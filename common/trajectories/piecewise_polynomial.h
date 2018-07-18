@@ -252,9 +252,13 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   /**
    * Constructs a third order PiecewisePolynomial from `breaks` and `knots`.
    * The PiecewisePolynomial is constructed such that the interior segments
-   * have the same value, first and second derivatives at `breaks`.
-   * "Not-a-knot" end condition is used here, which means the third derivatives
-   * are continuous for the first two and last two segments.
+   * have the same value, first and second derivatives at `breaks`. If
+   * periodic_end_condition is false (default), then "Not-a-knot" end
+   * condition is used here, which means the third derivatives are
+   * continuous for the first two and last two segments. If
+   * periodic_end_condition is true, then the first and second derivatives
+   * between the end of the last segment and the beginning of the first
+   * segment will be continuous.
    * See https://en.wikipedia.org/wiki/Spline_interpolation for more details
    * about "Not-a-knot" condition.
    * The matlab file "spline.m" and
@@ -264,6 +268,9 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * @p breaks and @p knots must have at least 3 elements. Otherwise there is
    * not enough information to solve for the coefficients.
    *
+   * @param periodic_end_condition Determines whether the "not-a-knot" or the
+   * periodic spline end condition is used.
+   *
    * @throws std::runtime_error if
    *    `breaks` and `knots` have different length,
    *    `breaks` is not strictly increasing,
@@ -272,7 +279,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    */
   static PiecewisePolynomial<T> Cubic(
       const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& knots);
+      const std::vector<CoefficientMatrix>& knots,
+      const bool periodic_end_condition=false);
 
   /**
    * Eigen version of Cubic(breaks, knots) where each column of knots is used
@@ -282,7 +290,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    */
   static PiecewisePolynomial<T> Cubic(
       const Eigen::Ref<const Eigen::VectorXd>& breaks,
-      const Eigen::Ref<const MatrixX<T>>& knots);
+      const Eigen::Ref<const MatrixX<T>>& knots,
+      const bool periodic_end_condition=false);
 
 
   /// Takes the derivative of this PiecewisePolynomial.
@@ -329,8 +338,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 
   bool empty() const { return polynomials_.empty(); }
 
-  double scalarValue(double t, Eigen::Index row = 0,
-                     Eigen::Index col = 0) const;
+  double scalarValue(double t, Eigen::Index row = 0, Eigen::Index col = 0);
 
   /**
    * Evaluates the PiecewisePolynomial at the given time \p t.
@@ -348,10 +356,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   int getSegmentPolynomialDegree(int segment_index, Eigen::Index row = 0,
                                  Eigen::Index col = 0) const;
 
-  /// Returns the row count of each and every PolynomialMatrix segment.
   Eigen::Index rows() const override;
 
-  /// Returns the column count of each and every PolynomialMatrix segment.
   Eigen::Index cols() const override;
 
   /// @throws std::runtime_error if other.segment_times is not within
@@ -401,18 +407,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * if any Polynomial in either PiecewisePolynomial is not univariate.
    */
   bool isApprox(const PiecewisePolynomial& other, double tol) const;
-
-  /// Concatenates @p other at the end, yielding a continuous trajectory
-  /// from current start_time() to @p other end_time().
-  ///
-  /// @param other PiecewisePolynomial instance to concatenate.
-  /// @throw std::runtime_error if trajectories' dimensions do not match
-  ///                           each other (either rows() or cols() does
-  ///                           not match between this and @p other).
-  /// @throw std::runtime_error if this end_time() and @p other start_time() are
-  ///                           not within PiecewiseTrajectory<T>::kEpsilonTime
-  ///                           from each other.
-  void ConcatenateInTime(const PiecewisePolynomial& other);
 
   void shiftRight(double offset);
 
