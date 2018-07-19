@@ -33,7 +33,7 @@ class RgbdRendererOSPRay final : public RgbdRenderer {
       const DrakeShapes::VisualElement& visual, int body_id) override;
 
   void ImplUpdateVisualPose(const Eigen::Isometry3d& X_WV,
-                        int body_id, VisualIndex visual_id) const override;
+                            int body_id, VisualIndex visual_id) const override;
 
   void ImplUpdateViewpoint(const Eigen::Isometry3d& X_WC) const override;
 
