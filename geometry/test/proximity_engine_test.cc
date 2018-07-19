@@ -523,6 +523,120 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsBetween) {
   ExpectNoPenetration(ad_engine.get());
 }
 
+// Given a sphere S and box B. The box's height and depth are large (much larger
+// than the diameter of the sphere), but the box's *width* is *less* than the
+// sphere diameter. The sphere will contact it such that it's penetration is
+// along the "width" axis.
+//
+// The sphere will start in a non-colliding state and subsequently move in the
+// width direction. As long as the center is on the same side of the box's
+// "origin" as its initial position, the normal direction should remain
+// unchanged. But as soon as it crosses, it should flip.
+//
+// Non-colliding state - no collision reported.
+//       y
+//      ┇ │ ┇       ←  movement of sphere
+//      ┃ │ ┃       o o
+//      ┃ │ ┃    o       o
+//      ┃ │ ┃   o         o
+// ─────╂─┼─╂───o────c────o───────── x
+//      ┃ │ ┃   o         o
+//      ┃ │ ┃    o       o
+//      ┃ │ ┃       o o            `c' marks the sphere center
+//      ┇ │ ┇
+//
+// penultimate colliding state (just to the right of the box's origin)
+// From the first contact up to this point, the contact normal should point to
+// the left (into the box).
+//       y
+//      ┇ │ ┇       ←  movement of sphere
+//      ┃ o o
+//     o┃ │ ┃  o
+//    o ┃ │ ┃   o
+// ───o─╂─┼c╂───o─────────────── x
+//    o ┃ │ ┃   o
+//     o┃ │ ┃  o
+//      ┃ o o
+//      ┇ │ ┇
+//
+// discontinuous colliding state - crossed the origin; contact normal flips to
+// the right.
+//       y
+//        ┇ │ ┇       ←  movement of sphere
+//        o o ┃
+//     o  ┃ │ ┃o
+//    o   ┃ │ ┃ o
+// ───o───╂c┼─╂─o─────────────── x
+//    o   ┃ │ ┃ o
+//     o  ┃ │ ┃o
+//        o o ┃
+//        ┇ │ ┇
+//
+// Supporting structure for the query.
+struct SpherePunchData {
+  const std::string description;
+  const Vector3d sphere_pose;
+  const int contact_count;
+  // This is the normal pointing *into* the box.
+  const Vector3d normal;
+  const double depth;
+};
+GTEST_TEST(ProximityEngineCollisionTest, SpherePunchThroughBox) {
+  ProximityEngine<double> engine;
+  const double radius = 0.5;
+  const double w = radius;        // width smaller than diameter.
+  const double half_w = w * 0.5;
+  const double h = 10 * radius;   // dimension much larger than sphere.
+  const double d = 10 * radius;   // dimension much larger than sphere.
+  const double eps = std::numeric_limits<double>::epsilon();
+  GeometryIndex box_index = engine.AddDynamicGeometry(Box{w, h, d});
+  GeometryIndex sphere_index = engine.AddDynamicGeometry(Sphere{radius});
+  ASSERT_EQ(box_index, 0);
+  ASSERT_EQ(sphere_index, 1);
+
+  GeometryId box_id = GeometryId::get_new_id();
+  GeometryId sphere_id = GeometryId::get_new_id();
+  std::vector<GeometryId> dynamic_map{box_id, sphere_id};
+  std::vector<GeometryId> anchored_map;
+
+  std::vector<Isometry3d> poses{Isometry3d::Identity(), Isometry3d::Identity()};
+  // clang-format off
+  std::vector<SpherePunchData> test_data{
+      {"non-penetration",
+       {radius + half_w + 0.1, 0, 0}, 0, {0, 0, 0}, -1.},
+      {"shallow penetration",
+       {radius + 0.75 * half_w, 0, 0}, 1, {-1, 0, 0}, 0.25 * half_w},
+      {"touching far side",
+       {radius - half_w, 0, 0}, 1, {-1, 0, 0}, w},
+      {"near origin",
+       {eps, 0, 0}, 1, {-1, 0, 0}, radius + half_w - eps},
+      {"crossed origin",
+       {-eps, 0, 0}, 1, {1, 0, 0}, radius + half_w - eps}};
+  // clang-format on
+  for (const auto& test : test_data) {
+    poses[1].translation() = test.sphere_pose;
+    engine.UpdateWorldPoses(poses);
+    std::vector<PenetrationAsPointPair<double>> results =
+        engine.ComputePointPairPenetration(dynamic_map, anchored_map);
+
+    ASSERT_EQ(static_cast<int>(results.size()), test.contact_count)
+        << "Failed for the " << test.description << " case";
+    if (test.contact_count == 1) {
+      const PenetrationAsPointPair<double>& penetration = results[0];
+      // Normal direction is predicated on the sphere being geometry B.
+      ASSERT_EQ(penetration.id_A, box_id);
+      ASSERT_EQ(penetration.id_B, sphere_id);
+      EXPECT_TRUE(CompareMatrices(penetration.nhat_BA_W, test.normal,
+                                  eps, MatrixCompareType::absolute))
+                << "Failed for the " << test.description << " case";
+      // For this simple, axis-aligned test (where all the values are nicely
+      // powers of 2), I should expect perfect answers.
+      EXPECT_EQ(penetration.depth - test.depth, 0)
+                << "Failed for the " << test.description << " case";
+    }
+  }
+}
+
 // Robust Box-Primitive tests. Tests collision of the box with other primitives
 // in a uniform framework. These tests parallel tests located in fcl.
 
