@@ -622,14 +622,12 @@ class GurobiSolver::License {
     int grb_load_env_error = 1;
     for (int i = 0; grb_load_env_error && i < num_tries; ++i) {
       grb_load_env_error = GRBloadenv(&env_, nullptr);
-
-      if (grb_load_env_error) {
-        drake::log()->info("Gurobi returns code {}, with message \"{}\".",
-                           grb_load_env_error, GRBgeterrormsg(env_));
-      }
     }
     if (grb_load_env_error) {
-      throw std::runtime_error("Could not create Gurobi environment.");
+      const char *grb_msg = GRBgeterrormsg(env_);
+      throw std::runtime_error("Could not create Gurobi environment because "
+          "Gurobi returned code " + std::to_string(grb_load_env_error) +
+          " with message \"" + grb_msg + "\".");
     }
     DRAKE_DEMAND(env_ != nullptr);
   }
