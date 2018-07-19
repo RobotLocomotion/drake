@@ -12,6 +12,20 @@ namespace perception {
 namespace {
 
 class TransformPointCloudTest : public ::testing::Test {
+ public:
+  static Matrix3X<float> GenerateBoundedRandomSample(
+      std::default_random_engine* generator, float min, float max,
+      int num_cols) {
+    Matrix3X<float> return_matrix = Matrix3X<float>::Zero(3, num_cols);
+    std::uniform_real_distribution<float> distribution(min, max);
+    for (int i = 0; i < num_cols; ++i) {
+      return_matrix.col(i) =
+          Vector3<float>(distribution(*generator), distribution(*generator),
+                         distribution(*generator));
+    }
+    return return_matrix;
+  }
+
  protected:
   void SetUp() override {
     transformer_ = std::make_unique<TransformPointCloud>();
@@ -19,8 +33,9 @@ class TransformPointCloudTest : public ::testing::Test {
     output_ = transformer_->point_cloud_output_port().Allocate();
     point_cloud_input_ =
         systems::AbstractValue::Make<PointCloud>(PointCloud(0));
-    rigid_transform_input_ = 
-        systems::AbstractValue::Make<RigidTransform>(RigidTransform());
+    rigid_transform_input_ =
+        systems::AbstractValue::Make<math::RigidTransform<float>>(
+            math::RigidTransform<float>());
   }
 
   std::unique_ptr<TransformPointCloud> transformer_;
@@ -32,39 +47,41 @@ class TransformPointCloudTest : public ::testing::Test {
 
 // Verifies that the system applies the transform correctly to the point cloud.
 TEST_F(TransformPointCloudTest, ApplyTransformTest) {
-  Eigen::VectorXf test_data(10);
-  for (int i = 0; i < output_depth.size(); ++i) {
+  const float kMin = -10.;
+  const float kMax = 10.;
+  const int kNumPoints = 5;
+  const Vector3<float> kRpy(M_PI_4, -M_PI_2, 0.543);
+  const math::RollPitchYaw<float> kRollPitchYaw(kRpy);
+  const math::RotationMatrix<float> kR(kRollPitchYaw);
+  const Vector3<float> kP(-.3, 5.4, -2.7);
 
-  } 
- 
- 
-  = kDepth * Eigen::VectorXf::Ones(kWidth * kHeight);
-  test_data(kTooClosePointCloudIndex) =
-      systems::sensors::InvalidDepth::kTooClose;
-  test_data(kTooFarPointCloudIndex) = systems::sensors::InvalidDepth::kTooFar;
+  std::default_random_engine generator(321);
 
-  systems::sensors::ImageDepth32F image =
-      DepthImageToPointCloudTest::MakeImage(kWidth, kHeight, test_data);
+  MatrixX<float> test_data =
+      TransformPointCloudTest::GenerateBoundedRandomSample(&generator, kMin,
+                                                           kMax, kNumPoints);
 
+  PointCloud cloud(kNumPoints);
+  cloud.mutable_xyzs() = test_data;
+
+  math::RigidTransform<float> transform(kR, kP);
+
+  context_->FixInputPort(0, systems::AbstractValue::Make<PointCloud>(cloud));
   context_->FixInputPort(
-      0, systems::AbstractValue::Make<systems::sensors::ImageDepth32F>(image));
+      1, systems::AbstractValue::Make<math::RigidTransform<float>>(transform));
 
-  converter_->point_cloud_output_port().Calc(*context_, output_.get());
+  transformer_->point_cloud_output_port().Calc(*context_, output_.get());
 
-  auto output_cloud = output_->GetValueOrThrow<perception::PointCloud>();
-  Eigen::VectorXf output_depth = output_cloud.xyzs().row(2);
+  auto output_cloud = output_->GetValueOrThrow<PointCloud>();
 
-  // kTooClose is treated as kTooFar. For the detail, refer to the document of
-  // RgbdCamera::ConvertDepthImageToPointCloud.
-  for (int i = 0; i < output_depth.size(); ++i) {
-    if (i == kTooClosePointCloudIndex) {
-      ASSERT_EQ(output_depth(i), systems::sensors::InvalidDepth::kTooFar);
-    } else if (i == kTooFarPointCloudIndex) {
-      ASSERT_EQ(output_depth(i), systems::sensors::InvalidDepth::kTooFar);
-    } else {
-      ASSERT_NEAR(output_depth(i), test_data(i), kDistanceTolerance);
-    }
-  }
+  Matrix4X<float> test_data_homogeneous(4, kNumPoints);
+  test_data_homogeneous.block(0, 0, 3, kNumPoints) = test_data;
+  test_data_homogeneous.row(3) = VectorX<float>::Ones(kNumPoints);
+  Matrix4X<float> expected_output =
+      transform.GetAsMatrix4() * test_data_homogeneous;
+
+  EXPECT_TRUE(CompareMatrices(
+      output_cloud.xyzs(), expected_output.block(0, 0, 3, kNumPoints), 1e-6));
 }
 
 }  // namespace

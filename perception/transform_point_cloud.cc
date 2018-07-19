@@ -25,19 +25,18 @@ PointCloud TransformPointCloud::MakeOutputPointCloud() const {
 void TransformPointCloud::ApplyTransformToPointCloud(
     const systems::Context<double>& context, PointCloud* output) const {
   const systems::AbstractValue* input_point_cloud_ptr =
-        this->EvalAbstractInput(context, point_cloud_input_port_index_);
+      this->EvalAbstractInput(context, point_cloud_input_port_index_);
   DRAKE_ASSERT(input_point_cloud_ptr != nullptr);
-  const auto& input_point_cloud =
-        input_point_cloud_ptr->GetValue<PointCloud>();
+  const auto& input_point_cloud = input_point_cloud_ptr->GetValue<PointCloud>();
 
   const systems::AbstractValue* input_rigid_transform_ptr =
-        this->EvalAbstractInput(context, rigid_transform_input_port_index_);
+      this->EvalAbstractInput(context, rigid_transform_input_port_index_);
   DRAKE_ASSERT(input_rigid_transform_ptr != nullptr);
   const auto& input_rigid_transform =
-        input_rigid_transform_ptr->GetValue<math::RigidTransform<float>>();
+      input_rigid_transform_ptr->GetValue<math::RigidTransform<float>>();
 
   output->resize(input_point_cloud.size());
-  for(int i = 0; i < output->size(); i++) {
+  for (int i = 0; i < output->size(); i++) {
     output->mutable_xyz(i) = input_rigid_transform * input_point_cloud.xyz(i);
   }
 }
