@@ -108,6 +108,7 @@ GTEST_TEST(TestSos2, TestClosestPointOnLineSegments) {
   prog.AddLinearConstraint(line_segment(0) == x);
   prog.AddLinearConstraint(line_segment(1) == y);
 
+  // Add a dummy cost function, which we will change in the for loop below.
   Binding<QuadraticCost> cost =
       prog.AddQuadraticCost(Eigen::Matrix2d::Zero(), Eigen::Vector2d::Zero(), 0,
                             VectorDecisionVariable<2>(x, y));
@@ -124,20 +125,23 @@ GTEST_TEST(TestSos2, TestClosestPointOnLineSegments) {
       std::make_pair(Eigen::Vector2d(5, 1.2), Eigen::Vector2d(4.9, 1.1)));
   Q_and_P.push_back(
       std::make_pair(Eigen::Vector2d(7.5, 1.2), Eigen::Vector2d(7.15, 0.85)));
-  for (int i = 0; i < static_cast<int>(Q_and_P.size()); ++i) {
-    const Eigen::Vector2d& Q = Q_and_P[i].first;
+  for (const auto& QP_pair : Q_and_P) {
+    const Eigen::Vector2d& Q = QP_pair.first;
+    // The cost is |P-Q|²
     cost.evaluator()->UpdateCoefficients(2 * Eigen::Matrix2d::Identity(),
                                          -2 * Q, Q.squaredNorm());
 
+    // Any mixed integer convex solver can solve this problem, here we choose
+    // gurobi.
     GurobiSolver gurobi_solver;
     if (gurobi_solver.available()) {
       const SolutionResult result = gurobi_solver.Solve(prog);
       EXPECT_EQ(result, SolutionResult::kSolutionFound);
       const Eigen::Vector2d P(
           prog.GetSolution(VectorDecisionVariable<2>(x, y)));
-      const Eigen::Vector2d P_expected = Q_and_P[i].second;
+      const Eigen::Vector2d P_expected = QP_pair.second;
       EXPECT_TRUE(CompareMatrices(P, P_expected, 1E-6));
-      EXPECT_NEAR(prog.GetOptimalCost(), (Q - P_expected).squaredNorm(), 1E-6);
+      EXPECT_NEAR(prog.GetOptimalCost(), (Q - P_expected).squaredNorm(), 1E-12);
     }
   }
 }
