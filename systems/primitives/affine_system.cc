@@ -47,7 +47,7 @@ TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(
 }
 
 template <typename T>
-const InputPortDescriptor<T>& TimeVaryingAffineSystem<T>::get_input_port()
+const InputPort<T>& TimeVaryingAffineSystem<T>::get_input_port()
     const {
   DRAKE_DEMAND(num_inputs_ > 0);
   return System<T>::get_input_port(0);

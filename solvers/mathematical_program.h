@@ -2228,18 +2228,30 @@ class MathematicalProgram {
   }
 
   const std::map<std::string, double>& GetSolverOptionsDouble(
-      const SolverId& solver_id) {
-    return solver_options_double_[solver_id];
+      const SolverId& solver_id) const {
+    // Aliases for brevity.
+    const auto& options = solver_options_double_;
+    const auto& empty = solver_options_double_empty_;
+    const auto iter = options.find(solver_id);
+    return (iter != options.end()) ? iter->second : empty;
   }
 
   const std::map<std::string, int>& GetSolverOptionsInt(
-      const SolverId& solver_id) {
-    return solver_options_int_[solver_id];
+      const SolverId& solver_id) const {
+    // Aliases for brevity.
+    const auto& options = solver_options_int_;
+    const auto& empty = solver_options_int_empty_;
+    const auto iter = options.find(solver_id);
+    return (iter != options.end()) ? iter->second : empty;
   }
 
   const std::map<std::string, std::string>& GetSolverOptionsStr(
-      const SolverId& solver_id) {
-    return solver_options_str_[solver_id];
+      const SolverId& solver_id) const {
+    // Aliases for brevity.
+    const auto& options = solver_options_str_;
+    const auto& empty = solver_options_str_empty_;
+    const auto iter = options.find(solver_id);
+    return (iter != options.end()) ? iter->second : empty;
   }
 
   /**
@@ -2511,7 +2523,7 @@ class MathematicalProgram {
       binding_x(i) =
           prog_var_vals(FindDecisionVariableIndex(binding.variables()(i)));
     }
-    binding.evaluator()->Eval(binding_x, binding_y);
+    binding.evaluator()->Eval(binding_x, &binding_y);
     return binding_y;
   }
 
@@ -2643,9 +2655,15 @@ class MathematicalProgram {
   // The lower bound of the objective found by the solver, during the
   // optimization process.
   double lower_bound_cost_{};
+
+  // The actual per-solver customization options.
   std::map<SolverId, std::map<std::string, double>> solver_options_double_;
   std::map<SolverId, std::map<std::string, int>> solver_options_int_;
   std::map<SolverId, std::map<std::string, std::string>> solver_options_str_;
+  // Dummy (empty) options, for when the solver_id is not in the above maps.
+  const std::map<std::string, double> solver_options_double_empty_;
+  const std::map<std::string, int> solver_options_int_empty_;
+  const std::map<std::string, std::string> solver_options_str_empty_;
 
   AttributesSet required_capabilities_{0};
 

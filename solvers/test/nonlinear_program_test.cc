@@ -197,11 +197,10 @@ class SixHumpCamelCost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
+  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>* y) const {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-    y(0) =
+    DRAKE_ASSERT(static_cast<size_t>(y->rows()) == numOutputs());
+    (*y)(0) =
         x(0) * x(0) * (4 - 2.1 * x(0) * x(0) + x(0) * x(0) * x(0) * x(0) / 3) +
         x(0) * x(1) + x(1) * x(1) * (-4 + 4 * x(1) * x(1));
   }
@@ -217,9 +216,9 @@ GTEST_TEST(testNonlinearProgram, sixHumpCamel) {
     // check (numerically) if it is a local minimum
     VectorXd ystar, y;
     const auto& x_value = prog.GetSolution(x);
-    cost->Eval(x_value, ystar);
+    cost->Eval(x_value, &ystar);
     for (int i = 0; i < 10; i++) {
-      cost->Eval(x_value + .01 * Matrix<double, 2, 1>::Random(), y);
+      cost->Eval(x_value + .01 * Matrix<double, 2, 1>::Random(), &y);
       if (y(0) < ystar(0)) throw std::runtime_error("not a local minima!");
     }
   });

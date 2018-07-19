@@ -43,8 +43,8 @@ class DrivingCommandMux : public systems::LeafSystem<T> {
 
   /// See the class description for details on the following input ports.
   /// @{
-  const systems::InputPortDescriptor<T>& steering_input() const;
-  const systems::InputPortDescriptor<T>& acceleration_input() const;
+  const systems::InputPort<T>& steering_input() const;
+  const systems::InputPort<T>& acceleration_input() const;
   /// @}
 
  private:

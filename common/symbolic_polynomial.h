@@ -128,6 +128,16 @@ class Polynomial {
   /// Adds @p coeff * @p m to this polynomial.
   Polynomial& AddProduct(const Expression& coeff, const Monomial& m);
 
+  /// Removes the terms whose absolute value of the coefficients are smaller
+  /// than or equal to @p coefficient_tol
+  /// For example, if the polynomial is 2x² + 3xy + 10⁻⁴x - 10⁻⁵,
+  /// then after calling RemoveTermsWithSmallCoefficients(1e-3), the returned
+  /// polynomial becomes 2x² + 3xy.
+  /// @param coefficient_tol A positive scalar.
+  /// @retval polynomial_cleaned A polynomial whose terms with small
+  /// coefficients are removed.
+  Polynomial RemoveTermsWithSmallCoefficients(double coefficient_tol) const;
+
   Polynomial& operator+=(const Polynomial& p);
   Polynomial& operator+=(const Monomial& m);
   Polynomial& operator+=(double c);

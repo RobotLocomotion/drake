@@ -61,24 +61,24 @@ MobilPlanner<T>::MobilPlanner(const RoadGeometry& road, bool initial_with_s,
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>& MobilPlanner<T>::ego_pose_input() const {
+const systems::InputPort<T>& MobilPlanner<T>::ego_pose_input() const {
   return systems::System<T>::get_input_port(ego_pose_index_);
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>& MobilPlanner<T>::ego_velocity_input()
+const systems::InputPort<T>& MobilPlanner<T>::ego_velocity_input()
     const {
   return systems::System<T>::get_input_port(ego_velocity_index_);
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>& MobilPlanner<T>::ego_acceleration_input()
+const systems::InputPort<T>& MobilPlanner<T>::ego_acceleration_input()
     const {
   return systems::System<T>::get_input_port(ego_acceleration_index_);
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>& MobilPlanner<T>::traffic_input() const {
+const systems::InputPort<T>& MobilPlanner<T>::traffic_input() const {
   return systems::System<T>::get_input_port(traffic_index_);
 }
 

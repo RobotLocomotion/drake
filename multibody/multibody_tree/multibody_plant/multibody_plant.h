@@ -13,6 +13,7 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/implicit_stribeck/implicit_stribeck_solver.h"
+#include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
 #include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
@@ -635,6 +636,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @param[in] shape
   ///   The geometry::Shape used for visualization. E.g.: geometry::Sphere,
   ///   geometry::Cylinder, etc.
+  /// @param[in] material
+  ///   The visual material to assign to the geometry.
   /// @param[out] scene_graph
   ///   A valid non nullptr to a SceneGraph on which geometry will get
   ///   registered.
@@ -642,12 +645,17 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @throws if called post-finalize.
   /// @throws if `scene_graph` does not correspond to the same instance with
   /// which RegisterAsSourceForSceneGraph() was called.
-  // TODO(amcastro-tri): When GS supports it, provide argument to specify
-  // visual properties.
-  void RegisterVisualGeometry(const Body<T>& body,
-                              const Isometry3<double>& X_BG,
-                              const geometry::Shape& shape,
-                              geometry::SceneGraph<T>* scene_graph);
+  /// @returns the id for the registered geometry.
+  geometry::GeometryId RegisterVisualGeometry(
+      const Body<T>& body, const Isometry3<double>& X_BG,
+      const geometry::Shape& shape, const geometry::VisualMaterial& material,
+      geometry::SceneGraph<T>* scene_graph);
+
+  /// Overload for visual geometry registration; it implicitly assigns the
+  /// default material.
+  geometry::GeometryId RegisterVisualGeometry(
+      const Body<T>& body, const Isometry3<double>& X_BG,
+      const geometry::Shape& shape, geometry::SceneGraph<T>* scene_graph);
 
   /// Returns an array of GeometryId's identifying the different visual
   /// geometries for `body` previously registered with a SceneGraph.
@@ -779,7 +787,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @throws std::exception if this system was not registered with a
   /// SceneGraph.
   /// @throws std::exception if called pre-finalize. See Finalize().
-  const systems::InputPortDescriptor<T>& get_geometry_query_input_port() const;
+  const systems::InputPort<T>& get_geometry_query_input_port() const;
 
   /// Returns the output port of frames' poses to communicate with a
   /// SceneGraph.
@@ -844,7 +852,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @pre Finalize() was already called on `this` plant.
   /// @throws if called before Finalize(), if the model does not contain any
   /// actuators, or if multiple model instances have actuated dofs.
-  const systems::InputPortDescriptor<T>& get_actuation_input_port() const;
+  const systems::InputPort<T>& get_actuation_input_port() const;
 
   /// Returns a constant reference to the input port for external actuation for
   /// a specific model instance.  This input port is a vector valued port, which
@@ -853,7 +861,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @throws if called before Finalize() or if the model instance does not
   /// contain any actuators.
   /// @throws if the model instance does not exist.
-  const systems::InputPortDescriptor<T>& get_actuation_input_port(
+  const systems::InputPort<T>& get_actuation_input_port(
       ModelInstanceIndex model_instance) const;
 
   /// @}
@@ -894,6 +902,14 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @throws std::exception if the model instance does not exist.
   const systems::OutputPort<T>& get_generalized_contact_forces_output_port(
       ModelInstanceIndex model_instance) const;
+
+  /// Returns a constant reference to the port that outputs ContactResults.
+  /// @throws std::exception if `this` plant is not modeled as a discrete system
+  /// with periodic updates.
+  /// @throws std::exception if called pre-finalize, see Finalize().
+  // TODO(amcastro-tri): report contact results for plants modeled as a
+  // continuous system as well.
+  const systems::OutputPort<T>& get_contact_results_output_port() const;
 
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {
@@ -1136,6 +1152,29 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // bodies connected by a joint.
   void FilterAdjacentBodies(geometry::SceneGraph<T>* scene_graph);
 
+  // For discrete models, MultibodyPlant uses a penalty method to impose joint
+  // limits. In this penalty method a force law of the form:
+  //   τ = -k(q - qᵤ) - cv if q > qᵤ
+  //   τ = -k(q - qₗ) - cv if q < qₗ
+  // is used to limit the position q to be within the lower/upper limits
+  // (qₗ, qᵤ).
+  // The penalty parameters k (stiffness) and c (damping) are estimated using
+  // a harmonic oscillator model of the form ẍ + 2ζω₀ ẋ + ω₀² x = 0, with
+  // x = (q - qᵤ) near the upper limit when q > qᵤ and x = (q - qₗ) near the
+  // lower limit when q < qₗ and where ω₀² = k / m̃ is the characteristic
+  // numerical stiffness frequency and m̃ is an inertia term that for prismatic
+  // joints reduces to a simple function of the mass of the bodies adjancent to
+  // a particular joint. For revolute joints m̃ relates to the rotational inertia
+  // of the adjacent bodies to a joint. See the implementation notes for further
+  // details. Both ω₀ and ζ are non-negative numbers.
+  // The characteristic frequency ω₀ is entirely a function the time step of the
+  // discrete model so that, from a stability analysis of the simplified
+  // harmonic oscillator model, we guarantee the resulting time stepping is
+  // stable. That is, the numerical stiffness of the method is such that it
+  // corresponds to the largest penalty parameter (smaller violation errors)
+  // that still guarantees stability.
+  void SetUpJointLimitsParameters();
+
   // This is a *temporary* method to eliminate visual geometries from collision
   // while we wait for geometry roles to be introduced.
   // TODO(SeanCurtis-TRI): Remove this when geometry roles are introduced.
@@ -1217,10 +1256,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // 3. `scene_graph` points to the same SceneGraph instance previously
   //    passed to RegisterAsSourceForSceneGraph().
   // 4. The body is *not* the world body.
-  geometry::GeometryId RegisterGeometry(const Body<T>& body,
-                                        const Isometry3<double>& X_BG,
-                                        const geometry::Shape& shape,
-                                        geometry::SceneGraph<T>* scene_graph);
+  geometry::GeometryId RegisterGeometry(
+      const Body<T>& body, const Isometry3<double>& X_BG,
+      const geometry::Shape& shape,
+      const optional<geometry::VisualMaterial>& material,
+      geometry::SceneGraph<T>* scene_graph);
 
   // Helper method to register anchored geometry to the world, either visual or
   // collision. This associates a GeometryId with the world body.
@@ -1231,12 +1271,17 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   //    passed to RegisterAsSourceForSceneGraph().
   geometry::GeometryId RegisterAnchoredGeometry(
       const Isometry3<double>& X_WG, const geometry::Shape& shape,
+      const optional<geometry::VisualMaterial>& material,
       geometry::SceneGraph<T>* scene_graph);
 
   bool body_has_registered_frame(const Body<T>& body) const {
     return body_index_to_frame_id_.find(body.index()) !=
         body_index_to_frame_id_.end();
   }
+
+  // Helper to retrieve a constant reference to the state vector from context.
+  const systems::BasicVector<T>& GetStateVector(
+      const systems::Context<T>& context) const;
 
   // Calc method for the continuous state vector output port.
   void CopyContinuousStateOut(
@@ -1260,6 +1305,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   void CalcFramePoseOutput(const systems::Context<T>& context,
                            geometry::FramePoseVector<T>* poses) const;
+
+  void CalcContactResultsOutput(
+      const systems::Context<T>& context,
+      ContactResults<T>* contact_results) const;
 
   // Helper to evaluate if a GeometryId corresponds to a collision model.
   bool is_collision_geometry(geometry::GeometryId id) const {
@@ -1290,10 +1339,31 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
+  // Helper method to fill in the ContactResults given the current context,
+  // point_pairs and the vector or orientations R_WC of each contact point
+  // frame C in the world frame W.
+  void CalcContactResults(
+      const systems::Context<T>& context,
+      const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs,
+      const std::vector<Matrix3<T>>& R_WC_set,
+      ContactResults<T>* contacts) const;
+
   // Helper method to add the contribution of external actuation forces to the
   // set of multibody `forces`. External actuation is applied through the
   // plant's input ports.
   void AddJointActuationForces(
+      const systems::Context<T>& context, MultibodyForces<T>* forces) const;
+
+  // Helper method to apply penalty forces that enforce joint limits.
+  // At each joint with joint limits this penalty method applies a force law of
+  // the form:
+  //   τ = min(-k(q - qᵤ) - cv, 0) if q > qᵤ
+  //   τ = max(-k(q - qₗ) - cv, 0) if q < qₗ
+  // is used to limit the position q to be within the lower/upper limits
+  // (qₗ, qᵤ).
+  // The penalty parameters k (stiffness) and c (damping) are estimated using
+  // a harmonic oscillator model within SetUpJointLimitsParameters().
+  void AddJointLimitsPenaltyForces(
       const systems::Context<T>& context, MultibodyForces<T>* forces) const;
 
   // Helper method to apply forces due to damping at the joints.
@@ -1435,6 +1505,23 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   };
   StribeckModel stribeck_model_;
 
+  // This structure aids in the bookkeeping of parameters associated with joint
+  // limits and the penalty method parameters used to enforce them.
+  struct JointLimitsParameters {
+    // list of joints that have limits. These are all single-dof joints.
+    std::vector<JointIndex> joints_with_limits;
+    // Position lower/upper bounds for each joint in joints_with_limits. The
+    // Units depend on the particular joint type. For instance, radians for
+    // RevoluteJoint or meters for PrismaticJoint.
+    std::vector<double> lower_limit;
+    std::vector<double> upper_limit;
+    // Penalty parameters. These are defined in accordance to the penalty force
+    // internally implemented by MultibodyPlant in
+    // AddJointLimitsPenaltyForces().
+    std::vector<double> stiffness;
+    std::vector<double> damping;
+  } joint_limits_parameters_;
+
   // Iteration order on this map DOES matter, and therefore we use an std::map.
   std::map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;
 
@@ -1494,6 +1581,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // no state.
   std::vector<systems::OutputPortIndex> instance_continuous_state_output_ports_;
 
+  // Index for the output port of ContactResults.
+  systems::OutputPortIndex contact_results_port_;
+
   // A vector containing the index for the generalized contact forces port for
   // each model instance. This vector is indexed by ModelInstanceIndex. An
   // invalid value indicates that the model instance has no generalized
@@ -1509,6 +1599,13 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // The solver used when the plant is modeled as a discrete system.
   std::unique_ptr<implicit_stribeck::ImplicitStribeckSolver<T>>
       implicit_stribeck_solver_;
+
+  // TODO(amcastro-tri): Remove this when caching lands and properly cache the
+  // contact results.
+  // Until caching lands, we use this variable as a "caching" entry.
+  // We make it mutable so we can change its values even from withing const
+  // methods.
+  mutable ContactResults<T> contact_results_;
 
   // Temporary solution for fake cache entries to help stabilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.

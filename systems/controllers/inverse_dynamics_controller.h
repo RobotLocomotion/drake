@@ -75,7 +75,7 @@ class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
   /**
    * Returns the input port for the reference acceleration.
    */
-  const InputPortDescriptor<T>& get_input_port_desired_acceleration() const {
+  const InputPort<T>& get_input_port_desired_acceleration() const {
     DRAKE_DEMAND(has_reference_acceleration_);
     DRAKE_DEMAND(input_port_index_desired_acceleration_ >= 0);
     return Diagram<T>::get_input_port(input_port_index_desired_acceleration_);
@@ -84,14 +84,14 @@ class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
   /**
    * Returns the input port for the estimated state.
    */
-  const InputPortDescriptor<T>& get_input_port_estimated_state() const final {
+  const InputPort<T>& get_input_port_estimated_state() const final {
     return this->get_input_port(input_port_index_estimated_state_);
   }
 
   /**
    * Returns the input port for the desired state.
    */
-  const InputPortDescriptor<T>& get_input_port_desired_state() const final {
+  const InputPort<T>& get_input_port_desired_state() const final {
     return this->get_input_port(input_port_index_desired_state_);
   }
 

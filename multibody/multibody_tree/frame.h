@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/multibody/multibody_tree/frame_base.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
@@ -54,6 +55,22 @@ class Frame : public FrameBase<T> {
   virtual Isometry3<T> CalcPoseInBodyFrame(
       const systems::Context<T>& context) const = 0;
 
+  /// Variant of CalcPoseInBodyFrame() that returns the fixed pose `X_BF` of
+  /// `this` frame F in the body frame B associated with this frame.
+  /// Throws std::logic_error if called on a %Frame that does not have a
+  /// fixed offset in the body frame.
+  // %Frame sub-classes that can represent the fixed pose of `this` frame F in
+  // a body frame B, must override this method.
+  // An example of a frame sub-class not implementing this method would be that
+  // of a frame on a soft body, for which its pose in the body frame depends
+  // on the state of deformation of the body.
+  virtual Isometry3<T> GetFixedPoseInBodyFrame() const {
+    throw std::logic_error(
+        "Attempting to retrieve a fixed pose from a frame of type '" +
+            drake::NiceTypeName::Get(*this) +
+            "', which does not support this operation.");
+  }
+
   /// Given the offset pose `X_FQ` of a frame Q in `this` frame F, this method
   /// computes the pose `X_BQ` of frame Q in the body frame B to which this
   /// frame is attached.
@@ -68,6 +85,16 @@ class Frame : public FrameBase<T> {
       const systems::Context<T>& context,
       const Isometry3<T>& X_FQ) const {
     return CalcPoseInBodyFrame(context) * X_FQ;
+  }
+
+  /// Variant of CalcOffsetPoseInBody() that given the offset pose `X_FQ` of a
+  /// frame Q in `this` frame F, returns the pose `X_BQ` of frame Q in the body
+  /// frame B to which this frame is attached.
+  /// Throws std::logic_error if called on a %Frame that does not have a
+  /// fixed offset in the body frame.
+  virtual Isometry3<T> GetFixedOffsetPoseInBody(
+      const Isometry3<T>& X_FQ) const {
+    return GetFixedPoseInBodyFrame() * X_FQ;
   }
 
   /// NVI to DoCloneToScalar() templated on the scalar type of the new clone to

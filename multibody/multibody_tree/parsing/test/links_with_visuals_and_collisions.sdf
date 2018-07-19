@@ -103,14 +103,6 @@
             <size>1.0 2.0 3.0</size>
           </box>
         </geometry>
-        <surface>
-          <friction>
-            <ode>
-              <mu>0.5</mu>
-              <mu2>0.5</mu2>
-            </ode>
-          </friction>
-        </surface>
       </collision>
     </link>
 

@@ -335,6 +335,35 @@ TEST_F(BoolTestSymbolic, ExtractBoolOrThrowException) {
   EXPECT_THROW(ExtractBoolOrThrow(b), std::exception);
 }
 
+// Check if ExtractBoolOrThrow works consistently across the relational
+// operators (here, we only check == and <=).
+// See https://github.com/RobotLocomotion/drake/issues/9117.
+TEST_F(BoolTestSymbolic, ExtractBoolOrThrowConsistency) {
+  // These tests throw an exception because it is not possible to determine how
+  // x relates to 2 (there is no numerical value associated with x).
+  Bool<Expression> test_equal{x_ == 2};
+  Bool<Expression> test_less_than_equal{x_ <= 2};
+  EXPECT_THROW(ExtractBoolOrThrow(test_equal), std::runtime_error);
+  EXPECT_THROW(ExtractBoolOrThrow(test_less_than_equal), std::runtime_error);
+
+  // These tests do not throw an exception because the symbolic algorithms are
+  // able to definitely resolve the relationship between these expressions.
+  test_equal = (2 * x_ + 3 == 3 + 2 * x_);
+  test_less_than_equal = (2 * x_ + 3 <= 3 + 2 * x_);
+  EXPECT_TRUE(ExtractBoolOrThrow(test_equal));
+  EXPECT_TRUE(ExtractBoolOrThrow(test_less_than_equal));
+
+  // These tests throw an exception because the symbolic algorithms do not
+  // currently definitely resolve the relationship between these expressions.
+  //
+  // TODO(Mitiguy): Update this test as more symbolic algorithms are employed to
+  // resolve the comparison between these expressions.
+  test_equal = 2 * (x_ + 3) == 6 + 2 * x_;
+  test_less_than_equal = 2 * (x_ + 3) <= 6 + 2 * x_;
+  EXPECT_THROW(ExtractBoolOrThrow(test_equal), std::runtime_error);
+  EXPECT_THROW(ExtractBoolOrThrow(test_less_than_equal), std::runtime_error);
+}
+
 TEST_F(BoolTestSymbolic, Value) {
   EXPECT_PRED2(FormulaEqual, b_true_.value(), Formula::True());
   EXPECT_PRED2(FormulaEqual, b_false_.value(), Formula::False());

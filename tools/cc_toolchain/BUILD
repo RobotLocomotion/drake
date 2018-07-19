@@ -84,6 +84,15 @@ filegroup(
     visibility = ["//visibility:private"],
 )
 
+filegroup(
+    name = "all_toolchain_deps",
+    data = [
+        ":apple_toolchain_deps",
+        ":linux_toolchain_deps",
+    ],
+    visibility = ["//common:__pkg__"],
+)
+
 cc_toolchain(
     name = "cc_toolchain_linux",
     all_files = ":linux_toolchain_deps",
@@ -157,6 +166,34 @@ config_setting(
         "compiler": "clang-4.0",
         "cpu": "k8",
     },
+)
+
+# Utilities.
+genrule(
+    name = "capture_cc",
+    outs = ["capture_cc.env"],
+    cmd = "echo \"BAZEL_CC=$(CC)\" > '$@'",
+    visibility = ["//common:__pkg__"],
+)
+
+# Utility script to indicate which compiler is being used.
+sh_binary(
+    name = "print_host_settings",
+    srcs = ["print_host_settings.sh"],
+    args = ["$(location :capture_cc.env)"],
+    data = [
+        ":all_toolchain_deps",
+        ":capture_cc.env",
+    ],
+)
+
+# Test the above script; if CROSSTOOL is removed or changed, $(CC) may be an
+# invalid binary (related to #7763), and CI should catch this.
+# N.B. We have to use a proxy script since `print_host_settings` has `data`.
+sh_test(
+    name = "print_host_settings_test",
+    srcs = ["test/print_host_settings_test.sh"],
+    data = [":print_host_settings"],
 )
 
 add_lint_tests()

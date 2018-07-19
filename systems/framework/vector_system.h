@@ -33,7 +33,7 @@ class VectorSystem : public LeafSystem<T> {
   ~VectorSystem() override = default;
 
   /// Returns the sole input port.
-  const InputPortDescriptor<T>& get_input_port() const {
+  const InputPort<T>& get_input_port() const {
     DRAKE_DEMAND(this->get_num_input_ports() == 1);
     return LeafSystem<T>::get_input_port(0);
   }

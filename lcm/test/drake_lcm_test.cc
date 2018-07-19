@@ -225,12 +225,21 @@ TEST_F(DrakeLcmTest, SubscribeTest) {
 
 TEST_F(DrakeLcmTest, EmptyChannelTest) {
   DrakeLcm dut;
+  EXPECT_EQ(dut.get_requested_lcm_url(), "");
 
   MessageHandler handler;
   EXPECT_THROW(dut.Subscribe("", &handler), std::exception);
 
   lcmt_drake_signal message{};
   EXPECT_THROW(Publish(&dut, "", message), std::exception);
+}
+
+
+TEST_F(DrakeLcmTest, UrlTest) {
+  const std::string custom_url = "udpm://239.255.66.66:6666?ttl=0";
+  const DrakeLcm dut(custom_url);
+
+  EXPECT_EQ(dut.get_requested_lcm_url(), custom_url);
 }
 
 }  // namespace

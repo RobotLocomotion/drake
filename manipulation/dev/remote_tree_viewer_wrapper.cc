@@ -76,7 +76,8 @@ void RemoteTreeViewerWrapper::PublishPointCloud(
 }
 
 void RemoteTreeViewerWrapper::PublishLine(
-    const Eigen::Matrix3Xd& pts, const std::vector<std::string>& path) {
+    const Eigen::Matrix3Xd& pts, const std::vector<std::string>& path,
+    const Eigen::Ref<const Eigen::Vector4d>& color) {
   int64_t now = GetUnixTime() * 1000 * 1000;
   // Format a JSON string for this pointcloud
   json j = {{"timestamp", now},
@@ -87,6 +88,7 @@ void RemoteTreeViewerWrapper::PublishLine(
                    {
                        {"type", "line"},
                        {"points", std::vector<std::vector<double>>()},
+                       {"color", std::array<double, 4>()},
                    }}}},
             },
             {"settransform", json({})},
@@ -97,6 +99,8 @@ void RemoteTreeViewerWrapper::PublishLine(
     j["setgeometry"][0]["geometry"]["points"].push_back(
         {pts(0, i), pts(1, i), pts(2, i)});
   }
+  j["setgeometry"][0]["geometry"]["color"] = {color(0), color(1), color(2),
+                                              color(3)};
 
   auto msg = lcmt_viewer2_comms();
   FillLcmView2CommsMessage(now, j, &msg);
@@ -179,10 +183,8 @@ void RemoteTreeViewerWrapper::PublishRigidBodyTree(
     bool visual) {
   auto kinematics_cache = tree.doKinematics(q);
   for (int i = 0; i < tree.get_num_bodies(); ++i) {
-    PublishRigidBody(
-        tree, i,
-        tree.relativeTransform(kinematics_cache, 0, i),
-        color, path, visual);
+    PublishRigidBody(tree, i, tree.relativeTransform(kinematics_cache, 0, i),
+                     color, path, visual);
   }
 }
 

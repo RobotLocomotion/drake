@@ -38,16 +38,16 @@ class ImageToLcmImageArrayT : public systems::LeafSystem<double> {
                         const std::string& label_frame_name,
                         bool do_compress = false);
 
-  /// Returns a descriptor of the input port containing a color image.
-  const InputPortDescriptor<double>& color_image_input_port() const;
+  /// Returns the input port containing a color image.
+  const InputPort<double>& color_image_input_port() const;
 
-  /// Returns a descriptor of the input port containing a depth image.
-  const InputPortDescriptor<double>& depth_image_input_port() const;
+  /// Returns the input port containing a depth image.
+  const InputPort<double>& depth_image_input_port() const;
 
-  /// Returns a descriptor of the input port containing a label image.
-  const InputPortDescriptor<double>& label_image_input_port() const;
+  /// Returns the input port containing a label image.
+  const InputPort<double>& label_image_input_port() const;
 
-  /// Returns a descriptor of the abstract valued output port that contains a
+  /// Returns the abstract valued output port that contains a
   /// `Value<robotlocomotion::image_array_t>`.
   const OutputPort<double>& image_array_t_msg_output_port() const;
 

@@ -32,7 +32,11 @@ PYBIND11_MODULE(rigid_body, m) {
          py::return_value_policy::reference_internal)
 
     .def("get_visual_elements", &RigidBody<double>::get_visual_elements)
-    .def("AddVisualElement", &RigidBody<double>::AddVisualElement);
+    .def("AddVisualElement", &RigidBody<double>::AddVisualElement)
+    .def("get_num_collision_elements",
+         &RigidBody<double>::get_num_collision_elements)
+    .def("get_collision_element_ids",
+         &RigidBody<double>::get_collision_element_ids);
 }
 
 }  // namespace pydrake

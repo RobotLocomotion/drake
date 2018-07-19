@@ -44,7 +44,7 @@ class PoseAggregatorTest : public ::testing::Test {
     aggregator_.AddSingleInput("single_x", kRandomModelInstanceId1);
 
     context_ = aggregator_.CreateDefaultContext();
-    output_ = aggregator_.AllocateOutput(*context_);
+    output_ = aggregator_.AllocateOutput();
   }
 
   PoseAggregator<double> aggregator_;
@@ -173,7 +173,7 @@ TEST_F(PoseAggregatorTest, CompositeAggregation) {
   autodiff_context->FixInputPort(2, std::move(autodiff_frame_vel1));
   autodiff_context->FixInputPort(3, std::move(autodiff_pose_vec2));
 
-  auto autodiff_output = autodiff_aggregator->AllocateOutput(*autodiff_context);
+  auto autodiff_output = autodiff_aggregator->AllocateOutput();
   autodiff_aggregator->CalcOutput(*autodiff_context, autodiff_output.get());
   const PoseBundle<AutoDiffXd>& autodiff_bundle =
       autodiff_output->get_data(0)->GetValueOrThrow<PoseBundle<AutoDiffXd>>();
@@ -194,12 +194,12 @@ TEST_F(PoseAggregatorTest, CompositeAggregation) {
 // Tests that PoseAggregator allocates no state variables in the context_.
 TEST_F(PoseAggregatorTest, Stateless) { EXPECT_TRUE(context_->is_stateless()); }
 
-// Tests that AddSinglePoseAndVelocityInput returns descriptors for both
+// Tests that AddSinglePoseAndVelocityInput returns input ports for both
 // the new ports.
 TEST_F(PoseAggregatorTest, AddSinglePoseAndVelocityPorts) {
   auto ports = aggregator_.AddSinglePoseAndVelocityInput("test", 100);
-  const InputPortDescriptor<double>& pose_port = ports.pose_descriptor;
-  const InputPortDescriptor<double>& velocity_port = ports.velocity_descriptor;
+  const InputPort<double>& pose_port = ports.pose_input_port;
+  const InputPort<double>& velocity_port = ports.velocity_input_port;
   EXPECT_EQ(PoseVector<double>::kSize, pose_port.size());
   EXPECT_EQ(FrameVelocity<double>::kSize, velocity_port.size());
 }

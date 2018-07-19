@@ -84,6 +84,12 @@ class QueryObject {
    @throws  std::logic_error if the geometry id is invalid. */
   FrameId GetFrameId(GeometryId geometry_id) const;
 
+  /** Returns the visual material of the geometry indicated by the given
+   `geometry_id` (if it exists).
+   @throws  std::runtime_error if the %QueryObject is in default configuration.
+   @throws  std::logic_error if the geometry id is invalid. */
+  const VisualMaterial* GetVisualMaterial(GeometryId geometry_id) const;
+
   //@}
 
   //----------------------------------------------------------------------------
@@ -102,12 +108,14 @@ class QueryObject {
    geometry are also not reported. The penetration between two geometries is
    characterized as a point pair (see PenetrationAsPointPair).
 
-   <!--
+   For two penetrating geometries g₁ and g₂, it is guaranteed that they will
+   map to `id_A` and `id_B` in a fixed, repeatable manner.
+
    This method is affected by collision filtering; element pairs that
    have been filtered will not produce contacts, even if their collision
    geometry is penetrating.
-   TODO(SeanCurtis-TRI): This isn't true yet.
 
+   <!--
    NOTE: This is currently declared as double because we haven't exposed FCL's
    templated functionality yet. When that happens, double -> T.
    -->

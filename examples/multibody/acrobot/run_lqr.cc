@@ -49,6 +49,10 @@ DEFINE_double(target_realtime_rate, 1.0,
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
 
+DEFINE_bool(time_stepping, true, "If 'true', the plant is modeled as a "
+    "discrete system with periodic updates. "
+    "If 'false', the plant is modeled as a continuous system.");
+
 // This helper method makes an LQR controller to balance an acrobot model
 // specified in the SDF file `file_name`.
 std::unique_ptr<systems::AffineSystem<double>> MakeBalancingLQRController(
@@ -101,11 +105,15 @@ int do_main() {
 
   const double simulation_time = FLAGS_simulation_time;
 
+  const double time_step = FLAGS_time_stepping ? 1.0e-3 : 0.0;
+
   // Make and add the acrobot model.
   const std::string relative_name =
       "drake/multibody/benchmarks/acrobot/acrobot.sdf";
   const std::string full_name = FindResourceOrThrow(relative_name);
-  MultibodyPlant<double>& acrobot = *builder.AddSystem<MultibodyPlant>();
+  MultibodyPlant<double>& acrobot =
+      *builder.AddSystem<MultibodyPlant>(time_step);
+
   AddModelFromSdfFile(full_name, &acrobot, &scene_graph);
 
   // Add gravity to the model.

@@ -102,7 +102,7 @@ SpringMassSystem<T>::SpringMassSystem(const SpringMassSystem<U>& other)
           other.get_system_is_forced()) {}
 
 template <typename T>
-const InputPortDescriptor<T>& SpringMassSystem<T>::get_force_port() const {
+const InputPort<T>& SpringMassSystem<T>::get_force_port() const {
   if (system_is_forced_) {
     return this->get_input_port(0);
   } else {

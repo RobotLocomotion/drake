@@ -78,12 +78,18 @@ class LinearCost : public Cost {
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override;
+              Eigen::VectorXd* y) const override;
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override;
+              AutoDiffVecXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override;
 
  private:
+  template <typename DerivedX, typename U>
+  void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x, VectorX<U>* y) const;
+
   Eigen::VectorXd a_;
   double b_{};
 };
@@ -144,11 +150,17 @@ class QuadraticCost : public Cost {
   }
 
  private:
+  template <typename DerivedX, typename U>
+  void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x, VectorX<U>* y) const;
+
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override;
+              Eigen::VectorXd* y) const override;
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override;
+              AutoDiffVecXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override;
 
   Eigen::MatrixXd Q_;
   Eigen::VectorXd b_;
@@ -187,11 +199,16 @@ class EvaluatorCost : public Cost {
  protected:
   const EvaluatorType& evaluator() const { return *evaluator_; }
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override {
+              Eigen::VectorXd* y) const override {
     evaluator_->Eval(x, y);
   }
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override {
+              AutoDiffVecXd* y) const override {
+    evaluator_->Eval(x, y);
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override {
     evaluator_->Eval(x, y);
   }
 

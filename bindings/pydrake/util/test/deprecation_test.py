@@ -4,6 +4,7 @@ from pydrake.util.deprecation import DrakeDeprecationWarning
 
 import pydoc
 import unittest
+import rlcompleter
 import sys
 from types import ModuleType
 import warnings
@@ -64,6 +65,48 @@ class TestDeprecation(unittest.TestCase):
         temp = {}
         exec "from deprecation_example import *" in temp
         self.assertIsInstance(temp["sub_module"], str)
+
+    def test_module_autocomplete(self):
+        # Ensure that we can autocomplete with our example module.
+        # Without `__dir__` being implemented, it'll only return `install` as a
+        # non-private autocomplete candidate.
+        import deprecation_example
+        namespace = locals()
+        completer = rlcompleter.Completer(namespace)
+        candidates = []
+        for i in xrange(1000):
+            candidate = completer.complete("deprecation_example.", i)
+            if candidate is None:
+                break
+            candidates.append(candidate)
+        candidates_expected = [
+            # Injection from `Completer.attr_matches`, via `get_class_members`.
+            "deprecation_example.__class__(",
+            "deprecation_example.__delattr__(",
+            "deprecation_example.__dict__",
+            "deprecation_example.__dir__(",
+            "deprecation_example.__doc__",
+            "deprecation_example.__format__(",
+            "deprecation_example.__getattr__(",
+            "deprecation_example.__getattribute__(",
+            "deprecation_example.__hash__(",
+            "deprecation_example.__init__(",
+            "deprecation_example.__module__",
+            "deprecation_example.__new__(",
+            "deprecation_example.__reduce__(",
+            "deprecation_example.__reduce_ex__(",
+            "deprecation_example.__repr__(",
+            "deprecation_example.__setattr__(",
+            "deprecation_example.__sizeof__(",
+            "deprecation_example.__str__(",
+            "deprecation_example.__subclasshook__(",
+            "deprecation_example.__weakref__",
+            "deprecation_example._install(",
+            # Intended completions via `__all__`.
+            "deprecation_example.sub_module",
+            "deprecation_example.value",
+        ]
+        self.assertSetEqual(set(candidates), set(candidates_expected))
 
     def _check_warning(
             self, item, message_expected, type=DrakeDeprecationWarning):
@@ -146,3 +189,24 @@ class TestDeprecation(unittest.TestCase):
             # Manually set this back to `once`.
             warnings.simplefilter("ignored", DeprecationWarning)
             warnings.simplefilter("once", DrakeDeprecationWarning)
+
+    def test_deprecation_pybind(self):
+        """Test C++ usage in `deprecation_pybind.h`."""
+        from deprecation_example.cc_module import ExampleCppClass
+        with warnings.catch_warnings(record=True) as w:
+            # This is a descriptor, so it will trigger on class access.
+            ExampleCppClass.DeprecatedMethod
+            self.assertEqual(len(w), 1)
+            self._check_warning(w[0], ExampleCppClass.message_method)
+            # Same for a property.
+            ExampleCppClass.deprecated_prop
+            self.assertEqual(len(w), 2)
+            self._check_warning(w[1], ExampleCppClass.message_prop)
+            # Call good overload; no new warnings.
+            obj = ExampleCppClass()
+            obj.overload()
+            self.assertEqual(len(w), 2)
+            # Call bad overload.
+            obj.overload(10)
+            self.assertEqual(len(w), 3)
+            self._check_warning(w[2], ExampleCppClass.message_overload)

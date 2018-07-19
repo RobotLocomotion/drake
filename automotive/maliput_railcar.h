@@ -100,7 +100,7 @@ class MaliputRailcar final : public systems::LeafSystem<T> {
 
   /// Getter methods for input and output ports.
   /// @{
-  const systems::InputPortDescriptor<T>& command_input() const;
+  const systems::InputPort<T>& command_input() const;
   const systems::OutputPort<T>& state_output() const;
   const systems::OutputPort<T>& lane_state_output() const;
   const systems::OutputPort<T>& pose_output() const;

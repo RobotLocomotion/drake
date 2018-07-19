@@ -70,6 +70,15 @@ class BodyFrame final : public Frame<T> {
     return X_FQ;
   }
 
+  Isometry3<T> GetFixedPoseInBodyFrame() const override {
+    return Isometry3<T>::Identity();
+  }
+
+  Isometry3<T> GetFixedOffsetPoseInBody(
+      const Isometry3<T>& X_FQ) const override {
+    return X_FQ;
+  }
+
  protected:
   // Frame<T>::DoCloneToScalar() overrides.
   std::unique_ptr<Frame<double>> DoCloneToScalar(

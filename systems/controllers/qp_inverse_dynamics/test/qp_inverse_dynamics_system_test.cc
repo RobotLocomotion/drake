@@ -101,7 +101,7 @@ GTEST_TEST(testQpInverseDynamicsSystem, IiwaInverseDynamics) {
   // Uses the simulator to avoid various allocations by hand.
   Simulator<double> sim(*diagram);
   std::unique_ptr<SystemOutput<double>> output =
-      diagram->AllocateOutput(sim.get_context());
+      diagram->AllocateOutput();
   sim.Initialize();
   sim.StepTo(controller->get_control_dt());
 

@@ -21,7 +21,17 @@ class DrakeLcm : public DrakeLcmInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeLcm);
 
+  /**
+   * Constructs using LCM's default URL (either the default hard-coded URL, or
+   * else LCM_DEFAULT_URL environment variable if it is set).
+   */
   DrakeLcm();
+
+  /**
+   * Constructs using the given URL.  If empty, it will use the default URL as
+   * per the no-argument constructor.
+   */
+  explicit DrakeLcm(std::string lcm_url);
 
   /**
    * A destructor that forces the receive thread to be stopped.
@@ -63,6 +73,11 @@ class DrakeLcm : public DrakeLcmInterface {
    */
   ::lcm::LCM* get_lcm_instance();
 
+  /**
+   * Returns the LCM URL passed into the constructor; this can be empty.
+   */
+  std::string get_requested_lcm_url() const;
+
   void Publish(const std::string& channel, const void* data,
                int data_size, optional<double> time_sec) override;
 
@@ -74,6 +89,7 @@ class DrakeLcm : public DrakeLcmInterface {
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
  private:
+  std::string requested_lcm_url_;
   ::lcm::LCM lcm_;
   std::unique_ptr<LcmReceiveThread> receive_thread_{nullptr};
   std::list<HandlerFunction> handlers_;

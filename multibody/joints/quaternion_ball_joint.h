@@ -262,6 +262,17 @@ class QuaternionBallJoint : public DrakeJointImpl<QuaternionBallJoint> {
         get_num_velocities(), 1);
   }
 
+  template <typename DerivedQ>
+  Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, 1> SpringTorque(
+      const Eigen::MatrixBase<DerivedQ>& q) const {
+    drake::unused(q);
+    // Returning zero for now, but a 3D torsional spring could theoretically be
+    // added here.
+    return drake::VectorX<typename DerivedQ::Scalar>::Zero(
+        get_num_velocities(), 1);
+  }
+
+
   bool is_floating() const override { return false; };
 
   // TODO(liang.fok) Remove this deprecated method prior to release 1.0.

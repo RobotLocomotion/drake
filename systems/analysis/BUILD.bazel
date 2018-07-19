@@ -14,9 +14,9 @@ drake_cc_package_library(
     name = "analysis",
     deps = [
         ":antiderivative_function",
-        ":continuous_extension",
+        ":dense_output",
         ":explicit_euler_integrator",
-        ":hermitian_continuous_extension",
+        ":hermitian_dense_output",
         ":implicit_euler_integrator",
         ":initial_value_problem",
         ":integrator_base",
@@ -26,34 +26,37 @@ drake_cc_package_library(
         ":scalar_initial_value_problem",
         ":semi_explicit_euler_integrator",
         ":simulator",
-        ":stepwise_continuous_extension",
+        ":stepwise_dense_output",
     ],
 )
 
 drake_cc_library(
-    name = "continuous_extension",
-    hdrs = ["continuous_extension.h"],
+    name = "dense_output",
+    hdrs = ["dense_output.h"],
     deps = [
         "//common:essential",
     ],
 )
 
 drake_cc_library(
-    name = "stepwise_continuous_extension",
-    hdrs = ["stepwise_continuous_extension.h"],
+    name = "stepwise_dense_output",
+    hdrs = ["stepwise_dense_output.h"],
     deps = [
-        ":continuous_extension",
+        ":dense_output",
         "//common:essential",
     ],
 )
 
 drake_cc_library(
-    name = "hermitian_continuous_extension",
-    hdrs = ["hermitian_continuous_extension.h"],
+    name = "hermitian_dense_output",
+    hdrs = ["hermitian_dense_output.h"],
     deps = [
-        ":stepwise_continuous_extension",
+        ":stepwise_dense_output",
+        "//common:autodiff",
         "//common:essential",
+        "//common:extract_double",
         "//common/trajectories:piecewise_polynomial",
+        "//systems/framework:vector",
     ],
 )
 
@@ -61,6 +64,9 @@ drake_cc_library(
     name = "integrator_base",
     hdrs = ["integrator_base.h"],
     deps = [
+        ":dense_output",
+        ":hermitian_dense_output",
+        ":stepwise_dense_output",
         "//systems/framework:context",
         "//systems/framework:system",
     ],
@@ -298,9 +304,10 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "hermitian_continuous_extension_test",
+    name = "hermitian_dense_output_test",
     deps = [
-        ":hermitian_continuous_extension",
+        ":hermitian_dense_output",
+        "//common:autodiff",
         "//common:essential",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/trajectories:piecewise_polynomial",

@@ -18,6 +18,7 @@
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
 
+using drake::math::RotationMatrixd;
 using drake::symbolic::Expression;
 
 using std::sqrt;
@@ -58,41 +59,46 @@ class TestMixedIntegerRotationConstraint {
     return IsFeasibleCheck(&prog_, feasibility_constraint_, R_to_check);
   }
 
+  bool IsFeasible(const RotationMatrixd& R_to_check) {
+    return IsFeasible(R_to_check.matrix());
+  }
+
   void TestExactRotationMatrix() {
     // If R is exactly on SO(3), test whether it also satisfies our relaxation.
 
     // Test a few valid rotation matrices.
-    Matrix3d R_test = Matrix3d::Identity();
+    RotationMatrixd R_test;  // Identity matrix.
     EXPECT_TRUE(IsFeasible(R_test));
 
-    R_test = math::ZRotation(M_PI_4) * R_test;
+    R_test = RotationMatrixd::MakeZRotation(M_PI_4) * R_test;
     EXPECT_TRUE(IsFeasible(R_test));
 
-    R_test = math::YRotation(M_PI_4) * R_test;
+    R_test = RotationMatrixd::MakeYRotation(M_PI_4) * R_test;
     EXPECT_TRUE(IsFeasible(R_test));
 
-    R_test = math::ZRotation(M_PI_2);
+    R_test = RotationMatrixd::MakeZRotation(M_PI_2);
     EXPECT_TRUE(IsFeasible(R_test));
 
-    R_test = math::ZRotation(-M_PI_2);
+    R_test = RotationMatrixd::MakeZRotation(-M_PI_2);
     EXPECT_TRUE(IsFeasible(R_test));
 
-    R_test = math::YRotation(M_PI_2);
+    R_test = RotationMatrixd::MakeYRotation(M_PI_2);
     EXPECT_TRUE(IsFeasible(R_test));
 
-    R_test = math::YRotation(-M_PI_2);
+    R_test = RotationMatrixd::MakeYRotation(-M_PI_2);
     EXPECT_TRUE(IsFeasible(R_test));
 
     // This one caught a bug (in the loop finding the most conservative linear
     // constraint for a given region) during random testing.
-    R_test << 0.17082017792981191, 0.65144498431260445, -0.73921573253413542,
-        -0.82327804434149443, -0.31781600529013027, -0.47032568342231595,
-        -0.54132589862048197, 0.68892119955432829, 0.48203096610835455;
-    EXPECT_TRUE(IsFeasible(R_test));
+    Matrix3d R_check;
+    R_check << 0.17082017792981191, 0.65144498431260445, -0.73921573253413542,
+              -0.82327804434149443, -0.31781600529013027, -0.47032568342231595,
+              -0.54132589862048197, 0.68892119955432829, 0.48203096610835455;
+    EXPECT_TRUE(IsFeasible(R_check));
 
     std::mt19937 generator(41);
     for (int i = 0; i < 40; i++) {
-      R_test = math::UniformlyRandomRotationMatrix(&generator).matrix();
+      R_test = math::UniformlyRandomRotationMatrix(&generator);
       EXPECT_TRUE(IsFeasible(R_test));
     }
   }
@@ -126,10 +132,10 @@ class TestMixedIntegerRotationConstraint {
     R_test(2, 2) = -1;
     EXPECT_FALSE(IsFeasible(R_test));
 
-    R_test = math::ZRotation(M_PI_4) * R_test;
+    R_test = RotationMatrixd::MakeZRotation(M_PI_4).matrix() * R_test;
     EXPECT_FALSE(IsFeasible(R_test));
 
-    R_test = math::YRotation(M_PI_4) * R_test;
+    R_test = RotationMatrixd::MakeYRotation(M_PI_4).matrix() * R_test;
     EXPECT_FALSE(IsFeasible(R_test));
 
     // Checks a few cases just outside the L1 ball. If we use the formulation
@@ -137,7 +143,7 @@ class TestMixedIntegerRotationConstraint {
     // envelope, then it should always be infeasible. Otherwise should be
     // feasible for num_intervals_per_half_axis_=1, but infeasible for
     // num_intervals_per_half_axis_>1.
-    R_test = math::YRotation(M_PI_4);
+    R_test = RotationMatrixd::MakeYRotation(M_PI_4).matrix();
     R_test(2, 0) -= 0.1;
     EXPECT_GT(R_test.col(0).lpNorm<1>(), 1.0);
     EXPECT_GT(R_test.row(2).lpNorm<1>(), 1.0);

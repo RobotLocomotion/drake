@@ -75,6 +75,7 @@ GTEST_TEST(DependencyTracker, BuiltInTrackers) {
   for (int ticket_int = 0; ticket_int < internal::kNextAvailableTicket;
        ++ticket_int) {
     const DependencyTicket ticket(ticket_int);
+    ASSERT_TRUE(context.get_dependency_graph().has_tracker(ticket));
     auto& tracker = context.get_tracker(ticket);
     EXPECT_EQ(tracker.ticket(), ticket);
     EXPECT_NO_THROW(tracker.ThrowIfBadDependencyTracker(
@@ -109,13 +110,16 @@ GTEST_TEST(DependencyTracker, BuiltInTrackers) {
   EXPECT_EQ(nothing.prerequisites().size(), 0);
   EXPECT_EQ(nothing.subscribers().size(), 0);
 
-  // time and accuracy are independent but all_sources subscribes.
+  // time and accuracy are independent. all_sources depends on both,
+  // configuration and velocity trackers depend on accuracy.
   EXPECT_EQ(time.prerequisites().size(), 0);
   ASSERT_EQ(time.subscribers().size(), 1);
   EXPECT_EQ(time.subscribers()[0], &all_sources);
   EXPECT_EQ(accuracy.prerequisites().size(), 0);
-  ASSERT_EQ(accuracy.subscribers().size(), 1);
+  ASSERT_EQ(accuracy.subscribers().size(), 3);
   EXPECT_EQ(accuracy.subscribers()[0], &all_sources);
+  EXPECT_EQ(accuracy.subscribers()[1], &configuration);
+  EXPECT_EQ(accuracy.subscribers()[2], &velocity);
 
   // q, v, z are independent but xc subscribes to all, configuration to q,
   // and velocity to v.
@@ -157,15 +161,19 @@ GTEST_TEST(DependencyTracker, BuiltInTrackers) {
   ASSERT_EQ(x.subscribers().size(), 1);
   EXPECT_EQ(x.subscribers()[0], &all_sources);
 
-  // configuration depends on q, kinematics subscribes.
-  ASSERT_EQ(configuration.prerequisites().size(), 1);
+  // configuration depends on q, parameters, accuracy & kinematics subscribes.
+  ASSERT_EQ(configuration.prerequisites().size(), 3);
   EXPECT_EQ(configuration.prerequisites()[0], &q);
+  EXPECT_EQ(configuration.prerequisites()[1], &p);
+  EXPECT_EQ(configuration.prerequisites()[2], &accuracy);
   ASSERT_EQ(configuration.subscribers().size(), 1);
   EXPECT_EQ(configuration.subscribers()[0], &kinematics);
 
-  // velocity depends on q, kinematics subscribes.
-  ASSERT_EQ(velocity.prerequisites().size(), 1);
+  // velocity depends on q, parameters, accuracy & kinematics subscribes.
+  ASSERT_EQ(velocity.prerequisites().size(), 3);
   EXPECT_EQ(velocity.prerequisites()[0], &v);
+  EXPECT_EQ(velocity.prerequisites()[1], &p);
+  EXPECT_EQ(velocity.prerequisites()[2], &accuracy);
   ASSERT_EQ(velocity.subscribers().size(), 1);
   EXPECT_EQ(velocity.subscribers()[0], &kinematics);
 
@@ -175,10 +183,13 @@ GTEST_TEST(DependencyTracker, BuiltInTrackers) {
   EXPECT_EQ(kinematics.prerequisites()[1], &velocity);
   EXPECT_EQ(kinematics.subscribers().size(), 0);
 
-  // No parameters or inputs yet so p,u independent; all_sources subscribes.
+  // No parameters or inputs yet so p,u independent; all_sources, configuration,
+  // and velocity subscribe.
   EXPECT_EQ(p.prerequisites().size(), 0);
-  ASSERT_EQ(p.subscribers().size(), 1);
+  ASSERT_EQ(p.subscribers().size(), 3);
   EXPECT_EQ(p.subscribers()[0], &all_sources);
+  EXPECT_EQ(p.subscribers()[1], &configuration);
+  EXPECT_EQ(p.subscribers()[2], &velocity);
   EXPECT_EQ(u.prerequisites().size(), 0);
   ASSERT_EQ(u.subscribers().size(), 1);
   EXPECT_EQ(u.subscribers()[0], &all_sources);
@@ -192,7 +203,9 @@ GTEST_TEST(DependencyTracker, BuiltInTrackers) {
   EXPECT_EQ(all_sources.prerequisites()[4], &u);
   EXPECT_EQ(all_sources.subscribers().size(), 0);
 
-  // TODO(sherm1) xcdot and xdhat are not yet connected.
+  // xcdot and xdhat are created during Context construction but are not
+  // connected to the corresponding cache entry values until those are
+  // allocated later by the system framework (in SystemBase).
   EXPECT_EQ(xc_dot.prerequisites().size(), 0);
   EXPECT_EQ(xc_dot.subscribers().size(), 0);
   EXPECT_EQ(xd_hat.prerequisites().size(), 0);
@@ -248,7 +261,9 @@ class HandBuiltDependencies : public ::testing::Test {
         index, next_ticket++, "entry0",
         {time_ticket_, middle1_->ticket(), downstream2_->ticket()}, &graph);
     entry0_->SetInitialValue(AbstractValue::Make<int>(3));
-    entry0_tracker_ = &graph.get_mutable_tracker(entry0_->ticket());
+    // A new tracker should have been created.
+    EXPECT_NO_THROW(entry0_tracker_ =
+                        &graph.get_mutable_tracker(entry0_->ticket()));
 
     // Retrieve time tracker.
     time_tracker_ = &graph.get_mutable_tracker(time_ticket_);
@@ -297,6 +312,34 @@ TEST_F(HandBuiltDependencies, Construction) {
   const int num_trackers = graph.trackers_size();
   auto& tracker = graph.CreateNewDependencyTracker("tracker");
   EXPECT_EQ(tracker.ticket(), num_trackers);
+
+  // There were no cache entries assigned to those two trackers. Check
+  // that cache_entry_value() understands that.
+  EXPECT_EQ(tracker100.cache_entry_value(), nullptr);
+  EXPECT_EQ(tracker.cache_entry_value(), nullptr);
+
+  // In the HandBuiltDependencies SetUp() we assigned cache entry
+  // entry0_ to entry0_tracker_; make sure cache_entry_value() agrees.
+  EXPECT_EQ(entry0_tracker_->cache_entry_value(), entry0_);
+
+  // Make sure we can add a cache entry to a tracker. (Reusing entry0_
+  // here but that doesn't matter since we're just checking that the pointer
+  // gets memorized properly.)
+  tracker.set_cache_entry_value(entry0_);
+  EXPECT_EQ(tracker.cache_entry_value(), entry0_);
+
+  // Make sure that when we create a cache entry for an already-allocated
+  // built-in tracker, that tracker gets used rather than creating a
+  // new one. xcdot is an example where this is needed in practice.
+  Cache& cache = context_.get_mutable_cache();
+  const CacheIndex index(cache.cache_size());
+  const DependencyTicket xcdot_ticket(internal::kXcdotTicket);
+  const DependencyTracker& xcdot_tracker(graph.get_tracker(xcdot_ticket));
+  const CacheEntryValue& xcdot_value = cache.CreateNewCacheEntryValue(
+      index, xcdot_ticket, "xcdot cache value",
+      {time_ticket_}, &graph);
+  EXPECT_EQ(xcdot_value.ticket(), xcdot_ticket);
+  EXPECT_EQ(xcdot_tracker.cache_entry_value(), &xcdot_value);
 }
 
 // Check that a dependency tracker can provide a human-readable name.

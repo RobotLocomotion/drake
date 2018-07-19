@@ -4,7 +4,7 @@ namespace drake {
 
 using std::vector;
 using drake::systems::Context;
-using drake::systems::InputPortDescriptor;
+using drake::systems::InputPort;
 using drake::systems::OutputPort;
 using drake::systems::System;
 using drake::systems::BasicVector;
@@ -218,7 +218,7 @@ FeedforwardNeuralNetwork<T>::DecodeWeightsFromBasicVector(
 }
 
 template <typename T>
-const InputPortDescriptor<T>& FeedforwardNeuralNetwork<T>::input() const {
+const InputPort<T>& FeedforwardNeuralNetwork<T>::input() const {
   return System<T>::get_input_port(input_index_);
 }
 

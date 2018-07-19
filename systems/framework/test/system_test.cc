@@ -61,7 +61,7 @@ class TestSystem : public System<double> {
   void SetDefaultParameters(const Context<double>& context,
                             Parameters<double>* params) const override {}
 
-  const InputPortDescriptor<double>& AddAbstractInputPort() {
+  const InputPort<double>& AddAbstractInputPort() {
     return this->DeclareAbstractInputPort();
   }
 
@@ -125,12 +125,12 @@ class TestSystem : public System<double> {
 
  protected:
   BasicVector<double>* DoAllocateInputVector(
-      const InputPortDescriptor<double>& descriptor) const override {
+      const InputPort<double>& input_port) const override {
     return nullptr;
   }
 
   AbstractValue* DoAllocateInputAbstract(
-      const InputPortDescriptor<double>& descriptor) const override {
+      const InputPort<double>& input_port) const override {
     return nullptr;
   }
 
@@ -218,11 +218,11 @@ class TestSystem : public System<double> {
   }
 
  private:
-  std::unique_ptr<ContextBase> DoMakeContext() const final {
-    return std::make_unique<LeafContext<double>>();
+  std::unique_ptr<ContextBase> DoAllocateContext() const final {
+    auto context = std::make_unique<LeafContext<double>>();
+    InitializeContextBase(&*context);
+    return context;
   }
-
-  void DoValidateAllocatedContext(const ContextBase&) const final {}
 
   mutable int publish_count_ = 0;
   mutable int update_count_ = 0;
@@ -317,9 +317,9 @@ TEST_F(SystemTest, DiscreteUpdate) {
   EXPECT_EQ(1, system_.get_update_count());
 }
 
-// Tests that descriptor references remain valid even if lots of other
-// descriptors are added to the system, forcing a vector resize.
-TEST_F(SystemTest, PortDescriptorsAreStable) {
+// Tests that port references remain valid even if lots of other ports are added
+// to the system, forcing a vector resize.
+TEST_F(SystemTest, PortReferencesAreStable) {
   const auto& first_input = system_.AddAbstractInputPort();
   const auto& first_output = system_.AddAbstractOutputPort();
   for (int i = 0; i < 1000; i++) {
@@ -468,16 +468,16 @@ class ValueIOTestSystem : public System<T> {
   }
 
   AbstractValue* DoAllocateInputAbstract(
-      const InputPortDescriptor<T>& descriptor) const override {
+      const InputPort<T>& input_port) const override {
     // Should only get called for the first input.
-    EXPECT_EQ(descriptor.get_index(), 0);
+    EXPECT_EQ(input_port.get_index(), 0);
     return AbstractValue::Make<std::string>("").release();
   }
 
   BasicVector<T>* DoAllocateInputVector(
-      const InputPortDescriptor<T>& descriptor) const override {
+      const InputPort<T>& input_port) const override {
     // Should not get called for the first (abstract) input.
-    EXPECT_GE(descriptor.get_index(), 1);
+    EXPECT_GE(input_port.get_index(), 1);
     return new TestTypedVector<T>();
   }
 
@@ -485,11 +485,11 @@ class ValueIOTestSystem : public System<T> {
     return std::make_unique<ContinuousState<T>>();
   }
 
-  std::unique_ptr<ContextBase> DoMakeContext() const final {
-    return std::make_unique<LeafContext<T>>();
+  std::unique_ptr<ContextBase> DoAllocateContext() const final {
+    auto context = std::make_unique<LeafContext<T>>();
+    this->InitializeContextBase(&*context);
+    return context;
   }
-
-  void DoValidateAllocatedContext(const ContextBase& context) const final {}
 
   std::unique_ptr<CompositeEventCollection<T>>
   AllocateCompositeEventCollection() const override {
@@ -686,7 +686,7 @@ class SystemIOTest : public ::testing::Test {
  protected:
   void SetUp() override {
     context_ = test_sys_.CreateDefaultContext();
-    output_ = test_sys_.AllocateOutput(*context_);
+    output_ = test_sys_.AllocateOutput();
 
     // make string input
     context_->FixInputPort(0, Value<std::string>("input"));

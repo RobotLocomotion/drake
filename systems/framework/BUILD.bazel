@@ -28,8 +28,8 @@ drake_cc_package_library(
         ":discrete_values",
         ":event_collection",
         ":framework_common",
+        ":input_port",
         ":input_port_base",
-        ":input_port_descriptor",
         ":leaf_context",
         ":leaf_output_port",
         ":leaf_system",
@@ -337,12 +337,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "input_port_descriptor",
+    name = "input_port",
     srcs = [
-        "input_port_descriptor.cc",
+        "input_port.cc",
     ],
     hdrs = [
-        "input_port_descriptor.h",
+        "input_port.h",
     ],
     deps = [
         ":input_port_base",
@@ -382,7 +382,7 @@ drake_cc_library(
     deps = [
         ":context",
         ":event_collection",
-        ":input_port_descriptor",
+        ":input_port",
         ":output_port",
         ":system_base",
         ":system_constraint",

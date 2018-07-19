@@ -74,7 +74,7 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
       this_x(i) = tx(prog->FindDecisionVariableIndex(binding.variables()(i)));
     }
 
-    binding.evaluator()->Eval(this_x, ty);
+    binding.evaluator()->Eval(this_x, &ty);
 
     cost += ty(0).value();
     if (!grad.empty()) {
@@ -177,7 +177,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   AutoDiffVecXd ty(num_constraints);
   AutoDiffVecXd this_x =
       MakeInputAutoDiffVec(*(wrapped->prog), xvec, *(wrapped->vars));
-  c->Eval(this_x, ty);
+  c->Eval(this_x, &ty);
 
   const Eigen::VectorXd& lower_bound = c->lower_bound();
   const Eigen::VectorXd& upper_bound = c->upper_bound();

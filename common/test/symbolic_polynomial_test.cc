@@ -787,6 +787,34 @@ TEST_F(SymbolicPolynomialTest, Hash) {
   EXPECT_NE(h(p1), h(p2));
 }
 
+TEST_F(SymbolicPolynomialTest, RemoveTermsWithSmallCoefficients) {
+  // Single term.
+  Polynomial p1{1e-5 * x_ * x_};
+  EXPECT_PRED2(PolyEqual, p1.RemoveTermsWithSmallCoefficients(1E-4),
+               Polynomial(0));
+  EXPECT_PRED2(PolyEqual, p1.RemoveTermsWithSmallCoefficients(1E-5),
+               Polynomial(0));
+  EXPECT_PRED2(PolyEqual, p1.RemoveTermsWithSmallCoefficients(1E-6), p1);
+
+  // Multiple terms.
+  Polynomial p2(2 * x_ * x_ + 3 * x_ * y_ + 1E-4 * x_ - 1E-4);
+  EXPECT_PRED2(PolyEqual, p2.RemoveTermsWithSmallCoefficients(1E-4),
+               Polynomial(2 * x_ * x_ + 3 * x_ * y_));
+
+  // Coefficients are expressions.
+  Polynomial::MapType p3_map{};
+  p3_map.emplace(Monomial(var_x_, 2), 2 * sin(y_));
+  p3_map.emplace(Monomial(var_x_, 1), 1E-4 * cos(y_));
+  p3_map.emplace(Monomial(var_x_, 3), 1E-4 * y_);
+  p3_map.emplace(Monomial(), 1E-6);
+  Polynomial::MapType p3_expected_map{};
+  p3_expected_map.emplace(Monomial(var_x_, 2), 2 * sin(y_));
+  p3_expected_map.emplace(Monomial(var_x_, 1), 1E-4 * cos(y_));
+  p3_expected_map.emplace(Monomial(var_x_, 3), 1E-4 * y_);
+  EXPECT_PRED2(PolyEqual,
+               Polynomial(p3_map).RemoveTermsWithSmallCoefficients(1E-3),
+               Polynomial(p3_expected_map));
+}
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

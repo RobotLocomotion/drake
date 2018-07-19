@@ -138,7 +138,7 @@ void RgbdCamera::InitRenderer() {
   renderer_->AddFlatTerrain();
 }
 
-const InputPortDescriptor<double>& RgbdCamera::state_input_port() const {
+const InputPort<double>& RgbdCamera::state_input_port() const {
   return *state_input_port_;
 }
 

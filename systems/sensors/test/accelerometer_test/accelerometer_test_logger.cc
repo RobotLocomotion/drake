@@ -38,17 +38,17 @@ void AccelerometerTestLogger::DoPublish(const Context<double>& context,
   }
 }
 
-const InputPortDescriptor<double>&
+const InputPort<double>&
 AccelerometerTestLogger::get_plant_state_input_port() const {
   return System<double>::get_input_port(plant_state_port_index_);
 }
 
-const InputPortDescriptor<double>&
+const InputPort<double>&
 AccelerometerTestLogger::get_plant_state_derivative_input_port() const {
   return System<double>::get_input_port(plant_state_derivative_port_index_);
 }
 
-const InputPortDescriptor<double>&
+const InputPort<double>&
 AccelerometerTestLogger::get_acceleration_input_port() const {
   return System<double>::get_input_port(acceleration_port_index_);
 }

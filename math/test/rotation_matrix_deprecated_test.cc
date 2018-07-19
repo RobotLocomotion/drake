@@ -18,42 +18,6 @@ namespace drake {
 namespace math {
 namespace {
 
-// Test XRotation, YRotation, ZRotation
-GTEST_TEST(RotationMatrixTest, TestXYZ) {
-  Vector3d i(1, 0, 0), j(0, 1, 0), k(0, 0, 1);
-
-  double tol = 1e-12;
-  EXPECT_TRUE(CompareMatrices(XRotation(M_PI_4) * i, i, tol));
-  EXPECT_TRUE(CompareMatrices(XRotation(M_PI_4) * j,
-                              Vector3d(0, M_SQRT1_2, M_SQRT1_2), tol));
-  EXPECT_TRUE(CompareMatrices(XRotation(M_PI_4) * k,
-                              Vector3d(0, -M_SQRT1_2, M_SQRT1_2), tol));
-
-  EXPECT_TRUE(CompareMatrices(YRotation(M_PI_4) * i,
-                              Vector3d(M_SQRT1_2, 0, -M_SQRT1_2), tol));
-  EXPECT_TRUE(CompareMatrices(YRotation(M_PI_4) * j, j, tol));
-  EXPECT_TRUE(CompareMatrices(YRotation(M_PI_4) * k,
-                              Vector3d(M_SQRT1_2, 0, M_SQRT1_2), tol));
-
-  EXPECT_TRUE(CompareMatrices(ZRotation(M_PI_4) * i,
-                              Vector3d(M_SQRT1_2, M_SQRT1_2, 0), tol));
-  EXPECT_TRUE(CompareMatrices(ZRotation(M_PI_4) * j,
-                              Vector3d(-M_SQRT1_2, M_SQRT1_2, 0), tol));
-  EXPECT_TRUE(CompareMatrices(ZRotation(M_PI_4) * k, k, tol));
-
-  // Test that rotations by PI do not change the rotation axis, and flip the
-  // signs on the other two axes.
-  EXPECT_TRUE(CompareMatrices(
-      XRotation(M_PI + 0.3),
-      Eigen::DiagonalMatrix<double, 3>(1, -1, -1) * XRotation(0.3), tol));
-  EXPECT_TRUE(CompareMatrices(
-      YRotation(M_PI + 0.3),
-      Eigen::DiagonalMatrix<double, 3>(-1, 1, -1) * YRotation(0.3), tol));
-  EXPECT_TRUE(CompareMatrices(
-      ZRotation(M_PI + 0.3),
-      Eigen::DiagonalMatrix<double, 3>(-1, -1, 1) * ZRotation(0.3), tol));
-}
-
 // Take many possible samples of the rotation angle θ, make sure the rotation
 // matrix as R[θ] = AngleAxis(θ, axis) has larger error than the projected
 // matrix R, namely

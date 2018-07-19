@@ -136,6 +136,9 @@ PYBIND11_MODULE(rigid_body_tree, m) {
     .def("DefineCollisionFilterGroup",
          &RigidBodyTree<double>::DefineCollisionFilterGroup,
          py::arg("name"))
+    .def("FindCollisionElement",
+         &RigidBodyTree<double>::FindCollisionElement,
+         py::arg("id"), py::return_value_policy::reference)
     .def("addFrame", &RigidBodyTree<double>::addFrame, py::arg("frame"))
     .def("FindBody", [](const RigidBodyTree<double>& self,
                         const std::string& body_name,
@@ -265,7 +268,12 @@ PYBIND11_MODULE(rigid_body_tree, m) {
            py::arg("in_terms_of_qdot") = false)
       // centroidalMomentumMatrix
       // forwardKinPositionGradient
-      // geometricJacobianDotTimesV
+      .def("geometricJacobianDotTimesV",
+           &RigidBodyTree<double>::geometricJacobianDotTimesV<T>,
+           py::arg("cache"),
+           py::arg("base_body_or_frame_ind"),
+           py::arg("end_effector_body_or_frame_ind"),
+           py::arg("expressed_in_body_or_frame_ind"))
       .def("centerOfMassJacobianDotTimesV",
            &RigidBodyTree<double>::centerOfMassJacobianDotTimesV<T>,
            py::arg("cache"),
@@ -309,8 +317,6 @@ PYBIND11_MODULE(rigid_body_tree, m) {
               const MatrixX<T>& Ap) {
              return tree.transformQDotMappingToVelocityMapping(cache, Ap);
            })
-      // DoTransformPointsJacobian
-      // DoTransformPointsJacobianDotTimesV
       // relativeQuaternionJacobian
       // relativeRollPitchYawJacobian
       // relativeRollPitchYawJacobianDotTimesV
@@ -337,7 +343,34 @@ PYBIND11_MODULE(rigid_body_tree, m) {
                                  int to_body_or_frame_ind) {
         return tree.transformPoints(
             cache, points, from_body_or_frame_ind, to_body_or_frame_ind);
-      });
+      })
+      .def("transformPointsJacobian",
+           [](const RigidBodyTree<double>& tree,
+              const KinematicsCache<T>& cache,
+              const Matrix3X<double>& points,
+              int from_body_or_frame_ind,
+              int to_body_or_frame_ind,
+              bool in_terms_of_qdot) {
+             return tree.transformPointsJacobian(cache, points,
+                  from_body_or_frame_ind, to_body_or_frame_ind,
+                  in_terms_of_qdot);
+           },
+           py::arg("cache"), py::arg("points"),
+           py::arg("from_body_or_frame_ind"),
+           py::arg("to_body_or_frame_ind"),
+           py::arg("in_terms_of_qdot"))
+      .def("transformPointsJacobianDotTimesV",
+           [](const RigidBodyTree<double>& tree,
+              const KinematicsCache<T>& cache,
+              const Matrix3X<double>& points,
+              int from_body_or_frame_ind,
+              int to_body_or_frame_ind) {
+             return tree.transformPointsJacobianDotTimesV(cache, points,
+                  from_body_or_frame_ind, to_body_or_frame_ind);
+           },
+           py::arg("cache"), py::arg("points"),
+           py::arg("from_body_or_frame_ind"),
+           py::arg("to_body_or_frame_ind"));
   };
   // Bind for double and AutoDiff.
   type_visit(

@@ -56,7 +56,7 @@ GTEST_TEST(InverseDynamicsControllerTest, TestTorque) {
   auto dut = std::make_unique<InverseDynamicsController<double>>(
       std::move(robot_ptr), kp, ki, kd, true);
   auto context = dut->CreateDefaultContext();
-  auto output = dut->AllocateOutput(*context);
+  auto output = dut->AllocateOutput();
   const RigidBodyTree<double>& robot = dut->get_robot_for_control();
 
   // Sets current state and reference state and acceleration values.

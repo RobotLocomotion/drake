@@ -48,7 +48,7 @@ void TestSubscriber(drake::lcm::DrakeMockLcm* lcm,
   EXPECT_EQ(dut->get_name(), "LcmSubscriberSystem(" + channel_name + ")");
 
   std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
-  std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput(*context);
+  std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput();
 
   drake::lcmt_drake_signal message;
   message.dim = kDim;
@@ -150,7 +150,7 @@ GTEST_TEST(LcmSubscriberSystemTest, SerializerTest) {
 
   // Establishes the context and output for the dut.
   std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
-  std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput(*context);
+  std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput();
 
   // MockLcm produces a sample message.
   SampleData sample_data;
@@ -295,7 +295,7 @@ GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
 
   // Read back the vector via CalcOutput.
   auto context = dut.CreateDefaultContext();
-  auto output = dut.AllocateOutput(*context);
+  auto output = dut.AllocateOutput();
   EvalOutputHelper(dut, context.get(), output.get());
   const VectorBase<double>* const output_vector = output->get_vector_data(0);
   ASSERT_NE(nullptr, output_vector);

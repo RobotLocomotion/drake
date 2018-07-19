@@ -31,7 +31,7 @@ using maliput::api::Rotation;
 using systems::BasicVector;
 using systems::Context;
 using systems::ContinuousState;
-using systems::InputPortDescriptor;
+using systems::InputPort;
 using systems::LeafContext;
 using systems::OutputPort;
 using systems::Parameters;
@@ -99,7 +99,7 @@ MaliputRailcar<T>::MaliputRailcar(const LaneDirection& initial_lane_direction)
 }
 
 template <typename T>
-const InputPortDescriptor<T>& MaliputRailcar<T>::command_input() const {
+const InputPort<T>& MaliputRailcar<T>::command_input() const {
   return this->get_input_port(command_input_port_index_);
 }
 

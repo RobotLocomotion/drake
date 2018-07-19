@@ -37,9 +37,9 @@ class AdderTest : public ::testing::Test {
 TEST_F(AdderTest, Topology) {
   ASSERT_EQ(2, adder_->get_num_input_ports());
   for (int i = 0; i < 2; ++i) {
-    const InputPortDescriptor<double>& descriptor = adder_->get_input_port(i);
-    EXPECT_EQ(kVectorValued, descriptor.get_data_type());
-    EXPECT_EQ(3, descriptor.size());
+    const InputPort<double>& input_port = adder_->get_input_port(i);
+    EXPECT_EQ(kVectorValued, input_port.get_data_type());
+    EXPECT_EQ(3, input_port.size());
   }
 
   ASSERT_EQ(1, adder_->get_num_output_ports());

@@ -114,7 +114,7 @@ class RigidBodyPlantBridge : public systems::LeafSystem<T> {
   geometry::SourceId source_id() const { return source_id_; }
 
   const systems::OutputPort<T>& geometry_pose_output_port() const;
-  const systems::InputPortDescriptor<T>& rigid_body_plant_state_input_port()
+  const systems::InputPort<T>& rigid_body_plant_state_input_port()
       const;
 
  private:

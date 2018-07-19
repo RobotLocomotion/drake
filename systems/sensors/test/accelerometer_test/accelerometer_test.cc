@@ -85,7 +85,7 @@ void TestAccelerometerFreeFall(const Eigen::Vector3d& xyz,
       dut.get_plant_state_derivative_input_port().get_index(),
       make_unique<BasicVector<double>>(VectorX<double>::Zero(num_states)));
 
-  unique_ptr<SystemOutput<double>> output = dut.AllocateOutput(*dut_context);
+  unique_ptr<SystemOutput<double>> output = dut.AllocateOutput();
   ASSERT_EQ(output->get_num_ports(), 1);
   dut.CalcOutput(*dut_context, output.get());
 

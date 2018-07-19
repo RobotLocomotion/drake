@@ -15,12 +15,12 @@ namespace rendering {
 
 namespace pose_aggregator_detail { struct InputRecord; }
 
-/// A container with references to the input port descriptor for the pose input,
-/// and a reference to an input port descriptor for the velocity input.
+/// A container with references to the input port for the pose input, and a
+/// reference to the input port for the velocity input.
 template <typename T>
-struct PoseVelocityInputPortDescriptors {
-  const InputPortDescriptor<T>& pose_descriptor;
-  const InputPortDescriptor<T>& velocity_descriptor;
+struct PoseVelocityInputPorts {
+  const InputPort<T>& pose_input_port;
+  const InputPort<T>& velocity_input_port;
 };
 
 
@@ -92,19 +92,19 @@ class PoseAggregator : public LeafSystem<T> {
 
   /// Adds an input for a PoseVector. @p name must be unique for all inputs with
   /// the same @p model_instance_id.
-  const InputPortDescriptor<T>& AddSingleInput(const std::string& name,
+  const InputPort<T>& AddSingleInput(const std::string& name,
                                                int model_instance_id);
 
   /// Adds an input for a PoseVector, and a corresponding input for a
   /// FrameVelocity. @p name must be unique for all inputs with the same
   /// @p model_instance_id.
   ///
-  /// @return Descriptors for pose and velocity.
-  PoseVelocityInputPortDescriptors<T>
+  /// @return Input ports for pose and velocity.
+  PoseVelocityInputPorts<T>
   AddSinglePoseAndVelocityInput(const std::string& name, int model_instance_id);
 
   /// Adds an input for a PoseBundle containing @p num_poses poses.
-  const InputPortDescriptor<T>& AddBundleInput(const std::string& bundle_name,
+  const InputPort<T>& AddBundleInput(const std::string& bundle_name,
                                                int num_poses);
 
  private:
@@ -136,7 +136,7 @@ class PoseAggregator : public LeafSystem<T> {
                                                int num_poses);
 
   // Declares a System input port based on the given record.
-  const InputPortDescriptor<T>& DeclareInput(const InputRecord&);
+  const InputPort<T>& DeclareInput(const InputRecord&);
 
   // Returns the total number of poses from all inputs.
   int CountNumPoses() const;

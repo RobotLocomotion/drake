@@ -111,11 +111,6 @@ class Context : public ContextBase {
     return count;
   }
 
-  /// Sets the continuous state to @p xc, deleting whatever was there before.
-  void set_continuous_state(std::unique_ptr<ContinuousState<T>> xc) {
-    get_mutable_state().set_continuous_state(std::move(xc));
-  }
-
   /// Returns a mutable reference to the continuous component of the state,
   /// which may be of size zero.
   ContinuousState<T>& get_mutable_continuous_state() {
@@ -179,11 +174,6 @@ class Context : public ContextBase {
     return xd.get_mutable_vector(index);
   }
 
-  /// Sets the discrete state to @p xd, deleting whatever was there before.
-  void set_discrete_state(std::unique_ptr<DiscreteValues<T>> xd) {
-    get_mutable_state().set_discrete_state(std::move(xd));
-  }
-
   /// Returns a const reference to group (vector) @p index of the discrete
   /// state.
   /// @pre @p index must identify an existing group.
@@ -215,11 +205,6 @@ class Context : public ContextBase {
   U& get_mutable_abstract_state(int index) {
     AbstractValues& xa = get_mutable_abstract_state();
     return xa.get_mutable_value(index).GetMutableValue<U>();
-  }
-
-  /// Sets the abstract state to @p xa, deleting whatever was there before.
-  void set_abstract_state(std::unique_ptr<AbstractValues> xa) {
-    get_mutable_state().set_abstract_state(std::move(xa));
   }
 
   /// Returns a const reference to the abstract component of the
@@ -406,8 +391,31 @@ class Context : public ContextBase {
   /// Returns a const reference to current time and step information.
   const StepInfo<T>& get_step_info() const { return step_info_; }
 
-  /// Provides storage for declared parameters, deleting whatever was there
-  /// before. You must supply a Parameters object; null is not acceptable.
+  /// Sets the continuous state to @p xc, deleting whatever was there before.
+  /// Invalidates all continuous state-dependent computations in this context
+  /// and its subcontexts.
+  void init_continuous_state(std::unique_ptr<ContinuousState<T>> xc) {
+    get_mutable_state().set_continuous_state(std::move(xc));
+  }
+
+  /// Sets the discrete state to @p xd, deleting whatever was there before.
+  /// Invalidates all discrete state-dependent computations in this context and
+  /// its subcontexts.
+  void init_discrete_state(std::unique_ptr<DiscreteValues<T>> xd) {
+    get_mutable_state().set_discrete_state(std::move(xd));
+  }
+
+  /// Sets the abstract state to @p xa, deleting whatever was there before.
+  /// Invalidates all abstract state-dependent computations in this context and
+  /// its subcontexts.
+  void init_abstract_state(std::unique_ptr<AbstractValues> xa) {
+    get_mutable_state().set_abstract_state(std::move(xa));
+  }
+
+  /// Sets the parameters to @p params, deleting whatever was there before.
+  /// You must supply a Parameters object; null is not acceptable. Invalidates
+  /// all parameter-dependent computations recursively in this context and
+  /// its subcontexts.
   void init_parameters(std::unique_ptr<Parameters<T>> params) {
     DRAKE_DEMAND(params != nullptr);
     parameters_ = std::move(params);

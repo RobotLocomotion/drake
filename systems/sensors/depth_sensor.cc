@@ -115,7 +115,7 @@ void DepthSensor::PrecomputeRaycastEndpoints() {
   }
 }
 
-const InputPortDescriptor<double>&
+const InputPort<double>&
 DepthSensor::get_rigid_body_tree_state_input_port() const {
   return this->get_input_port(input_port_index_);
 }

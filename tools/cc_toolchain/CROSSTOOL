@@ -410,7 +410,6 @@ toolchain {
       action: "c++-header-preprocessing"
       action: "c++-module-compile"
       action: "c++-module-codegen"
-      action: "lto-backend"
       flag_group {
         flag: "%{legacy_compile_flags}"
         iterate_over: "legacy_compile_flags"
@@ -427,6 +426,13 @@ toolchain {
         flag: "-g"
       }
     }
+    flag_set {
+      flag_group {
+        flag: "DSYM_HINT_LINKED_BINARY=%{linked_binary}"
+        flag: "DSYM_HINT_DSYM_PATH=%{dsym_path}"
+        flag: "DSYM_HINT_DSYM_BUNDLE_ZIP=%{dsym_bundle_zip}"
+      }
+    }
   }
   feature {
     name: "strip_debug_symbols"
@@ -434,7 +440,6 @@ toolchain {
       action: "c++-link-executable"
       action: "c++-link-dynamic-library"
       action: "c++-link-nodeps-dynamic-library"
-      action: "c++-link-interface-dynamic-library"
       flag_group {
         flag: "-Wl,-S"
         expand_if_all_available: "strip_debug_symbols"
@@ -490,28 +495,9 @@ toolchain {
     }
   }
   feature {
-    name: "global_whole_archive_open"
-    flag_set {
-      action: "c++-link-executable"
-      action: "c++-link-dynamic-library"
-      action: "c++-link-nodeps-dynamic-library"
-      action: "c++-link-static-library"
-      action: "c++-link-alwayslink-static-library"
-      action: "c++-link-pic-static-library"
-      action: "c++-link-alwayslink-pic-static-library"
-      flag_group {
-        flag: "-Wl,-all_load"
-      }
-      expand_if_all_available: "global_whole_archive"
-    }
-  }
-  feature {
     name: "archiver_flags"
     flag_set {
       action: "c++-link-static-library"
-      action: "c++-link-alwayslink-static-library"
-      action: "c++-link-pic-static-library"
-      action: "c++-link-alwayslink-pic-static-library"
       flag_group {
         flag: "rcs"
         flag: "%{output_execpath}"
@@ -526,9 +512,6 @@ toolchain {
       action: "c++-link-dynamic-library"
       action: "c++-link-nodeps-dynamic-library"
       action: "c++-link-static-library"
-      action: "c++-link-alwayslink-static-library"
-      action: "c++-link-pic-static-library"
-      action: "c++-link-alwayslink-pic-static-library"
       flag_group {
         flag: "-Wl,-rpath,@loader_path/%{runtime_library_search_directories}"
         iterate_over: "runtime_library_search_directories"
@@ -540,9 +523,6 @@ toolchain {
       action: "c++-link-dynamic-library"
       action: "c++-link-nodeps-dynamic-library"
       action: "c++-link-static-library"
-      action: "c++-link-alwayslink-static-library"
-      action: "c++-link-pic-static-library"
-      action: "c++-link-alwayslink-pic-static-library"
       flag_group {
         flag: "%{runtime_root_flags}"
         iterate_over: "runtime_root_flags"
@@ -554,9 +534,6 @@ toolchain {
       action: "c++-link-dynamic-library"
       action: "c++-link-nodeps-dynamic-library"
       action: "c++-link-static-library"
-      action: "c++-link-alwayslink-static-library"
-      action: "c++-link-pic-static-library"
-      action: "c++-link-alwayslink-pic-static-library"
       flag_group {
         flag: "%{runtime_root_entries}"
         iterate_over: "runtime_root_entries"
@@ -571,9 +548,6 @@ toolchain {
       action: "c++-link-dynamic-library"
       action: "c++-link-nodeps-dynamic-library"
       action: "c++-link-static-library"
-      action: "c++-link-alwayslink-static-library"
-      action: "c++-link-pic-static-library"
-      action: "c++-link-alwayslink-pic-static-library"
       flag_group {
         flag: "-L%{library_search_directories}"
         iterate_over: "library_search_directories"
@@ -585,9 +559,6 @@ toolchain {
       action: "c++-link-dynamic-library"
       action: "c++-link-nodeps-dynamic-library"
       action: "c++-link-static-library"
-      action: "c++-link-alwayslink-static-library"
-      action: "c++-link-pic-static-library"
-      action: "c++-link-alwayslink-pic-static-library"
       flag_group {
         flag: "%{libopts}"
         iterate_over: "libopts"
@@ -599,9 +570,6 @@ toolchain {
       action: "c++-link-dynamic-library"
       action: "c++-link-nodeps-dynamic-library"
       action: "c++-link-static-library"
-      action: "c++-link-alwayslink-static-library"
-      action: "c++-link-pic-static-library"
-      action: "c++-link-alwayslink-pic-static-library"
       flag_group {
         flag: "-Wl,-force_load,%{whole_archive_linker_params}"
         iterate_over: "whole_archive_linker_params"
@@ -613,9 +581,6 @@ toolchain {
       action: "c++-link-dynamic-library"
       action: "c++-link-nodeps-dynamic-library"
       action: "c++-link-static-library"
-      action: "c++-link-alwayslink-static-library"
-      action: "c++-link-pic-static-library"
-      action: "c++-link-alwayslink-pic-static-library"
       flag_group {
         flag: "%{linker_input_params}"
         iterate_over: "linker_input_params"
@@ -627,9 +592,6 @@ toolchain {
       action: "c++-link-dynamic-library"
       action: "c++-link-nodeps-dynamic-library"
       action: "c++-link-static-library"
-      action: "c++-link-alwayslink-static-library"
-      action: "c++-link-pic-static-library"
-      action: "c++-link-alwayslink-pic-static-library"
       flag_group {
         flag_group {
           flag: "-Wl,--start-lib"
@@ -757,7 +719,24 @@ toolchain {
     }
   }
   feature {
-    name: "module_maps"
+    name: "apply_default_warnings"
+    flag_set {
+      flag_group {
+        flag: "-Wshorten-64-to-32"
+        flag: "-Wbool-conversion"
+        flag: "-Wconstant-conversion"
+        flag: "-Wduplicate-method-match"
+        flag: "-Wempty-body"
+        flag: "-Wenum-conversion"
+        flag: "-Wint-conversion"
+        flag: "-Wunreachable-code"
+        flag: "-Wmismatched-return-types"
+        flag: "-Wundeclared-selector"
+        flag: "-Wuninitialized"
+        flag: "-Wunused-function"
+        flag: "-Wunused-variable"
+      }
+    }
   }
   feature {
     name: "includes"
@@ -818,7 +797,6 @@ toolchain {
       action: "c++-link-dynamic-library"
       action: "c++-link-nodeps-dynamic-library"
       action: "linkstamp-compile"
-      action: "lto-backend"
       flag_group {
         flag: "--sysroot=%{sysroot}"
       }
@@ -877,7 +855,6 @@ toolchain {
       action: "c++-module-codegen"
       action: "assemble"
       action: "preprocess-assemble"
-      action: "lto-backend"
       flag_group {
         flag: "-gsplit-dwarf"
       }
@@ -905,7 +882,6 @@ toolchain {
     flag_set {
       action: "c-compile"
       action: "c++-compile"
-      action: "c++-link-interface-dynamic-library"
       action: "c++-link-dynamic-library"
       action: "c++-link-nodeps-dynamic-library"
       action: "c++-link-executable"
@@ -980,7 +956,6 @@ toolchain {
       }
     }
     flag_set {
-      action: "c++-link-interface-dynamic-library"
       action: "c++-link-dynamic-library"
       action: "c++-link-nodeps-dynamic-library"
       action: "c++-link-executable"
@@ -1006,7 +981,6 @@ toolchain {
       }
     }
     flag_set {
-      action: "c++-link-interface-dynamic-library"
       action: "c++-link-dynamic-library"
       action: "c++-link-nodeps-dynamic-library"
       action: "c++-link-executable"
@@ -1019,17 +993,11 @@ toolchain {
     }
   }
   feature {
-    name: "include_system_dirs"
+    name: "apply_default_compiler_flags"
     flag_set {
-      action: "c-compile"
-      action: "c++-compile"
-      action: "c++-module-compile"
-      action: "c++-header-parsing"
-      action: "c++-header-preprocessing"
-      action: "assemble"
-      action: "preprocess-assemble"
       flag_group {
-        flag: "-isysroot %{sdk_dir}"
+        flag: "-DOS_MACOSX"
+        flag: "-fno-autolink"
       }
     }
   }
@@ -1038,6 +1006,20 @@ toolchain {
   }
   feature {
     name: "bitcode_embedded_markers"
+  }
+  feature {
+    name: "user_link_flags"
+    flag_set {
+      action: "c++-link-executable"
+      action: "c++-link-dynamic-library"
+      action: "c++-link-nodeps-dynamic-library"
+      flag_group {
+        flag: "%{user_link_flags}"
+        iterate_over: "user_link_flags"
+      }
+      expand_if_all_available: "user_link_flags"
+    }
+    enabled: true
   }
   feature {
     name: "legacy_link_flags"
@@ -1085,7 +1067,6 @@ toolchain {
       action: "c++-module-compile"
       action: "c++-module-codegen"
       action: "linkstamp-compile"
-      action: "lto-backend"
       flag_group {
         flag: "%{user_compile_flags}"
         iterate_over: "user_compile_flags"
@@ -1105,7 +1086,6 @@ toolchain {
       action: "c++-module-compile"
       action: "c++-module-codegen"
       action: "linkstamp-compile"
-      action: "lto-backend"
       flag_group {
         flag: "%{unfiltered_compile_flags}"
         iterate_over: "unfiltered_compile_flags"
@@ -1126,9 +1106,6 @@ toolchain {
     }
     flag_set {
       action: "c++-link-static-library"
-      action: "c++-link-alwayslink-static-library"
-      action: "c++-link-pic-static-library"
-      action: "c++-link-alwayslink-pic-static-library"
       flag_group {
         flag: "@%{linker_param_file}"
       }
@@ -1167,21 +1144,17 @@ toolchain {
       action: "c++-module-compile"
       action: "c++-module-codegen"
       flag_group {
-        flag: "-o"
-        flag: "%{output_object_file}"
-        expand_if_all_available: "output_object_file"
-      }
-      flag_group {
         flag: "-S"
-        flag: "-o"
-        flag: "%{output_assembly_file}"
         expand_if_all_available: "output_assembly_file"
       }
       flag_group {
         flag: "-E"
-        flag: "-o"
-        flag: "%{output_preprocess_file}"
         expand_if_all_available: "output_preprocess_file"
+      }
+      flag_group {
+        flag: "-o"
+        flag: "%{output_file}"
+        expand_if_all_available: "output_file"
       }
     }
   }
@@ -1335,7 +1308,6 @@ toolchain {
     implies: "symbol_counts"
     implies: "linkstamps"
     implies: "output_execpath_flags"
-    implies: "global_whole_archive_open"
     implies: "runtime_root_flags"
     implies: "input_param_flags"
     implies: "force_pic_flags"
@@ -1356,7 +1328,6 @@ toolchain {
     implies: "shared_flag"
     implies: "linkstamps"
     implies: "output_execpath_flags"
-    implies: "global_whole_archive_open"
     implies: "runtime_root_flags"
     implies: "input_param_flags"
     implies: "legacy_link_flags"
@@ -1376,7 +1347,6 @@ toolchain {
     implies: "shared_flag"
     implies: "linkstamps"
     implies: "output_execpath_flags"
-    implies: "global_whole_archive_open"
     implies: "runtime_root_flags"
     implies: "input_param_flags"
     implies: "legacy_link_flags"
@@ -1391,59 +1361,10 @@ toolchain {
       tool_path: "osx_ar_wrapper.sh"  # Changed from "wrapped_ar" for Drake.
       execution_requirement: "requires-darwin"
     }
-    implies: "global_whole_archive_open"
     implies: "runtime_root_flags"
     implies: "archiver_flags"
     implies: "input_param_flags"
     implies: "linker_param_file"
-  }
-  action_config {
-    config_name: "c++-link-alwayslink-static-library"
-    action_name: "c++-link-alwayslink-static-library"
-    tool {
-      tool_path: "osx_ar_wrapper.sh"  # Changed from "wrapped_ar" for Drake.
-      execution_requirement: "requires-darwin"
-    }
-    implies: "global_whole_archive_open"
-    implies: "runtime_root_flags"
-    implies: "archiver_flags"
-    implies: "input_param_flags"
-    implies: "linker_param_file"
-  }
-  action_config {
-    config_name: "c++-link-pic-static-library"
-    action_name: "c++-link-pic-static-library"
-    tool {
-      tool_path: "osx_ar_wrapper.sh"  # Changed from "wrapped_ar" for Drake.
-      execution_requirement: "requires-darwin"
-    }
-    implies: "global_whole_archive_open"
-    implies: "runtime_root_flags"
-    implies: "archiver_flags"
-    implies: "input_param_flags"
-    implies: "linker_param_file"
-  }
-  action_config {
-    config_name: "c++-link-alwayslink-pic-static-library"
-    action_name: "c++-link-alwayslink-pic-static-library"
-    tool {
-      tool_path: "osx_ar_wrapper.sh"  # Changed from "wrapped_ar" for Drake.
-      execution_requirement: "requires-darwin"
-    }
-    implies: "global_whole_archive_open"
-    implies: "runtime_root_flags"
-    implies: "archiver_flags"
-    implies: "input_param_flags"
-    implies: "linker_param_file"
-  }
-  action_config {
-    config_name: "c++-link-interface-dynamic-library"
-    action_name: "c++-link-interface-dynamic-library"
-    tool {
-      tool_path: "/usr/bin/clang"  # Changed from "wrapped_clang" for Drake.
-      execution_requirement: "requires-darwin"
-    }
-    implies: "strip_debug_symbols"
   }
   cc_target_os: "apple"
 }

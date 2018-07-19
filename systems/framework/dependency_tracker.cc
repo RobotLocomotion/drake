@@ -219,9 +219,9 @@ void DependencyTracker::RepairTrackerPointers(
   owning_subcontext_ = owning_subcontext;
 
   // Set the cache entry pointer.
-  if (source.cache_value_ == &CacheEntryValue::dummy()) {
-    cache_value_ = &CacheEntryValue::dummy();
-  } else {
+  DRAKE_DEMAND(has_associated_cache_entry_ ==
+               source.has_associated_cache_entry_);
+  if (has_associated_cache_entry_) {
     const CacheIndex source_index(source.cache_value_->cache_index());
     cache_value_ = &cache->get_mutable_cache_entry_value(source_index);
     DRAKE_SPDLOG_DEBUG(log(),

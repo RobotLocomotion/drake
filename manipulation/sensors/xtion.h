@@ -83,7 +83,7 @@ class Xtion : public systems::Diagram<double> {
                     bool add_lcm_publisher = false,
                     bool add_frame_visualizer = false);
 
-  const systems::InputPortDescriptor<double>& get_input_port_state() const {
+  const systems::InputPort<double>& get_input_port_state() const {
     return get_input_port(input_port_state_);
   }
   const systems::OutputPort<double>& get_output_port_color_image() const {

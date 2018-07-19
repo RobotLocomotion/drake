@@ -73,7 +73,8 @@ void AddSos2Constraint(
   for (int i = 1; i < y.rows(); ++i) {
     prog->AddLinearConstraint(lambda(i) <= y(i - 1) + y(i) && lambda(i) >= 0);
   }
-  prog->AddLinearConstraint(lambda.tail<1>()(0) <= y.tail<1>()(0));
+  prog->AddLinearConstraint(lambda.tail<1>()(0) >= 0 &&
+                            lambda.tail<1>()(0) <= y.tail<1>()(0));
   prog->AddLinearConstraint(y.sum() == 1);
 }
 

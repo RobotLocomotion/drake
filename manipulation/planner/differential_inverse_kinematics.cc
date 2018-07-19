@@ -179,7 +179,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 
   if (num_cart_constraints) {
     VectorX<double> cost(1);
-    cart_cost->Eval(prog.GetSolution(alpha), cost);
+    cart_cost->Eval(prog.GetSolution(alpha), &cost);
     const double kMaxTrackingError = 5;
     const double kMinEndEffectorVel = 1e-2;
     if (cost(0) > kMaxTrackingError &&

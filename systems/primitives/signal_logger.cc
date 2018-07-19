@@ -25,7 +25,7 @@ void SignalLogger<T>::DoPublish(const Context<T>& context,
 }
 
 template <typename T>
-const InputPortDescriptor<T>& SignalLogger<T>::get_input_port()
+const InputPort<T>& SignalLogger<T>::get_input_port()
 const {
   return System<T>::get_input_port(0);
 }

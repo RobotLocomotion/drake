@@ -78,7 +78,7 @@ GTEST_TEST(RollPitchYaw, ToRotationMatrix) {
                           * Eigen::AngleAxisd(r, Vector3d::UnitX())).matrix();
   const RotationMatrix<double> R_eigen(m_eigen);
   const RotationMatrix<double> R_rpy = rpy.ToRotationMatrix();
-  EXPECT_TRUE(R_rpy.IsNearlyEqualTo(R_eigen, kEpsilon));
+  EXPECT_TRUE(R_rpy.IsNearlyEqualTo(R_eigen, kEpsilon).value());
 
   // Also test associated convenience "sugar" method that returns 3x3 matrix.
   const Matrix3d m_rpy = rpy.ToMatrix3ViaRotationMatrix();
@@ -107,7 +107,34 @@ GTEST_TEST(RollPitchYaw, testToQuaternion) {
   const Eigen::Quaterniond quat = rpy.ToQuaternion();
   const RotationMatrix<double> R1(rpy);
   const RotationMatrix<double> R2(quat);
-  EXPECT_TRUE(R1.IsNearlyEqualTo(R2, kEpsilon));
+  EXPECT_TRUE(R1.IsNearlyEqualTo(R2, kEpsilon).value());
+
+  // Test SetFromQuaternion.
+  RollPitchYaw<double> rpy2(0, 0, 0);
+  rpy2.SetFromQuaternion(quat);
+  EXPECT_TRUE(rpy2.IsNearlySameOrientation(rpy, kEpsilon));
+
+  // Test SetFromRotationMatrix.
+  rpy2.SetFromRotationMatrix(R1);
+  EXPECT_TRUE(rpy2.IsNearlySameOrientation(rpy, kEpsilon));
+
+  // Test SetFromQuaternionAndRotationMatrix.
+  rpy2.SetFromQuaternionAndRotationMatrix(quat, R1);
+  EXPECT_TRUE(rpy2.IsNearlySameOrientation(rpy, kEpsilon));
+
+#ifdef DRAKE_ASSERT_IS_ARMED
+  // Test SetFromQuaternionAndRotationMatrix throws exception in debug builds
+  // if quaternion is not consistent with rotation matrix.
+  const char* expected_message =
+      "RollPitchYaw::SetFromQuaternionAndRotationMatrix()"
+      ".*An element of the RotationMatrix R"
+      ".*differs by more than"
+      ".*element of the RotationMatrix formed by the Quaternion.*";
+  const Eigen::Quaterniond quat_inconsistent(1, 0, 0, 0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      rpy2.SetFromQuaternionAndRotationMatrix(quat_inconsistent, R1),
+      std::logic_error, expected_message);
+#endif
 }
 
 // This tests the RollPitchYaw.IsValid() method.

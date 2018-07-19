@@ -21,9 +21,19 @@ std::ostream& operator<<(std::ostream& out,
   return out << "(endpoint: " << start_spec.endpoint() << ")";
 }
 
+std::ostream& operator<<(std::ostream& out, const StartLane::Spec& start_spec) {
+  return out << "(endpoint: " << start_spec.endpoint()
+             << ", lane_id: " << start_spec.lane_id() << ")";
+}
+
 std::ostream& operator<<(std::ostream& out,
                          const EndReference::Spec& end_spec) {
   return out << "(endpoint_z: " << end_spec.endpoint_z() << ")";
+}
+
+std::ostream& operator<<(std::ostream& out, const EndLane::Spec& end_spec) {
+  return out << "(endpoint_z: " << end_spec.endpoint_z()
+             << ", lane_id: " << end_spec.lane_id() << ")";
 }
 
 std::ostream& operator<<(std::ostream& out, const LaneLayout& lane_layout) {
@@ -126,6 +136,142 @@ const Connection* Builder::Connect(const std::string& id,
       lane_layout.ref_r0(), lane_width_, lane_layout.left_shoulder(),
       lane_layout.right_shoulder(), arc_offset, linear_tolerance_,
       scale_length_, computation_policy_));
+  return connections_.back().get();
+}
+
+const Connection* Builder::Connect(const std::string& id,
+                                   const LaneLayout& lane_layout,
+                                   const StartLane::Spec& start_spec,
+                                   const LineOffset& line_offset,
+                                   const EndLane::Spec& end_spec) {
+  DRAKE_DEMAND(start_spec.lane_id() >= 0 &&
+               start_spec.lane_id() < lane_layout.num_lanes());
+  DRAKE_DEMAND(end_spec.lane_id() >= 0 &&
+               end_spec.lane_id() < lane_layout.num_lanes());
+
+  const double curvature{0.};
+
+  // Gets the initial heading and superelevation.
+  const double start_heading = start_spec.endpoint().xy().heading();
+  const double start_superelevation = start_spec.endpoint().z().theta();
+  const Vector3<double> start_lane_position(start_spec.endpoint().xy().x(),
+                                            start_spec.endpoint().xy().y(),
+                                            start_spec.endpoint().z().z());
+  const double start_lane_offset =
+      -lane_layout.ref_r0() +
+      lane_width_ *
+          static_cast<double>(start_spec.lane_id() - lane_layout.ref_lane());
+  // Computes the displacement vector from lane point to the reference curve
+  // point.
+  const Vector3<double> start_lane_to_ref(
+      -start_lane_offset * std::cos(start_superelevation) *
+          std::sin(start_heading),
+      start_lane_offset * std::cos(start_superelevation) *
+          std::cos(start_heading),
+      start_lane_offset * std::sin(start_superelevation));
+  const Vector3<double> start_reference_position =
+      start_lane_position - start_lane_to_ref;
+  // Assigns the start endpoint.
+  Endpoint start{
+      EndpointXy(start_reference_position.x(), start_reference_position.y(),
+                 start_heading),
+      EndpointZ(start_reference_position.z(), start_spec.endpoint().z().z_dot(),
+                start_spec.endpoint().z().theta(), {})};
+  ComputeContinuityConstraint(curvature, &(start.get_mutable_z()));
+
+  // Computes the r distance from the end lane to the reference curve.
+  const double end_lane_offset =
+      -lane_layout.ref_r0() +
+      lane_width_ *
+          static_cast<double>(end_spec.lane_id() - lane_layout.ref_lane());
+  // Computes the end endpoint.
+  const double z_end =
+      end_spec.endpoint_z().z() -
+      end_lane_offset * std::sin(end_spec.endpoint_z().theta());
+  EndpointZ end_z{
+      z_end, end_spec.endpoint_z().z_dot(), end_spec.endpoint_z().theta(), {}};
+  ComputeContinuityConstraint(curvature, &end_z);
+
+  connections_.push_back(std::make_unique<Connection>(
+      id, start, end_z, lane_layout.num_lanes(),
+      -lane_layout.ref_r0() -
+          static_cast<double>(lane_layout.ref_lane()) * lane_width_,
+      lane_width_, lane_layout.left_shoulder(), lane_layout.right_shoulder(),
+      line_offset, linear_tolerance_, scale_length_, computation_policy_));
+  return connections_.back().get();
+}
+
+const Connection* Builder::Connect(const std::string& id,
+                                   const LaneLayout& lane_layout,
+                                   const StartLane::Spec& start_spec,
+                                   const ArcOffset& arc_offset,
+                                   const EndLane::Spec& end_spec) {
+  DRAKE_DEMAND(start_spec.lane_id() >= 0 &&
+               start_spec.lane_id() < lane_layout.num_lanes());
+  DRAKE_DEMAND(end_spec.lane_id() >= 0 &&
+               end_spec.lane_id() < lane_layout.num_lanes());
+
+  const double curvature =
+      std::copysign(1., arc_offset.d_theta()) / arc_offset.radius();
+
+  // Fills arc related parameters, computes end Endpoint and creates the
+  // RoadCurve.
+  const double theta0 = start_spec.endpoint().xy().heading() -
+                        std::copysign(M_PI / 2., arc_offset.d_theta());
+  // Gets the initial heading and superelevation.
+  const double start_superelevation = start_spec.endpoint().z().theta();
+
+  // Computes the center.
+  const double start_lane_offset =
+      -lane_layout.ref_r0() +
+      lane_width_ *
+          static_cast<double>(start_spec.lane_id() - lane_layout.ref_lane());
+  const double start_lane_radius = arc_offset.radius() -
+                                   start_lane_offset *
+                                       std::cos(start_superelevation) *
+                                       std::copysign(1., arc_offset.d_theta());
+  const double cx =
+      start_spec.endpoint().xy().x() - std::cos(theta0) * start_lane_radius;
+  const double cy =
+      start_spec.endpoint().xy().y() - std::sin(theta0) * start_lane_radius;
+  const double start_z_dot = start_spec.endpoint().z().z_dot() *
+                             start_lane_radius / arc_offset.radius();
+  // Assigns the start endpoint.
+  Endpoint start{
+      EndpointXy(cx + arc_offset.radius() * std::cos(theta0),
+                 cy + arc_offset.radius() * std::sin(theta0),
+                 start_spec.endpoint().xy().heading()),
+      EndpointZ(start_spec.endpoint().z().z() -
+                    start_lane_offset * std::sin(start_superelevation) *
+                        std::copysign(1., arc_offset.d_theta()),
+                start_z_dot, start_spec.endpoint().z().theta(), {})};
+  ComputeContinuityConstraint(curvature, &(start.get_mutable_z()));
+
+  // Assigns the end endpoint.
+  const double end_superelevation = end_spec.endpoint_z().theta();
+  const double end_lane_offset =
+      -lane_layout.ref_r0() +
+      lane_width_ *
+          static_cast<double>(end_spec.lane_id() - lane_layout.ref_lane());
+  const double end_z_dot = end_spec.endpoint_z().z_dot() *
+                           (arc_offset.radius() -
+                            end_lane_offset * std::cos(end_superelevation) *
+                                std::copysign(1., arc_offset.d_theta())) /
+                           arc_offset.radius();
+  EndpointZ end_z{end_spec.endpoint_z().z() -
+                      end_lane_offset * std::sin(end_superelevation) *
+                          std::copysign(1., arc_offset.d_theta()),
+                  end_z_dot,
+                  end_spec.endpoint_z().theta(),
+                  {}};
+  ComputeContinuityConstraint(curvature, &end_z);
+
+  connections_.push_back(std::make_unique<Connection>(
+      id, start, end_z, lane_layout.num_lanes(),
+      -lane_layout.ref_r0() -
+          static_cast<double>(lane_layout.ref_lane()) * lane_width_,
+      lane_width_, lane_layout.left_shoulder(), lane_layout.right_shoulder(),
+      arc_offset, linear_tolerance_, scale_length_, computation_policy_));
   return connections_.back().get();
 }
 

@@ -103,7 +103,7 @@ class TestCustom(unittest.TestCase):
         system = self._create_adder_system()
         context = system.CreateDefaultContext()
         self._fix_adder_inputs(context)
-        output = system.AllocateOutput(context)
+        output = system.AllocateOutput()
         self.assertEqual(output.get_num_ports(), 1)
         system.CalcOutput(context, output)
         value = output.get_vector_data(0).get_value()
@@ -202,6 +202,16 @@ class TestCustom(unittest.TestCase):
         self.assertFalse(system.HasDirectFeedthrough(output_port=0))
         self.assertFalse(
             system.HasDirectFeedthrough(input_port=0, output_port=0))
+
+        # Test explicit calls.
+        system = TrivialSystem()
+        context = system.CreateDefaultContext()
+        system.Publish(context)
+        self.assertTrue(system.called_publish)
+        context_update = context.Clone()
+        system.CalcTimeDerivatives(
+            context, context_update.get_mutable_continuous_state())
+        self.assertTrue(system.called_continuous)
 
     def test_vector_system_overrides(self):
         dt = 0.5
@@ -354,7 +364,7 @@ class TestCustom(unittest.TestCase):
 
             self.assertEqual(context.get_num_input_ports(), 1)
             context.FixInputPort(0, AbstractValue.Make(expected_input_value))
-            output = system.AllocateOutput(context)
+            output = system.AllocateOutput()
             self.assertEqual(output.get_num_ports(), 1)
             system.CalcOutput(context, output)
             value = output.get_data(0)

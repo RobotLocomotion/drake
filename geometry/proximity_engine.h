@@ -132,7 +132,8 @@ class ProximityEngine {
    have been filtered will not produce contacts, even if their collision
    geometry is penetrating.
 
-   @endcond
+   For two penetrating geometries g₁ and g₂, it is guaranteed that they will
+   map to `id_A` and `id_B` in a fixed, repeatable manner.
 
    @param[in]   dynamic_map   A map from geometry _index_ to the corresponding
                               global geometry identifier for dynamic geometries.

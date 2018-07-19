@@ -83,9 +83,10 @@ cmake_configure_file(
 SDFORMAT_MOST_PUBLIC_HDRS = [
     "include/sdf/Assert.hh",
     "include/sdf/Box.hh",
+    # TODO(jwnimmer-tri) Collision.hh isn't marked public in upstream sdformat,
+    # but it should be.
     "include/sdf/Collision.hh",
     "include/sdf/Console.hh",
-    "include/sdf/Converter.hh",
     "include/sdf/Cylinder.hh",
     "include/sdf/Element.hh",
     "include/sdf/Error.hh",
@@ -95,6 +96,8 @@ SDFORMAT_MOST_PUBLIC_HDRS = [
     "include/sdf/Joint.hh",
     "include/sdf/JointAxis.hh",
     "include/sdf/Link.hh",
+    "include/sdf/Material.hh",
+    "include/sdf/Mesh.hh",
     "include/sdf/Model.hh",
     "include/sdf/Param.hh",
     "include/sdf/parser.hh",
@@ -153,6 +156,7 @@ SDFORMAT_DATA = glob(["sdf/1.6/*.sdf"])
 cc_library(
     name = "sdformat",
     srcs = [
+        "include/sdf/Collision.hh",
         "include/sdf/Converter.hh",
         "include/sdf/EmbeddedSdf.hh",
         "include/sdf/ExceptionPrivate.hh",
@@ -173,6 +177,8 @@ cc_library(
         "src/Joint.cc",
         "src/JointAxis.cc",
         "src/Link.cc",
+        "src/Material.cc",
+        "src/Mesh.cc",
         "src/Model.cc",
         "src/Param.cc",
         "src/Plane.cc",

@@ -45,9 +45,11 @@ class RevoluteJoint final : public Joint<T> {
   /// body B, rotate relatively to one another about a common axis. See this
   /// class's documentation for further details on the definition of these
   /// frames and rotation angle.
+  /// This constructor signature creates a joint with no joint limits, i.e. the
+  /// joint limits are the pair `(-∞, ∞)`.
   /// The first three arguments to this constructor are those of the Joint class
   /// constructor. See the Joint class's documentation for details.
-  /// The additional parameter `axis` is:
+  /// The additional parameters are:
   /// @param[in] axis
   ///   A vector in ℝ³ specifying the axis of revolution for this joint. Given
   ///   that frame M only rotates with respect to F and their origins are
@@ -62,15 +64,59 @@ class RevoluteJoint final : public Joint<T> {
   ///   joint. The damping torque (in N⋅m) is modeled as `τ = -damping⋅ω`, i.e.
   ///   opposing motion, with ω the angular rate for `this` joint (see
   ///   get_angular_rate()).
+  /// @throws std::exception if damping is negative.
   RevoluteJoint(const std::string& name,
                 const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
-                const Vector3<double>& axis, double damping = 0) :
+                const Vector3<double>& axis,
+                double damping = 0) :
+      RevoluteJoint<T>(name, frame_on_parent, frame_on_child, axis,
+                       -std::numeric_limits<double>::infinity(),
+                       std::numeric_limits<double>::infinity(), damping) {}
+
+  /// Constructor to create a revolute joint between two bodies so that
+  /// frame F attached to the parent body P and frame M attached to the child
+  /// body B, rotate relatively to one another about a common axis. See this
+  /// class's documentation for further details on the definition of these
+  /// frames and rotation angle.
+  /// The first three arguments to this constructor are those of the Joint class
+  /// constructor. See the Joint class's documentation for details.
+  /// The additional parameters are:
+  /// @param[in] axis
+  ///   A vector in ℝ³ specifying the axis of revolution for this joint. Given
+  ///   that frame M only rotates with respect to F and their origins are
+  ///   coincident at all times, the measures of `axis` in either frame F or M
+  ///   are exactly the same, that is, `axis_F = axis_M`. In other words,
+  ///   `axis_F` (or `axis_M`) is the eigenvector of `R_FM` with eigenvalue
+  ///   equal to one.
+  ///   This vector can have any length, only the direction is used. This method
+  ///   aborts if `axis` is the zero vector.
+  /// @param[in] lower_limit
+  ///   Lower limit, in radians, for the rotation coordinate
+  ///   (see get_angle()).
+  /// @param[in] upper_limit
+  ///   Upper limit, in radians, for the rotation coordinate
+  ///   (see get_angle()).
+  /// @param[in] damping
+  ///   Viscous damping coefficient, in N⋅m⋅s, used to model losses within the
+  ///   joint. The damping torque (in N⋅m) is modeled as `τ = -damping⋅ω`, i.e.
+  ///   opposing motion, with ω the angular rate for `this` joint (see
+  ///   get_angular_rate()).
+  /// @throws std::exception if damping is negative.
+  /// @throws std::exception if lower_limit > upper_limit.
+  RevoluteJoint(const std::string& name,
+                const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
+                const Vector3<double>& axis,
+                double lower_limit, double upper_limit,
+                double damping = 0) :
       Joint<T>(name, frame_on_parent, frame_on_child) {
     const double kEpsilon = std::numeric_limits<double>::epsilon();
     DRAKE_DEMAND(!axis.isZero(kEpsilon));
     DRAKE_THROW_UNLESS(damping >= 0);
+    DRAKE_THROW_UNLESS(lower_limit <= upper_limit);
     axis_ = axis.normalized();
     damping_ = damping;
+    lower_limit_ = lower_limit;
+    upper_limit_ = upper_limit;
   }
 
   /// Returns the axis of revolution of `this` joint as a unit vector.
@@ -83,6 +129,12 @@ class RevoluteJoint final : public Joint<T> {
 
   /// Returns `this` joint's damping constant in N⋅m⋅s.
   double damping() const { return damping_; }
+
+  /// Returns the lower limit for `this` joint in radians.
+  double lower_limit() const { return lower_limit_; }
+
+  /// Returns the upper limit for `this` joint in radians.
+  double upper_limit() const { return upper_limit_; }
 
   /// @name Context-dependent value access
   ///
@@ -196,6 +248,14 @@ class RevoluteJoint final : public Joint<T> {
     return 1;
   }
 
+  const T& DoGetOnePosition(const systems::Context<T>& context) const override {
+    return get_angle(context);
+  }
+
+  const T& DoGetOneVelocity(const systems::Context<T>& context) const override {
+    return get_angular_rate(context);
+  }
+
   // Joint<T> overrides:
   std::unique_ptr<typename Joint<T>::BluePrint>
   MakeImplementationBlueprint() const override {
@@ -241,8 +301,13 @@ class RevoluteJoint final : public Joint<T> {
   // This is the joint's axis expressed in either M or F since axis_M = axis_F.
   Vector3<double> axis_;
 
-  // Returns `this` joint's damping constant in N⋅m⋅s.
+  // This joint's damping constant in N⋅m⋅s.
   double damping_{0};
+
+  // The lower and upper joint limits in radians.
+  // lower_limit_ <= upper_limit_ always (enforced at construction).
+  double lower_limit_{-std::numeric_limits<double>::infinity()};
+  double upper_limit_{std::numeric_limits<double>::infinity()};
 };
 
 }  // namespace multibody

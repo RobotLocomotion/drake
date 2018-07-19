@@ -68,7 +68,7 @@ class LinearModelPredictiveController : public LeafSystem<T> {
       double time_horizon);
     // TODO(jadecastro) Get time_period directly from the plant model.
 
-  const InputPortDescriptor<T>& get_state_port() const {
+  const InputPort<T>& get_state_port() const {
     return this->get_input_port(state_input_index_);
   }
   const OutputPort<T>& get_control_port() const {

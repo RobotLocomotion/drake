@@ -73,7 +73,7 @@ TEST_F(TestMpcWithDoubleIntegrator, TestAgainstInfiniteHorizonSolution) {
 
   auto context = dut_->CreateDefaultContext();
   context->FixInputPort(0, BasicVector<double>::Make(x0(0), x0(1)));
-  std::unique_ptr<SystemOutput<double>> output = dut_->AllocateOutput(*context);
+  std::unique_ptr<SystemOutput<double>> output = dut_->AllocateOutput();
 
   dut_->CalcOutput(*context, output.get());
 

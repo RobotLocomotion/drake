@@ -26,7 +26,7 @@ GTEST_TEST(JointLimitConstraintForceEvaluatorTest, TestEval) {
       evaluator.ComposeEvalInputVector(non_lambda, lambda);
   const auto tx = math::initializeAutoDiff(x);
   AutoDiffVecXd ty;
-  evaluator.Eval(tx, ty);
+  evaluator.Eval(tx, &ty);
 
   Eigen::VectorXd y_expected =
       Eigen::VectorXd::Zero(tree->get_num_velocities());
