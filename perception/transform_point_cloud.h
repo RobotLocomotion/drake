@@ -15,7 +15,7 @@ namespace perception {
 
 /// Transforms a point cloud.
 ///
-/// Applies a rigid transform to all points in a point cloud. Each point is 
+/// Applies a rigid transform to all points in a point cloud. Each point is
 /// pre-multiplied by the transform.
 ///
 /// The system has two input ports and one output port. The first input port
@@ -48,7 +48,7 @@ class TransformPointCloud final : public systems::LeafSystem<double> {
   /// Returns an empty point cloud.
   PointCloud MakeOutputPointCloud() const;
 
-  /// Transforms the point cloud by applying the given rigid transform to 
+  /// Transforms the point cloud by applying the given rigid transform to
   /// each point in the cloud.
   void ApplyTransformToPointCloud(const systems::Context<double>& context,
                                   PointCloud* output) const;
