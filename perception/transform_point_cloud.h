@@ -20,7 +20,8 @@ namespace perception {
 ///
 /// The system has two input ports and one output port. The first input port
 /// takes a PointCloud and the second takes a RigidTransform. The output port
-/// contains a PointCloud.
+/// contains a PointCloud. Notice that because the XYZ values in PointCloud
+/// are stored as float, the RigidTransform should also be stored as float.
 class TransformPointCloud final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TransformPointCloud)
