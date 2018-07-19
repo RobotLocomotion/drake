@@ -241,7 +241,7 @@ GTEST_TEST(GurobiTest, MultipleThreadsSharingEnvironment) {
   // Running multiple threads of GurobiSolver, they share the same GRBenv
   // which is created when acquiring the Gurobi license in the main function.
 
-  auto SolveProgram = [](int i, int N) {
+  auto solve_program = [](int i, int N) {
     // We want to solve a complicated program in each thread, so that multiple
     // programs will run concurrently. To this end, in each thread, we solve
     // the following mixed-integer program
@@ -294,7 +294,7 @@ GTEST_TEST(GurobiTest, MultipleThreadsSharingEnvironment) {
   std::vector<std::thread> test_threads;
   const int num_threads = 20;
   for (int i = 0; i < num_threads; ++i) {
-    test_threads.emplace_back(SolveProgram, i, num_threads);
+    test_threads.emplace_back(solve_program, i, num_threads);
   }
   for (int i = 0; i < num_threads; ++i) {
     test_threads[i].join();
