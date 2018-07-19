@@ -253,13 +253,13 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * Constructs a third order PiecewisePolynomial from `breaks` and `knots`.
    * The PiecewisePolynomial is constructed such that the interior segments
    * have the same value, first and second derivatives at `breaks`. If
-   * periodic_end_condition is `false` (default), then the "Not-a-knot" end
+   * `periodic_end_condition` is `false` (default), then the "Not-a-knot" end
    * condition is used here, which means the third derivatives are
    * continuous for the first two and last two segments. If
    * `periodic_end_condition` is `true`, then the first and second derivatives
    * between the end of the last segment and the beginning of the first
    * segment will be continuous. Note that the periodic end condition does
-   * not require the first and last knot to be colocated, nor does it add
+   * not require the first and last knot to be collocated, nor does it add
    * an additional knot to connect the first and last segments. Only first
    * and second derivative continuity is enforced. 
    * See https://en.wikipedia.org/wiki/Spline_interpolation, 
@@ -270,7 +270,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *
    * @p breaks and @p knots must have at least 3 elements. The "not-a-knot" 
    * condition is ill-defined for two knots, and the "periodic" condition 
-   * produces a straight line (use `FirstOrderHold` for this instead).
+   * would produce a straight line (use `FirstOrderHold` for this instead).
    *
    * @param periodic_end_condition Determines whether the "not-a-knot" 
    * (`false`) or the periodic spline (`true`) end condition is used.
