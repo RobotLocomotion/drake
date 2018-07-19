@@ -17,6 +17,7 @@ drake_cc_package_library(
         ":depth_image_to_point_cloud",
         ":point_cloud",
         ":point_cloud_flags",
+        ":transform_point_cloud",
     ],
 )
 
@@ -48,6 +49,18 @@ drake_cc_library(
         "//common:essential",
         "//systems/framework",
         "//systems/sensors",
+    ],
+)
+
+drake_cc_library(
+    name = "transform_point_cloud",
+    srcs = ["transform_point_cloud.cc"],
+    hdrs = ["transform_point_cloud.h"],
+    deps = [
+        ":point_cloud",
+        "//common:essential",
+        "//math:geometric_transform",
+        "//systems/framework",
     ],
 )
 
