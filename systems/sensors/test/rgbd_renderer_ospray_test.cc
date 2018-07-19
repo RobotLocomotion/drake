@@ -48,7 +48,7 @@ TEST_F(RgbdRendererOSPRayTest, TerrainTest) {
   VerifyUniformColor(kTerrain, 254u);
 
   // Farther than kZFar.
-  X_WC_.translation().z() = kZFar + 1e-3;
+  X_WC_.translation().z() = kZFar + 1e-5;
   renderer_->UpdateViewpoint(X_WC_);
   renderer_->RenderColorImage(&color_);
   VerifyUniformColor(kTerrain, 254u);
@@ -152,7 +152,7 @@ TEST_F(RgbdRendererOSPRayTest, SphereTest) {
 TEST_F(RgbdRendererOSPRayTest, CylinderTest) {
   Init(X_WC_, false);
 
-  // Sets up a sphere.
+  // Sets up a cylinder.
   Isometry3d X_WV = Isometry3d::Identity();
   X_WV.translation().z() = 0.6;
   DrakeShapes::VisualElement visual(X_WV);
@@ -221,10 +221,14 @@ TEST_F(RgbdRendererOSPRayTest, SetBackgroundTest) {
   auto file = FindResourceOrThrow(kBackground);
   EXPECT_NO_THROW(ospray->SetBackground(file));
 
-  const char* kWrongBackground =
+  const char* kWrongFileFormat =
       "drake/systems/sensors/test/models/meshes/box.png";
-  auto wrongfile = FindResourceOrThrow(kWrongBackground);
-  EXPECT_THROW(ospray->SetBackground(wrongfile), std::runtime_error);
+  auto wrong_format = FindResourceOrThrow(kWrongFileFormat);
+  EXPECT_THROW(ospray->SetBackground(wrong_format), std::runtime_error);
+
+  const char* kNotExist =
+      "drake/systems/sensors/test/models/meshes/no.png";
+  EXPECT_THROW(ospray->SetBackground(kNotExist), std::runtime_error);
 }
 
 }  // namespace test
