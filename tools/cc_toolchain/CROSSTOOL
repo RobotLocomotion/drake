@@ -208,9 +208,11 @@ toolchain {
   cxx_builtin_include_directory: "/usr/include/c++/5.4.0/backward"
   cxx_builtin_include_directory: "/usr/local/include"
   cxx_builtin_include_directory: "/usr/include/clang/4.0.0/include"
+  cxx_builtin_include_directory: "/usr/include/clang/4.0.1/include"
   cxx_builtin_include_directory: "/usr/include/x86_64-linux-gnu"
   cxx_builtin_include_directory: "/usr/include"
-  # Next line is a Drake fix for https://github.com/bazelbuild/bazel/issues/3977.
+  # Next two lines are a Drake fix for https://github.com/bazelbuild/bazel/issues/3977.
+  cxx_builtin_include_directory: "/usr/lib/llvm-4.0/lib/clang/4.0.1/include"
   cxx_builtin_include_directory: "/usr/lib/llvm-4.0/lib/clang/4.0.0/include"
   cxx_flag: "-std=c++1y" # Modified for Drake.
   host_system_name: "local"
