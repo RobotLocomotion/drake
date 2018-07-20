@@ -166,8 +166,10 @@ cc_library(
 # -----------------------------------------------------------------------------
 
 fortran_library(
-    name = "snopt_fortran",
-    srcs = glob(
+    name = "fortran_objects",
+    srcs = [
+        "interfaces/src/snopt_wrapper.f90",
+    ] + glob(
         ["src/*.f"],
         exclude = [
             # Only used for SQOPT.
@@ -181,20 +183,6 @@ fortran_library(
     ),
     # Link statically per note (1) above.
     linkstatic = 1,
-    # Always link the entirety of SNOPT.
-    alwayslink = 1,
-)
-
-fortran_library(
-    name = "snopt_wrapper_fortran",
-    srcs = [
-        "interfaces/src/snopt_wrapper.f90",
-    ],
-    # Link statically per note (1) above.
-    linkstatic = 1,
-    deps = [
-        ":snopt_fortran",
-    ],
     # Always link the entirety of SNOPT.
     alwayslink = 1,
 )
@@ -213,18 +201,17 @@ cc_library(
     ],
     copts = [
         "-w",
-        # Hide symbols per note (2) above.  (This particular C file isn't
-        # proprietary (it has an open source release published at
-        # https://github.com/snopt/snopt-interface), but perhaps keeping these
-        # functions obscured as well still helps serve the overall goal of
-        # obscuring the calls into the SNOPT object code even more.)
+        # Hide symbols per note (2) above.  The snopt_cwrap.c file isn't
+        # proprietary (it is published at github.com/snopt/snopt-interface),
+        # but perhaps keeping these functions obscured helps serve the overall
+        # goal of obscuring the calls into the SNOPT object code even more.
         "-fvisibility=hidden",
     ],
     # Link statically per note (1) above.
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
-        ":snopt_wrapper_fortran",
+        ":fortran_objects",
     ],
     # Always link the entirety of SNOPT.
     alwayslink = 1,
