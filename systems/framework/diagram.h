@@ -830,6 +830,11 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     context->MakeParameters();
     context->MakeState();
 
+    // Subscribe each of the composite structures' dependency trackers to
+    // their constituent trackers, so that state and parameter changes done
+    // to a subcontext are seen by the containing diagram.
+    context->SubscribeDiagramStateAndParametersToChilds();
+
     // Connect child subsystem input ports to the child subsystem output ports
     // on which they depend. Declares dependency of each input port on its
     // connected output port.
