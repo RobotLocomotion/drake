@@ -54,7 +54,7 @@ GTEST_TEST(BruteForceIntegralTest, ArcRoadCurvePathLength) {
   EXPECT_NEAR(maximum_step, path_length_zero_order, kAccuracy);
 
   int k_order_hint = 0;
-  const double tolerance = .01 * rc.CalcSFromP(1., 0.);
+  const double tolerance = .01 * rc.OptimizeCalcSFromP(0.)(1.);
   const double path_length_adaptive_approx =
       test::AdaptiveBruteForcePathLengthIntegral(
           rc, kP0, kP1, kR, kH, tolerance, &k_order_hint);
@@ -65,44 +65,8 @@ GTEST_TEST(BruteForceIntegralTest, ArcRoadCurvePathLength) {
 class RoadCurveAccuracyTest
     : public ::testing::TestWithParam<std::shared_ptr<RoadCurve>> {};
 
-// Checks that path length computations are within tolerance.
-TEST_P(RoadCurveAccuracyTest, PathLengthComputationAccuracy) {
-  const double kMinimumP = 0.;
-  const double kMaximumP = 1.;
-  const double kPStep = 0.2;
-
-  const double kMinimumR = -5.0;
-  const double kMaximumR = 5.0;
-  const double kRStep = 2.5;
-
-  const double kH = 0.0;
-
-  std::shared_ptr<RoadCurve> road_curve = GetParam();
-  const double kTolerance = road_curve->linear_tolerance()
-                            / road_curve->scale_length();
-  for (double r = kMinimumR; r <= kMaximumR; r += kRStep) {
-    int k_order = 0;
-    for (double p = kMinimumP; p <= kMaximumP; p += kPStep) {
-      const double k_order_s_approximation =
-          test::AdaptiveBruteForcePathLengthIntegral(
-              *road_curve, kMinimumP, p, r, kH,
-              road_curve->linear_tolerance(), &k_order);
-      const double relative_error =
-          (k_order_s_approximation != 0.0) ?
-          (road_curve->CalcSFromP(p, r) - k_order_s_approximation) /
-          k_order_s_approximation : road_curve->CalcSFromP(p, r);
-      EXPECT_LE(relative_error, kTolerance) << fmt::format(
-          "Path length estimation with a tolerance of {} "
-          "m failed at p = {}, r = {}m, h = {}m with "
-          "{} for elevation and {} for superelevation",
-          road_curve->linear_tolerance(), p, r, kH, road_curve->elevation(),
-          road_curve->superelevation());
-    }
-  }
-}
-
 // Checks that optimized path length computations are within tolerance.
-TEST_P(RoadCurveAccuracyTest, OptimizedPathLengthComputationAccuracy) {
+TEST_P(RoadCurveAccuracyTest, PathLengthComputationAccuracy) {
   const double kMinimumP = 0.;
   const double kMaximumP = 1.;
   const double kPStep = 0.2;
@@ -129,12 +93,12 @@ TEST_P(RoadCurveAccuracyTest, OptimizedPathLengthComputationAccuracy) {
           (k_order_s_approximation != 0.0) ?
           (s_from_p_at_r(p) - k_order_s_approximation) /
           k_order_s_approximation : s_from_p_at_r(p);
-      EXPECT_LE(relative_error, kTolerance)
-          << "Optimized Path length estimation with a tolerance of "
-          << road_curve->linear_tolerance() << " m failed"
-          << " at p = " << p << ", r = " << r << "m, h = " << kH
-          << "m with " << road_curve->elevation() << " for elevation and "
-          << road_curve->superelevation() << " for superelevation";
+      EXPECT_LE(relative_error, kTolerance) << fmt::format(
+          "Path length estimation with a tolerance of {} "
+          "m failed at p = {}, r = {} m, h = {} m with "
+          "{} for elevation and {} for superelevation",
+          road_curve->linear_tolerance(), p, r, kH,
+          road_curve->elevation(), road_curve->superelevation());
     }
   }
 }
