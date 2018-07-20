@@ -895,26 +895,22 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   EXPECT_FALSE(cache2.is_out_of_date(*context));
   EXPECT_EQ(cacheval2.serial_number(), 2);
 
-  // Check that setting time invalidates correctly.
+  // Check that setting time invalidates correctly. Note that the method
+  // *may* avoid invalidation if the time hasn't actually changed.
   context->set_time(1.);  // Should invalidate time- and everything-dependents.
   EXPECT_TRUE(cache2.is_out_of_date(*context));
   EXPECT_EQ(cacheval2.serial_number(), 2);  // Unchanged since invalid.
   (void)port2.EvalAbstract(*context);  // Recalculate.
   EXPECT_FALSE(cache2.is_out_of_date(*context));
   EXPECT_EQ(cacheval2.serial_number(), 3);
-  context->set_time(1.);  // Same time; no invalidation.
-  EXPECT_FALSE(cache2.is_out_of_date(*context));
-  EXPECT_EQ(cacheval2.serial_number(), 3);
   (void)port2.EvalAbstract(*context);  // "Recalculate" (should do nothing).
   EXPECT_EQ(cacheval2.serial_number(), 3);
 
-  // Should invalidate accuracy- and everything-dependents.
-  context->set_accuracy(.000025);
+  // Should invalidate accuracy- and everything-dependents. Note that the
+  // method *may* avoid invalidation if the accuracy hasn't actually changed.
+  context->set_accuracy(.000025);  // This is a change.
   EXPECT_TRUE(cache2.is_out_of_date(*context));
   (void)port2.EvalAbstract(*context);  // Recalculate.
-  EXPECT_FALSE(cache2.is_out_of_date(*context));
-  EXPECT_EQ(cacheval2.serial_number(), 4);
-  context->set_accuracy(.000025);  // Same accuracy; no invalidation.
   EXPECT_FALSE(cache2.is_out_of_date(*context));
   EXPECT_EQ(cacheval2.serial_number(), 4);
 
