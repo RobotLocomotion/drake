@@ -13,7 +13,6 @@
 #include "drake/common/unused.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/analysis/antiderivative_function.h"
-#include "drake/systems/analysis/scalar_dense_output.h"
 #include "drake/systems/analysis/scalar_initial_value_problem.h"
 
 namespace drake {
@@ -125,18 +124,9 @@ class RoadCurve {
     return computation_policy_;
   }
 
-  /// Computes the parametric position p along the reference curve corresponding
-  /// to longitudinal position (in path-length) `s` along a parallel curve
-  /// laterally offset by `r` from the reference curve.
-  /// @return The parametric position p along an offset of the reference curve.
-  /// @throw std::runtime_error When `r` makes the radius of curvature be a non
-  ///                           positive number.
-  double CalcPFromS(double s, double r) const;
-
   /// Optimizes the computation of the parametric position p along the reference
   /// curve from the longitudinal position (in path-length) `s` along a parallel
   /// curve laterally offset by `r` from the reference curve.
-  /// @see CalcPFromS(double, double)
   /// @return A function that relates longitudinal position `s` at the specified
   ///         parallel curve to parametric position p along the reference curve,
   ///         defined for all `s` values between 0 and the total path length of
@@ -145,19 +135,9 @@ class RoadCurve {
   ///                           positive number.
   std::function<double(double)> OptimizeCalcPFromS(double r) const;
 
-  /// Computes the path length integral in the interval of the parameter [0; p]
-  /// and along a parallel curve laterally offset by `r` the planar reference
-  /// curve.
-  /// @return The path length integral of the curve composed with the elevation
-  /// polynomial.
-  /// @throw std::runtime_error When `r` makes the radius of curvature be a non
-  ///                           positive number.
-  double CalcSFromP(double p, double r) const;
-
   /// Optimizes the computation of path length integral in the interval of the
   /// parameter [0; p] and along a parallel curve laterally offset by `r` the
   /// planar reference curve.
-  /// @see CalcSFromP(double, double)
   /// @return A function that relates parametric position p along the reference
   ///         curve to longitudinal position s at the specified parallel curve,
   ///         defined for all p between 0 and 1.
@@ -337,6 +317,23 @@ class RoadCurve {
   // @param r Lateral offset of the reference curve over the z = 0 plane.
   // @return The minimum radius of curvature.
   virtual double CalcMinimumRadiusAtOffset(double r) const = 0;
+
+  // Computes the parametric position p along the reference curve corresponding
+  // to longitudinal position (in path-length) `s` along a parallel curve
+  // laterally offset by `r` from the reference curve using numerical methods.
+  // @return The parametric position p along an offset of the reference curve.
+  // @throw std::runtime_error When `r` makes the radius of curvature be a non
+  //                           positive number.
+  double CalcPFromS(double s, double r) const;
+
+  // Computes the path length integral in the interval of the parameter [0; p]
+  // and along a parallel curve laterally offset by `r` the planar reference
+  // curve using numerical methods.
+  // @return The path length integral of the curve composed with the elevation
+  // polynomial.
+  // @throw std::runtime_error When `r` makes the radius of curvature be a non
+  //                           positive number.
+  double CalcSFromP(double p, double r) const;
 
   // TODO(hidmic): Fast, analytical methods and the conditions in which these
   // are expected to hold were tailored for the currently available

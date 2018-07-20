@@ -1,10 +1,12 @@
 #include "drake/automotive/maliput/multilane/road_curve.h"
 
 #include <algorithm>
+#include <memory>
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/analysis/integrator_base.h"
+#include "drake/systems/analysis/scalar_dense_output.h"
 
 namespace drake {
 namespace maliput {
@@ -160,15 +162,10 @@ bool RoadCurve::AreFastComputationsAccurate(double r) const {
 }
 
 double RoadCurve::CalcSFromP(double p, double r) const {
-  DRAKE_THROW_UNLESS(CalcMinimumRadiusAtOffset(r) > 0.0);
-  if (computation_policy() == ComputationPolicy::kPreferAccuracy
-      && !AreFastComputationsAccurate(r)) {
-    // Populates parameter vector with (r, h) coordinate values.
-    systems::AntiderivativeFunction<double>::SpecifiedValues values;
-    values.k = (VectorX<double>(2) << r, 0.0).finished();
-    return s_from_p_func_->Evaluate(p, values);
-  }
-  return FastCalcSFromP(p, r);
+  // Populates parameter vector with (r, h) coordinate values.
+  systems::AntiderivativeFunction<double>::SpecifiedValues values;
+  values.k = (VectorX<double>(2) << r, 0.0).finished();
+  return s_from_p_func_->Evaluate(p, values);
 }
 
 std::function<double(double)> RoadCurve::OptimizeCalcSFromP(double r) const {
@@ -182,12 +179,19 @@ std::function<double(double)> RoadCurve::OptimizeCalcSFromP(double r) const {
     // instances only take copyable callables.
     std::shared_ptr<systems::ScalarDenseOutput<double>> dense_output{
       s_from_p_func_->DenseEvaluate(1.0, values)};
-    const double tolerance =
-        s_from_p_func_->get_integrator()->get_target_accuracy();
-    return [dense_output, tolerance] (double p) {
-      const double saturated_p = std::min(std::max(p, 0.), 1.);
-      DRAKE_THROW_UNLESS(std::abs(saturated_p - p) < tolerance);
-      return dense_output->Evaluate(saturated_p);
+    const double full_length = CalcSFromP(1.0, r);
+    return [dense_output, full_length] (double p) {
+      // Saturate p to lie within dense output's domain.
+      const double saturated_p = std::min(
+          std::max(p, dense_output->get_start_time()),
+          dense_output->get_end_time());
+      const double saturated_s = dense_output->Evaluate(saturated_p);
+      // Extrapolate s assuming a linear scaling with p. This is
+      // generally not correct but evaluating for p outside the
+      // [0, 1] interval isn't either (e.g. when p is the result
+      // of a computation and thus lies outside said interval by
+      // virtue of finite numerical precision).
+      return saturated_s + full_length * (p - saturated_p);
     };
   }
   return [this, r] (double p) {
@@ -196,15 +200,10 @@ std::function<double(double)> RoadCurve::OptimizeCalcSFromP(double r) const {
 }
 
 double RoadCurve::CalcPFromS(double s, double r) const {
-  DRAKE_THROW_UNLESS(CalcMinimumRadiusAtOffset(r) > 0.0);
-  if (computation_policy() == ComputationPolicy::kPreferAccuracy
-      && !AreFastComputationsAccurate(r)) {
-    // Populates parameter vector with (r, h) coordinate values.
-    systems::ScalarInitialValueProblem<double>::SpecifiedValues values;
-    values.k = (VectorX<double>(2) << r, 0.0).finished();
-    return p_from_s_ivp_->Solve(s, values);
-  }
-  return FastCalcPFromS(s, r);
+  // Populates parameter vector with (r, h) coordinate values.
+  systems::ScalarInitialValueProblem<double>::SpecifiedValues values;
+  values.k = (VectorX<double>(2) << r, 0.0).finished();
+  return p_from_s_ivp_->Solve(s, values);
 }
 
 std::function<double(double)> RoadCurve::OptimizeCalcPFromS(double r) const {
@@ -216,16 +215,21 @@ std::function<double(double)> RoadCurve::OptimizeCalcPFromS(double r) const {
     values.k = (VectorX<double>(2) << r, 0.0).finished();
     // Prepares dense output for shared ownership, as std::function
     // instances only take copyable callables.
+    const double full_length = CalcSFromP(1.0, r);
     std::shared_ptr<systems::ScalarDenseOutput<double>> dense_output{
-      p_from_s_ivp_->DenseSolve(CalcSFromP(1.0, r), values)};
-    const double tolerance =
-        p_from_s_ivp_->get_integrator()->get_target_accuracy();
-    return [dense_output, tolerance] (double s) {
+      p_from_s_ivp_->DenseSolve(full_length, values)};
+    return [dense_output, full_length] (double s) {
+      // Saturate s to lie within dense output's domain.
       const double saturated_s = std::min(
           std::max(s, dense_output->get_start_time()),
           dense_output->get_end_time());
-      DRAKE_THROW_UNLESS(std::abs(saturated_s - s) < tolerance);
-      return dense_output->Evaluate(saturated_s);
+      const double saturated_p = dense_output->Evaluate(saturated_s);
+      // Extrapolate p assuming a linear scaling with s. This is
+      // generally not correct but evaluating for s outside the
+      // [0, length] interval isn't either (e.g. when s is the result
+      // of a computation and thus lies outside said interval by
+      // virtue of finite numerical precision).
+      return saturated_p + (s - saturated_s) / full_length;
     };
   }
   return [this, r] (double s) {

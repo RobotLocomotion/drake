@@ -71,7 +71,9 @@ TEST_F(MultilaneArcRoadCurveTest, ArcGeometryTest) {
                          kLinearTolerance, kScaleLength, kComputationPolicy);
   // Checks the length.
   EXPECT_NEAR(dut.p_scale(), kDTheta * kRadius, kVeryExact);
-  EXPECT_NEAR(dut.CalcSFromP(1., kNoOffset), kDTheta * kRadius, kVeryExact);
+  std::function<double(double)> s_from_p_at_r =
+      dut.OptimizeCalcSFromP(kNoOffset);
+  EXPECT_NEAR(s_from_p_at_r(1.), kDTheta * kRadius, kVeryExact);
   // Checks the evaluation of xy at different values over the reference curve.
   EXPECT_TRUE(CompareMatrices(
       dut.xy_of_p(0.0), kCenter + Vector2<double>(kRadius * std::cos(kTheta0),
@@ -250,18 +252,16 @@ TEST_F(MultilaneArcRoadCurveTest, OffsetTest) {
                               kComputationPolicy);
   EXPECT_DOUBLE_EQ(flat_dut.p_scale(), kRadius * kDTheta);
   // Checks that functions throw when lateral offset is exceeded.
-  EXPECT_THROW(flat_dut.CalcPFromS(0., kRadius), std::runtime_error);
-  EXPECT_THROW(flat_dut.CalcPFromS(0., 2.0 * kRadius), std::runtime_error);
-  EXPECT_THROW(flat_dut.CalcSFromP(0., kRadius), std::runtime_error);
-  EXPECT_THROW(flat_dut.CalcSFromP(0., 2.0 * kRadius), std::runtime_error);
+  EXPECT_THROW(flat_dut.OptimizeCalcPFromS(kRadius), std::runtime_error);
+  EXPECT_THROW(flat_dut.OptimizeCalcPFromS(2.0 * kRadius), std::runtime_error);
+  EXPECT_THROW(flat_dut.OptimizeCalcPFromS(kRadius), std::runtime_error);
+  EXPECT_THROW(flat_dut.OptimizeCalcSFromP(2.0 * kRadius), std::runtime_error);
   // Evaluates inverse function for different path length and offset values.
   for (double r : r_vector) {
     std::function<double(double)> p_from_s_at_r =
         flat_dut.OptimizeCalcPFromS(r);
     for (double p : p_vector) {
-      const double s = p * (kRadius - r) * kDTheta;
-      EXPECT_DOUBLE_EQ(flat_dut.CalcPFromS(s, r), p);
-      EXPECT_DOUBLE_EQ(p_from_s_at_r(s), p);
+      EXPECT_DOUBLE_EQ(p_from_s_at_r(p * (kRadius - r) * kDTheta), p);
     }
   }
   // Evaluates the path length integral for different offset values.
@@ -269,9 +269,7 @@ TEST_F(MultilaneArcRoadCurveTest, OffsetTest) {
     std::function<double(double)> s_from_p_at_r =
         flat_dut.OptimizeCalcSFromP(r);
     for (double p : p_vector) {
-      const double s = p * (kRadius - r) * kDTheta;
-      EXPECT_DOUBLE_EQ(flat_dut.CalcSFromP(p, r), s);
-      EXPECT_DOUBLE_EQ(s_from_p_at_r(p), s);
+      EXPECT_DOUBLE_EQ(s_from_p_at_r(p), p * (kRadius - r) * kDTheta);
     }
   }
 
@@ -292,9 +290,7 @@ TEST_F(MultilaneArcRoadCurveTest, OffsetTest) {
     for (double p : p_vector) {
       const double s = p * kRadius * kDTheta *
           std::sqrt(std::pow((kRadius - r) / kRadius, 2.) + slope * slope);
-      EXPECT_DOUBLE_EQ(elevated_dut.CalcPFromS(s , r), p);
       EXPECT_DOUBLE_EQ(p_from_s_at_r(s), p);
-      EXPECT_DOUBLE_EQ(elevated_dut.CalcSFromP(p, r), s);
       EXPECT_DOUBLE_EQ(s_from_p_at_r(p), s);
     }
   }
