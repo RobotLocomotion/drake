@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -18,7 +19,12 @@ namespace dev {
  */
 class RemoteTreeViewerWrapper {
  public:
-  RemoteTreeViewerWrapper();
+  /**
+   * If @p lcm is passed in, it will be aliased and used for all publish calls.
+   * If nullptr, a new DrakeLcm instance will be made instead.
+   * The lifespan of @p lcm needs to be longer than this instance.
+   */
+  explicit RemoteTreeViewerWrapper(drake::lcm::DrakeLcm* lcm = nullptr);
 
   ~RemoteTreeViewerWrapper() = default;
 
@@ -53,7 +59,8 @@ class RemoteTreeViewerWrapper {
                        const std::vector<std::string>& path);
 
  private:
-  drake::lcm::DrakeLcm lcm_;
+  drake::lcm::DrakeLcm* lcm_{};
+  std::unique_ptr<drake::lcm::DrakeLcm> owned_lcm_{};
 };
 }  // namespace dev
 }  // namespace manipulation
