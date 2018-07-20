@@ -19,9 +19,10 @@ namespace perception {
 /// pre-multiplied by the transform.
 ///
 /// The system has two input ports and one output port. The first input port
-/// takes a PointCloud and the second takes a RigidTransform. The output port
+/// takes a PointCloud and the second takes a RigidTransform<float>. The output
+/// port
 /// contains a PointCloud. Notice that because the XYZ values in PointCloud
-/// are stored as float, the RigidTransform should also be stored as float.
+/// are stored as `float`, the RigidTransform should also be stored as float.
 class TransformPointCloud final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TransformPointCloud)
@@ -34,7 +35,8 @@ class TransformPointCloud final : public systems::LeafSystem<double> {
     return this->get_input_port(point_cloud_input_port_index_);
   }
 
-  /// Returns the abstract valued input port that contains a RigidTransform.
+  /// Returns the abstract valued input port that contains a
+  /// RigidTransform<float>.
   const systems::InputPort<double>& rigid_transform_input_port() const {
     return this->get_input_port(rigid_transform_input_port_index_);
   }
@@ -53,8 +55,8 @@ class TransformPointCloud final : public systems::LeafSystem<double> {
   void ApplyTransformToPointCloud(const systems::Context<double>& context,
                                   PointCloud* output) const;
 
-  int point_cloud_input_port_index_{-1};
-  int rigid_transform_input_port_index_{-1};
+  systems::InputPortIndex point_cloud_input_port_index_;
+  systems::InputPortIndex rigid_transform_input_port_index_;
 };
 
 }  // namespace perception
