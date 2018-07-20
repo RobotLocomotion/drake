@@ -13,16 +13,25 @@ namespace {
 
 class TransformPointCloudTest : public ::testing::Test {
  public:
-  static Matrix3X<float> GenerateBoundedRandomSample(
-      std::default_random_engine* generator, float min, float max,
-      int num_cols) {
+  static Matrix3X<float> GenerateBoundedSample(const Vector3<float>& min,
+                                               const Vector3<float>& max,
+                                               int num_cols) {
     Matrix3X<float> return_matrix = Matrix3X<float>::Zero(3, num_cols);
-    std::uniform_real_distribution<float> distribution(min, max);
+    const Vector3<float> kStep = (max - min) / static_cast<float>(num_cols);
+    float sign;
+    float step = 1.0f;
+
     for (int i = 0; i < num_cols; ++i) {
+      if (i % 2 == 0) {
+        sign = 1.0f;
+      } else {
+        sign = -1.0f;
+      }
       return_matrix.col(i) =
-          Vector3<float>(distribution(*generator), distribution(*generator),
-                         distribution(*generator));
+          kStep * step;  // + static_cast<float>(i));
+      step++;
     }
+
     return return_matrix;
   }
 
@@ -47,19 +56,16 @@ class TransformPointCloudTest : public ::testing::Test {
 
 // Verifies that the system applies the transform correctly to the point cloud.
 TEST_F(TransformPointCloudTest, ApplyTransformTest) {
-  const float kMin = -10.;
-  const float kMax = 10.;
+  const Vector3<float> kMin(-10.0, -20.0, -30.0);
+  const Vector3<float> kMax(10.0, 20.0, 30.0);
   const int kNumPoints = 5;
   const Vector3<float> kRpy(M_PI_4, -M_PI_2, 0.543);
   const math::RollPitchYaw<float> kRollPitchYaw(kRpy);
   const math::RotationMatrix<float> kR(kRollPitchYaw);
-  const Vector3<float> kP(-.3, 5.4, -2.7);
-
-  std::default_random_engine generator(321);
+  const Vector3<float> kP(-0.3, 5.4, -2.7);
 
   MatrixX<float> test_data =
-      TransformPointCloudTest::GenerateBoundedRandomSample(&generator, kMin,
-                                                           kMax, kNumPoints);
+      TransformPointCloudTest::GenerateBoundedSample(kMin, kMax, kNumPoints);
 
   PointCloud cloud(kNumPoints);
   cloud.mutable_xyzs() = test_data;
@@ -80,8 +86,10 @@ TEST_F(TransformPointCloudTest, ApplyTransformTest) {
   Matrix4X<float> expected_output =
       transform.GetAsMatrix4() * test_data_homogeneous;
 
+  // The tolerance used here has this value because the point cloud and the
+  // rigid transform both use `float` as the numerical representation.
   EXPECT_TRUE(CompareMatrices(
-      output_cloud.xyzs(), expected_output.block(0, 0, 3, kNumPoints), 1e-6));
+      output_cloud.xyzs(), expected_output.block(0, 0, 3, kNumPoints), 9e-7));
 }
 
 }  // namespace
