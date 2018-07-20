@@ -374,7 +374,7 @@ class DiagramContext final : public Context<T> {
   void DoPropagateTimeChange(const T& time_sec, int64_t change_event) final {
     for (auto& subcontext : contexts_) {
       DRAKE_ASSERT(subcontext != nullptr);
-      subcontext->PropagateTimeChange(time_sec, change_event);
+      Context<T>::PropagateTimeChange(&*subcontext, time_sec, change_event);
     }
   }
 
@@ -383,7 +383,7 @@ class DiagramContext final : public Context<T> {
                                  int64_t change_event) final {
     for (auto& subcontext : contexts_) {
       DRAKE_ASSERT(subcontext != nullptr);
-      subcontext->PropagateAccuracyChange(accuracy, change_event);
+      Context<T>::PropagateAccuracyChange(&*subcontext, accuracy, change_event);
     }
   }
 
