@@ -10,6 +10,7 @@
 #include "drake/systems/analysis/test_utilities/stateless_system.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
@@ -966,6 +967,9 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     diagram_->set_name("DiagramOfDiagrams");
 
     context_ = diagram_->CreateDefaultContext();
+    // Make sure caching is on locally, even if it is off by default.
+    context_->EnableCaching();
+
     output_ = diagram_->AllocateOutput();
 
     context_->FixInputPort(0, {8});
@@ -1025,6 +1029,8 @@ TEST_F(DiagramOfDiagramsTest, Graphviz) {
 // Tests that a diagram composed of diagrams can be evaluated.
 TEST_F(DiagramOfDiagramsTest, EvalOutput) {
   diagram_->CalcOutput(*context_, output_.get());
+  // (Note that caching is enabled in this context.)
+
   // The outputs of subsystem0_ are:
   //   output0 = 8 + 64 + 512 = 584
   //   output1 = output0 + 8 + 64 = 656
@@ -1038,9 +1044,12 @@ TEST_F(DiagramOfDiagramsTest, EvalOutput) {
   EXPECT_EQ(2489, output_->get_vector_data(1)->get_value().x());
   EXPECT_EQ(81, output_->get_vector_data(2)->get_value().x());
 
-  // Check that invalidation flows through input ports properly. We'll change
-  // the fixed input value for input port 0 from 8 to 10. That should cause
-  // everything to get recalculated.
+  // Check that invalidation flows through input ports properly, either due
+  // to replacing the fixed value or by modifying it.
+  //
+  // First we'll replace the fixed input value 8 for input port 0 with
+  // a new object that has value 10. That should cause everything to get
+  // recalculated when the ports are Eval()-ed.
   // The outputs of subsystem0_ are now:
   //   output0 = 10 + 64 + 512 = 586
   //   output1 = output0 + 10 + 64 = 660
@@ -1051,11 +1060,24 @@ TEST_F(DiagramOfDiagramsTest, EvalOutput) {
   //   output1 = output0 + 586 + 660 = 2501
   //   output2 = 81 (state of integrator1_)
   auto value10 = BasicVector<double>::Make({10});
-  context_->FixInputPort(0, std::move(value10));
-  diagram_->CalcOutput(*context_, output_.get());
-  EXPECT_EQ(1255, output_->get_vector_data(0)->get_value().x());
-  EXPECT_EQ(2501, output_->get_vector_data(1)->get_value().x());
-  EXPECT_EQ(81, output_->get_vector_data(2)->get_value().x());
+  FixedInputPortValue& port_value =
+      context_->FixInputPort(0, std::move(value10));
+  EXPECT_EQ(1255, diagram_->get_output_port(0).
+      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+  EXPECT_EQ(2501, diagram_->get_output_port(1).
+      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+  EXPECT_EQ(81, diagram_->get_output_port(2).
+      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+
+  // Now change the value back to 8 using mutable access to the port_value
+  // object. Should also cause re-evaluation.
+  port_value.GetMutableVectorData<double>()->SetAtIndex(0, 8.0);
+  EXPECT_EQ(1249, diagram_->get_output_port(0).
+      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+  EXPECT_EQ(2489, diagram_->get_output_port(1).
+      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+  EXPECT_EQ(81, diagram_->get_output_port(2).
+      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
 }
 
 TEST_F(DiagramOfDiagramsTest, DirectFeedthrough) {
@@ -2025,6 +2047,55 @@ TEST_F(NestedDiagramContextTest, CachingChangePropagation) {
 
   big_context_->SetAllCacheEntriesOutOfDate();
   EXPECT_TRUE(cache_entry.is_out_of_date(integrator3_subcontext));
+}
+
+/* Check that changes made directly to a subcontext still affect the
+parent Diagram's behavior properly.
+
+        +-----------------------------------------------------+
+        |                                                     |
+        |       +------------+             +-----------+      |
+        |       |            |             |           |      |
+        |    u0 |            | y0       u1 |           | y1   |
+      ---------->  integ0    +------------->  integ1   +-------->
+      u |       |            |             |           |      | y
+        |       |     x0     |             |    x1     |      |
+        |       +------------+             +-----------+      |
+        |                   diagram x={x0,x1}                 |
+        +-----------------------------------------------------+
+*/
+GTEST_TEST(MutateSubcontextTest, JeremysWorry) {
+  DiagramBuilder<double> builder;
+  auto integ0 = builder.AddSystem<Integrator>(1);  // (xdot = u; y = x)
+  auto integ1 = builder.AddSystem<Integrator>(1);
+  builder.ExportInput(integ0->get_input_port());
+  builder.Cascade(*integ0, *integ1);
+  builder.ExportOutput(integ1->get_output_port());
+  auto diagram = builder.Build();
+
+  auto diagram_context = diagram->AllocateContext();
+  diagram_context->EnableCaching();
+  Eigen::VectorXd init_state(2);
+  init_state << 5., 6.;  // x0, x1
+
+  // Set the state from the diagram level, then evaluate the diagram
+  // output, which should have copied the second state value (x1).
+  diagram_context->SetContinuousState(init_state);
+  EXPECT_EQ(diagram->get_output_port(0).Eval<BasicVector<double>>(
+                *diagram_context)[0],
+            6.);
+
+  // Now try to sneak in a change to a subcontext and then ask for the
+  // diagram's output value again. Did it know to recopy x1?
+  Context<double>& context1 =
+      diagram->GetMutableSubsystemContext(*integ1, &*diagram_context);
+  Eigen::VectorXd new_x1(1);
+  new_x1 << 17.;
+  context1.SetContinuousState(new_x1);
+
+  EXPECT_EQ(diagram->get_output_port(0).Eval<BasicVector<double>>(
+                *diagram_context)[0],
+            17.);
 }
 
 // Tests that an exception is thrown if the systems in a Diagram do not have

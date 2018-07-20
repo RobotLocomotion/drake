@@ -5,7 +5,6 @@
 
 #include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
-#include "drake/common/number_traits.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/parameters.h"
@@ -48,47 +47,28 @@ class Context : public ContextBase {
   Context& operator=(Context&&) = delete;
   //@}
 
-  /// Returns a deep copy of this Context.
-  // This is just an intentional shadowing of the base class method to return
-  // a more convenient type.
-  std::unique_ptr<Context<T>> Clone() const {
-    return dynamic_pointer_cast_or_throw<Context<T>>(ContextBase::Clone());
-  }
-
-  ~Context() override = default;
-
-  // =========================================================================
-  // Accessors and Mutators for Time.
+  /// @name           Accessors for locally-stored values
+  /// Methods in this group provide `const` access to values stored locally in
+  /// this %Context. The available values are:
+  /// - time
+  /// - state
+  /// - parameters
+  /// - accuracy
+  ///
+  /// Fixed input port values and cached values (including output port values)
+  /// are also stored in the %Context but are accessed indirectly via methods
+  /// like SystemBase::EvalInputValue(), through CacheEntry and OutputPort
+  /// objects, or via the FixedInputPortValue object that was returned when
+  /// an input port value was set.
+  /// @see FixInputPort()
+  //@{
 
   /// Returns the current time in seconds.
   const T& get_time() const { return get_step_info().time_sec; }
 
-  /// Set the current time in seconds. If this is a time change, invalidates all
-  /// time-dependent quantities in this context and its subcontexts.
-  void set_time(const T& time_sec) {
-    constexpr bool is_symbolic = !drake::is_numeric<T>::value;
-    if (is_symbolic || (time_sec != get_time())) {
-      const int64_t change_event = this->start_new_change_event();
-      PropagateTimeChange(time_sec, change_event);
-    }
-  }
-
-  // =========================================================================
-  // Accessors and Mutators for State.
-
   /// Returns a const reference to the whole State.
   const State<T>& get_state() const {
     return do_access_state();
-  }
-
-  /// Returns a mutable reference to the whole State, invalidating _all_
-  /// state-dependent computations. If you don't mean to change the whole
-  /// thing, use more focused methods to get mutable access to only a portion
-  /// of the state so that fewer computations are invalidated.
-  State<T>& get_mutable_state() {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event, &Context<T>::NoteAllStateChanged);
-    return do_access_mutable_state();
   }
 
   /// Returns true if the Context has no state.
@@ -128,45 +108,6 @@ class Context : public ContextBase {
     return count;
   }
 
-  /// Returns a mutable reference to the continuous component of the state,
-  /// which may be of size zero. Invalidates all continuous state-dependent
-  /// computations in this context and its subcontexts, recursively.
-  ContinuousState<T>& get_mutable_continuous_state() {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event,
-                        &Context<T>::NoteAllContinuousStateChanged);
-    return do_access_mutable_state().get_mutable_continuous_state();
-  }
-
-  /// Returns a mutable reference to the continuous state vector, devoid
-  /// of second-order structure. The vector may be of size zero. Invalidates all
-  /// continuous state-dependent computations in this context and its
-  /// subcontexts, recursively.
-  VectorBase<T>& get_mutable_continuous_state_vector() {
-    return get_mutable_continuous_state().get_mutable_vector();
-  }
-
-  /// Sets the continuous state to @p xc, including q, v, and z partitions.
-  /// The supplied vector must be the same size as the existing continuous
-  /// state. Invalidates all continuous state-dependent computations in this
-  /// context and its subcontexts, recursively.
-  void SetContinuousState(const Eigen::Ref<const VectorX<T>>& xc) {
-    get_mutable_continuous_state().SetFromVector(xc);
-  }
-
-  /// Sets time to @p t_sec and continuous state to @p xc. Performs a single
-  /// invalidation pass to avoid duplicate invalidations for computations that
-  /// depend on both time and state.
-  void SetTimeAndContinuousState(const T& t_sec,
-                                 const Eigen::Ref<const VectorX<T>>& xc) {
-    const int64_t change_event = this->start_new_change_event();
-    if (t_sec != get_time())
-      PropagateTimeChange(t_sec, change_event);
-    PropagateBulkChange(change_event,
-                        &Context<T>::NoteAllContinuousStateChanged);
-    do_access_mutable_state().get_mutable_continuous_state().SetFromVector(xc);
-  }
-
   /// Returns a const reference to the continuous component of the state,
   /// which may be of size zero.
   const ContinuousState<T>& get_continuous_state() const {
@@ -197,33 +138,6 @@ class Context : public ContextBase {
     return get_discrete_state().get_vector();
   }
 
-  /// Returns a mutable reference to the discrete component of the state,
-  /// which may be of size zero. Invalidates all discrete state-dependent
-  /// computations in this context and its subcontexts, recursively.
-  DiscreteValues<T>& get_mutable_discrete_state() {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event,
-                        &Context<T>::NoteAllDiscreteStateChanged);
-    return do_access_mutable_state().get_mutable_discrete_state();
-  }
-
-  /// Returns a mutable reference to the _only_ discrete state vector.
-  /// @sa get_discrete_state_vector().
-  /// @pre There is only one discrete state group.
-  BasicVector<T>& get_mutable_discrete_state_vector() {
-    return get_mutable_discrete_state().get_mutable_vector();
-  }
-
-  /// Returns a mutable reference to group (vector) @p index of the discrete
-  /// state. Invalidates all computations that depend (directly or indirectly)
-  /// on this discrete state group.
-  /// @pre @p index must identify an existing group.
-  BasicVector<T>& get_mutable_discrete_state(int index) {
-    // TODO(sherm1) Invalidate only dependents of this one discrete group.
-    DiscreteValues<T>& xd = get_mutable_discrete_state();
-    return xd.get_mutable_vector(index);
-  }
-
   /// Returns a const reference to group (vector) @p index of the discrete
   /// state.
   /// @pre @p index must identify an existing group.
@@ -243,9 +157,169 @@ class Context : public ContextBase {
     return get_state().get_abstract_state();
   }
 
+  /// Returns a const reference to the abstract component of the
+  /// state at @p index.
+  /// @pre @p index must identify an existing element.
+  /// @pre the abstract state's type must match the template argument.
+  template <typename U>
+  const U& get_abstract_state(int index) const {
+    const AbstractValues& xa = get_state().get_abstract_state();
+    return xa.get_value(index).GetValue<U>();
+  }
+
+  /// Returns the accuracy setting (if any). Note that the return type is
+  /// `optional<double>` rather than the double value itself.
+  /// @see set_accuracy() for details.
+  const optional<double>& get_accuracy() const { return accuracy_; }
+
+  /// Returns a const reference to this %Context's parameters.
+  const Parameters<T>& get_parameters() const { return *parameters_; }
+
+  /// Returns the number of vector-valued parameters.
+  int num_numeric_parameters() const {
+    return parameters_->num_numeric_parameters();
+  }
+
+  /// Returns a const reference to the vector-valued parameter at @p index.
+  /// @pre @p index must identify an existing parameter.
+  const BasicVector<T>& get_numeric_parameter(int index) const {
+    return parameters_->get_numeric_parameter(index);
+  }
+
+  /// Returns the number of abstract-valued parameters.
+  int num_abstract_parameters() const {
+    return get_parameters().num_abstract_parameters();
+  }
+
+  /// Returns a const reference to the abstract-valued parameter at @p index.
+  /// @pre @p index must identify an existing parameter.
+  const AbstractValue& get_abstract_parameter(int index) const {
+    return get_parameters().get_abstract_parameter(index);
+  }
+  //@}
+
+  /// @name           Methods for changing locally-stored values
+  /// The methods in this group allow changes to values stored locally in this
+  /// %Context. Such changes may invalidate computations that have been cached
+  /// here, and downstream computations that depend on those computations.
+  /// Invoking one of these methods automatically performs those invalidations,
+  /// which may involve this %Context and its neighbors in the full Diagram
+  /// context tree, including peers, parent, and child %Contexts. Those
+  /// invalidations may then propagate further up and down the context tree.
+  ///
+  /// These methods should be the _only_ way you modify %Context values. In
+  /// particular, some of these methods return mutable references -- you can
+  /// write through those once but must not hold onto the reference expecting to
+  /// make further changes. Instead, request the mutable reference again when
+  /// you need it so that necessary invalidations can be performed. In general,
+  /// prefer methods that accept a new value as an argument, rather than working
+  /// through a mutable reference.
+  ///
+  /// If you make multiple changes at once (say time and state), look for a
+  /// method that supports that since a single invalidation pass can be made
+  /// in that case, rather than a pass for each change.
+  ///
+  /// @note Any of these methods _may_ perform optimizations that allow them to
+  /// avoid invalidation in case some of the new values are the same as the old
+  /// ones, however they are not obligated to perform such optimizations.
+  ///
+  /// @note Each of these methods guarantees to invalidate dependencies of the
+  /// quantities it modifies, but the current implementations may also perform
+  /// some unnecessary invalidations. If so, that will be noted in the
+  /// method documentation. You should still use the most-specific available
+  /// method so that you will benefit from later improvements that result in
+  /// fewer invalidations.
+  //@{
+
+  /// Sets the current time in seconds, invalidating all time-dependent
+  /// computations.
+  // TODO(sherm1) Consider whether this should avoid invalidation if the
+  // new time is the same as the old time.
+  void set_time(const T& time_sec) {
+    const int64_t change_event = this->start_new_change_event();
+    PropagateTimeChange(this, time_sec, change_event);
+  }
+
+  /// Returns a mutable reference to the whole State, invalidating _all_
+  /// state-dependent computations. If you don't mean to change the whole
+  /// thing, use more focused methods to modify only a portion of the state so
+  /// that fewer computations are invalidated.
+  State<T>& get_mutable_state() {
+    const int64_t change_event = this->start_new_change_event();
+    PropagateBulkChange(change_event, &Context<T>::NoteAllStateChanged);
+    return do_access_mutable_state();
+  }
+
+  /// Returns a mutable reference to the continuous component of the state,
+  /// which may be of size zero. Invalidates all continuous state-dependent
+  /// computations.
+  ContinuousState<T>& get_mutable_continuous_state() {
+    const int64_t change_event = this->start_new_change_event();
+    PropagateBulkChange(change_event,
+                        &Context<T>::NoteAllContinuousStateChanged);
+    return do_access_mutable_state().get_mutable_continuous_state();
+  }
+
+  /// Returns a mutable reference to the continuous state vector, devoid
+  /// of second-order structure. The vector may be of size zero. Invalidates all
+  /// continuous state-dependent computations.
+  VectorBase<T>& get_mutable_continuous_state_vector() {
+    return get_mutable_continuous_state().get_mutable_vector();
+  }
+
+  /// Sets the continuous state to @p xc, including q, v, and z partitions.
+  /// The supplied vector must be the same size as the existing continuous
+  /// state. Invalidates all continuous state-dependent computations.
+  void SetContinuousState(const Eigen::Ref<const VectorX<T>>& xc) {
+    get_mutable_continuous_state().SetFromVector(xc);
+  }
+
+  /// Sets time to @p time_sec and continuous state to @p xc. Performs a single
+  /// invalidation pass to avoid duplicate invalidations for computations that
+  /// depend on both time and state.
+  // TODO(sherm1) Consider whether this should avoid invalidation of
+  // time-dependent quantities if the new time is the same as the old time.
+  void SetTimeAndContinuousState(const T& time_sec,
+                                 const Eigen::Ref<const VectorX<T>>& xc) {
+    const int64_t change_event = this->start_new_change_event();
+    PropagateTimeChange(this, time_sec, change_event);
+    PropagateBulkChange(change_event,
+                        &Context<T>::NoteAllContinuousStateChanged);
+    do_access_mutable_state().get_mutable_continuous_state().SetFromVector(xc);
+  }
+
+  /// Returns a mutable reference to the discrete component of the state,
+  /// which may be of size zero. Invalidates all discrete state-dependent
+  /// computations.
+  DiscreteValues<T>& get_mutable_discrete_state() {
+    const int64_t change_event = this->start_new_change_event();
+    PropagateBulkChange(change_event,
+                        &Context<T>::NoteAllDiscreteStateChanged);
+    return do_access_mutable_state().get_mutable_discrete_state();
+  }
+
+  /// Returns a mutable reference to the _only_ discrete state vector.
+  /// Invalidates all discrete state-dependent computations.
+  /// @sa get_discrete_state_vector().
+  /// @pre There is only one discrete state group.
+  BasicVector<T>& get_mutable_discrete_state_vector() {
+    return get_mutable_discrete_state().get_mutable_vector();
+  }
+
+  /// Returns a mutable reference to group (vector) @p index of the discrete
+  /// state. Invalidates all computations that depend on this discrete state
+  /// group.
+  /// @pre @p index must identify an existing group.
+  /// @bug Currently invalidates dependents of _all_ groups.
+  // TODO(sherm1) Invalidate only dependents of this one discrete group.
+  BasicVector<T>& get_mutable_discrete_state(int index) {
+    DiscreteValues<T>& xd = get_mutable_discrete_state();
+    return xd.get_mutable_vector(index);
+  }
+
   /// Returns a mutable reference to the abstract component of the state,
   /// which may be of size zero. Invalidates all abstract state-dependent
-  /// computations in this context and its subcontexts, recursively.
+  /// computations.
   AbstractValues& get_mutable_abstract_state() {
     const int64_t change_event = this->start_new_change_event();
     PropagateBulkChange(change_event,
@@ -254,27 +328,78 @@ class Context : public ContextBase {
   }
 
   /// Returns a mutable reference to element @p index of the abstract state.
-  /// Invalidates all computations that depend (directly or indirectly) on this
-  /// abstract state variable.
+  /// Invalidates all computations that depend on this abstract state variable.
   /// @pre @p index must identify an existing element.
+  /// @pre the abstract state's type must match the template argument.
+  /// @bug Currently invalidates dependents of _any_ abstract state variable.
+  // TODO(sherm1) Invalidate only dependents of this one abstract variable.
   template <typename U>
   U& get_mutable_abstract_state(int index) {
-    // TODO(sherm1) Invalidate only dependents of this one abstract variable.
     AbstractValues& xa = get_mutable_abstract_state();
     return xa.get_mutable_value(index).GetMutableValue<U>();
   }
 
-  /// Returns a const reference to the abstract component of the
-  /// state at @p index.
-  /// @pre @p index must identify an existing element.
-  template <typename U>
-  const U& get_abstract_state(int index) const {
-    const AbstractValues& xa = get_state().get_abstract_state();
-    return xa.get_value(index).GetValue<U>();
+  /// Returns a mutable reference to this %Context's parameters. Invalidates
+  /// all parameter-dependent computations. If you don't mean to change all the
+  /// parameters, use the indexed methods to modify only some of the parameters
+  /// so that fewer computations are invalidated.
+  Parameters<T>& get_mutable_parameters() {
+    const int64_t change_event = this->start_new_change_event();
+    PropagateBulkChange(change_event, &Context<T>::NoteAllParametersChanged);
+    return *parameters_;
   }
 
-  // =========================================================================
-  // Accessors and Mutators for Input.
+  /// Returns a mutable reference to element @p index of the vector-valued
+  /// parameters. Invalidates all computations dependent on this parameter.
+  /// @pre @p index must identify an existing numeric parameter.
+  /// @bug Currently invalidates dependents of _all_ numeric parameters.
+  // TODO(sherm1) Invalidate only dependents of this one parameter.
+  BasicVector<T>& get_mutable_numeric_parameter(int index) {
+    const int64_t change_event = this->start_new_change_event();
+    PropagateBulkChange(change_event,
+                        &Context<T>::NoteAllNumericParametersChanged);
+    return parameters_->get_mutable_numeric_parameter(index);
+  }
+
+  /// Returns a mutable reference to element @p index of the abstract-valued
+  /// parameters. Invalidates all computations dependent on this parameter.
+  /// @pre @p index must identify an existing abstract parameter.
+  /// @bug Currently invalidates dependents of _all_ abstract parameters.
+  // TODO(sherm1) Invalidate only dependents of this one parameter.
+  AbstractValue& get_mutable_abstract_parameter(int index) {
+    const int64_t change_event = this->start_new_change_event();
+    PropagateBulkChange(change_event,
+                        &Context<T>::NoteAllAbstractParametersChanged);
+    return get_mutable_parameters().get_mutable_abstract_parameter(index);
+  }
+
+  /// Sets this context's time, accuracy, state, and parameters from the real
+  /// values in @p source, regardless of this context's scalar type.
+  /// Invalidates all dependent computations in this context.
+  /// @bug Currently does not copy fixed input port values from `source`.
+  /// See System::FixInputPortsFrom() if you want to copy those.
+  // TODO(sherm1) Should treat fixed input port values same as parameters.
+  // TODO(sherm1) Change the name of this method to be more inclusive since it
+  //              also copies accuracy (now) and fixed input port values
+  //              (pending above TODO).
+  void SetTimeStateAndParametersFrom(const Context<double>& source) {
+    // A single change event for all these changes is much faster than doing
+    // each separately.
+    const int64_t change_event = this->start_new_change_event();
+
+    // These two both set the value and perform invalidations.
+    PropagateTimeChange(this, T(source.get_time()), change_event);
+    PropagateAccuracyChange(this, source.get_accuracy(), change_event);
+
+    // Invalidation is separate from the actual value change for bulk changes.
+    PropagateBulkChange(change_event, &Context<T>::NoteAllStateChanged);
+    do_access_mutable_state().SetFrom(source.get_state());
+
+    PropagateBulkChange(change_event, &Context<T>::NoteAllParametersChanged);
+    parameters_->SetFrom(source.get_parameters());
+
+    // TODO(sherm1) Fixed input copying goes here.
+  }
 
   // Allow access to the base class method (takes an AbstractValue).
   using ContextBase::FixInputPort;
@@ -313,70 +438,6 @@ class Context : public ContextBase {
     return FixInputPort(index, *vec);
   }
 
-  // =========================================================================
-  // Accessors and Mutators for Parameters.
-
-  /// Returns a const reference to this %Context's parameters.
-  const Parameters<T>& get_parameters() const { return *parameters_; }
-
-  /// Returns a mutable reference to this %Context's parameters after
-  /// invalidating all parameter-dependent computations in this context and
-  /// all its subcontexts, recursively. This is likely to be a _lot_ of
-  /// invalidation -- if you are really just changing a single parameter use
-  /// one of the indexed methods instead.
-  Parameters<T>& get_mutable_parameters() {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event, &Context<T>::NoteAllParametersChanged);
-    return *parameters_;
-  }
-
-  /// Returns the number of vector-valued parameters.
-  int num_numeric_parameters() const {
-    return parameters_->num_numeric_parameters();
-  }
-
-  /// Returns a const reference to the vector-valued parameter at @p index.
-  /// @pre @p index must identify an existing parameter.
-  const BasicVector<T>& get_numeric_parameter(int index) const {
-    return parameters_->get_numeric_parameter(index);
-  }
-
-  /// Returns a mutable reference to element @p index of the vector-valued
-  /// parameters. Invalidates all computations dependent on this parameter.
-  /// @pre @p index must identify an existing parameter.
-  BasicVector<T>& get_mutable_numeric_parameter(int index) {
-    // TODO(sherm1) Invalidate only dependents of this one parameter.
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event,
-                        &Context<T>::NoteAllNumericParametersChanged);
-    return parameters_->get_mutable_numeric_parameter(index);
-  }
-
-  /// Returns the number of abstract-valued parameters.
-  int num_abstract_parameters() const {
-    return get_parameters().num_abstract_parameters();
-  }
-
-  /// Returns a const reference to the abstract-valued parameter at @p index.
-  /// @pre @p index must identify an existing parameter.
-  const AbstractValue& get_abstract_parameter(int index) const {
-    return get_parameters().get_abstract_parameter(index);
-  }
-
-  /// Returns a mutable reference to element @p index of the abstract-valued
-  /// parameters. Invalidates all computations dependent on this parameter.
-  /// @pre @p index must identify an existing parameter.
-  AbstractValue& get_mutable_abstract_parameter(int index) {
-    // TODO(sherm1) Invalidate only dependents of this one parameter.
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event,
-                        &Context<T>::NoteAllAbstractParametersChanged);
-    return get_mutable_parameters().get_mutable_abstract_parameter(index);
-  }
-
-  // =========================================================================
-  // Accessors and Mutators for Accuracy.
-
   /// Records the user's requested accuracy. If no accuracy is requested,
   /// computations are free to choose suitable defaults, or to refuse to
   /// proceed without an explicit accuracy setting. If this is a change to
@@ -405,66 +466,29 @@ class Context : public ContextBase {
   /// The common thread among these examples is that they all share the
   /// same %Context, so by keeping accuracy here it can be used effectively to
   /// control all accuracy-dependent computations.
+  // TODO(sherm1) Consider whether to avoid invalidation if the new value is
+  // the same as the old one.
   void set_accuracy(const optional<double>& accuracy) {
-    constexpr bool is_symbolic = !drake::is_numeric<T>::value;
-    if (is_symbolic || (accuracy != get_accuracy())) {
-      const int64_t change_event = this->start_new_change_event();
-      PropagateAccuracyChange(accuracy, change_event);
-    }
+    const int64_t change_event = this->start_new_change_event();
+    PropagateAccuracyChange(this, accuracy, change_event);
   }
+  //@}
 
-  /// Returns the accuracy setting (if any). Note that the return type is
-  /// `optional<double>` rather than the double value itself.
-  /// @see set_accuracy() for details.
-  const optional<double>& get_accuracy() const { return accuracy_; }
+  /// @name             Miscellaneous public methods
+  //@{
 
-  // =========================================================================
-  // Miscellaneous Public Methods
+  /// Returns a deep copy of this Context.
+  // This is just an intentional shadowing of the base class method to return
+  // a more convenient type.
+  std::unique_ptr<Context<T>> Clone() const {
+    return dynamic_pointer_cast_or_throw<Context<T>>(ContextBase::Clone());
+  }
 
   /// Returns a deep copy of this Context's State.
   std::unique_ptr<State<T>> CloneState() const {
     return DoCloneState();
   }
-
-  /// Initializes this context's time, state, and parameters from the real
-  /// values in @p source, regardless of this context's scalar type.
-  /// Requires a constructor T(double).
-  // TODO(sherm1) Should treat fixed input port values same as parameters.
-  void SetTimeStateAndParametersFrom(const Context<double>& source) {
-    // A single change event for all these changes is much faster than doing
-    // each separately.
-    const int64_t change_event = this->start_new_change_event();
-
-    // These two both set the value and perform invalidations.
-    PropagateTimeChange(T(source.get_time()), change_event);
-    PropagateAccuracyChange(source.get_accuracy(), change_event);
-
-    // Invalidation is separate from the actual value change for bulk changes.
-    PropagateBulkChange(change_event, &Context<T>::NoteAllStateChanged);
-    do_access_mutable_state().SetFrom(source.get_state());
-
-    PropagateBulkChange(change_event, &Context<T>::NoteAllParametersChanged);
-    parameters_->SetFrom(source.get_parameters());
-
-    // TODO(sherm1) Fixed input copying goes here.
-  }
-
-  /// (Internal use only) Sets a new time and notifies time-dependent
-  /// quantities that they are now invalid, as part of a given change event.
-  void PropagateTimeChange(const T& time_sec, int64_t change_event) {
-    NoteTimeChanged(change_event);
-    step_info_.time_sec = time_sec;
-    DoPropagateTimeChange(time_sec, change_event);
-  }
-
-  /// (Internal use only) Sets a new accuracy and notifies accuracy-dependent
-  /// quantities that they are now invalid, as part of a given change event.
-  void PropagateAccuracyChange(const optional<double>& accuracy,
-                               int64_t change_event) {
-    NoteAccuracyChanged(change_event);
-    accuracy_ = accuracy;
-    DoPropagateAccuracyChange(accuracy, change_event);
-  }
+  //@}
 
  protected:
   Context() = default;
@@ -476,8 +500,29 @@ class Context : public ContextBase {
   // the local member copy constructors.
   Context(const Context<T>&) = default;
 
-  // Structuring these next three methods as statics permits a DiagramContext to
-  // invoke the protected functionality on its children.
+  // Structuring these methods as statics permits a DiagramContext to invoke
+  // the protected functionality on its children.
+
+  /// (Internal use only) Sets a new time and notifies time-dependent
+  /// quantities that they are now invalid, as part of a given change event.
+  static void PropagateTimeChange(Context<T>* context, const T& time_sec,
+                                  int64_t change_event) {
+    DRAKE_ASSERT(context != nullptr);
+    context->NoteTimeChanged(change_event);
+    context->step_info_.time_sec = time_sec;
+    context->DoPropagateTimeChange(time_sec, change_event);
+  }
+
+  /// (Internal use only) Sets a new accuracy and notifies accuracy-dependent
+  /// quantities that they are now invalid, as part of a given change event.
+  static void PropagateAccuracyChange(Context<T>* context,
+                                      const optional<double>& accuracy,
+                                      int64_t change_event) {
+    DRAKE_ASSERT(context != nullptr);
+    context->NoteAccuracyChanged(change_event);
+    context->accuracy_ = accuracy;
+    context->DoPropagateAccuracyChange(accuracy, change_event);
+  }
 
   /// (Internal use only) Returns a reference to mutable parameters _without_
   /// invalidation notifications. Use get_mutable_parameters() instead for
