@@ -31,7 +31,8 @@ def fortran_library(
     # linker to use hidden visibility for it.
     libname = "lib{}_{}.pic.a".format(
         native.repository_name()[1:],  # (Drop the leading @.)
-        name)
+        name,
+    )
     native.genrule(
         name = name + "_ar_genrule",
         srcs = objs,

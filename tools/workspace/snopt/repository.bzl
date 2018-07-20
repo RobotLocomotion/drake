@@ -134,7 +134,8 @@ def _impl(repo_ctx):
     # Add in the helper.
     repo_ctx.symlink(
         Label("@drake//tools/workspace/snopt:fortran-{}.bzl".format(
-            os_result.distribution)),
+            os_result.distribution,
+        )),
         "fortran.bzl",
     )
 
