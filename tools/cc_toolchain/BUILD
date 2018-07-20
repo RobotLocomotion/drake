@@ -196,4 +196,17 @@ sh_test(
     data = [":print_host_settings"],
 )
 
+# Utility script to rewrite object file symbols.
+sh_binary(
+    name = "obj_localize",
+    srcs = select({
+        ":apple": [
+            "obj_localize_apple.sh",
+        ],
+        ":linux": [
+            "obj_localize_linux.sh",
+        ],
+    }),
+)
+
 add_lint_tests()
