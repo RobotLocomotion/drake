@@ -187,9 +187,6 @@ void MultibodyTree<T>::FinalizeInternals() {
   }
 
   CreateModelInstances();
-
-  // TODO(amcastro-tri): Remove when MultibodyCachingEvaluatorInterface lands.
-  AllocateFakeCacheEntries();
 }
 
 template <typename T>
@@ -1031,19 +1028,19 @@ T MultibodyTree<T>::DoCalcConservativePower(
 }
 
 template<typename T>
-void MultibodyTree<T>::AllocateFakeCacheEntries() {
-  // Temporary hack before MultibodyCachingEvaluoatorInterface lands.
-  pc_ = std::make_unique<PositionKinematicsCache<T>>(get_topology());
-  vc_ = std::make_unique<VelocityKinematicsCache<T>>(get_topology());
-}
-
-template<typename T>
 const PositionKinematicsCache<T>& MultibodyTree<T>::EvalPositionKinematics(
     const systems::Context<T>& context) const {
   // TODO(amcastro-tri): Replace by cache_evaluator_->EvalPositionKinematics()
   // when MultibodyCachingEvaluatorInterface lands.
-  CalcPositionKinematicsCache(context, pc_.get());
-  return *pc_;
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+  PositionKinematicsCache<T>& pc_mut_ref =
+      mbt_context.get_mutable_position_kinematics_cache();
+  PositionKinematicsCache<T>* pc = &pc_mut_ref;
+  CalcPositionKinematicsCache(context, pc);
+  const PositionKinematicsCache<T>& pc_ref =
+      mbt_context.get_position_kinematics_cache();
+  return pc_ref;
 }
 
 template<typename T>
@@ -1052,8 +1049,15 @@ const VelocityKinematicsCache<T>& MultibodyTree<T>::EvalVelocityKinematics(
   // TODO(amcastro-tri): Replace by cache_evaluator_->EvalVelocityKinematics()
   // when MultibodyCachingEvaluatorInterface lands.
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  CalcVelocityKinematicsCache(context, pc, vc_.get());
-  return *vc_;
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+  VelocityKinematicsCache<T>& vc_mut_ref =
+      mbt_context.get_mutable_velocity_kinematics_cache();
+  VelocityKinematicsCache<T>* vc = &vc_mut_ref;
+  CalcVelocityKinematicsCache(context, pc, vc);
+  const VelocityKinematicsCache<T>& vc_ref =
+      mbt_context.get_velocity_kinematics_cache();
+  return vc_ref;
 }
 
 template <typename T>

@@ -2309,10 +2309,6 @@ class MultibodyTree {
   const VelocityKinematicsCache<T>& EvalVelocityKinematics(
       const systems::Context<T>& context) const;
 
-  // Helper method to allocate fake cache entries.
-  // TODO(amcastro-tri): Remove when MultibodyCachingEvaluatorInterface lands.
-  void AllocateFakeCacheEntries();
-
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
   // a method that verifies the state of the topology with a signature similar
   // to RoadGeometry::CheckHasRightSizeForModel().
