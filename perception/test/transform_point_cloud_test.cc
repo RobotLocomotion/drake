@@ -27,8 +27,7 @@ class TransformPointCloudTest : public ::testing::Test {
       } else {
         sign = -1.0f;
       }
-      return_matrix.col(i) =
-          kStep * step;  // + static_cast<float>(i));
+      return_matrix.col(i) = kStep * step;  // + static_cast<float>(i));
       step++;
     }
 
@@ -88,8 +87,9 @@ TEST_F(TransformPointCloudTest, ApplyTransformTest) {
 
   // The tolerance used here has this value because the point cloud and the
   // rigid transform both use `float` as the numerical representation.
-  EXPECT_TRUE(CompareMatrices(
-      output_cloud.xyzs(), expected_output.block(0, 0, 3, kNumPoints), 9e-7));
+  EXPECT_TRUE(CompareMatrices(output_cloud.xyzs(),
+                              expected_output.block(0, 0, 3, kNumPoints),
+                              10.0f * std::numeric_limits<float>::epsilon()));
 }
 
 }  // namespace
