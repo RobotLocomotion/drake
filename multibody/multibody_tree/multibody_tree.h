@@ -2350,11 +2350,6 @@ class MultibodyTree {
   std::vector<std::vector<BodyNodeIndex>> body_node_levels_;
 
   MultibodyTreeTopology topology_;
-
-  // Temporary solution for fake cache entries to help statbilize the API.
-  // TODO(amcastro-tri): Remove when MultibodyCachingEvaluatorInterface lands.
-  std::unique_ptr<PositionKinematicsCache<T>> pc_;
-  std::unique_ptr<VelocityKinematicsCache<T>> vc_;
 };
 
 /// @cond
