@@ -180,12 +180,12 @@ GTEST_TEST(JointLimitsTest, RevoluteJoint) {
 }
 
 GTEST_TEST(JointLimitsTest, KukaArm) {
-  const double time_step = 1.0e-3;
-  const double simulation_time = 40;
+  const double time_step = 2.0e-3;
+  const double simulation_time = 35;
 
   // At steady state after one second of simulation, we expect the velocity to
   // be zero within this absolute tolerance.
-  const double kVelocityTolerance = 1.0e-12;
+  const double kVelocityTolerance = 5.0e-4;
 
   // Expected relative tolerance for the joint limits. This number is chosen
   // so that the verifications performed below pass for the time step used in
@@ -193,7 +193,7 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
   // quadratic convergence in the time step) and therefore we could make
   // kRelativePositionTolerance even smaller. However there is a trade off
   // between what we want to test and the computational cost of this unit test.
-  const double kRelativePositionTolerance = 0.015;
+  const double kRelativePositionTolerance = 0.055;
 
   const std::string file_path =
       "drake/manipulation/models/iiwa_description/sdf/"
