@@ -32,7 +32,7 @@ class SnoptVisibilityTest(unittest.TestCase):
         output = subprocess.check_output(command + [libdrake])
         for line in output.splitlines():
             if undefined_marker in line:
-                # Ignore undefined references (like snprinf).
+                # Ignore undefined references (like snprintf).
                 continue
             # Most of snopt's symbols are 'snfoo' or 'f_snfoo' or '_snfoo'.  If
             # we don't find any of those, it seems unlikely that we would find

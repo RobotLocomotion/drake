@@ -37,7 +37,7 @@ def fortran_library(
         name = name + "_ar_genrule",
         srcs = objs,
         outs = [libname],
-        cmd = "/usr/bin/ar q $@ $(SRCS)",
+        cmd = "$(AR) q $@ $(SRCS)",
         visibility = ["//visibility:private"],
     )
 
