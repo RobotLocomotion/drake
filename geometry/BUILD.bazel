@@ -47,6 +47,7 @@ drake_cc_library(
         "//common",
         "//common:default_scalars",
         "//geometry/query_results:penetration_as_point_pair",
+        "//geometry/query_results:signed_distance_pair",
         "@fcl",
     ],
 )
@@ -161,6 +162,7 @@ drake_cc_library(
         ":geometry_state",
         "//common:essential",
         "//geometry/query_results:penetration_as_point_pair",
+        "//geometry/query_results:signed_distance_pair",
         "//systems/framework",
         "//systems/rendering:pose_bundle",
     ],
