@@ -16,8 +16,8 @@ drake_cc_package_library(
     deps = [
         ":depth_image_to_point_cloud",
         ":point_cloud",
-        ":transform_point_cloud",
         ":rigid_body_tree_removal",
+        ":transform_point_cloud",
     ],
 )
 
@@ -121,6 +121,7 @@ drake_cc_googletest(
         ":depth_image_to_point_cloud",
         ":point_cloud",
         ":rigid_body_tree_removal",
+        ":transform_point_cloud",
         "//common/test_utilities:eigen_matrix_compare",
         "//lcm",
         "//multibody/rigid_body_plant",

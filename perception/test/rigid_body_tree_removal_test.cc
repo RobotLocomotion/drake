@@ -12,6 +12,7 @@
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/perception/depth_image_to_point_cloud.h"
+#include "drake/perception/transform_point_cloud.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/sensors/rgbd_camera.h"
 
@@ -52,7 +53,8 @@ void AddFloatingBoxToTree(RigidBodyTree<double>* tree,
   }
 
   const DrakeShapes::Box shape(size);
-  drake::multibody::collision::Element body_collision(shape, Isometry3<double>::Identity());
+  drake::multibody::collision::Element body_collision(
+      shape, Isometry3<double>::Identity());
   body->AddCollisionElement("", &body_collision);
 
   auto joint =
@@ -95,6 +97,9 @@ void BuildFilterScene(systems::DiagramBuilder<double>* builder,
   auto converter =
       builder->AddSystem<DepthImageToPointCloud>(camera->depth_camera_info());
 
+  auto transformer =
+      builder->AddSystem<TransformPointCloud>();
+
   filter = builder->AddSystem<RigidBodyTreeRemoval>(
       plant->get_rigid_body_tree(), kCollisionThreshold);
 
@@ -115,6 +120,8 @@ void BuildFilterScene(systems::DiagramBuilder<double>* builder,
                    converter->depth_image_input_port());
   builder->Connect(plant->state_output_port(), filter->state_input_port());
   builder->Connect(converter->point_cloud_output_port(),
+                   transformer->point_cloud_input_port());
+  builder->Connect(transformer->point_cloud_output_port(),
                    filter->point_cloud_input_port());
 
   builder->ExportOutput(converter->point_cloud_output_port());
@@ -151,11 +158,11 @@ GTEST_TEST(RigidBodyTreeRemovalTests, FilterFloatingBoxTest) {
   auto const rgb = output->GetMutableData(2)
                        ->GetMutableValue<systems::sensors::ImageRgba8U>();
 
-/*  for (int i = 0; i < rgb.height(); i++) {
-    for (int j = 0; j < rgb.width(); j++) {
-      log()->info("{}", rgb.at(j, i));
-    }
-  }*/
+  /*  for (int i = 0; i < rgb.height(); i++) {
+      for (int j = 0; j < rgb.width(); j++) {
+        log()->info("{}", rgb.at(j, i));
+      }
+    }*/
 
   //  for(int i=0; i < unfiltered_cloud.size(); i++)
   //    log()->info("{}", unfiltered_cloud.xyz(i).transpose());

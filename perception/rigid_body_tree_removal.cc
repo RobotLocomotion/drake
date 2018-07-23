@@ -40,8 +40,8 @@ void RigidBodyTreeRemoval::FilterPointCloud(
     points[i] = input_cloud.xyz(i).cast<double>();
   }
 
-  points.resize(1);
-  points[0] = Eigen::Vector3d(0.,0.,0.);
+//  points.resize(1);
+//  points[0] = Eigen::Vector3d(0., 0., 0.);
 
   // 2. Extract the indices of the points in collision.
   Eigen::VectorXd q =
