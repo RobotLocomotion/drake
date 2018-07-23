@@ -307,22 +307,22 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
       length: 50
       z_end: ["ref", [0, 0, 0, 0]]
     s2:
-      lanes: [1, 0, 10]
+      lanes: [1, 0, 0]
       left_shoulder: 1.2
-      start: ["ref", "connections.s1.end.ref.forward"]
-      arc: [20, 180]
-      z_end: ["ref", [0, 0, 0]]
+      start: ["lane.0", "connections.s1.end.2.forward"]
+      arc: [10, 180]
+      z_end: ["lane.0", [0, 0, 0]]
     s3:
-      lanes: [1, 0, 10]
+      lanes: [1, 0, 0]
       right_shoulder: 0.8
-      start: ["ref", "connections.s2.end.ref.forward"]
+      start: ["lane.0", "connections.s2.end.0.forward"]
       length: 50
-      z_end: ["ref", [0, 0, 0]]
+      z_end: ["lane.0", [0, 0, 0]]
     s4:
       lanes: [1, 0, 10]
-      start: ["ref", "connections.s3.end.ref.forward"]
+      start: ["lane.0", "connections.s3.end.0.forward"]
       arc: [20, 180]
-      explicit_end: ["ref", "connections.s1.start.ref.forward"]
+      explicit_end: ["lane.0", "connections.s1.start.2.forward"]
     s5:
       lanes: [2, 0, -5]
       start: ["ref", "points.b.forward"]
@@ -340,19 +340,19 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
       z_end: ["ref", [0, 0, 0]]
     s8:
       lanes: [1, 0, 0]
-      start: ["ref", "connections.s6.end.ref.forward"]
+      start: ["lane.0", "connections.s6.end.1.forward"]
       arc: [20, 90]
-      z_end: ["ref", [5, 1, 30]]
+      z_end: ["lane.0", [5, 1, 30]]
     s9:
       lanes: [1, 0, 0]
-      start: ["ref", "connections.s8.end.ref.forward"]
+      start: ["lane.0", "connections.s8.end.0.forward"]
       arc: [20, 90]
-      z_end: ["ref", [10, 0, 30]]
+      z_end: ["lane.0", [10, 0, 30]]
     s10:
       lanes: [1, 0, 0]
-      start: ["ref", "connections.s9.end.ref.forward"]
+      start: ["lane.0", "connections.s9.end.0.forward"]
       arc: [20, 90]
-      z_end: ["ref", [10, 0, 0]]
+      z_end: ["lane.0", [10, 0, 0]]
     s11:
       lanes: [1, 0, 0]
       start: ["ref", "connections.s10.end.ref.forward"]
@@ -365,9 +365,9 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
       explicit_end: ["ref", "connections.s10.end.ref.forward"]
     s13:
       lanes: [1, 0, 0]
-      start: ["ref", "connections.s12.end.ref.forward"]
+      start: ["lane.0", "connections.s12.end.0.forward"]
       length: 15
-      z_end: ["ref", [0, 0, 0]]
+      z_end: ["lane.0", [0, 0, 0]]
   groups:
     g1: [s2, s5]
     g2: [s4, s8, s10]
@@ -428,29 +428,27 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
       *builder_mock,
       Connect(
           "s2", Matches(LaneLayout(kCustomLeftShoulder, kDefaultRightShoulder,
-                                   kOneLane, kRefLane, 10.),
+                                   kOneLane, kRefLane, kZeroRRef),
                         kZeroTolerance),
-          Matches(StartReference().at({{50., 0., 0.}, kFlatZWithoutThetaDot},
-                                      Direction::kForward),
+          Matches(StartLane(0).at({{50., 10., 0.}, kFlatZWithoutThetaDot},
+                                  Direction::kForward),
                   kLinearTolerance),
-          Matches(ArcOffset(20., M_PI), kLinearTolerance, kAngularTolerance),
-          Matches(
-              EndReference().z_at(kFlatZWithoutThetaDot, Direction::kForward),
-              kLinearTolerance)));
+          Matches(ArcOffset(10., M_PI), kLinearTolerance, kAngularTolerance),
+          Matches(EndLane(0).z_at(kFlatZWithoutThetaDot, Direction::kForward),
+                  kLinearTolerance)));
 
   prebuild_expectations += EXPECT_CALL(
       *builder_mock,
       Connect(
           "s3", Matches(LaneLayout(kDefaultLeftShoulder, kCustomRightShoulder,
-                                   kOneLane, kRefLane, 10.),
+                                   kOneLane, kRefLane, kZeroRRef),
                         kZeroTolerance),
-          Matches(StartReference().at({{50., 40., M_PI}, kFlatZWithoutThetaDot},
-                                      Direction::kForward),
+          Matches(StartLane(0).at({{50., 30., M_PI}, kFlatZWithoutThetaDot},
+                                  Direction::kForward),
                   kLinearTolerance),
           Matches(LineOffset(50), kZeroTolerance),
-          Matches(
-              EndReference().z_at(kFlatZWithoutThetaDot, Direction::kForward),
-              kLinearTolerance)));
+          Matches(EndLane(0).z_at(kFlatZWithoutThetaDot, Direction::kForward),
+                  kLinearTolerance)));
 
   prebuild_expectations += EXPECT_CALL(
       *builder_mock,
@@ -458,13 +456,12 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
           "s4", Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
                                    kOneLane, kRefLane, 10.),
                         kZeroTolerance),
-          Matches(StartReference().at({{0., 40., M_PI}, kFlatZWithoutThetaDot},
-                                      Direction::kForward),
+          Matches(StartLane(0).at({{0., 30., M_PI}, kFlatZWithoutThetaDot},
+                                  Direction::kForward),
                   kLinearTolerance),
           Matches(ArcOffset(20., M_PI), kLinearTolerance, kAngularTolerance),
-          Matches(
-              EndReference().z_at(kFlatZWithoutThetaDot, Direction::kForward),
-              kLinearTolerance)));
+          Matches(EndLane(0).z_at(kFlatZWithoutThetaDot, Direction::kForward),
+                  kLinearTolerance)));
 
   prebuild_expectations += EXPECT_CALL(
       *builder_mock,
@@ -516,12 +513,12 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
                                    kOneLane, kRefLane, kZeroRRef),
                         kZeroTolerance),
           Matches(
-              StartReference().at({{0., -35., -M_PI}, kFlatZWithoutThetaDot},
+              StartLane(0).at({{0., -35., -M_PI}, kFlatZWithoutThetaDot},
                                   Direction::kForward),
               kLinearTolerance),
           Matches(ArcOffset(20., M_PI / 2.), kLinearTolerance,
                   kAngularTolerance),
-          Matches(EndReference().z_at({5., 1., 0.523, {}}, Direction::kForward),
+          Matches(EndLane(0).z_at({5., 1., 0.523, {}}, Direction::kForward),
                   kLinearTolerance)));
 
   prebuild_expectations += EXPECT_CALL(
@@ -530,14 +527,14 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
           "s9", Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
                                    kOneLane, kRefLane, kZeroRRef),
                         kZeroTolerance),
-          Matches(StartReference().at(
+          Matches(StartLane(0).at(
                       {{-20., -55., -M_PI / 2.}, {5., 1., 0.523, {}}},
                       Direction::kForward),
                   kLinearTolerance),
           Matches(ArcOffset(20., M_PI / 2.), kLinearTolerance,
                   kAngularTolerance),
           Matches(
-              EndReference().z_at({10., 0., 0.523, {}}, Direction::kForward),
+              EndLane(0).z_at({10., 0., 0.523, {}}, Direction::kForward),
               kLinearTolerance)));
 
   prebuild_expectations += EXPECT_CALL(
@@ -546,13 +543,13 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
               Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
                                  kOneLane, kRefLane, kZeroRRef),
                       kZeroTolerance),
-              Matches(StartReference().at({{0, -75., 0}, {10., 0., 0.523, {}}},
-                                          Direction::kForward),
+              Matches(StartLane(0).at({{0, -75., 0}, {10., 0., 0.523, {}}},
+                                      Direction::kForward),
                       kLinearTolerance),
               Matches(ArcOffset(20., M_PI / 2.), kLinearTolerance,
                       kAngularTolerance),
-              Matches(EndReference().z_at(kElevatedZWithoutThetaDot,
-                                          Direction::kForward),
+              Matches(EndLane(0).z_at(kElevatedZWithoutThetaDot,
+                                      Direction::kForward),
                       kLinearTolerance)));
 
   prebuild_expectations += EXPECT_CALL(
@@ -592,13 +589,13 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
           "s13", Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
                                     kOneLane, kRefLane, kZeroRRef),
                          kZeroTolerance),
-          Matches(StartReference().at(
+          Matches(StartLane(0).at(
                       {{20., -25., M_PI / 2.}, kElevatedZWithoutThetaDot},
                       Direction::kForward),
                   kLinearTolerance),
           Matches(LineOffset(15.), kZeroTolerance),
           Matches(
-              EndReference().z_at(kFlatZWithoutThetaDot, Direction::kForward),
+              EndLane(0).z_at(kFlatZWithoutThetaDot, Direction::kForward),
               kLinearTolerance)));
 
   // Group expectations.
