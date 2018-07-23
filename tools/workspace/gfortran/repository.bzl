@@ -1,6 +1,10 @@
 # -*- python -*-
 
 load(
+    "@drake//tools/workspace:os.bzl",
+    "determine_os",
+)
+load(
     "@drake//tools/workspace:execute.bzl",
     "execute_or_fail",
     "which",
@@ -28,7 +32,10 @@ def _gfortran_impl(repo_ctx):
     ]))
 
     # Find the runtime libraries based on the OS.
-    if repo_ctx.os.name == "mac os x":
+    os_result = determine_os(repo_ctx)
+    if os_result.error != None:
+        fail(os_result.error)
+    if os_result.is_macos:
         suffix = ".dylib"
     else:
         suffix = ".so"
@@ -38,7 +45,7 @@ def _gfortran_impl(repo_ctx):
     libquadmath_path = _find_library(repo_ctx, compiler, libquadmath)
 
     # The cc_library linking is different on Ubuntu vs macOS.
-    if repo_ctx.os.name == "mac os x":
+    if os_result.is_macos:
         linkopts = [
             "-L{}".format(repo_ctx.path(libgfortran_path).dirname),
             "-L{}".format(repo_ctx.path(libquadmath_path).dirname),
