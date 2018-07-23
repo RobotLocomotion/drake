@@ -121,6 +121,15 @@ GTEST_TEST(RigidTransform, RigidTransformConstructorAndSet) {
 #endif
 }
 
+// Tests constructing a RigidTransform from just a RotationMatrix.
+// Also test alias/typdef RigidTransformd.
+GTEST_TEST(RigidTransform, RigidTransformConstructorFromRotationMatrix) {
+  const RotationMatrixd R = GetRotationMatrixB();
+  const RigidTransformd X(R);
+  EXPECT_TRUE(ExtractBoolOrThrow(X.rotation().IsExactlyEqualTo(R)));
+  EXPECT_TRUE(X.translation() == Vector3d(0, 0, 0));
+}
+
 // Tests constructing a RigidTransform from just a position vector.
 GTEST_TEST(RigidTransform, RigidTransformConstructorFromPositionVector) {
   const Vector3<double> p(4, 5, 6);
@@ -188,11 +197,16 @@ GTEST_TEST(RigidTransform, Isometry3) {
   EXPECT_TRUE((zero_position.array() == 0).all());
 
   // Tests making an Isometry3 from a RigidTransform.
+  // Note: Ensure the last row is 0, 0, 0, 1.
   const Isometry3<double> isometryB = X.GetAsIsometry3();
   zero_rotation = m - isometryB.linear();
   zero_position = p - isometryB.translation();
   EXPECT_TRUE((zero_rotation.array() == 0).all());
   EXPECT_TRUE((zero_position.array() == 0).all());
+  EXPECT_EQ(isometryB(3, 0), 0);
+  EXPECT_EQ(isometryB(3, 1), 0);
+  EXPECT_EQ(isometryB(3, 2), 0);
+  EXPECT_EQ(isometryB(3, 3), 1);
 
   // Test setting a RigidTransform from an Isometry3.
   RigidTransform<double> X2;

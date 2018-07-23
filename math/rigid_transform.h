@@ -64,11 +64,18 @@ class RigidTransform {
   /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
   RigidTransform(const RotationMatrix<T>& R, const Vector3<T>& p) { set(R, p); }
 
+  /// Constructs a %RigidTransform with a given RotationMatrix and a zero
+  /// position vector.
+  /// @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`).
+  explicit RigidTransform(const RotationMatrix<T>& R) {
+    set(R, Vector3<T>::Zero());
+  }
+
   /// Constructs a %RigidTransform with an identity RotationMatrix and a given
   /// position vector 'p'.
   /// @param[in] p position vector from frame A's origin to frame B's origin,
   /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
-  explicit RigidTransform(const Vector3<T>& p) {  set_translation(p); }
+  explicit RigidTransform(const Vector3<T>& p) { set_translation(p); }
 
   /// Constructs a %RigidTransform from an Eigen Isometry3.
   /// @param[in] pose Isometry3 that contains an allegedly valid rotation matrix
@@ -186,6 +193,7 @@ class RigidTransform {
     Isometry3<T> pose;
     pose.linear() = rotation().matrix();
     pose.translation() = translation();
+    pose.makeAffine();
     return pose;
   }
 
@@ -319,6 +327,10 @@ class RigidTransform {
   // Position vector from A's origin Ao to B's origin Bo, expressed in A.
   Vector3<T> p_AoBo_A_;
 };
+
+/// Abbreviation (alias/typedef) for a RigidTransform double scalar type.
+/// @relates RigidTransform
+using RigidTransformd = RigidTransform<double>;
 
 }  // namespace math
 }  // namespace drake
