@@ -19,12 +19,16 @@ namespace systems {
 /// literature and thus its imparted functionality is immediately clear.
 ///
 /// Herein, the concept in use may be formally stated as follows: given a
-/// solution 𝐱(t) ∈ ℝⁿ to an ODE or DAE system that is approximated at a
-/// discrete set of points 𝐲(tₖ) ∈ ℝⁿ where tₖ ∈ {t₁, ..., tᵢ} with
-/// tᵢ ∈ ℝ (e.g. as a result of numerical integration), a dense outpupt of
-/// 𝐱(t) is another function 𝐳(t) ∈ ℝⁿ defined for t ∈ [t₁, tᵢ] such that
-/// 𝐳(tⱼ) = 𝐲(tⱼ) for all tⱼ ∈ {t₁, ..., tᵢ} and that approximates 𝐱(t) for
-/// every value in the closed interval [t₁, tᵢ].
+/// solution 𝐱(t) ∈ ℝⁿ to an ODE system that is approximated at a discrete
+/// set of points 𝐲(tₖ) ∈ ℝⁿ where tₖ ∈ {t₁, ..., tᵢ} with tᵢ ∈ ℝ (e.g. as
+/// a result of numerical integration), a dense output of 𝐱(t) is another
+/// function 𝐳(t) ∈ ℝⁿ defined for t ∈ [t₁, tᵢ] such that 𝐳(tⱼ) = 𝐲(tⱼ) for
+/// all tⱼ ∈ {t₁, ..., tᵢ} and that approximates 𝐱(t) for every value in the
+/// closed interval [t₁, tᵢ].
+///
+/// @warning Note that dense outputs are not bound to enforce the same
+///          constraints that the approximated solution does, and therefore
+///          these may be violated.
 ///
 /// - [Engquist, 2105] B. Engquist. Encyclopedia of Applied and Computational
 ///                    Mathematics, p. 339, Springer, 2015.
@@ -40,17 +44,17 @@ class DenseOutput {
   virtual ~DenseOutput() = default;
 
   /// Evaluates the output at the given time @p t.
-  /// @param t Time to evaluate output at.
-  /// @return Output vector value.
+  /// @param t Time at which to evaluate output.
+  /// @returns Output vector value.
   /// @pre Output is not empty i.e. is_empty() equals false.
-  /// @throw std::logic_error if any of the preconditions are not met.
-  /// @throw std::runtime_error if the output is not defined for the
-  ///                           given @p t.
+  /// @throws std::logic_error if any of the preconditions are not met.
+  /// @throws std::runtime_error if the output is not defined for the
+  ///                            given @p t.
   VectorX<T> Evaluate(const T& t) const {
     if (is_empty()) {
       throw std::logic_error("Empty dense output cannot be evaluated.");
     }
-    if (t < this->do_get_start_time() || t > this->do_get_end_time()) {
+    if (t < this->do_start_time() || t > this->do_end_time()) {
       throw std::runtime_error("Dense output is not defined for given time.");
     }
     return this->DoEvaluate(t);
@@ -63,35 +67,36 @@ class DenseOutput {
   ///       it the preferred mechanism when targeting a single dimension.
   /// @param t Time to evaluate output at.
   /// @param dimension Dimension to evaluate.
-  /// @return Output @p dimension scalar value .
+  /// @returns Output @p dimension scalar value.
   /// @pre Output is not empty i.e. is_empty() equals false.
-  /// @throw std::logic_error if any of the preconditions are not met.
-  /// @throw std::runtime_error if the output is not defined for the
-  ///                           given @p t.
-  /// @throw std::runtime_error if given @p dimension is not valid
-  ///                           i.e. 0 <= @p dimension < get_dimensions().
+  /// @throws std::logic_error if any of the preconditions are not met.
+  /// @throws std::runtime_error if the output is not defined for the
+  ///                            given @p t.
+  /// @throws std::runtime_error if given @p dimension is not valid
+  ///                            i.e. 0 <= @p dimension < size().
   T Evaluate(const T& t, int dimension) const {
     if (is_empty()) {
       throw std::logic_error("Empty dense output cannot be evaluated.");
     }
-    if (dimension < 0 || this->do_get_dimensions() <= dimension) {
+    if (dimension < 0 || this->do_size() <= dimension) {
       throw std::runtime_error("Invalid dimension for dense output.");
     }
-    if (t < this->do_get_start_time() || t > this->do_get_end_time()) {
+    if (t < this->do_start_time() || t > this->do_end_time()) {
       throw std::runtime_error("Dense output is not defined for given time.");
     }
     return this->DoEvaluate(t, dimension);
   }
 
-  /// Returns the output dimension `n`.
+  /// Returns the output size (i.e. the number of elements in an
+  /// output value).
   /// @pre Output is not empty i.e. is_empty() equals false.
   /// @throw std::logic_error if any of the preconditions is not met.
-  int get_dimensions() const {
+  int size() const {
     if (is_empty()) {
-      throw std::logic_error("Dimension is not defined for"
+      throw std::logic_error("Size is not defined for"
                              " an empty dense output.");
     }
-    return this->do_get_dimensions();
+    return this->do_size();
   }
 
   /// Checks whether the output is empty or not.
@@ -100,25 +105,25 @@ class DenseOutput {
   /// Returns output's start time, or in other words, the oldest time
   /// `t` that it can be evaluated at e.g. via Evaluate().
   /// @pre Output is not empty i.e. is_empty() equals false.
-  /// @throw std::logic_error if any of the preconditions is not met.
-  const T& get_start_time() const {
+  /// @throws std::logic_error if any of the preconditions is not met.
+  const T& start_time() const {
     if (is_empty()) {
       throw std::logic_error("Start time is not defined for"
                              " an empty dense output.");
     }
-    return this->do_get_start_time();
+    return this->do_start_time();
   }
 
   /// Returns output's end time, or in other words, the newest time
   /// `t` that it can be evaluated at e.g. via Evaluate().
   /// @pre Output is not empty i.e. is_empty() equals false.
-  /// @throw std::logic_error if any of the preconditions is not met.
-  const T& get_end_time() const {
+  /// @throws std::logic_error if any of the preconditions is not met.
+  const T& end_time() const {
     if (is_empty()) {
       throw std::logic_error("End time is not defined for"
                              " an empty dense output.");
     }
-    return this->do_get_end_time();
+    return this->do_end_time();
   }
 
  protected:
@@ -139,14 +144,14 @@ class DenseOutput {
   // @see is_empty()
   virtual bool do_is_empty() const = 0;
 
-  // @see get_dimensions()
-  virtual int do_get_dimensions() const = 0;
+  // @see size()
+  virtual int do_size() const = 0;
 
-  // @see get_start_time()
-  virtual const T& do_get_start_time() const = 0;
+  // @see start_time()
+  virtual const T& do_start_time() const = 0;
 
-  // @see get_end_time()
-  virtual const T& do_get_end_time() const = 0;
+  // @see end_time()
+  virtual const T& do_end_time() const = 0;
 };
 
 }  // namespace systems

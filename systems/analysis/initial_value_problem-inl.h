@@ -216,7 +216,10 @@ void InitialValueProblem<T>::ResetCachedState(
 template <typename T>
 void InitialValueProblem<T>::ResetCachedStateIfNecessary(
     const T& tf, const SpecifiedValues& values) const {
-  // Only resets cache if necessary.
+  // Only resets cache if necessary, i.e. if either initial
+  // conditions or parameters have changed or if the time
+  // the IVP is to be solved for is in the past with respect
+  // to the integration context time.
   if (values != current_values_ || tf < context_->get_time()) {
     ResetCachedState(values);
   }
@@ -239,7 +242,7 @@ InitialValueProblem<T>::SanitizeValuesOrThrow(
   }
   safe_values.k = values.k.has_value() ? values.k : default_values_.k;
   if (safe_values.k.value().size() != default_values_.k.value().size()) {
-    throw std::logic_error("IVP parameter vector k is "
+    throw std::logic_error("IVP parameters vector k is "
                            " of the wrong dimension");
   }
   return safe_values;
@@ -252,8 +255,9 @@ std::unique_ptr<DenseOutput<T>> InitialValueProblem<T>::DenseSolve(
   // checking that all preconditions hold.
   const SpecifiedValues safe_values = SanitizeValuesOrThrow(tf, values);
 
-  // Unconditionally invalidates the cache. All integration steps need
-  // to be made generate a DenseOutput.
+  // Unconditionally invalidates the cache. All integration steps that
+  // take the IVP forward in time up to tf are necessary to build a
+  // DenseOutput.
   ResetCachedState(safe_values);
 
   // Re-initialize integrator after cache invalidation.
@@ -267,8 +271,7 @@ std::unique_ptr<DenseOutput<T>> InitialValueProblem<T>::DenseSolve(
       tf - context_->get_time());
 
   // Stops dense integration to prevent future updates to
-  // the built continuous extension and yields dense output
-  // to the caller.
+  // the dense output just built and yields it to the caller.
   return integrator_->StopDenseIntegration();
 }
 

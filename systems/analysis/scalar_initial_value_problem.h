@@ -100,7 +100,7 @@ class ScalarInitialValueProblem {
   /// @pre An initial time @p default_values.t0 is provided.
   /// @pre An initial state @p default_values.x0 is provided.
   /// @pre An parameter vector @p default_values.k is provided.
-  /// @throw std::logic_error if preconditions are not met.
+  /// @throws std::logic_error if preconditions are not met.
   ScalarInitialValueProblem(const ScalarODEFunction& scalar_ode_function,
                             const SpecifiedValues& default_values) {
     // Wraps the given scalar ODE function as a vector ODE function.
@@ -118,15 +118,15 @@ class ScalarInitialValueProblem {
   /// x₀ and parameter vector 𝐤 present in @p values, falling back to the ones
   /// given on construction if not given.
   ///
-  /// @param tf The time to solve the IVP for.
-  /// @param values The specified values for the IVP.
-  /// @return The IVP solution x(@p tf; 𝐤) for x(t₀; 𝐤) = x₀.
+  /// @param tf The IVP will be solved for this time.
+  /// @param values IVP initial conditions and parameters.
+  /// @returns The IVP solution x(@p tf; 𝐤) for x(t₀; 𝐤) = x₀.
   /// @pre Given @p tf must be larger than or equal to the specified initial
   ///      time t₀ (either given or default).
   /// @pre If given, the dimension of the parameter vector @p values.k
   ///      must match that of the parameter vector in the default specified
   ///      values given on construction.
-  /// @throw std::logic_error if any of the preconditions is not met.
+  /// @throws std::logic_error if any of the preconditions is not met.
   T Solve(const T& tf, const SpecifiedValues& values = {}) const {
     return this->vector_ivp_->Solve(tf, ToVectorIVPSpecifiedValues(values))[0];
   }
@@ -136,10 +136,10 @@ class ScalarInitialValueProblem {
   /// time @p tf, using initial state x₀ and parameter vector 𝐤 present in
   /// @p values (falling back to the ones given on construction if not given).
   ///
-  /// @param tf The time to solve the IVP up to.
-  /// @param values The specified values for the IVP.
-  /// @return A dense approximation to x(t; 𝐤) with x(t₀; 𝐤) = x₀,
-  ///         defined for t₀ <= t <= tf.
+  /// @param tf The IVP will be solved up to this time.
+  /// @param values IVP initial conditions and parameters.
+  /// @returns A dense approximation to x(t; 𝐤) with x(t₀; 𝐤) = x₀, defined for
+  ///          t₀ ≤ t ≤ tf.
   /// @pre Given @p tf must be larger than or equal to the specified initial
   ///      time t₀ (either given or default).
   /// @pre If given, the dimension of the initial state vector @p values.x0
@@ -148,7 +148,7 @@ class ScalarInitialValueProblem {
   /// @pre If given, the dimension of the parameter vector @p values.k
   ///      must match that of the parameter vector in the default specified
   ///      values given on construction.
-  /// @throw std::logic_error if any of the preconditions is not met.
+  /// @throws std::logic_error if any of the preconditions is not met.
   std::unique_ptr<ScalarDenseOutput<T>> DenseSolve(
       const T& tf, const SpecifiedValues& values = {}) const {
     // Delegates request to the vector form of this IVP by putting
@@ -170,7 +170,7 @@ class ScalarInitialValueProblem {
   /// @endcode
   ///
   /// @param args The integrator type-specific arguments.
-  /// @return The new integrator instance.
+  /// @returns The new integrator instance.
   /// @tparam Integrator The integrator type, which must be an
   ///                    IntegratorBase subclass.
   /// @tparam Args The integrator specific argument types.

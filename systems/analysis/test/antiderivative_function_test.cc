@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 
@@ -98,43 +99,48 @@ GTEST_TEST(AntiderivativeFunctionTest, EvaluatePreconditionValidation) {
   // parameter vector of the expected dimension.
   const VectorX<double> kValidParameters = VectorX<double>::Constant(2, 5.0);
 
-  EXPECT_THROW(
+  const std::string kInvalidIntegrationBoundErrorMessage{
+    "Cannot solve IVP for.*time.*"};
+  const std::string kInvalidParametersErrorMessage{
+    ".*parameters.*wrong dimension.*"};
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
       antiderivative_function.Evaluate(
           kInvalidUpperIntegrationBound),
-      std::logic_error);
+      std::logic_error, kInvalidIntegrationBoundErrorMessage);
 
-  EXPECT_THROW(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       antiderivative_function.DenseEvaluate(
           kInvalidUpperIntegrationBound),
-      std::logic_error);
+      std::logic_error, kInvalidIntegrationBoundErrorMessage);
 
-  EXPECT_THROW({
+  DRAKE_EXPECT_THROWS_MESSAGE({
       AntiderivativeFunction<double>::SpecifiedValues values;
       values.k = kInvalidParameters;
       antiderivative_function.Evaluate(
           kValidUpperIntegrationBound, values);
-    }, std::logic_error);
+    }, std::logic_error, kInvalidParametersErrorMessage);
 
-  EXPECT_THROW({
+  DRAKE_EXPECT_THROWS_MESSAGE({
       AntiderivativeFunction<double>::SpecifiedValues values;
       values.k = kInvalidParameters;
       antiderivative_function.DenseEvaluate(
           kValidUpperIntegrationBound, values);
-    }, std::logic_error);
+    }, std::logic_error, kInvalidParametersErrorMessage);
 
-  EXPECT_THROW({
+  DRAKE_EXPECT_THROWS_MESSAGE({
     AntiderivativeFunction<double>::SpecifiedValues values;
     values.k = kValidParameters;
     antiderivative_function.Evaluate(
         kInvalidUpperIntegrationBound, values);
-  }, std::logic_error);
+    }, std::logic_error, kInvalidIntegrationBoundErrorMessage);
 
-  EXPECT_THROW({
+  DRAKE_EXPECT_THROWS_MESSAGE({
     AntiderivativeFunction<double>::SpecifiedValues values;
     values.k = kValidParameters;
     antiderivative_function.DenseEvaluate(
         kInvalidUpperIntegrationBound, values);
-  }, std::logic_error);
+    }, std::logic_error, kInvalidIntegrationBoundErrorMessage);
 }
 
 class AntiderivativeFunctionAccuracyTest

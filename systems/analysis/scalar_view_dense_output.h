@@ -23,13 +23,13 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
   /// Constructs a view of another DenseOutput instance.
   /// @param base_output Base dense output to operate with.
   /// @param dimension The dimension to view.
-  /// @throw std::logic_error if specified @p dimension is not a
-  ///                         valid dimension of @p base_output.
+  /// @throws std::logic_error if specified @p dimension is not a
+  ///                          valid dimension of @p base_output.
   explicit ScalarViewDenseOutput(
       std::unique_ptr<DenseOutput<T>> base_output, int dimension)
       : base_output_(std::move(base_output)),
         dimension_(dimension) {
-    if (dimension < 0 || dimension >= base_output_->get_dimensions()) {
+    if (dimension < 0 || dimension >= base_output_->size()) {
       throw std::logic_error("Dimension out of range for the "
                              "given base dense output.");
     }
@@ -50,12 +50,12 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
     return base_output_->is_empty();
   }
 
-  const T& do_get_start_time() const override {
-    return base_output_->get_start_time();
+  const T& do_start_time() const override {
+    return base_output_->start_time();
   }
 
-  const T& do_get_end_time() const override {
-    return base_output_->get_end_time();
+  const T& do_end_time() const override {
+    return base_output_->end_time();
   }
 
   // The base (vector) dense output being wrapped.

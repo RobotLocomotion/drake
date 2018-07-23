@@ -19,17 +19,17 @@ class ScalarDenseOutput {
 
   /// Evaluates output at the given time @p t.
   /// @param t Time to evaluate output at.
-  /// @return Output scalar value.
+  /// @returns Output scalar value.
   /// @pre Output is not empty i.e. is_empty() is false.
-  /// @throw std::logic_error if any of the preconditions is not met.
-  /// @throw std::runtime_error if the output is not defined for the
-  ///                           given @p t.
+  /// @throws std::logic_error if any of the preconditions is not met.
+  /// @throws std::runtime_error if the output is not defined for the
+  ///                            given @p t.
   T Evaluate(const T& t) const {
     if (is_empty()) {
       throw std::logic_error("Empty scalar dense output"
                              " cannot be evaluated.");
     }
-    if (t < this->do_get_start_time() || t > this->do_get_end_time()) {
+    if (t < this->do_start_time() || t > this->do_end_time()) {
       throw std::runtime_error("Scalar dense output is not"
                                " defined for given time.");
     }
@@ -42,25 +42,25 @@ class ScalarDenseOutput {
   /// Returns output's start time, or in other words, the oldest time
   /// `t` that it can be evaluated at e.g. via Evaluate().
   /// @pre Output is not empty i.e. is_empty() equals false.
-  /// @throw std::logic_error if any of the preconditions is not met.
-  const T& get_start_time() const {
+  /// @throws std::logic_error if any of the preconditions is not met.
+  const T& start_time() const {
     if (is_empty()) {
       throw std::logic_error("Start time is not defined for"
                              " an empty scalar dense output.");
     }
-    return this->do_get_start_time();
+    return this->do_start_time();
   }
 
   /// Returns output's end time, or in other words, the newest time
   /// `t` that it can be evaluated at e.g. via Evaluate().
   /// @pre Output is not empty i.e. is_empty() equals false.
   /// @throw std::logic_error if any of the preconditions is not met.
-  const T& get_end_time() const {
+  const T& end_time() const {
     if (is_empty()) {
       throw std::logic_error("End time is not defined for"
                              " an empty scalar dense output.");
     }
-    return this->do_get_end_time();
+    return this->do_end_time();
   }
 
  protected:
@@ -73,11 +73,11 @@ class ScalarDenseOutput {
   // @see is_empty()
   virtual bool do_is_empty() const = 0;
 
-  // @see get_start_time()
-  virtual const T& do_get_start_time() const = 0;
+  // @see start_time()
+  virtual const T& do_start_time() const = 0;
 
-  // @see get_end_time()
-  virtual const T& do_get_end_time() const = 0;
+  // @see end_time()
+  virtual const T& do_end_time() const = 0;
 };
 
 }  // namespace systems

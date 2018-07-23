@@ -124,13 +124,13 @@ class AntiderivativeFunction {
   ///
   /// @param u The upper integration bound.
   /// @param values The specified values for the integration.
-  /// @return The value of the definite integral.
+  /// @returns The value of the definite integral.
   /// @pre The given upper integration bound @p u must be larger than or equal
   ///      to the lower integration bound v.
   /// @pre If given, the dimension of the parameter vector @p values.k
   ///      must match that of the parameter vector 𝐤 in the default specified
   ///      values given on construction.
-  /// @throw std::logic_error if any of the preconditions is not met.
+  /// @throws std::logic_error if any of the preconditions is not met.
   T Evaluate(const T& u, const SpecifiedValues& values = {}) const {
     typename ScalarInitialValueProblem<T>::SpecifiedValues
         scalar_ivp_values(values.v, {}, values.k);
@@ -138,28 +138,29 @@ class AntiderivativeFunction {
   }
 
   /// Evaluates and yields an approximation of the definite integral
-  /// F(u; 𝐤) = ∫ᵥᵘ f(x; 𝐤) dx for the closed interval that goes from the
-  /// lower integration bound v (see definition in class documentation) to
-  /// the uppermost integration bound @p w using the parameter vector 𝐤 (see
-  /// definition in class documentation) if present in @p values, falling back
-  /// to the ones given on construction if missing.
+  /// F(u; 𝐤) = ∫ᵥᵘ f(x; 𝐤) dx for v ≤ u ≤ w, i.e. the closed interval
+  /// that goes from the lower integration bound v (see definition in
+  /// class documentation) to the uppermost integration bound @p w, using
+  /// the parameter vector 𝐤 (see definition in class documentation) if
+  /// present in @p values, falling back to the ones given on construction
+  /// if missing.
   ///
   /// @param w The uppermost integration bound.
   /// @param values The specified values for the integration.
-  /// @return A dense approximation to F(u; 𝐤), defined for v <= u <= w.
+  /// @returns A dense approximation to F(u; 𝐤), defined for v ≤ u ≤ w.
   /// @pre The given upper integration bound @p u must be larger than or equal
   ///      to the lower integration bound v.
   /// @pre If given, the dimension of the parameter vector @p values.k
   ///      must match that of the parameter vector 𝐤 in the default specified
   ///      values given on construction.
-  /// @throw std::logic_error if any of the preconditions is not met.
+  /// @throws std::logic_error if any of the preconditions is not met.
   std::unique_ptr<ScalarDenseOutput<T>> DenseEvaluate(
-      const T& u, const SpecifiedValues& values = {}) const {
+      const T& w, const SpecifiedValues& values = {}) const {
     // Delegates request to the scalar IVP used for computations, by putting
     // specified values in scalar IVP terms.
     typename ScalarInitialValueProblem<T>::SpecifiedValues
         scalar_ivp_values(values.v, {}, values.k);
-    return this->scalar_ivp_->DenseSolve(u, scalar_ivp_values);
+    return this->scalar_ivp_->DenseSolve(w, scalar_ivp_values);
   }
 
   /// Resets the internal integrator instance.
@@ -170,7 +171,7 @@ class AntiderivativeFunction {
   /// @endcode
   ///
   /// @param args The integrator type-specific arguments.
-  /// @return The new integrator instance.
+  /// @returns The new integrator instance.
   /// @tparam Integrator The integrator type, which must be an
   ///                    IntegratorBase subclass.
   /// @tparam Args The integrator specific argument types.

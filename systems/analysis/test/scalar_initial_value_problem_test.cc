@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
@@ -81,39 +82,39 @@ GTEST_TEST(ScalarInitialValueProblemTest, ConstructionPreconditionsValidation) {
     return -x * t;
   };
 
-  EXPECT_THROW({
+  DRAKE_EXPECT_THROWS_MESSAGE({
       const ScalarInitialValueProblem<double>::
           SpecifiedValues no_values;
       const ScalarInitialValueProblem<double> ivp(
           dummy_scalar_ode_function, no_values);
-    }, std::logic_error);
+    }, std::logic_error, "No default.*");
 
-  EXPECT_THROW({
+  DRAKE_EXPECT_THROWS_MESSAGE({
       ScalarInitialValueProblem<double>::
           SpecifiedValues values_without_t0;
       values_without_t0.k = VectorX<double>();
       values_without_t0.x0 = 0.0;
       const ScalarInitialValueProblem<double> ivp(
           dummy_scalar_ode_function, values_without_t0);
-    }, std::logic_error);
+    }, std::logic_error, "No default initial time.*");
 
-  EXPECT_THROW({
+  DRAKE_EXPECT_THROWS_MESSAGE({
       ScalarInitialValueProblem<double>::
           SpecifiedValues values_without_x0;
       values_without_x0.t0 = 0.0;
       values_without_x0.k = VectorX<double>();
       const ScalarInitialValueProblem<double> ivp(
           dummy_scalar_ode_function, values_without_x0);
-    }, std::logic_error);
+    }, std::logic_error, "No default initial state.*");
 
-  EXPECT_THROW({
+  DRAKE_EXPECT_THROWS_MESSAGE({
       ScalarInitialValueProblem<double>::
           SpecifiedValues values_without_k;
       values_without_k.t0 = 0.0;
       values_without_k.x0 = 0.0;
       const ScalarInitialValueProblem<double> ivp(
           dummy_scalar_ode_function, values_without_k);
-    }, std::logic_error);
+    }, std::logic_error, "No default parameters.*");
 }
 
 // Validates preconditions when solving any given IVP.
@@ -154,20 +155,33 @@ GTEST_TEST(ScalarInitialValueProblemTest, ComputationPreconditionsValidation) {
   // parameter vector of the expected dimension.
   const VectorX<double> kValidParameters = VectorX<double>::Constant(2, 5.0);
 
-  EXPECT_THROW(ivp.Solve(kInvalidTime), std::logic_error);
-  EXPECT_THROW(ivp.DenseSolve(kInvalidTime), std::logic_error);
+  // Instantiates error message patterns for testing.
+  const std::string kInvalidTimeErrorMessage{
+    "Cannot solve IVP for.*time.*"};
+  const std::string kInvalidParametersErrorMessage{
+    ".*parameters.*wrong dimension.*"};
+
+  DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kInvalidTime), std::logic_error,
+                              kInvalidTimeErrorMessage);
+  DRAKE_EXPECT_THROWS_MESSAGE(ivp.DenseSolve(kInvalidTime), std::logic_error,
+                              kInvalidTimeErrorMessage);
   {
     ScalarInitialValueProblem<double>::SpecifiedValues values;
     values.k = kInvalidParameters;
-    EXPECT_THROW(ivp.Solve(kValidTime, values), std::logic_error);
-    EXPECT_THROW(ivp.DenseSolve(kValidTime, values), std::logic_error);
+    DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kValidTime, values), std::logic_error,
+                                kInvalidParametersErrorMessage);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        ivp.DenseSolve(kValidTime, values), std::logic_error,
+        kInvalidParametersErrorMessage);
   }
 
   {
     ScalarInitialValueProblem<double>::SpecifiedValues values;
     values.k = kValidParameters;
-    EXPECT_THROW(ivp.Solve(kInvalidTime, values), std::logic_error);
-    EXPECT_THROW(ivp.DenseSolve(kInvalidTime, values), std::logic_error);
+    DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kInvalidTime, values),
+                                std::logic_error, kInvalidTimeErrorMessage);
+    DRAKE_EXPECT_THROWS_MESSAGE(ivp.DenseSolve(kInvalidTime, values),
+                                std::logic_error, kInvalidTimeErrorMessage);
   }
 }
 

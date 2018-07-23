@@ -25,20 +25,22 @@ namespace systems {
 ///
 /// By default, an explicit 3rd order RungeKutta integration scheme is used.
 ///
-/// This class' implementation performs basic computation caching, optimizing
-/// away repeated integration whenever the IVP is solved for increasing values
-/// of time t while both initial conditions and parameters are kept constant,
-/// e.g. if solved for t₁ > t₀ first, solving for t₂ > t₁ will only require
-/// integrating from t₁ onward.
+/// The implementation of this class performs basic computation caching,
+/// optimizing away repeated integration whenever the IVP is solved for
+/// increasing values of time t while both initial conditions and parameters
+/// are kept constant, e.g. if solved for t₁ > t₀ first, solving for t₂ > t₁
+/// will only require integrating from t₁ onward.
 ///
-/// Additionally, integrator's dense output support can be leveraged to
+/// Additionally, IntegratorBase's dense output support can be leveraged to
 /// efficiently approximate the IVP solution within closed intervals of t.
 /// This is convenient when there's a need for a more dense sampling of the
 /// IVP solution than what would be available through either fixed or
 /// error-controlled step integration (for a given accuracy), or when the IVP
 /// is to be solved repeatedly for arbitrarily many t values within a given
-/// interval. See integrator's documentation for further reference on the
-/// specific dense output technique in use.
+/// interval. See documentation of the internally held IntegratorBase subclass
+/// instance (either the default or a user-defined one, set via
+/// reset_integrator()) for further reference on the specific dense output
+/// technique in use.
 ///
 /// For further insight into its use, consider the following examples:
 ///
@@ -101,7 +103,7 @@ class InitialValueProblem {
     }
 
     bool operator!=(const SpecifiedValues& rhs) const {
-      return (t0 != rhs.t0 || x0 != rhs.x0 || k != rhs.k);
+      return !operator==(rhs);
     }
 
     optional<T> t0;  ///< The initial time t₀ for the IVP.
@@ -121,7 +123,7 @@ class InitialValueProblem {
   /// @pre An initial time @p default_values.t0 is given.
   /// @pre An initial state vector @p default_values.x0 is given.
   /// @pre A parameter vector @p default_values.k is given.
-  /// @throw std::logic_error if preconditions are not met.
+  /// @throws std::logic_error if preconditions are not met.
   InitialValueProblem(const ODEFunction& ode_function,
                       const SpecifiedValues& default_values);
 
@@ -129,9 +131,9 @@ class InitialValueProblem {
   /// vector 𝐱₀ and parameter vector 𝐤 present in @p values, falling back to
   /// the ones given on construction if not given.
   ///
-  /// @param tf The time to solve the IVP for.
-  /// @param values The specified values for the IVP.
-  /// @return The IVP solution 𝐱(@p tf; 𝐤) for 𝐱(t₀; 𝐤) = 𝐱₀.
+  /// @param tf The IVP will be solved for this time.
+  /// @param values IVP initial conditions and parameters.
+  /// @returns The IVP solution 𝐱(@p tf; 𝐤) for 𝐱(t₀; 𝐤) = 𝐱₀.
   /// @pre Given @p tf must be larger than or equal to the specified initial
   ///      time t₀ (either given or default).
   /// @pre If given, the dimension of the initial state vector @p values.x0
@@ -140,7 +142,7 @@ class InitialValueProblem {
   /// @pre If given, the dimension of the parameter vector @p values.k
   ///      must match that of the parameter vector in the default specified
   ///      values given on construction.
-  /// @throw std::logic_error if preconditions are not met.
+  /// @throws std::logic_error if preconditions are not met.
   VectorX<T> Solve(const T& tf, const SpecifiedValues& values = {}) const;
 
   /// Solves and yields an approximation of the IVP solution x(t; 𝐤) for
@@ -148,10 +150,10 @@ class InitialValueProblem {
   /// time @p tf, using initial state 𝐱₀ and parameter vector 𝐤 present in
   /// @p values (falling back to the ones given on construction if not given).
   ///
-  /// @param tf The time to solve the IVP up to.
-  /// @param values The specified values for the IVP.
-  /// @return A dense approximation to 𝐱(t; 𝐤) with 𝐱(t₀; 𝐤) = 𝐱₀,
-  ///         defined for t₀ <= t <= tf.
+  /// @param tf The IVP will be solved up to this time.
+  /// @param values IVP initial conditions and parameters.
+  /// @returns A dense approximation to 𝐱(t; 𝐤) with 𝐱(t₀; 𝐤) = 𝐱₀, defined for
+  ///          t₀ ≤ t ≤ tf.
   /// @pre Given @p tf must be larger than or equal to the specified initial
   ///      time t₀ (either given or default).
   /// @pre If given, the dimension of the initial state vector @p values.x0
@@ -160,7 +162,7 @@ class InitialValueProblem {
   /// @pre If given, the dimension of the parameter vector @p values.k
   ///      must match that of the parameter vector in the default specified
   ///      values given on construction.
-  /// @throw std::logic_error if any of the preconditions is not met.
+  /// @throws std::logic_error if any of the preconditions is not met.
   std::unique_ptr<DenseOutput<T>> DenseSolve(
       const T& tf, const SpecifiedValues& values = {}) const;
 
@@ -173,7 +175,7 @@ class InitialValueProblem {
   /// @endcode
   ///
   /// @param args The integrator type-specific arguments.
-  /// @return The new integrator instance.
+  /// @returns The new integrator instance.
   /// @tparam Integrator The integrator type, which must be an
   ///         IntegratorBase subclass.
   /// @tparam Args The integrator specific argument types.
@@ -204,13 +206,13 @@ class InitialValueProblem {
   // for InitialValueProblem::Solve() and InitialValueProblem::DenseSolve()
   // hold.
   //
-  // @param tf The time to solve the IVP for.
-  // @param values The specified values for the IVP.
-  // @return Sanitized values.
-  // @throw std::logic_error If preconditions specified for
-  //                         InitialValueProblem::Solve() and
-  //                         InitialValueProblem::DenseSolve()
-  //                         do not hold.
+  // @param tf The IVP will be solved for this time.
+  // @param values IVP initial conditions and parameters.
+  // @returns Sanitized values.
+  // @throws std::logic_error If preconditions specified for
+  //                          InitialValueProblem::Solve() and
+  //                          InitialValueProblem::DenseSolve()
+  //                          do not hold.
   SpecifiedValues SanitizeValuesOrThrow(
       const T& tf, const SpecifiedValues& values) const;
 

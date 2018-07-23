@@ -310,6 +310,7 @@ drake_cc_googletest(
         ":initial_value_problem",
         ":runge_kutta2_integrator",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -318,6 +319,7 @@ drake_cc_googletest(
     deps = [
         ":runge_kutta2_integrator",
         ":scalar_initial_value_problem",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -326,6 +328,7 @@ drake_cc_googletest(
     deps = [
         ":antiderivative_function",
         ":runge_kutta2_integrator",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -336,6 +339,7 @@ drake_cc_googletest(
         "//common:autodiff",
         "//common:essential",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//common/trajectories:piecewise_polynomial",
     ],
 )
