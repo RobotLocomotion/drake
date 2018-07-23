@@ -224,7 +224,9 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     return x.nestedExpression().segment(start, count);
   }
 
-  /// TODO(amcastro-tri): Mark as deprecated when caching lands.
+  // TODO(amcastro-tri): Mark as deprecated when caching lands.
+
+  /// @name KinematicsCacheAccessors
   ///@{
   /// Accessors to the kinematics caches stored in MultibodyTreeContext.
   /// These will be deprecated once caching lands.
