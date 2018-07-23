@@ -26,7 +26,7 @@ using std::default_random_engine;
 using std::uniform_real_distribution;
 
 namespace {
-const int kInvalidResult = 100; // Invalid result from SNOPT IK.
+const int kInvalidIkResult = 100; // Invalid result from SNOPT IK.
 
 // TODO(naveenoid) : Replace with VectorXi::LinSpaced.
 Eigen::VectorXi GenerateIndices(int num_elements) {
@@ -81,7 +81,7 @@ VectorX<double> RandomClutterGenerator::GenerateFloatingClutter(
   VectorX<double> q_nominal_candidate = q_nominal;
   VectorX<double> q_ik_result = q_nominal;
 
-  int ik_result_code = kInvalidResult;
+  int ik_result_code = kInvalidIkResult;
   // Keep running the IK until a feasible solution is found.
   while (ik_result_code > 1) {
     // Setup the constraint_array. Next, determine the necessary constraints
@@ -170,7 +170,7 @@ int RandomClutterGenerator::ComputeIK(
   IKResults ik_results = inverseKinSimple(scene_tree_ptr_, q_initial, q_nominal,
                                           constraint_array, ikoptions);
 
-  int ik_result_code;
+  int ik_result_code = kInvalidIkResult;
   for (auto result_code_info : ik_results.info) {
     drake::log()->info("IK Result code : {}", result_code_info);
     ik_result_code = result_code_info;
@@ -189,12 +189,12 @@ int RandomClutterGenerator::ComputeIK(
 }
 
 void RandomClutterGenerator::AddBodyToOrientationConstraint(
-    const RigidBody<double>* body, VectorX<double>* linear_posture_lb,
+    const RigidBody<double>& body, VectorX<double>* linear_posture_lb,
     VectorX<double>* linear_posture_ub, VectorX<double>* q_initial,
     VectorX<double>* q_nominal_candidate, std::vector<int>* z_indices,
     std::default_random_engine* generator) {
-  if (body->has_joint()) {
-    const DrakeJoint* joint = &body->getJoint();
+  if (body.has_joint()) {
+    const DrakeJoint* joint = &body.getJoint();
     if (!joint->is_fixed()) {
       int joint_dofs = joint->get_num_positions();
       // Enforces checks only for Floating quaternion joints.
@@ -204,18 +204,17 @@ void RandomClutterGenerator::AddBodyToOrientationConstraint(
       VectorX<double> joint_initial = joint_ub;
       VectorX<double> joint_nominal = joint_ub;
       if (joint_dofs == 7) {
-        // If the num dofs of the joint is 7 its a floating quaternion
-        // joint.The position part to be bounded by the clutter bounding
-        // box, the orientation part to be a random quaternion.
-        // Position.
-        // Note that this code assumes the dofs are organised as
+        // If the num dofs of the joint is 7 it's a floating quaternion
+        // joint.The position part is then to be bounded by the clutter
+        // bounding box, the orientation part to be a random quaternion.
+        // Note that this code assumes the dofs are organized as
         // x-y-z-quaternion.
         joint_lb.head(3) = clutter_lb_;
         joint_ub.head(3) = clutter_ub_;
         auto temp_out =
             GenerateBoundedRandomSample(generator, clutter_lb_, clutter_ub_);
         joint_initial.head(3) = temp_out;
-        z_indices->push_back(body->get_position_start_index() + 2);
+        z_indices->push_back(body.get_position_start_index() + 2);
         joint_nominal.head(3) = Vector3<double>::Zero(3);
         // Orientation
         Eigen::Quaterniond quat =
@@ -241,13 +240,13 @@ void RandomClutterGenerator::AddBodyToOrientationConstraint(
       // TODO(naveenoid) : Consider moving to a MathematicalProgram
       // formulation of the problem to use that API directly and use
       // symbolic mapping.
-      linear_posture_lb->segment(body->get_position_start_index(), joint_dofs) =
+      linear_posture_lb->segment(body.get_position_start_index(), joint_dofs) =
           joint_lb;
-      linear_posture_ub->segment(body->get_position_start_index(), joint_dofs) =
+      linear_posture_ub->segment(body.get_position_start_index(), joint_dofs) =
           joint_ub;
-      q_initial->segment(body->get_position_start_index(), joint_dofs) =
+      q_initial->segment(body.get_position_start_index(), joint_dofs) =
           joint_initial;
-      q_nominal_candidate->segment(body->get_position_start_index(),
+      q_nominal_candidate->segment(body.get_position_start_index(),
                                    joint_dofs) = joint_nominal;
     }
   }

@@ -178,7 +178,7 @@ TEST_F(ClutterGeneratorTest, TestPlantToRest) {
     EXPECT_EQ(q_ik.size(), num_positions_);
     EXPECT_NO_THROW(q_out = plant_to_rest_->Run(q_ik));
 
-    EXPECT_TRUE(CompareMatrices(q_out_stored, q_out, 1e-6));
+    EXPECT_TRUE(CompareMatrices(q_out_stored, q_out, 1e-3));
   }
 }
 
