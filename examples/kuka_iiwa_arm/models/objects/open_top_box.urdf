@@ -1,0 +1,91 @@
+<?xml version="1.0" ?>
+<robot name="open_top_box">
+  <!--
+  This model is meant to be a container in which other objects can be dumped.
+  Origin:
+    (0, 0, 0) at the center bottom of the bin.
+  -->
+
+  <link name="bin">
+    <!-- This inertia value is bogus since its inconsequential -->
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.122" />
+      <inertia ixx="0.000360" ixy="0" ixz="0" iyy="0.0000615" iyz="0"
+          izz="0.00036" />
+    </inertial>
+
+    <!-- Front -->
+    <visual>
+      <origin rpy="0 0 0" xyz="0.19 0 0.15"/>
+      <geometry>
+        <box size="0.01 0.52 0.3"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.19 0 0.15"/>
+      <geometry>
+        <box size="0.01 0.52 0.3"/>
+      </geometry>
+    </collision>
+
+    <!-- Back -->
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.19 0 0.15"/>
+      <geometry>
+        <box size="0.01 0.52 0.3"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.19 0 0.15"/>
+      <geometry>
+        <box size="0.01 0.52 0.3"/>
+      </geometry>
+    </collision>
+
+    <!-- Left -->
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0.26 0.15"/>
+      <geometry>
+        <box size="0.38 0.01 0.3"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0.26 0.15"/>
+      <geometry>
+        <box size="0.38 0.01 0.3"/>
+      </geometry>
+    </collision>
+
+    <!-- Right -->
+    <visual>
+      <origin rpy="0 0 0" xyz="0 -0.26 0.15"/>
+      <geometry>
+        <box size="0.38 0.01 0.3"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 -0.26 0.15"/>
+      <geometry>
+        <box size="0.38 0.01 0.3"/>
+      </geometry>
+    </collision>
+
+    <!-- bottom -->
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.38 0.52 0.01"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0.0 -0.005"/>
+      <geometry>
+        <box size="0.38 0.52 0.01"/>
+      </geometry>
+    </collision>
+
+  </link>
+</robot>
+
+
