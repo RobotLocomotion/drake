@@ -1034,13 +1034,10 @@ const PositionKinematicsCache<T>& MultibodyTree<T>::EvalPositionKinematics(
   // when MultibodyCachingEvaluatorInterface lands.
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
-  PositionKinematicsCache<T>& pc_mut_ref =
+  PositionKinematicsCache<T>& pc =
       mbt_context.get_mutable_position_kinematics_cache();
-  PositionKinematicsCache<T>* pc = &pc_mut_ref;
-  CalcPositionKinematicsCache(context, pc);
-  const PositionKinematicsCache<T>& pc_ref =
-      mbt_context.get_position_kinematics_cache();
-  return pc_ref;
+  CalcPositionKinematicsCache(context, &pc);
+  return pc;
 }
 
 template<typename T>
@@ -1051,13 +1048,10 @@ const VelocityKinematicsCache<T>& MultibodyTree<T>::EvalVelocityKinematics(
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
-  VelocityKinematicsCache<T>& vc_mut_ref =
+  VelocityKinematicsCache<T>& vc =
       mbt_context.get_mutable_velocity_kinematics_cache();
-  VelocityKinematicsCache<T>* vc = &vc_mut_ref;
-  CalcVelocityKinematicsCache(context, pc, vc);
-  const VelocityKinematicsCache<T>& vc_ref =
-      mbt_context.get_velocity_kinematics_cache();
-  return vc_ref;
+  CalcVelocityKinematicsCache(context, pc, &vc);
+  return vc;
 }
 
 template <typename T>

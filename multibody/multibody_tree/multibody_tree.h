@@ -2000,6 +2000,14 @@ class MultibodyTree {
     return tree_clone;
   }
 
+  // Helper method to Eval() position kinematics cached in the context.
+  const PositionKinematicsCache<T>& EvalPositionKinematics(
+      const systems::Context<T>& context) const;
+
+  // Helper method to Eval() velocity kinematics cached in the context.
+  const VelocityKinematicsCache<T>& EvalVelocityKinematics(
+      const systems::Context<T>& context) const;
+
  private:
   // Make MultibodyTree templated on every other scalar type a friend of
   // MultibodyTree<T> so that CloneToScalar<ToAnyOtherScalar>() can access
@@ -2300,14 +2308,6 @@ class MultibodyTree {
     DRAKE_DEMAND(joint_variant != nullptr);
     return *joint_variant;
   }
-
-  // Helper method to Eval() position kinematics cached in the context.
-  const PositionKinematicsCache<T>& EvalPositionKinematics(
-      const systems::Context<T>& context) const;
-
-  // Helper method to Eval() velocity kinematics cached in the context.
-  const VelocityKinematicsCache<T>& EvalVelocityKinematics(
-      const systems::Context<T>& context) const;
 
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
   // a method that verifies the state of the topology with a signature similar

@@ -1633,32 +1633,13 @@ MultibodyPlant<T>::get_geometry_query_input_port() const {
 template<typename T>
 const PositionKinematicsCache<T>& MultibodyPlant<T>::EvalPositionKinematics(
     const systems::Context<T>& context) const {
-  // TODO(amcastro-tri): Replace Calc() for an actual Eval() when caching lands.
-  const auto& mbt_context =
-      dynamic_cast<const MultibodyTreeContext<T>&>(context);
-  PositionKinematicsCache<T>& pc_mut_ref =
-      mbt_context.get_mutable_position_kinematics_cache();
-  PositionKinematicsCache<T>* pc = &pc_mut_ref;
-  model_->CalcPositionKinematicsCache(context, pc);
-  const PositionKinematicsCache<T>& pc_ref =
-      mbt_context.get_position_kinematics_cache();
-  return pc_ref;
+  return model_->EvalPositionKinematics(context);
 }
 
 template<typename T>
 const VelocityKinematicsCache<T>& MultibodyPlant<T>::EvalVelocityKinematics(
     const systems::Context<T>& context) const {
-  // TODO(amcastro-tri): Replace Calc() for an actual Eval() when caching lands.
-  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  const auto& mbt_context =
-      dynamic_cast<const MultibodyTreeContext<T>&>(context);
-  VelocityKinematicsCache<T>& vc_mut_ref =
-      mbt_context.get_mutable_velocity_kinematics_cache();
-  VelocityKinematicsCache<T>* vc = &vc_mut_ref;
-  model_->CalcVelocityKinematicsCache(context, pc, vc);
-  const VelocityKinematicsCache<T>& vc_ref =
-      mbt_context.get_velocity_kinematics_cache();
-  return vc_ref;
+  return model_->EvalVelocityKinematics(context);
 }
 
 template <typename T>

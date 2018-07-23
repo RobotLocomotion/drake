@@ -225,27 +225,28 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
   }
 
   const PositionKinematicsCache<T>& get_position_kinematics_cache() const {
-    return *pc_.get();
+    return *pc_;
   }
 
   const VelocityKinematicsCache<T>& get_velocity_kinematics_cache() const {
-    return *vc_.get();
+    return *vc_;
   }
 
   PositionKinematicsCache<T>& get_mutable_position_kinematics_cache() const {
-    return *pc_.get();
+    return *pc_;
   }
 
   VelocityKinematicsCache<T>& get_mutable_velocity_kinematics_cache() const {
-    return *vc_.get();
+    return *vc_;
   }
 
  private:
   const MultibodyTreeTopology topology_;
 
-  // Temporary hack until real caching is available
-  mutable std::unique_ptr<PositionKinematicsCache<T>> pc_;
-  mutable std::unique_ptr<VelocityKinematicsCache<T>> vc_;
+  // Temporary solution for fake cache entries to help stabilize the API.
+  // TODO(amcastro-tri): Remove these when caching lands.
+  std::unique_ptr<PositionKinematicsCache<T>> pc_;
+  std::unique_ptr<VelocityKinematicsCache<T>> vc_;
 
   // If `true`, this context stores a discrete state. If `false` the state is
   // stored as continuous state.
