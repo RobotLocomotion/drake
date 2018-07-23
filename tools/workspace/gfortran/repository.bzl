@@ -46,6 +46,7 @@ def _gfortran_impl(repo_ctx):
 
     # The cc_library linking is different on Ubuntu vs macOS.
     if os_result.is_macos:
+        srcs = []
         linkopts = [
             "-L{}".format(repo_ctx.path(libgfortran_path).dirname),
             "-L{}".format(repo_ctx.path(libquadmath_path).dirname),
