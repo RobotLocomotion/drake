@@ -894,26 +894,18 @@ class MultibodyTreeTopology {
     (*path_to_world)[0] = BodyNodeIndex(0);  // Add the world.
   }
 
-  /// This methods creates a list of welded bodies.
-  /// A "welded body" is some connected sub-graph of the tree where the
-  /// connected edges (i.e., mobilizers) are weld mobilizers.
-  /// A welded body may have un-welded children (that is, connected by non-weld
-  /// mobilizers) and those children may be defined as children of arbitrary
-  /// bodies in that welded body sub-graph.
-  /// We represent a welded body as a set of bodies (body indexes), the
-  /// particular order in the set does not matter.
-  /// The list of welded bodies is represented as a vector of these welded
-  /// bodies (each in turn a set of bodies). The order in this vector is not
-  /// relevant and this method does not gurantee any particular ordering.
-  /// However it is guranteed that the first set in this list (element with
-  /// index zero) corresponds to the welded body containing the world body. That
-  /// is, entry zero in the returned vector, contains the set of all bodies
-  /// welded to the world.
+  /// Generates a list of sub-graphs containing bodies that are welded together
+  /// (joined by a weld mobilizer). Each sub-graph of welded bodies is
+  /// represented as a set of body indices. By definition, these sub-graphs will
+  /// be disconnected by any non-weld mobilizers that may be inboard or outboard
+  /// of any given body. The first sub-graph will have all of the bodies
+  /// connected to the world; all subsequent sub-graphs will be in no particular
+  /// order.
   /// A few more notes:
-  /// - All bodies in the topology are included in one set and one set only.
+  /// - Each body in the topology is included in one set and one set only.
   /// - The maximum size of the list equals the number of bodies in the topology
   ///   (num_bodies()). This corresponds to a topology with no weld mobilizers.
-  /// - The world body is also included to a welded bodies set, and this set is
+  /// - The world body is also included in a welded bodies set, and this set is
   ///   element zero in the returned vector.
   /// - The minimum size of the list is one. This corresponds to a topology with
   ///   all bodies welded to the world.
@@ -921,14 +913,15 @@ class MultibodyTreeTopology {
     std::vector<std::set<BodyIndex>> welded_bodies;
     // Reserve the maximum possible of welded bodies (that is, when each body
     // forms its own welded body) in advance in order to avoid reallocation in
-    // welded_bodies which would case the invalidation of references as we
+    // welded_bodies which would cause the invalidation of references as we
     // recursively fill it in.
     welded_bodies.reserve(num_bodies());
     welded_bodies.emplace_back(std::set<BodyIndex>{world_index()});
     // We build the list of welded bodies recursively, starting with the world
     // body added to the very first welded body in the list.
-    std::set<BodyIndex>& world_body = welded_bodies.back();
-    PartitionWeldedBodiesRecurse(world_index(), &world_body, &welded_bodies);
+    std::set<BodyIndex>& bodies_welded_to_world = welded_bodies.back();
+    CreateListOfWeldedBodiesRecurse(
+        world_index(), &bodies_welded_to_world, &welded_bodies);
     return welded_bodies;
   }
 
@@ -953,14 +946,14 @@ class MultibodyTreeTopology {
     return false;
   }
 
-  // Helper, recursive, method for CreateListOfWeldedBodies().
+  // Recursive helper method for CreateListOfWeldedBodies().
   // This method scans the children of body with parent_index. If a child is
   // welded to body with parent_index, it gets added to the parent's body welded
   // body, parent_welded_body. Otherwise a new welded body is created for the
   // child body and gets added to the list of all welded bodies, welded_bodies.
-  void PartitionWeldedBodiesRecurse(
-      BodyIndex parent_index, std::set<BodyIndex>* parent_welded_body,
-      std::vector<std::set<BodyIndex>>* welded_bodies) const {
+  void CreateListOfWeldedBodiesRecurse(
+      BodyIndex parent_index, std::set<BodyIndex> *parent_welded_body,
+      std::vector<std::set<BodyIndex>> *welded_bodies) const {
     const BodyTopology& parent = get_body(parent_index);
     for (BodyIndex child_index : parent.child_bodies) {
       const BodyTopology& child = get_body(child_index);
@@ -971,15 +964,17 @@ class MultibodyTreeTopology {
         // the parent's body welded body, parent_welded_body. We continue the
         // recursion down the tree starting at child.
         parent_welded_body->insert(child_index);
-        PartitionWeldedBodiesRecurse(
+        CreateListOfWeldedBodiesRecurse(
             child_index, parent_welded_body, welded_bodies);
       } else {
-        // If the child body is not weled to the parent body, then we create a
+        // If the child body is not welded to the parent body, then we create a
         // new welded body to which child is added. We continue the recursion
         // down the tree starting at child.
         welded_bodies->emplace_back(std::set<BodyIndex>{child_index});
         std::set<BodyIndex>& child_group = welded_bodies->back();
-        PartitionWeldedBodiesRecurse(child_index, &child_group, welded_bodies);
+        CreateListOfWeldedBodiesRecurse(child_index,
+                                        &child_group,
+                                        welded_bodies);
       }
     }
   }

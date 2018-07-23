@@ -683,14 +683,12 @@ GTEST_TEST(WeldedBodies, CreateListOfWeldedBodies) {
   // Ask the topology to build the list of welded bodies.
   std::vector<std::set<BodyIndex>> welded_bodies =
       topology.CreateListOfWeldedBodies();
-  EXPECT_EQ(welded_bodies.size(), 7);
+  ASSERT_EQ(welded_bodies.size(), 7);
 
   // Welded body "0" must correspond to the set of bodies welded to the world.
   const std::set<BodyIndex>& world_welded_body = welded_bodies[0];
   // Therefore world_welded_body must contain the index of the world body.
-  EXPECT_NE(
-      std::find(world_welded_body.begin(), world_welded_body.end(),
-                world_index()), world_welded_body.end());
+  EXPECT_NE(world_welded_body.find(world_index()), world_welded_body.end());
 
   // Build the expected result.
   std::set<std::set<BodyIndex>> expected_welded_bodies;
