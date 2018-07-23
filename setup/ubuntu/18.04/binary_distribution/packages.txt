@@ -5,6 +5,7 @@ libblas3
 libboost-all-dev
 libexpat1
 libgflags-dev
+libgfortran4
 libgl1-mesa-glx
 libglib2.0-0
 libhdf5-100
