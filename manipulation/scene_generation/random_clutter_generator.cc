@@ -26,6 +26,8 @@ using std::default_random_engine;
 using std::uniform_real_distribution;
 
 namespace {
+const int kInvalidResult = 100; // Invalid result from SNOPT IK.
+
 // TODO(naveenoid) : Replace with VectorXi::LinSpaced.
 Eigen::VectorXi GenerateIndices(int num_elements) {
   Eigen::VectorXi cumsum = Eigen::VectorXi::Constant(num_elements, 0);
@@ -64,7 +66,7 @@ RandomClutterGenerator::RandomClutterGenerator(
   // of instances in the tree.
   DRAKE_DEMAND(clutter_model_instances.size() >= 1);
   for (auto& it : clutter_model_instances) {
-    // Check that the tree contains the model instance in question. i.e.
+    // Check that the tree contains the model instance in question. I.e.
     // Atleast one body exists for each model instance listed in
     // clutter_model_instance.
     DRAKE_DEMAND(scene_tree_ptr_->FindModelInstanceBodies(it).size() > 0);
@@ -79,7 +81,7 @@ VectorX<double> RandomClutterGenerator::GenerateFloatingClutter(
   VectorX<double> q_nominal_candidate = q_nominal;
   VectorX<double> q_ik_result = q_nominal;
 
-  int ik_result_code = 100;
+  int ik_result_code = kInvalidResult;
   // Keep running the IK until a feasible solution is found.
   while (ik_result_code > 1) {
     // Setup the constraint_array. Next, determine the necessary constraints
@@ -124,8 +126,8 @@ VectorX<double> RandomClutterGenerator::GenerateFloatingClutter(
       for (size_t i = 0; i < model_instance_bodies.size(); ++i) {
         auto body = model_instance_bodies[i];
         AddBodyToOrientationConstraint(
-            body, &linear_posture_lb, &linear_posture_ub, &q_initial,
-            &q_nominal_candidate, &z_indices, generator);
+          body, &linear_posture_lb, &linear_posture_ub, &q_initial,
+          &q_nominal_candidate, &z_indices, generator);
       }
     }
 
