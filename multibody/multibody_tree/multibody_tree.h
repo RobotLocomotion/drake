@@ -2000,13 +2000,26 @@ class MultibodyTree {
     return tree_clone;
   }
 
-  // Helper method to Eval() position kinematics cached in the context.
+  /// TODO(amcastro-tri): Mark as deprecated when caching lands.
+  /// @name KinematicsHelpers
+  /// Helpers to evaluate kinematics using the kinematics caches stored in
+  /// MultibodyTreeContext<T>. These methods are temporary and will be
+  /// deprecated once systems:: framework caching lands.
+  ///@{
+  /// Helper method to Eval() position kinematics cached in the context.
+  /// @param context A MultibodyTreeContext<T> on which to update position
+  /// kinematics.
+  /// @return Reference to the PositionKinematicsCache<T> of context.
   const PositionKinematicsCache<T>& EvalPositionKinematics(
       const systems::Context<T>& context) const;
 
-  // Helper method to Eval() velocity kinematics cached in the context.
+  /// Helper method to Eval() velocity kinematics cached in the context.
+  /// @param context A MultibodyTreeContext<T> on which to update velocity
+  /// kinematics.
+  /// @return Reference to the VelocityKinematicsCache<T> of context.
   const VelocityKinematicsCache<T>& EvalVelocityKinematics(
       const systems::Context<T>& context) const;
+  ///@}
 
  private:
   // Make MultibodyTree templated on every other scalar type a friend of

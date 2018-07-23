@@ -224,6 +224,10 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     return x.nestedExpression().segment(start, count);
   }
 
+  /// TODO(amcastro-tri): Mark as deprecated when caching lands.
+  ///@{
+  /// Accessors to the kinematics caches stored in MultibodyTreeContext.
+  /// These will be deprecated once caching lands.
   const PositionKinematicsCache<T>& get_position_kinematics_cache() const {
     return *pc_;
   }
@@ -239,6 +243,7 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
   VelocityKinematicsCache<T>& get_mutable_velocity_kinematics_cache() const {
     return *vc_;
   }
+  ///@}
 
  private:
   const MultibodyTreeTopology topology_;
