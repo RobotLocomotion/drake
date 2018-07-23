@@ -26,7 +26,7 @@ using std::default_random_engine;
 using std::uniform_real_distribution;
 
 namespace {
-const int kInvalidIkResult = 100; // Invalid result from SNOPT IK.
+const int kInvalidIkResult = 100;  // Invalid result from SNOPT IK.
 
 // TODO(naveenoid) : Replace with VectorXi::LinSpaced.
 Eigen::VectorXi GenerateIndices(int num_elements) {
@@ -126,7 +126,7 @@ VectorX<double> RandomClutterGenerator::GenerateFloatingClutter(
       for (size_t i = 0; i < model_instance_bodies.size(); ++i) {
         auto body = model_instance_bodies[i];
         AddBodyToOrientationConstraint(
-          body, &linear_posture_lb, &linear_posture_ub, &q_initial,
+          *body, &linear_posture_lb, &linear_posture_ub, &q_initial,
           &q_nominal_candidate, &z_indices, generator);
       }
     }
@@ -189,10 +189,10 @@ int RandomClutterGenerator::ComputeIK(
 }
 
 void RandomClutterGenerator::AddBodyToOrientationConstraint(
-    const RigidBody<double>& body, VectorX<double>* linear_posture_lb,
-    VectorX<double>* linear_posture_ub, VectorX<double>* q_initial,
-    VectorX<double>* q_nominal_candidate, std::vector<int>* z_indices,
-    std::default_random_engine* generator) {
+  const RigidBody<double>& body, VectorX<double>* linear_posture_lb,
+  VectorX<double>* linear_posture_ub, VectorX<double>* q_initial,
+  VectorX<double>* q_nominal_candidate, std::vector<int>* z_indices,
+  std::default_random_engine* generator) {
   if (body.has_joint()) {
     const DrakeJoint* joint = &body.getJoint();
     if (!joint->is_fixed()) {
