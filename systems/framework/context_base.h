@@ -213,9 +213,12 @@ class ContextBase : public internal::ContextMessageInterface {
     // First search up to find the root Context (typically not far).
     // TODO(sherm1) Consider precalculating this for faster access.
     ContextBase* context = this;
-    while (context->parent_)
+    while (context->parent_) {
+      DRAKE_ASSERT(context->current_change_event_ == -1);
       context = context->parent_;
-
+    }
+    // Only a root context has a non-negative change event value.
+    DRAKE_ASSERT(context->current_change_event_ >= 0);
     return ++context->current_change_event_;
   }
 
@@ -411,13 +414,17 @@ class ContextBase : public internal::ContextMessageInterface {
   }
 
   /** Declares that `parent` is the context of the enclosing Diagram.
-  Aborts if the parent has already been set. */
+  Aborts if the parent has already been set or is null. */
   // Use static method so DiagramContext can invoke this on behalf of a child.
   // Output argument is listed first because it is serving as the 'this'
   // pointer here.
   static void set_parent(ContextBase* child, ContextBase* parent) {
-    DRAKE_DEMAND(child != nullptr && child->parent_ == nullptr);
+    DRAKE_DEMAND(child != nullptr);
+    DRAKE_DEMAND(parent != nullptr && child->parent_ == nullptr);
     child->parent_ = parent;
+    // This field is only used by the root context so set to an invalid
+    // value here.
+    child->current_change_event_ = -1;
   }
 
   /** Derived classes must implement this so that it performs the complete
@@ -519,8 +526,11 @@ class ContextBase : public internal::ContextMessageInterface {
   // This is the dependency graph for values within this subcontext.
   DependencyGraph graph_;
 
-  // This is used only when this subcontext is serving as the root
-  // of a context tree. Note that it does *not* get reset when copied.
+  // This is used only when this subcontext is serving as the root of a context
+  // tree, in which case it will be initialized to zero as shown. In any
+  // non-root context, it will be reset to -1 when the parent pointer is
+  // assigned and must never change from that value.
+  // Note that it does *not* get reset when copied.
   int64_t current_change_event_{0};
 
   // The Context of the enclosing Diagram. Null/invalid when this is the root
@@ -572,25 +582,28 @@ class SystemBaseContextBaseAttorney {
   }
 
   // Provide SystemBase mutable access to the ticket lists.
-  static std::vector<DependencyTicket>& discrete_state_tickets(
-      ContextBase* context) {
+  static void AddDiscreteStateTicket(ContextBase* context,
+                                     DependencyTicket ticket) {
     DRAKE_DEMAND(context != nullptr);
-    return context->discrete_state_tickets_;
+    context->AddDiscreteStateTicket(ticket);
   }
-  static std::vector<DependencyTicket>& abstract_state_tickets(
-      ContextBase* context) {
+
+  static void AddAbstractStateTicket(ContextBase* context,
+                                     DependencyTicket ticket) {
     DRAKE_DEMAND(context != nullptr);
-    return context->abstract_state_tickets_;
+    context->AddAbstractStateTicket(ticket);
   }
-  static std::vector<DependencyTicket>& numeric_parameter_tickets(
-      ContextBase* context) {
+
+  static void AddNumericParameterTicket(ContextBase* context,
+                                        DependencyTicket ticket) {
     DRAKE_DEMAND(context != nullptr);
-    return context->numeric_parameter_tickets_;
+    context->AddNumericParameterTicket(ticket);
   }
-  static std::vector<DependencyTicket>& abstract_parameter_tickets(
-      ContextBase* context) {
+
+  static void AddAbstractParameterTicket(ContextBase* context,
+                                         DependencyTicket ticket) {
     DRAKE_DEMAND(context != nullptr);
-    return context->abstract_parameter_tickets_;
+    context->AddAbstractParameterTicket(ticket);
   }
 
   static bool is_context_base_initialized(const ContextBase& context) {
