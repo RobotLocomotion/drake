@@ -7,6 +7,7 @@ diffstat
 doxygen
 file
 gdb
+gfortran
 git
 graphviz
 kcov-35
