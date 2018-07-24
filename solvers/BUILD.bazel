@@ -657,7 +657,7 @@ drake_cc_library(
         "//tools:with_snopt": [
             ":mathematical_program_api",
             "//math:autodiff",
-            "@snopt//:snopt_c",
+            "@snopt//:snopt_cwrap",
         ],
         "//conditions:default": [
             ":mathematical_program_api",
@@ -1345,6 +1345,23 @@ drake_cc_googletest(
         ":mixed_integer_rotation_constraint",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
+    ],
+)
+
+# TODO(jwnimmer-tri) We should remove this demo once snopt_solver.cc is using
+# snopt_cwrap directly.  In the meantime, this program ensures that snopt_cwrap
+# continues to compile and run correctly.
+drake_cc_binary(
+    name = "snopt_cwrap_example_toya",
+    srcs = ["test/snopt_cwrap_example_toya.c"],
+    add_test_rule = 1,
+    copts = ["-w"],
+    tags = [
+        "nolint",
+        "snopt",
+    ],
+    deps = [
+        "@snopt//:snopt_cwrap",
     ],
 )
 
