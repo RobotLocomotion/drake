@@ -87,9 +87,10 @@ systems::sensors::RgbdCamera* AddCamera(
 
 void BuildFilterScene(systems::DiagramBuilder<double>* builder,
                       RigidBodyTreeRemoval* filter,
+                      systems::RigidBodyPlant<double>* plant,
                       std::unique_ptr<RigidBodyTree<double>> tree_ptr) {
   tree_ptr->compile();
-  auto plant =
+  plant =
       builder->AddSystem<systems::RigidBodyPlant<double>>(std::move(tree_ptr));
 
   auto camera = AddCamera(builder, plant);
@@ -124,6 +125,7 @@ void BuildFilterScene(systems::DiagramBuilder<double>* builder,
   builder->Connect(transformer->point_cloud_output_port(),
                    filter->point_cloud_input_port());
 
+  builder->ExportInput(transformer->rigid_transform_input_port());
   builder->ExportOutput(converter->point_cloud_output_port());
   builder->ExportOutput(filter->point_cloud_output_port());
   builder->ExportOutput(camera->color_image_output_port());
@@ -140,12 +142,32 @@ GTEST_TEST(RigidBodyTreeRemovalTests, FilterFloatingBoxTest) {
 
   systems::DiagramBuilder<double> builder;
   std::unique_ptr<RigidBodyTreeRemoval> filter;
-  BuildFilterScene(&builder, filter.get(), std::move(tree_ptr));
+  std::unique_ptr<systems::RigidBodyPlant<double>> plant;
+  BuildFilterScene(&builder, filter.get(), plant.get(), std::move(tree_ptr));
+
+  log()->info("Scene built.");
+
+  const RigidBodyTree<double>& tree_ref = plant->get_rigid_body_tree();
+  
+//  KinematicsCache<double> cache = tree_ref.CreateKinematicsCache();
+//  cache.initialize(tree_ref.getZeroConfiguration());
+//  tree_ref.doKinematics(cache);
+  log()->info("Got ref toh tree.");
+  auto q = tree_ref.getZeroConfiguration();
+  KinematicsCache<double> cache = tree_ref.doKinematics(q);
+  log()->info("Did kinematic with tree.");
+  const Isometry3<double> iso = tree_ref.relativeTransform(cache, 0, 1);
+  const math::RigidTransform<float> transform(iso.cast<float>());
+  
+  log()->info("{}", iso.translation());
 
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 
   std::unique_ptr<systems::Context<double>> context =
       diagram->CreateDefaultContext();
+  
+  context->FixInputPort(0, systems::AbstractValue::Make<math::RigidTransform<float>>(transform));
+  log()->info("{}", iso.translation());
 
   std::unique_ptr<systems::SystemOutput<double>> output =
       diagram->AllocateOutput();
