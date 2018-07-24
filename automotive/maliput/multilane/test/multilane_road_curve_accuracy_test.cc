@@ -93,7 +93,7 @@ TEST_P(RoadCurveAccuracyTest, PathLengthAccuracy) {
           k_order_s_approximation : road_curve->CalcSFromP(p, r);
       EXPECT_LE(relative_error, kTolerance) << fmt::format(
           "Path length estimation with a tolerance of {} "
-          "m failed at p = {}, r = {}m, h = {}m with {}"
+          "m failed at p = {}, r = {}m, h = {}m with "
           "{} for elevation and {} for superelevation",
           road_curve->linear_tolerance(), p, r, kH, road_curve->elevation(),
           road_curve->superelevation());
