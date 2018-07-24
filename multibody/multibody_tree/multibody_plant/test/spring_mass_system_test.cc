@@ -26,16 +26,16 @@ class SpringMassSystemTest : public ::testing::Test {
  public:
   // Helper to create a MultibodyPlant model for a spring-mass system with
   // damping. The parameters of the model are:
-  // - The mass of the body, in kilograms.
-  // - The period of the undamped system, in seconds.
-  // - The damping ratio, dimensionless.
+  // - The mass of the body, in kilograms. Strictly positive.
+  // - The period of the undamped system, in seconds. Strictly positive.
+  // - The damping ratio, dimensionless. Positive, it can be zero.
   // This simple system follows a harmonic oscillator equation of the form:
   //   ẍ + 2ζω₀ẋ + ω₀²x = 0
   // where the undamped angular frequency of oscillation ω₀ and the damping
   // ratio are determined in terms of the body mass m, spring stiffness k and
   // damping coefficient c as:
-  //   - ω₀ = sqrt(k/m)
-  //   - ζ = c/sqrt(m⋅k)/2
+  //   ω₀ = sqrt(k/m), rad/s.
+  //   ζ = c/sqrt(m⋅k)/2
   void MakeSpringMassSystem(double mass, double period, double damping_ratio) {
     const double undamped_angular_frequency = 2.0 * M_PI / period;
     const double stiffness =
@@ -62,9 +62,12 @@ class SpringMassSystemTest : public ::testing::Test {
   // time `t = time` given the parameters of the system (period and
   // damping_ratio) and the intial position x0 and initial velocity v0 at
   // `t = 0`.
+  // This method cannnot compute the solution for damping_ratio = 1, i.e. the
+  // critically damped system.
   double CalcAnalyticSolution(
       double period, double damping_ratio,
       double x0, double v0, double time) {
+    DRAKE_DEMAND(damping_ratio != 1.0);
     using std::abs;
     using std::complex;
     using std::exp;
@@ -72,8 +75,8 @@ class SpringMassSystemTest : public ::testing::Test {
     constexpr complex<double> imaginary_unit(0.0, 1.0);
     using Vector2c = Vector2<complex<double>>;
     const double w0 = 2.0 * M_PI / period;
-    // In general the frequency is complex given the damping ratio might be
-    // greater than one (overdamped oscillator).
+    // In general the damped frequency ω = ω₀⋅sqrt(1 - ζ²) is complex given the
+    // damping ratio might be greater than one (overdamped oscillator).
     const complex<double> w =
         w0 * sqrt(complex<double>{1.0 - damping_ratio * damping_ratio});
     const double sigma = damping_ratio * w0;
@@ -114,6 +117,37 @@ class SpringMassSystemTest : public ::testing::Test {
   // Parameters of the case.
   const double free_length_ = 1.0;  // [m]
 };
+
+// Verify the solution for an undamped system, ζ = 1.
+TEST_F(SpringMassSystemTest, UnDampedCase) {
+  // Plant's parameters.
+  const double mass = 1.0;             // Mass of the body, [kg].
+  const double period = 1.0;           // Period of oscillation, [s].
+  const double damping_ratio = 0.0;    // Damping ratio, dimensionless.
+  const double amplitude = 0.5;        // Initial amplitude, [m].
+
+  // Length of the simulation, in seconds.
+  const double simulation_time = 0.2;
+
+  // Integration accuracy.
+  const double integration_accuracy = 1.0e-6;
+
+  MakeSpringMassSystem(mass, period, damping_ratio);
+
+  Simulator<double> simulator(plant_);
+  Context<double> &context = simulator.get_mutable_context();
+  slider_->set_translation(&context, free_length_ + amplitude);
+  slider_->set_translation_rate(&context, 0.0);
+  simulator.Initialize();
+  simulator.get_mutable_integrator()->set_target_accuracy(integration_accuracy);
+  simulator.StepTo(simulation_time);
+
+  const double x_analytic = CalcAnalyticSolution(
+      period, damping_ratio, amplitude, 0.0, simulation_time);
+
+  EXPECT_NEAR(
+      slider_->get_translation(context), x_analytic, integration_accuracy);
+}
 
 // Verify the solution for an uderdamped system, ζ < 1.
 TEST_F(SpringMassSystemTest, UnderDampedCase) {
