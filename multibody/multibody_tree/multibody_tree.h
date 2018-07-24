@@ -2201,6 +2201,20 @@ class MultibodyTree {
     return tree_clone;
   }
 
+  /// Evaluates position kinematics cached in context.
+  /// @param context A MultibodyTreeContext on which to update position
+  /// kinematics.
+  /// @return Reference to the PositionKinematicsCache of context.
+  const PositionKinematicsCache<T>& EvalPositionKinematics(
+      const systems::Context<T>& context) const;
+
+  /// Evaluates velocity kinematics cached in context.
+  /// @param context A MultibodyTreeContext on which to update velocity
+  /// kinematics.
+  /// @return Reference to the VelocityKinematicsCache of context.
+  const VelocityKinematicsCache<T>& EvalVelocityKinematics(
+      const systems::Context<T>& context) const;
+
  private:
   // Make MultibodyTree templated on every other scalar type a friend of
   // MultibodyTree<T> so that CloneToScalar<ToAnyOtherScalar>() can access
@@ -2511,18 +2525,6 @@ class MultibodyTree {
     return *joint_variant;
   }
 
-  // Helper method to Eval() position kinematics cached in the context.
-  const PositionKinematicsCache<T>& EvalPositionKinematics(
-      const systems::Context<T>& context) const;
-
-  // Helper method to Eval() velocity kinematics cached in the context.
-  const VelocityKinematicsCache<T>& EvalVelocityKinematics(
-      const systems::Context<T>& context) const;
-
-  // Helper method to allocate fake cache entries.
-  // TODO(amcastro-tri): Remove when MultibodyCachingEvaluatorInterface lands.
-  void AllocateFakeCacheEntries();
-
   // Helper function to find the element index for an element in the tree from
   // a multimap of name to index.  It finds the element from any model
   // instance and ensures only one element of that name exists.
@@ -2594,11 +2596,6 @@ class MultibodyTree {
   std::vector<std::vector<BodyNodeIndex>> body_node_levels_;
 
   MultibodyTreeTopology topology_;
-
-  // Temporary solution for fake cache entries to help statbilize the API.
-  // TODO(amcastro-tri): Remove when MultibodyCachingEvaluatorInterface lands.
-  std::unique_ptr<PositionKinematicsCache<T>> pc_;
-  std::unique_ptr<VelocityKinematicsCache<T>> vc_;
 };
 
 /// @cond

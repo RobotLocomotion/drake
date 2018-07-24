@@ -1334,9 +1334,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
       systems::VectorBase<T>* qdot) const override;
 
-  // Helper method to declare cache entries to be allocated in the context.
-  void DeclareCacheEntries();
-
   // Helper method to Eval() position kinematics cached in the context.
   const PositionKinematicsCache<T>& EvalPositionKinematics(
       const systems::Context<T>& context) const;
@@ -1707,11 +1704,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // We make it mutable so we can change its values even from withing const
   // methods.
   mutable ContactResults<T> contact_results_;
-
-  // Temporary solution for fake cache entries to help stabilize the API.
-  // TODO(amcastro-tri): Remove these when caching lands.
-  std::unique_ptr<PositionKinematicsCache<T>> pc_;
-  std::unique_ptr<VelocityKinematicsCache<T>> vc_;
 };
 
 /// @cond
