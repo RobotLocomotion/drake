@@ -2201,17 +2201,17 @@ class MultibodyTree {
     return tree_clone;
   }
 
-  /// Helper method to Eval() position kinematics cached in the context.
-  /// @param context A MultibodyTreeContext<T> on which to update position
+  /// Evaluates position kinematics cached in context.
+  /// @param context A MultibodyTreeContext on which to update position
   /// kinematics.
-  /// @return Reference to the PositionKinematicsCache<T> of context.
+  /// @return Reference to the PositionKinematicsCache of context.
   const PositionKinematicsCache<T>& EvalPositionKinematics(
       const systems::Context<T>& context) const;
 
-  /// Helper method to Eval() velocity kinematics cached in the context.
-  /// @param context A MultibodyTreeContext<T> on which to update velocity
+  /// Evaluates velocity kinematics cached in context.
+  /// @param context A MultibodyTreeContext on which to update velocity
   /// kinematics.
-  /// @return Reference to the VelocityKinematicsCache<T> of context.
+  /// @return Reference to the VelocityKinematicsCache of context.
   const VelocityKinematicsCache<T>& EvalVelocityKinematics(
       const systems::Context<T>& context) const;
 
