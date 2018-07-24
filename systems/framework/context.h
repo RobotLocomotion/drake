@@ -48,8 +48,8 @@ class Context : public ContextBase {
   Context& operator=(Context&&) = delete;
   //@}
 
-  /// @name           Accessors for Context source values
-  /// Methods in this group provide `const` access to source values stored in
+  /// @name           Accessors for locally-stored values
+  /// Methods in this group provide `const` access to values stored locally in
   /// this %Context. The available values are:
   /// - time
   /// - state
@@ -172,9 +172,6 @@ class Context : public ContextBase {
   /// @see set_accuracy() for details.
   const optional<double>& get_accuracy() const { return accuracy_; }
 
-  // =========================================================================
-  // Accessors for Parameters.
-
   /// Returns a const reference to this %Context's parameters.
   const Parameters<T>& get_parameters() const { return *parameters_; }
 
@@ -189,7 +186,6 @@ class Context : public ContextBase {
     return parameters_->get_numeric_parameter(index);
   }
 
-
   /// Returns the number of abstract-valued parameters.
   int num_abstract_parameters() const {
     return get_parameters().num_abstract_parameters();
@@ -202,8 +198,8 @@ class Context : public ContextBase {
   }
   //@}
 
-  /// @name             Methods for changing source values
-  /// The methods in this group allow changes to values stored in this
+  /// @name           Methods for changing locally-stored values
+  /// The methods in this group allow changes to values stored locally in this
   /// %Context. Such changes may invalidate computations that have been cached
   /// here, and downstream computations that depend on those computations.
   /// Invoking one of these methods automatically performs those invalidations,
@@ -379,7 +375,6 @@ class Context : public ContextBase {
   /// Sets this context's time, accuracy, state, and parameters from the real
   /// values in @p source, regardless of this context's scalar type.
   /// Invalidates all dependent computations in this context.
-  /// Requires a constructor T(double).
   /// @bug Currently does not copy fixed input port values from `source`.
   /// See System::FixInputPortsFrom() if you want to copy those.
   // TODO(sherm1) Should treat fixed input port values same as parameters.
