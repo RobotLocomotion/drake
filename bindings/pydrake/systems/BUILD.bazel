@@ -198,10 +198,35 @@ drake_py_library(
     deps = [":module_py"],
 )
 
+drake_pybind_library(
+    name = "lcm_py",
+    cc_deps = [
+        "//bindings/pydrake/systems:systems_pybind",
+    ],
+    cc_so_name = "_lcm_py",
+    cc_srcs = ["lcm_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":framework_py",
+        ":module_py",
+        "//bindings/pydrake:lcm_py",
+    ],
+    py_srcs = ["lcm.py"],
+)
+
+drake_py_unittest(
+    name = "lcm_test",
+    deps = [
+        ":lcm_py",
+        "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_py",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":analysis_py",
     ":controllers_py",
     ":framework_py",
+    ":lcm_py",
     ":primitives_py",
     ":rendering_py",
     ":sensors_py",
