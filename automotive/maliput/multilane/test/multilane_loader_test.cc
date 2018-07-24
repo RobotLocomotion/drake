@@ -215,7 +215,7 @@ GTEST_TEST(MultilaneLoaderTest, MinimalCorrectYaml) {
   scale_length: {}
   linear_tolerance: {}
   angular_tolerance: {}
-  computation_policy: prefer-accuracy
+  computation_policy: {}
   points: {{}}
   connections: {{}}
   groups: {{}}

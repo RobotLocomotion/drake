@@ -122,7 +122,6 @@ drake_cc_googletest(
         ":builder",
         "//automotive/maliput/multilane/test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
-        "@fmt",
     ],
 )
 
@@ -153,7 +152,6 @@ drake_cc_googletest(
         ":loader",
         "//automotive/maliput/api/test_utilities",
         "//automotive/maliput/multilane/test_utilities",
-        "@fmt",
     ],
 )
 
@@ -166,7 +164,6 @@ drake_cc_googletest(
         "//automotive/maliput/api/test_utilities",
         ("//automotive/maliput/multilane/test_utilities:" +
          "multilane_brute_force_integral"),
-        "@fmt",
     ],
 )
 

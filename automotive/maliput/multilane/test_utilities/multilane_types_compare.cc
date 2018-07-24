@@ -190,10 +190,11 @@ namespace test {
     if (delta > tolerance) {
       fails = true;
       error_message += fmt::format(
-          "Cubic polynomials are different at {} coefficient. cubic1.{}(): {} "
-          "vs. cubic2.{}(): {}, diff = {}, tolerance = {}\n",
-          coefficient_strs[i], coefficient_strs[i], coefficients1[i],
-          coefficient_strs[i], coefficients2[i], delta, tolerance);
+          "Cubic polynomials are different at {0} coefficient. "
+          "cubic1.{0}(): {1} vs. cubic2.{0}(): {2}, diff = {3}, "
+          "tolerance = {4}\n",
+          coefficient_strs[i], coefficients1[i], coefficients2[i], delta,
+          tolerance);
     }
   }
   if (fails) {
