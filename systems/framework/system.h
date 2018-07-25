@@ -320,7 +320,6 @@ class System : public SystemBase {
     }
     return false;
   }
-
   //@}
 
   //----------------------------------------------------------------------------
@@ -574,13 +573,11 @@ class System : public SystemBase {
 
     return basic_value->get_value();
   }
-
   //@}
 
   //----------------------------------------------------------------------------
-  /// @name               Constraint-related functions.
-  ///
-  // @{
+  /// @name               Constraint-related functions
+  //@{
 
   /// Gets the number of constraint equations for this system using the given
   /// context (useful in case the number of constraints is dependent upon the
@@ -656,7 +653,6 @@ class System : public SystemBase {
       throw std::logic_error("Error vector is mis-sized.");
     return DoCalcConstraintErrorNorm(context, error);
   }
-
   //@}
 
   //----------------------------------------------------------------------------
@@ -1234,7 +1230,6 @@ class System : public SystemBase {
   /// Returns an opaque integer that uniquely identifies this system in the
   /// Graphviz output.
   int64_t GetGraphvizId() const { return reinterpret_cast<int64_t>(this); }
-
   //@}
 
   //----------------------------------------------------------------------------
@@ -1298,7 +1293,7 @@ class System : public SystemBase {
   //@}
 
   //----------------------------------------------------------------------------
-  /// @name                Symbolics
+  /// @name                          Symbolics
   /// From a %System templatized by `double`, you can obtain an identical system
   /// templatized by a symbolic expression scalar.
 
@@ -1353,7 +1348,8 @@ class System : public SystemBase {
   //@}
 
   //----------------------------------------------------------------------------
-  /// @name                Transmogrification utilities
+  /// @name                Scalar type conversion utilities
+  //@{
 
   /// Fixes all of the input ports in @p target_context to their current values
   /// in @p other_context, as evaluated by @p other_system. Throws an exception
@@ -1400,7 +1396,6 @@ class System : public SystemBase {
   const SystemScalarConverter& get_system_scalar_converter() const {
     return system_scalar_converter_;
   }
-
   //@}
 
   /// Gets the witness functions active for the given state.
@@ -1434,10 +1429,12 @@ class System : public SystemBase {
       Event<T>* event,
       CompositeEventCollection<T>* events) const = 0;
 
-  // Promote these so we don't need "this->" everywhere.
-  using SystemBase::get_name;
-  using SystemBase::CheckValidContext;
+  // Promote these frequently-used methods so users (and tutorial examples)
+  // don't need "this->" everywhere when in templated derived classes.
   using SystemBase::DeclareCacheEntry;
+
+  // All pre-defined ticket methods should be listed here. They are ordered as
+  // they appear in SystemBase to make it easy to check that none are missing.
   using SystemBase::all_sources_ticket;
   using SystemBase::nothing_ticket;
   using SystemBase::time_ticket;
@@ -1512,8 +1509,8 @@ class System : public SystemBase {
   /// derived implementations can assume that @p context is valid. See, e.g.,
   /// LeafSystem::DispatchPublishHandler() and Diagram::DispatchPublishHandler()
   /// for more details.
-
   //@{
+
   /// This function dispatches all publish events to the appropriate handlers.
   virtual void DispatchPublishHandler(
       const Context<T>& context,
@@ -1534,9 +1531,8 @@ class System : public SystemBase {
       State<T>* state) const = 0;
   //@}
 
-
   //----------------------------------------------------------------------------
-  /// @name                 System construction
+  /// @name                    System construction
   /// Authors of derived %Systems can use these methods in the constructor
   /// for those %Systems.
   //@{
@@ -1632,7 +1628,6 @@ class System : public SystemBase {
   const InputPort<T>& DeclareAbstractInputPort() {
     return DeclareInputPort(kAbstractValued, 0 /* size */);
   }
-
   //@}
 
   /// Adds an already-created constraint to the list of constraints for this
@@ -1648,6 +1643,7 @@ class System : public SystemBase {
   /// @name               Virtual methods for input allocation
   /// Authors of derived %Systems should override these methods to self-describe
   /// acceptable inputs to the %System.
+  //@{
 
   /// Allocates an input vector of the leaf type that the System requires on
   /// the port specified by @p input_port. Caller owns the returned memory.
@@ -1884,8 +1880,7 @@ class System : public SystemBase {
 
   //----------------------------------------------------------------------------
   /// @name             Constraint-related functions (protected).
-  ///
-  // @{
+  //@{
 
   /// Gets the number of constraint equations for this system from the given
   /// context. The context is supplied in case the number of constraints is
@@ -1957,6 +1952,7 @@ class System : public SystemBase {
     unused(context);
     return error.norm();
   }
+  //@}
 
   //----------------------------------------------------------------------------
   /// @name                 Utility methods (protected)
