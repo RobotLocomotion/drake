@@ -10,6 +10,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/number_traits.h"
@@ -758,8 +760,6 @@ using RotationMatrixd = RotationMatrix<double>;
 ///    θ = angle_ub, if sin(angle_lb + α) <  sin(angle_ub + α)
 /// </pre>
 /// @see GlobalInverseKinematics for an usage of this function.
-/// @authors Hong Kai Dai (2016) Original author.
-/// @authors Drake team (see https://drake.mit.edu/credits).
 template <typename Derived>
 double ProjectMatToRotMatWithAxis(const Eigen::MatrixBase<Derived>& M,
                                   const Eigen::Vector3d& axis,
@@ -871,17 +871,32 @@ RotationMatrix<T>::ThrowIfNotValid(const Matrix3<S>& R) {
   }
 }
 
+/// (Deprecated), use @ref math::RotationMatrix::MakeXRotation().
+// TODO(mitiguy) Delete this code after October 6, 2018.
+template <typename T>
+DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
+                     "Use math::RotationMatrix::MakeXRotation(theta).")
+Matrix3<T> XRotation(const T& theta) {
+  return drake::math::RotationMatrix<T>::MakeXRotation(theta).matrix();
+}
+
+/// (Deprecated), use @ref math::RotationMatrix::MakeYRotation().
+// TODO(mitiguy) Delete this code after October 6, 2018.
+template <typename T>
+DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
+                     "Use math::RotationMatrix::MakeYRotation(theta).")
+Matrix3<T> YRotation(const T& theta) {
+  return drake::math::RotationMatrix<T>::MakeYRotation(theta).matrix();
+}
+
+/// (Deprecated), use @ref math::RotationMatrix::MakeZRotation().
+// TODO(mitiguy) Delete this code after October 6, 2018.
+template <typename T>
+DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
+                     "Use math::RotationMatrix::MakeZRotation(theta).")
+Matrix3<T> ZRotation(const T& theta) {
+  return drake::math::RotationMatrix<T>::MakeZRotation(theta).matrix();
+}
+
 }  // namespace math
 }  // namespace drake
-
-
-// TODO(mitiguy): Remove the following #include statement when the included file
-// has been deleted.  See the included file for file deletion conditions.
-// Note: This #include intentionally appears at the end of rotation_matrix.h as
-// a temporary stop-gap measure to support backward compatability.  It is
-// understood that including this file here is not style-guide compliant.
-// clang-format off
-#define DRAKE_MATH_ROTATION_MATRIX_DEPRECATED_HEADER_IS_ENABLED
-#include "drake/math/rotation_matrix_deprecated.h"
-#undef DRAKE_MATH_ROTATION_MATRIX_DEPRECATED_HEADER_IS_ENABLED
-// clang-format on
