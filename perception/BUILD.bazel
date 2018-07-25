@@ -18,6 +18,7 @@ drake_cc_package_library(
         ":point_cloud",
         ":point_cloud_flags",
         ":transform_point_cloud",
+        ":transform_point_cloud_to_world",
     ],
 )
 
