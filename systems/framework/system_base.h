@@ -468,6 +468,11 @@ class SystemBase : public internal::SystemMessageInterface {
   // in ContextBase::CreateBuiltInTrackers() and the implementation there must
   // be kept up to date with the API contracts here.
 
+  // The ticket methods are promoted in the System<T> class so that users can
+  // invoke them in their constructors without prefixing with this->. If you
+  // add, remove, rename, or rearrange any of these be sure to update the
+  // promotions in system.h.
+
   /** Returns a ticket indicating dependence on every possible independent
   source value, including time, state, input ports, parameters, and the accuracy
   setting (but not cache entries). This is the default dependency for
