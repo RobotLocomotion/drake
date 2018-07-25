@@ -6,82 +6,107 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace perception {
 namespace {
 
-class TransformPointCloudTest : public ::testing::Test {
- public:
-  static Matrix3X<float> GenerateBoundedSample(const Vector3<float>& min,
-                                               const Vector3<float>& max,
-                                               int num_cols) {
-    Matrix3X<float> return_matrix = Matrix3X<float>::Zero(3, num_cols);
-    const Vector3<float> increment = (max - min) / static_cast<float>(num_cols);
+const Vector3<double> kFrameToBodyRpy(M_PI_4, -M_PI_2, 0.543);
+const Vector3<double> kFrameToBodyP(-0.3, 5.4, -2.7);
 
-    for (int i = 0; i < num_cols; ++i) {
-      return_matrix.col(i) = increment * static_cast<float>(i);
-    }
+const Vector3<double> kWorldToBodyRpy(M_PI_2, -0.236, M_PI_4);
+const Vector3<double> kWorldToBodyP(-1.4, 0.3, 2.8);
 
-    return return_matrix;
+Matrix3X<float> GenerateBoundedSample(const Vector3<float>& min,
+                                      const Vector3<float>& max, int num_cols) {
+  Matrix3X<float> return_matrix = Matrix3X<float>::Zero(3, num_cols);
+  const Vector3<float> increment = (max - min) / static_cast<float>(num_cols);
+
+  for (int i = 0; i < num_cols; ++i) {
+    return_matrix.col(i) = increment * static_cast<float>(i);
   }
 
- protected:
-  void SetUp() override {
-    transformer_ = std::make_unique<TransformPointCloud>();
-    context_ = transformer_->CreateDefaultContext();
-    output_ = transformer_->point_cloud_output_port().Allocate();
-    point_cloud_input_ =
-        systems::AbstractValue::Make<PointCloud>(PointCloud(0));
-    rigid_transform_input_ =
-        systems::AbstractValue::Make<math::RigidTransform<float>>(
-            math::RigidTransform<float>());
-  }
-
-  std::unique_ptr<TransformPointCloud> transformer_;
-  std::unique_ptr<systems::Context<double>> context_;
-  std::unique_ptr<systems::AbstractValue> output_;
-  std::unique_ptr<systems::AbstractValue> point_cloud_input_;
-  std::unique_ptr<systems::AbstractValue> rigid_transform_input_;
-};
+  return return_matrix;
+}
 
 // Verifies that the system applies the transform correctly to the point cloud.
-TEST_F(TransformPointCloudTest, ApplyTransformTest) {
+GTEST_TEST(TransformPointCloudTest, TransformToWorldFrame) {
+  const int kWorldFrameIndex = 0;
   const Vector3<float> kMin(-10.0, -20.0, -30.0);
   const Vector3<float> kMax(10.0, 20.0, 30.0);
   const int kNumPoints = 5;
-  const Vector3<float> kRpy(M_PI_4, -M_PI_2, 0.543);
-  const math::RollPitchYaw<float> kRollPitchYaw(kRpy);
-  const math::RotationMatrix<float> kR(kRollPitchYaw);
-  const Vector3<float> kP(-0.3, 5.4, -2.7);
 
-  MatrixX<float> test_data =
-      TransformPointCloudTest::GenerateBoundedSample(kMin, kMax, kNumPoints);
+  std::unique_ptr<RigidBodyTree<double>> tree =
+      std::make_unique<RigidBodyTree<double>>();
 
+  std::unique_ptr<RigidBody<double>> body =
+      std::make_unique<RigidBody<double>>();
+  body->set_name("body");
+  body->set_mass(1.0);
+  body->set_spatial_inertia(Matrix6<double>::Identity());
+
+  Isometry3<double> body_transform;
+  body_transform =
+      Eigen::Translation3d(kWorldToBodyP) *
+      (Eigen::AngleAxisd(kWorldToBodyRpy(0), Eigen::Vector3d::UnitX()) *
+       Eigen::AngleAxisd(kWorldToBodyRpy(1), Eigen::Vector3d::UnitY()) *
+       Eigen::AngleAxisd(kWorldToBodyRpy(2), Eigen::Vector3d::UnitZ()));
+  body->add_joint(&tree->world(), std::make_unique<RollPitchYawFloatingJoint>(
+                                      "base", body_transform));
+
+  RigidBody<double>* b = tree->add_rigid_body(std::move(body));
+
+  std::shared_ptr<RigidBodyFrame<double>> frame =
+      std::make_shared<RigidBodyFrame<double>>("frame", b, kFrameToBodyP,
+                                               kFrameToBodyRpy);
+  // RigidBodyFrame<double> frame("frame", b, kFrameToBodyP, kFrameToBodyRpy);
+  tree->addFrame(frame);
+
+  tree->compile();
+
+  std::unique_ptr<TransformPointCloud> transformer =
+      std::make_unique<TransformPointCloud>(*tree.get(), kWorldFrameIndex,
+                                            frame->get_frame_index());
+  std::unique_ptr<systems::Context<double>> context =
+      transformer->CreateDefaultContext();
+  std::unique_ptr<systems::AbstractValue> output =
+      transformer->point_cloud_output_port().Allocate();
+
+  VectorX<double> state(transformer->state_input_port().size());
+  state << 0.3, -0.4, 2.3, 0, 0, 0, 1;
+
+  MatrixX<float> test_data = GenerateBoundedSample(kMin, kMax, kNumPoints);
   PointCloud cloud(kNumPoints);
   cloud.mutable_xyzs() = test_data;
 
-  math::RigidTransform<float> transform(kR, kP);
+  context->FixInputPort(0, systems::AbstractValue::Make<PointCloud>(cloud));
+  context->FixInputPort(1, state);
 
-  context_->FixInputPort(0, systems::AbstractValue::Make<PointCloud>(cloud));
-  context_->FixInputPort(
-      1, systems::AbstractValue::Make<math::RigidTransform<float>>(transform));
+  transformer->point_cloud_output_port().Calc(*context, output.get());
+  auto output_cloud = output->GetValueOrThrow<PointCloud>();
 
-  transformer_->point_cloud_output_port().Calc(*context_, output_.get());
-
-  auto output_cloud = output_->GetValueOrThrow<PointCloud>();
-
+  // The rigid transform below uses `float` because the point cloud uses
+  // `float` as the numerical representation.
+  const KinematicsCache<double> cache =
+      tree->doKinematics(state.head(tree->get_num_positions()));
+  const Isometry3<double> isom =
+      tree->relativeTransform(cache, 0, frame->get_frame_index());
+  math::RigidTransform<double> transform_d(isom);
+  math::RigidTransform<float> transform(transform_d.cast<float>());
   Matrix4X<float> test_data_homogeneous(4, kNumPoints);
   test_data_homogeneous.block(0, 0, 3, kNumPoints) = test_data;
   test_data_homogeneous.row(3) = VectorX<float>::Ones(kNumPoints);
   Matrix4X<float> expected_output =
       transform.GetAsMatrix4() * test_data_homogeneous;
 
-  // The tolerance used here has this value because the point cloud and the
-  // rigid transform both use `float` as the numerical representation.
+  // The tolerance used here has this value because the point cloud uses
+  // `float` as the numerical representation.
   EXPECT_TRUE(CompareMatrices(output_cloud.xyzs(),
                               expected_output.block(0, 0, 3, kNumPoints),
-                              10.0f * std::numeric_limits<float>::epsilon()));
+                              16.0f * std::numeric_limits<float>::epsilon()));
 }
 
 }  // namespace

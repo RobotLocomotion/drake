@@ -18,7 +18,6 @@ drake_cc_package_library(
         ":point_cloud",
         ":point_cloud_flags",
         ":transform_point_cloud",
-        ":transform_point_cloud_to_world",
     ],
 )
 
@@ -54,19 +53,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "transform_point_cloud_to_world",
-    srcs = ["transform_point_cloud_to_world.cc"],
-    hdrs = ["transform_point_cloud_to_world.h"],
-    deps = [
-        ":point_cloud",
-        "//common:essential",
-        "//math:geometric_transform",
-        "//multibody:rigid_body_tree",
-        "//systems/framework",
-    ],
-)
-
-drake_cc_library(
     name = "transform_point_cloud",
     srcs = ["transform_point_cloud.cc"],
     hdrs = ["transform_point_cloud.h"],
@@ -74,6 +60,7 @@ drake_cc_library(
         ":point_cloud",
         "//common:essential",
         "//math:geometric_transform",
+        "//multibody:rigid_body_tree",
         "//systems/framework",
     ],
 )
@@ -106,21 +93,12 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "transform_point_cloud_to_world_test",
-    srcs = ["test/transform_point_cloud_to_world_test.cc"],
-    deps = [
-        ":transform_point_cloud_to_world",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/rigid_body_plant",
-    ],
-)
-
-drake_cc_googletest(
     name = "transform_point_cloud_test",
     srcs = ["test/transform_point_cloud_test.cc"],
     deps = [
         ":transform_point_cloud",
         "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/rigid_body_plant",
     ],
 )
 
