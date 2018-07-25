@@ -8,30 +8,48 @@ unpacked. On macOS, VTK must be installed from the robotlocomotion/director tap
 (https://git.io/vN6ft) using Homebrew.
 
 Archive naming convention:
-    vtk-v<version>-qt-<qt version>-xenial-<arch>[-<rebuild>]
+    vtk-<version>-embree-<embree version>-ospray-<ospray version>
+        -python-<python 2.x version>[-python-<python 3.x version>]
+        -qt-<qt version>-<platform>-<arch>[-<rebuild>]
 
 Build configuration:
-    BUILD_TESTING=OFF
-    BUILD_SHARED_LIBS=ON
-    CMAKE_BUILD_TYPE=Release
-    Module_vtkRenderingOSPRay=ON
-    VTK_Group_Qt=ON
-    VTK_LEGACY_REMOVE=ON
-    VTK_QT_VERSION=5
-    VTK_USE_SYSTEM_EXPAT=ON
-    VTK_USE_SYSTEM_FREETYPE=ON
-    VTK_USE_SYSTEM_HDF5=ON
-    VTK_USE_SYSTEM_JPEG=ON
-    VTK_USE_SYSTEM_JSONCPP=ON
-    VTK_USE_SYSTEM_LIBXML2=ON
-    VTK_USE_SYSTEM_LZ4=ON
-    VTK_USE_SYSTEM_NETCDF=ON
-    VTK_USE_SYSTEM_NETCDFCPP=ON
-    VTK_USE_SYSTEM_OGGTHEORA=ON
-    VTK_USE_SYSTEM_PNG=ON
-    VTK_USE_SYSTEM_TIFF=ON
-    VTK_USE_SYSTEM_ZLIB=ON
-    VTK_WRAP_PYTHON=ON
+    Embree (https://git.io/fNR7Q):
+        BUILD_SHARED_LIBS=ON
+        BUILD_TESTING=OFF
+        CMAKE_BUILD_TYPE=Release
+        EMBREE_MAX_ISA=SSE4.2
+        EMBREE_STACK_PROTECTOR=ON
+        EMBREE_TUTORIALS=OFF
+
+    OSPRay (https://git.io/fNR7b):
+        BUILD_SHARED_LIBS=ON
+        CMAKE_BUILD_TYPE=Release
+        OSPRAY_ENABLE_APPS=OFF
+        OSPRAY_ENABLE_TESTING=OFF
+
+    VTK:
+        BUILD_SHARED_LIBS=ON
+        BUILD_TESTING=OFF
+        CMAKE_BUILD_TYPE=Release
+        Module_vtkRenderingOSPRay=ON
+        VTK_ENABLE_VTKPYTHON=OFF
+        VTK_Group_Qt=ON
+        VTK_LEGACY_REMOVE=ON
+        VTK_QT_VERSION=5
+        VTK_USE_SYSTEM_EXPAT=ON
+        VTK_USE_SYSTEM_FREETYPE=ON
+        VTK_USE_SYSTEM_HDF5=ON
+        VTK_USE_SYSTEM_JPEG=ON
+        VTK_USE_SYSTEM_JSONCPP=ON
+        VTK_USE_SYSTEM_LIBXML2=ON
+        VTK_USE_SYSTEM_LZ4=ON
+        VTK_USE_SYSTEM_NETCDF=ON
+        VTK_USE_SYSTEM_NETCDFCPP=ON
+        VTK_USE_SYSTEM_OGGTHEORA=ON
+        VTK_USE_SYSTEM_PNG=ON
+        VTK_USE_SYSTEM_TIFF=ON
+        VTK_USE_SYSTEM_ZLIB=ON
+        VTK_WRAP_PYTHON=ON
 
 Example:
     WORKSPACE:
