@@ -54,7 +54,7 @@ toolchain {
   cxx_builtin_include_directory: "/usr/lib/gcc/x86_64-linux-gnu/6/include-fixed"
   cxx_builtin_include_directory: "/usr/include/x86_64-linux-gnu"
   cxx_builtin_include_directory: "/usr/include"
-  cxx_flag: "-std=c++1y" # Modified for Drake.
+  cxx_flag: "-std=c++0x"
   host_system_name: "local"
   linker_flag: "-lstdc++"
   linker_flag: "-lm"
@@ -134,7 +134,7 @@ toolchain {
   cxx_builtin_include_directory: "/usr/lib/gcc/x86_64-linux-gnu/5/include-fixed"
   cxx_builtin_include_directory: "/usr/include/x86_64-linux-gnu"
   cxx_builtin_include_directory: "/usr/include"
-  cxx_flag: "-std=c++1y" # Modified for Drake.
+  cxx_flag: "-std=c++0x"
   host_system_name: "local"
   linker_flag: "-lstdc++"
   linker_flag: "-lm"
@@ -214,7 +214,7 @@ toolchain {
   # Next two lines are a Drake fix for https://github.com/bazelbuild/bazel/issues/3977.
   cxx_builtin_include_directory: "/usr/lib/llvm-4.0/lib/clang/4.0.1/include"
   cxx_builtin_include_directory: "/usr/lib/llvm-4.0/lib/clang/4.0.0/include"
-  cxx_flag: "-std=c++1y" # Modified for Drake.
+  cxx_flag: "-std=c++0x"
   host_system_name: "local"
   linker_flag: "-lstdc++"
   linker_flag: "-lm"
@@ -340,7 +340,7 @@ toolchain {
   compiler_flag: "-Wthread-safety"
   compiler_flag: "-Wself-assign"
   compiler_flag: "-fno-omit-frame-pointer"
-  cxx_flag: "-std=c++14"  # Changed from "-std=c++11" for Drake.
+  cxx_flag: "-std=c++11"
   linker_flag: "-headerpad_max_install_names"
   linker_flag: "-lc++"
   linker_flag: "-no-canonical-prefixes"
