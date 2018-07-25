@@ -27,9 +27,15 @@ class TransformPointCloudToWorld final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TransformPointCloudToWorld)
 
-  /// Constructs the transformer.
+  /// Constructs a transformer that transforms from `child_frame` to
+  /// `parent_frame`.
   TransformPointCloudToWorld(const RigidBodyTree<double>& tree,
-      const RigidBodyFrame<double>& frame);
+                             int parent_frame_index, int child_frame_index);
+
+  /// Constructs a transformer that transforms from `child_frame` to world
+  /// frame.
+  TransformPointCloudToWorld(const RigidBodyTree<double>& tree,
+                             int child_frame_index);
 
   /// Returns the abstract valued input port that contains a PointCloud.
   const systems::InputPort<double>& point_cloud_input_port() const {
@@ -56,8 +62,12 @@ class TransformPointCloudToWorld final : public systems::LeafSystem<double> {
   void ApplyTransformToPointCloud(const systems::Context<double>& context,
                                   PointCloud* output) const;
 
+  /// Creates input and output ports for this system.
+  void CreatePorts();
+
   const RigidBodyTree<double>& tree_;
-  const RigidBodyFrame<double>& frame_;
+  int parent_frame_index_;
+  int child_frame_index_;
 
   systems::InputPortIndex point_cloud_input_port_index_;
   systems::InputPortIndex state_input_port_index_;

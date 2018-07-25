@@ -20,7 +20,7 @@ const Vector3<double> kFrameToBodyP(-0.3, 5.4, -2.7);
 const Vector3<double> kWorldToBodyRpy(M_PI_2, -0.236, M_PI_4);
 const Vector3<double> kWorldToBodyP(-1.4, 0.3, 2.8);
 
-class FixedTransformPointCloudTest : public ::testing::Test {
+class TransformPointCloudTest : public ::testing::Test {
  public:
   static Matrix3X<float> GenerateBoundedSample(const Vector3<float>& min,
                                                const Vector3<float>& max,
@@ -57,8 +57,8 @@ class FixedTransformPointCloudTest : public ::testing::Test {
 
     RigidBody<double>* b = tree->add_rigid_body(std::move(body));
 
-    frame_ = std::make_shared<RigidBodyFrame<double>>("frame", b,
-        kFrameToBodyP, kFrameToBodyRpy);
+    frame_ = std::make_shared<RigidBodyFrame<double>>("frame", b, kFrameToBodyP,
+                                                      kFrameToBodyRpy);
 
     tree->addFrame(frame_);
     tree->compile();
@@ -66,7 +66,7 @@ class FixedTransformPointCloudTest : public ::testing::Test {
     plant_ = std::make_unique<systems::RigidBodyPlant<double>>(std::move(tree));
 
     transformer_ = std::make_unique<TransformPointCloudToWorld>(
-        plant_->get_rigid_body_tree(), *frame_);
+        plant_->get_rigid_body_tree(), frame_->get_frame_index());
     context_ = transformer_->CreateDefaultContext();
     output_ = transformer_->point_cloud_output_port().Allocate();
   }
@@ -79,7 +79,7 @@ class FixedTransformPointCloudTest : public ::testing::Test {
 };
 
 // Verifies that the system applies the transform correctly to the point cloud.
-TEST_F(FixedTransformPointCloudTest, ApplyTransformTest) {
+TEST_F(TransformPointCloudTest, ApplyTransformTest) {
   const Vector3<float> kMin(-10.0, -20.0, -30.0);
   const Vector3<float> kMax(10.0, 20.0, 30.0);
   const int kNumPoints = 5;
@@ -88,7 +88,7 @@ TEST_F(FixedTransformPointCloudTest, ApplyTransformTest) {
   state << 0.3, -0.4, 2.3, 0, 0, 0, 1;
 
   MatrixX<float> test_data =
-      FixedTransformPointCloudTest::GenerateBoundedSample(kMin, kMax,
+      TransformPointCloudTest::GenerateBoundedSample(kMin, kMax,
                                                           kNumPoints);
   PointCloud cloud(kNumPoints);
   cloud.mutable_xyzs() = test_data;

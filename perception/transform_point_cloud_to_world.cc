@@ -4,22 +4,18 @@ namespace drake {
 namespace perception {
 
 TransformPointCloudToWorld::TransformPointCloudToWorld(
-    const RigidBodyTree<double>& tree, const RigidBodyFrame<double>& frame)
-    : tree_(tree), frame_(frame) {
-  // Create input port for point cloud.
-  point_cloud_input_port_index_ = this->DeclareAbstractInputPort().get_index();
-
-  // Create input port for state of a RigidBodyTree.
-  const int q_dim = tree.get_num_positions();
-  const int v_dim = tree.get_num_velocities();
-  state_input_port_index_ =
-      this->DeclareInputPort(systems::kVectorValued, q_dim + v_dim).get_index();
-
-  // Create output port for transformed point cloud.
-  this->DeclareAbstractOutputPort(
-      &TransformPointCloudToWorld::MakeOutputPointCloud,
-      &TransformPointCloudToWorld::ApplyTransformToPointCloud);
+    const RigidBodyTree<double>& tree, int parent_frame_index,
+    int child_frame_index)
+    : tree_(tree), parent_frame_index_(parent_frame_index),
+    child_frame_index_(child_frame_index) {
+  this->CreatePorts();
 }
+
+TransformPointCloudToWorld::TransformPointCloudToWorld(
+    const RigidBodyTree<double>& tree,
+    int child_frame_index)
+    : TransformPointCloudToWorld(tree,
+        tree.findFrame("world")->get_frame_index(), child_frame_index) { }
 
 PointCloud TransformPointCloudToWorld::MakeOutputPointCloud() const {
   PointCloud cloud(0);
@@ -38,7 +34,8 @@ void TransformPointCloudToWorld::ApplyTransformToPointCloud(
 
   const KinematicsCache<double> cache = tree_.doKinematics(q);
 
-  const Isometry3<double> isom = tree_.CalcFramePoseInWorldFrame(cache, frame_);
+  const Isometry3<double> isom =
+    tree_.relativeTransform(cache, parent_frame_index_, child_frame_index_);
 
   const math::RigidTransform<float> rigid_transform(isom.cast<float>());
 
@@ -46,6 +43,22 @@ void TransformPointCloudToWorld::ApplyTransformToPointCloud(
   for (int i = 0; i < output->size(); i++) {
     output->mutable_xyz(i) = rigid_transform * input_point_cloud->xyz(i);
   }
+}
+
+void TransformPointCloudToWorld::CreatePorts() {
+  // Create input port for point cloud.
+  point_cloud_input_port_index_ = this->DeclareAbstractInputPort().get_index();
+
+  // Create input port for state of a RigidBodyTree.
+  const int q_dim = tree_.get_num_positions();
+  const int v_dim = tree_.get_num_velocities();
+  state_input_port_index_ =
+      this->DeclareInputPort(systems::kVectorValued, q_dim + v_dim).get_index();
+
+  // Create output port for transformed point cloud.
+  this->DeclareAbstractOutputPort(
+      &TransformPointCloudToWorld::MakeOutputPointCloud,
+      &TransformPointCloudToWorld::ApplyTransformToPointCloud);
 }
 
 }  // namespace perception
