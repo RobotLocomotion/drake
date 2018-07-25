@@ -56,13 +56,10 @@ def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
         "//tools/cc_toolchain:apple": (
             CLANG_FLAGS + rule_copts + rule_clang_copts
         ),
-        "//tools/cc_toolchain:clang4.0-linux": (
+        "//tools/cc_toolchain:clang": (
             CLANG_FLAGS + rule_copts + rule_clang_copts
         ),
-        "//tools/cc_toolchain:gcc5-linux": (
-            GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts
-        ),
-        "//tools/cc_toolchain:gcc6-linux": (
+        "//tools/cc_toolchain:gcc": (
             GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts
         ),
         "//conditions:default": (
