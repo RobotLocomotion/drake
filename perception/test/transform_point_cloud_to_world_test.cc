@@ -17,7 +17,7 @@ namespace {
 const Vector3<double> kFrameToBodyRpy(M_PI_4, -M_PI_2, 0.543);
 const Vector3<double> kFrameToBodyP(-0.3, 5.4, -2.7);
 
-const Vector3<double> kWorldToBodyRpy(M_PI, 0.236, M_PI_4);
+const Vector3<double> kWorldToBodyRpy(M_PI_2, -0.236, M_PI_4);
 const Vector3<double> kWorldToBodyP(-1.4, 0.3, 2.8);
 
 class FixedTransformPointCloudTest : public ::testing::Test {
@@ -106,7 +106,8 @@ TEST_F(FixedTransformPointCloudTest, ApplyTransformTest) {
           state.head(plant_->get_num_positions()));
   const Isometry3<double> isom =
       plant_->get_rigid_body_tree().CalcFramePoseInWorldFrame(cache, *frame_);
-  math::RigidTransform<float> transform(isom.cast<float>());
+  math::RigidTransform<double> transform_d(isom);
+  math::RigidTransform<float> transform(transform_d.cast<float>());
   Matrix4X<float> test_data_homogeneous(4, kNumPoints);
   test_data_homogeneous.block(0, 0, 3, kNumPoints) = test_data;
   test_data_homogeneous.row(3) = VectorX<float>::Ones(kNumPoints);
