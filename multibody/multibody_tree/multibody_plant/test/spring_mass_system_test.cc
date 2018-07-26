@@ -118,7 +118,7 @@ class SpringMassSystemTest : public ::testing::Test {
   const double free_length_ = 1.0;  // [m]
 };
 
-// Verify the solution for an undamped system, ζ = 1.
+// Verify the solution for an undamped system, ζ = 0.
 TEST_F(SpringMassSystemTest, UnDampedCase) {
   // Plant's parameters.
   const double mass = 1.0;             // Mass of the body, [kg].
