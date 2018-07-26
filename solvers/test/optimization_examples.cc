@@ -80,7 +80,7 @@ double OptimizationProgram::GetSolverSolutionDefaultCompareTolerance(
       return 1E-10;
     }
     case SolverType::kSnopt : {
-      return 1E-8;
+      return 1.5E-6;
     }
     case SolverType::kIpopt : {
       return 1E-6;
