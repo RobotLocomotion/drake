@@ -113,6 +113,8 @@ class TestAll(unittest.TestCase):
             "LeafSystem",
             # - analysis
             "Simulator",
+            # - lcm
+            "PySerializer",
             # - primitives
             "Adder",
             # - rendering
