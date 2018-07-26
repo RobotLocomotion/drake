@@ -55,13 +55,27 @@ class RigidTransform {
   /// so unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is coincident with
   /// Bo.  Hence, the constructed %RigidTransform contains an identity
   /// RotationMatrix and a zero position vector.
-  RigidTransform() { SetIdentity(); }
+  // @internal The default RotationMatrix constructor is an identity matrix.
+  RigidTransform() { set_translation(Vector3<T>::Zero()); }
 
   /// Constructs a %RigidTransform from a rotation matrix and a position vector.
   /// @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`).
   /// @param[in] p position vector from frame A's origin to frame B's origin,
   /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
   RigidTransform(const RotationMatrix<T>& R, const Vector3<T>& p) { set(R, p); }
+
+  /// Constructs a %RigidTransform with a given RotationMatrix and a zero
+  /// position vector.
+  /// @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`).
+  explicit RigidTransform(const RotationMatrix<T>& R) {
+    set(R, Vector3<T>::Zero());
+  }
+
+  /// Constructs a %RigidTransform with an identity RotationMatrix and a given
+  /// position vector 'p'.
+  /// @param[in] p position vector from frame A's origin to frame B's origin,
+  /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
+  explicit RigidTransform(const Vector3<T>& p) { set_translation(p); }
 
   /// Constructs a %RigidTransform from an Eigen Isometry3.
   /// @param[in] pose Isometry3 that contains an allegedly valid rotation matrix
@@ -158,6 +172,19 @@ class RigidTransform {
     return pose;
   }
 
+  /// Returns the 3x4 matrix associated with this %RigidTransform, i.e., X_AB.
+  /// <pre>
+  ///  ┌                ┐
+  ///  │ R_AB  p_AoBo_A │
+  ///  └                ┘
+  /// </pre>
+  Eigen::Matrix<T, 3, 4> GetAsMatrix34() const {
+    Eigen::Matrix<T, 3, 4> pose;
+    pose.template topLeftCorner<3, 3>() = rotation().matrix();
+    pose.template topRightCorner<3, 1>() = translation();
+    return pose;
+  }
+
   /// Returns the isometry in ℜ³ that is equivalent to a %RigidTransform.
   Isometry3<T> GetAsIsometry3() const {
     // pose.linear() returns a mutable reference to the 3x3 rotation matrix part
@@ -166,6 +193,7 @@ class RigidTransform {
     Isometry3<T> pose;
     pose.linear() = rotation().matrix();
     pose.translation() = translation();
+    pose.makeAffine();
     return pose;
   }
 
@@ -255,16 +283,22 @@ class RigidTransform {
     return GetMaximumAbsoluteDifference(other) <= tolerance;
   }
 
+  /// Returns true if `this` is exactly equal to `other`.
+  /// @param[in] other %RigidTransform to compare to `this`.
+  /// @returns `true` if each element of `this` is exactly equal to the
+  /// corresponding element of `other`.
+  Bool<T> IsExactlyEqualTo(const RigidTransform<T>& other) const {
+    return rotation().IsExactlyEqualTo(other.rotation()) &&
+           translation() == other.translation();
+  }
+
   /// Computes the infinity norm of `this` - `other` (i.e., the maximum absolute
   /// value of the difference between the elements of `this` and `other`).
   /// @param[in] other %RigidTransform to subtract from `this`.
   /// @returns ‖`this` - `other`‖∞
-  // @internal The last line of this method throws an exception if T is a
-  // symbolic::Expression and there are free variables in `this` or `other`.
   T GetMaximumAbsoluteDifference(const RigidTransform<T>& other) const {
-    const T R_difference = R_AB_.GetMaximumAbsoluteDifference(other.rotation());
-    const T p_difference = GetMaximumAbsoluteTranslationDifference(other);
-    return R_difference > p_difference ? R_difference : p_difference;
+    const Eigen::Matrix<T, 3, 4> diff = GetAsMatrix34() - other.GetAsMatrix34();
+    return diff.template lpNorm<Eigen::Infinity>();
   }
 
   /// Returns the maximum absolute value of the difference in the position
@@ -287,11 +321,16 @@ class RigidTransform {
   friend class RigidTransform;
 
   // Rotation matrix relating two frames, e.g. frame A and frame B.
+  // The default constructor for R_AB_ is an identity matrix.
   RotationMatrix<T> R_AB_;
 
   // Position vector from A's origin Ao to B's origin Bo, expressed in A.
   Vector3<T> p_AoBo_A_;
 };
+
+/// Abbreviation (alias/typedef) for a RigidTransform double scalar type.
+/// @relates RigidTransform
+using RigidTransformd = RigidTransform<double>;
 
 }  // namespace math
 }  // namespace drake

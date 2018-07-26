@@ -49,6 +49,9 @@ drake_transitive_installed_hdrs_filegroup(
 # (i.e. in Drake itself; not externals).
 install(
     name = "install",
+    install_tests = [
+        "test/snopt_visibility_test.py",
+    ],
     targets = ["libdrake.so"],
     hdrs = [":libdrake_headers"],
     hdr_dest = "include/drake",
@@ -92,6 +95,7 @@ cc_library(
         "@vtk//:vtkIOGeometry",
         "@vtk//:vtkIOImage",
         "@vtk//:vtkRenderingCore",
+        "@vtk//:vtkRenderingOSPRay",
         "@vtk//:vtkRenderingOpenGL2",
     ],
 )

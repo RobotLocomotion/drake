@@ -5,6 +5,7 @@
 #include <cmath>
 #include <ostream>
 
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/multilane/arc_road_curve.h"
@@ -369,11 +370,11 @@ struct EndpointZTestParameters{
 // errors.
 std::ostream& operator<<(std::ostream& stream,
                          const EndpointZTestParameters& endpoint_z_test_param) {
-  return stream << "EndpointZTestParameters( start_z: ("
-                << endpoint_z_test_param.start_z  << "), end_z: ("
-                << endpoint_z_test_param.end_z << "), r0: "
-                << endpoint_z_test_param.r0 << ", num_lanes: "
-                << endpoint_z_test_param.num_lanes << ")";
+  return stream << fmt::format(
+             "EndpointZTestParameters( start_z: ({}), "
+             "end_z: ({}), r0: {}, num_lanes: {})",
+             endpoint_z_test_param.start_z, endpoint_z_test_param.end_z,
+             endpoint_z_test_param.r0, endpoint_z_test_param.num_lanes);
 }
 
 // Groups common test constants as well as each test case parameters.

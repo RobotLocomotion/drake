@@ -15,6 +15,16 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+vtk_test_tags = [
+    # Disable under LeakSanitizer and Valgrind Memcheck due to
+    # driver-related leaks. For more information, see #7520.
+    "no_lsan",
+    "no_memcheck",
+    # Mitigates driver-related issues when running under `bazel test`. For
+    # more information, see #7004.
+    "no-sandbox",
+]
+
 drake_cc_package_library(
     name = "sensors",
     deps = [
@@ -185,12 +195,14 @@ drake_cc_library(
     name = "rgbd_renderer",
     srcs = [
         "rgbd_renderer.cc",
+        "rgbd_renderer_ospray.cc",
         "rgbd_renderer_vtk.cc",
     ],
     hdrs = [
         "color_palette.h",
         "depth_shaders.h",
         "rgbd_renderer.h",
+        "rgbd_renderer_ospray.h",
         "rgbd_renderer_vtk.h",
     ],
     deps = [
@@ -207,7 +219,9 @@ drake_cc_library(
         "@vtk//:vtkIOGeometry",
         "@vtk//:vtkIOImage",
         "@vtk//:vtkRenderingCore",
+        "@vtk//:vtkRenderingOSPRay",
         "@vtk//:vtkRenderingOpenGL2",
+        "@vtk//:vtkRenderingSceneGraph",
     ],
 )
 
@@ -235,7 +249,9 @@ drake_cc_library(
         "@vtk//:vtkIOGeometry",
         "@vtk//:vtkIOImage",
         "@vtk//:vtkRenderingCore",
+        "@vtk//:vtkRenderingOSPRay",
         "@vtk//:vtkRenderingOpenGL2",
+        "@vtk//:vtkRenderingSceneGraph",
     ],
 )
 
@@ -405,9 +421,12 @@ filegroup(
     name = "test_models",
     testonly = 1,
     srcs = [
+        "test/models/background.jpg",
         "test/models/box.sdf",
+        "test/models/meshes/box.json",
         "test/models/meshes/box.obj",
         "test/models/meshes/box.png",
+        "test/models/meshes/box2.obj",
         "test/models/nothing.sdf",
         "test/models/sphere.sdf",
     ],
@@ -418,15 +437,7 @@ drake_cc_googletest(
     data = [
         ":test_models",
     ],
-    tags = [
-        # Disable under LeakSanitizer and Valgrind Memcheck due to
-        # driver-related leaks. For more information, see #7520.
-        "no_lsan",
-        "no_memcheck",
-        # Mitigates driver-related issues when running under `bazel test`. For
-        # more information, see #7004.
-        "no-sandbox",
-    ],
+    tags = vtk_test_tags,
     deps = [
         ":rgbd_camera",
         "//common:find_resource",
@@ -444,19 +455,26 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "rgbd_renderer_ospray_test",
+    data = [
+        ":test_models",
+    ],
+    tags = vtk_test_tags,
+    deps = [
+        ":rgbd_renderer",
+        ":rgbd_renderer_test_util",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
     name = "rgbd_renderer_vtk_test",
     data = [
         ":test_models",
     ],
-    tags = [
-        # Disable under LeakSanitizer and Valgrind Memcheck due to
-        # driver-related leaks. For more information, see #7520.
-        "no_lsan",
-        "no_memcheck",
-        # Mitigates driver-related issues when running under `bazel test`. For
-        # more information, see #7004.
-        "no-sandbox",
-    ],
+    tags = vtk_test_tags,
     deps = [
         ":rgbd_renderer",
         ":rgbd_renderer_test_util",
@@ -477,11 +495,7 @@ sh_test(
     data = [
         ":test_models",
     ],
-    tags = [
-        # Mitigates driver-related issues when running under `bazel test`. For
-        # more information, see #7004.
-        "no-sandbox",
-    ],
+    tags = vtk_test_tags,
 )
 
 drake_cc_googletest(

@@ -92,6 +92,8 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     // TODO(amcastro-tri): Create cache entries.
     // For instance, for PositionKinematicsCache so that it doesn't get
     // re-allocated and re-computed every time is needed.
+    pc_ = std::make_unique<PositionKinematicsCache<T>>(topology_);
+    vc_ = std::make_unique<VelocityKinematicsCache<T>>(topology_);
   }
 
   /// Returns the size of the generalized positions vector.
@@ -222,8 +224,36 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     return x.nestedExpression().segment(start, count);
   }
 
+  // TODO(amcastro-tri): Mark as deprecated when caching lands.
+
+  /// @name KinematicsCacheAccessors
+  ///@{
+  /// Accessors to the kinematics caches stored in MultibodyTreeContext.
+  /// These will be deprecated once caching lands.
+  const PositionKinematicsCache<T>& get_position_kinematics_cache() const {
+    return *pc_;
+  }
+
+  const VelocityKinematicsCache<T>& get_velocity_kinematics_cache() const {
+    return *vc_;
+  }
+
+  PositionKinematicsCache<T>& get_mutable_position_kinematics_cache() const {
+    return *pc_;
+  }
+
+  VelocityKinematicsCache<T>& get_mutable_velocity_kinematics_cache() const {
+    return *vc_;
+  }
+  ///@}
+
  private:
   const MultibodyTreeTopology topology_;
+
+  // Temporary solution for fake cache entries to help stabilize the API.
+  // TODO(amcastro-tri): Remove these when caching lands.
+  std::unique_ptr<PositionKinematicsCache<T>> pc_;
+  std::unique_ptr<VelocityKinematicsCache<T>> vc_;
 
   // If `true`, this context stores a discrete state. If `false` the state is
   // stored as continuous state.
