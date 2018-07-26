@@ -120,7 +120,14 @@ def install(src, dst):
         installed = True
     else:
         print("-- Up-to-date: {}".format(dst_full))
-    re_result = re.match(dylib_match, dst)
+    # NOTE: Only the libraries whose filenames start with `lib` are taken into
+    # account. This workaround allows to install Python C/C++ extensions for
+    # multiple Python versions without triggering the error message below.
+    # These Python C/C++ extensions can have the same name, as long as they
+    # are in different subdirectories.
+    # Caveat: We assume that no C/C++ shared libraries depend on these Python
+    # C/C++ extensions and require some RPath fix-up.
+    re_result = re.match(r'lib' + dylib_match, os.path.basename(dst))
     if re_result is not None:  # It is a library
         basename = os.path.basename(re_result.group(0))
         # Check that dependency is only referenced once
