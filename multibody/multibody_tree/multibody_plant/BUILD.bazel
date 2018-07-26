@@ -179,12 +179,20 @@ drake_cc_googletest(
     data = [
         "//manipulation/models/iiwa_description:models",
     ],
-    # TODO (amcastro): Re-enable test, times out on mac tsan
-    tags = ["manual"],
+    shard_count = 3,
     deps = [
         ":multibody_plant",
         "//common:find_resource",
         "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "spring_mass_system_test",
+    timeout = "moderate",
+    deps = [
+        ":multibody_plant",
         "//systems/analysis:simulator",
     ],
 )

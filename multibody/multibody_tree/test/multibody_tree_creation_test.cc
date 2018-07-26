@@ -2,6 +2,7 @@
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 /* clang-format on */
 
+#include <algorithm>
 #include <memory>
 #include <set>
 #include <sstream>
@@ -11,6 +12,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/joints/weld_joint.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
@@ -558,6 +560,156 @@ TEST_F(TreeTopologyTests, KinematicPathToWorld) {
     // Verify the
     EXPECT_EQ(path_to_world[level], expected_node_index);
   }
+}
+
+// Unit test to verify the correctness of
+// MultibodyTreeTopology::CreateListOfWeldedBodies().
+// This test creates a tree with a topology as shown below. Single vertical
+// lines indicate bodies that are connected by a non-weld mobilizer. Double
+// vertical lines indicate bodies that are welded.
+// A "welded body" is defined as some connected sub-graph of the tree where the
+// connected edges (i.e., mobilizers) are weld mobilizers (double vertical lines
+// in the schematic below). According to this definition, welded bodies for the
+// tree below are (see MultibodyTreeTopology::CreateListOfWeldedBodies() for
+// further details on this definition):
+// - Welded body 0: w, l, m, n
+// - Welded body 1: a, b
+// - Welded body 2: c
+// - Welded body 3: d, e, g, f
+// - Welded body 4: i
+// - Welded body 5: j, k
+// - Welded body 6: h
+//
+// In no particular order however, welded body zero contains the world.
+//
+//
+//                      +---+
+//                      | w | (world body)
+//          +-----------+-+-+-----------+-------------+
+//          |             |             |             ║
+//          |             |             |             ║
+//          |             |             |             ║
+//        +-v-+         +-v-+         +-v-+         +-v-+
+//        | a |         | d |         | i |         | l |
+//        +---+      +--+---+--+      +-+-+      +--+---+--+
+//          ║        ║         ║        |        ║         ║
+//          ║        ║         ║        |        ║         ║
+//          ║        ║         ║        |        ║         ║
+//        +-v-+    +-v-+     +-v-+    +-v-+    +-v-+     +-v-+
+//        | b |    | e |     | g |    | j |    | m |     | n |
+//        +---+    +---+     +---+    +-+-+    +---+     +---+
+//         |         ║         |        ║
+//         |         ║         |        ║
+//         |         ║         |        ║
+//       +-v-+     +-v-+     +-v-+    +-v-+
+//       | c |     | f |     | h |    | k |
+//       +---+     +---+     +---+    +-+-+
+//
+// This test verifies MultibodyTreeTopology::CreateListOfWeldedBodies() returns
+// this list of welded bodies.
+GTEST_TEST(WeldedBodies, CreateListOfWeldedBodies) {
+  MultibodyTree<double> model;
+
+  // Helper to add a rigid body. For these tests the value of the spatial
+  // inertia is not relevant and therefore we leave it un-initialized.
+  auto AddRigidBody =
+      [&model](const std::string& name) -> const RigidBody<double>& {
+    return model.AddRigidBody(name, SpatialInertia<double>());
+  };
+
+  // Helper to add a joint between two bodies. For this test the actual type of
+  // the joint is not relevant, only the fact that "is not" a WeldJoint.
+  auto AddJoint =
+      [&model](const std::string& name,
+               const Body<double>& parent, const Body<double>& child) {
+    model.AddJoint<RevoluteJoint>(
+        name, parent, {}, child, {}, Vector3<double>::UnitX());
+  };
+
+  // Helper method to add a WeldJoint between two bodies.
+  auto AddWeldJoint =
+      [&model](const std::string& name,
+               const Body<double>& parent, const Body<double>& child) {
+        model.AddJoint<WeldJoint>(
+            name, parent, {}, child, {}, Isometry3d::Identity());
+      };
+
+  // Start building the test model.
+  const RigidBody<double>& body_a = AddRigidBody("a");
+  const RigidBody<double>& body_b = AddRigidBody("b");
+  const RigidBody<double>& body_c = AddRigidBody("c");
+  const RigidBody<double>& body_d = AddRigidBody("d");
+  const RigidBody<double>& body_e = AddRigidBody("e");
+  const RigidBody<double>& body_f = AddRigidBody("f");
+  const RigidBody<double>& body_g = AddRigidBody("g");
+  const RigidBody<double>& body_h = AddRigidBody("h");
+  const RigidBody<double>& body_i = AddRigidBody("i");
+  const RigidBody<double>& body_j = AddRigidBody("j");
+  const RigidBody<double>& body_k = AddRigidBody("k");
+  const RigidBody<double>& body_l = AddRigidBody("l");
+  const RigidBody<double>& body_m = AddRigidBody("m");
+  const RigidBody<double>& body_n = AddRigidBody("n");
+
+  AddJoint("wa", model.world_body(), body_a);
+
+  // Welded body formed by bodies a and b.
+  AddWeldJoint("ab", body_a, body_b);
+
+  AddJoint("bc", body_b, body_c);
+  AddJoint("wd", model.world_body(), body_d);
+
+  // Welded body formed by bodies d, e, f and, g.
+  AddWeldJoint("de", body_d, body_e);
+  AddWeldJoint("ef", body_e, body_f);
+  AddWeldJoint("dg", body_d, body_g);
+
+  AddJoint("gh", body_g, body_h);
+  AddJoint("wi", model.world_body(), body_i);
+  AddJoint("ij", body_i, body_j);
+
+  // Welded body formed by bodies j and k.
+  AddWeldJoint("jk", body_j, body_k);
+
+  // Welded body formed by bodies w (world), l, m and n.
+  AddWeldJoint("wl", model.world_body(), body_l);
+  AddWeldJoint("lm", body_l, body_m);
+  AddWeldJoint("ln", body_l, body_n);
+
+  // We are done building the test model.
+  model.Finalize();
+
+  const MultibodyTreeTopology& topology = model.get_topology();
+
+  // Ask the topology to build the list of welded bodies.
+  std::vector<std::set<BodyIndex>> welded_bodies =
+      topology.CreateListOfWeldedBodies();
+  ASSERT_EQ(welded_bodies.size(), 7);
+
+  // Welded body "0" must correspond to the set of bodies welded to the world.
+  const std::set<BodyIndex>& world_welded_body = welded_bodies[0];
+  // Therefore world_welded_body must contain the index of the world body.
+  EXPECT_NE(world_welded_body.find(world_index()), world_welded_body.end());
+
+  // Build the expected result.
+  std::set<std::set<BodyIndex>> expected_welded_bodies;
+  expected_welded_bodies.insert({body_a.index(), body_b.index()});
+  expected_welded_bodies.insert({body_c.index()});
+  expected_welded_bodies.insert(
+      {body_d.index(), body_e.index(), body_f.index(), body_g.index()});
+  expected_welded_bodies.insert({body_h.index()});
+  expected_welded_bodies.insert({body_i.index()});
+  expected_welded_bodies.insert({body_j.index(), body_k.index()});
+  expected_welded_bodies.insert(
+      {world_index(), body_l.index(), body_m.index(), body_n.index()});
+
+  // In order to compare the computed list of welded bodies against the expected
+  // list, irrespective of the ordering in the computed list, we first convert
+  // the computed list to a set.
+  std::set<std::set<BodyIndex>> welded_bodies_set(
+      welded_bodies.begin(), welded_bodies.end());
+
+  // Verify the computed list has the expected entries.
+  EXPECT_EQ(welded_bodies_set, expected_welded_bodies);
 }
 
 }  // namespace

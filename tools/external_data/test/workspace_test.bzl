@@ -15,6 +15,7 @@ def workspace_test(
         size = None,
         timeout = None,
         args = ARGS_DEFAULT,
+        tags = [],
         data = []):
     """
     Copies all contents under `*.runfiles/${workspace}/**` to a temporary
@@ -36,4 +37,5 @@ def workspace_test(
         srcs = ["@drake//tools/external_data/test:workspace_test.sh"],
         args = args,
         data = data,
+        tags = tags,
     )

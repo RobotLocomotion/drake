@@ -392,14 +392,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "rotation_matrix_deprecated_test",
-    deps = [
-        ":geometric_transform",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
     name = "rotation_conversion_test",
     deps = [
         ":geometric_transform",

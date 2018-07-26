@@ -522,7 +522,6 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   // Only declare ports to communicate with a SceneGraph if the plant is
   // provided with a valid source id.
   if (source_id_) DeclareSceneGraphPorts();
-  DeclareCacheEntries();
   scene_graph_ = nullptr;  // must not be used after Finalize().
   if (num_collision_geometries() > 0 &&
       penalty_method_contact_parameters_.time_scale < 0)
@@ -1632,28 +1631,15 @@ MultibodyPlant<T>::get_geometry_query_input_port() const {
 }
 
 template<typename T>
-void MultibodyPlant<T>::DeclareCacheEntries() {
-  // TODO(amcastro-tri): User proper System::Declare() infrastructure to
-  // declare cache entries when that lands.
-  pc_ = std::make_unique<PositionKinematicsCache<T>>(model_->get_topology());
-  vc_ = std::make_unique<VelocityKinematicsCache<T>>(model_->get_topology());
-}
-
-template<typename T>
 const PositionKinematicsCache<T>& MultibodyPlant<T>::EvalPositionKinematics(
     const systems::Context<T>& context) const {
-  // TODO(amcastro-tri): Replace Calc() for an actual Eval() when caching lands.
-  model_->CalcPositionKinematicsCache(context, pc_.get());
-  return *pc_;
+  return model_->EvalPositionKinematics(context);
 }
 
 template<typename T>
 const VelocityKinematicsCache<T>& MultibodyPlant<T>::EvalVelocityKinematics(
     const systems::Context<T>& context) const {
-  // TODO(amcastro-tri): Replace Calc() for an actual Eval() when caching lands.
-  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  model_->CalcVelocityKinematicsCache(context, pc, vc_.get());
-  return *vc_;
+  return model_->EvalVelocityKinematics(context);
 }
 
 template <typename T>

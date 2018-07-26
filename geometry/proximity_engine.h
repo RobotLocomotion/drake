@@ -8,6 +8,7 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
+#include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -91,6 +92,16 @@ class ProximityEngine {
   /** Reports the number of _anchored_ geometries (spanning all sources). */
   int num_anchored() const;
 
+  /** The distance (signed/unsigned/penetration distance) is generally computed
+   * from an iterative process. The distance_tolerance determines when the
+   * iterative process will terminate.
+   * As a rule of rule of thumb, one can generally assume that the answer will
+   * be within 10 * tol to the true answer.
+   */
+  void set_distance_tolerance(double tol);
+
+  double distance_tolerance() const;
+
   //@}
 
   /** Updates the poses for all of the dynamic geometries in the engine. It
@@ -106,6 +117,37 @@ class ProximityEngine {
   //  2. I could simply have a method that returns a mutable reference to such
   //    a vector and the caller sets values there directly.
   void UpdateWorldPoses(const std::vector<Isometry3<T>>& X_WG);
+
+  // ----------------------------------------------------------------------
+  /**@name              Signed Distance Queries
+  See @ref signed_distance_query "Signed Distance Query" for more details. */
+
+  //@{
+  // NOTE: This maps to Model::ClosestPointsAllToAll().
+  /** Determines all the closest points between any pair of bodies/elements.
+   This function returns the _signed_ distance function between each pair of
+   elements in @p dynamic_map (object whose pose will change), and between
+   each pair between an element in @p dynamic_map and another element in
+   @p anchored_map. The order and size of the closest points are invariant
+   when the poses of the objects are changed.
+   @param[in]   dynamic_map   A map from geometry _index_ to the corresponding
+                              global geometry identifier for dynamic geometries.
+   @param[in]   anchored_map  A map from geometry _index_ to the corresponding
+                              global geometry identifier for anchored
+                              geometries.
+   @returns signed_distance_pair A vector populated with all pairs of witness
+                                 points. For a pair consisting of geometries A
+                                 and B, distances will always be reported as the
+                                 pair (A, B). In other words, it won't sometimes
+                                 be (A, B) and other times be (B, A). The pair
+                                 is defined with respect to a fixed, arbitrary
+                                 ordering.
+   */
+  std::vector<SignedDistancePair<double>>
+  ComputeSignedDistancePairwiseClosestPoints(
+      const std::vector<GeometryId>& dynamic_map,
+      const std::vector<GeometryId>& anchored_map) const;
+  //@}
 
 
   //----------------------------------------------------------------------------

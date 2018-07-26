@@ -117,11 +117,11 @@ def _impl(repository_ctx):
         ), "include")
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "16.04":
-            archive = "vtk-v8.1.1-qt-5.5.1-xenial-x86_64-1.tar.gz"
-            sha256 = "77c4bd6eb41fa23c2c7421eeca70e761fc699aaed6cc4804e3d3a73dff16a0fb"  # noqa
+            archive = "vtk-8.1.1-embree-3.2.0-ospray-1.6.1-python-2.7.12-python-3.5.2-qt-5.5.1-xenial-x86_64.tar.gz"  # noqa
+            sha256 = "a79c6b50675a52f23820c722b10d64272ecf29be055c9d90b1fe9104d86a1d4d"  # noqa
         elif os_result.ubuntu_release == "18.04":
-            archive = "vtk-v8.1.1-qt-5.9.5-bionic-x86_64-1.tar.gz"
-            sha256 = "7c05576eb918fcf85934659d920e4a97bf2c5f034eda296d941495f0008e22b3"  # noqa
+            archive = "vtk-8.1.1-embree-3.2.0-ospray-1.6.1-python-2.7.15-python-3.6.5-qt-5.9.5-bionic-x86_64.tar.gz"  # noqa
+            sha256 = "9efc6e27639a4e07b30a3320740f63b089d95105739050e65e5f51a13ce9049b"  # noqa
         else:
             fail("Operating system is NOT supported", attr = os_result)
 
@@ -448,6 +448,16 @@ licenses([
 
     file_content += _vtk_cc_library(
         repository_ctx.os.name,
+        "vtkImagingCore",
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
         "vtkIOGeometry",
         hdrs = [
             "vtkIOGeometryModule.h",
@@ -469,6 +479,7 @@ licenses([
             "vtkImageReader2.h",
             "vtkImageWriter.h",
             "vtkIOImageModule.h",
+            "vtkJPEGReader.h",
             "vtkPNGReader.h",
             "vtkPNGWriter.h",
         ],
@@ -519,6 +530,7 @@ licenses([
             "vtkActor.h",
             "vtkActorCollection.h",
             "vtkCamera.h",
+            "vtkLight.h",
             "vtkMapper.h",
             "vtkPolyDataMapper.h",
             "vtkProp.h",
@@ -526,7 +538,9 @@ licenses([
             "vtkPropCollection.h",
             "vtkProperty.h",
             "vtkRenderer.h",
+            "vtkRendererCollection.h",
             "vtkRenderingCoreModule.h",
+            "vtkRenderPass.h",
             "vtkRenderWindow.h",
             "vtkTexture.h",
             "vtkViewport.h",
@@ -574,6 +588,64 @@ licenses([
         ],
     )
 
+    file_content += """
+cc_library(
+    name = "ospray",
+    srcs =
+        glob(["lib/libembree*.so*"]) +
+        glob(["lib/libospray*.so*"]),
+    visibility = ["//visibility:private"],
+)
+"""
+
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
+        "vtkRenderingOSPRay",
+        visibility = ["//visibility:public"],
+        hdrs = [
+            "vtkOSPRayLightNode.h",
+            "vtkOSPRayMaterialLibrary.h",
+            "vtkOSPRayPass.h",
+            "vtkOSPRayRendererNode.h",
+            "vtkRenderingOSPRayModule.h",
+            "vtkRenderingVolumeModule.h",
+        ],
+        deps = [
+            ":vtkCommonDataModel",
+            ":vtkImagingCore",
+            ":vtkIOXML",
+            ":vtkRenderingOpenGL2",
+            ":vtkRenderingCore",
+            ":vtkRenderingSceneGraph",
+            ":vtkRenderingVolume",
+            ":ospray",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
+        "vtkRenderingSceneGraph",
+        visibility = ["//visibility:public"],
+        hdrs = [
+            "vtkLightNode.h",
+            "vtkRendererNode.h",
+            "vtkRenderingSceneGraphModule.h",
+            "vtkViewNode.h",
+        ],
+        deps = [
+            ":vtkCommonCore",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
+        "vtkRenderingVolume",
+        deps = [
+            ":vtkCommonCore",
+            ":vtkRenderingCore",
+        ],
+    )
+
     if repository_ctx.os.name == "linux":
         file_content += _vtk_cc_library(repository_ctx.os.name, "vtkglew")
 
@@ -601,7 +673,8 @@ licenses([
     file_content += """
 filegroup(
     name = "vtk",
-    srcs = glob(["**/*"], exclude=["BUILD.bazel", "WORKSPACE"]),
+    srcs = glob(["**/*"], exclude=["BUILD.bazel", "WORKSPACE",
+        "lib/python3.*/**/*", "lib/libvtkWrappingPython3*.so"]),
     visibility = ["//visibility:public"],
 )
 """

@@ -1,8 +1,10 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -18,7 +20,14 @@ namespace dev {
  */
 class RemoteTreeViewerWrapper {
  public:
-  RemoteTreeViewerWrapper();
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RemoteTreeViewerWrapper)
+
+  /**
+   * If @p lcm is passed in, it will be aliased and used for all publish calls.
+   * If nullptr, a new DrakeLcm instance will be made instead.
+   * The lifespan of @p lcm needs to be longer than this instance.
+   */
+  explicit RemoteTreeViewerWrapper(drake::lcm::DrakeLcm* lcm = nullptr);
 
   ~RemoteTreeViewerWrapper() = default;
 
@@ -53,7 +62,8 @@ class RemoteTreeViewerWrapper {
                        const std::vector<std::string>& path);
 
  private:
-  drake::lcm::DrakeLcm lcm_;
+  drake::lcm::DrakeLcm* lcm_{};
+  std::unique_ptr<drake::lcm::DrakeLcm> owned_lcm_{};
 };
 }  // namespace dev
 }  // namespace manipulation

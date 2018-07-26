@@ -21,6 +21,7 @@ def external_data_workspace_test(
         size = None,
         timeout = None,
         args = ARGS_DEFAULT,
+        tags = [],
         data = []):
     """
     Convenience wrapper for `workspace_test`, specific to `external_data`
@@ -48,6 +49,7 @@ def external_data_workspace_test(
             package_files,
             script,
         ] + _upstream_files + data,
+        tags = tags,
     )
 
 def collect_external_data_lint_files():

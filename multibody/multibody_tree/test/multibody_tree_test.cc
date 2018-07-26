@@ -167,10 +167,11 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
   // Attempt to add a body having the same name as a body already part of the
   // model. This is not allowed and an exception should be thrown.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model->AddRigidBody("iiwa_link_5", SpatialInertia<double>()),
+      model->AddRigidBody("iiwa_link_5", default_model_instance(),
+                          SpatialInertia<double>()),
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */
-      "This model already contains a body named 'iiwa_link_5'. "
+      ".* already contains a body named 'iiwa_link_5'. "
       "Body names must be unique within a given model.");
 
   // Attempt to add a joint having the same name as a joint already part of the
@@ -178,13 +179,12 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       model->AddJoint<RevoluteJoint>(
           "iiwa_joint_4",
-          /* Dummy frame definitions. Not relevant for this test. */
           model->world_body(), {},
-          model->world_body(), {},
+          model->GetBodyByName("iiwa_link_5"), {},
           Vector3<double>::UnitZ()),
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */
-      "This model already contains a joint named 'iiwa_joint_4'. "
+      ".* already contains a joint named 'iiwa_joint_4'. "
       "Joint names must be unique within a given model.");
 
   // Attempt to add a joint having the same name as a joint already part of the
@@ -195,7 +195,7 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
           model->GetJointByName("iiwa_joint_4")),
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */
-      "This model already contains a joint actuator named 'iiwa_actuator_4'. "
+      ".* already contains a joint actuator named 'iiwa_actuator_4'. "
           "Joint actuator names must be unique within a given model.");
 
   // Now we tested we cannot add body or joints with an existing name, finalize
