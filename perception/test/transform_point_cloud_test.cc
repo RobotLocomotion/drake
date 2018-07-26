@@ -14,7 +14,7 @@ namespace drake {
 namespace perception {
 namespace {
 
-const Vector3<double> kFrameToBodyRpy(M_PI_4, -M_PI_2, 0.543);
+const Vector3<double> kFrameToBodyRpy(M_PI_4, -M_PI_4, M_PI_2);
 const Vector3<double> kFrameToBodyP(-0.3, 5.4, -2.7);
 
 const Vector3<double> kWorldToBodyRpy(M_PI_2, -0.236, M_PI_4);
@@ -38,7 +38,7 @@ Matrix3X<float> GenerateBoundedSample(const Vector3<float>& min,
 }
 
 Matrix4X<float> CalcExpectedOutput(const Isometry3<double>& isom,
-    const MatrixX<float>& data) {
+                                   const MatrixX<float>& data) {
   // The rigid transform below uses `float` because the point cloud uses
   // `float` as the numerical representation.
   math::RigidTransform<double> transform_d(isom);
@@ -63,7 +63,7 @@ RigidBody<double> AddBodyToTree(RigidBodyTree<double>* tree) {
        Eigen::AngleAxisd(kWorldToBodyRpy(1), Eigen::Vector3d::UnitY()) *
        Eigen::AngleAxisd(kWorldToBodyRpy(2), Eigen::Vector3d::UnitZ()));
   body.add_joint(&tree->world(), std::make_unique<RollPitchYawFloatingJoint>(
-                                      "base", body_transform));
+                                     "base", body_transform));
 
   return body;
 }
@@ -141,7 +141,7 @@ GTEST_TEST(TransformPointCloudTest, TransformToWorldFrame) {
 
   std::unique_ptr<TransformPointCloud> transformer =
       std::make_unique<TransformPointCloud>(*tree.get(),
-          frame->get_frame_index());
+                                            frame->get_frame_index());
   std::unique_ptr<systems::Context<double>> context =
       transformer->CreateDefaultContext();
   std::unique_ptr<systems::AbstractValue> output =

@@ -37,12 +37,12 @@ void TransformPointCloud::ApplyTransformToPointCloud(
   const Isometry3<double> isom =
       tree_.relativeTransform(cache, parent_frame_index_, child_frame_index_);
 
-  const math::RigidTransform<float> rigid_transform(isom.cast<float>());
-
+  const math::RigidTransform<double> rigid_transform(isom);
+  const Matrix4<float> mat = rigid_transform.GetAsMatrix4().cast<float>();
+  const Matrix4X<float> out =
+      mat * input_point_cloud->xyzs().colwise().homogeneous();
   output->resize(input_point_cloud->size());
-  for (int i = 0; i < output->size(); i++) {
-    output->mutable_xyz(i) = rigid_transform * input_point_cloud->xyz(i);
-  }
+  output->mutable_xyzs() = out.block(0, 0, 3, out.cols());
 }
 
 void TransformPointCloud::CreatePorts() {
