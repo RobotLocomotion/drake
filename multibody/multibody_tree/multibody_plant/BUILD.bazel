@@ -188,4 +188,13 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "spring_mass_system_test",
+    timeout = "moderate",
+    deps = [
+        ":multibody_plant",
+        "//systems/analysis:simulator",
+    ],
+)
+
 add_lint_tests()
