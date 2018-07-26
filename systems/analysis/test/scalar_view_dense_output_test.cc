@@ -71,10 +71,10 @@ TYPED_TEST(ScalarViewDenseOutputTest, ExtensionConsistency) {
   // Checks basic getters for consistency.
   EXPECT_EQ(dense_output.is_empty(),
             base_output->is_empty());
-  EXPECT_EQ(dense_output.get_start_time(),
-            base_output->get_start_time());
-  EXPECT_EQ(dense_output.get_end_time(),
-            base_output->get_end_time());
+  EXPECT_EQ(dense_output.start_time(),
+            base_output->start_time());
+  EXPECT_EQ(dense_output.end_time(),
+            base_output->end_time());
 
   // Compares evaluations for consistency.
   EXPECT_THROW(

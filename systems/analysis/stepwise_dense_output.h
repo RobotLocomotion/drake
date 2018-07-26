@@ -46,7 +46,7 @@ class StepwiseDenseOutput : public DenseOutput<T> {
   /// @post The extents covered by updates since instantiation or
   ///       last consolidation can be evaluated (via Evaluate()).
   /// @post Time extents covered by updates can be evaluated
-  ///       (via get_start_time()/get_end_time()).
+  ///       (via start_time()/end_time()).
   /// @throws std::logic_error if any of the preconditions is not met.
   virtual void Consolidate() = 0;
 

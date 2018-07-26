@@ -370,8 +370,8 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
   // TODO(hidmic): Remove redundant time-keeping member fields when
   // PiecewisePolynomial supports return by-reference of its time extents.
   // It currently returns them by-value, double type only, and thus the
-  // need for this storage in order to meet DenseOutput::get_start_time()
-  // and DenseOutput::get_end_time() API.
+  // need for this storage in order to meet DenseOutput::start_time()
+  // and DenseOutput::end_time() API.
 
   // The smallest time at which the output is defined.
   T start_time_{};
