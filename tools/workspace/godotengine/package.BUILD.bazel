@@ -90,6 +90,7 @@ cc_library(
         "core/method_bind.gen.inc",
         "core/method_bind_ext.gen.inc",
     ],
+    tags = ["manual"],
 )
 
 # The packages that we want.  Use "/**" to also glob their subpackages.  When
@@ -169,6 +170,7 @@ cc_library(
         "**/*.xpm",
     ]),
     visibility = ["//visibility:public"],
+    tags = ["manual"],
     deps = [
         "generated_headers",
         "@freetype2",
