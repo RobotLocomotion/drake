@@ -1,11 +1,9 @@
-# Use one of Drake's pre-selected compilers.
-build --crosstool_top=//tools/cc_toolchain:default-toolchain
+# Disable ccache due to incompatibility with Bazel.
+build --action_env=CCACHE_DISABLE=1
 
-### Unsupported Crosstool ###
-# Use the default Bazel-generated CROSSTOOL.
-# This may be useful for developers with unsupported workstation configurations.
-build:unsupported_crosstool --crosstool_top=//external:cc_toolchain
-build:unsupported_crosstool --action_env=CCACHE_DISABLE=1
+# Add C++14 compiler flags.
+build --cxxopt=-std=c++14
+build --host_cxxopt=-std=c++14
 
 ### Debug symbols on OS X. ###
 # See https://github.com/bazelbuild/bazel/issues/2537
