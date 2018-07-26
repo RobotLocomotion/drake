@@ -42,11 +42,11 @@ Matrix4X<float> CalcExpectedOutput(const Isometry3<double>& isom,
   // The rigid transform below uses `float` because the point cloud uses
   // `float` as the numerical representation.
   math::RigidTransform<double> transform_d(isom);
-  math::RigidTransform<float> transform(transform_d.cast<float>());
+  Matrix4X<float> transform = transform_d.GetAsMatrix4().cast<float>();
   Matrix4X<float> data_homogeneous(4, data.cols());
   data_homogeneous.block(0, 0, 3, data.cols()) = data;
   data_homogeneous.row(3) = VectorX<float>::Ones(kNumPoints);
-  Matrix4X<float> expected_output = transform.GetAsMatrix4() * data_homogeneous;
+  Matrix4X<float> expected_output = transform * data_homogeneous;
   return expected_output;
 }
 
