@@ -510,7 +510,7 @@ SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
   app->RethrowNonIpoptException(true);
 
-  const double tol = 1e-10;  // Note: SNOPT is only 1e-6, but in #3712 we
+  const double tol = 1.05e-10;  // Note: SNOPT is only 1e-6, but in #3712 we
   // diagnosed that the CompareMatrices tolerance needed to be the sqrt of the
   // constr_viol_tol
   app->Options()->SetNumericValue("tol", tol);
