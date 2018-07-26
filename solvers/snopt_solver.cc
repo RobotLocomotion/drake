@@ -31,13 +31,76 @@ extern "C" {
 namespace drake {
 namespace solvers {
 namespace {
-// This struct is used for passing additional info to the snopt_userfun, which
+// This class is used for passing additional info to the snopt_userfun, which
 // evaluates the value and gradient of the cost and constraints. Apart from the
 // standard information such as decision variable values, snopt_userfun could
 // rely on additional information such as the cost gradient sparsity pattern.
-struct SnoptUserFunInfo {
-  const MathematicalProgram* prog{nullptr};
-  const std::set<int>* nonlinear_cost_gradient_indices{nullptr};
+//
+// In order to use access class in SNOPT's userfun callback, we need to provide
+// for a pointer to this object.  SNOPT's C interface does not allow using the
+// char workspace, as explained in http://ccom.ucsd.edu/~optimizers/usage/c/ --
+// "due to the incompatibility of strings in Fortran/C, all character arrays
+// are disabled." Therefore, we use the integer user data (`int iu[]`) instead.
+class SnoptUserFunInfo {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SnoptUserFunInfo)
+
+  SnoptUserFunInfo(const MathematicalProgram* prog,
+                   const std::set<int>* nonlinear_cost_gradient_indices)
+      : this_pointer_as_int_array_(MakeThisAsInts()),
+        prog_(*prog),
+        nonlinear_cost_gradient_indices_(*nonlinear_cost_gradient_indices) {}
+
+  const MathematicalProgram& mathematical_program() const { return prog_; }
+
+  const std::set<int>& nonlinear_cost_gradient_indices() const {
+    return nonlinear_cost_gradient_indices_;
+  }
+
+  // Stores an alias to `this` into the SNOPT workspace, by setting the user
+  // data `int iu[]` pointer to alias our internal int array.
+  void SetInto(snProblem* snopt_problem) const {
+    snopt_problem->iu = const_cast<int*>(this_pointer_as_int_array_.data());
+    snopt_problem->leniu = kIntCount;
+  }
+
+  // Converts the `int iu[]` data back into a reference to this class.
+  static const SnoptUserFunInfo& GetFrom(const int* iu, int leniu) {
+    DRAKE_ASSERT(iu != nullptr);
+    DRAKE_ASSERT(leniu == kIntCount);
+
+    const SnoptUserFunInfo* result = nullptr;
+    std::copy(
+        reinterpret_cast<const char*>(iu),
+        reinterpret_cast<const char*>(iu) + sizeof(result),
+        reinterpret_cast<char*>(&result));
+
+    DRAKE_ASSERT(result != nullptr);
+    return *result;
+  }
+
+ private:
+  // We need this many `int`s to store a pointer.
+  static constexpr size_t kIntCount =
+      (sizeof(SnoptUserFunInfo*) + sizeof(int) - 1) / sizeof(int);
+
+  // Converts the `this` pointer into an integer array.
+  std::array<int, kIntCount> MakeThisAsInts() {
+    std::array<int, kIntCount> result;
+    result.fill(0);
+
+    const SnoptUserFunInfo* const value = this;
+    std::copy(
+        reinterpret_cast<const char*>(&value),
+        reinterpret_cast<const char*>(&value) + sizeof(value),
+        reinterpret_cast<char*>(result.data()));
+
+    return result;
+  }
+
+  const std::array<int, kIntCount> this_pointer_as_int_array_;
+  const MathematicalProgram& prog_;
+  const std::set<int>& nonlinear_cost_gradient_indices_;
 };
 
 // Return the number of rows in the nonlinear constraint.
@@ -207,54 +270,11 @@ void EvaluateAllNonlinearCosts(
   }
 }
 
-void PackSnoptUserFunInfoIntoWorkspace(
-    snProblem* snopt_problem, const SnoptUserFunInfo* snopt_userfun_info) {
-  // snopt-interface does not allow using the char workspace, as explained in
-  // http://ccom.ucsd.edu/~optimizers/usage/c/, that "due to the incompatibility
-  // of strings in Fortran/C, all character arrays are disabled."
-  //
-  // This is a tricky part, we use the integer user workspace iu[0] to
-  // store snopt_user_info. In snopt_userfun, we will need to read
-  // snopt_user_info from the integer workspace.
-  // Set the length of the integer user workspace to be 100. This should be
-  // large enough to accomodate snopt_userfun_info. If not, increase this
-  // number, and also change the static assertion below.
-  snopt_problem->leniu = 100;
-  static_assert(100 * sizeof(int) > sizeof(snopt_userfun_info),
-                "snopt_problem->leniu is not large enough.");
-  snopt_problem->iu =
-      static_cast<int*>(malloc(sizeof(int) * snopt_problem->leniu));
-
-  const int* const p_snopt_userfun_info =
-      reinterpret_cast<int*>(&snopt_userfun_info);
-  int* const iu_snopt_userfun_info = &snopt_problem->iu[0];
-  // copy_size is the round up of the division sizeof(snopt_userfun_info) /
-  // sizeof(int).
-  const int copy_size =
-      (sizeof(snopt_userfun_info) + sizeof(int) - 1) / sizeof(int);
-  std::copy(p_snopt_userfun_info, p_snopt_userfun_info + copy_size,
-            iu_snopt_userfun_info);
-}
-
-SnoptUserFunInfo* UnpackSnoptUserFunInfoFromWorkspace(int iu[]) {
-  SnoptUserFunInfo* snopt_userfun_info;
-  int* const p_snopt_userfun_info = reinterpret_cast<int*>(&snopt_userfun_info);
-  const int* const iu_snopt_userfun_info = iu;
-  std::copy(iu_snopt_userfun_info,
-            iu_snopt_userfun_info + sizeof(snopt_userfun_info),
-            p_snopt_userfun_info);
-  return snopt_userfun_info;
-}
-
 void snopt_userfun(int* Status, int* n, double x[], int* needF, int* neF,
                    double F[], int* needG, int* neG, double G[], char* cu,
                    int* lencu, int iu[], int* leniu, double ru[], int* lenru) {
-  const SnoptUserFunInfo* snopt_userfun_info =
-      UnpackSnoptUserFunInfoFromWorkspace(iu);
-
-  const MathematicalProgram* current_problem = snopt_userfun_info->prog;
-  const std::set<int>* nonlinear_cost_gradient_indices =
-      snopt_userfun_info->nonlinear_cost_gradient_indices;
+  const SnoptUserFunInfo& info = SnoptUserFunInfo::GetFrom(iu, *leniu);
+  const MathematicalProgram& current_problem = info.mathematical_program();
 
   Eigen::VectorXd xvec(*n);
   for (int i = 0; i < *n; i++) {
@@ -266,27 +286,27 @@ void snopt_userfun(int* Status, int* n, double x[], int* needF, int* neF,
 
   size_t grad_index = 0;
 
-  current_problem->EvalVisualizationCallbacks(xvec);
+  current_problem.EvalVisualizationCallbacks(xvec);
 
-  EvaluateAllNonlinearCosts(*current_problem, xvec,
-                            *nonlinear_cost_gradient_indices, F, G,
-                            &grad_index);
+  EvaluateAllNonlinearCosts(
+      current_problem, xvec, info.nonlinear_cost_gradient_indices(), F, G,
+      &grad_index);
 
   // The constraint index starts at 1 because the cost is the
   // first row.
   size_t constraint_index = 1;
   // The gradient_index also starts after the cost.
-  EvaluateNonlinearConstraints(*current_problem,
-                               current_problem->generic_constraints(), F, G,
+  EvaluateNonlinearConstraints(current_problem,
+                               current_problem.generic_constraints(), F, G,
                                &constraint_index, &grad_index, xvec);
-  EvaluateNonlinearConstraints(*current_problem,
-                               current_problem->lorentz_cone_constraints(), F,
+  EvaluateNonlinearConstraints(current_problem,
+                               current_problem.lorentz_cone_constraints(), F,
                                G, &constraint_index, &grad_index, xvec);
   EvaluateNonlinearConstraints(
-      *current_problem, current_problem->rotated_lorentz_cone_constraints(), F,
+      current_problem, current_problem.rotated_lorentz_cone_constraints(), F,
       G, &constraint_index, &grad_index, xvec);
   EvaluateNonlinearConstraints(
-      *current_problem, current_problem->linear_complementarity_constraints(),
+      current_problem, current_problem.linear_complementarity_constraints(),
       F, G, &constraint_index, &grad_index, xvec);
 }
 
@@ -489,13 +509,12 @@ void SolveWithGivenOptions(
   char no_print_file[] = "";
   snInit(&drake_problem, problem_name, no_print_file, 0 /* no summary */);
 
-  SnoptUserFunInfo snopt_userfun_info;
-  snopt_userfun_info.prog = &prog;
   const std::set<int> nonlinear_cost_gradient_indices =
       GetAllNonlinearCostNonzeroGradientIndices(prog);
-  snopt_userfun_info.nonlinear_cost_gradient_indices =
-      &nonlinear_cost_gradient_indices;
-  PackSnoptUserFunInfoIntoWorkspace(&drake_problem, &snopt_userfun_info);
+  const SnoptUserFunInfo snopt_userfun_info(
+      &prog,
+      &nonlinear_cost_gradient_indices);
+  snopt_userfun_info.SetInto(&drake_problem);
 
   const int nx = prog.num_vars();
   std::vector<double> x(nx, 0.0);
@@ -681,7 +700,6 @@ void SolveWithGivenOptions(
   *x_val = Eigen::Map<Eigen::VectorXd>(x.data(), nx);
   *objective = F[0];
 
-  free(drake_problem.iu);
   deleteSNOPT(&drake_problem);
 }
 
