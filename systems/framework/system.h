@@ -1550,6 +1550,9 @@ class System : public SystemBase {
 
     // Potential and kinetic energy, and conservative power that measures
     // the transfer between them, must _not_ be (explicitly) time dependent.
+    // See API documentation above for Eval{Potential|Kinetic}Energy() and
+    // EvalConservativePower() to see why.
+
     // TODO(sherm1) Due to issue #9171 we cannot always recognize which
     // variables contribute to configuration so we'll invalidate on all
     // changes. Use configuration and kinematics tickets when #9171 is resolved.
@@ -1572,7 +1575,8 @@ class System : public SystemBase {
             .cache_index();
 
     // Only non-conservative power can have an explicit time or input
-    // port dependence.
+    // port dependence. See API documentation above for
+    // EvalNonConservativePower() to see why.
     nonconservative_power_cache_index_ =
         DeclareCacheEntry("non-conservative power",
                           &System<T>::CalcNonConservativePower,
