@@ -201,7 +201,8 @@ class RgbdCamera final : public LeafSystem<double> {
              const RigidBodyTree<double>& tree,
              const Eigen::Vector3d& position,
              const Eigen::Vector3d& orientation,
-             std::unique_ptr<RgbdRenderer> renderer);
+             std::unique_ptr<RgbdRenderer> renderer,
+             bool flat_terrain = true);
 
   /// A constructor for %RgbdCamera that defines `B` using a RigidBodyFrame.
   /// The pose of %RgbdCamera is fixed to a user-defined frame and will be
@@ -228,7 +229,8 @@ class RgbdCamera final : public LeafSystem<double> {
   RgbdCamera(const std::string& name,
              const RigidBodyTree<double>& tree,
              const RigidBodyFrame<double>& frame,
-             std::unique_ptr<RgbdRenderer> renderer);
+             std::unique_ptr<RgbdRenderer> renderer,
+             bool flat_terrain = true);
 
   ~RgbdCamera() = default;
 

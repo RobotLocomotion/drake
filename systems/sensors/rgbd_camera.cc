@@ -97,7 +97,8 @@ RgbdCamera::RgbdCamera(const std::string& name,
                        const RigidBodyTree<double>& tree,
                        const Eigen::Vector3d& position,
                        const Eigen::Vector3d& orientation,
-                       std::unique_ptr<RgbdRenderer> renderer)
+                       std::unique_ptr<RgbdRenderer> renderer,
+                       bool flat_terrain)
     : tree_(tree),
       frame_(RigidBodyFrame<double>()),
       X_WB_initial_(
@@ -105,6 +106,7 @@ RgbdCamera::RgbdCamera(const std::string& name,
           Eigen::Isometry3d(math::RollPitchYaw<double>(orientation)
                                 .ToMatrix3ViaRotationMatrix())),
       camera_fixed_(true),
+      flat_terrain_(flat_terrain),
       renderer_(std::move(renderer)),
       color_camera_info_(renderer_->config().width, renderer_->config().height,
                          renderer_->config().fov_y),
@@ -117,10 +119,12 @@ RgbdCamera::RgbdCamera(const std::string& name,
 RgbdCamera::RgbdCamera(const std::string& name,
                        const RigidBodyTree<double>& tree,
                        const RigidBodyFrame<double>& frame,
-                       std::unique_ptr<RgbdRenderer> renderer)
+                       std::unique_ptr<RgbdRenderer> renderer,
+                       bool flat_terrain)
     : tree_(tree),
       frame_(frame),
       camera_fixed_(false),
+      flat_terrain_(flat_terrain),
       renderer_(std::move(renderer)),
       color_camera_info_(renderer_->config().width, renderer_->config().height,
                          renderer_->config().fov_y),
