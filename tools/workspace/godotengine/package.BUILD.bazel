@@ -133,6 +133,10 @@ cc_library(
         x + "/*.inc"
         for x in _PACKAGES
     ] + [
+        x + "/*.hpp"
+        for x in _PACKAGES
+    ] + [
+        "main/*.h",
         "drivers/unix/**/*.h",
     ]),
     copts = [
