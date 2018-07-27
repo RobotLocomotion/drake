@@ -9,7 +9,7 @@ drake_assert_test_compile_cc="$2"
 # Make sure we know what C++ compiler to use.
 source "$capture_cc_env"
 [[ ! -z "$BAZEL_CC" ]]
-[[ -x "$BAZEL_CC" ]]
+command -v "$BAZEL_CC"
 "$BAZEL_CC" --version
 
 # TODO(#6996) Do this unconditionally once #6996 is fully merged.
