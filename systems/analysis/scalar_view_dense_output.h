@@ -42,7 +42,7 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
   }
 
  private:
-  T DoEvaluate(const T& t) const override {
+  T DoEvaluateScalar(const T& t) const override {
     return base_output_->Evaluate(t, dimension_);
   }
 

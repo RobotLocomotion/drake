@@ -71,6 +71,7 @@ TYPED_TEST(ScalarViewDenseOutputTest, ExtensionConsistency) {
             base_output->start_time());
   EXPECT_EQ(dense_output.end_time(),
             base_output->end_time());
+  EXPECT_EQ(dense_output.size(), 1);
 
   // Checks evaluation preconditions.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -79,13 +80,13 @@ TYPED_TEST(ScalarViewDenseOutputTest, ExtensionConsistency) {
 
   // Compares evaluations for consistency.
   EXPECT_EQ(
-      dense_output.Evaluate(this->kInitialTime),
+      dense_output.EvaluateScalar(this->kInitialTime),
       base_output->Evaluate(this->kInitialTime, this->kValidDimension));
   EXPECT_EQ(
-      dense_output.Evaluate(this->kMidTime),
+      dense_output.EvaluateScalar(this->kMidTime),
       base_output->Evaluate(this->kMidTime, this->kValidDimension));
   EXPECT_EQ(
-      dense_output.Evaluate(this->kFinalTime),
+      dense_output.EvaluateScalar(this->kFinalTime),
       base_output->Evaluate(this->kFinalTime, this->kValidDimension));
 }
 

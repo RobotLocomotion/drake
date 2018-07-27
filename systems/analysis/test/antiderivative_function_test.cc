@@ -203,7 +203,7 @@ TEST_P(AntiderivativeFunctionAccuracyTest, NthPowerMonomialTestCase) {
           << u << " and n = " << n << " to an accuracy of "
           << integration_accuracy_;
 
-      EXPECT_NEAR(antiderivative_function_approx->Evaluate(u),
+      EXPECT_NEAR(antiderivative_function_approx->EvaluateScalar(u),
                   solution, integration_accuracy_)
           << "Failure approximating ∫₀ᵘ xⁿ dx for u = "
           << u << " and n = " << n << " to an accuracy of "
@@ -262,7 +262,7 @@ TEST_P(AntiderivativeFunctionAccuracyTest, HyperbolicTangentTestCase) {
           << " u = " << u << " and a = " << a << " to an accuracy of "
           << integration_accuracy_;
 
-      EXPECT_NEAR(antiderivative_function_approx->Evaluate(u),
+      EXPECT_NEAR(antiderivative_function_approx->EvaluateScalar(u),
                   solution, integration_accuracy_)
           << "Failure approximating ∫₀ᵘ tanh(a⋅x) dx for"
           << " u = " << u << " and a = " << a << " to an accuracy of "
@@ -329,7 +329,7 @@ TEST_P(AntiderivativeFunctionAccuracyTest,
             << " u = " << u << ", a = " << a << "and b = " << b
             << " to an accuracy of " << integration_accuracy_;
 
-        EXPECT_NEAR(antiderivative_function_approx->Evaluate(u),
+        EXPECT_NEAR(antiderivative_function_approx->EvaluateScalar(u),
                     solution, integration_accuracy_)
             << "Failure approximating ∫₀ᵘ [(x + a)⋅(x + b)]⁻¹ dx for"
             << " u = " << u << ", a = " << a << "and b = " << b
@@ -390,7 +390,7 @@ TEST_P(AntiderivativeFunctionAccuracyTest, ExponentialFunctionTestCase) {
           << " u = " << u << " and n = " << n
           << " to an accuracy of " << integration_accuracy_;
 
-      EXPECT_NEAR(antiderivative_function_approx->Evaluate(u),
+      EXPECT_NEAR(antiderivative_function_approx->EvaluateScalar(u),
                   solution, integration_accuracy_)
           << "Failure approximating ∫₀ᵘ x eⁿˣ dx for"
           << " u = " << u << " and n = " << n
@@ -450,7 +450,7 @@ TEST_P(AntiderivativeFunctionAccuracyTest, TrigonometricFunctionTestCase) {
           << " u = " << u << " and a = " << a << " to an accuracy of "
           << integration_accuracy_;
 
-      EXPECT_NEAR(antiderivative_function_approx->Evaluate(u),
+      EXPECT_NEAR(antiderivative_function_approx->EvaluateScalar(u),
                   solution, integration_accuracy_)
           << "Failure approximating ∫₀ᵘ x⋅sin(a⋅x) dx for"
           << " u = " << u << " and a = " << a << " to an accuracy of "

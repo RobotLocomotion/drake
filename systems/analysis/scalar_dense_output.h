@@ -1,17 +1,20 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
+#include "drake/systems/analysis/dense_output.h"
 
 namespace drake {
 namespace systems {
 
-/// An interface for dense output of scalar ODE solutions.
-///
-/// See DenseOutput class documentation for further details.
+/// A DenseOutput class interface extension to deal with scalar ODE
+/// solutions. A ScalarDenseOutput instance is also a DenseOutput
+/// instance with single element vector values (i.e. size() == 1).
+/// As such, its value can evaluated in both scalar and vectorial
+/// form (via EvaluateScalar() and Evaluate(), respectively).
 ///
 /// @tparam T A valid Eigen scalar type.
 template <typename T>
-class ScalarDenseOutput {
+class ScalarDenseOutput : public DenseOutput<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScalarDenseOutput)
 
@@ -24,60 +27,30 @@ class ScalarDenseOutput {
   /// @throws std::logic_error if any of the preconditions is not met.
   /// @throws std::runtime_error if the output is not defined for the
   ///                            given @p t.
-  T Evaluate(const T& t) const {
-    if (is_empty()) {
-      throw std::logic_error("Empty scalar dense output"
-                             " cannot be evaluated.");
+  T EvaluateScalar(const T& t) const {
+    if (this->is_empty()) {
+      throw std::logic_error("Empty dense output cannot be evaluated.");
     }
-    if (t < this->do_start_time() || t > this->do_end_time()) {
-      throw std::runtime_error("Scalar dense output is not"
-                               " defined for given time.");
+    if (t < this->start_time() || t > this->end_time()) {
+      throw std::runtime_error("Dense output is not defined for given time.");
     }
-    return this->DoEvaluate(t);
-  }
-
-  /// Checks whether the output is empty or not.
-  virtual bool is_empty() const { return do_is_empty(); }
-
-  /// Returns output's start time, or in other words, the oldest time
-  /// `t` that it can be evaluated at e.g. via Evaluate().
-  /// @pre Output is not empty i.e. is_empty() equals false.
-  /// @throws std::logic_error if any of the preconditions is not met.
-  const T& start_time() const {
-    if (is_empty()) {
-      throw std::logic_error("Start time is not defined for"
-                             " an empty scalar dense output.");
-    }
-    return this->do_start_time();
-  }
-
-  /// Returns output's end time, or in other words, the newest time
-  /// `t` that it can be evaluated at e.g. via Evaluate().
-  /// @pre Output is not empty i.e. is_empty() equals false.
-  /// @throw std::logic_error if any of the preconditions is not met.
-  const T& end_time() const {
-    if (is_empty()) {
-      throw std::logic_error("End time is not defined for"
-                             " an empty scalar dense output.");
-    }
-    return this->do_end_time();
+    return this->DoEvaluateScalar(t);
   }
 
  protected:
   ScalarDenseOutput() = default;
 
  private:
-  // @see Evaluate(const T&)
-  virtual T DoEvaluate(const T& t) const = 0;
+  // @see EvaluateScalar(const T&)
+  virtual T DoEvaluateScalar(const T& t) const = 0;
 
-  // @see is_empty()
-  virtual bool do_is_empty() const = 0;
+  VectorX<T> DoEvaluate(const T& t) const override {
+    return VectorX<T>::Constant(1, this->DoEvaluateScalar(t));
+  }
 
-  // @see start_time()
-  virtual const T& do_start_time() const = 0;
-
-  // @see end_time()
-  virtual const T& do_end_time() const = 0;
+  int do_size() const override {
+    return 1;
+  }
 };
 
 }  // namespace systems

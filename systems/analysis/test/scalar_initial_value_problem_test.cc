@@ -273,7 +273,7 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, StoredCharge) {
             << Rs << " and Cs = " << Cs << " to an accuracy of "
             << integration_accuracy_;
 
-        EXPECT_NEAR(stored_charge_approx->Evaluate(t),
+        EXPECT_NEAR(stored_charge_approx->EvaluateScalar(t),
                     solution, integration_accuracy_)
             << "Failure approximating the solution for"
             << " dQ/dt = (sin(t) - Q / Cs) / Rs using Q(t₀ = "
@@ -344,7 +344,7 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, PopulationGrowth) {
           << " and r = " << r << " to an accuracy of "
           << integration_accuracy_;
 
-      EXPECT_NEAR(population_growth_approx->Evaluate(t),
+      EXPECT_NEAR(population_growth_approx->EvaluateScalar(t),
                   solution, integration_accuracy_)
           << "Failure approximating the solution for dN/dt = r * N"
           << " using N(t₀ = " << t0 << "; r) = " << N0 << " for t = "
