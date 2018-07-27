@@ -31,7 +31,7 @@ class ScalarDenseOutput : public DenseOutput<T> {
     if (this->is_empty()) {
       throw std::logic_error("Empty dense output cannot be evaluated.");
     }
-    if (t < this->start_time() || t > this->end_time()) {
+    if (t < this->do_start_time() || t > this->do_end_time()) {
       throw std::runtime_error("Dense output is not defined for given time.");
     }
     return this->DoEvaluateScalar(t);
@@ -40,10 +40,6 @@ class ScalarDenseOutput : public DenseOutput<T> {
  protected:
   ScalarDenseOutput() = default;
 
- private:
-  // @see EvaluateScalar(const T&)
-  virtual T DoEvaluateScalar(const T& t) const = 0;
-
   VectorX<T> DoEvaluate(const T& t) const override {
     return VectorX<T>::Constant(1, this->DoEvaluateScalar(t));
   }
@@ -51,6 +47,9 @@ class ScalarDenseOutput : public DenseOutput<T> {
   int do_size() const override {
     return 1;
   }
+
+  // @see EvaluateScalar(const T&)
+  virtual T DoEvaluateScalar(const T& t) const = 0;
 };
 
 }  // namespace systems

@@ -81,13 +81,13 @@ TYPED_TEST(ScalarViewDenseOutputTest, ExtensionConsistency) {
   // Compares evaluations for consistency.
   EXPECT_EQ(
       dense_output.EvaluateScalar(this->kInitialTime),
-      base_output->Evaluate(this->kInitialTime, this->kValidDimension));
+      base_output->EvaluateNth(this->kInitialTime, this->kValidDimension));
   EXPECT_EQ(
       dense_output.EvaluateScalar(this->kMidTime),
-      base_output->Evaluate(this->kMidTime, this->kValidDimension));
+      base_output->EvaluateNth(this->kMidTime, this->kValidDimension));
   EXPECT_EQ(
       dense_output.EvaluateScalar(this->kFinalTime),
-      base_output->Evaluate(this->kFinalTime, this->kValidDimension));
+      base_output->EvaluateNth(this->kFinalTime, this->kValidDimension));
 }
 
 }  // namespace

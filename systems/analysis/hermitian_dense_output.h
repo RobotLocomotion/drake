@@ -280,14 +280,14 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
     raw_steps_.clear();
   }
 
- private:
+ protected:
   VectorX<T> DoEvaluate(const T& t) const override {
     const MatrixX<double> matrix_value =
         continuous_trajectory_.value(ExtractDoubleOrThrow(t));
     return matrix_value.col(0).cast<T>();
   }
 
-  T DoEvaluate(const T& t, const int dimension) const override {
+  T DoEvaluateNth(const T& t, const int dimension) const override {
     return continuous_trajectory_.scalarValue(
         ExtractDoubleOrThrow(t), dimension, 0);
   }
@@ -304,6 +304,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
 
   const T& do_start_time() const override { return start_time_; }
 
+ private:
   // Validates that the provided @p step can be consolidated into this
   // dense output.
   // @see Update(const IntegrationStep&)

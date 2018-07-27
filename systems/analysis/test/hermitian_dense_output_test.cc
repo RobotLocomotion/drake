@@ -88,7 +88,7 @@ TYPED_TEST(HermitianDenseOutputTest, OutputConsistency) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       dense_output.Evaluate(this->kInitialTime),
       std::logic_error, this->kEmptyOutputErrorMessage);
-  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Evaluate(
+  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.EvaluateNth(
       this->kInitialTime, this->kValidDimension),
       std::logic_error, this->kEmptyOutputErrorMessage);
   DRAKE_EXPECT_THROWS_MESSAGE(dense_output.start_time(), std::logic_error,
@@ -122,7 +122,7 @@ TYPED_TEST(HermitianDenseOutputTest, OutputConsistency) {
   DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Evaluate(this->kMidTime),
                              std::logic_error, this->kEmptyOutputErrorMessage);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dense_output.Evaluate(this->kMidTime, this->kValidDimension),
+      dense_output.EvaluateNth(this->kMidTime, this->kValidDimension),
       std::logic_error, this->kEmptyOutputErrorMessage);
   DRAKE_EXPECT_THROWS_MESSAGE(dense_output.start_time(), std::logic_error,
                              this->kEmptyOutputErrorMessage);
@@ -149,14 +149,15 @@ TYPED_TEST(HermitianDenseOutputTest, OutputConsistency) {
   EXPECT_EQ(dense_output.end_time(), first_step.end_time());
   EXPECT_EQ(dense_output.size(), first_step.size());
   EXPECT_NO_THROW(dense_output.Evaluate(this->kMidTime));
-  EXPECT_NO_THROW(dense_output.Evaluate(this->kMidTime, this->kValidDimension));
+  EXPECT_NO_THROW(dense_output.EvaluateNth(
+      this->kMidTime, this->kValidDimension));
 
   // Verifies that invalid evaluation arguments generate errors.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dense_output.Evaluate(this->kMidTime, this->kInvalidDimension),
+      dense_output.EvaluateNth(this->kMidTime, this->kInvalidDimension),
       std::runtime_error, this->kInvalidDimensionErrorMessage);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dense_output.Evaluate(this->kInvalidTime, this->kValidDimension),
+      dense_output.EvaluateNth(this->kInvalidTime, this->kValidDimension),
       std::runtime_error, this->kInvalidTimeErrorMessage);
   DRAKE_EXPECT_THROWS_MESSAGE(
       dense_output.Evaluate(this->kInvalidTime),

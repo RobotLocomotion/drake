@@ -41,9 +41,9 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
     return base_output_.get();
   }
 
- private:
+ protected:
   T DoEvaluateScalar(const T& t) const override {
-    return base_output_->Evaluate(t, dimension_);
+    return base_output_->EvaluateNth(t, dimension_);
   }
 
   bool do_is_empty() const override {

@@ -74,7 +74,7 @@ class DenseOutput {
   ///                            given @p t.
   /// @throws std::runtime_error if given @p dimension is not valid
   ///                            i.e. 0 <= @p dimension < size().
-  T Evaluate(const T& t, int dimension) const {
+  T EvaluateNth(const T& t, int dimension) const {
     if (is_empty()) {
       throw std::logic_error("Empty dense output cannot be evaluated.");
     }
@@ -84,7 +84,7 @@ class DenseOutput {
     if (t < this->do_start_time() || t > this->do_end_time()) {
       throw std::runtime_error("Dense output is not defined for given time.");
     }
-    return this->DoEvaluate(t, dimension);
+    return this->DoEvaluateNth(t, dimension);
   }
 
   /// Returns the output size (i.e. the number of elements in an
@@ -129,7 +129,6 @@ class DenseOutput {
  protected:
   DenseOutput() = default;
 
- private:
   // @see Evaluate(const T&)
   virtual VectorX<T> DoEvaluate(const T& t) const = 0;
 
@@ -137,7 +136,7 @@ class DenseOutput {
   //          be less than or equal to that of indexing
   //          DoEvaluate(const T&) return value.
   // @see Evaluate(const T&, int)
-  virtual T DoEvaluate(const T& t, int dimension) const {
+  virtual T DoEvaluateNth(const T& t, int dimension) const {
     return this->DoEvaluate(t)(dimension);
   }
 
