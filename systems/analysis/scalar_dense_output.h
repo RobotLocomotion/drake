@@ -18,7 +18,7 @@ class ScalarDenseOutput {
   virtual ~ScalarDenseOutput() = default;
 
   /// Evaluates output at the given time @p t.
-  /// @param t Time to evaluate output at.
+  /// @param t Time at which to evaluate output.
   /// @returns Output scalar value.
   /// @pre Output is not empty i.e. is_empty() is false.
   /// @throws std::logic_error if any of the preconditions is not met.

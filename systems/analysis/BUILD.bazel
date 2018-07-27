@@ -173,6 +173,7 @@ drake_cc_library(
         ":dense_output",
         ":integrator_base",
         ":runge_kutta3_integrator",
+        "//common:default_scalars",
         "//systems/framework:context",
         "//systems/framework:continuous_state",
         "//systems/framework:leaf_system",
@@ -194,6 +195,7 @@ drake_cc_library(
         ":initial_value_problem",
         ":scalar_dense_output",
         ":scalar_view_dense_output",
+        "//common:default_scalars",
         "//common:essential",
         "//common:unused",
     ],
@@ -211,6 +213,7 @@ drake_cc_library(
     deps = [
         ":scalar_dense_output",
         ":scalar_initial_value_problem",
+        "//common:default_scalars",
         "//common:essential",
         "//common:unused",
     ],

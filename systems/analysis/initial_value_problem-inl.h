@@ -99,7 +99,7 @@ void ODESystem<T>::DoCalcTimeDerivatives(
 }  // namespace detail
 
 template<typename T>
-const T InitialValueProblem<T>::kDefaultAccuracy = static_cast<T>(1e-4);
+const double InitialValueProblem<T>::kDefaultAccuracy = 1e-4;
 
 template<typename T>
 const T InitialValueProblem<T>::kInitialStepSize = static_cast<T>(1e-4);
@@ -196,7 +196,7 @@ void InitialValueProblem<T>::ResetCachedState(
   // of whether these are actually used by the integrator instance or not).
   const T max_step_size = integrator_->get_maximum_step_size();
   const T initial_step_size = integrator_->get_initial_step_size_target();
-  const T target_accuracy = integrator_->get_target_accuracy();
+  const double target_accuracy = integrator_->get_target_accuracy();
 
   // Resets the integrator internal state.
   integrator_->Reset();

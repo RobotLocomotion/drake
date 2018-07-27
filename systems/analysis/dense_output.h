@@ -65,7 +65,7 @@ class DenseOutput {
   ///       method may be lower than that of of indexing an
   ///       Evaluate(const T&) call return vector value, thus making
   ///       it the preferred mechanism when targeting a single dimension.
-  /// @param t Time to evaluate output at.
+  /// @param t Time at which to evaluate output.
   /// @param dimension Dimension to evaluate.
   /// @returns Output @p dimension scalar value.
   /// @pre Output is not empty i.e. is_empty() equals false.

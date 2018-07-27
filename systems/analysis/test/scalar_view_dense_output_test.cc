@@ -4,6 +4,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/analysis/hermitian_dense_output.h"
 
 namespace drake {
@@ -50,15 +51,10 @@ TYPED_TEST_CASE(ScalarViewDenseOutputTest, ExtensionTypes);
 // DenseOutput instance.
 TYPED_TEST(ScalarViewDenseOutputTest, ExtensionConsistency) {
   // Verifies that views to invalid dimensions result in an error.
-  EXPECT_THROW(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       ScalarViewDenseOutput<TypeParam> dense_output(
           this->CreateDummyDenseOutput(), this->kInvalidDimension),
-      std::logic_error);
-
-  EXPECT_THROW(
-      ScalarViewDenseOutput<TypeParam> dense_output(
-          this->CreateDummyDenseOutput(), -this->kInvalidDimension),
-      std::logic_error);
+      std::logic_error, "[Dd]imension out of range.*");
 
   // Instantiates scalar continuous extension properly.
   ScalarViewDenseOutput<TypeParam> dense_output(
@@ -76,9 +72,12 @@ TYPED_TEST(ScalarViewDenseOutputTest, ExtensionConsistency) {
   EXPECT_EQ(dense_output.end_time(),
             base_output->end_time());
 
+  // Checks evaluation preconditions.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dense_output.Evaluate(this->kInvalidTime),
+      std::runtime_error, ".*not defined for.*time.*");
+
   // Compares evaluations for consistency.
-  EXPECT_THROW(
-      dense_output.Evaluate(this->kInvalidTime), std::runtime_error);
   EXPECT_EQ(
       dense_output.Evaluate(this->kInitialTime),
       base_output->Evaluate(this->kInitialTime, this->kValidDimension));

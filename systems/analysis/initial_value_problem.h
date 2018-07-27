@@ -66,7 +66,7 @@ class InitialValueProblem {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InitialValueProblem);
 
   /// Default integration accuracy in the relative tolerance sense.
-  static const T kDefaultAccuracy;
+  static const double kDefaultAccuracy;
   /// Default initial integration step size.
   static const T kInitialStepSize;
   /// Default maximum integration step size.
