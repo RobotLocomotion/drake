@@ -65,6 +65,12 @@ class RoadGeometry : public api::RoadGeometry {
 
   double do_angular_tolerance() const override { return angular_tolerance_; }
 
+  // TODO(maddog@tri.global)  monolane is not scale_length aware in any way,
+  //                          and really this property should be consistent
+  //                          with the geometry of the curves themselves.
+  //                          This value of 1 has been picked arbitrarily.
+  double do_scale_length() const override { return 1.; }
+
   api::RoadGeometryId id_;
   double linear_tolerance_{};
   double angular_tolerance_{};

@@ -413,10 +413,10 @@ joins those two end-to-end (resulting in three independent =Junctions=).
 *** =RoadGeometry=
     * accessors for component =Junctions=
     * accessors for component =BranchPoints=
-    * accessors for tolerances
+    * accessors for characteristic lengths and tolerances
       * =linear_tolerance=
       * =angular_tolerance=
-      * /TODO/ =scale_length=
+      * =scale_length=
 *** =Junction=
     * accessors for parent =RoadGeometry=, component =Junctions=
 *** =Segment=
