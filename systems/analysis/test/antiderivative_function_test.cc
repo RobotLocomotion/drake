@@ -110,7 +110,7 @@ GTEST_TEST(AntiderivativeFunctionTest, EvaluatePreconditionValidation) {
       std::logic_error, kInvalidIntegrationBoundErrorMessage);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      antiderivative_function.DenseEvaluate(
+      antiderivative_function.MakeDenseEvalFunction(
           kInvalidUpperIntegrationBound),
       std::logic_error, kInvalidIntegrationBoundErrorMessage);
 
@@ -124,7 +124,7 @@ GTEST_TEST(AntiderivativeFunctionTest, EvaluatePreconditionValidation) {
   DRAKE_EXPECT_THROWS_MESSAGE({
       AntiderivativeFunction<double>::SpecifiedValues values;
       values.k = kInvalidParameters;
-      antiderivative_function.DenseEvaluate(
+      antiderivative_function.MakeDenseEvalFunction(
           kValidUpperIntegrationBound, values);
     }, std::logic_error, kInvalidParametersErrorMessage);
 
@@ -138,7 +138,7 @@ GTEST_TEST(AntiderivativeFunctionTest, EvaluatePreconditionValidation) {
   DRAKE_EXPECT_THROWS_MESSAGE({
     AntiderivativeFunction<double>::SpecifiedValues values;
     values.k = kValidParameters;
-    antiderivative_function.DenseEvaluate(
+    antiderivative_function.MakeDenseEvalFunction(
         kInvalidUpperIntegrationBound, values);
     }, std::logic_error, kInvalidIntegrationBoundErrorMessage);
 }
@@ -188,7 +188,7 @@ TEST_P(AntiderivativeFunctionAccuracyTest, NthPowerMonomialTestCase) {
 
     const std::unique_ptr<ScalarDenseOutput<double>>
         antiderivative_function_approx =
-        antiderivative_function.DenseEvaluate(
+        antiderivative_function.MakeDenseEvalFunction(
             kArgIntervalUBound, values);
 
     for (double u = kArgIntervalLBound; u <= kArgIntervalUBound;
@@ -247,7 +247,7 @@ TEST_P(AntiderivativeFunctionAccuracyTest, HyperbolicTangentTestCase) {
 
     const std::unique_ptr<ScalarDenseOutput<double>>
         antiderivative_function_approx =
-        antiderivative_function.DenseEvaluate(
+        antiderivative_function.MakeDenseEvalFunction(
             kArgIntervalUBound, values);
 
     for (double u = kArgIntervalLBound; u <= kArgIntervalUBound;
@@ -313,7 +313,7 @@ TEST_P(AntiderivativeFunctionAccuracyTest,
 
     const std::unique_ptr<ScalarDenseOutput<double>>
         antiderivative_function_approx =
-        antiderivative_function.DenseEvaluate(
+        antiderivative_function.MakeDenseEvalFunction(
             kArgIntervalUBound, values);
 
       for (double u = kArgIntervalLBound; u <= kArgIntervalUBound;
@@ -374,7 +374,7 @@ TEST_P(AntiderivativeFunctionAccuracyTest, ExponentialFunctionTestCase) {
 
     const std::unique_ptr<ScalarDenseOutput<double>>
         antiderivative_function_approx =
-        antiderivative_function.DenseEvaluate(
+        antiderivative_function.MakeDenseEvalFunction(
             kArgIntervalUBound, values);
 
     for (double u = kArgIntervalLBound; u <= kArgIntervalUBound;
@@ -434,7 +434,7 @@ TEST_P(AntiderivativeFunctionAccuracyTest, TrigonometricFunctionTestCase) {
 
     const std::unique_ptr<ScalarDenseOutput<double>>
         antiderivative_function_approx =
-        antiderivative_function.DenseEvaluate(
+        antiderivative_function.MakeDenseEvalFunction(
             kArgIntervalUBound, values);
 
     for (double u = kArgIntervalLBound; u <= kArgIntervalUBound;

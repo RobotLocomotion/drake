@@ -147,14 +147,15 @@ class AntiderivativeFunction {
   ///
   /// @param w The uppermost integration bound.
   /// @param values The specified values for the integration.
-  /// @returns A dense approximation to F(u; 𝐤), defined for v ≤ u ≤ w.
+  /// @returns A dense approximation to F(u; 𝐤) (that is, a function), defined
+  ///          for v ≤ u ≤ w.
   /// @pre The given uppermost integration bound @p w must be larger than or
   ///      equal to the lower integration bound v.
   /// @pre If given, the dimension of the parameter vector @p values.k
   ///      must match that of the parameter vector 𝐤 in the default specified
   ///      values given on construction.
   /// @throws std::logic_error if any of the preconditions is not met.
-  std::unique_ptr<ScalarDenseOutput<T>> DenseEvaluate(
+  std::unique_ptr<ScalarDenseOutput<T>> MakeDenseEvalFunction(
       const T& w, const SpecifiedValues& values = {}) const {
     // Delegates request to the scalar IVP used for computations, by putting
     // specified values in scalar IVP terms.
