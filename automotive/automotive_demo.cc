@@ -90,9 +90,13 @@ DEFINE_int32(multilane_num_lanes, 1,
 DEFINE_double(multilane_lane_width, 3.7, "The multilane lane width.");
 DEFINE_double(multilane_shoulder_width, 3.0, "The multilane's shoulder width.");
 DEFINE_double(onramp_base_speed, 25, "The speed of the vehicles added to the "
-              "onramp.");
+              "onramp or multilane_onramp scenarios, i.e. this option is only "
+              "valid when either `with_onramp` or `with_multilane_onramp` "
+              "options are used.");
 DEFINE_bool(onramp_swap_start, false, "Whether to swap the starting lanes of "
-            "the vehicles on the onramp.");
+            "the vehicles on the onramp or multilane_onramp scenarios, i.e. "
+            " this option is only valid when either `with_onramp` or "
+            "`with_multilane_onramp` options are used.");
 
 DEFINE_bool(with_stalled_cars, false, "Places a stalled vehicle at the end of "
             "each lane of a dragway. This option is only enabled when the "
@@ -217,7 +221,7 @@ void AddOnrampMaliputRailcars(int num_cars, bool idm_controlled,
     const std::string lane_name = lane_name_selector(n);
     const bool with_s = false;
 
-    LaneDirection lane_direction(simulator->FindLane(lane_name), with_s);
+    const LaneDirection lane_direction(simulator->FindLane(lane_name), with_s);
     MaliputRailcarParams<double> params;
     params.set_r(0);
     params.set_h(0);
@@ -362,8 +366,6 @@ void AddVehicles(RoadNetworkType road_network_type,
         false /* IDM controlled */, road_network_type, simulator);
   } else if (road_network_type == RoadNetworkType::multilane_onramp) {
     DRAKE_DEMAND(road_geometry != nullptr);
-    AddOnrampMaliputRailcars(FLAGS_num_idm_controlled_maliput_railcar,
-        true /* IDM controlled */, road_network_type, simulator);
     AddOnrampMaliputRailcars(FLAGS_num_maliput_railcar,
         false /* IDM controlled */, road_network_type, simulator);
   } else {
