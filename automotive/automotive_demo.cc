@@ -185,15 +185,12 @@ void AddMaliputRailcar(int num_cars, bool idm_controlled, int initial_s_offset,
 // @param road_network_type The road network type. It must be one of the onramp
 // types.
 //
-// @param road_geometry The road on which to add the railcars.
-//
 // @param simulator The simulator to modify.
 // TODO(agalbachicar):  Refactor this function and merge it with
 //                      AddMaliputRailcar() so there is a better interface to
 //                      add cars.
 void AddOnrampMaliputRailcars(int num_cars, bool idm_controlled,
     RoadNetworkType road_network_type,
-    const maliput::api::RoadGeometry* road_geometry,
     AutomotiveSimulator<double>* simulator) {
   DRAKE_DEMAND(road_network_type == RoadNetworkType::onramp ||
                road_network_type == RoadNetworkType::multilane_onramp);
@@ -362,15 +359,13 @@ void AddVehicles(RoadNetworkType road_network_type,
   } else if (road_network_type == RoadNetworkType::onramp) {
     DRAKE_DEMAND(road_geometry != nullptr);
     AddOnrampMaliputRailcars(FLAGS_num_maliput_railcar,
-        false /* IDM controlled */, road_network_type, road_geometry,
-        simulator);
+        false /* IDM controlled */, road_network_type, simulator);
   } else if (road_network_type == RoadNetworkType::multilane_onramp) {
     DRAKE_DEMAND(road_geometry != nullptr);
     AddOnrampMaliputRailcars(FLAGS_num_idm_controlled_maliput_railcar,
-        true /* IDM controlled */, road_network_type, road_geometry, simulator);
+        true /* IDM controlled */, road_network_type, simulator);
     AddOnrampMaliputRailcars(FLAGS_num_maliput_railcar,
-        false /* IDM controlled */, road_network_type, road_geometry,
-        simulator);
+        false /* IDM controlled */, road_network_type, simulator);
   } else {
     for (int i = 0; i < FLAGS_num_trajectory_car; ++i) {
       const auto& params = CreateTrajectoryParams(i);
