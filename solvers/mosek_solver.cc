@@ -610,13 +610,18 @@ class MosekSolver::License {
     }
     DRAKE_DEMAND(mosek_env_ != nullptr);
 
-    // Acquire the license for the base MOSEK system so that we can
-    // fail fast if the license file is missing or the server is
-    // unavailable. Any additional features should be checked out
-    // later by MSK_optimizetrm if needed (so there's still the
-    // possiblity of later failure at that stage if the desired
-    // feature is unavailable or another error occurs).
-    rescode = MSK_checkoutlicense(mosek_env_, MSK_FEATURE_PTS);
+    const int num_tries = 3;
+    int i = 0;
+    do {
+      // Acquire the license for the base MOSEK system so that we can
+      // fail fast if the license file is missing or the server is
+      // unavailable. Any additional features should be checked out
+      // later by MSK_optimizetrm if needed (so there's still the
+      // possiblity of later failure at that stage if the desired
+      // feature is unavailable or another error occurs).
+      rescode = MSK_checkoutlicense(mosek_env_, MSK_FEATURE_PTS);
+    } while (++i < num_tries && rescode != MSK_RES_OK);
+
     if (rescode != MSK_RES_OK) {
       throw std::runtime_error("Could not acquire MOSEK license.");
     }
