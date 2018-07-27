@@ -16,8 +16,11 @@ MultilaneOnrampMerge::BuildOnramp() const {
                                          scale_length_, computation_policy_);
 
   // Initialize roads lane layouts.
+  // Reference lane from which the reference curve of the segment is placed (at
+  // kRefR0 lateral distance).
   const int kRefLane = 0;
-  const int kRefR0 = 0;
+  // Distance between the reference curve and kRefLane lane curve.
+  const double kRefR0 = 0.;
   const multi::LaneLayout kLaneLayout(rc_.left_shoulder, rc_.right_shoulder,
                                       rc_.lane_number, kRefLane, kRefR0);
 
