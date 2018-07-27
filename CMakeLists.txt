@@ -14,6 +14,8 @@ if(CYGWIN OR NOT UNIX)
   message(FATAL_ERROR "Cygwin and non-Unix platforms are NOT supported")
 endif()
 
+# The version passed to find_package(Bazel) should match the
+# minimum_bazel_version value in the call to versions.check() in WORKSPACE.
 set(MINIMUM_BAZEL_VERSION 0.14.1)
 find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE REQUIRED)
 
