@@ -35,8 +35,8 @@ GTEST_TEST(MultilaneSegmentsTest, MultipleLanes) {
   const ComputationPolicy kComputationPolicy{
     ComputationPolicy::kPreferAccuracy};
 
-  RoadGeometry rg(api::RoadGeometryId{"apple"}, kLinearTolerance,
-                  kAngularTolerance);
+  RoadGeometry rg(api::RoadGeometryId{"apple"},
+                  kLinearTolerance, kAngularTolerance, kScaleLength);
   std::unique_ptr<RoadCurve> road_curve_1 = std::make_unique<LineRoadCurve>(
       Vector2<double>(100., -75.), Vector2<double>(100., 50.), zp, zp,
       kLinearTolerance, kScaleLength, kComputationPolicy);
