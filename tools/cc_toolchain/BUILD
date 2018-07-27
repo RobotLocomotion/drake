@@ -143,6 +143,16 @@ config_setting(
 )
 
 config_setting(
+    name = "clang",
+    constraint_values = ["@bazel_tools//tools/cpp:clang"],
+)
+
+config_setting(
+    name = "gcc",
+    constraint_values = ["@bazel_tools//tools/cpp:gcc"],
+)
+
+config_setting(
     name = "gcc6-linux",
     values = {
         "compiler": "gcc-6",
