@@ -467,13 +467,14 @@ def drake_cc_binary(
     )
 
     # Also generate the OS X debug symbol file for this binary.
+    tags = kwargs.pop("tags", [])
     native.genrule(
         name = name + "_dsym",
         srcs = [":" + name],
         outs = [name + ".dSYM"],
         output_to_bindir = 1,
         testonly = testonly,
-        tags = ["dsym"],
+        tags = tags + ["dsym"],
         visibility = ["//visibility:private"],
         cmd = _dsym_command(name),
     )
@@ -494,7 +495,7 @@ def drake_cc_binary(
             flaky = test_rule_flaky,
             linkstatic = linkstatic,
             args = test_rule_args,
-            tags = kwargs.pop("tags", []) + ["nolint"],
+            tags = tags + ["nolint"],
             **kwargs
         )
 
