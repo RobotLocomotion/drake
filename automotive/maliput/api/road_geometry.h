@@ -126,6 +126,12 @@ class RoadGeometry {
     return do_angular_tolerance();
   }
 
+  // TODO(maddog@tri.global) Needs a precise mathematical definition.
+  /// Returns the characteristic scale length expressed by this RoadGeometry.
+  double scale_length() const {
+    return do_scale_length();
+  }
+
   /// Verifies certain invariants guaranteed by the API.
   ///
   /// Returns a vector of strings describing violations of invariants.
@@ -160,6 +166,8 @@ class RoadGeometry {
   virtual double do_linear_tolerance() const = 0;
 
   virtual double do_angular_tolerance() const = 0;
+
+  virtual double do_scale_length() const = 0;
   ///@}
 };
 

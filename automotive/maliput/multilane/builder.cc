@@ -404,7 +404,7 @@ std::vector<Lane*> Builder::BuildConnection(
 std::unique_ptr<const api::RoadGeometry> Builder::Build(
     const api::RoadGeometryId& id) const {
   auto road_geometry = std::make_unique<RoadGeometry>(
-      id, linear_tolerance_, angular_tolerance_);
+      id, linear_tolerance_, angular_tolerance_, scale_length_);
   std::map<Endpoint, BranchPoint*, EndpointFuzzyOrder> bp_map(
       (EndpointFuzzyOrder(linear_tolerance_)));
   std::map<const Connection*, std::vector<Lane*>> lane_map;
