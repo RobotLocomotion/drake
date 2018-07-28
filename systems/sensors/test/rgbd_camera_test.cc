@@ -126,6 +126,34 @@ GTEST_TEST(RgbdCamera, TestInstantiation) {
   Verify(movable_camera_hd720, kSizeHd720);
 }
 
+GTEST_TEST(RgbdCamera, TestInstantiationRenderer) {
+  auto Verify = [](const RgbdCamera& camera, Size size) {
+    VerifyCameraInfo(camera.color_camera_info(), size);
+    VerifyCameraInfo(camera.depth_camera_info(), size);
+    VerifyCameraPose(camera.color_camera_optical_pose());
+    VerifyCameraPose(camera.depth_camera_optical_pose());
+    EXPECT_NO_THROW(camera.tree());
+  };
+
+  RgbdCamera fixed_camera("rgbd_camera", RigidBodyTree<double>(),
+                          Eigen::Vector3d(1., 2., 3.),
+                          Eigen::Vector3d(0.1, 0.2, 0.3),
+                          std::make_unique<RgbdRendererVTK>(RenderingConfig{
+                              kSizeVga.width, kSizeVga.height, kFovY,
+                              kDepthRangeNear, kDepthRangeFar, kShowWindow}));
+  Verify(fixed_camera, kSizeVga);
+  // With the fixed camera use case, RgbdCamera doesn't hold a frame, thus
+  // throws an exception.
+  EXPECT_THROW(fixed_camera.frame(), std::logic_error);
+
+  RgbdCamera movable_camera("rgbd_camera", RigidBodyTree<double>(),
+                            RigidBodyFrame<double>(),
+                            std::make_unique<RgbdRendererVTK>(RenderingConfig{
+                                kSizeVga.width, kSizeVga.height, kFovY,
+                                kDepthRangeNear, kDepthRangeFar, kShowWindow}));
+  Verify(movable_camera, kSizeVga);
+  EXPECT_NO_THROW(movable_camera.frame());
+}
 
 class RgbdCameraDiagram : public systems::Diagram<double> {
  public:
@@ -319,10 +347,15 @@ TEST_F(RgbdCameraDiagramTest, ResetRendererTest) {
     auto const rgb1 =
         output_->GetMutableData(0)->GetMutableValue<ImageRgba8U>();
 
+    // N.B. Per the deprecation, this code should should be removed after
+    // 2018/10/01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     diagram_->camera().ResetRenderer(
         std::unique_ptr<RgbdRenderer>(new RgbdRendererVTK(
             RenderingConfig{size.width, size.height, kFovY,
                             kDepthRangeNear, kDepthRangeFar, kShowWindow})));
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
     auto renderer2 = &diagram_->camera().mutable_renderer();
     EXPECT_NE(renderer1, renderer2);
