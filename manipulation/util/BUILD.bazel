@@ -247,4 +247,8 @@ drake_py_unittest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    python_lint_extra_srcs = [
+        "convert_to_visualize_collisions.py",
+    ],
+)
