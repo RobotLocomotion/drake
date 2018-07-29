@@ -93,6 +93,47 @@ RgbdCamera::RgbdCamera(const std::string& name,
   InitRenderer();
 }
 
+RgbdCamera::RgbdCamera(const std::string& name,
+                       const RigidBodyTree<double>& tree,
+                       const Eigen::Vector3d& position,
+                       const Eigen::Vector3d& orientation,
+                       std::unique_ptr<RgbdRenderer> renderer,
+                       bool flat_terrain)
+    : tree_(tree),
+      frame_(RigidBodyFrame<double>()),
+      camera_fixed_(true),
+      flat_terrain_(flat_terrain),
+      color_camera_info_(renderer->config().width, renderer->config().height,
+                         renderer->config().fov_y),
+      depth_camera_info_(renderer->config().width, renderer->config().height,
+                         renderer->config().fov_y),
+      X_WB_initial_(
+          Eigen::Translation3d(position[0], position[1], position[2]) *
+          Eigen::Isometry3d(math::RollPitchYaw<double>(orientation)
+                                .ToMatrix3ViaRotationMatrix())) {
+  renderer_ = std::move(renderer);
+  InitPorts(name);
+  InitRenderer();
+}
+
+RgbdCamera::RgbdCamera(const std::string& name,
+                       const RigidBodyTree<double>& tree,
+                       const RigidBodyFrame<double>& frame,
+                       std::unique_ptr<RgbdRenderer> renderer,
+                       bool flat_terrain)
+    : tree_(tree),
+      frame_(frame),
+      camera_fixed_(false),
+      flat_terrain_(flat_terrain),
+      color_camera_info_(renderer->config().width, renderer->config().height,
+                         renderer->config().fov_y),
+      depth_camera_info_(renderer->config().width, renderer->config().height,
+                         renderer->config().fov_y) {
+  renderer_ = std::move(renderer);
+  InitPorts(name);
+  InitRenderer();
+}
+
 void RgbdCamera::InitPorts(const std::string& name) {
   set_name(name);
   const int kVecNum =
