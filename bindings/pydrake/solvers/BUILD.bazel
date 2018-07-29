@@ -87,12 +87,21 @@ drake_pybind_library(
     py_deps = [":mathematicalprogram_py"],
 )
 
+drake_pybind_library(
+    name = "osqp_py",
+    cc_so_name = "osqp",
+    cc_srcs = ["osqp_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [":mathematicalprogram_py"],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":gurobi_py",
     ":ik_py",
     ":ipopt_py",
     ":mathematicalprogram_py",
     ":mosek_py",
+    ":osqp_py",
 ]
 
 PY_LIBRARIES = [
@@ -138,6 +147,15 @@ drake_py_unittest(
     name = "mosek_solver_test",
     tags = mosek_test_tags(),
     deps = [":mosek_py"],
+)
+
+drake_py_unittest(
+    name = "osqp_solver_test",
+    args = select({
+        "//tools:no_osqp": ["TestOsqpSolver.unavailable"],
+        "//conditions:default": [],
+    }),
+    deps = [":osqp_py"],
 )
 
 drake_py_unittest(
