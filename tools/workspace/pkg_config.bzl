@@ -165,7 +165,8 @@ def setup_pkg_config_repository(repository_ctx):
             # Instead, when compiling our code that uses this library, we'll
             # decide to just ignore pkg-config's advice to use -pthread when
             # compiling and instead apply -pthread only when linking.
-            linkopts.append("-pthread")
+            if "-pthread" not in linkopts:
+                linkopts.append("-pthread")
         elif cflag in [
             "-frounding-math",
             "-ffloat-store",
