@@ -174,6 +174,8 @@ def setup_pkg_config_repository(repository_ctx):
             "-msse2",
             "-msse3",
             "-msse4",
+            "-msse4.1",
+            "-msse4.2",
             "-mfpmath",
         ]:
             # We know these are okay to ignore.
