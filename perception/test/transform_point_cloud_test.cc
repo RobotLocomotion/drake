@@ -75,14 +75,11 @@ GTEST_TEST(TransformPointCloudTest, ApplyTransform) {
 
   std::unique_ptr<RigidBody<double>> body =
       std::make_unique<RigidBody<double>>(AddBodyToTree(tree.get()));
-  RigidBody<double>* b = tree->add_rigid_body(std::move(body));
-
-  std::shared_ptr<RigidBodyFrame<double>> frame =
-      std::make_shared<RigidBodyFrame<double>>("frame", b, kFrameToBodyP,
-                                               kFrameToBodyRpy);
-  tree->addFrame(frame);
+  tree->add_rigid_body(std::move(body));
 
   tree->compile();
+
+  std::shared_ptr<RigidBodyFrame<double>> frame = tree->findFrame("body");
 
   std::unique_ptr<TransformPointCloud> transformer =
       std::make_unique<TransformPointCloud>(*tree.get(), kWorldFrameIndex,
@@ -92,8 +89,9 @@ GTEST_TEST(TransformPointCloudTest, ApplyTransform) {
   std::unique_ptr<systems::AbstractValue> output =
       transformer->point_cloud_output_port().Allocate();
 
-  VectorX<double> state(transformer->state_input_port().size());
-  state << 0.3, -0.4, 2.3, 0, 0, 0, 1;
+  VectorX<double> state =
+      VectorX<double>::Zero(transformer->state_input_port().size());
+  state.head(tree->get_num_positions()) << 0.3, -0.4, 2.3, 0, 0, 0, 1;
 
   MatrixX<float> test_data = GenerateBoundedSample(kMin, kMax, kNumPoints);
   PointCloud cloud(kNumPoints);
@@ -130,14 +128,11 @@ GTEST_TEST(TransformPointCloudTest, TransformToWorldFrame) {
 
   std::unique_ptr<RigidBody<double>> body =
       std::make_unique<RigidBody<double>>(AddBodyToTree(tree.get()));
-  RigidBody<double>* b = tree->add_rigid_body(std::move(body));
-
-  std::shared_ptr<RigidBodyFrame<double>> frame =
-      std::make_shared<RigidBodyFrame<double>>("frame", b, kFrameToBodyP,
-                                               kFrameToBodyRpy);
-  tree->addFrame(frame);
+  tree->add_rigid_body(std::move(body));
 
   tree->compile();
+
+  std::shared_ptr<RigidBodyFrame<double>> frame = tree->findFrame("body");
 
   std::unique_ptr<TransformPointCloud> transformer =
       std::make_unique<TransformPointCloud>(*tree.get(),
@@ -147,8 +142,9 @@ GTEST_TEST(TransformPointCloudTest, TransformToWorldFrame) {
   std::unique_ptr<systems::AbstractValue> output =
       transformer->point_cloud_output_port().Allocate();
 
-  VectorX<double> state(transformer->state_input_port().size());
-  state << 0.3, -0.4, 2.3, 0, 0, 0, 1;
+  VectorX<double> state =
+      VectorX<double>::Zero(transformer->state_input_port().size());
+  state.head(tree->get_num_positions()) << 0.3, -0.4, 2.3, 0, 0, 0, 1;
 
   MatrixX<float> test_data = GenerateBoundedSample(kMin, kMax, kNumPoints);
   PointCloud cloud(kNumPoints);
