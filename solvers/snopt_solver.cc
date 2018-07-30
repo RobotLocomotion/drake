@@ -45,6 +45,9 @@ class SnoptUserFunInfo {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SnoptUserFunInfo)
 
+  // Pointers to the parameters ('prog' and 'nonlinear_cost_gradient_indices')
+  // are retained internally, so the supplied objects must have lifetimes longer
+  // than the SnoptUserFuncInfo object.
   SnoptUserFunInfo(const MathematicalProgram* prog,
                    const std::set<int>* nonlinear_cost_gradient_indices)
       : this_pointer_as_int_array_(MakeThisAsInts()),
@@ -80,7 +83,8 @@ class SnoptUserFunInfo {
   }
 
  private:
-  // We need this many `int`s to store a pointer.
+  // We need this many `int`s to store a pointer.  Round up any fractional
+  // remainder.
   static constexpr size_t kIntCount =
       (sizeof(SnoptUserFunInfo*) + sizeof(int) - 1) / sizeof(int);
 
