@@ -91,7 +91,7 @@ GTEST_TEST(TransformPointCloudTest, ApplyTransform) {
 
   VectorX<double> state =
       VectorX<double>::Zero(transformer->state_input_port().size());
-  state.head(tree->get_num_positions()) << 0.3, -0.4, 2.3, 0, 0, 0, 1;
+  state.head(tree->get_num_positions()) << 0.3, -0.4, 2.3, 0, 0, 0;
 
   MatrixX<float> test_data = GenerateBoundedSample(kMin, kMax, kNumPoints);
   PointCloud cloud(kNumPoints);
@@ -144,7 +144,7 @@ GTEST_TEST(TransformPointCloudTest, TransformToWorldFrame) {
 
   VectorX<double> state =
       VectorX<double>::Zero(transformer->state_input_port().size());
-  state.head(tree->get_num_positions()) << 0.3, -0.4, 2.3, 0, 0, 0, 1;
+  state.head(tree->get_num_positions()) << 0.3, -0.4, 2.3, 0, 0, 0;
 
   MatrixX<float> test_data = GenerateBoundedSample(kMin, kMax, kNumPoints);
   PointCloud cloud(kNumPoints);
