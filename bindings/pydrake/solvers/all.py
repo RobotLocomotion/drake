@@ -7,3 +7,4 @@ from .mathematicalprogram import *
 from .gurobi import *
 from .ipopt import *
 from .mosek import *
+from .osqp import *
