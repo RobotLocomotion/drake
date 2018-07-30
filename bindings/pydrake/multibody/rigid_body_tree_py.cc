@@ -404,7 +404,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
          // Keep alive: `this` keeps `return` alive.
          py::keep_alive<1, 0>())
     .def("get_transform_to_body",
-         &RigidBodyFrame<double>::get_transform_to_body);
+         &RigidBodyFrame<double>::get_transform_to_body)
+    .def("set_name", &RigidBodyFrame<double>::set_name);
 
   m.def("AddModelInstanceFromUrdfFile",
         [](const std::string& urdf_filename,
