@@ -420,7 +420,8 @@ class ContextBase : public internal::ContextMessageInterface {
   // pointer here.
   static void set_parent(ContextBase* child, ContextBase* parent) {
     DRAKE_DEMAND(child != nullptr);
-    DRAKE_DEMAND(parent != nullptr && child->parent_ == nullptr);
+    DRAKE_DEMAND(parent != nullptr);
+    DRAKE_DEMAND(child->parent_ == nullptr);
     child->parent_ = parent;
     // This field is only used by the root context so set to an invalid
     // value here.

@@ -1067,10 +1067,6 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description,
     void (MySystem::*calc)(const MyContext&, ValueType*) const,
     std::set<DependencyTicket> prerequisites_of_calc) {
-  static_assert(std::is_base_of<SystemBase, MySystem>::value,
-                "Expected to be invoked from a SystemBase-derived System.");
-  static_assert(std::is_base_of<ContextBase, MyContext>::value,
-                "Expected to be invoked with a ContextBase-derived Context.");
   static_assert(
       std::is_default_constructible<ValueType>::value,
       "SystemBase::DeclareCacheEntry(calc): the calc-only overloads of "
@@ -1088,10 +1084,6 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description,
     ValueType (MySystem::*calc)(const MyContext&) const,
     std::set<DependencyTicket> prerequisites_of_calc) {
-  static_assert(std::is_base_of<SystemBase, MySystem>::value,
-                "Expected to be invoked from a SystemBase-derived System.");
-  static_assert(std::is_base_of<ContextBase, MyContext>::value,
-                "Expected to be invoked with a ContextBase-derived Context.");
   static_assert(
       std::is_default_constructible<ValueType>::value,
       "SystemBase::DeclareCacheEntry(calc): the calc-only overloads of "

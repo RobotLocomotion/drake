@@ -247,11 +247,12 @@ class DiagramContext final : public Context<T> {
     iport_tracker.SubscribeToPrerequisite(&oport_tracker);
   }
 
-  /// Generates the state vector for the entire diagram by wrapping the states
-  /// of all the constituent diagrams.
-  ///
-  /// User code should not call this method. It is for use during Diagram
-  /// context allocation only.
+  /// (Internal use only) Generates the state vector for the entire diagram by
+  /// wrapping the states of all the constituent diagrams.
+  // TODO(sherm1) Consider making the diagram state dependency trackers
+  //     subscribe to corresponding subcontext trackers so that direct
+  //     subcontext state modifications are reflected here. Will be essential if
+  //     computational functionality is added to Diagrams.
   void MakeState() {
     auto state = std::make_unique<DiagramState<T>>(num_subcontexts());
     for (SubsystemIndex i(0); i < num_subcontexts(); ++i) {
@@ -263,13 +264,14 @@ class DiagramContext final : public Context<T> {
     state_ = std::move(state);
   }
 
-  /// Generates the parameters for the entire diagram by wrapping the parameters
-  /// of all the constituent Systems. The wrapper simply holds pointers to the
-  /// parameters in the subsystem Contexts.  It does not make a copy, or take
-  /// ownership.
-  ///
-  /// User code should not call this method. It is for use during Diagram
-  /// context allocation only.
+  /// (Internal use only) Generates the parameters for the entire diagram by
+  /// wrapping the parameters of all the constituent Systems. The wrapper simply
+  /// holds pointers to the parameters in the subsystem Contexts. It does not
+  /// make a copy, or take ownership.
+  // TODO(sherm1) Consider making the diagram parameter dependency trackers
+  //     subscribe to corresponding subcontext trackers so that direct
+  //     subcontext parameter modifications are reflected here. Will be
+  //     essential if computational functionality is added to Diagrams.
   void MakeParameters() {
     std::vector<BasicVector<T>*> numeric_params;
     std::vector<AbstractValue*> abstract_params;
@@ -356,6 +358,7 @@ class DiagramContext final : public Context<T> {
     return clone;
   }
 
+  // Returns the number of immediate child subcontexts in this DiagramContext.
   int num_subcontexts() const {
     return static_cast<int>(contexts_.size());
   }

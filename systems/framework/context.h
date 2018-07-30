@@ -5,7 +5,6 @@
 
 #include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
-#include "drake/common/number_traits.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/parameters.h"
@@ -161,6 +160,7 @@ class Context : public ContextBase {
   /// Returns a const reference to the abstract component of the
   /// state at @p index.
   /// @pre @p index must identify an existing element.
+  /// @pre the abstract state's type must match the template argument.
   template <typename U>
   const U& get_abstract_state(int index) const {
     const AbstractValues& xa = get_state().get_abstract_state();
@@ -203,9 +203,9 @@ class Context : public ContextBase {
   /// %Context. Such changes may invalidate computations that have been cached
   /// here, and downstream computations that depend on those computations.
   /// Invoking one of these methods automatically performs those invalidations,
-  /// which may include computations in this %Context and its neighbors in the
-  /// full Diagram context tree, including peers, parent, and child %Contexts.
-  /// Those invalidations may propagate further up and down the context tree.
+  /// which may involve this %Context and its neighbors in the full Diagram
+  /// context tree, including peers, parent, and child %Contexts. Those
+  /// invalidations may then propagate further up and down the context tree.
   ///
   /// These methods should be the _only_ way you modify %Context values. In
   /// particular, some of these methods return mutable references -- you can
@@ -330,6 +330,7 @@ class Context : public ContextBase {
   /// Returns a mutable reference to element @p index of the abstract state.
   /// Invalidates all computations that depend on this abstract state variable.
   /// @pre @p index must identify an existing element.
+  /// @pre the abstract state's type must match the template argument.
   /// @bug Currently invalidates dependents of _any_ abstract state variable.
   // TODO(sherm1) Invalidate only dependents of this one abstract variable.
   template <typename U>
@@ -338,10 +339,10 @@ class Context : public ContextBase {
     return xa.get_mutable_value(index).GetMutableValue<U>();
   }
 
-  /// Returns a mutable reference to this %Context's parameters after
-  /// invalidating all parameter-dependent computations. This is likely to be a
-  /// _lot_ of invalidation -- if you are really just changing a single
-  /// parameter use one of the indexed methods instead.
+  /// Returns a mutable reference to this %Context's parameters. Invalidates
+  /// all parameter-dependent computations. If you don't mean to change all the
+  /// parameters, use the indexed methods to modify only some of the parameters
+  /// so that fewer computations are invalidated.
   Parameters<T>& get_mutable_parameters() {
     const int64_t change_event = this->start_new_change_event();
     PropagateBulkChange(change_event, &Context<T>::NoteAllParametersChanged);
@@ -378,6 +379,9 @@ class Context : public ContextBase {
   /// @bug Currently does not copy fixed input port values from `source`.
   /// See System::FixInputPortsFrom() if you want to copy those.
   // TODO(sherm1) Should treat fixed input port values same as parameters.
+  // TODO(sherm1) Change the name of this method to be more inclusive since it
+  //              also copies accuracy (now) and fixed input port values
+  //              (pending above TODO).
   void SetTimeStateAndParametersFrom(const Context<double>& source) {
     // A single change event for all these changes is much faster than doing
     // each separately.

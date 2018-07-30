@@ -2051,7 +2051,7 @@ TEST_F(NestedDiagramContextTest, CachingChangePropagation) {
 
 /* Check that changes made directly to a subcontext still affect the
 parent Diagram's behavior properly.
- 
+
         +-----------------------------------------------------+
         |                                                     |
         |       +------------+             +-----------+      |

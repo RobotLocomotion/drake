@@ -110,11 +110,10 @@ void SystemBase::CreateSourceTrackers(ContextBase* context_ptr) const {
 
   // Define a lambda to do the repeated work below: create trackers for
   // individual entities and subscribe the group tracker to each of them.
-  auto MakeTrackers = [&context](
+  auto make_trackers = [&context](
       DependencyTicket subscriber_ticket,
       const std::vector<TrackerInfo>& system_ticket_info,
-      void (*add_ticket_to_context)(ContextBase* context,
-                                    DependencyTicket ticket)) {
+      void (*add_ticket_to_context)(ContextBase*, DependencyTicket)) {
     DependencyGraph& graph = context.get_mutable_dependency_graph();
     DependencyTracker& subscriber =
         graph.get_mutable_tracker(subscriber_ticket);
@@ -129,22 +128,22 @@ void SystemBase::CreateSourceTrackers(ContextBase* context_ptr) const {
 
   // Allocate trackers for each discrete variable group xdᵢ, and subscribe
   // the "all discrete variables" tracker xd to those.
-  MakeTrackers(
+  make_trackers(
       xd_ticket(), discrete_state_tickets_,
       &detail::SystemBaseContextBaseAttorney::AddDiscreteStateTicket);
 
   // Allocate trackers for each abstract state variable xaᵢ, and subscribe
   // the "all abstract variables" tracker xa to those.
-  MakeTrackers(
+  make_trackers(
       xa_ticket(), abstract_state_tickets_,
       &detail::SystemBaseContextBaseAttorney::AddAbstractStateTicket);
 
   // Allocate trackers for each numeric parameter pnᵢ and each abstract
   // parameter paᵢ, and subscribe the "all parameters" tracker p to those.
-  MakeTrackers(
+  make_trackers(
       all_parameters_ticket(), numeric_parameter_tickets_,
       &detail::SystemBaseContextBaseAttorney::AddNumericParameterTicket);
-  MakeTrackers(
+  make_trackers(
       all_parameters_ticket(), abstract_parameter_tickets_,
       &detail::SystemBaseContextBaseAttorney::AddAbstractParameterTicket);
 
