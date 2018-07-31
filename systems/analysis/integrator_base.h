@@ -910,7 +910,7 @@ class IntegratorBase {
    * integration. This is an advanced topic and most users can simply specify
    * desired accuracy and accept the default state variable weights.
    *
-   * A collection of state variables is generally defined in heterogenous units
+   * A collection of state variables is generally defined in heterogeneous units
    * (e.g. length, angles, velocities, energy). Some of the state
    * variables cannot even be expressed in meaningful units, like
    * quaternions. Certain integrators provide an estimate of the absolute error
@@ -1606,7 +1606,7 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
     // Constants used to determine whether modifications to the step size are
     // close enough to the attempted step size to use the unadjusted originals,
     // or (1) whether the step size to be attempted is so small that we should
-    // consider it to be artifically limited or (2) whether the step size to
+    // consider it to be artificially limited or (2) whether the step size to
     // be attempted is sufficiently close to that requested such that the step
     // size should be stretched slightly.
     const double near_enough_smaller = 0.95;

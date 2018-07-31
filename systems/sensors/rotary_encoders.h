@@ -50,7 +50,7 @@ class RotaryEncoders final : public VectorSystem<T> {
       Context<T>* context,
       const Eigen::Ref<VectorX<T>>& calibration_offsets) const;
 
-  /// Retreive the calibration offset parameters.
+  /// Retrieve the calibration offset parameters.
   Eigen::VectorBlock<const VectorX<T>> get_calibration_offsets(
       const Context<T>& context) const;
 
