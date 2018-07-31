@@ -248,6 +248,8 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertTrue(frame.get_rigid_body() is tree.world())
         self.assertIsInstance(frame.get_transform_to_body(), Isometry3)
         self.assertTrue(tree.findFrame(frame_name="frame_1") is frame)
+        frame.set_name("frame_2")
+        self.assertEqual(frame.get_name(), "frame_2")
 
     def test_flat_terrain(self):
         tree = RigidBodyTree(FindResourceOrThrow(
