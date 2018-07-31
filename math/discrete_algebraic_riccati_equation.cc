@@ -255,8 +255,8 @@ void swap_block_22(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
 
 // Functionality of "swap_block" function:
 // swap the 1x1 or 2x2 blocks pointed by p and q.
-// There are four cases: swaping 1x1 and 1x1 matrices, swaping 2x2 and 1x1
-// matrices, swaping 1x1 and 2x2 matrices, and swaping 2x2 and 2x2 matrices.
+// There are four cases: swapping 1x1 and 1x1 matrices, swapping 2x2 and 1x1
+// matrices, swapping 1x1 and 2x2 matrices, and swapping 2x2 and 2x2 matrices.
 // Algorithms are described in the papers
 // "A generalized eigenvalue approach for solving Riccati equations" by P. Van
 // Dooren, 1981 ( http://epubs.siam.org/doi/pdf/10.1137/0902010 ), and
