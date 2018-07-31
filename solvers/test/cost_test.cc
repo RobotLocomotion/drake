@@ -261,7 +261,7 @@ GTEST_TEST(testCost, testFunctionCost) {
   // Test that we can construct FunctionCosts with different signatures.
   Eigen::Vector2d x(1, 2);
   VerifyFunctionCost(GenericTrivialCost2(), x);
-  // Ensure that we explictly call the default constructor for a const class.
+  // Ensure that we explicitly call the default constructor for a const class.
   // @ref http://stackoverflow.com/a/28338123/7829525
   const GenericTrivialCost2 obj_const{};
   VerifyFunctionCost(obj_const, x);
