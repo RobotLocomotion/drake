@@ -30,8 +30,8 @@ class TransformPointCloud final : public systems::LeafSystem<double> {
 
   /// Constructs a transformer that transforms from the frame with index
   /// `src_frame_index` to the frame with index `dest_frame_index`.
-  TransformPointCloud(const RigidBodyTree<double>& tree, int dest_frame_index,
-                      int src_frame_index);
+  TransformPointCloud(const RigidBodyTree<double>& tree, int src_frame_index,
+                      int dest_frame_index);
 
   /// Constructs a transformer that transforms from the frame with index
   /// `src_frame_index` to the world frame.
@@ -66,8 +66,8 @@ class TransformPointCloud final : public systems::LeafSystem<double> {
   void CreatePorts();
 
   const RigidBodyTree<double>& tree_;
-  int dest_frame_index_;
   int src_frame_index_;
+  int dest_frame_index_;
 
   systems::InputPortIndex point_cloud_input_port_index_;
   systems::InputPortIndex state_input_port_index_;

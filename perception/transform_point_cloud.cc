@@ -4,18 +4,18 @@ namespace drake {
 namespace perception {
 
 TransformPointCloud::TransformPointCloud(const RigidBodyTree<double>& tree,
-                                         int dest_frame_index,
-                                         int src_frame_index)
+                                         int src_frame_index,
+                                         int dest_frame_index)
     : tree_(tree),
-      dest_frame_index_(dest_frame_index),
-      src_frame_index_(src_frame_index) {
+      src_frame_index_(src_frame_index),
+      dest_frame_index_(dest_frame_index) {
   this->CreatePorts();
 }
 
 TransformPointCloud::TransformPointCloud(const RigidBodyTree<double>& tree,
                                          int src_frame_index)
-    : TransformPointCloud(tree, tree.findFrame("world")->get_frame_index(),
-                          src_frame_index) {}
+    : TransformPointCloud(tree, src_frame_index,
+                          tree.findFrame("world")->get_frame_index()) {}
 
 PointCloud TransformPointCloud::MakeOutputPointCloud() const {
   PointCloud cloud(0);
