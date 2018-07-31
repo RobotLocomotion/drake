@@ -19,7 +19,7 @@ def workspace_test(
         data = []):
     """
     Copies all contents under `*.runfiles/${workspace}/**` to a temporary
-    directory, then evalutates `args` in `bash` in the new temporary runfiles
+    directory, then evaluates `args` in `bash` in the new temporary runfiles
     workspace directory.
 
     @param args

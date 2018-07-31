@@ -79,7 +79,7 @@ def setup_pkg_config_repository(repository_ctx):
     # or labels ("foo").  We should only get switches from `pkg-config --libs`.
     # However, sometimes it produces "-framework CoreFoundation" or similar,
     # which is *supposed* to be a single switch, but our split heuristic
-    # chopped it up.  We recombine non-switch args with their preceeding arg as
+    # chopped it up.  We recombine non-switch args with their preceding arg as
     # a repair.  We process args in reserve order to keep our loop index
     # unchanged by a pop.
     for i in reversed(range(len(linkopts))):
@@ -326,6 +326,6 @@ Args:
     extra_linkopts: (Optional) Extra items to add to the library target.
     extra_deps: (Optional) Extra items to add to the library target.
     pkg_config_paths: (Optional) Paths to find pkg-config files (.pc). Note
-                      that we ignore the enviornment variable PKG_CONFIG_PATH
+                      that we ignore the environment variable PKG_CONFIG_PATH
                       set by the user.
 """
