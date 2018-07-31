@@ -115,7 +115,7 @@ def setup_pkg_config_repository(repository_ctx):
         # Add `-Wl,-rpath <path>` for `-L<path>`.
         # See https://github.com/RobotLocomotion/drake/issues/7387#issuecomment-359952616  # noqa
         if linkopt.startswith("-L"):
-            linkopts[i] = "-Wl,-rpath " + linkopt[2:] + " " + linkopt
+            linkopts.insert(i, "-Wl,-rpath " + linkopt[2:])
             continue
 
         # Switches stay put.
@@ -165,7 +165,8 @@ def setup_pkg_config_repository(repository_ctx):
             # Instead, when compiling our code that uses this library, we'll
             # decide to just ignore pkg-config's advice to use -pthread when
             # compiling and instead apply -pthread only when linking.
-            linkopts.append("-pthread")
+            if "-pthread" not in linkopts:
+                linkopts.append("-pthread")
         elif cflag in [
             "-frounding-math",
             "-ffloat-store",
@@ -173,6 +174,8 @@ def setup_pkg_config_repository(repository_ctx):
             "-msse2",
             "-msse3",
             "-msse4",
+            "-msse4.1",
+            "-msse4.2",
             "-mfpmath",
         ]:
             # We know these are okay to ignore.
