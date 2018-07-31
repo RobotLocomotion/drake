@@ -226,7 +226,7 @@ class RotationConversionTest : public ::testing::Test {
     // 1E-10 rotation around an arbitrary axis
     addAngleAxisTestCase(1E-10, axis);
 
-    // -epsilon rotation around an arbitary axis
+    // -epsilon rotation around an arbitrary axis
     addAngleAxisTestCase(-kEpsilon, axis);
 
     // -1E-10 rotation around an arbitrary axis
@@ -250,10 +250,10 @@ class RotationConversionTest : public ::testing::Test {
     // -180 rotation around z axis
     addAngleAxisTestCase(-M_PI, Vector3d::UnitZ());
 
-    // 180 rotation around an arbitary axis
+    // 180 rotation around an arbitrary axis
     addAngleAxisTestCase(M_PI, axis);
 
-    // -180 rotation around an arbitary axis
+    // -180 rotation around an arbitrary axis
     addAngleAxisTestCase(-M_PI, axis);
 
     // (1-epsilon)*pi rotation around an arbitrary axis
