@@ -174,7 +174,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     n = problem_->num_vars();
 
     // The IPOPT interface defines eval_f() and eval_grad_f() as
-    // ouputting a single number for the result, and the size of the
+    // outputting a single number for the result, and the size of the
     // output gradient array at the same order as the x variables.
     // Initialize the cost cache with those dimensions.
     cost_cache_.reset(new ResultCache(n, 1, n));
