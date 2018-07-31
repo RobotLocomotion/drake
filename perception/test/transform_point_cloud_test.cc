@@ -116,7 +116,7 @@ GTEST_TEST(TransformPointCloudTest, ApplyTransform) {
   // `float` as the numerical representation.
   EXPECT_TRUE(CompareMatrices(output_cloud.xyzs(),
                               expected_output.block(0, 0, 3, kNumPoints),
-                              10.0f * std::numeric_limits<float>::epsilon()));
+                              18.0f * std::numeric_limits<float>::epsilon()));
 }
 
 // Verifies that the system transforms a point cloud correctly to the world
@@ -169,7 +169,7 @@ GTEST_TEST(TransformPointCloudTest, TransformToWorldFrame) {
   // `float` as the numerical representation.
   EXPECT_TRUE(CompareMatrices(output_cloud.xyzs(),
                               expected_output.block(0, 0, 3, kNumPoints),
-                              10.0f * std::numeric_limits<float>::epsilon()));
+                              18.0f * std::numeric_limits<float>::epsilon()));
 }
 
 }  // namespace

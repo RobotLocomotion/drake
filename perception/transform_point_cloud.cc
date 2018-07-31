@@ -4,18 +4,18 @@ namespace drake {
 namespace perception {
 
 TransformPointCloud::TransformPointCloud(const RigidBodyTree<double>& tree,
-                                         int parent_frame_index,
-                                         int child_frame_index)
+                                         int dest_frame_index,
+                                         int src_frame_index)
     : tree_(tree),
-      parent_frame_index_(parent_frame_index),
-      child_frame_index_(child_frame_index) {
+      dest_frame_index_(dest_frame_index),
+      src_frame_index_(src_frame_index) {
   this->CreatePorts();
 }
 
 TransformPointCloud::TransformPointCloud(const RigidBodyTree<double>& tree,
-                                         int child_frame_index)
+                                         int src_frame_index)
     : TransformPointCloud(tree, tree.findFrame("world")->get_frame_index(),
-                          child_frame_index) {}
+                          src_frame_index) {}
 
 PointCloud TransformPointCloud::MakeOutputPointCloud() const {
   PointCloud cloud(0);
@@ -35,14 +35,12 @@ void TransformPointCloud::ApplyTransformToPointCloud(
   const KinematicsCache<double> cache = tree_.doKinematics(q);
 
   const Isometry3<double> isom =
-      tree_.relativeTransform(cache, parent_frame_index_, child_frame_index_);
+      tree_.relativeTransform(cache, dest_frame_index_, src_frame_index_);
 
-  const math::RigidTransform<double> rigid_transform(isom);
-  const Matrix4<float> mat = rigid_transform.GetAsMatrix4().cast<float>();
-  const Matrix4X<float> out =
-      mat * input_point_cloud->xyzs().colwise().homogeneous();
+  const Eigen::Isometry3f isomf(isom);
+  const auto out = isomf * input_point_cloud->xyzs();
   output->resize(input_point_cloud->size());
-  output->mutable_xyzs() = out.block(0, 0, 3, out.cols());
+  output->mutable_xyzs() = out;
 }
 
 void TransformPointCloud::CreatePorts() {

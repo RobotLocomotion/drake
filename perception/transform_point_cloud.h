@@ -14,11 +14,12 @@
 namespace drake {
 namespace perception {
 
-/// Transforms a point cloud to the world frame.
+/// Transforms a point cloud to the world frame or to an arbitrary frame.
 ///
-/// The system first computes a RigidTransform between a RigidBodyFrame and
-/// the world frame based on the state of a RigidBodyTree. Then it applies
-/// this transform to a point cloud.
+/// The system first computes a RigidTransform between two RigidBodyFrames
+/// based on the state of a RigidBodyTree. Then it applies this transform to
+/// a point cloud. The system stores the indices of the two RigidBodyFrames
+/// to recover them from the RigidBodyTree.
 ///
 /// The system has two input ports and one output port. The first input port
 /// takes a PointCloud and the second takes the state of a RigidBodyTree. The
@@ -27,14 +28,14 @@ class TransformPointCloud final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TransformPointCloud)
 
-  /// Constructs a transformer that transforms from `child_frame` to
-  /// `parent_frame`.
-  TransformPointCloud(const RigidBodyTree<double>& tree, int parent_frame_index,
-                      int child_frame_index);
+  /// Constructs a transformer that transforms from the frame with index
+  /// `src_frame_index` to the frame with index `dest_frame_index`.
+  TransformPointCloud(const RigidBodyTree<double>& tree, int dest_frame_index,
+                      int src_frame_index);
 
-  /// Constructs a transformer that transforms from `child_frame` to world
-  /// frame.
-  TransformPointCloud(const RigidBodyTree<double>& tree, int child_frame_index);
+  /// Constructs a transformer that transforms from the frame with index
+  /// `src_frame_index` to the world frame.
+  TransformPointCloud(const RigidBodyTree<double>& tree, int src_frame_index);
 
   /// Returns the abstract valued input port that contains a PointCloud.
   const systems::InputPort<double>& point_cloud_input_port() const {
@@ -65,8 +66,8 @@ class TransformPointCloud final : public systems::LeafSystem<double> {
   void CreatePorts();
 
   const RigidBodyTree<double>& tree_;
-  int parent_frame_index_;
-  int child_frame_index_;
+  int dest_frame_index_;
+  int src_frame_index_;
 
   systems::InputPortIndex point_cloud_input_port_index_;
   systems::InputPortIndex state_input_port_index_;
