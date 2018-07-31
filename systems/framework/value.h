@@ -61,7 +61,7 @@ struct ValueTraitsImpl<T, false> {
   //   template <class Foo> DoBar(const Foo& foo) { DoBar(Value<Foo>{foo}); }
   // and accidentally called DoBar<AbstractValue>, or similar mistakes.
   static_assert(!std::is_same<T, std::remove_cv<AbstractValue>::type>::value,
-                "T in Value<T> cannnot be AbstractValue.");
+                "T in Value<T> cannot be AbstractValue.");
 
   using UseCopy = std::false_type;
   using Storage = typename drake::copyable_unique_ptr<T>;

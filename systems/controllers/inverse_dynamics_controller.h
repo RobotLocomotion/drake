@@ -50,7 +50,7 @@ class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
   /**
    * Constructs the controller that takes ownership of a given RigidBodyTree
    * unique pointer.
-   * @param robot Unique pointer whose ownership will be transfered to this
+   * @param robot Unique pointer whose ownership will be transferred to this
    * instance.
    * @param kp Position gain
    * @param ki Integral gain
