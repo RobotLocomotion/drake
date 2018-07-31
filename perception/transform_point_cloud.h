@@ -16,7 +16,7 @@ namespace perception {
 
 /// Transforms a point cloud to the world frame or to an arbitrary frame.
 ///
-/// The system first computes a RigidTransform between two RigidBodyFrames
+/// The system first computes a transform between two RigidBodyFrames
 /// based on the state of a RigidBodyTree. Then it applies this transform to
 /// a point cloud. The system stores the indices of the two RigidBodyFrames
 /// to recover them from the RigidBodyTree.
@@ -57,8 +57,8 @@ class TransformPointCloud final : public systems::LeafSystem<double> {
   /// Returns an empty point cloud.
   PointCloud MakeOutputPointCloud() const;
 
-  /// Transforms the point cloud using a RigidTransform between `frame_` and
-  /// the world frame that is calculated based on the state of `tree_`.
+  /// Transforms the point cloud using a transform from the frame with index
+  /// `src_frame_index` to the frame with index `dest_frame_index`.
   void ApplyTransformToPointCloud(const systems::Context<double>& context,
                                   PointCloud* output) const;
 

@@ -37,19 +37,6 @@ Matrix3X<float> GenerateBoundedSample(const Vector3<float>& min,
   return return_matrix;
 }
 
-Matrix4X<float> CalcExpectedOutput(const Isometry3<double>& isom,
-                                   const MatrixX<float>& data) {
-  // The rigid transform below uses `float` because the point cloud uses
-  // `float` as the numerical representation.
-  math::RigidTransform<double> transform_d(isom);
-  Matrix4X<float> transform = transform_d.GetAsMatrix4().cast<float>();
-  Matrix4X<float> data_homogeneous(4, data.cols());
-  data_homogeneous.block(0, 0, 3, data.cols()) = data;
-  data_homogeneous.row(3) = VectorX<float>::Ones(kNumPoints);
-  Matrix4X<float> expected_output = transform * data_homogeneous;
-  return expected_output;
-}
-
 RigidBody<double> AddBodyToTree(RigidBodyTree<double>* tree) {
   RigidBody<double> body;
   body.set_name("body");
@@ -93,7 +80,7 @@ GTEST_TEST(TransformPointCloudTest, ApplyTransform) {
       VectorX<double>::Zero(transformer->state_input_port().size());
   state.head(tree->get_num_positions()) << 0.3, -0.4, 2.3, 0, 0, 0;
 
-  MatrixX<float> test_data = GenerateBoundedSample(kMin, kMax, kNumPoints);
+  Matrix3X<float> test_data = GenerateBoundedSample(kMin, kMax, kNumPoints);
   PointCloud cloud(kNumPoints);
   cloud.mutable_xyzs() = test_data;
 
@@ -103,20 +90,20 @@ GTEST_TEST(TransformPointCloudTest, ApplyTransform) {
   transformer->point_cloud_output_port().Calc(*context, output.get());
   PointCloud output_cloud = output->GetValueOrThrow<PointCloud>();
 
-  // The rigid transform below uses `float` because the point cloud uses
-  // `float` as the numerical representation.
+  // The transform below uses `float` because the point cloud uses `float` as
+  // the numerical representation.
   const KinematicsCache<double> cache =
       tree->doKinematics(state.head(tree->get_num_positions()));
   const Isometry3<double> isom =
       tree->relativeTransform(cache, 0, frame->get_frame_index());
-
-  Matrix4X<float> expected_output = CalcExpectedOutput(isom, test_data);
+  const Eigen::Isometry3f isomf(isom);
+  const auto expected = isomf * test_data;
 
   // The tolerance used here has this value because the point cloud uses
   // `float` as the numerical representation.
   EXPECT_TRUE(CompareMatrices(output_cloud.xyzs(),
-                              expected_output.block(0, 0, 3, kNumPoints),
-                              18.0f * std::numeric_limits<float>::epsilon()));
+                              expected,
+                              10.0f * std::numeric_limits<float>::epsilon()));
 }
 
 // Verifies that the system transforms a point cloud correctly to the world
@@ -146,7 +133,7 @@ GTEST_TEST(TransformPointCloudTest, TransformToWorldFrame) {
       VectorX<double>::Zero(transformer->state_input_port().size());
   state.head(tree->get_num_positions()) << 0.3, -0.4, 2.3, 0, 0, 0;
 
-  MatrixX<float> test_data = GenerateBoundedSample(kMin, kMax, kNumPoints);
+  Matrix3X<float> test_data = GenerateBoundedSample(kMin, kMax, kNumPoints);
   PointCloud cloud(kNumPoints);
   cloud.mutable_xyzs() = test_data;
 
@@ -156,20 +143,20 @@ GTEST_TEST(TransformPointCloudTest, TransformToWorldFrame) {
   transformer->point_cloud_output_port().Calc(*context, output.get());
   PointCloud output_cloud = output->GetValueOrThrow<PointCloud>();
 
-  // The rigid transform below uses `float` because the point cloud uses
-  // `float` as the numerical representation.
+  // The transform below uses `float` because the point cloud uses `float` as
+  // the numerical representation.
   const KinematicsCache<double> cache =
       tree->doKinematics(state.head(tree->get_num_positions()));
   const Isometry3<double> isom =
       tree->relativeTransform(cache, 0, frame->get_frame_index());
-
-  Matrix4X<float> expected_output = CalcExpectedOutput(isom, test_data);
+  const Eigen::Isometry3f isomf(isom);
+  const auto expected = isomf * test_data;
 
   // The tolerance used here has this value because the point cloud uses
   // `float` as the numerical representation.
   EXPECT_TRUE(CompareMatrices(output_cloud.xyzs(),
-                              expected_output.block(0, 0, 3, kNumPoints),
-                              18.0f * std::numeric_limits<float>::epsilon()));
+                              expected,
+                              10.0f * std::numeric_limits<float>::epsilon()));
 }
 
 }  // namespace
