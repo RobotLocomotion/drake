@@ -93,7 +93,7 @@ TEST_F(DrakeLcmTest, PublishTest) {
 
   MessageSubscriber subscriber(channel_name, dut.get_lcm_instance());
 
-  // Start the LCM recieve thread after all objects it can potentially use like
+  // Start the LCM receive thread after all objects it can potentially use like
   // subscribers are instantiated. Since objects are destructed in the reverse
   // order of construction, this ensures the LCM receive thread stops before any
   // resources it uses are destroyed. If the Lcm receive thread is stopped after
