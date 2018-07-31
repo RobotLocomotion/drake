@@ -48,7 +48,7 @@ class HermitianDenseOutputTest : public ::testing::Test {
   const int kInvalidDimension{10};
 
   const std::string kEmptyOutputErrorMessage{
-    ".*[Ee]mpty dense output.*"};
+    ".*[Dd]ense output.*empty.*"};
   const std::string kZeroLengthStepErrorMessage{
     ".*step has zero length.*"};
   const std::string kCannotRollbackErrorMessage{
@@ -56,9 +56,9 @@ class HermitianDenseOutputTest : public ::testing::Test {
   const std::string kCannotConsolidateErrorMessage{
     "No updates to consolidate."};
   const std::string kInvalidDimensionErrorMessage{
-    ".*[Ii]nvalid dimension.*"};
+    ".*[Dd]imension.*out of.*dense output.*range.*"};
   const std::string kInvalidTimeErrorMessage{
-    ".*not defined for given time.*"};
+    ".*[Tt]ime.*out of.*dense output.*domain.*"};
   const std::string kTimeMismatchErrorMessage{
     ".*start time.*end time.*differ.*"};
   const std::string kStateMismatchErrorMessage{

@@ -150,7 +150,8 @@ class InitialValueProblem {
   /// time @p tf, using initial state 𝐱₀ and parameter vector 𝐤 present in
   /// @p values (falling back to the ones given on construction if not given).
   ///
-  /// @param tf The IVP will be solved up to this time.
+  /// @param tf The IVP will be solved up to this time, usually t₀ < @p tf, as
+  ///           an empty dense output would result if t₀ = @p tf.
   /// @param values IVP initial conditions and parameters.
   /// @returns A dense approximation to 𝐱(t; 𝐤) with 𝐱(t₀; 𝐤) = 𝐱₀, defined for
   ///          t₀ ≤ t ≤ tf.

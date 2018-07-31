@@ -3,6 +3,8 @@
 #include <memory>
 #include <utility>
 
+#include <fmt/format.h>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/dense_output.h"
 #include "drake/systems/analysis/scalar_dense_output.h"
@@ -22,16 +24,16 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
 
   /// Constructs a view of another DenseOutput instance.
   /// @param base_output Base dense output to operate with.
-  /// @param dimension The dimension to view.
-  /// @throws std::logic_error if specified @p dimension is not a
-  ///                          valid dimension of @p base_output.
+  /// @param n The nth dimension of the output value to view.
+  /// @throws std::runtime_error if @p n is not a valid dimension
+  ///                            of @p base_output.
   explicit ScalarViewDenseOutput(
-      std::unique_ptr<DenseOutput<T>> base_output, int dimension)
-      : base_output_(std::move(base_output)),
-        dimension_(dimension) {
-    if (dimension < 0 || dimension >= base_output_->size()) {
-      throw std::logic_error("Dimension out of range for the "
-                             "given base dense output.");
+      std::unique_ptr<DenseOutput<T>> base_output, int n)
+      : base_output_(std::move(base_output)), n_(n) {
+    if (n < 0 || base_output_->size() <= n) {
+      throw std::runtime_error(fmt::format(
+          "Dimension {} out of base dense output [0, {}) range.",
+          n, base_output_->size()));
     }
   }
 
@@ -43,7 +45,7 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
 
  protected:
   T DoEvaluateScalar(const T& t) const override {
-    return base_output_->EvaluateNth(t, dimension_);
+    return base_output_->EvaluateNth(t, n_);
   }
 
   bool do_is_empty() const override {
@@ -60,8 +62,8 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
 
   // The base (vector) dense output being wrapped.
   const std::unique_ptr<DenseOutput<T>> base_output_;
-  // The dimension of interest for the view.
-  const int dimension_;
+  // The nth dimension of interest for the view.
+  const int n_;
 };
 
 }  // namespace systems

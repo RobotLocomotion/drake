@@ -136,7 +136,8 @@ class ScalarInitialValueProblem {
   /// time @p tf, using initial state x₀ and parameter vector 𝐤 present in
   /// @p values (falling back to the ones given on construction if not given).
   ///
-  /// @param tf The IVP will be solved up to this time.
+  /// @param tf The IVP will be solved up to this time, usually t₀ < @p tf, as
+  ///           an empty dense output would result if t₀ = @p tf.
   /// @param values IVP initial conditions and parameters.
   /// @returns A dense approximation to x(t; 𝐤) with x(t₀; 𝐤) = x₀, defined for
   ///          t₀ ≤ t ≤ tf.

@@ -54,7 +54,7 @@ TYPED_TEST(ScalarViewDenseOutputTest, ExtensionConsistency) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       ScalarViewDenseOutput<TypeParam> dense_output(
           this->CreateDummyDenseOutput(), this->kInvalidDimension),
-      std::logic_error, "[Dd]imension out of range.*");
+      std::runtime_error, ".*[Dd]imension.*out of.*dense output.*range.*");
 
   // Instantiates scalar continuous extension properly.
   ScalarViewDenseOutput<TypeParam> dense_output(
@@ -76,7 +76,8 @@ TYPED_TEST(ScalarViewDenseOutputTest, ExtensionConsistency) {
   // Checks evaluation preconditions.
   DRAKE_EXPECT_THROWS_MESSAGE(
       dense_output.Evaluate(this->kInvalidTime),
-      std::runtime_error, ".*not defined for.*time.*");
+      std::runtime_error,
+      ".*[Tt]ime.*out of.*dense output.*domain.*");
 
   // Compares evaluations for consistency.
   EXPECT_EQ(

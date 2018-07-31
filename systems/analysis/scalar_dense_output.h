@@ -25,15 +25,11 @@ class ScalarDenseOutput : public DenseOutput<T> {
   /// @returns Output scalar value.
   /// @pre Output is not empty i.e. is_empty() is false.
   /// @throws std::logic_error if any of the preconditions is not met.
-  /// @throws std::runtime_error if the output is not defined for the
-  ///                            given @p t.
+  /// @throws std::runtime_error if given @p t is not valid
+  ///                            i.e. start_time() ≤ @p t ≤ end_time().
   T EvaluateScalar(const T& t) const {
-    if (this->is_empty()) {
-      throw std::logic_error("Empty dense output cannot be evaluated.");
-    }
-    if (t < this->do_start_time() || t > this->do_end_time()) {
-      throw std::runtime_error("Dense output is not defined for given time.");
-    }
+    this->ThrowIfOutputIsEmpty();
+    this->ThrowIfTimeIsInvalid(t);
     return this->DoEvaluateScalar(t);
   }
 

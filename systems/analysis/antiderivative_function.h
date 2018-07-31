@@ -145,7 +145,8 @@ class AntiderivativeFunction {
   /// present in @p values, falling back to the ones given on construction
   /// if missing.
   ///
-  /// @param w The uppermost integration bound.
+  /// @param w The uppermost integration bound, usually v < @p w, as an empty
+  ///          dense output would result if v = @p w.
   /// @param values The specified values for the integration.
   /// @returns A dense approximation to F(u; 𝐤) (that is, a function), defined
   ///          for v ≤ u ≤ w.
