@@ -741,7 +741,7 @@ GTEST_TEST(PoseSelectorTest, MultiSegmentRoad) {
   }
 }
 
-// Construct a monolane road with three confluent feeder lanes correponding to
+// Construct a monolane road with three confluent feeder lanes corresponding to
 // three distinct branch points.
 //
 // TODO(jadecastro) Port this to multilane.
