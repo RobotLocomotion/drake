@@ -42,7 +42,7 @@ VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
   // Temporary array for body accelerations.
   std::vector<SpatialAcceleration<T>> A_WB_array(model.num_bodies());
 
-  // Ouput vector of generalized forces:
+  // Output vector of generalized forces:
   VectorX<T> tau_g(model.num_velocities());
 
   // Compute inverse dynamics with zero generalized velocities and zero

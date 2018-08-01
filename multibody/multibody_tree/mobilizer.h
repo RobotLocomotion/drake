@@ -326,7 +326,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
 
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the vector of
-  /// generalized postions `q`.
+  /// generalized positions `q`.
   /// %Mobilizer subclasses implementing this method can retrieve the fixed-size
   /// vector of generalized positions for `this` mobilizer from `context` with:
   ///

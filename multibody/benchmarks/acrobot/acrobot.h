@@ -31,7 +31,7 @@ class Acrobot {
   /// Essentially the two dimensional equations of the acrobot are described
   /// in a model frame D within a x-y plane with y the vertical direction
   /// and gravity pointing downwards.
-  /// Thefore the axes defining the model frame D are: <pre>
+  /// Therefore the axes defining the model frame D are: <pre>
   ///   z_W = normal_W.normalized()
   ///   y_W = (up - up.dot(z_W) * z_W).normalized()
   ///   x_W = y_W.cross(z_W)

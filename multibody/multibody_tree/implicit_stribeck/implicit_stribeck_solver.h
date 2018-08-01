@@ -130,7 +130,7 @@ struct DirectionChangeLimiter {
   /// @param[in] cos_theta_max precomputed value of cos(θₘₐₓ).
   /// @param[in] v_stiction the stiction tolerance vₛ, in m/s.
   /// @param[in] relative_tolerance a value << 1 used to determine when
-  /// ‖vₜ‖ ≈ 0. Typical values lie withing the 10⁻³ - 10⁻² range. This allows
+  /// ‖vₜ‖ ≈ 0. Typical values lie within the 10⁻³ - 10⁻² range. This allows
   /// us to compute `εᵥ = tolerance⋅vₛ` (in m/s) which defines a "small
   /// tangential velocity scale". This value is used to compute "soft norms"
   /// (see class's documentation) and to detect values close to
@@ -1014,7 +1014,7 @@ class ImplicitStribeckSolver {
     }
 
     // Returns a mutable reference to the vector storing ∂fₜ/∂vₜ (in ℝ²ˣ²)
-    // for each contact pont, of size nc.
+    // for each contact point, of size nc.
     std::vector<Matrix2<T>>& mutable_dft_dvt() {
       return dft_dv_;
     }

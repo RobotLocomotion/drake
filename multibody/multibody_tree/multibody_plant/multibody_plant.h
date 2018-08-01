@@ -1701,7 +1701,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // TODO(amcastro-tri): Remove this when caching lands and properly cache the
   // contact results.
   // Until caching lands, we use this variable as a "caching" entry.
-  // We make it mutable so we can change its values even from withing const
+  // We make it mutable so we can change its values even from within const
   // methods.
   mutable ContactResults<T> contact_results_;
 };

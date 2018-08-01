@@ -335,7 +335,7 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_VeryLargeTheta) {
 }
 
 // This is a very degenerate case in which the angle formed by vt and dvt
-// equals (whithin machine epsilon) to theta_max. It so happens than in this
+// equals (within machine epsilon) to theta_max. It so happens that in this
 // case there is a single solution to the quadratic equation solved by the
 // limiter (the equation becomes linear).
 // Even though this will rarely (or impossibly) happen, we make sure we consider
@@ -773,7 +773,7 @@ TEST_F(PizzaSaver, NoContact) {
 // bodies first make contact. That is, we set the normal force to
 // fn = -m * vy / dt + m * g, where the small contribution due to gravity is
 // needed to exactly bring the cylinder's vertical velocity to zero. The solver
-// keeps this value constant througout the computation.
+// keeps this value constant throughout the computation.
 // The equations governing the motion for the cylinder during impact are:
 //   (1)  I Δω = pt R,  Δω  = ω, since ω0 = 0.
 //   (2)  m Δvx = pt ,  Δvx = vx - vx0
