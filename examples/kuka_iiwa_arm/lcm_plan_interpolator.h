@@ -42,7 +42,7 @@ class LcmPlanInterpolator : public systems::Diagram<double> {
   int input_port_iiwa_status_{-1};
   int input_port_iiwa_plan_{-1};
 
-  // Ouptut ports.
+  // Output ports.
   int output_port_iiwa_command_{-1};
 
   manipulation::planner::RobotPlanInterpolator* robot_plan_interpolator_{};

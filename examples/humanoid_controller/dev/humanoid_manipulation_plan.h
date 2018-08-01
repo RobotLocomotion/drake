@@ -42,7 +42,7 @@ class HumanoidManipulationPlan
 
   /**
    * Returns true if @p robot has at least 2 rigid bodies; the first rigid body
-   * has a RPY parametrized floating joint, and it has the same number of
+   * has a RPY parameterized floating joint, and it has the same number of
    * generalized positions and velocities.
    */
   bool IsRigidBodyTreeCompatible(const RigidBodyTree<T>& robot) const override;
@@ -102,7 +102,7 @@ class HumanoidManipulationPlan
    * and every configuration in `Q_plan` is statically stable given the support
    * region defined by the current foot poses. `T_plan` has to be strictly
    * increasing, and `T_plan[0]` is bigger than 0. The current implementation
-   * assumes that the message is encoded with a RPY parametrized floating base
+   * assumes that the message is encoded with a RPY parameterized floating base
    * model as opposed to a quaternion floating joint.
    *
    * This function returns without changing the current trajectories if the

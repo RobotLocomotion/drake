@@ -2,7 +2,7 @@ This directory contains various urdf models describing the dual iiwa arm setup
 for the box rotation simulation. The inter-arm distance defined in these urdf's
 is particularly important in making sure the open-loop simulation actually works.
 Changing this value could cause the open-loop simulation to break. Future versions
-will probablly just check and/or enforce it.
+will probably just check and/or enforce it.
 
 There are two collision models defined for the arms:
 1. Overlapping spheres, representing relevant parts of the arm (i.e., parts that are
