@@ -67,7 +67,7 @@ RandomClutterGenerator::RandomClutterGenerator(
   DRAKE_DEMAND(clutter_model_instances.size() >= 1);
   for (auto& it : clutter_model_instances) {
     // Check that the tree contains the model instance in question. I.e.
-    // Atleast one body exists for each model instance listed in
+    // At least one body exists for each model instance listed in
     // clutter_model_instance.
     DRAKE_DEMAND(scene_tree_ptr_->FindModelInstanceBodies(it).size() > 0);
   }
@@ -105,7 +105,7 @@ VectorX<double> RandomClutterGenerator::GenerateFloatingClutter(
     // state (q) equal some random orientation and the translation components
     // of the state are sampled from a bounded distribution.
     // The following vectors are populated on the basis of this equation, with
-    // the A matrix being specified by a sparse matrix notation, i,e the ith
+    // the A matrix being specified by a sparse matrix notation, i.e., the ith
     // (linear_posture_iAfun) and jth position (linear_posture_jAVar) specifying
     // the index values for elements which take on the value specified by
     // linear_posture_A.
