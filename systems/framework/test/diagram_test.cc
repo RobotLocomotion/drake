@@ -2405,7 +2405,7 @@ GTEST_TEST(DiagramConstraintTest, SystemConstraintsTest) {
 }
 
 GTEST_TEST(DiagramParametersTest, ParameterTest) {
-  // Construct a diagram with multiple subsytems that have parameters.
+  // Construct a diagram with multiple subsystems that have parameters.
   systems::DiagramBuilder<double> builder;
   auto pendulum1 =
       builder.AddSystem<examples::pendulum::PendulumPlant<double>>();

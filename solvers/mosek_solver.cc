@@ -617,7 +617,7 @@ class MosekSolver::License {
       // fail fast if the license file is missing or the server is
       // unavailable. Any additional features should be checked out
       // later by MSK_optimizetrm if needed (so there's still the
-      // possiblity of later failure at that stage if the desired
+      // possibility of later failure at that stage if the desired
       // feature is unavailable or another error occurs).
       rescode = MSK_checkoutlicense(mosek_env_, MSK_FEATURE_PTS);
     }
@@ -752,7 +752,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   }
 
   SolverResult solver_result(id());
-  // TODO(hongkai.dai@tri.global) : Add MOSEK paramaters.
+  // TODO(hongkai.dai@tri.global) : Add MOSEK parameters.
   // Mosek parameter are added by enum, not by string.
   if (rescode == MSK_RES_OK) {
     MSKsolstae solution_status;

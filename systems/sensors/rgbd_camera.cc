@@ -18,7 +18,7 @@ namespace systems {
 namespace sensors {
 
 // Note that if `depth_image` holds any pixels that have NaN, the converted
-// points will aslo become NaN.
+// points will also become NaN.
 void RgbdCamera::ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
                                                const CameraInfo& camera_info,
                                                Eigen::Matrix3Xf* point_cloud) {

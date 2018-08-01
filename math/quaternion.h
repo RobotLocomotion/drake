@@ -410,7 +410,7 @@ bool IsBothQuaternionAndQuaternionDtOK(const Eigen::Quaternion<T>& quat,
 
 /** This function tests if a quaternion and a quaternions time-derivative
  * can calculate and match an angular velocity to within a tolerance.
- * Note: This function first tests if the quaternion [w, x, y, z] satisifies
+ * Note: This function first tests if the quaternion [w, x, y, z] satisfies
  * w^2 + x^2 + y^2 + z^2 = 1 (to within tolerance) and if its time-derivative
  * satisfies  w*ẇ + x*ẋ + y*ẏ + z*ż = 0  (to within tolerance).  Lastly, it
  * tests if each element of the angular velocity calculated from quat and quatDt
@@ -429,7 +429,7 @@ bool IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
                                        const Vector4<T>& quatDt,
                                        const Vector3<T>& w_B,
                                        const double tolerance) {
-  // Ensure time-derivative of quaternion satifies quarternionDt test.
+  // Ensure time-derivative of quaternion satisfies quarternionDt test.
   if ( !math::IsBothQuaternionAndQuaternionDtOK(quat, quatDt, tolerance) )
     return false;
 

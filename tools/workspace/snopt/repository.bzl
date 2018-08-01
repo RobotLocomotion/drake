@@ -124,7 +124,7 @@ def _impl(repo_ctx):
 
     snopt_path = repo_ctx.os.environ.get("SNOPT_PATH", "")
 
-    # For now, an empty path defaults to use git.  In the future, settting
+    # For now, an empty path defaults to use git.  In the future, setting
     # SNOPT_PATH="git" will be required -- an empty path will report an error.
     if snopt_path in ["git", ""]:
         _setup_git(repo_ctx)
