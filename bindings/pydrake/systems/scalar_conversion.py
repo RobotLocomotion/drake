@@ -164,7 +164,7 @@ class TemplateSystem(TemplateClass):
                 .format(cls.__name__))
         if not has_construct:
             raise RuntimeError(
-                "{} does not define `_construct`. Pleaes ensure this is "
+                "{} does not define `_construct`. Please ensure this is "
                 "defined.".format(cls.__name__))
         if not has_copy:
             raise RuntimeError(

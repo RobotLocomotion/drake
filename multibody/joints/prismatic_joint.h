@@ -15,7 +15,7 @@
 class PrismaticJoint : public FixedAxisOneDoFJoint<PrismaticJoint> {
  public:
   /**
-   * The constructor that intializes the name, position, and axis of motion
+   * The constructor that initializes the name, position, and axis of motion
    * of this prismatic joint.
    *
    * @param[in] name The name of this joint.

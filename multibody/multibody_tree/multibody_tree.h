@@ -428,7 +428,7 @@ class MultibodyTree {
     DRAKE_ASSERT(mobilizer_index == num_mobilizers());
 
     // TODO(sammy-tri) This effectively means that there's no way to
-    // programatically add mobilizers from outside of MultibodyTree
+    // programmatically add mobilizers from outside of MultibodyTree
     // itself with multiple model instances.  I'm not convinced that
     // this is a problem.
     if (!mobilizer->model_instance().is_valid()) {

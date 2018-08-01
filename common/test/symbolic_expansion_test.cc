@@ -64,7 +64,7 @@ class SymbolicExpansionTest : public ::testing::Test {
 };
 
 TEST_F(SymbolicExpansionTest, ExpressionAlreadyExpandedPolynomial) {
-  // The followings are all already expanded.
+  // The following are all already expanded.
   EXPECT_TRUE(CheckAlreadyExpanded(0));
   EXPECT_TRUE(CheckAlreadyExpanded(1));
   EXPECT_TRUE(CheckAlreadyExpanded(-1));
@@ -82,7 +82,7 @@ TEST_F(SymbolicExpansionTest, ExpressionAlreadyExpandedPolynomial) {
 }
 
 TEST_F(SymbolicExpansionTest, ExpressionAlreadyExpandedPow) {
-  // The followings are all already expanded.
+  // The following are all already expanded.
   EXPECT_TRUE(CheckAlreadyExpanded(pow(x_, y_)));            // x^y
   EXPECT_TRUE(CheckAlreadyExpanded(pow(x_, -1)));            // x^(-1)
   EXPECT_TRUE(CheckAlreadyExpanded(pow(x_, -1)));            // x^(-1)
@@ -94,7 +94,7 @@ TEST_F(SymbolicExpansionTest, ExpressionAlreadyExpandedPow) {
 
 TEST_F(SymbolicExpansionTest, ExpressionExpansion) {
   // test_exprs includes pairs of expression `e` and its expected expansion
-  // `expected`. For each pair (e, expected), we check the followings:
+  // `expected`. For each pair (e, expected), we check the following:
   //     1. e.Expand() is structurally equal to expected.
   //     2. Evaluate e and e.Expand() under multiple environments to check the
   //        correctness of expansions.

@@ -126,7 +126,7 @@ The fix is to change the compiler CMake is using. One way to do this is to set t
 
 .. note::
 
-    Do not change the compiler using ``update-alternatives`` in Ubuntu, as this may affect your DKMS module compatiblity with the kernel (among other things) [#update_alt]_.
+    Do not change the compiler using ``update-alternatives`` in Ubuntu, as this may affect your DKMS module compatibility with the kernel (among other things) [#update_alt]_.
 
 .. [#dual_abi] https://stackoverflow.com/q/36159238/7829525
 .. [#binary_install] :ref:`binary-installation`

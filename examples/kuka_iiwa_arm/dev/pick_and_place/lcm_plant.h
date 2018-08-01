@@ -15,7 +15,7 @@ namespace pick_and_place {
 simulated Optitrack system, and SchunkWsgControllers for each gripper in the
 plant. The purpose of this system is to provide a drop-in replacement for the
 hardware + drivers. Note that LCM publishers and subscribers are intentionally
-ommitted from this system so that it can be directly connected to other systems.
+omitted from this system so that it can be directly connected to other systems.
 The block diagram for a system with a single arm is shown below:
 
                        ┌─────────┐    ┌───────────┐    ┌───────────┐

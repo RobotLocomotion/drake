@@ -94,7 +94,7 @@ bool determine_polynomial(
 // Determines if pow(base, exponent) is polynomial-convertible or not. This
 // function is used in constructor of ExpressionPow.
 bool determine_polynomial(const Expression& base, const Expression& exponent) {
-  // base ^ exponent is polynomial-convertible if the followings hold:
+  // base ^ exponent is polynomial-convertible if the following hold:
   //    - base is polynomial-convertible.
   //    - exponent is a non-negative integer.
   if (!(base.is_polynomial() && is_constant(exponent))) {

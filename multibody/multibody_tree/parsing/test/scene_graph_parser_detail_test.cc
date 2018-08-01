@@ -241,7 +241,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
 
   const Isometry3d& X_LC = geometry_instance->pose();
 
-  // Thes are the expected values as specified by the string above.
+  // These are the expected values as specified by the string above.
   const Vector3d expected_rpy(3.14, 6.28, 1.57);
   const Matrix3d R_LC_expected =
       RotationMatrix<double>(RollPitchYaw<double>(expected_rpy)).matrix();

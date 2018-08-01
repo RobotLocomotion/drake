@@ -432,10 +432,10 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
   for (JointIndex joint_index(0); joint_index < model().num_joints();
        ++joint_index) {
     // Currently MultibodyPlant applies these "compliant" joint limit forces
-    // using an explicit Euler strategy. Stability analysis of the explict Euler
-    // applied to the harmonic oscillator (the model used for these compliant
-    // forces) shows the scheme to be stable for kAlpha > 2π. We take a
-    // significantly larger kAlpha so that we are well within the stability
+    // using an explicit Euler strategy. Stability analysis of the explicit
+    // Euler applied to the harmonic oscillator (the model used for these
+    // compliant forces) shows the scheme to be stable for kAlpha > 2π. We take
+    // a significantly larger kAlpha so that we are well within the stability
     // region of the scheme.
     // TODO(amcastro-tri): Decrease the value of kAlpha to be closer to one when
     // the time stepping scheme is updated to be implicit in the joint limits.

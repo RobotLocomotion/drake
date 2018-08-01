@@ -680,7 +680,7 @@ class PendulumKinematicTests : public PendulumTests {
         forcing.mutable_body_forces();
     VectorX<double>& tau_applied = forcing.mutable_generalized_forces();
 
-    // Try first using different arrays for input/ouput:
+    // Try first using different arrays for input/output:
     // Initialize output to garbage, it should not affect the results.
     tau.setConstant(std::numeric_limits<double>::quiet_NaN());
     tau_applied.setZero();
