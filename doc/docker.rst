@@ -10,7 +10,7 @@ Introduction
 Docker containers have emerged as a solution to running code or services in a
 way that is isolated from the host operating system. This allows code to be
 compiled and run on systems running unsupported operating systems or with
-incompatable configurations to the software dependencies. Docker is available
+incompatible configurations to the software dependencies. Docker is available
 for `all major operating systems <https://www.docker.com/community-edition>`_.
 
 Two Docker containers are provided with Drake to allow developers to test and

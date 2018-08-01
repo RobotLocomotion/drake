@@ -126,7 +126,7 @@ An example of importing symbols directly from ``pydrake.all``:
     simulator = Simulator(RigidBodyPlant(tree))
 
 An alternative is to use ``pydrake.all`` to import all modules, but then
-explicity refer to each symbol:
+explicitly refer to each symbol:
 
 .. code-block:: python
 
