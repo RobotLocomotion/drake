@@ -49,6 +49,7 @@ load("@drake//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
 load("@drake//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")  # noqa
 load("@drake//tools/workspace/pycps:repository.bzl", "pycps_repository")
 load("@drake//tools/workspace/python:repository.bzl", "python_repository")
+load("@drake//tools/workspace/qdldl:repository.bzl", "qdldl_repository")
 load("@drake//tools/workspace/ruby:repository.bzl", "ruby_repository")
 load("@drake//tools/workspace/scs:repository.bzl", "scs_repository")
 load("@drake//tools/workspace/sdformat:repository.bzl", "sdformat_repository")
@@ -173,6 +174,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         pycps_repository(name = "pycps", mirrors = mirrors)
     if "python" not in excludes:
         python_repository(name = "python")
+    if "qdldl" not in excludes:
+        qdldl_repository(name = "qdldl", mirrors = mirrors)
     if "ruby" not in excludes:
         ruby_repository(name = "ruby")
     if "scs" not in excludes:
