@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
   message.link.back().geom.resize(1);
   message.link.back().geom[0] = MakeGeometryData(rod_vis);
 
-  // Send a load mesage.
+  // Send a load message.
   Publish(&lcm, "DRAKE_VIEWER_LOAD_ROBOT", message);
 
   // Set the names of the systems.
