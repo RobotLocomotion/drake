@@ -247,18 +247,39 @@ class DiagramContext final : public Context<T> {
     iport_tracker.SubscribeToPrerequisite(&oport_tracker);
   }
 
+  /// (Internal use only) Makes the diagram state and parameter trackers
+  /// subscribe to the corresponding constituent trackers. Note that diagrams
+  /// don't provide diagram-level tickets for individual discrete or abstract
+  /// state or individual numerical or abstract parameters.
+  void SubscribeDiagramStateAndParametersToChilds() {
+    std::vector<internal::BuiltInTicketNumbers> composites{
+        internal::kQTicket,  internal::kVTicket,
+        internal::kZTicket,  internal::kXdTicket,
+        internal::kXaTicket, internal::kAllParametersTicket};
+    DependencyGraph& graph = this->get_mutable_dependency_graph();
+    std::vector<DependencyTracker*> diagram_trackers;
+    for (auto ticket : composites)
+      diagram_trackers.push_back(
+          &graph.get_mutable_tracker(DependencyTicket(ticket)));
+
+    for (auto& subcontext : contexts_) {
+      DependencyGraph& subgraph = subcontext->get_mutable_dependency_graph();
+      for (size_t i = 0; i < composites.size(); ++i) {
+        auto& sub_tracker =
+            subgraph.get_mutable_tracker(DependencyTicket(composites[i]));
+        diagram_trackers[i]->SubscribeToPrerequisite(&sub_tracker);
+      }
+    }
+  }
+
   /// (Internal use only) Generates the state vector for the entire diagram by
   /// wrapping the states of all the constituent diagrams.
-  // TODO(sherm1) Consider making the diagram state dependency trackers
-  //     subscribe to corresponding subcontext trackers so that direct
-  //     subcontext state modifications are reflected here. Will be essential if
-  //     computational functionality is added to Diagrams.
   void MakeState() {
     auto state = std::make_unique<DiagramState<T>>(num_subcontexts());
     for (SubsystemIndex i(0); i < num_subcontexts(); ++i) {
-      Context<T>* subcontext = contexts_[i].get();
+      Context<T>& subcontext = *contexts_[i].get();
       // Using `access` here to avoid sending invalidations.
-      state->set_substate(i, &Context<T>::access_mutable_state(subcontext));
+      state->set_substate(i, &Context<T>::access_mutable_state(&subcontext));
     }
     state->Finalize();
     state_ = std::move(state);
@@ -268,10 +289,6 @@ class DiagramContext final : public Context<T> {
   /// wrapping the parameters of all the constituent Systems. The wrapper simply
   /// holds pointers to the parameters in the subsystem Contexts. It does not
   /// make a copy, or take ownership.
-  // TODO(sherm1) Consider making the diagram parameter dependency trackers
-  //     subscribe to corresponding subcontext trackers so that direct
-  //     subcontext parameter modifications are reflected here. Will be
-  //     essential if computational functionality is added to Diagrams.
   void MakeParameters() {
     std::vector<BasicVector<T>*> numeric_params;
     std::vector<AbstractValue*> abstract_params;

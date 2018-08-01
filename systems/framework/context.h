@@ -232,10 +232,14 @@ class Context : public ContextBase {
   //@{
 
   /// Sets the current time in seconds, invalidating all time-dependent
-  /// computations.
+  /// computations. Time must have the same value in every subcontext within
+  /// the same context tree so may only be modified at the root context of
+  /// a tree.
+  /// @throws std::logic_error if this is not the root context.
   // TODO(sherm1) Consider whether this should avoid invalidation if the
   // new time is the same as the old time.
   void set_time(const T& time_sec) {
+    ThrowIfNotRootContext(__func__, "Time");
     const int64_t change_event = this->start_new_change_event();
     PropagateTimeChange(this, time_sec, change_event);
   }
@@ -277,10 +281,12 @@ class Context : public ContextBase {
   /// Sets time to @p time_sec and continuous state to @p xc. Performs a single
   /// invalidation pass to avoid duplicate invalidations for computations that
   /// depend on both time and state.
+  /// @throws std::logic_error if this is not the root context.
   // TODO(sherm1) Consider whether this should avoid invalidation of
   // time-dependent quantities if the new time is the same as the old time.
   void SetTimeAndContinuousState(const T& time_sec,
                                  const Eigen::Ref<const VectorX<T>>& xc) {
+    ThrowIfNotRootContext(__func__, "Time");
     const int64_t change_event = this->start_new_change_event();
     PropagateTimeChange(this, time_sec, change_event);
     PropagateBulkChange(change_event,
@@ -376,6 +382,7 @@ class Context : public ContextBase {
   /// Sets this context's time, accuracy, state, and parameters from the real
   /// values in @p source, regardless of this context's scalar type.
   /// Invalidates all dependent computations in this context.
+  /// @throws std::logic_error if this is not the root context.
   /// @bug Currently does not copy fixed input port values from `source`.
   /// See System::FixInputPortsFrom() if you want to copy those.
   // TODO(sherm1) Should treat fixed input port values same as parameters.
@@ -383,6 +390,7 @@ class Context : public ContextBase {
   //              also copies accuracy (now) and fixed input port values
   //              (pending above TODO).
   void SetTimeStateAndParametersFrom(const Context<double>& source) {
+    ThrowIfNotRootContext(__func__, "Time");
     // A single change event for all these changes is much faster than doing
     // each separately.
     const int64_t change_event = this->start_new_change_event();
@@ -442,7 +450,11 @@ class Context : public ContextBase {
   /// computations are free to choose suitable defaults, or to refuse to
   /// proceed without an explicit accuracy setting. If this is a change to
   /// the current accuracy setting, all accuracy-dependent computations in this
-  /// Context and its subcontexts are invalidated.
+  /// Context and its subcontexts are invalidated. Accuracy must have the same
+  /// value in every subcontext within the same context tree so may only be
+  /// modified at the root context of a tree.
+  ///
+  /// @throws std::logic_error if this is not the root context.
   ///
   /// Requested accuracy is stored in the %Context for two reasons:
   /// - It permits all computations performed over a System to see the _same_
@@ -469,6 +481,7 @@ class Context : public ContextBase {
   // TODO(sherm1) Consider whether to avoid invalidation if the new value is
   // the same as the old one.
   void set_accuracy(const optional<double>& accuracy) {
+    ThrowIfNotRootContext(__func__, "Accuracy");
     const int64_t change_event = this->start_new_change_event();
     PropagateAccuracyChange(this, accuracy, change_event);
   }
@@ -550,27 +563,28 @@ class Context : public ContextBase {
         ContextBase::CloneWithoutPointers(source));
   }
 
-  /// Derived context class should return a const reference to its concrete
-  /// State object.
+  /// Returns a const reference to its concrete State object.
   virtual const State<T>& do_access_state() const = 0;
 
-  /// Derived context class should return a mutable reference to its concrete
-  /// State object _without_ any invalidation. We promise not to allow user
-  /// access to this object without invalidation.
+  /// Returns a mutable reference to its concrete State object _without_ any
+  /// invalidation. We promise not to allow user access to this object without
+  /// invalidation.
   virtual State<T>& do_access_mutable_state() = 0;
 
-  /// Override to return the appropriate concrete State class to be returned
-  /// by CloneState().
+  /// Returns the appropriate concrete State object to be returned by
+  /// CloneState().
   virtual std::unique_ptr<State<T>> DoCloneState() const = 0;
 
-  /// Diagram contexts should override this to invoke PropagateTimeChange()
-  /// on their subcontexts. The default implementation does nothing.
+  /// Invokes PropagateTimeChange() on all subcontexts of this Context. The
+  /// default implementation does nothing, which is suitable for leaf contexts.
+  /// Diagram contexts must override.
   virtual void DoPropagateTimeChange(const T& time_sec, int64_t change_event) {
     unused(time_sec, change_event);
   }
 
-  /// Diagram contexts should override this to invoke PropagateAccuracyChange()
-  /// on their subcontexts. The default implementation does nothing.
+  /// Invokes PropagateAccuracyChange() on all subcontexts of this Context. The
+  /// default implementation does nothing, which is suitable for leaf contexts.
+  /// Diagram contexts must override.
   virtual void DoPropagateAccuracyChange(const optional<double>& accuracy,
                                          int64_t change_event) {
     unused(accuracy, change_event);
@@ -610,6 +624,16 @@ class Context : public ContextBase {
   }
 
  private:
+  // Call with arguments like (__func__, "Time"), capitalized as shown.
+  void ThrowIfNotRootContext(const char* func_name,
+                             const char* quantity) const {
+    if (!is_root_context()) {
+      throw std::logic_error(
+          fmt::format("{}(): {} change allowed only in the root Context.",
+                      func_name, quantity));
+    }
+  }
+
   // Current time and step information.
   StepInfo<T> step_info_;
 

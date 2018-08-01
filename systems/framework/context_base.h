@@ -277,79 +277,82 @@ class ContextBase : public internal::ContextMessageInterface {
   // notifications. Each acts locally but has an identical signature so can
   // be passed down the Context tree to operate on every subcontext.
 
-  /** Force invalidation of any time-dependent computation. */
+  /** Forces invalidation of any time-dependent computation. */
   void NoteTimeChanged(int64_t change_event) {
     get_tracker(DependencyTicket(internal::kTimeTicket))
         .NoteValueChange(change_event);
   }
 
-  /** Force invalidation of any accuracy-dependent computation. */
+  /** Forces invalidation of any accuracy-dependent computation. */
   void NoteAccuracyChanged(int64_t change_event) {
     get_tracker(DependencyTicket(internal::kAccuracyTicket))
         .NoteValueChange(change_event);
   }
 
-  /** Force invalidation of any state-dependent computation. */
+  /** Forces invalidation of any state-dependent computation. */
   void NoteAllStateChanged(int64_t change_event) {
     NoteAllContinuousStateChanged(change_event);
     NoteAllDiscreteStateChanged(change_event);
     NoteAllAbstractStateChanged(change_event);
   }
 
-  /** Force invalidation of any continuous state-dependent computation. */
+  /** Forces invalidation of any continuous state-dependent computation. */
   void NoteAllContinuousStateChanged(int64_t change_event) {
     NoteAllQChanged(change_event);
     NoteAllVChanged(change_event);
     NoteAllZChanged(change_event);
   }
 
-  /** Force invalidation of any q-dependent computation. */
+  /** Forces invalidation of any q-dependent computation. */
   void NoteAllQChanged(int64_t change_event) {
     get_tracker(DependencyTicket(internal::kQTicket))
         .NoteValueChange(change_event);
   }
 
-  /** Force invalidation of any v-dependent computation. */
+  /** Forces invalidation of any v-dependent computation. */
   void NoteAllVChanged(int64_t change_event) {
     get_tracker(DependencyTicket(internal::kVTicket))
         .NoteValueChange(change_event);
   }
 
-  /** Force invalidation of any z-dependent computation. */
+  /** Forces invalidation of any z-dependent computation. */
   void NoteAllZChanged(int64_t change_event) {
     get_tracker(DependencyTicket(internal::kZTicket))
         .NoteValueChange(change_event);
   }
 
-  /** Force invalidation of any discrete state-dependent computation. */
+  /** Forces invalidation of any discrete state-dependent computation. */
   void NoteAllDiscreteStateChanged(int64_t change_event) {
     for (auto ticket : discrete_state_tickets_)
       get_tracker(ticket).NoteValueChange(change_event);
   }
 
-  /** Force invalidation of any abstract state-dependent computation. */
+  /** Forces invalidation of any abstract state-dependent computation. */
   void NoteAllAbstractStateChanged(int64_t change_event) {
     for (auto ticket : abstract_state_tickets_)
       get_tracker(ticket).NoteValueChange(change_event);
   }
 
-  /** Force invalidation of any parameter-dependent computation. */
+  /** Forces invalidation of any parameter-dependent computation. */
   void NoteAllParametersChanged(int64_t change_event) {
     NoteAllNumericParametersChanged(change_event);
     NoteAllAbstractParametersChanged(change_event);
   }
 
-  /** Force invalidation of any numeric parameter-dependent computation. */
+  /** Forces invalidation of any numeric parameter-dependent computation. */
   void NoteAllNumericParametersChanged(int64_t change_event) {
     for (auto ticket : numeric_parameter_tickets_)
       get_tracker(ticket).NoteValueChange(change_event);
   }
 
-  /** Force invalidation of any abstract parameter-dependent computation. */
+  /** Forces invalidation of any abstract parameter-dependent computation. */
   void NoteAllAbstractParametersChanged(int64_t change_event) {
     for (auto ticket : abstract_parameter_tickets_)
       get_tracker(ticket).NoteValueChange(change_event);
   }
+
+  /** Returns true if this context has no parent. */
+  bool is_root_context() const { return parent_ == nullptr; }
 
   /** (Internal use only) Clones a context but without copying any of its
   internal pointers; the clone's pointers are set to null. */

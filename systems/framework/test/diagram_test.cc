@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/systems/analysis/test_utilities/stateless_system.h"
@@ -594,8 +595,9 @@ TEST_F(DiagramTest, Topology) {
 
 // Tests that dependency wiring is set up correctly between
 //  1. input ports and their source output ports,
-//  2. diagram output ports and their source leaf output ports, and
-//  3. diagram input ports and the corresponding exported leaf inputs.
+//  2. diagram output ports and their source leaf output ports,
+//  3. diagram input ports and the corresponding exported leaf inputs,
+//  4. diagram states/parameters and their constituent leaf states/parameters.
 TEST_F(DiagramTest, CheckPortSubscriptions) {
   const Context<double>& adder1_subcontext =
       diagram_->GetSubsystemContext(*diagram_->adder1(), *context_);
@@ -639,6 +641,28 @@ TEST_F(DiagramTest, CheckPortSubscriptions) {
   // 3. Diagram's input port 2 is imported to adder1's input port 1.
   EXPECT_TRUE(diagram_iport2_tracker.HasSubscriber(adder1_iport1_tracker));
   EXPECT_TRUE(adder1_iport1_tracker.HasPrerequisite(diagram_iport2_tracker));
+
+  // 4. Diagrams q, v, z, xd, xa state trackers and all_parameters tracker
+  //    subscribe to the corresponding leaf trackers.
+  auto systems = diagram_->GetSystems();
+  for (auto subsystem : systems) {
+    auto& subcontext = diagram_->GetSubsystemContext(*subsystem, *context_);
+    // Not checking "HasSubscriber" separately to cut down on fluff;
+    // prerequisite and subscriber are set in the same call and checked above.
+    EXPECT_TRUE(context_->get_tracker(diagram_->q_ticket())
+        .HasPrerequisite(subcontext.get_tracker(subsystem->q_ticket())));
+    EXPECT_TRUE(context_->get_tracker(diagram_->v_ticket())
+        .HasPrerequisite(subcontext.get_tracker(subsystem->v_ticket())));
+    EXPECT_TRUE(context_->get_tracker(diagram_->z_ticket())
+        .HasPrerequisite(subcontext.get_tracker(subsystem->z_ticket())));
+    EXPECT_TRUE(context_->get_tracker(diagram_->xd_ticket())
+        .HasPrerequisite(subcontext.get_tracker(subsystem->xd_ticket())));
+    EXPECT_TRUE(context_->get_tracker(diagram_->xa_ticket())
+        .HasPrerequisite(subcontext.get_tracker(subsystem->xa_ticket())));
+    EXPECT_TRUE(context_->get_tracker(diagram_->all_parameters_ticket())
+        .HasPrerequisite(subcontext.get_tracker(
+            subsystem->all_parameters_ticket())));
+  }
 }
 
 TEST_F(DiagramTest, Path) {
@@ -2050,21 +2074,25 @@ TEST_F(NestedDiagramContextTest, CachingChangePropagation) {
 }
 
 /* Check that changes made directly to a subcontext still affect the
-parent Diagram's behavior properly.
+parent Diagram's behavior properly. Also, time and accuracy must be identical
+in every subcontext of a Context tree. They are only permitted to change at the
+root so they can be properly propagated down.
 
         +-----------------------------------------------------+
         |                                                     |
         |       +------------+             +-----------+      |
         |       |            |             |           |      |
-        |    u0 |            | y0       u1 |           | y1   |
+      u |    u0 |            | y0       u1 |           | y1   | y (=x1)
       ---------->  integ0    +------------->  integ1   +-------->
-      u |       |            |             |           |      | y
+        |       |            |             |           |      |
         |       |     x0     |             |    x1     |      |
         |       +------------+             +-----------+      |
-        |                   diagram x={x0,x1}                 |
+        |                   diagram x={x0,x1}                 | xdot={u0,u1}
+        |                        xdot={u0,u1}          +-------->
+        |                                                     |
         +-----------------------------------------------------+
 */
-GTEST_TEST(MutateSubcontextTest, JeremysWorry) {
+GTEST_TEST(MutateSubcontextTest, DiagramRecalculatesOnSubcontextChange) {
   DiagramBuilder<double> builder;
   auto integ0 = builder.AddSystem<Integrator>(1);  // (xdot = u; y = x)
   auto integ1 = builder.AddSystem<Integrator>(1);
@@ -2075,8 +2103,10 @@ GTEST_TEST(MutateSubcontextTest, JeremysWorry) {
 
   auto diagram_context = diagram->AllocateContext();
   diagram_context->EnableCaching();
+  diagram_context->FixInputPort(0, {1.5});  // u(=u0)
+
   Eigen::VectorXd init_state(2);
-  init_state << 5., 6.;  // x0, x1
+  init_state << 5., 6.;  // x0(=y0=u1), x1(=y1)
 
   // Set the state from the diagram level, then evaluate the diagram
   // output, which should have copied the second state value (x1).
@@ -2085,17 +2115,57 @@ GTEST_TEST(MutateSubcontextTest, JeremysWorry) {
                 *diagram_context)[0],
             6.);
 
-  // Now try to sneak in a change to a subcontext and then ask for the
-  // diagram's output value again. Did it know to recopy x1?
+  // The diagram derivatives should be (u0,u1)=(u,x0).
+  auto& eval_derivs =
+      diagram->EvalTimeDerivatives(*diagram_context);
+  EXPECT_EQ(eval_derivs[0], 1.5);
+  EXPECT_EQ(eval_derivs[1], 5.);
+
+  // Now try to sneak in a change to subcontexts and then ask for the
+  // diagram's output value and derivatives again.
+  Context<double>& context0 =
+      diagram->GetMutableSubsystemContext(*integ0, &*diagram_context);
   Context<double>& context1 =
       diagram->GetMutableSubsystemContext(*integ1, &*diagram_context);
-  Eigen::VectorXd new_x1(1);
-  new_x1 << 17.;
+  Eigen::VectorXd new_x0(1), new_x1(1);
+  new_x0 << 13.; new_x1 << 17.;
+  context0.SetContinuousState(new_x0);
   context1.SetContinuousState(new_x1);
 
+  // Diagram should know to recopy x1 to the output port cache entry.
   EXPECT_EQ(diagram->get_output_port(0).Eval<BasicVector<double>>(
                 *diagram_context)[0],
             17.);
+
+  // Diagram should know that the time derivatives cache entry is out of date
+  // so initiate subsystem derivative calculations and pick up the changed x0.
+  // The diagram derivatives cache entry depends only on diagram dependency
+  // trackers so this fails if subcontext modifications aren't transmitted
+  // properly to the Diagram.
+  diagram->EvalTimeDerivatives(*diagram_context);
+  EXPECT_EQ(eval_derivs[0], 1.5);
+  EXPECT_EQ(eval_derivs[1], 13.);
+
+  // Time & accuracy changes are allowed at the root (diagram) level.
+  EXPECT_NO_THROW(diagram_context->set_time(1.));
+  EXPECT_NO_THROW(diagram_context->SetTimeAndContinuousState(2., init_state));
+  auto diagram_context_clone = diagram_context->Clone();
+  EXPECT_NO_THROW(
+      diagram_context->SetTimeStateAndParametersFrom(*diagram_context_clone));
+  EXPECT_NO_THROW(diagram_context->set_accuracy(1e-6));
+
+  // Time & accuracy changes NOT allowed at child (leaf) level.
+  DRAKE_EXPECT_THROWS_MESSAGE(context0.set_time(3.), std::logic_error,
+                              ".*set_time().*Time change allowed only.*root.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      context0.SetTimeAndContinuousState(4., new_x0), std::logic_error,
+      ".*SetTimeAndContinuousState().*Time change allowed only.*root.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      context0.SetTimeStateAndParametersFrom(context1), std::logic_error,
+      ".*SetTimeStateAndParametersFrom().*Time change allowed only.*root.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      context0.set_accuracy(1e-7), std::logic_error,
+      ".*set_accuracy().*Accuracy change allowed only.*root.*");
 }
 
 // Tests that an exception is thrown if the systems in a Diagram do not have
