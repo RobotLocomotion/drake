@@ -36,7 +36,6 @@ namespace multilane {
 /// is an arc starting at the end of Connection-B and that Connection-B
 /// is an arc starting at the end of Connection-A.  All referential chains
 /// must bottom out in explicitly-named Endpoints.
-// TODO(maddog@tri.global)  Describe complete format somewhere.
 
 /// Loads the `input` string as a maliput_multilane_builder document using the
 /// provided `builder_factory`.
