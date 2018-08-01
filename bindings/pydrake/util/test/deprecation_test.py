@@ -127,7 +127,7 @@ class TestDeprecation(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             base_deprecation()  # Should not appear.
             obj = ExampleClass()
-            # Call each deprecated method / propery repeatedly; it should only
+            # Call each deprecated method / property repeatedly; it should only
             # warn once per unique line of source code.
             # - Method.
             for _ in range(3):

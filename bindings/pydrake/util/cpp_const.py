@@ -64,7 +64,7 @@ class _ConstClassMetaMap(object):
         self._meta_map = {}
 
     def emplace(self, cls, owned_properties=None, mutable_methods=None):
-        # Constructs metadata and reigstered it.
+        # Constructs metadata and registers it.
         meta = _ConstClassMeta(cls, owned_properties, mutable_methods)
         return self._add(cls, meta)
 

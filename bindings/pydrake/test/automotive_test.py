@@ -147,7 +147,7 @@ class TestAutomotive(unittest.TestCase):
         lane_index = pure_pursuit.lane_input().get_index()
         context.FixInputPort(lane_index, ld_value)
 
-        pos = [1., 2., 3.]  # An aribtrary position with the lane.
+        pos = [1., 2., 3.]  # An arbitrary position with the lane.
         pose_vector = PoseVector()
         pose_vector.set_translation(pos)
         pose_index = pure_pursuit.ego_pose_input().get_index()

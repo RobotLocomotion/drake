@@ -120,7 +120,7 @@ one of the other arguments (`self` is included in those arguments, for
 - "Keep alive, reference" implies a reference that is lifetime-sensitive
 (something that is not necessarily owned by the other arguments).
 - "Keep alive, transitive" implies a transfer of ownership of owned
-objects from one container to another (e.g. transfering all `System`s
+objects from one container to another (e.g. transferring all `System`s
 from `DiagramBuilder` to `Diagram` when calling
 `DiagramBuilder.Build()`).
 

@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file
-/// Provides access to Python deprecation utilites from C++.
+/// Provides access to Python deprecation utilities from C++.
 
 #include "pybind11/pybind11.h"
 
