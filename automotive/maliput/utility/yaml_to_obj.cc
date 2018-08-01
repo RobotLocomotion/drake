@@ -36,7 +36,7 @@ namespace maliput {
 namespace utility {
 namespace {
 
-// Available maliput implentations to load.
+// Available maliput implementations to load.
 enum class MaliputImplementation {
   kMonolane,   //< monolane implementation.
   kMultilane,  //< multilane implementation.

@@ -381,7 +381,7 @@ void AddVehicles(RoadNetworkType road_network_type,
 
 // Adds a flat terrain to the provided simulator.
 void AddFlatTerrain(AutomotiveSimulator<double>*) {
-  // Intentially do nothing. This is possible since only non-physics-based
+  // Intentionally do nothing. This is possible since only non-physics-based
   // vehicles are supported and they will not fall through the "ground" when no
   // flat terrain is present.
   //

@@ -343,7 +343,7 @@ presents a different $(s,r,h)$ parameterization of that same pavement.
 
 We would like for the driveable-bounds of each =Lane= to map to the
 same extent of physical space in the World frame, but that isn't always
-possible due to the geometric contraints of parallel curves.  However,
+possible due to the geometric constraints of parallel curves.  However,
 we do require that the union of the driveable-bounds of all =Lanes=
 in a =Segment= is simply-connected.  This means that:
  * a =Segment= doesn't have any "holes" in its driveable space (e.g.,
@@ -383,7 +383,7 @@ to go around an impassable monument.
 terms of the union of the driveable-bounds of their =Lanes=) are
 grouped together into a =Junction=.  The primary (sole?) purpose of a
 =Junction= is to indicate that objects in its component =Segments= may
-spatially interact with eachother (e.g., collide!).  Conversely, if
+spatially interact with each other (e.g., collide!).  Conversely, if
 two =Segments= belong to two distinct =Junctions=, then objects within
 their respective driveable-bounds should /not/ be touching.  (Note
 that in considering intersection, we ignore the measure-zero overlap
