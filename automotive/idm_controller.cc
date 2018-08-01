@@ -46,7 +46,7 @@ IdmController<T>::IdmController(const RoadGeometry& road,
               .get_index()) {
   this->DeclareNumericParameter(IdmPlannerParameters<T>());
   // TODO(jadecastro) It is possible to replace the following AbstractState with
-  // a caching sceme once #4364 lands, preventing the need to use abstract
+  // a caching scheme once #4364 lands, preventing the need to use abstract
   // states and periodic sampling time.
   if (road_position_strategy == RoadPositionStrategy::kCache) {
     this->DeclareAbstractState(systems::AbstractValue::Make<RoadPosition>(

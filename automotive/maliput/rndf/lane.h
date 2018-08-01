@@ -23,7 +23,7 @@ class BranchPoint;
 /// private virtual functions.
 ///
 /// This base implementation will handle all the non-geometric stuff from the
-/// lane. All geometric computation will be moved to each sub lane childs. See
+/// lane. All geometric computation will be moved to each sub lane child. See
 /// SplineLane for an example.
 class Lane : public api::Lane {
  public:
