@@ -1,6 +1,0 @@
-The files in this directory tree (other than this file) are derived from Bazel:
-
-  remote = "https://github.com/bazelbuild/bazel.git"
-  sha = "f98a7a2fedb3e714cef1038dcb85f83731150246"
-
-Please update this metadata when copying new versions from upstream.
