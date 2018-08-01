@@ -29,7 +29,7 @@ T MaxStlVector(const std::vector<T>& v) {
   return *result;
 }
 
-/* returns the indicies of positions/velocities of the bodies in idx_body. The
+/* returns the indices of positions/velocities of the bodies in idx_body. The
  * indices are into the rigidbodytree containing these bodies.
  */
 std::vector<int> GetPositionOrVelocityIndicesOfBodiesFromRBT(

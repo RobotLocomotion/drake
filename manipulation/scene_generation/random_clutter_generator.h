@@ -17,7 +17,7 @@ namespace scene_generation {
 /**
  * Given a RigidBodyTree containing a given scene, the RandomClutterGenerator
  * can repeatedly generate bounded random poses/configurations on selected
- * model instances within the tree. Each of these objects are seperated from
+ * model instances within the tree. Each of these objects are separated from
  * each other by (settable) minimum distance and their object frames are
  * located within a (settable) bounding box volume. This class solves the
  * IK problem to find feasible poses on the clutter bodies
@@ -65,7 +65,7 @@ class RandomClutterGenerator {
    * from this value.
    * @param generator Used to pass a seed.
    * @param z_height_cost An optional cost added to the optimization problem
-   * on the height (z) of each of the model intances. Set to either 0 or {}
+   * on the height (z) of each of the model instances. Set to either 0 or {}
    * in order to not utilise any z cost. @pre z_height_cost must be
    * non-negative, if specified.
    * @returns The generalized coordinates q representing a feasible
