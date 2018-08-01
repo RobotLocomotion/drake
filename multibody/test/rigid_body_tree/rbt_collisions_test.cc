@@ -27,7 +27,7 @@ namespace {
 struct SurfacePoint {
   SurfacePoint() { }
   SurfacePoint(Vector3d wf, Vector3d bf) : world_frame(wf), body_frame(bf) { }
-  // Eigen variables are left uninitalized by default.
+  // Eigen variables are left uninitialized by default.
   Vector3d world_frame;
   Vector3d body_frame;
 };

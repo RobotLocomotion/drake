@@ -221,7 +221,7 @@ Eigen::Matrix<T, 4, 3> QuaternionFloatingMobilizer<T>::CalcLMatrix(
   // component of the quaternion (Euler parameters). Notice however here we use
   // qs and qv for the "scalar" and "vector" components of the quaternion q_FM,
   // respectively, while Mitiguy uses ε₀ and ε (in bold), respectively.
-  // This mobilizer is parametrized by the angular velocity w_FM, i.e. time
+  // This mobilizer is parameterized by the angular velocity w_FM, i.e. time
   // derivatives of the vector component of the quaternion are taken in the F
   // frame. If you are confused by this, notice that the vector component of a
   // quaternion IS a vector, and therefore you must specify in what frame time
@@ -231,7 +231,7 @@ Eigen::Matrix<T, 4, 3> QuaternionFloatingMobilizer<T>::CalcLMatrix(
   // Dt_F(q) = 1/2 * w_FM⋅q_FM, where ⋅ denotes the "quaternion product" and
   // both the vector component qv_FM of q_FM and w_FM are expressed in frame F.
   // Dt_F(q) is short for [Dt_F(q)]_F.
-  // The expression above can be writen as:
+  // The expression above can be written as:
   // Dt_F(q) = 1/2 * (-w_FM.dot(qv_F); qs * w_FM + w_FM.cross(qv_F))
   //         = 1/2 * (-w_FM.dot(qv_F); qs * w_FM - qv_F.cross(w_FM))
   //         = 1/2 * (-w_FM.dot(qv_F); (qs * Id - [qv_F]x) * w_FM)

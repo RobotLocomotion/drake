@@ -246,8 +246,8 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// generalized coordinate representing the rotational degree of freedom about
   /// a given axis between the inboard and outboard frames. Another example
   /// would be a 6 DOF "free" mobilizer internally using a quaternion
-  /// representation to parametrize free rotations and a position vector to
-  /// parametrize free translations; this method would return 7 (a quaternion
+  /// representation to parameterize free rotations and a position vector to
+  /// parameterize free translations; this method would return 7 (a quaternion
   /// plus a position vector).
   /// @see num_velocities()
   virtual int num_positions() const = 0;
@@ -326,7 +326,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
 
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the vector of
-  /// generalized postions `q`.
+  /// generalized positions `q`.
   /// %Mobilizer subclasses implementing this method can retrieve the fixed-size
   /// vector of generalized positions for `this` mobilizer from `context` with:
   ///
