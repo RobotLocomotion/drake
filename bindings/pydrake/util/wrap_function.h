@@ -72,7 +72,7 @@ struct functor_helpers {
     return Ptr{};
   }
 
-  // Infers funtion pointer from functor.
+  // Infers function pointer from functor.
   // @pre `Func` must have only *one* overload of `operator()`.
   template <typename Func>
   static auto infer_function_ptr() {
@@ -226,7 +226,7 @@ struct wrap_function_impl {
 ///   If true (default), will recursively wrap callbacks. If your policy
 ///   provides handling for functions, then you should set this to false.
 /// @param func
-///   Functor to be wrapped. Returns a function with wrapped arugments and
+///   Functor to be wrapped. Returns a function with wrapped arguments and
 ///   return type. If functor is a method pointer, it will return a function of
 ///   the form `Return ([const] Class* self, ...)`.
 /// @return Wrapped function lambda.
@@ -253,7 +253,7 @@ struct wrap_arg_default {
     return std::forward<Wrapped&&>(arg_wrapped);
   }
   // N.B. `T` rather than `T&&` is used as arguments here as it behaves well
-  // with primitve types, such as `int`.
+  // with primitive types, such as `int`.
 };
 
 /// Policy for explicitly wrapping functions for a given policy.
