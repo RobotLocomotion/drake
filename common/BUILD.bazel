@@ -644,7 +644,7 @@ drake_cc_googletest(
     ],
 )
 
-# Functional test that mistyped DRAKE_ASSERTs will failt to compile.
+# Functional test that mistyped DRAKE_ASSERTs will fail to compile.
 sh_test(
     name = "drake_assert_test_compile_variants",
     size = "small",
