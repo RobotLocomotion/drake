@@ -60,9 +60,9 @@ class SpringMassSystemTest : public ::testing::Test {
 
   // Returns the position x(t) of the body mass in the spring-mass system for
   // time `t = time` given the parameters of the system (period and
-  // damping_ratio) and the intial position x0 and initial velocity v0 at
+  // damping_ratio) and the initial position x0 and initial velocity v0 at
   // `t = 0`.
-  // This method cannnot compute the solution for damping_ratio = 1, i.e. the
+  // This method cannot compute the solution for damping_ratio = 1, i.e. the
   // critically damped system.
   double CalcAnalyticSolution(
       double period, double damping_ratio,

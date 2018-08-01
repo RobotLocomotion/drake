@@ -27,7 +27,7 @@ using std::unique_ptr;
 /// Utility method for creating a transform from frame A to frame B.
 /// @param[in] R_AB Rotation matrix relating Ax, Ay, Az to Bx, By, Bz.
 /// @param[in] p_AoBo_A Position vector from Ao to Bo, expressed in A.
-/// @retval X_AB Tranform relating frame A to frame B.
+/// @retval X_AB Transform relating frame A to frame B.
 Eigen::Isometry3d MakeIsometry3d(const Eigen::Matrix3d& R_AB,
                                  const Eigen::Vector3d& p_AoBo_A) {
   // Initialize all of X_AB (may be more than just linear and translation).

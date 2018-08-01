@@ -106,7 +106,7 @@ class SpatialKinematicsPVA {
   // in N) and v_NBo_N (Bo's velocity in N, expressed in N).
   SpatialVelocity<T> V_NBo_N_;
 
-  // Spatial acceleration containig alpha_NB_N (B's angular acceleration in N,
+  // Spatial acceleration containing alpha_NB_N (B's angular acceleration in N,
   // expressed in N) and a_NBo_N (Bo's acceleration in N, expressed in N).
   SpatialAcceleration<T> A_NBo_N_;
 
