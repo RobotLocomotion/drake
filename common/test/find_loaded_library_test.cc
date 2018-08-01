@@ -16,7 +16,7 @@ namespace {
 GTEST_TEST(FindLibraryTest, Library) {
   // See above.
   lib_is_real_dummy_function();
-  // Test wether or not `LoadedLibraryPath()` can find the path to a library
+  // Test whether or not `LoadedLibraryPath()` can find the path to a library
   // loaded by the process.
   optional<string> library_path = LoadedLibraryPath("lib_is_real.so");
   ASSERT_TRUE(library_path);

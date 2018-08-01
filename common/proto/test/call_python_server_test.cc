@@ -50,7 +50,7 @@ GTEST_TEST(TestCallPython, SetVar) {
   CallPython("eval", "print(example_var)");
   // Print a letter.
   CallPython("print", CallPython("eval", "example_var")[2]);
-  // Print all variables avaiable.
+  // Print all variables available.
   CallPython("print", CallPython("locals").attr("keys")());
 }
 
