@@ -19,7 +19,7 @@ namespace manipulation {
 struct QuasistaticSystemOptions {
   double period_sec{0.01};
   std::vector<bool> is_contact_2d{};
-  double mu{1};  // coefficent of friction for all contacts
+  double mu{1};  // coefficient of friction for all contacts
   double kBigM{1};
   bool is_analytic{false};
   bool is_using_kinetic_energy_minimizing_QP{false};
@@ -88,7 +88,7 @@ class QuasistaticSystem : public systems::LeafSystem<Scalar> {
 
   // As half of the vectors that span the tangent spaces are the negation of
   // the other half, half of the columns of Jf are also the negation of the
-  // other half. Jf_half is one of the two halfs of J.
+  // other half. Jf_half is one of the two halves of J.
   void CalcJf(const Eigen::Ref<const Eigen::MatrixXd>& Jf_half,
               Eigen::MatrixXd* const Jf_ptr) const;
   void CalcWnWfJnJfPhi(const KinematicsCache<double>& cache,
@@ -146,7 +146,7 @@ class QuasistaticSystem : public systems::LeafSystem<Scalar> {
   // DoFs of the floating joint of the base body of the unactuated rigid body
   // mechanisms that are fixed.
   const std::vector<int> fixed_base_positions_;
-  // When base rotation is parametrized by a quaternion, fixing components of
+  // When base rotation is parameterized by a quaternion, fixing components of
   // the quaternion doesn't make much sense. Instead, we fix the rotations
   // about axes defined by components of the base body's angular velocity.
   std::vector<int> fixed_base_velocities_;
@@ -169,7 +169,7 @@ class QuasistaticSystem : public systems::LeafSystem<Scalar> {
   int na_{0};           // number of actuated DOFs (inputs), dim(qa)
   int nc_;              // number of contacts.
   int nq_tree_;         // number of positions in RBT
-  Eigen::VectorXi nf_;  // nubmer of vectors spanning each friction cone
+  Eigen::VectorXi nf_;  // number of vectors spanning each friction cone
 
   // indices of actuated states in increasing order.
   std::vector<int> idx_qa_;
