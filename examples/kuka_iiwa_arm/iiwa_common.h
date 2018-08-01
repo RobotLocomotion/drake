@@ -40,7 +40,7 @@ void VerifyIiwaTree(const RigidBodyTree<double>& tree);
 
 /// Builds a RigidBodyTree at the specified @position and @orientation from
 /// the model specified by @model_file_name.
-/// This method is a convinience wrapper over `AddModelInstanceFromUrdfFile`.
+/// This method is a convenience wrapper over `AddModelInstanceFromUrdfFile`.
 /// @see drake::parsers::urdf::AddModelInstanceFromUrdfFile
 void CreateTreedFromFixedModelAtPose(
     const std::string& model_file_name, RigidBodyTreed* tree,

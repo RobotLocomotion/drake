@@ -41,7 +41,7 @@ void HumanoidPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
       EvalInputValue<RobotKinematicState<double>>(
           context, get_input_port_kinematic_state().get_index());
 
-  // Gets the plan message fron input.
+  // Gets the plan message from input.
   const systems::AbstractValue* msg_as_value =
       EvalAbstractInput(context, input_port_index_manip_plan_msg_);
   DRAKE_DEMAND(msg_as_value != nullptr);
