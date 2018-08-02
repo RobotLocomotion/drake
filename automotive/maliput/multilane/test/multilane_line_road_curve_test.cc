@@ -38,11 +38,21 @@ class MultilaneLineRoadCurveTest : public ::testing::Test {
 TEST_F(MultilaneLineRoadCurveTest, LineRoadCurve) {
   const LineRoadCurve dut(kOrigin, kDirection, zp, zp, kLinearTolerance,
                           kScaleLength, kComputationPolicy);
-  // Checks the length.
-  EXPECT_NEAR(dut.p_scale(),
-              std::sqrt(kDirection.x() * kDirection.x() +
-                        kDirection.y() * kDirection.y()),
-              kVeryExact);
+  // Checks curve length computations.
+  const double kExpectedLength = std::sqrt(kDirection.x() * kDirection.x() +
+                                           kDirection.y() * kDirection.y());
+  EXPECT_NEAR(dut.p_scale(), kExpectedLength, kVeryExact);
+  std::function<double(double)> s_from_p_at_r =
+      dut.OptimizeCalcSFromP(kNoOffset);
+  const double length = s_from_p_at_r(1.);
+  EXPECT_NEAR(length, kExpectedLength, kVeryExact);
+  // Checks that both `s` and `p` bounds are enforced on
+  // mapping evaluation.
+  std::function<double(double)> p_from_s_at_r =
+      dut.OptimizeCalcPFromS(kNoOffset);
+  EXPECT_THROW(s_from_p_at_r(2.), std::runtime_error);
+  EXPECT_THROW(p_from_s_at_r(2. * length), std::runtime_error);
+
   // Check the evaluation of xy at different p values.
   EXPECT_TRUE(
       CompareMatrices(dut.xy_of_p(0.0), kOrigin, kVeryExact));

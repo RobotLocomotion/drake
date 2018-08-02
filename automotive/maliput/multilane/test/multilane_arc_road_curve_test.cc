@@ -69,11 +69,19 @@ TEST_F(MultilaneArcRoadCurveTest, ConstructorTest) {
 TEST_F(MultilaneArcRoadCurveTest, ArcGeometryTest) {
   const ArcRoadCurve dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp,
                          kLinearTolerance, kScaleLength, kComputationPolicy);
-  // Checks the length.
-  EXPECT_NEAR(dut.p_scale(), kDTheta * kRadius, kVeryExact);
+  // Checks curve length computations.
+  const double kExpectedLength = kDTheta * kRadius;
+  EXPECT_NEAR(dut.p_scale(), kExpectedLength, kVeryExact);
   std::function<double(double)> s_from_p_at_r =
       dut.OptimizeCalcSFromP(kNoOffset);
-  EXPECT_NEAR(s_from_p_at_r(1.), kDTheta * kRadius, kVeryExact);
+  const double length = s_from_p_at_r(1.);
+  EXPECT_NEAR(length, kExpectedLength, kVeryExact);
+  // Checks that both `s` and `p` bounds are enforced on
+  // mapping evaluation.
+  std::function<double(double)> p_from_s_at_r =
+      dut.OptimizeCalcPFromS(kNoOffset);
+  EXPECT_THROW(s_from_p_at_r(2.), std::runtime_error);
+  EXPECT_THROW(p_from_s_at_r(2. * length), std::runtime_error);
   // Checks the evaluation of xy at different values over the reference curve.
   EXPECT_TRUE(CompareMatrices(
       dut.xy_of_p(0.0), kCenter + Vector2<double>(kRadius * std::cos(kTheta0),

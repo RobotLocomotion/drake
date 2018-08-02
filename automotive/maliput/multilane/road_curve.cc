@@ -123,7 +123,7 @@ RoadCurve::RoadCurve(double linear_tolerance, double scale_length,
   // the same period and amplitude equal to the specified tolerance. The
   // difference in path length is bounded by 4e and the relative error is thus
   // bounded by 4e/L.
-  const double relative_tolerance = linear_tolerance_ / scale_length_;
+  relative_tolerance_ = linear_tolerance_ / scale_length_;
 
   // Sets `s_from_p`'s integration accuracy and step sizes. Said steps
   // should not be too large, because that could make accuracy control
@@ -137,7 +137,7 @@ RoadCurve::RoadCurve(double linear_tolerance, double scale_length,
       s_from_p_func_->get_mutable_integrator();
   s_from_p_integrator->request_initial_step_size_target(0.1);
   s_from_p_integrator->set_maximum_step_size(1.0);
-  s_from_p_integrator->set_target_accuracy(relative_tolerance);
+  s_from_p_integrator->set_target_accuracy(relative_tolerance_);
 
   // Sets `p_from_s`'s integration accuracy and step sizes. Said steps
   // should not be too large, because that could make accuracy control
@@ -150,7 +150,7 @@ RoadCurve::RoadCurve(double linear_tolerance, double scale_length,
       p_from_s_ivp_->get_mutable_integrator();
   p_from_s_integrator->request_initial_step_size_target(0.1 * scale_length);
   p_from_s_integrator->set_maximum_step_size(scale_length);
-  p_from_s_integrator->set_target_accuracy(relative_tolerance);
+  p_from_s_integrator->set_target_accuracy(relative_tolerance_);
 }
 
 bool RoadCurve::AreFastComputationsAccurate(double r) const {
@@ -179,19 +179,14 @@ std::function<double(double)> RoadCurve::OptimizeCalcSFromP(double r) const {
     // instances only take copyable callables.
     std::shared_ptr<systems::ScalarDenseOutput<double>> dense_output{
       s_from_p_func_->DenseEvaluate(1.0, values)};
-    const double full_length = CalcSFromP(1.0, r);
-    return [dense_output, full_length] (double p) {
+    const double absolute_tolerance = relative_tolerance_ * 1.;
+    return [dense_output, absolute_tolerance] (double p) {
       // Saturate p to lie within dense output's domain.
       const double saturated_p = std::min(
           std::max(p, dense_output->get_start_time()),
           dense_output->get_end_time());
-      const double saturated_s = dense_output->Evaluate(saturated_p);
-      // Extrapolate s assuming a linear scaling with p. This is
-      // generally not correct but evaluating for p outside the
-      // [0, 1] interval isn't either (e.g. when p is the result
-      // of a computation and thus lies outside said interval by
-      // virtue of finite numerical precision).
-      return saturated_s + full_length * (p - saturated_p);
+      DRAKE_THROW_UNLESS(std::abs(saturated_p - p) < absolute_tolerance);
+      return dense_output->Evaluate(saturated_p);
     };
   }
   return [this, r] (double p) {
@@ -218,18 +213,14 @@ std::function<double(double)> RoadCurve::OptimizeCalcPFromS(double r) const {
     const double full_length = CalcSFromP(1.0, r);
     std::shared_ptr<systems::ScalarDenseOutput<double>> dense_output{
       p_from_s_ivp_->DenseSolve(full_length, values)};
-    return [dense_output, full_length] (double s) {
+    const double absolute_tolerance = relative_tolerance_ * full_length;
+    return [dense_output, absolute_tolerance] (double s) {
       // Saturate s to lie within dense output's domain.
       const double saturated_s = std::min(
           std::max(s, dense_output->get_start_time()),
           dense_output->get_end_time());
-      const double saturated_p = dense_output->Evaluate(saturated_s);
-      // Extrapolate p assuming a linear scaling with s. This is
-      // generally not correct but evaluating for s outside the
-      // [0, length] interval isn't either (e.g. when s is the result
-      // of a computation and thus lies outside said interval by
-      // virtue of finite numerical precision).
-      return saturated_p + (s - saturated_s) / full_length;
+      DRAKE_THROW_UNLESS(std::abs(saturated_s - s) < absolute_tolerance);
+      return dense_output->Evaluate(saturated_s);
     };
   }
   return [this, r] (double s) {
