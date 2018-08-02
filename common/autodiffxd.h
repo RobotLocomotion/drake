@@ -55,7 +55,8 @@ class AutoDiffScalar<VectorXd>
   using Base::operator+;
   using Base::operator*;
 
-  AutoDiffScalar() {}
+  AutoDiffScalar()
+    : m_value(Scalar(0)), m_derivatives(DerType::Zero(0)) {}
 
   AutoDiffScalar(const Scalar& value, int nbDer, int derNumber)
       : m_value(value), m_derivatives(DerType::Zero(nbDer)) {
