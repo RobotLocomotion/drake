@@ -29,12 +29,16 @@ class TransformPointCloud final : public systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TransformPointCloud)
 
   /// Constructs a transformer that transforms from the frame with index
-  /// `src_frame_index` to the frame with index `dest_frame_index`.
+  /// `src_frame_index` to the frame with index `dest_frame_index`. The `tree`
+  /// object must remain valid for the duration of this object.
   TransformPointCloud(const RigidBodyTree<double>& tree, int src_frame_index,
                       int dest_frame_index);
 
   /// Constructs a transformer that transforms from the frame with index
-  /// `src_frame_index` to the world frame.
+  /// `src_frame_index` to the world frame. The `tree` object must remain
+  /// valid for the duration of this object.
+  ///
+  /// @throw std::logic_error if there is no "world" frame in `tree`.
   TransformPointCloud(const RigidBodyTree<double>& tree, int src_frame_index);
 
   /// Returns the abstract valued input port that contains a PointCloud.
@@ -66,8 +70,8 @@ class TransformPointCloud final : public systems::LeafSystem<double> {
   void CreatePorts();
 
   const RigidBodyTree<double>& tree_;
-  int src_frame_index_;
-  int dest_frame_index_;
+  const int src_frame_index_;
+  const int dest_frame_index_;
 
   systems::InputPortIndex point_cloud_input_port_index_;
   systems::InputPortIndex state_input_port_index_;

@@ -9,7 +9,7 @@ TransformPointCloud::TransformPointCloud(const RigidBodyTree<double>& tree,
     : tree_(tree),
       src_frame_index_(src_frame_index),
       dest_frame_index_(dest_frame_index) {
-  this->CreatePorts();
+  CreatePorts();
 }
 
 TransformPointCloud::TransformPointCloud(const RigidBodyTree<double>& tree,
@@ -25,11 +25,11 @@ PointCloud TransformPointCloud::MakeOutputPointCloud() const {
 void TransformPointCloud::ApplyTransformToPointCloud(
     const systems::Context<double>& context, PointCloud* output) const {
   const PointCloud* input_point_cloud =
-      this->EvalInputValue<PointCloud>(context, point_cloud_input_port_index_);
+      EvalInputValue<PointCloud>(context, point_cloud_input_port_index_);
   DRAKE_ASSERT(input_point_cloud != nullptr);
 
   const Eigen::VectorXd q =
-      this->EvalEigenVectorInput(context, state_input_port_index_)
+      EvalEigenVectorInput(context, state_input_port_index_)
           .head(tree_.get_num_positions());
 
   const KinematicsCache<double> cache = tree_.doKinematics(q);
@@ -45,18 +45,17 @@ void TransformPointCloud::ApplyTransformToPointCloud(
 
 void TransformPointCloud::CreatePorts() {
   // Create input port for point cloud.
-  point_cloud_input_port_index_ = this->DeclareAbstractInputPort().get_index();
+  point_cloud_input_port_index_ = DeclareAbstractInputPort().get_index();
 
   // Create input port for state of a RigidBodyTree.
   const int q_dim = tree_.get_num_positions();
   const int v_dim = tree_.get_num_velocities();
   state_input_port_index_ =
-      this->DeclareInputPort(systems::kVectorValued, q_dim + v_dim).get_index();
+      DeclareInputPort(systems::kVectorValued, q_dim + v_dim).get_index();
 
   // Create output port for transformed point cloud.
-  this->DeclareAbstractOutputPort(
-      &TransformPointCloud::MakeOutputPointCloud,
-      &TransformPointCloud::ApplyTransformToPointCloud);
+  DeclareAbstractOutputPort(&TransformPointCloud::MakeOutputPointCloud,
+                            &TransformPointCloud::ApplyTransformToPointCloud);
 }
 
 }  // namespace perception
