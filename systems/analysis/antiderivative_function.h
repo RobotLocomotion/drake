@@ -145,6 +145,11 @@ class AntiderivativeFunction {
   /// present in @p values, falling back to the ones given on construction
   /// if missing.
   ///
+  /// To this end, the wrapped IntegratorBase instance solves the integral
+  /// from v to @p w (i.e. advances the state x of its differential form
+  /// x'(t) = f(x; 𝐤) from v to @p w), creating a scalar dense output over
+  /// that [v, @p w] interval along the way.
+  ///
   /// @param w The uppermost integration bound. Usually, v < @p w as an empty
   ///          dense output would result if v = @p w.
   /// @param values The specified values for the integration.

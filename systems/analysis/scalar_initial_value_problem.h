@@ -136,6 +136,11 @@ class ScalarInitialValueProblem {
   /// time @p tf, using initial state x₀ and parameter vector 𝐤 present in
   /// @p values (falling back to the ones given on construction if not given).
   ///
+  /// To this end, the wrapped IntegratorBase instance solves this scalar IVP,
+  /// advancing time and state from t₀ and x₀ = x(t₀) to @p tf and x(@p tf),
+  /// creating a scalar dense output over that [t₀, @p tf] interval along the
+  /// way.
+  ///
   /// @param tf The IVP will be solved up to this time. Usually, t₀ < @p tf as
   ///           an empty dense output would result if t₀ = @p tf.
   /// @param values IVP initial conditions and parameters.

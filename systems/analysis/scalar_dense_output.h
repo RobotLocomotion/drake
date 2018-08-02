@@ -25,8 +25,8 @@ class ScalarDenseOutput : public DenseOutput<T> {
   /// @returns Output scalar value.
   /// @pre Output is not empty i.e. is_empty() is false.
   /// @throws std::logic_error if any of the preconditions is not met.
-  /// @throws std::runtime_error if given @p t is not valid
-  ///                            i.e. start_time() ≤ @p t ≤ end_time().
+  /// @throws std::runtime_error if given @p t is not within output's domain
+  ///                            i.e. @p t ∉ [start_time(), end_time()].
   T EvaluateScalar(const T& t) const {
     this->ThrowIfOutputIsEmpty(__func__);
     this->ThrowIfTimeIsInvalid(__func__, t);

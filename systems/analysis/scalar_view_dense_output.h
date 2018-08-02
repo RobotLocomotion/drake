@@ -27,8 +27,9 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
   /// @param n The nth scalar element (0-indexed) of the output value
   ///          to view.
   /// @throws std::runtime_error if @p base_output is nullptr.
-  /// @throws std::runtime_error if @p n is not valid
-  ///                            i.e. 0 ≤ @p n < `base_output`->size().
+  /// @throws std::runtime_error if given @p n does not refer to a valid
+  ///                            base output dimension
+  ///                            i.e. @p n ∉ [0, `base_output`->size()).
   explicit ScalarViewDenseOutput(
       std::unique_ptr<DenseOutput<T>> base_output, int n)
       : base_output_(std::move(base_output)), n_(n) {
