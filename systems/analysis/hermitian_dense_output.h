@@ -84,6 +84,10 @@ ExtractDoublesOrThrow(const std::vector<MatrixX<S>>& input_vector) {
 /// of the integration scheme being used for up to 3rd order schemes (see
 /// [Hairer, 1993]).
 ///
+/// From a performance standpoint, memory footprint and evaluation overhead
+/// (i.e. the computational cost of an evaluation) increase linearly and
+/// logarithmically with the amount of steps taken, respectively.
+///
 /// - [Engquist, 2105] B. Engquist. Encyclopedia of Applied and Computational
 ///                    Mathematics, p. 339, Springer, 2015.
 /// - [Hairer, 1993] E. Hairer, S. Nørsett and G. Wanner. Solving Ordinary

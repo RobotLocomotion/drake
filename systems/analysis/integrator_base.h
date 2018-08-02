@@ -795,7 +795,8 @@ class IntegratorBase {
 
 
   /**
-   * @name             Methods for dense output computation
+   * @name               Methods for dense output computation
+   * @anchor dense_output_computation
    * @{
    *
    * In general, dense output computations entail both CPU load and memory
@@ -804,6 +805,9 @@ class IntegratorBase {
    * are only carried out by explicit user request. The API to start and stop
    * a _dense integration_ process (i.e. a numerical integration process that
    * also computes dense output) is consistent with this design choice.
+   *
+   * Once dense integration is started, and until it is stopped, all subsequent
+   * integration steps taken will update the allocated dense output.
    */
 
   /**

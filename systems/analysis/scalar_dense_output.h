@@ -28,8 +28,8 @@ class ScalarDenseOutput : public DenseOutput<T> {
   /// @throws std::runtime_error if given @p t is not valid
   ///                            i.e. start_time() ≤ @p t ≤ end_time().
   T EvaluateScalar(const T& t) const {
-    this->ThrowIfOutputIsEmpty();
-    this->ThrowIfTimeIsInvalid(t);
+    this->ThrowIfOutputIsEmpty(__func__);
+    this->ThrowIfTimeIsInvalid(__func__, t);
     return this->DoEvaluateScalar(t);
   }
 

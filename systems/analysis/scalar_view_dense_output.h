@@ -24,7 +24,8 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
 
   /// Constructs a view of another DenseOutput instance.
   /// @param base_output Base dense output to operate with.
-  /// @param n The nth dimension of the output value to view.
+  /// @param n The nth element (or the 0-indexed dimension) of
+  ///          the output value to view.
   /// @throws std::runtime_error if @p n is not a valid dimension
   ///                            of @p base_output.
   explicit ScalarViewDenseOutput(
@@ -62,7 +63,8 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
 
   // The base (vector) dense output being wrapped.
   const std::unique_ptr<DenseOutput<T>> base_output_;
-  // The nth dimension of interest for the view.
+  // The nth element (or the 0-indexed dimension) of the base
+  // (vector) dense output value to view.
   const int n_;
 };
 

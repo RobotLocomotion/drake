@@ -29,9 +29,11 @@ namespace systems {
 /// all tⱼ ∈ {t₁, ..., tᵢ} and that approximates 𝐱(t) for every value in the
 /// closed interval [t₁, tᵢ].
 ///
-/// @warning Note that dense outputs are not bound to enforce the same
-///          constraints that the approximated solution does, and therefore
-///          these may be violated.
+/// @warning Dense outputs are, in general, not bound to attain the same
+///          accuracy that error-controlled integration schemes do. Check
+///          each subclass documentation for further specification.
+/// @warning Note that dense outputs do not enforce the same solution
+///          constraints that integrators may enforce on each time step.
 ///
 /// - [Engquist, 2105] B. Engquist. Encyclopedia of Applied and Computational
 ///                    Mathematics, p. 339, Springer, 2015.
@@ -54,19 +56,20 @@ class DenseOutput {
   /// @throws std::runtime_error if given @p t is not valid
   ///                            i.e. start_time() ≤ @p t ≤ end_time().
   VectorX<T> Evaluate(const T& t) const {
-    ThrowIfOutputIsEmpty();
-    ThrowIfTimeIsInvalid(t);
+    ThrowIfOutputIsEmpty(__func__);
+    ThrowIfTimeIsInvalid(__func__, t);
     return this->DoEvaluate(t);
   }
 
-  /// Evaluates the output's `n`th dimension at the given time @p t.
+  /// Evaluates the output value `n`th scalar element at the given time @p t.
   /// @note On some implementations, the computational cost of this
   ///       method may be lower than that of of indexing an
   ///       Evaluate(const T&) call return vector value, thus making
   ///       it the preferred mechanism when targeting a single dimension.
   /// @param t Time at which to evaluate output.
-  /// @param n Nth dimension of the output value to evaluate.
-  /// @returns Output value `n`th scalar element.
+  /// @param n The nth element (or 0-indexed dimension) of the output
+  ///          value to evaluate.
+  /// @returns Output value `n`th scalar element (or 0-indexed dimension).
   /// @pre Output is not empty i.e. is_empty() equals false.
   /// @throws std::logic_error if any of the preconditions are not met.
   /// @throws std::runtime_error if given @p t is not valid
@@ -74,9 +77,9 @@ class DenseOutput {
   /// @throws std::runtime_error if given @p n is not valid
   ///                            i.e. 0 ≤ @p n < size().
   T EvaluateNth(const T& t, int n) const {
-    ThrowIfOutputIsEmpty();
-    ThrowIfNthDimensionIsInvalid(n);
-    ThrowIfTimeIsInvalid(t);
+    ThrowIfOutputIsEmpty(__func__);
+    ThrowIfNthDimensionIsInvalid(__func__, n);
+    ThrowIfTimeIsInvalid(__func__, t);
     return this->DoEvaluateNth(t, n);
   }
 
@@ -85,7 +88,7 @@ class DenseOutput {
   /// @pre Output is not empty i.e. is_empty() equals false.
   /// @throw std::logic_error if any of the preconditions is not met.
   int size() const {
-    ThrowIfOutputIsEmpty();
+    ThrowIfOutputIsEmpty(__func__);
     return this->do_size();
   }
 
@@ -97,7 +100,7 @@ class DenseOutput {
   /// @pre Output is not empty i.e. is_empty() equals false.
   /// @throws std::logic_error if any of the preconditions is not met.
   const T& start_time() const {
-    ThrowIfOutputIsEmpty();
+    ThrowIfOutputIsEmpty(__func__);
     return this->do_start_time();
   }
 
@@ -106,7 +109,7 @@ class DenseOutput {
   /// @pre Output is not empty i.e. is_empty() equals false.
   /// @throws std::logic_error if any of the preconditions is not met.
   const T& end_time() const {
-    ThrowIfOutputIsEmpty();
+    ThrowIfOutputIsEmpty(__func__);
     return this->do_end_time();
   }
 
@@ -136,31 +139,40 @@ class DenseOutput {
   // @see end_time()
   virtual const T& do_end_time() const = 0;
 
+  // Asserts that this dense output is not empty.
+  // @param func_name Call site name for error message clarity (i.e. __func__).
   // @throws std::logic_error if output is empty i.e. is_empty()
   //                          equals false..
-  void ThrowIfOutputIsEmpty() const {
+  void ThrowIfOutputIsEmpty(const char* func_name) const {
     if (is_empty()) {
-      throw std::logic_error("Dense output is empty.");
+      throw std::logic_error(fmt::format(
+          "{}(): Dense output is empty.", func_name));
     }
   }
 
+  // Asserts that the given dimension @p n is valid for this dense output.
+  // @param func_name Call site name for error message clarity (i.e. __func__).
+  // @param n The nth scalar element (or 0-indexed dimension) to be checked.
   // @throws std::runtime_error if given @p n is not valid
   //                            i.e. 0 ≤ @p n < size().
-  void ThrowIfNthDimensionIsInvalid(int n) const {
+  void ThrowIfNthDimensionIsInvalid(const char* func_name, int n) const {
     if (n < 0 || this->do_size() <= n) {
       throw std::runtime_error(fmt::format(
-          "Dimension {} out of dense output [0, {}) range.",
-          n, this->do_size()));
+          "{}(): Dimension {} out of dense output [0, {}) range.",
+          func_name, n, this->do_size()));
     }
   }
 
+  // Asserts that the given given time @p t is valid for this dense output.
+  // @param func_name Call site name for error message clarity (i.e. __func__).
+  // @param t Time to be checked.
   // @throws std::runtime_error if given @p t is not valid
   //                            i.e. start_time() ≤ @p t ≤ end_time().
-  void ThrowIfTimeIsInvalid(const T& t) const {
+  void ThrowIfTimeIsInvalid(const char* func_name, const T& t) const {
     if (t < this->do_start_time() || t > this->do_end_time()) {
       throw std::runtime_error(fmt::format(
-          "Time {} out of dense output [{}, {}] domain.",
-          t, this->do_start_time(), this->do_end_time()));
+          "{}(): Time {} out of dense output [{}, {}] domain.",
+          func_name, t, this->do_start_time(), this->do_end_time()));
     }
   }
 };
