@@ -291,9 +291,9 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
     return matrix_value.col(0).cast<T>();
   }
 
-  T DoEvaluateNth(const T& t, const int dimension) const override {
+  T DoEvaluateNth(const T& t, const int n) const override {
     return continuous_trajectory_.scalarValue(
-        ExtractDoubleOrThrow(t), dimension, 0);
+        ExtractDoubleOrThrow(t), n, 0);
   }
 
   bool do_is_empty() const override {

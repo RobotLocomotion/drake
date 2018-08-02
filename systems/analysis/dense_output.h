@@ -32,8 +32,8 @@ namespace systems {
 /// @warning Dense outputs are, in general, not bound to attain the same
 ///          accuracy that error-controlled integration schemes do. Check
 ///          each subclass documentation for further specification.
-/// @warning Note that dense outputs do not enforce the same solution
-///          constraints that integrators may enforce on each time step.
+/// @warning Note that dense outputs do not enforce any algebraic constraints
+///          on the solution that integrators might enforce.
 ///
 /// - [Engquist, 2105] B. Engquist. Encyclopedia of Applied and Computational
 ///                    Mathematics, p. 339, Springer, 2015.
@@ -61,15 +61,16 @@ class DenseOutput {
     return this->DoEvaluate(t);
   }
 
-  /// Evaluates the output value `n`th scalar element at the given time @p t.
+  /// Evaluates the output value `n`th scalar element (0-indexed) at the
+  /// given time @p t.
   /// @note On some implementations, the computational cost of this
-  ///       method may be lower than that of of indexing an
-  ///       Evaluate(const T&) call return vector value, thus making
-  ///       it the preferred mechanism when targeting a single dimension.
+  ///       method may be lower than that of indexing an Evaluate(const T&)
+  ///       call return vector value, thus making it the preferred mechanism
+  ///       when targeting a single dimension.
   /// @param t Time at which to evaluate output.
-  /// @param n The nth element (or 0-indexed dimension) of the output
+  /// @param n The nth scalar element (0-indexed) of the output
   ///          value to evaluate.
-  /// @returns Output value `n`th scalar element (or 0-indexed dimension).
+  /// @returns Output value's `n`th scalar element (0-indexed).
   /// @pre Output is not empty i.e. is_empty() equals false.
   /// @throws std::logic_error if any of the preconditions are not met.
   /// @throws std::runtime_error if given @p t is not valid
@@ -78,7 +79,7 @@ class DenseOutput {
   ///                            i.e. 0 ≤ @p n < size().
   T EvaluateNth(const T& t, int n) const {
     ThrowIfOutputIsEmpty(__func__);
-    ThrowIfNthDimensionIsInvalid(__func__, n);
+    ThrowIfNthElementIsInvalid(__func__, n);
     ThrowIfTimeIsInvalid(__func__, t);
     return this->DoEvaluateNth(t, n);
   }
@@ -150,15 +151,15 @@ class DenseOutput {
     }
   }
 
-  // Asserts that the given dimension @p n is valid for this dense output.
+  // Asserts that the given element index @p n is valid for this dense output.
   // @param func_name Call site name for error message clarity (i.e. __func__).
-  // @param n The nth scalar element (or 0-indexed dimension) to be checked.
+  // @param n The nth scalar element (0-indexed) to be checked.
   // @throws std::runtime_error if given @p n is not valid
   //                            i.e. 0 ≤ @p n < size().
-  void ThrowIfNthDimensionIsInvalid(const char* func_name, int n) const {
+  void ThrowIfNthElementIsInvalid(const char* func_name, int n) const {
     if (n < 0 || this->do_size() <= n) {
       throw std::runtime_error(fmt::format(
-          "{}(): Dimension {} out of dense output [0, {}) range.",
+          "{}(): Index {} out of dense output [0, {}) range.",
           func_name, n, this->do_size()));
     }
   }

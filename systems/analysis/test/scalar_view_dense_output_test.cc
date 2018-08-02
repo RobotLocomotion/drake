@@ -39,8 +39,8 @@ class ScalarViewDenseOutputTest : public ::testing::Test {
     (MatrixX<double>(3, 1) << 0., 1., 0.).finished()};
   const MatrixX<double> kFinalStateDerivative{
     (MatrixX<double>(3, 1) << 1., 0., 1.).finished()};
-  const int kValidDimension{0};
-  const int kInvalidDimension{10};
+  const int kValidElementIndex{0};
+  const int kInvalidElementIndex{10};
 };
 
 typedef ::testing::Types<double, AutoDiffXd> ExtensionTypes;
@@ -50,15 +50,22 @@ TYPED_TEST_CASE(ScalarViewDenseOutputTest, ExtensionTypes);
 // Checks that ScalarViewDenseOutput properly wraps a
 // DenseOutput instance.
 TYPED_TEST(ScalarViewDenseOutputTest, ExtensionConsistency) {
-  // Verifies that views to invalid dimensions result in an error.
+  // Verifies that passing a null base dense output results in an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
       ScalarViewDenseOutput<TypeParam> dense_output(
-          this->CreateDummyDenseOutput(), this->kInvalidDimension),
-      std::runtime_error, ".*[Dd]imension.*out of.*dense output.*range.*");
+          std::unique_ptr<HermitianDenseOutput<TypeParam>>(),
+          this->kValidElementIndex),
+      std::runtime_error, ".*dense output.*is null.*");
+
+  // Verifies that views to invalid elements result in an error.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ScalarViewDenseOutput<TypeParam> dense_output(
+          this->CreateDummyDenseOutput(), this->kInvalidElementIndex),
+      std::runtime_error, ".*out of.*dense output.*range.*");
 
   // Instantiates scalar continuous extension properly.
   ScalarViewDenseOutput<TypeParam> dense_output(
-      this->CreateDummyDenseOutput(), this->kValidDimension);
+      this->CreateDummyDenseOutput(), this->kValidElementIndex);
 
   // Retrieves dummy base continuous extension.
   const DenseOutput<TypeParam>* base_output =
@@ -82,13 +89,13 @@ TYPED_TEST(ScalarViewDenseOutputTest, ExtensionConsistency) {
   // Compares evaluations for consistency.
   EXPECT_EQ(
       dense_output.EvaluateScalar(this->kInitialTime),
-      base_output->EvaluateNth(this->kInitialTime, this->kValidDimension));
+      base_output->EvaluateNth(this->kInitialTime, this->kValidElementIndex));
   EXPECT_EQ(
       dense_output.EvaluateScalar(this->kMidTime),
-      base_output->EvaluateNth(this->kMidTime, this->kValidDimension));
+      base_output->EvaluateNth(this->kMidTime, this->kValidElementIndex));
   EXPECT_EQ(
       dense_output.EvaluateScalar(this->kFinalTime),
-      base_output->EvaluateNth(this->kFinalTime, this->kValidDimension));
+      base_output->EvaluateNth(this->kFinalTime, this->kValidElementIndex));
 }
 
 }  // namespace

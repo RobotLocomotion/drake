@@ -14,7 +14,7 @@ namespace systems {
 
 /// A ScalarDenseOutput class implementation that wraps a
 /// DenseOutput class instance and behaves as a view to one of
-/// its dimensions.
+/// its elements.
 ///
 /// @tparam T A valid Eigen scalar.
 template <typename T>
@@ -24,16 +24,20 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
 
   /// Constructs a view of another DenseOutput instance.
   /// @param base_output Base dense output to operate with.
-  /// @param n The nth element (or the 0-indexed dimension) of
-  ///          the output value to view.
-  /// @throws std::runtime_error if @p n is not a valid dimension
-  ///                            of @p base_output.
+  /// @param n The nth scalar element (0-indexed) of the output value
+  ///          to view.
+  /// @throws std::runtime_error if @p base_output is nullptr.
+  /// @throws std::runtime_error if @p n is not valid
+  ///                            i.e. 0 ≤ @p n < `base_output`->size().
   explicit ScalarViewDenseOutput(
       std::unique_ptr<DenseOutput<T>> base_output, int n)
       : base_output_(std::move(base_output)), n_(n) {
+    if (base_output_ == nullptr) {
+      throw std::runtime_error("Base dense output to view is null.");
+    }
     if (n < 0 || base_output_->size() <= n) {
       throw std::runtime_error(fmt::format(
-          "Dimension {} out of base dense output [0, {}) range.",
+          "Index {} out of base dense output [0, {}) range.",
           n, base_output_->size()));
     }
   }
@@ -63,7 +67,7 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
 
   // The base (vector) dense output being wrapped.
   const std::unique_ptr<DenseOutput<T>> base_output_;
-  // The nth element (or the 0-indexed dimension) of the base
+  // The nth scalar element (0-indexed) of the base
   // (vector) dense output value to view.
   const int n_;
 };
