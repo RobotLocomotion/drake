@@ -60,6 +60,7 @@ drake_cc_library(
         ":point_cloud",
         "//common:essential",
         "//math:geometric_transform",
+        "//multibody:rigid_body_tree",
         "//systems/framework",
     ],
 )
@@ -97,6 +98,7 @@ drake_cc_googletest(
     deps = [
         ":transform_point_cloud",
         "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/rigid_body_plant",
     ],
 )
 
