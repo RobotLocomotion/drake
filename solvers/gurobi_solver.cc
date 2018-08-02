@@ -697,6 +697,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
       case MathematicalProgram::VarType::INTEGER:
         gurobi_var_type[i] = GRB_INTEGER;
         is_mip = true;
+        break;
       case MathematicalProgram::VarType::BOOLEAN:
         throw std::runtime_error(
             "Boolean variables should not be used with Gurobi solver.");
