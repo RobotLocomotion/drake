@@ -374,8 +374,6 @@ void AddLinksFromSpecification(
       }
     }
   }
-
-
 }
 
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
