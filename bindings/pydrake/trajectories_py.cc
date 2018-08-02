@@ -4,6 +4,7 @@
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/common/trajectories/trajectory.h"
 
 namespace drake {
 namespace pydrake {
@@ -14,7 +15,9 @@ PYBIND11_MODULE(trajectories, m) {
 
   using T = double;
 
-  py::class_<PiecewiseTrajectory<T>>(m, "PiecewiseTrajectory")
+  py::class_<Trajectory<T>>(m, "Trajectory");
+
+  py::class_<PiecewiseTrajectory<T>, Trajectory<T>>(m, "PiecewiseTrajectory")
       .def("get_number_of_segments",
            &PiecewiseTrajectory<T>::get_number_of_segments)
       .def("start_time", overload_cast_explicit<double, int>(
