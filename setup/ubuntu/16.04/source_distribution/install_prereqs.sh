@@ -67,6 +67,6 @@ dpkg_install_from_wget() {
 }
 
 dpkg_install_from_wget \
-  bazel 0.14.1 \
-  https://github.com/bazelbuild/bazel/releases/download/0.14.1/bazel_0.14.1-linux-x86_64.deb \
-  31946d067901fb10e38a6497996906b5c777feffabe1b3de0039cac0c3c02318
+  bazel 0.16.0 \
+  https://github.com/bazelbuild/bazel/releases/download/0.16.0/bazel_0.16.0-linux-x86_64.deb \
+  1720273534173474796c9d7d8213c360bedf664d43dd844198690b4c78c485eb
