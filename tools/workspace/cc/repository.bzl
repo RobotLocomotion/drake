@@ -64,7 +64,7 @@ def _impl(repository_ctx):
     result = repository_ctx.execute([
         cc,
         repository_ctx.path(
-            Label("@//tools/workspace/cc:identify_compiler.cc"),
+            Label("@drake//tools/workspace/cc:identify_compiler.cc"),
         ),
         "-o",
         executable,
