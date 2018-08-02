@@ -1,6 +1,0 @@
-<sdf version='1.6'>
-  <model name='robot2'>
-    <link name='another_link'>
-    </link>
-  </model>
-</sdf>
