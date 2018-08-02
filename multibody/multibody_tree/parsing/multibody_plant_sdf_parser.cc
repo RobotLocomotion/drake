@@ -312,18 +312,16 @@ void AddJointFromSpecification(
 
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
-ModelInstanceIndex AddModelFromSpecification(const sdf::Model& model,
+void AddLinksFromSpecification(
+    const ModelInstanceIndex model_instance,
+    const sdf::Model& model,
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph,
     const parsers::PackageMap& package_map,
     const std::string& root_dir) {
 
-  const ModelInstanceIndex model_instance =
-    plant->AddModelInstance(model.Name());
-
   // Add all the links
-  for (uint64_t link_index = 0;
-      link_index < model.LinkCount(); ++link_index) {
+  for (uint64_t link_index = 0; link_index < model.LinkCount(); ++link_index) {
     const sdf::Link& link = *model.LinkByIndex(link_index);
 
     // Get the link's inertia relative to the Bcm frame.
@@ -376,6 +374,24 @@ ModelInstanceIndex AddModelFromSpecification(const sdf::Model& model,
       }
     }
   }
+
+
+}
+
+// Helper method to add a model to a MultibodyPlant given an sdf::Model
+// specification object.
+ModelInstanceIndex AddModelFromSpecification(
+    const sdf::Model& model,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph,
+    const parsers::PackageMap& package_map,
+    const std::string& root_dir) {
+
+  const ModelInstanceIndex model_instance =
+    plant->AddModelInstance(model.Name());
+
+  AddLinksFromSpecification(
+      model_instance, model, plant, scene_graph, package_map, root_dir);
 
   // Add all the joints
   for (uint64_t joint_index = 0; joint_index < model.JointCount();
@@ -439,59 +455,8 @@ ModelInstanceIndex AddModelFromSdfFile(
   const ModelInstanceIndex model_instance =
       plant->AddModelInstance(model_name);
 
-  // Add all the links
-  for (uint64_t link_index = 0; link_index < model.LinkCount(); ++link_index) {
-    const sdf::Link& link = *model.LinkByIndex(link_index);
-
-    // Get the link's inertia relative to the Bcm frame.
-    // sdf::Link::Inertial() provides a representation for the SpatialInertia
-    // M_Bcm_Bi of body B, about its center of mass Bcm, and expressed in an
-    // inertial frame Bi as defined in <inertial> <pose></pose> </inertial>.
-    // Per SDF specification, Bi's origin is at the COM Bcm, but Bi is not
-    // necessarily aligned with B.
-    const ignition::math::Inertiald& Inertial_Bcm_Bi = link.Inertial();
-
-    const SpatialInertia<double> M_BBo_B =
-        ExtractSpatialInertiaAboutBoExpressedInB(Inertial_Bcm_Bi);
-
-    // Add a rigid body to model each link.
-    const RigidBody<double>& body =
-        plant->AddRigidBody(link.Name(), model_instance, M_BBo_B);
-
-    if (scene_graph != nullptr) {
-      for (uint64_t visual_index = 0; visual_index < link.VisualCount();
-           ++visual_index) {
-        const sdf::Visual sdf_visual = detail::ResolveVisualUri(
-            *link.VisualByIndex(visual_index), package_map, root_dir);
-        unique_ptr<GeometryInstance> geometry_instance =
-            detail::MakeGeometryInstanceFromSdfVisual(sdf_visual);
-        // We check for nullptr in case someone decided to specify an SDF
-        // <empty/> geometry.
-        if (geometry_instance) {
-          plant->RegisterVisualGeometry(
-              body, geometry_instance->pose(), geometry_instance->shape(),
-              geometry_instance->visual_material(), scene_graph);
-        }
-      }
-
-      for (uint64_t collision_index = 0;
-           collision_index < link.CollisionCount(); ++collision_index) {
-        const sdf::Collision& sdf_collision =
-            *link.CollisionByIndex(collision_index);
-        const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
-        if (sdf_geometry.Type() != sdf::GeometryType::EMPTY) {
-          const Isometry3d X_LG =
-              detail::MakeGeometryPoseFromSdfCollision(sdf_collision);
-          std::unique_ptr<geometry::Shape> shape =
-              detail::MakeShapeFromSdfGeometry(sdf_geometry);
-          const CoulombFriction<double> coulomb_friction =
-              detail::MakeCoulombFrictionFromSdfCollisionOde(sdf_collision);
-          plant->RegisterCollisionGeometry(
-              body, X_LG, *shape, coulomb_friction, scene_graph);
-        }
-      }
-    }
-  }
+  AddLinksFromSpecification(
+      model_instance, model, plant, scene_graph, package_map, root_dir);
 
   // Add all the joints
   for (uint64_t joint_index = 0; joint_index < model.JointCount();
@@ -535,7 +500,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
   if (root.ModelCount() == 0 && root.WorldCount() == 0) {
     throw std::runtime_error(
         "File must have at least one <model>, or <world> with one "
-        "child <model> lement.");
+        "child <model> element.");
   }
 
   if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {

@@ -344,12 +344,12 @@ GTEST_TEST(SdfParser, IncludeTags) {
         sdf_file_path + "/include_models.sdf"), &plant);
   plant.Finalize();
 
-  // We should have loaded two more models.
-  EXPECT_EQ(plant.num_model_instances(), 4);
-  // The models should have added 4 four more bodies.
-  EXPECT_EQ(plant.num_bodies(), 5);
-  // The models should have added two more joints.
-  EXPECT_EQ(plant.num_joints(), 2);
+  // We should have loaded three more models.
+  EXPECT_EQ(plant.num_model_instances(), 5);
+  // The models should have added 8 four more bodies.
+  EXPECT_EQ(plant.num_bodies(), 9);
+  // The models should have added five more joints.
+  EXPECT_EQ(plant.num_joints(), 5);
 
   // There should be a model instance with the name "robot1".
   EXPECT_TRUE(plant.HasModelInstanceNamed("robot1"));
@@ -368,6 +368,21 @@ GTEST_TEST(SdfParser, IncludeTags) {
   EXPECT_TRUE(plant.HasBodyNamed("robot3_moving_link"));
   // There should be joint with the name ""robot3_slider".
   EXPECT_TRUE(plant.HasJointNamed("robot3_slider"));
+
+  // There should be a model instance with the name "weld_robots".
+  EXPECT_TRUE(plant.HasModelInstanceNamed("weld_models"));
+  // There should be all the bodies and joints contained in "simple_robot1"
+  // prefixed with the model's name of "robot1".
+  EXPECT_TRUE(plant.HasBodyNamed("robot1::a_link"));
+  EXPECT_TRUE(plant.HasBodyNamed("robot1::moving_link"));
+  EXPECT_TRUE(plant.HasJointNamed("robot1::slider"));
+  // There should be all the bodies and joints contained in "simple_robot3"
+  // prefixed with the model's name of "robot3".
+  EXPECT_TRUE(plant.HasBodyNamed("robot3::robot3_base_link"));
+  EXPECT_TRUE(plant.HasBodyNamed("robot3::robot3_moving_link"));
+  EXPECT_TRUE(plant.HasJointNamed("robot3::robot3_slider"));
+  // There should be a joint named "weld_robots"
+  EXPECT_TRUE(plant.HasJointNamed("weld_robots"));
 }
 
 }  // namespace

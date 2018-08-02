@@ -52,7 +52,8 @@ ModelInstanceIndex AddModelFromSdfFile(
 
 /// Parses all `<model>` elements from the SDF file specified by `file_name`
 /// and adds them to `plant`. The SDF file can contain multiple `<model>`
-/// elements. New model instances will be added to @p plant.
+/// elements. New model instances will be added to @p plant for each
+/// `<model>` tag in the SDF file.
 ///
 /// @throws std::runtime_error if the file is not in accordance with the SDF
 /// specification containing a message with a list of errors encountered while

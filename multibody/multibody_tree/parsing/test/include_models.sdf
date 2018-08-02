@@ -6,11 +6,21 @@
     <include>
       <uri>model://simple_robot3</uri>
     </include>
-    <!-- <model name='weld_models'> -->
-    <!--   <joint name='weld_robots' type='fixed'> -->
-    <!--     <parent>a_link</parent> -->
-    <!--     <child>another_link</child> -->
-    <!--   </joint> -->
-    <!-- </model> -->
+    <model name='weld_models'> 
+      <include>
+        <uri>model://simple_robot1</uri>
+      </include>
+      <include>
+        <uri>model://simple_robot3</uri>
+      </include>
+
+      <joint name='weld_robots' type='revolute'>
+        <parent>robot1::a_link</parent>
+        <child>robot3::robot3_base_link</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+    </model>
   </world>
 </sdf>
