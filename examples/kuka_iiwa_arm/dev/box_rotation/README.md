@@ -2,7 +2,7 @@ Iiwa Bi-Manual Manipulation Example : Box Rotation
 ==================================================
 
 The following instructions assume Drake was
-[built using bazel](http://drake.mit.edu/bazel.html?highlight=bazel).
+[built using bazel](https://drake.mit.edu/bazel.html?highlight=bazel).
 
 Prerequisites
 -------------

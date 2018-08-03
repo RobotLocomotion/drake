@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://drake.mit.edu"
-    xmlns="http://drake.mit.edu" elementFormDefault="qualified">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="https://drake.mit.edu"
+    xmlns="https://drake.mit.edu" elementFormDefault="qualified">
 
     <xs:annotation>
         <xs:documentation>XML Schema for DrakeURDF v1.0

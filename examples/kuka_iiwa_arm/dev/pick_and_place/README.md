@@ -45,7 +45,7 @@ the processes.
 
 # Running the demo
 The following instructions assume Drake was
-[built using bazel](http://drake.mit.edu/bazel.html?highlight=bazel).
+[built using bazel](https://drake.mit.edu/bazel.html?highlight=bazel).
 Furthermore, it assumes that you've installed Drake by executing
 ```
 $ bazel run //:install <drake_install_dir>

@@ -22,7 +22,7 @@ two dimensions.
 In the discussion below and in code comments, we will use the 2D analog of our
 standard multibody notation as described in detail here:
 @ref multibody_notation.
-<!-- http://drake.mit.edu/doxygen_cxx/group__multibody__notation.html -->
+<!-- https://drake.mit.edu/doxygen_cxx/group__multibody__notation.html -->
 
 For a quick summary and translation to 2D:
  - When we combine rotational and translational quantities into a single
@@ -125,7 +125,7 @@ Coulomb friction. The problem is well known to correspond to an
 necessary to resolve the problem.
 
 This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
-this class, please refer to http://drake.mit.edu/cxx_inl.html.
+this class, please refer to https://drake.mit.edu/cxx_inl.html.
 
 @tparam T The vector element type, which must be a valid Eigen scalar.
 
