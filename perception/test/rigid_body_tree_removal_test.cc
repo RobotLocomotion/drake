@@ -14,6 +14,7 @@
 #include "drake/perception/transform_point_cloud.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/sensors/rgbd_camera.h"
 
 namespace drake {
@@ -52,121 +53,200 @@ void AddFloatingBoxToTree(RigidBodyTree<double>* tree,
     joint_transform.matrix() << kRotIdentity.matrix(), position, 0, 0, 0, 1;
   }
 
-  const DrakeShapes::Box shape(size);
-  drake::multibody::collision::Element body_collision(
-      shape, Isometry3<double>::Identity());
-  body->AddCollisionElement("", &body_collision);
 
   auto joint =
       std::make_unique<FixedJoint>("box_joint", joint_transform);
   body->add_joint(&tree->world(), std::move(joint));
 
-  tree->add_rigid_body(std::move(body));
-}
+  RigidBody<double>* body_in_tree = tree->add_rigid_body(std::move(body));
 
-void AddCameraBody(RigidBodyTree<double>* tree) {
-  const Eigen::Vector3d kPosition(0., 0., 2.);
-  const Eigen::Vector3d kOrientation(0., M_PI_2, 0.);
-
-  auto body = std::make_unique<RigidBody<double>>();
-  body->set_name("rgbd_camera");
-  body->set_mass(1.0);
-  body->set_spatial_inertia(Matrix6<double>::Identity());
-  
-  const Eigen::Vector3d size(0.02, 0.02, 0.02);
   const DrakeShapes::Box shape(size);
-  const Eigen::Vector4d material(0.9, 0.0, 0.0, 0.6);
-  const DrakeShapes::VisualElement visual_element(
-      shape, Eigen::Isometry3d::Identity(), material);
-  body->AddVisualElement(visual_element);
-  
-  Eigen::Isometry3d joint_transform = Eigen::Translation3d(kPosition)
-    * (Eigen::AngleAxisd(kOrientation(0), Eigen::Vector3d::UnitX()) * Eigen::AngleAxisd(kOrientation(1), Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(kOrientation(2), Eigen::Vector3d::UnitZ()));
-  auto joint = std::make_unique<FixedJoint>("camera_joint", joint_transform);
-  body->add_joint(&tree->world(), std::move(joint));
-  tree->add_rigid_body(std::move(body));
+  drake::multibody::collision::Element body_collision(
+      shape, Isometry3<double>::Identity());
+  tree->addCollisionElement(body_collision, *body_in_tree, "default");;
 }
 
-systems::sensors::RgbdCameraDiscrete* AddCamera(
+void AddCamera(
     systems::DiagramBuilder<double>* builder,
-    systems::RigidBodyPlant<double>* plant) {
+    RigidBodyTree<double>* tree) {
+  const Eigen::Vector3d kPosition(0.0, 0.0, 2.0);
+  const Eigen::Vector3d kOrientation(0.0, M_PI_2, 0.0);
+
+  auto camera_body = std::make_unique<RigidBody<double>>();
+  camera_body->set_name("rgbd_camera");
+  camera_body->set_model_instance_id(tree->add_model_instance());
+  Eigen::Isometry3d joint_transform = Eigen::Translation3d(kPosition) * Eigen::AngleAxisd(kOrientation(1), Eigen::Vector3d::UnitY());
+  auto joint =
+      std::make_unique<FixedJoint>("camera_joint", joint_transform);
+  camera_body->add_joint(&tree->world(), std::move(joint));
+
+  Eigen::Isometry3d X_BD;
+  X_BD.matrix() <<  0.,  0.,  1.,  0.,
+                   -1.,  0.,  0.,  0.02,
+                    0., -1.,  0.,  0.,
+                    0.,  0.,  0.,  1.;
+  tree->addFrame(std::make_shared<RigidBodyFrame<double>>("depth_camera", camera_body.get(), X_BD));
+
+  tree->add_rigid_body(std::move(camera_body));
+}
+
+void BuildFilterSceneSimple(systems::DiagramBuilder<double>* builder,
+                            RigidBodyTreeRemoval* filter,
+                            RigidBodyTree<double>* tree) {
+  //auto camera = AddCamera(builder, tree);
+  AddCamera(builder, tree);
+
+  tree->compile();
+
   const double kFovY = M_PI_4;
-  const bool kShowWindow = true;
+  const bool kShowWindow = false;
   const double kDepthRangeNear = 0.5;
-  const double kDepthRangeFar = 5.;
+  const double kDepthRangeFar = 5.0;
   const Eigen::Vector3d kPosition(0.0, 0.0, 2.0);
   const Eigen::Vector3d kOrientation(0.0, M_PI_2, 0.0);
   const int kWidth = 640;
   const int kHeight = 480;
 
-  //systems::sensors::RgbdCamera* rgbd_camera =
-//      builder->AddSystem<systems::sensors::RgbdCamera>(
-//          "rgbd_camera", plant->get_rigid_body_tree(), kPosition, kOrientation,
-//          kDepthRangeNear, kDepthRangeFar, kFovY, kShowWindow, kWidth, kHeight);
-  auto rgbd_camera = builder->AddSystem<systems::sensors::RgbdCameraDiscrete>(
-          std::make_unique<systems::sensors::RgbdCamera>("rgbd_camera", plant->get_rigid_body_tree(), kPosition, kOrientation,
-          kDepthRangeNear, kDepthRangeFar, kFovY, kShowWindow, kWidth, kHeight), 1./30., false);
-  rgbd_camera->set_name("rgbd_camera");
-
-  return rgbd_camera;
-}
-
-void BuildFilterScene(systems::DiagramBuilder<double>* builder,
-                      RigidBodyTreeRemoval* filter,
-                      systems::RigidBodyPlant<double>* plant,
-                      std::unique_ptr<RigidBodyTree<double>> tree_ptr) {
-  AddCameraBody(tree_ptr.get());
-  tree_ptr->compile();
-  //tree_ptr->doKinematics(tree_ptr->getZeroConfiguration());
-  plant =
-      builder->AddSystem<systems::RigidBodyPlant<double>>(std::move(tree_ptr));
-
-  auto camera = AddCamera(builder, plant);
+  auto camera = builder->AddSystem<systems::sensors::RgbdCamera>(
+          "rgbd_camera", *tree, kPosition, kOrientation,
+          kDepthRangeNear, kDepthRangeFar, kFovY, kShowWindow, kWidth, kHeight);
+  camera->set_name("rgbd_camera");
+  log()->info("X_BD:\n{}", camera->depth_camera_optical_pose().matrix());
 
   auto converter =
-      builder->AddSystem<DepthImageToPointCloud>(camera->camera().depth_camera_info());
-
-  const RigidBodyTree<double>& tree = plant->get_rigid_body_tree();
-  
-  log()->info("  {}", tree.FindBody("rgbd_camera")->get_name());
+      builder->AddSystem<DepthImageToPointCloud>(camera->depth_camera_info());
 
   auto transformer =
-      builder->AddSystem<TransformPointCloud>(tree,
-          tree.findFrame("rgbd_camera")->get_frame_index());
+      builder->AddSystem<TransformPointCloud>(*tree,
+          tree->findFrame("depth_camera")->get_frame_index());
 
-  filter = builder->AddSystem<RigidBodyTreeRemoval>(tree, kCollisionThreshold);
+  filter = builder->AddSystem<RigidBodyTreeRemoval>(*tree, kCollisionThreshold);
 
-/*  lcm::DrakeLcm lcm;
-  systems::DrakeVisualizer visualizer(tree, &lcm);
-  visualizer.set_name("visualizer");
-  auto context = visualizer.CreateDefaultContext();
-  const int vector_size = tree.get_num_positions() + tree.get_num_velocities();
-  auto input_data = std::make_unique<systems::BasicVector<double>>(vector_size);
-  input_data->set_value(Eigen::VectorXd::Zero(vector_size));
-  context->FixInputPort(0, std::move(input_data));
-  visualizer.PublishLoadRobot();
-  visualizer.Publish(*context.get());*/
+  auto passthrough =
+    builder->AddSystem<systems::PassThrough<double>>(tree->get_num_positions() + tree->get_num_velocities());
 
-  builder->Connect(plant->state_output_port(), camera->state_input_port());
+  builder->Connect(passthrough->get_output_port(), camera->state_input_port());
+  builder->Connect(passthrough->get_output_port(), transformer->state_input_port());
+  builder->Connect(passthrough->get_output_port(), filter->state_input_port());
+
   builder->Connect(camera->depth_image_output_port(),
                    converter->depth_image_input_port());
-  builder->Connect(plant->state_output_port(), filter->state_input_port());
-  builder->Connect(plant->state_output_port(), transformer->state_input_port());
   builder->Connect(converter->point_cloud_output_port(),
                    transformer->point_cloud_input_port());
   builder->Connect(transformer->point_cloud_output_port(),
                    filter->point_cloud_input_port());
 
-  //builder->ExportInput(camera->state_input_port());
-  builder->ExportOutput(converter->point_cloud_output_port());
+  builder->ExportInput(passthrough->get_input_port());
+  builder->ExportOutput(transformer->point_cloud_output_port());
   builder->ExportOutput(filter->point_cloud_output_port());
   builder->ExportOutput(camera->color_image_output_port());
   builder->ExportOutput(camera->depth_image_output_port());
+  log()->info("System built");
+}
+
+GTEST_TEST(RigidBodyTreeRemovalTests, AwesomeTest) {
+  const Eigen::Vector3d kBoxPosition(0., 0., 0.);
+  const Eigen::Vector3d kBoxSize(0.25, 0.25, 0.25);
+
+  auto tree_ptr = std::make_unique<RigidBodyTree<double>>();
+  AddFloatingBoxToTree(tree_ptr.get(), kBoxPosition, kBoxSize);
+
+  systems::DiagramBuilder<double> builder;
+  std::unique_ptr<RigidBodyTreeRemoval> filter;
+  BuildFilterSceneSimple(&builder, filter.get(), tree_ptr.get());
+
+  //tree_ptr->compile();
+
+  std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
+
+  log()->info("graphviz of diagram: {}", diagram->GetGraphvizString());
+
+  auto camera_system = diagram->GetSystems()[0];
+  log()->info("camera_system: {}", camera_system->get_name());
+
+  std::unique_ptr<systems::Context<double>> context =
+      diagram->CreateDefaultContext();
+
+  Eigen::VectorXd state = Eigen::VectorXd::Zero(tree_ptr->get_num_positions() + tree_ptr->get_num_velocities());
+  state = tree_ptr->getZeroConfiguration();
+  context->FixInputPort(0, state);
+  log()->info("state: {}", state);
+
+  std::vector<int> indices = tree_ptr->FindBaseBodies();
+  for (size_t i = 0; i < indices.size(); i++) {
+    log()->info("{} {}", i, tree_ptr->get_body(indices[i]).get_name());
+  }
+
+  std::unique_ptr<systems::SystemOutput<double>> output =
+      diagram->AllocateOutput();
+  log()->info("Allocated output.");
+
+  diagram->CalcOutput(*context, output.get());
+  log()->info("Calculated output.");
+  auto const unfiltered_cloud =
+      output->GetMutableData(0)->GetMutableValue<PointCloud>();
+  log()->info("0.");
+  auto const filtered_cloud =
+      output->GetMutableData(1)->GetMutableValue<PointCloud>();
+  log()->info("1.");
+  auto const rgb = output->GetMutableData(2)
+                       ->GetMutableValue<systems::sensors::ImageRgba8U>();
+  log()->info("2.");
+  auto const depth = output->GetMutableData(3)
+                       ->GetMutableValue<systems::sensors::ImageDepth32F>();
+
+  log()->info("rgb: {} x {}, depth: {} x {}, unfiltered cloud: {}, filtered cloud: {}", rgb.width(), 
+      rgb.height(), depth.width(), depth.height(), unfiltered_cloud.size(), filtered_cloud.size());
+
+/*  for (int i = 0; i < depth.height(); i++) {
+      for (int j = 0; j < depth.width(); j++) {
+        log()->info("x,y: ({}, {}); rgb: ({}, {}, {}); depth: {}", j, i, rgb.at(j, i)[0], rgb.at(j, i)[1], rgb.at(j, i)[2], depth.at(j,i)[0]);
+      }
+  }*/
+
+/*  for (int i = 0; i < filtered_cloud.size(); i++) {
+    log()->info("{} ---> {}", unfiltered_cloud.xyz(i).transpose(), filtered_cloud.xyz(i).transpose());
+  }*/
+  /*for (int i = 0; i < filtered_cloud.size(); i++) {
+    if (unfiltered_cloud.xyz(i)(0) != filtered_cloud.xyz(i)(0)) {
+      log()->info("{} ---> {}", unfiltered_cloud.xyz(i).transpose(), filtered_cloud.xyz(i).transpose());
+    }
+  }*/
+
+  auto empty_tree_ptr = std::make_unique<RigidBodyTree<double>>();
+  systems::DiagramBuilder<double> empty_builder;
+  std::unique_ptr<RigidBodyTreeRemoval> empty_filter;
+  BuildFilterSceneSimple(&empty_builder, empty_filter.get(), empty_tree_ptr.get());
+  std::unique_ptr<systems::Diagram<double>> empty_diagram = empty_builder.Build();
+  std::unique_ptr<systems::Context<double>> empty_context =
+      empty_diagram->CreateDefaultContext();
+  log()->info("t doe");
+  Eigen::VectorXd empty_state = Eigen::VectorXd::Zero(empty_tree_ptr->get_num_positions() + empty_tree_ptr->get_num_velocities());
+  empty_state = empty_tree_ptr->getZeroConfiguration();
+  empty_context->FixInputPort(0, empty_state);
+  log()->info("state: {}", state);
+  std::unique_ptr<systems::SystemOutput<double>> empty_output =
+      empty_diagram->AllocateOutput();
+  log()->info("allocated output");
+  empty_diagram->CalcOutput(*empty_context, empty_output.get());
+  log()->info("calccated output");
+  auto const filtered_cloud2 =
+      empty_output->GetMutableData(1)->GetMutableValue<PointCloud>();
+  log()->info("almost done");
+
+  for (int i = 0; i < filtered_cloud.size(); i++) {
+    if (filtered_cloud.xyz(i)(0) != filtered_cloud2.xyz(i)(0)) {
+      log()->info("{} ---> {}", filtered_cloud.xyz(i).transpose(), filtered_cloud2.xyz(i).transpose());
+    }
+    else {
+      log()->info("equal");
+    }
+  }
 }
 
 // Tests that the visual geometries corresponding to rigid bodies in a
 // RigidBodyTree are removed completely from the point cloud.
-GTEST_TEST(RigidBodyTreeRemovalTests, FilterFloatingBoxTest) {
+/*GTEST_TEST(RigidBodyTreeRemovalTests, FilterFloatingBoxTest) {
   const Eigen::Vector3d kBoxPosition(0., 0., 0.);
   const Eigen::Vector3d kBoxSize(0.25, 0.25, 0.25);
 
@@ -187,13 +267,13 @@ GTEST_TEST(RigidBodyTreeRemovalTests, FilterFloatingBoxTest) {
 //  KinematicsCache<double> cache = tree_ref.CreateKinematicsCache();
 //  cache.initialize(tree_ref.getZeroConfiguration());
 //  tree_ref.doKinematics(cache);
-/*  log()->info("Got ref toh tree.");
+  log()->info("Got ref toh tree.");
   auto q = tree_ref.getZeroConfiguration();
   KinematicsCache<double> cache = tree_ref.doKinematics(q);
   log()->info("Did kinematic with tree.");
   const Isometry3<double> iso = tree_ref.relativeTransform(cache, 0, 1);
   const math::RigidTransform<float> transform(iso.cast<float>());
-  log()->info("{}", iso.translation());*/
+  log()->info("{}", iso.translation());
 
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 
@@ -212,10 +292,10 @@ GTEST_TEST(RigidBodyTreeRemovalTests, FilterFloatingBoxTest) {
   log()->info("graphviz of diagram: {}", diagram->GetGraphvizString());
   
   auto simulator = std::make_unique<systems::Simulator<double>>(*diagram);
-  simulator->set_target_realtime_rate(0.1);
+  simulator->set_target_realtime_rate(0.01);
   simulator->Initialize();
   // Run simulation.
-  simulator->StepTo(0.3);
+  simulator->StepTo(0.01);
 
 
   std::unique_ptr<systems::SystemOutput<double>> output =
@@ -246,11 +326,11 @@ GTEST_TEST(RigidBodyTreeRemovalTests, FilterFloatingBoxTest) {
     log()->info("{} ---> {}", unfiltered_cloud.xyz(i).transpose(), filtered_cloud.xyz(i).transpose());
   }
 
-  /*  for (int i = 0; i < rgb.height(); i++) {
+    for (int i = 0; i < rgb.height(); i++) {
       for (int j = 0; j < rgb.width(); j++) {
         log()->info("{}", rgb.at(j, i));
       }
-    }*/
+    }
 
   //  for(int i=0; i < unfiltered_cloud.size(); i++)
   //    log()->info("{}", unfiltered_cloud.xyz(i).transpose());
@@ -338,7 +418,7 @@ GTEST_TEST(RigidBodyTreeRemovalTests, KeepPointsTest) {
   auto output_cloud = filter_output->GetValueOrThrow<perception::PointCloud>();
   log()->info("output_cloud: {}", output_cloud.size());
   EXPECT_EQ(output_cloud.size(), 3);
-}
+}*/
 
 }  // namespace
 }  // namespace perception
