@@ -32,6 +32,8 @@ class MultilaneLineRoadCurveTest : public ::testing::Test {
   const double kRMin{-10.0};
   const double kRMax{10.0};
   const api::HBounds elevation_bounds{0.0, 10.0};
+  const double kR0Offset{0.0};
+  const double kROffset{5.0};
 };
 
 // Checks line reference curve interpolations, derivatives, and lengths.
@@ -42,16 +44,25 @@ TEST_F(MultilaneLineRoadCurveTest, LineRoadCurve) {
   const double kExpectedLength = std::sqrt(kDirection.x() * kDirection.x() +
                                            kDirection.y() * kDirection.y());
   EXPECT_NEAR(dut.p_scale(), kExpectedLength, kVeryExact);
-  std::function<double(double)> s_from_p_at_r =
-      dut.OptimizeCalcSFromP(kNoOffset);
-  const double length = s_from_p_at_r(1.);
-  EXPECT_NEAR(length, kExpectedLength, kVeryExact);
+  std::function<double(double)> s_from_p_at_r0 =
+      dut.OptimizeCalcSFromP(kR0Offset);
+  const double centerline_length = s_from_p_at_r0(1.);
+  EXPECT_NEAR(centerline_length, kExpectedLength, kVeryExact);
   // Checks that both `s` and `p` bounds are enforced on
-  // mapping evaluation.
+  // mapping evaluation along the centerline
+  std::function<double(double)> p_from_s_at_r0 =
+      dut.OptimizeCalcPFromS(kR0Offset);
+  EXPECT_THROW(s_from_p_at_r0(2.), std::runtime_error);
+  EXPECT_THROW(p_from_s_at_r0(2. * centerline_length), std::runtime_error);
+  // Checks that both `s` and `p` bounds are enforced on
+  // mapping evaluation at an offset
+  std::function<double(double)> s_from_p_at_r =
+      dut.OptimizeCalcSFromP(kROffset);
   std::function<double(double)> p_from_s_at_r =
-      dut.OptimizeCalcPFromS(kNoOffset);
-  EXPECT_THROW(s_from_p_at_r(2.), std::runtime_error);
-  EXPECT_THROW(p_from_s_at_r(2. * length), std::runtime_error);
+      dut.OptimizeCalcPFromS(kROffset);
+  const double offset_line_length = s_from_p_at_r(1.);
+  EXPECT_THROW(s_from_p_at_r0(2.), std::runtime_error);
+  EXPECT_THROW(p_from_s_at_r0(2. * offset_line_length), std::runtime_error);
 
   // Check the evaluation of xy at different p values.
   EXPECT_TRUE(

@@ -161,15 +161,9 @@ bool RoadCurve::AreFastComputationsAccurate(double r) const {
           && elevation().order() <= 1);
 }
 
-double RoadCurve::CalcSFromP(double p, double r) const {
-  // Populates parameter vector with (r, h) coordinate values.
-  systems::AntiderivativeFunction<double>::SpecifiedValues values;
-  values.k = (VectorX<double>(2) << r, 0.0).finished();
-  return s_from_p_func_->Evaluate(p, values);
-}
-
 std::function<double(double)> RoadCurve::OptimizeCalcSFromP(double r) const {
   DRAKE_THROW_UNLESS(CalcMinimumRadiusAtOffset(r) > 0.0);
+  const double absolute_tolerance = relative_tolerance_ * 1.;
   if (computation_policy() == ComputationPolicy::kPreferAccuracy
       && !AreFastComputationsAccurate(r)) {
     // Populates parameter vector with (r, h) coordinate values.
@@ -177,32 +171,35 @@ std::function<double(double)> RoadCurve::OptimizeCalcSFromP(double r) const {
     values.k = (VectorX<double>(2) << r, 0.0).finished();
     // Prepares dense output for shared ownership, as std::function
     // instances only take copyable callables.
-    std::shared_ptr<systems::ScalarDenseOutput<double>> dense_output{
-      s_from_p_func_->DenseEvaluate(1.0, values)};
-    const double absolute_tolerance = relative_tolerance_ * 1.;
-    return [dense_output, absolute_tolerance] (double p) {
+    const std::shared_ptr<systems::ScalarDenseOutput<double>> dense_output{
+      s_from_p_func_->MakeDenseEvalFunction(1.0, values)};
+    return [dense_output, absolute_tolerance] (double p) -> double {
       // Saturate p to lie within dense output's domain.
       const double saturated_p = std::min(
-          std::max(p, dense_output->get_start_time()),
-          dense_output->get_end_time());
+          std::max(p, dense_output->start_time()), dense_output->end_time());
       DRAKE_THROW_UNLESS(std::abs(saturated_p - p) < absolute_tolerance);
-      return dense_output->Evaluate(saturated_p);
+      return dense_output->EvaluateScalar(saturated_p);
     };
   }
-  return [this, r] (double p) {
+  return [this, r, absolute_tolerance] (double p) {
+    // Saturate p to lie within dense output's domain.
+    const double saturated_p = std::min(std::max(p, 0.), 1.);
+    DRAKE_THROW_UNLESS(std::abs(saturated_p - p) < absolute_tolerance);
     return this->FastCalcSFromP(p, r);
   };
 }
 
-double RoadCurve::CalcPFromS(double s, double r) const {
+double RoadCurve::CalcSFromP(double p, double r) const {
   // Populates parameter vector with (r, h) coordinate values.
-  systems::ScalarInitialValueProblem<double>::SpecifiedValues values;
+  systems::AntiderivativeFunction<double>::SpecifiedValues values;
   values.k = (VectorX<double>(2) << r, 0.0).finished();
-  return p_from_s_ivp_->Solve(s, values);
+  return s_from_p_func_->Evaluate(p, values);
 }
 
 std::function<double(double)> RoadCurve::OptimizeCalcPFromS(double r) const {
   DRAKE_THROW_UNLESS(CalcMinimumRadiusAtOffset(r) > 0.0);
+  const double full_length = CalcSFromP(1., r);
+  const double absolute_tolerance = relative_tolerance_ * full_length;
   if (computation_policy() == ComputationPolicy::kPreferAccuracy
       && !AreFastComputationsAccurate(r)) {
     // Populates parameter vector with (r, h) coordinate values.
@@ -210,20 +207,20 @@ std::function<double(double)> RoadCurve::OptimizeCalcPFromS(double r) const {
     values.k = (VectorX<double>(2) << r, 0.0).finished();
     // Prepares dense output for shared ownership, as std::function
     // instances only take copyable callables.
-    const double full_length = CalcSFromP(1.0, r);
-    std::shared_ptr<systems::ScalarDenseOutput<double>> dense_output{
+    const std::shared_ptr<systems::ScalarDenseOutput<double>> dense_output{
       p_from_s_ivp_->DenseSolve(full_length, values)};
-    const double absolute_tolerance = relative_tolerance_ * full_length;
-    return [dense_output, absolute_tolerance] (double s) {
+    return [dense_output, absolute_tolerance] (double s) -> double {
       // Saturate s to lie within dense output's domain.
       const double saturated_s = std::min(
-          std::max(s, dense_output->get_start_time()),
-          dense_output->get_end_time());
+          std::max(s, dense_output->start_time()), dense_output->end_time());
       DRAKE_THROW_UNLESS(std::abs(saturated_s - s) < absolute_tolerance);
-      return dense_output->Evaluate(saturated_s);
+      return dense_output->EvaluateScalar(saturated_s);
     };
   }
-  return [this, r] (double s) {
+  return [this, r, full_length, absolute_tolerance] (double s) {
+    // Saturate s to lie within dense output's domain.
+    const double saturated_s = std::min(std::max(s, 0.), full_length);
+    DRAKE_THROW_UNLESS(std::abs(saturated_s - s) < absolute_tolerance);
     return this->FastCalcPFromS(s, r);
   };
 }

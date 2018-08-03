@@ -31,7 +31,8 @@ class MultilaneArcRoadCurveTest : public ::testing::Test {
   const double kRMax{ 0.5 * kRadius};
   const api::HBounds height_bounds{0.0, 10.0};
   const double kVeryExact{1e-12};
-  const double kNoOffset{0.0};
+  const double kR0Offset{0.0};
+  const double kROffset{5.0};
 };
 
 // Checks ArcRoadCurve constructor constraints.
@@ -69,19 +70,29 @@ TEST_F(MultilaneArcRoadCurveTest, ConstructorTest) {
 TEST_F(MultilaneArcRoadCurveTest, ArcGeometryTest) {
   const ArcRoadCurve dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp,
                          kLinearTolerance, kScaleLength, kComputationPolicy);
-  // Checks curve length computations.
+  // Checks curve length computations along the centerline.
   const double kExpectedLength = kDTheta * kRadius;
   EXPECT_NEAR(dut.p_scale(), kExpectedLength, kVeryExact);
-  std::function<double(double)> s_from_p_at_r =
-      dut.OptimizeCalcSFromP(kNoOffset);
-  const double length = s_from_p_at_r(1.);
-  EXPECT_NEAR(length, kExpectedLength, kVeryExact);
+  std::function<double(double)> s_from_p_at_r0 =
+      dut.OptimizeCalcSFromP(kR0Offset);
+  const double centerline_length = s_from_p_at_r0(1.);
+  EXPECT_NEAR(centerline_length, kExpectedLength, kVeryExact);
   // Checks that both `s` and `p` bounds are enforced on
-  // mapping evaluation.
+  // mapping evaluation along the centerline
+  std::function<double(double)> p_from_s_at_r0 =
+      dut.OptimizeCalcPFromS(kR0Offset);
+  EXPECT_THROW(s_from_p_at_r0(2.), std::runtime_error);
+  EXPECT_THROW(p_from_s_at_r0(2. * centerline_length), std::runtime_error);
+  // Checks that both `s` and `p` bounds are enforced on
+  // mapping evaluation at an offset
+  std::function<double(double)> s_from_p_at_r =
+      dut.OptimizeCalcSFromP(kROffset);
   std::function<double(double)> p_from_s_at_r =
-      dut.OptimizeCalcPFromS(kNoOffset);
+      dut.OptimizeCalcPFromS(kROffset);
+  const double offset_line_length = s_from_p_at_r(1.);
   EXPECT_THROW(s_from_p_at_r(2.), std::runtime_error);
-  EXPECT_THROW(p_from_s_at_r(2. * length), std::runtime_error);
+  EXPECT_THROW(p_from_s_at_r(2. * offset_line_length), std::runtime_error);
+
   // Checks the evaluation of xy at different values over the reference curve.
   EXPECT_TRUE(CompareMatrices(
       dut.xy_of_p(0.0), kCenter + Vector2<double>(kRadius * std::cos(kTheta0),

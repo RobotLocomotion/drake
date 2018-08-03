@@ -141,8 +141,8 @@ class RoadCurve {
   /// planar reference curve.
   /// @return A function that relates parametric position p along the reference
   ///         curve to longitudinal position s at the specified parallel curve,
-  ///         defined for all p between 0 and 1 (and throwing for any given value
-  ///         outside this interval).
+  ///         defined for all p between 0 and 1 (and throwing for any given
+  ///         value outside this interval).
   /// @throw std::runtime_error When `r` makes the radius of curvature be a non
   ///                           positive number.
   std::function<double(double)> OptimizeCalcSFromP(double r) const;
@@ -319,14 +319,6 @@ class RoadCurve {
   // @param r Lateral offset of the reference curve over the z = 0 plane.
   // @return The minimum radius of curvature.
   virtual double CalcMinimumRadiusAtOffset(double r) const = 0;
-
-  // Computes the parametric position p along the reference curve corresponding
-  // to longitudinal position (in path-length) `s` along a parallel curve
-  // laterally offset by `r` from the reference curve using numerical methods.
-  // @return The parametric position p along an offset of the reference curve.
-  // @throw std::runtime_error When `r` makes the radius of curvature be a non
-  //                           positive number.
-  double CalcPFromS(double s, double r) const;
 
   // Computes the path length integral in the interval of the parameter [0; p]
   // and along a parallel curve laterally offset by `r` the planar reference
