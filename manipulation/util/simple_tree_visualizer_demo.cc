@@ -25,8 +25,10 @@ int DoMain() {
 
   // Adds a demo tree.
   const std::string kModelPath =
-      "drake/manipulation/models/iiwa_description/urdf/"
-      "iiwa14_polytope_collision.urdf";
+      // "drake/manipulation/models/iiwa_description/urdf/"
+      // "iiwa14_polytope_collision.urdf";
+      "drake/manipulation/models/allegro_hand_description/urdf/"
+      "allegro_hand_description_right.urdf";
 
   auto tree = std::make_unique<RigidBodyTree<double>>();
 
@@ -43,7 +45,8 @@ int DoMain() {
 
   // Simple demo that iterates through a bunch of joint configurations.
   for (int i = 0; i < FLAGS_num_configurations; ++i) {
-    simple_tree_visualizer.visualize(Eigen::VectorXd::Random(7));
+    simple_tree_visualizer.visualize(Eigen::VectorXd::Random(
+                  tree->get_num_positions()));
 
     // Sleep for a second just so that the new configuration can be seen
     // on the visualizer.
