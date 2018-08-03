@@ -1,9 +1,9 @@
 #include <gflags/gflags.h>
 
-#include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_controller.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
@@ -14,8 +14,8 @@
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
+#include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
 #include "drake/systems/sensors/rgbd_camera.h"
@@ -53,8 +53,8 @@ void AddCamera(WorldSimTreeBuilder<double>* tree_builder,
                PhysicalCamera<double>* physical_camera,
                const Eigen::Vector3d& base, const Eigen::Vector3d& rotation) {
   const char* const kWsgFixtureUrdf =
-        "drake/manipulation/models/xtion_description/urdf/"
-        "xtion_wsg_fixture.urdf";
+      "drake/manipulation/models/xtion_description/urdf/"
+      "xtion_wsg_fixture.urdf";
   tree_builder->StoreDrakeModel("xtion_wsg_fixture", kWsgFixtureUrdf);
 
   int fixture_id =
@@ -68,8 +68,8 @@ void AddCamera(WorldSimTreeBuilder<double>* tree_builder,
       physical_camera->fixture_frame->get_transform_to_body().matrix());
 
   tree_builder->StoreDrakeModel(
-          physical_camera->name,
-          "drake/manipulation/models/xtion_description/urdf/xtion.urdf");
+      physical_camera->name,
+      "drake/manipulation/models/xtion_description/urdf/xtion.urdf");
   int xtion_id = tree_builder->AddModelInstanceToFrame(
       "xtion", physical_camera->fixture_frame,
       drake::multibody::joints::kFixed);
@@ -81,10 +81,11 @@ void AddCamera(WorldSimTreeBuilder<double>* tree_builder,
       physical_camera->fixture_frame->get_transform_to_body().matrix());
 }
 
-
 std::unique_ptr<RigidBodyTree<double>> BuildCombinedTree(
-    ModelInstanceInfo<double>* iiwa_instance, ModelInstanceInfo<double>* wsg_instance,
-    ModelInstanceInfo<double>* box_instance, PhysicalCamera<double>* physical_camera) {
+    ModelInstanceInfo<double>* iiwa_instance,
+    ModelInstanceInfo<double>* wsg_instance,
+    ModelInstanceInfo<double>* box_instance,
+    PhysicalCamera<double>* physical_camera) {
   auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>();
 
   // Adds models to the simulation builder. Instances of these models can be
@@ -97,14 +98,12 @@ std::unique_ptr<RigidBodyTree<double>> BuildCombinedTree(
       "table",
       "drake/examples/kuka_iiwa_arm/models/table/"
       "extra_heavy_duty_table_surface_only_collision.sdf");
-  tree_builder->StoreDrakeModel(
-      "box",
-      "drake/examples/kuka_iiwa_arm/models/objects/"
-      "block_for_pick_and_place.urdf");
-  tree_builder->StoreDrakeModel(
-      "wsg",
-      "drake/manipulation/models/wsg_50_description"
-      "/sdf/schunk_wsg_50_ball_contact.sdf");
+  tree_builder->StoreDrakeModel("box",
+                                "drake/examples/kuka_iiwa_arm/models/objects/"
+                                "block_for_pick_and_place.urdf");
+  tree_builder->StoreDrakeModel("wsg",
+                                "drake/manipulation/models/wsg_50_description"
+                                "/sdf/schunk_wsg_50_ball_contact.sdf");
 
   // Build a world with two fixed tables.  A box is placed one on
   // table, and the iiwa arm is fixed to the other.
@@ -154,17 +153,22 @@ std::unique_ptr<RigidBodyTree<double>> BuildCombinedTree(
 }
 
 std::unique_ptr<RigidBodyPlant<double>> BuildCombinedPlant(
-    ModelInstanceInfo<double>* iiwa_instance, ModelInstanceInfo<double>* wsg_instance,
-    ModelInstanceInfo<double>* box_instance, PhysicalCamera<double>* physical_camera) {
-  std::unique_ptr<RigidBodyPlant<double>> plant = std::make_unique<RigidBodyPlant<double>>(
-      BuildCombinedTree(iiwa_instance, wsg_instance, box_instance, physical_camera));
+    ModelInstanceInfo<double>* iiwa_instance,
+    ModelInstanceInfo<double>* wsg_instance,
+    ModelInstanceInfo<double>* box_instance,
+    PhysicalCamera<double>* physical_camera) {
+  std::unique_ptr<RigidBodyPlant<double>> plant =
+      std::make_unique<RigidBodyPlant<double>>(BuildCombinedTree(
+          iiwa_instance, wsg_instance, box_instance, physical_camera));
 
   return plant;
 }
 
 std::unique_ptr<RigidBodyPlant<double>> BuildCombinedPlant2(
-    ModelInstanceInfo<double>* iiwa_instance, ModelInstanceInfo<double>* wsg_instance,
-    ModelInstanceInfo<double>* box_instance, PhysicalCamera<double>* physical_camera) {
+    ModelInstanceInfo<double>* iiwa_instance,
+    ModelInstanceInfo<double>* wsg_instance,
+    ModelInstanceInfo<double>* box_instance,
+    PhysicalCamera<double>* physical_camera) {
   auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>();
 
   // Adds models to the simulation builder. Instances of these models can be
@@ -177,14 +181,12 @@ std::unique_ptr<RigidBodyPlant<double>> BuildCombinedPlant2(
       "table",
       "drake/examples/kuka_iiwa_arm/models/table/"
       "extra_heavy_duty_table_surface_only_collision.sdf");
-  tree_builder->StoreDrakeModel(
-      "box",
-      "drake/examples/kuka_iiwa_arm/models/objects/"
-      "block_for_pick_and_place.urdf");
-  tree_builder->StoreDrakeModel(
-      "wsg",
-      "drake/manipulation/models/wsg_50_description"
-      "/sdf/schunk_wsg_50_ball_contact.sdf");
+  tree_builder->StoreDrakeModel("box",
+                                "drake/examples/kuka_iiwa_arm/models/objects/"
+                                "block_for_pick_and_place.urdf");
+  tree_builder->StoreDrakeModel("wsg",
+                                "drake/manipulation/models/wsg_50_description"
+                                "/sdf/schunk_wsg_50_ball_contact.sdf");
 
   // Build a world with two fixed tables.  A box is placed one on
   // table, and the iiwa arm is fixed to the other.
@@ -230,39 +232,45 @@ std::unique_ptr<RigidBodyPlant<double>> BuildCombinedPlant2(
   const Eigen::Vector3d kCamRotation(-M_PI_2, 0, 0);
   AddCamera(tree_builder.get(), physical_camera, kCamBase, kCamRotation);
 
-//  std::unique_ptr<RigidBodyTree<double>> tree = tree_builder->Build();
-//  RigidBodyTreeRemoval filter(tree);
+  //  std::unique_ptr<RigidBodyTree<double>> tree = tree_builder->Build();
+  //  RigidBodyTreeRemoval filter(tree);
 
   // Add the point cloud filter.
-//  RigidBodyTree<double>* tree_ptr = tree_builder->mutable_tree();
-//  std::unique_ptr<RigidBodyTree<double>> tree_ptr = std::make_unique<RigidBodyTree<double>>(tree_builder->mutable_tree());
-//  RigidBodyTreeRemoval filter();
+  //  RigidBodyTree<double>* tree_ptr = tree_builder->mutable_tree();
+  //  std::unique_ptr<RigidBodyTree<double>> tree_ptr =
+  //  std::make_unique<RigidBodyTree<double>>(tree_builder->mutable_tree());
+  //  RigidBodyTreeRemoval filter();
 
-//  std::unique_ptr<RigidBodyTree<double>> tree = tree_builder->Build();
-//  std::unique_ptr<RigidBodyPlant<double>> plant = std::make_unique<RigidBodyPlant<double>>(tree.get());
+  //  std::unique_ptr<RigidBodyTree<double>> tree = tree_builder->Build();
+  //  std::unique_ptr<RigidBodyPlant<double>> plant =
+  //  std::make_unique<RigidBodyPlant<double>>(tree.get());
 
-//  std::unique_ptr<RigidBodyPlant<double>> plant2 = std::make_unique<RigidBodyPlant<double>>(tree);
+  //  std::unique_ptr<RigidBodyPlant<double>> plant2 =
+  //  std::make_unique<RigidBodyPlant<double>>(tree);
 
-//  std::unique_ptr<RigidBodyPlant<double>> plant(tree);
+  //  std::unique_ptr<RigidBodyPlant<double>> plant(tree);
 
-//  auto plant = std::make_unique<RigidBodyPlant<double>>(tree);
-//  auto plant = std::make_unique<RigidBodyPlant<double>>(tree_builder->Build());
+  //  auto plant = std::make_unique<RigidBodyPlant<double>>(tree);
+  //  auto plant =
+  //  std::make_unique<RigidBodyPlant<double>>(tree_builder->Build());
 
-//  RigidBodyTreeRemoval filter(tree_builder->mutable_tree(tree));
+  //  RigidBodyTreeRemoval filter(tree_builder->mutable_tree(tree));
 
-//  std::unique_ptr<RigidBodyPlant<double>> plant = std::make_unique<RigidBodyPlant<double>>(tree_builder->Build());
+  //  std::unique_ptr<RigidBodyPlant<double>> plant =
+  //  std::make_unique<RigidBodyPlant<double>>(tree_builder->Build());
 
   // Does not work. Why?
-//  std::unique_ptr<const RigidBodyTree<double>> tree;
-//  std::unique_ptr<RigidBodyPlant<double>> plant = std::make_unique<RigidBodyPlant<double>>(tree);
+  //  std::unique_ptr<const RigidBodyTree<double>> tree;
+  //  std::unique_ptr<RigidBodyPlant<double>> plant =
+  //  std::make_unique<RigidBodyPlant<double>>(tree);
 
   std::unique_ptr<RigidBodyPlant<double>> plant;
 
   return plant;
 }
 
-//template <typename T>
-//std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
+// template <typename T>
+// std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
 //    ModelInstanceInfo<T>* iiwa_instance, ModelInstanceInfo<T>* wsg_instance,
 //    ModelInstanceInfo<T>* box_instance, PhysicalCamera<T>* physical_camera) {
 //  auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>();
@@ -332,13 +340,16 @@ std::unique_ptr<RigidBodyPlant<double>> BuildCombinedPlant2(
 //
 //  // Add the point cloud filter.
 ////  RigidBodyTree<double>* tree_ptr = tree_builder->mutable_tree();
-////  std::unique_ptr<RigidBodyTree<double>> tree_ptr = std::make_unique<RigidBodyTree<double>>(tree_builder->mutable_tree());
+////  std::unique_ptr<RigidBodyTree<double>> tree_ptr =
+///std::make_unique<RigidBodyTree<double>>(tree_builder->mutable_tree());
 ////  RigidBodyTreeRemoval filter();
 //
 //  std::unique_ptr<RigidBodyTree<double>> tree = tree_builder->Build();
-////  std::unique_ptr<RigidBodyPlant<double>> plant = std::make_unique<RigidBodyPlant<double>>(tree.get());
+////  std::unique_ptr<RigidBodyPlant<double>> plant =
+///std::make_unique<RigidBodyPlant<double>>(tree.get());
 //
-////  std::unique_ptr<RigidBodyPlant<double>> plant2 = std::make_unique<RigidBodyPlant<double>>(tree);
+////  std::unique_ptr<RigidBodyPlant<double>> plant2 =
+///std::make_unique<RigidBodyPlant<double>>(tree);
 //
 ////  std::unique_ptr<RigidBodyPlant<double>> plant;
 //
@@ -348,9 +359,10 @@ std::unique_ptr<RigidBodyPlant<double>> BuildCombinedPlant2(
 //  return plant;
 //}
 
-void ConnectCamera(systems::DiagramBuilder<double>& builder, PhysicalCamera<double>* physical_camera,
-               IiwaAndWsgPlantWithStateEstimator<double>* model, drake::lcm::DrakeLcm* lcm)
-{
+void ConnectCamera(systems::DiagramBuilder<double>& builder,
+                   PhysicalCamera<double>* physical_camera,
+                   IiwaAndWsgPlantWithStateEstimator<double>* model,
+                   drake::lcm::DrakeLcm* lcm) {
   const double depth_range_near = 0.2;
   const double depth_range_far = 1.5;
   const double fov_y = M_PI_4;
@@ -397,7 +409,7 @@ void ConnectCamera(systems::DiagramBuilder<double>& builder, PhysicalCamera<doub
   builder.Connect(image_to_lcm_message->image_array_t_msg_output_port(),
                   image_lcm_pub->get_input_port());
 
-    // Make the camera description message.
+  // Make the camera description message.
   //  anzu::camera_description_t desc{};
   //  desc.camera_name = camera_name;
   //  desc.lcm_channel_name = lcm_image_channel;
@@ -456,32 +468,40 @@ int do_main() {
   ModelInstanceInfo<double> iiwa_instance, wsg_instance, box_instance;
 
   // Point cloud filtering.
-//  RigidBodyTreeRemoval filter(BuildCombinedTree(&iiwa_instance, &wsg_instance, &box_instance, physical_camera.get()));
-//  std::unique_ptr<RigidBodyTreeRemoval> filter_ptr(BuildCombinedTree(&iiwa_instance, &wsg_instance, &box_instance, physical_camera.get()));
+  //  RigidBodyTreeRemoval filter(BuildCombinedTree(&iiwa_instance,
+  //  &wsg_instance, &box_instance, physical_camera.get()));
+  //  std::unique_ptr<RigidBodyTreeRemoval>
+  //  filter_ptr(BuildCombinedTree(&iiwa_instance, &wsg_instance, &box_instance,
+  //  physical_camera.get()));
 
   std::unique_ptr<int> i(new int(5));
 
   // Build the plant.
   std::unique_ptr<systems::RigidBodyPlant<double>> model_ptr =
-      BuildCombinedPlant(&iiwa_instance, &wsg_instance, &box_instance, physical_camera.get());
+      BuildCombinedPlant(&iiwa_instance, &wsg_instance, &box_instance,
+                         physical_camera.get());
   model_ptr->set_name("plant");
 
   // Construct the diagram.
   systems::DiagramBuilder<double> builder;
   auto model =
-        builder.template AddSystem<IiwaAndWsgPlantWithStateEstimator<double>>(
-            std::move(model_ptr), iiwa_instance, wsg_instance, box_instance);
+      builder.template AddSystem<IiwaAndWsgPlantWithStateEstimator<double>>(
+          std::move(model_ptr), iiwa_instance, wsg_instance, box_instance);
   model->set_name("plant_with_state_estimator");
 
   const RigidBodyTree<double>& tree = model->get_plant().get_rigid_body_tree();
 
-  RigidBodyTreeRemoval* filter = builder.AddSystem<RigidBodyTreeRemoval>(BuildCombinedTree(&iiwa_instance, &wsg_instance, &box_instance, physical_camera.get()));
-  builder.Connect(model->get_output_port_plant_state(), filter->get_input_port(1));
+  RigidBodyTreeRemoval* filter =
+      builder.AddSystem<RigidBodyTreeRemoval>(BuildCombinedTree(
+          &iiwa_instance, &wsg_instance, &box_instance, physical_camera.get()));
+  builder.Connect(model->get_output_port_plant_state(),
+                  filter->get_input_port(1));
   // TODO(andreas): Add point cloud as input.
 
   // Add the visualizer.
   drake::lcm::DrakeLcm lcm;
-  systems::DrakeVisualizer* visualizer = builder.AddSystem<systems::DrakeVisualizer>(tree, &lcm);
+  systems::DrakeVisualizer* visualizer =
+      builder.AddSystem<systems::DrakeVisualizer>(tree, &lcm);
   visualizer->set_name("visualizer");
   builder.Connect(model->get_output_port_plant_state(),
                   visualizer->get_input_port(0));
@@ -489,15 +509,13 @@ int do_main() {
 
   // Create the command subscriber and status publisher.
   auto iiwa_command_sub = builder.AddSystem(
-      LcmSubscriberSystem::Make<lcmt_iiwa_command>("IIWA_COMMAND",
-                                                                 &lcm));
+      LcmSubscriberSystem::Make<lcmt_iiwa_command>("IIWA_COMMAND", &lcm));
   iiwa_command_sub->set_name("iiwa_command_subscriber");
   auto iiwa_command_receiver = builder.AddSystem<IiwaCommandReceiver>();
   iiwa_command_receiver->set_name("iwwa_command_receiver");
 
   auto iiwa_status_pub = builder.AddSystem(
-      LcmPublisherSystem::Make<lcmt_iiwa_status>("IIWA_STATUS",
-                                                               &lcm));
+      LcmPublisherSystem::Make<lcmt_iiwa_status>("IIWA_STATUS", &lcm));
   iiwa_status_pub->set_name("iiwa_status_publisher");
   iiwa_status_pub->set_publish_period(kIiwaLcmStatusPeriod);
   auto iiwa_status_sender = builder.AddSystem<IiwaStatusSender>();
@@ -505,8 +523,7 @@ int do_main() {
 
   std::vector<int> instance_ids = {iiwa_instance.instance_id};
   auto external_torque_converter =
-      builder.AddSystem<IiwaContactResultsToExternalTorque>(
-          tree, instance_ids);
+      builder.AddSystem<IiwaContactResultsToExternalTorque>(tree, instance_ids);
 
   // TODO(siyuan): Connect this to kuka_planner runner once it generates
   // reference acceleration.
@@ -537,14 +554,14 @@ int do_main() {
   builder.Connect(iiwa_status_sender->get_output_port(0),
                   iiwa_status_pub->get_input_port());
 
-  auto wsg_command_sub = builder.AddSystem(
-      LcmSubscriberSystem::Make<lcmt_schunk_wsg_command>(
+  auto wsg_command_sub =
+      builder.AddSystem(LcmSubscriberSystem::Make<lcmt_schunk_wsg_command>(
           "SCHUNK_WSG_COMMAND", &lcm));
   wsg_command_sub->set_name("wsg_command_subscriber");
   auto wsg_controller = builder.AddSystem<SchunkWsgController>();
 
-  auto wsg_status_pub = builder.AddSystem(
-      LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
+  auto wsg_status_pub =
+      builder.AddSystem(LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
           "SCHUNK_WSG_STATUS", &lcm));
   wsg_status_pub->set_name("wsg_status_publisher");
   wsg_status_pub->set_publish_period(
@@ -595,13 +612,13 @@ int do_main() {
   auto sys = builder.Build();
 
   // Print the diagram.
-//  drake::log()->info(" diagram: {}", sys->GetGraphvizString());
+  //  drake::log()->info(" diagram: {}", sys->GetGraphvizString());
 
   systems::Simulator<double> simulator(*sys);
 
   double rk_dt = 5e-5;
   simulator.reset_integrator<drake::systems::RungeKutta2Integrator<double>>(
-            *sys, rk_dt, &simulator.get_mutable_context());
+      *sys, rk_dt, &simulator.get_mutable_context());
 
   lcm.StartReceiveThread();
   simulator.Initialize();
@@ -616,13 +633,12 @@ int do_main() {
 }  // namespace perception
 }  // namespace drake
 
-
 int main(int argc, char* argv[]) {
-//  gflags::SetUsageMessage(
-//      "A simple acrobot demo using Drake's MultibodyTree,"
-//      "with SceneGraph visualization. "
-//      "Launch drake-visualizer before running this example.");
+  //  gflags::SetUsageMessage(
+  //      "A simple acrobot demo using Drake's MultibodyTree,"
+  //      "with SceneGraph visualization. "
+  //      "Launch drake-visualizer before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-//  drake::logging::HandleSpdlogGflags();
+  //  drake::logging::HandleSpdlogGflags();
   return drake::perception::filtering::do_main();
 }

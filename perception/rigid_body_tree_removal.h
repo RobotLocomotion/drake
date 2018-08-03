@@ -35,15 +35,16 @@ class RigidBodyTreeRemoval final : public systems::LeafSystem<double> {
   /// Returns the vector valued input port that contains a vector
   /// of `q, v` corresponding to the positions and velocities associated with
   /// a RigidBodyTree.
-  const systems::InputPortDescriptor<double>& state_input_port() const {
+  const systems::InputPort<double>& state_input_port() const {
     return this->get_input_port(state_input_port_index_);
   }
 
   /// Returns the abstract valued input port that contains a PointCloud.
-  const systems::InputPortDescriptor<double>& point_cloud_input_port() const {
+  const systems::InputPort<double>& point_cloud_input_port() const {
     return this->get_input_port(point_cloud_input_port_index_);
   }
 
+  /// Returns the abstract valued output port that contains a PointCloud.
   const systems::OutputPort<double>& point_cloud_output_port() const {
     return LeafSystem<double>::get_output_port(0);
   }
