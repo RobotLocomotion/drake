@@ -18,6 +18,7 @@
 #include "drake/systems/primitives/random_source.h"
 #include "drake/systems/primitives/saturation.h"
 #include "drake/systems/primitives/signal_logger.h"
+#include "drake/systems/primitives/trajectory_source.h"
 #include "drake/systems/primitives/wrap_to_system.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 
@@ -147,6 +148,13 @@ PYBIND11_MODULE(primitives, m) {
       m, "ExponentialRandomSource")
       .def(py::init<int, double>(), py::arg("num_outputs"),
            py::arg("sampling_interval_sec"));
+
+  py::class_<TrajectorySource<double>, LeafSystem<double>>(
+        m, "TrajectorySource")
+        .def(py::init<const trajectories::Trajectory<double>&, int, bool>(),
+          py::arg("trajectory"),
+          py::arg("output_derivative_order") = 0,
+          py::arg("zero_derivatives_beyond_limits") = true);
 
   m.def("AddRandomInputs", &AddRandomInputs, py::arg("sampling_interval_sec"),
         py::arg("builder"));
