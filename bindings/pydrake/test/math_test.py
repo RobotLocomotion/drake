@@ -86,10 +86,13 @@ class TestBarycentricMesh(unittest.TestCase):
             self.assertEqual(f_core(a, b), f_cpp(a, b))
 
     def test_rotation_matrix(self):
+        # - Constructors.
         R = mut.RotationMatrix()
         self.assertTrue(np.allclose(R.matrix(), np.eye(3)))
         self.assertTrue(np.allclose(
             mut.RotationMatrix.Identity().matrix(), np.eye(3)))
+        R = mut.RotationMatrix(R=np.eye(3))
+        self.assertTrue(np.allclose(R.matrix(), np.eye(3)))
         R = mut.RotationMatrix(quaternion=Quaternion.Identity())
         self.assertTrue(np.allclose(R.matrix(), np.eye(3)))
         R = mut.RotationMatrix(rpy=mut.RollPitchYaw(rpy=[0, 0, 0]))
@@ -104,11 +107,17 @@ class TestBarycentricMesh(unittest.TestCase):
         self.assertTrue(np.allclose(R_I.matrix(), np.eye(3)))
 
     def test_roll_pitch_yaw(self):
+        # - Constructors.
         rpy = mut.RollPitchYaw(rpy=[0, 0, 0])
         self.assertTrue(np.allclose(rpy.vector(), [0, 0, 0]))
         rpy = mut.RollPitchYaw(roll=0, pitch=0, yaw=0)
         self.assertTupleEqual(
             (rpy.roll_angle(), rpy.pitch_angle(), rpy.yaw_angle()),
             (0, 0, 0))
+        rpy = mut.RollPitchYaw(R=mut.RotationMatrix())
+        self.assertTrue(np.allclose(rpy.vector(), [0, 0, 0]))
         q_I = Quaternion()
+        rpy_q_I = mut.RollPitchYaw(quaternion=q_I)
+        self.assertTrue(np.allclose(rpy_q_I.vector(), [0, 0, 0]))
+        # - Additional properties.
         self.assertTrue(np.allclose(rpy.ToQuaternion().wxyz(), q_I.wxyz()))
