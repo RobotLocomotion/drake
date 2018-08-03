@@ -174,7 +174,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     n = problem_->num_vars();
 
     // The IPOPT interface defines eval_f() and eval_grad_f() as
-    // ouputting a single number for the result, and the size of the
+    // outputting a single number for the result, and the size of the
     // output gradient array at the same order as the x variables.
     // Initialize the cost cache with those dimensions.
     cost_cache_.reset(new ResultCache(n, 1, n));
@@ -510,7 +510,7 @@ SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
   app->RethrowNonIpoptException(true);
 
-  const double tol = 1e-10;  // Note: SNOPT is only 1e-6, but in #3712 we
+  const double tol = 1.05e-10;  // Note: SNOPT is only 1e-6, but in #3712 we
   // diagnosed that the CompareMatrices tolerance needed to be the sqrt of the
   // constr_viol_tol
   app->Options()->SetNumericValue("tol", tol);

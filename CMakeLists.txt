@@ -14,6 +14,8 @@ if(CYGWIN OR NOT UNIX)
   message(FATAL_ERROR "Cygwin and non-Unix platforms are NOT supported")
 endif()
 
+# The version passed to find_package(Bazel) should match the
+# minimum_bazel_version value in the call to versions.check() in WORKSPACE.
 set(MINIMUM_BAZEL_VERSION 0.14.1)
 find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE REQUIRED)
 
@@ -56,18 +58,9 @@ endif()
 set(BAZEL_ENV)
 
 if(NOT APPLE)
-  # Patches applied to the compiler by particular distributions may have broken
-  # the behavior expected by bazel when identifying the built-in include
-  # directories, so call a wrapper script that intercepts certain calls and
-  # fixes the output.
-  foreach(LANG C CXX)
-    set(COMPILER ${CMAKE_${LANG}_COMPILER})
-    configure_file(tools/cc_toolchain/wrapper.sh.in ${LANG}_wrapper.sh @ONLY)
-  endforeach()
-
   list(APPEND BAZEL_ENV
-    "CC=${CMAKE_CURRENT_BINARY_DIR}/C_wrapper.sh"
-    "CXX=${CMAKE_CURRENT_BINARY_DIR}/CXX_wrapper.sh"
+    "CC=${CMAKE_C_COMPILER}"
+    "CXX=${CMAKE_CXX_COMPILER}"
   )
 endif()
 
@@ -105,7 +98,7 @@ set(BAZEL_OUTPUT_BASE
   "${BAZEL_OUTPUT_BASE}/_bazel_$ENV{USER}/${PROJECT_BINARY_DIR_MD5}"
 )
 
-configure_file(tools/cc_toolchain/bazel.rc.in bazel.rc @ONLY)
+configure_file(cmake/bazel.rc.in bazel.rc @ONLY)
 
 set(BAZEL_STARTUP_ARGS "--bazelrc=${CMAKE_CURRENT_BINARY_DIR}/bazel.rc")
 

@@ -610,13 +610,18 @@ class MosekSolver::License {
     }
     DRAKE_DEMAND(mosek_env_ != nullptr);
 
-    // Acquire the license for the base MOSEK system so that we can
-    // fail fast if the license file is missing or the server is
-    // unavailable. Any additional features should be checked out
-    // later by MSK_optimizetrm if needed (so there's still the
-    // possiblity of later failure at that stage if the desired
-    // feature is unavailable or another error occurs).
-    rescode = MSK_checkoutlicense(mosek_env_, MSK_FEATURE_PTS);
+    const int num_tries = 3;
+    rescode = MSK_RES_TRM_INTERNAL;
+    for (int i = 0; i < num_tries && rescode != MSK_RES_OK; ++i) {
+      // Acquire the license for the base MOSEK system so that we can
+      // fail fast if the license file is missing or the server is
+      // unavailable. Any additional features should be checked out
+      // later by MSK_optimizetrm if needed (so there's still the
+      // possibility of later failure at that stage if the desired
+      // feature is unavailable or another error occurs).
+      rescode = MSK_checkoutlicense(mosek_env_, MSK_FEATURE_PTS);
+    }
+
     if (rescode != MSK_RES_OK) {
       throw std::runtime_error("Could not acquire MOSEK license.");
     }
@@ -747,7 +752,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   }
 
   SolverResult solver_result(id());
-  // TODO(hongkai.dai@tri.global) : Add MOSEK paramaters.
+  // TODO(hongkai.dai@tri.global) : Add MOSEK parameters.
   // Mosek parameter are added by enum, not by string.
   if (rescode == MSK_RES_OK) {
     MSKsolstae solution_status;

@@ -47,6 +47,7 @@ drake_cc_package_library(
         ":maliput_railcar",
         ":mobil_planner",
         ":monolane_onramp_merge",
+        ":multilane_onramp_merge",
         ":pose_selector",
         ":prius_vis",
         ":pure_pursuit",
@@ -286,6 +287,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "multilane_onramp_merge",
+    srcs = ["multilane_onramp_merge.cc"],
+    hdrs = ["multilane_onramp_merge.h"],
+    deps = [
+        "//automotive/maliput/api",
+        "//automotive/maliput/multilane",
+    ],
+)
+
+drake_cc_library(
     name = "pose_selector",
     srcs = ["pose_selector.cc"],
     hdrs = ["pose_selector.h"],
@@ -513,6 +524,7 @@ drake_cc_binary(
         ":automotive_simulator",
         ":create_trajectory_params",
         ":monolane_onramp_merge",
+        ":multilane_onramp_merge",
         "//automotive/maliput/dragway",
         "//common:text_logging_gflags",
         "//lcm",
@@ -678,6 +690,16 @@ drake_cc_googletest(
     name = "monolane_onramp_merge_test",
     deps = [
         ":monolane_onramp_merge",
+        "//automotive/maliput/utility",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multilane_onramp_merge_test",
+    deps = [
+        ":multilane_onramp_merge",
+        "//automotive/maliput/api",
+        "//automotive/maliput/api/test_utilities",
         "//automotive/maliput/utility",
     ],
 )

@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load(":fortran.bzl", "fortran_library")
+
 licenses(["by_exception_only"])  # SNOPT
 
 # In some versions of SNOPT, this header provides the function declarations to
@@ -155,4 +157,62 @@ cc_library(
     # By convention, SNOPT header #includes are not fully qualified.
     strip_include_prefix = _LIBF2C,
     visibility = ["//visibility:public"],
+)
+
+# -----------------------------------------------------------------------------
+# What follows are build rules for the native Fortran version of SNOPT, not
+# using the f2c wrapper.  Only one of the above (f2c) or below (snopt_cwrap)
+# revision of SNOPT should be used by Drake.
+# -----------------------------------------------------------------------------
+
+fortran_library(
+    name = "fortran_objects",
+    srcs = [
+        "interfaces/src/snopt_wrapper.f90",
+    ] + glob(
+        ["src/*.f"],
+        exclude = [
+            # Only used for SQOPT.
+            "src/snopth.f",
+            # Not listed in snopt/src/Submakefile.
+            "src/sn27lu77.f",
+            "src/sn27lu90.f",
+            # TODO(jwnimmer-tri) Possibly we should exclude snblas.f here as
+            # well, in order to use a more custom (system) build of BLAS.
+        ],
+    ),
+    # Link statically per note (1) above.
+    linkstatic = 1,
+    # Always link the entirety of SNOPT.
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "snopt_cwrap",
+    srcs = [
+        "interfaces/src/snopt_cwrap.c",
+    ],
+    hdrs = [
+        "interfaces/include/snopt.h",
+        "interfaces/include/snopt_cwrap.h",
+    ],
+    includes = [
+        "interfaces/include",
+    ],
+    copts = [
+        "-w",
+        # Hide symbols per note (2) above.  The snopt_cwrap.c file isn't
+        # proprietary (it is published at github.com/snopt/snopt-interface),
+        # but perhaps keeping these functions obscured helps serve the overall
+        # goal of obscuring the calls into the SNOPT object code even more.
+        "-fvisibility=hidden",
+    ],
+    # Link statically per note (1) above.
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":fortran_objects",
+    ],
+    # Always link the entirety of SNOPT.
+    alwayslink = 1,
 )

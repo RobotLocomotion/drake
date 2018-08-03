@@ -6,8 +6,8 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/manipulation/util/bot_core_lcm_encode_decode.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/math/transform.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 namespace drake {
@@ -108,11 +108,11 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
     const DrakeJoint& root_joint = root_body_.getJoint();
 
     // Pose of floating base in the world frame.
-    const math::Transform<double> X_WB(DecodePose(msg.pose));
+    const math::RigidTransform<double> X_WB(DecodePose(msg.pose));
     // Spatial velocity of base in the world frame.
     const Vector6<double> V_WB_W = DecodeTwist(msg.twist);
     // J is the root_joint frame.
-    const math::Transform<double> X_JW(
+    const math::RigidTransform<double> X_JW(
         root_joint.get_transform_to_parent_body().inverse());
     const math::RotationMatrix<double> R_JW = X_JW.rotation();
     // Reexpress V_WB_W in J frame.
@@ -120,7 +120,7 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
     V_WB_J.head<3>() = R_JW * V_WB_W.head<3>();
     V_WB_J.tail<3>() = R_JW * V_WB_W.tail<3>();
 
-    const math::Transform<double> X_JB = X_JW * X_WB;
+    const math::RigidTransform<double> X_JB = X_JW * X_WB;
     const math::RotationMatrix<double> R_JB = X_JB.rotation();
 
     const DrakeJoint& floating_joint = root_body_.getJoint();

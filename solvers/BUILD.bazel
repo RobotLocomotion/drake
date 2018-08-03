@@ -6,6 +6,7 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
+    "drake_cc_test",
 )
 load("//tools/skylark:test_tags.bzl", "gurobi_test_tags", "mosek_test_tags")
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -589,6 +590,7 @@ drake_cc_library(
         "//tools:with_gurobi": [
             ":mathematical_program_api",
             "//math:eigen_sparse_triplet",
+            "//common:scoped_singleton",
             "@gurobi//:gurobi_c",
         ],
         "//conditions:default": [
@@ -943,11 +945,13 @@ drake_cc_googletest(
         "test/gurobi_solver_test.cc",
     ],
     tags = gurobi_test_tags(),
+    use_default_main = False,
     deps = [
         ":gurobi_solver",
         ":linear_program_examples",
         ":mathematical_program",
         ":mathematical_program_test_util",
+        ":mixed_integer_optimization_util",
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         "//common/test_utilities:eigen_matrix_compare",

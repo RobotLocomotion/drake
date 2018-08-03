@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load("@cc//:compiler.bzl", "COMPILER_ID")
+
 # Keep CXX_FLAGS, CLANG_FLAGS, and GCC_FLAGS in sync with CMAKE_CXX_FLAGS in
 # matlab/cmake/flags.cmake.
 
@@ -16,7 +18,7 @@ CXX_FLAGS = [
 ]
 
 # The CLANG_FLAGS will be enabled for all C++ rules in the project when
-# building with clang.
+# building with clang (including the Apple LLVM compiler).
 CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=inconsistent-missing-override",
     "-Werror=non-virtual-dtor",
@@ -52,23 +54,11 @@ def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
     extra_gcc_flags = []
     if cc_test:
         extra_gcc_flags = GCC_CC_TEST_FLAGS
-    return select({
-        "//tools/cc_toolchain:apple": (
-            CLANG_FLAGS + rule_copts + rule_clang_copts
-        ),
-        "//tools/cc_toolchain:clang4.0-linux": (
-            CLANG_FLAGS + rule_copts + rule_clang_copts
-        ),
-        "//tools/cc_toolchain:gcc5-linux": (
-            GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts
-        ),
-        "//tools/cc_toolchain:gcc6-linux": (
-            GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts
-        ),
-        "//conditions:default": (
-            rule_copts
-        ),
-    })
+    if COMPILER_ID.endswith("Clang"):
+        return CLANG_FLAGS + rule_copts + rule_clang_copts
+    if COMPILER_ID == "GNU":
+        return GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts
+    return rule_copts
 
 def _dsym_command(name):
     """Returns the command to produce .dSYM on macOS, or a no-op on Linux."""
@@ -467,13 +457,14 @@ def drake_cc_binary(
     )
 
     # Also generate the OS X debug symbol file for this binary.
+    tags = kwargs.pop("tags", [])
     native.genrule(
         name = name + "_dsym",
         srcs = [":" + name],
         outs = [name + ".dSYM"],
         output_to_bindir = 1,
         testonly = testonly,
-        tags = ["dsym"],
+        tags = tags + ["dsym"],
         visibility = ["//visibility:private"],
         cmd = _dsym_command(name),
     )
@@ -494,7 +485,7 @@ def drake_cc_binary(
             flaky = test_rule_flaky,
             linkstatic = linkstatic,
             args = test_rule_args,
-            tags = kwargs.pop("tags", []) + ["nolint"],
+            tags = tags + ["nolint"],
             **kwargs
         )
 

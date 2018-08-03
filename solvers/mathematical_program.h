@@ -2156,7 +2156,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Set the intial guess for ALL decision variables.
+   * Set the initial guess for ALL decision variables.
    * Note that variables begin with a default initial guess of NaN to indicate
    * that no guess is available.
    * @param x0 A vector of appropriate size (num_vars() x 1).
@@ -2199,11 +2199,11 @@ class MathematicalProgram {
    *
    * Supported solver names/options:
    *
-   * "SNOPT" -- Paramater names and values as specified in SNOPT
+   * "SNOPT" -- Parameter names and values as specified in SNOPT
    * User's Guide section 7.7 "Description of the optional parameters",
    * used as described in section 7.5 for snSet().
    *
-   * "IPOPT" -- Paramater names and values as specified in IPOPT users
+   * "IPOPT" -- Parameter names and values as specified in IPOPT users
    * guide section "Options Reference"
    * http://www.coin-or.org/Ipopt/documentation/node40.html
    *
@@ -2413,7 +2413,7 @@ class MathematicalProgram {
   const Eigen::VectorXd& initial_guess() const { return x_initial_guess_; }
 
   /** Returns the index of the decision variable. Internally the solvers thinks
-   * all variables are stored in an array, and it acceses each individual
+   * all variables are stored in an array, and it accesses each individual
    * variable using its index. This index is used when adding constraints
    * and costs for each solver.
    * @pre{@p var is a decision variable in the mathematical program, otherwise
@@ -2423,7 +2423,7 @@ class MathematicalProgram {
 
   /**
    * Returns the indices of the decision variables. Internally the solvers
-   * thinks all variables are stored in an array, and it acceses each individual
+   * thinks all variables are stored in an array, and it accesses each individual
    * variable using its index. This index is used when adding constraints
    * and costs for each solver.
    * @pre{@p vars are decision variables in the mathematical program, otherwise
@@ -2436,7 +2436,7 @@ class MathematicalProgram {
   int num_indeterminates() const { return indeterminates_.rows(); }
 
   /** Returns the index of the indeterminate. Internally a solver
-   * thinks all indeterminates are stored in an array, and it acceses each
+   * thinks all indeterminates are stored in an array, and it accesses each
    * individual indeterminate using its index. This index is used when adding
    * constraints and costs for each solver.
    * @pre @p var is a indeterminate in the mathematical program,

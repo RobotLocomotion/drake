@@ -48,7 +48,7 @@ config_setting(
 )
 
 # IPOPT is an open-source solver, and is included in the Drake build by
-# default. The IPOPT solver is irrelvant to some users of MathematicalProgram,
+# default. The IPOPT solver is irrelevant to some users of MathematicalProgram,
 # so we provide a hidden switch to shut it off for developers who don't
 # actually need it.  This is not a supported configuration. Use at your own
 # risk: --define=NO_IPOPT=ON
@@ -58,7 +58,7 @@ config_setting(
 )
 
 # NLOPT is an open-source solver, and is included in the Drake build by
-# default. The NLOPT solver is irrelvant to some users of MathematicalProgram,
+# default. The NLOPT solver is irrelevant to some users of MathematicalProgram,
 # so we provide a hidden switch to shut it off for developers who don't
 # actually need it.  This is not a supported configuration. Use at your own
 # risk: --define=NO_NLOPT=ON
@@ -68,7 +68,7 @@ config_setting(
 )
 
 # OSQP is an open-source solver, and is included in the Drake build by
-# default. The OSQP solver is irrelvant to some users of MathematicalProgram,
+# default. The OSQP solver is irrelevant to some users of MathematicalProgram,
 # so we provide a hidden switch to shut it off for developers who don't
 # actually need it.  This is not a supported configuration. Use at your own
 # risk: --define=NO_OSQP=ON

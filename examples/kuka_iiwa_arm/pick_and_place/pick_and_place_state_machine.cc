@@ -11,8 +11,8 @@
 #include "drake/common/text_logging.h"
 #include "drake/common/trajectories/piecewise_quaternion.h"
 #include "drake/manipulation/util/world_sim_tree_builder.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/math/transform.h"
 #include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_ik.h"
@@ -863,7 +863,7 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
     case PickAndPlaceState::kOpenGripper: {
       if (!wsg_act_.ActionStarted()) {
         const Isometry3<double>& obj_pose = env_state.get_object_pose();
-        math::Transform<double> X(obj_pose);
+        math::RigidTransform<double> X(obj_pose);
         math::RollPitchYaw<double> rpy(X.rotation());
         drake::log()->info("Object at: {} {}",
                            X.translation().transpose(),

@@ -88,7 +88,7 @@ class QpInverseDynamics {
   int num_basis_{0};
   int num_torque_{0};
   int num_variable_{0};
-  // One cost / eqaulity constraint term per body motion.
+  // One cost / equality constraint term per body motion.
   // For each dimension (row) of the desired body motion, it can be treated
   // as a cost term (Soft), skipped (SKip) or as an equality constraint (Hard)
   // depending on the given constraint type. If it's a Soft constraint, the

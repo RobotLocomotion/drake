@@ -160,7 +160,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   }
 
   // http://ab-initio.mit.edu/wiki/index.php/NLopt_Reference#Vector-valued_constraints
-  // explicity tells us that it's allocated m * n array elements
+  // explicitly tells us that it's allocated m * n array elements
   // before invoking this function.  It does not seem to have been
   // zeroed, and not all constraints will store gradients for all
   // decision variables (so don't leave junk in the other array

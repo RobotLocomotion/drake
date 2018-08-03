@@ -10,9 +10,9 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/math/transform.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/simulator.h"
@@ -178,10 +178,10 @@ class SingleMoveTests : public ::testing::TestWithParam<std::tuple<int, int>> {
     //   - T: Table frame of "place" table (center of the table top)
     const pick_and_place::WorldState& world_state = plant->world_state(
         sys->GetSubsystemContext(*plant, simulator.get_context()), 0);
-    const math::Transform<double> X_SO(world_state.get_object_pose());
-    const math::Transform<double> X_TS(
+    const math::RigidTransform<double> X_SO(world_state.get_object_pose());
+    const math::RigidTransform<double> X_TS(
         world_state.get_table_poses().back().inverse());
-    const math::Transform<double> X_TO = X_TS * X_SO;
+    const math::RigidTransform<double> X_TO = X_TS * X_SO;
     const math::RollPitchYaw<double> rpy_TO(X_TO.rotation());
 
     const Eigen::Vector3d p_TO_T_expected(0, 0, 0.5 * kTargetDimensions.z());

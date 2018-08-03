@@ -304,7 +304,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   /// Returns a constant reference to the subcontext that corresponds to the
   /// system @p subsystem.
   /// Classes inheriting from %Diagram need access to this method in order to
-  /// pass their constituent subsystems the apropriate subcontext. Aborts if
+  /// pass their constituent subsystems the appropriate subcontext. Aborts if
   /// @p subsystem is not actually a subsystem of this diagram.
   const Context<T>& GetSubsystemContext(const System<T>& subsystem,
                                         const Context<T>& context) const {
@@ -315,7 +315,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   /// Returns the subcontext that corresponds to the system @p subsystem.
   /// Classes inheriting from %Diagram need access to this method in order to
-  /// pass their constituent subsystems the apropriate subcontext. Aborts if
+  /// pass their constituent subsystems the appropriate subcontext. Aborts if
   /// @p subsystem is not actually a subsystem of this diagram.
   Context<T>& GetMutableSubsystemContext(const System<T>& subsystem,
                                          Context<T>* context) const {
@@ -442,7 +442,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     }
 
     // -- Add edges from the input and output port nodes to the subsystems that
-    //    actually service that port.  These edges are higlighted in blue
+    //    actually service that port.  These edges are highlighted in blue
     //    (input) and green (output), matching the port nodes.
     for (int i = 0; i < this->get_num_input_ports(); ++i) {
       const auto& port_id = input_port_ids_[i];
@@ -1493,7 +1493,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // they were registered. Index by SubsystemIndex.
   std::vector<std::unique_ptr<System<T>>> registered_systems_;
 
-  // Map to quickly satisify "What is the subsytem index of the child system?"
+  // Map to quickly satisfy "What is the subsystem index of the child system?"
   std::map<const System<T>*, SubsystemIndex> system_index_map_;
 
   // The ordered inputs and outputs of this Diagram. Index by InputPortIndex

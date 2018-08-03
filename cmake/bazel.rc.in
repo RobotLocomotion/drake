@@ -6,9 +6,6 @@
 #     bazel --bazelrc=@CMAKE_CURRENT_BINARY_DIR@/bazel.rc <command> <options>
 
 build --compilation_mode=@BAZEL_COMPILATION_MODE@
-build --crosstool_top=@bazel_tools//tools/cpp:toolchain
-build --cxxopt=@CMAKE_CXX14_STANDARD_COMPILE_OPTION@
-build --host_cxxopt=@CMAKE_CXX14_STANDARD_COMPILE_OPTION@
 build --python_path=@PYTHON_EXECUTABLE@
 build --symlink_prefix=/
 

@@ -6,6 +6,7 @@
 
 #include "drake/geometry/geometry_context.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
+#include "drake/geometry/query_results/signed_distance_pair.h"
 
 namespace drake {
 namespace geometry {
@@ -125,6 +126,59 @@ class QueryObject {
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
       const;
 
+  //@}
+
+  //---------------------------------------------------------------------------
+  /**
+   @anchor signed_distance_query
+   @name                   Signed Distance Queries
+
+   These queries provide φ(A, B), the signed distance between two objects A and
+   B.
+
+   If the objects do not overlap (i.e., A ⋂ B = ∅), φ > 0 and represents the
+   minimal distance between the two objects. More formally:
+   φ = min(|Aₚ - Bₚ|)
+   ∀ Aₚ ∈ A and Bₚ ∈ B. 
+   Note: the pair (Aₚ, Bₚ) is a "witness" of the distance.
+   The pair need not be unique (think of two parallel planes).
+
+   If the objects touch or overlap (i.e., A ⋂ B ≠ ∅), φ ≤ 0 and can be
+   interpreted as the negative penetration depth. It is the smallest length of
+   the vector v, such that by shifting one object along that vector relative to
+   the other, the two objects will no longer be overlapping. More formally,
+   φ(A, B) = -min |v|.
+   s.t (Tᵥ · A) ⋂ B = ∅
+   where Tᵥ is a rigid transformation that displaces A by the vector v, namely
+   Tᵥ · A = {u + v | ∀ u ∈ A}.
+   By implication, there exist points Aₚ and Bₚ on the surfaces of objects A and
+   B, respectively, such that Aₚ + v = Bₚ, Aₚ ∈ A ∩ B, Bₚ ∈ A ∩ B. These points
+   are the witnesses to the penetration.
+
+   This method is affected by collision filtering; geometry pairs that
+   have been filtered will not produce signed distance query results.
+
+   Note: the signed distance function is a continuous function with respect to
+   the pose of the objects.
+   */
+
+  //@{
+
+  /**
+   * Computes the signed distance together with the nearest points across all
+   * pairs of geometries in the world. Reports both the separating geometries
+   * and penetrating geometries. Notice that this is an O(N²) operation, where N
+   * is the number of geometries remaining in the world after applying collision
+   * filter. We report the distance between dynamic objects, and between dynamic
+   * and anchored objects. We DO NOT report the distance between two anchored 
+   * objects.
+   * @retval near_pairs The signed distance for all unfiltered geometry pairs.
+   * TODO(hongkai.dai): add a distance bound as an optional input, such that the
+   * function doesn't return the pairs whose signed distance is larger than the
+   * distance bound.
+   */
+  std::vector<SignedDistancePair<double>>
+  ComputeSignedDistancePairwiseClosestPoints() const;
   //@}
 
  private:
