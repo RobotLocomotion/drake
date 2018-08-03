@@ -460,7 +460,7 @@
       <material name="black">
         <color rgba=".2 .2 .2 1"/>
       </material>
-      <origin rpy="3.1415926518 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
     </visual>
     <collision>
       <geometry>
