@@ -795,7 +795,8 @@ class IntegratorBase {
 
 
   /**
-   * @name             Methods for dense output computation
+   * @name               Methods for dense output computation
+   * @anchor dense_output_computation
    * @{
    *
    * In general, dense output computations entail both CPU load and memory
@@ -804,6 +805,9 @@ class IntegratorBase {
    * are only carried out by explicit user request. The API to start and stop
    * a _dense integration_ process (i.e. a numerical integration process that
    * also computes dense output) is consistent with this design choice.
+   *
+   * Once dense integration is started, and until it is stopped, all subsequent
+   * integration steps taken will update the allocated dense output.
    */
 
   /**
@@ -814,7 +818,7 @@ class IntegratorBase {
    * @pre The system being integrated has continuous state.
    * @pre No dense integration is in progress (no dense output is held by the
    *      integrator)
-   * @throw std::logic_error if any of the preconditions is not met.
+   * @throws std::logic_error if any of the preconditions is not met.
    * @warning Dense integration may incur significant overhead.
    */
   void StartDenseIntegration() {
@@ -846,17 +850,17 @@ class IntegratorBase {
    * to the caller.
    *
    * @remarks This process is irreversible.
-   * @return A DenseOutput instance, i.e. a representation of the
-   *         continuous state trajectory of the system being integrated
-   *         that can be evaluated at any time within its extension. This
-   *         representation is defined starting at the context time of the
-   *         last StartDenseIntegration() call and finishing at the current
-   *         context time.
+   * @returns A DenseOutput instance, i.e. a representation of the
+   *          continuous state trajectory of the system being integrated
+   *          that can be evaluated at any time within its extension. This
+   *          representation is defined starting at the context time of the
+   *          last StartDenseIntegration() call and finishing at the current
+   *          context time.
    * @pre Dense integration is in progress (a dense output is held by this
    *      integrator, after a call to StartDenseIntegration()).
    * @post Previously held dense output is not updated nor referenced by
    *       the integrator anymore.
-   * @throw std::logic_error if any of the preconditions is not met.
+   * @throws std::logic_error if any of the preconditions is not met.
    */
   std::unique_ptr<DenseOutput<T>> StopDenseIntegration() {
     if (!dense_output_) {

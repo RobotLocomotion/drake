@@ -84,6 +84,10 @@ ExtractDoublesOrThrow(const std::vector<MatrixX<S>>& input_vector) {
 /// of the integration scheme being used for up to 3rd order schemes (see
 /// [Hairer, 1993]).
 ///
+/// From a performance standpoint, memory footprint and evaluation overhead
+/// (i.e. the computational cost of an evaluation) increase linearly and
+/// logarithmically with the amount of steps taken, respectively.
+///
 /// - [Engquist, 2105] B. Engquist. Encyclopedia of Applied and Computational
 ///                    Mathematics, p. 339, Springer, 2015.
 /// - [Hairer, 1993] E. Hairer, S. Nørsett and G. Wanner. Solving Ordinary
@@ -123,7 +127,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
     /// @param initial_state_derivative Initial state derivative vector
     ///                                 d𝐱/dt₀ at @p initial_time as a
     ///                                 column matrix.
-    /// @throw std::runtime_error
+    /// @throws std::runtime_error
     ///   if given @p initial_state 𝐱₀ is not a column matrix.<br>
     ///   if given @p initial_state_derivative d𝐱/t₀ is not a column
     ///   matrix.<br>
@@ -147,7 +151,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
     /// @param state State vector 𝐱ᵢ at @p time tᵢ as a column matrix.
     /// @param state_derivative State derivative vector d𝐱/dtᵢ at @p time tᵢ
     ///                         as a column matrix.
-    /// @throw std::runtime_error
+    /// @throws std::runtime_error
     ///   if given @p state 𝐱ᵢ is not a column matrix.<br>
     ///   if given @p state_derivative d𝐱/dtᵢ is not a column matrix.<br>
     ///   if given @p time tᵢ is not greater than the previous time
@@ -167,16 +171,16 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
     /// derivative triplet), which may coincide with its end time tᵢ (that of
     /// the last time, state and state derivative triplet) if the step has zero
     /// length (that is, it contains a single triplet).
-    const T& get_start_time() const { return times_.front(); }
+    const T& start_time() const { return times_.front(); }
 
     /// Returns step end time tᵢ (that of the first time, state and state
     /// derivative triplet), which may coincide with its start time t₀ (that of
     /// the last time, state and state derivative triplet) if the step has zero
     /// length (that is, it contains a single triplet).
-    const T& get_end_time() const { return times_.back(); }
+    const T& end_time() const { return times_.back(); }
 
-    /// Returns the step state 𝐱 dimensions.
-    int get_dimensions() const {
+    /// Returns the step state 𝐱 size (i.e. dimension).
+    int size() const {
       return states_.back().rows();
     }
 
@@ -238,46 +242,6 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
 
   HermitianDenseOutput() = default;
 
-  VectorX<T> Evaluate(const T& t) const override {
-    if (is_empty()) {
-      throw std::logic_error("Empty dense output cannot be evaluated.");
-    }
-    if (t < get_start_time() || t > get_end_time()) {
-      throw std::runtime_error("Dense output is not defined for given time.");
-    }
-    const MatrixX<double> matrix_value =
-        continuous_trajectory_.value(ExtractDoubleOrThrow(t));
-    return matrix_value.col(0).cast<T>();
-  }
-
-  int get_dimensions() const override {
-    if (is_empty()) {
-      throw std::logic_error("Dimension is not defined for"
-                             " an empty dense output.");
-    }
-    return continuous_trajectory_.rows();
-  }
-
-  bool is_empty() const override {
-    return continuous_trajectory_.empty();
-  }
-
-  const T& get_end_time() const override {
-    if (is_empty()) {
-      throw std::logic_error("End time is not defined for"
-                             " an empty dense output.");
-    }
-    return end_time_;
-  }
-
-  const T& get_start_time() const override {
-    if (is_empty()) {
-      throw std::logic_error("Start time is not defined for"
-                             " an empty dense output.");
-    }
-    return start_time_;
-  }
-
   /// Update output with the given @p step.
   ///
   /// Provided @p step is queued for later consolidation. Note that
@@ -285,7 +249,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
   /// StepwiseDenseOutput class documentation).
   ///
   /// @param step Integration step to update this output with.
-  /// @throw std::runtime_error
+  /// @throws std::runtime_error
   ///   if given @p step has zero length.<br>
   ///   if given @p step does not ensure C1 continuity at the end of
   ///   this dense output.<br>
@@ -320,12 +284,36 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
     raw_steps_.clear();
   }
 
+ protected:
+  VectorX<T> DoEvaluate(const T& t) const override {
+    const MatrixX<double> matrix_value =
+        continuous_trajectory_.value(ExtractDoubleOrThrow(t));
+    return matrix_value.col(0).cast<T>();
+  }
+
+  T DoEvaluateNth(const T& t, const int n) const override {
+    return continuous_trajectory_.scalarValue(
+        ExtractDoubleOrThrow(t), n, 0);
+  }
+
+  bool do_is_empty() const override {
+    return continuous_trajectory_.empty();
+  }
+
+  int do_size() const override {
+    return continuous_trajectory_.rows();
+  }
+
+  const T& do_end_time() const override { return end_time_; }
+
+  const T& do_start_time() const override { return start_time_; }
+
  private:
   // Validates that the provided @p step can be consolidated into this
   // dense output.
   // @see Update(const IntegrationStep&)
   void ValidateStepCanBeConsolidatedOrThrow(const IntegrationStep& step) {
-    if (step.get_start_time() == step.get_end_time()) {
+    if (step.start_time() == step.end_time()) {
       throw std::runtime_error("Provided step has zero length "
                                "i.e. start time and end time "
                                "are equal.");
@@ -342,7 +330,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
   // @param next_step Integration step to be taken.
   // @param prev_step Last integration step consolidated or to be
   //                  consolidated into dense output.
-  // @throw std::runtime_error
+  // @throws std::runtime_error
   //   if given @p next_step does not ensure C1 continuity at the
   //   end of the given @p prev_step.<br>
   //   if given @p next_step dimensions does not match @p prev_step
@@ -352,14 +340,14 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
     using std::abs;
     using std::max;
 
-    if (prev_step.get_dimensions() != next_step.get_dimensions()) {
+    if (prev_step.size() != next_step.size()) {
       throw std::runtime_error("Provided step dimensions and previous"
                                " step dimensions do not match.");
     }
     // Maximum time misalignment between previous step and next step that
     // can still be disregarded as a discontinuity in time.
-    const T& prev_end_time = prev_step.get_end_time();
-    const T& next_start_time = next_step.get_start_time();
+    const T& prev_end_time = prev_step.end_time();
+    const T& next_start_time = next_step.start_time();
     const T allowed_time_misalignment =
         max(abs(prev_end_time), T{1.}) * std::numeric_limits<T>::epsilon();
     const T time_misalignment = abs(prev_end_time - next_start_time);
@@ -387,8 +375,8 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
   // TODO(hidmic): Remove redundant time-keeping member fields when
   // PiecewisePolynomial supports return by-reference of its time extents.
   // It currently returns them by-value, double type only, and thus the
-  // need for this storage in order to meet DenseOutput::get_start_time()
-  // and DenseOutput::get_end_time() API.
+  // need for this storage in order to meet DenseOutput::start_time()
+  // and DenseOutput::end_time() API.
 
   // The smallest time at which the output is defined.
   T start_time_{};
