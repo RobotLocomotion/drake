@@ -35,6 +35,7 @@ def install_data(
         "dae",
         "jpg",
         "json",
+        "mtl",
         "obj",
         "png",
         "sdf",
