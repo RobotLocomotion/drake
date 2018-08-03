@@ -168,9 +168,10 @@ def _drake_installed_headers_impl(ctx):
     hdrs = list(ctx.files.hdrs)
     for x in ctx.files.hdrs_exclude:
         hdrs.remove(x)
-    transitive_hdrs = depset(hdrs)
-    for dep in ctx.attr.deps:
-        transitive_hdrs += depset(dep[DrakeCc].transitive_hdrs)
+    transitive_hdrs = depset(hdrs, transitive = [
+        dep[DrakeCc].transitive_hdrs
+        for dep in ctx.attr.deps
+    ])
     return [
         DrakeCc(
             transitive_hdrs = transitive_hdrs,
@@ -201,9 +202,10 @@ drake_installed_headers = rule(
 )
 
 def _gather_transitive_hdrs_impl(ctx):
-    result = depset()
-    for dep in ctx.attr.deps:
-        result += dep[DrakeCc].transitive_hdrs
+    result = depset([], transitive = [
+        dep[DrakeCc].transitive_hdrs
+        for dep in ctx.attr.deps
+    ])
     return struct(files = result)
 
 _gather_transitive_hdrs = rule(

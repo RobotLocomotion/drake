@@ -1,11 +1,12 @@
 def _recursive_filegroup_impl(ctx):
-    files = depset()
-    for d in ctx.attr.data:
-        files += d.data_runfiles.files
+    files = depset([], transitive = [
+        d.data_runfiles.files
+        for d in ctx.attr.data
+    ])
     return [DefaultInfo(
         files = files,
         data_runfiles = ctx.runfiles(
-            files = list(files),
+            files = files.to_list(),
         ),
     )]
 
