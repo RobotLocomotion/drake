@@ -59,6 +59,8 @@ drake_cc_library(
     name = "multiple_shooting",
     srcs = ["multiple_shooting.cc"],
     hdrs = ["multiple_shooting.h"],
+    # NOTE: This is necessary for gcc 7.3 to not throw a warning.
+    gcc_copts = ["-Wno-strict-overflow"],
     deps = [
         "//common:essential",
         "//common/trajectories:piecewise_polynomial",
