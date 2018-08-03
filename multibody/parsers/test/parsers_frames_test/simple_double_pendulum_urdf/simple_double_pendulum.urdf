@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!-- Comments in this file use frames as defined in the C++ Doxygen module
 "Frames and Bodies",
-http://drake.mit.edu/doxygen_cxx/group__multibody__frames__and__bodies.html.
+https://drake.mit.edu/doxygen_cxx/group__multibody__frames__and__bodies.html.
 In particular, this file refers to the link frame L, the body frame B, the
 inertia frame I and the joint inboard frame F. -->
 <robot name="SimpleDoublePendulum">

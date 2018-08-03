@@ -2,7 +2,7 @@ Demo Instructions
 =================
 
 These instructions only support the Bazel build system (not CMake).  For
-getting started with Bazel, see http://drake.mit.edu/bazel.html.
+getting started with Bazel, see https://drake.mit.edu/bazel.html.
 
 Running the demos
 -----------------

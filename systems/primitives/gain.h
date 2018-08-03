@@ -12,7 +12,7 @@ namespace systems {
 /// output.
 ///
 /// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
-/// this class, please refer to http://drake.mit.edu/cxx_inl.html.
+/// this class, please refer to https://drake.mit.edu/cxx_inl.html.
 ///
 /// Instantiated templates for the following scalar types @p T are provided:
 /// - double

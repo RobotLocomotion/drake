@@ -14,7 +14,7 @@ namespace systems {
 /// @ingroup primitive_systems
 ///
 /// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
-/// this class, please refer to http://drake.mit.edu/cxx_inl.html.
+/// this class, please refer to https://drake.mit.edu/cxx_inl.html.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double

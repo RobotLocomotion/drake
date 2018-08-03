@@ -2,9 +2,9 @@
 
 <!-- adapted from Daniel Mellinger, Nathan Michael, Vijay Kumar, "Trajectory Generation and Control for Precise Aggressive Maneuvers with Quadrotors" -->
 
-<robot xmlns="http://drake.mit.edu"
+<robot xmlns="https://drake.mit.edu"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- xsi:schemaLocation="http://drake.mit.edu ../../../../pods/drake/doc/drakeURDF.xsd" name="quadrotor">
+ xsi:schemaLocation="https://drake.mit.edu ../../../../pods/drake/doc/drakeURDF.xsd" name="quadrotor">
   <link name="base_link">
     <inertial>
       <mass value="0.5"/>
