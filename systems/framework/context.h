@@ -376,7 +376,7 @@ class Context : public ContextBase {
     const int64_t change_event = this->start_new_change_event();
     PropagateBulkChange(change_event,
                         &Context<T>::NoteAllAbstractParametersChanged);
-    return get_mutable_parameters().get_mutable_abstract_parameter(index);
+    return parameters_->get_mutable_abstract_parameter(index);
   }
 
   /// Sets this context's time, accuracy, state, and parameters from the real

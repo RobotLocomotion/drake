@@ -139,12 +139,12 @@ void SystemBase::CreateSourceTrackers(ContextBase* context_ptr) const {
       &detail::SystemBaseContextBaseAttorney::AddAbstractStateTicket);
 
   // Allocate trackers for each numeric parameter pnᵢ and each abstract
-  // parameter paᵢ, and subscribe the "all parameters" tracker p to those.
+  // parameter paᵢ, and subscribe the pn and pa trackers to them.
   make_trackers(
-      all_parameters_ticket(), numeric_parameter_tickets_,
+      pn_ticket(), numeric_parameter_tickets_,
       &detail::SystemBaseContextBaseAttorney::AddNumericParameterTicket);
   make_trackers(
-      all_parameters_ticket(), abstract_parameter_tickets_,
+      pa_ticket(), abstract_parameter_tickets_,
       &detail::SystemBaseContextBaseAttorney::AddAbstractParameterTicket);
 
   // Allocate trackers for each input port uᵢ, and subscribe the "all input

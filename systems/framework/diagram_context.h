@@ -247,15 +247,19 @@ class DiagramContext final : public Context<T> {
     iport_tracker.SubscribeToPrerequisite(&oport_tracker);
   }
 
-  /// (Internal use only) Makes the diagram state and parameter trackers
-  /// subscribe to the corresponding constituent trackers. Note that diagrams
-  /// don't provide diagram-level tickets for individual discrete or abstract
-  /// state or individual numerical or abstract parameters.
-  void SubscribeDiagramStateAndParametersToChilds() {
+  /// (Internal use only) Makes the diagram state, parameter, and composite
+  /// cache entry trackers subscribe to the corresponding constituent trackers
+  /// in the child subcontexts.
+  // Diagrams don't provide diagram-level tickets for individual
+  // discrete or abstract state or individual numerical or abstract parameters.
+  // That means we need only subscribe the aggregate trackers xd, xa, pn, pa
+  // to their children's xd, xa, pn, pa, resp.
+  void SubscribeDiagramCompositeTrackersToChildrens() {
     std::vector<internal::BuiltInTicketNumbers> composites{
-        internal::kQTicket,  internal::kVTicket,
-        internal::kZTicket,  internal::kXdTicket,
-        internal::kXaTicket, internal::kAllParametersTicket};
+        internal::kQTicket,  internal::kVTicket,     internal::kZTicket,
+        internal::kXdTicket, internal::kXaTicket,    internal::kPnTicket,
+        internal::kPaTicket, internal::kXcdotTicket, internal::kPeTicket,
+        internal::kKeTicket, internal::kPcTicket,    internal::kPncTicket};
     DependencyGraph& graph = this->get_mutable_dependency_graph();
     std::vector<DependencyTracker*> diagram_trackers;
     for (auto ticket : composites)
