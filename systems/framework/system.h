@@ -1435,7 +1435,6 @@ class System : public SystemBase {
 
   // All pre-defined ticket methods should be listed here. They are ordered as
   // they appear in SystemBase to make it easy to check that none are missing.
-  using SystemBase::all_sources_ticket;
   using SystemBase::nothing_ticket;
   using SystemBase::time_ticket;
   using SystemBase::accuracy_ticket;
@@ -1443,23 +1442,30 @@ class System : public SystemBase {
   using SystemBase::v_ticket;
   using SystemBase::z_ticket;
   using SystemBase::xc_ticket;
+  using SystemBase::discrete_state_ticket;
   using SystemBase::xd_ticket;
+  using SystemBase::abstract_state_ticket;
   using SystemBase::xa_ticket;
   using SystemBase::all_state_ticket;
-  using SystemBase::xcdot_ticket;
-  using SystemBase::xdhat_ticket;
+  using SystemBase::numeric_parameter_ticket;
+  using SystemBase::pn_ticket;
+  using SystemBase::abstract_parameter_ticket;
+  using SystemBase::pa_ticket;
+  using SystemBase::all_parameters_ticket;
+  using SystemBase::input_port_ticket;
+  using SystemBase::all_input_ports_ticket;
+  using SystemBase::all_sources_ticket;
+  using SystemBase::cache_entry_ticket;
   using SystemBase::configuration_ticket;
   using SystemBase::velocity_ticket;
   using SystemBase::kinematics_ticket;
-  using SystemBase::all_parameters_ticket;
-  using SystemBase::all_input_ports_ticket;
-  using SystemBase::input_port_ticket;
-  using SystemBase::output_port_ticket;
-  using SystemBase::cache_entry_ticket;
-  using SystemBase::discrete_state_ticket;
-  using SystemBase::abstract_state_ticket;
-  using SystemBase::numeric_parameter_ticket;
-  using SystemBase::abstract_parameter_ticket;
+  using SystemBase::xcdot_ticket;
+  using SystemBase::pe_ticket;
+  using SystemBase::ke_ticket;
+  using SystemBase::pc_ticket;
+  using SystemBase::pnc_ticket;
+
+  // Don't promote output_port_ticket() since it is form internal use only.
 
  protected:
   /// Derived classes will implement this method to evaluate a witness function

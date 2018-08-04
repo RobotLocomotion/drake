@@ -530,13 +530,13 @@ TEST_F(LeafSystemTest, NumericParameters) {
   EXPECT_EQ(42.0, vec[1]);
 
   EXPECT_EQ(system_.num_numeric_parameters(), 1);
-  const DependencyTracker& all_parameters_tracker =
-      context->get_tracker(system_.all_parameters_ticket());
+  const DependencyTracker& pn_tracker =
+      context->get_tracker(system_.pn_ticket());
   for (NumericParameterIndex i(0); i < system_.num_numeric_parameters(); ++i) {
     const DependencyTracker& tracker =
         context->get_tracker(system_.numeric_parameter_ticket(i));
-    EXPECT_TRUE(all_parameters_tracker.HasPrerequisite(tracker));
-    EXPECT_TRUE(tracker.HasSubscriber(all_parameters_tracker));
+    EXPECT_TRUE(pn_tracker.HasPrerequisite(tracker));
+    EXPECT_TRUE(tracker.HasSubscriber(pn_tracker));
   }
 }
 
@@ -555,14 +555,14 @@ TEST_F(LeafSystemTest, AbstractParameters) {
   EXPECT_EQ("modified parameter value", param);
 
   EXPECT_EQ(system_.num_abstract_parameters(), 1);
-  const DependencyTracker& all_parameters_tracker =
-      context->get_tracker(system_.all_parameters_ticket());
+  const DependencyTracker& pa_tracker =
+      context->get_tracker(system_.pa_ticket());
   for (AbstractParameterIndex i(0); i < system_.num_abstract_parameters();
        ++i) {
     const DependencyTracker& tracker =
         context->get_tracker(system_.abstract_parameter_ticket(i));
-    EXPECT_TRUE(all_parameters_tracker.HasPrerequisite(tracker));
-    EXPECT_TRUE(tracker.HasSubscriber(all_parameters_tracker));
+    EXPECT_TRUE(pa_tracker.HasPrerequisite(tracker));
+    EXPECT_TRUE(tracker.HasSubscriber(pa_tracker));
   }
 }
 

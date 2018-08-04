@@ -110,16 +110,16 @@ class LeafContextTest : public ::testing::Test {
     auto& pn1_tracker = graph.CreateNewDependencyTracker(next_ticket_++, "pn1");
     context_.AddNumericParameterTicket(pn0_tracker.ticket());
     context_.AddNumericParameterTicket(pn1_tracker.ticket());
-    graph.get_mutable_tracker(DependencyTicket(internal::kAllParametersTicket))
+    graph.get_mutable_tracker(DependencyTicket(internal::kPnTicket))
         .SubscribeToPrerequisite(&pn0_tracker);
-    graph.get_mutable_tracker(DependencyTicket(internal::kAllParametersTicket))
+    graph.get_mutable_tracker(DependencyTicket(internal::kPnTicket))
         .SubscribeToPrerequisite(&pn1_tracker);
 
     std::vector<std::unique_ptr<AbstractValue>> abstract_params;
     abstract_params.push_back(std::make_unique<Value<TestAbstractType>>());
     auto& pa0_tracker = graph.CreateNewDependencyTracker(next_ticket_++, "pa0");
     context_.AddAbstractParameterTicket(pa0_tracker.ticket());
-    graph.get_mutable_tracker(DependencyTicket(internal::kAllParametersTicket))
+    graph.get_mutable_tracker(DependencyTicket(internal::kPaTicket))
         .SubscribeToPrerequisite(&pa0_tracker);
 
     context_.init_parameters(std::make_unique<Parameters<double>>(
@@ -631,7 +631,7 @@ TEST_F(LeafContextTest, Invalidation) {
   CacheIndex index(cache.cache_size());  // Next available index.
   std::map<int, CacheIndex> depends;     // Maps ticket number to cache index.
   for (int ticket = internal::kNothingTicket;
-       ticket <= internal::kAllSourcesTicket; ++ticket) {
+       ticket <= internal::kLastSourceTicket; ++ticket) {
     CacheEntryValue& entry = cache.CreateNewCacheEntryValue(
         index, next_ticket_++, "entry" + std::to_string(index),
         {DependencyTicket(ticket)}, &context_.get_mutable_dependency_graph());
@@ -706,6 +706,9 @@ TEST_F(LeafContextTest, Invalidation) {
   const std::set<CacheIndex> xd_dependent
       {depends[internal::kXdTicket],
        depends[internal::kXTicket],
+       depends[internal::kConfigurationTicket],
+       depends[internal::kVelocityTicket],
+       depends[internal::kKinematicsTicket],
        depends[internal::kAllSourcesTicket]};
   MarkAllCacheValuesUpToDate(&cache);
   context_.get_mutable_discrete_state();
@@ -719,6 +722,9 @@ TEST_F(LeafContextTest, Invalidation) {
   const std::set<CacheIndex> xa_dependent
       {depends[internal::kXaTicket],
        depends[internal::kXTicket],
+       depends[internal::kConfigurationTicket],
+       depends[internal::kVelocityTicket],
+       depends[internal::kKinematicsTicket],
        depends[internal::kAllSourcesTicket]};
   MarkAllCacheValuesUpToDate(&cache);
   context_.get_mutable_abstract_state();
@@ -729,22 +735,35 @@ TEST_F(LeafContextTest, Invalidation) {
   CheckAllCacheValuesUpToDateExcept(cache, xa_dependent);
 
   // Modify parameters.
-  const std::set<CacheIndex> p_dependent
-      {depends[internal::kConfigurationTicket],
+  const std::set<CacheIndex> pn_dependent
+      {depends[internal::kPnTicket],
+       depends[internal::kConfigurationTicket],
        depends[internal::kVelocityTicket],
        depends[internal::kKinematicsTicket],
        depends[internal::kAllParametersTicket],
        depends[internal::kAllSourcesTicket]};
-  MarkAllCacheValuesUpToDate(&cache);
-  context_.get_mutable_parameters();
-  CheckAllCacheValuesUpToDateExcept(cache, p_dependent);
+
+  const std::set<CacheIndex> pa_dependent
+      {depends[internal::kPaTicket],
+       depends[internal::kConfigurationTicket],
+       depends[internal::kVelocityTicket],
+       depends[internal::kKinematicsTicket],
+       depends[internal::kAllParametersTicket],
+       depends[internal::kAllSourcesTicket]};
+
+  std::set<CacheIndex> p_dependent(pn_dependent);
+  p_dependent.insert(depends[internal::kPaTicket]);
 
   MarkAllCacheValuesUpToDate(&cache);
   context_.get_mutable_numeric_parameter(NumericParameterIndex(0));
-  CheckAllCacheValuesUpToDateExcept(cache, p_dependent);
+  CheckAllCacheValuesUpToDateExcept(cache, pn_dependent);
 
   MarkAllCacheValuesUpToDate(&cache);
   context_.get_mutable_abstract_parameter(AbstractParameterIndex(0));
+  CheckAllCacheValuesUpToDateExcept(cache, pa_dependent);
+
+  MarkAllCacheValuesUpToDate(&cache);
+  context_.get_mutable_parameters();
   CheckAllCacheValuesUpToDateExcept(cache, p_dependent);
 
   // Modify an input port.
