@@ -11,6 +11,18 @@ package(
     default_visibility = [":__subpackages__"],
 )
 
+# === test/ ===
+
+drake_cc_googletest(
+    name = "allegro_hand_test",
+    srcs = ["urdf/test/allegro_hand_test.cc"],
+    data = [":models"],
+    deps = [
+        "//common:find_resource",
+        "//multibody/parsers",
+    ],
+)
+
 install_data()
 
 add_lint_tests()
