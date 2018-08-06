@@ -20,22 +20,25 @@ GTEST_TEST(GeometryInstanceTest, IsCopyable) {
   // have a runtime check available but this will fail to compile if the class
   // is not copyable.
   copyable_unique_ptr<GeometryInstance> geo(make_unique<GeometryInstance>
-      (Isometry3<double>(), make_unique<Sphere>(1)));
+      (Isometry3<double>(), make_unique<Sphere>(1), "sphere"));
   EXPECT_TRUE(geo->id().is_valid());
 }
 
 GTEST_TEST(GeometryInstanceTest, IdCopies) {
   Isometry3<double> pose = Isometry3<double>::Identity();
   auto shape = make_unique<Sphere>(1.0);
-  GeometryInstance geometry_a{pose, move(shape)};
+  GeometryInstance geometry_a{pose, move(shape), "geometry_a"};
   GeometryInstance geometry_b(geometry_a);
   EXPECT_EQ(geometry_a.id(), geometry_b.id());
+  EXPECT_EQ(geometry_a.name(), geometry_b.name());
 
   shape = make_unique<Sphere>(2.0);
-  GeometryInstance geometry_c{pose, move(shape)};
+  GeometryInstance geometry_c{pose, move(shape), "geometry_c"};
   EXPECT_NE(geometry_a.id(), geometry_c.id());
+  EXPECT_NE(geometry_a.name(), geometry_c.name());
   geometry_c = geometry_a;
   EXPECT_EQ(geometry_a.id(), geometry_c.id());
+  EXPECT_EQ(geometry_a.name(), geometry_c.name());
 }
 
 }  // namespace

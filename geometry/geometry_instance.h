@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "drake/common/copyable_unique_ptr.h"
@@ -16,7 +17,21 @@ namespace geometry {
 /** A geometry instance combines a geometry definition (i.e., a shape of some
  sort), a pose (relative to a parent "frame" P), material information, and an
  opaque collection of metadata. The parent frame can be a registered frame or
- another registered geometry. */
+ another registered geometry.
+
+ Every %GeometryInstance must be named. The names meet the following
+ requirements:
+   - no leading or trailing whitespace,
+   - cannot be empty (or only consist of whitespace), and
+   - the name must be unique in the scope of its frame. In other words, two
+     GeometryInstances can both be called "collision" as long as they are
+     affixed to different frames.
+
+ Names *can* have internal whitespace (e.g., "my frame name").
+
+ <!-- TODO(SeanCurtis-TRI): Refine the scope to just the *role* within the
+ frame. -->
+ */
 class GeometryInstance {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryInstance)
@@ -24,14 +39,19 @@ class GeometryInstance {
   /** Constructor with default visual material (see VisualMaterial default
    constructor for details on what that color is).
    @param X_PG   The pose of this geometry (`G`) in its parent's frame (`P`).
-   @param shape  The underlying shape for this geometry instance. */
-  GeometryInstance(const Isometry3<double>& X_PG, std::unique_ptr<Shape> shape);
+   @param shape  The underlying shape for this geometry instance.
+   @param name   The name of the geometry (must satisfy the name requirements).
+   */
+  GeometryInstance(const Isometry3<double>& X_PG, std::unique_ptr<Shape> shape,
+                   const std::string& name);
 
   /** Constructor.
    @param X_PG   The pose of this geometry (`G`) in its parent's frame (`P`).
    @param shape  The underlying shape for this geometry instance.
-   @param vis_material The visual material to apply to this geometry. */
+   @param name   The name of the geometry (must satisfy the nam requirements).
+   @param vis_material The visual material to apply to this geometry.  */
   GeometryInstance(const Isometry3<double>& X_PG, std::unique_ptr<Shape> shape,
+                   const std::string& name,
                    const VisualMaterial& vis_material);
 
   /** Returns the globally unique id for this geometry specification. Every
@@ -54,6 +74,8 @@ class GeometryInstance {
 
   const VisualMaterial& visual_material() const { return visual_material_; }
 
+  const std::string& name() const { return name_; }
+
  private:
   // The *globally* unique identifier for this instance. It is functionally
   // const (i.e. defined in construction) but not marked const to allow for
@@ -65,6 +87,9 @@ class GeometryInstance {
 
   // The shape associated with this instance.
   copyable_unique_ptr<Shape> shape_;
+
+  // The name of the geometry instance.
+  std::string name_;
 
   // The "rendering" material -- e.g., OpenGl contexts and the like.
   VisualMaterial visual_material_;

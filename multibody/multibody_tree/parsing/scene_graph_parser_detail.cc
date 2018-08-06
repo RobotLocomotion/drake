@@ -214,8 +214,9 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
   }
 
   const VisualMaterial material = MakeVisualMaterialFromSdfVisual(sdf_visual);
-  return make_unique<GeometryInstance>(
-      X_LC, MakeShapeFromSdfGeometry(sdf_geometry), material);
+  return make_unique<GeometryInstance>(X_LC,
+                                       MakeShapeFromSdfGeometry(sdf_geometry),
+                                       sdf_visual.Name(), material);
 }
 
 VisualMaterial MakeVisualMaterialFromSdfVisual(const sdf::Visual& sdf_visual) {

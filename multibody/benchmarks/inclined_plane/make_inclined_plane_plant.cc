@@ -45,38 +45,38 @@ std::unique_ptr<MultibodyPlant<double>> MakeInclinedPlanePlant(
   const Vector3<double> point_W = -normal_W * radius;
 
   // A half-space for the inclined plane geometry.
-  plant->RegisterCollisionGeometry(plant->world_body(),
-                                   HalfSpace::MakePose(normal_W, point_W),
-                                   HalfSpace(), surface_friction, scene_graph);
+  plant->RegisterCollisionGeometry(
+      plant->world_body(), HalfSpace::MakePose(normal_W, point_W), HalfSpace(),
+      "collision", surface_friction, scene_graph);
 
   // Add sphere geometry for the ball.
   plant->RegisterCollisionGeometry(
       ball,
       /* Pose X_BG of the geometry frame G in the ball frame B. */
-      Isometry3<double>::Identity(), Sphere(radius), surface_friction,
-      scene_graph);
+      Isometry3<double>::Identity(), Sphere(radius), "collision",
+      surface_friction, scene_graph);
 
   // Adds little spherical spokes highlight the sphere's rotation.
   plant->RegisterVisualGeometry(
       ball,
       /* Pose X_BG of the geometry frame G in the ball frame B. */
       Isometry3<double>(Translation3<double>(0, 0, radius)), Sphere(radius / 5),
-      scene_graph);
+      "marker1", scene_graph);
   plant->RegisterVisualGeometry(
       ball,
       /* Pose X_BG of the geometry frame G in the ball frame B. */
       Isometry3<double>(Translation3<double>(0, 0, -radius)),
-      Sphere(radius / 5), scene_graph);
+      Sphere(radius / 5), "marker2", scene_graph);
   plant->RegisterVisualGeometry(
       ball,
       /* Pose X_BG of the geometry frame G in the ball frame B. */
       Isometry3<double>(Translation3<double>(radius, 0, 0)), Sphere(radius / 5),
-      scene_graph);
+      "marker3", scene_graph);
   plant->RegisterVisualGeometry(
       ball,
       /* Pose X_BG of the geometry frame G in the ball frame B. */
       Isometry3<double>(Translation3<double>(-radius, 0, 0)),
-      Sphere(radius / 5), scene_graph);
+      Sphere(radius / 5), "marker4", scene_graph);
 
   // Gravity acting in the -z direction.
   plant->AddForceElement<UniformGravityFieldElement>(

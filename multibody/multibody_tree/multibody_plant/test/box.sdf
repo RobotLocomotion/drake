@@ -27,7 +27,9 @@
           <izz>1.0</izz>
         </inertia>
       </inertial>
-      <visual name='ground_plane'>
+      <!-- TODO(SeanCurtis-TRI): the "vis" and "collision" suffixes will no
+       longer be necessary when geometry roles are added. -->
+      <visual name='ground_plane_vis'>
         <geometry>
           <plane>
             <normal>0.0 0.0 1.0</normal>
@@ -35,7 +37,7 @@
         </geometry>
       </visual>
 
-      <collision name='ground_plane'>
+      <collision name='ground_plane_collision'>
         <geometry>
           <plane>
             <normal>0.0 0.0 1.0</normal>
