@@ -25,6 +25,7 @@ const double kCollisionThreshold = 0.01;
 
 class RigidBodyTreeRemovalTest : public ::testing::Test {
  public:
+  // Checks if the point cloud `cloud` contains the point `x`.
   static bool ContainsPoint(const PointCloud& cloud, const Vector3<float>& x) {
     for (int i = 0; i < cloud.size(); i++) {
       if (cloud.xyz(i)(0) == x(0) && cloud.xyz(i)(1) == x(1) &&
@@ -36,6 +37,10 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
   }
 
  protected:
+  // Builds the initial diagram that consists of the following systems:
+  // PassThrough, RgbdCamera, DepthImageToPoint, TransformPointCloud. The
+  // three latter systems are connected sequentially, while the former is
+  // connected to both the RgbdCamera and the TransformPointCloud system.
   void SetUp() override {
     tree_ = std::make_unique<RigidBodyTree<double>>();
 
@@ -43,34 +48,48 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
     const Eigen::Vector3d kBoxSize(0.25, 0.25, 0.25);
     AddBox(tree_.get(), kBoxPosition, kBoxSize);
 
-    auto camera = AddCamera();
     builder_ = std::make_unique<systems::DiagramBuilder<double>>();
-    auto camera_ptr = builder_->AddSystem(std::move(camera));
 
-    passthrough_ = builder_->AddSystem(
-        std::make_unique<systems::PassThrough<double>>(
+    auto camera = AddCamera();
+
+    passthrough_ =
+        builder_->AddSystem(std::make_unique<systems::PassThrough<double>>(
             tree_->get_num_positions() + tree_->get_num_velocities()));
+
+    transformer_ = builder_->AddSystem(std::make_unique<TransformPointCloud>(
+        *tree_.get(), tree_->findFrame("depth_camera")->get_frame_index()));
+
+    auto converter = builder_->AddSystem<DepthImageToPointCloud>(
+        camera->depth_camera_info());
+
+    builder_->Connect(passthrough_->get_output_port(),
+                      camera->state_input_port());
+    builder_->Connect(passthrough_->get_output_port(),
+                      transformer_->state_input_port());
+
+    builder_->Connect(camera->depth_image_output_port(),
+                      converter->depth_image_input_port());
+    builder_->Connect(converter->point_cloud_output_port(),
+                      transformer_->point_cloud_input_port());
+
     builder_->ExportInput(passthrough_->get_input_port());
-
-    transformer_ =
-        builder_->AddSystem(std::make_unique<TransformPointCloud>(
-            *tree_.get(), tree_->findFrame("depth_camera")->get_frame_index()));
     builder_->ExportOutput(transformer_->point_cloud_output_port());
-
-    BuildInitialDiagram(builder_.get(), camera_ptr, passthrough_, transformer_);
   }
 
+  // Adds a RigidBodyTreeRemoval filter to the diagram.
   void InitFilterDiagram() {
-    auto filter = builder_->AddSystem<RigidBodyTreeRemoval>(*tree_.get(),
-                                                          kCollisionThreshold);
+    auto filter = builder_->AddSystem<RigidBodyTreeRemoval>(
+        *tree_.get(), kCollisionThreshold);
 
-    builder_->Connect(passthrough_->get_output_port(), filter->state_input_port());
+    builder_->Connect(passthrough_->get_output_port(),
+                      filter->state_input_port());
     builder_->Connect(transformer_->point_cloud_output_port(),
-                    filter->point_cloud_input_port());
+                      filter->point_cloud_input_port());
 
     builder_->ExportOutput(filter->point_cloud_output_port());
   }
 
+  // Builds the diagram and initializes the context.
   void BuildDiagramAndInitContext() {
     diagram_ = builder_->Build();
 
@@ -82,13 +101,7 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
     output_ = diagram_->AllocateOutput();
   }
 
-  void CalcOutput(PointCloud* unfiltered_cloud, PointCloud* filtered_cloud) {
-    diagram_->CalcOutput(*context_, output_.get());
-    *unfiltered_cloud =
-        output_->GetMutableData(0)->GetMutableValue<PointCloud>();
-    *filtered_cloud = output_->GetMutableData(1)->GetMutableValue<PointCloud>();
-  }
-
+  // Calculates the expected output of the filter.
   PointCloud CalcExpectedOutput(const PointCloud& cloud) {
     const std::vector<size_t> indices = CollidingPoints(cloud, tree_.get());
     PointCloud cloud_out(cloud.size() - indices.size());
@@ -112,25 +125,9 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
   VectorX<double> state_input_;
 
  private:
-  void BuildInitialDiagram(systems::DiagramBuilder<double>* builder,
-                           systems::sensors::RgbdCamera* camera,
-                           systems::PassThrough<double>* passthrough,
-                           TransformPointCloud* transformer) {
-    auto converter =
-        builder->AddSystem<DepthImageToPointCloud>(camera->depth_camera_info());
-
-    builder->Connect(passthrough->get_output_port(),
-                     camera->state_input_port());
-    builder->Connect(passthrough->get_output_port(),
-                     transformer->state_input_port());
-
-    builder->Connect(camera->depth_image_output_port(),
-                     converter->depth_image_input_port());
-    builder->Connect(converter->point_cloud_output_port(),
-                     transformer->point_cloud_input_port());
-  }
-
-  std::unique_ptr<systems::sensors::RgbdCamera> AddCamera() {
+  // Adds an RgbdCamera to the diagram and a corresponding body and frames to
+  // the RigidBodyTree.
+  systems::sensors::RgbdCamera* AddCamera() {
     const Eigen::Vector3d kPosition(0.0, 0.0, 2.0);
     const Eigen::Vector3d kOrientation(0.0, M_PI_2, 0.0);
     AddCameraBody(tree_.get(), kPosition, kOrientation);
@@ -143,16 +140,47 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
     const double kDepthRangeFar = 5.0;
     const int kWidth = 640;
     const int kHeight = 480;
-    std::unique_ptr<systems::sensors::RgbdCamera> camera =
-        std::make_unique<systems::sensors::RgbdCamera>(
-            "rgbd_camera", *tree_.get(), kPosition, kOrientation,
-            kDepthRangeNear, kDepthRangeFar, kFovY, kShowWindow, kWidth,
-            kHeight);
+    systems::sensors::RgbdCamera* camera =
+        builder_->AddSystem<systems::sensors::RgbdCamera>(
+            std::make_unique<systems::sensors::RgbdCamera>(
+                "rgbd_camera", *tree_.get(), kPosition, kOrientation,
+                kDepthRangeNear, kDepthRangeFar, kFovY, kShowWindow, kWidth,
+                kHeight));
     camera->set_name("rgbd_camera");
 
     return camera;
   }
 
+  // Adds a camera body to the RigidBodyTree. Required to retrieve the correct
+  // transform between the points in the depth camera frame and the `world`
+  // frame.
+  void AddCameraBody(RigidBodyTree<double>* tree,
+                     const Vector3<double>& position,
+                     const Vector3<double>& orientation) {
+    auto camera_body = std::make_unique<RigidBody<double>>();
+    camera_body->set_name("rgbd_camera");
+    camera_body->set_model_instance_id(tree->add_model_instance());
+    Eigen::Isometry3d joint_transform =
+        Eigen::Translation3d(position) *
+        (Eigen::AngleAxisd(orientation(0), Eigen::Vector3d::UnitX()) *
+         Eigen::AngleAxisd(orientation(1), Eigen::Vector3d::UnitY()) *
+         Eigen::AngleAxisd(orientation(2), Eigen::Vector3d::UnitZ()));
+    auto joint = std::make_unique<FixedJoint>("camera_joint", joint_transform);
+    camera_body->add_joint(&tree->world(), std::move(joint));
+
+    // Transform from camera body frame to depth camera frame. Required to find
+    // the correct transformation between the points in a point cloud obtained
+    // from an RgbdCamera and the `world` frame.
+    Eigen::Isometry3d X_BD;
+    X_BD.matrix() << 0., 0., 1., 0., -1., 0., 0., 0.02, 0., -1., 0., 0., 0., 0.,
+        0., 1.;
+    tree->addFrame(std::make_shared<RigidBodyFrame<double>>(
+        "depth_camera", camera_body.get(), X_BD));
+
+    tree->add_rigid_body(std::move(camera_body));
+  }
+
+  // Adds a RigidBody with a box shape to the RigidBodyTree at a fixed location.
   void AddBox(RigidBodyTree<double>* tree, const Eigen::Vector3d& position,
               const Eigen::Vector3d& size) {
     auto body = std::make_unique<RigidBody<double>>(MakeBox(size));
@@ -175,6 +203,7 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
     tree->addCollisionElement(body_collision, *body_in_tree, "default");
   }
 
+  // Creates a RigidBody with a box shape.
   RigidBody<double> MakeBox(const Eigen::Vector3d& size) {
     RigidBody<double> body;
     body.set_name("box_body");
@@ -191,30 +220,7 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
     return body;
   }
 
-  void AddCameraBody(RigidBodyTree<double>* tree,
-                     const Vector3<double>& position,
-                     const Vector3<double>& orientation) {
-    auto camera_body = std::make_unique<RigidBody<double>>();
-    camera_body->set_name("rgbd_camera");
-    camera_body->set_model_instance_id(tree->add_model_instance());
-    Eigen::Isometry3d joint_transform =
-        Eigen::Translation3d(position) *
-        (Eigen::AngleAxisd(orientation(0), Eigen::Vector3d::UnitX()) *
-         Eigen::AngleAxisd(orientation(1), Eigen::Vector3d::UnitY()) *
-         Eigen::AngleAxisd(orientation(2), Eigen::Vector3d::UnitZ()));
-    auto joint = std::make_unique<FixedJoint>("camera_joint", joint_transform);
-    camera_body->add_joint(&tree->world(), std::move(joint));
-
-    // Transform from camera body frame to depth camera frame.
-    Eigen::Isometry3d X_BD;
-    X_BD.matrix() << 0., 0., 1., 0., -1., 0., 0., 0.02, 0., -1., 0., 0., 0., 0.,
-        0., 1.;
-    tree->addFrame(std::make_shared<RigidBodyFrame<double>>(
-        "depth_camera", camera_body.get(), X_BD));
-
-    tree->add_rigid_body(std::move(camera_body));
-  }
-
+  // Finds the points in `cloud` that collide with some body in `tree`.
   std::vector<size_t> CollidingPoints(const PointCloud& cloud,
                                       RigidBodyTree<double>* tree) {
     KinematicsCache<double> kinematics_cache = tree->doKinematics(state_input_);
@@ -237,14 +243,11 @@ TEST_F(RigidBodyTreeRemovalTest, RemoveBoxTest) {
 
   diagram_->CalcOutput(*context_, output_.get());
   PointCloud unfiltered_cloud =
-    output_->GetMutableData(0)->GetMutableValue<PointCloud>();
+      output_->GetMutableData(0)->GetMutableValue<PointCloud>();
   PointCloud filtered_cloud =
-    output_->GetMutableData(1)->GetMutableValue<PointCloud>();
+      output_->GetMutableData(1)->GetMutableValue<PointCloud>();
 
   PointCloud expected_cloud = CalcExpectedOutput(unfiltered_cloud);
-
-  log()->info("expected_cloud: {}, filtered_cloud: {}", expected_cloud.size(),
-              filtered_cloud.size());
 
   EXPECT_EQ(filtered_cloud.size(), expected_cloud.size());
 
@@ -289,9 +292,6 @@ TEST_F(RigidBodyTreeRemovalTest, KeepPointsTest) {
       filter_output->GetValueOrThrow<perception::PointCloud>();
 
   PointCloud expected_cloud = CalcExpectedOutput(unfiltered_cloud);
-  
-  log()->info("expected_cloud: {}, filtered_cloud: {}", expected_cloud.size(),
-              filtered_cloud.size());
 
   EXPECT_EQ(filtered_cloud.size(), expected_cloud.size());
 
