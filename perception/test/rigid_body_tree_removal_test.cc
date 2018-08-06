@@ -266,6 +266,8 @@ TEST_F(RigidBodyTreeRemovalTest, KeepPointsTest) {
   diagram_->CalcOutput(*context_, output_.get());
   unfiltered_cloud = output_->GetMutableData(0)->GetMutableValue<PointCloud>();
 
+  // Add three points to the unfiltered cloud. These points should remain
+  // after filtering.
   const Eigen::Vector3f point1(0.3, 0., 0.);
   const Eigen::Vector3f point2(0., -0.42, 0.);
   const Eigen::Vector3f point3(0., 0., 0.35);
