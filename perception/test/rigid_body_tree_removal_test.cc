@@ -25,9 +25,10 @@ const double kCollisionThreshold = 0.01;
 
 class RigidBodyTreeRemovalTest : public ::testing::Test {
  public:
-  static bool ContainsPoint(const PointCloud& cloud, const Vector3<double>& x) {
+  static bool ContainsPoint(const PointCloud& cloud, const Vector3<float>& x) {
     for (int i = 0; i < cloud.size(); i++) {
-      if (cloud.xyz(i)(0) == x(0) && cloud.xyz(i)(1) == x(1) && cloud.xyz(i)(2) == x(2)) {
+      if (cloud.xyz(i)(0) == x(0) && cloud.xyz(i)(1) == x(1) &&
+          cloud.xyz(i)(2) == x(2)) {
         return true;
       }
     }
@@ -41,60 +42,44 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
     const Eigen::Vector3d kBoxPosition(0., 0., 0.);
     const Eigen::Vector3d kBoxSize(0.25, 0.25, 0.25);
     AddBox(tree_.get(), kBoxPosition, kBoxSize);
+
+    auto camera = AddCamera();
+    builder_ = std::make_unique<systems::DiagramBuilder<double>>();
+    auto camera_ptr = builder_->AddSystem(std::move(camera));
+
+    passthrough_ = builder_->AddSystem(
+        std::make_unique<systems::PassThrough<double>>(
+            tree_->get_num_positions() + tree_->get_num_velocities()));
+    builder_->ExportInput(passthrough_->get_input_port());
+
+    transformer_ =
+        builder_->AddSystem(std::make_unique<TransformPointCloud>(
+            *tree_.get(), tree_->findFrame("depth_camera")->get_frame_index()));
+    builder_->ExportOutput(transformer_->point_cloud_output_port());
+
+    BuildInitialDiagram(builder_.get(), camera_ptr, passthrough_, transformer_);
   }
 
   void InitFilterDiagram() {
-    auto camera = AddCamera();
-
-    systems::DiagramBuilder<double> builder;
-    auto camera_ptr = builder.AddSystem(std::move(camera));
-
-    systems::PassThrough<double>* passthrough =
-        builder.AddSystem(std::make_unique<systems::PassThrough<double>>(
-            tree_->get_num_positions() + tree_->get_num_velocities()));
-    TransformPointCloud* transformer =
-        builder.AddSystem(std::make_unique<TransformPointCloud>(
-            *tree_.get(), tree_->findFrame("depth_camera")->get_frame_index()));
-
-    BuildInitialDiagram(&builder, camera_ptr, passthrough, transformer);
-
-    auto filter = builder.AddSystem<RigidBodyTreeRemoval>(*tree_.get(),
+    auto filter = builder_->AddSystem<RigidBodyTreeRemoval>(*tree_.get(),
                                                           kCollisionThreshold);
 
-    builder.Connect(passthrough->get_output_port(), filter->state_input_port());
-    builder.Connect(transformer->point_cloud_output_port(),
+    builder_->Connect(passthrough_->get_output_port(), filter->state_input_port());
+    builder_->Connect(transformer_->point_cloud_output_port(),
                     filter->point_cloud_input_port());
 
-    builder.ExportInput(passthrough->get_input_port());
-    builder.ExportOutput(transformer->point_cloud_output_port());
-    builder.ExportOutput(filter->point_cloud_output_port());
-
-    diagram_ = builder.Build();
-
-    InitContextAndPorts();
+    builder_->ExportOutput(filter->point_cloud_output_port());
   }
 
-  void InitTransformerDiagram() {
-    auto camera = AddCamera();
+  void BuildDiagramAndInitContext() {
+    diagram_ = builder_->Build();
 
-    systems::DiagramBuilder<double> builder;
-    auto camera_ptr = builder.AddSystem(std::move(camera));
+    context_ = diagram_->CreateDefaultContext();
 
-    systems::PassThrough<double>* passthrough =
-        builder.AddSystem(std::make_unique<systems::PassThrough<double>>(
-            tree_->get_num_positions() + tree_->get_num_velocities()));
-    TransformPointCloud* transformer =
-        builder.AddSystem(std::make_unique<TransformPointCloud>(
-            *tree_.get(), tree_->findFrame("depth_camera")->get_frame_index()));
+    state_input_ = tree_->getZeroConfiguration();
+    context_->FixInputPort(0, state_input_);
 
-    BuildInitialDiagram(&builder, camera_ptr, passthrough, transformer);
-
-    builder.ExportInput(passthrough->get_input_port());
-    builder.ExportOutput(transformer->point_cloud_output_port());
-
-    diagram_ = builder.Build();
-
-    InitContextAndPorts();
+    output_ = diagram_->AllocateOutput();
   }
 
   void CalcOutput(PointCloud* unfiltered_cloud, PointCloud* filtered_cloud) {
@@ -118,6 +103,9 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
   }
 
   std::unique_ptr<RigidBodyTree<double>> tree_;
+  systems::PassThrough<double>* passthrough_;
+  TransformPointCloud* transformer_;
+  std::unique_ptr<systems::DiagramBuilder<double>> builder_;
   std::unique_ptr<systems::Diagram<double>> diagram_;
   std::unique_ptr<systems::Context<double>> context_;
   std::unique_ptr<systems::SystemOutput<double>> output_;
@@ -163,15 +151,6 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
     camera->set_name("rgbd_camera");
 
     return camera;
-  }
-
-  void InitContextAndPorts() {
-    context_ = diagram_->CreateDefaultContext();
-
-    state_input_ = tree_->getZeroConfiguration();
-    context_->FixInputPort(0, state_input_);
-
-    output_ = diagram_->AllocateOutput();
   }
 
   void AddBox(RigidBodyTree<double>* tree, const Eigen::Vector3d& position,
@@ -254,10 +233,13 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
 // RigidBodyTree are completely removed from the point cloud.
 TEST_F(RigidBodyTreeRemovalTest, RemoveBoxTest) {
   InitFilterDiagram();
+  BuildDiagramAndInitContext();
 
-  PointCloud unfiltered_cloud(0);
-  PointCloud filtered_cloud(0);
-  CalcOutput(&unfiltered_cloud, &filtered_cloud);
+  diagram_->CalcOutput(*context_, output_.get());
+  PointCloud unfiltered_cloud =
+    output_->GetMutableData(0)->GetMutableValue<PointCloud>();
+  PointCloud filtered_cloud =
+    output_->GetMutableData(1)->GetMutableValue<PointCloud>();
 
   PointCloud expected_cloud = CalcExpectedOutput(unfiltered_cloud);
 
@@ -275,7 +257,7 @@ TEST_F(RigidBodyTreeRemovalTest, RemoveBoxTest) {
 // Verifies that points which do not belong to visual geometries of the rigid
 // bodies contained in a RigidBodyTree are kept.
 TEST_F(RigidBodyTreeRemovalTest, KeepPointsTest) {
-  InitTransformerDiagram();
+  BuildDiagramAndInitContext();
 
   PointCloud unfiltered_cloud(0);
   diagram_->CalcOutput(*context_, output_.get());
@@ -302,11 +284,12 @@ TEST_F(RigidBodyTreeRemovalTest, KeepPointsTest) {
                                state_input_);
   std::unique_ptr<systems::AbstractValue> filter_output =
       filter->point_cloud_output_port().Allocate();
-  log()->info("Applying filter outside of diagram ...");
   filter->point_cloud_output_port().Calc(*filter_context, filter_output.get());
   auto filtered_cloud =
       filter_output->GetValueOrThrow<perception::PointCloud>();
+
   PointCloud expected_cloud = CalcExpectedOutput(unfiltered_cloud);
+  
   log()->info("expected_cloud: {}, filtered_cloud: {}", expected_cloud.size(),
               filtered_cloud.size());
 
@@ -316,6 +299,10 @@ TEST_F(RigidBodyTreeRemovalTest, KeepPointsTest) {
   // `float` as the numerical representation.
   EXPECT_TRUE(CompareMatrices(filtered_cloud.xyzs(), expected_cloud.xyzs(),
                               10.0f * std::numeric_limits<float>::epsilon()));
+
+  EXPECT_TRUE(ContainsPoint(filtered_cloud, point1));
+  EXPECT_TRUE(ContainsPoint(filtered_cloud, point2));
+  EXPECT_TRUE(ContainsPoint(filtered_cloud, point3));
 }
 
 }  // namespace
