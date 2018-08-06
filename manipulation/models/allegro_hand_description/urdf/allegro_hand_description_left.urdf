@@ -38,7 +38,7 @@
     </inertial>
   </link>
   <!-- [LINK 0, 4, 8] -->
-  <link name="link_8">
+  <link name="link_0">
     <visual>
       <geometry>
         <mesh filename="../meshes/link_0.0.obj"/>
@@ -57,16 +57,22 @@
       <inertia ixx="1.01666658333e-06" ixy="0.0" ixz="0.0" iyy="6.47677333333e-07" iyz="0.0" izz="1.01666658333e-06"/>
     </inertial>
   </link>
-  <joint name="joint_8" type="revolute">
+  <joint name="joint_0" type="revolute">
     <axis xyz="0 0 1"/>
     <limit effort="15" lower="-0.47" upper="0.47" velocity="7"/>
     <parent link="palm_link"/>
-    <child link="link_8"/>
+    <child link="link_0"/>
     <origin rpy="-0.08726646255 0 0" xyz="0 0.0435 -0.001542"/>
     <dynamics damping="3" friction="10"/>
   </joint>
+  <transmission name="joint_0_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_0_motor"/>
+    <joint name="joint_0"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 1, 5, 9] -->
-  <link name="link_9">
+  <link name="link_1">
     <visual>
       <geometry>
         <mesh filename="../meshes/link_1.0.obj"/>
@@ -85,16 +91,22 @@
       <inertia ixx="7.95654166667e-05" ixy="1.7199e-05" ixz="8.75875e-06" iyy="2.47088833333e-05" iyz="2.413125e-05" izz="7.95654166667e-05"/>
     </inertial>
   </link>
-  <joint name="joint_9" type="revolute">
+  <joint name="joint_1" type="revolute">
     <limit effort="15" lower="-0.196" upper="1.61" velocity="7"/>
     <axis xyz="0 1 0"/>
-    <parent link="link_8"/>
-    <child link="link_9"/>
+    <parent link="link_0"/>
+    <child link="link_1"/>
     <origin xyz="0 0 0.0164"/>
     <dynamics damping="3" friction="5"/>
   </joint>
+  <transmission name="joint_1_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_1_motor"/>
+    <joint name="joint_1"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 2, 6, 10]-->
-  <link name="link_10">
+  <link name="link_2">
     <visual>
       <geometry>
         <mesh filename="../meshes/link_2.0.obj"/>
@@ -113,16 +125,22 @@
       <inertia ixx="2.63979183333e-05" ixy="6.67968e-06" ixz="4.783625e-06" iyy="1.34948516667e-05" iyz="9.372e-06" izz="2.63979183333e-05"/>
     </inertial>
   </link>
-  <joint name="joint_10" type="revolute">
+  <joint name="joint_2" type="revolute">
     <axis xyz="0 1 0"/>
     <limit effort="15" lower="-0.174" upper="1.709" velocity="7"/>
-    <parent link="link_9"/>
-    <child link="link_10"/>
+    <parent link="link_1"/>
+    <child link="link_2"/>
     <origin xyz="0 0 0.054"/>
     <dynamics damping="8" friction="10"/>
   </joint>
+  <transmission name="joint_2_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_2_motor"/>
+    <joint name="joint_2"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 3, 7, 11] -->
-  <link name="link_11">
+  <link name="link_3">
     <visual>
       <geometry>
         <mesh filename="../meshes/link_3.0.obj"/>
@@ -141,16 +159,22 @@
       <inertia ixx="4.701248e-06" ixy="1.255968e-06" ixz="1.2936e-06" iyy="3.649312e-06" iyz="1.7622e-06" izz="4.701248e-06"/>
     </inertial>
   </link>
-  <joint name="joint_11" type="revolute">
+  <joint name="joint_3" type="revolute">
     <axis xyz="0 1 0"/>
     <limit effort="15" lower="-0.227" upper="1.618" velocity="7"/>
-    <parent link="link_10"/>
-    <child link="link_11"/>
+    <parent link="link_2"/>
+    <child link="link_3"/>
     <origin xyz="0 0 0.0384"/>
     <dynamics damping="10" friction="12"/>
   </joint>
+  <transmission name="joint_3_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_3_motor"/>
+    <joint name="joint_3"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [FINGER TIP] -->
-  <link name="link_11_tip">
+  <link name="link_3_tip">
     <visual>
       <geometry>
         <mesh filename="../meshes/link_3.0_tip.obj"/>
@@ -170,9 +194,9 @@
       <inertia ixx="9.68e-07" ixy="0" ixz="0" iyy="9.68e-07" iyz="0" izz="9.68e-07"/>
     </inertial>
   </link>
-  <joint name="joint_11_tip" type="fixed">
-    <parent link="link_11"/>
-    <child link="link_11_tip"/>
+  <joint name="joint_3_tip" type="fixed">
+    <parent link="link_3"/>
+    <child link="link_3_tip"/>
     <origin rpy="0 0 0" xyz="0 0 0.0267"/>
   </joint>
   <!-- [LINK 0, 4, 8] -->
@@ -203,6 +227,12 @@
     <origin rpy="0.0 0 0" xyz="0 0 0.0007"/>
     <dynamics damping="3" friction="10"/>
   </joint>
+  <transmission name="joint_4_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_4_motor"/>
+    <joint name="joint_4"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 1, 5, 9] -->
   <link name="link_5">
     <visual>
@@ -231,6 +261,12 @@
     <origin xyz="0 0 0.0164"/>
     <dynamics damping="3" friction="5"/>
   </joint>
+  <transmission name="joint_5_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_5_motor"/>
+    <joint name="joint_5"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 2, 6, 10]-->
   <link name="link_6">
     <visual>
@@ -259,6 +295,12 @@
     <origin xyz="0 0 0.054"/>
     <dynamics damping="8" friction="10"/>
   </joint>
+  <transmission name="joint_6_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_6_motor"/>
+    <joint name="joint_6"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 3, 7, 11] -->
   <link name="link_7">
     <visual>
@@ -287,6 +329,12 @@
     <origin xyz="0 0 0.0384"/>
     <dynamics damping="10" friction="12"/>
   </joint>
+  <transmission name="joint_7_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_7_motor"/>
+    <joint name="joint_7"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [FINGER TIP] -->
   <link name="link_7_tip">
     <visual>
@@ -314,7 +362,7 @@
     <origin rpy="0 0 0" xyz="0 0 0.0267"/>
   </joint>
   <!-- [LINK 0, 4, 8] -->
-  <link name="link_0">
+  <link name="link_8">
     <visual>
       <geometry>
         <mesh filename="../meshes/link_0.0.obj"/>
@@ -333,16 +381,22 @@
       <inertia ixx="1.01666658333e-06" ixy="0.0" ixz="0.0" iyy="6.47677333333e-07" iyz="0.0" izz="1.01666658333e-06"/>
     </inertial>
   </link>
-  <joint name="joint_0" type="revolute">
+  <joint name="joint_8" type="revolute">
     <axis xyz="0 0 1"/>
     <limit effort="15" lower="-0.47" upper="0.47" velocity="7"/>
     <parent link="palm_link"/>
-    <child link="link_0"/>
+    <child link="link_8"/>
     <origin rpy="0.08726646255 0 0" xyz="0 -0.0435 -0.001542"/>
     <dynamics damping="3" friction="10"/>
   </joint>
+  <transmission name="joint_8_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_8_motor"/>
+    <joint name="joint_8"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 1, 5, 9] -->
-  <link name="link_1">
+  <link name="link_9">
     <visual>
       <geometry>
         <mesh filename="../meshes/link_1.0.obj"/>
@@ -361,16 +415,22 @@
       <inertia ixx="7.95654166667e-05" ixy="1.7199e-05" ixz="8.75875e-06" iyy="2.47088833333e-05" iyz="2.413125e-05" izz="7.95654166667e-05"/>
     </inertial>
   </link>
-  <joint name="joint_1" type="revolute">
+  <joint name="joint_9" type="revolute">
     <limit effort="15" lower="-0.196" upper="1.61" velocity="7"/>
     <axis xyz="0 1 0"/>
-    <parent link="link_0"/>
-    <child link="link_1"/>
+    <parent link="link_8"/>
+    <child link="link_9"/>
     <origin xyz="0 0 0.0164"/>
     <dynamics damping="3" friction="5"/>
   </joint>
+  <transmission name="joint_9_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_9_motor"/>
+    <joint name="joint_9"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 2, 6, 10]-->
-  <link name="link_2">
+  <link name="link_10">
     <visual>
       <geometry>
         <mesh filename="../meshes/link_2.0.obj"/>
@@ -389,16 +449,22 @@
       <inertia ixx="2.63979183333e-05" ixy="6.67968e-06" ixz="4.783625e-06" iyy="1.34948516667e-05" iyz="9.372e-06" izz="2.63979183333e-05"/>
     </inertial>
   </link>
-  <joint name="joint_2" type="revolute">
+  <joint name="joint_10" type="revolute">
     <axis xyz="0 1 0"/>
     <limit effort="15" lower="-0.174" upper="1.709" velocity="7"/>
-    <parent link="link_1"/>
-    <child link="link_2"/>
+    <parent link="link_9"/>
+    <child link="link_10"/>
     <origin xyz="0 0 0.054"/>
     <dynamics damping="8" friction="10"/>
   </joint>
+  <transmission name="joint_10_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_10_motor"/>
+    <joint name="joint_10"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 3, 7, 11] -->
-  <link name="link_3">
+  <link name="link_11">
     <visual>
       <geometry>
         <mesh filename="../meshes/link_3.0.obj"/>
@@ -417,16 +483,22 @@
       <inertia ixx="4.701248e-06" ixy="1.255968e-06" ixz="1.2936e-06" iyy="3.649312e-06" iyz="1.7622e-06" izz="4.701248e-06"/>
     </inertial>
   </link>
-  <joint name="joint_3" type="revolute">
+  <joint name="joint_11" type="revolute">
     <axis xyz="0 1 0"/>
     <limit effort="15" lower="-0.227" upper="1.618" velocity="7"/>
-    <parent link="link_2"/>
-    <child link="link_3"/>
+    <parent link="link_10"/>
+    <child link="link_11"/>
     <origin xyz="0 0 0.0384"/>
     <dynamics damping="10" friction="12"/>
   </joint>
+  <transmission name="joint_11_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_11_motor"/>
+    <joint name="joint_11"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [FINGER TIP] -->
-  <link name="link_3_tip">
+  <link name="link_11_tip">
     <visual>
       <geometry>
         <mesh filename="../meshes/link_3.0_tip.obj"/>
@@ -446,9 +518,9 @@
       <inertia ixx="9.68e-07" ixy="0" ixz="0" iyy="9.68e-07" iyz="0" izz="9.68e-07"/>
     </inertial>
   </link>
-  <joint name="joint_3_tip" type="fixed">
-    <parent link="link_3"/>
-    <child link="link_3_tip"/>
+  <joint name="joint_11_tip" type="fixed">
+    <parent link="link_11"/>
+    <child link="link_11_tip"/>
     <origin rpy="0 0 0" xyz="0 0 0.0267"/>
   </joint>
   <!-- [LINK 12] -->
@@ -466,7 +538,7 @@
       <geometry>
         <box size="0.0358 0.034 0.0455"/>
       </geometry>
-      <origin rpy="0 0 0" xyz="-0.0179 -0.009 0.0145"/>
+      <origin rpy="0 0 0" xyz="-0.0179 0.009 0.0145"/>
     </collision>
     <inertial>
       <mass value="0.0176"/>
@@ -475,13 +547,19 @@
     </inertial>
   </link>
   <joint name="joint_12" type="revolute">
-    <axis xyz="+1 0 0"/>
+    <axis xyz="1 0 0"/>
     <limit effort="15" lower="0.263" upper="1.396" velocity="7"/>
     <parent link="palm_link"/>
     <child link="link_12"/>
     <origin rpy="0 -1.65806278845 1.5707963259" xyz="-0.0182 -0.019333 -0.045987"/>
     <dynamics damping="3" friction="10"/>
   </joint>
+  <transmission name="joint_12_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_12_motor"/>
+    <joint name="joint_12"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 13] -->
   <link name="link_13">
     <visual>
@@ -512,6 +590,12 @@
     <origin xyz="-0.027 -0.005 0.0399"/>
     <dynamics damping="3" friction="5"/>
   </joint>
+  <transmission name="joint_13_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_13_motor"/>
+    <joint name="joint_13"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 14] -->
   <link name="link_14">
     <visual>
@@ -541,6 +625,12 @@
     <origin xyz="0 0 0.0177"/>
     <dynamics damping="3" friction="10"/>
   </joint>
+  <transmission name="joint_14_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_14_motor"/>
+    <joint name="joint_14"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 15] -->
   <link name="link_15">
     <visual>
@@ -570,6 +660,12 @@
     <origin xyz="0 0 0.0514"/>
     <dynamics damping="3" friction="12"/>
   </joint>
+  <transmission name="joint_15_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_15_motor"/>
+    <joint name="joint_15"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [FINGER TIP] -->
   <link name="link_15_tip">
     <visual>

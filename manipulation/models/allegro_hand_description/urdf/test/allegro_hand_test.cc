@@ -15,7 +15,7 @@ void test_hand_model(const RigidBodyTreed& tree) {
   EXPECT_EQ(tree.get_num_model_instances(), 1);
   EXPECT_EQ(tree.get_num_positions(), 16);
   EXPECT_EQ(tree.get_num_velocities(), 16);
-  EXPECT_EQ(tree.get_num_actuators(), 0);
+  EXPECT_EQ(tree.get_num_actuators(), 16);
   EXPECT_EQ(tree.get_num_bodies(), 23);
 }
 
