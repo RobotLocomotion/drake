@@ -6,17 +6,17 @@ namespace perception {
 RigidBodyTreeRemoval::RigidBodyTreeRemoval(const RigidBodyTree<double>& tree,
                                            double collision_threshold)
     : tree_(tree), collision_threshold_(collision_threshold) {
-  /// input port for point cloud
+  /// Create input port for point cloud.
   point_cloud_input_port_index_ = this->DeclareAbstractInputPort().get_index();
 
-  /// input port for tree positions and velocities
+  /// Create input port for tree positions and velocities.
   state_input_port_index_ =
       this->DeclareInputPort(
               systems::kVectorValued,
               tree_.get_num_positions() + tree_.get_num_velocities())
           .get_index();
 
-  /// output port for filtered point cloud
+  // Create output port for filtered point cloud.
   this->DeclareAbstractOutputPort(&RigidBodyTreeRemoval::MakeOutputPointCloud,
                                   &RigidBodyTreeRemoval::FilterPointCloud);
 }
@@ -40,9 +40,6 @@ void RigidBodyTreeRemoval::FilterPointCloud(
     points[i] = input_cloud.xyz(i).cast<double>();
   }
 
-//  points.resize(1);
-//  points[0] = Eigen::Vector3d(0., 0., 0.);
-
   // 2. Extract the indices of the points in collision.
   Eigen::VectorXd q =
       this->EvalEigenVectorInput(context, state_input_port_index_)
@@ -51,9 +48,6 @@ void RigidBodyTreeRemoval::FilterPointCloud(
   std::vector<size_t> filtered_point_indices =
       const_cast<RigidBodyTree<double>&>(tree_).collidingPoints(
           kinematics_cache, points, collision_threshold_);
-
-  log()->info("points: {}, filtered_point_indices: {}", points.size(),
-              filtered_point_indices.size());
 
   // 3. Create a new point cloud without the colliding points.
   output->resize(points.size() - filtered_point_indices.size());

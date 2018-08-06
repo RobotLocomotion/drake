@@ -13,12 +13,16 @@
 namespace drake {
 namespace perception {
 
-/// A filtering algorithm for point clouds that removes known geometries.
-/// Given a RigidBodyTree object, the algorithm takes a point cloud and a vector
-/// of tree positions as input, and outputs a filtered point cloud from which
-/// all points
-/// expected to belong to the rigid bodies comprising the RigidBodyTree have
-/// been removed.
+/// Removes known geometries from point clouds.
+///
+/// Given a RigidBodyTree, the system takes a point cloud and the state of the
+/// RigidBodyTree as input, and produces a filtered point cloud as output from
+/// which all points expected to belong to the rigid bodies comprising the
+/// RigidBodyTree have been removed.
+///
+/// The system has two inpt ports and one output port. The first input port
+/// consumes a PointCloud and the second takes the state of the RigidBodyTree.
+/// The ouput port contains the filtered PointCloud.
 class RigidBodyTreeRemoval final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBodyTreeRemoval)
@@ -28,13 +32,15 @@ class RigidBodyTreeRemoval final : public systems::LeafSystem<double> {
   /// @param[in] tree The RigidBodyTree containing the geometric configuration
   /// of the world.
   /// @param [in] collision_threshold The threshold for the collision
-  /// detection that decides which points to remove from the point cloud.
+  /// detection that determines which points to remove from the point cloud.
+  ///
+  /// The `tree` object must remain valid for the duration of this object.
   RigidBodyTreeRemoval(const RigidBodyTree<double>& tree,
                        double collision_threshold);
 
-  /// Returns the vector valued input port that contains a vector
-  /// of `q, v` corresponding to the positions and velocities associated with
-  /// a RigidBodyTree.
+  /// Returns the vector valued input port that contains a vector of `q, v`
+  /// corresponding to the positions and velocities associated with a
+  /// RigidBodyTree.
   const systems::InputPort<double>& state_input_port() const {
     return this->get_input_port(state_input_port_index_);
   }
@@ -50,8 +56,11 @@ class RigidBodyTreeRemoval final : public systems::LeafSystem<double> {
   }
 
  private:
+  /// Returns an empty point cloud.
   PointCloud MakeOutputPointCloud() const;
 
+  /// Filters the point cloud by removing those geometries that are known
+  /// from the RigidBodyTree `tree_`.
   void FilterPointCloud(const systems::Context<double>& context,
                         PointCloud* output) const;
 
