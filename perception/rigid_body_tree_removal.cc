@@ -55,9 +55,6 @@ void RigidBodyTreeRemoval::FilterPointCloud(
   log()->info("points: {}, filtered_point_indices: {}", points.size(),
               filtered_point_indices.size());
 
-  // for(size_t i=0; i < points.size(); i++)
-  //  log()->info("{}", points[i].transpose());
-
   // 3. Create a new point cloud without the colliding points.
   output->resize(points.size() - filtered_point_indices.size());
   int k = 0;
