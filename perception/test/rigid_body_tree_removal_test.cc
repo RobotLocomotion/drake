@@ -49,44 +49,72 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
     AddBox(tree_.get(), kBoxPosition, kBoxSize);
 
     builder_ = std::make_unique<systems::DiagramBuilder<double>>();
+  }
 
+  void InitFilterDiagram() {
     auto camera = AddCamera();
 
-    passthrough_ =
+    auto passthrough =
         builder_->AddSystem(std::make_unique<systems::PassThrough<double>>(
             tree_->get_num_positions() + tree_->get_num_velocities()));
 
-    transformer_ = builder_->AddSystem(std::make_unique<TransformPointCloud>(
-        *tree_.get(), tree_->findFrame("depth_camera")->get_frame_index()));
+    auto transformer =
+        builder_->AddSystem(std::make_unique<TransformPointCloud>(
+            *tree_.get(), tree_->findFrame("depth_camera")->get_frame_index()));
 
     auto converter = builder_->AddSystem<DepthImageToPointCloud>(
         camera->depth_camera_info());
 
-    builder_->Connect(passthrough_->get_output_port(),
+    builder_->Connect(passthrough->get_output_port(),
                       camera->state_input_port());
-    builder_->Connect(passthrough_->get_output_port(),
-                      transformer_->state_input_port());
+    builder_->Connect(passthrough->get_output_port(),
+                      transformer->state_input_port());
 
     builder_->Connect(camera->depth_image_output_port(),
                       converter->depth_image_input_port());
     builder_->Connect(converter->point_cloud_output_port(),
-                      transformer_->point_cloud_input_port());
+                      transformer->point_cloud_input_port());
 
-    builder_->ExportInput(passthrough_->get_input_port());
-    builder_->ExportOutput(transformer_->point_cloud_output_port());
-  }
+    builder_->ExportInput(passthrough->get_input_port());
+    builder_->ExportOutput(transformer->point_cloud_output_port());
 
-  // Adds a RigidBodyTreeRemoval filter to the diagram.
-  void InitFilterDiagram() {
     auto filter = builder_->AddSystem<RigidBodyTreeRemoval>(
         *tree_.get(), kCollisionThreshold);
 
-    builder_->Connect(passthrough_->get_output_port(),
+    builder_->Connect(passthrough->get_output_port(),
                       filter->state_input_port());
-    builder_->Connect(transformer_->point_cloud_output_port(),
+    builder_->Connect(transformer->point_cloud_output_port(),
                       filter->point_cloud_input_port());
 
     builder_->ExportOutput(filter->point_cloud_output_port());
+  }
+
+  void InitiTransformerDiagram() {
+    auto camera = AddCamera();
+
+    auto passthrough =
+        builder_->AddSystem(std::make_unique<systems::PassThrough<double>>(
+            tree_->get_num_positions() + tree_->get_num_velocities()));
+
+    auto transformer =
+        builder_->AddSystem(std::make_unique<TransformPointCloud>(
+            *tree_.get(), tree_->findFrame("depth_camera")->get_frame_index()));
+
+    auto converter = builder_->AddSystem<DepthImageToPointCloud>(
+        camera->depth_camera_info());
+
+    builder_->Connect(passthrough->get_output_port(),
+                      camera->state_input_port());
+    builder_->Connect(passthrough->get_output_port(),
+                      transformer->state_input_port());
+
+    builder_->Connect(camera->depth_image_output_port(),
+                      converter->depth_image_input_port());
+    builder_->Connect(converter->point_cloud_output_port(),
+                      transformer->point_cloud_input_port());
+
+    builder_->ExportInput(passthrough->get_input_port());
+    builder_->ExportOutput(transformer->point_cloud_output_port());
   }
 
   // Builds the diagram and initializes the context.
@@ -116,8 +144,6 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
   }
 
   std::unique_ptr<RigidBodyTree<double>> tree_;
-  systems::PassThrough<double>* passthrough_;
-  TransformPointCloud* transformer_;
   std::unique_ptr<systems::DiagramBuilder<double>> builder_;
   std::unique_ptr<systems::Diagram<double>> diagram_;
   std::unique_ptr<systems::Context<double>> context_;
@@ -260,6 +286,7 @@ TEST_F(RigidBodyTreeRemovalTest, RemoveBoxTest) {
 // Verifies that points which do not belong to visual geometries of the rigid
 // bodies contained in a RigidBodyTree are kept.
 TEST_F(RigidBodyTreeRemovalTest, KeepPointsTest) {
+  InitiTransformerDiagram();
   BuildDiagramAndInitContext();
 
   PointCloud unfiltered_cloud(0);
