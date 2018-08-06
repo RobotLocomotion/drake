@@ -40,6 +40,11 @@ def _rename(file_dest, rename):
         return join_paths(dirname(file_dest), renamed)
     return file_dest
 
+def _depset_to_list(l):
+    """Helper function to convert depset to list."""
+    iter_list = l.to_list() if type(l) == "depset" else l
+    return iter_list
+
 #------------------------------------------------------------------------------
 def _output_path(ctx, input_file, strip_prefix = [], warn_foreign = True):
     """Compute output path (without destination prefix) for install action.
@@ -79,14 +84,14 @@ def _guess_files(target, candidates, scope, attr_name):
     elif scope == "WORKSPACE":
         return [
             f
-            for f in candidates
+            for f in _depset_to_list(candidates)
             if target.label.workspace_root == f.owner.workspace_root
         ]
 
     elif scope == "PACKAGE":
         return [
             f
-            for f in candidates
+            for f in _depset_to_list(candidates)
             if (target.label.workspace_root == f.owner.workspace_root and
                 target.label.package == f.owner.package)
         ]
@@ -172,7 +177,7 @@ def _install_actions(
     # Iterate over files. We expect a list of labels, which will have a 'files'
     # attribute that is a list of file artifacts. Thus this two-level loop.
     for f in file_labels:
-        for a in f.files:
+        for a in _depset_to_list(f.files):
             # TODO(mwoehlke-kitware) refactor this to separate computing the
             # original relative path and the path with prefix(es) stripped,
             # then use the original relative path for both exclusions and
@@ -217,7 +222,11 @@ def _install_cc_actions(ctx, target):
 
     # Compute actions for guessed resource files.
     if ctx.attr.guess_data != "NONE":
-        data = [f for f in target.data_runfiles.files if f.is_source]
+        data = [
+            f
+            for f in _depset_to_list(target.data_runfiles.files)
+            if f.is_source
+        ]
         data = _guess_files(target, data, ctx.attr.guess_data, "guess_data")
         actions += _install_actions(
             ctx,
@@ -315,7 +324,7 @@ def _install_java_launcher_actions(
     classpath = []
     actions = []
 
-    for jar in target[MainClassInfo].classpath:
+    for jar in _depset_to_list(target[MainClassInfo].classpath):
         jar_install = _install_action(
             ctx,
             jar,
@@ -360,7 +369,7 @@ def _install_test_actions(ctx):
 
     # For files, we run the file from the build tree.
     for test in ctx.attr.install_tests:
-        for f in test.files:
+        for f in _depset_to_list(test.files):
             test_actions.append(
                 struct(src = f, cmd = f.path),
             )
