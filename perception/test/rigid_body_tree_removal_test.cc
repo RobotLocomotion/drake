@@ -56,14 +56,14 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
     const Eigen::Vector3d kBoxSize(0.25, 0.25, 0.25);
     AddBox(tree_.get(), kBoxPosition, kBoxSize);
 
-    builder_ = std::make_unique<systems::DiagramBuilder<double>>();
-  }
-
-  void InitFilterDiagram() {
     AddCameraBody(tree_.get(), kPosition, kOrientation);
 
     tree_->compile();
 
+    builder_ = std::make_unique<systems::DiagramBuilder<double>>();
+  }
+
+  void InitFilterDiagram() {
     auto camera = builder_->AddSystem<systems::sensors::RgbdCamera>(
         std::make_unique<systems::sensors::RgbdCamera>(
             "rgbd_camera", *tree_.get(), kPosition, kOrientation,
@@ -107,9 +107,6 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
   }
 
   void InitTransformerDiagram() {
-    AddCameraBody(tree_.get(), kPosition, kOrientation);
-
-    tree_->compile();
     auto camera = builder_->AddSystem<systems::sensors::RgbdCamera>(
         std::make_unique<systems::sensors::RgbdCamera>(
             "rgbd_camera", *tree_.get(), kPosition, kOrientation,
@@ -184,7 +181,7 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
                      const Vector3<double>& orientation) {
     auto camera_body = std::make_unique<RigidBody<double>>();
     camera_body->set_name("rgbd_camera");
-    camera_body->set_model_instance_id(tree->add_model_instance());
+    // camera_body->set_model_instance_id(tree->add_model_instance());
     Eigen::Isometry3d joint_transform =
         Eigen::Translation3d(position) *
         (Eigen::AngleAxisd(orientation(0), Eigen::Vector3d::UnitX()) *
@@ -209,7 +206,8 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
   void AddBox(RigidBodyTree<double>* tree, const Eigen::Vector3d& position,
               const Eigen::Vector3d& size) {
     auto body = std::make_unique<RigidBody<double>>(MakeBox(size));
-    body->set_model_instance_id(tree->add_model_instance());
+    body->set_name("box");
+    // body->set_model_instance_id(tree->add_model_instance());
 
     Eigen::Isometry3d joint_transform;
     {
@@ -220,12 +218,12 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
     auto joint = std::make_unique<FixedJoint>("box_joint", joint_transform);
     body->add_joint(&tree->world(), std::move(joint));
 
-    RigidBody<double>* body_in_tree = tree->add_rigid_body(std::move(body));
+    tree->add_rigid_body(std::move(body));
 
     const DrakeShapes::Box shape(size);
-    drake::multibody::collision::Element body_collision(
+    drake::multibody::collision::Element collision(
         shape, Isometry3<double>::Identity());
-    tree->addCollisionElement(body_collision, *body_in_tree, "default");
+    tree->addCollisionElement(collision, *tree->FindBody("box"), "default");
   }
 
   // Creates a RigidBody with a box shape.
