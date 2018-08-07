@@ -156,6 +156,11 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertEqual(v_map_ad.shape, (num_v, num_q))
         self.assertEqual(qd_map_ad.shape, (num_q, num_v))
 
+        # - Check FindBody and FindBodyIndex methods
+        body_name = "arm"
+        body = tree.FindBody(body_name)
+        self.assertEqual(body.get_body_index(), tree.FindBodyIndex(body_name))
+
         # - Check ChildOfJoint methods
         body = tree.FindChildBodyOfJoint("theta")
         self.assertIsInstance(body, RigidBody)
