@@ -39,28 +39,33 @@ void RigidBodyTreeRemoval::FilterPointCloud(
   }
 
   // 2. Extract the indices of the points in collision.
-  Eigen::VectorXd q = EvalEigenVectorInput(context, state_input_port_index_)
-                          .head(tree_.get_num_positions());
-  KinematicsCache<double> kinematics_cache = tree_.doKinematics(q);
-  std::vector<size_t> filtered_point_indices =
+  const Eigen::VectorXd q =
+      EvalEigenVectorInput(context, state_input_port_index_)
+          .head(tree_.get_num_positions());
+  const KinematicsCache<double> kinematics_cache = tree_.doKinematics(q);
+  const std::vector<size_t> filtered_point_indices =
       const_cast<RigidBodyTree<double>&>(tree_).collidingPoints(
           kinematics_cache, points, collision_threshold_);
 
   // 3. Create a new point cloud without the colliding points.
-  output->resize(points.size() - filtered_point_indices.size());
-  int k = 0;
-  for (size_t i = 0; i < points.size(); i++) {
-    bool keep = true;
-    for (size_t j = 0; j < filtered_point_indices.size(); j++) {
-      if (i == filtered_point_indices[j]) {
-        keep = false;
-        break;
+  if (filtered_point_indices.size() > 0) {
+    output->resize(points.size() - filtered_point_indices.size());
+    int k = 0;
+    for (size_t i = 0; i < points.size(); i++) {
+      bool keep = true;
+      for (size_t j = 0; j < filtered_point_indices.size(); j++) {
+        if (i == filtered_point_indices[j]) {
+          keep = false;
+          break;
+        }
+      }
+      if (keep) {
+        output->mutable_xyz(k) = points[i].cast<float>();
+        k++;
       }
     }
-    if (keep) {
-      output->mutable_xyz(k) = points[i].cast<float>();
-      k++;
-    }
+  } else {
+    *output = *input_cloud;
   }
 }
 

@@ -205,42 +205,30 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
   // Adds a RigidBody with a box shape to the RigidBodyTree at a fixed location.
   void AddBox(RigidBodyTree<double>* tree, const Eigen::Vector3d& position,
               const Eigen::Vector3d& size) {
-    auto body = std::make_unique<RigidBody<double>>(MakeBox(size));
+    auto body = std::make_unique<RigidBody<double>>();
     body->set_name("box");
-    // body->set_model_instance_id(tree->add_model_instance());
+    body->set_mass(1.0);
+    body->set_spatial_inertia(Matrix6<double>::Identity());
+
+    const DrakeShapes::Box shape(size);
+    const Eigen::Vector4d material(0.5, 0.0, 0.5, 1.0);
+    const DrakeShapes::VisualElement visual_element(
+        shape, Eigen::Isometry3d::Identity(), material);
+    body->AddVisualElement(visual_element);
 
     Eigen::Isometry3d joint_transform;
     {
       const drake::math::RotationMatrix<double> kRotIdentity;
       joint_transform.matrix() << kRotIdentity.matrix(), position, 0, 0, 0, 1;
     }
-
     auto joint = std::make_unique<FixedJoint>("box_joint", joint_transform);
     body->add_joint(&tree->world(), std::move(joint));
 
     tree->add_rigid_body(std::move(body));
 
-    const DrakeShapes::Box shape(size);
     drake::multibody::collision::Element collision(
         shape, Isometry3<double>::Identity());
     tree->addCollisionElement(collision, *tree->FindBody("box"), "default");
-  }
-
-  // Creates a RigidBody with a box shape.
-  RigidBody<double> MakeBox(const Eigen::Vector3d& size) {
-    RigidBody<double> body;
-    body.set_name("box_body");
-    body.set_mass(1.0);
-    body.set_spatial_inertia(Matrix6<double>::Identity());
-
-    const DrakeShapes::Box shape(size);
-    const Eigen::Vector4d material(0.5, 0.0, 0.5, 1.0);
-
-    const DrakeShapes::VisualElement visual_element(
-        shape, Eigen::Isometry3d::Identity(), material);
-    body.AddVisualElement(visual_element);
-
-    return body;
   }
 
   // Finds the points in `cloud` that collide with some body in `tree`.
@@ -286,12 +274,13 @@ TEST_F(RigidBodyTreeRemovalTest, KeepPointsTest) {
   InitTransformerDiagram();
   BuildDiagramAndInitContext();
 
+  // Obtain a point cloud that has been transformed to the "world" frame.
   diagram_->CalcOutput(*context_, output_.get());
   PointCloud unfiltered_cloud =
       output_->GetMutableData(0)->GetMutableValue<PointCloud>();
 
-  // Add three points to the unfiltered cloud. These points should remain
-  // after filtering.
+  // Add three points to the point cloud. These points should remain after
+  // filtering.
   const Eigen::Vector3f point1(0.3, 0., 0.);
   const Eigen::Vector3f point2(0., -0.42, 0.);
   const Eigen::Vector3f point3(0., 0., 0.35);
@@ -301,23 +290,23 @@ TEST_F(RigidBodyTreeRemovalTest, KeepPointsTest) {
   unfiltered_cloud.mutable_xyz(size + 1) = point2;
   unfiltered_cloud.mutable_xyz(size + 2) = point3;
 
-  std::unique_ptr<RigidBodyTreeRemoval> filter =
-      std::make_unique<RigidBodyTreeRemoval>(*tree_.get(), kCollisionThreshold);
+  auto filter =
+    std::make_unique<RigidBodyTreeRemoval>(*tree_.get(), kCollisionThreshold);
 
-  std::unique_ptr<systems::Context<double>> filter_context =
-      filter->CreateDefaultContext();
+  auto filter_context =
+    filter->CreateDefaultContext();
   filter_context->FixInputPort(
       filter->point_cloud_input_port().get_index(),
       systems::AbstractValue::Make<PointCloud>(unfiltered_cloud));
   filter_context->FixInputPort(filter->state_input_port().get_index(),
                                state_input_);
-  std::unique_ptr<systems::AbstractValue> filter_output =
-      filter->point_cloud_output_port().Allocate();
+
+  auto filter_output = filter->point_cloud_output_port().Allocate();
   filter->point_cloud_output_port().Calc(*filter_context, filter_output.get());
   auto filtered_cloud =
       filter_output->GetValueOrThrow<perception::PointCloud>();
 
-  PointCloud expected_cloud = CalcExpectedOutput(unfiltered_cloud);
+  auto expected_cloud = CalcExpectedOutput(unfiltered_cloud);
 
   EXPECT_EQ(filtered_cloud.size(), expected_cloud.size());
 
