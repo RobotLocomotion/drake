@@ -10,13 +10,17 @@
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/allegro_hand/allegro_common.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
+#include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 
 namespace drake {
 
@@ -42,17 +46,14 @@ int DoMain() {
   RigidBodyPlant<double>* plant = nullptr;
   {
     auto tree = std::make_unique<RigidBodyTree<double>>();
-    drake::multibody::AddFlatTerrainToWorld(tree.get());
+    // drake::multibody::AddFlatTerrainToWorld(tree.get());
     CreateTreeFromFixedModelAtPose(
         FindResourceOrThrow(
             "drake/manipulation/models/allegro_hand_description/urdf/"
             "allegro_hand_description_right.urdf"),
         tree.get());
 
-    auto tree_sys =
-        std::make_unique<RigidBodyPlant<double>>(std::move(tree));
-    plant = builder.AddSystem<RigidBodyPlant<double>>(
-        std::move(tree_sys));
+    plant = builder.AddSystem<RigidBodyPlant<double>>(std::move(tree));
     plant->set_name("plant");
   }
 
@@ -62,11 +63,23 @@ int DoMain() {
   auto visualizer =
       builder.AddSystem<systems::DrakeVisualizer>(tree, &lcm);
 
+  // Publish the contact results over LCM.
+  auto contact_viz =
+      builder.AddSystem<systems::ContactResultsToLcmSystem<double>>(
+          plant->get_rigid_body_tree());
+  auto contact_results_publisher = builder.AddSystem(
+      systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
+          "CONTACT_RESULTS", &lcm));
+  builder.Connect(plant->contact_results_output_port(),
+                  contact_viz->get_input_port(0));
+  builder.Connect(contact_viz->get_output_port(0),
+                  contact_results_publisher->get_input_port());
+
   // Feeds in constant command inputs of zero.
   VectorX<double> zero_values = VectorX<double>::Zero(plant->get_input_size());
-  zero_values(0)=1;
-  zero_values(2)=10;
-  std::cout<<zero_values<<"\n";
+  // zero_values(0)=1;
+  // zero_values(2)=10;
+  // std::cout<<zero_values<<"\n";
   // std::cout<<"input size: "<<plant->get_input_size()<<"\n";  // ------------->16
   auto zero_source =
       builder.AddSystem<ConstantVectorSource<double>>(zero_values);
@@ -78,23 +91,32 @@ int DoMain() {
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
   systems::Simulator<double> simulator(*diagram);
 
-  Context<double>& allegro_context = diagram->GetMutableSubsystemContext(
-      *plant, &simulator.get_mutable_context());
 
   std::cout<<"Connected to the simulator \n";
 
+  simulator.set_target_realtime_rate(1);
+  //simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
+  //    *diagram, 5e-4, &simulator.get_mutable_context());
+  simulator.get_mutable_integrator()->set_maximum_step_size(5e-3);
+  simulator.get_mutable_integrator()->set_fixed_step_mode(true);
+  //simulator.set_publish_every_time_step(false);
+
   // Sets (arbitrary) initial conditions.
+  Context<double>& allegro_context = diagram->GetMutableSubsystemContext(
+      *plant, &simulator.get_mutable_context());
   VectorBase<double>& x0 = allegro_context.get_mutable_continuous_state_vector();
-  x0.SetAtIndex(1, 0.5);  // shoulder fore/aft angle [rad]
+  x0.SetAtIndex(1, 0.2);  // shoulder fore/aft angle [rad]
+  x0.SetAtIndex(2, 0.2);
 
   simulator.Initialize();
+
 
   std::cout<<"Simulator inited \n";
 
 //----------------------
 
   // Simulate for the desired duration.
-  simulator.set_target_realtime_rate(1);
+  // simulator.set_target_realtime_rate(1);
   simulator.StepTo(FLAGS_simulation_sec);
 
   std::cout<<"Simulator proceeds \n";
