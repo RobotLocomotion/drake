@@ -221,15 +221,16 @@ void ContextBase::CreateBuiltInTrackers() {
   // and discrete representations without having to change the specified
   // dependency, which remains "configuration" either way.
   //
-  // See SystemBase::configuration_ticket() and velocity_ticket() for the API
+  // See SystemBase::configuration_ticket() and kinematics_ticket() for the API
   // contract that must be implemented here and make sure this code is kept
   // up to date with that contract.
 
   // TODO(sherm1) Should track changes to configuration and velocity regardless
   // of how represented. See issue #9171. Until that is resolved, we must
-  // assume that "configuration" results (like PE) can be affected by anything
-  // *except* time, v, and u; "velocity" results include everything except time,
-  // q, and u; and "kinematics" is everything except time and u.
+  // assume that "configuration" results (like end effector location and PE)
+  // can be affected by anything *except* time, v, and u; and "kinematics"
+  // results (like end effector velocity and KE) can be affected by anything
+  // except time and u.
   auto& configuration_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kConfigurationTicket), "configuration");
   // Compare with "all sources" above.
@@ -240,20 +241,11 @@ void ContextBase::CreateBuiltInTrackers() {
   configuration_tracker.SubscribeToPrerequisite(&xa_tracker);
   configuration_tracker.SubscribeToPrerequisite(&p_tracker);
 
-  auto& velocity_tracker = graph.CreateNewDependencyTracker(
-      DependencyTicket(internal::kVelocityTicket), "velocity");
-  velocity_tracker.SubscribeToPrerequisite(&accuracy_tracker);
-  velocity_tracker.SubscribeToPrerequisite(&v_tracker);  // Not q.
-  velocity_tracker.SubscribeToPrerequisite(&z_tracker);
-  velocity_tracker.SubscribeToPrerequisite(&xd_tracker);
-  velocity_tracker.SubscribeToPrerequisite(&xa_tracker);
-  velocity_tracker.SubscribeToPrerequisite(&p_tracker);
-
   // This tracks configuration & velocity regardless of how represented.
   auto& kinematics_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kKinematicsTicket), "kinematics");
   kinematics_tracker.SubscribeToPrerequisite(&configuration_tracker);
-  kinematics_tracker.SubscribeToPrerequisite(&velocity_tracker);
+  kinematics_tracker.SubscribeToPrerequisite(&v_tracker);
 
   // The following trackers are for well-known cache entries which don't
   // exist yet at this point in Context creation. When the corresponding cache

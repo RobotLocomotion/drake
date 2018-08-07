@@ -646,6 +646,7 @@ class SystemBase : public internal::SystemMessageInterface {
   Examples: a parameter that affects length may change the computation of an
   end-effector location. A change in accuracy requirement may require
   recomputation of an iterative approximation of contact forces.
+  @see kinematics_ticket()
 
   @bug Currently there is no way to declare specific variables and parameters
   to be configuration-affecting so we include all state variables and
@@ -657,37 +658,16 @@ class SystemBase : public internal::SystemMessageInterface {
     return DependencyTicket(internal::kConfigurationTicket);
   }
 
-  /** (Advanced) Returns a ticket indicating dependence on all source values
-  that may _directly_ affect velocity computations. By _directly_ here we mean
-  "not as a side effect of a configuration change". In particular, this category
-  _does not_ include time, generalized coordinates q, or input ports.
-  Generalized velocities v are included, as well as any discrete state variables
-  that have been declared as velocity variables, and velocity-affecting
-  parameters. Finally we assume that the accuracy setting may affect some
-  velocity-dependent computations.
-  Examples: a parameter that sets a desired rate directly affects a
-  velocity-error computation. A change in accuracy requirement may require
-  recomputation of an iterative approximation of friction forces.
-
-  @warning This _does not_ include dependence on configuration, although
-  most velocity calculations do depend on configuration. If you want to
-  register dependence on both (more common), use kinematics_ticket().
+  /** Returns a ticket indicating dependence on all source values that may
+  affect configuration- or velocity-dependent computations. This ticket depends
+  on the configuration_ticket defined above, and adds in velocity-affecting
+  source values. This _does not_ include time or input ports.
+  @see configuration_ticket()
 
   @bug Currently there is no way to declare specific variables and parameters
-  to be velocity-affecting so we include all state variables and
-  parameters except for generalized coordinates q. */
+  to be configuration- or velocity-affecting so we include all state variables
+  and parameters. */
   // TODO(sherm1) Remove the above bug notice once #9171 is resolved.
-  // The velocity_tracker implementation in ContextBase must be kept
-  // up to date with the above API contract.
-  static DependencyTicket velocity_ticket() {
-    return DependencyTicket(internal::kVelocityTicket);
-  }
-
-  /** Returns a ticket indicating dependence on all of the configuration
-  and velocity state variables of this System. This ticket depends on the
-  configuration_ticket and the velocity_ticket. Note that this includes
-  dependence on all parameters and the accuracy setting, but not on time.
-  @see configuration_ticket(), velocity_ticket() */
   static DependencyTicket kinematics_ticket() {
     return DependencyTicket(internal::kKinematicsTicket);
   }
