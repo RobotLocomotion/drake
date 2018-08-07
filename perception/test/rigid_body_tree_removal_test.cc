@@ -22,6 +22,14 @@ namespace perception {
 namespace {
 
 const double kCollisionThreshold = 0.01;
+const Eigen::Vector3d kPosition(0.0, 0.0, 2.0);
+const Eigen::Vector3d kOrientation(0.0, M_PI_2, 0.0);
+const double kFovY = M_PI_4;
+const bool kShowWindow = false;
+const double kDepthRangeNear = 0.5;
+const double kDepthRangeFar = 5.0;
+const int kWidth = 640;
+const int kHeight = 480;
 
 class RigidBodyTreeRemovalTest : public ::testing::Test {
  public:
@@ -52,7 +60,16 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
   }
 
   void InitFilterDiagram() {
-    auto camera = AddCamera();
+    AddCameraBody(tree_.get(), kPosition, kOrientation);
+
+    tree_->compile();
+
+    auto camera = builder_->AddSystem<systems::sensors::RgbdCamera>(
+        std::make_unique<systems::sensors::RgbdCamera>(
+            "rgbd_camera", *tree_.get(), kPosition, kOrientation,
+            kDepthRangeNear, kDepthRangeFar, kFovY, kShowWindow, kWidth,
+            kHeight));
+    camera->set_name("rgbd_camera");
 
     auto passthrough =
         builder_->AddSystem(std::make_unique<systems::PassThrough<double>>(
@@ -89,8 +106,16 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
     builder_->ExportOutput(filter->point_cloud_output_port());
   }
 
-  void InitiTransformerDiagram() {
-    auto camera = AddCamera();
+  void InitTransformerDiagram() {
+    AddCameraBody(tree_.get(), kPosition, kOrientation);
+
+    tree_->compile();
+    auto camera = builder_->AddSystem<systems::sensors::RgbdCamera>(
+        std::make_unique<systems::sensors::RgbdCamera>(
+            "rgbd_camera", *tree_.get(), kPosition, kOrientation,
+            kDepthRangeNear, kDepthRangeFar, kFovY, kShowWindow, kWidth,
+            kHeight));
+    camera->set_name("rgbd_camera");
 
     auto passthrough =
         builder_->AddSystem(std::make_unique<systems::PassThrough<double>>(
@@ -151,32 +176,6 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
   VectorX<double> state_input_;
 
  private:
-  // Adds an RgbdCamera to the diagram and a corresponding body and frames to
-  // the RigidBodyTree.
-  systems::sensors::RgbdCamera* AddCamera() {
-    const Eigen::Vector3d kPosition(0.0, 0.0, 2.0);
-    const Eigen::Vector3d kOrientation(0.0, M_PI_2, 0.0);
-    AddCameraBody(tree_.get(), kPosition, kOrientation);
-
-    tree_->compile();
-
-    const double kFovY = M_PI_4;
-    const bool kShowWindow = false;
-    const double kDepthRangeNear = 0.5;
-    const double kDepthRangeFar = 5.0;
-    const int kWidth = 640;
-    const int kHeight = 480;
-    systems::sensors::RgbdCamera* camera =
-        builder_->AddSystem<systems::sensors::RgbdCamera>(
-            std::make_unique<systems::sensors::RgbdCamera>(
-                "rgbd_camera", *tree_.get(), kPosition, kOrientation,
-                kDepthRangeNear, kDepthRangeFar, kFovY, kShowWindow, kWidth,
-                kHeight));
-    camera->set_name("rgbd_camera");
-
-    return camera;
-  }
-
   // Adds a camera body to the RigidBodyTree. Required to retrieve the correct
   // transform between the points in the depth camera frame and the `world`
   // frame.
@@ -286,12 +285,12 @@ TEST_F(RigidBodyTreeRemovalTest, RemoveBoxTest) {
 // Verifies that points which do not belong to visual geometries of the rigid
 // bodies contained in a RigidBodyTree are kept.
 TEST_F(RigidBodyTreeRemovalTest, KeepPointsTest) {
-  InitiTransformerDiagram();
+  InitTransformerDiagram();
   BuildDiagramAndInitContext();
 
-  PointCloud unfiltered_cloud(0);
   diagram_->CalcOutput(*context_, output_.get());
-  unfiltered_cloud = output_->GetMutableData(0)->GetMutableValue<PointCloud>();
+  PointCloud unfiltered_cloud =
+      output_->GetMutableData(0)->GetMutableValue<PointCloud>();
 
   // Add three points to the unfiltered cloud. These points should remain
   // after filtering.
