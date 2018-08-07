@@ -199,37 +199,71 @@ class Context : public ContextBase {
   //@}
 
   /// @name           Methods for changing locally-stored values
-  /// The methods in this group allow changes to values stored locally in this
-  /// %Context. Such changes may invalidate computations that have been cached
-  /// here, and downstream computations that depend on those computations.
-  /// Invoking one of these methods automatically performs those invalidations,
-  /// which may involve this %Context and its neighbors in the full Diagram
-  /// context tree, including peers, parent, and child %Contexts. Those
-  /// invalidations may then propagate further up and down the context tree.
+  /// Methods in this group allow changes to values stored locally in this
+  /// %Context. The changeable values are:
+  /// - time
+  /// - state
+  /// - parameters
+  /// - accuracy
+  /// - fixed input port values
   ///
-  /// These methods should be the _only_ way you modify %Context values. In
-  /// particular, some of these methods return mutable references -- you can
-  /// write through those once but must not hold onto the reference expecting to
-  /// make further changes. Instead, request the mutable reference again when
-  /// you need it so that necessary invalidations can be performed. In general,
-  /// prefer methods that accept a new value as an argument, rather than working
-  /// through a mutable reference.
+  /// Such changes may invalidate locally-cached computation results,
+  /// and any downstream cached results that depend on those computations. Such
+  /// cached results may reside anywhere in the full Diagram context tree of
+  /// which this %Context is a part.
   ///
-  /// If you make multiple changes at once (say time and state), look for a
-  /// method that supports that since a single invalidation pass can be made
-  /// in that case, rather than a pass for each change.
+  /// The Drake caching system depends on every cached value being flagged as
+  /// up to date (valid) or out of date (invalid) with respect to its
+  /// prerequisites. That flag is checked prior to returning a cached value, and
+  /// computation is initiated if necessary to bring the value up to date first.
+  /// The methods here are responsible for ensuring that cached values are
+  /// marked out of date whenever a prerequisite value changes. These methods
+  /// _do not_ initiate such recomputation themselves.
   ///
-  /// @note Any of these methods _may_ perform optimizations that allow them to
-  /// avoid invalidation in case some of the new values are the same as the old
-  /// ones, however they are not obligated to perform such optimizations.
+  /// Choose the most-specific method in this group that permits you to perform
+  /// the modifications you need. For example, if you need to modify only
+  /// continuous state variables, don't use a method that provides mutable
+  /// access to the whole state. That provides two performance advantages:
+  /// - fewer downstream computations need to be marked out of date, making the
+  ///   invalidation sweep faster, and
+  /// - fewer results will need to be recomputed later.
   ///
-  /// @note Each of these methods guarantees to invalidate dependencies of the
-  /// quantities it modifies, but the current implementations may also perform
-  /// some unnecessary invalidations. If so, that will be noted in the
-  /// method documentation. You should still use the most-specific available
-  /// method so that you will benefit from later improvements that result in
-  /// fewer invalidations.
+  /// The methods below may be grouped into "safe" methods that begin with
+  /// `set` or `Set` and "dangerous" methods that begin with `get_mutable`
+  /// and return a mutable reference. In addition the `FixInputPort` methods
+  /// return an object that has `get_mutable` methods with the same dangers
+  /// (see FixedInputPortValue). Prefer the safe methods when possible.
+  ///
+  /// <h3>Safe "set" methods</h3>
+  /// The `set` and `Set` methods are safe in the sense that they perform both
+  /// the "mark as out of date" invalidation sweep through dependent cached
+  /// values, and the update to the local value without returning a reference to
+  /// that value. Using these methods ensures that no change can occur without
+  /// an appropriate invalidation sweep. Also, these methods can be used to
+  /// perform multiple changes at once (say time and state), requiring only a
+  /// single invalidation sweep, and _may_ perform optimizations to avoid
+  /// invalidation in case some of the new values are the same as the old ones.
+  ///
+  /// <h3>Dangerous "get_mutable" methods</h3>
+  /// The `get_mutable` methods return a mutable reference to the local value
+  /// object within this %Context. The invalidation sweep is done prior to
+  /// returning that reference. You can then use the reference to make the
+  /// desired change. However, you _must not_ hold on to the reference expecting
+  /// to be able to make subsequent changes, because those changes can't be
+  /// seen by the framework and thus will not cause the necessary invalidation
+  /// sweep to occur. Instead, request the mutable reference again when
+  /// you need it so that necessary invalidation sweep can be performed.
+  ///
+  /// @note All of these methods guarantee to mark as out of date any
+  /// dependents of the quantities it modifies, but the current implementations
+  /// may also perform some unnecessary invalidations. If so, that is noted
+  /// in the method documentation. You should still use the most-specific
+  /// available method so that you will benefit from later improvements that
+  /// result in fewer invalidations.
   //@{
+
+  // TODO(sherm1) All these methods perform invalidation sweeps so aren't
+  // entitled to lower_case_names. Deprecate and replace (see #9205).
 
   /// Sets the current time in seconds, invalidating all time-dependent
   /// computations. Time must have the same value in every subcontext within
@@ -244,10 +278,12 @@ class Context : public ContextBase {
     PropagateTimeChange(this, time_sec, change_event);
   }
 
+
   /// Returns a mutable reference to the whole State, invalidating _all_
   /// state-dependent computations. If you don't mean to change the whole
   /// thing, use more focused methods to modify only a portion of the state so
-  /// that fewer computations are invalidated.
+  /// that fewer computations are invalidated. See class documentation for more
+  /// information.
   State<T>& get_mutable_state() {
     const int64_t change_event = this->start_new_change_event();
     PropagateBulkChange(change_event, &Context<T>::NoteAllStateChanged);
@@ -255,7 +291,7 @@ class Context : public ContextBase {
   }
 
   /// Returns a mutable reference to the continuous component of the state,
-  /// which may be of size zero. Invalidates all continuous state-dependent
+  /// which may be of size zero. Invalidates all continuous-state-dependent
   /// computations.
   ContinuousState<T>& get_mutable_continuous_state() {
     const int64_t change_event = this->start_new_change_event();
@@ -266,14 +302,17 @@ class Context : public ContextBase {
 
   /// Returns a mutable reference to the continuous state vector, devoid
   /// of second-order structure. The vector may be of size zero. Invalidates all
-  /// continuous state-dependent computations.
+  /// continuous-state-dependent computations.
   VectorBase<T>& get_mutable_continuous_state_vector() {
     return get_mutable_continuous_state().get_mutable_vector();
   }
 
+  // TODO(sherm1) Add more-specific state "set" methods for smaller
+  // state groupings (issue #9205).
+
   /// Sets the continuous state to @p xc, including q, v, and z partitions.
   /// The supplied vector must be the same size as the existing continuous
-  /// state. Invalidates all continuous state-dependent computations.
+  /// state. Invalidates all continuous-state-dependent computations.
   void SetContinuousState(const Eigen::Ref<const VectorX<T>>& xc) {
     get_mutable_continuous_state().SetFromVector(xc);
   }
@@ -295,7 +334,7 @@ class Context : public ContextBase {
   }
 
   /// Returns a mutable reference to the discrete component of the state,
-  /// which may be of size zero. Invalidates all discrete state-dependent
+  /// which may be of size zero. Invalidates all discrete-state-dependent
   /// computations.
   DiscreteValues<T>& get_mutable_discrete_state() {
     const int64_t change_event = this->start_new_change_event();
@@ -305,7 +344,7 @@ class Context : public ContextBase {
   }
 
   /// Returns a mutable reference to the _only_ discrete state vector.
-  /// Invalidates all discrete state-dependent computations.
+  /// Invalidates all discrete-state-dependent computations.
   /// @sa get_discrete_state_vector().
   /// @pre There is only one discrete state group.
   BasicVector<T>& get_mutable_discrete_state_vector() {
@@ -324,7 +363,7 @@ class Context : public ContextBase {
   }
 
   /// Returns a mutable reference to the abstract component of the state,
-  /// which may be of size zero. Invalidates all abstract state-dependent
+  /// which may be of size zero. Invalidates all abstract-state-dependent
   /// computations.
   AbstractValues& get_mutable_abstract_state() {
     const int64_t change_event = this->start_new_change_event();

@@ -657,7 +657,6 @@ TEST_F(LeafContextTest, Invalidation) {
   CheckAllCacheValuesUpToDateExcept(cache,
       {depends[internal::kAccuracyTicket],
        depends[internal::kConfigurationTicket],
-       depends[internal::kVelocityTicket],
        depends[internal::kKinematicsTicket],
        depends[internal::kAllSourcesTicket]});
 
@@ -666,7 +665,7 @@ TEST_F(LeafContextTest, Invalidation) {
       {depends[internal::kQTicket], depends[internal::kVTicket],
        depends[internal::kZTicket], depends[internal::kXcTicket],
        depends[internal::kXTicket], depends[internal::kConfigurationTicket],
-       depends[internal::kVelocityTicket], depends[internal::kKinematicsTicket],
+       depends[internal::kKinematicsTicket],
        depends[internal::kAllSourcesTicket]};
 
   // This is everything depends on continuous, discrete, or abstract state.
@@ -707,7 +706,6 @@ TEST_F(LeafContextTest, Invalidation) {
       {depends[internal::kXdTicket],
        depends[internal::kXTicket],
        depends[internal::kConfigurationTicket],
-       depends[internal::kVelocityTicket],
        depends[internal::kKinematicsTicket],
        depends[internal::kAllSourcesTicket]};
   MarkAllCacheValuesUpToDate(&cache);
@@ -723,7 +721,6 @@ TEST_F(LeafContextTest, Invalidation) {
       {depends[internal::kXaTicket],
        depends[internal::kXTicket],
        depends[internal::kConfigurationTicket],
-       depends[internal::kVelocityTicket],
        depends[internal::kKinematicsTicket],
        depends[internal::kAllSourcesTicket]};
   MarkAllCacheValuesUpToDate(&cache);
@@ -738,7 +735,6 @@ TEST_F(LeafContextTest, Invalidation) {
   const std::set<CacheIndex> pn_dependent
       {depends[internal::kPnTicket],
        depends[internal::kConfigurationTicket],
-       depends[internal::kVelocityTicket],
        depends[internal::kKinematicsTicket],
        depends[internal::kAllParametersTicket],
        depends[internal::kAllSourcesTicket]};
@@ -746,7 +742,6 @@ TEST_F(LeafContextTest, Invalidation) {
   const std::set<CacheIndex> pa_dependent
       {depends[internal::kPaTicket],
        depends[internal::kConfigurationTicket],
-       depends[internal::kVelocityTicket],
        depends[internal::kKinematicsTicket],
        depends[internal::kAllParametersTicket],
        depends[internal::kAllSourcesTicket]};

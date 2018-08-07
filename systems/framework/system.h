@@ -412,9 +412,10 @@ class System : public SystemBase {
   /// By definition here, potential energy depends only on "configuration"
   /// (e.g. orientation and position), which includes a subset of the state
   /// variables, and parameters that affect configuration or conservative
-  /// forces. The calculated value may also be affected by the accuracy value
-  /// supplied in the Context. PE cannot depend explicitly on time (∂PE/∂t = 0),
-  /// velocities, or input port values.
+  /// forces (such as lengths and masses). The calculated value may also be
+  /// affected by the accuracy value supplied in the Context. PE cannot depend
+  /// explicitly on time (∂PE/∂t = 0), velocities (∂PE/∂v = 0), or input port
+  /// values (∂PE/∂u = 0).
   ///
   /// Non-physical systems where PE is not meaningful will return PE = 0.
   ///
@@ -437,7 +438,7 @@ class System : public SystemBase {
   /// which includes a subset of the state variables, and parameters that affect
   /// configuration, velocities, or mass properties. The calculated value may
   /// also be affected by the accuracy value supplied in the Context. KE cannot
-  /// depend explicitly on time (∂KE/∂t = 0) or input port values.
+  /// depend explicitly on time (∂KE/∂t = 0) or input port values (∂KE/∂u = 0).
   ///
   /// Non-physical systems where KE is not meaningful will return KE = 0.
   ///
@@ -459,8 +460,8 @@ class System : public SystemBase {
   /// converted _from_ potential energy (PE) _to_ kinetic energy (KE) by this
   /// system in the given Context. This quantity will be _positive_ when PE
   /// is _decreasing_. By definition here, conservative power may depend only
-  /// on quantities that explicitly contribute to KE. See EvalKineticEnergy()
-  /// for details.
+  /// on quantities that explicitly contribute to PE and KE. See
+  /// EvalPotentialEnergy() and EvalKineticEnergy() for details.
   ///
   /// Power due to non-conservative forces (e.g. dampers) can contribute to the
   /// rate of change of KE. Therefore this method alone cannot be used to
@@ -1457,7 +1458,6 @@ class System : public SystemBase {
   using SystemBase::all_sources_ticket;
   using SystemBase::cache_entry_ticket;
   using SystemBase::configuration_ticket;
-  using SystemBase::velocity_ticket;
   using SystemBase::kinematics_ticket;
   using SystemBase::xcdot_ticket;
   using SystemBase::pe_ticket;
@@ -1465,7 +1465,7 @@ class System : public SystemBase {
   using SystemBase::pc_ticket;
   using SystemBase::pnc_ticket;
 
-  // Don't promote output_port_ticket() since it is form internal use only.
+  // Don't promote output_port_ticket() since it is for internal use only.
 
  protected:
   /// Derived classes will implement this method to evaluate a witness function
@@ -1552,7 +1552,7 @@ class System : public SystemBase {
   explicit System(SystemScalarConverter converter)
       : system_scalar_converter_(std::move(converter)) {
     // Note that configuration and kinematics tickets also include dependence
-    // on parameters and accuracy, but not time.
+    // on parameters and accuracy, but not time or input ports.
 
     // Potential and kinetic energy, and conservative power that measures
     // the transfer between them, must _not_ be (explicitly) time dependent.
@@ -1560,24 +1560,24 @@ class System : public SystemBase {
     // EvalConservativePower() to see why.
 
     // TODO(sherm1) Due to issue #9171 we cannot always recognize which
-    // variables contribute to configuration so we'll invalidate on all
-    // changes. Use configuration and kinematics tickets when #9171 is resolved.
+    // variables contribute to configuration so we'll invalidate on all changes.
+    // Use configuration, kinematics, and mass tickets when #9171 is resolved.
     potential_energy_cache_index_ =
         DeclareCacheEntry("potential energy",
             &System<T>::CalcPotentialEnergy,
-            {all_sources_ticket()})  // After #9171: configuration_ticket()
+            {all_sources_ticket()})  // After #9171: configuration + mass.
             .cache_index();
 
     kinetic_energy_cache_index_ =
         DeclareCacheEntry("kinetic energy",
             &System<T>::CalcKineticEnergy,
-            {all_sources_ticket()})  // After #9171: kinematics_ticket()
+            {all_sources_ticket()})  // After #9171: kinematics + mass.
             .cache_index();
 
     conservative_power_cache_index_ =
         DeclareCacheEntry("conservative power",
             &System<T>::CalcConservativePower,
-            {all_sources_ticket()})  // After #9171: kinematics_ticket()
+            {all_sources_ticket()})  // After #9171: kinematics + mass.
             .cache_index();
 
     // Only non-conservative power can have an explicit time or input
