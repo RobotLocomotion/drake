@@ -16,6 +16,7 @@ drake_cc_package_library(
     deps = [
         ":depth_image_to_point_cloud",
         ":point_cloud",
+        ":point_cloud_flags",
         ":rigid_body_tree_removal",
         ":transform_point_cloud",
     ],
