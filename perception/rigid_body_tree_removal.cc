@@ -7,18 +7,17 @@ RigidBodyTreeRemoval::RigidBodyTreeRemoval(const RigidBodyTree<double>& tree,
                                            double collision_threshold)
     : tree_(tree), collision_threshold_(collision_threshold) {
   /// Create input port for point cloud.
-  point_cloud_input_port_index_ = this->DeclareAbstractInputPort().get_index();
+  point_cloud_input_port_index_ = DeclareAbstractInputPort().get_index();
 
   /// Create input port for tree positions and velocities.
   state_input_port_index_ =
-      this->DeclareInputPort(
-              systems::kVectorValued,
-              tree_.get_num_positions() + tree_.get_num_velocities())
+      DeclareInputPort(systems::kVectorValued,
+                       tree_.get_num_positions() + tree_.get_num_velocities())
           .get_index();
 
   // Create output port for filtered point cloud.
-  this->DeclareAbstractOutputPort(&RigidBodyTreeRemoval::MakeOutputPointCloud,
-                                  &RigidBodyTreeRemoval::FilterPointCloud);
+  DeclareAbstractOutputPort(&RigidBodyTreeRemoval::MakeOutputPointCloud,
+                            &RigidBodyTreeRemoval::FilterPointCloud);
 }
 
 PointCloud RigidBodyTreeRemoval::MakeOutputPointCloud() const {
@@ -29,21 +28,19 @@ PointCloud RigidBodyTreeRemoval::MakeOutputPointCloud() const {
 void RigidBodyTreeRemoval::FilterPointCloud(
     const systems::Context<double>& context, PointCloud* output) const {
   // 1. Create the list of points to be considered.
-  const systems::AbstractValue* input =
-      this->EvalAbstractInput(context, point_cloud_input_port_index_);
-  DRAKE_ASSERT(input != nullptr);
-  const auto& input_cloud = input->GetValue<PointCloud>();
+  const PointCloud* input_cloud =
+      EvalInputValue<PointCloud>(context, point_cloud_input_port_index_);
+  DRAKE_ASSERT(input_cloud != nullptr);
 
   std::vector<Eigen::Vector3d> points;
-  points.resize(input_cloud.size());
-  for (int i = 0; i < input_cloud.size(); i++) {
-    points[i] = input_cloud.xyz(i).cast<double>();
+  points.resize(input_cloud->size());
+  for (int i = 0; i < input_cloud->size(); i++) {
+    points[i] = input_cloud->xyz(i).cast<double>();
   }
 
   // 2. Extract the indices of the points in collision.
-  Eigen::VectorXd q =
-      this->EvalEigenVectorInput(context, state_input_port_index_)
-          .head(tree_.get_num_positions());
+  Eigen::VectorXd q = EvalEigenVectorInput(context, state_input_port_index_)
+                          .head(tree_.get_num_positions());
   KinematicsCache<double> kinematics_cache = tree_.doKinematics(q);
   std::vector<size_t> filtered_point_indices =
       const_cast<RigidBodyTree<double>&>(tree_).collidingPoints(
