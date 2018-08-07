@@ -173,16 +173,17 @@ std::function<double(double)> RoadCurve::OptimizeCalcSFromP(double r) const {
     // instances only take copyable callables.
     const std::shared_ptr<systems::ScalarDenseOutput<double>> dense_output{
       s_from_p_func_->MakeDenseEvalFunction(1.0, values)};
+    DRAKE_DEMAND(dense_output->start_time() <= 0.);
+    DRAKE_DEMAND(dense_output->end_time() >= 1.);
     return [dense_output, absolute_tolerance] (double p) -> double {
-      // Saturate p to lie within dense output's domain.
-      const double saturated_p = std::min(
-          std::max(p, dense_output->start_time()), dense_output->end_time());
+      // Saturates p to lie within the [0., 1.] interval.
+      const double saturated_p = std::min(std::max(p, 0.), 1.);
       DRAKE_THROW_UNLESS(std::abs(saturated_p - p) < absolute_tolerance);
       return dense_output->EvaluateScalar(saturated_p);
     };
   }
   return [this, r, absolute_tolerance] (double p) {
-    // Saturate p to lie within dense output's domain.
+    // Saturates p to lie within the [0., 1.] interval.
     const double saturated_p = std::min(std::max(p, 0.), 1.);
     DRAKE_THROW_UNLESS(std::abs(saturated_p - p) < absolute_tolerance);
     return this->FastCalcSFromP(p, r);
@@ -209,16 +210,17 @@ std::function<double(double)> RoadCurve::OptimizeCalcPFromS(double r) const {
     // instances only take copyable callables.
     const std::shared_ptr<systems::ScalarDenseOutput<double>> dense_output{
       p_from_s_ivp_->DenseSolve(full_length, values)};
-    return [dense_output, absolute_tolerance] (double s) -> double {
-      // Saturate s to lie within dense output's domain.
-      const double saturated_s = std::min(
-          std::max(s, dense_output->start_time()), dense_output->end_time());
+    DRAKE_DEMAND(dense_output->start_time() <= 0.);
+    DRAKE_DEMAND(dense_output->end_time() >= full_length);
+    return [dense_output, full_length, absolute_tolerance] (double s) -> double {
+      // Saturates s to lie within the [0., full_length] interval.
+      const double saturated_s = std::min(std::max(s, 0.), full_length);
       DRAKE_THROW_UNLESS(std::abs(saturated_s - s) < absolute_tolerance);
       return dense_output->EvaluateScalar(saturated_s);
     };
   }
   return [this, r, full_length, absolute_tolerance] (double s) {
-    // Saturate s to lie within dense output's domain.
+    // Saturates s to lie within the [0., full_length] interval.
     const double saturated_s = std::min(std::max(s, 0.), full_length);
     DRAKE_THROW_UNLESS(std::abs(saturated_s - s) < absolute_tolerance);
     return this->FastCalcPFromS(s, r);

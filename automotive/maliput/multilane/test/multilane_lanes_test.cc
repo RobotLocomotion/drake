@@ -757,7 +757,11 @@ api::LanePosition IntegrateTrivially(const api::Lane* lane,
 }
 
 
+// Checks EvalMotionDerivatives() correctness on a non-trivial road surface.
 TEST_P(MultilaneLanesParamTest, HillIntegration) {
+  // Sets up a single segment road with three (3) adjacent lanes, whose
+  // reference curve is a piece of an arc with cubic elevation and zero
+  // superelevation.
   RoadGeometry rg(api::RoadGeometryId{"apple"},
                   kLinearTolerance, kAngularTolerance);
   const double theta0 = 0.25 * M_PI;
@@ -793,6 +797,8 @@ TEST_P(MultilaneLanesParamTest, HillIntegration) {
                          {-kHalfLaneWidth, kHalfLaneWidth});
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
 
+  // Checks center lane endpoints' position in the GLOBAL frame
+  // against their analytically known values.
   const api::LanePosition kInitialLanePositionA{0., 0., 0.};
   EXPECT_TRUE(api::test::IsGeoPositionClose(
       l2->ToGeoPosition(kInitialLanePositionA),
@@ -807,6 +813,14 @@ TEST_P(MultilaneLanesParamTest, HillIntegration) {
                        -100. + (offset_radius * std::sin(theta1)), z1),
       kLinearTolerance));
 
+  // Checks EvalMotionDerivatives() accuracy. To that end, motion derivatives
+  // are (1) queried for a given constant velocity σᵥ from the center lane at an
+  // r-offset that matches that of an adjacent lane centerline, (2) integrated
+  // using Euler's method with a fixed time step dt and (3) compared against the
+  // center lane's length. Total integration steps count n is estimated based
+  // on the corresponding adjacent lane's length l and velocity σᵥ as
+  // n = l / (σᵥ * dt). Path length estimation error is expected to be higher
+  // than that achievable by a RoadCurve instance.
   const double kTimeStep{0.001};
   const api::IsoLaneVelocity kVelocity{1., 0., 0. };
   const double kIntegrationTolerance{1e-3};
