@@ -14,80 +14,82 @@ namespace test {
 
 ::testing::AssertionResult IsEndpointXyClose(const EndpointXy& xy1,
                                              const EndpointXy& xy2,
-                                             double tolerance) {
+                                             double linear_tolerance,
+                                             double angular_tolerance) {
   bool fails = false;
   std::string error_message{};
   double delta = std::abs(xy1.x() - xy2.x());
-  if (delta > tolerance) {
+  if (delta > linear_tolerance) {
     fails = true;
     error_message += fmt::format(
         "EndpointXys are different at x coordinate. "
-        "xy1.x(): {} vs.xy2.x(): {}, diff = {}, tolerance = {}.\n",
-        xy1.x(), xy2.x(), delta, tolerance);
+        "xy1.x(): {} vs.xy2.x(): {}, diff = {}, linear tolerance = {}.\n",
+        xy1.x(), xy2.x(), delta, linear_tolerance);
   }
   delta = std::abs(xy1.y() - xy2.y());
-  if (delta > tolerance) {
+  if (delta > linear_tolerance) {
     fails = true;
     error_message += fmt::format(
         "EndpointXys are different at y coordinate. "
-        "xy1.y(): {} vs.xy2.y(): {}, diff = {}, tolerance = {}.\n",
-        xy1.y(), xy2.y(), delta, tolerance);
+        "xy1.y(): {} vs.xy2.y(): {}, diff = {}, linear tolerance = {}.\n",
+        xy1.y(), xy2.y(), delta, linear_tolerance);
   }
   delta = std::abs(xy1.heading() - xy2.heading());
-  if (delta > tolerance) {
+  if (delta > angular_tolerance) {
     fails = true;
     error_message += fmt::format(
         "EndpointXys are different at heading angle. "
         "xy1.heading(): {} vs.xy2.heading(): {}, diff = {}, "
-        "tolerance = {}.\n",
-        xy1.heading(), xy2.heading(), delta, tolerance);
+        "angular tolerance = {}.\n",
+        xy1.heading(), xy2.heading(), delta, angular_tolerance);
   }
   if (fails) {
     return ::testing::AssertionFailure() << error_message;
   }
   return ::testing::AssertionSuccess() << fmt::format(
              "xy1 =\n{}\nis approximately equal to xy2 =\n{}\n"
-             "tolerance = {}",
-             xy1, xy2, tolerance);
+             "linear tolerance = {}, angular tolerance = {}",
+             xy1, xy2, linear_tolerance, angular_tolerance);
 }
 
 ::testing::AssertionResult IsEndpointZClose(const EndpointZ& z1,
                                             const EndpointZ& z2,
-                                            double tolerance) {
+                                            double linear_tolerance,
+                                            double angular_tolerance) {
   bool fails = false;
   std::string error_message{};
   double delta = std::abs(z1.z() - z2.z());
-  if (delta > tolerance) {
+  if (delta > linear_tolerance) {
     fails = true;
     error_message += fmt::format(
         "EndpointZ are different at z coordinate. z1.z(): {} vs z2.z(): {}"
-        ", diff = {}, tolerance = {}\n",
-        z1.z(), z2.z(), delta, tolerance);
+        ", diff = {}, linear tolerance = {}\n",
+        z1.z(), z2.z(), delta, linear_tolerance);
   }
   delta = std::abs(z1.z_dot() - z2.z_dot());
-  if (delta > tolerance) {
+  if (delta > linear_tolerance) {
     fails = true;
     error_message += fmt::format(
         "EndpointZ are different at z_dot coordinate. z1.z_dot(): {} vs "
-        "z2.z_dot(): {}, diff = {}, tolerance = {}\n",
-        z1.z_dot(), z2.z_dot(), delta, tolerance);
+        "z2.z_dot(): {}, diff = {}, linear tolerance = {}\n",
+        z1.z_dot(), z2.z_dot(), delta, linear_tolerance);
   }
   delta = std::abs(z1.theta() - z2.theta());
-  if (delta > tolerance) {
+  if (delta > angular_tolerance) {
     fails = true;
     error_message += fmt::format(
         "EndpointZ are different at theta angle. z1.theta(): {} vs "
-        "z2.theta(): {}, diff = {}, tolerance = {}\n",
-        z1.theta(), z2.theta(), delta, tolerance);
+        "z2.theta(): {}, diff = {}, angular tolerance = {}\n",
+        z1.theta(), z2.theta(), delta, angular_tolerance);
   }
   if (z1.theta_dot().has_value() && z2.theta_dot().has_value()) {
     delta = std::abs(*z1.theta_dot() - *z2.theta_dot());
-    if (delta > tolerance) {
+    if (delta > angular_tolerance) {
       fails = true;
       error_message += fmt::format(
           "EndpointZ are different at theta_dot. z1.theta_dot(): {} vs "
-          "z2.theta_dot(): {}, diff = {}, tolerance = {}\n",
-          *z1.theta_dot(), *z2.theta_dot(), delta, tolerance);
+          "z2.theta_dot(): {}, diff = {}, angular tolerance = {}\n",
+          *z1.theta_dot(), *z2.theta_dot(), delta, angular_tolerance);
     }
   } else if (z1.theta_dot().has_value() && !z2.theta_dot().has_value()) {
     fails = true;
@@ -107,18 +109,19 @@ namespace test {
   }
   return ::testing::AssertionSuccess() << fmt::format(
              "z1 =\n{}\nis approximately equal to z2 =\n{}\n"
-             "tolerance = {}",
-             z1, z2, tolerance);
+             "linear tolerance = {}, angular tolerance = {}",
+             z1, z2, linear_tolerance, angular_tolerance);
 }
 
 ::testing::AssertionResult IsEndpointClose(const Endpoint& p1,
                                            const Endpoint& p2,
-                                           double tolerance) {
+                                           double linear_tolerance,
+                                           double angular_tolerance) {
   bool fails = false;
   std::string error_message{};
 
   const ::testing::AssertionResult endpoint_xy_comparison =
-      IsEndpointXyClose(p1.xy(), p2.xy(), tolerance);
+      IsEndpointXyClose(p1.xy(), p2.xy(), linear_tolerance, angular_tolerance);
   if (!endpoint_xy_comparison) {
     fails = true;
     error_message +=
@@ -126,7 +129,7 @@ namespace test {
                     endpoint_xy_comparison.message());
   }
   const ::testing::AssertionResult endpoint_z_comparison =
-      IsEndpointZClose(p1.z(), p2.z(), tolerance);
+      IsEndpointZClose(p1.z(), p2.z(), linear_tolerance, angular_tolerance);
   if (!endpoint_z_comparison) {
     fails = true;
     error_message +=
@@ -138,8 +141,8 @@ namespace test {
   }
   return ::testing::AssertionSuccess() << fmt::format(
              "p1 =\n{}\nis approximately equal to p2 =\n{}\n"
-             "tolerance = {}",
-             p1, p2, tolerance);
+             "linear tolerance = {}, angular tolerance = {}",
+             p1, p2, linear_tolerance, angular_tolerance);
 }
 
 ::testing::AssertionResult IsArcOffsetClose(const ArcOffset& arc_offset1,
@@ -229,23 +232,31 @@ Matcher<const LaneLayout&> Matches(const LaneLayout& lane_layout,
 }
 
 Matcher<const StartReference::Spec&> Matches(
-    const StartReference::Spec& start_reference, double tolerance) {
-  return MakeMatcher(new StartReferenceSpecMatcher(start_reference, tolerance));
+    const StartReference::Spec& start_reference, double linear_tolerance,
+    double angular_tolerance) {
+  return MakeMatcher(new StartReferenceSpecMatcher(
+      start_reference, linear_tolerance, angular_tolerance));
 }
 
 Matcher<const StartLane::Spec&> Matches(
-    const StartLane::Spec& start_lane, double tolerance) {
-  return MakeMatcher(new StartLaneSpecMatcher(start_lane, tolerance));
+    const StartLane::Spec& start_lane, double linear_tolerance,
+    double angular_tolerance) {
+  return MakeMatcher(new StartLaneSpecMatcher(
+      start_lane, linear_tolerance, angular_tolerance));
 }
 
 Matcher<const EndReference::Spec&> Matches(
-    const EndReference::Spec& end_reference, double tolerance) {
-  return MakeMatcher(new EndReferenceSpecMatcher(end_reference, tolerance));
+    const EndReference::Spec& end_reference, double linear_tolerance,
+    double angular_tolerance) {
+  return MakeMatcher(new EndReferenceSpecMatcher(
+      end_reference, linear_tolerance, angular_tolerance));
 }
 
 Matcher<const EndLane::Spec&> Matches(
-    const EndLane::Spec& end_lane, double tolerance) {
-  return MakeMatcher(new EndLaneSpecMatcher(end_lane, tolerance));
+    const EndLane::Spec& end_lane, double linear_tolerance,
+    double angular_tolerance) {
+  return MakeMatcher(new EndLaneSpecMatcher(
+      end_lane, linear_tolerance, angular_tolerance));
 }
 
 }  // namespace test
