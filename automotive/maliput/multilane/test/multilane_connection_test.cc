@@ -36,10 +36,11 @@ GTEST_TEST(EndpointXyTest, ParametrizedConstructor) {
 
 GTEST_TEST(EndpointXyTest, Reverse) {
   const EndpointXy dut{1., 2., M_PI / 7.123456};
-  const double kVeryExact{1e-15};
-  EXPECT_TRUE(test::IsEndpointXyClose(dut.reverse(),
-                                      {1., 2., -M_PI * (1. - 1. / 7.123456)},
-                                      kVeryExact));
+  constexpr double kEndpointLinearTolerance{1e-15};
+  constexpr double kEndpointAngularTolerance{1e-15};
+  EXPECT_TRUE(test::IsEndpointXyClose(
+      dut.reverse(), {1., 2., -M_PI * (1. - 1. / 7.123456)},
+      kEndpointLinearTolerance, kEndpointAngularTolerance));
 }
 
 // EndpointZ checks.
@@ -67,16 +68,17 @@ GTEST_TEST(EndpointZTest, ParametrizedConstructors) {
 }
 
 GTEST_TEST(EndpointZTest, Reverse) {
-  const double kZeroTolerance{0.};
+  constexpr double kZeroTolerance{0.};
+
   const EndpointZ dut_without_theta_dot{1., 2., M_PI / 4., {}};
   EXPECT_TRUE(test::IsEndpointZClose(dut_without_theta_dot.reverse(),
                                      {1., -2., -M_PI / 4., {}},
-                                     kZeroTolerance));
+                                     kZeroTolerance, kZeroTolerance));
 
   const EndpointZ dut_with_theta_dot{1., 2., M_PI / 4., M_PI / 2.};
   EXPECT_TRUE(test::IsEndpointZClose(dut_with_theta_dot.reverse(),
                                      {1., -2., -M_PI / 4., M_PI / 2.},
-                                     kZeroTolerance));
+                                     kZeroTolerance, kZeroTolerance));
 }
 
 // LineOffset check.
@@ -105,6 +107,8 @@ class MultilaneConnectionTest : public ::testing::Test {
   const EndpointXy kStartXy{20., 30., kHeading};
   const Endpoint kStartEndpoint{kStartXy, kLowFlatZ};
   const double kZeroTolerance{0.};
+  const double kEndpointLinearTolerance{1e-12};
+  const double kEndpointAngularTolerance{1e-12};
   const double kLinearTolerance{0.01};
   const double kScaleLength{1.0};
   const ComputationPolicy kComputationPolicy{
@@ -136,9 +140,10 @@ TEST_F(MultilaneConnectionTest, ArcAccessors) {
   EXPECT_EQ(dut.r_max(),
             kR0 + kLaneWidth * (static_cast<double>(kNumLanes - 1) + .5) +
                 kLeftShoulder);
-  EXPECT_TRUE(
-      test::IsEndpointClose(dut.start(), kStartEndpoint, kZeroTolerance));
-  EXPECT_TRUE(test::IsEndpointClose(dut.end(), kEndEndpoint, kVeryExact));
+  EXPECT_TRUE(test::IsEndpointClose(dut.start(), kStartEndpoint,
+                                    kZeroTolerance, kZeroTolerance));
+  EXPECT_TRUE(test::IsEndpointClose(dut.end(), kEndEndpoint,
+                                    kZeroTolerance, kZeroTolerance));
   EXPECT_EQ(dut.lane_offset(0), kR0);
   EXPECT_EQ(dut.lane_offset(1), kR0 + kLaneWidth);
   EXPECT_EQ(dut.lane_offset(2), kR0 + 2. * kLaneWidth);
@@ -168,9 +173,10 @@ TEST_F(MultilaneConnectionTest, LineAccessors) {
   EXPECT_EQ(dut.r_max(),
             kR0 + kLaneWidth * (static_cast<double>(kNumLanes - 1) + .5) +
                 kLeftShoulder);
-  EXPECT_TRUE(
-      test::IsEndpointClose(dut.start(), kStartEndpoint, kZeroTolerance));
-  EXPECT_TRUE(test::IsEndpointClose(dut.end(), kEndEndpoint, kVeryExact));
+  EXPECT_TRUE(test::IsEndpointClose(dut.start(), kStartEndpoint,
+                                    kZeroTolerance, kZeroTolerance));
+  EXPECT_TRUE(test::IsEndpointClose(dut.end(), kEndEndpoint,
+                                    kZeroTolerance, kZeroTolerance));
   EXPECT_EQ(dut.lane_offset(0), kR0);
   EXPECT_EQ(dut.lane_offset(1), kR0 + kLaneWidth);
   EXPECT_EQ(dut.lane_offset(2), kR0 + 2. * kLaneWidth);
@@ -395,6 +401,8 @@ class MultilaneConnectionEndpointZTest
   const double kLaneWidth{2.};
   const double kHeading{-M_PI / 4.};
   const EndpointXy kStartXy{20., 30., kHeading};
+  const double kEndpointLinearTolerance{1e-12};
+  const double kEndpointAngularTolerance{1e-12};
   const double kLinearTolerance{0.01};
   const double kScaleLength{1.0};
   const ComputationPolicy kComputationPolicy{
@@ -437,8 +445,9 @@ TEST_P(MultilaneConnectionEndpointZTest, ArcLaneEndpoints) {
          wrap(kTheta0 + M_PI / 2.)},
         {start_z.z(), start_z.z_dot() * kRadius / start_radius, start_z.theta(),
          (*start_z.theta_dot()) * kRadius / start_radius}};
-    EXPECT_TRUE(
-        test::IsEndpointClose(dut.LaneStart(i), lane_start, kVeryExact));
+    EXPECT_TRUE(test::IsEndpointClose(dut.LaneStart(i), lane_start,
+                                      kEndpointLinearTolerance,
+                                      kEndpointAngularTolerance));
     // End endpoints.
     const double end_radius =
         kRadius - (r0 + static_cast<double>(i) * kLaneWidth) *
@@ -449,7 +458,9 @@ TEST_P(MultilaneConnectionEndpointZTest, ArcLaneEndpoints) {
          wrap(kTheta0 + kDTheta + M_PI / 2.)},
         {end_z.z(), end_z.z_dot() * kRadius / end_radius, end_z.theta(),
          (*end_z.theta_dot()) * kRadius / end_radius}};
-    EXPECT_TRUE(test::IsEndpointClose(dut.LaneEnd(i), lane_end, kVeryExact));
+    EXPECT_TRUE(test::IsEndpointClose(dut.LaneEnd(i), lane_end,
+                                      kEndpointLinearTolerance,
+                                      kEndpointAngularTolerance));
   }
 }
 
@@ -470,14 +481,17 @@ TEST_P(MultilaneConnectionEndpointZTest, LineLaneEndpoints) {
     const Endpoint lane_start{
         {kStartXy.x() - offset * kNormalDirection.x(),
          kStartXy.y() - offset * kNormalDirection.y(), kHeading}, start_z};
-    EXPECT_TRUE(
-        test::IsEndpointClose(dut.LaneStart(i), lane_start, kVeryExact));
+    EXPECT_TRUE(test::IsEndpointClose(dut.LaneStart(i), lane_start,
+                                      kEndpointLinearTolerance,
+                                      kEndpointAngularTolerance));
     // End endpoints.
     const Endpoint lane_end{
         {kStartXy.x() - offset * kNormalDirection.x() + kDirection.x(),
          kStartXy.y() - offset * kNormalDirection.y() + kDirection.y(),
          kHeading}, end_z};
-    EXPECT_TRUE(test::IsEndpointClose(dut.LaneEnd(i), lane_end, kVeryExact));
+    EXPECT_TRUE(test::IsEndpointClose(dut.LaneEnd(i), lane_end,
+                                      kEndpointLinearTolerance,
+                                      kEndpointAngularTolerance));
   }
 }
 
