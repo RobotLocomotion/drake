@@ -139,6 +139,14 @@ const Connection* Builder::Connect(const std::string& id,
   return connections_.back().get();
 }
 
+// TODO(hidmic): Support connections where the constant C in the
+//               continuity constraints theta_dotA - sin(betaA) = C
+//               and theta_dotB - sin(betaB) = C is non-zero. This
+//               is necessary to ensure continuity when arbitrary
+//               theta_dot values are provided by the user. Then,
+//               do not clear *explicitly* set theta_dot values
+//               upon Spec construction using a Connection anymore.
+
 const Connection* Builder::Connect(const std::string& id,
                                    const LaneLayout& lane_layout,
                                    const StartLane::Spec& start_spec,
@@ -298,22 +306,104 @@ Group* Builder::MakeGroup(const std::string& id,
 
 
 namespace {
-// Determine the heading (in xy-plane) along the centerline when
-// travelling towards/into the lane, from the specified end.
-double HeadingIntoLane(const api::Lane* const lane,
-                       const api::LaneEnd::Which end) {
+
+
+// Determine the heading direction at an `r_offset` away from the `lane`
+// centerline when travelling outwards from the specified `end`.
+Vector3<double> DirectionOutFromLane(const api::Lane* const lane,
+                                     const api::LaneEnd::Which end,
+                                     double r_offset) {
+  const Vector3<double> s_hat = Vector3<double>::UnitX();
   switch (end) {
     case api::LaneEnd::kStart: {
-      return lane->GetOrientation({0., 0., 0.}).yaw();
+      return -lane->GetOrientation(
+          {0., r_offset, 0.}).matrix() * s_hat;
     }
     case api::LaneEnd::kFinish: {
-      return lane->GetOrientation({lane->length(), 0., 0.}).yaw() + M_PI;
+      return lane->GetOrientation(
+          {lane->length(), r_offset, 0.}).matrix() * s_hat;
     }
     default: { DRAKE_ABORT(); }
   }
 }
-}  // namespace
 
+
+// Checks if the heading direction of the all the given lanes at an `r_offset`
+// at their specified end in `side` match the reference `direction_at_r_offset`,
+// down to the given `angular_tolerance`.
+bool AreLanesDirectionsWithinTolerance(
+    const Vector3<double>& direction_at_r_offset, double r_offset,
+    const api::LaneEndSet* side, double angular_tolerance) {
+  DRAKE_DEMAND(side != nullptr);
+
+  for (int i = 0; i < side->size(); ++i) {
+    const api::LaneEnd& le = side->get(i);
+    const Vector3<double> other_direction =
+        DirectionOutFromLane(le.lane, le.end, r_offset);
+    const double angular_deviation =
+        std::acos(direction_at_r_offset.dot(other_direction));
+    if (angular_deviation > angular_tolerance) {
+      return false;
+    }
+  }
+  return true;
+}
+
+
+// Checks if the `lane` is continuous along an `r_offset` from its centerline
+// at the branchpoint on the given `end`, down to an `angular_tolerance`.
+// `lane` is assumed to have an into-the-lane tangent vector that is coincident
+// with those of the lanes in the `aside`, which in turn are anti-parallel to
+// those of the lanes in the `bside`.
+bool IsLaneContinuousAtBranchPointAlongROffset(
+    const api::Lane* lane, const api::LaneEnd::Which end,
+    const api::LaneEndSet* aside, const api::LaneEndSet* bside,
+    double r_offset, double angular_tolerance) {
+  DRAKE_DEMAND(lane != nullptr);
+  DRAKE_DEMAND(aside != nullptr);
+  DRAKE_DEMAND(bside != nullptr);
+
+  const Vector3<double> direction =
+      DirectionOutFromLane(lane, end, r_offset);
+  return
+      (AreLanesDirectionsWithinTolerance(
+          direction, r_offset,
+          aside, angular_tolerance) &&
+       AreLanesDirectionsWithinTolerance(
+           -direction, -r_offset,
+           bside, angular_tolerance));
+}
+
+
+// Checks if the `lane` is continuous at the branchpoint on the given
+// `end`, down to an `angular_tolerance`. // `lane` is assumed to have
+// an into-the-lane tangent vector that is coincident with those of the
+// lanes in the `aside`, which in turn are anti-parallel to those of the
+// lanes in the `bside`.
+bool IsLaneContinuousAtBranchPoint(
+    const api::Lane* lane, const api::LaneEnd::Which end,
+    const api::LaneEndSet* aside, const api::LaneEndSet* bside,
+    double angular_tolerance) {
+  DRAKE_DEMAND(lane != nullptr);
+  DRAKE_DEMAND(aside != nullptr);
+  DRAKE_DEMAND(bside != nullptr);
+
+  constexpr const double kZeroROffset{0.};
+  const double s_at_branch_point =
+      (end != api::LaneEnd::kStart) ? lane->length() : 0.;
+  const double max_r_offset =
+      lane->lane_bounds(s_at_branch_point).max();
+  return
+      (IsLaneContinuousAtBranchPointAlongROffset(
+          lane, end, aside, bside,
+          kZeroROffset, angular_tolerance) &&
+       IsLaneContinuousAtBranchPointAlongROffset(
+           lane, end, aside, bside,
+           max_r_offset, angular_tolerance));
+}
+
+
+}  // namespace
 
 
 BranchPoint* Builder::FindOrCreateBranchPoint(
@@ -360,20 +450,32 @@ void Builder::AttachBranchPoint(
     bp->AddABranch({lane, end});
     return;
   }
+
   // Otherwise, assess if this new lane-end is parallel or anti-parallel to
   // the first lane-end.  Parallel: go to same, A-side; anti-parallel:
   // other, B-side.  Do this by examining the dot-product of the heading
   // vectors (rather than goofing around with cyclic angle arithmetic).
-  const double new_h = HeadingIntoLane(lane, end);
-  const api::LaneEnd old_le = bp->GetASide()->get(0);
-  const double old_h = HeadingIntoLane(old_le.lane, old_le.end);
-  if (((std::cos(new_h) * std::cos(old_h)) +
-       (std::sin(new_h) * std::sin(old_h))) > 0.) {
+  constexpr const double kZeroROffset{0.};
+  const Vector3<double> direction =
+      DirectionOutFromLane(lane, end, kZeroROffset);
+  const api::LaneEnd& old_le = bp->GetASide()->get(0);
+  const Vector3<double> old_direction =
+      DirectionOutFromLane(old_le.lane, old_le.end, kZeroROffset);
+  if (direction.dot(old_direction) > 0.) {
+    // Assert continuity before attaching the lane.
+    DRAKE_THROW_UNLESS(IsLaneContinuousAtBranchPoint(
+        lane, end, bp->GetASide(), bp->GetBSide(),
+        angular_tolerance_));
     bp->AddABranch({lane, end});
   } else {
+    // Assert continuity before attaching the lane.
+    DRAKE_THROW_UNLESS(IsLaneContinuousAtBranchPoint(
+        lane, end, bp->GetBSide(), bp->GetASide(),
+        angular_tolerance_));
     bp->AddBBranch({lane, end});
   }
 }
+
 
 std::vector<Lane*> Builder::BuildConnection(
     const Connection* const conn, Junction* const junction,
