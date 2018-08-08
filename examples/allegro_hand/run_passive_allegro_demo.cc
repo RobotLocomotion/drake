@@ -66,10 +66,12 @@ DEFINE_double(v_stiction_tolerance, 1.0e-2,
               "The maximum slipping speed allowed during stiction. [m/s]");
 
 // Integration parameters:
-DEFINE_string(integration_scheme, "implicit_euler",
+DEFINE_string(integration_scheme, "semi_implicit_euler",
               "Integration scheme to be used. Available options are: "
               "'semi_explicit_euler','runge_kutta2','runge_kutta3',"
               "'implicit_euler'");
+
+DEFINE_bool(add_gravity, false, "Whether adding gravity in the simulation");
 
 DEFINE_double(accuracy, 1.0e-2, "Sets the simulation accuracy for variable step"
               "size integrators with error control.");
@@ -101,8 +103,9 @@ int DoMain() {
 
 
   // optional: adding gravity -- the gripper could start free falling
-  // plant.AddForceElement<multibody::UniformGravityFieldElement>(
-  //       -9.81 * Eigen::Vector3d::UnitZ());
+  if (FLAGS_add_gravity)
+    plant.AddForceElement<multibody::UniformGravityFieldElement>(
+        -9.81 * Eigen::Vector3d::UnitZ());
 
   // Now the model is complete.
   plant.Finalize(&scene_graph);
