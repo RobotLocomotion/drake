@@ -430,7 +430,7 @@ class Context : public ContextBase {
   //              (pending above TODO).
   void SetTimeStateAndParametersFrom(const Context<double>& source) {
     ThrowIfNotRootContext(__func__, "Time");
-    // A single change event for all these changes is much faster than doing
+    // A single change event for all these changes is faster than doing
     // each separately.
     const int64_t change_event = this->start_new_change_event();
 
