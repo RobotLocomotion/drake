@@ -48,6 +48,12 @@ class RemoteTreeViewerWrapper {
                     double head_radius, double head_length,
                     const Eigen::Ref<const Eigen::Vector4d>& color =
                         Eigen::Vector4d(1, 0, 0, 1));
+
+  /**
+   * Publishes the visual (or collision, if `visual` is false) geometries of
+   * `tree` for the configuration `q` as children of `path`. Any geometries that
+   * do not specify a color or texture will use `color`.
+   */
   void PublishRigidBodyTree(const RigidBodyTree<double>& tree,
                             const Eigen::VectorXd& q,
                             const Eigen::Vector4d& color,
@@ -60,6 +66,17 @@ class RemoteTreeViewerWrapper {
   void PublishGeometry(const DrakeShapes::Geometry& geometry,
                        const Eigen::Affine3d& tf, const Eigen::Vector4d& color,
                        const std::vector<std::string>& path);
+
+  /**
+   * Updates the poses of all geometries in `path`, based on the poses of the
+   * corresponding geometries in `tree` for the configuration `q`. For this
+   * method to have an effect, `PublishRigidBodyTree()` must be called first
+   * with the same `tree`, `path`, and `visual` arguments.
+   */
+  void UpdateRigidBodyTree(const RigidBodyTree<double>& tree,
+                           const Eigen::VectorXd& q,
+                           const std::vector<std::string>& path,
+                           bool visual = true);
 
  private:
   drake::lcm::DrakeLcm* lcm_{};
