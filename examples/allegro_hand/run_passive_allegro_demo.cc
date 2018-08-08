@@ -96,8 +96,8 @@ int DoMain() {
       *builder.AddSystem<MultibodyPlant>();   /* continuous system */
   std::string full_name =
       FindResourceOrThrow("drake/manipulation/models/allegro_hand_description/"
-                          "sdf/allegro_hand_description_right.sdf");
-                          // "sdf/allegro_finger_1.sdf");
+                          // "sdf/allegro_hand_description_right.sdf");
+                          "sdf/allegro_finger_1.sdf");
   multibody::parsing::AddModelFromSdfFile(
                           full_name, &plant, &scene_graph);
 
@@ -196,22 +196,22 @@ int DoMain() {
 
   // intialization state?
   std::cout<<"Initialize hand state \n";
-  systems::Context<double>& plant_context =
-      diagram->GetMutableSubsystemContext(plant, diagram_context.get());
+
 
 
   //PRINT_VAR(plant_context.get_discrete_state(0).CopyToVector().transpose());
 
-
-  const multibody::RevoluteJoint<double>& joint_finger_1_tip =
-      plant.GetJointByName<multibody::RevoluteJoint>("joint_3");
-  // const multibody::RevoluteJoint<double>& joint_finger_3_tip =
-  //     plant.GetJointByName<multibody::RevoluteJoint>("joint_7");
-  joint_finger_1_tip.set_angle(&plant_context, 0.5);
-  // joint_finger_3_tip.set_angle(&plant_context, 0.5);
-    const multibody::RevoluteJoint<double>& joint_finger_1_middle =
-      plant.GetJointByName<multibody::RevoluteJoint>("joint_2");
-  joint_finger_1_middle.set_angle(&plant_context, 0.5);
+  systems::Context<double>& plant_context =
+      diagram->GetMutableSubsystemContext(plant, diagram_context.get());
+  const multibody::RevoluteJoint<double>& joint_finger_1_root =
+      plant.GetJointByName<multibody::RevoluteJoint>("joint_1");
+  joint_finger_1_root.set_angle(&plant_context, 0.5);
+  // const multibody::RevoluteJoint<double>& joint_finger_1_tip =
+  //     plant.GetJointByName<multibody::RevoluteJoint>("joint_3");
+  // joint_finger_1_tip.set_angle(&plant_context, 0.5);
+  //   const multibody::RevoluteJoint<double>& joint_finger_1_middle =
+  //     plant.GetJointByName<multibody::RevoluteJoint>("joint_2");
+  // joint_finger_1_middle.set_angle(&plant_context, 0.5);
 
   // Set up simulator.
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
