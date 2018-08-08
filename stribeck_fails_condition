@@ -1,0 +1,3 @@
+In this case if we lower the time step from 1e-3 to 1e-4 it runs successfully.
+
+bazel-bin/examples/multibody/bouncing_ball/bouncing_ball_run_dynamics --vx0=1 --target_realtime_rate=0.4 --friction_coefficient=0.5 --time_step=1e-3 --penetration_allowance=1e-3 --z0=0.5 --wx0=0.1 --simulation_time=10 --stiction_tolerance=1e-4

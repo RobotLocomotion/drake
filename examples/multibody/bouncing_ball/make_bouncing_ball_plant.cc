@@ -11,6 +11,7 @@ using geometry::SceneGraph;
 using geometry::Cylinder;
 using geometry::Sphere;
 using geometry::HalfSpace;
+using geometry::VisualMaterial;
 using drake::multibody::multibody_plant::CoulombFriction;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::RigidBody;
@@ -24,6 +25,8 @@ void AddCylinderWithMultiContact(
     const RigidBody<double>& body,
     double radius, double length, const CoulombFriction<double>& friction,
     double contact_radius, int num_contacts) {
+  const VisualMaterial orange(Vector4<double>(1.0, 0.55, 0.0, 1.0));
+  const VisualMaterial red(Vector4<double>(1.0, 0.0, 0.0, 1.0));
   // Add sphere geometry for the ball.
 #if 0
   plant->RegisterCollisionGeometry(
@@ -37,7 +40,7 @@ void AddCylinderWithMultiContact(
   plant->RegisterVisualGeometry(
       body,
       /* Pose X_BG of the geometry frame G in the ball frame B. */
-      Isometry3d::Identity(), Cylinder(radius, length), scene_graph);
+      Isometry3d::Identity(), Cylinder(radius, length), orange, scene_graph);
 
   // Add a bunch of little spheres to simulate "multi-contact".
   const int nspheres = num_contacts;
@@ -58,7 +61,7 @@ void AddCylinderWithMultiContact(
         body,
         /* Pose X_BG of the geometry frame G in the ball frame B. */
         X_BG,
-        Sphere(contact_spheres_radius), scene_graph);
+        Sphere(contact_spheres_radius), red, scene_graph);
 
     // Bottom spheres:
     X_BG.translation() << x, y, -length / 2;
@@ -71,7 +74,7 @@ void AddCylinderWithMultiContact(
         body,
         /* Pose X_BG of the geometry frame G in the ball frame B. */
         X_BG,
-        Sphere(contact_spheres_radius), scene_graph);
+        Sphere(contact_spheres_radius), red, scene_graph);
   }
 }
 
@@ -159,12 +162,12 @@ MakeBouncingBallPlant(int nspheres, double radius, double mass,
         scene_graph);
 
     // Add sphere geometry for the ball.
-    AddSphereWithSpokes(plant.get(), scene_graph,
-                        ball, radius, surface_friction);
+    //AddSphereWithSpokes(plant.get(), scene_graph,
+      //                  ball, radius, surface_friction);
 
-    //AddCylinderWithMultiContact(
-      //  plant.get(), scene_graph,
-        //ball, radius, 4 * radius, surface_friction, radius / 20.0, 10);
+    AddCylinderWithMultiContact(
+        plant.get(), scene_graph,
+        ball, radius, 4 * radius, surface_friction, radius / 20.0, 10);
 
 #if 0
     // Add a bunch of little spheres to simulate "multi-contact".
@@ -205,7 +208,7 @@ MakeBouncingBallPlant(int nspheres, double radius, double mass,
   plant->AddForceElement<UniformGravityFieldElement>(gravity_W);
 
   // We are done creating the plant.
-  plant->Finalize();
+  plant->Finalize(scene_graph);
 
   return plant;
 }
