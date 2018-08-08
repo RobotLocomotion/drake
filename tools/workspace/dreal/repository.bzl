@@ -108,7 +108,7 @@ dreal_repository = repository_rule(
         ),
         "sha256s": attr.string_list(
             default = [
-                "4df7f27effe990618efbf68be67a484a44695a469113ffcb67b9a6d163299474",  # noqa
+                "667392dfccfde3f175021cb47923b645b7d6dd8526ed1b30e2bf4823523ecaeb",  # noqa
                 "1285a64aa5c7ddbefa650232dbd5b309414fce94fd25b160689336f20672494b",  # noqa
             ],
         ),
