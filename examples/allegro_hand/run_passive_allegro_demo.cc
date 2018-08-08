@@ -98,8 +98,9 @@ int DoMain() {
       *builder.AddSystem<MultibodyPlant>();   /* continuous system */
   std::string full_name =
       FindResourceOrThrow("drake/manipulation/models/allegro_hand_description/"
-                          "sdf/allegro_hand_description_right_full.sdf");
+                          // "sdf/allegro_hand_description_right_full.sdf");
                           // "sdf/allegro_finger_1.sdf");
+                          "sdf/allegro_finger_saperate.sdf");
   multibody::parsing::AddModelFromSdfFile(
                           full_name, &plant, &scene_graph);
 
