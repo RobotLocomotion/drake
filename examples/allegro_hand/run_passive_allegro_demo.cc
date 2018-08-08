@@ -5,178 +5,252 @@
 /// simulated with zero torques at the joints.
 
 #include <gflags/gflags.h>
+#include "fmt/ostream.h"
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging_gflags.h"
-#include "drake/examples/allegro_hand/allegro_common.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/lcmt_contact_results_for_viz.hpp"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
-#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
-#include "drake/multibody/rigid_body_tree_construction.h"
-#include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
+  
+#include "drake/lcmt_viewer_draw.hpp"
+#include "drake/geometry/geometry_visualization.h"
+// #include "drake/lcmt_contact_results_for_viz.hpp"
+#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
+#include "drake/multibody/multibody_tree/multibody_plant/contact_results_to_lcm.h"
+#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/implicit_euler_integrator.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
+#include "drake/systems/analysis/runge_kutta3_integrator.h"
+#include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
+#include "drake/systems/lcm/serializer.h"
 #include "drake/systems/primitives/constant_vector_source.h"
-#include "drake/systems/analysis/runge_kutta2_integrator.h"
+#include "drake/systems/rendering/pose_bundle_to_draw_message.h"
+
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
 
 namespace drake {
 
-using systems::ConstantVectorSource;
-using systems::Context;
-using systems::ContinuousState;
-using systems::RigidBodyPlant;
-using systems::VectorBase;
 
 namespace examples {
 namespace allegro_hand {
 namespace {
 
-DEFINE_double(simulation_sec, 2, "Number of seconds to simulate");
+using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::systems::rendering::PoseBundleToDrawMessage;
+// using drake::multibody::RevoluteJoint;
+
+DEFINE_double(simulation_time, 1e-2, "Number of seconds to simulate");
+
+DEFINE_bool(time_stepping, true, "If 'true', the plant is modeled as a "
+    "discrete system with periodic updates of period 'max_time_step'."
+    "If 'false', the plant is modeled as a continuous system.");
+DEFINE_double(max_time_step, 1.0e-3,
+              "Maximum time step used for the integrators. [s]. "
+              "If negative, a value based on parameter penetration_allowance "
+              "is used.");
+
+// Contact parameters
+DEFINE_double(penetration_allowance, 1.0e-2,
+              "Penetration allowance. [m]. "
+              "See MultibodyPlant::set_penetration_allowance().");
+DEFINE_double(v_stiction_tolerance, 1.0e-2,
+              "The maximum slipping speed allowed during stiction. [m/s]");
+
+// Integration parameters:
+DEFINE_string(integration_scheme, "implicit_euler",
+              "Integration scheme to be used. Available options are: "
+              "'semi_explicit_euler','runge_kutta2','runge_kutta3',"
+              "'implicit_euler'");
+
+DEFINE_double(accuracy, 1.0e-2, "Sets the simulation accuracy for variable step"
+              "size integrators with error control.");
+DEFINE_double(target_realtime_rate, 1e-2,
+              "Desired rate relative to real time.  See documentation for "
+              "Simulator::set_target_realtime_rate() for details.");
+
 
 int DoMain() {
-  DRAKE_DEMAND(FLAGS_simulation_sec > 0);
+  DRAKE_DEMAND(FLAGS_simulation_time > 0);
 
-  drake::lcm::DrakeLcm lcm;
+  lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
 
-  // Adds a plant.
-  RigidBodyPlant<double>* plant = nullptr;
-  {
-    auto tree = std::make_unique<RigidBodyTree<double>>();
-    // drake::multibody::AddFlatTerrainToWorld(tree.get());
-    CreateTreeFromFixedModelAtPose(
-        FindResourceOrThrow(
-            "drake/manipulation/models/allegro_hand_description/urdf/"
-            "allegro_hand_description_right.urdf"),
-        tree.get());
+  geometry::SceneGraph<double>& scene_graph = 
+      *builder.AddSystem<geometry::SceneGraph>();
+  scene_graph.set_name("scene_graph");
 
-    plant = builder.AddSystem<RigidBodyPlant<double>>(std::move(tree));
-    plant->set_name("plant");
-  }
+  MultibodyPlant<double>& plant =
+      FLAGS_time_stepping ?
+      *builder.AddSystem<MultibodyPlant>(FLAGS_max_time_step) : /*discrete*/
+      *builder.AddSystem<MultibodyPlant>();   /* continuous system */
+  std::string full_name =
+      FindResourceOrThrow("drake/manipulation/models/allegro_hand_description/"
+                          "sdf/allegro_hand_description_right.sdf");
+                          // "sdf/allegro_finger_1.sdf");
+  multibody::parsing::AddModelFromSdfFile(
+                          full_name, &plant, &scene_graph);
 
-  const RigidBodyTree<double>& tree = plant->get_rigid_body_tree();
 
-  // Creates and adds LCM publisher for visualization.
-  auto visualizer =
-      builder.AddSystem<systems::DrakeVisualizer>(tree, &lcm);
+  // optional: adding gravity -- the gripper could start free falling
+  // plant.AddForceElement<multibody::UniformGravityFieldElement>(
+  //       -9.81 * Eigen::Vector3d::UnitZ());
 
-  // Publish the contact results over LCM.
-  auto contact_viz =
-      builder.AddSystem<systems::ContactResultsToLcmSystem<double>>(
-          plant->get_rigid_body_tree());
-  auto contact_results_publisher = builder.AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
-          "CONTACT_RESULTS", &lcm));
-  builder.Connect(plant->contact_results_output_port(),
-                  contact_viz->get_input_port(0));
-  builder.Connect(contact_viz->get_output_port(0),
-                  contact_results_publisher->get_input_port());
+  // Now the model is complete.
+  plant.Finalize(&scene_graph);
 
-  // Feeds in constant command inputs of zero.
-  VectorX<double> zero_values = VectorX<double>::Zero(plant->get_input_size());
-  // zero_values(0)=1;
-  // zero_values(2)=10;
-  // std::cout<<zero_values<<"\n";
-  // std::cout<<"input size: "<<plant->get_input_size()<<"\n";  // ------------->16
-  auto zero_source =
-      builder.AddSystem<ConstantVectorSource<double>>(zero_values);
-  zero_source->set_name("zero_source");
-  builder.Connect(zero_source->get_output_port(), plant->get_input_port(0));
+  PRINT_VAR(plant.model().num_velocities());
+  PRINT_VAR(plant.model().num_positions());
+  PRINT_VAR(plant.num_actuators());
+  PRINT_VAR(plant.num_actuated_dofs());
 
-  // Connects the visualizer and builds the diagram.
-  builder.Connect(plant->get_output_port(0), visualizer->get_input_port(0));
+  // Set how much penetration (in meters) we are willing to accept.
+  plant.set_penetration_allowance(FLAGS_penetration_allowance);
+  plant.set_stiction_tolerance(FLAGS_v_stiction_tolerance);
+
+  // If the user specifies a time step, we use that, otherwise estimate a
+  // maximum time step based on the compliance of the contact model.
+  // The maximum time step is estimated to resolve this time scale with at
+  // least 30 time steps. Usually this is a good starting point for fixed step
+  // size integrators to be stable.
+  const double max_time_step =
+      FLAGS_max_time_step > 0 ? FLAGS_max_time_step :
+      plant.get_contact_penalty_method_time_scale() / 30;
+
+  // Print maximum time step and the time scale introduced by the compliance in
+  // the contact model as a reference to the user.
+  fmt::print("Maximum time step = {:10.6f} s\n", max_time_step);
+  fmt::print("Compliance time scale = {:10.6f} s\n",
+             plant.get_contact_penalty_method_time_scale());
+
+  // DRAKE_DEMAND(plant.num_actuators() == 16);
+  // DRAKE_DEMAND(plant.num_actuated_dofs() == 16);
+
+  // Boilerplate used to connect the plant to a SceneGraph for
+  // visualization.
+  const systems::rendering::PoseBundleToDrawMessage& converter =
+      *builder.template AddSystem<PoseBundleToDrawMessage>();
+  systems::lcm::LcmPublisherSystem& publisher =
+      *builder.template AddSystem<systems::lcm::LcmPublisherSystem>(
+          "DRAKE_VIEWER_DRAW",
+          std::make_unique<systems::lcm::Serializer<lcmt_viewer_draw>>(), &lcm);
+
+  // Sanity check on the availability of the optional source id before using it.
+  DRAKE_DEMAND(!!plant.get_source_id());
+
+  builder.Connect(
+      plant.get_geometry_poses_output_port(),
+      scene_graph.get_source_pose_port(plant.get_source_id().value()));
+  builder.Connect(scene_graph.get_query_output_port(),
+                  plant.get_geometry_query_input_port());
+
+  builder.Connect(scene_graph.get_pose_bundle_output_port(),
+                  converter.get_input_port(0));
+  builder.Connect(converter, publisher);
+
+  // Publish contact results for visualization.
+  #if 0
+  const auto& contact_results_to_lcm =
+      *builder.AddSystem<multibody::multibody_plant::ContactResultsToLcmSystem>
+      (plant);
+  const auto& contact_results_publisher = *builder.AddSystem(
+      systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>
+      ("CONTACT_RESULTS", &lcm));
+  // Contact results to lcm msg.
+  builder.Connect(plant.get_contact_results_output_port(),
+                  contact_results_to_lcm.get_input_port(0));
+  builder.Connect(contact_results_to_lcm.get_output_port(0),
+                  contact_results_publisher.get_input_port());
+  #endif
+
+  // zero force input
+  ///VectorX<double> zero_values = VectorX<double>::Zero(16)*0.5;
+  //auto zero_source =
+  //    builder.AddSystem<systems::ConstantVectorSource<double>>(zero_values);
+  //zero_source->set_name("zero_source");
+  //builder.Connect(zero_source->get_output_port(), plant.get_actuation_input_port());
+
+  // Last thing before building the diagram; dispatch the message to load
+  // geometry.
+  geometry::DispatchLoadMessage(scene_graph);
+
+  // And build the Diagram:
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
-  systems::Simulator<double> simulator(*diagram);
+
+  // Create a context for this system:
+  std::unique_ptr<systems::Context<double>> diagram_context =
+      diagram->CreateDefaultContext();
+  diagram->SetDefaultContext(diagram_context.get());
+ 
+
+  // intialization state?
+  std::cout<<"Initialize hand state \n";
+  systems::Context<double>& plant_context =
+      diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
 
-  std::cout<<"Connected to the simulator \n";
-
-  simulator.set_target_realtime_rate(1);
-  //simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
-  //    *diagram, 5e-4, &simulator.get_mutable_context());
-  simulator.get_mutable_integrator()->set_maximum_step_size(5e-3);
-  simulator.get_mutable_integrator()->set_fixed_step_mode(true);
-  //simulator.set_publish_every_time_step(false);
-
-  // Sets (arbitrary) initial conditions.
-  Context<double>& allegro_context = diagram->GetMutableSubsystemContext(
-      *plant, &simulator.get_mutable_context());
-  VectorBase<double>& x0 = allegro_context.get_mutable_continuous_state_vector();
-  x0.SetAtIndex(1, 0.2);  // shoulder fore/aft angle [rad]
-  x0.SetAtIndex(2, 0.2);
-
-  simulator.Initialize();
+  //PRINT_VAR(plant_context.get_discrete_state(0).CopyToVector().transpose());
 
 
-  std::cout<<"Simulator inited \n";
+  const multibody::RevoluteJoint<double>& joint_finger_1_tip =
+      plant.GetJointByName<multibody::RevoluteJoint>("joint_3");
+  // const multibody::RevoluteJoint<double>& joint_finger_3_tip =
+  //     plant.GetJointByName<multibody::RevoluteJoint>("joint_7");
+  joint_finger_1_tip.set_angle(&plant_context, 0.5);
+  // joint_finger_3_tip.set_angle(&plant_context, 0.5);
+    const multibody::RevoluteJoint<double>& joint_finger_1_middle =
+      plant.GetJointByName<multibody::RevoluteJoint>("joint_2");
+  joint_finger_1_middle.set_angle(&plant_context, 0.5);
 
-//----------------------
-
-  // Simulate for the desired duration.
-  // simulator.set_target_realtime_rate(1);
-  simulator.StepTo(FLAGS_simulation_sec);
-
-  std::cout<<"Simulator proceeds \n";
-
-  // Ensures the simulation was successful.
-  const Context<double>& context = simulator.get_context();
-  const ContinuousState<double>& state = context.get_continuous_state();
-  const VectorBase<double>& position_vector = state.get_generalized_position();
-  const VectorBase<double>& velocity_vector = state.get_generalized_velocity();
-
-  const int num_q = position_vector.size();
-  const int num_v = velocity_vector.size();
-
-  std::cout<<"something here \n";
-
-  // Ensures the sizes of the position and velocity vectors are correct.
-  DRAKE_DEMAND(num_q == plant->get_num_positions());
-  DRAKE_DEMAND(num_v == plant->get_num_velocities());
-  DRAKE_DEMAND(num_q == num_v);
-
-  // Ensures the robot's joints are within their position limits.
-  const std::vector<std::unique_ptr<RigidBody<double>>>& bodies =
-      plant->get_rigid_body_tree().get_bodies();
-  for (int state_index = 0, i = 0; i < static_cast<int>(bodies.size()); ++i) {
-    // Skips rigid bodies without a parent. This includes the world.
-    if (!bodies[i]->has_parent_body()) continue;
-
-    const DrakeJoint& joint = bodies[i]->getJoint();
-    const Eigen::VectorXd& min_limit = joint.getJointLimitMin();
-    const Eigen::VectorXd& max_limit = joint.getJointLimitMax();
-
-    // Defines a joint limit tolerance. This is the amount in radians over which
-    // joint position limits can be violated and still be considered to be
-    // within the limits. Once we are able to model joint limits via
-    // constraints, we may be able to remove this tolerance value.
-    const double kJointLimitTolerance = 0.0261799;  // 1.5 degrees.
-
-    for (int j = 0; j < joint.get_num_positions(); ++j) {
-      double position = position_vector.GetAtIndex(state_index++);
-      if (position < min_limit[j] - kJointLimitTolerance) {
-        std::cerr << "ERROR: Joint " + joint.get_name() + " (DOF " +
-                                 joint.get_position_name(j) +
-                                 ") violated minimum position limit (" +
-                                 std::to_string(position) + " < " +
-                                 std::to_string(min_limit[j]) + ").";
-        return 1;
-      }
-      if (position > max_limit[j] + kJointLimitTolerance) {
-        std::cerr << "ERROR: Joint " + joint.get_name() + " (DOF " +
-                                 joint.get_position_name(j) +
-                                 ") violated maximum position limit (" +
-                                 std::to_string(position) + " > " +
-                                 std::to_string(max_limit[j]) + ").";
-        return 1;
-      }
-    }
+  // Set up simulator.
+  systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
+  systems::IntegratorBase<double>* integrator{nullptr};
+  if (FLAGS_integration_scheme == "implicit_euler") {
+    integrator =
+        simulator.reset_integrator<systems::ImplicitEulerIntegrator<double>>(
+            *diagram, &simulator.get_mutable_context());
+  } else if (FLAGS_integration_scheme == "runge_kutta2") {
+    integrator =
+        simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
+            *diagram, max_time_step, &simulator.get_mutable_context());
+  } else if (FLAGS_integration_scheme == "runge_kutta3") {
+    integrator =
+        simulator.reset_integrator<systems::RungeKutta3Integrator<double>>(
+            *diagram, &simulator.get_mutable_context());
+  } else if (FLAGS_integration_scheme == "semi_explicit_euler") {
+    integrator =
+        simulator.reset_integrator<systems::SemiExplicitEulerIntegrator<double>>(
+            *diagram, max_time_step, &simulator.get_mutable_context());
+  } else {
+    throw std::runtime_error(
+        "Integration scheme '" + FLAGS_integration_scheme +
+            "' not supported for this example.");
   }
+  integrator->set_maximum_step_size(max_time_step);
+  if (!integrator->get_fixed_step_mode())
+    integrator->set_target_accuracy(FLAGS_accuracy);
 
-  return 0;
-}
+
+  // The error controlled integrators might need to take very small time steps
+  // to compute a solution to the desired accuracy. Therefore, to visualize
+  // these very short transients, we publish every time step.
+  simulator.set_publish_every_time_step(true);
+  simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
+  simulator.Initialize();
+  simulator.StepTo(FLAGS_simulation_time);
+
+  return 1;
+
+
+}  // int main
 
 }  // namespace
 }  // namespace allegro_hand

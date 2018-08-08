@@ -40,12 +40,12 @@ group "2.interpolators" {
 }
 
 cmd "3.drake-visualizer" {
-    exec = "drake-visualizer --script $PWD/multibody/rigid_body_plant/visualization/show_time.py";
+    exec = "bazel-bin/tools/drake_visualizer --script $PWD/multibody/rigid_body_plant/visualization/show_time.py";
     host = "localhost";
 }
 
 cmd "4.lcm-spy" {
-    exec = "drake-lcm-spy";
+    exec = "drake-build/install/bin/drake-lcm-spy";
     host = "localhost";
 }
 

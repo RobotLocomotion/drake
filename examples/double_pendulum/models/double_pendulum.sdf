@@ -47,7 +47,7 @@
     </link>
     <!-- upper link, length 1, angle -90 degrees -->
     <link name='upper_link'>
-      <pose>0 0 2.1 -1.5708 0 0</pose>
+      <pose>0 0 2.1 -1.5708 0  0</pose>
       <self_collide>0</self_collide>
       <inertial>
         <pose>0 0 0.5 0 0 0</pose>
@@ -158,7 +158,7 @@
       <parent>base</parent>
       <child>upper_link</child>
       <axis>
-        <xyz>1.0 0 0</xyz>
+        <xyz>1.0 0 0 </xyz>
         <use_parent_model_frame>true</use_parent_model_frame>
         <limit>
           <effort>0.0</effort>
