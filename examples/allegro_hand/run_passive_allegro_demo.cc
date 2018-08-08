@@ -79,6 +79,8 @@ DEFINE_double(target_realtime_rate, 1e-2,
               "Desired rate relative to real time.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
+DEFINE_double(constant_load_force, 0, "the constant load on all the joint");
+
 
 int DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_time > 0);
@@ -96,8 +98,8 @@ int DoMain() {
       *builder.AddSystem<MultibodyPlant>();   /* continuous system */
   std::string full_name =
       FindResourceOrThrow("drake/manipulation/models/allegro_hand_description/"
-                          // "sdf/allegro_hand_description_right.sdf");
-                          "sdf/allegro_finger_1.sdf");
+                          "sdf/allegro_hand_description_right_full.sdf");
+                          // "sdf/allegro_finger_1.sdf");
   multibody::parsing::AddModelFromSdfFile(
                           full_name, &plant, &scene_graph);
 
@@ -160,7 +162,7 @@ int DoMain() {
   builder.Connect(converter, publisher);
 
   // Publish contact results for visualization.
-  #if 0
+  #if 1
   const auto& contact_results_to_lcm =
       *builder.AddSystem<multibody::multibody_plant::ContactResultsToLcmSystem>
       (plant);
@@ -175,11 +177,14 @@ int DoMain() {
   #endif
 
   // zero force input
-  ///VectorX<double> zero_values = VectorX<double>::Zero(16)*0.5;
-  //auto zero_source =
-  //    builder.AddSystem<systems::ConstantVectorSource<double>>(zero_values);
-  //zero_source->set_name("zero_source");
-  //builder.Connect(zero_source->get_output_port(), plant.get_actuation_input_port());
+  VectorX<double> constant_load_value = VectorX<double>::Ones(
+      plant.model().num_actuators()) * FLAGS_constant_load_force;
+  auto constant_source =
+     builder.AddSystem<systems::ConstantVectorSource<double>>(
+      constant_load_value);
+  constant_source->set_name("constant_source");
+  builder.Connect(constant_source->get_output_port(), 
+                  plant.get_actuation_input_port());
 
   // Last thing before building the diagram; dispatch the message to load
   // geometry.

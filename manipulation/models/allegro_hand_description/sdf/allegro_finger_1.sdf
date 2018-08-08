@@ -21,7 +21,7 @@
           <izz>0.0001</izz>
         </inertia>
       </inertial>
-<!--      <collision name='hand_root_fixed_joint_lump__palm_link_collision'>
+      <collision name='hand_root_fixed_joint_lump__palm_link_collision'>
         <pose frame=''>-0.0093 0 0.0475 0 -0 0</pose>
         <geometry>
           <box>
@@ -29,7 +29,6 @@
           </box>
         </geometry>
       </collision>
--->
       <visual name='hand_root_fixed_joint_lump__palm_link_visual'>
         <pose frame=''>0 0 0.095 0 -0 0</pose>
         <geometry>
@@ -80,7 +79,7 @@
         <limit>
           <lower>-0.47</lower>
           <upper>0.47</upper>
-          <effort>0</effort>
+          <effort>15</effort>
           <velocity>7</velocity>
         </limit>
         <dynamics>
@@ -106,7 +105,7 @@
           <izz>7.95654e-05</izz>
         </inertia>
       </inertial>
- <!--      <collision name='link_1_collision'>
+      <collision name='link_1_collision'>
         <pose frame=''>0 0 0.027 0 -0 0</pose>
         <geometry>
           <box>
@@ -114,7 +113,7 @@
           </box>
         </geometry>
       </collision>
-  -->
+
       <visual name='link_1_visual'>
         <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
@@ -133,7 +132,7 @@
         <limit>
           <lower>-0.196</lower>
           <upper>1.61</upper>
-          <effort>0</effort>
+          <effort>15</effort>
           <velocity>7</velocity>
         </limit>
         <dynamics>
@@ -159,7 +158,7 @@
           <izz>2.63979e-05</izz>
         </inertia>
       </inertial>
- <!--      <collision name='link_2_collision'>
+      <collision name='link_2_collision'>
         <pose frame=''>0 0 0.0192 0 -0 0</pose>
         <geometry>
           <box>
@@ -167,7 +166,6 @@
           </box>
         </geometry>
       </collision>
--->
       <visual name='link_2_visual'>
         <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
@@ -186,7 +184,7 @@
         <limit>
           <lower>-0.174</lower>
           <upper>1.709</upper>
-          <effort>0</effort>
+          <effort>15</effort>
           <velocity>7</velocity>
         </limit>
         <dynamics>
