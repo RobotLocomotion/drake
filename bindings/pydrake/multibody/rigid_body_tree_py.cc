@@ -330,7 +330,13 @@ PYBIND11_MODULE(rigid_body_tree, m) {
              RigidBodyTreeConstants::default_model_instance_id_set,
            py::arg("in_terms_of_qdot") = false,
            doc.RigidBodyTree.centerOfMassJacobian.doc)
-      // centroidalMomentumMatrix
+      .def("centroidalMomentumMatrix",
+           &RigidBodyTree<double>::centroidalMomentumMatrix<T>,
+           py::arg("cache"),
+           py::arg("model_instance_id_set") =
+             RigidBodyTreeConstants::default_model_instance_id_set,
+           py::arg("in_terms_of_qdot") = false,
+           doc.RigidBodyTree.centroidalMomentumMatrix.doc)
       // forwardKinPositionGradient
       .def("geometricJacobianDotTimesV",
            &RigidBodyTree<double>::geometricJacobianDotTimesV<T>,
@@ -345,7 +351,12 @@ PYBIND11_MODULE(rigid_body_tree, m) {
            py::arg("model_instance_id_set") =
              RigidBodyTreeConstants::default_model_instance_id_set,
            doc.RigidBodyTree.centerOfMassJacobianDotTimesV.doc)
-      // centroidalMomentumMatrixDotTimesV
+      .def("centroidalMomentumMatrixDotTimesV",
+           &RigidBodyTree<double>::centroidalMomentumMatrixDotTimesV<T>,
+           py::arg("cache"),
+           py::arg("model_instance_id_set") =
+             RigidBodyTreeConstants::default_model_instance_id_set,
+           doc.RigidBodyTree.centroidalMomentumMatrixDotTimesV.doc)
       .def("positionConstraints",
            &RigidBodyTree<double>::positionConstraints<T>,
            py::arg("cache"),
@@ -563,7 +574,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
                   doc.RigidBodyActuator.effort_limit_min_.doc)
     .def_readonly("effort_limit_max", &RigidBodyActuator::effort_limit_max_,
                   doc.RigidBodyActuator.effort_limit_max_.doc);
-}
+}  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake
 }  // namespace drake
