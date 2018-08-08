@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <functional>
 #include <memory>
+#include <regex>
 #include <string>
 #include <utility>
 
@@ -124,6 +125,44 @@ const std::string& GeometryState<T>::get_frame_name(FrameId frame_id) const {
 }
 
 template <typename T>
+const std::string& GeometryState<T>::get_name(GeometryId geometry_id) const {
+  const auto& dynamic_iterator = geometries_.find(geometry_id);
+  if (dynamic_iterator != geometries_.end()) {
+    return dynamic_iterator->second.get_name();
+  } else {
+    const auto& anchored_iterator = anchored_geometries_.find(geometry_id);
+    if (anchored_iterator != anchored_geometries_.end()) {
+      return anchored_iterator->second.get_name();
+    }
+  }
+  throw std::logic_error("No geometry available for invalid geometry id: " +
+      to_string(geometry_id));
+}
+
+template <typename T>
+GeometryId GeometryState<T>::GetGeometryFromName(
+    FrameId frame_id, const std::string& name) const {
+  // TODO(SeanCurtis-TRI): Account for geometry role once implemented.
+  if (frame_id == InternalFrame::get_world_frame_id()) {
+    for (const auto& pair : anchored_geometries_) {
+      const InternalAnchoredGeometry& geometry = pair.second;
+      if (geometry.get_name() == name) return pair.first;
+    }
+    throw std::logic_error("The frame 'world' (" + to_string(frame_id) +
+                           ") has no geometry named '" + name + "'");
+  } else {
+    const InternalFrame& frame = GetValueOrThrow(frame_id, frames_);
+    for (GeometryId geometry_id : frame.get_child_geometries()) {
+      const InternalGeometry& geometry = geometries_.at(geometry_id);
+      if (geometry.get_name() == name) return geometry_id;
+    }
+    throw std::logic_error("The frame '" + frame.get_name() + "' (" +
+                           to_string(frame_id) + ") has no geometry named '" +
+                           name + "'");
+  }
+}
+
+template <typename T>
 const Isometry3<T>& GeometryState<T>::get_pose_in_world(
     FrameId frame_id) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
@@ -136,6 +175,9 @@ const Isometry3<T>& GeometryState<T>::get_pose_in_world(
 template <typename T>
 const Isometry3<T>& GeometryState<T>::get_pose_in_world(
     GeometryId geometry_id) const {
+  // TODO(SeanCurtis-TRI): This is an BUG! If you pass in the id of an
+  // anchored geometry, this will throw an exception. See
+  // https://github.com/RobotLocomotion/drake/issues/9145.
   FindOrThrow(geometry_id, geometries_, [geometry_id]() {
     return "No world pose available for invalid geometry id: " +
            to_string(geometry_id);
@@ -288,14 +330,17 @@ GeometryId GeometryState<T>::RegisterGeometry(
   geometry_index_id_map_.push_back(geometry_id);
 
   // Configure topology.
+  // NOTE: It is important to test for name validity *before* adding this
+  // geometry to the frame.
+  ThrowIfInvalidName(frame_id, geometry->name());
+
   InternalFrame& frame = frames_[frame_id];
   frame.add_child(geometry_id);
 
-  // TODO(SeanCurtis-TRI): Get name from geometry instance (when available).
   geometries_.emplace(
       geometry_id,
       InternalGeometry(geometry->release_shape(), frame_id, geometry_id,
-                       geometry->pose(), engine_index,
+                       geometry->name(), geometry->pose(), engine_index,
                        geometry->visual_material()));
 
 
@@ -399,15 +444,27 @@ GeometryId GeometryState<T>::RegisterAnchoredGeometry(
   // Pass the geometry to the engine.
   auto engine_index = geometry_engine_->AddAnchoredGeometry(geometry->shape(),
                                                             geometry->pose());
+
+  // NOTE: It is important to test for name validity *before* adding this
+  // geometry to the frame.
+  ThrowIfInvalidName(InternalFrame::get_world_frame_id(), geometry->name());
+
   DRAKE_ASSERT(static_cast<int>(anchored_geometry_index_id_map_.size()) ==
                engine_index);
   anchored_geometry_index_id_map_.push_back(geometry_id);
+
   anchored_geometries_.emplace(
       geometry_id,
-      InternalAnchoredGeometry(
-          geometry->release_shape(), geometry_id, geometry->pose(),
-          engine_index, geometry->visual_material()));
+      InternalAnchoredGeometry(geometry->release_shape(), geometry_id,
+                               geometry->name(), geometry->pose(), engine_index,
+                               geometry->visual_material()));
   return geometry_id;
+}
+
+template <typename T>
+bool GeometryState<T>::IsValidGeometryName(
+    FrameId frame_id, const std::string& candidate_name) const {
+  return TestNameValidity(frame_id, candidate_name) == OK;
 }
 
 template <typename T>
@@ -594,6 +651,64 @@ void GeometryState<T>::UpdatePosesRecursively(
     auto& child_frame = frames_[child_id];
     UpdatePosesRecursively(child_frame, X_WF, poses);
   }
+}
+
+template <typename T>
+void GeometryState<T>::ThrowIfInvalidName(FrameId frame_id,
+                                          const std::string& name) const {
+  NameValidityResult result = TestNameValidity(frame_id, name);
+  switch (result) {
+    case OK:
+      return;
+    case DUPLICATE:
+      throw std::logic_error(
+          "The proposed geometry name '" + name + "' is "
+          "already used by a geometry on the indicated frame (" +
+          to_string(frame_id) + ")");
+    case EMPTY:
+      throw std::logic_error("The proposed geometry name is empty");
+    case ONLY_WHITE_SPACE:
+      throw std::logic_error(
+          "The proposed geometry name contains only whitespace");
+  }
+}
+
+template <typename T>
+typename GeometryState<T>::NameValidityResult
+GeometryState<T>::TestNameValidity(FrameId frame_id,
+                                   const std::string& candidate_name) const {
+  if (frame_id != InternalFrame::get_world_frame_id()) {
+    FindOrThrow(frame_id, frames_, [frame_id]() {
+      return "Given frame id is not valid: " + to_string(frame_id);
+    });
+  }
+  if (candidate_name.empty()) return EMPTY;
+
+  auto trim = [](const std::string& name) -> std::string {
+    std::regex trim_regex("^\\s*(.*?)\\s*$");
+    std::smatch matches;
+    std::regex_match(name, matches, trim_regex);
+    DRAKE_DEMAND(matches.size() == 2);
+    return matches[1].str();
+  };
+
+  const std::string& trimmed = trim(candidate_name);
+  if (trimmed.empty()) return ONLY_WHITE_SPACE;
+
+  // Now test for uniqueness
+  // TODO(SeanCurtis-TRI): Add geometry role to the test.
+  if (frame_id == InternalFrame::get_world_frame_id()) {
+    for (const auto& pair : anchored_geometries_) {
+      const InternalAnchoredGeometry& geometry = pair.second;
+      if (geometry.get_name() == candidate_name) return DUPLICATE;
+    }
+  } else {
+    const InternalFrame& frame = GetValueOrThrow(frame_id, frames_);
+    for (GeometryId id : frame.get_child_geometries()) {
+      if (geometries_.at(id).get_name() == candidate_name) return DUPLICATE;
+    }
+  }
+  return OK;
 }
 
 }  // namespace geometry

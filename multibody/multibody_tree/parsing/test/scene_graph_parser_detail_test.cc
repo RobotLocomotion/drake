@@ -4,6 +4,7 @@
 #include <memory>
 
 #include <gtest/gtest.h>
+#include "fmt/ostream.h"
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -253,6 +254,140 @@ GTEST_TEST(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
                               kTolerance, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(X_LC.translation(), p_LCo_expected,
                               kTolerance, MatrixCompareType::relative));
+}
+
+// Confirms the failure conditions for SDFormat. SceneGraph requirements on
+// geometry names are supposed to mirror the SDFormat behavior. If these tests
+// no longer fail, the requirements in SceneGraph should become more relaxed.
+// Alternatively, if more failure modes are learned, they should be encoded
+// here and in the SceneGraph logic (start at the documentation of
+// GeometryInstace).
+// Note: This is only tested for visual geometries, but the same requirements
+// are assumed for collision geometries.
+GTEST_TEST(SceneGraphParserDetail, VisualGeometryNameRequirements) {
+  // It is necessary to do a full, deep parse from the root to reveal *all*
+  // of the failure modes.
+  auto ValidParse = [](const std::string& visual_str) -> bool {
+    const std::string sdf_str = fmt::format(
+        "<?xml version='1.0'?>"
+        "<sdf version='1.6'>"
+        "  <model name='my_model'>"
+        "    <link name='link'>{}"
+        "    </link>"
+        "  </model>"
+        "</sdf>", visual_str);
+    sdf::Root root;
+    return root.LoadSdfString(sdf_str).empty();
+  };
+
+  // Allowable naming.
+  {
+    // Case: control group - a simple valid name.
+    const std::string valid_name = "<visual name='visual'>"
+        "  <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>"
+        "  <geometry>"
+        "    <cylinder>"
+        "      <radius>0.5</radius>"
+        "      <length>1.2</length>"
+        "    </cylinder>"
+        "  </geometry>"
+        "</visual>";
+    EXPECT_TRUE(ValidParse(valid_name));
+  }
+
+  {
+    // Case: Name with leading whitespace.
+    const std::string leading_whitespace_name = "<visual name='  visual'>"
+        "  <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>"
+        "  <geometry>"
+        "    <cylinder>"
+        "      <radius>0.5</radius>"
+        "      <length>1.2</length>"
+        "    </cylinder>"
+        "  </geometry>"
+        "</visual>";
+    EXPECT_TRUE(ValidParse(leading_whitespace_name));
+  }
+
+  {
+    // Case: Name with leading whitespace.
+    const std::string trailing_whitespace_name = "<visual name='visual  '>"
+        "  <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>"
+        "  <geometry>"
+        "    <cylinder>"
+        "      <radius>0.5</radius>"
+        "      <length>1.2</length>"
+        "    </cylinder>"
+        "  </geometry>"
+        "</visual>";
+    EXPECT_TRUE(ValidParse(trailing_whitespace_name));
+  }
+
+  // Invalid naming
+  {
+    // Case: Missing name element.
+    const std::string missing_name_parameter = "<visual>"
+        "  <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>"
+        "  <geometry>"
+        "    <cylinder>"
+        "      <radius>0.5</radius>"
+        "      <length>1.2</length>"
+        "    </cylinder>"
+        "  </geometry>"
+        "</visual>";
+    EXPECT_FALSE(ValidParse(missing_name_parameter));
+  }
+
+  {
+    // Case: Empty name element.
+    const std::string empty_name = "<visual name=''>"
+        "  <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>"
+        "  <geometry>"
+        "    <cylinder>"
+        "      <radius>0.5</radius>"
+        "      <length>1.2</length>"
+        "    </cylinder>"
+        "  </geometry>"
+        "</visual>";
+    EXPECT_FALSE(ValidParse(empty_name));
+  }
+
+  {
+    // Case: Whitespace-only name.
+    const std::string whitespace_name = "<visual name='  '>"
+        "  <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>"
+        "  <geometry>"
+        "    <cylinder>"
+        "      <radius>0.5</radius>"
+        "      <length>1.2</length>"
+        "    </cylinder>"
+        "  </geometry>"
+        "</visual>";
+    EXPECT_FALSE(ValidParse(whitespace_name));
+  }
+
+  {
+    // Case: Duplicate names.
+    const std::string duplicate_name = "<visual name='visual'>"
+        "  <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>"
+        "  <geometry>"
+        "    <cylinder>"
+        "      <radius>0.5</radius>"
+        "      <length>1.2</length>"
+        "    </cylinder>"
+        "  </geometry>"
+        "</visual>"
+        "<visual name='visual'>"
+        "  <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>"
+        "  <geometry>"
+        "    <cylinder>"
+        "      <radius>0.5</radius>"
+        "      <length>1.2</length>"
+        "    </cylinder>"
+        "  </geometry>"
+        "</visual>";
+    EXPECT_FALSE(ValidParse(duplicate_name));
+  }
 }
 
 // Verify MakeGeometryInstanceFromSdfVisual can make a GeometryInstance from an
