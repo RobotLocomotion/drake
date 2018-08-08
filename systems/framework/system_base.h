@@ -298,6 +298,7 @@ class SystemBase : public internal::SystemMessageInterface {
   @see drake::systems::Value for more about abstract values. */
   //@{
 
+  /// @anchor DeclareCacheEntry_primary
   /** Declares a new %CacheEntry in this System using the least-restrictive
   definitions for the associated functions. Prefer one of the more-convenient
   signatures below if you can. The new cache entry is assigned a unique
@@ -346,9 +347,9 @@ class SystemBase : public internal::SystemMessageInterface {
   where `MySystem` is a class derived from `SystemBase`, `MyContext` is a class
   derived from `ContextBase`, and `ValueType` is any concrete type such that
   `Value<ValueType>` is permitted. (The method names are arbitrary.) Template
-  arguments will be deduced and do not need to be specified. See the first
-  DeclareCacheEntry() signature above for more information about the parameters
-  and behavior.
+  arguments will be deduced and do not need to be specified. See the
+  @ref DeclareCacheEntry_primary "primary DeclareCacheEntry() signature"
+  for more information about the parameters and behavior.
   @see drake::systems::Value */
   template <class MySystem, class MyContext, typename ValueType>
   const CacheEntry& DeclareCacheEntry(
@@ -358,6 +359,7 @@ class SystemBase : public internal::SystemMessageInterface {
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
 
+  /// @anchor DeclareCacheEntry_model_and_calc
   /** Declares a cache entry by specifying a model value of concrete type
   `ValueType` and a calculator function that is a class member function (method)
   with signature: @code
@@ -366,9 +368,9 @@ class SystemBase : public internal::SystemMessageInterface {
   where `MySystem` is a class derived from `SystemBase`, `MyContext` is a class
   derived from `ContextBase`, and `ValueType` is any concrete type such that
   `Value<ValueType>` is permitted. (The method names are arbitrary.) Template
-  arguments will be deduced and do not need to be specified.
-  See the first DeclareCacheEntry() signature above for more information about
-  the parameters and behavior.
+  arguments will be deduced and do not need to be specified. See the
+  @ref DeclareCacheEntry_primary "primary DeclareCacheEntry() signature"
+  above for more information about the parameters and behavior.
   @see drake::systems::Value */
   template <class MySystem, class MyContext, typename ValueType>
   const CacheEntry& DeclareCacheEntry(
@@ -382,7 +384,8 @@ class SystemBase : public internal::SystemMessageInterface {
   with signature: @code
     ValueType MySystem::CalcCacheValue(const MyContext&) const;
   @endcode
-  Other than the signature, this is identical to the previous signature above;
+  Other than the calculator signature, this is identical to the other
+  @ref DeclareCacheEntry_model_and_calc "model and calculator signature",
   please look there for more information. */
   template <class MySystem, class MyContext, typename ValueType>
   const CacheEntry& DeclareCacheEntry(
@@ -391,6 +394,7 @@ class SystemBase : public internal::SystemMessageInterface {
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
 
+  /// @anchor DeclareCacheEntry_calc_only
   /** Declares a cache entry by specifying only a calculator function that is a
   class member function (method) with signature:
   @code
@@ -424,7 +428,8 @@ class SystemBase : public internal::SystemMessageInterface {
   @code
     ValueType MySystem::CalcCacheValue(const MyContext&) const;
   @endcode
-  Other than the signature, this is identical to the previous signature above;
+  Other than the calculator method's signature, this is identical to the other
+  @ref DeclareCacheEntry_calc_only "calculator-only signature";
   please look there for more information. */
   template <class MySystem, class MyContext, typename ValueType>
   const CacheEntry& DeclareCacheEntry(
@@ -470,7 +475,7 @@ class SystemBase : public internal::SystemMessageInterface {
 
   // The ticket methods are promoted in the System<T> class so that users can
   // invoke them in their constructors without prefixing with this->. If you
-  // add, remove, rename, or rearrange any of these be sure to update the
+  // add, remove, rename, or reorder any of these be sure to update the
   // promotions in system.h.
 
   // Keep the order here the same as they are defined in the internal enum
@@ -1081,6 +1086,8 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
 
 // Takes an initial value and value-returning calc() member function.
 // See the above output-argument signature for an explanation of the code.
+// TODO(sherm1) Consider whether common code in this and the previous method
+// can be factored out and shared rather than repeated.
 template <class MySystem, class MyContext, typename ValueType>
 const CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description, const ValueType& model_value,

@@ -256,16 +256,32 @@ class DiagramContext final : public Context<T> {
   // to their children's xd, xa, pn, pa, resp.
   void SubscribeDiagramCompositeTrackersToChildrens() {
     std::vector<internal::BuiltInTicketNumbers> composites{
-        internal::kQTicket,  internal::kVTicket,     internal::kZTicket,
-        internal::kXdTicket, internal::kXaTicket,    internal::kPnTicket,
-        internal::kPaTicket, internal::kXcdotTicket, internal::kPeTicket,
-        internal::kKeTicket, internal::kPcTicket,    internal::kPncTicket};
+        internal::kQTicket,  // Value sources.
+        internal::kVTicket,
+        internal::kZTicket,
+        internal::kXdTicket,
+        internal::kXaTicket,
+        internal::kPnTicket,
+        internal::kPaTicket,
+        internal::kXcdotTicket,  // Cache entries.
+        internal::kPeTicket,
+        internal::kKeTicket,
+        internal::kPcTicket,
+        internal::kPncTicket};
+
+    // Validate the claim above that Diagrams do not have tickets for individual
+    // variables and parameters.
+    DRAKE_DEMAND(!this->owns_any_variables_or_parameters());
+
+    // Collect the diagram trackers for each composite item above.
     DependencyGraph& graph = this->get_mutable_dependency_graph();
     std::vector<DependencyTracker*> diagram_trackers;
-    for (auto ticket : composites)
+    for (auto ticket : composites) {
       diagram_trackers.push_back(
           &graph.get_mutable_tracker(DependencyTicket(ticket)));
+    }
 
+    // Subscribe those trackers to the corresponding subcontext trackers.
     for (auto& subcontext : contexts_) {
       DependencyGraph& subgraph = subcontext->get_mutable_dependency_graph();
       for (size_t i = 0; i < composites.size(); ++i) {

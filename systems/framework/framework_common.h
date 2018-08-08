@@ -203,7 +203,8 @@ class SystemParentServiceInterface {
 // Ticket numbers for conditionally-allocated objects like ports and cache
 // entries are allocated beginning with kNextAvailableTicket defined below.
 enum BuiltInTicketNumbers {
-  // This group of tickets represents independent source values in a Context.
+  // This set of tickets represents independent source values in a Context,
+  // and groupings of such source values.
   kNothingTicket        =  0,  // Indicates "not dependent on anything".
   kTimeTicket           =  1,  // Time.
   kAccuracyTicket       =  2,  // Accuracy.
