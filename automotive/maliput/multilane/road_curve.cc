@@ -212,7 +212,8 @@ std::function<double(double)> RoadCurve::OptimizeCalcPFromS(double r) const {
       p_from_s_ivp_->DenseSolve(full_length, values)};
     DRAKE_DEMAND(dense_output->start_time() <= 0.);
     DRAKE_DEMAND(dense_output->end_time() >= full_length);
-    return [dense_output, full_length, absolute_tolerance] (double s) -> double {
+    return [dense_output, full_length,
+            absolute_tolerance] (double s) -> double {
       // Saturates s to lie within the [0., full_length] interval.
       const double saturated_s = std::min(std::max(s, 0.), full_length);
       DRAKE_THROW_UNLESS(std::abs(saturated_s - s) < absolute_tolerance);
