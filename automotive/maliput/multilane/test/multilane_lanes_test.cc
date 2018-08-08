@@ -777,7 +777,7 @@ TEST_P(MultilaneLanesParamTest, HillIntegration) {
   const CubicPolynomial kHillPolynomial(z0 / p_scale, 0.,
                                         (3. * (z1 - z0) / p_scale),
                                         (-2. * (z1 - z0) / p_scale));
-  std::unique_ptr<RoadCurve> road_curve_1 =
+  std::unique_ptr<RoadCurve> road_curve =
       std::make_unique<ArcRoadCurve>(Vector2<double>(-100., -100.), radius,
                                      theta0, d_theta, kHillPolynomial, zp,
                                      kLinearTolerance, kScaleLength,
@@ -785,30 +785,33 @@ TEST_P(MultilaneLanesParamTest, HillIntegration) {
   const double kLaneSpacing = 2. * kHalfLaneWidth;
   const double kLeftWidth = kLaneSpacing + kHalfLaneWidth;
   const double kRightWidth = kLaneSpacing + kHalfLaneWidth;
-  Junction* j1 = rg.NewJunction(api::JunctionId{"j1"});
-  Segment* s1 = j1->NewSegment(
-      api::SegmentId{"s1"}, std::move(road_curve_1),
+  Junction* junction = rg.NewJunction(api::JunctionId{"junction"});
+  Segment* segment = junction->NewSegment(
+      api::SegmentId{"segment"}, std::move(road_curve),
       -kLeftWidth + r0, r0 + kRightWidth, {0., kMaxHeight});
-  Lane* l1 = s1->NewLane(api::LaneId{"l1"}, r0 - kLaneSpacing,
-                         {-kHalfLaneWidth, kHalfLaneWidth});
-  Lane* l2 = s1->NewLane(api::LaneId{"l2"}, r0,
-                         {-kHalfLaneWidth, kHalfLaneWidth});
-  Lane* l3 = s1->NewLane(api::LaneId{"l3"}, r0 + kLaneSpacing,
-                         {-kHalfLaneWidth, kHalfLaneWidth});
+  Lane* right_lane = segment->NewLane(
+      api::LaneId{"right_lane"}, r0 - kLaneSpacing,
+      {-kHalfLaneWidth, kHalfLaneWidth});
+  Lane* center_lane = segment->NewLane(
+      api::LaneId{"center_lane"}, r0,
+      {-kHalfLaneWidth, kHalfLaneWidth});
+  Lane* left_lane = segment->NewLane(
+      api::LaneId{"left_lane"}, r0 + kLaneSpacing,
+      {-kHalfLaneWidth, kHalfLaneWidth});
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
 
-  // Checks center lane endpoints' position in the GLOBAL frame
+  // Checks center lane endpoints' position in the world frame
   // against their analytically known values.
-  const api::LanePosition kInitialLanePositionA{0., 0., 0.};
+  const api::LanePosition kInitialLanePosition{0., 0., 0.};
   EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l2->ToGeoPosition(kInitialLanePositionA),
+      center_lane->ToGeoPosition(kInitialLanePosition),
       api::GeoPosition(-100. + (offset_radius * std::cos(theta0)),
                        -100. + (offset_radius * std::sin(theta0)), z0),
       kLinearTolerance));
 
-  const api::LanePosition kFinalLanePositionA{l2->length(), 0., 0.};
+  const api::LanePosition kFinalLanePosition{center_lane->length(), 0., 0.};
   EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l2->ToGeoPosition(kFinalLanePositionA),
+      center_lane->ToGeoPosition(kFinalLanePosition),
       api::GeoPosition(-100. + (offset_radius * std::cos(theta1)),
                        -100. + (offset_radius * std::sin(theta1)), z1),
       kLinearTolerance));
@@ -825,23 +828,27 @@ TEST_P(MultilaneLanesParamTest, HillIntegration) {
   const api::IsoLaneVelocity kVelocity{1., 0., 0. };
   const double kIntegrationTolerance{1e-3};
 
-  const int kStepCountB = l1->length() / (kVelocity.sigma_v * kTimeStep);
-  const api::LanePosition kInitialLanePositionB{0., -kLaneSpacing, 0.};
-  const api::LanePosition kExpectedFinalLanePositionB{
-    l2->length(), -kLaneSpacing, 0.};
+  // Tests using the lane on the right side.
+  const int kStepCountR =
+      right_lane->length() / (kVelocity.sigma_v * kTimeStep);
+  const api::LanePosition kInitialLanePositionR{0., -kLaneSpacing, 0.};
+  const api::LanePosition kExpectedFinalLanePositionR{
+    center_lane->length(), -kLaneSpacing, 0.};
   EXPECT_TRUE(api::test::IsLanePositionClose(
-      IntegrateTrivially(l2, kInitialLanePositionB,
-                         kVelocity, kTimeStep, kStepCountB),
-      kExpectedFinalLanePositionB, kIntegrationTolerance));
+      IntegrateTrivially(center_lane, kInitialLanePositionR,
+                         kVelocity, kTimeStep, kStepCountR),
+      kExpectedFinalLanePositionR, kIntegrationTolerance));
 
-  const int kStepCountC = l3->length() / (kVelocity.sigma_v * kTimeStep);
-  const api::LanePosition kInitialLanePositionC{0., kLaneSpacing, 0.};
-  const api::LanePosition kExpectedFinalLanePositionC{
-    l2->length(), kLaneSpacing, 0.};
+  // Tests using the lane on the left side.
+  const int kStepCountL =
+      left_lane->length() / (kVelocity.sigma_v * kTimeStep);
+  const api::LanePosition kInitialLanePositionL{0., kLaneSpacing, 0.};
+  const api::LanePosition kExpectedFinalLanePositionL{
+    center_lane->length(), kLaneSpacing, 0.};
   EXPECT_TRUE(api::test::IsLanePositionClose(
-      IntegrateTrivially(l2, kInitialLanePositionC,
-                         kVelocity, kTimeStep, kStepCountC),
-      kExpectedFinalLanePositionC, kIntegrationTolerance));
+      IntegrateTrivially(center_lane, kInitialLanePositionL,
+                         kVelocity, kTimeStep, kStepCountL),
+      kExpectedFinalLanePositionL, kIntegrationTolerance));
 }
 
 
