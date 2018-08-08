@@ -66,7 +66,7 @@ DEFINE_double(v_stiction_tolerance, 1.0e-2,
               "The maximum slipping speed allowed during stiction. [m/s]");
 
 // Integration parameters:
-DEFINE_string(integration_scheme, "semi_implicit_euler",
+DEFINE_string(integration_scheme, "semi_explicit_euler",
               "Integration scheme to be used. Available options are: "
               "'semi_explicit_euler','runge_kutta2','runge_kutta3',"
               "'implicit_euler'");
