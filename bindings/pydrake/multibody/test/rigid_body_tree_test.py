@@ -347,8 +347,13 @@ class TestRigidBodyTree(unittest.TestCase):
         assert_sane(tau)
         # - Friction torques.
         friction_torques = tree.frictionTorques(v)
-        self.assertTrue(friction_torques.shape, (num_v,))
+        self.assertEqual(friction_torques.shape, (num_v,))
         assert_sane(friction_torques, nonzero=False)
+        # - Centroidal Momentum
+        Ag = tree.centroidalMomentumMatrix(kinsol)
+        self.assertEqual(Ag.shape, (6, num_q))
+        AgDotV = tree.centroidalMomentumMatrixDotTimesV(kinsol)
+        self.assertEqual(AgDotV.shape, (6,))
 
     def test_shapes_parsing(self):
         # TODO(gizatt) This test ought to have its reliance on
