@@ -914,6 +914,7 @@ class ImplicitStribeckSolver {
       fn_.resize(nc);
       ft_.resize(nf);
       x_.resize(nc);
+      Delta_vn_.resize(nc);
       Delta_vt_.resize(nf);
       t_hat_.resize(nf);
       v_slip_.resize(nc);
@@ -948,6 +949,12 @@ class ImplicitStribeckSolver {
     // Mutable version of vt().
     Eigen::VectorBlock<VectorX<T>> mutable_vt() {
       return vt_.segment(0, 2 * nc_);
+    }
+
+    // Returns a mutable reference to the vector containing the normal
+    // velocity updates Δvₙ for all contact points, of size nc.
+    Eigen::VectorBlock<VectorX<T>> mutable_Delta_vn() {
+      return Delta_vn_.segment(0, nc_);
     }
 
     // Returns a mutable reference to the vector containing the tangential
@@ -1022,6 +1029,7 @@ class ImplicitStribeckSolver {
    private:
     // The number of contact points. This determines sizes in this workspace.
     int nc_, nv_;
+    VectorX<T> Delta_vn_;  // Δvₙᵏ = Jₙ Δvᵏ, in ℝⁿᶜ, for the k-th iteration.
     VectorX<T> Delta_vt_;  // Δvₜᵏ = Jₜ Δvᵏ, in ℝ²ⁿᶜ, for the k-th iteration.
     VectorX<T> vn_;        // vₙᵏ, in ℝⁿᶜ.
     VectorX<T> vt_;        // vₜᵏ, in ℝ²ⁿᶜ.

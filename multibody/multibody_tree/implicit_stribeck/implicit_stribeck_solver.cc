@@ -650,6 +650,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   auto vn = variable_size_workspace_.mutable_vn();
   auto vt = variable_size_workspace_.mutable_vt();
   auto ft = variable_size_workspace_.mutable_ft();
+  auto Delta_vn = variable_size_workspace_.mutable_Delta_vn();
   auto Delta_vt = variable_size_workspace_.mutable_Delta_vt();
   auto& dft_dvt = variable_size_workspace_.mutable_dft_dvt();
   auto Gn = variable_size_workspace_.mutable_Gn();
@@ -662,6 +663,8 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   // Initialize vt_error to a value larger than tolerance so t_hat the solver at
   // least performs one iteration.
   T vt_error = 2 * vt_tolerance;
+
+  T vn_error = 2 * vt_tolerance;
 
   // Initialize iteration with the guess provided.
   v = v_guess;
@@ -685,7 +688,8 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
 
     // After the previous iteration, we allow updating ft above to have its
     // latest value before leaving.
-    if (vt_error < vt_tolerance) {
+    // Convergence is monitored in both tangential and normal directions.
+    if (std::max(vt_error, vn_error) < vt_tolerance) {
       // Update generalized forces and return.
       tau_f = Jt.transpose() * ft;
       tau = tau_f + Jn.transpose() * fn;
@@ -731,7 +735,12 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // points.
     Delta_vt = Jt * Delta_v;
 
-    // Convergence is monitored in the tangential velocities.
+    // Similarly to Δvₜᵏ above, we define the update in the normal velocities
+    // as Δvₙᵏ = Jₙ Δvᵏ.
+    Delta_vn = Jn * Delta_v;
+
+    // We monitor convergence in both normal and tangential velocities.
+    vn_error = Delta_vn.norm();
     vt_error = Delta_vt.norm();
 
     // Limit the angle change between vₜᵏ⁺¹ and vₜᵏ for all contact points.
