@@ -892,12 +892,16 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
                std::logic_error);
   const std::string& str2_cached = port2.Eval<std::string>(*context);
   EXPECT_EQ(str2_cached, "concrete string");
-  EXPECT_FALSE(cache2.is_out_of_date(*context));
   EXPECT_EQ(cacheval2.serial_number(), 2);
+  EXPECT_FALSE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cache2.GetKnownUpToDate<std::string>(*context),
+            "concrete string");  // Doesn't throw now.
 
   // Check that setting time invalidates correctly. Note that the method
   // *may* avoid invalidation if the time hasn't actually changed.
-  context->set_time(1.);  // Should invalidate time- and everything-dependents.
+
+  // Should invalidate time- and everything-dependents.
+  context->set_time(context->get_time() + 1.);
   EXPECT_TRUE(cache2.is_out_of_date(*context));
   EXPECT_EQ(cacheval2.serial_number(), 2);  // Unchanged since invalid.
   (void)port2.EvalAbstract(*context);  // Recalculate.
@@ -908,6 +912,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
 
   // Should invalidate accuracy- and everything-dependents. Note that the
   // method *may* avoid invalidation if the accuracy hasn't actually changed.
+  EXPECT_FALSE(context->get_accuracy());  // None set initially.
   context->set_accuracy(.000025);  // This is a change.
   EXPECT_TRUE(cache2.is_out_of_date(*context));
   (void)port2.EvalAbstract(*context);  // Recalculate.

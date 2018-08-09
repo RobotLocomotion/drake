@@ -472,6 +472,8 @@ class DiagramTest : public ::testing::Test {
     output_ = diagram_->AllocateOutput();
 
     // Make sure caching is on locally, even if it is off by default.
+    // Do not remove this line; we want to show that these tests function
+    // correctly with caching on. It is easier to pass with caching off!
     context_->EnableCaching();
 
     // Initialize the integrator states.
@@ -993,7 +995,10 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     diagram_->set_name("DiagramOfDiagrams");
 
     context_ = diagram_->CreateDefaultContext();
+
     // Make sure caching is on locally, even if it is off by default.
+    // Do not remove this line; we want to show that these tests function
+    // correctly with caching on. It is easier to pass with caching off!
     context_->EnableCaching();
 
     output_ = diagram_->AllocateOutput();
@@ -1052,10 +1057,14 @@ TEST_F(DiagramOfDiagramsTest, Graphviz) {
   EXPECT_NE(std::string::npos, dot.find("_" + id0 + "_y0 -> _" + id1 + "_u0"));
 }
 
-// Tests that a diagram composed of diagrams can be evaluated.
+// Tests that a diagram composed of diagrams can be evaluated, and gives
+// correct answers with caching enabled.
 TEST_F(DiagramOfDiagramsTest, EvalOutput) {
-  diagram_->CalcOutput(*context_, output_.get());
-  // (Note that caching is enabled in this context.)
+  context_->EnableCaching();  // Just to be sure.
+
+  EXPECT_EQ(diagram_->EvalVectorInput(*context_, 0)->GetAtIndex(0), 8.);
+  EXPECT_EQ(diagram_->EvalVectorInput(*context_, 1)->GetAtIndex(0), 64.);
+  EXPECT_EQ(diagram_->EvalVectorInput(*context_, 2)->GetAtIndex(0), 512.);
 
   // The outputs of subsystem0_ are:
   //   output0 = 8 + 64 + 512 = 584
@@ -1066,9 +1075,12 @@ TEST_F(DiagramOfDiagramsTest, EvalOutput) {
   //   output0 = 584 + 656 + 9 = 1249
   //   output1 = output0 + 584 + 656 = 2489
   //   output2 = 81 (state of integrator1_)
-  EXPECT_EQ(1249, output_->get_vector_data(0)->get_value().x());
-  EXPECT_EQ(2489, output_->get_vector_data(1)->get_value().x());
-  EXPECT_EQ(81, output_->get_vector_data(2)->get_value().x());
+  EXPECT_EQ(1249, diagram_->get_output_port(0).
+      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+  EXPECT_EQ(2489, diagram_->get_output_port(1).
+      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+  EXPECT_EQ(81, diagram_->get_output_port(2).
+      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
 
   // Check that invalidation flows through input ports properly, either due
   // to replacing the fixed value or by modifying it.
@@ -1920,6 +1932,8 @@ class NestedDiagramContextTest : public ::testing::Test {
     big_output_ = big_diagram_->AllocateOutput();
 
     // Make sure caching is on locally, even if it is off by default.
+    // Do not remove this line; we want to show that these tests function
+    // correctly with caching on. It is easier to pass with caching off!
     big_context_->EnableCaching();
   }
 

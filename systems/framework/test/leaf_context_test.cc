@@ -375,35 +375,35 @@ TEST_F(LeafContextTest, SetAndGetCache) {
                              {DependencyTicket(internal::kNothingTicket)},
                              &context_.get_mutable_dependency_graph())
                          .cache_index();
-  CacheEntryValue& entry =
+  CacheEntryValue& entry_value =
       context_.get_mutable_cache().get_mutable_cache_entry_value(index);
-  entry.SetInitialValue(PackValue(42));
-  EXPECT_EQ(entry.cache_index(), index);
-  EXPECT_TRUE(entry.ticket().is_valid());
-  EXPECT_EQ(entry.description(), "entry");
+  entry_value.SetInitialValue(PackValue(42));
+  EXPECT_EQ(entry_value.cache_index(), index);
+  EXPECT_TRUE(entry_value.ticket().is_valid());
+  EXPECT_EQ(entry_value.description(), "entry");
 
-  EXPECT_TRUE(entry.is_out_of_date());  // Initial value is not up to date.
-  EXPECT_THROW(entry.GetValueOrThrow<int>(), std::logic_error);
-  entry.mark_up_to_date();
-  EXPECT_NO_THROW(entry.GetValueOrThrow<int>());
+  EXPECT_TRUE(entry_value.is_out_of_date());  // Initial value isn't up to date.
+  EXPECT_THROW(entry_value.GetValueOrThrow<int>(), std::logic_error);
+  entry_value.mark_up_to_date();
+  EXPECT_NO_THROW(entry_value.GetValueOrThrow<int>());
 
-  const AbstractValue& value = entry.GetAbstractValueOrThrow();
+  const AbstractValue& value = entry_value.GetAbstractValueOrThrow();
   EXPECT_EQ(42, UnpackIntValue(value));
-  EXPECT_EQ(42, entry.GetValueOrThrow<int>());
-  EXPECT_EQ(42, entry.get_value<int>());
+  EXPECT_EQ(42, entry_value.GetValueOrThrow<int>());
+  EXPECT_EQ(42, entry_value.get_value<int>());
 
   // Already up to date.
-  EXPECT_THROW(entry.SetValueOrThrow<int>(43), std::logic_error);
-  entry.mark_out_of_date();
+  EXPECT_THROW(entry_value.SetValueOrThrow<int>(43), std::logic_error);
+  entry_value.mark_out_of_date();
 
-  EXPECT_NO_THROW(entry.SetValueOrThrow<int>(43));
-  EXPECT_FALSE(entry.is_out_of_date());  // Set marked it up to date.
-  EXPECT_EQ(43, UnpackIntValue(entry.GetAbstractValueOrThrow()));
+  EXPECT_NO_THROW(entry_value.SetValueOrThrow<int>(43));
+  EXPECT_FALSE(entry_value.is_out_of_date());  // Set marked it up to date.
+  EXPECT_EQ(43, UnpackIntValue(entry_value.GetAbstractValueOrThrow()));
 
-  entry.mark_out_of_date();
-  entry.set_value<int>(99);
-  EXPECT_FALSE(entry.is_out_of_date());  // Set marked it up to date.
-  EXPECT_EQ(99, entry.get_value<int>());
+  entry_value.mark_out_of_date();
+  entry_value.set_value<int>(99);
+  EXPECT_FALSE(entry_value.is_out_of_date());  // Set marked it up to date.
+  EXPECT_EQ(99, entry_value.get_value<int>());
 }
 
 TEST_F(LeafContextTest, FixInputPort) {
