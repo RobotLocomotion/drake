@@ -1,0 +1,53 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_library(
+    name = "make_cylinder_plant",
+    srcs = [
+        "make_cylinder_plant.cc",
+    ],
+    hdrs = [
+        "make_cylinder_plant.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//geometry:geometry_ids",
+        "//geometry:scene_graph",
+        "//math:geometric_transform",
+        "//multibody/multibody_tree/multibody_plant",
+    ],
+)
+
+drake_cc_binary(
+    name = "cylinder_run_dynamics",
+    srcs = ["cylinder_run_dynamics.cc"],
+    add_test_rule = 1,
+    test_rule_args = [
+        "--simulation_time=0.1",
+        "--target_realtime_rate=0.0",
+    ],
+    deps = [
+        ":make_cylinder_plant",
+        "//common:text_logging_gflags",
+        "//geometry:geometry_visualization",
+        "//systems/analysis:implicit_euler_integrator",
+        "//systems/analysis:runge_kutta2_integrator",
+        "//systems/analysis:runge_kutta3_integrator",
+        "//systems/analysis:semi_explicit_euler_integrator",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/lcm:lcm_pubsub_system",
+        "//systems/rendering:pose_bundle_to_draw_message",
+        "@gflags",
+    ],
+)
+
+add_lint_tests()
