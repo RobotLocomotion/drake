@@ -1,8 +1,10 @@
 /// @file
 ///
-/// This demo sets up a simple passive dynamics simulation of the Kinova Jaco
-/// arm. The robot is initialized with an (arbitrary) joint space pose, and is
-/// simulated with zero torques at the joints.
+/// This demo sets up a simple dynamic simulation for the Allegro hand using 
+/// the multi-body library, on the discete simulation. The joint torques are 
+/// constant values that can be manualy set, and is the same for all the 
+/// joints. It can also be set whether to simulate the right hand or the left 
+/// hand.   
 
 #include <gflags/gflags.h>
 #include "fmt/ostream.h"
@@ -32,10 +34,6 @@
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-
 namespace drake {
 
 
@@ -44,7 +42,6 @@ namespace allegro_hand {
 namespace {
 
 using drake::multibody::multibody_plant::MultibodyPlant;
-// using drake::systems::rendering::PoseBundleToDrawMessage;
 
 DEFINE_double(constant_load, 0, "the constant load on all the joint. "
               "Suggested load is in the order of 0.01. When equals to "
@@ -54,9 +51,6 @@ DEFINE_double(simulation_time, 5, "Number of seconds to simulate");
 
 DEFINE_string(test_hand, "right", "Which hand to model: 'left' or 'right'");
 
-DEFINE_bool(time_stepping, true, "If 'true', the plant is modeled as a "
-    "discrete system with periodic updates of period 'max_time_step'."
-    "If 'false', the plant is modeled as a continuous system.");
 DEFINE_double(max_time_step, 1.0e-4,
               "Maximum time step used for the integrators. [s]. "
               "If negative, a value based on parameter penetration_allowance "
@@ -83,7 +77,6 @@ DEFINE_double(target_realtime_rate, 1,
               "Desired rate relative to real time.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
-
 int DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_time > 0);
 
@@ -94,50 +87,24 @@ int DoMain() {
       *builder.AddSystem<geometry::SceneGraph>();
   scene_graph.set_name("scene_graph");
 
-  MultibodyPlant<double>& plant =
-      FLAGS_time_stepping ?
-      *builder.AddSystem<MultibodyPlant>(FLAGS_max_time_step) : /*discrete*/
-      *builder.AddSystem<MultibodyPlant>();   /* continuous system */
-  std::string full_name =
-      FindResourceOrThrow("drake/manipulation/models/allegro_hand_description/"
-                          "sdf/allegro_hand_description_" + FLAGS_test_hand + 
-                          "_test.sdf");
-                          // "sdf/allegro_hand_description_right_full.sdf");
-                          // "sdf/allegro_finger_1.sdf");
+  MultibodyPlant<double>& plant = *builder.AddSystem<MultibodyPlant>
+                                  (FLAGS_max_time_step);
+  std::string full_name = FindResourceOrThrow("drake/manipulation/models/"
+                  "allegro_hand_description/sdf/allegro_hand_description_" 
+                  + FLAGS_test_hand + ".sdf");
   multibody::parsing::AddModelFromSdfFile(
                           full_name, &plant, &scene_graph);
 
-
-  // optional: adding gravity
+  if (FLAGS_add_gravity)
     plant.AddForceElement<multibody::UniformGravityFieldElement>(
         -9.81 * Eigen::Vector3d::UnitZ());
 
   // Now the model is complete.
   plant.Finalize(&scene_graph);
 
-  PRINT_VAR(plant.model().num_velocities());
-  PRINT_VAR(plant.model().num_positions());
-  PRINT_VAR(plant.num_actuators());
-  PRINT_VAR(plant.num_actuated_dofs());
-
   // Set allowed penetration (in meters)
   plant.set_penetration_allowance(FLAGS_penetration_allowance);
   plant.set_stiction_tolerance(FLAGS_v_stiction_tolerance);
-
-  // If the user specifies a time step, we use that, otherwise estimate a
-  // maximum time step based on the compliance of the contact model.
-  // The maximum time step is estimated to resolve this time scale with at
-  // least 30 time steps. Usually this is a good starting point for fixed step
-  // size integrators to be stable.
-  const double max_time_step =
-      FLAGS_max_time_step > 0 ? FLAGS_max_time_step :
-      plant.get_contact_penalty_method_time_scale() / 30;
-
-  // Print maximum time step and the time scale introduced by the compliance in
-  // the contact model as a reference to the user.
-  fmt::print("Maximum time step = {:10.6f} s\n", max_time_step);
-  fmt::print("Compliance time scale = {:10.6f} s\n",
-             plant.get_contact_penalty_method_time_scale());
 
   DRAKE_DEMAND(plant.num_actuators() == 16);
   DRAKE_DEMAND(plant.num_actuated_dofs() == 16);
@@ -154,8 +121,7 @@ int DoMain() {
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(!!plant.get_source_id());
 
-  builder.Connect(
-      plant.get_geometry_poses_output_port(),
+  builder.Connect(plant.get_geometry_poses_output_port(),
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
   builder.Connect(scene_graph.get_query_output_port(),
                   plant.get_geometry_query_input_port());
@@ -197,8 +163,7 @@ int DoMain() {
       diagram->CreateDefaultContext();
   diagram->SetDefaultContext(diagram_context.get());
   systems::Context<double>& plant_context =
-      diagram->GetMutableSubsystemContext(plant, diagram_context.get());
- 
+      diagram->GetMutableSubsystemContext(plant, diagram_context.get()); 
 
   // Initialized joint angle
   const multibody::RevoluteJoint<double>& joint_finger_1_root =
@@ -212,6 +177,9 @@ int DoMain() {
   joint_finger_3_tip.set_angle(&plant_context, 0.5);
 
   // Set up simulator.
+  const double max_time_step =
+      FLAGS_max_time_step > 0 ? FLAGS_max_time_step :
+      plant.get_contact_penalty_method_time_scale() / 30;
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
   systems::IntegratorBase<double>* integrator{nullptr};
   if (FLAGS_integration_scheme == "implicit_euler") {
@@ -239,7 +207,6 @@ int DoMain() {
   if (!integrator->get_fixed_step_mode())
     integrator->set_target_accuracy(FLAGS_accuracy);
 
-
   // The error controlled integrators might need to take very small time steps
   // to compute a solution to the desired accuracy. Therefore, to visualize
   // these very short transients, we publish every time step.
@@ -249,8 +216,6 @@ int DoMain() {
   simulator.StepTo(FLAGS_simulation_time);
 
   return 1;
-
-
 }  // int main
 
 }  // namespace

@@ -12,28 +12,12 @@ package(
     default_visibility = [":__subpackages__"],
 )
 
-drake_cc_library(
-    name = "allegro_common",
-    srcs = [
-        "allegro_common.cc",
-    ],
-    hdrs = [
-        "allegro_common.h",
-    ],
-    deps = [
-        "//multibody:rigid_body_tree",
-        "//multibody/parsers",
-    ],
-)
-
 drake_cc_binary(
-    name = "run_passive_allegro_demo",
-    srcs = ["run_passive_allegro_demo.cc"],
-    add_test_rule = 1,
+    name = "run_allegro_constant_load_demo",
+    srcs = ["run_allegro_constant_load_demo.cc"],
     data = [
         "//manipulation/models/allegro_hand_description:models",
     ],
-    test_rule_args = ["--simulation_sec=10"],
     deps = [
         "//common:find_resource",
         "//common:text_logging_gflags",

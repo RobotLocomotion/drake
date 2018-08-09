@@ -63,7 +63,7 @@
     <parent link="palm_link"/>
     <child link="link_0"/>
     <origin rpy="-0.08726646255 0 0" xyz="0 0.0435 -0.001542"/>
-    <dynamics damping="3" friction="10"/>
+    <dynamics damping="1e-2" friction="10"/>
   </joint>
   <transmission name="joint_0_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="joint_0_motor"/>
@@ -97,7 +97,7 @@
     <parent link="link_0"/>
     <child link="link_1"/>
     <origin xyz="0 0 0.0164"/>
-    <dynamics damping="3" friction="5"/>
+    <dynamics damping="1e-2" friction="5"/>
   </joint>
   <transmission name="joint_1_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="joint_1_motor"/>
@@ -131,7 +131,7 @@
     <parent link="link_1"/>
     <child link="link_2"/>
     <origin xyz="0 0 0.054"/>
-    <dynamics damping="8" friction="10"/>
+    <dynamics damping="2.5e-2" friction="10"/>
   </joint>
   <transmission name="joint_2_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="joint_2_motor"/>
@@ -165,7 +165,7 @@
     <parent link="link_2"/>
     <child link="link_3"/>
     <origin xyz="0 0 0.0384"/>
-    <dynamics damping="10" friction="12"/>
+    <dynamics damping="3.2e-2" friction="12"/>
   </joint>
   <transmission name="joint_3_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="joint_3_motor"/>
@@ -225,7 +225,7 @@
     <parent link="palm_link"/>
     <child link="link_4"/>
     <origin rpy="0.0 0 0" xyz="0 0 0.0007"/>
-    <dynamics damping="3" friction="10"/>
+    <dynamics damping="1e-2" friction="10"/>
   </joint>
   <transmission name="joint_4_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="joint_4_motor"/>
@@ -259,7 +259,7 @@
     <parent link="link_4"/>
     <child link="link_5"/>
     <origin xyz="0 0 0.0164"/>
-    <dynamics damping="3" friction="5"/>
+    <dynamics damping="1e-2" friction="5"/>
   </joint>
   <transmission name="joint_5_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="joint_5_motor"/>
@@ -293,7 +293,7 @@
     <parent link="link_5"/>
     <child link="link_6"/>
     <origin xyz="0 0 0.054"/>
-    <dynamics damping="8" friction="10"/>
+    <dynamics damping="2.5e-2" friction="10"/>
   </joint>
   <transmission name="joint_6_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="joint_6_motor"/>
@@ -327,7 +327,7 @@
     <parent link="link_6"/>
     <child link="link_7"/>
     <origin xyz="0 0 0.0384"/>
-    <dynamics damping="10" friction="12"/>
+    <dynamics damping="3.2e-2" friction="12"/>
   </joint>
   <transmission name="joint_7_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="joint_7_motor"/>
@@ -387,7 +387,7 @@
     <parent link="palm_link"/>
     <child link="link_8"/>
     <origin rpy="0.08726646255 0 0" xyz="0 -0.0435 -0.001542"/>
-    <dynamics damping="3" friction="10"/>
+    <dynamics damping="1e-2" friction="10"/>
   </joint>
   <transmission name="joint_8_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="joint_8_motor"/>
@@ -421,7 +421,7 @@
     <parent link="link_8"/>
     <child link="link_9"/>
     <origin xyz="0 0 0.0164"/>
-    <dynamics damping="3" friction="5"/>
+    <dynamics damping="1e-2" friction="5"/>
   </joint>
   <transmission name="joint_9_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="joint_9_motor"/>
@@ -455,7 +455,7 @@
     <parent link="link_9"/>
     <child link="link_10"/>
     <origin xyz="0 0 0.054"/>
-    <dynamics damping="8" friction="10"/>
+    <dynamics damping="2.5e-2" friction="10"/>
   </joint>
   <transmission name="joint_10_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="joint_10_motor"/>
@@ -489,7 +489,7 @@
     <parent link="link_10"/>
     <child link="link_11"/>
     <origin xyz="0 0 0.0384"/>
-    <dynamics damping="10" friction="12"/>
+    <dynamics damping="3.2e-2" friction="12"/>
   </joint>
   <transmission name="joint_11_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="joint_11_motor"/>
@@ -552,7 +552,7 @@
     <parent link="palm_link"/>
     <child link="link_12"/>
     <origin rpy="0 -1.65806278845 -1.5707963259" xyz="-0.0182 0.019333 -0.045987"/>
-    <dynamics damping="3" friction="10"/>
+    <dynamics damping="1e-2" friction="10"/>
   </joint>
   <transmission name="joint_12_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="joint_12_motor"/>
@@ -588,7 +588,7 @@
     <parent link="link_12"/>
     <child link="link_13"/>
     <origin xyz="-0.027 0.005 0.0399"/>
-    <dynamics damping="3" friction="5"/>
+    <dynamics damping="1e-2" friction="5"/>
   </joint>
   <transmission name="joint_13_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="joint_13_motor"/>
@@ -623,7 +623,7 @@
     <parent link="link_13"/>
     <child link="link_14"/>
     <origin xyz="0 0 0.0177"/>
-    <dynamics damping="3" friction="10"/>
+    <dynamics damping="1e-2" friction="10"/>
   </joint>
   <transmission name="joint_14_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="joint_14_motor"/>
@@ -658,7 +658,7 @@
     <parent link="link_14"/>
     <child link="link_15"/>
     <origin xyz="0 0 0.0514"/>
-    <dynamics damping="3" friction="12"/>
+    <dynamics damping="1e-2" friction="12"/>
   </joint>
   <transmission name="joint_15_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="joint_15_motor"/>
