@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!-- This package.xml file is a manifest used by ROS to identify and find ROS
+  packages within a ROS workspace. For more details about this file, see:
+  http://wiki.ros.org/catkin/package.xml. -->
+<package>
+  <name>allegro_hand_description</name>
+  <version>0.0.0</version>
+  <description>
+    This package contains URDF models of Allegro hand.
+  </description>
+  <author email="drake-users@mit.edu">Drake Users</author>
+  <maintainer email="drake-users@mit.edu">Drake Users</maintainer>
+  <license>BSD</license>
+  <buildtool_depend>catkin</buildtool_depend>
+</package>
+

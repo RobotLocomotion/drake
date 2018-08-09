@@ -59,7 +59,8 @@ Launch the visualizer (optionally visualizing contact forces or not)
 
 Without contact forces visualized:
 ```
-./bazel-bin/tools/drake_visualizer```
+./bazel-bin/tools/drake_visualizer
+```
 With contact forces visualized:
 ```
 ./bazel-bin/tools/drake_visualizer --script multibody/rigid_body_plant/visualization/contact_viz.py

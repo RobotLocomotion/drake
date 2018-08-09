@@ -49,7 +49,7 @@ class TimeVisualizer(object):
         self._real_time.append(time.time())
         self._msg_time.append(msg_time)
 
-        my_text = 'sim time: %.3f' % msg_time
+        my_text = 'sim time: %.8f' % msg_time
 
         if (len(self._real_time) >= self._num_msg_for_average):
             self._real_time.pop(0)

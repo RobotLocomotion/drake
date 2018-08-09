@@ -44,6 +44,7 @@ def install_data(
         "vtm",
         "vtp",
         "xml",
+	"mtl",
     ]
     exclude_patterns = ["**/test/*", "**/test*"]
     prod_models_include = ["**/*.{}".format(x) for x in models_extensions]

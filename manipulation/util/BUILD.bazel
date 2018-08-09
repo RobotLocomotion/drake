@@ -114,6 +114,7 @@ drake_cc_binary(
     add_test_rule = 1,
     data = [
         "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/allegro_hand_description:models",
     ],
     test_rule_args = ["--num_configurations=1"],
     deps = [

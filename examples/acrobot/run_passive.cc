@@ -47,7 +47,7 @@ int do_main(int argc, char* argv[]) {
       diagram->GetMutableSubsystemContext(*acrobot,
                                           &simulator.get_mutable_context());
 
-  double tau = 0;
+  double tau = -10;
   acrobot_context.FixInputPort(0, Eigen::Matrix<double, 1, 1>::Constant(tau));
 
   // Set an initial condition that is sufficiently far from the downright fixed
@@ -55,8 +55,8 @@ int do_main(int argc, char* argv[]) {
   AcrobotState<double>* x0 = dynamic_cast<AcrobotState<double>*>(
       &acrobot_context.get_mutable_continuous_state_vector());
   DRAKE_DEMAND(x0 != nullptr);
-  x0->set_theta1(1.0);
-  x0->set_theta2(1.0);
+  x0->set_theta1(0.0);
+  x0->set_theta2(1.5);
   x0->set_theta1dot(0.0);
   x0->set_theta2dot(0.0);
 
