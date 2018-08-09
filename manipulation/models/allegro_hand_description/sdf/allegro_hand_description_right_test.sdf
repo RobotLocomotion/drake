@@ -83,7 +83,7 @@
           <velocity>7</velocity>
         </limit>
         <dynamics>
-          <damping>3e-3</damping>
+          <damping>1e-2</damping>
           <friction>10</friction>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
@@ -136,7 +136,7 @@
           <velocity>7</velocity>
         </limit>
         <dynamics>
-          <damping>3e-3</damping>
+          <damping>1e-2</damping>
           <friction>5</friction>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
@@ -189,7 +189,7 @@
           <velocity>7</velocity>
         </limit>
         <dynamics>
-          <damping>8e-3</damping>
+          <damping>2.5e-2</damping>
           <friction>10</friction>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
@@ -260,7 +260,7 @@
           <velocity>7</velocity>
         </limit>
         <dynamics>
-          <damping>10e-3</damping>
+          <damping>3.2e-2</damping>
           <friction>12</friction>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
@@ -314,7 +314,7 @@
           <velocity>7</velocity>
         </limit>
         <dynamics>
-          <damping>3e-3</damping>
+          <damping>1e-2</damping>
           <friction>10</friction>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
@@ -366,7 +366,7 @@
           <velocity>7</velocity>
         </limit>
         <dynamics>
-          <damping>3e-3</damping>
+          <damping>1e-2</damping>
           <friction>5</friction>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
@@ -419,7 +419,7 @@
           <velocity>7</velocity>
         </limit>
         <dynamics>
-          <damping>3e-3</damping>
+          <damping>1e-2</damping>
           <friction>10</friction>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
@@ -490,7 +490,7 @@
           <velocity>7</velocity>
         </limit>
         <dynamics>
-          <damping>3e-3</damping>
+          <damping>1e-2</damping>
           <friction>12</friction>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
@@ -543,7 +543,7 @@
           <velocity>7</velocity>
         </limit>
         <dynamics>
-          <damping>3e-3</damping>
+          <damping>1e-2</damping>
           <friction>10</friction>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
@@ -596,7 +596,7 @@
           <velocity>7</velocity>
         </limit>
         <dynamics>
-          <damping>3e-3</damping>
+          <damping>1e-2</damping>
           <friction>5</friction>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
@@ -650,7 +650,7 @@
           <velocity>7</velocity>
         </limit>
         <dynamics>
-          <damping>8e-3</damping>
+          <damping>2.5e-2</damping>
           <friction>10</friction>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
@@ -724,7 +724,7 @@
           <velocity>7</velocity>
         </limit>
         <dynamics>
-          <damping>10e-3</damping>
+          <damping>3.2e-2</damping>
           <friction>12</friction>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
@@ -777,7 +777,7 @@
           <velocity>7</velocity>
         </limit>
         <dynamics>
-          <damping>3e-3</damping>
+          <damping>1e-2</damping>
           <friction>10</friction>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
@@ -831,7 +831,7 @@
           <velocity>7</velocity>
         </limit>
         <dynamics>
-          <damping>3e-3</damping>
+          <damping>1e-2</damping>
           <friction>5</friction>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
@@ -884,7 +884,7 @@
           <velocity>7</velocity>
         </limit>
         <dynamics>
-          <damping>8e-3</damping>
+          <damping>2.5e-2</damping>
           <friction>10</friction>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
@@ -955,7 +955,7 @@
           <velocity>7</velocity>
         </limit>
         <dynamics>
-          <damping>10e-3</damping>
+          <damping>3.2e-2</damping>
           <friction>12</friction>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>

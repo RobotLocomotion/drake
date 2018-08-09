@@ -14,7 +14,6 @@
   
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/geometry/geometry_visualization.h"
-// #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
 #include "drake/multibody/multibody_tree/multibody_plant/contact_results_to_lcm.h"
@@ -45,21 +44,26 @@ namespace allegro_hand {
 namespace {
 
 using drake::multibody::multibody_plant::MultibodyPlant;
-using drake::systems::rendering::PoseBundleToDrawMessage;
-// using drake::multibody::RevoluteJoint;
+// using drake::systems::rendering::PoseBundleToDrawMessage;
 
-DEFINE_double(simulation_time, 1e-2, "Number of seconds to simulate");
+DEFINE_double(constant_load, 0, "the constant load on all the joint. "
+              "Suggested load is in the order of 0.01. When equals to "
+              "0 (default), the program simulate the passive demo");
+
+DEFINE_double(simulation_time, 5, "Number of seconds to simulate");
+
+DEFINE_string(test_hand, "right", "Which hand to model: 'left' or 'right'");
 
 DEFINE_bool(time_stepping, true, "If 'true', the plant is modeled as a "
     "discrete system with periodic updates of period 'max_time_step'."
     "If 'false', the plant is modeled as a continuous system.");
-DEFINE_double(max_time_step, 1.0e-3,
+DEFINE_double(max_time_step, 1.0e-4,
               "Maximum time step used for the integrators. [s]. "
               "If negative, a value based on parameter penetration_allowance "
               "is used.");
 
 // Contact parameters
-DEFINE_double(penetration_allowance, 1.0e-2,
+DEFINE_double(penetration_allowance, 2.0e-3,
               "Penetration allowance. [m]. "
               "See MultibodyPlant::set_penetration_allowance().");
 DEFINE_double(v_stiction_tolerance, 1.0e-2,
@@ -71,15 +75,13 @@ DEFINE_string(integration_scheme, "semi_explicit_euler",
               "'semi_explicit_euler','runge_kutta2','runge_kutta3',"
               "'implicit_euler'");
 
-DEFINE_bool(add_gravity, false, "Whether adding gravity in the simulation");
+DEFINE_bool(add_gravity, true, "Whether adding gravity in the simulation");
 
 DEFINE_double(accuracy, 1.0e-2, "Sets the simulation accuracy for variable step"
               "size integrators with error control.");
-DEFINE_double(target_realtime_rate, 1e-2,
+DEFINE_double(target_realtime_rate, 1,
               "Desired rate relative to real time.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
-
-DEFINE_double(constant_load_force, 0, "the constant load on all the joint");
 
 
 int DoMain() {
@@ -98,15 +100,15 @@ int DoMain() {
       *builder.AddSystem<MultibodyPlant>();   /* continuous system */
   std::string full_name =
       FindResourceOrThrow("drake/manipulation/models/allegro_hand_description/"
+                          "sdf/allegro_hand_description_" + FLAGS_test_hand + 
+                          "_test.sdf");
                           // "sdf/allegro_hand_description_right_full.sdf");
                           // "sdf/allegro_finger_1.sdf");
-                          "sdf/allegro_finger_saperate.sdf");
   multibody::parsing::AddModelFromSdfFile(
                           full_name, &plant, &scene_graph);
 
 
-  // optional: adding gravity -- the gripper could start free falling
-  if (FLAGS_add_gravity)
+  // optional: adding gravity
     plant.AddForceElement<multibody::UniformGravityFieldElement>(
         -9.81 * Eigen::Vector3d::UnitZ());
 
@@ -118,7 +120,7 @@ int DoMain() {
   PRINT_VAR(plant.num_actuators());
   PRINT_VAR(plant.num_actuated_dofs());
 
-  // Set how much penetration (in meters) we are willing to accept.
+  // Set allowed penetration (in meters)
   plant.set_penetration_allowance(FLAGS_penetration_allowance);
   plant.set_stiction_tolerance(FLAGS_v_stiction_tolerance);
 
@@ -137,13 +139,13 @@ int DoMain() {
   fmt::print("Compliance time scale = {:10.6f} s\n",
              plant.get_contact_penalty_method_time_scale());
 
-  // DRAKE_DEMAND(plant.num_actuators() == 16);
-  // DRAKE_DEMAND(plant.num_actuated_dofs() == 16);
+  DRAKE_DEMAND(plant.num_actuators() == 16);
+  DRAKE_DEMAND(plant.num_actuated_dofs() == 16);
 
   // Boilerplate used to connect the plant to a SceneGraph for
   // visualization.
   const systems::rendering::PoseBundleToDrawMessage& converter =
-      *builder.template AddSystem<PoseBundleToDrawMessage>();
+      *builder.template AddSystem<systems::rendering::PoseBundleToDrawMessage>();
   systems::lcm::LcmPublisherSystem& publisher =
       *builder.template AddSystem<systems::lcm::LcmPublisherSystem>(
           "DRAKE_VIEWER_DRAW",
@@ -163,7 +165,6 @@ int DoMain() {
   builder.Connect(converter, publisher);
 
   // Publish contact results for visualization.
-  #if 1
   const auto& contact_results_to_lcm =
       *builder.AddSystem<multibody::multibody_plant::ContactResultsToLcmSystem>
       (plant);
@@ -175,11 +176,10 @@ int DoMain() {
                   contact_results_to_lcm.get_input_port(0));
   builder.Connect(contact_results_to_lcm.get_output_port(0),
                   contact_results_publisher.get_input_port());
-  #endif
 
-  // zero force input
+  // constant force input
   VectorX<double> constant_load_value = VectorX<double>::Ones(
-      plant.model().num_actuators()) * FLAGS_constant_load_force;
+      plant.model().num_actuators()) * FLAGS_constant_load;
   auto constant_source =
      builder.AddSystem<systems::ConstantVectorSource<double>>(
       constant_load_value);
@@ -187,37 +187,29 @@ int DoMain() {
   builder.Connect(constant_source->get_output_port(), 
                   plant.get_actuation_input_port());
 
-  // Last thing before building the diagram; dispatch the message to load
-  // geometry.
+  // Dispatch the message to load geometry.
   geometry::DispatchLoadMessage(scene_graph);
 
-  // And build the Diagram:
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 
   // Create a context for this system:
   std::unique_ptr<systems::Context<double>> diagram_context =
       diagram->CreateDefaultContext();
   diagram->SetDefaultContext(diagram_context.get());
- 
-
-  // intialization state?
-  std::cout<<"Initialize hand state \n";
-
-
-
-  //PRINT_VAR(plant_context.get_discrete_state(0).CopyToVector().transpose());
-
   systems::Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
+ 
+
+  // Initialized joint angle
   const multibody::RevoluteJoint<double>& joint_finger_1_root =
       plant.GetJointByName<multibody::RevoluteJoint>("joint_1");
   joint_finger_1_root.set_angle(&plant_context, 0.5);
-  // const multibody::RevoluteJoint<double>& joint_finger_1_tip =
-  //     plant.GetJointByName<multibody::RevoluteJoint>("joint_3");
-  // joint_finger_1_tip.set_angle(&plant_context, 0.5);
-  //   const multibody::RevoluteJoint<double>& joint_finger_1_middle =
-  //     plant.GetJointByName<multibody::RevoluteJoint>("joint_2");
-  // joint_finger_1_middle.set_angle(&plant_context, 0.5);
+  const multibody::RevoluteJoint<double>& joint_finger_2_middle =
+      plant.GetJointByName<multibody::RevoluteJoint>("joint_6");
+  joint_finger_2_middle.set_angle(&plant_context, -0.1);
+  const multibody::RevoluteJoint<double>& joint_finger_3_tip =
+      plant.GetJointByName<multibody::RevoluteJoint>("joint_11");
+  joint_finger_3_tip.set_angle(&plant_context, 0.5);
 
   // Set up simulator.
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
