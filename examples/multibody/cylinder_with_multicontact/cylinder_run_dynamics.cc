@@ -38,7 +38,7 @@ DEFINE_double(vx0, 1.0,
 DEFINE_double(wx0, 0.1,
               "The initial x-angular velocity of the cylinder, rad/s.");
 
-DEFINE_double(friction_coefficient, 0.5,
+DEFINE_double(friction_coefficient, 0.3,
               "The friction coefficient of both the cylinder and the ground.");
 
 DEFINE_double(penetration_allowance, 1.0e-3,

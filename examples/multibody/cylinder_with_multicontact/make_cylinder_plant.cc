@@ -24,7 +24,7 @@ void AddCylinderWithMultiContact(
     MultibodyPlant<double>* plant, SceneGraph<double>* scene_graph,
     const RigidBody<double>& body,
     double radius, double length, const CoulombFriction<double>& friction,
-    double contact_radius, int num_contacts) {
+    double contact_spheres_radius, int num_contacts) {
   const VisualMaterial orange(Vector4<double>(1.0, 0.55, 0.0, 1.0));
   const VisualMaterial red(Vector4<double>(1.0, 0.0, 0.0, 1.0));
 
@@ -35,10 +35,8 @@ void AddCylinderWithMultiContact(
       Isometry3d::Identity(), Cylinder(radius, length), orange, scene_graph);
 
   // Add a bunch of little spheres to simulate "multi-contact".
-  const int nspheres = num_contacts;
-  const double contact_spheres_radius = contact_radius;
-  for (int i = 0; i < nspheres; ++i) {
-    const double theta = 2.0 * i / nspheres * M_PI;
+  for (int i = 0; i < num_contacts; ++i) {
+    const double theta = 2.0 * i / num_contacts * M_PI;
     const double x = cos(theta) * radius;
     const double y = sin(theta) * radius;
     Isometry3<double> X_BG = Isometry3<double>::Identity();
@@ -80,13 +78,14 @@ MakeCylinderPlant(double radius, double length, double mass,
   auto plant = std::make_unique<MultibodyPlant<double>>(dt);
   plant->RegisterAsSourceForSceneGraph(scene_graph);
 
-  // Create the cylinder model.
-  UnitInertia<double> G_Bcm = UnitInertia<double>::SolidSphere(radius);
+  UnitInertia<double> G_Bcm =
+      UnitInertia<double>::SolidCylinder(radius, length);
+
   SpatialInertia<double> M_Bcm(mass, Vector3<double>::Zero(), G_Bcm);
   const RigidBody<double>& cylinder = plant->AddRigidBody("Cylinder", M_Bcm);
 
   // The radius of the small spheres used to emulate multicontact.
-  const int contact_radius = radius / 20.0;
+  const double contact_radius = radius / 20.0;
 
   // The number of small spheres places at each rim of the cylinder to emulate
   // multicontact.
