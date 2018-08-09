@@ -29,11 +29,11 @@ namespace bouncing_ball {
 ///   system and it will also register geometry for collision.
 ///   If this argument is omitted, no geometry will be registered.
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
-MakeBouncingBallPlant(int nspheres,
+MakeBouncingBallPlant(
     double radius, double mass,
     const drake::multibody::multibody_plant::CoulombFriction<double>&
-    surface_friction, const Vector3<double>& gravity_W,
-    double dt,
+        surface_friction,
+    const Vector3<double>& gravity_W,
     geometry::SceneGraph<double>* scene_graph = nullptr);
 
 }  // namespace bouncing_ball

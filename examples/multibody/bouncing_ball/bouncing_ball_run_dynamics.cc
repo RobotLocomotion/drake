@@ -21,17 +21,13 @@
 #include "drake/systems/lcm/serializer.h"
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-
 namespace drake {
 namespace examples {
 namespace multibody {
 namespace bouncing_ball {
 namespace {
 
-DEFINE_double(target_realtime_rate, 0.5,
+DEFINE_double(target_realtime_rate, 1.0,
               "Desired rate relative to real time.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
@@ -43,31 +39,6 @@ DEFINE_string(integration_scheme, "runge_kutta2",
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
 
-DEFINE_double(z0, 0.5,
-              "The initial height, in z, of the ball, m.");
-
-DEFINE_double(vx0, 1.0,
-              "The initial x-velocity of the ball, m/s.");
-
-DEFINE_double(wx0, 0.1,
-              "The initial x-angular velocity of the ball, rad/s.");
-
-DEFINE_double(friction_coefficient, 0.5,
-              "The friction coefficient of both the sphere and the ground.");
-
-DEFINE_double(penetration_allowance, 1.0e-3,
-              "Penetration allowance. [m]. "
-              "See MultibodyPlant::set_penetration_allowance().");
-
-DEFINE_double(stiction_tolerance, 1.0e-4,
-              "The maximum slipping speed allowed during stiction. [m/s]");
-
-DEFINE_double(time_step, 1.0e-3,
-              "If zero, the plant is modeled as a continuous system. "
-              "If positive, the period (in seconds) of the discrete updates "
-              "for the plant modeled as a discrete system."
-              "This parameter must be non-negative.");
-
 using Eigen::AngleAxisd;
 using Eigen::Isometry3d;
 using Eigen::Matrix3d;
@@ -76,13 +47,9 @@ using geometry::SceneGraph;
 using geometry::SourceId;
 using lcm::DrakeLcm;
 using drake::multibody::multibody_plant::CoulombFriction;
-using drake::multibody::multibody_plant::ContactResults;
 using drake::multibody::multibody_plant::MultibodyPlant;
-using drake::multibody::multibody_plant::PointPairContactInfo;
 using drake::multibody::MultibodyTree;
 using drake::multibody::QuaternionFloatingMobilizer;
-using drake::multibody::SpatialVelocity;
-using drake::systems::AbstractValue;
 using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::lcm::Serializer;
@@ -90,7 +57,6 @@ using drake::systems::rendering::PoseBundleToDrawMessage;
 using drake::systems::RungeKutta2Integrator;
 using drake::systems::RungeKutta3Integrator;
 using drake::systems::SemiExplicitEulerIntegrator;
-
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
@@ -106,18 +72,15 @@ int do_main() {
   const double radius = 0.05;   // m
   const double mass = 0.1;      // kg
   const double g = 9.81;        // m/s^2
+  const double z0 = 0.3;        // Initial height.
   const CoulombFriction<double> coulomb_friction(
-      FLAGS_friction_coefficient /* static friction */,
-      FLAGS_friction_coefficient /* dynamic friction */);
+      0.8 /* static friction */, 0.3 /* dynamic friction */);
 
   MultibodyPlant<double>& plant = *builder.AddSystem(MakeBouncingBallPlant(
-      8,
-      radius, mass, coulomb_friction, -g * Vector3d::UnitZ(), FLAGS_time_step,
-      &scene_graph));
+      radius, mass, coulomb_friction, -g * Vector3d::UnitZ(), &scene_graph));
   const MultibodyTree<double>& model = plant.model();
   // Set how much penetration (in meters) we are willing to accept.
-  plant.set_penetration_allowance(FLAGS_penetration_allowance);
-  plant.set_stiction_tolerance(FLAGS_stiction_tolerance);
+  plant.set_penetration_allowance(0.001);
 
   // Hint the integrator's time step based on the contact time scale.
   // A fraction of this time scale is used which is chosen so that the fixed
@@ -170,18 +133,12 @@ int do_main() {
   std::mt19937 generator(41);
   std::uniform_real_distribution<double> uniform(-1.0, 1.0);
   model.SetDefaultContext(&plant_context);
-  //Matrix3d R_WB = math::UniformlyRandomRotationMatrix(&generator).matrix();
+  Matrix3d R_WB = math::UniformlyRandomRotationMatrix(&generator).matrix();
   Isometry3d X_WB = Isometry3d::Identity();
-  //X_WB.linear() = R_WB;
-  X_WB.translation() = Vector3d(0.0, 0.0, FLAGS_z0);
-  const auto& ball = model.GetBodyByName("Ball");
+  X_WB.linear() = R_WB;
+  X_WB.translation() = Vector3d(0.0, 0.0, z0);
   model.SetFreeBodyPoseOrThrow(
-      ball, X_WB, &plant_context);
-  model.SetFreeBodySpatialVelocityOrThrow(
-      ball,
-      SpatialVelocity<double>(
-          Vector3<double>(FLAGS_wx0, 0.0, 0.0),
-          Vector3<double>(FLAGS_vx0, 0.0, 0.0)), &plant_context);
+      model.GetBodyByName("Ball"), X_WB, &plant_context);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
@@ -213,7 +170,7 @@ int do_main() {
   if (!integrator->get_fixed_step_mode())
     integrator->set_target_accuracy(target_accuracy);
 
-  simulator.set_publish_every_time_step(true);
+  simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(FLAGS_simulation_time);
@@ -251,25 +208,6 @@ int do_main() {
   DRAKE_DEMAND(integrator->get_num_substep_failures() == 0);
   DRAKE_DEMAND(
       integrator->get_num_step_shrinkages_from_substep_failures() == 0);
-
-  std::unique_ptr<AbstractValue> contact_results_value =
-      plant.get_contact_results_output_port().Allocate();
-  const ContactResults<double>& contact_results =
-      contact_results_value->GetValueOrThrow<ContactResults<double>>();
-  // Compute the poses for each geometry in the model.
-  plant.get_contact_results_output_port().Calc(
-      plant_context, contact_results_value.get());
-
-  //DRAKE_DEMAND(contact_results.num_contacts() == 1);  // only one contact pair.
-  //const PointPairContactInfo<double>& contact_info =
-    //  contact_results.contact_info(0);
-
-  for (int i(0); i < contact_results.num_contacts();++i) {
-    const auto& contact_info = contact_results.contact_info(i);
-    PRINT_VAR(contact_info.point_pair().depth);
-    PRINT_VAR(contact_info.separation_speed());
-    PRINT_VAR(contact_info.slip_speed());
-  }
 
   return 0;
 }
