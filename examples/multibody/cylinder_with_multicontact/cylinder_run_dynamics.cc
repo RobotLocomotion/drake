@@ -9,26 +9,17 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
-#include "drake/math/random_rotation.h"
-#include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
-#include "drake/systems/analysis/implicit_euler_integrator.h"
-#include "drake/systems/analysis/runge_kutta2_integrator.h"
-#include "drake/systems/analysis/runge_kutta3_integrator.h"
-#include "drake/systems/analysis/semi_explicit_euler_integrator.h"
+#include "drake/multibody/multibody_tree/multibody_plant/contact_results_to_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/serializer.h"
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-
 namespace drake {
 namespace examples {
 namespace multibody {
-namespace bouncing_ball {
+namespace cylinder_with_multicontact {
 namespace {
 
 DEFINE_double(target_realtime_rate, 0.5,
@@ -39,16 +30,16 @@ DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
 
 DEFINE_double(z0, 0.5,
-              "The initial height, in z, of the ball, m.");
+              "The initial height of the cylinder, m.");
 
 DEFINE_double(vx0, 1.0,
-              "The initial x-velocity of the ball, m/s.");
+              "The initial x-velocity of the cylinder, m/s.");
 
 DEFINE_double(wx0, 0.1,
-              "The initial x-angular velocity of the ball, rad/s.");
+              "The initial x-angular velocity of the cylinder, rad/s.");
 
 DEFINE_double(friction_coefficient, 0.5,
-              "The friction coefficient of both the sphere and the ground.");
+              "The friction coefficient of both the cylinder and the ground.");
 
 DEFINE_double(penetration_allowance, 1.0e-3,
               "Penetration allowance. [m]. "
@@ -63,29 +54,19 @@ DEFINE_double(time_step, 1.0e-3,
               "for the plant modeled as a discrete system."
               "This parameter must be non-negative.");
 
-using Eigen::AngleAxisd;
 using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using geometry::SceneGraph;
-using geometry::SourceId;
 using lcm::DrakeLcm;
 using drake::multibody::multibody_plant::CoulombFriction;
-using drake::multibody::multibody_plant::ContactResults;
+using drake::multibody::multibody_plant::ContactResultsToLcmSystem;
 using drake::multibody::multibody_plant::MultibodyPlant;
-using drake::multibody::multibody_plant::PointPairContactInfo;
 using drake::multibody::MultibodyTree;
-using drake::multibody::QuaternionFloatingMobilizer;
 using drake::multibody::SpatialVelocity;
-using drake::systems::AbstractValue;
-using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::lcm::Serializer;
 using drake::systems::rendering::PoseBundleToDrawMessage;
-using drake::systems::RungeKutta2Integrator;
-using drake::systems::RungeKutta3Integrator;
-using drake::systems::SemiExplicitEulerIntegrator;
-
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
@@ -102,7 +83,7 @@ int do_main() {
       FLAGS_friction_coefficient /* dynamic friction */);
 
   MultibodyPlant<double>& plant = *builder.AddSystem(MakeCylinderPlant(
-      radius, mass, coulomb_friction, -g * Vector3d::UnitZ(), FLAGS_time_step,
+      radius, 4 * radius, mass, coulomb_friction, -g * Vector3d::UnitZ(), FLAGS_time_step,
       &scene_graph));
   const MultibodyTree<double>& model = plant.model();
   // Set how much penetration (in meters) we are willing to accept.
@@ -136,6 +117,18 @@ int do_main() {
                   converter.get_input_port(0));
   builder.Connect(converter, publisher);
 
+  // Publish contact results for visualization.
+  const auto& contact_results_to_lcm =
+      *builder.AddSystem<ContactResultsToLcmSystem>(plant);
+  const auto& contact_results_publisher = *builder.AddSystem(
+      LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
+          "CONTACT_RESULTS", &lcm));
+  // Contact results to lcm msg.
+  builder.Connect(plant.get_contact_results_output_port(),
+                  contact_results_to_lcm.get_input_port(0));
+  builder.Connect(contact_results_to_lcm.get_output_port(0),
+                  contact_results_publisher.get_input_port());
+
   // Last thing before building the diagram; dispatch the message to load
   // geometry.
   geometry::DispatchLoadMessage(scene_graph);
@@ -150,13 +143,9 @@ int do_main() {
   systems::Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
-  // Set at height z0 with random orientation.
-  std::mt19937 generator(41);
-  std::uniform_real_distribution<double> uniform(-1.0, 1.0);
+  // Set at height z0.
   model.SetDefaultContext(&plant_context);
-  //Matrix3d R_WB = math::UniformlyRandomRotationMatrix(&generator).matrix();
   Isometry3d X_WB = Isometry3d::Identity();
-  //X_WB.linear() = R_WB;
   X_WB.translation() = Vector3d(0.0, 0.0, FLAGS_z0);
   const auto& cylinder = model.GetBodyByName("Cylinder");
   model.SetFreeBodyPoseOrThrow(
@@ -178,17 +167,17 @@ int do_main() {
 }
 
 }  // namespace
-}  // namespace bouncing_ball
+}  // namespace cylinder_with_multicontact
 }  // namespace multibody
 }  // namespace examples
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
-      "A simple acrobot demo using Drake's MultibodyTree,"
-      "with SceneGraph visualization. "
+      "A demo for a cylinder falling towards the ground using Drake's"
+      "MultibodyPlant, with SceneGraph contact handling and visualization. "
       "Launch drake-visualizer before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   drake::logging::HandleSpdlogGflags();
-  return drake::examples::multibody::bouncing_ball::do_main();
+  return drake::examples::multibody::cylinder_with_multicontact::do_main();
 }

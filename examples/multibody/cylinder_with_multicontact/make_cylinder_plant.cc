@@ -5,13 +5,12 @@
 namespace drake {
 namespace examples {
 namespace multibody {
-namespace bouncing_ball {
+namespace cylinder_with_multicontact {
 
-using geometry::SceneGraph;
 using geometry::Cylinder;
-using geometry::Sphere;
 using geometry::HalfSpace;
 using geometry::SceneGraph;
+using geometry::Sphere;
 using geometry::VisualMaterial;
 using drake::multibody::multibody_plant::CoulombFriction;
 using drake::multibody::multibody_plant::MultibodyPlant;
@@ -32,7 +31,7 @@ void AddCylinderWithMultiContact(
   // Visual for the Cylinder
   plant->RegisterVisualGeometry(
       body,
-      /* Pose X_BG of the geometry frame G in the ball frame B. */
+      /* Pose X_BG of the geometry frame G in the cylinder body frame B. */
       Isometry3d::Identity(), Cylinder(radius, length), orange, scene_graph);
 
   // Add a bunch of little spheres to simulate "multi-contact".
@@ -47,12 +46,12 @@ void AddCylinderWithMultiContact(
     X_BG.translation() << x, y, length / 2;
     plant->RegisterCollisionGeometry(
         body,
-        /* Pose X_BG of the geometry frame G in the ball frame B. */
+        /* Pose X_BG of the geometry frame G in the cylinder body frame B. */
         X_BG,
         Sphere(contact_spheres_radius), friction, scene_graph);
     plant->RegisterVisualGeometry(
         body,
-        /* Pose X_BG of the geometry frame G in the ball frame B. */
+        /* Pose X_BG of the geometry frame G in the cylinder body frame B. */
         X_BG,
         Sphere(contact_spheres_radius), red, scene_graph);
 
@@ -60,23 +59,22 @@ void AddCylinderWithMultiContact(
     X_BG.translation() << x, y, -length / 2;
     plant->RegisterCollisionGeometry(
         body,
-        /* Pose X_BG of the geometry frame G in the ball frame B. */
+        /* Pose X_BG of the geometry frame G in the cylinder body frame B. */
         X_BG,
         Sphere(contact_spheres_radius), friction, scene_graph);
     plant->RegisterVisualGeometry(
         body,
-        /* Pose X_BG of the geometry frame G in the ball frame B. */
+        /* Pose X_BG of the geometry frame G in the cylinder body frame B. */
         X_BG,
         Sphere(contact_spheres_radius), red, scene_graph);
   }
 }
 
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
-MakeCylinderPlant(double radius, double mass,
-                      const CoulombFriction<double>& surface_friction,
-                      const Vector3<double>& gravity_W,
-                      double dt,
-                      geometry::SceneGraph<double>* scene_graph) {
+MakeCylinderPlant(double radius, double length, double mass,
+                  const CoulombFriction<double>& surface_friction,
+                  const Vector3<double>& gravity_W, double dt,
+                  geometry::SceneGraph<double>* scene_graph) {
   DRAKE_DEMAND(scene_graph != nullptr);
 
   auto plant = std::make_unique<MultibodyPlant<double>>(dt);
@@ -87,10 +85,18 @@ MakeCylinderPlant(double radius, double mass,
   SpatialInertia<double> M_Bcm(mass, Vector3<double>::Zero(), G_Bcm);
   const RigidBody<double>& cylinder = plant->AddRigidBody("Cylinder", M_Bcm);
 
+  // The radius of the small spheres used to emulate multicontact.
+  const int contact_radius = radius / 20.0;
+
+  // The number of small spheres places at each rim of the cylinder to emulate
+  // multicontact.
+  const int num_contact_spheres = 10;
+
   // Add geometry to the cylinder for both contact and visualization.
   AddCylinderWithMultiContact(
       plant.get(), scene_graph,
-      cylinder, radius, 4 * radius, surface_friction, radius / 20.0, 10);
+      cylinder, radius, length, surface_friction,
+      contact_radius, num_contact_spheres);
 
   // Add a model for the ground.
   Vector3<double> normal_W(0, 0, 1);
@@ -116,7 +122,7 @@ MakeCylinderPlant(double radius, double mass,
   return plant;
 }
 
-}  // namespace bouncing_ball
+}  // namespace cylinder_with_multicontact
 }  // namespace multibody
 }  // namespace examples
 }  // namespace drake

@@ -8,17 +8,23 @@
 namespace drake {
 namespace examples {
 namespace multibody {
-namespace bouncing_ball {
+namespace cylinder_with_multicontact {
 
-/// This method makes a MultibodyPlant model of a ball falling into a plane.
+/// This method makes a MultibodyPlant model of a cylinder free to fall onto the
+/// ground.
+/// The model adds a fixed number of spheres (10) around each rim of the
+/// cylinder as a way of emulating multicontact so that we can evaluate
+/// MultibodyPlant's contact solver.
 /// MultibodyPlant models the contact of the ball with the ground as a perfectly
 /// inelastic collision (zero coefficient of restitution), i.e. energy is lost
 /// due to the collision.
 ///
 /// @param[in] radius
-///   The radius of the ball.
+///   The radius of the cylinder.
+/// @param[in] length
+///   The length of the cylinder.
 /// @param[in] mass
-///   The mass of the ball.
+///   The mass of the cylinder.
 /// @param[in] surface_friction
 ///   The Coulomb's law coefficients of friction.
 /// @param[in] gravity_W
@@ -30,13 +36,13 @@ namespace bouncing_ball {
 ///   If this argument is omitted, no geometry will be registered.
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakeCylinderPlant(
-    double radius, double mass,
+    double radius,double length, double mass,
     const drake::multibody::multibody_plant::CoulombFriction<double>&
     surface_friction, const Vector3<double>& gravity_W,
     double dt,
     geometry::SceneGraph<double>* scene_graph = nullptr);
 
-}  // namespace bouncing_ball
+}  // namespace cylinder_with_multicontact
 }  // namespace multibody
 }  // namespace examples
 }  // namespace drake
