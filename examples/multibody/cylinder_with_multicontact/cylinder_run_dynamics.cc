@@ -75,15 +75,16 @@ int do_main() {
   scene_graph.set_name("scene_graph");
 
   // Plant's parameters.
-  const double radius = 0.05;   // m
-  const double mass = 0.1;      // kg
-  const double g = 9.81;        // m/s^2
+  const double radius = 0.05;          // The cylinder's radius, m
+  const double mass = 0.1;             // The cylinder's mass, kg
+  const double g = 9.81;               // Acceleration of gravity, m/s^2
+  const double length = 4.0 * radius;  // The cylinder's length, m.
   const CoulombFriction<double> coulomb_friction(
       FLAGS_friction_coefficient /* static friction */,
       FLAGS_friction_coefficient /* dynamic friction */);
 
   MultibodyPlant<double>& plant = *builder.AddSystem(MakeCylinderPlant(
-      radius, 4 * radius, mass, coulomb_friction, -g * Vector3d::UnitZ(),
+      radius, length, mass, coulomb_friction, -g * Vector3d::UnitZ(),
       FLAGS_time_step, &scene_graph));
   const MultibodyTree<double>& model = plant.model();
   // Set how much penetration (in meters) we are willing to accept.
