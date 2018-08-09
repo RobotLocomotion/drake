@@ -646,7 +646,8 @@ TEST_F(DiagramTest, CheckPortSubscriptions) {
   //    subscribe to the corresponding leaf trackers.
   auto systems = diagram_->GetSystems();
   for (auto subsystem : systems) {
-    auto& subcontext = diagram_->GetSubsystemContext(*subsystem, *context_);
+    const auto& subcontext =
+        diagram_->GetSubsystemContext(*subsystem, *context_);
     // Not checking "HasSubscriber" separately to cut down on fluff;
     // prerequisite and subscriber are set in the same call and checked above.
     EXPECT_TRUE(context_->get_tracker(diagram_->q_ticket())
@@ -2230,16 +2231,16 @@ GTEST_TEST(MutateSubcontextTest, DiagramRecalculatesOnSubcontextChange) {
 
   // Time & accuracy changes NOT allowed at child (leaf) level.
   DRAKE_EXPECT_THROWS_MESSAGE(context0.set_time(3.), std::logic_error,
-                              ".*set_time().*Time change allowed only.*root.*");
+                              ".*set_time.*Time change allowed only.*root.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       context0.SetTimeAndContinuousState(4., new_x0), std::logic_error,
-      ".*SetTimeAndContinuousState().*Time change allowed only.*root.*");
+      ".*SetTimeAndContinuousState.*Time change allowed only.*root.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       context0.SetTimeStateAndParametersFrom(context1), std::logic_error,
-      ".*SetTimeStateAndParametersFrom().*Time change allowed only.*root.*");
+      ".*SetTimeStateAndParametersFrom.*Time change allowed only.*root.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       context0.set_accuracy(1e-7), std::logic_error,
-      ".*set_accuracy().*Accuracy change allowed only.*root.*");
+      ".*set_accuracy.*Accuracy change allowed only.*root.*");
 }
 
 // Tests that an exception is thrown if the systems in a Diagram do not have

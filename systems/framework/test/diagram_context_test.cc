@@ -663,18 +663,18 @@ TEST_F(DiagramContextTest, NextChangeEventNumber) {
   EXPECT_EQ(context_->start_new_change_event(), first + 2);
 
   // Obtain a subcontext and verify we still count up.
-  Context<double>& zoh_context =
+  Context<double>& discrete_context =
       context_->GetMutableSubsystemContext(SubsystemIndex(4));
-  EXPECT_EQ(zoh_context.start_new_change_event(), first + 3);
+  EXPECT_EQ(discrete_context.start_new_change_event(), first + 3);
 
   // Now clone the context and make sure we're still counting up.
   auto clone = dynamic_pointer_cast<DiagramContext<double>>(context_->Clone());
   EXPECT_EQ(clone->start_new_change_event(), first + 4);
   EXPECT_EQ(context_->start_new_change_event(), first + 4);  // Sanity check.
 
-  Context<double>& zoh_clone =
+  Context<double>& discrete_clone =
       clone->GetMutableSubsystemContext(SubsystemIndex(4));
-  EXPECT_EQ(zoh_clone.start_new_change_event(), first + 5);
+  EXPECT_EQ(discrete_clone.start_new_change_event(), first + 5);
 }
 
 TEST_F(DiagramContextTest, Clone) {

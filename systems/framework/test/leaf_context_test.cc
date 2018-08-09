@@ -101,8 +101,7 @@ class LeafContextTest : public ::testing::Test {
     graph.get_mutable_tracker(DependencyTicket(internal::kXaTicket))
         .SubscribeToPrerequisite(&xa0_tracker);
 
-    // Reserve two numeric parameters of size 3 and size 4, and one abstract
-    // valued parameter of type TestAbstractType.
+    // Reserve two numeric parameters of size 3 and size 4.
     std::vector<std::unique_ptr<BasicVector<double>>> vector_params;
     vector_params.push_back(BasicVector<double>::Make({1.0, 2.0, 4.0}));
     vector_params.push_back(BasicVector<double>::Make({8.0, 16.0, 32.0, 64.0}));
@@ -115,6 +114,7 @@ class LeafContextTest : public ::testing::Test {
     graph.get_mutable_tracker(DependencyTicket(internal::kPnTicket))
         .SubscribeToPrerequisite(&pn1_tracker);
 
+    // Reserve one abstract-valued parameter of type TestAbstractType.
     std::vector<std::unique_ptr<AbstractValue>> abstract_params;
     abstract_params.push_back(std::make_unique<Value<TestAbstractType>>());
     auto& pa0_tracker = graph.CreateNewDependencyTracker(next_ticket_++, "pa0");

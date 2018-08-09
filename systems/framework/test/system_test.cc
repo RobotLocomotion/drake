@@ -776,12 +776,13 @@ TEST_F(SystemIOTest, TransmogrifyAndFix) {
 // LeafSystem.
 class ComputationTestSystem final : public System<double> {
  public:
-  ComputationTestSystem() : System<double>(SystemScalarConverter{}) {
-  }
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ComputationTestSystem)
+
+  ComputationTestSystem() : System<double>(SystemScalarConverter{}) {}
 
   // One q, one v, one z.
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
-  const final {
+      const final {
     return std::make_unique<ContinuousState<double>>(
         std::make_unique<BasicVector<double>>(3), 1, 1, 1);  // q, v, z
   }

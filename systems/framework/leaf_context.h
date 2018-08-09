@@ -103,7 +103,7 @@ class LeafContext : public Context<T> {
 
   State<T>& do_access_mutable_state() final {
     DRAKE_ASSERT(state_ != nullptr);
-    return *state_.get();
+    return *state_;
   }
 
   // The state values (x) for this LeafContext; this is never null.

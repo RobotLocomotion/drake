@@ -25,7 +25,7 @@ class SystemBaseContextBaseAttorney;
 #endif
 
 /** Provides non-templatized Context functionality shared by the templatized
-derived classes. That includes caching and dependency tracking, and management
+derived classes. That includes caching, dependency tracking, and management
 of local values for fixed input ports.
 
 Terminology: in general a Drake System is a tree structure composed of
@@ -214,10 +214,10 @@ class ContextBase : public internal::ContextMessageInterface {
     // TODO(sherm1) Consider precalculating this for faster access.
     ContextBase* context = this;
     while (context->parent_) {
+      // Only a root context has a non-negative change event value.
       DRAKE_ASSERT(context->current_change_event_ == -1);
       context = context->parent_;
     }
-    // Only a root context has a non-negative change event value.
     DRAKE_ASSERT(context->current_change_event_ >= 0);
     return ++context->current_change_event_;
   }
@@ -239,16 +239,19 @@ class ContextBase : public internal::ContextMessageInterface {
   contained in the source are left null in the copy. */
   ContextBase(const ContextBase&) = default;
 
+  /** @name      Add dependency tracking resources (Internal use only)
+  Methods in this group are used by SystemBase and unit testing while creating
+  a Context that can track dependencies for a given System. Although these
+  methods are protected, SystemBase is granted permission to invoke them (via
+  an attorney class). */
+  //@{
+
   /** Adds the next input port. Expected index is supplied along with the
   assigned ticket. Subscribes the "all input ports" tracker to this one. */
-  // SystemBase is granted permission to invoke this protected method for use
-  // during Context construction.
   void AddInputPort(InputPortIndex expected_index, DependencyTicket ticket);
 
   /** Adds the next output port. Expected index is supplied along with the
   assigned ticket. */
-  // SystemBase is granted permission to invoke this protected method for use
-  // during Context construction.
   void AddOutputPort(
       OutputPortIndex expected_index, DependencyTicket ticket,
       const internal::OutputPortPrerequisite& prerequisite);
@@ -272,84 +275,110 @@ class ContextBase : public internal::ContextMessageInterface {
   void AddAbstractParameterTicket(DependencyTicket ticket) {
     abstract_parameter_tickets_.push_back(ticket);
   }
+  //@}
 
-  // These "Note" methods are used by derived classes to effect "bulk" change
-  // notifications. Each acts locally but has an identical signature so can
-  // be passed down the Context tree to operate on every subcontext.
+  /** @name         Change notification methods (Internal use only)
+  These "Note" methods are used by framework-internal derived classes to effect
+  change notifications that propagate down from a DiagramContext (where the
+  change is initiated) through all its subcontexts, recursively. Each of these
+  methods affects only the local context, but all have identical signatures
+  so can be passed down the context tree to operate on every subcontext. The
+  `change_event` argument should be the result of the start_new_change_event()
+  method. */
+  //@{
 
-  /** Forces invalidation of any time-dependent computation. */
+  /** Notifies the local time tracker that time has changed. */
   void NoteTimeChanged(int64_t change_event) {
     get_tracker(DependencyTicket(internal::kTimeTicket))
         .NoteValueChange(change_event);
   }
 
-  /** Forces invalidation of any accuracy-dependent computation. */
+  /** Notifies the local accuracy tracker that the accuracy setting
+  has changed. */
   void NoteAccuracyChanged(int64_t change_event) {
     get_tracker(DependencyTicket(internal::kAccuracyTicket))
         .NoteValueChange(change_event);
   }
 
-  /** Forces invalidation of any state-dependent computation. */
+  /** Notifies the local continuous, discrete, and abstract state trackers that
+  each of them has changed, likely because someone has asked to modify the whole
+  state x. */
   void NoteAllStateChanged(int64_t change_event) {
     NoteAllContinuousStateChanged(change_event);
     NoteAllDiscreteStateChanged(change_event);
     NoteAllAbstractStateChanged(change_event);
   }
 
-  /** Forces invalidation of any continuous state-dependent computation. */
+  /** Notifies the local q, v, and z trackers that each of them has changed, likely
+  because someone has asked to modify continuous state xc. */
   void NoteAllContinuousStateChanged(int64_t change_event) {
     NoteAllQChanged(change_event);
     NoteAllVChanged(change_event);
     NoteAllZChanged(change_event);
   }
 
-  /** Forces invalidation of any q-dependent computation. */
+  /** Notifies the local q tracker that the q's have changed. */
   void NoteAllQChanged(int64_t change_event) {
     get_tracker(DependencyTicket(internal::kQTicket))
         .NoteValueChange(change_event);
   }
 
-  /** Forces invalidation of any v-dependent computation. */
+  /** Notifies the local v tracker that the v's have changed. */
   void NoteAllVChanged(int64_t change_event) {
     get_tracker(DependencyTicket(internal::kVTicket))
         .NoteValueChange(change_event);
   }
 
-  /** Forces invalidation of any z-dependent computation. */
+  /** Notifies the local z tracker that the z's have changed. */
   void NoteAllZChanged(int64_t change_event) {
     get_tracker(DependencyTicket(internal::kZTicket))
         .NoteValueChange(change_event);
   }
 
-  /** Forces invalidation of any discrete state-dependent computation. */
+  /** Notifies each local discrete state group tracker that the value of
+  the discrete state group it manages has changed. If there are no discrete
+  state groups owned by this context, nothing happens. A DiagramContext does
+  not own any discrete state groups. */
   void NoteAllDiscreteStateChanged(int64_t change_event) {
     for (auto ticket : discrete_state_tickets_)
       get_tracker(ticket).NoteValueChange(change_event);
   }
 
-  /** Forces invalidation of any abstract state-dependent computation. */
+  /** Notifies each local abstract state variable tracker that the value of
+  the abstract state variable it manages has changed. If there are no abstract
+  state variables owned by this context, nothing happens. A DiagramContext does
+  not own any abstract state variables. */
   void NoteAllAbstractStateChanged(int64_t change_event) {
     for (auto ticket : abstract_state_tickets_)
       get_tracker(ticket).NoteValueChange(change_event);
   }
 
-  /** Forces invalidation of any parameter-dependent computation. */
+  /** Notifies the local numeric and abstract parameter trackers that each of
+  them has changed, likely because someone asked to modify all the
+  parameters. */
   void NoteAllParametersChanged(int64_t change_event) {
     NoteAllNumericParametersChanged(change_event);
     NoteAllAbstractParametersChanged(change_event);
   }
 
-  /** Forces invalidation of any numeric parameter-dependent computation. */
+  /** Notifies each local numeric parameter tracker that the value of the
+  parameter it manages has changed. If there are no numeric parameters owned by
+  this context, nothing happens. A DiagramContext does not own any
+  parameters. */
   void NoteAllNumericParametersChanged(int64_t change_event) {
     for (auto ticket : numeric_parameter_tickets_)
       get_tracker(ticket).NoteValueChange(change_event);
   }
 
-  /** Forces invalidation of any abstract parameter-dependent computation. */
+  /** Notifies each local abstract parameter tracker that the value of the
+  parameter it manages has changed. If there are no abstract parameters owned by
+  this context, nothing happens. A DiagramContext does not own any
+  parameters. */
   void NoteAllAbstractParametersChanged(int64_t change_event) {
     for (auto ticket : abstract_parameter_tickets_)
       get_tracker(ticket).NoteValueChange(change_event);
   }
+  //@}
 
   /** Returns true if this context has no parent. */
   bool is_root_context() const { return parent_ == nullptr; }

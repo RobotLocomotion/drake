@@ -266,9 +266,9 @@ class Context : public ContextBase {
   // entitled to lower_case_names. Deprecate and replace (see #9205).
 
   /// Sets the current time in seconds, invalidating all time-dependent
-  /// computations. Time must have the same value in every subcontext within
-  /// the same context tree so may only be modified at the root context of
-  /// a tree.
+  /// computations (at least if the time has actually changed). Time must have
+  /// the same value in every subcontext within the same context tree so may
+  /// only be modified at the root context of a tree.
   /// @throws std::logic_error if this is not the root context.
   // TODO(sherm1) Consider whether this should avoid invalidation if the
   // new time is the same as the old time.
@@ -487,9 +487,9 @@ class Context : public ContextBase {
 
   /// Records the user's requested accuracy. If no accuracy is requested,
   /// computations are free to choose suitable defaults, or to refuse to
-  /// proceed without an explicit accuracy setting. If this is a change to
-  /// the current accuracy setting, all accuracy-dependent computations in this
-  /// Context and its subcontexts are invalidated. Accuracy must have the same
+  /// proceed without an explicit accuracy setting. All accuracy-dependent
+  /// computations in this Context and its subcontexts are invalidated (at
+  /// least if the accuracy setting has changed). Accuracy must have the same
   /// value in every subcontext within the same context tree so may only be
   /// modified at the root context of a tree.
   ///
