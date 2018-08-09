@@ -247,7 +247,7 @@ class TestGeneral(unittest.TestCase):
         mytest((.2, .3), (.2, 1.3))
 
     def test_demultiplexer(self):
-        # test all scalar outputs
+        # Test demultiplexer with scalar outputs.
         demux = Demultiplexer(size=4)
         context = demux.CreateDefaultContext()
         self.assertEqual(demux.get_num_input_ports(), 1)
@@ -263,8 +263,9 @@ class TestGeneral(unittest.TestCase):
                 np.allclose(output.get_vector_data(i).get_value(),
                             input_vec[i]))
 
-        # test vector outputs
+        # Test demultiplexer with vector outputs.
         demux = Demultiplexer(size=4, output_ports_sizes=2)
+        context = demux.CreateDefaultContext()
         self.assertEqual(demux.get_num_input_ports(), 1)
         self.assertEqual(demux.get_num_output_ports(), 2)
 
