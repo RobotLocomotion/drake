@@ -927,8 +927,11 @@ TEST_F(ComputationTest, Eval) {
   test_sys_.ExpectCount(1, 0, 0, 0, 0);
 
   EXPECT_EQ(test_sys_.EvalPotentialEnergy(*context_), 1.);
+  test_sys_.ExpectCount(1, 1, 0, 0, 0);
   EXPECT_EQ(test_sys_.EvalKineticEnergy(*context_), 2.);
+  test_sys_.ExpectCount(1, 1, 1, 0, 0);
   EXPECT_EQ(test_sys_.EvalConservativePower(*context_), 3.);
+  test_sys_.ExpectCount(1, 1, 1, 1, 0);
   EXPECT_EQ(test_sys_.EvalNonConservativePower(*context_), 4.);
   test_sys_.ExpectCount(1, 1, 1, 1, 1);
 
@@ -942,10 +945,14 @@ TEST_F(ComputationTest, Eval) {
   // Each of the Calc methods should cause computation.
   auto derivatives = test_sys_.AllocateTimeDerivatives();
   test_sys_.CalcTimeDerivatives(*context_, &*derivatives);
+  test_sys_.ExpectCount(2, 1, 1, 1, 1);
   EXPECT_EQ((*derivatives)[1], -2.);
   EXPECT_EQ(test_sys_.CalcPotentialEnergy(*context_), 1.);
+  test_sys_.ExpectCount(2, 2, 1, 1, 1);
   EXPECT_EQ(test_sys_.CalcKineticEnergy(*context_), 2.);
+  test_sys_.ExpectCount(2, 2, 2, 1, 1);
   EXPECT_EQ(test_sys_.CalcConservativePower(*context_), 3.);
+  test_sys_.ExpectCount(2, 2, 2, 2, 1);
   EXPECT_EQ(test_sys_.CalcNonConservativePower(*context_), 4.);
   test_sys_.ExpectCount(2, 2, 2, 2, 2);
 
@@ -957,15 +964,21 @@ TEST_F(ComputationTest, Eval) {
   EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[0], -2.);
   EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[1], -4.);
   EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[2], -6.);
+  test_sys_.ExpectCount(3, 2, 2, 2, 2);  // Above is just one evaluation.
   EXPECT_EQ(test_sys_.EvalNonConservativePower(*context_), 8.);
+  test_sys_.ExpectCount(3, 2, 2, 2, 3);
   // TODO(sherm1) Verify that other methods don't depend on time.
 
   // This should mark all state variables as changed and force recomputation.
   context_->get_mutable_state();
   EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[2], -6.);  // Again.
+  test_sys_.ExpectCount(4, 2, 2, 2, 3);
   EXPECT_EQ(test_sys_.EvalPotentialEnergy(*context_), 1.);
+  test_sys_.ExpectCount(4, 3, 2, 2, 3);
   EXPECT_EQ(test_sys_.EvalKineticEnergy(*context_), 2.);
+  test_sys_.ExpectCount(4, 3, 3, 2, 3);
   EXPECT_EQ(test_sys_.EvalConservativePower(*context_), 3.);
+  test_sys_.ExpectCount(4, 3, 3, 3, 3);
   EXPECT_EQ(test_sys_.EvalNonConservativePower(*context_), 8.);  // Again.
   test_sys_.ExpectCount(4, 3, 3, 3, 4);
 }

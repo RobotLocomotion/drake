@@ -150,6 +150,102 @@ class DiagramContextTest : public ::testing::Test {
     return free_value ? &free_value->get_vector_value<double>() : nullptr;
   }
 
+
+// Check that time is set as expected in the Diagram and all the subcontexts.
+  void VerifyTimeValue(double expected_time) {
+    // Check the Diagram.
+    EXPECT_EQ(context_->get_time(), expected_time);
+
+    // Make sure time got delivered to the subcontexts.
+    for (SubsystemIndex i(0); i < kNumSystems; ++i) {
+      const auto& subcontext = context_->GetSubsystemContext(i);
+      EXPECT_EQ(subcontext.get_time(), expected_time);
+    }
+  }
+
+  // Check that accuracy is set to the expected numerical value in the Diagram
+  // and all the subcontexts. Don't call this for uninitialized (optional)
+  // accuracy.
+  void VerifyAccuracyValue(double expected_accuracy) {
+    // Check the Diagram.
+    EXPECT_TRUE(context_->get_accuracy());
+    EXPECT_EQ(context_->get_accuracy().value(), expected_accuracy);
+
+    // Make sure time got delivered to the subcontexts.
+    for (SubsystemIndex i(0); i < kNumSystems; ++i) {
+      const auto& subcontext = context_->GetSubsystemContext(i);
+      EXPECT_TRUE(subcontext.get_accuracy());
+      EXPECT_EQ(subcontext.get_accuracy().value(), expected_accuracy);
+    }
+  }
+
+  // Check that the continuous state has the expected value, in both the
+  // Diagram and its continuous-state-holding subcontexts, which are the two
+  // integrators.
+  void VerifyContinuousStateValue(const Eigen::Vector2d& expected) {
+    // Make sure state is right in the Diagram.
+    EXPECT_EQ(context_->get_continuous_state_vector().CopyToVector(), expected);
+
+    // Make sure state got delivered to the integrators.
+    EXPECT_EQ(context_->GetSubsystemContext(SubsystemIndex(2))
+                  .get_continuous_state_vector()[0],
+              expected[0]);
+    EXPECT_EQ(context_->GetSubsystemContext(SubsystemIndex(3))
+                  .get_continuous_state_vector()[0],
+              expected[1]);
+  }
+
+  // Record the notification count for the given tracker in each of the
+  // subcontexts, followed by the notification count for that same tracker in
+  // the diagram context, so there are kNumSystems + 1 in the returned vector.
+  std::vector<int64_t> SaveNotifications(DependencyTicket ticket) {
+    std::vector<int64_t> notifications;
+    for (SubsystemIndex i(0); i < kNumSystems; ++i) {
+      notifications.push_back(
+          NumNotifications(context_->GetSubsystemContext(i), ticket));
+    }
+    notifications.push_back(NumNotifications(*context_, ticket));
+    return notifications;
+  }
+
+// Verify that the current notification count is as expected, relative to the
+// given `before_count`. `should_have_been_notified` says which subsystems
+// should have received a notification, with kNumSystems treated as the index
+// of the diagram "subsystem". `before_count` is updated on return so it can
+// be used in a subsequent test.
+  void VerifyNotifications(const std::string& which,
+                           const std::set<int>& should_have_been_notified,
+                           DependencyTicket ticket,
+                           std::vector<int64_t>* before_count) {  // in/out
+    auto count_now = SaveNotifications(ticket);
+    ASSERT_EQ(count_now.size(), kNumSystems + 1);
+    ASSERT_EQ(before_count->size(), kNumSystems + 1);
+    for (int i = 0; i <= kNumSystems; ++i) {
+      const int n = should_have_been_notified.count(i) ? 1 : 0;
+      (*before_count)[i] += n;
+      EXPECT_EQ(count_now[i], (*before_count)[i]) << which << " of system " << i;
+    }
+  }
+
+// Verify that all subsystem trackers with this ticket were notified, including
+// the diagram, and updated the expected notification count.
+  void VerifyNotifications(const std::string& which,
+                           DependencyTicket ticket,
+                           std::vector<int64_t>* before_count) {  // in/out
+    std::set<int> should_have_been_notified;
+    for (int i = 0; i <= kNumSystems; ++i) should_have_been_notified.insert(i);
+    VerifyNotifications(which, should_have_been_notified, ticket, before_count);
+  }
+
+  // Return the current notification count for the given tracker in the given
+  // context. Don't count multiple notifications for the same change event.
+  static int64_t NumNotifications(const ContextBase& context,
+                                  DependencyTicket ticket) {
+    const auto& tracker = context.get_tracker(ticket);
+    return tracker.num_notifications_received()
+        - tracker.num_ignored_notifications();
+  }
+
   std::unique_ptr<DiagramContext<double>> context_;
   std::unique_ptr<Adder<double>> adder0_;
   std::unique_ptr<Adder<double>> adder1_;
@@ -189,109 +285,6 @@ void VerifyClonedParameters(const Parameters<double>& params) {
   EXPECT_EQ(2048, UnpackIntValue(params.get_abstract_parameter(0)));
 }
 
-// Check that time is set as expected in the Diagram and all the subcontexts.
-void VerifyTimeValue(const DiagramContext<double>& context,
-                     double expected_time) {
-  // Check the Diagram.
-  EXPECT_EQ(context.get_time(), expected_time);
-
-  // Make sure time got delivered to the subcontexts.
-  for (SubsystemIndex i(0); i < kNumSystems; ++i) {
-    const auto& subcontext = context.GetSubsystemContext(i);
-    EXPECT_EQ(subcontext.get_time(), expected_time);
-  }
-}
-
-// Check that accuracy is set to the expected numerical value in the Diagram
-// and all the subcontexts. Don't call this for uninitialized (optional)
-// accuracy.
-void VerifyAccuracyValue(const DiagramContext<double>& context,
-                         double expected_accuracy) {
-  // Check the Diagram.
-  EXPECT_TRUE(context.get_accuracy());
-  EXPECT_EQ(context.get_accuracy().value(), expected_accuracy);
-
-  // Make sure time got delivered to the subcontexts.
-  for (SubsystemIndex i(0); i < kNumSystems; ++i) {
-    const auto& subcontext = context.GetSubsystemContext(i);
-    EXPECT_TRUE(subcontext.get_accuracy());
-    EXPECT_EQ(subcontext.get_accuracy().value(), expected_accuracy);
-  }
-}
-
-// Check that the continuous state has the expected value, in both the
-// Diagram and its continuous-state-holding subcontexts, which are the two
-// integrators.
-void VerifyContinuousStateValue(const DiagramContext<double>& context,
-                                const Eigen::Vector2d& expected) {
-  // Make sure state is right in the Diagram.
-  EXPECT_EQ(context.get_continuous_state_vector().CopyToVector(), expected);
-
-  // Make sure state got delivered to the integrators.
-  EXPECT_EQ(context.GetSubsystemContext(SubsystemIndex(2))
-                .get_continuous_state_vector()[0],
-            expected[0]);
-  EXPECT_EQ(context.GetSubsystemContext(SubsystemIndex(3))
-                .get_continuous_state_vector()[0],
-            expected[1]);
-}
-
-// Return the current notification count for the given tracker. Don't count
-// multiple notifications for the same change event.
-int64_t NumNotifications(const ContextBase& context,
-                         DependencyTicket ticket) {
-  const auto& tracker = context.get_tracker(ticket);
-  return tracker.num_notifications_received()
-      - tracker.num_ignored_notifications();
-}
-
-// Record the notification count for the given tracker in each of the
-// given context's subcontexts, followed by the notification count for that
-// same tracker in the given context, so there are kNumSystems + 1 in the
-// returned vector.
-std::vector<int64_t> SaveNotifications(const DiagramContext<double>& context,
-                                       DependencyTicket ticket) {
-  std::vector<int64_t> notifications;
-  for (SubsystemIndex i(0); i < kNumSystems; ++i) {
-    notifications.push_back(
-        NumNotifications(context.GetSubsystemContext(i), ticket));
-  }
-  notifications.push_back(NumNotifications(context, ticket));
-  return notifications;
-}
-
-// Verify that the current notification count is as expected, relative to the
-// given `before_count`. `should_have_been_notified` says which subsystems
-// should have received a notification, with kNumSystems treated as the index
-// of the diagram "subsystem". `before_count` is updated on return so it can
-// be used in a subsequent test.
-void VerifyNotifications(const std::string& which,
-                         const std::set<int>& should_have_been_notified,
-                         const DiagramContext<double>& context,
-                         DependencyTicket ticket,
-                         std::vector<int64_t>* before_count) {  // in/out
-  auto count_now = SaveNotifications(context, ticket);
-  ASSERT_EQ(count_now.size(), kNumSystems + 1);
-  ASSERT_EQ(before_count->size(), kNumSystems + 1);
-  for (int i = 0; i <= kNumSystems; ++i) {
-    const int n = should_have_been_notified.count(i) ? 1 : 0;
-    (*before_count)[i] += n;
-    EXPECT_EQ(count_now[i], (*before_count)[i]) << which << " of system " << i;
-  }
-}
-
-// Verify that all subsystem trackers with this ticket were notified, including
-// the diagram, and updated the expected notification count.
-void VerifyNotifications(const std::string& which,
-                         const DiagramContext<double>& context,
-                         DependencyTicket ticket,
-                         std::vector<int64_t>* before_count) {  // in/out
-  std::set<int> should_have_been_notified;
-  for (int i = 0; i <= kNumSystems; ++i) should_have_been_notified.insert(i);
-  VerifyNotifications(which, should_have_been_notified, context, ticket,
-                      before_count);
-}
-
 // Tests that subsystems have contexts in the DiagramContext.
 TEST_F(DiagramContextTest, RetrieveConstituents) {
   // All of the subsystems should be leaf Systems.
@@ -311,192 +304,191 @@ TEST_F(DiagramContextTest, RetrieveConstituents) {
 // Tests that the time writes through to the subsystem contexts, and that all
 // time trackers are notified.
 TEST_F(DiagramContextTest, Time) {
-  auto before = SaveNotifications(*context_, SystemBase::time_ticket());
+  auto before = SaveNotifications(SystemBase::time_ticket());
 
   context_->set_time(42.0);
-  VerifyTimeValue(*context_, 42.);
-  VerifyNotifications("Time", *context_, SystemBase::time_ticket(), &before);
+  VerifyTimeValue(42.);
+  VerifyNotifications("Time", SystemBase::time_ticket(), &before);
 }
 
 // Tests that the accuracy writes through to the subsystem contexts, and that
 // all accuracy trackers are notified.
 TEST_F(DiagramContextTest, Accuracy) {
-  auto before = SaveNotifications(*context_, SystemBase::accuracy_ticket());
+  auto before = SaveNotifications(SystemBase::accuracy_ticket());
 
   const double new_accuracy = 1e-12;
   context_->set_accuracy(new_accuracy);
-  VerifyAccuracyValue(*context_, new_accuracy);
-  VerifyNotifications("Accuracy", *context_, SystemBase::accuracy_ticket(),
-                      &before);
+  VerifyAccuracyValue(new_accuracy);
+  VerifyNotifications("Accuracy", SystemBase::accuracy_ticket(), &before);
 }
 
 // Test that State notifications propagate down from the diagram to the leaves.
 TEST_F(DiagramContextTest, MutableStateNotifications) {
-  auto x_before = SaveNotifications(*context_, SystemBase::all_state_ticket());
-  auto xc_before = SaveNotifications(*context_, SystemBase::xc_ticket());
-  auto xd_before = SaveNotifications(*context_, SystemBase::xd_ticket());
-  auto xa_before = SaveNotifications(*context_, SystemBase::xa_ticket());
+  auto x_before = SaveNotifications(SystemBase::all_state_ticket());
+  auto xc_before = SaveNotifications(SystemBase::xc_ticket());
+  auto xd_before = SaveNotifications(SystemBase::xd_ticket());
+  auto xa_before = SaveNotifications(SystemBase::xa_ticket());
 
   // Changing the whole state should affect all the substates.
   context_->get_mutable_state();  // Return value ignored.
-  VerifyNotifications("get_mutable_state: x", *context_,
+  VerifyNotifications("get_mutable_state: x",
                       SystemBase::all_state_ticket(), &x_before);
-  VerifyNotifications("get_mutable_state: xc", *context_,
+  VerifyNotifications("get_mutable_state: xc",
                       SystemBase::xc_ticket(), &xc_before);
-  VerifyNotifications("get_mutable_state: xd", has_discrete_state(), *context_,
+  VerifyNotifications("get_mutable_state: xd", has_discrete_state(),
                       SystemBase::xd_ticket(), &xd_before);
-  VerifyNotifications("get_mutable_state: xa", has_abstract_state(), *context_,
+  VerifyNotifications("get_mutable_state: xa", has_abstract_state(),
                       SystemBase::xa_ticket(), &xa_before);
 
   // Changing continuous state should affect only x and xc.
   context_->get_mutable_continuous_state();  // Return value ignored.
-  VerifyNotifications("get_mutable_continuous_state: x", *context_,
+  VerifyNotifications("get_mutable_continuous_state: x",
                       SystemBase::all_state_ticket(), &x_before);
-  VerifyNotifications("get_mutable_continuous_state: xc", *context_,
+  VerifyNotifications("get_mutable_continuous_state: xc",
                       SystemBase::xc_ticket(), &xc_before);
-  VerifyNotifications("get_mutable_continuous_state: xd", {}, *context_,
-                      SystemBase::xd_ticket(), &xd_before);  // No effect.
-  VerifyNotifications("get_mutable_continuous_state: xa", {}, *context_,
-                      SystemBase::xa_ticket(), &xa_before);  // No effect.
+  VerifyNotifications("get_mutable_continuous_state: xd", {},  // None.
+                      SystemBase::xd_ticket(), &xd_before);
+  VerifyNotifications("get_mutable_continuous_state: xa", {},  // None.
+                      SystemBase::xa_ticket(), &xa_before);
 
   context_->get_mutable_continuous_state_vector();  // Return value ignored.
-  VerifyNotifications("get_mutable_continuous_state_vector: x", *context_,
+  VerifyNotifications("get_mutable_continuous_state_vector: x",
                       SystemBase::all_state_ticket(), &x_before);
-  VerifyNotifications("get_mutable_continuous_state_vector: xc", *context_,
+  VerifyNotifications("get_mutable_continuous_state_vector: xc",
                       SystemBase::xc_ticket(), &xc_before);
-  VerifyNotifications("get_mutable_continuous_state_vector: xd", {}, *context_,
-                      SystemBase::xd_ticket(), &xd_before);  // No effect.
-  VerifyNotifications("get_mutable_continuous_state_vector: xa", {}, *context_,
-                      SystemBase::xa_ticket(), &xa_before);  // No effect.
+  VerifyNotifications("get_mutable_continuous_state_vector: xd", {},  // None.
+                      SystemBase::xd_ticket(), &xd_before);
+  VerifyNotifications("get_mutable_continuous_state_vector: xa", {},  // None.
+                      SystemBase::xa_ticket(), &xa_before);
 
   const Eigen::Vector2d new_xc1(3.25, 5.5);
   context_->SetContinuousState(VectorX<double>(new_xc1));
-  VerifyContinuousStateValue(*context_, new_xc1);
-  VerifyNotifications("SetContinuousState: x", *context_,
+  VerifyContinuousStateValue(new_xc1);
+  VerifyNotifications("SetContinuousState: x",
                       SystemBase::all_state_ticket(), &x_before);
-  VerifyNotifications("SetContinuousState: xc", *context_,
+  VerifyNotifications("SetContinuousState: xc",
                       SystemBase::xc_ticket(), &xc_before);
-  VerifyNotifications("SetContinuousState: xd", {}, *context_,
-                      SystemBase::xd_ticket(), &xd_before);  // No effect.
-  VerifyNotifications("SetContinuousState: xa", {}, *context_,
-                      SystemBase::xa_ticket(), &xa_before);  // No effect.
+  VerifyNotifications("SetContinuousState: xd", {},  // None.
+                      SystemBase::xd_ticket(), &xd_before);
+  VerifyNotifications("SetContinuousState: xa", {},  // None.
+                      SystemBase::xa_ticket(), &xa_before);
 
   // Changing time and continuous state should affect only t, x and xc.
-  auto t_before = SaveNotifications(*context_, SystemBase::time_ticket());
+  auto t_before = SaveNotifications(SystemBase::time_ticket());
   const double new_time = context_->get_time() + 1.;
   const Eigen::Vector2d new_xc2(1.25, 1.5);
   context_->SetTimeAndContinuousState(new_time, VectorX<double>(new_xc2));
-  VerifyTimeValue(*context_, new_time);
+  VerifyTimeValue(new_time);
   // Make sure state got delivered to the integrators.
-  VerifyContinuousStateValue(*context_, new_xc2);
+  VerifyContinuousStateValue(new_xc2);
   // Make sure notifications got delivered.
-  VerifyNotifications("SetTimeAndContinuousState: t", *context_,
+  VerifyNotifications("SetTimeAndContinuousState: t",
                       SystemBase::time_ticket(), &t_before);
-  VerifyNotifications("SetTimeAndContinuousState: x", *context_,
+  VerifyNotifications("SetTimeAndContinuousState: x",
                       SystemBase::all_state_ticket(), &x_before);
-  VerifyNotifications("SetTimeAndContinuousState: xc", *context_,
+  VerifyNotifications("SetTimeAndContinuousState: xc",
                       SystemBase::xc_ticket(), &xc_before);
-  VerifyNotifications("SetTimeAndContinuousState: xd", {}, *context_,
-                      SystemBase::xd_ticket(), &xd_before);  // No effect.
-  VerifyNotifications("SetTimeAndContinuousState: xa", {}, *context_,
-                      SystemBase::xa_ticket(), &xa_before);  // No effect.
+  VerifyNotifications("SetTimeAndContinuousState: xd", {},  // None.
+                      SystemBase::xd_ticket(), &xd_before);
+  VerifyNotifications("SetTimeAndContinuousState: xa", {},  // None.
+                      SystemBase::xa_ticket(), &xa_before);
 
   // Changing discrete state should affect only x and xd, and those should only
   // get notified for systems that actually have discrete variables.
 
   context_->get_mutable_discrete_state();  // Return value ignored.
   VerifyNotifications("get_mutable_discrete_state: x", has_discrete_state(),
-                      *context_, SystemBase::all_state_ticket(), &x_before);
+                      SystemBase::all_state_ticket(), &x_before);
   VerifyNotifications("get_mutable_discrete_state: xd", has_discrete_state(),
-                      *context_, SystemBase::xd_ticket(), &xd_before);
-  VerifyNotifications("get_mutable_discrete_state: xc", {}, *context_,
-                      SystemBase::xc_ticket(), &xc_before);  // No effect.
-  VerifyNotifications("get_mutable_discrete_state: xa", {}, *context_,
-                      SystemBase::xa_ticket(), &xa_before);  // No effect.
+                      SystemBase::xd_ticket(), &xd_before);
+  VerifyNotifications("get_mutable_discrete_state: xc", {},  // None.
+                      SystemBase::xc_ticket(), &xc_before);
+  VerifyNotifications("get_mutable_discrete_state: xa", {},  // None.
+                      SystemBase::xa_ticket(), &xa_before);
 
   context_->get_mutable_discrete_state_vector();  // Return value ignored.
   VerifyNotifications("get_mutable_discrete_state_vector: x",
-                      has_discrete_state(), *context_,
+                      has_discrete_state(),
                       SystemBase::all_state_ticket(), &x_before);
   VerifyNotifications("get_mutable_discrete_state_vector: xd",
-                      has_discrete_state(), *context_, SystemBase::xd_ticket(),
+                      has_discrete_state(), SystemBase::xd_ticket(),
                       &xd_before);
-  VerifyNotifications("get_mutable_discrete_state_vector: xc", {}, *context_,
-                      SystemBase::xc_ticket(), &xc_before);  // No effect.
-  VerifyNotifications("get_mutable_discrete_state_vector: xa", {}, *context_,
-                      SystemBase::xa_ticket(), &xa_before);  // No effect.
+  VerifyNotifications("get_mutable_discrete_state_vector: xc", {},  // None.
+                      SystemBase::xc_ticket(), &xc_before);
+  VerifyNotifications("get_mutable_discrete_state_vector: xa", {},  // None.
+                      SystemBase::xa_ticket(), &xa_before);
 
   context_->get_mutable_discrete_state(0);  // Return value ignored.
   VerifyNotifications("get_mutable_discrete_state(0): x", has_discrete_state(),
-                      *context_, SystemBase::all_state_ticket(), &x_before);
+                      SystemBase::all_state_ticket(), &x_before);
   VerifyNotifications("get_mutable_discrete_state(0): xd", has_discrete_state(),
-                      *context_, SystemBase::xd_ticket(), &xd_before);
-  VerifyNotifications("get_mutable_discrete_state(0): xc", {}, *context_,
-                      SystemBase::xc_ticket(), &xc_before);  // No effect.
-  VerifyNotifications("get_mutable_discrete_state(0): xa", {}, *context_,
-                      SystemBase::xa_ticket(), &xa_before);  // No effect.
+                      SystemBase::xd_ticket(), &xd_before);
+  VerifyNotifications("get_mutable_discrete_state(0): xc", {},  // None.
+                      SystemBase::xc_ticket(), &xc_before);
+  VerifyNotifications("get_mutable_discrete_state(0): xa", {},  // None.
+                      SystemBase::xa_ticket(), &xa_before);
 
   // Changing abstract state should affect only x and xa, and those should only
   // get notified for systems that actually have discrete variables.
 
   context_->get_mutable_abstract_state();  // Return value ignored.
   VerifyNotifications("get_mutable_abstract_state: x", has_abstract_state(),
-                      *context_, SystemBase::all_state_ticket(), &x_before);
+                      SystemBase::all_state_ticket(), &x_before);
   VerifyNotifications("get_mutable_abstract_state: xa", has_abstract_state(),
-                      *context_, SystemBase::xa_ticket(), &xa_before);
-  VerifyNotifications("get_mutable_abstract_state: xc", {}, *context_,
-                      SystemBase::xc_ticket(), &xc_before);  // No effect.
-  VerifyNotifications("get_mutable_abstract_state: xd", {}, *context_,
-                      SystemBase::xd_ticket(), &xd_before);  // No effect.
+                      SystemBase::xa_ticket(), &xa_before);
+  VerifyNotifications("get_mutable_abstract_state: xc", {},  // None.
+                      SystemBase::xc_ticket(), &xc_before);
+  VerifyNotifications("get_mutable_abstract_state: xd", {},  // None.
+                      SystemBase::xd_ticket(), &xd_before);
 
   context_->get_mutable_abstract_state<int>(0);  // Return value ignored.
   VerifyNotifications("get_mutable_abstract_state(0): x", has_abstract_state(),
-                      *context_, SystemBase::all_state_ticket(), &x_before);
+                      SystemBase::all_state_ticket(), &x_before);
   VerifyNotifications("get_mutable_abstract_state(0): xa", has_abstract_state(),
-                      *context_, SystemBase::xa_ticket(), &xa_before);
-  VerifyNotifications("get_mutable_abstract_state(0): xc", {}, *context_,
-                      SystemBase::xc_ticket(), &xc_before);  // No effect.
-  VerifyNotifications("get_mutable_abstract_state(0): xd", {}, *context_,
-                      SystemBase::xd_ticket(), &xd_before);  // No effect.
+                      SystemBase::xa_ticket(), &xa_before);
+  VerifyNotifications("get_mutable_abstract_state(0): xc", {},  // None.
+                      SystemBase::xc_ticket(), &xc_before);
+  VerifyNotifications("get_mutable_abstract_state(0): xd", {},  // None.
+                      SystemBase::xd_ticket(), &xd_before);
 }
 
 TEST_F(DiagramContextTest, MutableParameterNotifications) {
   auto p_before =
-      SaveNotifications(*context_, SystemBase::all_parameters_ticket());
-  auto pn_before = SaveNotifications(*context_, SystemBase::pn_ticket());
-  auto pa_before = SaveNotifications(*context_, SystemBase::pa_ticket());
+      SaveNotifications(SystemBase::all_parameters_ticket());
+  auto pn_before = SaveNotifications(SystemBase::pn_ticket());
+  auto pa_before = SaveNotifications(SystemBase::pa_ticket());
 
   // Changing the whole set of parameters should affect all subcontexts that
   // have any parameters.
   context_->get_mutable_parameters();  // Return value ignored.
-  VerifyNotifications("get_mutable_parameters: p", has_parameter(), *context_,
+  VerifyNotifications("get_mutable_parameters: p", has_parameter(),
                       SystemBase::all_parameters_ticket(), &p_before);
   VerifyNotifications("get_mutable_parameters: pn", has_numeric_parameter(),
-                      *context_, SystemBase::pn_ticket(), &pn_before);
+                      SystemBase::pn_ticket(), &pn_before);
   VerifyNotifications("get_mutable_parameters: pa", has_abstract_parameter(),
-                      *context_, SystemBase::pa_ticket(), &pa_before);
+                      SystemBase::pa_ticket(), &pa_before);
 
   // Changing numeric or abstract should affect only subcontexts with that kind
   // of parameter.
   context_->get_mutable_numeric_parameter(0);  // Return value ignored.
   VerifyNotifications("get_mutable_numeric_parameter(0): p",
-                      has_numeric_parameter(), *context_,
+                      has_numeric_parameter(),
                       SystemBase::all_parameters_ticket(), &p_before);
   VerifyNotifications("get_mutable_numeric_parameter(0): pn",
-                      has_numeric_parameter(), *context_,
+                      has_numeric_parameter(),
                       SystemBase::pn_ticket(), &pn_before);
-  VerifyNotifications("get_mutable_numeric_parameter(0): pa", {}, *context_,
-                      SystemBase::pa_ticket(), &pa_before);  // No effect.
+  VerifyNotifications("get_mutable_numeric_parameter(0): pa", {},  // No effect.
+                      SystemBase::pa_ticket(), &pa_before);
 
   context_->get_mutable_abstract_parameter(0);  // Return value ignored.
   VerifyNotifications("get_mutable_abstract_parameter(0): p",
-                      has_abstract_parameter(), *context_,
+                      has_abstract_parameter(),
                       SystemBase::all_parameters_ticket(), &p_before);
   VerifyNotifications("get_mutable_abstract_parameter(0): pa",
-                      has_abstract_parameter(), *context_,
+                      has_abstract_parameter(),
                       SystemBase::pa_ticket(), &pa_before);
-  VerifyNotifications("get_mutable_abstract_parameter(0): pn", {}, *context_,
-                      SystemBase::pn_ticket(), &pn_before);  // No effect.
+  VerifyNotifications("get_mutable_abstract_parameter(0): pn", {},  // No effect.
+                      SystemBase::pn_ticket(), &pn_before);
 }
 
 // We have a method that copies everything from one context to another. That
@@ -523,24 +515,24 @@ TEST_F(DiagramContextTest, MutableEverythingNotifications) {
   clone->get_mutable_numeric_parameter(0).SetAtIndex(0, new_pn);
   clone->get_mutable_abstract_parameter(0).SetValue<int>(new_pa);
 
-  auto t_before = SaveNotifications(*context_, SystemBase::time_ticket());
-  auto a_before = SaveNotifications(*context_, SystemBase::accuracy_ticket());
+  auto t_before = SaveNotifications(SystemBase::time_ticket());
+  auto a_before = SaveNotifications(SystemBase::accuracy_ticket());
   auto p_before =
-      SaveNotifications(*context_, SystemBase::all_parameters_ticket());
-  auto pn_before = SaveNotifications(*context_, SystemBase::pn_ticket());
-  auto pa_before = SaveNotifications(*context_, SystemBase::pa_ticket());
-  auto x_before = SaveNotifications(*context_, SystemBase::all_state_ticket());
-  auto xc_before = SaveNotifications(*context_, SystemBase::xc_ticket());
-  auto xd_before = SaveNotifications(*context_, SystemBase::xd_ticket());
-  auto xa_before = SaveNotifications(*context_, SystemBase::xa_ticket());
+      SaveNotifications(SystemBase::all_parameters_ticket());
+  auto pn_before = SaveNotifications(SystemBase::pn_ticket());
+  auto pa_before = SaveNotifications(SystemBase::pa_ticket());
+  auto x_before = SaveNotifications(SystemBase::all_state_ticket());
+  auto xc_before = SaveNotifications(SystemBase::xc_ticket());
+  auto xd_before = SaveNotifications(SystemBase::xd_ticket());
+  auto xa_before = SaveNotifications(SystemBase::xa_ticket());
 
   // This is the method under test.
   context_->SetTimeStateAndParametersFrom(*clone);
 
   // First make sure that all the values got passed through.
-  VerifyTimeValue(*context_, new_time);
-  VerifyAccuracyValue(*context_, new_accuracy);
-  VerifyContinuousStateValue(*context_, new_xc);
+  VerifyTimeValue(new_time);
+  VerifyAccuracyValue(new_accuracy);
+  VerifyContinuousStateValue(new_xc);
   // Check that non-continuous states and parameter got set in diagram and
   // subcontext that has the resource.
   EXPECT_EQ(context_->get_discrete_state_vector()[0], new_xd);
@@ -560,27 +552,27 @@ TEST_F(DiagramContextTest, MutableEverythingNotifications) {
                 .get_abstract_parameter(0).GetValue<int>(),
             new_pa);
 
-  VerifyNotifications("SetTimeStateAndParametersFrom: t", *context_,
+  VerifyNotifications("SetTimeStateAndParametersFrom: t",
                       SystemBase::time_ticket(), &t_before);
-  VerifyNotifications("SetTimeStateAndParametersFrom: a", *context_,
+  VerifyNotifications("SetTimeStateAndParametersFrom: a",
                       SystemBase::accuracy_ticket(), &a_before);
   VerifyNotifications("SetTimeStateAndParametersFrom: p", has_parameter(),
-                      *context_, SystemBase::all_parameters_ticket(),
+                      SystemBase::all_parameters_ticket(),
                       &p_before);
   VerifyNotifications("SetTimeStateAndParametersFrom: pn",
-                      has_numeric_parameter(), *context_,
+                      has_numeric_parameter(),
                       SystemBase::pn_ticket(), &pn_before);
   VerifyNotifications("SetTimeStateAndParametersFrom: pa",
-                      has_abstract_parameter(), *context_,
+                      has_abstract_parameter(),
                       SystemBase::pa_ticket(), &pa_before);
-  VerifyNotifications("SetTimeStateAndParametersFrom: x", *context_,
+  VerifyNotifications("SetTimeStateAndParametersFrom: x",
                       SystemBase::all_state_ticket(), &x_before);
-  VerifyNotifications("SetTimeStateAndParametersFrom: xc", *context_,
+  VerifyNotifications("SetTimeStateAndParametersFrom: xc",
                       SystemBase::xc_ticket(), &xc_before);
   VerifyNotifications("SetTimeStateAndParametersFrom: xd", has_discrete_state(),
-                      *context_, SystemBase::xd_ticket(), &xd_before);
+                      SystemBase::xd_ticket(), &xd_before);
   VerifyNotifications("SetTimeStateAndParametersFrom: xa", has_abstract_state(),
-                      *context_, SystemBase::xa_ticket(), &xa_before);
+                      SystemBase::xa_ticket(), &xa_before);
 }
 
 // Tests that state variables appear in the diagram context, and write
