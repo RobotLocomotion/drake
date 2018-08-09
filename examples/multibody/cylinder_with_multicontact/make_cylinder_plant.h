@@ -36,7 +36,7 @@ namespace cylinder_with_multicontact {
 ///   If this argument is omitted, no geometry will be registered.
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakeCylinderPlant(
-    double radius,double length, double mass,
+    double radius, double length, double mass,
     const drake::multibody::multibody_plant::CoulombFriction<double>&
     surface_friction, const Vector3<double>& gravity_W,
     double dt,

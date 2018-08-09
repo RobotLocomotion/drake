@@ -1200,6 +1200,7 @@ implicit_stribeck::ComputationInfo MultibodyPlant<T>::SolveUsingSubStepping(
   VectorX<T> v0_substep = v0;
   VectorX<T> phi0_substep = phi0;
 
+  // Initialize info to an unsuccessful result.
   implicit_stribeck::ComputationInfo info{
       implicit_stribeck::ComputationInfo::MaxIterationsReached};
 
@@ -1218,8 +1219,7 @@ implicit_stribeck::ComputationInfo MultibodyPlant<T>::SolveUsingSubStepping(
     info = implicit_stribeck_solver_->SolveWithGuess(dt_substep,
                                                      v0_substep);
 
-    // On failure, we'll break this sub-time stepping loop and try with the
-    // next sub-time step size.
+    // Break the sub-stepping loop on failure and return the info result.
     if (info != implicit_stribeck::Success) break;
 
     // Update previous time step to new solution.
@@ -1300,11 +1300,6 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       &F_BBo_W_array, /* Note: these arrays get overwritten on output. */
       &minus_tau);
 
-  // Compute discrete update before applying friction forces.
-  // We denote this state x* = [q*, v*], the "star" state.
-  // Generalized momentum "star", before contact forces are applied.
-  VectorX<T> p_star = M0 * v0 - dt * minus_tau;
-
   // Compute normal and tangential velocity Jacobians at t0.
   const int num_contacts = point_pairs0.size();
   MatrixX<T> Jn(num_contacts, nv);
@@ -1349,10 +1344,6 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   VectorX<T> damping = VectorX<T>::Constant(
       num_contacts, penalty_method_contact_parameters_.damping);
 
-  // Update the solver with the new data defining the problem for this update.
-  implicit_stribeck_solver_->SetTwoWayCoupledProblemData(
-      &M0, &Jn, &Jt, &p_star, &phi0, &stiffness, &damping, &mu);
-
   // Solve for v and the contact forces.
   implicit_stribeck::ComputationInfo info{
       implicit_stribeck::ComputationInfo::MaxIterationsReached};
@@ -1364,16 +1355,20 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   params.max_iterations = 20;
   implicit_stribeck_solver_->set_solver_parameters(params);
 
-  VectorX<T> vdot_star = M0.ldlt().solve(-minus_tau);
-  VectorX<T> vtdot_star = Jt * vdot_star;
-
+  // We attempt to compute the update during the time interval dt using a
+  // progressively larger number of sub-steps (i.e each using a smaller time
+  // step than in the previous attempt). This loop breaks on the first
+  // successful attempt.
+  // We only allow a maximum number of trials. If the solver is unsuccessful in
+  // this number of trials, the user should probably decrease the discrete
+  // update time step dt or evaluate the validity of the model.
   const int kNumMaxSubTimeSteps = 20;
   int num_substeps = 0;
   do {
     ++num_substeps;
     info = SolveUsingSubStepping(
         num_substeps, M0, Jn, Jt, minus_tau, stiffness, damping, mu, v0, phi0);
-  } while(info != implicit_stribeck::Success &&
+  } while (info != implicit_stribeck::Success &&
       num_substeps < kNumMaxSubTimeSteps);
 
   DRAKE_DEMAND(info == implicit_stribeck::Success);

@@ -83,8 +83,8 @@ int do_main() {
       FLAGS_friction_coefficient /* dynamic friction */);
 
   MultibodyPlant<double>& plant = *builder.AddSystem(MakeCylinderPlant(
-      radius, 4 * radius, mass, coulomb_friction, -g * Vector3d::UnitZ(), FLAGS_time_step,
-      &scene_graph));
+      radius, 4 * radius, mass, coulomb_friction, -g * Vector3d::UnitZ(),
+      FLAGS_time_step, &scene_graph));
   const MultibodyTree<double>& model = plant.model();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(FLAGS_penetration_allowance);
