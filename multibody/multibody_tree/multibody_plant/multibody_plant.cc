@@ -14,6 +14,10 @@
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+
 namespace drake {
 namespace multibody {
 namespace multibody_plant {
@@ -1306,8 +1310,68 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       &M0, &Jn, &Jt, &p_star, &phi0, &stiffness, &damping, &mu);
 
   // Solve for v and the contact forces.
-  implicit_stribeck::ComputationInfo info =
-      implicit_stribeck_solver_->SolveWithGuess(dt, v0);
+  implicit_stribeck::ComputationInfo info{
+      implicit_stribeck::ComputationInfo::MaxIterationsReached};
+
+  const int kNumMaxSubTimeSteps = 20;
+
+  implicit_stribeck::Parameters params =
+      implicit_stribeck_solver_->get_solver_parameters();
+  // A nicely converged NR iteration should not take more than 20 iterations.
+  // Otherwise we attempt a smaller time step.
+  params.max_iterations = 20;
+  implicit_stribeck_solver_->set_solver_parameters(params);
+
+  VectorX<T> vdot_star = M0.ldlt().solve(-minus_tau);
+  VectorX<T> vtdot_star = Jt * vdot_star;
+  const double stiction_tolerance = implicit_stribeck_solver_->get_solver_parameters().stiction_tolerance;
+  const T slip_time_scale = stiction_tolerance / vtdot_star.norm();
+
+
+  int num_substeps = 0;
+  do {
+    ++num_substeps;
+    const double dt_substep = dt / num_substeps;
+    VectorX<T> v0_substep = v0;
+    VectorX<T> phi0_substep = phi0;
+    for (int substep = 0; substep < num_substeps; ++substep) {
+      // Discrete update before applying friction forces.
+      // We denote this state x* = [q*, v*], the "star" state.
+      // Generalized momentum "star", before contact forces are applied.
+      VectorX<T> p_star_substep = M0 * v0_substep - dt_substep * minus_tau;
+
+      // Update the data.
+      implicit_stribeck_solver_->SetTwoWayCoupledProblemData(
+          &M0, &Jn, &Jt,
+          &p_star_substep, &phi0_substep,
+          &stiffness, &damping, &mu);
+
+      info = implicit_stribeck_solver_->SolveWithGuess(dt_substep,
+                                                       v0_substep);
+
+      PRINT_VAR(context0.get_time());
+      PRINT_VAR(substep);
+      PRINT_VAR(info);
+
+      // On failure, we'll break this sub-time stepping loop and try with the
+      // next sub-time step size.
+      if (info != implicit_stribeck::Success) break;
+
+      // Update previous time step to new solution.
+      v0_substep = implicit_stribeck_solver_->get_generalized_velocities();
+
+      // Update penetration distance consistently with the solver update.
+      const auto vn_substep =
+          implicit_stribeck_solver_->get_normal_velocities();
+      phi0_substep = phi0_substep - dt_substep * vn_substep;
+    }
+  } while(info != implicit_stribeck::Success &&
+      num_substeps < kNumMaxSubTimeSteps);
+
+  time_stepping_stats_.emplace_back(
+      TimeSteppingSolverStats{
+          ExtractDoubleOrThrow(context0.get_time()), num_substeps, ExtractDoubleOrThrow(slip_time_scale)});
+
   DRAKE_DEMAND(info == implicit_stribeck::Success);
 
   // TODO(amcastro-tri): implement capability to dump solver statistics to a

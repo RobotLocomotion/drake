@@ -7,6 +7,11 @@
 #include <utility>
 #include <vector>
 
+#include <fstream>
+
+#include <fmt/format.h>
+#include <fmt/ostream.h>
+
 #include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/geometry/geometry_set.h"
@@ -158,6 +163,12 @@ template<typename T>
 class MultibodyPlant : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPlant)
+
+  struct TimeSteppingSolverStats {
+    double time;
+    int num_substeps;
+    double slip_time_scale;
+  };
 
   /// Default constructor creates a plant with a single "world" body.
   /// Therefore, right after creation, num_bodies() returns one.
@@ -1073,6 +1084,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @see MultibodyPlant::MultibodyPlant(double)
   double time_step() const { return time_step_; }
 
+  const std::vector<TimeSteppingSolverStats>& get_time_stepping_stats() {
+    return time_stepping_stats_;
+  }
+
   /// @anchor mbp_penalty_method
   /// @name Contact by penalty method
   ///
@@ -1233,6 +1248,19 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   // Friend class to facilitate testing.
   friend class MultibodyPlantTester;
+
+  void DoPublish(const systems::Context<T>&,
+                const std::vector<const systems::PublishEvent<T>*>&) const {
+    if (time_stepping_stats_.size() == 0) return;
+    const TimeSteppingSolverStats& stats = time_stepping_stats_.back();
+
+    std::fstream file("time_stepping_stats.dat", std::fstream::out | std::fstream::app);
+
+    file << fmt::format("{:.8f} {:d} {:.8f}\n",
+                        stats.time, stats.num_substeps, stats.slip_time_scale);
+
+    file.close();
+  }
 
   // Helper method for throwing an exception within public methods that should
   // not be called post-finalize. The invoking method should pass its name so
@@ -1697,6 +1725,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // The solver used when the plant is modeled as a discrete system.
   std::unique_ptr<implicit_stribeck::ImplicitStribeckSolver<T>>
       implicit_stribeck_solver_;
+
+  mutable std::vector<TimeSteppingSolverStats> time_stepping_stats_;
 
   // TODO(amcastro-tri): Remove this when caching lands and properly cache the
   // contact results.

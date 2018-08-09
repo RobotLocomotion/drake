@@ -213,7 +213,7 @@ int do_main() {
   if (!integrator->get_fixed_step_mode())
     integrator->set_target_accuracy(target_accuracy);
 
-  simulator.set_publish_every_time_step(false);
+  simulator.set_publish_every_time_step(true);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(FLAGS_simulation_time);
