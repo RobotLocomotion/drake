@@ -44,6 +44,26 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
     return false;
   }
 
+  // Calculates the output for a RigidBodyTreeRemoval filter given fixed inputs.
+  static PointCloud CreateFilterAndCalcOutput(
+      const PointCloud& cloud_input, const RigidBodyTree<double>& tree,
+      const VectorX<double>& state_input) {
+    auto filter =
+        std::make_unique<RigidBodyTreeRemoval>(tree, kCollisionThreshold);
+
+    auto context = filter->CreateDefaultContext();
+    context->FixInputPort(
+        filter->point_cloud_input_port().get_index(),
+        systems::AbstractValue::Make<PointCloud>(cloud_input));
+    context->FixInputPort(filter->state_input_port().get_index(), state_input);
+
+    auto output = filter->point_cloud_output_port().Allocate();
+    filter->point_cloud_output_port().Calc(*context, output.get());
+    auto filtered_cloud = output->GetValueOrThrow<perception::PointCloud>();
+
+    return filtered_cloud;
+  }
+
  protected:
   // Builds the initial diagram that consists of the following systems:
   // PassThrough, RgbdCamera, DepthImageToPoint, TransformPointCloud. The
@@ -253,12 +273,12 @@ TEST_F(RigidBodyTreeRemovalTest, RemoveBoxTest) {
   BuildDiagramAndInitContext();
 
   diagram_->CalcOutput(*context_, output_.get());
-  PointCloud unfiltered_cloud =
+  const PointCloud unfiltered_cloud =
       output_->GetMutableData(0)->GetMutableValue<PointCloud>();
-  PointCloud filtered_cloud =
+  const PointCloud filtered_cloud =
       output_->GetMutableData(1)->GetMutableValue<PointCloud>();
 
-  PointCloud expected_cloud = CalcExpectedOutput(unfiltered_cloud);
+  const PointCloud expected_cloud = CalcExpectedOutput(unfiltered_cloud);
 
   EXPECT_EQ(filtered_cloud.size(), expected_cloud.size());
 
@@ -276,7 +296,7 @@ TEST_F(RigidBodyTreeRemovalTest, KeepPointsTest) {
 
   // Obtain a point cloud that has been transformed to the "world" frame.
   diagram_->CalcOutput(*context_, output_.get());
-  PointCloud unfiltered_cloud =
+  const PointCloud unfiltered_cloud =
       output_->GetMutableData(0)->GetMutableValue<PointCloud>();
 
   // Add three points to the point cloud. These points should remain after
@@ -285,28 +305,16 @@ TEST_F(RigidBodyTreeRemovalTest, KeepPointsTest) {
   const Eigen::Vector3f point2(0., -0.42, 0.);
   const Eigen::Vector3f point3(0., 0., 0.35);
   const int size = unfiltered_cloud.size();
-  unfiltered_cloud.resize(size + 3);
-  unfiltered_cloud.mutable_xyz(size) = point1;
-  unfiltered_cloud.mutable_xyz(size + 1) = point2;
-  unfiltered_cloud.mutable_xyz(size + 2) = point3;
+  PointCloud cloud_with_extra_points(size);
+  cloud_with_extra_points.resize(size + 3);
+  cloud_with_extra_points.mutable_xyz(size) = point1;
+  cloud_with_extra_points.mutable_xyz(size + 1) = point2;
+  cloud_with_extra_points.mutable_xyz(size + 2) = point3;
 
-  auto filter =
-    std::make_unique<RigidBodyTreeRemoval>(*tree_.get(), kCollisionThreshold);
+  const PointCloud filtered_cloud = CreateFilterAndCalcOutput(
+      cloud_with_extra_points, *tree_.get(), state_input_);
 
-  auto filter_context =
-    filter->CreateDefaultContext();
-  filter_context->FixInputPort(
-      filter->point_cloud_input_port().get_index(),
-      systems::AbstractValue::Make<PointCloud>(unfiltered_cloud));
-  filter_context->FixInputPort(filter->state_input_port().get_index(),
-                               state_input_);
-
-  auto filter_output = filter->point_cloud_output_port().Allocate();
-  filter->point_cloud_output_port().Calc(*filter_context, filter_output.get());
-  auto filtered_cloud =
-      filter_output->GetValueOrThrow<perception::PointCloud>();
-
-  auto expected_cloud = CalcExpectedOutput(unfiltered_cloud);
+  const PointCloud expected_cloud = CalcExpectedOutput(cloud_with_extra_points);
 
   EXPECT_EQ(filtered_cloud.size(), expected_cloud.size());
 
