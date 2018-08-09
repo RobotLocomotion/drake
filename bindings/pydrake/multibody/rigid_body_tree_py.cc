@@ -149,6 +149,9 @@ PYBIND11_MODULE(rigid_body_tree, m) {
        py::arg("model_name") = "",
        py::arg("model_id") = -1,
        py::return_value_policy::reference)
+    .def("FindBodyIndex",
+         &RigidBodyTree<double>::FindBodyIndex,
+         py::arg("body_name"), py::arg("model_id") = -1)
     .def("FindChildBodyOfJoint", [](const RigidBodyTree<double>& self,
                         const std::string& joint_name,
                         int model_id) {
