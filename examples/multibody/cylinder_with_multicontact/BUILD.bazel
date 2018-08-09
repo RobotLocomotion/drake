@@ -29,9 +29,21 @@ drake_cc_library(
 drake_cc_binary(
     name = "cylinder_run_dynamics",
     srcs = ["cylinder_run_dynamics.cc"],
+    # Running this example with the default parameters incurs in a case with
+    # a violent collision between the cylinder and the ground. MultibodyPlant
+    # must use sub-stepping in order to handle this situation. Otherwise the
+    # contact solver aborts with a non-convergence error.
+    # Therefore the success of this test indicates MultibodyPlant correcly
+    # identified this event and used sub-stepping.
     add_test_rule = 1,
     test_rule_args = [
-        "--simulation_time=0.1",
+        # If MultibodyPlant does not use sub-stepping, i.e attempts to handle
+        # the collision with the default time step of 1.0e-3 seconds, the
+        # simulation will abort at t = 0.514 seconds due to non-convergence of
+        # the contact solver. Therefore we run this example as a test past that
+        # time in order to test that MultibodyPlant correctly handled this case
+        # using sub-stepping.
+        "--simulation_time=0.6",
         "--target_realtime_rate=0.0",
     ],
     deps = [

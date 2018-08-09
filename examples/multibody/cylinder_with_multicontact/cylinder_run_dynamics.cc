@@ -110,8 +110,7 @@ int do_main() {
       FLAGS_friction_coefficient /* static friction */,
       FLAGS_friction_coefficient /* dynamic friction */);
 
-  MultibodyPlant<double>& plant = *builder.AddSystem(MakeBouncingBallPlant(
-      8,
+  MultibodyPlant<double>& plant = *builder.AddSystem(MakeCylinderPlant(
       radius, mass, coulomb_friction, -g * Vector3d::UnitZ(), FLAGS_time_step,
       &scene_graph));
   const MultibodyTree<double>& model = plant.model();
@@ -174,11 +173,11 @@ int do_main() {
   Isometry3d X_WB = Isometry3d::Identity();
   //X_WB.linear() = R_WB;
   X_WB.translation() = Vector3d(0.0, 0.0, FLAGS_z0);
-  const auto& ball = model.GetBodyByName("Ball");
+  const auto& cylinder = model.GetBodyByName("Cylinder");
   model.SetFreeBodyPoseOrThrow(
-      ball, X_WB, &plant_context);
+      cylinder, X_WB, &plant_context);
   model.SetFreeBodySpatialVelocityOrThrow(
-      ball,
+      cylinder,
       SpatialVelocity<double>(
           Vector3<double>(FLAGS_wx0, 0.0, 0.0),
           Vector3<double>(FLAGS_vx0, 0.0, 0.0)), &plant_context);
