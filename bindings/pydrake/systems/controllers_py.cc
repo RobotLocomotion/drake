@@ -50,6 +50,7 @@ PYBIND11_MODULE(controllers, m) {
                     py::arg("ki"),
                     py::arg("kd"),
                     py::arg("has_reference_acceleration"),
+                    // Keep alive, ownership: RigidBodyTree keeps this alive.
                     py::keep_alive<2, 1>())
       .def("set_integral_value",
         &InverseDynamicsController<double>::set_integral_value);

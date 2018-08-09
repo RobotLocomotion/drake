@@ -4,7 +4,9 @@ import math
 import numpy as np
 import unittest
 
+from pydrake.common import FindResourceOrThrow
 from pydrake.examples.pendulum import PendulumPlant
+from pydrake.multibody.rigid_body_tree import (FloatingBaseType, RigidBodyTree)
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.controllers import (
     DiscreteTimeLinearQuadraticRegulator, DynamicProgrammingOptions,
@@ -15,8 +17,6 @@ from pydrake.systems.controllers import (
 )
 from pydrake.systems.framework import BasicVector
 from pydrake.systems.primitives import (Integrator, LinearSystem)
-from pydrake.common import FindResourceOrThrow
-from pydrake.multibody.rigid_body_tree import RigidBodyTree, FloatingBaseType
 
 
 class TestControllers(unittest.TestCase):
@@ -93,9 +93,9 @@ class TestControllers(unittest.TestCase):
             "iiwa_description/urdf/iiwa14_primitive_collision.urdf")
         tree = RigidBodyTree(
                 urdf_path, floating_base_type=FloatingBaseType.kFixed)
-        kp = np.array([1., 2., 3., 4., 5., 6., 7.], dtype="float64")
-        ki = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7], dtype="float64")
-        kd = np.array([.5, 1., 1.5, 2., 2.5, 3., 3.5], dtype="float64")
+        kp = np.array([1., 2., 3., 4., 5., 6., 7.])
+        ki = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7])
+        kd = np.array([.5, 1., 1.5, 2., 2.5, 3., 3.5])
 
         controller = InverseDynamicsController(robot=tree,
                                                kp=kp,
@@ -105,7 +105,6 @@ class TestControllers(unittest.TestCase):
         context = controller.CreateDefaultContext()
         output = controller.AllocateOutput()
 
-        # print(controller.get_input_port_desired_acceleration())
         estimated_state_port = 0
         desired_state_port = 1
         desired_acceleration_port = 2
