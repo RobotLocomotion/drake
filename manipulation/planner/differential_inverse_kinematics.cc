@@ -1,7 +1,10 @@
 #include "drake/manipulation/planner/differential_inverse_kinematics.h"
 
 #include <memory>
+#include <stdexcept>
 #include <string>
+
+#include <fmt/format.h>
 
 #include "drake/solvers/osqp_solver.h"
 
@@ -84,6 +87,23 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Eigen::Ref<const VectorX<double>>& V,
     const Eigen::Ref<const MatrixX<double>>& J,
     const DifferentialInverseKinematicsParameters& parameters) {
+
+  std::vector<std::shared_ptr<solvers::LinearConstraint>>
+      linear_velocity_constraints{};
+  return DoDifferentialInverseKinematics(q_current, v_current, V, J,
+                                         linear_velocity_constraints,
+                                         parameters);
+}
+
+DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
+    const Eigen::Ref<const VectorX<double>>& q_current,
+    const Eigen::Ref<const VectorX<double>>& v_current,
+    const Eigen::Ref<const VectorX<double>>& V,
+    const Eigen::Ref<const MatrixX<double>>& J,
+    const std::vector<std::shared_ptr<solvers::LinearConstraint>>&
+        linear_velocity_constraints,
+    const DifferentialInverseKinematicsParameters& parameters) {
+  unused(linear_velocity_constraints);
   const int num_positions = parameters.get_num_positions();
   const int num_velocities = parameters.get_num_velocities();
   const int num_cart_constraints = V.size();
@@ -133,6 +153,17 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
         prog.AddLinearConstraint(svd.matrixV().col(i).transpose(), -uncon_v,
                                  uncon_v, v_next);
       }
+    }
+  }
+
+  for (const auto& constraint : linear_velocity_constraints) {
+    if (constraint->num_vars() == num_velocities) {
+      prog.AddConstraint(
+          solvers::Binding<solvers::LinearConstraint>(constraint, v_next));
+    } else {
+      throw std::invalid_argument(fmt::format(
+          "Number of variables, {}, does not match number of velocities, {}.",
+          constraint->num_vars(), num_velocities));
     }
   }
 
