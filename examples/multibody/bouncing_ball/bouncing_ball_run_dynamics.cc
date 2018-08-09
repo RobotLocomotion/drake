@@ -31,7 +31,7 @@ namespace multibody {
 namespace bouncing_ball {
 namespace {
 
-DEFINE_double(target_realtime_rate, 1.0,
+DEFINE_double(target_realtime_rate, 0.5,
               "Desired rate relative to real time.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
@@ -43,23 +43,23 @@ DEFINE_string(integration_scheme, "runge_kutta2",
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
 
-DEFINE_double(z0, 0.3,
+DEFINE_double(z0, 0.5,
               "The initial height, in z, of the ball, m.");
 
-DEFINE_double(vx0, 0.3,
+DEFINE_double(vx0, 1.0,
               "The initial x-velocity of the ball, m/s.");
 
-DEFINE_double(wx0, M_PI,
+DEFINE_double(wx0, 0.1,
               "The initial x-angular velocity of the ball, rad/s.");
 
 DEFINE_double(friction_coefficient, 0.5,
               "The friction coefficient of both the sphere and the ground.");
 
-DEFINE_double(penetration_allowance, 1.0e-6,
+DEFINE_double(penetration_allowance, 1.0e-3,
               "Penetration allowance. [m]. "
               "See MultibodyPlant::set_penetration_allowance().");
 
-DEFINE_double(stiction_tolerance, 1.0e-6,
+DEFINE_double(stiction_tolerance, 1.0e-4,
               "The maximum slipping speed allowed during stiction. [m/s]");
 
 DEFINE_double(time_step, 1.0e-3,
