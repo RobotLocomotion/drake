@@ -185,6 +185,22 @@ class GeometryState {
    @throws std::logic_error if the frame id is not valid. */
   const std::string& get_frame_name(FrameId frame_id) const;
 
+  /** Reports the name of the geometry.
+   @param geometry_id  The identifier of the queried geometry.
+   @returns The name of the identified geometry.
+   @throws std::logic_error if the geometry id is not valid. */
+  const std::string& get_name(GeometryId geometry_id) const;
+
+  /** Reports the id for the named geometry affixed to the indicated frame.
+   @param frame_id  The id of the parent frame.
+   @param name      The name of the geometry to query for.
+   @return The id of the requested frame.
+   @throws std::logic_error if no such geometry exists or if the frame doesn't
+                            exist. */
+  // TODO(SeanCurtis-TRI): Account for role when geometry roles exist.
+  GeometryId GetGeometryFromName(FrameId frame_id,
+                                 const std::string& name) const;
+
   /** Reports the pose of the frame with the given id.
    @param frame_id  The identifier of the queried frame.
    @returns The pose in the world (X_WF) of the identified frame.
@@ -284,10 +300,12 @@ class GeometryState {
                        ownership of the geometry.
    @returns  A newly allocated geometry id.
    @throws std::logic_error  1. the `source_id` does _not_ map to a registered
-                             source, or
+                             source,
                              2. the `frame_id` doesn't belong to the source,
-                             3. The `geometry` is equal to `nullptr`, or
-                             4. `geometry` has a previously registered id. */
+                             3. the `geometry` is equal to `nullptr`,
+                             4. `geometry` has a previously registered id, or
+                             5. the geometry's name doesn't satisfy the
+                             requirements outlined in GeometryInstance.  */
   GeometryId RegisterGeometry(SourceId source_id, FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
@@ -305,10 +323,12 @@ class GeometryState {
                        ownership of the geometry.
    @returns  A newly allocated geometry id.
    @throws std::logic_error 1. the `source_id` does _not_ map to a registered
-                            source, or
+                            source,
                             2. the `geometry_id` doesn't belong to the source,
-                            3. the `geometry` is equal to `nullptr`, or
-                            4. `geometry` has a previously registered id. */
+                            3. the `geometry` is equal to `nullptr`,
+                            4. `geometry` has a previously registered id,  or
+                            5. the geometry's name doesn't satisfy the
+                            requirements outlined in GeometryInstance.  */
   GeometryId RegisterGeometryWithParent(
       SourceId source_id, GeometryId geometry_id,
       std::unique_ptr<GeometryInstance> geometry);
@@ -323,12 +343,27 @@ class GeometryState {
    @param geometry     The geometry to get the id for. The state takes
                        ownership of the geometry.
    @returns  A newly allocated geometry id.
-   @throws std::logic_error  If the `source_id` does _not_ map to a registered
-                             source, or
-                             `geometry` has a previously registered id. */
+   @throws std::logic_error  1. the `source_id` does _not_ map to a registered
+                             source,
+                             2. `geometry` has a previously registered id, or
+                             3. the geometry's name doesn't satisfy the
+                             requirements outlined in GeometryInstance.  */
   GeometryId RegisterAnchoredGeometry(
       SourceId source_id,
       std::unique_ptr<GeometryInstance> geometry);
+
+  /** Reports whether a candidate geometry name is considered valid. This
+   tests the requirements described in the documentation of GeometryInstance.
+   When adding a geometry to a frame, if there is doubt if a proposed name is
+   valid, the name can be tested prior to registering the geometry.
+   @param frame_id        The id of the frame to which the geometry would be
+                          assigned.
+   @param candidate_name  The name to validate.
+   @return true if the `candidate_name` can be given to a `GeometryInstance`
+   assigned to the indicated frame.
+   @throws if `frame_id` does not refer to a valid frame.  */
+  bool IsValidGeometryName(FrameId frame_id,
+                           const std::string& candidate_name) const;
 
   //@}
 
@@ -552,6 +587,31 @@ class GeometryState {
   bool is_dynamic(GeometryId id) const {
     return geometries_.count(id) > 0;
   }
+
+  enum NameValidityResult {
+    OK,                   // Name considered valid.
+    DUPLICATE,            // Name is duplicate of a previous geometry.
+    EMPTY,                // The name is empty.
+  };
+
+  // Given a candidate name for a geometry to be attached to the indicated
+  // frame, returns a valid (trimmed) name if possible. If not possible, throws
+  // and exception indicating why it's not possible (see requirements listed in
+  // GeometryInstance class documentation).
+  std::string GetValidNameOrThrow(FrameId frame_id,
+                                  const std::string& name) const;
+
+  // Provides a detailed report about the validity of the proposed name. This
+  // assumes the frame_id is valid. See requirements listed in GeometryInstance
+  // class documentation.
+  NameValidityResult TestNameValidity(FrameId frame_id,
+                                      const std::string& candidate_name) const;
+
+  // Applies trimming of leading and trailing whitespace of a geometry name
+  // to be consistent with sdformat parsing (trim first, validate result, use
+  // valid result). See
+  // https://bitbucket.org/osrf/sdformat/src/2fa714812545abeb5ae05a8aebf0047aeb35d6a4/src/Types.cc?at=default&fileviewer=file-view-default#Types.cc-51
+  static std::string TrimWithSdfRules(const std::string& name);
 
   // ---------------------------------------------------------------------
   // Maps from registered source ids to the entities registered to those

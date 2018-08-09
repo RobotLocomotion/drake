@@ -113,12 +113,18 @@ class GeometryStateTester {
     return state_->peek_next_clique();
   }
 
+  std::string GetValidNameOrThrow(FrameId frame_id,
+                                  const std::string& name) const {
+    return state_->GetValidNameOrThrow(frame_id, name);
+  }
+
  private:
   GeometryState<T>* state_;
 };
 
 namespace {
 
+using Eigen::Isometry3d;
 using std::make_unique;
 using std::move;
 using std::unique_ptr;
@@ -130,7 +136,7 @@ class GeometryStateTest : public ::testing::Test {
                                         Isometry3<double>::Identity());
     instance_pose_.translation() << 10, 20, 30;
     instance_ = make_unique<GeometryInstance>(
-        instance_pose_, unique_ptr<Shape>(new Sphere(1.0)));
+        instance_pose_, unique_ptr<Shape>(new Sphere(1.0)), "instance");
     gs_tester_.set_state(&geometry_state_);
   }
 
@@ -212,16 +218,21 @@ class GeometryStateTest : public ::testing::Test {
     // Add geometries to each frame.
     const Vector3<double> x_axis(1, 0, 0);
     geometries_.resize(kFrameCount * kGeometryCount);
+    geometry_names_.resize(geometries_.size());
     int g_count = 0;
     for (auto frame_id : frames_) {
       for (int i = 0; i < kGeometryCount; ++i) {
         pose.translation() << g_count + 1, 0, 0;
         pose.linear() =
             AngleAxis<double>(g_count * M_PI / 2.0, x_axis).matrix();
+        // Have the name reflect the frame and the index in the geometry.
+        const std::string& name =
+            to_string(frame_id) + "_g" + std::to_string(i);
+        geometry_names_[g_count] = name;
         geometries_[g_count] = geometry_state_.RegisterGeometry(
             source_id_, frame_id,
             make_unique<GeometryInstance>(
-                pose, std::unique_ptr<Shape>(new Sphere(1))));
+                pose, std::unique_ptr<Shape>(new Sphere(1)), name));
         X_FG_.push_back(pose);
         ++g_count;
       }
@@ -232,7 +243,8 @@ class GeometryStateTest : public ::testing::Test {
     pose.translation() << 0, 0, -1;
     anchored_geometry_ = geometry_state_.RegisterAnchoredGeometry(
         source_id_, make_unique<GeometryInstance>(
-                        pose, std::unique_ptr<Box>(new Box(100, 100, 2))));
+                        pose, std::unique_ptr<Box>(new Box(100, 100, 2)),
+                        anchored_name_));
     return source_id_;
   }
 
@@ -311,8 +323,12 @@ class GeometryStateTest : public ::testing::Test {
   vector<FrameId> frames_;
   // The geometry ids created in the dummy tree instantiation.
   vector<GeometryId> geometries_;
+  // The names for all the geometries (as registered).
+  vector<std::string> geometry_names_;
   // The single, anchored geometry id.
   GeometryId anchored_geometry_;
+  // The registered name of the anchored geometry.
+  const std::string anchored_name_{"anchored"};
   // The id of the single-source tree.
   SourceId source_id_;
 
@@ -692,6 +708,45 @@ TEST_F(GeometryStateTest, RegisterDuplicateGeometry) {
       "Registering geometry with an id that has already been registered: \\d+");
 }
 
+// Confirms that geometry registered with a bad name is reported as such. Note:
+// this doesn't test all the ways it can be considered invalid, just that the
+// test is performed. There is a separate test for confirming the space of
+// validity.
+TEST_F(GeometryStateTest, RegisterGeometryInvalidName) {
+  SourceId s_id = NewSource();
+  FrameId f_id = geometry_state_.RegisterFrame(s_id, *frame_);
+
+  // These tests use a duplicate name as an invalid name. This implicitly
+  // confirms that the validity test passes a valid name and throws on invalid.
+
+  // Case: dynamic geometry
+  const std::string name = "some_name";
+  geometry_state_.RegisterGeometry(
+      s_id, f_id, make_unique<GeometryInstance>(
+                      Isometry3d::Identity(), make_unique<Sphere>(1.0), name));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RegisterGeometry(
+          s_id, f_id,
+          make_unique<GeometryInstance>(Isometry3d::Identity(),
+                                        make_unique<Cylinder>(1.0, 1.0), name)),
+      std::logic_error,
+      "The proposed geometry name '" + name + "' is "
+          "already used by a geometry on the indicated frame \\(\\d+\\)");
+
+  // Case: Anchored geometry
+  geometry_state_.RegisterAnchoredGeometry(
+      s_id, make_unique<GeometryInstance>(Isometry3d::Identity(),
+                                          make_unique<Sphere>(1.0), name));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RegisterAnchoredGeometry(
+          s_id,
+          make_unique<GeometryInstance>(Isometry3d::Identity(),
+                                        make_unique<Cylinder>(1.0, 1.0), name)),
+      std::logic_error,
+      "The proposed geometry name '" + name + "' is "
+          "already used by a geometry on the indicated frame \\(\\d+\\)");
+}
+
 // Tests registration of geometry on invalid source.
 TEST_F(GeometryStateTest, RegisterGeometryMissingSource) {
   SourceId s_id = SourceId::get_new_id();
@@ -736,8 +791,8 @@ TEST_F(GeometryStateTest, RegisterGeometryonValidGeometry) {
   const int parent_index = 0;
   const GeometryId parent_id = geometries_[parent_index];
   const FrameId frame_id = geometry_state_.GetFrameId(parent_id);
-  auto instance =
-      make_unique<GeometryInstance>(pose, unique_ptr<Shape>(new Sphere(1)));
+  auto instance = make_unique<GeometryInstance>(
+      pose, unique_ptr<Shape>(new Sphere(1)), "sphere");
   GeometryId expected_g_id = instance->id();
   GeometryId g_id =
       geometry_state_.RegisterGeometryWithParent(s_id,
@@ -772,8 +827,8 @@ TEST_F(GeometryStateTest, RegisterGeometryonValidGeometry) {
 TEST_F(GeometryStateTest, RegisterGeometryonInvalidGeometry) {
   SourceId s_id = SetUpSingleSourceTree();
   Isometry3<double> pose = Isometry3<double>::Identity();
-  auto instance =
-      make_unique<GeometryInstance>(pose, unique_ptr<Shape>(new Sphere(1)));
+  auto instance = make_unique<GeometryInstance>(
+      pose, unique_ptr<Shape>(new Sphere(1)), "sphere");
   GeometryId junk_id = GeometryId::get_new_id();
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.RegisterGeometryWithParent(s_id, junk_id, move(instance)),
@@ -797,7 +852,7 @@ TEST_F(GeometryStateTest, RegisterAnchoredGeometry) {
   SourceId s_id = NewSource("new source");
   Isometry3<double> pose = Isometry3<double>::Identity();
   auto instance = make_unique<GeometryInstance>(
-      pose, unique_ptr<Shape>(new Sphere(1)));
+      pose, unique_ptr<Shape>(new Sphere(1)), "sphere");
   GeometryId expected_g_id = instance->id();
   auto g_id = geometry_state_.RegisterAnchoredGeometry(s_id, move(instance));
   EXPECT_EQ(g_id, expected_g_id);
@@ -820,7 +875,7 @@ TEST_F(GeometryStateTest, RegisterDuplicateAnchoredGeometry) {
 TEST_F(GeometryStateTest, RegisterAnchoredGeometryInvalidSource) {
   Isometry3<double> pose = Isometry3<double>::Identity();
   auto instance = make_unique<GeometryInstance>(
-      pose, unique_ptr<Shape>(new Sphere(1)));
+      pose, unique_ptr<Shape>(new Sphere(1)), "sphere");
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.RegisterAnchoredGeometry(SourceId::get_new_id(),
                                                move(instance)),
@@ -870,7 +925,8 @@ TEST_F(GeometryStateTest, SourceOwnershipInvalidSource) {
   GeometryId anchored_id = geometry_state_.RegisterAnchoredGeometry(
       source_id_,
       make_unique<GeometryInstance>(Isometry3<double>::Identity(),
-                                    std::unique_ptr<Shape>(new Sphere(1))));
+                                    std::unique_ptr<Shape>(new Sphere(1)),
+                                    "sphere"));
   // Valid frame/geometry ids.
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.BelongsToSource(frames_[0], source_id), std::logic_error,
@@ -901,10 +957,9 @@ TEST_F(GeometryStateTest, SourceOwnershipFrameId) {
 TEST_F(GeometryStateTest, SourceOwnershipGeometryId) {
   SourceId s_id = SetUpSingleSourceTree();
   GeometryId anchored_id = geometry_state_.RegisterAnchoredGeometry(
-      s_id,
-      make_unique<GeometryInstance>(
-          Isometry3<double>::Identity(),
-          std::unique_ptr<Shape>(new Sphere(1))));
+      s_id, make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+                                          std::unique_ptr<Shape>(new Sphere(1)),
+                                          "sphere"));
   // Test for invalid geometry.
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.BelongsToSource(GeometryId::get_new_id(), s_id),
@@ -1224,6 +1279,105 @@ TEST_F(GeometryStateTest, CrossCollisionFilterExceptions) {
       std::logic_error,
       "Geometry set includes a geometry id that doesn't belong to the "
           "SceneGraph: \\d+");
+}
+
+// Tests the ability to query for a geometry from the name of a geometry.
+TEST_F(GeometryStateTest, GetGeometryIdFromName) {
+  SetUpSingleSourceTree();
+  // Frame i has geometries f * kFrameCount + g, where g ∈ [0, kGeometryCount).
+  for (int f = 0; f < kFrameCount; ++f) {
+    for (int g = 0; g < kGeometryCount; ++g) {
+      int g_index = f * kGeometryCount + g;
+      GeometryId expected_id = geometries_[g_index];
+      EXPECT_EQ(geometry_state_.GetGeometryFromName(frames_[f],
+                                                    geometry_names_[g_index]),
+                expected_id);
+    }
+  }
+}
+
+// Confirms that the name *stored* with the geometry is the trimmed version of
+// the requested name.
+TEST_F(GeometryStateTest, GeometryNameStorage) {
+  SetUpSingleSourceTree();
+
+  const Isometry3d X_FG = Isometry3d::Identity();
+  const std::string name = "unique test name";
+
+  // White space trimmed off and new string stored.
+  {
+    GeometryId id = geometry_state_.RegisterGeometry(
+        source_id_, frames_[0],
+        make_unique<GeometryInstance>(
+            X_FG, std::unique_ptr<Shape>(new Sphere(1)), " " + name));
+    EXPECT_EQ(geometry_state_.get_name(id), name);
+  }
+
+  // Valid name that is unchanged after trimming is stored as is.
+  // Note: This assigns a geometry fo the *same* name to a *different* frame.
+  {
+    GeometryId id = geometry_state_.RegisterGeometry(
+        source_id_, frames_[1],
+        make_unique<GeometryInstance>(
+            X_FG, std::unique_ptr<Shape>(new Sphere(1)), " " + name));
+    EXPECT_EQ(geometry_state_.get_name(id), name);
+  }
+}
+
+// Tests the logic for confirming if a name is valid or not.
+TEST_F(GeometryStateTest, GeometryNameValidation) {
+  SetUpSingleSourceTree();
+
+  // Case: Invalid frame should throw (regardless of name contents).
+  EXPECT_THROW(
+      geometry_state_.IsValidGeometryName(FrameId::get_new_id(), ""),
+      std::logic_error);
+
+  auto expect_bad_name = [this](const std::string& name,
+                                const std::string& exception_message,
+                                const std::string& printable_name) {
+    EXPECT_FALSE(geometry_state_.IsValidGeometryName(frames_[0], name))
+        << "Failed on input name: " << printable_name;
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        gs_tester_.GetValidNameOrThrow(frames_[0], name), std::logic_error,
+        exception_message);
+  };
+
+  // Invalid cases:
+  // Empty.
+  expect_bad_name("", "The proposed geometry name is empty", "");
+
+  // Nothing but whitespace.
+  const std::string whitespace_message{
+      "The proposed geometry name contains only whitespace"};
+  expect_bad_name(" ", whitespace_message, "' '");
+  expect_bad_name("\t", whitespace_message, "'\\t'");
+  expect_bad_name(" \t", whitespace_message, "' \\t'");
+
+  // Duplicate name
+  expect_bad_name(geometry_names_[0], "The proposed geometry name '.+' is "
+      "already used by a geometry on the indicated frame \\(\\d+\\)",
+                  geometry_names_[0]);
+
+  // Case: Valid (as a control case).
+  EXPECT_TRUE(geometry_state_.IsValidGeometryName(frames_[0], "unique"));
+  EXPECT_NO_THROW(gs_tester_.GetValidNameOrThrow(frames_[0], "unique"));
+
+  std::vector<std::pair<std::string, std::string>> names{{"unique", "unique"},
+                                                         {" unique", "unique"},
+                                                         {"unique ", "unique"}};
+  for (const auto& pair : names) {
+    std::string valid_name =
+         gs_tester_.GetValidNameOrThrow(frames_[0], pair.first);
+    EXPECT_EQ(valid_name, pair.second);
+  }
+
+  // Case: Whitespace that SDF nevertheless considers not whitespace.
+  // Update this when the following sdformat issue is resolved:
+  // https://bitbucket.org/osrf/sdformat/issues/194/string-trimming-only-considers-space-and
+  for (const std::string& s : {"\n", " \n\t", " \f", "\v", "\r", "\ntest"}) {
+    EXPECT_TRUE(geometry_state_.IsValidGeometryName(frames_[0], s));
+  }
 }
 
 }  // namespace

@@ -145,7 +145,7 @@ class InternalFrame {
   // It does *not* include geometries hung on child frames.
   std::unordered_set<GeometryId> child_geometries_;
 
-  // The clique used to prevent self-collision among the geomtries affixed to
+  // The clique used to prevent self-collision among the geometries affixed to
   // this frame.
   int clique_{};
 
