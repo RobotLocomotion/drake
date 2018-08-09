@@ -14,10 +14,6 @@
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-
 namespace drake {
 namespace multibody {
 namespace multibody_plant {
@@ -1324,9 +1320,6 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   VectorX<T> vdot_star = M0.ldlt().solve(-minus_tau);
   VectorX<T> vtdot_star = Jt * vdot_star;
-  const double stiction_tolerance = implicit_stribeck_solver_->get_solver_parameters().stiction_tolerance;
-  const T slip_time_scale = stiction_tolerance / vtdot_star.norm();
-
 
   int num_substeps = 0;
   do {
@@ -1349,10 +1342,6 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       info = implicit_stribeck_solver_->SolveWithGuess(dt_substep,
                                                        v0_substep);
 
-      PRINT_VAR(context0.get_time());
-      PRINT_VAR(substep);
-      PRINT_VAR(info);
-
       // On failure, we'll break this sub-time stepping loop and try with the
       // next sub-time step size.
       if (info != implicit_stribeck::Success) break;
@@ -1367,10 +1356,6 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     }
   } while(info != implicit_stribeck::Success &&
       num_substeps < kNumMaxSubTimeSteps);
-
-  time_stepping_stats_.emplace_back(
-      TimeSteppingSolverStats{
-          ExtractDoubleOrThrow(context0.get_time()), num_substeps, ExtractDoubleOrThrow(slip_time_scale)});
 
   DRAKE_DEMAND(info == implicit_stribeck::Success);
 
