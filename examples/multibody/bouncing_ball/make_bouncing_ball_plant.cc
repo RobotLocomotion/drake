@@ -11,6 +11,7 @@ using geometry::SceneGraph;
 using geometry::Cylinder;
 using geometry::Sphere;
 using geometry::HalfSpace;
+using geometry::SceneGraph;
 using geometry::VisualMaterial;
 using drake::multibody::multibody_plant::CoulombFriction;
 using drake::multibody::multibody_plant::MultibodyPlant;
@@ -160,6 +161,11 @@ MakeBouncingBallPlant(int nspheres, double radius, double mass,
         plant->world_body(),
         HalfSpace::MakePose(normal_W, point_W), HalfSpace(),
         scene_graph);
+
+    // Add visual for the ground.
+    plant->RegisterVisualGeometry(
+        plant->world_body(), HalfSpace::MakePose(normal_W, point_W),
+        HalfSpace(), scene_graph);
 
     // Add sphere geometry for the ball.
     //AddSphereWithSpokes(plant.get(), scene_graph,
