@@ -1324,6 +1324,14 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
       drake::systems::DiscreteValues<T>* updates) const override;
 
+  implicit_stribeck::ComputationInfo SolveUsingSubStepping(
+      int num_substeps,
+      const MatrixX<T>& M0, const MatrixX<T>& Jn, const MatrixX<T>& Jt,
+      const VectorX<T>& minus_tau,
+      const VectorX<T>& stiffness, const VectorX<T>& damping,
+      const VectorX<T>& mu,
+      const VectorX<T>& v0, const VectorX<T>& phi0) const;
+
   void DoMapQDotToVelocity(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,

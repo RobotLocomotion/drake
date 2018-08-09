@@ -1186,6 +1186,54 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   derivatives->SetFromVector(xdot);
 }
 
+template<typename T>
+implicit_stribeck::ComputationInfo MultibodyPlant<T>::SolveUsingSubStepping(
+    int num_substeps,
+    const MatrixX<T>& M0, const MatrixX<T>& Jn, const MatrixX<T>& Jt,
+    const VectorX<T>& minus_tau,
+    const VectorX<T>& stiffness, const VectorX<T>& damping,
+    const VectorX<T>& mu,
+    const VectorX<T>& v0, const VectorX<T>& phi0) const {
+
+  const double dt = time_step_;  // just a shorter alias.
+  const double dt_substep = dt / num_substeps;
+  VectorX<T> v0_substep = v0;
+  VectorX<T> phi0_substep = phi0;
+
+  implicit_stribeck::ComputationInfo info{
+      implicit_stribeck::ComputationInfo::MaxIterationsReached};
+
+  for (int substep = 0; substep < num_substeps; ++substep) {
+    // Discrete update before applying friction forces.
+    // We denote this state x* = [q*, v*], the "star" state.
+    // Generalized momentum "star", before contact forces are applied.
+    VectorX<T> p_star_substep = M0 * v0_substep - dt_substep * minus_tau;
+
+    // Update the data.
+    implicit_stribeck_solver_->SetTwoWayCoupledProblemData(
+        &M0, &Jn, &Jt,
+        &p_star_substep, &phi0_substep,
+        &stiffness, &damping, &mu);
+
+    info = implicit_stribeck_solver_->SolveWithGuess(dt_substep,
+                                                     v0_substep);
+
+    // On failure, we'll break this sub-time stepping loop and try with the
+    // next sub-time step size.
+    if (info != implicit_stribeck::Success) break;
+
+    // Update previous time step to new solution.
+    v0_substep = implicit_stribeck_solver_->get_generalized_velocities();
+
+    // Update penetration distance consistently with the solver update.
+    const auto vn_substep =
+        implicit_stribeck_solver_->get_normal_velocities();
+    phi0_substep = phi0_substep - dt_substep * vn_substep;
+  }
+
+  return info;
+}
+
 // TODO(amcastro-tri): Consider splitting this method into smaller pieces.
 template<typename T>
 void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
@@ -1309,8 +1357,6 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   implicit_stribeck::ComputationInfo info{
       implicit_stribeck::ComputationInfo::MaxIterationsReached};
 
-  const int kNumMaxSubTimeSteps = 20;
-
   implicit_stribeck::Parameters params =
       implicit_stribeck_solver_->get_solver_parameters();
   // A nicely converged NR iteration should not take more than 20 iterations.
@@ -1321,39 +1367,12 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   VectorX<T> vdot_star = M0.ldlt().solve(-minus_tau);
   VectorX<T> vtdot_star = Jt * vdot_star;
 
+  const int kNumMaxSubTimeSteps = 20;
   int num_substeps = 0;
   do {
     ++num_substeps;
-    const double dt_substep = dt / num_substeps;
-    VectorX<T> v0_substep = v0;
-    VectorX<T> phi0_substep = phi0;
-    for (int substep = 0; substep < num_substeps; ++substep) {
-      // Discrete update before applying friction forces.
-      // We denote this state x* = [q*, v*], the "star" state.
-      // Generalized momentum "star", before contact forces are applied.
-      VectorX<T> p_star_substep = M0 * v0_substep - dt_substep * minus_tau;
-
-      // Update the data.
-      implicit_stribeck_solver_->SetTwoWayCoupledProblemData(
-          &M0, &Jn, &Jt,
-          &p_star_substep, &phi0_substep,
-          &stiffness, &damping, &mu);
-
-      info = implicit_stribeck_solver_->SolveWithGuess(dt_substep,
-                                                       v0_substep);
-
-      // On failure, we'll break this sub-time stepping loop and try with the
-      // next sub-time step size.
-      if (info != implicit_stribeck::Success) break;
-
-      // Update previous time step to new solution.
-      v0_substep = implicit_stribeck_solver_->get_generalized_velocities();
-
-      // Update penetration distance consistently with the solver update.
-      const auto vn_substep =
-          implicit_stribeck_solver_->get_normal_velocities();
-      phi0_substep = phi0_substep - dt_substep * vn_substep;
-    }
+    info = SolveUsingSubStepping(
+        num_substeps, M0, Jn, Jt, minus_tau, stiffness, damping, mu, v0, phi0);
   } while(info != implicit_stribeck::Success &&
       num_substeps < kNumMaxSubTimeSteps);
 
