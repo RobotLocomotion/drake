@@ -28,7 +28,7 @@ int DoMain() {
       // "drake/manipulation/models/iiwa_description/urdf/"
       // "iiwa14_polytope_collision.urdf";
       "drake/manipulation/models/allegro_hand_description/urdf/"
-      "allegro_hand_description_right.urdf";
+      "allegro_hand_description_left.urdf";
 
   auto tree = std::make_unique<RigidBodyTree<double>>();
 
@@ -41,7 +41,15 @@ int DoMain() {
       FindResourceOrThrow(kModelPath), drake::multibody::joints::kFixed,
       weld_to_frame, tree.get());
 
+  tree->compile();
   SimpleTreeVisualizer simple_tree_visualizer(*tree.get(), &lcm);
+
+
+  std::cout<<"Number of actuators: "<<tree->get_num_actuators()<<"\n";
+  std::cout<<"Number of bodies: "<<tree->get_num_bodies()<<"\n";
+  std::cout<<"Number of velocities: "<<tree->get_num_velocities()<<"\n";
+  std::cout<<"Number of positions: "<<tree->get_num_positions()<<"\n";
+  std::cout<<"Number of model instances: "<<tree->get_num_model_instances()<<"\n";
 
   // Simple demo that iterates through a bunch of joint configurations.
   for (int i = 0; i < FLAGS_num_configurations; ++i) {

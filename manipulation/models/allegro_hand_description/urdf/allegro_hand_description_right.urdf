@@ -18,7 +18,7 @@
   <link name="palm_link">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/base_link.obj"/>
+        <mesh filename="../meshes/base_link.obj"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0 "/>
       <material name="black">
@@ -41,7 +41,7 @@
   <link name="link_0">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/link_0.0.obj"/>
+        <mesh filename="../meshes/link_0.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -63,13 +63,19 @@
     <parent link="palm_link"/>
     <child link="link_0"/>
     <origin rpy="-0.08726646255 0 0" xyz="0 0.0435 -0.001542"/>
-    <dynamics damping="3" friction="10"/>
+    <dynamics damping="1e-2" friction="10"/>
   </joint>
+  <transmission name="joint_0_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_0_motor"/>
+    <joint name="joint_0"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 1, 5, 9] -->
   <link name="link_1">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/link_1.0.obj"/>
+        <mesh filename="../meshes/link_1.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -91,13 +97,19 @@
     <parent link="link_0"/>
     <child link="link_1"/>
     <origin xyz="0 0 0.0164"/>
-    <dynamics damping="3" friction="5"/>
+    <dynamics damping="1e-2" friction="5"/>
   </joint>
+  <transmission name="joint_1_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_1_motor"/>
+    <joint name="joint_1"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 2, 6, 10]-->
   <link name="link_2">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/link_2.0.obj"/>
+        <mesh filename="../meshes/link_2.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -119,13 +131,19 @@
     <parent link="link_1"/>
     <child link="link_2"/>
     <origin xyz="0 0 0.054"/>
-    <dynamics damping="8" friction="10"/>
+    <dynamics damping="2.5e-2" friction="10"/>
   </joint>
+  <transmission name="joint_2_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_2_motor"/>
+    <joint name="joint_2"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 3, 7, 11] -->
   <link name="link_3">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/link_3.0.obj"/>
+        <mesh filename="../meshes/link_3.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -147,13 +165,19 @@
     <parent link="link_2"/>
     <child link="link_3"/>
     <origin xyz="0 0 0.0384"/>
-    <dynamics damping="10" friction="12"/>
+    <dynamics damping="3.2e-2" friction="12"/>
   </joint>
+  <transmission name="joint_3_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_3_motor"/>
+    <joint name="joint_3"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [FINGER TIP] -->
   <link name="link_3_tip">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/link_3.0_tip.obj"/>
+        <mesh filename="../meshes/link_3.0_tip.obj"/>
       </geometry>
       <material name="white">
         <color rgba=".9 .9 .9 1"/>
@@ -179,7 +203,7 @@
   <link name="link_4">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/link_0.0.obj"/>
+        <mesh filename="../meshes/link_0.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -201,13 +225,19 @@
     <parent link="palm_link"/>
     <child link="link_4"/>
     <origin rpy="0.0 0 0" xyz="0 0 0.0007"/>
-    <dynamics damping="3" friction="10"/>
+    <dynamics damping="1e-2" friction="10"/>
   </joint>
+  <transmission name="joint_4_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_4_motor"/>
+    <joint name="joint_4"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 1, 5, 9] -->
   <link name="link_5">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/link_1.0.obj"/>
+        <mesh filename="../meshes/link_1.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -229,13 +259,19 @@
     <parent link="link_4"/>
     <child link="link_5"/>
     <origin xyz="0 0 0.0164"/>
-    <dynamics damping="3" friction="5"/>
+    <dynamics damping="1e-2" friction="5"/>
   </joint>
+  <transmission name="joint_5_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_5_motor"/>
+    <joint name="joint_5"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 2, 6, 10]-->
   <link name="link_6">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/link_2.0.obj"/>
+        <mesh filename="../meshes/link_2.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -257,13 +293,19 @@
     <parent link="link_5"/>
     <child link="link_6"/>
     <origin xyz="0 0 0.054"/>
-    <dynamics damping="8" friction="10"/>
+    <dynamics damping="2.5e-2" friction="10"/>
   </joint>
+  <transmission name="joint_6_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_6_motor"/>
+    <joint name="joint_6"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 3, 7, 11] -->
   <link name="link_7">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/link_3.0.obj"/>
+        <mesh filename="../meshes/link_3.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -285,13 +327,19 @@
     <parent link="link_6"/>
     <child link="link_7"/>
     <origin xyz="0 0 0.0384"/>
-    <dynamics damping="10" friction="12"/>
+    <dynamics damping="3.2e-2" friction="12"/>
   </joint>
+  <transmission name="joint_7_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_7_motor"/>
+    <joint name="joint_7"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [FINGER TIP] -->
   <link name="link_7_tip">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/link_3.0_tip.obj"/>
+        <mesh filename="../meshes/link_3.0_tip.obj"/>
       </geometry>
       <material name="white">
         <color rgba=".9 .9 .9 1"/>
@@ -317,7 +365,7 @@
   <link name="link_8">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/link_0.0.obj"/>
+        <mesh filename="../meshes/link_0.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -339,13 +387,19 @@
     <parent link="palm_link"/>
     <child link="link_8"/>
     <origin rpy="0.08726646255 0 0" xyz="0 -0.0435 -0.001542"/>
-    <dynamics damping="3" friction="10"/>
+    <dynamics damping="1e-2" friction="10"/>
   </joint>
+  <transmission name="joint_8_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_8_motor"/>
+    <joint name="joint_8"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 1, 5, 9] -->
   <link name="link_9">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/link_1.0.obj"/>
+        <mesh filename="../meshes/link_1.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -367,13 +421,19 @@
     <parent link="link_8"/>
     <child link="link_9"/>
     <origin xyz="0 0 0.0164"/>
-    <dynamics damping="3" friction="5"/>
+    <dynamics damping="1e-2" friction="5"/>
   </joint>
+  <transmission name="joint_9_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_9_motor"/>
+    <joint name="joint_9"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 2, 6, 10]-->
   <link name="link_10">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/link_2.0.obj"/>
+        <mesh filename="../meshes/link_2.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -395,13 +455,19 @@
     <parent link="link_9"/>
     <child link="link_10"/>
     <origin xyz="0 0 0.054"/>
-    <dynamics damping="8" friction="10"/>
+    <dynamics damping="2.5e-2" friction="10"/>
   </joint>
+  <transmission name="joint_10_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_10_motor"/>
+    <joint name="joint_10"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 3, 7, 11] -->
   <link name="link_11">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/link_3.0.obj"/>
+        <mesh filename="../meshes/link_3.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -423,13 +489,19 @@
     <parent link="link_10"/>
     <child link="link_11"/>
     <origin xyz="0 0 0.0384"/>
-    <dynamics damping="10" friction="12"/>
+    <dynamics damping="3.2e-2" friction="12"/>
   </joint>
+  <transmission name="joint_11_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_11_motor"/>
+    <joint name="joint_11"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [FINGER TIP] -->
   <link name="link_11_tip">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/link_3.0_tip.obj"/>
+        <mesh filename="../meshes/link_3.0_tip.obj"/>
       </geometry>
       <material name="white">
         <color rgba=".9 .9 .9 1"/>
@@ -455,12 +527,12 @@
   <link name="link_12">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/link_12.0_right.obj"/>
+        <mesh filename="../meshes/link_12.0_right.obj"/>
       </geometry>
       <material name="black">
         <color rgba=".2 .2 .2 1"/>
       </material>
-      <origin rpy="3.1415926518 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
     </visual>
     <collision>
       <geometry>
@@ -480,13 +552,19 @@
     <parent link="palm_link"/>
     <child link="link_12"/>
     <origin rpy="0 -1.65806278845 -1.5707963259" xyz="-0.0182 0.019333 -0.045987"/>
-    <dynamics damping="3" friction="10"/>
+    <dynamics damping="1e-2" friction="10"/>
   </joint>
+  <transmission name="joint_12_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_12_motor"/>
+    <joint name="joint_12"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 13] -->
   <link name="link_13">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/link_13.0.obj"/>
+        <mesh filename="../meshes/link_13.0.obj"/>
       </geometry>
       <material name="black">
         <color rgba=".2 .2 .2 1"/>
@@ -510,13 +588,19 @@
     <parent link="link_12"/>
     <child link="link_13"/>
     <origin xyz="-0.027 0.005 0.0399"/>
-    <dynamics damping="3" friction="5"/>
+    <dynamics damping="1e-2" friction="5"/>
   </joint>
+  <transmission name="joint_13_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_13_motor"/>
+    <joint name="joint_13"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 14] -->
   <link name="link_14">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/link_14.0.obj"/>
+        <mesh filename="../meshes/link_14.0.obj"/>
       </geometry>
       <material name="black">
                 </material>
@@ -539,13 +623,19 @@
     <parent link="link_13"/>
     <child link="link_14"/>
     <origin xyz="0 0 0.0177"/>
-    <dynamics damping="3" friction="10"/>
+    <dynamics damping="1e-2" friction="10"/>
   </joint>
+  <transmission name="joint_14_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_14_motor"/>
+    <joint name="joint_14"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [LINK 15] -->
   <link name="link_15">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/link_15.0.obj"/>
+        <mesh filename="../meshes/link_15.0.obj"/>
       </geometry>
       <material name="black">
                 </material>
@@ -568,13 +658,19 @@
     <parent link="link_14"/>
     <child link="link_15"/>
     <origin xyz="0 0 0.0514"/>
-    <dynamics damping="3" friction="12"/>
+    <dynamics damping="1e-2" friction="12"/>
   </joint>
+  <transmission name="joint_15_trans" type="transmission_interface/SimpleTransmission">
+    <actuator name="joint_15_motor"/>
+    <joint name="joint_15"/>
+    <mechanicalReduction>1</mechanicalReduction>
+    <motorTorqueConstant>1</motorTorqueConstant>
+  </transmission>
   <!-- [FINGER TIP] -->
   <link name="link_15_tip">
     <visual>
       <geometry>
-        <mesh filename="package://allegro_hand_description/meshes/link_15.0_tip.obj"/>
+        <mesh filename="../meshes/link_15.0_tip.obj"/>
       </geometry>
       <material name="white">
         <color rgba=".9 .9 .9 1"/>
