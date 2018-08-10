@@ -80,7 +80,7 @@ class DiagramContextTest : public ::testing::Test {
     system_with_abstract_parameters_ =
         std::make_unique<SystemWithAbstractParameters>();
 
-    // This chunk of code is partially mimicking Diagram::DoAllocatContext()
+    // This chunk of code is partially mimicking Diagram::DoAllocateContext()
     // which is normally in charge of making DiagramContexts.
     context_ = std::make_unique<DiagramContext<double>>(kNumSystems);
 
@@ -168,13 +168,13 @@ class DiagramContextTest : public ::testing::Test {
   // accuracy.
   void VerifyAccuracyValue(double expected_accuracy) {
     // Check the Diagram.
-    EXPECT_TRUE(context_->get_accuracy());
+    ASSERT_TRUE(context_->get_accuracy());
     EXPECT_EQ(context_->get_accuracy().value(), expected_accuracy);
 
     // Make sure time got delivered to the subcontexts.
     for (SubsystemIndex i(0); i < kNumSystems; ++i) {
       const auto& subcontext = context_->GetSubsystemContext(i);
-      EXPECT_TRUE(subcontext.get_accuracy());
+      ASSERT_TRUE(subcontext.get_accuracy());
       EXPECT_EQ(subcontext.get_accuracy().value(), expected_accuracy);
     }
   }
@@ -229,8 +229,7 @@ class DiagramContextTest : public ::testing::Test {
   }
 
   // Verify that all subsystem trackers with this ticket were notified,
-  // including
-  // the diagram, and updated the expected notification count.
+  // including the diagram, and updated the expected notification count.
   void VerifyNotifications(const std::string& which, DependencyTicket ticket,
                            std::vector<int64_t>* before_count) {  // in/out
     std::set<int> should_have_been_notified;

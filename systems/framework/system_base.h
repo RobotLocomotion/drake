@@ -504,7 +504,7 @@ class SystemBase : public internal::SystemMessageInterface {
 
   /** Returns a ticket indicating that a computation depends on configuration
   state variables q. There is no ticket representing just one of the state
-  variables q. */
+  variables qᵢ. */
   static DependencyTicket q_ticket() {
     return DependencyTicket(internal::kQTicket);
   }
@@ -512,14 +512,14 @@ class SystemBase : public internal::SystemMessageInterface {
   /** Returns a ticket indicating dependence on velocity state variables v. This
   does _not_ also indicate a dependence on configuration variables q -- you must
   list that explicitly or use kinematics_ticket() instead. There is no ticket
-  representing just one of the state variables v. */
+  representing just one of the state variables vᵢ. */
   static DependencyTicket v_ticket() {
     return DependencyTicket(internal::kVTicket);
   }
 
   /** Returns a ticket indicating dependence on any or all of the miscellaneous
   continuous state variables z. There is no ticket representing just one of
-  the state variables z. */
+  the state variables zᵢ. */
   static DependencyTicket z_ticket() {
     return DependencyTicket(internal::kZTicket);
   }
@@ -1117,7 +1117,7 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
 }
 
 // Takes just a calc() member function with an output argument, and
-// value-initializes entry.
+// value-initializes the entry.
 template <class MySystem, class MyContext, typename ValueType>
 const CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description,
@@ -1134,7 +1134,7 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
 }
 
 // Takes just a value-returning calc() member function, and
-// value-initializes entry. See previous method for more information.
+// value-initializes the entry. See previous method for more information.
 template <class MySystem, class MyContext, typename ValueType>
 const CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description,

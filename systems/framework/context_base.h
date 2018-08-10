@@ -280,63 +280,64 @@ class ContextBase : public internal::ContextMessageInterface {
   /** @name         Change notification methods (Internal use only)
   These "Note" methods are used by framework-internal derived classes to effect
   change notifications that propagate down from a DiagramContext (where the
-  change is initiated) through all its subcontexts, recursively. Each of these
-  methods affects only the local context, but all have identical signatures
-  so can be passed down the context tree to operate on every subcontext. The
-  `change_event` argument should be the result of the start_new_change_event()
-  method. */
+  change is initiated) through all its subcontexts, recursively. Such
+  notification sweeps result in the "out of date" flag being set in each of
+  the affected cache entry values. Each of these "Note" methods methods affects
+  only the local context, but all have identical signatures so can be passed
+  down the context tree to operate on every subcontext. The `change_event`
+  argument should be the result of the start_new_change_event() method. */
   //@{
 
-  /** Notifies the local time tracker that time has changed. */
+  /** Notifies the local time tracker that time may have changed. */
   void NoteTimeChanged(int64_t change_event) {
     get_tracker(DependencyTicket(internal::kTimeTicket))
         .NoteValueChange(change_event);
   }
 
   /** Notifies the local accuracy tracker that the accuracy setting
-  has changed. */
+  may have changed. */
   void NoteAccuracyChanged(int64_t change_event) {
     get_tracker(DependencyTicket(internal::kAccuracyTicket))
         .NoteValueChange(change_event);
   }
 
   /** Notifies the local continuous, discrete, and abstract state trackers that
-  each of them has changed, likely because someone has asked to modify the whole
-  state x. */
+  each of them may have changed, likely because someone has asked to modify the
+  whole state x. */
   void NoteAllStateChanged(int64_t change_event) {
     NoteAllContinuousStateChanged(change_event);
     NoteAllDiscreteStateChanged(change_event);
     NoteAllAbstractStateChanged(change_event);
   }
 
-  /** Notifies the local q, v, and z trackers that each of them has changed, likely
-  because someone has asked to modify continuous state xc. */
+  /** Notifies the local q, v, and z trackers that each of them may have
+  changed, likely because someone has asked to modify continuous state xc. */
   void NoteAllContinuousStateChanged(int64_t change_event) {
     NoteAllQChanged(change_event);
     NoteAllVChanged(change_event);
     NoteAllZChanged(change_event);
   }
 
-  /** Notifies the local q tracker that the q's have changed. */
+  /** Notifies the local q tracker that the q's may have changed. */
   void NoteAllQChanged(int64_t change_event) {
     get_tracker(DependencyTicket(internal::kQTicket))
         .NoteValueChange(change_event);
   }
 
-  /** Notifies the local v tracker that the v's have changed. */
+  /** Notifies the local v tracker that the v's may have changed. */
   void NoteAllVChanged(int64_t change_event) {
     get_tracker(DependencyTicket(internal::kVTicket))
         .NoteValueChange(change_event);
   }
 
-  /** Notifies the local z tracker that the z's have changed. */
+  /** Notifies the local z tracker that the z's may have changed. */
   void NoteAllZChanged(int64_t change_event) {
     get_tracker(DependencyTicket(internal::kZTicket))
         .NoteValueChange(change_event);
   }
 
   /** Notifies each local discrete state group tracker that the value of
-  the discrete state group it manages has changed. If there are no discrete
+  the discrete state group it manages may have changed. If there are no discrete
   state groups owned by this context, nothing happens. A DiagramContext does
   not own any discrete state groups. */
   void NoteAllDiscreteStateChanged(int64_t change_event) {
@@ -344,8 +345,8 @@ class ContextBase : public internal::ContextMessageInterface {
       get_tracker(ticket).NoteValueChange(change_event);
   }
 
-  /** Notifies each local abstract state variable tracker that the value of
-  the abstract state variable it manages has changed. If there are no abstract
+  /** Notifies each local abstract state variable tracker that the value of the
+  abstract state variable it manages may have changed. If there are no abstract
   state variables owned by this context, nothing happens. A DiagramContext does
   not own any abstract state variables. */
   void NoteAllAbstractStateChanged(int64_t change_event) {
@@ -354,7 +355,7 @@ class ContextBase : public internal::ContextMessageInterface {
   }
 
   /** Notifies the local numeric and abstract parameter trackers that each of
-  them has changed, likely because someone asked to modify all the
+  them may have changed, likely because someone asked to modify all the
   parameters. */
   void NoteAllParametersChanged(int64_t change_event) {
     NoteAllNumericParametersChanged(change_event);
@@ -362,8 +363,8 @@ class ContextBase : public internal::ContextMessageInterface {
   }
 
   /** Notifies each local numeric parameter tracker that the value of the
-  parameter it manages has changed. If there are no numeric parameters owned by
-  this context, nothing happens. A DiagramContext does not own any
+  parameter it manages may have changed. If there are no numeric parameters
+  owned by this context, nothing happens. A DiagramContext does not own any
   parameters. */
   void NoteAllNumericParametersChanged(int64_t change_event) {
     for (auto ticket : numeric_parameter_tickets_)
@@ -371,8 +372,8 @@ class ContextBase : public internal::ContextMessageInterface {
   }
 
   /** Notifies each local abstract parameter tracker that the value of the
-  parameter it manages has changed. If there are no abstract parameters owned by
-  this context, nothing happens. A DiagramContext does not own any
+  parameter it manages may have changed. If there are no abstract parameters
+  owned by this context, nothing happens. A DiagramContext does not own any
   parameters. */
   void NoteAllAbstractParametersChanged(int64_t change_event) {
     for (auto ticket : abstract_parameter_tickets_)

@@ -190,7 +190,7 @@ GTEST_TEST(DependencyTracker, BuiltInTrackers) {
   EXPECT_EQ(kinematics.subscribers().size(), 0);
 
   // all_parameters tracker depends on the numeric and abstract parameter
-  // trackers. all_sources, configuration, and velocity subscribe.
+  // trackers. all_sources, and configuration subscribe.
   EXPECT_EQ(p.prerequisites().size(), 2);
   EXPECT_EQ(p.prerequisites()[0], &pn);
   EXPECT_EQ(p.prerequisites()[1], &pa);

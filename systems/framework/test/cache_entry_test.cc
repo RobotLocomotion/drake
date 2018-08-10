@@ -670,7 +670,7 @@ TEST_F(CacheEntryTest, Copy) {
   string_entry().EvalAbstract(context_); vector_entry().EvalAbstract(context_);
 
   // Pretend entry0 was modified in the copy. Should invalidate the copy's
-  // entry1, 2 & 3, but leave source untouched.
+  // entry1-5, but leave source untouched.
   entry0().get_mutable_cache_entry_value(clone_context).mark_out_of_date();
   clone_context.get_tracker(entry0().ticket()).NoteValueChange(11);
   EXPECT_TRUE(entry0().is_out_of_date(clone_context));
