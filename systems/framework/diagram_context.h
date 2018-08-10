@@ -106,8 +106,8 @@ class DiagramState : public State<T> {
 
 /// The DiagramContext is a container for all of the data necessary to uniquely
 /// determine the computations performed by a Diagram. Specifically, a
-/// DiagramContext contains contexts and outputs for all the constituent
-/// Systems, wired up as specified by calls to `DiagramContext::Connect`.
+/// DiagramContext contains Context objects for all its constituent Systems.
+/// @see Context for more information.
 ///
 /// In general, users should not need to interact with a DiagramContext
 /// directly. Use the accessors on Diagram instead.
@@ -247,39 +247,80 @@ class DiagramContext final : public Context<T> {
     iport_tracker.SubscribeToPrerequisite(&oport_tracker);
   }
 
-  /// Generates the state vector for the entire diagram by wrapping the states
-  /// of all the constituent diagrams.
-  ///
-  /// User code should not call this method. It is for use during Diagram
-  /// context allocation only.
+  /// (Internal use only) Makes the diagram state, parameter, and composite
+  /// cache entry trackers subscribe to the corresponding constituent trackers
+  /// in the child subcontexts.
+  // Diagrams don't provide diagram-level tickets for individual
+  // discrete or abstract state or individual numerical or abstract parameters.
+  // That means we need only subscribe the aggregate trackers xd, xa, pn, pa
+  // to their children's xd, xa, pn, pa, resp.
+  void SubscribeDiagramCompositeTrackersToChildrens() {
+    std::vector<internal::BuiltInTicketNumbers> composites{
+        internal::kQTicket,  // Value sources.
+        internal::kVTicket,
+        internal::kZTicket,
+        internal::kXdTicket,
+        internal::kXaTicket,
+        internal::kPnTicket,
+        internal::kPaTicket,
+        internal::kXcdotTicket,  // Cache entries.
+        internal::kPeTicket,
+        internal::kKeTicket,
+        internal::kPcTicket,
+        internal::kPncTicket};
+
+    // Validate the claim above that Diagrams do not have tickets for individual
+    // variables and parameters.
+    DRAKE_DEMAND(!this->owns_any_variables_or_parameters());
+
+    // Collect the diagram trackers for each composite item above.
+    DependencyGraph& graph = this->get_mutable_dependency_graph();
+    std::vector<DependencyTracker*> diagram_trackers;
+    for (auto ticket : composites) {
+      diagram_trackers.push_back(
+          &graph.get_mutable_tracker(DependencyTicket(ticket)));
+    }
+
+    // Subscribe those trackers to the corresponding subcontext trackers.
+    for (auto& subcontext : contexts_) {
+      DependencyGraph& subgraph = subcontext->get_mutable_dependency_graph();
+      for (size_t i = 0; i < composites.size(); ++i) {
+        auto& sub_tracker =
+            subgraph.get_mutable_tracker(DependencyTicket(composites[i]));
+        diagram_trackers[i]->SubscribeToPrerequisite(&sub_tracker);
+      }
+    }
+  }
+
+  /// (Internal use only) Generates the state vector for the entire diagram by
+  /// wrapping the states of all the constituent diagrams.
   void MakeState() {
     auto state = std::make_unique<DiagramState<T>>(num_subcontexts());
     for (SubsystemIndex i(0); i < num_subcontexts(); ++i) {
-      Context<T>* context = contexts_[i].get();
-      state->set_substate(i, &context->get_mutable_state());
+      Context<T>& subcontext = *contexts_[i].get();
+      // Using `access` here to avoid sending invalidations.
+      state->set_substate(i, &Context<T>::access_mutable_state(&subcontext));
     }
     state->Finalize();
     state_ = std::move(state);
   }
 
-  /// Generates the parameters for the entire diagram by wrapping the parameters
-  /// of all the constituent Systems. The wrapper simply holds pointers to the
-  /// parameters in the subsystem Contexts.  It does not make a copy, or take
-  /// ownership.
-  ///
-  /// User code should not call this method. It is for use during Diagram
-  /// context allocation only.
+  /// (Internal use only) Generates the parameters for the entire diagram by
+  /// wrapping the parameters of all the constituent Systems. The wrapper simply
+  /// holds pointers to the parameters in the subsystem Contexts. It does not
+  /// make a copy, or take ownership.
   void MakeParameters() {
     std::vector<BasicVector<T>*> numeric_params;
     std::vector<AbstractValue*> abstract_params;
     for (auto& subcontext : contexts_) {
-      Parameters<T>& subparams = subcontext->get_mutable_parameters();
+      // Using `access` here to avoid sending invalidations.
+      Parameters<T>& subparams =
+          Context<T>::access_mutable_parameters(&*subcontext);
       for (int i = 0; i < subparams.num_numeric_parameters(); ++i) {
         numeric_params.push_back(&subparams.get_mutable_numeric_parameter(i));
       }
       for (int i = 0; i < subparams.num_abstract_parameters(); ++i) {
-        abstract_params.push_back(
-            &subparams.get_mutable_abstract_parameter(i));
+        abstract_params.push_back(&subparams.get_mutable_abstract_parameter(i));
       }
     }
     auto params = std::make_unique<Parameters<T>>();
@@ -308,37 +349,6 @@ class DiagramContext final : public Context<T> {
     DRAKE_DEMAND(index >= 0 && index < num_subcontexts());
     DRAKE_DEMAND(contexts_[index] != nullptr);
     return *contexts_[index].get();
-  }
-
-  /// Recursively sets the time on this context and all subcontexts.
-  void set_time(const T& time_sec) override {
-    Context<T>::set_time(time_sec);
-    for (auto& subcontext : contexts_) {
-      if (subcontext != nullptr) {
-        subcontext->set_time(time_sec);
-      }
-    }
-  }
-
-  /// Recursively sets the accuracy on this context and all subcontexts,
-  /// overwriting any accuracy value set in any subcontexts.
-  void set_accuracy(const optional<double>& accuracy) override {
-    Context<T>::set_accuracy(accuracy);
-    for (auto& subcontext : contexts_) {
-      if (subcontext != nullptr) {
-        subcontext->set_accuracy(accuracy);
-      }
-    }
-  }
-
-  const State<T>& get_state() const final {
-    DRAKE_ASSERT(state_ != nullptr);
-    return *state_;
-  }
-
-  State<T>& get_mutable_state() final {
-    DRAKE_ASSERT(state_ != nullptr);
-    return *state_;
   }
 
  protected:
@@ -388,6 +398,44 @@ class DiagramContext final : public Context<T> {
   // Returns the number of immediate child subcontexts in this DiagramContext.
   int num_subcontexts() const {
     return static_cast<int>(contexts_.size());
+  }
+
+  const State<T>& do_access_state() const final {
+    DRAKE_ASSERT(state_ != nullptr);
+    return *state_;
+  }
+
+  State<T>& do_access_mutable_state() final {
+    DRAKE_ASSERT(state_ != nullptr);
+    return *state_;
+  }
+
+  // Recursively sets the time on all subcontexts.
+  void DoPropagateTimeChange(const T& time_sec, int64_t change_event) final {
+    for (auto& subcontext : contexts_) {
+      DRAKE_ASSERT(subcontext != nullptr);
+      Context<T>::PropagateTimeChange(&*subcontext, time_sec, change_event);
+    }
+  }
+
+  // Recursively sets the accuracy on all subcontexts.
+  void DoPropagateAccuracyChange(const optional<double>& accuracy,
+                                 int64_t change_event) final {
+    for (auto& subcontext : contexts_) {
+      DRAKE_ASSERT(subcontext != nullptr);
+      Context<T>::PropagateAccuracyChange(&*subcontext, accuracy, change_event);
+    }
+  }
+
+  // Recursively notifies subcontexts of bulk changes.
+  void DoPropagateBulkChange(
+      int64_t change_event,
+      void (ContextBase::*note_bulk_change)(int64_t change_event)) final {
+    for (auto& subcontext : contexts_) {
+      DRAKE_ASSERT(subcontext != nullptr);
+      ContextBase::PropagateBulkChange(&*subcontext, change_event,
+                                       note_bulk_change);
+    }
   }
 
   // Recursively notifies subcontexts of some caching behavior change.
