@@ -32,7 +32,8 @@ void AddCylinderWithMultiContact(
   plant->RegisterVisualGeometry(
       body,
       /* Pose X_BG of the geometry frame G in the cylinder body frame B. */
-      Isometry3d::Identity(), Cylinder(radius, length), orange, scene_graph);
+      Isometry3d::Identity(), Cylinder(radius, length), "visual", orange,
+      scene_graph);
 
   // Add a bunch of little spheres to simulate "multi-contact".
   for (int i = 0; i < num_contacts; ++i) {
@@ -46,22 +47,26 @@ void AddCylinderWithMultiContact(
     plant->RegisterCollisionGeometry(
         body,
         X_BG,
-        Sphere(contact_spheres_radius), friction, scene_graph);
+        Sphere(contact_spheres_radius), "collision_top_" + std::to_string(i),
+        friction, scene_graph);
     plant->RegisterVisualGeometry(
         body,
         X_BG,
-        Sphere(contact_spheres_radius), red, scene_graph);
+        Sphere(contact_spheres_radius), "visual_top_" + std::to_string(i), red,
+        scene_graph);
 
     // Bottom spheres:
     X_BG.translation() << x, y, -length / 2;
     plant->RegisterCollisionGeometry(
         body,
         X_BG,
-        Sphere(contact_spheres_radius), friction, scene_graph);
+        Sphere(contact_spheres_radius), "collision_bottom_" + std::to_string(i),
+        friction, scene_graph);
     plant->RegisterVisualGeometry(
         body,
         X_BG,
-        Sphere(contact_spheres_radius), red, scene_graph);
+        Sphere(contact_spheres_radius), "visual_bottom_" + std::to_string(i),
+        red, scene_graph);
   }
 }
 
@@ -101,13 +106,13 @@ MakeCylinderPlant(double radius, double length, double mass,
   // A half-space for the ground geometry.
   plant->RegisterCollisionGeometry(
       plant->world_body(),
-      HalfSpace::MakePose(normal_W, point_W), HalfSpace(), surface_friction,
-      scene_graph);
+      HalfSpace::MakePose(normal_W, point_W), HalfSpace(), "collision",
+      surface_friction, scene_graph);
 
   // Add visual for the ground.
   plant->RegisterVisualGeometry(
       plant->world_body(), HalfSpace::MakePose(normal_W, point_W),
-      HalfSpace(), scene_graph);
+      HalfSpace(), "visual", scene_graph);
 
   plant->AddForceElement<UniformGravityFieldElement>(gravity_W);
 

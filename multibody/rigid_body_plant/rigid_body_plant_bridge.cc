@@ -1,6 +1,7 @@
 #include "drake/multibody/rigid_body_plant/rigid_body_plant_bridge.h"
 
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
@@ -87,6 +88,7 @@ void RigidBodyPlantBridge<T>::RegisterTree(SceneGraph<T>* scene_graph) {
       body_ids_.push_back(body_id);
       // TODO(SeanCurtis-TRI): Handle collision and visual elements differently.
       // For now, we're simply consuming the visual elements.
+      int visual_count = 0;
       for (const auto& visual_element : body.get_visual_elements()) {
         std::unique_ptr<Shape> shape;
         Isometry3<double> X_FG = visual_element.getLocalTransform();
@@ -125,9 +127,10 @@ void RigidBodyPlantBridge<T>::RegisterTree(SceneGraph<T>* scene_graph) {
         if (shape) {
           // Visual element's "material" is simply the diffuse rgba values.
           const Vector4<double>& diffuse = visual_element.getMaterial();
+          const std::string name = "visual_" + std::to_string(visual_count++);
           scene_graph->RegisterGeometry(
               source_id_, body_id,
-              std::make_unique<GeometryInstance>(X_FG, std::move(shape),
+              std::make_unique<GeometryInstance>(X_FG, std::move(shape), name,
                                                  VisualMaterial(diffuse)));
           DRAKE_DEMAND(shape == nullptr);
         }
