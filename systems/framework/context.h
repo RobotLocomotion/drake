@@ -199,33 +199,66 @@ class Context : public ContextBase {
   //@}
 
   /// @name           Methods for changing locally-stored values
-  /// Methods in this group allow changes to values stored locally in this
-  /// %Context. The changeable values are:
+  /// Methods in this group allow changes to the values of quantities stored
+  /// locally in this %Context. The changeable quantities are:
   /// - time
   /// - state
   /// - parameters
   /// - accuracy
   /// - fixed input port values
   ///
-  /// Such changes may invalidate locally-cached computation results,
-  /// and any downstream cached results that depend on those computations. Such
-  /// cached results may reside anywhere in the full Diagram context tree of
-  /// which this %Context is a part.
+  /// Expensive computations may be performed that depend on the current values
+  /// of some or all of the above quantities. For efficiency, we save the
+  /// results of such computations in the %Context so that we can reuse
+  /// those results without unnecessary recomputation.
   ///
-  /// The Drake caching system depends on every cached value being flagged as
-  /// up to date (valid) or out of date (invalid) with respect to its
-  /// prerequisites. That flag is checked prior to returning a cached value, and
-  /// computation is initiated if necessary to bring the value up to date first.
-  /// The methods here are responsible for ensuring that cached values are
-  /// marked out of date whenever a prerequisite value changes. These methods
-  /// _do not_ initiate such recomputation themselves.
+  /// <h3>Terminology</h3>
+  /// We call a quantity whose value is needed in order to perform a particular
+  /// computation a _prerequisite_ of that computation, and we say that the
+  /// computation is a _dependent_ of that prerequisite. If a prerequisite's
+  /// value changes, a result computed using an earlier value is _invalid_; we
+  /// say that the prerequisite change _invalidates_ that result, and that the
+  /// result is _out of date_ with respect to its prerequisites. It is important
+  /// to note that the result of one computation can serve as a prerequisite to
+  /// another computation; we call the dependent computation a _downstream_
+  /// computation and the prerequisite an _upstream_ computation.
   ///
+  /// <h3>Caching</h3>
+  /// Drake provides a caching system that is responsible for
+  /// - storing computed results in the %Context's _cache_, and
+  /// - ensuring that any cached result that _may_ be invalid is marked
+  ///   "out of date".
+  ///
+  /// The correctness of results reported by Drake depends critically on _every_
+  /// cached result being correctly flagged as up to date or out of date with
+  /// respect to its prerequisites. Only when it is known _for certain_ that
+  /// a result is valid can it be marked up to date. Access to cached results
+  /// is performed through `Eval()` methods that return up to date results
+  /// immediately but initiate recomputation first for results marked out of
+  /// date. The methods in the group below are responsible for ensuring that
+  /// cached results are marked out of date whenever a prerequisite value may
+  /// have changed. These methods _do not_ initiate such recomputation
+  /// themselves.
+  ///
+  /// <h3>Invalidation and "out of date" notification</h3>
+  /// Each method in this group provides the ability to change a particular
+  /// subset of the available quantities listed above. This triggers "out of
+  /// date" notifications to the cached results for all computations for which
+  /// any element of that subset is a prerequisite. Such notifications
+  /// propagate to downstream computations, whose cached results may reside
+  /// anywhere in the full Diagram context tree of which this %Context is a
+  /// part. That ensures that "out of date" flags are set correctly for the
+  /// cached results of all computations that could be made invalid by a value
+  /// change to any of the affected subset of quantities. We call this
+  /// process a _notification sweep_.
+  ///
+  /// <h3>Which method to use</h3>
   /// Choose the most-specific method in this group that permits you to perform
   /// the modifications you need. For example, if you need to modify only
   /// continuous state variables, don't use a method that provides mutable
   /// access to the whole state. That provides two performance advantages:
   /// - fewer downstream computations need to be marked out of date, making the
-  ///   invalidation sweep faster, and
+  ///   notification sweep faster, and
   /// - fewer results will need to be recomputed later.
   ///
   /// The methods below may be grouped into "safe" methods that begin with
@@ -234,56 +267,65 @@ class Context : public ContextBase {
   /// return an object that has `get_mutable` methods with the same dangers
   /// (see FixedInputPortValue). Prefer the safe methods when possible.
   ///
-  /// <h3>Safe "set" methods</h3>
+  /// <h4>Safe "set" methods</h4>
   /// The `set` and `Set` methods are safe in the sense that they perform both
-  /// the "mark as out of date" invalidation sweep through dependent cached
-  /// values, and the update to the local value without returning a reference to
-  /// that value. Using these methods ensures that no change can occur without
-  /// an appropriate invalidation sweep. Also, these methods can be used to
-  /// perform multiple changes at once (say time and state), requiring only a
-  /// single invalidation sweep, and _may_ perform optimizations to avoid
-  /// invalidation in case some of the new values are the same as the old ones.
+  /// the "mark as out of date" notification sweep through dependent cached
+  /// results, and the update to the local quantity's value. They do not return
+  /// a reference to the value object. Using these methods ensures that no value
+  /// modification can occur without an appropriate notification sweep. Also,
+  /// these methods can be used to perform multiple changes at once (say time
+  /// and state), requiring only a single notification sweep, and _may_ perform
+  /// optimizations to avoid notifications in case some of the new values are
+  /// the same as the old ones.
   ///
-  /// <h3>Dangerous "get_mutable" methods</h3>
+  /// <h4>Dangerous "get_mutable" methods</h4>
   /// The `get_mutable` methods return a mutable reference to the local value
-  /// object within this %Context. The invalidation sweep is done prior to
+  /// object within this %Context. The notification sweep is done prior to
   /// returning that reference. You can then use the reference to make the
-  /// desired change. However, you _must not_ hold on to the reference expecting
-  /// to be able to make subsequent changes, because those changes can't be
-  /// seen by the framework and thus will not cause the necessary invalidation
-  /// sweep to occur. Instead, request the mutable reference again when
-  /// you need it so that necessary invalidation sweep can be performed.
+  /// desired change. Note that with these methods we do not actually know
+  /// whether dependent computations are invalid; that depends what you do with
+  /// the reference once you have it. Nevertheless you will pay the cost of
+  /// the notifications sweep immediately and the cost of recomputation later
+  /// when you ask for the value. So don't call one of these methods unless
+  /// you are certain you will be writing through the returned reference.
   ///
-  /// @note All of these methods guarantee to mark as out of date any
-  /// dependents of the quantities it modifies, but the current implementations
-  /// may also perform some unnecessary invalidations. If so, that is noted
-  /// in the method documentation. You should still use the most-specific
-  /// available method so that you will benefit from later improvements that
-  /// result in fewer invalidations.
+  /// You _must not_ hold on to the returned reference expecting
+  /// to be able to make subsequent changes, because those changes can't be
+  /// seen by the framework and thus will not cause the necessary notification
+  /// sweep to occur. Instead, request the mutable reference again when
+  /// you need it so that the necessary notification sweep can be performed.
+  ///
+  /// <h3>Implementation note</h3>
+  /// Each method in the group below guarantees to mark as out of date any
+  /// dependents of the quantities to which it permits modification, including
+  /// all downstream dependents. However, the current implementations may also
+  /// perform some unnecessary notifications. If so, that is noted in the method
+  /// documentation. You should still use the most-specific available method so
+  /// that you will benefit from later improvements that result in fewer
+  /// notifications.
   //@{
 
   // TODO(sherm1) All these methods perform invalidation sweeps so aren't
   // entitled to lower_case_names. Deprecate and replace (see #9205).
 
-  /// Sets the current time in seconds, invalidating all time-dependent
-  /// computations (at least if the time has actually changed). Time must have
-  /// the same value in every subcontext within the same context tree so may
-  /// only be modified at the root context of a tree.
+  /// Sets the current time in seconds. Sends out of date notifications for all
+  /// time-dependent computations (at least if the time has actually changed).
+  /// Time must have the same value in every subcontext within the same Diagram
+  /// context tree so may only be modified at the root context of the tree.
   /// @throws std::logic_error if this is not the root context.
-  // TODO(sherm1) Consider whether this should avoid invalidation if the
-  // new time is the same as the old time.
+  // TODO(sherm1) Consider whether this should avoid the notification sweep
+  // if the new time is the same as the old time.
   void set_time(const T& time_sec) {
     ThrowIfNotRootContext(__func__, "Time");
     const int64_t change_event = this->start_new_change_event();
     PropagateTimeChange(this, time_sec, change_event);
   }
 
-
-  /// Returns a mutable reference to the whole State, invalidating _all_
-  /// state-dependent computations. If you don't mean to change the whole
-  /// thing, use more focused methods to modify only a portion of the state so
-  /// that fewer computations are invalidated. See class documentation for more
-  /// information.
+  /// Returns a mutable reference to the whole State, potentially invalidating
+  /// _all_ state-dependent computations so requiring out of date notifications
+  /// to be made for all such computations. If you don't mean to change the
+  /// whole state, use more focused methods to modify only a portion of the
+  /// state. See class documentation for more information.
   State<T>& get_mutable_state() {
     const int64_t change_event = this->start_new_change_event();
     PropagateBulkChange(change_event, &Context<T>::NoteAllStateChanged);
@@ -291,8 +333,8 @@ class Context : public ContextBase {
   }
 
   /// Returns a mutable reference to the continuous component of the state,
-  /// which may be of size zero. Invalidates all continuous-state-dependent
-  /// computations.
+  /// which may be of size zero. Sends out of date notifications for all
+  /// continuous-state-dependent computations.
   ContinuousState<T>& get_mutable_continuous_state() {
     const int64_t change_event = this->start_new_change_event();
     PropagateBulkChange(change_event,
@@ -301,8 +343,8 @@ class Context : public ContextBase {
   }
 
   /// Returns a mutable reference to the continuous state vector, devoid
-  /// of second-order structure. The vector may be of size zero. Invalidates all
-  /// continuous-state-dependent computations.
+  /// of second-order structure. The vector may be of size zero. Sends out of
+  /// date notifications for all continuous-state-dependent computations.
   VectorBase<T>& get_mutable_continuous_state_vector() {
     return get_mutable_continuous_state().get_mutable_vector();
   }
@@ -312,13 +354,14 @@ class Context : public ContextBase {
 
   /// Sets the continuous state to @p xc, including q, v, and z partitions.
   /// The supplied vector must be the same size as the existing continuous
-  /// state. Invalidates all continuous-state-dependent computations.
+  /// state. Sends out of date notifications for all continuous-state-dependent
+  /// computations.
   void SetContinuousState(const Eigen::Ref<const VectorX<T>>& xc) {
     get_mutable_continuous_state().SetFromVector(xc);
   }
 
   /// Sets time to @p time_sec and continuous state to @p xc. Performs a single
-  /// invalidation pass to avoid duplicate invalidations for computations that
+  /// notification sweep to avoid duplicate notifications for computations that
   /// depend on both time and state.
   /// @throws std::logic_error if this is not the root context.
   // TODO(sherm1) Consider whether this should avoid invalidation of
@@ -334,8 +377,8 @@ class Context : public ContextBase {
   }
 
   /// Returns a mutable reference to the discrete component of the state,
-  /// which may be of size zero. Invalidates all discrete-state-dependent
-  /// computations.
+  /// which may be of size zero. Sends out of date notifications for all
+  /// discrete-state-dependent computations.
   DiscreteValues<T>& get_mutable_discrete_state() {
     const int64_t change_event = this->start_new_change_event();
     PropagateBulkChange(change_event,
@@ -344,7 +387,8 @@ class Context : public ContextBase {
   }
 
   /// Returns a mutable reference to the _only_ discrete state vector.
-  /// Invalidates all discrete-state-dependent computations.
+  /// Sends out of date notifications for all discrete-state-dependent
+  /// computations.
   /// @sa get_discrete_state_vector().
   /// @pre There is only one discrete state group.
   BasicVector<T>& get_mutable_discrete_state_vector() {
@@ -352,10 +396,10 @@ class Context : public ContextBase {
   }
 
   /// Returns a mutable reference to group (vector) @p index of the discrete
-  /// state. Invalidates all computations that depend on this discrete state
-  /// group.
+  /// state. Sends out of date notifications for all computations that depend
+  /// on this discrete state group.
   /// @pre @p index must identify an existing group.
-  /// @bug Currently invalidates dependents of _all_ groups.
+  /// @bug Currently notifies dependents of _all_ groups.
   // TODO(sherm1) Invalidate only dependents of this one discrete group.
   BasicVector<T>& get_mutable_discrete_state(int index) {
     DiscreteValues<T>& xd = get_mutable_discrete_state();
@@ -363,8 +407,8 @@ class Context : public ContextBase {
   }
 
   /// Returns a mutable reference to the abstract component of the state,
-  /// which may be of size zero. Invalidates all abstract-state-dependent
-  /// computations.
+  /// which may be of size zero. Sends out of date notifications for all
+  /// abstract-state-dependent computations.
   AbstractValues& get_mutable_abstract_state() {
     const int64_t change_event = this->start_new_change_event();
     PropagateBulkChange(change_event,
@@ -373,10 +417,11 @@ class Context : public ContextBase {
   }
 
   /// Returns a mutable reference to element @p index of the abstract state.
-  /// Invalidates all computations that depend on this abstract state variable.
+  /// Sends out of date notifications for all computations that depend on this
+  /// abstract state variable.
   /// @pre @p index must identify an existing element.
   /// @pre the abstract state's type must match the template argument.
-  /// @bug Currently invalidates dependents of _any_ abstract state variable.
+  /// @bug Currently notifies dependents of _any_ abstract state variable.
   // TODO(sherm1) Invalidate only dependents of this one abstract variable.
   template <typename U>
   U& get_mutable_abstract_state(int index) {
@@ -384,10 +429,11 @@ class Context : public ContextBase {
     return xa.get_mutable_value(index).GetMutableValue<U>();
   }
 
-  /// Returns a mutable reference to this %Context's parameters. Invalidates
-  /// all parameter-dependent computations. If you don't mean to change all the
-  /// parameters, use the indexed methods to modify only some of the parameters
-  /// so that fewer computations are invalidated.
+  /// Returns a mutable reference to this %Context's parameters. Sends out of
+  /// date notifications for all parameter-dependent computations. If you don't
+  /// mean to change all the parameters, use the indexed methods to modify only
+  /// some of the parameters so that fewer computations are invalidated and
+  /// fewer notifications need be sent.
   Parameters<T>& get_mutable_parameters() {
     const int64_t change_event = this->start_new_change_event();
     PropagateBulkChange(change_event, &Context<T>::NoteAllParametersChanged);
@@ -395,9 +441,10 @@ class Context : public ContextBase {
   }
 
   /// Returns a mutable reference to element @p index of the vector-valued
-  /// parameters. Invalidates all computations dependent on this parameter.
+  /// (numeric) parameters. Sends out of date notifications for all computations
+  /// dependent on this parameter.
   /// @pre @p index must identify an existing numeric parameter.
-  /// @bug Currently invalidates dependents of _all_ numeric parameters.
+  /// @bug Currently notifies dependents of _all_ numeric parameters.
   // TODO(sherm1) Invalidate only dependents of this one parameter.
   BasicVector<T>& get_mutable_numeric_parameter(int index) {
     const int64_t change_event = this->start_new_change_event();
@@ -407,9 +454,10 @@ class Context : public ContextBase {
   }
 
   /// Returns a mutable reference to element @p index of the abstract-valued
-  /// parameters. Invalidates all computations dependent on this parameter.
+  /// parameters. Sends out of date notifications for all computations dependent
+  /// on this parameter.
   /// @pre @p index must identify an existing abstract parameter.
-  /// @bug Currently invalidates dependents of _all_ abstract parameters.
+  /// @bug Currently notifies dependents of _all_ abstract parameters.
   // TODO(sherm1) Invalidate only dependents of this one parameter.
   AbstractValue& get_mutable_abstract_parameter(int index) {
     const int64_t change_event = this->start_new_change_event();
@@ -418,9 +466,10 @@ class Context : public ContextBase {
     return parameters_->get_mutable_abstract_parameter(index);
   }
 
-  /// Sets this context's time, accuracy, state, and parameters from the real
-  /// values in @p source, regardless of this context's scalar type.
-  /// Invalidates all dependent computations in this context.
+  /// Sets this context's time, accuracy, state, and parameters from the
+  /// `double` values in @p source, regardless of this context's scalar type.
+  /// Sends out of date notifications for all dependent computations in this
+  /// context.
   /// @throws std::logic_error if this is not the root context.
   /// @bug Currently does not copy fixed input port values from `source`.
   /// See System::FixInputPortsFrom() if you want to copy those.
@@ -434,11 +483,11 @@ class Context : public ContextBase {
     // each separately.
     const int64_t change_event = this->start_new_change_event();
 
-    // These two both set the value and perform invalidations.
+    // These two both set the value and perform notifications.
     PropagateTimeChange(this, T(source.get_time()), change_event);
     PropagateAccuracyChange(this, source.get_accuracy(), change_event);
 
-    // Invalidation is separate from the actual value change for bulk changes.
+    // Notification is separate from the actual value change for bulk changes.
     PropagateBulkChange(change_event, &Context<T>::NoteAllStateChanged);
     do_access_mutable_state().SetFrom(source.get_state());
 
@@ -487,19 +536,21 @@ class Context : public ContextBase {
 
   /// Records the user's requested accuracy. If no accuracy is requested,
   /// computations are free to choose suitable defaults, or to refuse to
-  /// proceed without an explicit accuracy setting. All accuracy-dependent
-  /// computations in this Context and its subcontexts are invalidated (at
-  /// least if the accuracy setting has changed). Accuracy must have the same
-  /// value in every subcontext within the same context tree so may only be
-  /// modified at the root context of a tree.
+  /// proceed without an explicit accuracy setting. Any accuracy-dependent
+  /// computation in this Context and its subcontexts may be invalidated
+  /// by a change to the accuracy setting, so out of date notifications are
+  /// sent to all such computations (at least if the accuracy setting has
+  /// actually changed). Accuracy must have the same value in every subcontext
+  /// within the same context tree so may only be modified at the root context
+  /// of a tree.
   ///
   /// @throws std::logic_error if this is not the root context.
   ///
   /// Requested accuracy is stored in the %Context for two reasons:
   /// - It permits all computations performed over a System to see the _same_
   ///   accuracy request since accuracy is stored in one shared place, and
-  /// - it allows us to invalidate accuracy-dependent cached computations when
-  ///   the requested accuracy has changed.
+  /// - it allows us to notify accuracy-dependent cached results that they are
+  ///   out of date when the accuracy setting changes.
   ///
   /// The accuracy of a complete simulation or other numerical study depends on
   /// the accuracy of _all_ contributing computations, so it is important that
