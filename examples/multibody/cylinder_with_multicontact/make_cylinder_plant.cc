@@ -41,15 +41,14 @@ void AddCylinderWithMultiContact(
     const double y = sin(theta) * radius;
     Isometry3<double> X_BG = Isometry3<double>::Identity();
     // Top spheres:
+    /* Pose X_BG of the geometry frame G in the cylinder body frame B. */
     X_BG.translation() << x, y, length / 2;
     plant->RegisterCollisionGeometry(
         body,
-        /* Pose X_BG of the geometry frame G in the cylinder body frame B. */
         X_BG,
         Sphere(contact_spheres_radius), friction, scene_graph);
     plant->RegisterVisualGeometry(
         body,
-        /* Pose X_BG of the geometry frame G in the cylinder body frame B. */
         X_BG,
         Sphere(contact_spheres_radius), red, scene_graph);
 
@@ -57,12 +56,10 @@ void AddCylinderWithMultiContact(
     X_BG.translation() << x, y, -length / 2;
     plant->RegisterCollisionGeometry(
         body,
-        /* Pose X_BG of the geometry frame G in the cylinder body frame B. */
         X_BG,
         Sphere(contact_spheres_radius), friction, scene_graph);
     plant->RegisterVisualGeometry(
         body,
-        /* Pose X_BG of the geometry frame G in the cylinder body frame B. */
         X_BG,
         Sphere(contact_spheres_radius), red, scene_graph);
   }
@@ -112,7 +109,6 @@ MakeCylinderPlant(double radius, double length, double mass,
       plant->world_body(), HalfSpace::MakePose(normal_W, point_W),
       HalfSpace(), scene_graph);
 
-  // Gravity acting in the -z direction.
   plant->AddForceElement<UniformGravityFieldElement>(gravity_W);
 
   // We are done creating the plant.

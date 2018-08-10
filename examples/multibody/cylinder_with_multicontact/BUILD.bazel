@@ -26,6 +26,15 @@ drake_cc_library(
     ],
 )
 
+drake_cc_googletest(
+    name = "make_cylinder_plant_test",
+    deps = [
+        ":make_cylinder_plant",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/multibody_tree/multibody_plant",
+    ],
+)
+
 drake_cc_binary(
     name = "cylinder_run_dynamics",
     srcs = ["cylinder_run_dynamics.cc"],

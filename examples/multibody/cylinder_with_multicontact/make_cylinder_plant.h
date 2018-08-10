@@ -30,10 +30,10 @@ namespace cylinder_with_multicontact {
 /// @param[in] gravity_W
 ///   The acceleration of gravity vector, expressed in the world frame W.
 /// @param scene_graph
-///   If a SceneGraph is provided with this argument, this factory method
-///   will register the new multibody plant to be a source for that geometry
-///   system and it will also register geometry for collision.
-///   If this argument is omitted, no geometry will be registered.
+///   A valid pointer to a SceneGraph. This factory method will register the new
+///   multibody plant to be a source for that scene graph and it will also
+///   register geometry for contact modeling.
+/// @throws std::exception if scene_graph is nullptr.
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakeCylinderPlant(
     double radius, double length, double mass,
