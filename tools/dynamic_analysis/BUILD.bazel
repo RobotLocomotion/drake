@@ -4,6 +4,31 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+config_setting(
+    name = "with_asan",
+    values = {"define": "WITH_ASAN=ON"},
+)
+
+config_setting(
+    name = "with_lsan",
+    values = {"define": "WITH_LSAN=ON"},
+)
+
+config_setting(
+    name = "with_msan",
+    values = {"define": "WITH_MSAN=ON"},
+)
+
+config_setting(
+    name = "with_tsan",
+    values = {"define": "WITH_TSAN=ON"},
+)
+
+config_setting(
+    name = "with_ubsan",
+    values = {"define": "WITH_UBSAN=ON"},
+)
+
 sh_binary(
     name = "asan",
     srcs = ["asan.sh"],
@@ -35,7 +60,7 @@ sh_binary(
 )
 
 filegroup(
-    name = "sanitizer_blacklists",
+    name = "ubsan_blacklist",
     srcs = [
         "ubsan.blacklist",
     ],
