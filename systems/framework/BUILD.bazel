@@ -327,15 +327,14 @@ drake_cc_library(
     srcs = ["leaf_context.cc"],
     hdrs = ["leaf_context.h"],
     deps = [
-        ":cache_and_dependency_tracker",
         ":context",
-        ":parameters",
         ":vector",
         "//common:default_scalars",
         "//common:essential",
     ],
 )
 
+# TODO(sherm1) This should be "input_port".
 drake_cc_library(
     name = "input_port",
     srcs = [
@@ -604,7 +603,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "cache_test",
     deps = [
-        ":cache_and_dependency_tracker",
         ":context_base",
         "//common:essential",
         "//systems/framework/test_utilities",

@@ -80,9 +80,7 @@ class OutputPort : public OutputPortBase {
   already up to date with respect to its prerequisites, this port's Calc()
   method is used first to update the value before the reference is returned. The
   Calc() method may be arbitrarily expensive, but Eval() is constant time and
-  _very_ fast if the value is already up to date.
-  @warning Caching is currently disabled -- Calc() will be invoked. */
-  // TODO(sherm1) Remove the above warning asap. See LeafOutputPort::DoEval().
+  _very_ fast if the value is already up to date. */
   template <typename ValueType>
   const ValueType& Eval(const Context<T>& context) const {
     const AbstractValue& abstract_value = EvalAbstract(context);
@@ -126,9 +124,7 @@ class OutputPort : public OutputPortBase {
   /** Returns a reference to the value of this output port contained in the
   given Context. If that value is not up to date with respect to its
   prerequisites, the Calc() method above is used first to update the value
-  before the reference is returned.
-  @warning Caching is currently disabled -- Calc() will be invoked. */
-  // TODO(sherm1) Remove the above warning asap. See LeafOutputPort::DoEval().
+  before the reference is returned. */
   const AbstractValue& EvalAbstract(const Context<T>& context) const {
     DRAKE_ASSERT_VOID(
         get_system_base().ThrowIfContextNotCompatible(context));

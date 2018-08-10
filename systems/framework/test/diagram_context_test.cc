@@ -265,6 +265,30 @@ TEST_F(DiagramContextTest, SetAndGetInputPorts) {
   EXPECT_EQ(256, ReadVectorInputPort(*context_, 1)->get_value()[0]);
 }
 
+// Test that start_next_change_event() returns a sequentially increasing
+// number regardless of from where in the DiagramContext tree the request
+// is initiated. Also, it should continue counting up after cloning.
+TEST_F(DiagramContextTest, NextChangeEventNumber) {
+  const int64_t first = context_->start_new_change_event();
+
+  EXPECT_EQ(context_->start_new_change_event(), first + 1);
+  EXPECT_EQ(context_->start_new_change_event(), first + 2);
+
+  // Obtain a subcontext and verify we still count up.
+  Context<double>& zoh_context =
+      context_->GetMutableSubsystemContext(SubsystemIndex(4));
+  EXPECT_EQ(zoh_context.start_new_change_event(), first + 3);
+
+  // Now clone the context and make sure we're still counting up.
+  auto clone = dynamic_pointer_cast<DiagramContext<double>>(context_->Clone());
+  EXPECT_EQ(clone->start_new_change_event(), first + 4);
+  EXPECT_EQ(context_->start_new_change_event(), first + 4);  // Sanity check.
+
+  Context<double>& zoh_clone =
+      clone->GetMutableSubsystemContext(SubsystemIndex(4));
+  EXPECT_EQ(zoh_clone.start_new_change_event(), first + 5);
+}
+
 TEST_F(DiagramContextTest, Clone) {
   context_->SubscribeInputPortToOutputPort(
       {SubsystemIndex(0) /* adder0_ */, OutputPortIndex(0)},

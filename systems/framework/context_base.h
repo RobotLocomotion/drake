@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_optional.h"
 #include "drake/common/reset_on_copy.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/cache.h"
@@ -24,9 +25,9 @@ class SystemBaseContextBaseAttorney;
 }  // namespace detail
 #endif
 
-/** Provides non-templatized functionality shared by the templatized derived
-classes. That includes caching and dependency tracking, and management of
-local values for fixed input ports.
+/** Provides non-templatized Context functionality shared by the templatized
+derived classes. That includes caching and dependency tracking, and management
+of local values for fixed input ports.
 
 Terminology: in general a Drake System is a tree structure composed of
 "subsystems", which are themselves System objects. The corresponding Context is
@@ -206,6 +207,19 @@ class ContextBase : public internal::ContextMessageInterface {
     return input_port_values_[index].get_mutable();
   }
 
+  /** (Internal use only) Returns the next change event serial number that is
+  unique for this entire Context tree, not just this subcontext. This number
+  is not reset after a Context is copied but continues to count up. */
+  int64_t start_new_change_event() {
+    // First search up to find the root Context (typically not far).
+    // TODO(sherm1) Consider precalculating this for faster access.
+    ContextBase* context = this;
+    while (context->parent_)
+      context = context->parent_;
+
+    return ++context->current_change_event_;
+  }
+
  protected:
   /** Default constructor creates an empty ContextBase but initializes all the
   built-in dependency trackers that are the same in every System (like time,
@@ -237,8 +251,86 @@ class ContextBase : public internal::ContextMessageInterface {
       OutputPortIndex expected_index, DependencyTicket ticket,
       const internal::OutputPortPrerequisite& prerequisite);
 
-  /** Clones a context but without copying any of its internal pointers; the
-  clone's pointers are set to null. */
+  // These "Note" methods are used by derived classes to effect "bulk" change
+  // notifications. Each acts locally but has an identical signature so can
+  // be passed down the Context tree to operate on every subcontext.
+
+  /** Force invalidation of any time-dependent computation. */
+  void NoteTimeChanged(int64_t change_event) {
+    get_tracker(DependencyTicket(internal::kTimeTicket))
+        .NoteValueChange(change_event);
+  }
+
+  /** Force invalidation of any accuracy-dependent computation. */
+  void NoteAccuracyChanged(int64_t change_event) {
+    get_tracker(DependencyTicket(internal::kAccuracyTicket))
+        .NoteValueChange(change_event);
+  }
+
+  /** Force invalidation of any state-dependent computation. */
+  void NoteAllStateChanged(int64_t change_event) {
+    NoteAllContinuousStateChanged(change_event);
+    NoteAllDiscreteStateChanged(change_event);
+    NoteAllAbstractStateChanged(change_event);
+  }
+
+  /** Force invalidation of any continuous state-dependent computation. */
+  void NoteAllContinuousStateChanged(int64_t change_event) {
+    NoteAllQChanged(change_event);
+    NoteAllVChanged(change_event);
+    NoteAllZChanged(change_event);
+  }
+
+  /** Force invalidation of any q-dependent computation. */
+  void NoteAllQChanged(int64_t change_event) {
+    get_tracker(DependencyTicket(internal::kQTicket))
+        .NoteValueChange(change_event);
+  }
+
+  /** Force invalidation of any v-dependent computation. */
+  void NoteAllVChanged(int64_t change_event) {
+    get_tracker(DependencyTicket(internal::kVTicket))
+        .NoteValueChange(change_event);
+  }
+
+  /** Force invalidation of any z-dependent computation. */
+  void NoteAllZChanged(int64_t change_event) {
+    get_tracker(DependencyTicket(internal::kZTicket))
+        .NoteValueChange(change_event);
+  }
+
+  /** Force invalidation of any discrete state-dependent computation. */
+  void NoteAllDiscreteStateChanged(int64_t change_event) {
+    for (auto ticket : discrete_state_tickets_)
+      get_tracker(ticket).NoteValueChange(change_event);
+  }
+
+  /** Force invalidation of any abstract state-dependent computation. */
+  void NoteAllAbstractStateChanged(int64_t change_event) {
+    for (auto ticket : abstract_state_tickets_)
+      get_tracker(ticket).NoteValueChange(change_event);
+  }
+
+  /** Force invalidation of any parameter-dependent computation. */
+  void NoteAllParametersChanged(int64_t change_event) {
+    NoteAllNumericParametersChanged(change_event);
+    NoteAllAbstractParametersChanged(change_event);
+  }
+
+  /** Force invalidation of any numeric parameter-dependent computation. */
+  void NoteAllNumericParametersChanged(int64_t change_event) {
+    for (auto ticket : numeric_parameter_tickets_)
+      get_tracker(ticket).NoteValueChange(change_event);
+  }
+
+  /** Force invalidation of any abstract parameter-dependent computation. */
+  void NoteAllAbstractParametersChanged(int64_t change_event) {
+    for (auto ticket : abstract_parameter_tickets_)
+      get_tracker(ticket).NoteValueChange(change_event);
+  }
+
+  /** (Internal use only) Clones a context but without copying any of its
+  internal pointers; the clone's pointers are set to null. */
   // Structuring this as a static method allows DiagramContext to invoke this
   // protected function on its children.
   static std::unique_ptr<ContextBase> CloneWithoutPointers(
@@ -279,14 +371,34 @@ class ContextBase : public internal::ContextMessageInterface {
     context.DoPropagateCachingChange(caching_change);
   }
 
+  /** (Internal use only) Applies the given bulk-change notification method
+  to the given `context`, and propagates the notification to subcontexts if this
+  is a DiagramContext. */
+  // Structuring this as a static method allows DiagramContext to invoke this
+  // protected method on its children.
+  static void PropagateBulkChange(
+      ContextBase* context, int64_t change_event,
+      void (ContextBase::*note_bulk_change)(int64_t change_event)) {
+    (context->*note_bulk_change)(change_event);
+    context->DoPropagateBulkChange(change_event, note_bulk_change);
+  }
+
+  /** (Internal use only) This is a convenience method for invoking the
+  eponymous static method on `this` context (which occurs frequently). */
+  void PropagateBulkChange(
+      int64_t change_event,
+      void (ContextBase::*note_bulk_change)(int64_t change_event)) {
+    PropagateBulkChange(this, change_event, note_bulk_change);
+  }
+
   /** Declares that `parent` is the context of the enclosing Diagram.
-  Aborts if the parent has already been set to something else. */
+  Aborts if the parent has already been set. */
   // Use static method so DiagramContext can invoke this on behalf of a child.
   // Output argument is listed first because it is serving as the 'this'
   // pointer here.
-  static void set_parent(ContextBase* child, const ContextBase* parent) {
-    DRAKE_DEMAND(child != nullptr);
-    child->set_parent(parent);
+  static void set_parent(ContextBase* child, ContextBase* parent) {
+    DRAKE_DEMAND(child != nullptr && child->parent_ == nullptr);
+    child->parent_ = parent;
   }
 
   /** Derived classes must implement this so that it performs the complete
@@ -322,13 +434,19 @@ class ContextBase : public internal::ContextMessageInterface {
     unused(caching_change);
   }
 
+  /** DiagramContext must implement this to invoke PropagateBulkChange()
+  on their subcontexts, passing along the indicated method that specifies the
+  particular bulk change (e.g. whole state, all parameters, all discrete state
+  variables, etc.). The default implementation does nothing which is fine for
+  a LeafContext. */
+  virtual void DoPropagateBulkChange(
+      int64_t change_event,
+      void (ContextBase::*note_bulk_change)(int64_t change_event)) {
+    unused(change_event, note_bulk_change);
+  }
+
  private:
   friend class detail::SystemBaseContextBaseAttorney;
-
-  void set_parent(const ContextBase* parent) {
-    DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
-    parent_ = parent;
-  }
 
   // Returns the parent Context or `nullptr` if this is the root Context.
   const ContextBase* get_parent_base() const { return parent_; }
@@ -382,9 +500,13 @@ class ContextBase : public internal::ContextMessageInterface {
   // This is the dependency graph for values within this subcontext.
   DependencyGraph graph_;
 
+  // This is used only when this subcontext is serving as the root
+  // of a context tree. Note that it does *not* get reset when copied.
+  int64_t current_change_event_{0};
+
   // The Context of the enclosing Diagram. Null/invalid when this is the root
   // context.
-  reset_on_copy<const ContextBase*> parent_;
+  reset_on_copy<ContextBase*> parent_;
 
   // Name of the subsystem whose subcontext this is.
   std::string system_name_;

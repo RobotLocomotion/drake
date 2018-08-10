@@ -383,13 +383,42 @@ class System : public SystemBase {
   /// a helpful message.
   //@{
 
+  /// Returns a reference to the cached value of the continuous state variable
+  /// time derivatives, evaluating first if necessary using
+  /// CalcTimeDerivatives().
+  /// @see CalcTimeDerivatives()
+  const ContinuousState<T>& EvalTimeDerivatives(
+      const Context<T>& context) const {
+    const CacheEntry& entry =
+        this->get_cache_entry(time_derivatives_cache_index_);
+    return entry.Eval<ContinuousState<T>>(context);
+  }
+
+  /// Returns a reference to the cached value of the potential energy. If
+  /// necessary the cache will be updated first using CalcPotentialEnergy().
+  /// @see CalcPotentialEnergy()
+  const T& EvalPotentialEnergy(const Context<T>& context) const {
+    const CacheEntry& entry =
+        this->get_cache_entry(potential_energy_cache_index_);
+    return entry.Eval<T>(context);
+  }
+
+  /// Returns a reference to the cached value of the kinetic energy. If
+  /// necessary the cache will be updated first using CalcKineticEnergy().
+  /// @see CalcPotentialEnergy()
+  const T& EvalKineticEnergy(const Context<T>& context) const {
+    const CacheEntry& entry =
+        this->get_cache_entry(kinetic_energy_cache_index_);
+    return entry.Eval<T>(context);
+  }
+
   /// Returns a reference to the cached value of the conservative power. If
   /// necessary the cache will be updated first using CalcConservativePower().
   /// @see CalcConservativePower()
   const T& EvalConservativePower(const Context<T>& context) const {
-    // TODO(sherm1) Replace with an actual cache entry.
-    fake_cache_conservative_power_ = CalcConservativePower(context);
-    return fake_cache_conservative_power_;
+    const CacheEntry& entry =
+        this->get_cache_entry(conservative_power_cache_index_);
+    return entry.Eval<T>(context);
   }
 
   /// Returns a reference to the cached value of the non-conservative power. If
@@ -397,9 +426,9 @@ class System : public SystemBase {
   /// CalcNonConservativePower().
   /// @see CalcNonConservativePower()
   const T& EvalNonConservativePower(const Context<T>& context) const {
-    // TODO(sherm1) Replace with an actual cache entry.
-    fake_cache_nonconservative_power_ = CalcNonConservativePower(context);
-    return fake_cache_nonconservative_power_;
+    const CacheEntry& entry =
+        this->get_cache_entry(nonconservative_power_cache_index_);
+    return entry.Eval<T>(context);
   }
 
   /// Returns the value of the vector-valued input port with the given
@@ -466,6 +495,7 @@ class System : public SystemBase {
 
     return basic_value->get_value();
   }
+
   //@}
 
   //----------------------------------------------------------------------------
@@ -1332,8 +1362,35 @@ class System : public SystemBase {
       Event<T>* event,
       CompositeEventCollection<T>* events) const = 0;
 
-  // Promote so we don't need "this->" everywhere.
+  // Promote these so we don't need "this->" everywhere.
   using SystemBase::get_name;
+  using SystemBase::CheckValidContext;
+  using SystemBase::DeclareCacheEntry;
+  using SystemBase::all_sources_ticket;
+  using SystemBase::nothing_ticket;
+  using SystemBase::time_ticket;
+  using SystemBase::accuracy_ticket;
+  using SystemBase::q_ticket;
+  using SystemBase::v_ticket;
+  using SystemBase::z_ticket;
+  using SystemBase::xc_ticket;
+  using SystemBase::xd_ticket;
+  using SystemBase::xa_ticket;
+  using SystemBase::all_state_ticket;
+  using SystemBase::xcdot_ticket;
+  using SystemBase::xdhat_ticket;
+  using SystemBase::configuration_ticket;
+  using SystemBase::velocity_ticket;
+  using SystemBase::kinematics_ticket;
+  using SystemBase::all_parameters_ticket;
+  using SystemBase::all_input_ports_ticket;
+  using SystemBase::input_port_ticket;
+  using SystemBase::output_port_ticket;
+  using SystemBase::cache_entry_ticket;
+  using SystemBase::discrete_state_ticket;
+  using SystemBase::abstract_state_ticket;
+  using SystemBase::numeric_parameter_ticket;
+  using SystemBase::abstract_parameter_ticket;
 
  protected:
   /// Derived classes will implement this method to evaluate a witness function
@@ -1405,18 +1462,75 @@ class System : public SystemBase {
       State<T>* state) const = 0;
   //@}
 
+
   //----------------------------------------------------------------------------
   /// @name                 System construction
   /// Authors of derived %Systems can use these methods in the constructor
   /// for those %Systems.
   //@{
-  /// Constructs an empty %System base class object, possibly supporting
-  /// scalar-type conversion support (AutoDiff, etc.) using @p converter.
+
+  /// Constructs an empty %System base class object and allocates base class
+  /// resources, possibly supporting scalar-type conversion support (AutoDiff,
+  /// etc.) using @p converter.
   ///
   /// See @ref system_scalar_conversion for detailed background and examples
   /// related to scalar-type conversion support.
   explicit System(SystemScalarConverter converter)
-      : system_scalar_converter_(std::move(converter)) {}
+      : system_scalar_converter_(std::move(converter)) {
+    // Note that configuration and kinematics tickets also include dependence
+    // on parameters and accuracy.
+
+    // Potential and kinetic energy, and conservative power that measures
+    // the transfer between them, must *not* be (directly) time dependent.
+    potential_energy_cache_index_ =
+        DeclareCacheEntry("potential energy", T(0),
+                          &System::CalcPotentialEnergy2,
+                          {configuration_ticket()})
+            .cache_index();
+
+    kinetic_energy_cache_index_ =
+        DeclareCacheEntry("kinetic energy", T(0), &System::CalcKineticEnergy2,
+                          {kinematics_ticket()})
+            .cache_index();
+
+    conservative_power_cache_index_ =
+        DeclareCacheEntry("conservative power", T(0),
+                          &System::CalcConservativePower2,
+                          {kinematics_ticket()})
+            .cache_index();
+
+    // Only non-conservative power can have an explicit time dependence.
+    nonconservative_power_cache_index_ =
+        DeclareCacheEntry(
+            "non-conservative power", T(0), &System::CalcNonConservativePower2,
+            {time_ticket(), kinematics_ticket()})
+            .cache_index();
+
+    // For the time derivative cache we need to use the general form for
+    // cache creation because we're dealing with pre-defined allocator and
+    // calculator method signatures.
+    CacheEntry::AllocCallback alloc_derivatives = [this]() {
+      return std::make_unique<Value<ContinuousState<T>>>(
+          this->AllocateTimeDerivatives());
+    };
+    CacheEntry::CalcCallback calc_derivatives = [this](
+        const ContextBase& context_base, AbstractValue* result) {
+      DRAKE_DEMAND(result != nullptr);
+      ContinuousState<T>& state = result->GetMutableValue<ContinuousState<T>>();
+      const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
+      CalcTimeDerivatives(context, &state);
+    };
+
+    // We must assume that time derivatives can depend on *any* context source.
+    time_derivatives_cache_index_ =
+        this->DeclareCacheEntryWithKnownTicket(
+                xcdot_ticket(),
+                "time derivatives", std::move(alloc_derivatives),
+                std::move(calc_derivatives), {all_sources_ticket()})
+            .cache_index();
+
+    // TODO(sherm1) Allocate and use discrete update cache.
+  }
 
   /// Adds a port with the specified @p type and @p size to the input topology.
   /// If the port is intended to model a random noise or disturbance input,
@@ -1821,6 +1935,26 @@ class System : public SystemBase {
     CheckValidContextT(*context);
   }
 
+  // Provide energy and power signatures that satisfy requirements for cache
+  // Calc() methods.
+
+  void CalcPotentialEnergy2(const Context<T>& context, T* pe) const {
+    DRAKE_DEMAND(pe != nullptr);
+    *pe = CalcPotentialEnergy(context);
+  }
+  void CalcKineticEnergy2(const Context<T>& context, T* ke) const {
+    DRAKE_DEMAND(ke != nullptr);
+    *ke = CalcKineticEnergy(context);
+  }
+  void CalcConservativePower2(const Context<T>& context, T* power) const {
+    DRAKE_DEMAND(power != nullptr);
+    *power = CalcConservativePower(context);
+  }
+  void CalcNonConservativePower2(const Context<T>& context, T* power) const {
+    DRAKE_DEMAND(power != nullptr);
+    *power = CalcNonConservativePower(context);
+  }
+
   // Shared code for updating a vector input port and returning a pointer to its
   // value as a BasicVector<T>, or nullptr if the port is not connected. Throws
   // a logic_error if the port_index is out of range or if the input port is not
@@ -1870,12 +2004,11 @@ class System : public SystemBase {
   // Functions to convert this system to use alternative scalar types.
   SystemScalarConverter system_scalar_converter_;
 
-  // TODO(sherm1) Replace these fake cache entries with real cache asap.
-  // These are temporaries and hence uninitialized.
-  mutable T fake_cache_pe_;
-  mutable T fake_cache_ke_;
-  mutable T fake_cache_conservative_power_;
-  mutable T fake_cache_nonconservative_power_;
+  CacheIndex time_derivatives_cache_index_,
+             potential_energy_cache_index_,
+             kinetic_energy_cache_index_,
+             conservative_power_cache_index_,
+             nonconservative_power_cache_index_;
 };
 
 }  // namespace systems
