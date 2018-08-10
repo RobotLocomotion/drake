@@ -1324,6 +1324,20 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
       drake::systems::DiscreteValues<T>* updates) const override;
 
+  // Helper method used within DoCalcDiscreteVariableUpdates() to update
+  // generalized velocities from previous step value v0 to next step value v.
+  // This helper uses num_substeps within a time interval of duration dt
+  // to perform the update using a step size dt_substep = dt/num_substeps.
+  // During the time span dt the problem data M, Jn, Jt and minus_tau, are
+  // approximated to be constant, a first order approximation.
+  implicit_stribeck::ComputationInfo SolveUsingSubStepping(
+      int num_substeps,
+      const MatrixX<T>& M0, const MatrixX<T>& Jn, const MatrixX<T>& Jt,
+      const VectorX<T>& minus_tau,
+      const VectorX<T>& stiffness, const VectorX<T>& damping,
+      const VectorX<T>& mu,
+      const VectorX<T>& v0, const VectorX<T>& phi0) const;
+
   void DoMapQDotToVelocity(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,
