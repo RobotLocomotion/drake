@@ -17,8 +17,9 @@ namespace multilane {
 /// @file
 /// Loader for serialized multilane road networks.
 ///
-/// The serialization is a fairly straightforward mapping of the BuilderBase
-/// interface onto YAML. See (TBD) for more detail of the format.
+/// The serialization is a fairly straightforward mapping of the
+/// \ref drake::maliput::multilane::Builder "Builder" interface onto YAML.
+/// See yaml_spec_doxygen.h for more detail of the format.
 ///
 /// The basic idea is, however:
 ///  - general parameters (i.e., lane_width, elevation bounds, linear and
@@ -38,19 +39,20 @@ namespace multilane {
 /// must bottom out in explicitly-named Endpoints.
 
 /// Loads the `input` string as a maliput_multilane_builder document using the
-/// provided `builder_factory`.
+/// provided `builder_factory`. See loader.h for further details.
 ///
 /// Application code must use a BuilderFactory reference. It is provided so that
-/// the Builder to be created can be mocked and code can be tested.
+/// the \ref drake::maliput::multilane::Builder "Builder" to be created can be
+/// mocked and code can be tested.
 std::unique_ptr<const api::RoadGeometry> Load(
     const BuilderFactoryBase& builder_factory, const std::string& input);
 
 /// Loads the named file as a maliput_multilane_builder document using the
-/// provided `builder_factory`.
-///
+/// provided `builder_factory`. See loader.h for further details.
 ///
 /// Application code must use a BuilderFactory reference. It is provided so that
-/// the Builder to be created can be mocked and code can be tested.
+/// the \ref drake::maliput::multilane::Builder "Builder" to be created can be
+/// mocked and code can be tested.
 std::unique_ptr<const api::RoadGeometry> LoadFile(
     const BuilderFactoryBase& builder_factory, const std::string& filename);
 

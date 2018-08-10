@@ -13,19 +13,17 @@ namespace multilane {
 /// Multilane is a backend implementation of Maliput, an interface to describe
 /// road geometries. Multilane provides two loader methods
 /// ( Load() and LoadFile() ) that will parse a YAML file or string by
-/// calling appropriate `Builder` methods to create a `RoadGeometry`. So as
-/// to reduce the impact with a new base format, YAML was chosen taking
-/// Monolane's decision on that format before as well there is no need to
-/// deprecate it.
+/// calling appropriate \ref drake::maliput::multilane::Builder "Builder"
+/// methods to create a `RoadGeometry`.
 ///
 /// <h2>General considerations</h2>
 ///
-/// All the map information must be under a root node called
+/// All the road geometry information must be under a root node called
 /// `maliput_multilane_builder`, otherwise it will not be parsed.
 ///
 /// <h3>Units</h3>
 ///
-/// The following list shows the available units found in different entities:
+/// The following list shows the expected units for floating-point quantities:
 ///
 ///   - Positions, distances and lengths: meters [m].
 ///   - Angles: degrees [°] (no minutes nor seconds, just degrees).
@@ -43,18 +41,18 @@ namespace multilane {
 /// and positions are expressed as \f$(x, y, z)\f$ triples. Also, the \f$Θ\f$
 /// angle rotating around the \f$\hat{z}\f$ axis is used to define headings.
 /// These rotations are right handed and an angle of 0° points in the
-/// \f$\hat{x}\f$ direction. Angles wrt a plane parallel to \f$z = 0\f$ can be
-/// defined. A heading vector pointing the direction of the lane at that point
-/// is used as rotation axis and the angle is clockwise. Those will express
-/// superelevation.
+/// \f$\hat{x}\f$ direction. Angles with respect to a plane parallel to
+/// \f$z = 0\f$ can be defined. A heading vector pointing the direction of the
+/// lane at that point is used as rotation axis and the angle is clockwise.
+/// Those will express superelevation.
 ///
 /// <h2>Entities</h2>
 ///
-/// <h3>Maliput Multilane Builder</h3>
+/// <h3>`maliput_multilane_builder`</h3>
 ///
 /// `maliput_multilane_builder` holds all the common and default configurations
 /// to build a `RoadGeometry`. All of them, except `groups`, must be defined
-/// though some of them may be empty. Its attributes are:
+/// though some of them may be empty.
 ///
 /// It will be represented as a mapping:
 ///
@@ -87,8 +85,8 @@ namespace multilane {
 /// added to the right of the last lane and left to the first lane respectively.
 ///  Their purpose is to increase driveable bounds. Both must be non negative.
 ///   - _EB\_MIN_ and _EB\_MAX_ define minimum and maximum height values of the
-/// road’s volume. The minimum value comes first and must be non positive, then
-/// the maximum and must be non negative.
+/// road’s volume. The minimum value must be non positive, thus the maximum must
+/// be non negative.
 ///   - _LT_ and _AT_ are position and orientation tolerances which are non
 /// negative numbers that define the error of mapping a world coordinate or
 /// orientation in a custom lane-frame.
@@ -98,15 +96,35 @@ namespace multilane {
 /// The former guides the computations to be as accurate as precision states.
 /// The latter will be accurate whenever possible, but it's not guaranteed in
 /// favor of faster computations.
-///   - _points_ is a map of `Enpoints` to build `connections` are provided
-/// under the `points` mapping. If it is empty, no `connection` would be
-/// defined.
+///   - _points_ is a map of `Endpoint`s to build `connection`s. At least one
+/// point is required to anchor the connections to world-frame.
 ///   - _connections_ is a map that holds all the `Connection` definitions. It
 /// may be empty if no `Connection` is going to be defined.
 ///   - _groups_ is a map of `groups` where `connections` can be put together.
 /// It may be empty or not defined if no group is going to be made.
 ///
-/// <h3>`EndpointXy`</h3>
+///
+/// <h3>`points`</h3>
+///
+/// A collection of points in 3D space. Each one will be under a tag (used to
+/// reference it within `connection` description) and defined by an
+/// `endpoint_xy` and a `endpoint_z`. Both sequences must be provided.
+///
+/// It will be represented as a mapping like:
+///
+/// @code
+///
+/// endpoint:
+///   xypoint: [x, y, theta]
+///   zpoint: [z, z_dot, theta, theta_dot]
+///
+/// @endcode
+///
+/// Where:
+///   - `xypoint` is the `endpoint_xy` sequence.
+///   - `zpoint` is the `endpoint_z` sequence.
+///
+/// <h3>`endpoint_xy`</h3>
 ///
 /// A point in the plane \f$z = 0\f$ expressed as \f$(x, y, Θ)\f$, where
 /// \f$(x, y)\f$ defines the position and \f$Θ\f$ defines the heading angle of
@@ -125,7 +143,7 @@ namespace multilane {
 ///   - `y` is the \f$y\f$ coordinate.
 ///   - `theta` is the \f$Θ\f$ coordinate.
 ///
-/// <h3>`EndpointXy`</h3>
+/// <h3>`endpoint_z`</h3>
 ///
 /// Specifies elevation, slope, superelevation and its speed of change at a
 /// point over the plane \f$z = 0\f$ as \f$(z, z', Θ, Θ')\f$, where \f$z\f$ and
@@ -147,57 +165,22 @@ namespace multilane {
 ///   - `z_dot` is the \f$z′\f$ coordinate.
 ///   - `theta` is the \f$Θ\f$ coordinate.
 ///   - `theta_dot` is the \f$Θ′\f$ coordinate. This parameter is optional.
-/// The `Builder` may need to adjust it to comply with _G1_ constraints.
+/// The \ref drake::maliput::multilane::Builder "Builder" may need to adjust it
+/// to comply with _G1_ constraints.
 ///
-/// <h3>`Endpoint`</h3>
+/// <h3>`connections`</h3>
 ///
-/// It is a point in 3D space defined by an `EndpointXy` and a `EndpointZ`
-/// Both sequences must be provided.
-///
-/// It will be represented as a mapping like:
-///
-/// @code
-///
-/// endpoint:
-///   xypoint: [x, y, theta]
-///   zpoint: [z, z_dot, theta, theta_dot]
-///
-/// @endcode
-///
-/// Where:
-///   - `xypoint` is the _EndpointXy_ sequence.
-///   - `zpoint` is the `EnpointZ` sequence.
-///
-/// <h3>Arc</h3>
-///
-/// Constant radius arcs are defined in terms of a radius and an angle span.
-/// _Arcs_ are used to define planar curves on the the \f$z = 0\f$ plane,
-/// starting from an `EndpointXy`. Radius must be positive and its direction
-/// is derived as rotating +90° start `EndpointXy`’s heading vector, and
-/// angle span has the same properties as `EndpoinXy`’s `theta` coordinate.
-///
-/// It will be represented as a sequence:
-///
-/// @code
-///
-/// arc: [radius, theta]
-///
-/// @endcode
-///
-/// Where:
-///   - `radius` is the radius of the `arc`.
-///   - `theta` is the angle span of the `arc`.
-///
-/// <h3>`Connection`</h3>
-///
-/// A `Connection` defines a `Segment` and must provide the number of lanes,
-/// start `Endpoint` and end `EndpointZ` information. Either line `length` or
-/// `arc` must be provided to define the planar geometry of that connection.
+/// A `connection` defines a `Segment` and must provide the number of lanes,
+/// start `Endpoint` and end `endpoint_z` information. Either line `length` or
+/// `arc` must be provided to define the planar geometry of that `connection`.
 /// Optional extra information can also provided and it will modify the way the
-/// `Connection` will be created.
+/// `Connection` will be created. `connections` is a collection of `connection`s
+/// and those will be identified by their tag. Each tag will name a
+/// `connection`, can be referenced by other `connection`s and to create
+/// `group`s, and will be used as Segment`'s ID as well.
 ///
-/// `start` `Endpoint` and `end` `EndpointZ` can either refer to a reference
-/// road curve or to the lane start and end `Endpoints`. When only `start` and
+/// `start` `Endpoint` and `end` `endpoint_z` can either refer to a reference
+/// road curve or to the lane start and end `Endpoint`s. When only `start` and
 /// `z_end` or `explicit_end` are provided, those will refer to the reference
 /// road curve of the `Connection`. `r_ref` can be provided to state the offset
 /// distance from the reference road curve to `ref_lane` `connection`’s lane.
@@ -313,14 +296,37 @@ namespace multilane {
 /// fundamental "hook up segments so that the lanes line up as intended"
 /// specification.
 ///     -# This REF from other REF: I'm not sure how useful this actually is,
-/// but the existing `Builder` should be able to execute it.
+/// but the existing \ref drake::maliput::multilane::Builder "Builder" should be
+/// able to execute it.
 ///     -# This REF from lane POINT: We need something that allows using a
-/// free point as the origin, and the existing `Builder` should be able to
+/// free point as the origin, and the existing
+/// \ref drake::maliput::multilane::Builder "Builder" should be able to
 /// execute it.
 ///     -# This LANE from lane POINT: This is probably more useful than
 /// "REF from POINT".
 ///
-/// <h3>Group</h3>
+///
+/// <h3>`arc`</h3>
+///
+/// Constant radius arcs are defined in terms of a radius and an angle span.
+/// `arc`s are used to define planar curves on the the \f$z = 0\f$ plane,
+/// starting from an `endpoint_xy`. Radius must be positive and its direction
+/// is derived as rotating +90° start `endpoint_xy`’s heading vector, and
+/// angle span has the same properties as `EndpoinXy`’s `theta` coordinate.
+///
+/// It will be represented as a sequence:
+///
+/// @code
+///
+/// arc: [radius, theta]
+///
+/// @endcode
+///
+/// Where:
+///   - `radius` is the radius of the `arc`.
+///   - `theta` is the angle span of the `arc`.
+///
+/// <h3>`groups`</h3>
 ///
 /// A collection of touching `Connections`. It will be a sequence of string
 /// scalars that refer to connections’ name identifiers.
