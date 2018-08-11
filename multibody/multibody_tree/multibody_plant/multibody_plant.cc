@@ -889,7 +889,7 @@ void MultibodyPlant<T>::CalcContactResults(
 
     // Contact forces applied on B at contact point C.
     const Vector3<T> f_Bc_C(
-        ft(2 * icontact), ft(2 * icontact + 1), fn(icontact));
+        -ft(2 * icontact), -ft(2 * icontact + 1), fn(icontact));
     const Vector3<T> f_Bc_W = R_WC * f_Bc_C;
 
     // Slip velocity.

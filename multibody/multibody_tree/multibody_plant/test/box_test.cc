@@ -150,11 +150,11 @@ GTEST_TEST(Box, UnderStiction) {
   // in the -z direction).
   double direction = contact_info.bodyA_index() == box.index() ? 1.0 : -1.0;
 
-  // The expected value of the contact force applied on the body with index
-  // contact_info.bodyB_index() at the contact point C.
-  const Vector3<double> f_Bc_W(-applied_force, 0.0, mass * g * direction);
+  // The expected value of the contact force applied on the box at the contact
+  // point C.
+  const Vector3<double> f_Bc_W(-applied_force, 0.0, mass * g);
   EXPECT_TRUE(CompareMatrices(
-      contact_info.contact_force(), f_Bc_W,
+      contact_info.contact_force(), f_Bc_W * direction,
       kTolerance, MatrixCompareType::relative));
 
   // Upper limit on the x displacement computed using the maximum possible
