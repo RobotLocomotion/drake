@@ -16,6 +16,10 @@ def _run_pkg_config(repository_ctx, command_line, pkg_config_paths):
             "PKG_CONFIG_PATH": pkg_config_path,
         },
     )
+
+    print(' '.join(command_line))
+    print(result.stderr)
+    print(result.stdout)
     if result.return_code != 0:
         return struct(error = "error {} from {}: {}{}".format(
             result.return_code,
@@ -42,7 +46,7 @@ def setup_pkg_config_repository(repository_ctx):
         return struct(error = "Could not find pkg-config on PATH={}".format(
             path(repository_ctx),
         ))
-    args = [tool_path, repository_ctx.attr.modname]
+    args = [tool_path, repository_ctx.attr.modname, "--debug"]
 
     pkg_config_paths = getattr(
         repository_ctx.attr,
