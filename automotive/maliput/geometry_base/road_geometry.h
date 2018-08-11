@@ -1,0 +1,133 @@
+#pragma once
+
+#include <memory>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+#include "drake/automotive/maliput/api/basic_id_index.h"
+#include "drake/automotive/maliput/api/branch_point.h"
+#include "drake/automotive/maliput/api/junction.h"
+#include "drake/automotive/maliput/api/road_geometry.h"
+#include "drake/automotive/maliput/geometry_base/branch_point.h"
+#include "drake/automotive/maliput/geometry_base/junction.h"
+#include "drake/common/drake_copyable.h"
+#include "drake/common/drake_throw.h"
+
+namespace drake {
+namespace maliput {
+namespace geometry_base {
+
+/// @namespace drake::maliput::geometry_base
+///
+/// geometry_base implements the object graph interfaces of maliput's
+/// geometry API (api::RoadGeometry, etc).  It is suitable for use as base
+/// classes for a complete backend implementation, or for mock
+/// implementations for unit tests (such as test_utilities/mock_geometry.h).
+///
+/// geometry_base implements all the virtual methods involved in
+/// managing the object graph of the road network.  It does not
+/// implement any of the geometric methods that define the immersion
+/// of lane-frame into world-frame; that is the job of each specific
+/// backend.
+
+/// geometry_base's implementation of api::RoadGeometry.
+class RoadGeometry : public api::RoadGeometry {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RoadGeometry)
+
+  /// Constructs an empty RoadGeometry with the specified tolerances.
+  ///
+  /// @param id the ID of the RoadGeometry
+  /// @param linear_tolerance the linear tolerance
+  /// @param angular_tolerance the angular tolerance
+  ///
+  /// @throws if either `linear_tolerance` or `angular_tolerance` is
+  ///         non-positive.
+  RoadGeometry(const api::RoadGeometryId& id,
+               const double linear_tolerance,
+               const double angular_tolerance)
+      : id_(id),
+        linear_tolerance_(linear_tolerance),
+        angular_tolerance_(angular_tolerance) {
+    DRAKE_THROW_UNLESS(linear_tolerance_ > 0.);
+    DRAKE_THROW_UNLESS(angular_tolerance_ > 0.);
+  }
+
+  /// Adds @p junction to this RoadGeometry.
+  ///
+  /// This RoadGeometry will take ownership of `junction` and will be assigned
+  /// as its parent.
+  ///
+  /// @returns `junction`'s raw pointer.
+  ///
+  /// @tparam T must be derived from geometry_base::Junction.
+  template <class T>
+  T* AddJunction(std::unique_ptr<T> junction) {
+    static_assert(std::is_base_of<Junction, T>::value,
+                  "T is not derived from geometry_base::Junction");
+    T* const raw_pointer = junction.get();
+    AddJunctionPrivate(std::move(junction));
+    return raw_pointer;
+  }
+
+  /// Adds @p branch_point to this RoadGeometry.
+  ///
+  /// This RoadGeometry will take ownership of `branch_point` and will be
+  /// assigned as its parent.
+  ///
+  /// @returns `branch_point`'s raw pointer.
+  ///
+  /// @tparam T must be derived from geometry_base::BranchPoint.
+  template <class T>
+  T* AddBranchPoint(std::unique_ptr<T> branch_point) {
+    static_assert(std::is_base_of<BranchPoint, T>::value,
+                  "T is not derived from geometry_base::BranchPoint");
+    T* const raw_pointer = branch_point.get();
+    AddBranchPointPrivate(std::move(branch_point));
+    return raw_pointer;
+  }
+
+  ~RoadGeometry() override = default;
+
+ private:
+  void AddJunctionPrivate(std::unique_ptr<Junction> junction);
+
+  void AddBranchPointPrivate(std::unique_ptr<BranchPoint> branch_point);
+
+  const api::RoadGeometryId do_id() const override { return id_; }
+
+  int do_num_junctions() const override { return junctions_.size(); }
+
+  const api::Junction* do_junction(int index) const override;
+
+  int do_num_branch_points() const override { return branch_points_.size(); }
+
+  const api::BranchPoint* do_branch_point(int index) const override;
+
+  const IdIndex& DoById() const override { return id_index_; }
+
+  double do_linear_tolerance() const override { return linear_tolerance_; }
+
+  double do_angular_tolerance() const override { return angular_tolerance_; }
+
+  // TODO(maddog@tri.global) Provide a basic naive implementation of
+  //                         DoToRoadPosition() which only requires generic
+  //                         calls to Lane::ToLanePosition().
+
+  api::RoadGeometryId id_;
+  double linear_tolerance_{};
+  double angular_tolerance_{};
+  std::vector<std::unique_ptr<Junction>> junctions_;
+  std::vector<std::unique_ptr<BranchPoint>> branch_points_;
+  api::BasicIdIndex id_index_;
+};
+
+
+#ifndef DRAKE_DOXYGEN_CXX
+class RoadGeometryBadge { friend class RoadGeometry; };
+#endif  // DRAKE_DOXYGEN_CXX
+
+}  // namespace geometry_base
+}  // namespace maliput
+}  // namespace drake
