@@ -36,13 +36,9 @@ class ConstantValueSourceTest : public ::testing::Test {
 TEST_F(ConstantValueSourceTest, Output) {
   ASSERT_EQ(source_->get_num_input_ports(), context_->get_num_input_ports());
 
-  // Check Calc() method.
   source_->get_output_port(0).Calc(*context_, output_.get());
-  EXPECT_EQ("foo", output_->GetValue<std::string>());
 
-  // Check Eval() method.
-  auto& cached_value = source_->get_output_port(0).Eval<std::string>(*context_);
-  EXPECT_EQ("foo", cached_value);
+  EXPECT_EQ("foo", output_->GetValue<std::string>());
 }
 
 // Tests that ConstantValueSource allocates no state variables in the context_.
