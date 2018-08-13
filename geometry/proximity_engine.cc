@@ -295,8 +295,12 @@ bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
     nearest_pair.id_A = EncodedData(fcl_object_A).id(dynamic_map, anchored_map);
     nearest_pair.id_B = EncodedData(fcl_object_B).id(dynamic_map, anchored_map);
 
-    nearest_pair.p_ACa = result.nearest_points[0];
-    nearest_pair.p_BCb = result.nearest_points[1];
+    // Note: The result of FCL's distance query is in the *world* frame, the
+    // SignedDistancePair reports in geometry frame.
+    nearest_pair.p_ACa =
+        fcl_object_A.getTransform().inverse() * result.nearest_points[0];
+    nearest_pair.p_BCb =
+        fcl_object_B.getTransform().inverse() * result.nearest_points[1];
     nearest_pair.distance = result.min_distance;
     // Guarantee fixed ordering of pair (A, B). Swap the ids and points on
     // surfaces and then flip the normal.

@@ -31,6 +31,8 @@ struct SignedDistancePair{
   GeometryId id_A;
   /** The id of the second geometry in the pair. */
   GeometryId id_B;
+  // TODO(SeanCurtis-TRI): Determine if this is the right frame (as opposed to
+  // the world frame.
   /** The witness point on geometry A's surface, expressed in A's frame. */
   Vector3<T> p_ACa;
   /** The witness point on geometry B's surface, expressed in B's frame. */
