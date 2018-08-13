@@ -250,6 +250,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "explicit_euler_integrator_test",
+    timeout = "moderate",
     deps = [
         ":explicit_euler_integrator",
         "//systems/analysis/test_utilities",
@@ -258,8 +259,11 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "implicit_euler_integrator_test",
-    # Test timeout increased to not timeout when run with Valgrind.
     timeout = "moderate",
+    # Takes too long with Valgrind.
+    tags = [
+         "no_memcheck",
+    ],
     deps = [
         ":implicit_euler_integrator",
         "//systems/analysis/test_utilities",
@@ -286,8 +290,11 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "runge_kutta3_integrator_test",
-    # Test timeout increased to not timeout when run with Valgrind.
     timeout = "moderate",
+    # Takes too long with Valgrind.
+    tags = [
+         "no_memcheck",
+    ],
     deps = [
         ":runge_kutta3_integrator",
         "//common/test_utilities:eigen_matrix_compare",
@@ -300,6 +307,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "semi_explicit_euler_integrator_test",
+    timeout = "moderate",
     deps = [
         ":explicit_euler_integrator",
         ":semi_explicit_euler_integrator",
@@ -311,6 +319,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "initial_value_problem_test",
+    timeout = "moderate",
     deps = [
         ":initial_value_problem",
         ":runge_kutta2_integrator",
