@@ -200,7 +200,10 @@ class TestRigidBodyTree(unittest.TestCase):
             join(os.environ["TEST_TMPDIR"], "test_graph.dot"))
 
         # - Check relative twist method
-        twist = tree.relativeTwist(kinsol, 0, 1, 0)
+        twist = tree.relativeTwist(cache=kinsol,
+                                   base_or_frame_ind=0,
+                                   body_or_frame_ind=1,
+                                   expressed_in_body_or_frame_ind=0)
         self.assertEqual(twist.shape[0], 6)
 
     def test_constraint_api(self):
