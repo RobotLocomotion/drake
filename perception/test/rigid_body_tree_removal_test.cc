@@ -78,8 +78,6 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
 
     AddCameraBody(tree_.get(), kPosition, kOrientation);
 
-    tree_->compile();
-
     builder_ = std::make_unique<systems::DiagramBuilder<double>>();
   }
 
@@ -201,7 +199,6 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
                      const Vector3<double>& orientation) {
     auto camera_body = std::make_unique<RigidBody<double>>();
     camera_body->set_name("rgbd_camera");
-    // camera_body->set_model_instance_id(tree->add_model_instance());
     Eigen::Isometry3d joint_transform =
         Eigen::Translation3d(position) *
         (Eigen::AngleAxisd(orientation(0), Eigen::Vector3d::UnitX()) *
@@ -244,11 +241,11 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
     auto joint = std::make_unique<FixedJoint>("box_joint", joint_transform);
     body->add_joint(&tree->world(), std::move(joint));
 
-    tree->add_rigid_body(std::move(body));
+    RigidBody<double>* body_in_tree = tree->add_rigid_body(std::move(body));
 
     drake::multibody::collision::Element collision(
         shape, Isometry3<double>::Identity());
-    tree->addCollisionElement(collision, *tree->FindBody("box"), "default");
+    tree->addCollisionElement(collision, *body_in_tree, "default");
   }
 
   // Finds the points in `cloud` that collide with some body in `tree`.
@@ -269,6 +266,7 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
 // Verifies that the visual geometries of a RigidBody contained in a
 // RigidBodyTree are completely removed from the point cloud.
 TEST_F(RigidBodyTreeRemovalTest, RemoveBoxTest) {
+  tree_->compile();
   InitFilterDiagram();
   BuildDiagramAndInitContext();
 
@@ -291,6 +289,7 @@ TEST_F(RigidBodyTreeRemovalTest, RemoveBoxTest) {
 // Verifies that points which do not belong to visual geometries of the rigid
 // bodies contained in a RigidBodyTree are kept.
 TEST_F(RigidBodyTreeRemovalTest, KeepPointsTest) {
+  tree_->compile();
   InitTransformerDiagram();
   BuildDiagramAndInitContext();
 
