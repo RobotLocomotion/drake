@@ -1,7 +1,10 @@
 #include "drake/manipulation/planner/differential_inverse_kinematics.h"
 
 #include <memory>
+#include <stdexcept>
 #include <string>
+
+#include <fmt/format.h>
 
 #include "drake/solvers/osqp_solver.h"
 
@@ -55,6 +58,27 @@ std::ostream& operator<<(std::ostream& os,
     default:
       DRAKE_ABORT();
   }
+}
+
+const std::vector<std::shared_ptr<solvers::LinearConstraint>>&
+DifferentialInverseKinematicsParameters::get_linear_velocity_constraints()
+    const {
+  return linear_velocity_constraints_;
+}
+
+void DifferentialInverseKinematicsParameters::AddLinearVelocityConstraint(
+      const std::shared_ptr<solvers::LinearConstraint>
+          constraint) {
+  if (constraint->num_vars() != get_num_velocities()) {
+    throw std::invalid_argument(fmt::format(
+          "Number of variables, {}, does not match number of velocities, {}.",
+          constraint->num_vars(), get_num_velocities()));
+  }
+  linear_velocity_constraints_.push_back(constraint);
+}
+
+void DifferentialInverseKinematicsParameters::ClearLinearVelocityConstraints() {
+  linear_velocity_constraints_.clear();
 }
 
 Vector6<double> ComputePoseDiffInCommonFrame(const Isometry3<double>& pose0,
@@ -134,6 +158,11 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
                                  uncon_v, v_next);
       }
     }
+  }
+
+  for (const auto& constraint : parameters.get_linear_velocity_constraints()) {
+    prog.AddConstraint(
+        solvers::Binding<solvers::LinearConstraint>(constraint, v_next));
   }
 
   // If redundant, add a small regularization term to q_nominal.
