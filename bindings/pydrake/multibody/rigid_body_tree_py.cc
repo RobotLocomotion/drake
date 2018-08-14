@@ -220,7 +220,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
                                           const VectorX<T>& v) {
              return tree.transformVelocityToQDot(cache, v);
            })
-      .def("computePositionNameToIndexMap", 
+      .def("computePositionNameToIndexMap",
            &RigidBodyTree<double>::computePositionNameToIndexMap)
       .def("transformQDotToVelocity", [](const RigidBodyTree<double>& tree,
                                           const KinematicsCache<T>& cache,
