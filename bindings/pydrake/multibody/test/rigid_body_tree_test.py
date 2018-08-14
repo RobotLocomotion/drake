@@ -199,6 +199,10 @@ class TestRigidBodyTree(unittest.TestCase):
         tree.drawKinematicTree(
             join(os.environ["TEST_TMPDIR"], "test_graph.dot"))
 
+        # - Check relative twist method
+        twist = tree.relativeTwist(kinsol, 0, 1, 0)
+        self.assertEqual(twist.shape[0], 6)
+
     def test_constraint_api(self):
         tree = RigidBodyTree(FindResourceOrThrow(
             "drake/examples/simple_four_bar/FourBar.urdf"))
