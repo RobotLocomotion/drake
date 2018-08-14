@@ -30,17 +30,18 @@ GTEST_TEST(CompassGaitTest, TestEnergyConservedInSwing) {
   auto context = cg.CreateDefaultContext();
   CompassGaitContinuousState<Expression>& state =
       cg.get_mutable_continuous_state(context.get());
+  auto derivatives = cg.AllocateTimeDerivatives();
 
   // Set the state vector to be symbolic variables.
   state.SetToNamedVariables();
 
   // Compute the time-derivative of the energy symbolically.
   const Expression energy =
-      cg.EvalKineticEnergy(*context) + cg.EvalPotentialEnergy(*context);
-  const VectorX<Expression> derivatives =
-      cg.EvalTimeDerivatives(*context).CopyToVector();
+      cg.CalcKineticEnergy(*context) + cg.CalcPotentialEnergy(*context);
+  cg.CalcTimeDerivatives(*context, derivatives.get());
   const Expression energy_dot =
-      energy.Jacobian(GetVariableVector(state.CopyToVector())) * derivatives;
+      energy.Jacobian(GetVariableVector(state.CopyToVector())) *
+      derivatives->CopyToVector();
 
   // Evaluate the time-derivative of energy at a few arbitrary states, it
   // should be zero.

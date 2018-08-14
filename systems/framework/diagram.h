@@ -827,21 +827,12 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
     // Creates this diagram's composite data structures that collect its
     // subsystems' resources, which must have already been allocated above.
-    // No dependencies are set up in these two calls.
     context->MakeParameters();
     context->MakeState();
 
-    // Subscribe each of the Diagram's composite-entity dependency trackers to
-    // the trackers for the corresponding constituent entities in the child
-    // subsystems. This ensures that changes made at the subcontext level are
-    // propagated correctly to the diagram context level. That includes state
-    // and parameter changes, as well as local changes that affect composite
-    // diagram-level computations like xcdot and pe.
-    context->SubscribeDiagramCompositeTrackersToChildrens();
-
-    // Peer-to-peer connections wire a child subsystem's input port to a
-    // child subsystem's output port. Subscribe each child input port to the
-    // child output port on which it depends.
+    // Connect child subsystem input ports to the child subsystem output ports
+    // on which they depend. Declares dependency of each input port on its
+    // connected output port.
     for (const auto& connection : connection_map_) {
       const OutputPortLocator& src = connection.second;
       const InputPortLocator& dest = connection.first;
@@ -850,28 +841,23 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
           ConvertToContextPortIdentifier(dest));
     }
 
-    // Diagram-external input ports are exported from child subsystems (meaning
-    // the Diagram input is fed into the input of one of its children.
-    // Subscribe the child subsystem's input port to its parent Diagram's input
-    // port on which it depends.
+    // Diagram-external input ports are exported from child subsystems. Inform
+    // the new context so that it it can set up dependency tracking for the
+    // child subsystem's input port on its parent Diagram's input port.
     for (InputPortIndex i(0); i < this->get_num_input_ports(); ++i) {
       const InputPortLocator& id = input_port_ids_[i];
       context->SubscribeExportedInputPortToDiagramPort(
           i, ConvertToContextPortIdentifier(id));
     }
 
-    // Diagram-external output ports are exported from child subsystem output
-    // ports. Subscribe each Diagram-level output to the child-level output on
-    // which it depends.
+    // Connect exported child subsystem output ports to the Diagram-level output
+    // ports to which they have been exported. Declares dependency of each
+    // Diagram-level output on its child-level output.
     for (OutputPortIndex i(0); i < this->get_num_output_ports(); ++i) {
       const OutputPortLocator& id = output_port_ids_[i];
       context->SubscribeDiagramPortToExportedOutputPort(
           i, ConvertToContextPortIdentifier(id));
     }
-
-    // TODO(sherm1) Remove this line and the corresponding one in
-    // LeafSystem to enable caching by default in Drake (issue #9205).
-    context->DisableCaching();
 
     return context;
   }
