@@ -64,7 +64,8 @@ PYBIND11_MODULE(math, m) {
       .def("roll_angle", &RollPitchYaw<T>::roll_angle)
       .def("pitch_angle", &RollPitchYaw<T>::pitch_angle)
       .def("yaw_angle", &RollPitchYaw<T>::yaw_angle)
-      .def("ToQuaternion", &RollPitchYaw<T>::ToQuaternion);
+      .def("ToQuaternion", &RollPitchYaw<T>::ToQuaternion)
+      .def("ToRotationMatrix", &RollPitchYaw<T>::ToRotationMatrix);
 
   py::class_<RotationMatrix<T>>(m, "RotationMatrix")
       .def(py::init())
