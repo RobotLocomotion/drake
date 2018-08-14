@@ -114,4 +114,3 @@ class TestBarycentricMesh(unittest.TestCase):
         self.assertTrue(np.allclose(rpy.ToQuaternion().wxyz(), q_I.wxyz()))
         R = rpy.ToRotationMatrix().matrix()
         self.assertTrue(np.allclose(R, np.eye(3)))
-        

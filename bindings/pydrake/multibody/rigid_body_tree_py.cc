@@ -117,7 +117,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
     .def("get_num_bodies", &RigidBodyTree<double>::get_num_bodies)
     .def("get_num_frames", &RigidBodyTree<double>::get_num_frames)
     .def("get_num_actuators", &RigidBodyTree<double>::get_num_actuators)
-    .def("get_num_model_instances", &RigidBodyTree<double>::get_num_model_instances)
+    .def("get_num_model_instances",
+         &RigidBodyTree<double>::get_num_model_instances)
     .def("getBodyOrFrameName",
          &RigidBodyTree<double>::getBodyOrFrameName,
          py::arg("body_or_frame_id"))
@@ -292,7 +293,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
            &RigidBodyTree<double>::positionConstraintsJacDotTimesV<T>,
            py::arg("cache"))
       // jointLimitConstriants
-      .def("relativeTwist", 
+      .def("relativeTwist",
            &RigidBodyTree<double>::relativeTwist<T>,
            py::arg("cache"),
            py::arg("base_or_frame_ind"),
