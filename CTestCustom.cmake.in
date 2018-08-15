@@ -17,12 +17,10 @@ list(APPEND CTEST_CUSTOM_ERROR_EXCEPTION
   "^${ESC}\\[(33mDEBUG|35mWARNING): ${ESC}\\[0m"
 )
 
-# ERROR, FAIL, and TIMEOUT may be colored red (CSI 31m) and bolded (CSI 1m).
+# ERROR may be colored red (CSI 31m) and bolded (CSI 1m).
 list(APPEND CTEST_CUSTOM_ERROR_MATCH
   "^ERROR: "
-  "^FAIL: "
-  "^TIMEOUT: "
-  "^${ESC}\\[31m${ESC}\\[1m(ERROR|FAIL|TIMEOUT): ${ESC}\\[0m"
+  "^${ESC}\\[31m${ESC}\\[1mERROR: ${ESC}\\[0m"
 )
 
 # Ignore various Mac CROSSTOOL-related warnings.
