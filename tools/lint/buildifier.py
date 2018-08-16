@@ -121,7 +121,7 @@ def main(workspace_name="drake"):
                     one_file, "the required formatting is incorrect"))
                 print("ERROR: %s:1: note: fix via %s %s" % (
                     one_file, "bazel-bin/tools/lint/buildifier", one_file))
-        print("NOTE: see http://drake.mit.edu/bazel.html#buildifier")
+        print("NOTE: see https://drake.mit.edu/bazel.html#buildifier")
         return 1
 
     # In fix mode, disallow running from within the Bazel sandbox.

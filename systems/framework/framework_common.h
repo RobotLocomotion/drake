@@ -203,25 +203,36 @@ class SystemParentServiceInterface {
 // Ticket numbers for conditionally-allocated objects like ports and cache
 // entries are allocated beginning with kNextAvailableTicket defined below.
 enum BuiltInTicketNumbers {
-  kNothingTicket        =  0,
-  kTimeTicket           =  1,
-  kAccuracyTicket       =  2,
-  kQTicket              =  3,
-  kVTicket              =  4,
-  kZTicket              =  5,
-  kXcTicket             =  6,
-  kXdTicket             =  7,
-  kXaTicket             =  8,
-  kXTicket              =  9,
-  kConfigurationTicket  = 10,
-  kVelocityTicket       = 11,
-  kKinematicsTicket     = 12,
-  kAllParametersTicket  = 13,
-  kAllInputPortsTicket  = 14,
-  kAllSourcesTicket     = 15,
-  kXcdotTicket          = 16,
-  kXdhatTicket          = 17,
-  kNextAvailableTicket  = kXdhatTicket+1
+  // This set of tickets represents independent source values in a Context,
+  // and groupings of such source values.
+  kNothingTicket        =  0,  // Indicates "not dependent on anything".
+  kTimeTicket           =  1,  // Time.
+  kAccuracyTicket       =  2,  // Accuracy.
+  kQTicket              =  3,  // Continuous configuration variables.
+  kVTicket              =  4,  // Continuous velocity variables.
+  kZTicket              =  5,  // Miscellaneous continuous variables.
+  kXcTicket             =  6,  // All continuous variables xc = {q, v, z}.
+  kXdTicket             =  7,  // All discrete (numeric) state variables.
+  kXaTicket             =  8,  // All abstract state variables.
+  kXTicket              =  9,  // All state variables x = {xc, xd, xa}.
+  kPnTicket             = 10,  // All numeric parameters.
+  kPaTicket             = 11,  // All abstract parameters.
+  kAllParametersTicket  = 12,  // All parameters p = {pn, pa}.
+  kAllInputPortsTicket  = 13,  // All input ports u.
+  kAllSourcesTicket     = 14,  // All of the above.
+  kConfigurationTicket  = 15,  // All values that may affect configuration.
+  kKinematicsTicket     = 16,  // Configuration plus velocity-affecting values.
+  kLastSourceTicket     = kKinematicsTicket,  // (Used in testing.)
+
+  // The rest of these are pre-defined computations with associated cache
+  // entries.
+  kXcdotTicket          = 17,  // d/dt xc = {qdot, vdot, zdot}.
+  kPeTicket             = 18,  // Potential energy.
+  kKeTicket             = 19,  // Kinetic energy.
+  kPcTicket             = 20,  // Conservative power.
+  kPncTicket            = 21,  // Non-conservative power.
+
+  kNextAvailableTicket  = kPncTicket+1
 };
 
 // Specifies the prerequisite of an output port. It will always be either

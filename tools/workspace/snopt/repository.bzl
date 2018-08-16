@@ -1,6 +1,10 @@
 # -*- python -*-
 
 load(
+    "@drake//tools/workspace:os.bzl",
+    "determine_os",
+)
+load(
     "@drake//tools/workspace:execute.bzl",
     "execute_and_return",
 )
@@ -114,14 +118,26 @@ def _setup_local_archive(repo_ctx, snopt_path):
         )
 
 def _impl(repo_ctx):
+    os_result = determine_os(repo_ctx)
+    if os_result.error != None:
+        fail(os_result.error)
+
     snopt_path = repo_ctx.os.environ.get("SNOPT_PATH", "")
 
-    # For now, an empty path defaults to use git.  In the future, settting
+    # For now, an empty path defaults to use git.  In the future, setting
     # SNOPT_PATH="git" will be required -- an empty path will report an error.
     if snopt_path in ["git", ""]:
         _setup_git(repo_ctx)
     else:
         _setup_local_archive(repo_ctx, snopt_path)
+
+    # Add in the helper.
+    repo_ctx.symlink(
+        Label("@drake//tools/workspace/snopt:fortran-{}.bzl".format(
+            os_result.distribution,
+        )),
+        "fortran.bzl",
+    )
 
 snopt_repository = repository_rule(
     attrs = {

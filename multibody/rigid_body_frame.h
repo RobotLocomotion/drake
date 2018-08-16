@@ -164,7 +164,7 @@ class RigidBodyFrame final {
    * @see RigidBodyFrame::get_transform_to_body
    */
   // Frames' poses should only be specified at construction as described in
-  // #4407. Fix parsers to use construtor instead.
+  // #4407. Fix parsers to use constructor instead.
   void set_transform_to_body(const Eigen::Isometry3d& transform_to_body);
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

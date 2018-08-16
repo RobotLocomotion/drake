@@ -3,7 +3,7 @@
 /// @file
 /// Template method implementations for runge_kutta_3_integrator.h.
 /// Most users should only include that file, not this one.
-/// For background, see http://drake.mit.edu/cxx_inl.html.
+/// For background, see https://drake.mit.edu/cxx_inl.html.
 
 /* clang-format off to disable clang-format-includes */
 #include "drake/systems/analysis/runge_kutta3_integrator.h"

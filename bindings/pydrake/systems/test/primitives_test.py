@@ -35,9 +35,11 @@ from pydrake.systems.primitives import (
     Saturation, Saturation_,
     SignalLogger, SignalLogger_,
     UniformRandomSource,
+    TrajectorySource,
     WrapToSystem, WrapToSystem_,
     ZeroOrderHold_,
 )
+from pydrake.trajectories import PiecewisePolynomial
 
 
 def compare_value(test, a, b):
@@ -207,6 +209,25 @@ class TestGeneral(unittest.TestCase):
 
         mytest((-5., 5., 4.), (0., 2., 4.))
         mytest((.4, 0., 3.5), (.4, 0., 3.5))
+
+    def test_trajectory_source(self):
+        ppt = PiecewisePolynomial.FirstOrderHold(
+            [0., 1.], [[2., 3.], [2., 1.]])
+        system = TrajectorySource(trajectory=ppt,
+                                  output_derivative_order=0,
+                                  zero_derivatives_beyond_limits=True)
+        context = system.CreateDefaultContext()
+        output = system.AllocateOutput()
+
+        def mytest(input, expected):
+            context.set_time(input)
+            system.CalcOutput(context, output)
+            self.assertTrue(np.allclose(output.get_vector_data(
+                0).CopyToVector(), expected))
+
+        mytest(0.0, (2.0, 2.0))
+        mytest(0.5, (2.5, 1.5))
+        mytest(1.0, (3.0, 1.0))
 
     def test_wrap_to_system(self):
         system = WrapToSystem(2)

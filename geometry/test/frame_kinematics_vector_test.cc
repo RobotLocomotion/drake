@@ -13,6 +13,13 @@ namespace drake {
 namespace geometry {
 namespace test {
 
+::testing::AssertionResult ExpectExactIdentity(const Isometry3<double>& pose) {
+  const Isometry3<double> I = Isometry3<double>::Identity();
+  return CompareMatrices(pose.matrix().block<3, 4>(0, 0),
+                         I.matrix().block<3, 4>(0, 0));
+}
+
+
 GTEST_TEST(FrameKinematicsVector, Constructor) {
   SourceId source_id = SourceId::get_new_id();
 
@@ -28,6 +35,11 @@ GTEST_TEST(FrameKinematicsVector, Constructor) {
 
   EXPECT_EQ(poses2.source_id(), source_id);
   EXPECT_EQ(poses2.size(), kCount);
+
+  // Confirm that the values are properly initialized.
+  for (int i = 0; i < kCount; ++i) {
+    EXPECT_TRUE(ExpectExactIdentity(poses2.value(ids[i])));
+  }
 
   FrameId duplicate = FrameId::get_new_id();
   std::vector<FrameId> duplicate_ids{duplicate, FrameId::get_new_id(),

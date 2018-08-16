@@ -11,7 +11,7 @@ namespace controllers {
 
 /**
  * Given a desired two dimensional (X and Y) zero-moment point (ZMP) trajectory
- * parametrized as a piecewise polynomial, an optimal center of mass (CoM)
+ * parameterized as a piecewise polynomial, an optimal center of mass (CoM)
  * trajectory is planned using a linear inverted pendulum model (LIPM).
  * A second order value function (optimal cost-to-go) and a linear policy are
  * also computed along the optimal trajectory.

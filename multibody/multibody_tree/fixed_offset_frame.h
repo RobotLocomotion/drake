@@ -25,7 +25,7 @@ template <class T> class RigidBody;
 /// with `X_WF=X_WP*X_PF`.
 ///
 /// For more information about spatial transforms, see
-/// @ref multibody_spatial_pose. <!-- http://drake.mit.edu/doxygen_cxx/
+/// @ref multibody_spatial_pose. <!-- https://drake.mit.edu/doxygen_cxx/
 ///                                   group__multibody__spatial__pose.html -->
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.

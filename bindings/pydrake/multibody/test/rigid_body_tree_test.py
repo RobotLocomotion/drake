@@ -156,6 +156,11 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertEqual(v_map_ad.shape, (num_v, num_q))
         self.assertEqual(qd_map_ad.shape, (num_q, num_v))
 
+        # - Check FindBody and FindBodyIndex methods
+        body_name = "arm"
+        body = tree.FindBody(body_name)
+        self.assertEqual(body.get_body_index(), tree.FindBodyIndex(body_name))
+
         # - Check ChildOfJoint methods
         body = tree.FindChildBodyOfJoint("theta")
         self.assertIsInstance(body, RigidBody)
@@ -198,6 +203,13 @@ class TestRigidBodyTree(unittest.TestCase):
         # - Check that drawKinematicTree runs
         tree.drawKinematicTree(
             join(os.environ["TEST_TMPDIR"], "test_graph.dot"))
+
+        # - Check relative twist method
+        twist = tree.relativeTwist(cache=kinsol,
+                                   base_or_frame_ind=0,
+                                   body_or_frame_ind=1,
+                                   expressed_in_body_or_frame_ind=0)
+        self.assertEqual(twist.shape[0], 6)
 
     def test_constraint_api(self):
         tree = RigidBodyTree(FindResourceOrThrow(

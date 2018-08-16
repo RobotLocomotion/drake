@@ -67,14 +67,29 @@ GTEST_TEST(SdfAnchoredGeometry, ParentlessLinkFixedToWorld) {
 // Confirms that parentless links, which are specified to be *floating* to the
 // world by the parser, are *not* marked as anchored from SDF file.
 GTEST_TEST(SdfAnchoredGeometry, ParentlessLinkFloatOnWorld) {
-  RigidBodyTree<double> tree;
-  // NOTE: nullptr for weld_to_frame implies welding to the world frame.
-  AddModelInstancesFromSdfFile(
-      FindResourceOrThrow(
-          "drake/multibody/test/rigid_body_tree/anchored_parentless_link.sdf"),
-      drake::multibody::joints::kRollPitchYaw, nullptr, &tree);
-  auto body = tree.FindBody("parentless_body");
-  ExpectAnchored(body, 1, false);
+  // N.B. We test what happens when welding using the "world" frame that has the
+  // actual world body specified.
+  for (bool clone_initial : {false, true}) {
+    for (bool use_world_frame : {false, true}) {
+      auto tree = std::make_unique<RigidBodyTree<double>>();
+      if (clone_initial) {
+        tree = tree->Clone();
+      }
+      std::shared_ptr<RigidBodyFrame<double>> parent_frame{nullptr};
+      if (use_world_frame) {
+        parent_frame = tree->findFrame("world");
+        EXPECT_FALSE(parent_frame->has_as_rigid_body(nullptr));
+      }
+      // NOTE: nullptr for weld_to_frame implies welding to the world frame.
+      AddModelInstancesFromSdfFile(
+          FindResourceOrThrow(
+              "drake/multibody/test/rigid_body_tree/"
+              "anchored_parentless_link.sdf"),
+          drake::multibody::joints::kRollPitchYaw, parent_frame, tree.get());
+      auto body = tree->FindBody("parentless_body");
+      ExpectAnchored(body, 1, false);
+    }
+  }
 }
 
 // Confirms that a body that is rigidly fixed to an anchored body is likewise

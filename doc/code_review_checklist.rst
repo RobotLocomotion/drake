@@ -105,7 +105,7 @@ Did you use ``const`` where you could?
 
 - Do all "plain old data" member fields have ``{}``?
 
-  - See `our style guide <http://drake.mit.edu/styleguide/cppguide.html#Variable_and_Array_Initialization>`_
+  - See `our style guide <https://drake.mit.edu/styleguide/cppguide.html#Variable_and_Array_Initialization>`_
     citing "in-class member initialization."
 
 Did you use a C-style cast by accident?

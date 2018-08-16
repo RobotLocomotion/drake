@@ -61,7 +61,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   template <typename Derived>
   explicit PiecewisePolynomial(const Eigen::MatrixBase<Derived>& value)
       : PiecewiseTrajectory<T>(std::vector<double>(
-            {{0.0, std::numeric_limits<double>::infinity()}})) {
+            {0.0, std::numeric_limits<double>::infinity()})) {
     polynomials_.push_back(value.template cast<PolynomialType>());
   }
 

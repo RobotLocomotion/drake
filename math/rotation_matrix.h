@@ -10,6 +10,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/number_traits.h"
@@ -37,6 +39,9 @@ namespace math {
 /// In addition, validity tests are only performed for scalar types for which
 /// drake::is_numeric<T> is `true`.  No validity check is performed and no
 /// assertion is thrown if T is non-numeric (e.g., T is symbolic::Expression).
+///
+/// @authors Paul Mitiguy (2018) Original author.
+/// @authors Drake team (see https://drake.mit.edu/credits).
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 ///
@@ -707,6 +712,115 @@ class RotationMatrix {
 /// @relates RotationMatrix
 using RotationMatrixd = RotationMatrix<double>;
 
+/// Projects an approximate 3 x 3 rotation matrix M onto an orthonormal matrix R
+/// so that R is a rotation matrix associated with a angle-axis rotation by an
+/// angle θ about a vector direction `axis`, with `angle_lb <= θ <= angle_ub`.
+/// @tparam Derived A 3 x 3 matrix
+/// @param[in] M the matrix to be projected.
+/// @param[in] axis vector direction associated with angle-axis rotation for R.
+///            axis can be a non-unit vector, but cannot be the zero vector.
+/// @param[in] angle_lb the lower bound of the rotation angle θ.
+/// @param[in] angle_ub the upper bound of the rotation angle θ.
+/// @return Rotation angle θ of the projected matrix, angle_lb <= θ <= angle_ub
+/// @throws exception std::runtime_error if M is not a 3 x 3 matrix or if
+///                   axis is the zero vector or if angle_lb > angle_ub.
+/// @note This function is useful for reconstructing a rotation matrix for a
+/// revolute joint with joint limits.
+/// @note This can be formulated as an optimization problem
+/// <pre>
+///   min_θ trace((R - M)ᵀ*(R - M))
+///   subject to R = I + sinθ * A + (1 - cosθ) * A²   (1)
+///              angle_lb <= θ <= angle_ub
+/// </pre>
+/// where A is the cross product matrix of a = axis / axis.norm() = [a₁, a₂, a₃]
+/// <pre>
+/// A = [ 0  -a₃  a₂]
+///     [ a₃  0  -a₁]
+///     [-a₂  a₁  0 ]
+/// </pre>
+/// Equation (1) is the Rodriguez Formula that computes the rotation matrix R
+/// from the angle-axis rotation with angle θ and vector direction `axis`.
+/// For details, see http://mathworld.wolfram.com/RodriguesRotationFormula.html
+/// The objective function can be simplified as
+/// <pre>
+///    max_θ trace(Rᵀ * M + Mᵀ * R)
+/// </pre>
+/// By substituting the matrix `R` with the angle-axis representation, the
+/// optimization problem is formulated as
+/// <pre>
+///    max_θ sinθ * trace(Aᵀ*M) - cosθ * trace(Mᵀ * A²)
+///    subject to angle_lb <= θ <= angle_ub
+/// </pre>
+/// By introducing α = atan2(-trace(Mᵀ * A²), trace(Aᵀ*M)), we can compute the
+/// optimal θ as
+/// <pre>
+///    θ = π/2 + 2kπ - α, if angle_lb <= π/2 + 2kπ - α <= angle_ub, k ∈ integers
+/// else
+///    θ = angle_lb, if sin(angle_lb + α) >= sin(angle_ub + α)
+///    θ = angle_ub, if sin(angle_lb + α) <  sin(angle_ub + α)
+/// </pre>
+/// @see GlobalInverseKinematics for an usage of this function.
+template <typename Derived>
+double ProjectMatToRotMatWithAxis(const Eigen::MatrixBase<Derived>& M,
+                                  const Eigen::Vector3d& axis,
+                                  const double angle_lb,
+                                  const double angle_ub) {
+  using Scalar = typename Derived::Scalar;
+  if (M.rows() != 3 || M.cols() != 3) {
+    throw std::runtime_error("The input matrix should be of size 3 x 3.");
+  }
+  if (angle_ub < angle_lb) {
+    throw std::runtime_error(
+        "The angle upper bound should be no smaller than the angle lower "
+            "bound.");
+  }
+  const double axis_norm = axis.norm();
+  if (axis_norm == 0) {
+    throw std::runtime_error("The axis argument cannot be the zero vector.");
+  }
+  const Vector3<Scalar> a = axis / axis_norm;
+  Eigen::Matrix3d A;
+  // clang-format off
+  A <<    0,  -a(2),   a(1),
+       a(2),      0,  -a(0),
+      -a(1),   a(0),      0;
+  // clang-format on
+  const Scalar alpha =
+      atan2(-(M.transpose() * A * A).trace(), (A.transpose() * M).trace());
+  Scalar theta{};
+  // The bounds on θ + α is [angle_lb + α, angle_ub + α].
+  if (std::isinf(angle_lb) && std::isinf(angle_ub)) {
+    theta = M_PI_2 - alpha;
+  } else if (std::isinf(angle_ub)) {
+    // First if the angle upper bound is inf, start from the angle_lb, and
+    // find the angle θ, such that θ + α = 0.5π + 2kπ
+    const int k = ceil((angle_lb + alpha - M_PI_2) / (2 * M_PI));
+    theta = (2 * k + 0.5) * M_PI - alpha;
+  } else if (std::isinf(angle_lb)) {
+    // If the angle lower bound is inf, start from the angle_ub, and find the
+    // angle θ, such that θ + α = 0.5π + 2kπ
+    const int k = floor((angle_ub + alpha - M_PI_2) / (2 * M_PI));
+    theta = (2 * k + 0.5) * M_PI - alpha;
+  } else {
+    // Now neither angle_lb nor angle_ub is inf. Check if there exists an
+    // integer k, such that 0.5π + 2kπ ∈ [angle_lb + α, angle_ub + α]
+    const int k = floor((angle_ub + alpha - M_PI_2) / (2 * M_PI));
+    const double max_sin_angle = M_PI_2 + 2 * k * M_PI;
+    if (max_sin_angle >= angle_lb + alpha) {
+      // 0.5π + 2kπ ∈ [angle_lb + α, angle_ub + α]
+      theta = max_sin_angle - alpha;
+    } else {
+      // Now the maximal is at the boundary, either θ = angle_lb or angle_ub
+      if (sin(angle_lb + alpha) >= sin(angle_ub + alpha)) {
+        theta = angle_lb;
+      } else {
+        theta = angle_ub;
+      }
+    }
+  }
+  return theta;
+}
+
 // TODO(mitiguy) Delete this code after:
 // * All call sites removed, and
 // * code has subsequently been marked deprecated in favor of
@@ -757,17 +871,32 @@ RotationMatrix<T>::ThrowIfNotValid(const Matrix3<S>& R) {
   }
 }
 
+/// (Deprecated), use @ref math::RotationMatrix::MakeXRotation().
+// TODO(mitiguy) Delete this code after October 6, 2018.
+template <typename T>
+DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
+                     "Use math::RotationMatrix::MakeXRotation(theta).")
+Matrix3<T> XRotation(const T& theta) {
+  return drake::math::RotationMatrix<T>::MakeXRotation(theta).matrix();
+}
+
+/// (Deprecated), use @ref math::RotationMatrix::MakeYRotation().
+// TODO(mitiguy) Delete this code after October 6, 2018.
+template <typename T>
+DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
+                     "Use math::RotationMatrix::MakeYRotation(theta).")
+Matrix3<T> YRotation(const T& theta) {
+  return drake::math::RotationMatrix<T>::MakeYRotation(theta).matrix();
+}
+
+/// (Deprecated), use @ref math::RotationMatrix::MakeZRotation().
+// TODO(mitiguy) Delete this code after October 6, 2018.
+template <typename T>
+DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
+                     "Use math::RotationMatrix::MakeZRotation(theta).")
+Matrix3<T> ZRotation(const T& theta) {
+  return drake::math::RotationMatrix<T>::MakeZRotation(theta).matrix();
+}
+
 }  // namespace math
 }  // namespace drake
-
-
-// TODO(mitiguy): Remove the following #include statement when the included file
-// has been deleted.  See the included file for file deletion conditions.
-// Note: This #include intentionally appears at the end of rotation_matrix.h as
-// a temporary stop-gap measure to support backward compatability.  It is
-// understood that including this file here is not style-guide compliant.
-// clang-format off
-#define DRAKE_MATH_ROTATION_MATRIX_DEPRECATED_HEADER_IS_ENABLED
-#include "drake/math/rotation_matrix_deprecated.h"
-#undef DRAKE_MATH_ROTATION_MATRIX_DEPRECATED_HEADER_IS_ENABLED
-// clang-format on

@@ -28,7 +28,7 @@
   </ul>
 </ul>
 <p>For more general information, you can also visit the <a
-  href="http://drake.mit.edu">Drake documentation main page</a>.</p>
+  href="https://drake.mit.edu">Drake documentation main page</a>.</p>
 </p>
 
 <p>Drake's C++ libraries use a small amount of template metaprogramming to
@@ -42,14 +42,14 @@
 
 <p>
 If you want to make your own Doxygen locally, see
-<a href="http://drake.mit.edu/documentation_instructions.html">Documentation
+<a href="https://drake.mit.edu/documentation_instructions.html">Documentation
 Generation Instructions</a></p>
 
 <p><a href="https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html">Check
 out the Doxygen C++ documentation</a></p>
 
 <p>Drake's Doxygen documentation is
-<a href="http://drake.mit.edu">hosted online</a> for the master branch, but is
+<a href="https://drake.mit.edu">hosted online</a> for the master branch, but is
 only updated nightly.</p>
 
 <h3>Technical Notes</h3>

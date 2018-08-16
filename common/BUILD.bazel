@@ -644,7 +644,7 @@ drake_cc_googletest(
     ],
 )
 
-# Functional test that mistyped DRAKE_ASSERTs will failt to compile.
+# Functional test that mistyped DRAKE_ASSERTs will fail to compile.
 sh_test(
     name = "drake_assert_test_compile_variants",
     size = "small",
@@ -657,9 +657,8 @@ sh_test(
         "drake_assert.h",
         "test/drake_assert_test_compile.cc",
         "unused.h",
-        "//third_party:com_github_bazelbuild_bazel/tools/cpp/osx_cc_wrapper.sh",  # noqa
-        "//tools/cc_toolchain:all_toolchain_deps",
         "//tools/cc_toolchain:capture_cc.env",
+        "//tools/cc_toolchain:toolchain_deps",
     ],
 )
 

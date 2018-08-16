@@ -26,8 +26,8 @@ namespace multibody {
 namespace multibody_plant {
 namespace {
 
-// This parametrized fixture allows us to run inclined planes tests using either
-// a continuous plant model or a discrete plant model.
+// This parameterized fixture allows us to run inclined planes tests using
+// either a continuous plant model or a discrete plant model.
 class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
  public:
   void SetUp() override {

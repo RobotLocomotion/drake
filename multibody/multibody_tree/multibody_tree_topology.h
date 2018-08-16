@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <queue>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -189,6 +190,12 @@ struct MobilizerTopology {
   bool connects_bodies(BodyIndex body1, BodyIndex body2) const {
     return (inboard_body == body1 && outboard_body == body2) ||
            (inboard_body == body2 && outboard_body == body1);
+  }
+
+  /// Returns `true` if this mobilizer topology corresponds to that of a weld
+  /// mobilizer.
+  bool is_weld_mobilizer() const {
+    return num_velocities == 0;
   }
 
   /// Unique index in the set of mobilizers.
@@ -887,6 +894,38 @@ class MultibodyTreeTopology {
     (*path_to_world)[0] = BodyNodeIndex(0);  // Add the world.
   }
 
+  /// This method partitions the tree topology into sub-graphs such that two
+  /// bodies are in the same sub-graph if there is a path between them which
+  /// includes only welded-mobilizer.
+  /// Each sub-graph of welded bodies is represented as a set of body indices.
+  /// By definition, these sub-graphs will be disconnected by any non-weld
+  /// mobilizers that may be inboard or outboard of any given body. The first
+  /// sub-graph will have all of the bodies welded to the world; all
+  /// subsequent sub-graphs will be in no particular order.
+  /// A few more notes:
+  /// - Each body in the topology is included in one set and one set only.
+  /// - The maximum size of the list equals the number of bodies in the topology
+  ///   (num_bodies()). This corresponds to a topology with no weld mobilizers.
+  /// - The world body is also included in a welded-bodies set, and this set is
+  ///   element zero in the returned vector.
+  /// - The minimum size of the list is one. This corresponds to a topology with
+  ///   all bodies welded to the world.
+  std::vector<std::set<BodyIndex>> CreateListOfWeldedBodies() const   {
+    std::vector<std::set<BodyIndex>> welded_bodies;
+    // Reserve the maximum possible of welded bodies (that is, when each body
+    // forms its own welded body) in advance in order to avoid reallocation in
+    // welded_bodies which would cause the invalidation of references as we
+    // recursively fill it in.
+    welded_bodies.reserve(num_bodies());
+    welded_bodies.push_back(std::set<BodyIndex>{world_index()});
+    // We build the list of welded bodies recursively, starting with the world
+    // body added to the very first welded body in the list.
+    std::set<BodyIndex>& bodies_welded_to_world = welded_bodies.back();
+    CreateListOfWeldedBodiesRecurse(
+        world_index(), &bodies_welded_to_world, &welded_bodies);
+    return welded_bodies;
+  }
+
  private:
   // Returns `true` if there is _any_ mobilizer in the multibody tree
   // connecting the frames with indexes `frame` and `frame2`.
@@ -906,6 +945,39 @@ class MultibodyTreeTopology {
       if (mobilizer_topology.connects_bodies(body1, body2)) return true;
     }
     return false;
+  }
+
+  // Recursive helper method for CreateListOfWeldedBodies().
+  // This method scans the children of body with parent_index. If a child is
+  // welded to body with parent_index, it gets added to the parent's body welded
+  // body, parent_welded_body. Otherwise a new welded body is created for the
+  // child body and gets added to the list of all welded bodies, welded_bodies.
+  void CreateListOfWeldedBodiesRecurse(
+      BodyIndex parent_index, std::set<BodyIndex> *parent_welded_body,
+      std::vector<std::set<BodyIndex>> *welded_bodies) const {
+    const BodyTopology& parent = get_body(parent_index);
+    for (BodyIndex child_index : parent.child_bodies) {
+      const BodyTopology& child = get_body(child_index);
+      const MobilizerTopology& child_mobilizer =
+          get_mobilizer(child.inboard_mobilizer);
+      if (child_mobilizer.is_weld_mobilizer()) {
+        // If the child body is welded to the parent body, we then add it to
+        // the parent's body welded body, parent_welded_body. We continue the
+        // recursion down the tree starting at child.
+        parent_welded_body->insert(child_index);
+        CreateListOfWeldedBodiesRecurse(
+            child_index, parent_welded_body, welded_bodies);
+      } else {
+        // If the child body is not welded to the parent body, then we create a
+        // new welded body to which child is added. We continue the recursion
+        // down the tree starting at child.
+        welded_bodies->push_back(std::set<BodyIndex>{child_index});
+        std::set<BodyIndex>& child_group = welded_bodies->back();
+        CreateListOfWeldedBodiesRecurse(child_index,
+                                        &child_group,
+                                        welded_bodies);
+      }
+    }
   }
 
   // is_valid is set to `true` after a successful Finalize().

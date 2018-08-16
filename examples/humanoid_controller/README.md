@@ -14,7 +14,7 @@ radians. If no argument is supplied, it resets to the nominal posture.
 
 All three components communicate using LCM messages. To properly run this demo,
 you need to have Gurobi installed and have access to a fixed-license.
-See [the Drake Bazel documentation](http://drake.mit.edu/bazel.html?highlight=gurobi)
+See [the Drake Bazel documentation](https://drake.mit.edu/bazel.html?highlight=gurobi)
 for more details about building with Gurobi enabled.
 
 To build: (assuming in drake's root directory)

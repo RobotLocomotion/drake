@@ -296,7 +296,7 @@ class RollPitchYaw {
   // TODO(Mitiguy) Improve speed -- last column of M is (0, 0, 1).
   Vector3<T> CalcAngularVelocityInParentFromRpyDt(
       const Vector3<T>& rpyDt) const {
-    // Get the 3x3 coefficent matrix M that contains the partial derivatives of
+    // Get the 3x3 coefficient matrix M that contains the partial derivatives of
     // w_AD_A with respect to ṙ, ṗ, ẏ.  In other words, `w_AD_A = M * rpyDt`.
     const Matrix3<T> M = CalcMatrixRelatingAngularVelocityInParentToRpyDt();
     return M * rpyDt;
@@ -309,7 +309,7 @@ class RollPitchYaw {
   // TODO(Mitiguy) Improve speed -- first column of M is (1, 0, 0).
   Vector3<T> CalcAngularVelocityInChildFromRpyDt(
       const Vector3<T>& rpyDt) const {
-    // Get the 3x3 coefficent matrix M that contains the partial derivatives of
+    // Get the 3x3 coefficient matrix M that contains the partial derivatives of
     // w_AD_D with respect to ṙ, ṗ, ẏ.  In other words, `w_AD_D = M * rpyDt`.
     const Matrix3<T> M = CalcMatrixRelatingAngularVelocityInChildToRpyDt();
     return M * rpyDt;
@@ -466,7 +466,7 @@ class RollPitchYaw {
 
   // For `this` %RollPitchYaw with roll-pitch-yaw angles `[r; p; y]` which
   // relate the orientation of two generic frames A and D, returns the 3x3
-  // coefficent matrix M that contains the partial derivatives of `w_AD_A`
+  // coefficient matrix M that contains the partial derivatives of `w_AD_A`
   // (D's angular velocity in A, expressed in A) with respect to ṙ, ṗ, ẏ.
   // In other words, `w_AD_A = M * rpyDt` where `rpyDt` is `[ṙ; ṗ; ẏ]`.
   const Matrix3<T> CalcMatrixRelatingAngularVelocityInParentToRpyDt() const {
@@ -512,7 +512,7 @@ class RollPitchYaw {
 
   // For `this` %RollPitchYaw with roll-pitch-yaw angles `[r; p; y]` which
   // relate the orientation of two generic frames A and D, returns the 3x3
-  // coefficent matrix M that contains the partial derivatives of `w_AD_D`
+  // coefficient matrix M that contains the partial derivatives of `w_AD_D`
   // (D's angular velocity in A, expressed in D) with respect to ṙ, ṗ, ẏ.
   // In other words, `w_AD_D = M * rpyDt` where `rpyDt` is `[ṙ; ṗ; ẏ]`.
   const Matrix3<T> CalcMatrixRelatingAngularVelocityInChildToRpyDt() const {

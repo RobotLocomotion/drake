@@ -52,10 +52,14 @@ int AddFloatingJoint(
     // the robot at the desired location in the world.
     if (weld_to_frame->get_name() ==
         string(RigidBodyTreeConstants::kWorldName)) {
-      if (!weld_to_frame->has_as_rigid_body(nullptr)) {
+      // N.B. Because of the design of `RigidBodyTree`, the world can either be
+      // indicated by the unique world body of tree or a `nullptr`. We should
+      // check both of these.
+      if (!weld_to_frame->has_as_rigid_body(nullptr) &&
+          !weld_to_frame->has_as_rigid_body(&tree->world())) {
         throw runtime_error(
             "AddFloatingJoint: Attempted to weld robot to the world while "
-            "specifying a body link!");
+            "specifying a non-world body link!");
       }
       weld_to_body = tree->get_bodies()[0].get();  // the world's body
       floating_joint_name = FloatingJointConstants::kFloatingJointName;

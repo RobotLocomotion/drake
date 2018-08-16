@@ -111,11 +111,17 @@ void ContextBase::SetFixedInputPortValue(
   detail::ContextBaseFixedInputAttorney::set_owning_subcontext(
       port_value.get(), this);
   input_port_values_[index] = std::move(port_value);
+
+  // Invalidate anyone who cares about this input port.
+  graph_.get_tracker(ticket_to_use).NoteValueChange(start_new_change_event());
 }
 
 // Set up trackers for independent sources: time, accuracy, state, parameters,
-// and input ports. The code for individual trackers below must be kept up to
-// date with the API contracts for the corresponding tickets in SystemBase.
+// and input ports, and the predefined computations for derivatives, energy,
+// and power. This code should set up everything listed in the
+// internal::BuiltInTicketNumbers enum, and do so in the same order. The code
+// for individual trackers below must be kept up to date with the API contracts
+// for the corresponding tickets in SystemBase.
 void ContextBase::CreateBuiltInTrackers() {
   DependencyGraph& graph = graph_;
   // This is the dummy "tracker" used for constants and anything else that has
@@ -123,11 +129,15 @@ void ContextBase::CreateBuiltInTrackers() {
   graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kNothingTicket), "nothing");
 
-  // Allocate trackers for time, accuracy, q, v, z.
+  // Allocate trackers for time and accuracy.
   auto& time_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kTimeTicket), "t");
   auto& accuracy_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kAccuracyTicket), "accuracy");
+
+  // Allocate trackers for continuous state variables. These are independent
+  // in leaf systems but diagrams must add dependencies on their children's
+  // q, v, and z trackers respectively.
   auto& q_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kQTicket), "q");
   auto& v_tracker = graph.CreateNewDependencyTracker(
@@ -144,13 +154,15 @@ void ContextBase::CreateBuiltInTrackers() {
 
   // Allocate the "all discrete variables" xd tracker. The associated System is
   // responsible for allocating the individual discrete variable group xdᵢ
-  // trackers and subscribing this one to each of those.
+  // trackers and subscribing this one to each of those. Diagrams must add
+  // dependencies on each child subcontext's xd tracker.
   auto& xd_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kXdTicket), "xd");
 
   // Allocate the "all abstract variables" xa tracker. The associated System is
   // responsible for allocating the individual abstract variable xaᵢ
-  // trackers and subscribing this one to each of those.
+  // trackers and subscribing this one to each of those. Diagrams must add
+  // dependencies on each child subcontext's xa tracker.
   auto& xa_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kXaTicket), "xa");
 
@@ -161,11 +173,25 @@ void ContextBase::CreateBuiltInTrackers() {
   x_tracker.SubscribeToPrerequisite(&xd_tracker);
   x_tracker.SubscribeToPrerequisite(&xa_tracker);
 
-  // Allocate the "all parameters" p tracker. The associated System is
-  // responsible for allocating the individual numeric parameter pnᵢ and
-  // abstract paraemter paᵢ trackers and subscribing this one to each of those.
+  // Allocate a tracker representing all the numeric parameters. The associated
+  // System is responsible for allocating the individual numeric parameters pnᵢ
+  // and subscribing the pn tracker to each one. Diagrams must add dependencies
+  // on each child subcontext's pn tracker.
+  auto& pn_tracker = graph.CreateNewDependencyTracker(
+      DependencyTicket(internal::kPnTicket), "pn");
+
+  // Allocate a tracker representing all the abstract parameters. The associated
+  // System is responsible for allocating the individual numeric parameters paᵢ
+  // and subscribing the pa tracker to each one. Diagrams must add dependencies
+  // on each child subcontext's pa tracker.
+  auto& pa_tracker = graph.CreateNewDependencyTracker(
+      DependencyTicket(internal::kPaTicket), "pa");
+
+  // Allocate a tracker representing all the parameters, p={pn,pa}.
   auto& p_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kAllParametersTicket), "p");
+  p_tracker.SubscribeToPrerequisite(&pn_tracker);
+  p_tracker.SubscribeToPrerequisite(&pa_tracker);
 
   // Allocate the "all input ports" u tracker. The associated System is
   // responsible for allocating the individual input port uᵢ
@@ -195,47 +221,58 @@ void ContextBase::CreateBuiltInTrackers() {
   // and discrete representations without having to change the specified
   // dependency, which remains "configuration" either way.
   //
-  // See SystemBase::configuration_ticket() and velocity_ticket() for the API
+  // See SystemBase::configuration_ticket() and kinematics_ticket() for the API
   // contract that must be implemented here and make sure this code is kept
   // up to date with that contract.
 
   // TODO(sherm1) Should track changes to configuration and velocity regardless
-  // of how represented. See discussion in issue #6998.
+  // of how represented. See issue #9171. Until that is resolved, we must
+  // assume that "configuration" results (like end effector location and PE)
+  // can be affected by anything *except* time, v, and u; and "kinematics"
+  // results (like end effector velocity and KE) can be affected by anything
+  // except time and u.
   auto& configuration_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kConfigurationTicket), "configuration");
-  // This default subscription must be changed if configuration is not
-  // represented by q in this System.
-  configuration_tracker.SubscribeToPrerequisite(&q_tracker);
-  configuration_tracker.SubscribeToPrerequisite(&p_tracker);
+  // Compare with "all sources" above.
   configuration_tracker.SubscribeToPrerequisite(&accuracy_tracker);
-
-  auto& velocity_tracker = graph.CreateNewDependencyTracker(
-      DependencyTicket(internal::kVelocityTicket), "velocity");
-  // This default subscription must be changed if velocity is not
-  // represented by v in this System.
-  velocity_tracker.SubscribeToPrerequisite(&v_tracker);
-  velocity_tracker.SubscribeToPrerequisite(&p_tracker);
-  velocity_tracker.SubscribeToPrerequisite(&accuracy_tracker);
+  configuration_tracker.SubscribeToPrerequisite(&q_tracker);  // Not v.
+  configuration_tracker.SubscribeToPrerequisite(&z_tracker);
+  configuration_tracker.SubscribeToPrerequisite(&xd_tracker);
+  configuration_tracker.SubscribeToPrerequisite(&xa_tracker);
+  configuration_tracker.SubscribeToPrerequisite(&p_tracker);
 
   // This tracks configuration & velocity regardless of how represented.
   auto& kinematics_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kKinematicsTicket), "kinematics");
   kinematics_tracker.SubscribeToPrerequisite(&configuration_tracker);
-  kinematics_tracker.SubscribeToPrerequisite(&velocity_tracker);
+  kinematics_tracker.SubscribeToPrerequisite(&v_tracker);
 
   // The following trackers are for well-known cache entries which don't
   // exist yet at this point in Context creation. When the corresponding cache
   // entry values are created (by SystemBase), these trackers will be subscribed
   // to the Calc() method's prerequisites, and set to invalidate the cache entry
-  // value when the prerequisites change.
+  // value when the prerequisites change. Diagrams must add dependencies on
+  // their constituent subcontexts' corresponding trackers.
 
   auto& xcdot_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kXcdotTicket), "xcdot");
   unused(xcdot_tracker);
 
-  auto& xdhat_tracker = graph.CreateNewDependencyTracker(
-      DependencyTicket(internal::kXdhatTicket), "xdhat");
-  unused(xdhat_tracker);
+  auto& pe_tracker = graph.CreateNewDependencyTracker(
+      DependencyTicket(internal::kPeTicket), "PE");
+  unused(pe_tracker);
+
+  auto& ke_tracker = graph.CreateNewDependencyTracker(
+      DependencyTicket(internal::kKeTicket), "KE");
+  unused(ke_tracker);
+
+  auto& pc_tracker = graph.CreateNewDependencyTracker(
+      DependencyTicket(internal::kPcTicket), "pc");
+  unused(pc_tracker);
+
+  auto& pnc_tracker = graph.CreateNewDependencyTracker(
+      DependencyTicket(internal::kPncTicket), "pnc");
+  unused(pnc_tracker);
 }
 
 void ContextBase::BuildTrackerPointerMap(

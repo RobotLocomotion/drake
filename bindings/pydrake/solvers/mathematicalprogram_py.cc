@@ -199,6 +199,7 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
       .value("kMobyLCP", SolverType::kMobyLCP)
       .value("kMosek", SolverType::kMosek)
       .value("kNlopt", SolverType::kNlopt)
+      .value("kOsqp", SolverType::kOsqp)
       .value("kSnopt", SolverType::kSnopt);
 
   py::class_<MathematicalProgram> prog_cls(m, "MathematicalProgram");

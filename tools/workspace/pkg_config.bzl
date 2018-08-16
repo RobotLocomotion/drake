@@ -79,7 +79,7 @@ def setup_pkg_config_repository(repository_ctx):
     # or labels ("foo").  We should only get switches from `pkg-config --libs`.
     # However, sometimes it produces "-framework CoreFoundation" or similar,
     # which is *supposed* to be a single switch, but our split heuristic
-    # chopped it up.  We recombine non-switch args with their preceeding arg as
+    # chopped it up.  We recombine non-switch args with their preceding arg as
     # a repair.  We process args in reserve order to keep our loop index
     # unchanged by a pop.
     for i in reversed(range(len(linkopts))):
@@ -115,7 +115,7 @@ def setup_pkg_config_repository(repository_ctx):
         # Add `-Wl,-rpath <path>` for `-L<path>`.
         # See https://github.com/RobotLocomotion/drake/issues/7387#issuecomment-359952616  # noqa
         if linkopt.startswith("-L"):
-            linkopts[i] = "-Wl,-rpath " + linkopt[2:] + " " + linkopt
+            linkopts.insert(i, "-Wl,-rpath " + linkopt[2:])
             continue
 
         # Switches stay put.
@@ -165,7 +165,8 @@ def setup_pkg_config_repository(repository_ctx):
             # Instead, when compiling our code that uses this library, we'll
             # decide to just ignore pkg-config's advice to use -pthread when
             # compiling and instead apply -pthread only when linking.
-            linkopts.append("-pthread")
+            if "-pthread" not in linkopts:
+                linkopts.append("-pthread")
         elif cflag in [
             "-frounding-math",
             "-ffloat-store",
@@ -173,6 +174,8 @@ def setup_pkg_config_repository(repository_ctx):
             "-msse2",
             "-msse3",
             "-msse4",
+            "-msse4.1",
+            "-msse4.2",
             "-mfpmath",
         ]:
             # We know these are okay to ignore.
@@ -323,6 +326,6 @@ Args:
     extra_linkopts: (Optional) Extra items to add to the library target.
     extra_deps: (Optional) Extra items to add to the library target.
     pkg_config_paths: (Optional) Paths to find pkg-config files (.pc). Note
-                      that we ignore the enviornment variable PKG_CONFIG_PATH
+                      that we ignore the environment variable PKG_CONFIG_PATH
                       set by the user.
 """

@@ -669,7 +669,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountChallenging) {
 // in the case of multiple witness functions. See issue #6184.
 
 GTEST_TEST(SimulatorTest, SecondConstructor) {
-  // Create the spring-mass sytem and context.
+  // Create the spring-mass system and context.
   analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
   auto context = spring_mass.CreateDefaultContext();
 

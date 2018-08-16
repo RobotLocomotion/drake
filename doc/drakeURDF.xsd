@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://drake.mit.edu"
-    xmlns="http://drake.mit.edu" elementFormDefault="qualified">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="https://drake.mit.edu"
+    xmlns="https://drake.mit.edu" elementFormDefault="qualified">
 
     <xs:annotation>
         <xs:documentation>XML Schema for DrakeURDF v1.0
@@ -108,7 +108,7 @@ from an input to the system, with different scalings for each.</xs:documentation
                 <xs:annotation>
                     <xs:documentation> Places added-mass coefficients on a point on the parent body. Added-mass forces act like a 'drag' that is proportional to the acceleration of the body, rather than the velocity. Important when the body is comparable in mass to the surrounding fluid, or if rapid motions are needed.
 
-These forces are represented by a 6x6 matrix 'Ma' similar to a mass matrix, where the force is F=-Ma*a (+coriolis terms). Each matrix element is refered as 'mij', where 'i' and 'j' are the rows and columns of the matrix. As is standard in the oceanographic literature, rows 123 are the linear accelerations, and 456 are the angular accelerations [note this is opposite of Featherstone's notation] </xs:documentation>
+These forces are represented by a 6x6 matrix 'Ma' similar to a mass matrix, where the force is F=-Ma*a (+coriolis terms). Each matrix element is referred as 'mij', where 'i' and 'j' are the rows and columns of the matrix. As is standard in the oceanographic literature, rows 123 are the linear accelerations, and 456 are the angular accelerations [note this is opposite of Featherstone's notation] </xs:documentation>
                 </xs:annotation>
             </xs:element>
             <xs:element name="buoyancy" type="buoyancy">

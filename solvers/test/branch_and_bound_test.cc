@@ -157,7 +157,7 @@ std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram4() {
 void CheckNewRootNode(
     const MixedIntegerBranchAndBoundNode& root,
     const std::list<symbolic::Variable>& binary_vars_expected) {
-  // The left and right childs are empty.
+  // The left and right children are empty.
   EXPECT_FALSE(root.left_child());
   EXPECT_FALSE(root.right_child());
   // The parent node is empty.
@@ -775,7 +775,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate3) {
       dut.bnb()->root()->prog()->decision_variables();
 
   dut.BranchAndUpdate(dut.mutable_root(), x(0));
-  // Both left and right childs are unbounded.
+  // Both left and right children are unbounded.
   EXPECT_EQ(dut.bnb()->best_upper_bound(),
             std::numeric_limits<double>::infinity());
   EXPECT_EQ(dut.bnb()->best_lower_bound(),

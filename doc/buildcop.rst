@@ -98,7 +98,7 @@ author, and include the following template in the PR description.
 
  [1] CI Continuous Production Dashboard: https://drake-jenkins.csail.mit.edu/view/Continuous%20Production/
  [2] CI Nightly Production Dashboard: https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/
- [3] http://drake.mit.edu/buildcop.html#workflow-for-handling-a-build-cop-revert
+ [3] https://drake.mit.edu/buildcop.html#workflow-for-handling-a-build-cop-revert
 
 .. _handling_a_build_cop_revert:
 

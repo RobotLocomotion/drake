@@ -1,8 +1,8 @@
 <?xml version="1.0" ?>
-<!-- =================================================================================== -->
-<!-- |    This model is a hand edited version of the original model (see               | -->
-<!-- |    iiwa14_primitive_collision.urdf).                                            | -->
-<!-- =================================================================================== -->
+<!-- ===================================================================== -->
+<!-- |    This model is a hand edited version of the original model (see | -->
+<!-- |    iiwa14_primitive_collision.urdf).                              | -->
+<!-- ===================================================================== -->
 <!-- ===================================================================== -->
 <!-- Collision models: complex meshes can drastically affect run time.
      Therefore some collision models are represented as simple spheres

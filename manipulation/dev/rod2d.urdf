@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 
 <robot name="rod2d"
-    xmlns="http://drake.mit.edu"
+    xmlns="https://drake.mit.edu"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd">
+    xsi:schemaLocation="https://drake.mit.edu ../../doc/drakeURDF.xsd">
 
   <link name="base">
     <visual>

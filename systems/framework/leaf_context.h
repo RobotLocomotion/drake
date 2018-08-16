@@ -16,11 +16,12 @@
 namespace drake {
 namespace systems {
 
-/// %LeafContext contains all prerequisite data necessary to uniquely determine
-/// the results of computations performed by the associated LeafSystem.
-///
-/// @tparam T The mathematical type of the context, which must be a valid Eigen
-///           scalar.
+/** %LeafContext contains all prerequisite data necessary to uniquely determine
+the results of computations performed by the associated LeafSystem.
+@see Context for more information.
+
+@tparam T The mathematical type of the context, which must be a valid Eigen
+          scalar. */
 template <typename T>
 class LeafContext : public Context<T> {
  public:
@@ -35,16 +36,6 @@ class LeafContext : public Context<T> {
   LeafContext()
       : state_(std::make_unique<State<T>>()) {}
   ~LeafContext() override {}
-
-  const State<T>& get_state() const final {
-    DRAKE_ASSERT(state_ != nullptr);
-    return *state_;
-  }
-
-  State<T>& get_mutable_state() final {
-    DRAKE_ASSERT(state_ != nullptr);
-    return *state_.get();
-  }
 
 #ifndef DRAKE_DOXYGEN_CXX
   // Temporarily promoting these to public so that LeafSystem and testing code
@@ -90,8 +81,8 @@ class LeafContext : public Context<T> {
         xc_vector.Clone(), num_q, num_v, num_z));
 
     // Make deep copies of the discrete and abstract states.
-    clone->set_discrete_state(get_state().get_discrete_state().Clone());
-    clone->set_abstract_state(get_state().get_abstract_state().Clone());
+    clone->set_discrete_state(state_->get_discrete_state().Clone());
+    clone->set_abstract_state(state_->get_abstract_state().Clone());
 
     return clone;
   }
@@ -100,6 +91,20 @@ class LeafContext : public Context<T> {
   friend class LeafContextTest;
   using ContextBase::AddInputPort;    // For LeafContextTest.
   using ContextBase::AddOutputPort;
+  using ContextBase::AddDiscreteStateTicket;
+  using ContextBase::AddAbstractStateTicket;
+  using ContextBase::AddNumericParameterTicket;
+  using ContextBase::AddAbstractParameterTicket;
+
+  const State<T>& do_access_state() const final {
+    DRAKE_ASSERT(state_ != nullptr);
+    return *state_;
+  }
+
+  State<T>& do_access_mutable_state() final {
+    DRAKE_ASSERT(state_ != nullptr);
+    return *state_;
+  }
 
   // The state values (x) for this LeafContext; this is never null.
   std::unique_ptr<State<T>> state_;

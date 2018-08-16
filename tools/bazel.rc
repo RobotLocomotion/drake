@@ -57,7 +57,7 @@ build:mosek --define=WITH_MOSEK=ON
 ### A configuration that enables SNOPT. ###
 # -- To use this config, you must have access to the private repository
 # -- RobotLocomotion/snopt on GitHub, and your local git must be configured
-# -- with SSH keys as documented at http://drake.mit.edu/from_source.html.
+# -- with SSH keys as documented at https://drake.mit.edu/from_source.html.
 #
 # -- To run tests that require SNOPT, also specify a set of test_tag_filters
 # -- that does not exclude the "snopt" tag.

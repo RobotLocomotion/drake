@@ -4,7 +4,7 @@ to remove the quoted sections that do not need a response.
 > Before you post:
 
 > * Have you reviewed the documentation on
-[Getting Help](http://drake.mit.edu/getting_help.html)?
+[Getting Help](https://drake.mit.edu/getting_help.html)?
 > * Have you reviewed existing GitHub issues and StackOverflow posts?
 > * Have you rerun `install_prereqs.sh` on your current commit of `drake`?
 
@@ -72,7 +72,7 @@ external:
         output.
 
 * If you are building `drake`
-[from source](http://drake.mit.edu/from_source.html):
+[from source](https://drake.mit.edu/from_source.html):
 
     * What git commit of `drake` are you using?
 
@@ -92,7 +92,7 @@ external:
 
         > Replace this with your answer.
 
-* If you are using `drake` [from a binary release](http://drake.mit.edu/from_binary.html):
+* If you are using `drake` [from a binary release](https://drake.mit.edu/from_binary.html):
 
     * What are the contents of `.../drake/share/doc/drake/VERSION.txt`?
 

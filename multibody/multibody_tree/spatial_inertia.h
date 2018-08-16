@@ -367,7 +367,7 @@ class SpatialInertia {
   ///
   /// @note
   /// The term `F_Bo_E` computed by this operator appears in the equations of
-  /// motion for a rigid body which, when writen about the origin `Bo` of the
+  /// motion for a rigid body which, when written about the origin `Bo` of the
   /// body frame B (which does not necessarily need to coincide with the body's
   /// center of mass), read as: <pre>
   ///   Ftot_BBo = M_Bo_W * A_WB + b_Bo

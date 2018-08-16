@@ -71,6 +71,9 @@ drake_cc_googletest(
 drake_cc_binary(
     name = "remote_tree_viewer_wrapper_demo",
     srcs = ["test/remote_tree_viewer_wrapper_demo.cc"],
+    data = [
+        "//examples/atlas:models",
+    ],
     deps = [
         ":remote_tree_viewer_wrapper",
         "//common:find_resource",

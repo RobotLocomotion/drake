@@ -48,6 +48,17 @@ QueryObject<T>::ComputePointPairPenetration() const {
   return state.ComputePointPairPenetration();
 }
 
+template <typename T>
+std::vector<SignedDistancePair<double>>
+QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints() const {
+  ThrowIfDefault();
+
+  // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
+  scene_graph_->FullPoseUpdate(*context_);
+  const GeometryState<T>& state = context_->get_geometry_state();
+  return state.ComputeSignedDistancePairwiseClosestPoints();
+}
+
 }  // namespace geometry
 }  // namespace drake
 

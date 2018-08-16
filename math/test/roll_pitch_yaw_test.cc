@@ -275,7 +275,7 @@ GTEST_TEST(RollPitchYaw, PrecisionOfAngularVelocityFromRpyDtAndViceVersa) {
       // max_rpyDt scales with 1/cos(pitch_angle) multiplied by angular velocity
       // wA = (1, 1, 1).  Check that max_rpyDt has a range that is within
       // a reasonable multiplier (1000) of that scale.
-      // max_rpyDDt scales with 1/cos(pitch_angle)² multipled by angular
+      // max_rpyDDt scales with 1/cos(pitch_angle)² multiplied by angular
       // acceleration alphaA = (1, 1, 1).  Check that max_rpyDDt has a range
       // that is within a reasonable multiplier (1000²) of that scale.
       EXPECT_TRUE(1E-3 / tolerance <= max_rpyDt &&

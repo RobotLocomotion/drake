@@ -13,9 +13,9 @@ namespace benchmarks {
 /// of Underactuated Robotics</a>.
 ///
 /// This system essentially is a double pendulum consisting of two links.
-/// Link 1 is connected to the world by a "shoulder" revolute joint parametrized
-/// by angle theta1 and Link 2 is connected to Link 1 by an "elbow" revolute
-/// joint parametrized by angle theta2.
+/// Link 1 is connected to the world by a "shoulder" revolute joint
+//  parameterized by angle theta1 and Link 2 is connected to Link 1 by an
+/// "elbow" revolute joint parameterized by angle theta2.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
@@ -31,7 +31,7 @@ class Acrobot {
   /// Essentially the two dimensional equations of the acrobot are described
   /// in a model frame D within a x-y plane with y the vertical direction
   /// and gravity pointing downwards.
-  /// Thefore the axes defining the model frame D are: <pre>
+  /// Therefore the axes defining the model frame D are: <pre>
   ///   z_W = normal_W.normalized()
   ///   y_W = (up - up.dot(z_W) * z_W).normalized()
   ///   x_W = y_W.cross(z_W)

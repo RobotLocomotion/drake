@@ -1,5 +1,5 @@
 # -*- mode: python -*-
 
-DREAL_VERSION = "4.18.05.3"
+DREAL_VERSION = "4.18.08.1"
 
 IBEX_VERSION = "2.6.5"

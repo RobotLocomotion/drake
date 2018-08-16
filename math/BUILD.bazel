@@ -90,7 +90,6 @@ drake_cc_library(
         "rigid_transform.h",
         "roll_pitch_yaw.h",
         "rotation_matrix.h",
-        "rotation_matrix_deprecated.h",
         "transform.h",  # Deprecated.
     ],
     deps = [
@@ -388,14 +387,6 @@ drake_cc_googletest(
     deps = [
         ":geometric_transform",
         "//common/test_utilities",
-    ],
-)
-
-drake_cc_googletest(
-    name = "rotation_matrix_deprecated_test",
-    deps = [
-        ":geometric_transform",
-        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

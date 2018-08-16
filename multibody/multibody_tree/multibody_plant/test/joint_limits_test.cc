@@ -179,13 +179,19 @@ GTEST_TEST(JointLimitsTest, RevoluteJoint) {
   }
 }
 
+// We test joint limits for the case of a Kuka arm model. In order to reach
+// the joint limits we drive the joints by applying a constant torque for a
+// given length of simulation time.
+// Tolerances are rather loose given we use a relatively large time step and
+// a short simulation time to keep wall clock times low, specially for debug
+// builds.
 GTEST_TEST(JointLimitsTest, KukaArm) {
-  const double time_step = 1.0e-3;
-  const double simulation_time = 40;
+  const double time_step = 2.0e-3;
+  const double simulation_time = 35;
 
   // At steady state after one second of simulation, we expect the velocity to
   // be zero within this absolute tolerance.
-  const double kVelocityTolerance = 1.0e-12;
+  const double kVelocityTolerance = 5.0e-4;
 
   // Expected relative tolerance for the joint limits. This number is chosen
   // so that the verifications performed below pass for the time step used in
@@ -193,7 +199,7 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
   // quadratic convergence in the time step) and therefore we could make
   // kRelativePositionTolerance even smaller. However there is a trade off
   // between what we want to test and the computational cost of this unit test.
-  const double kRelativePositionTolerance = 0.015;
+  const double kRelativePositionTolerance = 0.055;
 
   const std::string file_path =
       "drake/manipulation/models/iiwa_description/sdf/"

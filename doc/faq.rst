@@ -120,13 +120,13 @@ You look at a unittest that builds in Drake, run it, and it builds, runs, and pa
 
 If you look at symbols in the Drake shared library (e.g. ``nm -C`` or ``objdump -TC`` with ``grep``), you see the signature ``RigidBodyTree<double>::get_position_name[abi:cxx11](int)``. However, if you look in the produced object code (which causes the linking to fail), you see ``RigidBodyTree<double>::get_position_name(int)``.
 
-**Solution**: This is most likely due to an incompatibilty between the compiler used to produce Drake (e.g. ``clang-4``) and the compiler that CMake has selected (e.g. ``gcc-4.9``). Specifically, ``gcc-4.9`` or before does not tend to handle the DualABI well when linking against ``clang``-compiled code [#dual_abi]_. You may be able to use other functions, because only functions that return an ABI-dependent class (e.g. ``std::string``) are tagged with the ABI that they are using (since they cannot be distinguished in the function signature).
+**Solution**: This is most likely due to an incompatibilty between the compiler used to produce Drake (e.g. ``clang-4.0``) and the compiler that CMake has selected (e.g. ``gcc-4.9``). Specifically, ``gcc-4.9`` or before does not tend to handle the DualABI well when linking against ``clang``-compiled code [#dual_abi]_. You may be able to use other functions, because only functions that return an ABI-dependent class (e.g. ``std::string``) are tagged with the ABI that they are using (since they cannot be distinguished in the function signature).
 
 The fix is to change the compiler CMake is using. One way to do this is to set the ``CC`` and ``CXX`` environment variables to use a supported compiler. For a list of supported compilers, see :ref:`supported-configurations`. If you are using pre-compiled binaries [#binary_install]_, please refer to the :ref:`binary-packages` for the compilers used.
 
 .. note::
 
-    Do not change the compiler using ``update-alternatives`` in Ubuntu, as this may affect your DKMS module compatiblity with the kernel (among other things) [#update_alt]_.
+    Do not change the compiler using ``update-alternatives`` in Ubuntu, as this may affect your DKMS module compatibility with the kernel (among other things) [#update_alt]_.
 
 .. [#dual_abi] https://stackoverflow.com/q/36159238/7829525
 .. [#binary_install] :ref:`binary-installation`

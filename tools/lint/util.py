@@ -43,7 +43,7 @@ def find_all_sources(workspace_name):
     if not os.path.exists(workspace_file):
         raise RuntimeError("Cannot find WORKSPACE at " + workspace_root)
     # Walk the tree (ignoring symlinks), and collect a list of all workspace-
-    # relative filenames, but exluding a few specific items.
+    # relative filenames, but excluding a few specific items.
     relpaths = []
     for abs_dirpath, dirs, files in os.walk(workspace_root):
         assert abs_dirpath.startswith(workspace_root)

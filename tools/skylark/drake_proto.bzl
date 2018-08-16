@@ -52,6 +52,7 @@ def drake_cc_proto_library(
             "@com_google_protobuf//:protobuf",
             "@drake//common/proto:protobuf_ubsan_fixup",
         ],
+        copts = ["-Wno-unused-parameter"],
         **kwargs
     )
 

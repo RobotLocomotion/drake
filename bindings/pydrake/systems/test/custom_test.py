@@ -55,7 +55,7 @@ class CustomAdder(LeafSystem):
 # TODO(eric.cousineau): Make this class work with custom scalar types once
 # referencing with custom dtypes lands.
 # WARNING: At present, dtype=object matrices are NOT well supported, and may
-# produce unexecpted results (e.g. references not actually being respected).
+# produce unexpected results (e.g. references not actually being respected).
 
 
 class CustomVectorSystem(VectorSystem):
