@@ -337,8 +337,7 @@ void AddLinksFromSpecification(
 
     // Add a rigid body to model each link.
     const RigidBody<double>& body =
-      plant->AddRigidBody(link.Name(),
-          model_instance, M_BBo_B);
+      plant->AddRigidBody(link.Name(), model_instance, M_BBo_B);
 
     if (scene_graph != nullptr) {
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
@@ -380,13 +379,14 @@ void AddLinksFromSpecification(
 // specification object.
 ModelInstanceIndex AddModelFromSpecification(
     const sdf::Model& model,
+    const std::string& model_name,
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph,
     const parsers::PackageMap& package_map,
     const std::string& root_dir) {
 
   const ModelInstanceIndex model_instance =
-    plant->AddModelInstance(model.Name());
+    plant->AddModelInstance(model_name);
 
   AddLinksFromSpecification(
       model_instance, model, plant, scene_graph, package_map, root_dir);
@@ -450,21 +450,9 @@ ModelInstanceIndex AddModelFromSdfFile(
 
   const std::string model_name =
       model_name_in.empty() ? model.Name() : model_name_in;
-  const ModelInstanceIndex model_instance =
-      plant->AddModelInstance(model_name);
 
-  AddLinksFromSpecification(
-      model_instance, model, plant, scene_graph, package_map, root_dir);
-
-  // Add all the joints
-  for (uint64_t joint_index = 0; joint_index < model.JointCount();
-       ++joint_index) {
-    // Get a pointer to the SDF joint, and the joint axis information.
-    const sdf::Joint& joint = *model.JointByIndex(joint_index);
-    AddJointFromSpecification(model, joint, plant);
-  }
-
-  return model_instance;
+  return AddModelFromSpecification(
+      model, model_name, plant, scene_graph, package_map, root_dir);
 }
 
 ModelInstanceIndex AddModelFromSdfFile(
@@ -495,10 +483,21 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     throw std::runtime_error(error_accumulation);
   }
 
+  // Throw an error if there are no models or worlds.
   if (root.ModelCount() == 0 && root.WorldCount() == 0) {
     throw std::runtime_error(
         "File must have at least one <model>, or <world> with one "
         "child <model> element.");
+  }
+
+  // Only one world in an SDF file is allowed.
+  if (root.WorldCount() > 1) {
+    throw std::runtime_error("File must contain only one <world>.");
+  }
+
+  // Do not allow a <world> to have a <model> sibling.
+  if (root.ModelCount() > 0 && root.WorldCount() > 0) {
+    throw std::runtime_error("A <world> and <model> cannot be siblings.");
   }
 
   if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
@@ -524,22 +523,18 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     // Get the model.
     const sdf::Model& model = *root.ModelByIndex(i);
     model_instances.push_back(AddModelFromSpecification(
-          model, plant, scene_graph, package_map, root_dir));
+          model, model.Name(), plant, scene_graph, package_map, root_dir));
   }
 
-  // Load all the worlds, and all the models in each world.
-  for (uint64_t world_index = 0; world_index < root.WorldCount();
-       ++world_index) {
-    // Get the world.
-    const sdf::World& world = *root.WorldByIndex(world_index);
+  // Load the world and all the models in the world.
+  const sdf::World& world = *root.WorldByIndex(0);
 
-    for (uint64_t model_index = 0; model_index < world.ModelCount();
-         ++model_index) {
-      // Get the model.
-      const sdf::Model& model = *world.ModelByIndex(model_index);
-      model_instances.push_back(AddModelFromSpecification(
-            model, plant, scene_graph, package_map, root_dir));
-    }
+  for (uint64_t model_index = 0; model_index < world.ModelCount();
+       ++model_index) {
+    // Get the model.
+    const sdf::Model& model = *world.ModelByIndex(model_index);
+    model_instances.push_back(AddModelFromSpecification(
+          model, model.Name(), plant, scene_graph, package_map, root_dir));
   }
 
   return model_instances;
