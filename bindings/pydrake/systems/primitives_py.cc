@@ -10,6 +10,7 @@
 #include "drake/systems/primitives/barycentric_system.h"
 #include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/gain.h"
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/linear_system.h"
@@ -72,6 +73,12 @@ PYBIND11_MODULE(primitives, m) {
     DefineTemplateClassWithDefault<ConstantVectorSource<T>, LeafSystem<T>>(
         m, "ConstantVectorSource", GetPyParam<T>())
         .def(py::init<VectorX<T>>());
+
+    DefineTemplateClassWithDefault<Demultiplexer<T>, LeafSystem<T>>(
+        m, "Demultiplexer", GetPyParam<T>())
+        .def(py::init<int, int>(),
+             py::arg("size"),
+             py::arg("output_ports_sizes") = 1);
 
     DefineTemplateClassWithDefault<Gain<T>, LeafSystem<T>>(
         m, "Gain", GetPyParam<T>())
