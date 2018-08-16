@@ -52,15 +52,16 @@ MakePendulumPlant(const PendulumParameters& params,
     // Pose of the sphere used to visualize the point mass in the body frame B.
     const Isometry3d X_BGs{
         Translation3d(-params.l() * Vector3d::UnitZ())};
-    plant->RegisterVisualGeometry(
-        point_mass, X_BGs, Sphere(params.point_mass_radius()), scene_graph);
+    plant->RegisterVisualGeometry(point_mass, X_BGs,
+                                  Sphere(params.point_mass_radius()),
+                                  params.body_name(), scene_graph);
 
     // Pose of the cylinder used to visualize the massless rod in frame B.
     const Isometry3d X_BGc{
         Translation3d(-params.l() / 2.0 * Vector3d::UnitZ())};
     plant->RegisterVisualGeometry(
         point_mass, X_BGc, Cylinder(params.massless_rod_radius(), params.l()),
-        scene_graph);
+        "arm", scene_graph);
   }
 
   const RevoluteJoint<double>& pin = plant->AddJoint<RevoluteJoint>(

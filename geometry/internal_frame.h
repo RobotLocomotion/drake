@@ -51,7 +51,7 @@ class InternalFrame {
 
   SourceId get_source_id() const { return source_id_; }
   FrameId get_id() const { return id_; }
-  const std::string &get_name() const { return name_; }
+  const std::string& get_name() const { return name_; }
   int get_frame_group() const { return frame_group_; }
   PoseIndex get_pose_index() const { return pose_index_; }
   void set_pose_index(PoseIndex index) { pose_index_ = index; }
@@ -145,7 +145,7 @@ class InternalFrame {
   // It does *not* include geometries hung on child frames.
   std::unordered_set<GeometryId> child_geometries_;
 
-  // The clique used to prevent self-collision among the geomtries affixed to
+  // The clique used to prevent self-collision among the geometries affixed to
   // this frame.
   int clique_{};
 

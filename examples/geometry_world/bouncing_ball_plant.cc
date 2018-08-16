@@ -48,7 +48,8 @@ BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
   ball_id_ = scene_graph->RegisterGeometry(
       source_id, ball_frame_id_,
       make_unique<GeometryInstance>(Isometry3<double>::Identity(), /*X_FG*/
-                                    make_unique<Sphere>(diameter_ / 2.0)));
+                                    make_unique<Sphere>(diameter_ / 2.0),
+                                    "ball"));
 
   // Allocate the output port now that the frame has been registered.
   geometry_pose_port_ = this->DeclareAbstractOutputPort(
