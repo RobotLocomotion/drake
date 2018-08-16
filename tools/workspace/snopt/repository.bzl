@@ -107,7 +107,7 @@ def _setup_local_archive(repo_ctx, snopt_path):
         # not during the loading stage.
         repo_ctx.file(
             "error.txt",
-            "ERROR: Repository rule @{} failed: {}".format(
+            "ERROR: Repository rule @{} failed: {}\n".format(
                 repo_ctx.name,
                 error,
             ),
@@ -122,11 +122,15 @@ def _impl(repo_ctx):
     if os_result.error != None:
         fail(os_result.error)
 
+    # An empty path defaults to use a local archive (not git).  Since the path
+    # is empty, the archive won't exist anyway, but the error messages will be
+    # deferred to the build phase (because of our BUILD rule tricks), instead
+    # of loading phase.  Once the user sets a SNOPT_PATH, this function will be
+    # re-run (because we tag `environ` on our repository_rule).  In this way,
+    # we can keep this rule tagged `local = False`, which is important for not
+    # re-running git anytime the dependency graph changes.
     snopt_path = repo_ctx.os.environ.get("SNOPT_PATH", "")
-
-    # For now, an empty path defaults to use git.  In the future, setting
-    # SNOPT_PATH="git" will be required -- an empty path will report an error.
-    if snopt_path in ["git", ""]:
+    if snopt_path == "git":
         _setup_git(repo_ctx)
     else:
         _setup_local_archive(repo_ctx, snopt_path)

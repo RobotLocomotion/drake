@@ -218,9 +218,6 @@ Using the RobotLocomotion git repository
 2. `Set up SSH access to github.com <https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/>`_.
 3. ``export SNOPT_PATH=git``
 
-The build will attempt to use this mechanism anytime SNOPT is enabled and a
-source archive has not been specified.
-
 Test the build (for either mechanism)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
