@@ -1,5 +1,5 @@
 <sdf version='1.6'>
-  <model name='robot1'>
+  <model name='robot2'>
     <link name='base_link'>
     </link>
     <link name='moving_link'>

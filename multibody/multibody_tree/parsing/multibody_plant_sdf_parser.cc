@@ -310,6 +310,40 @@ void AddJointFromSpecification(
   }
 }
 
+// Helper method to load an SDF file and read the contents into an sdf::Root
+// object.
+std::string LoadSdf(
+    sdf::Root* root,
+    parsers::PackageMap* package_map,
+    const std::string& file_name) {
+
+  const std::string full_path = parsers::GetFullPath(file_name);
+
+  // Load the SDF file.
+  sdf::Errors errors = root->Load(full_path);
+
+  // Check for any errors.
+  if (!errors.empty()) {
+    std::string error_accumulation("From AddModelFromSdfFile():\n");
+    for (const auto& e : errors)
+      error_accumulation += "Error: " + e.Message() + "\n";
+    throw std::runtime_error(error_accumulation);
+  }
+
+  // TODO(sam.creasey) Add support for using an existing package map.
+  package_map->PopulateUpstreamToDrake(full_path);
+
+  // Uses the directory holding the SDF to be the root directory
+  // in which to search for files referenced within the SDF file.
+  std::string root_dir = ".";
+  size_t found = full_path.find_last_of("/\\");
+  if (found != std::string::npos) {
+    root_dir = full_path.substr(0, found);
+  }
+
+  return root_dir;
+}
+
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
 void AddLinksFromSpecification(
@@ -411,19 +445,10 @@ ModelInstanceIndex AddModelFromSdfFile(
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
-  const std::string full_path = parsers::GetFullPath(file_name);
-
-  // Load the SDF file.
   sdf::Root root;
-  sdf::Errors errors = root.Load(full_path);
+  parsers::PackageMap package_map;
 
-  // Check for any errors.
-  if (!errors.empty()) {
-    std::string error_accumulation("From AddModelFromSdfFile():\n");
-    for (const auto& e : errors)
-      error_accumulation += "Error: " + e.Message() + "\n";
-    throw std::runtime_error(error_accumulation);
-  }
+  std::string root_dir = LoadSdf(&root, &package_map, file_name);
 
   if (root.ModelCount() != 1) {
     throw std::runtime_error("File must have a single <model> element.");
@@ -435,18 +460,6 @@ ModelInstanceIndex AddModelFromSdfFile(
   if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
     plant->RegisterAsSourceForSceneGraph(scene_graph);
   }
-
-  // Uses the directory holding the SDF to be the root directory
-  // in which to search for files referenced within the SDF file.
-  std::string root_dir = ".";
-  size_t found = full_path.find_last_of("/\\");
-  if (found != std::string::npos) {
-    root_dir = full_path.substr(0, found);
-  }
-
-  // TODO(sam.creasey) Add support for using an existing package map.
-  parsers::PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_path);
 
   const std::string model_name =
       model_name_in.empty() ? model.Name() : model_name_in;
@@ -469,19 +482,10 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
-  const std::string full_path = parsers::GetFullPath(file_name);
-
-  // Load the SDF file.
   sdf::Root root;
-  sdf::Errors errors = root.Load(full_path);
+  parsers::PackageMap package_map;
 
-  // Check for any errors.
-  if (!errors.empty()) {
-    std::string error_accumulation("From AddModelsFromSdfFile():\n");
-    for (const auto& e : errors)
-      error_accumulation += "Error: " + e.Message() + "\n";
-    throw std::runtime_error(error_accumulation);
-  }
+  std::string root_dir = LoadSdf(&root, &package_map, file_name);
 
   // Throw an error if there are no models or worlds.
   if (root.ModelCount() == 0 && root.WorldCount() == 0) {
@@ -504,37 +508,29 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     plant->RegisterAsSourceForSceneGraph(scene_graph);
   }
 
-  // Uses the directory holding the SDF to be the root directory
-  // in which to search for files referenced within the SDF file.
-  std::string root_dir = ".";
-  size_t found = full_path.find_last_of("/\\");
-  if (found != std::string::npos) {
-    root_dir = full_path.substr(0, found);
-  }
-
-  // TODO(sam.creasey) Add support for using an existing package map.
-  parsers::PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_path);
-
   std::vector<ModelInstanceIndex> model_instances;
 
-  // Load all the models at the root level.
-  for (uint64_t i = 0; i < root.ModelCount(); ++i) {
-    // Get the model.
-    const sdf::Model& model = *root.ModelByIndex(i);
-    model_instances.push_back(AddModelFromSpecification(
-          model, model.Name(), plant, scene_graph, package_map, root_dir));
-  }
+  // At this point there should be only Models or a single World at the Root
+  // levelt.
+  if (root.ModelCount() > 0) {
+    // Load all the models at the root level.
+    for (uint64_t i = 0; i < root.ModelCount(); ++i) {
+      // Get the model.
+      const sdf::Model& model = *root.ModelByIndex(i);
+      model_instances.push_back(AddModelFromSpecification(
+            model, model.Name(), plant, scene_graph, package_map, root_dir));
+    }
+  } else {
+    // Load the world and all the models in the world.
+    const sdf::World& world = *root.WorldByIndex(0);
 
-  // Load the world and all the models in the world.
-  const sdf::World& world = *root.WorldByIndex(0);
-
-  for (uint64_t model_index = 0; model_index < world.ModelCount();
-       ++model_index) {
-    // Get the model.
-    const sdf::Model& model = *world.ModelByIndex(model_index);
-    model_instances.push_back(AddModelFromSpecification(
-          model, model.Name(), plant, scene_graph, package_map, root_dir));
+    for (uint64_t model_index = 0; model_index < world.ModelCount();
+        ++model_index) {
+      // Get the model.
+      const sdf::Model& model = *world.ModelByIndex(model_index);
+      model_instances.push_back(AddModelFromSpecification(
+            model, model.Name(), plant, scene_graph, package_map, root_dir));
+    }
   }
 
   return model_instances;

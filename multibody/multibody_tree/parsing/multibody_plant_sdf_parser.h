@@ -70,7 +70,7 @@ ModelInstanceIndex AddModelFromSdfFile(
 /// @param scene_graph
 ///   A pointer to a mutable SceneGraph object used for geometry registration
 ///   (either to model visual or contact geometry).  May be nullptr.
-/// @returns The set of model instance indicies for the newly added models.
+/// @returns The set of model instance indices for the newly added models.
 std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     const std::string& file_name,
     multibody_plant::MultibodyPlant<double>* plant,
