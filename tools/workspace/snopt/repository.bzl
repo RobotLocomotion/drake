@@ -107,7 +107,7 @@ def _setup_local_archive(repo_ctx, snopt_path):
         # not during the loading stage.
         repo_ctx.file(
             "error.txt",
-            "ERROR: Repository rule @{} failed: {}".format(
+            "ERROR: Repository rule @{} failed: {}\n".format(
                 repo_ctx.name,
                 error,
             ),
