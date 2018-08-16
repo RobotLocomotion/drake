@@ -324,9 +324,13 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "controllers_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
     deps = [
         ":controllers_py",
         "//bindings/pydrake/examples:pendulum_py",
+        "//bindings/pydrake/multibody:rigid_body_tree_py",
     ],
 )
 

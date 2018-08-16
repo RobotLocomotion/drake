@@ -7,6 +7,7 @@
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/bindings/pydrake/util/wrap_pybind.h"
 #include "drake/systems/controllers/dynamic_programming.h"
+#include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 
 namespace drake {
@@ -15,6 +16,7 @@ namespace pydrake {
 PYBIND11_MODULE(controllers, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::controllers;
+  using drake::systems::Diagram;
 
   py::module::import("pydrake.math");
   py::module::import("pydrake.symbolic");
@@ -35,6 +37,23 @@ PYBIND11_MODULE(controllers, m) {
                      &DynamicProgrammingOptions::convergence_tol)
       .def_readwrite("visualization_callback",
                      &DynamicProgrammingOptions::visualization_callback);
+
+  py::class_<InverseDynamicsController<double>, Diagram<double>>(
+      m, "InverseDynamicsController")
+      .def(py::init<std::unique_ptr<RigidBodyTree<double>>,
+                    const VectorX<double>&,
+                    const VectorX<double>&,
+                    const VectorX<double>&,
+                    bool>(),
+           py::arg("robot"),
+           py::arg("kp"),
+           py::arg("ki"),
+           py::arg("kd"),
+           py::arg("has_reference_acceleration"),
+           // Keep alive, ownership: RigidBodyTree keeps this alive.
+           py::keep_alive<2, 1>())
+      .def("set_integral_value",
+           &InverseDynamicsController<double>::set_integral_value);
 
   m.def("FittedValueIteration", WrapCallbacks(&FittedValueIteration));
 
