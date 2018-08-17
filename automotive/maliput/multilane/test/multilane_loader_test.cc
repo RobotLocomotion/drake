@@ -25,6 +25,7 @@
 
 using ::testing::_;
 using ::testing::An;
+using ::testing::AtLeast;
 using ::testing::Expectation;
 using ::testing::ExpectationSet;
 using ::testing::Invoke;
@@ -51,9 +52,11 @@ class BuilderMock : public BuilderBase {
  public:
   BuilderMock(double lane_width, const api::HBounds& elevation_bounds,
               double linear_tolerance, double angular_tolerance,
-              double scale_length, ComputationPolicy computation_policy)
+              double scale_length, ComputationPolicy computation_policy,
+              std::unique_ptr<GroupFactoryBase> group_factory)
       : builder_(lane_width, elevation_bounds, linear_tolerance,
-                 angular_tolerance, scale_length, computation_policy) {
+                 angular_tolerance, scale_length, computation_policy,
+                 std::move(group_factory)) {
     ON_CALL(*this, get_lane_width())
         .WillByDefault(Invoke(&builder_, &Builder::get_lane_width));
 
@@ -158,7 +161,7 @@ class BuilderMock : public BuilderBase {
   MOCK_METHOD1(MakeGroup, Group*(const std::string&));
 
   MOCK_METHOD2(MakeGroup, Group*(const std::string&,
-                                 const std::vector<const Connection*>&));
+                                     const std::vector<const Connection*>&));
 
   MOCK_CONST_METHOD1(Build, std::unique_ptr<const api::RoadGeometry>(
                                 const api::RoadGeometryId&));
@@ -191,6 +194,112 @@ class BuilderFactoryMock : public BuilderFactoryBase {
 
  private:
   std::unique_ptr<BuilderBase> builder_mock_;
+};
+
+// Mocks a Group object acting as a proxy for later method testing.
+class GroupMock : public Group {
+ public:
+  // Creates a GroupMock whose ID is `id`.
+  explicit GroupMock(const std::string& id) {
+    group_ = GroupFactory().Make(id);
+    Initialize();
+  }
+
+  // Creates a GroupMock whose ID is `id` and pre-filled with `connections`.
+  GroupMock(const std::string& id,
+            const std::vector<const Connection*>& connections) {
+    group_ = GroupFactory().Make(id, connections);
+    Initialize();
+  }
+
+  MOCK_CONST_METHOD0(id, const std::string&());
+
+  MOCK_CONST_METHOD0(connections, const std::vector<const Connection*>&());
+
+  MOCK_METHOD1(Add, void(const Connection*));
+
+ private:
+  // Initializes all mocked functions.
+  void Initialize() {
+    ON_CALL(*this, id()).WillByDefault(Invoke(group_.get(), &Group::id));
+    ON_CALL(*this, connections())
+        .WillByDefault(Invoke(group_.get(), &Group::connections));
+    ON_CALL(*this, Add(_)).WillByDefault(Invoke(group_.get(), &Group::Add));
+  }
+
+  // Real group to mock.
+  std::unique_ptr<Group> group_;
+};
+
+// Mocks a GroupFactoryBase.
+//
+// This factory will hold std::unique_ptr<GroupMocks> until any of the Make()
+// methods where by `id`, they are moved to the caller. However, internal raw
+// pointer copies are kept for later queries by test code.
+class GroupFactoryMock : public GroupFactoryBase {
+ public:
+  GroupFactoryMock() {
+    std::unique_ptr<Group> (GroupFactoryMock::*make_with_id)(
+        const std::string&) = &GroupFactoryMock::InternalMake;
+    ON_CALL(*this, Make(_))
+        .WillByDefault(Invoke(this, make_with_id));
+    std::unique_ptr<Group> (GroupFactoryMock::*make_with_id_connections)(
+        const std::string&,
+        const std::vector<const Connection*>& connections) =
+            &GroupFactoryMock::InternalMake;
+    ON_CALL(*this, Make(_, _))
+        .WillByDefault(Invoke(this, make_with_id_connections));
+  }
+
+  MOCK_CONST_METHOD1(Make, std::unique_ptr<Group>(const std::string&));
+
+  MOCK_CONST_METHOD2(Make, std::unique_ptr<Group>(
+      const std::string&, const std::vector<const Connection*>&));
+
+  // Returns a std::unique_ptr<Group> specialized to GroupMock whose id is
+  // `id`.
+  // When `id` does not refer to a previously set group, it returns nullptr.
+  std::unique_ptr<Group> InternalMake(const std::string& id) {
+    return InternalMake(id, {});
+  }
+
+  // Returns a std::unique_ptr<Group> specialized to GroupMock whose id is
+  // `id` and adds `connections` to it.
+  // When `id` does not refer to a previously set group, it returns nullptr.
+  // Otherwise, before the pointer is returned, a copy of the raw pointer is
+  // held and can be queried later via get_group_by_id().
+  std::unique_ptr<Group> InternalMake(
+      const std::string& id,
+      const std::vector<const Connection*>& connections) {
+    auto it = group_map_.find(id);
+    if (it != group_map_.end()) {
+      auto group = std::move(it->second);
+      group_map_.erase(it);
+      for (const Connection* conn : connections) {
+        group->Add(conn);
+      }
+      return group;
+    }
+    return nullptr;
+  }
+
+  // Returns a Group pointer whose id is `id`, otherwise returns nullptr.
+  Group* get_group_by_id(const std::string& id) {
+    if (group_pointer_map_.find(id) == group_pointer_map_.end()) {
+      return nullptr;
+    }
+    return group_pointer_map_[id];
+  }
+
+  // Adds a `group`.
+  void add_group(std::unique_ptr<Group> group) {
+    group_pointer_map_[group->id()] = group.get();
+    group_map_[group->id()] = std::move(group);
+  }
+
+ private:
+  std::map<std::string, std::unique_ptr<Group>> group_map_;
+  std::map<std::string, Group*> group_pointer_map_;
 };
 
 // Checks that the minimal YAML passes with an empty RoadGeometry.
@@ -226,7 +335,7 @@ GTEST_TEST(MultilaneLoaderTest, MinimalCorrectYaml) {
 
   auto local_builder_mock = std::make_unique<BuilderMock>(
       kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
-      kScaleLength, kComputationPolicy);
+      kScaleLength, kComputationPolicy, std::make_unique<GroupFactory>());
   BuilderMock* builder_mock = local_builder_mock.get();
   BuilderFactoryMock builder_factory_mock(std::move(local_builder_mock));
 
@@ -244,22 +353,6 @@ GTEST_TEST(MultilaneLoaderTest, MinimalCorrectYaml) {
   std::unique_ptr<const api::RoadGeometry> rg =
       Load(builder_factory_mock, kMultilaneYaml);
   EXPECT_NE(rg, nullptr);
-}
-
-// Provides a pointer to a junction in `rg` whose ID is `junction_id`.
-//
-// @throws std::runtime_err When the `rg` does not contain a junction whose ID
-// is `junction_id`.
-const api::Junction* GetJunctionById(const api::RoadGeometry& rg,
-                                     const api::JunctionId& junction_id) {
-  for (int i = 0; i < rg.num_junctions(); ++i) {
-    if (rg.junction(i)->id() == junction_id) {
-      return rg.junction(i);
-    }
-  }
-  throw std::runtime_error(
-      fmt::format("No matching junction whose ID is: {} in the road network.",
-                  junction_id.string()));
 }
 
 // These tests exercise the following RoadGeometry:
@@ -411,9 +504,13 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
       kLinearTolerance, kAngularTolerance * 180. / M_PI, kComputationPolicyStr,
       kCustomLeftShoulder, kCustomRightShoulder);
 
+  auto local_group_factory = std::make_unique<GroupFactoryMock>();
+  GroupFactoryMock* group_factory_mock = local_group_factory.get();
+
   auto local_builder_mock = std::make_unique<BuilderMock>(
       kLaneWidth, kElevationBounds, kLinearTolerance,
-      kAngularTolerance, kScaleLength, kComputationPolicy);
+      kAngularTolerance, kScaleLength, kComputationPolicy,
+      std::move(local_group_factory));
   BuilderMock* builder_mock = local_builder_mock.get();
 
   BuilderFactoryMock builder_factory_mock(std::move(local_builder_mock));
@@ -614,48 +711,44 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
               kLinearTolerance)));
 
   // Group expectations.
-  {
-    prebuild_expectations += EXPECT_CALL(*builder_mock, MakeGroup("g1"));
-    prebuild_expectations += EXPECT_CALL(*builder_mock, MakeGroup("g2"));
-    // TODO(agalbachicar):  Loader calls Group::Add() to insert Connections into
-    //                      it. A GroupMock class should be created to test that
-    //                      correct calls arguments to Group::Add() are done.
-    //                      Once it's done, code that checks junctions below
-    //                      must be removed.
-  }
+  prebuild_expectations += EXPECT_CALL(*builder_mock, MakeGroup("g1"));
+  prebuild_expectations += EXPECT_CALL(*builder_mock, MakeGroup("g2"));
 
+  // Creates mock groups and gets their pointers so calls are also validated.
+  group_factory_mock->add_group(std::make_unique<GroupMock>("g1"));
+  group_factory_mock->add_group(std::make_unique<GroupMock>("g2"));
+
+  GroupMock* g1 =
+      dynamic_cast<GroupMock*>(group_factory_mock->get_group_by_id("g1"));
+  EXPECT_NE(g1, nullptr);
+  GroupMock* g2 =
+      dynamic_cast<GroupMock*>(group_factory_mock->get_group_by_id("g2"));
+  EXPECT_NE(g2, nullptr);
+
+  prebuild_expectations += EXPECT_CALL(*group_factory_mock, Make("g1"));
+  prebuild_expectations +=
+      EXPECT_CALL(*g1, Add(An<const Connection*>())).Times(2);
+  EXPECT_CALL(*g1, id()).Times(AtLeast(1));
+  EXPECT_CALL(*g1, connections()).Times(AtLeast(1));
+
+  prebuild_expectations += EXPECT_CALL(*group_factory_mock, Make("g2"));
+  prebuild_expectations +=
+      EXPECT_CALL(*g2, Add(An<const Connection*>())).Times(3);
+  EXPECT_CALL(*g2, id()).Times(AtLeast(1));
+  EXPECT_CALL(*g2, connections()).Times(AtLeast(1));
+
+  // Build expectation.
   EXPECT_CALL(*builder_mock, Build(api::RoadGeometryId(kRoadName)))
       .After(prebuild_expectations);
 
   // At some point inside this function, `builder_factory_mock.Make()` will
   // be called. That will transfer ownership of `builder_mock` to a local scope
   // variable inside `Load()`. As a consequence, that memory will be freed and
-  // `builder_mock` must not be used anymore.
+  // `builder_mock` must not be used anymore. The same applies to local
+  // GroupMock objects.
   std::unique_ptr<const api::RoadGeometry> rg =
       Load(builder_factory_mock, std::string(kMultilaneYaml));
   EXPECT_NE(rg, nullptr);
-
-  // Finds "g1" junction and checks that the correct segments are created.
-  const api::Junction* g1 = GetJunctionById(*rg, api::JunctionId("j:g1"));
-  EXPECT_EQ(g1->num_segments(), 2);
-
-  const std::set<api::SegmentId> g1_segment_ids{api::SegmentId("s:s2"),
-                                                api::SegmentId("s:s5")};
-  for (int i = 0; i < g1->num_segments(); i++) {
-    EXPECT_TRUE(g1_segment_ids.find(g1->segment(i)->id()) !=
-                g1_segment_ids.end());
-  }
-
-  // Finds "g2" junction and checks that the correct segments are created.
-  const api::Junction* g2 = GetJunctionById(*rg, api::JunctionId("j:g2"));
-  EXPECT_EQ(g2->num_segments(), 3);
-
-  const std::set<api::SegmentId> g2_segment_ids{
-      api::SegmentId("s:s4"), api::SegmentId("s:s8"), api::SegmentId("s:s10")};
-  for (int i = 0; i < g2->num_segments(); i++) {
-    EXPECT_TRUE(g2_segment_ids.find(g2->segment(i)->id()) !=
-                g2_segment_ids.end());
-  }
 }
 
 GTEST_TEST(MultilaneLoaderTest, ContinuityConstraintOnReference) {
@@ -711,7 +804,7 @@ GTEST_TEST(MultilaneLoaderTest, ContinuityConstraintOnReference) {
 
   auto local_builder_mock = std::make_unique<BuilderMock>(
       kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
-      kScaleLength, kComputationPolicy);
+      kScaleLength, kComputationPolicy, std::make_unique<GroupFactory>());
   BuilderMock* builder_mock = local_builder_mock.get();
 
   BuilderFactoryMock builder_factory_mock(std::move(local_builder_mock));

@@ -26,6 +26,7 @@ using maliput::api::RoadGeometry;
 
 using maliput::multilane::ArcOffset;
 using maliput::multilane::Builder;
+using maliput::multilane::BuilderFactory;
 using maliput::multilane::ComputationPolicy;
 using maliput::multilane::Direction;
 using maliput::multilane::Endpoint;
@@ -48,7 +49,7 @@ const EndpointZ kEndZ{0, 0, 0, 0};  // Specifies zero elevation/super-elevation.
 
 // Build a road with two lanes in series.
 std::unique_ptr<const RoadGeometry> MakeTwoLaneRoad(bool is_opposing) {
-  Builder builder(
+  auto builder = BuilderFactory().Make(
       4. /* lane width */, HBounds(0., 5.), 0.01 /* linear tolerance */,
       M_PI_2 / 180.0 /* angular tolerance */, 1. /* scale length*/,
       ComputationPolicy::kPreferAccuracy /* accuracy */);
@@ -56,7 +57,7 @@ std::unique_ptr<const RoadGeometry> MakeTwoLaneRoad(bool is_opposing) {
       2. /* left shoulder */, 2. /* right shoulder */, 1 /* number of lanes */,
       0 /* reference lane*/, 0. /* reference r0 */);
 
-  builder.Connect(
+  builder->Connect(
       "0_fwd", lane_layout,
       StartReference().at(Endpoint({0, 0, 0}, kEndZ), Direction::kForward),
       LineOffset(kStraightRoadLength),
@@ -65,7 +66,7 @@ std::unique_ptr<const RoadGeometry> MakeTwoLaneRoad(bool is_opposing) {
   if (is_opposing) {
     // Construct a curved segment that is directionally opposite the straight
     // lane.
-    builder.Connect(
+    builder->Connect(
         "1_rev", lane_layout,
         StartReference().at(Endpoint({kStraightRoadLength + kCurvedRoadRadius,
                                       kCurvedRoadRadius, 1.5 * M_PI},
@@ -76,7 +77,7 @@ std::unique_ptr<const RoadGeometry> MakeTwoLaneRoad(bool is_opposing) {
   } else {
     // Construct a curved segment that is directionally confluent with the
     // straight lane.
-    builder.Connect(
+    builder->Connect(
         "1_fwd", lane_layout,
         StartReference().at(Endpoint({kStraightRoadLength, 0, 0}, kEndZ),
                             Direction::kForward),
@@ -84,7 +85,7 @@ std::unique_ptr<const RoadGeometry> MakeTwoLaneRoad(bool is_opposing) {
         EndReference().z_at(kEndZ, Direction::kForward));
   }
 
-  return builder.Build(maliput::api::RoadGeometryId("TwoLaneStretchOfRoad"));
+  return builder->Build(maliput::api::RoadGeometryId("TwoLaneStretchOfRoad"));
 }
 
 const Lane* GetLaneById(const RoadGeometry& road, const std::string& lane_id) {
