@@ -42,15 +42,15 @@ namespace controllers {
  * @ingroup control_systems
  */
 template <typename T>
-class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
-                                  public Diagram<T> {
+class InverseDynamicsController : public Diagram<T>,
+                                  public StateFeedbackControllerInterface<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamicsController)
 
   /**
    * Constructs the controller that takes ownership of a given RigidBodyTree
    * unique pointer.
-   * @param robot Unique pointer whose ownership will be transfered to this
+   * @param robot Unique pointer whose ownership will be transferred to this
    * instance.
    * @param kp Position gain
    * @param ki Integral gain
@@ -75,7 +75,7 @@ class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
   /**
    * Returns the input port for the reference acceleration.
    */
-  const InputPortDescriptor<T>& get_input_port_desired_acceleration() const {
+  const InputPort<T>& get_input_port_desired_acceleration() const {
     DRAKE_DEMAND(has_reference_acceleration_);
     DRAKE_DEMAND(input_port_index_desired_acceleration_ >= 0);
     return Diagram<T>::get_input_port(input_port_index_desired_acceleration_);
@@ -84,14 +84,14 @@ class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
   /**
    * Returns the input port for the estimated state.
    */
-  const InputPortDescriptor<T>& get_input_port_estimated_state() const final {
+  const InputPort<T>& get_input_port_estimated_state() const final {
     return this->get_input_port(input_port_index_estimated_state_);
   }
 
   /**
    * Returns the input port for the desired state.
    */
-  const InputPortDescriptor<T>& get_input_port_desired_state() const final {
+  const InputPort<T>& get_input_port_desired_state() const final {
     return this->get_input_port(input_port_index_desired_state_);
   }
 

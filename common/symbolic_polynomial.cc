@@ -606,6 +606,24 @@ Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {
   return *this;
 }
 
+Polynomial Polynomial::RemoveTermsWithSmallCoefficients(
+    double coefficient_tol) const {
+  DRAKE_DEMAND(coefficient_tol > 0);
+  MapType cleaned_polynomial{};
+  cleaned_polynomial.reserve(monomial_to_coefficient_map_.size());
+  for (const auto& term : monomial_to_coefficient_map_) {
+    if (is_constant(term.second) &&
+        std::abs(get_constant_value(term.second)) <= coefficient_tol) {
+      // The coefficients are small.
+      continue;
+    } else {
+      cleaned_polynomial.emplace_hint(cleaned_polynomial.end(), term.first,
+                                      term.second);
+    }
+  }
+  return Polynomial(cleaned_polynomial);
+}
+
 void Polynomial::CheckInvariant() const {
   Variables vars{intersect(decision_variables(), indeterminates())};
   if (!vars.empty()) {

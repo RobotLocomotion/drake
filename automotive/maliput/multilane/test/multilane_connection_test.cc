@@ -5,6 +5,7 @@
 #include <cmath>
 #include <ostream>
 
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/multilane/arc_road_curve.h"
@@ -121,11 +122,9 @@ TEST_F(MultilaneConnectionTest, ArcAccessors) {
   const Connection dut(kId, kStartEndpoint, kLowFlatZ, kNumLanes, kR0,
                        kLaneWidth, kLeftShoulder, kRightShoulder, kArcOffset,
                        kLinearTolerance, kScaleLength, kComputationPolicy);
+
   EXPECT_EQ(dut.type(), Connection::Type::kArc);
   EXPECT_EQ(dut.id(), kId);
-  EXPECT_TRUE(
-      test::IsEndpointClose(dut.start(), kStartEndpoint, kZeroTolerance));
-  EXPECT_TRUE(test::IsEndpointClose(dut.end(), kEndEndpoint, kZeroTolerance));
   EXPECT_EQ(dut.num_lanes(), kNumLanes);
   EXPECT_EQ(dut.r0(), kR0);
   EXPECT_EQ(dut.lane_width(), kLaneWidth);
@@ -159,9 +158,6 @@ TEST_F(MultilaneConnectionTest, LineAccessors) {
                        kLinearTolerance, kScaleLength, kComputationPolicy);
   EXPECT_EQ(dut.type(), Connection::Type::kLine);
   EXPECT_EQ(dut.id(), kId);
-  EXPECT_TRUE(
-      test::IsEndpointClose(dut.start(), kStartEndpoint, kZeroTolerance));
-  EXPECT_TRUE(test::IsEndpointClose(dut.end(), kEndEndpoint, kZeroTolerance));
   EXPECT_EQ(dut.num_lanes(), kNumLanes);
   EXPECT_EQ(dut.r0(), kR0);
   EXPECT_EQ(dut.lane_width(), kLaneWidth);
@@ -231,19 +227,10 @@ TEST_F(MultilaneConnectionTest, ArcRoadCurveValidation) {
       flat_end, kVeryExact));
   // Checks that elevation and superelevation polynomials are correctly built
   // for the trivial case of a flat dut.
-  EXPECT_EQ(road_curve->elevation().a(), 0.);
-  EXPECT_EQ(road_curve->elevation().b(), 0.);
-  EXPECT_EQ(road_curve->elevation().c(), 0.);
-  EXPECT_EQ(road_curve->elevation().d(), 0.);
-  EXPECT_EQ(road_curve->superelevation().a(), 0.);
-  EXPECT_EQ(road_curve->superelevation().b(), 0.);
-  EXPECT_EQ(road_curve->superelevation().c(), 0.);
-  EXPECT_EQ(road_curve->superelevation().d(), 0.);
-  // Checks that computation accuracy and speed related parameters are
-  // correctly set.
-  EXPECT_EQ(road_curve->computation_policy(), kComputationPolicy);
-  EXPECT_EQ(road_curve->linear_tolerance(), kLinearTolerance);
-  EXPECT_EQ(road_curve->scale_length(), kScaleLength);
+  EXPECT_TRUE(test::IsCubicPolynomialClose(road_curve->elevation(),
+                                           CubicPolynomial(), kZeroTolerance));
+  EXPECT_TRUE(test::IsCubicPolynomialClose(road_curve->superelevation(),
+                                           CubicPolynomial(), kZeroTolerance));
 
   // Creates a new complex dut with cubic elevation and superelevation.
   const Endpoint kEndElevatedEndpoint{{40., 30., kHeading + kDTheta},
@@ -273,24 +260,14 @@ TEST_F(MultilaneConnectionTest, ArcRoadCurveValidation) {
                                               kEndElevatedEndpoint.xy().y(),
                                               kEndElevatedEndpoint.z().z()),
                               complex_end, kVeryExact));
-
-  EXPECT_NEAR(complex_road_curve->elevation().a(), 0., kVeryExact);
-  EXPECT_NEAR(complex_road_curve->elevation().b(), 0., kVeryExact);
-  EXPECT_NEAR(complex_road_curve->elevation().c(), -0.32476276288217043,
-              kVeryExact);
-  EXPECT_NEAR(complex_road_curve->elevation().d(), 0.549841841921447,
-              kVeryExact);
-  EXPECT_NEAR(complex_road_curve->superelevation().a(), 0., kVeryExact);
-  EXPECT_NEAR(complex_road_curve->superelevation().b(), 0., kVeryExact);
-  EXPECT_NEAR(complex_road_curve->superelevation().c(), -0.9292893218813453,
-              kVeryExact);
-  EXPECT_NEAR(complex_road_curve->superelevation().d(), 0.9528595479208968,
-              kVeryExact);
-  // Checks that computation accuracy and speed related parameters are
-  // correctly set.
-  EXPECT_EQ(complex_road_curve->computation_policy(), kComputationPolicy);
-  EXPECT_EQ(complex_road_curve->linear_tolerance(), kLinearTolerance);
-  EXPECT_EQ(complex_road_curve->scale_length(), kScaleLength);
+  EXPECT_TRUE(test::IsCubicPolynomialClose(
+      complex_road_curve->elevation(),
+      CubicPolynomial(0., 0., -0.32476276288217043, 0.549841841921447),
+      kVeryExact));
+  EXPECT_TRUE(test::IsCubicPolynomialClose(
+      complex_road_curve->superelevation(),
+      CubicPolynomial(0., 0., -0.9292893218813453, 0.9528595479208968),
+      kVeryExact));
 }
 
 TEST_F(MultilaneConnectionTest, LineRoadCurveValidation) {
@@ -326,19 +303,10 @@ TEST_F(MultilaneConnectionTest, LineRoadCurveValidation) {
       flat_end, kVeryExact));
   // Checks that elevation and superelevation polynomials are correctly built
   // for the trivial case of a flat dut.
-  EXPECT_EQ(road_curve->elevation().a(), 0.);
-  EXPECT_EQ(road_curve->elevation().b(), 0.);
-  EXPECT_EQ(road_curve->elevation().c(), 0.);
-  EXPECT_EQ(road_curve->elevation().d(), 0.);
-  EXPECT_EQ(road_curve->superelevation().a(), 0.);
-  EXPECT_EQ(road_curve->superelevation().b(), 0.);
-  EXPECT_EQ(road_curve->superelevation().c(), 0.);
-  EXPECT_EQ(road_curve->superelevation().d(), 0.);
-  // Checks that computation accuracy and speed related parameters are
-  // correctly set.
-  EXPECT_EQ(road_curve->computation_policy(), kComputationPolicy);
-  EXPECT_EQ(road_curve->linear_tolerance(), kLinearTolerance);
-  EXPECT_EQ(road_curve->scale_length(), kScaleLength);
+  EXPECT_TRUE(test::IsCubicPolynomialClose(road_curve->elevation(),
+                                           CubicPolynomial(), kZeroTolerance));
+  EXPECT_TRUE(test::IsCubicPolynomialClose(road_curve->superelevation(),
+                                           CubicPolynomial(), kZeroTolerance));
 
   // Creates a new complex dut with cubic elevation and superelevation.
   const Endpoint kEndElevatedEndpoint{{50., 0., kHeading},
@@ -369,24 +337,14 @@ TEST_F(MultilaneConnectionTest, LineRoadCurveValidation) {
                                               kEndElevatedEndpoint.xy().y(),
                                               kEndElevatedEndpoint.z().z()),
                               complex_end, kVeryExact));
-
-  EXPECT_NEAR(complex_road_curve->elevation().a(), 0., kVeryExact);
-  EXPECT_NEAR(complex_road_curve->elevation().b(), 0., kVeryExact);
-  EXPECT_NEAR(complex_road_curve->elevation().c(), -0.646446609406726,
-              kVeryExact);
-  EXPECT_NEAR(complex_road_curve->elevation().d(), 0.764297739604484,
-              kVeryExact);
-  EXPECT_NEAR(complex_road_curve->superelevation().a(), 0., kVeryExact);
-  EXPECT_NEAR(complex_road_curve->superelevation().b(), 0., kVeryExact);
-  EXPECT_NEAR(complex_road_curve->superelevation().c(), -0.962975975515347,
-              kVeryExact);
-  EXPECT_NEAR(complex_road_curve->superelevation().d(), 0.975317317010231,
-              kVeryExact);
-  // Checks that computation accuracy and speed related parameters are
-  // correctly set.
-  EXPECT_EQ(complex_road_curve->computation_policy(), kComputationPolicy);
-  EXPECT_EQ(complex_road_curve->linear_tolerance(), kLinearTolerance);
-  EXPECT_EQ(complex_road_curve->scale_length(), kScaleLength);
+  EXPECT_TRUE(test::IsCubicPolynomialClose(
+      complex_road_curve->elevation(),
+      CubicPolynomial(0., 0., -0.646446609406726, 0.764297739604484),
+      kVeryExact));
+  EXPECT_TRUE(test::IsCubicPolynomialClose(
+      complex_road_curve->superelevation(),
+      CubicPolynomial(0., 0., -0.962975975515347, 0.975317317010231),
+      kVeryExact));
 }
 
 // Lane Endpoints with different EndpointZ. Those are selected to cover
@@ -412,11 +370,11 @@ struct EndpointZTestParameters{
 // errors.
 std::ostream& operator<<(std::ostream& stream,
                          const EndpointZTestParameters& endpoint_z_test_param) {
-  return stream << "EndpointZTestParameters( start_z: ("
-                << endpoint_z_test_param.start_z  << "), end_z: ("
-                << endpoint_z_test_param.end_z << "), r0: "
-                << endpoint_z_test_param.r0 << ", num_lanes: "
-                << endpoint_z_test_param.num_lanes << ")";
+  return stream << fmt::format(
+             "EndpointZTestParameters( start_z: ({}), "
+             "end_z: ({}), r0: {}, num_lanes: {})",
+             endpoint_z_test_param.start_z, endpoint_z_test_param.end_z,
+             endpoint_z_test_param.r0, endpoint_z_test_param.num_lanes);
 }
 
 // Groups common test constants as well as each test case parameters.

@@ -228,6 +228,12 @@ class GeometryState {
                              GeometryInstance. */
   const Isometry3<double>& GetPoseInParent(GeometryId geometry_id) const;
 
+  /** Returns the visual material defined for geometry indicated by the given
+   `geometry_id` (if defined).
+   @throws std::logic_error If the `geometry_id` does _not_ map to a valid
+                            GeometryInstance. */
+  const VisualMaterial* get_visual_material(GeometryId geometry_id) const;
+
   //@}
 
   /** @name        State management
@@ -412,6 +418,31 @@ class GeometryState {
                             scene graph.   */
   void ExcludeCollisionsBetween(const GeometrySet& setA,
                                 const GeometrySet& setB);
+
+  //---------------------------------------------------------------------------
+  /**@name                Signed Distance Queries
+
+  Refer to @ref signed_distance_query "Signed Distance Queries" for more details.
+  */
+
+  //@{
+
+  /**
+   * Computes the signed distance together with the witness points across all
+   * pairs of geometries in the world. Reports both the separating geometries
+   * and penetrating geometries.
+   * @retval witness_pairs A vector of reporting the signed distance
+   * characterized as witness point pairs. Notice that this is an O(N²)
+   * operation, where N is the number of geometries in the world. We report the
+   * distance between dynamic objects, or between a dynamic object and an
+   * anchored object. We DO NOT report the distance between two anchored
+   * objects.
+   */
+  std::vector<SignedDistancePair<double>>
+  ComputeSignedDistancePairwiseClosestPoints() const {
+    return geometry_engine_->ComputeSignedDistancePairwiseClosestPoints(
+        geometry_index_id_map_, anchored_geometry_index_id_map_);
+  }
   //@}
 
   /** @name Scalar conversion */

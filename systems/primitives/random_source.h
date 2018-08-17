@@ -160,7 +160,7 @@ typedef internal::RandomSource<std::exponential_distribution<double>>
     ExponentialRandomSource;
 
 /// For each subsystem input port in @p builder that is (a) not yet connected
-/// and (b) labeled as random in the InputPortDescriptor, this method will add a
+/// and (b) labeled as random in the InputPort, this method will add a
 /// new RandomSource system of the appropriate type and connect it to the
 /// subsystem input port.
 ///

@@ -82,7 +82,7 @@ PiecewisePolynomial<double> MakeControlledKukaPlan() {
   for (size_t i = 0; i < kTimes.size(); ++i) {
     // Zero configuration is a bad initial guess for IK, to be solved through
     // nonlinear optimization, as the robot configuration is in singularity,
-    // and the gradient is zero. So we add 0.1 as the arbitrary pertubation
+    // and the gradient is zero. So we add 0.1 as the arbitrary perturbation
     // to the zero configuration.
     q_seed.col(i) =
         zero_conf + 0.1 * Eigen::VectorXd::Ones(tree->get_num_positions());

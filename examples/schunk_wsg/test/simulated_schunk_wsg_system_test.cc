@@ -114,7 +114,7 @@ GTEST_TEST(SimulatedSchunkWsgSystemTest, OpenGripper) {
   simulator.Initialize();
 
   // Verify that the robot starts in the correct (zero) configuration.
-  auto initial_output = model->AllocateOutput(simulator.get_context());
+  auto initial_output = model->AllocateOutput();
   model->CalcOutput(simulator.get_context(), initial_output.get());
   const auto initial_output_data =
       initial_output->get_vector_data(0)->get_value();
@@ -126,7 +126,7 @@ GTEST_TEST(SimulatedSchunkWsgSystemTest, OpenGripper) {
   simulator.StepTo(1.0);
 
   // Extract and log the final state of the robot.
-  auto final_output = model->AllocateOutput(simulator.get_context());
+  auto final_output = model->AllocateOutput();
   model->CalcOutput(simulator.get_context(), final_output.get());
   const auto final_output_data =
       final_output->get_vector_data(0)->get_value();

@@ -117,7 +117,7 @@ class ManipulatorJointSpaceControllerTest : public ::testing::Test {
 
     context_ = diagram_->CreateDefaultContext();
     context_->set_time(0);
-    output_ = diagram_->AllocateOutput(*context_);
+    output_ = diagram_->AllocateOutput();
 
     // Initializes.
     qp_id_controller->Initialize(

@@ -25,7 +25,7 @@ using geometry::SceneGraph;
 using geometry::HalfSpace;
 using geometry::SourceId;
 using lcm::DrakeLcm;
-using systems::InputPortDescriptor;
+using systems::InputPort;
 using systems::rendering::PoseBundleToDrawMessage;
 using systems::lcm::LcmPublisherSystem;
 using systems::lcm::Serializer;

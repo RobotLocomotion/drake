@@ -126,7 +126,7 @@ An example of importing symbols directly from ``pydrake.all``:
     simulator = Simulator(RigidBodyPlant(tree))
 
 An alternative is to use ``pydrake.all`` to import all modules, but then
-explicity refer to each symbol:
+explicitly refer to each symbol:
 
 .. code-block:: python
 
@@ -231,6 +231,6 @@ For Developers
 --------------
 
 If you are developing Python bindings, please see the Doxygen page for
-`Python Bindings <http://drake.mit.edu/doxygen_cxx/python_bindings.html>`_.
+`Python Bindings <https://drake.mit.edu/doxygen_cxx/python_bindings.html>`_.
 This provides information on programming conventions as well as tips for
 debugging.

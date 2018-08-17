@@ -2,6 +2,7 @@
 
 load(
     "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
@@ -13,8 +14,10 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "perception",
     deps = [
+        ":depth_image_to_point_cloud",
         ":point_cloud",
         ":point_cloud_flags",
+        ":transform_point_cloud",
     ],
 )
 
@@ -37,6 +40,41 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "depth_image_to_point_cloud",
+    srcs = ["depth_image_to_point_cloud.cc"],
+    hdrs = ["depth_image_to_point_cloud.h"],
+    deps = [
+        ":point_cloud",
+        "//common:essential",
+        "//systems/framework",
+        "//systems/sensors",
+    ],
+)
+
+drake_cc_library(
+    name = "transform_point_cloud",
+    srcs = ["transform_point_cloud.cc"],
+    hdrs = ["transform_point_cloud.h"],
+    deps = [
+        ":point_cloud",
+        "//common:essential",
+        "//math:geometric_transform",
+        "//multibody:rigid_body_tree",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "depth_image_to_point_cloud_test",
+    srcs = ["test/depth_image_to_point_cloud_test.cc"],
+    deps = [
+        ":depth_image_to_point_cloud",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/sensors:camera_info",
+    ],
+)
+
 drake_cc_googletest(
     name = "point_cloud_flags_test",
     srcs = ["test/point_cloud_flags_test.cc"],
@@ -51,6 +89,16 @@ drake_cc_googletest(
     deps = [
         ":point_cloud",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "transform_point_cloud_test",
+    srcs = ["test/transform_point_cloud_test.cc"],
+    deps = [
+        ":transform_point_cloud",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/rigid_body_plant",
     ],
 )
 

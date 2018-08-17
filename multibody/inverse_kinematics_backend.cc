@@ -171,20 +171,26 @@ class InverseKinObjective : public solvers::Cost {
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                 Eigen::VectorXd& y) const override {
+              Eigen::VectorXd* y) const override {
     VectorXd q_err = x - q_nom_i_;
-    y(0) = q_err.transpose() * Q_ * q_err;
+    (*y)(0) = q_err.transpose() * Q_ * q_err;
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-                 AutoDiffVecXd& y) const override {
+              AutoDiffVecXd* y) const override {
     VectorXd x_val = autoDiffToValueMatrix(x);
     VectorXd q_err = x_val - q_nom_i_;
     VectorXd y_val = q_err.transpose() * Q_ * q_err;
     MatrixXd dy_vec = 2 * q_err.transpose() * Q_;
     auto gradient_mat = autoDiffToGradientMatrix(x);
     math::initializeAutoDiffGivenGradientMatrix(
-        y_val, (dy_vec * gradient_mat).eval(), y);
+        y_val, (dy_vec * gradient_mat).eval(), *y);
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>*) const override {
+    throw std::logic_error(
+        "InverseKinObjective does not support symbolic evaluation.");
   }
 
  private:

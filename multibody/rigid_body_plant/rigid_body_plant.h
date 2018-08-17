@@ -282,18 +282,18 @@ class RigidBodyPlant : public LeafSystem<T> {
   int FindInstancePositionIndexFromWorldIndex(int model_instance_id,
                                               int world_position_index);
 
-  /// @name System input port descriptor accessors.
-  /// These are accessors for obtaining descriptors of this RigidBodyPlant's
-  /// input ports. See this class's description for details about these ports
-  /// and how these accessors are typically used.
+  /// @name System input port accessors.
+  /// These are accessors for obtaining this RigidBodyPlant's input ports. See
+  /// this class's description for details about these ports and how these
+  /// accessors are typically used.
   ///@{
 
-  /// Returns a descriptor of the actuator command input port. This method can
-  /// only be called when there is only one model instance in the RigidBodyTree.
+  /// Returns a the actuator command input port. This method can only be
+  /// called when there is only one model instance in the RigidBodyTree.
   /// Otherwise, a std::runtime_error will be thrown. It returns the same port
   /// as model_instance_actuator_command_input_port() using input
   /// parameter RigidBodyTreeConstants::kFirstNonWorldModelInstanceId.
-  const InputPortDescriptor<T>& actuator_command_input_port() const {
+  const InputPort<T>& actuator_command_input_port() const {
     if (get_num_model_instances() != 1) {
       throw std::runtime_error(
           "RigidBodyPlant::actuator_command_input_port(): "
@@ -312,10 +312,10 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// whether it's safe to call model_instance_actuator_command_input_port().
   bool model_instance_has_actuators(int model_instance_id) const;
 
-  /// Returns a descriptor of the input port for a specific model instance. This
-  /// method can only be called when this class is instantiated with constructor
+  /// Returns the input port for a specific model instance. This method can
+  /// only be called when this class is instantiated with constructor
   /// parameter `export_model_instance_centric_ports` equal to `true`.
-  const InputPortDescriptor<T>& model_instance_actuator_command_input_port(
+  const InputPort<T>& model_instance_actuator_command_input_port(
       int model_instance_id) const;
 
   ///@}

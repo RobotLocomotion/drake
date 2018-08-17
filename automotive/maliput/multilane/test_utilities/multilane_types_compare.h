@@ -80,6 +80,19 @@ using ::testing::MatchResultListener;
                                             double linear_tolerance,
                                             double angular_tolerance);
 
+// Compares equality within @p tolerance of @p cubic1 and @p cubic2
+// coefficients.
+// @param cubic1 A CubicPolynomial object to compare.
+// @param cubic2 A CubicPolynomial object to compare.
+// @param tolerance An allowable absolute linear deviation for each coefficient.
+// @return ::testing::AssertionFailure() When any coefficient of
+// CubicPolynomial objects are different.
+// @return ::testing::AssertionSuccess() When all coefficients of
+// CubicPolynomial objects are equal.
+::testing::AssertionResult IsCubicPolynomialClose(const CubicPolynomial& cubic1,
+                                                  const CubicPolynomial& cubic2,
+                                                  double tolerance);
+
 /// Wraps api::HBounds comparison into a MatcherInterface.
 class HBoundsMatcher : public MatcherInterface<const api::HBounds&> {
  public:
@@ -256,10 +269,66 @@ class EndReferenceSpecMatcher
   const double tolerance_{};
 };
 
+/// Wraps a StartLane::Spec comparison into a MatcherInterface.
+class StartLaneSpecMatcher : public MatcherInterface<const StartLane::Spec&> {
+ public:
+  StartLaneSpecMatcher(const StartLane::Spec& start_lane,
+                       double tolerance)
+      : start_lane_(start_lane), tolerance_(tolerance) {}
+
+  bool MatchAndExplain(const StartLane::Spec& other,
+                       MatchResultListener*) const override {
+    return IsEndpointClose(start_lane_.endpoint(), other.endpoint(),
+                           tolerance_) &&
+           start_lane_.lane_id() == other.lane_id();
+  }
+
+  void DescribeTo(std::ostream* os) const override {
+    *os << "is within tolerance: [" << tolerance_
+        << "] and lane ID is equal to start_lane: ["
+        << start_lane_ << "].";
+  }
+
+ private:
+  const StartLane::Spec start_lane_;
+  const double tolerance_{};
+};
+
+/// @return A Matcher<const StartLane::Spec&> of type StartLaneSpecMatcher.
+Matcher<const StartLane::Spec&> Matches(
+    const StartLane::Spec& start_reference, double tolerance);
+
 /// @return A Matcher<const EndReference::Spec&> of type
 /// EndReferenceSpecMatcher.
 Matcher<const EndReference::Spec&> Matches(
     const EndReference::Spec& end_reference, double tolerance);
+
+/// Wraps a EndLane::Spec comparison into a MatcherInterface.
+class EndLaneSpecMatcher : public MatcherInterface<const EndLane::Spec&> {
+ public:
+  EndLaneSpecMatcher(const EndLane::Spec& end_lane, double tolerance)
+      : end_lane_(end_lane), tolerance_(tolerance) {}
+
+  bool MatchAndExplain(const EndLane::Spec& other,
+                       MatchResultListener*) const override {
+    return IsEndpointZClose(end_lane_.endpoint_z(), other.endpoint_z(),
+                            tolerance_);
+  }
+
+  void DescribeTo(std::ostream* os) const override {
+    *os << "is within tolerance: [" << tolerance_
+        << "] and lane ID is equal to end_lane: ["
+        << end_lane_ << "].";
+  }
+
+ private:
+  const EndLane::Spec end_lane_;
+  const double tolerance_{};
+};
+
+/// @return A Matcher<const EndLane::Spec&> of type EndLaneSpecMatcher.
+Matcher<const EndLane::Spec&> Matches(
+    const EndLane::Spec& end_lane, double tolerance);
 
 }  // namespace test
 }  // namespace multilane

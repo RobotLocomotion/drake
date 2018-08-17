@@ -130,7 +130,7 @@ struct DirectionChangeLimiter {
   /// @param[in] cos_theta_max precomputed value of cos(θₘₐₓ).
   /// @param[in] v_stiction the stiction tolerance vₛ, in m/s.
   /// @param[in] relative_tolerance a value << 1 used to determine when
-  /// ‖vₜ‖ ≈ 0. Typical values lie withing the 10⁻³ - 10⁻² range. This allows
+  /// ‖vₜ‖ ≈ 0. Typical values lie within the 10⁻³ - 10⁻² range. This allows
   /// us to compute `εᵥ = tolerance⋅vₛ` (in m/s) which defines a "small
   /// tangential velocity scale". This value is used to compute "soft norms"
   /// (see class's documentation) and to detect values close to
@@ -265,7 +265,8 @@ struct IterationStats {
   std::vector<double> residuals;
 };
 
-/** %ImplicitStribeckSolver solves the equations below for mechanical systems
+/** @anchor implicit_stribeck_class_intro
+%ImplicitStribeckSolver solves the equations below for mechanical systems
 with contact using a modified Stribeck model of friction:
 @verbatim
             q̇ = N(q) v
@@ -628,25 +629,54 @@ class ImplicitStribeckSolver {
   /// the last call to SolveWithGuess().
   /// @{
 
-  /// Returns a constant reference to the last solved vector of generalized
+  /// Returns a constant reference to the most recent  vector of generalized
   /// friction forces.
-  const VectorX<T>& get_generalized_forces() const {
+  const VectorX<T>& get_generalized_friction_forces() const {
     return fixed_size_workspace_.mutable_tau_f();
   }
 
-  /// Returns a constant reference to the last solved vector of tangential
+  /// Returns a constant reference to the most recent solution vector for normal
+  /// separation velocities. This method returns an `Eigen::VectorBlock`
+  /// referencing a vector of size `nc`.
+  Eigen::VectorBlock<const VectorX<T>> get_normal_velocities() const {
+    return variable_size_workspace_.vn();
+  }
+
+  /// Returns a constant reference to the most recent vector of generalized
+  /// contact forces, including both friction and normal forces.
+  const VectorX<T>& get_generalized_contact_forces() const {
+    return fixed_size_workspace_.mutable_tau();
+  }
+
+  /// Returns a constant reference to the most recent vector of tangential
   /// forces. This method returns an `Eigen::VectorBlock` referencing a vector
-  /// of size `nc` in accordance to the data last set with
-  /// SetOneWayCoupledProblemData().
+  /// of size `nc`.
   Eigen::VectorBlock<const VectorX<T>> get_tangential_velocities() const {
     return variable_size_workspace_.vt();
   }
 
-  /// Returns a constant reference to the last solved vector of generalized
+  /// Returns a constant reference to the most recent vector of generalized
   /// velocities.
   const VectorX<T>& get_generalized_velocities() const {
     return fixed_size_workspace_.mutable_v();
   }
+
+  /// Returns a constant reference to the most recent vector of (repulsive)
+  /// forces in the normal direction. That is, the normal force is positive when
+  /// the bodies push each other apart. Otherwise the normal force is zero,
+  /// since contact forces can only be repulsive.
+  Eigen::VectorBlock<const VectorX<T>> get_normal_forces() const {
+    return variable_size_workspace_.fn();
+  }
+
+  /// Returns a constant reference to the most recent vector of friction forces.
+  /// These friction forces are defined in accordance to the tangential
+  /// velocities Jacobian Jₜ as documented in
+  /// @ref implicit_stribeck_class_intro "this class's documentation".
+  Eigen::VectorBlock<const VectorX<T>> get_friction_forces() const {
+    return variable_size_workspace_.ft();
+  }
+
   /// @}
 
   /// Returns statistics recorded during the last call to SolveWithGuess().
@@ -884,6 +914,7 @@ class ImplicitStribeckSolver {
       fn_.resize(nc);
       ft_.resize(nf);
       x_.resize(nc);
+      Delta_vn_.resize(nc);
       Delta_vt_.resize(nf);
       t_hat_.resize(nf);
       v_slip_.resize(nc);
@@ -895,6 +926,12 @@ class ImplicitStribeckSolver {
     // Returns the current (maximum) capacity of the workspace.
     int capacity() const {
       return vt_.size();
+    }
+
+    // Returns a constant reference to the vector of separation velocities in
+    // the normal direction, of size nc.
+    Eigen::VectorBlock<const VectorX<T>> vn() const {
+      return vn_.segment(0, nc_);
     }
 
     // Returns a mutable reference to the vector of separation velocities in
@@ -914,10 +951,22 @@ class ImplicitStribeckSolver {
       return vt_.segment(0, 2 * nc_);
     }
 
+    // Returns a mutable reference to the vector containing the normal
+    // velocity updates Δvₙ for all contact points, of size nc.
+    Eigen::VectorBlock<VectorX<T>> mutable_Delta_vn() {
+      return Delta_vn_.segment(0, nc_);
+    }
+
     // Returns a mutable reference to the vector containing the tangential
     // velocity updates Δvₜ for all contact points, of size 2nc.
     Eigen::VectorBlock<VectorX<T>> mutable_Delta_vt() {
       return Delta_vt_.segment(0, 2 * nc_);
+    }
+
+    // Returns a constant reference to the vector containing the normal
+    // contact forces fₙ for all contact points, of size nc.
+    Eigen::VectorBlock<const VectorX<T>> fn() const {
+      return fn_.segment(0, nc_);
     }
 
     // Returns a mutable reference to the vector containing the normal
@@ -930,6 +979,14 @@ class ImplicitStribeckSolver {
     // depths for all contact points, of size nc.
     Eigen::VectorBlock<VectorX<T>> mutable_x() {
       return x_.segment(0, nc_);
+    }
+
+    // Returns a constant reference to the vector containing the tangential
+    // friction forces fₜ for all contact points. fₜ has size 2nc since it
+    // stores the two tangential compoents of the friction force for each
+    // contact point. Refer to ImplicitStribeckSolver for details.
+    Eigen::VectorBlock<const VectorX<T>> ft() const {
+      return ft_.segment(0, 2 * nc_);
     }
 
     // Returns a mutable reference to the vector containing the tangential
@@ -964,7 +1021,7 @@ class ImplicitStribeckSolver {
     }
 
     // Returns a mutable reference to the vector storing ∂fₜ/∂vₜ (in ℝ²ˣ²)
-    // for each contact pont, of size nc.
+    // for each contact point, of size nc.
     std::vector<Matrix2<T>>& mutable_dft_dvt() {
       return dft_dv_;
     }
@@ -972,6 +1029,7 @@ class ImplicitStribeckSolver {
    private:
     // The number of contact points. This determines sizes in this workspace.
     int nc_, nv_;
+    VectorX<T> Delta_vn_;  // Δvₙᵏ = Jₙ Δvᵏ, in ℝⁿᶜ, for the k-th iteration.
     VectorX<T> Delta_vt_;  // Δvₜᵏ = Jₜ Δvᵏ, in ℝ²ⁿᶜ, for the k-th iteration.
     VectorX<T> vn_;        // vₙᵏ, in ℝⁿᶜ.
     VectorX<T> vt_;        // vₜᵏ, in ℝ²ⁿᶜ.

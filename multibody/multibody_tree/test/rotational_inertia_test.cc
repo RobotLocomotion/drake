@@ -480,7 +480,7 @@ GTEST_TEST(RotationalInertia, MultiplicationWithScalarFromTheLeft) {
   EXPECT_EQ(Ixs.get_moments(), sxI.get_moments());
   EXPECT_EQ(Ixs.get_products(), sxI.get_products());
 
-  // Verify the scalar can be a variable symbolic expresion
+  // Verify the scalar can be a variable symbolic expression
   const Variable a("a");  // A "variable" scalar.
   const RotationalInertia<Expression> axI = a * I.cast<Expression>();
   EXPECT_EQ(axI.get_moments(), a * m);

@@ -34,7 +34,7 @@ class RobotStateMsgToHumanoidStatusSystem : public systems::LeafSystem<double> {
   /**
    * Returns input port for bot_core::robot_state_t.
    */
-  const systems::InputPortDescriptor<double>& get_input_port() const {
+  const systems::InputPort<double>& get_input_port() const {
     return System<double>::get_input_port(0);
   }
 

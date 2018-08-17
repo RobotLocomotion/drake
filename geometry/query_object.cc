@@ -31,6 +31,13 @@ FrameId QueryObject<T>::GetFrameId(GeometryId geometry_id) const {
 }
 
 template <typename T>
+const VisualMaterial* QueryObject<T>::GetVisualMaterial(
+    GeometryId geometry_id) const {
+  ThrowIfDefault();
+  return context_->get_geometry_state().get_visual_material(geometry_id);
+}
+
+template <typename T>
 std::vector<PenetrationAsPointPair<double>>
 QueryObject<T>::ComputePointPairPenetration() const {
   ThrowIfDefault();
@@ -39,6 +46,17 @@ QueryObject<T>::ComputePointPairPenetration() const {
   scene_graph_->FullPoseUpdate(*context_);
   const GeometryState<T>& state = context_->get_geometry_state();
   return state.ComputePointPairPenetration();
+}
+
+template <typename T>
+std::vector<SignedDistancePair<double>>
+QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints() const {
+  ThrowIfDefault();
+
+  // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
+  scene_graph_->FullPoseUpdate(*context_);
+  const GeometryState<T>& state = context_->get_geometry_state();
+  return state.ComputeSignedDistancePairwiseClosestPoints();
 }
 
 }  // namespace geometry

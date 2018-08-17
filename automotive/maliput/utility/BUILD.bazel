@@ -27,10 +27,12 @@ drake_cc_library(
     srcs = [
         "generate_obj.cc",
         "generate_urdf.cc",
+        "segment_analysis.cc",
     ],
     hdrs = [
         "generate_obj.h",
         "generate_urdf.h",
+        "segment_analysis.h",
     ],
     visibility = ["//visibility:private"],
     deps = [
@@ -103,6 +105,14 @@ drake_cc_googletest(
         ":utility",
         "//automotive/maliput/monolane",
         "@spruce",
+    ],
+)
+
+drake_cc_googletest(
+    name = "segment_analysis_test",
+    deps = [
+        ":utility",
+        "//automotive/maliput/multilane:loader",
     ],
 )
 

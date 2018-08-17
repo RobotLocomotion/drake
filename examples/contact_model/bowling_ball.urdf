@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
-<robot xmlns="http://drake.mit.edu"
+<robot xmlns="https://drake.mit.edu"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- xsi:schemaLocation="http://drake.mit.edu ../../../../doc/drakeURDF.xsd" name="BowlingBall">
+ xsi:schemaLocation="https://drake.mit.edu ../../../../doc/drakeURDF.xsd" name="BowlingBall">
 
  <!-- A simple model of a bowling ball. The ball's geometry is a pefect sphere
  (i.e., no holes).  But its mechanical properties represent the more subtle

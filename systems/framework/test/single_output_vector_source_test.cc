@@ -34,7 +34,7 @@ class SingleOutputVectorSourceTest : public ::testing::Test {
   void SetUp() override {
     source_ = std::make_unique<TestSource>();
     context_ = source_->CreateDefaultContext();
-    output_ = source_->AllocateOutput(*context_);
+    output_ = source_->AllocateOutput();
   }
 
   std::unique_ptr<System<double>> source_;

@@ -81,13 +81,14 @@ class ArticulatedIcpTest : public TestWithParam<ObjectTestType> {
     tree_.reset(mutable_tree_);
     tree_cache_.reset(new KinematicsCached(tree_->CreateKinematicsCache()));
 
-    const Vector3d obj_xyz = setup.X_WB.translation();
     // TODO(eric.cousineau): change X_WB.rotation() to X_WB.linear() once #7035
     // is resolved.
-    const Vector3d obj_rpy = math::rotmat2rpy(setup.X_WB.rotation());
-    const int nq = tree_->get_num_positions();
+    const math::RotationMatrix<double> R_WB(setup.X_WB.rotation());
+    const Vector3d obj_rpy = math::RollPitchYaw<double>(R_WB).vector();
+    const Vector3d obj_xyz = setup.X_WB.translation();
 
     // Perturbation for initializing local ICP.
+    const int nq = tree_->get_num_positions();
     q_perturb_.resize(nq);
 
     // Set additional parameters

@@ -159,17 +159,16 @@ class Accelerometer : public systems::LeafSystem<double> {
   /// @see get_tree()
   const RigidBodyFrame<double>& get_frame() const { return frame_; }
 
-  /// Returns a descriptor of the input port that should contain the generalized
-  /// position and velocity vector of the RigidBodyPlant that this sensor is
-  /// sensing.
-  const InputPortDescriptor<double>& get_plant_state_input_port() const {
+  /// Returns the input port that should contain the generalized position and
+  /// velocity vector of the RigidBodyPlant that this sensor is sensing.
+  const InputPort<double>& get_plant_state_input_port() const {
     return System<double>::get_input_port(plant_state_input_port_index_);
   }
 
-  /// Returns a descriptor of the input port that should contain the derivative
-  /// of the generalized position and velocity vector of the RigidBodyPlant that
-  /// this sensor is sensing.
-  const InputPortDescriptor<double>& get_plant_state_derivative_input_port()
+  /// Returns the input port that should contain the derivative of the
+  /// generalized position and velocity vector of the RigidBodyPlant that this
+  /// sensor is sensing.
+  const InputPort<double>& get_plant_state_derivative_input_port()
       const {
     return System<double>::get_input_port(
         plant_state_derivative_input_port_index_);

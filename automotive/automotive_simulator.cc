@@ -98,8 +98,8 @@ void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
   DRAKE_DEMAND(&pose_output.get_system() == &velocity_output.get_system());
   const std::string name = pose_output.get_system().get_name();
   auto ports = aggregator_->AddSinglePoseAndVelocityInput(name, id);
-  builder_->Connect(pose_output, ports.pose_descriptor);
-  builder_->Connect(velocity_output, ports.velocity_descriptor);
+  builder_->Connect(pose_output, ports.pose_input_port);
+  builder_->Connect(velocity_output, ports.velocity_input_port);
   if (lcm_) {
     car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, name));
   }
@@ -694,8 +694,7 @@ template <typename T>
 PoseBundle<T> AutomotiveSimulator<T>::GetCurrentPoses() const {
   DRAKE_DEMAND(has_started());
   const auto& context = simulator_->get_context();
-  std::unique_ptr<SystemOutput<T>> system_output = diagram_->AllocateOutput(
-      context);
+  std::unique_ptr<SystemOutput<T>> system_output = diagram_->AllocateOutput();
   diagram_->CalcOutput(context, system_output.get());
   DRAKE_DEMAND(system_output->get_num_ports() == 1);
   const AbstractValue* abstract_value = system_output->get_data(0);

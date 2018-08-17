@@ -126,46 +126,54 @@ class LeafSystem : public System<T> {
   }
   /// @endcond
 
-  std::unique_ptr<ContextBase> DoMakeContext() const final {
+  std::unique_ptr<ContextBase> DoAllocateContext() const final {
     std::unique_ptr<LeafContext<T>> context = DoMakeLeafContext();
-    // Reserve continuous state via delegation to subclass.
-    context->set_continuous_state(this->AllocateContinuousState());
-    // Reserve discrete state via delegation to subclass.
-    context->set_discrete_state(this->AllocateDiscreteState());
-    context->set_abstract_state(this->AllocateAbstractState());
+    this->InitializeContextBase(&*context);
 
     // Reserve parameters via delegation to subclass.
     context->init_parameters(this->AllocateParameters());
 
-    return context;
-  }
+    // Reserve state via delegation to subclass.
+    context->init_continuous_state(this->AllocateContinuousState());
+    context->init_discrete_state(this->AllocateDiscreteState());
+    context->init_abstract_state(this->AllocateAbstractState());
 
-  // Enforce some requirements on the fully-assembled Context.
-  // -- The continuous state must be contiguous, i.e., a valid BasicVector.
-  //    (In general, a System's Context's continuous state can be any kind of
-  //    VectorBase including scatter-gather implementations like Supervector.
-  //    But for a LeafSystem with LeafContext, we only allow BasicVectors,
-  //    which are guaranteed to have a linear storage layout.)  If the xc is
-  //    not BasicVector, the dynamic_cast will yield nullptr, and the
-  //    invariant-checker will complain.
-  void DoValidateAllocatedContext(const ContextBase& context_base) const final {
-    auto& context = dynamic_cast<const LeafContext<T>&>(context_base);
-    const VectorBase<T>* const xc = &context.get_continuous_state_vector();
+    // At this point this LeafContext is complete except possibly for
+    // inter-Context dependencies involving port connections to peers or
+    // parent. We can now perform some final sanity checks.
+
+    // The numeric vectors used for parameters and state must be contiguous,
+    // i.e., valid BasicVectors. In general, a Context's numeric vectors can be
+    // any kind of VectorBase including scatter-gather implementations like
+    // Supervector. But for a LeafContext, we only allow BasicVectors, which are
+    // guaranteed to have a contiguous storage layout.
+
+    // If xc is not BasicVector, the dynamic_cast will yield nullptr, and the
+    // invariant-checker will complain.
+    const VectorBase<T>* const xc = &context->get_continuous_state_vector();
     detail::CheckBasicVectorInvariants(dynamic_cast<const BasicVector<T>*>(xc));
-    // -- The discrete state must all be valid BasicVectors.
+
+    // The discrete state must all be valid BasicVectors.
     for (const BasicVector<T>* group :
-        context.get_state().get_discrete_state().get_data()) {
+        context->get_state().get_discrete_state().get_data()) {
       detail::CheckBasicVectorInvariants(group);
     }
-    // -- The numeric parameters must all be valid BasicVectors.
-    const int num_numeric_parameters = context.num_numeric_parameters();
+
+    // The numeric parameters must all be valid BasicVectors.
+    const int num_numeric_parameters = context->num_numeric_parameters();
     for (int i = 0; i < num_numeric_parameters; ++i) {
-      const BasicVector<T>& group = context.get_numeric_parameter(i);
+      const BasicVector<T>& group = context->get_numeric_parameter(i);
       detail::CheckBasicVectorInvariants(&group);
     }
 
     // Allow derived LeafSystem to validate allocated Context.
-    DoValidateAllocatedLeafContext(context);
+    DoValidateAllocatedLeafContext(*context);
+
+    // TODO(sherm1) Remove this line and the corresponding one in
+    // Diagram to enable caching by default in Drake.
+    context->DisableCaching();
+
+    return context;
   }
 
   /// Default implementation: sets all continuous state to the model vector
@@ -312,8 +320,11 @@ class LeafSystem : public System<T> {
 
   /// Derived classes that impose restrictions on what resources are permitted
   /// should check those restrictions by implementing this. For example, a
-  /// derived class might require a single input and single output. The default
-  /// implementation does nothing.
+  /// derived class might require a single input and single output. Note that
+  /// the supplied Context will be complete except that input and output
+  /// dependencies on peer and parent subcontexts will not yet have been set up,
+  /// so you may not consider them for validation.
+  /// The default implementation does nothing.
   virtual void DoValidateAllocatedLeafContext(
       const LeafContext<T>& context) const {
     unused(context);
@@ -355,32 +366,32 @@ class LeafSystem : public System<T> {
     DoCalcNextUpdateTimeImpl(context, events, time);
   }
 
-  /// Allocates a vector that is suitable as an input value for @p descriptor.
+  /// Allocates a vector that is suitable as an input value for @p input_port.
   /// The default implementation in this class either clones the model_vector
   /// (if the port was declared via DeclareVectorInputPort) or else allocates a
   /// BasicVector (if the port was declared via DeclareInputPort(kVectorValued,
   /// size).  Subclasses can override this method if the default behavior is
   /// not sufficient.
   BasicVector<T>* DoAllocateInputVector(
-      const InputPortDescriptor<T>& descriptor) const override {
+      const InputPort<T>& input_port) const override {
     std::unique_ptr<BasicVector<T>> model_result =
-        model_input_values_.CloneVectorModel<T>(descriptor.get_index());
+        model_input_values_.CloneVectorModel<T>(input_port.get_index());
     if (model_result) {
       return model_result.release();
     }
-    return new BasicVector<T>(descriptor.size());
+    return new BasicVector<T>(input_port.size());
   }
 
-  /// Allocates an AbstractValue suitable as an input value for @p descriptor.
+  /// Allocates an AbstractValue suitable as an input value for @p input_port.
   /// The default implementation in this class either clones the model_value
   /// (if the port was declared via DeclareAbstractInputPort) or else aborts.
   ///
   /// Subclasses with abstract input ports must either provide a model_value
   /// when declaring the port, or else override this method.
   AbstractValue* DoAllocateInputAbstract(
-      const InputPortDescriptor<T>& descriptor) const override {
+      const InputPort<T>& input_port) const override {
     std::unique_ptr<AbstractValue> model_result =
-        model_input_values_.CloneModel(descriptor.get_index());
+        model_input_values_.CloneModel(input_port.get_index());
     if (model_result) {
       return model_result.release();
     }
@@ -437,7 +448,7 @@ class LeafSystem : public System<T> {
     *dot << "}\"];" << std::endl;
   }
 
-  void GetGraphvizInputPortToken(const InputPortDescriptor<T>& port,
+  void GetGraphvizInputPortToken(const InputPort<T>& port,
                                  std::stringstream *dot) const final {
     DRAKE_DEMAND(port.get_system() == this);
     *dot << this->GetGraphvizId() << ":u" << port.get_index();
@@ -554,7 +565,7 @@ class LeafSystem : public System<T> {
   /// re-declared as inequality constraints on this system (see
   /// DeclareInequalityConstraint()).  Returns the index of the new parameter.
   int DeclareNumericParameter(const BasicVector<T>& model_vector) {
-    const int index = model_numeric_parameters_.size();
+    const NumericParameterIndex index(model_numeric_parameters_.size());
     model_numeric_parameters_.AddVectorModel(index, model_vector.Clone());
     MaybeDeclareVectorBaseInequalityConstraint(
         "parameter " + std::to_string(index), model_vector,
@@ -562,6 +573,7 @@ class LeafSystem : public System<T> {
           const BasicVector<T>& result = context.get_numeric_parameter(index);
           return result;
         });
+    this->AddNumericParameter(index);
     return index;
   }
 
@@ -601,8 +613,9 @@ class LeafSystem : public System<T> {
   /// the default implementation of SetDefaultParameters() will reset parameters
   /// to their model values.  Returns the index of the new parameter.
   int DeclareAbstractParameter(const AbstractValue& model_value) {
-    const int index = model_abstract_parameters_.size();
+    const AbstractParameterIndex index(model_abstract_parameters_.size());
     model_abstract_parameters_.AddModel(index, model_value.Clone());
+    this->AddAbstractParameter(index);
     return index;
   }
 
@@ -767,17 +780,22 @@ class LeafSystem : public System<T> {
   /// Declares that this System should reserve discrete state with
   /// @p num_state_variables state variables. Has no effect if
   /// AllocateDiscreteState is overridden.
+  // TODO(sherm1) Repeated calls to this should allocate additional discrete
+  // state groups. Currently there is only one.
   void DeclareDiscreteState(int num_state_variables) {
+    const DiscreteStateIndex index(0);  // Only one implemented currently.
     model_discrete_state_vector_ =
         std::make_unique<BasicVector<T>>(num_state_variables);
+    this->AddDiscreteStateGroup(index);
   }
 
   /// Declares an abstract state.
   /// @param abstract_state The abstract state, its ownership is transferred.
   /// @return index of the declared abstract state.
   int DeclareAbstractState(std::unique_ptr<AbstractValue> abstract_state) {
-    int index = model_abstract_states_.size();
+    const AbstractStateIndex index(model_abstract_states_.size());
     model_abstract_states_.AddModel(index, std::move(abstract_state));
+    this->AddAbstractState(index);
     return index;
   }
 
@@ -797,7 +815,7 @@ class LeafSystem : public System<T> {
   /// VectorBase::CalcInequalityConstraint() constraints, they will be
   /// re-declared as inequality constraints on this system (see
   /// DeclareInequalityConstraint()).
-  const InputPortDescriptor<T>& DeclareVectorInputPort(
+  const InputPort<T>& DeclareVectorInputPort(
       const BasicVector<T>& model_vector,
       optional<RandomDistribution> random_type = nullopt) {
     const int size = model_vector.size();
@@ -820,7 +838,7 @@ class LeafSystem : public System<T> {
   /// This is the best way to declare LeafSystem abstract input ports.
   /// LeafSystem's default implementation of DoAllocateInputAbstract will be
   /// model_value.Clone().
-  const InputPortDescriptor<T>& DeclareAbstractInputPort(
+  const InputPort<T>& DeclareAbstractInputPort(
       const AbstractValue& model_value) {
     const int next_index = this->get_num_input_ports();
     model_input_values_.AddModel(next_index, model_value.Clone());

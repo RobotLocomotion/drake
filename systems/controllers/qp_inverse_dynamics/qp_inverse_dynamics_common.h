@@ -153,7 +153,7 @@ class ContactInformation {
   /**
    * Constructs a ContactInformation object for @p body.
    * @param body Reference to a RigidBody, which must be valid through the
-   * lifespan of this obejct.
+   * lifespan of this object.
    * @param num_basis_per_contact_point Number of basis per contact point.
    */
   ContactInformation(const RigidBody<double>& body,
@@ -341,7 +341,7 @@ class DesiredBodyMotion : public ConstrainedValues {
    * Constructs a DesiredBodyMotion object that hold desired spatial
    * acceleration for @p body.
    * @param body Reference to a RigidBody, which must be valid through the
-   * lifespan of this obejct.
+   * lifespan of this object.
    */
   explicit DesiredBodyMotion(const RigidBody<double>& body)
       : ConstrainedValues(6), body_(&body), control_during_contact_(false) {}
@@ -633,7 +633,7 @@ class BodyAcceleration {
   /**
    * Constructs a BodyAcceleration object for @p body.
    * @param body Reference to a RigidBody, which must be valid through the
-   * lifespan of this obejct.
+   * lifespan of this object.
    */
   explicit BodyAcceleration(const RigidBody<double>& body)
       : body_(&body), accelerations_(Vector6<double>::Zero()) {}

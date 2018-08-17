@@ -103,16 +103,14 @@
             <size>1.0 2.0 3.0</size>
           </box>
         </geometry>
-        <surface>
-          <friction>
-            <ode>
-              <mu>0.5</mu>
-              <mu2>0.5</mu2>
-            </ode>
-          </friction>
-        </surface>
       </collision>
     </link>
 
+    <!-- For now at least, We care only that Drake's custom tag doesn't break
+         parsing the rest of the elements in this file. -->
+    <collision_filter_group name="filter_group1">
+      <member link="link1"/>
+      <member link="link2"/>
+    </collision_filter_group>
   </model>
 </sdf>

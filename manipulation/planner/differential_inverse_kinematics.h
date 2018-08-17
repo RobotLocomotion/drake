@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
@@ -95,6 +96,9 @@ class DifferentialInverseKinematicsParameters {
   get_joint_acceleration_limits() const {
     return vd_bounds_;
   }
+
+  const std::vector<std::shared_ptr<solvers::LinearConstraint>>&
+  get_linear_velocity_constraints() const;
   /// @}
 
   /// @name Setters.
@@ -191,6 +195,20 @@ class DifferentialInverseKinematicsParameters {
   }
   /// @}
 
+  /**
+   * Adds a linear velocity constraint.
+   * @param linear_velocity_constraint A linear constraint on joint velocities.
+   * @throws std::invalid_argument if `constraint->num_vars !=
+   * this->get_num_velocities()`.
+   */
+  void AddLinearVelocityConstraint(
+      const std::shared_ptr<solvers::LinearConstraint> constraint);
+
+  /**
+   * Clears all linear velocity constraints.
+   */
+  void ClearLinearVelocityConstraints();
+
  private:
   int num_positions_{0};
   int num_velocities_{0};
@@ -201,6 +219,8 @@ class DifferentialInverseKinematicsParameters {
   optional<double> unconstrained_degrees_of_freedom_velocity_limit_{};
   Vector6<double> gain_E_{Vector6<double>::Ones()};
   double dt_{1};
+  std::vector<std::shared_ptr<solvers::LinearConstraint>>
+      linear_velocity_constraints_;
 };
 
 /**

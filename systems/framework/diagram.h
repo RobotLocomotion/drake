@@ -304,7 +304,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   /// Returns a constant reference to the subcontext that corresponds to the
   /// system @p subsystem.
   /// Classes inheriting from %Diagram need access to this method in order to
-  /// pass their constituent subsystems the apropriate subcontext. Aborts if
+  /// pass their constituent subsystems the appropriate subcontext. Aborts if
   /// @p subsystem is not actually a subsystem of this diagram.
   const Context<T>& GetSubsystemContext(const System<T>& subsystem,
                                         const Context<T>& context) const {
@@ -315,7 +315,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   /// Returns the subcontext that corresponds to the system @p subsystem.
   /// Classes inheriting from %Diagram need access to this method in order to
-  /// pass their constituent subsystems the apropriate subcontext. Aborts if
+  /// pass their constituent subsystems the appropriate subcontext. Aborts if
   /// @p subsystem is not actually a subsystem of this diagram.
   Context<T>& GetMutableSubsystemContext(const System<T>& subsystem,
                                          Context<T>* context) const {
@@ -442,7 +442,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     }
 
     // -- Add edges from the input and output port nodes to the subsystems that
-    //    actually service that port.  These edges are higlighted in blue
+    //    actually service that port.  These edges are highlighted in blue
     //    (input) and green (output), matching the port nodes.
     for (int i = 0; i < this->get_num_input_ports(); ++i) {
       const auto& port_id = input_port_ids_[i];
@@ -467,7 +467,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     *dot << "}" << std::endl;
   }
 
-  void GetGraphvizInputPortToken(const InputPortDescriptor<T>& port,
+  void GetGraphvizInputPortToken(const InputPort<T>& port,
                                  std::stringstream* dot) const override {
     DRAKE_DEMAND(port.get_system() == this);
     *dot << "_" << this->GetGraphvizId() << "_u" << port.get_index();
@@ -789,9 +789,9 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   }
 
   BasicVector<T>* DoAllocateInputVector(
-      const InputPortDescriptor<T>& descriptor) const override {
+      const InputPort<T>& input_port) const override {
     // Ask the subsystem to perform the allocation.
-    const InputPortLocator& id = input_port_ids_[descriptor.get_index()];
+    const InputPortLocator& id = input_port_ids_[input_port.get_index()];
     const System<T>* subsystem = id.first;
     const InputPortIndex subindex = id.second;
     return subsystem->AllocateInputVector(subsystem->get_input_port(subindex))
@@ -799,9 +799,9 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   }
 
   AbstractValue* DoAllocateInputAbstract(
-      const InputPortDescriptor<T>& descriptor) const override {
+      const InputPort<T>& input_port) const override {
     // Ask the subsystem to perform the allocation.
-    const InputPortLocator& id = input_port_ids_[descriptor.get_index()];
+    const InputPortLocator& id = input_port_ids_[input_port.get_index()];
     const System<T>* subsystem = id.first;
     const InputPortIndex subindex = id.second;
     return subsystem->AllocateInputAbstract(subsystem->get_input_port(subindex))
@@ -811,62 +811,69 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
  private:
   // Allocates a default-constructed diagram context containing the complete
   // diagram substructure of default-constructed subcontexts.
-  std::unique_ptr<ContextBase> DoMakeContext() const final {
+  std::unique_ptr<ContextBase> DoAllocateContext() const final {
     // Reserve inputs as specified during Diagram initialization.
     auto context = std::make_unique<DiagramContext<T>>(num_subsystems());
+    this->InitializeContextBase(&*context);
 
     // Recursively construct each constituent system and its subsystems,
     // then add to this diagram Context.
     for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
-      const System<T>& sys = *registered_systems_[i];
+      const System<T>& system = *registered_systems_[i];
       auto subcontext = dynamic_pointer_cast_or_throw<Context<T>>(
-          SystemBase::MakeContext(sys));
+          system.AllocateContext());
       context->AddSystem(i, std::move(subcontext));
     }
 
-    // TODO(sherm1) Move to separate interconnection phase.
-    // Wire up the Diagram-internal inputs and outputs.
+    // Creates this diagram's composite data structures that collect its
+    // subsystems' resources, which must have already been allocated above.
+    // No dependencies are set up in these two calls.
+    context->MakeParameters();
+    context->MakeState();
+
+    // Subscribe each of the Diagram's composite-entity dependency trackers to
+    // the trackers for the corresponding constituent entities in the child
+    // subsystems. This ensures that changes made at the subcontext level are
+    // propagated correctly to the diagram context level. That includes state
+    // and parameter changes, as well as local changes that affect composite
+    // diagram-level computations like xcdot and pe.
+    context->SubscribeDiagramCompositeTrackersToChildrens();
+
+    // Peer-to-peer connections wire a child subsystem's input port to a
+    // child subsystem's output port. Subscribe each child input port to the
+    // child output port on which it depends.
     for (const auto& connection : connection_map_) {
       const OutputPortLocator& src = connection.second;
       const InputPortLocator& dest = connection.first;
-      context->Connect(ConvertToContextPortIdentifier(src),
-                       ConvertToContextPortIdentifier(dest));
+      context->SubscribeInputPortToOutputPort(
+          ConvertToContextPortIdentifier(src),
+          ConvertToContextPortIdentifier(dest));
     }
 
-    // Diagram-external input ports are exported from child subsystems. Inform
-    // the new context so that it it can set up dependency tracking for the
-    // child subsystem's input port on its parent Diagram's input port.
+    // Diagram-external input ports are exported from child subsystems (meaning
+    // the Diagram input is fed into the input of one of its children.
+    // Subscribe the child subsystem's input port to its parent Diagram's input
+    // port on which it depends.
     for (InputPortIndex i(0); i < this->get_num_input_ports(); ++i) {
       const InputPortLocator& id = input_port_ids_[i];
-      context->ExportInput(i, ConvertToContextPortIdentifier(id));
+      context->SubscribeExportedInputPortToDiagramPort(
+          i, ConvertToContextPortIdentifier(id));
     }
 
-    // Connect exported child subsystem output ports to the Diagram-level output
-    // ports to which they have been exported. Declares dependency of each
-    // Diagram-level output on its child-level output.
+    // Diagram-external output ports are exported from child subsystem output
+    // ports. Subscribe each Diagram-level output to the child-level output on
+    // which it depends.
     for (OutputPortIndex i(0); i < this->get_num_output_ports(); ++i) {
       const OutputPortLocator& id = output_port_ids_[i];
-      context->ExportOutput(i, ConvertToContextPortIdentifier(id));
+      context->SubscribeDiagramPortToExportedOutputPort(
+          i, ConvertToContextPortIdentifier(id));
     }
 
-    // TODO(sherm1) Move to final resource allocation phase.
-    context->MakeState();
-    context->MakeParameters();
+    // TODO(sherm1) Remove this line and the corresponding one in
+    // LeafSystem to enable caching by default in Drake (issue #9205).
+    context->DisableCaching();
 
     return context;
-  }
-
-  // Permits child Systems to take a look at the completed Context to see
-  // if they have any objections.
-  void DoValidateAllocatedContext(const ContextBase& context_base) const final {
-    auto& context = dynamic_cast<const DiagramContext<T>&>(context_base);
-
-    // Depth-first validation of Context to make sure restrictions are met.
-    for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
-      const System<T>& sys = *registered_systems_[i];
-      const Context<T>& subcontext = context.GetSubsystemContext(i);
-      SystemBase::ValidateAllocatedContext(sys, subcontext);
-    }
   }
 
   // Evaluates the value of the specified subsystem input
@@ -1389,10 +1396,10 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     GetSystemIndexOrAbort(sys);
 
     // Add this port to our externally visible topology.
-    const auto& subsystem_descriptor = sys->get_input_port(port_index);
-    this->DeclareInputPort(subsystem_descriptor.get_data_type(),
-                           subsystem_descriptor.size(),
-                           subsystem_descriptor.get_random_type());
+    const auto& subsystem_input_port = sys->get_input_port(port_index);
+    this->DeclareInputPort(subsystem_input_port.get_data_type(),
+                           subsystem_input_port.size(),
+                           subsystem_input_port.get_random_type());
   }
 
   // Exposes the given subsystem output port as an output of the Diagram.
@@ -1500,7 +1507,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // they were registered. Index by SubsystemIndex.
   std::vector<std::unique_ptr<System<T>>> registered_systems_;
 
-  // Map to quickly satisify "What is the subsytem index of the child system?"
+  // Map to quickly satisfy "What is the subsystem index of the child system?"
   std::map<const System<T>*, SubsystemIndex> system_index_map_;
 
   // The ordered inputs and outputs of this Diagram. Index by InputPortIndex

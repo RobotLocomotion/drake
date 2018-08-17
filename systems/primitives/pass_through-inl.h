@@ -3,7 +3,7 @@
 /// @file
 /// Template method implementations for pass_through.h.
 /// Most users should only include that file, not this one.
-/// For background, see http://drake.mit.edu/cxx_inl.html.
+/// For background, see https://drake.mit.edu/cxx_inl.html.
 
 /* clang-format off to disable clang-format-includes */
 #include "drake/systems/primitives/pass_through.h"

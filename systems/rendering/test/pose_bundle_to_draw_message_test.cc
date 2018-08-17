@@ -28,7 +28,7 @@ GTEST_TEST(PoseBundleToDrawMessageTest, Conversion) {
   PoseBundleToDrawMessage converter;
   auto context = converter.AllocateContext();
   context->FixInputPort(0, AbstractValue::Make(bundle));
-  auto output = converter.AllocateOutput(*context);
+  auto output = converter.AllocateOutput();
   converter.CalcOutput(*context, output.get());
 
   const auto& message = output->get_data(0)->GetValue<lcmt_viewer_draw>();

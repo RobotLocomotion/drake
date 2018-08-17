@@ -8,6 +8,9 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/text_logging.h"
+#include "drake/systems/analysis/dense_output.h"
+#include "drake/systems/analysis/hermitian_dense_output.h"
+#include "drake/systems/analysis/stepwise_dense_output.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/vector_base.h"
@@ -46,6 +49,14 @@ solution, so must be avoided.
  * the latter permits the caller to advance time using fixed steps in
  * applications where variable stepping would be deleterious (e.g., direct
  * transcription).
+ *
+ * For applications that require a more dense sampling of the system
+ * continuous state than what would be available through either fixed or
+ * error-controlled step integration (for a given accuracy), dense output
+ * support is available (through StartDenseIntegration() and
+ * StopDenseIntegration() methods). The accuracy and performance of these
+ * outputs may vary with each integration scheme implementation. Unless
+ * specified otherwise, an HermitianDenseOutput is provided by default.
  *
  * A natural question for a user to ask of an integrator is: Which scheme
  * (method) should be applied to a particular problem? The answer is whichever
@@ -162,7 +173,8 @@ class IntegratorBase {
    */
   explicit IntegratorBase(const System<T>& system,
                           Context<T>* context = nullptr)
-      : system_(system), context_(context) {
+      : system_(system), context_(context),
+        derivatives_(system.AllocateTimeDerivatives()) {
     initialization_done_ = false;
   }
 
@@ -406,6 +418,9 @@ class IntegratorBase {
     pinvN_dq_change_.reset();
     unweighted_substate_change_.setZero(0);
     weighted_q_change_.reset();
+
+    // Drops dense output, if any.
+    dense_output_.reset();
 
     // Integrator no longer operates in fixed step mode.
     fixed_step_mode_ = false;
@@ -778,6 +793,86 @@ class IntegratorBase {
     initialization_done_ = false;
   }
 
+
+  /**
+   * @name               Methods for dense output computation
+   * @anchor dense_output_computation
+   * @{
+   *
+   * In general, dense output computations entail both CPU load and memory
+   * footprint increases during numerical integration. For some applications,
+   * the performance penalty may be prohibitive. As such, these computations
+   * are only carried out by explicit user request. The API to start and stop
+   * a _dense integration_ process (i.e. a numerical integration process that
+   * also computes dense output) is consistent with this design choice.
+   *
+   * Once dense integration is started, and until it is stopped, all subsequent
+   * integration steps taken will update the allocated dense output.
+   */
+
+  /**
+   * Starts dense integration, allocating a new dense output for this integrator
+   * to use.
+   *
+   * @pre The integrator has been initialized.
+   * @pre The system being integrated has continuous state.
+   * @pre No dense integration is in progress (no dense output is held by the
+   *      integrator)
+   * @throws std::logic_error if any of the preconditions is not met.
+   * @warning Dense integration may incur significant overhead.
+   */
+  void StartDenseIntegration() {
+    if (!is_initialized()) {
+      throw std::logic_error("Integrator was not initialized.");
+    }
+    if (get_context().get_continuous_state().size() == 0) {
+      throw std::logic_error("System has no continuous state,"
+                             " no dense output can be built.");
+    }
+    if (get_dense_output()) {
+      throw std::logic_error("Dense integration has been started already.");
+    }
+    dense_output_ = DoStartDenseIntegration();
+  }
+
+  /**
+   * Returns a const pointer to the integrator's current DenseOutput instance,
+   * holding a representation of the continuous state trajectory since the last
+   * StartDenseIntegration() call. This is suitable to query the integrator's
+   * current dense output, if any (may be nullptr).
+   */
+  const DenseOutput<T>* get_dense_output() const {
+    return dense_output_.get();
+  }
+
+  /**
+   * Stops dense integration, yielding ownership of the current dense output
+   * to the caller.
+   *
+   * @remarks This process is irreversible.
+   * @returns A DenseOutput instance, i.e. a representation of the
+   *          continuous state trajectory of the system being integrated
+   *          that can be evaluated at any time within its extension. This
+   *          representation is defined starting at the context time of the
+   *          last StartDenseIntegration() call and finishing at the current
+   *          context time.
+   * @pre Dense integration is in progress (a dense output is held by this
+   *      integrator, after a call to StartDenseIntegration()).
+   * @post Previously held dense output is not updated nor referenced by
+   *       the integrator anymore.
+   * @throws std::logic_error if any of the preconditions is not met.
+   */
+  std::unique_ptr<DenseOutput<T>> StopDenseIntegration() {
+    if (!dense_output_) {
+      throw std::logic_error("No dense integration has been started.");
+    }
+    return std::move(dense_output_);
+  }
+
+  /**
+   * @}
+   */
+
   /**
    * Gets a constant reference to the system that is being integrated (and
    * was provided to the constructor of the integrator).
@@ -819,7 +914,7 @@ class IntegratorBase {
    * integration. This is an advanced topic and most users can simply specify
    * desired accuracy and accept the default state variable weights.
    *
-   * A collection of state variables is generally defined in heterogenous units
+   * A collection of state variables is generally defined in heterogeneous units
    * (e.g. length, angles, velocities, energy). Some of the state
    * variables cannot even be expressed in meaningful units, like
    * quaternions. Certain integrators provide an estimate of the absolute error
@@ -1220,6 +1315,30 @@ class IntegratorBase {
   virtual void DoReset() {}
 
   /**
+   * Derived classes can override this method to provide a continuous
+   * extension of their own when StartDenseIntegration() is called.
+   *
+   * TODO(hidmic): Make pure virtual and override on each subclass, as
+   * the 'optimal' dense output scheme is only known by the specific
+   * integration scheme being implemented.
+   */
+  virtual
+  std::unique_ptr<StepwiseDenseOutput<T>> DoStartDenseIntegration() {
+    return std::make_unique<HermitianDenseOutput<T>>();
+  }
+
+  /**
+   * Returns a mutable pointer to the internally-maintained StepwiseDenseOutput
+   * instance, holding a representation of the continuous state trajectory since
+   * the last time StartDenseIntegration() was called. This is useful for
+   * derived classes to update the integrator's current dense output, if any
+   * (may be nullptr).
+   */
+  StepwiseDenseOutput<T>* get_mutable_dense_output() {
+    return dense_output_.get();
+  }
+
+  /**
    * Derived classes must implement this method to (1) integrate the continuous
    * portion of this system forward by a single step of size @p dt and
    * (2) set the error estimate (via get_mutable_error_estimate()). This
@@ -1238,6 +1357,52 @@ class IntegratorBase {
    *          failures (e.g., explicit Euler) for very small step sizes.
    */
   virtual bool DoStep(const T& dt) = 0;
+
+  /**
+   * Derived classes may implement this method to (1) integrate the continuous
+   * portion of this system forward by a single step of size @p dt, (2) set the
+   * error estimate (via get_mutable_error_estimate()) and (3) update their own
+   * dense output implementation (via get_mutable_dense_output()). This method
+   * is called during the default Step() method.
+   * @param dt The integration step to take.
+   * @returns `true` if successful, `false` if either the integrator was
+   *           unable to take a single step of size @p dt or to advance
+   *           its dense output an equal step.
+   * @sa DoStep()
+   *
+   * TODO(hidmic): Make pure virtual and override on each subclass, as
+   * the 'optimal' dense output scheme is only known by the specific
+   * integration scheme being implemented.
+   */
+  virtual bool DoDenseStep(const T& dt) {
+    const ContinuousState<T>& state = context_->get_continuous_state();
+    // Makes a null (i.e. zero size) dense output step with initial
+    // time and state, before the actual integration step. This will later
+    // be extended with the final values after the step.
+    system_.CalcTimeDerivatives(*context_, derivatives_.get());
+    typename HermitianDenseOutput<T>::IntegrationStep step(
+        context_->get_time(), state.CopyToVector(),
+        derivatives_->CopyToVector());
+
+    // Performs the integration step.
+    if (!DoStep(dt)) return false;
+
+    // Extends dense output step to the end of the integration step, using
+    // the post-step values.
+    system_.CalcTimeDerivatives(*context_, derivatives_.get());
+    step.Extend(context_->get_time(), state.CopyToVector(),
+                derivatives_->CopyToVector());
+
+    // Retrieves dense output. This cast is safe if the base implementations
+    // of this method and DoStartDenseIntegration() are in use. Otherwise, a
+    // different dense output type may have been allocated and the following
+    // cast will throw.
+    HermitianDenseOutput<T>& dense_output =
+        dynamic_cast<HermitianDenseOutput<T>&>(*get_mutable_dense_output());
+    // Updates dense output with the integration step taken.
+    dense_output.Update(std::move(step));
+    return true;
+  }
 
   /**
    * Gets an error estimate of the state variables recorded by the last call
@@ -1300,7 +1465,8 @@ class IntegratorBase {
     prev_step_size_ = dt;
   }
 
-  // Steps the system forward exactly by @p dt, if possible, by calling DoStep.
+  // Steps the system forward exactly by @p dt, if possible, by calling DoStep
+  // or DoDenseStep depending on whether dense integration was started or not.
   // Does necessary pre-initialization and post-cleanup. This method does not
   // update general integrator statistics (which are updated in the calling
   // methods), because error control might decide that it does not like the
@@ -1308,10 +1474,12 @@ class IntegratorBase {
   // @returns `true` if successful, `false` otherwise (due to, e.g., integrator
   //          convergence failure).
   // @sa DoStep()
+  // @sa DoDenseStep()
   bool Step(const T& dt) {
-    if (!DoStep(dt))
-      return false;
-    return true;
+    if (get_dense_output()) {
+      return DoDenseStep(dt);
+    }
+    return DoStep(dt);
   }
 
   // Reference to the system being simulated.
@@ -1319,6 +1487,9 @@ class IntegratorBase {
 
   // Pointer to the context.
   Context<T>* context_{nullptr};  // The trajectory Context.
+
+  // Current dense output.
+  std::unique_ptr<StepwiseDenseOutput<T>> dense_output_{nullptr};
 
   // Runtime variables.
   // For variable step integrators, this is set at the end of each step to guide
@@ -1365,6 +1536,11 @@ class IntegratorBase {
 
   // State copy for reversion during error-controlled integration.
   VectorX<T> xc0_save_;
+
+  // A continuous state derivatives scratchpad for the default continuous
+  // extension implementation.
+  // TODO(hidmic): Remove when DoDenseStep() is made pure virtual.
+  std::unique_ptr<ContinuousState<T>> derivatives_;
 
   // The error estimate computed during integration with error control.
   std::unique_ptr<ContinuousState<T>> err_est_;
@@ -1434,7 +1610,7 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
     // Constants used to determine whether modifications to the step size are
     // close enough to the attempted step size to use the unadjusted originals,
     // or (1) whether the step size to be attempted is so small that we should
-    // consider it to be artifically limited or (2) whether the step size to
+    // consider it to be artificially limited or (2) whether the step size to
     // be attempted is sufficiently close to that requested such that the step
     // size should be stretched slightly.
     const double near_enough_smaller = 0.95;
@@ -1513,9 +1689,13 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
       // Reset the time, state, and time derivative at t0.
       get_mutable_context()->set_time(current_time);
       xc.SetFromVector(xc0_save_);
+      if (get_dense_output()) {
+        // Take dense output one step back to undo
+        // the last integration step.
+        get_mutable_dense_output()->Rollback();
+      }
     }
   } while (!step_succeeded);
-
   return (step_size_to_attempt == dt_max);
 }
 
@@ -1804,6 +1984,11 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::IntegrateAtMost(
     }
   } else {
     full_step = StepOnceErrorControlledAtMost(dt);
+  }
+  if (get_dense_output()) {
+    // Consolidates current dense output, merging the step
+    // taken into its internal representation.
+    get_mutable_dense_output()->Consolidate();
   }
 
   // Update generic statistics.

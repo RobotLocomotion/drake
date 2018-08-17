@@ -14,6 +14,8 @@ if(CYGWIN OR NOT UNIX)
   message(FATAL_ERROR "Cygwin and non-Unix platforms are NOT supported")
 endif()
 
+# The version passed to find_package(Bazel) should match the
+# minimum_bazel_version value in the call to versions.check() in WORKSPACE.
 set(MINIMUM_BAZEL_VERSION 0.14.1)
 find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE REQUIRED)
 
@@ -56,18 +58,9 @@ endif()
 set(BAZEL_ENV)
 
 if(NOT APPLE)
-  # Patches applied to the compiler by particular distributions may have broken
-  # the behavior expected by bazel when identifying the built-in include
-  # directories, so call a wrapper script that intercepts certain calls and
-  # fixes the output.
-  foreach(LANG C CXX)
-    set(COMPILER ${CMAKE_${LANG}_COMPILER})
-    configure_file(tools/cc_toolchain/wrapper.sh.in ${LANG}_wrapper.sh @ONLY)
-  endforeach()
-
   list(APPEND BAZEL_ENV
-    "CC=${CMAKE_CURRENT_BINARY_DIR}/C_wrapper.sh"
-    "CXX=${CMAKE_CURRENT_BINARY_DIR}/CXX_wrapper.sh"
+    "CC=${CMAKE_C_COMPILER}"
+    "CXX=${CMAKE_CXX_COMPILER}"
   )
 endif()
 
@@ -105,7 +98,7 @@ set(BAZEL_OUTPUT_BASE
   "${BAZEL_OUTPUT_BASE}/_bazel_$ENV{USER}/${PROJECT_BINARY_DIR_MD5}"
 )
 
-configure_file(tools/cc_toolchain/bazel.rc.in bazel.rc @ONLY)
+configure_file(cmake/bazel.rc.in bazel.rc @ONLY)
 
 set(BAZEL_STARTUP_ARGS "--bazelrc=${CMAKE_CURRENT_BINARY_DIR}/bazel.rc")
 
@@ -143,10 +136,23 @@ if(WITH_MOSEK)
   list(APPEND BAZEL_ARGS --config=mosek)
 endif()
 
-option(WITH_SNOPT "Build with support for SNOPT" OFF)
+option(WITH_ROBOTLOCOMOTION_SNOPT "Build with support for SNOPT using the RobotLocomotion/snopt private GitHub repository" OFF)
+option(WITH_SNOPT "Build with support for SNOPT using the SNOPT source archive at SNOPT_PATH" OFF)
 
-if(WITH_SNOPT)
+if(WITH_ROBOTLOCOMOTION_SNOPT AND WITH_SNOPT)
+  message(FATAL_ERROR
+    "WITH_SNOPT and WITH_ROBOTLOCOMOTION_SNOPT are mutually exclusive")
+elseif(WITH_ROBOTLOCOMOTION_SNOPT)
   list(APPEND BAZEL_ARGS --config=snopt)
+  list(APPEND BAZEL_ENV "SNOPT_PATH=git")
+elseif(WITH_SNOPT)
+  list(APPEND BAZEL_ARGS --config=snopt)
+  set(SNOPT_PATH SNOPT_PATH-NOTFOUND CACHE FILEPATH "Path to SNOPT source archive")
+  if(NOT EXISTS "${SNOPT_PATH}")
+    message(FATAL_ERROR "SNOPT source archive was NOT found at '${SNOPT_PATH}'")
+  endif()
+  mark_as_advanced(SNOPT_PATH)
+  list(APPEND BAZEL_ENV "SNOPT_PATH=${SNOPT_PATH}")
 endif()
 
 set(BAZEL_TARGETS //:install)
@@ -236,7 +242,7 @@ else()
 
   set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
   set(CPACK_DEBIAN_PACKAGE_CONTROL_STRICT_PERMISSION ON)
-  set(CPACK_DEBIAN_PACKAGE_HOMEPAGE http://drake.mit.edu/)
+  set(CPACK_DEBIAN_PACKAGE_HOMEPAGE https://drake.mit.edu/)
   set(CPACK_DEBIAN_PACKAGE_RELEASE 1)
   set(CPACK_DEBIAN_PACKAGE_SECTION contrib/devel)
 

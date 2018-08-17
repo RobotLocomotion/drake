@@ -254,7 +254,7 @@ find such issues. We'll define two tools:
   ``#include`` directives.
 
 These tools produce reports. In some cases, the reports can be automatically
-converted into clickable links so that you can click on a messsage and be taken
+converted into clickable links so that you can click on a message and be taken
 to the file and line indicated in the message. The configuration instructions
 include the details of how to configure these clickable links.
 

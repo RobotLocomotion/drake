@@ -33,9 +33,13 @@ class RollPitchYawFloatingJoint
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {
     Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry> ret;
     auto pos = q.template middleRows<drake::kSpaceDimension>(0);
-    auto rpy =
+    typedef typename DerivedQ::Scalar Scalar;
+    const Eigen::Matrix<Scalar, 3, 1> rpy =
         q.template middleRows<drake::kRpySize>(drake::kSpaceDimension);
-    ret.linear() = drake::math::rpy2rotmat(rpy);
+    const drake::math::RollPitchYaw<Scalar> roll_pitch_yaw(rpy(0), rpy(1),
+                                                           rpy(2));
+    const drake::math::RotationMatrix<Scalar> R(roll_pitch_yaw);
+    ret.linear() = R.matrix();
     ret.translation() = pos;
     ret.makeAffine();
     return ret;
@@ -50,14 +54,18 @@ class RollPitchYawFloatingJoint
           dmotion_subspace = nullptr) const {
     typedef typename DerivedQ::Scalar Scalar;
     motion_subspace.resize(drake::kTwistSize, get_num_velocities());
-    auto rpy =
-        q.template middleRows<drake::kRpySize>(drake::kSpaceDimension);
+    const Eigen::Matrix<Scalar, 3, 1> rpy =
+            q.template middleRows<drake::kRpySize>(drake::kSpaceDimension);
+    const drake::math::RollPitchYaw<Scalar> roll_pitch_yaw(rpy(0), rpy(1),
+                                                           rpy(2));
+    const drake::math::RotationMatrix<Scalar> R(roll_pitch_yaw);
+    Eigen::Matrix<Scalar, 3, 3> R_transpose = R.inverse().matrix();
+
     Eigen::Matrix<Scalar, drake::kSpaceDimension, drake::kRpySize> E;
     rpydot2angularvelMatrix(rpy, E);
-    Eigen::Matrix<Scalar, 3, 3> R = drake::math::rpy2rotmat(rpy);
     motion_subspace.template block<3, 3>(0, 0).setZero();
-    motion_subspace.template block<3, 3>(0, 3) = R.transpose() * E;
-    motion_subspace.template block<3, 3>(3, 0) = R.transpose();
+    motion_subspace.template block<3, 3>(0, 3) = R_transpose * E;
+    motion_subspace.template block<3, 3>(3, 0) = R_transpose;
     motion_subspace.template block<3, 3>(3, 3).setZero();
 
     if (dmotion_subspace) {
@@ -271,6 +279,17 @@ class RollPitchYawFloatingJoint
     return Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1>::Zero(
         get_num_velocities(), 1);
   }
+
+  template <typename DerivedQ>
+  Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, 1> SpringTorque(
+      const Eigen::MatrixBase<DerivedQ>& q) const {
+    drake::unused(q);
+    // Returning zero for now, but a 3D torsional spring could theoretically be
+    // added here.
+    return drake::VectorX<typename DerivedQ::Scalar>::Zero(
+        get_num_velocities(), 1);
+  }
+
 
   bool is_floating() const override { return true; }
 

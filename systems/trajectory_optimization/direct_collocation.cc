@@ -66,17 +66,17 @@ void DirectCollocationConstraint::dynamics(const AutoDiffVecXd& state,
 
 void DirectCollocationConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x,
-    Eigen::VectorXd& y) const {
+    Eigen::VectorXd* y) const {
   AutoDiffVecXd y_t;
-  Eval(math::initializeAutoDiff(x), y_t);
-  y = math::autoDiffToValueMatrix(y_t);
+  Eval(math::initializeAutoDiff(x), &y_t);
+  *y = math::autoDiffToValueMatrix(y_t);
 }
 
 // The format of the input to the eval() function is the
 // tuple { timestep, state 0, state 1, input 0, input 1 },
 // which has a total length of 1 + 2*num_states + 2*num_inputs.
 void DirectCollocationConstraint::DoEval(
-    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd& y) const {
+    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
   DRAKE_ASSERT(x.size() == 1 + (2 * num_states_) + (2 * num_inputs_));
 
   // Extract our input variables:
@@ -106,7 +106,14 @@ void DirectCollocationConstraint::DoEval(
 
   AutoDiffVecXd g;
   dynamics(xcol, 0.5 * (u0 + u1), &g);
-  y = xdotcol - g;
+  *y = xdotcol - g;
+}
+
+void DirectCollocationConstraint::DoEval(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+    VectorX<symbolic::Expression>*) const {
+  throw std::logic_error(
+      "DirectCollocationConstraint does not support symbolic evaluation.");
 }
 
 Binding<Constraint> AddDirectCollocationConstraint(

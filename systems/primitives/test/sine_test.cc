@@ -32,7 +32,7 @@ void TestSineSystem(const Sine<T>& sine_system,
 
   // Verifies that Sine allocates no state variables in the context.
   EXPECT_EQ(0, context->get_continuous_state().size());
-  auto output = sine_system.AllocateOutput(*context);
+  auto output = sine_system.AllocateOutput();
 
   if (sine_system.is_time_based()) {
     // If the system is time based, the input_vectors Matrix should only contain

@@ -16,11 +16,12 @@
 namespace drake {
 namespace systems {
 
-/// %LeafContext contains all prerequisite data necessary to uniquely determine
-/// the results of computations performed by the associated LeafSystem.
-///
-/// @tparam T The mathematical type of the context, which must be a valid Eigen
-///           scalar.
+/** %LeafContext contains all prerequisite data necessary to uniquely determine
+the results of computations performed by the associated LeafSystem.
+@see Context for more information.
+
+@tparam T The mathematical type of the context, which must be a valid Eigen
+          scalar. */
 template <typename T>
 class LeafContext : public Context<T> {
  public:
@@ -36,24 +37,16 @@ class LeafContext : public Context<T> {
       : state_(std::make_unique<State<T>>()) {}
   ~LeafContext() override {}
 
-  const State<T>& get_state() const final {
-    DRAKE_ASSERT(state_ != nullptr);
-    return *state_;
-  }
-
-  State<T>& get_mutable_state() final {
-    DRAKE_ASSERT(state_ != nullptr);
-    return *state_.get();
-  }
-
 #ifndef DRAKE_DOXYGEN_CXX
-  // Temporarily promoting this to public so that LeafSystem and testing
-  // code can construct a LeafContext with parameters. Users should never
-  // call this because parameters should not be resized once allocated (or at
-  // least should be done under Framework control so that dependency tracking
-  // can be correctly revised).
-  // TODO(sherm1) Make this inaccessible to users, along with other dangerous
-  // context resource sizing methods. See discussion in PR #9029.
+  // Temporarily promoting these to public so that LeafSystem and testing code
+  // can construct a LeafContext with state & parameters. Users should never
+  // call these because state & parameters should not be resized once allocated
+  // (or at least should be done under Framework control so that dependency
+  // tracking can be correctly revised).
+  // TODO(sherm1) Make these inaccessible to users. See discussion in PR #9029.
+  using Context<T>::init_continuous_state;
+  using Context<T>::init_discrete_state;
+  using Context<T>::init_abstract_state;
   using Context<T>::init_parameters;
 #endif
 
@@ -88,13 +81,31 @@ class LeafContext : public Context<T> {
         xc_vector.Clone(), num_q, num_v, num_z));
 
     // Make deep copies of the discrete and abstract states.
-    clone->set_discrete_state(get_state().get_discrete_state().Clone());
-    clone->set_abstract_state(get_state().get_abstract_state().Clone());
+    clone->set_discrete_state(state_->get_discrete_state().Clone());
+    clone->set_abstract_state(state_->get_abstract_state().Clone());
 
     return clone;
   }
 
  private:
+  friend class LeafContextTest;
+  using ContextBase::AddInputPort;    // For LeafContextTest.
+  using ContextBase::AddOutputPort;
+  using ContextBase::AddDiscreteStateTicket;
+  using ContextBase::AddAbstractStateTicket;
+  using ContextBase::AddNumericParameterTicket;
+  using ContextBase::AddAbstractParameterTicket;
+
+  const State<T>& do_access_state() const final {
+    DRAKE_ASSERT(state_ != nullptr);
+    return *state_;
+  }
+
+  State<T>& do_access_mutable_state() final {
+    DRAKE_ASSERT(state_ != nullptr);
+    return *state_;
+  }
+
   // The state values (x) for this LeafContext; this is never null.
   std::unique_ptr<State<T>> state_;
 };

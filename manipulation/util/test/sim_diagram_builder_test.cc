@@ -178,7 +178,7 @@ GTEST_TEST(SimDiagramBuilderTest, TestSimulation) {
   simulator.Initialize();
   simulator.StepTo(0.02);
 
-  auto state_output = diagram->AllocateOutput(simulator.get_context());
+  auto state_output = diagram->AllocateOutput();
   diagram->CalcOutput(simulator.get_context(), state_output.get());
   const auto final_output_data = state_output->get_vector_data(0)->get_value();
 

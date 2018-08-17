@@ -16,6 +16,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_stl_types.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/collision/collision_filter.h"
 #include "drake/multibody/collision/drake_collision.h"
@@ -844,6 +845,15 @@ class RigidBodyTree {
   Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorques(
       Eigen::MatrixBase<DerivedV> const& v) const;
 
+
+  /// Computes the generalized forces that correspond to joint springs.
+  ///
+  /// Spring forces are computed joint-by-joint and are a function of position
+  /// only (they do not couple between joints)
+  template <typename Scalar>
+  drake::VectorX<Scalar> CalcGeneralizedSpringForces(
+      const drake::VectorX<Scalar>& q) const;
+
   template <
       typename Scalar,
       typename DerivedPoints>  // not necessarily any relation between the two;
@@ -876,9 +886,11 @@ class RigidBodyTree {
   Eigen::Matrix<Scalar, 3, 1> relativeRollPitchYaw(
       const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
       int to_body_or_frame_ind) const {
-    return drake::math::rotmat2rpy(
-        relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind)
-            .linear());
+    const drake::Isometry3<Scalar> pose = relativeTransform(cache,
+                                  to_body_or_frame_ind, from_body_or_frame_ind);
+    const drake::math::RotationMatrix<Scalar> R(pose.linear());
+    const drake::math::RollPitchYaw<Scalar> rpy(R);
+    return rpy.vector();
   }
 
   template <typename Scalar, typename DerivedPoints>

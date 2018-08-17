@@ -81,7 +81,7 @@ struct Movable {
   static size_t numInputs() { return 1; }
   static size_t numOutputs() { return 1; }
   template <typename ScalarType>
-  void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
+  void eval(VecIn<ScalarType> const&, VecOut<ScalarType>*) const {}
 };
 
 struct Copyable {
@@ -91,7 +91,7 @@ struct Copyable {
   static size_t numInputs() { return 1; }
   static size_t numOutputs() { return 1; }
   template <typename ScalarType>
-  void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
+  void eval(VecIn<ScalarType> const&, VecOut<ScalarType>*) const {}
 };
 
 struct Unique {
@@ -101,7 +101,7 @@ struct Unique {
   static size_t numInputs() { return 1; }
   static size_t numOutputs() { return 1; }
   template <typename ScalarType>
-  void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
+  void eval(VecIn<ScalarType> const&, VecOut<ScalarType>*) const {}
 };
 // TODO(naveenoid) : tests need to be purged of Random initializations.
 
@@ -830,8 +830,8 @@ void VerifyAddedCost1(const MathematicalProgram& prog,
   EXPECT_EQ(static_cast<int>(prog.generic_costs().size()),
             num_generic_costs_expected);
   Eigen::VectorXd y, y_expected;
-  prog.generic_costs().back().evaluator()->Eval(x_value, y);
-  cost->Eval(x_value, y_expected);
+  prog.generic_costs().back().evaluator()->Eval(x_value, &y);
+  cost->Eval(x_value, &y_expected);
   EXPECT_TRUE(CompareMatrices(y, y_expected));
 }
 
@@ -846,10 +846,10 @@ void VerifyAddedCost2(const MathematicalProgram& prog,
   EXPECT_EQ(static_cast<int>(prog.generic_costs().size()),
             num_generic_costs_expected);
   Eigen::VectorXd y(1), y_expected(1), y_returned;
-  prog.generic_costs().back().evaluator()->Eval(x_value, y);
-  cost.eval<double>(x_value, y_expected);
+  prog.generic_costs().back().evaluator()->Eval(x_value, &y);
+  cost.eval<double>(x_value, &y_expected);
   EXPECT_TRUE(CompareMatrices(y, y_expected));
-  returned_cost->Eval(x_value, y_returned);
+  returned_cost->Eval(x_value, &y_returned);
   EXPECT_TRUE(CompareMatrices(y, y_returned));
 }
 
@@ -2482,8 +2482,8 @@ GTEST_TEST(testMathematicalProgram, TestL2NormCost) {
   x0 << 7, 8;
 
   for (int i = 0; i < 6; i++) {
-    obj1->Eval(x0, y1);
-    obj2->Eval(x0, y2);
+    obj1->Eval(x0, &y1);
+    obj2->Eval(x0, &y2);
 
     EXPECT_TRUE(CompareMatrices(y1, y2));
     EXPECT_TRUE(CompareMatrices(y2, (A * x0 - b).transpose() * (A * x0 - b)));
@@ -2910,7 +2910,7 @@ GTEST_TEST(testMathematicalProgram, testAddVisualizationCallback) {
   // Call it directly via the double interface.
   VectorXd test_y(0);
   was_called = false;
-  b.evaluator()->Eval(test_x, test_y);
+  b.evaluator()->Eval(test_x, &test_y);
   EXPECT_TRUE(was_called);
 
   // Call it directly via the autodiff interface.
@@ -2918,8 +2918,26 @@ GTEST_TEST(testMathematicalProgram, testAddVisualizationCallback) {
       math::initializeAutoDiff(VectorXd{test_x});
   VectorX<AutoDiffXd> test_y_autodiff(0);
   was_called = false;
-  b.evaluator()->Eval(test_x_autodiff, test_y_autodiff);
+  b.evaluator()->Eval(test_x_autodiff, &test_y_autodiff);
   EXPECT_TRUE(was_called);
+}
+
+GTEST_TEST(testMathematicalProgram, TestSolverOptions) {
+  MathematicalProgram prog;
+  const SolverId solver_id("solver_id");
+  const SolverId wrong_solver_id("wrong_solver_id");
+
+  prog.SetSolverOption(solver_id, "double_name", 1.0);
+  EXPECT_EQ(prog.GetSolverOptionsDouble(solver_id).at("double_name"), 1.0);
+  EXPECT_EQ(prog.GetSolverOptionsDouble(wrong_solver_id).size(), 0);
+
+  prog.SetSolverOption(solver_id, "int_name", 2);
+  EXPECT_EQ(prog.GetSolverOptionsInt(solver_id).at("int_name"), 2);
+  EXPECT_EQ(prog.GetSolverOptionsInt(wrong_solver_id).size(), 0);
+
+  prog.SetSolverOption(solver_id, "string_name", "3");
+  EXPECT_EQ(prog.GetSolverOptionsStr(solver_id).at("string_name"), "3");
+  EXPECT_EQ(prog.GetSolverOptionsStr(wrong_solver_id).size(), 0);
 }
 
 }  // namespace test

@@ -26,7 +26,7 @@ def _relative_dirname_basename(label):
 def _vector_gen_outs(srcs, kind):
     """Return the list of output filenames.  The `kind` is one of "vector"
     (foo.h, foo.cc), "translator" (foo_translator.h, foo_translator.cc),
-    or "lcm" (lcmt_foo_t.lcm).  For compatiblity with past practice, C++
+    or "lcm" (lcmt_foo_t.lcm).  For compatibility with past practice, C++
     output will appear under a "gen" folder, but *.lcm output will not.
     """
 
@@ -126,7 +126,7 @@ def drake_cc_vector_gen(
     for those `srcs`.  Returns a struct with fields `srcs`, `hdrs`, and `deps`
     that are appropriate for use in a cc_library rule.
 
-    The drake_workspace_name is a required argment, and is used to formulate
+    The drake_workspace_name is a required argument, and is used to formulate
     the correct `result.deps`.  When this macro is called from within Drake,
     the correct value is ""; when called from other workspaces, the correct
     value is the name of Drake's workspace, such as "@drake".

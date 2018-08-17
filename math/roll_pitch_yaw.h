@@ -81,21 +81,26 @@ class RollPitchYaw {
     set(roll, pitch, yaw);
   }
 
-  /// Constructs a %RollPitchYaw from a %RotationMatrix with
+  /// Uses a %RotationMatrix to construct a %RollPitchYaw with
   /// roll-pitch-yaw angles `[r, p, y]` in the range
   /// `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
   /// @param[in] R a %RotationMatrix.
   /// @note This new high-accuracy algorithm avoids numerical round-off issues
   /// encountered by some algorithms when pitch is within 1E-6 of π/2 or -π/2.
-  explicit RollPitchYaw(const RotationMatrix<T>& R);
+  explicit RollPitchYaw(const RotationMatrix<T>& R) {
+    SetFromRotationMatrix(R);
+  }
 
-  /// Constructs a %RollPitchYaw from a %Quaternion with
+  /// Uses a %Quaternion to construct a %RollPitchYaw with
   /// roll-pitch-yaw angles `[r, p, y]` in the range
   /// `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
   /// @param[in] quaternion unit %Quaternion.
   /// @note This new high-accuracy algorithm avoids numerical round-off issues
   /// encountered by some algorithms when pitch is within 1E-6 of π/2 or -π/2.
-  explicit RollPitchYaw(const Eigen::Quaternion<T>& quaternion);
+  /// @throws std::logic_error in debug builds if !IsValid(rpy).
+  explicit RollPitchYaw(const Eigen::Quaternion<T>& quaternion) {
+    SetFromQuaternion(quaternion);
+  }
 
   /// Sets `this` %RollPitchYaw from a 3x1 array of angles.
   /// @param[in] rpy 3x1 array with roll, pitch, yaw angles (units of radians).
@@ -113,6 +118,35 @@ class RollPitchYaw {
   RollPitchYaw<T>& set(const T& roll, const T& pitch, const T& yaw) {
     return set(Vector3<T>(roll, pitch, yaw));
   }
+
+  /// Uses a %Quaternion to set `this` %RollPitchYaw with
+  /// roll-pitch-yaw angles `[r, p, y]` in the range
+  /// `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
+  /// @param[in] quaternion unit %Quaternion.
+  /// @note This new high-accuracy algorithm avoids numerical round-off issues
+  /// encountered by some algorithms when pitch is within 1E-6 of π/2 or -π/2.
+  /// @throws std::logic_error in debug builds if !IsValid(rpy).
+  void SetFromQuaternion(const Eigen::Quaternion<T>& quaternion);
+
+  /// Uses a %RotationMatrix to set `this` %RollPitchYaw with
+  /// roll-pitch-yaw angles `[r, p, y]` in the range
+  /// `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
+  /// @param[in] R a %RotationMatrix.
+  /// @note This new high-accuracy algorithm avoids numerical round-off issues
+  /// encountered by some algorithms when pitch is within 1E-6 of π/2 or -π/2.
+  void SetFromRotationMatrix(const RotationMatrix<T>& R);
+
+  /// Uses a quaternion and its associated rotation matrix `R` to accurately
+  /// set `this` @RollPitchYaw roll-pitch-yaw angles (SpaceXYZ Euler angles),
+  /// even when the pitch angle is within 1E-6 of π/2 or -π/2.
+  /// @param[in] quaternion unit quaternion with elements `[e0, e1, e2, e3]`.
+  /// @param[in] R The %RotationMatrix corresponding to `quaternion`.
+  /// @return %RollPitchYaw containing angles `[r, p, y]` with range
+  /// `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
+  /// @throws std::logic_error in debug builds if rpy fails IsValid(rpy).
+  /// @note Aborts in debug builds if `quaternion` does not correspond to `R`.
+  void SetFromQuaternionAndRotationMatrix(
+      const Eigen::Quaternion<T>& quaternion, const RotationMatrix<T>& R);
 
   /// Returns the Vector3 underlying `this` %RollPitchYaw.
   const Vector3<T>& vector() const { return roll_pitch_yaw_; }
@@ -262,7 +296,7 @@ class RollPitchYaw {
   // TODO(Mitiguy) Improve speed -- last column of M is (0, 0, 1).
   Vector3<T> CalcAngularVelocityInParentFromRpyDt(
       const Vector3<T>& rpyDt) const {
-    // Get the 3x3 coefficent matrix M that contains the partial derivatives of
+    // Get the 3x3 coefficient matrix M that contains the partial derivatives of
     // w_AD_A with respect to ṙ, ṗ, ẏ.  In other words, `w_AD_A = M * rpyDt`.
     const Matrix3<T> M = CalcMatrixRelatingAngularVelocityInParentToRpyDt();
     return M * rpyDt;
@@ -275,7 +309,7 @@ class RollPitchYaw {
   // TODO(Mitiguy) Improve speed -- first column of M is (1, 0, 0).
   Vector3<T> CalcAngularVelocityInChildFromRpyDt(
       const Vector3<T>& rpyDt) const {
-    // Get the 3x3 coefficent matrix M that contains the partial derivatives of
+    // Get the 3x3 coefficient matrix M that contains the partial derivatives of
     // w_AD_D with respect to ṙ, ṗ, ẏ.  In other words, `w_AD_D = M * rpyDt`.
     const Matrix3<T> M = CalcMatrixRelatingAngularVelocityInChildToRpyDt();
     return M * rpyDt;
@@ -377,16 +411,6 @@ class RollPitchYaw {
   }
 
  private:
-  // Accurately constructs roll-pitch-yaw angles (i.e., SpaceXYZ Euler angles)
-  // from a quaternion and its associated rotation matrix -- even when pitch
-  // angle is within 1E-6 of π/2 or -π/2.
-  // @param[in] quaternion unit quaternion with elements `[e0, e1, e2, e3]`.
-  // @param[in] R The %RotationMatrix corresponding to `quaternion`.
-  // @return %RollPitchYaw containing angles `[r, p, y]` with range
-  // `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
-  RollPitchYaw(const Eigen::Quaternion<T>& quaternion,
-               const RotationMatrix<T>& rotation_matrix);
-
   // Throws an exception if rpy is not a valid %RollPitchYaw.
   // @param[in] rpy an allegedly valid rotation matrix.
   static void ThrowIfNotValid(const Vector3<T>& rpy) {
@@ -442,7 +466,7 @@ class RollPitchYaw {
 
   // For `this` %RollPitchYaw with roll-pitch-yaw angles `[r; p; y]` which
   // relate the orientation of two generic frames A and D, returns the 3x3
-  // coefficent matrix M that contains the partial derivatives of `w_AD_A`
+  // coefficient matrix M that contains the partial derivatives of `w_AD_A`
   // (D's angular velocity in A, expressed in A) with respect to ṙ, ṗ, ẏ.
   // In other words, `w_AD_A = M * rpyDt` where `rpyDt` is `[ṙ; ṗ; ẏ]`.
   const Matrix3<T> CalcMatrixRelatingAngularVelocityInParentToRpyDt() const {
@@ -488,7 +512,7 @@ class RollPitchYaw {
 
   // For `this` %RollPitchYaw with roll-pitch-yaw angles `[r; p; y]` which
   // relate the orientation of two generic frames A and D, returns the 3x3
-  // coefficent matrix M that contains the partial derivatives of `w_AD_D`
+  // coefficient matrix M that contains the partial derivatives of `w_AD_D`
   // (D's angular velocity in A, expressed in D) with respect to ṙ, ṗ, ẏ.
   // In other words, `w_AD_D = M * rpyDt` where `rpyDt` is `[ṙ; ṗ; ẏ]`.
   const Matrix3<T> CalcMatrixRelatingAngularVelocityInChildToRpyDt() const {
@@ -594,6 +618,18 @@ class RollPitchYaw {
   // 7 of the 52 bits in max_error's mantissa, which we deem acceptable.
   static constexpr double kGimbalLockToleranceCosPitchAngle = 0.008;
 };
+
+// Uses a quaternion and its associated rotation matrix `R` to accurately
+// construct roll-pitch-yaw angles (i.e., SpaceXYZ Euler angles) -- even
+// when the pitch angle is within 1E-6 of π/2 or -π/2.
+// @param[in] quaternion unit quaternion with elements `[e0, e1, e2, e3]`.
+// @param[in] R The %RotationMatrix corresponding to `quaternion`.
+// @return %RollPitchYaw containing angles `[r, p, y]` with range
+// `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
+// @note The caller of this function is responsible for ensure
+template <typename T>
+Vector3<T> CalcRollPitchYawFromQuaternionAndRotationMatrix(
+    const Eigen::Quaternion<T>& quaternion, const Matrix3<T>& R);
 
 /// (Deprecated), use @ref math::RollPitchYaw(quaternion).
 // TODO(mitiguy) Delete this code that was deprecated on April 27, 2018.

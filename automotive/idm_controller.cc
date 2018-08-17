@@ -46,7 +46,7 @@ IdmController<T>::IdmController(const RoadGeometry& road,
               .get_index()) {
   this->DeclareNumericParameter(IdmPlannerParameters<T>());
   // TODO(jadecastro) It is possible to replace the following AbstractState with
-  // a caching sceme once #4364 lands, preventing the need to use abstract
+  // a caching scheme once #4364 lands, preventing the need to use abstract
   // states and periodic sampling time.
   if (road_position_strategy == RoadPositionStrategy::kCache) {
     this->DeclareAbstractState(systems::AbstractValue::Make<RoadPosition>(
@@ -59,19 +59,19 @@ template <typename T>
 IdmController<T>::~IdmController() {}
 
 template <typename T>
-const systems::InputPortDescriptor<T>& IdmController<T>::ego_pose_input()
+const systems::InputPort<T>& IdmController<T>::ego_pose_input()
     const {
   return systems::System<T>::get_input_port(ego_pose_index_);
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>& IdmController<T>::ego_velocity_input()
+const systems::InputPort<T>& IdmController<T>::ego_velocity_input()
     const {
   return systems::System<T>::get_input_port(ego_velocity_index_);
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>& IdmController<T>::traffic_input() const {
+const systems::InputPort<T>& IdmController<T>::traffic_input() const {
   return systems::System<T>::get_input_port(traffic_index_);
 }
 

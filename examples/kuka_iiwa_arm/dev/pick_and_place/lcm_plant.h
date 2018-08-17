@@ -15,7 +15,7 @@ namespace pick_and_place {
 simulated Optitrack system, and SchunkWsgControllers for each gripper in the
 plant. The purpose of this system is to provide a drop-in replacement for the
 hardware + drivers. Note that LCM publishers and subscribers are intentionally
-ommitted from this system so that it can be directly connected to other systems.
+omitted from this system so that it can be directly connected to other systems.
 The block diagram for a system with a single arm is shown below:
 
                        ┌─────────┐    ┌───────────┐    ┌───────────┐
@@ -54,12 +54,12 @@ class LcmPlant : public systems::Diagram<double> {
       const pick_and_place::SimulatedPlantConfiguration& plant_configuration,
       const pick_and_place::OptitrackConfiguration& optitrack_configuration);
 
-  const systems::InputPortDescriptor<double>& get_input_port_iiwa_command(
+  const systems::InputPort<double>& get_input_port_iiwa_command(
       int index) const {
     return this->get_input_port(input_port_iiwa_command_.at(index));
   }
 
-  const systems::InputPortDescriptor<double>& get_input_port_wsg_command(
+  const systems::InputPort<double>& get_input_port_wsg_command(
       int index) const {
     return this->get_input_port(input_port_wsg_command_.at(index));
   }

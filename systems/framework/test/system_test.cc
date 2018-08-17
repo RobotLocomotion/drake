@@ -61,7 +61,7 @@ class TestSystem : public System<double> {
   void SetDefaultParameters(const Context<double>& context,
                             Parameters<double>* params) const override {}
 
-  const InputPortDescriptor<double>& AddAbstractInputPort() {
+  const InputPort<double>& AddAbstractInputPort() {
     return this->DeclareAbstractInputPort();
   }
 
@@ -125,12 +125,12 @@ class TestSystem : public System<double> {
 
  protected:
   BasicVector<double>* DoAllocateInputVector(
-      const InputPortDescriptor<double>& descriptor) const override {
+      const InputPort<double>& input_port) const override {
     return nullptr;
   }
 
   AbstractValue* DoAllocateInputAbstract(
-      const InputPortDescriptor<double>& descriptor) const override {
+      const InputPort<double>& input_port) const override {
     return nullptr;
   }
 
@@ -218,11 +218,11 @@ class TestSystem : public System<double> {
   }
 
  private:
-  std::unique_ptr<ContextBase> DoMakeContext() const final {
-    return std::make_unique<LeafContext<double>>();
+  std::unique_ptr<ContextBase> DoAllocateContext() const final {
+    auto context = std::make_unique<LeafContext<double>>();
+    InitializeContextBase(&*context);
+    return context;
   }
-
-  void DoValidateAllocatedContext(const ContextBase&) const final {}
 
   mutable int publish_count_ = 0;
   mutable int update_count_ = 0;
@@ -317,9 +317,9 @@ TEST_F(SystemTest, DiscreteUpdate) {
   EXPECT_EQ(1, system_.get_update_count());
 }
 
-// Tests that descriptor references remain valid even if lots of other
-// descriptors are added to the system, forcing a vector resize.
-TEST_F(SystemTest, PortDescriptorsAreStable) {
+// Tests that port references remain valid even if lots of other ports are added
+// to the system, forcing a vector resize.
+TEST_F(SystemTest, PortReferencesAreStable) {
   const auto& first_input = system_.AddAbstractInputPort();
   const auto& first_output = system_.AddAbstractOutputPort();
   for (int i = 0; i < 1000; i++) {
@@ -468,16 +468,16 @@ class ValueIOTestSystem : public System<T> {
   }
 
   AbstractValue* DoAllocateInputAbstract(
-      const InputPortDescriptor<T>& descriptor) const override {
+      const InputPort<T>& input_port) const override {
     // Should only get called for the first input.
-    EXPECT_EQ(descriptor.get_index(), 0);
+    EXPECT_EQ(input_port.get_index(), 0);
     return AbstractValue::Make<std::string>("").release();
   }
 
   BasicVector<T>* DoAllocateInputVector(
-      const InputPortDescriptor<T>& descriptor) const override {
+      const InputPort<T>& input_port) const override {
     // Should not get called for the first (abstract) input.
-    EXPECT_GE(descriptor.get_index(), 1);
+    EXPECT_GE(input_port.get_index(), 1);
     return new TestTypedVector<T>();
   }
 
@@ -485,11 +485,11 @@ class ValueIOTestSystem : public System<T> {
     return std::make_unique<ContinuousState<T>>();
   }
 
-  std::unique_ptr<ContextBase> DoMakeContext() const final {
-    return std::make_unique<LeafContext<T>>();
+  std::unique_ptr<ContextBase> DoAllocateContext() const final {
+    auto context = std::make_unique<LeafContext<T>>();
+    this->InitializeContextBase(&*context);
+    return context;
   }
-
-  void DoValidateAllocatedContext(const ContextBase& context) const final {}
 
   std::unique_ptr<CompositeEventCollection<T>>
   AllocateCompositeEventCollection() const override {
@@ -686,7 +686,7 @@ class SystemIOTest : public ::testing::Test {
  protected:
   void SetUp() override {
     context_ = test_sys_.CreateDefaultContext();
-    output_ = test_sys_.AllocateOutput(*context_);
+    output_ = test_sys_.AllocateOutput();
 
     // make string input
     context_->FixInputPort(0, Value<std::string>("input"));
@@ -768,6 +768,219 @@ TEST_F(SystemIOTest, TransmogrifyAndFix) {
   EXPECT_NE(fixed_vec, nullptr);
   EXPECT_EQ(2, fixed_vec->GetAtIndex(0).value());
   EXPECT_EQ(0, fixed_vec->GetAtIndex(0).derivatives().size());
+}
+
+// This class implements various computational methods so we can check that
+// they get invoked properly. The particular results don't mean anything.
+// As above, lots of painful bookkeeping here that is normally buried by
+// LeafSystem.
+class ComputationTestSystem final : public System<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ComputationTestSystem)
+
+  ComputationTestSystem() : System<double>(SystemScalarConverter{}) {}
+
+  // One q, one v, one z.
+  std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
+      const final {
+    return std::make_unique<ContinuousState<double>>(
+        std::make_unique<BasicVector<double>>(3), 1, 1, 1);  // q, v, z
+  }
+
+  // Verify that the number of calls is as expected.
+  void ExpectCount(int xcdot, int pe, int ke, int pc, int pnc) const {
+    EXPECT_EQ(xcdot, xcdot_count_);
+    EXPECT_EQ(pe, pe_count_);
+    EXPECT_EQ(ke, ke_count_);
+    EXPECT_EQ(pc, pc_count_);
+    EXPECT_EQ(pnc, pnc_count_);
+  }
+
+ private:
+  // Two discrete variable groups of lengths 2 and 4.
+  std::unique_ptr<DiscreteValues<double>> AllocateDiscreteVariables()
+      const final {
+    std::vector<std::unique_ptr<BasicVector<double>>> data;
+    data.emplace_back(std::make_unique<BasicVector<double>>(2));
+    data.emplace_back(std::make_unique<BasicVector<double>>(4));
+    return std::make_unique<DiscreteValues<double>>(std::move(data));
+  }
+
+  std::unique_ptr<ContextBase> DoAllocateContext() const final {
+    auto context = std::make_unique<LeafContext<double>>();
+    InitializeContextBase(&*context);
+    return context;
+  }
+
+  // Derivatives can depend on time. Here x = (-1, -2, -3) * t.
+  void DoCalcTimeDerivatives(const Context<double>& context,
+                             ContinuousState<double>* derivatives) const final {
+    unused(context);
+    EXPECT_EQ(derivatives->size(), 3);
+    const double t = context.get_time();
+    (*derivatives)[0] = -1 * t;
+    (*derivatives)[1] = -2 * t;
+    (*derivatives)[2] = -3 * t;
+    ++xcdot_count_;
+  }
+
+  double DoCalcPotentialEnergy(const Context<double>& context) const final {
+    unused(context);
+    ++pe_count_;
+    return 1.;
+  }
+
+  double DoCalcKineticEnergy(const Context<double>& context) const final {
+    unused(context);
+    ++ke_count_;
+    return 2.;
+  }
+
+  double DoCalcConservativePower(const Context<double>& context) const final {
+    unused(context);
+    ++pc_count_;
+    return 3.;
+  }
+
+  // Non-conservative power can depend on time. Here it is 4*t.
+  double DoCalcNonConservativePower(
+      const Context<double>& context) const final {
+    ++pnc_count_;
+    return 4. * context.get_time();
+  }
+
+  // These are required by the base class but not used here.
+  std::unique_ptr<CompositeEventCollection<double>>
+  AllocateCompositeEventCollection() const final { return {}; }
+  void SetDefaultState(const Context<double>&, State<double>*) const final {}
+  void SetDefaultParameters(const Context<double>&,
+                            Parameters<double>*) const final {}
+  std::unique_ptr<EventCollection<PublishEvent<double>>>
+  AllocateForcedPublishEventCollection() const final { return {}; }
+  std::unique_ptr<EventCollection<DiscreteUpdateEvent<double>>>
+  AllocateForcedDiscreteUpdateEventCollection() const final { return {}; }
+  std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<double>>>
+  AllocateForcedUnrestrictedUpdateEventCollection() const final { return {}; }
+  std::multimap<int, int> GetDirectFeedthroughs() const final { return {}; }
+  double DoCalcWitnessValue(const Context<double>&,
+                            const WitnessFunction<double>&) const final {
+    DRAKE_ABORT_MSG("test should not get here");
+  }
+  void AddTriggeredWitnessFunctionToCompositeEventCollection(
+      Event<double>*, CompositeEventCollection<double>*) const final {
+    DRAKE_ABORT_MSG("test should not get here");
+  }
+  BasicVector<double>* DoAllocateInputVector(
+      const InputPort<double>&) const final { return nullptr; }
+  AbstractValue* DoAllocateInputAbstract(const InputPort<double>&) const final {
+    return nullptr;
+  }
+  void DispatchPublishHandler(
+      const Context<double>& context,
+      const EventCollection<PublishEvent<double>>& events) const final {
+    DRAKE_ABORT_MSG("test should not get here");
+  }
+  void DispatchDiscreteVariableUpdateHandler(
+      const Context<double>& context,
+      const EventCollection<DiscreteUpdateEvent<double>>& events,
+      DiscreteValues<double>* discrete_state) const final {
+    DRAKE_ABORT_MSG("test should not get here");
+  }
+  void DispatchUnrestrictedUpdateHandler(
+      const Context<double>&,
+      const EventCollection<UnrestrictedUpdateEvent<double>>&,
+      State<double>*) const final {
+    DRAKE_ABORT_MSG("test should not get here");
+  }
+  std::map<PeriodicEventData, std::vector<const Event<double>*>,
+           PeriodicEventDataComparator>
+  DoGetPeriodicEvents() const final { return {}; }
+
+  mutable int xcdot_count_{};
+  mutable int pe_count_{};
+  mutable int ke_count_{};
+  mutable int pc_count_{};
+  mutable int pnc_count_{};
+};
+
+// Provides values for some of the inputs and sets up for outputs.
+class ComputationTest : public ::testing::Test {
+ protected:
+  void SetUp() final {
+    context_->EnableCaching();
+  }
+
+  ComputationTestSystem test_sys_;
+  std::unique_ptr<Context<double>> context_ =
+      test_sys_.CreateDefaultContext();
+};
+
+TEST_F(ComputationTest, Eval) {
+  context_->set_time(1.);
+
+  //                 xcdot, pe, ke, pc, pnc
+  test_sys_.ExpectCount(0, 0, 0, 0, 0);
+  EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[0], -1.);
+  EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[1], -2.);
+  EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[2], -3.);
+  // Caching should have kept us to a single derivative evaluation.
+  test_sys_.ExpectCount(1, 0, 0, 0, 0);
+
+  EXPECT_EQ(test_sys_.EvalPotentialEnergy(*context_), 1.);
+  test_sys_.ExpectCount(1, 1, 0, 0, 0);
+  EXPECT_EQ(test_sys_.EvalKineticEnergy(*context_), 2.);
+  test_sys_.ExpectCount(1, 1, 1, 0, 0);
+  EXPECT_EQ(test_sys_.EvalConservativePower(*context_), 3.);
+  test_sys_.ExpectCount(1, 1, 1, 1, 0);
+  EXPECT_EQ(test_sys_.EvalNonConservativePower(*context_), 4.);
+  test_sys_.ExpectCount(1, 1, 1, 1, 1);
+
+  // These should not require re-evaluation.
+  EXPECT_EQ(test_sys_.EvalPotentialEnergy(*context_), 1.);
+  EXPECT_EQ(test_sys_.EvalKineticEnergy(*context_), 2.);
+  EXPECT_EQ(test_sys_.EvalConservativePower(*context_), 3.);
+  EXPECT_EQ(test_sys_.EvalNonConservativePower(*context_), 4.);
+  test_sys_.ExpectCount(1, 1, 1, 1, 1);
+
+  // Each of the Calc methods should cause computation.
+  auto derivatives = test_sys_.AllocateTimeDerivatives();
+  test_sys_.CalcTimeDerivatives(*context_, &*derivatives);
+  test_sys_.ExpectCount(2, 1, 1, 1, 1);
+  EXPECT_EQ((*derivatives)[1], -2.);
+  EXPECT_EQ(test_sys_.CalcPotentialEnergy(*context_), 1.);
+  test_sys_.ExpectCount(2, 2, 1, 1, 1);
+  EXPECT_EQ(test_sys_.CalcKineticEnergy(*context_), 2.);
+  test_sys_.ExpectCount(2, 2, 2, 1, 1);
+  EXPECT_EQ(test_sys_.CalcConservativePower(*context_), 3.);
+  test_sys_.ExpectCount(2, 2, 2, 2, 1);
+  EXPECT_EQ(test_sys_.CalcNonConservativePower(*context_), 4.);
+  test_sys_.ExpectCount(2, 2, 2, 2, 2);
+
+  // TODO(sherm1) Pending resolution of issue #9171 we can be more precise
+  // about dependencies here. For now we'll just verify that changing
+  // some significant variables causes recomputation, not that *only*
+  // significant variables cause recomputation.
+  context_->set_time(2.);
+  EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[0], -2.);
+  EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[1], -4.);
+  EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[2], -6.);
+  test_sys_.ExpectCount(3, 2, 2, 2, 2);  // Above is just one evaluation.
+  EXPECT_EQ(test_sys_.EvalNonConservativePower(*context_), 8.);
+  test_sys_.ExpectCount(3, 2, 2, 2, 3);
+  // TODO(sherm1) Verify that other methods don't depend on time.
+
+  // This should mark all state variables as changed and force recomputation.
+  context_->get_mutable_state();
+  EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[2], -6.);  // Again.
+  test_sys_.ExpectCount(4, 2, 2, 2, 3);
+  EXPECT_EQ(test_sys_.EvalPotentialEnergy(*context_), 1.);
+  test_sys_.ExpectCount(4, 3, 2, 2, 3);
+  EXPECT_EQ(test_sys_.EvalKineticEnergy(*context_), 2.);
+  test_sys_.ExpectCount(4, 3, 3, 2, 3);
+  EXPECT_EQ(test_sys_.EvalConservativePower(*context_), 3.);
+  test_sys_.ExpectCount(4, 3, 3, 3, 3);
+  EXPECT_EQ(test_sys_.EvalNonConservativePower(*context_), 8.);  // Again.
+  test_sys_.ExpectCount(4, 3, 3, 3, 4);
 }
 
 }  // namespace

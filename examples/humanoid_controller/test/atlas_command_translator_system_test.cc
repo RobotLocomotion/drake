@@ -36,7 +36,7 @@ GTEST_TEST(JointLevelControllerTest, AtlasJointLevelControllerTest) {
 
   auto dut = std::make_unique<AtlasCommandTranslatorSystem>(*robot);
   auto context = dut->CreateDefaultContext();
-  auto output = dut->AllocateOutput(*context);
+  auto output = dut->AllocateOutput();
 
   context->set_time(3.);
 

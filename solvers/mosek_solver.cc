@@ -19,6 +19,14 @@ namespace drake {
 namespace solvers {
 namespace {
 
+// This function is used to print information for each iteration to the console,
+// it will show PRSTATUS, PFEAS, DFEAS, etc. For more information, check out
+// https://docs.mosek.com/8.1/capi/solver-io.html. This printstr is copied
+// directly from https://docs.mosek.com/8.1/capi/solver-io.html#stream-logging.
+void MSKAPI printstr(void* , const char str[]) {
+  printf("%s", str);
+}
+
 // Add LinearConstraints and LinearEqualityConstraints to the Mosek task.
 template <typename C>
 MSKrescodee AddLinearConstraintsFromBindings(
@@ -602,13 +610,18 @@ class MosekSolver::License {
     }
     DRAKE_DEMAND(mosek_env_ != nullptr);
 
-    // Acquire the license for the base MOSEK system so that we can
-    // fail fast if the license file is missing or the server is
-    // unavailable. Any additional features should be checked out
-    // later by MSK_optimizetrm if needed (so there's still the
-    // possiblity of later failure at that stage if the desired
-    // feature is unavailable or another error occurs).
-    rescode = MSK_checkoutlicense(mosek_env_, MSK_FEATURE_PTS);
+    const int num_tries = 3;
+    rescode = MSK_RES_TRM_INTERNAL;
+    for (int i = 0; i < num_tries && rescode != MSK_RES_OK; ++i) {
+      // Acquire the license for the base MOSEK system so that we can
+      // fail fast if the license file is missing or the server is
+      // unavailable. Any additional features should be checked out
+      // later by MSK_optimizetrm if needed (so there's still the
+      // possibility of later failure at that stage if the desired
+      // feature is unavailable or another error occurs).
+      rescode = MSK_checkoutlicense(mosek_env_, MSK_FEATURE_PTS);
+    }
+
     if (rescode != MSK_RES_OK) {
       throw std::runtime_error("Could not acquire MOSEK license.");
     }
@@ -704,6 +717,15 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   if (rescode == MSK_RES_OK) {
     rescode = AddLinearMatrixInequalityConstraint(prog, &task);
   }
+  if (rescode == MSK_RES_OK && stream_logging_) {
+    if (log_file_.empty()) {
+      rescode =
+          MSK_linkfunctotaskstream(task, MSK_STREAM_LOG, nullptr, printstr);
+    } else {
+      rescode =
+          MSK_linkfiletotaskstream(task, MSK_STREAM_LOG, log_file_.c_str(), 0);
+    }
+  }
 
   SolutionResult result = SolutionResult::kUnknownError;
   // Run optimizer.
@@ -730,7 +752,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   }
 
   SolverResult solver_result(id());
-  // TODO(hongkai.dai@tri.global) : Add MOSEK paramaters.
+  // TODO(hongkai.dai@tri.global) : Add MOSEK parameters.
   // Mosek parameter are added by enum, not by string.
   if (rescode == MSK_RES_OK) {
     MSKsolstae solution_status;

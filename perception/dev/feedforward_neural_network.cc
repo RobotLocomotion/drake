@@ -4,7 +4,7 @@ namespace drake {
 
 using std::vector;
 using drake::systems::Context;
-using drake::systems::InputPortDescriptor;
+using drake::systems::InputPort;
 using drake::systems::OutputPort;
 using drake::systems::System;
 using drake::systems::BasicVector;
@@ -118,7 +118,7 @@ template <typename T>
 VectorX<T> FeedforwardNeuralNetwork<T>::EvaluateLayer(
     const VectorX<T>& layerInput, MatrixX<T> Weights, VectorX<T> bias,
     LayerType layer, NonlinearityType nonlinearity) const {
-  // Only suppports fully-connected RELU at this time
+  // Only supports fully-connected RELU at this time
   DRAKE_DEMAND(layer == LayerType::FullyConnected);
   DRAKE_DEMAND(nonlinearity == NonlinearityType::Relu);
   VectorX<T> layer_output = relu(Weights * layerInput + bias);
@@ -218,7 +218,7 @@ FeedforwardNeuralNetwork<T>::DecodeWeightsFromBasicVector(
 }
 
 template <typename T>
-const InputPortDescriptor<T>& FeedforwardNeuralNetwork<T>::input() const {
+const InputPort<T>& FeedforwardNeuralNetwork<T>::input() const {
   return System<T>::get_input_port(input_index_);
 }
 

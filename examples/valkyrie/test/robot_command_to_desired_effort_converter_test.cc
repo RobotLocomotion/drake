@@ -52,7 +52,7 @@ void TestCommandToDesiredEffortConverter(
   auto diagram = builder.Build();
 
   auto context = diagram->CreateDefaultContext();
-  auto output = diagram->AllocateOutput(*context);
+  auto output = diagram->AllocateOutput();
   diagram->CalcOutput(*context, output.get());
 
   // TODO(tkoolen): assumption about ordering of exported output ports.

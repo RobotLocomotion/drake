@@ -108,22 +108,22 @@ TEST_F(BoolTestDouble, Cond) {
 }
 
 TEST_F(BoolTestDouble, LogicalOperators) {
-  EXPECT_TRUE((b_true_ && b_true_).value());
-  EXPECT_FALSE((b_false_ && b_true_).value());
-  EXPECT_FALSE((b_true_ && b_false_).value());
-  EXPECT_FALSE((b_false_ && b_false_).value());
-  EXPECT_FALSE((b_true_ && false).value());
-  EXPECT_FALSE((false && b_true_).value());
+  EXPECT_TRUE(b_true_ && b_true_);
+  EXPECT_FALSE(b_false_ && b_true_);
+  EXPECT_FALSE(b_true_ && b_false_);
+  EXPECT_FALSE(b_false_ && b_false_);
+  EXPECT_FALSE(b_true_ && false);
+  EXPECT_FALSE(false && b_true_);
 
-  EXPECT_TRUE((b_true_ || b_true_).value());
-  EXPECT_TRUE((b_false_ || b_true_).value());
-  EXPECT_TRUE((b_true_ || b_false_).value());
-  EXPECT_FALSE((b_false_ || b_false_).value());
-  EXPECT_TRUE((b_false_ || true).value());
-  EXPECT_TRUE((true || b_false_).value());
+  EXPECT_TRUE(b_true_ || b_true_);
+  EXPECT_TRUE(b_false_ || b_true_);
+  EXPECT_TRUE(b_true_ || b_false_);
+  EXPECT_FALSE(b_false_ || b_false_);
+  EXPECT_TRUE(b_false_ || true);
+  EXPECT_TRUE(true || b_false_);
 
-  EXPECT_FALSE((!b_true_).value());
-  EXPECT_TRUE((!b_false_).value());
+  EXPECT_FALSE(!b_true_);
+  EXPECT_TRUE(!b_false_);
 }
 
 TEST_F(BoolTestDouble, AllOf) {
@@ -209,22 +209,22 @@ TEST_F(BoolTestAutoDiffXd, Cond) {
 }
 
 TEST_F(BoolTestAutoDiffXd, LogicalOperators) {
-  EXPECT_TRUE((b_true_ && b_true_).value());
-  EXPECT_FALSE((b_false_ && b_true_).value());
-  EXPECT_FALSE((b_true_ && b_false_).value());
-  EXPECT_FALSE((b_false_ && b_false_).value());
-  EXPECT_FALSE((b_true_ && (x_ > y_)).value());
-  EXPECT_FALSE(((x_ > y_) && b_true_).value());
+  EXPECT_TRUE(b_true_ && b_true_);
+  EXPECT_FALSE(b_false_ && b_true_);
+  EXPECT_FALSE(b_true_ && b_false_);
+  EXPECT_FALSE(b_false_ && b_false_);
+  EXPECT_FALSE(b_true_ && (x_ > y_));
+  EXPECT_FALSE((x_ > y_) && b_true_);
 
-  EXPECT_TRUE((b_true_ || b_true_).value());
-  EXPECT_TRUE((b_false_ || b_true_).value());
-  EXPECT_TRUE((b_true_ || b_false_).value());
-  EXPECT_FALSE((b_false_ || b_false_).value());
-  EXPECT_TRUE((b_false_ || (x_ < y_)).value());
-  EXPECT_TRUE(((x_ < y_) || b_false_).value());
+  EXPECT_TRUE(b_true_ || b_true_);
+  EXPECT_TRUE(b_false_ || b_true_);
+  EXPECT_TRUE(b_true_ || b_false_);
+  EXPECT_FALSE(b_false_ || b_false_);
+  EXPECT_TRUE(b_false_ || (x_ < y_));
+  EXPECT_TRUE((x_ < y_) || b_false_);
 
-  EXPECT_FALSE((!b_true_).value());
-  EXPECT_TRUE((!b_false_).value());
+  EXPECT_FALSE(!b_true_);
+  EXPECT_TRUE(!b_false_);
 }
 
 TEST_F(BoolTestAutoDiffXd, AllOf) {
@@ -333,6 +333,35 @@ TEST_F(BoolTestSymbolic, ExtractBoolOrThrowException) {
   // the assignments on `x` and `y`.
   const Bool<Expression> b{x_ < y_};
   EXPECT_THROW(ExtractBoolOrThrow(b), std::exception);
+}
+
+// Check if ExtractBoolOrThrow works consistently across the relational
+// operators (here, we only check == and <=).
+// See https://github.com/RobotLocomotion/drake/issues/9117.
+TEST_F(BoolTestSymbolic, ExtractBoolOrThrowConsistency) {
+  // These tests throw an exception because it is not possible to determine how
+  // x relates to 2 (there is no numerical value associated with x).
+  Bool<Expression> test_equal{x_ == 2};
+  Bool<Expression> test_less_than_equal{x_ <= 2};
+  EXPECT_THROW(ExtractBoolOrThrow(test_equal), std::runtime_error);
+  EXPECT_THROW(ExtractBoolOrThrow(test_less_than_equal), std::runtime_error);
+
+  // These tests do not throw an exception because the symbolic algorithms are
+  // able to definitely resolve the relationship between these expressions.
+  test_equal = (2 * x_ + 3 == 3 + 2 * x_);
+  test_less_than_equal = (2 * x_ + 3 <= 3 + 2 * x_);
+  EXPECT_TRUE(ExtractBoolOrThrow(test_equal));
+  EXPECT_TRUE(ExtractBoolOrThrow(test_less_than_equal));
+
+  // These tests throw an exception because the symbolic algorithms do not
+  // currently definitely resolve the relationship between these expressions.
+  //
+  // TODO(Mitiguy): Update this test as more symbolic algorithms are employed to
+  // resolve the comparison between these expressions.
+  test_equal = 2 * (x_ + 3) == 6 + 2 * x_;
+  test_less_than_equal = 2 * (x_ + 3) <= 6 + 2 * x_;
+  EXPECT_THROW(ExtractBoolOrThrow(test_equal), std::runtime_error);
+  EXPECT_THROW(ExtractBoolOrThrow(test_less_than_equal), std::runtime_error);
 }
 
 TEST_F(BoolTestSymbolic, Value) {

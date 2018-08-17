@@ -191,7 +191,7 @@ QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
       prog()->AddLinearConstraint(x_(0) + 2 * x_(1) + 3 * x_(2) >= 4);
       prog()->AddLinearConstraint(-x_(0) - x_(1) <= -1);
       prog()->AddLinearConstraint(x_(1) + 2 * x_(2), -20, 100);
-      // TODO(hongkai.dai): Uncoment the next line, when we resolves the error
+      // TODO(hongkai.dai): Uncomment the next line, when we resolve the error
       // with infinity on the right handside of a formula.
       // prog()->AddLinearConstraint(x_(0) + x_(1) + 2 * x_(2) <=
       // numeric_limits<double>::infinity());

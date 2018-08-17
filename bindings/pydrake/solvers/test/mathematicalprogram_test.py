@@ -39,6 +39,8 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = mp.MathematicalProgram()
         vars = prog.NewContinuousVariables(5, "x")
         self.assertEqual(vars.dtype, sym.Variable)
+        vars_all = prog.decision_variables()
+        self.assertEqual(vars_all.shape, (5,))
 
     def test_mixed_integer_optimization(self):
         prog = mp.MathematicalProgram()
@@ -70,6 +72,8 @@ class TestMathematicalProgram(unittest.TestCase):
         # Redundant cost just to check the spelling.
         prog.AddQuadraticErrorCost(vars=x, Q=np.eye(2),
                                    x_desired=np.zeros(2))
+        prog.AddL2NormCost(A=np.eye(2), b=np.zeros(2), vars=x)
+
         result = prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
 
@@ -286,7 +290,8 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertIsInstance(binding.evaluator(),
                               mp.LinearComplementarityConstraint)
 
-    def test_bounding_box(self):
+    def test_linear_constraints(self):
+        # TODO(eric.cousineau): Add more general tests
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, 'x')
         lb = [0., 0.]
@@ -294,6 +299,7 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddBoundingBoxConstraint(lb, ub, x)
         prog.AddBoundingBoxConstraint(0., 1., x[0])
         prog.AddBoundingBoxConstraint(0., 1., x)
+        prog.AddLinearConstraint(np.eye(2), np.zeros(2), np.ones(2), x)
 
     def test_pycost_and_pyconstraint(self):
         prog = mp.MathematicalProgram()

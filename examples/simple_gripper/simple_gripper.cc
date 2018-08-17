@@ -13,6 +13,8 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
+#include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
+#include "drake/multibody/multibody_tree/multibody_plant/contact_results_to_lcm.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
@@ -42,6 +44,7 @@ using drake::math::RollPitchYaw;
 using drake::math::RotationMatrix;
 using drake::multibody::Body;
 using drake::multibody::multibody_plant::CoulombFriction;
+using drake::multibody::multibody_plant::ContactResultsToLcmSystem;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::parsing::AddModelFromSdfFile;
 using drake::multibody::PrismaticJoint;
@@ -161,6 +164,10 @@ void AddGripperPads(MultibodyPlant<double>* plant,
 
     plant->RegisterCollisionGeometry(
         finger, X_FS, Sphere(kPadMinorRadius), friction, scene_graph);
+
+    const geometry::VisualMaterial red(Vector4<double>(1.0, 0.0, 0.0, 1.0));
+    plant->RegisterVisualGeometry(
+        finger, X_FS, Sphere(kPadMinorRadius), red, scene_graph);
   }
 }
 
@@ -277,6 +284,18 @@ int do_main() {
   builder.Connect(scene_graph.get_pose_bundle_output_port(),
                   converter.get_input_port(0));
   builder.Connect(converter, publisher);
+
+  // Publish contact results for visualization.
+  const auto& contact_results_to_lcm =
+      *builder.AddSystem<ContactResultsToLcmSystem>(plant);
+  const auto& contact_results_publisher = *builder.AddSystem(
+      LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
+          "CONTACT_RESULTS", &lcm));
+  // Contact results to lcm msg.
+  builder.Connect(plant.get_contact_results_output_port(),
+                  contact_results_to_lcm.get_input_port(0));
+  builder.Connect(contact_results_to_lcm.get_output_port(0),
+                  contact_results_publisher.get_input_port());
 
   // Sinusoidal force input. We want the gripper to follow a trajectory of the
   // form x(t) = X0 * sin(ω⋅t). By differentiating once, we can compute the

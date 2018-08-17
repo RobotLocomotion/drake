@@ -40,7 +40,7 @@ exec "${{target_path}}" "$@"
     return [DefaultInfo(
         runfiles = ctx.runfiles(
             # Inherit `target`s runfiles.
-            files = list(ctx.attr.target.data_runfiles.files),
+            files = ctx.attr.target.data_runfiles.files.to_list(),
         ),
     )]
 

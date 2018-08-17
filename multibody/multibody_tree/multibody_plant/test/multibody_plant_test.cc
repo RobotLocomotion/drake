@@ -14,11 +14,13 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
+#include "drake/geometry/query_object.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/geometry/visual_material.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/math/transform.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
@@ -43,10 +45,12 @@ using geometry::FrameId;
 using geometry::FramePoseVector;
 using geometry::GeometryId;
 using geometry::PenetrationAsPointPair;
+using geometry::QueryObject;
 using geometry::SceneGraph;
+using geometry::VisualMaterial;
+using math::RigidTransform;
 using math::RollPitchYaw;
 using math::RotationMatrix;
-using math::Transform;
 using multibody::benchmarks::Acrobot;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
@@ -145,7 +149,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(plant->num_positions(pendulum_model_instance), 1);
   EXPECT_EQ(plant->num_velocities(pendulum_model_instance), 1);
 
-  // Check that the input/output ports have the approptiate geometry.
+  // Check that the input/output ports have the appropriate geometry.
   EXPECT_THROW(plant->get_actuation_input_port(), std::runtime_error);
   EXPECT_EQ(plant->get_actuation_input_port(
       default_model_instance()).size(), 1);
@@ -478,6 +482,15 @@ TEST_F(AcrobotPlantTests, CalcTimeDerivatives) {
 TEST_F(AcrobotPlantTests, DoCalcDiscreteVariableUpdates) {
   // Set up an additional discrete state model of the same acrobot model.
   SetUpDiscreteAcrobotPlant(0.001 /* time step in seconds. */);
+
+  const ModelInstanceIndex instance_index =
+      discrete_plant_->GetModelInstanceByName("acrobot");
+
+  // The generalized contact forces output port should have the same size as
+  // number of generalized velocities in the model instance, even if there is
+  // no contact geometry in the model.
+  EXPECT_EQ(discrete_plant_->get_generalized_contact_forces_output_port(
+      instance_index).size(), 2);
 
   // Verify the implementation for a number of arbitrarily chosen states.
   VerifyDoCalcDiscreteVariableUpdates(
@@ -945,6 +958,72 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
       plant.default_coulomb_friction(sphere2_id) == sphere2_friction));
 }
 
+// Verifies the process of visual geometry registration with a SceneGraph.
+// We build a model with two spheres and a ground plane. The ground plane is
+// located at y = 0 with normal in the y-axis direction.
+GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
+  // Parameters of the setup.
+  const double radius = 0.5;
+
+  SceneGraph<double> scene_graph;
+  MultibodyPlant<double> plant;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+
+  // A half-space for the ground geometry -- uses default visual material
+  GeometryId ground_id = plant.RegisterVisualGeometry(
+      plant.world_body(),
+      // A half-space passing through the origin in the x-z plane.
+      geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
+      geometry::HalfSpace(), &scene_graph);
+
+  // Add two spherical bodies.
+  const RigidBody<double>& sphere1 =
+      plant.AddRigidBody("Sphere1", SpatialInertia<double>());
+  Vector4<double> sphere1_diffuse{0.9, 0.1, 0.1, 0.5};
+  GeometryId sphere1_id = plant.RegisterVisualGeometry(
+      sphere1, Isometry3d::Identity(), geometry::Sphere(radius),
+      VisualMaterial(sphere1_diffuse), &scene_graph);
+  const RigidBody<double>& sphere2 =
+      plant.AddRigidBody("Sphere2", SpatialInertia<double>());
+  Vector4<double> sphere2_diffuse{0.1, 0.9, 0.1, 0.5};
+  GeometryId sphere2_id = plant.RegisterVisualGeometry(
+      sphere2, Isometry3d::Identity(), geometry::Sphere(radius),
+      VisualMaterial(sphere2_diffuse), &scene_graph);
+
+  // We are done defining the model.
+  plant.Finalize(&scene_graph);
+
+  EXPECT_EQ(plant.num_visual_geometries(), 3);
+  EXPECT_EQ(plant.num_collision_geometries(), 0);
+  EXPECT_TRUE(plant.geometry_source_is_registered());
+  EXPECT_TRUE(plant.get_source_id());
+
+  unique_ptr<Context<double>> context = scene_graph.CreateDefaultContext();
+  unique_ptr<AbstractValue> state_value =
+      scene_graph.get_query_output_port().Allocate();
+  EXPECT_NO_THROW(state_value->GetValueOrThrow<QueryObject<double>>());
+  const QueryObject<double>& query_object =
+      state_value->GetValueOrThrow<QueryObject<double>>();
+  scene_graph.get_query_output_port().Calc(*context, state_value.get());
+
+  const VisualMaterial* test_material =
+      query_object.GetVisualMaterial(ground_id);
+  EXPECT_NE(test_material, nullptr);
+  EXPECT_TRUE(CompareMatrices(test_material->diffuse(),
+                              VisualMaterial().diffuse(), 0.0,
+                              MatrixCompareType::absolute));
+
+  test_material = query_object.GetVisualMaterial(sphere1_id);
+  EXPECT_NE(test_material, nullptr);
+  EXPECT_TRUE(CompareMatrices(test_material->diffuse(), sphere1_diffuse, 0.0,
+                              MatrixCompareType::absolute));
+
+  test_material = query_object.GetVisualMaterial(sphere2_id);
+  EXPECT_NE(test_material, nullptr);
+  EXPECT_TRUE(CompareMatrices(test_material->diffuse(), sphere2_diffuse, 0.0,
+                              MatrixCompareType::absolute));
+}
+
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 
@@ -1240,21 +1319,20 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     const Body<double>& large_box = plant_.GetBodyByName("LargeBox");
     const Body<double>& small_box = plant_.GetBodyByName("SmallBox");
 
-    const Transform<double> X_WLb =
+    const RigidTransform<double> X_WLb =
         // Pure rotation.
-        Transform<double>(RotationMatrix<double>::MakeZRotation(M_PI_4),
-                          Vector3<double>::Zero()) *
+        RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI_4),
+                               Vector3<double>::Zero()) *
         // Pure translation.
-        Transform<double>(RotationMatrix<double>::Identity(),
-                          Vector3<double>(0, -large_box_size_ / 2.0, 0));
-    const Transform<double> X_WSb =
+        RigidTransform<double>(RotationMatrix<double>::Identity(),
+                               Vector3<double>(0, -large_box_size_ / 2.0, 0));
+    const RigidTransform<double> X_WSb =
         // Pure rotation.
-        Transform<double>(RotationMatrix<double>::MakeZRotation(M_PI_4),
-                          Vector3<double>::Zero()) *
+        RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI_4),
+                               Vector3<double>::Zero()) *
         // Pure translation.
-        Transform<double>(RotationMatrix<double>::Identity(),
-                          Vector3<double>(
-                              0, small_box_size_ / 2.0 - penetration_, 0));
+        RigidTransform<double>(RotationMatrix<double>::Identity(),
+               Vector3<double>(0, small_box_size_ / 2.0 - penetration_, 0));
 
     plant_.model().SetFreeBodyPoseOrThrow(
         large_box, X_WLb.GetAsIsometry3(), context);
