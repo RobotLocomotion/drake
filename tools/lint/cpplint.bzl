@@ -60,7 +60,7 @@ def _add_linter_rules(source_labels, source_filenames, name, data = None):
     # (Projects that want their own config can place a CPPLINT.cfg in their
     # root package.  Projects that want to use exactly the Drake defaults can
     # alias Drake's config file into their top-level BUILD.bazel file.)
-    cpplint_cfg = ["//:CPPLINT.cfg"] + native.glob([
+    cpplint_cfg = ["@drake//:CPPLINT.cfg"] + native.glob([
         "CPPLINT.cfg",
         "test/CPPLINT.cfg",
     ])
