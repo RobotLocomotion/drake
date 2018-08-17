@@ -281,7 +281,7 @@ class GroupFactoryMock : public GroupFactoryBase {
       for (const Connection* conn : connections) {
         group->Add(conn);
       }
-      return std::move(group);
+      return group;
     }
     return nullptr;
   }
