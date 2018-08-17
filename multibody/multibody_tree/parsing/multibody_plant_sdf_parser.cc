@@ -367,19 +367,19 @@ void AddLinksFromSpecification(
     const ignition::math::Inertiald& Inertial_Bcm_Bi = link.Inertial();
 
     const SpatialInertia<double> M_BBo_B =
-      ExtractSpatialInertiaAboutBoExpressedInB(Inertial_Bcm_Bi);
+        ExtractSpatialInertiaAboutBoExpressedInB(Inertial_Bcm_Bi);
 
     // Add a rigid body to model each link.
     const RigidBody<double>& body =
-      plant->AddRigidBody(link.Name(), model_instance, M_BBo_B);
+        plant->AddRigidBody(link.Name(), model_instance, M_BBo_B);
 
     if (scene_graph != nullptr) {
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
-          ++visual_index) {
+           ++visual_index) {
         const sdf::Visual sdf_visual = detail::ResolveVisualUri(
             *link.VisualByIndex(visual_index), package_map, root_dir);
         unique_ptr<GeometryInstance> geometry_instance =
-          detail::MakeGeometryInstanceFromSdfVisual(sdf_visual);
+            detail::MakeGeometryInstanceFromSdfVisual(sdf_visual);
         // We check for nullptr in case someone decided to specify an SDF
         // <empty/> geometry.
         if (geometry_instance) {
@@ -391,9 +391,9 @@ void AddLinksFromSpecification(
       }
 
       for (uint64_t collision_index = 0;
-          collision_index < link.CollisionCount(); ++collision_index) {
+           collision_index < link.CollisionCount(); ++collision_index) {
         const sdf::Collision& sdf_collision =
-          *link.CollisionByIndex(collision_index);
+            *link.CollisionByIndex(collision_index);
         const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
         if (sdf_geometry.Type() != sdf::GeometryType::EMPTY) {
           const Isometry3d X_LG =
@@ -429,7 +429,7 @@ ModelInstanceIndex AddModelFromSpecification(
 
   // Add all the joints
   for (uint64_t joint_index = 0; joint_index < model.JointCount();
-      ++joint_index) {
+       ++joint_index) {
     // Get a pointer to the SDF joint, and the joint axis information.
     const sdf::Joint& joint = *model.JointByIndex(joint_index);
     AddJointFromSpecification(model, joint, model_instance, plant);
