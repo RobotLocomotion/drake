@@ -228,7 +228,7 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
     body->set_spatial_inertia(Matrix6<double>::Identity());
 
     const DrakeShapes::Box shape(size);
-    const Eigen::Vector4d material(0.5, 0.0, 0.5, 1.0);
+    const Eigen::Vector4d material(0.0, 0.0, 0.5, 1.0);
     const DrakeShapes::VisualElement visual_element(
         shape, Eigen::Isometry3d::Identity(), material);
     body->AddVisualElement(visual_element);
