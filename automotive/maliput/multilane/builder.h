@@ -462,11 +462,11 @@ class BuilderBase {
                                 api::LaneEnd::Which out_end) = 0;
 
   /// Creates a new empty connection group with ID string `id`.
-  virtual Group* MakeGroup(const std::string& id) = 0;
+  virtual GroupBase* MakeGroup(const std::string& id) = 0;
 
   /// Creates a new connection group with ID `id`, populated with the
   /// given `connections`.
-  virtual Group* MakeGroup(
+  virtual GroupBase* MakeGroup(
       const std::string& id,
       const std::vector<const Connection*>& connections) = 0;
 
@@ -551,9 +551,11 @@ class Builder : public BuilderBase {
   /// tolerances for the resulting RoadGeometry. `scale_length` constrains
   /// the maximum level of detail captured by the resulting RoadGeometry.
   /// `computation_policy` sets the speed vs. accuracy balance for computations.
+  /// `group_factory` allows to create groups.
   Builder(double lane_width, const api::HBounds& elevation_bounds,
           double linear_tolerance, double angular_tolerance,
-          double scale_length, ComputationPolicy computation_policy);
+          double scale_length, ComputationPolicy computation_policy,
+          std::unique_ptr<GroupFactoryBase> group_factory);
 
   /// Gets `lane_width` value.
   double get_lane_width() const override { return lane_width_; }
@@ -604,10 +606,11 @@ class Builder : public BuilderBase {
                         int out_lane_index,
                         const api::LaneEnd::Which out_end) override;
 
-  Group* MakeGroup(const std::string& id) override;
+  GroupBase* MakeGroup(const std::string& id) override;
 
-  Group* MakeGroup(const std::string& id,
-                   const std::vector<const Connection*>& connections) override;
+  GroupBase* MakeGroup(
+      const std::string& id,
+      const std::vector<const Connection*>& connections) override;
 
   std::unique_ptr<const api::RoadGeometry> Build(
       const api::RoadGeometryId& id) const override;
@@ -709,7 +712,8 @@ class Builder : public BuilderBase {
   ComputationPolicy computation_policy_{};
   std::vector<std::unique_ptr<Connection>> connections_;
   std::vector<DefaultBranch> default_branches_;
-  std::vector<std::unique_ptr<Group>> groups_;
+  std::vector<std::unique_ptr<GroupBase>> groups_;
+  std::unique_ptr<GroupFactoryBase> group_factory_;
 };
 
 /// Implements a BuilderFactoryBase to construct Builder objects.
@@ -725,7 +729,8 @@ class BuilderFactory : public BuilderFactoryBase {
       ComputationPolicy computation_policy) const override {
     return std::make_unique<Builder>(lane_width, elevation_bounds,
                                      linear_tolerance, angular_tolerance,
-                                     scale_length, computation_policy);
+                                     scale_length, computation_policy,
+                                     std::make_unique<GroupFactory>());
   }
 };
 

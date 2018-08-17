@@ -633,7 +633,7 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(
     for (const auto& g : groups) {
       const std::string gid = g.first.as<std::string>();
       DRAKE_SPDLOG_DEBUG(drake::log(), "   create group '{}'", gid);
-      Group* group = builder->MakeGroup(gid);
+      GroupBase* group = builder->MakeGroup(gid);
       YAML::Node cids_node = g.second;
       DRAKE_DEMAND(cids_node.IsSequence());
       for (const YAML::Node& cid_node : cids_node) {
