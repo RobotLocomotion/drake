@@ -11,6 +11,7 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/proximity_engine.h"
+#include "drake/geometry/utilities.h"
 
 namespace drake {
 namespace geometry {
@@ -124,6 +125,64 @@ const std::string& GeometryState<T>::get_frame_name(FrameId frame_id) const {
 }
 
 template <typename T>
+const std::string& GeometryState<T>::get_name(GeometryId geometry_id) const {
+  const auto& dynamic_iterator = geometries_.find(geometry_id);
+  if (dynamic_iterator != geometries_.end()) {
+    return dynamic_iterator->second.get_name();
+  }
+
+  const auto& anchored_iterator = anchored_geometries_.find(geometry_id);
+  if (anchored_iterator != anchored_geometries_.end()) {
+    return anchored_iterator->second.get_name();
+  }
+
+  throw std::logic_error("No geometry available for invalid geometry id: " +
+      to_string(geometry_id));
+}
+
+template <typename T>
+GeometryId GeometryState<T>::GetGeometryFromName(
+    FrameId frame_id, const std::string& name) const {
+  const std::string canonical_name = detail::CanonicalizeStringName(name);
+  // TODO(SeanCurtis-TRI): Account for geometry role once implemented.
+
+  GeometryId result;
+  int count = 0;
+  std::string frame_name;
+
+  if (frame_id == InternalFrame::get_world_frame_id()) {
+    frame_name = "world";
+    for (const auto& pair : anchored_geometries_) {
+      const InternalAnchoredGeometry& geometry = pair.second;
+      if (geometry.get_name() == canonical_name) {
+        ++count;
+        result = pair.first;
+      }
+    }
+  } else {
+    const InternalFrame& frame = GetValueOrThrow(frame_id, frames_);
+    frame_name = frame.get_name();
+    for (GeometryId geometry_id : frame.get_child_geometries()) {
+      const InternalGeometry& geometry = geometries_.at(geometry_id);
+      if (geometry.get_name() == canonical_name) {
+        ++count;
+        result = geometry_id;
+      }
+    }
+  }
+
+  if (count == 1) return result;
+  if (count < 1) {
+    throw std::logic_error("The frame '" + frame_name + "' (" +
+        to_string(frame_id) + ") has no geometry with the canonical name '" +
+        canonical_name + "'");
+  }
+  throw std::logic_error("The frame '" + frame_name + "' (" +
+      to_string(frame_id) + ") has multiple geometries with the canonical " +
+      "name'" + canonical_name + "'");
+}
+
+template <typename T>
 const Isometry3<T>& GeometryState<T>::get_pose_in_world(
     FrameId frame_id) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
@@ -136,6 +195,9 @@ const Isometry3<T>& GeometryState<T>::get_pose_in_world(
 template <typename T>
 const Isometry3<T>& GeometryState<T>::get_pose_in_world(
     GeometryId geometry_id) const {
+  // TODO(SeanCurtis-TRI): This is an BUG! If you pass in the id of an
+  // anchored geometry, this will throw an exception. See
+  // https://github.com/RobotLocomotion/drake/issues/9145.
   FindOrThrow(geometry_id, geometries_, [geometry_id]() {
     return "No world pose available for invalid geometry id: " +
            to_string(geometry_id);
@@ -288,14 +350,18 @@ GeometryId GeometryState<T>::RegisterGeometry(
   geometry_index_id_map_.push_back(geometry_id);
 
   // Configure topology.
+  // TODO(SeanCurtis-TRI): Once geometry roles are implemented, test for
+  // uniqueness of the canonical name in that role for the given frame.
+  // NOTE: It is important to test for name validity *before* adding this
+  // geometry to the frame.
+
   InternalFrame& frame = frames_[frame_id];
   frame.add_child(geometry_id);
 
-  // TODO(SeanCurtis-TRI): Get name from geometry instance (when available).
   geometries_.emplace(
       geometry_id,
       InternalGeometry(geometry->release_shape(), frame_id, geometry_id,
-                       geometry->pose(), engine_index,
+                       geometry->name(), geometry->pose(), engine_index,
                        geometry->visual_material()));
 
 
@@ -399,15 +465,33 @@ GeometryId GeometryState<T>::RegisterAnchoredGeometry(
   // Pass the geometry to the engine.
   auto engine_index = geometry_engine_->AddAnchoredGeometry(geometry->shape(),
                                                             geometry->pose());
+
+
+  // TODO(SeanCurtis-TRI): Once geometry roles are implemented, test for
+  // uniqueness of the canonical name in that role for the given frame.
+  // NOTE: It is important to test for name validity *before* adding this
+  // geometry to the frame.
+
   DRAKE_ASSERT(static_cast<int>(anchored_geometry_index_id_map_.size()) ==
                engine_index);
   anchored_geometry_index_id_map_.push_back(geometry_id);
+
   anchored_geometries_.emplace(
       geometry_id,
-      InternalAnchoredGeometry(
-          geometry->release_shape(), geometry_id, geometry->pose(),
-          engine_index, geometry->visual_material()));
+      InternalAnchoredGeometry(geometry->release_shape(), geometry_id,
+                               geometry->name(), geometry->pose(), engine_index,
+                               geometry->visual_material()));
   return geometry_id;
+}
+
+template <typename T>
+bool GeometryState<T>::IsValidGeometryName(
+    FrameId frame_id, const std::string& candidate_name) const {
+  FindOrThrow(frame_id, frames_, [frame_id]() {
+    return "Given frame id is not valid: " + to_string(frame_id);
+  });
+  // TODO(SeanCurtis-TRI): Test for uniquness after geometry roles are added.
+  return !detail::CanonicalizeStringName(candidate_name).empty();
 }
 
 template <typename T>

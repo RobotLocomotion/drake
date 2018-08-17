@@ -385,7 +385,8 @@ void AddLinksFromSpecification(
         if (geometry_instance) {
           plant->RegisterVisualGeometry(
               body, geometry_instance->pose(), geometry_instance->shape(),
-              geometry_instance->visual_material(), scene_graph);
+              geometry_instance->name(), geometry_instance->visual_material(),
+              scene_graph);
         }
       }
 
@@ -396,13 +397,14 @@ void AddLinksFromSpecification(
         const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
         if (sdf_geometry.Type() != sdf::GeometryType::EMPTY) {
           const Isometry3d X_LG =
-            detail::MakeGeometryPoseFromSdfCollision(sdf_collision);
+              detail::MakeGeometryPoseFromSdfCollision(sdf_collision);
           std::unique_ptr<geometry::Shape> shape =
-            detail::MakeShapeFromSdfGeometry(sdf_geometry);
+              detail::MakeShapeFromSdfGeometry(sdf_geometry);
           const CoulombFriction<double> coulomb_friction =
-            detail::MakeCoulombFrictionFromSdfCollisionOde(sdf_collision);
-          plant->RegisterCollisionGeometry(
-              body, X_LG, *shape, coulomb_friction, scene_graph);
+              detail::MakeCoulombFrictionFromSdfCollisionOde(sdf_collision);
+          plant->RegisterCollisionGeometry(body, X_LG, *shape,
+                                           sdf_collision.Name(),
+                                           coulomb_friction, scene_graph);
         }
       }
     }

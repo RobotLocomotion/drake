@@ -47,6 +47,7 @@ using geometry::GeometryId;
 using geometry::PenetrationAsPointPair;
 using geometry::QueryObject;
 using geometry::SceneGraph;
+using geometry::SceneGraphInspector;
 using geometry::VisualMaterial;
 using math::RigidTransform;
 using math::RollPitchYaw;
@@ -648,19 +649,21 @@ class SphereChainScenario {
         plant_->world_body(),
         // A half-space passing through the origin in the x-z plane.
         geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
-        geometry::HalfSpace(), CoulombFriction<double>(), scene_graph_);
+        geometry::HalfSpace(), "ground", CoulombFriction<double>(),
+        scene_graph_);
 
     auto make_sphere = [this](int i) {
       const double radius = 0.5;
       const RigidBody<double>& sphere = plant_->AddRigidBody(
           "Sphere" + to_string(i), SpatialInertia<double>());
       GeometryId sphere_id = plant_->RegisterCollisionGeometry(
-          sphere, Isometry3d::Identity(), geometry::Sphere(radius),
+          sphere, Isometry3d::Identity(), geometry::Sphere(radius), "collision",
           CoulombFriction<double>(), scene_graph_);
       // We add visual geometry to implicitly test that they are *not* included
       // in the collision results. We don't even save the ids for them.
       plant_->RegisterVisualGeometry(sphere, Isometry3d::Identity(),
-                                     geometry::Sphere(radius), scene_graph_);
+                                     geometry::Sphere(radius), "visual",
+                                     scene_graph_);
       return std::make_tuple(&sphere, sphere_id);
     };
 
@@ -890,7 +893,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
       plant.world_body(),
       // A half-space passing through the origin in the x-z plane.
       geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
-      geometry::HalfSpace(), ground_friction, &scene_graph);
+      geometry::HalfSpace(), "ground", ground_friction, &scene_graph);
 
   // Add two spherical bodies.
   const RigidBody<double>& sphere1 =
@@ -898,13 +901,13 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   CoulombFriction<double> sphere1_friction(0.8, 0.5);
   GeometryId sphere1_id = plant.RegisterCollisionGeometry(
       sphere1, Isometry3d::Identity(), geometry::Sphere(radius),
-      sphere1_friction, &scene_graph);
+      "collision", sphere1_friction, &scene_graph);
   const RigidBody<double>& sphere2 =
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
   CoulombFriction<double> sphere2_friction(0.7, 0.6);
   GeometryId sphere2_id = plant.RegisterCollisionGeometry(
       sphere2, Isometry3d::Identity(), geometry::Sphere(radius),
-      sphere2_friction, &scene_graph);
+      "collision", sphere2_friction, &scene_graph);
 
   // We are done defining the model.
   plant.Finalize(&scene_graph);
@@ -974,7 +977,7 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
       plant.world_body(),
       // A half-space passing through the origin in the x-z plane.
       geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
-      geometry::HalfSpace(), &scene_graph);
+      geometry::HalfSpace(), "ground", &scene_graph);
 
   // Add two spherical bodies.
   const RigidBody<double>& sphere1 =
@@ -982,13 +985,13 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   Vector4<double> sphere1_diffuse{0.9, 0.1, 0.1, 0.5};
   GeometryId sphere1_id = plant.RegisterVisualGeometry(
       sphere1, Isometry3d::Identity(), geometry::Sphere(radius),
-      VisualMaterial(sphere1_diffuse), &scene_graph);
+      "visual", VisualMaterial(sphere1_diffuse), &scene_graph);
   const RigidBody<double>& sphere2 =
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
   Vector4<double> sphere2_diffuse{0.1, 0.9, 0.1, 0.5};
   GeometryId sphere2_id = plant.RegisterVisualGeometry(
       sphere2, Isometry3d::Identity(), geometry::Sphere(radius),
-      VisualMaterial(sphere2_diffuse), &scene_graph);
+      "visual", VisualMaterial(sphere2_diffuse), &scene_graph);
 
   // We are done defining the model.
   plant.Finalize(&scene_graph);
@@ -1006,19 +1009,20 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
       state_value->GetValueOrThrow<QueryObject<double>>();
   scene_graph.get_query_output_port().Calc(*context, state_value.get());
 
+  const SceneGraphInspector<double>& inspector = query_object.inspector();
   const VisualMaterial* test_material =
-      query_object.GetVisualMaterial(ground_id);
+      inspector.GetVisualMaterial(ground_id);
   EXPECT_NE(test_material, nullptr);
   EXPECT_TRUE(CompareMatrices(test_material->diffuse(),
                               VisualMaterial().diffuse(), 0.0,
                               MatrixCompareType::absolute));
 
-  test_material = query_object.GetVisualMaterial(sphere1_id);
+  test_material = inspector.GetVisualMaterial(sphere1_id);
   EXPECT_NE(test_material, nullptr);
   EXPECT_TRUE(CompareMatrices(test_material->diffuse(), sphere1_diffuse, 0.0,
                               MatrixCompareType::absolute));
 
-  test_material = query_object.GetVisualMaterial(sphere2_id);
+  test_material = inspector.GetVisualMaterial(sphere2_id);
   EXPECT_NE(test_material, nullptr);
   EXPECT_TRUE(CompareMatrices(test_material->diffuse(), sphere2_diffuse, 0.0,
                               MatrixCompareType::absolute));
@@ -1281,14 +1285,14 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     large_box_id_ = plant_.RegisterCollisionGeometry(
         large_box, Isometry3d::Identity(),
         geometry::Box(large_box_size_, large_box_size_, large_box_size_),
-        CoulombFriction<double>(), &scene_graph_);
+        "collision", CoulombFriction<double>(), &scene_graph_);
 
     const RigidBody<double>& small_box =
         plant_.AddRigidBody("SmallBox", SpatialInertia<double>());
     small_box_id_ = plant_.RegisterCollisionGeometry(
         small_box, Isometry3d::Identity(),
         geometry::Box(small_box_size_, small_box_size_, small_box_size_),
-        CoulombFriction<double>(), &scene_graph_);
+        "collision", CoulombFriction<double>(), &scene_graph_);
 
     // We are done defining the model.
     plant_.Finalize(&scene_graph_);
