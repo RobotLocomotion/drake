@@ -391,7 +391,8 @@ ModelInstanceIndex AddModelFromSdfFile(
         if (geometry_instance) {
           plant->RegisterVisualGeometry(
               body, geometry_instance->pose(), geometry_instance->shape(),
-              geometry_instance->visual_material(), scene_graph);
+              geometry_instance->name(), geometry_instance->visual_material(),
+              scene_graph);
         }
       }
 
@@ -407,8 +408,9 @@ ModelInstanceIndex AddModelFromSdfFile(
               detail::MakeShapeFromSdfGeometry(sdf_geometry);
           const CoulombFriction<double> coulomb_friction =
               detail::MakeCoulombFrictionFromSdfCollisionOde(sdf_collision);
-          plant->RegisterCollisionGeometry(
-              body, X_LG, *shape, coulomb_friction, scene_graph);
+          plant->RegisterCollisionGeometry(body, X_LG, *shape,
+                                           sdf_collision.Name(),
+                                           coulomb_friction, scene_graph);
         }
       }
     }

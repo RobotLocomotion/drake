@@ -7,6 +7,7 @@
 #include "drake/geometry/geometry_context.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
+#include "drake/geometry/scene_graph_inspector.h"
 
 namespace drake {
 namespace geometry {
@@ -71,27 +72,11 @@ class QueryObject {
   //  query_object_test.cc in the DefaultQueryThrows test to confirm that the
   //  query *is* calling ThrowIfDefault().
 
-  //----------------------------------------------------------------------------
-  /** @name                State queries */
-  //@{
-
-  /** Reports the name for the given source id.
-   @throws  std::runtime_error if the %QueryObject is in default configuration.
-   @throws  std::logic_error if the identifier is invalid. */
-  const std::string& GetSourceName(SourceId id) const;
-
-  /** Reports the id of the frame to which the given geometry id is registered.
-   @throws  std::runtime_error if the %QueryObject is in default configuration.
-   @throws  std::logic_error if the geometry id is invalid. */
-  FrameId GetFrameId(GeometryId geometry_id) const;
-
-  /** Returns the visual material of the geometry indicated by the given
-   `geometry_id` (if it exists).
-   @throws  std::runtime_error if the %QueryObject is in default configuration.
-   @throws  std::logic_error if the geometry id is invalid. */
-  const VisualMaterial* GetVisualMaterial(GeometryId geometry_id) const;
-
-  //@}
+  /** Provides an inspector for the topological structure of the underlying
+   scene graph data (see SceneGraphInspector for details).  */
+  const SceneGraphInspector<T>& inspector() const {
+    return inspector_;
+  }
 
   //----------------------------------------------------------------------------
   /** @name                Collision Queries
@@ -187,10 +172,19 @@ class QueryObject {
   // Convenience class for testing.
   friend class QueryObjectTester;
 
+  const GeometryState<T>& geometry_state() const;
+
   // Only the SceneGraph<T> can instantiate this class - it gets
   // instantiated into a *copyable* default instance (to facilitate allocation
   // in contexts).
   QueryObject() = default;
+
+  void set(const GeometryContext<T>* context,
+           const SceneGraph<T>* scene_graph) {
+    context_ = context;
+    scene_graph_ = scene_graph;
+    inspector_.set(&geometry_state());
+  }
 
   void ThrowIfDefault() const {
     if (!(context_ && scene_graph_)) {
@@ -225,6 +219,7 @@ class QueryObject {
   // context).
   const GeometryContext<T>* context_{nullptr};
   const SceneGraph<T>* scene_graph_{nullptr};
+  SceneGraphInspector<T> inspector_;
 };
 
 }  // namespace geometry

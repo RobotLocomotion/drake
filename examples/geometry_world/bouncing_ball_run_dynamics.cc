@@ -58,7 +58,7 @@ int do_main() {
   scene_graph->RegisterAnchoredGeometry(
       global_source,
       make_unique<GeometryInstance>(HalfSpace::MakePose(Hz_W, p_WH),
-                                    make_unique<HalfSpace>()));
+                                    make_unique<HalfSpace>(), "ground"));
   DrakeLcm lcm;
   PoseBundleToDrawMessage* converter =
       builder.template AddSystem<PoseBundleToDrawMessage>();

@@ -1,4 +1,5 @@
 #include <memory>
+#include <string>
 
 #include <gflags/gflags.h>
 #include "fmt/ostream.h"
@@ -162,12 +163,14 @@ void AddGripperPads(MultibodyPlant<double>* plant,
     CoulombFriction<double> friction(
         FLAGS_ring_static_friction, FLAGS_ring_static_friction);
 
-    plant->RegisterCollisionGeometry(
-        finger, X_FS, Sphere(kPadMinorRadius), friction, scene_graph);
+    plant->RegisterCollisionGeometry(finger, X_FS, Sphere(kPadMinorRadius),
+                                     "collision" + std::to_string(i), friction,
+                                     scene_graph);
 
     const geometry::VisualMaterial red(Vector4<double>(1.0, 0.0, 0.0, 1.0));
-    plant->RegisterVisualGeometry(
-        finger, X_FS, Sphere(kPadMinorRadius), red, scene_graph);
+    plant->RegisterVisualGeometry(finger, X_FS, Sphere(kPadMinorRadius),
+                                  "visual" + std::to_string(i), red,
+                                  scene_graph);
   }
 }
 

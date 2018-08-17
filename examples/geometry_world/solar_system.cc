@@ -105,16 +105,17 @@ void MakeArm(SourceId source_id, ParentId parent_id, double length,
       Eigen::AngleAxis<double>(M_PI / 2, Vector3<double>::UnitY()).matrix();
   arm_pose.translation() << length / 2, 0, 0;
   scene_graph->RegisterGeometry(
-      source_id, parent_id,
-      make_unique<GeometryInstance>(
-          arm_pose, make_unique<Cylinder>(radius, length), material));
+      source_id, parent_id, make_unique<GeometryInstance>(
+                                arm_pose, make_unique<Cylinder>(radius, length),
+                                "horz_arm", material));
 
   Isometry3<double> post_pose = Isometry3<double>::Identity();
-  post_pose.translation() << length, 0, height/2;
+  post_pose.translation() << length, 0, height / 2;
   scene_graph->RegisterGeometry(
       source_id, parent_id,
-      make_unique<GeometryInstance>(
-          post_pose, make_unique<Cylinder>(radius, height), material));
+      make_unique<GeometryInstance>(post_pose,
+                                    make_unique<Cylinder>(radius, height),
+                                    "vert_arm", material));
 }
 
 template <typename T>
@@ -133,7 +134,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   scene_graph->RegisterAnchoredGeometry(
       source_id_, make_unique<GeometryInstance>(
                       Isometry3<double>::Identity(), make_unique<Sphere>(1.f),
-                      VisualMaterial(Vector4d(1, 1, 0, 1))));
+                      "sun", VisualMaterial(Vector4d(1, 1, 0, 1))));
 
   // The fixed post on which Sun sits and around which all planets rotate.
   const double post_height = 1;
@@ -143,7 +144,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
       source_id_,
       make_unique<GeometryInstance>(
           post_pose, make_unique<Cylinder>(pipe_radius, post_height),
-          post_material));
+          "post", post_material));
 
   // Allocate the "celestial bodies": two planets orbiting on different planes,
   // each with a moon.
@@ -166,7 +167,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
       Translation3<double>{kEarthOrbitRadius, 0, -kEarthBottom}};
   scene_graph->RegisterGeometry(
       source_id_, planet_id,
-      make_unique<GeometryInstance>(X_EGe, make_unique<Sphere>(0.25f),
+      make_unique<GeometryInstance>(X_EGe, make_unique<Sphere>(0.25f), "earth",
                                     VisualMaterial(Vector4d(0, 0, 1, 1))));
   // Earth's orrery arm.
   MakeArm(source_id_, planet_id, kEarthOrbitRadius, -kEarthBottom, pipe_radius,
@@ -191,7 +192,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   Isometry3<double> X_LGl{Translation3<double>{luna_position}};
   scene_graph->RegisterGeometry(
       source_id_, luna_id, make_unique<GeometryInstance>(
-                               X_LGl, make_unique<Sphere>(0.075f),
+                               X_LGl, make_unique<Sphere>(0.075f), "luna",
                                VisualMaterial(Vector4d(0.5, 0.5, 0.35, 1))));
 
   // Mars's frame M lies directly *below* the sun (to account for the orrery
@@ -210,9 +211,9 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   Isometry3<double> X_MGm{
       Translation3<double>{kMarsOrbitRadius, 0, -orrery_bottom}};
   GeometryId mars_geometry_id = scene_graph->RegisterGeometry(
-      source_id_, planet_id,
-      make_unique<GeometryInstance>(X_MGm, make_unique<Sphere>(kMarsSize),
-                                    VisualMaterial(Vector4d(0.9, 0.1, 0, 1))));
+      source_id_, planet_id, make_unique<GeometryInstance>(
+                                 X_MGm, make_unique<Sphere>(kMarsSize), "mars",
+                                 VisualMaterial(Vector4d(0.9, 0.1, 0, 1))));
 
   std::string rings_absolute_path =
       FindResourceOrThrow("drake/examples/geometry_world/planet_rings.obj");
@@ -221,7 +222,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   scene_graph->RegisterGeometry(
       source_id_, mars_geometry_id,
       make_unique<GeometryInstance>(
-          X_GmGr, make_unique<Mesh>(rings_absolute_path, kMarsSize),
+          X_GmGr, make_unique<Mesh>(rings_absolute_path, kMarsSize), "rings",
           VisualMaterial(Vector4d(0.45, 0.9, 0, 1))));
 
   // Mars's orrery arm.
@@ -244,7 +245,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   Isometry3<double> X_PGp{Translation3<double>{kPhobosOrbitRadius, 0, 0}};
   scene_graph->RegisterGeometry(
       source_id_, phobos_id, make_unique<GeometryInstance>(
-                                 X_PGp, make_unique<Sphere>(0.06f),
+                                 X_PGp, make_unique<Sphere>(0.06f), "phobos",
                                  VisualMaterial(Vector4d(0.65, 0.6, 0.8, 1))));
 
   DRAKE_DEMAND(static_cast<int>(body_ids_.size()) == kBodyCount);
