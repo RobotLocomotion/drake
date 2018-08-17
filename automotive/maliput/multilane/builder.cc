@@ -46,16 +46,19 @@ std::ostream& operator<<(std::ostream& out, const LaneLayout& lane_layout) {
 
 Builder::Builder(double lane_width, const api::HBounds& elevation_bounds,
                  double linear_tolerance, double angular_tolerance,
-                 double scale_length, ComputationPolicy computation_policy)
+                 double scale_length, ComputationPolicy computation_policy,
+                 std::unique_ptr<GroupFactoryBase> group_factory)
     : lane_width_(lane_width),
       elevation_bounds_(elevation_bounds),
       linear_tolerance_(linear_tolerance),
       angular_tolerance_(angular_tolerance),
       scale_length_(scale_length),
-      computation_policy_(computation_policy) {
+      computation_policy_(computation_policy),
+      group_factory_(std::move(group_factory)) {
   DRAKE_DEMAND(lane_width_ >= 0.);
   DRAKE_DEMAND(linear_tolerance_ >= 0.);
   DRAKE_DEMAND(angular_tolerance_ >= 0.);
+  DRAKE_DEMAND(group_factory_ != nullptr);
 }
 
 namespace {
@@ -285,14 +288,14 @@ void Builder::SetDefaultBranch(const Connection* in, int in_lane_index,
 
 
 Group* Builder::MakeGroup(const std::string& id) {
-  groups_.push_back(std::make_unique<Group>(id));
+  groups_.push_back(group_factory_->Make(id));
   return groups_.back().get();
 }
 
 
 Group* Builder::MakeGroup(const std::string& id,
                           const std::vector<const Connection*>& connections) {
-  groups_.push_back(std::make_unique<Group>(id, connections));
+  groups_.push_back(group_factory_->Make(id, connections));
   return groups_.back().get();
 }
 
