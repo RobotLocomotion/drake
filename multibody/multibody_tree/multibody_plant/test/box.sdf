@@ -27,7 +27,7 @@
           <izz>1.0</izz>
         </inertia>
       </inertial>
-      <visual name='ground_plane'>
+      <visual name='visual'>
         <geometry>
           <plane>
             <normal>0.0 0.0 1.0</normal>
@@ -35,7 +35,7 @@
         </geometry>
       </visual>
 
-      <collision name='ground_plane'>
+      <collision name='collision'>
         <geometry>
           <plane>
             <normal>0.0 0.0 1.0</normal>

@@ -46,7 +46,7 @@ GTEST_TEST(GeometryVisualization, SimpleScene) {
   scene_graph.RegisterGeometry(
       source_id, frame_id,
       make_unique<GeometryInstance>(Isometry3d::Identity(),
-                                    make_unique<Sphere>(radius),
+                                    make_unique<Sphere>(radius), "sphere",
                                     VisualMaterial(Vector4d{r, g, b, a})));
 
   unique_ptr<Context<double>> context = scene_graph.AllocateContext();
