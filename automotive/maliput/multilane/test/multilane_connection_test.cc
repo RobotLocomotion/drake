@@ -504,6 +504,71 @@ INSTANTIATE_TEST_CASE_P(EndpointZ, MultilaneConnectionEndpointZTest,
                                             EndpointZ(5., 1., M_PI / 6., 1.),
                                             0., 1)));
 
+// Makes a stub line-connection.
+std::unique_ptr<Connection> MakeLineConnection() {
+  return std::make_unique<Connection>(
+      "line_connection" /* Id */,
+      Endpoint({20., 30., 0.}, {0., 0., 0., 0.}) /* Start Endpoint */,
+      EndpointZ(0., 0., 0., 0.) /* End EndpointZ */, 3 /* Number of lanes */,
+      0. /* kR0 */, 5. /* Lane width */, 1. /* Left shoulder */,
+      1. /* Right shoulder */, LineOffset(100.),
+      0.01 /* Linear tolerance */, 1. /* scale length */,
+      ComputationPolicy::kPreferAccuracy);
+}
+
+// Makes a stub arc-connection.
+std::unique_ptr<Connection> MakeArcConnection() {
+  return std::make_unique<Connection>(
+      "arc_connection" /* Id */,
+      Endpoint({20., 30., 0.}, {0., 0., 0., 0.}) /* Start Endpoint */,
+      EndpointZ(0., 0., 0., 0.) /* End EndpointZ */, 3 /* Number of lanes */,
+      0. /* kR0 */, 5. /* Lane width */, 1. /* Left shoulder */,
+      1. /* Right shoulder */, ArcOffset(30., M_PI / 2.),
+      0.01 /* Linear tolerance */, 1. /* scale length */,
+      ComputationPolicy::kPreferAccuracy);
+}
+
+GTEST_TEST(GroupTest, NoConnection) {
+  const std::string kId{"Empty_Group"};
+  std::unique_ptr<Group> dut = GroupFactory().Make(kId);
+
+  EXPECT_EQ(dut->id(), kId);
+  EXPECT_EQ(dut->connections().size(), 0);
+}
+
+GTEST_TEST(GroupTest, WithConnections) {
+  const std::string kId{"Populated_Group"};
+
+  auto line_connection = MakeLineConnection();
+  auto arc_connection = MakeArcConnection();
+
+  std::unique_ptr<Group> dut = GroupFactory().Make(
+      kId, {line_connection.get(), arc_connection.get()});
+
+  EXPECT_EQ(dut->id(), kId);
+  EXPECT_EQ(dut->connections().size(), 2);
+  EXPECT_EQ(dut->connections()[0], line_connection.get());
+  EXPECT_EQ(dut->connections()[1], arc_connection.get());
+}
+
+GTEST_TEST(GroupTest, AddConnections) {
+  const std::string kId{"Group"};
+
+  auto line_connection = MakeLineConnection();
+  auto arc_connection = MakeArcConnection();
+
+  std::unique_ptr<Group> dut = GroupFactory().Make(
+      kId, {line_connection.get()});
+
+  EXPECT_EQ(dut->connections().size(), 1);
+  EXPECT_EQ(dut->connections()[0], line_connection.get());
+
+  dut->Add(arc_connection.get());
+  EXPECT_EQ(dut->connections().size(), 2);
+  EXPECT_EQ(dut->connections()[0], line_connection.get());
+  EXPECT_EQ(dut->connections()[1], arc_connection.get());
+}
+
 }  // namespace
 }  // namespace multilane
 }  // namespace maliput
