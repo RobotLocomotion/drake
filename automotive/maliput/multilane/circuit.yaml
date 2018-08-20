@@ -70,7 +70,9 @@ maliput_multilane_builder:
       lanes: [1, 0, 0]
       start: ["ref", "connections.s9.end.ref.forward"]
       arc: [20, 59.5]
-      z_end: ["ref", [5, 0.5, -15, 0.7255]]
+      z_end: ["ref", [5, 0.5, -15]]  # theta_dot is left unspecified for the
+                                     # Builder to properly adjust it to match
+                                     # continuity constraints.
     s11:
       lanes: [1, 0, 0]
       start: ["ref", "connections.s10.end.ref.forward"]
