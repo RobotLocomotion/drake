@@ -3,6 +3,7 @@
 #include <memory>
 
 #include <gtest/gtest.h>
+#include <sdf/sdf.hh>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -24,6 +25,7 @@ using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::Body;
 using multibody::parsing::AddModelFromSdfFile;
+using multibody::parsing::AddModelsFromSdfFile;
 using multibody::parsing::default_friction;
 using systems::Context;
 
@@ -393,6 +395,67 @@ GTEST_TEST(SdfParserThrowsWhen, JointDampingIsNegative) {
       /* Verify this method is throwing for the right reasons. */
       "Joint damping is negative for joint '.*'. "
           "Joint damping must be a non-negative number.");
+}
+
+GTEST_TEST(SdfParser, IncludeTags) {
+  const std::string sdf_file_path =
+      "drake/multibody/multibody_tree/parsing/test";
+  sdf::addURIPath("model://", FindResourceOrThrow(sdf_file_path));
+  MultibodyPlant<double> plant;
+
+  // We start with the world and default model instances.
+  ASSERT_EQ(plant.num_model_instances(), 2);
+  ASSERT_EQ(plant.num_bodies(), 1);
+  ASSERT_EQ(plant.num_joints(), 0);
+
+  AddModelsFromSdfFile(FindResourceOrThrow(
+        sdf_file_path + "/include_models.sdf"), &plant);
+  plant.Finalize();
+
+  // We should have loaded three more models.
+  EXPECT_EQ(plant.num_model_instances(), 5);
+  // The models should have added 8 four more bodies.
+  EXPECT_EQ(plant.num_bodies(), 9);
+  // The models should have added five more joints.
+  EXPECT_EQ(plant.num_joints(), 5);
+
+  // There should be a model instance with the name "robot1".
+  EXPECT_TRUE(plant.HasModelInstanceNamed("robot1"));
+  ModelInstanceIndex robot1_model = plant.GetModelInstanceByName("robot1");
+  // There should be a body with the name "base_link".
+  EXPECT_TRUE(plant.HasBodyNamed("base_link", robot1_model));
+  // There should be another body with the name "moving_link".
+  EXPECT_TRUE(plant.HasBodyNamed("moving_link", robot1_model));
+  // There should be joint with the name "slider".
+  EXPECT_TRUE(plant.HasJointNamed("slider", robot1_model));
+
+  // There should be a model instance with the name "robot2".
+  EXPECT_TRUE(plant.HasModelInstanceNamed("robot2"));
+  ModelInstanceIndex robot2_model = plant.GetModelInstanceByName("robot2");
+
+  // There should be a body with the name "base_link".
+  EXPECT_TRUE(plant.HasBodyNamed("base_link", robot2_model));
+  // There should be another body with the name "moving_link".
+  EXPECT_TRUE(plant.HasBodyNamed("moving_link", robot2_model));
+  // There should be joint with the name "slider".
+  EXPECT_TRUE(plant.HasJointNamed("slider", robot2_model));
+
+  // There should be a model instance with the name "weld_robots".
+  EXPECT_TRUE(plant.HasModelInstanceNamed("weld_models"));
+  ModelInstanceIndex weld_model = plant.GetModelInstanceByName("weld_models");
+
+  // There should be all the bodies and joints contained in "simple_robot1"
+  // prefixed with the model's name of "robot1".
+  EXPECT_TRUE(plant.HasBodyNamed("robot1::base_link", weld_model));
+  EXPECT_TRUE(plant.HasBodyNamed("robot1::moving_link", weld_model));
+  EXPECT_TRUE(plant.HasJointNamed("robot1::slider", weld_model));
+  // There should be all the bodies and joints contained in "simple_robot2"
+  // prefixed with the model's name of "robot2".
+  EXPECT_TRUE(plant.HasBodyNamed("robot2::base_link", weld_model));
+  EXPECT_TRUE(plant.HasBodyNamed("robot2::moving_link", weld_model));
+  EXPECT_TRUE(plant.HasJointNamed("robot2::slider", weld_model));
+  // There should be a joint named "weld_robots"
+  EXPECT_TRUE(plant.HasJointNamed("weld_robots", weld_model));
 }
 
 }  // namespace

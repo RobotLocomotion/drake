@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include <sdf/sdf.hh>
 
@@ -308,21 +309,18 @@ void AddJointFromSpecification(
     }
   }
 }
-}  // namespace
 
-ModelInstanceIndex AddModelFromSdfFile(
-    const std::string& file_name,
-    const std::string& model_name_in,
-    multibody_plant::MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph) {
-  DRAKE_THROW_UNLESS(plant != nullptr);
-  DRAKE_THROW_UNLESS(!plant->is_finalized());
+// Helper method to load an SDF file and read the contents into an sdf::Root
+// object.
+std::string LoadSdf(
+    sdf::Root* root,
+    parsers::PackageMap* package_map,
+    const std::string& file_name) {
 
   const std::string full_path = parsers::GetFullPath(file_name);
 
   // Load the SDF file.
-  sdf::Root root;
-  sdf::Errors errors = root.Load(full_path);
+  sdf::Errors errors = root->Load(full_path);
 
   // Check for any errors.
   if (!errors.empty()) {
@@ -332,16 +330,8 @@ ModelInstanceIndex AddModelFromSdfFile(
     throw std::runtime_error(error_accumulation);
   }
 
-  if (root.ModelCount() != 1) {
-    throw std::runtime_error("File must have a single <model> element.");
-  }
-
-  // Get the only model in the file.
-  const sdf::Model& model = *root.ModelByIndex(0);
-
-  if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
-    plant->RegisterAsSourceForSceneGraph(scene_graph);
-  }
+  // TODO(sam.creasey) Add support for using an existing package map.
+  package_map->PopulateUpstreamToDrake(full_path);
 
   // Uses the directory holding the SDF to be the root directory
   // in which to search for files referenced within the SDF file.
@@ -351,14 +341,18 @@ ModelInstanceIndex AddModelFromSdfFile(
     root_dir = full_path.substr(0, found);
   }
 
-  // TODO(sam.creasey) Add support for using an existing package map.
-  parsers::PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_path);
+  return root_dir;
+}
 
-  const std::string model_name =
-      model_name_in.empty() ? model.Name() : model_name_in;
-  const ModelInstanceIndex model_instance =
-      plant->AddModelInstance(model_name);
+// Helper method to add a model to a MultibodyPlant given an sdf::Model
+// specification object.
+void AddLinksFromSpecification(
+    const ModelInstanceIndex model_instance,
+    const sdf::Model& model,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph,
+    const parsers::PackageMap& package_map,
+    const std::string& root_dir) {
 
   // Add all the links
   for (uint64_t link_index = 0; link_index < model.LinkCount(); ++link_index) {
@@ -415,6 +409,23 @@ ModelInstanceIndex AddModelFromSdfFile(
       }
     }
   }
+}
+
+// Helper method to add a model to a MultibodyPlant given an sdf::Model
+// specification object.
+ModelInstanceIndex AddModelFromSpecification(
+    const sdf::Model& model,
+    const std::string& model_name,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph,
+    const parsers::PackageMap& package_map,
+    const std::string& root_dir) {
+
+  const ModelInstanceIndex model_instance =
+    plant->AddModelInstance(model_name);
+
+  AddLinksFromSpecification(
+      model_instance, model, plant, scene_graph, package_map, root_dir);
 
   // Add all the joints
   for (uint64_t joint_index = 0; joint_index < model.JointCount();
@@ -426,12 +437,105 @@ ModelInstanceIndex AddModelFromSdfFile(
 
   return model_instance;
 }
+}  // namespace
+
+ModelInstanceIndex AddModelFromSdfFile(
+    const std::string& file_name,
+    const std::string& model_name_in,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph) {
+  DRAKE_THROW_UNLESS(plant != nullptr);
+  DRAKE_THROW_UNLESS(!plant->is_finalized());
+
+  sdf::Root root;
+  parsers::PackageMap package_map;
+
+  std::string root_dir = LoadSdf(&root, &package_map, file_name);
+
+  if (root.ModelCount() != 1) {
+    throw std::runtime_error("File must have a single <model> element.");
+  }
+
+  // Get the only model in the file.
+  const sdf::Model& model = *root.ModelByIndex(0);
+
+  if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
+    plant->RegisterAsSourceForSceneGraph(scene_graph);
+  }
+
+  const std::string model_name =
+      model_name_in.empty() ? model.Name() : model_name_in;
+
+  return AddModelFromSpecification(
+      model, model_name, plant, scene_graph, package_map, root_dir);
+}
 
 ModelInstanceIndex AddModelFromSdfFile(
     const std::string& file_name,
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   return AddModelFromSdfFile(file_name, "", plant, scene_graph);
+}
+
+std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
+    const std::string& file_name,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph) {
+  DRAKE_THROW_UNLESS(plant != nullptr);
+  DRAKE_THROW_UNLESS(!plant->is_finalized());
+
+  sdf::Root root;
+  parsers::PackageMap package_map;
+
+  std::string root_dir = LoadSdf(&root, &package_map, file_name);
+
+  // Throw an error if there are no models or worlds.
+  if (root.ModelCount() == 0 && root.WorldCount() == 0) {
+    throw std::runtime_error(
+        "File must have at least one <model>, or <world> with one "
+        "child <model> element.");
+  }
+
+  // Only one world in an SDF file is allowed.
+  if (root.WorldCount() > 1) {
+    throw std::runtime_error("File must contain only one <world>.");
+  }
+
+  // Do not allow a <world> to have a <model> sibling.
+  if (root.ModelCount() > 0 && root.WorldCount() > 0) {
+    throw std::runtime_error("A <world> and <model> cannot be siblings.");
+  }
+
+  if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
+    plant->RegisterAsSourceForSceneGraph(scene_graph);
+  }
+
+  std::vector<ModelInstanceIndex> model_instances;
+
+  // At this point there should be only Models or a single World at the Root
+  // levelt.
+  if (root.ModelCount() > 0) {
+    // Load all the models at the root level.
+    for (uint64_t i = 0; i < root.ModelCount(); ++i) {
+      // Get the model.
+      const sdf::Model& model = *root.ModelByIndex(i);
+      model_instances.push_back(AddModelFromSpecification(
+            model, model.Name(), plant, scene_graph, package_map, root_dir));
+    }
+  } else {
+    // Load the world and all the models in the world.
+    const sdf::World& world = *root.WorldByIndex(0);
+
+    for (uint64_t model_index = 0; model_index < world.ModelCount();
+        ++model_index) {
+      // Get the model.
+      const sdf::Model& model = *world.ModelByIndex(model_index);
+      model_instances.push_back(AddModelFromSpecification(
+            model, model.Name(), plant, scene_graph, package_map, root_dir));
+    }
+  }
+
+  return model_instances;
 }
 
 }  // namespace parsing
