@@ -1,0 +1,39 @@
+# -*- python -*-
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+)
+load("//tools/install:install_data.bzl", "install_data")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = [":__subpackages__"],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "allegro_hand_test",
+    srcs = ["urdf/test/allegro_hand_test.cc"],
+    data = [":models"],
+    deps = [
+        "//common:find_resource",
+        "//multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "allegro_hand_test_sdf",
+    srcs = ["sdf/test/allegro_hand_test_sdf.cc"],
+    data = [":models"],
+    deps = [
+        "//common:find_resource",
+        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+    ],
+)
+
+install_data()
+
+add_lint_tests()
