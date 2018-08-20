@@ -1,0 +1,1 @@
+The mesh files in this folder is converted from the .STL files offered by the manufacturer(https://github.com/simlabrobotics/allegro_hand_ros/tree/master/allegro_hand_description/meshes), and converted to .OBJ files using Open Asset Import Library through http://www.greentoken.de/onlineconv/.
