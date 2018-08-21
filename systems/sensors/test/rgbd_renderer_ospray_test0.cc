@@ -1,5 +1,4 @@
 #include "drake/systems/sensors/rgbd_renderer_ospray.h"
-
 #include "drake/systems/sensors/test/rgbd_renderer_test_util.h"
 
 namespace drake {
@@ -9,6 +8,7 @@ namespace test {
 
 using RgbdRendererOSPRayTest = RgbdRendererTest<RgbdRendererOSPRay>;
 using Eigen::Isometry3d;
+
 
 TEST_F(RgbdRendererOSPRayTest, InstantiationTest) {
   Init(Isometry3d::Identity());
@@ -92,113 +92,6 @@ TEST_F(RgbdRendererOSPRayTest, HorizonTest) {
     const double expected_horizon = CalcHorizon(z, kFovY, kHeight);
     ASSERT_NEAR(expected_horizon, actual_horizon, 1.001);
   }
-}
-
-TEST_F(RgbdRendererOSPRayTest, BoxTest) {
-  Init(X_WC_, false);
-
-  // Sets up a box.
-  Isometry3d X_WV = Isometry3d::Identity();
-  X_WV.translation().z() = 0.5;
-  DrakeShapes::VisualElement visual(X_WV);
-  Eigen::Vector3d box_size(1, 1, 1);
-  visual.setGeometry(DrakeShapes::Box(box_size));
-  const int kBodyID = 0;
-  const RgbdRenderer::VisualIndex kVisualID(0);
-  renderer_->RegisterVisual(visual, kBodyID);
-  renderer_->UpdateVisualPose(X_WV, kBodyID, kVisualID);
-  renderer_->RenderColorImage(&color_);
-
-  // Verifies outside the box.
-  for (const auto& p : kOutliers) {
-    CompareColor(color_.at(p.x, p.y), ColorI({0, 0, 0}), 0,
-                 kColorPixelTolerance);
-  }
-  // Verifies inside the box.
-  const int x = kInlier.x;
-  const int y = kInlier.y;
-  // Color
-  CompareColor(color_.at(x, y), ColorI({255, 255, 255}), 254u,
-               kColorPixelTolerance);
-}
-
-TEST_F(RgbdRendererOSPRayTest, SphereTest) {
-  Init(X_WC_, false);
-
-  // Sets up a sphere.
-  Isometry3d X_WV = Isometry3d::Identity();
-  X_WV.translation().z() = 0.5;
-  DrakeShapes::VisualElement visual(X_WV);
-  visual.setGeometry(DrakeShapes::Sphere(0.5));
-  const int kBodyID = 0;
-  const RgbdRenderer::VisualIndex kVisualID(0);
-  renderer_->RegisterVisual(visual, kBodyID);
-  renderer_->UpdateVisualPose(X_WV, kBodyID, kVisualID);
-  renderer_->RenderColorImage(&color_);
-
-  // Verifies outside the sphere.
-  for (const auto& p : kOutliers) {
-    CompareColor(color_.at(p.x, p.y), ColorI({0, 0, 0}), 0,
-                 kColorPixelTolerance);
-  }
-  // Verifies inside the sphere.
-  const int x = kInlier.x;
-  const int y = kInlier.y;
-  // Color
-  CompareColor(color_.at(x, y), ColorI({255, 255, 255}), 254u,
-               kColorPixelTolerance);
-}
-
-TEST_F(RgbdRendererOSPRayTest, CylinderTest) {
-  Init(X_WC_, false);
-
-  // Sets up a cylinder.
-  Isometry3d X_WV = Isometry3d::Identity();
-  X_WV.translation().z() = 0.6;
-  DrakeShapes::VisualElement visual(X_WV);
-  visual.setGeometry(DrakeShapes::Cylinder(0.2, 1.2));  // Radius and length.
-  const int kBodyID = 1;
-  const RgbdRenderer::VisualIndex kVisualID(0);
-  renderer_->RegisterVisual(visual, kBodyID);
-  renderer_->UpdateVisualPose(X_WV, kBodyID, kVisualID);
-  renderer_->RenderColorImage(&color_);
-
-  // Verifies outside the cylinder.
-  for (const auto& p : kOutliers) {
-    CompareColor(color_.at(p.x, p.y), ColorI({0, 0, 0}), 0,
-                 kColorPixelTolerance);
-  }
-  // Verifies inside the cylinder.
-  const int x = kInlier.x;
-  const int y = kInlier.y;
-  CompareColor(color_.at(x, y), ColorI({255, 255, 255}), 254u,
-               kColorPixelTolerance);
-}
-
-TEST_F(RgbdRendererOSPRayTest, MeshTest) {
-  Init(X_WC_, false);
-
-  Isometry3d X_WV = Isometry3d::Identity();
-  DrakeShapes::VisualElement visual(X_WV);
-  auto filename =
-      FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.obj");
-  visual.setGeometry(DrakeShapes::Mesh("", filename));
-  const int kBodyID = 0;
-  const RgbdRenderer::VisualIndex kVisualID(0);
-  renderer_->RegisterVisual(visual, kBodyID);
-  renderer_->UpdateVisualPose(X_WV, kBodyID, kVisualID);
-  renderer_->RenderColorImage(&color_);
-
-  // Verifies outside the mesh.
-  for (const auto& p : kOutliers) {
-    CompareColor(color_.at(p.x, p.y), ColorI({0, 0, 0}), 0,
-                 kColorPixelTolerance);
-  }
-  // Verifies inside the mesh.
-  const int x = kInlier.x;
-  const int y = kInlier.y;
-  // Color
-  CompareColor(color_.at(x, y), ColorI({104, 255, 129}), 214u, 2);
 }
 
 TEST_F(RgbdRendererOSPRayTest, MeshMaterialNotFoundTest) {

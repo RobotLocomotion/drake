@@ -455,7 +455,67 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "rgbd_renderer_ospray_test",
+    name = "rgbd_renderer_ospray_test0",
+    data = [
+        ":test_models",
+    ],
+    tags = vtk_test_tags,
+    deps = [
+        ":rgbd_renderer",
+        ":rgbd_renderer_test_util",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rgbd_renderer_ospray_test1",
+    data = [
+        ":test_models",
+    ],
+    tags = vtk_test_tags,
+    deps = [
+        ":rgbd_renderer",
+        ":rgbd_renderer_test_util",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rgbd_renderer_ospray_test2",
+    data = [
+        ":test_models",
+    ],
+    tags = vtk_test_tags,
+    deps = [
+        ":rgbd_renderer",
+        ":rgbd_renderer_test_util",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rgbd_renderer_ospray_test3",
+    data = [
+        ":test_models",
+    ],
+    tags = vtk_test_tags,
+    deps = [
+        ":rgbd_renderer",
+        ":rgbd_renderer_test_util",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rgbd_renderer_ospray_test4",
     data = [
         ":test_models",
     ],
