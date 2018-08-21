@@ -108,7 +108,7 @@ T CompassGait<T>::FootCollision(const systems::Context<T>& context) const {
 }
 
 template <typename T>
-void CompassGait<T>::CollisionDynamics(
+systems::EventHandlerStatus CompassGait<T>::CollisionDynamics(
     const systems::Context<T>& context,
     const systems::UnrestrictedUpdateEvent<T>&,
     systems::State<T>* state) const {
@@ -177,6 +177,8 @@ void CompassGait<T>::CollisionDynamics(
 
   // Switch stance foot from left to right (or back).
   set_left_leg_is_stance(!left_leg_is_stance(context), state);
+
+  return systems::EventHandlerStatus::Succeeded();
 }
 
 template <typename T>

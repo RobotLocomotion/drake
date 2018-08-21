@@ -119,14 +119,14 @@ void DrakeVisualizer::PlaybackTrajectory(
                 message_bytes.size(), sim_time);
 }
 
-void DrakeVisualizer::DoPublish(
+EventHandlerStatus DrakeVisualizer::DoPublish(
     const Context<double>& context,
     const std::vector<const PublishEvent<double>*>& event) const {
   // Initialization should only happen as a singleton event.
   if (event.size() == 1 && event.front()->get_trigger_type() ==
       Event<double>::TriggerType::kInitialization) {
     PublishLoadRobot();
-    return;
+    return EventHandlerStatus::Succeeded();
   }
 
   // Obtains the input vector, which contains the generalized q,v state of the
@@ -147,6 +147,7 @@ void DrakeVisualizer::DoPublish(
   // Publishes onto the specified LCM channel.
   lcm_->Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),
                 message_bytes.size(), context.get_time());
+  return EventHandlerStatus::Succeeded();
 }
 
 void DrakeVisualizer::PublishLoadRobot() const {

@@ -1518,20 +1518,20 @@ class System : public SystemBase {
   //@{
 
   /// This function dispatches all publish events to the appropriate handlers.
-  virtual void DispatchPublishHandler(
+  virtual EventHandlerStatus DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& events) const = 0;
 
   /// This function dispatches all discrete update events to the appropriate
   /// handlers. @p discrete_state cannot be null.
-  virtual void DispatchDiscreteVariableUpdateHandler(
+  virtual EventHandlerStatus DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const = 0;
 
   /// This function dispatches all unrestricted update events to the appropriate
   /// handlers. @p state cannot be null.
-  virtual void DispatchUnrestrictedUpdateHandler(
+  virtual EventHandlerStatus DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const = 0;

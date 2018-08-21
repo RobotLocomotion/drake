@@ -54,7 +54,7 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
                          int length,
                          systems::BasicVector<double>* output) const;
 
-  void DoCalcDiscreteVariableUpdates(
+  systems::EventHandlerStatus DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
       const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
       systems::DiscreteValues<double>* discrete_state) const override;
@@ -132,7 +132,7 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
   void OutputCommandedPosition(const systems::Context<double>& context,
                                systems::BasicVector<double>* output) const;
 
-  void DoCalcDiscreteVariableUpdates(
+  systems::EventHandlerStatus DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
       const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
       systems::DiscreteValues<double>* discrete_state) const override;

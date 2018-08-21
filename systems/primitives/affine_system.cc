@@ -121,11 +121,12 @@ void TimeVaryingAffineSystem<T>::DoCalcTimeDerivatives(
 }
 
 template <typename T>
-void TimeVaryingAffineSystem<T>::DoCalcDiscreteVariableUpdates(
+EventHandlerStatus TimeVaryingAffineSystem<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context,
     const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
     drake::systems::DiscreteValues<T>* updates) const {
-  if (num_states_ == 0 || time_period_ == 0.0) return;
+  if (num_states_ == 0 || time_period_ == 0.0)
+    return EventHandlerStatus::DidNothing();
 
   const T t = context.get_time();
 
@@ -151,6 +152,7 @@ void TimeVaryingAffineSystem<T>::DoCalcDiscreteVariableUpdates(
     xn += Bt * u;
   }
   updates->get_mutable_vector().SetFromVector(xn);
+  return EventHandlerStatus::Succeeded();
 }
 
 // Our public constructor declares that our most specific subclass is
@@ -280,11 +282,12 @@ void AffineSystem<T>::DoCalcTimeDerivatives(
 }
 
 template <typename T>
-void AffineSystem<T>::DoCalcDiscreteVariableUpdates(
+EventHandlerStatus AffineSystem<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context,
     const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
     drake::systems::DiscreteValues<T>* updates) const {
-  if (this->num_states() == 0 || this->time_period() == 0.0) return;
+  if (this->num_states() == 0 || this->time_period() == 0.0)
+    return EventHandlerStatus::DidNothing();
 
   const auto& x = context.get_discrete_state(0).get_value();
 
@@ -298,6 +301,7 @@ void AffineSystem<T>::DoCalcDiscreteVariableUpdates(
     xnext += B_ * u;
   }
   updates->get_mutable_vector().SetFromVector(xnext);
+  return EventHandlerStatus::Succeeded();
 }
 
 

@@ -122,9 +122,9 @@ class DrakeVisualizer : public LeafSystem<double> {
 
   // If @p events has only 1 kInitialization trigger typed event, calls
   // PublishLoadRobot. Otherwise it publishes a draw message.
-  void DoPublish(const systems::Context<double>& context,
-                 const std::vector<const PublishEvent<double>*>& events)
-                 const override;
+  EventHandlerStatus DoPublish(
+      const systems::Context<double>& context,
+      const std::vector<const PublishEvent<double>*>& events) const override;
 
   // A pointer to the LCM subsystem. It is through this object that LCM messages
   // are published.

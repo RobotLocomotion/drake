@@ -880,10 +880,11 @@ void QuasistaticSystem<Scalar>::StepForward(
 }
 
 template <class Scalar>
-void QuasistaticSystem<Scalar>::DoCalcDiscreteVariableUpdates(
-    const drake::systems::Context<Scalar>& context,
-    const std::vector<const drake::systems::DiscreteUpdateEvent<Scalar>*>&,
-    drake::systems::DiscreteValues<Scalar>* discrete_state_ptr) const {
+systems::EventHandlerStatus
+QuasistaticSystem<Scalar>::DoCalcDiscreteVariableUpdates(
+    const systems::Context<Scalar>& context,
+    const std::vector<const systems::DiscreteUpdateEvent<Scalar>*>&,
+    systems::DiscreteValues<Scalar>* discrete_state_ptr) const {
   // copy of discrete states at current time step (l)
   VectorX<Scalar> discrete_state_vector =
       context.get_discrete_state(0).CopyToVector();
@@ -979,6 +980,8 @@ void QuasistaticSystem<Scalar>::DoCalcDiscreteVariableUpdates(
   discrete_state_vector << ql1, delta_q_value, lambda_n_value, lambda_f_value,
       gamma_value, z_n_value, z_f_value, z_gamma_value;
   discrete_state_ptr->get_mutable_vector().SetFromVector(discrete_state_vector);
+
+  return systems::EventHandlerStatus::Succeeded();
 }
 
 // explicit template instantiations

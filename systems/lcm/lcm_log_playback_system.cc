@@ -39,6 +39,7 @@ void LcmLogPlaybackSystem::DoCalcNextUpdateTime(
     while (log->GetNextMessageTime() == callback_context.get_time()) {
       log->DispatchMessageAndAdvanceLog(callback_context.get_time());
     }
+    return EventHandlerStatus::Succeeded();
   };
 
   // Schedule a publish event at the next message time.

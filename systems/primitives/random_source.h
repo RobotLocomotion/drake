@@ -84,7 +84,7 @@ class RandomSource : public LeafSystem<double> {
 
  private:
   // Computes a random number and stores it in the discrete state.
-  void DoCalcUnrestrictedUpdate(
+  EventHandlerStatus DoCalcUnrestrictedUpdate(
       const Context<double>&,
       const std::vector<const UnrestrictedUpdateEvent<double>*>&,
       State<double>* state) const override {
@@ -94,6 +94,7 @@ class RandomSource : public LeafSystem<double> {
     for (int i = 0; i < updates.size(); i++) {
       updates[i] = random_state.GetNextValue();
     }
+    return EventHandlerStatus::Succeeded();
   }
 
   std::unique_ptr<AbstractValues> AllocateAbstractState() const override {

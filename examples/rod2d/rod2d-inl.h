@@ -507,7 +507,7 @@ void Rod2D<T>::CopyPoseOut(
 /// Integrates the Rod 2D example forward in time using a
 /// half-explicit discretization scheme.
 template <class T>
-void Rod2D<T>::DoCalcDiscreteVariableUpdates(
+systems::EventHandlerStatus Rod2D<T>::DoCalcDiscreteVariableUpdates(
     const systems::Context<T>& context,
     const std::vector<const systems::DiscreteUpdateEvent<T>*>&,
     systems::DiscreteValues<T>* discrete_state) const {
@@ -625,6 +625,8 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
   systems::BasicVector<T>& new_state = discrete_state->get_mutable_vector(0);
   new_state.get_mutable_value().segment(0, 3) = qplus;
   new_state.get_mutable_value().segment(3, 3) = vplus;
+
+  return systems::EventHandlerStatus::Succeeded();
 }
 
 // Computes the impulses such that the vertical velocity at the contact point

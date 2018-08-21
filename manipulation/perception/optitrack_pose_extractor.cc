@@ -79,7 +79,7 @@ OptitrackPoseExtractor::OptitrackPoseExtractor(
   this->DeclarePeriodicUnrestrictedUpdate(optitrack_lcm_status_period, 0);
 }
 
-void OptitrackPoseExtractor::DoCalcUnrestrictedUpdate(
+systems::EventHandlerStatus OptitrackPoseExtractor::DoCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
     const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
     systems::State<double>* state) const {
@@ -97,6 +97,8 @@ void OptitrackPoseExtractor::DoCalcUnrestrictedUpdate(
         "optitrack: id {} not found", object_id_));
   }
   internal_state = X_WO_ * ExtractOptitrackPose(*body);
+
+  return systems::EventHandlerStatus::Succeeded();
 }
 
 void OptitrackPoseExtractor::OutputMeasuredPose(

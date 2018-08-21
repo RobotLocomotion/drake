@@ -65,7 +65,7 @@ class JacoCommandReceiver : public systems::LeafSystem<double> {
   void OutputCommand(const systems::Context<double>& context,
                      systems::BasicVector<double>* output) const;
 
-  void DoCalcDiscreteVariableUpdates(
+  systems::EventHandlerStatus DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
       const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
       systems::DiscreteValues<double>* discrete_state) const override;
@@ -133,7 +133,7 @@ class JacoStatusReceiver : public systems::LeafSystem<double> {
   void OutputStatus(const systems::Context<double>& context,
                     systems::BasicVector<double>* output) const;
 
-  void DoCalcDiscreteVariableUpdates(
+  systems::EventHandlerStatus DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
       const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
       systems::DiscreteValues<double>* discrete_state) const override;

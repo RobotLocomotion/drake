@@ -70,7 +70,7 @@ class TestVectorSystem : public VectorSystem<double> {
   // VectorSystem override.
   // N.B. This method signature might be used by many downstream projects.
   // Change it only with good reason and with a deprecation period first.
-  void DoCalcVectorDiscreteVariableUpdates(
+  EventHandlerStatus DoCalcVectorDiscreteVariableUpdates(
       const Context<double>& context,
       const Eigen::VectorBlock<const VectorXd>& input,
       const Eigen::VectorBlock<const VectorXd>& state,
@@ -82,6 +82,7 @@ class TestVectorSystem : public VectorSystem<double> {
     } else {
       *next_state = input + state;
     }
+    return EventHandlerStatus::Succeeded();
   }
 
   // LeafSystem override.
@@ -434,12 +435,13 @@ class NoInputNoOutputDiscreteTimeSystem : public VectorSystem<double> {
 
  private:
   // x[n+1] = x[n]^3
-  virtual void DoCalcVectorDiscreteVariableUpdates(
+  virtual EventHandlerStatus DoCalcVectorDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
       const Eigen::VectorBlock<const Eigen::VectorXd>& input,
       const Eigen::VectorBlock<const Eigen::VectorXd>& state,
       Eigen::VectorBlock<Eigen::VectorXd>* next_state) const {
     (*next_state)[0] = std::pow(state[0], 3.0);
+    return EventHandlerStatus::Succeeded();
   }
 };
 

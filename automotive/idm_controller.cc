@@ -162,7 +162,7 @@ void IdmController<T>::ImplCalcAcceleration(
 }
 
 template <typename T>
-void IdmController<T>::DoCalcUnrestrictedUpdate(
+systems::EventHandlerStatus IdmController<T>::DoCalcUnrestrictedUpdate(
     const systems::Context<T>& context,
     const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
     systems::State<T>* state) const {
@@ -182,6 +182,8 @@ void IdmController<T>::DoCalcUnrestrictedUpdate(
       state->template get_mutable_abstract_state<RoadPosition>(0);
 
   CalcOngoingRoadPosition(*ego_pose, *ego_velocity, road_, &rp);
+
+  return systems::EventHandlerStatus::Succeeded();
 }
 
 }  // namespace automotive

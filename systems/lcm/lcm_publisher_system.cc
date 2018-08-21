@@ -82,7 +82,7 @@ void LcmPublisherSystem::set_publish_period(double period) {
   LeafSystem<double>::DeclarePeriodicPublish(period);
 }
 
-void LcmPublisherSystem::DoPublish(const Context<double>& context,
+EventHandlerStatus LcmPublisherSystem::DoPublish(const Context<double>& context,
                const std::vector<const systems::PublishEvent<double>*>&) const {
   SPDLOG_TRACE(drake::log(), "Publishing LCM {} message", channel_);
   DRAKE_ASSERT((translator_ != nullptr) != (serializer_.get() != nullptr));
@@ -104,6 +104,7 @@ void LcmPublisherSystem::DoPublish(const Context<double>& context,
   // Publishes onto the specified LCM channel.
   lcm_->Publish(channel_, message_bytes.data(), message_bytes.size(),
                 context.get_time());
+  return EventHandlerStatus::Succeeded();
 }
 
 const LcmAndVectorBaseTranslator& LcmPublisherSystem::get_translator() const {
