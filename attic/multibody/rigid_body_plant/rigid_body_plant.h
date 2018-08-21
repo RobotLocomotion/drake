@@ -419,12 +419,12 @@ class RigidBodyPlant : public LeafSystem<T> {
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override;
 
-  void DoCalcDiscreteVariableUpdates(
+  EventHandlerStatus DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<T>& context,
       const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
       drake::systems::DiscreteValues<T>* updates) const override {
     // Pass to SFINAE compatible implementation.
-    DoCalcDiscreteVariableUpdatesImpl(context, events, updates);
+    return DoCalcDiscreteVariableUpdatesImpl(context, events, updates);
   }
 
   optional<bool> DoHasDirectFeedthrough(int, int) const override;
@@ -466,14 +466,14 @@ class RigidBodyPlant : public LeafSystem<T> {
   void initialize(void);
 
   template <typename U = T>
-  std::enable_if_t<std::is_same<U, double>::value, void>
+  std::enable_if_t<std::is_same<U, double>::value, EventHandlerStatus>
   DoCalcDiscreteVariableUpdatesImpl(
       const drake::systems::Context<U>& context,
       const std::vector<const drake::systems::DiscreteUpdateEvent<U>*>& events,
       drake::systems::DiscreteValues<U>* updates) const;
 
   template <typename U = T>
-  std::enable_if_t<!std::is_same<U, double>::value, void>
+  std::enable_if_t<!std::is_same<U, double>::value, EventHandlerStatus>
   DoCalcDiscreteVariableUpdatesImpl(
       const drake::systems::Context<U>& context,
       const std::vector<const drake::systems::DiscreteUpdateEvent<U>*>& events,

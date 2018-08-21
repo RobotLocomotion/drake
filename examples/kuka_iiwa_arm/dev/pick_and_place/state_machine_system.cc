@@ -128,7 +128,8 @@ void PickAndPlaceStateMachineSystem::CalcWsgCommand(
   *wsg_command = internal_state.last_wsg_command;
 }
 
-void PickAndPlaceStateMachineSystem::DoCalcUnrestrictedUpdate(
+systems::EventHandlerStatus
+PickAndPlaceStateMachineSystem::DoCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
     const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
     systems::State<double>* state) const {
@@ -172,6 +173,8 @@ void PickAndPlaceStateMachineSystem::DoCalcUnrestrictedUpdate(
       });
   internal_state.state_machine.Update(internal_state.world_state, iiwa_callback,
                                       wsg_callback);
+
+  return systems::EventHandlerStatus::Succeeded();
 }
 
 pick_and_place::PickAndPlaceState PickAndPlaceStateMachineSystem::state(

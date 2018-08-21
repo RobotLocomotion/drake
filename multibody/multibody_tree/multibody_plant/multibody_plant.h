@@ -21,6 +21,7 @@
 #include "drake/multibody/multibody_tree/multibody_tree_system.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/systems/framework/event.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
 
@@ -1717,10 +1718,10 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   // shown to be exactly conserved and to be within O(dt) of the real energy of
   // the mechanical system.)
   // TODO(amcastro-tri): Update this docs when contact is added.
-  void DoCalcDiscreteVariableUpdates(
-      const drake::systems::Context<T>& context0,
-      const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
-      drake::systems::DiscreteValues<T>* updates) const override;
+  systems::EventHandlerStatus DoCalcDiscreteVariableUpdates(
+      const systems::Context<T>& context0,
+      const std::vector<const systems::DiscreteUpdateEvent<T>*>& events,
+      systems::DiscreteValues<T>* updates) const override;
 
   // Helper method used within DoCalcDiscreteVariableUpdates() to update
   // generalized velocities from previous step value v0 to next step value v.

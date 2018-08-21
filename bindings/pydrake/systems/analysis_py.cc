@@ -21,6 +21,13 @@ PYBIND11_MODULE(analysis, m) {
 
   py::module::import("pydrake.systems.framework");
 
+  py::class_<StepToResult> step_to_result(m, "StepToResult");
+  step_to_result.def("boundary_time", &StepToResult::boundary_time)
+      .def("final_time", &StepToResult::final_time)
+      .def("reason", &StepToResult::reason)
+      .def("system", &StepToResult::system)
+      .def("message", &StepToResult::message);
+
   auto bind_scalar_types = [m](auto dummy) {
     constexpr auto& doc = pydrake_doc.drake.systems;
     using T = decltype(dummy);
@@ -81,8 +88,9 @@ PYBIND11_MODULE(analysis, m) {
             // Keep alive, ownership: `Context` keeps `self` alive.
             py::keep_alive<3, 1>(), doc.Simulator.ctor.doc_3)
         .def("Initialize", &Simulator<T>::Initialize,
-            doc.Simulator.Initialize.doc)
-        .def("StepTo", &Simulator<T>::StepTo, doc.Simulator.StepTo.doc)
+             doc.Simulator.Initialize.doc)
+        .def("StepTo", &Simulator<T>::StepTo, py::arg("boundary_time"),
+             doc.Simulator.StepTo.doc)
         .def("get_context", &Simulator<T>::get_context, py_reference_internal,
             doc.Simulator.get_context.doc)
         .def("get_integrator", &Simulator<T>::get_integrator,

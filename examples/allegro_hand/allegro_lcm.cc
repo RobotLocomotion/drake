@@ -13,6 +13,7 @@ using systems::BasicVector;
 using systems::Context;
 using systems::DiscreteValues;
 using systems::DiscreteUpdateEvent;
+using systems::EventHandlerStatus;
 
 AllegroCommandReceiver::AllegroCommandReceiver(int num_joints)
     : num_joints_(num_joints) {
@@ -43,7 +44,7 @@ void AllegroCommandReceiver::set_initial_position(
   state_value.head(num_joints_) = x;
 }
 
-void AllegroCommandReceiver::DoCalcDiscreteVariableUpdates(
+EventHandlerStatus AllegroCommandReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
     const std::vector<const DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
@@ -75,6 +76,8 @@ void AllegroCommandReceiver::DoCalcDiscreteVariableUpdates(
     for (int i = 0; i < num_joints_; i++)
       state_value[2 * num_joints_ + i] = command.joint_torque[i];
   }
+
+  return EventHandlerStatus::Succeeded();
 }
 
 void AllegroCommandReceiver::CopyStateToOutput(

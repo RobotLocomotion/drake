@@ -126,9 +126,10 @@ class TestSystem : public System<double> {
   }
 
   // The default publish function.
-  void MyPublish(const Context<double>& context,
+  EventHandlerStatus MyPublish(const Context<double>& context,
                  const std::vector<const PublishEvent<double>*>& events) const {
     ++publish_count_;
+    return EventHandlerStatus::Succeeded();
   }
 
  protected:
@@ -141,17 +142,18 @@ class TestSystem : public System<double> {
       const Context<double>& context,
       ContinuousState<double>* derivatives) const override {}
 
-  void DispatchPublishHandler(
+  EventHandlerStatus DispatchPublishHandler(
       const Context<double>& context,
       const EventCollection<PublishEvent<double>>& events) const final {
     const LeafEventCollection<PublishEvent<double>>& leaf_events =
        dynamic_cast<const LeafEventCollection<PublishEvent<double>>&>(events);
     if (leaf_events.HasEvents()) {
-      this->MyPublish(context, leaf_events.get_events());
+      return this->MyPublish(context, leaf_events.get_events());
     }
+    return EventHandlerStatus::DidNothing();
   }
 
-  void DispatchDiscreteVariableUpdateHandler(
+  EventHandlerStatus DispatchDiscreteVariableUpdateHandler(
       const Context<double>& context,
       const EventCollection<DiscreteUpdateEvent<double>>& events,
       DiscreteValues<double>* discrete_state) const final {
@@ -159,12 +161,13 @@ class TestSystem : public System<double> {
         dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<double>>&>(
             events);
     if (leaf_events.HasEvents()) {
-      this->MyCalcDiscreteVariableUpdates(context, leaf_events.get_events(),
-          discrete_state);
+      return this->MyCalcDiscreteVariableUpdates(
+          context, leaf_events.get_events(), discrete_state);
     }
+    return EventHandlerStatus::DidNothing();
   }
 
-  void DispatchUnrestrictedUpdateHandler(
+  EventHandlerStatus DispatchUnrestrictedUpdateHandler(
       const Context<double>&,
       const EventCollection<UnrestrictedUpdateEvent<double>>&,
       State<double>*) const final {
@@ -188,11 +191,12 @@ class TestSystem : public System<double> {
   }
 
   // The default update function.
-  void MyCalcDiscreteVariableUpdates(
+  EventHandlerStatus MyCalcDiscreteVariableUpdates(
       const Context<double>& context,
       const std::vector<const DiscreteUpdateEvent<double>*>& events,
       DiscreteValues<double>* discrete_state) const {
     ++update_count_;
+    return EventHandlerStatus::Succeeded();
   }
 
   std::unique_ptr<EventCollection<PublishEvent<double>>>
@@ -575,20 +579,20 @@ class ValueIOTestSystem : public System<T> {
     vec_out.get_mutable_value() = 2 * vec_in->get_value();
   }
 
-  void DispatchPublishHandler(
+  EventHandlerStatus DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& event_info) const final {
     DRAKE_ABORT_MSG("test should not get here");
   }
 
-  void DispatchDiscreteVariableUpdateHandler(
+  EventHandlerStatus DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& event_info,
       DiscreteValues<T>* discrete_state) const final {
     DRAKE_ABORT_MSG("test should not get here");
   }
 
-  void DispatchUnrestrictedUpdateHandler(
+  EventHandlerStatus DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& event_info,
       State<T>* state) const final {
@@ -922,18 +926,18 @@ class ComputationTestSystem final : public System<double> {
       const InputPort<double>&) const final {
     return {};
   }
-  void DispatchPublishHandler(
+  EventHandlerStatus DispatchPublishHandler(
       const Context<double>& context,
       const EventCollection<PublishEvent<double>>& events) const final {
     DRAKE_ABORT_MSG("test should not get here");
   }
-  void DispatchDiscreteVariableUpdateHandler(
+  EventHandlerStatus DispatchDiscreteVariableUpdateHandler(
       const Context<double>& context,
       const EventCollection<DiscreteUpdateEvent<double>>& events,
       DiscreteValues<double>* discrete_state) const final {
     DRAKE_ABORT_MSG("test should not get here");
   }
-  void DispatchUnrestrictedUpdateHandler(
+  EventHandlerStatus DispatchUnrestrictedUpdateHandler(
       const Context<double>&,
       const EventCollection<UnrestrictedUpdateEvent<double>>&,
       State<double>*) const final {

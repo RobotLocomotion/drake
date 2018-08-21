@@ -164,7 +164,7 @@ void RobotPlanInterpolator::Initialize(double plan_start_time,
   state->get_mutable_abstract_state<bool>(kAbsStateIdxInitFlag) = true;
 }
 
-void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
+systems::EventHandlerStatus RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
     const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
     systems::State<double>* state) const {
@@ -241,6 +241,8 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
       plan.pp_double_deriv = plan.pp_deriv.derivative();
     }
   }
+
+  return systems::EventHandlerStatus::Succeeded();
 }
 
 }  // namespace planner

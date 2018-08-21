@@ -374,7 +374,7 @@ void MaliputRailcar<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
 }
 
 template <typename T>
-void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
+systems::EventHandlerStatus MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
     const systems::Context<T>& context,
     const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
     systems::State<T>* next_state) const {
@@ -395,11 +395,11 @@ void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
   DRAKE_ASSERT(next_railcar_state != nullptr);
 
   // Handles the case where no lane change or speed adjustment is necessary. No
-  // lane change is necessary when the vehicle is more than epilon away from the
-  // next lane boundary.
+  // lane change is necessary when the vehicle is more than epsilon away from
+  // the next lane boundary.
   if ((current_with_s && current_s < current_length - kLaneEndEpsilon) ||
       (!current_with_s && current_s > kLaneEndEpsilon)) {
-    return;
+    return systems::EventHandlerStatus::Succeeded();
   }
 
   // Sets the speed to be zero if the car is at or is after the end of the road.
@@ -464,6 +464,8 @@ void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
       }
     }
   }
+
+  return systems::EventHandlerStatus::Succeeded();
 }
 
 // This section must match the API documentation in maliput_railcar.h.

@@ -51,6 +51,14 @@ void DefineFrameworkPySemantics(py::module m) {
   py::class_<FixedInputPortValue>(
       m, "FixedInputPortValue", doc.FixedInputPortValue.doc);
 
+  py::class_<EventHandlerStatus> event_handler_status(m, "EventHandlerStatus");
+  event_handler_status.def_static("DidNothing", &EventHandlerStatus::DidNothing)
+      .def_static("Succeeded", &EventHandlerStatus::Succeeded)
+      .def_static("ReachedTermination", &EventHandlerStatus::ReachedTermination,
+                  py::arg("system"), py::arg("message"))
+      .def_static("Failed", &EventHandlerStatus::Failed, py::arg("system"),
+                  py::arg("message"));
+
   using AbstractValuePtrList = vector<unique_ptr<AbstractValue>>;
   // N.B. `AbstractValues` provides the ability to reference non-owned values,
   // without copying them. For consistency with other model-value Python

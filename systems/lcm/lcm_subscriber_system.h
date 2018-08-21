@@ -171,20 +171,22 @@ class LcmSubscriberSystem : public LeafSystem<double> {
                             systems::CompositeEventCollection<double>* events,
                             double* time) const override;
 
-  void DoCalcUnrestrictedUpdate(
+  EventHandlerStatus DoCalcUnrestrictedUpdate(
       const Context<double>&,
       const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
       State<double>* state) const override {
     ProcessMessageAndStoreToAbstractState(&state->get_mutable_abstract_state());
+    return EventHandlerStatus::Succeeded();
   }
 
   std::unique_ptr<AbstractValues> AllocateAbstractState() const override;
 
-  void DoCalcDiscreteVariableUpdates(
+  EventHandlerStatus DoCalcDiscreteVariableUpdates(
       const Context<double>&,
       const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
       DiscreteValues<double>* discrete_state) const override {
     ProcessMessageAndStoreToDiscreteState(discrete_state);
+    return EventHandlerStatus::Succeeded();
   }
 
   std::unique_ptr<DiscreteValues<double>> AllocateDiscreteState()

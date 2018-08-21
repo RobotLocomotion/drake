@@ -8,7 +8,9 @@ import numpy as np
 
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
 from pydrake.multibody.multibody_tree import JointIndex
-from pydrake.systems.framework import BasicVector, LeafSystem, VectorSystem
+from pydrake.systems.framework import (
+    BasicVector, EventHandlerStatus, LeafSystem, VectorSystem
+    )
 
 
 class JointSliders(VectorSystem):
@@ -130,6 +132,7 @@ class JointSliders(VectorSystem):
     def _DoPublish(self, context, event):
         self.window.update_idletasks()
         self.window.update()
+        return EventHandlerStatus.Succeeded()
 
     def _DoCalcVectorOutput(self, context, unused, unused2, output):
         output[:] = self._default_position
@@ -210,6 +213,7 @@ class SchunkWsgButtons(LeafSystem):
     def _DoPublish(self, context, event):
         self.window.update_idletasks()
         self.window.update()
+        return EventHandlerStatus.Succeeded()
 
     def CalcPositionOutput(self, context, output):
         if self._open_state:

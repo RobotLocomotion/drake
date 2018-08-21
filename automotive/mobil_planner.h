@@ -127,7 +127,7 @@ class MobilPlanner : public systems::LeafSystem<T> {
   /// @}
 
  protected:
-  void DoCalcUnrestrictedUpdate(
+  systems::EventHandlerStatus DoCalcUnrestrictedUpdate(
       const systems::Context<T>& context,
       const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
       systems::State<T>* state) const override;

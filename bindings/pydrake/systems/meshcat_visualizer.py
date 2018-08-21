@@ -16,7 +16,7 @@ from pydrake.geometry import DispatchLoadMessage, SceneGraph
 from pydrake.lcm import DrakeMockLcm
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.systems.framework import (
-    AbstractValue, LeafSystem, PublishEvent, TriggerType
+    AbstractValue, EventHandlerStatus, LeafSystem, PublishEvent, TriggerType
 )
 from pydrake.systems.rendering import PoseBundle
 
@@ -119,6 +119,7 @@ class MeshcatVisualizer(LeafSystem):
 
         def on_initialize(context, event):
             self.load()
+            return EventHandlerStatus.Succeeded()
 
         self._DeclareInitializationEvent(
             event=PublishEvent(
@@ -218,3 +219,5 @@ class MeshcatVisualizer(LeafSystem):
             # TODO(russt): Use a more textual naming convention here?
             self.vis[self.prefix][source_name][str(model_id)][frame_name]\
                 .set_transform(pose_bundle.get_pose(frame_i).matrix())
+
+        return EventHandlerStatus.Succeeded()

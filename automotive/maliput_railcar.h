@@ -133,7 +133,7 @@ class MaliputRailcar final : public systems::LeafSystem<T> {
   void DoCalcNextUpdateTime(const systems::Context<T>& context,
                             systems::CompositeEventCollection<T>*,
                             T* time) const override;
-  void DoCalcUnrestrictedUpdate(
+  systems::EventHandlerStatus DoCalcUnrestrictedUpdate(
       const systems::Context<T>& context,
       const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
       systems::State<T>* state) const override;

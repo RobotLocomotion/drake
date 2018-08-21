@@ -76,7 +76,7 @@ class OptitrackPoseExtractor : public systems::LeafSystem<double> {
   }
 
  private:
-  void DoCalcUnrestrictedUpdate(
+  systems::EventHandlerStatus DoCalcUnrestrictedUpdate(
       const systems::Context<double>& context,
       const std::vector<const systems::UnrestrictedUpdateEvent<double>*>& event,
       systems::State<double>* state) const override;

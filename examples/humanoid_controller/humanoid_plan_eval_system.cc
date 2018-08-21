@@ -31,7 +31,8 @@ HumanoidPlanEvalSystem::HumanoidPlanEvalSystem(
   abs_state_index_plan_ = DeclareAbstractState(std::move(plan_as_value));
 }
 
-void HumanoidPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
+systems::EventHandlerStatus
+HumanoidPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
     systems::State<double>* state) const {
   // Gets the plan from abstract state.
@@ -59,6 +60,8 @@ void HumanoidPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
   QpInput& qp_input = get_mutable_qp_input(state);
   plan.UpdateQpInput(*robot_status, get_paramset(), get_alias_groups(),
                      &qp_input);
+
+  return systems::EventHandlerStatus::Succeeded();
 }
 
 void HumanoidPlanEvalSystem::Initialize(

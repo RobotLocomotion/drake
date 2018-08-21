@@ -25,7 +25,7 @@ FrameVisualizer::FrameVisualizer(
   }
 }
 
-void FrameVisualizer::DoPublish(
+systems::EventHandlerStatus FrameVisualizer::DoPublish(
     const systems::Context<double>& context,
     const std::vector<const PublishEvent<double>*>&) const {
   KinematicsCache<double> cache = tree_.CreateKinematicsCache();
@@ -52,6 +52,7 @@ void FrameVisualizer::DoPublish(
   }
 
   drake::lcm::Publish(lcm_, lcm_channel_, msg, context.get_time());
+  return systems::EventHandlerStatus::Succeeded();
 }
 
 }  // namespace systems

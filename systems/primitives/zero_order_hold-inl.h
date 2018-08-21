@@ -70,7 +70,7 @@ void ZeroOrderHold<T>::DoCalcVectorOutput(
 }
 
 template <typename T>
-void ZeroOrderHold<T>::DoCalcDiscreteVariableUpdates(
+EventHandlerStatus ZeroOrderHold<T>::DoCalcDiscreteVariableUpdates(
     const Context<T>& context,
     const std::vector<const DiscreteUpdateEvent<T>*>&,
     DiscreteValues<T>* discrete_state) const {
@@ -78,6 +78,7 @@ void ZeroOrderHold<T>::DoCalcDiscreteVariableUpdates(
   const BasicVector<T>& input_value = *this->EvalVectorInput(context, 0);
   BasicVector<T>& state_value = discrete_state->get_mutable_vector(0);
   state_value.SetFrom(input_value);
+  return EventHandlerStatus::Succeeded();
 }
 
 template <typename T>
@@ -92,7 +93,7 @@ void ZeroOrderHold<T>::DoCalcAbstractOutput(const Context<T>& context,
 }
 
 template <typename T>
-void ZeroOrderHold<T>::DoCalcUnrestrictedUpdate(
+EventHandlerStatus ZeroOrderHold<T>::DoCalcUnrestrictedUpdate(
     const Context<T>& context,
     const std::vector<const UnrestrictedUpdateEvent<T>*>&,
     State<T>* state) const {
@@ -103,6 +104,7 @@ void ZeroOrderHold<T>::DoCalcUnrestrictedUpdate(
   AbstractValue& state_value =
       state->get_mutable_abstract_state().get_mutable_value(0);
   state_value.SetFrom(input_value);
+  return EventHandlerStatus::Succeeded();
 }
 
 template <typename T>

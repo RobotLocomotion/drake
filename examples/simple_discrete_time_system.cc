@@ -22,13 +22,15 @@ class SimpleDiscreteTimeSystem : public drake::systems::VectorSystem<double> {
 
  private:
   // x[n+1] = x[n]^3
-  virtual void DoCalcVectorDiscreteVariableUpdates(
+  virtual drake::systems::EventHandlerStatus
+  DoCalcVectorDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
       const Eigen::VectorBlock<const Eigen::VectorXd>& input,
       const Eigen::VectorBlock<const Eigen::VectorXd>& state,
       Eigen::VectorBlock<Eigen::VectorXd>* next_state) const {
     drake::unused(context, input);
     (*next_state)[0] = std::pow(state[0], 3.0);
+    return drake::systems::EventHandlerStatus::Succeeded();
   }
 
   // y = x

@@ -73,7 +73,8 @@ void ManipulatorMoveJointPlanEvalSystem::OutputDebugInfo(
       abs_state_index_debug_);
 }
 
-void ManipulatorMoveJointPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
+systems::EventHandlerStatus
+ManipulatorMoveJointPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
     systems::State<double>* state) const {
   // Gets the plan from abstract state.
@@ -126,6 +127,8 @@ void ManipulatorMoveJointPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
     debug.nominal_v[i] = plan.desired_velocity()[i];
     debug.nominal_vd[i] = plan.desired_acceleration()[i];
   }
+
+  return systems::EventHandlerStatus::Succeeded();
 }
 
 }  // namespace qp_inverse_dynamics

@@ -1099,7 +1099,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // For each subsystem, if there is a publish event in its corresponding
   // subevent collection, calls its Publish method with the appropriate
   // subcontext and subevent collection.
-  void DispatchPublishHandler(
+  EventHandlerStatus DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& event_info) const final {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
@@ -1108,22 +1108,26 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
         dynamic_cast<const DiagramEventCollection<PublishEvent<T>>&>(
             event_info);
 
+    EventHandlerStatus status = EventHandlerStatus::DidNothing();
     for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
       const EventCollection<PublishEvent<T>>& subinfo =
           info.get_subevent_collection(i);
+      if (!subinfo.HasEvents()) continue;
 
-      if (subinfo.HasEvents()) {
-        const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
-        registered_systems_[i]->Publish(subcontext, subinfo);
-      }
+      const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
+      if (status.KeepMoreSevere(registered_systems_[i]->Publish(subcontext,
+                                                                subinfo))
+              .failed())
+        break;
     }
+    return status;
   }
 
   // For each subsystem, if there is a discrete update event in its
   // corresponding subevent collection, calls its CalcDiscreteVariableUpdates
   // method with the appropriate subcontext, subevent collection and
   // substate.
-  void DispatchDiscreteVariableUpdateHandler(
+  EventHandlerStatus DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& event_info,
       DiscreteValues<T>* discrete_state) const final {
@@ -1141,25 +1145,28 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
         dynamic_cast<const DiagramEventCollection<DiscreteUpdateEvent<T>>&>(
             event_info);
 
+    EventHandlerStatus status = EventHandlerStatus::DidNothing();
     for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
       const EventCollection<DiscreteUpdateEvent<T>>& subinfo =
           info.get_subevent_collection(i);
+      if (!subinfo.HasEvents()) continue;
 
-      if (subinfo.HasEvents()) {
-        const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
-        DiscreteValues<T>& subdiscrete =
-            diagram_discrete->get_mutable_subdiscrete(i);
-
-        registered_systems_[i]->CalcDiscreteVariableUpdates(subcontext, subinfo,
-                                                            &subdiscrete);
-      }
+      const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
+      DiscreteValues<T>& subdiscrete =
+          diagram_discrete->get_mutable_subdiscrete(i);
+      if (status.KeepMoreSevere(
+                  registered_systems_[i]->CalcDiscreteVariableUpdates(
+                      subcontext, subinfo, &subdiscrete))
+              .failed())
+        break;
     }
+    return status;
   }
 
   // For each subsystem, if there is an unrestricted update event in its
   // corresponding subevent collection, calls its CalcUnrestrictedUpdate
   // method with the appropriate subcontext, subevent collection and substate.
-  void DispatchUnrestrictedUpdateHandler(
+  EventHandlerStatus DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& event_info,
       State<T>* state) const final {
@@ -1175,18 +1182,21 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
         dynamic_cast<const DiagramEventCollection<UnrestrictedUpdateEvent<T>>&>(
             event_info);
 
+    EventHandlerStatus status = EventHandlerStatus::DidNothing();
     for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
       const EventCollection<UnrestrictedUpdateEvent<T>>& subinfo =
           info.get_subevent_collection(i);
+      if (!subinfo.HasEvents()) continue;
 
-      if (subinfo.HasEvents()) {
-        const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
-        State<T>& substate = diagram_state->get_mutable_substate(i);
+      const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
+      State<T>& substate = diagram_state->get_mutable_substate(i);
 
-        registered_systems_[i]->CalcUnrestrictedUpdate(subcontext, subinfo,
-            &substate);
-      }
+      if (status.KeepMoreSevere(registered_systems_[i]->CalcUnrestrictedUpdate(
+                                subcontext, subinfo, &substate))
+              .failed())
+        break;
     }
+    return status;
   }
 
   // Tries to recursively find @p target_system's BaseStuff

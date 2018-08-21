@@ -97,7 +97,7 @@ class IdmController : public systems::LeafSystem<T> {
       const maliput::api::RoadPosition& ego_rp,
       systems::BasicVector<T>* command) const;
 
-  void DoCalcUnrestrictedUpdate(
+  systems::EventHandlerStatus DoCalcUnrestrictedUpdate(
       const systems::Context<T>& context,
       const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
       systems::State<T>* state) const override;

@@ -78,9 +78,10 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
       const override;
 
-  void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
-            const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
-            systems::State<double>* state) const override;
+  systems::EventHandlerStatus DoCalcUnrestrictedUpdate(
+      const systems::Context<double>& context,
+      const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
+      systems::State<double>* state) const override;
 
  private:
   struct PlanData;

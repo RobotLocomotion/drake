@@ -48,7 +48,7 @@ class DummySys : public LeafSystem<double> {
   }
 
  private:
-  void DoPublish(
+  EventHandlerStatus DoPublish(
       const Context<double>& context,
       const std::vector<const systems::PublishEvent<double>*>&)
   const override {
@@ -77,6 +77,8 @@ class DummySys : public LeafSystem<double> {
       // "tick" behind.
       received_time_.push_back(context.get_time() - 1.0 / publish_freq_);
     }
+
+    return EventHandlerStatus::Succeeded();
   }
 
   const double publish_freq_{100.0};  // In Hz.

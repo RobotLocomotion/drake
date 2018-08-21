@@ -42,11 +42,11 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
   /**
    * Calls DoExtendedCalcUnrestrictedUpdate().
    */
-  void DoCalcUnrestrictedUpdate(
+  EventHandlerStatus DoCalcUnrestrictedUpdate(
       const systems::Context<double>& context,
       const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
       systems::State<double>* state) const final {
-    DoExtendedCalcUnrestrictedUpdate(context, state);
+    return DoExtendedCalcUnrestrictedUpdate(context, state);
   }
 
   /**
@@ -96,7 +96,7 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
   /**
    * Derived classes need to implement this for custom behaviors.
    */
-  virtual void DoExtendedCalcUnrestrictedUpdate(
+  virtual EventHandlerStatus DoExtendedCalcUnrestrictedUpdate(
       const systems::Context<double>& context,
       systems::State<double>* state) const = 0;
 

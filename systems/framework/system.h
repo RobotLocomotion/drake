@@ -332,10 +332,10 @@ class System : public SystemBase {
   /// so that a step begins exactly at the next publication time. In the latter
   /// case the change in step size may affect the numerical result somewhat
   /// since a smaller integrator step produces a more accurate solution.
-  void Publish(const Context<T>& context,
+  EventHandlerStatus Publish(const Context<T>& context,
                const EventCollection<PublishEvent<T>>& events) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
-    DispatchPublishHandler(context, events);
+    return DispatchPublishHandler(context, events);
   }
 
   /// Forces a publish on the system, given a @p context. The publish event will
@@ -343,8 +343,8 @@ class System : public SystemBase {
   /// custom callback. The Simulator can be configured to call this in
   /// Simulator::Initialize() and at the start of each continuous integration
   /// step. See the Simulator API for more details.
-  void Publish(const Context<T>& context) const {
-    Publish(context, this->get_forced_publish_events());
+  EventHandlerStatus Publish(const Context<T>& context) const {
+    return Publish(context, this->get_forced_publish_events());
   }
   //@}
 
@@ -681,22 +681,23 @@ class System : public SystemBase {
   /// variables `xd(n)` in @p context and outputs the results to @p
   /// discrete_state. See documentation for
   /// DispatchDiscreteVariableUpdateHandler() for more details.
-  void CalcDiscreteVariableUpdates(
+  EventHandlerStatus CalcDiscreteVariableUpdates(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
 
-    DispatchDiscreteVariableUpdateHandler(context, events, discrete_state);
+    return DispatchDiscreteVariableUpdateHandler(context, events,
+                                                 discrete_state);
   }
 
   /// This method forces a discrete update on the system given a @p context,
   /// and the updated discrete state is stored in @p discrete_state. The
   /// discrete update event will have a trigger type of kForced, with no
   /// attribute or custom callback.
-  void CalcDiscreteVariableUpdates(const Context<T>& context,
-                                   DiscreteValues<T>* discrete_state) const {
-    CalcDiscreteVariableUpdates(
+  EventHandlerStatus CalcDiscreteVariableUpdates(
+      const Context<T>& context, DiscreteValues<T>* discrete_state) const {
+    return CalcDiscreteVariableUpdates(
         context, this->get_forced_discrete_update_events(), discrete_state);
   }
 
@@ -709,7 +710,7 @@ class System : public SystemBase {
   ///
   /// @throws std::logic_error if the dimensionality of the state variables
   ///         changes in the callback.
-  void CalcUnrestrictedUpdate(
+  EventHandlerStatus CalcUnrestrictedUpdate(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const {
@@ -722,7 +723,8 @@ class System : public SystemBase {
     // documentation for DoCalcUnrestrictedUpdate().
     state->CopyFrom(context.get_state());
 
-    DispatchUnrestrictedUpdateHandler(context, events, state);
+    const EventHandlerStatus status =
+        DispatchUnrestrictedUpdateHandler(context, events, state);
 
     if (continuous_state_dim != state->get_continuous_state().size() ||
         discrete_state_dim != state->get_discrete_state().num_groups() ||
@@ -730,6 +732,8 @@ class System : public SystemBase {
       throw std::logic_error(
           "State variable dimensions cannot be changed "
           "in CalcUnrestrictedUpdate().");
+
+    return status;
   }
 
   /// This method forces an unrestricted update on the system given a
@@ -740,9 +744,9 @@ class System : public SystemBase {
   /// @sa CalcUnrestrictedUpdate(const Context<T>&, const
   /// EventCollection<UnrestrictedUpdateEvent<T>>*, State<T>* state)
   ///     for more information.
-  void CalcUnrestrictedUpdate(const Context<T>& context,
-                              State<T>* state) const {
-    CalcUnrestrictedUpdate(
+  EventHandlerStatus CalcUnrestrictedUpdate(const Context<T>& context,
+                                            State<T>* state) const {
+    return CalcUnrestrictedUpdate(
         context, this->get_forced_unrestricted_update_events(), state);
   }
 
@@ -1558,20 +1562,20 @@ class System : public SystemBase {
   //@{
 
   /// This function dispatches all publish events to the appropriate handlers.
-  virtual void DispatchPublishHandler(
+  virtual EventHandlerStatus DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& events) const = 0;
 
   /// This function dispatches all discrete update events to the appropriate
   /// handlers. @p discrete_state cannot be null.
-  virtual void DispatchDiscreteVariableUpdateHandler(
+  virtual EventHandlerStatus DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const = 0;
 
   /// This function dispatches all unrestricted update events to the appropriate
   /// handlers. @p state cannot be null.
-  virtual void DispatchUnrestrictedUpdateHandler(
+  virtual EventHandlerStatus DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const = 0;

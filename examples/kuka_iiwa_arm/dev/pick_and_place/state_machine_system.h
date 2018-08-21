@@ -47,7 +47,7 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
   void SetDefaultState(const systems::Context<double>& context,
                        systems::State<double>* state) const override;
 
-  void DoCalcUnrestrictedUpdate(
+  systems::EventHandlerStatus DoCalcUnrestrictedUpdate(
       const systems::Context<double>& context,
       const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
       systems::State<double>* state) const override;

@@ -1219,10 +1219,10 @@ implicit_stribeck::ComputationInfo MultibodyPlant<T>::SolveUsingSubStepping(
 
 // TODO(amcastro-tri): Consider splitting this method into smaller pieces.
 template<typename T>
-void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
-    const drake::systems::Context<T>& context0,
-    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
-    drake::systems::DiscreteValues<T>* updates) const {
+systems::EventHandlerStatus MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
+    const systems::Context<T>& context0,
+    const std::vector<const systems::DiscreteUpdateEvent<T>*>&,
+    systems::DiscreteValues<T>* updates) const {
   // Assert this method was called on a context storing discrete state.
   DRAKE_ASSERT(context0.get_num_discrete_state_groups() == 1);
   DRAKE_ASSERT(context0.get_continuous_state().size() == 0);
@@ -1350,7 +1350,11 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   } while (info != implicit_stribeck::Success &&
       num_substeps < kNumMaxSubTimeSteps);
 
-  DRAKE_DEMAND(info == implicit_stribeck::Success);
+  if (info != implicit_stribeck::Success) {
+    return systems::EventHandlerStatus::Failed(this,
+        fmt::format("Implicit Stribeck Solver failed after {} substeps.",
+                    kNumMaxSubTimeSteps));
+  }
 
   // TODO(amcastro-tri): implement capability to dump solver statistics to a
   // file for analysis.
@@ -1370,6 +1374,8 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // TODO(amcastro-tri): remove next line once caching lands since point_pairs0
   // and R_WC_set will be cached.
   CalcContactResults(context0, point_pairs0, R_WC_set, &contact_results_);
+
+  return systems::EventHandlerStatus::Succeeded();
 }
 
 template<typename T>

@@ -16,8 +16,8 @@ from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
 from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (AbstractValue, BasicVector,
-                                       DiagramBuilder, LeafSystem,
-                                       PortDataType)
+                                       DiagramBuilder, EventHandlerStatus,
+                                       LeafSystem, PortDataType)
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 from pydrake.systems.primitives import FirstOrderLowPassFilter
 from pydrake.util.eigen_geometry import Isometry3, AngleAxis
@@ -99,6 +99,7 @@ class EndEffectorTeleop(LeafSystem):
     def _DoPublish(self, context, event):
         self.window.update_idletasks()
         self.window.update()
+        return EventHandlerStatus.Succeeded()
 
     def _DoCalcOutput(self, context, output):
         output.SetAtIndex(0, self.roll.get())
@@ -196,6 +197,7 @@ class DifferentialIK(LeafSystem):
         else:
             discrete_state.get_mutable_vector().\
                 SetFromVector(q_last + self.time_step*result.joint_velocities)
+        return EventHandlerStatus.Succeeded()
 
     def CopyPositionOut(self, context, output):
         output.SetFromVector(context.get_discrete_state_vector().get_value())

@@ -116,7 +116,7 @@ PoseSmoother::PoseSmoother(double desired_max_linear_velocity,
   this->DeclarePeriodicUnrestrictedUpdate(period_sec, 0);
 }
 
-void PoseSmoother::DoCalcUnrestrictedUpdate(
+systems::EventHandlerStatus PoseSmoother::DoCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
     const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
     systems::State<double>* state) const {
@@ -180,6 +180,8 @@ void PoseSmoother::DoCalcUnrestrictedUpdate(
   } else {
     drake::log()->debug("Data point rejected");
   }
+
+  return systems::EventHandlerStatus::Succeeded();
 }
 
 void PoseSmoother::OutputSmoothedPose(const systems::Context<double>& context,

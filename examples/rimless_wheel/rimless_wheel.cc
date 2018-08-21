@@ -69,7 +69,7 @@ T RimlessWheel<T>::StepForwardGuard(const systems::Context<T>& context) const {
 }
 
 template <typename T>
-void RimlessWheel<T>::StepForwardReset(
+systems::EventHandlerStatus RimlessWheel<T>::StepForwardReset(
     const systems::Context<T>& context,
     const systems::UnrestrictedUpdateEvent<T>&,
     systems::State<T>* state) const {
@@ -109,7 +109,10 @@ void RimlessWheel<T>::StepForwardReset(
     bool& double_support = get_mutable_double_support(state);
     double_support = true;
     next_state.set_thetadot(0.0);
+    return systems::EventHandlerStatus::ReachedTermination(this,
+        "StepForwardReset() reached double-support.");
   }
+  return systems::EventHandlerStatus::Succeeded();
 }
 
 template <typename T>
@@ -123,7 +126,7 @@ T RimlessWheel<T>::StepBackwardGuard(const systems::Context<T>& context) const {
 }
 
 template <typename T>
-void RimlessWheel<T>::StepBackwardReset(
+systems::EventHandlerStatus RimlessWheel<T>::StepBackwardReset(
     const systems::Context<T>& context,
     const systems::UnrestrictedUpdateEvent<T>&,
     systems::State<T>* state) const {
@@ -162,7 +165,10 @@ void RimlessWheel<T>::StepBackwardReset(
     bool& double_support = get_mutable_double_support(state);
     double_support = true;
     next_state.set_thetadot(0.0);
+    return systems::EventHandlerStatus::ReachedTermination(this,
+        "StepBackwardReset() reached double-support.");
   }
+  return systems::EventHandlerStatus::Succeeded();
 }
 
 template <typename T>

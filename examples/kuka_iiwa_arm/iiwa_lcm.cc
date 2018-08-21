@@ -53,7 +53,7 @@ void IiwaCommandReceiver::set_initial_position(
   state_value.head(num_joints_) = x;
 }
 
-void IiwaCommandReceiver::DoCalcDiscreteVariableUpdates(
+systems::EventHandlerStatus IiwaCommandReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
     const std::vector<const DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
@@ -86,6 +86,8 @@ void IiwaCommandReceiver::DoCalcDiscreteVariableUpdates(
     for (int i = 0; i < num_joints_; i++)
       state_value[2 * num_joints_ + i] = command.joint_torque[i];
   }
+
+  return systems::EventHandlerStatus::Succeeded();
 }
 
 void IiwaCommandReceiver::CopyStateToOutput(const Context<double>& context,

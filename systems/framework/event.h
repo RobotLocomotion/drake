@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
@@ -323,7 +324,7 @@ class Event {
 
   // Note: Users should not be calling this.
   #if !defined(DRAKE_DOXYGEN_CXX)
-  /// Constructs an Event with the specified @p trigger.
+  // Constructs an Event with the specified @p trigger.
   explicit Event(const TriggerType& trigger) : trigger_type_(trigger) {}
   #endif
 
@@ -346,8 +347,10 @@ class Event {
   std::unique_ptr<EventData> event_data_{nullptr};
 };
 
-/// Structure for comparing two PeriodicEventData objects for use in a map
-/// container, using an arbitrary comparison method.
+/**
+ * Structure for comparing two PeriodicEventData objects for use in a map
+ * container, using an arbitrary comparison method.
+ */
 struct PeriodicEventDataComparator {
   bool operator()(const PeriodicEventData& a,
     const PeriodicEventData& b) const {
@@ -355,6 +358,81 @@ struct PeriodicEventDataComparator {
         return a.offset_sec() < b.offset_sec();
       return a.period_sec() < b.period_sec();
   }
+};
+
+/**
+ * Holds the return status from execution of an event handler function, or
+ * the effective result from calling a series of such functions due to
+ * the occurrence of simultaneous events. In the latter case the return
+ * should be the returned status of highest severity. In case of multiple
+ * returns at the same severity, the first one wins.
+ */
+class EventHandlerStatus {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EventHandlerStatus)
+
+  /// The numerical values are ordered, with
+  /// no-op < success < terminate < fatal.
+  enum Severity {
+    /// Nothing happened; no state update needed.
+    kDidNothing = 0,
+    /// Handler executed successfully.
+    kSucceeded = 1,
+    /// Handler succeeded but detected a termination condition (has message).
+    kReachedTermination = 2,
+    /// Handler was unable to perform its job (has message).
+    kFailed = 3
+  };
+
+  /// Sets this status to "did nothing", with no message.
+  static EventHandlerStatus DidNothing() {
+    return EventHandlerStatus(kDidNothing);
+  }
+
+  /// Sets this status to "succeeded" with no message.
+  static EventHandlerStatus Succeeded() {
+    return EventHandlerStatus(kSucceeded);
+  }
+
+  /// Sets this status to "reached termination" with a message explaining why.
+  static EventHandlerStatus ReachedTermination(const SystemBase* system,
+                                               std::string message) {
+    return EventHandlerStatus(kReachedTermination, system, message);
+  }
+
+  /// Sets this status to "failed" with a message explaining why.
+  static EventHandlerStatus Failed(const SystemBase* system,
+                                   std::string message) {
+    return EventHandlerStatus(kFailed, system, message);
+  }
+
+  /// If the `candidate` is a more-severe status than `this` one,
+  /// replaces the contents of `this` with the more-severe status.
+  EventHandlerStatus& KeepMoreSevere(EventHandlerStatus candidate) {
+    if (candidate.severity() > severity())
+      *this = candidate;
+    return *this;
+  }
+
+  bool did_nothing() const { return severity_ == kDidNothing; }
+  bool reached_termination() const { return severity_ == kReachedTermination; }
+  bool failed() const { return severity_ == kFailed; }
+  Severity severity() const { return severity_; }
+  const SystemBase& system() const {
+    DRAKE_DEMAND(system_);
+    return *system_;
+  }
+  const std::string& message() const { return message_; }
+
+ private:
+  explicit EventHandlerStatus(Severity severity) : severity_(severity) {}
+  EventHandlerStatus(Severity severity, const SystemBase* system,
+                     std::string message)
+      : severity_(severity), system_(system), message_(std::move(message)) {}
+
+  Severity severity_{kDidNothing};
+  const SystemBase* system_{nullptr};
+  std::string message_;
 };
 
 /**
@@ -373,7 +451,8 @@ class PublishEvent final : public Event<T> {
   /**
    * Callback function that processes a publish event.
    */
-  typedef std::function<void(const Context<T>&, const PublishEvent<T>&)>
+  typedef std::function<EventHandlerStatus(const Context<T>&,
+                                           const PublishEvent<T>&)>
       PublishCallback;
 
   /// Makes a PublishEvent with no trigger type, no event data, and
@@ -403,8 +482,10 @@ class PublishEvent final : public Event<T> {
    * Calls the optional callback function, if one exists, with @p context and
    * `this`.
    */
-  void handle(const Context<T>& context) const {
-    if (callback_ != nullptr) callback_(context, *this);
+  EventHandlerStatus handle(const Context<T>& context) const {
+    if (callback_ == nullptr)
+      return EventHandlerStatus::DidNothing();
+    return callback_(context, *this);
   }
 
  private:
@@ -441,8 +522,8 @@ class DiscreteUpdateEvent final : public Event<T> {
   /**
    * Callback function that processes a discrete update event.
    */
-  typedef std::function<void(const Context<T>&, const DiscreteUpdateEvent<T>&,
-                             DiscreteValues<T>*)>
+  typedef std::function<EventHandlerStatus(
+      const Context<T>&, const DiscreteUpdateEvent<T>&, DiscreteValues<T>*)>
       DiscreteUpdateCallback;
 
   /// Makes a DiscreteUpdateEvent with no trigger type, no event data, and
@@ -474,9 +555,11 @@ class DiscreteUpdateEvent final : public Event<T> {
    * Calls the optional callback function, if one exists, with @p context,
    * 'this' and @p discrete_state.
    */
-  void handle(const Context<T>& context,
+  EventHandlerStatus handle(const Context<T>& context,
               DiscreteValues<T>* discrete_state) const {
-    if (callback_ != nullptr) callback_(context, *this, discrete_state);
+    if (callback_ == nullptr)
+      return EventHandlerStatus::DidNothing();
+    return callback_(context, *this, discrete_state);
   }
 
  private:
@@ -515,8 +598,8 @@ class UnrestrictedUpdateEvent final : public Event<T> {
   /**
    * Callback function that processes an unrestricted update event.
    */
-  typedef std::function<void(const Context<T>&,
-                             const UnrestrictedUpdateEvent<T>&, State<T>*)>
+  typedef std::function<EventHandlerStatus(
+      const Context<T>&, const UnrestrictedUpdateEvent<T>&, State<T>*)>
       UnrestrictedUpdateCallback;
 
   /// Makes an UnrestrictedUpdateEvent with no trigger type, no event data, and
@@ -547,8 +630,10 @@ class UnrestrictedUpdateEvent final : public Event<T> {
    * Calls the optional callback function, if one exists, with @p context,
    * `this` and @p discrete_state.
    */
-  void handle(const Context<T>& context, State<T>* state) const {
-    if (callback_ != nullptr) callback_(context, *this, state);
+  EventHandlerStatus handle(const Context<T>& context, State<T>* state) const {
+    if (callback_ == nullptr)
+      return EventHandlerStatus::DidNothing();
+    return callback_(context, *this, state);
   }
 
  private:

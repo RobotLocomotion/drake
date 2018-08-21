@@ -316,11 +316,12 @@ class TestNonPeriodicSystem : public LeafSystem<double> {
     this->DeclarePerStepEvent(PublishEvent<double>());
   }
 
-  void DoCalcDiscreteVariableUpdates(
+  EventHandlerStatus DoCalcDiscreteVariableUpdates(
       const Context<double>& context,
       const std::vector<const DiscreteUpdateEvent<double>*>&,
       DiscreteValues<double>* discrete_state) const override {
     (*discrete_state)[0] = context.get_discrete_state(0).GetAtIndex(0) + 1;
+    return EventHandlerStatus::Succeeded();
   }
 };
 
@@ -613,7 +614,7 @@ class MimoSystem final : public LeafSystem<T> {
     derivatives->SetFromVector(A_ * x + B0_ * u0 + B1_ * u1);
   }
 
-  void DoCalcDiscreteVariableUpdates(
+  EventHandlerStatus DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
       const std::vector<const DiscreteUpdateEvent<T>*>&,
       DiscreteValues<T>* discrete_state) const final {
@@ -623,6 +624,7 @@ class MimoSystem final : public LeafSystem<T> {
 
     discrete_state->get_mutable_vector(0).SetFromVector(A_ * x + B0_ * u0 +
                                                         B1_ * u1);
+    return EventHandlerStatus::Succeeded();
   }
 
   void CalcOutput0(const Context<T>& context, BasicVector<T>* output) const {

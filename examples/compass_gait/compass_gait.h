@@ -144,9 +144,10 @@ class CompassGait final : public systems::LeafSystem<T> {
   T FootCollision(const systems::Context<T>& context) const;
 
   // Handles the impact dynamics, including resetting the stance and swing legs.
-  void CollisionDynamics(const systems::Context<T> &context,
-                         const systems::UnrestrictedUpdateEvent<T> &,
-                         systems::State<T> *state) const;
+  systems::EventHandlerStatus CollisionDynamics(
+      const systems::Context<T>& context,
+      const systems::UnrestrictedUpdateEvent<T>&,
+      systems::State<T>* state) const;
 
   void MinimalStateOut(const systems::Context<T>& context,
                        CompassGaitContinuousState<T>* output) const;

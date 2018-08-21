@@ -52,7 +52,7 @@ void JacoCommandReceiver::set_initial_position(
       VectorX<double>::Zero(num_joints_ + num_fingers_);
 }
 
-void JacoCommandReceiver::DoCalcDiscreteVariableUpdates(
+systems::EventHandlerStatus JacoCommandReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
     const std::vector<const DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
@@ -80,6 +80,8 @@ void JacoCommandReceiver::DoCalcDiscreteVariableUpdates(
     velocities(i + num_joints_) =
         command.finger_velocity[i] * kFingerSdkToUrdf;
   }
+
+  return systems::EventHandlerStatus::Succeeded();
 }
 
 void JacoCommandReceiver::OutputCommand(const Context<double>& context,
@@ -137,7 +139,7 @@ JacoStatusReceiver::JacoStatusReceiver(int num_joints, int num_fingers)
   this->DeclarePeriodicDiscreteUpdate(kJacoLcmStatusPeriod);
 }
 
-void JacoStatusReceiver::DoCalcDiscreteVariableUpdates(
+systems::EventHandlerStatus JacoStatusReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
     const std::vector<const DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
@@ -169,6 +171,8 @@ void JacoStatusReceiver::DoCalcDiscreteVariableUpdates(
     velocities(i + num_joints_) =
         status.finger_velocity[i] * kFingerSdkToUrdf;
   }
+
+  return systems::EventHandlerStatus::Succeeded();
 }
 
 void JacoStatusReceiver::OutputStatus(const Context<double>& context,

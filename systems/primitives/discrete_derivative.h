@@ -96,7 +96,7 @@ class DiscreteDerivative final : public LeafSystem<T> {
   }
 
  private:
-  void DoCalcDiscreteVariableUpdates(
+  systems::EventHandlerStatus DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
       const std::vector<const DiscreteUpdateEvent<T>*>&,
       DiscreteValues<T>* discrete_state) const final;

@@ -151,6 +151,7 @@ const InputPort<double>& ImageWriter::DeclareImageInputPort(
       [this, port_index = port.get_index()](const Context<double>& context,
                                             const PublishEvent<double>&) {
         WriteImage<kPixelType>(context, port_index);
+        return EventHandlerStatus::Succeeded();
       });
   DeclarePeriodicEvent<PublishEvent<double>>(publish_period, start_time, event);
   port_info_.emplace_back(std::move(file_name_format), kPixelType);

@@ -17,11 +17,12 @@ void SignalLogger<T>::set_publish_period(double period) {
 }
 
 template <typename T>
-void SignalLogger<T>::DoPublish(const Context<T>& context,
+EventHandlerStatus SignalLogger<T>::DoPublish(const Context<T>& context,
                                 const std::vector<const PublishEvent<T>*>&)
                                 const {
   log_.AddData(context.get_time(),
                this->EvalVectorInput(context, 0)->get_value());
+  return EventHandlerStatus::Succeeded();
 }
 
 template <typename T>

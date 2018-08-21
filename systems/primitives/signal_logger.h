@@ -66,7 +66,7 @@ class SignalLogger : public LeafSystem<T> {
 
  private:
   // Logging is done in this method.
-  void DoPublish(const Context<T>& context,
+  EventHandlerStatus DoPublish(const Context<T>& context,
                  const std::vector<const systems::PublishEvent<T>*>& events)
       const override;
 

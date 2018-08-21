@@ -64,7 +64,7 @@ void QpInverseDynamicsSystem::CopyOutDebugInfo(
       abs_state_index_debug_info_);
 }
 
-void QpInverseDynamicsSystem::DoCalcUnrestrictedUpdate(
+EventHandlerStatus QpInverseDynamicsSystem::DoCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
     const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
     systems::State<double>* state) const {
@@ -85,8 +85,8 @@ void QpInverseDynamicsSystem::DoCalcUnrestrictedUpdate(
     err << rs->get_cache().getQ().transpose() << "\n";
     err << rs->get_cache().getV().transpose() << "\n";
     err << *qp_input << std::endl;
-    throw std::runtime_error("QpInverseDynamicsSystem: QP cannot solve\n" +
-                             err.str());
+    return EventHandlerStatus::Failed(this,
+        "QpInverseDynamicsSystem: QP cannot solve\n" + err.str());
   }
 
   // Generates debugging info.
@@ -105,6 +105,8 @@ void QpInverseDynamicsSystem::DoCalcUnrestrictedUpdate(
     debug.solved_vd[i] = qp_output.vd()[i];
     debug.solved_torque[i] = qp_output.dof_torques()[i];
   }
+
+  return EventHandlerStatus::Succeeded();
 }
 
 }  // namespace qp_inverse_dynamics

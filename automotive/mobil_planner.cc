@@ -302,7 +302,7 @@ const T MobilPlanner<T>::EvaluateIdm(
 }
 
 template <typename T>
-void MobilPlanner<T>::DoCalcUnrestrictedUpdate(
+systems::EventHandlerStatus MobilPlanner<T>::DoCalcUnrestrictedUpdate(
     const systems::Context<T>& context,
     const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
     systems::State<T>* state) const {
@@ -322,6 +322,8 @@ void MobilPlanner<T>::DoCalcUnrestrictedUpdate(
       state->template get_mutable_abstract_state<RoadPosition>(0);
 
   CalcOngoingRoadPosition(*ego_pose, *ego_velocity, road_, &rp);
+
+  return systems::EventHandlerStatus::Succeeded();
 }
 
 // These instantiations must match the API documentation in mobil_planner.h.

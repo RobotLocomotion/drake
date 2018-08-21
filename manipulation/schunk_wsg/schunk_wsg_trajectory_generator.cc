@@ -59,7 +59,8 @@ void SchunkWsgTrajectoryGenerator::OutputForce(
   output->get_mutable_value() = Vector1d(traj_state->max_force());
 }
 
-void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
+systems::EventHandlerStatus
+SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
     const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
@@ -99,6 +100,8 @@ void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
     new_traj_state->set_trajectory_start_time(
         last_traj_state->trajectory_start_time());
   }
+
+  return systems::EventHandlerStatus::Succeeded();
 }
 
 std::unique_ptr<DiscreteValues<double>>

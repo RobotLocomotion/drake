@@ -1318,7 +1318,7 @@ class LeafSystem : public System<T> {
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const,
-      void (MySystem::*publish_callback)(
+      EventHandlerStatus (MySystem::*publish_callback)(
           const Context<T>&, const PublishEvent<T>&) const) const {
     static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
                   "Expected to be invoked from a LeafSystem-derived system.");
@@ -1342,7 +1342,7 @@ class LeafSystem : public System<T> {
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const,
-      void (MySystem::*du_callback)(const Context<T>&,
+      EventHandlerStatus (MySystem::*du_callback)(const Context<T>&,
           const DiscreteUpdateEvent<T>&, DiscreteValues<T>*) const) const {
     static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
                   "Expected to be invoked from a LeafSystem-derived system.");
@@ -1366,7 +1366,7 @@ class LeafSystem : public System<T> {
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const,
-      void (MySystem::*uu_callback)(const Context<T>&,
+      EventHandlerStatus (MySystem::*uu_callback)(const Context<T>&,
           const UnrestrictedUpdateEvent<T>&, State<T>*) const) const {
     static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
                   "Expected to be invoked from a LeafSystem-derived system.");
@@ -1532,13 +1532,19 @@ class LeafSystem : public System<T> {
   /// already error-checked @p context so you may assume that it is valid.
   ///
   /// @param[in] context Const current context.
-  /// @param[in] events All the publish events that need handling.
-  virtual void DoPublish(
+  /// @param[in] events  All the publish events that need handling.
+  /// @retval status The most-severe status return from any of the invoked
+  ///   handlers.
+  virtual EventHandlerStatus DoPublish(
       const Context<T>& context,
       const std::vector<const PublishEvent<T>*>& events) const {
+    EventHandlerStatus status = EventHandlerStatus::DidNothing();
     for (const PublishEvent<T>* event : events) {
-      event->handle(context);
+      // Only "failed" status prevents further handler execution.
+      if (status.KeepMoreSevere(event->handle(context)).failed())
+        break;
     }
+    return status;
   }
 
   /// Derived-class event handler for all simultaneous discrete update
@@ -1558,17 +1564,25 @@ class LeafSystem : public System<T> {
   /// @p discrete_state is non-null, and that the referenced object has the
   /// same constituent structure as was produced by AllocateDiscreteVariables().
   ///
-  /// @param[in] context The "before" state.
-  /// @param[in] events All the discrete update events that need handling.
+  /// @param[in]     context        The "before" state.
+  /// @param[in]     events         All the discrete update events that need
+  ///                               handling.
   /// @param[in,out] discrete_state The current state of the system on input;
-  /// the desired state of the system on return.
-  virtual void DoCalcDiscreteVariableUpdates(
+  ///                               the desired state of the system on return.
+  /// @retval status The most-severe status return from any of the invoked
+  ///                handlers. If the status is "did nothing" the discrete state
+  ///                output argument can be assumed to be unchanged.
+  virtual EventHandlerStatus DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
       const std::vector<const DiscreteUpdateEvent<T>*>& events,
       DiscreteValues<T>* discrete_state) const {
+    EventHandlerStatus status = EventHandlerStatus::DidNothing();
     for (const DiscreteUpdateEvent<T>* event : events) {
-      event->handle(context, discrete_state);
+      if (status.KeepMoreSevere(event->handle(context, &*discrete_state))
+              .failed())
+        break;
     }
+    return status;
   }
 
   /// Derived-class event handler for all simultaneous unrestricted
@@ -1594,20 +1608,26 @@ class LeafSystem : public System<T> {
   ///
   /// @param[in]     context The "before" state that is to be used to calculate
   ///                        the returned state update.
-  /// @param[in]     events All the unrestricted update events that need
-  ///                       handling.
+  /// @param[in]     events  All the unrestricted update events that need
+  ///                        handling.
   /// @param[in,out] state   The current state of the system on input; the
   ///                        desired state of the system on return.
+  /// @retval status The most-severe status return from any of the invoked
+  ///                handlers. If the status is "did nothing" the state
+  ///                output argument can be assumed to be unchanged.
   // TODO(sherm1) Shouldn't require preloading of the output state; better to
   //              note just the changes since usually only a small subset will
   //              be changed by this method.
-  virtual void DoCalcUnrestrictedUpdate(
+  virtual EventHandlerStatus DoCalcUnrestrictedUpdate(
       const Context<T>& context,
       const std::vector<const UnrestrictedUpdateEvent<T>*>& events,
       State<T>* state) const {
+    EventHandlerStatus status = EventHandlerStatus::DidNothing();
     for (const UnrestrictedUpdateEvent<T>* event : events) {
-      event->handle(context, state);
+      if (status.KeepMoreSevere(event->handle(context, &*state)).failed())
+        break;
     }
+    return status;
   }
 
  private:
@@ -1648,21 +1668,21 @@ class LeafSystem : public System<T> {
   // Assumes @param events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
   // Assumes @param events is not empty. Aborts otherwise.
-  void DispatchPublishHandler(
+  EventHandlerStatus DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& events) const final {
     const LeafEventCollection<PublishEvent<T>>& leaf_events =
        dynamic_cast<const LeafEventCollection<PublishEvent<T>>&>(events);
     // Only call DoPublish if there are publish events.
     DRAKE_DEMAND(leaf_events.HasEvents());
-    this->DoPublish(context, leaf_events.get_events());
+    return this->DoPublish(context, leaf_events.get_events());
   }
 
   // Calls DoCalcDiscreteVariableUpdates.
   // Assumes @param events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
   // Assumes @param events is not empty. Aborts otherwise.
-  void DispatchDiscreteVariableUpdateHandler(
+  EventHandlerStatus DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const final {
@@ -1674,15 +1694,15 @@ class LeafSystem : public System<T> {
     // Only call DoCalcDiscreteVariableUpdates if there are discrete update
     // events.
     DRAKE_DEMAND(leaf_events.HasEvents());
-    this->DoCalcDiscreteVariableUpdates(context, leaf_events.get_events(),
-        discrete_state);
+    return this->DoCalcDiscreteVariableUpdates(
+        context, leaf_events.get_events(), discrete_state);
   }
 
   // Calls DoCalcUnrestrictedUpdate.
   // Assumes @param events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
   // Assumes @param events is not empty. Aborts otherwise.
-  void DispatchUnrestrictedUpdateHandler(
+  EventHandlerStatus DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const final {
@@ -1692,7 +1712,8 @@ class LeafSystem : public System<T> {
     // Only call DoCalcUnrestrictedUpdate if there are unrestricted update
     // events.
     DRAKE_DEMAND(leaf_events.HasEvents());
-    this->DoCalcUnrestrictedUpdate(context, leaf_events.get_events(), state);
+    return this->DoCalcUnrestrictedUpdate(context, leaf_events.get_events(),
+                                          state);
   }
 
   void DoGetPerStepEvents(

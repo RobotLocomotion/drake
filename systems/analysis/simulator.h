@@ -5,6 +5,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <string>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
@@ -23,6 +24,124 @@
 
 namespace drake {
 namespace systems {
+
+/// Holds the function return value from a call to Simulator::StepTo(). The
+/// argument t to StepTo(t) is called the boundary time, and the normal
+/// return is because simulated time advanced successfully to t. Early returns
+/// may be caused by a termination condition being met, or by failure of
+/// the System to evaluate some quantity needed by the Simulator. In the latter
+/// cases the return object holds a reference to the subsystem that failed,
+/// and a message from that subsystem that hopefully explains what happened.
+///
+/// Note that currently the Simulator unconditionally throws an exception
+/// if a failure occurs, but not if a termination condition is met.
+class StepToResult {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(StepToResult)
+
+  /// Creates a StepToResult that assumes we will reach the specified
+  /// `boundary_time` which should be the argument t that was supplied for
+  /// StepTo(t).
+  explicit StepToResult(double boundary_time) : boundary_time_(boundary_time) {
+    SetReachedBoundaryTime();
+  }
+
+  enum ReturnReason {
+    /// This is the normal return; StepTo(t) reached time t. There is no
+    /// message and no saved System.
+    kReachedBoundaryTime = 0,
+    /// StepTo() returned early because an event handler returned with a
+    /// "reached termination condition" result (has message with details).
+    kReachedTerminationCondition = 1,
+    /// StepTo() failed because an event handler failed.
+    kEventHandlerFailed = 2
+  };
+
+  /// Sets this status to "reached boundary time" with no message and with
+  /// the final time set to the boundary time (this is the same as the
+  /// post-construction default).
+  void SetReachedBoundaryTime() {
+    reason_ = kReachedBoundaryTime;
+    final_time_ = boundary_time_;
+    system_ = nullptr;
+    message_.clear();
+  }
+
+  /// Sets this status to "reached termination" with the early-termination
+  /// time and a message explaining why.
+  void SetReachedTermination(double final_time, const SystemBase* system,
+                             std::string message) {
+    SetResult(final_time, kReachedTerminationCondition, system,
+              std::move(message));
+  }
+
+  /// Sets this status to "event handler failed" with the early-termination
+  /// time and a message explaining why.
+  void SetEventHandlerFailed(double final_time, const SystemBase* system,
+                             std::string message) {
+    SetResult(final_time, kEventHandlerFailed, system, std::move(message));
+  }
+
+  /// Returns a human-readable message explaining the return result.
+  std::string FormatMessage() const {
+    const std::string method_id =
+        fmt::format("Simulator::StepTo({})", boundary_time());
+
+    if (reason() == kReachedBoundaryTime) {
+      DRAKE_DEMAND(final_time() == boundary_time());
+      return fmt::format("{}: successfully reached the given boundary time.",
+                         method_id);
+    }
+
+    // Equality is unlikely but allowed in case a termination request happens
+    // at exactly the boundary time.
+    DRAKE_DEMAND(final_time() <= boundary_time());
+    const std::string system_id =
+        fmt::format("{} System '{}'",
+                    NiceTypeName::RemoveNamespaces(system().GetSystemType()),
+                    system().GetSystemPathname());
+
+    if (reason() == kReachedTerminationCondition) {
+      return fmt::format(
+          "{}: returned early at time {} because {} requested termination "
+          "with message: \"{}\"",
+          method_id, final_time(), system_id, message());
+    }
+
+    DRAKE_DEMAND(reason() == kEventHandlerFailed);
+    return fmt::format(
+        "{}: stopped at time {} because  an event handler in {} failed "
+        "with message: \"{}\"",
+        method_id, final_time(), system_id, message());
+  }
+
+  double boundary_time() const { return boundary_time_; }
+  double final_time() const { return final_time_; }
+  ReturnReason reason() const { return reason_; }
+  const SystemBase& system() const {
+    DRAKE_DEMAND(system_ != nullptr);
+    return *system_;
+  }
+  const std::string& message() const { return message_; }
+
+ private:
+  void SetResult(double final_time, ReturnReason reason,
+                 const SystemBase* system,
+                 std::string message) {
+    DRAKE_DEMAND(final_time <= boundary_time_);
+    DRAKE_DEMAND(system != nullptr);
+    final_time_ = final_time;
+    reason_ = reason;
+    system_ = system;
+    message_ = std::move(message);
+  }
+
+  double boundary_time_{};
+  double final_time_{};  // Initially set to boundary_time.
+  ReturnReason reason_{kReachedBoundaryTime};
+  const SystemBase* system_{nullptr};
+  std::string message_;
+};
 
 /// A class for advancing the state of hybrid dynamic systems, represented by
 /// `System<T>` objects, forward in time. Starting with an initial Context for a
@@ -132,7 +251,7 @@ class Simulator {
   /// @param boundary_time The time to advance the context to.
   /// @pre The simulation state is valid (i.e., no discrete updates or state
   /// projections are necessary) at the present time.
-  void StepTo(const T& boundary_time);
+  StepToResult StepTo(const T& boundary_time);
 
   /// Slow the simulation down to *approximately* synchronize with real time
   /// when it would otherwise run too fast. Normally the %Simulator takes steps
@@ -352,13 +471,14 @@ class Simulator {
             std::unique_ptr<const System<T>> owned_system,
             std::unique_ptr<Context<T>> context);
 
-  void HandleUnrestrictedUpdate(
+  EventHandlerStatus HandleUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events);
 
-  void HandleDiscreteUpdate(
+  EventHandlerStatus HandleDiscreteUpdate(
       const EventCollection<DiscreteUpdateEvent<T>>& events);
 
-  void HandlePublish(const EventCollection<PublishEvent<T>>& events);
+  EventHandlerStatus HandlePublish(
+      const EventCollection<PublishEvent<T>>& events);
 
   bool IntegrateContinuousState(const T& next_publish_dt,
       const T& next_update_dt,
@@ -547,57 +667,79 @@ void Simulator<T>::Initialize() {
 
 // Processes UnrestrictedUpdateEvent events.
 template <typename T>
-void Simulator<T>::HandleUnrestrictedUpdate(
+EventHandlerStatus Simulator<T>::HandleUnrestrictedUpdate(
     const EventCollection<UnrestrictedUpdateEvent<T>>& events) {
-  if (events.HasEvents()) {
-    // First, compute the unrestricted updates into a temporary buffer.
-    system_.CalcUnrestrictedUpdate(*context_, events,
-        unrestricted_updates_.get());
+  if (!events.HasEvents()) return EventHandlerStatus::DidNothing();
+
+  // First, compute the unrestricted updates into a temporary buffer.
+  const EventHandlerStatus status = system_.CalcUnrestrictedUpdate(
+      *context_, events, unrestricted_updates_.get());
+  ++num_unrestricted_updates_;
+
+  // Update the state if it may have changed.
+  if (!status.did_nothing()) {
     // TODO(edrumwri): simply swap the states for additional speed.
     // Now write the update back into the context.
     State<T>& x = context_->get_mutable_state();
     x.CopyFrom(*unrestricted_updates_);
-    ++num_unrestricted_updates_;
 
     // Mark the witness function vector as needing to be redetermined.
     redetermine_active_witnesses_ = true;
   }
+
+  return status;
 }
 
 // Processes DiscreteEvent events.
 template <typename T>
-void Simulator<T>::HandleDiscreteUpdate(
+EventHandlerStatus Simulator<T>::HandleDiscreteUpdate(
     const EventCollection<DiscreteUpdateEvent<T>>& events) {
-  if (events.HasEvents()) {
-    // First, compute the discrete updates into a temporary buffer.
-    system_.CalcDiscreteVariableUpdates(*context_, events,
-        discrete_updates_.get());
+  if (!events.HasEvents())
+    return EventHandlerStatus::DidNothing();
+
+  // First, compute the discrete updates into a temporary buffer.
+  const EventHandlerStatus status =
+  system_.CalcDiscreteVariableUpdates(*context_, events,
+      discrete_updates_.get());
+  ++num_discrete_updates_;
+
+  if (!status.did_nothing()) {
+    // TODO(sherm1): figure out how to swap these instead.
     // Then, write them back into the context.
     DiscreteValues<T>& xd = context_->get_mutable_discrete_state();
     xd.CopyFrom(*discrete_updates_);
-    ++num_discrete_updates_;
   }
+
+  return status;
 }
 
 // Processes Publish events.
 template <typename T>
-void Simulator<T>::HandlePublish(
+EventHandlerStatus Simulator<T>::HandlePublish(
     const EventCollection<PublishEvent<T>>& events) {
-  if (events.HasEvents()) {
-    system_.Publish(*context_, events);
-    ++num_publishes_;
-  }
+  if (!events.HasEvents())
+    return EventHandlerStatus::DidNothing();
+
+  const EventHandlerStatus status =
+      system_.Publish(*context_, events);
+  ++num_publishes_;
+
+  return status;
 }
 
+/// Steps the simulation to the specified time.
+/// @param boundary_time The time to advance the context to.
+/// @return If the step was successful, what caused StepTo() to return.
+/// @throws std::runtime_error if a failure occurs that prevents further
+///         progress.
 template <typename T>
-void Simulator<T>::StepTo(const T& boundary_time) {
+StepToResult Simulator<T>::StepTo(const T& boundary_time) {
   if (!initialization_done_) Initialize();
 
   DRAKE_THROW_UNLESS(boundary_time >= context_->get_time());
 
-  // Updates/publishes can be triggered throughout the integration process,
-  // but are not active at the start of the step.
-  bool event_triggered = false;
+  // Assume we'll make it to the specified boundary time.
+  StepToResult result(ExtractDoubleOrThrow(boundary_time));
 
   // Integrate until desired interval has completed.
   auto timed_events = system_.AllocateCompositeEventCollection();
@@ -611,6 +753,11 @@ void Simulator<T>::StepTo(const T& boundary_time) {
   merged_events->Clear();
   merged_events->Merge(*per_step_events_);
 
+  // Updates/publishes can be triggered throughout the integration process,
+  // but are not active at the start of the step.
+  bool event_pending = false;
+  // Contains the status of any previously-processed events at this time.
+  EventHandlerStatus event_status = EventHandlerStatus::DidNothing();
   while (true) {
     // Starting a new step on the trajectory.
     const T step_start_time = context_->get_time();
@@ -624,9 +771,33 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // The "timed" actions happen before the "per step" ones.
 
     // Do unrestricted updates first.
-    HandleUnrestrictedUpdate(merged_events->get_unrestricted_update_events());
+    if (!event_status.failed()) {
+      event_status.KeepMoreSevere(HandleUnrestrictedUpdate(
+          merged_events->get_unrestricted_update_events()));
+    }
     // Do restricted (discrete variable) updates next.
-    HandleDiscreteUpdate(merged_events->get_discrete_update_events());
+    if (!event_status.failed()) {
+      event_status.KeepMoreSevere(
+          HandleDiscreteUpdate(merged_events->get_discrete_update_events()));
+    }
+
+    // All pending events have been handled at this point.
+    event_pending = false;
+
+    if (event_status.failed()) {
+      // TODO(sherm1) Provide an option to return this status rather than throw.
+      result.SetEventHandlerFailed(ExtractDoubleOrThrow(step_start_time),
+                                   &event_status.system(),
+                                   event_status.message());
+      throw std::runtime_error(result.FormatMessage());
+    }
+
+    if (event_status.reached_termination()) {
+      result.SetReachedTermination(ExtractDoubleOrThrow(step_start_time),
+                                   &event_status.system(),
+                                   event_status.message());
+      break;
+    }
 
     // How far can we go before we have to handle timed events?
     const T next_timed_event_time =
@@ -651,11 +822,9 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     const T boundary_dt = boundary_time - step_start_time;
 
     // Integrate the continuous state forward in time.
-    event_triggered = IntegrateContinuousState(next_publish_dt,
-                                               next_update_dt,
-                                               next_timed_event_time,
-                                               boundary_dt,
-                                               witnessed_events.get());
+    event_pending = IntegrateContinuousState(next_publish_dt, next_update_dt,
+                                             next_timed_event_time, boundary_dt,
+                                             witnessed_events.get());
 
     // Update the number of simulation steps taken.
     ++num_steps_taken_;
@@ -669,18 +838,19 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     merged_events->Merge(*per_step_events_);
 
     // Only merge timed / witnessed events in if an event was triggered.
-    if (event_triggered) {
+    if (event_pending) {
       merged_events->Merge(*timed_events);
       merged_events->Merge(*witnessed_events);
     }
 
-    // Handle any publish events at the end of the loop.
-    HandlePublish(merged_events->get_publish_events());
+    // Handle any publish events at the end of the loop. Discrete updates
+    // occur at the beginning and after we exit the loop.
+    event_status = HandlePublish(merged_events->get_publish_events());
 
     // TODO(siyuan): transfer per step publish entirely to individual systems.
     // Allow System a chance to produce some output.
-    if (get_publish_every_time_step()) {
-      system_.Publish(*context_);
+    if (!event_status.failed() && get_publish_every_time_step()) {
+      event_status.KeepMoreSevere(system_.Publish(*context_));
       ++num_publishes_;
     }
 
@@ -695,7 +865,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
   // where the integrator advanced time to the boundary, *at which point a
   // timed witnessed event should occur*. This must be handled now else the
   // trigger will be lost.
-  if (event_triggered) {
+  if (event_pending) {
     // We need to clear any per-step events from the merged set, since per-step
     // publish events have already been handled (we do not want to publish
     // twice).
@@ -705,13 +875,37 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     merged_events->Merge(*timed_events);
     merged_events->Merge(*witnessed_events);
 
-    // Do the unrestricted and discrete updates.
-    HandleUnrestrictedUpdate(merged_events->get_unrestricted_update_events());
-    HandleDiscreteUpdate(merged_events->get_discrete_update_events());
+    // Do unrestricted updates first.
+    if (!event_status.failed()) {
+      event_status.KeepMoreSevere(HandleUnrestrictedUpdate(
+          merged_events->get_unrestricted_update_events()));
+    }
+    // Do restricted (discrete variable) updates next.
+    if (!event_status.failed()) {
+      event_status.KeepMoreSevere(
+          HandleDiscreteUpdate(merged_events->get_discrete_update_events()));
+    }
+
+    // TODO(sherm1) Eliminate this duplication.
+    if (event_status.failed()) {
+      // TODO(sherm1) Provide an option to return this status rather than throw.
+      result.SetEventHandlerFailed(ExtractDoubleOrThrow(context_->get_time()),
+                                   &event_status.system(),
+                                   event_status.message());
+      throw std::runtime_error(result.FormatMessage());
+    }
+
+    if (event_status.reached_termination()) {
+      result.SetReachedTermination(ExtractDoubleOrThrow(context_->get_time()),
+                                   &event_status.system(),
+                                   event_status.message());
+    }
   }
 
   // TODO(edrumwri): Add test coverage to complete #8490.
   redetermine_active_witnesses_ = true;
+
+  return result;
 }
 
 template <class T>

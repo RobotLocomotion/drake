@@ -229,7 +229,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
 
   // Takes the VectorBase from the input port of the context and publishes
   // it onto an LCM channel.
-  void DoPublish(
+  EventHandlerStatus DoPublish(
       const Context<double>& context,
       const std::vector<const systems::PublishEvent<double>*>&) const override;
 

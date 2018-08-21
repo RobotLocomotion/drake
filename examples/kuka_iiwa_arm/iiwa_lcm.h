@@ -56,7 +56,7 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
                          systems::BasicVector<double>* output) const;
 
   // TODO(russt): This system should NOT have any state.
-  void DoCalcDiscreteVariableUpdates(
+  systems::EventHandlerStatus DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
       const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
       systems::DiscreteValues<double>* discrete_state) const override;

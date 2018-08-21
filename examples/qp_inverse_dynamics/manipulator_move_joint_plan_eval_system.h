@@ -85,7 +85,7 @@ class ManipulatorMoveJointPlanEvalSystem
  private:
   int get_num_extended_abstract_states() const override { return 2; }
 
-  void DoExtendedCalcUnrestrictedUpdate(
+  systems::EventHandlerStatus DoExtendedCalcUnrestrictedUpdate(
       const systems::Context<double>& context,
       systems::State<double>* state) const override;
 
