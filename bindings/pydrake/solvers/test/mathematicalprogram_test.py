@@ -301,6 +301,10 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddBoundingBoxConstraint(0., 1., x)
         prog.AddLinearConstraint(np.eye(2), np.zeros(2), np.ones(2), x)
 
+        prog.AddLinearEqualityConstraint(np.eye(2), np.zeros(2), x)
+        prog.AddLinearEqualityConstraint(x[0] == 1)
+        prog.AddLinearEqualityConstraint(x[0] + x[1], 1)
+
     def test_pycost_and_pyconstraint(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(1, 'x')
