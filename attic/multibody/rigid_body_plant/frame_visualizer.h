@@ -53,7 +53,7 @@ class FrameVisualizer : public LeafSystem<double> {
   }
 
  private:
-  void DoPublish(
+  systems::EventHandlerStatus DoPublish(
       const systems::Context<double>& context,
       const std::vector<const PublishEvent<double>*>&) const override;
 

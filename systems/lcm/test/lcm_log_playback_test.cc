@@ -49,7 +49,7 @@ class DummySys : public LeafSystem<double> {
   }
 
  private:
-  void DoPublish(const Context<double>& context,
+  EventHandlerStatus DoPublish(const Context<double>& context,
                  const std::vector<const systems::PublishEvent<double>*>&
                      events) const override {
     const lcmt_drake_signal* msg =
@@ -66,6 +66,8 @@ class DummySys : public LeafSystem<double> {
       received_msgs_.push_back(*msg);
       received_time_.push_back(context.get_time());
     }
+
+    return EventHandlerStatus::Succeeded();
   }
 
   mutable std::vector<lcmt_drake_signal> received_msgs_;

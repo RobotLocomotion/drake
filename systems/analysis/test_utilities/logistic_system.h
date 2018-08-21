@@ -31,7 +31,7 @@ class LogisticSystem : public LeafSystem<T> {
   }
 
   void set_publish_callback(
-      std::function<void(const Context<double>&)> callback) {
+      std::function<EventHandlerStatus(const Context<double>&)> callback) {
     publish_callback_ = callback;
   }
 
@@ -56,15 +56,18 @@ class LogisticSystem : public LeafSystem<T> {
     w->push_back(witness_.get());
   }
 
-  void DoPublish(
+  EventHandlerStatus DoPublish(
       const drake::systems::Context<double>& context,
       const std::vector<const systems::PublishEvent<double>*>&) const override {
-    if (publish_callback_ != nullptr) publish_callback_(context);
+    if (publish_callback_ == nullptr)
+      return EventHandlerStatus::DidNothing();
+    return publish_callback_(context);
   }
 
  private:
   std::unique_ptr<WitnessFunction<T>> witness_;
-  std::function<void(const Context<double>&)> publish_callback_{nullptr};
+  std::function<EventHandlerStatus(const Context<double>&)> publish_callback_{
+      nullptr};
 
   T GetStateValue(const Context<T>& context) const {
     return context.get_continuous_state()[0];

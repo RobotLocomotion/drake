@@ -975,7 +975,7 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
 
 template <typename T>
 template <typename U>
-std::enable_if_t<std::is_same<U, double>::value, void>
+std::enable_if_t<std::is_same<U, double>::value, EventHandlerStatus>
 RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
     const drake::systems::Context<U>& context,
     const std::vector<const drake::systems::DiscreteUpdateEvent<U>*>&,
@@ -983,7 +983,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
   using std::abs;
 
   // If plant state is continuous, no discrete state to update.
-  if (!is_state_discrete()) return;
+  if (!is_state_discrete()) return EventHandlerStatus::DidNothing();
 
   // Get the time step.
   const T t = context.get_discrete_state(1).get_value()[0];
@@ -1230,11 +1230,13 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
       new_velocity;
   updates->get_mutable_vector(0).SetFromVector(xn);
   updates->get_mutable_vector(1)[0] = t + dt;
+
+  return EventHandlerStatus::Succeeded();
 }
 
 template <typename T>
 template <typename U>
-std::enable_if_t<!std::is_same<U, double>::value, void>
+std::enable_if_t<!std::is_same<U, double>::value, EventHandlerStatus>
 RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
     const drake::systems::Context<U>&,
     const std::vector<const drake::systems::DiscreteUpdateEvent<U>*>&,

@@ -23,8 +23,9 @@ AccelerometerTestLogger::AccelerometerTestLogger(int plant_state_size) {
       this->DeclareInputPort(kVectorValued, 3).get_index();
 }
 
-void AccelerometerTestLogger::DoPublish(const Context<double>& context,
-        const std::vector<const systems::PublishEvent<double>*>&) const {
+EventHandlerStatus AccelerometerTestLogger::DoPublish(
+    const Context<double>& context,
+    const std::vector<const systems::PublishEvent<double>*>&) const {
   if (log_to_console_) {
     std::stringstream buffer;
     buffer <<
@@ -36,6 +37,7 @@ void AccelerometerTestLogger::DoPublish(const Context<double>& context,
         "  - acceleration = " << get_acceleration(context).transpose();
     drake::log()->info(buffer.str());
   }
+  return EventHandlerStatus::Succeeded();
 }
 
 const InputPort<double>&

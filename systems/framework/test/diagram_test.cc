@@ -1194,10 +1194,11 @@ class PublishingSystem : public LeafSystem<double> {
   }
 
  protected:
-  void DoPublish(
+  EventHandlerStatus DoPublish(
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>&) const override {
     callback_(this->EvalVectorInput(context, 0)->get_value()[0]);
+    return EventHandlerStatus::Succeeded();
   }
 
  private:
@@ -1597,10 +1598,11 @@ class TestPublishingSystem : public LeafSystem<double> {
   bool published() { return published_; }
 
  protected:
-  void DoPublish(
+  EventHandlerStatus DoPublish(
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
     published_ = true;
+    return EventHandlerStatus::Succeeded();
   }
 
  private:
@@ -1762,7 +1764,7 @@ class SystemWithAbstractState : public LeafSystem<double> {
   ~SystemWithAbstractState() override {}
 
   // Abstract state is set to time + id.
-  void DoCalcUnrestrictedUpdate(
+  EventHandlerStatus DoCalcUnrestrictedUpdate(
       const Context<double>& context,
       const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
       State<double>* state) const override {
@@ -1770,6 +1772,7 @@ class SystemWithAbstractState : public LeafSystem<double> {
                             .get_mutable_value(0)
                             .GetMutableValue<double>();
     state_num = id_ + context.get_time();
+    return EventHandlerStatus::Succeeded();
   }
 
   int get_id() const { return id_; }
@@ -2327,14 +2330,15 @@ class PerStepActionTestSystem : public LeafSystem<double> {
     state->get_mutable_abstract_state<std::string>(0) = "wow";
   }
 
-  void DoCalcDiscreteVariableUpdates(
+  EventHandlerStatus DoCalcDiscreteVariableUpdates(
       const Context<double>& context,
       const std::vector<const DiscreteUpdateEvent<double>*>& events,
       DiscreteValues<double>* discrete_state) const override {
     (*discrete_state)[0] = context.get_discrete_state(0).GetAtIndex(0) + 1;
+    return EventHandlerStatus::Succeeded();
   }
 
-  void DoCalcUnrestrictedUpdate(
+  EventHandlerStatus DoCalcUnrestrictedUpdate(
       const Context<double>& context,
       const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
       State<double>* state) const override {
@@ -2342,12 +2346,14 @@ class PerStepActionTestSystem : public LeafSystem<double> {
         static_cast<int>(context.get_discrete_state(0).GetAtIndex(0));
     state->get_mutable_abstract_state<std::string>(0) =
         "wow" + std::to_string(int_num);
+    return EventHandlerStatus::Succeeded();
   }
 
-  void DoPublish(
+  EventHandlerStatus DoPublish(
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
     publish_ctr_++;
+    return EventHandlerStatus::Succeeded();
   }
 
   // A hack to test publish calls easily.
@@ -2455,7 +2461,7 @@ class MyEventTestSystem : public LeafSystem<double> {
   int get_per_step_count() const { return per_step_count_; }
 
  private:
-  void DoPublish(
+  EventHandlerStatus DoPublish(
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
     for (const PublishEvent<double>* event : events) {
@@ -2469,6 +2475,7 @@ class MyEventTestSystem : public LeafSystem<double> {
         DRAKE_ABORT();
       }
     }
+    return EventHandlerStatus::Succeeded();
   }
 
   mutable int periodic_count_{0};
@@ -2824,14 +2831,15 @@ GTEST_TEST(InitializationTest, InitializationTest) {
     bool get_unres_update_init() const { return unres_update_init_; }
 
    private:
-    void InitPublish(const Context<double>&,
+    EventHandlerStatus InitPublish(const Context<double>&,
                      const PublishEvent<double>& event) const {
       EXPECT_EQ(event.get_trigger_type(),
                 Event<double>::TriggerType::kInitialization);
       pub_init_ = true;
+      return EventHandlerStatus::Succeeded();
     }
 
-    void DoCalcDiscreteVariableUpdates(
+    EventHandlerStatus DoCalcDiscreteVariableUpdates(
         const Context<double>&,
         const std::vector<const DiscreteUpdateEvent<double>*>& events,
         DiscreteValues<double>*) const final {
@@ -2839,9 +2847,10 @@ GTEST_TEST(InitializationTest, InitializationTest) {
       EXPECT_EQ(events.front()->get_trigger_type(),
                 Event<double>::TriggerType::kInitialization);
       dis_update_init_ = true;
+      return EventHandlerStatus::Succeeded();
     }
 
-    void DoCalcUnrestrictedUpdate(
+    EventHandlerStatus DoCalcUnrestrictedUpdate(
         const Context<double>&,
         const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
         State<double>*) const final {
@@ -2849,6 +2858,7 @@ GTEST_TEST(InitializationTest, InitializationTest) {
       EXPECT_EQ(events.front()->get_trigger_type(),
                 Event<double>::TriggerType::kInitialization);
       unres_update_init_ = true;
+      return EventHandlerStatus::Succeeded();
     }
 
     mutable bool pub_init_{false};

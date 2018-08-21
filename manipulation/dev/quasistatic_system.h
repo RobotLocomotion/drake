@@ -77,7 +77,7 @@ class QuasistaticSystem : public systems::LeafSystem<Scalar> {
 
  protected:
   void Initialize();
-  void DoCalcDiscreteVariableUpdates(
+  systems::EventHandlerStatus DoCalcDiscreteVariableUpdates(
       const systems::Context<Scalar>& context,
       const std::vector<const systems::DiscreteUpdateEvent<Scalar>*>&,
       systems::DiscreteValues<Scalar>* discrete_state) const override;

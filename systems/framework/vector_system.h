@@ -146,13 +146,13 @@ class VectorSystem : public LeafSystem<T> {
 
   /// Converts the parameters to Eigen::VectorBlock form, then delegates to
   /// DoCalcVectorDiscreteVariableUpdates().
-  void DoCalcDiscreteVariableUpdates(
+  EventHandlerStatus DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
       const std::vector<const DiscreteUpdateEvent<T>*>&,
       DiscreteValues<T>* discrete_state) const final {
     // Short-circuit when there's no work to do.
     if (discrete_state->num_groups() == 0) {
-      return;
+      return EventHandlerStatus::DidNothing();
     }
 
     const Eigen::VectorBlock<const VectorX<T>> input_block =
@@ -172,8 +172,8 @@ class VectorSystem : public LeafSystem<T> {
         discrete_update_vector.get_mutable_value();
 
     // Delegate to subclass.
-    DoCalcVectorDiscreteVariableUpdates(context, input_block, state_block,
-                                        &discrete_update_block);
+    return DoCalcVectorDiscreteVariableUpdates(
+        context, input_block, state_block, &discrete_update_block);
   }
 
   /// Converts the parameters to Eigen::VectorBlock form, then delegates to
@@ -295,13 +295,14 @@ class VectorSystem : public LeafSystem<T> {
   ///
   /// By default, this function does nothing if the @p next_state is
   /// empty, and throws an exception otherwise.
-  virtual void DoCalcVectorDiscreteVariableUpdates(
+  virtual EventHandlerStatus DoCalcVectorDiscreteVariableUpdates(
       const Context<T>& context,
       const Eigen::VectorBlock<const VectorX<T>>& input,
       const Eigen::VectorBlock<const VectorX<T>>& state,
       Eigen::VectorBlock<VectorX<T>>* next_state) const {
     unused(context, input, state);
     DRAKE_THROW_UNLESS(next_state->size() == 0);
+    return EventHandlerStatus::DidNothing();
   }
 
  private:

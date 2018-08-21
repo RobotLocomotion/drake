@@ -84,6 +84,7 @@ void LcmPublisherSystem::AddInitializationMessage(
       [this](const systems::Context<double>& context,
              const systems::PublishEvent<double>&) {
         this->initialization_publisher_(context, this->lcm_);
+        return EventHandlerStatus::Succeeded();
       }));
 }
 
@@ -99,7 +100,7 @@ void LcmPublisherSystem::set_publish_period(double period) {
   LeafSystem<double>::DeclarePeriodicPublish(period);
 }
 
-void LcmPublisherSystem::DoPublish(
+EventHandlerStatus LcmPublisherSystem::DoPublish(
     const Context<double>& context,
     const std::vector<const systems::PublishEvent<double>*>& events) const {
 
@@ -112,7 +113,7 @@ void LcmPublisherSystem::DoPublish(
     DRAKE_DEMAND(events.size() == 1);
     SPDLOG_TRACE(drake::log(), "Invoking initialization publisher");
     event->handle(context);
-    return;
+    return EventHandlerStatus::Succeeded();
   }
 
   // If the event isn't initialization, we assume it is a request to publish
@@ -142,6 +143,7 @@ void LcmPublisherSystem::DoPublish(
   // Publishes onto the specified LCM channel.
   lcm_->Publish(channel_, message_bytes.data(), message_bytes.size(),
                 context.get_time());
+  return EventHandlerStatus::Succeeded();
 }
 
 const LcmAndVectorBaseTranslator& LcmPublisherSystem::get_translator() const {

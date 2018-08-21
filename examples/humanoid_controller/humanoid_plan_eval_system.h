@@ -64,7 +64,7 @@ class HumanoidPlanEvalSystem
  private:
   int get_num_extended_abstract_states() const override { return 1; }
 
-  void DoExtendedCalcUnrestrictedUpdate(
+  systems::EventHandlerStatus DoExtendedCalcUnrestrictedUpdate(
       const systems::Context<double>& context,
       systems::State<double>* state) const override;
 

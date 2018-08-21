@@ -15,6 +15,7 @@ from pydrake.systems.framework import (
     AbstractValue,
     BasicVector, BasicVector_,
     DiagramBuilder,
+    EventHandlerStatus,
     LeafSystem, LeafSystem_,
     PortDataType,
     VectorSystem,
@@ -83,6 +84,7 @@ class CustomVectorSystem(VectorSystem):
     def _DoCalcVectorDiscreteVariableUpdates(self, context, u, x, x_n):
         x_n[:] = x + 2*u
         self.has_called.append("discrete")
+        return EventHandlerStatus.Succeeded()
 
     def _DoHasDirectFeedthrough(self, input_port, output_port):
         self.has_called.append("feedthrough")
@@ -156,9 +158,9 @@ class TestCustom(unittest.TestCase):
                 self._DeclareVectorOutputPort(BasicVector(1), noop)
 
             def _DoPublish(self, context, events):
-                # Call base method to ensure we do not get recursion.
-                LeafSystem._DoPublish(self, context, events)
                 self.called_publish = True
+                # Call base method to ensure we do not get recursion.
+                return LeafSystem._DoPublish(self, context, events)
 
             def _DoHasDirectFeedthrough(self, input_port, output_port):
                 # Test inputs.
@@ -180,10 +182,10 @@ class TestCustom(unittest.TestCase):
 
             def _DoCalcDiscreteVariableUpdates(
                     self, context, events, discrete_state):
-                # Call base method to ensure we do not get recursion.
-                LeafSystem._DoCalcDiscreteVariableUpdates(
-                    self, context, events, discrete_state)
                 self.called_discrete = True
+                # Call base method to ensure we do not get recursion.
+                return LeafSystem._DoCalcDiscreteVariableUpdates(
+                    self, context, events, discrete_state)
 
         system = TrivialSystem()
         self.assertFalse(system.called_publish)

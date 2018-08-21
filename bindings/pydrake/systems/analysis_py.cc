@@ -20,6 +20,14 @@ PYBIND11_MODULE(analysis, m) {
 
   py::module::import("pydrake.systems.framework");
 
+  py::class_<StepToResult> step_to_result(m, "StepToResult");
+  step_to_result
+    .def("boundary_time", &StepToResult::boundary_time)
+    .def("final_time", &StepToResult::final_time)
+    .def("reason", &StepToResult::reason)
+    .def("system", &StepToResult::system)
+    .def("message", &StepToResult::message);
+
   auto bind_scalar_types = [m](auto dummy) {
     using T = decltype(dummy);
     DefineTemplateClassWithDefault<IntegratorBase<T>>(

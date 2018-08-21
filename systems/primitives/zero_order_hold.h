@@ -73,7 +73,7 @@ class ZeroOrderHold : public LeafSystem<T> {
       BasicVector<T>* output) const;
 
   // Latches the input port into the discrete vector-valued state.
-  void DoCalcDiscreteVariableUpdates(
+  EventHandlerStatus DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
       const std::vector<const DiscreteUpdateEvent<T>*>& events,
       DiscreteValues<T>* discrete_state) const override;
@@ -84,7 +84,7 @@ class ZeroOrderHold : public LeafSystem<T> {
       AbstractValue* output) const;
 
   // Same as `DoCalcDiscreteVariablesUpdate`, but for abstract values.
-  void DoCalcUnrestrictedUpdate(
+  EventHandlerStatus DoCalcUnrestrictedUpdate(
       const Context<T>& context,
       const std::vector<const UnrestrictedUpdateEvent<T>*>& events,
       State<T>* state) const override;

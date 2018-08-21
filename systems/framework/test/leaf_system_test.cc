@@ -169,22 +169,26 @@ class TestSystem : public LeafSystem<T> {
 
   // Publish callback function, which serves to test whether the appropriate
   // DeclareWitnessFunction() interface works as promised.
-  void PublishCallback(const Context<T>&, const PublishEvent<T>&) const {
+  EventHandlerStatus PublishCallback(const Context<T>&,
+                                     const PublishEvent<T>&) const {
     publish_callback_called_ = true;
+    return EventHandlerStatus::Succeeded();
   }
 
   // Discrete update callback function, which serves to test whether the
   // appropriate DeclareWitnessFunction() interface works as promised.
-  void DiscreteUpdateCallback(const Context<T>&,
+  EventHandlerStatus DiscreteUpdateCallback(const Context<T>&,
       const DiscreteUpdateEvent<T>&, DiscreteValues<T>*) const {
     discrete_update_callback_called_ = true;
+    return EventHandlerStatus::Succeeded();
   }
 
   // Unrestricted update callback function, which serves to test whether the
   // appropriate DeclareWitnessFunction() interface works as promised.
-  void UnrestrictedUpdateCallback(const Context<T>&,
+  EventHandlerStatus UnrestrictedUpdateCallback(const Context<T>&,
       const UnrestrictedUpdateEvent<T>&, State<T>*) const {
     unrestricted_update_callback_called_ = true;
+    return EventHandlerStatus::Succeeded();
   }
 
   // Indicators for which callbacks have been called, made mutable as
@@ -1255,6 +1259,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
         const Context<double>& c, const Event<double>&, State<double>* s) {
       s->CopyFrom(*c.CloneState());
+      return EventHandlerStatus::Succeeded();
     };
 
     UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kPeriodic,
@@ -1277,6 +1282,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
       s->CopyFrom(*c.CloneState());
       s->set_continuous_state(std::make_unique<ContinuousState<double>>(
           std::make_unique<BasicVector<double>>(4), 4, 0, 0));
+      return EventHandlerStatus::Succeeded();
     };
 
     UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kPeriodic,
@@ -1307,6 +1313,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
       disc_data.push_back(std::make_unique<BasicVector<double>>(1));
       s->set_discrete_state(
           std::make_unique<DiscreteValues<double>>(std::move(disc_data)));
+      return EventHandlerStatus::Succeeded();
     };
 
     UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kPeriodic,
@@ -1333,6 +1340,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
         const Context<double>& c, const Event<double>&, State<double>* s) {
       s->CopyFrom(*c.CloneState());
       s->set_abstract_state(std::make_unique<AbstractValues>());
+      return EventHandlerStatus::Succeeded();
     };
 
     UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kPeriodic,
@@ -1695,18 +1703,21 @@ class TestTriggerSystem : public LeafSystem<double> {
  public:
   TestTriggerSystem() {}
 
-  void DoPublish(
+  EventHandlerStatus DoPublish(
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
+    EventHandlerStatus status = EventHandlerStatus::DidNothing();
     for (const PublishEvent<double>* event : events) {
       if (event->get_trigger_type() == Event<double>::TriggerType::kForced)
         continue;
 
       // Call custom callback handler.
-      event->handle(context);
+      if (status.KeepMoreSevere(event->handle(context)).failed())
+          break;
     }
 
     publish_count_++;
+    return status;
   }
 
   void DoGetPerStepEvents(
@@ -1740,15 +1751,18 @@ class TestTriggerSystem : public LeafSystem<double> {
 
  private:
   // Pass data by a shared_ptr<const stuff>.
-  void StringCallback(const Context<double>&, const PublishEvent<double>&,
+  EventHandlerStatus StringCallback(
+      const Context<double>&, const PublishEvent<double>&,
       std::shared_ptr<const std::string> data) const {
     string_data_.push_back(*data);
+    return EventHandlerStatus::Succeeded();
   }
 
   // Pass data by value.
-  void IntCallback(const Context<double>&, const PublishEvent<double>&,
-      int data) const {
+  EventHandlerStatus IntCallback(const Context<double>&,
+                                 const PublishEvent<double>&, int data) const {
     int_data_.push_back(data);
+    return EventHandlerStatus::Succeeded();
   }
 
   // Stores data copied from the abstract values in handled events.
@@ -2126,14 +2140,15 @@ GTEST_TEST(InitializationTest, InitializationTest) {
     bool get_unres_update_init() const { return unres_update_init_; }
 
    private:
-    void InitPublish(const Context<double>&,
+    EventHandlerStatus InitPublish(const Context<double>&,
                      const PublishEvent<double>& event) const {
       EXPECT_EQ(event.get_trigger_type(),
                 Event<double>::TriggerType::kInitialization);
       pub_init_ = true;
+      return EventHandlerStatus::Succeeded();
     }
 
-    void DoCalcDiscreteVariableUpdates(
+    EventHandlerStatus DoCalcDiscreteVariableUpdates(
         const Context<double>&,
         const std::vector<const DiscreteUpdateEvent<double>*>& events,
         DiscreteValues<double>*) const final {
@@ -2141,9 +2156,10 @@ GTEST_TEST(InitializationTest, InitializationTest) {
       EXPECT_EQ(events.front()->get_trigger_type(),
                 Event<double>::TriggerType::kInitialization);
       dis_update_init_ = true;
+      return EventHandlerStatus::Succeeded();
     }
 
-    void DoCalcUnrestrictedUpdate(
+    EventHandlerStatus DoCalcUnrestrictedUpdate(
         const Context<double>&,
         const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
         State<double>*) const final {
@@ -2151,6 +2167,7 @@ GTEST_TEST(InitializationTest, InitializationTest) {
       EXPECT_EQ(events.front()->get_trigger_type(),
                 Event<double>::TriggerType::kInitialization);
       unres_update_init_ = true;
+      return EventHandlerStatus::Succeeded();
     }
 
     mutable bool pub_init_{false};

@@ -28,13 +28,15 @@ class SimpleMixedContinuousTimeDiscreteTimeSystem
 
  private:
   // x[n+1] = x[n]^3
-  void DoCalcDiscreteVariableUpdates(
+  drake::systems::EventHandlerStatus DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
       const std::vector<const drake::systems::DiscreteUpdateEvent<double>*>&,
       drake::systems::DiscreteValues<double>* updates) const override {
     const double x = context.get_discrete_state(0).GetAtIndex(0);
     const double xn = std::pow(x, 3.0);
     (*updates)[0] = xn;
+
+    return drake::systems::EventHandlerStatus::Succeeded();
   }
 
   // xdot = -x + x^3
