@@ -600,7 +600,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   ///
   /// @{
 
-  /// Returns a constant reference to a rigid body that is identified
+  /// Returns a constant reference to a body that is identified
   /// by the string `name` in `this` %MultibodyPlant.
   /// @throws std::logic_error if there is no body with the requested name.
   /// @throws std::logic_error if the body name occurs in multiple model
@@ -611,7 +611,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return model_->GetBodyByName(name);
   }
 
-  /// Returns a constant reference to the rigid body that is uniquely identified
+  /// Returns a constant reference to the body that is uniquely identified
   /// by the string `name` and @p model_instance in `this` %MultibodyPlant.
   /// @throws std::logic_error if there is no body with the requested name.
   /// @see HasBodyNamed() to query if there exists a body in `this`
@@ -846,7 +846,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   ///
   /// @throws std::exception if called pre-finalize.
   geometry::GeometrySet CollectRegisteredGeometries(
-      const std::vector<const RigidBody<T>*>& bodies) const;
+      const std::vector<const Body<T>*>& bodies) const;
 
   /// Returns the friction coefficients provided during geometry registration
   /// for the given geometry `id`. We call these the "default" coefficients but
