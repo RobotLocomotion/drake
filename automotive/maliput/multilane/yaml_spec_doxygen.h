@@ -13,7 +13,7 @@ namespace multilane {
 /// Multilane is a backend implementation of Maliput, an interface to describe
 /// road geometries. Multilane provides two loader methods
 /// ( Load() and LoadFile() ) that will parse a YAML file or string by
-/// calling appropriate \ref drake::maliput::multilane::Builder "Builder"
+/// calling appropriate @ref drake::maliput::multilane::Builder "Builder"
 /// methods to create a `RoadGeometry`.
 ///
 /// <h2>General considerations</h2>
@@ -45,6 +45,44 @@ namespace multilane {
 /// \f$z = 0\f$ can be defined. A heading vector pointing the direction of the
 /// lane at that point is used as rotation axis and the angle is clockwise.
 /// Those will express superelevation.
+///
+/// <h2>Example of General Structure</h2>
+///
+/// Below you can see a snippet with the general YAML structure.
+///
+/// @code
+///
+/// maliput_multilane_builder:
+///  id: "my_road_geometry"
+///  lane_width: 3.2
+///  left_shoulder: 1.25
+///  right_shoulder: 2.47
+///  elevation_bounds: [0., 7.6]
+///  scale_length: 1.
+///  linear_tolerance: 0.1
+///  angular_tolerance: 0.1
+///  computation_policy: prefer-accuracy
+///  points:
+///    point_a:
+///      xypoint: [0, 0, 0]
+///      zpoint: [0, 0, 0, 0]
+///    point_b:
+///      xypoint: [50, 5, 0]
+///      zpoint: [0, 0, 0]
+///    ...
+///  connections:
+///    conn_a:
+///       left_shoulder: 1.3 # Optional
+///       lanes: [3, 2, -5.3]
+///       start: ["lane.1", "points.point_a.forward"]
+///       arc: [30.25, -45]
+///       z_end: ["lane.0", [0, 3, 30, 3.1]]
+///    conn_b:
+///    ...
+///  groups:
+///    group_A: [conn_a, conn_b]
+///
+/// @endcode
 ///
 /// <h2>Entities</h2>
 ///
@@ -164,9 +202,9 @@ namespace multilane {
 ///   - `z` is the \f$z\f$ coordinate.
 ///   - `z_dot` is the \f$z′\f$ coordinate.
 ///   - `theta` is the \f$Θ\f$ coordinate.
-///   - `theta_dot` is the \f$Θ′\f$ coordinate. This parameter is optional.
-/// The \ref drake::maliput::multilane::Builder "Builder" may need to adjust it
-/// to comply with _G1_ constraints.
+///   - `theta_dot` is the \f$Θ′\f$ coordinate. This parameter is optional, and
+/// typically should be omitted. When omitted, this value will be automatically
+/// calculated such that _G1_ continuity of the road surface is preserved.
 ///
 /// <h3>`connections`</h3>
 ///
@@ -194,7 +232,7 @@ namespace multilane {
 ///
 /// @code
 ///
-/// connection:
+/// CONNECTION_NAME:
 ///   left_shoulder: LS
 ///   right_shoulder: RS
 ///   lanes: [NL, NREF, RREF]
@@ -206,11 +244,21 @@ namespace multilane {
 ///
 /// @endcode
 ///
+/// Within `z_end`, `theta_dot` is optional, and typically should be omitted.
+/// When omitted, this value will be automatically calculated such that _G1_
+/// continuity of the road surface is preserved. Otherwise, provided `theta_dot`
+/// will be used and the @ref drake::maliput::multilane::Builder "Builder" will
+/// check whether or not _G1_ is preserved.
+///
+/// When `explicit_end` is used, `theta_dot` will be set by
+/// @ref drake::maliput::multilane::Builder "Builder" to preserve _G1_ road
+/// surface continuity.
+///
 ///   - Example 2: reference curve from connections.
 ///
 /// @code
 ///
-/// connection:
+/// CONNECTION_NAME:
 ///   left_shoulder: LS
 ///   right_shoulder: RS
 ///   lanes: [NL, NREF, RREF]
@@ -222,39 +270,57 @@ namespace multilane {
 ///
 /// @endcode
 ///
+/// Within `z_end`, `theta_dot` is optional, and typically should be omitted.
+/// When omitted, this value will be automatically calculated such that _G1_
+/// continuity of the road surface is preserved. Otherwise, provided `theta_dot`
+/// will be used and the @ref drake::maliput::multilane::Builder "Builder" will
+/// check whether or not _G1_ is preserved.
+///
+/// When `explicit_end` is used, `theta_dot` will be set by
+/// @ref drake::maliput::multilane::Builder "Builder" to preserve _G1_
+/// continuity of the road surface.
+///
 ///   - Example 3: lane curve from points.
 ///
 /// @code
 ///
-/// connection:
+/// CONNECTION_NAME:
 ///   left_shoulder: LS
 ///   right_shoulder: RS
 ///   lanes: [NL, NREF, RREF]
 ///   start: ["lane.LN_1", "points.POINT_NAME_1.(forward|reverse)"]
 ///   length: L
-///   z_end: ["lane.LN_2", [z, z_dot, theta, theta_dot]]
+///   z_end: ["lane.LN_2", [z, z_dot, theta]]
 ///   # The following can be used instead of z_end:
 ///   # explicit_end: ["lane.LN_2", "points.POINT_NAME_2.(forward|reverse)"]
 ///
 /// @endcode
 ///
+/// None of the lane-based flavors allow to have `theta_dot` at either
+/// `start` or `z_end`. @ref drake::maliput::multilane::Builder "Builder" will
+/// adjust them to preserve _G1_ continuity of the road surface.
+///
 ///   - Example 4: lane curve from other connections' lane curves.
 ///
 /// @code
 ///
-/// connection:
+/// CONNECTION_NAME:
 ///   left_shoulder: LS
 ///   right_shoulder: RS
 ///   lanes: [NL, NREF, RREF]
 ///   start: ["lane.LN_1", connections.CONN_NAME_1.(start|end).LN_2.(forward|reverse)"]
 ///   length: L
-///   explicit_end: ["lane.LN_3", "connections.CONN_NAME_2.(start|end).LN_4.(forward|reverse)"]
+///   explicit_end: ["lane.LN_2", "connections.CONN_NAME_2.(start|end).LN_4.(forward|reverse)"]
 ///   # The following can be used instead of explicit_end:
-///   # z_end: ["ref", [z, z_dot, theta, theta_dot]]
+///   # z_end: ["lane.LN_2", [z, z_dot, theta]]
 ///
 /// @endcode
 ///
-/// Where:
+/// None of the lane-based flavors allow to have `theta_dot` at either
+/// `start` or `z_end`. @ref drake::maliput::multilane::Builder "Builder" will
+/// adjust them to preserve _G1_ continuity of the road surface.
+///
+/// From examples above:
 ///   - `lanes` holds number of lanes, reference lane and distance from the
 /// reference lane to the reference curve.
 ///   - `left_shoulder` is the extra space at the right side of the last lane
@@ -262,22 +328,21 @@ namespace multilane {
 ///   - `right_shoulder` is the extra space at the left side of the first lane
 /// of the `connection`. It will override default values.
 ///   - `start` is used to define the start `Endpoint` of one the `connection`’s
-/// curves. It may have multiple options. Those can be split into two parts.
-/// The first item could be:
-///     -# `ref` to point the reference curve.
-///     -# `lane.LN` to point a specific lane.
-/// The second part is composed of one of the following options:
-///     -# A reference to an `Endpoint` in the points collection. Either
+/// curves. It may have multiple options. Those can be split into two elements:
+///     - The first element could be:
+///       -# `ref` to point the reference curve.
+///       -# `lane.LN` to point a specific lane.\n
+///     - The second element is composed of one of the following options:
+///       -# A reference to an `Endpoint` in the points collection. Either
 /// `forward` or `reverse` should be used to indicate the direction of the
 /// `Endpoint`.
-///    -# The start or end `Endpoint` of a `connection`’s reference curve or
+///       -# The start or end `Endpoint` of a `connection`’s reference curve or
 /// lane. Either forward or reverse should be used to indicate the direction of
-/// the `Endpoint`.
-/// When using the forward the `Endpoint` will be used as is. Otherwise
-/// (using `reverse`) the `Endpoint` will be reversed.
+/// the `Endpoint`. When using the forward the `Endpoint` will be used as is.
+/// Otherwise (using `reverse`) the `Endpoint` will be reversed.
 ///   - `length` is the `connection`’s reference road curve planar line length.
 ///   - `arc` is the `connection`’s reference curve planar piece of arc.
-///   - `z_end` is the `EnpointZ` information to end one of the `connection`’s
+///   - `z_end` is the `EndpointZ` information to end one of the `connection`’s
 /// curves. It is composed of two elements too. The first one points to the
 /// reference curve when `ref` is present. Otherwise, `lane.LN` must be
 /// specified.
@@ -292,27 +357,22 @@ namespace multilane {
 ///   - Each `connection` must have either `length` or `arc`.
 ///   - Each `connection` must have either `z_end` or `explicit_end`.
 ///   - `start` and `explicit_end` possible combinations:
-///     -# This LANE from other LANE: This combination is essential; it's the
-/// fundamental "hook up segments so that the lanes line up as intended"
-/// specification.
-///     -# This REF from other REF: I'm not sure how useful this actually is,
-/// but the existing \ref drake::maliput::multilane::Builder "Builder" should be
-/// able to execute it.
-///     -# This REF from lane POINT: We need something that allows using a
-/// free point as the origin, and the existing
-/// \ref drake::maliput::multilane::Builder "Builder" should be able to
-/// execute it.
-///     -# This LANE from lane POINT: This is probably more useful than
-/// "REF from POINT".
+///     -# This LANE from other LANE.
+///     -# This REF from other REF.
+///     -# This LANE from POINT.
+///     -# This REF from POINT.
 ///
+/// At least one connection must _start_ with "LANE from POINT" or "REF from
+/// POINT" in order to anchor the road geometry in the world frame.
 ///
 /// <h3>`arc`</h3>
 ///
 /// Constant radius arcs are defined in terms of a radius and an angle span.
 /// `arc`s are used to define planar curves on the the \f$z = 0\f$ plane,
-/// starting from an `endpoint_xy`. Radius must be positive and its direction
-/// is derived as rotating +90° start `endpoint_xy`’s heading vector, and
-/// angle span has the same properties as `EndpoinXy`’s `theta` coordinate.
+/// starting from an `endpoint_xy`. Radius must be positive, and arc's center
+/// would be to the left (i.e. rotating +90° start `endpoint_xy`’s heading
+/// vector) when theta is positive, otherwise it would be to the right (i.e.
+/// rotating -90° start `endpoint_xy`’s heading).
 ///
 /// It will be represented as a sequence:
 ///
@@ -328,57 +388,21 @@ namespace multilane {
 ///
 /// <h3>`groups`</h3>
 ///
-/// A collection of touching `Connections`. It will be a sequence of string
-/// scalars that refer to connections’ name identifiers.
+/// A group specifies a set of connections whose Segments will be placed
+/// together in the same Junction. A connection may only belong to a single
+/// group. If a connection is not in any group, its Segment will receive its own
+/// Junction.
 ///
 /// It will be represented as a mapping:
 ///
 /// @code
 ///
-/// group: [c_1, c_2, c_3]
+/// GROUP_NAME: [c_1, c_2, c_3]
 ///
 /// @endcode
 ///
 /// Where:
-///   - `c_1`, `c_2`, `c_3` are `connections`’ _ID_s.
-///
-/// <h2>General structure</h2>
-///
-/// Below you can see a snippet with the general YAML structure.
-///
-/// @code
-///
-/// maliput_multilane_builder:
-///  id: "my_road_geometry"
-///  lane_width: 3.2
-///  left_shoulder: 1.25
-///  right_shoulder: 2.47
-///  elevation_bounds: [0., 7.6]
-///  scale_length: 1.
-///  linear_tolerance: 0.1
-///  angular_tolerance: 0.1
-///  computation_policy: prefer-accuracy
-///  points:
-///    point_a:
-///      xypoint: [0, 0, 0]
-///      zpoint: [0, 0, 0, 0]
-///    point_b:
-///      xypoint: [50, 5, 0]
-///      zpoint: [0, 0, 0]
-///    ...
-///  connections:
-///    conn_a:
-///       left_shoulder: 1.3 # Optional
-///       lanes: [3, 2, -5.3]
-///       start: ["lane.1", "points.point_a.forward"]
-///       arc: [30.25, -45]
-///       z_end: ["lane.0", [0, 3, 30, 3.1]]
-///    conn_b:
-///    ...
-///  groups:
-///    group_A: [conn_a, conn_b]
-///
-/// @endcode
+///   - `c_1`, `c_2`, `c_3` are `connections`’ IDs.
 ///
 
 }  // namespace multilane
