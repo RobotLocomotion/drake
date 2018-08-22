@@ -133,6 +133,16 @@ void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
   *Ki = Eigen::VectorXd::Zero(7);
 }
 
+void SetTorqueControlledIiwaGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Kd) {
+  // All the gains are for directly generating torques. These gains are set
+  // according to the values in the drake-kuka-driver repository:
+  // https://github.com/RobotLocomotion/drake-iiwa-driver/blob/master/kuka-driver/sunrise_1.11/DrakeFRITorqueDriver.java NOLINT
+  Kp->resize(7);
+  *Kp << 1000, 1000, 1000, 500, 500, 500, 500;
+  Kd->resize(Kp->size());
+  Kd->setConstant(1.0);
+}
+
 void ApplyJointVelocityLimits(const MatrixX<double>& keyframes,
                               std::vector<double>* time) {
   DRAKE_DEMAND(keyframes.cols() == static_cast<int>(time->size()));
