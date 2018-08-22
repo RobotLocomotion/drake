@@ -23,7 +23,7 @@ namespace pendulum {
 /// - AutoDiffXd
 /// - symbolic::Expression
 template <typename T>
-class PendulumPlant : public systems::LeafSystem<T> {
+class PendulumPlant final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PendulumPlant);
 
