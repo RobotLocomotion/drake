@@ -130,16 +130,20 @@ def _impl(repository_ctx):
         fail(os_result.error)
 
     if os_result.is_macos:
+        repository_ctx.symlink(
+            "/usr/local/opt/ospray/include",
+            "ospray_include",
+        )
         repository_ctx.symlink("/usr/local/opt/vtk@{}/include".format(
             VTK_MAJOR_MINOR_VERSION,
         ), "include")
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "16.04":
-            archive = "vtk-8.1.1-embree-3.2.0-ospray-1.6.1-python-2.7.12-python-3.5.2-qt-5.5.1-xenial-x86_64.tar.gz"  # noqa
-            sha256 = "a79c6b50675a52f23820c722b10d64272ecf29be055c9d90b1fe9104d86a1d4d"  # noqa
+            archive = "vtk-8.1.1-embree-3.2.0-ospray-1.6.1-python-2.7.12-python-3.5.2-qt-5.5.1-xenial-x86_64-1.tar.gz"  # noqa
+            sha256 = "85bec1347159291e78671c2b19c51843b595f7e24bff017a57b3374c58ce89f6"  # noqa
         elif os_result.ubuntu_release == "18.04":
-            archive = "vtk-8.1.1-embree-3.2.0-ospray-1.6.1-python-2.7.15-python-3.6.5-qt-5.9.5-bionic-x86_64.tar.gz"  # noqa
-            sha256 = "9efc6e27639a4e07b30a3320740f63b089d95105739050e65e5f51a13ce9049b"  # noqa
+            archive = "vtk-8.1.1-embree-3.2.0-ospray-1.6.1-python-2.7.15-python-3.6.5-qt-5.9.5-bionic-x86_64-1.tar.gz"  # noqa
+            sha256 = "95b28c6823d451f0e0112b02e1d6850b68e61e5373eb2a4c66404d455c3d97d6"  # noqa
         else:
             fail("Operating system is NOT supported", attr = os_result)
 
@@ -606,13 +610,40 @@ licenses([
         ],
     )
 
-    file_content += """
+    if repository_ctx.os.name == "mac os x":
+        file_content += """
 cc_library(
     name = "ospray",
-    srcs =
-        glob(["lib/libembree*.so*"]) +
-        glob(["lib/libospray*.so*"]),
-    visibility = ["//visibility:private"],
+    hdrs = [
+        "ospray_include/ospray/OSPDataType.h",
+        "ospray_include/ospray/OSPTexture.h",
+        "ospray_include/ospray/ospray.h",
+    ],
+    includes = ["ospray_include"],
+    linkopts = [
+        "-L/usr/local/opt/ospray/lib",
+        "-lospray",
+    ],
+    visibility = ["//visibility:public"],
+)
+"""
+    else:
+        file_content += """
+cc_library(
+    name = "ospray",
+    srcs = glob([
+        "lib/libembree3.so*",
+        "lib/libospray_common.so*",
+        "lib/libospray_module_ispc.so*",
+        "lib/libospray.so*",
+    ]),
+    hdrs = [
+        "include/ospray/OSPDataType.h",
+        "include/ospray/OSPTexture.h",
+        "include/ospray/ospray.h",
+    ],
+    includes = ["include"],
+    visibility = ["//visibility:public"],
 )
 """
 
