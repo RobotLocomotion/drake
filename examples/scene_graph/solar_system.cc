@@ -1,4 +1,4 @@
-#include "drake/examples/geometry_world/solar_system.h"
+#include "drake/examples/scene_graph/solar_system.h"
 
 #include <memory>
 #include <string>
@@ -216,7 +216,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
                                  VisualMaterial(Vector4d(0.9, 0.1, 0, 1))));
 
   std::string rings_absolute_path =
-      FindResourceOrThrow("drake/examples/geometry_world/planet_rings.obj");
+      FindResourceOrThrow("drake/examples/scene_graph/planet_rings.obj");
   Vector3<double> axis = Vector3<double>(1, 1, 1).normalized();
   Isometry3<double> X_GmGr(AngleAxis<double>(M_PI / 3, axis));
   scene_graph->RegisterGeometry(

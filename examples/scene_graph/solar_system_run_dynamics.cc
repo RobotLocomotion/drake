@@ -1,4 +1,4 @@
-#include "drake/examples/geometry_world/solar_system.h"
+#include "drake/examples/scene_graph/solar_system.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"

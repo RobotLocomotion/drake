@@ -1,4 +1,4 @@
-#include "drake/examples/geometry_world/bouncing_ball_plant.h"
+#include "drake/examples/scene_graph/bouncing_ball_plant.h"
 
 #include <algorithm>
 #include <vector>
