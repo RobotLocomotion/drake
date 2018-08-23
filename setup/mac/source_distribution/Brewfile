@@ -1,6 +1,7 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+tap 'bazelbuild/tap'
 tap 'robotlocomotion/director'
 
 brew 'bash-completion'
