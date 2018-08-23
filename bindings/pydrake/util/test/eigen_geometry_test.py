@@ -73,6 +73,8 @@ class TestEigenGeometry(unittest.TestCase):
             (q.multiply(position=[1, 2, 3]) == [3, 1, 2]).all())
         q_I = q.inverse().multiply(q)
         self.assertTrue(np.allclose(q_I.wxyz(), [1, 0, 0, 0]))
+        q_conj = q.conjugate()
+        self.assertTrue(np.allclose(q_conj.wxyz(), [0.5, -0.5, -0.5, -0.5]))
 
         # Test `type_caster`s.
         value = test_util.create_quaternion()

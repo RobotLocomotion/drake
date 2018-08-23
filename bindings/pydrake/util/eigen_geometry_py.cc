@@ -247,6 +247,9 @@ PYBIND11_MODULE(eigen_geometry, m) {
       }, py::arg("position"))
       .def("inverse", [](const Class* self) {
         return self->inverse();
+      })
+      .def("conjugate", [](const Class* self) {
+        return self->conjugate();
       });
   }
 
