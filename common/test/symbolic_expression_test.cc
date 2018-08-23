@@ -89,9 +89,11 @@ void CheckOrdering(const vector<Expression>& expressions) {
 // Provides common variables that are used by the following tests.
 class SymbolicExpressionTest : public ::testing::Test {
  protected:
+  const Variable var_a_{"a"};
   const Variable var_x_{"x"};
   const Variable var_y_{"y"};
   const Variable var_z_{"z"};
+  const Expression a_{var_a_};
   const Expression x_{var_x_};
   const Expression y_{var_y_};
   const Expression z_{var_z_};
@@ -1998,13 +2000,59 @@ TEST_F(SymbolicExpressionTest, TaylorExpand4) {
   EXPECT_PRED2(ExprEqual, e, TaylorExpand(e, Environment{}, 2));
 }
 
-TEST_F(SymbolicExpressionTest, TaylorExpand5) {
-  // Test TaylorExpand(sin(x) + cos(y), {x: 1}, 2) => Exception.
+TEST_F(SymbolicExpressionTest, TaylorExpandPartialEnv1) {
+  // Test TaylorExpand(sin(x) + cos(y), {x:1}, 2).
+  // Note that we provide a partial environment, {x:1}.
   const Expression& x{x_};
   const Expression& y{y_};
   const Expression e{sin(x) + cos(y)};
   const Environment env{{{var_x_, 1}}};
-  EXPECT_THROW(TaylorExpand(e, env, 2), std::runtime_error);
+  const Expression expanded{TaylorExpand(e, env, 2)};
+  // We have the following from Wolfram Alpha.
+  // The query was "series sin(x) + cos(y) at x=1 to order 2".
+  const Expression expected{cos(y) + sin(1) + (x - 1) * cos(1) -
+                            0.5 * (x - 1) * (x - 1) * sin(1)};
+
+  // To show that the function `expanded` approximates another function
+  // `expected`, we sample a few points around x = 1 and check the evaluation
+  // results over those points. For each point p, the difference between
+  // expanded(p) and expected(p) should be bounded by a tiny number (here, we
+  // picked 1e-10).
+  const vector<Environment> test_envs{{{{var_x_, 0}, {var_y_, 0}}},
+                                      {{{var_x_, 2}, {var_y_, 0}}},
+                                      {{{var_x_, 0}, {var_y_, 2}}},
+                                      {{{var_x_, 2}, {var_y_, 2}}}};
+  for (const auto& test_env : test_envs) {
+    EXPECT_NEAR((expanded - expected).Evaluate(test_env), 0.0, 1e-10);
+  }
+}
+
+TEST_F(SymbolicExpressionTest, TaylorExpandPartialEnv2) {
+  // Test TaylorExpand(a * sin(x), {x:2}, 3).
+  // Note that we provide a partial environment, {x:2}.
+  const Expression& a{a_};
+  const Expression& x{x_};
+  const Expression e{a * sin(x)};
+  const Environment env{{{var_x_, 2}}};
+  const Expression expanded{TaylorExpand(e, env, 3)};
+  // We have the following from Wolfram Alpha.
+  // The query was "series a * sin(x) at x=2 to order 3".
+  const Expression expected{a * sin(2) + a * (x - 2) * cos(2) -
+                            0.5 * (x - 2) * (x - 2) * a * sin(2) -
+                            1.0 / 6.0 * pow((x - 2), 3) * a * cos(2)};
+
+  // To show that the function `expanded` approximates another function
+  // `expected`, we sample a few points around x = 2 and check the evaluation
+  // results over those points. For each point p, the difference between
+  // expanded(p) and expected(p) should be bounded by a tiny number (here, we
+  // picked 1e-10).
+  const vector<Environment> test_envs{{{{var_x_, 1}, {var_a_, 0}}},
+                                      {{{var_x_, 3}, {var_a_, 0}}},
+                                      {{{var_x_, 1}, {var_a_, 2}}},
+                                      {{{var_x_, 3}, {var_a_, 2}}}};
+  for (const auto& test_env : test_envs) {
+    EXPECT_NEAR((expanded - expected).Evaluate(test_env), 0.0, 1e-10);
+  }
 }
 
 }  // namespace
