@@ -23,6 +23,9 @@
   <material name="Grey">
     <color rgba="0.4 0.4 0.4 1.0"/>
   </material>
+  <material name="Silver">
+    <color rgba="0.6 0.6 0.6 1.0"/>
+  </material>
   <material name="Orange">
     <color rgba="1.0 0.423529411765 0.0392156862745 1.0"/>
   </material>
@@ -123,9 +126,16 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/link_2.obj"/>
+        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/link_2_orange.obj"/>
       </geometry>
       <material name="Orange"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/link_2_grey.obj"/>
+      </geometry>
+      <material name="Grey"/>
     </visual>
    <collision>
       <origin rpy="0 0 0" xyz="-2.488800594e-017 0.203225991 -0.002065464272"/>
@@ -166,6 +176,20 @@
         <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/link_3.obj"/>
       </geometry>
       <material name="Grey"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/band.obj"/>
+      </geometry>
+      <material name="Silver"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/kuka.obj"/>
+      </geometry>
+      <material name="Black"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="7.416339176e-017 0.05241123123 0.213459395"/>
@@ -210,9 +234,16 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/link_4.obj"/>
+        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/link_4_orange.obj"/>
       </geometry>
       <material name="Orange"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/link_4_grey.obj"/>
+      </geometry>
+      <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="2.212061137e-017 0.1787589211 -0.001869578351"/>
@@ -254,6 +285,20 @@
       </geometry>
       <material name="Grey"/>
     </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/band.obj"/>
+      </geometry>
+      <material name="Silver"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/kuka.obj"/>
+      </geometry>
+      <material name="Black"/>
+    </visual>
     <collision>
       <origin rpy="0 0 0" xyz="3.178830537e-017 0.0445161559 0.2150550559"/>
       <geometry>
@@ -290,9 +335,16 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/link_6.obj"/>
+        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/link_6_orange.obj"/>
       </geometry>
       <material name="Orange"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/link_6_grey.obj"/>
+      </geometry>
+      <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="-2.904627567e-018 -0.01623589495 0.00748218906"/>
@@ -581,9 +633,16 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/link_2.obj"/>
+        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/link_2_orange.obj"/>
       </geometry>
       <material name="Orange"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/link_2_grey.obj"/>
+      </geometry>
+      <material name="Grey"/>
     </visual>
    <collision>
       <origin rpy="0 0 0" xyz="-2.488800594e-017 0.203225991 -0.002065464272"/>
@@ -624,6 +683,20 @@
         <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/link_3.obj"/>
       </geometry>
       <material name="Grey"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/band.obj"/>
+      </geometry>
+      <material name="Silver"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/kuka.obj"/>
+      </geometry>
+      <material name="Black"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="7.416339176e-017 0.05241123123 0.213459395"/>
@@ -668,9 +741,16 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/link_4.obj"/>
+        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/link_4_orange.obj"/>
       </geometry>
       <material name="Orange"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/link_4_grey.obj"/>
+      </geometry>
+      <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="2.212061137e-017 0.1787589211 -0.001869578351"/>
@@ -712,6 +792,20 @@
       </geometry>
       <material name="Grey"/>
     </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/band.obj"/>
+      </geometry>
+      <material name="Silver"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/kuka.obj"/>
+      </geometry>
+      <material name="Black"/>
+    </visual>
     <collision>
       <origin rpy="0 0 0" xyz="3.178830537e-017 0.0445161559 0.2150550559"/>
       <geometry>
@@ -748,9 +842,16 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/link_6.obj"/>
+        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/link_6_orange.obj"/>
       </geometry>
       <material name="Orange"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../../../../../manipulation/models/iiwa_description/meshes/visual/link_6_grey.obj"/>
+      </geometry>
+      <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="-2.904627567e-018 -0.01623589495 0.00748218906"/>
