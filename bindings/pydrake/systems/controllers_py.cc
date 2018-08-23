@@ -7,6 +7,7 @@
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/bindings/pydrake/util/wrap_pybind.h"
 #include "drake/systems/controllers/dynamic_programming.h"
+#include "drake/systems/controllers/inverse_dynamics.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 
@@ -17,6 +18,7 @@ PYBIND11_MODULE(controllers, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::controllers;
   using drake::systems::Diagram;
+  using drake::systems::LeafSystem;
 
   py::module::import("pydrake.math");
   py::module::import("pydrake.symbolic");
@@ -37,6 +39,13 @@ PYBIND11_MODULE(controllers, m) {
                      &DynamicProgrammingOptions::convergence_tol)
       .def_readwrite("visualization_callback",
                      &DynamicProgrammingOptions::visualization_callback);
+
+  py::class_<InverseDynamics<double>, LeafSystem<double>>(m, "InverseDynamics")
+      .def(py::init<const RigidBodyTree<double>&, bool>(),
+           py::arg("tree"),
+           py::arg("pure_gravity_compensation"))
+      .def("is_pure_gravity_compensation",
+           &InverseDynamics<double>::is_pure_gravity_compenstation);
 
   py::class_<InverseDynamicsController<double>, Diagram<double>>(
       m, "InverseDynamicsController")
