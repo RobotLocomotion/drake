@@ -13,6 +13,9 @@ if [[ "${EUID}" -eq 0 ]]; then
 fi
 
 /usr/local/bin/brew update
+# TODO(jamiesnape): Remove this line on or after 9/30/18.
+/usr/local/bin/brew uninstall --force bazel
 /usr/local/bin/brew bundle --file="${BASH_SOURCE%/*}/Brewfile"
+/usr/local/bin/brew tap-pin bazelbuild/tap
 
 /usr/local/bin/pip2 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"
