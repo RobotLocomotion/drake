@@ -8,7 +8,6 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
@@ -16,8 +15,6 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/lcm/lcm_publisher_system.h"
-#include "drake/systems/lcm/serializer.h"
 #include "drake/systems/primitives/affine_system.h"
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
@@ -33,9 +30,6 @@ using multibody::JointActuator;
 using multibody::RevoluteJoint;
 using multibody::UniformGravityFieldElement;
 using systems::Context;
-using systems::lcm::LcmPublisherSystem;
-using systems::lcm::Serializer;
-using systems::rendering::PoseBundleToDrawMessage;
 
 namespace examples {
 namespace multibody {
@@ -147,17 +141,6 @@ int do_main() {
   builder.Connect(controller->get_output_port(),
                   acrobot.get_actuation_input_port());
 
-  // Boilerplate used to connect the plant to a SceneGraph for
-  // visualization.
-  DrakeLcm lcm;
-  const PoseBundleToDrawMessage& converter =
-      *builder.template AddSystem<PoseBundleToDrawMessage>();
-  LcmPublisherSystem& publisher =
-      *builder.template AddSystem<LcmPublisherSystem>(
-          "DRAKE_VIEWER_DRAW",
-          std::make_unique<Serializer<drake::lcmt_viewer_draw>>(), &lcm);
-  publisher.set_publish_period(1 / 60.0);
-
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(!!acrobot.get_source_id());
 
@@ -165,16 +148,14 @@ int do_main() {
       acrobot.get_geometry_poses_output_port(),
       scene_graph.get_source_pose_port(acrobot.get_source_id().value()));
 
-  builder.Connect(scene_graph.get_pose_bundle_output_port(),
-                  converter.get_input_port(0));
-  builder.Connect(converter, publisher);
+  // Last thing before building the diagram; configure the system for
+  // visualization.
+  DrakeLcm lcm;
+  geometry::ConnectVisualization(scene_graph, &builder, &lcm);
+  auto diagram = builder.Build();
 
-  // Last thing before building the diagram; dispatch the message to load
-  // geometry.
-  geometry::DispatchLoadMessage(scene_graph);
-
-  // And build the Diagram:
-  std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
+  // Load message must be sent before creating a Context.
+  geometry::DispatchLoadMessage(scene_graph, &lcm);
 
   // Create a context for this system:
   std::unique_ptr<systems::Context<double>> diagram_context =

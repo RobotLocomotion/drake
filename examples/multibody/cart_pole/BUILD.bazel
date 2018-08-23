@@ -36,8 +36,6 @@ drake_cc_binary(
         "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
-        "//systems/lcm:lcm_pubsub_system",
-        "//systems/rendering:pose_bundle_to_draw_message",
         "@gflags",
     ],
 )
