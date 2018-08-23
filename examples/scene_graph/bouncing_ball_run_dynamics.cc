@@ -1,7 +1,7 @@
 #include <memory>
 #include <utility>
 
-#include "drake/examples/geometry_world/bouncing_ball_plant.h"
+#include "drake/examples/scene_graph/bouncing_ball_plant.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
