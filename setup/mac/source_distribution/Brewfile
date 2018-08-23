@@ -1,10 +1,11 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+tap 'bazelbuild/tap'
 tap 'robotlocomotion/director'
 
 brew 'bash-completion'
-brew 'bazel'
+brew 'bazelbuild/tap/bazel'
 brew 'clang-format'
 brew 'diffstat'
 brew 'doxygen'
