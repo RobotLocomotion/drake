@@ -13,7 +13,7 @@
 
 namespace drake {
 namespace examples {
-namespace geometry_world {
+namespace scene_graph {
 namespace bouncing_ball {
 namespace {
 
@@ -96,10 +96,10 @@ int do_main() {
 
 }  // namespace
 }  // namespace bouncing_ball
-}  // namespace geometry_world
+}  // namespace scene_graph
 }  // namespace examples
 }  // namespace drake
 
 int main() {
-  return drake::examples::geometry_world::bouncing_ball::do_main();
+  return drake::examples::scene_graph::bouncing_ball::do_main();
 }
