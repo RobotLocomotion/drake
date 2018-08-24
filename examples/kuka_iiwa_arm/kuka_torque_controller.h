@@ -12,6 +12,17 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
+/**
+ * Controller that take emulates the kuka_iiwa_arm when operated in torque
+ * control mode. The controller specifies a stiffness and damping ratio at each
+ * of the joints. Because the critical damping constant is a function of the
+ * configuration the damping is non-linear. See
+ * https://github.com/RobotLocomotion/drake-iiwa-driver/blob/master/kuka-driver/sunrise_1.11/DrakeFRITorqueDriver.java
+ *
+ * for details on the low-level controller. Note that the
+ * input_port_desired_state() method takes a full state for convenient wiring
+ * with other Systems, but ignores the velocity component.
+ */
 template <typename T>
 class KukaTorqueController
     : public systems::Diagram<T>,
@@ -19,24 +30,21 @@ class KukaTorqueController
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(KukaTorqueController)
   KukaTorqueController(std::unique_ptr<RigidBodyTree<T>> tree,
-                       const VectorX<double>& kp,
+                       const VectorX<double>& stiffness,
                        const VectorX<double>& damping);
+
+  const systems::InputPort<T>& get_input_port_commanded_torque() const {
+    return systems::Diagram<T>::get_input_port(
+        input_port_index_commanded_torque_);
+  }
 
   const systems::InputPort<T>& get_input_port_estimated_state() const override {
     return systems::Diagram<T>::get_input_port(
         input_port_index_estimated_state_);
   }
 
-  /** Provides the desired state for the controller.
-    * Note that the controller is emulating a spring-damper system at each of
-    * the joints and ignores the velocity inputs. */
   const systems::InputPort<T>& get_input_port_desired_state() const override {
     return systems::Diagram<T>::get_input_port(input_port_index_desired_state_);
-  }
-
-  const systems::InputPort<T>& get_input_port_commanded_torque() const {
-    return systems::Diagram<T>::get_input_port(
-        input_port_index_commanded_torque_);
   }
 
   const systems::OutputPort<T>& get_output_port_control() const override {
@@ -44,7 +52,8 @@ class KukaTorqueController
   }
 
  private:
-  void SetUp(const VectorX<double>& kp, const VectorX<double>& damping);
+  void SetUp(const VectorX<double>& stiffness,
+             const VectorX<double>& damping_ratio);
   std::unique_ptr<RigidBodyTree<T>> robot_for_control_{nullptr};
   int input_port_index_estimated_state_{-1};
   int input_port_index_desired_state_{-1};
