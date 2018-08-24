@@ -53,8 +53,8 @@ void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
                                     Eigen::VectorXd* Kd);
 
 /// Used to set the feedback gains for the simulated torque controlled KUKA.
-void SetTorqueControlledIiwaGains(Eigen::VectorXd* Kp,
-                                  Eigen::VectorXd* Kd);
+void SetTorqueControlledIiwaGains(Eigen::VectorXd* stiffness,
+                                  Eigen::VectorXd* damping_ratio);
 
 /// Scales a plan so that no step exceeds the robot's maximum joint velocities.
 /// The number of columns in @p keyframes must match the size of @p time.  Times
