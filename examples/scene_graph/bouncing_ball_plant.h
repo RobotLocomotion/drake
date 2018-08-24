@@ -12,7 +12,7 @@
 
 namespace drake {
 namespace examples {
-namespace geometry_world {
+namespace scene_graph {
 namespace bouncing_ball {
 
 /** A model of a bouncing ball with Hunt-Crossley compliant contact model.
@@ -141,6 +141,6 @@ class BouncingBallPlant : public systems::LeafSystem<T> {
 };
 
 }  // namespace bouncing_ball
-}  // namespace geometry_world
+}  // namespace scene_graph
 }  // namespace examples
 }  // namespace drake

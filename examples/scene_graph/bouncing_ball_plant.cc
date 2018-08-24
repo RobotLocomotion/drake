@@ -11,7 +11,7 @@
 
 namespace drake {
 namespace examples {
-namespace geometry_world {
+namespace scene_graph {
 namespace bouncing_ball {
 
 using geometry::FramePoseVector;
@@ -138,6 +138,6 @@ void BouncingBallPlant<T>::DoCalcTimeDerivatives(
 template class BouncingBallPlant<double>;
 
 }  // namespace bouncing_ball
-}  // namespace geometry_world
+}  // namespace scene_graph
 }  // namespace examples
 }  // namespace drake
