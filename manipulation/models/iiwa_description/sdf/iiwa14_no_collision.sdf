@@ -22,7 +22,7 @@ weld_base_to_world joint, and remove damping from the joints.
         </inertia>
       </inertial>
       <visual name='iiwa_link_0_fixed_joint_lump__iiwa_link_0_visual'>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose frame=''>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -108,12 +108,24 @@ weld_base_to_world joint, and remove damping from the joints.
           <izz>0.011</izz>
         </inertia>
       </inertial>
-      <visual name='iiwa_link_2_visual'>
+      <visual name='iiwa_link_2_visual_grey'>
         <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>../meshes/visual/link_2.obj</uri>
+            <uri>../meshes/visual/link_2_grey.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.4 0.4 0.4 1.0</diffuse>
+        </material>
+      </visual>
+      <visual name='iiwa_link_2_visual_orange'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/link_2_orange.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -170,6 +182,30 @@ weld_base_to_world joint, and remove damping from the joints.
           <diffuse>0.4 0.4 0.4 1.0</diffuse>
         </material>
       </visual>
+      <visual name='iiwa_link_3_visual_band'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/band.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.6 0.6 0.6 1.0</diffuse>
+        </material>
+      </visual>
+      <visual name='iiwa_link_3_visual_kuka'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/kuka.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0 0 0 1</diffuse>
+        </material>
+      </visual>
       <gravity>1</gravity>
       <velocity_decay/>
       <self_collide>0</self_collide>
@@ -208,12 +244,24 @@ weld_base_to_world joint, and remove damping from the joints.
           <izz>0.006</izz>
         </inertia>
       </inertial>
-      <visual name='iiwa_link_4_visual'>
+      <visual name='iiwa_link_4_visual_grey'>
         <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>../meshes/visual/link_4.obj</uri>
+            <uri>../meshes/visual/link_4_grey.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.4 0.4 0.4 1.0</diffuse>
+        </material>
+      </visual>
+      <visual name='iiwa_link_4_visual_orange'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/link_4_orange.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -270,6 +318,30 @@ weld_base_to_world joint, and remove damping from the joints.
           <diffuse>0.4 0.4 0.4 1.0</diffuse>
         </material>
       </visual>
+      <visual name='iiwa_link_5_visual_band'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/band.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.6 0.6 0.6 1.0</diffuse>
+        </material>
+      </visual>
+      <visual name='iiwa_link_5_visual_kuka'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/kuka.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0 0 0 1</diffuse>
+        </material>
+      </visual>
       <gravity>1</gravity>
       <velocity_decay/>
       <self_collide>0</self_collide>
@@ -308,12 +380,24 @@ weld_base_to_world joint, and remove damping from the joints.
           <izz>0.0036</izz>
         </inertia>
       </inertial>
-      <visual name='iiwa_link_6_visual'>
+      <visual name='iiwa_link_6_visual_grey'>
         <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>../meshes/visual/link_6.obj</uri>
+            <uri>../meshes/visual/link_6_grey.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.4 0.4 0.4 1.0</diffuse>
+        </material>
+      </visual>
+      <visual name='iiwa_link_6_visual_orange'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/link_6_orange.obj</uri>
           </mesh>
         </geometry>
         <material>
