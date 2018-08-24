@@ -88,13 +88,13 @@ int DoMain() {
   // Adds a iiwa controller.
   StateFeedbackControllerInterface<double>* controller = nullptr;
   if (FLAGS_torque_control) {
-    VectorX<double> iiwa_kp, iiwa_kd;
-    SetTorqueControlledIiwaGains(&iiwa_kp, &iiwa_kd);
-    iiwa_kp = iiwa_kp.replicate(num_iiwa, 1);
-    iiwa_kd = iiwa_kd.replicate(num_iiwa, 1);
+    VectorX<double> stiffness, damping_ratio;
+    SetTorqueControlledIiwaGains(&stiffness, &damping_ratio);
+    stiffness = stiffness.replicate(num_iiwa, 1);
+    damping_ratio = damping_ratio.replicate(num_iiwa, 1);
     controller = builder.AddController<KukaTorqueController<double>>(
         RigidBodyTreeConstants::kFirstNonWorldModelInstanceId, tree.Clone(),
-        iiwa_kp, iiwa_kd);
+        stiffness, damping_ratio);
   } else {
     VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
     SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
@@ -151,10 +151,7 @@ int DoMain() {
   if (FLAGS_torque_control) {
     KukaTorqueController<double>* torque_controller =
         dynamic_cast<KukaTorqueController<double>*>(controller);
-    if (torque_controller == nullptr) {
-      throw std::runtime_error(
-          "Could not cast controller to KukaTorqueController");
-    }
+    DRAKE_DEMAND(torque_controller);
     base_builder->Connect(command_receiver->get_output_port(1),
                           torque_controller->get_input_port_commanded_torque());
   }
