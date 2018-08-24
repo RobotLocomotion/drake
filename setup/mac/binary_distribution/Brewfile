@@ -1,7 +1,6 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-tap 'caskroom/versions'
 tap 'dreal/dreal'
 tap 'robotlocomotion/director'
 
@@ -25,6 +24,6 @@ brew 'tinyxml2'
 brew 'vtk@8.1'
 brew 'yaml-cpp'
 
-cask 'java8' unless system '/usr/libexec/java_home --version 1.8 --failfast &> /dev/null'
+cask 'java' unless system '/usr/libexec/java_home --version 1.8+ --failfast &> /dev/null'
 
 mas 'Xcode', id: 497799835 unless File.exist? '/Applications/Xcode.app'
