@@ -133,12 +133,13 @@ void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
   *Ki = Eigen::VectorXd::Zero(7);
 }
 
-void SetTorqueControlledIiwaGains(Eigen::VectorXd* Kp, Eigen::VectorXd* damping_ratio) {
+void SetTorqueControlledIiwaGains(Eigen::VectorXd* Kp,
+                                  Eigen::VectorXd* damping_ratio) {
   // All the gains are for directly generating torques. These gains are set
-  // according to the values in the drake-kuka-driver repository:
+  // according to the values in the drake-iiwa-driver repository:
   // https://github.com/RobotLocomotion/drake-iiwa-driver/blob/master/kuka-driver/sunrise_1.11/DrakeFRITorqueDriver.java NOLINT
 
-  // Kp is the spring stiffness in Nm/rad 
+  // Kp is the spring stiffness in Nm/rad
   Kp->resize(7);
   *Kp << 1000, 1000, 1000, 500, 500, 500, 500;
 
