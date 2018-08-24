@@ -25,6 +25,9 @@
   <material name="Grey">
     <color rgba="0.4 0.4 0.4 1.0"/>
   </material>
+  <material name="Silver">
+    <color rgba="0.6 0.6 0.6 1.0"/>
+  </material>
   <material name="Orange">
     <color rgba="1.0 0.423529411765 0.0392156862745 1.0"/>
   </material>
@@ -124,9 +127,16 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_2.obj"/>
+        <mesh filename="../meshes/visual/link_2_orange.obj"/>
       </geometry>
       <material name="Orange"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/visual/link_2_grey.obj"/>
+      </geometry>
+      <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="-2.488800594e-017 0.203225991 -0.002065464272"/>
@@ -167,6 +177,20 @@
         <mesh filename="../meshes/visual/link_3.obj"/>
       </geometry>
       <material name="Grey"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/visual/band.obj"/>
+      </geometry>
+      <material name="Silver"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/visual/kuka.obj"/>
+      </geometry>
+      <material name="Black"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.0355"/>
@@ -253,9 +277,16 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_4.obj"/>
+        <mesh filename="../meshes/visual/link_4_orange.obj"/>
       </geometry>
       <material name="Orange"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/visual/link_4_grey.obj"/>
+      </geometry>
+      <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0.01 0.046"/>
@@ -325,6 +356,20 @@
       </geometry>
       <material name="Grey"/>
     </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/visual/band.obj"/>
+      </geometry>
+      <material name="Silver"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/visual/kuka.obj"/>
+      </geometry>
+      <material name="Black"/>
+    </visual>
   </link>
   <!-- joint between link_5 and link_6 -->
   <joint name="iiwa_joint_6" type="revolute">
@@ -347,9 +392,16 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_6.obj"/>
+        <mesh filename="../meshes/visual/link_6_orange.obj"/>
       </geometry>
       <material name="Orange"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/visual/link_6_grey.obj"/>
+      </geometry>
+      <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 -0.059"/>
