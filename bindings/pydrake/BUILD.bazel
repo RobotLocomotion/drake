@@ -101,6 +101,17 @@ drake_py_library(
 )
 
 drake_pybind_library(
+    name = "geometry_py",
+    cc_so_name = "geometry",
+    cc_srcs = ["geometry_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":common_py",
+        "//bindings/pydrake/systems:framework_py",
+    ],
+)
+
+drake_pybind_library(
     name = "lcm_py",
     cc_deps = [
         "//bindings/pydrake/util:drake_optional_pybind",
@@ -161,6 +172,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":autodiffutils_py",
     ":automotive_py",
     ":common_py",
+    ":geometry_py",
     ":lcm_py",
     ":math_py",
     ":symbolic_py",
