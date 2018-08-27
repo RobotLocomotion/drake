@@ -74,6 +74,31 @@ namespace multibody_plant {
 /// generalized forces applied on the system. These can include externally
 /// applied body forces, constraint forces, and contact forces.
 ///
+/// @section sdf_loading Loading models from SDF files
+///
+/// Drake has the capability of loading multibody models from SDF files.
+/// Consider the example below which loads an acrobot model from a file:
+/// @code
+///   MultibodyPlant<T> acrobot;
+///   const std::string relative_name =
+///     "drake/multibody/benchmarks/acrobot/acrobot.sdf";
+///   const std::string full_name = FindResourceOrThrow(relative_name);
+///   AddModelFromSdfFile(full_name, &acrobot, &scene_graph);
+/// @endcode
+/// As in the example above, for models including visual geometry, collision
+/// geometry or both, the user must specify a SceneGraph for geometry handling.
+/// You can find a full example of the LQR controlled acrobot in
+/// examples/multibody/acrobot/run_lqr.cc.
+///
+/// AddModelFromSdfFile() can be invoked multiple times on the same plant in
+/// order to load multiple model instances.
+/// Other parsing variants are available in
+/// multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h such as
+/// AddModelsFromSdfFile() (please note the change to plural, i.e, "Models"
+/// instead of "Model") which allows creating model instances per each
+/// `<model>` tag found in the file. Please refer to each of these method's
+/// documentation for further details.
+///
 /// @section adding_elements Adding modeling elements
 ///
 /// @cond
