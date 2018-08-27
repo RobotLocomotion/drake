@@ -7,4 +7,5 @@ from .rigid_body import *
 from .shapes import *
 
 # Submodules.
+from .benchmarks.all import *
 from .multibody_tree.all import *
