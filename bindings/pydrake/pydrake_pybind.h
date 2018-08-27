@@ -21,6 +21,25 @@ At present, a fork of `pybind11` is used which permits bindings matrices with
 `dtype=object`, passing `unique_ptr` objects, and prevents aliasing for Python
 classes derived from `pybind11` classes.
 
+## Module Organization
+
+The structure of the bindings generally follow the *directory structure*, not
+the namespace structure. As an example, if in C++  you do:
+
+    #include <drake/multibody/multibody_tree/multibody_plant/{header}.h>
+    using drake::multibody::multibody_plant::{symbol};
+
+then in Python you would do:
+
+    from pydrake.multibody.multibody_tree.multibody_plant import {symbol}
+
+Some (but not all) exceptions:
+
+*   Some of `drake/common` is incorporated into `pydrake.util`. (This will be
+remedied in the future.)
+*   `drake/solvers/mathematical_program.h` is actually contained in the module
+`pydrake.sovlers.mathematicalprogram`.
+
 ## `pybind11` Tips
 
 ### Python Types
