@@ -32,15 +32,29 @@ drake_py_library(
 )
 
 drake_pybind_library(
+    name = "benchmarks_py",
+    cc_so_name = "benchmarks",
+    cc_srcs = ["benchmarks_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        ":multibody_tree_py",
+    ],
+)
+
+drake_pybind_library(
     name = "multibody_tree_py",
     cc_deps = [
         "//bindings/pydrake/util:eigen_geometry_pybind",
+        "//bindings/pydrake/util:type_safe_index_pybind",
     ],
     cc_so_name = "multibody_tree",
     cc_srcs = ["multibody_tree_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake/systems:framework_py",
         "//bindings/pydrake/util:eigen_geometry_py",
     ],
 )
@@ -142,6 +156,7 @@ drake_pybind_library(
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
+    ":benchmarks_py",
     ":collision_py",
     ":joints_py",
     ":multibody_tree_py",
@@ -217,7 +232,11 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "multibody_tree_test",
+    data = [
+        "//multibody/benchmarks/acrobot:models",
+    ],
     deps = [
+        ":benchmarks_py",
         ":multibody_tree_py",
     ],
 )

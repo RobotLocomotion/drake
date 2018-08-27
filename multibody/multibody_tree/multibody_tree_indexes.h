@@ -5,6 +5,9 @@
 namespace drake {
 namespace multibody {
 
+// N.B. To simplify checking binding coverage, please ensure these symbols
+// are defined in `multibody_tree_py.cc` in the same order.
+
 /// Type used to identify frames by index in a multibody tree system.
 using FrameIndex = TypeSafeIndex<class FrameTag>;
 
