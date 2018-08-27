@@ -86,6 +86,23 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "kuka_torque_controller",
+    srcs = ["kuka_torque_controller.cc"],
+    hdrs = ["kuka_torque_controller.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//multibody:rigid_body_tree",
+        "//systems/controllers:inverse_dynamics",
+        "//systems/controllers:pid_controller",
+        "//systems/controllers:state_feedback_controller_interface",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
+        "//systems/primitives:adder",
+        "//systems/primitives:pass_through",
+    ],
+)
+
 drake_cc_binary(
     name = "iiwa_controller",
     srcs = ["iiwa_controller.cc"],
@@ -146,6 +163,7 @@ drake_cc_binary(
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
+        ":kuka_torque_controller",
         "//common:text_logging_gflags",
         "//lcm",
         "//manipulation/util:sim_diagram_builder",
@@ -153,6 +171,7 @@ drake_cc_binary(
         "//multibody/rigid_body_plant:frame_visualizer",
         "//systems/analysis",
         "//systems/controllers:inverse_dynamics_controller",
+        "//systems/controllers:state_feedback_controller_interface",
     ],
 )
 
@@ -215,6 +234,20 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//manipulation/util:world_sim_tree_builder",
         "//systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "kuka_torque_controller_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":iiwa_common",
+        ":kuka_torque_controller",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody:rigid_body_tree",
+        "//multibody:rigid_body_tree_construction",
     ],
 )
 
