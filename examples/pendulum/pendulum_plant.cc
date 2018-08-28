@@ -3,18 +3,32 @@
 #include <cmath>
 
 #include "drake/common/default_scalars.h"
+#include "drake/geometry/geometry_frame.h"
+#include "drake/geometry/geometry_instance.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace examples {
 namespace pendulum {
+
+using Eigen::Isometry3d;
+using Eigen::Translation3d;
+using Eigen::Vector4d;
+using geometry::Box;
+using geometry::Cylinder;
+using geometry::GeometryFrame;
+using geometry::GeometryInstance;
+using geometry::Sphere;
+using geometry::VisualMaterial;
+using std::make_unique;
 
 template <typename T>
 PendulumPlant<T>::PendulumPlant()
     : systems::LeafSystem<T>(
           systems::SystemTypeTag<pendulum::PendulumPlant>{}) {
   this->DeclareVectorInputPort(PendulumInput<T>());
-  this->DeclareVectorOutputPort(PendulumState<T>(),
-                                &PendulumPlant::CopyStateOut);
+  state_port_ = this->DeclareVectorOutputPort(PendulumState<T>(),
+                                &PendulumPlant::CopyStateOut).get_index();
   this->DeclareContinuousState(PendulumState<T>(), 1 /* num_q */, 1 /* num_v */,
                                0 /* num_z */);
   this->DeclareNumericParameter(PendulumParams<T>());
@@ -22,7 +36,12 @@ PendulumPlant<T>::PendulumPlant()
 
 template <typename T>
 template <typename U>
-PendulumPlant<T>::PendulumPlant(const PendulumPlant<U>&) : PendulumPlant() {}
+PendulumPlant<T>::PendulumPlant(const PendulumPlant<U>& p)
+    : PendulumPlant() {
+  if (source_id_.is_valid()) {
+    this->set_geometry_pose_output_ids(p.source_id(), p.pose_id());
+  }
+}
 
 template <typename T>
 PendulumPlant<T>::~PendulumPlant() {}
@@ -34,8 +53,14 @@ const systems::InputPort<T>& PendulumPlant<T>::get_input_port()
 }
 
 template <typename T>
-const systems::OutputPort<T>& PendulumPlant<T>::get_output_port() const {
-  return systems::System<T>::get_output_port(0);
+const systems::OutputPort<T>& PendulumPlant<T>::get_state_output_port() const {
+  return systems::System<T>::get_output_port(state_port_);
+}
+
+template <typename T>
+const systems::OutputPort<T>& PendulumPlant<T>::get_geometry_pose_output_port()
+    const {
+  return systems::System<T>::get_output_port(geometry_pose_port_);
 }
 
 template <typename T>
@@ -43,6 +68,23 @@ void PendulumPlant<T>::CopyStateOut(const systems::Context<T>& context,
                                     PendulumState<T>* output) const {
   output->set_value(get_state(context).get_value());
 }
+
+template <typename T>
+void PendulumPlant<T>::CopyPoseOut(
+    const systems::Context<T>& context,
+    geometry::FramePoseVector<T>* poses) const {
+  DRAKE_DEMAND(poses->size() == 1);
+  DRAKE_DEMAND(poses->source_id() == source_id_);
+
+  const T theta =
+      this->template EvalVectorInput<PendulumState>(context, 0)->theta();
+
+  poses->clear();
+  Isometry3<T> pose = Isometry3<T>::Identity();
+  pose.linear() = math::RotationMatrix<T>::MakeYRotation(theta).matrix();
+  poses->set_value(pose_id_, pose);
+}
+
 
 template <typename T>
 T PendulumPlant<T>::CalcTotalEnergy(const systems::Context<T>& context) const {
@@ -73,6 +115,57 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
        params.mass() * params.gravity() * params.length() * sin(state.theta()) -
        params.damping() * state.thetadot()) /
       (params.mass() * params.length() * params.length()));
+}
+
+template <typename T>
+void PendulumPlant<T>::set_geometry_pose_output_ids(
+    geometry::SourceId source_id, geometry::FrameId pose_id) {
+  DRAKE_DEMAND(source_id.is_valid());
+  DRAKE_DEMAND(pose_id.is_valid());
+
+  // This should be called exactly once
+  DRAKE_DEMAND(!source_id_.is_valid());
+  DRAKE_DEMAND(!pose_id_.is_valid());
+  DRAKE_DEMAND(geometry_pose_port_ < 0);
+
+  source_id_ = source_id;
+  pose_id_ = pose_id_;
+
+  // Now allocate the output port.
+  geometry_pose_port_ = this->DeclareAbstractOutputPort(
+      geometry::FramePoseVector<T>(source_id_, {pose_id_}),
+      &PendulumPlant<T>::CopyPoseOut).get_index();
+}
+
+void RegisterGeometry(const PendulumParams<double>& params,
+                      PendulumPlant<double>* plant,
+                      geometry::SceneGraph<double>* scene_graph) {
+  geometry::SourceId source_id = scene_graph->RegisterSource("pendulum");
+
+  scene_graph->RegisterAnchoredGeometry(
+      source_id,
+      make_unique<GeometryInstance>(Isometry3d(Translation3d(0., 0., .025)),
+                                    make_unique<Box>(.05, 0.05, 0.05), "base",
+                                    VisualMaterial(Vector4d(.3, .6, .4, 1))));
+
+  geometry::FrameId pose_id = scene_graph->RegisterFrame(
+      source_id, GeometryFrame("arm", Isometry3d::Identity()));
+
+  scene_graph->RegisterGeometry(
+      source_id, pose_id,
+      make_unique<GeometryInstance>(
+          Isometry3d(Translation3d(0, 0, -params.length() / 2.)),
+          make_unique<Cylinder>(0.01, params.length()), "arm",
+          VisualMaterial(Vector4d(.9, .1, 0, 1))));
+
+  scene_graph->RegisterGeometry(
+      source_id, pose_id,
+      make_unique<GeometryInstance>(
+          Isometry3d(Translation3d(0, 0, -params.length())),
+          make_unique<Sphere>(params.mass() / 40.), "arm point mass",
+          VisualMaterial(Vector4d(0, 0, 1, 1))));
+
+  plant->set_geometry_pose_output_ids(source_id, pose_id);
 }
 
 }  // namespace pendulum

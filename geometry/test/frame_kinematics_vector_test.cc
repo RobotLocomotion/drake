@@ -6,6 +6,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
@@ -107,6 +108,16 @@ GTEST_TEST(FrameKinematicsVector, AutoDiffInstantiation) {
 
   EXPECT_EQ(poses.source_id(), source_id);
   EXPECT_EQ(poses.size(), kCount);
+}
+
+GTEST_TEST(FrameKinematicsVector, SymbolicInstantiation) {
+SourceId source_id = SourceId::get_new_id();
+std::vector<FrameId> ids{FrameId::get_new_id(), FrameId::get_new_id()};
+const int kCount = static_cast<int>(ids.size());
+FramePoseVector<symbolic::Expression> poses(source_id, ids);
+
+EXPECT_EQ(poses.source_id(), source_id);
+EXPECT_EQ(poses.size(), kCount);
 }
 
 }  // namespace test
