@@ -66,6 +66,7 @@ drake_cc_library(
         ":geometry_ids",
         "//common:autodiff",
         "//common:essential",
+        "//common:symbolic",
     ],
 )
 

@@ -164,6 +164,7 @@ struct KinematicsValueInitializer<Isometry3<S>> {
  -----------------|------------------------------------------|--------------
   FramePoseVector | FrameKinematicsVector<Isometry3<Scalar>> | double
   FramePoseVector | FrameKinematicsVector<Isometry3<Scalar>> | AutoDiffXd
+  FramePoseVector | FrameKinematicsVector<Isometry3<Scalar>> | Expression
   */
 template <class KinematicsValue>
 class FrameKinematicsVector {
