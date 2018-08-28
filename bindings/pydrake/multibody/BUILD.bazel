@@ -45,6 +45,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "multibody_tree_py",
     cc_deps = [
+        "//bindings/pydrake/util:drake_optional_pybind",
         "//bindings/pydrake/util:eigen_geometry_pybind",
         "//bindings/pydrake/util:type_safe_index_pybind",
     ],
@@ -233,11 +234,14 @@ drake_py_unittest(
 drake_py_unittest(
     name = "multibody_tree_test",
     data = [
+        "//examples/multibody/cart_pole:cart_pole.sdf",
         "//multibody/benchmarks/acrobot:models",
     ],
     deps = [
         ":benchmarks_py",
         ":multibody_tree_py",
+        "//bindings/pydrake:lcm_py",
+        "//bindings/pydrake/systems:analysis_py",
     ],
 )
 
