@@ -862,6 +862,7 @@ drake_cc_googletest(
     deps = [
         ":vector_system",
         "//systems/framework/test_utilities",
+        "//systems/primitives:integrator",
     ],
 )
 

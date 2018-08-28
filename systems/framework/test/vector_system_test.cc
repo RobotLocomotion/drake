@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
+#include "drake/systems/primitives/integrator.h"
 
 namespace drake {
 namespace systems {
@@ -397,6 +398,25 @@ class NoInputContinuousTimeSystem : public VectorSystem<double> {
 // Input is not provided to DoCalcOutput when non-direct-feedthrough.
 TEST_F(VectorSystemTest, NoFeedthroughContinuousTimeSystemTest) {
   NoFeedthroughContinuousTimeSystem dut;
+
+  // The non-connected input is never evaluated.
+  auto context = dut.CreateDefaultContext();
+  auto output = dut.get_output_port().Allocate();
+  dut.get_output_port().Calc(*context, output.get());
+  EXPECT_EQ(output->GetValueOrThrow<BasicVector<double>>().GetAtIndex(0), 0.0);
+}
+
+// Symbolic analysis should be able to determine that the system is not direct
+// feedthrough.  (This is a of special concern to VectorSystem, because it must
+// be precise about when it evaluates is inputs.)
+TEST_F(VectorSystemTest, ImplicitlyNoFeedthroughTest) {
+  static_assert(
+      std::is_base_of<VectorSystem<double>, Integrator<double>>::value,
+      "This test assumes that Integrator is implemented in terms of "
+      "VectorSystem; if that changes, copy its old implementation here "
+      "so that this test is unchanged.");
+  const Integrator<double> dut(1);
+  EXPECT_FALSE(dut.HasAnyDirectFeedthrough());
 
   // The non-connected input is never evaluated.
   auto context = dut.CreateDefaultContext();
