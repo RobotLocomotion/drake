@@ -142,7 +142,7 @@ class SolarSystem : public systems::LeafSystem<T> {
     return get_state(context.get_continuous_state());
   }
 
-  // Geometry source identifier for this system to interact with geometry system
+  // Geometry source identifier for this system to interact with SceneGraph
   geometry::SourceId source_id_{};
 
   // Port handles

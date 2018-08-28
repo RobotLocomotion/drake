@@ -34,6 +34,22 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "pendulum_visualizer",
+    srcs = ["pendulum_visualizer.cc"],
+    hdrs = ["pendulum_visualizer.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":pendulum_vector_types",
+        "//geometry:scene_graph",
+        "//geometry:geometry_visualization",
+        "//lcm",
+        "//math:geometric_transform",
+        "//systems/framework",
+        "//systems/lcm",
+    ],
+)
+
 drake_cc_binary(
     name = "passive_simulation",
     srcs = ["passive_simulation.cc"],
@@ -42,12 +58,9 @@ drake_cc_binary(
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         ":pendulum_plant",
+        ":pendulum_visualizer",
         "//common:find_resource",
         "//lcm",
-        "//multibody:rigid_body_tree",
-        "//multibody/joints",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/primitives:constant_vector_source",
@@ -63,11 +76,9 @@ drake_cc_binary(
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         ":pendulum_plant",
+        ":pendulum_visualizer",
         "//common:find_resource",
         "//lcm",
-        "//multibody/joints",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/framework:leaf_system",
@@ -83,12 +94,10 @@ drake_cc_binary(
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         ":pendulum_plant",
+        ":pendulum_visualizer",
         "//common:find_resource",
         "//common:is_approx_equal_abstol",
         "//lcm",
-        "//multibody/joints",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/controllers:linear_quadratic_regulator",
         "//systems/framework:diagram",
@@ -104,13 +113,11 @@ drake_cc_binary(
     data = [":models"],
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
-        "pendulum_plant",
+        ":pendulum_plant",
+        ":pendulum_visualizer",
         "//common:find_resource",
         "//common:is_approx_equal_abstol",
         "//lcm",
-        "//multibody/joints",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/controllers:pid_controlled_system",
         "//systems/framework",

@@ -6,10 +6,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
+#include "drake/examples/pendulum/pendulum_visualizer.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -63,10 +61,6 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
 
 int DoMain() {
   lcm::DrakeLcm lcm;
-  auto tree = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"),
-      multibody::joints::kFixed, tree.get());
 
   systems::DiagramBuilder<double> builder;
   auto pendulum = builder.AddSystem<PendulumPlant>();
@@ -79,9 +73,9 @@ int DoMain() {
   builder.Connect(pendulum->get_output_port(), controller->get_input_port(0));
   builder.Connect(controller->get_output_port(0), pendulum->get_input_port());
 
-  auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
-  publisher->set_name("publisher");
-  builder.Connect(pendulum->get_output_port(), publisher->get_input_port(0));
+  auto visualizer = AddPendulumVisualizerAndPublisher(&builder, &lcm);
+  builder.Connect(pendulum->get_output_port(),
+                  visualizer->get_state_input_port());
 
   auto diagram = builder.Build();
   systems::Simulator<double> simulator(*diagram);
