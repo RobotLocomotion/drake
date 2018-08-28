@@ -95,7 +95,7 @@ VectorX<T> MultibodyTree<T>::get_velocities_from_array(
 }
 
 template <typename T>
-void MultibodyTree<T>:: AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer() {
+void MultibodyTree<T>::AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer() {
   DRAKE_DEMAND(!topology_is_valid());
   // Skip the world.
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
@@ -602,6 +602,19 @@ void MultibodyTree<T>::CalcForceElementsContribution(
   // Add contributions from force elements.
   for (const auto& force_element : owned_force_elements_) {
     force_element->CalcAndAddForceContribution(mbt_context, pc, vc, forces);
+  }
+
+  // TODO(amcastro-tri): Remove this call once damping is implemented in terms
+  // of force elements.
+  AddJointDampingForces(context, forces);
+}
+
+template<typename T>
+void MultibodyTree<T>::AddJointDampingForces(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  DRAKE_DEMAND(forces != nullptr);
+  for (const auto& joint : owned_joints_) {
+    joint->AddInDamping(context, forces);
   }
 }
 
