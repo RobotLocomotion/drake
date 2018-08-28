@@ -15,6 +15,9 @@ namespace geometry {
 /**
  A simple identifier class.
 
+ @note This is *purposely* a separate class from `TypeSafeIndex`. For more
+ explanatation, see below.
+
  This class serves as an upgrade to the standard practice of passing `int`s
  around as unique identifiers (or, as in this case, `int64_t`s). In the common
  practice, a method that takes identifiers to different types of objects would
