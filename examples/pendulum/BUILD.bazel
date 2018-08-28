@@ -30,23 +30,9 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":pendulum_vector_types",
-        "//systems/framework",
-    ],
-)
-
-drake_cc_library(
-    name = "pendulum_visualizer",
-    srcs = ["pendulum_visualizer.cc"],
-    hdrs = ["pendulum_visualizer.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":pendulum_vector_types",
         "//geometry:scene_graph",
-        "//geometry:geometry_visualization",
-        "//lcm",
         "//math:geometric_transform",
         "//systems/framework",
-        "//systems/lcm",
     ],
 )
 
@@ -58,8 +44,8 @@ drake_cc_binary(
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         ":pendulum_plant",
-        ":pendulum_visualizer",
         "//common:find_resource",
+        "//geometry:geometry_visualization",
         "//lcm",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
@@ -76,8 +62,8 @@ drake_cc_binary(
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         ":pendulum_plant",
-        ":pendulum_visualizer",
         "//common:find_resource",
+        "//geometry:geometry_visualization",
         "//lcm",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
@@ -94,9 +80,9 @@ drake_cc_binary(
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         ":pendulum_plant",
-        ":pendulum_visualizer",
         "//common:find_resource",
         "//common:is_approx_equal_abstol",
+        "//geometry:geometry_visualization",
         "//lcm",
         "//systems/analysis:simulator",
         "//systems/controllers:linear_quadratic_regulator",
@@ -114,9 +100,9 @@ drake_cc_binary(
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         ":pendulum_plant",
-        ":pendulum_visualizer",
         "//common:find_resource",
         "//common:is_approx_equal_abstol",
+        "//geometry:geometry_visualization",
         "//lcm",
         "//systems/analysis:simulator",
         "//systems/controllers:pid_controlled_system",

@@ -4,7 +4,6 @@
 
 #include "drake/examples/pendulum/gen/pendulum_params.h"
 #include "drake/examples/pendulum/gen/pendulum_state.h"
-#include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -33,24 +32,13 @@ public:
 
   ~PendulumVisualizer() override {};
 
-  geometry::SourceId source_id() const { return source_id_; }
 
   /// Returns the input port expecting a PendulumState<double>.
   const systems::InputPort<double>& get_state_input_port() const;
 
-  /// Returns the port to output the pose; aborts if scene_graph was not
-  /// declared in the constructor.
-  const systems::OutputPort<double>& get_geometry_pose_output_port() const;
 
 private:
-  // Calculator method for the pose output port.
-  void CopyPoseOut(const systems::Context<double>& context,
-                   geometry::FramePoseVector<double>* poses) const;
 
-  // Geometry source identifier for this system to interact with SceneGraph
-  geometry::SourceId source_id_{};
-  // The id for the pendulum (arm + point mass) frame
-  geometry::FrameId pose_id_;
 };
 
 /// Constructs a PendulumVisualizer, a SceneGraph, and the connections to

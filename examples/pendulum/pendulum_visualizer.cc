@@ -28,35 +28,7 @@ PendulumVisualizer::PendulumVisualizer(
     : systems::LeafSystem<double>() {
   this->DeclareVectorInputPort(PendulumState<double>());
 
-  source_id_ = scene_graph->RegisterSource("pendulum_visualizer");
 
-  scene_graph->RegisterAnchoredGeometry(
-      source_id_, make_unique<GeometryInstance>(
-                      Isometry3d(Translation3d(0., 0., .025)),
-                      make_unique<Box>(.05, 0.05, 0.05), "base",
-                      VisualMaterial(Vector4d(.3, .6, .4, 1))));
-
-  pose_id_ = scene_graph->RegisterFrame(
-      source_id_, GeometryFrame("arm", Isometry3d::Identity()));
-
-  scene_graph->RegisterGeometry(
-      source_id_, pose_id_,
-      make_unique<GeometryInstance>(
-          Isometry3d(Translation3d(0, 0, -params.length() / 2.)),
-          make_unique<Cylinder>(0.01, params.length()), "arm",
-          VisualMaterial(Vector4d(.9, .1, 0, 1))));
-
-  scene_graph->RegisterGeometry(
-      source_id_, pose_id_,
-      make_unique<GeometryInstance>(
-          Isometry3d(Translation3d(0, 0, -params.length())),
-          make_unique<Sphere>(params.mass() / 40.), "arm point mass",
-          VisualMaterial(Vector4d(0, 0, 1, 1))));
-
-  // Now that frames have been registered, allocate the output port.
-  this->DeclareAbstractOutputPort(
-      geometry::FramePoseVector<double>(source_id_, {pose_id_}),
-      &PendulumVisualizer::CopyPoseOut);
 }
 
 const systems::InputPort<double>& PendulumVisualizer::get_state_input_port()
