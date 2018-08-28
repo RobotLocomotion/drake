@@ -27,6 +27,7 @@
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 #include "drake/multibody/multibody_tree/position_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
+#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/context.h"
 
@@ -528,13 +529,52 @@ class MultibodyTree {
     return *raw_force_element_ptr;
   }
 
+  /// Adds a new force element model of type `ForceElementType` to `this`
+  /// %MultibodyTree.  The arguments to this method `args` are forwarded to
+  /// `ForceElementType`'s constructor.
+  /// @param[in] args
+  ///   Zero or more parameters provided to the constructor of the new force
+  ///   element. It must be the case that
+  ///   `JointType<T>(args)` is a valid constructor.
+  /// @tparam ForceElementType
+  ///   The type of the ForceElement to add.
+  ///   This method can only be called once for elements of type
+  ///   UniformGravityFieldElement. That is, gravity can only be specified once.
+  /// @returns A constant reference to the new ForceElement just added, of type
+  ///   `ForceElementType<T>` specialized on the scalar type T of `this`
+  ///   %MultibodyTree. It will remain valid for the lifetime of `this`
+  ///   %MultibodyTree.
+  /// @see The ForceElement class's documentation for further details on how a
+  /// force element is defined.
   template<template<typename Scalar> class ForceElementType, typename... Args>
-  const ForceElementType<T>& AddForceElement(Args&&... args) {
+#ifdef DRAKE_DOXYGEN_CXX
+  const ForceElementType<T>&
+#else
+  typename std::enable_if<!std::is_same<
+      ForceElementType<T>,
+      UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
+#endif
+  AddForceElement(Args&&... args) {
     static_assert(std::is_base_of<ForceElement<T>, ForceElementType<T>>::value,
-                  "ForceElementType<T> must be a sub-class of "
-                  "ForceElement<T>.");
+        "ForceElementType<T> must be a sub-class of "
+            "ForceElement<T>.");
     return AddForceElement(
         std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...));
+  }
+
+  // SFINAE overload for ForceElementType = UniformGravityFieldElement.
+  // This allow us to keep track of the gravity field parameters.
+  template<template<typename Scalar> class ForceElementType, typename... Args>
+  typename std::enable_if<std::is_same<
+      ForceElementType<T>,
+      UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
+  AddForceElement(Args&&... args) {
+    DRAKE_DEMAND(!gravity_field_.has_value());
+    // We save the force element so that we can grant users access to it for
+    // gravity field specific queries.
+    gravity_field_ = &AddForceElement(
+        std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...));
+    return *gravity_field_.value();
   }
 
   /// This method adds a Joint of type `JointType` between the frames specified
@@ -557,9 +597,9 @@ class MultibodyTree {
     if (HasJointNamed(joint->name(), joint->model_instance())) {
       throw std::logic_error(
           "Model instance '" +
-          instance_index_to_name_.at(joint->model_instance()) +
-          "' already contains a joint named '" + joint->name() + "'. " +
-          "Joint names must be unique within a given model.");
+              instance_index_to_name_.at(joint->model_instance()) +
+              "' already contains a joint named '" + joint->name() + "'. " +
+              "Joint names must be unique within a given model.");
     }
 
     if (topology_is_valid()) {
@@ -2061,6 +2101,31 @@ class MultibodyTree {
   void CalcBiasTerm(
       const systems::Context<T>& context, EigenPtr<VectorX<T>> Cv) const;
 
+  /// Computes the generalized forces `tau_g(q)` due to gravity as a function
+  /// of the generalized positions `q` stored in the input `context`.
+  /// The vector of generalized forces due to gravity `tau_g(q)` is defined such
+  /// that it appears on the right hand side of the equations of motion together
+  /// with any other generalized forces, like so:
+  /// <pre>
+  ///   Mv̇ + C(q, v)v = tau_g(q) + tau_app
+  /// </pre>
+  /// where `tau_app` includes any other generalized forces applied on the
+  /// system.
+  ///
+  /// @param[in] context
+  ///   The context storing the state of the multibody model.
+  /// @returns tau_g
+  ///   A vector containing the generalized forces due to gravity.
+  ///   The generalized forces are consistent with the vector of
+  ///   generalized velocities `v` for `this` MultibodyTree model so that
+  ///   the inner product `v⋅tau_g` corresponds to the power applied by the
+  ///   gravity forces on the mechanical system. That is, `v⋅tau_g > 0`
+  ///   corresponds to potential energy going into the system, as either
+  ///   mechanical kinetic energy, some other potential energy, or heat, and
+  ///   therefore to a decrease of potential energy.
+  VectorX<T> CalcGravityGeneralizedForces(
+      const systems::Context<T>& context) const;
+
   /// Transforms generalized velocities v to time derivatives `qdot` of the
   /// generalized positions vector `q` (stored in `context`). `v` and `qdot`
   /// are related linearly by `q̇ = N(q)⋅v`.
@@ -2662,6 +2727,9 @@ class MultibodyTree {
   // This vector contains a pointer to all frames in owned_frames_ as well as a
   // pointer to each BodyFrame, which are owned by their corresponding Body.
   std::vector<const Frame<T>*> frames_;
+
+  // The gravity field force element.
+  optional<const UniformGravityFieldElement<T>*> gravity_field_;
 
   // TODO(amcastro-tri): Consider moving these maps into MultibodyTreeTopology
   // since they are not templated on <T>.

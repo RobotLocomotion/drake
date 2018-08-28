@@ -326,6 +326,28 @@ class AcrobotPlantTests : public ::testing::Test {
         Vector1<double>(0.0));
   }
 
+  // Computes the vector of generalized forces due to gravity.
+  // This test is mostly to verify MultibodyPlant provides the proper APIs to
+  // perform this computations.
+  void VerifyCalcGravityGeneralizedForces(double theta1, double theta2) {
+    const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+
+    // Set the state:
+    shoulder_->set_angle(context_.get(), theta1);
+    elbow_->set_angle(context_.get(), theta2);
+
+    // Calculate the generalized forces due to gravity.
+    const VectorX<double> tau_g =
+        plant_->model().CalcGravityGeneralizedForces(*context_);
+
+    // Calculate a benchmark value.
+    const Vector2d tau_g_expected =
+        acrobot_benchmark_.CalcGravityVector(theta1, theta2);
+
+    EXPECT_TRUE(CompareMatrices(
+        tau_g, tau_g_expected, kTolerance, MatrixCompareType::relative));
+  }
+
   // Verifies the computation performed by MultibodyPlant::CalcTimeDerivatives()
   // for the acrobot model. The comparison is carried out against a benchmark
   // with hand written dynamics.
@@ -464,6 +486,20 @@ class AcrobotPlantTests : public ::testing::Test {
       parameters_.b1(), parameters_.b2(),
       parameters_.g()};
 };
+
+// Verifies we can compute the vector of generalized forces due to gravity on a
+// model of an acrobot.
+TEST_F(AcrobotPlantTests, VerifyCalcGravityGeneralizedForces) {
+  // Some arbitrary values of non-zero state:
+  VerifyCalcGravityGeneralizedForces(
+      -M_PI / 5.0, M_PI / 2.0  /* joint's angles */);
+  VerifyCalcGravityGeneralizedForces(
+      M_PI / 3.0, -M_PI / 5.0  /* joint's angles */);
+  VerifyCalcGravityGeneralizedForces(
+      M_PI / 4.0, -M_PI / 3.0  /* joint's angles */);
+  VerifyCalcGravityGeneralizedForces(
+      -M_PI, -M_PI / 2.0       /* joint's angles */);
+}
 
 // Verifies the correctness of MultibodyPlant::CalcTimeDerivatives() on a model
 // of an acrobot.
