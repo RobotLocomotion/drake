@@ -200,3 +200,35 @@ def py_test_isolated(
         isolate = True,
         **kwargs
     )
+
+def drake_py_sh_test(
+        name,
+        target,
+        main = None,
+        deps = [],
+        **kwargs):
+    """
+    Provides a version of `sh_test` that works with `py_binary` targets.
+
+    Since Skylark's Py provider that results from a `py_binary` can result in
+    multiple files, `sh_test` does not accept Python binaries that involve
+    more than one files.
+
+    @param target Target to put under test. This macro is generally meant for
+        targets within the same package, and should *not* start with `:`.
+    @param main Main file to run. If not specified, will try to infer main file
+        from the target.
+    """
+    if main == None:
+        main = "{}.py".format(target)
+    drake_py_test(
+        name = name,
+        srcs = [main],
+        main = main,
+        # N.B. Somehow, Bazel is OK with taking a `py_binary` as a library.
+        deps = deps + [target],
+        # N.B. Same as the warning in `drake_pybind_cc_googletest`: numpy
+        # imports unittest unconditionally.
+        allow_import_unittest = True,
+        **kwargs
+    )
