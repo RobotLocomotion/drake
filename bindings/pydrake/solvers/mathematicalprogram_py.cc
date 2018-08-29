@@ -479,7 +479,22 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
           })
       .def("SetSolverOption", &SetSolverOptionBySolverType<double>)
       .def("SetSolverOption", &SetSolverOptionBySolverType<int>)
-      .def("SetSolverOption", &SetSolverOptionBySolverType<string>);
+      .def("SetSolverOption", &SetSolverOptionBySolverType<string>)
+      .def("GetSolverOptionsDouble",
+          [](MathematicalProgram& prog, SolverType solver_type) {
+            return prog.GetSolverOptionsDouble(
+                SolverTypeConverter::TypeToId(solver_type));
+          })
+      .def("GetSolverOptionsInt",
+          [](MathematicalProgram& prog, SolverType solver_type) {
+            return prog.GetSolverOptionsInt(
+                SolverTypeConverter::TypeToId(solver_type));
+          })
+      .def("GetSolverOptionsStr",
+          [](MathematicalProgram& prog, SolverType solver_type) {
+            return prog.GetSolverOptionsStr(
+                SolverTypeConverter::TypeToId(solver_type));
+          });
 
   py::enum_<SolutionResult>(m, "SolutionResult")
       .value("kSolutionFound", SolutionResult::kSolutionFound)
