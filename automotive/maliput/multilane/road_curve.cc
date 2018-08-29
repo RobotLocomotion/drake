@@ -238,7 +238,7 @@ double RoadCurve::CalcGPrimeAsUsedForCalcSFromP(double p) const {
 
 Vector3<double> RoadCurve::W_of_prh(double p, double r, double h) const {
   // Calculates z (elevation) of (p,0,0).
-  const double z = elevation().f_p(p) * p_scale();
+  const double z = elevation().f_p(p) * l_max();
   // Calculates x,y of (p,0,0).
   const Vector2<double> xy = xy_of_p(p);
   // Calculates orientation of (p,r,h) basis at (p,0,0).
@@ -266,7 +266,7 @@ Vector3<double> RoadCurve::W_prime_of_prh(double p, double r, double h,
   const double sg = std::sin(gamma);
 
   // Evaluate dα/dp, dβ/dp, dγ/dp...
-  const double d_alpha = superelevation().f_dot_p(p) * p_scale();
+  const double d_alpha = superelevation().f_dot_p(p) * l_max();
   const double d_beta = -cb * cb * elevation().f_ddot_p(p);
   const double d_gamma = heading_dot_of_p(p);
 
@@ -280,13 +280,13 @@ Vector3<double> RoadCurve::W_prime_of_prh(double p, double r, double h,
   //
   //   ∂G(p)/∂p = G'(p)
   //
-  //   ∂Z(p)/∂p = p_scale * (z / p_scale) = p_scale * g'(p)
+  //   ∂Z(p)/∂p = l_max * (z / l_max) = l_max * g'(p)
   //
   //   ∂R_αβγ/∂p = (∂R_αβγ/∂α ∂R_αβγ/∂β ∂R_αβγ/∂γ)*(dα/dp, dβ/dp, dγ/dp)
   return
       Vector3<double>(G_prime.x(),
                       G_prime.y(),
-                      p_scale() * g_prime) +
+                      l_max() * g_prime) +
 
       Vector3<double>((((sa*sg)+(ca*sb*cg))*r + ((ca*sg)-(sa*sb*cg))*h),
                       (((-sa*cg)+(ca*sb*sg))*r - ((ca*cg)+(sa*sb*sg))*h),
@@ -305,7 +305,7 @@ Vector3<double> RoadCurve::W_prime_of_prh(double p, double r, double h,
 }
 
 Rot3 RoadCurve::Rabg_of_p(double p) const {
-  return Rot3(superelevation().f_p(p) * p_scale(),
+  return Rot3(superelevation().f_p(p) * l_max(),
               -std::atan(elevation().f_dot_p(p)),
               heading_of_p(p));
 }

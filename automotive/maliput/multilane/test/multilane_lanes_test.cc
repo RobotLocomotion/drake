@@ -769,14 +769,16 @@ TEST_P(MultilaneLanesParamTest, HillIntegration) {
   const double theta1 = theta0 + d_theta;
   const double radius = 100.;
   const double offset_radius = radius - r0;
-  const double p_scale = radius * d_theta;
+  const double l_max = radius * d_theta;
   const double z0 = 0.;
   const double z1 = 20.;
   // A cubic polynomial such that:
-  //   f(0) = (z0 / p_scale), f(1) = (z1 / p_scale), and f'(0) = f'(1) = 0.
-  const CubicPolynomial kHillPolynomial(z0 / p_scale, 0.,
-                                        (3. * (z1 - z0) / p_scale),
-                                        (-2. * (z1 - z0) / p_scale));
+  //   f(0) = (z0 / l_max),
+  ///  f(1) = (z1 / l_max),
+  //   and f'(0) = f'(1) = 0.
+  const CubicPolynomial kHillPolynomial(z0 / l_max, 0.,
+                                        (3. * (z1 - z0) / l_max),
+                                        (-2. * (z1 - z0) / l_max));
   std::unique_ptr<RoadCurve> road_curve =
       std::make_unique<ArcRoadCurve>(Vector2<double>(-100., -100.), radius,
                                      theta0, d_theta, kHillPolynomial, zp,
