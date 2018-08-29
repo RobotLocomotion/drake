@@ -156,6 +156,14 @@ This works about 80% of the time.
 - Lambdas, e.g. `[](Args... args) -> auto&& { return func(args...); }`
 (using perfect forwarding when appropriate).
 
+## Python Subclassing of C++ Classes
+
+In general, minimize the amount in which users may subclass C++ classes in
+Python. When you do wish to do this, ensure that you use a trampoline class
+in `pybind`, and ensure that the trampoline class inherits from the
+`py::wrapper<>` class specific to our fork of `pybind`. This ensures that no
+slicing happens with the subclassed instances.
+
 # Interactive Debugging with Bazel
 
 If you would like to interactively debug binding code (using IPython for
