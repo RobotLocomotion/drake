@@ -27,6 +27,8 @@ const Eigen::Vector3d kBoxSize(0.2, 0.2, 0.2);
 const Eigen::Vector3f point1(0.3, 0., 0.);
 const Eigen::Vector3f point2(0., -0.42, 0.);
 const Eigen::Vector3f point3(0., 0., 0.35);
+const int kPointsPerFace = 10;
+const int kFaces = 6;
 
 class RigidBodyPointCloudFilterTest : public ::testing::Test {
  public:
@@ -129,8 +131,6 @@ class RigidBodyPointCloudFilterTest : public ::testing::Test {
   // Creates a point cloud from an axis aligned box.
   PointCloud MakePointCloudFromBox(const Eigen::Vector3f& position,
                                    const Eigen::Vector3f& size) {
-    const int kPointsPerFace = 10;
-    const int kFaces = 6;
     PointCloud cloud(kFaces * kPointsPerFace);
     for (int i = 0; i < kFaces; i++) {
       int dim = i / 2;
