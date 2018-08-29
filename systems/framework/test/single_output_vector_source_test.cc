@@ -77,6 +77,7 @@ class Convertable final : public SingleOutputVectorSource<T> {
   explicit Convertable(UseTransmogrify) : Base(Tag{}, kSize) {}
   Convertable(UseTransmogrify, UseVector) : Base(Tag{}, *MakeVec()) {}
 
+  // Scalar-converting copy constructor.
   template <typename U>
   explicit Convertable(const Convertable<U>&)
       : Convertable<T>(UseTransmogrify{}) {}

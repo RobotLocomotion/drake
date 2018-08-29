@@ -1198,7 +1198,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   //
   // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
   template <typename T1 = T>
-  typename std::enable_if<!is_numeric<T1>::value>::type
+  typename std::enable_if_t<!is_numeric<T1>::value>
   DoCalcNextUpdateTimeImpl(const Context<T1>&, CompositeEventCollection<T1>*,
                            T1*) const {
     DRAKE_ABORT_MSG(
@@ -1211,7 +1211,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   //
   // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
   template <typename T1 = T>
-  typename std::enable_if<is_numeric<T1>::value>::type DoCalcNextUpdateTimeImpl(
+  typename std::enable_if_t<is_numeric<T1>::value> DoCalcNextUpdateTimeImpl(
       const Context<T1>& context, CompositeEventCollection<T1>* event_info,
       T1* time) const {
     auto diagram_context = dynamic_cast<const DiagramContext<T1>*>(&context);
