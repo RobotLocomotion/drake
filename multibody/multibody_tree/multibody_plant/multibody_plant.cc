@@ -1021,16 +1021,6 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
 }
 
 template<typename T>
-void MultibodyPlant<T>::AddJointDampingForces(
-    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
-  DRAKE_DEMAND(forces != nullptr);
-  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
-    const Joint<T>& joint = model().get_joint(joint_index);
-    joint.AddInDamping(context, forces);
-  }
-}
-
-template<typename T>
 void MultibodyPlant<T>::AddJointActuationForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
   DRAKE_DEMAND(forces != nullptr);
@@ -1151,8 +1141,6 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 
   // If there is any input actuation, add it to the multibody forces.
   AddJointActuationForces(context, &forces);
-
-  AddJointDampingForces(context, &forces);
 
   model_->CalcMassMatrixViaInverseDynamics(context, &M);
 
@@ -1277,10 +1265,6 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // If there is any input actuation, add it to the multibody forces.
   AddJointActuationForces(context0, &forces0);
-
-  // TODO(amcastro-tri): Update ImplicitStribeckSolver to treat this term
-  // implicitly.
-  AddJointDampingForces(context0, &forces0);
 
   AddJointLimitsPenaltyForces(context0, &forces0);
 

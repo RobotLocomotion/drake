@@ -2336,6 +2336,17 @@ class MultibodyTree {
       const VelocityKinematicsCache<T>& vc,
       EigenPtr<VectorX<T>> Cv) const;
 
+  // Helper method to apply forces due to damping at the joints.
+  // MultibodyTree treats damping forces separately from other ForceElement
+  // forces for a quick simple solution. This allows clients of MBT (namely MBP)
+  // to implement their own customized (implicit) time stepping schemes.
+  // TODO(amcastro-tri): Consider updating ForceElement to also compute a
+  // Jacobian for general force models. That would allow us to implement
+  // implicit schemes for any forces using a more general infrastructure rather
+  // than having to deal with damping in a special way.
+  void AddJointDampingForces(
+      const systems::Context<T>& context, MultibodyForces<T>* forces) const;
+
   // Implementation of CalcPotentialEnergy().
   // It is assumed that the position kinematics cache pc is in sync with
   // context.
