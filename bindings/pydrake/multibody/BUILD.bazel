@@ -45,6 +45,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "multibody_tree_py",
     cc_deps = [
+        "//bindings/pydrake/util:drake_optional_pybind",
         "//bindings/pydrake/util:eigen_geometry_pybind",
         "//bindings/pydrake/util:type_safe_index_pybind",
     ],

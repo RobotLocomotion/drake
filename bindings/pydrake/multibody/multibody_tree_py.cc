@@ -3,8 +3,11 @@
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/util/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/util/type_safe_index_pybind.h"
+#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
+#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/math/spatial_force.h"
 #include "drake/multibody/multibody_tree/math/spatial_vector.h"
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"
@@ -89,12 +92,46 @@ void init_module(py::module m) {
   }
 
   {
+    using Class = PrismaticJoint<T>;
+    py::class_<Class, Joint<T>> cls(m, "PrismaticJoint");
+    cls
+        .def("get_translation", &Class::get_translation, py::arg("context"))
+        .def("set_translation", &Class::set_translation,
+             py::arg("context"), py::arg("translation"))
+        .def("get_translation_rate", &Class::get_translation_rate,
+             py::arg("context"))
+        .def("set_translation_rate", &Class::set_translation_rate,
+             py::arg("context"), py::arg("translation_dot"));
+  }
+
+  {
+    using Class = RevoluteJoint<T>;
+    py::class_<Class, Joint<T>> cls(m, "RevoluteJoint");
+    cls
+        .def("get_angle", &Class::get_angle, py::arg("context"))
+        .def("set_angle", &Class::set_angle, py::arg("context"),
+             py::arg("angle"));
+  }
+
+  {
     using Class = JointActuator<T>;
     py::class_<Class> cls(m, "JointActuator");
     BindMultibodyTreeElementMixin(&cls);
     cls
         .def("name", &Class::name)
         .def("joint", &Class::joint, py_reference_internal);
+  }
+
+  {
+    using Class = ForceElement<T>;
+    py::class_<Class> cls(m, "ForceElement");
+    BindMultibodyTreeElementMixin(&cls);
+  }
+
+  {
+    using Class = UniformGravityFieldElement<T>;
+    py::class_<Class, ForceElement<T>>(m, "UniformGravityFieldElement")
+        .def(py::init<Vector3<double>>());
   }
 
   {
@@ -168,6 +205,13 @@ void init_multibody_plant(py::module m) {
         .def("num_actuated_dofs",
              overload_cast_explicit<int>(&Class::num_actuated_dofs));
     // TODO(eric.cousineau): Add construction methods, `AddRigidBody`, etc.
+    cls
+        .def("AddForceElement",
+             [](Class* self,
+                std::unique_ptr<ForceElement<T>> force_element) -> auto& {
+               return self->AddForceElement<ForceElement>(
+                   std::move(force_element));
+             }, py::arg("force_element"), py_reference_internal);
     // Topology queries.
     cls
         .def("HasBodyNamed",
@@ -190,6 +234,15 @@ void init_multibody_plant(py::module m) {
              overload_cast_explicit<const JointActuator<T>&, const string&>(
                 &Class::GetJointActuatorByName),
              py::arg("name"), py_reference_internal);
+    // Geometry.
+    cls
+        .def("get_source_id", &Class::get_source_id)
+        .def("get_geometry_query_input_port",
+             &Class::get_geometry_query_input_port, py_reference_internal)
+        .def("get_geometry_poses_output_port",
+             &Class::get_geometry_poses_output_port, py_reference_internal)
+        .def("geometry_source_is_registered",
+             &Class::geometry_source_is_registered);
     // Port accessors.
     cls
         .def("get_actuation_input_port",

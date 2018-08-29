@@ -26,7 +26,6 @@ using geometry::SceneGraph;
 using lcm::DrakeLcm;
 
 // "multibody" namespace is ambiguous here without "drake::".
-using drake::multibody::Body;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::parsing::AddModelFromSdfFile;
 using drake::multibody::PrismaticJoint;
@@ -66,7 +65,7 @@ int do_main() {
   cart_pole.Finalize(&scene_graph);
 
   // Sanity check on the availability of the optional source id before using it.
-  DRAKE_DEMAND(!!cart_pole.get_source_id());
+  DRAKE_DEMAND(cart_pole.geometry_source_is_registered());
 
   builder.Connect(
       cart_pole.get_geometry_poses_output_port(),
