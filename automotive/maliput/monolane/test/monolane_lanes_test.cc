@@ -571,15 +571,15 @@ GTEST_TEST(MonolaneLanesTest, HillIntegration) {
   const double theta0 = 0.25 * M_PI;
   const double d_theta = 0.5 * M_PI;
   const double theta1 = theta0 + d_theta;
-  const double p_scale = 100. * d_theta;
+  const double l_max = 100. * d_theta;
   const double z0 = 0.;
   const double z1 = 20.;
   // A cubic polynomial such that:
-  //   f(0) = (z0 / p_scale), f(1) = (z1 / p_scale), and f'(0) = f'(1) = 0.
-  const CubicPolynomial kHillPolynomial(z0 / p_scale,
+  //   f(0) = (z0 / l_max), f(1) = (z1 / l_max), and f'(0) = f'(1) = 0.
+  const CubicPolynomial kHillPolynomial(z0 / l_max,
                                         0.,
-                                        (3. * (z1 - z0) / p_scale),
-                                        (-2. * (z1 - z0) / p_scale));
+                                        (3. * (z1 - z0) / l_max),
+                                        (-2. * (z1 - z0) / l_max));
   Lane* l1 = s1->NewArcLane(
       api::LaneId{"l2"},
       {-100., -100.}, 100., theta0, d_theta,

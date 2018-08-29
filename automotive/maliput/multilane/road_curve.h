@@ -77,8 +77,8 @@ enum class ComputationPolicy {
 /// W is derived from the three functions which define the lane:
 ///
 ///   G: p --> (x,y)     = the reference curve, a.k.a. xy_of_p()
-///   Z: p --> z / q_max = the elevation function, a.k.a. elevation_
-///   Θ: p --> θ / q_max = the superelevation function, a.k.a. superelevation_
+///   Z: p --> z / l_max = the elevation function, a.k.a. elevation_
+///   Θ: p --> θ / l_max = the superelevation function, a.k.a. superelevation_
 ///
 /// as:
 ///
@@ -171,13 +171,11 @@ class RoadCurve {
   /// d_heading/dp evaluated at @p p.
   virtual double heading_dot_of_p(double p) const = 0;
 
-  /// Computes the path length integral of the reference curve for the interval
-  /// [0;1] of p.
-  /// @return The path length integral of the reference curve.
-  // TODO(maddog-tri)  This method should be renamed to match the Maliput's
-  //                   documentation as well as other variable names along the
-  //                   implementation.
-  virtual double p_scale() const = 0;
+  /// Computes the path length integral of the reference curve for
+  /// the whole [0; 1] interval of p, formally l_max = ∫₀¹ |G'(p)| dp
+  /// where G' = dG/dp.
+  /// @return The total path length of the reference curve.
+  virtual double l_max() const = 0;
 
   /// Converts a @p geo_coordinate in the world frame to the composed curve
   /// frame, i.e., the superposition of the reference curve, elevation and
@@ -290,22 +288,22 @@ class RoadCurve {
   /// These two functions (@p elevation and @p superelevation) must be
   /// isotropically scaled to operate over the domain p in [0, 1], where
   /// p is linear in the path-length of the planar reference curve,
-  /// p = 0 corresponds to the start and p = 1 to the end. p_scale() is
-  /// the scale factor.  In other words...
+  /// p = 0 corresponds to the start and p = 1 to the end. l_max()
+  /// is the length of the reference curve. In other words...
   ///
   /// Given:
   ///  * a reference curve R(p) parameterized by p in domain [0, 1], which
-  ///    has a path-length q(p) in range [0, q_max], linearly related to p,
-  ///    where q_max is the total path-length of R (in real-world units);
-  ///  * the true elevation function E_true(q), parameterized by the
-  ///    path-length q of R;
-  ///  * the true superelevation function S_true(q), parameterized by the
-  ///    path-length q of R;
+  ///    has a path-length ℓ(p) in range [0, l_max], linearly related to p,
+  ///    where l_max is the total path-length of R (in real-world units);
+  ///  * the true elevation function E_true(ℓ), parameterized by the
+  ///    path-length ℓ of R;
+  ///  * the true superelevation function S_true(ℓ), parameterized by the
+  ///    path-length ℓ of R;
   ///
   /// then:
-  ///  * p_scale is q_max (and p = q / p_scale);
-  ///  * @p elevation is  E_scaled = (1 / p_scale) * E_true(p_scale * p);
-  ///  * @p superelevation is  S_scaled = (1 / p_scale) * S_true(p_scale * p).
+  ///  * p = ℓ / l_max;
+  ///  * @p elevation is E_scaled = (1 / l_max) * E_true(l_max * p);
+  ///  * @p superelevation is  S_scaled = (1 / l_max) * S_true(l_max * p).
   RoadCurve(double linear_tolerance, double scale_length,
             const CubicPolynomial& elevation,
             const CubicPolynomial& superelevation,
