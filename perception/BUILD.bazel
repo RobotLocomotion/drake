@@ -17,7 +17,7 @@ drake_cc_package_library(
         ":depth_image_to_point_cloud",
         ":point_cloud",
         ":point_cloud_flags",
-        ":rigid_body_tree_removal",
+        ":rigid_body_point_cloud_filter",
         ":transform_point_cloud",
     ],
 )
@@ -77,9 +77,9 @@ drake_cc_googletest(
 )
 
 drake_cc_library(
-    name = "rigid_body_tree_removal",
-    srcs = ["rigid_body_tree_removal.cc"],
-    hdrs = ["rigid_body_tree_removal.h"],
+    name = "rigid_body_point_cloud_filter",
+    srcs = ["rigid_body_point_cloud_filter.cc"],
+    hdrs = ["rigid_body_point_cloud_filter.h"],
     deps = [
         ":point_cloud",
         "//common:essential",
@@ -106,12 +106,12 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "rigid_body_tree_removal_test",
-    srcs = ["test/rigid_body_tree_removal_test.cc"],
+    name = "rigid_body_point_cloud_filter_test",
+    srcs = ["test/rigid_body_point_cloud_filter_test.cc"],
     deps = [
         ":depth_image_to_point_cloud",
         ":point_cloud",
-        ":rigid_body_tree_removal",
+        ":rigid_body_point_cloud_filter",
         ":transform_point_cloud",
         "//common/test_utilities:eigen_matrix_compare",
         "//lcm",

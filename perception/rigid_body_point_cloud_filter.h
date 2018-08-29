@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -23,9 +24,9 @@ namespace perception {
 /// The system has two inpt ports and one output port. The first input port
 /// consumes a PointCloud and the second takes the state of the RigidBodyTree.
 /// The ouput port contains the filtered PointCloud.
-class RigidBodyTreeRemoval final : public systems::LeafSystem<double> {
+class RigidBodyPointCloudFilter final : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBodyTreeRemoval)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBodyPointCloudFilter)
 
   /// Constructs the filter given a RigidBodyTree.
   ///
@@ -35,8 +36,8 @@ class RigidBodyTreeRemoval final : public systems::LeafSystem<double> {
   /// detection that determines which points to remove from the point cloud.
   ///
   /// The `tree` object must remain valid for the duration of this object.
-  RigidBodyTreeRemoval(const RigidBodyTree<double>& tree,
-                       double collision_threshold);
+  RigidBodyPointCloudFilter(const RigidBodyTree<double>& tree,
+                            double collision_threshold);
 
   /// Returns the vector valued input port that contains a vector of `q, v`
   /// corresponding to the positions and velocities associated with a

@@ -1,10 +1,10 @@
-#include "drake/perception/rigid_body_tree_removal.h"
+#include "drake/perception/rigid_body_point_cloud_filter.h"
 
 namespace drake {
 namespace perception {
 
-RigidBodyTreeRemoval::RigidBodyTreeRemoval(const RigidBodyTree<double>& tree,
-                                           double collision_threshold)
+RigidBodyPointCloudFilter::RigidBodyPointCloudFilter(
+    const RigidBodyTree<double>& tree, double collision_threshold)
     : tree_(tree), collision_threshold_(collision_threshold) {
   /// Create input port for point cloud.
   point_cloud_input_port_index_ = DeclareAbstractInputPort().get_index();
@@ -16,16 +16,16 @@ RigidBodyTreeRemoval::RigidBodyTreeRemoval(const RigidBodyTree<double>& tree,
           .get_index();
 
   // Create output port for filtered point cloud.
-  DeclareAbstractOutputPort(&RigidBodyTreeRemoval::MakeOutputPointCloud,
-                            &RigidBodyTreeRemoval::FilterPointCloud);
+  DeclareAbstractOutputPort(&RigidBodyPointCloudFilter::MakeOutputPointCloud,
+                            &RigidBodyPointCloudFilter::FilterPointCloud);
 }
 
-PointCloud RigidBodyTreeRemoval::MakeOutputPointCloud() const {
+PointCloud RigidBodyPointCloudFilter::MakeOutputPointCloud() const {
   PointCloud cloud(0);
   return cloud;
 }
 
-void RigidBodyTreeRemoval::FilterPointCloud(
+void RigidBodyPointCloudFilter::FilterPointCloud(
     const systems::Context<double>& context, PointCloud* output) const {
   // 1. Create the list of points to be considered.
   const PointCloud* input_cloud =
@@ -43,12 +43,13 @@ void RigidBodyTreeRemoval::FilterPointCloud(
       EvalEigenVectorInput(context, state_input_port_index_)
           .head(tree_.get_num_positions());
   const KinematicsCache<double> kinematics_cache = tree_.doKinematics(q);
-  const std::vector<size_t> filtered_point_indices =
+  std::vector<size_t> filtered_point_indices =
       const_cast<RigidBodyTree<double>&>(tree_).collidingPoints(
           kinematics_cache, points, collision_threshold_);
 
   // 3. Create a new point cloud without the colliding points.
-  if (filtered_point_indices.size() > 0) {
+  if (!filtered_point_indices.empty()) {
+    // std::sort(filtered_point_indices.begin(), filtered_point_indices.end());
     output->resize(points.size() - filtered_point_indices.size());
     int k = 0;
     for (size_t i = 0; i < points.size(); i++) {
@@ -64,6 +65,19 @@ void RigidBodyTreeRemoval::FilterPointCloud(
         k++;
       }
     }
+    // size_t last_i = 0;
+    // int j = 0;
+    // for (const auto& index : filtered_point_indices) {
+    //  for (size_t i = last_i; i < points.size(); ++i) {
+    //    ++last_i;
+    //    if (i != index) {
+    //      output->mutable_xyz(j) = points[i].cast<float>();
+    //      j++;
+    //    } else {
+    //      break;
+    //    }
+    //  }
+    //}
   } else {
     *output = *input_cloud;
   }

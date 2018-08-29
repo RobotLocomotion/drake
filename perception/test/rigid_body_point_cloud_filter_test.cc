@@ -1,4 +1,4 @@
-#include "drake/perception/rigid_body_tree_removal.h"
+#include "drake/perception/rigid_body_point_cloud_filter.h"
 
 #include <cmath>
 #include <random>
@@ -31,7 +31,7 @@ const double kDepthRangeFar = 5.0;
 const int kWidth = 640;
 const int kHeight = 480;
 
-class RigidBodyTreeRemovalTest : public ::testing::Test {
+class RigidBodyPointCloudFilterTest : public ::testing::Test {
  public:
   // Checks if the point cloud `cloud` contains the point `x`.
   static bool ContainsPoint(const PointCloud& cloud, const Vector3<float>& x) {
@@ -44,12 +44,12 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
     return false;
   }
 
-  // Calculates the output for a RigidBodyTreeRemoval filter given fixed inputs.
+  // Calculates the filter output for given fixed inputs.
   static PointCloud CreateFilterAndCalcOutput(
       const PointCloud& cloud_input, const RigidBodyTree<double>& tree,
       const VectorX<double>& state_input) {
     auto filter =
-        std::make_unique<RigidBodyTreeRemoval>(tree, kCollisionThreshold);
+        std::make_unique<RigidBodyPointCloudFilter>(tree, kCollisionThreshold);
 
     auto context = filter->CreateDefaultContext();
     context->FixInputPort(
@@ -113,7 +113,7 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
     builder_->ExportInput(passthrough->get_input_port());
     builder_->ExportOutput(transformer->point_cloud_output_port());
 
-    auto filter = builder_->AddSystem<RigidBodyTreeRemoval>(
+    auto filter = builder_->AddSystem<RigidBodyPointCloudFilter>(
         *tree_.get(), kCollisionThreshold);
 
     builder_->Connect(passthrough->get_output_port(),
@@ -171,8 +171,22 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
 
   // Calculates the expected output of the filter.
   PointCloud CalcExpectedOutput(const PointCloud& cloud) {
-    const std::vector<size_t> indices = CollidingPoints(cloud, tree_.get());
+    std::vector<size_t> indices = CollidingPoints(cloud, tree_.get());
+    // std::sort(indices.begin(), indices.end());
     PointCloud cloud_out(cloud.size() - indices.size());
+    // int last_i = 0;
+    // int j = 0;
+    // for (const auto& index : indices) {
+    //  for (size_t i = last_i; i < static_cast<size_t>(cloud.size()); ++i) {
+    //    ++last_i;
+    //    if (i != index) {
+    //      cloud_out.mutable_xyz(j) = cloud.xyz(i);
+    //      j++;
+    //    } else {
+    //      break;
+    //    }
+    //  }
+    //}
     int j = 0;
     for (int i = 0; i < cloud.size(); i++) {
       if (std::find(indices.begin(), indices.end(), i) == indices.end()) {
@@ -265,7 +279,7 @@ class RigidBodyTreeRemovalTest : public ::testing::Test {
 
 // Verifies that the visual geometries of a RigidBody contained in a
 // RigidBodyTree are completely removed from the point cloud.
-TEST_F(RigidBodyTreeRemovalTest, RemoveBoxTest) {
+TEST_F(RigidBodyPointCloudFilterTest, RemoveBoxTest) {
   tree_->compile();
   InitFilterDiagram();
   BuildDiagramAndInitContext();
@@ -288,7 +302,7 @@ TEST_F(RigidBodyTreeRemovalTest, RemoveBoxTest) {
 
 // Verifies that points which do not belong to visual geometries of the rigid
 // bodies contained in a RigidBodyTree are kept.
-TEST_F(RigidBodyTreeRemovalTest, KeepPointsTest) {
+TEST_F(RigidBodyPointCloudFilterTest, KeepPointsTest) {
   tree_->compile();
   InitTransformerDiagram();
   BuildDiagramAndInitContext();
