@@ -680,7 +680,7 @@ drake_cc_googletest(
         "//automotive:maliput_railcar",
         "//automotive/maliput/api",
         "//automotive/maliput/dragway",
-        "//automotive/maliput/monolane",
+        "//automotive/maliput/multilane",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
     ],
