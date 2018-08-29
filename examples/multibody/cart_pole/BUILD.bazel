@@ -52,4 +52,8 @@ drake_cc_googletest(
     ],
 )
 
+exports_files(
+    srcs = ["cart_pole.sdf"],
+)
+
 add_lint_tests()

@@ -4,6 +4,8 @@ from pydrake.multibody.multibody_tree import (
     Body,
     BodyFrame,
     BodyIndex,
+    ForceElement,
+    ForceElementIndex,
     Frame,
     FrameIndex,
     Joint,
@@ -12,6 +14,7 @@ from pydrake.multibody.multibody_tree import (
     JointIndex,
     ModelInstanceIndex,
     MultibodyTree,
+    UniformGravityFieldElement,
     world_index,
 )
 from pydrake.multibody.multibody_tree.math import (
@@ -28,19 +31,27 @@ from pydrake.multibody.benchmarks.acrobot import (
     MakeAcrobotPlant,
 )
 
+import copy
+import unittest
+
+import numpy as np
+
 from pydrake.common import FindResourceOrThrow
 from pydrake.systems.framework import InputPort, OutputPort
 
-import copy
-import unittest
-import numpy as np
 
-
-CLASS_TO_INDEX_CLASS_MAP = {
-    Body: BodyIndex,
-    Joint: JointIndex,
-    JointActuator: JointActuatorIndex,
-}
+def get_index_class(cls):
+    # Maps a class to its corresponding index class, accommdating inheritance.
+    class_to_index_class_map = {
+        Body: BodyIndex,
+        ForceElement: ForceElementIndex,
+        Joint: JointIndex,
+        JointActuator: JointActuatorIndex,
+    }
+    for key_cls, index_cls in class_to_index_class_map.iteritems():
+        if issubclass(cls, key_cls):
+            return index_cls
+    raise RuntimeError("Unknown class: {}".format(cls))
 
 
 class TestMultibodyTreeMath(unittest.TestCase):
@@ -107,7 +118,7 @@ class TestMultibodyTree(unittest.TestCase):
     def _test_multibody_tree_element_mixin(self, element):
         self.assertIsInstance(element.get_parent_tree(), MultibodyTree)
         cls = type(element)
-        self.assertIsInstance(element.index(), CLASS_TO_INDEX_CLASS_MAP[cls])
+        self.assertIsInstance(element.index(), get_index_class(cls))
         self.assertIsInstance(element.model_instance(), ModelInstanceIndex)
 
     def _test_body_api(self, body):
