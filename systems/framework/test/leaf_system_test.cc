@@ -1465,7 +1465,17 @@ template <typename T>
 class SymbolicSparsitySystem : public LeafSystem<T> {
  public:
   SymbolicSparsitySystem()
-      : LeafSystem<T>(SystemTypeTag<systems::SymbolicSparsitySystem>{}) {
+      : SymbolicSparsitySystem(
+            SystemTypeTag<systems::SymbolicSparsitySystem>{}) {}
+
+  // Scalar-converting copy constructor.
+  template <typename U>
+  SymbolicSparsitySystem(const SymbolicSparsitySystem<U>&)
+      : SymbolicSparsitySystem<T>() {}
+
+ protected:
+  explicit SymbolicSparsitySystem(SystemScalarConverter converter)
+      : LeafSystem<T>(std::move(converter)) {
     this->DeclareInputPort(kVectorValued, kSize);
     this->DeclareInputPort(kVectorValued, kSize);
 
@@ -1474,10 +1484,6 @@ class SymbolicSparsitySystem : public LeafSystem<T> {
     this->DeclareVectorOutputPort(BasicVector<T>(kSize),
                                   &SymbolicSparsitySystem::CalcY1);
   }
-
-  template <typename U>
-  SymbolicSparsitySystem(const SymbolicSparsitySystem<U>&)
-      : SymbolicSparsitySystem<T>() {}
 
  private:
   void CalcY0(const Context<T>& context,
@@ -1495,8 +1501,22 @@ class SymbolicSparsitySystem : public LeafSystem<T> {
   const int kSize = 1;
 };
 
-GTEST_TEST(FeedthroughTest, SymbolicSparsity) {
-  SymbolicSparsitySystem<double> system;
+// The sparsity reporting should be the same no matter which scalar type the
+// original system has been instantiated with.
+using FeedthroughTestScalars = ::testing::Types<
+  double,
+  AutoDiffXd,
+  symbolic::Expression>;
+
+template <typename T>
+class FeedthroughTypedTest : public ::testing::Test {};
+TYPED_TEST_CASE(FeedthroughTypedTest, FeedthroughTestScalars);
+
+// The sparsity of a System should be inferred from its symbolic form.
+TYPED_TEST(FeedthroughTypedTest, SymbolicSparsity) {
+  using T = TypeParam;
+  const SymbolicSparsitySystem<T> system;
+
   // Both the output ports have direct feedthrough from some input.
   EXPECT_TRUE(system.HasAnyDirectFeedthrough());
   EXPECT_TRUE(system.HasDirectFeedthrough(0));
@@ -1506,12 +1526,33 @@ GTEST_TEST(FeedthroughTest, SymbolicSparsity) {
   EXPECT_TRUE(system.HasDirectFeedthrough(0, 1));
   EXPECT_TRUE(system.HasDirectFeedthrough(1, 0));
   EXPECT_FALSE(system.HasDirectFeedthrough(1, 1));
-  // Confirm all pairs are returned.
+  // Confirm the exact set of desired pairs are returned.
   std::multimap<int, int> expected;
   expected.emplace(1, 0);
   expected.emplace(0, 1);
-  auto feedthrough_pairs = system.GetDirectFeedthroughs();
-  EXPECT_EQ(feedthrough_pairs, expected);
+  EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
+}
+
+// This system only supports T = symbolic::Expression; it does not support
+// scalar conversion.
+class NoScalarConversionSymbolicSparsitySystem
+    : public SymbolicSparsitySystem<symbolic::Expression> {
+ public:
+  NoScalarConversionSymbolicSparsitySystem()
+      : SymbolicSparsitySystem<symbolic::Expression>(
+            SystemScalarConverter{}) {}
+};
+
+// The sparsity of a System should be inferred from its symbolic form, even
+// when the system does not support scalar conversion.
+GTEST_TEST(FeedthroughTest, SymbolicSparsityWithoutScalarConversion) {
+  const NoScalarConversionSymbolicSparsitySystem system;
+
+  // Confirm the exact set of desired pairs are returned.
+  std::multimap<int, int> expected;
+  expected.emplace(1, 0);
+  expected.emplace(0, 1);
+  EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
 }
 
 // Sanity check the default implementation of ToAutoDiffXd, for cases that

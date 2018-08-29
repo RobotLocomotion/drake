@@ -1516,7 +1516,7 @@ class LeafSystem : public System<T> {
   //
   // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
   template <typename T1 = T>
-  typename std::enable_if<!is_numeric<T1>::value>::type
+  typename std::enable_if_t<!is_numeric<T1>::value>
   DoCalcNextUpdateTimeImpl(const Context<T1>&,
                            CompositeEventCollection<T1>*,
                            T1*) const {
@@ -1530,7 +1530,7 @@ class LeafSystem : public System<T> {
   //
   // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
   template <typename T1 = T>
-  typename std::enable_if<is_numeric<T1>::value>::type DoCalcNextUpdateTimeImpl(
+  typename std::enable_if_t<is_numeric<T1>::value> DoCalcNextUpdateTimeImpl(
       const Context<T1>& context, CompositeEventCollection<T1>* events,
       T1* time) const {
     T1 min_time = std::numeric_limits<double>::infinity();
@@ -1566,14 +1566,30 @@ class LeafSystem : public System<T> {
     }
   }
 
-  // Returns a SystemSymbolicInspector for this system, or nullptr if a
-  // SystemSymbolicInspector cannot be constructed because this System has no
-  // symbolic representation.
+  // Returns a SystemSymbolicInspector for this system, or nullptr if one
+  // cannot be constructed because this System has no symbolic representation.
   std::unique_ptr<SystemSymbolicInspector> MakeSystemSymbolicInspector() const {
-    std::unique_ptr<System<symbolic::Expression>> symbolic_system =
-        this->ToSymbolicMaybe();
-    if (symbolic_system) {
-      return std::make_unique<SystemSymbolicInspector>(*symbolic_system);
+    // We use different implementations when T = Expression or not.
+    return MakeSystemSymbolicInspectorImpl(*this);
+  }
+
+  // When T == Expression, we don't need to use scalar conversion.
+  static std::unique_ptr<SystemSymbolicInspector>
+  MakeSystemSymbolicInspectorImpl(const System<symbolic::Expression>& system) {
+    return std::make_unique<SystemSymbolicInspector>(system);
+  }
+
+  // When T != Expression, attempt to use scalar conversion.
+  template <typename T1>
+  static
+  typename std::enable_if_t<
+    !std::is_same<T1, symbolic::Expression>::value,
+    std::unique_ptr<SystemSymbolicInspector>>
+  MakeSystemSymbolicInspectorImpl(const System<T1>& system) {
+    using symbolic::Expression;
+    std::unique_ptr<System<Expression>> converted = system.ToSymbolicMaybe();
+    if (converted) {
+      return MakeSystemSymbolicInspectorImpl(*converted);
     } else {
       return nullptr;
     }

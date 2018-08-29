@@ -861,7 +861,9 @@ drake_cc_googletest(
     name = "vector_system_test",
     deps = [
         ":vector_system",
+        "//common/test_utilities:expect_throws_message",
         "//systems/framework/test_utilities",
+        "//systems/primitives:integrator",
     ],
 )
 
