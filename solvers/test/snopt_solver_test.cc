@@ -155,6 +155,43 @@ GTEST_TEST(SnoptTest, TestSparseCost) {
       CompareMatrices(prog.GetSolution(x), Eigen::Vector3d(1, -1, 1), tol));
   EXPECT_NEAR(prog.GetOptimalCost(), -1, tol);
 }
+
+GTEST_TEST(SnoptTest, DistanceToTetrahedron) {
+  // This test fails in SNOPT 7.6 using C interface, but succeeds in SNOPT
+  // 7.4.11 with f2c interface.
+  const double distance_expected = 0.2;
+  DistanceToTetrahedronExample prog(distance_expected);
+  Eigen::Matrix<double, 18, 1> x0;
+  x0 << 0, 0, 0, 0.7, 0.8, 0.9, 0.1, 0.2, 0.3, 1, 1, 1, 1, 0.4, 0.5, 0.6, 1.1,
+      1.2;
+  // This following initial guess should work in SNOPT 7.6
+  // x0 << 0, 0, 0, 0.7, 0.8, 0.9, 0.7, 0.2, 0.3, 1, 1, 1, 1, 0.4, 0.5, 0.6,
+  // 1.1, 1.2
+  prog.SetInitialGuessForAllVariables(x0);
+
+  SnoptSolver solver;
+  const SolutionResult result = solver.Solve(prog);
+  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+
+  const auto x_sol = prog.GetSolution(prog.x());
+  const Eigen::Vector3d p_WB_sol = x_sol.head<3>();
+  const Eigen::Vector3d p_WQ_sol = x_sol.segment<3>(3);
+  const Eigen::Vector3d n_W_sol = x_sol.segment<3>(6);
+  const Eigen::Vector4d quat_WB_sol = x_sol.segment<4>(9);
+  const Eigen::Vector3d p_WP_sol = x_sol.segment<3>(13);
+  const double tol = 1E-6;
+  EXPECT_NEAR(n_W_sol.norm(), 1, tol);
+  EXPECT_NEAR(quat_WB_sol.norm(), 1, tol);
+  EXPECT_NEAR((p_WP_sol - p_WQ_sol).norm(), distance_expected, tol);
+  const Eigen::Quaterniond quaternion_WB_sol(quat_WB_sol(0), quat_WB_sol(1),
+                                             quat_WB_sol(2), quat_WB_sol(3));
+  const Eigen::Matrix3d R_WB = quaternion_WB_sol.toRotationMatrix();
+  const Eigen::Vector3d p_BQ = R_WB.transpose() * (p_WQ_sol - p_WB_sol);
+  EXPECT_TRUE(
+      ((prog.A_tetrahedron() * p_BQ).array() <= prog.b_tetrahedron().array())
+          .all());
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
