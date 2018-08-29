@@ -6,7 +6,9 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
+#include "drake/systems/primitives/integrator.h"
 
 namespace drake {
 namespace systems {
@@ -400,9 +402,26 @@ TEST_F(VectorSystemTest, NoFeedthroughContinuousTimeSystemTest) {
 
   // The non-connected input is never evaluated.
   auto context = dut.CreateDefaultContext();
-  auto output = dut.get_output_port().Allocate();
-  dut.get_output_port().Calc(*context, output.get());
-  EXPECT_EQ(output->GetValueOrThrow<BasicVector<double>>().GetAtIndex(0), 0.0);
+  const auto& output = dut.get_output_port();
+  EXPECT_EQ(output.Eval<BasicVector<double>>(*context).GetAtIndex(0), 0.0);
+}
+
+// Symbolic analysis should be able to determine that the system is not direct
+// feedthrough.  (This is of special concern to VectorSystem, because it must
+// be precise about when it evaluates its inputs.)
+TEST_F(VectorSystemTest, ImplicitlyNoFeedthroughTest) {
+  static_assert(
+      std::is_base_of<VectorSystem<double>, Integrator<double>>::value,
+      "This test assumes that Integrator is implemented in terms of "
+      "VectorSystem; if that changes, copy its old implementation here "
+      "so that this test is unchanged.");
+  const Integrator<double> dut(1);
+  EXPECT_FALSE(dut.HasAnyDirectFeedthrough());
+
+  // The non-connected input is never evaluated.
+  auto context = dut.CreateDefaultContext();
+  const auto& output = dut.get_output_port();
+  EXPECT_EQ(output.Eval<BasicVector<double>>(*context).GetAtIndex(0), 0.0);
 }
 
 // Derivatives and Output methods still work when input size is zero.
@@ -417,9 +436,8 @@ TEST_F(VectorSystemTest, NoInputContinuousTimeSystemTest) {
   dut.CalcTimeDerivatives(*context, derivatives.get());
   EXPECT_EQ(derivatives->get_vector().GetAtIndex(0), -1.0);
 
-  auto output = dut.get_output_port().Allocate();
-  dut.get_output_port().Calc(*context, output.get());
-  EXPECT_EQ(output->GetValueOrThrow<BasicVector<double>>().GetAtIndex(0), 1.0);
+  const auto& output = dut.get_output_port();
+  EXPECT_EQ(output.Eval<BasicVector<double>>(*context).GetAtIndex(0), 1.0);
 
   const auto& input = dut.EvalVectorInput(*context);
   EXPECT_EQ(input.size(), 0);
@@ -468,6 +486,7 @@ class OpenScalarTypeSystem : public VectorSystem<T> {
       : VectorSystem<T>(SystemTypeTag<systems::OpenScalarTypeSystem>{}, 1, 1),
         some_number_(some_number) {}
 
+  // Scalar-converting copy constructor.
   template <typename U>
   explicit OpenScalarTypeSystem(const OpenScalarTypeSystem<U>& other)
       : OpenScalarTypeSystem<T>(other.some_number_) {}
@@ -550,12 +569,14 @@ TEST_F(VectorSystemTest, MissingMethodsContinuousTimeSystemTest) {
 
   std::unique_ptr<ContinuousState<double>> derivatives =
       dut.AllocateTimeDerivatives();
-  EXPECT_THROW(dut.CalcTimeDerivatives(*context, derivatives.get()),
-               std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.CalcTimeDerivatives(*context, derivatives.get()), std::exception,
+      ".*TimeDerivatives.*derivatives->size.. == 0.*failed.*");
 
-  auto output = dut.get_output_port().Allocate();
-  EXPECT_THROW(dut.get_output_port().Calc(*context, output.get()),
-               std::exception);
+  const auto& output = dut.get_output_port();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      output.Eval<BasicVector<double>>(*context), std::exception,
+      ".*Output.*'output->size.. == 0.*failed.*");
 }
 
 // This system declares an output and discrete state, but does not define
@@ -575,13 +596,15 @@ TEST_F(VectorSystemTest, MissingMethodsDiscreteTimeSystemTest) {
   context->get_mutable_discrete_state().get_mutable_vector().SetFromVector(
       Vector1d::Constant(2.0));
   auto discrete_updates = dut.AllocateDiscreteVariables();
-  EXPECT_THROW(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       dut.CalcDiscreteVariableUpdates(*context, discrete_updates.get()),
-      std::exception);
+      std::exception,
+      ".*DiscreteVariableUpdates.*next_state->size.. == 0.*failed.*");
 
-  auto output = dut.get_output_port().Allocate();
-  EXPECT_THROW(dut.get_output_port().Calc(*context, output.get()),
-               std::exception);
+  const auto& output = dut.get_output_port();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      output.Eval<BasicVector<double>>(*context), std::exception,
+      ".*Output.*'output->size.. == 0.*failed.*");
 }
 
 }  // namespace

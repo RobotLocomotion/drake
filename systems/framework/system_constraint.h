@@ -94,7 +94,7 @@ class SystemConstraint {
   // TODO(russt): Resolve names differences across the codebase. The vector
   // gen scripts call this IsValid, but Constraint calls it CheckSatisfied.
   template <typename T1 = T>
-  typename std::enable_if<is_numeric<T1>::value, bool>::type CheckSatisfied(
+  typename std::enable_if_t<is_numeric<T1>::value, bool> CheckSatisfied(
       const Context<T1>& context, double tol) const {
     DRAKE_DEMAND(tol >= 0.0);
     VectorX<T> value(count_);
@@ -109,7 +109,7 @@ class SystemConstraint {
   /// Supports CheckSatisfied calls for non-numeric scalar types by simply
   /// returning true.
   template <typename T1 = T>
-  typename std::enable_if<!is_numeric<T1>::value, bool>::type CheckSatisfied(
+  typename std::enable_if_t<!is_numeric<T1>::value, bool> CheckSatisfied(
       const Context<T1>& context, double tol) const {
     DRAKE_DEMAND(tol >= 0.0);
     unused(context);
