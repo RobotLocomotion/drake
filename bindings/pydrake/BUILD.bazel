@@ -102,6 +102,9 @@ drake_py_library(
 
 drake_pybind_library(
     name = "geometry_py",
+    cc_deps = [
+        "//lcmtypes:viewer",
+    ],
     cc_so_name = "geometry",
     cc_srcs = ["geometry_py.cc"],
     package_info = PACKAGE_INFO,
