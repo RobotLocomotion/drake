@@ -83,18 +83,10 @@ int do_main() {
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(!!pendulum.get_source_id());
 
-  builder.Connect(
-      pendulum.get_geometry_poses_output_port(),
-      scene_graph.get_source_pose_port(pendulum.get_source_id().value()));
-
-  // Last thing before building the diagram; configure the system for
-  // visualization.
-  DrakeLcm lcm;
-  geometry::ConnectVisualization(scene_graph, &builder, &lcm);
+  geometry::AddVisualization(&builder, *scene_graph,
+                             pendulum.get_source_id().value(),
+                             pendulum.get_geometry_poses_output_port());
   auto diagram = builder.Build();
-
-  // Load message must be sent before creating a Context.
-  geometry::DispatchLoadMessage(scene_graph, &lcm);
 
   auto diagram_context = diagram->CreateDefaultContext();
   systems::Context<double>& pendulum_context =

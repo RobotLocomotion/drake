@@ -23,18 +23,11 @@ int do_main() {
   auto solar_system = builder.AddSystem<SolarSystem>(scene_graph);
   solar_system->set_name("SolarSystem");
 
-  builder.Connect(solar_system->get_geometry_pose_output_port(),
-                  scene_graph->get_source_pose_port(solar_system->source_id()));
+  geometry::AddVisualization(&builder, *scene_graph,
+                             solar_system->source_id(),
+                             solar_system->get_geometry_pose_output_port());
 
-  // Last thing before building the diagram; configure the system for
-  // visualization.
-  DrakeLcm lcm;
-  geometry::ConnectVisualization(*scene_graph, &builder, &lcm);
   auto diagram = builder.Build();
-
-  // Load message must be sent before creating a Context (Simulator
-  // creates one).
-  geometry::DispatchLoadMessage(*scene_graph, &lcm);
 
   systems::Simulator<double> simulator(*diagram);
 
