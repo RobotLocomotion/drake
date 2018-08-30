@@ -51,14 +51,16 @@ void RigidBodyPointCloudFilter::FilterPointCloud(
   if (!filtered_point_indices.empty()) {
     std::sort(filtered_point_indices.begin(), filtered_point_indices.end());
     output->resize(points.size() - filtered_point_indices.size());
-    size_t last_j = 0;
+    size_t last_i = 0;
     int k = 0;
-    for (size_t i = 0; i <= filtered_point_indices.size(); i++) {
-      size_t index = filtered_point_indices[i];
-      for (size_t j = last_j; j < points.size(); ++j) {
-        ++last_j;
-        if (j != index) {
-          output->mutable_xyz(k) = points[j].cast<float>();
+    // Add an invalid index at the end of the list so that the iteration of
+    // points can go to the end of its size.
+    filtered_point_indices.push_back(-1);
+    for (const auto& index : filtered_point_indices) {
+      for (size_t i = last_i; i < points.size(); ++i) {
+        ++last_i;
+        if (i != index) {
+          output->mutable_xyz(k) = points[i].cast<float>();
           k++;
         } else {
           break;
