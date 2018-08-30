@@ -127,32 +127,21 @@ int main() {
 
   const auto& tree = plant.get_rigid_body_tree();
 
-  // TODO(SeanCurtis-TRI): This should be wrapped up into a sugar diagram so
-  // this can be done more concisely. Perhaps bundle a SceneGraph in with
-  // all the others and called (something like) SceneGraphWithLcmVisuals.
   auto scene_graph = builder.AddSystem<geometry::SceneGraph<double>>();
   scene_graph->set_name("scene_graph");
 
-  auto rbt_gs_bridge = builder.AddSystem<systems::RigidBodyPlantBridge<double>>(
+  auto rbt_sg_bridge = builder.AddSystem<systems::RigidBodyPlantBridge<double>>(
       &tree, scene_graph);
 
-
   builder.Connect(plant.state_output_port(),
-                  rbt_gs_bridge->rigid_body_plant_state_input_port());
+                  rbt_sg_bridge->rigid_body_plant_state_input_port());
 
   builder.Connect(
-      rbt_gs_bridge->geometry_pose_output_port(),
-      scene_graph->get_source_pose_port(rbt_gs_bridge->source_id()));
+      rbt_sg_bridge->geometry_pose_output_port(),
+      scene_graph->get_source_pose_port(rbt_sg_bridge->source_id()));
 
-  // Last thing before building the diagram; configure the system for
-  // visualization.
-  DrakeLcm lcm;
-  geometry::ConnectVisualization(*scene_graph, &builder, &lcm);
+  geometry::ConnectVisualization(&builder, *scene_graph);
   auto diagram = builder.Build();
-
-  // Load message must be sent before creating a Context (Simulator
-  // creates one).
-  geometry::DispatchLoadMessage(*scene_graph, &lcm);
 
   // Create simulator.
   Simulator<double> simulator(*diagram);

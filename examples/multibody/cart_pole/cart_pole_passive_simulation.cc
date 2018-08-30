@@ -71,14 +71,8 @@ int do_main() {
       cart_pole.get_geometry_poses_output_port(),
       scene_graph.get_source_pose_port(cart_pole.get_source_id().value()));
 
-  // Last thing before building the diagram; configure the system for
-  // visualization.
-  DrakeLcm lcm;
-  geometry::ConnectVisualization(scene_graph, &builder, &lcm);
+  geometry::ConnectVisualization(&builder, scene_graph);
   auto diagram = builder.Build();
-
-  // Load message must be sent before creating a Context.
-  geometry::DispatchLoadMessage(scene_graph, &lcm);
 
   // Create a context for this system:
   std::unique_ptr<systems::Context<double>> diagram_context =

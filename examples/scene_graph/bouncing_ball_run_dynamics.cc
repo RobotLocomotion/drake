@@ -64,15 +64,8 @@ int do_main() {
   builder.Connect(scene_graph->get_query_output_port(),
                   bouncing_ball2->get_geometry_query_input_port());
 
-  // Last thing before building the diagram; configure the system for
-  // visualization.
-  DrakeLcm lcm;
-  geometry::ConnectVisualization(*scene_graph, &builder, &lcm);
+  geometry::ConnectVisualization(&builder, *scene_graph);
   auto diagram = builder.Build();
-
-  // Load message must be sent before creating a Context (Simulator
-  // creates one).
-  geometry::DispatchLoadMessage(*scene_graph, &lcm);
 
   systems::Simulator<double> simulator(*diagram);
   auto init_ball = [&](BouncingBallPlant<double>* system, double z,
