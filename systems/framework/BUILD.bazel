@@ -459,7 +459,6 @@ drake_cc_library(
         ":value_checker",
         "//common:default_scalars",
         "//common:essential",
-        "//common:number_traits",
         "//common:pointer_cast",
         "//common:unused",
     ],
@@ -527,7 +526,6 @@ drake_cc_library(
         ":system",
         "//common:default_scalars",
         "//common:essential",
-        "//common:number_traits",
     ],
 )
 
@@ -549,6 +547,7 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:essential",
+        "//common:number_traits",
         "//common:symbolic",
         "//common:type_safe_index",
         "//common:unused",
