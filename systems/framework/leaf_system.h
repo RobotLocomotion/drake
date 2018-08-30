@@ -360,7 +360,37 @@ class LeafSystem : public System<T> {
   void DoCalcNextUpdateTime(const Context<T>& context,
                             CompositeEventCollection<T>* events,
                             T* time) const override {
-    DoCalcNextUpdateTimeImpl(context, events, time);
+    T min_time = std::numeric_limits<double>::infinity();
+    // No periodic events events.
+    if (periodic_events_.empty()) {
+      // No discrete update.
+      *time = min_time;
+      return;
+    }
+
+    // Find the minimum next sample time across all registered events, and
+    // the set of registered events that will occur at that time.
+    std::vector<const Event<T>*> next_events;
+    for (const auto& event_pair : periodic_events_) {
+      const PeriodicEventData& event_data =
+          event_pair.first;
+      const Event<T>* const event = event_pair.second.get();
+      const T t = leaf_system_detail::GetNextSampleTime(
+          event_data, context.get_time());
+      if (t < min_time) {
+        min_time = t;
+        next_events = {event};
+      } else if (t == min_time) {
+        next_events.push_back(event);
+      }
+    }
+
+    // Write out the events that fire at min_time.
+    *time = min_time;
+
+    for (const Event<T>* event : next_events) {
+      event->add_to_composite(events);
+    }
   }
 
   /// Allocates a vector that is suitable as an input value for @p input_port.
@@ -1506,42 +1536,6 @@ class LeafSystem : public System<T> {
       const Context<T>&,
       CompositeEventCollection<T>* events) const override {
     events->SetFrom(initialization_events_);
-  }
-
-  void DoCalcNextUpdateTimeImpl(
-      const Context<T>& context, CompositeEventCollection<T>* events,
-      T* time) const {
-    T min_time = std::numeric_limits<double>::infinity();
-    // No periodic events events.
-    if (periodic_events_.empty()) {
-      // No discrete update.
-      *time = min_time;
-      return;
-    }
-
-    // Find the minimum next sample time across all registered events, and
-    // the set of registered events that will occur at that time.
-    std::vector<const Event<T>*> next_events;
-    for (const auto& event_pair : periodic_events_) {
-      const PeriodicEventData& event_data =
-          event_pair.first;
-      const Event<T>* const event = event_pair.second.get();
-      const T t = leaf_system_detail::GetNextSampleTime(
-          event_data, context.get_time());
-      if (t < min_time) {
-        min_time = t;
-        next_events = {event};
-      } else if (t == min_time) {
-        next_events.push_back(event);
-      }
-    }
-
-    // Write out the events that fire at min_time.
-    *time = min_time;
-
-    for (const Event<T>* event : next_events) {
-      event->add_to_composite(events);
-    }
   }
 
   // Returns a SystemSymbolicInspector for this system, or nullptr if one
