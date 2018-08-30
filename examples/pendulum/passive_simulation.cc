@@ -38,10 +38,7 @@ int DoMain() {
   builder.Connect(pendulum->get_geometry_pose_output_port(),
                   scene_graph->get_source_pose_port(pendulum->source_id()));
 
-  lcm::DrakeLcm lcm;
-  geometry::ConnectVisualization(*scene_graph, &builder, &lcm);
-  geometry::DispatchLoadMessage(*scene_graph, &lcm);
-
+  geometry::ConnectVisualization(&builder, *scene_graph);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);

@@ -5,8 +5,7 @@ Provides an example translation of `cart_pole_passive_simluation.cc`.
 import argparse
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.geometry import (
-    ConnectVisualization, DispatchLoadMessage, SceneGraph)
+from pydrake.geometry import (ConnectVisualization, SceneGraph)
 from pydrake.lcm import DrakeLcm
 from pydrake.multibody.multibody_tree import UniformGravityFieldElement
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
@@ -43,17 +42,14 @@ def main():
     assert cart_pole.geometry_source_is_registered()
 
     builder.Connect(
+        scene_graph.get_query_output_port(),
+        cart_pole.get_geometry_query_input_port())
+    builder.Connect(
         cart_pole.get_geometry_poses_output_port(),
         scene_graph.get_source_pose_port(cart_pole.get_source_id()))
 
-    builder.Connect(
-        scene_graph.get_query_output_port(),
-        cart_pole.get_geometry_query_input_port())
-
-    lcm = DrakeLcm()
-    ConnectVisualization(scene_graph=scene_graph, builder=builder, lcm=lcm)
+    ConnectVisualization(builder=builder, scene_graph=scene_graph)
     diagram = builder.Build()
-    DispatchLoadMessage(scene_graph=scene_graph, lcm=lcm)
 
     diagram_context = diagram.CreateDefaultContext()
     cart_pole_context = diagram.GetMutableSubsystemContext(
