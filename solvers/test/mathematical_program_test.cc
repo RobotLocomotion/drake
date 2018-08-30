@@ -187,96 +187,110 @@ GTEST_TEST(testMathematicalProgram, testConstructor) {
   EXPECT_EQ(prog.GetSolution(prog.decision_variables()).rows(), 0);
 }
 
+template <typename T, typename ExpectedType>
+void CheckAddContinuousVariableWithDefaultName(const MathematicalProgram& prog,
+                                               const T& X, int rows, int cols,
+                                               const std::string& X_names) {
+  static_assert(is_same<T, ExpectedType>::value, "Type not match");
+  EXPECT_EQ(X.rows(), rows);
+  EXPECT_EQ(X.cols(), cols);
+  CheckAddedVariable(prog, X, X_names, false,
+                     MathematicalProgram::VarType::CONTINUOUS);
+}
+
 GTEST_TEST(testAddVariable, testAddContinuousVariables1) {
   // Adds a dynamic-sized matrix of continuous variables.
   MathematicalProgram prog;
   auto X = prog.NewContinuousVariables(2, 3, "X");
-  static_assert(is_same<decltype(X), MatrixXDecisionVariable>::value,
-                "should be a dynamic sized matrix");
-  EXPECT_EQ(X.rows(), 2);
-  EXPECT_EQ(X.cols(), 3);
-  CheckAddedVariable(prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n",
-                     false, MathematicalProgram::VarType::CONTINUOUS);
+  CheckAddContinuousVariableWithDefaultName<decltype(X),
+                                            MatrixXDecisionVariable>(
+      prog, X, 2, 3, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
 }
 
 GTEST_TEST(testAddVariable, testAddContinuousVariable2) {
   // Adds a static-sized matrix of continuous variables.
   MathematicalProgram prog;
   auto X = prog.NewContinuousVariables<2, 3>("X");
-  static_assert(is_same<decltype(X), MatrixDecisionVariable<2, 3>>::value,
-                "should be a static sized matrix");
-  CheckAddedVariable(prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n",
-                     false, MathematicalProgram::VarType::CONTINUOUS);
+  CheckAddContinuousVariableWithDefaultName<decltype(X),
+                                            MatrixDecisionVariable<2, 3>>(
+      prog, X, 2, 3, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
 }
 
 GTEST_TEST(testAddVariable, testAddContinuousVariable3) {
   // Adds a dynamic-sized vector of continuous variables.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(4, "x");
-  static_assert(is_same<decltype(x), VectorXDecisionVariable>::value,
-                "Should be a VectorXDecisionVariable object.");
-  EXPECT_EQ(x.rows(), 4);
-  CheckAddedVariable(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n", false,
-                     MathematicalProgram::VarType::CONTINUOUS);
+  CheckAddContinuousVariableWithDefaultName<decltype(x),
+                                            VectorXDecisionVariable>(
+      prog, x, 4, 1, "x(0)\nx(1)\nx(2)\nx(3)\n");
 }
 
 GTEST_TEST(testAddVariable, testAddContinuousVariable4) {
   // Adds a static-sized vector of continuous variables.
   MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<4>("x");
-  static_assert(is_same<decltype(x), VectorDecisionVariable<4>>::value,
-                "Should be a VectorXDecisionVariable object.");
-  CheckAddedVariable(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n", false,
-                     MathematicalProgram::VarType::CONTINUOUS);
+  auto x = prog.NewContinuousVariables<4>("y");
+  CheckAddContinuousVariableWithDefaultName<decltype(x),
+                                            VectorDecisionVariable<4>>(
+      prog, x, 4, 1, "y(0)\ny(1)\ny(2)\ny(3)\n");
 }
 
 GTEST_TEST(testAddVariable, testAddContinuousVariable5) {
   // Adds a static-sized matrix of continuous variables.
   MathematicalProgram prog;
-  auto X = prog.NewContinuousVariables<2, 3>(2, 3, "X");
-  static_assert(is_same<decltype(X), MatrixDecisionVariable<2, 3>>::value,
-                "should be a static sized matrix");
-  CheckAddedVariable(prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n",
-                     false, MathematicalProgram::VarType::CONTINUOUS);
+  auto X = prog.NewContinuousVariables<2, 3>(2, 3, "Y");
+  CheckAddContinuousVariableWithDefaultName<decltype(X),
+                                            MatrixDecisionVariable<2, 3>>(
+      prog, X, 2, 3, "Y(0,0) Y(0,1) Y(0,2)\nY(1,0) Y(1,1) Y(1,2)\n");
 }
 
 GTEST_TEST(testAddVariable, testAddContinuousVariables6) {
   // Adds a dynamic-sized matrix of continuous variables.
   MathematicalProgram prog;
   auto X =
-      prog.NewContinuousVariables<Eigen::Dynamic, Eigen::Dynamic>(2, 3, "X");
-  static_assert(is_same<decltype(X), MatrixXDecisionVariable>::value,
-                "should be a dynamic sized matrix");
-  EXPECT_EQ(X.rows(), 2);
-  EXPECT_EQ(X.cols(), 3);
-  CheckAddedVariable(prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n",
-                     false, MathematicalProgram::VarType::CONTINUOUS);
+      prog.NewContinuousVariables<Eigen::Dynamic, Eigen::Dynamic>(2, 3, "Y");
+  CheckAddContinuousVariableWithDefaultName<decltype(X),
+                                            MatrixXDecisionVariable>(
+      prog, X, 2, 3, "Y(0,0) Y(0,1) Y(0,2)\nY(1,0) Y(1,1) Y(1,2)\n");
 }
 
 GTEST_TEST(testAddVariable, testAddContinuousVariables7) {
   // Adds a dynamic-sized matrix of continuous variables.
   MathematicalProgram prog;
-  auto X = prog.NewContinuousVariables<2, Eigen::Dynamic>(2, 3, "X");
-  static_assert(
-      is_same<decltype(X), MatrixDecisionVariable<2, Eigen::Dynamic>>::value,
-      "should be a dynamic sized matrix");
-  EXPECT_EQ(X.rows(), 2);
-  EXPECT_EQ(X.cols(), 3);
-  CheckAddedVariable(prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n",
-                     false, MathematicalProgram::VarType::CONTINUOUS);
+  auto X = prog.NewContinuousVariables<2, Eigen::Dynamic>(2, 3, "Y");
+  CheckAddContinuousVariableWithDefaultName<
+      decltype(X), MatrixDecisionVariable<2, Eigen::Dynamic>>(
+      prog, X, 2, 3, "Y(0,0) Y(0,1) Y(0,2)\nY(1,0) Y(1,1) Y(1,2)\n");
 }
 
 GTEST_TEST(testAddVariable, testAddContinuousVariables8) {
   // Adds a dynamic-sized matrix of continuous variables.
   MathematicalProgram prog;
-  auto X = prog.NewContinuousVariables<Eigen::Dynamic, 3>(2, 3, "X");
-  static_assert(
-      is_same<decltype(X), MatrixDecisionVariable<Eigen::Dynamic, 3>>::value,
-      "should be a dynamic sized matrix");
-  EXPECT_EQ(X.rows(), 2);
-  EXPECT_EQ(X.cols(), 3);
-  CheckAddedVariable(prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n",
-                     false, MathematicalProgram::VarType::CONTINUOUS);
+  auto X = prog.NewContinuousVariables<Eigen::Dynamic, 3>(2, 3, "Y");
+  CheckAddContinuousVariableWithDefaultName<
+      decltype(X), MatrixDecisionVariable<Eigen::Dynamic, 3>>(
+      prog, X, 2, 3, "Y(0,0) Y(0,1) Y(0,2)\nY(1,0) Y(1,1) Y(1,2)\n");
+}
+
+GTEST_TEST(testAddVariable, testAddContinuousVariables9) {
+  // Adds continuous variables with default variable name.
+  const std::string X_names = "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n";
+  MathematicalProgram prog1;
+  auto X1 = prog1.NewContinuousVariables(2, 3);
+  CheckAddContinuousVariableWithDefaultName<decltype(X1),
+                                            MatrixXDecisionVariable>(
+      prog1, X1, 2, 3, X_names);
+
+  MathematicalProgram prog2;
+  auto X2 = prog2.NewContinuousVariables<Eigen::Dynamic, 3>(2, 3);
+  CheckAddContinuousVariableWithDefaultName<
+      decltype(X2), MatrixDecisionVariable<Eigen::Dynamic, 3>>(prog2, X2, 2, 3,
+                                                               X_names);
+
+  MathematicalProgram prog3;
+  auto X3 = prog3.NewContinuousVariables<2, 3>(2, 3);
+  CheckAddContinuousVariableWithDefaultName<decltype(X3),
+                                            MatrixDecisionVariable<2, 3>>(
+      prog3, X3, 2, 3, X_names);
 }
 
 GTEST_TEST(testAddVariable, testAddSymmetricVariable1) {
