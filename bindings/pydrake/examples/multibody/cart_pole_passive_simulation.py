@@ -7,8 +7,7 @@ import argparse
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.geometry import (
-    ConnectVisualization, DispatchLoadMessage, SceneGraph)
+from pydrake.geometry import (AddVisualization, SceneGraph)
 from pydrake.lcm import DrakeLcm
 from pydrake.multibody.multibody_tree import UniformGravityFieldElement
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
@@ -44,14 +43,11 @@ def main():
     cart_pole.Finalize(scene_graph)
     assert cart_pole.geometry_source_is_registered()
 
-    builder.Connect(
-        cart_pole.get_geometry_poses_output_port(),
-        scene_graph.get_source_pose_port(cart_pole.get_source_id()))
-
-    lcm = DrakeLcm()
-    ConnectVisualization(scene_graph=scene_graph, builder=builder, lcm=lcm)
+    AddVisualization(
+        builder=builder, scene_graph=scene_graph,
+        source_id=cart_pole.get_source_id(),
+        pose_output_port=cart_pole.get_geometry_poses_output_port())
     diagram = builder.Build()
-    DispatchLoadMessage(scene_graph=scene_graph, lcm=lcm)
 
     diagram_context = diagram.CreateDefaultContext()
     cart_pole_context = diagram.GetMutableSubsystemContext(

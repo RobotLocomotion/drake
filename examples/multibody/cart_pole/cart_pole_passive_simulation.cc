@@ -67,18 +67,10 @@ int do_main() {
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(cart_pole.geometry_source_is_registered());
 
-  builder.Connect(
-      cart_pole.get_geometry_poses_output_port(),
-      scene_graph.get_source_pose_port(cart_pole.get_source_id().value()));
-
-  // Last thing before building the diagram; configure the system for
-  // visualization.
-  DrakeLcm lcm;
-  geometry::ConnectVisualization(scene_graph, &builder, &lcm);
+  geometry::AddVisualization(&builder, scene_graph,
+                             cart_pole.get_source_id().value(),
+                             cart_pole.get_geometry_poses_output_port());
   auto diagram = builder.Build();
-
-  // Load message must be sent before creating a Context.
-  geometry::DispatchLoadMessage(scene_graph, &lcm);
 
   // Create a context for this system:
   std::unique_ptr<systems::Context<double>> diagram_context =

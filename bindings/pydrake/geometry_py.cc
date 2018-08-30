@@ -40,8 +40,11 @@ PYBIND11_MODULE(geometry, m) {
   BindIdentifier<FrameId>(m, "FrameId");
   BindIdentifier<GeometryId>(m, "GeometryId");
 
+  m.def("AddVisualization", &AddVisualization,
+        py::arg("builder"), py::arg("scene_graph"), py::arg("source_id"),
+        py::arg("pose_output_port"));
   m.def("ConnectVisualization", &ConnectVisualization,
-        py::arg("scene_graph"), py::arg("builder"), py::arg("lcm"));
+        py::arg("builder"), py::arg("scene_graph"), py::arg("lcm"));
   m.def("DispatchLoadMessage", &DispatchLoadMessage,
         py::arg("scene_graph"), py::arg("lcm"));
 }
