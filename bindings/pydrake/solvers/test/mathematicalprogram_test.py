@@ -1,6 +1,7 @@
 from __future__ import print_function, absolute_import
 
 from pydrake.solvers import mathematicalprogram as mp
+from pydrake.solvers.mathematicalprogram import SolverType
 
 import numpy as np
 import unittest
@@ -382,3 +383,14 @@ class TestMathematicalProgram(unittest.TestCase):
         # Check answer
         x_expected = np.array([1-2**(-0.5), 1-2**(-0.5)])
         self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
+
+    def test_solver_options(self):
+        prog = mp.MathematicalProgram()
+
+        prog.SetSolverOption(SolverType.kGurobi, "double_key", 1.0)
+        prog.SetSolverOption(SolverType.kGurobi, "int_key", 2)
+        prog.SetSolverOption(SolverType.kGurobi, "string_key", "3")
+
+        options = prog.GetSolverOptions(SolverType.kGurobi)
+        self.assertDictEqual(
+            options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
