@@ -137,7 +137,6 @@ drake_cc_library(
         ":decision_variable",
         "//common:autodiff",
         "//common:essential",
-        "//common:number_traits",
         "//common:polynomial",
         "//common:symbolic",
     ],
@@ -268,7 +267,6 @@ drake_cc_library(
         ":unrevised_lemke_solver",
         "//common:autodiff",
         "//common:essential",
-        "//common:number_traits",
         "//common:polynomial",
         "//common:symbolic",
     ],
@@ -506,7 +504,6 @@ drake_cc_library(
         ":solver_id",
         "//common:autodiff",
         "//common:essential",
-        "//common:number_traits",
         "//common:polynomial",
     ],
 )
