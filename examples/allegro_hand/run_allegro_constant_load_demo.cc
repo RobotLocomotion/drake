@@ -87,15 +87,6 @@ void DoMain() {
   DRAKE_DEMAND(plant.num_actuators() == 16);
   DRAKE_DEMAND(plant.num_actuated_dofs() == 16);
 
-  // Visualization
-  lcm::DrakeLcm lcm;
-  geometry::ConnectVisualization(scene_graph, &builder, &lcm);
-  DRAKE_DEMAND(!!plant.get_source_id());
-  builder.Connect(plant.get_geometry_poses_output_port(),
-      scene_graph.get_source_pose_port(plant.get_source_id().value()));
-  builder.Connect(scene_graph.get_query_output_port(),
-                  plant.get_geometry_query_input_port());
-
   // constant force input
   VectorX<double> constant_load_value = VectorX<double>::Ones(
       plant.model().num_actuators()) * FLAGS_constant_load;
@@ -106,8 +97,15 @@ void DoMain() {
   builder.Connect(constant_source->get_output_port(),
                   plant.get_actuation_input_port());
 
+  DRAKE_DEMAND(!!plant.get_source_id());
+  builder.Connect(
+      plant.get_geometry_poses_output_port(),
+      scene_graph.get_source_pose_port(plant.get_source_id().value()));
+  builder.Connect(scene_graph.get_query_output_port(),
+                  plant.get_geometry_query_input_port());
+
+  geometry::ConnectVisualization(&builder, scene_graph);
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
-  geometry::DispatchLoadMessage(scene_graph, &lcm);
 
   // Create a context for this system:
   std::unique_ptr<systems::Context<double>> diagram_context =
