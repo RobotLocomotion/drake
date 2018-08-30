@@ -6,16 +6,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/fixed_joint.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
-#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
-#include "drake/perception/depth_image_to_point_cloud.h"
-#include "drake/perception/transform_point_cloud.h"
-#include "drake/systems/analysis/simulator.h"
-#include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/primitives/pass_through.h"
-#include "drake/systems/sensors/rgbd_camera.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace perception {
@@ -24,9 +16,9 @@ namespace {
 const double kCollisionThreshold = 0.01;
 const Eigen::Vector3d kBoxPosition(0., 0., 0.);
 const Eigen::Vector3d kBoxSize(0.2, 0.2, 0.2);
-const Eigen::Vector3f point1(0.3, 0., 0.);
-const Eigen::Vector3f point2(0., -0.42, 0.);
-const Eigen::Vector3f point3(0., 0., 0.35);
+const Eigen::Vector3f kPoint1(0.3, 0., 0.);
+const Eigen::Vector3f kPoint2(0., -0.42, 0.);
+const Eigen::Vector3f kPoint3(0., 0., 0.35);
 const int kPointsPerFace = 10;
 const int kFaces = 6;
 
@@ -60,9 +52,9 @@ class RigidBodyPointCloudFilterTest : public ::testing::Test {
     // filtering.
     const int size = cloud_input_->size();
     cloud_input_->resize(size + 3);
-    cloud_input_->mutable_xyz(size) = point1;
-    cloud_input_->mutable_xyz(size + 1) = point2;
-    cloud_input_->mutable_xyz(size + 2) = point3;
+    cloud_input_->mutable_xyz(size) = kPoint1;
+    cloud_input_->mutable_xyz(size + 1) = kPoint2;
+    cloud_input_->mutable_xyz(size + 2) = kPoint3;
 
     state_input_ = VectorX<double>::Zero(tree_->get_num_positions() +
                                          tree_->get_num_velocities());
@@ -176,9 +168,9 @@ TEST_F(RigidBodyPointCloudFilterTest, RemoveBoxTest) {
   EXPECT_TRUE(CompareMatrices(output_cloud.xyzs(), expected_cloud.xyzs(),
                               10.0f * std::numeric_limits<float>::epsilon()));
 
-  EXPECT_TRUE(ContainsPoint(output_cloud, point1));
-  EXPECT_TRUE(ContainsPoint(output_cloud, point2));
-  EXPECT_TRUE(ContainsPoint(output_cloud, point3));
+  EXPECT_TRUE(ContainsPoint(output_cloud, kPoint1));
+  EXPECT_TRUE(ContainsPoint(output_cloud, kPoint2));
+  EXPECT_TRUE(ContainsPoint(output_cloud, kPoint3));
 }
 
 }  // namespace
