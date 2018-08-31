@@ -13,7 +13,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/number_traits.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/diagram_context.h"
@@ -785,7 +784,34 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   void DoCalcNextUpdateTime(const Context<T>& context,
                             CompositeEventCollection<T>* event_info,
                             T* time) const override {
-    DoCalcNextUpdateTimeImpl(context, event_info, time);
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    auto info = dynamic_cast<DiagramCompositeEventCollection<T>*>(event_info);
+    DRAKE_DEMAND(diagram_context != nullptr);
+    DRAKE_DEMAND(info != nullptr);
+
+    *time = std::numeric_limits<double>::infinity();
+
+    // Iterate over the subsystems, and harvest the most imminent updates.
+    std::vector<T> times(num_subsystems());
+    for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
+      const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
+      CompositeEventCollection<T>& subinfo =
+          info->get_mutable_subevent_collection(i);
+      const T sub_time =
+          registered_systems_[i]->CalcNextUpdateTime(subcontext, &subinfo);
+      times[i] = sub_time;
+
+      if (sub_time < *time) {
+        *time = sub_time;
+      }
+    }
+
+    // For all the subsystems whose next update time is bigger than *time,
+    // clear their event collections.
+    for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
+      if (times[i] > *time)
+        info->get_mutable_subevent_collection(i).Clear();
+    }
   }
 
   BasicVector<T>* DoAllocateInputVector(
@@ -1191,57 +1217,6 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     blueprint->systems = std::move(new_systems);
 
     return blueprint;
-  }
-
-  // Aborts for scalar types that are not numeric, since there is no reasonable
-  // definition of "next update time" outside of the real line.
-  //
-  // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
-  template <typename T1 = T>
-  typename std::enable_if_t<!is_numeric<T1>::value>
-  DoCalcNextUpdateTimeImpl(const Context<T1>&, CompositeEventCollection<T1>*,
-                           T1*) const {
-    DRAKE_ABORT_MSG(
-        "The default implementation of Diagram<T>::DoCalcNextUpdateTime "
-        "only works with types that are drake::is_numeric.");
-  }
-
-  // Computes the next update time across all the scheduled events, for
-  // scalar types that are numeric.
-  //
-  // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
-  template <typename T1 = T>
-  typename std::enable_if_t<is_numeric<T1>::value> DoCalcNextUpdateTimeImpl(
-      const Context<T1>& context, CompositeEventCollection<T1>* event_info,
-      T1* time) const {
-    auto diagram_context = dynamic_cast<const DiagramContext<T1>*>(&context);
-    auto info = dynamic_cast<DiagramCompositeEventCollection<T1>*>(event_info);
-    DRAKE_DEMAND(diagram_context != nullptr);
-    DRAKE_DEMAND(info != nullptr);
-
-    *time = std::numeric_limits<T1>::infinity();
-
-    // Iterate over the subsystems, and harvest the most imminent updates.
-    std::vector<T1> times(num_subsystems());
-    for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
-      const Context<T1>& subcontext = diagram_context->GetSubsystemContext(i);
-      CompositeEventCollection<T1>& subinfo =
-          info->get_mutable_subevent_collection(i);
-      const T1 sub_time =
-          registered_systems_[i]->CalcNextUpdateTime(subcontext, &subinfo);
-      times[i] = sub_time;
-
-      if (sub_time < *time) {
-        *time = sub_time;
-      }
-    }
-
-    // For all the subsystems whose next update time is bigger than *time,
-    // clear their event collections.
-    for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
-      if (times[i] > *time)
-        info->get_mutable_subevent_collection(i).Clear();
-    }
   }
 
   std::map<PeriodicEventData, std::vector<const Event<T>*>,

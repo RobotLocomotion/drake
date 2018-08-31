@@ -1722,7 +1722,7 @@ class System : public SystemBase {
                                     CompositeEventCollection<T>* events,
                                     T* time) const {
     unused(context, events);
-    *time = std::numeric_limits<T>::infinity();
+    *time = std::numeric_limits<double>::infinity();
   }
 
   /// Implement this method to return all periodic triggered events.

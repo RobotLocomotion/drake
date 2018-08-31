@@ -16,7 +16,6 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/number_traits.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/abstract_values.h"
@@ -57,13 +56,11 @@ static T GetNextSampleTime(
     return offset;
   }
 
-  // NOLINTNEXTLINE(build/namespaces): Needed for ADL of floor and ceil.
-  using namespace std;
-
   // Compute the index in the sequence of samples for the next time to sample,
   // which should be greater than the present time.
+  using std::ceil;
   const T offset_time = current_time_sec - offset;
-  const int64_t next_k = static_cast<int64_t>(ceil(offset_time / period));
+  const T next_k = ceil(offset_time / period);
   T next_t = offset + next_k * period;
   if (next_t <= current_time_sec) {
     next_t = offset + (next_k + 1) * period;
@@ -363,7 +360,36 @@ class LeafSystem : public System<T> {
   void DoCalcNextUpdateTime(const Context<T>& context,
                             CompositeEventCollection<T>* events,
                             T* time) const override {
-    DoCalcNextUpdateTimeImpl(context, events, time);
+    T min_time = std::numeric_limits<double>::infinity();
+    // No periodic events.
+    if (periodic_events_.empty()) {
+      // No discrete update.
+      *time = min_time;
+      return;
+    }
+
+    // Find the minimum next sample time across all registered events, and
+    // the set of registered events that will occur at that time.
+    std::vector<const Event<T>*> next_events;
+    for (const auto& event_pair : periodic_events_) {
+      const PeriodicEventData& event_data =
+          event_pair.first;
+      const Event<T>* const event = event_pair.second.get();
+      const T t = leaf_system_detail::GetNextSampleTime(
+          event_data, context.get_time());
+      if (t < min_time) {
+        min_time = t;
+        next_events = {event};
+      } else if (t == min_time) {
+        next_events.push_back(event);
+      }
+    }
+
+    // Write out the events that fire at min_time.
+    *time = min_time;
+    for (const Event<T>* event : next_events) {
+      event->add_to_composite(events);
+    }
   }
 
   /// Allocates a vector that is suitable as an input value for @p input_port.
@@ -1509,61 +1535,6 @@ class LeafSystem : public System<T> {
       const Context<T>&,
       CompositeEventCollection<T>* events) const override {
     events->SetFrom(initialization_events_);
-  }
-
-  // Aborts for scalar types that are not numeric, since there is no reasonable
-  // definition of "next update time" outside of the real line.
-  //
-  // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
-  template <typename T1 = T>
-  typename std::enable_if_t<!is_numeric<T1>::value>
-  DoCalcNextUpdateTimeImpl(const Context<T1>&,
-                           CompositeEventCollection<T1>*,
-                           T1*) const {
-    DRAKE_ABORT_MSG(
-        "The default implementation of LeafSystem<T>::DoCalcNextUpdateTime "
-        "only works with types that are drake::is_numeric.");
-  }
-
-  // Computes the next update time across all the scheduled periodic events,
-  // for scalar types that are numeric.
-  //
-  // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
-  template <typename T1 = T>
-  typename std::enable_if_t<is_numeric<T1>::value> DoCalcNextUpdateTimeImpl(
-      const Context<T1>& context, CompositeEventCollection<T1>* events,
-      T1* time) const {
-    T1 min_time = std::numeric_limits<double>::infinity();
-    // No periodic events events.
-    if (periodic_events_.empty()) {
-      // No discrete update.
-      *time = min_time;
-      return;
-    }
-
-    // Find the minimum next sample time across all registered events, and
-    // the set of registered events that will occur at that time.
-    std::vector<const Event<T1>*> next_events;
-    for (const auto& event_pair : periodic_events_) {
-      const PeriodicEventData& event_data =
-          event_pair.first;
-      const Event<T>* const event = event_pair.second.get();
-      const T1 t = leaf_system_detail::GetNextSampleTime(
-          event_data, context.get_time());
-      if (t < min_time) {
-        min_time = t;
-        next_events = {event};
-      } else if (t == min_time) {
-        next_events.push_back(event);
-      }
-    }
-
-    // Write out the events that fire at min_time.
-    *time = min_time;
-
-    for (const Event<T1>* event : next_events) {
-      event->add_to_composite(events);
-    }
   }
 
   // Returns a SystemSymbolicInspector for this system, or nullptr if one
