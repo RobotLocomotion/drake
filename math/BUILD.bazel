@@ -149,7 +149,6 @@ drake_cc_library(
     hdrs = ["matrix_util.h"],
     deps = [
         "//common:essential",
-        "//common:number_traits",
     ],
 )
 

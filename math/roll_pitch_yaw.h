@@ -9,7 +9,6 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/number_traits.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
