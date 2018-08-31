@@ -66,7 +66,7 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 /// Endpoint references, e.g., if a document specifies that Connection-A
 /// is an arc starting at the end of Connection-B and that Connection-B
 /// is an arc starting at the end of Connection-A.  All referential chains
-/// must bottom out in explicitly-named Endpoints
+/// must bottom out in explicitly-named Endpoints.
 ///
 /// <h2>General considerations</h2>
 ///
@@ -314,9 +314,13 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 ///   left_shoulder: LS
 ///   right_shoulder: RS
 ///   lanes: [NL, NREF, RREF]
-///   start: ["ref", "connections.CONN_NAME_1.(start|end).ref.(forward|reverse)"]
+///   start: [
+///     "ref",
+///     "connections.CONN_NAME_1.(start|end).ref.(forward|reverse)"]
 ///   length: L
-///   explicit_end: ["ref", "connections.CONN_NAME_2.(start|end).ref.(forward|reverse)"]
+///   explicit_end: [
+///     "ref",
+///     "connections.CONN_NAME_2.(start|end).ref.(forward|reverse)"]
 ///   # The following can be used instead of explicit_end:
 ///   # z_end: ["ref", [z, z_dot, theta, theta_dot]]
 ///
@@ -360,9 +364,13 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 ///   left_shoulder: LS
 ///   right_shoulder: RS
 ///   lanes: [NL, NREF, RREF]
-///   start: ["lane.LN_1", connections.CONN_NAME_1.(start|end).LN_2.(forward|reverse)"]
+///   start: [
+///     "lane.LN_1",
+///     "connections.CONN_NAME_1.(start|end).LN_2.(forward|reverse)"]
 ///   length: L
-///   explicit_end: ["lane.LN_2", "connections.CONN_NAME_2.(start|end).LN_4.(forward|reverse)"]
+///   explicit_end: [
+///     "lane.LN_2",
+///     "connections.CONN_NAME_2.(start|end).LN_4.(forward|reverse)"]
 ///   # The following can be used instead of explicit_end:
 ///   # z_end: ["lane.LN_2", [z, z_dot, theta]]
 ///
