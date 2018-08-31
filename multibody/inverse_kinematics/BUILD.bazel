@@ -30,4 +30,14 @@ drake_cc_library(
     ],
 )
 
+drake_cc_googletest(
+    name = "kinematic_constraint_test",
+    deps = [
+        ":kinematic_constraint",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/benchmarks/kuka_iiwa_robot",
+        "//math:gradient",
+    ],
+)
+
 add_lint_tests()
