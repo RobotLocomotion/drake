@@ -237,6 +237,12 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       "calls to this method must happen before Finalize\\(\\).");
   // TODO(amcastro-tri): add test to verify that requesting a joint of the wrong
   // type throws an exception. We need another joint type to do so.
+  // Test API for simplified `AddJoint` method.
+  EXPECT_THROW(
+      plant->AddJoint(std::make_unique<RevoluteJoint<double>>(
+          "AnotherJoint", link1.body_frame(), link2.body_frame(),
+          Vector3d::UnitZ())),
+      std::logic_error);
 }
 
 // Fixture to perform a number of computational tests on an acrobot model.

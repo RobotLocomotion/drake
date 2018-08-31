@@ -28,10 +28,12 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
       "weld1", tree.world_body(), Eigen::Isometry3d::Identity(),
       body1, Eigen::Isometry3d::Identity(),
       Eigen::Isometry3d::Identity());
+  // Test minimal `AddJoint` overload.
   const Joint<double>& body1_body2 =
-      tree.AddJoint<PrismaticJoint>(
-          "prism1", body1, Eigen::Isometry3d::Identity(),
-          body2, Eigen::Isometry3d::Identity(), Eigen::Vector3d(0, 0, 1));
+      tree.AddJoint(
+          std::make_unique<PrismaticJoint<double>>(
+              "prism1", body1.body_frame(), body2.body_frame(),
+              Eigen::Vector3d(0, 0, 1)));
   tree.AddJointActuator("act1", body1_body2);
 
   const Joint<double>& body2_body3 =
