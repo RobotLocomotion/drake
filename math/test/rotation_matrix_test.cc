@@ -473,7 +473,7 @@ GTEST_TEST(RotationMatrix, CastFromDoubleToAutoDiffXd) {
 // construction, and the two methods specialized for symbolic::Expression:
 // ThrowIfNotValid() and ProjectToRotationMatrix().
 GTEST_TEST(RotationMatrix, SymbolicRotationMatrixSimpleTests) {
-  RotationMatrix<symbolic::Expression> R;
+  using RotMatExpr = RotationMatrix<symbolic::Expression>;
 
   // When the underlying scalar type is a symbolic::Expression, ensure
   // set(m_symbolic) only sets the rotation matrix, with no validity checks
@@ -486,15 +486,23 @@ GTEST_TEST(RotationMatrix, SymbolicRotationMatrixSimpleTests) {
   // Since this function is private, it cannot be directly tested.
   // Instead, it is tested via the set() method which calls ThrowIfNotValid()
   // when assertions are armed.
+  RotMatExpr R;
   EXPECT_NO_THROW(R.set(m_symbolic));
 
-  // Test ProjectToRotationMatrix() throws an exception for symbolic expression.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      RotationMatrix<symbolic::Expression> R_symbolic_after_project =
-      RotationMatrix<symbolic::Expression>::ProjectToRotationMatrix(m_symbolic),
-      std::runtime_error,
-      "This method is not supported for scalar types "
-      "that are not drake::is_numeric<S>.");
+  // Set one of the matrix terms to a variable.  Still no throw.
+  const symbolic::Variable x{"x"};
+  m_symbolic(0, 0) = x;
+  EXPECT_NO_THROW(R.set(m_symbolic));
+
+  // The ProjectToRotationMatrix() returns uninterpreted function terms.
+  symbolic::Expression quality;
+  EXPECT_TRUE(CheckStructuralEquality(
+      RotMatExpr::ProjectToRotationMatrix(m_symbolic, &quality).matrix(),
+      Matrix3<symbolic::Expression>::Constant(
+          uninterpreted_function(
+              "orthonormal_projection",
+              symbolic::Variables{x}))));
+  EXPECT_EQ(quality.to_string(), "orthonormal_projection_quality({x})");
 }
 
 // Utility function to help test ProjectMatToRotMatWithAxis().
