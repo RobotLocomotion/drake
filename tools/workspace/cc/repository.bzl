@@ -79,7 +79,11 @@ def _impl(repository_ctx):
     if result.return_code != 0:
         fail("Could NOT identify C/C++ compiler.", result.stderr)
 
-    compiler_id = result.stdout.strip()
+    output = result.stdout.strip().split(" ")
+    if len(output) != 3:
+        fail("Could NOT identify C/C++ compiler.")
+
+    compiler_id = output[0]
 
     if repository_ctx.os.name == "mac os x":
         supported_compilers = ["AppleClang"]
@@ -90,6 +94,35 @@ def _impl(repository_ctx):
         print("WARNING: {} is NOT a supported C/C++ compiler.".format(
             compiler_id,
         ))
+        print("WARNING: Compilation of the drake WORKSPACE may fail.")
+
+    compiler_version_major = int(output[1])
+    compiler_version_minor = int(output[2])
+
+    # The minimum compiler versions should match those listed in the root
+    # CMakeLists.txt
+
+    if compiler_id == "AppleClang":
+        if compiler_version_major < 9:
+            fail("AppleClang compiler version {}.{} is less than 9.0.".format(
+                compiler_version_major,
+                compiler_version_minor,
+            ))
+
+    elif compiler_id == "Clang":
+        if compiler_version_major < 4:
+            fail("Clang compiler version {}.{} is less than 4.0.".format(
+                compiler_version_major,
+                compiler_version_minor,
+            ))
+
+    elif compiler_id == "GNU":
+        if compiler_version_major < 5 or (compiler_version_major == 5 and
+                                          compiler_version_minor < 4):
+            fail("GNU compiler version {}.{} is less than 5.4.".format(
+                compiler_version_major,
+                compiler_version_minor,
+            ))
 
     file_content = """# -*- python -*-
 
