@@ -30,6 +30,21 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "inverse_kinematics",
+    srcs = [
+        "inverse_kinematics.cc",
+    ],
+    hdrs = [
+        "inverse_kinematics.h",
+    ],
+    deps = [
+        ":kinematic_constraint",
+        "//multibody/multibody_tree:multibody_tree",
+        "//solvers:mathematical_program",
+    ],
+)
+
 drake_cc_googletest(
     name = "kinematic_constraint_test",
     deps = [
@@ -40,4 +55,12 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "inverse_kinematics_test",
+    deps = [
+        ":inverse_kinematics",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/benchmarks/kuka_iiwa_robot",
+    ],
+)
 add_lint_tests()
