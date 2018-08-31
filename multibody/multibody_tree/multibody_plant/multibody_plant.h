@@ -375,6 +375,16 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   }
 
   /// This method adds a Joint of type `JointType` between two bodies.
+  /// For more information, see the below overload of `AddJoint<>`, and the
+  /// related `MultibodyTree::AddJoint<>` method.
+  template <template<typename Scalar> class JointType>
+  const JointType<T>& AddJoint(std::unique_ptr<JointType<T>> joint) {
+    static_assert(std::is_convertible<JointType<T>*, Joint<T>*>::value,
+                  "JointType must be a sub-class of Joint<T>.");
+    return model_->AddJoint(std::move(joint));
+  }
+
+  /// This method adds a Joint of type `JointType` between two bodies.
   /// The two bodies connected by this Joint object are referred to as the
   /// _parent_ and _child_ bodies. Although the terms _parent_ and _child_ are
   /// sometimes used synonymously to describe the relationship between inboard
