@@ -42,7 +42,7 @@ class RigidBodyPointCloudFilterTest : public ::testing::Test {
     AddBox(tree_.get(), kBoxPosition, kBoxSize);
     tree_->compile();
 
-    filter_ = std::make_unique<RigidBodyPointCloudFilter>(*tree_.get(),
+    filter_ = std::make_unique<RigidBodyPointCloudFilter>(tree_.get(),
                                                           kCollisionThreshold);
 
     cloud_input_ = std::make_unique<PointCloud>(MakePointCloudFromBox(
@@ -67,20 +67,6 @@ class RigidBodyPointCloudFilterTest : public ::testing::Test {
                            state_input_);
 
     output_ = filter_->point_cloud_output_port().Allocate();
-  }
-
-  // Calculates the expected output of the filter.
-  PointCloud CalcExpectedOutput(const PointCloud& cloud) {
-    std::vector<size_t> indices = CollidingPoints(cloud, tree_.get());
-    PointCloud cloud_out(cloud.size() - indices.size());
-    int j = 0;
-    for (int i = 0; i < cloud.size(); i++) {
-      if (std::find(indices.begin(), indices.end(), i) == indices.end()) {
-        cloud_out.mutable_xyz(j) = cloud.xyz(i);
-        j++;
-      }
-    }
-    return cloud_out;
   }
 
   std::unique_ptr<RigidBodyTree<double>> tree_;
@@ -125,12 +111,12 @@ class RigidBodyPointCloudFilterTest : public ::testing::Test {
                                    const Eigen::Vector3f& size) {
     PointCloud cloud(kFaces * kPointsPerFace);
     for (int i = 0; i < kFaces; i++) {
-      int dim = i / 2;
+      int dimension = i / 2;
       int sign = (i + 1) % 2 ? -1 : 1;
       for (int j = 0; j < kPointsPerFace; j++) {
-        int idx = i * kPointsPerFace + j;
-        cloud.mutable_xyz(idx) = position;
-        cloud.mutable_xyz(idx)(dim) += sign * 0.5 * size(dim);
+        int index = i * kPointsPerFace + j;
+        cloud.mutable_xyz(index) = position;
+        cloud.mutable_xyz(index)(dimension) += sign * 0.5 * size(dimension);
       }
     }
     return cloud;
@@ -156,17 +142,7 @@ TEST_F(RigidBodyPointCloudFilterTest, RemoveBoxTest) {
   filter_->point_cloud_output_port().Calc(*context_, output_.get());
   PointCloud output_cloud = output_->GetValueOrThrow<PointCloud>();
 
-  // Calculate the system's expected output.
-  PointCloud expected_cloud = CalcExpectedOutput(*cloud_input_.get());
-
-  EXPECT_EQ(output_cloud.size(), expected_cloud.size());
   EXPECT_GT(output_cloud.size(), 0);
-  EXPECT_GT(expected_cloud.size(), 0);
-
-  // The tolerance used here has this value because the point cloud uses
-  // `float` as the numerical representation.
-  EXPECT_TRUE(CompareMatrices(output_cloud.xyzs(), expected_cloud.xyzs(),
-                              10.0f * std::numeric_limits<float>::epsilon()));
 
   EXPECT_TRUE(ContainsPoint(output_cloud, kPoint1));
   EXPECT_TRUE(ContainsPoint(output_cloud, kPoint2));

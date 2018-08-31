@@ -1,10 +1,5 @@
 #pragma once
 
-#include <algorithm>
-#include <memory>
-#include <utility>
-#include <vector>
-
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/perception/point_cloud.h"
@@ -31,12 +26,13 @@ class RigidBodyPointCloudFilter final : public systems::LeafSystem<double> {
   /// Constructs the filter given a RigidBodyTree.
   ///
   /// @param[in] tree The RigidBodyTree containing the geometric configuration
-  /// of the world.
-  /// @param [in] collision_threshold The threshold for the collision
+  /// of the world. Notice that calculating the filter's output updates the
+  /// `tree`'s collision model.
+  /// @param[in] collision_threshold The threshold for the collision
   /// detection that determines which points to remove from the point cloud.
   ///
   /// The `tree` object must remain valid for the duration of this object.
-  RigidBodyPointCloudFilter(const RigidBodyTree<double>& tree,
+  RigidBodyPointCloudFilter(RigidBodyTree<double>* tree,
                             double collision_threshold);
 
   /// Returns the vector valued input port that contains a vector of `q, v`
@@ -57,20 +53,20 @@ class RigidBodyPointCloudFilter final : public systems::LeafSystem<double> {
   }
 
  private:
-  /// Returns an empty point cloud.
+  // Returns an empty point cloud.
   PointCloud MakeOutputPointCloud() const;
 
-  /// Filters the point cloud by removing those geometries that are known
-  /// from the RigidBodyTree `tree_`.
+  // Filters the point cloud by removing those geometries that are known
+  // from the RigidBodyTree `tree_`.
   void FilterPointCloud(const systems::Context<double>& context,
                         PointCloud* output) const;
 
-  const RigidBodyTree<double>& tree_;
+  RigidBodyTree<double>* tree_;
 
   int point_cloud_input_port_index_{-1};
   int state_input_port_index_{-1};
 
-  double collision_threshold_;
+  double collision_threshold_{};
 };
 
 }  // namespace perception

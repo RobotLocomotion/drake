@@ -1,18 +1,22 @@
 #include "drake/perception/rigid_body_point_cloud_filter.h"
 
+#include <algorithm>
+#include <unordered_set>
+#include <vector>
+
 namespace drake {
 namespace perception {
 
 RigidBodyPointCloudFilter::RigidBodyPointCloudFilter(
-    const RigidBodyTree<double>& tree, double collision_threshold)
+    RigidBodyTree<double>* tree, double collision_threshold)
     : tree_(tree), collision_threshold_(collision_threshold) {
-  /// Create input port for point cloud.
+  // Create input port for point cloud.
   point_cloud_input_port_index_ = DeclareAbstractInputPort().get_index();
 
-  /// Create input port for tree positions and velocities.
+  // Create input port for tree positions and velocities.
   state_input_port_index_ =
       DeclareInputPort(systems::kVectorValued,
-                       tree_.get_num_positions() + tree_.get_num_velocities())
+                       tree_->get_num_positions() + tree_->get_num_velocities())
           .get_index();
 
   // Create output port for filtered point cloud.
@@ -41,30 +45,22 @@ void RigidBodyPointCloudFilter::FilterPointCloud(
   // 2. Extract the indices of the points in collision.
   const Eigen::VectorXd q =
       EvalEigenVectorInput(context, state_input_port_index_)
-          .head(tree_.get_num_positions());
-  const KinematicsCache<double> kinematics_cache = tree_.doKinematics(q);
+          .head(tree_->get_num_positions());
+  const KinematicsCache<double> kinematics_cache = tree_->doKinematics(q);
   std::vector<size_t> filtered_point_indices =
-      const_cast<RigidBodyTree<double>&>(tree_).collidingPoints(
-          kinematics_cache, points, collision_threshold_);
+      tree_->collidingPoints(kinematics_cache, points, collision_threshold_);
 
   // 3. Create a new point cloud without the colliding points.
   if (!filtered_point_indices.empty()) {
-    std::sort(filtered_point_indices.begin(), filtered_point_indices.end());
-    output->resize(points.size() - filtered_point_indices.size());
-    size_t last_i = 0;
+    std::unordered_set<size_t> unique_indices(filtered_point_indices.begin(),
+        filtered_point_indices.end());
+    DRAKE_DEMAND(points.size() > unique_indices.size());
+    output->resize(points.size() - unique_indices.size());
     int k = 0;
-    // Add an invalid index at the end of the list so that the iteration of
-    // points can go to the end of its size.
-    filtered_point_indices.push_back(-1);
-    for (const auto& index : filtered_point_indices) {
-      for (size_t i = last_i; i < points.size(); ++i) {
-        ++last_i;
-        if (i != index) {
+    for (size_t i = 0; i < points.size(); ++i) {
+      if (unique_indices.find(i) == unique_indices.end()) {
           output->mutable_xyz(k) = points[i].cast<float>();
           k++;
-        } else {
-          break;
-        }
       }
     }
   } else {
