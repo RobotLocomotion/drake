@@ -54,13 +54,13 @@ void RigidBodyPointCloudFilter::FilterPointCloud(
   if (!filtered_point_indices.empty()) {
     std::unordered_set<size_t> unique_indices(filtered_point_indices.begin(),
         filtered_point_indices.end());
-    DRAKE_DEMAND(points.size() > unique_indices.size());
+    DRAKE_DEMAND(unique_indices.size() <= points.size());
     output->resize(points.size() - unique_indices.size());
     int k = 0;
     for (size_t i = 0; i < points.size(); ++i) {
       if (unique_indices.find(i) == unique_indices.end()) {
-          output->mutable_xyz(k) = points[i].cast<float>();
-          k++;
+        output->mutable_xyz(k) = points[i].cast<float>();
+        k++;
       }
     }
   } else {
