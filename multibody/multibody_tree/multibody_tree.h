@@ -532,6 +532,43 @@ class MultibodyTree {
         std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...));
   }
 
+  /// This method adds a Joint of type `JointType` between the frames specified
+  /// by the joint.
+  ///
+  /// @param[in] joint
+  ///   Joint to be added.
+  /// @tparam JointType
+  ///   The type of the new joint to add, which must be a subclass of Joint<T>.
+  /// @returns A rvalue reference to the added joint.
+  template <template<typename Scalar> class JointType>
+  const JointType<T>& AddJoint(
+      std::unique_ptr<JointType<T>> joint) {
+    static_assert(std::is_convertible<JointType<T>*, Joint<T>*>::value,
+                  "JointType must be a sub-class of Joint<T>.");
+
+    if (HasJointNamed(joint->name(), joint->model_instance())) {
+      throw std::logic_error(
+          "Model instance '" +
+          instance_index_to_name_.at(joint->model_instance()) +
+          "' already contains a joint named '" + joint->name() + "'. " +
+          "Joint names must be unique within a given model.");
+    }
+
+    if (topology_is_valid()) {
+      throw std::logic_error("This MultibodyTree is finalized already. "
+                             "Therefore adding more joints is not allowed. "
+                             "See documentation for Finalize() for details.");
+    }
+    if (joint == nullptr) {
+      throw std::logic_error("Input joint is a nullptr.");
+    }
+    const JointIndex joint_index(owned_joints_.size());
+    joint->set_parent_tree(this, joint_index);
+    JointType<T>* raw_joint_ptr = joint.get();
+    owned_joints_.push_back(std::move(joint));
+    return *raw_joint_ptr;
+  }
+
   /// This method helps to create a Joint of type `JointType` between two
   /// bodies.
   /// The two bodies connected by this Joint object are referred to as the
@@ -569,7 +606,7 @@ class MultibodyTree {
   ///   your intention is to make a frame F with pose `X_PF`, provide
   ///   `Isometry3<double>::Identity()` as your input.
   /// @tparam JointType
-  ///   The type of the new joint to add, which must be a subclass of Joint.
+  ///   The type of the new joint to add, which must be a subclass of Joint<T>.
   /// @returns A constant reference to the new joint just added, of type
   ///   `JointType<T>` specialized on the scalar type T of `this`
   ///   %MultibodyTree. It will remain valid for the lifetime of `this`
@@ -2223,35 +2260,6 @@ class MultibodyTree {
 
   // Friend class to facilitate testing.
   friend class MultibodyTreeTester;
-
-  template <template<typename Scalar> class JointType>
-  const JointType<T>& AddJoint(
-      std::unique_ptr<JointType<T>> joint) {
-    static_assert(std::is_convertible<JointType<T>*, Joint<T>*>::value,
-                  "JointType must be a sub-class of Joint<T>.");
-
-    if (HasJointNamed(joint->name(), joint->model_instance())) {
-      throw std::logic_error(
-          "Model instance '" +
-          instance_index_to_name_.at(joint->model_instance()) +
-          "' already contains a joint named '" + joint->name() + "'. " +
-          "Joint names must be unique within a given model.");
-    }
-
-    if (topology_is_valid()) {
-      throw std::logic_error("This MultibodyTree is finalized already. "
-                             "Therefore adding more joints is not allowed. "
-                             "See documentation for Finalize() for details.");
-    }
-    if (joint == nullptr) {
-      throw std::logic_error("Input joint is a nullptr.");
-    }
-    const JointIndex joint_index(owned_joints_.size());
-    joint->set_parent_tree(this, joint_index);
-    JointType<T>* raw_joint_ptr = joint.get();
-    owned_joints_.push_back(std::move(joint));
-    return *raw_joint_ptr;
-  }
 
   // Finalizes the MultibodyTreeTopology of this tree.
   void FinalizeTopology();

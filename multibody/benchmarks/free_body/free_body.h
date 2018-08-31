@@ -13,7 +13,7 @@ namespace free_body {
 
 /// The purpose of the %FreeBody class is to provide the data (initial values
 /// and gravity) and methods for calculating the exact analytical solution for
-/// the translational and rotational motion of a toque-free rigid body B with
+/// the translational and rotational motion of a torque-free rigid body B with
 /// axially symmetric inertia, in a Newtonian frame (World) N. Examples of
 /// bodies with axially symmetric inertia include cylinders, rods or bars with a
 /// circular or square cross section and spinning tops.
