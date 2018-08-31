@@ -15,6 +15,7 @@ from pydrake.multibody.multibody_tree import (
     ModelInstanceIndex,
     MultibodyTree,
     UniformGravityFieldElement,
+    WeldJoint,
     world_index,
 )
 from pydrake.multibody.multibody_tree.math import (
@@ -37,6 +38,7 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.util.eigen_geometry import Isometry3
 from pydrake.systems.framework import InputPort, OutputPort
 
 
@@ -108,6 +110,9 @@ class TestMultibodyTree(unittest.TestCase):
         self._test_joint_actuator_api(
             plant.GetJointActuatorByName(name="ElbowJoint"))
         self._test_body_api(plant.GetBodyByName(name="Link1"))
+        self.assertIs(
+            plant.GetBodyByName(name="Link1"),
+            plant.GetBodyByName(name="Link1", model_instance=model_instance))
         self.assertIsInstance(
             plant.get_actuation_input_port(), InputPort)
         self.assertIsInstance(
@@ -155,3 +160,22 @@ class TestMultibodyTree(unittest.TestCase):
         model_instance = AddModelFromSdfFile(
             file_name=file_name, model_name="acrobot", plant=plant,
             scene_graph=None)
+
+    def test_multibody_welding(self):
+        file_name = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+
+        # Add a weld joint between two instances of an acrobot.
+        plant = MultibodyPlant()
+        first_acrobot = AddModelFromSdfFile(file_name, "first_acrobot", plant)
+        second_acrobot = AddModelFromSdfFile(
+            file_name, "second_acrobot", plant)
+        joint = plant.AddJoint(WeldJoint(
+            name="weld_things",
+            parent_frame_P=plant.GetBodyByName(
+                "Link2", first_acrobot).body_frame(),
+            child_frame_C=plant.GetBodyByName(
+                "Link1", second_acrobot).body_frame(),
+            X_PC=Isometry3.Identity()))
+        self.assertIsInstance(joint, WeldJoint)
+        self._test_joint_api(joint)
