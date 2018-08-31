@@ -789,7 +789,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     DRAKE_DEMAND(diagram_context != nullptr);
     DRAKE_DEMAND(info != nullptr);
 
-    *time = std::numeric_limits<T>::infinity();
+    *time = std::numeric_limits<double>::infinity();
 
     // Iterate over the subsystems, and harvest the most imminent updates.
     std::vector<T> times(num_subsystems());

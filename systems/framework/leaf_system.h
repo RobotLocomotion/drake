@@ -361,7 +361,7 @@ class LeafSystem : public System<T> {
                             CompositeEventCollection<T>* events,
                             T* time) const override {
     T min_time = std::numeric_limits<double>::infinity();
-    // No periodic events events.
+    // No periodic events.
     if (periodic_events_.empty()) {
       // No discrete update.
       *time = min_time;
@@ -387,7 +387,6 @@ class LeafSystem : public System<T> {
 
     // Write out the events that fire at min_time.
     *time = min_time;
-
     for (const Event<T>* event : next_events) {
       event->add_to_composite(events);
     }
