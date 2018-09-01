@@ -15,12 +15,15 @@ LIBDRAKE_COMPONENTS = [
     "//common",
     "//common/proto",
     "//common/trajectories",
+    "//common:drake_marker_shared_library",  # unpackaged
     "//common:text_logging_gflags_h",  # unpackaged
     "//geometry",
     "//geometry/query_results",
     "//lcm",
     "//manipulation/perception",
     "//manipulation/planner",
+    "//manipulation/scene_generation:random_clutter_generator",  # unpackaged
+    "//manipulation/scene_generation:simulate_plant_to_rest",  # unpackaged
     "//manipulation/schunk_wsg",
     "//manipulation/sensors",
     "//manipulation/util",
@@ -35,8 +38,10 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/constraint",
     "//multibody/joints",
     "//multibody/multibody_tree",
+    "//multibody/multibody_tree/implicit_stribeck:implicit_stribeck_solver",  # unpackaged  # noqa
     "//multibody/multibody_tree/math",
     "//multibody/multibody_tree/multibody_plant",
+    "//multibody/multibody_tree/multibody_plant:contact_results_to_lcm",  # unpackaged  # noqa
     "//multibody/multibody_tree/parsing",
     "//multibody/parsers",
     "//multibody/parsing",
@@ -59,6 +64,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody:rigid_body",  # unpackaged
     "//multibody:rigid_body_actuator",  # unpackaged
     "//multibody:rigid_body_constraint",  # unpackaged
+    "//multibody:rigid_body_distance_constraint",  # unpackaged
     "//multibody:rigid_body_frame",  # unpackaged
     "//multibody:rigid_body_loop",  # unpackaged
     "//multibody:rigid_body_tree",  # unpackaged
