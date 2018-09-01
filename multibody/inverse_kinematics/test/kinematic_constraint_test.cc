@@ -121,5 +121,55 @@ TEST_F(IiwaKinematicConstraintTest, OrientationConstraint) {
           .trace();
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, 1E-12);
 }
+
+TEST_F(IiwaKinematicConstraintTest, OrientationConstraintConstructionError) {
+  // Throws a logic error for negative angle bound.
+  EXPECT_THROW(
+      OrientationConstraint(*iiwa_autodiff_, iiwa_link_frame_indices_[6],
+                            iiwa_link_frame_indices_[2], -0.01,
+                            dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(
+                                context_autodiff_.get())),
+      std::logic_error);
+}
+
+TEST_F(IiwaKinematicConstraintTest, GazeTargetConstraint) {
+  const FrameIndex frameA_idx{iiwa_link_frame_indices_[6]};
+  const Eigen::Vector3d p_AS(0.1, 0.2, 0.3);
+  const Eigen::Vector3d n_A(-0.1, 0.3, 0.4);
+  const FrameIndex frameB_idx{iiwa_link_frame_indices_[2]};
+  const Eigen::Vector3d p_BT(0.4, 0.2, -0.3);
+  const double cone_half_angle{0.1 * M_PI};
+  GazeTargetConstraint constraint(
+      *iiwa_autodiff_, frameA_idx, p_AS, n_A, frameB_idx, p_BT, cone_half_angle,
+      dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(context_autodiff_.get()));
+
+  EXPECT_EQ(constraint.num_constraints(), 2);
+  EXPECT_EQ(constraint.num_vars(), iiwa_autodiff_->num_positions());
+  EXPECT_TRUE(
+      CompareMatrices(constraint.lower_bound(), Eigen::Vector2d::Zero()));
+  EXPECT_TRUE(CompareMatrices(
+      constraint.upper_bound(),
+      Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity())));
+
+  Eigen::VectorXd q(iiwa_autodiff_->num_positions());
+  // arbitrary joint configuration.
+  q << 0.1, 0.2, -0.3, 0.5, -0.2, -0.05, 0.34;
+  const AutoDiffVecXd q_autodiff = math::initializeAutoDiff(q);
+  AutoDiffVecXd y_autodiff;
+  constraint.Eval(q_autodiff, &y_autodiff);
+
+  Vector3<AutoDiffXd> p_AT;
+  iiwa_autodiff_->CalcPointsPositions(
+      *context_autodiff_, iiwa_autodiff_->get_frame(frameB_idx),
+      p_BT.cast<AutoDiffXd>(), iiwa_autodiff_->get_frame(frameA_idx), &p_AT);
+  const Vector3<AutoDiffXd> p_ST_A = p_AT - p_AS;
+  Vector2<AutoDiffXd> y_autodiff_expected;
+  const Eigen::Vector3d n_A_normalized = n_A.normalized();
+  y_autodiff_expected(0) = p_ST_A.dot(n_A_normalized);
+  y_autodiff_expected(1) =
+      pow(p_ST_A.dot(n_A_normalized), 2) -
+      std::pow(std::cos(cone_half_angle), 2) * p_ST_A.squaredNorm();
+  CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, 1E-12);
+}
 }  // namespace multibody
 }  // namespace drake

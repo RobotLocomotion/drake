@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/multibody/inverse_kinematics/kinematic_constraint.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/solvers/mathematical_program.h"
