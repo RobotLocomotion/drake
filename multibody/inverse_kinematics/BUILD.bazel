@@ -1,10 +1,11 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_package_library",
     "drake_cc_test",
 )
 load(
@@ -16,22 +17,30 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+drake_cc_package_library(
+    name = "inverse_kinematics",
+    deps = [
+        ":kinematic_constraint",
+        ":inverse_kinematics_core",
+    ],
+)
+
 drake_cc_library(
     name = "kinematic_constraint",
     srcs = [
         "kinematic_constraint.cc",
     ],
     hdrs = [
-        "kinematic_constraint.h"
+        "kinematic_constraint.h",
     ],
     deps = [
-        "//multibody/multibody_tree:multibody_tree",
+        "//multibody/multibody_tree",
         "//solvers:constraint",
     ],
 )
 
 drake_cc_library(
-    name = "inverse_kinematics",
+    name = "inverse_kinematics_core",
     srcs = [
         "inverse_kinematics.cc",
     ],
@@ -40,7 +49,7 @@ drake_cc_library(
     ],
     deps = [
         ":kinematic_constraint",
-        "//multibody/multibody_tree:multibody_tree",
+        "//multibody/multibody_tree",
         "//solvers:mathematical_program",
     ],
 )
@@ -50,17 +59,18 @@ drake_cc_googletest(
     deps = [
         ":kinematic_constraint",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/benchmarks/kuka_iiwa_robot",
         "//math:gradient",
+        "//multibody/benchmarks/kuka_iiwa_robot",
     ],
 )
 
 drake_cc_googletest(
     name = "inverse_kinematics_test",
     deps = [
-        ":inverse_kinematics",
+        ":inverse_kinematics_core",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/benchmarks/kuka_iiwa_robot",
     ],
 )
+
 add_lint_tests()
