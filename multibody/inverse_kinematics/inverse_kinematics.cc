@@ -6,7 +6,7 @@ InverseKinematics::InverseKinematics(const MultibodyTree<AutoDiffXd>& tree)
     : tree_(tree),
       context_(tree_.CreateDefaultContext()),
       q_(NewContinuousVariables(tree_.num_positions(), "q")) {
-        // Add joint limit constraint here.
+  // Add joint limit constraint here.
 }
 
 solvers::Binding<PositionConstraint> InverseKinematics::AddPositionConstraint(
@@ -19,6 +19,28 @@ solvers::Binding<PositionConstraint> InverseKinematics::AddPositionConstraint(
       get_mutable_context());
   AddConstraint(constraint, q_);
   return solvers::Binding<PositionConstraint>(constraint, q_);
+}
+
+solvers::Binding<OrientationConstraint>
+InverseKinematics::AddOrientationConstraint(const FrameIndex& frameA_idx,
+                                            const FrameIndex& frameB_idx,
+                                            double angle_bound) {
+  auto constraint = std::make_shared<OrientationConstraint>(
+      tree_, frameA_idx, frameB_idx, angle_bound, get_mutable_context());
+  AddConstraint(constraint, q_);
+  return solvers::Binding<OrientationConstraint>(constraint, q_);
+}
+
+solvers::Binding<GazeTargetConstraint>
+InverseKinematics::AddGazeTargetConstraint(
+    const FrameIndex& frameA_idx, const Eigen::Ref<const Eigen::Vector3d>& p_AS,
+    const Eigen::Ref<const Eigen::Vector3d>& n_A, const FrameIndex& frameB_idx,
+    const Eigen::Ref<const Eigen::Vector3d>& p_BT, double cone_half_angle) {
+  auto constraint = std::make_shared<GazeTargetConstraint>(
+      tree_, frameA_idx, p_AS, n_A, frameB_idx, p_BT, cone_half_angle,
+      get_mutable_context());
+  AddConstraint(constraint, q_);
+  return solvers::Binding<GazeTargetConstraint>(constraint, q_);
 }
 }  // namespace multibody
 }  // namespace drake
