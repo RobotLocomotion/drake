@@ -45,6 +45,17 @@ class IiwaKinematicConstraintTest : public ::testing::Test {
   std::unique_ptr<systems::LeafContext<double>> context_double_;
 };
 
+template <typename T>
+unique_ptr<MultibodyTree<T>>
+// Test kinematic constraints on two free floating bodies.
+class TwoBodiesConstraintTest : public ::testing::Test {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO-ASSIGN(TwoBodiesConstraintTest)
+
+ public:
+   std::unique_ptr<MultibodyTree<AutoDiffXd>> two_bodies_;
+}
+
 TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
   const Eigen::Vector3d p_BQ(0.1, 0.2, 0.3);
   const Eigen::Vector3d p_AQ_lower(-0.2, -0.3, -0.4);

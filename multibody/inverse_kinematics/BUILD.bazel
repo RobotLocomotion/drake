@@ -54,6 +54,18 @@ drake_cc_library(
     ],
 )
 
+#============ Test ============================
+
+drake_cc_library(
+    name = "inverse_kinematics_test_utilities",
+    testonly = 1,
+    srcs = ["test/inverse_kinematics_test_utilities.cc"],
+    hdrs = ["test/inverse_kinematics_test_utilities.h"],
+    deps = [
+        "//multibody/multibody_tree",
+    ],
+)
+
 drake_cc_googletest(
     name = "kinematic_constraint_test",
     deps = [
