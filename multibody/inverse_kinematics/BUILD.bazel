@@ -70,6 +70,7 @@ drake_cc_googletest(
     name = "kinematic_constraint_test",
     deps = [
         ":kinematic_constraint",
+	":inverse_kinematics_test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:gradient",
         "//multibody/benchmarks/kuka_iiwa_robot",
