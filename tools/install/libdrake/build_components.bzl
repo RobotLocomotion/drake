@@ -28,6 +28,7 @@ LIBDRAKE_COMPONENTS = [
     "//manipulation/sensors",
     "//manipulation/util",
     "//math",
+    "//multibody/attic/parsers",
     "//multibody/benchmarks/acrobot",
     "//multibody/benchmarks/free_body",
     "//multibody/benchmarks/inclined_plane",
@@ -43,7 +44,6 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/multibody_tree/multibody_plant",
     "//multibody/multibody_tree/multibody_plant:contact_results_to_lcm",  # unpackaged  # noqa
     "//multibody/multibody_tree/parsing",
-    "//multibody/parsers",
     "//multibody/parsing",
     "//multibody/rigid_body_plant:compliant_contact_model",  # unpackaged
     "//multibody/rigid_body_plant:compliant_material",  # unpackaged
