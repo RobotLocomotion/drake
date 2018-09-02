@@ -64,7 +64,7 @@ OrientationConstraint::OrientationConstraint(
     const FrameIndex& frameB_idx, double angle_bound,
     MultibodyTreeContext<AutoDiffXd>* context)
     : solvers::Constraint(1, tree.num_positions(),
-                          Vector1d(2 * std::cos(angle_bound) - 1), Vector1d(1)),
+                          Vector1d(2 * std::cos(angle_bound) + 1), Vector1d(3)),
       tree_{tree},
       frameA_{tree.get_frame(frameA_idx)},
       frameB_{tree.get_frame(frameB_idx)},

@@ -76,7 +76,7 @@ class PositionConstraint : public solvers::Constraint {
  * https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
  * R_AB = I + sinθ â + (1-cosθ)â²
  * where â is the skew symmetric matrix of the rotation axis a.
- * trace(R_AB) = 2cos(θ) - 1 ≥ 2cos(θ_bound) - 1
+ * trace(R_AB) = 2cos(θ) + 1 ≥ 2cos(θ_bound) + 1
  */
 class OrientationConstraint : public solvers::Constraint {
  public:
