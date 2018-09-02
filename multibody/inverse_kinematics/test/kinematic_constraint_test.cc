@@ -19,6 +19,10 @@ void CompareAutoDiffVectors(const Eigen::MatrixBase<DerivedA>& a,
                               math::autoDiffToGradientMatrix(b), tol));
 }
 
+Eigen::Vector4d QuaternionToVector4(const Eigen::Quaterniond& q) {
+  return Eigen::Vector4d(q.w(), q.x(), q.y(), q.z());
+}
+
 class IiwaKinematicConstraintTest : public ::testing::Test {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaKinematicConstraintTest)
@@ -52,16 +56,24 @@ class TwoFreeBodiesConstraintTest : public ::testing::Test {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TwoFreeBodiesConstraintTest)
 
   TwoFreeBodiesConstraintTest()
-      : two_bodies_(test::ConstructTwoFreeBodies<AutoDiffXd>()),
-        body1_index_(two_bodies_->GetBodyByName("body1").body_frame().index()),
-        body2_index_(two_bodies_->GetBodyByName("body2").body_frame().index()),
-        context_autodiff_(two_bodies_->CreateDefaultContext()) {}
+      : two_bodies_autodiff_(test::ConstructTwoFreeBodies<AutoDiffXd>()),
+        two_bodies_double_(test::ConstructTwoFreeBodies<double>()),
+        body1_index_(
+            two_bodies_autodiff_->GetBodyByName("body1").body_frame().index()),
+        body2_index_(
+            two_bodies_autodiff_->GetBodyByName("body2").body_frame().index()),
+        context_autodiff_(two_bodies_autodiff_->CreateDefaultContext()),
+        context_double_(two_bodies_double_->CreateDefaultContext()) {}
+
+  ~TwoFreeBodiesConstraintTest() override {}
 
  protected:
-  std::unique_ptr<MultibodyTree<AutoDiffXd>> two_bodies_;
+  std::unique_ptr<MultibodyTree<AutoDiffXd>> two_bodies_autodiff_;
+  std::unique_ptr<MultibodyTree<double>> two_bodies_double_;
   FrameIndex body1_index_;
   FrameIndex body2_index_;
   std::unique_ptr<systems::LeafContext<AutoDiffXd>> context_autodiff_;
+  std::unique_ptr<systems::LeafContext<double>> context_double_;
 };
 
 TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
@@ -109,8 +121,38 @@ TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, tol);
 }
 
-Eigen::Vector4d QuaternionToVector4(const Eigen::Quaterniond& q) {
-  return Eigen::Vector4d(q.w(), q.x(), q.y(), q.z());
+TEST_F(TwoFreeBodiesConstraintTest, PositionConstraint) {
+  // Given two free bodies with some given (arbitrary) poses, check if the poses
+  // satisfy given position constraints.
+  const Eigen::Quaterniond body1_quaternion(Eigen::AngleAxisd(
+      0.3 * M_PI, Eigen::Vector3d(0.1, 0.3, 0.2).normalized()));
+  const Eigen::Quaterniond body2_quaternion(Eigen::AngleAxisd(
+      -0.2 * M_PI, Eigen::Vector3d(0.4, 1.5, -0.2).normalized()));
+  const Eigen::Vector3d body1_position(0.4, -0.02, 3.5);
+  const Eigen::Vector3d body2_position(-.1, -2.3, 0.05);
+  Eigen::Matrix<double, 14, 1> q;
+  q << QuaternionToVector4(body1_quaternion), body1_position,
+      QuaternionToVector4(body2_quaternion), body2_position;
+  dynamic_cast<MultibodyTreeContext<double>*>(context_double_.get())
+      ->get_mutable_positions() = q;
+  const Eigen::Vector3d p_BQ(0.2, 0.3, 0.4);
+  Eigen::Vector3d p_AQ;
+  two_bodies_double_->CalcPointsPositions(
+      *context_double_, two_bodies_double_->get_frame(body1_index_), p_BQ,
+      two_bodies_double_->get_frame(body2_index_), &p_AQ);
+
+  PositionConstraint constraint_satisfied(
+      *two_bodies_autodiff_, body1_index_, p_BQ, body2_index_,
+      p_AQ - Eigen::Vector3d::Constant(0.001),
+      p_AQ + Eigen::Vector3d::Constant(0.001),
+      dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(context_autodiff_.get()));
+  EXPECT_TRUE(constraint_satisfied.CheckSatisfied(q));
+  PositionConstraint constraint_unsatisfied(
+      *two_bodies_autodiff_, body1_index_, p_BQ, body2_index_,
+      p_AQ - Eigen::Vector3d::Constant(0.002),
+      p_AQ - Eigen::Vector3d::Constant(0.001),
+      dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(context_autodiff_.get()));
+  EXPECT_FALSE(constraint_unsatisfied.CheckSatisfied(q));
 }
 
 TEST_F(IiwaKinematicConstraintTest, OrientationConstraint) {
@@ -149,7 +191,7 @@ TEST_F(TwoFreeBodiesConstraintTest, OrientationConstraint) {
   // Check if the orientation constraints are satisfied for two bodies with
   // given orientations
   OrientationConstraint constraint(
-      *two_bodies_, body1_index_, body2_index_, 0.1 * M_PI,
+      *two_bodies_autodiff_, body1_index_, body2_index_, 0.1 * M_PI,
       dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(context_autodiff_.get()));
 
   // With q_satisfied, the angle between body1 and body2 is 0.09 * M_PI, it
