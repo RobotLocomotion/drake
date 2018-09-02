@@ -215,6 +215,34 @@ optional<string> FindSentinelDir() {
   }
 }
 
+bool StartsWith(const string& str, const string& prefix) {
+  return str.compare(0, prefix.size(), prefix) == 0;
+}
+
+// Opportunistically searches inside the attic for multibody resource paths.
+// This function is not unit tested -- only acceptance-tested by the fact that
+// none of the tests in the attic fail.
+Result MaybeFindResourceInAttic(const string& resource_path) {
+  const string prefix("drake/multibody/");
+  if (StartsWith(resource_path, prefix)) {
+    const string multibody_substr = resource_path.substr(prefix.size());
+    for (const auto& directory : {
+             "parsers/test/package_map_test",
+             "parsers/test/parsers_frames_test",
+             "parsers/test/urdf_parser_test",
+         }) {
+      if (StartsWith(multibody_substr, directory)) {
+        const Result attic_result =
+            FindResource(prefix + string("attic/") + multibody_substr);
+        if (attic_result.get_absolute_path() != nullopt) {
+          return attic_result;
+        }
+      }
+    }
+  }
+  return Result::make_error(resource_path, "Not an attic path");
+}
+
 }  // namespace
 
 const char* const kDrakeResourceRootEnvironmentVariableName =
@@ -254,12 +282,21 @@ Result FindResource(string resource_path) {
         "resource_path is not a relative path");
   }
   const std::string prefix("drake/");
-  if (resource_path.compare(0, prefix.size(), prefix) != 0) {
+  if (!StartsWith(resource_path, prefix)) {
     return Result::make_error(
         std::move(resource_path),
         "resource_path does not start with " + prefix);
   }
   const std::string resource_path_substr = resource_path.substr(prefix.size());
+
+  // As a compatibility shim, for resource paths that have been moved into the
+  // multibody attic, use the non-attic path and search inside the attic.  This
+  // heuristic is only relevant for source trees -- no data files from the
+  // attic are ever installed.
+  const Result attic_result = MaybeFindResourceInAttic(resource_path);
+  if (attic_result.get_absolute_path() != nullopt) {
+    return attic_result;
+  }
 
   // Collect a list of (priority-ordered) directories to check.  Candidate
   // paths will already end with "drake" as their final path element, or
