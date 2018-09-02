@@ -171,5 +171,28 @@ TEST_F(IiwaKinematicConstraintTest, GazeTargetConstraint) {
       std::pow(std::cos(cone_half_angle), 2) * p_ST_A.squaredNorm();
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, 1E-12);
 }
+
+TEST_F(IiwaKinematicConstraintTest, GazeTargetConstraintConstructorError) {
+  // Check if the constructor for GazeTargetConstraint will throw errors if the
+  // inputs are incorrect.
+  const Eigen::Vector3d p_AS(1, 2, 3);
+  const Eigen::Vector3d p_BT(2, 3, 4);
+  // zero n_A
+  EXPECT_THROW(GazeTargetConstraint(
+                   *iiwa_autodiff_, iiwa_link_frame_indices_[2], p_AS,
+                   Eigen::Vector3d::Zero(), iiwa_link_frame_indices_[3], p_BT,
+                   0.1, dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(
+                            context_autodiff_.get())),
+               std::logic_error);
+
+  // wrong cone_half_angle
+  EXPECT_THROW(GazeTargetConstraint(
+                   *iiwa_autodiff_, iiwa_link_frame_indices_[2], p_AS,
+                   Eigen::Vector3d::Ones(), iiwa_link_frame_indices_[3], p_BT,
+                   -0.1, dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(
+                            context_autodiff_.get())),
+               std::logic_error);
+
+}
 }  // namespace multibody
 }  // namespace drake
