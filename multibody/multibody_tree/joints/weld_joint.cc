@@ -38,6 +38,19 @@ std::unique_ptr<Joint<AutoDiffXd>> WeldJoint<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
+// N.B. Due to esoteric linking errors on Mac (see #9345) involving
+// `MobilizerImpl`, we must place this implementation in the source file, not
+// in the header file.
+template <typename T>
+std::unique_ptr<typename Joint<T>::BluePrint>
+WeldJoint<T>::MakeImplementationBlueprint() const {
+  auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
+  blue_print->mobilizers_.push_back(
+      std::make_unique<WeldMobilizer<T>>(
+          this->frame_on_parent(), this->frame_on_child(), X_PC_));
+  return std::move(blue_print);
+}
+
 }  // namespace multibody
 }  // namespace drake
 
