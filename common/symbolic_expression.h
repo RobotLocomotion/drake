@@ -8,6 +8,7 @@
 #include <algorithm>  // for cpplint only
 #include <cstddef>
 #include <functional>
+#include <limits>
 #include <map>
 #include <memory>
 #include <ostream>
@@ -830,6 +831,11 @@ struct equal_to<drake::symbolic::Expression> {
     return lhs.EqualTo(rhs);
   }
 };
+
+/* Provides std::numeric_limits<drake::symbolic::Expression>. */
+template <>
+struct numeric_limits<drake::symbolic::Expression>
+    : public numeric_limits<double> {};
 
 }  // namespace std
 
