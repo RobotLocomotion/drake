@@ -192,10 +192,24 @@ drake_installed_headers = rule(
 )
 
 def _gather_transitive_hdrs_impl(ctx):
-    result = depset([], transitive = [
+    # Transitively list all headers.
+    all_hdrs = depset([], transitive = [
         dep[DrakeCc].transitive_hdrs
         for dep in ctx.attr.deps
     ])
+
+    # Filter in/out items matching a prefix.
+    only = ctx.attr.only_startswith
+    never = ctx.attr.never_startswith
+    result = depset([
+        x
+        for x in all_hdrs
+        if (
+            (not only or x.short_path.startswith(only)) and
+            (not never or not x.short_path.startswith(never))
+        )
+    ])
+
     return struct(files = result)
 
 _gather_transitive_hdrs = rule(
@@ -204,11 +218,18 @@ _gather_transitive_hdrs = rule(
             allow_files = False,
             providers = [DrakeCc],
         ),
+        "only_startswith": attr.string(),
+        "never_startswith": attr.string(),
     },
     implementation = _gather_transitive_hdrs_impl,
 )
 
-def drake_transitive_installed_hdrs_filegroup(name, deps = [], **kwargs):
+def drake_transitive_installed_hdrs_filegroup(
+        name,
+        deps = [],
+        only_startswith = None,
+        never_startswith = None,
+        **kwargs):
     """Declare a filegroup that contains the transtive installed hdrs of the
     targets named by `deps`.
     """
@@ -216,6 +237,8 @@ def drake_transitive_installed_hdrs_filegroup(name, deps = [], **kwargs):
         name = name + "_gather",
         deps = [installed_headers_for_dep(x) for x in deps],
         visibility = [],
+        only_startswith = only_startswith,
+        never_startswith = never_startswith,
     )
     native.filegroup(
         name = name,
@@ -240,13 +263,11 @@ def _raw_drake_cc_library(
     _, private_hdrs = _prune_private_hdrs(srcs)
     if private_hdrs:
         fail("private_hdrs = " + private_hdrs)
-    if native.package_name().startswith("drake"):
-        strip_include_prefix = None
-        include_prefix = None
-    else:
-        # Require include paths like "drake/foo/bar.h", not "foo/bar.h".
-        strip_include_prefix = "/"
-        include_prefix = "drake"
+
+    # Require include paths like "drake/foo/bar.h", not "foo/bar.h".
+    strip_include_prefix = kwargs.pop("strip_include_prefix", "") or "/"
+    include_prefix = kwargs.pop("include_prefix", "") or "drake"
+
     native.cc_library(
         name = name,
         hdrs = hdrs,
