@@ -421,12 +421,12 @@ class RotationMatrix {
   /// - [Dahleh] "Lectures on Dynamic Systems and Controls: Electrical
   /// Engineering and Computer Science, Massachusetts Institute of Technology"
   /// https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-241j-dynamic-systems-and-control-spring-2011/readings/MIT6_241JS11_chap04.pdf
-  /// @note Although this function exists for all scalar types, invocation on
-  /// symbolic::Expression (non-numeric types) will throw an exception.
   //  @internal This function's name is referenced in Doxygen documentation.
   template <typename S = T>
-  static typename std::enable_if<is_numeric<S>::value, RotationMatrix<S>>::type
-  ProjectToRotationMatrix(const Matrix3<S>& M, T* quality_factor = NULL) {
+  static typename std::enable_if<
+    !std::is_same<S, symbolic::Expression>::value,
+    RotationMatrix<S>>::type
+  ProjectToRotationMatrix(const Matrix3<S>& M, S* quality_factor = nullptr) {
     const Matrix3<S> M_orthonormalized =
         ProjectMatrix3ToOrthonormalMatrix3(M, quality_factor);
     ThrowIfNotValid(M_orthonormalized);
@@ -434,10 +434,23 @@ class RotationMatrix {
   }
 
   template <typename S = T>
-  static typename std::enable_if<!is_numeric<S>::value, RotationMatrix<S>>::type
-  ProjectToRotationMatrix(const Matrix3<S>& M, T* quality_factor = NULL) {
-    throw std::runtime_error("This method is not supported for scalar types "
-                             "that are not drake::is_numeric<S>.");
+  static typename std::enable_if<
+    std::is_same<S, symbolic::Expression>::value,
+    RotationMatrix<S>>::type
+  ProjectToRotationMatrix(const Matrix3<S>& M, S* quality_factor = nullptr) {
+    // Extract all variables within M.
+    const symbolic::Variables vars =
+        M.unaryExpr([](const S& term) { return term.GetVariables(); })
+        .redux([](const auto& a, const auto& b) { return a + b; } );
+    // Return a rotation matrix and quality_factor where every scalar value is
+    // an uninterpreted term.
+    if (quality_factor) {
+      *quality_factor = uninterpreted_function(
+          "orthonormal_projection_quality", vars);
+    }
+    const symbolic::Expression matrix_term = uninterpreted_function(
+        "orthonormal_projection", vars);
+    return RotationMatrix<S>(Matrix3<S>::Constant(matrix_term), true);
   }
 
   /// Returns an internal tolerance that checks rotation matrix orthonormality.
