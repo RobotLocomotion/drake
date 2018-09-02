@@ -903,6 +903,25 @@ TEST_F(SymbolicExpressionTest, HashUnary) {
   EXPECT_EQ(hash_set.size(), exprs.size());
 }
 
+// Confirm that numeric_limits is appropriately specialized for Expression.
+// We'll just spot-test a few values, since our implementation is trivially
+// forwarding to numeric_limits<double>.
+TEST_F(SymbolicExpressionTest, NumericLimits) {
+  using std::numeric_limits;
+  using Limits = numeric_limits<Expression>;
+
+  const Expression num_eps = Limits::epsilon();
+  ASSERT_TRUE(is_constant(num_eps));
+  EXPECT_EQ(get_constant_value(num_eps), numeric_limits<double>::epsilon());
+
+  const Expression num_min = Limits::min();
+  ASSERT_TRUE(is_constant(num_min));
+  EXPECT_EQ(get_constant_value(num_min), numeric_limits<double>::min());
+
+  const Expression num_infinity = Limits::infinity();
+  EXPECT_EQ(num_infinity.to_string(), "inf");
+}
+
 TEST_F(SymbolicExpressionTest, UnaryPlus) {
   EXPECT_PRED2(ExprEqual, c3_, +c3_);
   EXPECT_PRED2(ExprEqual, Expression(var_x_), +var_x_);
