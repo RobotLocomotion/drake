@@ -1222,8 +1222,8 @@ TEST_F(SymbolicFormulaTest, DrakeAssert) {
 GTEST_TEST(FormulaTest, DefaultConstructors) {
   const Formula f_default;
   const Formula f_zero(0);
-  EXPECT_TRUE(is_true(f_default));
-  EXPECT_TRUE(is_true(f_zero));
+  EXPECT_TRUE(is_false(f_default));
+  EXPECT_TRUE(is_false(f_zero));
 }
 
 // This test checks whether symbolic::Formula is compatible with

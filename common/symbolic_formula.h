@@ -115,11 +115,13 @@ class Formula {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Formula)
 
-  /** Default constructor. */
-  Formula() { *this = True(); }
+  /** Default constructor.  Sets the value to Formula::False, to be consistent
+   * with value-initialized `bool`s.
+   */
+  Formula() { *this = False(); }
 
-  /** Constructs a default value.  This overload is used by Eigen when
-   * EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.
+  /** Constructs the same value as the default constructor.  This overload is
+   * used by Eigen when EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.
    */
   explicit Formula(std::nullptr_t) : Formula() {}
 
