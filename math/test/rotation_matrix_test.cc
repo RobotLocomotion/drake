@@ -469,12 +469,9 @@ GTEST_TEST(RotationMatrix, CastFromDoubleToAutoDiffXd) {
   }
 }
 
-// Verify RotationMatrix is compatible with symbolic::Expression. This includes,
-// construction, and the two methods specialized for symbolic::Expression:
-// ThrowIfNotValid() and ProjectToRotationMatrix().
-GTEST_TEST(RotationMatrix, SymbolicRotationMatrixSimpleTests) {
-  RotationMatrix<symbolic::Expression> R;
-
+// Verify RotationMatrix constructor is compatible with symbolic::Expression,
+// including the ThrowIfNotValid() check.
+GTEST_TEST(RotationMatrix, SymbolicConstructionTest) {
   // When the underlying scalar type is a symbolic::Expression, ensure
   // set(m_symbolic) only sets the rotation matrix, with no validity checks
   // e.g., ThrowIfNotValid() is a "no-op" (does nothing).
@@ -486,15 +483,51 @@ GTEST_TEST(RotationMatrix, SymbolicRotationMatrixSimpleTests) {
   // Since this function is private, it cannot be directly tested.
   // Instead, it is tested via the set() method which calls ThrowIfNotValid()
   // when assertions are armed.
+  RotationMatrix<symbolic::Expression> R;
   EXPECT_NO_THROW(R.set(m_symbolic));
 
-  // Test ProjectToRotationMatrix() throws an exception for symbolic expression.
+  // Set one of the matrix terms to a variable.  Still no throw.
+  const symbolic::Variable x{"x"};
+  m_symbolic(0, 0) = x;
+  EXPECT_NO_THROW(R.set(m_symbolic));
+}
+
+// Verify RotationMatrix projection with symbolic::Expression behaves as
+// expected.  (In prior revisions, it was specialized for Expressions.)
+// If there are free variables, it will throw.
+GTEST_TEST(RotationMatrix, SymbolicProjectionTest) {
+  // Set up an identity matrix, but with one off-diagonal free variable.
+  auto input = Matrix3<symbolic::Expression>::Identity().eval();
+  const symbolic::Variable x{"x"};
+  input(2, 0) = x;
+
+  // The ProjectToRotationMatrix() SVD throws if there is a free variable.
+  // In the future, it would be acceptable if the implementation produced a
+  // symbolic value instead of throwing, but for now we'll lock in the "must
+  // throw" contract so that we'll notice if the behavior changes.
+  using RotMatExpr = RotationMatrix<symbolic::Expression>;
+  symbolic::Expression quality;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      RotationMatrix<symbolic::Expression> R_symbolic_after_project =
-      RotationMatrix<symbolic::Expression>::ProjectToRotationMatrix(m_symbolic),
+      RotMatExpr::ProjectToRotationMatrix(input, &quality),
       std::runtime_error,
-      "This method is not supported for scalar types "
-      "that are not drake::is_numeric<S>.");
+      ".*environment does not have an entry for the variable.*\n*");
+
+  // Removing the free variable allows us to succeed.
+  input(2, 0) = 0;   // The input is now the identity matrix.
+  RotMatExpr::ProjectToRotationMatrix(input, &quality);
+
+  // The precision and correctness of the double-valued result is tested
+  // elsewhere.  This is just a sanity check that the operation succeeded.
+  EXPECT_LT(abs(quality - 1.0), 1e-10);
+
+  // Even inputs that are far from orthonormal do not throw.
+  Matrix3d m;
+  m << 1, 2,  3,
+       4, 5,  6,
+       7, 8, -10;
+  input = m.template cast<symbolic::Expression>();
+  RotMatExpr::ProjectToRotationMatrix(input, &quality);
+  EXPECT_GT(quality, 10.0);
 }
 
 // Utility function to help test ProjectMatToRotMatWithAxis().
