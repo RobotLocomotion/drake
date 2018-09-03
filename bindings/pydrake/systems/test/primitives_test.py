@@ -156,7 +156,8 @@ class TestGeneral(unittest.TestCase):
         taylor = FirstOrderTaylorApproximation(system, context)
         self.assertTrue((taylor.y0() == y0).all())
 
-        system = MatrixGain(A)
+        system = MatrixGain(D=A)
+        self.assertTrue((system.D() == A).all())
 
     def test_vector_pass_through(self):
         model_value = BasicVector([1., 2, 3])
