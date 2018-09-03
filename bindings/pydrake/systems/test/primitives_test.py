@@ -30,6 +30,7 @@ from pydrake.systems.primitives import (
     IsObservable,
     Linearize,
     LinearSystem, LinearSystem_,
+    MatrixGain,
     Multiplexer, Multiplexer_,
     ObservabilityMatrix,
     PassThrough, PassThrough_,
@@ -154,6 +155,8 @@ class TestGeneral(unittest.TestCase):
         self.assertTrue((linearized.A() == A).all())
         taylor = FirstOrderTaylorApproximation(system, context)
         self.assertTrue((taylor.y0() == y0).all())
+
+        system = MatrixGain(A)
 
     def test_vector_pass_through(self):
         model_value = BasicVector([1., 2, 3])
