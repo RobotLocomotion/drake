@@ -36,9 +36,10 @@ namespace math {
 /// do a validity check and throw an exception (std::logic_error) if the
 /// rotation matrix is invalid.  When DRAKE_ASSERT_IS_ARMED is not defined,
 /// many of these validity checks are skipped (which helps improve speed).
-/// In addition, validity tests are only performed for scalar types for which
-/// drake::is_numeric<T> is `true`.  No validity check is performed and no
-/// assertion is thrown if T is non-numeric (e.g., T is symbolic::Expression).
+/// In addition, validity tests are only performed for scalar types when
+/// drake::Bool<T>::is_native.  No validity check is performed and no exception
+/// is thrown if formulas over T are not typed as `bool` (e.g., if T is
+/// symbolic::Expression).
 ///
 /// @authors Paul Mitiguy (2018) Original author.
 /// @authors Drake team (see https://drake.mit.edu/credits).
@@ -587,11 +588,11 @@ class RotationMatrix {
   // @note If the underlying scalar type T is non-numeric (symbolic), no
   // validity check is made and no assertion is thrown.
   template <typename S = T>
-  static typename std::enable_if<is_numeric<S>::value, void>::type
+  static typename std::enable_if<Bool<S>::is_native>::type
   ThrowIfNotValid(const Matrix3<S>& R);
 
   template <typename S = T>
-  static typename std::enable_if<!is_numeric<S>::value, void>::type
+  static typename std::enable_if<!Bool<S>::is_native>::type
   ThrowIfNotValid(const Matrix3<S>&) {}
 
   // Given an approximate rotation matrix M, finds the orthonormal matrix R
@@ -830,9 +831,9 @@ Matrix3<typename Derived::Scalar> rpy2rotmat(
 // error that arose, but only during release builds and when tests in
 // rotation_matrix_test.cc used symbolic expressions.  I (Paul) spent a fair
 // amount of time trying to understand this problem (with Sherm & Sean).
-template<typename T>
+template <typename T>
 template <typename S>
-typename std::enable_if<is_numeric<S>::value, void>::type
+typename std::enable_if<Bool<S>::is_native>::type
 RotationMatrix<T>::ThrowIfNotValid(const Matrix3<S>& R) {
   if (!R.allFinite()) {
     throw std::logic_error(
