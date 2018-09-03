@@ -18,9 +18,8 @@ from pydrake.maliput.dragway import (
 
 
 # Instantiate and return a two-lane straight road.
-def make_test_dragway(kLaneWidth):
+def make_test_dragway(kLaneWidth, kLength):
     kNumLanes = 2
-    kLength = 100.
     kShoulderWidth = 1.
     kHeight = 5.
     kTol = 1e-6
@@ -54,9 +53,14 @@ class TestMaliput(unittest.TestCase):
         self.assertTrue(np.allclose(geo_pos_alt.xyz(), xyz))
 
         RoadPosition()
-        rg = make_test_dragway(kLaneWidth=4.)
-        lane_0 = rg.junction(0).segment(0).lane(0)
-        lane_1 = rg.junction(0).segment(0).lane(1)
+        rg = make_test_dragway(kLaneWidth=4., kLength=100.)
+        self.assertEqual(rg.num_junctions(), 1)
+        junction = rg.junction(0)
+        self.assertEqual(junction.num_segments(), 1)
+        segment = junction.segment(0)
+        self.assertEqual(segment.num_lanes(), 2)
+        lane_0 = segment.lane(0)
+        lane_1 = segment.lane(1)
         road_pos = RoadPosition(lane=lane_0, pos=lane_pos)
         self.assertEqual(road_pos.lane.id().string(), lane_0.id().string())
         self.assertTrue(np.allclose(road_pos.pos.srh(), lane_pos.srh()))
@@ -79,10 +83,34 @@ class TestMaliput(unittest.TestCase):
 
     def test_dragway(self):
         kLaneWidth = 4.
-        rg = make_test_dragway(kLaneWidth=kLaneWidth)
-        segment = rg.junction(0).segment(0)
-        lane_0 = segment.lane(0)
-        lane_1 = segment.lane(1)
+        kLength = 100.
+        rg = make_test_dragway(kLaneWidth=kLaneWidth,
+                               kLength=kLength)
+        lane_0 = rg.junction(0).segment(0).lane(0)
+        lane_1 = rg.junction(0).segment(0).lane(1)
+
+        # Test that both Lanes have equal and expected lengths.
+        self.assertEqual(lane_0.length(), kLength)
+        self.assertEqual(lane_0.length(), lane_1.length())
+
+        # Test Lane orientations for consistency.
+        lane_start = LanePosition(0., 0., 0.)
+        lane_end = LanePosition(lane_0.length(), 0., 0.)
+        self.assertTrue(np.allclose(
+            lane_0.GetOrientation(lane_start).vector(), [0., 0., 0.]
+        ))
+        self.assertTrue(np.allclose(
+            lane_0.GetOrientation(lane_start).vector(),
+            lane_0.GetOrientation(lane_end).vector()
+        ))
+        self.assertTrue(np.allclose(
+            lane_1.GetOrientation(lane_start).vector(),
+            lane_1.GetOrientation(lane_end).vector()
+        ))
+        self.assertTrue(np.allclose(
+            lane_0.GetOrientation(lane_end).vector(),
+            lane_1.GetOrientation(lane_end).vector()
+        ))
 
         # Test the Lane <-> Geo space coordinate conversion.
         lane_pos = LanePosition(0., 0., 0.)
@@ -101,5 +129,6 @@ class TestMaliput(unittest.TestCase):
                                     lane_pos_expected.srh()))
         self.assertTrue(np.allclose(nearest_pos.xyz(), geo_pos.xyz()))
         self.assertTrue(distance == 0.)
+
 
     # TODO(jadecastro) Add more maliput backends as needed.
