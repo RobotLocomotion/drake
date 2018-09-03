@@ -875,7 +875,13 @@ map<string, int> RigidBodyTree<T>::computePositionNameToIndexMap() const {
   map<string, int> name_to_index_map;
 
   for (int i = 0; i < num_positions_; ++i) {
-    name_to_index_map[get_position_name(i)] = i;
+    string name = get_position_name(i);
+    if (name_to_index_map.find(name) != name_to_index_map.end()) {
+      throw std::runtime_error(fmt::format(
+          "Duplicate position name: {}, which means you have multiple "
+          "model instances. Please use custom iteration."));
+    }
+    name_to_index_map[name] = i;
   }
   return name_to_index_map;
 }
