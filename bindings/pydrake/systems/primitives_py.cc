@@ -14,6 +14,7 @@
 #include "drake/systems/primitives/gain.h"
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/linear_system.h"
+#include "drake/systems/primitives/matrix_gain.h"
 #include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/random_source.h"
@@ -98,6 +99,11 @@ PYBIND11_MODULE(primitives, m) {
                       const Eigen::Ref<const Eigen::MatrixXd>&, double>(),
              py::arg("A"), py::arg("B"), py::arg("C"), py::arg("D"),
              py::arg("time_period") = 0.0);
+
+    DefineTemplateClassWithDefault<MatrixGain<T>, LinearSystem<T>>(
+        m, "MatrixGain", GetPyParam<T>())
+        .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&>(),
+             py::arg("D"));
 
     DefineTemplateClassWithDefault<Multiplexer<T>, LeafSystem<T>>(
         m, "Multiplexer", GetPyParam<T>())
