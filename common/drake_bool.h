@@ -192,20 +192,35 @@ T cond(const Bool<T>& b, const T& e_then, Rest... rest) {
   return cond(b.value(), e_then, rest...);
 }
 
+/// Checks truth for all elements in the matrix @p m.
+template <typename Derived>
+typename Derived::Scalar all(const Eigen::DenseBase<Derived>& m) {
+  using BoolT = typename Derived::Scalar;
+  if (m.rows() == 0 || m.cols() == 0) {
+    // all holds vacuously when there is nothing to check.
+    return BoolT{true};
+  }
+  return m.redux([](const BoolT& v1, const BoolT& v2) { return v1 && v2; });
+}
+
 /// Checks if unary predicate @p pred holds for all elements in the matrix @p m.
 template <typename Derived>
 Bool<typename Derived::Scalar> all_of(
     const Eigen::MatrixBase<Derived>& m,
     const std::function<typename Bool<typename Derived::Scalar>::value_type(
         const typename Derived::Scalar&)>& pred) {
-  using T = typename Derived::Scalar;
+  return all(m.unaryExpr(pred));
+}
+
+/// Checks truth for at least one element in the matrix @p m.
+template <typename Derived>
+typename Derived::Scalar any(const Eigen::DenseBase<Derived>& m) {
+  using BoolT = typename Derived::Scalar;
   if (m.rows() == 0 || m.cols() == 0) {
-    // all_of holds vacuously when there is nothing to check.
-    return Bool<T>::True();
+    // any is vacuously false when there is nothing to check.
+    return BoolT{false};
   }
-  return m.unaryExpr(pred).redux(
-      [](const typename Bool<T>::value_type& v1,
-         const typename Bool<T>::value_type& v2) { return v1 && v2; });
+  return m.redux([](const BoolT& v1, const BoolT& v2) { return v1 || v2; });
 }
 
 /// Checks if unary predicate @p pred holds for at least one element in the
@@ -215,14 +230,7 @@ Bool<typename Derived::Scalar> any_of(
     const Eigen::MatrixBase<Derived>& m,
     const std::function<typename Bool<typename Derived::Scalar>::value_type(
         const typename Derived::Scalar&)>& pred) {
-  using T = typename Derived::Scalar;
-  if (m.rows() == 0 || m.cols() == 0) {
-    // any_of is vacuously false when there is nothing to check.
-    return Bool<T>::False();
-  }
-  return m.unaryExpr(pred).redux(
-      [](const typename Bool<T>::value_type& v1,
-         const typename Bool<T>::value_type& v2) { return v1 || v2; });
+  return any(m.unaryExpr(pred));
 }
 
 /// Checks if unary predicate @p pred holds for no elements in the matrix @p m.
