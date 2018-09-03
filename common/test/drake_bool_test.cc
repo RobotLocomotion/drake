@@ -86,6 +86,8 @@ TEST_F(BoolTestDouble, MoveAssign) {
 TEST_F(BoolTestDouble, TypeCheck) {
   static_assert(std::is_same<Bool<double>::value_type, bool>::value,
                 "Bool<double>::value_type should be bool");
+  static_assert(Bool<double>::is_native,
+                "Bool<double> should be native");
 }
 
 TEST_F(BoolTestDouble, Value) {
@@ -177,6 +179,8 @@ class BoolTestAutoDiffXd : public ::testing::Test {
 TEST_F(BoolTestAutoDiffXd, TypeCheck) {
   static_assert(std::is_same<Bool<AutoDiffXd>::value_type, bool>::value,
                 "Bool<AutoDiffXd>::value_type should be bool");
+  static_assert(Bool<double>::is_native,
+                "Bool<AutoDiffXd> should be native");
 }
 
 TEST_F(BoolTestAutoDiffXd, TrueFalse) {
@@ -308,6 +312,8 @@ TEST_F(BoolTestSymbolic, TypeCheck) {
   static_assert(
       std::is_same<Bool<Expression>::value_type, Formula>::value,
       "Bool<symbolic::Expression>::value_type should be symbolic::Formula");
+  static_assert(!Bool<Expression>::is_native,
+                "Bool<AutoDiffXd> should NOT be native");
 }
 
 TEST_F(BoolTestSymbolic, TrueFalse) {
