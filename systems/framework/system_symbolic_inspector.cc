@@ -64,15 +64,8 @@ SystemSymbolicInspector::SystemSymbolicInspector(
   for (int i = 0; i < system.get_num_constraints(); i++) {
     const SystemConstraint<Expression>& constraint =
         system.get_constraint(SystemConstraintIndex(i));
-    VectorX<Expression> value;
-    constraint.Calc(*context_, &value);
-    for (int j = 0; j < value.size(); j++) {
-      if (constraint.is_equality_constraint()) {
-        constraints_.emplace(value[j] == 0.0);
-      } else {
-        constraints_.emplace(value[j] >= 0.0);
-      }
-    }
+    const double tol = 0.0;
+    constraints_.emplace(constraint.CheckSatisfied(*context_, tol).value());
   }
 }
 

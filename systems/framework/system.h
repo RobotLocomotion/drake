@@ -14,6 +14,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
@@ -1114,18 +1115,22 @@ class System : public SystemBase {
   /// Returns true if @p context satisfies all of the registered
   /// SystemConstraints with tolerance @p tol.  @see
   /// SystemConstraint::CheckSatisfied.
-  bool CheckSystemConstraintsSatisfied(const Context<T> &context,
-                                       double tol) const {
+  Bool<T> CheckSystemConstraintsSatisfied(const Context<T> &context,
+                                          double tol) const {
     DRAKE_DEMAND(tol >= 0.0);
+    Bool<T> result = true;
     for (const auto& constraint : constraints_) {
-      if (!constraint->CheckSatisfied(context, tol)) {
+      result = result && constraint->CheckSatisfied(context, tol);
+      // If T is a real number (not a symbolic expression), we can bail out
+      // early with a diagnostic when the first constraint fails.
+      if (Bool<T>::is_native && !result.value()) {
         SPDLOG_DEBUG(drake::log(),
                      "Context fails to satisfy SystemConstraint {}",
                      constraint->description());
-        return false;
+        return result;
       }
     }
-    return true;
+    return result;
   }
 
   /// Checks that @p output is consistent with the number and size of output

@@ -163,17 +163,11 @@ TEST_F(SystemSymbolicInspectorTest, AbstractContextThwartsSparsity) {
 }
 
 TEST_F(SystemSymbolicInspectorTest, ConstraintTest) {
-  EXPECT_EQ(inspector_->constraints().size(), 4);
-
-  int equality_constraint_count{0};
-  for (const auto& formula : inspector_->constraints()) {
-    if (is_equal_to(formula)) {
-      equality_constraint_count++;
-    }
-    EXPECT_EQ(get_rhs_expression(formula), 0);
-    EXPECT_TRUE(is_variable(get_lhs_expression(formula)));
-  }
-  EXPECT_EQ(equality_constraint_count, 2);
+  const auto& constraints = inspector_->constraints();
+  ASSERT_EQ(constraints.size(), 2);
+  auto iter = constraints.begin();
+  EXPECT_EQ(iter->to_string(), "((xc0 = 0) and (xc1 = 0))");
+  EXPECT_EQ((++iter)->to_string(), "((xc0 >= 0) and (xc1 >= 0))");
 }
 
 TEST_F(SystemSymbolicInspectorTest, IsTimeInvariant) {
