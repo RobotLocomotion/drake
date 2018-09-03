@@ -202,14 +202,14 @@ GTEST_TEST(MultilaneBuilderTest, ParameterConstructor) {
 
 // Checks that Connection instances are properly built by the Builder.
 GTEST_TEST(MultilaneBuilderTest, ProperConnections) {
-  const double kLaneWidth = 4.;
+  constexpr double kLaneWidth = 4.;
   const api::HBounds kElevationBounds(0., 5.);
-  const double kLinearTolerance = 0.01;
-  const double kAngularTolerance = 0.01 * M_PI;
+  constexpr double kLinearTolerance = 0.01;
+  constexpr double kAngularTolerance = 0.01 * M_PI;
   constexpr double kEndpointLinearTolerance{1e-15};
   constexpr double kEndpointAngularTolerance{1e-15};
-  const double kScaleLength = 1.0;
-  const ComputationPolicy kComputationPolicy{
+  constexpr double kScaleLength = 1.0;
+  constexpr ComputationPolicy kComputationPolicy{
     ComputationPolicy::kPreferAccuracy};
   Builder builder(kLaneWidth, kElevationBounds, kLinearTolerance,
                   kAngularTolerance, kScaleLength, kComputationPolicy);

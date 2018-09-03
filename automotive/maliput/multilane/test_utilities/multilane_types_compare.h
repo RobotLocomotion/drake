@@ -19,7 +19,7 @@ using ::testing::MatchResultListener;
 // Compares equality within @p tolerance deviation of two EndpointXy objects.
 // @param xy1 An EndpointXy object to compare.
 // @param xy2 An EndpointXy object to compare.
-// @param linear_tolerance An allowable absolute deviation for EndpointXy's
+// @param linear_tolerance An allowable absolute deviation for each EndpointXy's
 //                         x and y position coordinates.
 // @param angular_tolerance An allowable absolute deviation for EndpointXy's
 //                          heading angle.
@@ -36,11 +36,11 @@ using ::testing::MatchResultListener;
 // @param z1 An EndpointZ object to compare.
 // @param z2 An EndpointZ object to compare.
 // @param linear_tolerance An allowable absolute deviation for EndpointZ's
-//                         z position coordinate, as well as for its derivative
-//                         zdot.
-// @param angular_tolerance An allowable absolute deviation for EndpointZ's
-//                          superelevation angle theta, as well as for its
-//                          derivative thetadot.
+//                         z position coordinate, as well as elevation
+//                         derivative ż.
+// @param angular_tolerance An allowable absolute deviation for each EndpointZ's
+//                          heading angle and superelevation angle θ, as well as
+//                          superelevation derivative θ_dot.
 // @return ::testing::AssertionFailure() When EndpointZ objects are different.
 // @return ::testing::AssertionSuccess() When EndpointZ objects' quantities
 //                                       are within @p linear_tolerance or
@@ -53,12 +53,12 @@ using ::testing::MatchResultListener;
 // Compares equality within @p tolerance deviation of two Endpoint objects.
 // @param pos1 An Endpoint object to compare.
 // @param pos2 An Endpoint object to compare.
-// @param linear_tolerance An allowable absolute deviation for Endpoint's
-//                         x, y and z position coordinates, as well as for
-//                         the derivative of the latter zdot.
-// @param angular_tolerance An allowable absolute deviation for Endpoint's
-//                          heading angle and superelevation angle theta, as
-//                          well as for the derivative other later thetadot.
+// @param linear_tolerance An allowable absolute deviation for each Endpoint's
+//                         x, y and z position coordinates, as well as elevation
+//                         derivative ż.
+// @param angular_tolerance An allowable absolute deviation for each Endpoint's
+//                          heading angle and superelevation angle θ, as well as
+//                          superelevation derivative θ_dot.
 // @return ::testing::AssertionFailure() When Endpoint objects are different.
 // @return ::testing::AssertionSuccess() When Endpoint objects' quantities
 //                                       are within @p linear_tolerance or
