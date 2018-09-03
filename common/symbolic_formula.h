@@ -120,6 +120,19 @@ class Formula {
    */
   Formula() { *this = False(); }
 
+  /** Constructs from a `bool`.
+   *
+   * The argument type is a wrapper object around `bool`, so that when `0` is
+   * passed into a constructor via EIGEN_INITIALIZE_MATRICES_BY_ZERO, it
+   * prefers the `nullptr_t` overload, instead of being ambiguous with us.
+   *
+   * Note that passing a literal `false` will select the `nullptr_t` overload,
+   * but the constructed Formula is still Formula::False() in any case.
+   */
+  explicit Formula(Bool<double> value) {
+    *this = value ? True() : False();
+  }
+
   /** Constructs the same value as the default constructor.  This overload is
    * used by Eigen when EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.
    */
