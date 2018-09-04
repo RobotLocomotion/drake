@@ -252,9 +252,9 @@ GET_COORDINATE_NAMES = """
 
 IS_VALID_BEGIN = """
   /// Returns whether the current values of this vector are well-formed.
-  drake::Bool<T> IsValid() const {
+  drake::scalar_predicate_t<T> IsValid() const {
     using std::isnan;
-    auto result = (T(0) == T(0));
+    drake::scalar_predicate_t<T> result{true};
 """
 IS_VALID = """
     result = result && !isnan(%(field)s());
