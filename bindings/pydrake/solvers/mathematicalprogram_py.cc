@@ -542,7 +542,12 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
 
   py::class_<LinearEqualityConstraint, LinearConstraint,
              std::shared_ptr<LinearEqualityConstraint>>(
-      m, "LinearEqualityConstraint");
+      m, "LinearEqualityConstraint")
+      .def("UpdateCoefficients",
+          [](LinearEqualityConstraint& self, const Eigen::MatrixXd& Aeq,
+             const Eigen::VectorXd& beq) {
+            self.UpdateCoefficients(Aeq, beq);
+          }, py::arg("Aeq"), py::arg("beq"));
 
   py::class_<BoundingBoxConstraint, LinearConstraint,
              std::shared_ptr<BoundingBoxConstraint>>(m,
@@ -574,13 +579,23 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
 
   py::class_<LinearCost, Cost, std::shared_ptr<LinearCost>>(m, "LinearCost")
       .def("a", &LinearCost::a)
-      .def("b", &LinearCost::b);
+      .def("b", &LinearCost::b)
+      .def("UpdateCoefficients",
+          [](LinearCost& self, const Eigen::VectorXd& new_a,
+             double new_b) {
+            self.UpdateCoefficients(new_a, new_b);
+          }, py::arg("new_a"), py::arg("new_b") = 0);
 
   py::class_<QuadraticCost, Cost, std::shared_ptr<QuadraticCost>>(
       m, "QuadraticCost")
       .def("Q", &QuadraticCost::Q)
       .def("b", &QuadraticCost::b)
-      .def("c", &QuadraticCost::c);
+      .def("c", &QuadraticCost::c)
+      .def("UpdateCoefficients",
+          [](QuadraticCost& self, const Eigen::MatrixXd& new_Q,
+             const Eigen::VectorXd& new_b, double new_c) {
+            self.UpdateCoefficients(new_Q, new_b, new_c);
+          }, py::arg("new_Q"), py::arg("new_b"), py::arg("new_c") = 0);
 
   RegisterBinding<Cost>(&m, &prog_cls, "Cost");
   RegisterBinding<LinearCost>(&m, &prog_cls, "LinearCost");
