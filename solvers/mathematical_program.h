@@ -2039,6 +2039,22 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
+   * Adds the constraint that a symmetric matrix is diagonally dominant.
+   * A symmetric matrix X is diagonally dominant if
+   * X(i, i) >= ∑ⱼ |X(i, j)| ∀ j ≠ i
+   * namely in each row, the diagonal entry is larger than the sum of the
+   * absolute values of all other entries in the same row. A matrix being
+   * diagonally dominant is a sufficient (but not necessary) condition of a
+   * matrix being positive semidefinite.
+   * @param symmetric_matrix_var The matrix X in the documentation above. We
+   * will assume that @p symmetric_matrix_var is already symmetric. It is the
+   * user's responsibility to guarantee the symmetry.
+   */
+  void AddDiagonallyDominantMatrixConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>&
+          symmetric_matrix_var);
+
+  /**
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),
    * that is, @p p can be decomposed into `mᵀQm`, where m is the @p
    * monomial_basis. It returns a pair of constraint bindings expressing:
