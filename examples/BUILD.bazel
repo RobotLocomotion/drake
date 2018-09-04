@@ -44,6 +44,7 @@ INSTALLED_MODEL_PACKAGES = [
     "//examples/double_pendulum",
     "//examples/irb140",
     "//examples/kuka_iiwa_arm",
+    "//examples/multibody/cart_pole",
     "//examples/particles",
     "//examples/pendulum",
     "//examples/pr2",
