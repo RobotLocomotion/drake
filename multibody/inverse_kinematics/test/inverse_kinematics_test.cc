@@ -18,7 +18,7 @@ class TwoFreeBodiesTest : public ::testing::Test {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TwoFreeBodiesTest)
 
   TwoFreeBodiesTest()
-      : two_bodies_(test::ConstructTwoFreeBodies<double>()),
+      : two_bodies_(ConstructTwoFreeBodies<double>()),
         body1_frame_(two_bodies_->GetBodyByName("body1").body_frame()),
         body2_frame_(two_bodies_->GetBodyByName("body2").body_frame()),
         ik_(*two_bodies_) {

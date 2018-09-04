@@ -2,7 +2,6 @@
 
 namespace drake {
 namespace multibody {
-namespace test {
 template <typename T>
 std::unique_ptr<MultibodyTree<T>> ConstructTwoFreeBodies() {
   auto model = std::make_unique<MultibodyTree<T>>();
@@ -21,10 +20,13 @@ std::unique_ptr<MultibodyTree<T>> ConstructTwoFreeBodies() {
   return model;
 }
 
+Eigen::Vector4d QuaternionToVector4(const Eigen::Quaterniond& q) {
+  return Eigen::Vector4d(q.w(), q.x(), q.y(), q.z());
+}
+
 template std::unique_ptr<MultibodyTree<double>>
 ConstructTwoFreeBodies<double>();
 template std::unique_ptr<MultibodyTree<AutoDiffXd>>
 ConstructTwoFreeBodies<AutoDiffXd>();
-}  // namespace test
 }  // namespace multibody
 }  // namespace drake

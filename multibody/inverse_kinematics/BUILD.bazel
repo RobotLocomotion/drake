@@ -71,18 +71,43 @@ drake_cc_library(
     srcs = ["test/inverse_kinematics_test_utilities.cc"],
     hdrs = ["test/inverse_kinematics_test_utilities.h"],
     deps = [
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:gradient",
+        "//multibody/benchmarks/kuka_iiwa_robot",
         "//multibody/multibody_tree",
+        "@gtest//:without_main",
     ],
 )
 
 drake_cc_googletest(
-    name = "kinematic_constraint_test",
+    name = "position_constraint_test",
     deps = [
         ":inverse_kinematics_test_utilities",
         ":kinematic_constraint",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:gradient",
-        "//multibody/benchmarks/kuka_iiwa_robot",
+    ],
+)
+
+drake_cc_googletest(
+    name = "orientation_constraint_test",
+    deps = [
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_constraint",
+    ],
+)
+
+drake_cc_googletest(
+    name = "gaze_target_constraint_test",
+    deps = [
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_constraint",
+    ],
+)
+
+drake_cc_googletest(
+    name = "angle_between_vectors_constraint_test",
+    deps = [
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_constraint",
     ],
 )
 
@@ -91,8 +116,6 @@ drake_cc_googletest(
     deps = [
         ":inverse_kinematics_core",
         ":inverse_kinematics_test_utilities",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/benchmarks/kuka_iiwa_robot",
     ],
 )
 
