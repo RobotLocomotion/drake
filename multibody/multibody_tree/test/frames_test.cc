@@ -68,6 +68,10 @@ class FrameTests : public ::testing::Test {
     frameQ_ =
         &model_->AddFrame<FixedOffsetFrame>(*frameP_, X_PQ_);
 
+    // Frame R is arbitrary, but named.
+    frameR_ = &model_->AddFrame<FixedOffsetFrame>(
+        "R", *frameP_, Isometry3d::Identity());
+
     model_->Finalize();
     context_ = model_->CreateDefaultContext();
 
@@ -93,6 +97,7 @@ class FrameTests : public ::testing::Test {
   const Frame<double>* frameB_{};
   const Frame<double>* frameP_{};
   const Frame<double>* frameQ_{};
+  const Frame<double>* frameR_{};
   // Poses:
   Isometry3d X_BP_;
   Isometry3d X_PQ_;
@@ -157,6 +162,7 @@ TEST_F(FrameTests, FixedOffsetFrameCalcPoseMethods) {
 //         X_BP       X_PQ
 //     B -------> P -------> Q
 TEST_F(FrameTests, ChainedFixedOffsetFrames) {
+  EXPECT_TRUE(frameQ_->name().empty());
   // Verify this method computes the pose of frame Q in the body frame B as:
   // X_BQ = X_BP * X_PQ
   EXPECT_TRUE(frameQ_->CalcPoseInBodyFrame(*context_).isApprox(X_BP_ * X_PQ_));
@@ -173,6 +179,10 @@ TEST_F(FrameTests, ChainedFixedOffsetFrames) {
   // Now verify the fixed pose version of the same method.
   EXPECT_TRUE(frameQ_->GetFixedOffsetPoseInBody(X_QG_).
       isApprox(X_BP_ * X_PQ_ * X_QG_));
+}
+
+TEST_F(FrameTests, NamedFrame) {
+  EXPECT_EQ(frameR_->name(), "R");
 }
 
 }  // namespace
