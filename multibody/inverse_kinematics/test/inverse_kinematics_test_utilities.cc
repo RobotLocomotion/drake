@@ -2,9 +2,10 @@
 
 namespace drake {
 namespace multibody {
+namespace {
 template <typename T>
-std::unique_ptr<MultibodyTree<T>> ConstructTwoFreeBodies() {
-  auto model = std::make_unique<MultibodyTree<T>>();
+std::unique_ptr<T> ConstructTwoFreeBodiesHelper() {
+  auto model = std::make_unique<T>();
 
   const double mass{1};
   const Eigen::Vector3d p_AoAcm_A(0, 0, 0);
@@ -19,6 +20,17 @@ std::unique_ptr<MultibodyTree<T>> ConstructTwoFreeBodies() {
 
   return model;
 }
+}  // namespace
+template <typename T>
+std::unique_ptr<MultibodyTree<T>> ConstructTwoFreeBodies() {
+  return ConstructTwoFreeBodiesHelper<MultibodyTree<T>>();
+}
+
+template <typename T>
+std::unique_ptr<multibody_plant::MultibodyPlant<T>>
+ConstructTwoFreeBodiesPlant() {
+  return ConstructTwoFreeBodiesHelper<multibody_plant::MultibodyPlant<T>>();
+}
 
 Eigen::Vector4d QuaternionToVector4(const Eigen::Quaterniond& q) {
   return Eigen::Vector4d(q.w(), q.x(), q.y(), q.z());
@@ -28,5 +40,9 @@ template std::unique_ptr<MultibodyTree<double>>
 ConstructTwoFreeBodies<double>();
 template std::unique_ptr<MultibodyTree<AutoDiffXd>>
 ConstructTwoFreeBodies<AutoDiffXd>();
+template std::unique_ptr<multibody_plant::MultibodyPlant<double>>
+ConstructTwoFreeBodiesPlant<double>();
+template std::unique_ptr<multibody_plant::MultibodyPlant<AutoDiffXd>>
+ConstructTwoFreeBodiesPlant<AutoDiffXd>();
 }  // namespace multibody
 }  // namespace drake

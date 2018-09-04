@@ -18,10 +18,10 @@ class TwoFreeBodiesTest : public ::testing::Test {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TwoFreeBodiesTest)
 
   TwoFreeBodiesTest()
-      : two_bodies_(ConstructTwoFreeBodies<double>()),
-        body1_frame_(two_bodies_->GetBodyByName("body1").body_frame()),
-        body2_frame_(two_bodies_->GetBodyByName("body2").body_frame()),
-        ik_(*two_bodies_) {
+      : two_bodies_plant_(ConstructTwoFreeBodiesPlant<double>()),
+        body1_frame_(two_bodies_plant_->GetBodyByName("body1").body_frame()),
+        body2_frame_(two_bodies_plant_->GetBodyByName("body2").body_frame()),
+        ik_(*two_bodies_plant_) {
     // TODO(hongkai.dai): The unit quaternion constraint should be added by
     // InverseKinematics automatically.
     ik_.AddConstraint(solvers::internal::ParseQuadraticConstraint(
@@ -42,7 +42,7 @@ class TwoFreeBodiesTest : public ::testing::Test {
   }
 
  protected:
-  std::unique_ptr<MultibodyTree<double>> two_bodies_;
+  std::unique_ptr<multibody_plant::MultibodyPlant<double>> two_bodies_plant_;
   const Frame<double>& body1_frame_;
   const Frame<double>& body2_frame_;
   InverseKinematics ik_;

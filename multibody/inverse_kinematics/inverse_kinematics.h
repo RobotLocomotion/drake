@@ -2,13 +2,13 @@
 
 #include <memory>
 
-#include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace multibody {
 /**
- * Solves an inverse kinematics (IK) problem on a MultibodyTree, to find the
+ * Solves an inverse kinematics (IK) problem on a MultibodyPlant, to find the
  * postures of the robot satisfying certain constraints.
  * The decision variables include the generalized position of the robot.
  * TODO(hongkai.dai) The bounds on the generalized positions (i.e., joint
@@ -21,11 +21,11 @@ class InverseKinematics : public solvers::MathematicalProgram {
   ~InverseKinematics() override {}
 
   /**
-   * Constructs an inverse kinematics problem for a MultibodyTree.
-   * @param MultibodyTree The robot on which the inverse kinematics problem is
-   * solved.
+   * Constructs an inverse kinematics problem for a MultibodyPlant.
+   * @param plant The robot on which the inverse kinematics problem is solved.
    */
-  explicit InverseKinematics(const MultibodyTree<double>& tree);
+  explicit InverseKinematics(
+      const multibody_plant::MultibodyPlant<double>& plant);
 
   /** Adds the kinematic constraint that a point Q, fixed in frame B, should lie
    * within a bounding box expressed in another frame A as p_AQ_lower <= p_AQ <=
@@ -132,6 +132,7 @@ class InverseKinematics : public solvers::MathematicalProgram {
     return dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(context_.get());
   }
 
+  const multibody_plant::MultibodyPlant<double>& plant_;
   std::unique_ptr<MultibodyTree<AutoDiffXd>> tree_;
   std::unique_ptr<systems::LeafContext<AutoDiffXd>> const context_;
   solvers::VectorXDecisionVariable q_;

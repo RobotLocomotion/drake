@@ -58,7 +58,7 @@ drake_cc_library(
     ],
     deps = [
         ":kinematic_constraint",
-        "//multibody/multibody_tree",
+        "//multibody/multibody_tree/multibody_plant",
         "//solvers:mathematical_program",
     ],
 )
@@ -75,6 +75,7 @@ drake_cc_library(
         "//math:gradient",
         "//multibody/benchmarks/kuka_iiwa_robot",
         "//multibody/multibody_tree",
+        "//multibody/multibody_tree/multibody_plant",
         "@gtest//:without_main",
     ],
 )

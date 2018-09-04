@@ -7,10 +7,12 @@
 
 namespace drake {
 namespace multibody {
-InverseKinematics::InverseKinematics(const MultibodyTree<double>& tree)
-    : tree_(tree.ToAutoDiffXd()),
+InverseKinematics::InverseKinematics(
+    const multibody_plant::MultibodyPlant<double>& plant)
+    : plant_(plant),
+      tree_(plant_.model().ToAutoDiffXd()),
       context_(tree_->CreateDefaultContext()),
-      q_(NewContinuousVariables(tree_->num_positions(), "q")) {
+      q_(NewContinuousVariables(plant_.num_positions(), "q")) {
   // Add joint limit constraint here.
 }
 
