@@ -35,6 +35,8 @@ PYBIND11_MODULE(geometry, m) {
       .def(py::init<>())
       .def("get_source_pose_port", &SceneGraph<T>::get_source_pose_port,
            py_reference_internal)
+      .def("get_pose_bundle_output_port",
+           &SceneGraph<T>::get_pose_bundle_output_port, py_reference_internal)
       .def("get_query_output_port", &SceneGraph<T>::get_query_output_port,
            py_reference_internal);
 
