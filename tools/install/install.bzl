@@ -136,6 +136,11 @@ def _install_action(
     )
     file_dest = _rename(file_dest, rename)
 
+    if "/attic/" in file_dest:
+        fail("Do not expose attic paths to the install tree ({})".format(
+            file_dest,
+        ))
+
     return struct(src = artifact, dst = file_dest)
 
 #------------------------------------------------------------------------------
