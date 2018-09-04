@@ -48,6 +48,10 @@ def main():
         cart_pole.get_geometry_poses_output_port(),
         scene_graph.get_source_pose_port(cart_pole.get_source_id()))
 
+    builder.Connect(
+        scene_graph.get_query_output_port(),
+        cart_pole.get_geometry_query_input_port())
+
     lcm = DrakeLcm()
     ConnectVisualization(scene_graph=scene_graph, builder=builder, lcm=lcm)
     diagram = builder.Build()

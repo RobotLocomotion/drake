@@ -79,6 +79,11 @@ void init_module(py::module m) {
   }
 
   {
+    using Class = RigidBody<T>;
+    py::class_<Class, Body<T>> cls(m, "RigidBody");
+  }
+
+  {
     using Class = Joint<T>;
     py::class_<Class> cls(m, "Joint");
     BindMultibodyTreeElementMixin(&cls);
