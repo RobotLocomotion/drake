@@ -129,9 +129,11 @@ lcmt_viewer_geometry_data MakeGeometryData(const Shape& shape,
 namespace internal {
 
 lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
-    const GeometryState<double>& state) {
+    const SceneGraph<double>& scene_graph) {
   using internal::InternalAnchoredGeometry;
   using internal::InternalGeometry;
+
+  const GeometryState<double>& state = *scene_graph.initial_state_;
 
   lcmt_viewer_load_robot message{};
   // Populate the message.
@@ -204,10 +206,8 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
 
 void DispatchLoadMessage(const SceneGraph<double>& scene_graph,
                          lcm::DrakeLcmInterface* lcm) {
-  scene_graph.ThrowIfContextAllocated("DispatchLoadMessage");
   lcmt_viewer_load_robot message =
-      internal::GeometryVisualizationImpl::BuildLoadMessage(
-          *scene_graph.initial_state_);
+      internal::GeometryVisualizationImpl::BuildLoadMessage(scene_graph);
   // Send a load message.
   Publish(lcm, "DRAKE_VIEWER_LOAD_ROBOT", message);
 }

@@ -23,7 +23,7 @@ class GeometryVisualizationImpl {
   // Given an instance of GeometryState, returns an lcm message sufficient
   // to load the state's geometry.
   static lcmt_viewer_load_robot BuildLoadMessage(
-      const GeometryState<double>& state);
+      const SceneGraph<double>& scene_graph);
 };
 
 }  // namespace internal
