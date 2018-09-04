@@ -28,10 +28,18 @@ drake_cc_package_library(
 drake_cc_library(
     name = "kinematic_constraint",
     srcs = [
-        "kinematic_constraint.cc",
+        "angle_between_vectors_constraint.cc",
+        "gaze_target_constraint.cc",
+        "kinematic_constraint_utilities.cc",
+        "orientation_constraint.cc",
+        "position_constraint.cc",
     ],
     hdrs = [
-        "kinematic_constraint.h",
+        "angle_between_vectors_constraint.h",
+        "gaze_target_constraint.h",
+        "kinematic_constraint_utilities.h",
+        "orientation_constraint.h",
+        "position_constraint.h",
     ],
     deps = [
         "//math:gradient",

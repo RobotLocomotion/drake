@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "drake/multibody/inverse_kinematics/kinematic_constraint.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -42,7 +41,7 @@ class InverseKinematics : public solvers::MathematicalProgram {
    * @param p_AQ_upper The upper bound on the position of point Q, measured and
    * expressed in frame A.
    */
-  solvers::Binding<PositionConstraint> AddPositionConstraint(
+  solvers::Binding<solvers::Constraint> AddPositionConstraint(
       const Frame<double>& frameB,
       const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
       const Frame<double>& frameA,
@@ -64,7 +63,7 @@ class InverseKinematics : public solvers::MathematicalProgram {
    * orientation and frame B's orientation. It is denoted as θ_bound in the
    * documentation.
    */
-  solvers::Binding<OrientationConstraint> AddOrientationConstraint(
+  solvers::Binding<solvers::Constraint> AddOrientationConstraint(
       const Frame<double>& frameA, const Frame<double>& frameB,
       double angle_bound);
 
@@ -89,7 +88,7 @@ class InverseKinematics : public solvers::MathematicalProgram {
    * documentation. @pre @p 0 <= cone_half_angle <= pi. @throw a logic
    * error if cone_half_angle is outside of the bound.
    */
-  solvers::Binding<GazeTargetConstraint> AddGazeTargetConstraint(
+  solvers::Binding<solvers::Constraint> AddGazeTargetConstraint(
       const Frame<double>& frameA,
       const Eigen::Ref<const Eigen::Vector3d>& p_AS,
       const Eigen::Ref<const Eigen::Vector3d>& n_A, const Frame<double>& frameB,
@@ -119,12 +118,10 @@ class InverseKinematics : public solvers::MathematicalProgram {
    * angle_upper <= pi. @throw a logic error if angle_upper is outside the
    * bounds.
    */
-  solvers::Binding<AngleBetweenVectorsConstraint>
-  AddAngleBetweenVectorsConstraint(const Frame<double>& frameA,
-                                   const Eigen::Ref<const Eigen::Vector3d>& n_A,
-                                   const Frame<double>& frameB,
-                                   const Eigen::Ref<const Eigen::Vector3d>& n_B,
-                                   double angle_lower, double angle_upper);
+  solvers::Binding<solvers::Constraint> AddAngleBetweenVectorsConstraint(
+      const Frame<double>& frameA, const Eigen::Ref<const Eigen::Vector3d>& n_A,
+      const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& n_B,
+      double angle_lower, double angle_upper);
 
   /** Getter for q. q is the decision variable for the generalized positions of
    * the robot. */
