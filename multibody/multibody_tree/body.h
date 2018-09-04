@@ -100,7 +100,7 @@ class BodyFrame final : public Frame<T> {
 
   // Only Body objects can create BodyFrame objects since Body is a friend of
   // BodyFrame.
-  explicit BodyFrame(const Body<T>& body) : Frame<T>(body) {}
+  explicit BodyFrame(const Body<T>& body) : Frame<T>(body.name(), body) {}
 
   // Helper method to make a clone templated on any other scalar type.
   // This method holds the common implementation for the different overrides to

@@ -2,6 +2,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 
@@ -14,6 +15,7 @@ using Eigen::Isometry3d;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 
+using drake::multibody::FixedOffsetFrame;
 using drake::multibody::RevoluteJoint;
 using drake::multibody::RigidBody;
 using drake::multibody::RotationalInertia;
@@ -158,6 +160,11 @@ unique_ptr<MultibodyTree<T>> KukaIiwaModelBuilder<T>::Build() const {
       linkF, joint_7_rpy_, joint_7_xyz_,
       linkG, Eigen::Vector3d::UnitZ(), model.get());
   model->AddJointActuator("iiwa_actuator_7", *joint);
+
+  // Add arbitrary tool frame.
+  model->template AddFrame<FixedOffsetFrame>(
+      "tool_arbitrary", model->GetFrameByName("iiwa_link_7"),
+      Isometry3d(Translation3d(0.1, 0.2, 0.3)));
 
   // Add force element for a constant gravity pointing downwards, that is, in
   // the negative z-axis direction.
