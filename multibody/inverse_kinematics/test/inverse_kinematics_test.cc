@@ -18,9 +18,9 @@ class TwoFreeBodiesTest : public ::testing::Test {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TwoFreeBodiesTest)
 
   TwoFreeBodiesTest()
-      : two_bodies_(test::ConstructTwoFreeBodies<AutoDiffXd>()),
-        body1_index_(two_bodies_->GetBodyByName("body1").body_frame().index()),
-        body2_index_(two_bodies_->GetBodyByName("body2").body_frame().index()),
+      : two_bodies_(test::ConstructTwoFreeBodies<double>()),
+        body1_frame_(two_bodies_->GetBodyByName("body1").body_frame()),
+        body2_frame_(two_bodies_->GetBodyByName("body2").body_frame()),
         ik_(*two_bodies_) {
     // TODO(hongkai.dai): The unit quaternion constraint should be added by
     // InverseKinematics automatically.
@@ -42,9 +42,9 @@ class TwoFreeBodiesTest : public ::testing::Test {
   }
 
  protected:
-  std::unique_ptr<MultibodyTree<AutoDiffXd>> two_bodies_;
-  FrameIndex body1_index_;
-  FrameIndex body2_index_;
+  std::unique_ptr<MultibodyTree<double>> two_bodies_;
+  const Frame<double>& body1_frame_;
+  const Frame<double>& body2_frame_;
   InverseKinematics ik_;
 
   Eigen::Quaterniond body1_quaternion_sol_;
@@ -57,7 +57,7 @@ TEST_F(TwoFreeBodiesTest, PositionConstraint) {
   const Eigen::Vector3d p_BQ(0.2, 0.3, 0.5);
   const Eigen::Vector3d p_AQ_lower(-0.1, -0.2, -0.3);
   const Eigen::Vector3d p_AQ_upper(-0.05, -0.12, -0.28);
-  ik_.AddPositionConstraint(body1_index_, p_BQ, body2_index_, p_AQ_lower,
+  ik_.AddPositionConstraint(body1_frame_, p_BQ, body2_frame_, p_AQ_lower,
                             p_AQ_upper);
 
   ik_.SetInitialGuess(ik_.q().head<4>(), Eigen::Vector4d(1, 0, 0, 0));
@@ -80,7 +80,7 @@ TEST_F(TwoFreeBodiesTest, PositionConstraint) {
 TEST_F(TwoFreeBodiesTest, OrientationConstraint) {
   const double angle_bound = 0.05 * M_PI;
 
-  ik_.AddOrientationConstraint(body1_index_, body2_index_, angle_bound);
+  ik_.AddOrientationConstraint(body1_frame_, body2_frame_, angle_bound);
 
   ik_.SetInitialGuess(ik_.q().head<4>(), Eigen::Vector4d(1, 0, 0, 0));
   ik_.SetInitialGuess(ik_.q().segment<4>(7), Eigen::Vector4d(1, 0, 0, 0));
@@ -100,7 +100,7 @@ TEST_F(TwoFreeBodiesTest, GazeTargetConstraint) {
   const Eigen::Vector3d p_BT(0.4, -0.2, 1.5);
   const double cone_half_angle{0.2 * M_PI};
 
-  ik_.AddGazeTargetConstraint(body1_index_, p_AS, n_A, body2_index_, p_BT,
+  ik_.AddGazeTargetConstraint(body1_frame_, p_AS, n_A, body2_frame_, p_BT,
                               cone_half_angle);
 
   ik_.SetInitialGuess(ik_.q().head<4>(), Eigen::Vector4d(1, 0, 0, 0));
@@ -115,9 +115,8 @@ TEST_F(TwoFreeBodiesTest, GazeTargetConstraint) {
       body2_quaternion_sol_ * p_BT + body2_position_sol_;
   const Eigen::Vector3d p_ST_A =
       body1_quaternion_sol_.inverse() * (p_WT - p_WS);
-  const double angle =
-      std::acos(p_ST_A.dot(n_A) / (p_ST_A.norm() * n_A.norm()));
-  EXPECT_LE(angle, cone_half_angle + 1E-6);
+  EXPECT_GE(p_ST_A.dot(n_A),
+            std::cos(cone_half_angle) * p_ST_A.norm() * n_A.norm() - 1E-3);
 }
 
 TEST_F(TwoFreeBodiesTest, AngleBetweenVectorsConstraint) {
@@ -127,7 +126,7 @@ TEST_F(TwoFreeBodiesTest, AngleBetweenVectorsConstraint) {
   const double angle_lower{0.2 * M_PI};
   const double angle_upper{0.2 * M_PI};
 
-  ik_.AddAngleBetweenVectorsConstraint(body1_index_, n_A, body2_index_, n_B,
+  ik_.AddAngleBetweenVectorsConstraint(body1_frame_, n_A, body2_frame_, n_B,
                                        angle_lower, angle_upper);
   ik_.SetInitialGuess(ik_.q().head<4>(), Eigen::Vector4d(1, 0, 0, 0));
   ik_.SetInitialGuess(ik_.q().segment<4>(7), Eigen::Vector4d(1, 0, 0, 0));

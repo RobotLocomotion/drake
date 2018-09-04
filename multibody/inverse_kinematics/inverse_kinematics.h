@@ -8,16 +8,13 @@
 
 namespace drake {
 namespace multibody {
-// Solves an inverse kinematics (IK) problem on a MultibodyTree, to find the
-// postures of the robot satisfying certain constraint.
-// The decision variables include the generalized position of the robot.
-// TODO(hongkai.dai) The bounds on the generalized positions (i.e., joint
-// limits) should be imposed automatially.
-// Internally this class creates and stores a MultibodyTreeContext, which will
-// cache the kinematic result for a posture. So when the user adds kinematic
-// constraint, he/she should construct the kinematic constraint using the
-// MultibodyTreeContext stored inside this class, accessed by
-// `get_mutable_context()` function.
+/**
+ * Solves an inverse kinematics (IK) problem on a MultibodyTree, to find the
+ * postures of the robot satisfying certain constraints.
+ * The decision variables include the generalized position of the robot.
+ * TODO(hongkai.dai) The bounds on the generalized positions (i.e., joint
+ * limits) should be imposed automatially.
+ */
 class InverseKinematics : public solvers::MathematicalProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseKinematics)
@@ -29,29 +26,26 @@ class InverseKinematics : public solvers::MathematicalProgram {
    * @param MultibodyTree The robot on which the inverse kinematics problem is
    * solved.
    */
-  explicit InverseKinematics(const MultibodyTree<AutoDiffXd>& tree);
-
-  MultibodyTreeContext<AutoDiffXd>* get_mutable_context() {
-    return dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(context_.get());
-  }
+  explicit InverseKinematics(const MultibodyTree<double>& tree);
 
   /** Adds the kinematic constraint that a point Q, fixed in frame B, should lie
-   * within a bounding box expressed in frame A as p_AQ_lower <= p_AQ <=
+   * within a bounding box expressed in another frame A as p_AQ_lower <= p_AQ <=
    * p_AQ_upper, where p_AQ is the position of point Q measured and expressed
    * in frame A.
-   * @param frameB_idx The index of frame B.
+   * @param frameB The frame in which point Q is fixed.
    * @param p_BQ The position of the point Q, rigidly attached to frame B,
    * measured and expressed in frame A.
-   * @param frameA_idx The index of frame A.
+   * @param frameA The frame in which the bounding box p_AQ_lower <= p_AQ <=
+   * p_AQ_upper is expressed.
    * @param p_AQ_lower The lower bound on the position of point Q, measured and
    * expressed in frame A.
    * @param p_AQ_upper The upper bound on the position of point Q, measured and
    * expressed in frame A.
    */
   solvers::Binding<PositionConstraint> AddPositionConstraint(
-      const FrameIndex& frameB_idx,
+      const Frame<double>& frameB,
       const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
-      const FrameIndex& frameA_idx,
+      const Frame<double>& frameA,
       const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
       const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper);
 
@@ -64,14 +58,14 @@ class InverseKinematics : public solvers::MathematicalProgram {
    * AngleAxisd(R_AB).angle(). where R_AB is the orientation of frame A measured
    * and expressed in frame B. If the users wants frame A and frame B to align
    * perfectly, they can set θ_bound = 0.
-   * @param frameA_idx The index of frame A.
-   * @param frameB_idx The index of frame B.
+   * @param frameA frame A.
+   * @param frameB frame B.
    * @param angle_bound The bound on the angle difference between frame A's
    * orientation and frame B's orientation. It is denoted as θ_bound in the
    * documentation.
    */
   solvers::Binding<OrientationConstraint> AddOrientationConstraint(
-      const FrameIndex& frameA_idx, const FrameIndex& frameB_idx,
+      const Frame<double>& frameA, const Frame<double>& frameB,
       double angle_bound);
 
   /**
@@ -81,14 +75,14 @@ class InverseKinematics : public solvers::MathematicalProgram {
    * frame A. The half angle of the cone is θ. A common usage of this constraint
    * is that a camera should gaze at some target; namely the target falls within
    * a gaze cone, originating from the camera eye.
-   * @param frameA_idx The frame where the gaze cone is fixed to.
+   * @param frameA The frame where the gaze cone is fixed to.
    * @param p_AS The position of the cone source point S, measured and
    * expressed in frame A.
    * @param n_A The directional vector representing the center ray of the
    * cone.
    * @pre @p n_A cannot be a zero vector. @throw a logic error is n_A is close
    * to a zero vector.
-   * @param frameB_idx The frame where the target point T is fixed to.
+   * @param frameB The frame where the target point T is fixed to.
    * @param p_BT The position of the target point T, measured and expressed in
    * frame B.
    * @param cone_half_angle The half angle of the cone. We denote it as θ in the
@@ -96,10 +90,9 @@ class InverseKinematics : public solvers::MathematicalProgram {
    * error if cone_half_angle is outside of the bound.
    */
   solvers::Binding<GazeTargetConstraint> AddGazeTargetConstraint(
-      const FrameIndex& frameA_idx,
+      const Frame<double>& frameA,
       const Eigen::Ref<const Eigen::Vector3d>& p_AS,
-      const Eigen::Ref<const Eigen::Vector3d>& n_A,
-      const FrameIndex& frameB_idx,
+      const Eigen::Ref<const Eigen::Vector3d>& n_A, const Frame<double>& frameB,
       const Eigen::Ref<const Eigen::Vector3d>& p_BT, double cone_half_angle);
 
   /**
@@ -110,12 +103,12 @@ class InverseKinematics : public solvers::MathematicalProgram {
    * after normalization (n_A_A has unit length), and n_B_B as n_B measured and
    * expressed in frame B after normalization, the constraint is
    * cos(θ_upper) ≤ n_A_Aᵀ * R_AB * n_B_B ≤ cos(θ_lower)
-   * @param frameA_idx The index of frame A.
+   * @param frameA The frame to which n_A is fixed.
    * @param n_A The vector n_A fixed to frame A, measured and expressed in frame
    * A. @pre n_A should be a non-zero vector. @throw logic error if n_A is
    * close to zero.
-   * @param frameB_idx The index of frame B.
-   * @param n_B The vector n_A fixed to frame B, measured and expressed in frame
+   * @param frameB The frame to which n_B is fixed.
+   * @param n_B The vector n_B fixed to frame B, measured and expressed in frame
    * B. @pre n_B should be a non-zero vector. @throw logic error if n_B is
    * close to zero.
    * @param angle_lower The lower bound on the angle between n_A and n_B. It is
@@ -127,9 +120,9 @@ class InverseKinematics : public solvers::MathematicalProgram {
    * bounds.
    */
   solvers::Binding<AngleBetweenVectorsConstraint>
-  AddAngleBetweenVectorsConstraint(const FrameIndex& frameA_idx,
+  AddAngleBetweenVectorsConstraint(const Frame<double>& frameA,
                                    const Eigen::Ref<const Eigen::Vector3d>& n_A,
-                                   const FrameIndex& frameB_idx,
+                                   const Frame<double>& frameB,
                                    const Eigen::Ref<const Eigen::Vector3d>& n_B,
                                    double angle_lower, double angle_upper);
 
@@ -138,7 +131,11 @@ class InverseKinematics : public solvers::MathematicalProgram {
   const solvers::VectorXDecisionVariable& q() const { return q_; }
 
  private:
-  const MultibodyTree<AutoDiffXd>& tree_;
+  MultibodyTreeContext<AutoDiffXd>* get_mutable_context() {
+    return dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(context_.get());
+  }
+
+  std::unique_ptr<MultibodyTree<AutoDiffXd>> tree_;
   std::unique_ptr<systems::LeafContext<AutoDiffXd>> const context_;
   solvers::VectorXDecisionVariable q_;
 };
