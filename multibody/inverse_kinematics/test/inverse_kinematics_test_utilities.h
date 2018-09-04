@@ -7,6 +7,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
+#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
 namespace drake {
@@ -17,6 +18,13 @@ namespace multibody {
  */
 template <typename T>
 std::unique_ptr<MultibodyTree<T>> ConstructTwoFreeBodies();
+
+/**
+ * Constructs a MultibodyPlant consists of two free bodies.
+ */
+template <typename T>
+std::unique_ptr<multibody_plant::MultibodyPlant<T>>
+ConstructTwoFreeBodiesPlant();
 
 /**
  * Compares if two eigen matrices of AutoDiff have the same values and
