@@ -34,6 +34,7 @@ drake_cc_library(
         "kinematic_constraint.h",
     ],
     deps = [
+        "//math:gradient",
         "//multibody/multibody_tree",
         "//solvers:constraint",
     ],
@@ -69,8 +70,8 @@ drake_cc_library(
 drake_cc_googletest(
     name = "kinematic_constraint_test",
     deps = [
+        ":inverse_kinematics_test_utilities",
         ":kinematic_constraint",
-	":inverse_kinematics_test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:gradient",
         "//multibody/benchmarks/kuka_iiwa_robot",
@@ -81,6 +82,7 @@ drake_cc_googletest(
     name = "inverse_kinematics_test",
     deps = [
         ":inverse_kinematics_core",
+        ":inverse_kinematics_test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/benchmarks/kuka_iiwa_robot",
     ],

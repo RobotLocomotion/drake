@@ -10,9 +10,9 @@ namespace drake {
 namespace multibody {
 // Solves an inverse kinematics (IK) problem on a MultibodyTree, to find the
 // postures of the robot satisfying certain constraint.
-// The decision variables include the generalized position of the robot. The
-// bounds on the generalized positions (i.e., joint limits) are imposed
-// automatially.
+// The decision variables include the generalized position of the robot.
+// TODO(hongkai.dai) The bounds on the generalized positions (i.e., joint
+// limits) should be imposed automatially.
 // Internally this class creates and stores a MultibodyTreeContext, which will
 // cache the kinematic result for a posture. So when the user adds kinematic
 // constraint, he/she should construct the kinematic constraint using the
@@ -68,7 +68,7 @@ class InverseKinematics : public solvers::MathematicalProgram {
    * @param frameB_idx The index of frame B.
    * @param angle_bound The bound on the angle difference between frame A's
    * orientation and frame B's orientation. It is denoted as θ_bound in the
-   * class documentation.
+   * documentation.
    */
   solvers::Binding<OrientationConstraint> AddOrientationConstraint(
       const FrameIndex& frameA_idx, const FrameIndex& frameB_idx,
@@ -92,7 +92,7 @@ class InverseKinematics : public solvers::MathematicalProgram {
    * @param p_BT The position of the target point T, measured and expressed in
    * frame B.
    * @param cone_half_angle The half angle of the cone. We denote it as θ in the
-   * class documentation. @pre @p 0 <= cone_half_angle <= pi. @throw a logic
+   * documentation. @pre @p 0 <= cone_half_angle <= pi. @throw a logic
    * error if cone_half_angle is outside of the bound.
    */
   solvers::Binding<GazeTargetConstraint> AddGazeTargetConstraint(
@@ -101,6 +101,37 @@ class InverseKinematics : public solvers::MathematicalProgram {
       const Eigen::Ref<const Eigen::Vector3d>& n_A,
       const FrameIndex& frameB_idx,
       const Eigen::Ref<const Eigen::Vector3d>& p_BT, double cone_half_angle);
+
+  /**
+   * Constrains that the angle between a vector n_A and another vector n_B is
+   * between [θ_lower, θ_upper]. n_A is fixed to a frame A, while n_B is fixed
+   * to a frame B.
+   * Mathematically, if we denote n_A_A as n_A measured and expressed in frame A
+   * after normalization (n_A_A has unit length), and n_B_B as n_B measured and
+   * expressed in frame B after normalization, the constraint is
+   * cos(θ_upper) ≤ n_A_Aᵀ * R_AB * n_B_B ≤ cos(θ_lower)
+   * @param frameA_idx The index of frame A.
+   * @param n_A The vector n_A fixed to frame A, measured and expressed in frame
+   * A. @pre n_A should be a non-zero vector. @throw logic error if n_A is
+   * close to zero.
+   * @param frameB_idx The index of frame B.
+   * @param n_B The vector n_A fixed to frame B, measured and expressed in frame
+   * B. @pre n_B should be a non-zero vector. @throw logic error if n_B is
+   * close to zero.
+   * @param angle_lower The lower bound on the angle between n_A and n_B. It is
+   * denoted as θ_lower in the documentation. @pre angle_lower >= 0.
+   * @throw a logic error if angle_lower is negative.
+   * @param angle_upper The upper bound on the angle between n_A and n_B. it is
+   * denoted as θ_upper in the class documentation. @pre angle_lower <=
+   * angle_upper <= pi. @throw a logic error if angle_upper is outside the
+   * bounds.
+   */
+  solvers::Binding<AngleBetweenVectorsConstraint>
+  AddAngleBetweenVectorsConstraint(const FrameIndex& frameA_idx,
+                                   const Eigen::Ref<const Eigen::Vector3d>& n_A,
+                                   const FrameIndex& frameB_idx,
+                                   const Eigen::Ref<const Eigen::Vector3d>& n_B,
+                                   double angle_lower, double angle_upper);
 
   /** Getter for q. q is the decision variable for the generalized positions of
    * the robot. */
