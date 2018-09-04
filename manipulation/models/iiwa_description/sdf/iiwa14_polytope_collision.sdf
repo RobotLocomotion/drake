@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!--
-SDF automatically generated with: gz sdf -p /my_urdf.urdf > /my_sdf.sdf
+SDF automatically generated with: gz sdf -p ../urdf/iiwa14_polytope_collision.urdf > /iiwa14_polytope_collision.sdf
 
 Later edited by hand to rename the base link, add the
 weld_base_to_world joint, and remove damping from the joints.
