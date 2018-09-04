@@ -165,8 +165,6 @@ GTEST_TEST(SnoptTest, DistanceToTetrahedron) {
   x0 << 0, 0, 0, 0.7, 0.8, 0.9, 0.1, 0.2, 0.3, 1, 1, 1, 1, 0.4, 0.5, 0.6, 1.1,
       1.2;
   // Setting x0(6) = 0.7 would enable SNOPT 7.6 to succeed.
-  // x0 << 0, 0, 0, 0.7, 0.8, 0.9, 0.7, 0.2, 0.3, 1, 1, 1, 1, 0.4, 0.5, 0.6,
-  // 1.1, 1.2
   prog.SetInitialGuessForAllVariables(x0);
 
   SnoptSolver solver;
