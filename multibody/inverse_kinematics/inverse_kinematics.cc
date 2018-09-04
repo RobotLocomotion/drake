@@ -42,5 +42,17 @@ InverseKinematics::AddGazeTargetConstraint(
   AddConstraint(constraint, q_);
   return solvers::Binding<GazeTargetConstraint>(constraint, q_);
 }
+
+solvers::Binding<AngleBetweenVectorsConstraint>
+InverseKinematics::AddAngleBetweenVectorsConstraint(
+    const FrameIndex& frameA_idx, const Eigen::Ref<const Eigen::Vector3d>& n_A,
+    const FrameIndex& frameB_idx, const Eigen::Ref<const Eigen::Vector3d>& n_B,
+    double angle_lower, double angle_upper) {
+  auto constraint = std::make_shared<AngleBetweenVectorsConstraint>(
+      tree_, frameA_idx, n_A, frameB_idx, n_B, angle_lower, angle_upper,
+      get_mutable_context());
+  AddConstraint(constraint, q_);
+  return solvers::Binding<AngleBetweenVectorsConstraint>(constraint, q_);
+}
 }  // namespace multibody
 }  // namespace drake

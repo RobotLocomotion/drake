@@ -228,6 +228,9 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
    * denoted as θ_upper in the class documentation. @pre angle_lower <=
    * angle_upper <= pi. @throw a logic error if angle_upper is outside the
    * bounds.
+   * @param context The Context that has been allocated for this @p tree. We
+   * will update the context when evaluating the constraint. @p context should
+   * be alive during the lifetime of this constraint.
    */
   AngleBetweenVectorsConstraint(const MultibodyTree<AutoDiffXd>& tree,
                                 const FrameIndex& frameA_idx,
