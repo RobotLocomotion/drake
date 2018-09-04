@@ -753,6 +753,14 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
   return AddConstraint(constraint, vars);
 }
 
+void MathematicalProgram::AddDiagonallyDominantMatrixConstraint(
+    const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var) {
+  // We will denote X = symmetric_matrix_var
+  // First create the slack variables Y with the same size as X, Y being the
+  // symmetric matrix representing the absolute value of X.
+  
+}
+
 // Note that FindDecisionVariableIndex is implemented in
 // mathematical_program_api.cc instead of this file.
 
