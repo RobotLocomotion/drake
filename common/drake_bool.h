@@ -55,6 +55,9 @@ class Bool {
 
   using value_type = decltype(T() < T());
 
+  /// True iff value_type is C++ `bool`.
+  static constexpr bool is_native = std::is_same<value_type, bool>::value;
+
   /// Constructs with @p value.
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   Bool(const value_type& value) : value_{value} {}
@@ -64,7 +67,7 @@ class Bool {
   /// @note This constructor is only enabled if `value_type` is not `bool` in
   /// which case the above constructor, `Bool(const value_type& value)`, is
   /// used instead.
-  template <typename = std::enable_if<!std::is_same<value_type, bool>::value>>
+  template <typename = std::enable_if<!is_native>>
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   Bool(bool b)
       : value_{b ? !(T(0) < T(0)) /* True */ : T(0) < T(0) /* False */} {}
@@ -74,8 +77,7 @@ class Bool {
   /// @note The use of std::enable_if is not allowed here. I found a workaround
   /// of using std::conditional which is explained in
   /// https://stackoverflow.com/a/19434345.
-  operator typename std::conditional_t<std::is_same<value_type, bool>::value,
-                                       bool, void>() const {
+  operator typename std::conditional_t<is_native, bool, void>() const {
     return value();
   }
 
@@ -107,8 +109,7 @@ bool ExtractBoolOrThrow(const Bool<T>& b) {
 /// `Bool<double> && bool` becomes ambiguous because there are two possible
 /// operator&&s -- one for C++ bool and another for `drake::Bool<double>`.
 template <typename T>
-std::enable_if_t<!std::is_same<typename Bool<T>::value_type, bool>::value,
-                 Bool<T>>
+std::enable_if_t<!Bool<T>::is_native, Bool<T>>
 operator&&(const Bool<T>& b1, const Bool<T>& b2) {
   // Previously, we use the "friend" trick explained in the Meyer's effective
   // C++ 3rd. (item 46) to provide a single `operator&&` definition. The trick
@@ -123,8 +124,7 @@ operator&&(const Bool<T>& b1, const Bool<T>& b2) {
 /// Provides logical AND operator (&&) between Bool<T>::value_type and Bool<T>
 /// when Bool<T>::value_type is *not* bool.
 template <typename T>
-std::enable_if_t<!std::is_same<typename Bool<T>::value_type, bool>::value,
-                 Bool<T>>
+std::enable_if_t<!Bool<T>::is_native, Bool<T>>
 operator&&(const typename Bool<T>::value_type& v1, const Bool<T>& b2) {
   return Bool<T>{v1 && b2.value()};
 }
@@ -132,8 +132,7 @@ operator&&(const typename Bool<T>::value_type& v1, const Bool<T>& b2) {
 /// Provides logical AND operator (&&) between Bool<T> and Bool<T>::value_type
 /// when Bool<T>::value_type is *not* bool.
 template <typename T>
-std::enable_if_t<!std::is_same<typename Bool<T>::value_type, bool>::value,
-                 Bool<T>>
+std::enable_if_t<!Bool<T>::is_native, Bool<T>>
 operator&&(const Bool<T>& b1, const typename Bool<T>::value_type& v2) {
   return Bool<T>{b1.value() && v2};
 }
@@ -141,8 +140,7 @@ operator&&(const Bool<T>& b1, const typename Bool<T>::value_type& v2) {
 /// Provides logical OR operator (||) between Bool<T> and Bool<T> when
 /// Bool<T>::value_type is *not* bool.
 template <typename T>
-std::enable_if_t<!std::is_same<typename Bool<T>::value_type, bool>::value,
-                 Bool<T>>
+std::enable_if_t<!Bool<T>::is_native, Bool<T>>
 operator||(const Bool<T>& b1, const Bool<T>& b2) {
   return Bool<T>{b1.value() || b2.value()};
 }
@@ -150,8 +148,7 @@ operator||(const Bool<T>& b1, const Bool<T>& b2) {
 /// Provides logical OR operator (||) between Bool<T>::value_type and Bool<T>
 /// when Bool<T>::value_type is *not* bool.
 template <typename T>
-std::enable_if_t<!std::is_same<typename Bool<T>::value_type, bool>::value,
-                 Bool<T>>
+std::enable_if_t<!Bool<T>::is_native, Bool<T>>
 operator||(const typename Bool<T>::value_type& v1, const Bool<T>& b2) {
   return Bool<T>{v1 || b2.value()};
 }
@@ -159,16 +156,14 @@ operator||(const typename Bool<T>::value_type& v1, const Bool<T>& b2) {
 /// Provides logical OR operator (||) between Bool<T> and Bool<T>::value_type
 /// when Bool<T>::value_type is *not* bool.
 template <typename T>
-std::enable_if_t<!std::is_same<typename Bool<T>::value_type, bool>::value,
-                 Bool<T>>
+std::enable_if_t<!Bool<T>::is_native, Bool<T>>
 operator||(const Bool<T>& b1, const typename Bool<T>::value_type& v2) {
   return Bool<T>{b1.value() || v2};
 }
 
 /// Provides logical NOT operator (!) when Bool<T>::value_type is *not* bool.
 template <typename T>
-std::enable_if_t<!std::is_same<typename Bool<T>::value_type, bool>::value,
-                 Bool<T>>
+std::enable_if_t<!Bool<T>::is_native, Bool<T>>
 operator!(const Bool<T>& b) {
   return Bool<T>{!b.value()};
 }
@@ -192,20 +187,35 @@ T cond(const Bool<T>& b, const T& e_then, Rest... rest) {
   return cond(b.value(), e_then, rest...);
 }
 
+/// Checks truth for all elements in the matrix @p m.
+template <typename Derived>
+typename Derived::Scalar all(const Eigen::DenseBase<Derived>& m) {
+  using BoolT = typename Derived::Scalar;
+  if (m.rows() == 0 || m.cols() == 0) {
+    // all holds vacuously when there is nothing to check.
+    return BoolT{true};
+  }
+  return m.redux([](const BoolT& v1, const BoolT& v2) { return v1 && v2; });
+}
+
 /// Checks if unary predicate @p pred holds for all elements in the matrix @p m.
 template <typename Derived>
 Bool<typename Derived::Scalar> all_of(
     const Eigen::MatrixBase<Derived>& m,
     const std::function<typename Bool<typename Derived::Scalar>::value_type(
         const typename Derived::Scalar&)>& pred) {
-  using T = typename Derived::Scalar;
+  return all(m.unaryExpr(pred));
+}
+
+/// Checks truth for at least one element in the matrix @p m.
+template <typename Derived>
+typename Derived::Scalar any(const Eigen::DenseBase<Derived>& m) {
+  using BoolT = typename Derived::Scalar;
   if (m.rows() == 0 || m.cols() == 0) {
-    // all_of holds vacuously when there is nothing to check.
-    return Bool<T>::True();
+    // any is vacuously false when there is nothing to check.
+    return BoolT{false};
   }
-  return m.unaryExpr(pred).redux(
-      [](const typename Bool<T>::value_type& v1,
-         const typename Bool<T>::value_type& v2) { return v1 && v2; });
+  return m.redux([](const BoolT& v1, const BoolT& v2) { return v1 || v2; });
 }
 
 /// Checks if unary predicate @p pred holds for at least one element in the
@@ -215,14 +225,7 @@ Bool<typename Derived::Scalar> any_of(
     const Eigen::MatrixBase<Derived>& m,
     const std::function<typename Bool<typename Derived::Scalar>::value_type(
         const typename Derived::Scalar&)>& pred) {
-  using T = typename Derived::Scalar;
-  if (m.rows() == 0 || m.cols() == 0) {
-    // any_of is vacuously false when there is nothing to check.
-    return Bool<T>::False();
-  }
-  return m.unaryExpr(pred).redux(
-      [](const typename Bool<T>::value_type& v1,
-         const typename Bool<T>::value_type& v2) { return v1 || v2; });
+  return any(m.unaryExpr(pred));
 }
 
 /// Checks if unary predicate @p pred holds for no elements in the matrix @p m.

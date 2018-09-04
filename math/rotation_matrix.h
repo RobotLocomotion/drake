@@ -36,9 +36,10 @@ namespace math {
 /// do a validity check and throw an exception (std::logic_error) if the
 /// rotation matrix is invalid.  When DRAKE_ASSERT_IS_ARMED is not defined,
 /// many of these validity checks are skipped (which helps improve speed).
-/// In addition, validity tests are only performed for scalar types for which
-/// drake::is_numeric<T> is `true`.  No validity check is performed and no
-/// assertion is thrown if T is non-numeric (e.g., T is symbolic::Expression).
+/// In addition, validity tests are only performed for scalar types when
+/// drake::Bool<T>::is_native.  No validity check is performed and no exception
+/// is thrown if formulas over T are not typed as `bool` (e.g., if T is
+/// symbolic::Expression).
 ///
 /// @authors Paul Mitiguy (2018) Original author.
 /// @authors Drake team (see https://drake.mit.edu/credits).
@@ -421,23 +422,13 @@ class RotationMatrix {
   /// - [Dahleh] "Lectures on Dynamic Systems and Controls: Electrical
   /// Engineering and Computer Science, Massachusetts Institute of Technology"
   /// https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-241j-dynamic-systems-and-control-spring-2011/readings/MIT6_241JS11_chap04.pdf
-  /// @note Although this function exists for all scalar types, invocation on
-  /// symbolic::Expression (non-numeric types) will throw an exception.
   //  @internal This function's name is referenced in Doxygen documentation.
-  template <typename S = T>
-  static typename std::enable_if<is_numeric<S>::value, RotationMatrix<S>>::type
-  ProjectToRotationMatrix(const Matrix3<S>& M, T* quality_factor = NULL) {
-    const Matrix3<S> M_orthonormalized =
+  static RotationMatrix<T>
+  ProjectToRotationMatrix(const Matrix3<T>& M, T* quality_factor = nullptr) {
+    const Matrix3<T> M_orthonormalized =
         ProjectMatrix3ToOrthonormalMatrix3(M, quality_factor);
     ThrowIfNotValid(M_orthonormalized);
-    return RotationMatrix<S>(M_orthonormalized, true);
-  }
-
-  template <typename S = T>
-  static typename std::enable_if<!is_numeric<S>::value, RotationMatrix<S>>::type
-  ProjectToRotationMatrix(const Matrix3<S>& M, T* quality_factor = NULL) {
-    throw std::runtime_error("This method is not supported for scalar types "
-                             "that are not drake::is_numeric<S>.");
+    return RotationMatrix<T>(M_orthonormalized, true);
   }
 
   /// Returns an internal tolerance that checks rotation matrix orthonormality.
@@ -597,11 +588,11 @@ class RotationMatrix {
   // @note If the underlying scalar type T is non-numeric (symbolic), no
   // validity check is made and no assertion is thrown.
   template <typename S = T>
-  static typename std::enable_if<is_numeric<S>::value, void>::type
+  static typename std::enable_if<Bool<S>::is_native>::type
   ThrowIfNotValid(const Matrix3<S>& R);
 
   template <typename S = T>
-  static typename std::enable_if<!is_numeric<S>::value, void>::type
+  static typename std::enable_if<!Bool<S>::is_native>::type
   ThrowIfNotValid(const Matrix3<S>&) {}
 
   // Given an approximate rotation matrix M, finds the orthonormal matrix R
@@ -840,9 +831,9 @@ Matrix3<typename Derived::Scalar> rpy2rotmat(
 // error that arose, but only during release builds and when tests in
 // rotation_matrix_test.cc used symbolic expressions.  I (Paul) spent a fair
 // amount of time trying to understand this problem (with Sherm & Sean).
-template<typename T>
+template <typename T>
 template <typename S>
-typename std::enable_if<is_numeric<S>::value, void>::type
+typename std::enable_if<Bool<S>::is_native>::type
 RotationMatrix<T>::ThrowIfNotValid(const Matrix3<S>& R) {
   if (!R.allFinite()) {
     throw std::logic_error(

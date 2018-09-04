@@ -141,7 +141,6 @@ drake_cc_library(
     deps = [
         ":essential",
         ":nice_type_name",
-        ":number_traits",
     ],
 )
 

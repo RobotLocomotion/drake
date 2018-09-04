@@ -160,7 +160,7 @@ class ArticulatedBodyInertia {
   /// The checks performed are:
   ///   - The matrix is positive semi-definite.
   template <typename T1 = T>
-  typename std::enable_if<is_numeric<T1>::value, bool>::type
+  typename std::enable_if_t<Bool<T1>::is_native, bool>
   IsPhysicallyValid() const {
     // Note that this tolerance may need to be loosened.
     const double kTolerance = -1e-14;
@@ -172,12 +172,13 @@ class ArticulatedBodyInertia {
     return (eigvals.array() > kTolerance).all();
   }
 
-  /// IsPhysicallyValid() for non-numeric scalar types is not supported.
+  /// IsPhysicallyValid() is not supported when formulas over T are not typed
+  /// as `bool` (e.g., if T is symbolic::Expression).
   template <typename T1 = T>
-  typename std::enable_if<!is_numeric<T1>::value, bool>::type
+  typename std::enable_if_t<!Bool<T1>::is_native, bool>
   IsPhysicallyValid() const {
     throw std::logic_error(
-        "IsPhysicallyValid() is only supported for numeric types. It is not "
+        "IsPhysicallyValid() is not "
         "supported for type '" + NiceTypeName::Get<T>() + "'.");
     return false;  // Return something so that the compiler doesn't complain.
   }
