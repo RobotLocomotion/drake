@@ -4,8 +4,6 @@ Provides an example translation of `cart_pole_passive_simluation.cc`.
 
 import argparse
 
-import numpy as np
-
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import (
     ConnectVisualization, DispatchLoadMessage, SceneGraph)
