@@ -41,6 +41,8 @@ class OrientationConstraint : public solvers::Constraint {
    * @param context The Context that has been allocated for this @p tree. We
    * will update the context when evaluating the constraint. @p context should
    * be alive during the lifetime of this constraint.
+   * TODO(hongkai.dai): use MultibodyTree<double> and LeafContext<double> when
+   * MBT provides the API for computing analytical Jacobian.
    */
   OrientationConstraint(const MultibodyTree<AutoDiffXd>& tree,
                         const FrameIndex& frameA_idx,
