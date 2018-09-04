@@ -191,11 +191,42 @@ drake_installed_headers = rule(
     implementation = _drake_installed_headers_impl,
 )
 
+def _path_startswith_match(path, only_startswith, never_startswith):
+    # Ignore some leading path elements.  These will happen if Drake is
+    # consumed as an external.
+    strip = "../drake/"
+    if path.startswith(strip):
+        path = path[len(strip):]
+
+    # Returns true iff `path` is consistent with the given `only...` and
+    # `never...` prefixes.  Omitting either or both of the `...startswith`
+    # arguments is treated as a pass (true) by default.
+    if only_startswith:
+        if not path.startswith(only_startswith):
+            return False
+    if never_startswith:
+        if path.startswith(never_startswith):
+            return False
+    return True
+
 def _gather_transitive_hdrs_impl(ctx):
-    result = depset([], transitive = [
+    # Transitively list all headers.
+    all_hdrs = depset([], transitive = [
         dep[DrakeCc].transitive_hdrs
         for dep in ctx.attr.deps
     ])
+
+    # Filter in/out items matching a prefix.
+    result = depset([
+        x
+        for x in all_hdrs
+        if _path_startswith_match(
+            x.short_path,
+            ctx.attr.only_startswith,
+            ctx.attr.never_startswith,
+        )
+    ])
+
     return struct(files = result)
 
 _gather_transitive_hdrs = rule(
@@ -204,11 +235,18 @@ _gather_transitive_hdrs = rule(
             allow_files = False,
             providers = [DrakeCc],
         ),
+        "only_startswith": attr.string(),
+        "never_startswith": attr.string(),
     },
     implementation = _gather_transitive_hdrs_impl,
 )
 
-def drake_transitive_installed_hdrs_filegroup(name, deps = [], **kwargs):
+def drake_transitive_installed_hdrs_filegroup(
+        name,
+        deps = [],
+        only_startswith = None,
+        never_startswith = None,
+        **kwargs):
     """Declare a filegroup that contains the transtive installed hdrs of the
     targets named by `deps`.
     """
@@ -216,6 +254,8 @@ def drake_transitive_installed_hdrs_filegroup(name, deps = [], **kwargs):
         name = name + "_gather",
         deps = [installed_headers_for_dep(x) for x in deps],
         visibility = [],
+        only_startswith = only_startswith,
+        never_startswith = never_startswith,
     )
     native.filegroup(
         name = name,
@@ -240,13 +280,11 @@ def _raw_drake_cc_library(
     _, private_hdrs = _prune_private_hdrs(srcs)
     if private_hdrs:
         fail("private_hdrs = " + private_hdrs)
-    if native.package_name().startswith("drake"):
-        strip_include_prefix = None
-        include_prefix = None
-    else:
-        # Require include paths like "drake/foo/bar.h", not "foo/bar.h".
-        strip_include_prefix = "/"
-        include_prefix = "drake"
+
+    # Require include paths like "drake/foo/bar.h", not "foo/bar.h".
+    strip_include_prefix = kwargs.pop("strip_include_prefix", "") or "/"
+    include_prefix = kwargs.pop("include_prefix", "") or "drake"
+
     native.cc_library(
         name = name,
         hdrs = hdrs,
