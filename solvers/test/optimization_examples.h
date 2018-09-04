@@ -609,6 +609,7 @@ class DistanceToTetrahedronExample : public MathematicalProgram {
     template <typename DerivedX, typename ScalarY>
     void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                        VectorX<ScalarY>* y) const {
+      DRAKE_DEMAND(x.size() == 18);
       y->resize(15);
       using ScalarX = typename DerivedX::Scalar;
       Vector3<ScalarX> p_WB = x.template head<3>();
@@ -623,9 +624,9 @@ class DistanceToTetrahedronExample : public MathematicalProgram {
       Eigen::Matrix<double, 4, 3> p_BV;
       // clang-format off
       p_BV << 0, 0, 0,
-             1, 0, 0,
-             0, 1, 0,
-             0, 0, 1;
+              1, 0, 0,
+              0, 1, 0,
+              0, 0, 1;
       // clang-format on
       (*y)(0) = quat_WB.dot(quat_WB);
       (*y)(1) = n_W.dot(n_W);

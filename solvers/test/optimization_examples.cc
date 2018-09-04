@@ -650,17 +650,16 @@ void UnitLengthProgramExample::CheckSolution(double tolerance) const {
 }
 
 DistanceToTetrahedronExample::DistanceToTetrahedronExample(
-    double distance_expected)
-    : MathematicalProgram() {
+    double distance_expected) {
   x_ = NewContinuousVariables<18>();
 
-  // Distance to the tetrahedron is 0.2m.
+  // Distance to the tetrahedron is fixed.
   AddBoundingBoxConstraint(distance_expected, distance_expected, x_(17));
   // clang-format off
-  A_tetrahedron_ << 1, 1, 1,
-                  -1, 0, 0,
-                  0, -1, 0,
-                  0, 0, -1;
+  A_tetrahedron_ << 1,  1,  1,
+                   -1,  0,  0,
+                    0, -1,  0,
+                    0,  0, -1;
   // clang-format on
   b_tetrahedron_ << 1, 0, 0, 0;
   auto distance_constraint =
@@ -674,11 +673,10 @@ DistanceToTetrahedronExample::DistanceToTetrahedronNonlinearConstraint::
         const Eigen::Matrix<double, 4, 3>& A_tetrahedron,
         const Eigen::Vector4d& b_tetrahedron)
     : Constraint(15, 18), A_tetrahedron_(A_tetrahedron) {
-  const double kInf = std::numeric_limits<double>::infinity();
+  const double inf = std::numeric_limits<double>::infinity();
   Eigen::Matrix<double, 15, 1> lower_bound, upper_bound;
-  lower_bound << 1, 1, -kInf, 0, 0, 0, 0, 0, 0, 0, 0, -kInf, -kInf, -kInf,
-      -kInf;
-  upper_bound << 1, 1, 0, 0, 0, 0, 0, kInf, kInf, kInf, kInf, b_tetrahedron;
+  lower_bound << 1, 1, -inf, 0, 0, 0, 0, 0, 0, 0, 0, -inf, -inf, -inf, -inf;
+  upper_bound << 1, 1, 0, 0, 0, 0, 0, inf, inf, inf, inf, b_tetrahedron;
   UpdateLowerBound(lower_bound);
   UpdateUpperBound(upper_bound);
 }
