@@ -578,6 +578,9 @@ class UnitLengthProgramExample : public MathematicalProgram {
 // Finds a point Q outside a tetrahedron, and with a specified distance to the
 // tetrahedron. The tetrahedron's shape is fixed. Both the point and the
 // tetrahedron can move in space.
+// We pick this problem to break SNOPT 7.6, as explained in
+// https://github.com/snopt/snopt-interface/issues/19#issuecomment-410346280
+// This is just a feasibility problem, without a cost.
 class DistanceToTetrahedronExample : public MathematicalProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DistanceToTetrahedronExample)
@@ -595,6 +598,7 @@ class DistanceToTetrahedronExample : public MathematicalProgram {
   const Eigen::Vector4d b_tetrahedron() const { return b_tetrahedron_; }
 
  private:
+  // TODO(hongkai.dai): explain the mathematical formulation of this constraint.
   class DistanceToTetrahedronNonlinearConstraint : public Constraint {
    public:
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DistanceToTetrahedronNonlinearConstraint)
