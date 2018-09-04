@@ -118,12 +118,13 @@ class Formula {
   /** Default constructor.  Sets the value to Formula::False, to be consistent
    * with value-initialized `bool`s.
    */
-  Formula() { *this = False(); }
+  Formula() : Formula(False()) {}
 
-  /** Constructs the same value as the default constructor.  This overload is
-   * used by Eigen when EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.
+  /** Constructs from a `bool`.  This overload is also used by Eigen when
+   * EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.
    */
-  explicit Formula(std::nullptr_t) : Formula() {}
+  explicit Formula(bool value)
+      : Formula(value ? True() : False()) {}
 
   explicit Formula(std::shared_ptr<FormulaCell> ptr);
 
