@@ -11,6 +11,7 @@ from pydrake.maliput.api import (
     RoadGeometry,
     RoadGeometryId,
     RoadPosition,
+    Rotation,
     )
 from pydrake.maliput.dragway import (
     create_dragway,
@@ -97,19 +98,20 @@ class TestMaliput(unittest.TestCase):
         lane_start = LanePosition(0., 0., 0.)
         lane_end = LanePosition(lane_0.length(), 0., 0.)
         self.assertTrue(np.allclose(
-            lane_0.GetOrientation(lane_start).vector(), [0., 0., 0.]
+            lane_0.GetOrientation(lane_start).quat().wxyz(),
+            [1., 0., 0., 0.]
         ))
         self.assertTrue(np.allclose(
-            lane_0.GetOrientation(lane_start).vector(),
-            lane_0.GetOrientation(lane_end).vector()
+            lane_0.GetOrientation(lane_start).quat().wxyz(),
+            lane_0.GetOrientation(lane_end).quat().wxyz()
         ))
         self.assertTrue(np.allclose(
-            lane_1.GetOrientation(lane_start).vector(),
-            lane_1.GetOrientation(lane_end).vector()
+            lane_1.GetOrientation(lane_start).quat().wxyz(),
+            lane_1.GetOrientation(lane_end).quat().wxyz()
         ))
         self.assertTrue(np.allclose(
-            lane_0.GetOrientation(lane_end).vector(),
-            lane_1.GetOrientation(lane_end).vector()
+            lane_0.GetOrientation(lane_end).quat().wxyz(),
+            lane_1.GetOrientation(lane_end).quat().wxyz()
         ))
 
         # Test the Lane <-> Geo space coordinate conversion.

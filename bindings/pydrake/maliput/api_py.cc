@@ -46,6 +46,10 @@ PYBIND11_MODULE(api, m) {
       .def_readwrite("pos", &RoadPosition::pos);
   DefReadWriteKeepAlive(&road_position, "lane", &RoadPosition::lane);
 
+  py::class_<Rotation>(m, "Rotation")
+      .def("quat", &Rotation::quat, py_reference_internal)
+      .def("rpy", &Rotation::rpy);
+
   py::class_<RoadGeometry>(m, "RoadGeometry")
       .def("num_junctions", &RoadGeometry::num_junctions)
       .def("junction", &RoadGeometry::junction, py_reference_internal);
@@ -65,11 +69,7 @@ PYBIND11_MODULE(api, m) {
   py::class_<Lane>(m, "Lane")
       .def("ToLanePosition", &Lane::ToLanePosition)
       .def("ToGeoPosition", &Lane::ToGeoPosition)
-      .def("GetOrientation",
-           [](const Lane* self, const LanePosition& position)
-           -> math::RollPitchYaw<double> {
-             return self->GetOrientation(position).rpy();
-           })
+      .def("GetOrientation", &Lane::GetOrientation)
       .def("length", &Lane::length)
       .def("id", &Lane::id);
 }
