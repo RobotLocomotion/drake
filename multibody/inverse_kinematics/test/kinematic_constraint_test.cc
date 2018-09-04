@@ -1,4 +1,9 @@
-#include "drake/multibody/inverse_kinematics/kinematic_constraint.h"
+// clang-format-includes off
+#include "drake/multibody/inverse_kinematics/angle_between_vectors_constraint.h"
+#include "drake/multibody/inverse_kinematics/gaze_target_constraint.h"
+#include "drake/multibody/inverse_kinematics/orientation_constraint.h"
+#include "drake/multibody/inverse_kinematics/position_constraint.h"
+// clang-format-includes on
 
 #include <gtest/gtest.h>
 
@@ -14,6 +19,7 @@
 // satisfy the kinematic constraints.
 namespace drake {
 namespace multibody {
+namespace internal {
 
 template <typename DerivedA, typename DerivedB>
 void CompareAutoDiffVectors(const Eigen::MatrixBase<DerivedA>& a,
@@ -441,5 +447,6 @@ TEST_F(IiwaKinematicConstraintTest,
               context_autodiff_.get())),
       std::logic_error);
 }
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
