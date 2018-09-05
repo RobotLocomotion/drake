@@ -1400,6 +1400,20 @@ class MultibodyTree {
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const;
 
+  /// Returns a const Eigen vector containing the multibody state `x = [q; v]`
+  /// of the model with q the vector of generalized positions and v the vector
+  /// of generalized velocities.
+  Eigen::VectorBlock<const VectorX<T>> get_multibody_state_vector(
+      const systems::Context<T>& context) const;
+
+  /// Returns a mutable Eigen vector containing the multibody state `x = [q; v]`
+  /// of the model with q the vector of generalized positions and v the vector
+  /// of generalized velocities.
+  /// @throws std::exception if the `context` is nullptr or if it does not
+  /// correspond to the context for a multibody model.
+  Eigen::VectorBlock<VectorX<T>> get_mutable_multibody_state_vector(
+      systems::Context<T>* context) const;
+
   /// Sets `context` to store the pose `X_WB` of a given `body` B in the world
   /// frame W.
   /// @note In general setting the pose and/or velocity of a body in the model

@@ -114,6 +114,7 @@ drake_cc_googletest(
     name = "multibody_plant_test",
     data = [
         "test/split_pendulum.sdf",
+        "//manipulation/models/iiwa_description:models",
         "//multibody/benchmarks/acrobot:models",
         "//multibody/multibody_tree/parsing:test_models",
         "//multibody/shapes:test_models",
