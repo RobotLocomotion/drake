@@ -190,6 +190,37 @@ GTEST_TEST(SnoptTest, DistanceToTetrahedron) {
           .all());
 }
 
+GTEST_TEST(SnoptTest, TestBoundedLinearProgram) {
+  // Solve the following LP
+  // min -a
+  // s.t |a| + |b| <= 1
+  //     |a| + |c| <= 2
+  //     |b| + |c| <= 3
+  MathematicalProgram prog;
+  const auto abc = prog.NewContinuousVariables<3>();
+  const auto abc_abs = prog.NewContinuousVariables<3>();
+  for (int i = 0; i < 3; ++i) {
+    prog.AddLinearConstraint(abc_abs(i) >= abc(i));
+    prog.AddLinearConstraint(abc_abs(i) >= -abc(i));
+  }
+  prog.AddLinearConstraint(abc_abs(0) + abc_abs(1) <= 1);
+  prog.AddLinearConstraint(abc_abs(0) + abc_abs(2) <= 2);
+  prog.AddLinearConstraint(abc_abs(1) + abc_abs(2) <= 3);
+
+  prog.AddLinearCost(-abc(0));
+
+  const std::string print_file = temp_directory() + "/snopt_lp.out";
+  std::cout << print_file << std::endl;
+  EXPECT_FALSE(spruce::path(print_file).exists());
+  prog.SetSolverOption(SnoptSolver::id(), "Print file", print_file);
+
+  SnoptSolver solver;
+  const auto solution_result = solver.Solve(prog);
+  EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
+  const double tol{1e-6};
+  EXPECT_TRUE(
+      CompareMatrices(prog.GetSolution(abc), Eigen::Vector3d(1, 0, 2), tol));
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
