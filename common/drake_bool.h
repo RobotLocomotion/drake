@@ -11,6 +11,26 @@
 
 namespace drake {
 
+/// A traits struct that describes the return type of predicates over a scalar
+/// type (named `T`).  For example, a predicate that evaluates `double`s will
+/// return a `bool`, but a predicate that evaluates symbolic::Expression will
+/// return a symbolic::Formula.  By default, the return type is inferred from
+/// the type's comparison operator, but scalar types are permitted to
+/// specialize this template for their needs.
+template <typename T>
+struct scalar_predicate {
+  /// The return type of predicates over T.
+  using type = decltype(T() < T());
+
+  /// Whether `type` is `bool`.
+  static constexpr bool is_bool = std::is_same<type, bool>::value;
+};
+
+/// The return type of predicates over some scalar type T; this is a
+/// convenience alias for scalar_predicate<T>::type.
+template <typename T>
+using scalar_predicate_t = typename scalar_predicate<T>::type;
+
 /// Class representing a Boolean value independent of the underlying
 /// scalar type T:
 ///  - For `double` or autodiff, this class embeds a `bool` value.

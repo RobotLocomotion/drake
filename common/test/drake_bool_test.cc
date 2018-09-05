@@ -86,6 +86,12 @@ TEST_F(BoolTestDouble, MoveAssign) {
 TEST_F(BoolTestDouble, TypeCheck) {
   static_assert(std::is_same<Bool<double>::value_type, bool>::value,
                 "Bool<double>::value_type should be bool");
+  static_assert(std::is_same<scalar_predicate_t<double>, bool>::value,
+                "scalar_predicate_t<double> should be bool");
+  static_assert(std::is_same<scalar_predicate<double>::type, bool>::value,
+                "scalar_predicate<double>::type should be bool");
+  static_assert(scalar_predicate<double>::is_bool,
+                "scalar_predicate<double>::is_bool should be true");
 }
 
 TEST_F(BoolTestDouble, Value) {
@@ -177,6 +183,12 @@ class BoolTestAutoDiffXd : public ::testing::Test {
 TEST_F(BoolTestAutoDiffXd, TypeCheck) {
   static_assert(std::is_same<Bool<AutoDiffXd>::value_type, bool>::value,
                 "Bool<AutoDiffXd>::value_type should be bool");
+  static_assert(std::is_same<scalar_predicate_t<AutoDiffXd>, bool>::value,
+                "scalar_predicate_t<AutoDiffXd> should be bool");
+  static_assert(std::is_same<scalar_predicate<AutoDiffXd>::type, bool>::value,
+                "scalar_predicate<AutoDiffXd>::type should be bool");
+  static_assert(scalar_predicate<AutoDiffXd>::is_bool,
+                "scalar_predicate<AutoDiffXd>::is_bool should be true");
 }
 
 TEST_F(BoolTestAutoDiffXd, TrueFalse) {
@@ -308,6 +320,15 @@ TEST_F(BoolTestSymbolic, TypeCheck) {
   static_assert(
       std::is_same<Bool<Expression>::value_type, Formula>::value,
       "Bool<symbolic::Expression>::value_type should be symbolic::Formula");
+  static_assert(
+      std::is_same<scalar_predicate_t<Expression>, Formula>::value,
+      "scalar_predicate_t<Expression> should be Formula");
+  static_assert(
+      std::is_same<scalar_predicate<Expression>::type, Formula>::value,
+      "scalar_predicate<Expression>::type should be Formula");
+  static_assert(
+      !scalar_predicate<Expression>::is_bool,
+      "scalar_predicate<Expression>::is_bool should be false");
 }
 
 TEST_F(BoolTestSymbolic, TrueFalse) {
