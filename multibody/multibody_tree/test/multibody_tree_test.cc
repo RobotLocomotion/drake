@@ -45,6 +45,17 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
       "iiwa_link_5",
       "iiwa_link_6",
       "iiwa_link_7"};
+
+  const std::vector<std::string> kFrameNames = {
+      "iiwa_link_1",
+      "iiwa_link_2",
+      "iiwa_link_3",
+      "iiwa_link_4",
+      "iiwa_link_5",
+      "iiwa_link_6",
+      "iiwa_link_7",
+      "tool_arbitrary"};
+
   const std::vector<std::string> kJointNames = {
       "iiwa_joint_1",
       "iiwa_joint_2",
@@ -80,6 +91,11 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   }
   EXPECT_FALSE(model.HasBodyNamed(kInvalidName));
 
+  for (const std::string frame_name : kFrameNames) {
+    EXPECT_TRUE(model.HasFrameNamed(frame_name));
+  }
+  EXPECT_FALSE(model.HasFrameNamed(kInvalidName));
+
   for (const std::string joint_name : kJointNames) {
     EXPECT_TRUE(model.HasJointNamed(joint_name));
   }
@@ -107,6 +123,15 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetRigidBodyByName(kInvalidName), std::logic_error,
       "There is no body named '.*' in the model.");
+
+  // Get frames by name.
+  for (const std::string frame_name : kFrameNames) {
+    const Frame<T>& frame = model.GetFrameByName(frame_name);
+    EXPECT_EQ(frame.name(), frame_name);
+  }
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model.GetFrameByName(kInvalidName), std::logic_error,
+      "There is no frame named '.*' in the model.");
 
   // Get joints by name.
   for (const std::string joint_name : kJointNames) {
