@@ -1400,6 +1400,12 @@ class MultibodyTree {
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const;
 
+  Eigen::VectorBlock<const VectorX<T>> get_multibody_state_vector(
+      const systems::Context<T>& context) const;
+
+  Eigen::VectorBlock<VectorX<T>> get_mutable_multibody_state_vector(
+      systems::Context<T>* context) const;
+
   /// Sets `context` to store the pose `X_WB` of a given `body` B in the world
   /// frame W.
   /// @note In general setting the pose and/or velocity of a body in the model

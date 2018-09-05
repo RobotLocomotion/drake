@@ -1601,6 +1601,81 @@ TEST_F(MultibodyPlantContactJacobianTests, TangentJacobian) {
       D, vt_derivs, kTolerance, MatrixCompareType::relative));
 }
 
+// Unit test fixture for a model of Kuka Iiwa arm parametrized on the periodic
+// update period of the plant. This allows us to test some of the plant's
+// functionality for both continuous and discrete models.
+class KukaArmTest : public ::testing::TestWithParam<double> {
+ protected:
+  void SetUp() override {
+    const char kSdfPath[] =
+        "drake/manipulation/models/iiwa_description/sdf/"
+            "iiwa14_no_collision.sdf";
+    plant_ = std::make_unique<MultibodyPlant<double>>(this->GetParam());
+    AddModelFromSdfFile(FindResourceOrThrow(kSdfPath), plant_.get());
+    plant_->Finalize();
+
+    EXPECT_EQ(plant_->num_positions(), 7);
+    EXPECT_EQ(plant_->num_velocities(), 7);
+
+    // We expect the first joint to be the one WeldJoint fixing the model to the
+    // world. We verify this assumption.
+    const Joint<double>& weld = plant_->model().get_joint(JointIndex(0));
+    ASSERT_EQ(weld.name(), "weld_base_to_world");
+
+    context_ = plant_->CreateDefaultContext();
+  }
+
+  // Helper to set the multibody state x to x[i] = i for each i-th entry in the
+  // state vector.
+  void SetStateToContainStateIndexes() {
+    for (JointIndex joint_index(1); /* Skip "weld_base_to_world". */
+         joint_index < plant_->num_joints(); ++joint_index) {
+      // We know all joints in our model, besides the first joint welding the
+      // model to the world, are revolute joints.
+      const auto& joint = plant_->GetJointByName<RevoluteJoint>(
+          "iiwa_joint_" + std::to_string(joint_index));
+
+      // We simply set each entry in the state with the value of its index.
+      joint.set_angle(context_.get(), joint_index);
+      joint.set_angular_rate(
+          context_.get(), plant_->num_positions() + joint_index);
+    }
+  }
+
+  std::unique_ptr<MultibodyPlant<double>> plant_;
+  std::unique_ptr<Context<double>> context_;
+};
+
+// This test verifies we can easily access the multibody state vector x = [q, v]
+// for either a discrete or continuous multibody model.
+TEST_P(KukaArmTest, StateAccess) {
+  // Set the state to x[i] = i for each i-th entry.
+  SetStateToContainStateIndexes();
+
+  // Verify that we can retrieve the state vector and that it has the values we
+  // set above.
+  const auto xc = plant_->model().get_multibody_state_vector(*context_);
+  const VectorX<double> xc_expected = VectorX<double>::LinSpaced(
+      plant_->num_multibody_states() /* size */,
+      1 /* first index */, plant_->num_multibody_states() /* last index */);
+  EXPECT_EQ(xc, xc_expected);
+
+  // Get a mutable state and modified it.
+  plant_->model().get_mutable_multibody_state_vector(context_.get()).setZero();
+  EXPECT_EQ(xc, VectorX<double>::Zero(plant_->num_multibody_states()));
+}
+
+// Verifies we instantiated an appropriate MultibodyPlant model based on the
+// fixture's parameter.
+TEST_P(KukaArmTest, CheckContinuousOrDiscreteModel) {
+  // The plant must be a discrete system if the periodic update period is zero.
+  EXPECT_EQ(!plant_->is_discrete(), this->GetParam() == 0);
+}
+
+INSTANTIATE_TEST_CASE_P(
+    Blank, KukaArmTest,
+    testing::Values(0.0 /* continuous state */, 1e-3 /* discrete state */));
+
 }  // namespace
 }  // namespace multibody_plant
 }  // namespace multibody
