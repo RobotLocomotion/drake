@@ -753,12 +753,41 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
   return AddConstraint(constraint, vars);
 }
 
-void MathematicalProgram::AddDiagonallyDominantMatrixConstraint(
-    const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var) {
+MatrixXDecisionVariable
+MathematicalProgram::AddDiagonallyDominantMatrixConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>&
+        symmetric_matrix_var) {
   // We will denote X = symmetric_matrix_var
   // First create the slack variables Y with the same size as X, Y being the
   // symmetric matrix representing the absolute value of X.
-  
+  const int num_X_rows = symmetric_matrix_var.rows();
+  DRAKE_DEMAND(symmetric_matrix_var.cols() == num_X_rows);
+  auto Y =
+      NewSymmetricContinuousVariables(num_X_rows, "diagonally_dominant_slack");
+  // Add the constraint that Y(i, j) >= |X(i, j) + X(j, i) / 2|
+  for (int i = 0; i < num_X_rows; ++i) {
+    for (int j = i + 1; j < num_X_rows; ++j) {
+      AddLinearConstraint(
+          Y(i, j) >=
+          (symmetric_matrix_var(i, j) + symmetric_matrix_var(j, i)) / 2);
+      AddLinearConstraint(
+          Y(i, j) >=
+          -(symmetric_matrix_var(i, j) + symmetric_matrix_var(j, i)) / 2);
+    }
+  }
+
+  // Add the constraint X(i, i) >= sum_j Y(i, j), j ≠ i
+  for (int i = 0; i < num_X_rows; ++i) {
+    symbolic::Expression y_sum = 0;
+    for (int j = 0; j < num_X_rows; ++j) {
+      if (j == i) {
+        continue;
+      }
+      y_sum += Y(i, j);
+    }
+    AddLinearConstraint(symmetric_matrix_var(i, i) >= y_sum);
+  }
+  return Y;
 }
 
 // Note that FindDecisionVariableIndex is implemented in
