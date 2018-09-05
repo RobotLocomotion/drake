@@ -421,23 +421,13 @@ class RotationMatrix {
   /// - [Dahleh] "Lectures on Dynamic Systems and Controls: Electrical
   /// Engineering and Computer Science, Massachusetts Institute of Technology"
   /// https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-241j-dynamic-systems-and-control-spring-2011/readings/MIT6_241JS11_chap04.pdf
-  /// @note Although this function exists for all scalar types, invocation on
-  /// symbolic::Expression (non-numeric types) will throw an exception.
   //  @internal This function's name is referenced in Doxygen documentation.
-  template <typename S = T>
-  static typename std::enable_if<is_numeric<S>::value, RotationMatrix<S>>::type
-  ProjectToRotationMatrix(const Matrix3<S>& M, T* quality_factor = NULL) {
-    const Matrix3<S> M_orthonormalized =
+  static RotationMatrix<T>
+  ProjectToRotationMatrix(const Matrix3<T>& M, T* quality_factor = nullptr) {
+    const Matrix3<T> M_orthonormalized =
         ProjectMatrix3ToOrthonormalMatrix3(M, quality_factor);
     ThrowIfNotValid(M_orthonormalized);
-    return RotationMatrix<S>(M_orthonormalized, true);
-  }
-
-  template <typename S = T>
-  static typename std::enable_if<!is_numeric<S>::value, RotationMatrix<S>>::type
-  ProjectToRotationMatrix(const Matrix3<S>& M, T* quality_factor = NULL) {
-    throw std::runtime_error("This method is not supported for scalar types "
-                             "that are not drake::is_numeric<S>.");
+    return RotationMatrix<T>(M_orthonormalized, true);
   }
 
   /// Returns an internal tolerance that checks rotation matrix orthonormality.

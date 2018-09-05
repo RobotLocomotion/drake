@@ -469,16 +469,15 @@ GTEST_TEST(RotationMatrix, CastFromDoubleToAutoDiffXd) {
   }
 }
 
-// Verify RotationMatrix is compatible with symbolic::Expression. This includes,
-// construction, and the two methods specialized for symbolic::Expression:
-// ThrowIfNotValid() and ProjectToRotationMatrix().
-GTEST_TEST(RotationMatrix, SymbolicRotationMatrixSimpleTests) {
-  RotationMatrix<symbolic::Expression> R;
+// Verify RotationMatrix constructor is compatible with symbolic::Expression,
+// including the ThrowIfNotValid() check.
+GTEST_TEST(RotationMatrix, SymbolicConstructionTest) {
+  using symbolic::Expression;
 
   // When the underlying scalar type is a symbolic::Expression, ensure
   // set(m_symbolic) only sets the rotation matrix, with no validity checks
   // e.g., ThrowIfNotValid() is a "no-op" (does nothing).
-  Matrix3<symbolic::Expression> m_symbolic;
+  Matrix3<Expression> m_symbolic;
   m_symbolic << 1, 2, 3,  // This is an obviously invalid rotation matrix.
                 4, 5, 6,
                 7, 8, 9;
@@ -486,15 +485,60 @@ GTEST_TEST(RotationMatrix, SymbolicRotationMatrixSimpleTests) {
   // Since this function is private, it cannot be directly tested.
   // Instead, it is tested via the set() method which calls ThrowIfNotValid()
   // when assertions are armed.
+  RotationMatrix<Expression> R;
   EXPECT_NO_THROW(R.set(m_symbolic));
 
-  // Test ProjectToRotationMatrix() throws an exception for symbolic expression.
+  // Set one of the matrix terms to a variable.  Still no throw.
+  const symbolic::Variable x{"x"};
+  m_symbolic(0, 0) = x;
+  EXPECT_NO_THROW(R.set(m_symbolic));
+}
+
+// Verify RotationMatrix projection with symbolic::Expression behaves as
+// expected.  (In prior revisions, it was specialized for Expressions.)
+// If there are free variables, it will throw.
+GTEST_TEST(RotationMatrix, SymbolicProjectionTest) {
+  using symbolic::Expression;
+
+  // Set up an identity matrix, but with one off-diagonal free variable.
+  Matrix3<Expression> m_symbolic = Matrix3<Expression>::Identity();
+  const symbolic::Variable x{"x"};
+  m_symbolic(2, 0) = x;
+
+  // Verify Eigen's SVD [which is called by ProjectToRotationMatrix()] throws
+  // an exception if it is passed a symbolic matrix with an element that it
+  // cannot resolve to a numerical value (e.g., the element contains a free
+  // variable).
+  // In the future, it would be acceptable if the implementation returned a
+  // symbolic result instead of throwing, but for now we'll lock in the "must
+  // throw" contract so that we'll notice if the behavior changes.
+  using RotMatExpr = RotationMatrix<Expression>;
+  Expression quality;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      RotationMatrix<symbolic::Expression> R_symbolic_after_project =
-      RotationMatrix<symbolic::Expression>::ProjectToRotationMatrix(m_symbolic),
+      RotMatExpr::ProjectToRotationMatrix(m_symbolic, &quality),
       std::runtime_error,
-      "This method is not supported for scalar types "
-      "that are not drake::is_numeric<S>.");
+      ".*environment does not have an entry for the variable.*\n*");
+
+  // Removing the free variable allows us to succeed.
+  m_symbolic(2, 0) = 0;   // The input is now the identity matrix.
+  RotMatExpr::ProjectToRotationMatrix(m_symbolic, &quality);
+
+  // Sanity check that the operation succeeded.  (We don't specify a tight
+  // tolerance here because the precise numerical result is tested elsewhere.)
+  EXPECT_LT(abs(quality - 1.0), 1e-3);
+
+  // Verify ProjectToRotationMatrix() (which uses Eigen's SVD) can handle
+  // symbolic matrices as long as every element resolves to a numerical value
+  // (no free variables).  To more fully test the code, the test matrix below
+  // is not already orthonormal since an already-orthonormal matrix may produce
+  // an early-return from Eigen's SVD.
+  Matrix3d m;
+  m << 1, 2,  3,
+       4, 5,  6,
+       7, 8, -10;
+  m_symbolic = m.template cast<Expression>();
+  RotMatExpr::ProjectToRotationMatrix(m_symbolic, &quality);
+  EXPECT_GT(quality, 10.0);
 }
 
 // Utility function to help test ProjectMatToRotMatWithAxis().
