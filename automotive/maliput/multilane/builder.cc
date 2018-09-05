@@ -308,8 +308,8 @@ Group* Builder::MakeGroup(const std::string& id,
 namespace {
 
 
-// Determine the heading direction at an `r_offset` away from the `lane`
-// centerline when travelling outwards from the specified `end`.
+// Determine the heading direction at an `r_offset` leftwards of the `lane`
+// centerline when traveling outwards from the specified `end`.
 Vector3<double> DirectionOutFromLane(const api::Lane* const lane,
                                      const api::LaneEnd::Which end,
                                      double r_offset) {
@@ -317,7 +317,7 @@ Vector3<double> DirectionOutFromLane(const api::Lane* const lane,
   switch (end) {
     case api::LaneEnd::kStart: {
       return -lane->GetOrientation(
-          {0., r_offset, 0.}).matrix() * s_hat;
+          {0., -r_offset, 0.}).matrix() * s_hat;
     }
     case api::LaneEnd::kFinish: {
       return lane->GetOrientation(
@@ -328,16 +328,17 @@ Vector3<double> DirectionOutFromLane(const api::Lane* const lane,
 }
 
 
-// Checks if the heading direction of the all the given lanes at an `r_offset`
-// at their specified end in `side` match the reference `direction_at_r_offset`,
-// down to the given `angular_tolerance`.
+// Checks if the heading direction of the all the given lanes at an
+// `r_offset` leftwards of the centerlines when traveling outwards from
+// their specified end in `parallel_set` matches the reference
+// `direction_at_r_offset`, down to the given `angular_tolerance`.
 bool AreLanesDirectionsWithinTolerance(
     const Vector3<double>& direction_at_r_offset, double r_offset,
-    const api::LaneEndSet* side, double angular_tolerance) {
-  DRAKE_DEMAND(side != nullptr);
+    const api::LaneEndSet* parallel_set, double angular_tolerance) {
+  DRAKE_DEMAND(parallel_set != nullptr);
 
-  for (int i = 0; i < side->size(); ++i) {
-    const api::LaneEnd& le = side->get(i);
+  for (int i = 0; i < parallel_set->size(); ++i) {
+    const api::LaneEnd& le = parallel_set->get(i);
     const Vector3<double> other_direction =
         DirectionOutFromLane(le.lane, le.end, r_offset);
     const double angular_deviation =
@@ -350,55 +351,58 @@ bool AreLanesDirectionsWithinTolerance(
 }
 
 
-// Checks if the `lane` is continuous along an `r_offset` from its centerline
-// at the branchpoint on the given `end`, down to an `angular_tolerance`.
-// `lane` is assumed to have an into-the-lane tangent vector that is coincident
-// with those of the lanes in the `aside`, which in turn are anti-parallel to
-// those of the lanes in the `bside`.
+// Checks if the `lane` is G1 continuous along an `r_offset` leftwards of
+// the `lane` centerline when traveling outwards from the given `end`, at the
+// branch point and down to the given `angular_tolerance`. `lane` is assumed
+// to have an into-the-lane tangent vector that is coincident with those of
+// the lanes in the `parallel_set`, which in turn are anti-parallel to
+// those of the lanes in the `antiparallel_set`.
 bool IsLaneContinuousAtBranchPointAlongROffset(
     const api::Lane* lane, const api::LaneEnd::Which end,
-    const api::LaneEndSet* aside, const api::LaneEndSet* bside,
+    const api::LaneEndSet* parallel_set,
+    const api::LaneEndSet* antiparallel_set,
     double r_offset, double angular_tolerance) {
   DRAKE_DEMAND(lane != nullptr);
-  DRAKE_DEMAND(aside != nullptr);
-  DRAKE_DEMAND(bside != nullptr);
+  DRAKE_DEMAND(parallel_set != nullptr);
+  DRAKE_DEMAND(antiparallel_set != nullptr);
 
   const Vector3<double> direction =
       DirectionOutFromLane(lane, end, r_offset);
   return
       (AreLanesDirectionsWithinTolerance(
           direction, r_offset,
-          aside, angular_tolerance) &&
+          parallel_set, angular_tolerance) &&
        AreLanesDirectionsWithinTolerance(
-           -direction, -r_offset,
-           bside, angular_tolerance));
+           -direction, r_offset,
+           antiparallel_set, angular_tolerance));
 }
 
 
-// Checks if the `lane` is continuous at the branchpoint on the given
-// `end`, down to an `angular_tolerance`. // `lane` is assumed to have
-// an into-the-lane tangent vector that is coincident with those of the
-// lanes in the `aside`, which in turn are anti-parallel to those of the
-// lanes in the `bside`.
+// Checks if the `lane` is G1 continuous at the branchpoint on the given
+// `end`, down to an `angular_tolerance`. `lane` is assumed to have an
+// into-the-lane tangent vector that is coincident with those of the
+// lanes in the `parallel_set`, which in turn are anti-parallel to those
+// of the lanes in the `antiparallel_set`.
 bool IsLaneContinuousAtBranchPoint(
     const api::Lane* lane, const api::LaneEnd::Which end,
-    const api::LaneEndSet* aside, const api::LaneEndSet* bside,
+    const api::LaneEndSet* parallel_set,
+    const api::LaneEndSet* antiparallel_set,
     double angular_tolerance) {
   DRAKE_DEMAND(lane != nullptr);
-  DRAKE_DEMAND(aside != nullptr);
-  DRAKE_DEMAND(bside != nullptr);
+  DRAKE_DEMAND(parallel_set != nullptr);
+  DRAKE_DEMAND(antiparallel_set != nullptr);
 
   constexpr const double kZeroROffset{0.};
   const double s_at_branch_point =
-      (end != api::LaneEnd::kStart) ? lane->length() : 0.;
+      (end == api::LaneEnd::kFinish) ? lane->length() : 0.;
   const double max_r_offset =
       lane->lane_bounds(s_at_branch_point).max();
   return
       (IsLaneContinuousAtBranchPointAlongROffset(
-          lane, end, aside, bside,
+          lane, end, parallel_set, antiparallel_set,
           kZeroROffset, angular_tolerance) &&
        IsLaneContinuousAtBranchPointAlongROffset(
-           lane, end, aside, bside,
+           lane, end, parallel_set, antiparallel_set,
            max_r_offset, angular_tolerance));
 }
 

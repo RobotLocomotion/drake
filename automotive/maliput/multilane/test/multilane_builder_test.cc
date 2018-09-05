@@ -237,148 +237,6 @@ GTEST_TEST(MultilaneBuilderTest, ProperConnections) {
   EXPECT_EQ(arc_connection->computation_policy(), kComputationPolicy);
 }
 
-// Checks that the Builder refuses to issue discontinuous road
-// geometries as a result of bad combinations of lane-based and
-// reference curve-based connections. See Builder class documentation
-// for further reference.
-GTEST_TEST(MultilaneBuilderTest, DiscontinuityAtReverseConnection) {
-  const double kLaneWidth = 4.;
-  const api::HBounds kElevationBounds(0., 5.);
-  const double kLinearTolerance = 0.01;
-  const double kAngularTolerance = 0.01 * M_PI;
-  const double kScaleLength = 1.0;
-  const ComputationPolicy kComputationPolicy{
-    ComputationPolicy::kPreferAccuracy};
-  Builder builder(kLaneWidth, kElevationBounds,
-                  kLinearTolerance, kAngularTolerance,
-                  kScaleLength, kComputationPolicy);
-
-  const int kOneLane{1};
-  const int kRefLane{0};
-  const double kRefR0{0.};
-  const double kLeftShoulder{2.};
-  const double kRightShoulder{2.};
-  const LaneLayout kLaneLayout(kLeftShoulder, kRightShoulder,
-                               kOneLane, kRefLane, kRefR0);
-
-  const EndpointZ kFlatZ(0., 0., 0., {});
-  // Provided theta_dot value should render the road surface
-  // discontinuous at the branch point between both lanes.
-  const EndpointZ kSlightTiltZ(0., 0., 0.3, 0.1);
-  // Superelevation angles are reversed since the first
-  // connection's start endpoint is reversed to serve as
-  // the second connection's start endpoint.
-  const EndpointZ kLargeTiltZ(0., 0., -0.8, {});
-  const Endpoint kStartEndpoint{{0., 0., M_PI / 2.}, kSlightTiltZ};
-
-  const double kStraightLaneLength{50.};
-  auto straight_conn = builder.Connect(
-      "straight", kLaneLayout,
-      StartReference().at(kStartEndpoint, Direction::kForward),
-      LineOffset(kStraightLaneLength),
-      EndReference().z_at(kFlatZ, Direction::kForward));
-  ASSERT_TRUE(straight_conn != nullptr);
-
-  const double kCurvedLaneRadius{50.};
-  const double kCurvedLaneAngularDisplacement{M_PI/2.};
-  auto curved_conn = builder.Connect(
-      "curved", kLaneLayout, StartReference().at(
-          *straight_conn, api::LaneEnd::kStart, Direction::kReverse),
-      ArcOffset(kCurvedLaneRadius, kCurvedLaneAngularDisplacement),
-      EndReference().z_at(kLargeTiltZ, Direction::kForward));
-  ASSERT_TRUE(curved_conn != nullptr);
-
-  // Asserts that the Builder actually catches the surface
-  // discontinuity and throws.
-  EXPECT_THROW({
-      std::unique_ptr<const api::RoadGeometry> road_geometry =
-          builder.Build(api::RoadGeometryId{"banked_turn"}); },
-    std::runtime_error);
-}
-
-
-// Checks that reference curve-based connections made through
-// endpoint reversal are kept continuous at the branchpoint.
-GTEST_TEST(MultilaneBuilderTest, ContinuityAtReverseEndpoint) {
-  const double kLaneWidth = 4.;
-  const api::HBounds kElevationBounds(0., 5.);
-  const double kLinearTolerance = 0.01;
-  const double kAngularTolerance = 0.01 * M_PI;
-  const double kScaleLength = 1.0;
-  const ComputationPolicy kComputationPolicy{
-    ComputationPolicy::kPreferAccuracy};
-  Builder builder(kLaneWidth, kElevationBounds,
-                  kLinearTolerance, kAngularTolerance,
-                  kScaleLength, kComputationPolicy);
-
-  const int kOneLane{1};
-  const int kRefLane{0};
-  const double kRefR0{0.};
-  const double kLeftShoulder{2.};
-  const double kRightShoulder{2.};
-  const LaneLayout kLaneLayout(kLeftShoulder, kRightShoulder,
-                               kOneLane, kRefLane, kRefR0);
-
-  const EndpointZ kFlatZ(0., 0., 0., {});
-  const EndpointZ kSlightTiltZ(0., 0., 0.3, 0.1);
-  // Superelevation angles are reversed since the first
-  // connection's start endpoint is reversed to serve as
-  // the second connection's start endpoint.
-  const EndpointZ kLargeTiltZ(0., 0., -0.8, {});
-  const Endpoint kStartEndpoint{{0., 0., M_PI / 2.}, kSlightTiltZ};
-
-  const double kStraightLaneLength{50.};
-  auto straight_conn = builder.Connect(
-      "straight", kLaneLayout,
-      StartReference().at(kStartEndpoint, Direction::kForward),
-      LineOffset(kStraightLaneLength),
-      EndReference().z_at(kFlatZ, Direction::kForward));
-  ASSERT_TRUE(straight_conn != nullptr);
-
-  const double kCurvedLaneRadius{50.};
-  const double kCurvedLaneAngularDisplacement{M_PI/2.};
-  auto curved_conn = builder.Connect(
-      "curved", kLaneLayout, StartReference().at(
-          kStartEndpoint, Direction::kReverse),
-      ArcOffset(kCurvedLaneRadius, kCurvedLaneAngularDisplacement),
-      EndReference().z_at(kLargeTiltZ, Direction::kForward));
-  ASSERT_TRUE(curved_conn != nullptr);
-
-  std::unique_ptr<const api::RoadGeometry> road_geometry =
-      builder.Build(api::RoadGeometryId{"banked_turn"});
-  ASSERT_TRUE(road_geometry != nullptr);
-
-  ASSERT_EQ(road_geometry->num_junctions(), 2);
-  const api::Junction* straight_junction = road_geometry->junction(0);
-  const api::Junction* curved_junction = road_geometry->junction(1);
-  if (curved_junction->id() != api::JunctionId{"j:curved"}) {
-    std::swap(straight_junction, curved_junction);
-  }
-  ASSERT_EQ(curved_junction->num_segments(), 1);
-  ASSERT_EQ(straight_junction->num_segments(), 1);
-  const api::Segment* straight_segment = straight_junction->segment(0);
-  const api::Segment* curved_segment = curved_junction->segment(0);
-  ASSERT_EQ(curved_segment->num_lanes(), 1);
-  ASSERT_EQ(straight_segment->num_lanes(), 1);
-  const api::Lane* straight_lane = straight_segment->lane(0);
-  const api::Lane* curved_lane = curved_segment->lane(0);
-  const double kS{0.}; const double kH{0.};
-  for (double r = -kLaneWidth/2; r <= kLaneWidth/2; r += kLaneWidth/10) {
-    // Since the curved lane heading at the origin is opposite to that of
-    // the straight lane by construction, the r-offset sign is reversed
-    // and the resulting orientation is rotated pi radians around the h-axis.
-    const api::Rotation rrotation = curved_lane->GetOrientation({kS, -r, kH});
-    const Quaternion<double> pi_rotation(
-        AngleAxis<double>(M_PI, Vector3<double>::UnitZ()));
-    EXPECT_TRUE(api::test::IsRotationClose(
-        straight_lane->GetOrientation({kS, r, kH}),
-        // Apply a pi radians rotation around the h-axis to the curved
-        // lane orientation (i.e. apply an intrinsic pi radians rotation
-        // about the lane local z-axis, effectively post-multiplying).
-        api::Rotation::FromQuat(rrotation.quat() * pi_rotation),
-        kAngularTolerance)) << " Orientation discontinuity at r = " << r;
-  }
-}
 
 GTEST_TEST(MultilaneBuilderTest, Fig8) {
   const double kLaneWidth = 4.;
@@ -651,6 +509,7 @@ GTEST_TEST(MultilaneBuilderTest, QuadRing) {
 
   EXPECT_TRUE(api::test::CheckIdIndexing(rg.get()));
 };
+
 
 // Holds common properties for reference-to-reference curve primitive tests.
 class MultilaneBuilderReferenceCurvePrimitivesTest : public ::testing::Test {
@@ -1157,6 +1016,344 @@ TEST_F(MultilaneBuilderLaneToLanePrimitivesTest, ElevatedEndArcSegment) {
   // Checks the number of branch points.
   EXPECT_EQ(rg->num_branch_points(), 2 * kNumLanes);
 }
+
+namespace {
+
+// An encapsulated Multilane road build procedure.
+class BuildProcedure {
+ public:
+  // Constructs a named build procedure.
+  explicit BuildProcedure(const std::string& name)
+      : name_(name) {
+  }
+
+  virtual ~BuildProcedure() = default;
+
+  // Applies procedure to the given @p builder.
+  virtual void ApplyTo(Builder* builder) const = 0;
+
+  // Asserts that the procedure was properly applied
+  // to the given @p road_geometry.
+  virtual void AssertProperConstruction(
+      const api::RoadGeometry& road_geometry) const = 0;
+
+  // Returns procedure's name.
+  const std::string& name() const { return name_; }
+
+ private:
+  // Procedure name.
+  const std::string name_;
+};
+
+// An stream operator overload for shared references to
+// BuildProcedure instances. Useful for gtest to print.
+std::ostream& operator<<(
+    std::ostream& os, const std::shared_ptr<BuildProcedure>& proc) {
+  return os << proc->name();
+}
+
+// An encapsulated Multilane road turn build procedure.
+class TurnBuildProcedure : public BuildProcedure {
+ public:
+  // Constructs a named build procedure for a turn.
+  // @param name Name for the build procedure.
+  // @param start_endpoint Turn's start endpoint.
+  // @param straight_conn_length Turn straight section's length.
+  // @param curved_conn_radius Turn curved section's arc radius.
+  // @param curved_conn_angular_delta Turn curved section's arc
+  //                                  subtended angle.
+  explicit TurnBuildProcedure(
+      const std::string& name, const Endpoint& start_endpoint,
+      double straight_conn_length, double curved_conn_radius,
+      double curved_conn_angular_delta)
+      : BuildProcedure(name), start_endpoint_(start_endpoint),
+        straight_conn_length_(straight_conn_length),
+        curved_conn_radius_(curved_conn_radius),
+        curved_conn_angular_delta_(curved_conn_angular_delta) {}
+
+  void AssertProperConstruction(
+      const api::RoadGeometry& road_geometry) const override {
+    ASSERT_EQ(road_geometry.num_junctions(), 2);
+    const api::Junction* straight_junction =
+        road_geometry.ById().GetJunction(api::JunctionId{
+            "j:" + std::string{kStraightConnName}});
+    const api::Junction* curved_junction =
+        road_geometry.ById().GetJunction(api::JunctionId{
+            "j:" + std::string{kCurvedConnName}});
+    ASSERT_EQ(curved_junction->num_segments(), 1);
+    ASSERT_EQ(straight_junction->num_segments(), 1);
+    const api::Segment* straight_segment = straight_junction->segment(0);
+    const api::Segment* curved_segment = curved_junction->segment(0);
+    ASSERT_EQ(curved_segment->num_lanes(), kLaneNum);
+    ASSERT_EQ(straight_segment->num_lanes(), kLaneNum);
+    const api::Lane* straight_lane = straight_segment->lane(kRefLane);
+    const api::Lane* curved_lane = curved_segment->lane(kRefLane);
+
+    const double kS{0.};
+    const double kH{0.};
+    const api::RBounds lbounds = straight_lane->lane_bounds(kS);
+    const double lane_width = lbounds.max() - lbounds.min();
+    for (double r = lbounds.min(); r <= lbounds.max(); r += lane_width/10) {
+      // Since the curved lane heading at the origin is opposite to that of
+      // the straight lane by construction, the r-offset sign is reversed.
+      EXPECT_TRUE(api::test::IsGeoPositionClose(
+          straight_lane->ToGeoPosition({kS, r, kH}),
+          curved_lane->ToGeoPosition({kS, -r, kH}),
+          road_geometry.linear_tolerance()))
+          << "Position discontinuity at r = " << r;
+      // Since the curved lane heading at the origin is opposite to that of
+      // the straight lane by construction, the resulting orientation is
+      // rotated pi radians about the h-axis.
+      const api::Rotation rrotation = curved_lane->GetOrientation({kS, -r, kH});
+      const Quaternion<double> pi_rotation(
+          AngleAxis<double>(M_PI, Vector3<double>::UnitZ()));
+      EXPECT_TRUE(api::test::IsRotationClose(
+          straight_lane->GetOrientation({kS, r, kH}),
+          // Applies a pi radians rotation around the h-axis to the curved
+          // lane orientation (i.e. apply an intrinsic pi radians rotation
+          // about the lane local z-axis, effectively post-multiplying).
+          api::Rotation::FromQuat(rrotation.quat() * pi_rotation),
+          road_geometry.angular_tolerance()))
+          << " Orientation discontinuity at r = " << r;
+    }
+  }
+
+ protected:
+  // Returns straight connection line spec.
+  LineOffset line_offset() const {
+    return LineOffset(straight_conn_length_);
+  }
+
+  // Returns curved connection arc spec.
+  ArcOffset arc_offset() const {
+    return ArcOffset(curved_conn_radius_, curved_conn_angular_delta_);
+  }
+
+  // Returns turn start endpoint.
+  const Endpoint& start_endpoint() const { return start_endpoint_; }
+
+  const int kLaneNum{1};
+  const int kRefLane{0};
+  const double kRefR0{0.};
+  const double kLeftShoulder{2.};
+  const double kRightShoulder{2.};
+  const LaneLayout kLaneLayout{kLeftShoulder, kRightShoulder,
+                               kLaneNum, kRefLane, kRefR0};
+  const EndpointZ kFlatZ{0., 0., 0., {}};
+  const std::string kStraightConnName{"straight"};
+  const std::string kCurvedConnName{"curved"};
+
+ private:
+  const Endpoint start_endpoint_;
+  const double straight_conn_length_;
+  const double curved_conn_radius_;
+  const double curved_conn_angular_delta_;
+};
+
+// An encapsulated Multilane turn build procedure that
+// constructs it by specifying the straight connection by
+// it's reference curve starting at the endpoint and the
+// curved connection by reversing the former connection
+// start endpoint.
+class TurnUsingRefToRConn
+    : public TurnBuildProcedure {
+ public:
+  using TurnBuildProcedure::TurnBuildProcedure;
+
+  void ApplyTo(Builder* builder) const override {
+    const Connection* straight_conn = builder->Connect(
+        kStraightConnName, kLaneLayout,
+        StartReference().at(start_endpoint(), Direction::kForward),
+        line_offset(), EndReference().z_at(kFlatZ, Direction::kForward));
+    ASSERT_TRUE(straight_conn != nullptr);
+
+    const Connection* curved_conn = builder->Connect(
+        kCurvedConnName, kLaneLayout, StartReference().at(
+            *straight_conn, api::LaneEnd::kStart, Direction::kReverse),
+        arc_offset(), EndReference().z_at(kFlatZ, Direction::kForward));
+    ASSERT_TRUE(curved_conn != nullptr);
+  }
+};
+
+// An encapsulated Multilane turn build procedure that
+// constructs it by specifying the straight connection by
+// it's reference curve starting at the endpoint and the
+// curved connection by reversing the endpoint.
+class TurnUsingRefToRRef
+    : public TurnBuildProcedure {
+ public:
+  using TurnBuildProcedure::TurnBuildProcedure;
+
+  void ApplyTo(Builder* builder) const override {
+    const Connection* straight_conn = builder->Connect(
+        kStraightConnName, kLaneLayout,
+        StartReference().at(start_endpoint(), Direction::kForward),
+        line_offset(), EndReference().z_at(kFlatZ, Direction::kForward));
+    ASSERT_TRUE(straight_conn != nullptr);
+
+    const Connection* curved_conn = builder->Connect(
+        kCurvedConnName, kLaneLayout, StartReference().at(
+            start_endpoint(), Direction::kReverse),
+        arc_offset(), EndReference().z_at(kFlatZ, Direction::kForward));
+    ASSERT_TRUE(curved_conn != nullptr);
+  }
+};
+
+// An encapsulated Multilane turn build procedure that
+// constructs it by specifying the straight connection by
+// it's reference curve starting at the endpoint and the
+// curved connection by reversing the former connection
+// reference lane at its start end.
+class TurnUsingRefToRLane
+    : public TurnBuildProcedure {
+ public:
+  using TurnBuildProcedure::TurnBuildProcedure;
+
+  void ApplyTo(Builder* builder) const override {
+    const Connection* straight_conn = builder->Connect(
+        kStraightConnName, kLaneLayout,
+        StartReference().at(start_endpoint(), Direction::kForward),
+        line_offset(), EndReference().z_at(kFlatZ, Direction::kForward));
+    ASSERT_TRUE(straight_conn != nullptr);
+
+    const Connection* curved_conn = builder->Connect(
+        kCurvedConnName, kLaneLayout, StartLane(kRefLane).at(
+            *straight_conn, kRefLane, api::LaneEnd::kStart,
+            Direction::kReverse), arc_offset(),
+        EndLane(kRefLane).z_at(kFlatZ, Direction::kForward));
+    ASSERT_TRUE(curved_conn != nullptr);
+  }
+};
+
+}  // namespace
+
+using TestWithBuildProcedure =
+    ::testing::TestWithParam<std::shared_ptr<BuildProcedure>>;
+
+// A test fixture for Multilane build procedures.
+class MultilaneBuildProcedureTest : public TestWithBuildProcedure {
+ protected:
+  // Applies provided build procedure param to the given @p builder.
+  void ApplyProcedureTo(Builder* builder) {
+    ASSERT_TRUE(GetParam() != nullptr);
+    GetParam()->ApplyTo(builder);
+  }
+
+  // Asserts that the given @p road_geometry was properly built by
+  // the provided build procedure param.
+  void AssertProcedureResult(const api::RoadGeometry& road_geometry) {
+    ASSERT_TRUE(GetParam() != nullptr);
+    GetParam()->AssertProperConstruction(road_geometry);
+  }
+
+  const double kLaneWidth{4.};
+  const api::HBounds kElevationBounds{0., 5.};
+  const double kLinearTolerance{0.01};
+  const double kAngularTolerance{0.01 * M_PI};
+  const double kScaleLength{1.0};
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
+};
+
+// Test fixture parameterized by BuildProcedure instances that are
+// expected to produce G1 continuity issues. See Builder class
+// documentation for further reference.
+class MultilaneDiscontinuousBuildProcedureTest
+    : public MultilaneBuildProcedureTest {
+};
+
+// Tests that the Builder refuses to issue G1 discontinuous road
+// geometries.
+TEST_P(MultilaneDiscontinuousBuildProcedureTest, ThrowingUponBuild) {
+  Builder builder(kLaneWidth, kElevationBounds,
+                  kLinearTolerance, kAngularTolerance,
+                  kScaleLength, kComputationPolicy);
+  ApplyProcedureTo(&builder);
+  EXPECT_THROW({
+      const std::unique_ptr<const api::RoadGeometry> road_geometry =
+          builder.Build(api::RoadGeometryId{"bad_road"}); },
+    std::runtime_error);
+}
+
+// Returns a collection of BuildProcedure instances that make use
+// of reversed semantics in a way that would introduce G1 continuity
+// issues.
+std::vector<std::shared_ptr<BuildProcedure>>
+ListBadReverseBuildProcedures() {
+  constexpr double kStraightConnLength{50.};
+  constexpr double kCurvedConnRadius{50.};
+  constexpr double kCurvedConnAngularDelta{M_PI/2.};
+  const Endpoint kBadStartEndpoint{{0., 0., M_PI/2.}, {0., 0., 0.3, 0.1}};
+  std::vector<std::shared_ptr<BuildProcedure>> procedures;
+  procedures.push_back(
+      std::make_unique<TurnUsingRefToRConn>(
+          "BankedTurnUsingRefToRConnWithBadThetaDot",
+          kBadStartEndpoint, kStraightConnLength,
+          kCurvedConnRadius, kCurvedConnAngularDelta));
+  procedures.push_back(
+      std::make_unique<TurnUsingRefToRRef>(
+          "BankedTurnUsingRefToRRefWithBadThetaDot",
+          kBadStartEndpoint, kStraightConnLength,
+          kCurvedConnRadius, kCurvedConnAngularDelta));
+  procedures.push_back(
+      std::make_unique<TurnUsingRefToRLane>(
+          "BankedTurnUsingRefToRLaneWithBadThetaDot",
+          kBadStartEndpoint, kStraightConnLength,
+          kCurvedConnRadius, kCurvedConnAngularDelta));
+  return procedures;
+}
+
+INSTANTIATE_TEST_CASE_P(BadReverseConnectionTest,
+                        MultilaneDiscontinuousBuildProcedureTest,
+                        ::testing::ValuesIn(ListBadReverseBuildProcedures()));
+
+// Test fixture parameterized by BuildProcedure instances, that
+// are expected to produce G1 continuous roads.
+class MultilaneContinuousBuildProcedureTest
+    : public MultilaneBuildProcedureTest {
+};
+
+// Tests (exhaustively) that the Builder achieves G1 continuity.
+TEST_P(MultilaneContinuousBuildProcedureTest, Continuity) {
+  Builder builder(kLaneWidth, kElevationBounds,
+                  kLinearTolerance, kAngularTolerance,
+                  kScaleLength, kComputationPolicy);
+  ApplyProcedureTo(&builder);
+  const std::unique_ptr<const api::RoadGeometry> road_geometry =
+      builder.Build(api::RoadGeometryId{"good_road"});
+  AssertProcedureResult(*road_geometry);
+}
+
+// Returns a collection of BuildProcedure instances that make use
+// of reversed semantics in a way that produces G1 continuous roads.
+std::vector<std::shared_ptr<BuildProcedure>>
+ListGoodReverseBuildProcedures() {
+  constexpr double kStraightConnLength{50.};
+  constexpr double kCurvedConnRadius{50.};
+  constexpr double kCurvedConnAngularDelta{M_PI/2.};
+  const Endpoint kStartEndpoint{{0., 0., M_PI/2.}, {0., 0., 0.3, {}}};
+  std::vector<std::shared_ptr<BuildProcedure>> procedures;
+  procedures.push_back(
+      std::make_unique<TurnUsingRefToRConn>(
+          "BankedTurnUsingRefToRConnWithoutThetaDot",
+          kStartEndpoint, kStraightConnLength,
+          kCurvedConnRadius, kCurvedConnAngularDelta));
+  procedures.push_back(
+      std::make_unique<TurnUsingRefToRRef>(
+          "BankedTurnUsingRefToRRefWithoutThetaDot",
+          kStartEndpoint, kStraightConnLength,
+          kCurvedConnRadius, kCurvedConnAngularDelta));
+  procedures.push_back(
+      std::make_unique<TurnUsingRefToRLane>(
+          "BankedTurnUsingRefToRLaneWithoutThetaDot",
+          kStartEndpoint, kStraightConnLength,
+          kCurvedConnRadius, kCurvedConnAngularDelta));
+  return procedures;
+}
+
+INSTANTIATE_TEST_CASE_P(GoodReverseConnectionTest,
+                        MultilaneContinuousBuildProcedureTest,
+                        ::testing::ValuesIn(ListGoodReverseBuildProcedures()));
 
 // Holds Lane IDs for each Lane, both at the start and end of the Lane.
 struct BranchPointLaneIds {
