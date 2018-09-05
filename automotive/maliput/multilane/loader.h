@@ -79,30 +79,42 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 ///
 ///   - Positions, distances and lengths: meters [m].
 ///   - Angles: degrees [°] (no minutes nor seconds, just degrees).
-///   - Derivatives of positions: meters per meter [m/m].
+///   - Derivatives of positions: meters per meter [m/m] \(i.e., a unitless
+///     slope).
 ///   - Derivatives of angles: degrees per meter [°/m].
 ///
 /// All positions, distances, lengths, angles and derivatives are floating point
-/// numbers. Bare quantities are integers.
+/// numbers. Other type of quantities will be integers.
+///
+/// <h3>Miscellaneous</h3>
+///
+/// Clarifications to better understand the nomenclature used within this
+/// description:
+///
+///   - In code snippets, strings in capital letters represent values that the
+/// YAML writer must choose and the others are keywords to be parsed.
+///   - When referring to keywords in the YAML, `non-capitalized` strings will
+/// be used.
+///   - When referring to types within `maliput`, `Capitalized` strings will be
+/// used.
 ///
 /// <h3>Coordinates and frames</h3>
 ///
 /// For points in space, a right handed, orthonormal and inertial ℝ³ frame is
-/// used. Its basis is \f$(\hat{x}, \hat{y}, \hat{z})\f$ , where \f$\hat{x}\f$,
-/// \f$\hat{y}\f$ are coplanar with the ground and \f$\hat{z}\f$ points upwards,
-/// and positions are expressed as \f$(x, y, z)\f$ triples. Also, the \f$Θ\f$
-/// angle rotating around the \f$\hat{z}\f$ axis is used to define headings.
-/// These rotations are right handed and an angle of 0° points in the
-/// \f$\hat{x}\f$ direction. Angles with respect to a plane parallel to
-/// \f$z = 0\f$ can be defined. A heading vector pointing the direction of the
-/// lane at that point is used as rotation axis and the angle is clockwise.
-/// Those will express superelevation.
+/// used. Its basis is (x̂, ŷ, ẑ), where x̂, ŷ are coplanar with the ground and ẑ
+/// points upwards, and positions are expressed as @f$(x, y, z)@f$ triples.
+/// Also, the @f$Θ@f$ angle rotating around the ẑ axis is used to define
+/// headings. These rotations are right handed and an angle of 0° points in
+/// the x̂ direction. Angles with respect to a plane parallel to @f$z = 0@f$ can
+/// be defined. A heading vector pointing the direction of the lane at that
+/// point is used as rotation axis and the angle is clockwise. Those will
+/// express superelevation.
 ///
 /// <h2>Example of General Structure</h2>
 ///
 /// Below you can see a snippet with the general YAML structure.
 ///
-/// @code
+/// @code{.yml}
 ///
 /// maliput_multilane_builder:
 ///  id: "my_road_geometry"
@@ -146,7 +158,7 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 ///
 /// It will be represented as a mapping:
 ///
-/// @code
+/// @code{.yml}
 ///
 /// maliput_multilane_builder:
 ///  id: "ID"
@@ -186,9 +198,9 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 /// The former guides the computations to be as accurate as precision states.
 /// The latter will be accurate whenever possible, but it's not guaranteed in
 /// favor of faster computations.
-///   - _points_ is a map of `Endpoint`s to build `connection`s. At least one
+///   - _points_ is a map of `endpoint`s to build `connection`s. At least one
 /// point is required to anchor the connections to world-frame.
-///   - _connections_ is a map that holds all the `Connection` definitions. It
+///   - _connections_ is a map that holds all the `connection` definitions. It
 /// may be empty if no `Connection` is going to be defined.
 ///   - _groups_ is a map of `groups` where `connections` can be put together.
 /// It may be empty or not defined if no group is going to be made.
@@ -202,11 +214,11 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 ///
 /// It will be represented as a mapping like:
 ///
-/// @code
+/// @code{.yml}
 ///
 /// endpoint:
-///   xypoint: [x, y, theta]
-///   zpoint: [z, z_dot, theta, theta_dot]
+///   xypoint: [X, Y, THETHA]
+///   zpoint: [Z, Z_DOT, THETA, THETA_DOT]
 ///
 /// @endcode
 ///
@@ -216,60 +228,60 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 ///
 /// <h3>`endpoint_xy`</h3>
 ///
-/// A point in the plane \f$z = 0\f$ expressed as \f$(x, y, Θ)\f$, where
-/// \f$(x, y)\f$ defines the position and \f$Θ\f$ defines the heading angle of
+/// A point in the plane @f$z = 0@f$ expressed as @f$(x, y, Θ)@f$, where
+/// @f$(x, y)@f$ defines the position and @f$Θ@f$ defines the heading angle of
 /// the endpoint. All coordinates must be provided.
 ///
 /// It will be represented as a sequence:
 ///
-/// @code
+/// @code{.yml}
 ///
-/// endpoint_xy: [x, y, theta]
+/// endpoint_xy: [X, Y, THETA]
 ///
 /// @endcode
 ///
 /// Where:
-///   - `x` is the \f$x\f$ coordinate.
-///   - `y` is the \f$y\f$ coordinate.
-///   - `theta` is the \f$Θ\f$ coordinate.
+///   - _X_ is the @f$x@f$ coordinate.
+///   - _Y_ is the @f$y@f$ coordinate.
+///   - _THETA_ is the @f$Θ@f$ coordinate.
 ///
 /// <h3>`endpoint_z`</h3>
 ///
 /// Specifies elevation, slope, superelevation and its speed of change at a
-/// point over the plane \f$z = 0\f$ as \f$(z, z', Θ, Θ')\f$, where \f$z\f$ and
-/// \f$Θ'\f$ are the elevation and superelevation of the road at the endpoint
-/// and \f$z'\f$ and \f$Θ'\f$ are their respective derivatives with respect to
-/// an arc-length coordinate \f$t\f$ that travels along curve’s projection over
-/// the \f$z = 0\f$ plane. All coordinates must be provided.
+/// point over the plane @f$z = 0@f$ as @f$(z, z', Θ, Θ')@f$, where @f$z@f$ and
+/// @f$Θ'@f$ are the elevation and superelevation of the road at the endpoint
+/// and @f$z'@f$ and @f$Θ'@f$ are their respective derivatives with respect to
+/// an arc-length coordinate @f$t@f$ that travels along curve’s projection over
+/// the @f$z = 0@f$ plane. All coordinates must be provided.
 ///
 /// It will be represented as a sequence:
 ///
-/// @code
+/// @code{.yml}
 ///
-/// endpoint_z: [z, z_dot, theta, theta_dot]
+/// endpoint_z: [Z, Z_DOT, THETA, THETA_DOT]
 ///
 /// @endcode
 ///
 /// Where:
-///   - `z` is the \f$z\f$ coordinate.
-///   - `z_dot` is the \f$z′\f$ coordinate.
-///   - `theta` is the \f$Θ\f$ coordinate.
-///   - `theta_dot` is the \f$Θ′\f$ coordinate. This parameter is optional, and
+///   - _Z_ is the @f$z@f$ coordinate.
+///   - _Z\_DOT_ is the @f$z′@f$ coordinate.
+///   - _THETA_ is the @f$Θ@f$ coordinate.
+///   - _THETA\_DOT_ is the @f$Θ′@f$ coordinate. This parameter is optional, and
 /// typically should be omitted. When omitted, this value will be automatically
 /// calculated such that _G1_ continuity of the road surface is preserved.
 ///
 /// <h3>`connections`</h3>
 ///
 /// A `connection` defines a `Segment` and must provide the number of lanes,
-/// start `Endpoint` and end `endpoint_z` information. Either line `length` or
+/// start `endpoint` and end `endpoint_z` information. Either line `length` or
 /// `arc` must be provided to define the planar geometry of that `connection`.
 /// Optional extra information can also provided and it will modify the way the
-/// `Connection` will be created. `connections` is a collection of `connection`s
+/// `connection` will be created. `connections` is a collection of `connection`s
 /// and those will be identified by their tag. Each tag will name a
 /// `connection`, can be referenced by other `connection`s and to create
-/// `group`s, and will be used as Segment`'s ID as well.
+/// `group`s, and will be used as `Segment`'s ID as well.
 ///
-/// `start` `Endpoint` and `end` `endpoint_z` can either refer to a reference
+/// `start` `endpoint` and `end` `endpoint_z` can either refer to a reference
 /// road curve or to the lane start and end `Endpoint`s. When only `start` and
 /// `z_end` or `explicit_end` are provided, those will refer to the reference
 /// road curve of the `Connection`. `r_ref` can be provided to state the offset
@@ -282,7 +294,7 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 ///
 ///   - Example 1: reference curve from points.
 ///
-/// @code
+/// @code{.yml}
 ///
 /// CONNECTION_NAME:
 ///   left_shoulder: LS
@@ -290,25 +302,26 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 ///   lanes: [NL, NREF, RREF]
 ///   start: ["ref", "points.POINT_NAME_1.(forward|reverse)"]
 ///   length: L
-///   z_end: ["ref", [z, z_dot, theta, theta_dot]]
+///   z_end: ["ref", [Z, Z_DOT, THETA, THETA_DOT]]
 ///   # The following can be used instead of z_end:
 ///   # explicit_end: ["ref", "points.POINT_NAME_2.(forward|reverse)"]
 ///
 /// @endcode
 ///
-/// Within `z_end`, `theta_dot` is optional, and typically should be omitted.
+/// Within `z_end`, _THETA\_DOT_ is optional, and typically should be omitted.
 /// When omitted, this value will be automatically calculated such that _G1_
-/// continuity of the road surface is preserved. Otherwise, provided `theta_dot`
-/// will be used and the @ref drake::maliput::multilane::Builder "Builder" will
-/// check whether or not _G1_ is preserved.
+/// continuity of the road surface is preserved. Otherwise, provided
+/// _THETA\_DOT_ will be used and the
+/// @ref drake::maliput::multilane::Builder "Builder" will check whether or not
+///  _G1_ is preserved.
 ///
-/// When `explicit_end` is used, `theta_dot` will be set by
+/// When `explicit_end` is used, _THETA\_DOT_ will be set by
 /// @ref drake::maliput::multilane::Builder "Builder" to preserve _G1_ road
 /// surface continuity.
 ///
 ///   - Example 2: reference curve from connections.
 ///
-/// @code
+/// @code{.yml}
 ///
 /// CONNECTION_NAME:
 ///   left_shoulder: LS
@@ -316,29 +329,32 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 ///   lanes: [NL, NREF, RREF]
 ///   start: [
 ///     "ref",
-///     "connections.CONN_NAME_1.(start|end).ref.(forward|reverse)"]
+///     "connections.CONN_NAME_1.(start|end).ref.(forward|reverse)"
+///   ]
 ///   length: L
 ///   explicit_end: [
 ///     "ref",
-///     "connections.CONN_NAME_2.(start|end).ref.(forward|reverse)"]
+///     "connections.CONN_NAME_2.(start|end).ref.(forward|reverse)"
+///   ]
 ///   # The following can be used instead of explicit_end:
-///   # z_end: ["ref", [z, z_dot, theta, theta_dot]]
+///   # z_end: ["ref", [Z, Z_DOT, THETA, THETA_DOT]]
 ///
 /// @endcode
 ///
-/// Within `z_end`, `theta_dot` is optional, and typically should be omitted.
+/// Within `z_end`, _THETA\_DOT_ is optional, and typically should be omitted.
 /// When omitted, this value will be automatically calculated such that _G1_
-/// continuity of the road surface is preserved. Otherwise, provided `theta_dot`
-/// will be used and the @ref drake::maliput::multilane::Builder "Builder" will
-/// check whether or not _G1_ is preserved.
+/// continuity of the road surface is preserved. Otherwise, provided
+/// _THETA\_DOT_ will be used and the
+/// @ref drake::maliput::multilane::Builder "Builder" will check whether or not
+/// _G1_ is preserved.
 ///
-/// When `explicit_end` is used, `theta_dot` will be set by
+/// When `explicit_end` is used, _THETA\_DOT_ will be set by
 /// @ref drake::maliput::multilane::Builder "Builder" to preserve _G1_
 /// continuity of the road surface.
 ///
 ///   - Example 3: lane curve from points.
 ///
-/// @code
+/// @code{.yml}
 ///
 /// CONNECTION_NAME:
 ///   left_shoulder: LS
@@ -346,19 +362,19 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 ///   lanes: [NL, NREF, RREF]
 ///   start: ["lane.LN_1", "points.POINT_NAME_1.(forward|reverse)"]
 ///   length: L
-///   z_end: ["lane.LN_2", [z, z_dot, theta]]
+///   z_end: ["lane.LN_2", [Z, Z_DOT, THETA]]
 ///   # The following can be used instead of z_end:
 ///   # explicit_end: ["lane.LN_2", "points.POINT_NAME_2.(forward|reverse)"]
 ///
 /// @endcode
 ///
-/// None of the lane-based flavors allow to have `theta_dot` at either
+/// None of the lane-based flavors allow to have _THETA\_DOT_ at either
 /// `start` or `z_end`. @ref drake::maliput::multilane::Builder "Builder" will
 /// adjust them to preserve _G1_ continuity of the road surface.
 ///
 ///   - Example 4: lane curve from other connections' lane curves.
 ///
-/// @code
+/// @code{.yml}
 ///
 /// CONNECTION_NAME:
 ///   left_shoulder: LS
@@ -366,17 +382,19 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 ///   lanes: [NL, NREF, RREF]
 ///   start: [
 ///     "lane.LN_1",
-///     "connections.CONN_NAME_1.(start|end).LN_2.(forward|reverse)"]
+///     "connections.CONN_NAME_1.(start|end).LN_2.(forward|reverse)"
+///   ]
 ///   length: L
 ///   explicit_end: [
 ///     "lane.LN_2",
-///     "connections.CONN_NAME_2.(start|end).LN_4.(forward|reverse)"]
+///     "connections.CONN_NAME_2.(start|end).LN_4.(forward|reverse)"
+///   ]
 ///   # The following can be used instead of explicit_end:
-///   # z_end: ["lane.LN_2", [z, z_dot, theta]]
+///   # z_end: ["lane.LN_2", [Z, Z_DOT, THETA]]
 ///
 /// @endcode
 ///
-/// None of the lane-based flavors allow to have `theta_dot` at either
+/// None of the lane-based flavors allow to have _THETA\_DOT_ at either
 /// `start` or `z_end`. @ref drake::maliput::multilane::Builder "Builder" will
 /// adjust them to preserve _G1_ continuity of the road surface.
 ///
@@ -387,29 +405,29 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 /// of the connection. It will override default values.
 ///   - `right_shoulder` is the extra space at the left side of the first lane
 /// of the `connection`. It will override default values.
-///   - `start` is used to define the start `Endpoint` of one the `connection`’s
+///   - `start` is used to define the start `endpoint` of one the `connection`’s
 /// curves. It may have multiple options. Those can be split into two elements:
 ///     - The first element could be:
 ///       -# `ref` to point the reference curve.
 ///       -# `lane.LN` to point a specific lane.\n
 ///     - The second element is composed of one of the following options:
-///       -# A reference to an `Endpoint` in the points collection. Either
+///       -# A reference to an `endpoint` in the points collection. Either
 /// `forward` or `reverse` should be used to indicate the direction of the
-/// `Endpoint`.
-///       -# The start or end `Endpoint` of a `connection`’s reference curve or
+/// `endpoint`.
+///       -# The start or end `endpoint` of a `connection`’s reference curve or
 /// lane. Either forward or reverse should be used to indicate the direction of
-/// the `Endpoint`. When using the forward the `Endpoint` will be used as is.
+/// the `endpoint`. When using the forward the `endpoint` will be used as is.
 /// Otherwise (using `reverse`) the `Endpoint` will be reversed.
 ///   - `length` is the `connection`’s reference road curve planar line length.
 ///   - `arc` is the `connection`’s reference curve planar piece of arc.
-///   - `z_end` is the `EndpointZ` information to end one of the `connection`’s
+///   - `z_end` is the `endpoint_z` information to end one of the `connection`’s
 /// curves. It is composed of two elements too. The first one points to the
 /// reference curve when `ref` is present. Otherwise, `lane.LN` must be
 /// specified.
 ///   - `explicit_end` is a node similar to `start`. It is composed of two
 /// parts. The first one points to the reference curve when `ref` is present.
 /// Otherwise, `lane.LN` must be specified. The second part is used to point the
-/// `Endpoint` information which could be provided by a `connection` or the
+/// `endpoint` information which could be provided by a `connection` or the
 /// `points` collection. When using a `connection`, two options are available:
 /// the reference curve or a lane.
 ///
@@ -428,7 +446,7 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 /// <h3>`arc`</h3>
 ///
 /// Constant radius arcs are defined in terms of a radius and an angle span.
-/// `arc`s are used to define planar curves on the the \f$z = 0\f$ plane,
+/// `arc`s are used to define planar curves on the the @f$z = 0@f$ plane,
 /// starting from an `endpoint_xy`. Radius must be positive, and arc's center
 /// would be to the left (i.e. rotating +90° start `endpoint_xy`’s heading
 /// vector) when theta is positive, otherwise it would be to the right (i.e.
@@ -436,33 +454,33 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 ///
 /// It will be represented as a sequence:
 ///
-/// @code
+/// @code{.yml}
 ///
-/// arc: [radius, theta]
+/// arc: [RADIUS, THETA]
 ///
 /// @endcode
 ///
 /// Where:
-///   - `radius` is the radius of the `arc`.
-///   - `theta` is the angle span of the `arc`.
+///   - _RADIUS_ is the radius of the `arc`.
+///   - _THETA_ is the angle span of the `arc`.
 ///
 /// <h3>`groups`</h3>
 ///
 /// A group specifies a set of connections whose Segments will be placed
-/// together in the same Junction. A connection may only belong to a single
-/// group. If a connection is not in any group, its Segment will receive its own
-/// Junction.
+/// together in the same `Junction`. A `connection` may only belong to a single
+/// `group`. If a `connection` is not in any `group`, its `Segment` will receive
+/// its own `Junction`.
 ///
 /// It will be represented as a mapping:
 ///
-/// @code
+/// @code{.yml}
 ///
-/// GROUP_NAME: [c_1, c_2, c_3]
+/// GROUP_NAME: [C_1, C_2, C_3]
 ///
 /// @endcode
 ///
 /// Where:
-///   - `c_1`, `c_2`, `c_3` are `connections`’ IDs.
+///   - `C\_1`, `C\_2`, `C\_3` are `connections`’ IDs.
 
 }  // namespace multilane
 }  // namespace maliput
