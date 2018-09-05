@@ -70,6 +70,11 @@ class TestMaliput(unittest.TestCase):
         new_srh = [42., 43., 44.]
         road_pos.pos = LanePosition(s=new_srh[0], r=new_srh[1], h=new_srh[2])
         self.assertTrue(np.allclose(road_pos.pos.srh(), new_srh))
+        lane_orientation = lane_0.GetOrientation(lane_pos)
+        self.assertTrue(np.allclose(
+            lane_orientation.rpy().ToQuaternion().wxyz(),
+            lane_orientation.quat().wxyz(),
+        ))
 
         # Check that the getters are read-only.
         with self.assertRaises(ValueError):
@@ -131,6 +136,5 @@ class TestMaliput(unittest.TestCase):
                                     lane_pos_expected.srh()))
         self.assertTrue(np.allclose(nearest_pos.xyz(), geo_pos.xyz()))
         self.assertTrue(distance == 0.)
-
 
     # TODO(jadecastro) Add more maliput backends as needed.
