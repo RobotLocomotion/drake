@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_forces.h"
@@ -118,6 +119,13 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     return frame_on_child_;
   }
 
+  /// Returns the number of degrees of freedom for `this` joint.
+  /// E.g., one for a revolute joint and three for a ball joint.
+  DRAKE_DEPRECATED("Please use num_velocities().")
+  int num_dofs() const {
+    return num_velocities();
+  }
+
   /// Returns the index to the first generalized velocity for this joint
   /// within the vector v of generalized velocities for the full model.
   int velocity_start() const {
@@ -175,8 +183,8 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   ///   `this` joint belongs.
   /// @param[in] joint_dof
   ///   Index specifying one of the degrees of freedom for this joint. The index
-  ///   must be in the range `0 <= joint_dof < num_velocities()` or otherwise this
-  ///   method will abort.
+  ///   must be in the range `0 <= joint_dof < num_velocities()` or otherwise
+  ///   this method will abort.
   /// @param[in] joint_tau
   ///   Generalized force corresponding to the degree of freedom indicated by
   ///   `joint_dof` to be added into `forces`.

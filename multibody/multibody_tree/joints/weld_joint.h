@@ -77,7 +77,7 @@ class WeldJoint final : public Joint<T> {
     // allowing zero sized Eigen blocks).
     DRAKE_DEMAND(static_cast<int>(
                      this->get_implementation().mobilizers_.size()) == 1);
-    throw this->get_implementation().mobilizers_[0]->position_start_in_q();
+    return this->get_implementation().mobilizers_[0]->position_start_in_q();
   }
 
   int do_get_num_positions() const override {

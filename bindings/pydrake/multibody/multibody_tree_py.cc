@@ -96,7 +96,7 @@ void init_module(py::module m) {
         .def("child_body", &Class::child_body, py_reference_internal)
         .def("frame_on_parent", &Class::frame_on_parent, py_reference_internal)
         .def("frame_on_child", &Class::frame_on_child, py_reference_internal)
-        .def("num_dofs", &Class::num_dofs);
+        .def("num_velocities", &Class::num_velocities);
   }
 
   {

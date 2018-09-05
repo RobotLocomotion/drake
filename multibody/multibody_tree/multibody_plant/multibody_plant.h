@@ -515,8 +515,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   ///   The Joint to be actuated by the new JointActuator.
   /// @returns A constant reference to the new JointActuator just added, which
   /// will remain valid for the lifetime of `this` plant.
-  /// @throws if `joint.num_velocities() > 1` since for now we only support actuators
-  /// for single dof joints.
+  /// @throws if `joint.num_velocities() > 1` since for now we only support
+  /// actuators for single dof joints.
   const JointActuator<T>& AddJointActuator(
       const std::string& name, const Joint<T>& joint) {
     DRAKE_THROW_UNLESS(joint.num_velocities() == 1);
