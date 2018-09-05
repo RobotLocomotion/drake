@@ -552,6 +552,13 @@ class DiagramTest : public ::testing::Test {
   std::unique_ptr<SystemOutput<double>> output_;
 };
 
+// Tests that the diagram returns the correct number of continuous states
+// without a context. The class ExampleDiagram above contains two integrators,
+// each of which has three state variables.
+TEST_F(DiagramTest, NumberOfContinuousStates) {
+  EXPECT_EQ(3+3, diagram_->get_num_continuous_states());
+}
+
 // Tests that the diagram returns the correct number of witness functions and
 // that the witness function can be called correctly.
 TEST_F(DiagramTest, Witness) {

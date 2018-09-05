@@ -41,6 +41,12 @@ class TestSystem : public System<double> {
         this->AllocateForcedUnrestrictedUpdateEventCollection());
     this->set_name("TestSystem");
   }
+
+  // Implementation is required, but unused here.
+  int get_num_continuous_states() const final {
+    DRAKE_ABORT();
+  }
+
   ~TestSystem() override {}
 
   using System::AddConstraint;  // allow access to protected method.
@@ -452,7 +458,12 @@ class ValueIOTestSystem : public System<T> {
     this->set_name("ValueIOTestSystem");
   }
 
-  ~ValueIOTestSystem() override {}
+  // Implementation is required, but unused here.
+  int get_num_continuous_states() const final {
+    DRAKE_ABORT();
+  }
+
+    ~ValueIOTestSystem() override {}
 
   T DoCalcWitnessValue(const Context<T>&,
                        const WitnessFunction<T>&) const override {
@@ -794,6 +805,11 @@ class ComputationTestSystem final : public System<double> {
     EXPECT_EQ(ke, ke_count_);
     EXPECT_EQ(pc, pc_count_);
     EXPECT_EQ(pnc, pnc_count_);
+  }
+
+  // Implementation is required, but unused here.
+  int get_num_continuous_states() const final {
+    DRAKE_ABORT();
   }
 
  private:
