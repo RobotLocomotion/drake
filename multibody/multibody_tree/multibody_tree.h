@@ -539,13 +539,16 @@ class MultibodyTree {
   /// @tparam ForceElementType
   ///   The type of the ForceElement to add.
   ///   This method can only be called once for elements of type
-  ///   UniformGravityFieldElement. That is, gravity can only be specified once.
+  ///   UniformGravityFieldElement. That is, gravity can only be specified once
+  ///   and std::runtime_error is thrown if the model already contains a gravity
+  ///   field element.
   /// @returns A constant reference to the new ForceElement just added, of type
   ///   `ForceElementType<T>` specialized on the scalar type T of `this`
   ///   %MultibodyTree. It will remain valid for the lifetime of `this`
   ///   %MultibodyTree.
   /// @see The ForceElement class's documentation for further details on how a
   /// force element is defined.
+  /// @throws std::exception if gravity was already added to the model.
   template<template<typename Scalar> class ForceElementType, typename... Args>
 #ifdef DRAKE_DOXYGEN_CXX
   const ForceElementType<T>&
@@ -569,7 +572,11 @@ class MultibodyTree {
       ForceElementType<T>,
       UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
   AddForceElement(Args&&... args) {
-    DRAKE_DEMAND(!gravity_field_.has_value());
+    if (gravity_field_.has_value()) {
+      throw std::runtime_error(
+          "This model already contains a gravity field element. "
+          "Only one gravity field element is allowed per model.");
+    }
     // We save the force element so that we can grant users access to it for
     // gravity field specific queries.
     gravity_field_ = &AddForceElement(
@@ -2122,7 +2129,7 @@ class MultibodyTree {
   ///   gravity forces on the mechanical system. That is, `v⋅tau_g > 0`
   ///   corresponds to potential energy going into the system, as either
   ///   mechanical kinetic energy, some other potential energy, or heat, and
-  ///   therefore to a decrease of potential energy.
+  ///   therefore to a decrease of the gravitational potential energy.
   VectorX<T> CalcGravityGeneralizedForces(
       const systems::Context<T>& context) const;
 
