@@ -37,6 +37,7 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.util.eigen_geometry import Isometry3
 from pydrake.systems.framework import InputPort, OutputPort
 
 
@@ -145,7 +146,6 @@ class TestMultibodyTree(unittest.TestCase):
     def test_multibody_plant_parsing(self):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
-
         plant = MultibodyPlant(time_step=0.01)
         model_instance = AddModelFromSdfFile(
             file_name=file_name, plant=plant, scene_graph=None)
@@ -155,3 +155,30 @@ class TestMultibodyTree(unittest.TestCase):
         model_instance = AddModelFromSdfFile(
             file_name=file_name, model_name="acrobot", plant=plant,
             scene_graph=None)
+
+    def test_multibody_tree_kinematics(self):
+        file_name = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        plant = MultibodyPlant()
+        AddModelFromSdfFile(file_name, plant)
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+        tree = plant.model()
+        world_frame = plant.world_frame()
+        # TODO(eric.cousineau): Replace this with `GetFrameByName`.
+        link1_frame = plant.GetBodyByName("Link1").body_frame()
+
+        X_WL = tree.CalcRelativeTransform(
+            context, frame_A=world_frame, frame_B=link1_frame)
+        self.assertIsInstance(X_WL, Isometry3)
+
+        p_AQi = tree.CalcPointsPositions(
+            context=context, frame_B=link1_frame,
+            p_BQi=np.array([[0, 1, 2], [10, 11, 12]]).T,
+            frame_A=world_frame).T
+        self.assertTupleEqual(p_AQi.shape, (2, 3))
+
+        Jv_WL = tree.CalcFrameGeometricJacobianExpressedInWorld(
+            context=context, frame_B=link1_frame,
+            p_BoFo_B=[0, 0, 0])
+        self.assertTupleEqual(Jv_WL.shape, (6, plant.num_velocities()))

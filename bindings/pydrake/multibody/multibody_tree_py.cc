@@ -44,6 +44,8 @@ void init_module(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
 
+  using systems::Context;
+
   // To simplify checking binding coverage, these are defined in the same order
   // as `multibody_tree_indexes.h`.
   BindTypeSafeIndex<FrameIndex>(m, "FrameIndex");
@@ -75,7 +77,8 @@ void init_module(py::module m) {
     py::class_<Class> cls(m, "Body");
     BindMultibodyTreeElementMixin(&cls);
     cls
-        .def("name", &Class::name);
+        .def("name", &Class::name)
+        .def("body_frame", &Class::body_frame, py_reference_internal);
   }
 
   {
@@ -140,11 +143,39 @@ void init_module(py::module m) {
   }
 
   {
-    // N.B. We purposely do not expose much functionality, as users should
-    // generally be using `MultibodyPlant`. We simply enable passing the object
-    // around.
+    // N.B. Pending a concrete direction on #9366, a minimal subset of the
+    // `MultibodyTree` API will be exposed.
     using Class = MultibodyTree<T>;
-    py::class_<Class>(m, "MultibodyTree");
+    py::class_<Class>(m, "MultibodyTree")
+        .def("CalcRelativeTransform", &Class::CalcRelativeTransform,
+             py::arg("context"), py::arg("frame_A"), py::arg("frame_B"))
+        .def(
+            "CalcPointsPositions",
+            [](
+                const Class* self,
+                const Context<T>& context, const Frame<T>& frame_B,
+                const Eigen::Ref<const MatrixX<T>>& p_BQi,
+                const Frame<T>& frame_A) {
+              MatrixX<T> p_AQi(p_BQi.rows(), p_BQi.cols());
+              self->CalcPointsPositions(
+                  context, frame_B, p_BQi, frame_A, &p_AQi);
+              return p_AQi;
+            },
+            py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
+            py::arg("frame_A"))
+        .def(
+            "CalcFrameGeometricJacobianExpressedInWorld",
+            [](
+                const Class* self,
+                const Context<T>& context,
+                const Frame<T>& frame_B, const Vector3<T>& p_BoFo_B) {
+              MatrixX<T> Jv_WF(6, self->num_velocities());
+              self->CalcFrameGeometricJacobianExpressedInWorld(
+                  context, frame_B, p_BoFo_B, &Jv_WF);
+              return Jv_WF;
+            },
+            py::arg("context"), py::arg("frame_B"),
+            py::arg("p_BoFo_B") = Vector3<T>::Zero().eval());
   }
 }
 
@@ -265,6 +296,7 @@ void init_multibody_plant(py::module m) {
     // Property accessors.
     cls
         .def("world_body", &Class::world_body, py_reference_internal)
+        .def("world_frame", &Class::world_frame, py_reference_internal)
         .def("model", &Class::model, py_reference_internal)
         .def("is_finalized", &Class::is_finalized)
         .def("Finalize", py::overload_cast<SceneGraph<T>*>(&Class::Finalize),

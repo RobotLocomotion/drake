@@ -137,7 +137,11 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(plant->num_actuators(), 2);
   EXPECT_EQ(plant->num_actuated_dofs(), 2);
 
-    // State size.
+  // World accessors.
+  EXPECT_EQ(&plant->world_body(), &plant->model().world_body());
+  EXPECT_EQ(&plant->world_frame(), &plant->model().world_frame());
+
+  // State size.
   EXPECT_EQ(plant->num_positions(), 3);
   EXPECT_EQ(plant->num_velocities(), 3);
   EXPECT_EQ(plant->num_multibody_states(), 6);

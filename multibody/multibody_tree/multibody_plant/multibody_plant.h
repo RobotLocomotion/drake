@@ -1047,6 +1047,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return model_->world_body();
   }
 
+  /// Returns a constant reference to the *world* frame.
+  const BodyFrame<T>& world_frame() const {
+    return model_->world_frame();
+  }
+
   /// Returns a constant reference to the underlying MultibodyTree model for
   /// `this` plant.
   /// @throws if called pre-finalize. See Finalize().
