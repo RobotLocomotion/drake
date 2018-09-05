@@ -26,8 +26,10 @@ GazeTargetConstraint::GazeTargetConstraint(
       cone_half_angle_{cone_half_angle},
       cos_cone_half_angle_{std::cos(cone_half_angle_)},
       context_{context} {
+  // TODO(hongkai.dai): use MultibodyTree<double> and LeafContext<double> when
+  // MBT provides the API for computing analytical Jacobian.
   if (cone_half_angle < 0 || cone_half_angle > M_PI) {
-    throw std::logic_error(
+    throw std::invalid_argument(
         "GazeTargetConstraint: cone_half_angle should be within [0, pi]");
   }
 }

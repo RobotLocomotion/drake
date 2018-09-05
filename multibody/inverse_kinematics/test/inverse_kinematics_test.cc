@@ -19,6 +19,7 @@ class TwoFreeBodiesTest : public ::testing::Test {
 
   TwoFreeBodiesTest()
       : two_bodies_plant_(ConstructTwoFreeBodiesPlant<double>()),
+        // TODO(hongkai.dai) call GetFrameByName()
         body1_frame_(two_bodies_plant_->GetBodyByName("body1").body_frame()),
         body2_frame_(two_bodies_plant_->GetBodyByName("body2").body_frame()),
         ik_(*two_bodies_plant_) {

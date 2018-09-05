@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include <gtest/gtest.h>
 
@@ -13,8 +14,7 @@
 namespace drake {
 namespace multibody {
 /**
- * Constructs a MultibodyTree consists of two free bodies. This two free bodies
- * will be used to test kinematic constraints.
+ * Constructs a MultibodyTree consists of two free bodies. 
  */
 template <typename T>
 std::unique_ptr<MultibodyTree<T>> ConstructTwoFreeBodies();
@@ -45,10 +45,10 @@ CompareAutoDiffVectors(const Eigen::MatrixBase<DerivedA>& a,
 /**
  * Convert an Eigen::Quaternion to a vector 4d in the order (w, x, y, z).
  */
-Eigen::Vector4d QuaternionToVector4(const Eigen::Quaterniond& q);
+Eigen::Vector4d QuaternionToVectorWxyz(const Eigen::Quaterniond& q);
 
 namespace internal {
-// We test kinematic constraints on two robots, an IIWA robot and two free
+// We test kinematic constraints on two robots: an IIWA robot and two free
 // bodies. The IIWA test confirms that the bounds and the Eval function of each
 // constraint computes the expected result. The two free bodies test confirms
 // that the equations in Eval function semantically makes the two free bodies to
@@ -63,19 +63,16 @@ class IiwaKinematicConstraintTest : public ::testing::Test {
         iiwa_double_{benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel<double>(
             true /* finalized model. */)},
         context_autodiff_(iiwa_autodiff_->CreateDefaultContext()),
-        context_double_(iiwa_double_->CreateDefaultContext()) {
-    for (int i = 0; i < 7; ++i) {
-      iiwa_link_frame_indices_[i] =
-          iiwa_autodiff_->GetBodyByName("iiwa_link_" + std::to_string(i + 1))
-              .body_frame()
-              .index();
-    }
+        context_double_(iiwa_double_->CreateDefaultContext()) {}
+
+  FrameIndex GetFrameIndex(const std::string& name) {
+    // TODO(hongkai.dai): call GetFrameByName() directly.
+    return iiwa_autodiff_->GetBodyByName(name).body_frame().index();
   }
 
  protected:
   std::unique_ptr<MultibodyTree<AutoDiffXd>> iiwa_autodiff_;
   std::unique_ptr<MultibodyTree<double>> iiwa_double_;
-  std::array<FrameIndex, 7> iiwa_link_frame_indices_;
   std::unique_ptr<systems::LeafContext<AutoDiffXd>> context_autodiff_;
   std::unique_ptr<systems::LeafContext<double>> context_double_;
 };

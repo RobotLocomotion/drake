@@ -7,9 +7,10 @@ namespace multibody {
 namespace internal {
 TEST_F(IiwaKinematicConstraintTest, OrientationConstraint) {
   const double angle_bound{0.1 * M_PI};
+  const FrameIndex frameA_index{GetFrameIndex("iiwa_link_7")};
+  const FrameIndex frameB_index{GetFrameIndex("iiwa_link_3")};
   OrientationConstraint constraint(
-      *iiwa_autodiff_, iiwa_link_frame_indices_[6], iiwa_link_frame_indices_[2],
-      angle_bound,
+      *iiwa_autodiff_, frameA_index, frameB_index, angle_bound,
       dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(context_autodiff_.get()));
 
   EXPECT_EQ(constraint.num_constraints(), 1);
@@ -28,10 +29,9 @@ TEST_F(IiwaKinematicConstraintTest, OrientationConstraint) {
   AutoDiffVecXd y_autodiff_expected(1);
   y_autodiff_expected(0) =
       iiwa_autodiff_
-          ->CalcRelativeTransform(
-              *context_autodiff_,
-              iiwa_autodiff_->get_frame(iiwa_link_frame_indices_[6]),
-              iiwa_autodiff_->get_frame(iiwa_link_frame_indices_[2]))
+          ->CalcRelativeTransform(*context_autodiff_,
+                                  iiwa_autodiff_->get_frame(frameA_index),
+                                  iiwa_autodiff_->get_frame(frameB_index))
           .linear()
           .trace();
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, 1E-12);
@@ -53,8 +53,9 @@ TEST_F(TwoFreeBodiesConstraintTest, OrientationConstraint) {
   const Eigen::Quaterniond body1_quaternion(0.5, -0.5, 0.1, 0.7);
   Eigen::Quaterniond body2_quaternion =
       body1_quaternion * Eigen::AngleAxisd(theta_satisfied, a);
-  q_satisfied << QuaternionToVector4(body1_quaternion), Eigen::Vector3d::Zero(),
-      QuaternionToVector4(body2_quaternion), Eigen::Vector3d(0.2, 0.3, 0.4);
+  q_satisfied << QuaternionToVectorWxyz(body1_quaternion),
+      Eigen::Vector3d::Zero(), QuaternionToVectorWxyz(body2_quaternion),
+      Eigen::Vector3d(0.2, 0.3, 0.4);
 
   EXPECT_TRUE(constraint.CheckSatisfied(q_satisfied));
 
@@ -63,8 +64,8 @@ TEST_F(TwoFreeBodiesConstraintTest, OrientationConstraint) {
   const double theta_unsatisfied = 0.101 * M_PI;
   body2_quaternion = body1_quaternion * Eigen::AngleAxisd(theta_unsatisfied, a);
   Eigen::Matrix<double, 14, 1> q_unsatisfied;
-  q_unsatisfied << QuaternionToVector4(body1_quaternion),
-      Eigen::Vector3d::Zero(), QuaternionToVector4(body2_quaternion),
+  q_unsatisfied << QuaternionToVectorWxyz(body1_quaternion),
+      Eigen::Vector3d::Zero(), QuaternionToVectorWxyz(body2_quaternion),
       Eigen::Vector3d::Zero();
   EXPECT_FALSE(constraint.CheckSatisfied(q_unsatisfied));
 }
@@ -72,11 +73,11 @@ TEST_F(TwoFreeBodiesConstraintTest, OrientationConstraint) {
 TEST_F(IiwaKinematicConstraintTest, OrientationConstraintConstructionError) {
   // Throws a logic error for negative angle bound.
   EXPECT_THROW(
-      OrientationConstraint(*iiwa_autodiff_, iiwa_link_frame_indices_[6],
-                            iiwa_link_frame_indices_[2], -0.01,
+      OrientationConstraint(*iiwa_autodiff_, GetFrameIndex("iiwa_link_7"),
+                            GetFrameIndex("iiwa_link_3"), -0.01,
                             dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(
                                 context_autodiff_.get())),
-      std::logic_error);
+      std::invalid_argument);
 }
 
 }  // namespace internal

@@ -19,9 +19,7 @@ bool AreAutoDiffVecXdEqual(const Eigen::Ref<const VectorX<AutoDiffXd>>& a,
   }
   return a_gradient == b_gradient;
 }
-// Check if the generalized positions in @p mbt_context is the same as @p q.
-// If they are not the same, then reset @p mbt_context's generalized positions
-// to q. Otherwise, leave @p mbt_context unchanged.
+
 void UpdateContextConfiguration(const Eigen::Ref<const VectorX<AutoDiffXd>>& q,
                                 MultibodyTreeContext<AutoDiffXd>* mbt_context) {
   if (!AreAutoDiffVecXdEqual(q, mbt_context->get_positions())) {

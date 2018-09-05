@@ -32,7 +32,7 @@ ConstructTwoFreeBodiesPlant() {
   return ConstructTwoFreeBodiesHelper<multibody_plant::MultibodyPlant<T>>();
 }
 
-Eigen::Vector4d QuaternionToVector4(const Eigen::Quaterniond& q) {
+Eigen::Vector4d QuaternionToVectorWxyz(const Eigen::Quaterniond& q) {
   return Eigen::Vector4d(q.w(), q.x(), q.y(), q.z());
 }
 

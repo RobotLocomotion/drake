@@ -13,7 +13,9 @@ InverseKinematics::InverseKinematics(
       tree_(plant_.model().ToAutoDiffXd()),
       context_(tree_->CreateDefaultContext()),
       q_(NewContinuousVariables(plant_.num_positions(), "q")) {
-  // Add joint limit constraint here.
+  // TODO(hongkai.dai) Add joint limit constraint here.
+  // TODO(hongkai.dai) Add other position constraints, such as unit length
+  // quaternion constraint here.
 }
 
 solvers::Binding<solvers::Constraint> InverseKinematics::AddPositionConstraint(
@@ -24,8 +26,7 @@ solvers::Binding<solvers::Constraint> InverseKinematics::AddPositionConstraint(
   auto constraint = std::make_shared<internal::PositionConstraint>(
       *tree_, frameB.index(), p_BQ, frameA.index(), p_AQ_lower, p_AQ_upper,
       get_mutable_context());
-  AddConstraint(constraint, q_);
-  return solvers::Binding<solvers::Constraint>(constraint, q_);
+  return AddConstraint(constraint, q_);
 }
 
 solvers::Binding<solvers::Constraint>
@@ -35,8 +36,7 @@ InverseKinematics::AddOrientationConstraint(const Frame<double>& frameA,
   auto constraint = std::make_shared<internal::OrientationConstraint>(
       *tree_, frameA.index(), frameB.index(), angle_bound,
       get_mutable_context());
-  AddConstraint(constraint, q_);
-  return solvers::Binding<solvers::Constraint>(constraint, q_);
+  return AddConstraint(constraint, q_);
 }
 
 solvers::Binding<solvers::Constraint>
@@ -47,20 +47,18 @@ InverseKinematics::AddGazeTargetConstraint(
   auto constraint = std::make_shared<internal::GazeTargetConstraint>(
       *tree_, frameA.index(), p_AS, n_A, frameB.index(), p_BT, cone_half_angle,
       get_mutable_context());
-  AddConstraint(constraint, q_);
-  return solvers::Binding<solvers::Constraint>(constraint, q_);
+  return AddConstraint(constraint, q_);
 }
 
 solvers::Binding<solvers::Constraint>
 InverseKinematics::AddAngleBetweenVectorsConstraint(
-    const Frame<double>& frameA, const Eigen::Ref<const Eigen::Vector3d>& n_A,
-    const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& n_B,
+    const Frame<double>& frameA, const Eigen::Ref<const Eigen::Vector3d>& na_A,
+    const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& nb_B,
     double angle_lower, double angle_upper) {
   auto constraint = std::make_shared<internal::AngleBetweenVectorsConstraint>(
-      *tree_, frameA.index(), n_A, frameB.index(), n_B, angle_lower,
+      *tree_, frameA.index(), na_A, frameB.index(), nb_B, angle_lower,
       angle_upper, get_mutable_context());
-  AddConstraint(constraint, q_);
-  return solvers::Binding<solvers::Constraint>(constraint, q_);
+  return AddConstraint(constraint, q_);
 }
 }  // namespace multibody
 }  // namespace drake
