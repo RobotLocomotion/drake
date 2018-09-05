@@ -42,24 +42,13 @@ drake_cc_library(
     name = "make_acrobot_plant",
     srcs = [
         "make_acrobot_plant.cc",
-        "make_acrobot_plant_sdf.cc",
     ],
     hdrs = [
         "make_acrobot_plant.h",
-        "make_acrobot_plant_sdf.h",
     ],
     deps = [
         "//geometry:scene_graph",
         "//multibody/multibody_tree/multibody_plant",
-        "@sdformat",
-    ],
-)
-
-drake_cc_googletest(
-    name = "multibody_plant_sdf_test",
-    deps = [
-        "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/benchmarks/acrobot:make_acrobot_plant",
     ],
 )
 
