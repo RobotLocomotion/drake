@@ -754,7 +754,7 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
 }
 
 MatrixXDecisionVariable
-MathematicalProgram::AddDiagonallyDominantMatrixConstraint(
+MathematicalProgram::AddPositiveDiagonallyDominantMatrixConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Expression>>&
         symmetric_matrix_var) {
   // We will denote X = symmetric_matrix_var

@@ -9,7 +9,7 @@ namespace solvers {
 GTEST_TEST(DiagonallyDominantMatrixConstraint, FeasibilityCheck) {
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<2>();
-  auto Y = prog.AddDiagonallyDominantMatrixConstraint(
+  auto Y = prog.AddPositiveDiagonallyDominantMatrixConstraint(
       X.cast<symbolic::Expression>());
 
   auto X_constraint = prog.AddBoundingBoxConstraint(
@@ -46,7 +46,7 @@ GTEST_TEST(DiagonallyDominantMatrixConstraint, three_by_three_vertices) {
   //     [1 a b]
   // A = [a 2 c]
   //     [b c 3]
-  // to be a diagonally dominant matrix. The vertices of the polytope is
+  // to be a diagonally dominant matrix. The vertices of the polytope are
   // (0, ±1, 0), (±1, 0, 0), (0, ±1, ±2), (±1, 0, ±1), (0, 0, ±2)
   // By optimizing the LP
   // min nᵀ* (a, b, c)
@@ -57,7 +57,8 @@ GTEST_TEST(DiagonallyDominantMatrixConstraint, three_by_three_vertices) {
   auto X = prog.NewSymmetricContinuousVariables<3>();
   prog.AddBoundingBoxConstraint(Eigen::Vector3d(1, 2, 3),
                                 Eigen::Vector3d(1, 2, 3), X.diagonal());
-  prog.AddDiagonallyDominantMatrixConstraint(X.cast<symbolic::Expression>());
+  prog.AddPositiveDiagonallyDominantMatrixConstraint(
+      X.cast<symbolic::Expression>());
 
   auto cost =
       prog.AddLinearCost(Eigen::Vector3d::Zero(), 0,
@@ -76,6 +77,10 @@ GTEST_TEST(DiagonallyDominantMatrixConstraint, three_by_three_vertices) {
       EXPECT_TRUE(CompareMatrices(prog.GetSolution(VectorDecisionVariable<3>(
                                       X(0, 1), X(0, 2), X(1, 2))),
                                   sol_expected, tol));
+      // The matrix should be positive semidefinite.
+      const Eigen::Matrix3d X_sol = prog.GetSolution(X);
+      Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver(X_sol);
+      EXPECT_TRUE((eigen_solver.eigenvalues().array() >= -tol).all());
     }
   };
 

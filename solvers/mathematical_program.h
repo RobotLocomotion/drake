@@ -595,7 +595,6 @@ class MathematicalProgram {
   std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
   NewSosPolynomial(const symbolic::Variables& indeterminates, int degree);
 
-
   /**
    * Adds indeterminates, appending them to an internal vector of any
    * existing indeterminates.
@@ -1305,8 +1304,9 @@ class MathematicalProgram {
     } else {
       std::stringstream oss;
       oss << "Formulas are non-linear.";
-      throw std::runtime_error("AddLinearConstraint called but formulas are "
-                                   "non-linear");
+      throw std::runtime_error(
+          "AddLinearConstraint called but formulas are "
+          "non-linear");
     }
   }
 
@@ -2039,13 +2039,15 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
-   * Adds the constraint that a symmetric matrix is diagonally dominant.
-   * A symmetric matrix X is diagonally dominant if
+   * Adds the constraint that a symmetric matrix is diagonally dominant with
+   * non-negative diagonal entries.
+   * A symmetric matrix X is diagonally dominant with non-negative diagonal
+   * entries if
    * X(i, i) >= ∑ⱼ |X(i, j)| ∀ j ≠ i
    * namely in each row, the diagonal entry is larger than the sum of the
    * absolute values of all other entries in the same row. A matrix being
-   * diagonally dominant is a sufficient (but not necessary) condition of a
-   * matrix being positive semidefinite.
+   * diagonally dominant with non-negative diagonals is a sufficient (but not
+   * necessary) condition of a matrix being positive semidefinite.
    * Internally we will create a matrix Y as slack variables, such that Y(i, j)
    * represents the absolute value |X(i, j)| ∀ j ≠ i.
    * @param symmetric_matrix_var The matrix X in the documentation above. We
@@ -2055,7 +2057,7 @@ class MathematicalProgram {
    * the constraint Y(i, j) >= X(i, j) and Y(i, j) >= -X(i, j). Y is a symmetric
    * matrix.
    */
-  MatrixXDecisionVariable AddDiagonallyDominantMatrixConstraint(
+  MatrixXDecisionVariable AddPositiveDiagonallyDominantMatrixConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>&
           symmetric_matrix_var);
 
@@ -2081,7 +2083,7 @@ class MathematicalProgram {
    *  - The coefficients matching conditions in linear equality constraint.
    */
   std::pair<Binding<PositiveSemidefiniteConstraint>,
-      Binding<LinearEqualityConstraint>>
+            Binding<LinearEqualityConstraint>>
   AddSosConstraint(const symbolic::Polynomial& p);
 
   /**
@@ -2094,7 +2096,7 @@ class MathematicalProgram {
    *  - The coefficients matching conditions in linear equality constraint.
    */
   std::pair<Binding<PositiveSemidefiniteConstraint>,
-      Binding<LinearEqualityConstraint>>
+            Binding<LinearEqualityConstraint>>
   AddSosConstraint(
       const symbolic::Expression& e,
       const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
@@ -2444,7 +2446,8 @@ class MathematicalProgram {
 
   /**
    * Returns the indices of the decision variables. Internally the solvers
-   * thinks all variables are stored in an array, and it accesses each individual
+   * thinks all variables are stored in an array, and it accesses each
+   * individual
    * variable using its index. This index is used when adding constraints
    * and costs for each solver.
    * @pre{@p vars are decision variables in the mathematical program, otherwise
