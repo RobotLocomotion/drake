@@ -67,7 +67,7 @@ class IiwaKinematicConstraintTest : public ::testing::Test {
 
   FrameIndex GetFrameIndex(const std::string& name) {
     // TODO(hongkai.dai): call GetFrameByName() directly.
-    return iiwa_autodiff_->GetBodyByName(name).body_frame().index();
+    return iiwa_autodiff_->GetFrameByName(name).index();
   }
 
  protected:

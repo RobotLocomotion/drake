@@ -14,11 +14,11 @@ namespace multibody {
  * TODO(hongkai.dai) The bounds on the generalized positions (i.e., joint
  * limits) should be imposed automatially.
  */
-class InverseKinematics : public solvers::MathematicalProgram {
+class InverseKinematics {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseKinematics)
 
-  ~InverseKinematics() override {}
+  ~InverseKinematics() {}
 
   /**
    * Constructs an inverse kinematics problem for a MultibodyPlant.
@@ -144,11 +144,18 @@ class InverseKinematics : public solvers::MathematicalProgram {
    * the robot. */
   const solvers::VectorXDecisionVariable& q() const { return q_; }
 
+  /** Getter for the optimization program constructed by InverseKinematics. */
+  const solvers::MathematicalProgram& prog() const { return *prog_; }
+
+  /** Getter for the optimization program constructed by InverseKinematics. */
+  solvers::MathematicalProgram* get_mutable_prog() const { return prog_.get(); }
+
  private:
   MultibodyTreeContext<AutoDiffXd>* get_mutable_context() {
     return dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(context_.get());
   }
 
+  std::unique_ptr<solvers::MathematicalProgram> prog_;
   const multibody_plant::MultibodyPlant<double>& plant_;
   std::unique_ptr<MultibodyTree<AutoDiffXd>> tree_;
   std::unique_ptr<systems::LeafContext<AutoDiffXd>> const context_;

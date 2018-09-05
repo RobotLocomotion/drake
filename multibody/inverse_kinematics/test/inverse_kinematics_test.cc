@@ -20,22 +20,25 @@ class TwoFreeBodiesTest : public ::testing::Test {
   TwoFreeBodiesTest()
       : two_bodies_plant_(ConstructTwoFreeBodiesPlant<double>()),
         // TODO(hongkai.dai) call GetFrameByName()
-        body1_frame_(two_bodies_plant_->GetBodyByName("body1").body_frame()),
-        body2_frame_(two_bodies_plant_->GetBodyByName("body2").body_frame()),
+        body1_frame_(two_bodies_plant_->GetFrameByName("body1")),
+        body2_frame_(two_bodies_plant_->GetFrameByName("body2")),
         ik_(*two_bodies_plant_) {
     // TODO(hongkai.dai): The unit quaternion constraint should be added by
     // InverseKinematics automatically.
-    ik_.AddConstraint(solvers::internal::ParseQuadraticConstraint(
-        ik_.q().head<4>().cast<symbolic::Expression>().squaredNorm(), 1, 1));
-    ik_.AddConstraint(solvers::internal::ParseQuadraticConstraint(
-        ik_.q().segment<4>(7).cast<symbolic::Expression>().squaredNorm(), 1,
-        1));
+    ik_.get_mutable_prog()->AddConstraint(
+        solvers::internal::ParseQuadraticConstraint(
+            ik_.q().head<4>().cast<symbolic::Expression>().squaredNorm(), 1,
+            1));
+    ik_.get_mutable_prog()->AddConstraint(
+        solvers::internal::ParseQuadraticConstraint(
+            ik_.q().segment<4>(7).cast<symbolic::Expression>().squaredNorm(), 1,
+            1));
   }
 
   ~TwoFreeBodiesTest() override {}
 
   void RetrieveSolution() {
-    const auto q_sol = ik_.GetSolution(ik_.q());
+    const auto q_sol = ik_.prog().GetSolution(ik_.q());
     body1_quaternion_sol_ = Vector4ToQuaternion(q_sol.head<4>());
     body1_position_sol_ = q_sol.segment<3>(4);
     body2_quaternion_sol_ = Vector4ToQuaternion(q_sol.segment<4>(7));
@@ -61,9 +64,11 @@ TEST_F(TwoFreeBodiesTest, PositionConstraint) {
   ik_.AddPositionConstraint(body1_frame_, p_BQ, body2_frame_, p_AQ_lower,
                             p_AQ_upper);
 
-  ik_.SetInitialGuess(ik_.q().head<4>(), Eigen::Vector4d(1, 0, 0, 0));
-  ik_.SetInitialGuess(ik_.q().segment<4>(7), Eigen::Vector4d(1, 0, 0, 0));
-  const auto result = ik_.Solve();
+  ik_.get_mutable_prog()->SetInitialGuess(ik_.q().head<4>(),
+                                          Eigen::Vector4d(1, 0, 0, 0));
+  ik_.get_mutable_prog()->SetInitialGuess(ik_.q().segment<4>(7),
+                                          Eigen::Vector4d(1, 0, 0, 0));
+  const auto result = ik_.get_mutable_prog()->Solve();
   EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
   RetrieveSolution();
   const Eigen::Vector3d p_AQ = body2_quaternion_sol_.inverse() *
@@ -83,11 +88,13 @@ TEST_F(TwoFreeBodiesTest, OrientationConstraint) {
 
   ik_.AddOrientationConstraint(body1_frame_, body2_frame_, angle_bound);
 
-  ik_.SetInitialGuess(ik_.q().head<4>(), Eigen::Vector4d(1, 0, 0, 0));
-  ik_.SetInitialGuess(ik_.q().segment<4>(7), Eigen::Vector4d(1, 0, 0, 0));
-  const auto result = ik_.Solve();
+  ik_.get_mutable_prog()->SetInitialGuess(ik_.q().head<4>(),
+                                          Eigen::Vector4d(1, 0, 0, 0));
+  ik_.get_mutable_prog()->SetInitialGuess(ik_.q().segment<4>(7),
+                                          Eigen::Vector4d(1, 0, 0, 0));
+  const auto result = ik_.get_mutable_prog()->Solve();
   EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
-  const auto q_sol = ik_.GetSolution(ik_.q());
+  const auto q_sol = ik_.prog().GetSolution(ik_.q());
   RetrieveSolution();
   const double angle =
       Eigen::AngleAxisd(body1_quaternion_sol_.inverse() * body2_quaternion_sol_)
@@ -104,9 +111,11 @@ TEST_F(TwoFreeBodiesTest, GazeTargetConstraint) {
   ik_.AddGazeTargetConstraint(body1_frame_, p_AS, n_A, body2_frame_, p_BT,
                               cone_half_angle);
 
-  ik_.SetInitialGuess(ik_.q().head<4>(), Eigen::Vector4d(1, 0, 0, 0));
-  ik_.SetInitialGuess(ik_.q().segment<4>(7), Eigen::Vector4d(1, 0, 0, 0));
-  const auto result = ik_.Solve();
+  ik_.get_mutable_prog()->SetInitialGuess(ik_.q().head<4>(),
+                                          Eigen::Vector4d(1, 0, 0, 0));
+  ik_.get_mutable_prog()->SetInitialGuess(ik_.q().segment<4>(7),
+                                          Eigen::Vector4d(1, 0, 0, 0));
+  const auto result = ik_.get_mutable_prog()->Solve();
   EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
 
   RetrieveSolution();
@@ -129,9 +138,11 @@ TEST_F(TwoFreeBodiesTest, AngleBetweenVectorsConstraint) {
 
   ik_.AddAngleBetweenVectorsConstraint(body1_frame_, n_A, body2_frame_, n_B,
                                        angle_lower, angle_upper);
-  ik_.SetInitialGuess(ik_.q().head<4>(), Eigen::Vector4d(1, 0, 0, 0));
-  ik_.SetInitialGuess(ik_.q().segment<4>(7), Eigen::Vector4d(1, 0, 0, 0));
-  const auto result = ik_.Solve();
+  ik_.get_mutable_prog()->SetInitialGuess(ik_.q().head<4>(),
+                                          Eigen::Vector4d(1, 0, 0, 0));
+  ik_.get_mutable_prog()->SetInitialGuess(ik_.q().segment<4>(7),
+                                          Eigen::Vector4d(1, 0, 0, 0));
+  const auto result = ik_.get_mutable_prog()->Solve();
   EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
 
   RetrieveSolution();
