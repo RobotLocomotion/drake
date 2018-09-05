@@ -229,16 +229,21 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       plant->AddRigidBody("AnotherBody", default_model_instance(),
                           SpatialInertia<double>()),
       std::logic_error,
-      /* Verify this method is throwing for the right reasons. */
       "Post-finalize calls to '.*' are not allowed; "
       "calls to this method must happen before Finalize\\(\\).");
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant->AddJoint<RevoluteJoint>(
           "AnotherJoint", link1, {}, link2, {}, Vector3d::UnitZ()),
       std::logic_error,
-      /* Verify this method is throwing for the right reasons. */
       "Post-finalize calls to '.*' are not allowed; "
       "calls to this method must happen before Finalize\\(\\).");
+  // Test API for simplified `AddJoint` method.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant->AddJoint(std::make_unique<RevoluteJoint<double>>(
+          "AnotherJoint", link1.body_frame(), link2.body_frame(),
+          Vector3d::UnitZ())),
+      std::logic_error,
+      "This MultibodyTree is finalized already. .*");
   // TODO(amcastro-tri): add test to verify that requesting a joint of the wrong
   // type throws an exception. We need another joint type to do so.
 }
