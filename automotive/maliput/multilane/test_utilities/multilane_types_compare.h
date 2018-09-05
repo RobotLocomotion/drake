@@ -20,9 +20,9 @@ using ::testing::MatchResultListener;
 // @param xy1 An EndpointXy object to compare.
 // @param xy2 An EndpointXy object to compare.
 // @param linear_tolerance An allowable absolute deviation for each EndpointXy's
-//                         x and y position coordinates.
+//                         x and y position coordinates, in meters.
 // @param angular_tolerance An allowable absolute deviation for EndpointXy's
-//                          heading angle.
+//                          heading angle, in radians.
 // @return ::testing::AssertionFailure() When EndpointXy objects are different.
 // @return ::testing::AssertionSuccess() When EndpointXy objects' quantities
 //                                       are within @p linear_tolerance or
@@ -35,12 +35,17 @@ using ::testing::MatchResultListener;
 // Compares equality within @p tolerance deviation of two EndpointZ objects.
 // @param z1 An EndpointZ object to compare.
 // @param z2 An EndpointZ object to compare.
-// @param linear_tolerance An allowable absolute deviation for EndpointZ's
-//                         z position coordinate, as well as elevation
-//                         derivative ż.
-// @param angular_tolerance An allowable absolute deviation for each EndpointZ's
-//                          heading angle and superelevation angle θ, as well as
-//                          superelevation derivative θ_dot.
+// @param linear_tolerance An allowable absolute deviation, in meters, for
+//                         EndpointZ's z position coordinate, as well as
+//                         elevation derivative ż through the linear deviation
+//                         that would result of moving 1 m along the reference
+//                         curve path for which the derivative is defined.
+// @param angular_tolerance An allowable absolute deviation, in radians, for
+//                          each EndpointZ's heading angle and superelevation
+//                          angle θ, as well as superelevation derivative θ_dot
+//                          through the angular deviation that would result of
+//                          moving 1 m along the reference curve path for which
+//                          the derivative is defined.
 // @return ::testing::AssertionFailure() When EndpointZ objects are different.
 // @return ::testing::AssertionSuccess() When EndpointZ objects' quantities
 //                                       are within @p linear_tolerance or
@@ -53,12 +58,18 @@ using ::testing::MatchResultListener;
 // Compares equality within @p tolerance deviation of two Endpoint objects.
 // @param pos1 An Endpoint object to compare.
 // @param pos2 An Endpoint object to compare.
-// @param linear_tolerance An allowable absolute deviation for each Endpoint's
-//                         x, y and z position coordinates, as well as elevation
-//                         derivative ż.
-// @param angular_tolerance An allowable absolute deviation for each Endpoint's
-//                          heading angle and superelevation angle θ, as well as
-//                          superelevation derivative θ_dot.
+// @param linear_tolerance An allowable absolute deviation, in meters, for each
+//                         Endpoint's x, y and z position coordinates, as well
+//                         as elevation derivative ż through the linear
+//                         deviation that would result of moving 1 m along the
+//                         reference curve path for which the derivative is
+//                         defined.
+// @param angular_tolerance An allowable absolute deviation, in radians, for
+//                          each Endpoint's heading angle and superelevation
+//                          angle θ, as well as superelevation derivative θ_dot
+//                          through the angular deviation that would result of
+//                          moving 1 m along the reference curve path for which
+//                          the derivative is defined.
 // @return ::testing::AssertionFailure() When Endpoint objects are different.
 // @return ::testing::AssertionSuccess() When Endpoint objects' quantities
 //                                       are within @p linear_tolerance or
