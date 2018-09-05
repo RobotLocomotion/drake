@@ -49,7 +49,12 @@ class PrismaticJointTest : public ::testing::Test {
 
 // Verify the expected number of dofs.
 TEST_F(PrismaticJointTest, NumDOFs) {
-  EXPECT_EQ(joint1_->num_dofs(), 1);
+  EXPECT_EQ(model_.num_positions(), 1);
+  EXPECT_EQ(model_.num_velocities(), 1);
+  EXPECT_EQ(joint1_->num_positions(), 1);
+  EXPECT_EQ(joint1_->num_velocities(), 1);
+  EXPECT_EQ(joint1_->position_start(), 0);
+  EXPECT_EQ(joint1_->velocity_start(), 0);
 }
 
 // Default axis accessor.

@@ -118,14 +118,28 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     return frame_on_child_;
   }
 
-  /// Returns the number of degrees of freedom for `this` joint.
-  /// E.g., one for a revolute joint and three for a ball joint.
-  // NVI to do_get_num_dofs();
-  int num_dofs() const {
-    // Verifies the implementation returns an acceptable value.
-    const int n_joint_dofs = do_get_num_dofs();
-    DRAKE_DEMAND(0 <= n_joint_dofs && n_joint_dofs <= 6);
-    return n_joint_dofs;
+  /// Returns the index to the first generalized velocity for this joint
+  /// within the vector v of generalized velocities for the full model.
+  int velocity_start() const {
+    return do_get_velocity_start();
+  }
+
+  /// Returns the number of generalized velocities describing this joint.
+  int num_velocities() const {
+    DRAKE_DEMAND(0 <= do_get_num_velocities() && do_get_num_velocities() <= 6);
+    return do_get_num_velocities();
+  }
+
+  /// Returns the index to the first generalized position for this joint
+  /// within the vector q of generalized positions for the full model.
+  int position_start() const {
+    return do_get_position_start();
+  }
+
+  /// Returns the number of generalized positions describing this joint.
+  int num_positions() const {
+    DRAKE_DEMAND(0 <= do_get_num_positions() && do_get_num_positions() <= 7);
+    return do_get_num_positions();
   }
 
   /// Returns the position coordinate for joints with a single degree of
@@ -133,7 +147,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   /// @throws std::exception if the joint does not have a single degree of
   /// freedom.
   const T& GetOnePosition(const systems::Context<T>& context) const {
-    DRAKE_THROW_UNLESS(num_dofs() == 1);
+    DRAKE_THROW_UNLESS(num_positions() == 1);
     return DoGetOnePosition(context);
   }
 
@@ -142,7 +156,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   /// @throws std::exception if the joint does not have a single degree of
   /// freedom.
   const T& GetOneVelocity(const systems::Context<T>& context) const {
-    DRAKE_THROW_UNLESS(num_dofs() == 1);
+    DRAKE_THROW_UNLESS(num_velocities() == 1);
     return DoGetOneVelocity(context);
   }
 
@@ -161,7 +175,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   ///   `this` joint belongs.
   /// @param[in] joint_dof
   ///   Index specifying one of the degrees of freedom for this joint. The index
-  ///   must be in the range `0 <= joint_dof < num_dofs()` or otherwise this
+  ///   must be in the range `0 <= joint_dof < num_velocities()` or otherwise this
   ///   method will abort.
   /// @param[in] joint_tau
   ///   Generalized force corresponding to the degree of freedom indicated by
@@ -178,7 +192,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
       const T& joint_tau,
       MultibodyForces<T>* forces) const {
     DRAKE_DEMAND(forces != nullptr);
-    DRAKE_DEMAND(0 <= joint_dof && joint_dof < num_dofs());
+    DRAKE_DEMAND(0 <= joint_dof && joint_dof < num_velocities());
     DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
     DoAddInOneForce(context, joint_dof, joint_tau, forces);
   }
@@ -282,12 +296,21 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     // TODO(amcastro-tri): add force elements, constraints, bodies, etc.
   };
 
-  /// Returns the number of degrees of freedom for `this` joint.
-  /// Implementation to the NVI num_dofs() that must be implemented by all
-  /// subclasses.
-  /// E.g., this method should return one for a revolute joint and it should
-  /// return three for a ball joint.
-  virtual int do_get_num_dofs() const = 0;
+  /// Implementation to the NVI velocity_start(), see velocity_start() for
+  /// details.
+  virtual int do_get_velocity_start() const = 0;
+
+  /// Implementation to the NVI num_velocities(), see num_velocities() for
+  /// details.
+  virtual int do_get_num_velocities() const = 0;
+
+  /// Implementation to the NVI position_start(), see position_start() for
+  /// details.
+  virtual int do_get_position_start() const = 0;
+
+  /// Implementation to the NVI num_positions(), see num_positions() for
+  /// details.
+  virtual int do_get_num_positions() const = 0;
 
   /// Implementation to the NVI GetOnePosition() that must only be implemented
   /// by those joint subclasses that have a single degree of freedom.

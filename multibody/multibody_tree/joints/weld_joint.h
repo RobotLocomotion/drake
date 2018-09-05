@@ -58,7 +58,29 @@ class WeldJoint final : public Joint<T> {
   }
 
  private:
-  int do_get_num_dofs() const override {
+  int do_get_velocity_start() const override {
+    // Since WeldJoint has no state, the start index has no meaning. However,
+    // we let its decide the return value for this case (this has to do with
+    // allowing zero sized Eigen blocks).
+    DRAKE_DEMAND(static_cast<int>(
+                     this->get_implementation().mobilizers_.size()) == 1);
+    return this->get_implementation().mobilizers_[0]->velocity_start_in_v();
+  }
+
+  int do_get_num_velocities() const override {
+    return 0;
+  }
+
+  int do_get_position_start() const override {
+    // Since WeldJoint has no state, the start index has no meaning. However,
+    // we let its decide the return value for this case (this has to do with
+    // allowing zero sized Eigen blocks).
+    DRAKE_DEMAND(static_cast<int>(
+                     this->get_implementation().mobilizers_.size()) == 1);
+    throw this->get_implementation().mobilizers_[0]->position_start_in_q();
+  }
+
+  int do_get_num_positions() const override {
     return 0;
   }
 

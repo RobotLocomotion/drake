@@ -1031,9 +1031,9 @@ void MultibodyPlant<T>::AddJointActuationForces(
       const JointActuator<T>& actuator =
           model().get_joint_actuator(actuator_index);
       // We only support actuators on single dof joints for now.
-      DRAKE_DEMAND(actuator.joint().num_dofs() == 1);
+      DRAKE_DEMAND(actuator.joint().num_velocities() == 1);
       for (int joint_dof = 0;
-           joint_dof < actuator.joint().num_dofs(); ++joint_dof) {
+           joint_dof < actuator.joint().num_velocities(); ++joint_dof) {
         actuator.AddInOneForce(context, joint_dof, u[actuator_index], forces);
       }
     }

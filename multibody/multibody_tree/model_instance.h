@@ -98,7 +98,7 @@ class ModelInstance :
   }
 
   void add_joint_actuator(const JointActuator<T>* joint_actuator) {
-    num_actuated_dofs_ += joint_actuator->joint().num_dofs();
+    num_actuated_dofs_ += joint_actuator->joint().num_velocities();
     joint_actuators_.push_back(joint_actuator);
   }
 

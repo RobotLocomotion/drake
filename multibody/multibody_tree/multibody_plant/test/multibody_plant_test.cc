@@ -1596,6 +1596,75 @@ TEST_F(MultibodyPlantContactJacobianTests, TangentJacobian) {
       D, vt_derivs, kTolerance, MatrixCompareType::relative));
 }
 
+// Verifies that we can obtain the indexes into the state vector for each joint
+// in the model of a Kuka arm.
+// For this topologically simple model with only one branch of bodies with root
+// in the world, joints, and their degrees of freedom, are numbered from root
+// (world) in increasing order towards the end effector.
+GTEST_TEST(KukaModel, JointIndexes) {
+  const char kSdfPath[] =
+      "drake/manipulation/models/iiwa_description/sdf/"
+          "iiwa14_no_collision.sdf";
+
+  MultibodyPlant<double> plant;
+  AddModelFromSdfFile(FindResourceOrThrow(kSdfPath), &plant);
+  plant.Finalize();
+
+  EXPECT_EQ(plant.num_positions(), 7);
+  EXPECT_EQ(plant.num_velocities(), 7);
+
+  // We expect the first joint to be the one WeldJoint fixing the model to the
+  // world. We verify this assumption.
+  const Joint<double>& weld = plant.model().get_joint(JointIndex(0));
+  ASSERT_EQ(weld.name(), "weld_base_to_world");
+
+  EXPECT_EQ(weld.num_positions(), 0);
+  EXPECT_EQ(weld.num_velocities(), 0);
+
+  // MultibodyPlant orders the state x with the vector q of generalized
+  // positions followed by the vector v of generalized velocities.
+  for (JointIndex joint_index(1); /* Skip "weld_base_to_world". */
+       joint_index < plant.num_joints(); ++joint_index) {
+    const Joint<double>& joint = plant.model().get_joint(joint_index);
+    // Start index in the vector q of generalized positions.
+    const int expected_q_start = joint_index - 1;
+    // Start index in the vector v of generalized velocities.
+    const int expected_v_start = joint_index - 1;
+    const int expected_num_v = 1;
+    const int expected_num_q = 1;
+    EXPECT_EQ(joint.num_positions(), expected_num_q);
+    EXPECT_EQ(joint.position_start(), expected_q_start);
+    EXPECT_EQ(joint.num_velocities(), expected_num_v);
+    EXPECT_EQ(joint.velocity_start(), expected_v_start);
+  }
+
+  // Verify that the indexes above point to the right entries in the state
+  // stored in the context.
+  auto context = plant.CreateDefaultContext();
+
+  for (JointIndex joint_index(1); /* Skip "weld_base_to_world". */
+       joint_index < plant.num_joints(); ++joint_index) {
+    // We know all joints in our model, besides the first joint welding the
+    // model to the world, are revolute joints.
+    const auto& joint = plant.GetJointByName<RevoluteJoint>(
+        "iiwa_joint_" + std::to_string(joint_index));
+
+    // We simply set each entry in the state with the value of its index.
+    joint.set_angle(context.get(), joint.position_start());
+    joint.set_angular_rate(context.get(),
+                           plant.num_positions() + joint.velocity_start());
+  }
+
+  // Verify that each entry has the value we expect it to have.
+  const VectorX<double> xc =
+      context->get_continuous_state_vector().CopyToVector();
+  const VectorX<double> xc_expected = VectorX<double>::LinSpaced(
+      plant.num_multibody_states() /* size */,
+      0 /* first index */, plant.num_multibody_states() - 1 /* last index */);
+
+  EXPECT_EQ(xc, xc_expected);
+}
+
 }  // namespace
 }  // namespace multibody_plant
 }  // namespace multibody

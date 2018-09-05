@@ -26,7 +26,7 @@ void JointActuator<T>::AddInOneForce(
     const T& joint_tau,
     MultibodyForces<T>* forces) const {
   DRAKE_DEMAND(forces != nullptr);
-  DRAKE_DEMAND(0 <= joint_dof && joint_dof < joint().num_dofs());
+  DRAKE_DEMAND(0 <= joint_dof && joint_dof < joint().num_velocities());
   DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
   joint().AddInOneForce(context, joint_dof, joint_tau, forces);
 }
@@ -37,8 +37,8 @@ void JointActuator<T>::set_actuation_vector(
     EigenPtr<VectorX<T>> u) const {
   DRAKE_DEMAND(u != nullptr);
   DRAKE_DEMAND(u->size() == this->get_parent_tree().num_actuated_dofs());
-  DRAKE_DEMAND(u_instance.size() == joint().num_dofs());
-  u->segment(topology_.actuator_index_start, joint().num_dofs()) =
+  DRAKE_DEMAND(u_instance.size() == joint().num_velocities());
+  u->segment(topology_.actuator_index_start, joint().num_velocities()) =
       u_instance;
 }
 

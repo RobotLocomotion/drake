@@ -666,7 +666,7 @@ class MultibodyTree {
     }
 
     const JointActuatorIndex actuator_index =
-        topology_.add_joint_actuator(joint.num_dofs());
+        topology_.add_joint_actuator(joint.num_velocities());
     owned_actuators_.push_back(std::make_unique<JointActuator<T>>(name, joint));
     JointActuator<T>* actuator = owned_actuators_.back().get();
     actuator->set_parent_tree(this, actuator_index);
