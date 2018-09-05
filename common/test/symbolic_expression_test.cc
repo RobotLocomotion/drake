@@ -1795,10 +1795,12 @@ TEST_F(SymbolicExpressionTest, Cond2) {
   EXPECT_EQ(e.Evaluate({{var_x_, 1}}), 0.0);
 }
 
-TEST_F(SymbolicExpressionTest, UninterpretedFunction_GetVariables_GetName) {
+TEST_F(SymbolicExpressionTest,
+       UninterpretedFunction_GetVariables_GetName_GetArguments) {
   const Expression uf1{uninterpreted_function("uf1", {})};
   EXPECT_TRUE(uf1.GetVariables().empty());
   EXPECT_EQ(get_uninterpreted_function_name(uf1), "uf1");
+  EXPECT_TRUE(get_uninterpreted_function_arguments(uf1).empty());
 
   const Expression uf2{uninterpreted_function("uf2", {var_x_, var_y_})};
   EXPECT_EQ(get_uninterpreted_function_name(uf2), "uf2");
@@ -1806,6 +1808,14 @@ TEST_F(SymbolicExpressionTest, UninterpretedFunction_GetVariables_GetName) {
   EXPECT_EQ(vars_in_uf2.size(), 2);
   EXPECT_TRUE(vars_in_uf2.include(var_x_));
   EXPECT_TRUE(vars_in_uf2.include(var_y_));
+
+  const vector<Expression> arguments{sin(x_), cos(y_)};
+  const Expression uf3{uninterpreted_function("uf3", arguments)};
+  const vector<Expression>& the_arguments{
+      get_uninterpreted_function_arguments(uf3)};
+  EXPECT_EQ(arguments.size(), the_arguments.size());
+  EXPECT_PRED2(ExprEqual, arguments[0], the_arguments[0]);
+  EXPECT_PRED2(ExprEqual, arguments[1], the_arguments[1]);
 }
 
 TEST_F(SymbolicExpressionTest, UninterpretedFunction_Evaluate) {
@@ -1860,7 +1870,7 @@ TEST_F(SymbolicExpressionTest, ToString) {
             "(3.1415926535897931 * x * pow(y, 2.7182818284590451))");
   EXPECT_EQ(e4.to_string(),
             "(2.7182818284590451 + x + 3.1415926535897931 * y)");
-  EXPECT_EQ(e_uf_.to_string(), "uf({x, y})");
+  EXPECT_EQ(e_uf_.to_string(), "uf(x, y)");
 }
 
 TEST_F(SymbolicExpressionTest, EvaluatePartial) {

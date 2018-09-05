@@ -748,8 +748,9 @@ Expression if_then_else(const Formula& f_cond, const Expression& e_then,
   return Expression{make_shared<ExpressionIfThenElse>(f_cond, e_then, e_else)};
 }
 
-Expression uninterpreted_function(const string& name, const Variables& vars) {
-  return Expression{make_shared<ExpressionUninterpretedFunction>(name, vars)};
+Expression uninterpreted_function(string name, vector<Expression> arguments) {
+  return Expression{make_shared<ExpressionUninterpretedFunction>(
+      std::move(name), std::move(arguments))};
 }
 
 bool is_constant(const Expression& e) { return is_constant(*e.ptr_); }
@@ -823,6 +824,11 @@ const map<Expression, Expression>& get_base_to_exponent_map_in_multiplication(
 
 const string& get_uninterpreted_function_name(const Expression& e) {
   return to_uninterpreted_function(e)->get_name();
+}
+
+const vector<Expression>& get_uninterpreted_function_arguments(
+    const Expression& e) {
+  return to_uninterpreted_function(e)->get_arguments();
 }
 
 const Formula& get_conditional_formula(const Expression& e) {
