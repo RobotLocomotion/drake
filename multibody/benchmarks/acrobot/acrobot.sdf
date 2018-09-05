@@ -106,5 +106,10 @@
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
+
+    <frame name='ArbitraryFrame'>
+      <pose frame='Link2'>0.1 0.2 0.3 0 0 0</pose>
+    </frame>
+
   </model>
 </sdf>

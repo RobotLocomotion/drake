@@ -7,6 +7,7 @@
 #include <sdf/sdf.hh>
 
 #include "drake/geometry/geometry_instance.h"
+#include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/joints/weld_joint.h"
@@ -310,6 +311,28 @@ void AddJointFromSpecification(
   }
 }
 
+// Helper function to express an ignition::math::Vector3d instance as
+// a Vector3<double> instance.
+Vector3<double> ToVector(const ignition::math::Vector3d &vector) {
+  return Vector3<double>(vector.X(), vector.Y(), vector.Z());
+}
+
+// Helper function to express an ignition::math::Pose3d instance as
+// an Isometry3<double> instance.
+Isometry3<double> ToIsometry(const ignition::math::Pose3d &pose) {
+  const Isometry3<double>::TranslationType translation(ToVector(pose.Pos()));
+  const Quaternion<double> rotation(pose.Rot().W(), pose.Rot().X(),
+                                    pose.Rot().Y(), pose.Rot().Z());
+  return translation * rotation;
+}
+
+// Parses a pose from the given SDF element.
+Isometry3<double> ParsePose(sdf::ElementPtr sdf_pose_element) {
+  DRAKE_DEMAND(sdf_pose_element != nullptr);
+  DRAKE_DEMAND(sdf_pose_element->GetName() == "pose");
+  return ToIsometry(sdf_pose_element->Get<ignition::math::Pose3d>());
+}
+
 // Helper method to load an SDF file and read the contents into an sdf::Root
 // object.
 std::string LoadSdf(
@@ -411,6 +434,32 @@ void AddLinksFromSpecification(
   }
 }
 
+void AddFramesFromSpecification(
+    ModelInstanceIndex model_instance,
+    sdf::ElementPtr parent_element,
+    multibody_plant::MultibodyPlant<double>* plant) {
+  // Per documentation, `GetElement(...)` will create a new element if one does
+  // not already exist rather than return `nullptr`; use `HasElement(...)`
+  // instead.
+  // TODO(eric.cousineau): Verify that this interpretation of the SDF spec is
+  // accurate.
+  if (parent_element->HasElement("frame")) {
+    sdf::ElementPtr frame_element = parent_element->GetElement("frame");
+    while (frame_element) {
+      std::string name = frame_element->Get<std::string>("name");
+      sdf::ElementPtr pose_element = frame_element->GetElement("pose");
+      const Frame<double>* parent_frame = &plant->world_body().body_frame();
+      if (pose_element->HasAttribute("frame")) {
+        parent_frame = &plant->GetFrameByName(
+            pose_element->Get<std::string>("frame"), model_instance);
+      }
+      plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+          name, *parent_frame, ParsePose(pose_element)));
+      frame_element = frame_element->GetNextElement("frame");
+    }
+  }
+}
+
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
 ModelInstanceIndex AddModelFromSpecification(
@@ -434,6 +483,11 @@ ModelInstanceIndex AddModelFromSpecification(
     const sdf::Joint& joint = *model.JointByIndex(joint_index);
     AddJointFromSpecification(model, joint, model_instance, plant);
   }
+
+  // Add frames at root-level of <model>.
+  // N.B. For now, the only frames per SDF's specification will be parsed at
+  // the root-level module.
+  AddFramesFromSpecification(model_instance, model.Element(), plant);
 
   return model_instance;
 }
