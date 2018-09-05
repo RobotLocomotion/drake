@@ -5,7 +5,11 @@
 #include "google/protobuf/text_format.h"
 
 #include "drake/common/proto/protobuf.h"
-#include "drake/multibody/alias_groups.pb.h"
+
+// N.B. Usually we avoid "attic/" in our #include paths, but for this
+// protoc-generated file, it's not worth the effort of teaching the build
+// system how to omit it, specially since alias_groups.pb.h is not installed.
+#include "drake/attic/multibody/alias_groups.pb.h"
 
 template <typename T>
 constexpr char RigidBodyTreeAliasGroups<T>::kBodyGroupsKeyword[];
