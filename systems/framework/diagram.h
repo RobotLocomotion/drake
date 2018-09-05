@@ -488,6 +488,9 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     return it->second;
   }
 
+  /// Returns the dimension of the continuous state vector
+  int get_num_continuous_states() const final { return 0;}
+
  protected:
   /// Constructs an uninitialized Diagram. Subclasses that use this constructor
   /// are obligated to call DiagramBuilder::BuildInto(this).  Provides scalar-
