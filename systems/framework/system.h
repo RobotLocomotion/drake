@@ -1097,6 +1097,11 @@ class System : public SystemBase {
     return static_cast<int>(constraints_.size());
   }
 
+
+  /// Returns the dimension of the continuous state vector that has been
+  /// declared until now.
+  virtual int get_num_continuous_states() const = 0;
+
   /// Returns the constraint at index @p constraint_index.
   /// @throws std::out_of_range for an invalid constraint_index.
   const SystemConstraint<T>& get_constraint(

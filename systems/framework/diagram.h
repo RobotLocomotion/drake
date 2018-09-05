@@ -488,6 +488,15 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     return it->second;
   }
 
+  int get_num_continuous_states() const final {
+    int num_states = 0;
+    for (const auto& system : registered_systems_) {
+      num_states += system->get_num_continuous_states();
+    }
+
+    return num_states;
+  }
+
  protected:
   /// Constructs an uninitialized Diagram. Subclasses that use this constructor
   /// are obligated to call DiagramBuilder::BuildInto(this).  Provides scalar-
