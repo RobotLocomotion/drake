@@ -9,6 +9,20 @@ genrule(
     cmd = "cp \"$<\" \"$(@)\"",
 )
 
+genrule(
+    name = "copy_cps2pc",
+    srcs = ["cps2pc"],
+    outs = ["cps2pc.py"],
+    cmd = "cp \"$<\" \"$(@)\"",
+)
+
+genrule(
+    name = "copy_pc2cps",
+    srcs = ["pc2cps"],
+    outs = ["pc2cps.py"],
+    cmd = "cp \"$<\" \"$(@)\"",
+)
+
 # LGPL; don't use externally (okay for build-time stuff only)
 py_library(
     name = "cps",
@@ -21,6 +35,22 @@ py_binary(
     name = "cps2cmake_executable",
     srcs = ["cps2cmake.py"],
     main = "cps2cmake.py",
+    visibility = ["//visibility:public"],
+    deps = [":cps"],
+)
+
+py_binary(
+    name = "cps2pc_executable",
+    srcs = ["cps2pc.py"],
+    main = "cps2pc.py",
+    visibility = ["//visibility:public"],
+    deps = [":cps"],
+)
+
+py_binary(
+    name = "pc2cps_executable",
+    srcs = ["pc2cps.py"],
+    main = "pc2cps.py",
     visibility = ["//visibility:public"],
     deps = [":cps"],
 )
