@@ -84,7 +84,7 @@ RigidTransform<double> GetRigidTransformB() {
 // Tests default constructor - should be identity RigidTransform.
 GTEST_TEST(RigidTransform, DefaultRigidTransformIsIdentity) {
   const RigidTransform<double> X;
-  EXPECT_TRUE(X.IsExactlyIdentity().value());
+  EXPECT_TRUE(X.IsExactlyIdentity());
 }
 
 // Tests constructing a RigidTransform from a RotationMatrix and Vector3.
@@ -101,7 +101,7 @@ GTEST_TEST(RigidTransform, RigidTransformConstructorAndSet) {
 
   // Test the set method.
   X.set(RotationMatrix<double>::Identity(), Vector3d(0, 0, 0));
-  EXPECT_TRUE(X.IsExactlyIdentity().value());
+  EXPECT_TRUE(X.IsExactlyIdentity());
   X.set(R1, p);
   zero_rotation = m - X.rotation().matrix();
   zero_position = p - X.translation();
@@ -126,7 +126,7 @@ GTEST_TEST(RigidTransform, RigidTransformConstructorAndSet) {
 GTEST_TEST(RigidTransform, RigidTransformConstructorFromRotationMatrix) {
   const RotationMatrixd R = GetRotationMatrixB();
   const RigidTransformd X(R);
-  EXPECT_TRUE(ExtractBoolOrThrow(X.rotation().IsExactlyEqualTo(R)));
+  EXPECT_TRUE(X.rotation().IsExactlyEqualTo(R));
   EXPECT_TRUE(X.translation() == Vector3d(0, 0, 0));
 }
 
@@ -134,7 +134,7 @@ GTEST_TEST(RigidTransform, RigidTransformConstructorFromRotationMatrix) {
 GTEST_TEST(RigidTransform, RigidTransformConstructorFromPositionVector) {
   const Vector3<double> p(4, 5, 6);
   const RigidTransform<double> X(p);
-  EXPECT_TRUE(ExtractBoolOrThrow(X.rotation().IsExactlyIdentity()));
+  EXPECT_TRUE(X.rotation().IsExactlyIdentity());
   EXPECT_TRUE(X.translation() == p);
 }
 
@@ -233,7 +233,7 @@ GTEST_TEST(RigidTransform, Isometry3) {
 // Tests method Identity (identity rotation matrix and zero vector).
 GTEST_TEST(RigidTransform, Identity) {
   const RigidTransform<double>& X = RigidTransform<double>::Identity();
-  EXPECT_TRUE(X.IsExactlyIdentity().value());
+  EXPECT_TRUE(X.IsExactlyIdentity());
 }
 
 // Tests method SetIdentity.
@@ -242,34 +242,34 @@ GTEST_TEST(RigidTransform, SetIdentity) {
   const Vector3d p(2, 3, 4);
   RigidTransform<double> X(R, p);
   X.SetIdentity();
-  EXPECT_TRUE(X.IsExactlyIdentity().value());
+  EXPECT_TRUE(X.IsExactlyIdentity());
 }
 
 // Tests whether or not a RigidTransform is an identity RigidTransform.
 GTEST_TEST(RigidTransform, IsIdentity) {
   // Test whether it is an identity matrix multiple ways.
   RigidTransform<double> X1;
-  EXPECT_TRUE(X1.IsExactlyIdentity().value());
-  EXPECT_TRUE(X1.IsIdentityToEpsilon(0.0).value());
-  EXPECT_TRUE(X1.rotation().IsExactlyIdentity().value());
+  EXPECT_TRUE(X1.IsExactlyIdentity());
+  EXPECT_TRUE(X1.IsIdentityToEpsilon(0.0));
+  EXPECT_TRUE(X1.rotation().IsExactlyIdentity());
   EXPECT_TRUE((X1.translation().array() == 0).all());
 
   // Test non-identity matrix.
   const RotationMatrix<double> R = GetRotationMatrixA();
   const Vector3d p(2, 3, 4);
   RigidTransform<double> X2(R, p);
-  EXPECT_FALSE(X2.IsExactlyIdentity().value());
+  EXPECT_FALSE(X2.IsExactlyIdentity());
 
   // Change rotation matrix to identity, but leave non-zero position vector.
   X2.set_rotation(RotationMatrix<double>::Identity());
-  EXPECT_FALSE(X2.IsExactlyIdentity().value());
-  EXPECT_FALSE(X2.IsIdentityToEpsilon(3.99).value());
-  EXPECT_TRUE(X2.IsIdentityToEpsilon(4.01).value());
+  EXPECT_FALSE(X2.IsExactlyIdentity());
+  EXPECT_FALSE(X2.IsIdentityToEpsilon(3.99));
+  EXPECT_TRUE(X2.IsIdentityToEpsilon(4.01));
 
   // Change position vector to zero vector.
   const Vector3d zero_vector(0, 0, 0);
   X2.set_translation(zero_vector);
-  EXPECT_TRUE(X2.IsExactlyIdentity().value());
+  EXPECT_TRUE(X2.IsExactlyIdentity());
 }
 
 // Tests calculating the inverse of a RigidTransform.
@@ -284,7 +284,7 @@ GTEST_TEST(RigidTransform, Inverse) {
   // Note: The square-root of a RigidTransform's condition number is roughly the
   // magnitude of the position vector.  The accuracy of the calculation for the
   // inverse of a RigidTransform drops off with sqrt(condition number).
-  EXPECT_TRUE(I.IsNearlyEqualTo(X_identity, 8 * kEpsilon).value());
+  EXPECT_TRUE(I.IsNearlyEqualTo(X_identity, 8 * kEpsilon));
 }
 
 // Tests RigidTransform multiplied by another RigidTransform
@@ -298,7 +298,7 @@ GTEST_TEST(RigidTransform, OperatorMultiplyByRigidTransform) {
   const RotationMatrix<double> R_BA = GetRotationMatrixA();
   const RotationMatrix<double> R_CB = GetRotationMatrixB();
   const RotationMatrix<double> R_CA_expected = R_CB * R_BA;
-  EXPECT_TRUE(R_CA.IsNearlyEqualTo(R_CA_expected, 0).value());
+  EXPECT_TRUE(R_CA.IsNearlyEqualTo(R_CA_expected, 0));
 
   // Expected position vector (from MotionGenesis).
   const double x_expected = 5.761769695362743;
@@ -314,7 +314,7 @@ GTEST_TEST(RigidTransform, OperatorMultiplyByRigidTransform) {
   // As documented in IsNearlyEqualTo(), 32 * epsilon was chosen because it is
   // slightly larger than the characteristic length |p_CoAo_C| = 14.2
   const RigidTransform<double> X_CA_expected(R_CA_expected, p_CoAo_C_expected);
-  EXPECT_TRUE(X_CA.IsNearlyEqualTo(X_CA_expected, 32 * kEpsilon).value());
+  EXPECT_TRUE(X_CA.IsNearlyEqualTo(X_CA_expected, 32 * kEpsilon));
 }
 
 // Tests RigidTransform multiplied by a position vector.
@@ -350,7 +350,7 @@ GTEST_TEST(RigidTransform, CastFromDoubleToAutoDiffXd) {
     for (int j = 0; j < 4; j++) {
       const double mij_double = m_double(i, j);
       const AutoDiffXd& mij_autodiff = m_autodiff(i, j);
-      EXPECT_EQ(mij_autodiff.value(), mij_double);
+      EXPECT_EQ(mij_autodiff, mij_double);
       EXPECT_EQ(mij_autodiff.derivatives().size(), 0);
     }
   }
@@ -359,29 +359,27 @@ GTEST_TEST(RigidTransform, CastFromDoubleToAutoDiffXd) {
 // Verify RigidTransform is compatible with symbolic::Expression. This includes,
 // construction and methods involving Bool specialized for symbolic::Expression,
 // namely: IsExactlyIdentity(), IsIdentityToEpsilon(), IsNearlyEqualTo().
-// TODO(Mitiguy) Once PR 9127 is merged, should not need ExtractBoolOrThrow
-// in any of these tests, so remove them.
 GTEST_TEST(RigidTransform, SymbolicRigidTransformSimpleTests) {
   // Test RigidTransform can be constructed with symbolic::Expression.
   RigidTransform<symbolic::Expression> X;
 
   // Test IsExactlyIdentity() nominally works with symbolic::Expression.
-  Bool<symbolic::Expression> test_Bool = X.IsExactlyIdentity();
-  EXPECT_TRUE(ExtractBoolOrThrow(test_Bool));
+  symbolic::Formula test_Bool = X.IsExactlyIdentity();
+  EXPECT_TRUE(test_Bool);
 
   // Test IsIdentityToEpsilon() nominally works with symbolic::Expression.
   test_Bool = X.IsIdentityToEpsilon(kEpsilon);
-  EXPECT_TRUE(ExtractBoolOrThrow(test_Bool));
+  EXPECT_TRUE(test_Bool);
 
   // Test IsExactlyEqualTo() nominally works for symbolic::Expression.
   const RigidTransform<symbolic::Expression>& X_built_in_identity =
       RigidTransform<symbolic::Expression>::Identity();
   test_Bool = X.IsExactlyEqualTo(X_built_in_identity);
-  EXPECT_TRUE(ExtractBoolOrThrow(test_Bool));
+  EXPECT_TRUE(test_Bool);
 
   // Test IsNearlyEqualTo() nominally works for symbolic::Expression.
   test_Bool = X.IsNearlyEqualTo(X_built_in_identity, kEpsilon);
-  EXPECT_TRUE(ExtractBoolOrThrow(test_Bool));
+  EXPECT_TRUE(test_Bool);
 
   // Now perform the same tests on a non-identity transform.
   const Vector3<symbolic::Expression> p_symbolic(1, 2, 3);
@@ -389,19 +387,19 @@ GTEST_TEST(RigidTransform, SymbolicRigidTransformSimpleTests) {
 
   // Test IsExactlyIdentity() works with symbolic::Expression.
   test_Bool = X.IsExactlyIdentity();
-  EXPECT_FALSE(ExtractBoolOrThrow(test_Bool));
+  EXPECT_FALSE(test_Bool);
 
   // Test IsIdentityToEpsilon() works with symbolic::Expression.
   test_Bool = X.IsIdentityToEpsilon(kEpsilon);
-  EXPECT_FALSE(ExtractBoolOrThrow(test_Bool));
+  EXPECT_FALSE(test_Bool);
 
   // Test IsExactlyEqualTo() works for symbolic::Expression.
   test_Bool = X.IsExactlyEqualTo(X_built_in_identity);
-  EXPECT_FALSE(ExtractBoolOrThrow(test_Bool));
+  EXPECT_FALSE(test_Bool);
 
   // Test IsNearlyEqualTo() works for symbolic::Expression.
   test_Bool = X.IsNearlyEqualTo(X_built_in_identity, kEpsilon);
-  EXPECT_FALSE(ExtractBoolOrThrow(test_Bool));
+  EXPECT_FALSE(test_Bool);
 }
 
 // Test that symbolic conversions may throw exceptions.
@@ -417,19 +415,19 @@ GTEST_TEST(RigidTransform, SymbolicRigidTransformThrowsExceptions) {
 
   // The next four tests should throw exceptions since the tests are
   // inconclusive because the value of x is unknown.
-  Bool<symbolic::Expression> test_Bool = X_symbolic.IsExactlyIdentity();
-  EXPECT_THROW(ExtractBoolOrThrow(test_Bool), std::runtime_error);
+  symbolic::Formula test_Bool = X_symbolic.IsExactlyIdentity();
+  EXPECT_THROW(test_Bool.Evaluate(), std::runtime_error);
 
   test_Bool = X_symbolic.IsIdentityToEpsilon(kEpsilon);
-  EXPECT_THROW(ExtractBoolOrThrow(test_Bool), std::runtime_error);
+  EXPECT_THROW(test_Bool.Evaluate(), std::runtime_error);
 
   const RigidTransform<symbolic::Expression>& X_identity =
       RigidTransform<symbolic::Expression>::Identity();
   test_Bool = X_symbolic.IsExactlyEqualTo(X_identity);
-  EXPECT_THROW(ExtractBoolOrThrow(test_Bool), std::runtime_error);
+  EXPECT_THROW(test_Bool.Evaluate(), std::runtime_error);
 
   test_Bool = X_symbolic.IsNearlyEqualTo(X_identity, kEpsilon);
-  EXPECT_THROW(ExtractBoolOrThrow(test_Bool), std::runtime_error);
+  EXPECT_THROW(test_Bool.Evaluate(), std::runtime_error);
 }
 
 }  // namespace
