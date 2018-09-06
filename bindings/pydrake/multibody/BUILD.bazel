@@ -156,9 +156,21 @@ drake_pybind_library(
     ],
 )
 
+drake_pybind_library(
+    name = "inverse_kinematics_py",
+    cc_so_name = "inverse_kinematics",
+    cc_srcs = ["inverse_kinematics_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        ":multibody_tree_py",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":benchmarks_py",
     ":collision_py",
+    ":inverse_kinematics_py",
     ":joints_py",
     ":multibody_tree_py",
     ":parsers_py",
@@ -240,6 +252,17 @@ drake_py_unittest(
     deps = [
         ":benchmarks_py",
         ":multibody_tree_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "inverse_kinematics_test",
+    data = [
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":benchmarks_py",
+        ":inverse_kinematics_py",
     ],
 )
 
