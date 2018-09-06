@@ -164,6 +164,7 @@ drake_pybind_library(
     py_deps = [
         ":module_py",
         ":multibody_tree_py",
+        "//bindings/pydrake/solvers:mathematicalprogram_py",
     ],
 )
 
