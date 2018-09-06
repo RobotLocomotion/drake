@@ -1099,7 +1099,7 @@ class System : public SystemBase {
 
 
   /// Returns the dimension of the continuous state vector
-  virtual int get_num_continuous_states() const { return 0; }
+  virtual int get_num_continuous_states() const = 0;
 
   /// Returns the constraint at index @p constraint_index.
   /// @throws std::out_of_range for an invalid constraint_index.

@@ -41,6 +41,9 @@ class TestSystem : public System<double> {
         this->AllocateForcedUnrestrictedUpdateEventCollection());
     this->set_name("TestSystem");
   }
+
+  int get_num_continuous_states() const final { return 0; }
+
   ~TestSystem() override {}
 
   using System::AddConstraint;  // allow access to protected method.
@@ -452,7 +455,9 @@ class ValueIOTestSystem : public System<T> {
     this->set_name("ValueIOTestSystem");
   }
 
-  ~ValueIOTestSystem() override {}
+  int get_num_continuous_states() const final { return 0; }
+
+    ~ValueIOTestSystem() override {}
 
   T DoCalcWitnessValue(const Context<T>&,
                        const WitnessFunction<T>&) const override {
@@ -795,6 +800,8 @@ class ComputationTestSystem final : public System<double> {
     EXPECT_EQ(pc, pc_count_);
     EXPECT_EQ(pnc, pnc_count_);
   }
+
+  int get_num_continuous_states() const final { return 0; }
 
  private:
   // Two discrete variable groups of lengths 2 and 4.
