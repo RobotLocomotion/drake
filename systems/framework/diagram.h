@@ -489,7 +489,14 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   }
 
   /// Returns the dimension of the continuous state vector
-  int get_num_continuous_states() const final { return 0;}
+  int get_num_continuous_states() const final {
+    int numStates = 0;
+    for (const auto& system : registered_systems_) {
+      numStates += system->get_num_continuous_states();
+    }
+
+    return numStates;
+  }
 
  protected:
   /// Constructs an uninitialized Diagram. Subclasses that use this constructor
