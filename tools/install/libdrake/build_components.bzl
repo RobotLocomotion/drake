@@ -37,6 +37,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/pendulum",
     "//multibody/collision",
     "//multibody/constraint",
+    "//multibody/inverse_kinematics",
     "//multibody/joints",
     "//multibody/multibody_tree",
     "//multibody/multibody_tree/implicit_stribeck:implicit_stribeck_solver",  # unpackaged  # noqa
