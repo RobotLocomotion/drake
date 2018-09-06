@@ -1,11 +1,11 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
-    "drake_cc_binary",
-    "drake_cc_googletest",
-    "drake_cc_library",
-    "drake_cc_test",
+    "@drake//attic:build_macros.bzl",
+    drake_cc_binary = "attic_drake_cc_binary",
+    drake_cc_googletest = "attic_drake_cc_googletest",
+    drake_cc_library = "attic_drake_cc_library",
+    drake_cc_test = "attic_drake_cc_test",
 )
 load(
     "@drake//tools/skylark:drake_proto.bzl",
@@ -340,6 +340,7 @@ drake_cc_proto_library(
     srcs = [
         "alias_groups.proto",
     ],
+    visibility = ["//visibility:private"],
 )
 
 drake_cc_library(
@@ -701,17 +702,10 @@ filegroup(
     ]),
 )
 
-filegroup(
-    name = "models",
-    srcs = [
-        "models/box.urdf",
-        "models/box_small.urdf",
-    ],
-)
-
 # The extra_srcs are required here because add_lint_tests() doesn't understand
 # how to extract labels from select() functions yet.
 add_lint_tests(
+    cpplint_data = ["//attic:CPPLINT.cfg"],
     cpplint_extra_srcs = [
         "approximate_ik.cc",
         "test/test_approximate_ik.cc",

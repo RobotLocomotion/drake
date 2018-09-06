@@ -227,9 +227,13 @@ Result MaybeFindResourceInAttic(const string& resource_path) {
   DRAKE_DEMAND(StartsWith(resource_path, prefix));
   const string substr = resource_path.substr(prefix.size());
   for (const auto& directory : {
+           "multibody/collision/test",
            "multibody/parsers/test/package_map_test",
            "multibody/parsers/test/parsers_frames_test",
            "multibody/parsers/test/urdf_parser_test",
+           "multibody/rigid_body_plant/test",
+           "multibody/shapes/test",
+           "multibody/test"
        }) {
     if (StartsWith(substr, directory)) {
       const Result attic_result =

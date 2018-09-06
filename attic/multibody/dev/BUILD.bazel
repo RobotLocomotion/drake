@@ -1,9 +1,9 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
-    "drake_cc_googletest",
-    "drake_cc_library",
+    "@drake//attic:build_macros.bzl",
+    drake_cc_googletest = "attic_drake_cc_googletest",
+    drake_cc_library = "attic_drake_cc_library",
 )
 load("//tools/skylark:test_tags.bzl", "gurobi_test_tags")
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -100,4 +100,6 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    cpplint_data = ["//attic:CPPLINT.cfg"],
+)
