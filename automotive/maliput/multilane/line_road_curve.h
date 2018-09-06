@@ -72,7 +72,7 @@ class LineRoadCurve : public RoadCurve {
     return 0.;
   }
 
-  double p_scale() const override { return dp_.norm(); }
+  double l_max() const override { return dp_.norm(); }
 
   Vector3<double> ToCurveFrame(
       const Vector3<double>& geo_coordinate,

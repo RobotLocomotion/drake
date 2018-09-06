@@ -153,7 +153,7 @@ TEST_F(RK3IntegratorTest, DenseOutputAccuracy) {
   rk3.IntegrateWithMultipleSteps(t_step);
 
   // Verify that the dense output was not updated.
-  EXPECT_LT(rk3_dense_output->get_end_time(), context->get_time());
+  EXPECT_LT(rk3_dense_output->end_time(), context->get_time());
 }
 
 }  // namespace analysis_test

@@ -74,6 +74,31 @@ namespace multibody_plant {
 /// generalized forces applied on the system. These can include externally
 /// applied body forces, constraint forces, and contact forces.
 ///
+/// @section sdf_loading Loading models from SDF files
+///
+/// Drake has the capability of loading multibody models from SDF files.
+/// Consider the example below which loads an acrobot model from a file:
+/// @code
+///   MultibodyPlant<T> acrobot;
+///   const std::string relative_name =
+///     "drake/multibody/benchmarks/acrobot/acrobot.sdf";
+///   const std::string full_name = FindResourceOrThrow(relative_name);
+///   AddModelFromSdfFile(full_name, &acrobot, &scene_graph);
+/// @endcode
+/// As in the example above, for models including visual geometry, collision
+/// geometry or both, the user must specify a SceneGraph for geometry handling.
+/// You can find a full example of the LQR controlled acrobot in
+/// examples/multibody/acrobot/run_lqr.cc.
+///
+/// AddModelFromSdfFile() can be invoked multiple times on the same plant in
+/// order to load multiple model instances.
+/// Other parsing variants are available in
+/// multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h such as
+/// AddModelsFromSdfFile() (please note the change to plural, i.e, "Models"
+/// instead of "Model") which allows creating model instances per each
+/// `<model>` tag found in the file. Please refer to each of these method's
+/// documentation for further details.
+///
 /// @section adding_elements Adding modeling elements
 ///
 /// @cond
@@ -282,9 +307,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @endcode
   ///
   /// @param[in] name
-  ///   A string that uniquely identifies the new body to be added to `this`
-  ///   model. A std::runtime_error is thrown if a body named `name` already is
-  ///   part of the model. See HasBodyNamed(), Body::name().
+  ///   A string that identifies the new body to be added to `this` model. A
+  ///   std::runtime_error is thrown if a body named `name` already is part of
+  ///   @p model_instance. See HasBodyNamed(), Body::name().
   /// @param[in] model_instance
   ///   A model instance index which this body is part of.
   /// @param[in] M_BBo_B
@@ -326,9 +351,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @endcode
   ///
   /// @param[in] name
-  ///   A string that uniquely identifies the new body to be added to `this`
-  ///   model. A std::runtime_error is thrown if a body named `name` already is
-  ///   part of the model. See HasBodyNamed(), Body::name().
+  ///   A string that identifies the new body to be added to `this` model. A
+  ///   std::runtime_error is thrown if a body named `name` already is part of
+  ///   the model in the default model instance. See HasBodyNamed(),
+  ///   Body::name().
   /// @param[in] M_BBo_B
   ///   The SpatialInertia of the new rigid body to be added to `this`
   ///   %MultibodyPlant, computed about the body frame origin `Bo` and expressed
@@ -346,6 +372,27 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     }
 
     return AddRigidBody(name, default_model_instance(), M_BBo_B);
+  }
+
+  /// This method adds a Frame of type `FrameType<T>`. For more information,
+  /// please see the corresponding constructor of `FrameType`.
+  /// @tparam FrameType Template which will be instantiated on `T`.
+  /// @param frame Unique pointer frame instance.
+  /// @returns A constant reference to the new Frame just added, which will
+  ///          remain valid for the lifetime of `this` %MultibodyPlant.
+  template <template<typename> class FrameType>
+  const FrameType<T>& AddFrame(std::unique_ptr<FrameType<T>> frame) {
+    return model_->AddFrame(std::move(frame));
+  }
+
+  /// This method adds a Joint of type `JointType` between two bodies.
+  /// For more information, see the below overload of `AddJoint<>`, and the
+  /// related `MultibodyTree::AddJoint<>` method.
+  template <template<typename Scalar> class JointType>
+  const JointType<T>& AddJoint(std::unique_ptr<JointType<T>> joint) {
+    static_assert(std::is_convertible<JointType<T>*, Joint<T>*>::value,
+                  "JointType must be a sub-class of Joint<T>.");
+    return model_->AddJoint(std::move(joint));
   }
 
   /// This method adds a Joint of type `JointType` between two bodies.
@@ -520,21 +567,60 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   /// @returns `true` if a body named `name` was added to the %MultibodyPlant.
   /// @see AddRigidBody().
+  ///
+  /// @throws std::logic_error if the body name occurs in multiple model
+  /// instances.
   bool HasBodyNamed(const std::string& name) const {
     return model_->HasBodyNamed(name);
   }
 
+  /// @returns `true` if a body named `name` was added to the %MultibodyPlant
+  /// in @p model_instance.
+  /// @see AddRigidBody().
+  ///
+  /// @throws if @p model_instance is not valid for this model.
+  bool HasBodyNamed(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    return model_->HasBodyNamed(name, model_instance);
+  }
+
   /// @returns `true` if a joint named `name` was added to the %MultibodyPlant.
   /// @see AddJoint().
+  ///
+  /// @throws std::logic_error if the joint name occurs in multiple model
+  /// instances.
   bool HasJointNamed(const std::string& name) const {
     return model_->HasJointNamed(name);
+  }
+
+  /// @returns `true` if a joint named `name` was added to the %MultibodyPlant
+  /// in @p model_instance.
+  /// @see AddJoint().
+  ///
+  /// @throws if @p model_instance is not valid for this model.
+  bool HasJointNamed(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    return model_->HasJointNamed(name, model_instance);
   }
 
   /// @returns `true` if an actuator named `name` was added to the
   /// %MultibodyPlant.
   /// @see AddJointActuator().
+  ///
+  /// @throws std::logic_error if the actuator name occurs in multiple model
+  /// instances.
   bool HasJointActuatorNamed(const std::string& name) const {
     return model_->HasJointActuatorNamed(name);
+  }
+
+  /// @returns `true` if an actuator named `name` was added to the
+  /// %MultibodyPlant in @p model_instance.
+  /// @see AddJointActuator().
+  ///
+  /// @throws if @p model_instance is not valid for this model.
+  bool HasJointActuatorNamed(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    return model_->HasJointActuatorNamed(name, model_instance);
   }
 
   /// @returns `true` if a model instance named `name` was added to the
@@ -549,28 +635,81 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// These methods allow a user to retrieve a reference to a multibody element
   /// by its name. An exception is thrown if there is no element with the
   /// requested name.
+
   /// These queries can be performed at any time during the lifetime of a
   /// %MultibodyPlant, i.e. there is no restriction on whether they must
   /// be called before or after Finalize(). This implies that these queries can
   /// be performed while new multibody elements are being added to the model.
+  ///
+  /// If the named element is present in more than one model instance and a
+  /// model instance is not explicitly specified, std::logic_error is thrown.
+  ///
   /// @{
 
-  /// Returns a constant reference to the rigid body that is uniquely identified
+  /// Returns a constant reference to a body that is identified
   /// by the string `name` in `this` %MultibodyPlant.
   /// @throws std::logic_error if there is no body with the requested name.
+  /// @throws std::logic_error if the body name occurs in multiple model
+  /// instances.
   /// @see HasBodyNamed() to query if there exists a body in `this`
   /// %MultibodyPlant with a given specified name.
   const Body<T>& GetBodyByName(const std::string& name) const {
     return model_->GetBodyByName(name);
   }
 
-  /// Returns a constant reference to the joint that is uniquely identified
+  /// Returns a constant reference to the body that is uniquely identified
+  /// by the string `name` and @p model_instance in `this` %MultibodyPlant.
+  /// @throws std::logic_error if there is no body with the requested name.
+  /// @see HasBodyNamed() to query if there exists a body in `this`
+  /// %MultibodyPlant with a given specified name.
+  const Body<T>& GetBodyByName(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    return model_->GetBodyByName(name, model_instance);
+  }
+
+  /// Returns a constant reference to a frame that is identified by the
+  /// string `name` in `this` model.
+  /// @throws std::logic_error if there is no frame with the requested name.
+  /// @throws std::logic_error if the frame name occurs in multiple model
+  /// instances.
+  /// @see HasFrameNamed() to query if there exists a frame in `this` model with
+  /// a given specified name.
+  const Frame<T>& GetFrameByName(const std::string& name) const {
+    return model_->GetFrameByName(name);
+  }
+
+  /// Returns a constant reference to the frame that is uniquely identified
+  /// by the string `name` in @p model_instance.
+  /// @throws std::logic_error if there is no frame with the requested name.
+  /// @throws std::runtime_error if @p model_instance is not valid for this
+  ///         model.
+  /// @see HasFrameNamed() to query if there exists a frame in `this` model with
+  /// a given specified name.
+  const Frame<T>& GetFrameByName(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    return model_->GetFrameByName(name, model_instance);
+  }
+
+  /// Returns a constant reference to a joint that is identified
   /// by the string `name` in `this` %MultibodyPlant.
   /// @throws std::logic_error if there is no joint with the requested name.
+  /// @throws std::logic_error if the joint name occurs in multiple model
+  /// instances.
   /// @see HasJointNamed() to query if there exists a joint in `this`
   /// %MultibodyPlant with a given specified name.
   const Joint<T>& GetJointByName(const std::string& name) const {
     return model_->GetJointByName(name);
+  }
+
+  /// Returns a constant reference to the joint that is uniquely identified
+  /// by the string `name` and @p model_instance in `this` %MultibodyPlant.
+  /// @throws std::logic_error if there is no joint with the requested name.
+  /// @throws if @p model_instance is not valid for this model.
+  /// @see HasJointNamed() to query if there exists a joint in `this`
+  /// %MultibodyPlant with a given specified name.
+  const Joint<T>& GetJointByName(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    return model_->GetJointByName(name, model_instance);
   }
 
   /// A templated version of GetJointByName() to return a constant reference of
@@ -580,6 +719,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// be a subclass of Joint.
   /// @throws std::logic_error if the named joint is not of type `JointType` or
   /// if there is no Joint with that name.
+  /// @throws std::logic_error if the joint name occurs in multiple model
+  /// instances.
   /// @see HasJointNamed() to query if there exists a joint in `this`
   /// %MultibodyPlant with a given specified name.
   template <template<typename> class JointType>
@@ -587,14 +728,43 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return model_->template GetJointByName<JointType>(name);
   }
 
-  /// Returns a constant reference to the actuator that is uniquely identified
+  /// A templated version of GetJointByName() to return a constant reference of
+  /// the specified type `JointType` in place of the base Joint class. See
+  /// GetJointByName() for details.
+  /// @tparam JointType The specific type of the Joint to be retrieved. It must
+  /// be a subclass of Joint.
+  /// @throws std::logic_error if the named joint is not of type `JointType` or
+  /// if there is no Joint with that name.
+  /// @throws if @p model_instance is not valid for this model.
+  /// @see HasJointNamed() to query if there exists a joint in `this`
+  /// %MultibodyPlant with a given specified name.
+  template <template<typename> class JointType>
+  const JointType<T>& GetJointByName(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    return model_->template GetJointByName<JointType>(name, model_instance);
+  }
+
+  /// Returns a constant reference to an actuator that is identified
   /// by the string `name` in `this` %MultibodyPlant.
   /// @throws std::logic_error if there is no actuator with the requested name.
+  /// @throws std::logic_error if the actuator name occurs in multiple model
+  /// instances.
   /// @see HasJointActuatorNamed() to query if there exists an actuator in
   /// `this` %MultibodyPlant with a given specified name.
   const JointActuator<T>& GetJointActuatorByName(
       const std::string& name) const {
     return model_->GetJointActuatorByName(name);
+  }
+
+  /// Returns a constant reference to the actuator that is uniquely identified
+  /// by the string `name` and @p model_instance in `this` %MultibodyPlant.
+  /// @throws std::logic_error if there is no actuator with the requested name.
+  /// @throws if @p model_instance is not valid for this model.
+  /// @see HasJointActuatorNamed() to query if there exists an actuator in
+  /// `this` %MultibodyPlant with a given specified name.
+  const JointActuator<T>& GetJointActuatorByName(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    return model_->GetJointActuatorByName(name, model_instance);
   }
 
   /// Returns the index to the model instance that is uniquely identified
@@ -636,6 +806,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @param[in] shape
   ///   The geometry::Shape used for visualization. E.g.: geometry::Sphere,
   ///   geometry::Cylinder, etc.
+  /// @param[in] name
+  ///   The name for the geometry. It must satsify the requirements defined in
+  ///   drake::geometry::GeometryInstance.
   /// @param[in] material
   ///   The visual material to assign to the geometry.
   /// @param[out] scene_graph
@@ -648,14 +821,16 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @returns the id for the registered geometry.
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
-      const geometry::Shape& shape, const geometry::VisualMaterial& material,
+      const geometry::Shape& shape, const std::string& name,
+      const geometry::VisualMaterial& material,
       geometry::SceneGraph<T>* scene_graph);
 
   /// Overload for visual geometry registration; it implicitly assigns the
   /// default material.
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
-      const geometry::Shape& shape, geometry::SceneGraph<T>* scene_graph);
+      const geometry::Shape& shape, const std::string& name,
+      geometry::SceneGraph<T>* scene_graph);
 
   /// Returns an array of GeometryId's identifying the different visual
   /// geometries for `body` previously registered with a SceneGraph.
@@ -699,7 +874,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// same instance with which RegisterAsSourceForSceneGraph() was called.
   geometry::GeometryId RegisterCollisionGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
-      const geometry::Shape& shape,
+      const geometry::Shape& shape, const std::string& name,
       const CoulombFriction<double>& coulomb_friction,
       geometry::SceneGraph<T>* scene_graph);
 
@@ -745,7 +920,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   ///
   /// @throws std::exception if called pre-finalize.
   geometry::GeometrySet CollectRegisteredGeometries(
-      const std::vector<const RigidBody<T>*>& bodies) const;
+      const std::vector<const Body<T>*>& bodies) const;
 
   /// Returns the friction coefficients provided during geometry registration
   /// for the given geometry `id`. We call these the "default" coefficients but
@@ -914,6 +1089,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {
     return model_->world_body();
+  }
+
+  /// Returns a constant reference to the *world* frame.
+  const BodyFrame<T>& world_frame() const {
+    return model_->world_frame();
   }
 
   /// Returns a constant reference to the underlying MultibodyTree model for
@@ -1223,6 +1403,20 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
       drake::systems::DiscreteValues<T>* updates) const override;
 
+  // Helper method used within DoCalcDiscreteVariableUpdates() to update
+  // generalized velocities from previous step value v0 to next step value v.
+  // This helper uses num_substeps within a time interval of duration dt
+  // to perform the update using a step size dt_substep = dt/num_substeps.
+  // During the time span dt the problem data M, Jn, Jt and minus_tau, are
+  // approximated to be constant, a first order approximation.
+  implicit_stribeck::ComputationInfo SolveUsingSubStepping(
+      int num_substeps,
+      const MatrixX<T>& M0, const MatrixX<T>& Jn, const MatrixX<T>& Jt,
+      const VectorX<T>& minus_tau,
+      const VectorX<T>& stiffness, const VectorX<T>& damping,
+      const VectorX<T>& mu,
+      const VectorX<T>& v0, const VectorX<T>& phi0) const;
+
   void DoMapQDotToVelocity(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,
@@ -1232,9 +1426,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
       systems::VectorBase<T>* qdot) const override;
-
-  // Helper method to declare cache entries to be allocated in the context.
-  void DeclareCacheEntries();
 
   // Helper method to Eval() position kinematics cached in the context.
   const PositionKinematicsCache<T>& EvalPositionKinematics(
@@ -1259,6 +1450,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   geometry::GeometryId RegisterGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape,
+      const std::string& name,
       const optional<geometry::VisualMaterial>& material,
       geometry::SceneGraph<T>* scene_graph);
 
@@ -1271,6 +1463,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   //    passed to RegisterAsSourceForSceneGraph().
   geometry::GeometryId RegisterAnchoredGeometry(
       const Isometry3<double>& X_WG, const geometry::Shape& shape,
+      const std::string& name,
       const optional<geometry::VisualMaterial>& material,
       geometry::SceneGraph<T>* scene_graph);
 
@@ -1364,17 +1557,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // The penalty parameters k (stiffness) and c (damping) are estimated using
   // a harmonic oscillator model within SetUpJointLimitsParameters().
   void AddJointLimitsPenaltyForces(
-      const systems::Context<T>& context, MultibodyForces<T>* forces) const;
-
-  // Helper method to apply forces due to damping at the joints.
-  // Currently, MultibodyPlant treats damping forces separately from other
-  // ForceElement forces so that it can use an implicit scheme in the time
-  // stepping scheme.
-  // TODO(amcastro-tri): Consider updating ForceElement to also compute a
-  // Jacobian for general force models. That would allow MultibodyPlant to use
-  // that general infrastructure rather than having to deal with damping in a
-  // special way.
-  void AddJointDampingForces(
       const systems::Context<T>& context, MultibodyForces<T>* forces) const;
 
   // Given a set of point pairs in `point_pairs_set`, this method computes the
@@ -1603,14 +1785,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // TODO(amcastro-tri): Remove this when caching lands and properly cache the
   // contact results.
   // Until caching lands, we use this variable as a "caching" entry.
-  // We make it mutable so we can change its values even from withing const
+  // We make it mutable so we can change its values even from within const
   // methods.
   mutable ContactResults<T> contact_results_;
-
-  // Temporary solution for fake cache entries to help stabilize the API.
-  // TODO(amcastro-tri): Remove these when caching lands.
-  std::unique_ptr<PositionKinematicsCache<T>> pc_;
-  std::unique_ptr<VelocityKinematicsCache<T>> vc_;
 };
 
 /// @cond

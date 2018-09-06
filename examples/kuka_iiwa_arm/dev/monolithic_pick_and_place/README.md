@@ -2,7 +2,7 @@ A simulation demo of a pick-and-place of a box executed by the KUKA IIWA Arm
 with a Schunk WSG gripper attached to its end.
 
 The following instructions assume Drake was
-[built using bazel](http://drake.mit.edu/bazel.html?highlight=bazel).
+[built using bazel](https://drake.mit.edu/bazel.html?highlight=bazel).
 
 It is strongly recommended that you build drake along with SNOPT in order
 to execute this demo. The default demo executable utilizes IPOPT instead

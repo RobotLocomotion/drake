@@ -32,17 +32,41 @@ class MultilaneLineRoadCurveTest : public ::testing::Test {
   const double kRMin{-10.0};
   const double kRMax{10.0};
   const api::HBounds elevation_bounds{0.0, 10.0};
+  const double kR0Offset{0.0};
+  const double kROffset{5.0};
 };
 
 // Checks line reference curve interpolations, derivatives, and lengths.
 TEST_F(MultilaneLineRoadCurveTest, LineRoadCurve) {
   const LineRoadCurve dut(kOrigin, kDirection, zp, zp, kLinearTolerance,
                           kScaleLength, kComputationPolicy);
-  // Checks the length.
-  EXPECT_NEAR(dut.p_scale(),
-              std::sqrt(kDirection.x() * kDirection.x() +
-                        kDirection.y() * kDirection.y()),
-              kVeryExact);
+  // Checks curve length computations.
+  const double kExpectedLength = std::sqrt(kDirection.x() * kDirection.x() +
+                                           kDirection.y() * kDirection.y());
+  // The total path length of the reference curve l_max and the total path
+  // length of the curve along the centerline s_max for r = h = 0 should match
+  // provided that the curve shows no elevation.
+  EXPECT_NEAR(dut.l_max(), kExpectedLength, kVeryExact);
+  std::function<double(double)> s_from_p_at_r0 =
+      dut.OptimizeCalcSFromP(kR0Offset);
+  const double centerline_length = s_from_p_at_r0(1.);
+  EXPECT_NEAR(centerline_length, kExpectedLength, kVeryExact);
+  // Checks that both `s` and `p` bounds are enforced on
+  // mapping evaluation along the centerline
+  std::function<double(double)> p_from_s_at_r0 =
+      dut.OptimizeCalcPFromS(kR0Offset);
+  EXPECT_THROW(s_from_p_at_r0(2.), std::runtime_error);
+  EXPECT_THROW(p_from_s_at_r0(2. * centerline_length), std::runtime_error);
+  // Checks that both `s` and `p` bounds are enforced on
+  // mapping evaluation at an offset
+  std::function<double(double)> s_from_p_at_r =
+      dut.OptimizeCalcSFromP(kROffset);
+  std::function<double(double)> p_from_s_at_r =
+      dut.OptimizeCalcPFromS(kROffset);
+  const double offset_line_length = s_from_p_at_r(1.);
+  EXPECT_THROW(s_from_p_at_r0(2.), std::runtime_error);
+  EXPECT_THROW(p_from_s_at_r0(2. * offset_line_length), std::runtime_error);
+
   // Check the evaluation of xy at different p values.
   EXPECT_TRUE(
       CompareMatrices(dut.xy_of_p(0.0), kOrigin, kVeryExact));
@@ -126,8 +150,9 @@ TEST_F(MultilaneLineRoadCurveTest, ToCurveFrameTest) {
       Vector3<double>(0.05, -0.707106781186547, 7.0), kVeryExact));
 }
 
-// Checks that p_scale(), p_from_s() and s_from_p() with constant superelevation
-// polynomial and up to linear elevation polynomial behave properly.
+// Checks that l_max(), p_from_s() and s_from_p() with constant
+// superelevation polynomial and up to linear elevation polynomial behave
+// properly.
 TEST_F(MultilaneLineRoadCurveTest, OffsetTest) {
   const std::vector<double> r_vector{-10., 0., 10.};
   const std::vector<double> p_vector{0., 0.1, 0.2, 0.5, 0.7, 1.0};
@@ -135,17 +160,21 @@ TEST_F(MultilaneLineRoadCurveTest, OffsetTest) {
   // Checks for flat LineRoadCurve.
   const LineRoadCurve flat_dut(kOrigin, kDirection, zp, zp, kLinearTolerance,
                                kScaleLength, kComputationPolicy);
-  EXPECT_DOUBLE_EQ(flat_dut.p_scale(), kDirection.norm());
+  EXPECT_DOUBLE_EQ(flat_dut.l_max(), kDirection.norm());
   // Evaluates inverse function for different path length and offset values.
   for (double r : r_vector) {
+    std::function<double(double)> p_from_s_at_r =
+        flat_dut.OptimizeCalcPFromS(r);
     for (double p : p_vector) {
-      EXPECT_DOUBLE_EQ(flat_dut.CalcPFromS(p * kDirection.norm(), r), p);
+      EXPECT_DOUBLE_EQ(p_from_s_at_r(p * kDirection.norm()), p);
     }
   }
   // Evaluates the path length integral for different offset values.
   for (double r : r_vector) {
+    std::function<double(double)> s_from_p_at_r =
+        flat_dut.OptimizeCalcSFromP(r);
     for (double p : p_vector) {
-      EXPECT_DOUBLE_EQ(flat_dut.CalcSFromP(p, r), p * kDirection.norm());
+      EXPECT_DOUBLE_EQ(s_from_p_at_r(p), p * kDirection.norm());
     }
   }
 
@@ -155,14 +184,18 @@ TEST_F(MultilaneLineRoadCurveTest, OffsetTest) {
   const LineRoadCurve elevated_dut(kOrigin, kDirection, linear_elevation, zp,
                                    kLinearTolerance, kScaleLength,
                                    kComputationPolicy);
-  EXPECT_DOUBLE_EQ(elevated_dut.p_scale(), kDirection.norm());
+  EXPECT_DOUBLE_EQ(elevated_dut.l_max(), kDirection.norm());
   // Evaluates inverse function and path length integral for different values of
   // p and r lateral offsets.
   for (double r : r_vector) {
+    std::function<double(double)> s_from_p_at_r =
+        elevated_dut.OptimizeCalcSFromP(r);
+    std::function<double(double)> p_from_s_at_r =
+        elevated_dut.OptimizeCalcPFromS(r);
     for (double p : p_vector) {
       const double s = p * kDirection.norm() * std::sqrt(1. + slope * slope);
-      EXPECT_DOUBLE_EQ(elevated_dut.CalcPFromS(s, r), p);
-      EXPECT_DOUBLE_EQ(elevated_dut.CalcSFromP(p, r), s);
+      EXPECT_DOUBLE_EQ(p_from_s_at_r(s), p);
+      EXPECT_DOUBLE_EQ(s_from_p_at_r(p), s);
     }
   }
 }

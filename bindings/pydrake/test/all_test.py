@@ -70,6 +70,8 @@ class TestAll(unittest.TestCase):
             "jacobian",
             "sin",
             "cos",
+            # geometry
+            "SceneGraph",
             # lcm
             "DrakeLcm",
             # symbolic
@@ -84,6 +86,11 @@ class TestAll(unittest.TestCase):
             # - planner
             "DoDifferentialInverseKinematics",
             # multibody
+            # - benchmarks
+            "MakeAcrobotPlant",
+            # - multibody_tree
+            "MultibodyPlant",
+            "SpatialVelocity",
             # - parsers
             "PackageMap",
             # - rigid_body_plant
@@ -94,8 +101,6 @@ class TestAll(unittest.TestCase):
             # TODO(eric.cousineau): Avoid collision with `collision.Element`.
             # Import modules, since these names are generic.
             "Element",
-            # - multibody_tree
-            "SpatialVelocity",
             # solvers
             # - gurobi
             "GurobiSolver",
@@ -113,6 +118,8 @@ class TestAll(unittest.TestCase):
             "LeafSystem",
             # - analysis
             "Simulator",
+            # - lcm
+            "PySerializer",
             # - primitives
             "Adder",
             # - rendering

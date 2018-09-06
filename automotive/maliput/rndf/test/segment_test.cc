@@ -15,7 +15,7 @@ namespace {
 
 // The following tolerances are very strict as they are not used to compute
 // anything in the following tests. However, we need them for the RoadGeometry
-// constuctor.
+// constructor.
 const double kLinearTolerance = 1e-12;
 const double kAngularTolerance = 1e-12;
 

@@ -108,45 +108,17 @@ def library_lint(
 
     # If there was a package_library rule, ensure its deps are comprehensive.
     if package_library_rule:
-        # If snopt is disabled, we have to use a dummy scope and expression.
-        #
-        # Details: When snopt is enabled, we obtain the @snopt source code via
-        # git.  When snopt is disabled, there is no guarantee that git is still
-        # going to work (e.g., the repository is authenticated).  Normally this
-        # is not a problem.  However, during a `bazel query` or `genquery()`
-        # computation, Bazel still builds a graph where the conditional
-        # dependency on snopt is reified, and so its repository_rule gets run
-        # (and fails).  Thus, we shouldn't do any genquery() operations unless
-        # snopt is enabled.  Instead, we'll scope the genquery to a dummy
-        # label, and nerf the expression to be definitionally empty.
-        #
-        # TODO(jwnimmer-tri) Figure out how make linting work even when snopt
-        # is disabled.
-        dummy = "@bazel_tools//tools/cpp:empty"
-        dummy_expression = "{} except {}".format(dummy, dummy)
         native.genquery(
             name = "library_lint_missing_deps",
-            expression = select({
-                "//tools:with_snopt": missing_deps_expression,
-                "//conditions:default": dummy_expression,
-            }),
-            scope = select({
-                "//tools:with_snopt": scope,
-                "//conditions:default": [dummy],
-            }),
+            expression = missing_deps_expression,
+            scope = scope,
             testonly = 1,
             visibility = ["//visibility:private"],
         )
         native.genquery(
             name = "library_lint_extra_deps",
-            expression = select({
-                "//tools:with_snopt": extra_deps_expression,
-                "//conditions:default": dummy_expression,
-            }),
-            scope = select({
-                "//tools:with_snopt": scope,
-                "//conditions:default": [dummy],
-            }),
+            expression = extra_deps_expression,
+            scope = scope,
             testonly = 1,
             visibility = ["//visibility:private"],
         )

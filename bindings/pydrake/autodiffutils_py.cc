@@ -19,7 +19,7 @@ PYBIND11_MODULE(_autodiffutils_py, m) {
 
   // Install NumPy warning filtres.
   // N.B. This may interfere with other code, but until that is a confirmed
-  // issue, we should agressively try to avoid these warnings.
+  // issue, we should aggressively try to avoid these warnings.
   py::module::import("pydrake.util.deprecation")
       .attr("install_numpy_warning_filters")();
 

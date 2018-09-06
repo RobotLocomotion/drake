@@ -13,17 +13,17 @@ namespace multilane {
 double ArcRoadCurve::FastCalcPFromS(double s, double r) const {
   const double effective_radius = offset_radius(r);
   const double elevation_domain = effective_radius / radius_;
-  return s / (p_scale() * std::sqrt(elevation_domain * elevation_domain +
-                                    elevation().fake_gprime(1.) *
-                                    elevation().fake_gprime(1.)));
+  return s / (l_max() * std::sqrt(elevation_domain * elevation_domain +
+                                  elevation().fake_gprime(1.) *
+                                  elevation().fake_gprime(1.)));
 }
 
 double ArcRoadCurve::FastCalcSFromP(double p, double r) const {
   const double effective_radius = offset_radius(r);
   const double elevation_domain = effective_radius / radius_;
-  return p * p_scale() * std::sqrt(elevation_domain * elevation_domain +
-                                   elevation().fake_gprime(p) *
-                                   elevation().fake_gprime(p));
+  return p * l_max() * std::sqrt(elevation_domain * elevation_domain +
+                                 elevation().fake_gprime(p) *
+                                 elevation().fake_gprime(p));
 }
 
 namespace {
@@ -117,7 +117,7 @@ Vector3<double> ArcRoadCurve::ToCurveFrame(
   // Calculate the (uniform) road elevation.
   // N.B. h is the geo z-coordinate referenced against the lane elevation (whose
   // `a` coefficient is normalized by lane length).
-  const double h_unsaturated = geo_coordinate.z() - elevation().a() * p_scale();
+  const double h_unsaturated = geo_coordinate.z() - elevation().a() * l_max();
   const double h = math::saturate(h_unsaturated, height_bounds.min(),
                                   height_bounds.max());
   return Vector3<double>(p, r, h);

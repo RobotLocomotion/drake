@@ -35,19 +35,19 @@ optional<api::LaneEnd> Lane::DoGetDefaultBranch(
 
 
 double Lane::do_length() const {
-  return elevation().s_p(1.0) * p_scale_;
+  return elevation().s_p(1.0) * l_max_;
 }
 
 
 Rot3 Lane::Rabg_of_p(const double p) const {
-  return Rot3(superelevation().f_p(p) * p_scale_,
+  return Rot3(superelevation().f_p(p) * l_max_,
               -std::atan(elevation().f_dot_p(p)),
               heading_of_p(p));
 }
 
 
 double Lane::p_from_s(const double s) const {
-  return elevation().p_s(s / p_scale_);
+  return elevation().p_s(s / l_max_);
 }
 
 
@@ -69,7 +69,7 @@ V3 Lane::W_prime_of_prh(const double p, const double r, const double h,
   const double sg = std::sin(gamma);
 
   // Evaluate dα/dp, dβ/dp, dγ/dp...
-  const double d_alpha = superelevation().f_dot_p(p) * p_scale_;
+  const double d_alpha = superelevation().f_dot_p(p) * l_max_;
   const double d_beta = -cb * cb * elevation().f_ddot_p(p);
   const double d_gamma = heading_dot_of_p(p);
 
@@ -83,13 +83,13 @@ V3 Lane::W_prime_of_prh(const double p, const double r, const double h,
   //
   //   ∂G(p)/∂p = G'(p)
   //
-  //   ∂Z(p)/∂p = p_scale * (z / p_scale) = p_scale * g'(p)
+  //   ∂Z(p)/∂p = l_max * (z / l_max) = l_max * g'(p)
   //
   //   ∂R_αβγ/∂p = (∂R_αβγ/∂α ∂R_αβγ/∂β ∂R_αβγ/∂γ)*(dα/dp, dβ/dp, dγ/dp)
   return
       V3(G_prime.x(),
          G_prime.y(),
-         p_scale_ * g_prime) +
+         l_max_ * g_prime) +
 
       V3((((sa*sg)+(ca*sb*cg))*r + ((ca*sg)-(sa*sb*cg))*h),
          (((-sa*cg)+(ca*sb*sg))*r - ((ca*cg)+(sa*sb*sg))*h),
@@ -125,7 +125,7 @@ api::GeoPosition Lane::DoToGeoPosition(
   // Recover parameter p from arc-length position s.
   const double p = p_from_s(lane_pos.s());
   // Calculate z (elevation) of (s,0,0);
-  const double z = elevation().f_p(p) * p_scale_;
+  const double z = elevation().f_p(p) * l_max_;
   // Calculate x,y of (s,0,0).
   const V2 xy = xy_of_p(p);
   // Calculate orientation of (s,r,h) basis at (s,0,0).
@@ -191,9 +191,9 @@ api::LanePosition Lane::DoEvalMotionDerivatives(
 
   // The definition of path-length of a path along σ yields dσ = |∂W/∂p| dp.
   // Similarly, path-length s along the road at r = 0 is related to the
-  // elevation by ds = p_scale * sqrt(1 + g'^2) dp.  Chaining yields ds/dσ:
+  // elevation by ds = l_max * sqrt(1 + g'^2) dp.  Chaining yields ds/dσ:
   const double ds_dsigma =
-      p_scale_ * std::sqrt(1 + (g_prime * g_prime)) / W_prime.norm();
+      l_max_ * std::sqrt(1 + (g_prime * g_prime)) / W_prime.norm();
 
   return api::LanePosition(ds_dsigma * velocity.sigma_v,
                            velocity.rho_v,

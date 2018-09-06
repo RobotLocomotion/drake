@@ -4,13 +4,18 @@ CLion IDE setup
 
 This guide describes how to set up Drake in the JetBrains CLion IDE.
 
+**NOTE: EVERY SETUP STEP IN THIS DOCUMENT IS CRITICAL TO GET CLION WORKING
+PROPERLY.  Read carefully, and don't skip anything.**
+
 Using CLion with Bazel
 ======================
 
-(See note below about CLion versions compatible with Bazel.)
-
-First, install Bazel and build Drake with Bazel, following
+First, you **must** install Bazel and build Drake with Bazel, following
 :ref:`the Drake Bazel instructions <bazel>`.
+
+To use Drake with CLion, your Drake checkout **must** be named ``drake``.
+
+(See note below about CLion versions compatible with Bazel.)
 
 A Note About Environment Variables
 ----------------------------------
@@ -52,9 +57,10 @@ Installing CLion
    academic license `here <https://www.jetbrains.com/shop/eform/students>`_.
 
 The most recent versions that we have tested for compatibility are:
-  - CLion 2018.1.2
-  - Bazel 0.14.1
-  - "CLion with Bazel" plug-in 2018.05.21.0.0.
+  - Bazel 0.16.1
+  - CLion 2018.1.6 with:
+
+    - Bazel plug-in 2018.08.06.0.1.
 
 Upgrading CLion
 ---------------
@@ -67,26 +73,21 @@ Users upgrading from a previous version of CLion should do the following:
    in your user directory, typically ``~/.local/share/applications``.
 2. Uninstall the previous version of the Bazel plugin and update to the latest
    version. See `Installing the Bazel Plugin`_.
-3. CLion 2017.1.3 users, confirm that you are using Bazel plugin 2017.05.02
-   and Bazel version 0.5.2.
 
 **Note**: It is not necessary to import your project into a *new* CLion project.
-Overwriting the old project is appropriate (i.e., the directory likely located
-in ``~/ClionProjects/project-name``).
+Overwriting the old project is appropriate.
 
 Installing the Bazel Plugin
 ---------------------------
 
-To use Bazel in CLion, you must install a plugin supplied by Google.  To
-install the plugin, open ``File > Settings``, select ``Plugins``, and press the
-``Browse repositories`` button.  Locate and install the ``CLion with Bazel``
-plugin. You will be prompted to restart CLion.
+To use Bazel in CLion, you **must** install a plugin supplied by Google.  To
+install the plugin, open ``Settings`` (either ``Welcome > Configure >
+Settings`` or ``File > Settings``), select ``Plugins``, and press the ``Browse
+repositories`` button.  Locate and install the ``Bazel`` plugin. You will be
+prompted to restart CLion.
 
-To use Drake with CLion, your Drake checkout should ideally be named ``drake``;
-if it isn't, navigation features like "Jump to Definition" will have confusing
-results.
-
-Open ``Settings >> Bazel Settings``.  For ``Bazel binary location`` select the
+To use Drake in CLion you **must** use Drake's bazel wrapper.
+Open ``Settings > Bazel Settings``.  For ``Bazel binary location`` select the
 path to ``drake/tools/clion/bazel_wrapper`` from any recent Drake source tree
 (it doesn't have to match the current project open in CLion).
 
@@ -254,7 +255,7 @@ find such issues. We'll define two tools:
   ``#include`` directives.
 
 These tools produce reports. In some cases, the reports can be automatically
-converted into clickable links so that you can click on a messsage and be taken
+converted into clickable links so that you can click on a message and be taken
 to the file and line indicated in the message. The configuration instructions
 include the details of how to configure these clickable links.
 

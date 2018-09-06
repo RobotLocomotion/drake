@@ -15,6 +15,9 @@ namespace geometry {
 /**
  A simple identifier class.
 
+ @note This is *purposely* a separate class from @ref TypeSafeIndex. For more
+ explanatation, see @ref TypeSafeIndexVsIndentifier "this section".
+
  This class serves as an upgrade to the standard practice of passing `int`s
  around as unique identifiers (or, as in this case, `int64_t`s). In the common
  practice, a method that takes identifiers to different types of objects would
@@ -75,7 +78,7 @@ namespace geometry {
 
  __Examples of valid and invalid operations__
 
- The Identifier guarantees that id instances of different types can't be
+ The %Identifier guarantees that id instances of different types can't be
  compared or combined. Efforts to do so will cause a compile-time failure.
  For example:
 
@@ -96,21 +99,22 @@ namespace geometry {
     a3 = 7;                              // Compiler error.
  @endcode
 
- __Type-safe Index vs Identifier__
+ @anchor TypeSafeIndexVsIndentifier
+ __TypeSafeIndex vs Identifier__
 
- In principle, the *identifier* is related to the TypeSafeIndex. In
+ In principle, the *identifier* is related to the @ref TypeSafeIndex. In
  some sense, both are "type-safe" `int`s. They differ in their semantics. We can
  consider `ints`, indices, and identifiers as a list of `int` types with
  _decreasing_ functionality.
 
    - The int, obviously, has the full range of C++ ints.
-   - The TypeSafeIndex can be implicitly cast *to* an int, but there are a
+   - The @ref TypeSafeIndex can be implicitly cast *to* an int, but there are a
      limited number of operations _on_ the index that produce other instances
      of the index (e.g., increment, in-place addition, etc.) They can be
      compared with `int` and other indices of the same type. This behavior
      arises from the intention of having them serve as an _index_ in an
      ordered set (e.g., `std::vector`).
-   - The Identifier is the most restricted. They exist solely to serve as a
+   - The %Identifier is the most restricted. They exist solely to serve as a
      unique identifier. They are immutable when created. Very few operations
      exist on them (comparison for _equality_ with other identifiers of the same
      type, hashing, writing to output stream). These *cannot* be used as

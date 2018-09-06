@@ -37,15 +37,19 @@ target label (and optional configuration options if desired).  We give some
 typical examples below; for more reading about target patterns, see:
 https://docs.bazel.build/versions/master/user-manual.html#target-patterns.
 
-Under Bazel, Clang is the default compiler on all platforms, but command-line
-options are available to use GCC on Ubuntu.
+On Ubuntu Xenial, the default compiler is the first ``gcc`` compiler in the
+``PATH``, usually GCC 5.4. On macOS, the default compiler is Apple Clang. To
+use Clang 4.0 on Ubuntu Xenial, set the ``CC`` and ``CXX`` environment
+variables before running **bazel build**, **bazel test**, or any other
+**bazel** commands.
 
 Cheat sheet for operating on the entire project::
 
   cd /path/to/drake
-  bazel build //...                     # Build the entire project.
-  bazel test //...                      # Build and test the entire project.
-  bazel build --compiler=gcc-5 //...    # Build using gcc 5.x on Xenial.
+  bazel build //...                               # Build the entire project.
+  bazel test //...                                # Build and test the entire project.
+  CC=clang-4.0 CXX=clang++-4.0 bazel build //...  # Build using Clang 4.0 on Xenial.
+  CC=clang-4.0 CXX=clang++-4.0 bazel test //...   # Build and test using Clang 4.0 on Xenial.
 
 - The "``//``" means "starting from the root of the project".
 - The "``...``" means "everything including the subdirectories' ``BUILD`` files".
@@ -95,7 +99,7 @@ Cheat sheet for operating on specific portions of the project::
 
 - The "``:``" syntax separates target names from the directory path of the
   ``BUILD`` file they appear in.  In this case, for example,
-  ``drake/commmon/BUILD`` specifies ``cc_test(name = "polynomial_test")``.
+  ``drake/common/BUILD`` specifies ``cc_test(name = "polynomial_test")``.
 - Note that the configuration switches (``-c`` and ``--config``) influence the
   entire command.  For example, running a test in ``dbg`` mode means that its
   prerequisite libraries are also compiled and linked in ``dbg`` mode.
@@ -213,9 +217,6 @@ Using the RobotLocomotion git repository
 1. Obtain access to the private RobotLocomotion/snopt GitHub repository.
 2. `Set up SSH access to github.com <https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/>`_.
 3. ``export SNOPT_PATH=git``
-
-The build will attempt to use this mechanism anytime SNOPT is enabled and a
-source archive has not been specified.
 
 Test the build (for either mechanism)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

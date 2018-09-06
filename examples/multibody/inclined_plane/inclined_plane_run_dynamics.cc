@@ -7,13 +7,9 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/multibody/benchmarks/inclined_plane/make_inclined_plane_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/lcm/lcm_publisher_system.h"
-#include "drake/systems/lcm/serializer.h"
-#include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
 namespace drake {
 namespace examples {
@@ -42,13 +38,12 @@ DEFINE_double(stiction_tolerance, 1.0e-5, "Stribeck model stiction tolerance.");
 using geometry::SceneGraph;
 using geometry::SourceId;
 using lcm::DrakeLcm;
+
+// "multibody" namespace is ambiguous here without "drake::".
 using drake::multibody::benchmarks::inclined_plane::MakeInclinedPlanePlant;
 using drake::multibody::multibody_plant::CoulombFriction;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::MultibodyTree;
-using drake::systems::lcm::LcmPublisherSystem;
-using drake::systems::lcm::Serializer;
-using drake::systems::rendering::PoseBundleToDrawMessage;
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
@@ -75,17 +70,6 @@ int do_main() {
   DRAKE_DEMAND(plant.num_velocities() == 6);
   DRAKE_DEMAND(plant.num_positions() == 7);
 
-  // Boilerplate used to connect the plant to a SceneGraph for
-  // visualization.
-  DrakeLcm lcm;
-  const PoseBundleToDrawMessage& converter =
-      *builder.template AddSystem<PoseBundleToDrawMessage>();
-  LcmPublisherSystem& publisher =
-      *builder.template AddSystem<LcmPublisherSystem>(
-          "DRAKE_VIEWER_DRAW",
-          std::make_unique<Serializer<drake::lcmt_viewer_draw>>(), &lcm);
-  publisher.set_publish_period(1 / 60.0);
-
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(!!plant.get_source_id());
 
@@ -95,16 +79,14 @@ int do_main() {
   builder.Connect(scene_graph.get_query_output_port(),
                   plant.get_geometry_query_input_port());
 
-  builder.Connect(scene_graph.get_pose_bundle_output_port(),
-                  converter.get_input_port(0));
-  builder.Connect(converter, publisher);
+  // Last thing before building the diagram; configure the system for
+  // visualization.
+  DrakeLcm lcm;
+  geometry::ConnectVisualization(scene_graph, &builder, &lcm);
+  auto diagram = builder.Build();
 
-  // Last thing before building the diagram; dispatch the message to load
-  // geometry.
-  geometry::DispatchLoadMessage(scene_graph);
-
-  // And build the Diagram:
-  std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
+  // Load message must be sent before creating a Context.
+  geometry::DispatchLoadMessage(scene_graph, &lcm);
 
   // Create a context for this system:
   std::unique_ptr<systems::Context<double>> diagram_context =

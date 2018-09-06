@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load("@cc//:compiler.bzl", "COMPILER_ID")
+
 # Keep CXX_FLAGS, CLANG_FLAGS, and GCC_FLAGS in sync with CMAKE_CXX_FLAGS in
 # matlab/cmake/flags.cmake.
 
@@ -16,7 +18,7 @@ CXX_FLAGS = [
 ]
 
 # The CLANG_FLAGS will be enabled for all C++ rules in the project when
-# building with clang.
+# building with clang (including the Apple LLVM compiler).
 CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=inconsistent-missing-override",
     "-Werror=non-virtual-dtor",
@@ -52,23 +54,11 @@ def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
     extra_gcc_flags = []
     if cc_test:
         extra_gcc_flags = GCC_CC_TEST_FLAGS
-    return select({
-        "//tools/cc_toolchain:apple": (
-            CLANG_FLAGS + rule_copts + rule_clang_copts
-        ),
-        "//tools/cc_toolchain:clang4.0-linux": (
-            CLANG_FLAGS + rule_copts + rule_clang_copts
-        ),
-        "//tools/cc_toolchain:gcc5-linux": (
-            GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts
-        ),
-        "//tools/cc_toolchain:gcc6-linux": (
-            GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts
-        ),
-        "//conditions:default": (
-            rule_copts
-        ),
-    })
+    if COMPILER_ID.endswith("Clang"):
+        return CLANG_FLAGS + rule_copts + rule_clang_copts
+    if COMPILER_ID == "GNU":
+        return GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts
+    return rule_copts
 
 def _dsym_command(name):
     """Returns the command to produce .dSYM on macOS, or a no-op on Linux."""
@@ -168,9 +158,10 @@ def _drake_installed_headers_impl(ctx):
     hdrs = list(ctx.files.hdrs)
     for x in ctx.files.hdrs_exclude:
         hdrs.remove(x)
-    transitive_hdrs = depset(hdrs)
-    for dep in ctx.attr.deps:
-        transitive_hdrs += depset(dep[DrakeCc].transitive_hdrs)
+    transitive_hdrs = depset(hdrs, transitive = [
+        dep[DrakeCc].transitive_hdrs
+        for dep in ctx.attr.deps
+    ])
     return [
         DrakeCc(
             transitive_hdrs = transitive_hdrs,
@@ -200,10 +191,42 @@ drake_installed_headers = rule(
     implementation = _drake_installed_headers_impl,
 )
 
+def _path_startswith_match(path, only_startswith, never_startswith):
+    # Ignore some leading path elements.  These will happen if Drake is
+    # consumed as an external.
+    strip = "../drake/"
+    if path.startswith(strip):
+        path = path[len(strip):]
+
+    # Returns true iff `path` is consistent with the given `only...` and
+    # `never...` prefixes.  Omitting either or both of the `...startswith`
+    # arguments is treated as a pass (true) by default.
+    if only_startswith:
+        if not path.startswith(only_startswith):
+            return False
+    if never_startswith:
+        if path.startswith(never_startswith):
+            return False
+    return True
+
 def _gather_transitive_hdrs_impl(ctx):
-    result = depset()
-    for dep in ctx.attr.deps:
-        result += dep[DrakeCc].transitive_hdrs
+    # Transitively list all headers.
+    all_hdrs = depset([], transitive = [
+        dep[DrakeCc].transitive_hdrs
+        for dep in ctx.attr.deps
+    ])
+
+    # Filter in/out items matching a prefix.
+    result = depset([
+        x
+        for x in all_hdrs
+        if _path_startswith_match(
+            x.short_path,
+            ctx.attr.only_startswith,
+            ctx.attr.never_startswith,
+        )
+    ])
+
     return struct(files = result)
 
 _gather_transitive_hdrs = rule(
@@ -212,11 +235,18 @@ _gather_transitive_hdrs = rule(
             allow_files = False,
             providers = [DrakeCc],
         ),
+        "only_startswith": attr.string(),
+        "never_startswith": attr.string(),
     },
     implementation = _gather_transitive_hdrs_impl,
 )
 
-def drake_transitive_installed_hdrs_filegroup(name, deps = [], **kwargs):
+def drake_transitive_installed_hdrs_filegroup(
+        name,
+        deps = [],
+        only_startswith = None,
+        never_startswith = None,
+        **kwargs):
     """Declare a filegroup that contains the transtive installed hdrs of the
     targets named by `deps`.
     """
@@ -224,6 +254,8 @@ def drake_transitive_installed_hdrs_filegroup(name, deps = [], **kwargs):
         name = name + "_gather",
         deps = [installed_headers_for_dep(x) for x in deps],
         visibility = [],
+        only_startswith = only_startswith,
+        never_startswith = never_startswith,
     )
     native.filegroup(
         name = name,
@@ -248,13 +280,11 @@ def _raw_drake_cc_library(
     _, private_hdrs = _prune_private_hdrs(srcs)
     if private_hdrs:
         fail("private_hdrs = " + private_hdrs)
-    if native.package_name().startswith("drake"):
-        strip_include_prefix = None
-        include_prefix = None
-    else:
-        # Require include paths like "drake/foo/bar.h", not "foo/bar.h".
-        strip_include_prefix = "/"
-        include_prefix = "drake"
+
+    # Require include paths like "drake/foo/bar.h", not "foo/bar.h".
+    strip_include_prefix = kwargs.pop("strip_include_prefix", "") or "/"
+    include_prefix = kwargs.pop("include_prefix", "") or "drake"
+
     native.cc_library(
         name = name,
         hdrs = hdrs,
@@ -467,13 +497,14 @@ def drake_cc_binary(
     )
 
     # Also generate the OS X debug symbol file for this binary.
+    tags = kwargs.pop("tags", [])
     native.genrule(
         name = name + "_dsym",
         srcs = [":" + name],
         outs = [name + ".dSYM"],
         output_to_bindir = 1,
         testonly = testonly,
-        tags = ["dsym"],
+        tags = tags + ["dsym"],
         visibility = ["//visibility:private"],
         cmd = _dsym_command(name),
     )
@@ -494,7 +525,7 @@ def drake_cc_binary(
             flaky = test_rule_flaky,
             linkstatic = linkstatic,
             args = test_rule_args,
-            tags = kwargs.pop("tags", []) + ["nolint"],
+            tags = tags + ["nolint"],
             **kwargs
         )
 

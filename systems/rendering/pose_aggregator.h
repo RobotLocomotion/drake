@@ -15,12 +15,12 @@ namespace rendering {
 
 namespace pose_aggregator_detail { struct InputRecord; }
 
-/// A container with references to the input port descriptor for the pose input,
-/// and a reference to an input port descriptor for the velocity input.
+/// A container with references to the input port for the pose input, and a
+/// reference to the input port for the velocity input.
 template <typename T>
 struct PoseVelocityInputPorts {
-  const InputPort<T>& pose_descriptor;
-  const InputPort<T>& velocity_descriptor;
+  const InputPort<T>& pose_input_port;
+  const InputPort<T>& velocity_input_port;
 };
 
 
@@ -99,7 +99,7 @@ class PoseAggregator : public LeafSystem<T> {
   /// FrameVelocity. @p name must be unique for all inputs with the same
   /// @p model_instance_id.
   ///
-  /// @return Descriptors for pose and velocity.
+  /// @return Input ports for pose and velocity.
   PoseVelocityInputPorts<T>
   AddSinglePoseAndVelocityInput(const std::string& name, int model_instance_id);
 

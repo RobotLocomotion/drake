@@ -298,6 +298,7 @@ class SystemBase : public internal::SystemMessageInterface {
   @see drake::systems::Value for more about abstract values. */
   //@{
 
+  /// @anchor DeclareCacheEntry_primary
   /** Declares a new %CacheEntry in this System using the least-restrictive
   definitions for the associated functions. Prefer one of the more-convenient
   signatures below if you can. The new cache entry is assigned a unique
@@ -346,9 +347,9 @@ class SystemBase : public internal::SystemMessageInterface {
   where `MySystem` is a class derived from `SystemBase`, `MyContext` is a class
   derived from `ContextBase`, and `ValueType` is any concrete type such that
   `Value<ValueType>` is permitted. (The method names are arbitrary.) Template
-  arguments will be deduced and do not need to be specified. See the first
-  DeclareCacheEntry() signature above for more information about the parameters
-  and behavior.
+  arguments will be deduced and do not need to be specified. See the
+  @ref DeclareCacheEntry_primary "primary DeclareCacheEntry() signature"
+  for more information about the parameters and behavior.
   @see drake::systems::Value */
   template <class MySystem, class MyContext, typename ValueType>
   const CacheEntry& DeclareCacheEntry(
@@ -358,6 +359,7 @@ class SystemBase : public internal::SystemMessageInterface {
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
 
+  /// @anchor DeclareCacheEntry_model_and_calc
   /** Declares a cache entry by specifying a model value of concrete type
   `ValueType` and a calculator function that is a class member function (method)
   with signature: @code
@@ -366,9 +368,9 @@ class SystemBase : public internal::SystemMessageInterface {
   where `MySystem` is a class derived from `SystemBase`, `MyContext` is a class
   derived from `ContextBase`, and `ValueType` is any concrete type such that
   `Value<ValueType>` is permitted. (The method names are arbitrary.) Template
-  arguments will be deduced and do not need to be specified.
-  See the first DeclareCacheEntry() signature above for more information about
-  the parameters and behavior.
+  arguments will be deduced and do not need to be specified. See the
+  @ref DeclareCacheEntry_primary "primary DeclareCacheEntry() signature"
+  above for more information about the parameters and behavior.
   @see drake::systems::Value */
   template <class MySystem, class MyContext, typename ValueType>
   const CacheEntry& DeclareCacheEntry(
@@ -377,6 +379,22 @@ class SystemBase : public internal::SystemMessageInterface {
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
 
+  /** Declares a cache entry by specifying a model value of concrete type
+  `ValueType` and a calculator function that is a class member function (method)
+  with signature: @code
+    ValueType MySystem::CalcCacheValue(const MyContext&) const;
+  @endcode
+  Other than the calculator signature, this is identical to the other
+  @ref DeclareCacheEntry_model_and_calc "model and calculator signature",
+  please look there for more information. */
+  template <class MySystem, class MyContext, typename ValueType>
+  const CacheEntry& DeclareCacheEntry(
+      std::string description, const ValueType& model_value,
+      ValueType (MySystem::*calc)(const MyContext&) const,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()});
+
+  /// @anchor DeclareCacheEntry_calc_only
   /** Declares a cache entry by specifying only a calculator function that is a
   class member function (method) with signature:
   @code
@@ -404,6 +422,21 @@ class SystemBase : public internal::SystemMessageInterface {
       void (MySystem::*calc)(const MyContext&, ValueType*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
+
+  /** Declares a cache entry by specifying only a calculator function that is a
+  class member function (method) with signature:
+  @code
+    ValueType MySystem::CalcCacheValue(const MyContext&) const;
+  @endcode
+  Other than the calculator method's signature, this is identical to the other
+  @ref DeclareCacheEntry_calc_only "calculator-only signature";
+  please look there for more information. */
+  template <class MySystem, class MyContext, typename ValueType>
+  const CacheEntry& DeclareCacheEntry(
+      std::string description,
+      ValueType (MySystem::*calc)(const MyContext&) const,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()});
   //@}
 
   /** Checks whether the given context is valid for this System and throws
@@ -425,9 +458,9 @@ class SystemBase : public internal::SystemMessageInterface {
 
   Use these tickets to declare well-known sources as prerequisites of a
   downstream computation such as an output port, derivative, update, or cache
-  entry. The ticket numbers for these sources are the same for all systems.
-  For time and accuracy they refer to the same global resource; otherwise they
-  refer to the specified sources within the referencing system.
+  entry. The ticket numbers for the built-in sources are the same for all
+  systems. For time and accuracy they refer to the same global resource;
+  otherwise they refer to the specified sources within the referencing system.
 
   A dependency ticket for a more specific resource (a particular input or
   output port, a discrete variable group, abstract state variable, a parameter,
@@ -440,13 +473,14 @@ class SystemBase : public internal::SystemMessageInterface {
   // in ContextBase::CreateBuiltInTrackers() and the implementation there must
   // be kept up to date with the API contracts here.
 
-  /** Returns a ticket indicating dependence on every possible independent
-  source value, including time, state, input ports, parameters, and the accuracy
-  setting (but not cache entries). This is the default dependency for
-  computations that have not specified anything more refined. */
-  static DependencyTicket all_sources_ticket() {
-    return DependencyTicket(internal::kAllSourcesTicket);
-  }
+  // The ticket methods are promoted in the System<T> class so that users can
+  // invoke them in their constructors without prefixing with this->. If you
+  // add, remove, rename, or reorder any of these be sure to update the
+  // promotions in system.h.
+
+  // Keep the order here the same as they are defined in the internal enum
+  // BuiltInTicketNumbers, with the "particular resource" indexed methods
+  // inserted prior to the corresponding built-in "all such resources" ticket.
 
   /** Returns a ticket indicating that a computation does not depend on *any*
   source value; that is, it is a constant. If this appears in a prerequisite
@@ -469,38 +503,60 @@ class SystemBase : public internal::SystemMessageInterface {
   }
 
   /** Returns a ticket indicating that a computation depends on configuration
-  state variables q. */
+  state variables q. There is no ticket representing just one of the state
+  variables qᵢ. */
   static DependencyTicket q_ticket() {
     return DependencyTicket(internal::kQTicket);
   }
 
   /** Returns a ticket indicating dependence on velocity state variables v. This
   does _not_ also indicate a dependence on configuration variables q -- you must
-  list that explicitly or use kinematics_ticket() instead. */
+  list that explicitly or use kinematics_ticket() instead. There is no ticket
+  representing just one of the state variables vᵢ. */
   static DependencyTicket v_ticket() {
     return DependencyTicket(internal::kVTicket);
   }
 
-  /** Returns a ticket indicating dependence on all of the miscellaneous
-  continuous state variables z. */
+  /** Returns a ticket indicating dependence on any or all of the miscellaneous
+  continuous state variables z. There is no ticket representing just one of
+  the state variables zᵢ. */
   static DependencyTicket z_ticket() {
     return DependencyTicket(internal::kZTicket);
   }
 
-  /** Returns a ticket indicating dependence on all of the continuous
+  /** Returns a ticket indicating dependence on _all_ of the continuous
   state variables q, v, or z. */
   static DependencyTicket xc_ticket() {
     return DependencyTicket(internal::kXcTicket);
   }
 
+  /** Returns a ticket indicating dependence on a particular discrete state
+  variable xdᵢ (may be a vector). (We sometimes refer to this as a "discrete
+  variable group".)
+  @see xd_ticket() to obtain a ticket for _all_ discrete variables. */
+  DependencyTicket discrete_state_ticket(DiscreteStateIndex index) const {
+    return discrete_state_tracker_info(index).ticket;
+  }
+
   /** Returns a ticket indicating dependence on all of the numerical
-  discrete state variables, in any discrete variable group. */
+  discrete state variables, in any discrete variable group.
+  @see discrete_state_ticket() to obtain a ticket for just one discrete
+       state variable. */
   static DependencyTicket xd_ticket() {
     return DependencyTicket(internal::kXdTicket);
   }
 
+  /** Returns a ticket indicating dependence on a particular abstract state
+  variable xaᵢ.
+  @see xa_ticket() to obtain a ticket for _all_ abstract variables. */
+  DependencyTicket abstract_state_ticket(AbstractStateIndex index) const {
+    return abstract_state_tracker_info(index).ticket;
+  }
+
   /** Returns a ticket indicating dependence on all of the abstract
-  state variables in the current Context. */
+  state variables in the current Context.
+  @see abstract_state_ticket() to obtain a ticket for just one abstract
+       state variable. */
   static DependencyTicket xa_ticket() {
     return DependencyTicket(internal::kXaTicket);
   }
@@ -508,68 +564,42 @@ class SystemBase : public internal::SystemMessageInterface {
   /** Returns a ticket indicating dependence on _all_ state variables x in this
   system, including continuous variables xc, discrete (numeric) variables xd,
   and abstract state variables xa. This does not imply dependence on time,
-  parameters, or inputs; those must be specified separately. If you mean to
-  express dependence on all possible value sources, use all_sources_ticket()
-  instead. */
+  accuracy, parameters, or inputs; those must be specified separately. If you
+  mean to express dependence on all possible value sources, use
+  all_sources_ticket() instead. */
   static DependencyTicket all_state_ticket() {
     return DependencyTicket(internal::kXTicket);
   }
 
-  /** Returns a ticket for the cache entry that holds time derivatives of
-  the continuous variables. */
-  static DependencyTicket xcdot_ticket() {
-    return DependencyTicket(internal::kXcdotTicket);
+  /** Returns a ticket indicating dependence on a particular numeric parameter
+  pnᵢ (may be a vector).
+  @see pn_ticket() to obtain a ticket for _all_ numeric parameters. */
+  DependencyTicket numeric_parameter_ticket(NumericParameterIndex index) const {
+    return numeric_parameter_tracker_info(index).ticket;
   }
 
-  /** Returns a ticket for the cache entry that holds the discrete state
-  update for the numerical discrete variables in the state. */
-  static DependencyTicket xdhat_ticket() {
-    return DependencyTicket(internal::kXdhatTicket);
+  /** Returns a ticket indicating dependence on all of the numerical
+  parameters in the current Context.
+  @see numeric_parameter_ticket() to obtain a ticket for just one numeric
+       parameter. */
+  static DependencyTicket pn_ticket() {
+    return DependencyTicket(internal::kPnTicket);
   }
 
-  /** Returns a ticket indicating dependence on all the configuration
-  variables for this System. By default this is set to the continuous
-  second-order state variables q, but configuration may be represented
-  differently in some systems (discrete ones, for example), in which case this
-  ticket should have been set to depend on that representation. This ticket
-  also assumes that configuration computations may depend on any parameter and
-  on the accuracy setting (which don't change often), but not on time.
-  Examples: a parameter that affects length may change the computation of an
-  end-effector location. A change in accuracy requirement may require
-  recomputation of an iterative approximation of contact forces. */
-  // The configuration_tracker implementation in ContextBase must be kept
-  // up to date with the above API contract.
-  static DependencyTicket configuration_ticket() {
-    return DependencyTicket(internal::kConfigurationTicket);
+  /** Returns a ticket indicating dependence on a particular abstract
+  parameter paᵢ.
+  @see pa_ticket() to obtain a ticket for _all_ abstract parameters. */
+  DependencyTicket abstract_parameter_ticket(
+      AbstractParameterIndex index) const {
+    return abstract_parameter_tracker_info(index).ticket;
   }
 
-  /** (Advanced) Returns a ticket indicating dependence on all of the velocity
-  variables, but _not_ the configuration variables for this System. By default
-  this is set to the continuous state variables v, but velocity may be
-  represented differently in some systems (discrete ones, for example), in which
-  case this ticket should have been set to depend on that representation. This
-  ticket also assumes that velocity calculations may depend on any parameter and
-  on the accuracy setting (which don't change often), but not on time.
-  Examples: a parameter that affects length may change the computation of an
-  end-effector velocity. A change in accuracy requirement may require
-  recomputation of an iterative approximation of friction forces.
-
-  @warning This _does not_ include dependence on configuration, although
-  most velocity calculations do depend on configuration. If you want to
-  register dependence on both (more common), use kinematics_ticket(). */
-  // The velocity_tracker implementation in ContextBase must be kept
-  // up to date with the above API contract.
-  static DependencyTicket velocity_ticket() {
-    return DependencyTicket(internal::kVelocityTicket);
-  }
-
-  /** Returns a ticket indicating dependence on all of the configuration
-  and velocity state variables of this System. This ticket depends on the
-  configuration_ticket and the velocity_ticket. Note that this includes
-  dependence on all parameters and the accuracy setting, but not on time.
-  @see configuration_ticket(), velocity_ticket() */
-  static DependencyTicket kinematics_ticket() {
-    return DependencyTicket(internal::kKinematicsTicket);
+  /** Returns a ticket indicating dependence on all of the abstract
+  parameters pa in the current Context.
+  @see abstract_parameter_ticket() to obtain a ticket for just one abstract
+       parameter. */
+  static DependencyTicket pa_ticket() {
+    return DependencyTicket(internal::kPaTicket);
   }
 
   /** Returns a ticket indicating dependence on _all_ parameters p in this
@@ -578,13 +608,7 @@ class SystemBase : public internal::SystemMessageInterface {
     return DependencyTicket(internal::kAllParametersTicket);
   }
 
-  /** Returns a ticket indicating dependence on _all_ input ports u of this
-  system. */
-  static DependencyTicket all_input_ports_ticket() {
-    return DependencyTicket(internal::kAllInputPortsTicket);
-  }
-
-  /** Returns a ticket indicating dependence on the input port indicated
+  /** Returns a ticket indicating dependence on input port uᵢ indicated
   by `index`.
   @pre `index` selects an existing input port of this System. */
   DependencyTicket input_port_ticket(InputPortIndex index) {
@@ -592,20 +616,109 @@ class SystemBase : public internal::SystemMessageInterface {
     return input_ports_[index]->ticket();
   }
 
-  /** Returns a ticket indicating dependence on the output port indicated
-  by `index`.
-  @pre `index` selects an existing output port of this System. */
-  DependencyTicket output_port_ticket(OutputPortIndex index) {
-    DRAKE_DEMAND(0 <= index && index < get_num_output_ports());
-    return output_ports_[index]->ticket();
+  /** Returns a ticket indicating dependence on _all_ input ports u of this
+  system.
+  @see input_port_ticket() to obtain a ticket for just one input port. */
+  static DependencyTicket all_input_ports_ticket() {
+    return DependencyTicket(internal::kAllInputPortsTicket);
+  }
+
+  /** Returns a ticket indicating dependence on every possible independent
+  source value, including time, accuracy, state, input ports, and parameters
+  (but not cache entries). This is the default dependency for computations that
+  have not specified anything more refined.
+  @see cache_entry_ticket() to obtain a ticket for a cache entry. */
+  static DependencyTicket all_sources_ticket() {
+    return DependencyTicket(internal::kAllSourcesTicket);
   }
 
   /** Returns a ticket indicating dependence on the cache entry indicated
-  by `index`.
+  by `index`. Note that cache entries are _not_ included in the `all_sources`
+  ticket so must be listed separately.
   @pre `index` selects an existing cache entry in this System. */
   DependencyTicket cache_entry_ticket(CacheIndex index) {
     DRAKE_DEMAND(0 <= index && index < num_cache_entries());
     return cache_entries_[index]->ticket();
+  }
+
+  /** Returns a ticket indicating dependence on all source values that may
+  affect configuration-dependent computations. In particular, this category
+  _does not_ include time, generalized velocities v, or input ports.
+  Generalized coordinates q are included, as well as any discrete state
+  variables that have been declared as configuration variables, and
+  configuration-affecting parameters. Finally we assume that
+  the accuracy setting may affect some configuration-dependent computations.
+  Examples: a parameter that affects length may change the computation of an
+  end-effector location. A change in accuracy requirement may require
+  recomputation of an iterative approximation of contact forces.
+  @see kinematics_ticket()
+
+  @bug Currently there is no way to declare specific variables and parameters
+  to be configuration-affecting so we include all state variables and
+  parameters except for generalized velocities v. */
+  // TODO(sherm1) Remove the above bug notice once #9171 is resolved.
+  // The configuration_tracker implementation in ContextBase must be kept
+  // up to date with the above API contract.
+  static DependencyTicket configuration_ticket() {
+    return DependencyTicket(internal::kConfigurationTicket);
+  }
+
+  /** Returns a ticket indicating dependence on all source values that may
+  affect configuration- or velocity-dependent computations. This ticket depends
+  on the configuration_ticket defined above, and adds in velocity-affecting
+  source values. This _does not_ include time or input ports.
+  @see configuration_ticket()
+
+  @bug Currently there is no way to declare specific variables and parameters
+  to be configuration- or velocity-affecting so we include all state variables
+  and parameters. */
+  // TODO(sherm1) Remove the above bug notice once #9171 is resolved.
+  static DependencyTicket kinematics_ticket() {
+    return DependencyTicket(internal::kKinematicsTicket);
+  }
+
+  /** Returns a ticket for the cache entry that holds time derivatives of
+  the continuous variables.
+  @see EvalTimeDerivatives() */
+  static DependencyTicket xcdot_ticket() {
+    return DependencyTicket(internal::kXcdotTicket);
+  }
+
+  /** Returns a ticket for the cache entry that holds the potential energy
+  calculation.
+  @see System::EvalPotentialEnergy() */
+  static DependencyTicket pe_ticket() {
+    return DependencyTicket(internal::kPeTicket);
+  }
+
+  /** Returns a ticket for the cache entry that holds the kinetic energy
+  calculation.
+  @see System::EvalKineticEnergy() */
+  static DependencyTicket ke_ticket() {
+    return DependencyTicket(internal::kKeTicket);
+  }
+
+  /** Returns a ticket for the cache entry that holds the conservative power
+  calculation.
+  @see System::EvalConservativePower() */
+  static DependencyTicket pc_ticket() {
+    return DependencyTicket(internal::kPcTicket);
+  }
+
+  /** Returns a ticket for the cache entry that holds the non-conservative
+  power calculation.
+  @see System::EvalNonConservativePower() */
+  static DependencyTicket pnc_ticket() {
+    return DependencyTicket(internal::kPncTicket);
+  }
+
+  /** (Internal use only) Returns a ticket indicating dependence on the output
+  port indicated by `index`. No user-definable quantities in a system can
+  meaningfully depend on that system's own output ports.
+  @pre `index` selects an existing output port of this System. */
+  DependencyTicket output_port_ticket(OutputPortIndex index) {
+    DRAKE_DEMAND(0 <= index && index < get_num_output_ports());
+    return output_ports_[index]->ticket();
   }
 
   /** Returns the number of declared discrete state groups (each group is
@@ -628,32 +741,6 @@ class SystemBase : public internal::SystemMessageInterface {
   /** Returns the number of declared abstract parameters. */
   int num_abstract_parameters() const {
     return static_cast<int>(abstract_parameter_tickets_.size());
-  }
-
-  /** Returns a ticket indicating dependence on a particular discrete state
-  variable (may be a vector). (We sometimes refer to this as a "discrete
-  variable group".) */
-  DependencyTicket discrete_state_ticket(DiscreteStateIndex index) const {
-    return discrete_state_tracker_info(index).ticket;
-  }
-
-  /** Returns a ticket indicating dependence on a particular abstract state
-  variable. */
-  DependencyTicket abstract_state_ticket(AbstractStateIndex index) const {
-    return abstract_state_tracker_info(index).ticket;
-  }
-
-  /** Returns a ticket indicating dependence on a particular numeric parameter
-  (may be a vector). */
-  DependencyTicket numeric_parameter_ticket(NumericParameterIndex index) const {
-    return numeric_parameter_tracker_info(index).ticket;
-  }
-
-  /** Returns a ticket indicating dependence on a particular abstract
-  parameter. */
-  DependencyTicket abstract_parameter_ticket(
-      AbstractParameterIndex index) const {
-    return abstract_parameter_tracker_info(index).ticket;
   }
   //@}
 
@@ -961,7 +1048,8 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
   return entry;
 }
 
-// Takes an initial value and calc() member function.
+// Takes an initial value and calc() member function that has an output
+// argument.
 template <class MySystem, class MyContext, typename ValueType>
 const CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description, const ValueType& model_value,
@@ -996,22 +1084,66 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
   return entry;
 }
 
-// Takes just a calc() member function, value-initializes entry.
+// Takes an initial value and value-returning calc() member function.
+// See the above output-argument signature for an explanation of the code.
+// TODO(sherm1) Consider whether common code in this and the previous method
+// can be factored out and shared rather than repeated.
 template <class MySystem, class MyContext, typename ValueType>
 const CacheEntry& SystemBase::DeclareCacheEntry(
-    std::string description,
-    void (MySystem::*calc)(const MyContext&, ValueType*) const,
+    std::string description, const ValueType& model_value,
+    ValueType (MySystem::*calc)(const MyContext&) const,
     std::set<DependencyTicket> prerequisites_of_calc) {
   static_assert(std::is_base_of<SystemBase, MySystem>::value,
                 "Expected to be invoked from a SystemBase-derived System.");
   static_assert(std::is_base_of<ContextBase, MyContext>::value,
                 "Expected to be invoked with a ContextBase-derived Context.");
+  auto this_ptr = dynamic_cast<const MySystem*>(this);
+  DRAKE_DEMAND(this_ptr != nullptr);
+  copyable_unique_ptr<AbstractValue> owned_model(
+      std::make_unique<Value<ValueType>>(model_value));
+  auto alloc_callback = [model = std::move(owned_model)]() {
+    return model->Clone();
+  };
+  auto calc_callback = [this_ptr, calc](const ContextBase& context,
+                                        AbstractValue* result) {
+    const auto& typed_context = dynamic_cast<const MyContext&>(context);
+    ValueType& typed_result = result->GetMutableValue<ValueType>();
+    typed_result = (this_ptr->*calc)(typed_context);
+  };
+  auto& entry = DeclareCacheEntry(
+      std::move(description), std::move(alloc_callback),
+      std::move(calc_callback), std::move(prerequisites_of_calc));
+  return entry;
+}
+
+// Takes just a calc() member function with an output argument, and
+// value-initializes the entry.
+template <class MySystem, class MyContext, typename ValueType>
+const CacheEntry& SystemBase::DeclareCacheEntry(
+    std::string description,
+    void (MySystem::*calc)(const MyContext&, ValueType*) const,
+    std::set<DependencyTicket> prerequisites_of_calc) {
   static_assert(
       std::is_default_constructible<ValueType>::value,
-      "SystemBase::DeclareCacheEntry(calc): the calc-only overload of "
+      "SystemBase::DeclareCacheEntry(calc): the calc-only overloads of "
       "this method requires that the output type has a default constructor");
   // Invokes the above model-value method. Note that value initialization {}
   // is required here.
+  return DeclareCacheEntry(std::move(description), ValueType{}, calc,
+                           std::move(prerequisites_of_calc));
+}
+
+// Takes just a value-returning calc() member function, and
+// value-initializes the entry. See previous method for more information.
+template <class MySystem, class MyContext, typename ValueType>
+const CacheEntry& SystemBase::DeclareCacheEntry(
+    std::string description,
+    ValueType (MySystem::*calc)(const MyContext&) const,
+    std::set<DependencyTicket> prerequisites_of_calc) {
+  static_assert(
+      std::is_default_constructible<ValueType>::value,
+      "SystemBase::DeclareCacheEntry(calc): the calc-only overloads of "
+      "this method requires that the output type has a default constructor");
   return DeclareCacheEntry(std::move(description), ValueType{}, calc,
                            std::move(prerequisites_of_calc));
 }

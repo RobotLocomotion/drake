@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import pydrake.math as mut
 from pydrake.math import (BarycentricMesh, wrap_to)
-from pydrake.util.eigen_geometry import Quaternion
+from pydrake.util.eigen_geometry import Isometry3, Quaternion
 
 import unittest
 import numpy as np
@@ -50,6 +50,8 @@ class TestBarycentricMesh(unittest.TestCase):
     def test_wrap_to(self):
         self.assertEqual(wrap_to(1.5, 0., 1.), .5)
 
+
+class TestMath(unittest.TestCase):
     def test_math(self):
         # Compare against `math` functions.
         # TODO(eric.cousineau): Consider removing this and only rely on
@@ -85,11 +87,48 @@ class TestBarycentricMesh(unittest.TestCase):
         for f_core, f_cpp in binary:
             self.assertEqual(f_core(a, b), f_cpp(a, b))
 
+    def test_rigid_transform(self):
+
+        def check_equality(X_actual, X_expected_matrix):
+            # TODO(eric.cousineau): Use `IsNearlyEqualTo` once `Bool<T>` is
+            # bound.
+            self.assertIsInstance(X_actual, mut.RigidTransform)
+            self.assertTrue(
+                np.allclose(X_actual.GetAsMatrix4(), X_expected_matrix))
+
+        # - Constructors.
+        X_I = np.eye(4)
+        check_equality(mut.RigidTransform(), X_I)
+        R_I = mut.RotationMatrix()
+        p_I = np.zeros(3)
+        check_equality(mut.RigidTransform(R=R_I, p=p_I), X_I)
+        check_equality(mut.RigidTransform(R=R_I), X_I)
+        check_equality(mut.RigidTransform(p=p_I), X_I)
+        # - Accessors, mutators, and general methods.
+        X = mut.RigidTransform()
+        X.set(R=R_I, p=p_I)
+        X.SetFromIsometry3(pose=Isometry3.Identity())
+        check_equality(mut.RigidTransform.Identity(), X_I)
+        self.assertIsInstance(X.rotation(), mut.RotationMatrix)
+        X.set_rotation(R=R_I)
+        self.assertIsInstance(X.translation(), np.ndarray)
+        X.set_translation(p=np.zeros(3))
+        self.assertTrue(np.allclose(X.GetAsMatrix4(), X_I))
+        self.assertTrue(np.allclose(X.GetAsMatrix34(), X_I[:3]))
+        self.assertIsInstance(X.GetAsIsometry3(), Isometry3)
+        check_equality(X.inverse(), X_I)
+        self.assertIsInstance(
+            X.multiply(other=mut.RigidTransform()), mut.RigidTransform)
+        self.assertIsInstance(X.multiply(p_BoQ_B=p_I), np.ndarray)
+
     def test_rotation_matrix(self):
+        # - Constructors.
         R = mut.RotationMatrix()
         self.assertTrue(np.allclose(R.matrix(), np.eye(3)))
         self.assertTrue(np.allclose(
             mut.RotationMatrix.Identity().matrix(), np.eye(3)))
+        R = mut.RotationMatrix(R=np.eye(3))
+        self.assertTrue(np.allclose(R.matrix(), np.eye(3)))
         R = mut.RotationMatrix(quaternion=Quaternion.Identity())
         self.assertTrue(np.allclose(R.matrix(), np.eye(3)))
         R = mut.RotationMatrix(rpy=mut.RollPitchYaw(rpy=[0, 0, 0]))
@@ -104,11 +143,19 @@ class TestBarycentricMesh(unittest.TestCase):
         self.assertTrue(np.allclose(R_I.matrix(), np.eye(3)))
 
     def test_roll_pitch_yaw(self):
+        # - Constructors.
         rpy = mut.RollPitchYaw(rpy=[0, 0, 0])
         self.assertTrue(np.allclose(rpy.vector(), [0, 0, 0]))
         rpy = mut.RollPitchYaw(roll=0, pitch=0, yaw=0)
         self.assertTupleEqual(
             (rpy.roll_angle(), rpy.pitch_angle(), rpy.yaw_angle()),
             (0, 0, 0))
+        rpy = mut.RollPitchYaw(R=mut.RotationMatrix())
+        self.assertTrue(np.allclose(rpy.vector(), [0, 0, 0]))
         q_I = Quaternion()
+        rpy_q_I = mut.RollPitchYaw(quaternion=q_I)
+        self.assertTrue(np.allclose(rpy_q_I.vector(), [0, 0, 0]))
+        # - Additional properties.
         self.assertTrue(np.allclose(rpy.ToQuaternion().wxyz(), q_I.wxyz()))
+        R = rpy.ToRotationMatrix().matrix()
+        self.assertTrue(np.allclose(R, np.eye(3)))

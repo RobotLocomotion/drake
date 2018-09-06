@@ -47,10 +47,10 @@ TYPED_TEST_CASE_P(SingleDOFEulerJointTest);
 /// output is the right mapping of its inputs.
 TYPED_TEST_P(SingleDOFEulerJointTest, OutputTest) {
   // Set input.
-  const systems::InputPort<TypeParam>& input_descriptor =
+  const systems::InputPort<TypeParam>& input_port =
       this->dut_->get_input_port(0);
   auto input = std::make_unique<systems::BasicVector<TypeParam>>(
-      input_descriptor.size());
+      input_port.size());
   input->SetZero();
   input->SetAtIndex(0, static_cast<TypeParam>(1.0));  // q0 = 1.0
   input->SetAtIndex(input->size()/2, static_cast<TypeParam>(5.0));  // v0 = 5.0

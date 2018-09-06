@@ -12,6 +12,9 @@ namespace drake {
 
 /// A type-safe non-negative index class.
 ///
+/// @note This is *purposely* a separate class from @ref geometry::Identifier.
+/// For more information, see @ref TypeSafeIndexVsIndentifier "this section".
+///
 /// This class serves as an upgrade to the standard practice of passing `int`s
 /// around as indices. In the common practice, a method that takes indices into
 /// multiple collections would have an interface like:
@@ -117,35 +120,6 @@ namespace drake {
 /// @code
 ///    for (MyIndex a(0); a < N; ++a) { ... }
 /// @endcode
-///
-/// __Type-safe Index vs Identifier__
-///
-/// In principle, the TypeSafeIndex is related to the
-/// @ref drake::geometry::Identifier "Identifier". In
-/// some sense, both are "type-safe `int`s". They differ in their semantics. We
-/// can consider `ints`, indexes, and identifiers as a list of `int` types with
-/// _decreasing_ functionality.
-///
-///   - The int, obviously, has the full range of C++ ints.
-///   - The TypeSafeIndex can be implicitly cast *to* an int, but there are a
-///     limited number of operations _on_ the index that produces other
-///     instances of the index (e.g., increment, in-place addition, etc.) They
-///     can be compared with `int` and other indexes of the same type. This
-///     behavior arises from the intention of having them serve as an _index_ in
-///     an ordered set (e.g., `std::vector`.)
-///   - The @ref drake::geometry::Identifier "Identifier" is the most
-///     restricted. They exist solely to serve as a unique identifier. They are
-///     immutable when created. Very few operations exist on them (comparison
-///     for _equality_ with other identifiers of the same type, hashing, writing
-///     to output stream).
-///
-/// Ultimately, indexes _can_ serve as identifiers (within the scope of the
-/// object they index into). Although, their mutability could make this a
-/// dangerous practice for a public API. Identifiers are more general in that
-/// they don't reflect an object's position in memory (hence the inability to
-/// transform to or compare with an `int`). This decouples details of
-/// implementation from the idea of the object. Combined with its immutability,
-/// it would serve well as a element of a public API.
 ///
 /// @sa drake::geometry::Identifier
 ///

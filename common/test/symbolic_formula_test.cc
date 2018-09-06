@@ -1222,8 +1222,26 @@ TEST_F(SymbolicFormulaTest, DrakeAssert) {
 GTEST_TEST(FormulaTest, DefaultConstructors) {
   const Formula f_default;
   const Formula f_zero(0);
-  EXPECT_TRUE(is_true(f_default));
-  EXPECT_TRUE(is_true(f_zero));
+  EXPECT_TRUE(is_false(f_default));
+  EXPECT_TRUE(is_false(f_zero));
+}
+
+// Tests the `bool`-literal constructor.
+GTEST_TEST(FormulaTest, CxxBoolLiteralConstructor) {
+  const Formula f_true(true);
+  const Formula f_false(false);
+  EXPECT_TRUE(is_true(f_true));
+  EXPECT_TRUE(is_false(f_false));
+}
+
+// Tests the `bool`-variable constructor.
+GTEST_TEST(FormulaTest, CxxBoolVariableConstructor) {
+  const bool true_variable = true;
+  const bool false_variable = false;
+  const Formula f_true(true_variable);
+  const Formula f_false(false_variable);
+  EXPECT_TRUE(is_true(f_true));
+  EXPECT_TRUE(is_false(f_false));
 }
 
 // This test checks whether symbolic::Formula is compatible with

@@ -67,7 +67,7 @@ void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
   DRAKE_ASSERT(input != nullptr);
   const auto& command = input->GetValue<lcmt_schunk_wsg_command>();
   // The target_position_mm field represents the distance between the two
-  // fingers in milimeters. This class generates trajectories for the negative
+  // fingers in millimeters. This class generates trajectories for the negative
   // of the distance between the fingers in meters.
   double target_position = -command.target_position_mm / 1e3;
   if (std::isnan(target_position)) {

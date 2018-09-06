@@ -95,7 +95,7 @@ VectorX<T> MultibodyTree<T>::get_velocities_from_array(
 }
 
 template <typename T>
-void MultibodyTree<T>:: AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer() {
+void MultibodyTree<T>::AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer() {
   DRAKE_DEMAND(!topology_is_valid());
   // Skip the world.
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
@@ -187,9 +187,6 @@ void MultibodyTree<T>::FinalizeInternals() {
   }
 
   CreateModelInstances();
-
-  // TODO(amcastro-tri): Remove when MultibodyCachingEvaluatorInterface lands.
-  AllocateFakeCacheEntries();
 }
 
 template <typename T>
@@ -312,6 +309,28 @@ void MultibodyTree<T>::SetDefaultState(
   for (const auto& mobilizer : owned_mobilizers_) {
     mobilizer->set_zero_state(context, state);
   }
+}
+
+template <typename T>
+Eigen::VectorBlock<const VectorX<T>>
+MultibodyTree<T>::get_multibody_state_vector(
+    const systems::Context<T>& context) const {
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+  return mbt_context.get_state_vector();
+}
+
+template <typename T>
+Eigen::VectorBlock<VectorX<T>>
+MultibodyTree<T>::get_mutable_multibody_state_vector(
+    systems::Context<T>* context) const {
+  DRAKE_DEMAND(context != nullptr);
+  auto* mbt_context = dynamic_cast<MultibodyTreeContext<T>*>(context);
+  if (mbt_context == nullptr) {
+    throw std::runtime_error(
+        "The context provided is not compatible with a multibody model.");
+  }
+  return mbt_context->get_mutable_state_vector();
 }
 
 template <typename T>
@@ -511,6 +530,25 @@ void MultibodyTree<T>::CalcAccelerationKinematicsCache(
 }
 
 template <typename T>
+VectorX<T> MultibodyTree<T>::CalcInverseDynamics(
+    const systems::Context<T>& context,
+    const VectorX<T>& known_vdot,
+    const MultibodyForces<T>& external_forces) const {
+  // Temporary storage used in the computation of inverse dynamics.
+  std::vector<SpatialAcceleration<T>> A_WB(num_bodies());
+  std::vector<SpatialForce<T>> F_BMo_W(num_bodies());
+
+  const auto& pc = EvalPositionKinematics(context);
+  const auto& vc = EvalVelocityKinematics(context);
+  VectorX<T> tau(num_velocities());
+  CalcInverseDynamics(
+      context, pc, vc, known_vdot,
+      external_forces.body_forces(), external_forces.generalized_forces(),
+      &A_WB, &F_BMo_W, &tau);
+  return tau;
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcInverseDynamics(
     const systems::Context<T>& context,
     const PositionKinematicsCache<T>& pc,
@@ -606,6 +644,19 @@ void MultibodyTree<T>::CalcForceElementsContribution(
   for (const auto& force_element : owned_force_elements_) {
     force_element->CalcAndAddForceContribution(mbt_context, pc, vc, forces);
   }
+
+  // TODO(amcastro-tri): Remove this call once damping is implemented in terms
+  // of force elements.
+  AddJointDampingForces(context, forces);
+}
+
+template<typename T>
+void MultibodyTree<T>::AddJointDampingForces(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  DRAKE_DEMAND(forces != nullptr);
+  for (const auto& joint : owned_joints_) {
+    joint->AddInDamping(context, forces);
+  }
 }
 
 template <typename T>
@@ -695,6 +746,16 @@ void MultibodyTree<T>::CalcBiasTerm(
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
   DoCalcBiasTerm(context, pc, vc, Cv);
+}
+
+template <typename T>
+VectorX<T> MultibodyTree<T>::CalcGravityGeneralizedForces(
+    const systems::Context<T>& context) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  if (gravity_field_.has_value()) {
+    return gravity_field_.value()->CalcGravityGeneralizedForces(context);
+  }
+  return VectorX<T>::Zero(num_velocities());
 }
 
 template <typename T>
@@ -1031,19 +1092,16 @@ T MultibodyTree<T>::DoCalcConservativePower(
 }
 
 template<typename T>
-void MultibodyTree<T>::AllocateFakeCacheEntries() {
-  // Temporary hack before MultibodyCachingEvaluoatorInterface lands.
-  pc_ = std::make_unique<PositionKinematicsCache<T>>(get_topology());
-  vc_ = std::make_unique<VelocityKinematicsCache<T>>(get_topology());
-}
-
-template<typename T>
 const PositionKinematicsCache<T>& MultibodyTree<T>::EvalPositionKinematics(
     const systems::Context<T>& context) const {
   // TODO(amcastro-tri): Replace by cache_evaluator_->EvalPositionKinematics()
   // when MultibodyCachingEvaluatorInterface lands.
-  CalcPositionKinematicsCache(context, pc_.get());
-  return *pc_;
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+  PositionKinematicsCache<T>& pc =
+      mbt_context.get_mutable_position_kinematics_cache();
+  CalcPositionKinematicsCache(context, &pc);
+  return pc;
 }
 
 template<typename T>
@@ -1052,8 +1110,12 @@ const VelocityKinematicsCache<T>& MultibodyTree<T>::EvalVelocityKinematics(
   // TODO(amcastro-tri): Replace by cache_evaluator_->EvalVelocityKinematics()
   // when MultibodyCachingEvaluatorInterface lands.
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  CalcVelocityKinematicsCache(context, pc, vc_.get());
-  return *vc_;
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+  VelocityKinematicsCache<T>& vc =
+      mbt_context.get_mutable_velocity_kinematics_cache();
+  CalcVelocityKinematicsCache(context, pc, &vc);
+  return vc;
 }
 
 template <typename T>

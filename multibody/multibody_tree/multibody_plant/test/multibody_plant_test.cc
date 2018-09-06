@@ -18,9 +18,9 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/visual_material.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/math/transform.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
@@ -47,10 +47,11 @@ using geometry::GeometryId;
 using geometry::PenetrationAsPointPair;
 using geometry::QueryObject;
 using geometry::SceneGraph;
+using geometry::SceneGraphInspector;
 using geometry::VisualMaterial;
+using math::RigidTransform;
 using math::RollPitchYaw;
 using math::RotationMatrix;
-using math::Transform;
 using multibody::benchmarks::Acrobot;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
@@ -136,7 +137,11 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(plant->num_actuators(), 2);
   EXPECT_EQ(plant->num_actuated_dofs(), 2);
 
-    // State size.
+  // World accessors.
+  EXPECT_EQ(&plant->world_body(), &plant->model().world_body());
+  EXPECT_EQ(&plant->world_frame(), &plant->model().world_frame());
+
+  // State size.
   EXPECT_EQ(plant->num_positions(), 3);
   EXPECT_EQ(plant->num_velocities(), 3);
   EXPECT_EQ(plant->num_multibody_states(), 6);
@@ -224,16 +229,21 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       plant->AddRigidBody("AnotherBody", default_model_instance(),
                           SpatialInertia<double>()),
       std::logic_error,
-      /* Verify this method is throwing for the right reasons. */
       "Post-finalize calls to '.*' are not allowed; "
       "calls to this method must happen before Finalize\\(\\).");
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant->AddJoint<RevoluteJoint>(
           "AnotherJoint", link1, {}, link2, {}, Vector3d::UnitZ()),
       std::logic_error,
-      /* Verify this method is throwing for the right reasons. */
       "Post-finalize calls to '.*' are not allowed; "
       "calls to this method must happen before Finalize\\(\\).");
+  // Test API for simplified `AddJoint` method.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant->AddJoint(std::make_unique<RevoluteJoint<double>>(
+          "AnotherJoint", link1.body_frame(), link2.body_frame(),
+          Vector3d::UnitZ())),
+      std::logic_error,
+      "This MultibodyTree is finalized already. .*");
   // TODO(amcastro-tri): add test to verify that requesting a joint of the wrong
   // type throws an exception. We need another joint type to do so.
 }
@@ -314,6 +324,28 @@ class AcrobotPlantTests : public ::testing::Test {
     discrete_context_->FixInputPort(
         discrete_plant_->get_actuation_input_port().get_index(),
         Vector1<double>(0.0));
+  }
+
+  // Computes the vector of generalized forces due to gravity.
+  // This test is mostly to verify MultibodyPlant provides the proper APIs to
+  // perform this computations.
+  void VerifyCalcGravityGeneralizedForces(double theta1, double theta2) {
+    const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+
+    // Set the state:
+    shoulder_->set_angle(context_.get(), theta1);
+    elbow_->set_angle(context_.get(), theta2);
+
+    // Calculate the generalized forces due to gravity.
+    const VectorX<double> tau_g =
+        plant_->model().CalcGravityGeneralizedForces(*context_);
+
+    // Calculate a benchmark value.
+    const Vector2d tau_g_expected =
+        acrobot_benchmark_.CalcGravityVector(theta1, theta2);
+
+    EXPECT_TRUE(CompareMatrices(
+        tau_g, tau_g_expected, kTolerance, MatrixCompareType::relative));
   }
 
   // Verifies the computation performed by MultibodyPlant::CalcTimeDerivatives()
@@ -454,6 +486,20 @@ class AcrobotPlantTests : public ::testing::Test {
       parameters_.b1(), parameters_.b2(),
       parameters_.g()};
 };
+
+// Verifies we can compute the vector of generalized forces due to gravity on a
+// model of an acrobot.
+TEST_F(AcrobotPlantTests, VerifyCalcGravityGeneralizedForces) {
+  // Some arbitrary values of non-zero state:
+  VerifyCalcGravityGeneralizedForces(
+      -M_PI / 5.0, M_PI / 2.0  /* joint's angles */);
+  VerifyCalcGravityGeneralizedForces(
+      M_PI / 3.0, -M_PI / 5.0  /* joint's angles */);
+  VerifyCalcGravityGeneralizedForces(
+      M_PI / 4.0, -M_PI / 3.0  /* joint's angles */);
+  VerifyCalcGravityGeneralizedForces(
+      -M_PI, -M_PI / 2.0       /* joint's angles */);
+}
 
 // Verifies the correctness of MultibodyPlant::CalcTimeDerivatives() on a model
 // of an acrobot.
@@ -648,19 +694,21 @@ class SphereChainScenario {
         plant_->world_body(),
         // A half-space passing through the origin in the x-z plane.
         geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
-        geometry::HalfSpace(), CoulombFriction<double>(), scene_graph_);
+        geometry::HalfSpace(), "ground", CoulombFriction<double>(),
+        scene_graph_);
 
     auto make_sphere = [this](int i) {
       const double radius = 0.5;
       const RigidBody<double>& sphere = plant_->AddRigidBody(
           "Sphere" + to_string(i), SpatialInertia<double>());
       GeometryId sphere_id = plant_->RegisterCollisionGeometry(
-          sphere, Isometry3d::Identity(), geometry::Sphere(radius),
+          sphere, Isometry3d::Identity(), geometry::Sphere(radius), "collision",
           CoulombFriction<double>(), scene_graph_);
       // We add visual geometry to implicitly test that they are *not* included
       // in the collision results. We don't even save the ids for them.
       plant_->RegisterVisualGeometry(sphere, Isometry3d::Identity(),
-                                     geometry::Sphere(radius), scene_graph_);
+                                     geometry::Sphere(radius), "visual",
+                                     scene_graph_);
       return std::make_tuple(&sphere, sphere_id);
     };
 
@@ -890,7 +938,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
       plant.world_body(),
       // A half-space passing through the origin in the x-z plane.
       geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
-      geometry::HalfSpace(), ground_friction, &scene_graph);
+      geometry::HalfSpace(), "ground", ground_friction, &scene_graph);
 
   // Add two spherical bodies.
   const RigidBody<double>& sphere1 =
@@ -898,13 +946,13 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   CoulombFriction<double> sphere1_friction(0.8, 0.5);
   GeometryId sphere1_id = plant.RegisterCollisionGeometry(
       sphere1, Isometry3d::Identity(), geometry::Sphere(radius),
-      sphere1_friction, &scene_graph);
+      "collision", sphere1_friction, &scene_graph);
   const RigidBody<double>& sphere2 =
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
   CoulombFriction<double> sphere2_friction(0.7, 0.6);
   GeometryId sphere2_id = plant.RegisterCollisionGeometry(
       sphere2, Isometry3d::Identity(), geometry::Sphere(radius),
-      sphere2_friction, &scene_graph);
+      "collision", sphere2_friction, &scene_graph);
 
   // We are done defining the model.
   plant.Finalize(&scene_graph);
@@ -974,7 +1022,7 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
       plant.world_body(),
       // A half-space passing through the origin in the x-z plane.
       geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
-      geometry::HalfSpace(), &scene_graph);
+      geometry::HalfSpace(), "ground", &scene_graph);
 
   // Add two spherical bodies.
   const RigidBody<double>& sphere1 =
@@ -982,13 +1030,13 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   Vector4<double> sphere1_diffuse{0.9, 0.1, 0.1, 0.5};
   GeometryId sphere1_id = plant.RegisterVisualGeometry(
       sphere1, Isometry3d::Identity(), geometry::Sphere(radius),
-      VisualMaterial(sphere1_diffuse), &scene_graph);
+      "visual", VisualMaterial(sphere1_diffuse), &scene_graph);
   const RigidBody<double>& sphere2 =
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
   Vector4<double> sphere2_diffuse{0.1, 0.9, 0.1, 0.5};
   GeometryId sphere2_id = plant.RegisterVisualGeometry(
       sphere2, Isometry3d::Identity(), geometry::Sphere(radius),
-      VisualMaterial(sphere2_diffuse), &scene_graph);
+      "visual", VisualMaterial(sphere2_diffuse), &scene_graph);
 
   // We are done defining the model.
   plant.Finalize(&scene_graph);
@@ -1006,19 +1054,20 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
       state_value->GetValueOrThrow<QueryObject<double>>();
   scene_graph.get_query_output_port().Calc(*context, state_value.get());
 
+  const SceneGraphInspector<double>& inspector = query_object.inspector();
   const VisualMaterial* test_material =
-      query_object.GetVisualMaterial(ground_id);
+      inspector.GetVisualMaterial(ground_id);
   EXPECT_NE(test_material, nullptr);
   EXPECT_TRUE(CompareMatrices(test_material->diffuse(),
                               VisualMaterial().diffuse(), 0.0,
                               MatrixCompareType::absolute));
 
-  test_material = query_object.GetVisualMaterial(sphere1_id);
+  test_material = inspector.GetVisualMaterial(sphere1_id);
   EXPECT_NE(test_material, nullptr);
   EXPECT_TRUE(CompareMatrices(test_material->diffuse(), sphere1_diffuse, 0.0,
                               MatrixCompareType::absolute));
 
-  test_material = query_object.GetVisualMaterial(sphere2_id);
+  test_material = inspector.GetVisualMaterial(sphere2_id);
   EXPECT_NE(test_material, nullptr);
   EXPECT_TRUE(CompareMatrices(test_material->diffuse(), sphere2_diffuse, 0.0,
                               MatrixCompareType::absolute));
@@ -1281,14 +1330,14 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     large_box_id_ = plant_.RegisterCollisionGeometry(
         large_box, Isometry3d::Identity(),
         geometry::Box(large_box_size_, large_box_size_, large_box_size_),
-        CoulombFriction<double>(), &scene_graph_);
+        "collision", CoulombFriction<double>(), &scene_graph_);
 
     const RigidBody<double>& small_box =
         plant_.AddRigidBody("SmallBox", SpatialInertia<double>());
     small_box_id_ = plant_.RegisterCollisionGeometry(
         small_box, Isometry3d::Identity(),
         geometry::Box(small_box_size_, small_box_size_, small_box_size_),
-        CoulombFriction<double>(), &scene_graph_);
+        "collision", CoulombFriction<double>(), &scene_graph_);
 
     // We are done defining the model.
     plant_.Finalize(&scene_graph_);
@@ -1319,21 +1368,20 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     const Body<double>& large_box = plant_.GetBodyByName("LargeBox");
     const Body<double>& small_box = plant_.GetBodyByName("SmallBox");
 
-    const Transform<double> X_WLb =
+    const RigidTransform<double> X_WLb =
         // Pure rotation.
-        Transform<double>(RotationMatrix<double>::MakeZRotation(M_PI_4),
-                          Vector3<double>::Zero()) *
+        RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI_4),
+                               Vector3<double>::Zero()) *
         // Pure translation.
-        Transform<double>(RotationMatrix<double>::Identity(),
-                          Vector3<double>(0, -large_box_size_ / 2.0, 0));
-    const Transform<double> X_WSb =
+        RigidTransform<double>(RotationMatrix<double>::Identity(),
+                               Vector3<double>(0, -large_box_size_ / 2.0, 0));
+    const RigidTransform<double> X_WSb =
         // Pure rotation.
-        Transform<double>(RotationMatrix<double>::MakeZRotation(M_PI_4),
-                          Vector3<double>::Zero()) *
+        RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI_4),
+                               Vector3<double>::Zero()) *
         // Pure translation.
-        Transform<double>(RotationMatrix<double>::Identity(),
-                          Vector3<double>(
-                              0, small_box_size_ / 2.0 - penetration_, 0));
+        RigidTransform<double>(RotationMatrix<double>::Identity(),
+               Vector3<double>(0, small_box_size_ / 2.0 - penetration_, 0));
 
     plant_.model().SetFreeBodyPoseOrThrow(
         large_box, X_WLb.GetAsIsometry3(), context);
@@ -1588,6 +1636,95 @@ TEST_F(MultibodyPlantContactJacobianTests, TangentJacobian) {
   EXPECT_TRUE(CompareMatrices(
       D, vt_derivs, kTolerance, MatrixCompareType::relative));
 }
+
+// Unit test fixture for a model of Kuka Iiwa arm parametrized on the periodic
+// update period of the plant. This allows us to test some of the plant's
+// functionality for both continuous and discrete models.
+class KukaArmTest : public ::testing::TestWithParam<double> {
+ protected:
+  void SetUp() override {
+    const char kSdfPath[] =
+        "drake/manipulation/models/iiwa_description/sdf/"
+            "iiwa14_no_collision.sdf";
+    plant_ = std::make_unique<MultibodyPlant<double>>(this->GetParam());
+    AddModelFromSdfFile(FindResourceOrThrow(kSdfPath), plant_.get());
+    plant_->Finalize();
+
+    EXPECT_EQ(plant_->num_positions(), 7);
+    EXPECT_EQ(plant_->num_velocities(), 7);
+
+    // We expect the first joint to be the one WeldJoint fixing the model to the
+    // world. We verify this assumption.
+    const Joint<double>& weld = plant_->model().get_joint(JointIndex(0));
+    ASSERT_EQ(weld.name(), "weld_base_to_world");
+
+    context_ = plant_->CreateDefaultContext();
+  }
+
+  // Helper to set the multibody state x to x[i] = i for each i-th entry in the
+  // state vector.
+  // We use RevoluteJoint's methods to set the state in order to independently
+  // unit test the proper workings of
+  // MultibodyTree::get_multibody_state_vector() and its mutable counterpart.
+  void SetState(const VectorX<double>& xc) {
+    const int nq = plant_->num_positions();
+    for (JointIndex joint_index(1); /* Skip "weld_base_to_world". */
+         joint_index < plant_->num_joints(); ++joint_index) {
+      // We know all joints in our model, besides the first joint welding the
+      // model to the world, are revolute joints.
+      const auto& joint = plant_->GetJointByName<RevoluteJoint>(
+          "iiwa_joint_" + std::to_string(joint_index));
+
+      // For this simple model we do know the order in which variables are
+      // stored in the state vector.
+      const double angle = xc[joint_index-1];
+      const double angle_rate = xc[nq + joint_index - 1];
+
+      // We simply set each entry in the state with the value of its index.
+      joint.set_angle(context_.get(), angle);
+      joint.set_angular_rate(context_.get(), angle_rate);
+    }
+  }
+
+  std::unique_ptr<MultibodyPlant<double>> plant_;
+  std::unique_ptr<Context<double>> context_;
+};
+
+// This test verifies we can easily access the multibody state vector x = [q, v]
+// for either a discrete or continuous multibody model.
+TEST_P(KukaArmTest, StateAccess) {
+  // Set the state to x[i] = i for each i-th entry.
+  const VectorX<double> xc_expected = VectorX<double>::LinSpaced(
+      plant_->num_multibody_states() /* size */,
+      1 /* first index */, plant_->num_multibody_states() /* last index */);
+  SetState(xc_expected);
+
+  // Verify that we can retrieve the state vector and that it has the values we
+  // set above.
+  // Note: xc is an Eigen block, that is, a reference to the values stored in
+  // the context. Changes to state through the context can change the values
+  // referenced by xc.
+  Eigen::VectorBlock<const VectorX<double>> xc =
+      plant_->model().get_multibody_state_vector(*context_);
+  EXPECT_EQ(xc, xc_expected);
+
+  // Get a mutable state and modified it.
+  // Note: xc above is referencing values stored in the context. Therefore
+  // setting the entire state to zero changes the values referenced by xc.
+  plant_->model().get_mutable_multibody_state_vector(context_.get()).setZero();
+  EXPECT_EQ(xc, VectorX<double>::Zero(plant_->num_multibody_states()));
+}
+
+// Verifies we instantiated an appropriate MultibodyPlant model based on the
+// fixture's parameter.
+TEST_P(KukaArmTest, CheckContinuousOrDiscreteModel) {
+  // The plant must be a discrete system if the periodic update period is zero.
+  EXPECT_EQ(!plant_->is_discrete(), this->GetParam() == 0);
+}
+
+INSTANTIATE_TEST_CASE_P(
+    Blank, KukaArmTest,
+    testing::Values(0.0 /* continuous state */, 1e-3 /* discrete state */));
 
 }  // namespace
 }  // namespace multibody_plant

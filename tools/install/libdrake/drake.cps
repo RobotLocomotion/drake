@@ -5,7 +5,7 @@
   "X-See-Also": "https://github.com/mwoehlke/pycps",
   "Cps-Version": "0.8.0",
   "Name": "drake",
-  "Website": "http://drake.mit.edu/",
+  "Website": "https://drake.mit.edu/",
   "Requires": {
     "bot2-core-lcmtypes": {
       "Hints": ["@prefix@/lib/cmake/bot2-core-lcmtypes"],

@@ -36,6 +36,12 @@ class IKoptions {
   IKoptions(const IKoptions &rhs);
   ~IKoptions(void);
   RigidBodyTree<double> *getRobotPtr() const;
+
+  /**
+   * Sets the quadratic cost matrix Q where the cost
+   * for the optimization is formulated as q_err' Q q_err, 
+   * where q_err = q - q_nominal
+   */
   void setQ(const Eigen::MatrixXd &Q);
   void setQa(const Eigen::MatrixXd &Qa);
   void setQv(const Eigen::MatrixXd &Qv);

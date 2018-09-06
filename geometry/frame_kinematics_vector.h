@@ -11,6 +11,35 @@
 namespace drake {
 namespace geometry {
 
+#ifndef DRAKE_DOXYGEN_CXX
+namespace detail {
+
+// A type-traits-style initializer for making sure that quantities in the frame
+// kinematics vector are initialized. This is because Eigen actively does *not*
+// initialize its data types and there is a code path by which uninitialized
+// values in the vector can be accessed.
+
+template <typename Value>
+struct KinematicsValueInitializer {
+  static void Initialize(Value* value) {
+    std::logic_error("Unsupported kinematics value");
+  }
+};
+
+template <typename S>
+struct KinematicsValueInitializer<Isometry3<S>> {
+  static void Initialize(Isometry3<S>* value) {
+    value->setIdentity();
+  }
+};
+
+// TODO(SeanCurtis-TRI): Add specializations for SpatialVelocity and
+// SpatialAcceleration (setting them to zero vectors) as those quantities are
+// added to SceneGraph.
+
+}  // namespace detail
+#endif  // DRAKE_DOXYGEN_CXX
+
 /** A %FrameKinematicsVector is used to report kinematics data for registered
  frames (identified by unique FrameId values) to SceneGraph.
  It serves as the basis of FramePoseVector, FrameVelocityVector, and
@@ -135,6 +164,7 @@ namespace geometry {
  -----------------|------------------------------------------|--------------
   FramePoseVector | FrameKinematicsVector<Isometry3<Scalar>> | double
   FramePoseVector | FrameKinematicsVector<Isometry3<Scalar>> | AutoDiffXd
+  FramePoseVector | FrameKinematicsVector<Isometry3<Scalar>> | Expression
   */
 template <class KinematicsValue>
 class FrameKinematicsVector {
@@ -182,6 +212,9 @@ class FrameKinematicsVector {
  private:
   // Utility function to help catch misuse.
   struct FlaggedValue {
+    FlaggedValue() {
+      detail::KinematicsValueInitializer<KinematicsValue>::Initialize(&value);
+    }
     int64_t version{0};
     KinematicsValue value;
   };

@@ -373,7 +373,7 @@ elements.
 collision filter groups is to create a new group which ignores itself and
 make all of the collision elements of both bodies members of that group.
 
-<b>Comparision</b> Both representations offer a straightforward implementation.
+<b>Comparison</b> Both representations offer a straightforward implementation.
 However, because of the fixed-width bitmask, we have a finite number of
 collision filter groups. For a _single_ robot with `k` links, we would need, on
 the average, `k - 1` groups to handle this case.  If we extend this to multiple
@@ -459,7 +459,7 @@ In this representation, the right-most bit is the low-order bit.  Remember that
 all elements belong to the universal group (bit 0). It should be clear that
 `groupA` and `groupB` were assigned to bits 1 and 2, respectively.
 
-<b>Comparision</b> Collision filtering based on _classes_ of bodies fits
+<b>Comparison</b> Collision filtering based on _classes_ of bodies fits
 naturally with the collision filter group model.  Its representation is compact
 and its runtime cost remains unchanged.  The efficacy of the clique approach
 depends on the size of the groups and, handled greedily, could lead to an

@@ -78,8 +78,8 @@ namespace multibody {
 /// rotational inertia operations in debug releases only.  This provides speed
 /// in a release build while facilitating debugging in debug builds.
 /// In addition, these validity tests are only performed for scalar types for
-/// which drake::is_numeric<T> is `true`. For instance, validity checks are not
-/// performed when T is symbolic::Expression.
+/// which drake::scalar_predicate<T>::is_bool is `true`. For instance, validity
+/// checks are not performed when T is symbolic::Expression.
 ///
 /// - [Jain 2010]  Jain, A., 2010. Robot and multibody dynamics: analysis and
 ///                algorithms. Springer Science & Business Media.
@@ -367,7 +367,7 @@ class SpatialInertia {
   ///
   /// @note
   /// The term `F_Bo_E` computed by this operator appears in the equations of
-  /// motion for a rigid body which, when writen about the origin `Bo` of the
+  /// motion for a rigid body which, when written about the origin `Bo` of the
   /// body frame B (which does not necessarily need to coincide with the body's
   /// center of mass), read as: <pre>
   ///   Ftot_BBo = M_Bo_W * A_WB + b_Bo
@@ -440,7 +440,8 @@ class SpatialInertia {
   // attempt a smart way throw based on a given symbolic::Formula but instead we
   // make these methods a no-op for non-numeric types.
   template <typename T1 = T>
-  typename std::enable_if<is_numeric<T1>::value>::type CheckInvariants() const {
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool> CheckInvariants()
+      const {
     if (!IsPhysicallyValid().value()) {
       throw std::runtime_error(
           "The resulting spatial inertia is not physically valid. "
@@ -451,7 +452,8 @@ class SpatialInertia {
   // SFINAE for non-numeric types. See documentation in the implementation for
   // numeric types.
   template <typename T1 = T>
-  typename std::enable_if<!is_numeric<T1>::value>::type CheckInvariants() {}
+  typename std::enable_if_t<!scalar_predicate<T1>::is_bool> CheckInvariants()
+      const {}
 
   // Mass of the body or composite body.
   T mass_{nan()};

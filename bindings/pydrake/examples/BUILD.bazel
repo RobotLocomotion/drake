@@ -111,12 +111,15 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":pendulum_py",
     ":rimless_wheel_py",
     ":van_der_pol_py",
+    "//bindings/pydrake/examples/multibody",
 ]
 
 PY_LIBRARIES = [
     ":module_py",
 ]
 
+# Package roll-up (for Bazel dependencies).
+# N.B. `examples` packages do not have `all` modules.
 drake_py_library(
     name = "examples",
     imports = PACKAGE_INFO.py_imports,

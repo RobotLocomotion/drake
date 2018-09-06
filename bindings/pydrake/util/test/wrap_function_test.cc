@@ -20,7 +20,7 @@ auto WrapIdentity(Func&& func) {
   return WrapFunction<wrap_arg_default>(std::forward<Func>(func));
 }
 
-// Functions with primitive values (int) as return, with 0-1 arugments and/or
+// Functions with primitive values (int) as return, with 0-1 arguments and/or
 // parameters.
 void Void() {}
 void IntToVoid(int) {}

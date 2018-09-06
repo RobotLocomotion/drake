@@ -45,6 +45,38 @@ struct ParsedReference {
   optional<int> lane_id;
 };
 
+// Enumerates the types of curve within a connection where endpoints may be
+// laid.
+enum class AnchorPointType {
+  kReference,  //< Reference curve.
+  kLane,       //< Lane curve.
+};
+
+// Holds the parsed information of the curve the endpoint refers to.
+struct ParsedAnchorPoint {
+  // Type of curve.
+  AnchorPointType type;
+  // When `type` == kLane, is the lane ID that the endpoint refers to, or
+  // nullopt if referring to a connection's reference curve.
+  optional<int> lane_id;
+};
+
+// TODO(agalbachicar)    Once std::variant is added, move this to:
+// using StartSpec = std::optional<std::variant<StartReference::Spec,
+//                                              StartLane::Spec>>
+struct StartSpec {
+  optional<StartReference::Spec> ref_spec;
+  optional<StartLane::Spec> lane_spec;
+};
+
+// TODO(agalbachicar)    Once std::variant is added, move this to:
+// using EndSpec = std::optional<std::variant<EndReference::Spec,
+//                                            EndLane::Spec>>
+struct EndSpec {
+  optional<EndReference::Spec> ref_spec;
+  optional<EndLane::Spec> lane_spec;
+};
+
 // Converts `degrees` angle into radians.
 double deg_to_rad(double degrees) { return degrees * M_PI / 180.; }
 
@@ -245,61 +277,98 @@ ParsedReference ResolveEndpointReference(const std::string& endpoint_key) {
     parsed_reference.id = pieces_match[1].str();
     parsed_reference.direction = ResolveDirection(pieces_match[4].str());
     parsed_reference.end = {ResolveEnd(pieces_match[2].str())};
-    // TODO(agalbachicar)    Provide support for "lane_number" so as to
-    //                       reference the lane ID.
-    DRAKE_DEMAND(pieces_match[3].str() == "ref");
-    parsed_reference.lane_id = {};
+    parsed_reference.lane_id = pieces_match[3].str() == "ref"
+        ? nullopt : optional<int>(std::atoi(pieces_match[3].str().c_str()));
   } else {
     DRAKE_ABORT();
   }
   return parsed_reference;
 }
 
-// Checks that `node` is a sequence of two elements. "ref" or "lane.NB"
+// Returns a ParsedAnchorPoint structure by extracting keywords from
+// `anchor_key`.
+//
+// `anchor_key` must match one of the following formats:
+//
+// - Reference curve:  ref
+// - Lane curve:       lane.LANE_ID
+//
+// Where:
+// - LANE_ID is a non negative integer that refers to connection lane's ID.
+ParsedAnchorPoint ParseAnchorPoint(const std::string anchor_key) {
+  if (anchor_key == "ref") {
+    return {AnchorPointType::kReference, {}};
+  }
+  const auto it = anchor_key.find("lane.");
+  DRAKE_DEMAND(it != std::string::npos && it == 0);
+  const std::string lane_str =
+      anchor_key.substr(std::strlen("lane."),
+                        anchor_key.length() - std::strlen("lane."));
+  // Checks that lane_str only contains digits but no other character.
+  DRAKE_DEMAND(lane_str.find_first_not_of("0123456789") == std::string::npos);
+  const int lane_id = std::stoi(lane_str);
+  return {AnchorPointType::kLane, {lane_id}};
+}
+
+// Checks that `node` is a sequence of two elements. "ref" or "lane.LANE_ID"
 // must go first and then a string that points to the Endpoint. It will be
 // looked for inside `point_catalog` or a Connection will be selected from
 // `connection_catalog`.
-// @return An optional<StartReference::Spec> with the point information when
-// it is possible to identify. When the point refers to a Connection that is
-// not in `connection_catalog`, nullopt is returned.
-// TODO(agalbachicar)  Review return type once lane-to-lane methods in Builder
-//                     are supported.
-optional<StartReference::Spec> ResolveEndpoint(
+// @return An optional<std::pair<ParsedCurve, StartSpec>> with the point
+// information when it is possible to identify. When the point refers to a
+// Connection that is not in `connection_catalog`, nullopt is returned.
+optional<std::pair<ParsedAnchorPoint, StartSpec>> ResolveEndpoint(
     const YAML::Node& node,
     const std::map<std::string, Endpoint>& point_catalog,
     const std::map<std::string, const Connection*>& connection_catalog) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 2);
-  // TODO(agalbachicar)    Provide support for "lane.NB" so as to reference the
-  //                       lane ID.
-  DRAKE_DEMAND(node[0].as<std::string>() == "ref");
   DRAKE_DEMAND(node[1].IsScalar());
+
+  const ParsedAnchorPoint parsed_anchor_point =
+      ParseAnchorPoint(node[0].as<std::string>());
 
   const std::string endpoint_key = node[1].as<std::string>();
   const ParsedReference parsed_reference =
       ResolveEndpointReference(endpoint_key);
 
+  StartSpec spec{};
   if (parsed_reference.type == ReferenceType::kPoint) {
     optional<Endpoint> endpoint =
         FindEndpointInCatalog(parsed_reference.id, point_catalog);
     DRAKE_DEMAND(endpoint.has_value());
-    return {StartReference().at(endpoint.value(), parsed_reference.direction)};
+    if (parsed_anchor_point.type == AnchorPointType::kReference) {
+      spec.ref_spec =
+          StartReference().at(endpoint.value(), parsed_reference.direction);
+    } else {
+      spec.lane_spec =
+          StartLane(parsed_anchor_point.lane_id.value()).at(
+              endpoint.value(), parsed_reference.direction);
+    }
   } else if (parsed_reference.type == ReferenceType::kConnection) {
     optional<const Connection*> connection =
         FindConnectionInCatalog(parsed_reference.id, connection_catalog);
     if (!connection) {
-      return {};
+      return nullopt;
     }
-    // TODO(agalbachicar)    Provide support for "lane_number" so as to
-    //                       reference the lane ID.
-    return {StartReference().at(*connection.value(),
-                                parsed_reference.end.value(),
-                                parsed_reference.direction)};
+    if (parsed_anchor_point.type == AnchorPointType::kReference) {
+      DRAKE_DEMAND(!parsed_reference.lane_id.has_value());
+      spec.ref_spec = StartReference().at(*connection.value(),
+                                          parsed_reference.end.value(),
+                                          parsed_reference.direction);
+    } else {
+      DRAKE_DEMAND(parsed_reference.lane_id.has_value());
+      spec.lane_spec = StartLane(parsed_anchor_point.lane_id.value()).at(
+          *connection.value(), parsed_reference.lane_id.value(),
+          parsed_reference.end.value(), parsed_reference.direction);
+    }
+  } else {
+    DRAKE_ABORT();
   }
-  DRAKE_ABORT();
+  return {{parsed_anchor_point, spec}};
 }
 
-// Checks that `node` is a sequence of two elements. "ref" or "lane.NB"
+// Checks that `node` is a sequence of two elements. "ref" or "lane.LANE_ID"
 // must go first and then a string that points to the EndpointZ, or a sequence
 // that represents an EndpointZ.
 // When the node has a sequence as its second element, it will be parsed as
@@ -307,22 +376,29 @@ optional<StartReference::Spec> ResolveEndpoint(
 // element will be checked to be a scalar of string type. It must refer to
 // either a point in `point_catalog` or to an EndpointZ of any Connection in
 // `connection_catalog`.
-// @return An optional<EndReference::Spec> with the point information when
-// it is possible to identify. When the point refers to a Connection that is
-// not in `connection_catalog`, nullopt is returned.
-// TODO(agalbachicar)  Review return type once lane-to-lane methods in Builder
-//                     are supported.
-optional<EndReference::Spec> ResolveEndpointZ(
+// @return An optional<std::pair<ParsedCurve, EndSpec>> with the point
+// information when it is possible to identify. When the point refers to a
+//  Connection that is not in `connection_catalog`, nullopt is returned.
+optional<std::pair<ParsedAnchorPoint, EndSpec>> ResolveEndpointZ(
     const YAML::Node& node,
     const std::map<std::string, Endpoint>& point_catalog,
     const std::map<std::string, const Connection*>& connection_catalog) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 2);
-  // TODO(agalbachicar)    Provide support for "lane.NB" so as to reference the
-  //                       lane ID.
-  DRAKE_DEMAND(node[0].as<std::string>() == "ref");
+
+  const ParsedAnchorPoint parsed_anchor_point =
+      ParseAnchorPoint(node[0].as<std::string>());
+  EndSpec spec{};
+
   if (node[1].IsSequence()) {
-    return {EndReference().z_at(ParseEndpointZ(node[1]), Direction::kForward)};
+    if (parsed_anchor_point.type == AnchorPointType::kReference) {
+      spec.ref_spec =
+          EndReference().z_at(ParseEndpointZ(node[1]), Direction::kForward);
+    } else {
+      spec.lane_spec =
+          EndLane(parsed_anchor_point.lane_id.value()).z_at(
+              ParseEndpointZ(node[1]), Direction::kForward);
+    }
   } else if (node[1].IsScalar()) {
     const std::string endpoint_key = node[1].as<std::string>();
     const ParsedReference parsed_reference =
@@ -332,22 +408,39 @@ optional<EndReference::Spec> ResolveEndpointZ(
       optional<Endpoint> endpoint =
           FindEndpointInCatalog(parsed_reference.id, point_catalog);
       DRAKE_DEMAND(endpoint.has_value());
-      return {EndReference().z_at(endpoint.value().z(),
-                                  parsed_reference.direction)};
+      if (parsed_anchor_point.type == AnchorPointType::kReference) {
+        spec.ref_spec =
+            EndReference().z_at(endpoint.value().z(),
+                                 parsed_reference.direction);
+      } else {
+        spec.lane_spec =
+            EndLane(parsed_anchor_point.lane_id.value()).z_at(
+                endpoint.value().z(), parsed_reference.direction);
+      }
     } else if (parsed_reference.type == ReferenceType::kConnection) {
       optional<const Connection*> connection =
           FindConnectionInCatalog(parsed_reference.id, connection_catalog);
       if (!connection) {
-        return {};
+        return nullopt;
       }
-      // TODO(agalbachicar)    Provide support for "lane_number" so as to
-      //                       reference the lane ID.
-      return {EndReference().z_at(*connection.value(),
-                                  parsed_reference.end.value(),
-                                  parsed_reference.direction)};
+      if (parsed_anchor_point.type == AnchorPointType::kReference) {
+        DRAKE_DEMAND(!parsed_reference.lane_id.has_value());
+        spec.ref_spec = EndReference().z_at(*connection.value(),
+                                            parsed_reference.end.value(),
+                                            parsed_reference.direction);
+      } else {
+        DRAKE_DEMAND(parsed_reference.lane_id.has_value());
+        spec.lane_spec = EndLane(parsed_anchor_point.lane_id.value()).z_at(
+            *connection.value(), parsed_reference.lane_id.value(),
+            parsed_reference.end.value(), parsed_reference.direction);
+      }
+    } else {
+      DRAKE_ABORT();
     }
+  } else {
+    DRAKE_ABORT();
   }
-  DRAKE_ABORT();
+  return {{parsed_anchor_point, spec}};
 }
 
 // Parses `points` YAML node to resolve all the endpoints in the collection.
@@ -394,39 +487,65 @@ const Connection* MaybeMakeConnection(
       node["length"] ? Connection::kLine : Connection::kArc;
 
   // Resolve start endpoint.
-  // TODO(agalbachicar): Once the Builder can create lane-connected
-  //                     segments, the return type should handle also
-  //                     StartLane::Spec.
-  optional<StartReference::Spec> start_spec =
+  optional<std::pair<ParsedAnchorPoint, StartSpec>> start_spec =
       ResolveEndpoint(node["start"], point_catalog, connection_catalog);
   if (!start_spec.has_value()) {
     return nullptr;
   }  // "Try to resolve later."
 
   // Resolve end endpoint.
-  // TODO(agalbachicar): Once the Builder can create lane-connected
-  //                     segments, the return type should handle also
-  //                     EndLane::Spec.
-  optional<EndReference::Spec> end_spec = ResolveEndpointZ(
+  // TODO(agalbachicar)  It is needed an assertion to make sure that when
+  //                     "explicit_end" is used, the Endpoint it refers to
+  //                     actually matches within linear and angular tolerance
+  //                     the new Connection's end Endpoint.
+  optional<std::pair<ParsedAnchorPoint, EndSpec>> end_spec = ResolveEndpointZ(
       node["explicit_end"] ? node["explicit_end"] : node["z_end"],
       point_catalog, connection_catalog);
   if (!end_spec.has_value()) {
     return nullptr;
   }  // "Try to resolve later."
 
-  // TODO(agalbachicar)    Once the API of the Builder is finished, support for
-  //                       the alternative API is needed and the format may
-  //                       suffer some transformations. For the time being,
-  //                       this code covers Builder's reference-curve API.
-  switch (geometry_type) {
-    case Connection::kLine: {
-      return builder->Connect(id, lane_layout, start_spec.value(),
-                              ParseLineOffset(node["length"]),
-                              end_spec.value());
+  // Both ends must be of the same type.
+  DRAKE_DEMAND(start_spec->first.type == end_spec->first.type);
+
+  switch ((*start_spec).first.type) {
+    case AnchorPointType::kReference: {
+      switch (geometry_type) {
+        case Connection::kLine: {
+          return builder->Connect(id, lane_layout,
+                                  *(start_spec->second.ref_spec),
+                                  ParseLineOffset(node["length"]),
+                                  *(end_spec->second.ref_spec));
+        }
+        case Connection::kArc: {
+          return builder->Connect(id, lane_layout,
+                                  *(start_spec->second.ref_spec),
+                                  ParseArcOffset(node["arc"]),
+                                  *(end_spec->second.ref_spec));
+        }
+        default: {
+          DRAKE_ABORT();
+        }
+      }
     }
-    case Connection::kArc: {
-      return builder->Connect(id, lane_layout, start_spec.value(),
-                              ParseArcOffset(node["arc"]), end_spec.value());
+    case AnchorPointType::kLane: {
+      switch (geometry_type) {
+        case Connection::kLine: {
+          return builder->Connect(id, lane_layout,
+                                  *(start_spec->second.lane_spec),
+                                  ParseLineOffset(node["length"]),
+                                  *(end_spec->second.lane_spec));
+        }
+        case Connection::kArc: {
+          return builder->Connect(id, lane_layout,
+                                  *(start_spec->second.lane_spec),
+                                  ParseArcOffset(node["arc"]),
+                                  *(end_spec->second.lane_spec));
+        }
+        default: {
+          DRAKE_ABORT();
+        }
+      }
     }
     default: {
       DRAKE_ABORT();

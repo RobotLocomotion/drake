@@ -9,11 +9,18 @@
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
+#include "drake/geometry/scene_graph_inspector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
+
+// Forward declarations to give LCM message publication appropriate access.
+namespace lcm {
+class DrakeLcmInterface;
+}  // namespace lcm
+
 namespace geometry {
 
 class GeometryInstance;
@@ -315,6 +322,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    previously registered frame F (indicated by `frame_id`). The pose of the
    geometry is defined in a fixed pose relative to F (i.e., `X_FG`).
    Returns the corresponding unique geometry id.
+
    @param source_id   The id for the source registering the geometry.
    @param frame_id    The id for the frame F to hang the geometry on.
    @param geometry    The geometry G to affix to frame F.
@@ -323,7 +331,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
                              source,
                              2. the `frame_id` doesn't belong to the source,
                              3. the `geometry` is equal to `nullptr`,
-                             4. a context has been allocated. */
+                             4. a context has been allocated, or
+                             5. the geometry's name doesn't satisfy the
+                             requirements outlined in GeometryInstance.  */
   GeometryId RegisterGeometry(SourceId source_id, FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
@@ -340,8 +350,10 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @throws std::logic_error 1. the `source_id` does _not_ map to a registered
                             source,
                             2. the `geometry_id` doesn't belong to the source,
-                            3. the `geometry` is equal to `nullptr`, or
-                            4. a context has been allocated. */
+                            3. the `geometry` is equal to `nullptr`,
+                            4. a context has been allocated, or
+                            5. the geometry's name doesn't satisfy the
+                            requirements outlined in GeometryInstance.  */
   GeometryId RegisterGeometry(SourceId source_id, GeometryId geometry_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
@@ -351,12 +363,24 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @param source_id     The id for the source registering the frame.
    @param geometry      The anchored geometry G to add to the world.
    @returns The index for the added geometry.
-   @throws std::logic_error  If the `source_id` does _not_ map to a registered
-                             source or a context has been allocated. */
+   @throws std::logic_error  1. the `source_id` does _not_ map to a registered
+                             source,
+                             2. a context has been allocated, or
+                             3. the geometry's name doesn't satisfy the
+                             requirements outlined in GeometryInstance.  */
   GeometryId RegisterAnchoredGeometry(
       SourceId source_id, std::unique_ptr<GeometryInstance> geometry);
 
   //@}
+
+  /** Reports the identifier for the world frame. */
+  static FrameId world_frame_id() {
+    return internal::InternalFrame::get_world_frame_id();
+  }
+
+  /** Returns an inspector on the system's *model* scene graph data.
+   @throw std::logic_error If a context has been allocated.*/
+  const SceneGraphInspector<T>& model_inspector() const;
 
   /** @name         Collision filtering
    @anchor scene_graph_collision_filtering
@@ -431,7 +455,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
   void MakeSourcePorts(SourceId source_id);
 
   // Allow the load dispatch to peek into SceneGraph.
-  friend void DispatchLoadMessage(const SceneGraph<double>&);
+  friend void DispatchLoadMessage(const SceneGraph<double>&,
+                                  lcm::DrakeLcmInterface*);
 
   // Constructs a QueryObject for OutputPort allocation.
   QueryObject<T> MakeQueryObject() const;
@@ -487,12 +512,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   // A raw pointer to the default geometry state (which serves as the model for
   // allocating contexts for this system). The instance is owned by
-  // model_abstract_states_. This pointer will only be non-null between
-  // construction and context allocation. It serves a key role in enforcing the
-  // property that source ids can only be added prior to context allocation.
-  // This is mutable so that it can be cleared in the const method
-  // AllocateContext().
+  // model_abstract_states_.
   GeometryState<T>* initial_state_{};
+  SceneGraphInspector<T> model_inspector_;
 
   // TODO(SeanCurtis-TRI): Get rid of this.
   mutable bool context_has_been_allocated_{false};

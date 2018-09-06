@@ -98,7 +98,7 @@ class PoseSelector {
   /// traffic cars are found.  Note that when no vehicle is detected in front of
   /// (resp. behind) the ego vehicle, the respective RoadPosition within
   /// ClosestPoses will contain an `s`-value of positive (resp. negative)
-  /// infinity.  Any traffic poses that are redunant with `ego_pose` (i.e. have
+  /// infinity.  Any traffic poses that are redundant with `ego_pose` (i.e. have
   /// the same RoadPosition as the ego car and thus the same `s` and `r` value)
   /// are discarded.  If no leading/trailing vehicles are seen within
   /// scan-distance of the ego car, `s`-positions are taken to be at infinite

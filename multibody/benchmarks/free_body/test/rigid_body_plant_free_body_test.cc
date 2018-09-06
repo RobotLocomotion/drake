@@ -124,7 +124,7 @@ using Eigen::Quaterniond;
   EXPECT_TRUE(CompareMatrices(vDt_NBo_B_drake, vDt_NBo_B_exact,  10*tolerance));
 
   // Multi-step process to compare Drake vs exact time-derivative of quaternion.
-  // Ensure time-derivative of Drake's quaternion satifies quarternionDt test.
+  // Ensure time-derivative of Drake's quaternion satisfies quaternionDt test.
   // Since more than one time-derivative of a quaternion is associated with the
   // same angular velocity, convert to angular velocity to compare results.
   EXPECT_TRUE(math::IsBothQuaternionAndQuaternionDtOK(

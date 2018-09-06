@@ -111,7 +111,7 @@ GTEST_TEST(RotationMatrix, MakeXRotationMakeYRotationMakeZRotation) {
   const Vector3d i = Eigen::Vector3d::UnitX();
   const Vector3d j = Eigen::Vector3d::UnitY();
   const Vector3d k = Eigen::Vector3d::UnitZ();
-  double tolerance = 32 * kEpsilon;
+  constexpr double tolerance = 32 * kEpsilon;
 
   // Test making a rotation matrix associated with X-rotation.
   double theta = 0.3;
@@ -469,16 +469,15 @@ GTEST_TEST(RotationMatrix, CastFromDoubleToAutoDiffXd) {
   }
 }
 
-// Verify RotationMatrix is compatible with symbolic::Expression. This includes,
-// construction, and the two methods specialized for symbolic::Expression:
-// ThrowIfNotValid() and ProjectToRotationMatrix().
-GTEST_TEST(RotationMatrix, SymbolicRotationMatrixSimpleTests) {
-  RotationMatrix<symbolic::Expression> R;
+// Verify RotationMatrix constructor is compatible with symbolic::Expression,
+// including the ThrowIfNotValid() check.
+GTEST_TEST(RotationMatrix, SymbolicConstructionTest) {
+  using symbolic::Expression;
 
   // When the underlying scalar type is a symbolic::Expression, ensure
   // set(m_symbolic) only sets the rotation matrix, with no validity checks
   // e.g., ThrowIfNotValid() is a "no-op" (does nothing).
-  Matrix3<symbolic::Expression> m_symbolic;
+  Matrix3<Expression> m_symbolic;
   m_symbolic << 1, 2, 3,  // This is an obviously invalid rotation matrix.
                 4, 5, 6,
                 7, 8, 9;
@@ -486,17 +485,153 @@ GTEST_TEST(RotationMatrix, SymbolicRotationMatrixSimpleTests) {
   // Since this function is private, it cannot be directly tested.
   // Instead, it is tested via the set() method which calls ThrowIfNotValid()
   // when assertions are armed.
+  RotationMatrix<Expression> R;
   EXPECT_NO_THROW(R.set(m_symbolic));
 
-  // Test ProjectToRotationMatrix() throws an exception for symbolic expression.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      RotationMatrix<symbolic::Expression> R_symbolic_after_project =
-      RotationMatrix<symbolic::Expression>::ProjectToRotationMatrix(m_symbolic),
-      std::runtime_error,
-      "This method is not supported for scalar types "
-      "that are not drake::is_numeric<S>.");
+  // Set one of the matrix terms to a variable.  Still no throw.
+  const symbolic::Variable x{"x"};
+  m_symbolic(0, 0) = x;
+  EXPECT_NO_THROW(R.set(m_symbolic));
 }
 
+// Verify RotationMatrix projection with symbolic::Expression behaves as
+// expected.  (In prior revisions, it was specialized for Expressions.)
+// If there are free variables, it will throw.
+GTEST_TEST(RotationMatrix, SymbolicProjectionTest) {
+  using symbolic::Expression;
+
+  // Set up an identity matrix, but with one off-diagonal free variable.
+  Matrix3<Expression> m_symbolic = Matrix3<Expression>::Identity();
+  const symbolic::Variable x{"x"};
+  m_symbolic(2, 0) = x;
+
+  // Verify Eigen's SVD [which is called by ProjectToRotationMatrix()] throws
+  // an exception if it is passed a symbolic matrix with an element that it
+  // cannot resolve to a numerical value (e.g., the element contains a free
+  // variable).
+  // In the future, it would be acceptable if the implementation returned a
+  // symbolic result instead of throwing, but for now we'll lock in the "must
+  // throw" contract so that we'll notice if the behavior changes.
+  using RotMatExpr = RotationMatrix<Expression>;
+  Expression quality;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RotMatExpr::ProjectToRotationMatrix(m_symbolic, &quality),
+      std::runtime_error,
+      ".*environment does not have an entry for the variable.*\n*");
+
+  // Removing the free variable allows us to succeed.
+  m_symbolic(2, 0) = 0;   // The input is now the identity matrix.
+  RotMatExpr::ProjectToRotationMatrix(m_symbolic, &quality);
+
+  // Sanity check that the operation succeeded.  (We don't specify a tight
+  // tolerance here because the precise numerical result is tested elsewhere.)
+  EXPECT_LT(abs(quality - 1.0), 1e-3);
+
+  // Verify ProjectToRotationMatrix() (which uses Eigen's SVD) can handle
+  // symbolic matrices as long as every element resolves to a numerical value
+  // (no free variables).  To more fully test the code, the test matrix below
+  // is not already orthonormal since an already-orthonormal matrix may produce
+  // an early-return from Eigen's SVD.
+  Matrix3d m;
+  m << 1, 2,  3,
+       4, 5,  6,
+       7, 8, -10;
+  m_symbolic = m.template cast<Expression>();
+  RotMatExpr::ProjectToRotationMatrix(m_symbolic, &quality);
+  EXPECT_GT(quality, 10.0);
+}
+
+// Utility function to help test ProjectMatToRotMatWithAxis().
+// Take many samples of the rotation angle θ, make sure the rotation matrix
+// R[θ] = AngleAxis(θ, axis) has larger error than the projected matrix R, so
+// (R(i,j) - M(i,j))² <= (R[θ](i,j) - M(i,j))² ∀ θ: angle_lb <= θ <= angle_ub.
+void CheckProjectionWithAxis(const Eigen::Matrix3d& M,
+                             const Eigen::Vector3d& axis,
+                             const double angle_lb,
+                             const double angle_ub) {
+  const double angle = ProjectMatToRotMatWithAxis(M, axis, angle_lb, angle_ub);
+  const RotationMatrixd R(Eigen::AngleAxisd(angle, axis));
+  const double R_error = (R.matrix() - M).squaredNorm();
+  const int kNumAngles = 100;
+  double theta_lb{};
+  double theta_ub{};
+  // Depending on the value of angle_lb and angle_ub, we choose the range for
+  // the sampled theta. If angle_lb and/or angle_ub is inf, then the theta_lb
+  // and/or theta_ub will be set to a finite value.
+  if (!std::isinf(angle_lb) && !std::isinf(angle_ub)) {
+    theta_lb = angle_lb;
+    theta_ub = angle_ub;
+  } else if (std::isinf(angle_lb) && std::isinf(angle_ub)) {
+    theta_lb = -2 * M_PI;
+    theta_ub = 2 * M_PI;
+  } else if (std::isinf(angle_lb)) {
+    theta_lb = angle_ub - 2 * M_PI;
+    theta_ub = angle_ub;
+  } else {
+    theta_lb = angle_lb;
+    theta_ub = angle_lb + 2 * M_PI;
+  }
+  const Eigen::Matrix<double, kNumAngles, 1> theta =
+      Eigen::Matrix<double, kNumAngles, 1>::LinSpaced(theta_lb, theta_ub);
+
+  for (int i = 0; i < kNumAngles; ++i) {
+    const RotationMatrixd Ri(Eigen::AngleAxisd(theta(i), axis));
+    const double Ri_error = (Ri.matrix() - M).squaredNorm();
+    EXPECT_GE(Ri_error, R_error - 1E-10);
+  }
+}
+
+GTEST_TEST(RotationMatrixTest, TestProjectionWithAxis) {
+  const Eigen::Vector3d axis(1.0 / 3.0, 2.0 / 3.0, -2.0 / 3.0);
+  constexpr double tolerance = 64 * kEpsilon;
+  // Note: Before 7/24/2018, tolerance = 1E-6.
+
+  // For a proper rotation matrix with the desired axis, the projected matrix
+  // should be the same, if the angle falls inside the bound.
+  Eigen::Matrix3d M = Eigen::AngleAxisd(0.2, axis).toRotationMatrix();
+  double angle = ProjectMatToRotMatWithAxis(M, axis, 0, 1);
+  EXPECT_NEAR(angle, 0.2, tolerance);
+
+  // If the angle of `M` falls outside the angle's bounds, then the optimal
+  // projection is either the lower or upper bound (for next test lower bound).
+  angle = ProjectMatToRotMatWithAxis(M, axis, 0.3, 1);
+  EXPECT_NEAR(angle, 0.3, tolerance);
+
+  // If angle bounds include infinity, the maximal angle is to shift 0.2 by 2kπ.
+  constexpr double infinity_dbl = std::numeric_limits<double>::infinity();
+  angle = ProjectMatToRotMatWithAxis(M, axis, 0.3, infinity_dbl);
+  EXPECT_NEAR(angle, 0.2 + 2 * M_PI, tolerance);
+
+  angle = ProjectMatToRotMatWithAxis(M, axis, -infinity_dbl, 0.1);
+  EXPECT_NEAR(angle, 0.2 - 2 * M_PI, tolerance);
+
+  angle = ProjectMatToRotMatWithAxis(M, axis, -infinity_dbl, infinity_dbl);
+  EXPECT_NEAR(angle, 0.2, tolerance);
+
+  angle = ProjectMatToRotMatWithAxis(M, axis, -4, 0.1);
+  EXPECT_NEAR(angle, 0.1, tolerance);
+
+  M = 2 * Eigen::AngleAxisd(M_PI_2, axis).toRotationMatrix();
+  CheckProjectionWithAxis(M, axis, 0.1, 2 * M_PI);
+  CheckProjectionWithAxis(M, axis, M_PI, 2 * M_PI);
+  CheckProjectionWithAxis(M, axis, -2 * M_PI, -M_PI);
+
+  M = 0.2 * Eigen::AngleAxisd(M_PI / 3, axis).toRotationMatrix();
+  CheckProjectionWithAxis(M, axis, 0.1, 2 * M_PI);
+  CheckProjectionWithAxis(M, axis, M_PI, 2 * M_PI);
+  CheckProjectionWithAxis(M, axis, -2 * M_PI, -M_PI);
+
+  // A random matrix.
+  M << 0.1, 0.4, 1.2,
+      -0.4, 2.3, 1.5,
+      1.3, -.4, -0.2;
+  CheckProjectionWithAxis(M, axis, M_PI, 2 * M_PI);
+  CheckProjectionWithAxis(M, axis, -2 * M_PI, 0);
+  CheckProjectionWithAxis(M, axis, 0.1, 0.2);
+  CheckProjectionWithAxis(M, axis, -infinity_dbl, 2 * M_PI);
+  CheckProjectionWithAxis(M, axis, -M_PI, infinity_dbl);
+  CheckProjectionWithAxis(M, axis, -2 * M_PI, 4 * M_PI);
+}
 
 class RotationMatrixConversionTests : public ::testing::Test {
  public:
@@ -539,7 +674,7 @@ class RotationMatrixConversionTests : public ::testing::Test {
 };
 
 TEST_F(RotationMatrixConversionTests, RotationMatrixToQuaternionViceVersa) {
-  const double tolerance = 40 * kEpsilon;
+  constexpr double tolerance = 40 * kEpsilon;
   for (const Eigen::Quaterniond& qi : quaternion_test_cases_) {
     // Step 1: Convert the quaternion qi to a 3x3 matrix mi.
     // Step 2: Construct a RotationMatrix Ri from the 3x3 matrix.

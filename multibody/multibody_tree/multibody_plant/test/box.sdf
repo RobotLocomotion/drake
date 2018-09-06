@@ -1,7 +1,7 @@
 <?xml version='1.0'?>
 <sdf version='1.6'>
   <!-- Note: This is the accompaning SDF file for the unit test box_test.cc
-       and thefore these two files must be kept in sync.
+       and therefore these two files must be kept in sync.
 
        This file defines the model for a box on a flat plane. The unit test
        applies a horizontal force in order to verify the value of the friction
@@ -27,7 +27,7 @@
           <izz>1.0</izz>
         </inertia>
       </inertial>
-      <visual name='ground_plane'>
+      <visual name='visual'>
         <geometry>
           <plane>
             <normal>0.0 0.0 1.0</normal>
@@ -35,7 +35,7 @@
         </geometry>
       </visual>
 
-      <collision name='ground_plane'>
+      <collision name='collision'>
         <geometry>
           <plane>
             <normal>0.0 0.0 1.0</normal>

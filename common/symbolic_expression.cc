@@ -3,7 +3,6 @@
 #include <cmath>
 #include <cstddef>
 #include <ios>
-#include <limits>
 #include <map>
 #include <memory>
 #include <stdexcept>
@@ -942,7 +941,8 @@ int FactorialProduct(const MultiIndex& alpha) {
 }
 
 // Computes ∂fᵅ(a) = ∂ᵅ¹...∂ᵅⁿf(a).
-double Derivative(Expression f, const MultiIndex& alpha, const Environment& a) {
+Expression Derivative(Expression f, const MultiIndex& alpha,
+                      const Environment& a) {
   int i = 0;
   for (const pair<const Variable, double>& p : a) {
     const Variable& v = p.first;
@@ -951,7 +951,7 @@ double Derivative(Expression f, const MultiIndex& alpha, const Environment& a) {
     }
     ++i;
   }
-  return f.Evaluate(a);
+  return f.EvaluatePartial(a);
 }
 
 // Given terms = [e₁, ..., eₙ] and alpha = (α₁, ..., αₙ), returns
@@ -985,8 +985,8 @@ Expression TaylorExpand(const Expression& f, const Environment& a,
   //      Taylor(f, a, order) = ∑_{|α| ≤ order} ∂fᵅ(a) / α! * (x - a)ᵅ.
   DRAKE_DEMAND(order >= 1);
   ExpressionAddFactory factory;
-  factory.AddExpression(f.Evaluate(a));
-  const int num_vars = f.GetVariables().size();
+  factory.AddExpression(f.EvaluatePartial(a));
+  const int num_vars = a.size();
   if (num_vars == 0) {
     return f;
   }

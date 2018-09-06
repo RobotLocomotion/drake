@@ -200,6 +200,10 @@ class LeafSystemTest : public ::testing::Test {
     event_info_ = system_.AllocateCompositeEventCollection();
     leaf_info_ = dynamic_cast<const LeafCompositeEventCollection<double>*>(
         event_info_.get());
+
+    // Make sure caching tests will work properly even if caching is off
+    // by default.
+    context_.EnableCaching();
   }
 
   TestSystem<double> system_;
@@ -526,13 +530,13 @@ TEST_F(LeafSystemTest, NumericParameters) {
   EXPECT_EQ(42.0, vec[1]);
 
   EXPECT_EQ(system_.num_numeric_parameters(), 1);
-  const DependencyTracker& all_parameters_tracker =
-      context->get_tracker(system_.all_parameters_ticket());
+  const DependencyTracker& pn_tracker =
+      context->get_tracker(system_.pn_ticket());
   for (NumericParameterIndex i(0); i < system_.num_numeric_parameters(); ++i) {
     const DependencyTracker& tracker =
         context->get_tracker(system_.numeric_parameter_ticket(i));
-    EXPECT_TRUE(all_parameters_tracker.HasPrerequisite(tracker));
-    EXPECT_TRUE(tracker.HasSubscriber(all_parameters_tracker));
+    EXPECT_TRUE(pn_tracker.HasPrerequisite(tracker));
+    EXPECT_TRUE(tracker.HasSubscriber(pn_tracker));
   }
 }
 
@@ -551,14 +555,14 @@ TEST_F(LeafSystemTest, AbstractParameters) {
   EXPECT_EQ("modified parameter value", param);
 
   EXPECT_EQ(system_.num_abstract_parameters(), 1);
-  const DependencyTracker& all_parameters_tracker =
-      context->get_tracker(system_.all_parameters_ticket());
+  const DependencyTracker& pa_tracker =
+      context->get_tracker(system_.pa_ticket());
   for (AbstractParameterIndex i(0); i < system_.num_abstract_parameters();
        ++i) {
     const DependencyTracker& tracker =
         context->get_tracker(system_.abstract_parameter_ticket(i));
-    EXPECT_TRUE(all_parameters_tracker.HasPrerequisite(tracker));
-    EXPECT_TRUE(tracker.HasSubscriber(all_parameters_tracker));
+    EXPECT_TRUE(pa_tracker.HasPrerequisite(tracker));
+    EXPECT_TRUE(tracker.HasSubscriber(pa_tracker));
   }
 }
 
@@ -867,6 +871,9 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   DeclaredModelPortsSystem dut;
   auto context = dut.CreateDefaultContext();
 
+  // Make sure caching is on locally, even if it is off by default.
+  context->EnableCaching();
+
   // Calculate values for each output port and save copies of those values.
   std::vector<std::unique_ptr<AbstractValue>> values;
   for (OutputPortIndex i(0); i < 4; ++i) {
@@ -874,6 +881,43 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
     values.emplace_back(out.Allocate());
     out.Calc(*context, values.back().get());
   }
+
+  const auto& port2 = dut.get_output_port(OutputPortIndex(2));
+  const auto& cache2 =
+      dynamic_cast<const LeafOutputPort<double>&>(port2).cache_entry();
+  const auto& cacheval2 = cache2.get_cache_entry_value(*context);
+  EXPECT_EQ(cacheval2.serial_number(), 1);
+  EXPECT_TRUE(cache2.is_out_of_date(*context));
+  EXPECT_THROW(cache2.GetKnownUpToDate<std::string>(*context),
+               std::logic_error);
+  const std::string& str2_cached = port2.Eval<std::string>(*context);
+  EXPECT_EQ(str2_cached, "concrete string");
+  EXPECT_EQ(cacheval2.serial_number(), 2);
+  EXPECT_FALSE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cache2.GetKnownUpToDate<std::string>(*context),
+            "concrete string");  // Doesn't throw now.
+
+  // Check that setting time invalidates correctly. Note that the method
+  // *may* avoid invalidation if the time hasn't actually changed.
+
+  // Should invalidate time- and everything-dependents.
+  context->set_time(context->get_time() + 1.);
+  EXPECT_TRUE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cacheval2.serial_number(), 2);  // Unchanged since invalid.
+  (void)port2.EvalAbstract(*context);  // Recalculate.
+  EXPECT_FALSE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cacheval2.serial_number(), 3);
+  (void)port2.EvalAbstract(*context);  // "Recalculate" (should do nothing).
+  EXPECT_EQ(cacheval2.serial_number(), 3);
+
+  // Should invalidate accuracy- and everything-dependents. Note that the
+  // method *may* avoid invalidation if the accuracy hasn't actually changed.
+  EXPECT_FALSE(context->get_accuracy());  // None set initially.
+  context->set_accuracy(.000025);  // This is a change.
+  EXPECT_TRUE(cache2.is_out_of_date(*context));
+  (void)port2.EvalAbstract(*context);  // Recalculate.
+  EXPECT_FALSE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cacheval2.serial_number(), 4);
 
   // Downcast to concrete types.
   const BasicVector<double>* vec0{};
@@ -1049,6 +1093,9 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   auto context = dut.CreateDefaultContext();
   auto system_output = dut.AllocateOutput();  // Invokes all allocators.
 
+  // Make sure caching is on locally, even if it is off by default.
+  context->EnableCaching();
+
   // Check topology.
   EXPECT_EQ(dut.get_num_input_ports(), 0);
   EXPECT_EQ(dut.get_num_output_ports(), 5);
@@ -1088,10 +1135,8 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   EXPECT_EQ(out0.Eval<BasicVector<double>>(*context).get_value(),
             out0_dummy->get_value());
   EXPECT_EQ(dut.calc_dummy_vec2_calls(), 2);
-  // Verify that caching is currently disabled.
-  // TODO(sherm1) Verify that caching is working as soon as it is enabled.
   out0.Eval<BasicVector<double>>(*context);
-  EXPECT_EQ(dut.calc_dummy_vec2_calls(), 3);  // Will be 2 with caching.
+  EXPECT_EQ(dut.calc_dummy_vec2_calls(), 2);  // Should have been cached.
 
   // Check that Value<string>() came out, default initialized to empty.
   auto output1 = system_output->GetMutableData(1);
@@ -1105,10 +1150,8 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   EXPECT_EQ(dut.calc_string_calls(), 1);
   EXPECT_EQ(out1.Eval<std::string>(*context), *downcast_output1);
   EXPECT_EQ(dut.calc_string_calls(), 2);
-  // Verify that caching is currently disabled.
-  // TODO(sherm1) Verify that caching is working as soon as it is enabled.
   out1.Eval<std::string>(*context);
-  EXPECT_EQ(dut.calc_string_calls(), 3);  // Will be 2 with caching.
+  EXPECT_EQ(dut.calc_string_calls(), 2);  // Should have been cached.
 
   // Check that Value<int> came out, default initialized to -2.
   auto output2 = system_output->GetMutableData(2);
@@ -1146,10 +1189,8 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   EXPECT_EQ(eval_out.some_int, -10);
   EXPECT_EQ(eval_out.some_double, 3.25);
   EXPECT_EQ(dut.calc_POD_calls(), 2);
-  // Verify that caching is currently disabled.
-  // TODO(sherm1) Verify that caching is working as soon as it is enabled.
   out4.Eval<SomePOD>(*context);
-  EXPECT_EQ(dut.calc_POD_calls(), 3);  // Will be 2 with caching.
+  EXPECT_EQ(dut.calc_POD_calls(), 2);  // Should have been cached.
 }
 
 // Tests both that an unrestricted update callback is called and that
@@ -1424,7 +1465,17 @@ template <typename T>
 class SymbolicSparsitySystem : public LeafSystem<T> {
  public:
   SymbolicSparsitySystem()
-      : LeafSystem<T>(SystemTypeTag<systems::SymbolicSparsitySystem>{}) {
+      : SymbolicSparsitySystem(
+            SystemTypeTag<systems::SymbolicSparsitySystem>{}) {}
+
+  // Scalar-converting copy constructor.
+  template <typename U>
+  SymbolicSparsitySystem(const SymbolicSparsitySystem<U>&)
+      : SymbolicSparsitySystem<T>() {}
+
+ protected:
+  explicit SymbolicSparsitySystem(SystemScalarConverter converter)
+      : LeafSystem<T>(std::move(converter)) {
     this->DeclareInputPort(kVectorValued, kSize);
     this->DeclareInputPort(kVectorValued, kSize);
 
@@ -1433,10 +1484,6 @@ class SymbolicSparsitySystem : public LeafSystem<T> {
     this->DeclareVectorOutputPort(BasicVector<T>(kSize),
                                   &SymbolicSparsitySystem::CalcY1);
   }
-
-  template <typename U>
-  SymbolicSparsitySystem(const SymbolicSparsitySystem<U>&)
-      : SymbolicSparsitySystem<T>() {}
 
  private:
   void CalcY0(const Context<T>& context,
@@ -1454,8 +1501,22 @@ class SymbolicSparsitySystem : public LeafSystem<T> {
   const int kSize = 1;
 };
 
-GTEST_TEST(FeedthroughTest, SymbolicSparsity) {
-  SymbolicSparsitySystem<double> system;
+// The sparsity reporting should be the same no matter which scalar type the
+// original system has been instantiated with.
+using FeedthroughTestScalars = ::testing::Types<
+  double,
+  AutoDiffXd,
+  symbolic::Expression>;
+
+template <typename T>
+class FeedthroughTypedTest : public ::testing::Test {};
+TYPED_TEST_CASE(FeedthroughTypedTest, FeedthroughTestScalars);
+
+// The sparsity of a System should be inferred from its symbolic form.
+TYPED_TEST(FeedthroughTypedTest, SymbolicSparsity) {
+  using T = TypeParam;
+  const SymbolicSparsitySystem<T> system;
+
   // Both the output ports have direct feedthrough from some input.
   EXPECT_TRUE(system.HasAnyDirectFeedthrough());
   EXPECT_TRUE(system.HasDirectFeedthrough(0));
@@ -1465,12 +1526,33 @@ GTEST_TEST(FeedthroughTest, SymbolicSparsity) {
   EXPECT_TRUE(system.HasDirectFeedthrough(0, 1));
   EXPECT_TRUE(system.HasDirectFeedthrough(1, 0));
   EXPECT_FALSE(system.HasDirectFeedthrough(1, 1));
-  // Confirm all pairs are returned.
+  // Confirm the exact set of desired pairs are returned.
   std::multimap<int, int> expected;
   expected.emplace(1, 0);
   expected.emplace(0, 1);
-  auto feedthrough_pairs = system.GetDirectFeedthroughs();
-  EXPECT_EQ(feedthrough_pairs, expected);
+  EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
+}
+
+// This system only supports T = symbolic::Expression; it does not support
+// scalar conversion.
+class NoScalarConversionSymbolicSparsitySystem
+    : public SymbolicSparsitySystem<symbolic::Expression> {
+ public:
+  NoScalarConversionSymbolicSparsitySystem()
+      : SymbolicSparsitySystem<symbolic::Expression>(
+            SystemScalarConverter{}) {}
+};
+
+// The sparsity of a System should be inferred from its symbolic form, even
+// when the system does not support scalar conversion.
+GTEST_TEST(FeedthroughTest, SymbolicSparsityWithoutScalarConversion) {
+  const NoScalarConversionSymbolicSparsitySystem system;
+
+  // Confirm the exact set of desired pairs are returned.
+  std::multimap<int, int> expected;
+  expected.emplace(1, 0);
+  expected.emplace(0, 1);
+  EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
 }
 
 // Sanity check the default implementation of ToAutoDiffXd, for cases that

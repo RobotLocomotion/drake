@@ -247,15 +247,17 @@ geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
 template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
     const Body<T>& body, const Isometry3<double>& X_BG,
-    const geometry::Shape& shape, geometry::SceneGraph<T>* scene_graph) {
-  return RegisterVisualGeometry(body, X_BG, shape, geometry::VisualMaterial(),
-                                scene_graph);
+    const geometry::Shape& shape, const std::string& name,
+    geometry::SceneGraph<T>* scene_graph) {
+  return RegisterVisualGeometry(body, X_BG, shape, name,
+                                geometry::VisualMaterial(), scene_graph);
 }
 
 template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
     const Body<T>& body, const Isometry3<double>& X_BG,
-    const geometry::Shape& shape, const geometry::VisualMaterial& material,
+    const geometry::Shape& shape, const std::string& name,
+    const geometry::VisualMaterial& material,
     SceneGraph<T>* scene_graph) {
   // TODO(SeanCurtis-TRI): Consider simply adding an interface that takes a
   // unique pointer to an already instantiated GeometryInstance. This will
@@ -275,9 +277,9 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register anchored geometry on ANY body welded to the world.
   if (body.index() == world_index()) {
-    id = RegisterAnchoredGeometry(X_BG, shape, material, scene_graph);
+    id = RegisterAnchoredGeometry(X_BG, shape, name, material, scene_graph);
   } else {
-    id = RegisterGeometry(body, X_BG, shape, material, scene_graph);
+    id = RegisterGeometry(body, X_BG, shape, name, material, scene_graph);
   }
   const int visual_index = geometry_id_to_visual_index_.size();
   geometry_id_to_visual_index_[id] = visual_index;
@@ -295,7 +297,7 @@ MultibodyPlant<T>::GetVisualGeometriesForBody(const Body<T>& body) const {
 template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
     const Body<T>& body, const Isometry3<double>& X_BG,
-    const geometry::Shape& shape,
+    const geometry::Shape& shape, const std::string& name,
     const CoulombFriction<double>& coulomb_friction,
     SceneGraph<T>* scene_graph) {
   DRAKE_MBP_THROW_IF_FINALIZED();
@@ -318,9 +320,11 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register anchored geometry on ANY body welded to the world.
   if (body.index() == world_index()) {
-    id = RegisterAnchoredGeometry(X_BG, shape, invisible_material, scene_graph);
+    id = RegisterAnchoredGeometry(X_BG, shape, name, invisible_material,
+                                  scene_graph);
   } else {
-    id = RegisterGeometry(body, X_BG, shape, invisible_material, scene_graph);
+    id = RegisterGeometry(body, X_BG, shape, name, invisible_material,
+                          scene_graph);
   }
   const int collision_index = geometry_id_to_collision_index_.size();
   geometry_id_to_collision_index_[id] = collision_index;
@@ -341,12 +345,12 @@ MultibodyPlant<T>::GetCollisionGeometriesForBody(const Body<T>& body) const {
 
 template <typename T>
 geometry::GeometrySet MultibodyPlant<T>::CollectRegisteredGeometries(
-    const std::vector<const RigidBody<T>*>& bodies) const {
+    const std::vector<const Body<T>*>& bodies) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(geometry_source_is_registered());
 
   geometry::GeometrySet geometry_set;
-  for (const RigidBody<T>* body : bodies) {
+  for (const Body<T>* body : bodies) {
     optional<FrameId> frame_id = GetBodyFrameIdIfExists(body->index());
     if (frame_id) {
       geometry_set.Add(frame_id.value());
@@ -364,6 +368,7 @@ template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
     const Body<T>& body, const Isometry3<double>& X_BG,
     const geometry::Shape& shape,
+    const std::string& name,
     const optional<geometry::VisualMaterial>& material,
     SceneGraph<T>* scene_graph) {
   // This should never be called with the world index.
@@ -378,16 +383,20 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
         GeometryFrame(
             body.name(),
             /* Initial pose: Not really used by GS. Will get removed. */
-            Isometry3<double>::Identity()));
+            Isometry3<double>::Identity(),
+            /* TODO(@SeanCurtis-TRI): Add test coverage for this
+             * model-instance support as requested in #9390. */
+            body.model_instance()));
   }
 
   // Register geometry in the body frame.
   std::unique_ptr<geometry::GeometryInstance> geometry_instance;
   if (material) {
-    geometry_instance = std::make_unique<GeometryInstance>(X_BG, shape.Clone(),
-                                                           material.value());
+    geometry_instance = std::make_unique<GeometryInstance>(
+        X_BG, shape.Clone(), name, material.value());
   } else {
-    geometry_instance = std::make_unique<GeometryInstance>(X_BG, shape.Clone());
+    geometry_instance =
+        std::make_unique<GeometryInstance>(X_BG, shape.Clone(), name);
   }
   GeometryId geometry_id = scene_graph->RegisterGeometry(
       source_id_.value(), body_index_to_frame_id_[body.index()],
@@ -399,7 +408,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
 template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterAnchoredGeometry(
     const Isometry3<double>& X_WG, const geometry::Shape& shape,
-    const optional<geometry::VisualMaterial>& material,
+    const std::string& name, const optional<geometry::VisualMaterial>& material,
     SceneGraph<T>* scene_graph) {
   DRAKE_ASSERT(!is_finalized());
   DRAKE_ASSERT(geometry_source_is_registered());
@@ -407,14 +416,14 @@ geometry::GeometryId MultibodyPlant<T>::RegisterAnchoredGeometry(
 
   std::unique_ptr<geometry::GeometryInstance> geometry_instance;
   if (material) {
-    geometry_instance = std::make_unique<GeometryInstance>(X_WG, shape.Clone(),
-                                                           material.value());
+    geometry_instance = std::make_unique<GeometryInstance>(
+        X_WG, shape.Clone(), name, material.value());
   } else {
-    geometry_instance = std::make_unique<GeometryInstance>(X_WG, shape.Clone());
+    geometry_instance =
+        std::make_unique<GeometryInstance>(X_WG, shape.Clone(), name);
   }
   GeometryId geometry_id = scene_graph->RegisterAnchoredGeometry(
-      source_id_.value(),
-      std::move(geometry_instance));
+      source_id_.value(), std::move(geometry_instance));
   geometry_id_to_body_index_[geometry_id] = world_index();
   return geometry_id;
 }
@@ -432,10 +441,10 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
   for (JointIndex joint_index(0); joint_index < model().num_joints();
        ++joint_index) {
     // Currently MultibodyPlant applies these "compliant" joint limit forces
-    // using an explicit Euler strategy. Stability analysis of the explict Euler
-    // applied to the harmonic oscillator (the model used for these compliant
-    // forces) shows the scheme to be stable for kAlpha > 2π. We take a
-    // significantly larger kAlpha so that we are well within the stability
+    // using an explicit Euler strategy. Stability analysis of the explicit
+    // Euler applied to the harmonic oscillator (the model used for these
+    // compliant forces) shows the scheme to be stable for kAlpha > 2π. We take
+    // a significantly larger kAlpha so that we are well within the stability
     // region of the scheme.
     // TODO(amcastro-tri): Decrease the value of kAlpha to be closer to one when
     // the time stepping scheme is updated to be implicit in the joint limits.
@@ -522,7 +531,6 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   // Only declare ports to communicate with a SceneGraph if the plant is
   // provided with a valid source id.
   if (source_id_) DeclareSceneGraphPorts();
-  DeclareCacheEntries();
   scene_graph_ = nullptr;  // must not be used after Finalize().
   if (num_collision_geometries() > 0 &&
       penalty_method_contact_parameters_.time_scale < 0)
@@ -890,7 +898,7 @@ void MultibodyPlant<T>::CalcContactResults(
 
     // Contact forces applied on B at contact point C.
     const Vector3<T> f_Bc_C(
-        ft(2 * icontact), ft(2 * icontact + 1), fn(icontact));
+        -ft(2 * icontact), -ft(2 * icontact + 1), fn(icontact));
     const Vector3<T> f_Bc_W = R_WC * f_Bc_C;
 
     // Slip velocity.
@@ -1016,16 +1024,6 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
 }
 
 template<typename T>
-void MultibodyPlant<T>::AddJointDampingForces(
-    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
-  DRAKE_DEMAND(forces != nullptr);
-  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
-    const Joint<T>& joint = model().get_joint(joint_index);
-    joint.AddInDamping(context, forces);
-  }
-}
-
-template<typename T>
 void MultibodyPlant<T>::AddJointActuationForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
   DRAKE_DEMAND(forces != nullptr);
@@ -1147,8 +1145,6 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   // If there is any input actuation, add it to the multibody forces.
   AddJointActuationForces(context, &forces);
 
-  AddJointDampingForces(context, &forces);
-
   model_->CalcMassMatrixViaInverseDynamics(context, &M);
 
   // WARNING: to reduce memory foot-print, we use the input applied arrays also
@@ -1185,6 +1181,54 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   model_->MapVelocityToQDot(context, v, &qdot);
   xdot << qdot, vdot;
   derivatives->SetFromVector(xdot);
+}
+
+template<typename T>
+implicit_stribeck::ComputationInfo MultibodyPlant<T>::SolveUsingSubStepping(
+    int num_substeps,
+    const MatrixX<T>& M0, const MatrixX<T>& Jn, const MatrixX<T>& Jt,
+    const VectorX<T>& minus_tau,
+    const VectorX<T>& stiffness, const VectorX<T>& damping,
+    const VectorX<T>& mu,
+    const VectorX<T>& v0, const VectorX<T>& phi0) const {
+
+  const double dt = time_step_;  // just a shorter alias.
+  const double dt_substep = dt / num_substeps;
+  VectorX<T> v0_substep = v0;
+  VectorX<T> phi0_substep = phi0;
+
+  // Initialize info to an unsuccessful result.
+  implicit_stribeck::ComputationInfo info{
+      implicit_stribeck::ComputationInfo::MaxIterationsReached};
+
+  for (int substep = 0; substep < num_substeps; ++substep) {
+    // Discrete update before applying friction forces.
+    // We denote this state x* = [q*, v*], the "star" state.
+    // Generalized momentum "star", before contact forces are applied.
+    VectorX<T> p_star_substep = M0 * v0_substep - dt_substep * minus_tau;
+
+    // Update the data.
+    implicit_stribeck_solver_->SetTwoWayCoupledProblemData(
+        &M0, &Jn, &Jt,
+        &p_star_substep, &phi0_substep,
+        &stiffness, &damping, &mu);
+
+    info = implicit_stribeck_solver_->SolveWithGuess(dt_substep,
+                                                     v0_substep);
+
+    // Break the sub-stepping loop on failure and return the info result.
+    if (info != implicit_stribeck::Success) break;
+
+    // Update previous time step to new solution.
+    v0_substep = implicit_stribeck_solver_->get_generalized_velocities();
+
+    // Update penetration distance consistently with the solver update.
+    const auto vn_substep =
+        implicit_stribeck_solver_->get_normal_velocities();
+    phi0_substep = phi0_substep - dt_substep * vn_substep;
+  }
+
+  return info;
 }
 
 // TODO(amcastro-tri): Consider splitting this method into smaller pieces.
@@ -1225,10 +1269,6 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // If there is any input actuation, add it to the multibody forces.
   AddJointActuationForces(context0, &forces0);
 
-  // TODO(amcastro-tri): Update ImplicitStribeckSolver to treat this term
-  // implicitly.
-  AddJointDampingForces(context0, &forces0);
-
   AddJointLimitsPenaltyForces(context0, &forces0);
 
   // TODO(amcastro-tri): Eval() point_pairs0 when caching lands.
@@ -1252,11 +1292,6 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       &A_WB_array,
       &F_BBo_W_array, /* Note: these arrays get overwritten on output. */
       &minus_tau);
-
-  // Compute discrete update before applying friction forces.
-  // We denote this state x* = [q*, v*], the "star" state.
-  // Generalized momentum "star", before contact forces are applied.
-  VectorX<T> p_star = M0 * v0 - dt * minus_tau;
 
   // Compute normal and tangential velocity Jacobians at t0.
   const int num_contacts = point_pairs0.size();
@@ -1302,13 +1337,33 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   VectorX<T> damping = VectorX<T>::Constant(
       num_contacts, penalty_method_contact_parameters_.damping);
 
-  // Update the solver with the new data defining the problem for this update.
-  implicit_stribeck_solver_->SetTwoWayCoupledProblemData(
-      &M0, &Jn, &Jt, &p_star, &phi0, &stiffness, &damping, &mu);
-
   // Solve for v and the contact forces.
-  implicit_stribeck::ComputationInfo info =
-      implicit_stribeck_solver_->SolveWithGuess(dt, v0);
+  implicit_stribeck::ComputationInfo info{
+      implicit_stribeck::ComputationInfo::MaxIterationsReached};
+
+  implicit_stribeck::Parameters params =
+      implicit_stribeck_solver_->get_solver_parameters();
+  // A nicely converged NR iteration should not take more than 20 iterations.
+  // Otherwise we attempt a smaller time step.
+  params.max_iterations = 20;
+  implicit_stribeck_solver_->set_solver_parameters(params);
+
+  // We attempt to compute the update during the time interval dt using a
+  // progressively larger number of sub-steps (i.e each using a smaller time
+  // step than in the previous attempt). This loop breaks on the first
+  // successful attempt.
+  // We only allow a maximum number of trials. If the solver is unsuccessful in
+  // this number of trials, the user should probably decrease the discrete
+  // update time step dt or evaluate the validity of the model.
+  const int kNumMaxSubTimeSteps = 20;
+  int num_substeps = 0;
+  do {
+    ++num_substeps;
+    info = SolveUsingSubStepping(
+        num_substeps, M0, Jn, Jt, minus_tau, stiffness, damping, mu, v0, phi0);
+  } while (info != implicit_stribeck::Success &&
+      num_substeps < kNumMaxSubTimeSteps);
+
   DRAKE_DEMAND(info == implicit_stribeck::Success);
 
   // TODO(amcastro-tri): implement capability to dump solver statistics to a
@@ -1632,28 +1687,15 @@ MultibodyPlant<T>::get_geometry_query_input_port() const {
 }
 
 template<typename T>
-void MultibodyPlant<T>::DeclareCacheEntries() {
-  // TODO(amcastro-tri): User proper System::Declare() infrastructure to
-  // declare cache entries when that lands.
-  pc_ = std::make_unique<PositionKinematicsCache<T>>(model_->get_topology());
-  vc_ = std::make_unique<VelocityKinematicsCache<T>>(model_->get_topology());
-}
-
-template<typename T>
 const PositionKinematicsCache<T>& MultibodyPlant<T>::EvalPositionKinematics(
     const systems::Context<T>& context) const {
-  // TODO(amcastro-tri): Replace Calc() for an actual Eval() when caching lands.
-  model_->CalcPositionKinematicsCache(context, pc_.get());
-  return *pc_;
+  return model_->EvalPositionKinematics(context);
 }
 
 template<typename T>
 const VelocityKinematicsCache<T>& MultibodyPlant<T>::EvalVelocityKinematics(
     const systems::Context<T>& context) const {
-  // TODO(amcastro-tri): Replace Calc() for an actual Eval() when caching lands.
-  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  model_->CalcVelocityKinematicsCache(context, pc, vc_.get());
-  return *vc_;
+  return model_->EvalVelocityKinematics(context);
 }
 
 template <typename T>

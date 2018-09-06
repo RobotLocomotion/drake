@@ -105,6 +105,40 @@ class TestPlantWithMoreOutputs : public TestPlant {
   }
 };
 
+class TestPlantWithMoreOutputPorts : public TestPlant {
+ public:
+  TestPlantWithMoreOutputPorts() {
+    DeclareVectorInputPort(BasicVector<double>(1));
+    // Declare some non-state output port.
+    DeclareVectorOutputPort(
+        BasicVector<double>(3),
+        &TestPlantWithMoreOutputPorts::CalcNonStateOutputVector);
+    DeclareVectorOutputPort(
+        BasicVector<double>(2),
+        &TestPlantWithMoreOutputPorts::CalcStateOutputVector);
+  }
+
+  void CalcNonStateOutputVector(const Context<double>& context,
+                                BasicVector<double>* output) const {
+    BasicVector<double>& output_vector = *output;
+    output_vector[0] = 2.;
+    output_vector[1] = 0.2;
+    output_vector[2] = 0.02;
+  }
+
+  void CalcStateOutputVector(const Context<double>& context,
+                        BasicVector<double>* output) const {
+    BasicVector<double>& output_vector = *output;
+    output_vector[0] = 43.;
+    output_vector[1] = 0.68;
+  }
+
+ protected:
+  optional<bool> DoHasDirectFeedthrough(int, int) const override {
+    return false;
+  }
+};
+
 class PidControlledSystemTest : public ::testing::Test {
  protected:
   // Instantiates a PidControlledSystem based on the supplied plant and
@@ -192,6 +226,27 @@ TEST_F(PidControlledSystemTest, PlantWithMoreOutputs) {
   feedback_selector_matrix << 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0;
 
   DoPidControlledSystemTest(std::move(plant), feedback_selector_matrix);
+}
+
+// Tests that additional output ports of the plant are exposed through the
+// new diagram.
+TEST_F(PidControlledSystemTest, PlantWithMoreOutputPorts) {
+  auto plant = std::make_unique<TestPlantWithMoreOutputPorts>();
+  const int state_output_port_index = 1;
+  PidControlledSystem<double> system(std::move(plant), Kp_, Ki_, Kd_,
+                                     state_output_port_index);
+
+  EXPECT_EQ(system.get_num_output_ports(), 2);
+  EXPECT_EQ(system.get_output_port(0).size(), 3);
+  EXPECT_EQ(system.get_output_port(1).size(), 2);
+
+  auto context = system.CreateDefaultContext();
+  auto output = system.AllocateOutput();
+
+  system.CalcOutput(*context, output.get());
+
+  EXPECT_EQ(output->get_vector_data(0)->GetAtIndex(1), 0.2);
+  EXPECT_EQ(output->get_vector_data(1)->GetAtIndex(1), 0.68);
 }
 
 class ConnectControllerTest : public ::testing::Test {

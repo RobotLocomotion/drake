@@ -199,6 +199,7 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
       .value("kMobyLCP", SolverType::kMobyLCP)
       .value("kMosek", SolverType::kMosek)
       .value("kNlopt", SolverType::kNlopt)
+      .value("kOsqp", SolverType::kOsqp)
       .value("kSnopt", SolverType::kSnopt);
 
   py::class_<MathematicalProgram> prog_cls(m, "MathematicalProgram");
@@ -306,6 +307,21 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
       .def("AddLinearConstraint",
            static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
                const Formula&)>(&MathematicalProgram::AddLinearConstraint))
+      .def("AddLinearEqualityConstraint",
+           static_cast<Binding<LinearEqualityConstraint> (
+               MathematicalProgram::*)(
+               const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const VectorXDecisionVariable>&)>(
+               &MathematicalProgram::AddLinearEqualityConstraint))
+      .def("AddLinearEqualityConstraint",
+           static_cast<Binding<LinearEqualityConstraint> (
+               MathematicalProgram::*)(const Expression&, double)>(
+               &MathematicalProgram::AddLinearEqualityConstraint))
+      .def("AddLinearEqualityConstraint",
+           static_cast<Binding<LinearEqualityConstraint> (
+               MathematicalProgram::*)(const Formula&)>(
+               &MathematicalProgram::AddLinearEqualityConstraint))
       .def("AddLorentzConeConstraint",
            static_cast<Binding<LorentzConeConstraint> (MathematicalProgram::*)(
                const Eigen::Ref<const VectorX<drake::symbolic::Expression>>&)>(
@@ -463,7 +479,17 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
           })
       .def("SetSolverOption", &SetSolverOptionBySolverType<double>)
       .def("SetSolverOption", &SetSolverOptionBySolverType<int>)
-      .def("SetSolverOption", &SetSolverOptionBySolverType<string>);
+      .def("SetSolverOption", &SetSolverOptionBySolverType<string>)
+      .def("GetSolverOptions",
+          [](MathematicalProgram& prog, SolverType solver_type) {
+            py::dict out;
+            py::object update = out.attr("update");
+            const SolverId id = SolverTypeConverter::TypeToId(solver_type);
+            update(prog.GetSolverOptionsDouble(id));
+            update(prog.GetSolverOptionsInt(id));
+            update(prog.GetSolverOptionsStr(id));
+            return out;
+          });
 
   py::enum_<SolutionResult>(m, "SolutionResult")
       .value("kSolutionFound", SolutionResult::kSolutionFound)
@@ -516,7 +542,12 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
 
   py::class_<LinearEqualityConstraint, LinearConstraint,
              std::shared_ptr<LinearEqualityConstraint>>(
-      m, "LinearEqualityConstraint");
+      m, "LinearEqualityConstraint")
+      .def("UpdateCoefficients",
+          [](LinearEqualityConstraint& self, const Eigen::MatrixXd& Aeq,
+             const Eigen::VectorXd& beq) {
+            self.UpdateCoefficients(Aeq, beq);
+          }, py::arg("Aeq"), py::arg("beq"));
 
   py::class_<BoundingBoxConstraint, LinearConstraint,
              std::shared_ptr<BoundingBoxConstraint>>(m,
@@ -548,13 +579,23 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
 
   py::class_<LinearCost, Cost, std::shared_ptr<LinearCost>>(m, "LinearCost")
       .def("a", &LinearCost::a)
-      .def("b", &LinearCost::b);
+      .def("b", &LinearCost::b)
+      .def("UpdateCoefficients",
+          [](LinearCost& self, const Eigen::VectorXd& new_a,
+             double new_b) {
+            self.UpdateCoefficients(new_a, new_b);
+          }, py::arg("new_a"), py::arg("new_b") = 0);
 
   py::class_<QuadraticCost, Cost, std::shared_ptr<QuadraticCost>>(
       m, "QuadraticCost")
       .def("Q", &QuadraticCost::Q)
       .def("b", &QuadraticCost::b)
-      .def("c", &QuadraticCost::c);
+      .def("c", &QuadraticCost::c)
+      .def("UpdateCoefficients",
+          [](QuadraticCost& self, const Eigen::MatrixXd& new_Q,
+             const Eigen::VectorXd& new_b, double new_c) {
+            self.UpdateCoefficients(new_Q, new_b, new_c);
+          }, py::arg("new_Q"), py::arg("new_b"), py::arg("new_c") = 0);
 
   RegisterBinding<Cost>(&m, &prog_cls, "Cost");
   RegisterBinding<LinearCost>(&m, &prog_cls, "LinearCost");

@@ -5,11 +5,13 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/systems/analysis/test_utilities/stateless_system.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
@@ -469,6 +471,11 @@ class DiagramTest : public ::testing::Test {
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput();
 
+    // Make sure caching is on locally, even if it is off by default.
+    // Do not remove this line; we want to show that these tests function
+    // correctly with caching on. It is easier to pass with caching off!
+    context_->EnableCaching();
+
     // Initialize the integrator states.
     auto& integrator0_xc = GetMutableContinuousState(integrator0());
     integrator0_xc.get_mutable_vector().SetAtIndex(0, 3);
@@ -560,10 +567,10 @@ TEST_F(DiagramTest, Witness) {
 TEST_F(DiagramTest, Topology) {
   ASSERT_EQ(kSize, diagram_->get_num_input_ports());
   for (int i = 0; i < kSize; ++i) {
-    const auto& descriptor = diagram_->get_input_port(i);
-    EXPECT_EQ(diagram_.get(), descriptor.get_system());
-    EXPECT_EQ(kVectorValued, descriptor.get_data_type());
-    EXPECT_EQ(kSize, descriptor.size());
+    const auto& input_port = diagram_->get_input_port(i);
+    EXPECT_EQ(diagram_.get(), input_port.get_system());
+    EXPECT_EQ(kVectorValued, input_port.get_data_type());
+    EXPECT_EQ(kSize, input_port.size());
   }
 
   ASSERT_EQ(kSize, diagram_->get_num_output_ports());
@@ -590,8 +597,9 @@ TEST_F(DiagramTest, Topology) {
 
 // Tests that dependency wiring is set up correctly between
 //  1. input ports and their source output ports,
-//  2. diagram output ports and their source leaf output ports, and
-//  3. diagram input ports and the corresponding exported leaf inputs.
+//  2. diagram output ports and their source leaf output ports,
+//  3. diagram input ports and the corresponding exported leaf inputs,
+//  4. diagram states/parameters and their constituent leaf states/parameters.
 TEST_F(DiagramTest, CheckPortSubscriptions) {
   const Context<double>& adder1_subcontext =
       diagram_->GetSubsystemContext(*diagram_->adder1(), *context_);
@@ -635,6 +643,30 @@ TEST_F(DiagramTest, CheckPortSubscriptions) {
   // 3. Diagram's input port 2 is imported to adder1's input port 1.
   EXPECT_TRUE(diagram_iport2_tracker.HasSubscriber(adder1_iport1_tracker));
   EXPECT_TRUE(adder1_iport1_tracker.HasPrerequisite(diagram_iport2_tracker));
+
+  // 4. Diagrams q, v, z, xd, xa state trackers and pn, pa parameter trackers
+  //    subscribe to the corresponding leaf trackers.
+  auto systems = diagram_->GetSystems();
+  for (auto subsystem : systems) {
+    const auto& subcontext =
+        diagram_->GetSubsystemContext(*subsystem, *context_);
+    // Not checking "HasSubscriber" separately to cut down on fluff;
+    // prerequisite and subscriber are set in the same call and checked above.
+    EXPECT_TRUE(context_->get_tracker(diagram_->q_ticket())
+        .HasPrerequisite(subcontext.get_tracker(subsystem->q_ticket())));
+    EXPECT_TRUE(context_->get_tracker(diagram_->v_ticket())
+        .HasPrerequisite(subcontext.get_tracker(subsystem->v_ticket())));
+    EXPECT_TRUE(context_->get_tracker(diagram_->z_ticket())
+        .HasPrerequisite(subcontext.get_tracker(subsystem->z_ticket())));
+    EXPECT_TRUE(context_->get_tracker(diagram_->xd_ticket())
+        .HasPrerequisite(subcontext.get_tracker(subsystem->xd_ticket())));
+    EXPECT_TRUE(context_->get_tracker(diagram_->xa_ticket())
+        .HasPrerequisite(subcontext.get_tracker(subsystem->xa_ticket())));
+    EXPECT_TRUE(context_->get_tracker(diagram_->pn_ticket())
+        .HasPrerequisite(subcontext.get_tracker(subsystem->pn_ticket())));
+    EXPECT_TRUE(context_->get_tracker(diagram_->pa_ticket())
+        .HasPrerequisite(subcontext.get_tracker(subsystem->pa_ticket())));
+  }
 }
 
 TEST_F(DiagramTest, Path) {
@@ -963,6 +995,12 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     diagram_->set_name("DiagramOfDiagrams");
 
     context_ = diagram_->CreateDefaultContext();
+
+    // Make sure caching is on locally, even if it is off by default.
+    // Do not remove this line; we want to show that these tests function
+    // correctly with caching on. It is easier to pass with caching off!
+    context_->EnableCaching();
+
     output_ = diagram_->AllocateOutput();
 
     context_->FixInputPort(0, {8});
@@ -1019,9 +1057,15 @@ TEST_F(DiagramOfDiagramsTest, Graphviz) {
   EXPECT_NE(std::string::npos, dot.find("_" + id0 + "_y0 -> _" + id1 + "_u0"));
 }
 
-// Tests that a diagram composed of diagrams can be evaluated.
+// Tests that a diagram composed of diagrams can be evaluated, and gives
+// correct answers with caching enabled.
 TEST_F(DiagramOfDiagramsTest, EvalOutput) {
-  diagram_->CalcOutput(*context_, output_.get());
+  context_->EnableCaching();  // Just to be sure.
+
+  EXPECT_EQ(diagram_->EvalVectorInput(*context_, 0)->GetAtIndex(0), 8.);
+  EXPECT_EQ(diagram_->EvalVectorInput(*context_, 1)->GetAtIndex(0), 64.);
+  EXPECT_EQ(diagram_->EvalVectorInput(*context_, 2)->GetAtIndex(0), 512.);
+
   // The outputs of subsystem0_ are:
   //   output0 = 8 + 64 + 512 = 584
   //   output1 = output0 + 8 + 64 = 656
@@ -1031,9 +1075,47 @@ TEST_F(DiagramOfDiagramsTest, EvalOutput) {
   //   output0 = 584 + 656 + 9 = 1249
   //   output1 = output0 + 584 + 656 = 2489
   //   output2 = 81 (state of integrator1_)
-  EXPECT_EQ(1249, output_->get_vector_data(0)->get_value().x());
-  EXPECT_EQ(2489, output_->get_vector_data(1)->get_value().x());
-  EXPECT_EQ(81, output_->get_vector_data(2)->get_value().x());
+  EXPECT_EQ(1249, diagram_->get_output_port(0).
+      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+  EXPECT_EQ(2489, diagram_->get_output_port(1).
+      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+  EXPECT_EQ(81, diagram_->get_output_port(2).
+      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+
+  // Check that invalidation flows through input ports properly, either due
+  // to replacing the fixed value or by modifying it.
+  //
+  // First we'll replace the fixed input value 8 for input port 0 with
+  // a new object that has value 10. That should cause everything to get
+  // recalculated when the ports are Eval()-ed.
+  // The outputs of subsystem0_ are now:
+  //   output0 = 10 + 64 + 512 = 586
+  //   output1 = output0 + 10 + 64 = 660
+  //   output2 = 9 (state of integrator1_)
+
+  // So, the outputs of subsystem1_, and thus of the whole diagram, are:
+  //   output0 = 586 + 660 + 9 = 1255
+  //   output1 = output0 + 586 + 660 = 2501
+  //   output2 = 81 (state of integrator1_)
+  auto value10 = BasicVector<double>::Make({10});
+  FixedInputPortValue& port_value =
+      context_->FixInputPort(0, std::move(value10));
+  EXPECT_EQ(1255, diagram_->get_output_port(0).
+      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+  EXPECT_EQ(2501, diagram_->get_output_port(1).
+      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+  EXPECT_EQ(81, diagram_->get_output_port(2).
+      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+
+  // Now change the value back to 8 using mutable access to the port_value
+  // object. Should also cause re-evaluation.
+  port_value.GetMutableVectorData<double>()->SetAtIndex(0, 8.0);
+  EXPECT_EQ(1249, diagram_->get_output_port(0).
+      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+  EXPECT_EQ(2489, diagram_->get_output_port(1).
+      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+  EXPECT_EQ(81, diagram_->get_output_port(2).
+      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
 }
 
 TEST_F(DiagramOfDiagramsTest, DirectFeedthrough) {
@@ -1848,6 +1930,11 @@ class NestedDiagramContextTest : public ::testing::Test {
     big_diagram_->set_name("big_diagram");
     big_context_ = big_diagram_->CreateDefaultContext();
     big_output_ = big_diagram_->AllocateOutput();
+
+    // Make sure caching is on locally, even if it is off by default.
+    // Do not remove this line; we want to show that these tests function
+    // correctly with caching on. It is easier to pass with caching off!
+    big_context_->EnableCaching();
   }
 
   Integrator<double>* integrator0_;
@@ -2000,6 +2087,174 @@ TEST_F(NestedDiagramContextTest, CachingChangePropagation) {
 
   big_context_->SetAllCacheEntriesOutOfDate();
   EXPECT_TRUE(cache_entry.is_out_of_date(integrator3_subcontext));
+}
+
+/* Check that changes made directly to a subcontext still affect the
+parent Diagram's behavior properly. Also, time and accuracy must be identical
+in every subcontext of a Context tree. They are only permitted to change at the
+root so they can be properly propagated down.
+
+        +-----------------------------------------------------+
+        |                                                     |
+        |       +------------+             +-----------+      |
+        |       |            |             |           |      |
+      u |    u0 |            | y0       u1 |           | y1   | y (=x1)
+Fixed ---------->  integ0    +------------->  integ1   +-------->
+value   |       |            |             |           |      |
+        |       |     x0     |             |    x1     |      |
+        |       +------------+             +-----------+      |
+        |                                                     | xdot={u0,u1,u2}
+        |                    +------------+            +-------->
+        |                    |            |                   |
+        |               u2   |            | y2                |
+        |       Fixed ------->  integ2    +------>            |
+        |       value        |            |                   |
+        |                    |     x2     |                   |
+        |                    +------------+                   |
+        |                                                     |
+        |                   diagram x={x0,x1,x2}              |
+        |                        xdot={u0,u1,u2}              |
+        +-----------------------------------------------------+
+
+Note that integ2's input port is invisible to the diagram, but a value change
+to that hidden port should invalidate the diagram's composite derivative
+calculation. */
+GTEST_TEST(MutateSubcontextTest, DiagramRecalculatesOnSubcontextChange) {
+  DiagramBuilder<double> builder;
+  auto integ0 = builder.AddSystem<Integrator>(1);  // (xdot = u; y = x)
+  auto integ1 = builder.AddSystem<Integrator>(1);
+  auto integ2 = builder.AddSystem<Integrator>(1);
+  builder.ExportInput(integ0->get_input_port());
+  builder.Cascade(*integ0, *integ1);
+  builder.ExportOutput(integ1->get_output_port());
+  auto diagram = builder.Build();
+
+  auto diagram_context = diagram->AllocateContext();
+  diagram_context->EnableCaching();
+  diagram_context->FixInputPort(0, {1.5});  // u(=u0)
+
+  // Hunt down the cache entry for the Diagram's derivative computation so we
+  // can verify that it gets invalidated and recomputed as we expect.
+  auto& derivative_tracker =
+      diagram_context->get_tracker(diagram->xcdot_ticket());
+  ASSERT_NE(derivative_tracker.cache_entry_value(), nullptr);
+  const CacheEntryValue& derivative_cache =
+      *derivative_tracker.cache_entry_value();
+  EXPECT_TRUE(derivative_cache.is_out_of_date());
+
+  // Record the derivative serial number so we can watch out for unnecessary
+  // extra computations.
+  int64_t expected_derivative_serial = derivative_cache.serial_number();
+
+  Eigen::VectorXd init_state(3);
+  init_state << 5., 6., 7.;  // x0(=y0=u1), x1(=y1), x2(=y2)
+
+  // Set the state from the diagram level, then evaluate the diagram
+  // output, which should have copied the second state value (x1). Also, this
+  // shouldn't complain even though input u2 is dangling since we don't need it
+  // for this computation.
+  diagram_context->SetContinuousState(init_state);
+  EXPECT_EQ(diagram->get_output_port(0).Eval<BasicVector<double>>(
+                *diagram_context)[0],
+            6.);
+
+  // That should not have caused derivative evaluations.
+  EXPECT_TRUE(derivative_cache.is_out_of_date());
+  EXPECT_EQ(derivative_cache.serial_number(), expected_derivative_serial);
+
+  // Must set the dangling input port to a value to evaluate derivatives.
+  Context<double>& context2 =
+      diagram->GetMutableSubsystemContext(*integ2, &*diagram_context);
+  FixedInputPortValue& u2_value = context2.FixInputPort(0, {0.75});
+
+  // The diagram derivatives should be (u0,u1,u2)=(u,x0,u2).
+  auto& eval_derivs =
+      diagram->EvalTimeDerivatives(*diagram_context);
+  ++expected_derivative_serial;
+  EXPECT_EQ(eval_derivs[0], 1.5);
+  EXPECT_EQ(eval_derivs[1], 5.);
+  EXPECT_EQ(eval_derivs[2], 0.75);
+
+  EXPECT_FALSE(derivative_cache.is_out_of_date());
+  EXPECT_EQ(derivative_cache.serial_number(), expected_derivative_serial);
+
+  // Now try to sneak in a change to subcontext state variables and then ask for
+  // the diagram's output value and derivatives again.
+  Context<double>& context0 =
+      diagram->GetMutableSubsystemContext(*integ0, &*diagram_context);
+  Context<double>& context1 =
+      diagram->GetMutableSubsystemContext(*integ1, &*diagram_context);
+
+  Eigen::VectorXd new_x0(1), new_x1(1);
+  new_x0 << 13.; new_x1 << 17.;
+  context0.SetContinuousState(new_x0);
+  context1.SetContinuousState(new_x1);
+
+  // Diagram should know to recopy x1 to the output port cache entry.
+  EXPECT_EQ(diagram->get_output_port(0).Eval<BasicVector<double>>(
+                *diagram_context)[0],
+            17.);
+
+  // Diagram derivatives should be out of date since they depend on x0.
+  EXPECT_TRUE(derivative_cache.is_out_of_date());
+  EXPECT_EQ(derivative_cache.serial_number(), expected_derivative_serial);
+
+  // Diagram should know that the time derivatives cache entry is out of date
+  // so initiate subsystem derivative calculations and pick up the changed x0.
+  // This will fail if subcontext *state* modifications aren't transmitted
+  // properly to the Diagram.
+  diagram->EvalTimeDerivatives(*diagram_context);
+  ++expected_derivative_serial;
+  EXPECT_EQ(eval_derivs[0], 1.5);
+  EXPECT_EQ(eval_derivs[1], 13.);
+  EXPECT_EQ(eval_derivs[2], 0.75);
+
+  EXPECT_FALSE(derivative_cache.is_out_of_date());
+  EXPECT_EQ(derivative_cache.serial_number(), expected_derivative_serial);
+
+  // Re-evaluate derivatives now and verify that they weren't recomputed.
+  diagram->EvalTimeDerivatives(*diagram_context);
+  EXPECT_EQ(derivative_cache.serial_number(), expected_derivative_serial);
+
+  // Now let's try modifying the internal input port. That shouldn't have any
+  // effect on the Diagram output port, since that depends only on state and
+  // hasn't changed. However, input u2 is the derivative result for integ2 and
+  // that should be reflected in the diagram derivative result.
+  u2_value.GetMutableVectorData<double>()->SetAtIndex(0, 300.);
+  EXPECT_EQ(diagram->get_output_port(0).Eval<BasicVector<double>>(
+      *diagram_context)[0],
+            17.);  // No change.
+  EXPECT_TRUE(derivative_cache.is_out_of_date());
+
+  diagram->EvalTimeDerivatives(*diagram_context);
+  ++expected_derivative_serial;
+  EXPECT_EQ(eval_derivs[0], 1.5);
+  EXPECT_EQ(eval_derivs[1], 13.);
+  EXPECT_EQ(eval_derivs[2], 300.);
+
+  EXPECT_FALSE(derivative_cache.is_out_of_date());
+  EXPECT_EQ(derivative_cache.serial_number(), expected_derivative_serial);
+
+  // Time & accuracy changes are allowed at the root (diagram) level.
+  EXPECT_NO_THROW(diagram_context->set_time(1.));
+  EXPECT_NO_THROW(diagram_context->SetTimeAndContinuousState(2., init_state));
+  auto diagram_context_clone = diagram_context->Clone();
+  EXPECT_NO_THROW(
+      diagram_context->SetTimeStateAndParametersFrom(*diagram_context_clone));
+  EXPECT_NO_THROW(diagram_context->set_accuracy(1e-6));
+
+  // Time & accuracy changes NOT allowed at child (leaf) level.
+  DRAKE_EXPECT_THROWS_MESSAGE(context0.set_time(3.), std::logic_error,
+                              ".*set_time.*Time change allowed only.*root.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      context0.SetTimeAndContinuousState(4., new_x0), std::logic_error,
+      ".*SetTimeAndContinuousState.*Time change allowed only.*root.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      context0.SetTimeStateAndParametersFrom(context1), std::logic_error,
+      ".*SetTimeStateAndParametersFrom.*Time change allowed only.*root.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      context0.set_accuracy(1e-7), std::logic_error,
+      ".*set_accuracy.*Accuracy change allowed only.*root.*");
 }
 
 // Tests that an exception is thrown if the systems in a Diagram do not have
@@ -2405,7 +2660,7 @@ GTEST_TEST(DiagramConstraintTest, SystemConstraintsTest) {
 }
 
 GTEST_TEST(DiagramParametersTest, ParameterTest) {
-  // Construct a diagram with multiple subsytems that have parameters.
+  // Construct a diagram with multiple subsystems that have parameters.
   systems::DiagramBuilder<double> builder;
   auto pendulum1 =
       builder.AddSystem<examples::pendulum::PendulumPlant<double>>();

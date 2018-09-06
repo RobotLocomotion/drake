@@ -390,7 +390,7 @@ class MathematicalProgram {
    */
   template <int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
   MatrixDecisionVariable<Rows, Cols> NewContinuousVariables(
-      int rows, int cols, const std::string& name) {
+      int rows, int cols, const std::string& name = "X") {
     rows = Rows == Eigen::Dynamic ? rows : Rows;
     cols = Cols == Eigen::Dynamic ? cols : Cols;
     auto names =
@@ -2156,7 +2156,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Set the intial guess for ALL decision variables.
+   * Set the initial guess for ALL decision variables.
    * Note that variables begin with a default initial guess of NaN to indicate
    * that no guess is available.
    * @param x0 A vector of appropriate size (num_vars() x 1).
@@ -2199,11 +2199,11 @@ class MathematicalProgram {
    *
    * Supported solver names/options:
    *
-   * "SNOPT" -- Paramater names and values as specified in SNOPT
+   * "SNOPT" -- Parameter names and values as specified in SNOPT
    * User's Guide section 7.7 "Description of the optional parameters",
    * used as described in section 7.5 for snSet().
    *
-   * "IPOPT" -- Paramater names and values as specified in IPOPT users
+   * "IPOPT" -- Parameter names and values as specified in IPOPT users
    * guide section "Options Reference"
    * http://www.coin-or.org/Ipopt/documentation/node40.html
    *
@@ -2228,18 +2228,30 @@ class MathematicalProgram {
   }
 
   const std::map<std::string, double>& GetSolverOptionsDouble(
-      const SolverId& solver_id) {
-    return solver_options_double_[solver_id];
+      const SolverId& solver_id) const {
+    // Aliases for brevity.
+    const auto& options = solver_options_double_;
+    const auto& empty = solver_options_double_empty_;
+    const auto iter = options.find(solver_id);
+    return (iter != options.end()) ? iter->second : empty;
   }
 
   const std::map<std::string, int>& GetSolverOptionsInt(
-      const SolverId& solver_id) {
-    return solver_options_int_[solver_id];
+      const SolverId& solver_id) const {
+    // Aliases for brevity.
+    const auto& options = solver_options_int_;
+    const auto& empty = solver_options_int_empty_;
+    const auto iter = options.find(solver_id);
+    return (iter != options.end()) ? iter->second : empty;
   }
 
   const std::map<std::string, std::string>& GetSolverOptionsStr(
-      const SolverId& solver_id) {
-    return solver_options_str_[solver_id];
+      const SolverId& solver_id) const {
+    // Aliases for brevity.
+    const auto& options = solver_options_str_;
+    const auto& empty = solver_options_str_empty_;
+    const auto iter = options.find(solver_id);
+    return (iter != options.end()) ? iter->second : empty;
   }
 
   /**
@@ -2401,7 +2413,7 @@ class MathematicalProgram {
   const Eigen::VectorXd& initial_guess() const { return x_initial_guess_; }
 
   /** Returns the index of the decision variable. Internally the solvers thinks
-   * all variables are stored in an array, and it acceses each individual
+   * all variables are stored in an array, and it accesses each individual
    * variable using its index. This index is used when adding constraints
    * and costs for each solver.
    * @pre{@p var is a decision variable in the mathematical program, otherwise
@@ -2411,7 +2423,7 @@ class MathematicalProgram {
 
   /**
    * Returns the indices of the decision variables. Internally the solvers
-   * thinks all variables are stored in an array, and it acceses each individual
+   * thinks all variables are stored in an array, and it accesses each individual
    * variable using its index. This index is used when adding constraints
    * and costs for each solver.
    * @pre{@p vars are decision variables in the mathematical program, otherwise
@@ -2424,7 +2436,7 @@ class MathematicalProgram {
   int num_indeterminates() const { return indeterminates_.rows(); }
 
   /** Returns the index of the indeterminate. Internally a solver
-   * thinks all indeterminates are stored in an array, and it acceses each
+   * thinks all indeterminates are stored in an array, and it accesses each
    * individual indeterminate using its index. This index is used when adding
    * constraints and costs for each solver.
    * @pre @p var is a indeterminate in the mathematical program,
@@ -2643,9 +2655,15 @@ class MathematicalProgram {
   // The lower bound of the objective found by the solver, during the
   // optimization process.
   double lower_bound_cost_{};
+
+  // The actual per-solver customization options.
   std::map<SolverId, std::map<std::string, double>> solver_options_double_;
   std::map<SolverId, std::map<std::string, int>> solver_options_int_;
   std::map<SolverId, std::map<std::string, std::string>> solver_options_str_;
+  // Dummy (empty) options, for when the solver_id is not in the above maps.
+  const std::map<std::string, double> solver_options_double_empty_;
+  const std::map<std::string, int> solver_options_int_empty_;
+  const std::map<std::string, std::string> solver_options_str_empty_;
 
   AttributesSet required_capabilities_{0};
 

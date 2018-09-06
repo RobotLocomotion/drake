@@ -40,7 +40,7 @@ void VerifyIiwaTree(const RigidBodyTree<double>& tree);
 
 /// Builds a RigidBodyTree at the specified @position and @orientation from
 /// the model specified by @model_file_name.
-/// This method is a convinience wrapper over `AddModelInstanceFromUrdfFile`.
+/// This method is a convenience wrapper over `AddModelInstanceFromUrdfFile`.
 /// @see drake::parsers::urdf::AddModelInstanceFromUrdfFile
 void CreateTreedFromFixedModelAtPose(
     const std::string& model_file_name, RigidBodyTreed* tree,
@@ -51,6 +51,10 @@ void CreateTreedFromFixedModelAtPose(
 void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
                                     Eigen::VectorXd* Ki,
                                     Eigen::VectorXd* Kd);
+
+/// Used to set the feedback gains for the simulated torque controlled KUKA.
+void SetTorqueControlledIiwaGains(Eigen::VectorXd* stiffness,
+                                  Eigen::VectorXd* damping_ratio);
 
 /// Scales a plan so that no step exceeds the robot's maximum joint velocities.
 /// The number of columns in @p keyframes must match the size of @p time.  Times

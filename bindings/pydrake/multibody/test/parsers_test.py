@@ -143,7 +143,7 @@ class TestParsers(unittest.TestCase):
 
         # Populate from folder.
         # TODO(eric.cousineau): This mismatch between casing is confusing, with
-        # `Atlas` being the package name, but `atlas` being the dirctory name.
+        # `Atlas` being the package name, but `atlas` being the directory name.
         pm = PackageMap()
         self.assertEqual(pm.size(), 0)
         pm.PopulateFromFolder(

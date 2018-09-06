@@ -86,6 +86,12 @@ TEST_F(BoolTestDouble, MoveAssign) {
 TEST_F(BoolTestDouble, TypeCheck) {
   static_assert(std::is_same<Bool<double>::value_type, bool>::value,
                 "Bool<double>::value_type should be bool");
+  static_assert(std::is_same<scalar_predicate_t<double>, bool>::value,
+                "scalar_predicate_t<double> should be bool");
+  static_assert(std::is_same<scalar_predicate<double>::type, bool>::value,
+                "scalar_predicate<double>::type should be bool");
+  static_assert(scalar_predicate<double>::is_bool,
+                "scalar_predicate<double>::is_bool should be true");
 }
 
 TEST_F(BoolTestDouble, Value) {
@@ -108,22 +114,22 @@ TEST_F(BoolTestDouble, Cond) {
 }
 
 TEST_F(BoolTestDouble, LogicalOperators) {
-  EXPECT_TRUE((b_true_ && b_true_).value());
-  EXPECT_FALSE((b_false_ && b_true_).value());
-  EXPECT_FALSE((b_true_ && b_false_).value());
-  EXPECT_FALSE((b_false_ && b_false_).value());
-  EXPECT_FALSE((b_true_ && false).value());
-  EXPECT_FALSE((false && b_true_).value());
+  EXPECT_TRUE(b_true_ && b_true_);
+  EXPECT_FALSE(b_false_ && b_true_);
+  EXPECT_FALSE(b_true_ && b_false_);
+  EXPECT_FALSE(b_false_ && b_false_);
+  EXPECT_FALSE(b_true_ && false);
+  EXPECT_FALSE(false && b_true_);
 
-  EXPECT_TRUE((b_true_ || b_true_).value());
-  EXPECT_TRUE((b_false_ || b_true_).value());
-  EXPECT_TRUE((b_true_ || b_false_).value());
-  EXPECT_FALSE((b_false_ || b_false_).value());
-  EXPECT_TRUE((b_false_ || true).value());
-  EXPECT_TRUE((true || b_false_).value());
+  EXPECT_TRUE(b_true_ || b_true_);
+  EXPECT_TRUE(b_false_ || b_true_);
+  EXPECT_TRUE(b_true_ || b_false_);
+  EXPECT_FALSE(b_false_ || b_false_);
+  EXPECT_TRUE(b_false_ || true);
+  EXPECT_TRUE(true || b_false_);
 
-  EXPECT_FALSE((!b_true_).value());
-  EXPECT_TRUE((!b_false_).value());
+  EXPECT_FALSE(!b_true_);
+  EXPECT_TRUE(!b_false_);
 }
 
 TEST_F(BoolTestDouble, AllOf) {
@@ -177,6 +183,12 @@ class BoolTestAutoDiffXd : public ::testing::Test {
 TEST_F(BoolTestAutoDiffXd, TypeCheck) {
   static_assert(std::is_same<Bool<AutoDiffXd>::value_type, bool>::value,
                 "Bool<AutoDiffXd>::value_type should be bool");
+  static_assert(std::is_same<scalar_predicate_t<AutoDiffXd>, bool>::value,
+                "scalar_predicate_t<AutoDiffXd> should be bool");
+  static_assert(std::is_same<scalar_predicate<AutoDiffXd>::type, bool>::value,
+                "scalar_predicate<AutoDiffXd>::type should be bool");
+  static_assert(scalar_predicate<AutoDiffXd>::is_bool,
+                "scalar_predicate<AutoDiffXd>::is_bool should be true");
 }
 
 TEST_F(BoolTestAutoDiffXd, TrueFalse) {
@@ -209,22 +221,22 @@ TEST_F(BoolTestAutoDiffXd, Cond) {
 }
 
 TEST_F(BoolTestAutoDiffXd, LogicalOperators) {
-  EXPECT_TRUE((b_true_ && b_true_).value());
-  EXPECT_FALSE((b_false_ && b_true_).value());
-  EXPECT_FALSE((b_true_ && b_false_).value());
-  EXPECT_FALSE((b_false_ && b_false_).value());
-  EXPECT_FALSE((b_true_ && (x_ > y_)).value());
-  EXPECT_FALSE(((x_ > y_) && b_true_).value());
+  EXPECT_TRUE(b_true_ && b_true_);
+  EXPECT_FALSE(b_false_ && b_true_);
+  EXPECT_FALSE(b_true_ && b_false_);
+  EXPECT_FALSE(b_false_ && b_false_);
+  EXPECT_FALSE(b_true_ && (x_ > y_));
+  EXPECT_FALSE((x_ > y_) && b_true_);
 
-  EXPECT_TRUE((b_true_ || b_true_).value());
-  EXPECT_TRUE((b_false_ || b_true_).value());
-  EXPECT_TRUE((b_true_ || b_false_).value());
-  EXPECT_FALSE((b_false_ || b_false_).value());
-  EXPECT_TRUE((b_false_ || (x_ < y_)).value());
-  EXPECT_TRUE(((x_ < y_) || b_false_).value());
+  EXPECT_TRUE(b_true_ || b_true_);
+  EXPECT_TRUE(b_false_ || b_true_);
+  EXPECT_TRUE(b_true_ || b_false_);
+  EXPECT_FALSE(b_false_ || b_false_);
+  EXPECT_TRUE(b_false_ || (x_ < y_));
+  EXPECT_TRUE((x_ < y_) || b_false_);
 
-  EXPECT_FALSE((!b_true_).value());
-  EXPECT_TRUE((!b_false_).value());
+  EXPECT_FALSE(!b_true_);
+  EXPECT_TRUE(!b_false_);
 }
 
 TEST_F(BoolTestAutoDiffXd, AllOf) {
@@ -308,6 +320,15 @@ TEST_F(BoolTestSymbolic, TypeCheck) {
   static_assert(
       std::is_same<Bool<Expression>::value_type, Formula>::value,
       "Bool<symbolic::Expression>::value_type should be symbolic::Formula");
+  static_assert(
+      std::is_same<scalar_predicate_t<Expression>, Formula>::value,
+      "scalar_predicate_t<Expression> should be Formula");
+  static_assert(
+      std::is_same<scalar_predicate<Expression>::type, Formula>::value,
+      "scalar_predicate<Expression>::type should be Formula");
+  static_assert(
+      !scalar_predicate<Expression>::is_bool,
+      "scalar_predicate<Expression>::is_bool should be false");
 }
 
 TEST_F(BoolTestSymbolic, TrueFalse) {

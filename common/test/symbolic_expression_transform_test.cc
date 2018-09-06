@@ -50,7 +50,7 @@ class SymbolicExpressionTransformationTest : public ::testing::Test {
   Eigen::Transform<double, 3, Eigen::Projective, Eigen::DontAlign> projective_;
 };
 
-// Checks if `lhs.cast<Expresion>() * rhs` and `(lhs * rhs).cast<Expresion>()`
+// Checks if `lhs.cast<Expression>() * rhs` and `(lhs * rhs).cast<Expression>()`
 // produce almost identical output. Also checks the symmetric case. See the
 // following commutative diagram.
 //                  * rhs
@@ -62,7 +62,7 @@ class SymbolicExpressionTransformationTest : public ::testing::Test {
 //    ||                                ||
 //    || * rhs                          ||
 //    \/                          ?     \/
-//   lhs.cast<Expresion>() * rhs  ==  (lhs * rhs).cast<Expresion>()
+//   lhs.cast<Expression>() * rhs  ==  (lhs * rhs).cast<Expression>()
 //
 // The exactness is not guaranteed due to the non-associativity of
 // floating-point arithmetic (+, *).

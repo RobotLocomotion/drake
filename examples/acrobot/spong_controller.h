@@ -122,8 +122,8 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
       const double k_p = 50;
       const double k_d = 5;
 
-      const T PE = acrobot_.CalcPotentialEnergy(*acrobot_context_);
-      const T KE = acrobot_.CalcKineticEnergy(*acrobot_context_);
+      const T PE = acrobot_.EvalPotentialEnergy(*acrobot_context_);
+      const T KE = acrobot_.EvalKineticEnergy(*acrobot_context_);
       const T E = PE + KE;
       const T E_desired =
           (p.m1() * p.lc1() + p.m2() * (p.l1() + p.lc2())) * p.gravity();

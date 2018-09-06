@@ -60,17 +60,17 @@ GTEST_TEST(SampleTest, SimpleCoverage) {
 GTEST_TEST(SampleTest, IsValid) {
   // N.B. Sample<T>.unset is an invalid value by default.
   Sample<double> dummy1;
-  EXPECT_FALSE(ExtractBoolOrThrow(dummy1.IsValid()));
+  EXPECT_FALSE(dummy1.IsValid());
   dummy1.set_unset(0.0);
-  EXPECT_TRUE(ExtractBoolOrThrow(dummy1.IsValid()));
+  EXPECT_TRUE(dummy1.IsValid());
   dummy1.set_x(std::numeric_limits<double>::quiet_NaN());
-  EXPECT_FALSE(ExtractBoolOrThrow(dummy1.IsValid()));
+  EXPECT_FALSE(dummy1.IsValid());
 
   Sample<double> dummy2;
   dummy2.set_unset(0.0);
-  EXPECT_TRUE(ExtractBoolOrThrow(dummy2.IsValid()));
+  EXPECT_TRUE(dummy2.IsValid());
   dummy2.set_two_word(std::numeric_limits<double>::quiet_NaN());
-  EXPECT_FALSE(ExtractBoolOrThrow(dummy2.IsValid()));
+  EXPECT_FALSE(dummy2.IsValid());
 }
 
 // Cover Simple<AutoDiffXd>::IsValid.
@@ -78,9 +78,9 @@ GTEST_TEST(SampleTest, AutoDiffXdIsValid) {
   // A NaN in the AutoDiffScalar::value() makes us invalid.
   Sample<AutoDiffXd> dut;
   dut.set_unset(0.0);  // N.B. Sample<T>.unset is an invalid value by default.
-  EXPECT_TRUE(ExtractBoolOrThrow(dut.IsValid()));
+  EXPECT_TRUE(dut.IsValid());
   dut.set_x(std::numeric_limits<double>::quiet_NaN());
-  EXPECT_FALSE(ExtractBoolOrThrow(dut.IsValid()));
+  EXPECT_FALSE(dut.IsValid());
 
   // A NaN in the AutoDiffScalar::derivatives() is still valid.
   AutoDiffXd zero_with_nan_derivatives{0};
@@ -89,7 +89,7 @@ GTEST_TEST(SampleTest, AutoDiffXdIsValid) {
   ASSERT_EQ(zero_with_nan_derivatives.derivatives().size(), 1);
   EXPECT_TRUE(std::isnan(zero_with_nan_derivatives.derivatives()(0)));
   dut.set_x(zero_with_nan_derivatives);
-  EXPECT_TRUE(ExtractBoolOrThrow(dut.IsValid()));
+  EXPECT_TRUE(dut.IsValid());
 }
 
 GTEST_TEST(SampleTest, SetToNamedVariablesTest) {
@@ -112,7 +112,7 @@ GTEST_TEST(SampleTest, SymbolicIsValid) {
       (dut.x() >= 0.0) &&
       (dut.absone() >= -1.0) &&
       (dut.absone() <= 1.0);
-  EXPECT_TRUE(dut.IsValid().value().EqualTo(expected_is_valid));
+  EXPECT_TRUE(dut.IsValid().EqualTo(expected_is_valid));
 }
 
 }  // namespace

@@ -23,6 +23,9 @@
   <material name="Grey">
     <color rgba="0.4 0.4 0.4 1.0"/>
   </material>
+  <material name="Silver">
+    <color rgba="0.6 0.6 0.6 1.0"/>
+  </material>
   <material name="Orange">
     <color rgba="1.0 0.423529411765 0.0392156862745 1.0"/>
   </material>
@@ -108,9 +111,16 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_2.obj"/>
+        <mesh filename="../meshes/visual/link_2_orange.obj"/>
       </geometry>
       <material name="Orange"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/visual/link_2_grey.obj"/>
+      </geometry>
+      <material name="Grey"/>
     </visual>
   </link>
   <!-- joint between link_2 and link_3 -->
@@ -138,6 +148,20 @@
       </geometry>
       <material name="Grey"/>
     </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/visual/kuka.obj"/>
+      </geometry>
+      <material name="Black"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/visual/band.obj"/>
+      </geometry>
+      <material name="Silver"/>
+    </visual>
   </link>
   <!-- joint between link_3 and link_4 -->
   <joint name="iiwa_joint_4" type="revolute">
@@ -160,9 +184,16 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_4.obj"/>
+        <mesh filename="../meshes/visual/link_4_orange.obj"/>
       </geometry>
       <material name="Orange"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/visual/link_4_grey.obj"/>
+      </geometry>
+      <material name="Grey"/>
     </visual>
   </link>
   <!-- joint between link_4 and link_5 -->
@@ -190,6 +221,20 @@
       </geometry>
       <material name="Grey"/>
     </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/visual/kuka.obj"/>
+      </geometry>
+      <material name="Black"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/visual/band.obj"/>
+      </geometry>
+      <material name="Silver"/>
+    </visual>
   </link>
   <!-- joint between link_5 and link_6 -->
   <joint name="iiwa_joint_6" type="revolute">
@@ -212,7 +257,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_6.obj"/>
+        <mesh filename="../meshes/visual/link_6_grey.obj"/>
+      </geometry>
+      <material name="Grey"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/visual/link_6_orange.obj"/>
       </geometry>
       <material name="Orange"/>
     </visual>

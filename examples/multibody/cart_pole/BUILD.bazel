@@ -14,6 +14,8 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+package(default_visibility = ["//visibility:public"])
+
 drake_cc_vector_gen_library(
     name = "cart_pole_params",
     srcs = ["cart_pole_params.named_vector"],
@@ -36,8 +38,6 @@ drake_cc_binary(
         "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
-        "//systems/lcm:lcm_pubsub_system",
-        "//systems/rendering:pose_bundle_to_draw_message",
         "@gflags",
     ],
 )
@@ -53,5 +53,7 @@ drake_cc_googletest(
         "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
     ],
 )
+
+install_data()
 
 add_lint_tests()

@@ -21,7 +21,7 @@ namespace multibody {
 /// is allowed and the inboard frame origin `Fo` and the outboard frame origin
 /// `Mo` are coincident at all times.
 ///
-/// The orientation `R_FM` of the outboard frame M in F is parametrized with
+/// The orientation `R_FM` of the outboard frame M in F is parameterized with
 /// space `x-y-z` Euler angles (also known as extrinsic angles). That is, the
 /// generalized coordinates for this mobilizer correspond to angles
 /// θ₁, θ₂, θ₃, for a sequence of rotations about the x̂, ŷ, ẑ axes solidary with

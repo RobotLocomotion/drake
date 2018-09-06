@@ -103,31 +103,31 @@ class System : public SystemBase {
   virtual std::unique_ptr<CompositeEventCollection<T>>
       AllocateCompositeEventCollection() const = 0;
 
-  /// Given a port descriptor, allocates the vector storage.  The default
+  /// Given an input port, allocates the vector storage.  The default
   /// implementation in this class allocates a BasicVector.  Subclasses must
   /// override the NVI implementation of this function, DoAllocateInputVector,
-  /// to return input vector types other than BasicVector. The @p descriptor
+  /// to return input vector types other than BasicVector. The @p input_port
   /// must match a port declared via DeclareInputPort.
   std::unique_ptr<BasicVector<T>> AllocateInputVector(
-      const InputPort<T>& descriptor) const {
-    DRAKE_ASSERT(descriptor.get_data_type() == kVectorValued);
-    const int index = descriptor.get_index();
+      const InputPort<T>& input_port) const {
+    DRAKE_ASSERT(input_port.get_data_type() == kVectorValued);
+    const int index = input_port.get_index();
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
     DRAKE_ASSERT(get_input_port(index).get_data_type() == kVectorValued);
-    return std::unique_ptr<BasicVector<T>>(DoAllocateInputVector(descriptor));
+    return std::unique_ptr<BasicVector<T>>(DoAllocateInputVector(input_port));
   }
 
-  /// Given a port descriptor, allocates the abstract storage. Subclasses with a
+  /// Given an input port, allocates the abstract storage. Subclasses with a
   /// abstract input ports must override the NVI implementation of this
   /// function, DoAllocateInputAbstract, to return an appropriate AbstractValue.
-  /// The @p descriptor must match a port declared via DeclareInputPort.
+  /// The @p input_port must match a port declared via DeclareInputPort.
   std::unique_ptr<AbstractValue> AllocateInputAbstract(
-      const InputPort<T>& descriptor) const {
-    DRAKE_ASSERT(descriptor.get_data_type() == kAbstractValued);
-    const int index = descriptor.get_index();
+      const InputPort<T>& input_port) const {
+    DRAKE_ASSERT(input_port.get_data_type() == kAbstractValued);
+    const int index = input_port.get_index();
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
     DRAKE_ASSERT(get_input_port(index).get_data_type() == kAbstractValued);
-    return std::unique_ptr<AbstractValue>(DoAllocateInputAbstract(descriptor));
+    return std::unique_ptr<AbstractValue>(DoAllocateInputAbstract(input_port));
   }
 
   /// Returns a container that can hold the values of all of this System's
@@ -320,7 +320,6 @@ class System : public SystemBase {
     }
     return false;
   }
-
   //@}
 
   //----------------------------------------------------------------------------
@@ -383,23 +382,132 @@ class System : public SystemBase {
   /// a helpful message.
   //@{
 
-  /// Returns a reference to the cached value of the conservative power. If
-  /// necessary the cache will be updated first using CalcConservativePower().
-  /// @see CalcConservativePower()
-  const T& EvalConservativePower(const Context<T>& context) const {
-    // TODO(sherm1) Replace with an actual cache entry.
-    fake_cache_conservative_power_ = CalcConservativePower(context);
-    return fake_cache_conservative_power_;
+  /// Returns a reference to the cached value of the continuous state variable
+  /// time derivatives, evaluating first if necessary using
+  /// CalcTimeDerivatives().
+  ///
+  /// This method returns the time derivatives `xcdot` of the continuous state
+  /// `xc`. The referenced return object will correspond elementwise with the
+  /// continuous state in the given Context. Thus, if the state in the Context
+  /// has second-order structure `xc=[q v z]`, that same structure applies to
+  /// the derivatives so we will have `xcdot=[qdot vdot zdot]`.
+  ///
+  /// @param context The Context whose time, input port, parameter, state, and
+  /// accuracy values may be used to evaluate the derivatives.
+  ///
+  /// @retval xcdot The time derivatives of `xc` returned as a reference to an
+  ///               object of the same type and size as this %Context's
+  ///               continuous state.
+  /// @see CalcTimeDerivatives()
+  const ContinuousState<T>& EvalTimeDerivatives(
+      const Context<T>& context) const {
+    const CacheEntry& entry =
+        this->get_cache_entry(time_derivatives_cache_index_);
+    return entry.Eval<ContinuousState<T>>(context);
   }
 
-  /// Returns a reference to the cached value of the non-conservative power. If
-  /// necessary the cache will be updated first using
-  /// CalcNonConservativePower().
-  /// @see CalcNonConservativePower()
+  /// Returns a reference to the cached value of the potential energy (PE),
+  /// evaluating first if necessary using CalcPotentialEnergy().
+  ///
+  /// By definition here, potential energy depends only on "configuration"
+  /// (e.g. orientation and position), which includes a subset of the state
+  /// variables, and parameters that affect configuration or conservative
+  /// forces (such as lengths and masses). The calculated value may also be
+  /// affected by the accuracy value supplied in the Context. PE cannot depend
+  /// explicitly on time (∂PE/∂t = 0), velocities (∂PE/∂v = 0), or input port
+  /// values (∂PE/∂u = 0).
+  ///
+  /// Non-physical systems where PE is not meaningful will return PE = 0.
+  ///
+  /// @param context The Context whose configuration variables may be used to
+  ///                evaluate potential energy.
+  /// @retval PE The potential energy in joules (J) represented by the
+  ///            configuration given in `context`.
+  /// @see CalcPotentialEnergy()
+  const T& EvalPotentialEnergy(const Context<T>& context) const {
+    const CacheEntry& entry =
+        this->get_cache_entry(potential_energy_cache_index_);
+    return entry.Eval<T>(context);
+  }
+
+  /// Returns a reference to the cached value of the kinetic energy (KE),
+  /// evaluating first if necessary using CalcKineticEnergy().
+  ///
+  /// By definition here, kinetic energy depends only on "configuration" and
+  /// "velocity" (e.g. angular and translational velocity) of moving masses
+  /// which includes a subset of the state variables, and parameters that affect
+  /// configuration, velocities, or mass properties. The calculated value may
+  /// also be affected by the accuracy value supplied in the Context. KE cannot
+  /// depend explicitly on time (∂KE/∂t = 0) or input port values (∂KE/∂u = 0).
+  ///
+  /// Non-physical systems where KE is not meaningful will return KE = 0.
+  ///
+  /// @param context The Context whose configuration and velocity variables may
+  ///                be used to evaluate kinetic energy.
+  /// @retval KE The kinetic energy in joules (J) represented by the
+  ///            configuration and velocity given in `context`.
+  /// @see CalcKineticEnergy()
+  const T& EvalKineticEnergy(const Context<T>& context) const {
+    const CacheEntry& entry =
+        this->get_cache_entry(kinetic_energy_cache_index_);
+    return entry.Eval<T>(context);
+  }
+
+  /// Returns a reference to the cached value of the conservative power (Pc),
+  /// evaluating first if necessary using CalcConservativePower().
+  ///
+  /// The returned Pc represents the rate at which mechanical energy is being
+  /// converted _from_ potential energy (PE) _to_ kinetic energy (KE) by this
+  /// system in the given Context. This quantity will be _positive_ when PE
+  /// is _decreasing_. By definition here, conservative power may depend only
+  /// on quantities that explicitly contribute to PE and KE. See
+  /// EvalPotentialEnergy() and EvalKineticEnergy() for details.
+  ///
+  /// Power due to non-conservative forces (e.g. dampers) can contribute to the
+  /// rate of change of KE. Therefore this method alone cannot be used to
+  /// determine whether KE is increasing or decreasing, only whether the
+  /// conservative power is adding or removing kinetic energy.
+  /// EvalNonConservativePower() can be used in conjunction with this method to
+  /// find the total rate of change of KE.
+  ///
+  /// Non-physical systems where Pc is not meaningful will return Pc = 0.
+  ///
+  /// @param context The Context whose contents may be used to evaluate
+  ///                conservative power.
+  /// @retval Pc The conservative power in watts (W or J/s) represented by the
+  ///            contents of the given `context`.
+  /// @see CalcConservativePower(), EvalNonConservativePower(),
+  ///      EvalPotentialEnergy(), EvalKineticEnergy()
+  const T& EvalConservativePower(const Context<T>& context) const {
+    const CacheEntry& entry =
+        this->get_cache_entry(conservative_power_cache_index_);
+    return entry.Eval<T>(context);
+  }
+
+  /// Returns a reference to the cached value of the non-conservative power
+  /// (Pnc), evaluating first if necessary using CalcNonConservativePower().
+  ///
+  /// The returned Pnc represents the rate at which work W is done on the system
+  /// by non-conservative forces. Pnc is _negative_ if the non-conservative
+  /// forces are _dissipative_, positive otherwise. Time integration of Pnc
+  /// yields work W, and the total mechanical energy `E = PE + KE − W` should be
+  /// conserved by any physically-correct model, to within integration accuracy
+  /// of W. Power is in watts (J/s). (Watts are abbreviated W but not to be
+  /// confused with work!) Any values in the supplied Context (including time
+  /// and input ports) may contribute to the computation of non-conservative
+  /// power.
+  ///
+  /// Non-physical systems where Pnc is not meaningful will return Pnc = 0.
+  ///
+  /// @param context The Context whose contents may be used to evaluate
+  ///                non-conservative power.
+  /// @retval Pnc The non-conservative power in watts (W or J/s) represented by
+  ///             the contents of the given `context`.
+  /// @see CalcNonConservativePower(), EvalConservativePower()
   const T& EvalNonConservativePower(const Context<T>& context) const {
-    // TODO(sherm1) Replace with an actual cache entry.
-    fake_cache_nonconservative_power_ = CalcNonConservativePower(context);
-    return fake_cache_nonconservative_power_;
+    const CacheEntry& entry =
+        this->get_cache_entry(nonconservative_power_cache_index_);
+    return entry.Eval<T>(context);
   }
 
   /// Returns the value of the vector-valued input port with the given
@@ -469,9 +577,8 @@ class System : public SystemBase {
   //@}
 
   //----------------------------------------------------------------------------
-  /// @name               Constraint-related functions.
-  ///
-  // @{
+  /// @name               Constraint-related functions
+  //@{
 
   /// Gets the number of constraint equations for this system using the given
   /// context (useful in case the number of constraints is dependent upon the
@@ -547,7 +654,6 @@ class System : public SystemBase {
       throw std::logic_error("Error vector is mis-sized.");
     return DoCalcConstraintErrorNorm(context, error);
   }
-
   //@}
 
   //----------------------------------------------------------------------------
@@ -565,15 +671,13 @@ class System : public SystemBase {
   /// depend on both Context and additional input arguments.
   //@{
 
-  /// Calculates the time derivatives `xcdot` of the continuous state `xc`.
-  /// The `derivatives` vector will correspond elementwise with the continuous
-  /// state in the given Context. Thus, if the state in
-  /// the Context has second-order structure `xc=[q v z]`, that same structure
-  /// applies to the derivatives so we will have `xcdot=[qdot vdot zdot]`.
+  /// Calculates the time derivatives `xcdot` of the continuous state `xc` into
+  /// a given output argument. Prefer EvalTimeDerivatives() instead to avoid
+  /// unnecessary recomputation.
+  /// @see EvalTimeDerivatives() for more information.
   ///
-  /// @param context The Context whose time, input port, parameter, and state
-  /// values are used to evaluate the derivatives.
-  ///
+  /// @param context The Context whose contents will be used to evaluate the
+  ///                derivatives.
   /// @param derivatives The time derivatives `xcdot`. Must be the same size as
   ///                    the continuous state vector in `context`.
   void CalcTimeDerivatives(const Context<T>& context,
@@ -763,46 +867,41 @@ class System : public SystemBase {
     }
   }
 
-  /// Calculates and returns the potential energy current stored in the
-  /// configuration provided in `context`. Non-physical Systems will return
-  /// zero.
-  /// @see EvalPotentialEnergy()
+  /// Calculates and returns the potential energy represented by the current
+  /// configuration provided in `context`. Prefer EvalPotentialEnergy() to
+  /// avoid unnecessary recalculation.
+  ///
+  /// @see EvalPotentialEnergy() for more information.
   T CalcPotentialEnergy(const Context<T>& context) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     return DoCalcPotentialEnergy(context);
   }
 
-  /// Calculates and returns the kinetic energy currently present in the motion
-  /// provided in the given Context. Non-physical Systems will return zero.
-  /// @see EvalKineticEnergy()
+  /// Calculates and returns the kinetic energy represented by the current
+  /// configuration and velocity provided in `context`. Prefer
+  /// EvalKineticEnergy() to avoid unnecessary recalculation.
+  ///
+  /// @see EvalKineticEnergy() for more information.
   T CalcKineticEnergy(const Context<T>& context) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     return DoCalcKineticEnergy(context);
   }
 
-  /// Calculates and returns the rate at which mechanical energy is being
-  /// converted *from* potential energy *to* kinetic energy by this system in
-  /// the given Context. This quantity will be positive when potential energy is
-  /// decreasing. Note that kinetic energy will also be affected by
-  /// non-conservative forces so we can't say whether it is increasing or
-  /// decreasing in an absolute sense, only whether the conservative
-  /// power is increasing or decreasing the kinetic energy. Power is in watts
-  /// (J/s).Non-physical Systems will return zero.
-  /// @see EvalConservativePower()
+  /// Calculates and returns the conservative power represented by the current
+  /// contents of the given `context`. Prefer EvalConservativePower() to avoid
+  /// unnecessary recalculation.
+  ///
+  /// @see EvalConservativePower() for more information.
   T CalcConservativePower(const Context<T>& context) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     return DoCalcConservativePower(context);
   }
 
-  /// Calculates and returns the rate at which mechanical energy is being
-  /// generated (positive) or dissipated (negative) *other than* by conversion
-  /// between potential and kinetic energy (in the given Context). Integrating
-  /// this quantity yields work W, and the total energy `E=PE+KE-W` should be
-  /// conserved by any physically-correct model, to within integration accuracy
-  /// of W. Power is in watts (J/s). (Watts are abbreviated W but not to be
-  /// confused with work!) This method is meaningful only for physical systems;
-  /// others return zero.
-  /// @see EvalNonConservativePower()
+  /// Calculates and returns the non-conservative power represented by the
+  /// current contents of the given `context`. Prefer EvalNonConservativePower()
+  /// to avoid unnecessary recalculation.
+  ///
+  /// @see EvalNonConservativePower() for more information.
   T CalcNonConservativePower(const Context<T>& context) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     return DoCalcNonConservativePower(context);
@@ -1132,7 +1231,6 @@ class System : public SystemBase {
   /// Returns an opaque integer that uniquely identifies this system in the
   /// Graphviz output.
   int64_t GetGraphvizId() const { return reinterpret_cast<int64_t>(this); }
-
   //@}
 
   //----------------------------------------------------------------------------
@@ -1196,7 +1294,7 @@ class System : public SystemBase {
   //@}
 
   //----------------------------------------------------------------------------
-  /// @name                Symbolics
+  /// @name                          Symbolics
   /// From a %System templatized by `double`, you can obtain an identical system
   /// templatized by a symbolic expression scalar.
 
@@ -1251,7 +1349,8 @@ class System : public SystemBase {
   //@}
 
   //----------------------------------------------------------------------------
-  /// @name                Transmogrification utilities
+  /// @name                Scalar type conversion utilities
+  //@{
 
   /// Fixes all of the input ports in @p target_context to their current values
   /// in @p other_context, as evaluated by @p other_system. Throws an exception
@@ -1266,20 +1365,20 @@ class System : public SystemBase {
     DRAKE_ASSERT_VOID(other_system.CheckValidContextT(*target_context));
 
     for (int i = 0; i < get_num_input_ports(); ++i) {
-      const auto& descriptor = get_input_port(i);
+      const auto& input_port = get_input_port(i);
 
-      if (descriptor.get_data_type() == kVectorValued) {
+      if (input_port.get_data_type() == kVectorValued) {
         // For vector-valued input ports, we placewise initialize a fixed input
         // vector using the explicit conversion from double to T.
         const BasicVector<double>* other_vec =
             other_system.EvalVectorInput(other_context, i);
         if (other_vec == nullptr) continue;
-        auto our_vec = this->AllocateInputVector(descriptor);
+        auto our_vec = this->AllocateInputVector(input_port);
         for (int j = 0; j < our_vec->size(); ++j) {
           our_vec->SetAtIndex(j, T(other_vec->GetAtIndex(j)));
         }
         target_context->FixInputPort(i, *our_vec);
-      } else if (descriptor.get_data_type() == kAbstractValued) {
+      } else if (input_port.get_data_type() == kAbstractValued) {
         // For abstract-valued input ports, we just clone the value and fix
         // it to the port.
         const AbstractValue* other_value =
@@ -1287,7 +1386,7 @@ class System : public SystemBase {
         if (other_value == nullptr) continue;
         target_context->FixInputPort(i, other_value->Clone());
       } else {
-        DRAKE_ABORT_MSG("Unknown descriptor type.");
+        DRAKE_ABORT_MSG("Unknown input port type.");
       }
     }
   }
@@ -1298,7 +1397,6 @@ class System : public SystemBase {
   const SystemScalarConverter& get_system_scalar_converter() const {
     return system_scalar_converter_;
   }
-
   //@}
 
   /// Gets the witness functions active for the given state.
@@ -1332,8 +1430,42 @@ class System : public SystemBase {
       Event<T>* event,
       CompositeEventCollection<T>* events) const = 0;
 
-  // Promote so we don't need "this->" everywhere.
-  using SystemBase::get_name;
+  // Promote these frequently-used methods so users (and tutorial examples)
+  // don't need "this->" everywhere when in templated derived classes.
+  using SystemBase::DeclareCacheEntry;
+
+  // All pre-defined ticket methods should be listed here. They are ordered as
+  // they appear in SystemBase to make it easy to check that none are missing.
+  using SystemBase::nothing_ticket;
+  using SystemBase::time_ticket;
+  using SystemBase::accuracy_ticket;
+  using SystemBase::q_ticket;
+  using SystemBase::v_ticket;
+  using SystemBase::z_ticket;
+  using SystemBase::xc_ticket;
+  using SystemBase::discrete_state_ticket;
+  using SystemBase::xd_ticket;
+  using SystemBase::abstract_state_ticket;
+  using SystemBase::xa_ticket;
+  using SystemBase::all_state_ticket;
+  using SystemBase::numeric_parameter_ticket;
+  using SystemBase::pn_ticket;
+  using SystemBase::abstract_parameter_ticket;
+  using SystemBase::pa_ticket;
+  using SystemBase::all_parameters_ticket;
+  using SystemBase::input_port_ticket;
+  using SystemBase::all_input_ports_ticket;
+  using SystemBase::all_sources_ticket;
+  using SystemBase::cache_entry_ticket;
+  using SystemBase::configuration_ticket;
+  using SystemBase::kinematics_ticket;
+  using SystemBase::xcdot_ticket;
+  using SystemBase::pe_ticket;
+  using SystemBase::ke_ticket;
+  using SystemBase::pc_ticket;
+  using SystemBase::pnc_ticket;
+
+  // Don't promote output_port_ticket() since it is for internal use only.
 
  protected:
   /// Derived classes will implement this method to evaluate a witness function
@@ -1383,8 +1515,8 @@ class System : public SystemBase {
   /// derived implementations can assume that @p context is valid. See, e.g.,
   /// LeafSystem::DispatchPublishHandler() and Diagram::DispatchPublishHandler()
   /// for more details.
-
   //@{
+
   /// This function dispatches all publish events to the appropriate handlers.
   virtual void DispatchPublishHandler(
       const Context<T>& context,
@@ -1406,17 +1538,82 @@ class System : public SystemBase {
   //@}
 
   //----------------------------------------------------------------------------
-  /// @name                 System construction
+  /// @name                    System construction
   /// Authors of derived %Systems can use these methods in the constructor
   /// for those %Systems.
   //@{
-  /// Constructs an empty %System base class object, possibly supporting
-  /// scalar-type conversion support (AutoDiff, etc.) using @p converter.
+
+  /// Constructs an empty %System base class object and allocates base class
+  /// resources, possibly supporting scalar-type conversion support (AutoDiff,
+  /// etc.) using @p converter.
   ///
   /// See @ref system_scalar_conversion for detailed background and examples
   /// related to scalar-type conversion support.
   explicit System(SystemScalarConverter converter)
-      : system_scalar_converter_(std::move(converter)) {}
+      : system_scalar_converter_(std::move(converter)) {
+    // Note that configuration and kinematics tickets also include dependence
+    // on parameters and accuracy, but not time or input ports.
+
+    // Potential and kinetic energy, and conservative power that measures
+    // the transfer between them, must _not_ be (explicitly) time dependent.
+    // See API documentation above for Eval{Potential|Kinetic}Energy() and
+    // EvalConservativePower() to see why.
+
+    // TODO(sherm1) Due to issue #9171 we cannot always recognize which
+    // variables contribute to configuration so we'll invalidate on all changes.
+    // Use configuration, kinematics, and mass tickets when #9171 is resolved.
+    potential_energy_cache_index_ =
+        DeclareCacheEntry("potential energy",
+            &System<T>::CalcPotentialEnergy,
+            {all_sources_ticket()})  // After #9171: configuration + mass.
+            .cache_index();
+
+    kinetic_energy_cache_index_ =
+        DeclareCacheEntry("kinetic energy",
+            &System<T>::CalcKineticEnergy,
+            {all_sources_ticket()})  // After #9171: kinematics + mass.
+            .cache_index();
+
+    conservative_power_cache_index_ =
+        DeclareCacheEntry("conservative power",
+            &System<T>::CalcConservativePower,
+            {all_sources_ticket()})  // After #9171: kinematics + mass.
+            .cache_index();
+
+    // Only non-conservative power can have an explicit time or input
+    // port dependence. See API documentation above for
+    // EvalNonConservativePower() to see why.
+    nonconservative_power_cache_index_ =
+        DeclareCacheEntry("non-conservative power",
+                          &System<T>::CalcNonConservativePower,
+                          {all_sources_ticket()})  // This is correct.
+            .cache_index();
+
+    // For the time derivative cache we need to use the general form for
+    // cache creation because we're dealing with pre-defined allocator and
+    // calculator method signatures.
+    CacheEntry::AllocCallback alloc_derivatives = [this]() {
+      return std::make_unique<Value<ContinuousState<T>>>(
+          this->AllocateTimeDerivatives());
+    };
+    CacheEntry::CalcCallback calc_derivatives = [this](
+        const ContextBase& context_base, AbstractValue* result) {
+      DRAKE_DEMAND(result != nullptr);
+      ContinuousState<T>& state = result->GetMutableValue<ContinuousState<T>>();
+      const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
+      CalcTimeDerivatives(context, &state);
+    };
+
+    // We must assume that time derivatives can depend on *any* context source.
+    time_derivatives_cache_index_ =
+        this->DeclareCacheEntryWithKnownTicket(
+                xcdot_ticket(), "time derivatives",
+                std::move(alloc_derivatives), std::move(calc_derivatives),
+                {all_sources_ticket()})
+            .cache_index();
+
+    // TODO(sherm1) Allocate and use discrete update cache.
+  }
 
   /// Adds a port with the specified @p type and @p size to the input topology.
   /// If the port is intended to model a random noise or disturbance input,
@@ -1424,7 +1621,7 @@ class System : public SystemBase {
   /// enables algorithms for design and analysis (e.g. state estimation) to
   /// reason explicitly about randomness at the system level.  All random input
   /// ports are assumed to be statistically independent.
-  /// @return descriptor of declared port.
+  /// @returns the declared port.
   const InputPort<T>& DeclareInputPort(
       PortDataType type, int size,
       optional<RandomDistribution> random_type = nullopt) {
@@ -1437,11 +1634,10 @@ class System : public SystemBase {
   }
 
   /// Adds an abstract-valued port to the input topology.
-  /// @return descriptor of declared port.
+  /// @returns the declared port.
   const InputPort<T>& DeclareAbstractInputPort() {
     return DeclareInputPort(kAbstractValued, 0 /* size */);
   }
-
   //@}
 
   /// Adds an already-created constraint to the list of constraints for this
@@ -1457,16 +1653,17 @@ class System : public SystemBase {
   /// @name               Virtual methods for input allocation
   /// Authors of derived %Systems should override these methods to self-describe
   /// acceptable inputs to the %System.
+  //@{
 
   /// Allocates an input vector of the leaf type that the System requires on
-  /// the port specified by @p descriptor. Caller owns the returned memory.
+  /// the port specified by @p input_port. Caller owns the returned memory.
   virtual BasicVector<T>* DoAllocateInputVector(
-      const InputPort<T>& descriptor) const = 0;
+      const InputPort<T>& input_port) const = 0;
 
   /// Allocates an abstract input of the leaf type that the System requires on
-  /// the port specified by @p descriptor. Caller owns the returned memory.
+  /// the port specified by @p input_port. Caller owns the returned memory.
   virtual AbstractValue* DoAllocateInputAbstract(
-      const InputPort<T>& descriptor) const = 0;
+      const InputPort<T>& input_port) const = 0;
   //@}
 
   //----------------------------------------------------------------------------
@@ -1525,7 +1722,7 @@ class System : public SystemBase {
                                     CompositeEventCollection<T>* events,
                                     T* time) const {
     unused(context, events);
-    *time = std::numeric_limits<T>::infinity();
+    *time = std::numeric_limits<double>::infinity();
   }
 
   /// Implement this method to return all periodic triggered events.
@@ -1566,50 +1763,58 @@ class System : public SystemBase {
   }
 
   /// Override this method for physical systems to calculate the potential
-  /// energy currently stored in the configuration provided in the given
+  /// energy PE currently stored in the configuration provided in the given
   /// Context. The default implementation returns 0 which is correct for
   /// non-physical systems. You may assume that `context` has already
   /// been validated before it is passed to you here.
+  ///
+  /// See EvalPotentialEnergy() for details on what you must compute here. In
+  /// particular, your potential energy method must _not_ depend explicitly on
+  /// time, velocities, or any input port values.
   virtual T DoCalcPotentialEnergy(const Context<T>& context) const {
     unused(context);
     return T(0);
   }
 
   /// Override this method for physical systems to calculate the kinetic
-  /// energy currently present in the motion provided in the given
+  /// energy KE currently present in the motion provided in the given
   /// Context. The default implementation returns 0 which is correct for
   /// non-physical systems. You may assume that `context` has already
   /// been validated before it is passed to you here.
+  ///
+  /// See EvalKineticEnergy() for details on what you must compute here. In
+  /// particular, your kinetic energy method must _not_ depend explicitly on
+  /// time or any input port values.
   virtual T DoCalcKineticEnergy(const Context<T>& context) const {
     unused(context);
     return T(0);
   }
 
-  /// Override this method to return the rate at which mechanical energy is
-  /// being converted *from* potential energy *to* kinetic energy by this system
-  /// in the given Context. This quantity must be positive when potential energy
-  /// is *decreasing*. Power is in watts (J/s).
+  /// Override this method to return the rate Pc at which mechanical energy is
+  /// being converted _from_ potential energy _to_ kinetic energy by this system
+  /// in the given Context. By default, returns zero. Physical systems should
+  /// override. You may assume that `context` has already been validated before
+  /// it is passed to you here.
   ///
-  /// By default, returns zero. Continuous, physical systems should override.
-  /// You may assume that `context` has already been validated before it is
-  /// passed to you here.
+  /// See EvalConservativePower() for details on what you must compute here. In
+  /// particular, this quantity must be _positive_ when potential energy
+  /// is _decreasing_, and your conservative power method must _not_ depend
+  /// explicitly on time or any input port values.
   virtual T DoCalcConservativePower(const Context<T>& context) const {
     unused(context);
     return T(0);
   }
 
-  /// Override this method to return the rate at which mechanical energy is
-  /// being generated (positive) or dissipated (negative) *other than* by
-  /// conversion between potential and kinetic energy (in the given Context).
-  /// Integrating this quantity yields work W, and the total energy `E=PE+KE-W`
-  /// should be conserved by any physically-correct model, to within integration
-  /// accuracy of W. Power is in watts (J/s). (Watts are abbreviated W but not
-  /// to be confused with work!) This method is meaningful only for physical
-  /// systems; others return zero.
+  /// Override this method to return the rate Pnc at which work W is done on the
+  /// system by non-conservative forces. By default, returns zero. Physical
+  /// systems should override. You may assume that `context` has already been
+  /// validated before it is passed to you here.
   ///
-  /// By default, returns zero. Continuous, physical systems should override.
-  /// You may assume that `context` has already been validated before it is
-  /// passed to you here.
+  /// See EvalNonConservativePower() for details on what you must compute here.
+  /// In particular, this quantity must be _negative_ if the non-conservative
+  /// forces are _dissipative_, positive otherwise. Your non-conservative power
+  /// method can depend on anything you find in the given Context, including
+  /// time and input ports.
   virtual T DoCalcNonConservativePower(const Context<T>& context) const {
     unused(context);
     return T(0);
@@ -1685,8 +1890,7 @@ class System : public SystemBase {
 
   //----------------------------------------------------------------------------
   /// @name             Constraint-related functions (protected).
-  ///
-  // @{
+  //@{
 
   /// Gets the number of constraint equations for this system from the given
   /// context. The context is supplied in case the number of constraints is
@@ -1758,6 +1962,7 @@ class System : public SystemBase {
     unused(context);
     return error.norm();
   }
+  //@}
 
   //----------------------------------------------------------------------------
   /// @name                 Utility methods (protected)
@@ -1870,12 +2075,11 @@ class System : public SystemBase {
   // Functions to convert this system to use alternative scalar types.
   SystemScalarConverter system_scalar_converter_;
 
-  // TODO(sherm1) Replace these fake cache entries with real cache asap.
-  // These are temporaries and hence uninitialized.
-  mutable T fake_cache_pe_;
-  mutable T fake_cache_ke_;
-  mutable T fake_cache_conservative_power_;
-  mutable T fake_cache_nonconservative_power_;
+  CacheIndex time_derivatives_cache_index_;
+  CacheIndex potential_energy_cache_index_;
+  CacheIndex kinetic_energy_cache_index_;
+  CacheIndex conservative_power_cache_index_;
+  CacheIndex nonconservative_power_cache_index_;
 };
 
 }  // namespace systems

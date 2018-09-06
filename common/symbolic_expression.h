@@ -8,6 +8,7 @@
 #include <algorithm>  // for cpplint only
 #include <cstddef>
 #include <functional>
+#include <limits>
 #include <map>
 #include <memory>
 #include <ostream>
@@ -831,6 +832,11 @@ struct equal_to<drake::symbolic::Expression> {
   }
 };
 
+/* Provides std::numeric_limits<drake::symbolic::Expression>. */
+template <>
+struct numeric_limits<drake::symbolic::Expression>
+    : public numeric_limits<double> {};
+
 }  // namespace std
 
 #if !defined(DRAKE_DOXYGEN_CXX)
@@ -934,12 +940,11 @@ MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
 /// @param[in] f     Symbolic expression to approximate using Taylor series
 ///                  expansion.
 /// @param[in] a     Symbolic environment which specifies the point of
-///                  approximation.
+///                  approximation. If a partial environment is provided,
+///                  the unspecified variables are treated as symbolic
+///                  variables (e.g. decision variable).
 /// @param[in] order Positive integer which specifies the maximum order of the
 ///                  resulting polynomial approximating `f` around `a`.
-///
-/// @note The approximation point `a` should provide full assignments over the
-/// free variables in `f`. Otherwise, this function throws an exception.
 Expression TaylorExpand(const Expression& f, const Environment& a, int order);
 
 /// Returns the distinct variables in the matrix of expressions.

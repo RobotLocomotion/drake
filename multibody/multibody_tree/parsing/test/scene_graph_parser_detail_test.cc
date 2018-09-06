@@ -4,6 +4,7 @@
 #include <memory>
 
 #include <gtest/gtest.h>
+#include "fmt/ostream.h"
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -241,7 +242,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
 
   const Isometry3d& X_LC = geometry_instance->pose();
 
-  // Thes are the expected values as specified by the string above.
+  // These are the expected values as specified by the string above.
   const Vector3d expected_rpy(3.14, 6.28, 1.57);
   const Matrix3d R_LC_expected =
       RotationMatrix<double>(RollPitchYaw<double>(expected_rpy)).matrix();
@@ -253,6 +254,113 @@ GTEST_TEST(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
                               kTolerance, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(X_LC.translation(), p_LCo_expected,
                               kTolerance, MatrixCompareType::relative));
+}
+
+// Confirms the failure conditions for SDFormat. SceneGraph requirements on
+// geometry names are supposed to mirror the SDFormat behavior. If these tests
+// no longer fail, the requirements in SceneGraph should become more relaxed.
+// Alternatively, if more failure modes are learned, they should be encoded
+// here and in the SceneGraph logic (start at the documentation of
+// GeometryInstace).
+// Note: This is only tested for visual geometries, but the same requirements
+// are assumed for collision geometries.
+GTEST_TEST(SceneGraphParserDetail, VisualGeometryNameRequirements) {
+  // It is necessary to do a full, deep parse from the root to reveal *all*
+  // of the failure modes.
+
+  // A fmt::format-compatible string for testing various permutations of visual
+  // names.
+  const std::string visual_tag =
+      "<visual name='{}'>"
+      "  <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>"
+      "  <geometry>"
+      "    <cylinder>"
+      "      <radius>0.5</radius>"
+      "      <length>1.2</length>"
+      "    </cylinder>"
+      "  </geometry>"
+      "</visual>";
+
+  auto valid_parse = [](const std::string& visual_str) -> bool {
+    const std::string sdf_str = fmt::format(
+        "<?xml version='1.0'?>"
+        "<sdf version='1.6'>"
+        "  <model name='my_model'>"
+        "    <link name='link'>{}"
+        "    </link>"
+        "  </model>"
+        "</sdf>",
+        visual_str);
+    sdf::Root root;
+    auto errors = root.LoadSdfString(sdf_str);
+    return errors.empty();
+  };
+
+  // Allowable naming.
+  // Case: control group - a simple valid name.
+  EXPECT_TRUE(valid_parse(fmt::format(visual_tag, "visual")));
+
+  // Case: Valid name with leading whitespace.
+  EXPECT_TRUE(valid_parse(fmt::format(visual_tag, "  visual")));
+
+  // Case: Valid name with trailing whitespace.
+  EXPECT_TRUE(valid_parse(fmt::format(visual_tag, "visual   ")));
+
+  // These whitespace characters are *not* considered to be whitespace by SDF.
+  std::vector<std::pair<char, std::string>> ignored_whitespace{
+      {'\n', "\\n"}, {'\v', "\\v"}, {'\r', "\\r"}, {'\f', "\\f"}};
+  for (const auto& pair : ignored_whitespace) {
+    // Case: Whitespace-only name.
+    EXPECT_TRUE(valid_parse(fmt::format(visual_tag, pair.first)))
+        << "Failed on " << pair.second;
+  }
+
+  {
+    // Case: Same name for two different geometry types (collision vs visual).
+    const std::string collision_tag =
+        "<collision name='thing'>"
+        "  <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>"
+        "  <geometry>"
+        "    <sphere/>"
+        "  </geometry>"
+        "</collision>";
+    EXPECT_TRUE(valid_parse(fmt::format(visual_tag, "thing") + collision_tag));
+  }
+
+  // Invalid naming
+  {
+    // Case: Missing name element.
+    const std::string missing_name_parameter =
+        "<visual>"
+        "  <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>"
+        "  <geometry>"
+        "    <cylinder>"
+        "      <radius>0.5</radius>"
+        "      <length>1.2</length>"
+        "    </cylinder>"
+        "  </geometry>"
+        "</visual>";
+    EXPECT_FALSE(valid_parse(missing_name_parameter));
+  }
+
+  // Case: Empty name element.
+  EXPECT_FALSE(valid_parse(fmt::format(visual_tag, "")));
+
+  std::vector<std::pair<char, std::string>> invalid_whitespace{{' ', "space"},
+                                                               {'\t', "\\t"}};
+  for (const auto& pair : invalid_whitespace) {
+    // Case: Whitespace-only name.
+    EXPECT_FALSE(valid_parse(fmt::format(visual_tag, pair.first)))
+        << "Failed on " << pair.second;
+  }
+
+  // Case: Duplicate names.
+  EXPECT_FALSE(valid_parse(fmt::format(visual_tag, "visual") +
+                           fmt::format(visual_tag, "visual")));
+
+  // Case: Duplicate names which arise from trimming whitespace.
+  EXPECT_FALSE(valid_parse(fmt::format(visual_tag, "visual  ") +
+                           fmt::format(visual_tag, "  visual")));
 }
 
 // Verify MakeGeometryInstanceFromSdfVisual can make a GeometryInstance from an

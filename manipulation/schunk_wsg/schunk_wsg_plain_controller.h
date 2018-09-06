@@ -112,7 +112,7 @@ class SchunkWsgPlainController
       ControlMode control_mode = ControlMode::kPosition, double kp = 2000,
       double ki = 0, double kd = 5);
 
-  /** Returns the descriptor for the feed-forward force input port.
+  /** Returns the feed-forward force input port.
    * @pre `this` was constructed with `control_mode` set to
    * `ControlMode::kForce`.*/
   const systems::InputPort<double>&
@@ -131,7 +131,7 @@ class SchunkWsgPlainController
     return this->get_input_port(state_input_port_);
   }
 
-  /** Returns the descriptor for the desired grip state input port.
+  /** Returns the desired grip state input port.
    * @pre `this` was constructed with `control_mode` set to
    * `ControlMode::kPosition`.*/
   const systems::InputPort<double>& get_input_port_desired_state()

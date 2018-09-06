@@ -10,9 +10,9 @@ otherwise the various build targets mentioned below will not exist.
 
 This section contains instructions on how to generate Drake's documentation.
 This includes both API documentation
-(`C++ <http://drake.mit.edu/doxygen_cxx/index.html>`_),
+(`C++ <https://drake.mit.edu/doxygen_cxx/index.html>`_),
 which uses `Doxygen <http://www.stack.nl/~dimitri/doxygen/>`_, and
-`Drake's website <http://drake.mit.edu>`_, which
+`Drake's website <https://drake.mit.edu>`_, which
 uses `Sphinx <http://www.sphinx-doc.org/en/stable/index.html>`_.
 
 .. _documentation-generation-instructions-bazel:

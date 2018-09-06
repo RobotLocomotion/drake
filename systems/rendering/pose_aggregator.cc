@@ -45,12 +45,12 @@ PoseVelocityInputPorts<T>
 PoseAggregator<T>::AddSinglePoseAndVelocityInput(const std::string& name,
                                                  int model_instance_id) {
   // Add an input for the pose.
-  const auto& pose_descriptor =
+  const auto& pose_input_port =
       DeclareInput(MakeSinglePoseInputRecord(name, model_instance_id));
   // Add an input for the velocity.
-  const auto& velocity_descriptor =
+  const auto& velocity_input_port =
       DeclareInput(MakeSingleVelocityInputRecord(name, model_instance_id));
-  return {pose_descriptor, velocity_descriptor};
+  return {pose_input_port, velocity_input_port};
 }
 
 template <typename T>
