@@ -87,8 +87,8 @@ namespace multibody {
 /// rotational inertia operations in debug releases only.  This provides speed
 /// in a release build while facilitating debugging in debug builds.
 /// In addition, these validity tests are only performed for scalar types for
-/// which drake::is_numeric<T> is `true`. For instance, validity checks are not
-/// performed when T is symbolic::Expression.
+/// which drake::scalar_predicate<T>::is_bool is `true`. For instance, validity
+/// checks are not performed when T is symbolic::Expression.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 /// Various methods in this class require numerical (not symbolic) data types.
@@ -899,7 +899,7 @@ class RotationalInertia {
   // eigenvalues and checking if they are positive and satisfy the triangle
   // inequality.
   template <typename T1 = T>
-  typename std::enable_if<is_numeric<T1>::value>::type
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool>
   ThrowIfNotPhysicallyValid() {
     if (!CouldBePhysicallyValid().value()) {
       throw std::logic_error("Error: Rotational inertia did not pass test: "
@@ -910,13 +910,13 @@ class RotationalInertia {
   // SFINAE for non-numeric types. See documentation in the implementation for
   // numeric types.
   template <typename T1 = T>
-  typename std::enable_if<!is_numeric<T1>::value>::type
+  typename std::enable_if_t<!scalar_predicate<T1>::is_bool>
   ThrowIfNotPhysicallyValid() {}
 
   // Throws an exception if a rotational inertia is multiplied by a negative
   // number - which implies that the resulting rotational inertia is invalid.
   template <typename T1 = T>
-  static typename std::enable_if<is_numeric<T1>::value>::type
+  static typename std::enable_if_t<scalar_predicate<T1>::is_bool>
   ThrowIfMultiplyByNegativeScalar(const T& nonnegative_scalar) {
     if (nonnegative_scalar < 0) {
       throw std::logic_error("Error: Rotational inertia is multiplied by a "
@@ -927,13 +927,13 @@ class RotationalInertia {
   // SFINAE for non-numeric types. See documentation in the implementation for
   // numeric types.
   template <typename T1 = T>
-  static typename std::enable_if<!is_numeric<T1>::value>::type
+  static typename std::enable_if_t<!scalar_predicate<T1>::is_bool>
   ThrowIfMultiplyByNegativeScalar(const T&) {}
 
   // Throws an exception if a rotational inertia is divided by a non-positive
   // number - which implies that the resulting rotational inertia is invalid.
   template <typename T1 = T>
-  static typename std::enable_if<is_numeric<T1>::value>::type
+  static typename std::enable_if_t<scalar_predicate<T1>::is_bool>
   ThrowIfDivideByZeroOrNegativeScalar(const T& positive_scalar) {
     if (positive_scalar == 0)
       throw std::logic_error("Error: Rotational inertia is divided by 0.");
@@ -946,7 +946,7 @@ class RotationalInertia {
   // SFINAE for non-numeric types. See documentation in the implementation for
   // numeric types.
   template <typename T1 = T>
-  static typename std::enable_if<!is_numeric<T1>::value>::type
+  static typename std::enable_if_t<!scalar_predicate<T1>::is_bool>
   ThrowIfDivideByZeroOrNegativeScalar(const T&) {}
 
   // The 3x3 inertia matrix is symmetric and its diagonal elements (moments of
