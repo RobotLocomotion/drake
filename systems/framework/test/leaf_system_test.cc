@@ -570,7 +570,8 @@ TEST_F(LeafSystemTest, AbstractParameters) {
 TEST_F(LeafSystemTest, DeclareVanillaMiscContinuousState) {
   system_.DeclareContinuousState(2);
 
-  EXPECT_EQ(2, system_.get_num_continuous_states()); // test it before creating Context
+  // test it before creating Context
+  EXPECT_EQ(2, system_.get_num_continuous_states());
 
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const ContinuousState<double>& xc = context->get_continuous_state();
@@ -585,7 +586,8 @@ TEST_F(LeafSystemTest, DeclareVanillaMiscContinuousState) {
 TEST_F(LeafSystemTest, DeclareTypedMiscContinuousState) {
   system_.DeclareContinuousState(MyVector2d());
 
-  EXPECT_EQ(2, system_.get_num_continuous_states()); // test it before creating Context
+  // test it before creating Context
+  EXPECT_EQ(2, system_.get_num_continuous_states());
 
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const ContinuousState<double>& xc = context->get_continuous_state();
@@ -603,7 +605,8 @@ TEST_F(LeafSystemTest, DeclareTypedMiscContinuousState) {
 TEST_F(LeafSystemTest, DeclareVanillaContinuousState) {
   system_.DeclareContinuousState(4, 3, 2);
 
-  EXPECT_EQ(4 + 3 + 2, system_.get_num_continuous_states()); // test it before creating Context
+  // test it before creating Context
+  EXPECT_EQ(4 + 3 + 2, system_.get_num_continuous_states());
 
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const ContinuousState<double>& xc = context->get_continuous_state();
@@ -619,7 +622,8 @@ TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
   using MyVector9d = MyVector<4 + 3 + 2, double>;
   system_.DeclareContinuousState(MyVector9d(), 4, 3, 2);
 
-  EXPECT_EQ(4 + 3 + 2, system_.get_num_continuous_states()); // test it before creating Context
+  // test it before creating Context
+  EXPECT_EQ(4 + 3 + 2, system_.get_num_continuous_states());
 
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const ContinuousState<double>& xc = context->get_continuous_state();
