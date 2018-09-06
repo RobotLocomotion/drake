@@ -351,6 +351,12 @@ class PendulumTests : public ::testing::Test {
 
     EXPECT_TRUE(CompareMatrices(
         tau, rhs, kTolerance, MatrixCompareType::relative));
+
+    // Verify alternative APIs for inverse dynamics.
+    const VectorX<double> tau_id2 =
+        tree_->CalcInverseDynamics(*context_, vdot, forces);
+    EXPECT_TRUE(CompareMatrices(
+        tau_id2, rhs, kTolerance, MatrixCompareType::relative));
   }
 
  protected:

@@ -508,6 +508,25 @@ void MultibodyTree<T>::CalcAccelerationKinematicsCache(
 }
 
 template <typename T>
+VectorX<T> MultibodyTree<T>::CalcInverseDynamics(
+    const systems::Context<T>& context,
+    const VectorX<T>& known_vdot,
+    const MultibodyForces<T>& external_forces) const {
+  // Temporary storage used in the computation of inverse dynamics.
+  std::vector<SpatialAcceleration<T>> A_WB(num_bodies());
+  std::vector<SpatialForce<T>> F_BMo_W(num_bodies());
+
+  const auto& pc = EvalPositionKinematics(context);
+  const auto& vc = EvalVelocityKinematics(context);
+  VectorX<T> tau(num_velocities());
+  CalcInverseDynamics(
+      context, pc, vc, known_vdot,
+      external_forces.body_forces(), external_forces.generalized_forces(),
+      &A_WB, &F_BMo_W, &tau);
+  return tau;
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcInverseDynamics(
     const systems::Context<T>& context,
     const PositionKinematicsCache<T>& pc,
