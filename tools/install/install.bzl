@@ -769,30 +769,91 @@ Args:
     allowed_externals: List of external packages whose files may be installed.
 """
 
+#------------------------------------------------------------------------------
+# Generate a pkgconfig file.
+def _generate_pkgconfig_file_impl(ctx):
+    output = ctx.outputs.pc_file_name
+    input = ctx.file.cps_file_name
+
+    executable = "$(location @pycps//:cps2pc_executable)"
+
+    prefix = []
+    if ctx.attr.pc_prefix:
+        prefix = ["--prefix", ctx.attr.pc_prefix]
+
+    # Action to call the script.
+    ctx.actions.run(
+        executable = ctx.executable._command,
+        inputs = [input],
+        outputs = [output],
+        arguments = [input.path, "--output-file", output.path] + prefix,
+        progress_message = "Generating %s" % ctx.outputs.pc_file_name,
+    )
+
+_generate_pkgconfig_file = rule(
+    attrs = {
+        "cps_file_name": attr.label(
+            mandatory = True,
+            allow_files = True,
+            single_file = True,
+        ),
+        "pc_file_name": attr.output(mandatory = True),
+        "pc_prefix": attr.string(mandatory = False),
+        "_command": attr.label(
+            executable = True,
+            cfg = "host",
+            allow_files = True,
+            default = Label("@pycps//:cps2pc_executable"),
+        ),
+    },
+    implementation = _generate_pkgconfig_file_impl,
+)
+
+"""Generate pkgconfig file
+
+This generates a pkgconfig file using the information contained in a CPS
+file, and extra parameters provided in this rule. This is normally only called
+inside the macro `pkgconfig()` which handles the creation of the CPS file is
+necessary.
+
+Args:
+    cps_file_name: Input CPS file.
+    pc_file_name: Output file name.
+    pc_prefix: Optional prefix used to specify where include and library files
+        are. If not provided, it will use the default path defined in `cps2pc`.
+        The path can be made relative to this `.pc` file: e.g.:
+
+    pc_prefix = `${pcfiledir}/../../..`
+"""
+
 #END rules
 #==============================================================================
 #BEGIN macros
 
 #------------------------------------------------------------------------------
-def cmake_config(
+def create_cps_file(
         package,
         script = None,
         version_file = None,
         cps_file_name = None,
+        pkg_file = None,
         deps = []):
-    """Create CMake package configuration and package version files via an
-    intermediate CPS file.
+    """Create intermediate CPS file.
 
     Args:
         package (:obj:`str`): CMake package name.
         script (:obj:`Label`): Script that creates the intermediate CPS file.
         version_file (:obj:`str`): File that the script will search to
             determine the version of the package.
+        pkg_file (:obj:`Label`): Input pkg file used to create CPS file.
     """
 
     if script and version_file:
         if cps_file_name:
             fail("cps_file_name should not be set if " +
+                 "script and version_file are set.")
+        if pkg_file:
+            fail("pkg_file should not be set if " +
                  "script and version_file are set.")
         native.py_binary(
             name = "create-cps",
@@ -812,10 +873,49 @@ def cmake_config(
             tools = [":create-cps"],
             visibility = ["//visibility:public"],
         )
+    elif pkg_file:
+        if cps_file_name:
+            fail("cps_file_name should not be set if " +
+                 "script and version_file are set.")
+        executable = "$(location @pycps//:pc2cps_executable)"
+        cps_file_name = "package.cps"
+        native.genrule(
+            name = "pkg_to_cps",
+            srcs = [pkg_file],
+            outs = [cps_file_name],
+            cmd = executable + " \"$<\" > \"$@\"",
+            tools = ["@pycps//:pc2cps_executable"],
+            visibility = ["//visibility:private"],
+        )
     elif not cps_file_name:
         cps_file_name = "@drake//tools/workspace/{}:package.cps".format(
             package,
         )
+    return cps_file_name
+
+#------------------------------------------------------------------------------
+def cmake_config(
+        package,
+        script = None,
+        version_file = None,
+        cps_file_name = None,
+        deps = []):
+    """Create CMake package configuration and package version files via an
+    intermediate CPS file.
+
+    Args:
+        package (:obj:`str`): CMake package name.
+        script (:obj:`Label`): Script that creates the intermediate CPS file.
+        version_file (:obj:`str`): File that the script will search to
+            determine the version of the package.
+    """
+    cps_file_name = create_cps_file(
+        package = package,
+        script = script,
+        version_file = version_file,
+        cps_file_name = cps_file_name,
+        deps = deps,
+    )
 
     package_lower = package.lower()
 
@@ -840,6 +940,64 @@ def cmake_config(
         cmd = executable + " --version-check \"$<\" > \"$@\"",
         tools = ["@pycps//:cps2cmake_executable"],
         visibility = ["//visibility:private"],
+    )
+
+#------------------------------------------------------------------------------
+def pkgconfig(
+        package,
+        script = None,
+        version_file = None,
+        cps_file_name = None,
+        pc_prefix = None,
+        deps = []):
+    """Create pkgconfig file via an intermediate CPS file.
+
+    Args:
+        package (:obj:`str`): pkgconfig package name.
+        script (:obj:`Label`): Script that creates the intermediate CPS file.
+        version_file (:obj:`str`): File that the script will search to
+            determine the version of the package.
+    """
+
+    cps_file_name = create_cps_file(
+        package = package,
+        script = script,
+        version_file = version_file,
+        cps_file_name = cps_file_name,
+        deps = deps,
+    )
+
+    package_lower = package.lower()
+    pc_file_name = "{}.pc".format(package_lower)
+
+    _generate_pkgconfig_file(
+        name = "pkgconfig",
+        pc_file_name = pc_file_name,
+        cps_file_name = cps_file_name,
+        pc_prefix = pc_prefix,
+    )
+
+#------------------------------------------------------------------------------
+def install_pkgconfig(
+        package,
+        name = "install_pkgconfig",
+        visibility = ["//visibility:private"]):
+    """Generate installation information for pkgconfig package file.
+    The rule name is always ``:install_pkgconfig``.
+
+    Args:
+        package (:obj:`str`): pkgconfig package name.
+    """
+    package_lower = package.lower()
+
+    pkgconfig_dest = "lib/pkgconfig/{}".format(package_lower)
+    pkgconfig_files = ["{}.pc".format(package_lower)]
+
+    install_files(
+        name = name,
+        dest = pkgconfig_dest,
+        files = pkgconfig_files,
+        visibility = visibility,
     )
 
 #------------------------------------------------------------------------------

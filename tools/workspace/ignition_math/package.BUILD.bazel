@@ -15,8 +15,11 @@ load(
 load(
     "@drake//tools/install:install.bzl",
     "cmake_config",
+    "create_cps_file",
     "install",
     "install_cmake_config",
+    "install_pkgconfig",
+    "pkgconfig",
 )
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
@@ -207,14 +210,27 @@ cc_library(
 
 CMAKE_PACKAGE = "ignition-math4"
 
-cmake_config(
+cps_file_name = create_cps_file(
     package = CMAKE_PACKAGE,
     script = "@drake//tools/workspace/ignition_math:package-create-cps.py",
     version_file = ":config",
 )
 
+cmake_config(
+    package = CMAKE_PACKAGE,
+    cps_file_name = cps_file_name,
+)
+
 # Creates rule :install_cmake_config.
 install_cmake_config(package = CMAKE_PACKAGE)
+
+pkgconfig(
+    package = CMAKE_PACKAGE,
+    cps_file_name = cps_file_name,
+    pc_prefix = "${pcfiledir}/../../..",
+)
+
+install_pkgconfig(package = CMAKE_PACKAGE)  # Creates rule :install_pkgconfig.
 
 install(
     name = "install",
@@ -227,5 +243,5 @@ install(
         "COPYING",
         "LICENSE",
     ],
-    deps = [":install_cmake_config"],
+    deps = [":install_cmake_config", ":install_pkgconfig"],
 )
