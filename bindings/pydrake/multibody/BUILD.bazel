@@ -161,6 +161,9 @@ drake_pybind_library(
     cc_so_name = "inverse_kinematics",
     cc_srcs = ["inverse_kinematics_py.cc"],
     package_info = PACKAGE_INFO,
+    cc_deps = [
+        "//bindings/pydrake:symbolic_types_pybind",
+    ],
     py_deps = [
         ":module_py",
         ":multibody_tree_py",
@@ -204,6 +207,14 @@ install(
     py_dest = PACKAGE_INFO.py_dest,
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
+
+filegroup(
+    name = "models",
+    srcs = glob([
+        "**/*.sdf",
+    ]),
+)
+
 
 drake_py_unittest(
     name = "rigid_body_plant_test",
@@ -259,7 +270,7 @@ drake_py_unittest(
 drake_py_unittest(
     name = "inverse_kinematics_test",
     data = [
-        "//multibody/benchmarks/acrobot:models",
+        ":models",
     ],
     deps = [
         ":benchmarks_py",

@@ -1,0 +1,28 @@
+<sdf version='1.6'>
+  <model name='two_bodies'>
+  <link name="body1">
+  <pose> 0 0 0 0 0 0</pose>
+  <inertial>
+    <pose> 0 0 0 0 0 0</pose>
+    <mass>1</mass>
+    <inertia>
+      <ixx>0.001</ixx><iyy>0.001</iyy><izz>0.001</izz>
+      <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+    </inertia>
+  </inertial>
+  </link>
+  <link name="body2">
+  <pose> 0 0 0 0 0 0</pose>
+  <inertial>
+    <pose> 0 0 0 0 0 0</pose>
+    <mass>1</mass>
+    <inertia>
+      <ixx>0.001</ixx><iyy>0.001</iyy><izz>0.001</izz>
+      <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+    </inertia>
+  </inertial>
+  </link>
+  </model>
+</sdf>
+
+
