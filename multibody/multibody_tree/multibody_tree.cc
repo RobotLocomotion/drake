@@ -312,6 +312,28 @@ void MultibodyTree<T>::SetDefaultState(
 }
 
 template <typename T>
+Eigen::VectorBlock<const VectorX<T>>
+MultibodyTree<T>::get_multibody_state_vector(
+    const systems::Context<T>& context) const {
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+  return mbt_context.get_state_vector();
+}
+
+template <typename T>
+Eigen::VectorBlock<VectorX<T>>
+MultibodyTree<T>::get_mutable_multibody_state_vector(
+    systems::Context<T>* context) const {
+  DRAKE_DEMAND(context != nullptr);
+  auto* mbt_context = dynamic_cast<MultibodyTreeContext<T>*>(context);
+  if (mbt_context == nullptr) {
+    throw std::runtime_error(
+        "The context provided is not compatible with a multibody model.");
+  }
+  return mbt_context->get_mutable_state_vector();
+}
+
+template <typename T>
 void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
     const Body<T>& body, const Isometry3<T>& X_WB,
     systems::Context<T>* context) const {
@@ -505,6 +527,25 @@ void MultibodyTree<T>::CalcAccelerationKinematicsCache(
   std::vector<SpatialAcceleration<T>>& A_WB_array = ac->get_mutable_A_WB_pool();
 
   CalcSpatialAccelerationsFromVdot(context, pc, vc, known_vdot, &A_WB_array);
+}
+
+template <typename T>
+VectorX<T> MultibodyTree<T>::CalcInverseDynamics(
+    const systems::Context<T>& context,
+    const VectorX<T>& known_vdot,
+    const MultibodyForces<T>& external_forces) const {
+  // Temporary storage used in the computation of inverse dynamics.
+  std::vector<SpatialAcceleration<T>> A_WB(num_bodies());
+  std::vector<SpatialForce<T>> F_BMo_W(num_bodies());
+
+  const auto& pc = EvalPositionKinematics(context);
+  const auto& vc = EvalVelocityKinematics(context);
+  VectorX<T> tau(num_velocities());
+  CalcInverseDynamics(
+      context, pc, vc, known_vdot,
+      external_forces.body_forces(), external_forces.generalized_forces(),
+      &A_WB, &F_BMo_W, &tau);
+  return tau;
 }
 
 template <typename T>
@@ -705,6 +746,16 @@ void MultibodyTree<T>::CalcBiasTerm(
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
   DoCalcBiasTerm(context, pc, vc, Cv);
+}
+
+template <typename T>
+VectorX<T> MultibodyTree<T>::CalcGravityGeneralizedForces(
+    const systems::Context<T>& context) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  if (gravity_field_.has_value()) {
+    return gravity_field_.value()->CalcGravityGeneralizedForces(context);
+  }
+  return VectorX<T>::Zero(num_velocities());
 }
 
 template <typename T>

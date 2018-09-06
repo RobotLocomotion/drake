@@ -326,6 +326,28 @@ class AcrobotPlantTests : public ::testing::Test {
         Vector1<double>(0.0));
   }
 
+  // Computes the vector of generalized forces due to gravity.
+  // This test is mostly to verify MultibodyPlant provides the proper APIs to
+  // perform this computations.
+  void VerifyCalcGravityGeneralizedForces(double theta1, double theta2) {
+    const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+
+    // Set the state:
+    shoulder_->set_angle(context_.get(), theta1);
+    elbow_->set_angle(context_.get(), theta2);
+
+    // Calculate the generalized forces due to gravity.
+    const VectorX<double> tau_g =
+        plant_->model().CalcGravityGeneralizedForces(*context_);
+
+    // Calculate a benchmark value.
+    const Vector2d tau_g_expected =
+        acrobot_benchmark_.CalcGravityVector(theta1, theta2);
+
+    EXPECT_TRUE(CompareMatrices(
+        tau_g, tau_g_expected, kTolerance, MatrixCompareType::relative));
+  }
+
   // Verifies the computation performed by MultibodyPlant::CalcTimeDerivatives()
   // for the acrobot model. The comparison is carried out against a benchmark
   // with hand written dynamics.
@@ -464,6 +486,20 @@ class AcrobotPlantTests : public ::testing::Test {
       parameters_.b1(), parameters_.b2(),
       parameters_.g()};
 };
+
+// Verifies we can compute the vector of generalized forces due to gravity on a
+// model of an acrobot.
+TEST_F(AcrobotPlantTests, VerifyCalcGravityGeneralizedForces) {
+  // Some arbitrary values of non-zero state:
+  VerifyCalcGravityGeneralizedForces(
+      -M_PI / 5.0, M_PI / 2.0  /* joint's angles */);
+  VerifyCalcGravityGeneralizedForces(
+      M_PI / 3.0, -M_PI / 5.0  /* joint's angles */);
+  VerifyCalcGravityGeneralizedForces(
+      M_PI / 4.0, -M_PI / 3.0  /* joint's angles */);
+  VerifyCalcGravityGeneralizedForces(
+      -M_PI, -M_PI / 2.0       /* joint's angles */);
+}
 
 // Verifies the correctness of MultibodyPlant::CalcTimeDerivatives() on a model
 // of an acrobot.
@@ -1600,6 +1636,95 @@ TEST_F(MultibodyPlantContactJacobianTests, TangentJacobian) {
   EXPECT_TRUE(CompareMatrices(
       D, vt_derivs, kTolerance, MatrixCompareType::relative));
 }
+
+// Unit test fixture for a model of Kuka Iiwa arm parametrized on the periodic
+// update period of the plant. This allows us to test some of the plant's
+// functionality for both continuous and discrete models.
+class KukaArmTest : public ::testing::TestWithParam<double> {
+ protected:
+  void SetUp() override {
+    const char kSdfPath[] =
+        "drake/manipulation/models/iiwa_description/sdf/"
+            "iiwa14_no_collision.sdf";
+    plant_ = std::make_unique<MultibodyPlant<double>>(this->GetParam());
+    AddModelFromSdfFile(FindResourceOrThrow(kSdfPath), plant_.get());
+    plant_->Finalize();
+
+    EXPECT_EQ(plant_->num_positions(), 7);
+    EXPECT_EQ(plant_->num_velocities(), 7);
+
+    // We expect the first joint to be the one WeldJoint fixing the model to the
+    // world. We verify this assumption.
+    const Joint<double>& weld = plant_->model().get_joint(JointIndex(0));
+    ASSERT_EQ(weld.name(), "weld_base_to_world");
+
+    context_ = plant_->CreateDefaultContext();
+  }
+
+  // Helper to set the multibody state x to x[i] = i for each i-th entry in the
+  // state vector.
+  // We use RevoluteJoint's methods to set the state in order to independently
+  // unit test the proper workings of
+  // MultibodyTree::get_multibody_state_vector() and its mutable counterpart.
+  void SetState(const VectorX<double>& xc) {
+    const int nq = plant_->num_positions();
+    for (JointIndex joint_index(1); /* Skip "weld_base_to_world". */
+         joint_index < plant_->num_joints(); ++joint_index) {
+      // We know all joints in our model, besides the first joint welding the
+      // model to the world, are revolute joints.
+      const auto& joint = plant_->GetJointByName<RevoluteJoint>(
+          "iiwa_joint_" + std::to_string(joint_index));
+
+      // For this simple model we do know the order in which variables are
+      // stored in the state vector.
+      const double angle = xc[joint_index-1];
+      const double angle_rate = xc[nq + joint_index - 1];
+
+      // We simply set each entry in the state with the value of its index.
+      joint.set_angle(context_.get(), angle);
+      joint.set_angular_rate(context_.get(), angle_rate);
+    }
+  }
+
+  std::unique_ptr<MultibodyPlant<double>> plant_;
+  std::unique_ptr<Context<double>> context_;
+};
+
+// This test verifies we can easily access the multibody state vector x = [q, v]
+// for either a discrete or continuous multibody model.
+TEST_P(KukaArmTest, StateAccess) {
+  // Set the state to x[i] = i for each i-th entry.
+  const VectorX<double> xc_expected = VectorX<double>::LinSpaced(
+      plant_->num_multibody_states() /* size */,
+      1 /* first index */, plant_->num_multibody_states() /* last index */);
+  SetState(xc_expected);
+
+  // Verify that we can retrieve the state vector and that it has the values we
+  // set above.
+  // Note: xc is an Eigen block, that is, a reference to the values stored in
+  // the context. Changes to state through the context can change the values
+  // referenced by xc.
+  Eigen::VectorBlock<const VectorX<double>> xc =
+      plant_->model().get_multibody_state_vector(*context_);
+  EXPECT_EQ(xc, xc_expected);
+
+  // Get a mutable state and modified it.
+  // Note: xc above is referencing values stored in the context. Therefore
+  // setting the entire state to zero changes the values referenced by xc.
+  plant_->model().get_mutable_multibody_state_vector(context_.get()).setZero();
+  EXPECT_EQ(xc, VectorX<double>::Zero(plant_->num_multibody_states()));
+}
+
+// Verifies we instantiated an appropriate MultibodyPlant model based on the
+// fixture's parameter.
+TEST_P(KukaArmTest, CheckContinuousOrDiscreteModel) {
+  // The plant must be a discrete system if the periodic update period is zero.
+  EXPECT_EQ(!plant_->is_discrete(), this->GetParam() == 0);
+}
+
+INSTANTIATE_TEST_CASE_P(
+    Blank, KukaArmTest,
+    testing::Values(0.0 /* continuous state */, 1e-3 /* discrete state */));
 
 }  // namespace
 }  // namespace multibody_plant
