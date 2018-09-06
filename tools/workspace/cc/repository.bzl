@@ -79,17 +79,56 @@ def _impl(repository_ctx):
     if result.return_code != 0:
         fail("Could NOT identify C/C++ compiler.", result.stderr)
 
-    compiler_id = result.stdout.strip()
+    output = result.stdout.strip().split(" ")
+    if len(output) != 3:
+        fail("Could NOT identify C/C++ compiler.")
+
+    compiler_id = output[0]
 
     if repository_ctx.os.name == "mac os x":
         supported_compilers = ["AppleClang"]
     else:
         supported_compilers = ["Clang", "GNU"]
 
+    # We do not fail outright here since even though we do not officially
+    # support them, Drake may happily compile with new enough versions of
+    # compilers that are compatible with GNU flags such as -std=c++14.
+
     if compiler_id not in supported_compilers:
         print("WARNING: {} is NOT a supported C/C++ compiler.".format(
             compiler_id,
         ))
+        print("WARNING: Compilation of the drake WORKSPACE may fail.")
+
+    compiler_version_major = int(output[1])
+    compiler_version_minor = int(output[2])
+
+    # The minimum compiler versions should match those listed in both the root
+    # CMakeLists.txt and doc/developers.rst. We know from experience that
+    # compilation of Drake will certainly fail with versions lower than these,
+    # even if they happen to support the necessary compiler flags.
+
+    if compiler_id == "AppleClang":
+        if compiler_version_major < 9:
+            fail("AppleClang compiler version {}.{} is less than 9.0.".format(
+                compiler_version_major,
+                compiler_version_minor,
+            ))
+
+    elif compiler_id == "Clang":
+        if compiler_version_major < 4:
+            fail("Clang compiler version {}.{} is less than 4.0.".format(
+                compiler_version_major,
+                compiler_version_minor,
+            ))
+
+    elif compiler_id == "GNU":
+        if compiler_version_major < 5 or (compiler_version_major == 5 and
+                                          compiler_version_minor < 4):
+            fail("GNU compiler version {}.{} is less than 5.4.".format(
+                compiler_version_major,
+                compiler_version_minor,
+            ))
 
     file_content = """# -*- python -*-
 
