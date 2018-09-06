@@ -312,6 +312,28 @@ void MultibodyTree<T>::SetDefaultState(
 }
 
 template <typename T>
+Eigen::VectorBlock<const VectorX<T>>
+MultibodyTree<T>::get_multibody_state_vector(
+    const systems::Context<T>& context) const {
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+  return mbt_context.get_state_vector();
+}
+
+template <typename T>
+Eigen::VectorBlock<VectorX<T>>
+MultibodyTree<T>::get_mutable_multibody_state_vector(
+    systems::Context<T>* context) const {
+  DRAKE_DEMAND(context != nullptr);
+  auto* mbt_context = dynamic_cast<MultibodyTreeContext<T>*>(context);
+  if (mbt_context == nullptr) {
+    throw std::runtime_error(
+        "The context provided is not compatible with a multibody model.");
+  }
+  return mbt_context->get_mutable_state_vector();
+}
+
+template <typename T>
 void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
     const Body<T>& body, const Isometry3<T>& X_WB,
     systems::Context<T>* context) const {
