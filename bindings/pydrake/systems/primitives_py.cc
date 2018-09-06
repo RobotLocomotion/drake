@@ -192,6 +192,9 @@ PYBIND11_MODULE(primitives, m) {
   m.def("IsObservable", &IsObservable, py::arg("sys"),
         py::arg("threshold") = nullopt);
 
+  m.def("LogOutput", &LogOutput<double>, py::arg("src"), py::arg("builder"),
+        py_reference_internal);
+
   // TODO(eric.cousineau): Add more systems as needed.
 }
 
