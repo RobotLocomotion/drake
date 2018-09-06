@@ -3,8 +3,12 @@
 load(
     "@drake//tools/install:install.bzl",
     "cmake_config",
+    "create_cps_file",
     "install",
+    "install_files",
     "install_cmake_config",
+    "install_pkgconfig",
+    "pkgconfig",
 )
 load("@drake//tools/lint:python_lint.bzl", "python_lint")
 
@@ -34,13 +38,26 @@ cc_library(
     includes = ["."],
 )
 
+cps_file_name = create_cps_file(
+        package = "Eigen3",
+        script = "@drake//tools/workspace/eigen:package-create-cps.py",
+        version_file = "Eigen/src/Core/util/Macros.h",
+    )
+
 cmake_config(
     package = "Eigen3",
-    script = "@drake//tools/workspace/eigen:package-create-cps.py",
-    version_file = "Eigen/src/Core/util/Macros.h",
+    cps_file_name = cps_file_name,
 )
 
 install_cmake_config(package = "Eigen3")  # Creates rule :install_cmake_config.
+
+pkgconfig(
+        package = "Eigen3",
+        cps_file_name = cps_file_name,
+        pc_prefix = '${pcfiledir}/../../..',
+)
+
+install_pkgconfig(package = "Eigen3")  # Creates rule :install_pkgconfig.
 
 install(
     name = "install",
@@ -49,7 +66,7 @@ install(
     guess_hdrs = "PACKAGE",
     docs = glob(["COPYING.*"]),
     doc_dest = "share/doc/eigen3",
-    deps = [":install_cmake_config"],
+    deps = [":install_cmake_config", ":install_pkgconfig"],
 )
 
 python_lint()
