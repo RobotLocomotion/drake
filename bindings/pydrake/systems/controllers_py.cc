@@ -6,6 +6,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/bindings/pydrake/util/wrap_pybind.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/controllers/dynamic_programming.h"
 #include "drake/systems/controllers/inverse_dynamics.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
@@ -41,7 +42,7 @@ PYBIND11_MODULE(controllers, m) {
                      &DynamicProgrammingOptions::visualization_callback);
 
   py::class_<InverseDynamics<double>, LeafSystem<double>>(m, "InverseDynamics")
-      .def(py::init<const RigidBodyTree<double>&, bool>(),
+      .def(py::init<const RigidBodyTree<double>*, bool>(),
            py::arg("tree"),
            py::arg("pure_gravity_compensation"))
       .def("is_pure_gravity_compensation",
