@@ -92,7 +92,7 @@ GTEST_TEST(InverseDynamicsControllerTestRBP, TestTorque) {
                               1e-10, MatrixCompareType::absolute));
 }
 
-// TODO(edrumwri): Rename the test below, removing the MBT specifier, when
+// TODO(edrumwri): Rename the test below, removing the MBP specifier, when
 // RigidBodyTree goes away (and the test above is necessarily removed).
 // Tests the computed torque from InverseDynamicsController matches hand
 // derived results for the kuka iiwa arm at a given state (q, v), when
@@ -117,7 +117,7 @@ GTEST_TEST(InverseDynamicsControllerTestMBP, TestTorque) {
   auto inverse_dynamics_context = dut->CreateDefaultContext();
   auto output = dut->AllocateOutput();
   const MultibodyPlant<double>& robot_plant =
-      *dut->get_multi_body_plant_for_control();
+      *dut->get_multibody_plant_for_control();
   const MultibodyTree<double>& robot_model = robot_plant.model();
 
   // Sets current state and reference state and acceleration values.

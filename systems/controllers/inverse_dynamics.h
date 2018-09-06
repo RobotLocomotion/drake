@@ -6,7 +6,7 @@
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/systems/framework/leaf_system.h"
 
-// Forward reference keeps us from including RBT headers that significantly
+// Forward declaration keeps us from including RBT headers that significantly
 // slow compilation.
 template <class T>
 class RigidBodyTree;
@@ -43,18 +43,18 @@ class InverseDynamics : public LeafSystem<T> {
 
   /**
    * Computes inverse dynamics for @p tree.
-   * @param tree Reference to the model. The life span of @p tree must be longer
+   * @param tree Pointer to the model. The life span of @p tree must be longer
    * than this instance.
    * @param pure_gravity_compensation If set to true, this instance will only
    * consider the gravity term. It also will NOT have the desired acceleration
    * input port.
    */
-  InverseDynamics(const RigidBodyTree<T>& tree, bool pure_gravity_compensation);
+  InverseDynamics(const RigidBodyTree<T>* tree, bool pure_gravity_compensation);
 
   /**
    * Computes inverse dynamics for @p plant.
-   * @param plant Reference to the plant. The life span of @p plant must be
-   * longer than this instance.
+   * @param plant Pointer to the plant. The life span of @p plant must be
+   * longer than that of this instance.
    * @param parameters The parameters corresponding to this plant.
    * @param pure_gravity_compensation If set to true, this instance will only
    * consider the gravity term. It also will NOT have the desired acceleration
@@ -62,7 +62,7 @@ class InverseDynamics : public LeafSystem<T> {
    * @pre The plant must be finalized (i.e., plant.is_finalized() must return
    * `true`).
    */
-  InverseDynamics(const multibody::multibody_plant::MultibodyPlant<T>& plant,
+  InverseDynamics(const multibody::multibody_plant::MultibodyPlant<T>* plant,
                   const systems::Parameters<T>& parameters,
                   bool pure_gravity_compensation);
 
@@ -98,14 +98,13 @@ class InverseDynamics : public LeafSystem<T> {
                         BasicVector<T>* torque) const;
 
   const RigidBodyTree<T>* rigid_body_tree_{nullptr};
-  const multibody::multibody_plant::MultibodyPlant<T>* multi_body_plant_{
+  const multibody::multibody_plant::MultibodyPlant<T>* multibody_plant_{
       nullptr};
   const bool pure_gravity_compensation_{false};
 
   // This context is used solely for setting generalized positions and
-  // velocities in multi_body_plant_- changing this value does not affect
-  // the correctness of computation.
-  mutable std::unique_ptr<Context<T>> multibody_plant_context_;
+  // velocities in multibody_plant_.
+  std::unique_ptr<Context<T>> multibody_plant_context_;
 
   int input_port_index_state_{0};
   int input_port_index_desired_acceleration_{0};

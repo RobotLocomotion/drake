@@ -37,17 +37,17 @@ class InverseDynamicsTest : public ::testing::Test {
             bool pure_gravity_compensation) {
     rigid_body_tree_ = std::move(tree);
     inverse_dynamics_ = make_unique<InverseDynamics<double>>(
-        *rigid_body_tree_,
+        rigid_body_tree_.get(),
         pure_gravity_compensation /* pure gravity compensation mode */);
     FinishInit(pure_gravity_compensation);
   }
 
   void Init(std::unique_ptr<MultibodyPlant<double>> plant,
             bool pure_gravity_compensation) {
-    multi_body_plant_ = std::move(plant);
-    multi_body_context_ = multi_body_plant_->CreateDefaultContext();
+    multibody_plant_ = std::move(plant);
+    multibody_context_ = multibody_plant_->CreateDefaultContext();
     inverse_dynamics_ = make_unique<InverseDynamics<double>>(
-        *multi_body_plant_, multi_body_context_->get_parameters(),
+        multibody_plant_.get(), multibody_context_->get_parameters(),
         pure_gravity_compensation /* pure gravity compensation mode */);
     FinishInit(pure_gravity_compensation);
   }
@@ -114,11 +114,11 @@ class InverseDynamicsTest : public ::testing::Test {
       expected_torque = controllers_test::ComputeTorque(
           *rigid_body_tree_, position, velocity, vd_d);
     } else {
-      DRAKE_DEMAND(multi_body_plant_.get());
-      DRAKE_DEMAND(multi_body_context_.get());
+      ASSERT_TRUE(multibody_plant_.get());
+      ASSERT_TRUE(multibody_context_.get());
       expected_torque = controllers_test::ComputeTorque(
-          *multi_body_plant_, position, velocity, vd_d,
-          multi_body_context_.get());
+          *multibody_plant_, position, velocity, vd_d,
+          multibody_context_.get());
     }
 
     // Checks the expected and computed gravity torque.
@@ -131,22 +131,22 @@ class InverseDynamicsTest : public ::testing::Test {
   int num_positions() const {
     if (rigid_body_tree_)
       return rigid_body_tree_->get_num_positions();
-    DRAKE_DEMAND(multi_body_plant_.get());
-    return multi_body_plant_->model().num_positions();
+    DRAKE_DEMAND(multibody_plant_.get());
+    return multibody_plant_->model().num_positions();
   }
 
   int num_velocities() const {
     if (rigid_body_tree_)
       return rigid_body_tree_->get_num_velocities();
-    DRAKE_DEMAND(multi_body_plant_.get());
-    return multi_body_plant_->model().num_velocities();
+    DRAKE_DEMAND(multibody_plant_.get());
+    return multibody_plant_->model().num_velocities();
   }
 
   std::unique_ptr<RigidBodyTree<double>> rigid_body_tree_;
-  std::unique_ptr<MultibodyPlant<double>> multi_body_plant_;
+  std::unique_ptr<MultibodyPlant<double>> multibody_plant_;
   std::unique_ptr<InverseDynamics<double>> inverse_dynamics_;
   std::unique_ptr<Context<double>> inverse_dynamics_context_;
-  std::unique_ptr<Context<double>> multi_body_context_;
+  std::unique_ptr<Context<double>> multibody_context_;
   std::unique_ptr<SystemOutput<double>> output_;
 };
 
@@ -244,8 +244,6 @@ TEST_F(InverseDynamicsTest, InverseDynamicsTestMBT) {
 // RigidBodyTree goes away (and the test above is necessarily removed) *and*
 // the multibody plant SDF parser is capable of constructing MBPs with
 // kinematic loops.
-// Tests that the GravityCompensator will abort if it is provided an
-// underactuated model.
 TEST_F(InverseDynamicsTest, UnderactuatedModelTestRBT) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::sdf::AddModelInstancesFromSdfFile(

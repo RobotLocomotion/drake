@@ -10,7 +10,7 @@
 #include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/framework/diagram.h"
 
-// Forward reference keeps us from including RBT headers that significantly
+// Forward declaration keeps us from including RBT headers that significantly
 // slow compilation.
 template <class T>
 class RigidBodyTree;
@@ -130,20 +130,20 @@ class InverseDynamicsController : public Diagram<T>,
   }
 
   /**
-   * Returns a constant pointer to the RigidBodyTree used for control. Pointer
-   * will be null if `this` was constructed using a MultibodyPlant.
+   * Returns a pointer to the const RigidBodyTree used for control.
+   * @return `nullptr` if `this` was constructed using a MultibodyPlant.
    */
   const RigidBodyTree<T>* get_rigid_body_tree_for_control() const {
     return rigid_body_tree_for_control_.get();
   }
 
   /**
-   * Returns a constant pointer to the MultibodyPlant used for control. Pointer
-   * will be null if `this` was constructed using a RigidBodyTree.
+   * Returns a constant pointer to the MultibodyPlant used for control.
+   * @return `nullptr` if `this` was constructed using a RigidBodyTree.
    */
   const multibody::multibody_plant::MultibodyPlant<T>*
-      get_multi_body_plant_for_control() const {
-    return multi_body_plant_for_control_.get();
+      get_multibody_plant_for_control() const {
+    return multibody_plant_for_control_.get();
   }
 
  private:
@@ -154,7 +154,7 @@ class InverseDynamicsController : public Diagram<T>,
 
   std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_for_control_;
   std::unique_ptr<multibody::multibody_plant::MultibodyPlant<T>>
-      multi_body_plant_for_control_;
+      multibody_plant_for_control_;
   PidController<T>* pid_{nullptr};
   const bool has_reference_acceleration_{false};
   int input_port_index_estimated_state_{-1};

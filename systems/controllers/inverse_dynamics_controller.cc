@@ -101,13 +101,12 @@ InverseDynamicsController<T>::InverseDynamicsController(
     std::unique_ptr<RigidBodyTree<T>> robot, const VectorX<double>& kp,
     const VectorX<double>& ki, const VectorX<double>& kd,
     bool has_reference_acceleration)
-    : has_reference_acceleration_(has_reference_acceleration) {
-  rigid_body_tree_for_control_ = std::move(robot);
-
+    : rigid_body_tree_for_control_(std::move(robot)),
+      has_reference_acceleration_(has_reference_acceleration) {
   DiagramBuilder<T> builder;
   auto inverse_dynamics =
       builder.template AddSystem<InverseDynamics<T>>(
-          *rigid_body_tree_for_control_, false);
+          rigid_body_tree_for_control_.get(), false);
 
   SetUp(kp, ki, kd, *inverse_dynamics, &builder);
 }
@@ -118,15 +117,15 @@ InverseDynamicsController<T>::InverseDynamicsController(
     const systems::Parameters<T>& parameters,
     const VectorX<double>& kp, const VectorX<double>& ki,
     const VectorX<double>& kd, bool has_reference_acceleration)
-    : has_reference_acceleration_(has_reference_acceleration) {
-  multi_body_plant_for_control_ = std::move(robot);
-
+    : multibody_plant_for_control_(std::move(robot)),
+      has_reference_acceleration_(has_reference_acceleration) {
   DiagramBuilder<T> builder;
   auto inverse_dynamics =
     builder.template AddSystem<InverseDynamics<T>>(
-      *multi_body_plant_for_control_, parameters, false);
+      multibody_plant_for_control_.get(), parameters,
+          false /* pure gravity compensation */);
 
-    SetUp(kp, ki, kd, *inverse_dynamics, &builder);
+  SetUp(kp, ki, kd, *inverse_dynamics, &builder);
 }
 
 template class InverseDynamicsController<double>;

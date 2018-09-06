@@ -1,14 +1,14 @@
-#include <memory>
-#include <stdexcept>
-#include <string>
+#pragma once
+
 #include <vector>
 
-#include <gtest/gtest.h>
-
-#include "drake/common/autodiff.h"
-#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/kinematics_cache.h"
+#include "drake/multibody/multibody_tree/math/spatial_acceleration.h"
+#include "drake/multibody/multibody_tree/math/spatial_force.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/multibody_tree/position_kinematics_cache.h"
+#include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {

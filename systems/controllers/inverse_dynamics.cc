@@ -13,13 +13,13 @@ namespace systems {
 namespace controllers {
 
 template <typename T>
-InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>& tree,
+InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>* tree,
                                     bool pure_gravity_compensation)
-    : rigid_body_tree_(&tree),
+    : rigid_body_tree_(tree),
       pure_gravity_compensation_(pure_gravity_compensation),
-      q_dim_(tree.get_num_positions()),
-      v_dim_(tree.get_num_velocities()),
-      act_dim_(tree.get_num_actuators()) {
+      q_dim_(tree->get_num_positions()),
+      v_dim_(tree->get_num_velocities()),
+      act_dim_(tree->get_num_actuators()) {
   input_port_index_state_ =
       this->DeclareInputPort(kVectorValued, q_dim_ + v_dim_).get_index();
   output_port_index_torque_ =
@@ -44,22 +44,22 @@ InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>& tree,
 }
 
 template <typename T>
-InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>& plant,
+InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
                                     const Parameters<T>& multibody_parameters,
                                     bool pure_gravity_compensation)
-    : multi_body_plant_(&plant),
+    : multibody_plant_(plant),
       pure_gravity_compensation_(pure_gravity_compensation),
-      q_dim_(plant.model().num_positions()),
-      v_dim_(plant.model().num_velocities()),
-      act_dim_(plant.model().num_actuators()) {
-  DRAKE_DEMAND(plant.is_finalized());
+      q_dim_(plant->model().num_positions()),
+      v_dim_(plant->model().num_velocities()),
+      act_dim_(plant->model().num_actuators()) {
+  DRAKE_DEMAND(plant->is_finalized());
 
   if (v_dim_ != act_dim_) {
     std::stringstream msg;
     msg << "The model is under-actuated!\n"
         << "  - size of gravity vector: " << v_dim_ << "\n"
         << "  - number of actuators: " << act_dim_;
-    throw std::runtime_error(msg.str().c_str());
+    throw std::runtime_error(msg.str());
   }
 
   input_port_index_state_ =
@@ -70,7 +70,7 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>& plant,
           .get_index();
 
   // Copy the parameters.
-  multibody_plant_context_ = plant.CreateDefaultContext();
+  multibody_plant_context_ = plant->CreateDefaultContext();
   multibody_plant_context_->get_mutable_parameters().SetFrom(
       multibody_parameters);
 
@@ -116,34 +116,33 @@ void InverseDynamics<T>::CalcOutputTorque(const Context<T>& context,
     DRAKE_ASSERT(torque.size() == output->size());
     output->get_mutable_value() = torque;
   } else {
-    DRAKE_DEMAND(multi_body_plant_);
+    DRAKE_DEMAND(multibody_plant_);
+    const auto& tree = multibody_plant_->model();
+
+    if (pure_gravity_compensation_) {
+      output->get_mutable_value() = tree.CalcGravityGeneralizedForces(
+          *multibody_plant_context_);
+      return;
+    }
 
     // Set the position and velocity in the context.
-    multibody_plant_context_->get_mutable_continuous_state_vector().
-        SetFromVector(x);
+    tree.get_mutable_multibody_state_vector(multibody_plant_context_.get()) = x;
 
     // Compute the caches.
-    const auto& tree = multi_body_plant_->model();
     PositionKinematicsCache<T> pcache(tree.get_topology());
     VelocityKinematicsCache<T> vcache(tree.get_topology());
     tree.CalcPositionKinematicsCache(*multibody_plant_context_, &pcache);
     tree.CalcVelocityKinematicsCache(*multibody_plant_context_, pcache,
                                      &vcache);
 
+    // Compute the contribution from force elements.
+    multibody::MultibodyForces<T> external_forces(tree);
+    tree.CalcForceElementsContribution(
+        *multibody_plant_context_, pcache, vcache, &external_forces);
+
     // Compute inverse dynamics.
-    const VectorX<T> tau_applied(0);  // No applied torques.
-    std::vector<multibody::SpatialAcceleration<T>> A_WB_array(
-        tree.num_bodies());
-    std::vector<multibody::SpatialForce<T>> F_BMo_W_array(tree.num_bodies());
-    for (auto& f : F_BMo_W_array)
-      f.SetZero();
-    VectorX<T> tau_array(tree.num_velocities());
-
-    tree.CalcInverseDynamics(*multibody_plant_context_, pcache, vcache,
-        desired_vd, {}, tau_applied, &A_WB_array, &F_BMo_W_array, &tau_array);
-
-    DRAKE_ASSERT(tau_array.size() == output->size());
-    output->get_mutable_value() = tau_array;
+    output->get_mutable_value() = tree.CalcInverseDynamics(
+        *multibody_plant_context_, desired_vd, external_forces);
   }
 }
 
