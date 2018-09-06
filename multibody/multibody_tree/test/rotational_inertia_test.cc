@@ -169,8 +169,8 @@ GTEST_TEST(RotationalInertia, IsNearlyEqualTo) {
 
   // Ensure rotational inertias I1 and I2 are nearly equal.
   // Ensure rotational inertias I1 and I3 are not equal.
-  EXPECT_TRUE(I1.IsNearlyEqualTo(I2, 4*kEpsilon).value());
-  EXPECT_FALSE(I1.IsNearlyEqualTo(I3, 7*kEpsilon).value());
+  EXPECT_TRUE(I1.IsNearlyEqualTo(I2, 4*kEpsilon));
+  EXPECT_FALSE(I1.IsNearlyEqualTo(I3, 7*kEpsilon));
 }
 
 // TestA: Rotational inertia expressed in frame R then re-expressed in frame E.
@@ -203,7 +203,7 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameA) {
   EXPECT_NEAR(I_RRo_F(2, 2), I_RRo_R(1, 1), kEpsilon);  // F z-axis = R -y-axis.
 
   // Ensure re-expressing in frame F still produces a physically valid inertia.
-  EXPECT_TRUE(I_RRo_F.CouldBePhysicallyValid().value());
+  EXPECT_TRUE(I_RRo_F.CouldBePhysicallyValid());
 }
 
 // TestB: Rotational inertia expressed in frame R then re-expressed in frame E.
@@ -240,7 +240,7 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameB) {
                                           I_BBo_Axy, I_BBo_Axz, I_BBo_Ayz);
 
   // Ensure rotational inertia I_BBo_A is physically valid.
-  EXPECT_TRUE(I_BBo_A.CouldBePhysicallyValid().value());
+  EXPECT_TRUE(I_BBo_A.CouldBePhysicallyValid());
 
   // Re-express I_BBo_A from expressed-in frame A to expressed-in frame B.
   const RotationalInertia<double> I_BBo_B = I_BBo_A.ReExpress(R_BA);
@@ -259,7 +259,7 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameB) {
   // Compare Drake results versus MotionGenesis results using a comparison
   // that tests moments/products of inertia to within kEpsilon multiplied
   // by trace / 2, where trace is the smallest trace of the two matrices.
-  EXPECT_TRUE(I_BBo_B.IsNearlyEqualTo(expected_I_BBo_B, kEpsilon).value());
+  EXPECT_TRUE(I_BBo_B.IsNearlyEqualTo(expected_I_BBo_B, kEpsilon));
 }
 
 // Test the method ShiftFromCenterOfMass for a body B's rotational inertia
@@ -282,7 +282,7 @@ GTEST_TEST(RotationalInertia, ShiftFromCenterOfMass) {
   const double Ixz = I_BBcm_Bxz - mass * xQ*zQ;
   const double Iyz = I_BBcm_Byz - mass * yQ*zQ;
   const RotationalInertia<double> expected_I_BQ_B(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
-  EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(expected_I_BQ_B, 2*kEpsilon).value());
+  EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(expected_I_BQ_B, 2*kEpsilon));
 }
 
 // Test the method ShiftToCenterOfMass for a body B's rotational inertia
@@ -306,7 +306,7 @@ GTEST_TEST(RotationalInertia, ShiftToCenterOfMass) {
   const double Iyz = I_BP_Byz + mass * yBcm*zBcm;
   const RotationalInertia<double> expected_I_BBcm_B(
       Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
-  EXPECT_TRUE(I_BBcm_B.IsNearlyEqualTo(expected_I_BBcm_B, 2*kEpsilon).value());
+  EXPECT_TRUE(I_BBcm_B.IsNearlyEqualTo(expected_I_BBcm_B, 2*kEpsilon));
 }
 
 // Test the method ShiftToThenAwayFromCenterOfMass for a body B's
@@ -333,17 +333,17 @@ GTEST_TEST(RotationalInertia, ShiftToThenAwayFromCenterOfMass) {
   // Calculate with single method that does it slightly more efficiently.
   const RotationalInertia<double> I_BQ_B =
       I_BP_B.ShiftToThenAwayFromCenterOfMass(mass, p_PBcm, p_QBcm);
-  EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(expected_I_BQ_B, 2*kEpsilon).value());
+  EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(expected_I_BQ_B, 2*kEpsilon));
 
   // Test that negating position vectors have no affect on results.
   EXPECT_TRUE(I_BBcm_B.IsNearlyEqualTo(
-              I_BP_B.ShiftToCenterOfMass(mass, -p_PBcm), 2*kEpsilon).value());
+              I_BP_B.ShiftToCenterOfMass(mass, -p_PBcm), 2*kEpsilon));
   EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(
               I_BBcm_B.ShiftFromCenterOfMass(mass, -p_QBcm),
-              2*kEpsilon).value());
+              2*kEpsilon));
   EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(
               I_BP_B.ShiftToThenAwayFromCenterOfMass(mass, -p_PBcm, -p_QBcm),
-              2*kEpsilon).value());
+              2*kEpsilon));
 }
 
 // Test the method CouldBePhysicallyValid after a body B's rotational inertia
@@ -368,10 +368,10 @@ GTEST_TEST(RotationalInertia, CouldBePhysicallyValidB) {
   const double I_transverse = 20;
   const double I_axial = -1.0E-15;  // Although negative, this is effectively 0.
   const RotationalInertia<double> rod(I_transverse, I_transverse, I_axial);
-  EXPECT_TRUE(rod.CouldBePhysicallyValid().value());
+  EXPECT_TRUE(rod.CouldBePhysicallyValid());
 
   const RotationalInertia<double> sphere(1.0E-5, 1.0E-5, 1.0E-5);
-  EXPECT_TRUE(sphere.CouldBePhysicallyValid().value());
+  EXPECT_TRUE(sphere.CouldBePhysicallyValid());
 
   // Subtracting the sphere from the rod creates an invalid rotational inertia.
   EXPECT_THROW_IF_ARMED(rod - sphere, std::logic_error);
@@ -558,7 +558,7 @@ GTEST_TEST(RotationalInertia, CastToAutoDiff) {
 
   // Cast from double to AutoDiffScalar.
   const RotationalInertia<AutoDiff1d> I_cast = I_double.cast<AutoDiff1d>();
-  EXPECT_TRUE(I_autodiff.IsNearlyEqualTo(I_cast, kEpsilon).value());
+  EXPECT_TRUE(I_autodiff.IsNearlyEqualTo(I_cast, kEpsilon));
 
   const Matrix3<AutoDiff1d> I_autodiff_matrix = I_cast.CopyToFullMatrix3();
   auto I_value = drake::math::autoDiffToValueMatrix(I_autodiff_matrix);
@@ -662,7 +662,7 @@ GTEST_TEST(RotationalInertia, AutoDiff) {
   const Matrix3<AutoDiff1d> R_BW =
       (AngleAxis<AutoDiff1d>(-angle, Vector3d::UnitZ())).toRotationMatrix();
   const RotationalInertia<AutoDiff1d> expectedI_B = I_W.ReExpress(R_BW);
-  EXPECT_TRUE(expectedI_B.IsNearlyEqualTo(I_B, kEpsilon).value());
+  EXPECT_TRUE(expectedI_B.IsNearlyEqualTo(I_B, kEpsilon));
 }
 
 GTEST_TEST(RotationalInertia, CompatibleWithSymbolicExpression) {
@@ -688,7 +688,7 @@ GTEST_TEST(RotationalInertia, CompatibleWithSymbolicExpression) {
 
   // The expression cannot be evaluated to bool given it contains free
   // variables.
-  EXPECT_THROW(I_BQ_E.CouldBePhysicallyValid().value(), std::exception);
+  EXPECT_THROW(I_BQ_E.CouldBePhysicallyValid(), std::exception);
 }
 
 // Verifies we can still call IsPhysicallyValid() when T = symbolic::Expression
@@ -696,7 +696,7 @@ GTEST_TEST(RotationalInertia, CompatibleWithSymbolicExpression) {
 GTEST_TEST(RotationalInertia, SymbolicConstant) {
   using T = symbolic::Expression;
   RotationalInertia<T> I = RotationalInertia<T>::TriaxiallySymmetric(1.0);
-  ASSERT_TRUE(I.CouldBePhysicallyValid().value());
+  ASSERT_TRUE(I.CouldBePhysicallyValid());
 }
 
 }  // namespace
