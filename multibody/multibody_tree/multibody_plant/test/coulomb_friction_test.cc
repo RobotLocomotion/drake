@@ -50,17 +50,17 @@ GTEST_TEST(CoulombFriction, ConstructionFromFrictionCoefficients) {
 
 GTEST_TEST(CoulombFriction, EqualityOperator) {
   // They are equal.
-  EXPECT_TRUE(ExtractBoolOrThrow(
-      CoulombFriction<double>(0.8, 0.5) == CoulombFriction<double>(0.8, 0.5)));
+  EXPECT_TRUE(
+      CoulombFriction<double>(0.8, 0.5) == CoulombFriction<double>(0.8, 0.5));
   // Static friction coefficient differs.
-  EXPECT_FALSE(ExtractBoolOrThrow(
-      CoulombFriction<double>(0.8, 0.5) == CoulombFriction<double>(1.2, 0.5)));
+  EXPECT_FALSE(
+      CoulombFriction<double>(0.8, 0.5) == CoulombFriction<double>(1.2, 0.5));
   // Dynamic friction coefficient differs.
-  EXPECT_FALSE(ExtractBoolOrThrow(
-      CoulombFriction<double>(0.8, 0.5) == CoulombFriction<double>(0.8, 0.3)));
+  EXPECT_FALSE(
+      CoulombFriction<double>(0.8, 0.5) == CoulombFriction<double>(0.8, 0.3));
   // Both friction coefficients differ.
-  EXPECT_FALSE(ExtractBoolOrThrow(
-      CoulombFriction<double>(0.8, 0.5) == CoulombFriction<double>(1.2, 0.6)));
+  EXPECT_FALSE(
+      CoulombFriction<double>(0.8, 0.5) == CoulombFriction<double>(1.2, 0.6));
 }
 
 // Verify CoulombFriction::CalcContactFrictionFromSurfaceProperties().
@@ -89,22 +89,22 @@ GTEST_TEST(CoulombFriction, CalcContactFrictionFromSurfaceProperties) {
   // Verify the operation is commutative.
   CoulombFriction<double> friction2_with_friction1 =
       CalcContactFrictionFromSurfaceProperties(friction2, friction1);
-  EXPECT_TRUE(ExtractBoolOrThrow(
-      friction1_with_friction2 == friction2_with_friction1));
+  EXPECT_TRUE(
+      friction1_with_friction2 == friction2_with_friction1);
 
   // Verify result when one of the surfaces is frictionless.
   CoulombFriction<double> friction1_with_frictionless =
       CalcContactFrictionFromSurfaceProperties(friction1,
                                                CoulombFriction<double>());
-  EXPECT_TRUE(ExtractBoolOrThrow(
-      friction1_with_frictionless == CoulombFriction<double>()));
+  EXPECT_TRUE(
+      friction1_with_frictionless == CoulombFriction<double>());
 
   // Verify commutativity when one of the surfaces is frictionless.
   CoulombFriction<double> frictionless_with_friction1 =
       CalcContactFrictionFromSurfaceProperties(CoulombFriction<double>(),
                                                friction1);
-  EXPECT_TRUE(ExtractBoolOrThrow(
-      friction1_with_frictionless == frictionless_with_friction1));
+  EXPECT_TRUE(
+      friction1_with_frictionless == frictionless_with_friction1);
 }
 
 // Verify that the result of combining two identical surfaces returns the
@@ -130,15 +130,15 @@ GTEST_TEST(CoulombFriction, BothSurfacesAreFrictionless) {
   // Verify the surfaces are indeed frictionless.
   EXPECT_EQ(frictionless_surface1.dynamic_friction(), 0);
   EXPECT_EQ(frictionless_surface1.static_friction(), 0);
-  EXPECT_TRUE(ExtractBoolOrThrow(
-      frictionless_surface1 == frictionless_surface2));
+  EXPECT_TRUE(
+      frictionless_surface1 == frictionless_surface2);
 
   CoulombFriction<double> frictionless_with_frictionless =
       CalcContactFrictionFromSurfaceProperties(frictionless_surface1,
                                                frictionless_surface2);
   // The result should be that of a frictionless surface pair.
-  EXPECT_TRUE(ExtractBoolOrThrow(
-      frictionless_with_frictionless == CoulombFriction<double>()));
+  EXPECT_TRUE(
+      frictionless_with_frictionless == CoulombFriction<double>());
 }
 
 }  // namespace

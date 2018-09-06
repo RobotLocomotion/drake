@@ -62,7 +62,7 @@ GTEST_TEST(ArticulatedBodyInertia, CastToAutoDiff) {
       m_double(0), m_double(1), m_double(2), /* moments of inertia */
       p_double(0), p_double(1), p_double(2));/* products of inertia */
   const SpatialInertia<double> M_double(mass_double, com_double, G_double);
-  ASSERT_TRUE(M_double.IsPhysicallyValid().value());
+  ASSERT_TRUE(M_double.IsPhysicallyValid());
 
   // Construct articulated body inertia from spatial inertia.
   const ArticulatedBodyInertia<double> P_double(M_double);

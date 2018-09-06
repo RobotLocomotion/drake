@@ -998,12 +998,12 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   }
 
   // Verify we can retrieve friction coefficients.
-  EXPECT_TRUE(ExtractBoolOrThrow(
-      plant.default_coulomb_friction(ground_id) == ground_friction));
-  EXPECT_TRUE(ExtractBoolOrThrow(
-      plant.default_coulomb_friction(sphere1_id) == sphere1_friction));
-  EXPECT_TRUE(ExtractBoolOrThrow(
-      plant.default_coulomb_friction(sphere2_id) == sphere2_friction));
+  EXPECT_TRUE(
+      plant.default_coulomb_friction(ground_id) == ground_friction);
+  EXPECT_TRUE(
+      plant.default_coulomb_friction(sphere1_id) == sphere1_friction);
+  EXPECT_TRUE(
+      plant.default_coulomb_friction(sphere2_id) == sphere2_friction);
 }
 
 // Verifies the process of visual geometry registration with a SceneGraph.
