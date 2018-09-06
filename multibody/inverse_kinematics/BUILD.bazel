@@ -57,6 +57,7 @@ drake_cc_library(
     hdrs = [
         "inverse_kinematics.h",
     ],
+    visibility = ["//visibility:private"],
     deps = [
         ":kinematic_constraint",
         "//multibody/multibody_tree/multibody_plant",
