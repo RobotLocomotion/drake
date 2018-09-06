@@ -6,7 +6,6 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
@@ -79,7 +78,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sdf_parser_test",
     data = [
-        ":test/models",
+        ":test_models",
     ],
     deps = [
         ":sdf_parser",
@@ -88,6 +87,11 @@ drake_cc_googletest(
     ],
 )
 
-install_data()
+filegroup(
+    name = "test_models",
+    testonly = 1,
+    srcs = glob(["test/models/**"]),
+    visibility = ["//visibility:private"],
+)
 
 add_lint_tests()
