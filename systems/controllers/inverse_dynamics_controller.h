@@ -76,6 +76,7 @@ class InverseDynamicsController : public Diagram<T>,
    * unique pointer.
    * @param robot Unique pointer whose ownership will be transfered to this
    * instance.
+   * @param parameters The parameters corresponding to `robot`.
    * @param kp Position gain
    * @param ki Integral gain
    * @param kd Velocity gain
