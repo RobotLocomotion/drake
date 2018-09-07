@@ -48,7 +48,7 @@ class TestInverseKinematics(unittest.TestCase):
         # TODO(eric.cousineau): Replace with state indexing.
         return q[0:4]
 
-    def _body1_pos(self, q):
+    def _body1_xyz(self, q):
         # TODO(eric.cousineau): Replace with state indexing.
         return q[4:7]
 
@@ -56,7 +56,7 @@ class TestInverseKinematics(unittest.TestCase):
         # TODO(eric.cousineau): Replace with state indexing.
         return q[7:11]
 
-    def _body2_pos(self, q):
+    def _body2_xyz(self, q):
         # TODO(eric.cousineau): Replace with state indexing.
         return q[11:14]
 
@@ -74,9 +74,9 @@ class TestInverseKinematics(unittest.TestCase):
         q_val = self.prog.GetSolution(self.q)
 
         body1_quat = self._body1_quat(q_val)
-        body1_pos = self._body1_pos(q_val)
+        body1_pos = self._body1_xyz(q_val)
         body2_quat = self._body2_quat(q_val)
-        body2_pos = self._body2_pos(q_val)
+        body2_pos = self._body2_xyz(q_val)
         body1_rotmat = Quaternion(body1_quat).rotation()
         body2_rotmat = Quaternion(body2_quat).rotation()
         p_AQ = body2_rotmat.transpose().dot(
@@ -118,9 +118,9 @@ class TestInverseKinematics(unittest.TestCase):
 
         q_val = self.prog.GetSolution(self.q)
         body1_quat = self._body1_quat(q_val)
-        body1_pos = self._body1_pos(q_val)
+        body1_pos = self._body1_xyz(q_val)
         body2_quat = self._body2_quat(q_val)
-        body2_pos = self._body2_pos(q_val)
+        body2_pos = self._body2_xyz(q_val)
         body1_rotmat = Quaternion(body1_quat).rotation()
         body2_rotmat = Quaternion(body2_quat).rotation()
 
