@@ -17,17 +17,17 @@ namespace controllers {
 
 /**
  * Solves inverse dynamics with no consideration for under actuation, joint
- * torque limits, or closed kinematic chains. The system also provides a pure
- * gravity compensation mode. This system provides a BasicVector
+ * actuator force limits, or closed kinematic chains. The system also provides a
+ * pure gravity compensation mode. This system provides a BasicVector
  * input port for the state `(q, v)`, where `q` is the generalized
  * position and `v` is the generalized velocity, and a BasicVector output port
- * for the computed torque. There is an additional BasicVector input port for
- * desired acceleration when configured to be **not** in pure gravity
+ * for the computed generalized forces. There is an additional BasicVector input
+ * port for desired acceleration when configured to be **not** in pure gravity
  * compensation mode.
  *
  * InverseDynamicsController uses a PID controller to generate desired
- * acceleration and uses this class to compute torque. This class should be used
- * directly if desired acceleration is computed differently.
+ * acceleration and uses this class to compute generalized forces. This class
+ * should be used directly if desired acceleration is computed differently.
  *
  * @tparam T The vector element type, which must be a valid Eigen scalar.
  * @see Constructors for descriptions of how (and which) forces are incorporated
@@ -43,11 +43,12 @@ class InverseDynamics : public LeafSystem<T> {
 
   /**
    * Computes inverse dynamics for `tree`, where the computed torque
-   * is `H(q) * vd_d + c(q, v) + g(q)`, and `H` is the inertia matrix, `c` is
-   * the Coriolis terms, `g` is the gravity term, `q` is the generalized
-   * position, `v` is the generalized velocity and `vd_d` is the desired
-   * generalized acceleration. In gravity compensation mode, torque is computed
-   * as `g(q)`.
+   * is `H(q) * vd_d + c(q, v) = g(q) + fs - fd`, and `H` is the inertia matrix,
+   * `c` is the Coriolis terms, `g` is the gravity term, `q` is the generalized
+   * position, `v` is the generalized velocity, `vd_d` is the desired
+   * generalized acceleration, `fs` is computed via
+   * `CalcGeneralizedSpringForces()` and `fd` is `frictionTorques()`. In gravity
+   * compensation mode, torque is computed as `g(q)`.
    * @param tree Pointer to the model. The life span of @p tree must be longer
    * than this instance.
    * @param pure_gravity_compensation If set to true, this instance will only
