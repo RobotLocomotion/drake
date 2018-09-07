@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/common/text_logging.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 
@@ -13,6 +14,7 @@ namespace systems {
 namespace lcm {
 
 using drake::lcm::DrakeLcmInterface;
+using drake::lcm::DrakeLcm;
 
 namespace {
 const int kPortIndex = 0;
@@ -34,7 +36,8 @@ LcmPublisherSystem::LcmPublisherSystem(
     : channel_(channel),
       translator_(translator),
       serializer_(std::move(serializer)),
-      lcm_(lcm) {
+      owned_lcm_(lcm ? nullptr :  new DrakeLcm()),
+      lcm_(lcm ? lcm : owned_lcm_.get()) {
   DRAKE_DEMAND((translator_ != nullptr) != (serializer_.get() != nullptr));
   DRAKE_DEMAND(lcm_);
 
@@ -70,40 +73,60 @@ LcmPublisherSystem::LcmPublisherSystem(
 
 LcmPublisherSystem::~LcmPublisherSystem() {}
 
-std::string LcmPublisherSystem::make_name(const std::string& channel) {
-  return "LcmPublisherSystem(" + channel + ")";
+void LcmPublisherSystem::AddInitializationMessage(
+    InitializationPublisher initialization_publisher) {
+  DRAKE_DEMAND(!!initialization_publisher);
+
+  initialization_publisher_ = std::move(initialization_publisher);
+
+  DeclareInitializationEvent(systems::PublishEvent<double>(
+      systems::Event<double>::TriggerType::kInitialization,
+      [this](const systems::Context<double>& context,
+             const systems::PublishEvent<double>&) {
+        this->initialization_publisher_(context, this->lcm_);
+      }));
 }
 
-const std::string& LcmPublisherSystem::get_channel_name() const {
-  return channel_;
+std::string LcmPublisherSystem::make_name(const std::string& channel) {
+  return "LcmPublisherSystem(" + channel + ")";
 }
 
 void LcmPublisherSystem::set_publish_period(double period) {
   LeafSystem<double>::DeclarePeriodicPublish(period);
 }
 
-void LcmPublisherSystem::DoPublish(const Context<double>& context,
-               const std::vector<const systems::PublishEvent<double>*>&) const {
-  SPDLOG_TRACE(drake::log(), "Publishing LCM {} message", channel_);
-  DRAKE_ASSERT((translator_ != nullptr) != (serializer_.get() != nullptr));
+void LcmPublisherSystem::DoPublish(
+    const Context<double>& context,
+    const std::vector<const systems::PublishEvent<double>*>& events) const {
+  for (const auto& event : events) {
+    if (event->get_trigger_type() ==
+        systems::Event<double>::TriggerType::kInitialization) {
+      SPDLOG_TRACE(drake::log(), "Invoking initialization publisher");
+      event->handle(context);
+      continue;
+    }
 
-  // Converts the input into LCM message bytes.
-  std::vector<uint8_t> message_bytes;
-  if (translator_ != nullptr) {
-    const VectorBase<double>* const input_vector =
-        this->EvalVectorInput(context, kPortIndex);
-    DRAKE_ASSERT(input_vector != nullptr);
-    translator_->Serialize(context.get_time(), *input_vector, &message_bytes);
-  } else {
-    const AbstractValue* const input_value =
-        this->EvalAbstractInput(context, kPortIndex);
-    DRAKE_ASSERT(input_value != nullptr);
-    serializer_->Serialize(*input_value, &message_bytes);
+    SPDLOG_TRACE(drake::log(), "Publishing LCM {} message", channel_);
+    DRAKE_ASSERT((translator_ != nullptr) != (serializer_.get() != nullptr));
+
+    // Converts the input into LCM message bytes.
+    std::vector<uint8_t> message_bytes;
+    if (translator_ != nullptr) {
+      const VectorBase<double>* const input_vector =
+          this->EvalVectorInput(context, kPortIndex);
+      DRAKE_ASSERT(input_vector != nullptr);
+      translator_->Serialize(context.get_time(), *input_vector, &message_bytes);
+    } else {
+      const AbstractValue* const input_value =
+          this->EvalAbstractInput(context, kPortIndex);
+      DRAKE_ASSERT(input_value != nullptr);
+      serializer_->Serialize(*input_value, &message_bytes);
+    }
+
+    // Publishes onto the specified LCM channel.
+    lcm_->Publish(channel_, message_bytes.data(), message_bytes.size(),
+                  context.get_time());
   }
-
-  // Publishes onto the specified LCM channel.
-  lcm_->Publish(channel_, message_bytes.data(), message_bytes.size(),
-                context.get_time());
 }
 
 const LcmAndVectorBaseTranslator& LcmPublisherSystem::get_translator() const {
