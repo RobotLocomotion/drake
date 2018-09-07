@@ -1,5 +1,7 @@
 #pragma once
 
+#include "drake/common/drake_deprecated.h"
+
 /// @file
 /// This file contains traits for number (scalar) types. Drake libraries that
 /// are templated on a scalar type may consult these traits to perform
@@ -29,6 +31,8 @@ namespace drake {
 /// symbolic::Expression.
 template <typename T>
 struct is_numeric {
+  // TODO(jwnimmer-tri) Remove number_traits.h on or about 2018-12-01.
+  DRAKE_DEPRECATED("This trait will be removed")
   static constexpr bool value = true;
 };
 
