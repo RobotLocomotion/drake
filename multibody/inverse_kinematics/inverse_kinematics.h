@@ -60,7 +60,7 @@ class InverseKinematics {
    * definition the angle difference θ is between [0,π]. If the users
    * want frame A and frame B to align perfectly, they can set θ_bound = 0.
    * Mathematically, this constraint is imposed as
-   * trace(R_AB) ≥ 2cos(θ_bound) - 1 (1)
+   * trace(R_AB) ≥ 2cos(θ_bound) + 1   (1)
    * To derive (1), using Rodriguez formula
    * https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
    * R_AB = I + sinθ â + (1-cosθ)â²
