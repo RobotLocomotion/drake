@@ -63,7 +63,7 @@ drake_cc_library(
     ],
     deps = [
         ":translator",
-        "//lcm:interface",
+        "//lcm:real",
         "//systems/framework",
     ],
 )
@@ -134,6 +134,7 @@ drake_cc_googletest(
     deps = [
         ":lcm_pubsub_system",
         ":lcmt_drake_signal_translator",
+        "//common/test_utilities:is_dynamic_castable",
         "//lcm:lcmt_drake_signal_utils",
         "//lcm:mock",
         "//systems/analysis",
