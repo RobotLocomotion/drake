@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 #include "drake/lcmt_drake_signal.hpp"
@@ -25,6 +26,7 @@ const int kDim = 10;
 const int kPortNumber = 0;
 
 using drake::lcm::CompareLcmtDrakeSignalMessages;
+using drake::lcm::DrakeLcmInterface;
 using drake::lcm::DrakeMockLcm;
 
 void TestPublisher(const std::string& channel_name, lcm::DrakeMockLcm* lcm,
@@ -82,6 +84,48 @@ void TestPublisher(const std::string& channel_name, lcm::DrakeMockLcm* lcm,
   EXPECT_EQ(
       lcm->get_last_publication_time(dut->get_channel_name()).value_or(-1.0),
       time);
+}
+
+// Test that failure to specify an LCM interface results in an internal one
+// of being allocated. Can't check for operation in this case
+// since we won't have a mock LCM to look at.
+GTEST_TEST(LcmPublisherSystemTest, DefaultLcmTest) {
+  const std::string channel_name = "junk";
+
+  // Use a translator just so we can invoke a constructor.
+  LcmtDrakeSignalTranslator translator(kDim);
+
+  // Provide an explicit LCM interface and check that it gets used.
+  DrakeMockLcm mock_lcm;
+  LcmPublisherSystem dut1(channel_name, translator, &mock_lcm);
+  EXPECT_EQ(&dut1.lcm(), &mock_lcm);
+
+  // Now leave out the LCM interface and check that one gets allocated.
+  LcmPublisherSystem dut2(channel_name, translator, nullptr);
+  DrakeLcmInterface* internal_lcm = &dut2.lcm();
+  EXPECT_NE(internal_lcm, nullptr);
+}
+
+// Test that an initialization publisher gets invoked properly by an
+// initialization event.
+GTEST_TEST(LcmPublisherSystemTest, TestInitializationEvent) {
+  const std::string channel_name = "junk";
+
+  // Use a translator just so we can invoke a constructor.
+  LcmtDrakeSignalTranslator translator(kDim);
+
+  LcmPublisherSystem dut1(channel_name, translator, nullptr);
+
+  bool init_was_called{false};
+  dut1.AddInitializationMessage([&init_was_called](
+      const Context<double>&, DrakeLcmInterface*) { init_was_called = true; });
+
+  auto context = dut1.AllocateContext();
+  auto init_events = dut1.AllocateCompositeEventCollection();
+  dut1.GetInitializationEvents(*context, &*init_events);
+  dut1.Publish(*context, init_events->get_publish_events());
+
+  EXPECT_TRUE(init_was_called);
 }
 
 // Tests LcmPublisherSystem using a translator.
