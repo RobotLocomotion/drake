@@ -32,7 +32,7 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 // quick detection of un-initialized values.
 GTEST_TEST(UnitInertia, DefaultConstructor) {
   UnitInertia<double> I;
-  ASSERT_TRUE(I.IsNaN().value());
+  ASSERT_TRUE(I.IsNaN());
 }
 
 // Test constructor for a diagonal unit inertia with all elements equal.
@@ -119,7 +119,7 @@ GTEST_TEST(UnitInertia, ReExpressInAnotherFrame) {
 
   // While at it, check if after transformation this still is a physically
   // valid inertia.
-  EXPECT_TRUE(G_Ro_F.CouldBePhysicallyValid().value());
+  EXPECT_TRUE(G_Ro_F.CouldBePhysicallyValid());
 }
 
 // Tests the static method to obtain the unit inertia of a point mass.
@@ -353,7 +353,7 @@ GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
   G.ShiftFromCenterOfMassInPlace({0.0, 0.0, L / 2.0});
   EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
       G_expected.CopyToFullMatrix3(), kEpsilon));  // Equal after shifting.
-  EXPECT_TRUE(G.CouldBePhysicallyValid().value());
+  EXPECT_TRUE(G.CouldBePhysicallyValid());
 
   // Now test that we can perform the inverse operation and obtain the original
   // unit inertia.
@@ -372,7 +372,7 @@ GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
       SolidCylinder(r, L).ShiftFromCenterOfMass({0.0, 0.0, L / 2.0});
   EXPECT_TRUE(G3.CopyToFullMatrix3().isApprox(
       G_expected.CopyToFullMatrix3(), kEpsilon));
-  EXPECT_TRUE(G3.CouldBePhysicallyValid().value());
+  EXPECT_TRUE(G3.CouldBePhysicallyValid());
 }
 
 // Tests that we can correctly cast a UnitInertia<double> to a UnitInertia
@@ -394,7 +394,7 @@ GTEST_TEST(UnitInertia, CastToAutoDiff) {
 
   // Cast from double to AutoDiffScalar.
   const UnitInertia<ADScalar> I_cast = I_double.cast<ADScalar>();
-  EXPECT_TRUE(I_autodiff.IsNearlyEqualTo(I_cast, kEpsilon).value());
+  EXPECT_TRUE(I_autodiff.IsNearlyEqualTo(I_cast, kEpsilon));
 
   const Matrix3<ADScalar> I_autodiff_matrix = I_cast.CopyToFullMatrix3();
   auto I_value = drake::math::autoDiffToValueMatrix(I_autodiff_matrix);
