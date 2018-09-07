@@ -14,22 +14,7 @@ import pydrake.solvers.mathematicalprogram as mp
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-
-
-def quaternionToRotationMatrix(q):
-    ww = q[0] * q[0]
-    wx = q[0] * q[1]
-    wy = q[0] * q[2]
-    wz = q[0] * q[3]
-    xx = q[1] * q[1]
-    xy = q[1] * q[2]
-    xz = q[1] * q[3]
-    yy = q[2] * q[2]
-    yz = q[2] * q[3]
-    zz = q[3] * q[3]
-    return np.array([[ww + xx - yy - zz, 2 * (xy - wz), 2 * (xz + wy)],
-                     [2 * (xy + wz), ww + yy - xx - zz, 2 * (yz - wx)],
-                     [2 * (xz - wy), 2 * (yz + wx), ww + zz - xx - yy]])
+from pydrake.util.eigen_geometry import Quaternion
 
 
 class TestInverseKinematics(unittest.TestCase):
@@ -61,7 +46,7 @@ class TestInverseKinematics(unittest.TestCase):
 
         self.ik_two_bodies.AddPositionConstraint(
             self.link1_frame, p_BQ, self.link2_frame, p_AQ_lower, p_AQ_upper)
-        result = self.ik_two_bodies.get_mutable_prog().Solve()
+        result = self.prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
         q_val = self.prog.GetSolution(self.q)
 
@@ -69,8 +54,8 @@ class TestInverseKinematics(unittest.TestCase):
         body1_pos = q_val[4:7]
         body2_quat = q_val[7:11]
         body2_pos = q_val[11:14]
-        body1_rotmat = quaternionToRotationMatrix(body1_quat)
-        body2_rotmat = quaternionToRotationMatrix(body2_quat)
+        body1_rotmat = Quaternion(body1_quat).rotation()
+        body2_rotmat = Quaternion(body2_quat).rotation()
         p_AQ = body2_rotmat.transpose().dot(
             body1_rotmat.dot(p_BQ) + body1_pos - body2_pos)
         self.assertTrue(np.greater(p_AQ, p_AQ_lower -
@@ -79,20 +64,21 @@ class TestInverseKinematics(unittest.TestCase):
                                 1E-6 * np.ones((3, 1))).all())
 
     def test_AddOrientationConstraint(self):
-        angle_bound = 0.2 * math.pi
+        theta_bound = 0.2 * math.pi
         self.ik_two_bodies.AddOrientationConstraint(
-            self.link1_frame, self.link2_frame, angle_bound)
-        result = self.ik_two_bodies.get_mutable_prog().Solve()
+            frameA=self.link1_frame, frameB=self.link2_frame,
+            theta_bound=theta_bound)
+        result = self.prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
 
         q_val = self.prog.GetSolution(self.q)
 
         body1_quat = q_val[0:4]
         body2_quat = q_val[7:11]
-        body1_rotmat = quaternionToRotationMatrix(body1_quat)
-        body2_rotmat = quaternionToRotationMatrix(body2_quat)
+        body1_rotmat = Quaternion(body1_quat).rotation()
+        body2_rotmat = Quaternion(body2_quat).rotation()
         R_AB = body1_rotmat.transpose().dot(body2_rotmat)
-        self.assertGreater(R_AB.trace(), 1 + 2 * math.cos(angle_bound) - 1E-6)
+        self.assertGreater(R_AB.trace(), 1 + 2 * math.cos(theta_bound) - 1E-6)
 
     def test_AddGazeTargetConstraint(self):
         p_AS = np.array([0.1, 0.2, 0.3])
@@ -101,8 +87,10 @@ class TestInverseKinematics(unittest.TestCase):
         cone_half_angle = 0.2 * math.pi
 
         self.ik_two_bodies.AddGazeTargetConstraint(
-            self.link1_frame, p_AS, n_A, self.link2_frame, p_BT, cone_half_angle)
-        result = self.ik_two_bodies.get_mutable_prog().Solve()
+            frameA=self.link1_frame, p_AS=p_AS, n_A=n_A,
+            frameB=self.link2_frame, p_BT=p_BT,
+            cone_half_angle=cone_half_angle)
+        result = self.prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
 
         q_val = self.prog.GetSolution(self.q)
@@ -110,38 +98,40 @@ class TestInverseKinematics(unittest.TestCase):
         body1_pos = q_val[4:7]
         body2_quat = q_val[7:11]
         body2_pos = q_val[11:14]
-        body1_rotmat = quaternionToRotationMatrix(body1_quat)
-        body2_rotmat = quaternionToRotationMatrix(body2_quat)
+        body1_rotmat = Quaternion(body1_quat).rotation()
+        body2_rotmat = Quaternion(body2_quat).rotation()
 
         p_WS = body1_pos + body1_rotmat.dot(p_AS)
         p_WT = body2_pos + body2_rotmat.dot(p_BT)
         p_ST_W = p_WT - p_WS
-        n_A_W = body1_rotmat.dot(n_A)
-        self.assertGreater(p_ST_W.dot(n_A_W), np.linalg.norm(
-            p_ST_W) * np.linalg.norm(n_A_W) * math.cos(cone_half_angle) - 1E-6)
+        n_W = body1_rotmat.dot(n_A)
+        self.assertGreater(p_ST_W.dot(n_W), np.linalg.norm(
+            p_ST_W) * np.linalg.norm(n_W) * math.cos(cone_half_angle) - 1E-6)
 
     def test_AddAngleBetweenVectorsConstraint(self):
-        n_A = np.array([0.2, -0.4, 0.9])
-        n_B = np.array([1.4, -0.1, 1.8])
+        na_A = np.array([0.2, -0.4, 0.9])
+        nb_B = np.array([1.4, -0.1, 1.8])
 
         angle_lower = 0.2 * math.pi
         angle_upper = 0.2 * math.pi
 
         self.ik_two_bodies.AddAngleBetweenVectorsConstraint(
-            self.link1_frame, n_A, self.link2_frame, n_B, angle_lower, angle_upper)
-        result = self.ik_two_bodies.get_mutable_prog().Solve()
+            frameA=self.link1_frame, na_A=na_A,
+            frameB=self.link2_frame, nb_B=nb_B,
+            angle_lower=angle_lower, angle_upper=angle_upper)
+        result = self.prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
 
         q_val = self.prog.GetSolution(self.q)
         body1_quat = q_val[0:4]
         body2_quat = q_val[7:11]
-        body1_rotmat = quaternionToRotationMatrix(body1_quat)
-        body2_rotmat = quaternionToRotationMatrix(body2_quat)
+        body1_rotmat = Quaternion(body1_quat).rotation()
+        body2_rotmat = Quaternion(body2_quat).rotation()
 
-        n_A_W = body1_rotmat.dot(n_A)
-        n_B_W = body2_rotmat.dot(n_B)
+        na_W = body1_rotmat.dot(na_A)
+        nb_W = body2_rotmat.dot(nb_B)
 
-        angle = math.acos(n_A_W.transpose().dot(n_B_W) /
-                          (np.linalg.norm(n_A_W) * np.linalg.norm(n_B_W)))
+        angle = math.acos(na_W.transpose().dot(nb_W) /
+                          (np.linalg.norm(na_W) * np.linalg.norm(nb_W)))
 
         self.assertLess(math.fabs(angle - angle_lower), 1E-6)
