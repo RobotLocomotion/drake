@@ -63,7 +63,9 @@ class TestInverseKinematics(unittest.TestCase):
         p_AQ_upper = np.array([-0.05, -0.12, -0.28])
 
         self.ik_two_bodies.AddPositionConstraint(
-            self.body1_frame, p_BQ, self.body2_frame, p_AQ_lower, p_AQ_upper)
+            frameB=self.body1_frame, p_BQ=p_BQ,
+            frameA=self.body2_frame,
+            p_AQ_lower=p_AQ_lower, p_AQ_upper=p_AQ_upper)
         result = self.prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
         q_val = self.prog.GetSolution(self.q)
