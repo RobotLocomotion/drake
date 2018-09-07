@@ -456,7 +456,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   // Allow the load dispatch to peek into SceneGraph.
   friend void DispatchLoadMessage(const SceneGraph<double>&,
-                                  lcm::DrakeLcmInterface*);
+                                  lcm::DrakeLcmInterface*,
+                                  const std::string& channel);
 
   // Constructs a QueryObject for OutputPort allocation.
   QueryObject<T> MakeQueryObject() const;

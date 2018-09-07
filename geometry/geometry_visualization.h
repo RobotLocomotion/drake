@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm_interface.h"
@@ -77,9 +79,13 @@ void ConnectVisualization(systems::DiagramBuilder<double>* builder,
  after ConnectVisualization() has been used to add visualization to the
  Diagram that contains the given `scene_graph`.
 
+ You may optionally specify an LCM channel name, if not provided the message
+ goes to "DRAKE_VIEWER_LOAD_ROBOT".
+
  @see geometry::ConnectVisualization() */
-void DispatchLoadMessage(const SceneGraph<double>& scene_graph,
-                         lcm::DrakeLcmInterface* lcm);
+void DispatchLoadMessage(
+    const SceneGraph<double>& scene_graph, lcm::DrakeLcmInterface* lcm,
+    const std::string& channel = "DRAKE_VIEWER_LOAD_ROBOT");
 
 }  // namespace geometry
 }  // namespace drake

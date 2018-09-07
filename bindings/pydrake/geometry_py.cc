@@ -47,7 +47,8 @@ PYBIND11_MODULE(geometry, m) {
   m.def("ConnectVisualization", &ConnectVisualization,
         py::arg("builder"), py::arg("scene_graph"), py::arg("lcm") = nullptr);
   m.def("DispatchLoadMessage", &DispatchLoadMessage,
-        py::arg("scene_graph"), py::arg("lcm"));
+        py::arg("scene_graph"), py::arg("lcm"),
+        py::arg("channel") = std::string("DRAKE_VIEWER_LOAD_ROBOT"));
 }
 
 }  // namespace
