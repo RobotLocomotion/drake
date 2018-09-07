@@ -131,14 +131,14 @@ class InverseDynamicsTest : public ::testing::Test {
   int num_positions() const {
     if (rigid_body_tree_)
       return rigid_body_tree_->get_num_positions();
-    ASSERT_NE(multibody_plant_.get(), nullptr);
+    DRAKE_DEMAND(multibody_plant_.get() != nullptr);
     return multibody_plant_->model().num_positions();
   }
 
   int num_velocities() const {
     if (rigid_body_tree_)
       return rigid_body_tree_->get_num_velocities();
-    ASSERT_NE(multibody_plant_.get(), nullptr);
+    DRAKE_DEMAND(multibody_plant_.get() != nullptr);
     return multibody_plant_->model().num_velocities();
   }
 

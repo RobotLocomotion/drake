@@ -36,11 +36,15 @@ namespace controllers {
  * When unset, `vd*` is be treated as zero.
  *
  * Note that this class assumes the robot is fully actuated, its position
- * and velocity have the same dimension, it does not have a floating base.
- * If violated, the program will abort. It is discouraged to use this controller
- * for robots with closed kinematic loops.
+ * and velocity have the same dimension, and it does not have a floating base.
+ * If violated, the program will abort. This controller was not designed for
+ * closed loop systems: the controller accounts for neither constraint forces
+ * nor actuator forces applied at loop constraints. Use on such systems is not
+ * recommended.
  *
  * @tparam T The vector element type, which must be a valid Eigen scalar.
+ * @see InverseDynamics for an accounting of all forces incorporated into this
+ *      computation.
  *
  * Instantiated templates for the following kinds of T's are provided:
  * - double

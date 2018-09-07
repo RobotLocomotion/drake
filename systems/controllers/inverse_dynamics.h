@@ -16,16 +16,22 @@ namespace systems {
 namespace controllers {
 
 /**
- * Solves inverse dynamics with no consideration for external wrenches,
- * under actuation, joint torque limits or closed kinematic chains. The torque
- * is `H(q) * vd_d + c(q, v) + g(q)`, where `H` is the inertia matrix, `c` is
- * the coriolis and centrifugal, `g` is the gravity term, `q` is the generalized
- * position, `v` is the generalized velocity and `vd_d` is the desired
- * generalized acceleration. There is also a pure gravity compensation mode,
+ * Solves inverse dynamics with no consideration for under actuation, joint
+ * torque limits, or closed kinematic chains. The system also provides a pure
+ * gravity compensation mode. This system provides a BasicVector
+ * input port for the state `(q, v)`, where `q` is the generalized
+ * position and `v` is the generalized velocity, and a BasicVector output port
+ * for the computed torque. There is an additional BasicVector input port for
+ * desired acceleration when configured to be **not** in pure gravity
+ * compensation mode.
+
+
+ There is also a pure gravity compensation mode,
  * in which torque is computed as `g(q)`. This system always has an BasicVector
  * input port for the state `(q, v)` and an BasicVector output port for the
  * computed torque. There is an additional BasicVector input port for desired
  * acceleration when configured to be not in pure gravity compensation mode.
+
  *
  * InverseDynamicsController uses a PID controller to generate desired
  * acceleration and uses this class to compute torque. This class should be used
@@ -42,7 +48,12 @@ class InverseDynamics : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamics)
 
   /**
-   * Computes inverse dynamics for @p tree.
+   * Computes inverse dynamics for `tree`, where the computed torque
+   * is `H(q) * vd_d + c(q, v) + g(q)`, where `H` is the inertia matrix, `c` is
+   * the Coriolis terms, `g` is the gravity term, `q` is the generalized
+   * position, `v` is the generalized velocity and `vd_d` is the desired
+   * generalized acceleration. In gravity compensation mode, torque is computed
+   * as `g(q)`.
    * @param tree Pointer to the model. The life span of @p tree must be longer
    * than this instance.
    * @param pure_gravity_compensation If set to true, this instance will only
@@ -51,8 +62,19 @@ class InverseDynamics : public LeafSystem<T> {
    */
   InverseDynamics(const RigidBodyTree<T>* tree, bool pure_gravity_compensation);
 
+  // @TODO(edrumwri) Find a cleaner way of approaching the consideration of
+  // external forces. I like to imagine a dichotomy of approaches for
+  // construction of this system: incorporating *no* external forces or all
+  // forces on the plant. The current approach does neither: it only pledges to
+  // account for exactly the forces that MultibodyTree does.
   /**
-   * Computes inverse dynamics for @p plant.
+   * Computes inverse dynamics for `plant`, where the computed torque is
+   * `H(q) * vd_d + f`, and `H` is the inertia matrix, `c` is the Coriolis term,
+   * `q` is the generalized position, `v` is the generalized velocity,
+   * `vd_d` is the desired generalized acceleration, and `f` is the result
+   * computed using MultibodyTree::CalcForceElementsContribution() given the
+   * passed-in model, `q`, and `v`. In gravity compensation mode, torque is
+   * computed using MultibodyTree::CalcGravityGeneralizedForces().
    * @param plant Pointer to the plant. The life span of @p plant must be
    * longer than that of this instance.
    * @param parameters The parameters corresponding to this plant.
