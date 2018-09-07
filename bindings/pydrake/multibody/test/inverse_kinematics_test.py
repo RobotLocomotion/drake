@@ -25,8 +25,8 @@ class TestInverseKinematics(unittest.TestCase):
         model_instance = AddModelFromSdfFile(
             file_name=file_name, plant=self.plant, scene_graph=None)
         self.plant.Finalize()
-        self.link1_frame = self.plant.GetBodyByName("body1").body_frame()
-        self.link2_frame = self.plant.GetBodyByName("body2").body_frame()
+        self.body1_frame = self.plant.GetBodyByName("body1").body_frame()
+        self.body2_frame = self.plant.GetBodyByName("body2").body_frame()
         self.ik_two_bodies = ik.InverseKinematics(self.plant)
         self.prog = self.ik_two_bodies.get_mutable_prog()
         self.q = self.ik_two_bodies.q()
@@ -34,10 +34,28 @@ class TestInverseKinematics(unittest.TestCase):
         def squaredNorm(x):
             return np.array([x[0] ** 2 + x[1] ** 2 + x[2] ** 2 + x[3] ** 2])
 
-        self.prog.AddConstraint(squaredNorm, [1], [1], self.q[0:4])
-        self.prog.AddConstraint(squaredNorm, [1], [1], self.q[7:11])
-        self.prog.SetInitialGuess(self.q[0:4], [1, 0, 0, 0])
-        self.prog.SetInitialGuess(self.q[7:11], [1, 0, 0, 0])
+        self.prog.AddConstraint(
+            squaredNorm, [1], [1], self._body1_quat(self.q))
+        self.prog.AddConstraint(
+            squaredNorm, [1], [1], self._body2_quat(self.q))
+        self.prog.SetInitialGuess(self._body1_quat(self.q), [1, 0, 0, 0])
+        self.prog.SetInitialGuess(self._body2_quat(self.q), [1, 0, 0, 0])
+
+    def _body1_quat(self, q):
+        # TODO(eric.cousineau): Replace with state indexing.
+        return q[0:4]
+
+    def _body1_pos(self, q):
+        # TODO(eric.cousineau): Replace with state indexing.
+        return q[4:7]
+
+    def _body2_quat(self, q):
+        # TODO(eric.cousineau): Replace with state indexing.
+        return q[7:11]
+
+    def _body2_pos(self, q):
+        # TODO(eric.cousineau): Replace with state indexing.
+        return q[11:14]
 
     def test_AddPositionConstraint(self):
         p_BQ = np.array([0.2, 0.3, 0.5])
@@ -45,15 +63,15 @@ class TestInverseKinematics(unittest.TestCase):
         p_AQ_upper = np.array([-0.05, -0.12, -0.28])
 
         self.ik_two_bodies.AddPositionConstraint(
-            self.link1_frame, p_BQ, self.link2_frame, p_AQ_lower, p_AQ_upper)
+            self.body1_frame, p_BQ, self.body2_frame, p_AQ_lower, p_AQ_upper)
         result = self.prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
         q_val = self.prog.GetSolution(self.q)
 
-        body1_quat = q_val[0:4]
-        body1_pos = q_val[4:7]
-        body2_quat = q_val[7:11]
-        body2_pos = q_val[11:14]
+        body1_quat = self._body1_quat(q_val)
+        body1_pos = self._body1_pos(q_val)
+        body2_quat = self._body2_quat(q_val)
+        body2_pos = self._body2_pos(q_val)
         body1_rotmat = Quaternion(body1_quat).rotation()
         body2_rotmat = Quaternion(body2_quat).rotation()
         p_AQ = body2_rotmat.transpose().dot(
@@ -66,15 +84,15 @@ class TestInverseKinematics(unittest.TestCase):
     def test_AddOrientationConstraint(self):
         theta_bound = 0.2 * math.pi
         self.ik_two_bodies.AddOrientationConstraint(
-            frameA=self.link1_frame, frameB=self.link2_frame,
+            frameA=self.body1_frame, frameB=self.body2_frame,
             theta_bound=theta_bound)
         result = self.prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
 
         q_val = self.prog.GetSolution(self.q)
 
-        body1_quat = q_val[0:4]
-        body2_quat = q_val[7:11]
+        body1_quat = self._body1_quat(q_val)
+        body2_quat = self._body2_quat(q_val)
         body1_rotmat = Quaternion(body1_quat).rotation()
         body2_rotmat = Quaternion(body2_quat).rotation()
         R_AB = body1_rotmat.transpose().dot(body2_rotmat)
@@ -87,17 +105,17 @@ class TestInverseKinematics(unittest.TestCase):
         cone_half_angle = 0.2 * math.pi
 
         self.ik_two_bodies.AddGazeTargetConstraint(
-            frameA=self.link1_frame, p_AS=p_AS, n_A=n_A,
-            frameB=self.link2_frame, p_BT=p_BT,
+            frameA=self.body1_frame, p_AS=p_AS, n_A=n_A,
+            frameB=self.body2_frame, p_BT=p_BT,
             cone_half_angle=cone_half_angle)
         result = self.prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
 
         q_val = self.prog.GetSolution(self.q)
-        body1_quat = q_val[0:4]
-        body1_pos = q_val[4:7]
-        body2_quat = q_val[7:11]
-        body2_pos = q_val[11:14]
+        body1_quat = self._body1_quat(q_val)
+        body1_pos = self._body1_pos(q_val)
+        body2_quat = self._body2_quat(q_val)
+        body2_pos = self._body2_pos(q_val)
         body1_rotmat = Quaternion(body1_quat).rotation()
         body2_rotmat = Quaternion(body2_quat).rotation()
 
@@ -116,15 +134,15 @@ class TestInverseKinematics(unittest.TestCase):
         angle_upper = 0.2 * math.pi
 
         self.ik_two_bodies.AddAngleBetweenVectorsConstraint(
-            frameA=self.link1_frame, na_A=na_A,
-            frameB=self.link2_frame, nb_B=nb_B,
+            frameA=self.body1_frame, na_A=na_A,
+            frameB=self.body2_frame, nb_B=nb_B,
             angle_lower=angle_lower, angle_upper=angle_upper)
         result = self.prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
 
         q_val = self.prog.GetSolution(self.q)
-        body1_quat = q_val[0:4]
-        body2_quat = q_val[7:11]
+        body1_quat = self._body1_quat(q_val)
+        body2_quat = self._body2_quat(q_val)
         body1_rotmat = Quaternion(body1_quat).rotation()
         body2_rotmat = Quaternion(body2_quat).rotation()
 
