@@ -1623,20 +1623,22 @@ class System : public SystemBase {
   /// ports are assumed to be statistically independent.
   /// @returns the declared port.
   const InputPort<T>& DeclareInputPort(
-      PortDataType type, int size,
+      PortDataType type, int size, const std::string& name = "",
       optional<RandomDistribution> random_type = nullopt) {
     const InputPortIndex port_index(get_num_input_ports());
     const DependencyTicket port_ticket(this->assign_next_dependency_ticket());
     this->AddInputPort(
         std::make_unique<InputPort<T>>(
-            port_index, port_ticket, type, size, random_type, this, this));
+            port_index, port_ticket, type, size, name, random_type, this,
+            this));
     return get_input_port(port_index);
   }
 
   /// Adds an abstract-valued port to the input topology.
   /// @returns the declared port.
-  const InputPort<T>& DeclareAbstractInputPort() {
-    return DeclareInputPort(kAbstractValued, 0 /* size */);
+  const InputPort<T>& DeclareAbstractInputPort(
+      const std::string& name = "") {
+    return DeclareInputPort(kAbstractValued, 0 /* size */, name);
   }
   //@}
 
