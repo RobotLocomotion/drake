@@ -41,6 +41,7 @@ class TestSystem : public LeafSystem<T> {
   ~TestSystem() override {}
 
   using LeafSystem<T>::DeclareContinuousState;
+  using LeafSystem<T>::DeclareVectorInputPort;
 
   void AddPeriodicUpdate() {
     const double period = 10.0;
@@ -213,6 +214,17 @@ class LeafSystemTest : public ::testing::Test {
   std::unique_ptr<CompositeEventCollection<double>> event_info_;
   const LeafCompositeEventCollection<double>* leaf_info_;
 };
+
+
+TEST_F(LeafSystemTest, PortNameTest) {
+  const auto& unnamed_input =
+      system_.DeclareVectorInputPort(BasicVector<double>(2));
+  const auto& named_input =
+      system_.DeclareVectorInputPort(BasicVector<double>(3), "my_input");
+
+  EXPECT_EQ(unnamed_input.get_name(), "u0");
+  EXPECT_EQ(named_input.get_name(), "my_input");
+}
 
 // Tests that witness functions can be declared. Tests that witness functions
 // stop Simulator at desired points (i.e., the raison d'etre of a witness
@@ -677,9 +689,9 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
     this->DeclareInputPort(kVectorValued, 1);
     this->DeclareVectorInputPort(MyVector2d());
     this->DeclareAbstractInputPort(Value<int>(22));
-    this->DeclareVectorInputPort(MyVector2d(),
+    this->DeclareVectorInputPort(MyVector2d(), "uniform",
                                  RandomDistribution::kUniform);
-    this->DeclareVectorInputPort(MyVector2d(),
+    this->DeclareVectorInputPort(MyVector2d(), "gaussian",
                                  RandomDistribution::kGaussian);
 
     // Output port 0 uses a BasicVector base class model.

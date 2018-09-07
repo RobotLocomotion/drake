@@ -249,29 +249,26 @@ struct Impl {
 
     // TODO(eric.cousineau): Show constructor, but somehow make sure `pybind11`
     // knows this is abstract?
-    DefineTemplateClassWithDefault<System<T>, PySystem>(
-        m, "System", GetPyParam<T>())
+    DefineTemplateClassWithDefault<System<T>, PySystem>(m, "System",
+                                                        GetPyParam<T>())
         .def("set_name", &System<T>::set_name)
         // Topology.
         .def("get_num_input_ports", &System<T>::get_num_input_ports)
-        .def("get_input_port",
-             &System<T>::get_input_port, py_reference_internal)
+        .def("get_input_port", &System<T>::get_input_port,
+             py_reference_internal)
         .def("get_num_output_ports", &System<T>::get_num_output_ports)
-        .def("get_output_port",
-             &System<T>::get_output_port, py_reference_internal)
-        .def(
-            "_DeclareInputPort", &PySystem::DeclareInputPort,
-            py_reference_internal,
-            py::arg("type"), py::arg("size"), py::arg("random_type") = nullopt)
+        .def("get_output_port", &System<T>::get_output_port,
+             py_reference_internal)
+        .def("_DeclareInputPort", &PySystem::DeclareInputPort,
+             py_reference_internal, py::arg("type"), py::arg("size"),
+             py::arg("name") = "", py::arg("random_type") = nullopt)
         // - Feedthrough.
         .def("HasAnyDirectFeedthrough", &System<T>::HasAnyDirectFeedthrough)
-        .def("HasDirectFeedthrough",
-             overload_cast_explicit<bool, int>(
-                 &System<T>::HasDirectFeedthrough),
+        .def("HasDirectFeedthrough", overload_cast_explicit<bool, int>(
+                                         &System<T>::HasDirectFeedthrough),
              py::arg("output_port"))
-        .def("HasDirectFeedthrough",
-             overload_cast_explicit<bool, int, int>(
-                 &System<T>::HasDirectFeedthrough),
+        .def("HasDirectFeedthrough", overload_cast_explicit<bool, int, int>(
+                                         &System<T>::HasDirectFeedthrough),
              py::arg("input_port"), py::arg("output_port"))
         // Context.
         .def("CreateDefaultContext", &System<T>::CreateDefaultContext)
@@ -285,45 +282,42 @@ struct Impl {
                   "`System.AllocateOutput(self, Context)` is deprecated. "
                   "Please use `System.AllocateOutput(self)` instead.");
                return self->AllocateOutput();
-             }, py::arg("context"))
-        .def(
-            "EvalVectorInput",
-            [](const System<T>* self, const Context<T>& arg1, int arg2) {
-              return self->EvalVectorInput(arg1, arg2);
-            }, py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 2>())
-        .def(
-            "EvalAbstractInput",
-            [](const System<T>* self, const Context<T>& arg1, int arg2) {
-              return self->EvalAbstractInput(arg1, arg2);
-            }, py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 2>())
+             },
+             py::arg("context"))
+        .def("EvalVectorInput",
+             [](const System<T>* self, const Context<T>& arg1, int arg2) {
+               return self->EvalVectorInput(arg1, arg2);
+             },
+             py_reference,
+             // Keep alive, ownership: `return` keeps `Context` alive.
+             py::keep_alive<0, 2>())
+        .def("EvalAbstractInput",
+             [](const System<T>* self, const Context<T>& arg1, int arg2) {
+               return self->EvalAbstractInput(arg1, arg2);
+             },
+             py_reference,
+             // Keep alive, ownership: `return` keeps `Context` alive.
+             py::keep_alive<0, 2>())
         // Computation.
         .def("CalcOutput", &System<T>::CalcOutput)
         .def("CalcTimeDerivatives", &System<T>::CalcTimeDerivatives)
         // Sugar.
-        .def(
-            "GetGraphvizString",
-            [str_py](const System<T>* self) {
-              // @note This is a workaround; for some reason,
-              // casting this using `py::str` does not work, but directly
-              // calling the Python function (`str_py`) does.
-              return str_py(self->GetGraphvizString());
-            })
+        .def("GetGraphvizString",
+             [str_py](const System<T>* self) {
+               // @note This is a workaround; for some reason,
+               // casting this using `py::str` does not work, but directly
+               // calling the Python function (`str_py`) does.
+               return str_py(self->GetGraphvizString());
+             })
         // Events.
-        .def("Publish",
-             overload_cast_explicit<void, const Context<T>&>(
-                 &System<T>::Publish))
+        .def("Publish", overload_cast_explicit<void, const Context<T>&>(
+                            &System<T>::Publish))
         // Scalar types.
-        .def("ToAutoDiffXd", [](const System<T>& self) {
-           return self.ToAutoDiffXd();
-        })
+        .def("ToAutoDiffXd",
+             [](const System<T>& self) { return self.ToAutoDiffXd(); })
         .def("ToAutoDiffXdMaybe", &System<T>::ToAutoDiffXdMaybe)
-        .def("ToSymbolic", [](const System<T>& self) {
-           return self.ToSymbolic();
-        })
+        .def("ToSymbolic",
+             [](const System<T>& self) { return self.ToSymbolic(); })
         .def("ToSymbolicMaybe", &System<T>::ToSymbolicMaybe);
 
     using AllocCallback = typename LeafOutputPort<T>::AllocCallback;
