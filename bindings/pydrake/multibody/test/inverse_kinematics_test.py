@@ -18,6 +18,9 @@ from pydrake.util.eigen_geometry import Quaternion
 
 
 class TestInverseKinematics(unittest.TestCase):
+    """
+    This test reflects inverse_kinematics_test.cc
+    """
     def setUp(self):
         file_name = FindResourceOrThrow(
             "drake/bindings/pydrake/multibody/test/two_bodies.sdf")
