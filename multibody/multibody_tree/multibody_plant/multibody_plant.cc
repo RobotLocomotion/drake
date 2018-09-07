@@ -1452,7 +1452,9 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
     last_actuated_instance = model_instance_index;
     instance_actuation_ports_[model_instance_index] =
         this->DeclareVectorInputPort(
-            systems::BasicVector<T>(instance_num_dofs)).get_index();
+            systems::BasicVector<T>(instance_num_dofs),
+                tree_->GetModelInstanceName(model_instance_index) +
+                "_actuation").get_index();
   }
 
   if (num_actuated_instances == 1) {
@@ -1634,7 +1636,8 @@ MultibodyPlant<T>::get_contact_results_output_port() const {
 
 template <typename T>
 void MultibodyPlant<T>::DeclareSceneGraphPorts() {
-  geometry_query_port_ = this->DeclareAbstractInputPort().get_index();
+  geometry_query_port_ =
+      this->DeclareAbstractInputPort("geometry_query").get_index();
   // This presupposes that the source id has been assigned and _all_ frames have
   // been registered.
   std::vector<FrameId> ids;

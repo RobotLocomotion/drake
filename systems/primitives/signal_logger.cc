@@ -8,7 +8,7 @@ namespace systems {
 template <typename T>
 SignalLogger<T>::SignalLogger(int input_size, int batch_allocation_size)
     : log_(input_size, batch_allocation_size) {
-  this->DeclareInputPort(kVectorValued, input_size);
+  this->DeclareInputPort(kVectorValued, input_size, "data");
 }
 
 template <typename T>
