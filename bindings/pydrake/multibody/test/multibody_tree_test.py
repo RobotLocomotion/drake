@@ -140,7 +140,10 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertIsInstance(joint.child_body(), Body)
         self.assertIsInstance(joint.frame_on_parent(), Frame)
         self.assertIsInstance(joint.frame_on_child(), Frame)
-        self.assertIsInstance(joint.num_dofs(), int)
+        self.assertIsInstance(joint.num_positions(), int)
+        self.assertIsInstance(joint.num_velocities(), int)
+        self.assertIsInstance(joint.position_start(), int)
+        self.assertIsInstance(joint.velocity_start(), int)
 
     def _test_joint_actuator_api(self, joint_actuator):
         self.assertIsInstance(joint_actuator, JointActuator)
@@ -227,6 +230,9 @@ class TestMultibodyTree(unittest.TestCase):
         for joint in joints:
             joint_out = plant.AddJoint(joint)
             self.assertIs(joint, joint_out)
-            self._test_joint_api(joint)
-        # Ensure construction is valid.
+
+        # The model is now complete.
         plant.Finalize()
+
+        for joint in joints:
+            self._test_joint_api(joint)

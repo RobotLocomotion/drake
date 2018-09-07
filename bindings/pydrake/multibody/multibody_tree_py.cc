@@ -3,6 +3,7 @@
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/util/deprecation_pybind.h"
 #include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/util/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/util/type_safe_index_pybind.h"
@@ -100,7 +101,19 @@ void init_module(py::module m) {
         .def("child_body", &Class::child_body, py_reference_internal)
         .def("frame_on_parent", &Class::frame_on_parent, py_reference_internal)
         .def("frame_on_child", &Class::frame_on_child, py_reference_internal)
-        .def("num_dofs", &Class::num_dofs);
+        .def("position_start", &Class::position_start)
+        .def("velocity_start", &Class::velocity_start)
+        .def("num_positions", &Class::num_positions)
+        .def("num_velocities", &Class::num_velocities);
+
+    // Add deprecated methods.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("num_dofs", &Class::num_dofs);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    cls.attr("message_num_dofs") = "Please use num_velocities().";
+    DeprecateAttribute(
+        cls, "num_dofs", cls.attr("message_num_dofs"));
   }
 
   {

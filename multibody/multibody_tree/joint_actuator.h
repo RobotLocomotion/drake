@@ -64,9 +64,9 @@ class JointActuator final
   ///   The context storing the state and parameters for the model to which
   ///   `this` joint belongs.
   /// @param[in] joint_dof
-  ///   Index specifying one of the degress of freedom for this joint. The index
-  ///   must be in the range `0 <= joint_dof < num_dofs()` or otherwise this
-  ///   method will throw an exception.
+  ///   Index specifying one of the degrees of freedom for this joint. The index
+  ///   must be in the range `0 <= joint_dof < num_velocities()` or otherwise
+  ///   this method will throw an exception.
   /// @param[in] joint_tau
   ///   Generalized force corresponding to the degree of freedom indicated by
   ///   `joint_dof` to be added into `forces`. Refere to the specific Joint
@@ -90,12 +90,12 @@ class JointActuator final
   /// @param[in] u_instance
   ///   Actuation values for `this` actuator. It must be of size equal to the
   ///   number of degrees of freedom of the actuated Joint, see
-  ///   Joint::num_dofs(). For units and sign conventions refer to the specific
-  ///   Joint sub-class documentation.
+  ///   Joint::num_velocities(). For units and sign conventions refer to the
+  ///   specific Joint sub-class documentation.
   /// @param[out] u
   ///   The vector containing the actuation values for the entire MultibodyTree
   ///   model to which `this` actuator belongs to.
-  /// @throws if `u_instance.size() != this->joint().num_dofs()`.
+  /// @throws if `u_instance.size() != this->joint().num_velocities()`.
   /// @throws if u is nullptr.
   /// @throws if `u.size() != this->get_parent_tree().num_actuated_dofs()`.
   void set_actuation_vector(

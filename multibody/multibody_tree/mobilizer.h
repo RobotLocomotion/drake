@@ -263,6 +263,22 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// @see num_positions()
   virtual int num_velocities() const = 0;
 
+  /// Returns the index to the first generalized position for this mobilizer
+  /// within the vector q of generalized positions for the full multibody
+  /// system.
+  int position_start_in_q() const {
+    DRAKE_DEMAND(this->get_parent_tree().topology_is_valid());
+    return topology_.positions_start;
+  }
+
+  /// Returns the index to the first generalized velocity for this mobilizer
+  /// within the vector v of generalized velocities for the full multibody
+  /// system.
+  int velocity_start_in_v() const {
+    DRAKE_DEMAND(this->get_parent_tree().topology_is_valid());
+    return topology_.velocities_start_in_v;
+  }
+
   /// Returns a constant reference to the inboard frame.
   const Frame<T>& inboard_frame() const {
     return inboard_frame_;

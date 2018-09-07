@@ -17,7 +17,7 @@ void ModelInstance<T>::set_actuation_vector(
   DRAKE_DEMAND(u_instance.size() == num_actuated_dofs_);
   int u_instance_offset = 0;
   for (const JointActuator<T>* actuator : joint_actuators_) {
-    const int num_dofs = actuator->joint().num_dofs();
+    const int num_dofs = actuator->joint().num_velocities();
     actuator->set_actuation_vector(
         u_instance.segment(u_instance_offset, num_dofs), u);
     u_instance_offset += num_dofs;

@@ -176,11 +176,11 @@ class PrismaticJoint final : public Joint<T> {
   /// Joint<T> virtual override called through public NVI, Joint::AddInForce().
   /// Therefore arguments were already checked to be valid.
   /// For a %PrismaticJoint, we must always have `joint_dof = 0` since there is
-  /// only a single degree of freedom (get_num_dofs() == 1). `joint_tau` is the
-  /// linear force applied along the joint's axis, on the body declared as child
-  /// (according to the prismatic joint's constructor) at the origin of the
-  /// child frame (which is coincident with the origin of the parent frame at
-  /// all times).
+  /// only a single degree of freedom (num_velocities() == 1). `joint_tau` is
+  /// the linear force applied along the joint's axis, on the body declared as
+  /// child (according to the prismatic joint's constructor) at the origin of
+  /// the child frame (which is coincident with the origin of the parent frame
+  /// at all times).
   void DoAddInOneForce(
       const systems::Context<T>&,
       int joint_dof,
@@ -205,7 +205,19 @@ class PrismaticJoint final : public Joint<T> {
   }
 
  private:
-  int do_get_num_dofs() const final {
+  int do_get_velocity_start() const override {
+    return get_mobilizer()->velocity_start_in_v();
+  }
+
+  int do_get_num_velocities() const override {
+    return 1;
+  }
+
+  int do_get_position_start() const override {
+    return get_mobilizer()->position_start_in_q();
+  }
+
+  int do_get_num_positions() const override {
     return 1;
   }
 
