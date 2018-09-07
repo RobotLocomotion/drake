@@ -372,7 +372,6 @@ drake_cc_library(
     hdrs = ["road_path.h"],
     deps = [
         ":lane_direction",
-        ":monolane_onramp_merge",
         "//automotive/maliput/api",
         "//common:essential",
         "//common:unused",
@@ -717,7 +716,6 @@ drake_cc_googletest(
     name = "idm_controller_test",
     deps = [
         "//automotive:idm_controller",
-        "//automotive:monolane_onramp_merge",
         "//automotive/maliput/dragway",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/framework/test_utilities:scalar_conversion",
@@ -768,7 +766,7 @@ drake_cc_googletest(
     deps = [
         ":road_path",
         "//automotive/maliput/dragway",
-        "//automotive/maliput/monolane",
+        "//automotive/maliput/multilane",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
