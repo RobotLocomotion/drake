@@ -73,7 +73,7 @@ class WeldJoint final : public Joint<T> {
 
   int do_get_position_start() const override {
     // Since WeldJoint has no state, the start index has no meaning. However,
-    // we let its decide the return value for this case (this has to do with
+    // we let it decide the return value for this case (this has to do with
     // allowing zero sized Eigen blocks).
     DRAKE_DEMAND(static_cast<int>(
                      this->get_implementation().mobilizers_.size()) == 1);

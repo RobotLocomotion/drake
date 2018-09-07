@@ -53,7 +53,7 @@ TEST_F(WeldJointTest, NumDOFs) {
   EXPECT_EQ(joint_->num_positions(), 0);
   EXPECT_EQ(joint_->num_velocities(), 0);
   // We just verify we can call these methods. However their return value is
-  // irrelevant given joints of type WeldJoint have no state.
+  // irrelevant since joints of type WeldJoint have no state.
   EXPECT_NO_THROW(joint_->position_start());
   EXPECT_NO_THROW(joint_->velocity_start());
 }

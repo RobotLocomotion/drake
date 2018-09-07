@@ -134,7 +134,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
 
   /// Returns the number of generalized velocities describing this joint.
   int num_velocities() const {
-    DRAKE_DEMAND(0 <= do_get_num_velocities() && do_get_num_velocities() <= 6);
+    DRAKE_ASSERT(0 <= do_get_num_velocities() && do_get_num_velocities() <= 6);
     return do_get_num_velocities();
   }
 
@@ -146,7 +146,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
 
   /// Returns the number of generalized positions describing this joint.
   int num_positions() const {
-    DRAKE_DEMAND(0 <= do_get_num_positions() && do_get_num_positions() <= 7);
+    DRAKE_ASSERT(0 <= do_get_num_positions() && do_get_num_positions() <= 7);
     return do_get_num_positions();
   }
 
