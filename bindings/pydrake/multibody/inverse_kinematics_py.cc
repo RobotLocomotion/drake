@@ -53,10 +53,12 @@ void init_module(py::module m) {
       .def("q", static_cast<const solvers::VectorXDecisionVariable& (
                     InverseKinematics::*)() const>(&InverseKinematics::q))
       .def("prog", static_cast<const MathematicalProgram& (
-                       InverseKinematics::*)() const>(&InverseKinematics::prog))
+                       InverseKinematics::*)() const>(&InverseKinematics::prog),
+           py_reference_internal)
       .def("get_mutable_prog",
            static_cast<MathematicalProgram* (InverseKinematics::*)() const>(
-               &InverseKinematics::get_mutable_prog));
+               &InverseKinematics::get_mutable_prog),
+           py_reference_internal);
 }
 
 void init_all(py::module m) {
