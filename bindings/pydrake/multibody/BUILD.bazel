@@ -158,12 +158,12 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "inverse_kinematics_py",
-    cc_so_name = "inverse_kinematics",
-    cc_srcs = ["inverse_kinematics_py.cc"],
-    package_info = PACKAGE_INFO,
     cc_deps = [
         "//bindings/pydrake:symbolic_types_pybind",
     ],
+    cc_so_name = "inverse_kinematics",
+    cc_srcs = ["inverse_kinematics_py.cc"],
+    package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
         ":multibody_tree_py",
@@ -214,7 +214,6 @@ filegroup(
         "**/*.sdf",
     ]),
 )
-
 
 drake_py_unittest(
     name = "rigid_body_plant_test",
