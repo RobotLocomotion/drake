@@ -77,6 +77,12 @@ drake_py_binary(
 )
 
 drake_py_binary(
+    name = "install_lint_reporter",
+    testonly = 1,
+    srcs = ["install_lint_reporter.py"],
+)
+
+drake_py_binary(
     name = "library_lint_reporter",
     testonly = 1,
     srcs = ["library_lint_reporter.py"],
