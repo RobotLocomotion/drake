@@ -50,6 +50,8 @@ class TestSystem : public System<double> {
   ~TestSystem() override {}
 
   using System::AddConstraint;  // allow access to protected method.
+  using System::DeclareInputPort;
+  using System::DeclareAbstractInputPort;
 
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
       const override {
@@ -344,6 +346,23 @@ TEST_F(SystemTest, PortReferencesAreStable) {
   EXPECT_EQ(kAbstractValued, first_output.get_data_type());
 }
 
+TEST_F(SystemTest, PortNameTest) {
+  const auto& unnamed_input = system_.DeclareInputPort(kVectorValued, 2);
+  const auto& named_input =
+      system_.DeclareInputPort(kVectorValued, 3, "my_input");
+  const auto& named_abstract_input =
+      system_.DeclareAbstractInputPort("abstract");
+
+  EXPECT_EQ(unnamed_input.get_name(), "u0");
+  EXPECT_EQ(named_input.get_name(), "my_input");
+  EXPECT_EQ(named_abstract_input.get_name(), "abstract");
+
+  // Duplicate port names should throw.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      system_.DeclareInputPort(kAbstractValued, 0, "my_input"),
+      std::logic_error, ".*already has an input port named.*");
+}
+
 // Tests the constraint list logic.
 TEST_F(SystemTest, SystemConstraintTest) {
   EXPECT_EQ(system_.get_num_constraints(), 0);
@@ -440,8 +459,10 @@ class ValueIOTestSystem : public System<T> {
               this->CalcStringOutput(context, output);
             })));
     this->DeclareInputPort(kVectorValued, 1);
-    this->DeclareInputPort(kVectorValued, 1, RandomDistribution::kUniform);
-    this->DeclareInputPort(kVectorValued, 1, RandomDistribution::kGaussian);
+    this->DeclareInputPort(kVectorValued, 1, "uniform",
+                           RandomDistribution::kUniform);
+    this->DeclareInputPort(kVectorValued, 1, "gaussian",
+                           RandomDistribution::kGaussian);
     this->AddOutputPort(std::make_unique<LeafOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
