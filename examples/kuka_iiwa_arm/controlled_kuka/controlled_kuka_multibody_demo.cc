@@ -99,7 +99,7 @@ int DoMain() {
       kuka_plant.get_geometry_poses_output_port(),
       scene_graph.get_source_pose_port(kuka_plant.get_source_id().value()));
 
-  geometry::ConnectVisualization(&builder, scene_graph);
+  geometry::ConnectDrakeVisualizer(&builder, scene_graph);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);

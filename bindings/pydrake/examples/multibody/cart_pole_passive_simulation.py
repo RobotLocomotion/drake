@@ -5,7 +5,7 @@ Provides an example translation of `cart_pole_passive_simluation.cc`.
 import argparse
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.geometry import (ConnectVisualization, SceneGraph)
+from pydrake.geometry import (ConnectDrakeVisualizer, SceneGraph)
 from pydrake.lcm import DrakeLcm
 from pydrake.multibody.multibody_tree import UniformGravityFieldElement
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
@@ -48,7 +48,7 @@ def main():
         cart_pole.get_geometry_poses_output_port(),
         scene_graph.get_source_pose_port(cart_pole.get_source_id()))
 
-    ConnectVisualization(builder=builder, scene_graph=scene_graph)
+    ConnectDrakeVisualizer(builder=builder, scene_graph=scene_graph)
     diagram = builder.Build()
 
     diagram_context = diagram.CreateDefaultContext()

@@ -64,7 +64,7 @@ int do_main() {
   builder.Connect(scene_graph->get_query_output_port(),
                   bouncing_ball2->get_geometry_query_input_port());
 
-  geometry::ConnectVisualization(&builder, *scene_graph);
+  geometry::ConnectDrakeVisualizer(&builder, *scene_graph);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);

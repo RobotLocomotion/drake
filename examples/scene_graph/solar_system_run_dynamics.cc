@@ -26,7 +26,7 @@ int do_main() {
   builder.Connect(solar_system->get_geometry_pose_output_port(),
                   scene_graph->get_source_pose_port(solar_system->source_id()));
 
-  geometry::ConnectVisualization(&builder, *scene_graph);
+  geometry::ConnectDrakeVisualizer(&builder, *scene_graph);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);

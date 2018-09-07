@@ -67,18 +67,18 @@ class GeometryVisualizationImpl {
       DiagramBuilder.
 
  @see geometry::DispatchLoadMessage() */
-void ConnectVisualization(systems::DiagramBuilder<double>* builder,
-                          const SceneGraph<double>& scene_graph,
-                          lcm::DrakeLcmInterface* lcm = nullptr);
+void ConnectDrakeVisualizer(systems::DiagramBuilder<double>* builder,
+                            const SceneGraph<double>& scene_graph,
+                            lcm::DrakeLcmInterface* lcm = nullptr);
 
 /** Explicitly dispatches an LCM load message based on the registered geometry.
  Normally this is done automatically at Simulator initialization. But if you
  have to do it yourself (likely because you are not using a Simulator), it
  should be invoked _after_ registration is complete. Typically this is used
- after ConnectVisualization() has been used to add visualization to the
+ after ConnectDrakeVisualizer() has been used to add visualization to the
  Diagram that contains the given `scene_graph`.
 
- @see geometry::ConnectVisualization() */
+ @see geometry::ConnectDrakeVisualizer() */
 void DispatchLoadMessage(const SceneGraph<double>& scene_graph,
                          lcm::DrakeLcmInterface* lcm);
 

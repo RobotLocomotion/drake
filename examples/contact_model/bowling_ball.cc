@@ -140,7 +140,7 @@ int main() {
       rbt_sg_bridge->geometry_pose_output_port(),
       scene_graph->get_source_pose_port(rbt_sg_bridge->source_id()));
 
-  geometry::ConnectVisualization(&builder, *scene_graph);
+  geometry::ConnectDrakeVisualizer(&builder, *scene_graph);
   auto diagram = builder.Build();
 
   // Create simulator.

@@ -44,7 +44,7 @@ PYBIND11_MODULE(geometry, m) {
   BindIdentifier<FrameId>(m, "FrameId");
   BindIdentifier<GeometryId>(m, "GeometryId");
 
-  m.def("ConnectVisualization", &ConnectVisualization,
+  m.def("ConnectDrakeVisualizer", &ConnectDrakeVisualizer,
         py::arg("builder"), py::arg("scene_graph"), py::arg("lcm") = nullptr);
   m.def("DispatchLoadMessage", &DispatchLoadMessage,
         py::arg("scene_graph"), py::arg("lcm"));

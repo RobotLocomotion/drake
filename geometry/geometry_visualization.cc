@@ -258,9 +258,9 @@ void DispatchLoadMessage(const SceneGraph<double>& scene_graph,
   Publish(lcm, "DRAKE_VIEWER_LOAD_ROBOT", message);
 }
 
-void ConnectVisualization(systems::DiagramBuilder<double>* builder,
-                          const SceneGraph<double>& scene_graph,
-                          lcm::DrakeLcmInterface* lcm_optional) {
+void ConnectDrakeVisualizer(systems::DiagramBuilder<double>* builder,
+                            const SceneGraph<double>& scene_graph,
+                            lcm::DrakeLcmInterface* lcm_optional) {
   using systems::lcm::LcmPublisherSystem;
   using systems::lcm::Serializer;
   using systems::rendering::PoseBundleToDrawMessage;
