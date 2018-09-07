@@ -24,20 +24,14 @@ namespace controllers {
  * for the computed torque. There is an additional BasicVector input port for
  * desired acceleration when configured to be **not** in pure gravity
  * compensation mode.
-
-
- There is also a pure gravity compensation mode,
- * in which torque is computed as `g(q)`. This system always has an BasicVector
- * input port for the state `(q, v)` and an BasicVector output port for the
- * computed torque. There is an additional BasicVector input port for desired
- * acceleration when configured to be not in pure gravity compensation mode.
-
  *
  * InverseDynamicsController uses a PID controller to generate desired
  * acceleration and uses this class to compute torque. This class should be used
  * directly if desired acceleration is computed differently.
  *
  * @tparam T The vector element type, which must be a valid Eigen scalar.
+ * @see Constructors for descriptions of how (and which) forces are incorporated
+ *      into the inverse dynamics computation.
  *
  * Instantiated templates for the following kinds of T's are provided:
  * - double
@@ -49,7 +43,7 @@ class InverseDynamics : public LeafSystem<T> {
 
   /**
    * Computes inverse dynamics for `tree`, where the computed torque
-   * is `H(q) * vd_d + c(q, v) + g(q)`, where `H` is the inertia matrix, `c` is
+   * is `H(q) * vd_d + c(q, v) + g(q)`, and `H` is the inertia matrix, `c` is
    * the Coriolis terms, `g` is the gravity term, `q` is the generalized
    * position, `v` is the generalized velocity and `vd_d` is the desired
    * generalized acceleration. In gravity compensation mode, torque is computed

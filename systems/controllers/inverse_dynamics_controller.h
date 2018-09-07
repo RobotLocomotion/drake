@@ -43,8 +43,8 @@ namespace controllers {
  * recommended.
  *
  * @tparam T The vector element type, which must be a valid Eigen scalar.
- * @see InverseDynamics for an accounting of all forces incorporated into this
- *      computation.
+ * @see InverseDynamics for an accounting of all forces incorporated into the
+ *      inverse dynamics computation.
  *
  * Instantiated templates for the following kinds of T's are provided:
  * - double
