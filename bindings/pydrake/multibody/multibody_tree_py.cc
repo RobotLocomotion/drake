@@ -97,6 +97,9 @@ void init_module(py::module m) {
         .def("child_body", &Class::child_body, py_reference_internal)
         .def("frame_on_parent", &Class::frame_on_parent, py_reference_internal)
         .def("frame_on_child", &Class::frame_on_child, py_reference_internal)
+        .def("position_start", &Class::position_start)
+        .def("velocity_start", &Class::velocity_start)
+        .def("num_positions", &Class::num_positions)
         .def("num_velocities", &Class::num_velocities);
 
     // Add deprecated methods.

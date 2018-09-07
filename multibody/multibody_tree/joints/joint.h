@@ -127,7 +127,8 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   }
 
   /// Returns the index to the first generalized velocity for this joint
-  /// within the vector v of generalized velocities for the full model.
+  /// within the vector v of generalized velocities for the full multibody
+  /// system.
   int velocity_start() const {
     return do_get_velocity_start();
   }
@@ -139,7 +140,8 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   }
 
   /// Returns the index to the first generalized position for this joint
-  /// within the vector q of generalized positions for the full model.
+  /// within the vector q of generalized positions for the full multibody
+  /// system.
   int position_start() const {
     return do_get_position_start();
   }

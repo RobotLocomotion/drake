@@ -135,7 +135,10 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertIsInstance(joint.child_body(), Body)
         self.assertIsInstance(joint.frame_on_parent(), Frame)
         self.assertIsInstance(joint.frame_on_child(), Frame)
+        self.assertIsInstance(joint.num_positions(), int)
         self.assertIsInstance(joint.num_velocities(), int)
+        self.assertIsInstance(joint.position_start, int)
+        self.assertIsInstance(joint.velocity_start, int)
 
     def _test_joint_actuator_api(self, joint_actuator):
         self.assertIsInstance(joint_actuator, JointActuator)
