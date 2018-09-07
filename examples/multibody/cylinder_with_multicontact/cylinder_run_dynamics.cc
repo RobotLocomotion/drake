@@ -94,13 +94,16 @@ int do_main() {
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(!!plant.get_source_id());
 
-  builder.Connect(
-      plant.get_geometry_poses_output_port(),
-      scene_graph.get_source_pose_port(plant.get_source_id().value()));
   builder.Connect(scene_graph.get_query_output_port(),
                   plant.get_geometry_query_input_port());
 
   DrakeLcm lcm;
+  geometry::ConnectDrakeVisualizer(&builder, scene_graph, &lcm);
+
+  // This is the source of poses for the visualizer.
+  builder.Connect(
+      plant.get_geometry_poses_output_port(),
+      scene_graph.get_source_pose_port(plant.get_source_id().value()));
 
   // Publish contact results for visualization.
   const auto& contact_results_to_lcm =
@@ -114,13 +117,7 @@ int do_main() {
   builder.Connect(contact_results_to_lcm.get_output_port(0),
                   contact_results_publisher.get_input_port());
 
-  // Last thing before building the diagram; configure the system for
-  // visualization.
-  geometry::ConnectVisualization(scene_graph, &builder, &lcm);
   auto diagram = builder.Build();
-
-  // Load message must be sent before creating a Context.
-  geometry::DispatchLoadMessage(scene_graph, &lcm);
 
   // Create a context for this system:
   std::unique_ptr<systems::Context<double>> diagram_context =

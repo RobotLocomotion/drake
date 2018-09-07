@@ -114,13 +114,10 @@ int main() {
   auto scene_graph = builder.AddSystem<geometry::SceneGraph<double>>();
   scene_graph->set_name("scene_graph");
 
-  auto rbt_gs_bridge = builder.AddSystem<systems::RigidBodyPlantBridge<double>>(
+  auto rbt_sg_bridge = builder.AddSystem<systems::RigidBodyPlantBridge<double>>(
       &tree, scene_graph);
   builder.Connect(plant.state_output_port(),
-                  rbt_gs_bridge->rigid_body_plant_state_input_port());
-  builder.Connect(
-      rbt_gs_bridge->geometry_pose_output_port(),
-      scene_graph->get_source_pose_port(rbt_gs_bridge->source_id()));
+                  rbt_sg_bridge->rigid_body_plant_state_input_port());
 
   // Pusher
   VectorXd push_value(1);      // Single actuator.
@@ -135,15 +132,12 @@ int main() {
   builder.Connect(push_source.get_output_port(), plant.get_input_port(0));
   builder.Connect(push_source.get_output_port(), plant.get_input_port(1));
 
-  // Last thing before building the diagram; configure the system for
-  // visualization.
-  DrakeLcm lcm;
-  geometry::ConnectVisualization(*scene_graph, &builder, &lcm);
-  auto diagram = builder.Build();
+  builder.Connect(
+      rbt_sg_bridge->geometry_pose_output_port(),
+      scene_graph->get_source_pose_port(rbt_sg_bridge->source_id()));
 
-  // Load message must be sent before creating a Context (Simulator
-  // creates one).
-  geometry::DispatchLoadMessage(*scene_graph, &lcm);
+  geometry::ConnectDrakeVisualizer(&builder, *scene_graph);
+  auto diagram = builder.Build();
 
   // Create simulator.
   Simulator<double> simulator(*diagram);

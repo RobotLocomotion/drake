@@ -66,10 +66,6 @@ int DoMain() {
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(!!kuka_plant.get_source_id());
 
-  builder.Connect(
-      kuka_plant.get_geometry_poses_output_port(),
-      scene_graph.get_source_pose_port(kuka_plant.get_source_id().value()));
-
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::sdf::AddModelInstancesFromSdfFile(
       FindResourceOrThrow(kSdfPath), multibody::joints::kFixed,
@@ -99,15 +95,12 @@ int DoMain() {
   builder.Connect(traj_src->get_output_port(),
                   controller->get_input_port_desired_state());
 
-  // Last thing before building the diagram; configure the system for
-  // visualization.
-  DrakeLcm lcm;
-  geometry::ConnectVisualization(scene_graph, &builder, &lcm);
-  auto diagram = builder.Build();
+  builder.Connect(
+      kuka_plant.get_geometry_poses_output_port(),
+      scene_graph.get_source_pose_port(kuka_plant.get_source_id().value()));
 
-  // Load message must be sent before creating a Context (Simulator
-  // creates one).
-  geometry::DispatchLoadMessage(scene_graph, &lcm);
+  geometry::ConnectDrakeVisualizer(&builder, scene_graph);
+  auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
   simulator.Initialize();

@@ -145,9 +145,9 @@ bool SceneGraph<T>::SourceIsRegistered(SourceId id) const {
 
 template <typename T>
 const systems::InputPort<T>& SceneGraph<T>::get_source_pose_port(
-    SourceId id) {
+    SourceId id) const {
   ThrowUnlessRegistered(id, "Can't acquire pose port for unknown source id: ");
-  return this->get_input_port(input_source_ids_[id].pose_port);
+  return this->get_input_port(input_source_ids_.at(id).pose_port);
 }
 
 template <typename T>
