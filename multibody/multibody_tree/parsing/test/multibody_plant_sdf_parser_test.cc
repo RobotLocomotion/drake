@@ -135,6 +135,12 @@ TEST_F(AcrobotModelTests, ModelBasics) {
   EXPECT_EQ(shoulder_joint.child_body().name(), parameters_.link1_name());
   EXPECT_EQ(elbow_joint.parent_body().name(), parameters_.link1_name());
   EXPECT_EQ(elbow_joint.child_body().name(), parameters_.link2_name());
+
+  // Get frames by name.
+  const Frame<double>& link1_frame = plant_->GetFrameByName("Link1");
+  EXPECT_EQ(link1_frame.name(), "Link1");
+  const Frame<double>& link2_frame = plant_->GetFrameByName("Link2");
+  EXPECT_EQ(link2_frame.name(), "Link2");
 }
 
 // Verify the parsed model computes the same mass matrix as a Drake benchmark
@@ -265,12 +271,12 @@ TEST_F(MultibodyPlantSdfParser, LinksWithCollisions) {
       plant_.GetCollisionGeometriesForBody(plant_.GetBodyByName("link1"));
   ASSERT_EQ(link1_collision_geometry_ids.size(), 2);
 
-  EXPECT_TRUE(ExtractBoolOrThrow(
+  EXPECT_TRUE(
       plant_.default_coulomb_friction(link1_collision_geometry_ids[0]) ==
-          CoulombFriction<double>(0.8, 0.3)));
-  EXPECT_TRUE(ExtractBoolOrThrow(
+          CoulombFriction<double>(0.8, 0.3));
+  EXPECT_TRUE(
       plant_.default_coulomb_friction(link1_collision_geometry_ids[1]) ==
-          CoulombFriction<double>(1.5, 0.6)));
+          CoulombFriction<double>(1.5, 0.6));
 
   const std::vector<GeometryId>& link2_collision_geometry_ids =
       plant_.GetCollisionGeometriesForBody(plant_.GetBodyByName("link2"));
@@ -281,9 +287,9 @@ TEST_F(MultibodyPlantSdfParser, LinksWithCollisions) {
   ASSERT_EQ(link3_collision_geometry_ids.size(), 1);
   // Verifies the default value of the friction coefficients when the user does
   // not specify them in the SDF file.
-  EXPECT_TRUE(ExtractBoolOrThrow(
+  EXPECT_TRUE(
       plant_.default_coulomb_friction(link3_collision_geometry_ids[0]) ==
-          default_friction()));
+          default_friction());
 }
 // Verifies model instances are correctly created in the plant.
 TEST_F(MultibodyPlantSdfParser, ModelInstanceTest) {
@@ -381,6 +387,16 @@ TEST_F(MultibodyPlantSdfParser, ModelInstanceTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.GetJointActuatorByName("ElbowJoint"), std::logic_error,
       "Joint actuator ElbowJoint appears in multiple model instances.");
+
+  const Frame<double>& acrobot1_link1_frame =
+      plant_.GetFrameByName("Link1", acrobot1);
+  const Frame<double>& acrobot2_link1_frame =
+      plant_.GetFrameByName("Link1", acrobot2);
+  EXPECT_NE(acrobot1_link1_frame.index(), acrobot2_link1_frame.index());
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.GetFrameByName("Link1"), std::logic_error,
+      "Frame Link1 appears in multiple model instances.");
 }
 
 // Verify that our SDF parser throws an exception when a user specifies a joint

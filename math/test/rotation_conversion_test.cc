@@ -48,9 +48,9 @@ GTEST_TEST(EigenEulerAngleTest, MakeXYZRotation) {
   const Quaterniond qy(Eigen::AngleAxisd(theta, Vector3d::UnitY()));
   const Quaterniond qz(Eigen::AngleAxisd(theta, Vector3d::UnitZ()));
   const double tolerance = 32 * kEpsilon;
-  EXPECT_TRUE(Rx.IsNearlyEqualTo(RotationMatrixd(qx), tolerance).value());
-  EXPECT_TRUE(Ry.IsNearlyEqualTo(RotationMatrixd(qy), tolerance).value());
-  EXPECT_TRUE(Rz.IsNearlyEqualTo(RotationMatrixd(qz), tolerance).value());
+  EXPECT_TRUE(Rx.IsNearlyEqualTo(RotationMatrixd(qx), tolerance));
+  EXPECT_TRUE(Ry.IsNearlyEqualTo(RotationMatrixd(qy), tolerance));
+  EXPECT_TRUE(Rz.IsNearlyEqualTo(RotationMatrixd(qz), tolerance));
 }
 
 GTEST_TEST(EigenEulerAngleTest, BodyXYZ) {
@@ -377,7 +377,7 @@ TEST_F(RotationConversionTest, RotmatQuat) {
     // This 5-bit estimate seems to be a reasonably tight bound which
     // nevertheless passes a representative sampling of compilers and platforms.
     const RotationMatrix<double> rotmat(quat_drake);
-    EXPECT_TRUE(Ri.IsNearlyEqualTo(rotmat, 32 * kEpsilon).value());
+    EXPECT_TRUE(Ri.IsNearlyEqualTo(rotmat, 32 * kEpsilon));
   }
 }
 
@@ -386,7 +386,7 @@ TEST_F(RotationConversionTest, rotmat2rpyTest) {
     const RollPitchYaw<double> rpy(Ri);
     const RotationMatrix<double> rotmat_expected(rpy);
     // RollPitchYaw(RotationMatrix) is inverse of RotationMatrix(RollPitchYaw).
-    EXPECT_TRUE(Ri.IsNearlyEqualTo(rotmat_expected, 256 * kEpsilon).value());
+    EXPECT_TRUE(Ri.IsNearlyEqualTo(rotmat_expected, 256 * kEpsilon));
     EXPECT_TRUE(rpy.IsRollPitchYawInCanonicalRange());
   }
 }
@@ -405,7 +405,7 @@ TEST_F(RotationConversionTest, rpy2rotmatTest) {
     // then compare the result with RotationMatrix(RollPitchYaw).
     const RotationMatrix<double> R_from_rpy(rpyi);
     EXPECT_TRUE(
-        R_from_rpy.IsNearlyEqualTo(R_from_quaternion, 512 * kEpsilon).value());
+        R_from_rpy.IsNearlyEqualTo(R_from_quaternion, 512 * kEpsilon));
 
     // RollPitchYaw(RotationMatrix) is inverse of RotationMatrix(RollPitchYaw).
     const RollPitchYaw<double> rpy_expected(R_from_rpy);

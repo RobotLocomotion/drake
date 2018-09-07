@@ -82,13 +82,7 @@ class WeldJoint final : public Joint<T> {
 
   // Joint<T> overrides:
   std::unique_ptr<typename Joint<T>::BluePrint>
-  MakeImplementationBlueprint() const override {
-    auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
-    blue_print->mobilizers_.push_back(
-        std::make_unique<WeldMobilizer<T>>(
-            this->frame_on_parent(), this->frame_on_child(), X_PC_));
-    return std::move(blue_print);
-  }
+  MakeImplementationBlueprint() const override;
 
   std::unique_ptr<Joint<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;

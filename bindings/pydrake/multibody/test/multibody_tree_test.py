@@ -14,7 +14,9 @@ from pydrake.multibody.multibody_tree import (
     JointIndex,
     ModelInstanceIndex,
     MultibodyTree,
+    RevoluteJoint,
     UniformGravityFieldElement,
+    WeldJoint,
     world_index,
 )
 from pydrake.multibody.multibody_tree.math import (
@@ -109,6 +111,9 @@ class TestMultibodyTree(unittest.TestCase):
         self._test_joint_actuator_api(
             plant.GetJointActuatorByName(name="ElbowJoint"))
         self._test_body_api(plant.GetBodyByName(name="Link1"))
+        self.assertIs(
+            plant.GetBodyByName(name="Link1"),
+            plant.GetBodyByName(name="Link1", model_instance=model_instance))
         self.assertIsInstance(
             plant.get_actuation_input_port(), InputPort)
         self.assertIsInstance(
@@ -185,3 +190,46 @@ class TestMultibodyTree(unittest.TestCase):
             context=context, frame_B=link1_frame,
             p_BoFo_B=[0, 0, 0])
         self.assertTupleEqual(Jv_WL.shape, (6, plant.num_velocities()))
+
+    def test_multibody_add_joint(self):
+        """
+        Tests joint constructors and `AddJoint`.
+        """
+        instance_file = FindResourceOrThrow(
+            "drake/examples/double_pendulum/models/double_pendulum.sdf")
+        # Add different joints between multiple model instances.
+        # TODO(eric.cousineau): Remove the multiple instances and use
+        # programmatically constructed bodies once this API is exposed in
+        # Python.
+        num_joints = 2
+        plant = MultibodyPlant()
+        instances = []
+        for i in xrange(num_joints + 1):
+            instance = AddModelFromSdfFile(
+                instance_file, "instance_{}".format(i), plant)
+            instances.append(instance)
+        proximal_frame = "base"
+        distal_frame = "lower_link"
+        joints = [
+            RevoluteJoint(
+                name="revolve_things",
+                frame_on_parent=plant.GetBodyByName(
+                    distal_frame, instances[1]).body_frame(),
+                frame_on_child=plant.GetBodyByName(
+                    proximal_frame, instances[2]).body_frame(),
+                axis=[0, 0, 1],
+                damping=0.),
+            WeldJoint(
+                name="weld_things",
+                parent_frame_P=plant.GetBodyByName(
+                    distal_frame, instances[0]).body_frame(),
+                child_frame_C=plant.GetBodyByName(
+                    proximal_frame, instances[1]).body_frame(),
+                X_PC=Isometry3.Identity()),
+        ]
+        for joint in joints:
+            joint_out = plant.AddJoint(joint)
+            self.assertIs(joint, joint_out)
+            self._test_joint_api(joint)
+        # Ensure construction is valid.
+        plant.Finalize()

@@ -8,8 +8,8 @@ def json_repository(
     github_archive(
         name = name,
         repository = "nlohmann/json",
-        commit = "v3.1.2",
-        sha256 = "e8fffa6cbdb3c15ecdff32eebf958b6c686bc188da8ad5c6489462d16f83ae54",  # noqa
+        commit = "v3.2.0",
+        sha256 = "2de558ff3b3b32eebfb51cf2ceb835a0fa5170e6b8712b02be9c2c07fcfe52a1",  # noqa
         build_file = "@drake//tools/workspace/json:package.BUILD.bazel",
         mirrors = mirrors,
     )

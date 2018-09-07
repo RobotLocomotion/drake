@@ -143,7 +143,7 @@ class Lane : public api::Lane {
   ///        entire reference path
   /// @param elevation_bounds elevation bounds of the lane, uniform along the
   ///        entire driveable surface
-  /// @param p_scale isotropic scale factor for elevation and superelevation
+  /// @param l_max isotropic scale factor for elevation and superelevation
   /// @param elevation elevation function (see below)
   /// @param superelevation superelevation function (see below)
   ///
@@ -163,22 +163,22 @@ class Lane : public api::Lane {
   /// These two functions (@p elevation and @p superelevation) must be
   /// isotropically scaled to operate over the domain p in [0, 1], where
   /// p is linear in the path-length of the planar reference curve,
-  /// p = 0 corresponds to the start and p = 1 to the end.  @p p_scale is
+  /// p = 0 corresponds to the start and p = 1 to the end.  @p l_max is
   /// the scale factor.  In other words...
   ///
   /// Given:
   ///  * a reference curve R(p) parameterized by p in domain [0, 1], which
-  ///    has a path-length q(p) in range [0, q_max], linearly related to p,
-  ///    where q_max is the total path-length of R (in real-world units);
-  ///  * the true elevation function E_true(q), parameterized by the
-  ///    path-length q of R;
-  ///  * the true superelevation function S_true(q), parameterized by the
-  ///    path-length q of R;
+  ///    has a path-length ℓ(p) in range [0, l_max], linearly related to p,
+  ///    where l_max is the total path-length of R (in real-world units);
+  ///  * the true elevation function E_true(ℓ), parameterized by the
+  ///    path-length ℓ of R;
+  ///  * the true superelevation function S_true(ℓ), parameterized by the
+  ///    path-length ℓ of R;
   ///
   /// then:
-  ///  * @p p_scale is q_max (and p = q / p_scale);
-  ///  * @p elevation is  E_scaled = (1 / p_scale) * E_true(p_scale * p);
-  ///  * @p superelevation is  S_scaled = (1 / p_scale) * S_true(p_scale * p).
+  ///  * p = ℓ / l_max;
+  ///  * @p elevation is E_scaled = (1 / l_max) * E_true(l_max * p);
+  ///  * @p superelevation is  S_scaled = (1 / l_max) * S_true(l_max * p).
   ///
   /// N.B. The override Lane::ToLanePosition() is currently restricted to lanes
   /// in which superelevation and elevation change are both zero.
@@ -186,14 +186,14 @@ class Lane : public api::Lane {
        const api::RBounds& lane_bounds,
        const api::RBounds& driveable_bounds,
        const api::HBounds& elevation_bounds,
-       double p_scale,
+       double l_max,
        const CubicPolynomial& elevation,
        const CubicPolynomial& superelevation)
       : id_(id), segment_(segment),
         lane_bounds_(lane_bounds),
         driveable_bounds_(driveable_bounds),
         elevation_bounds_(elevation_bounds),
-        p_scale_(p_scale),
+        l_max_(l_max),
         elevation_(elevation),
         superelevation_(superelevation) {
     DRAKE_DEMAND(lane_bounds_.min() >= driveable_bounds_.min());
@@ -354,7 +354,7 @@ class Lane : public api::Lane {
   const api::RBounds lane_bounds_;
   const api::RBounds driveable_bounds_;
   const api::HBounds elevation_bounds_;
-  const double p_scale_{};
+  const double l_max_{};
   const CubicPolynomial elevation_;
   const CubicPolynomial superelevation_;
 };

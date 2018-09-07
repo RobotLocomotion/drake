@@ -383,7 +383,10 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
         GeometryFrame(
             body.name(),
             /* Initial pose: Not really used by GS. Will get removed. */
-            Isometry3<double>::Identity()));
+            Isometry3<double>::Identity(),
+            /* TODO(@SeanCurtis-TRI): Add test coverage for this
+             * model-instance support as requested in #9390. */
+            body.model_instance()));
   }
 
   // Register geometry in the body frame.

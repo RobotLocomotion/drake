@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/util/type_safe_index_pybind.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/joints/weld_joint.h"
 #include "drake/multibody/multibody_tree/math/spatial_force.h"
 #include "drake/multibody/multibody_tree/math/spatial_vector.h"
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"
@@ -59,6 +60,7 @@ void init_module(py::module m) {
   BindTypeSafeIndex<ModelInstanceIndex>(m, "ModelInstanceIndex");
   m.def("world_index", &world_index);
 
+  // Frames.
   {
     using Class = Frame<T>;
     py::class_<Class> cls(m, "Frame");
@@ -73,6 +75,7 @@ void init_module(py::module m) {
     // No need to re-bind element mixins from `Frame`.
   }
 
+  // Bodies.
   {
     using Class = Body<T>;
     py::class_<Class> cls(m, "Body");
@@ -87,6 +90,7 @@ void init_module(py::module m) {
     py::class_<Class, Body<T>> cls(m, "RigidBody");
   }
 
+  // Joints.
   {
     using Class = Joint<T>;
     py::class_<Class> cls(m, "Joint");
@@ -129,11 +133,27 @@ void init_module(py::module m) {
     using Class = RevoluteJoint<T>;
     py::class_<Class, Joint<T>> cls(m, "RevoluteJoint");
     cls
+        .def(py::init<const string&, const Frame<T>&,
+             const Frame<T>&, const Vector3<T>&, double>(),
+             py::arg("name"), py::arg("frame_on_parent"),
+             py::arg("frame_on_child"), py::arg("axis"),
+             py::arg("damping") = 0)
         .def("get_angle", &Class::get_angle, py::arg("context"))
         .def("set_angle", &Class::set_angle, py::arg("context"),
              py::arg("angle"));
   }
 
+  {
+    using Class = WeldJoint<T>;
+    py::class_<Class, Joint<T>> cls(m, "WeldJoint");
+    cls
+        .def(py::init<const string&, const Frame<T>&,
+             const Frame<T>&, const Isometry3<double>&>(),
+             py::arg("name"), py::arg("parent_frame_P"),
+             py::arg("child_frame_C"), py::arg("X_PC"));
+  }
+
+  // Actuators.
   {
     using Class = JointActuator<T>;
     py::class_<Class> cls(m, "JointActuator");
@@ -143,6 +163,7 @@ void init_module(py::module m) {
         .def("joint", &Class::joint, py_reference_internal);
   }
 
+  // Force Elements.
   {
     using Class = ForceElement<T>;
     py::class_<Class> cls(m, "ForceElement");
@@ -152,9 +173,10 @@ void init_module(py::module m) {
   {
     using Class = UniformGravityFieldElement<T>;
     py::class_<Class, ForceElement<T>>(m, "UniformGravityFieldElement")
-        .def(py::init<Vector3<double>>());
+        .def(py::init<Vector3<double>>(), py::arg("g_W"));
   }
 
+  // Tree.
   {
     // N.B. Pending a concrete direction on #9366, a minimal subset of the
     // `MultibodyTree` API will be exposed.
@@ -253,8 +275,12 @@ void init_multibody_plant(py::module m) {
         .def("num_multibody_states", &Class::num_multibody_states)
         .def("num_actuated_dofs",
              overload_cast_explicit<int>(&Class::num_actuated_dofs));
-    // TODO(eric.cousineau): Add construction methods, `AddRigidBody`, etc.
+    // Construction.
     cls
+        .def("AddJoint",
+             [](Class* self, std::unique_ptr<Joint<T>> joint) -> auto& {
+               return self->AddJoint(std::move(joint));
+             }, py::arg("joint"), py_reference_internal)
         .def("AddForceElement",
              [](Class* self,
                 std::unique_ptr<ForceElement<T>> force_element) -> auto& {
@@ -274,6 +300,11 @@ void init_multibody_plant(py::module m) {
              overload_cast_explicit<const Body<T>&, const string&>(
                 &Class::GetBodyByName),
              py::arg("name"), py_reference_internal)
+        .def("GetBodyByName",
+             overload_cast_explicit<const Body<T>&, const string&,
+                                    ModelInstanceIndex>(
+                &Class::GetBodyByName),
+             py::arg("name"), py::arg("model_instance"), py_reference_internal)
         .def("GetJointByName",
              [](const Class* self, const string& name) -> auto& {
                return self->GetJointByName(name);

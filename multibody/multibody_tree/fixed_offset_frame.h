@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
@@ -38,21 +39,40 @@ class FixedOffsetFrame final : public Frame<T> {
   /// parent material Frame P. The pose is given by a spatial transform `X_PF`;
   /// see class documentation for more information.
   ///
+  /// @param[in] name
+  ///   The name of this frame.
   /// @param[in] P
   ///   The frame to which this frame is attached with a fixed pose.
   /// @param[in] X_PF
   ///   The _default_ transform giving the pose of F in P, therefore only the
   ///   value (as an Isometry3<double>) is provided.
-  FixedOffsetFrame(const Frame<T>& P, const Isometry3<double>& X_PF);
+  FixedOffsetFrame(
+      const std::string& name, const Frame<T>& P,
+      const Isometry3<double>& X_PF);
+
+  /// Creates an unnamed material Frame F. See overload with name for more
+  /// information.
+  FixedOffsetFrame(
+      const Frame<T>& P, const Isometry3<double>& X_PF)
+      : FixedOffsetFrame("", P, X_PF) {}
 
   /// Creates a material Frame F whose pose is fixed with respect to the
   /// BodyFrame B of the given Body, which serves as F's parent frame.
   /// The pose is given by a spatial transform `X_BF`; see class documentation
   /// for more information.
   ///
+  /// @param[in] name  The name of this frame.
   /// @param[in] bodyB The body whose BodyFrame B is to be F's parent frame.
   /// @param[in] X_BF  The transform giving the pose of F in B.
-  FixedOffsetFrame(const Body<T>& bodyB, const Isometry3<double>& X_BF);
+  FixedOffsetFrame(
+      const std::string& name, const Body<T>& bodyB,
+      const Isometry3<double>& X_BF);
+
+  /// Creates an unnamed material Frame F. See overload with name for more
+  /// information.
+  FixedOffsetFrame(
+      const Body<T>& bodyB, const Isometry3<double>& X_BF)
+      : FixedOffsetFrame("", bodyB, X_BF) {}
 
   Isometry3<T> CalcPoseInBodyFrame(
       const systems::Context<T>& context) const override {

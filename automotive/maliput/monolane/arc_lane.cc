@@ -222,10 +222,10 @@ api::LanePosition ArcLane::DoToLanePosition(
                                   driveable_bounds(s).max());
 
   // Calculate the (uniform) road elevation.
-  const double p_scale = r_ * d_theta_;
+  const double l_max = r_ * d_theta_;
   // N.B. h is the geo z-coordinate referenced against the lane elevation (whose
   // `a` coefficient is normalized by lane length).
-  const double h_unsaturated = geo_position.z() - elevation().a() * p_scale;
+  const double h_unsaturated = geo_position.z() - elevation().a() * l_max;
   const double h = math::saturate(h_unsaturated,
                                   elevation_bounds(s, r).min(),
                                   elevation_bounds(s, r).max());

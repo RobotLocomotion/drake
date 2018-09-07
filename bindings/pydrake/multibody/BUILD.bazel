@@ -235,6 +235,7 @@ drake_py_unittest(
 drake_py_unittest(
     name = "multibody_tree_test",
     data = [
+        "//examples/double_pendulum:models",
         "//multibody/benchmarks/acrobot:models",
     ],
     deps = [
