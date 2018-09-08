@@ -41,13 +41,17 @@ class InverseDynamics : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamics)
 
   /**
-   * Computes inverse dynamics for `tree`, where the computed force 
-   * is `M(q) * vd_d + C(q, v) * v = fg(q) + fs(q) - fd(v)`, and `M` is the
-   * inertia matrix, `C(q, v) * v` is the Coriolis term, `fg` is the gravity
-   * term, `q` is the generalized position, `v` is the generalized velocity,
-   * `vd_d` is the desired generalized acceleration, `fs` is computed via
-   * `CalcGeneralizedSpringForces()` and `fd` is `frictionTorques()`. In gravity
-   * compensation mode, force is computed as `fg(q)`.
+   * Computes inverse dynamics for `tree`, where the computed force `tau_id`
+   * is: <pre>
+   *   tau_id = `M(q)vd_d + C(q, v)v - tau_g(q) - tau_s(q) + tau_d(v)`
+   * </pre>
+   * where `M(q)` is the mass matrix, `C(q, v)v` is the Coriolis term,
+   * `tau_g(q)` is the gravity term, `q` is the generalized position, `v` is the
+   * generalized velocity, `vd_d` is the desired generalized acceleration,
+   * `tau_s` is computed via `RigidBodyTree::CalcGeneralizedSpringForces()` and
+   * `tau_d` is computed via `RigidBodyTree::frictionTorques()`.
+   * In gravity compensation mode, the generalized force  only includes the
+   * gravity term, that is, `tau_id = tau_g(q)`.
    * @param tree Pointer to the model. The life span of @p tree must be longer
    * than this instance.
    * @param pure_gravity_compensation If set to true, this instance will only
@@ -62,19 +66,25 @@ class InverseDynamics : public LeafSystem<T> {
   // forces on the plant. The current approach does neither: it only pledges to
   // account for exactly the forces that MultibodyTree does.
   /**
-   * Computes inverse dynamics for `plant`, where the computed force is
-   * `M(q) * vd_d + f`, and `M` is the inertia matrix, `q` is the generalized
-   * position, `v` is the generalized velocity, `vd_d` is the desired
-   * generalized acceleration, and `f` is the result computed using
-   * MultibodyTree::CalcForceElementsContribution() given the
-   * passed-in model, `q`, and `v`. In gravity compensation mode, force is
-   * computed using MultibodyTree::CalcGravityGeneralizedForces().
-   * @param plant Pointer to the plant. The life span of @p plant must be
-   * longer than that of this instance.
+   * Computes the generalized force `tau_id` that needs to be applied so that
+   * the multibody system undergoes a desired acceleration `vd_d`. That is,
+   * `tau_id` is the result of an inverse dynamics computation according to:
+   * <pre>
+   *   tau_id = M(q)vd_d + C(q, v)v - tau_g(q) - tau_app
+   * </pre>
+   * where `M(q)` is the mass matrix, `C(q, v)v` is the bias term containing
+   * Coriolis and gyroscopic effects, `tau_g(q)` is the vector of generalized
+   * forces due to gravity and `tau_app` contains applied forces from force
+   * elements added to the multibody model (this can include damping, springs,
+   * etc. See MultibodyTree::CalcForceElementsContribution()).
+   *
+   * @param plant Pointer to the multibody plant model. The life span of @p
+   * plant must be longer than that of this instance.
    * @param parameters The parameters corresponding to this plant.
    * @param pure_gravity_compensation If set to true, this instance will only
-   * consider the gravity term. It also will NOT have the desired acceleration
-   * input port.
+   * consider the gravity term. That is, `tau_id = tau_g(q)`.
+   * In this mode `this` system doest NOT have the desired acceleration input
+   * port.
    * @pre The plant must be finalized (i.e., plant.is_finalized() must return
    * `true`).
    */
