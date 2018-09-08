@@ -2116,7 +2116,7 @@ class MultibodyTree {
   ///
   /// @param[in] context
   ///   The context containing the state of the %MultibodyTree model.
-  /// @param[out] H
+  /// @param[out] M
   ///   A valid (non-null) pointer to a squared matrix in `ℛⁿˣⁿ` with n the
   ///   number of generalized velocities (num_velocities()) of the model.
   ///   This method aborts if H is nullptr or if it does not have the proper
@@ -2133,15 +2133,29 @@ class MultibodyTree {
   /// dynamics with an acceleration vector `v̇ = eᵢ`, with `eᵢ` the standard
   /// (or natural) basis of `ℛⁿ` with n the number of generalized velocities.
   /// We write this as: <pre>
-  ///   H.ᵢ(q) = M(q) * e_i
+  ///   M.ᵢ(q) = M(q) * e_i
   /// </pre>
-  /// where `H.ᵢ(q)` (notice the dot for the rows index) denotes the `i-th`
+  /// where `M.ᵢ(q)` (notice the dot for the rows index) denotes the `i-th`
   /// column in M(q).
   ///
   /// @warning This is an O(n²) algorithm. Avoid the explicit computation of the
   /// mass matrix whenever possible.
   void CalcMassMatrixViaInverseDynamics(
-      const systems::Context<T>& context, EigenPtr<MatrixX<T>> H) const;
+      const systems::Context<T>& context, EigenPtr<MatrixX<T>> M) const;
+
+  /// Alternative signature to compute the mass matrix `M(q)` via inverse
+  /// dynamics.
+  /// @param[in] context
+  ///   The context containing the state `x = [q, v]` of the model, where q is
+  ///   the vector of generalized positions and v is the vector of generalized
+  ///   velocities.
+  /// @retval M(q) The mass matrix of the multibody model. `M(q)` is an `n x n`
+  ///   matrix, with n the number of generalized velocities (num_velocities())
+  ///   of the model.
+  // NOLINTNEXTLINE(whitespace/line_length)
+  /// @see CalcMassMatrixViaInverseDynamics(const systems::Context<T>&, EigenPtr<MatrixX<T>>) const
+  MatrixX<T> CalcMassMatrixViaInverseDynamics(
+      const systems::Context<T>& context) const;
 
   /// Computes the bias term `C(q, v)v` containing Coriolis and gyroscopic
   /// effects of the multibody equations of motion: <pre>
