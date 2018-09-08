@@ -850,12 +850,13 @@ class ImplicitStribeckSolver {
    public:
     // Constructs a workspace with size only dependent on nv.
     explicit FixedSizeWorkspace(int nv) : J_ldlt_(nv), J_lu_(nv) {
-      v_.resize(nv);
-      residual_.resize(nv);
-      Delta_v_.resize(nv);
-      J_.resize(nv, nv);
-      tau_f_.resize(nv);
-      tau_.resize(nv);
+      J_ldlt_.setZero();
+      v_.setZero(nv);
+      residual_.setZero(nv);
+      Delta_v_.setZero(nv);
+      J_.setZero(nv, nv);
+      tau_f_.setZero(nv);
+      tau_.setZero(nv);
     }
     VectorX<T>& mutable_v() { return v_; }
     VectorX<T>& mutable_residual() { return residual_; }
