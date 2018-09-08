@@ -16,7 +16,7 @@ namespace systems {
 namespace controllers {
 
 /**
- * Solves inverse dynamics with no consideration for under joint actuator force
+ * Solves inverse dynamics with no consideration for joint actuator force
  * limits. The system also provides a pure gravity compensation mode. This
  * system provides a BasicVector input port for the state `(q, v)`, where `q`
  * is the generalized position and `v` is the generalized velocity, and a
