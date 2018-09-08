@@ -4,6 +4,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/systems/controllers/inverse_dynamics.h"
 #include "drake/systems/controllers/pid_controller.h"
@@ -132,6 +133,19 @@ class InverseDynamicsController : public Diagram<T>,
    */
   const OutputPort<T>& get_output_port_control() const final {
     return this->get_output_port(output_port_index_control_);
+  }
+
+  /**
+   * Returns a constant reference to the RigidBodyTree used for control.
+   */
+  DRAKE_DEPRECATED("Please use get_rigid_body_tree_for_control().")
+  const RigidBodyTree<T>& get_robot_for_control() const {
+    if (rigid_body_tree_for_control_ == nullptr) {
+      throw std::runtime_error(
+          "This controller was created for a MultibodyPlant."
+          "Use get_multibody_plant_for_control() instead.");
+    }
+    return *rigid_body_tree_for_control_;
   }
 
   /**

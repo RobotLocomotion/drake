@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -108,7 +109,15 @@ class InverseDynamics : public LeafSystem<T> {
   }
 
   /**
-   * Returns the output port for the forces that realize the desired
+   * Returns the output port for the actuation torques. 
+   */
+  DRAKE_DEPRECATED("Please use get_output_port_force().")
+  const OutputPort<T>& get_output_port_torque() const {
+    return this->get_output_port(output_port_index_force_);
+  }
+
+  /**
+   * Returns the output port for the generalized forces that realize the desired
    * acceleration. The dimension of that force vector will be identical to the
    * dimensionality of the generalized velocities.
    */
