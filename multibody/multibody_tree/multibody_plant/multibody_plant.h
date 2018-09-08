@@ -584,6 +584,25 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return model_->HasBodyNamed(name, model_instance);
   }
 
+  /// @returns `true` if a frame named `name` was added to the %MultibodyPlant.
+  /// @see AddFrame().
+  ///
+  /// @throws std::logic_error if the frame name occurs in multiple model
+  /// instances.
+  bool HasFrameNamed(const std::string& name) const {
+    return model_->HasFrameNamed(name);
+  }
+
+  /// @returns `true` if a frame named `name` was added to the %MultibodyPlant
+  /// in @p model_instance.
+  /// @see AddFrame().
+  ///
+  /// @throws if @p model_instance is not valid for this model.
+  bool HasFrameNamed(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    return model_->HasFrameNamed(name, model_instance);
+  }
+
   /// @returns `true` if a joint named `name` was added to the %MultibodyPlant.
   /// @see AddJoint().
   ///
