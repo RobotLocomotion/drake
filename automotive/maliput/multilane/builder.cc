@@ -287,13 +287,13 @@ void Builder::SetDefaultBranch(const Connection* in, int in_lane_index,
 }
 
 
-GroupBase* Builder::MakeGroup(const std::string& id) {
+Group* Builder::MakeGroup(const std::string& id) {
   groups_.push_back(group_factory_->Make(id));
   return groups_.back().get();
 }
 
 
-GroupBase* Builder::MakeGroup(const std::string& id,
+Group* Builder::MakeGroup(const std::string& id,
                           const std::vector<const Connection*>& connections) {
   groups_.push_back(group_factory_->Make(id, connections));
   return groups_.back().get();
@@ -414,7 +414,7 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
     connection_was_built.emplace(connection.get(), false);
   }
 
-  for (const std::unique_ptr<GroupBase>& group : groups_) {
+  for (const std::unique_ptr<Group>& group : groups_) {
     Junction* junction =
         road_geometry->NewJunction(
             api::JunctionId{std::string("j:") + group->id()});

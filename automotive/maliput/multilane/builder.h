@@ -462,11 +462,11 @@ class BuilderBase {
                                 api::LaneEnd::Which out_end) = 0;
 
   /// Creates a new empty connection group with ID string `id`.
-  virtual GroupBase* MakeGroup(const std::string& id) = 0;
+  virtual Group* MakeGroup(const std::string& id) = 0;
 
   /// Creates a new connection group with ID `id`, populated with the
   /// given `connections`.
-  virtual GroupBase* MakeGroup(
+  virtual Group* MakeGroup(
       const std::string& id,
       const std::vector<const Connection*>& connections) = 0;
 
@@ -606,9 +606,9 @@ class Builder : public BuilderBase {
                         int out_lane_index,
                         const api::LaneEnd::Which out_end) override;
 
-  GroupBase* MakeGroup(const std::string& id) override;
+  Group* MakeGroup(const std::string& id) override;
 
-  GroupBase* MakeGroup(
+  Group* MakeGroup(
       const std::string& id,
       const std::vector<const Connection*>& connections) override;
 
@@ -710,10 +710,10 @@ class Builder : public BuilderBase {
   double angular_tolerance_{};
   double scale_length_{};
   ComputationPolicy computation_policy_{};
+  std::unique_ptr<GroupFactoryBase> group_factory_;
   std::vector<std::unique_ptr<Connection>> connections_;
   std::vector<DefaultBranch> default_branches_;
-  std::vector<std::unique_ptr<GroupBase>> groups_;
-  std::unique_ptr<GroupFactoryBase> group_factory_;
+  std::vector<std::unique_ptr<Group>> groups_;
 };
 
 /// Implements a BuilderFactoryBase to construct Builder objects.

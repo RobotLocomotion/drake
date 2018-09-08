@@ -108,12 +108,12 @@ class BuilderMock : public BuilderBase {
     ON_CALL(*this, SetDefaultBranch(_, _, _, _, _, _))
         .WillByDefault(Invoke(&builder_, &Builder::SetDefaultBranch));
 
-    GroupBase* (Builder::*make_empty_group)(const std::string&) =
+    Group* (Builder::*make_empty_group)(const std::string&) =
         &Builder::MakeGroup;
     ON_CALL(*this, MakeGroup(_))
         .WillByDefault(Invoke(&builder_, make_empty_group));
 
-    GroupBase* (Builder::*make_filled_group)(
+    Group* (Builder::*make_filled_group)(
         const std::string&, const std::vector<const Connection*>&) =
         &Builder::MakeGroup;
     ON_CALL(*this, MakeGroup(_, _))
@@ -158,9 +158,9 @@ class BuilderMock : public BuilderBase {
                void(const Connection*, int, const api::LaneEnd::Which,
                     const Connection*, int, const api::LaneEnd::Which));
 
-  MOCK_METHOD1(MakeGroup, GroupBase*(const std::string&));
+  MOCK_METHOD1(MakeGroup, Group*(const std::string&));
 
-  MOCK_METHOD2(MakeGroup, GroupBase*(const std::string&,
+  MOCK_METHOD2(MakeGroup, Group*(const std::string&,
                                      const std::vector<const Connection*>&));
 
   MOCK_CONST_METHOD1(Build, std::unique_ptr<const api::RoadGeometry>(
@@ -197,17 +197,18 @@ class BuilderFactoryMock : public BuilderFactoryBase {
 };
 
 // Mocks a Group object acting as a proxy for later method testing.
-class GroupMock : public GroupBase {
+class GroupMock : public Group {
  public:
   // Creates a GroupMock whose ID is `id`.
-  explicit GroupMock(const std::string& id) : group_(id) {
+  explicit GroupMock(const std::string& id) {
+    group_ = GroupFactory().Make(id);
     Initialize();
   }
 
   // Creates a GroupMock whose ID is `id` and pre-filled with `connections`.
   GroupMock(const std::string& id,
-            const std::vector<const Connection*>& connections)
-      : group_(id) {
+            const std::vector<const Connection*>& connections) {
+    group_ = GroupFactory().Make(id, connections);
     Initialize();
   }
 
@@ -220,14 +221,14 @@ class GroupMock : public GroupBase {
  private:
   // Initializes all mocked functions.
   void Initialize() {
-    ON_CALL(*this, id()).WillByDefault(Invoke(&group_, &Group::id));
+    ON_CALL(*this, id()).WillByDefault(Invoke(group_.get(), &Group::id));
     ON_CALL(*this, connections())
-        .WillByDefault(Invoke(&group_, &Group::connections));
-    ON_CALL(*this, Add(_)).WillByDefault(Invoke(&group_, &Group::Add));
+        .WillByDefault(Invoke(group_.get(), &Group::connections));
+    ON_CALL(*this, Add(_)).WillByDefault(Invoke(group_.get(), &Group::Add));
   }
 
   // Real group to mock.
-  Group group_;
+  std::unique_ptr<Group> group_;
 };
 
 // Mocks a GroupFactoryBase.
@@ -238,11 +239,11 @@ class GroupMock : public GroupBase {
 class GroupFactoryMock : public GroupFactoryBase {
  public:
   GroupFactoryMock() {
-    std::unique_ptr<GroupBase> (GroupFactoryMock::*make_with_id)(
+    std::unique_ptr<Group> (GroupFactoryMock::*make_with_id)(
         const std::string&) = &GroupFactoryMock::InternalMake;
     ON_CALL(*this, Make(_))
         .WillByDefault(Invoke(this, make_with_id));
-    std::unique_ptr<GroupBase> (GroupFactoryMock::*make_with_id_connections)(
+    std::unique_ptr<Group> (GroupFactoryMock::*make_with_id_connections)(
         const std::string&,
         const std::vector<const Connection*>& connections) =
             &GroupFactoryMock::InternalMake;
@@ -250,31 +251,27 @@ class GroupFactoryMock : public GroupFactoryBase {
         .WillByDefault(Invoke(this, make_with_id_connections));
   }
 
-  MOCK_CONST_METHOD1(Make, std::unique_ptr<GroupBase>(const std::string&));
+  MOCK_CONST_METHOD1(Make, std::unique_ptr<Group>(const std::string&));
 
-  MOCK_CONST_METHOD2(Make, std::unique_ptr<GroupBase>(
+  MOCK_CONST_METHOD2(Make, std::unique_ptr<Group>(
       const std::string&, const std::vector<const Connection*>&));
 
-  // Returns a std::unique_ptr<GroupBase> specialized to GroupMock whose id is
+  // Returns a std::unique_ptr<Group> specialized to GroupMock whose id is
   // `id`.
   // When `id` does not refer to a previously set group, it returns nullptr.
-  std::unique_ptr<GroupBase> InternalMake(const std::string& id) {
+  std::unique_ptr<Group> InternalMake(const std::string& id) {
     return InternalMake(id, {});
   }
 
-  // Returns a std::unique_ptr<GroupBase> specialized to GroupMock whose id is
+  // Returns a std::unique_ptr<Group> specialized to GroupMock whose id is
   // `id` and adds `connections` to it.
   // When `id` does not refer to a previously set group, it returns nullptr.
   // Otherwise, before the pointer is returned, a copy of the raw pointer is
   // held and can be queried later via get_group_by_id().
-  std::unique_ptr<GroupBase> InternalMake(
+  std::unique_ptr<Group> InternalMake(
       const std::string& id,
       const std::vector<const Connection*>& connections) {
-    auto it = find_if(group_map_.begin(), group_map_.end(),
-                      [&](auto& id_group) {
-                        return id_group.first == id;
-                      });
-
+    auto it = group_map_.find(id);
     if (it != group_map_.end()) {
       auto group = std::move(it->second);
       group_map_.erase(it);
@@ -286,8 +283,8 @@ class GroupFactoryMock : public GroupFactoryBase {
     return nullptr;
   }
 
-  // Returns a GroupBase pointer whose id is `id`, otherwise returns nullptr.
-  GroupBase* get_group_by_id(const std::string& id) {
+  // Returns a Group pointer whose id is `id`, otherwise returns nullptr.
+  Group* get_group_by_id(const std::string& id) {
     if (group_pointer_map_.find(id) == group_pointer_map_.end()) {
       return nullptr;
     }
@@ -295,14 +292,14 @@ class GroupFactoryMock : public GroupFactoryBase {
   }
 
   // Adds a `group`.
-  void add_group(std::unique_ptr<GroupBase> group) {
+  void add_group(std::unique_ptr<Group> group) {
     group_pointer_map_[group->id()] = group.get();
     group_map_[group->id()] = std::move(group);
   }
 
  private:
-  std::map<std::string, std::unique_ptr<GroupBase>> group_map_;
-  std::map<std::string, GroupBase*> group_pointer_map_;
+  std::map<std::string, std::unique_ptr<Group>> group_map_;
+  std::map<std::string, Group*> group_pointer_map_;
 };
 
 // Checks that the minimal YAML passes with an empty RoadGeometry.

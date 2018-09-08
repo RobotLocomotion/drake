@@ -399,13 +399,13 @@ class Connection {
 
 /// Defines a group interface for multilane. It is used for testing purposes
 /// only, and derived code should instantiate Group objects.
-class GroupBase {
+class Group {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GroupBase)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Group)
 
-  GroupBase() = default;
+  Group() = default;
 
-  virtual ~GroupBase() = default;
+  virtual ~Group() = default;
 
   /// Adds a `connection` to the group.
   virtual void Add(const Connection* connection) = 0;
@@ -417,7 +417,7 @@ class GroupBase {
   virtual const std::vector<const Connection*>& connections() const = 0;
 };
 
-/// Factory interface to construct GroupBase instances.
+/// Factory interface to construct Group instances.
 ///
 /// Defined for testing purposes, and production code must use GroupFactory
 /// objects.
@@ -430,63 +430,65 @@ class GroupFactoryBase {
   virtual ~GroupFactoryBase() = default;
 
   /// Makes an empty Group with the specified `id`.
-  virtual std::unique_ptr<GroupBase> Make(const std::string& id) const = 0;
+  virtual std::unique_ptr<Group> Make(const std::string& id) const = 0;
 
   /// Makes a Group with `id`, populated by `connections`.
   ///
   /// `connections` must not contain duplicates.
-  virtual std::unique_ptr<GroupBase> Make(
+  virtual std::unique_ptr<Group> Make(
       const std::string& id,
       const std::vector<const Connection*>& connections) const = 0;
 };
 
-/// A group of Connections.
-///
-/// Upon building the RoadGeometry, a Group yields a Junction containing the
-/// corresponding Segments specified by all the Connections in the Group.
-class Group : public GroupBase {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Group)
-
-  /// Constructs an empty Group with the specified `id`.
-  explicit Group(const std::string& id) : id_(id) {}
-
-  /// Constructs a Group with `id`, populated by `connections`.
-  ///
-  /// `connections` must not contain duplicates.
-  Group(const std::string& id,
-        const std::vector<const Connection*>& connections)
-      : id_(id) {
-    for (const Connection* connection : connections) {
-      Add(connection);
-    }
-  }
-
-  /// Adds a Connection.
-  ///
-  /// `connection` must not already be added.
-  void Add(const Connection* connection) override {
-    auto result = connection_set_.insert(connection);
-    DRAKE_DEMAND(result.second);
-    connection_vector_.push_back(connection);
-  }
-
-  /// Returns the ID string.
-  const std::string& id() const override { return id_; }
-
-  /// Returns the grouped Connections.
-  const std::vector<const Connection*>& connections() const override {
-    return connection_vector_;
-  }
-
- private:
-  std::string id_;
-  std::unordered_set<const Connection*> connection_set_;
-  std::vector<const Connection*> connection_vector_;
-};
 
 /// Implements a GroupFactoryBase to construct Group objects.
 class GroupFactory : public GroupFactoryBase {
+ private:
+  // A group of Connections.
+  //
+  // Upon building the RoadGeometry, a Group yields a Junction containing the
+  // corresponding Segments specified by all the Connections in the Group.
+  class RealGroup : public Group {
+   public:
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RealGroup)
+
+    // Constructs an empty Group with the specified `id`.
+    explicit RealGroup(const std::string& id) : id_(id) {}
+
+    // Constructs a Group with `id`, populated by `connections`.
+    //
+    // `connections` must not contain duplicates.
+    RealGroup(const std::string& id,
+              const std::vector<const Connection*>& connections)
+        : id_(id) {
+      for (const Connection* connection : connections) {
+        Add(connection);
+      }
+    }
+
+    // Adds a Connection.
+    //
+    // `connection` must not already be added.
+    void Add(const Connection* connection) override {
+      auto result = connection_set_.insert(connection);
+      DRAKE_DEMAND(result.second);
+      connection_vector_.push_back(connection);
+    }
+
+    // Returns the ID string.
+    const std::string& id() const override { return id_; }
+
+    // Returns the grouped Connections.
+    const std::vector<const Connection*>& connections() const override {
+      return connection_vector_;
+    }
+
+   private:
+    std::string id_;
+    std::unordered_set<const Connection*> connection_set_;
+    std::vector<const Connection*> connection_vector_;
+  };
+
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GroupFactory)
 
@@ -494,14 +496,14 @@ class GroupFactory : public GroupFactoryBase {
 
   virtual ~GroupFactory() = default;
 
-  virtual std::unique_ptr<GroupBase> Make(const std::string& id) const {
-    return std::make_unique<Group>(id);
+  virtual std::unique_ptr<Group> Make(const std::string& id) const {
+    return std::make_unique<RealGroup>(id);
   }
 
-  virtual std::unique_ptr<GroupBase> Make(
+  virtual std::unique_ptr<Group> Make(
       const std::string& id,
       const std::vector<const Connection*>& connections) const {
-    return std::make_unique<Group>(id, connections);
+    return std::make_unique<RealGroup>(id, connections);
   }
 };
 

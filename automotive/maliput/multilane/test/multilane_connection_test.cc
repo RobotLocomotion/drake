@@ -529,66 +529,44 @@ std::unique_ptr<Connection> MakeArcConnection() {
 }
 
 GTEST_TEST(GroupTest, NoConnection) {
-  const std::string kId{"Empty_Connection"};
-  const Group dut(kId);
+  const std::string kId{"Empty_Group"};
+  std::unique_ptr<Group> dut = GroupFactory().Make(kId);
 
-  EXPECT_EQ(dut.id(), kId);
-  EXPECT_EQ(dut.connections().size(), 0);
-}
-
-GTEST_TEST(GroupTest, WithConnections) {
-  const std::string kId{"Populated_Connection"};
-
-  auto line_connection = MakeLineConnection();
-  auto arc_connection = MakeArcConnection();
-
-  const Group dut(kId, {line_connection.get(), arc_connection.get()});
-
-  EXPECT_EQ(dut.id(), kId);
-  EXPECT_EQ(dut.connections().size(), 2);
-  for (const Connection* conn : dut.connections()) {
-    EXPECT_TRUE(conn == line_connection.get() || conn == arc_connection.get());
-  }
-}
-
-GTEST_TEST(GroupTest, AddConnections) {
-  const std::string kId{"Connection"};
-
-  auto line_connection = MakeLineConnection();
-  auto arc_connection = MakeArcConnection();
-
-  Group dut(kId, {line_connection.get()});
-  EXPECT_EQ(dut.connections().size(), 1);
-  EXPECT_EQ(dut.connections()[0], line_connection.get());
-
-  dut.Add(arc_connection.get());
-  EXPECT_EQ(dut.connections().size(), 2);
-  EXPECT_EQ(dut.connections()[0], line_connection.get());
-  EXPECT_EQ(dut.connections()[1], arc_connection.get());
-}
-
-GTEST_TEST(GroupFactoryTest, NoConnection) {
-  const std::string kId{"Empty_Connection"};
-
-  auto dut = GroupFactory().Make(kId);
   EXPECT_EQ(dut->id(), kId);
   EXPECT_EQ(dut->connections().size(), 0);
 }
 
-GTEST_TEST(GroupFactoryTest, WithConnections) {
-  const std::string kId{"Populated_Connection"};
+GTEST_TEST(GroupTest, WithConnections) {
+  const std::string kId{"Populated_Group"};
 
   auto line_connection = MakeLineConnection();
   auto arc_connection = MakeArcConnection();
 
-  auto dut =
-      GroupFactory().Make(kId, {line_connection.get(), arc_connection.get()});
+  std::unique_ptr<Group> dut = GroupFactory().Make(
+      kId, {line_connection.get(), arc_connection.get()});
 
   EXPECT_EQ(dut->id(), kId);
   EXPECT_EQ(dut->connections().size(), 2);
-  for (const Connection* conn : dut->connections()) {
-    EXPECT_TRUE(conn == line_connection.get() || conn == arc_connection.get());
-  }
+  EXPECT_EQ(dut->connections()[0], line_connection.get());
+  EXPECT_EQ(dut->connections()[1], arc_connection.get());
+}
+
+GTEST_TEST(GroupTest, AddConnections) {
+  const std::string kId{"Group"};
+
+  auto line_connection = MakeLineConnection();
+  auto arc_connection = MakeArcConnection();
+
+  std::unique_ptr<Group> dut = GroupFactory().Make(
+      kId, {line_connection.get()});
+
+  EXPECT_EQ(dut->connections().size(), 1);
+  EXPECT_EQ(dut->connections()[0], line_connection.get());
+
+  dut->Add(arc_connection.get());
+  EXPECT_EQ(dut->connections().size(), 2);
+  EXPECT_EQ(dut->connections()[0], line_connection.get());
+  EXPECT_EQ(dut->connections()[1], arc_connection.get());
 }
 
 }  // namespace
