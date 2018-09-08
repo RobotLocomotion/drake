@@ -274,6 +274,13 @@ class LeafSystem : public System<T> {
     return pairs;
   };
 
+  int get_num_continuous_states() const final {
+    int total = num_generalized_positions_ +
+                num_generalized_velocities_+
+                num_misc_continuous_states_;
+    return total;
+  }
+
  protected:
   // Promote so we don't need "this->" in defaults which show up in Doxygen.
   using SystemBase::all_sources_ticket;
