@@ -701,13 +701,21 @@ void MultibodyTree<T>::MapVelocityToQDot(
 }
 
 template <typename T>
+MatrixX<T> MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
+    const systems::Context<T>& context) const {
+  MatrixX<T> M(num_velocities(), num_velocities());
+  CalcMassMatrixViaInverseDynamics(context, &M);
+  return M;
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
-    const systems::Context<T>& context, EigenPtr<MatrixX<T>> H) const {
-  DRAKE_DEMAND(H != nullptr);
-  DRAKE_DEMAND(H->rows() == num_velocities());
-  DRAKE_DEMAND(H->cols() == num_velocities());
+    const systems::Context<T>& context, EigenPtr<MatrixX<T>> M) const {
+  DRAKE_DEMAND(M != nullptr);
+  DRAKE_DEMAND(M->rows() == num_velocities());
+  DRAKE_DEMAND(M->cols() == num_velocities());
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  DoCalcMassMatrixViaInverseDynamics(context, pc, H);
+  DoCalcMassMatrixViaInverseDynamics(context, pc, M);
 }
 
 template <typename T>
