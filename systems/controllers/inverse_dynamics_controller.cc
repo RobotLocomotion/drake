@@ -31,7 +31,7 @@ void InverseDynamicsController<T>::SetUp(const VectorX<double>& kp,
          ---------> |   |   |
   (q, v)            |PID|   |
          ---------> |   | --+--> |                  |
-             |                   | inverse dynamics | ---> torque
+             |                   | inverse dynamics | ---> force 
              ------------------> |                  |
 
   */
@@ -81,9 +81,9 @@ void InverseDynamicsController<T>::SetUp(const VectorX<double>& kp,
         builder->ExportInput(adder->get_input_port(1));
   }
 
-  // Exposes inverse dynamics' output torque port.
+  // Exposes inverse dynamics' output force port.
   output_port_index_control_ =
-      builder->ExportOutput(inverse_dynamics.get_output_port_torque());
+      builder->ExportOutput(inverse_dynamics.get_output_port_force());
 
   builder->BuildInto(this);
 }

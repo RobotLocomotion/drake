@@ -16,14 +16,13 @@ namespace systems {
 namespace controllers {
 
 /**
- * Solves inverse dynamics with no consideration for under actuation, joint
- * actuator force limits, or closed kinematic chains. The system also provides a
- * pure gravity compensation mode. This system provides a BasicVector
- * input port for the state `(q, v)`, where `q` is the generalized
- * position and `v` is the generalized velocity, and a BasicVector output port
- * for the computed generalized forces. There is an additional BasicVector input
- * port for desired acceleration when configured to be **not** in pure gravity
- * compensation mode.
+ * Solves inverse dynamics with no consideration for under joint actuator force
+ * limits. The system also provides a pure gravity compensation mode. This
+ * system provides a BasicVector input port for the state `(q, v)`, where `q`
+ * is the generalized position and `v` is the generalized velocity, and a
+ * BasicVector output port for the computed generalized forces. There is an
+ * additional BasicVector input port for desired acceleration when configured
+ * to be **not** in pure gravity compensation mode.
  *
  * InverseDynamicsController uses a PID controller to generate desired
  * acceleration and uses this class to compute generalized forces. This class
@@ -42,13 +41,13 @@ class InverseDynamics : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamics)
 
   /**
-   * Computes inverse dynamics for `tree`, where the computed torque
-   * is `H(q) * vd_d + c(q, v) = g(q) + fs - fd`, and `H` is the inertia matrix,
-   * `c` is the Coriolis terms, `g` is the gravity term, `q` is the generalized
-   * position, `v` is the generalized velocity, `vd_d` is the desired
-   * generalized acceleration, `fs` is computed via
+   * Computes inverse dynamics for `tree`, where the computed force 
+   * is `M(q) * vd_d + C(q, v) * v = fg(q) + fs(q) - fd(v)`, and `M` is the
+   * inertia matrix, `C(q, v) * v` is the Coriolis term, `fg` is the gravity
+   * term, `q` is the generalized position, `v` is the generalized velocity,
+   * `vd_d` is the desired generalized acceleration, `fs` is computed via
    * `CalcGeneralizedSpringForces()` and `fd` is `frictionTorques()`. In gravity
-   * compensation mode, torque is computed as `g(q)`.
+   * compensation mode, force is computed as `fg(q)`.
    * @param tree Pointer to the model. The life span of @p tree must be longer
    * than this instance.
    * @param pure_gravity_compensation If set to true, this instance will only
@@ -63,12 +62,12 @@ class InverseDynamics : public LeafSystem<T> {
   // forces on the plant. The current approach does neither: it only pledges to
   // account for exactly the forces that MultibodyTree does.
   /**
-   * Computes inverse dynamics for `plant`, where the computed torque is
-   * `H(q) * vd_d + f`, and `H` is the inertia matrix, `c` is the Coriolis term,
-   * `q` is the generalized position, `v` is the generalized velocity,
-   * `vd_d` is the desired generalized acceleration, and `f` is the result
-   * computed using MultibodyTree::CalcForceElementsContribution() given the
-   * passed-in model, `q`, and `v`. In gravity compensation mode, torque is
+   * Computes inverse dynamics for `plant`, where the computed force is
+   * `M(q) * vd_d + f`, and `M` is the inertia matrix, `q` is the generalized
+   * position, `v` is the generalized velocity, `vd_d` is the desired
+   * generalized acceleration, and `f` is the result computed using
+   * MultibodyTree::CalcForceElementsContribution() given the
+   * passed-in model, `q`, and `v`. In gravity compensation mode, force is
    * computed using MultibodyTree::CalcGravityGeneralizedForces().
    * @param plant Pointer to the plant. The life span of @p plant must be
    * longer than that of this instance.
@@ -99,10 +98,12 @@ class InverseDynamics : public LeafSystem<T> {
   }
 
   /**
-   * Returns the output port for the actuation torques.
+   * Returns the output port for the forces that realize the desired
+   * acceleration. The dimension of that force vector will be identical to the
+   * dimensionality of the generalized velocities.
    */
-  const OutputPort<T>& get_output_port_torque() const {
-    return this->get_output_port(output_port_index_torque_);
+  const OutputPort<T>& get_output_port_force() const {
+    return this->get_output_port(output_port_index_force_);
   }
 
   bool is_pure_gravity_compenstation() const {
@@ -111,8 +112,8 @@ class InverseDynamics : public LeafSystem<T> {
 
  private:
   // This is the calculator method for the output port.
-  void CalcOutputTorque(const Context<T>& context,
-                        BasicVector<T>* torque) const;
+  void CalcOutputForce(const Context<T>& context,
+                       BasicVector<T>* force) const;
 
   const RigidBodyTree<T>* rigid_body_tree_{nullptr};
   const multibody::multibody_plant::MultibodyPlant<T>* multibody_plant_{
@@ -125,7 +126,7 @@ class InverseDynamics : public LeafSystem<T> {
 
   int input_port_index_state_{0};
   int input_port_index_desired_acceleration_{0};
-  int output_port_index_torque_{0};
+  int output_port_index_force_{0};
 
   const int q_dim_{0};
   const int v_dim_{0};

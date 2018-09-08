@@ -236,23 +236,6 @@ TEST_F(InverseDynamicsTest, InverseDynamicsTestMBT) {
   CheckTorque(q, v, vd_d);
 }
 
-// Tests that the GravityCompensator will abort if it is provided an
-// underactuated model. NOTE: There is no equivalent test for MultibodyPlant,
-// since MultibodyPlant itself checks for whether a body with kinematic loops
-// has been created.
-// TODO(edrumwri): Rename the test below, removing the MBT specifier, when
-// RigidBodyTree goes away (and the test above is necessarily removed) *and*
-// the multibody plant SDF parser is capable of constructing MBPs with
-// kinematic loops.
-TEST_F(InverseDynamicsTest, UnderactuatedModelTestRBT) {
-  auto tree = std::make_unique<RigidBodyTree<double>>();
-  drake::parsers::sdf::AddModelInstancesFromSdfFile(
-      drake::FindResourceOrThrow("drake/examples/simple_four_bar/FourBar.sdf"),
-      drake::multibody::joints::kFixed, nullptr /* weld to frame */,
-      tree.get());
-  EXPECT_THROW(Init(std::move(tree), true), std::runtime_error);
-}
-
 }  // namespace
 }  // namespace controllers
 }  // namespace systems

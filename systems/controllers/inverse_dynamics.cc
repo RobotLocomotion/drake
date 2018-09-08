@@ -18,13 +18,12 @@ InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>* tree,
     : rigid_body_tree_(tree),
       pure_gravity_compensation_(pure_gravity_compensation),
       q_dim_(tree->get_num_positions()),
-      v_dim_(tree->get_num_velocities()),
-      act_dim_(tree->get_num_actuators()) {
+      v_dim_(tree->get_num_velocities()) {
   input_port_index_state_ =
       this->DeclareInputPort(kVectorValued, q_dim_ + v_dim_).get_index();
-  output_port_index_torque_ =
-      this->DeclareVectorOutputPort(BasicVector<T>(act_dim_),
-                                    &InverseDynamics<T>::CalcOutputTorque)
+  output_port_index_force_ =
+      this->DeclareVectorOutputPort(BasicVector<T>(v_dim_),
+                                    &InverseDynamics<T>::CalcOutputForce)
           .get_index();
 
   // Doesn't declare desired acceleration input port if we are only doing
@@ -32,14 +31,6 @@ InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>* tree,
   if (!pure_gravity_compensation_) {
     input_port_index_desired_acceleration_ =
         this->DeclareInputPort(kVectorValued, v_dim_).get_index();
-  }
-
-  if (v_dim_ != act_dim_) {
-    std::stringstream msg;
-    msg << "The model is under-actuated!\n"
-        << "  - size of gravity vector: " << v_dim_ << "\n"
-        << "  - number of actuators: " << act_dim_;
-    throw std::runtime_error(msg.str().c_str());
   }
 }
 
@@ -50,23 +41,14 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
     : multibody_plant_(plant),
       pure_gravity_compensation_(pure_gravity_compensation),
       q_dim_(plant->model().num_positions()),
-      v_dim_(plant->model().num_velocities()),
-      act_dim_(plant->model().num_actuators()) {
+      v_dim_(plant->model().num_velocities()) {
   DRAKE_DEMAND(plant->is_finalized());
-
-  if (v_dim_ != act_dim_) {
-    std::stringstream msg;
-    msg << "The model is under-actuated!\n"
-        << "  - size of gravity vector: " << v_dim_ << "\n"
-        << "  - number of actuators: " << act_dim_;
-    throw std::runtime_error(msg.str());
-  }
 
   input_port_index_state_ =
       this->DeclareInputPort(kVectorValued, q_dim_ + v_dim_).get_index();
-  output_port_index_torque_ =
-      this->DeclareVectorOutputPort(BasicVector<T>(act_dim_),
-                                    &InverseDynamics<T>::CalcOutputTorque)
+  output_port_index_force_ =
+      this->DeclareVectorOutputPort(BasicVector<T>(v_dim_),
+                                    &InverseDynamics<T>::CalcOutputForce)
           .get_index();
 
   // Copy the parameters.
@@ -83,7 +65,7 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
 }
 
 template <typename T>
-void InverseDynamics<T>::CalcOutputTorque(const Context<T>& context,
+void InverseDynamics<T>::CalcOutputForce(const Context<T>& context,
                                           BasicVector<T>* output) const {
   // State input.
   VectorX<T> x = this->EvalEigenVectorInput(context, input_port_index_state_);
@@ -109,12 +91,12 @@ void InverseDynamics<T>::CalcOutputTorque(const Context<T>& context,
     eigen_aligned_std_unordered_map<RigidBody<T> const*, drake::TwistVector<T>>
         f_ext;
 
-    VectorX<T> torque = rigid_body_tree_->inverseDynamics(
+    VectorX<T> force = rigid_body_tree_->inverseDynamics(
         cache, f_ext, desired_vd,
         !pure_gravity_compensation_ /* include v dependent terms */);
 
-    DRAKE_ASSERT(torque.size() == output->size());
-    output->get_mutable_value() = torque;
+    DRAKE_ASSERT(force.size() == output->size());
+    output->get_mutable_value() = force;
   } else {
     DRAKE_DEMAND(multibody_plant_);
     const auto& tree = multibody_plant_->model();
