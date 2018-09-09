@@ -62,6 +62,13 @@ TEST_F(PrismaticJointTest, GetAxis) {
   EXPECT_EQ(joint1_->translation_axis(), Vector3d::UnitZ());
 }
 
+TEST_F(PrismaticJointTest, GetJointLimits) {
+  EXPECT_EQ(joint1_->lower_limits().size(), 1);
+  EXPECT_EQ(joint1_->upper_limits().size(), 1);
+  EXPECT_EQ(joint1_->lower_limits()[0], joint1_->lower_limit());
+  EXPECT_EQ(joint1_->upper_limits()[0], joint1_->upper_limit());
+}
+
 // Context-dependent value access.
 TEST_F(PrismaticJointTest, ContextDependentAccess) {
   const double some_value = 1.5;

@@ -63,6 +63,11 @@ TEST_F(WeldJointTest, GetX_PC) {
   EXPECT_EQ(joint_->X_PC().matrix(), X_FM_.matrix());
 }
 
+TEST_F(WeldJointTest, GetJointLimits) {
+  EXPECT_EQ(joint_->lower_limits().size(), 0);
+  EXPECT_EQ(joint_->upper_limits().size(), 0);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

@@ -64,6 +64,13 @@ TEST_F(RevoluteJointTest, GetAxis) {
   EXPECT_EQ(joint1_->revolute_axis(), Vector3d::UnitZ());
 }
 
+TEST_F(RevoluteJointTest, GetJointLimits) {
+  EXPECT_EQ(joint1_->lower_limits().size(), 1);
+  EXPECT_EQ(joint1_->upper_limits().size(), 1);
+  EXPECT_EQ(joint1_->lower_limits()[0], joint1_->lower_limit());
+  EXPECT_EQ(joint1_->upper_limits()[0], joint1_->upper_limit());
+}
+
 // Context-dependent value access.
 TEST_F(RevoluteJointTest, ContextDependentAccess) {
   const double some_value = M_PI_2;
