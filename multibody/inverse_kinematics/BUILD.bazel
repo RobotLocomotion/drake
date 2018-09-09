@@ -72,12 +72,17 @@ drake_cc_library(
     testonly = 1,
     srcs = ["test/inverse_kinematics_test_utilities.cc"],
     hdrs = ["test/inverse_kinematics_test_utilities.h"],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
     deps = [
+        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:gradient",
         "//multibody/benchmarks/kuka_iiwa_robot",
         "//multibody/multibody_tree",
         "//multibody/multibody_tree/multibody_plant",
+        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
         "@gtest//:without_main",
     ],
 )
