@@ -84,7 +84,7 @@ class InverseDynamics : public LeafSystem<T> {
    * @param parameters The parameters corresponding to this plant.
    * @param pure_gravity_compensation If set to true, this instance will only
    * consider the gravity term. That is, `tau_id = tau_g(q)`.
-   * In this mode `this` system doest NOT have the desired acceleration input
+   * In this mode `this` system does NOT have the desired acceleration input
    * port.
    * @pre The plant must be finalized (i.e., plant.is_finalized() must return
    * `true`).
@@ -109,7 +109,7 @@ class InverseDynamics : public LeafSystem<T> {
   }
 
   /**
-   * Returns the output port for the actuation torques. 
+   * Returns the output port for the actuation torques.
    */
   DRAKE_DEPRECATED("Please use get_output_port_force().")
   const OutputPort<T>& get_output_port_torque() const {
@@ -149,7 +149,6 @@ class InverseDynamics : public LeafSystem<T> {
 
   const int q_dim_{0};
   const int v_dim_{0};
-  const int act_dim_{0};
 };
 
 }  // namespace controllers

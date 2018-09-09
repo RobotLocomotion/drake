@@ -31,7 +31,7 @@ void InverseDynamicsController<T>::SetUp(const VectorX<double>& kp,
          ---------> |   |   |
   (q, v)            |PID|   |
          ---------> |   | --+--> |                  |
-             |                   | inverse dynamics | ---> force 
+             |                   | inverse dynamics | ---> force
              ------------------> |                  |
 
   */
@@ -108,6 +108,12 @@ InverseDynamicsController<T>::InverseDynamicsController(
       builder.template AddSystem<InverseDynamics<T>>(
           rigid_body_tree_for_control_.get(), false);
 
+  const int num_positions = rigid_body_tree_for_control_->get_num_positions();
+  const int num_velocities = rigid_body_tree_for_control_->get_num_velocities();
+  const int num_actuators = rigid_body_tree_for_control_->get_num_actuators();
+  DRAKE_DEMAND(num_positions == kp.size());
+  DRAKE_DEMAND(num_positions == num_velocities);
+  DRAKE_DEMAND(num_positions == num_actuators);
   SetUp(kp, ki, kd, *inverse_dynamics, &builder);
 }
 
@@ -125,6 +131,12 @@ InverseDynamicsController<T>::InverseDynamicsController(
       multibody_plant_for_control_.get(), parameters,
           false /* pure gravity compensation */);
 
+  const int num_positions = multibody_plant_for_control_->num_positions();
+  const int num_velocities = multibody_plant_for_control_->num_velocities();
+  const int num_actuators = multibody_plant_for_control_->num_actuators();
+  DRAKE_DEMAND(num_positions == kp.size());
+  DRAKE_DEMAND(num_positions == num_velocities);
+  DRAKE_DEMAND(num_positions == num_actuators);
   SetUp(kp, ki, kd, *inverse_dynamics, &builder);
 }
 
