@@ -57,6 +57,31 @@ class TwoFreeBodiesTest : public ::testing::Test {
   Eigen::Vector3d body2_position_sol_;
 };
 
+GTEST_TEST(InverseKinematicsTest, ConstructorWithJointLimits) {
+  // Constructs an inverse kinematics problem for IIWA robot, make sure that
+  // the joint limits are imposed.
+  auto plant = ConstructIiwaPlant("iiwa14_no_collision.sdf", 0.01);
+
+  InverseKinematics ik(*plant);
+  // Now check the joint limits.
+  VectorX<double> lower_limits(7);
+  lower_limits << -2.96706, -2.0944, -2.96706, -2.0944, -2.96706, -2.0944,
+      -3.05433;
+  VectorX<double> upper_limits(7);
+  upper_limits = -lower_limits;
+  EXPECT_EQ(ik.prog().bounding_box_constraints().size(), 1);
+  const auto joint_bounds = ik.prog().bounding_box_constraints()[0];
+  EXPECT_TRUE(
+      CompareMatrices(joint_bounds.evaluator()->lower_bound(), lower_limits));
+  EXPECT_TRUE(
+      CompareMatrices(joint_bounds.evaluator()->upper_bound(), upper_limits));
+  EXPECT_EQ(ik.q().size(), 7);
+  EXPECT_EQ(joint_bounds.variables().size(), 7);
+  for (int i = 0; i < 7; ++i) {
+    EXPECT_EQ(ik.q()(i), joint_bounds.variables()(i));
+  }
+}
+
 TEST_F(TwoFreeBodiesTest, PositionConstraint) {
   const Eigen::Vector3d p_BQ(0.2, 0.3, 0.5);
   const Eigen::Vector3d p_AQ_lower(-0.1, -0.2, -0.3);
