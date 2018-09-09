@@ -12,7 +12,9 @@
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
-#include "drake/automotive/maliput/monolane/builder.h"
+#include "drake/automotive/maliput/multilane/builder.h"
+#include "drake/automotive/maliput/multilane/connection.h"
+#include "drake/automotive/maliput/multilane/road_curve.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"
@@ -22,11 +24,19 @@
 namespace drake {
 
 using maliput::api::LaneEnd;
-using maliput::monolane::ArcOffset;
-using maliput::monolane::Connection;
-using maliput::monolane::Endpoint;
-using maliput::monolane::EndpointXy;
-using maliput::monolane::EndpointZ;
+using maliput::api::HBounds;
+
+using maliput::multilane::ArcOffset;
+using maliput::multilane::ComputationPolicy;
+using maliput::multilane::Connection;
+using maliput::multilane::Direction;
+using maliput::multilane::Endpoint;
+using maliput::multilane::EndpointXy;
+using maliput::multilane::EndpointZ;
+using maliput::multilane::EndReference;
+using maliput::multilane::LaneLayout;
+using maliput::multilane::LineOffset;
+using maliput::multilane::StartReference;
 
 using multibody::SpatialVelocity;
 
@@ -41,6 +51,17 @@ namespace {
 
 class MaliputRailcarTest : public ::testing::Test {
  protected:
+  const double kLaneWidth{4.};
+  const HBounds kHBounds{0., 5.};
+  const double kLinearTolerance{0.01};
+  const double kAngularTolerance{0.5 * M_PI / 180.0};
+  const double kScaleLength{1.};
+  const ComputationPolicy kComputationPolicy{
+      ComputationPolicy::kPreferAccuracy};
+  const LaneLayout kSingleLaneLayout{2. /* shoulder */, 2. /* shoulder */,
+                                     1 /* num lanes*/, 0 /* ref lane */,
+                                     0. /* ref r0 */};
+
   void InitializeDragwayLane(bool with_s = true) {
     // Defines the dragway's parameters.
     const int kNumLanes{1};
@@ -48,50 +69,61 @@ class MaliputRailcarTest : public ::testing::Test {
     const double kDragwayLaneWidth{0.5};
     const double kDragwayShoulderWidth{0.25};
     const double kMaximumHeight{5.};
-    const double kLinearTolerance{std::numeric_limits<double>::epsilon()};
-    const double kAngularTolerance{std::numeric_limits<double>::epsilon()};
+    const double kDragwayLinearTolerance{
+        std::numeric_limits<double>::epsilon()};
+    const double kDragwayAngularTolerance{
+        std::numeric_limits<double>::epsilon()};
     Initialize(
         std::make_unique<const maliput::dragway::RoadGeometry>(
             maliput::api::RoadGeometryId("RailcarTestDragway"), kNumLanes,
             kDragwayLength, kDragwayLaneWidth, kDragwayShoulderWidth,
-            kMaximumHeight, kLinearTolerance, kAngularTolerance), with_s);
+            kMaximumHeight, kDragwayLinearTolerance, kDragwayAngularTolerance),
+        with_s);
   }
 
-  void InitializeCurvedMonoLane(bool with_s = true) {
-    maliput::monolane::Builder builder(
-        maliput::api::RBounds(-2, 2),   /* lane_bounds       */
-        maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
-        maliput::api::HBounds(0, 5),    /* elevation bounds */
-        0.01,                           /* linear tolerance  */
-        0.5 * M_PI / 180.0);            /* angular_tolerance */
+  // Creates a RoadGeometry based on multilane that consists of a flat constant
+  // arc road with a single lane.
+  //
+  // @param with_s Whether the MaliputRailcar is traveling with or against the
+  // lane's s-curve.
+  void InitializeCurvedMultilane(bool with_s = true) {
+    maliput::multilane::Builder builder(kLaneWidth, kHBounds, kLinearTolerance,
+                                        kAngularTolerance, kScaleLength,
+                                        kComputationPolicy);
     builder.Connect(
-        "point.0",                                             /* id    */
-        Endpoint(EndpointXy(0, 0, 0), EndpointZ(0, 0, 0, 0)),  /* start */
-        ArcOffset(kCurvedRoadRadius, kCurvedRoadTheta),        /* arc   */
-        EndpointZ(0, 0, 0, 0));                                /* z_end */
+        "point.0", kSingleLaneLayout,
+        StartReference().at(
+            Endpoint(EndpointXy(0, 0, 0), EndpointZ(0, 0, 0, {})),
+            Direction::kForward),
+        ArcOffset(kCurvedRoadRadius, kCurvedRoadTheta),
+        EndReference().z_at(EndpointZ(0, 0, 0, {}), Direction::kForward));
     Initialize(
         builder.Build(maliput::api::RoadGeometryId("RailcarTestCurvedRoad")),
         with_s);
   }
 
-  void InitializeSlopedCurvedMonoLane(bool with_s = true) {
-    maliput::monolane::Builder builder(
-        maliput::api::RBounds(-2, 2),   /* lane_bounds       */
-        maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
-        maliput::api::HBounds(0, 5),    /* elevation bounds */
-        0.01,                           /* linear tolerance  */
-        0.5 * M_PI / 180.0);            /* angular_tolerance */
+  // Creates a RoadGeometry based on multilane that consists of a sloped
+  // constant arc road with a single lane.
+  //
+  // @param with_s Whether the MaliputRailcar is traveling with or against the
+  // lane's s-curve.
+  void InitializeSlopedCurvedMultilane(bool with_s = true) {
+    maliput::multilane::Builder builder(kLaneWidth, kHBounds, kLinearTolerance,
+                                        kAngularTolerance, kScaleLength,
+                                        kComputationPolicy);
     builder.Connect(
-        "point.0",                                             /* id    */
-        Endpoint(EndpointXy(0, 0, 0), EndpointZ(0, 0, 0, 0)),  /* start */
-        ArcOffset(kCurvedRoadRadius, kCurvedRoadTheta),        /* arc   */
-        EndpointZ(2, 0, 0.5, 0));                              /* z_end */
+        "point.0", kSingleLaneLayout,
+        StartReference().at(
+            Endpoint(EndpointXy(0, 0, 0), EndpointZ(0, 0, 0, {})),
+            Direction::kForward),
+        ArcOffset(kCurvedRoadRadius, kCurvedRoadTheta),
+        EndReference().z_at(EndpointZ(2, 0, 0.5, {}), Direction::kForward));
     Initialize(
         builder.Build(maliput::api::RoadGeometryId("RailcarTestCurvedRoad")),
         with_s);
   }
 
-  // Creates a RoadGeometry based on monolane that consists of a straight lane
+  // Creates a RoadGeometry based on multilane that consists of a straight lane
   // that's then connected to a left turning lane. See #5552 for screenshots of
   // the lane visualizations.
   //
@@ -103,17 +135,20 @@ class MaliputRailcarTest : public ::testing::Test {
   // opposing s-directions.
   void InitializeTwoLaneStretchOfRoad(bool with_s = true,
                                 bool flip_curve_lane = false) {
-    maliput::monolane::Builder builder(
-        maliput::api::RBounds(-2, 2),   /* lane_bounds       */
-        maliput::api::RBounds(-4, 4),   /* driveable_bounds  */
-        maliput::api::HBounds(0, 5),    /* elevation bounds */
-        0.01,                           /* linear tolerance  */
-        0.5 * M_PI / 180.0);            /* angular_tolerance */
+    maliput::multilane::Builder builder(kLaneWidth, kHBounds, kLinearTolerance,
+                                        kAngularTolerance, kScaleLength,
+                                        kComputationPolicy);
+
     const Connection* straight_lane_connection = builder.Connect(
-        "point.0",                                                /* id     */
-        Endpoint(EndpointXy(0, 0, 0), EndpointZ(0, 0, 0, 0)),     /* start  */
-        kStraightRoadLength,                                      /* length */
-        EndpointZ(0, 0, 0, 0));                                   /* z_end  */
+        "point.0", kSingleLaneLayout,
+        StartReference().at(
+            Endpoint(EndpointXy(0, 0, 0), EndpointZ(0, 0, 0, {})),
+            Direction::kForward),
+        LineOffset(kStraightRoadLength),
+        EndReference().z_at(EndpointZ(0, 0, 0, 0), Direction::kForward));
+
+    // Index of the single-lane segment lanes.
+    const int first_lane_id = 0;
 
     if (flip_curve_lane) {
       /*
@@ -128,19 +163,20 @@ class MaliputRailcarTest : public ::testing::Test {
       An OBJ rendering of this configuration is given in #5552.
       */
       const Connection* curved_lane_connection = builder.Connect(
-          "point.1",                                              /* id     */
-          Endpoint(                                               /* start  */
-              EndpointXy(kStraightRoadLength + kCurvedRoadRadius,
-                         kCurvedRoadRadius, 1.5 * M_PI),
-              EndpointZ(0, 0, 0, 0)),
-          ArcOffset(kCurvedRoadRadius, -kCurvedRoadTheta),        /* arc    */
-          EndpointZ(0, 0, 0, 0));                                 /* z_end  */
-      builder.SetDefaultBranch(
-          straight_lane_connection, LaneEnd::kFinish,             /* in_end */
-          curved_lane_connection, LaneEnd::kFinish);              /* out_end */
-      builder.SetDefaultBranch(
-          curved_lane_connection, LaneEnd::kFinish,               /* in_end */
-          straight_lane_connection, LaneEnd::kFinish);            /* out_end */
+          "point.1" /* id */, kSingleLaneLayout,
+          StartReference().at(
+              Endpoint(EndpointXy(kStraightRoadLength + kCurvedRoadRadius,
+                                  kCurvedRoadRadius, 1.5 * M_PI),
+                       EndpointZ(0, 0, 0, {})),
+              Direction::kForward),
+          ArcOffset(kCurvedRoadRadius, -kCurvedRoadTheta),
+          EndReference().z_at(EndpointZ(0, 0, 0, {}), Direction::kForward));
+      builder.SetDefaultBranch(straight_lane_connection, first_lane_id,
+                               LaneEnd::kFinish, curved_lane_connection,
+                               first_lane_id, LaneEnd::kFinish);
+      builder.SetDefaultBranch(curved_lane_connection, first_lane_id,
+                               LaneEnd::kFinish, straight_lane_connection,
+                               first_lane_id, LaneEnd::kFinish);
     } else {
       /*
       When flip_curve_lane == false, the two lanes are configured as follows:
@@ -154,17 +190,18 @@ class MaliputRailcarTest : public ::testing::Test {
       An OBJ rendering of this configuration is given in #5552.
       */
       const Connection* curved_lane_connection = builder.Connect(
-          "point.1",                                              /* id     */
-          Endpoint(EndpointXy(kStraightRoadLength, 0, 0),
-                   EndpointZ(0, 0, 0, 0)),  /* start  */
-          ArcOffset(kCurvedRoadRadius, kCurvedRoadTheta),         /* arc    */
-          EndpointZ(0, 0, 0, 0));                                 /* z_end  */
-      builder.SetDefaultBranch(
-          straight_lane_connection, LaneEnd::kFinish,             /* in_end */
-          curved_lane_connection, LaneEnd::kStart);               /* out_end */
-      builder.SetDefaultBranch(
-          curved_lane_connection, LaneEnd::kStart,                /* in_end */
-          straight_lane_connection, LaneEnd::kFinish);            /* out_end */
+          "point.1", kSingleLaneLayout,
+          StartReference().at(Endpoint(EndpointXy(kStraightRoadLength, 0, 0),
+                                       EndpointZ(0, 0, 0, {})),
+                              Direction::kForward),
+          ArcOffset(kCurvedRoadRadius, kCurvedRoadTheta),
+          EndReference().z_at(EndpointZ(0, 0, 0, {}), Direction::kForward));
+      builder.SetDefaultBranch(straight_lane_connection, first_lane_id,
+                               LaneEnd::kFinish, curved_lane_connection,
+                               first_lane_id, LaneEnd::kStart);
+      builder.SetDefaultBranch(curved_lane_connection, first_lane_id,
+                               LaneEnd::kStart, straight_lane_connection,
+                               first_lane_id, LaneEnd::kFinish);
     }
 
     std::unique_ptr<const maliput::api::RoadGeometry> road =
@@ -228,7 +265,7 @@ class MaliputRailcarTest : public ::testing::Test {
   }
 
   // Obtains the lanes created by the call to InitializeTwoLaneStretchOfRoad().
-  // Since a monolane::Builder was used to create the RoadGeometry, we don't
+  // Since a multilane::Builder was used to create the RoadGeometry, we don't
   // know which Junction contains which lane and thus need to figure it out.
   // This is done by checking the lengths of the two lanes. The straight lane
   // has a length of kStraightRoadLength = 10 while the curved lane has a length
@@ -340,7 +377,7 @@ class MaliputRailcarTest : public ::testing::Test {
   const double kStraightRoadLength{10};
 
   // The arc radius and theta of the road when it is created using
-  // InitializeCurvedMonoLane() and InitializeTwoLaneStretchOfRoad().
+  // InitializeCurvedMultilane() and InitializeTwoLaneStretchOfRoad().
   const double kCurvedRoadRadius{10};
   const double kCurvedRoadTheta{M_PI_2};
 
@@ -419,8 +456,8 @@ TEST_F(MaliputRailcarTest, StateAppearsInOutputDragway) {
                               expected_velocity));
 }
 
-TEST_F(MaliputRailcarTest, StateAppearsInOutputMonolane) {
-  EXPECT_NO_FATAL_FAILURE(InitializeCurvedMonoLane());
+TEST_F(MaliputRailcarTest, StateAppearsInOutputCurvedRoad) {
+  EXPECT_NO_FATAL_FAILURE(InitializeCurvedMultilane());
   const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
   const double kSpeed{3.5};
 
@@ -497,8 +534,8 @@ TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputDragway) {
                               expected_pose.matrix()));
 }
 
-TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputMonolane) {
-  EXPECT_NO_FATAL_FAILURE(InitializeCurvedMonoLane());
+TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputCurvedRoad) {
+  EXPECT_NO_FATAL_FAILURE(InitializeCurvedMultilane());
   const double kR{1.5};
   const double kH{8.2};
 
@@ -603,8 +640,8 @@ TEST_F(MaliputRailcarTest, DerivativesDragway) {
   EXPECT_DOUBLE_EQ(result->speed(), kNegAccelCmd);
 }
 
-TEST_F(MaliputRailcarTest, DerivativesMonolane) {
-  EXPECT_NO_FATAL_FAILURE(InitializeCurvedMonoLane());
+TEST_F(MaliputRailcarTest, DerivativesCurvedRoad) {
+  EXPECT_NO_FATAL_FAILURE(InitializeCurvedMultilane());
   // Grabs a pointer to where the EvalTimeDerivatives results end up.
   const MaliputRailcarState<double>* const result =
       dynamic_cast<const MaliputRailcarState<double>*>(
@@ -702,8 +739,8 @@ TEST_F(MaliputRailcarTest, DecreasingSDragway) {
                               Eigen::Vector3d(0, 0, 0)));
 }
 
-TEST_F(MaliputRailcarTest, DecreasingSMonolane) {
-  EXPECT_NO_FATAL_FAILURE(InitializeSlopedCurvedMonoLane(false /* with_s */));
+TEST_F(MaliputRailcarTest, DecreasingSSlopedCurvedRoad) {
+  EXPECT_NO_FATAL_FAILURE(InitializeSlopedCurvedMultilane(false /* with_s */));
   // Sets the r != 0 and s != 0.
   const double kS{2.25};
   const double kInitialSpeed{2};
@@ -728,7 +765,7 @@ TEST_F(MaliputRailcarTest, DecreasingSMonolane) {
   const SpatialVelocity<double> against_s_spatial_velocity =
       velocity_output()->get_velocity();
 
-  EXPECT_NO_FATAL_FAILURE(InitializeSlopedCurvedMonoLane(true /* with_s */));
+  EXPECT_NO_FATAL_FAILURE(InitializeSlopedCurvedMultilane(true /* with_s */));
   SetParams(params);
   continuous_state()->set_s(kS);
   continuous_state()->set_speed(kInitialSpeed);
@@ -851,10 +888,10 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeDragwayAgainstS) {
   EXPECT_DOUBLE_EQ(t, MaliputRailcar<double>::kTimeEpsilon);
 }
 
-// Same as the previous unit test except the road network is a curved monolane
+// Same as the previous unit test except the road network is a curved road
 // and with_s is true.
-TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneWithS) {
-  EXPECT_NO_FATAL_FAILURE(InitializeCurvedMonoLane(true /* with_s */));
+TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeCurvedRoadWithS) {
+  EXPECT_NO_FATAL_FAILURE(InitializeCurvedMultilane(true /* with_s */));
   const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
   const double kSpeed(10);
 
@@ -894,8 +931,8 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneWithS) {
 }
 
 // Same as the previous unit test except with_s is false.
-TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneAgainstS) {
-  EXPECT_NO_FATAL_FAILURE(InitializeCurvedMonoLane(false /* with_s */));
+TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeCurvedRoadAgainstS) {
+  EXPECT_NO_FATAL_FAILURE(InitializeCurvedMultilane(false /* with_s */));
   const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
   const double kSpeed(10);
 
