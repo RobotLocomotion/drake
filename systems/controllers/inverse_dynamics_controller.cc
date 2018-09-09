@@ -120,7 +120,6 @@ InverseDynamicsController<T>::InverseDynamicsController(
 template <typename T>
 InverseDynamicsController<T>::InverseDynamicsController(
     std::unique_ptr<MultibodyPlant<T>> robot,
-    const systems::Parameters<T>& parameters,
     const VectorX<double>& kp, const VectorX<double>& ki,
     const VectorX<double>& kd, bool has_reference_acceleration)
     : multibody_plant_for_control_(std::move(robot)),
@@ -128,8 +127,8 @@ InverseDynamicsController<T>::InverseDynamicsController(
   DiagramBuilder<T> builder;
   auto inverse_dynamics =
     builder.template AddSystem<InverseDynamics<T>>(
-      multibody_plant_for_control_.get(), parameters,
-          false /* pure gravity compensation */);
+      multibody_plant_for_control_.get(),
+      false /* pure gravity compensation */);
 
   const int num_positions = multibody_plant_for_control_->num_positions();
   const int num_velocities = multibody_plant_for_control_->num_velocities();

@@ -36,7 +36,6 @@ InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>* tree,
 
 template <typename T>
 InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
-                                    const Parameters<T>& multibody_parameters,
                                     bool pure_gravity_compensation)
     : multibody_plant_(plant),
       pure_gravity_compensation_(pure_gravity_compensation),
@@ -51,10 +50,8 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
                                     &InverseDynamics<T>::CalcOutputForce)
           .get_index();
 
-  // Copy the parameters.
+  // Make context with default parameters.
   multibody_plant_context_ = plant->CreateDefaultContext();
-  multibody_plant_context_->get_mutable_parameters().SetFrom(
-      multibody_parameters);
 
   // Doesn't declare desired acceleration input port if we are only doing
   // gravity compensation.

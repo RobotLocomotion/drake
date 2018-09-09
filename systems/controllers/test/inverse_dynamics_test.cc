@@ -47,7 +47,7 @@ class InverseDynamicsTest : public ::testing::Test {
     multibody_plant_ = std::move(plant);
     multibody_context_ = multibody_plant_->CreateDefaultContext();
     inverse_dynamics_ = make_unique<InverseDynamics<double>>(
-        multibody_plant_.get(), multibody_context_->get_parameters(),
+        multibody_plant_.get(),
         pure_gravity_compensation /* pure gravity compensation mode */);
     FinishInit(pure_gravity_compensation);
   }

@@ -81,7 +81,6 @@ class InverseDynamics : public LeafSystem<T> {
    *
    * @param plant Pointer to the multibody plant model. The life span of @p
    * plant must be longer than that of this instance.
-   * @param parameters The parameters corresponding to this plant.
    * @param pure_gravity_compensation If set to true, this instance will only
    * consider the gravity term. That is, `tau_id = tau_g(q)`.
    * In this mode `this` system does NOT have the desired acceleration input
@@ -90,7 +89,6 @@ class InverseDynamics : public LeafSystem<T> {
    * `true`).
    */
   InverseDynamics(const multibody::multibody_plant::MultibodyPlant<T>* plant,
-                  const systems::Parameters<T>& parameters,
                   bool pure_gravity_compensation);
 
   /**

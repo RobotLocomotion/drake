@@ -79,9 +79,8 @@ class InverseDynamicsController : public Diagram<T>,
   /**
    * Constructs the controller that takes ownership of a given MultiBodyPlant
    * unique pointer.
-   * @param robot Unique pointer whose ownership will be transfered to this
+   * @param robot Unique pointer whose ownership will be transferred to this
    * instance.
-   * @param parameters The parameters corresponding to `robot`.
    * @param kp Position gain
    * @param ki Integral gain
    * @param kd Velocity gain
@@ -92,7 +91,6 @@ class InverseDynamicsController : public Diagram<T>,
    */
   InverseDynamicsController(
       std::unique_ptr<multibody::multibody_plant::MultibodyPlant<T>> robot,
-      const systems::Parameters<T>& parameters,
       const VectorX<double>& kp,
       const VectorX<double>& ki,
       const VectorX<double>& kd,
