@@ -191,6 +191,7 @@ class TestMultibodyTree(unittest.TestCase):
             p_BoFo_B=[0, 0, 0])
         self.assertTupleEqual(Jv_WL.shape, (6, plant.num_velocities()))
 
+<<<<<<< HEAD
     def test_multibody_state_access(self):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
@@ -220,6 +221,9 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTrue(np.allclose(x, x0))
 
     def test_set_free_body_pose(self):
+=======
+    def test_state_access(self):
+>>>>>>> address eric's comments
         file_name = FindResourceOrThrow(
             "drake/examples/double_pendulum/models/double_pendulum.sdf")
         plant = MultibodyPlant()
