@@ -191,19 +191,19 @@ class TestMultibodyTree(unittest.TestCase):
             p_BoFo_B=[0, 0, 0])
         self.assertTupleEqual(Jv_WL.shape, (6, plant.num_velocities()))
 
-    def test_set_free_body_pose(self):
+    def test_state_access(self):
         file_name = FindResourceOrThrow(
-            "drake/examples/kuka_iiwa_arm/models/table/"
-            "extra_heavy_duty_table_surface_only_collision.sdf")
+            "drake/examples/double_pendulum/models/double_pendulum.sdf")
         plant = MultibodyPlant()
         plant_model = AddModelFromSdfFile(file_name, plant)
         plant.Finalize()
 
         context = plant.CreateDefaultContext()
         tree = plant.model()
-        T_WB = Isometry3.Identity()
+        X_WB = Isometry3.Identity()
         tree.SetFreeBodyPoseOrThrow(
-            plant.GetBodyByName("link", plant_model), T_WB, context)
+            body=plant.GetBodyByName("base", plant_model),
+            X_WB=X_WB, context=context)
 
     def test_multibody_add_joint(self):
         """
