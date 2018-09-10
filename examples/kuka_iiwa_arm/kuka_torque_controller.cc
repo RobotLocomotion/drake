@@ -99,7 +99,7 @@ void KukaTorqueController<T>::SetUp(const VectorX<double>& stiffness,
 
   // Add gravity compensator.
   auto gravity_comp =
-      builder.template AddSystem<InverseDynamics<T>>(tree, true);
+      builder.template AddSystem<InverseDynamics<T>>(&tree, true);
 
   // Adds virtual springs.
   Eigen::VectorXd kd(dim);

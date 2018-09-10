@@ -4,10 +4,17 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/multibody/rigid_body_tree.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/systems/controllers/inverse_dynamics.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/framework/diagram.h"
+
+// Forward declaration keeps us from including RBT headers that significantly
+// slow compilation.
+template <class T>
+class RigidBodyTree;
 
 namespace drake {
 namespace systems {
@@ -30,11 +37,15 @@ namespace controllers {
  * When unset, `vd*` is be treated as zero.
  *
  * Note that this class assumes the robot is fully actuated, its position
- * and velocity have the same dimension, it does not have a floating base.
- * If violated, the program will abort. It is discouraged to use this controller
- * for robots with closed kinematic loops.
+ * and velocity have the same dimension, and it does not have a floating base.
+ * If violated, the program will abort. This controller was not designed for
+ * closed loop systems: the controller accounts for neither constraint forces
+ * nor actuator forces applied at loop constraints. Use on such systems is not
+ * recommended.
  *
  * @tparam T The vector element type, which must be a valid Eigen scalar.
+ * @see InverseDynamics for an accounting of all forces incorporated into the
+ *      inverse dynamics computation.
  *
  * Instantiated templates for the following kinds of T's are provided:
  * - double
@@ -64,6 +75,26 @@ class InverseDynamicsController : public Diagram<T>,
                             const VectorX<double>& ki,
                             const VectorX<double>& kd,
                             bool has_reference_acceleration);
+
+  /**
+   * Constructs the controller that takes ownership of a given MultiBodyPlant
+   * unique pointer.
+   * @param robot Unique pointer whose ownership will be transferred to this
+   * instance.
+   * @param kp Position gain
+   * @param ki Integral gain
+   * @param kd Velocity gain
+   * @param has_reference_acceleration If true, there is an extra BasicVector
+   * input port for `vd*`. If false, `vd*` is treated as zero, and no extra
+   * input port is declared.
+   * @pre `robot` has been finalized (robot.is_finalized() returns `true`).
+   */
+  InverseDynamicsController(
+      std::unique_ptr<multibody::multibody_plant::MultibodyPlant<T>> robot,
+      const VectorX<double>& kp,
+      const VectorX<double>& ki,
+      const VectorX<double>& kd,
+      bool has_reference_acceleration);
 
   /**
    * Sets the integral part of the PidController to @p value.
@@ -105,15 +136,42 @@ class InverseDynamicsController : public Diagram<T>,
   /**
    * Returns a constant reference to the RigidBodyTree used for control.
    */
+  DRAKE_DEPRECATED("Please use get_rigid_body_tree_for_control().")
   const RigidBodyTree<T>& get_robot_for_control() const {
-    return *robot_for_control_;
+    if (rigid_body_tree_for_control_ == nullptr) {
+      throw std::runtime_error(
+          "This controller was created for a MultibodyPlant."
+          "Use get_multibody_plant_for_control() instead.");
+    }
+    return *rigid_body_tree_for_control_;
+  }
+
+  /**
+   * Returns a pointer to the const RigidBodyTree used for control.
+   * @return `nullptr` if `this` was constructed using a MultibodyPlant.
+   */
+  const RigidBodyTree<T>* get_rigid_body_tree_for_control() const {
+    return rigid_body_tree_for_control_.get();
+  }
+
+  /**
+   * Returns a constant pointer to the MultibodyPlant used for control.
+   * @return `nullptr` if `this` was constructed using a RigidBodyTree.
+   */
+  const multibody::multibody_plant::MultibodyPlant<T>*
+      get_multibody_plant_for_control() const {
+    return multibody_plant_for_control_.get();
   }
 
  private:
-  void SetUp(const VectorX<double>& kp,
-      const VectorX<double>& ki, const VectorX<double>& kd);
+  void SetUp(const VectorX<double>& kp, const VectorX<double>& ki,
+      const VectorX<double>& kd,
+      const controllers::InverseDynamics<T>& inverse_dynamics,
+      DiagramBuilder<T>* diagram_builder);
 
-  std::unique_ptr<RigidBodyTree<T>> robot_for_control_{nullptr};
+  std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_for_control_;
+  std::unique_ptr<multibody::multibody_plant::MultibodyPlant<T>>
+      multibody_plant_for_control_;
   PidController<T>* pid_{nullptr};
   const bool has_reference_acceleration_{false};
   int input_port_index_estimated_state_{-1};
