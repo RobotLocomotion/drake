@@ -4,6 +4,17 @@ from pydrake.systems.drawing import plot_system_graphviz
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.primitives import Adder
 
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--test",
+                    type=bool,
+                    help="If true, then the script will run without calling "
+                         "plt.show()",
+                    default=False)
+args = parser.parse_args()
+
+
 builder = DiagramBuilder()
 size = 1
 adders = [
@@ -20,4 +31,6 @@ diagram = builder.Build()
 diagram.set_name("graphviz_example")
 
 plot_system_graphviz(diagram)
-plt.show()
+
+if not args.test:
+    plt.show()
