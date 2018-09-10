@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/geometry/geometry_set.h"
@@ -1005,7 +1006,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     const auto it = body_index_to_frame_id_.find(body_index);
     if (it == body_index_to_frame_id_.end()) {
       throw std::logic_error(
-          "Body '" + model().get_body(body_index).name() +
+          "Body '" + tree().get_body(body_index).name() +
           "' does not have geometry registered with it.");
     }
     return it->second;
@@ -1099,7 +1100,16 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// Returns a constant reference to the underlying MultibodyTree model for
   /// `this` plant.
   /// @throws if called pre-finalize. See Finalize().
+  DRAKE_DEPRECATED("Please use tree().")
   const MultibodyTree<T>& model() const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    return *model_;
+  }
+
+  /// Returns a constant reference to the underlying MultibodyTree model for
+  /// `this` plant.
+  /// @throws if called pre-finalize. See Finalize().
+  const MultibodyTree<T>& tree() const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     return *model_;
   }

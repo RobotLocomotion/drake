@@ -47,7 +47,7 @@ GTEST_TEST(MakeCylinderPlant, VerifyPlant) {
 
   ASSERT_TRUE(plant->HasBodyNamed("Cylinder"));
   const RigidBody<double>& cylinder =
-      plant->model().GetRigidBodyByName("Cylinder");
+      plant->tree().GetRigidBodyByName("Cylinder");
   EXPECT_EQ(cylinder.get_default_mass(), mass);
 
   // Verify the value of the inertial properties for the cylinder.

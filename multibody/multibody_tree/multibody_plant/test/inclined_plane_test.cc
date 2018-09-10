@@ -93,7 +93,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
 
   MultibodyPlant<double>& plant = *builder.AddSystem(MakeInclinedPlanePlant(
       radius, mass, slope, surface_friction, g, time_step_, &scene_graph));
-  const MultibodyTree<double>& model = plant.model();
+  const MultibodyTree<double>& model = plant.tree();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(penetration_allowance_);
   plant.set_stiction_tolerance(stiction_tolerance_);

@@ -83,7 +83,7 @@ int do_main() {
   MultibodyPlant<double>& plant = *builder.AddSystem(MakeCylinderPlant(
       radius, length, mass, coulomb_friction, -g * Vector3d::UnitZ(),
       FLAGS_time_step, &scene_graph));
-  const MultibodyTree<double>& model = plant.model();
+  const MultibodyTree<double>& model = plant.tree();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(FLAGS_penetration_allowance);
   plant.set_stiction_tolerance(FLAGS_stiction_tolerance);

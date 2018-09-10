@@ -76,7 +76,7 @@ GTEST_TEST(Box, UnderStiction) {
 
   plant.Finalize(&scene_graph);  // Done creating the model.
 
-  const MultibodyTree<double>& model = plant.model();
+  const MultibodyTree<double>& model = plant.tree();
   // Set contact parameters.
   plant.set_penetration_allowance(penetration_allowance);
   plant.set_stiction_tolerance(stiction_tolerance);

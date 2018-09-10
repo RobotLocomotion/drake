@@ -73,7 +73,7 @@ int do_main() {
 
   MultibodyPlant<double>& plant = *builder.AddSystem(MakeBouncingBallPlant(
       radius, mass, coulomb_friction, -g * Vector3d::UnitZ(), &scene_graph));
-  const MultibodyTree<double>& model = plant.model();
+  const MultibodyTree<double>& model = plant.tree();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(0.001);
 

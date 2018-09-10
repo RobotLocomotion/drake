@@ -62,7 +62,7 @@ int do_main() {
   DRAKE_DEMAND(FLAGS_time_step >= 0);
   MultibodyPlant<double>& plant = *builder.AddSystem(MakeInclinedPlanePlant(
       radius, mass, slope, surface_friction, g, FLAGS_time_step, &scene_graph));
-  const MultibodyTree<double>& model = plant.model();
+  const MultibodyTree<double>& model = plant.tree();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(1.0e-5);
   plant.set_stiction_tolerance(FLAGS_stiction_tolerance);

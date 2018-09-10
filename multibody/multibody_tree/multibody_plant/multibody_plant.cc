@@ -438,7 +438,7 @@ void MultibodyPlant<T>::Finalize(geometry::SceneGraph<T>* scene_graph) {
 
 template<typename T>
 void MultibodyPlant<T>::SetUpJointLimitsParameters() {
-  for (JointIndex joint_index(0); joint_index < model().num_joints();
+  for (JointIndex joint_index(0); joint_index < tree().num_joints();
        ++joint_index) {
     // Currently MultibodyPlant applies these "compliant" joint limit forces
     // using an explicit Euler strategy. Stability analysis of the explicit
@@ -450,7 +450,7 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
     // the time stepping scheme is updated to be implicit in the joint limits.
     const double kAlpha = 20 * M_PI;
 
-    const Joint<T>& joint = model().get_joint(joint_index);
+    const Joint<T>& joint = tree().get_joint(joint_index);
     auto revolute_joint = dynamic_cast<const RevoluteJoint<T>*>(&joint);
     auto prismatic_joint = dynamic_cast<const PrismaticJoint<T>*>(&joint);
     // Currently MBP only supports limits for prismatic and revolute joints.
@@ -518,7 +518,7 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
           throw std::logic_error(
               "Currently MultibodyPlant does not handle joint limits for "
               "continuous models. However a limit was specified for joint `"
-              "`" + model().get_joint(index).name() + "`.");
+              "`" + tree().get_joint(index).name() + "`.");
         }
       }
     }
@@ -637,9 +637,9 @@ MatrixX<T> MultibodyPlant<T>::CalcNormalSeparationVelocitiesJacobian(
     const GeometryId geometryB_id = point_pair.id_B;
 
     BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
-    const Body<T>& bodyA = model().get_body(bodyA_index);
+    const Body<T>& bodyA = tree().get_body(bodyA_index);
     BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
-    const Body<T>& bodyB = model().get_body(bodyB_index);
+    const Body<T>& bodyB = tree().get_body(bodyB_index);
 
     // Penetration depth, > 0 if bodies interpenetrate.
     const Vector3<T>& nhat_BA_W = point_pair.nhat_BA_W;
@@ -650,13 +650,13 @@ MatrixX<T> MultibodyPlant<T>::CalcNormalSeparationVelocitiesJacobian(
     // body A, s.t.: v_WAc = Jv_WAc * v
     // where v is the vector of generalized velocities.
     MatrixX<T> Jv_WAc(3, this->num_velocities());
-    model().CalcPointsGeometricJacobianExpressedInWorld(
+    tree().CalcPointsGeometricJacobianExpressedInWorld(
         context, bodyA.body_frame(), p_WCa, &Jv_WAc);
 
     // Geometric Jacobian for the velocity of the contact point C as moving with
     // body B, s.t.: v_WBc = Jv_WBc * v.
     MatrixX<T> Jv_WBc(3, this->num_velocities());
-    model().CalcPointsGeometricJacobianExpressedInWorld(
+    tree().CalcPointsGeometricJacobianExpressedInWorld(
         context, bodyB.body_frame(), p_WCb, &Jv_WBc);
 
     // The velocity of Bc relative to Ac is
@@ -692,9 +692,9 @@ MatrixX<T> MultibodyPlant<T>::CalcTangentVelocitiesJacobian(
     const GeometryId geometryB_id = point_pair.id_B;
 
     BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
-    const Body<T>& bodyA = model().get_body(bodyA_index);
+    const Body<T>& bodyA = tree().get_body(bodyA_index);
     BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
-    const Body<T>& bodyB = model().get_body(bodyB_index);
+    const Body<T>& bodyB = tree().get_body(bodyB_index);
 
     // Penetration depth, > 0 if bodies interpenetrate.
     const T& x = point_pair.depth;
@@ -721,11 +721,11 @@ MatrixX<T> MultibodyPlant<T>::CalcTangentVelocitiesJacobian(
     // in the limit to rigid contact, Ac = Bc.
 
     MatrixX<T> Jv_WAc(3, this->num_velocities());  // s.t.: v_WAc = Jv_WAc * v.
-    model().CalcPointsGeometricJacobianExpressedInWorld(
+    tree().CalcPointsGeometricJacobianExpressedInWorld(
         context, bodyA.body_frame(), p_WCa, &Jv_WAc);
 
     MatrixX<T> Jv_WBc(3, this->num_velocities());  // s.t.: v_WBc = Jv_WBc * v.
-    model().CalcPointsGeometricJacobianExpressedInWorld(
+    tree().CalcPointsGeometricJacobianExpressedInWorld(
         context, bodyB.body_frame(), p_WCb, &Jv_WBc);
 
     // The velocity of Bc relative to Ac is
@@ -760,7 +760,7 @@ void MultibodyPlant<T>::set_penetration_allowance(
   // system.
   double mass = 0.0;
   for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
-    const Body<T>& body = model().get_body(body_index);
+    const Body<T>& body = tree().get_body(body_index);
     mass = std::max(mass, body.get_default_mass());
   }
 
@@ -935,9 +935,9 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
 
     BodyNodeIndex bodyA_node_index =
-        model().get_body(bodyA_index).node_index();
+        tree().get_body(bodyA_index).node_index();
     BodyNodeIndex bodyB_node_index =
-        model().get_body(bodyB_index).node_index();
+        tree().get_body(bodyB_index).node_index();
 
     // Penetration depth, > 0 during pair.
     const T& x = pair.depth;
@@ -1032,7 +1032,7 @@ void MultibodyPlant<T>::AddJointActuationForces(
     for (JointActuatorIndex actuator_index(0);
          actuator_index < num_actuators(); ++actuator_index) {
       const JointActuator<T>& actuator =
-          model().get_joint_actuator(actuator_index);
+          tree().get_joint_actuator(actuator_index);
       // We only support actuators on single dof joints for now.
       DRAKE_DEMAND(actuator.joint().num_velocities() == 1);
       for (int joint_dof = 0;
@@ -1078,7 +1078,7 @@ void MultibodyPlant<T>::AddJointLimitsPenaltyForces(
     const double upper_limit = joint_limits_parameters_.upper_limit[index];
     const double stiffness = joint_limits_parameters_.stiffness[index];
     const double damping = joint_limits_parameters_.damping[index];
-    const Joint<T>& joint = model().get_joint(joint_index);
+    const Joint<T>& joint = tree().get_joint(joint_index);
 
     const T& q = joint.GetOnePosition(context);
     const T& v = joint.GetOneVelocity(context);

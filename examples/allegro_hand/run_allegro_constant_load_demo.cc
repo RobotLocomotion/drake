@@ -89,7 +89,7 @@ void DoMain() {
 
   // constant force input
   VectorX<double> constant_load_value = VectorX<double>::Ones(
-      plant.model().num_actuators()) * FLAGS_constant_load;
+      plant.tree().num_actuators()) * FLAGS_constant_load;
   auto constant_source =
      builder.AddSystem<systems::ConstantVectorSource<double>>(
       constant_load_value);

@@ -120,7 +120,7 @@ TEST_F(CartPoleTest, MassMatrix) {
 
   Matrix2<double> M;
   pole_pin_->set_angle(context_.get(), theta);
-  cart_pole_.model().CalcMassMatrixViaInverseDynamics(*context_, &M);
+  cart_pole_.tree().CalcMassMatrixViaInverseDynamics(*context_, &M);
   Matrix2<double> M_expected = CartPoleHandWritenMassMatrix(theta);
 
   // Matrix verified to this tolerance.
