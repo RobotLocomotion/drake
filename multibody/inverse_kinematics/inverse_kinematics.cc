@@ -16,6 +16,11 @@ InverseKinematics::InverseKinematics(
       tree_(plant_.model().ToAutoDiffXd()),
       context_(tree_->CreateDefaultContext()),
       q_(prog_->NewContinuousVariables(plant_.num_positions(), "q")) {
+  // Initialize the lower and upper bounds to -inf/inf. A free floating body
+  // does not increment `num_joints()` (A single free floating body has
+  // num_joints() = 0), but has 7 generalized positions for each free floating
+  // body. The initialization below guarantees proper bounds on the
+  // generalized positions for the free floating body.
   Eigen::VectorXd q_lower = Eigen::VectorXd::Constant(
       tree_->num_positions(), -std::numeric_limits<double>::infinity());
   Eigen::VectorXd q_upper = Eigen::VectorXd::Constant(
