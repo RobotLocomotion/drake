@@ -84,14 +84,28 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   ///   The frame F attached on the parent body connected by this joint.
   /// @param[in] frame_on_child
   ///   The frame M attached on the child body connected by this joint.
+  /// @param[in] lower_limit
+  ///   A vector storing the position lower limit for each generalized position.
+  ///   It must have the same size as `upper_limit`.
+  ///   A value equal to -∞ implies no lower limit.
+  /// @param[in] upper_limit
+  ///   A vector storing the position upper limit for each generalized position.
+  ///   It must have the same size as `lower_limit`.
+  ///   A value equal to +∞ implies no upper limit.
   Joint(const std::string& name,
-        const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child)
+        const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
+        const VectorX<double>& lower_limits,
+        const VectorX<double>& upper_limits)
       : MultibodyTreeElement<Joint<T>, JointIndex>(
             frame_on_child.model_instance()),
         name_(name),
-        frame_on_parent_(frame_on_parent), frame_on_child_(frame_on_child) {
+        frame_on_parent_(frame_on_parent), frame_on_child_(frame_on_child),
+        lower_limits_(lower_limits), upper_limits_(upper_limits) {
     // Notice `this` joint references `frame_on_parent` and `frame_on_child` and
     // therefore they must outlive it.
+    DRAKE_DEMAND(lower_limits.size() == upper_limits.size());
+    // Verify that lower_limit <= upper_limit, elementwise.
+    DRAKE_DEMAND((lower_limits.array() <= upper_limits.array()).all());
   }
 
   virtual ~Joint() {}
@@ -150,6 +164,28 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   int num_positions() const {
     DRAKE_ASSERT(0 <= do_get_num_positions() && do_get_num_positions() <= 7);
     return do_get_num_positions();
+  }
+
+  /// Returns a vector of size num_positions() storing the lower limits for each
+  /// generalized position for `this` joint.
+  /// A limit with value -∞ implies no lower limit for the corresponding
+  /// position.
+  /// Joint limits are returned in order with the limit for position with index
+  /// position_start() in the first entry and with the limit for position with
+  /// index position_start() + num_positions() - 1 in the last entry.
+  const VectorX<double>& lower_limits() const {
+    return lower_limits_;
+  }
+
+  /// Returns a vector of size num_positions() storing the upper limits for each
+  /// generalized position for `this` joint.
+  /// A limit with value +∞ implies no upper limit for the corresponding
+  /// position.
+  /// Joint limits are returned in order with the limit for position with index
+  /// position_start() in the first entry and with the limit for position with
+  /// index position_start() + num_positions() - 1 in the last entry.
+  const VectorX<double>& upper_limits() const {
+    return upper_limits_;
   }
 
   /// Returns the position coordinate for joints with a single degree of
@@ -418,6 +454,10 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   std::string name_;
   const Frame<T>& frame_on_parent_;
   const Frame<T>& frame_on_child_;
+
+  // Joint limits. These vectors have zero size for joints with no limits.
+  VectorX<double> lower_limits_;
+  VectorX<double> upper_limits_;
 
   // The Joint<T> implementation:
   std::unique_ptr<JointImplementation> implementation_;

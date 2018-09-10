@@ -87,7 +87,8 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
             plant_->get_rigid_body_tree(), iiwa_instances[i].instance_id,
             kEndEffectorLinkName, wsg_instances[i].instance_id);
     RigidBody<T>* controller_ee =
-        iiwa_controller->get_robot_for_control().FindBody(kEndEffectorLinkName);
+        iiwa_controller->get_rigid_body_tree_for_control()->FindBody(
+            kEndEffectorLinkName);
     controller_ee->set_spatial_inertia(lumped_gripper_inertia_EE);
     // Export iiwa's desired state input, and state output.
     input_port_iiwa_state_command_.push_back(base_builder->ExportInput(
@@ -127,7 +128,7 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
     // bot_core::robot_state_t messages.
     auto iiwa_state_est =
         base_builder->template AddSystem<OracularStateEstimation<T>>(
-            iiwa_controller->get_robot_for_control());
+            *iiwa_controller->get_rigid_body_tree_for_control());
     iiwa_state_est->set_name("OracularStateEstimationIIWAState" + suffix);
     base_builder->Connect(iiwa_output_port,
                           iiwa_state_est->get_input_port_state());
