@@ -330,6 +330,7 @@ drake_py_unittest(
     deps = [
         ":controllers_py",
         "//bindings/pydrake/examples:pendulum_py",
+        "//bindings/pydrake/multibody:multibody_tree_py",
         "//bindings/pydrake/multibody:rigid_body_tree_py",
     ],
 )
