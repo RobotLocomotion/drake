@@ -86,18 +86,16 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   ///   The frame M attached on the child body connected by this joint.
   /// @param[in] lower_limit
   ///   A vector storing the position lower limit for each generalized position.
-  ///   By default a zero sized vector indicating this joint has no limits.
   ///   It must have the same size as `upper_limit`.
   ///   A value equal to -∞ implies no lower limit.
   /// @param[in] upper_limit
   ///   A vector storing the position upper limit for each generalized position.
-  ///   By default a zero sized vector indicating this joint has no limits.
   ///   It must have the same size as `lower_limit`.
   ///   A value equal to +∞ implies no upper limit.
   Joint(const std::string& name,
         const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
-        const VectorX<double>& lower_limits = VectorX<double>(),
-        const VectorX<double>& upper_limits = VectorX<double>())
+        const VectorX<double>& lower_limits,
+        const VectorX<double>& upper_limits)
       : MultibodyTreeElement<Joint<T>, JointIndex>(
             frame_on_child.model_instance()),
         name_(name),
@@ -106,6 +104,8 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     // Notice `this` joint references `frame_on_parent` and `frame_on_child` and
     // therefore they must outlive it.
     DRAKE_DEMAND(lower_limits.size() == upper_limits.size());
+    // Verify that lower_limit < upper_limit, elementwise.
+    DRAKE_DEMAND((lower_limits.array() < upper_limits.array()).all());
   }
 
   virtual ~Joint() {}
@@ -168,8 +168,8 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
 
   /// Returns a vector of size num_positions() storing the lower limits for each
   /// generalized position for `this` joint.
-  /// The returned vector has zero size for joints with no limits. A limit with
-  /// value -∞ implies no lower limit for the corresponding position.
+  /// A limit with value -∞ implies no lower limit for the corresponding
+  /// position.
   /// Joint limits are returned in order with the limit for position with index
   /// position_start() in the first entry and with the limit for position with
   /// index position_start() + num_positions() - 1 in the last entry.
@@ -179,8 +179,8 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
 
   /// Returns a vector of size num_positions() storing the upper limits for each
   /// generalized position for `this` joint.
-  /// The returned vector has zero size for joints with no limits. A limit with
-  /// value +∞ implies no upper limit for the corresponding position.
+  /// A limit with value +∞ implies no upper limit for the corresponding
+  /// position.
   /// Joint limits are returned in order with the limit for position with index
   /// position_start() in the first entry and with the limit for position with
   /// index position_start() + num_positions() - 1 in the last entry.

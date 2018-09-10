@@ -39,7 +39,9 @@ class WeldJoint final : public Joint<T> {
   WeldJoint(const std::string& name,
             const Frame<T>& parent_frame_P, const Frame<T>& child_frame_C,
             const Isometry3<double>& X_PC) :
-      Joint<T>(name, parent_frame_P, child_frame_C), X_PC_(X_PC) {}
+      Joint<T>(name, parent_frame_P, child_frame_C,
+               VectorX<double>() /* no lower limits */,
+               VectorX<double>() /* no upper limits */), X_PC_(X_PC) {}
 
   /// Returns the pose X_PC of frame C in P.
   const Isometry3<double>& X_PC() const {

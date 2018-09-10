@@ -29,9 +29,13 @@ class PrismaticJointTest : public ::testing::Test {
     body1_ = &model_.AddBody<RigidBody>(M_B);
 
     // Add a prismatic joint between the world and body1:
+    const double lower_limit = -1.0;
+    const double upper_limit = 1.5;
+    const double damping = 3.0;
     joint1_ = &model_.AddJoint<PrismaticJoint>(
         "Joint1",
-        model_.world_body(), {}, *body1_, {}, Vector3d::UnitZ());
+        model_.world_body(), {}, *body1_, {}, Vector3d::UnitZ(),
+        lower_limit, upper_limit, damping);
 
     // We are done adding modeling elements. Finalize the model:
     model_.Finalize();
@@ -104,6 +108,22 @@ TEST_F(PrismaticJointTest, AddInForces) {
     EXPECT_TRUE(F1.IsApprox(*F2++, kEpsilon));
 }
 
+TEST_F(PrismaticJointTest, Clone) {
+  auto model_clone = model_.CloneToScalar<AutoDiffXd>();
+  const auto& joint1_clone = model_clone->get_variant(*joint1_);
+
+  EXPECT_EQ(joint1_clone.name(), joint1_->name());
+  EXPECT_EQ(joint1_clone.frame_on_parent().index(),
+            joint1_->frame_on_parent().index());
+  EXPECT_EQ(joint1_clone.frame_on_child().index(),
+            joint1_->frame_on_child().index());
+  EXPECT_EQ(joint1_clone.translation_axis(), joint1_->translation_axis());
+  EXPECT_EQ(joint1_clone.lower_limits(), joint1_->lower_limits());
+  EXPECT_EQ(joint1_clone.upper_limits(), joint1_->upper_limits());
+  EXPECT_EQ(joint1_clone.lower_limit(), joint1_->lower_limit());
+  EXPECT_EQ(joint1_clone.upper_limit(), joint1_->upper_limit());
+  EXPECT_EQ(joint1_clone.damping(), joint1_->damping());
+}
 
 }  // namespace
 }  // namespace multibody
