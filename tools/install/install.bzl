@@ -519,7 +519,7 @@ def _install_impl(ctx):
 
 # TODO(mwoehlke-kitware) default guess_data to PACKAGE when we have better
 # default destinations.
-_install_rule = rule(
+install = rule(
     # Update buildifier-tables.json when this changes.
     attrs = {
         "deps": attr.label_list(providers = [InstallInfo]),
@@ -565,13 +565,6 @@ _install_rule = rule(
     executable = True,
     implementation = _install_impl,
 )
-
-def install(tags = [], **kwargs):
-    # (The documentation for this function is immediately below.)
-    _install_rule(
-        tags = tags + ["install"],
-        **kwargs
-    )
 
 """Generate installation information for various artifacts.
 
@@ -699,7 +692,7 @@ def _install_files_impl(ctx):
     # Return computed actions.
     return [InstallInfo(install_actions = actions, rename = ctx.attr.rename)]
 
-_install_files_rule = rule(
+install_files = rule(
     # Update buildifier-tables.json when this changes.
     attrs = {
         "dest": attr.string(mandatory = True),
@@ -711,13 +704,6 @@ _install_files_rule = rule(
     },
     implementation = _install_files_impl,
 )
-
-def install_files(tags = [], **kwargs):
-    # (The documentation for this function is immediately below.)
-    _install_files_rule(
-        tags = tags + ["install"],
-        **kwargs
-    )
 
 """Generate installation information for files.
 

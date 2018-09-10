@@ -11,7 +11,7 @@ def _check_invalid_line_endings(filename):
     # Ask Python to read the file and determine the newlines convention.
     with open(filename, 'rU') as file:
         if not file:
-            print("ERROR: unable to open " + filename)
+            print("error: unable to open " + filename)
             return 1
         file.read()
         if file.newlines is None:
@@ -22,7 +22,7 @@ def _check_invalid_line_endings(filename):
     # Only allow Unix newlines.
     for newline in newlines:
         if newline != '\n':
-            print("ERROR: non-Unix newline characters found")
+            print("error: non-Unix newline characters found")
             return 1
 
     return 0
@@ -34,7 +34,7 @@ def _check_includes(filename):
     tool.format_includes()
     first_difference = tool.get_first_differing_original_index()
     if first_difference is not None:
-        print("ERROR: " + filename + ":" + str(first_difference + 1) + ": " +
+        print("error: " + filename + ":" + str(first_difference + 1) + ": " +
               "the #include ordering is incorrect")
         print("note: fix via bazel-bin/tools/lint/clang-format-includes " +
               filename)
@@ -52,11 +52,11 @@ def _check_shebang(filename):
         shebang = file.readline().rstrip("\n")
         has_shebang = shebang.startswith("#!")
     if is_executable and not has_shebang:
-        print("ERROR: {} is executable but lacks a shebang".format(filename))
+        print("error: {} is executable but lacks a shebang".format(filename))
         print("note: fix via chmod a-x '{}'".format(filename))
         return 1
     if has_shebang and not is_executable:
-        print("ERROR: {} has a shebang but is not executable".format(filename))
+        print("error: {} has a shebang but is not executable".format(filename))
         print("note: fix by removing the first line of the file")
         return 1
     shebang_whitelist = {
@@ -65,7 +65,7 @@ def _check_shebang(filename):
         "python": "#!/usr/bin/env python2"
     }
     if has_shebang and shebang not in shebang_whitelist.values():
-        print(("ERROR: shebang '{}' in the file '{}' is not in the shebang "
+        print(("error: shebang '{}' in the file '{}' is not in the shebang "
               "whitelist").format(shebang, filename))
         for hint, replacement_shebang in shebang_whitelist.iteritems():
             if hint in shebang:
