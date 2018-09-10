@@ -108,7 +108,9 @@ class RevoluteJoint final : public Joint<T> {
                 const Vector3<double>& axis,
                 double lower_limit, double upper_limit,
                 double damping = 0) :
-      Joint<T>(name, frame_on_parent, frame_on_child) {
+      Joint<T>(name, frame_on_parent, frame_on_child,
+               VectorX<double>::Constant(1, lower_limit),
+               VectorX<double>::Constant(1, upper_limit)) {
     const double kEpsilon = std::numeric_limits<double>::epsilon();
     DRAKE_DEMAND(!axis.isZero(kEpsilon));
     DRAKE_THROW_UNLESS(damping >= 0);
