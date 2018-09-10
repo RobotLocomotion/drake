@@ -81,6 +81,5 @@ def install_data(
         name = "install_data",
         data = [prod_models_target],
         data_dest = "share/drake/" + native.package_name(),
-        tags = ["install"],
         visibility = ["//visibility:public"],
     )
