@@ -357,10 +357,18 @@ void init_multibody_plant(py::module m) {
     cls
         .def("world_body", &Class::world_body, py_reference_internal)
         .def("world_frame", &Class::world_frame, py_reference_internal)
-        .def("model", &Class::model, py_reference_internal)
+        .def("tree", &Class::tree, py_reference_internal)
         .def("is_finalized", &Class::is_finalized)
         .def("Finalize", py::overload_cast<SceneGraph<T>*>(&Class::Finalize),
              py::arg("scene_graph") = nullptr);
+    // Add deprecated methods.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("model", &Class::model, py_reference_internal);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    cls.attr("message_model") = "Please use tree().";
+    DeprecateAttribute(
+        cls, "model", cls.attr("message_model"));
   }
 }
 

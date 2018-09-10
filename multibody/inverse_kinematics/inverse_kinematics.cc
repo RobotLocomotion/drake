@@ -11,7 +11,7 @@ InverseKinematics::InverseKinematics(
     const multibody_plant::MultibodyPlant<double>& plant)
     : prog_{new solvers::MathematicalProgram()},
       plant_(plant),
-      tree_(plant_.model().ToAutoDiffXd()),
+      tree_(plant_.tree().ToAutoDiffXd()),
       context_(tree_->CreateDefaultContext()),
       q_(prog_->NewContinuousVariables(plant_.num_positions(), "q")) {
   // TODO(hongkai.dai) Add joint limit constraint here.
