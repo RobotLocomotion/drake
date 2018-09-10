@@ -8,6 +8,7 @@
 #include "drake/automotive/maliput/api/segment.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/util/wrap_pybind.h"
+#include "drake/math/roll_pitch_yaw.h"
 
 namespace drake {
 namespace pydrake {
@@ -45,13 +46,20 @@ PYBIND11_MODULE(api, m) {
       .def_readwrite("pos", &RoadPosition::pos);
   DefReadWriteKeepAlive(&road_position, "lane", &RoadPosition::lane);
 
+  py::class_<Rotation>(m, "Rotation")
+      .def("quat", &Rotation::quat, py_reference_internal)
+      .def("rpy", &Rotation::rpy);
+
   py::class_<RoadGeometry>(m, "RoadGeometry")
+      .def("num_junctions", &RoadGeometry::num_junctions)
       .def("junction", &RoadGeometry::junction, py_reference_internal);
 
   py::class_<Junction>(m, "Junction")
+      .def("num_segments", &Junction::num_segments)
       .def("segment", &Junction::segment, py_reference_internal);
 
   py::class_<Segment>(m, "Segment")
+      .def("num_lanes", &Segment::num_lanes)
       .def("lane", &Segment::lane, py_reference_internal);
 
   py::class_<LaneId>(m, "LaneId")
@@ -61,6 +69,8 @@ PYBIND11_MODULE(api, m) {
   py::class_<Lane>(m, "Lane")
       .def("ToLanePosition", &Lane::ToLanePosition)
       .def("ToGeoPosition", &Lane::ToGeoPosition)
+      .def("GetOrientation", &Lane::GetOrientation)
+      .def("length", &Lane::length)
       .def("id", &Lane::id);
 }
 
