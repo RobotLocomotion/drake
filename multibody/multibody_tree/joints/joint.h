@@ -104,8 +104,8 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     // Notice `this` joint references `frame_on_parent` and `frame_on_child` and
     // therefore they must outlive it.
     DRAKE_DEMAND(lower_limits.size() == upper_limits.size());
-    // Verify that lower_limit < upper_limit, elementwise.
-    DRAKE_DEMAND((lower_limits.array() < upper_limits.array()).all());
+    // Verify that lower_limit <= upper_limit, elementwise.
+    DRAKE_DEMAND((lower_limits.array() <= upper_limits.array()).all());
   }
 
   virtual ~Joint() {}
