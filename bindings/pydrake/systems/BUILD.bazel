@@ -270,6 +270,8 @@ drake_py_unittest(
 drake_py_binary(
     name = "drawing_graphviz_example",
     srcs = ["drawing_graphviz_example.py"],
+    add_test_rule = 1,
+    test_rule_args = ["--test"],
     deps = [
         ":drawing_py",
         ":framework_py",
