@@ -6,6 +6,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/bindings/pydrake/util/wrap_pybind.h"
+#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/controllers/dynamic_programming.h"
 #include "drake/systems/controllers/inverse_dynamics.h"
@@ -18,6 +19,7 @@ namespace pydrake {
 PYBIND11_MODULE(controllers, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::controllers;
+  using drake::multibody::multibody_plant::MultibodyPlant;
   using drake::systems::Diagram;
   using drake::systems::LeafSystem;
 
@@ -61,6 +63,18 @@ PYBIND11_MODULE(controllers, m) {
            py::arg("kd"),
            py::arg("has_reference_acceleration"),
            // Keep alive, ownership: RigidBodyTree keeps this alive.
+           py::keep_alive<2, 1>())
+      .def(py::init<std::unique_ptr<MultibodyPlant<double>>,
+                    const VectorX<double>&,
+                    const VectorX<double>&,
+                    const VectorX<double>&,
+                    bool>(),
+           py::arg("robot"),
+           py::arg("kp"),
+           py::arg("ki"),
+           py::arg("kd"),
+           py::arg("has_reference_acceleration"),
+          // Keep alive, ownership: MultibodyPlant keeps this alive.
            py::keep_alive<2, 1>())
       .def("set_integral_value",
            &InverseDynamicsController<double>::set_integral_value);
