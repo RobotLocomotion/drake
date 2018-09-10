@@ -5,6 +5,7 @@ installed.
 """
 
 from tempfile import NamedTemporaryFile
+from pydrake.common import temp_directory
 import matplotlib.pyplot as plt
 import pydot
 
@@ -26,7 +27,7 @@ def plot_graphviz(dot_text):
         # Handle this case for now.
         assert len(g) == 1
         g = g[0]
-    f = NamedTemporaryFile(suffix='.png')
+    f = NamedTemporaryFile(suffix='.png', dir=temp_directory())
     g.write_png(f.name)
     plt.axis('off')
 

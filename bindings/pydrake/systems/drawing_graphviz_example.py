@@ -4,10 +4,20 @@ from pydrake.systems.drawing import plot_system_graphviz
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.primitives import Adder
 
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--test",
+                    action='store_true',
+                    help="Causes the script will run without blocking for "
+                         "user input.",
+                    default=False)
+args = parser.parse_args()
+
 builder = DiagramBuilder()
 size = 1
 adders = [
-    builder.AddSystem(Adder(1, size)),
+    builder.AddSystem(Adder(2, size)),
     builder.AddSystem(Adder(1, size)),
 ]
 for i, adder in enumerate(adders):
@@ -20,4 +30,6 @@ diagram = builder.Build()
 diagram.set_name("graphviz_example")
 
 plot_system_graphviz(diagram)
-plt.show()
+
+if not args.test:
+    plt.show()
