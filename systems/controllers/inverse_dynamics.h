@@ -51,7 +51,7 @@ class InverseDynamics : public LeafSystem<T> {
    * generalized velocity, `vd_d` is the desired generalized acceleration,
    * `tau_s` is computed via `RigidBodyTree::CalcGeneralizedSpringForces()` and
    * `tau_d` is computed via `RigidBodyTree::frictionTorques()`.
-   * In gravity compensation mode, the generalized force  only includes the
+   * In gravity compensation mode, the generalized force only includes the
    * gravity term, that is, `tau_id = tau_g(q)`.
    * @param tree Pointer to the model. The life span of @p tree must be longer
    * than this instance.

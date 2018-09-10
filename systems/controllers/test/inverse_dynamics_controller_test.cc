@@ -36,7 +36,8 @@ GTEST_TEST(InverseDynamicsControllerTestRBP, TestTorque) {
   kd = kp / 2.;
 
   auto dut = std::make_unique<InverseDynamicsController<double>>(
-      std::move(robot_ptr), kp, ki, kd, true);
+      std::move(robot_ptr), kp, ki, kd,
+          true /* expose reference acceleration port */);
   auto context = dut->CreateDefaultContext();
   auto output = dut->AllocateOutput();
   const RigidBodyTree<double>& robot = *dut->get_rigid_body_tree_for_control();
@@ -113,7 +114,8 @@ GTEST_TEST(InverseDynamicsControllerTestMBP, TestTorque) {
   kd = kp / 2.;
 
   auto dut = std::make_unique<InverseDynamicsController<double>>(
-      std::move(robot), kp, ki, kd, true);
+      std::move(robot), kp, ki, kd,
+          true /* expose reference acceleration port */);
   auto inverse_dynamics_context = dut->CreateDefaultContext();
   auto output = dut->AllocateOutput();
   const MultibodyPlant<double>& robot_plant =
