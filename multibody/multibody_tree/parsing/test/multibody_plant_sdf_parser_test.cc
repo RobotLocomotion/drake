@@ -70,14 +70,14 @@ class AcrobotModelTests : public ::testing::Test {
     benchmark_shoulder_->set_angle(benchmark_context_.get(), theta1);
     benchmark_elbow_->set_angle(benchmark_context_.get(), theta2);
     MatrixX<double> M_benchmark(nv, nv);
-    benchmark_plant_->tree().CalcMassMatrixViaInverseDynamics(
+    benchmark_plant_->model().CalcMassMatrixViaInverseDynamics(
         *benchmark_context_.get(), &M_benchmark);
 
     // Set the state for the parsed model and compute the mass matrix.
     shoulder_->set_angle(context_.get(), theta1);
     elbow_->set_angle(context_.get(), theta2);
     MatrixX<double> M(nv, nv);
-    plant_->tree().CalcMassMatrixViaInverseDynamics(*context_.get(), &M);
+    plant_->model().CalcMassMatrixViaInverseDynamics(*context_.get(), &M);
 
     EXPECT_TRUE(CompareMatrices(
         M, M_benchmark, kTolerance, MatrixCompareType::relative));

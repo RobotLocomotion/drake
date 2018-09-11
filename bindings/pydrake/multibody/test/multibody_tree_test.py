@@ -171,7 +171,7 @@ class TestMultibodyTree(unittest.TestCase):
         AddModelFromSdfFile(file_name, plant)
         plant.Finalize()
         context = plant.CreateDefaultContext()
-        tree = plant.tree()
+        tree = plant.model()
         world_frame = plant.world_frame()
         # TODO(eric.cousineau): Replace this with `GetFrameByName`.
         link1_frame = plant.GetBodyByName("Link1").body_frame()
