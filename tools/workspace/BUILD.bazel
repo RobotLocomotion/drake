@@ -52,10 +52,20 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "//conditions:default": [],
 })
 
+_DRAKE_EXTERNAL_PACKAGE_INSTALLS_NO_LICENSE = [
+    "//tools/workspace/%s:install" % p
+    for p in [
+        "yaml_cpp",
+        "tinyxml",
+        "tinyxml2",
+    ]
+]
+
 install(
     name = "install_external_packages",
     visibility = ["//:__pkg__"],
-    deps = _DRAKE_EXTERNAL_PACKAGE_INSTALLS,
+    deps = _DRAKE_EXTERNAL_PACKAGE_INSTALLS +
+           _DRAKE_EXTERNAL_PACKAGE_INSTALLS_NO_LICENSE,
 )
 
 check_licenses(_DRAKE_EXTERNAL_PACKAGE_INSTALLS)

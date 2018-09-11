@@ -50,10 +50,23 @@ def setup_pkg_config_repository(repository_ctx):
         [],
     )
 
-    # Check if we can find the required *.pc file of any version.
-    result = _run_pkg_config(repository_ctx, args, pkg_config_paths)
+    # Check if we can find the required *.pc file of any version, and if so,
+    # in which folder it is.
+    result = _run_pkg_config(
+        repository_ctx,
+        args + ["--variable", "pcfiledir"],
+        pkg_config_paths,
+    )
     if result.error != None:
         return result
+
+    if result.tokens:
+        pc_file_name = repository_ctx.attr.modname + ".pc"
+        pc_file_path = result.tokens[0] + "/" + pc_file_name
+        repository_ctx.symlink(pc_file_path, pc_file_name)
+        exports_pkg = "exports_files([%s])" % repr(pc_file_name)
+    else:
+        exports_pkg = ""
 
     # If we have a minimum version, enforce that.
     atleast_version = getattr(repository_ctx.attr, "atleast_version", "")
@@ -239,6 +252,7 @@ def setup_pkg_config_repository(repository_ctx):
         "%{deps}": repr(
             getattr(repository_ctx.attr, "extra_deps", []),
         ),
+        "%{exports_pkg}": exports_pkg,
         "%{build_epilog}": getattr(repository_ctx.attr, "build_epilog", ""),
     }
     template = getattr(

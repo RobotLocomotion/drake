@@ -3,6 +3,28 @@
 # This file exists to make our directory into a Bazel package, so that our
 # neighboring *.bzl file can be loaded elsewhere.
 
+load(
+    "@drake//tools/install:install.bzl",
+    "cmake_config",
+    "create_cps_file",
+    "install_cmake_config",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
+
+cps_file_name = create_cps_file(
+    package = "tinyxml",
+    pkg_file = "@tinyxml//:tinyxml.pc",
+)
+
+cmake_config(
+    cps_file_name = cps_file_name,
+    package = "tinyxml",
+)
+
+install_cmake_config(
+    name = "install",
+    package = "tinyxml",
+    visibility = ["//:__subpackages__"],
+)
 
 add_lint_tests()

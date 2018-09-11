@@ -1,5 +1,31 @@
 # -*- python -*-
 
+load(
+    "@drake//tools/install:install.bzl",
+    "cmake_config",
+    "create_cps_file",
+    "install_cmake_config",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+cps_file_name = create_cps_file(
+    package = "yaml-cpp",
+    pkg_file = "@yaml_cpp//:yaml-cpp.pc",
+)
+
+cmake_config(
+    cps_file_name = cps_file_name,
+    package = "yaml-cpp",
+)
+
+install_cmake_config(
+    name = "install",
+    package = "yaml-cpp",
+    visibility = ["//:__subpackages__"],
+)
 
 add_lint_tests()

@@ -17,4 +17,6 @@ cc_library(
     deps = %{deps},
 )
 
+%{exports_pkg}
+
 %{build_epilog}
