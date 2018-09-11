@@ -247,7 +247,19 @@ void init_module(py::module m) {
         .def("SetFreeBodyPoseOrThrow",
             py::overload_cast<const Body<T>&, const Isometry3<T>&,
             systems::Context<T>*>(&Class::SetFreeBodyPoseOrThrow, py::const_),
-            py::arg("body"), py::arg("X_WB"), py::arg("context"));
+            py::arg("body"), py::arg("X_WB"), py::arg("context"))
+        .def("CalcInverseDynamics",
+            [](                
+                const Class* self,
+                const systems::Context<T>& context,
+                const VectorX<T>& known_vdot) {
+              auto external_forces = MultibodyForces<T>(*self);
+              external_forces.SetZero();
+              auto tau =self->CalcInverseDynamics(
+                context, known_vdot, external_forces);
+              return tau;
+            },
+            py::arg("context"), py::arg("known_vdot"));
   }
 }
 
