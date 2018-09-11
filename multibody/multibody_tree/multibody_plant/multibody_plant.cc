@@ -1429,9 +1429,10 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
     last_actuated_instance = model_instance_index;
     instance_actuation_ports_[model_instance_index] =
         this->DeclareVectorInputPort(
-            systems::BasicVector<T>(instance_num_dofs),
                 tree_->GetModelInstanceName(model_instance_index) +
-                "_actuation").get_index();
+                    "_actuation",
+                systems::BasicVector<T>(instance_num_dofs))
+            .get_index();
   }
 
   if (num_actuated_instances == 1) {
@@ -1440,9 +1441,10 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
 
   // Declare one output port for the entire state vector.
   continuous_state_output_port_ =
-      this->DeclareVectorOutputPort(
-          BasicVector<T>(num_multibody_states()),
-          &MultibodyPlant::CopyContinuousStateOut).get_index();
+      this->DeclareVectorOutputPort("continuous_state",
+                                    BasicVector<T>(num_multibody_states()),
+                                    &MultibodyPlant::CopyContinuousStateOut)
+          .get_index();
 
   // Declare per model instance state output ports.
   instance_continuous_state_output_ports_.resize(num_model_instances());
@@ -1460,7 +1462,10 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
     };
     instance_continuous_state_output_ports_[model_instance_index] =
         this->DeclareVectorOutputPort(
-            BasicVector<T>(instance_num_states), calc).get_index();
+                tree_->GetModelInstanceName(model_instance_index) +
+                    "_continuous_state",
+                BasicVector<T>(instance_num_states), calc)
+            .get_index();
   }
 
   // Declare per model instance output port of generalized contact forces.
@@ -1480,13 +1485,17 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
     };
     instance_generalized_contact_forces_output_ports_[model_instance_index] =
         this->DeclareVectorOutputPort(
-            BasicVector<T>(instance_num_velocities), calc).get_index();
+                tree_->GetModelInstanceName(model_instance_index) +
+                    "_generalized_contact_forces",
+                BasicVector<T>(instance_num_velocities), calc)
+            .get_index();
   }
 
   // Contact results output port.
   contact_results_port_ = this->DeclareAbstractOutputPort(
-      ContactResults<T>(),
-      &MultibodyPlant<T>::CalcContactResultsOutput).get_index();
+                                  "contact_results", ContactResults<T>(),
+                                  &MultibodyPlant<T>::CalcContactResultsOutput)
+                              .get_index();
 }
 
 template <typename T>
@@ -1622,9 +1631,10 @@ void MultibodyPlant<T>::DeclareSceneGraphPorts() {
     ids.push_back(it.second);
   }
   geometry_pose_port_ =
-      this->DeclareAbstractOutputPort(
-          FramePoseVector<T>(*source_id_, ids),
-          &MultibodyPlant::CalcFramePoseOutput).get_index();
+      this->DeclareAbstractOutputPort("geometry_pose",
+                                      FramePoseVector<T>(*source_id_, ids),
+                                      &MultibodyPlant::CalcFramePoseOutput)
+          .get_index();
 }
 
 template <typename T>
