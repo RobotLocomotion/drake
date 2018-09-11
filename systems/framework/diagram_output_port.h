@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
@@ -62,10 +63,11 @@ class DiagramOutputPort final : public OutputPort<T> {
                     OutputPortIndex index,
                     DependencyTicket ticket,
                     const OutputPort<T>* source_output_port,
-                    SubsystemIndex source_subsystem_index)
+                    SubsystemIndex source_subsystem_index,
+                    const std::string name)
       : OutputPort<T>(diagram, system_base, index, ticket,
                       source_output_port->get_data_type(),
-                      source_output_port->size()),
+                      source_output_port->size(), name),
         source_output_port_(source_output_port),
         source_subsystem_index_(source_subsystem_index) {
     DRAKE_DEMAND(index.is_valid() && ticket.is_valid());
