@@ -783,10 +783,10 @@ GTEST_TEST(MultilaneLoaderTest, ContinuityConstraintOnReference) {
 //        |-|-| | |+|+|
 //        |-|-| | |+|+|
 //    s1  |-|-| | |+|+|  s7
-//       _|-|-| | |+|+|_
-//        | | | | | | |
-//        | | | | | | |
-//             s0
+//       _|-|-| | |+|+|_          ^ x
+//        | | | | | | |        y  |
+//        | | | | | | |       <---|
+//             s0            WORLD frame
 // </pre>
 //
 // Notation reference:
@@ -799,21 +799,25 @@ GTEST_TEST(MultilaneLoaderTest, ContinuityConstraintOnReference) {
 //    - '*': lower lanes surface hint.
 //    - '_': segment delimitation.
 //
+// Direction indications below (e.g. rightmost) are to be understood as
+// seen by an observer sitting at the WORLD frame origin, looking in the
+// direction towards increasing x coordinates.
+//
 // Segments s0 and s13 sit at the ends of road. Segment s13 is elevated
 // 2 meters with respect to segment s0 plane. Both have six (6) lanes.
 // Starting from segment s0's and moving in its forward direction (that of
 // increasing x):
 //    - the two center lanes (i.e. s0's third and fourth lanes) match
-//      segment s13's center lanes (i.e. s0's third and fourth lanes) with
+//      segment s13's center lanes (i.e. s13's third and fourth lanes) with
 //      no elevation nor superelevation changes;
 //    - the two rightmost lanes (i.e. s0's first and second lanes) ramp up
 //      10 meters, describe an S curve towards the left and ramp down 10
-//      meters to match segment s13's two rightmost lanes (i.e. s13's first
-//      and second lanes as well), since said segment is built in reverse;
+//      meters to match segment s13's two leftmost lanes (i.e. s13's first
+//      and second lanes, since said segment is built in reverse);
 //    - the two leftmost lanes (i.e. s0's fifth and sixth lanes) ramp down
 //      10 meters, describe and S curve towards the right and ramp up 10
-//      meters to match segment s13's two leftmost lanes (i.e. s13's fifth
-//      and sixth lanes as well) since said segment is built in reverse.
+//      meters to match segment s13's two rightmost lanes (i.e. s13's fifth
+//      and sixth lanes, since said segment is built in reverse).
 // Both S curves show banked turns (i.e. non-zero superelevation in opposite
 // directions once past the inflection point).
 GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
@@ -1034,7 +1038,7 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
               Matches(StartLane(0).at(
                   {{40., 20., 0.}, {-10., 0., 5. * M_PI / 180., {}}},
                   Direction::kForward), kLinearTolerance),
-              Matches(ArcOffset(7.5, -M_PI/2.),
+              Matches(ArcOffset(7.5, -90. * M_PI / 180.),
                       kLinearTolerance, kAngularTolerance),
               Matches(EndLane(0).z_at({-10., 0., 0., {}}, Direction::kForward),
                       kLinearTolerance)));
@@ -1046,9 +1050,9 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
                                  kTwoLanes, kRefLane, kZeroRRef),
                       kZeroTolerance),
               Matches(StartLane(0).at(
-                  {{47.5, 12.5, -M_PI/2.}, {-10., 0., 0., {}}},
+                  {{47.5, 12.5, -90. * M_PI / 180.}, {-10., 0., 0., {}}},
                   Direction::kForward), kLinearTolerance),
-              Matches(ArcOffset(12.5, M_PI/2.),
+              Matches(ArcOffset(12.5, 90. * M_PI / 180.),
                       kLinearTolerance, kAngularTolerance),
               Matches(EndLane(0).z_at({-10., 0., -5. * M_PI / 180., {}},
                                       Direction::kForward),
@@ -1119,7 +1123,7 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
               Matches(StartLane(0).at(
                   {{40., 0., 0.}, {10., 0., -5 * M_PI / 180., {}}},
                   Direction::kForward), kLinearTolerance),
-              Matches(ArcOffset(12.5, M_PI / 2.), kLinearTolerance,
+              Matches(ArcOffset(12.5, 90. * M_PI / 180.), kLinearTolerance,
                       kAngularTolerance),
               Matches(EndLane(0).z_at({10., 0., 0., {}},
                                       Direction::kForward),
@@ -1134,7 +1138,7 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
               Matches(StartLane(0).at(
                   {{52.5, 12.5, M_PI / 2.}, {10., 0., 0., {}}},
                   Direction::kForward), kLinearTolerance),
-              Matches(ArcOffset(7.5, -M_PI / 2.), kLinearTolerance,
+              Matches(ArcOffset(7.5, -90. * M_PI / 180.), kLinearTolerance,
                       kAngularTolerance),
               Matches(EndLane(0).z_at({10., 0., 5. * M_PI / 180., {}},
                                       Direction::kForward),
@@ -1216,7 +1220,12 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
       Load(builder_factory_mock, std::string(kMultilaneYaml));
   EXPECT_NE(rg, nullptr);
 
-  // Finds "g1" junction and checks that the correct segments are created.
+  // Finds "s0" junction and checks that a segment was created.
+  const api::Junction* s0 = GetJunctionById(*rg, api::JunctionId("j:s0"));
+  EXPECT_EQ(s0->num_segments(), 1);
+  EXPECT_EQ(s0->segment(0)->id(), api::SegmentId("s:s0"));
+
+  // Finds "g1" junction and checks that the correct segments were created.
   const api::Junction* g1 = GetJunctionById(*rg, api::JunctionId("j:g1"));
   EXPECT_EQ(g1->num_segments(), 6);
 
@@ -1229,7 +1238,7 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
                 g1_segment_ids.end());
   }
 
-  // Finds "g2" junction and checks that the correct segments are created.
+  // Finds "g2" junction and checks that the correct segments were created.
   const api::Junction* g2 = GetJunctionById(*rg, api::JunctionId("j:g2"));
   EXPECT_EQ(g2->num_segments(), 6);
 
@@ -1241,6 +1250,16 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
     EXPECT_TRUE(g2_segment_ids.find(g2->segment(i)->id()) !=
                 g2_segment_ids.end());
   }
+
+  // Finds "s13" junction and checks that a segment was created.
+  const api::Junction* s13 = GetJunctionById(*rg, api::JunctionId("j:s13"));
+  EXPECT_EQ(s13->num_segments(), 1);
+  EXPECT_EQ(s13->segment(0)->id(), api::SegmentId("s:s13"));
+
+  // Finds "s14" junction and checks that a segment was created.
+  const api::Junction* s14 = GetJunctionById(*rg, api::JunctionId("j:s14"));
+  EXPECT_EQ(s14->num_segments(), 1);
+  EXPECT_EQ(s14->segment(0)->id(), api::SegmentId("s:s14"));
 }
 
 
