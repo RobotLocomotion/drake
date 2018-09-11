@@ -63,7 +63,8 @@ PYBIND11_MODULE(controllers, m) {
            py::arg("kd"),
            py::arg("has_reference_acceleration"),
            // Keep alive, ownership: RigidBodyTree keeps this alive.
-           py::keep_alive<2, 1>())
+           // See "Keep Alive Behavior" in pydrake_pybind.h for details.
+           py::keep_alive<2 /* Nurse */, 1 /* Patient */>())
       .def(py::init<std::unique_ptr<MultibodyPlant<double>>,
                     const VectorX<double>&,
                     const VectorX<double>&,

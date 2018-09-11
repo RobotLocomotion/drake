@@ -211,9 +211,14 @@ class TestControllers(unittest.TestCase):
         AddModelFromSdfFile(file_name=sdf_path, plant=plant)
         plant.Finalize()
 
-        self.assertEqual(plant.num_positions(), 7)
-        self.assertEqual(plant.num_velocities(), 7)
-        self.assertEqual(plant.num_actuators(), 7)
+        # We verify the (known) size of the model.
+        kNumPositions = 7
+        kNumVelocities = 7
+        kNumActuators = 7
+        kStateSize = kNumPositions + kNumVelocities
+        self.assertEqual(plant.num_positions(), kNumPositions)
+        self.assertEqual(plant.num_velocities(), kNumVelocities)
+        self.assertEqual(plant.num_actuators(), kNumActuators)
 
         kp = np.array([1., 2., 3., 4., 5., 6., 7.])
         ki = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7])
@@ -233,13 +238,14 @@ class TestControllers(unittest.TestCase):
         control_port = 0
 
         self.assertEqual(
-            controller.get_input_port(desired_acceleration_port).size(), 7)
+            controller.get_input_port(desired_acceleration_port).size(),
+            kNumVelocities)
         self.assertEqual(
-            controller.get_input_port(estimated_state_port).size(), 14)
+            controller.get_input_port(estimated_state_port).size(), kStateSize)
         self.assertEqual(
-            controller.get_input_port(desired_state_port).size(), 14)
+            controller.get_input_port(desired_state_port).size(), kStateSize)
         self.assertEqual(
-            controller.get_output_port(control_port).size(), 7)
+            controller.get_output_port(control_port).size(), kNumVelocities)
 
         # Current state.
         q = np.array([-0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3])
