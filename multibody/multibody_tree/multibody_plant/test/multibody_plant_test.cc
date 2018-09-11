@@ -162,6 +162,19 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(plant->get_continuous_state_output_port(
       pendulum_model_instance).size(), 2);
 
+  // Check that model-instance ports get named properly.
+  EXPECT_TRUE(plant->HasModelInstanceNamed("DefaultModelInstance"));
+  EXPECT_TRUE(plant->HasModelInstanceNamed("SplitPendulum"));
+  EXPECT_EQ(
+      plant->get_actuation_input_port(default_model_instance()).get_name(),
+      "DefaultModelInstance_actuation");
+  EXPECT_EQ(plant->get_continuous_state_output_port(default_model_instance())
+                .get_name(),
+            "DefaultModelInstance_continuous_state");
+  EXPECT_EQ(plant->get_continuous_state_output_port(pendulum_model_instance)
+                .get_name(),
+            "SplitPendulum_continuous_state");
+
   // Query if elements exist in the model.
   EXPECT_TRUE(plant->HasBodyNamed(parameters.link1_name()));
   EXPECT_TRUE(plant->HasBodyNamed(parameters.link2_name()));

@@ -31,6 +31,7 @@ from pydrake.systems.framework import (
     DiscreteValues_,
     Event_,
     InputPort_,
+    kUseDefaultName,
     LeafContext_,
     LeafSystem_,
     OutputPort_,
@@ -238,10 +239,11 @@ class TestGeneral(unittest.TestCase):
         builder.Connect(adder1.get_output_port(0),
                         integrator.get_input_port(0))
 
+        # Exercise naming variants.
         builder.ExportInput(adder0.get_input_port(0))
-        builder.ExportInput(adder0.get_input_port(1))
-        builder.ExportInput(adder1.get_input_port(1))
-        builder.ExportOutput(integrator.get_output_port(0))
+        builder.ExportInput(adder0.get_input_port(1), kUseDefaultName)
+        builder.ExportInput(adder1.get_input_port(1), "third_input")
+        builder.ExportOutput(integrator.get_output_port(0), "result")
 
         diagram = builder.Build()
         # TODO(eric.cousineau): Figure out unicode handling if needed.

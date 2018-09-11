@@ -42,11 +42,7 @@ PendulumPlant<T>::PendulumPlant(const PendulumPlant<U>& p) : PendulumPlant() {
   frame_id_ = p.frame_id();
 
   if (source_id_.is_valid()) {
-    geometry_pose_port_ =
-        this->DeclareAbstractOutputPort(
-                geometry::FramePoseVector<T>(source_id_, {frame_id_}),
-                &PendulumPlant<T>::CopyPoseOut)
-            .get_index();
+    geometry_pose_port_ = AllocateGeometryPoseOutputPort();
   }
 }
 
@@ -156,11 +152,16 @@ void PendulumPlant<T>::RegisterGeometry(
           VisualMaterial(Vector4d(0, 0, 1, 1))));
 
   // Now allocate the output port.
-  geometry_pose_port_ =
-      this->DeclareAbstractOutputPort(
-              geometry::FramePoseVector<T>(source_id_, {frame_id_}),
-              &PendulumPlant<T>::CopyPoseOut)
-          .get_index();
+  geometry_pose_port_ = AllocateGeometryPoseOutputPort();
+}
+
+template <typename T>
+systems::OutputPortIndex PendulumPlant<T>::AllocateGeometryPoseOutputPort() {
+  DRAKE_DEMAND(source_id_.is_valid() && frame_id_.is_valid());
+  return this->DeclareAbstractOutputPort("geometry_pose",
+      geometry::FramePoseVector<T>(source_id_, {frame_id_}),
+                                  &PendulumPlant<T>::CopyPoseOut)
+      .get_index();
 }
 
 }  // namespace pendulum

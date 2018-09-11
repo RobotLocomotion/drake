@@ -14,21 +14,21 @@ BeamModel<T>::BeamModel(int num_depth_readings, double max_range)
   DRAKE_DEMAND(num_depth_readings > 0);
   DRAKE_DEMAND(max_range >= 0.0);
   // Declare depth input port.
-  this->DeclareInputPort(kVectorValued, num_depth_readings, "depth");
+  this->DeclareInputPort("depth", kVectorValued, num_depth_readings);
   // Declare "event" random input port.
-  this->DeclareInputPort(kVectorValued, num_depth_readings, "event",
+  this->DeclareInputPort("event", kVectorValued, num_depth_readings,
                          RandomDistribution::kUniform);
   // Declare "hit" random input port.
-  this->DeclareInputPort(kVectorValued, num_depth_readings, "hit",
+  this->DeclareInputPort("hit", kVectorValued, num_depth_readings,
                          RandomDistribution::kGaussian);
   // Declare "short" random input port.
-  this->DeclareInputPort(kVectorValued, num_depth_readings, "short",
+  this->DeclareInputPort("short", kVectorValued, num_depth_readings,
                          RandomDistribution::kExponential);
   // Declare "uniform" random input port.
-  this->DeclareInputPort(kVectorValued, num_depth_readings, "uniform",
+  this->DeclareInputPort("uniform", kVectorValued, num_depth_readings,
                          RandomDistribution::kUniform);
   // Declare measurement output port.
-  this->DeclareVectorOutputPort(BasicVector<T>(num_depth_readings),
+  this->DeclareVectorOutputPort("depth", BasicVector<T>(num_depth_readings),
                                 &BeamModel<T>::CalcOutput);
 
   this->DeclareNumericParameter(BeamModelParams<T>());

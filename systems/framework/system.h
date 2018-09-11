@@ -1627,46 +1627,61 @@ class System : public SystemBase {
 
   /// Adds a port with the specified @p type and @p size to the input topology.
   ///
-  /// If @p name is provided, input port names must be unique for this system
-  /// (passing in a duplicate name will throw std::logic_error).  If @p name
-  /// is not provided (or the empty string), then a default value of e.g.
-  /// "u2", where 2 is the input number will be provided.
+  /// Input port names must be unique for this system (passing in a duplicate
+  /// @p name will throw std::logic_error). If @p name is given as
+  /// kUseDefaultName, then a default value of e.g. "u2", where 2
+  /// is the input number will be provided. An empty @p name is not permitted.
   ///
   /// If the port is intended to model a random noise or disturbance input,
   /// @p random_type can (optionally) be used to label it as such; doing so
   /// enables algorithms for design and analysis (e.g. state estimation) to
   /// reason explicitly about randomness at the system level.  All random input
   /// ports are assumed to be statistically independent.
-  /// @throws std::logic_error.
+  /// @pre @p name must not be empty.
+  /// @throws std::logic_error for a duplicate port name.
   /// @returns the declared port.
   const InputPort<T>& DeclareInputPort(
-      PortDataType type, int size, const std::string& name = "",
+      std::string name, PortDataType type, int size,
       optional<RandomDistribution> random_type = nullopt) {
     const InputPortIndex port_index(get_num_input_ports());
 
-    const std::string port_name =
-        name.empty() ? "u" + std::to_string(port_index) : name;
-    // Check that name is unique.
-    for (InputPortIndex i{0}; i < port_index; i++) {
-      if (port_name == get_input_port(i).get_name()) {
-        throw std::logic_error("System " + GetSystemName() +
-                               " already has an input port named " + port_name);
-      }
-    }
-
     const DependencyTicket port_ticket(this->assign_next_dependency_ticket());
-    this->AddInputPort(
-        std::make_unique<InputPort<T>>(
-            port_index, port_ticket, type, size, port_name, random_type, this,
-            this));
+    this->AddInputPort(std::make_unique<InputPort<T>>(
+        this, this, NextInputPortName(std::move(name)), port_index, port_ticket,
+        type, size, random_type));
     return get_input_port(port_index);
   }
 
   /// Adds an abstract-valued port to the input topology.
   /// @returns the declared port.
-  const InputPort<T>& DeclareAbstractInputPort(
-      const std::string& name = "") {
-    return DeclareInputPort(kAbstractValued, 0 /* size */, name);
+  /// @see DeclareInputPort() for more information.
+  const InputPort<T>& DeclareAbstractInputPort(std::string name) {
+    return DeclareInputPort(std::move(name),
+                            kAbstractValued, 0 /* size */);
+  }
+  //@}
+
+  // =========================================================================
+  /// @name             To-be-deprecated declarations
+  /// Methods in this section leave out the port name parameter and are the same
+  /// as invoking the corresponding method with `kUseDefaultName` as the name.
+  /// We intend to make specifying the name required and will deprecate these
+  /// soon. Don't use them.
+  //@{
+
+  /// See the nearly identical signature with an additional (first) argument
+  /// specifying the port name.  This version will be deprecated as discussed
+  /// in #9447.
+  const InputPort<T>& DeclareInputPort(
+      PortDataType type, int size,
+      optional<RandomDistribution> random_type = nullopt) {
+    return DeclareInputPort(kUseDefaultName, type, size, random_type);
+  }
+
+  /// See the nearly identical signature with an argument specifying the port
+  /// name.  This version will be deprecated as discussed in #9447.
+  const InputPort<T>& DeclareAbstractInputPort() {
+    return DeclareAbstractInputPort(kUseDefaultName);
   }
   //@}
 

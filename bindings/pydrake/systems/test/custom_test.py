@@ -15,6 +15,7 @@ from pydrake.systems.framework import (
     AbstractValue,
     BasicVector, BasicVector_,
     DiagramBuilder,
+    kUseDefaultName,
     LeafSystem, LeafSystem_,
     PortDataType,
     VectorSystem,
@@ -39,8 +40,9 @@ class CustomAdder(LeafSystem):
     def __init__(self, num_inputs, size):
         LeafSystem.__init__(self)
         for i in xrange(num_inputs):
-            self._DeclareInputPort(PortDataType.kVectorValued, size)
-        self._DeclareVectorOutputPort(BasicVector(size), self._calc_sum)
+            self._DeclareInputPort(kUseDefaultName, PortDataType.kVectorValued,
+                                   size)
+        self._DeclareVectorOutputPort("sum", BasicVector(size), self._calc_sum)
 
     def _calc_sum(self, context, sum_data):
         # @note This will NOT work if the scalar type is AutoDiff or symbolic,
@@ -343,9 +345,9 @@ class TestCustom(unittest.TestCase):
                     LeafSystem_[T].__init__(self)
                     test_input_type = AbstractValue.Make(
                         default_value)
-                    self.input_port = self._DeclareInputPort(
-                        PortDataType.kAbstractValued, 0)
+                    self.input_port = self._DeclareAbstractInputPort("in")
                     self.output_port = self._DeclareAbstractOutputPort(
+                        "out",
                         lambda: AbstractValue.Make(default_value),
                         self._DoCalcAbstractOutput)
 
