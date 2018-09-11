@@ -191,6 +191,7 @@ class TestMultibodyTree(unittest.TestCase):
             p_BoFo_B=[0, 0, 0])
         self.assertTupleEqual(Jv_WL.shape, (6, plant.num_velocities()))
 
+
     def test_state_access(self):
         file_name = FindResourceOrThrow(
             "drake/examples/double_pendulum/models/double_pendulum.sdf")
@@ -204,6 +205,35 @@ class TestMultibodyTree(unittest.TestCase):
         tree.SetFreeBodyPoseOrThrow(
             body=plant.GetBodyByName("base", plant_model),
             X_WB=X_WB, context=context)
+
+    def test_multibody_state_access(self):
+        file_name = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        plant = MultibodyPlant()
+        AddModelFromSdfFile(file_name, plant)
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+        tree = plant.model()
+
+        self.assertEqual(plant.num_positions(), 2)
+        self.assertEqual(plant.num_velocities(), 2)
+
+        q0 = np.array([3.14, 2.])
+        v0 = np.array([-0.5, 1.])
+        x0 = np.concatenate([q0, v0])
+
+        # The default state is all values set to zero.
+        x = tree.get_multibody_state_vector(context)
+        self.assertTrue(np.allclose(x, np.zeros(4)))
+
+        # Write into a mutable reference to the state vector.
+        x_reff = tree.get_mutable_multibody_state_vector(context)
+        x_reff[:] = x0
+
+        # Verify we did modify the state stored in context.
+        x = tree.get_multibody_state_vector(context)
+        self.assertTrue(np.allclose(x, x0))
+
 
     def test_multibody_add_joint(self):
         """

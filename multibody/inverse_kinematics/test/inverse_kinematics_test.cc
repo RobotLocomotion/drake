@@ -57,6 +57,44 @@ class TwoFreeBodiesTest : public ::testing::Test {
   Eigen::Vector3d body2_position_sol_;
 };
 
+GTEST_TEST(InverseKinematicsTest, ConstructorWithJointLimits) {
+  // Constructs an inverse kinematics problem for IIWA robot, make sure that
+  // the joint limits are imposed.
+  auto plant = ConstructIiwaPlant("iiwa14_no_collision.sdf", 0.01);
+
+  InverseKinematics ik(*plant);
+  // Now check the joint limits.
+  VectorX<double> lower_limits(7);
+  // The lower and upper joint limits are copied from the SDF file. Please make
+  // sure the values are in sync with the SDF file.
+  lower_limits << -2.96706, -2.0944, -2.96706, -2.0944, -2.96706, -2.0944,
+      -3.05433;
+  VectorX<double> upper_limits(7);
+  upper_limits = -lower_limits;
+  // Check if q_test will satisfy the joint limit constraint imposed from the
+  // IK constructor.
+  auto q_test_bound = ik.get_mutable_prog()->AddBoundingBoxConstraint(
+      Eigen::VectorXd::Zero(7), Eigen::VectorXd::Zero(7), ik.q());
+  auto check_q_test = [&ik, &q_test_bound](const Eigen::VectorXd& q_test) {
+    q_test_bound.evaluator()->UpdateLowerBound(q_test);
+    q_test_bound.evaluator()->UpdateUpperBound(q_test);
+    const auto result = ik.get_mutable_prog()->Solve();
+    return result == solvers::SolutionResult::kSolutionFound;
+  };
+  for (int i = 0; i < 7; ++i) {
+    Eigen::VectorXd q_good = Eigen::VectorXd::Zero(7);
+    q_good(i) = lower_limits(i) * 0.01 + upper_limits(i) * 0.99;
+    EXPECT_TRUE(check_q_test(q_good));
+    q_good(i) = lower_limits(i) * 0.99 + upper_limits(i) * 0.01;
+    EXPECT_TRUE(check_q_test(q_good));
+    Eigen::VectorXd q_bad = q_good;
+    q_bad(i) = -0.01 * lower_limits(i) + 1.01 * upper_limits(i);
+    EXPECT_FALSE(check_q_test(q_bad));
+    q_bad(i) = 1.01 * lower_limits(i) - 0.01 * upper_limits(i);
+    EXPECT_FALSE(check_q_test(q_bad));
+  }
+}
+
 TEST_F(TwoFreeBodiesTest, PositionConstraint) {
   const Eigen::Vector3d p_BQ(0.2, 0.3, 0.5);
   const Eigen::Vector3d p_AQ_lower(-0.1, -0.2, -0.3);

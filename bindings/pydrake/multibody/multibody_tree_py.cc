@@ -184,6 +184,22 @@ void init_module(py::module m) {
     py::class_<Class>(m, "MultibodyTree")
         .def("CalcRelativeTransform", &Class::CalcRelativeTransform,
              py::arg("context"), py::arg("frame_A"), py::arg("frame_B"))
+        .def("get_multibody_state_vector",
+             [](const MultibodyTree<T>* self,
+                const Context<T>& context) -> Eigen::Ref<const VectorX<T>> {
+               return self->get_multibody_state_vector(context);
+             },
+             py_reference,
+             // Keep alive, ownership: `return` keeps `Context` alive.
+             py::keep_alive<0, 2>(), py::arg("context"))
+        .def("get_mutable_multibody_state_vector",
+             [](const MultibodyTree<T>* self,
+                Context<T>* context) -> Eigen::Ref<VectorX<T>> {
+               return self->get_mutable_multibody_state_vector(context);
+             },
+             py_reference,
+             // Keep alive, ownership: `return` keeps `Context` alive.
+             py::keep_alive<0, 2>(), py::arg("context"))
         .def(
             "CalcPointsPositions",
             [](

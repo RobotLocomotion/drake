@@ -1,5 +1,7 @@
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 
+#include <limits>
+
 #include "drake/multibody/inverse_kinematics/angle_between_vectors_constraint.h"
 #include "drake/multibody/inverse_kinematics/gaze_target_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
@@ -14,7 +16,23 @@ InverseKinematics::InverseKinematics(
       tree_(plant_.model().ToAutoDiffXd()),
       context_(tree_->CreateDefaultContext()),
       q_(prog_->NewContinuousVariables(plant_.num_positions(), "q")) {
-  // TODO(hongkai.dai) Add joint limit constraint here.
+  // Initialize the lower and upper bounds to -inf/inf. A free floating body
+  // does not increment `num_joints()` (A single free floating body has
+  // num_joints() = 0), but has 7 generalized positions for each free floating
+  // body. The initialization below guarantees proper bounds on the
+  // generalized positions for the free floating body.
+  Eigen::VectorXd q_lower = Eigen::VectorXd::Constant(
+      tree_->num_positions(), -std::numeric_limits<double>::infinity());
+  Eigen::VectorXd q_upper = Eigen::VectorXd::Constant(
+      tree_->num_positions(), std::numeric_limits<double>::infinity());
+  for (JointIndex i{0}; i < plant_.model().num_joints(); ++i) {
+    const auto& joint = plant_.model().get_joint(i);
+    q_lower.segment(joint.position_start(), joint.num_positions()) =
+        joint.lower_limits();
+    q_upper.segment(joint.position_start(), joint.num_positions()) =
+        joint.upper_limits();
+  }
+  prog_->AddBoundingBoxConstraint(q_lower, q_upper, q_);
   // TODO(hongkai.dai) Add other position constraints, such as unit length
   // quaternion constraint here.
 }
