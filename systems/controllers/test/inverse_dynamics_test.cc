@@ -34,31 +34,29 @@ namespace {
 class InverseDynamicsTest : public ::testing::Test {
  protected:
   void Init(std::unique_ptr<RigidBodyTree<double>> tree,
-            bool pure_gravity_compensation) {
+            const InverseDynamics<double>::InverseDynamicsMode mode) {
     rigid_body_tree_ = std::move(tree);
     inverse_dynamics_ = make_unique<InverseDynamics<double>>(
-        rigid_body_tree_.get(),
-        pure_gravity_compensation /* pure gravity compensation mode */);
-    FinishInit(pure_gravity_compensation);
+        rigid_body_tree_.get(), mode);
+    FinishInit(mode);
   }
 
   void Init(std::unique_ptr<MultibodyPlant<double>> plant,
-            bool pure_gravity_compensation) {
+            const InverseDynamics<double>::InverseDynamicsMode mode) {
     multibody_plant_ = std::move(plant);
     multibody_context_ = multibody_plant_->CreateDefaultContext();
     inverse_dynamics_ = make_unique<InverseDynamics<double>>(
-        multibody_plant_.get(),
-        pure_gravity_compensation /* pure gravity compensation mode */);
-    FinishInit(pure_gravity_compensation);
+        multibody_plant_.get(), mode);
+    FinishInit(mode);
   }
 
-  void FinishInit(bool pure_gravity_compensation) {
+  void FinishInit(const InverseDynamics<double>::InverseDynamicsMode mode) {
     inverse_dynamics_context_ = inverse_dynamics_->CreateDefaultContext();
     output_ = inverse_dynamics_->AllocateOutput();
 
     // Checks that the number of input ports in the Gravity Compensator system
     // and the Context are consistent.
-    if (pure_gravity_compensation) {
+    if (mode == InverseDynamics<double>::kGravityCompensation) {
       EXPECT_EQ(inverse_dynamics_->get_num_input_ports(), 1);
       EXPECT_EQ(inverse_dynamics_context_->get_num_input_ports(), 1);
     } else {
@@ -85,7 +83,7 @@ class InverseDynamicsTest : public ::testing::Test {
                    const Eigen::VectorXd& acceleration_desired) {
     // desired acceleration.
     VectorXd vd_d = VectorXd::Zero(num_velocities());
-    if (!inverse_dynamics_->is_pure_gravity_compenstation()) {
+    if (!inverse_dynamics_->is_pure_gravity_compensation()) {
       vd_d = acceleration_desired;
     }
 
@@ -96,7 +94,7 @@ class InverseDynamicsTest : public ::testing::Test {
         inverse_dynamics_->get_input_port_estimated_state().get_index(),
         std::move(state_input));
 
-    if (!inverse_dynamics_->is_pure_gravity_compenstation()) {
+    if (!inverse_dynamics_->is_pure_gravity_compensation()) {
       auto vd_input =
           make_unique<BasicVector<double>>(num_velocities());
       vd_input->get_mutable_value() << vd_d;
@@ -160,7 +158,8 @@ TEST_F(InverseDynamicsTest, GravityCompensationTestRBT) {
           "iiwa_description/urdf/iiwa14_primitive_collision.urdf"),
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       tree.get());
-  Init(std::move(tree), true /* pure gravity compensation */);
+  Init(std::move(tree),
+       InverseDynamics<double>::InverseDynamicsMode::kGravityCompensation);
 
   // Defines an arbitrary robot position vector.
   Eigen::VectorXd robot_position = Eigen::VectorXd::Zero(7);
@@ -180,7 +179,8 @@ TEST_F(InverseDynamicsTest, GravityCompensationTestMBT) {
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
   multibody::parsing::AddModelFromSdfFile(full_name, mbp.get());
   mbp->Finalize();
-  Init(std::move(mbp), true /* pure gravity compensation */);
+  Init(std::move(mbp),
+       InverseDynamics<double>::InverseDynamicsMode::kGravityCompensation);
 
   // Defines an arbitrary robot position vector.
   Eigen::VectorXd robot_position = Eigen::VectorXd::Zero(7);
@@ -198,7 +198,8 @@ TEST_F(InverseDynamicsTest, InverseDynamicsTestRBT) {
       "iiwa_description/urdf/iiwa14_primitive_collision.urdf"),
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       tree.get());
-  Init(std::move(tree), false /* inverse dynamics */);
+  Init(std::move(tree),
+       InverseDynamics<double>::InverseDynamicsMode::kInverseDynamics);
 
   Eigen::VectorXd q = Eigen::VectorXd::Zero(7);
   Eigen::VectorXd v = Eigen::VectorXd::Zero(7);
@@ -222,7 +223,8 @@ TEST_F(InverseDynamicsTest, InverseDynamicsTestMBT) {
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
   multibody::parsing::AddModelFromSdfFile(full_name, mbp.get());
   mbp->Finalize();
-  Init(std::move(mbp), false /* inverse dynamics */);
+  Init(std::move(mbp),
+       InverseDynamics<double>::InverseDynamicsMode::kInverseDynamics);
 
   Eigen::VectorXd q = Eigen::VectorXd::Zero(7);
   Eigen::VectorXd v = Eigen::VectorXd::Zero(7);
