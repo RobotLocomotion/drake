@@ -13,6 +13,7 @@
 #include "drake/multibody/multibody_tree/math/spatial_force.h"
 #include "drake/multibody/multibody_tree/math/spatial_vector.h"
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"
+#include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
@@ -176,6 +177,14 @@ void init_module(py::module m) {
         .def(py::init<Vector3<double>>(), py::arg("g_W"));
   }
 
+  // MultibodyForces
+  {
+    using Class = MultibodyForces<T>;
+    py::class_<Class> cls(m, "MultibodyForces");
+    cls
+        .def(py::init<MultibodyTree<double>&>(), py::arg("model"));
+  }
+
   // Tree.
   {
     // N.B. Pending a concrete direction on #9366, a minimal subset of the
@@ -226,7 +235,15 @@ void init_module(py::module m) {
               return Jv_WF;
             },
             py::arg("context"), py::arg("frame_B"),
-            py::arg("p_BoFo_B") = Vector3<T>::Zero().eval());
+            py::arg("p_BoFo_B") = Vector3<T>::Zero().eval())
+        .def("CalcInverseDynamics",
+             overload_cast_explicit<VectorX<T>,
+                                    const Context<T>&,
+                                    const VectorX<T>&,
+                                    const MultibodyForces<T>&>(
+                 &Class::CalcInverseDynamics),
+             py::arg("context"), py::arg("known_vdot"),
+             py::arg("external_forces"));
   }
 }
 
