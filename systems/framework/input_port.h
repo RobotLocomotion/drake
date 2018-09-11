@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <utility>
 
 #include "drake/common/constants.h"
 #include "drake/common/drake_deprecated.h"
@@ -26,15 +27,16 @@ class InputPort final : public InputPortBase {
   /// (Internal use only)
   /// Constructs a type-specific input port. See InputPortBase::InputPortBase()
   /// for the meaning of these parameters. The additional `system` parameter
-  /// here must be the same object as the `system_base` parameter.
+  /// here must be the same object as the `system_base` parameter. The
+  /// `name` must not be empty.
   // The System and SystemBase are provided separately since we don't have
   // access to System's declaration here so can't cast but the caller can.
-  InputPort(InputPortIndex index, DependencyTicket ticket,
-            PortDataType data_type, int size, const std::string& name,
-            const optional<RandomDistribution>& random_type,
-            const System<T>* system, SystemBase* system_base)
-      : InputPortBase(index, ticket, data_type, size, name, random_type,
-                      system_base),
+  InputPort(const System<T>* system, SystemBase* system_base, std::string name,
+            InputPortIndex index, DependencyTicket ticket,
+            PortDataType data_type, int size,
+            const optional<RandomDistribution>& random_type)
+      : InputPortBase(system_base, std::move(name), index, ticket, data_type,
+                      size, random_type),
         system_(*system) {
     DRAKE_DEMAND(system != nullptr);
     DRAKE_DEMAND(static_cast<const void*>(system) == system_base);
