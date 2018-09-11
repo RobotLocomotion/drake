@@ -25,8 +25,8 @@ InverseKinematics::InverseKinematics(
       tree_->num_positions(), -std::numeric_limits<double>::infinity());
   Eigen::VectorXd q_upper = Eigen::VectorXd::Constant(
       tree_->num_positions(), std::numeric_limits<double>::infinity());
-  for (JointIndex i{0}; i < plant_.model().num_joints(); ++i) {
-    const auto& joint = plant_.model().get_joint(i);
+  for (JointIndex i{0}; i < plant_.tree().num_joints(); ++i) {
+    const auto& joint = plant_.tree().get_joint(i);
     q_lower.segment(joint.position_start(), joint.num_positions()) =
         joint.lower_limits();
     q_upper.segment(joint.position_start(), joint.num_positions()) =
