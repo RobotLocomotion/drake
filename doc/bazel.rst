@@ -243,8 +243,6 @@ kcov
 
 ``kcov`` can analyze coverage for any binary that contains DWARF format
 debuggging symbols, and produce nicely formatted browse-able coverage reports.
-It is supported on Ubuntu and macOS only.  Install ``kcov`` from source
-following the instructions here: :ref:`Building kcov <building-kcov>`.
 
 To analyze test coverage, run the tests under ``kcov``::
 
@@ -257,7 +255,11 @@ you can turn it back on by also supplying ``--copt -O2``.
 The coverage report is written to the ``drake/bazel-kcov`` directory.  To
 view it, browse to ``drake/bazel-kcov/index.html``.
 
-.. toctree::
-   :hidden:
+kcov on macOS
+~~~~~~~~~~~~~
 
-   building_kcov
+Be sure that your account has developer mode enabled, which gives you the
+privileges necessary to run debuggers and similar tools. If you are an
+administrator, use this command::
+
+  sudo /usr/sbin/DevToolsSecurity --enable
