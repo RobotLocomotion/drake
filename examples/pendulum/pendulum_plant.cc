@@ -43,7 +43,7 @@ PendulumPlant<T>::PendulumPlant(const PendulumPlant<U>& p) : PendulumPlant() {
 
   if (source_id_.is_valid()) {
     geometry_pose_port_ =
-        this->DeclareAbstractOutputPort(
+        this->DeclareAbstractOutputPort("geometry_pose",
                 geometry::FramePoseVector<T>(source_id_, {frame_id_}),
                 &PendulumPlant<T>::CopyPoseOut)
             .get_index();
@@ -157,7 +157,7 @@ void PendulumPlant<T>::RegisterGeometry(
 
   // Now allocate the output port.
   geometry_pose_port_ =
-      this->DeclareAbstractOutputPort(
+      this->DeclareAbstractOutputPort("geometry_pose",
               geometry::FramePoseVector<T>(source_id_, {frame_id_}),
               &PendulumPlant<T>::CopyPoseOut)
           .get_index();
