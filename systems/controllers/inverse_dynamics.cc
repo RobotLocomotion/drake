@@ -39,8 +39,8 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
                                     bool pure_gravity_compensation)
     : multibody_plant_(plant),
       pure_gravity_compensation_(pure_gravity_compensation),
-      q_dim_(plant->model().num_positions()),
-      v_dim_(plant->model().num_velocities()) {
+      q_dim_(plant->tree().num_positions()),
+      v_dim_(plant->tree().num_velocities()) {
   DRAKE_DEMAND(plant->is_finalized());
 
   input_port_index_state_ =
@@ -96,7 +96,7 @@ void InverseDynamics<T>::CalcOutputForce(const Context<T>& context,
     output->get_mutable_value() = force;
   } else {
     DRAKE_DEMAND(multibody_plant_);
-    const auto& tree = multibody_plant_->model();
+    const auto& tree = multibody_plant_->tree();
 
     if (pure_gravity_compensation_) {
       output->get_mutable_value() = tree.CalcGravityGeneralizedForces(

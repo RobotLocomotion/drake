@@ -83,7 +83,7 @@ int do_main() {
   MultibodyPlant<double>& plant = *builder.AddSystem(MakeCylinderPlant(
       radius, length, mass, coulomb_friction, -g * Vector3d::UnitZ(),
       FLAGS_time_step, &scene_graph));
-  const MultibodyTree<double>& model = plant.model();
+  const MultibodyTree<double>& tree = plant.tree();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(FLAGS_penetration_allowance);
   plant.set_stiction_tolerance(FLAGS_stiction_tolerance);
@@ -126,13 +126,13 @@ int do_main() {
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
   // Set at height z0.
-  model.SetDefaultContext(&plant_context);
+  tree.SetDefaultContext(&plant_context);
   Isometry3d X_WB = Isometry3d::Identity();
   X_WB.translation() = Vector3d(0.0, 0.0, FLAGS_z0);
-  const auto& cylinder = model.GetBodyByName("Cylinder");
-  model.SetFreeBodyPoseOrThrow(
+  const auto& cylinder = tree.GetBodyByName("Cylinder");
+  tree.SetFreeBodyPoseOrThrow(
       cylinder, X_WB, &plant_context);
-  model.SetFreeBodySpatialVelocityOrThrow(
+  tree.SetFreeBodySpatialVelocityOrThrow(
       cylinder,
       SpatialVelocity<double>(
           Vector3<double>(FLAGS_wx0, 0.0, 0.0),

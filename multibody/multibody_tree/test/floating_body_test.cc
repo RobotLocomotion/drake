@@ -80,7 +80,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
 
   const QuaternionFloatingMobilizer<double>& mobilizer =
       MultibodyTreeTester::get_floating_mobilizer(
-          free_body_plant.model(), free_body_plant.body());
+          free_body_plant.tree(), free_body_plant.body());
 
   // Unit test QuaternionFloatingMobilizer context dependent setters/getters.
   mobilizer.set_angular_velocity(&context, 2.0 * w0_WB_expected);
@@ -199,7 +199,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
 
   // Verify MultibodyTree::MapVelocityToQDot() to compute the quaternion time
   // derivative.
-  const MultibodyTree<double>& model = free_body_plant.model();
+  const MultibodyTree<double>& model = free_body_plant.tree();
   VectorX<double> qdot_from_v(model.num_positions());
   // The generalized velocity computed last at time = kEndTime.
   const VectorX<double> v =
@@ -265,7 +265,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
   // Instantiate the model for the free body in space.
   AxiallySymmetricFreeBodyPlant<double> free_body_plant(
       kMass, kInertia, kInertia, acceleration_of_gravity);
-  const MultibodyTree<double>& model = free_body_plant.model();
+  const MultibodyTree<double>& model = free_body_plant.tree();
 
   std::unique_ptr<Context<double>> context =
       free_body_plant.CreateDefaultContext();

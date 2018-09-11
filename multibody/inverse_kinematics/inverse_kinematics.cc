@@ -13,7 +13,7 @@ InverseKinematics::InverseKinematics(
     const multibody_plant::MultibodyPlant<double>& plant)
     : prog_{new solvers::MathematicalProgram()},
       plant_(plant),
-      tree_(plant_.model().ToAutoDiffXd()),
+      tree_(plant_.tree().ToAutoDiffXd()),
       context_(tree_->CreateDefaultContext()),
       q_(prog_->NewContinuousVariables(plant_.num_positions(), "q")) {
   // Initialize the lower and upper bounds to -inf/inf. A free floating body
