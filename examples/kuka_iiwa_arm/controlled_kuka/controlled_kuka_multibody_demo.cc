@@ -55,6 +55,8 @@ int DoMain() {
   // Make and add the kuka robot model.
   MultibodyPlant<double>& kuka_plant = *builder.AddSystem<MultibodyPlant>();
   AddModelFromSdfFile(FindResourceOrThrow(kSdfPath), &kuka_plant, &scene_graph);
+  kuka_plant.WeldFrames(kuka_plant.world_frame(),
+                        kuka_plant.GetFrameByName("iiwa_link_0"));
 
   // Add gravity to the model.
   kuka_plant.AddForceElement<UniformGravityFieldElement>(
