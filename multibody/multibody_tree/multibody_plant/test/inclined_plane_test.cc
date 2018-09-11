@@ -93,11 +93,11 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
 
   MultibodyPlant<double>& plant = *builder.AddSystem(MakeInclinedPlanePlant(
       radius, mass, slope, surface_friction, g, time_step_, &scene_graph));
-  const MultibodyTree<double>& tree = plant.tree();
+  const MultibodyTree<double>& model = plant.model();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(penetration_allowance_);
   plant.set_stiction_tolerance(stiction_tolerance_);
-  const RigidBody<double>& ball = tree.GetRigidBodyByName("Ball");
+  const RigidBody<double>& ball = model.GetRigidBodyByName("Ball");
 
   // Sanity check for the model's size.
   DRAKE_DEMAND(plant.num_velocities() == 6);
@@ -124,7 +124,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
 
   // This will set a default initial condition with the sphere located at
   // p_WBcm = (0; 0; 0) and zero spatial velocity.
-  tree.SetDefaultContext(&plant_context);
+  model.SetDefaultContext(&plant_context);
 
   Simulator<double> simulator(*diagram, std::move(diagram_context));
   IntegratorBase<double>* integrator = simulator.get_mutable_integrator();
@@ -135,10 +135,10 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
 
   // Compute the kinetic energy of B (in frame W) from V_WB.
   const SpatialVelocity<double>& V_WB =
-      tree.EvalBodySpatialVelocityInWorld(plant_context, ball);
+      model.EvalBodySpatialVelocityInWorld(plant_context, ball);
   const SpatialInertia<double> M_BBo_B = ball.default_spatial_inertia();
   const Isometry3<double>& X_WB =
-      tree.EvalBodyPoseInWorld(plant_context, ball);
+      model.EvalBodyPoseInWorld(plant_context, ball);
   const SpatialInertia<double> M_BBo_W = M_BBo_B.ReExpress(X_WB.linear());
   const double ke_WB = 0.5 * V_WB.dot(M_BBo_W * V_WB);
   const double speed = V_WB.translational().norm();
@@ -157,7 +157,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   const double angular_velocity_expected = speed_expected / radius;
 
   // Verify the plant's potential energy matches the analytical calculation.
-  const double Ve = tree.CalcPotentialEnergy(plant_context);
+  const double Ve = model.CalcPotentialEnergy(plant_context);
   EXPECT_NEAR(-Ve, ke_WB_expected, std::numeric_limits<double>::epsilon());
 
   // Verify the relative errors. For the continuous model of the plant errors

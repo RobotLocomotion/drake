@@ -138,8 +138,8 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(plant->num_actuated_dofs(), 2);
 
   // World accessors.
-  EXPECT_EQ(&plant->world_body(), &plant->tree().world_body());
-  EXPECT_EQ(&plant->world_frame(), &plant->tree().world_frame());
+  EXPECT_EQ(&plant->world_body(), &plant->model().world_body());
+  EXPECT_EQ(&plant->world_frame(), &plant->model().world_frame());
 
   // State size.
   EXPECT_EQ(plant->num_positions(), 3);
@@ -338,7 +338,7 @@ class AcrobotPlantTests : public ::testing::Test {
 
     // Calculate the generalized forces due to gravity.
     const VectorX<double> tau_g =
-        plant_->tree().CalcGravityGeneralizedForces(*context_);
+        plant_->model().CalcGravityGeneralizedForces(*context_);
 
     // Calculate a benchmark value.
     const Vector2d tau_g_expected =
@@ -378,7 +378,7 @@ class AcrobotPlantTests : public ::testing::Test {
         -parameters_.b1() * theta1dot, -parameters_.b2() * theta2dot);
 
     // Verify the computation of the contribution due to joint damping.
-    MultibodyForces<double> forces(plant_->tree());
+    MultibodyForces<double> forces(plant_->model());
     shoulder_->AddInDamping(*context_, &forces);
     elbow_->AddInDamping(*context_, &forces);
     EXPECT_TRUE(CompareMatrices(forces.generalized_forces(), tau_damping,
@@ -577,9 +577,9 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   // Compute the poses for each geometry in the model.
   plant_->get_geometry_poses_output_port().Calc(*context, poses_value.get());
 
-  const MultibodyTree<double>& tree = plant_->tree();
+  const MultibodyTree<double>& model = plant_->model();
   std::vector<Isometry3<double >> X_WB_all;
-  tree.CalcAllBodyPosesInWorld(*context, &X_WB_all);
+  model.CalcAllBodyPosesInWorld(*context, &X_WB_all);
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
   for (BodyIndex body_index(1);
        body_index < plant_->num_bodies(); ++body_index) {
@@ -965,11 +965,11 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   unique_ptr<Context<double>> context = plant.CreateDefaultContext();
 
   // Place sphere 1 on top of the ground, with offset x = -x_offset.
-  plant.tree().SetFreeBodyPoseOrThrow(
+  plant.model().SetFreeBodyPoseOrThrow(
       sphere1, Isometry3d(Translation3d(-x_offset, radius, 0.0)),
       context.get());
   // Place sphere 2 on top of the ground, with offset x = x_offset.
-  plant.tree().SetFreeBodyPoseOrThrow(
+  plant.model().SetFreeBodyPoseOrThrow(
       sphere2, Isometry3d(Translation3d(x_offset, radius, 0.0)),
       context.get());
 
@@ -984,7 +984,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   // Compute the poses for each geometry in the model.
   plant.get_geometry_poses_output_port().Calc(*context, poses_value.get());
 
-  const MultibodyTree<double>& model = plant.tree();
+  const MultibodyTree<double>& model = plant.model();
   std::vector<Isometry3<double >> X_WB_all;
   model.CalcAllBodyPosesInWorld(*context, &X_WB_all);
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
@@ -1171,12 +1171,12 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBack) {
   Isometry3d X_WB = Isometry3d::Identity();
   X_WB.linear() = AngleAxisd(M_PI / 3.0, axis_W).toRotationMatrix();
   X_WB.translation() = p_WB;
-  plant.tree().SetFreeBodyPoseOrThrow(body, X_WB, context.get());
+  plant.model().SetFreeBodyPoseOrThrow(body, X_WB, context.get());
 
   // Set an arbitrary, non-zero, spatial velocity of B in W.
   const SpatialVelocity<double> V_WB(Vector3d(1.0, 2.0, 3.0),
                                      Vector3d(-1.0, 4.0, -0.5));
-  plant.tree().SetFreeBodySpatialVelocityOrThrow(body, V_WB, context.get());
+  plant.model().SetFreeBodySpatialVelocityOrThrow(body, V_WB, context.get());
 
   // Use of MultibodyPlant's mapping to convert generalized velocities to time
   // derivatives of generalized coordinates.
@@ -1245,7 +1245,7 @@ TEST_F(SplitPendulum, MassMatrix) {
 
   MatrixX<double> M(1, 1);
   pin_->set_angle(context_.get(), theta);
-  plant_.tree().CalcMassMatrixViaInverseDynamics(*context_, &M);
+  plant_.model().CalcMassMatrixViaInverseDynamics(*context_, &M);
 
   // We can only expect values within the precision specified in the sdf file.
   EXPECT_NEAR(M(0, 0), Io, 1.0e-6);
@@ -1383,9 +1383,9 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
         RigidTransform<double>(RotationMatrix<double>::Identity(),
                Vector3<double>(0, small_box_size_ / 2.0 - penetration_, 0));
 
-    plant_.tree().SetFreeBodyPoseOrThrow(
+    plant_.model().SetFreeBodyPoseOrThrow(
         large_box, X_WLb.GetAsIsometry3(), context);
-    plant_.tree().SetFreeBodyPoseOrThrow(
+    plant_.model().SetFreeBodyPoseOrThrow(
         small_box, X_WSb.GetAsIsometry3(), context);
   }
 
@@ -1398,7 +1398,7 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     const Body<double>& small_box = plant_.GetBodyByName("SmallBox");
 
     std::vector<Isometry3<double>> X_WB_set;
-    plant_.tree().CalcAllBodyPosesInWorld(context, &X_WB_set);
+    plant_.model().CalcAllBodyPosesInWorld(context, &X_WB_set);
 
     // Pose of the boxes in the world frame.
     const Isometry3<double>& X_WLb = X_WB_set[large_box.index()];
@@ -1465,11 +1465,11 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
       const Context<T>& context_on_T,
       const std::vector<PenetrationAsPointPair<double>>& pairs_set) const {
     std::vector<SpatialVelocity<T>> V_WB_set;
-    plant_on_T.tree().CalcAllBodySpatialVelocitiesInWorld(
+    plant_on_T.model().CalcAllBodySpatialVelocitiesInWorld(
         context_on_T, &V_WB_set);
 
     std::vector<Isometry3<T>> X_WB_set;
-    plant_on_T.tree().CalcAllBodyPosesInWorld(
+    plant_on_T.model().CalcAllBodyPosesInWorld(
         context_on_T, &X_WB_set);
 
     VectorX<T> vn(pairs_set.size());
@@ -1513,11 +1513,11 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
       const std::vector<PenetrationAsPointPair<double>>& pairs_set,
       const std::vector<Matrix3<double>>& R_WC_set) const {
     std::vector<SpatialVelocity<T>> V_WB_set;
-    plant_on_T.tree().CalcAllBodySpatialVelocitiesInWorld(
+    plant_on_T.model().CalcAllBodySpatialVelocitiesInWorld(
         context_on_T, &V_WB_set);
 
     std::vector<Isometry3<T>> X_WB_set;
-    plant_on_T.tree().CalcAllBodyPosesInWorld(
+    plant_on_T.model().CalcAllBodyPosesInWorld(
         context_on_T, &X_WB_set);
 
     VectorX<T> vt(2 * pairs_set.size());
@@ -1656,7 +1656,7 @@ GTEST_TEST(KukaModel, JointIndexes) {
 
   // We expect the first joint to be the one WeldJoint fixing the model to the
   // world. We verify this assumption.
-  const Joint<double>& weld = plant.tree().get_joint(JointIndex(0));
+  const Joint<double>& weld = plant.model().get_joint(JointIndex(0));
   ASSERT_EQ(weld.name(), "weld_base_to_world");
 
   EXPECT_EQ(weld.num_positions(), 0);
@@ -1666,7 +1666,7 @@ GTEST_TEST(KukaModel, JointIndexes) {
   // positions followed by the vector v of generalized velocities.
   for (JointIndex joint_index(1); /* Skip "weld_base_to_world". */
        joint_index < plant.num_joints(); ++joint_index) {
-    const Joint<double>& joint = plant.tree().get_joint(joint_index);
+    const Joint<double>& joint = plant.model().get_joint(joint_index);
     // Start index in the vector q of generalized positions.
     const int expected_q_start = joint_index - 1;
     // Start index in the vector v of generalized velocities.
@@ -1724,7 +1724,7 @@ class KukaArmTest : public ::testing::TestWithParam<double> {
 
     // We expect the first joint to be the one WeldJoint fixing the model to the
     // world. We verify this assumption.
-    const Joint<double>& weld = plant_->tree().get_joint(JointIndex(0));
+    const Joint<double>& weld = plant_->model().get_joint(JointIndex(0));
     ASSERT_EQ(weld.name(), "weld_base_to_world");
 
     context_ = plant_->CreateDefaultContext();
@@ -1774,13 +1774,13 @@ TEST_P(KukaArmTest, StateAccess) {
   // the context. Changes to state through the context can change the values
   // referenced by xc.
   Eigen::VectorBlock<const VectorX<double>> xc =
-      plant_->tree().get_multibody_state_vector(*context_);
+      plant_->model().get_multibody_state_vector(*context_);
   EXPECT_EQ(xc, xc_expected);
 
   // Get a mutable state and modified it.
   // Note: xc above is referencing values stored in the context. Therefore
   // setting the entire state to zero changes the values referenced by xc.
-  plant_->tree().get_mutable_multibody_state_vector(context_.get()).setZero();
+  plant_->model().get_mutable_multibody_state_vector(context_.get()).setZero();
   EXPECT_EQ(xc, VectorX<double>::Zero(plant_->num_multibody_states()));
 }
 

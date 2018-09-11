@@ -44,7 +44,7 @@ VectorX<double> ComputeTorque(
       get_mutable_generalized_velocity().SetFromVector(v);
 
   // Compute the caches.
-  auto& tree = plant.tree();
+  auto& tree = plant.model();
   multibody::PositionKinematicsCache<double> pcache(tree.get_topology());
   multibody::VelocityKinematicsCache<double> vcache(tree.get_topology());
   tree.CalcPositionKinematicsCache(*context, &pcache);

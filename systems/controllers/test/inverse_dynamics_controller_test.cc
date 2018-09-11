@@ -120,7 +120,7 @@ GTEST_TEST(InverseDynamicsControllerTestMBP, TestTorque) {
   auto output = dut->AllocateOutput();
   const MultibodyPlant<double>& robot_plant =
       *dut->get_multibody_plant_for_control();
-  const MultibodyTree<double>& robot_tree = robot_plant.tree();
+  const MultibodyTree<double>& robot_model = robot_plant.model();
 
   // Sets current state and reference state and acceleration values.
   VectorX<double> q(dim), v(dim), q_r(dim), v_r(dim), vd_r(dim);
@@ -133,15 +133,15 @@ GTEST_TEST(InverseDynamicsControllerTestMBP, TestTorque) {
 
   // Connects inputs.
   auto state_input = std::make_unique<BasicVector<double>>(
-      robot_tree.num_positions() + robot_tree.num_velocities());
+      robot_model.num_positions() + robot_model.num_velocities());
   state_input->get_mutable_value() << q, v;
 
   auto reference_state_input = std::make_unique<BasicVector<double>>(
-      robot_tree.num_positions() + robot_tree.num_velocities());
+      robot_model.num_positions() + robot_model.num_velocities());
   reference_state_input->get_mutable_value() << q_r, v_r;
 
   auto reference_acceleration_input =
-      std::make_unique<BasicVector<double>>(robot_tree.num_velocities());
+      std::make_unique<BasicVector<double>>(robot_model.num_velocities());
   reference_acceleration_input->get_mutable_value() << vd_r;
 
   inverse_dynamics_context->FixInputPort(
