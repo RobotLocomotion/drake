@@ -171,6 +171,10 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_TRUE(plant->HasBodyNamed(parameters.link2_name()));
   EXPECT_FALSE(plant->HasBodyNamed(kInvalidName));
 
+  EXPECT_TRUE(plant->HasFrameNamed(parameters.link1_name()));
+  EXPECT_TRUE(plant->HasFrameNamed(parameters.link2_name()));
+  EXPECT_FALSE(plant->HasFrameNamed(kInvalidName));
+
   EXPECT_TRUE(plant->HasJointNamed(parameters.shoulder_joint_name()));
   EXPECT_TRUE(plant->HasJointNamed(parameters.elbow_joint_name()));
   EXPECT_FALSE(plant->HasJointNamed(kInvalidName));

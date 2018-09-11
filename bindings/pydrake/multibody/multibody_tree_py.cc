@@ -75,6 +75,15 @@ void init_module(py::module m) {
     // No need to re-bind element mixins from `Frame`.
   }
 
+  {
+    using Class = FixedOffsetFrame<T>;
+    py::class_<Class, Frame<T>>(m, "FixedOffsetFrame")
+        .def(py::init<const string&, const Frame<T>&,
+                      const Isometry3<double>&>(),
+             py::arg("name"), py::arg("P"), py::arg("X_PF"))
+        .def("GetFixedPoseInBodyFrame", &Class::GetFixedPoseInBodyFrame);
+  }
+
   // Bodies.
   {
     using Class = Body<T>;
@@ -293,6 +302,10 @@ void init_multibody_plant(py::module m) {
              overload_cast_explicit<int>(&Class::num_actuated_dofs));
     // Construction.
     cls
+        .def("AddFrame",
+             [](Class* self, std::unique_ptr<Frame<T>> frame) -> auto& {
+              return self->AddFrame(std::move(frame));
+             }, py::arg("frame"), py_reference_internal)
         .def("AddJoint",
              [](Class* self, std::unique_ptr<Joint<T>> joint) -> auto& {
                return self->AddJoint(std::move(joint));
@@ -308,6 +321,9 @@ void init_multibody_plant(py::module m) {
         .def("HasBodyNamed",
              overload_cast_explicit<bool, const string&>(&Class::HasBodyNamed),
              py::arg("name"))
+        .def("HasFrameNamed",
+             overload_cast_explicit<bool, const string&>(&Class::HasFrameNamed),
+             py::arg("name"))
         .def("HasJointNamed",
              overload_cast_explicit<bool, const string&>(
                 &Class::HasJointNamed),
@@ -321,6 +337,10 @@ void init_multibody_plant(py::module m) {
                                     ModelInstanceIndex>(
                 &Class::GetBodyByName),
              py::arg("name"), py::arg("model_instance"), py_reference_internal)
+        .def("GetFrameByName",
+             overload_cast_explicit<const Frame<T>&, const string&>(
+                &Class::GetFrameByName),
+             py::arg("name"), py_reference_internal)
         .def("GetJointByName",
              [](const Class* self, const string& name) -> auto& {
                return self->GetJointByName(name);

@@ -4,6 +4,7 @@ from pydrake.multibody.multibody_tree import (
     Body,
     BodyFrame,
     BodyIndex,
+    FixedOffsetFrame,
     ForceElement,
     ForceElementIndex,
     Frame,
@@ -264,3 +265,15 @@ class TestMultibodyTree(unittest.TestCase):
 
         for joint in joints:
             self._test_joint_api(joint)
+
+    def test_multibody_add_frame(self):
+        plant = MultibodyPlant()
+        frame = plant.AddFrame(
+            FixedOffsetFrame(
+                name="test_frame", P=plant.world_frame(),
+                X_PF=Isometry3.Identity()))
+        self.assertIs(
+            plant.GetFrameByName(name="test_frame"), frame)
+        self.assertIsInstance(frame.GetFixedPoseInBodyFrame(), Isometry3)
+        self.assertTrue(plant.HasFrameNamed("test_frame"))
+        plant.Finalize()
