@@ -86,17 +86,13 @@ class MultibodyPlantTester {
     return plant.geometry_id_to_body_index_.at(id);
   }
 
-  static MatrixX<double> CalcNormalSeparationVelocitiesJacobian(
-      const MultibodyPlant<double>& plant, const Context<double>& context,
-      const std::vector<PenetrationAsPointPair<double>>& point_pairs) {
-    return plant.CalcNormalSeparationVelocitiesJacobian(context, point_pairs);
-  }
-
-  static MatrixX<double> CalcTangentVelocitiesJacobian(
+  static void CalcNormalAndTangentContactJacobians(
       const MultibodyPlant<double>& plant, const Context<double>& context,
       const std::vector<PenetrationAsPointPair<double>>& point_pairs,
+      MatrixX<double>* Jn, MatrixX<double>* Jt,
       std::vector<Matrix3<double>>* R_WC_set) {
-    return plant.CalcTangentVelocitiesJacobian(context, point_pairs, R_WC_set);
+    plant.CalcNormalAndTangentContactJacobians(
+        context, point_pairs, Jn, Jt, R_WC_set);
   }
 };
 
@@ -1571,19 +1567,27 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
   const double penetration_{0.01};
 };
 
-TEST_F(MultibodyPlantContactJacobianTests, NormalJacobian) {
+TEST_F(MultibodyPlantContactJacobianTests, NormalAndTangentJacobian) {
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 
-  // Compute separation velocities Jacobian.
-  const MatrixX<double> N =
-      MultibodyPlantTester::CalcNormalSeparationVelocitiesJacobian(
-          plant_, *context_, penetrations_);
+  // Store the orientation of the contact frames so that we can use them later
+  // to compute the same Jacobian using autodifferentiation.
+  std::vector<Matrix3<double>> R_WC_set;
 
-  // Assert N has the right sizes.
+  // Compute separation velocities Jacobian.
+  MatrixX<double> N, D;
+  MultibodyPlantTester::CalcNormalAndTangentContactJacobians(
+          plant_, *context_, penetrations_, &N, &D, &R_WC_set);
+
+  // Assert Jt has the right sizes.
   const int nv = plant_.num_velocities();
   const int nc = penetrations_.size();
+
   ASSERT_EQ(N.rows(), nc);
   ASSERT_EQ(N.cols(), nv);
+
+  ASSERT_EQ(D.rows(), 2 * nc);
+  ASSERT_EQ(D.cols(), nv);
 
   // Scalar convert the plant and its context_.
   unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff;
@@ -1600,33 +1604,9 @@ TEST_F(MultibodyPlantContactJacobianTests, NormalJacobian) {
   // Verify the result.
   EXPECT_TRUE(CompareMatrices(
       N, vn_derivs, kTolerance, MatrixCompareType::relative));
-}
-
-TEST_F(MultibodyPlantContactJacobianTests, TangentJacobian) {
-  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
-
-  // Store the orientation of the contact frames so that we can use them later
-  // to compute the same Jacobian using autodifferentiation.
-  std::vector<Matrix3<double>> R_WC_set;
-
-  // Compute separation velocities Jacobian.
-  const MatrixX<double> D =
-      MultibodyPlantTester::CalcTangentVelocitiesJacobian(
-          plant_, *context_, penetrations_, &R_WC_set);
-
-  // Assert D has the right sizes.
-  const int nv = plant_.num_velocities();
-  const int nc = penetrations_.size();
-  ASSERT_EQ(D.rows(), 2 * nc);
-  ASSERT_EQ(D.cols(), nv);
-
-  // Scalar convert the plant and its context_.
-  unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff;
-  unique_ptr<Context<AutoDiffXd>> context_autodiff;
-  tie(plant_autodiff, context_autodiff) = ConvertPlantAndContextToAutoDiffXd();
 
   // Automatically differentiate vt (with respect to v) to get the tangent
-  // velocities Jacobian D.
+  // velocities Jacobian Jt.
   VectorX<AutoDiffXd> vt_autodiff = CalcTangentVelocities(
       *plant_autodiff, *context_autodiff, penetrations_, R_WC_set);
   const MatrixX<double> vt_derivs =
