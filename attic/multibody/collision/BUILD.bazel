@@ -2,9 +2,12 @@
 
 load(
     "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_googletest",
-    "drake_cc_library",
     "drake_cc_package_library",
+)
+load(
+    "@drake//attic:build_macros.bzl",
+    drake_cc_googletest = "attic_drake_cc_googletest",
+    drake_cc_library = "attic_drake_cc_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -152,4 +155,6 @@ filegroup(
     ]),
 )
 
-add_lint_tests()
+add_lint_tests(
+    cpplint_data = ["//attic:CPPLINT.cfg"],
+)

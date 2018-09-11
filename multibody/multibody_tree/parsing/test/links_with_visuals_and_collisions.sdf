@@ -18,7 +18,7 @@
       <visual name='link1_visual2'>
         <geometry>
           <mesh>
-            <uri>../../../shapes/test/tri_cube.obj</uri>
+            <uri>../../../../attic/multibody/shapes/test/tri_cube.obj</uri>
           </mesh>
         </geometry>
       </visual>
