@@ -7,14 +7,17 @@ namespace drake {
 namespace multibody {
 namespace internal {
 OrientationConstraint::OrientationConstraint(
-    const MultibodyTree<AutoDiffXd>& tree, const FrameIndex& frameA_idx,
-    const FrameIndex& frameB_idx, double theta_bound,
+    const MultibodyTree<AutoDiffXd>& tree, FrameIndex frameAbar_idx,
+    const math::RotationMatrix<double>& R_AbarA, FrameIndex frameBbar_idx,
+    const math::RotationMatrix<double>& R_BbarB, double theta_bound,
     MultibodyTreeContext<AutoDiffXd>* context)
     : solvers::Constraint(1, tree.num_positions(),
                           Vector1d(2 * std::cos(theta_bound) + 1), Vector1d(3)),
       tree_{tree},
-      frameA_{tree.get_frame(frameA_idx)},
-      frameB_{tree.get_frame(frameB_idx)},
+      frameAbar_{tree.get_frame(frameAbar_idx)},
+      R_AbarA_{R_AbarA.matrix().cast<AutoDiffXd>()},
+      frameBbar_{tree.get_frame(frameBbar_idx)},
+      R_BbarB_{R_BbarB.matrix().cast<AutoDiffXd>()},
       context_(context) {
   DRAKE_DEMAND(context);
   // TODO(hongkai.dai): use MultibodyTree<double> and LeafContext<double> when
@@ -36,8 +39,10 @@ void OrientationConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                                    AutoDiffVecXd* y) const {
   y->resize(1);
   UpdateContextConfiguration(x, context_);
-  (*y)(0) =
-      tree_.CalcRelativeTransform(*context_, frameA_, frameB_).linear().trace();
+  const Matrix3<AutoDiffXd> R_AbarBbar =
+      tree_.CalcRelativeTransform(*context_, frameAbar_, frameBbar_).linear();
+  const Matrix3<AutoDiffXd> R_AB = R_AbarA_.transpose() * R_AbarBbar * R_BbarB_;
+  (*y)(0) = R_AB.trace();
 }
 
 }  // namespace internal
