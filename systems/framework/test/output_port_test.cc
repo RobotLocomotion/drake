@@ -48,7 +48,7 @@ class MyOutputPort : public OutputPort<double> {
   MyOutputPort(const System<double>* diagram, SystemBase* system_base,
                OutputPortIndex index, DependencyTicket ticket)
       : OutputPort<double>(diagram, system_base, index, ticket, kVectorValued,
-                           2) {}
+                           2, "my_output") {}
 
   std::unique_ptr<AbstractValue> DoAllocate() const override {
     return AbstractValue::Make<BasicVector<double>>(

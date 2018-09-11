@@ -48,6 +48,7 @@ struct Impl {
     using Base::Base;
     // Expose protected methods for binding.
     using Base::DeclareInputPort;
+    using Base::DeclareAbstractInputPort;
   };
 
   class LeafSystemPublic : public LeafSystem<T> {
@@ -262,6 +263,8 @@ struct Impl {
         .def("_DeclareInputPort", &PySystem::DeclareInputPort,
              py_reference_internal, py::arg("type"), py::arg("size"),
              py::arg("name") = "", py::arg("random_type") = nullopt)
+        .def("_DeclareAbstractInputPort", &PySystem::DeclareAbstractInputPort,
+             py_reference_internal, py::arg("name") = "")
         // - Feedthrough.
         .def("HasAnyDirectFeedthrough", &System<T>::HasAnyDirectFeedthrough)
         .def("HasDirectFeedthrough",
@@ -343,18 +346,21 @@ struct Impl {
           "_DeclareAbstractOutputPort",
           WrapCallbacks(
               [](PyLeafSystem* self, AllocCallback arg1,
-                 CalcCallback arg2) -> auto& {
-                return self->DeclareAbstractOutputPort(arg1, arg2);
+                 CalcCallback arg2, const std::string& name) -> auto& {
+                return self->DeclareAbstractOutputPort(arg1, arg2, name);
               }),
-          py_reference_internal)
+          py_reference_internal, py::arg("make"), py::arg("calc"),
+          py::arg("name") = "")
       .def(
           "_DeclareVectorOutputPort",
           WrapCallbacks(
               [](PyLeafSystem* self, const BasicVector<T>& arg1,
-                 CalcVectorCallback arg2) -> auto& {
-                return self->DeclareVectorOutputPort(arg1, arg2);
+                 CalcVectorCallback arg2, const std::string& name)
+                     -> auto& {
+                return self->DeclareVectorOutputPort(arg1, arg2, name);
               }),
-          py_reference_internal)
+          py_reference_internal, py::arg("model_value"), py::arg("calc"),
+          py::arg("name") = "")
       .def("_DeclarePeriodicPublish", &PyLeafSystem::DeclarePeriodicPublish,
            py::arg("period_sec"), py::arg("offset_sec") = 0.)
       .def("_DoPublish", &LeafSystemPublic::DoPublish)
