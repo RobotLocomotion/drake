@@ -150,11 +150,8 @@ class InverseDynamics : public LeafSystem<T> {
   const multibody::multibody_plant::MultibodyPlant<T>* multibody_plant_{
       nullptr};
 
-  // Default mode is inverse dynamics, though the default should never be
-  // exercised.
-  // @TODO(edrumwri): Add `const` keyword below, once deprecated constructors
-  // are removed.
-  InverseDynamicsMode mode_{ InverseDynamicsMode::kInverseDynamics };
+  // Mode dictates whether to do inverse dynamics or just gravity compensation.
+  const InverseDynamicsMode mode_;
 
   // This context is used solely for setting generalized positions and
   // velocities in multibody_plant_.

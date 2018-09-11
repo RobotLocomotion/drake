@@ -16,6 +16,9 @@ template <typename T>
 InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>* tree,
                                     bool pure_gravity_compensation)
     : rigid_body_tree_(tree),
+      mode_{(pure_gravity_compensation) ?
+            InverseDynamicsMode::kGravityCompensation :
+            InverseDynamicsMode::kInverseDynamics},
       q_dim_(tree->get_num_positions()),
       v_dim_(tree->get_num_velocities()) {
   input_port_index_state_ =
@@ -24,11 +27,6 @@ InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>* tree,
       this->DeclareVectorOutputPort(BasicVector<T>(v_dim_),
                                     &InverseDynamics<T>::CalcOutputForce)
           .get_index();
-
-  // Set the gravity compensation mode.
-  mode_ = (pure_gravity_compensation) ?
-          InverseDynamics::InverseDynamicsMode::kGravityCompensation :
-          InverseDynamics::InverseDynamicsMode::kInverseDynamics;
 
   // Doesn't declare desired acceleration input port if we are only doing
   // gravity compensation.
@@ -42,6 +40,9 @@ template <typename T>
 InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
                                     bool pure_gravity_compensation)
     : multibody_plant_(plant),
+      mode_{(pure_gravity_compensation) ?
+            InverseDynamicsMode::kGravityCompensation :
+            InverseDynamicsMode::kInverseDynamics},
       q_dim_(plant->tree().num_positions()),
       v_dim_(plant->tree().num_velocities()) {
   DRAKE_DEMAND(plant->is_finalized());
@@ -52,11 +53,6 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
       this->DeclareVectorOutputPort(BasicVector<T>(v_dim_),
                                     &InverseDynamics<T>::CalcOutputForce)
           .get_index();
-
-  // Set the gravity compensation mode.
-  mode_ = (pure_gravity_compensation) ?
-          InverseDynamics::InverseDynamicsMode::kGravityCompensation :
-          InverseDynamics::InverseDynamicsMode::kInverseDynamics;
 
   // Make context with default parameters.
   multibody_plant_context_ = plant->CreateDefaultContext();
