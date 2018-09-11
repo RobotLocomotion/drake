@@ -103,6 +103,8 @@ GTEST_TEST(InverseDynamicsControllerTestMBP, TestTorque) {
   const std::string full_name = drake::FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
   multibody::parsing::AddModelFromSdfFile(full_name, robot.get());
+  robot->WeldFrames(robot->world_frame(),
+                    robot->GetFrameByName("iiwa_link_0"));
   robot->Finalize();
   auto robot_context = robot->CreateDefaultContext();
 

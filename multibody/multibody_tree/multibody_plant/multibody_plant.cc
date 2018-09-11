@@ -231,6 +231,14 @@ MultibodyPlant<T>::MultibodyPlant(double time_step) :
   collision_geometries_.emplace_back();
 }
 
+template<typename T>
+const WeldJoint<T>& MultibodyPlant<T>::WeldFrames(
+    const Frame<T>& A, const Frame<T>& B, const Isometry3<double>& X_AB) {
+  const std::string joint_name = A.name() + "_welds_to_" + B.name();
+  return tree_->AddJoint(
+      std::make_unique<WeldJoint<T>>(joint_name, A, B, X_AB));
+}
+
 template <typename T>
 geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
     SceneGraph<T>* scene_graph) {

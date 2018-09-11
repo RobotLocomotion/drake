@@ -621,6 +621,7 @@ class MultibodyTree {
     const JointIndex joint_index(owned_joints_.size());
     joint->set_parent_tree(this, joint_index);
     JointType<T>* raw_joint_ptr = joint.get();
+    joint_name_to_index_.insert({joint->name(), joint->index()});
     owned_joints_.push_back(std::move(joint));
     return *raw_joint_ptr;
   }
@@ -720,7 +721,6 @@ class MultibodyTree {
             name,
             *frame_on_parent, *frame_on_child,
             std::forward<Args>(args)...));
-    joint_name_to_index_.insert(std::make_pair(name, joint.index()));
     return joint;
   }
 

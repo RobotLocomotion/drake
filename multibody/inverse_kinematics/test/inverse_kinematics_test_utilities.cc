@@ -41,6 +41,8 @@ std::unique_ptr<multibody_plant::MultibodyPlant<double>> ConstructIiwaPlant(
   auto plant =
       std::make_unique<multibody_plant::MultibodyPlant<double>>(time_step);
   parsing::AddModelFromSdfFile(FindResourceOrThrow(file_path), plant.get());
+  plant->WeldFrames(plant->world_frame(),
+                    plant->GetFrameByName("iiwa_link_0"));
   plant->Finalize();
   return plant;
 }
