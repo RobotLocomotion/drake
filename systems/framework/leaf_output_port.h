@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <string>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -60,8 +61,9 @@ class LeafOutputPort final : public OutputPort<T> {
   LeafOutputPort(const System<T>* system, SystemBase* system_base,
                  OutputPortIndex index, DependencyTicket ticket,
                  PortDataType data_type, int size,
-                 const CacheEntry* cache_entry)
-      : OutputPort<T>(system, system_base, index, ticket, data_type, size),
+                 const CacheEntry* cache_entry, const std::string& name = "")
+      : OutputPort<T>(system, system_base, index, ticket, data_type, size,
+                      name),
         cache_entry_(cache_entry) {
     DRAKE_DEMAND(cache_entry != nullptr);
   }

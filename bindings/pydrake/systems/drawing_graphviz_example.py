@@ -36,6 +36,7 @@ builder.Connect(
 builder.Connect(
     cart_pole.get_geometry_poses_output_port(),
     scene_graph.get_source_pose_port(cart_pole.get_source_id()))
+builder.ExportInput(cart_pole.get_actuation_input_port())
 
 ConnectDrakeVisualizer(builder=builder, scene_graph=scene_graph)
 

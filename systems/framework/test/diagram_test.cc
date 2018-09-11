@@ -910,6 +910,12 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
               ad_diagram->get_input_port(i).get_name());
   }
 
+  // Make sure that the output port names survive type conversion.
+  for (OutputPortIndex i{0}; i < diagram_->get_num_output_ports(); i++) {
+    EXPECT_EQ(diagram_->get_output_port(i).get_name(),
+              ad_diagram->get_output_port(i).get_name());
+  }
+
   // When the Diagram contains a System that does not support AutoDiffXd,
   // we cannot transmogrify the Diagram to AutoDiffXd.
   const bool use_abstract = false;

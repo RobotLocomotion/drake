@@ -764,13 +764,24 @@ class SystemBase : public internal::SystemMessageInterface {
   /** (Internal use only) Adds an already-constructed output port to this
   System. Insists that the port already contains a reference to this System, and
   that the port's index is already set to the next available output port index
-  for this System. */
+  for this System, and that the name of the port is unique.
+  @throws std::logic_error if the name of the output port is not unique. */
   // TODO(sherm1) Add check on suitability of `size` parameter for the port's
   // data type.
   void AddOutputPort(std::unique_ptr<OutputPortBase> port) {
     DRAKE_DEMAND(port != nullptr);
     DRAKE_DEMAND(&port->get_system_base() == this);
-    DRAKE_DEMAND(port->get_index() == this->get_num_output_ports());
+    DRAKE_DEMAND(port->get_index() == get_num_output_ports());
+
+    // Check that name is unique.
+    for (OutputPortIndex i{0}; i < port->get_index(); i++) {
+      if (port->get_name() == get_output_port_base(i).get_name()) {
+        throw std::logic_error("System " + GetSystemName() +
+                               " already has an output port named " +
+                               port->get_name());
+      }
+    }
+
     output_ports_.push_back(std::move(port));
   }
 
