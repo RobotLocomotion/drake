@@ -343,16 +343,17 @@ struct Impl {
           "_DeclareAbstractOutputPort",
           WrapCallbacks(
               [](PyLeafSystem* self, AllocCallback arg1,
-                 CalcCallback arg2) -> auto& {
-                return self->DeclareAbstractOutputPort(arg1, arg2);
+                 CalcCallback arg2, const std::string& name = "") -> auto& {
+                return self->DeclareAbstractOutputPort(arg1, arg2, name);
               }),
           py_reference_internal)
       .def(
           "_DeclareVectorOutputPort",
           WrapCallbacks(
               [](PyLeafSystem* self, const BasicVector<T>& arg1,
-                 CalcVectorCallback arg2) -> auto& {
-                return self->DeclareVectorOutputPort(arg1, arg2);
+                 CalcVectorCallback arg2, const std::string& name = "")
+                     -> auto& {
+                return self->DeclareVectorOutputPort(arg1, arg2, name);
               }),
           py_reference_internal)
       .def("_DeclarePeriodicPublish", &PyLeafSystem::DeclarePeriodicPublish,

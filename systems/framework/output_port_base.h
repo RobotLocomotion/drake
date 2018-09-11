@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "drake/systems/framework/framework_common.h"
 
 namespace drake {
@@ -54,6 +56,9 @@ class OutputPortBase {
   }
 #endif
 
+  /** Get port name. */
+  const std::string& get_name() const { return name_; }
+
  protected:
   /** Provides derived classes the ability to set the base class members at
   construction.
@@ -68,10 +73,13 @@ class OutputPortBase {
     Whether the port described is vector or abstract valued.
   @param size
     If the port described is vector-valued, the number of elements expected,
-    otherwise ignored. */
+    otherwise ignored.
+  @param name
+    A name for the port.  Output ports names should be unique within a single
+    System. */
   OutputPortBase(SystemBase* owning_system,
                  OutputPortIndex index, DependencyTicket ticket,
-                 PortDataType data_type, int size);
+                 PortDataType data_type, int size, const std::string& name);
 
   SystemBase& get_mutable_system_base() {
     return owning_system_;
@@ -91,6 +99,7 @@ class OutputPortBase {
   // Port details.
   const PortDataType data_type_;
   const int size_;
+  const std::string name_;
 };
 
 }  // namespace systems

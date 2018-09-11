@@ -168,8 +168,8 @@ void DefineFrameworkPySemantics(py::module m) {
                &DiagramBuilder<T>::Connect))
       .def("ExportInput", &DiagramBuilder<T>::ExportInput, py::arg("input"),
            py::arg("name") = "", py_reference_internal)
-      .def("ExportOutput", &DiagramBuilder<T>::ExportOutput,
-           py_reference_internal)
+      .def("ExportOutput", &DiagramBuilder<T>::ExportOutput, py::arg
+          ("output"), py::arg("name") = "", py_reference_internal)
       .def("Build", &DiagramBuilder<T>::Build,
            // Keep alive, transitive: `return` keeps `self` alive.
            py::keep_alive<1, 0>())
