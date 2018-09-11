@@ -14,17 +14,23 @@
 namespace drake {
 namespace multibody {
 /**
- * Constructs a MultibodyTree consists of two free bodies. 
+ * Constructs a MultibodyTree consisting of two free bodies.
  */
 template <typename T>
 std::unique_ptr<MultibodyTree<T>> ConstructTwoFreeBodies();
 
 /**
- * Constructs a MultibodyPlant consists of two free bodies.
+ * Constructs a MultibodyPlant consisting of two free bodies.
  */
 template <typename T>
 std::unique_ptr<multibody_plant::MultibodyPlant<T>>
 ConstructTwoFreeBodiesPlant();
+
+/**
+ * Constructs a MultibodyPlant consisting of an Iiwa robot.
+ */
+std::unique_ptr<multibody_plant::MultibodyPlant<double>> ConstructIiwaPlant(
+    const std::string& iiwa_sdf_name, double time_step);
 
 /**
  * Compares if two eigen matrices of AutoDiff have the same values and
