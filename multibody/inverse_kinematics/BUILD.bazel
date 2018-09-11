@@ -43,6 +43,7 @@ drake_cc_library(
     ],
     visibility = ["//visibility:private"],
     deps = [
+        "//math:geometric_transform",
         "//math:gradient",
         "//multibody/multibody_tree",
         "//solvers:constraint",

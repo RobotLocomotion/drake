@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -51,30 +52,38 @@ class InverseKinematics {
 
   /**
    * Constrains that the angle difference θ between the orientation of frame A
-   * and the orientation of frame B to satisfy θ ≤ θ_bound. The angle
-   * difference between frame A's orientation R_WA and B's orientation R_WB is θ
-   * if there exists a rotation axis a, such that rotating frame A by angle θ
-   * about axis a aligns it with frame B. Namely
-   * θ = |mod(AngleAxisd(R_AB).angle(), 2π) - π|,
-   * where R_AB is the orientation of frame B expressed in frame A. By
-   * definition the angle difference θ is between [0,π]. If the users
-   * want frame A and frame B to align perfectly, they can set θ_bound = 0.
+   * and the orientation of frame B to satisfy θ ≤ θ_bound. Frame A is fixed to
+   * frame A_bar, with orientation R_AbarA measured in frame A_bar. Frame B is
+   * fixed to frame B_bar, with orientation R_BbarB measured in frame B_bar. The
+   * angle difference between frame A's orientation R_WA and B's orientation
+   * R_WB is θ, (θ ∈ [0, π]), if there exists a rotation axis a, such that
+   * rotating frame A by angle θ about axis a aligns it with frame B. Namely
+   * R_AB = I + sinθ â + (1-cosθ)â²   (1)
+   * where R_AB is the orientation of frame B expressed in frame A. â is the
+   * skew symmetric matrix of the rotation axis a. Equation (1) is the Rodrigues
+   * formula that computes the rotation matrix from a rotation axis a and an
+   * angle θ, https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
+   * If the users want frame A and frame B to align perfectly, they can set
+   * θ_bound = 0.
    * Mathematically, this constraint is imposed as
    * trace(R_AB) ≥ 2cos(θ_bound) + 1   (1)
-   * To derive (1), using Rodriguez formula
-   * https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
+   * To derive (1), using Rodrigues formula
    * R_AB = I + sinθ â + (1-cosθ)â²
-   * where â is the skew symmetric matrix of the rotation axis a.
+   * where
    * trace(R_AB) = 2cos(θ) + 1 ≥ 2cos(θ_bound) + 1
-   * @param frameA frame A.
-   * @param frameB frame B.
+   * @param frameAbar frame A_bar, the frame A is fixed to frame A_bar.
+   * @param R_AbarA The orientation of frame A measured in frame A_bar.
+   * @param frameBbar frame B_bar, the frame B is fixed to frame B_bar.
+   * @param R_BbarB The orientation of frame B measured in frame B_bar.
    * @param theta_bound The bound on the angle difference between frame A's
    * orientation and frame B's orientation. It is denoted as θ_bound in the
    * documentation. @p theta_bound is in radians.
    */
   solvers::Binding<solvers::Constraint> AddOrientationConstraint(
-      const Frame<double>& frameA, const Frame<double>& frameB,
-      double theta_bound);
+      const Frame<double>& frameAbar,
+      const math::RotationMatrix<double>& R_AbarA,
+      const Frame<double>& frameBbar,
+      const math::RotationMatrix<double>& R_BbarB, double theta_bound);
 
   /**
    * Constrains a target point T to be within a cone K. The point T ("T" stands

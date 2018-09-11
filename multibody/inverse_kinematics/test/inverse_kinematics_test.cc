@@ -124,7 +124,13 @@ TEST_F(TwoFreeBodiesTest, PositionConstraint) {
 TEST_F(TwoFreeBodiesTest, OrientationConstraint) {
   const double angle_bound = 0.05 * M_PI;
 
-  ik_.AddOrientationConstraint(body1_frame_, body2_frame_, angle_bound);
+  const math::RotationMatrix<double> R_AbarA(Eigen::AngleAxisd(
+      0.1 * M_PI, Eigen::Vector3d(0.2, 0.4, 1.2).normalized()));
+  const math::RotationMatrix<double> R_BbarB(Eigen::AngleAxisd(
+      0.2 * M_PI, Eigen::Vector3d(1.2, 2.1, -0.2).normalized()));
+
+  ik_.AddOrientationConstraint(body1_frame_, R_AbarA, body2_frame_, R_BbarB,
+                               angle_bound);
 
   ik_.get_mutable_prog()->SetInitialGuess(ik_.q().head<4>(),
                                           Eigen::Vector4d(1, 0, 0, 0));
@@ -134,9 +140,12 @@ TEST_F(TwoFreeBodiesTest, OrientationConstraint) {
   EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
   const auto q_sol = ik_.prog().GetSolution(ik_.q());
   RetrieveSolution();
-  const double angle =
-      Eigen::AngleAxisd(body1_quaternion_sol_.inverse() * body2_quaternion_sol_)
-          .angle();
+  const Eigen::Matrix3d R_AbarBbar =
+      (body1_quaternion_sol_.inverse() * body2_quaternion_sol_)
+          .toRotationMatrix();
+  const Eigen::Matrix3d R_AB =
+      R_AbarA.matrix().transpose() * R_AbarBbar * R_BbarB.matrix();
+  const double angle = Eigen::AngleAxisd(R_AB).angle();
   EXPECT_LE(angle, angle_bound + 1E-6);
 }
 
