@@ -270,12 +270,18 @@ drake_py_unittest(
 drake_py_binary(
     name = "drawing_graphviz_example",
     srcs = ["drawing_graphviz_example.py"],
+    data = [
+        "//examples/multibody/cart_pole:cart_pole.sdf",
+    ],
     add_test_rule = 1,
     test_rule_args = ["--test"],
     deps = [
         ":drawing_py",
         ":framework_py",
         ":primitives_py",
+        "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake:lcm_py",
+        "//bindings/pydrake/multibody:multibody_tree_py",
     ],
 )
 
