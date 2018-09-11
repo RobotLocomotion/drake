@@ -7,7 +7,7 @@ build:kcov --copt -O0
 test:kcov --spawn_strategy=standalone
 test:kcov --run_under //tools/dynamic_analysis:kcov
 test:kcov --local_test_jobs=1
-test:kcov --test_tag_filters=-cpplint,-pycodestyle,-gurobi,-mosek,-snopt,-no_kcov
+test:kcov --test_tag_filters=-lint,-gurobi,-mosek,-snopt,-no_kcov
 test:kcov --nocache_test_results
 # These increased timeouts were set through experimentation. Because kcov runs
 # in a separate process from the main program, the OS has to context-switch
@@ -25,7 +25,7 @@ build:kcov_everything --copt -O0
 test:kcov_everything --spawn_strategy=standalone
 test:kcov_everything --run_under=//tools/dynamic_analysis:kcov
 test:kcov_everything --local_test_jobs=1
-test:kcov_everything --test_tag_filters=-cpplint,-pycodestyle,-no_kcov
+test:kcov_everything --test_tag_filters=-lint,-no_kcov
 test:kcov_everything --nocache_test_results
 # See timeout note above. Timeouts are 5x default values.
 test:kcov_everything --test_timeout=300,1500,4500,18000
