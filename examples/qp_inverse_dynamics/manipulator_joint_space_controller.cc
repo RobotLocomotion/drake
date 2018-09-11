@@ -88,7 +88,7 @@ ManipulatorJointSpaceController::ManipulatorJointSpaceController(
 
   // Exposes inverse dynamics' debug output.
   output_port_index_inverse_dynamics_debug_ =
-      builder.ExportOutput(plan_eval_->get_output_port_debug_info());
+      builder.ExportOutput(id_controller->get_output_port_debug_info());
 
   // Exposes inverse dynamics' QpOutput output.
   output_port_index_qp_output_ =
