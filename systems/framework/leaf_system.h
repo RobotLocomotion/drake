@@ -472,7 +472,7 @@ class LeafSystem : public System<T> {
     *dot << " | {";
     for (int i = 0; i < this->get_num_output_ports(); ++i) {
       if (i != 0) *dot << "|";
-      *dot << "<y" << i << ">y" << i;
+      *dot << "<y" << i << ">" << this->get_output_port(i).get_name();
     }
     *dot << "}";
 
@@ -835,6 +835,13 @@ class LeafSystem : public System<T> {
   /// @name                    Declare input ports
   /// Methods in this section are used by derived classes to declare their
   /// output ports, which may be vector valued or abstract valued.
+  ///
+  /// You should normally provide a meaningful name for any input port you
+  /// create. Names must be unique for this system (passing in a duplicate
+  /// name will throw std::logic_error). However, if you specify
+  /// kUseDefaultName as the name, then a default name of e.g. "u2", where 2
+  /// is the input port number will be provided. An empty name is not
+  /// permitted.
   //@{
 
   /// Declares a vector-valued input port using the given @p model_vector.
@@ -847,9 +854,10 @@ class LeafSystem : public System<T> {
   /// VectorBase::CalcInequalityConstraint() constraints, they will be
   /// re-declared as inequality constraints on this system (see
   /// DeclareInequalityConstraint()).
+  ///
+  /// @see System::DeclareInputPort() for more information.
   const InputPort<T>& DeclareVectorInputPort(
-      const BasicVector<T>& model_vector,
-      const std::string& name = "",
+      std::string name, const BasicVector<T>& model_vector,
       optional<RandomDistribution> random_type = nullopt) {
     const int size = model_vector.size();
     const int index = this->get_num_input_ports();
@@ -861,7 +869,8 @@ class LeafSystem : public System<T> {
           DRAKE_DEMAND(input != nullptr);
           return *input;
         });
-    return this->DeclareInputPort(kVectorValued, size, name, random_type);
+    return this->DeclareInputPort(NextInputPortName(std::move(name)),
+                                  kVectorValued, size, random_type);
   }
 
   // Avoid shadowing out the no-arg DeclareAbstractInputPort().
@@ -871,11 +880,39 @@ class LeafSystem : public System<T> {
   /// This is the best way to declare LeafSystem abstract input ports.
   /// LeafSystem's default implementation of DoAllocateInputAbstract will be
   /// model_value.Clone().
+  ///
+  /// @see System::DeclareInputPort() for more information.
   const InputPort<T>& DeclareAbstractInputPort(
-      const AbstractValue& model_value, const std::string& name = "") {
+      std::string name, const AbstractValue& model_value) {
     const int next_index = this->get_num_input_ports();
     model_input_values_.AddModel(next_index, model_value.Clone());
-    return this->DeclareAbstractInputPort(name);
+    return this->DeclareAbstractInputPort(NextInputPortName(std::move(name)));
+  }
+  //@}
+
+  // =========================================================================
+  /// @name          To-be-deprecated input port declarations
+  /// Methods in this section leave out the name parameter and are the same
+  /// as invoking the corresponding method with `kUseDefaultName` as the name.
+  /// We intend to make specifying the name required and will deprecate these
+  /// soon. Don't use them.
+  //@{
+
+  /// See the nearly identical signature with an additional (first) argument
+  /// specifying the port name.  This version will be deprecated as discussed
+  /// in #9447.
+  const InputPort<T>& DeclareVectorInputPort(
+      const BasicVector<T>& model_vector,
+      optional<RandomDistribution> random_type = nullopt) {
+    return DeclareVectorInputPort(kUseDefaultName, model_vector, random_type);
+  }
+
+  /// See the nearly identical signature with an additional (first) argument
+  /// specifying the port name.  This version will be deprecated as discussed
+  /// in #9447.
+  const InputPort<T>& DeclareAbstractInputPort(
+      const AbstractValue& model_value) {
+    return DeclareAbstractInputPort(kUseDefaultName, model_value);
   }
   //@}
 
@@ -916,6 +953,12 @@ class LeafSystem : public System<T> {
   /// default is to assume the output port value is dependent on all possible
   /// sources. See @ref DeclareCacheEntry_documentation "DeclareCacheEntry"
   /// for more information about prerequisites.
+  ///
+  /// Output ports must have a name that is unique within the owning subsystem.
+  /// Users can provide meaningful names or specify the name as
+  /// `kUseDefaultName` in which case a name like "y3" is
+  /// automatically provided, where the number is the output port index. An
+  /// empty name is not permitted.
   //@{
 
   /// Declares a vector-valued output port by specifying (1) a model vector of
@@ -930,6 +973,7 @@ class LeafSystem : public System<T> {
   /// arguments will be deduced and do not need to be specified.
   template <class MySystem, typename BasicVectorSubtype>
   const OutputPort<T>& DeclareVectorOutputPort(
+      std::string name,
       const BasicVectorSubtype& model_vector,
       void (MySystem::*calc)(const Context<T>&, BasicVectorSubtype*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
@@ -946,7 +990,7 @@ class LeafSystem : public System<T> {
     // Currently all vector ports in Drake require a fixed size that is known
     // at the time the port is declared.
     auto& port = CreateVectorLeafOutputPort(
-        model_vector.size(),
+        NextOutputPortName(std::move(name)), model_vector.size(),
         // Allocator function just clones the given model vector.
         MakeAllocCallback<BasicVector<T>>(model_vector),
         // Calculator function downcasts to specific vector type and invokes
@@ -955,7 +999,9 @@ class LeafSystem : public System<T> {
           auto typed_result = dynamic_cast<BasicVectorSubtype*>(result);
           DRAKE_DEMAND(typed_result != nullptr);
           (this_ptr->*calc)(context, typed_result);
-        }, std::move(prerequisites_of_calc));
+        },
+        std::move(prerequisites_of_calc));
+    // Caution: "name" is empty now.
     MaybeDeclareVectorBaseInequalityConstraint(
         "output " + std::to_string(int{port.get_index()}), model_vector,
         [&port, storage = std::shared_ptr<AbstractValue>{}](
@@ -993,6 +1039,7 @@ class LeafSystem : public System<T> {
   /// the `BasicVectorSubtype` default constructor.
   template <class MySystem, typename BasicVectorSubtype>
   const OutputPort<T>& DeclareVectorOutputPort(
+      std::string name,
       void (MySystem::*calc)(const Context<T>&, BasicVectorSubtype*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
@@ -1001,7 +1048,8 @@ class LeafSystem : public System<T> {
         "LeafSystem::DeclareVectorOutputPort(calc): the one-argument form of "
         "this method requires that the output type has a default constructor");
     // Invokes the previous method.
-    return DeclareVectorOutputPort(BasicVectorSubtype{}, calc,
+    return DeclareVectorOutputPort(NextOutputPortName(std::move(name)),
+                                   BasicVectorSubtype{}, calc,
                                    std::move(prerequisites_of_calc));
   }
 
@@ -1013,13 +1061,14 @@ class LeafSystem : public System<T> {
   /// use one of the other signatures.
   /// @see LeafOutputPort::CalcVectorCallback
   const OutputPort<T>& DeclareVectorOutputPort(
+      std::string name,
       const BasicVector<T>& model_vector,
       typename LeafOutputPort<T>::CalcVectorCallback vector_calc_function,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
-    auto& port = CreateVectorLeafOutputPort(
+    auto& port = CreateVectorLeafOutputPort(NextOutputPortName(std::move(name)),
         model_vector.size(), MakeAllocCallback(model_vector),
-        vector_calc_function, std::move(prerequisites_of_calc));
+        std::move(vector_calc_function), std::move(prerequisites_of_calc));
     return port;
   }
 
@@ -1035,18 +1084,20 @@ class LeafSystem : public System<T> {
   /// @see drake::systems::Value
   template <class MySystem, typename OutputType>
   const OutputPort<T>& DeclareAbstractOutputPort(
-      const OutputType& model_value,
+      std::string name, const OutputType& model_value,
       void (MySystem::*calc)(const Context<T>&, OutputType*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
+
     auto& port = CreateAbstractLeafOutputPort(
-        MakeAllocCallback(model_value),
+        NextOutputPortName(std::move(name)), MakeAllocCallback(model_value),
         [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
           OutputType& typed_result = result->GetMutableValue<OutputType>();
           (this_ptr->*calc)(context, &typed_result);
-        }, std::move(prerequisites_of_calc));
+        },
+        std::move(prerequisites_of_calc));
     return port;
   }
 
@@ -1071,6 +1122,7 @@ class LeafSystem : public System<T> {
   /// @see drake::systems::Value
   template <class MySystem, typename OutputType>
   const OutputPort<T>& DeclareAbstractOutputPort(
+      std::string name,
       void (MySystem::*calc)(const Context<T>&, OutputType*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
@@ -1079,7 +1131,8 @@ class LeafSystem : public System<T> {
         "LeafSystem::DeclareAbstractOutputPort(calc): the one-argument form of "
         "this method requires that the output type has a default constructor");
     // Note that value initialization {} is required here.
-    return DeclareAbstractOutputPort(OutputType{}, calc,
+    return DeclareAbstractOutputPort(NextOutputPortName(std::move(name)),
+                                     OutputType{}, calc,
                                      std::move(prerequisites_of_calc));
   }
 
@@ -1096,20 +1149,21 @@ class LeafSystem : public System<T> {
   /// @see drake::systems::Value
   template <class MySystem, typename OutputType>
   const OutputPort<T>& DeclareAbstractOutputPort(
-      OutputType (MySystem::*make)() const,
+      std::string name, OutputType (MySystem::*make)() const,
       void (MySystem::*calc)(const Context<T>&, OutputType*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
+
     auto& port = CreateAbstractLeafOutputPort(
-        [this_ptr, make]() {
-          return AbstractValue::Make((this_ptr->*make)());
-        },
+        NextOutputPortName(std::move(name)),
+        [this_ptr, make]() { return AbstractValue::Make((this_ptr->*make)()); },
         [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
           OutputType& typed_result = result->GetMutableValue<OutputType>();
           (this_ptr->*calc)(context, &typed_result);
-        }, std::move(prerequisites_of_calc));
+        },
+        std::move(prerequisites_of_calc));
     return port;
   }
 
@@ -1118,13 +1172,117 @@ class LeafSystem : public System<T> {
   /// If you have a member function available use one of the other signatures.
   /// @see LeafOutputPort::AllocCallback, LeafOutputPort::CalcCallback
   const OutputPort<T>& DeclareAbstractOutputPort(
+      std::string name,
       typename LeafOutputPort<T>::AllocCallback alloc_function,
       typename LeafOutputPort<T>::CalcCallback calc_function,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
-    auto& port = CreateAbstractLeafOutputPort(alloc_function, calc_function,
-                                              std::move(prerequisites_of_calc));
+    auto& port = CreateAbstractLeafOutputPort(
+        NextOutputPortName(std::move(name)), std::move(alloc_function),
+        std::move(calc_function), std::move(prerequisites_of_calc));
     return port;
+  }
+  //@}
+
+  // =========================================================================
+  /// @name          To-be-deprecated output port declarations
+  /// Methods in this section leave out the name parameter and are the same
+  /// as invoking the corresponding method with `kUseDefaultName` as the name.
+  /// We intend to make specifying the name required and will deprecate these
+  /// soon. Don't use them.
+  //@{
+
+  /// See the nearly identical signature with an additional (first) argument
+  /// specifying the port name.  This version will be deprecated as discussed
+  /// in #9447.
+  template <class MySystem, typename BasicVectorSubtype>
+  const OutputPort<T>& DeclareVectorOutputPort(
+      const BasicVectorSubtype& model_vector,
+      void (MySystem::*calc)(const Context<T>&, BasicVectorSubtype*) const,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()}) {
+    return DeclareVectorOutputPort(kUseDefaultName, model_vector, calc,
+                                   std::move(prerequisites_of_calc));
+  }
+
+  /// See the nearly identical signature with an additional (first) argument
+  /// specifying the port name.  This version will be deprecated as discussed
+  /// in #9447.
+  template <class MySystem, typename BasicVectorSubtype>
+  const OutputPort<T>& DeclareVectorOutputPort(
+      void (MySystem::*calc)(const Context<T>&, BasicVectorSubtype*) const,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()}) {
+    return DeclareVectorOutputPort(kUseDefaultName, calc,
+                                   std::move(prerequisites_of_calc));
+  }
+
+  /// See the nearly identical signature with an additional (first) argument
+  /// specifying the port name.  This version will be deprecated as discussed
+  /// in #9447.
+  const OutputPort<T>& DeclareVectorOutputPort(
+      const BasicVector<T>& model_vector,
+      typename LeafOutputPort<T>::CalcVectorCallback vector_calc_function,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()}) {
+    return DeclareVectorOutputPort(kUseDefaultName, model_vector,
+                                   std::move(vector_calc_function),
+                                   std::move(prerequisites_of_calc));
+  }
+
+  /// See the nearly identical signature with an additional (first) argument
+  /// specifying the port name.  This version will be deprecated as discussed
+  /// in #9447. Note that the deprecated method is not available for
+  /// `OutputType` std::string as that would create an ambiguity. In that
+  /// case the name is required.
+  template <class MySystem, typename OutputType>
+  std::enable_if_t<!std::is_same<OutputType, std::string>::value,
+                   const OutputPort<T>&>
+  DeclareAbstractOutputPort(const OutputType& model_value,
+                            void (MySystem::*calc)(const Context<T>&,
+                                                   OutputType*) const,
+                            std::set<DependencyTicket> prerequisites_of_calc = {
+                                all_sources_ticket()}) {
+    return DeclareAbstractOutputPort(kUseDefaultName, model_value, calc,
+                                     std::move(prerequisites_of_calc));
+  }
+
+  /// See the nearly identical signature with an additional (first) argument
+  /// specifying the port name.  This version will be deprecated as discussed
+  /// in #9447.
+  template <class MySystem, typename OutputType>
+  const OutputPort<T>& DeclareAbstractOutputPort(
+      void (MySystem::*calc)(const Context<T>&, OutputType*) const,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()}) {
+    return DeclareAbstractOutputPort<MySystem, OutputType>(
+        kUseDefaultName, calc, std::move(prerequisites_of_calc));
+  }
+
+  /// See the nearly identical signature with an additional (first) argument
+  /// specifying the port name.  This version will be deprecated as discussed
+  /// in #9447.
+  template <class MySystem, typename OutputType>
+  const OutputPort<T>& DeclareAbstractOutputPort(
+      OutputType (MySystem::*make)() const,
+      void (MySystem::*calc)(const Context<T>&, OutputType*) const,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()}) {
+    return DeclareAbstractOutputPort(kUseDefaultName, make, calc,
+                                     std::move(prerequisites_of_calc));
+  }
+
+  /// See the nearly identical signature with an additional (first) argument
+  /// specifying the port name.  This version will be deprecated as discussed
+  /// in #9447.
+  const OutputPort<T>& DeclareAbstractOutputPort(
+      typename LeafOutputPort<T>::AllocCallback alloc_function,
+      typename LeafOutputPort<T>::CalcCallback calc_function,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()}) {
+    return DeclareAbstractOutputPort(kUseDefaultName, std::move(alloc_function),
+                                     std::move(calc_function),
+                                     std::move(prerequisites_of_calc));
   }
   //@}
 
@@ -1182,7 +1340,7 @@ class LeafSystem : public System<T> {
       void (MySystem::*publish_callback)(
           const Context<T>&, const PublishEvent<T>&) const) const {
     static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
-      "Expected to be invoked from a LeafSystem-derived system.");
+                  "Expected to be invoked from a LeafSystem-derived system.");
     auto fn = [this, publish_callback](
         const Context<T>& context, const PublishEvent<T>& publish_event) {
       auto system_ptr = dynamic_cast<const MySystem*>(this);
@@ -1206,7 +1364,7 @@ class LeafSystem : public System<T> {
       void (MySystem::*du_callback)(const Context<T>&,
           const DiscreteUpdateEvent<T>&, DiscreteValues<T>*) const) const {
     static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
-      "Expected to be invoked from a LeafSystem-derived system.");
+                  "Expected to be invoked from a LeafSystem-derived system.");
     auto fn = [this, du_callback](const Context<T>& context,
         const DiscreteUpdateEvent<T>& du_event, DiscreteValues<T>* values) {
       auto system_ptr = dynamic_cast<const MySystem*>(this);
@@ -1230,7 +1388,7 @@ class LeafSystem : public System<T> {
       void (MySystem::*uu_callback)(const Context<T>&,
           const UnrestrictedUpdateEvent<T>&, State<T>*) const) const {
     static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
-      "Expected to be invoked from a LeafSystem-derived system.");
+                  "Expected to be invoked from a LeafSystem-derived system.");
     auto fn = [this, uu_callback](const Context<T>& context,
         const UnrestrictedUpdateEvent<T>& uu_event, State<T>* state) {
       auto system_ptr = dynamic_cast<const MySystem*>(this);
@@ -1257,7 +1415,7 @@ class LeafSystem : public System<T> {
       T (MySystem::*calc)(const Context<T>&) const,
       const Event<T>& e) const {
     static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
-      "Expected to be invoked from a LeafSystem-derived system.");
+                  "Expected to be invoked from a LeafSystem-derived system.");
     return std::make_unique<WitnessFunction<T>>(
         this, description, direction_type, calc, e.Clone());
   }
@@ -1472,6 +1630,9 @@ class LeafSystem : public System<T> {
   }
 
  private:
+  using SystemBase::NextInputPortName;
+  using SystemBase::NextOutputPortName;
+
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
       PeriodicEventDataComparator> DoGetPeriodicEvents() const override {
     std::map<PeriodicEventData, std::vector<const Event<T>*>,
@@ -1577,6 +1738,7 @@ class LeafSystem : public System<T> {
   // Creates a new cached, vector-valued LeafOutputPort in this LeafSystem and
   // returns a reference to it.
   LeafOutputPort<T>& CreateVectorLeafOutputPort(
+      std::string name,
       int fixed_size,
       typename LeafOutputPort<T>::AllocCallback vector_allocator,
       typename LeafOutputPort<T>::CalcVectorCallback vector_calculator,
@@ -1604,14 +1766,15 @@ class LeafSystem : public System<T> {
     };
 
     // The allocator function is identical between output port and cache.
-    return CreateCachedLeafOutputPort(fixed_size, std::move(vector_allocator),
-                                      std::move(cache_calc_function),
-                                      std::move(calc_prerequisites));
+    return CreateCachedLeafOutputPort(
+        std::move(name), fixed_size, std::move(vector_allocator),
+        std::move(cache_calc_function), std::move(calc_prerequisites));
   }
 
   // Creates a new cached, abstract-valued LeafOutputPort in this LeafSystem and
   // returns a reference to it.
   LeafOutputPort<T>& CreateAbstractLeafOutputPort(
+      std::string name,
       typename LeafOutputPort<T>::AllocCallback allocator,
       typename LeafOutputPort<T>::CalcCallback calculator,
       std::set<DependencyTicket> calc_prerequisites) {
@@ -1623,16 +1786,16 @@ class LeafSystem : public System<T> {
       return calculator(context, result);
     };
 
-    return CreateCachedLeafOutputPort(0 /* size */, std::move(allocator),
-                                      std::move(cache_calc_function),
-                                      std::move(calc_prerequisites));
+    return CreateCachedLeafOutputPort(
+        std::move(name), 0 /* size */, std::move(allocator),
+        std::move(cache_calc_function), std::move(calc_prerequisites));
   }
 
   // Creates a new cached LeafOutputPort in this LeafSystem and returns a
   // reference to it. Pass fixed_size == 0 for abstract ports, or non-zero
   // for vector ports. Prerequisites list must not be empty.
   LeafOutputPort<T>& CreateCachedLeafOutputPort(
-      int fixed_size,
+      std::string name, int fixed_size,
       typename CacheEntry::AllocCallback allocator,
       typename CacheEntry::CalcCallback calculator,
       std::set<DependencyTicket> calc_prerequisites) {
@@ -1640,7 +1803,7 @@ class LeafSystem : public System<T> {
     // Create a cache entry for this output port.
     const OutputPortIndex oport_index(this->get_num_output_ports());
     const CacheEntry& cache_entry = this->DeclareCacheEntry(
-        "output port " + std::to_string(oport_index) + " cache",
+        "output port " + std::to_string(oport_index) + "(" + name + ") cache",
         std::move(allocator), std::move(calculator),
         std::move(calc_prerequisites));
 
@@ -1651,6 +1814,7 @@ class LeafSystem : public System<T> {
     auto port = std::make_unique<LeafOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
+        std::move(name),
         oport_index, this->assign_next_dependency_ticket(),
         fixed_size == 0 ? kAbstractValued : kVectorValued, fixed_size,
         &cache_entry);

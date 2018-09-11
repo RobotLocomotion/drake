@@ -48,6 +48,7 @@ struct Impl {
     using Base::Base;
     // Expose protected methods for binding.
     using Base::DeclareInputPort;
+    using Base::DeclareAbstractInputPort;
   };
 
   class LeafSystemPublic : public LeafSystem<T> {
@@ -259,9 +260,21 @@ struct Impl {
         .def("get_num_output_ports", &System<T>::get_num_output_ports)
         .def("get_output_port", &System<T>::get_output_port,
              py_reference_internal)
-        .def("_DeclareInputPort", &PySystem::DeclareInputPort,
-             py_reference_internal, py::arg("type"), py::arg("size"),
-             py::arg("name") = "", py::arg("random_type") = nullopt)
+        .def("_DeclareInputPort",
+             overload_cast_explicit<const InputPort<T>&, std::string,
+                 PortDataType, int, optional<RandomDistribution>>
+                 (&PySystem::DeclareInputPort),
+             py_reference_internal, py::arg("name"), py::arg("type"),
+             py::arg("size"), py::arg("random_type") = nullopt)
+        .def("_DeclareInputPort",
+             overload_cast_explicit<const InputPort<T>&, PortDataType, int,
+                 optional<RandomDistribution>>(&PySystem::DeclareInputPort),
+             py_reference_internal, py::arg("type"),
+             py::arg("size"), py::arg("random_type") = nullopt)
+        .def("_DeclareAbstractInputPort",
+             overload_cast_explicit<const InputPort<T>&, std::string>(
+                 &PySystem::DeclareAbstractInputPort),
+             py_reference_internal, py::arg("name"))
         // - Feedthrough.
         .def("HasAnyDirectFeedthrough", &System<T>::HasAnyDirectFeedthrough)
         .def("HasDirectFeedthrough",
@@ -339,19 +352,30 @@ struct Impl {
       // being used, and pass that as the converter. However, that requires an
       // old-style `py::init`, which is deprecated in Python...
       .def(py::init<SystemScalarConverter>(), py::arg("converter"))
-      .def(
-          "_DeclareAbstractOutputPort",
-          WrapCallbacks(
-              [](PyLeafSystem* self, AllocCallback arg1,
-                 CalcCallback arg2) -> auto& {
-                return self->DeclareAbstractOutputPort(arg1, arg2);
+      .def("_DeclareAbstractOutputPort",
+          WrapCallbacks([](PyLeafSystem* self, const std::string& name,
+                           AllocCallback arg1, CalcCallback arg2) -> auto& {
+                return self->DeclareAbstractOutputPort(name, arg1, arg2);
               }),
-          py_reference_internal)
-      .def(
-          "_DeclareVectorOutputPort",
-          WrapCallbacks(
-              [](PyLeafSystem* self, const BasicVector<T>& arg1,
-                 CalcVectorCallback arg2) -> auto& {
+          py_reference_internal, py::arg("name"), py::arg("alloc"),
+          py::arg("calc"))
+        .def("_DeclareAbstractOutputPort",
+             WrapCallbacks([](PyLeafSystem* self, AllocCallback arg1,
+                              CalcCallback arg2) -> auto& {
+               return self->DeclareAbstractOutputPort(arg1, arg2);
+             }),
+             py_reference_internal, py::arg("alloc"), py::arg("calc"))
+        .def("_DeclareVectorOutputPort",
+             WrapCallbacks([](PyLeafSystem* self, const std::string& name,
+                              const BasicVector<T>& arg1,
+                              CalcVectorCallback arg2) -> auto& {
+               return self->DeclareVectorOutputPort(name, arg1, arg2);
+             }),
+             py_reference_internal, py::arg("name"), py::arg("model_value"),
+             py::arg("calc"))
+        .def("_DeclareVectorOutputPort",
+          WrapCallbacks([](PyLeafSystem* self, const BasicVector<T>& arg1,
+                           CalcVectorCallback arg2) -> auto& {
                 return self->DeclareVectorOutputPort(arg1, arg2);
               }),
           py_reference_internal)

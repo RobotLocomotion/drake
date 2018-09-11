@@ -72,6 +72,14 @@ rather depends on what it is connected to (not yet implemented). */
 // TODO(sherm1) Implement this.
 constexpr int kAutoSize = -1;
 
+/** Name to use when you want a default one generated. This is set to an ugly
+string that no one will want to use as an actual name. You should normally
+give meaningful names to all Drake System entities you create rather than
+using this. */
+// TODO(sherm1) Consider using std::variant<string,systems::UseDefaultName>
+// as an alternative to this hack.
+constexpr const char* kUseDefaultName = "__use_default_name__";
+
 #ifndef DRAKE_DOXYGEN_CXX
 class AbstractValue;
 class ContextBase;
