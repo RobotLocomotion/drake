@@ -124,15 +124,17 @@ class TestControllers(unittest.TestCase):
                     output.get_vector_data(0).CopyToVector(), expected_torque))
 
         # Test with pure gravity compensation.
-        controller = InverseDynamics(tree=tree,
-                                     pure_gravity_compensation=True)
+        controller = InverseDynamics(
+            tree=tree,
+            mode=InverseDynamics.InverseDynamicsMode.kGravityCompensation)
         q = np.array([.1, .2, .3, .4, .5, .6, .7])
         v = np.zeros(num_v)
         check_torque_example(controller, q, v)
 
         # Test with desired acceleration.
-        controller = InverseDynamics(tree=tree,
-                                     pure_gravity_compensation=False)
+        controller = InverseDynamics(
+            tree=tree,
+            mode=InverseDynamics.InverseDynamicsMode.kInverseDynamics)
         q = np.array([.7, .6, .5, .4, .3, .2, .1])
         v = np.array([-.1, -.2, -.3, -.4, -.5, -.6, -.7])
         v_dot_desired = np.array([-.1, .1, -.1, .1, -.1, .1, -.1])

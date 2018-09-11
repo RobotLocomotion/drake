@@ -41,12 +41,21 @@ PYBIND11_MODULE(controllers, m) {
       .def_readwrite("visualization_callback",
                      &DynamicProgrammingOptions::visualization_callback);
 
-  py::class_<InverseDynamics<double>, LeafSystem<double>>(m, "InverseDynamics")
-      .def(py::init<const RigidBodyTree<double>*, bool>(),
-           py::arg("tree"),
-           py::arg("pure_gravity_compensation"))
-      .def("is_pure_gravity_compensation",
-           &InverseDynamics<double>::is_pure_gravity_compenstation);
+  py::class_<InverseDynamics<double>, LeafSystem<double>> idyn(
+    m, "InverseDynamics");
+  idyn.def(py::init<const RigidBodyTree<double>*,
+      InverseDynamics<double>::InverseDynamicsMode>(),
+      py::arg("tree"),
+      py::arg("mode"));
+  idyn.def("is_pure_gravity_compensation",
+      &InverseDynamics<double>::is_pure_gravity_compensation);
+
+  py::enum_<InverseDynamics<double>::InverseDynamicsMode>(
+      idyn, "InverseDynamicsMode")
+      .value("kInverseDynamics", InverseDynamics<double>::kInverseDynamics)
+      .value("kGravityCompensation",
+          InverseDynamics<double>::kGravityCompensation)
+      .export_values();
 
   py::class_<InverseDynamicsController<double>, Diagram<double>>(
       m, "InverseDynamicsController")
