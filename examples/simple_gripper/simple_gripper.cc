@@ -338,7 +338,7 @@ int do_main() {
 
   // Initialize the mug pose to be right in the middle between the fingers.
   std::vector<Isometry3d> X_WB_all;
-  plant.model().CalcAllBodyPosesInWorld(plant_context, &X_WB_all);
+  plant.tree().CalcAllBodyPosesInWorld(plant_context, &X_WB_all);
   const Vector3d& p_WBr = X_WB_all[right_finger.index()].translation();
   const Vector3d& p_WBl = X_WB_all[left_finger.index()].translation();
   const double mug_y_W = (p_WBr(1) + p_WBl(1)) / 2.0;
@@ -349,7 +349,7 @@ int do_main() {
                (FLAGS_rz * M_PI / 180) + M_PI);
   X_WM.linear() = RotationMatrix<double>(RollPitchYaw<double>(rpy)).matrix();
   X_WM.translation() = Vector3d(0.0, mug_y_W, 0.0);
-  plant.model().SetFreeBodyPoseOrThrow(mug, X_WM, &plant_context);
+  plant.tree().SetFreeBodyPoseOrThrow(mug, X_WM, &plant_context);
 
   // Set the initial height of the gripper and its initial velocity so that with
   // the applied harmonic forces it continues to move in a harmonic oscillation
