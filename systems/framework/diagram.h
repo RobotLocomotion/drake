@@ -1210,6 +1210,10 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       const OutputPortIndex port = id.second;
       blueprint->output_port_ids.emplace_back(new_system, port);
     }
+    for (OutputPortIndex i{0}; i < this->get_num_output_ports(); i++) {
+      blueprint->output_port_names.emplace_back(
+          this->get_output_port(i).get_name());
+    }
     // Make all the connections.
     for (const auto& edge : connection_map_) {
       const InputPortLocator& old_dest = edge.first;
@@ -1293,6 +1297,9 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
     // The ordered subsystem ports that are outputs of the entire diagram.
     std::vector<OutputPortLocator> output_port_ids;
+    // The default names should be the same length and ordering as the ids.
+    std::vector<std::string> output_port_names;
+
     // A map from the input ports of constituent systems to the output ports
     // on which they depend. This graph is possibly cyclic, but must not
     // contain an algebraic loop.
@@ -1359,8 +1366,11 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     for (const InputPortLocator& id : input_port_ids_) {
       ExportInput(id, *name_iter++);
     }
+    DRAKE_DEMAND(output_port_ids_.size() ==
+                 blueprint->output_port_names.size());
+    name_iter = blueprint->output_port_names.begin();
     for (const OutputPortLocator& id : output_port_ids_) {
-      ExportOutput(id);
+      ExportOutput(id, *name_iter++);
     }
 
     // Identify the intersection of the subsystems' scalar conversion support.
@@ -1398,7 +1408,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   }
 
   // Exposes the given subsystem output port as an output of the Diagram.
-  void ExportOutput(const OutputPortLocator& port) {
+  void ExportOutput(const OutputPortLocator& port, const std::string& name) {
     const System<T>* const sys = port.first;
     const int port_index = port.second;
     const auto& source_output_port = sys->get_output_port(port_index);
@@ -1409,7 +1419,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
         OutputPortIndex(this->get_num_output_ports()),
         this->assign_next_dependency_ticket(),
         &source_output_port,
-        GetSystemIndexOrAbort(&source_output_port.get_system()));
+        GetSystemIndexOrAbort(&source_output_port.get_system()), name);
     this->AddOutputPort(std::move(diagram_port));
   }
 
