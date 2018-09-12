@@ -171,7 +171,7 @@ class TestMultibodyTree(unittest.TestCase):
         AddModelFromSdfFile(file_name, plant)
         plant.Finalize()
         context = plant.CreateDefaultContext()
-        tree = plant.tree()
+        tree = plant.model()
         world_frame = plant.world_frame()
         # TODO(eric.cousineau): Replace this with `GetFrameByName`.
         link1_frame = plant.GetBodyByName("Link1").body_frame()
@@ -191,6 +191,25 @@ class TestMultibodyTree(unittest.TestCase):
             p_BoFo_B=[0, 0, 0])
         self.assertTupleEqual(Jv_WL.shape, (6, plant.num_velocities()))
 
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+
+    def test_state_access(self):
+        file_name = FindResourceOrThrow(
+            "drake/examples/double_pendulum/models/double_pendulum.sdf")
+        plant = MultibodyPlant()
+        plant_model = AddModelFromSdfFile(file_name, plant)
+        plant.Finalize()
+
+        context = plant.CreateDefaultContext()
+        tree = plant.model()
+        X_WB = Isometry3.Identity()
+        tree.SetFreeBodyPoseOrThrow(
+            body=plant.GetBodyByName("base", plant_model),
+            X_WB=X_WB, context=context)
+
+>>>>>>> 82949064e8e2335149f60bad7d47b74d39549608
     def test_multibody_state_access(self):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
@@ -218,6 +237,20 @@ class TestMultibodyTree(unittest.TestCase):
         # Verify we did modify the state stored in context.
         x = tree.get_multibody_state_vector(context)
         self.assertTrue(np.allclose(x, x0))
+
+    def test_set_free_body_pose(self):
+        file_name = FindResourceOrThrow(
+            "drake/examples/double_pendulum/models/double_pendulum.sdf")
+        plant = MultibodyPlant()
+        plant_model = AddModelFromSdfFile(file_name, plant)
+        plant.Finalize()
+ 
+        context = plant.CreateDefaultContext()
+        tree = plant.model()
+        X_WB = Isometry3.Identity()
+        tree.SetFreeBodyPoseOrThrow(
+            body=plant.GetBodyByName("base", plant_model),
+            X_WB=X_WB, context=context)
 
     def test_multibody_add_joint(self):
         """

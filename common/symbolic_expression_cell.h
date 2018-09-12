@@ -17,7 +17,6 @@
 #include <memory>
 #include <ostream>
 #include <string>
-#include <vector>
 
 #include <Eigen/Core>
 
@@ -790,11 +789,10 @@ class ExpressionIfThenElse : public ExpressionCell {
 /** Symbolic expression representing an uninterpreted function. */
 class ExpressionUninterpretedFunction : public ExpressionCell {
  public:
-  /** Constructs an uninterpreted-function expression from @p name and @p
-   * arguments.
+  /** Constructs an uninterpreted-function expression from @p name and @p vars.
    */
-  ExpressionUninterpretedFunction(std::string name,
-                                  std::vector<Expression> arguments);
+  ExpressionUninterpretedFunction(const std::string& name,
+                                  const Variables& vars);
   void HashAppendDetail(DelegatingHasher*) const override;
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
@@ -809,12 +807,9 @@ class ExpressionUninterpretedFunction : public ExpressionCell {
   /** Returns the name of this expression. */
   const std::string& get_name() const { return name_; }
 
-  /** Returns the arguments of this expression. */
-  const std::vector<Expression>& get_arguments() const { return arguments_; }
-
  private:
   const std::string name_;
-  const std::vector<Expression> arguments_;
+  const Variables variables_;
 };
 
 /** Checks if @p c is a constant expression. */

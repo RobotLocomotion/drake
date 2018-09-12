@@ -19,7 +19,7 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
     : systems::LeafSystem<T>() {
   DRAKE_DEMAND(plant.is_finalized());
   const int body_count = plant.num_bodies();
-  const MultibodyTree<T>& model = plant.tree();
+  const MultibodyTree<T>& model = plant.model();
 
   body_names_.reserve(body_count);
   using std::to_string;

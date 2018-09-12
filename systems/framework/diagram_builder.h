@@ -6,7 +6,6 @@
 #include <set>
 #include <sstream>
 #include <stdexcept>
-#include <string>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -158,24 +157,14 @@ class DiagramBuilder {
   }
 
   /// Declares that the given @p input port of a constituent system is an input
-  /// to the entire Diagram.  @p name is an optional name for the input port;
-  /// if it is unspecified or empty, then a default name will be provided.
+  /// to the entire Diagram.
   /// @return The index of the exported input port of the entire diagram.
-  InputPortIndex ExportInput(const InputPort<T>& input,
-                             const std::string& name = "") {
+  InputPortIndex ExportInput(const InputPort<T>& input) {
     InputPortLocator id{input.get_system(), input.get_index()};
     ThrowIfInputAlreadyWired(id);
     ThrowIfSystemNotRegistered(input.get_system());
     InputPortIndex return_id(input_port_ids_.size());
     input_port_ids_.push_back(id);
-
-    // The requirement that subsystem names are unique guarantees uniqueness
-    // of the port names.
-    const std::string port_name =
-        name.empty() ? input.get_system()->get_name() + ":" + input.get_name()
-                     : name;
-
-    input_port_names_.push_back(port_name);
     diagram_input_set_.insert(id);
     return return_id;
   }
@@ -367,7 +356,6 @@ class DiagramBuilder {
 
     auto blueprint = std::make_unique<typename Diagram<T>::Blueprint>();
     blueprint->input_port_ids = input_port_ids_;
-    blueprint->input_port_names = input_port_names_;
     blueprint->output_port_ids = output_port_ids_;
     blueprint->connection_map = connection_map_;
     blueprint->systems = std::move(registered_systems_);
@@ -377,7 +365,6 @@ class DiagramBuilder {
 
   // The ordered inputs and outputs of the Diagram to be built.
   std::vector<InputPortLocator> input_port_ids_;
-  std::vector<std::string> input_port_names_;
   std::vector<OutputPortLocator> output_port_ids_;
 
   // For fast membership queries: has this input port already been declared?

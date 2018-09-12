@@ -806,13 +806,11 @@ TEST_F(SymbolicExpressionTest, LessIfThenElse) {
 }
 
 TEST_F(SymbolicExpressionTest, LessUninterpretedFunction) {
-  const Expression uf1{uninterpreted_function("name1", {x_, y_ + z_})};
-  const Expression uf2{uninterpreted_function("name1", {x_, y_ * z_})};
-  const Expression uf3{uninterpreted_function("name1", {x_, y_ * z_, 3.0})};
-  const Expression uf4{uninterpreted_function("name2", {})};
-  const Expression uf5{uninterpreted_function("name2", {0.0, -1.0})};
-  const Expression uf6{uninterpreted_function("name2", {1.0, 0.0})};
-  CheckOrdering({uf1, uf2, uf3, uf4, uf5, uf6});
+  const Expression uf1_1{uninterpreted_function("uf1", {var_x_, var_y_})};
+  const Expression uf1_2{uninterpreted_function("uf1", {var_x_, var_z_})};
+  const Expression uf2_1{uninterpreted_function("uf2", {var_x_, var_z_})};
+  const Expression uf2_2{uninterpreted_function("uf2", {var_z_})};
+  CheckOrdering({uf1_1, uf1_2, uf2_1, uf2_2});
 }
 
 TEST_F(SymbolicExpressionTest, Variable) {
@@ -1797,12 +1795,10 @@ TEST_F(SymbolicExpressionTest, Cond2) {
   EXPECT_EQ(e.Evaluate({{var_x_, 1}}), 0.0);
 }
 
-TEST_F(SymbolicExpressionTest,
-       UninterpretedFunction_GetVariables_GetName_GetArguments) {
+TEST_F(SymbolicExpressionTest, UninterpretedFunction_GetVariables_GetName) {
   const Expression uf1{uninterpreted_function("uf1", {})};
   EXPECT_TRUE(uf1.GetVariables().empty());
   EXPECT_EQ(get_uninterpreted_function_name(uf1), "uf1");
-  EXPECT_TRUE(get_uninterpreted_function_arguments(uf1).empty());
 
   const Expression uf2{uninterpreted_function("uf2", {var_x_, var_y_})};
   EXPECT_EQ(get_uninterpreted_function_name(uf2), "uf2");
@@ -1810,14 +1806,6 @@ TEST_F(SymbolicExpressionTest,
   EXPECT_EQ(vars_in_uf2.size(), 2);
   EXPECT_TRUE(vars_in_uf2.include(var_x_));
   EXPECT_TRUE(vars_in_uf2.include(var_y_));
-
-  const vector<Expression> arguments{sin(x_), cos(y_)};
-  const Expression uf3{uninterpreted_function("uf3", arguments)};
-  const vector<Expression>& the_arguments{
-      get_uninterpreted_function_arguments(uf3)};
-  EXPECT_EQ(arguments.size(), the_arguments.size());
-  EXPECT_PRED2(ExprEqual, arguments[0], the_arguments[0]);
-  EXPECT_PRED2(ExprEqual, arguments[1], the_arguments[1]);
 }
 
 TEST_F(SymbolicExpressionTest, UninterpretedFunction_Evaluate) {
@@ -1825,21 +1813,6 @@ TEST_F(SymbolicExpressionTest, UninterpretedFunction_Evaluate) {
   const Expression uf2{uninterpreted_function("uf2", {var_x_, var_y_})};
   EXPECT_THROW(uf1.Evaluate(), std::runtime_error);
   EXPECT_THROW(uf2.Evaluate(), std::runtime_error);
-}
-
-TEST_F(SymbolicExpressionTest, UninterpretedFunction_Equal) {
-  const Expression uf1{uninterpreted_function("name1", {x_, y_ + z_})};
-  const Expression uf2{uninterpreted_function("name1", {x_, y_ + z_})};
-  EXPECT_TRUE(uf1.EqualTo(uf2));
-
-  const Expression uf3{uninterpreted_function("name2", {x_, y_ + z_})};
-  EXPECT_FALSE(uf1.EqualTo(uf3));
-  const Expression uf4{uninterpreted_function("name1", {y_, y_ + z_})};
-  EXPECT_FALSE(uf1.EqualTo(uf4));
-  const Expression uf5{uninterpreted_function("name1", {x_, z_})};
-  EXPECT_FALSE(uf1.EqualTo(uf5));
-  const Expression uf6{uninterpreted_function("name1", {x_, y_ + z_, 3.0})};
-  EXPECT_FALSE(uf1.EqualTo(uf6));
 }
 
 TEST_F(SymbolicExpressionTest, GetVariables) {
@@ -1887,7 +1860,7 @@ TEST_F(SymbolicExpressionTest, ToString) {
             "(3.1415926535897931 * x * pow(y, 2.7182818284590451))");
   EXPECT_EQ(e4.to_string(),
             "(2.7182818284590451 + x + 3.1415926535897931 * y)");
-  EXPECT_EQ(e_uf_.to_string(), "uf(x, y)");
+  EXPECT_EQ(e_uf_.to_string(), "uf({x, y})");
 }
 
 TEST_F(SymbolicExpressionTest, EvaluatePartial) {

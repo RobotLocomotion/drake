@@ -1201,10 +1201,6 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       const InputPortIndex port = id.second;
       blueprint->input_port_ids.emplace_back(new_system, port);
     }
-    for (InputPortIndex i{0}; i < this->get_num_input_ports(); i++) {
-      blueprint->input_port_names.emplace_back(
-          this->get_input_port(i).get_name());
-    }
     for (const OutputPortLocator& id : output_port_ids_) {
       const System<NewType>* new_system = old_to_new_map[id.first];
       const OutputPortIndex port = id.second;
@@ -1288,9 +1284,6 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   struct Blueprint {
     // The ordered subsystem ports that are inputs to the entire diagram.
     std::vector<InputPortLocator> input_port_ids;
-    // The names should be the same length and ordering as the ids.
-    std::vector<std::string> input_port_names;
-
     // The ordered subsystem ports that are outputs of the entire diagram.
     std::vector<OutputPortLocator> output_port_ids;
     // A map from the input ports of constituent systems to the output ports
@@ -1352,12 +1345,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     DRAKE_THROW_UNLESS(NamesAreUniqueAndNonEmpty());
 
     // Add the inputs to the Diagram topology, and check their invariants.
-    DRAKE_DEMAND(input_port_ids_.size() ==
-                 blueprint->input_port_names.size());
-    std::vector<std::string>::iterator name_iter =
-        blueprint->input_port_names.begin();
     for (const InputPortLocator& id : input_port_ids_) {
-      ExportInput(id, *name_iter++);
+      ExportInput(id);
     }
     for (const OutputPortLocator& id : output_port_ids_) {
       ExportOutput(id);
@@ -1384,7 +1373,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   }
 
   // Exposes the given port as an input of the Diagram.
-  void ExportInput(const InputPortLocator& port, const std::string& name) {
+  void ExportInput(const InputPortLocator& port) {
     const System<T>* const sys = port.first;
     const int port_index = port.second;
     // Fail quickly if this system is not part of the diagram.
@@ -1393,7 +1382,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     // Add this port to our externally visible topology.
     const auto& subsystem_input_port = sys->get_input_port(port_index);
     this->DeclareInputPort(subsystem_input_port.get_data_type(),
-                           subsystem_input_port.size(), name,
+                           subsystem_input_port.size(),
                            subsystem_input_port.get_random_type());
   }
 

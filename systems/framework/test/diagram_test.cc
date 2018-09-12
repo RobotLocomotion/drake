@@ -904,12 +904,6 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
     }
   }
 
-  // Make sure that the input port names survive type conversion.
-  for (InputPortIndex i{0}; i < diagram_->get_num_input_ports(); i++) {
-    EXPECT_EQ(diagram_->get_input_port(i).get_name(),
-              ad_diagram->get_input_port(i).get_name());
-  }
-
   // When the Diagram contains a System that does not support AutoDiffXd,
   // we cannot transmogrify the Diagram to AutoDiffXd.
   const bool use_abstract = false;
@@ -1441,9 +1435,9 @@ class RandomInputSystem : public LeafSystem<double> {
  public:
   RandomInputSystem() {
     this->DeclareInputPort(kVectorValued, 1);
-    this->DeclareInputPort(kVectorValued, 1, "uniform",
+    this->DeclareInputPort(kVectorValued, 1,
                            RandomDistribution::kUniform);
-    this->DeclareInputPort(kVectorValued, 1, "gaussian",
+    this->DeclareInputPort(kVectorValued, 1,
                            RandomDistribution::kGaussian);
   }
 };
