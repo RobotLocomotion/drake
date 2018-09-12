@@ -237,13 +237,19 @@ void init_module(py::module m) {
             py::arg("context"), py::arg("frame_B"),
             py::arg("p_BoFo_B") = Vector3<T>::Zero().eval())
         .def("CalcInverseDynamics",
-             overload_cast_explicit<VectorX<T>,
-                                    const Context<T>&,
-                                    const VectorX<T>&,
-                                    const MultibodyForces<T>&>(
-                 &Class::CalcInverseDynamics),
-             py::arg("context"), py::arg("known_vdot"),
-             py::arg("external_forces"));
+            overload_cast_explicit<VectorX<T>,
+                                  const Context<T>&,
+                                  const VectorX<T>&,
+                                  const MultibodyForces<T>&>(
+               &Class::CalcInverseDynamics),
+            py::arg("context"), py::arg("known_vdot"),
+            py::arg("external_forces"))
+        .def("get_positions_from_array",
+            &Class::get_positions_from_array,
+            py::arg("model_instance"), py::arg("q_array"))
+        .def("get_velocities_from_array",
+            &Class::get_velocities_from_array,
+            py::arg("model_instance"), py::arg("v_array"));
   }
 }
 
