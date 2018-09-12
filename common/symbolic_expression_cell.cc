@@ -194,8 +194,7 @@ Expression ExpandPow(const Expression& base, const Expression& exponent) {
 }  // anonymous namespace
 
 ExpressionCell::ExpressionCell(const ExpressionKind k, const bool is_poly)
-    : kind_{k},
-      is_polynomial_{is_poly} {}
+    : kind_{k}, is_polynomial_{is_poly} {}
 
 UnaryExpressionCell::UnaryExpressionCell(const ExpressionKind k,
                                          const Expression& e,
@@ -235,9 +234,7 @@ BinaryExpressionCell::BinaryExpressionCell(const ExpressionKind k,
                                            const Expression& e1,
                                            const Expression& e2,
                                            const bool is_poly)
-    : ExpressionCell{k, is_poly},
-      e1_{e1},
-      e2_{e2} {}
+    : ExpressionCell{k, is_poly}, e1_{e1}, e2_{e2} {}
 
 void BinaryExpressionCell::HashAppendDetail(DelegatingHasher* hasher) const {
   DRAKE_ASSERT(hasher);
@@ -280,8 +277,7 @@ double BinaryExpressionCell::Evaluate(const Environment& env) const {
 }
 
 ExpressionVar::ExpressionVar(const Variable& v)
-    : ExpressionCell{ExpressionKind::Var, true},
-      var_{v} {
+    : ExpressionCell{ExpressionKind::Var, true}, var_{v} {
   // Dummy symbolic variable (ID = 0) should not be used in constructing
   // symbolic expressions.
   DRAKE_DEMAND(!var_.is_dummy());
@@ -393,8 +389,7 @@ Expression ExpressionConstant::Differentiate(const Variable&) const {
 
 ostream& ExpressionConstant::Display(ostream& os) const { return os << v_; }
 
-ExpressionNaN::ExpressionNaN()
-    : ExpressionCell{ExpressionKind::NaN, false} {}
+ExpressionNaN::ExpressionNaN() : ExpressionCell{ExpressionKind::NaN, false} {}
 
 void ExpressionNaN::HashAppendDetail(DelegatingHasher*) const {}
 
@@ -1794,8 +1789,7 @@ double ExpressionFloor::DoEvaluate(const double v) const {
 ExpressionIfThenElse::ExpressionIfThenElse(const Formula& f_cond,
                                            const Expression& e_then,
                                            const Expression& e_else)
-    : ExpressionCell{ExpressionKind::IfThenElse,
-                     false},
+    : ExpressionCell{ExpressionKind::IfThenElse, false},
       f_cond_{f_cond},
       e_then_{e_then},
       e_else_{e_else} {}
