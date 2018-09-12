@@ -219,7 +219,6 @@ class TestMultibodyTree(unittest.TestCase):
         x = tree.get_multibody_state_vector(context)
         self.assertTrue(np.allclose(x, x0))
 
-
     def test_set_free_body_pose(self):
         file_name = FindResourceOrThrow(
             "drake/examples/double_pendulum/models/double_pendulum.sdf")
@@ -233,7 +232,6 @@ class TestMultibodyTree(unittest.TestCase):
         R_WB = np.array([[0., 1., 0.],
                          [0., 0., 1.],
                          [1., 0., 0.]])
-
         X_WB_desired.set_rotation(R_WB)
         tree.SetFreeBodyPoseOrThrow(
             body=plant.GetBodyByName("base", plant_model),
