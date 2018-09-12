@@ -119,15 +119,17 @@ InverseDynamicsController<T>::InverseDynamicsController(
 
 template <typename T>
 InverseDynamicsController<T>::InverseDynamicsController(
-    std::unique_ptr<MultibodyPlant<T>> robot,
+    const MultibodyPlant<T>& plant,
     const VectorX<double>& kp, const VectorX<double>& ki,
     const VectorX<double>& kd, bool has_reference_acceleration)
-    : multibody_plant_for_control_(std::move(robot)),
+    : multibody_plant_for_control_(&plant),
       has_reference_acceleration_(has_reference_acceleration) {
+  DRAKE_DEMAND(plant.is_finalized());
+
   DiagramBuilder<T> builder;
   auto inverse_dynamics =
     builder.template AddSystem<InverseDynamics<T>>(
-      multibody_plant_for_control_.get(),
+      multibody_plant_for_control_,
       false /* pure gravity compensation */);
 
   const int num_positions = multibody_plant_for_control_->num_positions();
