@@ -46,21 +46,6 @@ const char kSdfPath[] =
     "drake/manipulation/models/iiwa_description/sdf/"
         "iiwa14_no_collision.sdf";
 
-// Helper factory to make a model for the Kuka arm. If no SceneGraph is
-// provided no geometry is registered in the model.
-std::unique_ptr<MultibodyPlant<double>> MakeKukaPlant(
-    SceneGraph<double>* scene_graph = nullptr) {
-  auto plant = std::make_unique<MultibodyPlant<double>>();
-  AddModelFromSdfFile(FindResourceOrThrow(kSdfPath), plant.get(), scene_graph);
-
-  // Add gravity to the model.
-  plant->AddForceElement<UniformGravityFieldElement>(
-      -9.81 * Vector3<double>::UnitZ());
-
-  // Now the model is complete.
-  plant->Finalize(scene_graph);
-}
-
 int DoMain() {
   systems::DiagramBuilder<double> builder;
 
@@ -68,8 +53,14 @@ int DoMain() {
   scene_graph.set_name("scene_graph");
 
   // Make and add the kuka robot model.
-  MultibodyPlant<double>& kuka_plant =
-      *builder.AddSystem(MakeKukaPlant(&scene_graph));
+  MultibodyPlant<double>& kuka_plant = *builder.AddSystem<MultibodyPlant>();
+  AddModelFromSdfFile(FindResourceOrThrow(kSdfPath), &kuka_plant, &scene_graph);
+  kuka_plant.WeldFrames(kuka_plant.world_frame(),
+                        kuka_plant.GetFrameByName("iiwa_link_0"));
+
+  // Add gravity to the model.
+  kuka_plant.AddForceElement<UniformGravityFieldElement>(
+      -9.81 * Vector3<double>::UnitZ());
 
   DRAKE_THROW_UNLESS(kuka_plant.num_positions() == 7);
   // Sanity check on the availability of the optional source id before using it.

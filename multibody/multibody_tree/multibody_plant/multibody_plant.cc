@@ -231,6 +231,14 @@ MultibodyPlant<T>::MultibodyPlant(double time_step) :
   collision_geometries_.emplace_back();
 }
 
+template<typename T>
+const WeldJoint<T>& MultibodyPlant<T>::WeldFrames(
+    const Frame<T>& A, const Frame<T>& B, const Isometry3<double>& X_AB) {
+  const std::string joint_name = A.name() + "_welds_to_" + B.name();
+  return tree_->AddJoint(
+      std::make_unique<WeldJoint<T>>(joint_name, A, B, X_AB));
+}
+
 template <typename T>
 geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
     SceneGraph<T>* scene_graph) {
@@ -624,11 +632,23 @@ MultibodyPlant<T>::DoMakeLeafContext() const {
 }
 
 template<typename T>
-MatrixX<T> MultibodyPlant<T>::CalcNormalSeparationVelocitiesJacobian(
-    const Context<T>& context,
-    const std::vector<PenetrationAsPointPair<T>>& point_pairs_set) const {
+void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
+    const systems::Context<T>& context,
+    const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs_set,
+    MatrixX<T>* Jn_ptr, MatrixX<T>* Jt_ptr,
+    std::vector<Matrix3<T>>* R_WC_set) const {
+  DRAKE_DEMAND(Jn_ptr != nullptr);
+  DRAKE_DEMAND(Jt_ptr != nullptr);
+
   const int num_contacts = point_pairs_set.size();
-  MatrixX<T> N(num_contacts, num_velocities());
+
+  // Jn is defined such that vn = Jn * v, with vn of size nc.
+  auto& Jn = *Jn_ptr;
+  Jn.resize(num_contacts, num_velocities());
+
+  // Jt is defined such that vt = Jt * v, with vt of size 2nc.
+  auto& Jt = *Jt_ptr;
+  Jt.resize(2 * num_contacts, num_velocities());
 
   for (int icontact = 0; icontact < num_contacts; ++icontact) {
     const auto& point_pair = point_pairs_set[icontact];
@@ -645,6 +665,11 @@ MatrixX<T> MultibodyPlant<T>::CalcNormalSeparationVelocitiesJacobian(
     const Vector3<T>& nhat_BA_W = point_pair.nhat_BA_W;
     const Vector3<T>& p_WCa = point_pair.p_WCa;
     const Vector3<T>& p_WCb = point_pair.p_WCb;
+
+    // TODO(amcastro-tri): Consider using the midpoint between Ac and Bc for
+    // stability reasons. Besides that, there is no other reason to use the
+    // midpoint (or any other point between Ac and Bc for that matter) since,
+    // in the limit to rigid contact, Ac = Bc.
 
     // Geometric Jacobian for the velocity of the contact point C as moving with
     // body A, s.t.: v_WAc = Jv_WAc * v
@@ -659,6 +684,8 @@ MatrixX<T> MultibodyPlant<T>::CalcNormalSeparationVelocitiesJacobian(
     tree().CalcPointsGeometricJacobianExpressedInWorld(
         context, bodyB.body_frame(), p_WCb, &Jv_WBc);
 
+    // Computation of the normal separation velocities Jacobian Jn:
+    //
     // The velocity of Bc relative to Ac is
     //   v_AcBc_W = v_WBc - v_WAc.
     // From where the separation velocity is computed as
@@ -666,43 +693,10 @@ MatrixX<T> MultibodyPlant<T>::CalcNormalSeparationVelocitiesJacobian(
     // where the negative sign stems from the sign convention for vn and xdot.
     // This can be written in terms of the Jacobians as
     //   vn = -nhat_BA_Wᵀ⋅(Jv_WBc - Jv_WAc)⋅v
+    Jn.row(icontact) = nhat_BA_W.transpose() * (Jv_WAc - Jv_WBc);
 
-    N.row(icontact) = nhat_BA_W.transpose() * (Jv_WAc - Jv_WBc);
-  }
-
-  return N;
-}
-
-template<typename T>
-MatrixX<T> MultibodyPlant<T>::CalcTangentVelocitiesJacobian(
-    const Context<T>& context,
-    const std::vector<PenetrationAsPointPair<T>>& point_pairs_set,
-    std::vector<Matrix3<T>>* R_WC_set) const {
-  const int num_contacts = point_pairs_set.size();
-  // D is defined such that vt = D * v, with vt of size 2nc.
-  MatrixX<T> D(2 * num_contacts, num_velocities());
-
-  DRAKE_ASSERT(R_WC_set);
-  R_WC_set->clear();
-  if (R_WC_set != nullptr) R_WC_set->reserve(point_pairs_set.size());
-  for (int icontact = 0; icontact < num_contacts; ++icontact) {
-    const auto& point_pair = point_pairs_set[icontact];
-
-    const GeometryId geometryA_id = point_pair.id_A;
-    const GeometryId geometryB_id = point_pair.id_B;
-
-    BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
-    const Body<T>& bodyA = tree().get_body(bodyA_index);
-    BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
-    const Body<T>& bodyB = tree().get_body(bodyB_index);
-
-    // Penetration depth, > 0 if bodies interpenetrate.
-    const T& x = point_pair.depth;
-    DRAKE_ASSERT(x >= 0);
-    const Vector3<T>& nhat_BA_W = point_pair.nhat_BA_W;
-    const Vector3<T>& p_WCa = point_pair.p_WCa;
-    const Vector3<T>& p_WCb = point_pair.p_WCb;
-
+    // Computation of the tangential velocities Jacobian Jt:
+    //
     // Compute the orientation of a contact frame C at the contact point such
     // that the z-axis Cz equals to nhat_BA_W. The tangent vectors are
     // arbitrary, with the only requirement being that they form a valid right
@@ -715,30 +709,15 @@ MatrixX<T> MultibodyPlant<T>::CalcTangentVelocitiesJacobian(
     const Vector3<T> that1_W = R_WC.col(0);  // that1 = Cx.
     const Vector3<T> that2_W = R_WC.col(1);  // that2 = Cy.
 
-    // TODO(amcastro-tri): Consider using the midpoint between Ac and Bc for
-    // stability reasons. Besides that, there is no other reason to use the
-    // midpoint (or any other point between Ac and Bc for that matter) since,
-    // in the limit to rigid contact, Ac = Bc.
-
-    MatrixX<T> Jv_WAc(3, this->num_velocities());  // s.t.: v_WAc = Jv_WAc * v.
-    tree().CalcPointsGeometricJacobianExpressedInWorld(
-        context, bodyA.body_frame(), p_WCa, &Jv_WAc);
-
-    MatrixX<T> Jv_WBc(3, this->num_velocities());  // s.t.: v_WBc = Jv_WBc * v.
-    tree().CalcPointsGeometricJacobianExpressedInWorld(
-        context, bodyB.body_frame(), p_WCb, &Jv_WBc);
-
     // The velocity of Bc relative to Ac is
     //   v_AcBc_W = v_WBc - v_WAc.
     // The first two components of this velocity in C corresponds to the
     // tangential velocities in a plane normal to nhat_BA.
     //   vx_AcBc_C = that1⋅v_AcBc = that1ᵀ⋅(Jv_WBc - Jv_WAc)⋅v
     //   vy_AcBc_C = that2⋅v_AcBc = that2ᵀ⋅(Jv_WBc - Jv_WAc)⋅v
-
-    D.row(2 * icontact)     = that1_W.transpose() * (Jv_WBc - Jv_WAc);
-    D.row(2 * icontact + 1) = that2_W.transpose() * (Jv_WBc - Jv_WAc);
+    Jt.row(2 * icontact)     = that1_W.transpose() * (Jv_WBc - Jv_WAc);
+    Jt.row(2 * icontact + 1) = that2_W.transpose() * (Jv_WBc - Jv_WAc);
   }
-  return D;
 }
 
 template<typename T>
@@ -1305,8 +1284,8 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     // TODO(amcastro-tri): when it becomes a bottleneck, update the contact
     // solver to use operators instead so that we don't have to form these
     // Jacobian matrices explicitly (an O(num_contacts * nv) operation).
-    Jn = CalcNormalSeparationVelocitiesJacobian(context0, point_pairs0);
-    Jt = CalcTangentVelocitiesJacobian(context0, point_pairs0, &R_WC_set);
+    CalcNormalAndTangentContactJacobians(
+        context0, point_pairs0, &Jn, &Jt, &R_WC_set);
   }
 
   // Get friction coefficient into a single vector. Dynamic friction is ignored

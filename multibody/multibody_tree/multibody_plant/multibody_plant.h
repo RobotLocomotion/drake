@@ -14,6 +14,7 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/implicit_stribeck/implicit_stribeck_solver.h"
+#include "drake/multibody/multibody_tree/joints/weld_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
 #include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
@@ -555,6 +556,15 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   ModelInstanceIndex AddModelInstance(const std::string& name) {
     return tree_->AddModelInstance(name);
   }
+
+  /// Welds frames A and B with relative pose `X_AB`. That is, the pose of
+  /// frame B in frame A is fixed, with value `X_AB`.
+  /// The call to this method creates and adds a new WeldJoint to the model.
+  /// The new WeldJoint is named as: A.name() + "_welds_to_" + B.name().
+  /// @returns a constant reference to the WeldJoint welding frames A and B.
+  const WeldJoint<T>& WeldFrames(
+      const Frame<T>& A, const Frame<T>& B,
+      const Isometry3<double>& X_AB = Isometry3<double>::Identity());
   /// @}
 
   /// @name Querying for multibody elements by name
@@ -1570,8 +1580,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const systems::Context<T>& context, MultibodyForces<T>* forces) const;
 
   // Given a set of point pairs in `point_pairs_set`, this method computes the
-  // Jacobian N(q) such that:
-  //   vn = N(q) v
+  // normal velocities Jacobian Jn(q) and the tangential velocities Jacobian
+  // Jt(q).
+  //
+  // The normal velocities Jacobian Jn(q) is defined such that:
+  //   vn = Jn(q) v
   // where the i-th component of vn corresponds to the "separation velocity"
   // for the i-th point pair in the set. The i-th separation velocity is defined
   // positive for when the depth in the i-th point pair (
@@ -1579,16 +1592,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // the (positive) depth in PenetrationAsPointPair is defined so that it
   // corresponds to interpenetrating body geometries, a positive separation
   // velocity corresponds to bodies moving apart.
-  MatrixX<T> CalcNormalSeparationVelocitiesJacobian(
-      const systems::Context<T>& context,
-      const std::vector<geometry::PenetrationAsPointPair<T>>&
-      point_pairs_set) const;
-
-  // Given a set of nc point pairs in `point_pairs_set`, this method computes
-  // the tangential velocities Jacobian D(q) such that:
-  //   vt = D(q) v
-  // where v ∈ ℝⁿᵛ is the vector of generalized velocities, D(q) is a matrix of
-  // size 2⋅nc×nv and vt is a vector of size 2⋅nc.
+  //
+  // The tangential velocities Jacobian Jt(q) is defined such that:
+  //   vt = Jt(q) v
+  // where v ∈ ℝⁿᵛ is the vector of generalized velocities, Jt(q) is a matrix
+  // of size 2⋅nc×nv and vt is a vector of size 2⋅nc.
   // This method defines a contact frame C with orientation R_WC in the world
   // frame W such that Cz_W = nhat_BA_W, the normal direction in the point
   // pair (PenetrationAsPointPair::nhat_BA_W).
@@ -1604,9 +1612,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // If the optional output argument R_WC_set is provided with a valid non
   // nullptr vector, on output the i-th entry of R_WC_set will contain the
   // orientation R_WC of the i-th point pair in the set.
-  MatrixX<T> CalcTangentVelocitiesJacobian(
+  void CalcNormalAndTangentContactJacobians(
       const systems::Context<T>& context,
       const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs_set,
+      MatrixX<T>* Jn, MatrixX<T>* Jt,
       std::vector<Matrix3<T>>* R_WC_set = nullptr) const;
 
   // The entire multibody model.

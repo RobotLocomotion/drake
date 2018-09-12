@@ -11,14 +11,15 @@
 
 using std::function;
 using std::pair;
-using std::vector;
 using std::runtime_error;
+using std::vector;
 
 namespace drake {
 namespace symbolic {
 namespace {
 
 using test::ExprEqual;
+using test::ExprNotEqual;
 
 class SymbolicExpansionTest : public ::testing::Test {
  protected:
@@ -230,12 +231,16 @@ TEST_F(SymbolicExpansionTest, IfThenElse) {
                runtime_error);
 }
 
-// Expand() should not change uninterpreted functions.
 TEST_F(SymbolicExpansionTest, UninterpretedFunction) {
   const Expression uf1{uninterpreted_function("uf1", {})};
-  const Expression uf2{uninterpreted_function("uf2", {var_x_, var_y_})};
   EXPECT_PRED2(ExprEqual, uf1, uf1.Expand());
-  EXPECT_PRED2(ExprEqual, uf2, uf2.Expand());
+  const Expression e1{3 * (x_ + y_)};
+  const Expression e2{pow(x_ + y_, 2)};
+  const Expression uf2{uninterpreted_function("uf2", {e1, e2})};
+  EXPECT_PRED2(ExprNotEqual, uf2, uf2.Expand());
+  const Expression uf2_expand_expected{
+      uninterpreted_function("uf2", {e1.Expand(), e2.Expand()})};
+  EXPECT_PRED2(ExprEqual, uf2.Expand(), uf2_expand_expected);
 }
 
 TEST_F(SymbolicExpansionTest, DivideByConstant) {

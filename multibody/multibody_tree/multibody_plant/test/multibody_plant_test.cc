@@ -86,17 +86,13 @@ class MultibodyPlantTester {
     return plant.geometry_id_to_body_index_.at(id);
   }
 
-  static MatrixX<double> CalcNormalSeparationVelocitiesJacobian(
-      const MultibodyPlant<double>& plant, const Context<double>& context,
-      const std::vector<PenetrationAsPointPair<double>>& point_pairs) {
-    return plant.CalcNormalSeparationVelocitiesJacobian(context, point_pairs);
-  }
-
-  static MatrixX<double> CalcTangentVelocitiesJacobian(
+  static void CalcNormalAndTangentContactJacobians(
       const MultibodyPlant<double>& plant, const Context<double>& context,
       const std::vector<PenetrationAsPointPair<double>>& point_pairs,
+      MatrixX<double>* Jn, MatrixX<double>* Jt,
       std::vector<Matrix3<double>>* R_WC_set) {
-    return plant.CalcTangentVelocitiesJacobian(context, point_pairs, R_WC_set);
+    plant.CalcNormalAndTangentContactJacobians(
+        context, point_pairs, Jn, Jt, R_WC_set);
   }
 };
 
@@ -1571,19 +1567,27 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
   const double penetration_{0.01};
 };
 
-TEST_F(MultibodyPlantContactJacobianTests, NormalJacobian) {
+TEST_F(MultibodyPlantContactJacobianTests, NormalAndTangentJacobian) {
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 
-  // Compute separation velocities Jacobian.
-  const MatrixX<double> N =
-      MultibodyPlantTester::CalcNormalSeparationVelocitiesJacobian(
-          plant_, *context_, penetrations_);
+  // Store the orientation of the contact frames so that we can use them later
+  // to compute the same Jacobian using autodifferentiation.
+  std::vector<Matrix3<double>> R_WC_set;
 
-  // Assert N has the right sizes.
+  // Compute separation velocities Jacobian.
+  MatrixX<double> N, D;
+  MultibodyPlantTester::CalcNormalAndTangentContactJacobians(
+          plant_, *context_, penetrations_, &N, &D, &R_WC_set);
+
+  // Assert Jt has the right sizes.
   const int nv = plant_.num_velocities();
   const int nc = penetrations_.size();
+
   ASSERT_EQ(N.rows(), nc);
   ASSERT_EQ(N.cols(), nv);
+
+  ASSERT_EQ(D.rows(), 2 * nc);
+  ASSERT_EQ(D.cols(), nv);
 
   // Scalar convert the plant and its context_.
   unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff;
@@ -1600,33 +1604,9 @@ TEST_F(MultibodyPlantContactJacobianTests, NormalJacobian) {
   // Verify the result.
   EXPECT_TRUE(CompareMatrices(
       N, vn_derivs, kTolerance, MatrixCompareType::relative));
-}
-
-TEST_F(MultibodyPlantContactJacobianTests, TangentJacobian) {
-  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
-
-  // Store the orientation of the contact frames so that we can use them later
-  // to compute the same Jacobian using autodifferentiation.
-  std::vector<Matrix3<double>> R_WC_set;
-
-  // Compute separation velocities Jacobian.
-  const MatrixX<double> D =
-      MultibodyPlantTester::CalcTangentVelocitiesJacobian(
-          plant_, *context_, penetrations_, &R_WC_set);
-
-  // Assert D has the right sizes.
-  const int nv = plant_.num_velocities();
-  const int nc = penetrations_.size();
-  ASSERT_EQ(D.rows(), 2 * nc);
-  ASSERT_EQ(D.cols(), nv);
-
-  // Scalar convert the plant and its context_.
-  unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff;
-  unique_ptr<Context<AutoDiffXd>> context_autodiff;
-  tie(plant_autodiff, context_autodiff) = ConvertPlantAndContextToAutoDiffXd();
 
   // Automatically differentiate vt (with respect to v) to get the tangent
-  // velocities Jacobian D.
+  // velocities Jacobian Jt.
   VectorX<AutoDiffXd> vt_autodiff = CalcTangentVelocities(
       *plant_autodiff, *context_autodiff, penetrations_, R_WC_set);
   const MatrixX<double> vt_derivs =
@@ -1649,28 +1629,41 @@ GTEST_TEST(KukaModel, JointIndexes) {
 
   MultibodyPlant<double> plant;
   AddModelFromSdfFile(FindResourceOrThrow(kSdfPath), &plant);
+  const auto& base_link_frame = plant.GetFrameByName("iiwa_link_0");
+  const Joint<double>& weld = plant.WeldFrames(
+      plant.world_frame(), base_link_frame);
   plant.Finalize();
 
   EXPECT_EQ(plant.num_positions(), 7);
   EXPECT_EQ(plant.num_velocities(), 7);
 
-  // We expect the first joint to be the one WeldJoint fixing the model to the
-  // world. We verify this assumption.
-  const Joint<double>& weld = plant.tree().get_joint(JointIndex(0));
-  ASSERT_EQ(weld.name(), "weld_base_to_world");
+  // We expect the last joint to be the one WeldJoint fixing the model to the
+  // world, since we added it last above with the call to WeldFrames().
+  // We verify this assumption.
+  ASSERT_EQ(weld.index(), plant.num_joints() - 1);
+
+  // Verify we can get the weld joint by name.
+  // As documented, a WeldJoint added with WeldFrames() will be named as:
+  const std::string weld_name =
+      plant.world_frame().name() + "_welds_to_" + base_link_frame.name();
+  EXPECT_EQ(weld.name(), weld_name);
+  EXPECT_NO_THROW(plant.GetJointByName(weld_name));
+  EXPECT_EQ(plant.GetJointByName(weld_name).index(), weld.index());
+  EXPECT_EQ(&plant.GetJointByName(weld_name), &weld);
 
   EXPECT_EQ(weld.num_positions(), 0);
   EXPECT_EQ(weld.num_velocities(), 0);
 
   // MultibodyPlant orders the state x with the vector q of generalized
   // positions followed by the vector v of generalized velocities.
-  for (JointIndex joint_index(1); /* Skip "weld_base_to_world". */
-       joint_index < plant.num_joints(); ++joint_index) {
+  for (JointIndex joint_index(0);
+       joint_index < plant.num_joints() - 1 /* Skip "weld" joint. */;
+       ++joint_index) {
     const Joint<double>& joint = plant.tree().get_joint(joint_index);
     // Start index in the vector q of generalized positions.
-    const int expected_q_start = joint_index - 1;
+    const int expected_q_start = joint_index;
     // Start index in the vector v of generalized velocities.
-    const int expected_v_start = joint_index - 1;
+    const int expected_v_start = joint_index;
     const int expected_num_v = 1;
     const int expected_num_q = 1;
     EXPECT_EQ(joint.num_positions(), expected_num_q);
@@ -1717,15 +1710,18 @@ class KukaArmTest : public ::testing::TestWithParam<double> {
             "iiwa14_no_collision.sdf";
     plant_ = std::make_unique<MultibodyPlant<double>>(this->GetParam());
     AddModelFromSdfFile(FindResourceOrThrow(kSdfPath), plant_.get());
+    const Joint<double>& weld =
+        plant_->WeldFrames(plant_->world_frame(),
+                           plant_->GetFrameByName("iiwa_link_0"));
     plant_->Finalize();
 
     EXPECT_EQ(plant_->num_positions(), 7);
     EXPECT_EQ(plant_->num_velocities(), 7);
 
-    // We expect the first joint to be the one WeldJoint fixing the model to the
-    // world. We verify this assumption.
-    const Joint<double>& weld = plant_->tree().get_joint(JointIndex(0));
-    ASSERT_EQ(weld.name(), "weld_base_to_world");
+    // We expect the last joint to be the one WeldJoint fixing the model to the
+    // world, since we added it last above with the call to WeldFrames().
+    // We verify this assumption.
+    ASSERT_EQ(weld.index(), plant_->num_joints() - 1);
 
     context_ = plant_->CreateDefaultContext();
   }
@@ -1737,17 +1733,18 @@ class KukaArmTest : public ::testing::TestWithParam<double> {
   // MultibodyTree::get_multibody_state_vector() and its mutable counterpart.
   void SetState(const VectorX<double>& xc) {
     const int nq = plant_->num_positions();
-    for (JointIndex joint_index(1); /* Skip "weld_base_to_world". */
-         joint_index < plant_->num_joints(); ++joint_index) {
+    for (JointIndex joint_index(0);
+         joint_index < plant_->num_joints() - 1 /* Skip "weld" joint. */;
+         ++joint_index) {
       // We know all joints in our model, besides the first joint welding the
       // model to the world, are revolute joints.
       const auto& joint = plant_->GetJointByName<RevoluteJoint>(
-          "iiwa_joint_" + std::to_string(joint_index));
+          "iiwa_joint_" + std::to_string(joint_index + 1));
 
       // For this simple model we do know the order in which variables are
       // stored in the state vector.
-      const double angle = xc[joint_index-1];
-      const double angle_rate = xc[nq + joint_index - 1];
+      const double angle = xc[joint_index];
+      const double angle_rate = xc[nq + joint_index];
 
       // We simply set each entry in the state with the value of its index.
       joint.set_angle(context_.get(), angle);

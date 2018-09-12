@@ -199,56 +199,12 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
   return message;
 }
 
-// This System should be included in a diagram for the purpose of ensuring
-// that the one-time load geometry message gets sent to the visualizer upon
-// Simulator initialization. It will also serve to own the DrakeLcm object if
-// one isn't provided on construction.
-// TODO(sherm1) Move this functionality to LcmPublisher and remove this System
-//              (see issue #9397).
-class LcmInitSystem : public systems::LeafSystem<double> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmInitSystem)
-
-  LcmInitSystem(const SceneGraph<double>* scene_graph,
-                lcm::DrakeLcmInterface* lcm = nullptr)
-      : scene_graph_(*scene_graph), lcm_(lcm) {
-    DRAKE_DEMAND(scene_graph != nullptr);
-
-    // Create a DrakeLcm object if we don't already have one.
-    if (lcm_ == nullptr) {
-      owned_lcm_ = std::make_unique<lcm::DrakeLcm>();
-      lcm_ = owned_lcm_.get();
-    }
-
-    // Create an initialization event that sends the load message.
-    // TODO(sherm1) This is pulling geometry from the SceneGraph but should
-    // be changed to use the Context for the most current version of the
-    // geometry, once geometry is changeable at runtime. Also, subsequent
-    // geometry changes are likely to require a "geometry changed" message
-    // to be sent.
-    DeclareInitializationEvent(systems::PublishEvent<double>(
-        systems::Event<double>::TriggerType::kInitialization,
-        [this](const systems::Context<double>&,
-               const systems::PublishEvent<double>&) {
-          DispatchLoadMessage(this->scene_graph_, this->lcm_);
-        }));
-  }
-
-  // Obtain a reference to the DrakeLcm object, which may have been supplied
-  // on construction or may be internally owned.
-  lcm::DrakeLcmInterface& lcm() { return *lcm_; }
-
- private:
-  const SceneGraph<double>& scene_graph_;
-  lcm::DrakeLcmInterface* lcm_{nullptr};
-  std::unique_ptr<lcm::DrakeLcm> owned_lcm_;
-};
-
 }  // namespace internal
 
 // TODO(sherm1) Per Sean Curtis, the load message should take its geometry
 // from a Context rather than directly out of the SceneGraph. If geometry
-// has been added to the Context it won't be loaded here.
+// has been added to the Context it won't be loaded here. A runtime
+// geometry change will likely require a geometry-changed event.
 void DispatchLoadMessage(const SceneGraph<double>& scene_graph,
                          lcm::DrakeLcmInterface* lcm) {
   lcmt_viewer_load_robot message =
@@ -267,11 +223,6 @@ void ConnectDrakeVisualizer(systems::DiagramBuilder<double>* builder,
 
   DRAKE_DEMAND(builder != nullptr);
 
-  // This disembodied system serves to send out the visualizer's needed
-  // initialization message. Allocates a DrakeLcm if the supplied one is null.
-  internal::LcmInitSystem* lcm_system =
-      builder->AddSystem<internal::LcmInitSystem>(&scene_graph, lcm_optional);
-
   PoseBundleToDrawMessage* converter =
       builder->template AddSystem<PoseBundleToDrawMessage>();
 
@@ -279,9 +230,21 @@ void ConnectDrakeVisualizer(systems::DiagramBuilder<double>* builder,
       builder->template AddSystem<LcmPublisherSystem>(
           "DRAKE_VIEWER_DRAW",
           std::make_unique<Serializer<drake::lcmt_viewer_draw>>(),
-          &lcm_system->lcm());
+          lcm_optional);
   publisher->set_publish_period(1 / 60.0);
 
+  // The functor we create in publisher here holds a reference to scene_graph,
+  // which must therefore live as long as publisher does. We can count on that
+  // because scene_graph is required to be contained in builder (see method
+  // documentation), along with the converter and publisher we just added.
+  // Builder will transfer ownership of all of these objects to the Diagram it
+  // eventually builds.
+  publisher->AddInitializationMessage([&scene_graph](
+      const systems::Context<double>&, lcm::DrakeLcmInterface* lcm) {
+    DispatchLoadMessage(scene_graph, lcm);
+  });
+
+  // Note that this will fail if scene_graph is not actually in builder.
   builder->Connect(scene_graph.get_pose_bundle_output_port(),
                    converter->get_input_port(0));
   builder->Connect(*converter, *publisher);
