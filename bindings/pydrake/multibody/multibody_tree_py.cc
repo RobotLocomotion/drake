@@ -244,7 +244,11 @@ void init_module(py::module m) {
                                     const MultibodyForces<T>&>(
                  &Class::CalcInverseDynamics),
              py::arg("context"), py::arg("known_vdot"),
-             py::arg("external_forces"));
+             py::arg("external_forces"))
+        .def("SetFreeBodyPoseOrThrow",
+            overload_cast_explicit<void, const Body<T>&, const Isometry3<T>&,
+            systems::Context<T>*>(&Class::SetFreeBodyPoseOrThrow),
+            py::arg("body"), py::arg("X_WB"), py::arg("context"));
   }
 }
 

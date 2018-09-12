@@ -229,6 +229,32 @@ class TestMultibodyTree(unittest.TestCase):
         x = tree.get_multibody_state_vector(context)
         self.assertTrue(np.allclose(x, x0))
 
+    def test_set_free_body_pose(self):
+        file_name = FindResourceOrThrow(
+            "drake/examples/double_pendulum/models/double_pendulum.sdf")
+        plant = MultibodyPlant()
+        plant_model = AddModelFromSdfFile(file_name, plant)
+        plant.Finalize()
+
+        context = plant.CreateDefaultContext()
+        tree = plant.tree()
+        X_WB_desired = Isometry3.Identity()
+        R_WB = np.array([[0., 1., 0.],
+                         [0., 0., 1.],
+                         [1., 0., 0.]])
+        X_WB_desired.set_rotation(R_WB)
+        tree.SetFreeBodyPoseOrThrow(
+            body=plant.GetBodyByName("base", plant_model),
+            X_WB=X_WB_desired, context=context)
+
+        world_frame = plant.world_frame()
+        base_frame = plant.GetBodyByName("base").body_frame()
+
+        X_WB = tree.CalcRelativeTransform(
+            context, frame_A=world_frame, frame_B=base_frame)
+
+        self.assertTrue(np.allclose(X_WB.matrix(), X_WB_desired.matrix()))
+
     def test_multibody_add_joint(self):
         """
         Tests joint constructors and `AddJoint`.
