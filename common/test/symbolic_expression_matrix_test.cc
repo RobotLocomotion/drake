@@ -234,7 +234,7 @@ TEST_F(SymbolicExpressionMatrixTest, MatrixOperatorExprEqExpr1) {
   m1 << x_, y_, z_, x_;
   m2 << z_, x_, y_, z_;
   const Formula f{m1 == m2};
-  EXPECT_EQ(f.to_string(), "((x = z) and (y = x) and (z = y))");
+  EXPECT_EQ(f.to_string(), "((x == z) and (y == x) and (z == y))");
   ASSERT_TRUE(is_conjunction(f));
   EXPECT_EQ(get_operands(f).size(), 3);
   EXPECT_TRUE(CheckMatrixOperatorEq(m1, m2));

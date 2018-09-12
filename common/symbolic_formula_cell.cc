@@ -248,7 +248,7 @@ Formula FormulaEq::Substitute(const Substitution& s) const {
 }
 
 ostream& FormulaEq::Display(ostream& os) const {
-  return os << "(" << get_lhs_expression() << " = " << get_rhs_expression()
+  return os << "(" << get_lhs_expression() << " == " << get_rhs_expression()
             << ")";
 }
 

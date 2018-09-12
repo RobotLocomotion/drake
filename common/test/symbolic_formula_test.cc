@@ -432,7 +432,7 @@ TEST_F(SymbolicFormulaTest, Eq) {
   EXPECT_EQ(f3.Evaluate(env), (2 + 3) == (2 + 3));
   EXPECT_EQ(f4.Evaluate(env), (2 - 3) == (2 + 3));
 
-  EXPECT_EQ((5 + x_ == 3 + y_).to_string(), "((5 + x) = (3 + y))");
+  EXPECT_EQ((5 + x_ == 3 + y_).to_string(), "((5 + x) == (3 + y))");
 }
 
 TEST_F(SymbolicFormulaTest, Neq) {
@@ -577,7 +577,7 @@ TEST_F(SymbolicFormulaTest, And2) {
   EXPECT_EQ(f_and_.Evaluate(env3_), (-2 + -5 > 0) && (-2 * -5 < 5));
   EXPECT_EQ(f_and_.Evaluate(env4_), (-1 + -1 > 0) && (-1 * -1 < 5));
 
-  EXPECT_EQ((x_ == 3 && y_ == 5).to_string(), "((x = 3) and (y = 5))");
+  EXPECT_EQ((x_ == 3 && y_ == 5).to_string(), "((x == 3) and (y == 5))");
   EXPECT_TRUE(is_conjunction(x_ == 3 && y_ == 5));
   EXPECT_TRUE(is_nary(x_ == 3 && y_ == 5));
 }
@@ -666,7 +666,7 @@ TEST_F(SymbolicFormulaTest, Or2) {
   EXPECT_EQ(f_or_.Evaluate(env3_), (-2 + -5 > 0) || (-2 * -5 < 5));
   EXPECT_EQ(f_or_.Evaluate(env4_), (-1 + -1 > 0) || (-1 * -1 < 5));
 
-  EXPECT_EQ((x_ == 3 || y_ == 5).to_string(), "((x = 3) or (y = 5))");
+  EXPECT_EQ((x_ == 3 || y_ == 5).to_string(), "((x == 3) or (y == 5))");
   EXPECT_TRUE(is_disjunction(x_ == 3 || y_ == 5));
   EXPECT_TRUE(is_nary(x_ == 3 || y_ == 5));
 }
@@ -748,7 +748,7 @@ TEST_F(SymbolicFormulaTest, Not2) {
   EXPECT_EQ(not_f_or_.Evaluate(env3_), !((-2 + -5 > 0) || (-2 * -5 < 5)));
   EXPECT_EQ(not_f_or_.Evaluate(env4_), !((-1 + -1 > 0) || (-1 * -1 < 5)));
 
-  EXPECT_EQ((!(x_ == 5)).to_string(), "!((x = 5))");
+  EXPECT_EQ((!(x_ == 5)).to_string(), "!((x == 5))");
   EXPECT_TRUE(is_negation(!(x_ == 5)));
 }
 
