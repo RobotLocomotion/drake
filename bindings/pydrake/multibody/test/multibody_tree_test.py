@@ -228,7 +228,7 @@ class TestMultibodyTree(unittest.TestCase):
         plant.Finalize()
 
         context = plant.CreateDefaultContext()
-        tree = plant.model()
+        tree = plant.tree()
         X_WB_desired = Isometry3.Identity()
         R_WB = np.array([[0., 1., 0.],
                          [0., 0., 1.],
