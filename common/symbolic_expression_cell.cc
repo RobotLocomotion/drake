@@ -39,6 +39,7 @@ using std::runtime_error;
 using std::shared_ptr;
 using std::static_pointer_cast;
 using std::string;
+using std::vector;
 
 bool is_integer(const double v) {
   // v should be in [int_min, int_max].
@@ -1877,20 +1878,24 @@ ostream& ExpressionIfThenElse::Display(ostream& os) const {
 // ExpressionUninterpretedFunction
 // --------------------
 ExpressionUninterpretedFunction::ExpressionUninterpretedFunction(
-    const string& name, const Variables& vars)
+    string name, vector<Expression> arguments)
     : ExpressionCell{ExpressionKind::UninterpretedFunction, false},
-      name_{name},
-      variables_{vars} {}
+      name_{std::move(name)},
+      arguments_{std::move(arguments)} {}
 
 void ExpressionUninterpretedFunction::HashAppendDetail(
     DelegatingHasher* hasher) const {
   using drake::hash_append;
   hash_append(*hasher, name_);
-  hash_append(*hasher, variables_);
+  hash_append_range(*hasher, arguments_.begin(), arguments_.end());
 }
 
 Variables ExpressionUninterpretedFunction::GetVariables() const {
-  return variables_;
+  Variables ret;
+  for (const Expression& arg : arguments_) {
+    ret += arg.GetVariables();
+  }
+  return ret;
 }
 
 bool ExpressionUninterpretedFunction::EqualTo(const ExpressionCell& e) const {
@@ -1898,7 +1903,12 @@ bool ExpressionUninterpretedFunction::EqualTo(const ExpressionCell& e) const {
   DRAKE_ASSERT(get_kind() == e.get_kind());
   const ExpressionUninterpretedFunction& uf_e{
       static_cast<const ExpressionUninterpretedFunction&>(e)};
-  return name_ == uf_e.name_ && variables_ == uf_e.variables_;
+  return name_ == uf_e.name_ &&
+         equal(arguments_.begin(), arguments_.end(), uf_e.arguments_.begin(),
+               uf_e.arguments_.end(),
+               [](const Expression& e1, const Expression& e2) {
+                 return e1.EqualTo(e2);
+               });
 }
 
 bool ExpressionUninterpretedFunction::Less(const ExpressionCell& e) const {
@@ -1912,7 +1922,10 @@ bool ExpressionUninterpretedFunction::Less(const ExpressionCell& e) const {
   if (uf_e.name_ < name_) {
     return false;
   }
-  return variables_ < uf_e.variables_;
+  return lexicographical_compare(
+      arguments_.begin(), arguments_.end(), uf_e.arguments_.begin(),
+      uf_e.arguments_.end(),
+      [](const Expression& e1, const Expression& e2) { return e1.Less(e2); });
 }
 
 Polynomiald ExpressionUninterpretedFunction::ToPolynomial() const {
@@ -1925,31 +1938,27 @@ double ExpressionUninterpretedFunction::Evaluate(const Environment&) const {
 }
 
 Expression ExpressionUninterpretedFunction::Expand() const {
-  return uninterpreted_function(name_, variables_);
+  vector<Expression> new_arguments;
+  new_arguments.reserve(arguments_.size());
+  for (const Expression& arg : arguments_) {
+    new_arguments.push_back(arg.Expand());
+  }
+  return uninterpreted_function(name_, std::move(new_arguments));
 }
 
 Expression ExpressionUninterpretedFunction::Substitute(
     const Substitution& s) const {
-  // This method implements the following substitution:
-  //     uf(name, {v₁, ..., vₙ}).Substitute(s)
-  //   = uf(name, ⋃ᵢ s[vᵢ].GetVariables())
-  //
-  // For example, we have:
-  //     uf("uf1", {x, y}).Substitute({x ↦ 1, y ↦ y + z})
-  //   = uf("uf1", ∅ ∪ {y, z})
-  //   = uf("uf1", {y, z}).
-  Variables new_vars;
-  for (const auto& var : variables_) {
-    if (s.count(var) > 0) {
-      new_vars += s.at(var).GetVariables();
-    }
+  vector<Expression> new_arguments;
+  new_arguments.reserve(arguments_.size());
+  for (const Expression& arg : arguments_) {
+    new_arguments.push_back(arg.Substitute(s));
   }
-  return uninterpreted_function(name_, new_vars);
+  return uninterpreted_function(name_, std::move(new_arguments));
 }
 
 Expression ExpressionUninterpretedFunction::Differentiate(
     const Variable& x) const {
-  if (variables_.include(x)) {
+  if (GetVariables().include(x)) {
     // This uninterpreted function does have `x` as an argument, but we don't
     // have sufficient information to differentiate it with respect to `x`.
     ostringstream oss;
@@ -1964,7 +1973,15 @@ Expression ExpressionUninterpretedFunction::Differentiate(
 }
 
 ostream& ExpressionUninterpretedFunction::Display(ostream& os) const {
-  return os << name_ << "(" << variables_ << ")";
+  os << name_ << "(";
+  if (!arguments_.empty()) {
+    auto it = arguments_.begin();
+    os << *(it++);
+    for (; it != arguments_.end(); ++it) {
+      os << ", " << *it;
+    }
+  }
+  return os << ")";
 }
 
 bool is_constant(const ExpressionCell& c) {
