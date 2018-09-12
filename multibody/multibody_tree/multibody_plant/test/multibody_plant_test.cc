@@ -1629,8 +1629,9 @@ GTEST_TEST(KukaModel, JointIndexes) {
 
   MultibodyPlant<double> plant;
   AddModelFromSdfFile(FindResourceOrThrow(kSdfPath), &plant);
+  const auto& base_link_frame = plant.GetFrameByName("iiwa_link_0");
   const Joint<double>& weld = plant.WeldFrames(
-      plant.world_frame(), plant.GetFrameByName("iiwa_link_0"));
+      plant.world_frame(), base_link_frame);
   plant.Finalize();
 
   EXPECT_EQ(plant.num_positions(), 7);
@@ -1640,6 +1641,15 @@ GTEST_TEST(KukaModel, JointIndexes) {
   // world, since we added it last above with the call to WeldFrames().
   // We verify this assumption.
   ASSERT_EQ(weld.index(), plant.num_joints() - 1);
+
+  // Verify we can get the weld joint by name.
+  // As documented, a WeldJoint added with WeldFrames() will be named as:
+  const std::string weld_name =
+      plant.world_frame().name() + "_welds_to_" + base_link_frame.name();
+  EXPECT_EQ(weld.name(), weld_name);
+  EXPECT_NO_THROW(plant.GetJointByName(weld_name));
+  EXPECT_EQ(plant.GetJointByName(weld_name).index(), weld.index());
+  EXPECT_EQ(&plant.GetJointByName(weld_name), &weld);
 
   EXPECT_EQ(weld.num_positions(), 0);
   EXPECT_EQ(weld.num_velocities(), 0);

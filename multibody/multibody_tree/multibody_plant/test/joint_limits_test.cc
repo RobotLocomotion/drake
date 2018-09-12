@@ -207,7 +207,7 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
   MultibodyPlant<double> plant(time_step);
   AddModelFromSdfFile(FindResourceOrThrow(file_path), &plant);
   plant.WeldFrames(plant.world_frame(),
-                     plant.GetFrameByName("iiwa_link_0"));
+                   plant.GetFrameByName("iiwa_link_0"));
   plant.Finalize();
 
   // Some sanity check on model sizes.

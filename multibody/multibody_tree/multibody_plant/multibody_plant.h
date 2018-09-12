@@ -557,6 +557,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return tree_->AddModelInstance(name);
   }
 
+  /// Welds frames A and B with relative pose `X_AB`. That is, the pose of
+  /// frame B in frame A is fixed, with value `X_AB`.
+  /// The call to this method creates and adds a new WeldJoint to the model.
+  /// The new WeldJoint is named as: A.name() + "_welds_to_" + B.name().
+  /// @returns a constant reference to the WeldJoint welding frames A and B.
   const WeldJoint<T>& WeldFrames(
       const Frame<T>& A, const Frame<T>& B,
       const Isometry3<double>& X_AB = Isometry3<double>::Identity());
