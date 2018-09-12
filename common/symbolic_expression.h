@@ -399,8 +399,8 @@ class Expression {
   friend Expression if_then_else(const Formula& f_cond,
                                  const Expression& e_then,
                                  const Expression& e_else);
-  friend Expression uninterpreted_function(std::string name,
-                                           std::vector<Expression> arguments);
+  friend Expression uninterpreted_function(const std::string& name,
+                                           const Variables& vars);
 
   friend std::ostream& operator<<(std::ostream& os, const Expression& e);
   friend void swap(Expression& a, Expression& b) { std::swap(a.ptr_, b.ptr_); }
@@ -514,15 +514,14 @@ Expression floor(const Expression& e);
 Expression if_then_else(const Formula& f_cond, const Expression& e_then,
                         const Expression& e_else);
 
-/** Constructs an uninterpreted-function expression with @p name and @p
- * arguments. An uninterpreted function is an opaque function that has no other
- * property than its name and a list of its arguments. This is useful to
- * applications where it is good enough to provide abstract information of a
- * function without exposing full details. Declaring sparsity of a system is a
- * typical example.
+/** Constructs an uninterpreted-function expression with @p name and @p vars.
+ * An uninterpreted function is an opaque function that has no other property
+ * than its name and a set of its arguments. This is useful to applications
+ * where it is good enough to provide abstract information of a function without
+ * exposing full details. Declaring sparsity of a system is a typical example.
  */
-Expression uninterpreted_function(std::string name,
-                                  std::vector<Expression> arguments);
+Expression uninterpreted_function(const std::string& name,
+                                  const Variables& vars);
 void swap(Expression& a, Expression& b);
 
 std::ostream& operator<<(std::ostream& os, const Expression& e);
@@ -638,15 +637,9 @@ const std::map<Expression, Expression>&
 get_base_to_exponent_map_in_multiplication(const Expression& e);
 
 /** Returns the name of an uninterpreted-function expression @p e.
- *  \pre @p e is an uninterpreted-function expression.
+ *  \pre{@p e is an uninterpreted-function expression.}
  */
 const std::string& get_uninterpreted_function_name(const Expression& e);
-
-/** Returns the arguments of an uninterpreted-function expression @p e.
- *  \pre @p e is an uninterpreted-function expression.
- */
-const std::vector<Expression>& get_uninterpreted_function_arguments(
-    const Expression& e);
 
 /** Returns the conditional formula in the if-then-else expression @p e.
  * @pre @p e is an if-then-else expression.

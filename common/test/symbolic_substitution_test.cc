@@ -9,11 +9,11 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 
-using std::exception;
 using std::function;
 using std::is_same;
 using std::pair;
 using std::result_of;
+using std::exception;
 using std::vector;
 
 namespace drake {
@@ -404,20 +404,20 @@ TEST_F(SymbolicSubstitutionTest, UninterpretedFunction) {
   EXPECT_PRED2(ExprEqual, uf1.Substitute(s2), uf1);
   EXPECT_PRED2(ExprEqual, uf1.Substitute(s3), uf1);
 
-  //   (uf2(x, y)).Substitute(x ↦ 1.0, y ↦ x + y)
-  // = uf2(1.0, x + y)
-  EXPECT_PRED2(ExprEqual, uf2.Substitute(s1),
-               uninterpreted_function("uf2", {1.0, x_ + y_}));
+  //   s1[x].GetVariables() ∪ s1[y].GetVariables()
+  // = (1.0).GetVariables() ∪ (x + y).GetVariables()
+  // = ∅ ∪ {x, y} = {x, y}.
+  EXPECT_PRED2(ExprEqual, uf2.Substitute(s1), uf2);
 
-  //   (uf2(x, y)).Substitute(x ↦ y, y ↦ z)
-  // = uf2(y, z)
+  //   s2[x].GetVariables() ∪ s2[y].GetVariables()
+  // = {y} ∪ {z} = {y, z}.
   EXPECT_PRED2(ExprEqual, uf2.Substitute(s2),
-               uninterpreted_function("uf2", {y_, z_}));
+               uninterpreted_function("uf2", {var_y_, var_z_}));
 
-  //   (uf2(x, y)).Substitute(x ↦ 3.0, y ↦ 4.0)
-  // = uf2(3.0, 4.0)
+  //   s3[x].GetVariables() ∪ s3[y].GetVariables()
+  // = ∅ ∪ ∅ = ∅.
   EXPECT_PRED2(ExprEqual, uf2.Substitute(s3),
-               uninterpreted_function("uf2", {3.0, 4.0}));
+               uninterpreted_function("uf2", {}));
 }
 
 class ForallFormulaSubstitutionTest : public SymbolicSubstitutionTest {

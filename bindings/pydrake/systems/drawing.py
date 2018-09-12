@@ -4,8 +4,9 @@ Provides general visualization utilities. This is NOT related to `rendering`.
 installed.
 """
 
-from tempfile import NamedTemporaryFile
-from pydrake.common import temp_directory
+from StringIO import StringIO
+
+import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import pydot
 
@@ -27,11 +28,11 @@ def plot_graphviz(dot_text):
         # Handle this case for now.
         assert len(g) == 1
         g = g[0]
-    f = NamedTemporaryFile(suffix='.png', dir=temp_directory())
-    g.write_png(f.name)
+    s = StringIO()
+    g.write_png(s)
+    s.seek(0)
     plt.axis('off')
-
-    return plt.imshow(plt.imread(f.name), aspect="equal")
+    return plt.imshow(plt.imread(s), aspect="equal")
 
 
 def plot_system_graphviz(system):

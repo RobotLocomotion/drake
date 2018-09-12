@@ -39,18 +39,7 @@ namespace controllers {
 template <typename T>
 class InverseDynamics : public LeafSystem<T> {
  public:
-  enum InverseDynamicsMode {
-    /// Full inverse computation mode.
-    kInverseDynamics,
-
-    /// Purely gravity compensation mode.
-    kGravityCompensation
-  };
-
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamics)
-
-  DRAKE_DEPRECATED("Please use constructor with InverseDynamicsType.")
-  InverseDynamics(const RigidBodyTree<T>* tree, bool pure_gravity_compensation);
 
   /**
    * Computes inverse dynamics for `tree`, where the computed force `tau_id`
@@ -63,18 +52,14 @@ class InverseDynamics : public LeafSystem<T> {
    * `tau_s` is computed via `RigidBodyTree::CalcGeneralizedSpringForces()` and
    * `tau_d` is computed via `RigidBodyTree::frictionTorques()`.
    * In gravity compensation mode, the generalized force only includes the
-   * gravity term, that is, `tau_id = -tau_g(q)`.
+   * gravity term, that is, `tau_id = tau_g(q)`.
    * @param tree Pointer to the model. The life span of @p tree must be longer
    * than this instance.
-   * @param mode If set to kGravityCompensation, this instance will only
+   * @param pure_gravity_compensation If set to true, this instance will only
    * consider the gravity term. It also will NOT have the desired acceleration
    * input port.
    */
-  InverseDynamics(const RigidBodyTree<T>* tree, InverseDynamicsMode mode);
-
-  DRAKE_DEPRECATED("Please use constructor with InverseDynamicsType.")
-  InverseDynamics(const multibody::multibody_plant::MultibodyPlant<T>* plant,
-                  bool pure_gravity_compensation);
+  InverseDynamics(const RigidBodyTree<T>* tree, bool pure_gravity_compensation);
 
   // @TODO(edrumwri) Find a cleaner way of approaching the consideration of
   // external forces. I like to imagine a dichotomy of approaches for
@@ -96,14 +81,15 @@ class InverseDynamics : public LeafSystem<T> {
    *
    * @param plant Pointer to the multibody plant model. The life span of @p
    * plant must be longer than that of this instance.
-   * @param mode If set to kGravityCompensation, this instance will only
-   * consider the gravity term. It also will NOT have the desired acceleration
-   * input port.
+   * @param pure_gravity_compensation If set to true, this instance will only
+   * consider the gravity term. That is, `tau_id = tau_g(q)`.
+   * In this mode `this` system does NOT have the desired acceleration input
+   * port.
    * @pre The plant must be finalized (i.e., plant.is_finalized() must return
    * `true`).
    */
   InverseDynamics(const multibody::multibody_plant::MultibodyPlant<T>* plant,
-                  InverseDynamicsMode mode);
+                  bool pure_gravity_compensation);
 
   /**
    * Returns the input port for the estimated state.
@@ -116,7 +102,7 @@ class InverseDynamics : public LeafSystem<T> {
    * Returns the input port for the desired acceleration.
    */
   const InputPort<T>& get_input_port_desired_acceleration() const {
-    DRAKE_DEMAND(!this->is_pure_gravity_compensation());
+    DRAKE_DEMAND(!pure_gravity_compensation_);
     return this->get_input_port(input_port_index_desired_acceleration_);
   }
 
@@ -137,8 +123,8 @@ class InverseDynamics : public LeafSystem<T> {
     return this->get_output_port(output_port_index_force_);
   }
 
-  bool is_pure_gravity_compensation() const {
-    return mode_ == InverseDynamicsMode::kGravityCompensation;
+  bool is_pure_gravity_compenstation() const {
+    return pure_gravity_compensation_;
   }
 
  private:
@@ -149,9 +135,7 @@ class InverseDynamics : public LeafSystem<T> {
   const RigidBodyTree<T>* rigid_body_tree_{nullptr};
   const multibody::multibody_plant::MultibodyPlant<T>* multibody_plant_{
       nullptr};
-
-  // Mode dictates whether to do inverse dynamics or just gravity compensation.
-  const InverseDynamicsMode mode_;
+  const bool pure_gravity_compensation_{false};
 
   // This context is used solely for setting generalized positions and
   // velocities in multibody_plant_.

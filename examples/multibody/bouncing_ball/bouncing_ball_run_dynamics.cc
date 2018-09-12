@@ -73,7 +73,7 @@ int do_main() {
 
   MultibodyPlant<double>& plant = *builder.AddSystem(MakeBouncingBallPlant(
       radius, mass, coulomb_friction, -g * Vector3d::UnitZ(), &scene_graph));
-  const MultibodyTree<double>& tree = plant.tree();
+  const MultibodyTree<double>& model = plant.model();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(0.001);
 
@@ -109,13 +109,13 @@ int do_main() {
   // Set at height z0 with random orientation.
   std::mt19937 generator(41);
   std::uniform_real_distribution<double> uniform(-1.0, 1.0);
-  tree.SetDefaultContext(&plant_context);
+  model.SetDefaultContext(&plant_context);
   Matrix3d R_WB = math::UniformlyRandomRotationMatrix(&generator).matrix();
   Isometry3d X_WB = Isometry3d::Identity();
   X_WB.linear() = R_WB;
   X_WB.translation() = Vector3d(0.0, 0.0, z0);
-  tree.SetFreeBodyPoseOrThrow(
-      tree.GetBodyByName("Ball"), X_WB, &plant_context);
+  model.SetFreeBodyPoseOrThrow(
+      model.GetBodyByName("Ball"), X_WB, &plant_context);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 

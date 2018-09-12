@@ -952,20 +952,6 @@ class MultibodyTree {
     return *owned_mobilizers_[mobilizer_index];
   }
 
-  /// Returns the name of a model_instance.
-  /// @throws std::logic_error when `model_instance` does not correspond to a
-  /// model in this multibody tree.
-  const std::string& GetModelInstanceName(
-      ModelInstanceIndex model_instance) const {
-    const auto it = instance_index_to_name_.find(model_instance);
-    if (it == instance_index_to_name_.end()) {
-      throw std::logic_error("There is no model instance id " +
-                             std::to_string(model_instance) +
-                             " in the model.");
-    }
-    return it->second;
-  }
-
   /// @name Querying for multibody elements by name
   /// These methods allow a user to query whether a given multibody element is
   /// part of `this` model. These queries can be performed at any time during
@@ -2453,7 +2439,6 @@ class MultibodyTree {
     tree_clone->joint_name_to_index_ = this->joint_name_to_index_;
     tree_clone->actuator_name_to_index_ = this->actuator_name_to_index_;
     tree_clone->instance_name_to_index_ = this->instance_name_to_index_;
-    tree_clone->instance_index_to_name_ = this->instance_index_to_name_;
 
     // All other internals templated on T are created with the following call to
     // FinalizeInternals().

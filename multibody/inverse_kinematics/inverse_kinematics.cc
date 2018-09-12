@@ -13,7 +13,7 @@ InverseKinematics::InverseKinematics(
     const multibody_plant::MultibodyPlant<double>& plant)
     : prog_{new solvers::MathematicalProgram()},
       plant_(plant),
-      tree_(plant_.tree().ToAutoDiffXd()),
+      tree_(plant_.model().ToAutoDiffXd()),
       context_(tree_->CreateDefaultContext()),
       q_(prog_->NewContinuousVariables(plant_.num_positions(), "q")) {
   // Initialize the lower and upper bounds to -inf/inf. A free floating body
@@ -25,8 +25,8 @@ InverseKinematics::InverseKinematics(
       tree_->num_positions(), -std::numeric_limits<double>::infinity());
   Eigen::VectorXd q_upper = Eigen::VectorXd::Constant(
       tree_->num_positions(), std::numeric_limits<double>::infinity());
-  for (JointIndex i{0}; i < plant_.tree().num_joints(); ++i) {
-    const auto& joint = plant_.tree().get_joint(i);
+  for (JointIndex i{0}; i < plant_.model().num_joints(); ++i) {
+    const auto& joint = plant_.model().get_joint(i);
     q_lower.segment(joint.position_start(), joint.num_positions()) =
         joint.lower_limits();
     q_upper.segment(joint.position_start(), joint.num_positions()) =
@@ -49,13 +49,12 @@ solvers::Binding<solvers::Constraint> InverseKinematics::AddPositionConstraint(
 }
 
 solvers::Binding<solvers::Constraint>
-InverseKinematics::AddOrientationConstraint(
-    const Frame<double>& frameAbar, const math::RotationMatrix<double>& R_AbarA,
-    const Frame<double>& frameBbar, const math::RotationMatrix<double>& R_BbarB,
-    double angle_bound) {
+InverseKinematics::AddOrientationConstraint(const Frame<double>& frameA,
+                                            const Frame<double>& frameB,
+                                            double angle_bound) {
   auto constraint = std::make_shared<internal::OrientationConstraint>(
-      *tree_, frameAbar.index(), R_AbarA, frameBbar.index(), R_BbarB,
-      angle_bound, get_mutable_context());
+      *tree_, frameA.index(), frameB.index(), angle_bound,
+      get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
 }
 

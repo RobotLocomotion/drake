@@ -132,60 +132,30 @@ TEST_F(BoolTestDouble, LogicalOperators) {
   EXPECT_TRUE(!b_false_);
 }
 
-TEST_F(BoolTestDouble, All) {
-  auto bools = Eigen::Matrix<bool, 3, 3>::Constant(true).eval();
-  EXPECT_TRUE(all(bools));
-  bools(0, 0) = false;
-  EXPECT_FALSE(all(bools));
-
-  // Vacuously true.
-  EXPECT_TRUE(all(Eigen::Matrix<bool, 0, 0>::Constant(false)));
-}
-
 TEST_F(BoolTestDouble, AllOf) {
-  EXPECT_TRUE(all_of(m_, [](const double v) { return v >= 0.0; }));
-  EXPECT_FALSE(all_of(m_, [](const double v) { return v >= 2.0; }));
+  EXPECT_TRUE(all_of(m_, [](const double v) { return v >= 0.0; }).value());
+  EXPECT_FALSE(all_of(m_, [](const double v) { return v >= 2.0; }).value());
 
   // Vacuously true.
-  EXPECT_TRUE(all_of(zero_m_, [](const double v) { return v >= 0.0; }));
-}
-
-TEST_F(BoolTestDouble, Any) {
-  auto bools = Eigen::Matrix<bool, 3, 3>::Constant(false).eval();
-  EXPECT_FALSE(any(bools));
-  bools(0, 0) = true;
-  EXPECT_TRUE(any(bools));
-
-  // Vacuously false.
-  EXPECT_FALSE(any(Eigen::Matrix<bool, 0, 0>::Constant(true)));
+  EXPECT_TRUE(all_of(zero_m_, [](const double v) { return v >= 0.0; }).value());
 }
 
 TEST_F(BoolTestDouble, AnyOf) {
-  EXPECT_TRUE(any_of(m_, [](const double v) { return v >= 4.0; }));
-  EXPECT_FALSE(any_of(m_, [](const double v) { return v >= 5.0; }));
+  EXPECT_TRUE(any_of(m_, [](const double v) { return v >= 4.0; }).value());
+  EXPECT_FALSE(any_of(m_, [](const double v) { return v >= 5.0; }).value());
 
   // Vacuously false.
   EXPECT_FALSE(
-      any_of(zero_m_, [](const double v) { return v >= 0.0; }));
-}
-
-TEST_F(BoolTestDouble, None) {
-  auto bools = Eigen::Matrix<bool, 3, 3>::Constant(false).eval();
-  EXPECT_TRUE(none(bools));
-  bools(0, 0) = true;
-  EXPECT_FALSE(none(bools));
-
-  // Vacuously true.
-  EXPECT_TRUE(none(Eigen::Matrix<bool, 0, 0>::Constant(true)));
+      any_of(zero_m_, [](const double v) { return v >= 0.0; }).value());
 }
 
 TEST_F(BoolTestDouble, NoneOf) {
-  EXPECT_TRUE(none_of(m_, [](const double v) { return v >= 5.0; }));
-  EXPECT_FALSE(none_of(m_, [](const double v) { return v >= 4.0; }));
+  EXPECT_TRUE(none_of(m_, [](const double v) { return v >= 5.0; }).value());
+  EXPECT_FALSE(none_of(m_, [](const double v) { return v >= 4.0; }).value());
 
   // Vacuously true.
   EXPECT_TRUE(
-      none_of(zero_m_, [](const double v) { return v >= 0.0; }));
+      none_of(zero_m_, [](const double v) { return v >= 0.0; }).value());
 }
 
 // -------------------
@@ -274,13 +244,14 @@ TEST_F(BoolTestAutoDiffXd, AllOf) {
                      [](const AutoDiffXd& v) {
                        return v.derivatives()[0] == 1.0 ||
                               v.derivatives()[1] == 1.0;
-                     }));
+                     })
+                  .value());
   EXPECT_FALSE(
-      all_of(m_, [](const AutoDiffXd& v) { return v >= 1.0; }));
+      all_of(m_, [](const AutoDiffXd& v) { return v >= 1.0; }).value());
 
   // Vacuously true.
   EXPECT_TRUE(
-      all_of(zero_m_, [](const AutoDiffXd& v) { return v >= 1.0; }));
+      all_of(zero_m_, [](const AutoDiffXd& v) { return v >= 1.0; }).value());
 }
 
 TEST_F(BoolTestAutoDiffXd, AnyOf) {
@@ -288,16 +259,18 @@ TEST_F(BoolTestAutoDiffXd, AnyOf) {
                      [](const AutoDiffXd& v) {
                        return v.derivatives()[0] == 1.0 &&
                               v.derivatives()[1] == 0.0;
-                     }));
+                     })
+                  .value());
   EXPECT_FALSE(any_of(m_,
                       [](const AutoDiffXd& v) {
                         return v.derivatives()[0] == 1.0 &&
                                v.derivatives()[1] == 1.0;
-                      }));
+                      })
+                   .value());
 
   // Vacuously false.
   EXPECT_FALSE(
-      any_of(zero_m_, [](const AutoDiffXd& v) { return v >= 1.0; }));
+      any_of(zero_m_, [](const AutoDiffXd& v) { return v >= 1.0; }).value());
 }
 
 TEST_F(BoolTestAutoDiffXd, NoneOf) {
@@ -305,16 +278,18 @@ TEST_F(BoolTestAutoDiffXd, NoneOf) {
                       [](const AutoDiffXd& v) {
                         return v.derivatives()[0] == 1.0 &&
                                v.derivatives()[1] == 1.0;
-                      }));
+                      })
+                  .value());
   EXPECT_FALSE(none_of(m_,
                        [](const AutoDiffXd& v) {
                          return v.derivatives()[0] == 1.0 &&
                                 v.derivatives()[1] == 0.0;
-                       }));
+                       })
+                   .value());
 
   // Vacuously true.
   EXPECT_TRUE(
-      none_of(zero_m_, [](const AutoDiffXd& v) { return v >= 1.0; }));
+      none_of(zero_m_, [](const AutoDiffXd& v) { return v >= 1.0; }).value());
 }
 
 // -----------------------------
@@ -467,63 +442,36 @@ TEST_F(BoolTestSymbolic, LogicalOperators) {
   EXPECT_PRED2(FormulaEqual, (!b1).value(), !f1);
 }
 
-TEST_F(BoolTestSymbolic, All) {
-  const MatrixX<Formula> formulae = m_.unaryExpr(&symbolic::isnan);
-  EXPECT_PRED2(FormulaEqual, all(formulae),
-               isnan(x_) && isnan(y_) && isnan(z_) && isnan(w_));
-
-  // Vacuously true.
-  EXPECT_TRUE(all(MatrixX<Formula>::Constant(0, 0, Formula::False())));
-}
-
 TEST_F(BoolTestSymbolic, AllOf) {
   EXPECT_PRED2(
       FormulaEqual,
-      all_of(m_, [](const Expression& v) { return !isnan(v); }),
+      all_of(m_, [](const Expression& v) { return !isnan(v); }).value(),
       !isnan(x_) && !isnan(y_) && !isnan(z_) && !isnan(w_));
 
   // Vacuously true.
   EXPECT_TRUE(
-      all_of(zero_m_, [](const Expression& v) { return v >= 0.0; }));
-}
-
-TEST_F(BoolTestSymbolic, Any) {
-  const MatrixX<Formula> formulae = m_.unaryExpr(&symbolic::isnan);
-  EXPECT_PRED2(FormulaEqual, any(formulae),
-               isnan(x_) || isnan(y_) || isnan(z_) || isnan(w_));
-
-  // Vacuously false.
-  EXPECT_FALSE(any(MatrixX<Formula>::Constant(0, 0, Formula::True())));
+      all_of(zero_m_, [](const Expression& v) { return v >= 0.0; }).value());
 }
 
 TEST_F(BoolTestSymbolic, AnyOf) {
   EXPECT_PRED2(FormulaEqual,
-               any_of(m_, [](const Expression& v) { return isnan(v); }),
+               any_of(m_, [](const Expression& v) { return isnan(v); }).value(),
                isnan(x_) || isnan(y_) || isnan(z_) || isnan(w_));
 
   // Vacuously false.
   EXPECT_FALSE(
-      any_of(zero_m_, [](const Expression& v) { return v >= 0.0; }));
-}
-
-TEST_F(BoolTestSymbolic, None) {
-  const MatrixX<Formula> formulae = m_.unaryExpr(&symbolic::isnan);
-  EXPECT_PRED2(FormulaEqual, none(formulae),
-               !isnan(x_) && !isnan(y_) && !isnan(z_) && !isnan(w_));
-
-  // Vacuously true.
-  EXPECT_TRUE(none(MatrixX<Formula>::Constant(0, 0, Formula::False())));
+      any_of(zero_m_, [](const Expression& v) { return v >= 0.0; }).value());
 }
 
 TEST_F(BoolTestSymbolic, NoneOf) {
   EXPECT_PRED2(
       FormulaEqual,
-      none_of(m_, [](const Expression& v) { return isnan(v); }),
+      none_of(m_, [](const Expression& v) { return isnan(v); }).value(),
       !isnan(x_) && !isnan(y_) && !isnan(z_) && !isnan(w_));
 
   // Vacuously true.
   EXPECT_TRUE(
-      none_of(zero_m_, [](const Expression& v) { return v >= 0.0; }));
+      none_of(zero_m_, [](const Expression& v) { return v >= 0.0; }).value());
 }
 
 }  // namespace drake

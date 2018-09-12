@@ -4,34 +4,7 @@
 #
 # Do not update this list by hand; instead, run build_components_refresh.py.
 LIBDRAKE_COMPONENTS = [
-    "//attic/multibody/collision",
-    "//attic/multibody/joints",
     "//attic/multibody/parsers",
-    "//attic/multibody/rigid_body_plant:compliant_contact_model",  # unpackaged
-    "//attic/multibody/rigid_body_plant:compliant_material",  # unpackaged
-    "//attic/multibody/rigid_body_plant:contact_results",  # unpackaged
-    "//attic/multibody/rigid_body_plant:contact_results_to_lcm",  # unpackaged
-    "//attic/multibody/rigid_body_plant:create_load_robot_message",  # unpackaged  # noqa
-    "//attic/multibody/rigid_body_plant:drake_visualizer",  # unpackaged
-    "//attic/multibody/rigid_body_plant:frame_visualizer",  # unpackaged
-    "//attic/multibody/rigid_body_plant:rigid_body_plant",  # unpackaged
-    "//attic/multibody/rigid_body_plant:rigid_body_plant_bridge",  # unpackaged
-    "//attic/multibody/shapes",
-    "//attic/multibody:approximate_ik",  # unpackaged
-    "//attic/multibody:global_inverse_kinematics",  # unpackaged
-    "//attic/multibody:inverse_kinematics",  # unpackaged
-    "//attic/multibody:kinematics_cache",  # unpackaged
-    "//attic/multibody:kinematics_cache_helper",  # unpackaged
-    "//attic/multibody:resolve_center_of_pressure",  # unpackaged
-    "//attic/multibody:rigid_body",  # unpackaged
-    "//attic/multibody:rigid_body_actuator",  # unpackaged
-    "//attic/multibody:rigid_body_constraint",  # unpackaged
-    "//attic/multibody:rigid_body_distance_constraint",  # unpackaged
-    "//attic/multibody:rigid_body_frame",  # unpackaged
-    "//attic/multibody:rigid_body_loop",  # unpackaged
-    "//attic/multibody:rigid_body_tree",  # unpackaged
-    "//attic/multibody:rigid_body_tree_alias_groups",  # unpackaged
-    "//attic/multibody:rigid_body_tree_construction",  # unpackaged
     "//automotive",
     "//automotive/maliput/api",
     "//automotive/maliput/dragway",
@@ -62,8 +35,10 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/kuka_iiwa_robot",
     "//multibody/benchmarks/mass_damper_spring",
     "//multibody/benchmarks/pendulum",
+    "//multibody/collision",
     "//multibody/constraint",
     "//multibody/inverse_kinematics",
+    "//multibody/joints",
     "//multibody/multibody_tree",
     "//multibody/multibody_tree/implicit_stribeck:implicit_stribeck_solver",  # unpackaged  # noqa
     "//multibody/multibody_tree/math",
@@ -71,6 +46,32 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/multibody_tree/multibody_plant:contact_results_to_lcm",  # unpackaged  # noqa
     "//multibody/multibody_tree/parsing",
     "//multibody/parsing",
+    "//multibody/rigid_body_plant:compliant_contact_model",  # unpackaged
+    "//multibody/rigid_body_plant:compliant_material",  # unpackaged
+    "//multibody/rigid_body_plant:contact_results",  # unpackaged
+    "//multibody/rigid_body_plant:contact_results_to_lcm",  # unpackaged
+    "//multibody/rigid_body_plant:create_load_robot_message",  # unpackaged
+    "//multibody/rigid_body_plant:drake_visualizer",  # unpackaged
+    "//multibody/rigid_body_plant:frame_visualizer",  # unpackaged
+    "//multibody/rigid_body_plant:rigid_body_plant",  # unpackaged
+    "//multibody/rigid_body_plant:rigid_body_plant_bridge",  # unpackaged
+    "//multibody/shapes",
+    "//multibody:approximate_ik",  # unpackaged
+    "//multibody:global_inverse_kinematics",  # unpackaged
+    "//multibody:inverse_kinematics",  # unpackaged
+    "//multibody:kinematics_cache",  # unpackaged
+    "//multibody:kinematics_cache_helper",  # unpackaged
+    "//multibody:resolve_center_of_pressure",  # unpackaged
+    "//multibody:rigid_body",  # unpackaged
+    "//multibody:rigid_body_actuator",  # unpackaged
+    "//multibody:rigid_body_constraint",  # unpackaged
+    "//multibody:rigid_body_distance_constraint",  # unpackaged
+    "//multibody:rigid_body_frame",  # unpackaged
+    "//multibody:rigid_body_loop",  # unpackaged
+    "//multibody:rigid_body_tree",  # unpackaged
+    "//multibody:rigid_body_tree_alias_groups",  # unpackaged
+    "//multibody:rigid_body_tree_alias_groups_proto",  # unpackaged
+    "//multibody:rigid_body_tree_construction",  # unpackaged
     "//perception",
     "//solvers",
     "//systems/analysis",

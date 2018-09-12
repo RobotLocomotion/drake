@@ -1,7 +1,5 @@
 #include "drake/solvers/dreal_solver.h"
 
-#include <vector>
-
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
@@ -21,7 +19,6 @@ using symbolic::Variables;
 using std::logic_error;
 using std::make_shared;
 using std::shared_ptr;
-using std::vector;
 
 class DrealSolverTest : public ::testing::Test {
  protected:
@@ -461,7 +458,7 @@ TEST_F(DrealSolverTest, IfThenElse2) {
 TEST_F(DrealSolverTest, UnsupportedFormulaUninterpretedFunction) {
   EXPECT_THROW(
       DrealSolver::CheckSatisfiability(
-          symbolic::uninterpreted_function("uf", {x_, y_}) == 0, delta_),
+          uninterpreted_function("uf", Variables{x_, y_}) == 0, delta_),
       std::runtime_error);
 }
 
