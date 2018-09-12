@@ -14,6 +14,7 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/implicit_stribeck/implicit_stribeck_solver.h"
+#include "drake/multibody/multibody_tree/joints/weld_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
 #include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
@@ -555,6 +556,15 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   ModelInstanceIndex AddModelInstance(const std::string& name) {
     return tree_->AddModelInstance(name);
   }
+
+  /// Welds frames A and B with relative pose `X_AB`. That is, the pose of
+  /// frame B in frame A is fixed, with value `X_AB`.
+  /// The call to this method creates and adds a new WeldJoint to the model.
+  /// The new WeldJoint is named as: A.name() + "_welds_to_" + B.name().
+  /// @returns a constant reference to the WeldJoint welding frames A and B.
+  const WeldJoint<T>& WeldFrames(
+      const Frame<T>& A, const Frame<T>& B,
+      const Isometry3<double>& X_AB = Isometry3<double>::Identity());
   /// @}
 
   /// @name Querying for multibody elements by name
