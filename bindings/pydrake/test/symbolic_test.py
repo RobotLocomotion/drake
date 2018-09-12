@@ -78,7 +78,7 @@ class TestSymbolicVariable(SymbolicTestCase):
         self.assertEqual(str(x > 1), "(x > 1)")
         self.assertEqual(str(x <= 1), "(x <= 1)")
         self.assertEqual(str(x < 1), "(x < 1)")
-        self.assertEqual(str(x == 1), "(x = 1)")
+        self.assertEqual(str(x == 1), "(x == 1)")
         self.assertEqual(str(x != 1), "(x != 1)")
 
         # float rop Variable
@@ -86,7 +86,7 @@ class TestSymbolicVariable(SymbolicTestCase):
         self.assertEqual(str(1 <= y), "(y >= 1)")
         self.assertEqual(str(1 > y), "(y < 1)")
         self.assertEqual(str(1 >= y), "(y <= 1)")
-        self.assertEqual(str(1 == y), "(y = 1)")
+        self.assertEqual(str(1 == y), "(y == 1)")
         self.assertEqual(str(1 != y), "(y != 1)")
 
         # Variable rop Variable
@@ -94,7 +94,7 @@ class TestSymbolicVariable(SymbolicTestCase):
         self.assertEqual(str(x <= y), "(x <= y)")
         self.assertEqual(str(x > y), "(x > y)")
         self.assertEqual(str(x >= y), "(x >= y)")
-        self.assertEqual(str(x == y), "(x = y)")
+        self.assertEqual(str(x == y), "(x == y)")
         self.assertEqual(str(x != y), "(x != y)")
 
     def test_repr(self):
@@ -125,7 +125,7 @@ class TestSymbolicVariable(SymbolicTestCase):
 
     def test_logical(self):
         self.assertEqual(str(sym.logical_not(x == 0)),
-                         "!((x = 0))")
+                         "!((x == 0))")
 
         # Test single-operand logical statements
         self.assertEqual(str(sym.logical_and(x >= 1)), "(x >= 1)")
@@ -137,9 +137,9 @@ class TestSymbolicVariable(SymbolicTestCase):
                          "((x >= 2) or (x <= 1))")
         # Test multiple operand logical statements
         self.assertEqual(str(sym.logical_and(x >= 1, x <= 2, y == 2)),
-                         "((y = 2) and (x >= 1) and (x <= 2))")
+                         "((y == 2) and (x >= 1) and (x <= 2))")
         self.assertEqual(str(sym.logical_or(x >= 1, x <= 2, y == 2)),
-                         "((y = 2) or (x >= 1) or (x <= 2))")
+                         "((y == 2) or (x >= 1) or (x <= 2))")
 
     def test_functions_with_variable(self):
         self.assertEqual(str(sym.abs(x)), "abs(x)")
@@ -450,7 +450,7 @@ class TestSymbolicExpression(SymbolicTestCase):
         self.assertEqual(str(e_x <= e_y), "(x <= y)")
         self.assertEqual(str(e_x > e_y), "(x > y)")
         self.assertEqual(str(e_x >= e_y), "(x >= y)")
-        self.assertEqual(str(e_x == e_y), "(x = y)")
+        self.assertEqual(str(e_x == e_y), "(x == y)")
         self.assertEqual(str(e_x != e_y), "(x != y)")
 
         # Expression rop Variable
@@ -458,7 +458,7 @@ class TestSymbolicExpression(SymbolicTestCase):
         self.assertEqual(str(e_x <= y), "(x <= y)")
         self.assertEqual(str(e_x > y), "(x > y)")
         self.assertEqual(str(e_x >= y), "(x >= y)")
-        self.assertEqual(str(e_x == y), "(x = y)")
+        self.assertEqual(str(e_x == y), "(x == y)")
         self.assertEqual(str(e_x != y), "(x != y)")
 
         # Variable rop Expression
@@ -466,7 +466,7 @@ class TestSymbolicExpression(SymbolicTestCase):
         self.assertEqual(str(x <= e_y), "(x <= y)")
         self.assertEqual(str(x > e_y), "(x > y)")
         self.assertEqual(str(x >= e_y), "(x >= y)")
-        self.assertEqual(str(x == e_y), "(x = y)")
+        self.assertEqual(str(x == e_y), "(x == y)")
         self.assertEqual(str(x != e_y), "(x != y)")
 
         # Expression rop float
@@ -474,7 +474,7 @@ class TestSymbolicExpression(SymbolicTestCase):
         self.assertEqual(str(e_x <= 1), "(x <= 1)")
         self.assertEqual(str(e_x > 1), "(x > 1)")
         self.assertEqual(str(e_x >= 1), "(x >= 1)")
-        self.assertEqual(str(e_x == 1), "(x = 1)")
+        self.assertEqual(str(e_x == 1), "(x == 1)")
         self.assertEqual(str(e_x != 1), "(x != 1)")
 
         # float rop Expression
@@ -482,7 +482,7 @@ class TestSymbolicExpression(SymbolicTestCase):
         self.assertEqual(str(1 <= e_y), "(y >= 1)")
         self.assertEqual(str(1 > e_y), "(y < 1)")
         self.assertEqual(str(1 >= e_y), "(y <= 1)")
-        self.assertEqual(str(1 == e_y), "(y = 1)")
+        self.assertEqual(str(1 == e_y), "(y == 1)")
         self.assertEqual(str(1 != e_y), "(y != 1)")
 
     def test_relational_operators_nonzero(self):
