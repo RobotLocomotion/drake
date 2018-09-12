@@ -198,7 +198,7 @@ class TestMultibodyTree(unittest.TestCase):
         AddModelFromSdfFile(file_name, plant)
         plant.Finalize()
         context = plant.CreateDefaultContext()
-        tree = plant.model()
+        tree = plant.tree()
 
         self.assertEqual(plant.num_positions(), 2)
         self.assertEqual(plant.num_velocities(), 2)

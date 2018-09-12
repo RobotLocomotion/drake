@@ -245,8 +245,8 @@ void init_module(py::module m) {
              py::arg("context"), py::arg("known_vdot"),
              py::arg("external_forces"))
         .def("SetFreeBodyPoseOrThrow",
-            py::overload_cast<const Body<T>&, const Isometry3<T>&,
-            systems::Context<T>*>(&Class::SetFreeBodyPoseOrThrow, py::const_),
+            overload_cast_explicit<void, const Body<T>&, const Isometry3<T>&,
+            systems::Context<T>*>(&Class::SetFreeBodyPoseOrThrow),
             py::arg("body"), py::arg("X_WB"), py::arg("context"));
   }
 }
