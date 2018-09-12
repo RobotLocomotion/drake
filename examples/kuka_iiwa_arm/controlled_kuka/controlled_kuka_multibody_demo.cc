@@ -62,6 +62,8 @@ int DoMain() {
   kuka_plant.AddForceElement<UniformGravityFieldElement>(
       -9.81 * Vector3<double>::UnitZ());
 
+  // Now the model is complete.
+  kuka_plant.Finalize(&scene_graph);
   DRAKE_THROW_UNLESS(kuka_plant.num_positions() == 7);
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(!!kuka_plant.get_source_id());
@@ -71,8 +73,7 @@ int DoMain() {
   SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
   auto controller = builder.AddSystem<
       systems::controllers::InverseDynamicsController>(
-      // We create a new model for control. No geometry is needed.
-      MakeKukaPlant(),
+      kuka_plant,
       iiwa_kp, iiwa_ki, iiwa_kd,
       false /* no feedforward acceleration */);
 
