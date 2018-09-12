@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "drake/common/constants.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
@@ -28,10 +30,11 @@ class InputPort final : public InputPortBase {
   // The System and SystemBase are provided separately since we don't have
   // access to System's declaration here so can't cast but the caller can.
   InputPort(InputPortIndex index, DependencyTicket ticket,
-                      PortDataType data_type, int size,
-                      const optional<RandomDistribution>& random_type,
-                      const System<T>* system, SystemBase* system_base)
-      : InputPortBase(index, ticket, data_type, size, random_type, system_base),
+            PortDataType data_type, int size, const std::string& name,
+            const optional<RandomDistribution>& random_type,
+            const System<T>* system, SystemBase* system_base)
+      : InputPortBase(index, ticket, data_type, size, name, random_type,
+                      system_base),
         system_(*system) {
     DRAKE_DEMAND(system != nullptr);
     DRAKE_DEMAND(static_cast<const void*>(system) == system_base);

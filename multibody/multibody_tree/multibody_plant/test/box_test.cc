@@ -76,7 +76,7 @@ GTEST_TEST(Box, UnderStiction) {
 
   plant.Finalize(&scene_graph);  // Done creating the model.
 
-  const MultibodyTree<double>& model = plant.model();
+  const MultibodyTree<double>& tree = plant.tree();
   // Set contact parameters.
   plant.set_penetration_allowance(penetration_allowance);
   plant.set_stiction_tolerance(stiction_tolerance);
@@ -134,8 +134,8 @@ GTEST_TEST(Box, UnderStiction) {
       contact_results.contact_info(0);
 
   // Verify the bodies referenced by the contact info.
-  const RigidBody<double>& ground = model.GetRigidBodyByName("ground");
-  const RigidBody<double>& box = model.GetRigidBodyByName("box");
+  const RigidBody<double>& ground = tree.GetRigidBodyByName("ground");
+  const RigidBody<double>& box = tree.GetRigidBodyByName("box");
   EXPECT_TRUE(
       (contact_info.bodyA_index() == box.index() &&
        contact_info.bodyB_index() == ground.index()) ||

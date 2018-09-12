@@ -13,6 +13,7 @@
 #include "drake/multibody/multibody_tree/math/spatial_force.h"
 #include "drake/multibody/multibody_tree/math/spatial_vector.h"
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"
+#include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
@@ -176,6 +177,14 @@ void init_module(py::module m) {
         .def(py::init<Vector3<double>>(), py::arg("g_W"));
   }
 
+  // MultibodyForces
+  {
+    using Class = MultibodyForces<T>;
+    py::class_<Class> cls(m, "MultibodyForces");
+    cls
+        .def(py::init<MultibodyTree<double>&>(), py::arg("model"));
+  }
+
   // Tree.
   {
     // N.B. Pending a concrete direction on #9366, a minimal subset of the
@@ -227,6 +236,14 @@ void init_module(py::module m) {
             },
             py::arg("context"), py::arg("frame_B"),
             py::arg("p_BoFo_B") = Vector3<T>::Zero().eval())
+        .def("CalcInverseDynamics",
+             overload_cast_explicit<VectorX<T>,
+                                    const Context<T>&,
+                                    const VectorX<T>&,
+                                    const MultibodyForces<T>&>(
+                 &Class::CalcInverseDynamics),
+             py::arg("context"), py::arg("known_vdot"),
+             py::arg("external_forces"))
         .def("SetFreeBodyPoseOrThrow",
             py::overload_cast<const Body<T>&, const Isometry3<T>&,
             systems::Context<T>*>(&Class::SetFreeBodyPoseOrThrow, py::const_),
@@ -361,10 +378,18 @@ void init_multibody_plant(py::module m) {
     cls
         .def("world_body", &Class::world_body, py_reference_internal)
         .def("world_frame", &Class::world_frame, py_reference_internal)
-        .def("model", &Class::model, py_reference_internal)
+        .def("tree", &Class::tree, py_reference_internal)
         .def("is_finalized", &Class::is_finalized)
         .def("Finalize", py::overload_cast<SceneGraph<T>*>(&Class::Finalize),
              py::arg("scene_graph") = nullptr);
+    // Add deprecated methods.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("model", &Class::model, py_reference_internal);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    cls.attr("message_model") = "Please use tree().";
+    DeprecateAttribute(
+        cls, "model", cls.attr("message_model"));
   }
 }
 

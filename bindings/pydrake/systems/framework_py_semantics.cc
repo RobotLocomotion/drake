@@ -166,8 +166,8 @@ void DefineFrameworkPySemantics(py::module m) {
            py::overload_cast<
                const OutputPort<T>&, const InputPort<T>&>(
                &DiagramBuilder<T>::Connect))
-      .def("ExportInput", &DiagramBuilder<T>::ExportInput,
-           py_reference_internal)
+      .def("ExportInput", &DiagramBuilder<T>::ExportInput, py::arg("input"),
+           py::arg("name") = "", py_reference_internal)
       .def("ExportOutput", &DiagramBuilder<T>::ExportOutput,
            py_reference_internal)
       .def("Build", &DiagramBuilder<T>::Build,

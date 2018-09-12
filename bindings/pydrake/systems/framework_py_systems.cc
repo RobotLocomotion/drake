@@ -257,12 +257,11 @@ struct Impl {
         .def("get_input_port",
              &System<T>::get_input_port, py_reference_internal)
         .def("get_num_output_ports", &System<T>::get_num_output_ports)
-        .def("get_output_port",
-             &System<T>::get_output_port, py_reference_internal)
-        .def(
-            "_DeclareInputPort", &PySystem::DeclareInputPort,
-            py_reference_internal,
-            py::arg("type"), py::arg("size"), py::arg("random_type") = nullopt)
+        .def("get_output_port", &System<T>::get_output_port,
+             py_reference_internal)
+        .def("_DeclareInputPort", &PySystem::DeclareInputPort,
+             py_reference_internal, py::arg("type"), py::arg("size"),
+             py::arg("name") = "", py::arg("random_type") = nullopt)
         // - Feedthrough.
         .def("HasAnyDirectFeedthrough", &System<T>::HasAnyDirectFeedthrough)
         .def("HasDirectFeedthrough",
