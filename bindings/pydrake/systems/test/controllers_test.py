@@ -211,6 +211,8 @@ class TestControllers(unittest.TestCase):
 
         plant = MultibodyPlant(time_step=0.01)
         AddModelFromSdfFile(file_name=sdf_path, plant=plant)
+        plant.WeldFrames(plant.world_frame(),
+                         plant.GetFrameByName("iiwa_link_0"))
         plant.Finalize()
 
         # We verify the (known) size of the model.

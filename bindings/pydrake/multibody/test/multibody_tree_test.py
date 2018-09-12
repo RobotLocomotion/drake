@@ -48,6 +48,7 @@ def get_index_class(cls):
     class_to_index_class_map = {
         Body: BodyIndex,
         ForceElement: ForceElementIndex,
+        Frame: FrameIndex,
         Joint: JointIndex,
         JointActuator: JointActuatorIndex,
     }
@@ -114,6 +115,10 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertIs(
             plant.GetBodyByName(name="Link1"),
             plant.GetBodyByName(name="Link1", model_instance=model_instance))
+        self._test_frame_api(plant.GetFrameByName(name="Link1"))
+        self.assertIs(
+            plant.GetFrameByName(name="Link1"),
+            plant.GetFrameByName(name="Link1", model_instance=model_instance))
         self.assertIsInstance(
             plant.get_actuation_input_port(), InputPort)
         self.assertIsInstance(
@@ -126,6 +131,11 @@ class TestMultibodyTree(unittest.TestCase):
         cls = type(element)
         self.assertIsInstance(element.index(), get_index_class(cls))
         self.assertIsInstance(element.model_instance(), ModelInstanceIndex)
+
+    def _test_frame_api(self, frame):
+        self.assertIsInstance(frame, Frame)
+        self._test_multibody_tree_element_mixin(frame)
+        self.assertIsInstance(frame.name(), unicode)
 
     def _test_body_api(self, body):
         self.assertIsInstance(body, Body)
@@ -198,7 +208,7 @@ class TestMultibodyTree(unittest.TestCase):
         AddModelFromSdfFile(file_name, plant)
         plant.Finalize()
         context = plant.CreateDefaultContext()
-        tree = plant.model()
+        tree = plant.tree()
 
         self.assertEqual(plant.num_positions(), 2)
         self.assertEqual(plant.num_velocities(), 2)
