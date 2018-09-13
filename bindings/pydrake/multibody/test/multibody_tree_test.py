@@ -41,6 +41,7 @@ import numpy as np
 from pydrake.common import FindResourceOrThrow
 from pydrake.util.eigen_geometry import Isometry3
 from pydrake.systems.framework import InputPort, OutputPort
+from pydrake.math import RollPitchYaw
 
 
 def get_index_class(cls):
@@ -252,13 +253,13 @@ class TestMultibodyTree(unittest.TestCase):
         X_EeGripper.set_rotation(
             RollPitchYaw(np.pi / 2, 0, np.pi / 2).
             ToRotationMatrix().matrix())
-        plant.AddJoint(
-            WeldJoint(name="weld_gripper_to_robot_ee",
-                      parent_frame_P=plant.GetBodyByName(
-                          "iiwa_link_7", iiwa_model).body_frame(),
-                      child_frame_C=plant.GetBodyByName(
-                          "body", gripper_model).body_frame(),
-                      X_PC=X_EeGripper))
+        plant.WeldFrames(
+            A=plant.world_frame(),
+            B=plant.GetFrameByName("iiwa_link_0", iiwa_model))
+        plant.WeldFrames(
+            A=plant.GetFrameByName("iiwa_link_7", iiwa_model),
+            B=plant.GetFrameByName("body", gripper_model),
+            X_AB=X_EeGripper)
         plant.Finalize()
 
         context = plant.CreateDefaultContext()
