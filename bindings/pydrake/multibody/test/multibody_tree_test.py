@@ -234,7 +234,7 @@ class TestMultibodyTree(unittest.TestCase):
             "drake/manipulation/models/" +
             "wsg_50_description/sdf/schunk_wsg_50.sdf")
         iiwa_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/" + 
+            "drake/manipulation/models/" +
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
         timestep = 0.0002
