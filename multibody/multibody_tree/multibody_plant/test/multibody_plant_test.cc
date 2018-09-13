@@ -32,6 +32,10 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/linear_system.h"
 
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+
 namespace drake {
 
 using Eigen::AngleAxisd;
@@ -1791,6 +1795,112 @@ TEST_P(KukaArmTest, CheckContinuousOrDiscreteModel) {
 INSTANTIATE_TEST_CASE_P(
     Blank, KukaArmTest,
     testing::Values(0.0 /* continuous state */, 1e-3 /* discrete state */));
+
+GTEST_TEST(KukaWithSimpleGripper, StateSelection) {
+  const char kArmSdfPath[] =
+      "drake/manipulation/models/iiwa_description/sdf/"
+          "iiwa14_no_collision.sdf";
+
+  const char kWsg50SdfPath[] =
+      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf";
+
+  MultibodyPlant<double> plant;
+  const ModelInstanceIndex arm_model =
+      AddModelFromSdfFile(FindResourceOrThrow(kArmSdfPath), &plant);
+  const auto& base_link_frame = plant.GetFrameByName("iiwa_link_0");
+  plant.WeldFrames(plant.world_frame(), base_link_frame);
+
+  // Add the gripper.
+  const ModelInstanceIndex gripper_model =
+      AddModelFromSdfFile(FindResourceOrThrow(kWsg50SdfPath), &plant);
+  const auto& end_effector = plant.GetBodyByName("iiwa_link_7", arm_model);
+  const auto& gripper_body = plant.GetBodyByName("body", gripper_model);
+  // We dont care for the actual pose of the gripper in the end effector frame
+  // for this example. We only care about the state size.
+  plant.WeldFrames(end_effector.body_frame(), gripper_body.body_frame());
+  plant.Finalize();
+
+  // Sanity check basic invariants.
+  // Seven dofs for the arm and two for the gripper.
+  EXPECT_EQ(plant.num_positions(), 9);
+  EXPECT_EQ(plant.num_velocities(), 9);
+
+  std::vector<JointIndex> user_to_joint_index_map;
+  // For this example we are only interested in the state for joints:
+  //  - iiwa_joint_2
+  //  - iiwa_joint_7
+  //  - iiwa_joint_3
+  // In that order.
+  // We therefore create a user to joint index map accordingly.
+  user_to_joint_index_map.push_back(
+      plant.GetJointByName("iiwa_joint_2").index());  // user index = 0.
+  user_to_joint_index_map.push_back(
+      plant.GetJointByName("iiwa_joint_7").index());  // user index = 1.
+  user_to_joint_index_map.push_back(
+      plant.GetJointByName("iiwa_joint_3").index());  // user index = 2.
+
+  const MatrixX<double> Sx =
+      plant.tree().MakeStateSelectorMatrix(user_to_joint_index_map);
+
+  // Verify the sizes (all these joints are revolute with one q and one v).
+  const int num_selected_states = 2 * user_to_joint_index_map.size();
+  const int num_states = plant.tree().num_states();
+  ASSERT_EQ(Sx.rows(), num_selected_states);
+  ASSERT_EQ(Sx.cols(), num_states);
+
+  PRINT_VARn(Sx);
+
+  // Helper to verify if a matrix S is a valid "selection matrix". That is,
+  // it is a matrix full of zeroes with a single 1.0 value per row and per
+  // column.
+  auto IsSelectionMatrix = [](const MatrixX<double>& S) {
+    // Heper to verify if a vector v is one of the starnd basis versors eᵢ.
+    auto BelongsToStandardBasis = [](
+        const Eigen::Ref<const VectorX<double>>& v) {
+      int num_ones = 0;
+      int num_zeroes = 0;
+      for (int i = 0; i < v.size(); ++i) {
+        if (v(i) == 1) {
+          ++num_ones;
+        } else if (v(i) == 0) {
+          ++num_zeroes;
+        } else {
+          return false;
+        }
+      }
+      return (num_ones + num_zeroes) == v.size();
+    };
+
+    // Each column only has a single 1.0 entry and all zeroes.
+    for (int j = 0; j < S.cols(); ++j) {
+      if (!BelongsToStandardBasis(S.col(j))) return false;
+    }
+
+    // Each column only has a single 1.0 entry and all zeroes.
+    for (int i = 0; i < S.rows(); ++i) {
+      if (!BelongsToStandardBasis(S.row(i))) return false;
+    }
+
+    // If we are here is because all checks passed and we do have a valid
+    // selection matrix.
+    return true;
+  };
+
+  EXPECT_TRUE(IsSelectionMatrix(Sx));
+
+  // We know what the selection matrix should be for this case:
+  const int nq = plant.num_positions();
+  MatrixX<double> Sx_expected =
+      MatrixX<double>::Zero(num_selected_states, plant.num_multibody_states());
+  Sx_expected(0, 1) = 1;       // position for first joint, iiwa_joint_2.
+  Sx_expected(1, 6) = 1;       // position for second joint, iiwa_joint_7.
+  Sx_expected(2, 2) = 1;       // position for third joint, iiwa_joint_3.
+  Sx_expected(3, nq + 1) = 1;  // velocity for first joint, iiwa_joint_2.
+  Sx_expected(4, nq + 6) = 1;  // velocity for second joint, iiwa_joint_7.
+  Sx_expected(5, nq + 2) = 1;  // velocity for third joint, iiwa_joint_3.
+
+  EXPECT_EQ(Sx, Sx_expected);
+}
 
 }  // namespace
 }  // namespace multibody_plant

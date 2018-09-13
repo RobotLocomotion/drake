@@ -1164,6 +1164,52 @@ void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
   }
 }
 
+template <typename T>
+MatrixX<double> MultibodyTree<T>::MakeStateSelectorMatrix(
+    const std::vector<JointIndex>& user_to_joint_index_map) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+
+  // Determine the size of the vector of "selected" states xₛ.
+  int num_selected_positions = 0;
+  int num_selected_velocities = 0;
+  for (JointIndex joint_index : user_to_joint_index_map) {
+    num_selected_positions += get_joint(joint_index).num_positions();
+    num_selected_velocities += get_joint(joint_index).num_velocities();
+  }
+  const int num_selected_states =
+      num_selected_positions + num_selected_velocities;
+
+  // With state x of size n and selected state xₛ of size nₛ, Sx has size
+  // nₛ x n so that xₛ = Sx⋅x.
+  MatrixX<double> Sx =
+      MatrixX<double>::Zero(num_selected_states, num_states());
+
+  const int nq = num_positions();
+  // We place all selected positions first, followed by all the selected
+  // velocities, as in the original state x.
+  int selected_positions_index = 0;
+  int selected_velocities_index = num_selected_positions;
+  for (JointIndex joint_index : user_to_joint_index_map) {
+    const auto& joint = get_joint(joint_index);
+
+    const int pos_start = joint.position_start();
+    const int num_pos = joint.num_positions();
+    const int vel_start = joint.velocity_start();
+    const int num_vel = joint.num_velocities();
+
+    Sx.block(selected_positions_index, pos_start, num_pos, num_pos) =
+        MatrixX<double>::Identity(num_pos, num_pos);
+
+    Sx.block(selected_velocities_index, nq + vel_start, num_vel, num_vel) =
+        MatrixX<double>::Identity(num_vel, num_vel);
+
+    selected_positions_index += num_pos;
+    selected_velocities_index += num_vel;
+  }
+
+  return Sx;
+}
+
 // Explicitly instantiates on the most common scalar types.
 template class MultibodyTree<double>;
 template class MultibodyTree<AutoDiffXd>;
