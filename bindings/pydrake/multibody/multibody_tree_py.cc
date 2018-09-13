@@ -210,7 +210,41 @@ void init_module(py::module m) {
               return Jv_WF;
             },
             py::arg("context"), py::arg("frame_B"),
-            py::arg("p_BoFo_B") = Vector3<T>::Zero().eval());
+            py::arg("p_BoFo_B") = Vector3<T>::Zero().eval()).
+        def("SetFreeBodySpatialVelocityOrThrow",
+            [](
+                const Class* self, const Body<T>& body,
+                const SpatialVelocity<T>& V_WB, Context<T>* context) {
+              self->SetFreeBodySpatialVelocityOrThrow(body, V_WB, context);
+            },
+            py::arg("body"), py::arg("V_WB"), py::arg("context")).
+        def("CalcAllBodySpatialVelocitiesInWorld",
+            [](
+                const Class* self, const Body<T>& body,
+                const SpatialVelocity<T>& V_WB, Context<T>* context) {
+              self->SetFreeBodySpatialVelocityOrThrow(body, V_WB, context);
+            },
+            py::arg("body"), py::arg("V_WB"), py::arg("context")).
+        def("EvalBodyPoseInWorld",
+            [](
+                const Class* self, const Context<T>& context, Body<T>& body_B) {
+              self->EvalBodyPoseInWorld(context, body_B);
+            },
+            py::arg("context"), py::arg("body")).
+        def("EvalBodySpatialVelocityInWorld",
+            [](
+                const Class* self, const Context<T>& context, Body<T>& body_B) {
+              self->EvalBodySpatialVelocityInWorld(context, body_B);
+            },
+            py::arg("context"), py::arg("body")).
+        def("CalcAllBodyPosesInWorld",
+            [](
+                const Class* self, const Context<T>& context) {
+              std::vector<Isometry3<double>> X_WB;
+              self->CalcAllBodyPosesInWorld(context, &X_WB);
+              return X_WB;
+            },
+            py::arg("context"));
   }
 }
 
