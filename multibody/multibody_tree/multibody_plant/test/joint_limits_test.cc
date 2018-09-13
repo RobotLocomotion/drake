@@ -206,6 +206,8 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
           "iiwa14_no_collision.sdf";
   MultibodyPlant<double> plant(time_step);
   AddModelFromSdfFile(FindResourceOrThrow(file_path), &plant);
+  plant.WeldFrames(plant.world_frame(),
+                   plant.GetFrameByName("iiwa_link_0"));
   plant.Finalize();
 
   // Some sanity check on model sizes.
@@ -222,7 +224,7 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
 
   for (int joint_number = 1; joint_number <= 7; ++joint_number) {
     const std::string joint_name = "iiwa_joint_" + std::to_string(joint_number);
-    const auto& joint = plant.model().GetJointByName<RevoluteJoint>(joint_name);
+    const auto& joint = plant.tree().GetJointByName<RevoluteJoint>(joint_name);
     EXPECT_NEAR(joint.lower_limit(), lower_limits(joint_number-1),
                 std::numeric_limits<double>::epsilon());
     EXPECT_NEAR(joint.upper_limit(), upper_limits(joint_number-1),
@@ -239,7 +241,7 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
 
   for (int joint_number = 1; joint_number <= 7; ++joint_number) {
     const std::string joint_name = "iiwa_joint_" + std::to_string(joint_number);
-    const auto& joint = plant.model().GetJointByName<RevoluteJoint>(joint_name);
+    const auto& joint = plant.tree().GetJointByName<RevoluteJoint>(joint_name);
     EXPECT_LT(std::abs(
         (joint.get_angle(context)-joint.upper_limit())/joint.upper_limit()),
               kRelativePositionTolerance);
@@ -253,7 +255,7 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
   simulator.StepTo(simulation_time);
   for (int joint_number = 1; joint_number <= 7; ++joint_number) {
     const std::string joint_name = "iiwa_joint_" + std::to_string(joint_number);
-    const auto& joint = plant.model().GetJointByName<RevoluteJoint>(joint_name);
+    const auto& joint = plant.tree().GetJointByName<RevoluteJoint>(joint_name);
     EXPECT_LT(std::abs(
         (joint.get_angle(context)-joint.lower_limit())/joint.lower_limit()),
               kRelativePositionTolerance);

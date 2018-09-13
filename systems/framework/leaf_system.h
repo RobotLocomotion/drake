@@ -461,11 +461,10 @@ class LeafSystem : public System<T> {
     *dot << id << " [shape=record, label=\"" << name << "|{";
 
     // Append input ports to the label.
-    // TODO(david-german-tri): Provide a way to customize port names.
     *dot << "{";
     for (int i = 0; i < this->get_num_input_ports(); ++i) {
       if (i != 0) *dot << "|";
-      *dot << "<u" << i << ">u" << i;
+      *dot << "<u" << i << ">" << this->get_input_port(i).get_name();
     }
     *dot << "}";
 
@@ -850,6 +849,7 @@ class LeafSystem : public System<T> {
   /// DeclareInequalityConstraint()).
   const InputPort<T>& DeclareVectorInputPort(
       const BasicVector<T>& model_vector,
+      const std::string& name = "",
       optional<RandomDistribution> random_type = nullopt) {
     const int size = model_vector.size();
     const int index = this->get_num_input_ports();
@@ -861,7 +861,7 @@ class LeafSystem : public System<T> {
           DRAKE_DEMAND(input != nullptr);
           return *input;
         });
-    return this->DeclareInputPort(kVectorValued, size, random_type);
+    return this->DeclareInputPort(kVectorValued, size, name, random_type);
   }
 
   // Avoid shadowing out the no-arg DeclareAbstractInputPort().
@@ -872,10 +872,10 @@ class LeafSystem : public System<T> {
   /// LeafSystem's default implementation of DoAllocateInputAbstract will be
   /// model_value.Clone().
   const InputPort<T>& DeclareAbstractInputPort(
-      const AbstractValue& model_value) {
+      const AbstractValue& model_value, const std::string& name = "") {
     const int next_index = this->get_num_input_ports();
     model_input_values_.AddModel(next_index, model_value.Clone());
-    return this->DeclareAbstractInputPort();
+    return this->DeclareAbstractInputPort(name);
   }
   //@}
 

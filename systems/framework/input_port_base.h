@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_optional.h"
@@ -52,6 +54,9 @@ class InputPortBase {
   /** Returns the RandomDistribution if this is a random port. */
   optional<RandomDistribution> get_random_type() const { return random_type_; }
 
+  /** Get port name. */
+  const std::string& get_name() const { return name_; }
+
  protected:
   /** Provides derived classes the ability to set the base
   class members at construction.
@@ -65,6 +70,9 @@ class InputPortBase {
   @param size
     If the port described is vector-valued, the number of elements, or kAutoSize
     if determined by connections. Ignored for abstract-valued ports.
+  @param name
+    A name for the port.  Input port names should be non-empty and unique
+    within a single System.
   @param random_type
     Input ports may optionally be labeled as random, if the port is intended to
     model a random-source "noise" or "disturbance" input.
@@ -72,6 +80,7 @@ class InputPortBase {
     The System that will own this new input port. */
   InputPortBase(InputPortIndex index, DependencyTicket ticket,
                 PortDataType data_type, int size,
+                const std::string& name,
                 const optional<RandomDistribution>& random_type,
                 SystemBase* system_base);
 
@@ -84,6 +93,7 @@ class InputPortBase {
   // Port details.
   const PortDataType data_type_;
   const int size_;
+  const std::string name_;
   const optional<RandomDistribution> random_type_;
 };
 

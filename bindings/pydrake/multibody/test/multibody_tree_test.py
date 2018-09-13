@@ -48,6 +48,7 @@ def get_index_class(cls):
     class_to_index_class_map = {
         Body: BodyIndex,
         ForceElement: ForceElementIndex,
+        Frame: FrameIndex,
         Joint: JointIndex,
         JointActuator: JointActuatorIndex,
     }
@@ -114,6 +115,10 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertIs(
             plant.GetBodyByName(name="Link1"),
             plant.GetBodyByName(name="Link1", model_instance=model_instance))
+        self._test_frame_api(plant.GetFrameByName(name="Link1"))
+        self.assertIs(
+            plant.GetFrameByName(name="Link1"),
+            plant.GetFrameByName(name="Link1", model_instance=model_instance))
         self.assertIsInstance(
             plant.get_actuation_input_port(), InputPort)
         self.assertIsInstance(
@@ -126,6 +131,11 @@ class TestMultibodyTree(unittest.TestCase):
         cls = type(element)
         self.assertIsInstance(element.index(), get_index_class(cls))
         self.assertIsInstance(element.model_instance(), ModelInstanceIndex)
+
+    def _test_frame_api(self, frame):
+        self.assertIsInstance(frame, Frame)
+        self._test_multibody_tree_element_mixin(frame)
+        self.assertIsInstance(frame.name(), unicode)
 
     def _test_body_api(self, body):
         self.assertIsInstance(body, Body)
@@ -171,7 +181,7 @@ class TestMultibodyTree(unittest.TestCase):
         AddModelFromSdfFile(file_name, plant)
         plant.Finalize()
         context = plant.CreateDefaultContext()
-        tree = plant.model()
+        tree = plant.tree()
         world_frame = plant.world_frame()
         # TODO(eric.cousineau): Replace this with `GetFrameByName`.
         link1_frame = plant.GetBodyByName("Link1").body_frame()
@@ -190,6 +200,60 @@ class TestMultibodyTree(unittest.TestCase):
             context=context, frame_B=link1_frame,
             p_BoFo_B=[0, 0, 0])
         self.assertTupleEqual(Jv_WL.shape, (6, plant.num_velocities()))
+
+    def test_multibody_state_access(self):
+        file_name = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        plant = MultibodyPlant()
+        AddModelFromSdfFile(file_name, plant)
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+        tree = plant.tree()
+
+        self.assertEqual(plant.num_positions(), 2)
+        self.assertEqual(plant.num_velocities(), 2)
+
+        q0 = np.array([3.14, 2.])
+        v0 = np.array([-0.5, 1.])
+        x0 = np.concatenate([q0, v0])
+
+        # The default state is all values set to zero.
+        x = tree.get_multibody_state_vector(context)
+        self.assertTrue(np.allclose(x, np.zeros(4)))
+
+        # Write into a mutable reference to the state vector.
+        x_reff = tree.get_mutable_multibody_state_vector(context)
+        x_reff[:] = x0
+
+        # Verify we did modify the state stored in context.
+        x = tree.get_multibody_state_vector(context)
+        self.assertTrue(np.allclose(x, x0))
+
+    def test_set_free_body_pose(self):
+        file_name = FindResourceOrThrow(
+            "drake/examples/double_pendulum/models/double_pendulum.sdf")
+        plant = MultibodyPlant()
+        plant_model = AddModelFromSdfFile(file_name, plant)
+        plant.Finalize()
+
+        context = plant.CreateDefaultContext()
+        tree = plant.tree()
+        X_WB_desired = Isometry3.Identity()
+        R_WB = np.array([[0., 1., 0.],
+                         [0., 0., 1.],
+                         [1., 0., 0.]])
+        X_WB_desired.set_rotation(R_WB)
+        tree.SetFreeBodyPoseOrThrow(
+            body=plant.GetBodyByName("base", plant_model),
+            X_WB=X_WB_desired, context=context)
+
+        world_frame = plant.world_frame()
+        base_frame = plant.GetBodyByName("base").body_frame()
+
+        X_WB = tree.CalcRelativeTransform(
+            context, frame_A=world_frame, frame_B=base_frame)
+
+        self.assertTrue(np.allclose(X_WB.matrix(), X_WB_desired.matrix()))
 
     def test_multibody_add_joint(self):
         """

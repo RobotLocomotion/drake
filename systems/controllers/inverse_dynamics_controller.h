@@ -63,9 +63,9 @@ class InverseDynamicsController : public Diagram<T>,
    * unique pointer.
    * @param robot Unique pointer whose ownership will be transferred to this
    * instance.
-   * @param kp Position gain
-   * @param ki Integral gain
-   * @param kd Velocity gain
+   * @param kp Position gain.
+   * @param ki Integral gain.
+   * @param kd Velocity gain.
    * @param has_reference_acceleration If true, there is an extra BasicVector
    * input port for `vd*`. If false, `vd*` is treated as zero, and no extra
    * input port is declared.
@@ -77,20 +77,28 @@ class InverseDynamicsController : public Diagram<T>,
                             bool has_reference_acceleration);
 
   /**
-   * Constructs the controller that takes ownership of a given MultiBodyPlant
-   * unique pointer.
-   * @param robot Unique pointer whose ownership will be transferred to this
-   * instance.
-   * @param kp Position gain
-   * @param ki Integral gain
-   * @param kd Velocity gain
+   * Constructs an inverse dynamics controller for the given `plant` model.
+   * The %InverseDynamicsController holds an internal, non-owned reference to
+   * the MultibodyPlant object so you must ensure that `plant` has a longer
+   * lifetime than `this` %InverseDynamicsController.
+   * @param plant The model of the plant for control.
+   * @param kp Position gain.
+   * @param ki Integral gain.
+   * @param kd Velocity gain.
    * @param has_reference_acceleration If true, there is an extra BasicVector
    * input port for `vd*`. If false, `vd*` is treated as zero, and no extra
    * input port is declared.
-   * @pre `robot` has been finalized (robot.is_finalized() returns `true`).
+   * @pre `plant` has been finalized (plant.is_finalized() returns `true`).
+   * @throws std::exception if
+   *  - The plant is not finalized (see MultibodyPlant::Finalize()).
+   *  - The number of generalized velocities is not equal to the number of
+   *    generalized positions.
+   *  - The model is not fully actuated.
+   *  - Vector kp, ki and kd do not all have the same size equal to the number
+   *    of generalized positions.
    */
   InverseDynamicsController(
-      std::unique_ptr<multibody::multibody_plant::MultibodyPlant<T>> robot,
+      const multibody::multibody_plant::MultibodyPlant<T>& plant,
       const VectorX<double>& kp,
       const VectorX<double>& ki,
       const VectorX<double>& kd,
@@ -160,7 +168,7 @@ class InverseDynamicsController : public Diagram<T>,
    */
   const multibody::multibody_plant::MultibodyPlant<T>*
       get_multibody_plant_for_control() const {
-    return multibody_plant_for_control_.get();
+    return multibody_plant_for_control_;
   }
 
  private:
@@ -170,8 +178,8 @@ class InverseDynamicsController : public Diagram<T>,
       DiagramBuilder<T>* diagram_builder);
 
   std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_for_control_;
-  std::unique_ptr<multibody::multibody_plant::MultibodyPlant<T>>
-      multibody_plant_for_control_;
+  const multibody::multibody_plant::MultibodyPlant<T>*
+      multibody_plant_for_control_{nullptr};
   PidController<T>* pid_{nullptr};
   const bool has_reference_acceleration_{false};
   int input_port_index_estimated_state_{-1};

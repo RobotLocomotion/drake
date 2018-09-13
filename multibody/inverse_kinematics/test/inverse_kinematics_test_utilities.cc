@@ -1,5 +1,7 @@
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
 
+#include "drake/common/find_resource.h"
+#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 namespace drake {
 namespace multibody {
 namespace {
@@ -30,6 +32,19 @@ template <typename T>
 std::unique_ptr<multibody_plant::MultibodyPlant<T>>
 ConstructTwoFreeBodiesPlant() {
   return ConstructTwoFreeBodiesHelper<multibody_plant::MultibodyPlant<T>>();
+}
+
+std::unique_ptr<multibody_plant::MultibodyPlant<double>> ConstructIiwaPlant(
+    const std::string& iiwa_sdf_name, double time_step) {
+  const std::string file_path =
+      "drake/manipulation/models/iiwa_description/sdf/" + iiwa_sdf_name;
+  auto plant =
+      std::make_unique<multibody_plant::MultibodyPlant<double>>(time_step);
+  parsing::AddModelFromSdfFile(FindResourceOrThrow(file_path), plant.get());
+  plant->WeldFrames(plant->world_frame(),
+                    plant->GetFrameByName("iiwa_link_0"));
+  plant->Finalize();
+  return plant;
 }
 
 Eigen::Vector4d QuaternionToVectorWxyz(const Eigen::Quaterniond& q) {

@@ -57,6 +57,44 @@ class TwoFreeBodiesTest : public ::testing::Test {
   Eigen::Vector3d body2_position_sol_;
 };
 
+GTEST_TEST(InverseKinematicsTest, ConstructorWithJointLimits) {
+  // Constructs an inverse kinematics problem for IIWA robot, make sure that
+  // the joint limits are imposed.
+  auto plant = ConstructIiwaPlant("iiwa14_no_collision.sdf", 0.01);
+
+  InverseKinematics ik(*plant);
+  // Now check the joint limits.
+  VectorX<double> lower_limits(7);
+  // The lower and upper joint limits are copied from the SDF file. Please make
+  // sure the values are in sync with the SDF file.
+  lower_limits << -2.96706, -2.0944, -2.96706, -2.0944, -2.96706, -2.0944,
+      -3.05433;
+  VectorX<double> upper_limits(7);
+  upper_limits = -lower_limits;
+  // Check if q_test will satisfy the joint limit constraint imposed from the
+  // IK constructor.
+  auto q_test_bound = ik.get_mutable_prog()->AddBoundingBoxConstraint(
+      Eigen::VectorXd::Zero(7), Eigen::VectorXd::Zero(7), ik.q());
+  auto check_q_test = [&ik, &q_test_bound](const Eigen::VectorXd& q_test) {
+    q_test_bound.evaluator()->UpdateLowerBound(q_test);
+    q_test_bound.evaluator()->UpdateUpperBound(q_test);
+    const auto result = ik.get_mutable_prog()->Solve();
+    return result == solvers::SolutionResult::kSolutionFound;
+  };
+  for (int i = 0; i < 7; ++i) {
+    Eigen::VectorXd q_good = Eigen::VectorXd::Zero(7);
+    q_good(i) = lower_limits(i) * 0.01 + upper_limits(i) * 0.99;
+    EXPECT_TRUE(check_q_test(q_good));
+    q_good(i) = lower_limits(i) * 0.99 + upper_limits(i) * 0.01;
+    EXPECT_TRUE(check_q_test(q_good));
+    Eigen::VectorXd q_bad = q_good;
+    q_bad(i) = -0.01 * lower_limits(i) + 1.01 * upper_limits(i);
+    EXPECT_FALSE(check_q_test(q_bad));
+    q_bad(i) = 1.01 * lower_limits(i) - 0.01 * upper_limits(i);
+    EXPECT_FALSE(check_q_test(q_bad));
+  }
+}
+
 TEST_F(TwoFreeBodiesTest, PositionConstraint) {
   const Eigen::Vector3d p_BQ(0.2, 0.3, 0.5);
   const Eigen::Vector3d p_AQ_lower(-0.1, -0.2, -0.3);
@@ -86,7 +124,13 @@ TEST_F(TwoFreeBodiesTest, PositionConstraint) {
 TEST_F(TwoFreeBodiesTest, OrientationConstraint) {
   const double angle_bound = 0.05 * M_PI;
 
-  ik_.AddOrientationConstraint(body1_frame_, body2_frame_, angle_bound);
+  const math::RotationMatrix<double> R_AbarA(Eigen::AngleAxisd(
+      0.1 * M_PI, Eigen::Vector3d(0.2, 0.4, 1.2).normalized()));
+  const math::RotationMatrix<double> R_BbarB(Eigen::AngleAxisd(
+      0.2 * M_PI, Eigen::Vector3d(1.2, 2.1, -0.2).normalized()));
+
+  ik_.AddOrientationConstraint(body1_frame_, R_AbarA, body2_frame_, R_BbarB,
+                               angle_bound);
 
   ik_.get_mutable_prog()->SetInitialGuess(ik_.q().head<4>(),
                                           Eigen::Vector4d(1, 0, 0, 0));
@@ -96,9 +140,12 @@ TEST_F(TwoFreeBodiesTest, OrientationConstraint) {
   EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
   const auto q_sol = ik_.prog().GetSolution(ik_.q());
   RetrieveSolution();
-  const double angle =
-      Eigen::AngleAxisd(body1_quaternion_sol_.inverse() * body2_quaternion_sol_)
-          .angle();
+  const Eigen::Matrix3d R_AbarBbar =
+      (body1_quaternion_sol_.inverse() * body2_quaternion_sol_)
+          .toRotationMatrix();
+  const Eigen::Matrix3d R_AB =
+      R_AbarA.matrix().transpose() * R_AbarBbar * R_BbarB.matrix();
+  const double angle = Eigen::AngleAxisd(R_AB).angle();
   EXPECT_LE(angle, angle_bound + 1E-6);
 }
 

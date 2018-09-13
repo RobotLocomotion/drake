@@ -1,5 +1,7 @@
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 
+#include <limits>
+
 #include "drake/multibody/inverse_kinematics/angle_between_vectors_constraint.h"
 #include "drake/multibody/inverse_kinematics/gaze_target_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
@@ -11,10 +13,26 @@ InverseKinematics::InverseKinematics(
     const multibody_plant::MultibodyPlant<double>& plant)
     : prog_{new solvers::MathematicalProgram()},
       plant_(plant),
-      tree_(plant_.model().ToAutoDiffXd()),
+      tree_(plant_.tree().ToAutoDiffXd()),
       context_(tree_->CreateDefaultContext()),
       q_(prog_->NewContinuousVariables(plant_.num_positions(), "q")) {
-  // TODO(hongkai.dai) Add joint limit constraint here.
+  // Initialize the lower and upper bounds to -inf/inf. A free floating body
+  // does not increment `num_joints()` (A single free floating body has
+  // num_joints() = 0), but has 7 generalized positions for each free floating
+  // body. The initialization below guarantees proper bounds on the
+  // generalized positions for the free floating body.
+  Eigen::VectorXd q_lower = Eigen::VectorXd::Constant(
+      tree_->num_positions(), -std::numeric_limits<double>::infinity());
+  Eigen::VectorXd q_upper = Eigen::VectorXd::Constant(
+      tree_->num_positions(), std::numeric_limits<double>::infinity());
+  for (JointIndex i{0}; i < plant_.tree().num_joints(); ++i) {
+    const auto& joint = plant_.tree().get_joint(i);
+    q_lower.segment(joint.position_start(), joint.num_positions()) =
+        joint.lower_limits();
+    q_upper.segment(joint.position_start(), joint.num_positions()) =
+        joint.upper_limits();
+  }
+  prog_->AddBoundingBoxConstraint(q_lower, q_upper, q_);
   // TODO(hongkai.dai) Add other position constraints, such as unit length
   // quaternion constraint here.
 }
@@ -31,12 +49,13 @@ solvers::Binding<solvers::Constraint> InverseKinematics::AddPositionConstraint(
 }
 
 solvers::Binding<solvers::Constraint>
-InverseKinematics::AddOrientationConstraint(const Frame<double>& frameA,
-                                            const Frame<double>& frameB,
-                                            double angle_bound) {
+InverseKinematics::AddOrientationConstraint(
+    const Frame<double>& frameAbar, const math::RotationMatrix<double>& R_AbarA,
+    const Frame<double>& frameBbar, const math::RotationMatrix<double>& R_BbarB,
+    double angle_bound) {
   auto constraint = std::make_shared<internal::OrientationConstraint>(
-      *tree_, frameA.index(), frameB.index(), angle_bound,
-      get_mutable_context());
+      *tree_, frameAbar.index(), R_AbarA, frameBbar.index(), R_BbarB,
+      angle_bound, get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
 }
 

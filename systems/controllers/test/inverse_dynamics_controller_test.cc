@@ -103,6 +103,8 @@ GTEST_TEST(InverseDynamicsControllerTestMBP, TestTorque) {
   const std::string full_name = drake::FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
   multibody::parsing::AddModelFromSdfFile(full_name, robot.get());
+  robot->WeldFrames(robot->world_frame(),
+                    robot->GetFrameByName("iiwa_link_0"));
   robot->Finalize();
   auto robot_context = robot->CreateDefaultContext();
 
@@ -114,13 +116,12 @@ GTEST_TEST(InverseDynamicsControllerTestMBP, TestTorque) {
   kd = kp / 2.;
 
   auto dut = std::make_unique<InverseDynamicsController<double>>(
-      std::move(robot), kp, ki, kd,
-          true /* expose reference acceleration port */);
+      *robot, kp, ki, kd, true /* expose reference acceleration port */);
   auto inverse_dynamics_context = dut->CreateDefaultContext();
   auto output = dut->AllocateOutput();
   const MultibodyPlant<double>& robot_plant =
       *dut->get_multibody_plant_for_control();
-  const MultibodyTree<double>& robot_model = robot_plant.model();
+  const MultibodyTree<double>& robot_tree = robot_plant.tree();
 
   // Sets current state and reference state and acceleration values.
   VectorX<double> q(dim), v(dim), q_r(dim), v_r(dim), vd_r(dim);
@@ -133,15 +134,15 @@ GTEST_TEST(InverseDynamicsControllerTestMBP, TestTorque) {
 
   // Connects inputs.
   auto state_input = std::make_unique<BasicVector<double>>(
-      robot_model.num_positions() + robot_model.num_velocities());
+      robot_tree.num_positions() + robot_tree.num_velocities());
   state_input->get_mutable_value() << q, v;
 
   auto reference_state_input = std::make_unique<BasicVector<double>>(
-      robot_model.num_positions() + robot_model.num_velocities());
+      robot_tree.num_positions() + robot_tree.num_velocities());
   reference_state_input->get_mutable_value() << q_r, v_r;
 
   auto reference_acceleration_input =
-      std::make_unique<BasicVector<double>>(robot_model.num_velocities());
+      std::make_unique<BasicVector<double>>(robot_tree.num_velocities());
   reference_acceleration_input->get_mutable_value() << vd_r;
 
   inverse_dynamics_context->FixInputPort(

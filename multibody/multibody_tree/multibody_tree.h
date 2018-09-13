@@ -621,6 +621,7 @@ class MultibodyTree {
     const JointIndex joint_index(owned_joints_.size());
     joint->set_parent_tree(this, joint_index);
     JointType<T>* raw_joint_ptr = joint.get();
+    joint_name_to_index_.insert({joint->name(), joint->index()});
     owned_joints_.push_back(std::move(joint));
     return *raw_joint_ptr;
   }
@@ -720,7 +721,6 @@ class MultibodyTree {
             name,
             *frame_on_parent, *frame_on_child,
             std::forward<Args>(args)...));
-    joint_name_to_index_.insert(std::make_pair(name, joint.index()));
     return joint;
   }
 
@@ -950,6 +950,20 @@ class MultibodyTree {
   const Mobilizer<T>& get_mobilizer(MobilizerIndex mobilizer_index) const {
     DRAKE_THROW_UNLESS(mobilizer_index < num_mobilizers());
     return *owned_mobilizers_[mobilizer_index];
+  }
+
+  /// Returns the name of a model_instance.
+  /// @throws std::logic_error when `model_instance` does not correspond to a
+  /// model in this multibody tree.
+  const std::string& GetModelInstanceName(
+      ModelInstanceIndex model_instance) const {
+    const auto it = instance_index_to_name_.find(model_instance);
+    if (it == instance_index_to_name_.end()) {
+      throw std::logic_error("There is no model instance id " +
+                             std::to_string(model_instance) +
+                             " in the model.");
+    }
+    return it->second;
   }
 
   /// @name Querying for multibody elements by name
@@ -2439,6 +2453,7 @@ class MultibodyTree {
     tree_clone->joint_name_to_index_ = this->joint_name_to_index_;
     tree_clone->actuator_name_to_index_ = this->actuator_name_to_index_;
     tree_clone->instance_name_to_index_ = this->instance_name_to_index_;
+    tree_clone->instance_index_to_name_ = this->instance_index_to_name_;
 
     // All other internals templated on T are created with the following call to
     // FinalizeInternals().

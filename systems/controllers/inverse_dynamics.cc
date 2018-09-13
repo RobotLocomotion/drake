@@ -16,7 +16,9 @@ template <typename T>
 InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>* tree,
                                     bool pure_gravity_compensation)
     : rigid_body_tree_(tree),
-      pure_gravity_compensation_(pure_gravity_compensation),
+      mode_{(pure_gravity_compensation) ?
+            InverseDynamicsMode::kGravityCompensation :
+            InverseDynamicsMode::kInverseDynamics},
       q_dim_(tree->get_num_positions()),
       v_dim_(tree->get_num_velocities()) {
   input_port_index_state_ =
@@ -28,7 +30,7 @@ InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>* tree,
 
   // Doesn't declare desired acceleration input port if we are only doing
   // gravity compensation.
-  if (!pure_gravity_compensation_) {
+  if (!pure_gravity_compensation) {
     input_port_index_desired_acceleration_ =
         this->DeclareInputPort(kVectorValued, v_dim_).get_index();
   }
@@ -38,9 +40,11 @@ template <typename T>
 InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
                                     bool pure_gravity_compensation)
     : multibody_plant_(plant),
-      pure_gravity_compensation_(pure_gravity_compensation),
-      q_dim_(plant->model().num_positions()),
-      v_dim_(plant->model().num_velocities()) {
+      mode_{(pure_gravity_compensation) ?
+            InverseDynamicsMode::kGravityCompensation :
+            InverseDynamicsMode::kInverseDynamics},
+      q_dim_(plant->tree().num_positions()),
+      v_dim_(plant->tree().num_velocities()) {
   DRAKE_DEMAND(plant->is_finalized());
 
   input_port_index_state_ =
@@ -55,7 +59,56 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
 
   // Doesn't declare desired acceleration input port if we are only doing
   // gravity compensation.
-  if (!pure_gravity_compensation_) {
+  if (!pure_gravity_compensation) {
+    input_port_index_desired_acceleration_ =
+        this->DeclareInputPort(kVectorValued, v_dim_).get_index();
+  }
+}
+
+template <typename T>
+InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>* tree,
+                                    const InverseDynamicsMode mode)
+    : rigid_body_tree_(tree),
+      mode_(mode),
+      q_dim_(tree->get_num_positions()),
+      v_dim_(tree->get_num_velocities()) {
+  input_port_index_state_ =
+      this->DeclareInputPort(kVectorValued, q_dim_ + v_dim_).get_index();
+  output_port_index_force_ =
+      this->DeclareVectorOutputPort(BasicVector<T>(v_dim_),
+                                    &InverseDynamics<T>::CalcOutputForce)
+          .get_index();
+
+  // Doesn't declare desired acceleration input port if we are only doing
+  // gravity compensation.
+  if (!this->is_pure_gravity_compensation()) {
+    input_port_index_desired_acceleration_ =
+        this->DeclareInputPort(kVectorValued, v_dim_).get_index();
+  }
+}
+
+template <typename T>
+InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
+                                    const InverseDynamicsMode mode)
+    : multibody_plant_(plant),
+      mode_(mode),
+      q_dim_(plant->tree().num_positions()),
+      v_dim_(plant->tree().num_velocities()) {
+  DRAKE_DEMAND(plant->is_finalized());
+
+  input_port_index_state_ =
+      this->DeclareInputPort(kVectorValued, q_dim_ + v_dim_).get_index();
+  output_port_index_force_ =
+      this->DeclareVectorOutputPort(BasicVector<T>(v_dim_),
+                                    &InverseDynamics<T>::CalcOutputForce)
+          .get_index();
+
+  // Make context with default parameters.
+  multibody_plant_context_ = plant->CreateDefaultContext();
+
+  // Doesn't declare desired acceleration input port if we are only doing
+  // gravity compensation.
+  if (!this->is_pure_gravity_compensation()) {
     input_port_index_desired_acceleration_ =
         this->DeclareInputPort(kVectorValued, v_dim_).get_index();
   }
@@ -70,7 +123,7 @@ void InverseDynamics<T>::CalcOutputForce(const Context<T>& context,
   // Desired acceleration input.
   VectorX<T> desired_vd = VectorX<T>::Zero(v_dim_);
 
-  if (!pure_gravity_compensation_) {
+  if (!this->is_pure_gravity_compensation()) {
     // Only eval acceleration input port when we are not in pure gravity
     // compensation mode.
     desired_vd = this->EvalEigenVectorInput(
@@ -90,15 +143,15 @@ void InverseDynamics<T>::CalcOutputForce(const Context<T>& context,
 
     VectorX<T> force = rigid_body_tree_->inverseDynamics(
         cache, f_ext, desired_vd,
-        !pure_gravity_compensation_ /* include v dependent terms */);
+        (mode_ == InverseDynamicsMode::kInverseDynamics));
 
     DRAKE_ASSERT(force.size() == output->size());
     output->get_mutable_value() = force;
   } else {
     DRAKE_DEMAND(multibody_plant_);
-    const auto& tree = multibody_plant_->model();
+    const auto& tree = multibody_plant_->tree();
 
-    if (pure_gravity_compensation_) {
+    if (this->is_pure_gravity_compensation()) {
       output->get_mutable_value() = tree.CalcGravityGeneralizedForces(
           *multibody_plant_context_);
       return;

@@ -11,10 +11,11 @@ from pydrake.multibody.benchmarks.acrobot import (
 )
 import unittest
 import pydrake.solvers.mathematicalprogram as mp
+import pydrake.math
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.util.eigen_geometry import Quaternion
+from pydrake.util.eigen_geometry import Quaternion, AngleAxis
 
 
 class TestInverseKinematics(unittest.TestCase):
@@ -88,8 +89,13 @@ class TestInverseKinematics(unittest.TestCase):
 
     def test_AddOrientationConstraint(self):
         theta_bound = 0.2 * math.pi
+        R_AbarA = pydrake.math.RotationMatrix(
+            quaternion=Quaternion(0.5, -0.5, 0.5, 0.5))
+        R_BbarB = pydrake.math.RotationMatrix(
+            quaternion=Quaternion(1.0 / 3, 2.0 / 3, 0, 2.0 / 3))
         self.ik_two_bodies.AddOrientationConstraint(
-            frameA=self.body1_frame, frameB=self.body2_frame,
+            frameAbar=self.body1_frame, R_AbarA=R_AbarA,
+            frameBbar=self.body2_frame, R_BbarB=R_BbarB,
             theta_bound=theta_bound)
         result = self.prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
@@ -100,7 +106,9 @@ class TestInverseKinematics(unittest.TestCase):
         body2_quat = self._body2_quat(q_val)
         body1_rotmat = Quaternion(body1_quat).rotation()
         body2_rotmat = Quaternion(body2_quat).rotation()
-        R_AB = body1_rotmat.transpose().dot(body2_rotmat)
+        R_AbarBbar = body1_rotmat.transpose().dot(body2_rotmat)
+        R_AB = R_AbarA.matrix().transpose().dot(
+            R_AbarBbar.dot(R_BbarB.matrix()))
         self.assertGreater(R_AB.trace(), 1 + 2 * math.cos(theta_bound) - 1E-6)
 
     def test_AddGazeTargetConstraint(self):
