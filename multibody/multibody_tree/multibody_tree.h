@@ -764,6 +764,12 @@ class MultibodyTree {
     JointActuator<T>* actuator = owned_actuators_.back().get();
     actuator->set_parent_tree(this, actuator_index);
     actuator_name_to_index_.insert(std::make_pair(name, actuator_index));
+
+    // Resize the the latest count of joints. Additional values, if any, will
+    // get initialized to an invalid JointActuatorIndex.
+    joint_to_actuator_index_.resize(num_joints());
+    joint_to_actuator_index_[joint.index()] = actuator_index;
+
     return *actuator;
   }
 
@@ -2307,6 +2313,12 @@ class MultibodyTree {
   MatrixX<double> MakeStateSelectorMatrix(
       const std::vector<JointIndex>& user_to_joint_index_map) const;
 
+  MatrixX<double> MakeActuatorSelectorMatrix(
+      const std::vector<JointActuatorIndex>& user_to_actuator_index_map) const;
+
+  MatrixX<double> MakeActuatorSelectorMatrix(
+      const std::vector<JointIndex>& user_to_joint_index_map) const;
+
   /// @name Methods to retrieve multibody element variants
   ///
   /// Given two variants of the same %MultibodyTree, these methods map an
@@ -2854,6 +2866,13 @@ class MultibodyTree {
   // Map used to find actuator indexes by their actuator name.
   std::unordered_multimap<std::string,
                           JointActuatorIndex> actuator_name_to_index_;
+
+  // Vectored entries are ordered by JointIndex. This maps the a joint with
+  // index joint_index to its actuator with index
+  // joint_to_actuator_index_[joint_index].
+  // joint_to_actuator_index_[joint_index] will have an invalide value (
+  // TypeSafeIndex::is_valid()) if the joint does not have an actuator.
+  std::vector<JointActuatorIndex> joint_to_actuator_index_;
 
   // Map used to find a model instance index by its model instance name.
   std::unordered_map<std::string, ModelInstanceIndex> instance_name_to_index_;

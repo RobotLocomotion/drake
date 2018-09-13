@@ -1210,6 +1210,71 @@ MatrixX<double> MultibodyTree<T>::MakeStateSelectorMatrix(
   return Sx;
 }
 
+template <typename T>
+MatrixX<double> MultibodyTree<T>::MakeActuatorSelectorMatrix(
+    const std::vector<JointActuatorIndex>& user_to_actuator_index_map) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+
+#if 0
+  std::vector<int> joint_user_index_map;
+  joint_user_index_map.resize(num_joints(), -1 /* invalid value */);
+
+  int user_index(0);
+  for (JointIndex joint_index : user_to_joint_index_map) {
+    const auto& joint = get_joint(joint_index);
+    joint_user_index_map[joint.index()] = user_index;
+    ++user_index;
+  }
+#endif
+
+  const int num_selected_actuators = user_to_actuator_index_map.size();
+
+  // The actuation selector matrix maps the vector of "selected" actuators to
+  // the full vector of actuators: u = Sᵤ⋅uₛ.
+  MatrixX<double> Su =
+      MatrixX<double>::Zero(num_actuated_dofs(), num_selected_actuators);
+  int user_index(0);
+  for (JointActuatorIndex actuator_index : user_to_actuator_index_map) {
+    //const auto& actuator = get_joint_actuator(actuator_index);
+    //const auto& joint = actuator.joint();
+    Su(actuator_index, user_index) = 1.0;
+    ++user_index;
+  }
+
+  return Su;
+}
+
+template <typename T>
+MatrixX<double> MultibodyTree<T>::MakeActuatorSelectorMatrix(
+    const std::vector<JointIndex>& user_to_joint_index_map) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+
+  std::vector<JointActuatorIndex> joint_to_actuator_index(num_joints());
+  for (JointActuatorIndex actuator_index(0);
+       actuator_index < num_actuators(); ++actuator_index) {
+    const auto& actuator = get_joint_actuator(actuator_index);
+    joint_to_actuator_index[actuator.joint().index()] = actuator_index;
+  }
+
+  // Build a list of actuators in the order given by user_to_joint_index_map,
+  // which must contain actuated joints. We verify this.
+  std::vector<JointActuatorIndex> user_to_actuator_index_map;
+  for (JointIndex joint_index : user_to_joint_index_map) {
+    const auto& joint = get_joint(joint_index);
+
+    // If the map has an invalid index then this joint does not have an
+    // actuator.
+    if (!joint_to_actuator_index[joint_index].is_valid()) {
+      throw std::logic_error(
+          "Joint '" + joint.name() + "' does not have an actuator.");
+    }
+
+    user_to_actuator_index_map.push_back(joint_to_actuator_index[joint_index]);
+  }
+
+  return MakeActuatorSelectorMatrix(user_to_actuator_index_map);
+}
+
 // Explicitly instantiates on the most common scalar types.
 template class MultibodyTree<double>;
 template class MultibodyTree<AutoDiffXd>;

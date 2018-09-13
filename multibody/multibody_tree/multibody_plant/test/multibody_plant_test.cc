@@ -32,10 +32,6 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/linear_system.h"
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-
 namespace drake {
 
 using Eigen::AngleAxisd;
@@ -1825,81 +1821,84 @@ GTEST_TEST(KukaWithSimpleGripper, StateSelection) {
   EXPECT_EQ(plant.num_positions(), 9);
   EXPECT_EQ(plant.num_velocities(), 9);
 
-  std::vector<JointIndex> user_to_joint_index_map;
+  std::vector<JointIndex> arm_selected_joints;
   // For this example we are only interested in the state for joints:
   //  - iiwa_joint_2
   //  - iiwa_joint_7
   //  - iiwa_joint_3
   // In that order.
   // We therefore create a user to joint index map accordingly.
-  user_to_joint_index_map.push_back(
+  arm_selected_joints.push_back(
       plant.GetJointByName("iiwa_joint_2").index());  // user index = 0.
-  user_to_joint_index_map.push_back(
+  arm_selected_joints.push_back(
       plant.GetJointByName("iiwa_joint_7").index());  // user index = 1.
-  user_to_joint_index_map.push_back(
+  arm_selected_joints.push_back(
       plant.GetJointByName("iiwa_joint_3").index());  // user index = 2.
 
-  const MatrixX<double> Sx =
-      plant.tree().MakeStateSelectorMatrix(user_to_joint_index_map);
+  // State selector for the arm.
+  const MatrixX<double> Sx_arm =
+      plant.tree().MakeStateSelectorMatrix(arm_selected_joints);
+
+  // Actuation selector for the arm.
+  const MatrixX<double> Su_arm =
+      plant.tree().MakeActuatorSelectorMatrix(arm_selected_joints);
 
   // Verify the sizes (all these joints are revolute with one q and one v).
-  const int num_selected_states = 2 * user_to_joint_index_map.size();
+  const int num_selected_states = 2 * arm_selected_joints.size();
   const int num_states = plant.tree().num_states();
-  ASSERT_EQ(Sx.rows(), num_selected_states);
-  ASSERT_EQ(Sx.cols(), num_states);
-
-  PRINT_VARn(Sx);
-
-  // Helper to verify if a matrix S is a valid "selection matrix". That is,
-  // it is a matrix full of zeroes with a single 1.0 value per row and per
-  // column.
-  auto IsSelectionMatrix = [](const MatrixX<double>& S) {
-    // Heper to verify if a vector v is one of the starnd basis versors eᵢ.
-    auto BelongsToStandardBasis = [](
-        const Eigen::Ref<const VectorX<double>>& v) {
-      int num_ones = 0;
-      int num_zeroes = 0;
-      for (int i = 0; i < v.size(); ++i) {
-        if (v(i) == 1) {
-          ++num_ones;
-        } else if (v(i) == 0) {
-          ++num_zeroes;
-        } else {
-          return false;
-        }
-      }
-      return (num_ones + num_zeroes) == v.size();
-    };
-
-    // Each column only has a single 1.0 entry and all zeroes.
-    for (int j = 0; j < S.cols(); ++j) {
-      if (!BelongsToStandardBasis(S.col(j))) return false;
-    }
-
-    // Each column only has a single 1.0 entry and all zeroes.
-    for (int i = 0; i < S.rows(); ++i) {
-      if (!BelongsToStandardBasis(S.row(i))) return false;
-    }
-
-    // If we are here is because all checks passed and we do have a valid
-    // selection matrix.
-    return true;
-  };
-
-  EXPECT_TRUE(IsSelectionMatrix(Sx));
+  ASSERT_EQ(Sx_arm.rows(), num_selected_states);
+  ASSERT_EQ(Sx_arm.cols(), num_states);
 
   // We know what the selection matrix should be for this case:
   const int nq = plant.num_positions();
-  MatrixX<double> Sx_expected =
+  MatrixX<double> Sx_arm_expected =
       MatrixX<double>::Zero(num_selected_states, plant.num_multibody_states());
-  Sx_expected(0, 1) = 1;       // position for first joint, iiwa_joint_2.
-  Sx_expected(1, 6) = 1;       // position for second joint, iiwa_joint_7.
-  Sx_expected(2, 2) = 1;       // position for third joint, iiwa_joint_3.
-  Sx_expected(3, nq + 1) = 1;  // velocity for first joint, iiwa_joint_2.
-  Sx_expected(4, nq + 6) = 1;  // velocity for second joint, iiwa_joint_7.
-  Sx_expected(5, nq + 2) = 1;  // velocity for third joint, iiwa_joint_3.
+  Sx_arm_expected(0, 1) = 1;       // position for first joint, iiwa_joint_2.
+  Sx_arm_expected(1, 6) = 1;       // position for second joint, iiwa_joint_7.
+  Sx_arm_expected(2, 2) = 1;       // position for third joint, iiwa_joint_3.
+  Sx_arm_expected(3, nq + 1) = 1;  // velocity for first joint, iiwa_joint_2.
+  Sx_arm_expected(4, nq + 6) = 1;  // velocity for second joint, iiwa_joint_7.
+  Sx_arm_expected(5, nq + 2) = 1;  // velocity for third joint, iiwa_joint_3.
+  EXPECT_EQ(Sx_arm, Sx_arm_expected);
 
-  EXPECT_EQ(Sx, Sx_expected);
+  // Verify the arm's actuation selector.
+  MatrixX<double> Su_arm_expected =
+      MatrixX<double>::Zero(plant.num_actuators(), 3);
+  Su_arm_expected(1, 0) = 1;  // Actuator on first joint, iiwa_joint_2.
+  Su_arm_expected(6, 1) = 1;  // Actuator on second joint, iiwa_joint_7.
+  Su_arm_expected(2, 2) = 1;  // Actuator on third joint, iiwa_joint_3.
+  EXPECT_EQ(Su_arm, Su_arm_expected);
+
+  // We build a state selector for the gripper dofs.
+  std::vector<JointIndex> gripper_selected_joints;
+  gripper_selected_joints.push_back(plant.GetJointByName(
+      "left_finger_sliding_joint").index());  // user index = 0.
+  gripper_selected_joints.push_back(plant.GetJointByName(
+      "right_finger_sliding_joint").index());  // user index = 1.
+
+  // State selector for the griper.
+  const MatrixX<double> Sx_gripper =
+      plant.tree().MakeStateSelectorMatrix(gripper_selected_joints);
+
+  // Actuation selector for the gripper.
+  const MatrixX<double> Su_gripper =
+      plant.tree().MakeActuatorSelectorMatrix(gripper_selected_joints);
+
+  // Similarly we know the expected value for the gripper's selector matrix.
+  MatrixX<double> Sx_gripper_expected =
+      MatrixX<double>::Zero(4, plant.num_multibody_states());
+  Sx_gripper_expected(0, 7) = 1;       // first joint position, left finger.
+  Sx_gripper_expected(1, 8) = 1;       // second joint position, right finger.
+  Sx_gripper_expected(2, nq + 7) = 1;  // first joint velocity, left finger.
+  Sx_gripper_expected(3, nq + 8) = 1;  // second joint velocity, right finger.
+  EXPECT_EQ(Sx_gripper, Sx_gripper_expected);
+
+  // Verify the grippers's actuation selector.
+  MatrixX<double> Su_gripper_expected =
+      MatrixX<double>::Zero(plant.num_actuators(), 2);
+  Su_gripper_expected(7, 0) = 1;  // Actuator on first joint, left finger.
+  Su_gripper_expected(8, 1) = 1;  // Actuator on second joint, right finger.
+  EXPECT_EQ(Su_gripper, Su_gripper_expected);
 }
 
 }  // namespace
