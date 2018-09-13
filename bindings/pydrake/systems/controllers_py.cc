@@ -74,7 +74,7 @@ PYBIND11_MODULE(controllers, m) {
            // Keep alive, ownership: RigidBodyTree keeps this alive.
            // See "Keep Alive Behavior" in pydrake_pybind.h for details.
            py::keep_alive<2 /* Nurse */, 1 /* Patient */>())
-      .def(py::init<std::unique_ptr<MultibodyPlant<double>>,
+      .def(py::init<const MultibodyPlant<double>&,
                     const VectorX<double>&,
                     const VectorX<double>&,
                     const VectorX<double>&,
@@ -84,8 +84,8 @@ PYBIND11_MODULE(controllers, m) {
            py::arg("ki"),
            py::arg("kd"),
            py::arg("has_reference_acceleration"),
-          // Keep alive, ownership: MultibodyPlant keeps this alive.
-           py::keep_alive<2, 1>())
+           // Keep alive, reference: `self` keeps `MultibodyPlant` alive.
+           py::keep_alive<1, 2>())
       .def("set_integral_value",
            &InverseDynamicsController<double>::set_integral_value);
 

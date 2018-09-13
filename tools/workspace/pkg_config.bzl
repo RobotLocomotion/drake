@@ -239,6 +239,7 @@ def setup_pkg_config_repository(repository_ctx):
         "%{deps}": repr(
             getattr(repository_ctx.attr, "extra_deps", []),
         ),
+        "%{build_epilog}": getattr(repository_ctx.attr, "build_epilog", ""),
     }
     template = getattr(
         repository_ctx.attr,
@@ -279,6 +280,7 @@ pkg_config_repository = repository_rule(
         "extra_includes": attr.string_list(),
         "extra_linkopts": attr.string_list(),
         "extra_deps": attr.string_list(),
+        "build_epilog": attr.string(),
         "pkg_config_paths": attr.string_list(),
     },
     local = True,
@@ -325,6 +327,7 @@ Args:
     extra_includes: (Optional) Extra items to add to the library target.
     extra_linkopts: (Optional) Extra items to add to the library target.
     extra_deps: (Optional) Extra items to add to the library target.
+    build_epilog: (Optional) Extra text to add to the generated BUILD.bazel.
     pkg_config_paths: (Optional) Paths to find pkg-config files (.pc). Note
                       that we ignore the environment variable PKG_CONFIG_PATH
                       set by the user.

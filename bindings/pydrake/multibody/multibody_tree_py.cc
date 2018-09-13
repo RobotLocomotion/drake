@@ -67,6 +67,7 @@ void init_module(py::module m) {
     py::class_<Class> cls(m, "Frame");
     BindMultibodyTreeElementMixin(&cls);
     cls
+        .def("name", &Class::name)
         .def("body", &Class::body, py_reference_internal);
   }
 
@@ -244,6 +245,10 @@ void init_module(py::module m) {
                &Class::CalcInverseDynamics),
             py::arg("context"), py::arg("known_vdot"),
             py::arg("external_forces"))
+        .def("SetFreeBodyPoseOrThrow",
+            overload_cast_explicit<void, const Body<T>&, const Isometry3<T>&,
+            systems::Context<T>*>(&Class::SetFreeBodyPoseOrThrow),
+            py::arg("body"), py::arg("X_WB"), py::arg("context"))
         .def("get_positions_from_array",
             &Class::get_positions_from_array,
             py::arg("model_instance"), py::arg("q_array"))
@@ -320,6 +325,10 @@ void init_multibody_plant(py::module m) {
              [](Class* self, std::unique_ptr<Joint<T>> joint) -> auto& {
                return self->AddJoint(std::move(joint));
              }, py::arg("joint"), py_reference_internal)
+        .def("WeldFrames", &Class::WeldFrames,
+             py::arg("A"), py::arg("B"),
+             py::arg("X_AB") = Isometry3<double>::Identity(),
+             py_reference_internal)
         .def("AddForceElement",
              [](Class* self,
                 std::unique_ptr<ForceElement<T>> force_element) -> auto& {
@@ -335,6 +344,15 @@ void init_multibody_plant(py::module m) {
              overload_cast_explicit<bool, const string&>(
                 &Class::HasJointNamed),
              py::arg("name"))
+        .def("GetFrameByName",
+             overload_cast_explicit<const Frame<T>&, const string&>(
+                 &Class::GetFrameByName),
+             py::arg("name"), py_reference_internal)
+        .def("GetFrameByName",
+             overload_cast_explicit<const Frame<T>&, const string&,
+                                    ModelInstanceIndex>(
+                 &Class::GetFrameByName),
+             py::arg("name"), py::arg("model_instance"), py_reference_internal)
         .def("GetBodyByName",
              overload_cast_explicit<const Body<T>&, const string&>(
                 &Class::GetBodyByName),

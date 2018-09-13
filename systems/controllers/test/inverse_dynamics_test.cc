@@ -178,6 +178,8 @@ TEST_F(InverseDynamicsTest, GravityCompensationTestMBT) {
   const std::string full_name = drake::FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
   multibody::parsing::AddModelFromSdfFile(full_name, mbp.get());
+  mbp->WeldFrames(mbp->world_frame(),
+                  mbp->GetFrameByName("iiwa_link_0"));
   mbp->Finalize();
   Init(std::move(mbp),
        InverseDynamics<double>::InverseDynamicsMode::kGravityCompensation);
@@ -222,6 +224,8 @@ TEST_F(InverseDynamicsTest, InverseDynamicsTestMBT) {
   const std::string full_name = drake::FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
   multibody::parsing::AddModelFromSdfFile(full_name, mbp.get());
+  mbp->WeldFrames(mbp->world_frame(),
+                  mbp->GetFrameByName("iiwa_link_0"));
   mbp->Finalize();
   Init(std::move(mbp),
        InverseDynamics<double>::InverseDynamicsMode::kInverseDynamics);
