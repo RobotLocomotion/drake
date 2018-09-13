@@ -1,9 +1,8 @@
+#include "drake/common/drake_assert.h"
 #include "drake/examples/allegro_hand/allegro_lcm.h"
 
 #include <utility>
 #include <vector>
-
-#include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace examples {
