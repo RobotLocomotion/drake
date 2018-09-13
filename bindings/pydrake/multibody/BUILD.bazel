@@ -260,6 +260,8 @@ drake_py_unittest(
     data = [
         "//examples/double_pendulum:models",
         "//multibody/benchmarks/acrobot:models",
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
     ],
     deps = [
         ":benchmarks_py",
