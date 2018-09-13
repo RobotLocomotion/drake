@@ -84,7 +84,7 @@ class CoulombFriction {
   const T& dynamic_friction() const { return dynamic_friction_; }
 
   /// Performs a bitwise-identical comparison, not done to any tolerance.
-  scalar_predicate_t<T> operator==(const CoulombFriction& other) const;
+  boolean<T> operator==(const CoulombFriction& other) const;
 
  private:
   // Confirms two properties on the friction coefficient pair:
