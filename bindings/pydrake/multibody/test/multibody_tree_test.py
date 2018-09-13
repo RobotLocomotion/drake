@@ -251,6 +251,7 @@ class TestMultibodyTree(unittest.TestCase):
             file_name=wsg50_sdf_path, model_name='gripper',
             scene_graph=None, plant=plant)
 
+        # Weld the base of arm and gripper to reduce the number of states.
         X_EeGripper = Isometry3.Identity()
         X_EeGripper.set_translation([0, 0, 0.081])
         X_EeGripper.set_rotation(
