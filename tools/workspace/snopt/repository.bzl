@@ -95,6 +95,21 @@ def _extract_local_archive(repo_ctx, snopt_path):
     ])
     return result.error
 
+def _setup_deferred_failure(repo_ctx, error_message):
+    # Produce a repository with a valid BUILD.bazel file, but where all of the
+    # targets emit an error_message at build-time (but not while loading).
+    repo_ctx.file(
+        "error.txt",
+        "ERROR: Repository rule @{} failed: {}\n".format(
+            repo_ctx.name,
+            error_message,
+        ),
+    )
+    repo_ctx.symlink(
+        Label("@drake//tools/workspace/snopt:package-error.BUILD.bazel"),
+        "BUILD",
+    )
+
 def _setup_local_archive(repo_ctx, snopt_path):
     error = _extract_local_archive(repo_ctx, snopt_path)
     if error == None:
@@ -103,19 +118,7 @@ def _setup_local_archive(repo_ctx, snopt_path):
             "BUILD",
         )
     else:
-        # Add a build file that generates an error from its build actions, but
-        # not during the loading stage.
-        repo_ctx.file(
-            "error.txt",
-            "ERROR: Repository rule @{} failed: {}\n".format(
-                repo_ctx.name,
-                error,
-            ),
-        )
-        repo_ctx.symlink(
-            Label("@drake//tools/workspace/snopt:package-error.BUILD.bazel"),
-            "BUILD",
-        )
+        _setup_deferred_failure(repo_ctx, error)
 
 def _impl(repo_ctx):
     os_result = determine_os(repo_ctx)
@@ -130,7 +133,14 @@ def _impl(repo_ctx):
     # we can keep this rule tagged `local = False`, which is important for not
     # re-running git anytime the dependency graph changes.
     snopt_path = repo_ctx.os.environ.get("SNOPT_PATH", "")
-    if snopt_path == "git":
+    if len(snopt_path) == 0:
+        _setup_deferred_failure(
+            repo_ctx,
+            "SNOPT was enabled via '--config snopt' or '--config everything'" +
+            " (possibly in a '.bazelrc' file) but the SNOPT_PATH environment" +
+            " variable is unset.",
+        )
+    elif snopt_path == "git":
         _setup_git(repo_ctx)
     else:
         _setup_local_archive(repo_ctx, snopt_path)
