@@ -1,0 +1,13 @@
+package drake;
+
+struct lcmt_allegro_status {
+  // The timestamp in microseconds.
+  int64_t utime;
+
+  int32_t num_joints;
+
+  double joint_position_measured[num_joints];
+  double joint_velocity_estimated[num_joints];
+  double joint_position_commanded[num_joints];
+  double joint_torque_commanded[num_joints];
+}

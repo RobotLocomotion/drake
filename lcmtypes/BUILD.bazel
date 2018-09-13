@@ -251,6 +251,15 @@ drake_lcm_cc_library(
 )
 
 drake_lcm_cc_library(
+    name = "allegro",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_allegro_command.lcm",
+        "lcmt_allegro_status.lcm",
+    ],
+)
+
+drake_lcm_cc_library(
     name = "iiwa",
     lcm_package = "drake",
     lcm_srcs = [
