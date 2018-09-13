@@ -1,5 +1,6 @@
 #include "drake/systems/framework/system_symbolic_inspector.h"
 
+#include <algorithm>
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -163,17 +164,16 @@ TEST_F(SystemSymbolicInspectorTest, AbstractContextThwartsSparsity) {
 }
 
 TEST_F(SystemSymbolicInspectorTest, ConstraintTest) {
-  EXPECT_EQ(inspector_->constraints().size(), 4);
-
-  int equality_constraint_count{0};
-  for (const auto& formula : inspector_->constraints()) {
-    if (is_equal_to(formula)) {
-      equality_constraint_count++;
-    }
-    EXPECT_EQ(get_rhs_expression(formula), 0);
-    EXPECT_TRUE(is_variable(get_lhs_expression(formula)));
-  }
-  EXPECT_EQ(equality_constraint_count, 2);
+  const auto& constraints = inspector_->constraints();
+  const std::vector<std::string> expected{
+    "((xc0 == 0) and (xc1 == 0))",
+    "((xc0 >= 0) and (xc1 >= 0))",
+  };
+  std::vector<std::string> actual;
+  std::transform(
+      constraints.begin(), constraints.end(), std::back_inserter(actual),
+      [](const auto& item) { return item.to_string(); });
+  EXPECT_EQ(actual, expected);
 }
 
 TEST_F(SystemSymbolicInspectorTest, IsTimeInvariant) {
