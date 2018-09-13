@@ -265,7 +265,7 @@ class TestMultibodyTree(unittest.TestCase):
             X_AB=X_EeGripper)
         plant.Finalize()
 
-        # Create a context and set the state of the context 
+        # Create a context of the MBP and set the state of the context 
         # to desired values.
         context = plant.CreateDefaultContext()
         tree = plant.tree()
@@ -292,19 +292,19 @@ class TestMultibodyTree(unittest.TestCase):
         x_plant = tree.get_mutable_multibody_state_vector(context)
         x_plant[:] = x_plant_desired
 
-        # get state from context
+        # Get state from context.
         x = tree.get_multibody_state_vector(context)
         q = x[0:nq]
         v = x[nq:nq+nv]
 
-        # get positions and velocities of specific model instances
+        # Get positions and velocities of specific model instances
         # from the postion/velocity vector of the plant.
         q_iiwa = tree.get_positions_from_array(iiwa_model, q)
         q_gripper = tree.get_positions_from_array(gripper_model, q)
         v_iiwa = tree.get_velocities_from_array(iiwa_model, v)
         v_gripper = tree.get_velocities_from_array(gripper_model, v)
 
-        # assert that the get_positions_from_array return 
+        # Assert that the get_positions_from_array return 
         # the desired values set earlier. 
         self.assertTrue(np.allclose(q_iiwa_desired, q_iiwa))
         self.assertTrue(np.allclose(v_iiwa_desired, v_iiwa))
