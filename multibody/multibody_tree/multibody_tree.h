@@ -764,12 +764,6 @@ class MultibodyTree {
     JointActuator<T>* actuator = owned_actuators_.back().get();
     actuator->set_parent_tree(this, actuator_index);
     actuator_name_to_index_.insert(std::make_pair(name, actuator_index));
-
-    // Resize the the latest count of joints. Additional values, if any, will
-    // get initialized to an invalid JointActuatorIndex.
-    joint_to_actuator_index_.resize(num_joints());
-    joint_to_actuator_index_[joint.index()] = actuator_index;
-
     return *actuator;
   }
 
@@ -2313,9 +2307,34 @@ class MultibodyTree {
   MatrixX<double> MakeStateSelectorMatrix(
       const std::vector<JointIndex>& user_to_joint_index_map) const;
 
+  /// This method allows user to map a vector `uₛ` containing the actuation
+  /// for a set of selected actuators into the vector u containing the actuation
+  /// values for `this` full model.
+  /// The mapping, or selection, is returned in the form of a selector matrix
+  /// Su such that `u = Su⋅uₛ`. The size nₛ of uₛ is always smaller or equal
+  /// than the size of the full vector of actuation values u. That is, a user
+  /// might be interested in only a given subset of actuators in the model.
+  ///
+  /// This selection matrix is particularly useful when adding PID control
+  /// on a portion of the state, see systems::controllers::PidController.
+  ///
+  /// A user specifies the preferred order in uₛ via
+  /// `user_to_actuator_index_map`. The actuation values in uₛ are a
+  /// concatenation of the values for each actuator in the order they appear in
+  /// `user_to_actuator_index_map`.
+  /// The full vector of actuation values u is ordered by JointActuatorIndex.
   MatrixX<double> MakeActuatorSelectorMatrix(
       const std::vector<JointActuatorIndex>& user_to_actuator_index_map) const;
 
+  /// Alternative signature to build an actuation selector matrix `Su` such
+  /// that `u = Su⋅uₛ`, where u is the vector of actuation values for the full
+  /// model (ordered by JointActuatorIndex) and uₛ is a vector of actuation
+  /// values for the actuators acting on the joints listed by
+  /// `user_to_joint_index_map`. It is assumed all this joints are actuated.
+  /// See MakeStateSelectorMatrix(const std::vector<JointIndex>&) for details.
+  /// @pre Each joint in `user_to_joint_index_map` has an actuator.
+  /// @throws std::logic_error if any of the joints in
+  /// `user_to_joint_index_map` does not have an actuator.
   MatrixX<double> MakeActuatorSelectorMatrix(
       const std::vector<JointIndex>& user_to_joint_index_map) const;
 
@@ -2866,13 +2885,6 @@ class MultibodyTree {
   // Map used to find actuator indexes by their actuator name.
   std::unordered_multimap<std::string,
                           JointActuatorIndex> actuator_name_to_index_;
-
-  // Vectored entries are ordered by JointIndex. This maps the a joint with
-  // index joint_index to its actuator with index
-  // joint_to_actuator_index_[joint_index].
-  // joint_to_actuator_index_[joint_index] will have an invalide value (
-  // TypeSafeIndex::is_valid()) if the joint does not have an actuator.
-  std::vector<JointActuatorIndex> joint_to_actuator_index_;
 
   // Map used to find a model instance index by its model instance name.
   std::unordered_map<std::string, ModelInstanceIndex> instance_name_to_index_;

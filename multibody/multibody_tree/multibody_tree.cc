@@ -1215,18 +1215,6 @@ MatrixX<double> MultibodyTree<T>::MakeActuatorSelectorMatrix(
     const std::vector<JointActuatorIndex>& user_to_actuator_index_map) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
 
-#if 0
-  std::vector<int> joint_user_index_map;
-  joint_user_index_map.resize(num_joints(), -1 /* invalid value */);
-
-  int user_index(0);
-  for (JointIndex joint_index : user_to_joint_index_map) {
-    const auto& joint = get_joint(joint_index);
-    joint_user_index_map[joint.index()] = user_index;
-    ++user_index;
-  }
-#endif
-
   const int num_selected_actuators = user_to_actuator_index_map.size();
 
   // The actuation selector matrix maps the vector of "selected" actuators to
@@ -1235,8 +1223,6 @@ MatrixX<double> MultibodyTree<T>::MakeActuatorSelectorMatrix(
       MatrixX<double>::Zero(num_actuated_dofs(), num_selected_actuators);
   int user_index(0);
   for (JointActuatorIndex actuator_index : user_to_actuator_index_map) {
-    //const auto& actuator = get_joint_actuator(actuator_index);
-    //const auto& joint = actuator.joint();
     Su(actuator_index, user_index) = 1.0;
     ++user_index;
   }
