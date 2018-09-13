@@ -694,38 +694,35 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeclaredModelPortsSystem);
 
   DeclaredModelPortsSystem() {
-    this->DeclareInputPort(kVectorValued, 1, "input");
-    this->DeclareVectorInputPort(MyVector2d(), "vector_input");
-    this->DeclareAbstractInputPort(Value<int>(22), "abstract_input");
-    this->DeclareVectorInputPort(MyVector2d(), "uniform",
+    this->DeclareInputPort("input", kVectorValued, 1);
+    this->DeclareVectorInputPort("vector_input", MyVector2d());
+    this->DeclareAbstractInputPort("abstract_input", Value<int>(22));
+    this->DeclareVectorInputPort("uniform", MyVector2d(),
                                  RandomDistribution::kUniform);
-    this->DeclareVectorInputPort(MyVector2d(), "gaussian",
+    this->DeclareVectorInputPort("gaussian", MyVector2d(),
                                  RandomDistribution::kGaussian);
 
     // Output port 0 uses a BasicVector base class model.
-    this->DeclareVectorOutputPort(BasicVector<double>(3),
-                                  &DeclaredModelPortsSystem::CalcBasicVector3,
-                                  "basic_vector");
+    this->DeclareVectorOutputPort("basic_vector", BasicVector<double>(3),
+                                  &DeclaredModelPortsSystem::CalcBasicVector3);
     // Output port 1 uses a class derived from BasicVector.
-    this->DeclareVectorOutputPort(MyVector4d(),
-                                  &DeclaredModelPortsSystem::CalcMyVector4d,
-                                  "my_vector");
+    this->DeclareVectorOutputPort("my_vector", MyVector4d(),
+                                  &DeclaredModelPortsSystem::CalcMyVector4d);
 
     // Output port 2 uses a concrete string model.
-    this->DeclareAbstractOutputPort(std::string("45"),
-                                    &DeclaredModelPortsSystem::CalcString,
-                                    "string");
+    this->DeclareAbstractOutputPort("string", std::string("45"),
+                                    &DeclaredModelPortsSystem::CalcString);
 
     // Output port 3 uses the "Advanced" methods that take a model
     // and a general calc function rather than a calc method.
     this->DeclareVectorOutputPort(
-        BasicVector<double>(2),
+        "advanced", BasicVector<double>(2),
         [](const Context<double>&, BasicVector<double>* out) {
           ASSERT_NE(out, nullptr);
           EXPECT_EQ(out->size(), 2);
           out->SetAtIndex(0, 10.);
           out->SetAtIndex(1, 20.);
-        }, "advanced");
+        });
 
     this->DeclareNumericParameter(*MyVector2d::Make(1.1, 2.2));
   }

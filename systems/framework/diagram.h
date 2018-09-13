@@ -1402,8 +1402,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
     // Add this port to our externally visible topology.
     const auto& subsystem_input_port = sys->get_input_port(port_index);
-    this->DeclareInputPort(subsystem_input_port.get_data_type(),
-                           subsystem_input_port.size(), name,
+    this->DeclareInputPort(name, subsystem_input_port.get_data_type(),
+                           subsystem_input_port.size(),
                            subsystem_input_port.get_random_type());
   }
 
