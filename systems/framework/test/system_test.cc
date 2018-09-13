@@ -86,7 +86,8 @@ class TestSystem : public System<double> {
         this,  // implicit_cast<const SystemBase*>(this)
         OutputPortIndex(this->get_num_output_ports()),
         assign_next_dependency_ticket(),
-        kAbstractValued, 0, &cache_entry);
+        kAbstractValued, 0, &cache_entry, "y" + std::to_string
+                                                    (get_num_output_ports()));
     LeafOutputPort<double>* const port_ptr = port.get();
     this->AddOutputPort(std::move(port));
     return *port_ptr;
@@ -349,7 +350,7 @@ TEST_F(SystemTest, PortReferencesAreStable) {
 TEST_F(SystemTest, PortNameTest) {
   const auto& unnamed_input = system_.DeclareInputPort(kVectorValued, 2);
   const auto& named_input =
-      system_.DeclareInputPort(kVectorValued, 3, "my_input");
+      system_.DeclareInputPort("my_input", kVectorValued, 3);
   const auto& named_abstract_input =
       system_.DeclareAbstractInputPort("abstract");
 
@@ -359,7 +360,7 @@ TEST_F(SystemTest, PortNameTest) {
 
   // Duplicate port names should throw.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      system_.DeclareInputPort(kAbstractValued, 0, "my_input"),
+      system_.DeclareInputPort("my_input", kAbstractValued, 0),
       std::logic_error, ".*already has an input port named.*");
 }
 
@@ -457,11 +458,11 @@ class ValueIOTestSystem : public System<T> {
             []() { return AbstractValue::Make(std::string()); },
             [this](const ContextBase& context, AbstractValue* output) {
               this->CalcStringOutput(context, output);
-            })));
+            }), "absport"));
     this->DeclareInputPort(kVectorValued, 1);
-    this->DeclareInputPort(kVectorValued, 1, "uniform",
+    this->DeclareInputPort("uniform", kVectorValued, 1,
                            RandomDistribution::kUniform);
-    this->DeclareInputPort(kVectorValued, 1, "gaussian",
+    this->DeclareInputPort("gaussian", kVectorValued, 1,
                            RandomDistribution::kGaussian);
     this->AddOutputPort(std::make_unique<LeafOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
@@ -474,7 +475,7 @@ class ValueIOTestSystem : public System<T> {
             []() { return std::make_unique<Value<BasicVector<T>>>(1); },
             [this](const ContextBase& context, AbstractValue* output) {
               this->CalcVectorOutput(context, output);
-            })));
+            }), "vecport"));
 
     this->set_name("ValueIOTestSystem");
   }

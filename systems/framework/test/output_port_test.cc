@@ -195,6 +195,7 @@ class LeafOutputPortTest : public ::testing::Test {
   LeafOutputPort<double> absport_general_{
       &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
       &dummy_,  // implicit_cast<SystemBase*>(&dummy_)
+      "absport",
       OutputPortIndex(dummy_.get_num_output_ports()),
       dummy_.assign_next_dependency_ticket(), kAbstractValued, 0 /* size */,
       &dummy_.DeclareCacheEntry(
@@ -202,6 +203,7 @@ class LeafOutputPortTest : public ::testing::Test {
   LeafOutputPort<double> vecport_general_{
       &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
       &dummy_,  // implicit_cast<SystemBase*>(&dummy_)
+      "vecport",
       OutputPortIndex(dummy_.get_num_output_ports()),
       dummy_.assign_next_dependency_ticket(), kVectorValued, 3 /* size */,
       &dummy_.DeclareCacheEntry(
