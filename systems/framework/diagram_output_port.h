@@ -45,7 +45,7 @@ class DiagramOutputPort final : public OutputPort<T> {
   @param source_subsystem_index The index of the child subsystem that owns
       `source_output_port`.
   @param name A name for the port.  Output ports names should be unique
-   within the `diagram` System.
+       within the `diagram` System.
 
   @pre The `diagram` System must actually be a Diagram.
   @pre `diagram` lifetime must exceed the port's; we retain the pointer here.

@@ -61,7 +61,7 @@ class LeafOutputPort final : public OutputPort<T> {
   LeafOutputPort(const System<T>* system, SystemBase* system_base,
                  OutputPortIndex index, DependencyTicket ticket,
                  PortDataType data_type, int size,
-                 const CacheEntry* cache_entry, const std::string& name = "")
+                 const CacheEntry* cache_entry, const std::string& name)
       : OutputPort<T>(system, system_base, index, ticket, data_type, size,
                       name),
         cache_entry_(cache_entry) {
