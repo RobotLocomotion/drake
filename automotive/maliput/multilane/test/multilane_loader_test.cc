@@ -987,7 +987,18 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
                        kLinearTolerance, kAngularTolerance, kScaleLength,
                        kComputationPolicy));
 
-  // Connection expectations.
+  // Connection expectations. In the following, we check that:
+  //
+  // 1. `LaneLayout` is called with the same values in the yaml fields
+  //    `lanes`, `right_shoulder`, and `left_shoulder`.
+  //
+  // 2. `StartReference`, `LineOffset`, and `ArcOffset` are called with
+  //     the same values in the corresponding yaml fields `start`, `length`,
+  //     and `arc`.
+  //
+  // 3. `EndReference` is called when `z_end` is `["ref", ... ]` and
+  //    `EndLane(N)` is called when `z_end` is `["lane.N", ... ]`, both
+  //     having the same values as their yaml counterparts.
   prebuild_expectations += EXPECT_CALL(
       *builder_mock,
       Connect("s0",
@@ -1200,7 +1211,11 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
                                       Direction::kReverse),
                       kLinearTolerance)));
 
-  // Group expectations.
+  // Group expectations. In the following we check that:
+  //
+  // 1. `Group`s are built with the appropriate names.
+  //
+  // 2. `Group`s are populated with the right `Connection`s.
   {
     prebuild_expectations += EXPECT_CALL(*builder_mock, MakeGroup("g1"));
     prebuild_expectations += EXPECT_CALL(*builder_mock, MakeGroup("g2"));
