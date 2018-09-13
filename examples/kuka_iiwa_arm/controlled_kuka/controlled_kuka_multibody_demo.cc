@@ -68,17 +68,13 @@ int DoMain() {
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(!!kuka_plant.get_source_id());
 
-  auto tree = std::make_unique<RigidBodyTree<double>>();
-  parsers::sdf::AddModelInstancesFromSdfFile(
-      FindResourceOrThrow(kSdfPath), multibody::joints::kFixed,
-      nullptr, tree.get());
-
   // Adds a iiwa controller
   VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
   SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
   auto controller = builder.AddSystem<
       systems::controllers::InverseDynamicsController>(
-      std::move(tree), iiwa_kp, iiwa_ki, iiwa_kd,
+      kuka_plant,
+      iiwa_kp, iiwa_ki, iiwa_kd,
       false /* no feedforward acceleration */);
 
   // Wire up Kuka plant to controller.
