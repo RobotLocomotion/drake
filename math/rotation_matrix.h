@@ -321,8 +321,7 @@ class RotationMatrix {
   /// @param[in] tolerance maximum allowable absolute difference between R * Rᵀ
   /// and the identity matrix I, i.e., checks if `‖R ⋅ Rᵀ - I‖∞ <= tolerance`.
   /// @returns `true` if R is an orthonormal matrix.
-  static scalar_predicate_t<T> IsOrthonormal(const Matrix3<T>& R,
-                                             double tolerance) {
+  static boolean<T> IsOrthonormal(const Matrix3<T>& R, double tolerance) {
     return GetMeasureOfOrthonormality(R) <= tolerance;
   }
 
@@ -332,7 +331,7 @@ class RotationMatrix {
   /// @param[in] tolerance maximum allowable absolute difference of `R * Rᵀ`
   /// and the identity matrix I (i.e., checks if `‖R ⋅ Rᵀ - I‖∞ <= tolerance`).
   /// @returns `true` if R is a valid rotation matrix.
-  static scalar_predicate_t<T> IsValid(const Matrix3<T>& R, double tolerance) {
+  static boolean<T> IsValid(const Matrix3<T>& R, double tolerance) {
     return IsOrthonormal(R, tolerance) && R.determinant() > 0;
   }
 
@@ -340,23 +339,23 @@ class RotationMatrix {
   /// within the threshold of get_internal_tolerance_for_orthonormality().
   /// @param[in] R an allegedly valid rotation matrix.
   /// @returns `true` if R is a valid rotation matrix.
-  static scalar_predicate_t<T> IsValid(const Matrix3<T>& R) {
+  static boolean<T> IsValid(const Matrix3<T>& R) {
     return IsValid(R, get_internal_tolerance_for_orthonormality());
   }
 
   /// Tests if `this` rotation matrix R is a proper orthonormal rotation matrix
   /// to within the threshold of get_internal_tolerance_for_orthonormality().
   /// @returns `true` if `this` is a valid rotation matrix.
-  scalar_predicate_t<T> IsValid() const { return IsValid(matrix()); }
+  boolean<T> IsValid() const { return IsValid(matrix()); }
 
   /// Returns `true` if `this` is exactly equal to the identity matrix.
-  scalar_predicate_t<T> IsExactlyIdentity() const {
+  boolean<T> IsExactlyIdentity() const {
     return matrix() == Matrix3<T>::Identity();
   }
 
   /// Returns true if `this` is equal to the identity matrix to within the
   /// threshold of get_internal_tolerance_for_orthonormality().
-  scalar_predicate_t<T> IsIdentityToInternalTolerance() const {
+  boolean<T> IsIdentityToInternalTolerance() const {
     return IsNearlyEqualTo(matrix(), Matrix3<T>::Identity(),
                            get_internal_tolerance_for_orthonormality());
   }
@@ -367,8 +366,8 @@ class RotationMatrix {
   /// @param[in] tolerance maximum allowable absolute difference between the
   /// matrix elements in `this` and `other`.
   /// @returns `true` if `‖this - other‖∞ <= tolerance`.
-  scalar_predicate_t<T> IsNearlyEqualTo(
-      const RotationMatrix<T>& other, double tolerance) const {
+  boolean<T> IsNearlyEqualTo(const RotationMatrix<T>& other,
+                             double tolerance) const {
     return IsNearlyEqualTo(matrix(), other.matrix(), tolerance);
   }
 
@@ -377,7 +376,7 @@ class RotationMatrix {
   /// @param[in] other %RotationMatrix to compare to `this`.
   /// @returns true if each element of `this` is exactly equal to the
   /// corresponding element in `other`.
-  scalar_predicate_t<T> IsExactlyEqualTo(const RotationMatrix<T>& other) const {
+  boolean<T> IsExactlyEqualTo(const RotationMatrix<T>& other) const {
     return matrix() == other.matrix();
   }
 
@@ -576,9 +575,9 @@ class RotationMatrix {
   // @param[in] tolerance maximum allowable absolute difference between the
   // matrix elements in R and `other`.
   // @returns `true` if `‖R - `other`‖∞ <= tolerance`.
-  static scalar_predicate_t<T> IsNearlyEqualTo(const Matrix3<T>& R,
-                                               const Matrix3<T>& other,
-                                               double tolerance) {
+  static boolean<T> IsNearlyEqualTo(const Matrix3<T>& R,
+                                    const Matrix3<T>& other,
+                                    double tolerance) {
     const T R_max_difference = GetMaximumAbsoluteDifference(R, other);
     return R_max_difference <= tolerance;
   }

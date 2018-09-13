@@ -1120,10 +1120,10 @@ class System : public SystemBase {
   /// Returns true if @p context satisfies all of the registered
   /// SystemConstraints with tolerance @p tol.  @see
   /// SystemConstraint::CheckSatisfied.
-  scalar_predicate_t<T> CheckSystemConstraintsSatisfied(
+  boolean<T> CheckSystemConstraintsSatisfied(
       const Context<T>& context, double tol) const {
     DRAKE_DEMAND(tol >= 0.0);
-    scalar_predicate_t<T> result{true};
+    boolean<T> result{true};
     for (const auto& constraint : constraints_) {
       result = result && constraint->CheckSatisfied(context, tol);
       // If T is a real number (not a symbolic expression), we can bail out

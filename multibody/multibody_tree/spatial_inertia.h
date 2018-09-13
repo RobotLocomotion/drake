@@ -201,7 +201,7 @@ class SpatialInertia {
 
   /// Returns `true` if any of the elements in this spatial inertia is NaN
   /// and `false` otherwise.
-  scalar_predicate_t<T> IsNaN() const {
+  boolean<T> IsNaN() const {
     using std::isnan;
     return isnan(mass_) || G_SP_E_.IsNaN() ||
         any_of(p_PScm_E_, [](auto x){ return isnan(x); });
@@ -223,7 +223,7 @@ class SpatialInertia {
   /// condition when performed on a rotational inertia about a body's center of
   /// mass.
   /// @see RotationalInertia::CouldBePhysicallyValid().
-  scalar_predicate_t<T> IsPhysicallyValid() const {
+  boolean<T> IsPhysicallyValid() const {
     // The tests in RotationalInertia become a sufficient condition when
     // performed on a rotational inertia computed about a body's center of mass.
     const UnitInertia<T> G_SScm_E = G_SP_E_.ShiftToCenterOfMass(p_PScm_E_);

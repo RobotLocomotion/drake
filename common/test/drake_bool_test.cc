@@ -86,8 +86,8 @@ TEST_F(BoolTestDouble, MoveAssign) {
 TEST_F(BoolTestDouble, TypeCheck) {
   static_assert(std::is_same<Bool<double>::value_type, bool>::value,
                 "Bool<double>::value_type should be bool");
-  static_assert(std::is_same<scalar_predicate_t<double>, bool>::value,
-                "scalar_predicate_t<double> should be bool");
+  static_assert(std::is_same<boolean<double>, bool>::value,
+                "boolean<double> should be bool");
   static_assert(std::is_same<scalar_predicate<double>::type, bool>::value,
                 "scalar_predicate<double>::type should be bool");
   static_assert(scalar_predicate<double>::is_bool,
@@ -213,8 +213,8 @@ class BoolTestAutoDiffXd : public ::testing::Test {
 TEST_F(BoolTestAutoDiffXd, TypeCheck) {
   static_assert(std::is_same<Bool<AutoDiffXd>::value_type, bool>::value,
                 "Bool<AutoDiffXd>::value_type should be bool");
-  static_assert(std::is_same<scalar_predicate_t<AutoDiffXd>, bool>::value,
-                "scalar_predicate_t<AutoDiffXd> should be bool");
+  static_assert(std::is_same<boolean<AutoDiffXd>, bool>::value,
+                "boolean<AutoDiffXd> should be bool");
   static_assert(std::is_same<scalar_predicate<AutoDiffXd>::type, bool>::value,
                 "scalar_predicate<AutoDiffXd>::type should be bool");
   static_assert(scalar_predicate<AutoDiffXd>::is_bool,
@@ -346,8 +346,8 @@ TEST_F(BoolTestSymbolic, TypeCheck) {
       std::is_same<Bool<Expression>::value_type, Formula>::value,
       "Bool<symbolic::Expression>::value_type should be symbolic::Formula");
   static_assert(
-      std::is_same<scalar_predicate_t<Expression>, Formula>::value,
-      "scalar_predicate_t<Expression> should be Formula");
+      std::is_same<boolean<Expression>, Formula>::value,
+      "boolean<Expression> should be Formula");
   static_assert(
       std::is_same<scalar_predicate<Expression>::type, Formula>::value,
       "scalar_predicate<Expression>::type should be Formula");

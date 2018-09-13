@@ -8,6 +8,7 @@
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 
 namespace drake {
 
@@ -26,10 +27,15 @@ struct scalar_predicate {
   static constexpr bool is_bool = std::is_same<type, bool>::value;
 };
 
-/// The return type of predicates over some scalar type T; this is a
-/// convenience alias for scalar_predicate<T>::type.
+/// An alias for a boolean-like value, conditioned on the scalar type `T`.
+/// In many cases this will be a synonym for `bool`, e.g., when `T = double`.
+/// When `T = symbolic::Expression`, this is a synonym for `symbolic::Formula`.
+/// This is a convenience abbreviation for scalar_predicate<T>::type.
 template <typename T>
-using scalar_predicate_t = typename scalar_predicate<T>::type;
+using boolean = typename scalar_predicate<T>::type;
+
+template <typename T>
+using scalar_predicate_t DRAKE_DEPRECATED("Use boolean<T>.") = boolean<T>;
 
 /// Class representing a Boolean value independent of the underlying
 /// scalar type T:
@@ -229,9 +235,9 @@ typename Derived::Scalar all(const Eigen::DenseBase<Derived>& m) {
 /// Checks if unary predicate @p pred holds for all elements in the matrix @p m.
 /// An empty matrix returns true.
 template <typename Derived>
-scalar_predicate_t<typename Derived::Scalar> all_of(
+boolean<typename Derived::Scalar> all_of(
     const Eigen::MatrixBase<Derived>& m,
-    const std::function<scalar_predicate_t<typename Derived::Scalar>(
+    const std::function<boolean<typename Derived::Scalar>(
         const typename Derived::Scalar&)>& pred) {
   return all(m.unaryExpr(pred));
 }
@@ -253,9 +259,9 @@ typename Derived::Scalar any(const Eigen::DenseBase<Derived>& m) {
 /// Checks if unary predicate @p pred holds for at least one element in the
 /// matrix @p m.  An empty matrix returns false.
 template <typename Derived>
-scalar_predicate_t<typename Derived::Scalar> any_of(
+boolean<typename Derived::Scalar> any_of(
     const Eigen::MatrixBase<Derived>& m,
-    const std::function<scalar_predicate_t<typename Derived::Scalar>(
+    const std::function<boolean<typename Derived::Scalar>(
         const typename Derived::Scalar&)>& pred) {
   return any(m.unaryExpr(pred));
 }
@@ -271,9 +277,9 @@ typename Derived::Scalar none(const Eigen::MatrixBase<Derived>& m) {
 /// Checks if unary predicate @p pred holds for no elements in the matrix @p m.
 /// An empty matrix returns true.
 template <typename Derived>
-scalar_predicate_t<typename Derived::Scalar> none_of(
+boolean<typename Derived::Scalar> none_of(
     const Eigen::MatrixBase<Derived>& m,
-    const std::function<scalar_predicate_t<typename Derived::Scalar>(
+    const std::function<boolean<typename Derived::Scalar>(
         const typename Derived::Scalar&)>& pred) {
   return none(m.unaryExpr(pred));
 }
