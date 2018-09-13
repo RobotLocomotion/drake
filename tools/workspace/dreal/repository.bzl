@@ -81,8 +81,8 @@ dreal_repository = repository_rule(
     # TODO(jamiesnape): Pass down licenses to setup_pkg_config_repository.
     attrs = {
         "modname": attr.string(default = "dreal"),
-        # This attribute is only used for macOS.  It is documented in the
-        # pkg_config_repository rule.
+        # The next two attributes are only used for macOS.  They are documented
+        # in the pkg_config_repository rule.
         "pkg_config_paths": attr.string_list(
             default = [
                 "/usr/local/opt/clp/lib/pkgconfig",
@@ -91,6 +91,11 @@ dreal_repository = repository_rule(
                 "/usr/local/opt/ibex@{}/share/pkgconfig".format(IBEX_VERSION),
                 "/usr/local/opt/nlopt/lib/pkgconfig",
             ],
+        ),
+        # On macOS we are using dReal from homebrew, so Drake's installation
+        # script doesn't need to do anything extra.
+        "build_epilog": attr.string(
+            default = "filegroup(name = \"install\")  # Nothing.",
         ),
         # All of the below attributes are only used for Ubuntu.  They are
         # documented in the new_deb_archive rule.
