@@ -24,7 +24,7 @@ drake_cc_library(
     hdrs = ["manipulator_joint_space_controller.h"],
     deps = [
         ":manipulator_move_joint_plan_eval_system",
-        "//multibody/parsers",
+        "//attic/multibody/parsers",
         "//systems/controllers:state_feedback_controller_interface",
         "//systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics_system",  # noqa
         "//systems/controllers/qp_inverse_dynamics:qp_output_translator_system",  # noqa
@@ -46,9 +46,9 @@ drake_cc_googletest(
     tags = gurobi_test_tags(),
     deps = [
         ":manipulator_joint_space_controller",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
         "//systems/analysis:simulator",
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/framework",
