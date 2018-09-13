@@ -52,14 +52,14 @@ drake_cc_googletest(
     tags = gurobi_test_tags(),
     deps = [
         ":quasistatic_system",
+        "//attic/multibody/joints",
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//common",
         "//common:find_resource",
         "//lcm",
         "//manipulation/util:world_sim_tree_builder",
         "//multibody:rigid_body_tree",
-        "//multibody/joints",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/primitives:constant_vector_source",
@@ -76,8 +76,8 @@ drake_cc_binary(
     ],
     deps = [
         ":remote_tree_viewer_wrapper",
+        "//attic/multibody/parsers",
         "//common:find_resource",
-        "//multibody/parsers",
     ],
 )
 

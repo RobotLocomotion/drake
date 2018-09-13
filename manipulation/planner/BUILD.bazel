@@ -26,10 +26,10 @@ drake_cc_library(
     srcs = ["constraint_relaxing_ik.cc"],
     hdrs = ["constraint_relaxing_ik.h"],
     deps = [
+        "//attic/multibody/parsers",
         "//common/trajectories:piecewise_polynomial",
         "//multibody:inverse_kinematics",
         "//multibody:rigid_body_tree",
-        "//multibody/parsers",
     ],
 )
 
@@ -38,9 +38,9 @@ drake_cc_library(
     srcs = ["differential_inverse_kinematics.cc"],
     hdrs = ["differential_inverse_kinematics.h"],
     deps = [
+        "//attic/multibody/parsers",
         "//multibody:rigid_body_tree",
         "//multibody/multibody_tree",
-        "//multibody/parsers",
         "//solvers:mathematical_program",
     ],
 )
@@ -50,9 +50,9 @@ drake_cc_library(
     srcs = ["robot_plan_interpolator.cc"],
     hdrs = ["robot_plan_interpolator.h"],
     deps = [
+        "//attic/multibody/parsers",
         "//common/trajectories:piecewise_polynomial",
         "//multibody:rigid_body_tree",
-        "//multibody/parsers",
         "//systems/framework:leaf_system",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",

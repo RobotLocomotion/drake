@@ -127,9 +127,9 @@ drake_cc_library(
     ],
     deps = [
         ":rigid_body_tree_datatypes",
+        "//attic/multibody/joints",
         "//common:autodiff",
         "//common:essential",
-        "//multibody/joints",
     ],
 )
 
@@ -138,10 +138,10 @@ drake_cc_library(
     srcs = ["rigid_body.cc"],
     hdrs = ["rigid_body.h"],
     deps = [
+        "//attic/multibody/collision",
+        "//attic/multibody/joints",
         "//common:autodiff",
         "//common:essential",
-        "//multibody/collision",
-        "//multibody/joints",
         "//util",
     ],
 )
@@ -224,13 +224,13 @@ _RBT_SHARD_COUNT = 2
             ":rigid_body_frame",
             ":rigid_body_loop",
             ":rigid_body_tree_datatypes",
+            "//attic/multibody/collision",
+            "//attic/multibody/joints",
+            "//attic/multibody/shapes",
             "//common:autodiff",
             "//common:essential",
             "//math:geometric_transform",
             "//math:gradient",
-            "//multibody/collision",
-            "//multibody/joints",
-            "//multibody/shapes",
             "//util",
         ],
     )
@@ -263,12 +263,12 @@ drake_cc_library(
         ":rigid_body_frame",
         ":rigid_body_loop",
         ":rigid_body_tree_datatypes",
+        "//attic/multibody/collision",
+        "//attic/multibody/joints",
+        "//attic/multibody/shapes",
         "//common:autodiff",
         "//common:essential",
         "//math:geometric_transform",
-        "//multibody/collision",
-        "//multibody/joints",
-        "//multibody/shapes",
     ],
 )
 
@@ -374,9 +374,9 @@ drake_cc_binary(
     data = ["//examples/atlas:models"],
     deps = [
         ":rigid_body_tree",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:measure_execution",
-        "//multibody/parsers",
     ],
 )
 
@@ -387,7 +387,7 @@ drake_cc_binary(
     srcs = ["test/debug_manipulator_dynamics.cc"],
     deps = [
         ":rigid_body_tree",
-        "//multibody/parsers",
+        "//attic/multibody/parsers",
     ],
 )
 
@@ -397,8 +397,8 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":rigid_body_tree",
+        "//attic/multibody/parsers",
         "//common:find_resource",
-        "//multibody/parsers",
     ],
 )
 
@@ -408,9 +408,9 @@ drake_cc_googletest(
     data = glob(["test/rigid_body_tree/two_link_ball_joint_robot.urdf"]),
     deps = [
         ":rigid_body_tree",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
     ],
 )
 
@@ -420,8 +420,8 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":rigid_body_tree",
+        "//attic/multibody/parsers",
         "//common:find_resource",
-        "//multibody/parsers",
     ],
 )
 
@@ -431,9 +431,9 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":rigid_body_tree",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
     ],
 )
 
@@ -443,8 +443,8 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":rigid_body_tree",
+        "//attic/multibody/parsers",
         "//common:find_resource",
-        "//multibody/parsers",
     ],
 )
 
@@ -453,7 +453,7 @@ drake_cc_googletest(
     srcs = ["test/rigid_body_tree/rigid_body_collision_clique_test.cc"],
     deps = [
         ":rigid_body_tree",
-        "//multibody/parsers",
+        "//attic/multibody/parsers",
     ],
 )
 
@@ -463,9 +463,9 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":rigid_body_tree",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
     ],
 )
 
@@ -475,9 +475,9 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":rigid_body_tree",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
     ],
 )
 
@@ -494,8 +494,8 @@ drake_cc_googletest(
     data = ["//examples/atlas:models"],
     deps = [
         ":rigid_body_constraint",
+        "//attic/multibody/parsers",
         "//common:find_resource",
-        "//multibody/parsers",
     ],
 )
 
@@ -508,10 +508,10 @@ drake_cc_googletest(
     ],
     deps = [
         ":rigid_body_tree",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/benchmarks/acrobot:analytical_acrobot",
-        "//multibody/parsers",
     ],
 )
 
@@ -521,10 +521,10 @@ drake_cc_googletest(
     data = ["//examples/atlas:models"],
     deps = [
         ":rigid_body_tree",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:jacobian",
-        "//multibody/parsers",
     ],
 )
 
@@ -540,10 +540,10 @@ drake_cc_googletest(
     ],
     deps = [
         ":rigid_body_tree_compare_to_clone",
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant",
         "//systems/analysis",
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:signal_logger",
@@ -564,9 +564,9 @@ drake_cc_googletest(
     data = glob(["test/rigid_body_tree/*.urdf"]),
     deps = [
         ":rigid_body_tree",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities",
-        "//multibody/parsers",
     ],
 )
 
@@ -578,8 +578,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":rigid_body_tree",
+        "//attic/multibody/parsers",
         "//common:find_resource",
-        "//multibody/parsers",
     ],
 )
 
@@ -588,8 +588,8 @@ drake_cc_googletest(
     data = ["//examples/atlas:models"],
     deps = [
         ":rigid_body_tree",
+        "//attic/multibody/parsers",
         "//common:find_resource",
-        "//multibody/parsers",
     ],
 )
 
@@ -601,9 +601,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":inverse_kinematics",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
     ],
 )
 
@@ -612,9 +612,9 @@ drake_cc_googletest(
     data = ["//examples/atlas:models"],
     deps = [
         ":inverse_kinematics",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
     ],
 )
 
@@ -624,9 +624,9 @@ drake_cc_googletest(
     tags = ["snopt"],
     deps = [
         ":inverse_kinematics",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
     ],
 )
 
@@ -638,9 +638,9 @@ drake_cc_googletest(
     tags = ["snopt"],
     deps = [
         ":inverse_kinematics",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
     ],
 )
 
@@ -662,9 +662,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":rigid_body_tree_alias_groups",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
     ],
 )
 
@@ -685,7 +685,7 @@ drake_cc_googletest(
         "//tools:with_gurobi": [
             ":inverse_kinematics",
             "//common:find_resource",
-            "//multibody/parsers",
+            "//attic/multibody/parsers",
         ],
         "//conditions:default": [],
     }),

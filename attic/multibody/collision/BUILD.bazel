@@ -39,11 +39,11 @@ drake_cc_library(
         "point_pair.h",
     ],
     deps = [
+        "//attic/multibody/rigid_body_plant:compliant_material",
+        "//attic/multibody/shapes",
         "//common:autodiff",
         "//common:essential",
         "//common:sorted_vectors_have_intersection",
-        "//multibody/rigid_body_plant:compliant_material",
-        "//multibody/shapes",
     ],
 )
 
@@ -136,11 +136,11 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":collision",
+        "//attic/multibody/joints",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:expect_throws_message",
         "//multibody:rigid_body_tree",
-        "//multibody/joints",
-        "//multibody/parsers",
     ],
 )
 

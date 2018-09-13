@@ -90,10 +90,10 @@ drake_cc_googletest(
     deps = [
         ":generic_plan",
         ":test_common",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody:rigid_body_tree",
-        "//multibody/parsers",
     ],
 )
 
@@ -107,10 +107,10 @@ drake_cc_googletest(
     deps = [
         ":manipulator_move_end_effector_plan",
         ":test_common",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody:rigid_body_tree",
-        "//multibody/parsers",
     ],
 )
 

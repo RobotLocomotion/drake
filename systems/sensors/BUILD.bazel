@@ -56,8 +56,8 @@ drake_cc_library(
         "accelerometer_output.h",
     ],
     deps = [
+        "//attic/multibody/rigid_body_plant",
         "//multibody:rigid_body_tree",
-        "//multibody/rigid_body_plant",
         "//systems/framework",
     ],
 )
@@ -208,8 +208,8 @@ drake_cc_library(
     deps = [
         ":image",
         ":vtk_util",
+        "//attic/multibody/shapes",
         "//common",
-        "//multibody/shapes",
         "@eigen",
         "@vtk//:vtkCommonCore",
         "@vtk//:vtkCommonDataModel",
@@ -263,13 +263,13 @@ drake_cc_binary(
     deps = [
         ":image_to_lcm_image_array_t",
         ":rgbd_camera",
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant",
+        "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//common:unused",
         "//lcm",
         "//multibody:rigid_body_tree",
         "//multibody:rigid_body_tree_construction",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/lcm:lcm_pubsub_system",
         "//systems/rendering:pose_stamped_t_pose_vector_translator",
@@ -304,11 +304,11 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":accelerometer",
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant",
+        "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//common:essential",
         "//common:find_resource",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:signal_logger",
     ],
@@ -411,9 +411,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":gyroscope",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
     ],
 )
 
@@ -440,11 +440,11 @@ drake_cc_googletest(
     tags = vtk_test_tags,
     deps = [
         ":rgbd_camera",
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody:rigid_body_tree_construction",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant",
     ],
 )
 

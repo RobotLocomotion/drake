@@ -56,9 +56,9 @@ drake_cc_library(
     ],
     deps = [
         ":sdf_parser_common",
+        "//attic/multibody/parsers:find_files",
         "//geometry:scene_graph",
         "//multibody/multibody_tree/multibody_plant:coulomb_friction",
-        "//multibody/parsers:find_files",
         "@sdformat",
     ],
 )
@@ -83,8 +83,8 @@ drake_cc_googletest(
     name = "multibody_plant_sdf_parser_test",
     data = [
         ":test_models",
+        "//attic/multibody/shapes:test_models",
         "//multibody/benchmarks/acrobot:models",
-        "//multibody/shapes:test_models",
     ],
     deps = [
         ":multibody_plant_sdf_parser",

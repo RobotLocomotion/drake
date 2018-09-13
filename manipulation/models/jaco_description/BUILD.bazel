@@ -18,8 +18,8 @@ drake_cc_googletest(
     srcs = ["urdf/test/jaco_arm_test.cc"],
     data = [":models"],
     deps = [
+        "//attic/multibody/parsers",
         "//common:find_resource",
-        "//multibody/parsers",
     ],
 )
 

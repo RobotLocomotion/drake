@@ -223,7 +223,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_visualizer_test",
-    data = ["//multibody/collision:test_models"],
+    data = ["//attic/multibody/collision:test_models"],
     deps = [
         ":drake_visualizer",
         "//common:find_resource",
@@ -239,9 +239,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":frame_visualizer",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//lcm:mock",
-        "//multibody/parsers",
     ],
 )
 
@@ -250,9 +250,9 @@ drake_cc_googletest(
     data = ["//multibody:test_models"],
     deps = [
         ":rigid_body_plant",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
     ],
 )
 
@@ -267,11 +267,11 @@ drake_cc_googletest(
     ],
     deps = [
         ":rigid_body_plant",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//examples/pendulum:pendulum_vector_types",
         "//multibody:rigid_body_tree_construction",
-        "//multibody/parsers",
         "//systems/primitives:linear_system",
     ],
 )

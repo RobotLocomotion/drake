@@ -159,9 +159,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":lcm_utils",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
     ],
 )
 
@@ -175,10 +175,10 @@ drake_cc_googletest(
     ],
     deps = [
         ":param_parser",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody:rigid_body_tree_alias_groups",
-        "//multibody/parsers",
     ],
 )
 
@@ -194,9 +194,9 @@ drake_cc_googletest(
     deps = [
         ":control",
         ":param_parser",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
         "//systems/controllers:setpoint",
     ],
 )
@@ -212,9 +212,9 @@ drake_cc_googletest(
     tags = gurobi_test_tags(),
     deps = [
         ":qp_inverse_dynamics_system",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
         "//systems/analysis:simulator",
         "//systems/controllers:setpoint",
         "//systems/controllers/qp_inverse_dynamics:param_parser",
@@ -231,9 +231,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":qp_output_translator_system",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
         "//systems/framework",
     ],
 )
@@ -251,10 +251,10 @@ drake_cc_googletest(
     deps = [
         ":control",
         ":param_parser",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//examples/valkyrie:valkyrie_constants",
-        "//multibody/parsers",
         "//systems/controllers:setpoint",
     ],
 )

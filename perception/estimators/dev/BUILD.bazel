@@ -88,14 +88,14 @@ drake_cc_googletest(
     deps = [
         ":articulated_icp",
         ":test_util",
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant:create_load_robot_message",
+        "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//common:find_resource",
         "//lcmtypes:viewer",
         "//math:geometric_transform",
         "//multibody:rigid_body_tree",
         "//multibody:rigid_body_tree_construction",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant:create_load_robot_message",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//solvers:mathematical_program",
     ],
 )

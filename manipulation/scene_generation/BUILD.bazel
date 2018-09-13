@@ -24,11 +24,11 @@ drake_cc_library(
     srcs = ["simulate_plant_to_rest.cc"],
     hdrs = ["simulate_plant_to_rest.h"],
     deps = [
+        "//attic/multibody/rigid_body_plant",
         "//common",
         "//lcm",
         "//manipulation/util:simple_tree_visualizer",
         "//manipulation/util:world_sim_tree_builder",
-        "//multibody/rigid_body_plant",
         "//systems/analysis:simulator",
         "//systems/framework",
         "//systems/framework:diagram_builder",
