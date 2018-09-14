@@ -147,16 +147,15 @@ class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
   }
 };
 
-/// @defgroup Additional options for input/output port specification.
-/// @{
-// TODO(russt): Move these to a more central location if they are useful in
-// other related methods.
+#ifndef DRAKE_DOXYGEN_CXX
+// LinearSystem special values for port indices.  Omitted from Doxygen because
+// we should really not be using `int`s here in the first place, and we don't
+// really want to leak these into the drake::systems namespace globally.
 const int kNoInput = -1;
 const int kUseFirstInputIfItExists = -2;
-
 const int kNoOutput = -3;
 const int kUseFirstOutputIfItExists = -4;
-/// @}
+#endif
 
 /// Takes the first-order Taylor expansion of a System around a nominal
 /// operating point (defined by the Context).
