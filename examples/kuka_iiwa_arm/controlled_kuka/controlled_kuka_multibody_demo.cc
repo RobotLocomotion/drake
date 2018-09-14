@@ -19,6 +19,7 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
@@ -27,7 +28,6 @@
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/trajectory_source.h"
-#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 
 DEFINE_double(simulation_sec, 0.1, "Number of seconds to simulate.");
 
@@ -35,7 +35,7 @@ using drake::geometry::SceneGraph;
 using drake::lcm::DrakeLcm;
 using drake::math::RollPitchYaw;
 using drake::multibody::Body;
-using drake::multibody::ModelInstanceIndex ;
+using drake::multibody::ModelInstanceIndex;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::MultibodyTree;
 using drake::multibody::parsing::AddModelFromSdfFile;
@@ -69,7 +69,8 @@ SpatialInertia<double> MakeCompositeGripperInertia() {
   const auto& left_slider = plant.GetJointByName("left_finger_sliding_joint");
   const auto& right_slider = plant.GetJointByName("right_finger_sliding_joint");
 
-  const SpatialInertia<double>& M_GGo_G = gripper_body.default_spatial_inertia();
+  const SpatialInertia<double>& M_GGo_G =
+      gripper_body.default_spatial_inertia();
   const SpatialInertia<double>& M_LLo_L =
       left_finger.default_spatial_inertia();
   const SpatialInertia<double>& M_RRo_R =
@@ -129,7 +130,8 @@ std::unique_ptr<MultibodyPlant<double>> MakePlantWithCompositeGripper(
     SceneGraph<double>* scene_graph) {
   auto plant = std::make_unique<MultibodyPlant<double>>();
   ModelInstanceIndex arm_model =
-      AddModelFromSdfFile(FindResourceOrThrow(kSdfPath), plant.get(), scene_graph);
+      AddModelFromSdfFile(
+          FindResourceOrThrow(kSdfPath), plant.get(), scene_graph);
   plant->WeldFrames(plant->world_frame(),
                     plant->GetFrameByName("iiwa_link_0"));
 
