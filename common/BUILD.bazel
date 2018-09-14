@@ -94,7 +94,10 @@ drake_cc_library(
 
 drake_cc_library(
     name = "drake_bool",
-    hdrs = ["drake_bool.h"],
+    hdrs = [
+        "drake_bool.h",
+        "drake_bool_deprecated.h",
+    ],
     deps = [
         ":autodiff",
         ":cond",
@@ -141,7 +144,6 @@ drake_cc_library(
     deps = [
         ":essential",
         ":nice_type_name",
-        ":number_traits",
     ],
 )
 
@@ -556,6 +558,12 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_bool_test",
+    srcs = [
+        # N.B. The `srcs` can be elided entirely (use its default value), once
+        # drake_bool_deprecated_test.cc is removed here.
+        "test/drake_bool_test.cc",
+        "test/drake_bool_deprecated_test.cc",
+    ],
     deps = [
         ":drake_bool",
         ":symbolic",

@@ -105,8 +105,9 @@ inline bool FormulaNotLess(const Formula& f1, const Formula& f2) {
  * @param p2 A polynomial.
  * @param tol The tolerance on the coefficients of p1 - p2.
  */
-::testing::AssertionResult PolynomialEqual(const symbolic::Polynomial& p1,
-                     const symbolic::Polynomial& p2, double tol) {
+inline ::testing::AssertionResult PolynomialEqual(
+    const symbolic::Polynomial& p1, const symbolic::Polynomial& p2,
+    double tol) {
   const symbolic::Polynomial diff = p1 - p2;
   // Check if the absolute value of the coefficient for each monomial is less
   // than tol.

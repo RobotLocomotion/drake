@@ -7,12 +7,6 @@
 
 // A non-numeric ScalarType for testing.
 namespace { struct NonNumericScalar { }; }
-namespace drake {
-template <>
-struct is_numeric<NonNumericScalar> {
-  static constexpr bool value = false;
-};
-}  // namespace drake
 
 namespace drake {
 namespace {

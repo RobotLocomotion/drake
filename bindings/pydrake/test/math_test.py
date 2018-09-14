@@ -90,8 +90,7 @@ class TestMath(unittest.TestCase):
     def test_rigid_transform(self):
 
         def check_equality(X_actual, X_expected_matrix):
-            # TODO(eric.cousineau): Use `IsNearlyEqualTo` once `Bool<T>` is
-            # bound.
+            # TODO(eric.cousineau): Use `IsNearlyEqualTo`.
             self.assertIsInstance(X_actual, mut.RigidTransform)
             self.assertTrue(
                 np.allclose(X_actual.GetAsMatrix4(), X_expected_matrix))

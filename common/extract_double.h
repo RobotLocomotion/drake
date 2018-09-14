@@ -3,7 +3,6 @@
 #include <stdexcept>
 
 #include "drake/common/nice_type_name.h"
-#include "drake/common/number_traits.h"
 
 namespace drake {
 
@@ -21,11 +20,8 @@ namespace drake {
 ///
 /// See autodiff_overloads.h to use this with Eigen's AutoDiffScalar.
 /// See symbolic_expression.h to use this with symbolic::Expression.
-/// See number_traits.h for specifying which ScalarTypes are numeric.
 template <typename T>
 double ExtractDoubleOrThrow(const T&) {
-  static_assert(!is_numeric<T>::value,
-                "Numeric scalar types should overload this function");
   throw std::runtime_error(NiceTypeName::Get<T>() +
                            " cannot be converted to a double");
 }

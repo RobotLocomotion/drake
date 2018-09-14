@@ -55,7 +55,6 @@ PYBIND11_MODULE(math, m) {
                        &BarycentricMesh<T>::Eval))
       .def("MeshValuesFrom", &BarycentricMesh<T>::MeshValuesFrom);
 
-  // TODO(eric.cousineau): Add bindings for `Bool<T>`.
   py::class_<RigidTransform<T>>(m, "RigidTransform")
       .def(py::init())
       .def(py::init<const RotationMatrix<T>&, const Vector3<T>&>(),

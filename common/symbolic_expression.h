@@ -797,11 +797,16 @@ struct dummy_value<symbolic::Expression> {
   static symbolic::Expression get() { return symbolic::Expression::NaN(); }
 };
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 /** Specializes is_numeric to be false for symbolic::Expression type. */
 template <>
 struct is_numeric<symbolic::Expression> {
+  // TODO(jwnimmer-tri) Remove number_traits.h on or about 2018-12-01.
+  DRAKE_DEPRECATED("This trait will be removed")
   static constexpr bool value = false;
 };
+#pragma GCC diagnostic pop
 
 /// Returns the symbolic expression's value() as a double.
 ///
