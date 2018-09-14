@@ -136,11 +136,19 @@ std::unique_ptr<MultibodyPlant<double>> MakePlantWithCompositeGripper(
   // Pose of the gripper G in the end effector frame E.
   Isometry3<double> X_EG = Isometry3<double>::Identity();
   X_EG.translation() = Vector3<double>(0, 0, 0.081);
-  X_EG.linear() = RollPitchYaw<double>(M_PI_2, 0, M_PI_2).ToRotationMatrix().matrix();
+  X_EG.linear() =
+      RollPitchYaw<double>(M_PI_2, 0, M_PI_2).ToRotationMatrix().matrix();
 
   // Add a "lumped" model of the gripper.
   const auto& gripper = plant->AddRigidBody(
       "gripper", arm_model, MakeCompositeGripperInertia());
+
+  // From the SDF it'd seem that axes are such that (Rick please confirm):
+  // - x points towards the right finger.
+  // - y points forward, away from the body, in the direction of the fingers.
+  // - z points "up" defined by the cross product of x and y.
+  std::cout << "Gripper's composite spatial inertia: " << std::endl;
+  std::cout << MakeCompositeGripperInertia() << std::endl;
 
   // Weld gripper to end effector.
   const auto& end_effector = plant->GetFrameByName("iiwa_link_7");
