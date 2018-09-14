@@ -121,7 +121,7 @@ void DoMain() {
   // PID controller for position control of the finger joints
   VectorX<double> kp, kd, ki;
   MatrixX<double> Px, Py;
-  GetControlPortMapping(plant, Px, Py);
+  GetControlPortMapping(plant, &Px, &Py);
   SetPositionControlledGains(&kp, &ki, &kd);
   auto hand_controller = builder.AddSystem<systems::controllers::PidController>(
       Px, Py, kp, ki, kd);

@@ -24,11 +24,11 @@ void SetPositionControlledGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
 /// initialize the PID controller for the hand.
 /// @param Px the matrix to match the output state of the plant into the state
 /// of the finger joints in the desired order.
-/// @paramPy the matrix to match the output torque for the hand joint actuators
-/// in the desired order into the input actuation of the plant.
+/// @param Py the matrix to match the output torque for the hand joint
+/// actuators in the desired order into the input actuation of the plant.
 void GetControlPortMapping(
     const multibody::multibody_plant::MultibodyPlant<double>& plant,
-    MatrixX<double>& Px, MatrixX<double>& Py);
+    MatrixX<double>* Px, MatrixX<double>* Py);
 
 /// Create a map from finger joint names into the index, so that the joints are
 /// reordered into a "desired order":
@@ -57,7 +57,9 @@ class AllegroHandState {
   Eigen::Vector4d FingerGraspJointPosition(int finger_index) const;
   Eigen::Vector4d FingerOpenJointPosition(int finger_index) const;
 
-  bool IsFingerStuck(int finger_index) { return is_finger_stuck(finger_index); }
+  bool IsFingerStuck(int finger_index) const {
+    return is_finger_stuck(finger_index);
+  }
   bool IsAllFingersStuck() const { return is_finger_stuck.all(); }
   // Return whether any of the fingers, other than the thumb, is struck.
   bool IsAnyHighFingersStuck() const {

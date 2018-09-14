@@ -44,7 +44,7 @@ std::map<std::string, int> GetJointNameMapping() {
 
 void GetControlPortMapping(
     const multibody::multibody_plant::MultibodyPlant<double>& plant,
-    MatrixX<double>& Px, MatrixX<double>& Py) {
+    MatrixX<double>* Px, MatrixX<double>* Py) {
   std::map<std::string, int> joint_name_mapping = GetJointNameMapping();
 
   const int num_plant_positions = plant.num_positions();
@@ -52,8 +52,8 @@ void GetControlPortMapping(
   // Projection matrix. We include "all" dofs in the hand.
   // x_tilde = Px * x; where: x is the state in the MBP; x_tilde is the state
   // in the desired order.
-  Px.resize(kAllegroNumJoints * 2, plant.num_multibody_states());
-  Px.setZero();
+  Px->resize(kAllegroNumJoints * 2, plant.num_multibody_states());
+  Px->setZero();
 
   for (std::map<std::string, int>::iterator it = joint_name_mapping.begin();
        it != joint_name_mapping.end(); it++) {
@@ -61,22 +61,22 @@ void GetControlPortMapping(
     const int q_index = joint.position_start();
     const int v_index = joint.velocity_start();
 
-    Px(it->second, q_index) = 1.0;
-    Px(kAllegroNumJoints + it->second, num_plant_positions + v_index) = 1.0;
+    (*Px)(it->second, q_index) = 1.0;
+    (*Px)(kAllegroNumJoints + it->second, num_plant_positions + v_index) = 1.0;
   }
 
   // Build the projection matrix Py for the PID controller. Maps u_c from the
   // controller into u for the MBP, that is, u = Py * u_c where:
   // u_c is the output from the PID controller in our prefered order.
   // u is the output as require by the MBP.
-  Py.resize(plant.num_actuated_dofs(), kAllegroNumJoints);
-  Py.setZero();
+  Py->resize(plant.num_actuated_dofs(), kAllegroNumJoints);
+  Py->setZero();
   for (multibody::JointActuatorIndex actuator_index(0);
        actuator_index < plant.num_actuated_dofs(); ++actuator_index) {
     const auto& actuator = plant.tree().get_joint_actuator(actuator_index);
     const auto& joint = actuator.joint();
     if (joint_name_mapping.find(joint.name()) != joint_name_mapping.end())
-      Py(actuator_index, joint_name_mapping[joint.name()]) = 1.0;
+      (*Py)(actuator_index, joint_name_mapping[joint.name()]) = 1.0;
   }
 }
 
@@ -116,31 +116,31 @@ void AllegroHandState::Update(const lcmt_allegro_status& allegro_state_msg) {
 
 Eigen::Vector4d AllegroHandState::FingerGraspJointPosition(
     int finger_index) const {
-  Eigen::Vector4d pose;
+  Eigen::Vector4d position;
   // The numbers corresponds to the joint positions when the hand grasps a
   // medium size object, such as the mug. The final positions of the joints
   // are usually larger than the preset values, so that the fingers continously
   // apply force on the object.
   if (finger_index == 0)
-    pose << 1.396, 0.85, 0, 1.3;
+    position << 1.396, 0.85, 0, 1.3;
   else if (finger_index == 1)
-    pose << 0.08, 0.9, 0.75, 1.5;
+    position << 0.08, 0.9, 0.75, 1.5;
   else if (finger_index == 2)
-    pose << 0.1, 0.9, 0.75, 1.5;
+    position << 0.1, 0.9, 0.75, 1.5;
   else
-    pose << 0.12, 0.9, 0.75, 1.5;
-  return pose;
+    position << 0.12, 0.9, 0.75, 1.5;
+  return position;
 }
 
 Eigen::Vector4d AllegroHandState::FingerOpenJointPosition(
     int finger_index) const {
-  Eigen::Vector4d pose;
+  Eigen::Vector4d position;
   // The preset postion of the joints when the hand is open. The thumb joints
   // are not at 0 positions, so that it starts from the lower limit, and faces
   // upward.
-  pose.setZero();
-  if (finger_index == 0) pose << 0.263, 1.1, 0, 0;
-  return pose;
+  position.setZero();
+  if (finger_index == 0) position << 0.263, 1.1, 0, 0;
+  return position;
 }
 
 }  // namespace allegro_hand
