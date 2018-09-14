@@ -38,10 +38,15 @@ class ReifierTest : public ShapeReifier, public ::testing::Test {
     // supported.
     EXPECT_TRUE(false) << "Don't test Meshes until they are fully supported";
   }
+  void ImplementGeometry(const Convex&, void* data) override {
+    received_user_data_ = data;
+    convex_made_ = true;
+  }
   void Reset() {
     sphere_made_ = false;
     half_space_made_ = false;
     cylinder_made_ = false;
+    convex_made_ = false;
     received_user_data_ = nullptr;
   }
 
@@ -50,6 +55,7 @@ class ReifierTest : public ShapeReifier, public ::testing::Test {
   bool sphere_made_{false};
   bool cylinder_made_{false};
   bool half_space_made_{false};
+  bool convex_made_{false};
   void* received_user_data_{nullptr};
 };
 

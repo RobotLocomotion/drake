@@ -192,6 +192,25 @@ class Mesh final : public Shape {
   double scale_;
 };
 
+//** Support for convex shapes. */
+class Convex final : public Shape {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Convex)
+
+  /** Constructs a convex shape specification from the file located at the
+   given _absolute_ file path. Optionally uniformly scaled by the given scale factor.
+   */
+  explicit Convex(const std::string& absolute_filename, double scale = 1.0);
+
+  const std::string& filename() const { return filename_; }
+  double scale() const { return scale_; }
+
+ private:
+  std::string filename_;
+  double scale_;
+};
+
+
 /** The interface for converting shape descriptions to real shapes. Any entity
  that consumes shape descriptions _must_ implement this interface.
 
@@ -250,6 +269,7 @@ class ShapeReifier {
                                  void* user_data) = 0;
   virtual void ImplementGeometry(const Box& box, void* user_data) = 0;
   virtual void ImplementGeometry(const Mesh& mesh, void* user_data) = 0;
+  virtual void ImplementGeometry(const Convex& convex, void* user_data) = 0;
 };
 
 template <typename S>

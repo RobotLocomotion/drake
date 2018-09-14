@@ -3,11 +3,16 @@
 #include <algorithm>
 #include <cstdint>
 #include <iterator>
+#include <string>
 #include <unordered_map>
 #include <utility>
 
+#include <tiny_obj_loader.h>
+
 #include <fcl/fcl.h>
+#include <fcl/common/types.h>
 #include <fcl/geometry/shape/box.h>
+#include <fcl/geometry/shape/convex.h>
 #include <fcl/narrowphase/collision_request.h>
 #include <fcl/narrowphase/distance_request.h>
 
@@ -635,6 +640,115 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // other meshes. However, it *does* increase the collision space. :(
     auto fcl_sphere = make_shared<fcl::Sphered>(0.0);
     TakeShapeOwnership(fcl_sphere, user_data);
+  }
+
+  //
+  // Convert vertices from tinyobj format to FCL format
+  //
+  // Vertices from tinyobj are in a vector of floating-points like this:
+  //     attrib.vertices = {c0,c1,c2, c3,c4,c5, c6,c7,c8,...}
+  //                     = {x, y, z,  x, y, z,  x, y, z,...}
+  // We will convert to a vector of Vector3d for FCL like this:
+  //     vertices = {{c0,c1,c2}, {c3,c4,c5}, {c6,c7,c8},...}
+  //              = {    v0,         v1,         v2,    ...}
+  //
+  // The size of `attrib.vertices` is three times the number of vertices.
+  //
+  std::vector<Vector3d> TinyObjToFclVertices (const tinyobj::attrib_t& attrib,
+                                              const double scale) const {
+    int num_coords = attrib.vertices.size();
+    DRAKE_ASSERT(num_coords % 3 == 0);
+    std::vector<Vector3d> vertices;
+    vertices.reserve (num_coords/3);
+
+    auto iter=attrib.vertices.begin();
+    while (iter != attrib.vertices.end()) {
+      double x = *(iter++) * scale;
+      double y = *(iter++) * scale;
+      double z = *(iter++) * scale;
+      vertices.push_back(Vector3d(x,y,z));
+    }
+
+    return vertices;
+  }
+
+  //
+  // Convert faces from tinyobj to FCL
+  //
+  //
+  // A tinyobj mesh has an array of integer storing the number of vertices of
+  // each polygonal face.
+  //     mesh.num_face_vertices = {n0,n1,n2,...}
+  //         face0 has n0 vertices.
+  //         face1 has n1 vertices.
+  //         face2 has n2 vertices.
+  //         ...
+  // A tinyobj mesh has a vector of vertex that belongs to the faces.
+  //     mesh.indices = {v0_0, v0_1,..., v0_n0-1,
+  //                     v1_0, v1_1,..., v1_n1-1,
+  //                     v2_0, v2_1,..., v2_n2-1,
+  //                     ...}
+  //         face0 has vertices v0_0, v0_1,...,v0_n0-1.
+  //         face1 has vertices v1_0, v1_1,...,v1_n1-1.
+  //         face2 has vertices v2_0, v2_1,...,v2_n2-1.
+  //         ...
+  // For fcl::Convex, the `faces` is as an array of integers in this format.
+  //     faces = { n0, v0_0,v0_1,...,v0_n0-1,
+  //               n1, v1_0,v1_1,...,v1_n1-1,
+  //               n2, v2_0,v2_1,...,v2_n2-1,
+  //               ...}
+  // where n_i is the number of vertices of face_i.
+  //
+  int TinyObjToFclFaces (const tinyobj::mesh_t& mesh, std::vector<int>& faces) const {
+    auto iter = mesh.indices.begin();
+    for (const int& num : mesh.num_face_vertices) {
+      faces.push_back(num);
+      std::for_each(iter, iter + num,
+          [&](const tinyobj::index_t & index) {
+              faces.push_back(index.vertex_index);
+          });
+      iter += num;
+    }
+
+    return mesh.num_face_vertices.size();
+  }
+
+  void ImplementGeometry(const Convex& convex, void* user_data) override {
+    // We use tiny_obj_loader to read Obj file of the convex shape.
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string err;
+    // We keep polygonal faces without triangulating them.
+    bool do_tinyobj_triangulation = false;
+    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
+      convex.filename().c_str(), "", do_tinyobj_triangulation);
+
+    if (!ret || !err.empty()) {
+      throw std::runtime_error("Error parsing file \""
+        + convex.filename() + "\" : " + err);
+    }
+
+    //
+    // Now we convert tinyobj data for fcl::Convex.
+    //
+    std::vector<Vector3d> vertices = TinyObjToFclVertices(attrib,
+                                                          convex.scale());
+    // We support only the first shape.
+    assert (shapes.begin() != shapes.end());
+    const auto& first_shape = *(shapes.begin());
+    const tinyobj::mesh_t& mesh = first_shape.mesh;
+
+    // We will have `faces.size()` larger than the number of faces. For each
+    // face, the vector `faces` contains both the number and indices of its
+    // vertices `nv,v0,v1,...,v_nv-1`.
+    std::vector<int> faces;
+    int num_faces = TinyObjToFclFaces(mesh, faces);
+
+    // Create fcl::Convex
+    auto fcl_convex = make_shared<fcl::Convexd>(vertices.size(), vertices.data(),
+                                                num_faces, faces.data());
+    TakeShapeOwnership(fcl_convex, user_data);
   }
 
   std::vector<SignedDistancePair<double>>
