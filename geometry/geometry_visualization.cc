@@ -111,6 +111,10 @@ class ShapeToLcm : public ShapeReifier {
     geometry_data_.string_data = mesh.filename();
   }
 
+  // TODO(DamrongGuoy) Implement this for #9511
+  void ImplementGeometry(const Convex&, void*) override {
+  }
+
  private:
   lcmt_viewer_geometry_data geometry_data_{};
   // The transform from the geometry frame to its parent frame.
