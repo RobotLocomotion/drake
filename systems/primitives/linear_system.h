@@ -147,7 +147,8 @@ class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
   }
 };
 
-/// @defgroup Additional options for input/output port specification.
+/// @name
+/// Additional options for input/output port specification.
 /// @{
 // TODO(russt): Move these to a more central location if they are useful in
 // other related methods.
