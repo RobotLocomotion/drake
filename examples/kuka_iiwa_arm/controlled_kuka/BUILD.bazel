@@ -49,6 +49,7 @@ drake_cc_binary(
     data = [
         "//examples/kuka_iiwa_arm:models",
         "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
     ],
     deps = [
         ":controlled_kuka_trajectory",

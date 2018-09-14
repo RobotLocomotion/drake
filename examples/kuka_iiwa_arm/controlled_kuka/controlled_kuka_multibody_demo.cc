@@ -25,6 +25,8 @@
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/trajectory_source.h"
+#include "attic/multibody/joints/_virtual_includes/everything/drake/multibody/joints/drake_joints.h"
+#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 
 DEFINE_double(simulation_sec, 0.1, "Number of seconds to simulate.");
 
@@ -34,6 +36,9 @@ using drake::multibody::Body;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::MultibodyTree;
 using drake::multibody::parsing::AddModelFromSdfFile;
+using drake::multibody::Joint;
+using drake::multibody::RotationalInertia;
+using drake::multibody::SpatialInertia;
 using drake::multibody::UniformGravityFieldElement;
 
 namespace drake {
@@ -45,6 +50,71 @@ using trajectories::PiecewisePolynomial;
 const char kSdfPath[] =
     "drake/manipulation/models/iiwa_description/sdf/"
         "iiwa14_no_collision.sdf";
+
+const char kWsg50SdfPath[] =
+    "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf";
+
+SpatialInertia<double> MakeCompositeGripperInertia() {
+  MultibodyPlant<double> plant;
+  AddModelFromSdfFile(FindResourceOrThrow(kWsg50SdfPath), &plant);
+  plant.Finalize();
+
+  const auto& gripper_body = plant.tree().GetRigidBodyByName("body");
+  const auto& left_finger = plant.tree().GetRigidBodyByName("left_finger");
+  const auto& right_finger = plant.tree().GetRigidBodyByName("right_finger");
+
+  const auto& left_slider = plant.GetJointByName("left_finger_sliding_joint");
+  const auto& right_slider = plant.GetJointByName("right_finger_sliding_joint");
+
+  const SpatialInertia<double>& M_GGo_G = gripper_body.default_spatial_inertia();
+  const SpatialInertia<double>& M_LLo_L =
+      left_finger.default_spatial_inertia();
+  const SpatialInertia<double>& M_RRo_R =
+      right_finger.default_spatial_inertia();
+
+  auto CalcFingerPoseInGripperFrame = [](const Joint<double>& slider) {
+    // Pose of the joint's parent frame P (attached on gripper body G) in the
+    // frame of the gripper G.
+    const Isometry3<double> X_GP =
+        slider.frame_on_parent().GetFixedPoseInBodyFrame();
+    // Pose of the joint's child frame C (attached on the slider's finger body)
+    // in the frame of the slider's finger F.
+    const Isometry3<double> X_FC =
+        slider.frame_on_child().GetFixedPoseInBodyFrame();
+    // When the slider's translational dof is zero, then P coincides with C.
+    // Therefore:
+    const Isometry3<double> X_GF = X_GP * X_FC.inverse();
+    return X_GF;
+  };
+
+  // Pose of the left finger L in the gripper frame G when the slider's dof is
+  // zero.
+  const Isometry3<double> X_GL = CalcFingerPoseInGripperFrame(left_slider);
+
+  // Pose of the right finger R in the gripper frame G when the slider's dof is
+  // zero.
+  const Isometry3<double> X_GR = CalcFingerPoseInGripperFrame(right_slider);
+
+  // Helper to compute the spatial inertia of a finger F in about the gripper's
+  // origin Go, expressed in G.
+  auto CalcFingerSpatialInertiaInGripperFrame = [](
+      const SpatialInertia<double>& M_FFo_F, const Isometry3<double>& X_GF) {
+    const auto M_FFo_G = M_FFo_F.ReExpress(X_GF.linear());
+    const auto p_FoGo_G = -X_GF.translation();
+    const auto M_FGo_G = M_FFo_G.Shift(p_FoGo_G);
+    return M_FGo_G;
+  };
+
+  // Shift and re-express in G frame the finger's spatial inertias.
+  const auto M_LGo_G = CalcFingerSpatialInertiaInGripperFrame(M_LLo_L, X_GL);
+  const auto M_RGo_G = CalcFingerSpatialInertiaInGripperFrame(M_RRo_R, X_GR);
+
+  // With everything about the same point Go and expressed in the same frame G,
+  // proceed to compose into composite body C:
+  const auto M_CGo_G = M_GGo_G + M_LGo_G + M_RGo_G;
+
+  return M_CGo_G;
+}
 
 int DoMain() {
   systems::DiagramBuilder<double> builder;
