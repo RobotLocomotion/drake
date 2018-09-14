@@ -1,5 +1,5 @@
-#include "drake/common/drake_assert.h"
 #include "drake/examples/allegro_hand/allegro_lcm.h"
+#include "drake/common/drake_assert.h"
 
 #include <utility>
 #include <vector>
@@ -75,17 +75,16 @@ void AllegroCommandReceiver::DoCalcDiscreteVariableUpdates(
   }
 }
 
-void AllegroCommandReceiver::CopyStateToOutput(const Context<double>& context,
-                                            int start_idx, int length,
-                                            BasicVector<double>* output) const {
+void AllegroCommandReceiver::CopyStateToOutput(
+    const Context<double>& context, int start_idx, int length,
+    BasicVector<double>* output) const {
   Eigen::VectorBlock<VectorX<double>> output_vec = output->get_mutable_value();
   output_vec =
       context.get_discrete_state(0).get_value().segment(start_idx, length);
 }
 
-
-AllegroStatusSender::AllegroStatusSender(int num_joints) :
-                                         num_joints_(num_joints) {
+AllegroStatusSender::AllegroStatusSender(int num_joints)
+    : num_joints_(num_joints) {
   // Commanded state.
   this->DeclareInputPort(systems::kVectorValued, num_joints_ * 2);
   // Measured state.
@@ -109,14 +108,13 @@ lcmt_allegro_status AllegroStatusSender::MakeOutputStatus() const {
 }
 
 void AllegroStatusSender::OutputStatus(const Context<double>& context,
-                                    lcmt_allegro_status* output) const {
+                                       lcmt_allegro_status* output) const {
   lcmt_allegro_status& status = *output;
 
   status.utime = context.get_time() * 1e6;
   const systems::BasicVector<double>* command =
       this->EvalVectorInput(context, 0);
-  const systems::BasicVector<double>* state = 
-      this->EvalVectorInput(context, 1);
+  const systems::BasicVector<double>* state = this->EvalVectorInput(context, 1);
   const systems::BasicVector<double>* commanded_torque =
       this->EvalVectorInput(context, 2);
 

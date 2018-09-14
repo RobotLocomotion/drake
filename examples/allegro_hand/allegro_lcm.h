@@ -18,9 +18,9 @@ namespace drake {
 namespace examples {
 namespace allegro_hand {
 
-// The publication period of hand status publish. 
+// The publication period of hand status publish.
 // TODO (WenzhenYuan-TRI): match the value with the real hand's communication
-// rate. 
+// rate.
 const double kLcmStatusPeriod = 0.003;
 
 /// Handles lcmt_allegro_command messages from a LcmSubscriberSystem.
@@ -43,13 +43,11 @@ class AllegroCommandReceiver : public systems::LeafSystem<double> {
   void set_initial_position(systems::Context<double>* context,
                             const Eigen::Ref<const VectorX<double>> x) const;
 
-  const systems::OutputPort<double>& get_commanded_state_output_port()
-      const {
+  const systems::OutputPort<double>& get_commanded_state_output_port() const {
     return this->get_output_port(0);
   }
 
-  const systems::OutputPort<double>& get_commanded_torque_output_port()
-      const {
+  const systems::OutputPort<double>& get_commanded_torque_output_port() const {
     return this->get_output_port(1);
   }
 
@@ -66,7 +64,6 @@ class AllegroCommandReceiver : public systems::LeafSystem<double> {
  private:
   const int num_joints_ = 16;
 };
-
 
 /// Creates and outputs lcmt_allegro_status messages.
 ///
@@ -98,8 +95,7 @@ class AllegroStatusSender : public systems::LeafSystem<double> {
     return this->get_input_port(1);
   }
 
-  const systems::InputPort<double>& get_commanded_torque_input_port()
-      const {
+  const systems::InputPort<double>& get_commanded_torque_input_port() const {
     return this->get_input_port(2);
   }
 

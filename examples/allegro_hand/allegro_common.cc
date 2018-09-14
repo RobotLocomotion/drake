@@ -5,18 +5,14 @@ namespace examples {
 namespace allegro_hand {
 
 void SetPositionControlledGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
-                                    Eigen::VectorXd* Kd) {
-  Kp->resize(kAllegroNumJoints);
+                                Eigen::VectorXd* Kd) {
   *Kp = Eigen::VectorXd::Ones(kAllegroNumJoints) * 0.05;
-  Kd->resize(Kp->size());
-  for (int i = 0; i < Kp->size(); i++) {
-    (*Kd)[i] = 5e-3;
-  }
+  *Kd = Eigen::VectorXd::Constant(Kp->size(), 5e-3);
   (*Kp)[0] = 0.08;
   *Ki = Eigen::VectorXd::Zero(kAllegroNumJoints);
 }
 
-const std::map<std::string, int> SetJointNameMapping() {
+std::map<std::string, int> GetJointNameMapping() {
   std::map<std::string, int> joint_name_mapping;
 
   // Thumb finger
@@ -47,27 +43,26 @@ const std::map<std::string, int> SetJointNameMapping() {
 }
 
 void GetControlPortMapping(
-    multibody::multibody_plant::MultibodyPlant<double>& plant,
+    const multibody::multibody_plant::MultibodyPlant<double>& plant,
     MatrixX<double>& Px, MatrixX<double>& Py) {
-
-  std::map<std::string, int> joint_name_mapping = SetJointNameMapping();
+  std::map<std::string, int> joint_name_mapping = GetJointNameMapping();
 
   const int num_plant_positions = plant.num_positions();
 
   // Projection matrix. We include "all" dofs in the hand.
   // x_tilde = Px * x; where: x is the state in the MBP; x_tilde is the state
   // in the desired order.
-  Px.resize(kAllegroNumJoints * 2 , plant.num_multibody_states());
+  Px.resize(kAllegroNumJoints * 2, plant.num_multibody_states());
   Px.setZero();
 
-  for (std::map<std::string,int>::iterator it = joint_name_mapping.begin(); 
-                                        it!= joint_name_mapping.end(); it++){
-      const auto& joint = plant.GetJointByName(it->first);
-      const int q_index = joint.position_start();
-      const int v_index = joint.velocity_start();
+  for (std::map<std::string, int>::iterator it = joint_name_mapping.begin();
+       it != joint_name_mapping.end(); it++) {
+    const auto& joint = plant.GetJointByName(it->first);
+    const int q_index = joint.position_start();
+    const int v_index = joint.velocity_start();
 
-      Px(it->second, q_index) = 1.0;
-      Px(kAllegroNumJoints + it->second, num_plant_positions + v_index) = 1.0;
+    Px(it->second, q_index) = 1.0;
+    Px(kAllegroNumJoints + it->second, num_plant_positions + v_index) = 1.0;
   }
 
   // Build the projection matrix Py for the PID controller. Maps u_c from the
@@ -85,55 +80,68 @@ void GetControlPortMapping(
   }
 }
 
-void AllegroHandState::Update(const lcmt_allegro_status* allegro_state_msg) {
+AllegroHandState::AllegroHandState()
+    : allegro_num_joints_(kAllegroNumJoints),
+      finger_num_(allegro_num_joints_ / 4),
+      is_joint_stuck(allegro_num_joints_),
+      is_finger_stuck(finger_num_) {}
 
-  lcmt_allegro_status status = *allegro_state_msg;
+void AllegroHandState::Update(const lcmt_allegro_status& allegro_state_msg) {
+  const lcmt_allegro_status status = allegro_state_msg;
 
-  double* ptr = &(status.joint_velocity_estimated[0]);
-  Eigen::ArrayXd joint_velocity = Eigen::Map<Eigen::ArrayXd>(
-                                            ptr, AllegroNumJoints);
-  Eigen::ArrayXd torque_command = Eigen::Map<Eigen::ArrayXd>( 
-                    &(status.joint_torque_commanded[0]),  AllegroNumJoints);
+  const double* ptr = &(status.joint_velocity_estimated[0]);
+  const Eigen::ArrayXd joint_velocity =
+      Eigen::Map<const Eigen::ArrayXd>(ptr, allegro_num_joints_);
+  const Eigen::ArrayXd torque_command = Eigen::Map<const Eigen::ArrayXd>(
+      &(status.joint_torque_commanded[0]), allegro_num_joints_);
 
-  is_joint_stuck = joint_velocity.abs() < velocity_thresh; 
+  is_joint_stuck = joint_velocity.abs() < velocity_thresh;
 
-  Eigen::Array<bool, Eigen::Dynamic, 1> reverse = (joint_velocity * torque_command)
-      < -0.001;
-  is_joint_stuck += reverse;
+  // Detect whether the joint is moving in the opposite direction of the
+  // command. If yes, it is most likely the joint is stuck.
+  Eigen::Array<bool, Eigen::Dynamic, 1> motor_reverse =
+      (joint_velocity * torque_command) < -0.001;
+  is_joint_stuck += motor_reverse;
 
   is_finger_stuck.setZero();
-  if (is_joint_stuck.segment(0,  4).all()) is_finger_stuck(0) = true;
-  if (is_joint_stuck.segment(5,  3).all()) is_finger_stuck(1) = true;
-  if (is_joint_stuck.segment(9,  3).all()) is_finger_stuck(2) = true;
-  if (is_joint_stuck.segment(13, 3).all()) is_finger_stuck(3) = true;
+  if (is_joint_stuck.segment<4>(0).all()) is_finger_stuck(0) = true;
+  if (is_joint_stuck.segment<3>(5).all()) is_finger_stuck(1) = true;
+  if (is_joint_stuck.segment<3>(9).all()) is_finger_stuck(2) = true;
+  if (is_joint_stuck.segment<3>(13).all()) is_finger_stuck(3) = true;
 
-  // // if (reverse.segment(2,  2).any()) is_finger_stuck(0) = true;
-  if (reverse.segment(5,  3).any()) is_finger_stuck(1) = true;
-  if (reverse.segment(9,  3).any()) is_finger_stuck(2) = true;
-  if (reverse.segment(13, 3).any()) is_finger_stuck(3) = true;
+  if (motor_reverse.segment<3>(5).any()) is_finger_stuck(1) = true;
+  if (motor_reverse.segment<3>(9).any()) is_finger_stuck(2) = true;
+  if (motor_reverse.segment<3>(13).any()) is_finger_stuck(3) = true;
 }
 
-Eigen::Vector4d AllegroHandState::FingerGraspPose(int finger_index) {
+Eigen::Vector4d AllegroHandState::FingerGraspJointPosition(
+    int finger_index) const {
   Eigen::Vector4d pose;
+  // The numbers corresponds to the joint positions when the hand grasps a
+  // medium size object, such as the mug. The final positions of the joints
+  // are usually larger than the preset values, so that the fingers continously
+  // apply force on the object.
   if (finger_index == 0)
-    pose << 1.396, 0.85, 0, 1.3 ;
+    pose << 1.396, 0.85, 0, 1.3;
   else if (finger_index == 1)
-    pose << 0.08, 0.9, 0.75, 1.5 ; 
+    pose << 0.08, 0.9, 0.75, 1.5;
   else if (finger_index == 2)
-    pose << 0.1, 0.9, 0.75, 1.5 ;
-  else 
-    pose <<0.12, 0.9, 0.75, 1.5 ; 
+    pose << 0.1, 0.9, 0.75, 1.5;
+  else
+    pose << 0.12, 0.9, 0.75, 1.5;
   return pose;
 }
 
-Eigen::Vector4d AllegroHandState::FingerOpenPose(int finger_index) {
+Eigen::Vector4d AllegroHandState::FingerOpenJointPosition(
+    int finger_index) const {
   Eigen::Vector4d pose;
+  // The preset postion of the joints when the hand is open. The thumb joints
+  // are not at 0 positions, so that it starts from the lower limit, and faces
+  // upward.
   pose.setZero();
-  if (finger_index == 0)
-    pose << 0.263,   1.1,  0,0. ;
+  if (finger_index == 0) pose << 0.263, 1.1, 0, 0;
   return pose;
 }
-
 
 }  // namespace allegro_hand
 }  // namespace examples
