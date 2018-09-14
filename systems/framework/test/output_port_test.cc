@@ -47,8 +47,8 @@ class MyOutputPort : public OutputPort<double> {
  public:
   MyOutputPort(const System<double>* diagram, SystemBase* system_base,
                OutputPortIndex index, DependencyTicket ticket)
-      : OutputPort<double>(diagram, system_base, index, ticket, kVectorValued,
-                           2, "my_output") {}
+      : OutputPort<double>(diagram, system_base, "my_output", index, ticket,
+                           kVectorValued, 2) {}
 
   std::unique_ptr<AbstractValue> DoAllocate() const override {
     return AbstractValue::Make<BasicVector<double>>(
@@ -267,7 +267,8 @@ TEST_F(LeafOutputPortTest, ThrowIfNullAlloc) {
   // TODO(sherm1) Use implicit_cast when available (from abseil).
   LeafOutputPort<double> null_port{
       &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
-      &dummy_,  // implicit_cast<SystemBase*>(&dummy_)
+      &dummy_,  // implicit_cast<SystemBase*>(&dummy_),
+      "null_port",
       OutputPortIndex(dummy_.get_num_output_ports()),
       dummy_.assign_next_dependency_ticket(),
       kAbstractValued, 0 /* size */,

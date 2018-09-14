@@ -1408,7 +1408,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   }
 
   // Exposes the given subsystem output port as an output of the Diagram.
-  void ExportOutput(const OutputPortLocator& port, const std::string& name) {
+  void ExportOutput(const OutputPortLocator& port, std::string name) {
     const System<T>* const sys = port.first;
     const int port_index = port.second;
     const auto& source_output_port = sys->get_output_port(port_index);
@@ -1416,10 +1416,9 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     auto diagram_port = std::make_unique<DiagramOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<SystemBase*>(this)
-        OutputPortIndex(this->get_num_output_ports()),
-        this->assign_next_dependency_ticket(),
-        &source_output_port,
-        GetSystemIndexOrAbort(&source_output_port.get_system()), name);
+        std::move(name), OutputPortIndex(this->get_num_output_ports()),
+        this->assign_next_dependency_ticket(), &source_output_port,
+        GetSystemIndexOrAbort(&source_output_port.get_system()));
     this->AddOutputPort(std::move(diagram_port));
   }
 

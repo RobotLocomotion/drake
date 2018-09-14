@@ -38,14 +38,14 @@ class DiagramOutputPort final : public OutputPort<T> {
 
   @param diagram The Diagram that will own this port.
   @param system_base The same Diagram cast to its base class.
+  @param name A name for the port.  Output ports names must be unique
+      within the `diagram` System.
   @param index The output port index to be assigned to the new port.
   @param ticket The DependencyTicket to be assigned to the new port.
   @param source_output_port An output port of one of this diagram's child
       subsystems that is to be forwarded to the new port.
   @param source_subsystem_index The index of the child subsystem that owns
       `source_output_port`.
-  @param name A name for the port.  Output ports names should be unique
-       within the `diagram` System.
 
   @pre The `diagram` System must actually be a Diagram.
   @pre `diagram` lifetime must exceed the port's; we retain the pointer here.
@@ -62,14 +62,14 @@ class DiagramOutputPort final : public OutputPort<T> {
   // the caller to do that cast for us so take a System<T> here.
   DiagramOutputPort(const System<T>* diagram,
                     SystemBase* system_base,
+                    std::string name,
                     OutputPortIndex index,
                     DependencyTicket ticket,
                     const OutputPort<T>* source_output_port,
-                    SubsystemIndex source_subsystem_index,
-                    const std::string name)
-      : OutputPort<T>(diagram, system_base, index, ticket,
+                    SubsystemIndex source_subsystem_index)
+      : OutputPort<T>(diagram, system_base, std::move(name), index, ticket,
                       source_output_port->get_data_type(),
-                      source_output_port->size(), name),
+                      source_output_port->size()),
         source_output_port_(source_output_port),
         source_subsystem_index_(source_subsystem_index) {
     DRAKE_DEMAND(index.is_valid() && ticket.is_valid());

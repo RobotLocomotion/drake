@@ -65,6 +65,9 @@ class OutputPortBase {
 
   @param owning_system
     The System that owns this output port.
+  @param name
+    A name for the port. Must not be empty. Output ports names should be unique
+    within a single System.
   @param index
     The index to be assigned to this OutputPort.
   @param ticket
@@ -73,13 +76,10 @@ class OutputPortBase {
     Whether the port described is vector or abstract valued.
   @param size
     If the port described is vector-valued, the number of elements expected,
-    otherwise ignored.
-  @param name
-    A name for the port.  Output ports names should be unique within a single
-    System. */
-  OutputPortBase(SystemBase* owning_system,
+    otherwise ignored. */
+  OutputPortBase(SystemBase* owning_system, std::string name,
                  OutputPortIndex index, DependencyTicket ticket,
-                 PortDataType data_type, int size, const std::string& name);
+                 PortDataType data_type, int size);
 
   SystemBase& get_mutable_system_base() {
     return owning_system_;
@@ -93,13 +93,13 @@ class OutputPortBase {
  private:
   // Associated System and System resources.
   SystemBase& owning_system_;
+  const std::string name_;
   const OutputPortIndex index_;
   const DependencyTicket ticket_;
 
   // Port details.
   const PortDataType data_type_;
   const int size_;
-  const std::string name_;
 };
 
 }  // namespace systems
