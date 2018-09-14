@@ -51,6 +51,7 @@ drake_cc_library(
         "//geometry/query_results:penetration_as_point_pair",
         "//geometry/query_results:signed_distance_pair",
         "@fcl",
+        "@tinyobjloader",
     ],
 )
 
@@ -245,10 +246,15 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "proximity_engine_test",
+    data = [
+        "test/forbidden_two_cubes.obj",
+        "test/quad_cube.obj",
+    ],
     deps = [
         ":proximity_engine",
         ":shape_specification",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

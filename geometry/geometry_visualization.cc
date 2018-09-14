@@ -111,6 +111,16 @@ class ShapeToLcm : public ShapeReifier {
     geometry_data_.string_data = mesh.filename();
   }
 
+  // For visualization, Convex is the same as Mesh.
+  void ImplementGeometry(const Convex& mesh, void*) override {
+    geometry_data_.type = geometry_data_.MESH;
+    geometry_data_.num_float_data = 3;
+    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
+    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
+    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
+    geometry_data_.string_data = mesh.filename();
+  }
+
  private:
   lcmt_viewer_geometry_data geometry_data_{};
   // The transform from the geometry frame to its parent frame.

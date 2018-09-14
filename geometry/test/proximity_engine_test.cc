@@ -5,7 +5,9 @@
 #include <fcl/fcl.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -87,6 +89,17 @@ GTEST_TEST(ProximityEngineTests, AddMixedGeometry) {
   EXPECT_EQ(engine.num_geometries(), 2);
   EXPECT_EQ(engine.num_anchored(), 1);
   EXPECT_EQ(engine.num_dynamic(), 1);
+}
+
+// Tests for reading .obj files.------------------------------------------------
+
+// Tests exception when we read an .obj file with two objects into Convex
+GTEST_TEST(ProximityEngineTests, ExceptionTwoObjectsInObjFileForConvex) {
+  ProximityEngine<double> engine;
+  Convex convex{drake::FindResourceOrThrow(
+      "drake/geometry/test/forbidden_two_cubes.obj"), 1.0};
+  DRAKE_EXPECT_THROWS_MESSAGE(engine.AddDynamicGeometry(convex),
+      std::runtime_error, ".*one and only one object.*");
 }
 
 // Tests for copy/move semantics.  ---------------------------------------------
@@ -888,7 +901,8 @@ class BoxPenetrationTest : public ::testing::Test {
     TangentSphere,
     TangentBox,
     TangentStandingCylinder,
-    TangentProneCylinder
+    TangentProneCylinder,
+    TangentConvex
   };
 
   // The test that produces *bad* results based on the box orientation. Not
@@ -1011,6 +1025,8 @@ class BoxPenetrationTest : public ::testing::Test {
         return "standing cylinder";
       case TangentProneCylinder:
         return "prone cylinder";
+      case TangentConvex:
+        return "convex";
     }
     return "undefined shape";
   }
@@ -1027,6 +1043,8 @@ class BoxPenetrationTest : public ::testing::Test {
       case TangentStandingCylinder:
       case TangentProneCylinder:
         return tangent_cylinder_;
+      case TangentConvex:
+        return tangent_convex_;
     }
     // GCC considers this function ill-formed - no apparent return value. This
     // exception alleviates its concern.
@@ -1045,6 +1063,9 @@ class BoxPenetrationTest : public ::testing::Test {
         pose.translation() = Vector3d{0, 0, -kRadius};
         break;
       case TangentBox:
+      // The tangent convex is a cube of the same size as the tangent box.
+      // That is why we give them the same pose.
+      case TangentConvex:
       case TangentStandingCylinder:
         pose.translation() = Vector3d{0, 0, -kLength / 2};
         break;
@@ -1073,6 +1094,10 @@ class BoxPenetrationTest : public ::testing::Test {
   const Box tangent_box_{kLength, kLength, kLength};
   const HalfSpace tangent_plane_;  // Default construct the z = 0 plane.
   const Cylinder tangent_cylinder_{kRadius, kLength};
+  // We scale the convex shape by 5.0 to match the tangent_box_ of size 10.0.
+  // The file "quad_cube.obj" contains the cube of size 2.0.
+  const Convex tangent_convex_{drake::FindResourceOrThrow(
+      "drake/geometry/test/quad_cube.obj"), 5.0};
 
   const Vector3d p_WC_{0, 0, -kDepth};
   const Vector3d p_BoC_B_{-0.5, -0.5, -0.5};
@@ -1128,6 +1153,16 @@ TEST_F(BoxPenetrationTest, TangentProneCylinder2) {
   // collision result from being more precise. In this case, the largest error
   // is in the position of the contact points. See related Drake issue 7656.
   TestCollision2(TangentProneCylinder, 1e-4);
+}
+
+TEST_F(BoxPenetrationTest, TangentConvex1) {
+  // TODO(DamrongGuoy): We should check why we cannot use a smaller tolerance.
+  TestCollision1(TangentConvex, 1e-3);
+}
+
+TEST_F(BoxPenetrationTest, TangentConvex2) {
+  // TODO(DamrongGuoy): We should check why we cannot use a smaller tolerance.
+  TestCollision2(TangentConvex, 1e-3);
 }
 
 }  // namespace
