@@ -10,10 +10,10 @@
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/joints/weld_joint.h"
+#include "drake/multibody/multibody_tree/parsing/parser_path_utils.h"
 #include "drake/multibody/multibody_tree/parsing/scene_graph_parser_detail.h"
 #include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
-#include "drake/multibody/parsers/parser_path_utils.h"
 
 namespace drake {
 namespace multibody {
@@ -314,10 +314,10 @@ void AddJointFromSpecification(
 // object.
 std::string LoadSdf(
     sdf::Root* root,
-    parsers::PackageMap* package_map,
+    parsing::PackageMap* package_map,
     const std::string& file_name) {
 
-  const std::string full_path = parsers::GetFullPath(file_name);
+  const std::string full_path = parsing::GetFullPath(file_name);
 
   // Load the SDF file.
   sdf::Errors errors = root->Load(full_path);
@@ -351,7 +351,7 @@ void AddLinksFromSpecification(
     const sdf::Model& model,
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph,
-    const parsers::PackageMap& package_map,
+    const parsing::PackageMap& package_map,
     const std::string& root_dir) {
 
   // Add all the links
@@ -418,7 +418,7 @@ ModelInstanceIndex AddModelFromSpecification(
     const std::string& model_name,
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph,
-    const parsers::PackageMap& package_map,
+    const parsing::PackageMap& package_map,
     const std::string& root_dir) {
 
   const ModelInstanceIndex model_instance =
@@ -448,7 +448,7 @@ ModelInstanceIndex AddModelFromSdfFile(
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
   sdf::Root root;
-  parsers::PackageMap package_map;
+  parsing::PackageMap package_map;
 
   std::string root_dir = LoadSdf(&root, &package_map, file_name);
 
@@ -485,7 +485,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
   sdf::Root root;
-  parsers::PackageMap package_map;
+  parsing::PackageMap package_map;
 
   std::string root_dir = LoadSdf(&root, &package_map, file_name);
 

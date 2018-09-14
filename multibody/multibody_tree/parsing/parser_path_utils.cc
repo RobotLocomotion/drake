@@ -1,4 +1,4 @@
-#include "drake/multibody/parsers/parser_path_utils.h"
+#include "drake/multibody/multibody_tree/parsing/parser_path_utils.h"
 
 #include <string>
 #include <vector>
@@ -11,7 +11,8 @@
 using std::string;
 
 namespace drake {
-namespace parsers {
+namespace multibody {
+namespace parsing {
 namespace {
 bool IsAbsolutePath(const string& filename) {
   const string prefix = "/";
@@ -67,7 +68,9 @@ bool GetPackagePath(const string& package, const PackageMap& package_map,
 }  // namespace
 
 // The unit test that most directly covers this method is:
-// drake/multibody/attic/parsers/test/urdf_parser_test/urdf_parser_test.cc.
+// drake/attic/multibody/parsers/test/urdf_parser_test/urdf_parser_test.cc.
+// TODO(jwnimmer-tri) Port a more direct unit test to this package, so we
+// are not relying on attic code to test this non-attic function.
 string ResolveFilename(const string& filename, const PackageMap& package_map,
                        const string& root_dir) {
   spruce::path full_filename_spruce;
@@ -128,5 +131,6 @@ string ResolveFilename(const string& filename, const PackageMap& package_map,
   return full_filename_spruce.getStr();
 }
 
-}  // namespace parsers
+}  // namespace parsing
+}  // namespace multibody
 }  // namespace drake
