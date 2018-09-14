@@ -1,4 +1,4 @@
-#include "drake/multibody/parsers/package_map.h"
+#include "drake/multibody/multibody_tree/parsing/package_map.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -26,7 +26,8 @@ using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
 namespace drake {
-namespace parsers {
+namespace multibody {
+namespace parsing {
 
 PackageMap::PackageMap() {}
 
@@ -233,5 +234,6 @@ std::ostream& operator<<(std::ostream& out, const PackageMap& package_map) {
     return out;
 }
 
-}  // namespace parsers
+}  // namespace parsing
+}  // namespace multibody
 }  // namespace drake
