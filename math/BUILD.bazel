@@ -15,6 +15,8 @@ drake_cc_package_library(
     deps = [
         ":autodiff",
         ":barycentric",
+        ":bspline_basis",
+        ":bspline_curve",
         ":continuous_algebraic_riccati_equation",
         ":discrete_algebraic_riccati_equation",
         ":eigen_sparse_triplet",
@@ -50,6 +52,34 @@ drake_cc_library(
     hdrs = ["barycentric.h"],
     deps = [
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "bspline_basis",
+    srcs = [
+        "bspline_basis.cc",
+    ],
+    hdrs = [
+        "bspline_basis.h",
+    ],
+    deps = [
+        "//common:symbolic",
+        "//common/trajectories:piecewise_polynomial",
+    ],
+)
+
+drake_cc_library(
+    name = "bspline_curve",
+    srcs = [
+        "bspline_curve.cc",
+    ],
+    hdrs = [
+        "bspline_curve.h",
+    ],
+    deps = [
+        ":bspline_basis",
+        "//common:unused",
     ],
 )
 
@@ -247,6 +277,14 @@ drake_cc_googletest(
         ":barycentric",
         "//common:symbolic",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "bspline_basis_test",
+    deps = [
+        ":bspline_basis",
+        "@drake//common:find_resource",
     ],
 )
 

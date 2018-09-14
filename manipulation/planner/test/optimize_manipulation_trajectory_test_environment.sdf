@@ -1,0 +1,140 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <model name="optimize_manipulation_trajectory_test_environment">
+    <link name="environment">
+      <visual name="box_1_visual">
+        <pose>2.36 0 0.03 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>4 4 0.02</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.9297 0.7930 0.6758 0.6</diffuse>
+        </material>
+      </visual>
+      <collision name="box_1_collision">
+        <pose>2.36 0 0.03 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>4 4 0.02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="box_2_visual">
+        <pose>0 2.25 0.07 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>6 4 0.02</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.9297 0.7930 0.6758 0.6</diffuse>
+        </material>
+      </visual>
+      <collision name="box_2_collision">
+        <pose>0 2.25 0.07 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>6 4 0.02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="box_3_visual">
+        <pose>0.64 2.25 0.12 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.06 4 0.05</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.9297 0.7930 0.6758 0.6</diffuse>
+        </material>
+      </visual>
+      <collision name="box_3_collision">
+        <pose>0.64 2.25 0.12 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.06 4 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="box_4_visual">
+        <pose>0 1.05 1.1 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>6 0.1 2</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.9297 0.7930 0.6758 0.6</diffuse>
+        </material>
+      </visual>
+      <collision name="box_4_collision">
+        <pose>0 1.05 1.1 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>6 0.1 2</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="box_5_visual">
+        <pose>-1.05 0.64 1.1 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>1 1 2</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.9297 0.7930 0.6758 0.6</diffuse>
+        </material>
+      </visual>
+      <collision name="box_5_collision">
+        <pose>-1.05 0.64 1.1 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>1 1 2</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="box_6_visual">
+        <pose>-0.19 0.55 0.12 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.5 0.5 0.12</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.9297 0.7930 0.6758 0.6</diffuse>
+        </material>
+      </visual>
+      <collision name="box_6_collision">
+        <pose>-0.19 0.55 0.12 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.5 0.5 0.12</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="box_7_visual">
+        <pose>-0.35 0.65 1.15 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>2 1 0.5</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.9297 0.7930 0.6758 0.6</diffuse>
+        </material>
+      </visual>
+      <collision name="box_7_collision">
+        <pose>-0.35 0.65 1.15 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>2 1 0.5</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
