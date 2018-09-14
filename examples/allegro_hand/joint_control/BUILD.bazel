@@ -6,19 +6,15 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
-
-install_data()
 
 drake_cc_binary(
     name = "allegro_single_object_simulation",
     srcs = ["allegro_single_object_simulation.cc"],
     data = [
         "//manipulation/models/allegro_hand_description:models",
-        ":models",
     ],
     deps = [
         "//common:find_resource",
@@ -34,9 +30,9 @@ drake_cc_binary(
         "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
         "//systems/analysis",
         "//systems/controllers:pid_controller",
+        "//systems/lcm:lcm_pubsub_system",
         "//systems/primitives",
         "//systems/rendering:pose_bundle_to_draw_message",
-        "//systems/lcm:lcm_pubsub_system",
         "@gflags",
     ],
 )

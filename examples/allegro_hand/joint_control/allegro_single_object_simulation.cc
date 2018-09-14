@@ -15,10 +15,10 @@
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/allegro_hand/allegro_common.h"
 #include "drake/examples/allegro_hand/allegro_lcm.h"
-#include "drake/lcm/drake_lcm.h"  
+#include "drake/geometry/geometry_visualization.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_allegro_command.hpp"
 #include "drake/lcmt_allegro_status.hpp"
-#include "drake/geometry/geometry_visualization.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/joints/weld_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
@@ -26,7 +26,6 @@
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram.h"
@@ -60,14 +59,14 @@ void DoMain() {
   systems::DiagramBuilder<double> builder;
   lcm::DrakeLcm lcm;
 
-  geometry::SceneGraph<double>& scene_graph = 
+  geometry::SceneGraph<double>& scene_graph =
       *builder.AddSystem<geometry::SceneGraph>();
   scene_graph.set_name("scene_graph");
 
   MultibodyPlant<double>& plant = *builder.AddSystem<MultibodyPlant>
                                   (FLAGS_max_time_step);
   std::string hand_model_path;
-  if (FLAGS_use_right_hand) 
+  if (FLAGS_use_right_hand)
     hand_model_path = FindResourceOrThrow("drake/manipulation/models/"
       "allegro_hand_description/sdf/allegro_hand_description_right.sdf");
   else
@@ -76,13 +75,14 @@ void DoMain() {
 
   const std::string object_model_path = FindResourceOrThrow("drake/examples/"
                   "allegro_hand/joint_control/simple_mug.sdf");
-  multibody::parsing::AddModelFromSdfFile(hand_model_path, &plant, &scene_graph);
+  multibody::parsing::AddModelFromSdfFile(hand_model_path, &plant,
+                                          &scene_graph);
   multibody::parsing::AddModelFromSdfFile(object_model_path, &plant,
                                           &scene_graph);
 
   // Weld the hand to the world frame
   const auto& joint_hand_root = plant.GetBodyByName("hand_root");
-  plant.AddJoint<multibody::WeldJoint>( "weld_hand", plant.world_body(), {},
+  plant.AddJoint<multibody::WeldJoint>("weld_hand", plant.world_body(), {},
       joint_hand_root, {}, Isometry3<double>::Identity());
 
   // Add gravity, if needed
@@ -119,20 +119,20 @@ void DoMain() {
   GetControlPortMapping(plant, Px, Py);
   SetPositionControlledGains(&kp, &ki, &kd);
   auto hand_controller = builder.AddSystem<
-      systems::controllers::PidController>(Px, Py, kp, ki, kd); 
+      systems::controllers::PidController>(Px, Py, kp, ki, kd);
   builder.Connect(plant.get_continuous_state_output_port(),
                  hand_controller->get_input_port_estimated_state());
   builder.Connect(hand_controller->get_output_port_control(),
-                 plant.get_actuation_input_port());  
+                 plant.get_actuation_input_port());
 
   // Creat an output port of the continuous from the plant that only ouput the
   // status of the hand finger joints related DOFs, and put them in the
   // pre-defined order that is easy for understanding.
-  const auto hand_status_converter = 
+  const auto hand_status_converter =
       builder.AddSystem<systems::MatrixGain<double>>(Px);
   builder.Connect(plant.get_continuous_state_output_port(),
                   hand_status_converter->get_input_port());
-  const auto hand_output_torque_converter = 
+  const auto hand_output_torque_converter =
       builder.AddSystem<systems::MatrixGain<double>>(Py);
   builder.Connect(hand_controller->get_output_port_control(),
                   hand_output_torque_converter->get_input_port());
@@ -186,12 +186,12 @@ void DoMain() {
   plant.tree().CalcAllBodyPosesInWorld(plant_context, &X_WB_all);
   const Eigen::Vector3d& p_WHand = X_WB_all[hand.index()].translation();
   Eigen::Isometry3d X_WM;
-  Eigen::Vector3d rpy( M_PI /2, 0, 0);
-  X_WM.linear() = math::RotationMatrix<double>(math::RollPitchYaw<double>(rpy)).matrix();
+  Eigen::Vector3d rpy(M_PI /2, 0, 0);
+  X_WM.linear() = math::RotationMatrix<double>(
+                  math::RollPitchYaw<double>(rpy)).matrix();
   X_WM.translation() = p_WHand + Eigen::Vector3d(0.095, 0.062, 0.095);
   X_WM.makeAffine();
   plant.tree().SetFreeBodyPoseOrThrow(mug, X_WM, &plant_context);
-  std::cout<<mug.index();
 
   lcm.StartReceiveThread();
 
@@ -208,7 +208,7 @@ void DoMain() {
       VectorX<double>::Zero(plant.num_actuators()));
 
   simulator.StepTo(FLAGS_simulation_time);
-}  // main
+}
 
 }  // namespace
 }  // namespace allegro_hand

@@ -17,8 +17,8 @@ drake_cc_library(
     srcs = ["allegro_common.cc"],
     hdrs = ["allegro_common.h"],
     deps = [
-        "//multibody/multibody_tree/multibody_plant",
         "//lcmtypes:allegro",
+        "//multibody/multibody_tree/multibody_plant",
     ],
 )
 
@@ -45,9 +45,9 @@ drake_cc_binary(
         "//common:find_resource",
         "//common:text_logging_gflags",
         "//geometry:geometry_visualization",
+        "//lcm",
         "//multibody/multibody_tree/multibody_plant",
         "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
-        "//lcm",
         "//systems/analysis",
         "//systems/primitives:constant_vector_source",
         "//systems/rendering:pose_bundle_to_draw_message",
