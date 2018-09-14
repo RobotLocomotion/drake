@@ -197,14 +197,14 @@ GTEST_TEST(DiagramBuilderTest, SystemsThatAreNotAddedThrow) {
 template <typename T>
 class Sink : public LeafSystem<T> {
  public:
-  Sink() { this->DeclareInputPort(kVectorValued, 1, "in"); }
+  Sink() { this->DeclareInputPort("in", kVectorValued, 1); }
 };
 
 // Helper class that has no input port, and one output port.
 template <typename T>
 class Source : public LeafSystem<T> {
  public:
-  Source() { this->DeclareVectorOutputPort(&Source<T>::CalcOutput, "out"); }
+  Source() { this->DeclareVectorOutputPort("out", &Source<T>::CalcOutput); }
   void CalcOutput(const Context<T>& context, BasicVector<T>* output) const {}
 };
 

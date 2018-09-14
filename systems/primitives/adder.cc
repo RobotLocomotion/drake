@@ -10,10 +10,11 @@ template <typename T>
 Adder<T>::Adder(int num_inputs, int size)
     : LeafSystem<T>(SystemTypeTag<systems::Adder>{}) {
   for (int i = 0; i < num_inputs; i++) {
-    this->DeclareInputPort(kVectorValued, size);
+    this->DeclareInputPort(kUseDefaultName, kVectorValued, size);
   }
 
-  this->DeclareVectorOutputPort(BasicVector<T>(size), &Adder<T>::CalcSum);
+  this->DeclareVectorOutputPort("sum", BasicVector<T>(size),
+                                &Adder<T>::CalcSum);
 }
 
 template <typename T>

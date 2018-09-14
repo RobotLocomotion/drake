@@ -228,7 +228,7 @@ TEST_F(LeafSystemTest, DefaultPortNameTest) {
   EXPECT_EQ(system_.DeclareVectorOutputPort(&TestSystem<double>::CalcOutput)
                 .get_name(), "y0");
   EXPECT_EQ(system_
-                .DeclareAbstractOutputPort(BasicVector<double>(2),
+                .DeclareAbstractOutputPort("", BasicVector<double>(2),
                                            &TestSystem<double>::CalcOutput)
                 .get_name(),
             "y1");
@@ -1392,10 +1392,13 @@ class DefaultFeedthroughSystem : public LeafSystem<double> {
 
   ~DefaultFeedthroughSystem() override {}
 
-  void AddAbstractInputPort() { this->DeclareAbstractInputPort(); }
+  void AddAbstractInputPort() {
+    this->DeclareAbstractInputPort(kUseDefaultName);
+  }
 
   void AddAbstractOutputPort() {
     this->DeclareAbstractOutputPort(
+        kUseDefaultName,
         []() { return AbstractValue::Make<int>(0); },  // Dummies.
         [](const ContextBase&, AbstractValue*) {});
   }

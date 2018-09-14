@@ -343,8 +343,9 @@ class TestCustom(unittest.TestCase):
                     LeafSystem_[T].__init__(self)
                     test_input_type = AbstractValue.Make(
                         default_value)
-                    self.input_port = self._DeclareAbstractInputPort()
+                    self.input_port = self._DeclareAbstractInputPort("in")
                     self.output_port = self._DeclareAbstractOutputPort(
+                        "out",
                         lambda: AbstractValue.Make(default_value),
                         self._DoCalcAbstractOutput)
 

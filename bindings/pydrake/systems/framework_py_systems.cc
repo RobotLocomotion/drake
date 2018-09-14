@@ -279,8 +279,10 @@ struct Impl {
                                }),
              py_reference_internal, py::arg("type"), py::arg("size"),
              py::arg("random_type") = nullopt)
-        .def("_DeclareAbstractInputPort", &PySystem::DeclareAbstractInputPort,
-             py_reference_internal, py::arg("name") = "")
+        .def("_DeclareAbstractInputPort",
+             overload_cast_explicit<const InputPort<T>&, std::string>(
+                 &PySystem::DeclareAbstractInputPort),
+             py_reference_internal, py::arg("name"))
         // - Feedthrough.
         .def("HasAnyDirectFeedthrough", &System<T>::HasAnyDirectFeedthrough)
         .def("HasDirectFeedthrough", overload_cast_explicit<bool, int>(

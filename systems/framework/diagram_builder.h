@@ -35,6 +35,9 @@ class DiagramBuilder {
   DiagramBuilder() {}
   virtual ~DiagramBuilder() {}
 
+  // TODO(sherm1) The AddSystem methods should take the system name as their
+  // first parameter.
+
   /// Takes ownership of @p system and adds it to the builder. Returns a bare
   /// pointer to the System, which will remain valid for the lifetime of the
   /// Diagram built by this builder.
@@ -162,7 +165,7 @@ class DiagramBuilder {
   /// if it is unspecified or empty, then a default name will be provided.
   /// @return The index of the exported input port of the entire diagram.
   InputPortIndex ExportInput(const InputPort<T>& input,
-                             const std::string& name = "") {
+                             std::string name = kUseDefaultName) {
     InputPortLocator id{input.get_system(), input.get_index()};
     ThrowIfInputAlreadyWired(id);
     ThrowIfSystemNotRegistered(input.get_system());
@@ -171,11 +174,11 @@ class DiagramBuilder {
 
     // The requirement that subsystem names are unique guarantees uniqueness
     // of the port names.
-    const std::string port_name =
+    std::string port_name =
         name.empty() ? input.get_system()->get_name() + "_" + input.get_name()
-                     : name;
+                     : std::move(name);
+    input_port_names_.emplace_back(std::move(port_name));
 
-    input_port_names_.push_back(port_name);
     diagram_input_set_.insert(id);
     return return_id;
   }
@@ -185,7 +188,7 @@ class DiagramBuilder {
   /// port; if it is unspecified or empty, then a default name will be provided.
   /// @return The index of the exported output port of the entire diagram.
   OutputPortIndex ExportOutput(const OutputPort<T>& output,
-                               const std::string& name = "") {
+                               std::string name = kUseDefaultName) {
     ThrowIfSystemNotRegistered(&output.get_system());
     OutputPortIndex return_id(output_port_ids_.size());
     output_port_ids_.push_back(
@@ -193,10 +196,10 @@ class DiagramBuilder {
 
     // The requirement that subsystem names are unique guarantees uniqueness
     // of the port names.
-    const std::string port_name =
+    std::string port_name =
         name.empty() ? output.get_system().get_name() + "_" + output.get_name()
                      : std::move(name);
-    output_port_names_.push_back(port_name);
+    output_port_names_.emplace_back(std::move(port_name));
 
     return return_id;
   }

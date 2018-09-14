@@ -141,19 +141,19 @@ class OutputPort : public OutputPortBase {
  protected:
   /** Provides derived classes the ability to set the base class members at
   construction. See OutputPortBase::OutputPortBase() for the meaning of these
-  parameters.  If @p name is empty, then a default name will be assigned.
+  parameters.
+  @pre The `name` must not be empty.
   @pre The `system` parameter must be the same object as the `system_base`
   parameter. */
   // The System and SystemBase are provided separately since we don't have
   // access to System's declaration here so can't cast but the caller can.
-  OutputPort(const System<T>* system, SystemBase* system_base,
+  OutputPort(const System<T>* system, SystemBase* system_base, std::string name,
              OutputPortIndex index, DependencyTicket ticket,
-             PortDataType data_type, int size, const std::string& name)
+             PortDataType data_type, int size)
       : OutputPortBase(
-            system_base, index, ticket, data_type, size,
-            name.empty()
-                ? "y" + std::to_string(system_base->get_num_output_ports())
-                : name),
+            system_base,
+            std::move(name),
+            index, ticket, data_type, size),
         system_{*system} {
     DRAKE_DEMAND(static_cast<const void*>(system) == system_base);
   }

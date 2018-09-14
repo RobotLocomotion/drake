@@ -1,24 +1,25 @@
 #include "drake/systems/framework/input_port_base.h"
 
+#include <utility>
+
 #include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace systems {
 
-InputPortBase::InputPortBase(InputPortIndex index, DependencyTicket ticket,
+InputPortBase::InputPortBase(SystemBase* owning_system, std::string name,
+                             InputPortIndex index, DependencyTicket ticket,
                              PortDataType data_type, int size,
-                             const std::string& name,
-                             const optional<RandomDistribution>& random_type,
-                             SystemBase* system_base)
-    : system_(*system_base),
+                             const optional<RandomDistribution>& random_type)
+    : owning_system_(*owning_system),
       index_(index),
       ticket_(ticket),
       data_type_(data_type),
       size_(size),
-      name_(name),
+      name_(std::move(name)),
       random_type_(random_type) {
-  DRAKE_DEMAND(system_base != nullptr);
-  DRAKE_DEMAND(!name.empty());
+  DRAKE_DEMAND(owning_system != nullptr);
+  DRAKE_DEMAND(!name_.empty());
   if (size_ == kAutoSize) {
     DRAKE_ABORT_MSG("Auto-size ports are not yet implemented.");
   }
