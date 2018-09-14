@@ -84,10 +84,10 @@ class TestSystem : public System<double> {
     auto port = std::make_unique<LeafOutputPort<double>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
+        "y" + std::to_string(get_num_output_ports()),
         OutputPortIndex(this->get_num_output_ports()),
         assign_next_dependency_ticket(),
-        kAbstractValued, 0, &cache_entry, "y" + std::to_string
-                                                    (get_num_output_ports()));
+        kAbstractValued, 0, &cache_entry);
     LeafOutputPort<double>* const port_ptr = port.get();
     this->AddOutputPort(std::move(port));
     return *port_ptr;
@@ -450,6 +450,7 @@ class ValueIOTestSystem : public System<T> {
     this->AddOutputPort(std::make_unique<LeafOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
+        "absport",
         OutputPortIndex(this->get_num_output_ports()),
         this->assign_next_dependency_ticket(),
         kAbstractValued, 0 /* size */,
@@ -458,7 +459,7 @@ class ValueIOTestSystem : public System<T> {
             []() { return AbstractValue::Make(std::string()); },
             [this](const ContextBase& context, AbstractValue* output) {
               this->CalcStringOutput(context, output);
-            }), "absport"));
+            })));
     this->DeclareInputPort(kVectorValued, 1);
     this->DeclareInputPort("uniform", kVectorValued, 1,
                            RandomDistribution::kUniform);
@@ -467,6 +468,7 @@ class ValueIOTestSystem : public System<T> {
     this->AddOutputPort(std::make_unique<LeafOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
+        "vecport",
         OutputPortIndex(this->get_num_output_ports()),
         this->assign_next_dependency_ticket(),
         kVectorValued, 1 /* size */,
@@ -475,7 +477,7 @@ class ValueIOTestSystem : public System<T> {
             []() { return std::make_unique<Value<BasicVector<T>>>(1); },
             [this](const ContextBase& context, AbstractValue* output) {
               this->CalcVectorOutput(context, output);
-            }), "vecport"));
+            })));
 
     this->set_name("ValueIOTestSystem");
   }

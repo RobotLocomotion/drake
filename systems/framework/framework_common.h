@@ -72,6 +72,9 @@ rather depends on what it is connected to (not yet implemented). */
 // TODO(sherm1) Implement this.
 constexpr int kAutoSize = -1;
 
+/** Name to use when you want a default one generated. */
+constexpr const char* kUseDefaultName = "";
+
 #ifndef DRAKE_DOXYGEN_CXX
 class AbstractValue;
 class ContextBase;

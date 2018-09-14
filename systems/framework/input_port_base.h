@@ -61,6 +61,9 @@ class InputPortBase {
   /** Provides derived classes the ability to set the base
   class members at construction.
 
+  @param name
+    A name for the port. Input port names should be non-empty and unique
+    within a single System.
   @param index
     The index to be assigned to this InputPort.
   @param ticket
@@ -70,17 +73,13 @@ class InputPortBase {
   @param size
     If the port described is vector-valued, the number of elements, or kAutoSize
     if determined by connections. Ignored for abstract-valued ports.
-  @param name
-    A name for the port.  Input port names should be non-empty and unique
-    within a single System.
   @param random_type
     Input ports may optionally be labeled as random, if the port is intended to
     model a random-source "noise" or "disturbance" input.
   @param system_base
     The System that will own this new input port. */
-  InputPortBase(InputPortIndex index, DependencyTicket ticket,
+  InputPortBase(std::string name, InputPortIndex index, DependencyTicket ticket,
                 PortDataType data_type, int size,
-                const std::string& name,
                 const optional<RandomDistribution>& random_type,
                 SystemBase* system_base);
 

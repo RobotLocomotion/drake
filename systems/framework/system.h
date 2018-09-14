@@ -1640,23 +1640,14 @@ class System : public SystemBase {
   /// @throws std::logic_error.
   /// @returns the declared port.
   const InputPort<T>& DeclareInputPort(
-      const std::string& name, PortDataType type, int size,
+      std::string name, PortDataType type, int size,
       optional<RandomDistribution> random_type = nullopt) {
     const InputPortIndex port_index(get_num_input_ports());
 
-    // Check that name is unique.
-    for (InputPortIndex i{0}; i < port_index; i++) {
-      if (name == get_input_port(i).get_name()) {
-        throw std::logic_error("System " + GetSystemName() +
-                               " already has an input port named " + name);
-      }
-    }
-
     const DependencyTicket port_ticket(this->assign_next_dependency_ticket());
     this->AddInputPort(
-        std::make_unique<InputPort<T>>(
-            port_index, port_ticket, type, size, name, random_type, this,
-            this));
+        std::make_unique<InputPort<T>>(NextInputPortName(std::move(name)),
+            port_index, port_ticket, type, size, random_type, this, this));
     return get_input_port(port_index);
   }
 
@@ -1666,19 +1657,21 @@ class System : public SystemBase {
   const InputPort<T>& DeclareInputPort(
       PortDataType type, int size,
       optional<RandomDistribution> random_type = nullopt) {
-    const std::string name = "u" + std::to_string(this->get_num_input_ports());
-    return DeclareInputPort(name, type, size, random_type);
+    return DeclareInputPort(kUseDefaultName, type, size, random_type);
   }
 
 
   /// Adds an abstract-valued port to the input topology.
   /// @returns the declared port.
-  // TODO(sherm1): Remove default value for name (see #9447)
-  const InputPort<T>& DeclareAbstractInputPort(
-      const std::string& name = "") {
-    const std::string port_name =
-        name.empty() ? "u" + std::to_string(this->get_num_input_ports()) : name;
-    return DeclareInputPort(port_name, kAbstractValued, 0 /* size */);
+  const InputPort<T>& DeclareAbstractInputPort(std::string name) {
+    return DeclareInputPort(std::move(name),
+                            kAbstractValued, 0 /* size */);
+  }
+
+  /// See the nearly identical signature with an argument specifying the port
+  /// name.  This version will be deprecated as discussed in #9447.
+  const InputPort<T>& DeclareAbstractInputPort() {
+    return DeclareAbstractInputPort(kUseDefaultName);
   }
   //@}
 

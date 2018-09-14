@@ -758,6 +758,17 @@ class SystemBase : public internal::SystemMessageInterface {
     DRAKE_DEMAND(port != nullptr);
     DRAKE_DEMAND(&port->get_system_base() == this);
     DRAKE_DEMAND(port->get_index() == this->get_num_input_ports());
+    DRAKE_DEMAND(!port->get_name().empty());
+
+    // Check that name is unique.
+    for (InputPortIndex i{0}; i < port->get_index(); i++) {
+      if (port->get_name() == get_input_port_base(i).get_name()) {
+        throw std::logic_error("System " + GetSystemName() +
+            " already has an input port named " +
+            port->get_name());
+      }
+    }
+
     input_ports_.push_back(std::move(port));
   }
 
@@ -772,6 +783,7 @@ class SystemBase : public internal::SystemMessageInterface {
     DRAKE_DEMAND(port != nullptr);
     DRAKE_DEMAND(&port->get_system_base() == this);
     DRAKE_DEMAND(port->get_index() == get_num_output_ports());
+    DRAKE_DEMAND(!port->get_name().empty());
 
     // Check that name is unique.
     for (OutputPortIndex i{0}; i < port->get_index(); i++) {
@@ -783,6 +795,25 @@ class SystemBase : public internal::SystemMessageInterface {
     }
 
     output_ports_.push_back(std::move(port));
+  }
+
+
+  /** (Internal use only) Returns a name for the next input port, using the
+  given name if it isn't empty, otherwise making up a name like "u3" from the
+  next available input port index. */
+  std::string NextInputPortName(std::string given_name) const {
+    return given_name.empty()
+           ? std::string("u") + std::to_string(this->get_num_input_ports())
+           : std::move(given_name);
+  }
+
+  /** (Internal use only) Returns a name for the next output port, using the
+  given name if it isn't empty, otherwise making up a name like "u3" from the
+  next available input port index. */
+  std::string NextOutputPortName(std::string given_name) const {
+    return given_name.empty()
+           ? std::string("y") + std::to_string(this->get_num_output_ports())
+           : std::move(given_name);
   }
 
   /** (Internal use only) Assigns a ticket to a new discrete variable group

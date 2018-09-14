@@ -62,14 +62,14 @@ class DiagramOutputPort final : public OutputPort<T> {
   // the caller to do that cast for us so take a System<T> here.
   DiagramOutputPort(const System<T>* diagram,
                     SystemBase* system_base,
+                    std::string name,
                     OutputPortIndex index,
                     DependencyTicket ticket,
                     const OutputPort<T>* source_output_port,
-                    SubsystemIndex source_subsystem_index,
-                    const std::string name)
-      : OutputPort<T>(diagram, system_base, index, ticket,
+                    SubsystemIndex source_subsystem_index)
+      : OutputPort<T>(diagram, system_base, std::move(name), index, ticket,
                       source_output_port->get_data_type(),
-                      source_output_port->size(), name),
+                      source_output_port->size()),
         source_output_port_(source_output_port),
         source_subsystem_index_(source_subsystem_index) {
     DRAKE_DEMAND(index.is_valid() && ticket.is_valid());
