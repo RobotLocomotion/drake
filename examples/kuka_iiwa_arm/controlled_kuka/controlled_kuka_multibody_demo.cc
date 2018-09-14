@@ -154,7 +154,7 @@ std::unique_ptr<MultibodyPlant<double>> MakePlantWithCompositeGripper(
 
   // Weld gripper to end effector.
   const auto& end_effector = plant->GetFrameByName("iiwa_link_7");
-  plant->WeldFrames(end_effector, gripper.body_frame());
+  plant->WeldFrames(end_effector, gripper.body_frame(), X_EG);
 
   // Add gravity to the model.
   plant->AddForceElement<UniformGravityFieldElement>(
