@@ -17,6 +17,8 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
@@ -25,14 +27,15 @@
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/trajectory_source.h"
-#include "attic/multibody/joints/_virtual_includes/everything/drake/multibody/joints/drake_joints.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 
 DEFINE_double(simulation_sec, 0.1, "Number of seconds to simulate.");
 
 using drake::geometry::SceneGraph;
 using drake::lcm::DrakeLcm;
+using drake::math::RollPitchYaw;
 using drake::multibody::Body;
+using drake::multibody::ModelInstanceIndex ;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::MultibodyTree;
 using drake::multibody::parsing::AddModelFromSdfFile;
@@ -111,9 +114,46 @@ SpatialInertia<double> MakeCompositeGripperInertia() {
 
   // With everything about the same point Go and expressed in the same frame G,
   // proceed to compose into composite body C:
-  const auto M_CGo_G = M_GGo_G + M_LGo_G + M_RGo_G;
+  // TODO(amcastro-tri): Implement operator+() in SpatialInertia.
+  SpatialInertia<double> M_CGo_G = M_GGo_G;
+  M_CGo_G += M_LGo_G;
+  M_CGo_G += M_RGo_G;
 
   return M_CGo_G;
+}
+
+// Helper factory to make a model of the Kuka arm with a "lumped" (or composite)
+// model of the gripper. That is, to control the motion of the arm, we only care
+// about a "frozen" gripper, without extra dofs for the gripper.
+std::unique_ptr<MultibodyPlant<double>> MakePlantWithCompositeGripper(
+    SceneGraph<double>* scene_graph) {
+  auto plant = std::make_unique<MultibodyPlant<double>>();
+  ModelInstanceIndex arm_model =
+      AddModelFromSdfFile(FindResourceOrThrow(kSdfPath), plant.get(), scene_graph);
+  plant->WeldFrames(plant->world_frame(),
+                    plant->GetFrameByName("iiwa_link_0"));
+
+  // Pose of the gripper G in the end effector frame E.
+  Isometry3<double> X_EG = Isometry3<double>::Identity();
+  X_EG.translation() = Vector3<double>(0, 0, 0.081);
+  X_EG.linear() = RollPitchYaw<double>(M_PI_2, 0, M_PI_2).ToRotationMatrix().matrix();
+
+  // Add a "lumped" model of the gripper.
+  const auto& gripper = plant->AddRigidBody(
+      "gripper", arm_model, MakeCompositeGripperInertia());
+
+  // Weld gripper to end effector.
+  const auto& end_effector = plant->GetFrameByName("iiwa_link_7");
+  plant->WeldFrames(end_effector, gripper.body_frame());
+
+  // Add gravity to the model.
+  plant->AddForceElement<UniformGravityFieldElement>(
+      -9.81 * Vector3<double>::UnitZ());
+
+  // Now the model is complete.
+  plant->Finalize(scene_graph);
+
+  return plant;
 }
 
 int DoMain() {
@@ -123,17 +163,9 @@ int DoMain() {
   scene_graph.set_name("scene_graph");
 
   // Make and add the kuka robot model.
-  MultibodyPlant<double>& kuka_plant = *builder.AddSystem<MultibodyPlant>();
-  AddModelFromSdfFile(FindResourceOrThrow(kSdfPath), &kuka_plant, &scene_graph);
-  kuka_plant.WeldFrames(kuka_plant.world_frame(),
-                        kuka_plant.GetFrameByName("iiwa_link_0"));
+  MultibodyPlant<double>& kuka_plant =
+      *builder.AddSystem(MakePlantWithCompositeGripper(&scene_graph));
 
-  // Add gravity to the model.
-  kuka_plant.AddForceElement<UniformGravityFieldElement>(
-      -9.81 * Vector3<double>::UnitZ());
-
-  // Now the model is complete.
-  kuka_plant.Finalize(&scene_graph);
   DRAKE_THROW_UNLESS(kuka_plant.num_positions() == 7);
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(!!kuka_plant.get_source_id());
