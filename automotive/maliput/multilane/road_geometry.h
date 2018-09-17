@@ -57,6 +57,8 @@ class RoadGeometry : public api::RoadGeometry {
   // words, for the lane whose LanePosition makes the r coordinate be the
   // smallest. If `hint` is non-null, then the search is restricted to the
   // `hint->lane` and lanes adjacent to `hint->lane`.
+  // TODO(agalbachicar) Take into account `h` coordinate to return by minimum
+  //                    `h` and then minimum `r`.
   api::RoadPosition DoToRoadPosition(
       const api::GeoPosition& geo_position,
       const api::RoadPosition* hint,
