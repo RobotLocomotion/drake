@@ -54,6 +54,10 @@ void GetPositionIfSmallerDistance(const api::GeoPosition& geo_position,
     }
   };
 
+  auto is_within_lane_bounds = [](double r, const api::RBounds& lane_bounds) {
+    return r >= lane_bounds.min() && r < lane_bounds.max();
+  };
+
   const double delta = new_distance - *distance;
 
   if (delta > linear_tolerance) {
@@ -65,21 +69,28 @@ void GetPositionIfSmallerDistance(const api::GeoPosition& geo_position,
     replace_values();
     return;
   }
-  // They are almost equal so it is worth checking the lane bounds.
-  // When new_distance and *distance are within linear_tolerance, we need to
-  // compare against the lane bounds and the r coordinate.
+
+  // They are almost equal so it is worth checking the `r` coordinate and the
+  // lane bounds.
+  // When lane_position .r() is within lane bounds and the `road_position` is
+  // within its own lane bounds, or when none of those does, the lane position
+  // with the minimum `r` coordinate will be valid.
+  // When lane_position.r() is within lane bound and the `road_position` is not
+  // within its own lane bounds, the lane position is eligible to become the
+  // new `road_position`.
   const api::RBounds lane_bounds = lane->lane_bounds(lane_position.s());
-  if (lane_position.r() >= lane_bounds.min() &&
-      lane_position.r() < lane_bounds.max()) {
-    // Given that `geo_position` is inside the lane_bounds and there is no
-    // overlapping of lane_bounds, the road_position is returned.
-    replace_values();
-  } else {
-    // Compares the r coordinate and updates the closest_road_position if it
-    // is a better match.
+  const api::RBounds road_lane_bounds =
+      road_position->lane->lane_bounds(road_position->pos.s());
+  if ((is_within_lane_bounds(lane_position.r(), lane_bounds) &&
+       is_within_lane_bounds(road_position->pos.r(), road_lane_bounds)) ||
+      (!is_within_lane_bounds(lane_position.r(), lane_bounds) &&
+       !is_within_lane_bounds(road_position->pos.r(), road_lane_bounds))) {
     if (std::abs(lane_position.r()) < std::abs(road_position->pos.r())) {
       replace_values();
     }
+  } else if (is_within_lane_bounds(lane_position.r(), lane_bounds) &&
+             !is_within_lane_bounds(road_position->pos.r(), road_lane_bounds)) {
+    replace_values();
   }
 }
 
