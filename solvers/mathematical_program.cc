@@ -768,16 +768,11 @@ MathematicalProgram::AddPositiveDiagonallyDominantMatrixConstraint(
   for (int j = 0; j < num_X_rows; ++j) {
     for (int i = 0; i < j; ++i) {
       Y(i, j) = Y_upper(Y_upper_count);
+      Y(j, i) = Y(i, j);
       ++Y_upper_count;
     }
     // The diagonal entries of Y.
     Y(j, j) = X(j, j);
-  }
-  // Fill in the lower triangular entries of Y.
-  for (int j = 0; j < num_X_rows; ++j) {
-    for (int i = j + 1; i < num_X_rows; ++i) {
-      Y(i, j) = Y(j, i);
-    }
   }
   // Add the constraint that Y(i, j) >= |X(i, j) + X(j, i) / 2|
   for (int i = 0; i < num_X_rows; ++i) {
