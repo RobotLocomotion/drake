@@ -29,6 +29,8 @@ struct ObjFeatures {
   bool draw_branch_points{true};
   /// Draw highlighting of elevation_bounds of each lane?
   bool draw_elevation_bounds{true};
+  /// Simplify mesh faces? (Support for constant lane width roads only).
+  bool simplify_mesh_faces{false};
   /// Absolute width of stripes
   double stripe_width{0.25};
   /// Absolute elevation (h) of stripes above road surface
