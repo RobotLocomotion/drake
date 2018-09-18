@@ -1065,9 +1065,13 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
       kElevationBounds.min(), kElevationBounds.max(), kScaleLength,
       kLinearTolerance, kAngularTolerance * 180. / M_PI, kComputationPolicyStr);
 
+  auto local_group_factory = std::make_unique<GroupFactoryMock>();
+  GroupFactoryMock* group_factory_mock = local_group_factory.get();
+
   auto local_builder_mock = std::make_unique<BuilderMock>(
       kLaneWidth, kElevationBounds, kLinearTolerance,
-      kAngularTolerance, kScaleLength, kComputationPolicy);
+      kAngularTolerance, kScaleLength, kComputationPolicy,
+      std::move(local_group_factory));
   BuilderMock* builder_mock = local_builder_mock.get();
 
   BuilderFactoryMock builder_factory_mock(std::move(local_builder_mock));
@@ -1099,11 +1103,11 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
                                  kSixLanes, kRefLane, kZeroRRef),
                       kZeroTolerance),
               Matches(StartReference().at(kEndpointA, Direction::kForward),
-                      kLinearTolerance),
+                      kLinearTolerance, kAngularTolerance),
               Matches(LineOffset(10.), kZeroTolerance),
               Matches(EndReference().z_at(kFlatZWithoutThetaDot,
                                           Direction::kForward),
-                      kLinearTolerance)));
+                      kLinearTolerance, kAngularTolerance)));
 
   prebuild_expectations += EXPECT_CALL(
       *builder_mock,
@@ -1113,11 +1117,11 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
                       kZeroTolerance),
               Matches(StartLane(0).at({{10., 20., 0.}, kFlatZWithoutThetaDot},
                                       Direction::kForward),
-                      kLinearTolerance),
+                      kLinearTolerance, kAngularTolerance),
               Matches(LineOffset(20.), kZeroTolerance),
               Matches(EndLane(0).z_at({-10., 0., 7.5 * M_PI / 180., {}},
                                       Direction::kForward),
-                      kLinearTolerance)));
+                      kLinearTolerance, kAngularTolerance)));
 
   prebuild_expectations += EXPECT_CALL(
       *builder_mock,
@@ -1127,11 +1131,11 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
                       kZeroTolerance),
               Matches(StartLane(0).at(
                   {{30., 20., 0.}, {-10., 0., 7.5 * M_PI / 180., {}}},
-                  Direction::kForward), kLinearTolerance),
+                  Direction::kForward), kLinearTolerance, kAngularTolerance),
               Matches(LineOffset(10.), kZeroTolerance),
               Matches(EndLane(0).z_at({-10., 0., 5. * M_PI / 180., {}},
                                       Direction::kForward),
-                      kLinearTolerance)));
+                      kLinearTolerance, kAngularTolerance)));
 
   prebuild_expectations += EXPECT_CALL(
       *builder_mock,
@@ -1141,11 +1145,11 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
                       kZeroTolerance),
               Matches(StartLane(0).at(
                   {{40., 20., 0.}, {-10., 0., 5. * M_PI / 180., {}}},
-                  Direction::kForward), kLinearTolerance),
+                  Direction::kForward), kLinearTolerance, kAngularTolerance),
               Matches(ArcOffset(7.5, -90. * M_PI / 180.),
                       kLinearTolerance, kAngularTolerance),
               Matches(EndLane(0).z_at({-10., 0., 0., {}}, Direction::kForward),
-                      kLinearTolerance)));
+                      kLinearTolerance, kAngularTolerance)));
 
   prebuild_expectations += EXPECT_CALL(
       *builder_mock,
@@ -1155,12 +1159,12 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
                       kZeroTolerance),
               Matches(StartLane(0).at(
                   {{47.5, 12.5, -90. * M_PI / 180.}, {-10., 0., 0., {}}},
-                  Direction::kForward), kLinearTolerance),
+                  Direction::kForward), kLinearTolerance, kAngularTolerance),
               Matches(ArcOffset(12.5, 90. * M_PI / 180.),
                       kLinearTolerance, kAngularTolerance),
               Matches(EndLane(0).z_at({-10., 0., -5. * M_PI / 180., {}},
                                       Direction::kForward),
-                      kLinearTolerance)));
+                      kLinearTolerance, kAngularTolerance)));
 
   prebuild_expectations += EXPECT_CALL(
       *builder_mock,
@@ -1170,11 +1174,11 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
                       kZeroTolerance),
               Matches(StartLane(0).at(
                   {{60., 0., 0.}, {-10., 0., -5. * M_PI / 180., {}}},
-                  Direction::kForward), kLinearTolerance),
+                  Direction::kForward), kLinearTolerance, kAngularTolerance),
               Matches(LineOffset(10.), kLinearTolerance),
               Matches(EndLane(0).z_at({-10., 0., -7.5 * M_PI / 180., {}},
                                       Direction::kForward),
-                      kLinearTolerance)));
+                      kLinearTolerance, kAngularTolerance)));
 
   prebuild_expectations += EXPECT_CALL(
       *builder_mock,
@@ -1184,11 +1188,11 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
                       kZeroTolerance),
               Matches(StartLane(0).at(
                   {{70., 0., 0.}, {-10., 0., -7.5 * M_PI / 180., {}}},
-                  Direction::kForward), kLinearTolerance),
+                  Direction::kForward), kLinearTolerance, kAngularTolerance),
               Matches(LineOffset(20), kZeroTolerance),
               Matches(EndLane(0).z_at({2., 0.2, 0., {}},
                                       Direction::kReverse),
-                      kLinearTolerance)));
+                      kLinearTolerance, kAngularTolerance)));
 
   prebuild_expectations += EXPECT_CALL(
       *builder_mock,
@@ -1198,11 +1202,11 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
                       kZeroTolerance),
               Matches(StartLane(0).at({{10., 0., 0.}, kFlatZWithoutThetaDot},
                                       Direction::kForward),
-                      kLinearTolerance),
+                      kLinearTolerance, kAngularTolerance),
               Matches(LineOffset(20.), kLinearTolerance),
               Matches(EndLane(0).z_at({10., 0., -7.5 * M_PI / 180., {}},
                                       Direction::kForward),
-                      kLinearTolerance)));
+                      kLinearTolerance, kAngularTolerance)));
 
   prebuild_expectations += EXPECT_CALL(
       *builder_mock,
@@ -1212,11 +1216,11 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
                       kZeroTolerance),
               Matches(StartLane(0).at(
                   {{30., 0., 0.}, {10., 0., -7.5 * M_PI / 180., {}}},
-                  Direction::kForward), kLinearTolerance),
+                  Direction::kForward), kLinearTolerance, kAngularTolerance),
               Matches(LineOffset(10.), kLinearTolerance),
               Matches(EndLane(0).z_at({10., 0., -5 * M_PI / 180., {}},
                                       Direction::kForward),
-                      kLinearTolerance)));
+                      kLinearTolerance, kAngularTolerance)));
 
   prebuild_expectations += EXPECT_CALL(
       *builder_mock,
@@ -1226,12 +1230,12 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
                       kZeroTolerance),
               Matches(StartLane(0).at(
                   {{40., 0., 0.}, {10., 0., -5 * M_PI / 180., {}}},
-                  Direction::kForward), kLinearTolerance),
+                  Direction::kForward), kLinearTolerance, kAngularTolerance),
               Matches(ArcOffset(12.5, 90. * M_PI / 180.), kLinearTolerance,
                       kAngularTolerance),
               Matches(EndLane(0).z_at({10., 0., 0., {}},
                                       Direction::kForward),
-                      kLinearTolerance)));
+                      kLinearTolerance, kAngularTolerance)));
 
   prebuild_expectations += EXPECT_CALL(
       *builder_mock,
@@ -1241,12 +1245,12 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
                       kZeroTolerance),
               Matches(StartLane(0).at(
                   {{52.5, 12.5, M_PI / 2.}, {10., 0., 0., {}}},
-                  Direction::kForward), kLinearTolerance),
+                  Direction::kForward), kLinearTolerance, kAngularTolerance),
               Matches(ArcOffset(7.5, -90. * M_PI / 180.), kLinearTolerance,
                       kAngularTolerance),
               Matches(EndLane(0).z_at({10., 0., 5. * M_PI / 180., {}},
                                       Direction::kForward),
-                      kLinearTolerance)));
+                      kLinearTolerance, kAngularTolerance)));
 
   prebuild_expectations += EXPECT_CALL(
       *builder_mock,
@@ -1256,12 +1260,12 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
                       kZeroTolerance),
               Matches(StartLane(0).at(
                   {{60., 20., 0.}, {10., 0., 5. * M_PI / 180., {}}},
-                  Direction::kForward), kLinearTolerance),
+                  Direction::kForward), kLinearTolerance, kAngularTolerance),
               Matches(LineOffset(10.), kLinearTolerance),
               Matches(
                   EndLane(0).z_at({10., 0., 7.5 * M_PI / 180., {}},
                                   Direction::kForward),
-                  kLinearTolerance)));
+                  kLinearTolerance, kAngularTolerance)));
 
   prebuild_expectations += EXPECT_CALL(
       *builder_mock,
@@ -1271,11 +1275,11 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
                       kZeroTolerance),
               Matches(StartLane(0).at(
                   {{70., 20., 0.}, {10., 0., 7.5 * M_PI / 180., {}}},
-              Direction::kForward), kLinearTolerance),
+              Direction::kForward), kLinearTolerance, kAngularTolerance),
               Matches(LineOffset(20.), kZeroTolerance),
               Matches(EndLane(0).z_at({2., 0.2, 0., {}},
                                       Direction::kReverse),
-                      kLinearTolerance)));
+                      kLinearTolerance, kAngularTolerance)));
 
   prebuild_expectations += EXPECT_CALL(
       *builder_mock,
@@ -1284,11 +1288,11 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
                                  kSixLanes, kRefLane, kZeroRRef),
                       kZeroTolerance),
               Matches(StartLane(5).at(kEndpointB, Direction::kReverse),
-                      kLinearTolerance),
+                      kLinearTolerance, kAngularTolerance),
               Matches(LineOffset(10.), kZeroTolerance),
               Matches(EndLane(5).z_at({2., 0.2, 0., {}},
                                       Direction::kForward),
-                      kLinearTolerance)));
+                      kLinearTolerance, kAngularTolerance)));
 
   prebuild_expectations += EXPECT_CALL(
       *builder_mock,
@@ -1298,24 +1302,42 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
                       kZeroTolerance),
               Matches(StartLane(0).at(
                   {{10., 10., 0.}, kFlatZWithoutThetaDot},
-                  Direction::kForward), kLinearTolerance),
+                  Direction::kForward), kLinearTolerance, kAngularTolerance),
               Matches(LineOffset(80.), kZeroTolerance),
               Matches(EndLane(0).z_at({2., 0.2, 0., {}},
                                       Direction::kReverse),
-                      kLinearTolerance)));
+                      kLinearTolerance, kAngularTolerance)));
 
   // Group expectations. In the following we check that:
   //
   // 1. `Group`s are built with the appropriate names.
   //
-  // 2. `Group`s are populated with the right `Connection`s.
-  {
-    prebuild_expectations += EXPECT_CALL(*builder_mock, MakeGroup("g1"));
-    prebuild_expectations += EXPECT_CALL(*builder_mock, MakeGroup("g2"));
-    // TODO(hidmic):  Make use of Group mocking infrastructure to test
-    //                for proper Group::Add() calls once #9278 is in. Then
-    //                remove junction checks below.
-  }
+  // 2. `Group`s are populated with the right number of `Connection`s.
+  prebuild_expectations += EXPECT_CALL(*builder_mock, MakeGroup("g1"));
+  prebuild_expectations += EXPECT_CALL(*builder_mock, MakeGroup("g2"));
+
+  // Creates mock groups and gets their pointers so calls are also validated.
+  group_factory_mock->add_group(std::make_unique<GroupMock>("g1"));
+  group_factory_mock->add_group(std::make_unique<GroupMock>("g2"));
+
+  GroupMock* g1 =
+      dynamic_cast<GroupMock*>(group_factory_mock->get_group_by_id("g1"));
+  EXPECT_NE(g1, nullptr);
+  GroupMock* g2 =
+      dynamic_cast<GroupMock*>(group_factory_mock->get_group_by_id("g2"));
+  EXPECT_NE(g2, nullptr);
+
+  prebuild_expectations += EXPECT_CALL(*group_factory_mock, Make("g1"));
+  prebuild_expectations +=
+      EXPECT_CALL(*g1, Add(An<const Connection*>())).Times(6);
+  EXPECT_CALL(*g1, id()).Times(AtLeast(1));
+  EXPECT_CALL(*g1, connections()).Times(AtLeast(1));
+
+  prebuild_expectations += EXPECT_CALL(*group_factory_mock, Make("g2"));
+  prebuild_expectations +=
+      EXPECT_CALL(*g2, Add(An<const Connection*>())).Times(6);
+  EXPECT_CALL(*g2, id()).Times(AtLeast(1));
+  EXPECT_CALL(*g2, connections()).Times(AtLeast(1));
 
   EXPECT_CALL(*builder_mock, Build(api::RoadGeometryId(kRoadName)))
       .After(prebuild_expectations);
@@ -1327,47 +1349,6 @@ GTEST_TEST(MultilaneLoaderTest, FunkyRoadCircuit) {
   std::unique_ptr<const api::RoadGeometry> rg =
       Load(builder_factory_mock, std::string(kMultilaneYaml));
   EXPECT_NE(rg, nullptr);
-
-  // Finds "s0" junction and checks that a segment was created.
-  const api::Junction* s0 = GetJunctionById(*rg, api::JunctionId("j:s0"));
-  EXPECT_EQ(s0->num_segments(), 1);
-  EXPECT_EQ(s0->segment(0)->id(), api::SegmentId("s:s0"));
-
-  // Finds "g1" junction and checks that the correct segments were created.
-  const api::Junction* g1 = GetJunctionById(*rg, api::JunctionId("j:g1"));
-  EXPECT_EQ(g1->num_segments(), 6);
-
-  const std::set<api::SegmentId> g1_segment_ids{
-    api::SegmentId("s:s1"), api::SegmentId("s:s2"),
-    api::SegmentId("s:s3"), api::SegmentId("s:s4"),
-    api::SegmentId("s:s5"), api::SegmentId("s:s6")};
-  for (int i = 0; i < g1->num_segments(); i++) {
-    EXPECT_TRUE(g1_segment_ids.find(g1->segment(i)->id()) !=
-                g1_segment_ids.end());
-  }
-
-  // Finds "g2" junction and checks that the correct segments were created.
-  const api::Junction* g2 = GetJunctionById(*rg, api::JunctionId("j:g2"));
-  EXPECT_EQ(g2->num_segments(), 6);
-
-  const std::set<api::SegmentId> g2_segment_ids{
-    api::SegmentId("s:s7"), api::SegmentId("s:s8"),
-    api::SegmentId("s:s9"), api::SegmentId("s:s10"),
-    api::SegmentId("s:s11"), api::SegmentId("s:s12")};
-  for (int i = 0; i < g2->num_segments(); i++) {
-    EXPECT_TRUE(g2_segment_ids.find(g2->segment(i)->id()) !=
-                g2_segment_ids.end());
-  }
-
-  // Finds "s13" junction and checks that a segment was created.
-  const api::Junction* s13 = GetJunctionById(*rg, api::JunctionId("j:s13"));
-  EXPECT_EQ(s13->num_segments(), 1);
-  EXPECT_EQ(s13->segment(0)->id(), api::SegmentId("s:s13"));
-
-  // Finds "s14" junction and checks that a segment was created.
-  const api::Junction* s14 = GetJunctionById(*rg, api::JunctionId("j:s14"));
-  EXPECT_EQ(s14->num_segments(), 1);
-  EXPECT_EQ(s14->segment(0)->id(), api::SegmentId("s:s14"));
 }
 
 
