@@ -53,11 +53,22 @@ out the Doxygen C++ documentation</a></p>
 only updated nightly.</p>
 
 <h3>Technical Notes</h3>
-These links provide notes on Drake's design and implementation.
+These links provide notes on Drake's theory, design, and implementation.
 
 - @ref multibody_concepts
+- @ref collision_concepts
 - @ref cache_design_notes
+- @ref system_scalar_conversion
 
+*/
+// Define groups here so we can contol the ordering.
+// TODO(sherm1) Change Collision Concepts title here when #9467 is fixed.
+/**
+  @defgroup systems Modeling Dynamical Systems
+  @defgroup solvers Formulating and Solving Optimization Problems
+  @defgroup multibody_concepts Multibody Dynamics Concepts
+  @defgroup collision_concepts Collision Concepts (RigidBodyPlant only)
+  @defgroup drake_technical_notes Technical Notes
 */
 
 

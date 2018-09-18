@@ -1,5 +1,5 @@
 
-/// @defgroup systems Modeling Dynamical Systems
+/// @addtogroup systems
 /// @{
 /// @brief Drake uses a Simulink-inspired description of dynamical systems.
 ///
