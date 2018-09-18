@@ -302,6 +302,18 @@ Formula operator>=(const Expression& e1, const Expression& e2);
  */
 Formula isnan(const Expression& e);
 
+/** Returns a Formula determining if the given expression @p e is a
+ * positive or negative infinity.
+ * @throws std::runtime_error if NaN is detected during evaluation.
+ */
+Formula isinf(const Expression& e);
+
+/** Returns a Formula determining if the given expression @p e has a finite
+ * value.
+ * @throws std::runtime_error if NaN is detected during evaluation.
+ */
+Formula isfinite(const Expression& e);
+
 /** Returns a symbolic formula constraining @p m to be a positive-semidefinite
  * matrix. By definition, a symmetric matrix @p m is positive-semidefinte if xᵀ
  * m x ≥ 0 for all vector x ∈ ℝⁿ.
