@@ -45,6 +45,7 @@ def add_attic_aliases(short_labels):
 
     (In other words -- find all of the public targets within the attic.)
     """
+
     # The name (e.g., "multibody/parsers") of the package we're aliasing.
     subdir = native.package_name()
 
@@ -66,4 +67,3 @@ def add_attic_aliases(short_labels):
             name = item + ".installed_headers",
             actual = full_item + ".installed_headers",
         )
-
