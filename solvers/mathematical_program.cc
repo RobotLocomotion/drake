@@ -753,26 +753,37 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
   return AddConstraint(constraint, vars);
 }
 
-MatrixXDecisionVariable
+MatrixX<symbolic::Expression>
 MathematicalProgram::AddPositiveDiagonallyDominantMatrixConstraint(
-    const Eigen::Ref<const MatrixX<symbolic::Expression>>&
-        symmetric_matrix_var) {
-  // We will denote X = symmetric_matrix_var
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
   // First create the slack variables Y with the same size as X, Y being the
   // symmetric matrix representing the absolute value of X.
-  const int num_X_rows = symmetric_matrix_var.rows();
-  DRAKE_DEMAND(symmetric_matrix_var.cols() == num_X_rows);
-  auto Y =
-      NewSymmetricContinuousVariables(num_X_rows, "diagonally_dominant_slack");
+  const int num_X_rows = X.rows();
+  DRAKE_DEMAND(X.cols() == num_X_rows);
+  auto Y_upper = NewContinuousVariables((num_X_rows - 1) * num_X_rows / 2,
+                                        "diagonally_dominant_slack");
+  MatrixX<symbolic::Expression> Y(num_X_rows, num_X_rows);
+  int Y_upper_count = 0;
+  // Fill in the upper triangle of Y.
+  for (int j = 0; j < num_X_rows; ++j) {
+    for (int i = 0; i < j; ++i) {
+      Y(i, j) = Y_upper(Y_upper_count);
+      ++Y_upper_count;
+    }
+    // The diagonal entries of Y.
+    Y(j, j) = X(j, j);
+  }
+  // Fill in the lower triangular entries of Y.
+  for (int j = 0; j < num_X_rows; ++j) {
+    for (int i = j + 1; i < num_X_rows; ++i) {
+      Y(i, j) = Y(j, i);
+    }
+  }
   // Add the constraint that Y(i, j) >= |X(i, j) + X(j, i) / 2|
   for (int i = 0; i < num_X_rows; ++i) {
     for (int j = i + 1; j < num_X_rows; ++j) {
-      AddLinearConstraint(
-          Y(i, j) >=
-          (symmetric_matrix_var(i, j) + symmetric_matrix_var(j, i)) / 2);
-      AddLinearConstraint(
-          Y(i, j) >=
-          -(symmetric_matrix_var(i, j) + symmetric_matrix_var(j, i)) / 2);
+      AddLinearConstraint(Y(i, j) >= (X(i, j) + X(j, i)) / 2);
+      AddLinearConstraint(Y(i, j) >= -(X(i, j) + X(j, i)) / 2);
     }
   }
 
@@ -785,7 +796,7 @@ MathematicalProgram::AddPositiveDiagonallyDominantMatrixConstraint(
       }
       y_sum += Y(i, j);
     }
-    AddLinearConstraint(symmetric_matrix_var(i, i) >= y_sum);
+    AddLinearConstraint(X(i, i) >= y_sum);
   }
   return Y;
 }

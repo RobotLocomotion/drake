@@ -6,11 +6,33 @@
 
 namespace drake {
 namespace solvers {
+GTEST_TEST(DiagonallyDominantMatrixConstraint, ReturnYTest) {
+  // Test the returned variables Y.
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<5>();
+  auto Y = prog.AddPositiveDiagonallyDominantMatrixConstraint(
+      X.cast<symbolic::Expression>());
+  EXPECT_EQ(Y.rows(), 5);
+  EXPECT_EQ(Y.cols(), 5);
+  for (int i = 0; i < 5; ++i) {
+    for (int j = 0; j < 5; ++j) {
+      if (i != j) {
+        EXPECT_EQ(Y(i, j), Y(j, i));
+      } else {
+        EXPECT_EQ(Y(i, i), X(i, i));
+      }
+    }
+  }
+}
+
 GTEST_TEST(DiagonallyDominantMatrixConstraint, FeasibilityCheck) {
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<2>();
   auto Y = prog.AddPositiveDiagonallyDominantMatrixConstraint(
       X.cast<symbolic::Expression>());
+  EXPECT_EQ(Y(0, 1), Y(1, 0));
+  EXPECT_EQ(Y(0, 0), X(0, 0));
+  EXPECT_EQ(Y(1, 1), X(1, 1));
 
   auto X_constraint = prog.AddBoundingBoxConstraint(
       Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),

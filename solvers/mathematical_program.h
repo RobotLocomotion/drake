@@ -1305,8 +1305,7 @@ class MathematicalProgram {
       std::stringstream oss;
       oss << "Formulas are non-linear.";
       throw std::runtime_error(
-          "AddLinearConstraint called but formulas are "
-          "non-linear");
+          "AddLinearConstraint called but formulas are non-linear");
     }
   }
 
@@ -2049,17 +2048,17 @@ class MathematicalProgram {
    * diagonally dominant with non-negative diagonals is a sufficient (but not
    * necessary) condition of a matrix being positive semidefinite.
    * Internally we will create a matrix Y as slack variables, such that Y(i, j)
-   * represents the absolute value |X(i, j)| ∀ j ≠ i.
-   * @param symmetric_matrix_var The matrix X in the documentation above. We
-   * will assume that @p symmetric_matrix_var is already symmetric. It is the
-   * user's responsibility to guarantee the symmetry.
+   * represents the absolute value |X(i, j)| ∀ j ≠ i. The diagonal entries
+   * Y(i, i) = X(i, i)
+   * @param X The symmetric matrix X in the documentation above. We
+   * will assume that @p X is already symmetric. It is the user's responsibility
+   * to guarantee the symmetry.
    * @return Y The slack variable. Y(i, j) represents |X(i, j)| ∀ j ≠ i, with
    * the constraint Y(i, j) >= X(i, j) and Y(i, j) >= -X(i, j). Y is a symmetric
-   * matrix.
+   * matrix. The diagonal entries Y(i, i) = X(i, i)
    */
-  MatrixXDecisionVariable AddPositiveDiagonallyDominantMatrixConstraint(
-      const Eigen::Ref<const MatrixX<symbolic::Expression>>&
-          symmetric_matrix_var);
+  MatrixX<symbolic::Expression> AddPositiveDiagonallyDominantMatrixConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
   /**
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),
