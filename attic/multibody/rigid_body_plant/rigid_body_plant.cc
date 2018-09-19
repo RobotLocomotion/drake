@@ -1137,7 +1137,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
     }
     return result;
   };
-  data.L_transpose_mult = [this, &v, &limits](const VectorX<T>& lambda) {
+  data.L_transpose_mult = [&v, &limits](const VectorX<T>& lambda) {
     VectorX<T> result = VectorX<T>::Zero(v.size());
     for (int i = 0; static_cast<size_t>(i) < limits.size(); ++i) {
       const int index = limits[i].v_index;
