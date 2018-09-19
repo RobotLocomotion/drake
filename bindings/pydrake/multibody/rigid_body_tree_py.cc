@@ -225,6 +225,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
                                           const VectorX<T>& v) {
              return tree.transformVelocityToQDot(cache, v);
            })
+      .def("computePositionNameToIndexMap",
+           &RigidBodyTree<double>::computePositionNameToIndexMap)
       .def("transformQDotToVelocity", [](const RigidBodyTree<double>& tree,
                                           const KinematicsCache<T>& cache,
                                           const VectorX<T>& qdot) {
@@ -271,7 +273,12 @@ PYBIND11_MODULE(rigid_body_tree, m) {
            py::arg("model_instance_id_set") =
              RigidBodyTreeConstants::default_model_instance_id_set,
            py::arg("in_terms_of_qdot") = false)
-      // centroidalMomentumMatrix
+      .def("centroidalMomentumMatrix",
+           &RigidBodyTree<double>::centroidalMomentumMatrix<T>,
+           py::arg("cache"),
+           py::arg("model_instance_id_set") =
+             RigidBodyTreeConstants::default_model_instance_id_set,
+           py::arg("in_terms_of_qdot") = false)
       // forwardKinPositionGradient
       .def("geometricJacobianDotTimesV",
            &RigidBodyTree<double>::geometricJacobianDotTimesV<T>,
@@ -284,7 +291,11 @@ PYBIND11_MODULE(rigid_body_tree, m) {
            py::arg("cache"),
            py::arg("model_instance_id_set") =
              RigidBodyTreeConstants::default_model_instance_id_set)
-      // centroidalMomentumMatrixDotTimesV
+      .def("centroidalMomentumMatrixDotTimesV",
+           &RigidBodyTree<double>::centroidalMomentumMatrixDotTimesV<T>,
+           py::arg("cache"),
+           py::arg("model_instance_id_set") =
+             RigidBodyTreeConstants::default_model_instance_id_set)
       .def("positionConstraints",
            &RigidBodyTree<double>::positionConstraints<T>,
            py::arg("cache"))
