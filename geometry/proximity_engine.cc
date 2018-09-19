@@ -7,14 +7,13 @@
 #include <unordered_map>
 #include <utility>
 
-#include <tiny_obj_loader.h>
-
-#include <fcl/fcl.h>
 #include <fcl/common/types.h>
+#include <fcl/fcl.h>
 #include <fcl/geometry/shape/box.h>
 #include <fcl/geometry/shape/convex.h>
 #include <fcl/narrowphase/collision_request.h>
 #include <fcl/narrowphase/distance_request.h>
+#include <tiny_obj_loader.h>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/sorted_vectors_have_intersection.h"
@@ -654,19 +653,19 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   //
   // The size of `attrib.vertices` is three times the number of vertices.
   //
-  std::vector<Vector3d> TinyObjToFclVertices (const tinyobj::attrib_t& attrib,
-                                              const double scale) const {
+  std::vector<Vector3d> TinyObjToFclVertices(const tinyobj::attrib_t& attrib,
+                                             const double scale) const {
     int num_coords = attrib.vertices.size();
     DRAKE_ASSERT(num_coords % 3 == 0);
     std::vector<Vector3d> vertices;
-    vertices.reserve (num_coords/3);
+    vertices.reserve(num_coords / 3);
 
-    auto iter=attrib.vertices.begin();
+    auto iter = attrib.vertices.begin();
     while (iter != attrib.vertices.end()) {
       double x = *(iter++) * scale;
       double y = *(iter++) * scale;
       double z = *(iter++) * scale;
-      vertices.push_back(Vector3d(x,y,z));
+      vertices.push_back(Vector3d(x, y, z));
     }
 
     return vertices;
@@ -699,14 +698,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   //               ...}
   // where n_i is the number of vertices of face_i.
   //
-  int TinyObjToFclFaces (const tinyobj::mesh_t& mesh, std::vector<int>& faces) const {
+  int TinyObjToFclFaces(const tinyobj::mesh_t& mesh,
+                        std::vector<int>* faces) const {
     auto iter = mesh.indices.begin();
     for (const int& num : mesh.num_face_vertices) {
-      faces.push_back(num);
-      std::for_each(iter, iter + num,
-          [&](const tinyobj::index_t & index) {
-              faces.push_back(index.vertex_index);
-          });
+      faces->push_back(num);
+      std::for_each(iter, iter + num, [&](const tinyobj::index_t& index) {
+        faces->push_back(index.vertex_index);
+      });
       iter += num;
     }
 
@@ -722,20 +721,21 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // We keep polygonal faces without triangulating them.
     bool do_tinyobj_triangulation = false;
     bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
-      convex.filename().c_str(), "", do_tinyobj_triangulation);
+                                convex.filename().c_str(), "",
+                                do_tinyobj_triangulation);
 
     if (!ret || !err.empty()) {
-      throw std::runtime_error("Error parsing file \""
-        + convex.filename() + "\" : " + err);
+      throw std::runtime_error("Error parsing file \"" + convex.filename() +
+                               "\" : " + err);
     }
 
     //
     // Now we convert tinyobj data for fcl::Convex.
     //
-    std::vector<Vector3d> vertices = TinyObjToFclVertices(attrib,
-                                                          convex.scale());
+    std::vector<Vector3d> vertices =
+        TinyObjToFclVertices(attrib, convex.scale());
     // We support only the first shape.
-    assert (shapes.begin() != shapes.end());
+    assert(shapes.begin() != shapes.end());
     const auto& first_shape = *(shapes.begin());
     const tinyobj::mesh_t& mesh = first_shape.mesh;
 
@@ -743,11 +743,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // face, the vector `faces` contains both the number and indices of its
     // vertices `nv,v0,v1,...,v_nv-1`.
     std::vector<int> faces;
-    int num_faces = TinyObjToFclFaces(mesh, faces);
+    int num_faces = TinyObjToFclFaces(mesh, &faces);
 
     // Create fcl::Convex
-    auto fcl_convex = make_shared<fcl::Convexd>(vertices.size(), vertices.data(),
-                                                num_faces, faces.data());
+    auto fcl_convex = make_shared<fcl::Convexd>(
+        vertices.size(), vertices.data(), num_faces, faces.data());
     TakeShapeOwnership(fcl_convex, user_data);
   }
 
