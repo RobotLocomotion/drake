@@ -37,6 +37,7 @@
 #include "drake/common/symbolic_monomial.h"
 #include "drake/common/symbolic_monomial_util.h"
 #include "drake/common/symbolic_polynomial.h"
+#include "drake/common/symbolic_polynomial_fraction.h"
 #include "drake/common/symbolic_formula.h"
 #include "drake/common/symbolic_formula_visitor.h"
 #include "drake/common/symbolic_simplification.h"

@@ -72,6 +72,16 @@ inline bool PolyNotEqual(const Polynomial& p1, const Polynomial& p2) {
   return !PolyEqual(p1, p2);
 }
 
+inline bool PolyFractionEqual(const PolynomialFraction& f1,
+                              const PolynomialFraction& f2) {
+  return f1.EqualTo(f2);
+}
+
+inline bool PolyFractionNotEqual(const PolynomialFraction& f1,
+                                 const PolynomialFraction& f2) {
+  return !PolyFractionEqual(f1, f2);
+}
+
 template <typename F>
 bool all_of(const std::vector<Formula>& formulas, const F& f) {
   return std::all_of(formulas.begin(), formulas.end(), f);
