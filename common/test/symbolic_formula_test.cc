@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <cmath>
 #include <exception>
-#include <limits>
 #include <map>
 #include <set>
 #include <stdexcept>
@@ -20,7 +19,6 @@
 
 namespace drake {
 
-using std::numeric_limits;
 using test::IsMemcpyMovable;
 
 namespace symbolic {
@@ -1185,46 +1183,6 @@ TEST_F(SymbolicFormulaTest, GetMatrixInPSD_NonSymmetric_Dynamic) {
       get_matrix_in_positive_semidefinite(
           positive_semidefinite(m.triangularView<Eigen::Upper>())),
       sym_from_upper));
-}
-
-TEST_F(SymbolicFormulaTest, Isinf) {
-  // Checks the std::isinf and symbolic isinf agree on non-NaN values.
-  const double inf{numeric_limits<double>::infinity()};
-  EXPECT_EQ(std::isinf(inf), isinf(Expression(inf)).Evaluate());
-  EXPECT_EQ(std::isinf(3e18), isinf(Expression(3e18)).Evaluate());
-  EXPECT_EQ(std::isinf(3.0), isinf(Expression(3.0)).Evaluate());
-  EXPECT_EQ(std::isinf(0.0), isinf(Expression(0.0)).Evaluate());
-  EXPECT_EQ(std::isinf(-3.0), isinf(Expression(-3.0)).Evaluate());
-  EXPECT_EQ(std::isinf(-3e18), isinf(Expression(-3e18)).Evaluate());
-  EXPECT_EQ(std::isinf(-inf), isinf(Expression(-inf)).Evaluate());
-
-  // Note that constructing isinf with an expression including NaN does *not*
-  // throw.
-  EXPECT_NO_THROW(isinf(Expression::NaN()));
-
-  // For NaN, symbolic::isinf will throw an exception when evaluated while
-  // std::isfinite returns false.
-  EXPECT_THROW(isinf(Expression::NaN()).Evaluate(), std::runtime_error);
-}
-
-TEST_F(SymbolicFormulaTest, Isfinite) {
-  // Checks the std::isfinite and symbolic isfinte agree on non-NaN values.
-  const double inf{numeric_limits<double>::infinity()};
-  EXPECT_EQ(std::isfinite(inf), isfinite(Expression(inf)).Evaluate());
-  EXPECT_EQ(std::isfinite(3e18), isfinite(Expression(3e18)).Evaluate());
-  EXPECT_EQ(std::isfinite(3.0), isfinite(Expression(3.0)).Evaluate());
-  EXPECT_EQ(std::isfinite(0.0), isfinite(Expression(0.0)).Evaluate());
-  EXPECT_EQ(std::isfinite(-3.0), isfinite(Expression(-3.0)).Evaluate());
-  EXPECT_EQ(std::isfinite(-3e18), isfinite(Expression(-3e18)).Evaluate());
-  EXPECT_EQ(std::isfinite(-inf), isfinite(Expression(-inf)).Evaluate());
-
-  // Note that constructing isfinite with an expression including NaN does *not*
-  // throw.
-  EXPECT_NO_THROW(isfinite(Expression::NaN()));
-
-  // For NaN, symbolic::isfinite will throw an exception when evaluated while
-  // std::isfinite returns false.
-  EXPECT_THROW(isfinite(Expression::NaN()).Evaluate(), std::runtime_error);
 }
 
 // Confirm that formulas compile (and pass) Drake's assert-like checks.
