@@ -68,9 +68,6 @@ struct MultilaneRoadCharacteristics {
 /// road respectively. When the full lane number is even, two lanes from `pre`
 /// and `onramp` will overlap. Otherwise, only one lane will overlap.
 ///
-/// For the special case of a single lane, the output RoadGeometry will be
-/// identical to a `monolane::RoadGeometry`.
-///
 /// Note that this factory sets some constants to the `multilane::Builder` when
 /// creating the RoadGeometry. Linear and angular tolerances, the scale length
 /// and the ComputationPolicy are set to appropriate values to build this

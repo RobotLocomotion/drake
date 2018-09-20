@@ -89,7 +89,9 @@ DEFINE_int32(onramp_num_lanes, 1,
 DEFINE_double(onramp_lane_width, 3.7,
               "The onramp lane width. This option is only valid when "
               "`with_onramp` option is used.");
-DEFINE_double(onramp_shoulder_width, 3.0, "The onramp's road shoulder width.");
+DEFINE_double(onramp_shoulder_width, 3.0,
+              "The onramp's road shoulder width. This option is only valid "
+              "when `with_onramp` option is used.");
 DEFINE_double(onramp_base_speed, 25, "The speed of the vehicles "
               "added to the onramp, i.e. this option is only valid when "
               "`with_onramp` option is used.");
