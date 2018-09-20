@@ -46,7 +46,6 @@ drake_cc_package_library(
         ":lane_direction",
         ":maliput_railcar",
         ":mobil_planner",
-        ":monolane_onramp_merge",
         ":multilane_onramp_merge",
         ":pose_selector",
         ":prius_vis",
@@ -522,7 +521,6 @@ drake_cc_binary(
     deps = [
         ":automotive_simulator",
         ":create_trajectory_params",
-        ":monolane_onramp_merge",
         ":multilane_onramp_merge",
         "//automotive/maliput/dragway",
         "//common:text_logging_gflags",
