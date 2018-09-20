@@ -642,7 +642,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   //
-  // Convert vertices from tinyobj format to FCL format
+  // Convert vertices from tinyobj format to FCL format.
   //
   // Vertices from tinyobj are in a vector of floating-points like this:
   //     attrib.vertices = {c0,c1,c2, c3,c4,c5, c6,c7,c8,...}
@@ -656,12 +656,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   std::vector<Vector3d> TinyObjToFclVertices(const tinyobj::attrib_t& attrib,
                                              const double scale) const {
     int num_coords = attrib.vertices.size();
-    DRAKE_ASSERT(num_coords % 3 == 0);
+    DRAKE_DEMAND(num_coords % 3 == 0);
     std::vector<Vector3d> vertices;
     vertices.reserve(num_coords / 3);
 
     auto iter = attrib.vertices.begin();
     while (iter != attrib.vertices.end()) {
+      // We increment `iter` three times for x, y, and z coordinates.
       double x = *(iter++) * scale;
       double y = *(iter++) * scale;
       double z = *(iter++) * scale;
@@ -672,17 +673,17 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   //
-  // Convert faces from tinyobj to FCL
+  // Convert faces from tinyobj to FCL.
   //
   //
-  // A tinyobj mesh has an array of integer storing the number of vertices of
+  // A tinyobj mesh has an integer array storing the number of vertices of
   // each polygonal face.
   //     mesh.num_face_vertices = {n0,n1,n2,...}
   //         face0 has n0 vertices.
   //         face1 has n1 vertices.
   //         face2 has n2 vertices.
   //         ...
-  // A tinyobj mesh has a vector of vertex that belongs to the faces.
+  // A tinyobj mesh has a vector of vertices that belong to the faces.
   //     mesh.indices = {v0_0, v0_1,..., v0_n0-1,
   //                     v1_0, v1_1,..., v1_n1-1,
   //                     v2_0, v2_1,..., v2_n2-1,
@@ -703,7 +704,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     auto iter = mesh.indices.begin();
     for (const int& num : mesh.num_face_vertices) {
       faces->push_back(num);
-      std::for_each(iter, iter + num, [&](const tinyobj::index_t& index) {
+      std::for_each(iter, iter + num, [faces](const tinyobj::index_t& index) {
         faces->push_back(index.vertex_index);
       });
       iter += num;
@@ -734,21 +735,33 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     //
     std::vector<Vector3d> vertices =
         TinyObjToFclVertices(attrib, convex.scale());
+
     // We support only the first shape.
-    assert(shapes.begin() != shapes.end());
+    DRAKE_DEMAND(shapes.begin() != shapes.end());
     const auto& first_shape = *(shapes.begin());
     const tinyobj::mesh_t& mesh = first_shape.mesh;
 
     // We will have `faces.size()` larger than the number of faces. For each
-    // face, the vector `faces` contains both the number and indices of its
-    // vertices `nv,v0,v1,...,v_nv-1`.
+    // face_i, the vector `faces` contains both the number and indices of its
+    // vertices:
+    //     faces = { n0, v0_0,v0_1,...,v0_n0-1,
+    //               n1, v1_0,v1_1,...,v1_n1-1,
+    //               n2, v2_0,v2_1,...,v2_n2-1,
+    //               ...}
+    // where n_i is the number of vertices of face_i.
+    //
     std::vector<int> faces;
     int num_faces = TinyObjToFclFaces(mesh, &faces);
 
-    // Create fcl::Convex
+    // Create fcl::Convex.
     auto fcl_convex = make_shared<fcl::Convexd>(
         vertices.size(), vertices.data(), num_faces, faces.data());
     TakeShapeOwnership(fcl_convex, user_data);
+
+    // TODO(DamrongGuoy): Per f2f with SeanCurtis-TRI, we want ProximityEngine
+    // to own vertices and face by a map from filename.  This way we won't have
+    // to read the same file again and again when we create multiple Convex
+    // objects from the same file.
   }
 
   std::vector<SignedDistancePair<double>>

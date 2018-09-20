@@ -111,6 +111,7 @@ class ShapeToLcm : public ShapeReifier {
     geometry_data_.string_data = mesh.filename();
   }
 
+  // TODO(DamrongGuoy) Implement this.
   void ImplementGeometry(const Convex&, void*) override {
   }
 

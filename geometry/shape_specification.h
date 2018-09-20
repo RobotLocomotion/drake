@@ -192,13 +192,20 @@ class Mesh final : public Shape {
   double scale_;
 };
 
-//** Support for convex shapes. */
+/** Support for convex shapes. */
 class Convex final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Convex)
 
   /** Constructs a convex shape specification from the file located at the
-   given _absolute_ file path. Optionally uniformly scaled by the given scale factor.
+   given _absolute_ file path. Optionally uniformly scaled by the given scale
+   factor.
+   @param absolute_filename     The file name with absolute path. We support
+                                an Obj file with one object. If the file
+                                contains more than one object, only the first
+                                object is read. We assume that the polyhedral
+                                object is convex.
+   @param scale                 An optional scale to coordinates.
    */
   explicit Convex(const std::string& absolute_filename, double scale = 1.0);
 

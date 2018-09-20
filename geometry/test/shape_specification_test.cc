@@ -39,6 +39,7 @@ class ReifierTest : public ShapeReifier, public ::testing::Test {
     EXPECT_TRUE(false) << "Don't test Meshes until they are fully supported";
   }
   void ImplementGeometry(const Convex&, void* data) override {
+    // TODO(DamrongGuoy): Implement this.
     received_user_data_ = data;
     convex_made_ = true;
   }
