@@ -16,3 +16,5 @@ cc_library(
     linkopts = %{linkopts},
     deps = %{deps},
 )
+
+%{build_epilog}

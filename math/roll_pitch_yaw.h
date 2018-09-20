@@ -201,8 +201,8 @@ class RollPitchYaw {
   }
 
   // TODO(jwnimmer-tri) Nearly all of the bool-valued predicates ("IsFoo...")
-  // in this class should return scalar_predicate_t<T>, to be consistent with
-  // the RotationMatrix methods.
+  // in this class should return boolean<T>, to be consistent with the
+  // RotationMatrix methods.
 
   /// Compares each element of `this` to the corresponding element of `other`
   /// to check if they are the same to within a specified `tolerance`.

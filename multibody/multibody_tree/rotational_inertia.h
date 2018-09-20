@@ -218,8 +218,8 @@ class RotationalInertia {
   ///    in `this` and `other` can be converted to a double (discarding
   ///    supplemental scalar data such as derivatives of an AutoDiffScalar).
   ///    It fails at runtime if type T cannot be converted to `double`.
-  scalar_predicate_t<T> IsNearlyEqualTo(
-      const RotationalInertia& other, double precision) const {
+  boolean<T> IsNearlyEqualTo(const RotationalInertia& other,
+                             double precision) const {
     using std::min;
     const T I_maxA = CalcMaximumPossibleMomentOfInertia();
     const T I_maxB = other.CalcMaximumPossibleMomentOfInertia();
@@ -378,7 +378,7 @@ class RotationalInertia {
 
   /// Returns `true` if any moment/product in `this` rotational inertia is NaN.
   /// Otherwise returns `false`.
-  scalar_predicate_t<T> IsNaN() const {
+  boolean<T> IsNaN() const {
     using std::isnan;
     // Only check the lower-triangular part of this symmetric matrix for NaN.
     // The three upper off-diagonal products of inertia should be/remain NaN.
@@ -481,7 +481,7 @@ class RotationalInertia {
   /// @throws std::runtime_error if principal moments of inertia cannot be
   ///         calculated (eigenvalue solver) or if scalar type T cannot be
   ///         converted to a double.
-  scalar_predicate_t<T> CouldBePhysicallyValid() const {
+  boolean<T> CouldBePhysicallyValid() const {
     // To check the validity of rotational inertia use an epsilon value that is
     // a number related to machine precision multiplied by the largest possible
     // element that can appear in a valid `this` rotational inertia.  Note: The
@@ -836,8 +836,8 @@ class RotationalInertia {
   //          product absolute value in `other`.  Otherwise returns `false`.
   // @note Trace() / 2 is a rotational inertia's maximum possible element,
   // e.g., consider: epsilon = 1E-9 * Trace()  (where 1E-9 is a heuristic).
-  scalar_predicate_t<T> IsApproxMomentsAndProducts(
-      const RotationalInertia& other, const T& epsilon) const {
+  boolean<T> IsApproxMomentsAndProducts(const RotationalInertia& other,
+                                        const T& epsilon) const {
     const Vector3<T> moment_difference = get_moments() - other.get_moments();
     const Vector3<T> product_difference = get_products() - other.get_products();
     const T moment_max = moment_difference.template lpNorm<Eigen::Infinity>();
@@ -863,7 +863,7 @@ class RotationalInertia {
   //       rotational inertia (e.g., Ixx + Iyy + Izz), one can prove:
   //       0 <= Imin <= tr/3,   tr/3 <= Imed <= tr/2,   tr/3 <= Imax <= tr/2.
   //       If Imin == 0, then Imed == Imax == tr / 2.
-  static scalar_predicate_t<T>
+  static boolean<T>
   AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
       const T& Ixx, const T& Iyy, const T& Izz, const T& epsilon) {
     const auto are_moments_near_positive = AreMomentsOfInertiaNearPositive(
@@ -882,7 +882,7 @@ class RotationalInertia {
   // @param epsilon Real positive number that is significantly smaller than the
   //        largest possible element in a valid rotational inertia.
   //        Heuristically, `epsilon` is a small multiplier of Trace() / 2.
-  static scalar_predicate_t<T> AreMomentsOfInertiaNearPositive(
+  static boolean<T> AreMomentsOfInertiaNearPositive(
       const T& Ixx, const T& Iyy, const T& Izz, const T& epsilon) {
     return Ixx + epsilon >= 0  &&  Iyy + epsilon >= 0  &&  Izz + epsilon >= 0;
   }

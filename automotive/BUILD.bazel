@@ -128,7 +128,7 @@ drake_cc_library(
     hdrs = ["box_car_vis.h"],
     deps = [
         ":car_vis",
-        "//multibody/shapes",
+        "//attic/multibody/shapes",
         "//systems/rendering:drake_visualizer_client",
     ],
 )
@@ -318,11 +318,11 @@ drake_cc_library(
     data = ["//automotive/models:prod_models"],
     deps = [
         ":car_vis",
+        "//attic/multibody/joints",
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant:create_load_robot_message",
         "//common:find_resource",
         "//lcmtypes:viewer",
-        "//multibody/joints",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant:create_load_robot_message",
         "//systems/rendering:pose_bundle",
         "//systems/rendering:pose_vector",
     ],
@@ -372,7 +372,6 @@ drake_cc_library(
     hdrs = ["road_path.h"],
     deps = [
         ":lane_direction",
-        ":monolane_onramp_merge",
         "//automotive/maliput/api",
         "//common:essential",
         "//common:unused",
@@ -497,12 +496,12 @@ drake_cc_library(
         ":simple_car",
         ":trajectory_car",
         ":trivial_right_of_way_state_provider",
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//automotive/maliput/api",
         "//automotive/maliput/utility",
         "//common:temp_directory",
         "//lcm",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis",
         "//systems/lcm:lcm_pubsub_system",
         "//systems/lcm:lcmt_drake_signal_translator",
@@ -528,30 +527,6 @@ drake_cc_binary(
         "//automotive/maliput/dragway",
         "//common:text_logging_gflags",
         "//lcm",
-    ],
-)
-
-drake_cc_binary(
-    name = "car_sim_lcm",
-    srcs = [
-        "car_sim_lcm.cc",
-        "car_sim_lcm_common.cc",
-        "car_sim_lcm_common.h",
-    ],
-    add_test_rule = 1,
-    data = [
-        "//automotive/models:prod_models",
-    ],
-    test_rule_args = ["--simulation_sec=0.01"],
-    # Flaky because LCM self-test can fail (PR #7311)
-    test_rule_flaky = 1,
-    deps = [
-        ":automotive_simulator",
-        "//common:find_resource",
-        "//common:text_logging_gflags",
-        "//multibody:rigid_body_tree_construction",
-        "//multibody/rigid_body_plant",
-        "//systems/controllers:pid_controlled_system",
     ],
 )
 
@@ -717,7 +692,6 @@ drake_cc_googletest(
     name = "idm_controller_test",
     deps = [
         "//automotive:idm_controller",
-        "//automotive:monolane_onramp_merge",
         "//automotive/maliput/dragway",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/framework/test_utilities:scalar_conversion",
@@ -768,7 +742,7 @@ drake_cc_googletest(
     deps = [
         ":road_path",
         "//automotive/maliput/dragway",
-        "//automotive/maliput/monolane",
+        "//automotive/maliput/multilane",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )

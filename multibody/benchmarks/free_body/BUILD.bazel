@@ -52,11 +52,11 @@ drake_cc_googletest(
     data = [":models"],
     deps = [
         ":free_body",
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:autodiff",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant",
         "//systems/analysis:runge_kutta3_integrator",
         "//systems/framework:diagram",
         "//systems/framework:diagram_builder",

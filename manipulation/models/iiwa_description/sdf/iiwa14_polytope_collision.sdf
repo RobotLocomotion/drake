@@ -2,8 +2,7 @@
 <!--
 SDF automatically generated with: gz sdf -p ../urdf/iiwa14_polytope_collision.urdf > /iiwa14_polytope_collision.sdf
 
-Later edited by hand to rename the base link, add the
-weld_base_to_world joint, and remove damping from the joints.
+Later edited by hand to rename the base link and remove damping from the joints.
 -->
 <sdf version='1.6'>
   <model name='iiwa14'>
@@ -37,12 +36,6 @@ weld_base_to_world joint, and remove damping from the joints.
       <velocity_decay/>
       <self_collide>0</self_collide>
     </link>
-
-    <joint name='weld_base_to_world' type='fixed' drake_ignore='true'>
-      <child>iiwa_link_0</child>
-      <parent>world</parent>
-    </joint>
-
 
     <link name='iiwa_link_1'>
       <pose frame=''>0 0 0.1575 0 -0 0</pose>

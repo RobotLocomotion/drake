@@ -38,8 +38,7 @@ void CoulombFriction<T>::ThrowForBadFriction(const T& static_friction,
 }
 
 template <typename T>
-scalar_predicate_t<T> CoulombFriction<T>::operator==(
-    const CoulombFriction& other) const {
+boolean<T> CoulombFriction<T>::operator==(const CoulombFriction& other) const {
   return static_friction() == other.static_friction() &&
       dynamic_friction() == other.dynamic_friction();
 }

@@ -38,7 +38,7 @@
 namespace drake {
 namespace solvers {
 
-/** @defgroup solvers Formulating and Solving Optimization Problems
+/** @addtogroup solvers
  * @{
  * Drake wraps a number of commercial solvers (+ a few custom solvers) to
  * provide a common interface for convex optimization, mixed-integer convex
@@ -594,7 +594,6 @@ class MathematicalProgram {
    */
   std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
   NewSosPolynomial(const symbolic::Variables& indeterminates, int degree);
-
 
   /**
    * Adds indeterminates, appending them to an internal vector of any
@@ -1305,8 +1304,8 @@ class MathematicalProgram {
     } else {
       std::stringstream oss;
       oss << "Formulas are non-linear.";
-      throw std::runtime_error("AddLinearConstraint called but formulas are "
-                                   "non-linear");
+      throw std::runtime_error(
+          "AddLinearConstraint called but formulas are non-linear");
     }
   }
 
@@ -2039,6 +2038,29 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
+   * Adds the constraint that a symmetric matrix is diagonally dominant with
+   * non-negative diagonal entries.
+   * A symmetric matrix X is diagonally dominant with non-negative diagonal
+   * entries if
+   * X(i, i) >= ∑ⱼ |X(i, j)| ∀ j ≠ i
+   * namely in each row, the diagonal entry is larger than the sum of the
+   * absolute values of all other entries in the same row. A matrix being
+   * diagonally dominant with non-negative diagonals is a sufficient (but not
+   * necessary) condition of a matrix being positive semidefinite.
+   * Internally we will create a matrix Y as slack variables, such that Y(i, j)
+   * represents the absolute value |X(i, j)| ∀ j ≠ i. The diagonal entries
+   * Y(i, i) = X(i, i)
+   * @param X The symmetric matrix X in the documentation above. We
+   * will assume that @p X is already symmetric. It is the user's responsibility
+   * to guarantee the symmetry.
+   * @return Y The slack variable. Y(i, j) represents |X(i, j)| ∀ j ≠ i, with
+   * the constraint Y(i, j) >= X(i, j) and Y(i, j) >= -X(i, j). Y is a symmetric
+   * matrix. The diagonal entries Y(i, i) = X(i, i)
+   */
+  MatrixX<symbolic::Expression> AddPositiveDiagonallyDominantMatrixConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
+
+  /**
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),
    * that is, @p p can be decomposed into `mᵀQm`, where m is the @p
    * monomial_basis. It returns a pair of constraint bindings expressing:
@@ -2060,7 +2082,7 @@ class MathematicalProgram {
    *  - The coefficients matching conditions in linear equality constraint.
    */
   std::pair<Binding<PositiveSemidefiniteConstraint>,
-      Binding<LinearEqualityConstraint>>
+            Binding<LinearEqualityConstraint>>
   AddSosConstraint(const symbolic::Polynomial& p);
 
   /**
@@ -2073,7 +2095,7 @@ class MathematicalProgram {
    *  - The coefficients matching conditions in linear equality constraint.
    */
   std::pair<Binding<PositiveSemidefiniteConstraint>,
-      Binding<LinearEqualityConstraint>>
+            Binding<LinearEqualityConstraint>>
   AddSosConstraint(
       const symbolic::Expression& e,
       const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
@@ -2423,7 +2445,8 @@ class MathematicalProgram {
 
   /**
    * Returns the indices of the decision variables. Internally the solvers
-   * thinks all variables are stored in an array, and it accesses each individual
+   * thinks all variables are stored in an array, and it accesses each
+   * individual
    * variable using its index. This index is used when adding constraints
    * and costs for each solver.
    * @pre{@p vars are decision variables in the mathematical program, otherwise

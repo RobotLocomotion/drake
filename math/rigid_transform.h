@@ -208,9 +208,8 @@ class RigidTransform {
 
   /// Returns `true` if `this` is exactly the identity %RigidTransform.
   /// @see IsIdentityToEpsilon().
-  scalar_predicate_t<T> IsExactlyIdentity() const {
-    const scalar_predicate_t<T> is_position_zero =
-        (translation() == Vector3<T>::Zero());
+  boolean<T> IsExactlyIdentity() const {
+    const boolean<T> is_position_zero = (translation() == Vector3<T>::Zero());
     return is_position_zero && rotation().IsExactlyIdentity();
   }
 
@@ -223,8 +222,7 @@ class RigidTransform {
   /// (e.g., the magnitude of a characteristic position vector) by an epsilon
   /// (e.g., RotationMatrix::get_internal_tolerance_for_orthonormality()).
   /// @see IsExactlyIdentity().
-  scalar_predicate_t<T> IsIdentityToEpsilon(
-      double translation_tolerance) const {
+  boolean<T> IsIdentityToEpsilon(double translation_tolerance) const {
     const T max_component = translation().template lpNorm<Eigen::Infinity>();
     return max_component <= translation_tolerance &&
         rotation().IsIdentityToInternalTolerance();
@@ -280,8 +278,8 @@ class RigidTransform {
   /// @note Consider scaling tolerance with the largest of magA and magB, where
   /// magA and magB denoted the magnitudes of `this` position vector and `other`
   /// position vectors, respectively.
-  scalar_predicate_t<T> IsNearlyEqualTo(const RigidTransform<T>& other,
-                                        double tolerance) const {
+  boolean<T> IsNearlyEqualTo(const RigidTransform<T>& other,
+                             double tolerance) const {
     return GetMaximumAbsoluteDifference(other) <= tolerance;
   }
 
@@ -289,7 +287,7 @@ class RigidTransform {
   /// @param[in] other %RigidTransform to compare to `this`.
   /// @returns `true` if each element of `this` is exactly equal to the
   /// corresponding element of `other`.
-  scalar_predicate_t<T> IsExactlyEqualTo(const RigidTransform<T>& other) const {
+  boolean<T> IsExactlyEqualTo(const RigidTransform<T>& other) const {
     return rotation().IsExactlyEqualTo(other.rotation()) &&
            translation() == other.translation();
   }

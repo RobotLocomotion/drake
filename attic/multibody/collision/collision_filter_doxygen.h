@@ -1,4 +1,4 @@
-/** @defgroup collision_concepts Collision Concepts
+/** @addtogroup collision_concepts
 
 In the real world, we can rely on the axiom that no two objects can occupy the
 same space at the same time; the universe provides this constraint for free. In

@@ -138,8 +138,8 @@ drake_cc_library(
         "//examples/simple_four_bar:models",
     ],
     deps = [
+        "//attic/multibody/parsers",
         "//common:find_resource",
-        "//multibody/parsers",
     ],
 )
 

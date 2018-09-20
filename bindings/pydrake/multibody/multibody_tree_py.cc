@@ -225,23 +225,6 @@ void init_module(py::module m) {
             py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
             py::arg("frame_A"))
         .def(
-            "CalcPointsGeometricJacobianExpressedInWorld",
-            [](
-                const Class* self,
-                const Context<T>& context,
-                const Frame<T>& frame_B,
-                const Eigen::Ref<const MatrixX<T>>& p_BQi_set) {
-              const int np3 = p_BQi_set.rows();
-              const int nv = self->num_velocities();
-              MatrixX<T> p_WQi_set, Jv_WQi;
-              p_WQi_set.resize(p_BQi_set.rows(), p_BQi_set.cols());
-              Jv_WQi.resize(np3, nv);
-              self->CalcPointsGeometricJacobianExpressedInWorld(
-                  context, frame_B, p_BQi_set, &p_WQi_set, &Jv_WQi);
-              return std::make_pair(p_WQi_set, Jv_WQi);
-            },
-            py::arg("context"), py::arg("frame_B"), py::arg("p_BQi_set"))
-        .def(
             "CalcFrameGeometricJacobianExpressedInWorld",
             [](
                 const Class* self,
@@ -255,18 +238,24 @@ void init_module(py::module m) {
             py::arg("context"), py::arg("frame_B"),
             py::arg("p_BoFo_B") = Vector3<T>::Zero().eval())
         .def("CalcInverseDynamics",
-             overload_cast_explicit<VectorX<T>,
-                                    const Context<T>&,
-                                    const VectorX<T>&,
-                                    const MultibodyForces<T>&>(
-                 &Class::CalcInverseDynamics),
-             py::arg("context"), py::arg("known_vdot"),
-             py::arg("external_forces"))
+            overload_cast_explicit<VectorX<T>,
+                                  const Context<T>&,
+                                  const VectorX<T>&,
+                                  const MultibodyForces<T>&>(
+               &Class::CalcInverseDynamics),
+            py::arg("context"), py::arg("known_vdot"),
+            py::arg("external_forces"))
         .def("SetFreeBodyPoseOrThrow",
             overload_cast_explicit<void, const Body<T>&, const Isometry3<T>&,
             systems::Context<T>*>(&Class::SetFreeBodyPoseOrThrow),
-            py::arg("body"), py::arg("X_WB"), py::arg("context")).
-        def("SetFreeBodySpatialVelocityOrThrow",
+            py::arg("body"), py::arg("X_WB"), py::arg("context"))
+        .def("get_positions_from_array",
+            &Class::get_positions_from_array,
+            py::arg("model_instance"), py::arg("q_array"))
+        .def("get_velocities_from_array",
+            &Class::get_velocities_from_array,
+            py::arg("model_instance"), py::arg("v_array"))
+        .def("SetFreeBodySpatialVelocityOrThrow",
             [](
                 const Class* self, const Body<T>& body,
                 const SpatialVelocity<T>& V_WB, Context<T>* context) {
@@ -284,13 +273,13 @@ void init_module(py::module m) {
         def("EvalBodyPoseInWorld",
             [](
                 const Class* self, const Context<T>& context, Body<T>& body_B) {
-              self->EvalBodyPoseInWorld(context, body_B);
+              return self->EvalBodyPoseInWorld(context, body_B);
             },
             py::arg("context"), py::arg("body")).
         def("EvalBodySpatialVelocityInWorld",
             [](
                 const Class* self, const Context<T>& context, Body<T>& body_B) {
-              self->EvalBodySpatialVelocityInWorld(context, body_B);
+              return self->EvalBodySpatialVelocityInWorld(context, body_B);
             },
             py::arg("context"), py::arg("body")).
         def("CalcAllBodyPosesInWorld",
