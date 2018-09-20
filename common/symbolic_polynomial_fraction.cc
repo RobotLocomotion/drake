@@ -169,12 +169,46 @@ PolynomialFraction operator-(const Polynomial& p, PolynomialFraction f) {
   return f = -f + p;
 }
 
-PolynomialFraction operator-(PolynomialFraction f, double c) {
-  return f -= c;
-}
+PolynomialFraction operator-(PolynomialFraction f, double c) { return f -= c; }
 
 PolynomialFraction operator-(double c, PolynomialFraction f) {
   return f = -f + c;
+}
+
+PolynomialFraction operator*(PolynomialFraction f1,
+                             const PolynomialFraction& f2) {
+  return f1 *= f2;
+}
+
+PolynomialFraction operator*(PolynomialFraction f, const Polynomial& p) {
+  return f *= p;
+}
+
+PolynomialFraction operator*(const Polynomial& p, PolynomialFraction f) {
+  return f *= p;
+}
+
+PolynomialFraction operator*(PolynomialFraction f, double c) { return f *= c; }
+
+PolynomialFraction operator*(double c, PolynomialFraction f) { return f *= c; }
+
+PolynomialFraction operator/(PolynomialFraction f1,
+                             const PolynomialFraction& f2) {
+  return f1 /= f2;
+}
+
+PolynomialFraction operator/(PolynomialFraction f, const Polynomial& p) {
+  return f /= p;
+}
+
+PolynomialFraction operator/(const Polynomial& p, const PolynomialFraction& f) {
+  return PolynomialFraction(p * f.denominator(), f.numerator());
+}
+
+PolynomialFraction operator/(PolynomialFraction f, double c) { return f /= c; }
+
+PolynomialFraction operator/(double c, const PolynomialFraction& f) {
+  return PolynomialFraction(c * f.denominator(), f.numerator());
 }
 }  // namespace symbolic
 }  // namespace drake

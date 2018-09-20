@@ -26,7 +26,7 @@ class SymbolicPolynomialFractionTest : public ::testing::Test {
   const Polynomial polynomial_zero_{0};
   const Polynomial polynomial_one_{1};
   const Polynomial p1_{var_x_ * var_x_ * 2 + var_y_};
-  const Polynomial p2_{var_x_ * var_x_  + 2 * var_y_};
+  const Polynomial p2_{var_x_ * var_x_ + 2 * var_y_};
   const Polynomial p3_{var_a_ * var_x_ + var_b_ + var_y_, var_xy_};
   const Polynomial p4_{2 * var_a_ * var_x_ + var_b_ + var_x_ * var_y_, var_xy_};
 };
@@ -76,7 +76,7 @@ TEST_F(SymbolicPolynomialFractionTest, EqualTo) {
 
 TEST_F(SymbolicPolynomialFractionTest, UnaryMinus) {
   const Polynomial p1(var_x_ * var_x_ * 2 + var_y_);
-  const Polynomial p2(var_x_ * var_x_  + 2 * var_y_);
+  const Polynomial p2(var_x_ * var_x_ + 2 * var_y_);
   const PolynomialFraction f(p1, p2);
   const PolynomialFraction f_minus = -f;
   EXPECT_PRED2(PolyEqual, -f_minus.numerator(), p1);
@@ -112,7 +112,8 @@ TEST_F(SymbolicPolynomialFractionTest, Addition) {
 TEST_F(SymbolicPolynomialFractionTest, Subtraction) {
   const PolynomialFraction f1(p1_, p2_);
   const PolynomialFraction f2(p3_, p4_);
-  const PolynomialFraction f1_minus_f2_expected(p1_ * p4_ - p2_ * p3_, p2_ * p4_);
+  const PolynomialFraction f1_minus_f2_expected(p1_ * p4_ - p2_ * p3_,
+                                                p2_ * p4_);
   EXPECT_PRED2(PolyFractionEqual, f1 - f2, f1_minus_f2_expected);
   EXPECT_PRED2(PolyFractionEqual, f2 - f1, -f1_minus_f2_expected);
   PolynomialFraction f1_minus_f2 = f1;
@@ -134,6 +135,62 @@ TEST_F(SymbolicPolynomialFractionTest, Subtraction) {
   f1_minus_c -= c;
   EXPECT_PRED2(PolyFractionEqual, f1_minus_c, f1_minus_c_expected);
 }
+
+TEST_F(SymbolicPolynomialFractionTest, Product) {
+  const PolynomialFraction f1(p1_, p2_);
+  const PolynomialFraction f2(p3_, p4_);
+  const PolynomialFraction f1_times_f2_expected(p1_ * p3_, p2_ * p4_);
+  EXPECT_PRED2(PolyFractionEqual, f1 * f2, f1_times_f2_expected);
+  EXPECT_PRED2(PolyFractionEqual, f2 * f1, f1_times_f2_expected);
+  PolynomialFraction f1_times_f2 = f1;
+  f1_times_f2 *= f2;
+  EXPECT_PRED2(PolyFractionEqual, f1_times_f2, f1_times_f2_expected);
+
+  const PolynomialFraction f1_times_p3_expected(p1_ * p3_, p2_);
+  EXPECT_PRED2(PolyFractionEqual, f1 * p3_, f1_times_p3_expected);
+  EXPECT_PRED2(PolyFractionEqual, p3_ * f1, f1_times_p3_expected);
+  PolynomialFraction f1_times_p3 = f1;
+  f1_times_p3 *= p3_;
+  EXPECT_PRED2(PolyFractionEqual, f1_times_p3, f1_times_p3_expected);
+
+  const double c = 2;
+  const PolynomialFraction f1_times_c_expected(p1_ * c, p2_);
+  EXPECT_PRED2(PolyFractionEqual, f1 * c, f1_times_c_expected);
+  EXPECT_PRED2(PolyFractionEqual, c * f1, f1_times_c_expected);
+  PolynomialFraction f1_times_c = f1;
+  f1_times_c *= c;
+  EXPECT_PRED2(PolyFractionEqual, f1_times_c, f1_times_c_expected);
+}
+
+TEST_F(SymbolicPolynomialFractionTest, Division) {
+  const PolynomialFraction f1(p1_, p2_);
+  const PolynomialFraction f2(p3_, p4_);
+  const PolynomialFraction f1_divides_f2_expected(p3_ * p2_, p1_ * p4_);
+  EXPECT_PRED2(PolyFractionEqual, f2 / f1, f1_divides_f2_expected);
+  EXPECT_PRED2(PolyFractionEqual, f1 / f2, 1 / f1_divides_f2_expected);
+  PolynomialFraction f1_divides_f2 = f2;
+  f1_divides_f2 /= f1;
+  EXPECT_PRED2(PolyFractionEqual, f1_divides_f2, f1_divides_f2_expected);
+
+  const PolynomialFraction p3_divides_f1_expected(p1_, p2_ * p3_);
+  EXPECT_PRED2(PolyFractionEqual, f1 / p3_, p3_divides_f1_expected);
+  EXPECT_PRED2(PolyFractionEqual, p3_ / f1, 1 / p3_divides_f1_expected);
+  PolynomialFraction p3_divides_f1 = f1;
+  p3_divides_f1 /= p3_;
+  EXPECT_PRED2(PolyFractionEqual, p3_divides_f1, p3_divides_f1_expected);
+
+  const double c = 2;
+  const PolynomialFraction c_divides_f1_expected(p1_, p2_ * c);
+  EXPECT_PRED2(PolyFractionEqual, f1 / c, c_divides_f1_expected);
+  EXPECT_PRED2(PolyFractionEqual, c / f1, 1 / c_divides_f1_expected);
+  PolynomialFraction c_divides_f1 = f1;
+  c_divides_f1 /= c;
+  EXPECT_PRED2(PolyFractionEqual, c_divides_f1, c_divides_f1_expected);
+
+  EXPECT_THROW(f1 / 0, std::logic_error);
+  EXPECT_THROW(f1 / polynomial_zero_, std::logic_error);
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
