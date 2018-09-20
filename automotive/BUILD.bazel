@@ -276,16 +276,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "monolane_onramp_merge",
-    srcs = ["monolane_onramp_merge.cc"],
-    hdrs = ["monolane_onramp_merge.h"],
-    deps = [
-        "//automotive/maliput/api",
-        "//automotive/maliput/monolane",
-    ],
-)
-
-drake_cc_library(
     name = "multilane_onramp_merge",
     srcs = ["multilane_onramp_merge.cc"],
     hdrs = ["multilane_onramp_merge.h"],
@@ -656,14 +646,6 @@ drake_cc_googletest(
         "//automotive/maliput/multilane",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
-    ],
-)
-
-drake_cc_googletest(
-    name = "monolane_onramp_merge_test",
-    deps = [
-        ":monolane_onramp_merge",
-        "//automotive/maliput/utility",
     ],
 )
 
