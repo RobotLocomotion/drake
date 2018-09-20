@@ -720,10 +720,9 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "pose_selector_test",
     deps = [
-        "//automotive:monolane_onramp_merge",
         "//automotive:pose_selector",
         "//automotive/maliput/dragway",
-        "//automotive/maliput/monolane:builder",
+        "//automotive/maliput/multilane:builder",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
