@@ -191,6 +191,18 @@ TEST_F(SymbolicPolynomialFractionTest, Division) {
   EXPECT_THROW(f1 / polynomial_zero_, std::logic_error);
 }
 
+TEST_F(SymbolicPolynomialFractionTest, pow) {
+  const PolynomialFraction f(p1_, p2_);
+  EXPECT_PRED2(PolyFractionEqual, pow(f, 0),
+               PolynomialFraction(polynomial_one_, polynomial_one_));
+  EXPECT_PRED2(PolyFractionEqual, pow(f, 1), f);
+  EXPECT_PRED2(PolyFractionEqual, pow(f, 2),
+               PolynomialFraction(pow(p1_, 2), pow(p2_, 2)));
+  EXPECT_PRED2(PolyFractionEqual, pow(f, -1), PolynomialFraction(p2_, p1_));
+  EXPECT_PRED2(PolyFractionEqual, pow(f, -2),
+               PolynomialFraction(pow(p2_, 2), pow(p1_, 2)));
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
