@@ -210,5 +210,16 @@ PolynomialFraction operator/(PolynomialFraction f, double c) { return f /= c; }
 PolynomialFraction operator/(double c, const PolynomialFraction& f) {
   return PolynomialFraction(c * f.denominator(), f.numerator());
 }
+
+PolynomialFraction pow(const PolynomialFraction& f, int n) {
+  if (n == 0) {
+    return PolynomialFraction(Polynomial(1), Polynomial(1));
+  } else if (n >= 1) {
+    return PolynomialFraction(pow(f.numerator(), n), pow(f.denominator(), n));
+  } else {
+    // n < 0
+    return PolynomialFraction(pow(f.denominator(), -n), pow(f.numerator(), -n));
+  }
+}
 }  // namespace symbolic
 }  // namespace drake

@@ -106,5 +106,8 @@ PolynomialFraction operator/(PolynomialFraction f, const Polynomial& p);
 PolynomialFraction operator/(const Polynomial& p, const PolynomialFraction& f);
 PolynomialFraction operator/(PolynomialFraction f, double c);
 PolynomialFraction operator/(double c, const PolynomialFraction& f);
+
+/// Returns the polynomial fraction @p f raised to @p n.
+PolynomialFraction pow(const PolynomialFraction& f, int n);
 }  // namespace symbolic
 }  // namespace drake
