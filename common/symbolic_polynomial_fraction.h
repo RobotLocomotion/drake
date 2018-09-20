@@ -103,8 +103,8 @@ PolynomialFraction operator*(double c, PolynomialFraction f);
 PolynomialFraction operator/(PolynomialFraction f1,
                              const PolynomialFraction& f2);
 PolynomialFraction operator/(PolynomialFraction f, const Polynomial& p);
-PolynomialFraction operator/(const Polynomial& p, PolynomialFraction f);
+PolynomialFraction operator/(const Polynomial& p, const PolynomialFraction& f);
 PolynomialFraction operator/(PolynomialFraction f, double c);
-PolynomialFraction operator/(double c, PolynomialFraction f);
+PolynomialFraction operator/(double c, const PolynomialFraction& f);
 }  // namespace symbolic
 }  // namespace drake
