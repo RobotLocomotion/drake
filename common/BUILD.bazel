@@ -201,6 +201,8 @@ drake_cc_library(
         "symbolic_monomial_util.h",
         "symbolic_polynomial.cc",
         "symbolic_polynomial.h",
+        "symbolic_polynomial_fraction.cc",
+        "symbolic_polynomial_fraction.h",
         "symbolic_simplification.cc",
         "symbolic_simplification.h",
         "symbolic_variable.cc",
@@ -977,6 +979,14 @@ drake_cc_googletest(
     name = "symbolic_polynomial_matrix_test",
     deps = [
         ":essential",
+        ":symbolic",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_polynomial_fraction_test",
+    deps = [
         ":symbolic",
         "//common/test_utilities:symbolic_test_util",
     ],
