@@ -530,30 +530,6 @@ drake_cc_binary(
     ],
 )
 
-drake_cc_binary(
-    name = "car_sim_lcm",
-    srcs = [
-        "car_sim_lcm.cc",
-        "car_sim_lcm_common.cc",
-        "car_sim_lcm_common.h",
-    ],
-    add_test_rule = 1,
-    data = [
-        "//automotive/models:prod_models",
-    ],
-    test_rule_args = ["--simulation_sec=0.01"],
-    # Flaky because LCM self-test can fail (PR #7311)
-    test_rule_flaky = 1,
-    deps = [
-        ":automotive_simulator",
-        "//attic/multibody/rigid_body_plant",
-        "//common:find_resource",
-        "//common:text_logging_gflags",
-        "//multibody:rigid_body_tree_construction",
-        "//systems/controllers:pid_controlled_system",
-    ],
-)
-
 drake_py_binary(
     name = "steering_command_driver",
     srcs = ["steering_command_driver.py"],
