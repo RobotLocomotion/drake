@@ -255,6 +255,34 @@ class TestMultibodyTree(unittest.TestCase):
 
         self.assertTrue(np.allclose(X_WB.matrix(), X_WB_desired.matrix()))
 
+    def test_calc_all_body_spatial_velocities_in_world(self):
+        file_name = FindResourceOrThrow(
+            "drake/examples/double_pendulum/models/double_pendulum.sdf")
+        plant = MultibodyPlant()
+        plant_model = AddModelFromSdfFile(file_name, plant)
+        plant.Finalize()
+
+        context = plant.CreateDefaultContext()
+        tree = plant.tree()
+
+        # Set the joint configuration and velocities.
+        x = tree.get_mutable_multibody_state_vector(context)
+
+        # Compute the body velocities and verify that the proper number of
+        # links are specified. There should be four links: "world" plus three
+        # defined in the SDF.
+        v_WB = tree.CalcAllBodySpatialVelocitiesInWorld(context)
+        self.assertTrue(len(v_WB) == 4)
+
+
+#    def test_calc_points_jacobian_expressed_in_world(self):
+
+#    def test_eval_body_pose_in_world(self):
+
+#    def test_eval_body_spatial_velocity_in_world(self):
+
+#    def test_calc_all_body_poses_in_world(self):
+
     def test_multibody_add_joint(self):
         """
         Tests joint constructors and `AddJoint`.

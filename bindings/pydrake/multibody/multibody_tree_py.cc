@@ -225,6 +225,23 @@ void init_module(py::module m) {
             py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
             py::arg("frame_A"))
         .def(
+            "CalcPointsGeometricJacobianExpressedInWorld",
+            [](
+                const Class* self,
+                const Context<T>& context,
+                const Frame<T>& frame_B,
+                const Eigen::Ref<const MatrixX<T>>& p_BQi_set) {
+              const int np3 = p_BQi_set.rows();
+              const int nv = self->num_velocities();
+              MatrixX<T> p_WQi_set, Jv_WQi;
+              p_WQi_set.resize(p_BQi_set.rows(), p_BQi_set.cols());
+              Jv_WQi.resize(np3, nv);
+              self->CalcPointsGeometricJacobianExpressedInWorld(
+                  context, frame_B, p_BQi_set, &p_WQi_set, &Jv_WQi);
+              return std::make_pair(p_WQi_set, Jv_WQi);
+            },
+            py::arg("context"), py::arg("frame_B"), py::arg("p_BQi_set"))
+        .def(
             "CalcFrameGeometricJacobianExpressedInWorld",
             [](
                 const Class* self,
@@ -236,7 +253,7 @@ void init_module(py::module m) {
               return Jv_WF;
             },
             py::arg("context"), py::arg("frame_B"),
-            py::arg("p_BoFo_B") = Vector3<T>::Zero().eval()).
+            py::arg("p_BoFo_B") = Vector3<T>::Zero().eval())
         .def("CalcInverseDynamics",
              overload_cast_explicit<VectorX<T>,
                                     const Context<T>&,
@@ -258,11 +275,12 @@ void init_module(py::module m) {
             py::arg("body"), py::arg("V_WB"), py::arg("context")).
         def("CalcAllBodySpatialVelocitiesInWorld",
             [](
-                const Class* self, const Body<T>& body,
-                const SpatialVelocity<T>& V_WB, Context<T>* context) {
-              self->SetFreeBodySpatialVelocityOrThrow(body, V_WB, context);
+                const Class* self, const Context<T>& context) {
+              std::vector<SpatialVelocity<T>> V_WB;
+              self->CalcAllBodySpatialVelocitiesInWorld(context, &V_WB);
+              return V_WB;
             },
-            py::arg("body"), py::arg("V_WB"), py::arg("context")).
+            py::arg("context")).
         def("EvalBodyPoseInWorld",
             [](
                 const Class* self, const Context<T>& context, Body<T>& body_B) {
@@ -278,7 +296,7 @@ void init_module(py::module m) {
         def("CalcAllBodyPosesInWorld",
             [](
                 const Class* self, const Context<T>& context) {
-              std::vector<Isometry3<double>> X_WB;
+              std::vector<Isometry3<T>> X_WB;
               self->CalcAllBodyPosesInWorld(context, &X_WB);
               return X_WB;
             },
