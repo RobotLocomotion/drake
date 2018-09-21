@@ -12,9 +12,11 @@
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/multibody_tree_system.h"
 #include "drake/multibody/multibody_tree/weld_mobilizer.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace multibody {
@@ -29,6 +31,7 @@ using Eigen::MatrixXd;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 using multibody_tree::test_utilities::SpatialKinematicsPVA;
+using systems::BasicVector;
 using systems::Context;
 using systems::ContinuousState;
 
@@ -238,7 +241,9 @@ class KukaIiwaModelTests : public ::testing::Test {
  public:
   /// Creates MultibodyTree for a KUKA Iiwa robot arm.
   void SetUp() override {
-    model_ = MakeKukaIiwaModel<double>(true /* Finalize model */, gravity_);
+    auto tree = MakeKukaIiwaModel<double>(true /* Finalize model */, gravity_);
+    plant_ = std::make_unique<MultibodyTreeSystem<double>>(std::move(tree));
+    model_ = &plant_->tree();
 
     // Keep pointers to the modeling elements.
     end_effector_link_ = &model_->GetBodyByName("iiwa_link_7");
@@ -250,11 +255,13 @@ class KukaIiwaModelTests : public ::testing::Test {
     joints_.push_back(&model_->GetJointByName<RevoluteJoint>("iiwa_joint_6"));
     joints_.push_back(&model_->GetJointByName<RevoluteJoint>("iiwa_joint_7"));
 
-    context_ = model_->CreateDefaultContext();
+    context_ = plant_->CreateDefaultContext();
 
     // Scalar-convert the model and create a default context for it.
-    model_autodiff_ = model_->ToAutoDiffXd();
-    context_autodiff_ = model_autodiff_->CreateDefaultContext();
+    plant_autodiff_ = std::make_unique<MultibodyTreeSystem<AutoDiffXd>>(
+        model_->ToAutoDiffXd());
+    model_autodiff_ = &plant_autodiff_->tree();
+    context_autodiff_ = plant_autodiff_->CreateDefaultContext();
   }
 
   // Gets an arm state to an arbitrary configuration in which joint angles and
@@ -344,7 +351,9 @@ class KukaIiwaModelTests : public ::testing::Test {
   // Acceleration of gravity:
   const double gravity_{9.81};
   // The model plant:
-  std::unique_ptr<MultibodyTree<double>> model_;
+  std::unique_ptr<MultibodyTreeSystem<double>> plant_;
+  // Non-owning pointer to the tree owned by the mock plant.
+  const MultibodyTree<double>* model_{};
   // Workspace including context and derivatives vector:
   std::unique_ptr<Context<double>> context_;
   // Non-owning pointer to the end effector link:
@@ -353,7 +362,8 @@ class KukaIiwaModelTests : public ::testing::Test {
   std::vector<const RevoluteJoint<double>*> joints_;
 
   // AutoDiffXd model to compute automatic derivatives:
-  std::unique_ptr<MultibodyTree<AutoDiffXd>> model_autodiff_;
+  std::unique_ptr<MultibodyTreeSystem<AutoDiffXd>> plant_autodiff_;
+  const MultibodyTree<AutoDiffXd>* model_autodiff_{};
   std::unique_ptr<Context<AutoDiffXd>> context_autodiff_;
 
   // And independent benchmarking set of solutions.
@@ -746,23 +756,28 @@ class WeldMobilizerTest : public ::testing::Test {
     // these tests since they are all kinematic.
     const SpatialInertia<double> M_B;
 
-    body1_ = &model_.AddBody<RigidBody>(M_B);
-    body2_ = &model_.AddBody<RigidBody>(M_B);
+    auto tree = std::make_unique<MultibodyTree<double>>();
 
-    model_.AddMobilizer<WeldMobilizer>(
-        model_.world_body().body_frame(), body1_->body_frame(), X_WB1_);
+    body1_ = &tree->AddBody<RigidBody>(M_B);
+    body2_ = &tree->AddBody<RigidBody>(M_B);
+
+    tree->AddMobilizer<WeldMobilizer>(
+        tree->world_body().body_frame(), body1_->body_frame(), X_WB1_);
 
     // Add a weld joint between bodies 1 and 2 by welding together inboard
     // frame F (on body 1) with outboard frame M (on body 2).
-    const auto& frame_F = model_.AddFrame<FixedOffsetFrame>(*body1_, X_B1F_);
-    const auto& frame_M = model_.AddFrame<FixedOffsetFrame>(*body2_, X_B2M_);
-    model_.AddMobilizer<WeldMobilizer>(frame_F, frame_M, X_FM_);
+    const auto& frame_F = tree->AddFrame<FixedOffsetFrame>(*body1_, X_B1F_);
+    const auto& frame_M = tree->AddFrame<FixedOffsetFrame>(*body2_, X_B2M_);
+    tree->AddMobilizer<WeldMobilizer>(frame_F, frame_M, X_FM_);
 
     // We are done adding modeling elements. Finalize the model:
-    model_.Finalize();
+    tree->Finalize();
 
-    // Create a context to store the state for this model:
-    context_ = model_.CreateDefaultContext();
+    plant_ = std::make_unique<MultibodyTreeSystem<double>>(std::move(tree));
+    tree_ = &plant_->tree();
+
+    // Create a context to store the state for this tree:
+    context_ = plant_->CreateDefaultContext();
 
     // Expected pose of body 2 in the world.
     X_WB2_.translation() =
@@ -773,10 +788,12 @@ class WeldMobilizerTest : public ::testing::Test {
   }
 
  protected:
-  MultibodyTree<double> model_;
   const RigidBody<double>* body1_{nullptr};
   const RigidBody<double>* body2_{nullptr};
+  std::unique_ptr<MultibodyTreeSystem<double>> plant_;
   std::unique_ptr<Context<double>> context_;
+  const MultibodyTree<double>* tree_{};
+
   Isometry3d X_WB1_{
       AngleAxisd(-M_PI_4, Vector3d::UnitZ()) * Translation3d(0.5, 0.0, 0.0)};
   Isometry3d X_FM_{AngleAxisd(-M_PI_2, Vector3d::UnitZ())};
@@ -786,8 +803,8 @@ class WeldMobilizerTest : public ::testing::Test {
 };
 
 TEST_F(WeldMobilizerTest, StateHasZeroSize) {
-  EXPECT_EQ(model_.num_positions(), 0);
-  EXPECT_EQ(model_.num_velocities(), 0);
+  EXPECT_EQ(tree_->num_positions(), 0);
+  EXPECT_EQ(tree_->num_velocities(), 0);
   EXPECT_EQ(context_->get_continuous_state().size(), 0);
 }
 
@@ -796,7 +813,7 @@ TEST_F(WeldMobilizerTest, PositionKinematics) {
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
   std::vector<Isometry3d> body_poses;
-  model_.CalcAllBodyPosesInWorld(*context_, &body_poses);
+  tree_->CalcAllBodyPosesInWorld(*context_, &body_poses);
 
   EXPECT_TRUE(CompareMatrices(
       body_poses[body1_->index()].matrix(), X_WB1_.matrix(),

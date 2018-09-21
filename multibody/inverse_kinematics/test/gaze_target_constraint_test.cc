@@ -13,18 +13,19 @@ TEST_F(IiwaKinematicConstraintTest, GazeTargetConstraint) {
   const Eigen::Vector3d p_BT(0.4, 0.2, -0.3);
   const double cone_half_angle{0.1 * M_PI};
   GazeTargetConstraint constraint(
-      *iiwa_autodiff_, frameA_idx, p_AS, n_A, frameB_idx, p_BT, cone_half_angle,
+      iiwa_autodiff_.tree(), frameA_idx, p_AS, n_A, frameB_idx, p_BT,
+      cone_half_angle,
       dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(context_autodiff_.get()));
 
   EXPECT_EQ(constraint.num_constraints(), 2);
-  EXPECT_EQ(constraint.num_vars(), iiwa_autodiff_->num_positions());
+  EXPECT_EQ(constraint.num_vars(), iiwa_autodiff_.tree().num_positions());
   EXPECT_TRUE(
       CompareMatrices(constraint.lower_bound(), Eigen::Vector2d::Zero()));
   EXPECT_TRUE(CompareMatrices(
       constraint.upper_bound(),
       Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity())));
 
-  Eigen::VectorXd q(iiwa_autodiff_->num_positions());
+  Eigen::VectorXd q(iiwa_autodiff_.tree().num_positions());
   // arbitrary joint configuration.
   q << 0.1, 0.2, -0.3, 0.5, -0.2, -0.05, 0.34;
   const AutoDiffVecXd q_autodiff = math::initializeAutoDiff(q);
@@ -32,9 +33,10 @@ TEST_F(IiwaKinematicConstraintTest, GazeTargetConstraint) {
   constraint.Eval(q_autodiff, &y_autodiff);
 
   Vector3<AutoDiffXd> p_AT;
-  iiwa_autodiff_->CalcPointsPositions(
-      *context_autodiff_, iiwa_autodiff_->get_frame(frameB_idx),
-      p_BT.cast<AutoDiffXd>(), iiwa_autodiff_->get_frame(frameA_idx), &p_AT);
+  iiwa_autodiff_.tree().CalcPointsPositions(
+      *context_autodiff_, iiwa_autodiff_.tree().get_frame(frameB_idx),
+      p_BT.cast<AutoDiffXd>(), iiwa_autodiff_.tree().get_frame(frameA_idx),
+      &p_AT);
   const Vector3<AutoDiffXd> p_ST_A = p_AT - p_AS;
   Vector2<AutoDiffXd> y_autodiff_expected;
   const Eigen::Vector3d n_A_normalized = n_A.normalized();
@@ -69,16 +71,18 @@ TEST_F(TwoFreeBodiesConstraintTest, GazeTargetConstraint) {
 
   {
     GazeTargetConstraint good_constraint(
-        *two_bodies_autodiff_, body1_index_, p_AS, n_A, body2_index_, p_BT,
-        angle + 0.01 * M_PI, dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(
-                                 context_autodiff_.get()));
+        two_bodies_autodiff_.tree(), body1_index_, p_AS, n_A, body2_index_,
+        p_BT, angle + 0.01 * M_PI,
+        dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(
+            context_autodiff_.get()));
     EXPECT_TRUE(good_constraint.CheckSatisfied(q));
   }
   {
     GazeTargetConstraint bad_constraint(
-        *two_bodies_autodiff_, body1_index_, p_AS, n_A, body2_index_, p_BT,
-        angle - 0.01 * M_PI, dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(
-                                 context_autodiff_.get()));
+        two_bodies_autodiff_.tree(), body1_index_, p_AS, n_A, body2_index_,
+        p_BT, angle - 0.01 * M_PI,
+        dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(
+            context_autodiff_.get()));
     EXPECT_FALSE(bad_constraint.CheckSatisfied(q));
   }
 }
@@ -92,7 +96,7 @@ TEST_F(IiwaKinematicConstraintTest, GazeTargetConstraintConstructorError) {
   const FrameIndex frameB_index = GetFrameIndex("iiwa_link_4");
   // zero n_A
   EXPECT_THROW(
-      GazeTargetConstraint(*iiwa_autodiff_, frameA_index, p_AS,
+      GazeTargetConstraint(iiwa_autodiff_.tree(), frameA_index, p_AS,
                            Eigen::Vector3d::Zero(), frameB_index, p_BT, 0.1,
                            dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(
                                context_autodiff_.get())),
@@ -100,7 +104,7 @@ TEST_F(IiwaKinematicConstraintTest, GazeTargetConstraintConstructorError) {
 
   // wrong cone_half_angle
   EXPECT_THROW(
-      GazeTargetConstraint(*iiwa_autodiff_, frameA_index, p_AS,
+      GazeTargetConstraint(iiwa_autodiff_.tree(), frameA_index, p_AS,
                            Eigen::Vector3d::Ones(), frameB_index, p_BT, -0.1,
                            dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(
                                context_autodiff_.get())),
