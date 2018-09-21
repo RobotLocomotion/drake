@@ -11,6 +11,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/multibody_tree_system.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/framework/context.h"
@@ -103,7 +104,7 @@ class DoublePendulumModel {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DoublePendulumModel)
 
   DoublePendulumModel() {
-    tree_ = std::make_unique<MultibodyTree<T>>();
+    auto model = std::make_unique<MultibodyTree<double>>();
 
     // Position of L1's COM measured in L1, expressed in L1.
     Vector3d p_L1oL1cm = Vector3d::Zero();  // L1 is at the link's COM.
@@ -127,9 +128,9 @@ class DoublePendulumModel {
     SpatialInertia<double> M2_L2 = M2_L2cm.Shift(-p_L2oL2cm);
 
     // Adds the upper and lower links of the pendulum:
-    link1_ = &tree_->template AddBody<RigidBody>(M1_L1);
-    link2_ = &tree_->template AddBody<RigidBody>(M2_L2);
-    world_body_ = &tree_->world_body();
+    link1_ = &model->template AddBody<RigidBody>(M1_L1);
+    link2_ = &model->template AddBody<RigidBody>(M2_L2);
+    world_body_ = &model->world_body();
 
     // The shoulder joint connects the world with link 1.
     // Its inboard frame, Si, is the world frame.
@@ -139,7 +140,7 @@ class DoublePendulumModel {
     // frame.
     const Isometry3d X_L1So{Translation3d(0.0, half_length1_, 0.0)};
 
-    shoulder_ = &tree_->template AddJoint<RevoluteJoint>(
+    shoulder_ = &model->template AddJoint<RevoluteJoint>(
         "ShoulderJoint",
         *world_body_,
         {},      /* Default to Identity; frame Si IS the world frame W. */
@@ -157,7 +158,7 @@ class DoublePendulumModel {
     // X_L1Ei defines the pose of the elbow inboard frame Ei link 1's frame L1.
     const Isometry3d X_L1Ei{Translation3d(0.0, -half_length1_, 0.0)};
 
-    elbow_ = &tree_->template AddJoint<RevoluteJoint>(
+    elbow_ = &model->template AddJoint<RevoluteJoint>(
         "ElbowJoint",
         *link1_,
         X_L1Ei,  /* Pose of Ei in L1. */
@@ -168,15 +169,21 @@ class DoublePendulumModel {
     // Add force element for a constant gravity pointing downwards, that is, in
     // the minus y-axis direction.
     gravity_element_ =
-        &tree_->template AddForceElement<UniformGravityFieldElement>(
+        &model->template AddForceElement<UniformGravityFieldElement>(
             Vector3d(0.0, -acceleration_of_gravity_, 0.0));
 
     // We are done adding modeling elements.
-    tree_->Finalize();
+    tree_system_ =
+        std::make_unique<MultibodyTreeSystem<double>>(std::move(model));
+    tree_ = &tree_system_->tree();
   }
 
   const MultibodyTree<T>& get_tree() const {
     return *tree_;
+  }
+
+  std::unique_ptr<Context<T>> CreateDefaultContext() const {
+    return tree_system_->CreateDefaultContext();
   }
 
   double mass1() const { return mass1_; }
@@ -199,7 +206,9 @@ class DoublePendulumModel {
   }
 
  private:
-  std::unique_ptr<MultibodyTree<T>> tree_;
+  std::unique_ptr<MultibodyTreeSystem<T>> tree_system_;
+  const MultibodyTree<T>* tree_{nullptr};
+
   const Body<T>* world_body_{nullptr};
   // Bodies:
   const RigidBody<T>* link1_{nullptr};
@@ -232,7 +241,7 @@ class PendulumTests : public ::testing::Test {
   // of a double pendulum.
   void SetUp() override {
     tree_ = &model_.get_tree();
-    context_ = tree_->CreateDefaultContext();
+    context_ = model_.CreateDefaultContext();
   }
 
   // For the double pendulum system it turns out that the mass matrix is only a
