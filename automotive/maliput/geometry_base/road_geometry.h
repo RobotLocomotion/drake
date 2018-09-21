@@ -50,14 +50,17 @@ class RoadGeometry : public api::RoadGeometry {
   /// @param angular_tolerance the angular tolerance
   ///
   /// @throws std::exception if either `linear_tolerance` or
-  ///         `angular_tolerance` is non-positive.
+  ///         `angular_tolerance` or `scale_length` is non-positive.
   RoadGeometry(const api::RoadGeometryId& id,
-               double linear_tolerance, double angular_tolerance)
+               double linear_tolerance, double angular_tolerance,
+               double scale_length)
       : id_(id),
         linear_tolerance_(linear_tolerance),
-        angular_tolerance_(angular_tolerance) {
+        angular_tolerance_(angular_tolerance),
+        scale_length_(scale_length) {
     DRAKE_THROW_UNLESS(linear_tolerance_ > 0.);
     DRAKE_THROW_UNLESS(angular_tolerance_ > 0.);
+    DRAKE_THROW_UNLESS(scale_length_ > 0.);
   }
 
   /// Adds @p junction to this RoadGeometry.
@@ -123,9 +126,12 @@ class RoadGeometry : public api::RoadGeometry {
 
   double do_angular_tolerance() const override { return angular_tolerance_; }
 
+  double do_scale_length() const override { return scale_length_; }
+
   api::RoadGeometryId id_;
   double linear_tolerance_{};
   double angular_tolerance_{};
+  double scale_length_{};
   std::vector<std::unique_ptr<Junction>> junctions_;
   std::vector<std::unique_ptr<BranchPoint>> branch_points_;
   api::BasicIdIndex id_index_;

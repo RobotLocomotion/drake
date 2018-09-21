@@ -123,6 +123,9 @@ surface.  The routing graph (=Lanes= are joined end-to-end via
 =BranchPoints=) describes how one can get from one region of the road
 network to another.
 
+*** Scale Length and Tolerances
+/TODO: Explain the concepts of linear tolerance, angular tolerance, and
+characteristic scale length./
 *** =World= Frame versus =Lane= Frame
 Two types of coordinate frames are used in this model: the (single)
 =World=-frame and the (multiple) =Lane=-frames.  In both, distances
@@ -413,10 +416,10 @@ joins those two end-to-end (resulting in three independent =Junctions=).
 *** =RoadGeometry=
     * accessors for component =Junctions=
     * accessors for component =BranchPoints=
-    * accessors for tolerances
+    * accessors for characteristic lengths and tolerances
       * =linear_tolerance=
       * =angular_tolerance=
-      * /TODO/ =scale_length=
+      * =scale_length=
 *** =Junction=
     * accessors for parent =RoadGeometry=, component =Junctions=
 *** =Segment=

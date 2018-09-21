@@ -238,17 +238,25 @@ GTEST_TEST(GeometryBaseJunctionTest, AddingSegments) {
 GTEST_TEST(GeometryBaseRoadGeometryTest, BasicConstruction) {
   const double kValidLinearTolerance = 7.0;
   const double kValidAngularTolerance = 99.0;
-  // Tolerance values must be positive.
+  const double kValidScaleLength = 0.5;
+  // Tolerance/scale-length values must be positive.
   EXPECT_THROW(MockRoadGeometry(
-      api::RoadGeometryId("dut"), kValidLinearTolerance, 0.), std::exception);
+      api::RoadGeometryId("dut"),
+      0., kValidAngularTolerance, kValidScaleLength), std::exception);
   EXPECT_THROW(MockRoadGeometry(
-      api::RoadGeometryId("dut"), 0., kValidAngularTolerance), std::exception);
+      api::RoadGeometryId("dut"),
+      kValidLinearTolerance, 0., kValidScaleLength), std::exception);
+  EXPECT_THROW(MockRoadGeometry(
+      api::RoadGeometryId("dut"),
+      kValidLinearTolerance, kValidAngularTolerance, 0.), std::exception);
 
-  const MockRoadGeometry dut(api::RoadGeometryId("dut"),
-                             kValidLinearTolerance, kValidAngularTolerance);
+  const MockRoadGeometry dut(
+      api::RoadGeometryId("dut"),
+      kValidLinearTolerance, kValidAngularTolerance, kValidScaleLength);
   EXPECT_EQ(dut.id(), api::RoadGeometryId("dut"));
   EXPECT_EQ(dut.linear_tolerance(), kValidLinearTolerance);
   EXPECT_EQ(dut.angular_tolerance(), kValidAngularTolerance);
+  EXPECT_EQ(dut.scale_length(), kValidScaleLength);
 }
 
 
@@ -262,7 +270,8 @@ GTEST_TEST(GeometryBaseRoadGeometryTest, AddingBranchPoints) {
 
   const double kSomePositiveDouble = 7.0;
   MockRoadGeometry dut(
-      api::RoadGeometryId("dut"), kSomePositiveDouble, kSomePositiveDouble);
+      api::RoadGeometryId("dut"),
+      kSomePositiveDouble, kSomePositiveDouble, kSomePositiveDouble);
 
   // Test the empty dut.
   EXPECT_EQ(dut.num_branch_points(), 0);
@@ -298,7 +307,8 @@ GTEST_TEST(GeometryBaseRoadGeometryTest, AddingJunctions) {
 
   const double kSomePositiveDouble = 7.0;
   MockRoadGeometry dut(
-      api::RoadGeometryId("dut"), kSomePositiveDouble, kSomePositiveDouble);
+      api::RoadGeometryId("dut"),
+      kSomePositiveDouble, kSomePositiveDouble, kSomePositiveDouble);
 
   // Test the empty dut.
   EXPECT_EQ(dut.num_junctions(), 0);
@@ -337,7 +347,7 @@ class GeometryBaseRoadGeometryIndexingTest : public ::testing::Test {
   void SetUp() override {
     constexpr double kArbitrary{1.};
     road_geometry_ = std::make_unique<MockRoadGeometry>(
-        api::RoadGeometryId("dut"), kArbitrary, kArbitrary);
+        api::RoadGeometryId("dut"), kArbitrary, kArbitrary, kArbitrary);
   }
 
   std::unique_ptr<RoadGeometry> road_geometry_;
@@ -402,7 +412,7 @@ TEST_F(GeometryBaseRoadGeometryIndexingTest, Test) {
 
 
 GTEST_TEST(GeometryBaseRoadGeometryTest, UnimplementedMethods) {
-  MockRoadGeometry dut(api::RoadGeometryId("dut"), 1., 1.);
+  MockRoadGeometry dut(api::RoadGeometryId("dut"), 1., 1., 1.);
   // Ensure that the not-actually-implemented methods throw an exception.
   EXPECT_THROW(dut.ToRoadPosition(
       api::GeoPosition(), nullptr, nullptr, nullptr), std::exception);

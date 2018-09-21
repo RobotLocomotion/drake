@@ -22,13 +22,16 @@ class RoadGeometry : public api::RoadGeometry {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RoadGeometry)
 
-  /// Constructs an empty RoadGeometry with the specified tolerances.
+  /// Constructs an empty RoadGeometry with the specified tolerances and
+  /// scale-length.
   RoadGeometry(const api::RoadGeometryId& id,
-               const double linear_tolerance,
-               const double angular_tolerance)
+               double linear_tolerance,
+               double angular_tolerance,
+               double scale_length)
       : id_(id),
         linear_tolerance_(linear_tolerance),
-        angular_tolerance_(angular_tolerance) {}
+        angular_tolerance_(angular_tolerance),
+        scale_length_(scale_length) {}
 
   /// Creates and adds a new Junction with the specified @p id.
   Junction* NewJunction(api::JunctionId id);
@@ -69,9 +72,15 @@ class RoadGeometry : public api::RoadGeometry {
 
   double do_angular_tolerance() const override { return angular_tolerance_; }
 
+  // TODO(maddog@tri.global)  scale_length should really be kept consistent
+  //                          with the geometry of the curves themselves,
+  //                          perhaps even derived from the curves directly.
+  double do_scale_length() const override { return scale_length_; }
+
   api::RoadGeometryId id_;
   double linear_tolerance_{};
   double angular_tolerance_{};
+  double scale_length_{};
   std::vector<std::unique_ptr<Junction>> junctions_;
   std::vector<std::unique_ptr<BranchPoint>> branch_points_;
   api::BasicIdIndex id_index_;
