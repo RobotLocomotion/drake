@@ -1069,7 +1069,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     int& num_faces() { return num_faces_; }
     std::vector<int>& faces() { return faces_; }
 
-  private:
+   private:
     std::vector<Vector3d> vertices_;
     int num_faces_;
     std::vector<int> faces_;
