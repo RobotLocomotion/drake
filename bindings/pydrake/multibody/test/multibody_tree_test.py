@@ -178,30 +178,66 @@ class TestMultibodyTree(unittest.TestCase):
 
     def test_multibody_tree_kinematics(self):
         file_name = FindResourceOrThrow(
-            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+            "drake/examples/double_pendulum/models/double_pendulum.sdf")
         plant = MultibodyPlant()
         AddModelFromSdfFile(file_name, plant)
         plant.Finalize()
         context = plant.CreateDefaultContext()
         tree = plant.tree()
         world_frame = plant.world_frame()
-        # TODO(eric.cousineau): Replace this with `GetFrameByName`.
-        link1_frame = plant.GetBodyByName("Link1").body_frame()
+        base = plant.GetBodyByName("base")
+        base_frame = plant.GetFrameByName("base")
 
         X_WL = tree.CalcRelativeTransform(
-            context, frame_A=world_frame, frame_B=link1_frame)
+            context, frame_A=world_frame, frame_B=base_frame)
         self.assertIsInstance(X_WL, Isometry3)
 
         p_AQi = tree.CalcPointsPositions(
-            context=context, frame_B=link1_frame,
+            context=context, frame_B=base_frame,
             p_BQi=np.array([[0, 1, 2], [10, 11, 12]]).T,
             frame_A=world_frame).T
         self.assertTupleEqual(p_AQi.shape, (2, 3))
 
         Jv_WL = tree.CalcFrameGeometricJacobianExpressedInWorld(
-            context=context, frame_B=link1_frame,
+            context=context, frame_B=base_frame,
             p_BoFo_B=[0, 0, 0])
         self.assertTupleEqual(Jv_WL.shape, (6, plant.num_velocities()))
+
+        # Compute body pose.
+        X_WBase = tree.EvalBodyPoseInWorld(context, base)
+        self.assertIsInstance(X_WBase, Isometry3)
+
+        # All body poses.
+        X_WB_list = tree.CalcAllBodyPosesInWorld(context)
+        self.assertEqual(len(X_WB_list), 4)
+        for X_WB in X_WB_list:
+            self.assertIsInstance(X_WB, Isometry3)
+
+        # Compute body velocities.
+        v_WB_list = tree.CalcAllBodySpatialVelocitiesInWorld(context)
+        self.assertEqual(len(v_WB_list), 4)
+        for v_WB in v_WB_list:
+            self.assertIsInstance(v_WB, SpatialVelocity)
+        # - Sanity check.
+        v_WBase_flat = np.hstack((
+            v_WB_list[0].rotational(), v_WB_list[0].translational()))
+        self.assertTrue(np.allclose(v_WBase_flat, np.zeros(6)))
+
+        # Set pose for the base.
+        X_WB_desired = Isometry3.Identity()
+        X_WB = tree.CalcRelativeTransform(context, world_frame, base_frame)
+        tree.SetFreeBodyPoseOrThrow(
+            body=base, X_WB=X_WB_desired, context=context)
+        self.assertTrue(np.allclose(X_WB.matrix(), X_WB_desired.matrix()))
+
+        # Set a spatial velocity for the base.
+        v_WB = SpatialVelocity(w=[1, 2, 3], v=[4, 5, 6])
+        tree.SetFreeBodySpatialVelocityOrThrow(
+            body=base, V_WB=v_WB, context=context)
+        v_base = tree.EvalBodySpatialVelocityInWorld(context, base)
+        self.assertTrue(np.allclose(v_base.rotational(), v_WB.rotational()))
+        self.assertTrue(np.allclose(v_base.translational(),
+                                    v_WB.translational()))
 
     def test_multibody_state_access(self):
         file_name = FindResourceOrThrow(
@@ -312,202 +348,6 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTrue(np.allclose(v_iiwa_desired, v_iiwa))
         self.assertTrue(np.allclose(q_gripper_desired, q_gripper))
         self.assertTrue(np.allclose(v_gripper_desired, v_gripper))
-
-    def test_set_free_body_pose(self):
-        file_name = FindResourceOrThrow(
-            "drake/examples/double_pendulum/models/double_pendulum.sdf")
-        plant = MultibodyPlant()
-        plant_model = AddModelFromSdfFile(file_name, plant)
-        plant.Finalize()
-
-        context = plant.CreateDefaultContext()
-        tree = plant.tree()
-        X_WB_desired = Isometry3.Identity()
-        R_WB = np.array([[0., 1., 0.],
-                         [0., 0., 1.],
-                         [1., 0., 0.]])
-        X_WB_desired.set_rotation(R_WB)
-        tree.SetFreeBodyPoseOrThrow(
-            body=plant.GetBodyByName("base", plant_model),
-            X_WB=X_WB_desired, context=context)
-
-        world_frame = plant.world_frame()
-        base_frame = plant.GetBodyByName("base").body_frame()
-
-        X_WB = tree.CalcRelativeTransform(
-            context, frame_A=world_frame, frame_B=base_frame)
-
-        self.assertTrue(np.allclose(X_WB.matrix(), X_WB_desired.matrix()))
-
-    def test_set_free_body_spatial_velocity(self):
-        file_name = FindResourceOrThrow(
-            "drake/examples/double_pendulum/models/double_pendulum.sdf")
-        plant = MultibodyPlant()
-        plant_model = AddModelFromSdfFile(file_name, plant)
-        plant.Finalize()
-
-        context = plant.CreateDefaultContext()
-        tree = plant.tree()
-
-        # Get the base link.
-        base = plant.GetBodyByName("base", plant_model)
-
-        # Set a spatial velocity for the base.
-        v_WB = SpatialVelocity(w=[1, 2, 3], v=[4, 5, 6])
-        tree.SetFreeBodySpatialVelocityOrThrow(
-            body=base, V_WB=v_WB, context=context)
-
-        # Check the spatial velocity.
-        v_base = tree.EvalBodySpatialVelocityInWorld(context, base)
-        self.assertTrue(np.allclose(v_base.rotational(), v_WB.rotational()))
-        self.assertTrue(np.allclose(v_base.translational(),
-                                    v_WB.translational()))
-
-    # Tests both EvalBodySpatialVelocityInWorld() and
-    # CalcAllBodySpatialVelocitiesInWorld().
-    def test_spatial_velocities_in_world(self):
-        file_name = FindResourceOrThrow(
-            "drake/examples/double_pendulum/models/double_pendulum.sdf")
-        plant = MultibodyPlant()
-        plant_model = AddModelFromSdfFile(file_name, plant)
-
-        # Weld the base to the world.
-        plant.WeldFrames(
-            A=plant.world_frame(),
-            B=plant.GetFrameByName("base", plant_model))
-
-        plant.Finalize()
-        context = plant.CreateDefaultContext()
-        tree = plant.tree()
-
-        # Set the joint configuration and velocities.
-        x = tree.get_mutable_multibody_state_vector(context)
-        for i in range(len(x)):
-            x[i] = i + 1
-
-        # Get the body spatial velocities.
-        base = plant.GetBodyByName("base", plant_model)
-        ul = plant.GetBodyByName("upper_link", plant_model)
-        ll = plant.GetBodyByName("lower_link", plant_model)
-        v_base = tree.EvalBodySpatialVelocityInWorld(context, base)
-        v_ul = tree.EvalBodySpatialVelocityInWorld(context, ul)
-        v_ll = tree.EvalBodySpatialVelocityInWorld(context, ll)
-
-        # Compute the body velocities and verify that the proper number of
-        # links are specified. There should be four links: "world" plus three
-        # defined in the SDF.
-        v_WB = tree.CalcAllBodySpatialVelocitiesInWorld(context)
-        self.assertEqual(len(v_WB), 4)
-
-        # Check velocity of the world link. Must be zero.
-        zero_tol = 1e-15
-        three_dim = 3
-        for i in range(three_dim):
-            self.assertAlmostEqual(v_WB[0].rotational()[i], zero_tol)
-            self.assertAlmostEqual(v_WB[0].translational()[i], zero_tol)
-        self.assertTrue(np.allclose(v_base.rotational(), v_WB[0].rotational()))
-        self.assertTrue(np.allclose(v_base.translational(),
-                                    v_WB[0].translational()))
-
-        # Spatial velocity of the base link must also be zero.
-        for i in range(three_dim):
-            self.assertAlmostEqual(v_WB[1].rotational()[i], zero_tol)
-            self.assertAlmostEqual(v_WB[1].translational()[i], zero_tol)
-        self.assertTrue(np.allclose(v_base.rotational(), v_WB[1].rotational()))
-        self.assertTrue(np.allclose(v_base.translational(),
-                                    v_WB[1].translational()))
-
-        # The values below for the first non-fixed link were determined to be
-        # reasonable. Tests for the underlying C++ code exist elsewhere.
-        v_WB2_rotational_des = [3, 0, 0]
-        v_WB2_translational_des = [0, 0, 0]
-        self.assertTrue(np.allclose(v_WB[2].rotational(),
-                                    v_WB2_rotational_des))
-        self.assertTrue(np.allclose(v_WB[2].translational(),
-                                    v_WB2_translational_des))
-        self.assertTrue(np.allclose(v_ul.rotational(), v_WB[2].rotational()))
-        self.assertTrue(np.allclose(v_ul.translational(),
-                                    v_WB[2].translational()))
-
-        # The values below for the second non-fixed link were determined to be
-        # reasonable. Tests for the underlying C++ code exist elsewhere.
-        v_WB3_rotational_des = [7, 0, 0]
-        v_WB3_translational_des = [0, -2.52441295, 1.62090692]
-        self.assertTrue(np.allclose(v_WB[3].rotational(),
-                                    v_WB3_rotational_des))
-        self.assertTrue(np.allclose(v_WB[3].translational(),
-                                    v_WB3_translational_des))
-        self.assertTrue(np.allclose(v_ll.rotational(), v_WB[3].rotational()))
-        self.assertTrue(np.allclose(v_ll.translational(),
-                                    v_WB[3].translational()))
-
-    # Tests both EvalBodyPoseInWorld() and CalcAllBodyPosesInWorld().
-    def test_body_poses_in_world(self):
-        file_name = FindResourceOrThrow(
-            "drake/examples/double_pendulum/models/double_pendulum.sdf")
-        plant = MultibodyPlant()
-        plant_model = AddModelFromSdfFile(file_name, plant)
-
-        # Weld the base to the world.
-        plant.WeldFrames(
-            A=plant.world_frame(),
-            B=plant.GetFrameByName("base", plant_model))
-
-        plant.Finalize()
-        context = plant.CreateDefaultContext()
-        tree = plant.tree()
-
-        # Set the joint configuration.
-        x = tree.get_mutable_multibody_state_vector(context)
-        x[0] = math.pi/2
-        x[1] = math.pi
-
-        # Get the three links.
-        base = plant.GetBodyByName("base", plant_model)
-        ul = plant.GetBodyByName("upper_link", plant_model)
-        ll = plant.GetBodyByName("lower_link", plant_model)
-
-        # Check the poses for the three links. First link should be identity.
-        X_WB_base_desired = Isometry3.Identity()
-        X_WB_base = tree.EvalBodyPoseInWorld(context, base)
-        self.assertTrue(np.allclose(X_WB_base.matrix(),
-                                    X_WB_base_desired.matrix()))
-
-        # Second link pose determined manually. Tests for the underlying C++
-        # code exist elsewhere.
-        X_WB_ul_desired = Isometry3.Identity()
-        R_WB_ul_desired = np.array([[1., 0., 0.],
-                                    [0., 1, 3.67e-6],
-                                    [0., -3.67e-6, 1.]])
-        X_WB_ul_desired.set_rotation(R_WB_ul_desired)
-        X_WB_ul_desired.set_translation([0, 0, 2.1])
-        X_WB_ul = tree.EvalBodyPoseInWorld(context, ul)
-        self.assertTrue(np.allclose(X_WB_ul.matrix(),
-                                    X_WB_ul_desired.matrix()))
-
-        # Third link pose also determined manually.
-        X_WB_ll_desired = Isometry3.Identity()
-        R_WB_ll_desired = np.array([[1., 0., 0.],
-                                    [0., -9.09297427e-1, -4.16146837e-1],
-                                    [0., 4.16146837e-1, -9.09297427e-1]])
-        X_WB_ll_desired.set_rotation(R_WB_ll_desired)
-        X_WB_ll_desired.set_translation([0.25, 0, 3.1])
-        X_WB_ll = tree.EvalBodyPoseInWorld(context, ll)
-        self.assertTrue(np.allclose(X_WB_ll.matrix(),
-                                    X_WB_ll_desired.matrix()))
-
-        # Test the same quantities but now using CalcAllBodyPosesInWorld()
-        # instead.
-        X_WB = tree.CalcAllBodyPosesInWorld(context)
-        self.assertEqual(len(X_WB), 4)
-        self.assertTrue(np.allclose(X_WB[0].matrix(),
-                                    X_WB_base_desired.matrix()))
-        self.assertTrue(np.allclose(X_WB[1].matrix(),
-                                    X_WB_base_desired.matrix()))
-        self.assertTrue(np.allclose(X_WB[2].matrix(),
-                                    X_WB_ul_desired.matrix()))
-        self.assertTrue(np.allclose(X_WB[3].matrix(),
-                                    X_WB_ll_desired.matrix()))
 
     def test_multibody_add_joint(self):
         """
