@@ -645,36 +645,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
 
   //
-  // This method checks whether the file name has extension ".obj" (or ".OBJ")
-  // and whether the file exists. If the file extension is not ".obj", it
-  // changes the extension to ".obj" and check whether the file exists.
-  // It returns the file name with ".obj".
-  //
-  std::string FindFileWithObjExtension(const std::string& fileName) const {
-    spruce::path spath(fileName);
-    std::string ext = spath.extension();
-    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-
-    if (ext == ".obj") {
-      if (!spath.exists()) {
-        throw std::runtime_error(
-            "Unable to open file \"" + spath.getStr() + "\".");
-      }
-    } else {
-      // Tries changing the extension to obj.
-      spath.setExtension(".obj");
-      if (!spath.exists()) {
-        throw std::runtime_error(
-          "Unable to resolve an obj file from the filename \""
-              + spath.getStr() + "\" provided.");
-      }
-    }
-
-    return spath.getStr();
-  }
-
-
-  //
   // Convert vertices from tinyobj format to FCL format.
   //
   // Vertices from tinyobj are in a vector of floating-points like this:
@@ -747,30 +717,22 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void ImplementGeometry(const Convex& convex, void* user_data) override {
-    std::string obj_file_name = FindFileWithObjExtension(convex.filename());
-
-    std::string path;
-    const size_t idx = obj_file_name.rfind('/');
-    if (idx != std::string::npos) {
-      path = obj_file_name.substr(0, idx + 1);
-    }
-
     // We use tiny_obj_loader to read Obj file of the convex shape.
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
     std::string err;
-    // We keep polygonal faces without triangulating them. In FCL, one large
-    // face with many vertices performs better than many small faces with three
-    // vertices each. In the future, as we expand FCL, this assumption might
-    // change, and we might want to triangulate in a controlled way; for
-    // example, we might use Delaunay triangulation.
+    // We keep polygonal faces without triangulating them. Some algorithms for
+    // convex geometry perform better with fewer faces.
     bool do_tinyobj_triangulation = false;
+    // We use default value (NULL) for the base directory of .mtl file (material
+    // description), so it will be searched from the working directory.
+    const char* mtl_basedir = nullptr;
     bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
-        obj_file_name.c_str(), path.c_str(), do_tinyobj_triangulation);
+        convex.filename().c_str(), mtl_basedir, do_tinyobj_triangulation);
     if (!ret || !err.empty()) {
-      throw std::runtime_error("Error parsing file \"" + obj_file_name + "\" : "
-          + err);
+      throw std::runtime_error("Error parsing file \"" + convex.filename() +
+          "\" : " + err);
     }
 
     // TODO(DamrongGuoy) Check that the input is a valid convex polyhedron.
