@@ -11,6 +11,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
+#include "drake/multibody/multibody_tree/multibody_tree_system.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
@@ -40,16 +41,16 @@ class FrameTests : public ::testing::Test {
     // properties do not play any role.)
     SpatialInertia<double> M_Bo_B;
 
-    model_ = std::make_unique<MultibodyTree<double>>();
+    auto tree_ptr = std::make_unique<MultibodyTree<double>>();
 
-    bodyB_ = &model_->AddBody<RigidBody>(M_Bo_B);
+    bodyB_ = &tree_ptr->AddBody<RigidBody>(M_Bo_B);
     frameB_ = &bodyB_->body_frame();
 
     // Mobilizer connecting bodyB to the world.
     // The mobilizer is only needed because it is a requirement of MultibodyTree
     // that all bodies in the model must have an inboard mobilizer.
-    model_->AddMobilizer<RevoluteMobilizer>(
-        model_->world_frame(), bodyB_->body_frame(),
+    tree_ptr->AddMobilizer<RevoluteMobilizer>(
+        tree_ptr->world_frame(), bodyB_->body_frame(),
         Vector3d::UnitZ() /*revolute axis*/);
 
     // Some arbitrary pose of frame P in the body frame B.
@@ -58,7 +59,7 @@ class FrameTests : public ::testing::Test {
             Translation3d(0.0, -1.0, 0.0);
     // Frame P is rigidly attached to B with pose X_BP.
     frameP_ =
-        &model_->AddFrame<FixedOffsetFrame>(bodyB_->body_frame(), X_BP_);
+        &tree_ptr->AddFrame<FixedOffsetFrame>(bodyB_->body_frame(), X_BP_);
 
     // Some arbitrary pose of frame Q in frame P.
     X_PQ_ = AngleAxisd(-M_PI / 3.0, Vector3d::UnitZ()) *
@@ -66,14 +67,16 @@ class FrameTests : public ::testing::Test {
             Translation3d(0.5, 1.0, -2.0);
     // Frame Q is rigidly attached to P with pose X_PQ.
     frameQ_ =
-        &model_->AddFrame<FixedOffsetFrame>(*frameP_, X_PQ_);
+        &tree_ptr->AddFrame<FixedOffsetFrame>(*frameP_, X_PQ_);
 
     // Frame R is arbitrary, but named.
-    frameR_ = &model_->AddFrame<FixedOffsetFrame>(
+    frameR_ = &tree_ptr->AddFrame<FixedOffsetFrame>(
         "R", *frameP_, Isometry3d::Identity());
 
-    model_->Finalize();
-    context_ = model_->CreateDefaultContext();
+    system_ =
+        std::make_unique<MultibodyTreeSystem<double>>(std::move(tree_ptr));
+    model_ = &system_->tree();
+    context_ = system_->CreateDefaultContext();
 
     // An arbitrary pose of an arbitrary frame G in an arbitrary frame F.
     X_FG_ = AngleAxisd(M_PI / 6.0, Vector3d::UnitY()) *
@@ -89,7 +92,8 @@ class FrameTests : public ::testing::Test {
   }
 
  protected:
-  std::unique_ptr<MultibodyTree<double>> model_;
+  std::unique_ptr<MultibodyTreeSystem<double>> system_;
+  const MultibodyTree<double>* model_{};
   std::unique_ptr<Context<double>> context_;
   // Bodies:
   const RigidBody<double>* bodyB_;

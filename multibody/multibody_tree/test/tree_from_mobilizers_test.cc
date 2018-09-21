@@ -16,6 +16,7 @@
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_forces.h"
+#include "drake/multibody/multibody_tree/multibody_tree_system.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
@@ -118,19 +119,16 @@ using systems::Context;
 //      |        |
 //      |        |
 //      +--------+
+//
+// On construction, creates an "empty" MultibodyTree that only contains the
+// world body and world body frame.
 class PendulumTests : public ::testing::Test {
  public:
-  // Creates an "empty" MultibodyTree that only contains the "world" body and
-  // world body frame.
-  void SetUp() override {
-    model_ = std::make_unique<MultibodyTree<double>>();
-
-    // Retrieves the world body.
-    world_body_ = &model_->world_body();
-  }
+  void SetUp() override {}
 
   // Sets up the MultibodyTree model for a double pendulum. See this unit test's
-  // class description for details.
+  // class description for details. Note that this method does not finalize the
+  // tree.
   void CreatePendulumModel() {
     // Spatial inertia of the upper link about its frame U and expressed in U.
     Vector3d link1_com_U = Vector3d::Zero();  // U is at the link's COM.
@@ -154,14 +152,14 @@ class PendulumTests : public ::testing::Test {
     // Adds the upper and lower links of the pendulum.
     // Using: const BodyType& AddBody(std::unique_ptr<BodyType> body).
     upper_link_ =
-        &model_->AddBody(make_unique<RigidBody<double>>(M_U));
+        &mutable_tree().AddBody(make_unique<RigidBody<double>>(M_U));
     // Using: const BodyType<T>& AddBody(Args&&... args)
-    lower_link_ = &model_->AddBody<RigidBody>(M_L);
+    lower_link_ = &mutable_tree().AddBody<RigidBody>(M_L);
 
     // The shoulder is the mobilizer that connects the world to the upper link.
     // Its inboard frame, Si, is the world frame. Its outboard frame, So, a
     // fixed offset frame on the upper link.
-    shoulder_inboard_frame_ = &model_->world_frame();
+    shoulder_inboard_frame_ = &mutable_tree().world_frame();
 
     // The body frame of the upper link is U, and that of the lower link is L.
     // We will add a frame for the pendulum's shoulder. This will be the
@@ -171,14 +169,14 @@ class PendulumTests : public ::testing::Test {
     // In this case the frame is created explicitly from the body frame of
     // upper_link.
     shoulder_outboard_frame_ =
-        &model_->AddFrame<FixedOffsetFrame>(
+        &mutable_tree().AddFrame<FixedOffsetFrame>(
             upper_link_->body_frame(), X_USo_);
 
     // Adds the shoulder and elbow mobilizers of the pendulum.
     // Using:
     //  const Mobilizer& AddMobilizer(std::unique_ptr<MobilizerType> mobilizer).
     shoulder_mobilizer_ =
-        &model_->AddMobilizer(
+        &mutable_tree().AddMobilizer(
             make_unique<RevoluteMobilizer<double>>(
                 *shoulder_inboard_frame_, *shoulder_outboard_frame_,
                 Vector3d::UnitZ() /*revolute axis*/));
@@ -200,7 +198,7 @@ class PendulumTests : public ::testing::Test {
     // Instead of creating an elbow inboard frame (Ei), an elbow outboard
     // frame (Eo) and connecting them with a Joint, we'll let the
     // MultibodyTree::AddJoint() method do that for us:
-    elbow_joint_ = &model_->AddJoint<RevoluteJoint>(
+    elbow_joint_ = &mutable_tree().AddJoint<RevoluteJoint>(
         "ElbowJoint",
         *upper_link_, X_UEi_, /* Pose of Ei in U. */
         *lower_link_, {},     /* No pose provided, frame Eo IS frame L. */
@@ -216,7 +214,7 @@ class PendulumTests : public ::testing::Test {
 
     // Add force element for a constant gravity pointing downwards, that is, in
     // the minus y-axis direction.
-    model_->AddForceElement<UniformGravityFieldElement>(
+    mutable_tree().AddForceElement<UniformGravityFieldElement>(
         Vector3d(0.0, -acceleration_of_gravity_, 0.0));
   }
 
@@ -228,7 +226,7 @@ class PendulumTests : public ::testing::Test {
   const Isometry3<T>& get_body_pose_in_world(
       const PositionKinematicsCache<T>& pc,
       const Body<T>& body) const {
-    const MultibodyTreeTopology& topology = model_->get_topology();
+    const MultibodyTreeTopology& topology = tree().get_topology();
     // Cache entries are accessed by BodyNodeIndex for fast traversals.
     return pc.get_X_WB(topology.get_body(body.index()).body_node);
   }
@@ -242,7 +240,7 @@ class PendulumTests : public ::testing::Test {
   const SpatialVelocity<double>& get_body_spatial_velocity_in_world(
       const VelocityKinematicsCache<double>& vc,
       const Body<double>& body) const {
-    const MultibodyTreeTopology& topology = model_->get_topology();
+    const MultibodyTreeTopology& topology = tree().get_topology();
     // Cache entries are accessed by BodyNodeIndex for fast traversals.
     return vc.get_V_WB(topology.get_body(body.index()).body_node);
   }
@@ -256,10 +254,15 @@ class PendulumTests : public ::testing::Test {
   const SpatialAcceleration<double>& get_body_spatial_acceleration_in_world(
       const AccelerationKinematicsCache<double>& ac,
       const Body<double>& body) const {
-    const MultibodyTreeTopology& topology = model_->get_topology();
+    const MultibodyTreeTopology& topology = tree().get_topology();
     // Cache entries are accessed by BodyNodeIndex for fast traversals.
     return ac.get_A_WB(topology.get_body(body.index()).body_node);
   }
+
+  const MultibodyTree<double>& tree() const { return system_.tree(); }
+
+  // This can only be used before the tree is finalized.
+  MultibodyTree<double>& mutable_tree() const { return system_.mutable_tree(); }
 
  protected:
   // For testing only so that we can retrieve/set (future to be) cache entries,
@@ -269,21 +272,22 @@ class PendulumTests : public ::testing::Test {
     pc->get_mutable_X_WB(BodyNodeIndex(1)) = X_WL_;
   }
 
-  std::unique_ptr<MultibodyTree<double>> model_;
-  const Body<double>* world_body_;
+  MultibodyTreeSystem<double> system_;
+  const Body<double>* const world_body_ = &system_.tree().world_body();
+
   // Bodies:
-  const RigidBody<double>* upper_link_;
-  const RigidBody<double>* lower_link_;
+  const RigidBody<double>* upper_link_{nullptr};
+  const RigidBody<double>* lower_link_{nullptr};
   // Frames:
-  const BodyFrame<double>* shoulder_inboard_frame_;
-  const FixedOffsetFrame<double>* shoulder_outboard_frame_;
-  const Frame<double>* elbow_inboard_frame_;
-  const Frame<double>* elbow_outboard_frame_;
+  const BodyFrame<double>* shoulder_inboard_frame_{nullptr};
+  const FixedOffsetFrame<double>* shoulder_outboard_frame_{nullptr};
+  const Frame<double>* elbow_inboard_frame_{nullptr};
+  const Frame<double>* elbow_outboard_frame_{nullptr};
   // Mobilizers:
-  const RevoluteMobilizer<double>* shoulder_mobilizer_;
-  const RevoluteMobilizer<double>* elbow_mobilizer_;
+  const RevoluteMobilizer<double>* shoulder_mobilizer_{nullptr};
+  const RevoluteMobilizer<double>* elbow_mobilizer_{nullptr};
   // Joints:
-  const RevoluteJoint<double>* elbow_joint_;
+  const RevoluteJoint<double>* elbow_joint_{nullptr};
   // Pendulum parameters:
   const double link1_length_ = 1.0;
   const double link1_mass_ = 1.0;
@@ -310,17 +314,17 @@ class PendulumTests : public ::testing::Test {
 
 TEST_F(PendulumTests, CreateModelBasics) {
   // Initially there is only one body, the world.
-  EXPECT_EQ(model_->num_bodies(), 1);
+  EXPECT_EQ(tree().num_bodies(), 1);
   // And there is only one frame, the world frame.
-  EXPECT_EQ(model_->num_frames(), 1);
+  EXPECT_EQ(tree().num_frames(), 1);
 
   CreatePendulumModel();
 
   // Verifies the number of multibody elements is correct.
-  EXPECT_EQ(model_->num_bodies(), 3);
-  EXPECT_EQ(model_->num_frames(), 5);
+  EXPECT_EQ(tree().num_bodies(), 3);
+  EXPECT_EQ(tree().num_frames(), 5);
   // Joint has no implementation before finalize.
-  EXPECT_EQ(model_->num_mobilizers(), 1);
+  EXPECT_EQ(tree().num_mobilizers(), 1);
 
   // Check that frames are associated with the correct bodies.
   EXPECT_EQ(
@@ -355,10 +359,10 @@ TEST_F(PendulumTests, CreateModelBasics) {
 
   // We need to Finalize() our model before testing the elbow mobilizer was
   // created correctly. Joint implementations are created at Finalize().
-  ASSERT_NO_THROW(model_->Finalize());
+  ASSERT_NO_THROW(mutable_tree().Finalize());
   elbow_mobilizer_ = JointTester::get_mobilizer(*elbow_joint_);
 
-  EXPECT_EQ(model_->num_mobilizers(), 2);
+  EXPECT_EQ(tree().num_mobilizers(), 2);
   // Check that frames are associated with the correct bodies.
   EXPECT_EQ(
       elbow_inboard_frame_->body().index(), upper_link_->index());
@@ -410,30 +414,30 @@ TEST_F(PendulumTests, Indexes) {
 TEST_F(PendulumTests, Finalize) {
   CreatePendulumModel();
   // Finalize() stage.
-  EXPECT_FALSE(model_->topology_is_valid());  // Not valid before Finalize().
-  EXPECT_NO_THROW(model_->Finalize());
-  EXPECT_TRUE(model_->topology_is_valid());  // Valid after Finalize().
+  EXPECT_FALSE(tree().topology_is_valid());  // Not valid before Finalize().
+  EXPECT_NO_THROW(mutable_tree().Finalize());
+  EXPECT_TRUE(tree().topology_is_valid());  // Valid after Finalize().
 
   // Asserts that no more multibody elements can be added after finalize.
   SpatialInertia<double> M_Bo_B;
-  EXPECT_THROW(model_->AddBody<RigidBody>(M_Bo_B), std::logic_error);
-  EXPECT_THROW(model_->AddFrame<FixedOffsetFrame>(*lower_link_, X_LEo_),
+  EXPECT_THROW(mutable_tree().AddBody<RigidBody>(M_Bo_B), std::logic_error);
+  EXPECT_THROW(mutable_tree().AddFrame<FixedOffsetFrame>(*lower_link_, X_LEo_),
                std::logic_error);
-  EXPECT_THROW(model_->AddMobilizer<RevoluteMobilizer>(
+  EXPECT_THROW(mutable_tree().AddMobilizer<RevoluteMobilizer>(
       *shoulder_inboard_frame_, *shoulder_outboard_frame_,
       Vector3d::UnitZ()), std::logic_error);
 
   // Asserts re-finalization is not allowed.
-  EXPECT_THROW(model_->Finalize(), std::logic_error);
+  EXPECT_THROW(mutable_tree().Finalize(), std::logic_error);
 }
 
 // This is an experiment with std::reference_wrapper to show that we can save
 // bodies in an array of references.
 TEST_F(PendulumTests, StdReferenceWrapperExperiment) {
   // Initially there is only one body, the world.
-  EXPECT_EQ(model_->num_bodies(), 1);
+  EXPECT_EQ(tree().num_bodies(), 1);
   // And there is only one frame, the world frame.
-  EXPECT_EQ(model_->num_frames(), 1);
+  EXPECT_EQ(tree().num_frames(), 1);
   CreatePendulumModel();
 
   // Vector of references.
@@ -460,19 +464,15 @@ TEST_F(PendulumTests, CreateContext) {
   // - world_
   // - upper_link_
   // - lower_link_
-  EXPECT_EQ(model_->num_bodies(), 3);
-
-  // Verify we cannot create a Context until we have a valid topology.
-  EXPECT_FALSE(model_->topology_is_valid());  // Not valid before Finalize().
-  EXPECT_THROW(model_->CreateDefaultContext(), std::logic_error);
+  EXPECT_EQ(tree().num_bodies(), 3);
 
   // Finalize() stage.
-  EXPECT_NO_THROW(model_->Finalize());
-  EXPECT_TRUE(model_->topology_is_valid());  // Valid after Finalize().
+  EXPECT_NO_THROW(system_.FinalizeMultibodyTreeSystem());
+  EXPECT_TRUE(tree().topology_is_valid());  // Valid after Finalize().
 
   // Create Context.
   std::unique_ptr<Context<double>> context;
-  EXPECT_NO_THROW(context = model_->CreateDefaultContext());
+  EXPECT_NO_THROW(context = system_.CreateDefaultContext());
 
   // Tests MultibodyTreeContext accessors.
   auto mbt_context =
@@ -493,7 +493,7 @@ TEST_F(PendulumTests, CreateContext) {
   // arbitrary value that we can use for unit testing. In practice the poses in
   // the position kinematics will be the result of a position kinematics update
   // and will live in the context as a cache entry.
-  PositionKinematicsCache<double> pc(model_->get_topology());
+  PositionKinematicsCache<double> pc(tree().get_topology());
   SetPendulumPoses(&pc);
 
   // Retrieve body poses from position kinematics cache.
@@ -514,11 +514,12 @@ class PendulumKinematicTests : public PendulumTests {
   void SetUp() override {
     PendulumTests::SetUp();
     CreatePendulumModel();
-    model_->Finalize();
+    system_.FinalizeMultibodyTreeSystem();
+
     // Only for testing, in this case we do know our Joint model IS a
     // RevoluteMobilizer.
     elbow_mobilizer_ = JointTester::get_mobilizer(*elbow_joint_);
-    context_ = model_->CreateDefaultContext();
+    context_ = system_.CreateDefaultContext();
     mbt_context_ =
         dynamic_cast<MultibodyTreeContext<double>*>(context_.get());
   }
@@ -543,7 +544,7 @@ class PendulumKinematicTests : public PendulumTests {
     elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
 
     Matrix2d H;
-    model_->CalcMassMatrixViaInverseDynamics(*context_, &H);
+    tree().CalcMassMatrixViaInverseDynamics(*context_, &H);
 
     Matrix2d H_expected = acrobot_benchmark_.CalcMassMatrix(elbow_angle);
     EXPECT_TRUE(H.isApprox(H_expected, 5 * kEpsilon));
@@ -568,7 +569,7 @@ class PendulumKinematicTests : public PendulumTests {
     elbow_rate = 0.0;
     shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_rate);
     elbow_mobilizer_->set_angular_rate(context_.get(), elbow_rate);
-    model_->CalcBiasTerm(*context_, &C);
+    tree().CalcBiasTerm(*context_, &C);
     C_expected = acrobot_benchmark_.CalcCoriolisVector(
             shoulder_angle, elbow_angle, shoulder_rate, elbow_rate);
     EXPECT_TRUE(CompareMatrices(
@@ -579,7 +580,7 @@ class PendulumKinematicTests : public PendulumTests {
     elbow_rate = 0.0;
     shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_rate);
     elbow_mobilizer_->set_angular_rate(context_.get(), elbow_rate);
-    model_->CalcBiasTerm(*context_, &C);
+    tree().CalcBiasTerm(*context_, &C);
     C_expected = acrobot_benchmark_.CalcCoriolisVector(
         shoulder_angle, elbow_angle, shoulder_rate, elbow_rate);
     EXPECT_TRUE(CompareMatrices(
@@ -590,7 +591,7 @@ class PendulumKinematicTests : public PendulumTests {
     elbow_rate = 1.0;
     shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_rate);
     elbow_mobilizer_->set_angular_rate(context_.get(), elbow_rate);
-    model_->CalcBiasTerm(*context_, &C);
+    tree().CalcBiasTerm(*context_, &C);
     C_expected = acrobot_benchmark_.CalcCoriolisVector(
         shoulder_angle, elbow_angle, shoulder_rate, elbow_rate);
     EXPECT_TRUE(CompareMatrices(
@@ -601,7 +602,7 @@ class PendulumKinematicTests : public PendulumTests {
     elbow_rate = 1.0;
     shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_rate);
     elbow_mobilizer_->set_angular_rate(context_.get(), elbow_rate);
-    model_->CalcBiasTerm(*context_, &C);
+    tree().CalcBiasTerm(*context_, &C);
     C_expected = acrobot_benchmark_.CalcCoriolisVector(
         shoulder_angle, elbow_angle, shoulder_rate, elbow_rate);
     EXPECT_TRUE(CompareMatrices(
@@ -617,7 +618,7 @@ class PendulumKinematicTests : public PendulumTests {
   /// drake::multibody::benchmarks::Acrobot.
   Vector2d VerifyGravityTerm(
       const Eigen::Ref<const VectorXd>& q) const {
-    DRAKE_DEMAND(q.size() == model_->num_positions());
+    DRAKE_DEMAND(q.size() == tree().num_positions());
 
     // This is the minimum factor of the machine precision within which these
     // tests pass. This factor incorporates an additional factor of two (2) to
@@ -628,8 +629,8 @@ class PendulumKinematicTests : public PendulumTests {
     const double shoulder_angle =  q(0);
     const double elbow_angle =  q(1);
 
-    PositionKinematicsCache<double> pc(model_->get_topology());
-    VelocityKinematicsCache<double> vc(model_->get_topology());
+    PositionKinematicsCache<double> pc(tree().get_topology());
+    VelocityKinematicsCache<double> vc(tree().get_topology());
     // Even though tau_g(q) only depends on positions, other velocity dependent
     // forces (for instance damping) could depend on velocities. Therefore we
     // set the velocity kinematics cache entries to zero so that only tau_g(q)
@@ -641,25 +642,25 @@ class PendulumKinematicTests : public PendulumTests {
     // Compute position kinematics.
     shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
     elbow_joint_->set_angle(context_.get(), elbow_angle);
-    model_->CalcPositionKinematicsCache(*context_, &pc);
+    tree().CalcPositionKinematicsCache(*context_, &pc);
 
     // ======================================================================
     // The force of gravity gets included in this call since we have
     // UniformGravityFieldElement in the model.
     // Applied forcing:
-    MultibodyForces<double> forcing(*model_);
-    model_->CalcForceElementsContribution(*context_, pc, vc, &forcing);
+    MultibodyForces<double> forcing(tree());
+    tree().CalcForceElementsContribution(*context_, pc, vc, &forcing);
 
     // ======================================================================
     // To get generalized forces, compute inverse dynamics applying the forces
     // computed by CalcForceElementsContribution().
 
     // Output vector of generalized forces.
-    VectorXd tau(model_->num_velocities());
+    VectorXd tau(tree().num_velocities());
 
     // Output vector of spatial forces for each body B at their inboard
     // frame Mo, expressed in the world W.
-    vector<SpatialForce<double>> F_BMo_W_array(model_->num_bodies());
+    vector<SpatialForce<double>> F_BMo_W_array(tree().num_bodies());
 
     // ======================================================================
     // Compute expected values using the acrobot benchmark.
@@ -672,8 +673,8 @@ class PendulumKinematicTests : public PendulumTests {
     // However, the data given at input is lost on output. A user might choose
     // then to have separate input/output arrays.
 
-    const VectorXd vdot = VectorXd::Zero(model_->num_velocities());
-    vector<SpatialAcceleration<double>> A_WB_array(model_->num_bodies());
+    const VectorXd vdot = VectorXd::Zero(tree().num_velocities());
+    vector<SpatialAcceleration<double>> A_WB_array(tree().num_bodies());
 
     // Aliases to external forcing arrays:
     std::vector<SpatialForce<double>>& Fapplied_Bo_W_array =
@@ -684,7 +685,7 @@ class PendulumKinematicTests : public PendulumTests {
     // Initialize output to garbage, it should not affect the results.
     tau.setConstant(std::numeric_limits<double>::quiet_NaN());
     tau_applied.setZero();
-    model_->CalcInverseDynamics(
+    tree().CalcInverseDynamics(
         *context_, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
         &A_WB_array, &F_BMo_W_array, &tau);
     // The result from inverse dynamics must be tau = -tau_g(q).
@@ -693,7 +694,7 @@ class PendulumKinematicTests : public PendulumTests {
     // Now try using the same arrays for input/output (input data
     // Fapplied_Bo_W_array will get overwritten through the output argument).
     tau_applied.setZero();  // This will now get overwritten.
-    model_->CalcInverseDynamics(
+    tree().CalcInverseDynamics(
         *context_, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
         &A_WB_array, &Fapplied_Bo_W_array, &tau_applied);
     // The result from inverse dynamics must be tau = -tau_g(q).
@@ -702,7 +703,7 @@ class PendulumKinematicTests : public PendulumTests {
     // Compute the system's potential energy:
     const double V_expected =
         acrobot_benchmark_.CalcPotentialEnergy(shoulder_angle, elbow_angle);
-    const double V = model_->CalcPotentialEnergy(*context_);
+    const double V = tree().CalcPotentialEnergy(*context_);
     EXPECT_NEAR(V, V_expected, kTolerance);
 
     return tau;
@@ -752,9 +753,9 @@ class PendulumKinematicTests : public PendulumTests {
       const Eigen::Ref<const VectorXd>& q,
       const Eigen::Ref<const VectorXd>& v,
       const Eigen::Ref<const VectorXd>& vdot) const {
-    DRAKE_DEMAND(q.size() == model_->num_positions());
-    DRAKE_DEMAND(v.size() == model_->num_velocities());
-    DRAKE_DEMAND(vdot.size() == model_->num_velocities());
+    DRAKE_DEMAND(q.size() == tree().num_positions());
+    DRAKE_DEMAND(v.size() == tree().num_velocities());
+    DRAKE_DEMAND(vdot.size() == tree().num_velocities());
 
     // This is the minimum factor of the machine precision within which these
     // tests pass. This factor incorporates an additional factor of two (2) to
@@ -768,33 +769,33 @@ class PendulumKinematicTests : public PendulumTests {
     const double shoulder_angle_rate = v(0);
     const double elbow_angle_rate = v(1);
 
-    PositionKinematicsCache<double> pc(model_->get_topology());
-    VelocityKinematicsCache<double> vc(model_->get_topology());
+    PositionKinematicsCache<double> pc(tree().get_topology());
+    VelocityKinematicsCache<double> vc(tree().get_topology());
 
     // ======================================================================
     // Compute position kinematics.
     shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
     elbow_joint_->set_angle(context_.get(), elbow_angle);
-    model_->CalcPositionKinematicsCache(*context_, &pc);
+    tree().CalcPositionKinematicsCache(*context_, &pc);
 
     // ======================================================================
     // Compute velocity kinematics.
     shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_angle_rate);
     elbow_joint_->set_angular_rate(context_.get(), elbow_angle_rate);
-    model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
+    tree().CalcVelocityKinematicsCache(*context_, pc, &vc);
 
     // ======================================================================
     // Compute inverse dynamics.
-    VectorXd tau(model_->num_velocities());
-    vector<SpatialAcceleration<double>> A_WB_array(model_->num_bodies());
-    vector<SpatialForce<double>> F_BMo_W_array(model_->num_bodies());
-    model_->CalcInverseDynamics(*context_, pc, vc, vdot, {}, VectorXd(),
+    VectorXd tau(tree().num_velocities());
+    vector<SpatialAcceleration<double>> A_WB_array(tree().num_bodies());
+    vector<SpatialForce<double>> F_BMo_W_array(tree().num_bodies());
+    tree().CalcInverseDynamics(*context_, pc, vc, vdot, {}, VectorXd(),
                                 &A_WB_array, &F_BMo_W_array, &tau);
 
     // ======================================================================
     // Compute acceleration kinematics.
-    AccelerationKinematicsCache<double> ac(model_->get_topology());
-    model_->CalcAccelerationKinematicsCache(*context_, pc, vc, vdot, &ac);
+    AccelerationKinematicsCache<double> ac(tree().get_topology());
+    tree().CalcAccelerationKinematicsCache(*context_, pc, vc, vdot, &ac);
 
     // From acceleration kinematics.
     const SpatialAcceleration<double>& A_WUcm_ac =
@@ -842,7 +843,7 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
   shoulder_mobilizer_->set_zero_configuration(context_.get());
   EXPECT_EQ(shoulder_mobilizer_->get_angle(*context_), 0.0);
 
-  PositionKinematicsCache<double> pc(model_->get_topology());
+  PositionKinematicsCache<double> pc(tree().get_topology());
 
   const int num_angles = 50;
   const double kDeltaAngle = 2 * M_PI / (num_angles - 1.0);
@@ -860,7 +861,7 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
       EXPECT_EQ(mbt_context_->get_positions()(0), shoulder_angle);
       EXPECT_EQ(mbt_context_->get_positions()(1), elbow_angle);
 
-      model_->CalcPositionKinematicsCache(*context_, &pc);
+      tree().CalcPositionKinematicsCache(*context_, &pc);
 
       // Indexes to the BodyNode objects associated with each mobilizer.
       const BodyNodeIndex shoulder_node =
@@ -912,9 +913,9 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
   const int kEpsilonFactor = 30;
   const double kTolerance = kEpsilonFactor * kEpsilon;
 
-  PositionKinematicsCache<double> pc(model_->get_topology());
-  VelocityKinematicsCache<double> vc(model_->get_topology());
-  AccelerationKinematicsCache<double> ac(model_->get_topology());
+  PositionKinematicsCache<double> pc(tree().get_topology());
+  VelocityKinematicsCache<double> vc(tree().get_topology());
+  AccelerationKinematicsCache<double> ac(tree().get_topology());
 
   const int num_angles = 50;
   const double kDeltaAngle = 2 * M_PI / (num_angles - 1.0);
@@ -927,7 +928,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       // Compute position kinematics.
       shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
       elbow_joint_->set_angle(context_.get(), elbow_angle);
-      model_->CalcPositionKinematicsCache(*context_, &pc);
+      tree().CalcPositionKinematicsCache(*context_, &pc);
 
       // Obtain the lower link center of mass to later shift its computed
       // spatial velocity and acceleration to the center of mass frame for
@@ -951,7 +952,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       const double elbow_angle_rate = -0.5;
       elbow_joint_->set_angular_rate(context_.get(), elbow_angle_rate);
       EXPECT_EQ(elbow_joint_->get_angular_rate(*context_), elbow_angle_rate);
-      model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
+      tree().CalcVelocityKinematicsCache(*context_, pc, &vc);
 
       // Retrieve body spatial velocities from velocity kinematics cache.
       const SpatialVelocity<double>& V_WUcm =
@@ -980,7 +981,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       VectorX<double> vdot(2);  // Vector of generalized accelerations.
       vdot = VectorX<double>::Zero(2);
 
-      model_->CalcAccelerationKinematicsCache(*context_, pc, vc, vdot, &ac);
+      tree().CalcAccelerationKinematicsCache(*context_, pc, vc, vdot, &ac);
 
       // Retrieve body spatial accelerations from acceleration kinematics cache.
       SpatialAcceleration<double> A_WUcm =
@@ -1018,7 +1019,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       EXPECT_EQ(
           elbow_mobilizer_->get_accelerations_from_array(vdot)(0), 2.0);
 
-      model_->CalcAccelerationKinematicsCache(*context_, pc, vc, vdot, &ac);
+      tree().CalcAccelerationKinematicsCache(*context_, pc, vc, vdot, &ac);
 
       // Retrieve body spatial accelerations from acceleration kinematics cache.
       A_WUcm = get_body_spatial_acceleration_in_world(ac, *upper_link_);
@@ -1118,7 +1119,8 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
   const double kTolerance = kEpsilonFactor * kEpsilon;
 
   std::unique_ptr<MultibodyTree<AutoDiffXd>> model_autodiff =
-      model_->ToAutoDiffXd();
+      tree().ToAutoDiffXd();
+  const MultibodyTree<AutoDiffXd>& tree_autodiff = *model_autodiff.get();
 
   const RevoluteMobilizer<AutoDiffXd>& shoulder_mobilizer_autodiff =
       model_autodiff->get_variant(*shoulder_mobilizer_);
@@ -1131,10 +1133,12 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
   const RigidBody<AutoDiffXd>& lower_link_autodiff =
       model_autodiff->get_variant(*lower_link_);
 
+  MultibodyTreeSystem<AutoDiffXd> tree_system_autodiff(
+      std::move(model_autodiff));
   std::unique_ptr<Context<AutoDiffXd>> context_autodiff =
-      model_autodiff->CreateDefaultContext();
+      tree_system_autodiff.CreateDefaultContext();
 
-  PositionKinematicsCache<AutoDiffXd> pc(model_autodiff->get_topology());
+  PositionKinematicsCache<AutoDiffXd> pc(tree_autodiff.get_topology());
 
   const int num_angles = 50;
   const double kDeltaAngle = 2 * M_PI / (num_angles - 1.0);
@@ -1168,7 +1172,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
           shoulder_mobilizer_autodiff.set_angle(context_autodiff.get(),
                                                 shoulder_angle);
           elbow_joint_autodiff.set_angle(context_autodiff.get(), elbow_angle);
-          model_autodiff->CalcPositionKinematicsCache(*context_autodiff, &pc);
+          tree_autodiff.CalcPositionKinematicsCache(*context_autodiff, &pc);
 
           // Retrieve body poses from position kinematics cache.
           const Isometry3<AutoDiffXd>& X_WU =
@@ -1231,7 +1235,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
 
           // Compute potential energy, and its time derivative.
           const AutoDiffXd V =
-              model_autodiff->CalcPotentialEnergy(*context_autodiff);
+              tree_autodiff.CalcPotentialEnergy(*context_autodiff);
           const double V_value = V.value();
           const double V_expected =
               acrobot_benchmark_.CalcPotentialEnergy(
@@ -1249,7 +1253,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
               context_.get(), elbow_angle.value());
           elbow_mobilizer_->set_angular_rate(
               context_.get(), elbow_angle.derivatives()[0]);
-          const double Pc = model_->CalcConservativePower(*context_);
+          const double Pc = tree().CalcConservativePower(*context_);
 
           // Notice we define Pc = -d(Pc)/dt.
           const double Pc_from_autodiff = -V.derivatives()[0];
@@ -1277,10 +1281,10 @@ TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
 
   // World positions of the set of points Qi:
   Matrix3X<double> p_WQi_set(3, 3);
-  model_->CalcPointsPositions(
+  tree().CalcPointsPositions(
       *context_,
       lower_link_->body_frame(), p_LQi_set,
-      model_->world_frame(), &p_WQi_set);
+      tree().world_frame(), &p_WQi_set);
 
   Matrix3X<double> p_WQi_set_expected(3, 3);
   p_WQi_set_expected.col(0) << 2.0 + M_SQRT1_2, -M_SQRT1_2, 0.0;
@@ -1299,10 +1303,10 @@ TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
 
   // World positions of the set of points Qi:
   Matrix3X<double> p_WPi_set(3, 3);
-  model_->CalcPointsPositions(
+  tree().CalcPointsPositions(
       *context_,
       upper_link_->body_frame(), p_UPi_set,
-      model_->world_frame(), &p_WPi_set);
+      tree().world_frame(), &p_WPi_set);
 
   Matrix3X<double> p_WPi_set_expected(3, 3);
   p_WPi_set_expected.col(0) = 0.5 * Vector3d(-M_SQRT1_2, M_SQRT1_2, 0.0);
@@ -1312,7 +1316,7 @@ TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
   EXPECT_TRUE(CompareMatrices(
       p_WPi_set, p_WPi_set_expected, kTolerance, MatrixCompareType::relative));
 
-  const Isometry3d X_UL = model_->CalcRelativeTransform(
+  const Isometry3d X_UL = tree().CalcRelativeTransform(
       *context_, upper_link_->body_frame(), lower_link_->body_frame());
   const Vector3d p_UL = X_UL.translation();
   const Matrix3d R_UL = X_UL.linear();
@@ -1338,10 +1342,10 @@ TEST_F(PendulumKinematicTests, PointsHaveTheWrongSize) {
 
   // World positions of the set of points Qi:
   Matrix3X<double> p_WQi_set(3, 3);
-  EXPECT_THROW(model_->CalcPointsPositions(
+  EXPECT_THROW(tree().CalcPointsPositions(
       *context_,
       lower_link_->body_frame(), p_LQi_set,
-      model_->world_frame(), &p_WQi_set), std::runtime_error);
+      tree().world_frame(), &p_WQi_set), std::runtime_error);
 }
 
 }  // namespace
