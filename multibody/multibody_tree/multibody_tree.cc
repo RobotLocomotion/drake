@@ -300,20 +300,6 @@ void MultibodyTree<T>::CreateModelInstances() {
 }
 
 template <typename T>
-std::unique_ptr<systems::LeafContext<T>>
-MultibodyTree<T>::CreateDefaultContext() const {
-  if (!topology_is_valid()) {
-    throw std::logic_error(
-        "Attempting to create a Context for a MultibodyTree with an invalid "
-        "topology. MultibodyTree::Finalize() must be called before attempting "
-        "to create a context.");
-  }
-  auto context = std::make_unique<MultibodyTreeContext<T>>(topology_);
-  SetDefaultContext(context.get());
-  return std::move(context);
-}
-
-template <typename T>
 void MultibodyTree<T>::SetDefaultContext(systems::Context<T> *context) const {
   for (const auto& mobilizer : owned_mobilizers_) {
     mobilizer->set_zero_configuration(context);
@@ -1106,33 +1092,6 @@ T MultibodyTree<T>::DoCalcConservativePower(
         force_element->CalcConservativePower(mbt_context, pc, vc);
   }
   return conservative_power;
-}
-
-template<typename T>
-const PositionKinematicsCache<T>& MultibodyTree<T>::EvalPositionKinematics(
-    const systems::Context<T>& context) const {
-  // TODO(amcastro-tri): Replace by cache_evaluator_->EvalPositionKinematics()
-  // when MultibodyCachingEvaluatorInterface lands.
-  const auto& mbt_context =
-      dynamic_cast<const MultibodyTreeContext<T>&>(context);
-  PositionKinematicsCache<T>& pc =
-      mbt_context.get_mutable_position_kinematics_cache();
-  CalcPositionKinematicsCache(context, &pc);
-  return pc;
-}
-
-template<typename T>
-const VelocityKinematicsCache<T>& MultibodyTree<T>::EvalVelocityKinematics(
-    const systems::Context<T>& context) const {
-  // TODO(amcastro-tri): Replace by cache_evaluator_->EvalVelocityKinematics()
-  // when MultibodyCachingEvaluatorInterface lands.
-  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  const auto& mbt_context =
-      dynamic_cast<const MultibodyTreeContext<T>&>(context);
-  VelocityKinematicsCache<T>& vc =
-      mbt_context.get_mutable_velocity_kinematics_cache();
-  CalcVelocityKinematicsCache(context, pc, &vc);
-  return vc;
 }
 
 template <typename T>

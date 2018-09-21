@@ -27,6 +27,7 @@ namespace {
 
 using examples::kuka_iiwa_arm::get_iiwa_max_joint_velocities;
 using multibody::MultibodyTree;
+using multibody::MultibodyTreeSystem;
 using multibody::RevoluteJoint;
 using multibody::FixedOffsetFrame;
 using solvers::LinearConstraint;
@@ -74,14 +75,17 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
     params_->set_joint_velocity_limits(v_bounds);
 
     // For the MBT version.
-    mbt_ = multibody::benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel<double>(
-        false, 9.81);
-    frame_E_mbt_ = &mbt_->AddFrame<FixedOffsetFrame>(
-        mbt_->GetBodyByName("iiwa_link_7").body_frame(),
+    auto model =
+        multibody::benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel<double>(false,
+                                                                          9.81);
+    frame_E_mbt_ = &model->AddFrame<FixedOffsetFrame>(
+        model->GetBodyByName("iiwa_link_7").body_frame(),
         frame_E_->get_transform_to_body());
-    mbt_->Finalize();
+    mbt_system_ =
+        std::make_unique<MultibodyTreeSystem<double>>(std::move(model));
+    mbt_ = &mbt_system_->tree();
 
-    context_ = mbt_->CreateDefaultContext();
+    context_ = mbt_system_->CreateDefaultContext();
     joints_.push_back(&mbt_->GetJointByName<RevoluteJoint>("iiwa_joint_1"));
     joints_.push_back(&mbt_->GetJointByName<RevoluteJoint>("iiwa_joint_2"));
     joints_.push_back(&mbt_->GetJointByName<RevoluteJoint>("iiwa_joint_3"));
@@ -142,7 +146,8 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
   std::shared_ptr<RigidBodyFrame<double>> frame_E_;
   std::unique_ptr<DifferentialInverseKinematicsParameters> params_;
 
-  std::unique_ptr<MultibodyTree<double>> mbt_;
+  std::unique_ptr<MultibodyTreeSystem<double>> mbt_system_;
+  const MultibodyTree<double>* mbt_{};
   std::unique_ptr<systems::Context<double>> context_;
   std::vector<const RevoluteJoint<double>*> joints_;
   const FixedOffsetFrame<double>* frame_E_mbt_;
