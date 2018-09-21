@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity_engine.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cstdint>
 #include <iterator>
 #include <string>
@@ -13,6 +14,7 @@
 #include <fcl/geometry/shape/convex.h>
 #include <fcl/narrowphase/collision_request.h>
 #include <fcl/narrowphase/distance_request.h>
+#include <spruce.hh>
 #include <tiny_obj_loader.h>
 
 #include "drake/common/default_scalars.h"
@@ -641,6 +643,37 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     TakeShapeOwnership(fcl_sphere, user_data);
   }
 
+
+  //
+  // This method checks whether the file name has extension ".obj" (or ".OBJ")
+  // and whether the file exists. If the file extension is not ".obj", it
+  // changes the extension to ".obj" and check whether the file exists.
+  // It returns the file name with ".obj".
+  //
+  std::string FindFileWithObjExtension(const std::string& fileName) const {
+    spruce::path spath(fileName);
+    std::string ext = spath.extension();
+    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+    if (ext == ".obj") {
+      if (!spath.exists()) {
+        throw std::runtime_error(
+            "Unable to open file \"" + spath.getStr() + "\".");
+      }
+    } else {
+      // Tries changing the extension to obj.
+      spath.setExtension(".obj");
+      if (!spath.exists()) {
+        throw std::runtime_error(
+          "Unable to resolve an obj file from the filename \""
+              + spath.getStr() + "\" provided.");
+      }
+    }
+
+    return spath.getStr();
+  }
+
+
   //
   // Convert vertices from tinyobj format to FCL format.
   //
@@ -714,25 +747,41 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void ImplementGeometry(const Convex& convex, void* user_data) override {
+    std::string obj_file_name = FindFileWithObjExtension(convex.filename());
+
+    std::string path;
+    const size_t idx = obj_file_name.rfind('/');
+    if (idx != std::string::npos) {
+      path = obj_file_name.substr(0, idx + 1);
+    }
+
     // We use tiny_obj_loader to read Obj file of the convex shape.
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
     std::string err;
-    // We keep polygonal faces without triangulating them.
+    // We keep polygonal faces without triangulating them. In FCL, one large
+    // face with many vertices performs better than many small faces with three
+    // vertices each. In the future, as we expand FCL, this assumption might
+    // change, and we might want to triangulate in a controlled way; for
+    // example, we might use Delaunay triangulation.
     bool do_tinyobj_triangulation = false;
     bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
-                                convex.filename().c_str(), "",
-                                do_tinyobj_triangulation);
-
+        obj_file_name.c_str(), path.c_str(), do_tinyobj_triangulation);
     if (!ret || !err.empty()) {
-      throw std::runtime_error("Error parsing file \"" + convex.filename() +
-                               "\" : " + err);
+      throw std::runtime_error("Error parsing file \"" + obj_file_name + "\" : "
+          + err);
     }
+
+    // TODO(DamrongGuoy) Check that the input is a valid convex polyhedron.
+    // 1. Each face is a planar polygon.
+    // 2. Each face is a convex polygon.
+    // 3. The polyhedron is convex.
 
     //
     // Now we convert tinyobj data for fcl::Convex.
     //
+
     std::vector<Vector3d> vertices =
         TinyObjToFclVertices(attrib, convex.scale());
 
@@ -753,9 +802,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     std::vector<int> faces;
     int num_faces = TinyObjToFclFaces(mesh, &faces);
 
+    convex_objects_.push_back(ConvexData(std::move(vertices), num_faces,
+        std::move(faces)));
+    auto c = convex_objects_.rbegin();
+
     // Create fcl::Convex.
     auto fcl_convex = make_shared<fcl::Convexd>(
-        vertices.size(), vertices.data(), num_faces, faces.data());
+        c->vertices().size(), c->vertices().data(), num_faces,
+        c->faces().data());
     TakeShapeOwnership(fcl_convex, user_data);
 
     // TODO(DamrongGuoy): Per f2f with SeanCurtis-TRI, we want ProximityEngine
@@ -999,6 +1053,30 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   // The mechanism for dictating collision filtering.
   CollisionFilterLegacy collision_filter_;
+
+  // The data needed by fcl::Convex.
+  class ConvexData {
+   public:
+    ConvexData():num_faces_(0) {
+    }
+    // TODO(DamrongGuoy) We will switch to shared_ptr<vector<>> later.
+    // For now, we force callers to use move semantics (&& rvalue reference)
+    // for efficiency.
+    ConvexData(std::vector<Vector3d>&& v, int n, std::vector<int>&& f):
+      vertices_(v), num_faces_(n), faces_(f) {
+    }
+    std::vector<Vector3d>& vertices() { return vertices_; }
+    int& num_faces() { return num_faces_; }
+    std::vector<int>& faces() { return faces_; }
+
+  private:
+    std::vector<Vector3d> vertices_;
+    int num_faces_;
+    std::vector<int> faces_;
+  };
+
+  // The vector containing data for each convex object.
+  std::vector<ConvexData> convex_objects_;
 
   // The tolerance that determines when the iterative process would terminate.
   // @see ProximityEngine::set_distance_tolerance() for more details.
