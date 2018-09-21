@@ -26,21 +26,23 @@ class WeldJointTest : public ::testing::Test {
     const SpatialInertia<double> M_B;
 
     // Add a body so we can add joint to it.
-    body_ = &model_.AddBody<RigidBody>(M_B);
+    body_ = &system_.mutable_tree().AddBody<RigidBody>(M_B);
 
     // Add a prismatic joint between the world and the body.
-    joint_ = &model_.AddJoint<WeldJoint>(
+    joint_ = &system_.mutable_tree().AddJoint<WeldJoint>(
         "Welder",
-        model_.world_body(), {},  // X_PF
+        tree().world_body(), {},  // X_PF
         *body_, {},               // X_BM
         X_FM_);                   // X_FM
 
     // We are done adding modeling elements. Finalize the model:
-    model_.Finalize();
+    system_.FinalizeMultibodyTreeSystem();
   }
 
+  const MultibodyTree<double>& tree() const { return system_.tree(); }
+
  protected:
-  MultibodyTree<double> model_;
+  MultibodyTreeSystem<double> system_;
   const RigidBody<double>* body_{nullptr};
   const WeldJoint<double>* joint_{nullptr};
   const Isometry3d X_FM_{Translation3d(0, 0.5, 0)};
@@ -48,8 +50,8 @@ class WeldJointTest : public ::testing::Test {
 
 // Verify the expected number of dofs.
 TEST_F(WeldJointTest, NumDOFs) {
-  EXPECT_EQ(model_.num_positions(), 0);
-  EXPECT_EQ(model_.num_velocities(), 0);
+  EXPECT_EQ(tree().num_positions(), 0);
+  EXPECT_EQ(tree().num_velocities(), 0);
   EXPECT_EQ(joint_->num_positions(), 0);
   EXPECT_EQ(joint_->num_velocities(), 0);
   // We just verify we can call these methods. However their return value is

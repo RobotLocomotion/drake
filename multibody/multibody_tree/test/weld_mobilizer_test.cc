@@ -5,6 +5,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/multibody_tree/multibody_tree_system.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
 
@@ -36,28 +37,30 @@ class WeldMobilizerTest : public ::testing::Test {
     const SpatialInertia<double> M_B;
 
     // Add a body so we can add a mobilizer to it.
-    body_ = &model_.AddBody<RigidBody>(M_B);
+    auto& body = system_.mutable_tree().AddBody<RigidBody>(M_B);
 
     X_WB_ = Translation3d(1.0, 2.0, 3.0);
 
     // Add a weld mobilizer between the world and the body:
-    weld_body_to_world_ = &model_.AddMobilizer<WeldMobilizer>(
-        model_.world_body().body_frame(), body_->body_frame(), X_WB_);
+    weld_body_to_world_ = &system_.mutable_tree().AddMobilizer<WeldMobilizer>(
+        tree().world_body().body_frame(), body.body_frame(), X_WB_);
 
     // We are done adding modeling elements. Finalize the model:
-    model_.Finalize();
+    system_.FinalizeMultibodyTreeSystem();
 
     // Create a context to store the state for this model:
-    context_ = model_.CreateDefaultContext();
+    context_ = system_.CreateDefaultContext();
+
     // Performance critical queries take a MultibodyTreeContext to avoid dynamic
     // casting.
     mbt_context_ = dynamic_cast<MultibodyTreeContext<double>*>(context_.get());
     ASSERT_NE(mbt_context_, nullptr);
   }
 
+  const MultibodyTree<double>& tree() const { return system_.tree(); }
+
  protected:
-  MultibodyTree<double> model_;
-  const RigidBody<double>* body_{nullptr};
+  MultibodyTreeSystem<double> system_;
   const WeldMobilizer<double>* weld_body_to_world_{nullptr};
   std::unique_ptr<Context<double>> context_;
   MultibodyTreeContext<double>* mbt_context_{nullptr};
@@ -66,8 +69,8 @@ class WeldMobilizerTest : public ::testing::Test {
 };
 
 TEST_F(WeldMobilizerTest, ZeroSizedState) {
-  EXPECT_EQ(model_.num_positions(), 0);
-  EXPECT_EQ(model_.num_velocities(), 0);
+  EXPECT_EQ(tree().num_positions(), 0);
+  EXPECT_EQ(tree().num_velocities(), 0);
 }
 
 TEST_F(WeldMobilizerTest, CalcAcrossMobilizerTransform) {
