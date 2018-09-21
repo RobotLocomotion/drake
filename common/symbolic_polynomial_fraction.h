@@ -14,7 +14,12 @@ namespace symbolic {
 /**
  * Represents symbolic polynomial fractions. A function f(x) is a polynomial
  * fraction, if f(x) = p(x) / q(x), where both p(x) and q(x) are polynomials of
- * x.
+ * x. Note that polynomial fraction is closed under (+, -, x, /). One
+ * application of polynomial fraction is in polynomial optimization, where we
+ * represent (or approximate) functions using polynomial fractions, and then
+ * convert the constraint f(x) = h(x) (where h(x) is a polynomial) to a
+ * polynomial constraint p(x) - q(x) * h(x) = 0, or convert the inequality
+ * constraint f(x) >= h(x) as p(x) - q(x) * h(x) >= 0 if we know q(x) > 0.
  */
 class PolynomialFraction {
  public:
@@ -36,10 +41,12 @@ class PolynomialFraction {
   PolynomialFraction(const Polynomial& numerator,
                      const Polynomial& denominator);
 
-  ~PolynomialFraction() {}
+  ~PolynomialFraction() = default;
 
+  /// Getter for the numerator.
   const Polynomial& numerator() const { return numerator_; }
 
+  /// Getter for the denominator.
   const Polynomial& denominator() const { return denominator_; }
 
   PolynomialFraction& operator+=(const PolynomialFraction& f);
