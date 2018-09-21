@@ -46,6 +46,20 @@ class RationalFunction {
    */
   RationalFunction(const Polynomial& numerator, const Polynomial& denominator);
 
+  /**
+   * Constructs the rational function: p / 1. Note that we use 1 as the
+   * denominator.
+   * @param p The numerator of the rational function.
+   */
+  RationalFunction(const Polynomial& p);
+
+  /**
+   * Constructs the rational function: c / 1. Note that we use 1 as the
+   * denominator.
+   * @param c The numerator of the rational function.
+   */
+  RationalFunction(double c);
+
   ~RationalFunction() = default;
 
   /// Getter for the numerator.
@@ -122,5 +136,103 @@ RationalFunction operator/(double c, const RationalFunction& f);
  * (f/g)⁰ = 1 / 1.
  */
 RationalFunction pow(const RationalFunction& f, int n);
+/**
+ * Provides the following operations
+ *  - Matrix<RationalFunction> * Matrix<Polynomial> =>
+ * Matrix<RationalFunction>
+ *  - Matrix<RationalFunction> * Matrix<double> => Matrix<RationalFunction>
+ *  - Matrix<Polynomial> * Matrix<RationalFunction> =>
+ * Matrix<RationalFunction>
+ *  - Matrix<double> * Matrix<RationalFunction> => Matrix<RationalFunction>
+ *
+ * @note that these operator overloadings are necessary even after providing
+ * Eigen::ScalarBinaryOpTraits. See
+ * https://stackoverflow.com/questions/41494288/mixing-scalar-types-in-eigen
+ * for more information
+ */
+#if defined(DRAKE_DOXYGEN_CXX)
+template <typename MatrixL, typename MatrixR>
+Eigen::Matrix<RationalFunction, MatrixL::RowsAtCompileTime,
+              MatrixR::ColsAtCompileTime>
+operator*(const Eigen::MatrixBase<MatrixL>& lhs,
+          const Eigen::MatrixBase<MatrixR>& rhs);
+#else
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        ((std::is_same<typename MatrixL::Scalar, RationalFunction>::value &&
+          (std::is_same<typename MatrixR::Scalar, Polynomial>::value ||
+           std::is_same<typename MatrixR::Scalar, double>::value)) ||
+         (std::is_same<typename MatrixR::Scalar, RationalFunction>::value &&
+          (std::is_same<typename MatrixL::Scalar, Polynomial>::value ||
+           std::is_same<typename MatrixL::Scalar, double>::value))),
+    Eigen::Matrix<RationalFunction, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime>>::type
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  return lhs.template cast<RationalFunction>() *
+         rhs.template cast<RationalFunction>();
+}
+#endif
 }  // namespace symbolic
 }  // namespace drake
+
+#if !defined(DRAKE_DOXYGEN_CXX)
+namespace Eigen {
+
+// Defines Eigen traits needed for Matrix<drake::symbolic::RationalFunction>.
+template <>
+struct NumTraits<drake::symbolic::RationalFunction>
+    : GenericNumTraits<drake::symbolic::RationalFunction> {
+  static inline int digits10() { return 0; }
+};
+
+// Informs Eigen that BinaryOp(LhsType, RhsType) gets ResultType.
+#define DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS(LhsType, RhsType, BinaryOp,    \
+                                               ResultType)                    \
+  template <>                                                                 \
+  struct ScalarBinaryOpTraits<LhsType, RhsType, BinaryOp<LhsType, RhsType>> { \
+    enum { Defined = 1 };                                                     \
+    typedef ResultType ReturnType;                                            \
+  };
+
+// Informs Eigen that LhsType op RhsType gets ResultType
+// where op ∈ {+, -, *, /, conj_product}.
+#define DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(  \
+    LhsType, RhsType, ResultType)                                             \
+  DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS(LhsType, RhsType,                    \
+                                         internal::scalar_sum_op, ResultType) \
+  DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS(                                     \
+      LhsType, RhsType, internal::scalar_difference_op, ResultType)           \
+  DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS(                                     \
+      LhsType, RhsType, internal::scalar_product_op, ResultType)              \
+  DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS(                                     \
+      LhsType, RhsType, internal::scalar_conj_product_op, ResultType)
+
+// Informs Eigen that RationalFunction op Polynomial gets RationalFunction
+// where op ∈ {+, -, *, /, conj_product}.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    drake::symbolic::RationalFunction, drake::symbolic::Polynomial,
+    drake::symbolic::RationalFunction)
+
+// Informs Eigen that Polynomial op RationalFunction gets RationalFunction
+// where op ∈ {+, -, *, /, conj_product}.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    drake::symbolic::Polynomial, drake::symbolic::RationalFunction,
+    drake::symbolic::RationalFunction)
+
+// Informs Eigen that double op RationalFunction gets RationalFunction
+// where op ∈ {+, -, *, /, conj_product}.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    double, drake::symbolic::RationalFunction,
+    drake::symbolic::RationalFunction)
+
+// Informs Eigen that RationalFunction op double gets RationalFunction
+// where op ∈ {+, -, *, /, conj_product}.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    drake::symbolic::RationalFunction, double,
+    drake::symbolic::RationalFunction)
+#undef DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS
+#undef DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS
+}  // namespace Eigen
+#endif  // !defined(DRAKE_DOXYGEN_CXX)
