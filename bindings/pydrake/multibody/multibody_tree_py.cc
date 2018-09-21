@@ -256,35 +256,32 @@ void init_module(py::module m) {
             &Class::get_velocities_from_array,
             py::arg("model_instance"), py::arg("v_array"))
         .def("SetFreeBodySpatialVelocityOrThrow",
-            [](
-                const Class* self, const Body<T>& body,
-                const SpatialVelocity<T>& V_WB, Context<T>* context) {
+            [](const Class* self, const Body<T>& body,
+               const SpatialVelocity<T>& V_WB, Context<T>* context) {
               self->SetFreeBodySpatialVelocityOrThrow(body, V_WB, context);
             },
             py::arg("body"), py::arg("V_WB"), py::arg("context")).
         def("CalcAllBodySpatialVelocitiesInWorld",
-            [](
-                const Class* self, const Context<T>& context) {
+            [](const Class* self, const Context<T>& context) {
               std::vector<SpatialVelocity<T>> V_WB;
               self->CalcAllBodySpatialVelocitiesInWorld(context, &V_WB);
               return V_WB;
             },
             py::arg("context")).
         def("EvalBodyPoseInWorld",
-            [](
-                const Class* self, const Context<T>& context, Body<T>& body_B) {
+            [](const Class* self, const Context<T>& context,
+               const Body<T>& body_B) {
               return self->EvalBodyPoseInWorld(context, body_B);
             },
             py::arg("context"), py::arg("body")).
         def("EvalBodySpatialVelocityInWorld",
-            [](
-                const Class* self, const Context<T>& context, Body<T>& body_B) {
+            [](const Class* self, const Context<T>& context,
+               const Body<T>& body_B) {
               return self->EvalBodySpatialVelocityInWorld(context, body_B);
             },
             py::arg("context"), py::arg("body")).
         def("CalcAllBodyPosesInWorld",
-            [](
-                const Class* self, const Context<T>& context) {
+            [](const Class* self, const Context<T>& context) {
               std::vector<Isometry3<T>> X_WB;
               self->CalcAllBodyPosesInWorld(context, &X_WB);
               return X_WB;
