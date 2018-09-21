@@ -81,13 +81,12 @@ SceneGraph<T>::SceneGraph()
   model_inspector_.set(initial_state_);
   geometry_state_index_ = this->DeclareAbstractState(std::move(state_value));
 
-  bundle_port_index_ =
-      this->DeclareAbstractOutputPort(&SceneGraph::MakePoseBundle,
-                                      &SceneGraph::CalcPoseBundle)
-          .get_index();
+  bundle_port_index_ = this->DeclareAbstractOutputPort("lcm_visualization",
+                               &SceneGraph::MakePoseBundle,
+                               &SceneGraph::CalcPoseBundle).get_index();
 
   query_port_index_ =
-      this->DeclareAbstractOutputPort(&SceneGraph::MakeQueryObject,
+      this->DeclareAbstractOutputPort("query", &SceneGraph::MakeQueryObject,
                                       &SceneGraph::CalcQueryObject)
           .get_index();
 }

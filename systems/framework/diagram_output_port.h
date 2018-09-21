@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
@@ -43,6 +44,8 @@ class DiagramOutputPort final : public OutputPort<T> {
       subsystems that is to be forwarded to the new port.
   @param source_subsystem_index The index of the child subsystem that owns
       `source_output_port`.
+  @param name A name for the port.  Output ports names should be unique
+       within the `diagram` System.
 
   @pre The `diagram` System must actually be a Diagram.
   @pre `diagram` lifetime must exceed the port's; we retain the pointer here.
@@ -62,10 +65,11 @@ class DiagramOutputPort final : public OutputPort<T> {
                     OutputPortIndex index,
                     DependencyTicket ticket,
                     const OutputPort<T>* source_output_port,
-                    SubsystemIndex source_subsystem_index)
+                    SubsystemIndex source_subsystem_index,
+                    const std::string name)
       : OutputPort<T>(diagram, system_base, index, ticket,
                       source_output_port->get_data_type(),
-                      source_output_port->size()),
+                      source_output_port->size(), name),
         source_output_port_(source_output_port),
         source_subsystem_index_(source_subsystem_index) {
     DRAKE_DEMAND(index.is_valid() && ticket.is_valid());

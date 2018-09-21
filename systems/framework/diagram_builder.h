@@ -172,7 +172,7 @@ class DiagramBuilder {
     // The requirement that subsystem names are unique guarantees uniqueness
     // of the port names.
     const std::string port_name =
-        name.empty() ? input.get_system()->get_name() + ":" + input.get_name()
+        name.empty() ? input.get_system()->get_name() + "_" + input.get_name()
                      : name;
 
     input_port_names_.push_back(port_name);
@@ -181,13 +181,23 @@ class DiagramBuilder {
   }
 
   /// Declares that the given @p output port of a constituent system is an
-  /// output of the entire diagram.
+  /// output of the entire diagram.  @p name is an optional name for the output
+  /// port; if it is unspecified or empty, then a default name will be provided.
   /// @return The index of the exported output port of the entire diagram.
-  OutputPortIndex ExportOutput(const OutputPort<T>& output) {
+  OutputPortIndex ExportOutput(const OutputPort<T>& output,
+                               const std::string& name = "") {
     ThrowIfSystemNotRegistered(&output.get_system());
     OutputPortIndex return_id(output_port_ids_.size());
     output_port_ids_.push_back(
         OutputPortLocator{&output.get_system(), output.get_index()});
+
+    // The requirement that subsystem names are unique guarantees uniqueness
+    // of the port names.
+    const std::string port_name =
+        name.empty() ? output.get_system().get_name() + "_" + output.get_name()
+                     : std::move(name);
+    output_port_names_.push_back(port_name);
+
     return return_id;
   }
 
@@ -369,6 +379,7 @@ class DiagramBuilder {
     blueprint->input_port_ids = input_port_ids_;
     blueprint->input_port_names = input_port_names_;
     blueprint->output_port_ids = output_port_ids_;
+    blueprint->output_port_names = output_port_names_;
     blueprint->connection_map = connection_map_;
     blueprint->systems = std::move(registered_systems_);
 
@@ -379,6 +390,7 @@ class DiagramBuilder {
   std::vector<InputPortLocator> input_port_ids_;
   std::vector<std::string> input_port_names_;
   std::vector<OutputPortLocator> output_port_ids_;
+  std::vector<std::string> output_port_names_;
 
   // For fast membership queries: has this input port already been declared?
   std::set<InputPortLocator> diagram_input_set_;

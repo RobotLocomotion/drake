@@ -48,6 +48,7 @@ struct Impl {
     using Base::Base;
     // Expose protected methods for binding.
     using Base::DeclareInputPort;
+    using Base::DeclareAbstractInputPort;
   };
 
   class LeafSystemPublic : public LeafSystem<T> {
@@ -249,28 +250,44 @@ struct Impl {
 
     // TODO(eric.cousineau): Show constructor, but somehow make sure `pybind11`
     // knows this is abstract?
-    DefineTemplateClassWithDefault<System<T>, PySystem>(
-        m, "System", GetPyParam<T>())
+    DefineTemplateClassWithDefault<System<T>, PySystem>(m, "System",
+                                                        GetPyParam<T>())
         .def("set_name", &System<T>::set_name)
         // Topology.
         .def("get_num_input_ports", &System<T>::get_num_input_ports)
-        .def("get_input_port",
-             &System<T>::get_input_port, py_reference_internal)
+        .def("get_input_port", &System<T>::get_input_port,
+             py_reference_internal)
         .def("get_num_output_ports", &System<T>::get_num_output_ports)
         .def("get_output_port", &System<T>::get_output_port,
              py_reference_internal)
-        .def("_DeclareInputPort", &PySystem::DeclareInputPort,
+        .def("_DeclareInputPort",
+             WrapCallbacks([](PySystem * self, const std::string& name,
+                              PortDataType type, int size,
+                              optional<RandomDistribution> random_type)
+                               -> auto& {
+                                 return self->DeclareInputPort(name, type, size,
+                                                               random_type);
+                               }),
+             py_reference_internal, py::arg("name"), py::arg("type"),
+             py::arg("size"), py::arg("random_type") = nullopt)
+        .def("_DeclareInputPort",
+             WrapCallbacks([](PySystem * self, PortDataType type, int size,
+                              optional<RandomDistribution> random_type)
+                               -> auto& {
+                                 return self->DeclareInputPort(type, size,
+                                                               random_type);
+                               }),
              py_reference_internal, py::arg("type"), py::arg("size"),
-             py::arg("name") = "", py::arg("random_type") = nullopt)
+             py::arg("random_type") = nullopt)
+        .def("_DeclareAbstractInputPort", &PySystem::DeclareAbstractInputPort,
+             py_reference_internal, py::arg("name") = "")
         // - Feedthrough.
         .def("HasAnyDirectFeedthrough", &System<T>::HasAnyDirectFeedthrough)
-        .def("HasDirectFeedthrough",
-             overload_cast_explicit<bool, int>(
-                 &System<T>::HasDirectFeedthrough),
+        .def("HasDirectFeedthrough", overload_cast_explicit<bool, int>(
+                                         &System<T>::HasDirectFeedthrough),
              py::arg("output_port"))
-        .def("HasDirectFeedthrough",
-             overload_cast_explicit<bool, int, int>(
-                 &System<T>::HasDirectFeedthrough),
+        .def("HasDirectFeedthrough", overload_cast_explicit<bool, int, int>(
+                                         &System<T>::HasDirectFeedthrough),
              py::arg("input_port"), py::arg("output_port"))
         // Context.
         .def("CreateDefaultContext", &System<T>::CreateDefaultContext)
@@ -284,45 +301,42 @@ struct Impl {
                   "`System.AllocateOutput(self, Context)` is deprecated. "
                   "Please use `System.AllocateOutput(self)` instead.");
                return self->AllocateOutput();
-             }, py::arg("context"))
-        .def(
-            "EvalVectorInput",
-            [](const System<T>* self, const Context<T>& arg1, int arg2) {
-              return self->EvalVectorInput(arg1, arg2);
-            }, py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 2>())
-        .def(
-            "EvalAbstractInput",
-            [](const System<T>* self, const Context<T>& arg1, int arg2) {
-              return self->EvalAbstractInput(arg1, arg2);
-            }, py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 2>())
+             },
+             py::arg("context"))
+        .def("EvalVectorInput",
+             [](const System<T>* self, const Context<T>& arg1, int arg2) {
+               return self->EvalVectorInput(arg1, arg2);
+             },
+             py_reference,
+             // Keep alive, ownership: `return` keeps `Context` alive.
+             py::keep_alive<0, 2>())
+        .def("EvalAbstractInput",
+             [](const System<T>* self, const Context<T>& arg1, int arg2) {
+               return self->EvalAbstractInput(arg1, arg2);
+             },
+             py_reference,
+             // Keep alive, ownership: `return` keeps `Context` alive.
+             py::keep_alive<0, 2>())
         // Computation.
         .def("CalcOutput", &System<T>::CalcOutput)
         .def("CalcTimeDerivatives", &System<T>::CalcTimeDerivatives)
         // Sugar.
-        .def(
-            "GetGraphvizString",
-            [str_py](const System<T>* self) {
-              // @note This is a workaround; for some reason,
-              // casting this using `py::str` does not work, but directly
-              // calling the Python function (`str_py`) does.
-              return str_py(self->GetGraphvizString());
-            })
+        .def("GetGraphvizString",
+             [str_py](const System<T>* self) {
+               // @note This is a workaround; for some reason,
+               // casting this using `py::str` does not work, but directly
+               // calling the Python function (`str_py`) does.
+               return str_py(self->GetGraphvizString());
+             })
         // Events.
-        .def("Publish",
-             overload_cast_explicit<void, const Context<T>&>(
-                 &System<T>::Publish))
+        .def("Publish", overload_cast_explicit<void, const Context<T>&>(
+                            &System<T>::Publish))
         // Scalar types.
-        .def("ToAutoDiffXd", [](const System<T>& self) {
-           return self.ToAutoDiffXd();
-        })
+        .def("ToAutoDiffXd",
+             [](const System<T>& self) { return self.ToAutoDiffXd(); })
         .def("ToAutoDiffXdMaybe", &System<T>::ToAutoDiffXdMaybe)
-        .def("ToSymbolic", [](const System<T>& self) {
-           return self.ToSymbolic();
-        })
+        .def("ToSymbolic",
+             [](const System<T>& self) { return self.ToSymbolic(); })
         .def("ToSymbolicMaybe", &System<T>::ToSymbolicMaybe);
 
     using AllocCallback = typename LeafOutputPort<T>::AllocCallback;
@@ -330,70 +344,81 @@ struct Impl {
     using CalcVectorCallback = typename LeafOutputPort<T>::CalcVectorCallback;
 
     DefineTemplateClassWithDefault<LeafSystem<T>, PyLeafSystem, System<T>>(
-      m, "LeafSystem", GetPyParam<T>())
-      .def(py::init<>())
-      // TODO(eric.cousineau): It'd be nice if we did not need the user to
-      // propagate scalar conversion information. Ideally, if we could
-      // intercept `self` at this point, when constructing `PyLeafSystem` for
-      // extending Python, we could figure out what user-defined template is
-      // being used, and pass that as the converter. However, that requires an
-      // old-style `py::init`, which is deprecated in Python...
-      .def(py::init<SystemScalarConverter>(), py::arg("converter"))
-      .def(
-          "_DeclareAbstractOutputPort",
-          WrapCallbacks(
-              [](PyLeafSystem* self, AllocCallback arg1,
-                 CalcCallback arg2) -> auto& {
-                return self->DeclareAbstractOutputPort(arg1, arg2);
-              }),
-          py_reference_internal)
-      .def(
-          "_DeclareVectorOutputPort",
-          WrapCallbacks(
-              [](PyLeafSystem* self, const BasicVector<T>& arg1,
-                 CalcVectorCallback arg2) -> auto& {
-                return self->DeclareVectorOutputPort(arg1, arg2);
-              }),
-          py_reference_internal)
-      .def("_DeclarePeriodicPublish", &PyLeafSystem::DeclarePeriodicPublish,
-           py::arg("period_sec"), py::arg("offset_sec") = 0.)
-      .def("_DoPublish", &LeafSystemPublic::DoPublish)
-      // System attributes.
-      .def("_DoHasDirectFeedthrough",
-           &LeafSystemPublic::DoHasDirectFeedthrough)
-      // Continuous state.
-      .def("_DeclareContinuousState",
-           py::overload_cast<int>(&LeafSystemPublic::DeclareContinuousState),
-           py::arg("num_state_variables"))
-      .def("_DeclareContinuousState",
-           py::overload_cast<int, int, int>(
-              &LeafSystemPublic::DeclareContinuousState),
-           py::arg("num_q"), py::arg("num_v"), py::arg("num_z"))
-      .def("_DeclareContinuousState",
-           py::overload_cast<const BasicVector<T>&>(
-              &LeafSystemPublic::DeclareContinuousState),
-           py::arg("model_vector"))
-      // TODO(eric.cousineau): Ideally the downstream class of `BasicVector<T>`
-      // should expose `num_q`, `num_v`, and `num_z`?
-      .def("_DeclareContinuousState",
-           py::overload_cast<const BasicVector<T>&, int, int, int>(
-              &LeafSystemPublic::DeclareContinuousState),
-           py::arg("model_vector"),
-           py::arg("num_q"), py::arg("num_v"), py::arg("num_z"))
-      // Discrete state.
-      // TODO(eric.cousineau): Should there be a `BasicVector<>` overload?
-      .def("_DeclareDiscreteState", &LeafSystemPublic::DeclareDiscreteState)
-      .def("_DeclarePeriodicDiscreteUpdate",
-           &LeafSystemPublic::DeclarePeriodicDiscreteUpdate,
-           py::arg("period_sec"), py::arg("offset_sec") = 0.)
-      .def("_DoCalcTimeDerivatives", &LeafSystemPublic::DoCalcTimeDerivatives)
-      .def("_DoCalcDiscreteVariableUpdates",
-           &LeafSystemPublic::DoCalcDiscreteVariableUpdates)
-      // Abstract state.
-      .def("_DeclareAbstractState",
-           &LeafSystemPublic::DeclareAbstractState,
-           // Keep alive, ownership: `AbstractValue` keeps `self` alive.
-           py::keep_alive<2, 1>());
+        m, "LeafSystem", GetPyParam<T>())
+        .def(py::init<>())
+        // TODO(eric.cousineau): It'd be nice if we did not need the user to
+        // propagate scalar conversion information. Ideally, if we could
+        // intercept `self` at this point, when constructing `PyLeafSystem` for
+        // extending Python, we could figure out what user-defined template is
+        // being used, and pass that as the converter. However, that requires an
+        // old-style `py::init`, which is deprecated in Python...
+        .def(py::init<SystemScalarConverter>(), py::arg("converter"))
+        .def("_DeclareAbstractOutputPort",
+             WrapCallbacks([](PyLeafSystem * self, const std::string& name,
+                              AllocCallback arg1, CalcCallback arg2) -> auto& {
+               return self->DeclareAbstractOutputPort(name, arg1, arg2);
+             }),
+             py_reference_internal, py::arg("name"), py::arg("make"),
+             py::arg("calc"))
+        .def("_DeclareAbstractOutputPort",
+             WrapCallbacks([](PyLeafSystem * self, AllocCallback arg1,
+                              CalcCallback arg2) -> auto& {
+               return self->DeclareAbstractOutputPort(arg1, arg2);
+             }),
+             py_reference_internal, py::arg("make"), py::arg("calc"))
+        .def("_DeclareVectorOutputPort",
+             WrapCallbacks([](PyLeafSystem * self, const std::string& name,
+                              const BasicVector<T>& arg1,
+                              CalcVectorCallback arg2) -> auto& {
+               return self->DeclareVectorOutputPort(name, arg1, arg2);
+             }),
+             py_reference_internal, py::arg("name"), py::arg("model_value"),
+             py::arg("calc"))
+        .def("_DeclareVectorOutputPort",
+             WrapCallbacks([](PyLeafSystem * self, const BasicVector<T>& arg1,
+                              CalcVectorCallback arg2) -> auto& {
+               return self->DeclareVectorOutputPort(arg1, arg2);
+             }),
+             py_reference_internal, py::arg("model_value"), py::arg("calc"))
+        .def("_DeclarePeriodicPublish", &PyLeafSystem::DeclarePeriodicPublish,
+             py::arg("period_sec"), py::arg("offset_sec") = 0.)
+        .def("_DoPublish", &LeafSystemPublic::DoPublish)
+        // System attributes.
+        .def("_DoHasDirectFeedthrough",
+             &LeafSystemPublic::DoHasDirectFeedthrough)
+        // Continuous state.
+        .def("_DeclareContinuousState",
+             py::overload_cast<int>(&LeafSystemPublic::DeclareContinuousState),
+             py::arg("num_state_variables"))
+        .def("_DeclareContinuousState",
+             py::overload_cast<int, int, int>(
+                 &LeafSystemPublic::DeclareContinuousState),
+             py::arg("num_q"), py::arg("num_v"), py::arg("num_z"))
+        .def("_DeclareContinuousState",
+             py::overload_cast<const BasicVector<T>&>(
+                 &LeafSystemPublic::DeclareContinuousState),
+             py::arg("model_vector"))
+        // TODO(eric.cousineau): Ideally the downstream class of
+        // `BasicVector<T>`
+        // should expose `num_q`, `num_v`, and `num_z`?
+        .def("_DeclareContinuousState",
+             py::overload_cast<const BasicVector<T>&, int, int, int>(
+                 &LeafSystemPublic::DeclareContinuousState),
+             py::arg("model_vector"), py::arg("num_q"), py::arg("num_v"),
+             py::arg("num_z"))
+        // Discrete state.
+        // TODO(eric.cousineau): Should there be a `BasicVector<>` overload?
+        .def("_DeclareDiscreteState", &LeafSystemPublic::DeclareDiscreteState)
+        .def("_DeclarePeriodicDiscreteUpdate",
+             &LeafSystemPublic::DeclarePeriodicDiscreteUpdate,
+             py::arg("period_sec"), py::arg("offset_sec") = 0.)
+        .def("_DoCalcTimeDerivatives", &LeafSystemPublic::DoCalcTimeDerivatives)
+        .def("_DoCalcDiscreteVariableUpdates",
+             &LeafSystemPublic::DoCalcDiscreteVariableUpdates)
+        // Abstract state.
+        .def("_DeclareAbstractState", &LeafSystemPublic::DeclareAbstractState,
+             // Keep alive, ownership: `AbstractValue` keeps `self` alive.
+             py::keep_alive<2, 1>());
 
     DefineTemplateClassWithDefault<Diagram<T>, System<T>>(
         m, "Diagram", GetPyParam<T>())

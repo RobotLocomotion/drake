@@ -1640,33 +1640,45 @@ class System : public SystemBase {
   /// @throws std::logic_error.
   /// @returns the declared port.
   const InputPort<T>& DeclareInputPort(
-      PortDataType type, int size, const std::string& name = "",
+      const std::string& name, PortDataType type, int size,
       optional<RandomDistribution> random_type = nullopt) {
     const InputPortIndex port_index(get_num_input_ports());
 
-    const std::string port_name =
-        name.empty() ? "u" + std::to_string(port_index) : name;
     // Check that name is unique.
     for (InputPortIndex i{0}; i < port_index; i++) {
-      if (port_name == get_input_port(i).get_name()) {
+      if (name == get_input_port(i).get_name()) {
         throw std::logic_error("System " + GetSystemName() +
-                               " already has an input port named " + port_name);
+                               " already has an input port named " + name);
       }
     }
 
     const DependencyTicket port_ticket(this->assign_next_dependency_ticket());
     this->AddInputPort(
         std::make_unique<InputPort<T>>(
-            port_index, port_ticket, type, size, port_name, random_type, this,
+            port_index, port_ticket, type, size, name, random_type, this,
             this));
     return get_input_port(port_index);
   }
 
+  /// See the nearly identical signature with an additional (first) argument
+  /// specifying the port name.  This version will be deprecated as discussed
+  /// in #9447.
+  const InputPort<T>& DeclareInputPort(
+      PortDataType type, int size,
+      optional<RandomDistribution> random_type = nullopt) {
+    const std::string name = "u" + std::to_string(this->get_num_input_ports());
+    return DeclareInputPort(name, type, size, random_type);
+  }
+
+
   /// Adds an abstract-valued port to the input topology.
   /// @returns the declared port.
+  // TODO(sherm1): Remove default value for name (see #9447)
   const InputPort<T>& DeclareAbstractInputPort(
       const std::string& name = "") {
-    return DeclareInputPort(kAbstractValued, 0 /* size */, name);
+    const std::string port_name =
+        name.empty() ? "u" + std::to_string(this->get_num_input_ports()) : name;
+    return DeclareInputPort(port_name, kAbstractValued, 0 /* size */);
   }
   //@}
 

@@ -48,7 +48,7 @@ class MyOutputPort : public OutputPort<double> {
   MyOutputPort(const System<double>* diagram, SystemBase* system_base,
                OutputPortIndex index, DependencyTicket ticket)
       : OutputPort<double>(diagram, system_base, index, ticket, kVectorValued,
-                           2) {}
+                           2, "my_output") {}
 
   std::unique_ptr<AbstractValue> DoAllocate() const override {
     return AbstractValue::Make<BasicVector<double>>(
@@ -195,6 +195,7 @@ class LeafOutputPortTest : public ::testing::Test {
   LeafOutputPort<double> absport_general_{
       &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
       &dummy_,  // implicit_cast<SystemBase*>(&dummy_)
+      "absport",
       OutputPortIndex(dummy_.get_num_output_ports()),
       dummy_.assign_next_dependency_ticket(), kAbstractValued, 0 /* size */,
       &dummy_.DeclareCacheEntry(
@@ -202,6 +203,7 @@ class LeafOutputPortTest : public ::testing::Test {
   LeafOutputPort<double> vecport_general_{
       &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
       &dummy_,  // implicit_cast<SystemBase*>(&dummy_)
+      "vecport",
       OutputPortIndex(dummy_.get_num_output_ports()),
       dummy_.assign_next_dependency_ticket(), kVectorValued, 3 /* size */,
       &dummy_.DeclareCacheEntry(
