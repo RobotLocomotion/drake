@@ -441,8 +441,6 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTrue(np.allclose(v_ll.translational(),
                                     v_WB[3].translational()))
 
-    #    def test_eval_body_spatial_velocity_in_world(self):
-
     # Tests both EvalBodyPoseInWorld() and CalcAllBodyPosesInWorld().
     def test_body_poses_in_world(self):
         file_name = FindResourceOrThrow(
