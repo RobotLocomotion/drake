@@ -9,8 +9,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
-#include "drake/multibody/multibody_tree/position_kinematics_cache.h"
-#include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
@@ -23,7 +21,7 @@ namespace multibody {
 /// %MultibodyTreeContext is an object that contains all the information
 /// needed to uniquely determine the state of a MultibodyTree.
 /// %MultibodyTreeContext provides a collection of convenient access methods to
-/// retrieve generalized positions, velocities, cache entries, etc. Users should
+/// retrieve generalized positions and velocities. Users should
 /// not need to make calls to these methods directly but rather access
 /// portions of a MultibodyTree state through the API provided by
 /// the different MultibodyTree elements such as Body, Frame, etc.
@@ -36,6 +34,7 @@ namespace multibody {
 /// - AutoDiffXd
 ///
 /// They are already available to link against in the containing library.
+// TODO(sherm1) Remove this class and just use a LeafContext directly.
 template <typename T>
 class MultibodyTreeContext: public systems::LeafContext<T> {
  public:
@@ -57,43 +56,6 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
       systems::LeafContext<T>(),
       topology_(topology),
       is_state_discrete_(discrete_state) {
-    using systems::AbstractValue;
-    using systems::BasicVector;
-    using systems::Context;
-    using systems::ContinuousState;
-    using systems::DiscreteValues;
-    using systems::LeafContext;
-    using systems::Value;
-
-    // Allocate continuous state.
-    const int num_positions = topology_.num_positions();
-    const int num_velocities = topology_.num_velocities();
-    const int num_states = topology_.num_states();
-
-    // TODO(amcastro-tri): Consider inheriting a more specific BasicVector.
-    // See EndlessRoadCar<T>::AllocateContinuousState().
-    // TODO(amcastro-tri): This code needs some fixing. This constructor gets
-    // called by MultibodyPlant when making its context. However, the system
-    // infrastructure evolved to allocate things into the context as they get
-    // declared. The result, the memory here allocated gets thrown away when the
-    // system creates the default context. However, this is still needed for
-    // MultibodyTree stand alone tests.
-    if (!is_state_discrete()) {
-      auto xc = std::make_unique<ContinuousState<T>>(
-          std::make_unique<BasicVector<T>>(num_states),
-          num_positions, num_velocities, 0);
-      this->init_continuous_state(std::move(xc));
-    } else {
-      auto xd = std::make_unique<DiscreteValues<T>>(
-          std::make_unique<BasicVector<T>>(num_states));
-      this->init_discrete_state(std::move(xd));
-    }
-
-    // TODO(amcastro-tri): Create cache entries.
-    // For instance, for PositionKinematicsCache so that it doesn't get
-    // re-allocated and re-computed every time is needed.
-    pc_ = std::make_unique<PositionKinematicsCache<T>>(topology_);
-    vc_ = std::make_unique<VelocityKinematicsCache<T>>(topology_);
   }
 
   /// Returns the size of the generalized positions vector.
@@ -224,36 +186,8 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     return x.nestedExpression().segment(start, count);
   }
 
-  // TODO(amcastro-tri): Mark as deprecated when caching lands.
-
-  /// @name KinematicsCacheAccessors
-  ///@{
-  /// Accessors to the kinematics caches stored in MultibodyTreeContext.
-  /// These will be deprecated once caching lands.
-  const PositionKinematicsCache<T>& get_position_kinematics_cache() const {
-    return *pc_;
-  }
-
-  const VelocityKinematicsCache<T>& get_velocity_kinematics_cache() const {
-    return *vc_;
-  }
-
-  PositionKinematicsCache<T>& get_mutable_position_kinematics_cache() const {
-    return *pc_;
-  }
-
-  VelocityKinematicsCache<T>& get_mutable_velocity_kinematics_cache() const {
-    return *vc_;
-  }
-  ///@}
-
  private:
   const MultibodyTreeTopology topology_;
-
-  // Temporary solution for fake cache entries to help stabilize the API.
-  // TODO(amcastro-tri): Remove these when caching lands.
-  std::unique_ptr<PositionKinematicsCache<T>> pc_;
-  std::unique_ptr<VelocityKinematicsCache<T>> vc_;
 
   // If `true`, this context stores a discrete state. If `false` the state is
   // stored as continuous state.
