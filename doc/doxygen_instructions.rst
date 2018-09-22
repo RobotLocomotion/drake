@@ -16,6 +16,18 @@ Coming soon. See issue
 `#2051 <https://github.com/RobotLocomotion/drake/issues/2051>`_ and PR
 `#2359 <https://github.com/RobotLocomotion/drake/pull/2359>`_.
 
+Classes that implement the `drake::systems::System <http://drake.mit
+.edu/doxygen_cxx/classdrake_1_1systems_1_1_system.html>`_ interface should add a
+simple diagram documenting their input and output ports using the macro:
+
+.. code-block:: python
+
+  @system{ system name,
+           @input_port{input port 1 name} @input_port{input port 2 name},
+           @output_port{output port 1 name} @output_port{output port 2 name}}
+
+Note that the comma delimeter separates the input and output port listings
+(there is no comma between ports).
 
 Documentation Tips and Tricks
 =============================
