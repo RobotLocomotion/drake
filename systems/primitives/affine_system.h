@@ -15,6 +15,13 @@ namespace systems {
  * Base class for a discrete- or continuous-time, time-varying affine
  * system, with potentially time-varying coefficients.
  *
+ * @ingroup primitive_systems
+ *
+ * @system{TimeVaryingAffineSystem,
+ *    @input_port{u(t)},
+ *    @output_port{y(t)}
+ * }
+ *
  * If `time_period > 0.0`, then the affine system will have the state update:
  *   @f[ x(t+h) = A(t) x(t) + B(t) u(t) + f_0(t), @f]
  * where `h` is the time_period.  If `time_period == 0.0`, then the system will
@@ -27,6 +34,8 @@ namespace systems {
  * where `y` denotes the output vector.
  *
  * @tparam T The scalar element type, which must be a valid Eigen scalar.
+ *
+ * @see AffineSystem
  */
 template <typename T>
 class TimeVaryingAffineSystem : public LeafSystem<T> {
@@ -101,6 +110,11 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
 };
 
 /// A discrete OR continuous affine system (with constant coefficients).
+///
+/// @system{AffineSystem,
+///   @input_port{u(t)},
+///   @output_port{y(t)}
+/// }
 ///
 /// Let `u` denote the input vector, `x` denote the state vector, and
 /// `y` denote the output vector.
