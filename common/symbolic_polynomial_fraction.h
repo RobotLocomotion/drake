@@ -20,6 +20,12 @@ namespace symbolic {
  * convert the constraint f(x) = h(x) (where h(x) is a polynomial) to a
  * polynomial constraint p(x) - q(x) * h(x) = 0, or convert the inequality
  * constraint f(x) >= h(x) as p(x) - q(x) * h(x) >= 0 if we know q(x) > 0.
+ *
+ * We choose to create this new class instead of using symbolic::Expression.
+ * If we were to use symbolic::Expression to represent polynomial fraction, then
+ * it is quite hard to extract the numerator/denominator for a complicated
+ * expression; for instance, from p1(x) / q1(x) + p2(x) / q2(x) + ... + pn(x) /
+ * qn(x).
  */
 class PolynomialFraction {
  public:
@@ -81,7 +87,7 @@ class PolynomialFraction {
 };
 
 /**
- * Unary minus operatrion for polynomial fraction.
+ * Unary minus operation for polynomial fraction.
  * if f(x) = p(x) / q(x), then -f(x) = (-p(x)) / q(x)
  */
 PolynomialFraction operator-(PolynomialFraction f);
@@ -114,7 +120,11 @@ PolynomialFraction operator/(const Polynomial& p, const PolynomialFraction& f);
 PolynomialFraction operator/(PolynomialFraction f, double c);
 PolynomialFraction operator/(double c, const PolynomialFraction& f);
 
-/// Returns the polynomial fraction @p f raised to @p n.
+/**
+ * Returns the polynomial fraction @p f raised to @p n.
+ * For a positive integer n, (f/g)ⁿ = fⁿ / gⁿ, (f/g)⁻ⁿ = gⁿ / fⁿ, (f/g)⁰ = 0 /
+ * 1.
+ */
 PolynomialFraction pow(const PolynomialFraction& f, int n);
 }  // namespace symbolic
 }  // namespace drake
