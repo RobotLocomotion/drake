@@ -15,6 +15,8 @@ namespace systems {
  * A System that encodes ContactResults into a lcmt_contact_results_for_viz
  * message. It has a single input port with type ContactResults<T> and a
  * single output port with lcmt_contact_results_for_viz.
+ *
+ * @ingroup visualization
  */
 template <typename T>
 class ContactResultsToLcmSystem : public LeafSystem<double> {

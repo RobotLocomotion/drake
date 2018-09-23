@@ -297,6 +297,8 @@ struct assert_if_is_constraint {
  * MathematicalProgram stores the decision variables, the constraints and costs
  * of an optimization problem. The user can solve the problem by calling Solve()
  * function, and obtain the results of the optimization.
+ *
+ * @ingroup solvers
  */
 class MathematicalProgram {
  public:
