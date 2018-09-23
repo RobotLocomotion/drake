@@ -9,8 +9,9 @@
 namespace drake {
 namespace pydrake {
 
-/**
-@page python_bindings Python Bindings
+/** @defgroup python_bindings Python Bindings
+@ingroup technical_notes
+@brief Details on implementing python bindings for the C++ code.
 
 # Overview
 
