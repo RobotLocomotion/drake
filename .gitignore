@@ -61,3 +61,4 @@ xcode
 .cproject
 .project
 .settings
+.bazelrc
