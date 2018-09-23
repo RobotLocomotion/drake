@@ -4,12 +4,13 @@
 
 namespace drake {
 namespace symbolic {
-PolynomialFraction::PolynomialFraction() : numerator_{0}, denominator_{1} {}
+PolynomialFraction::PolynomialFraction()
+    : numerator_{} /* zero polynomial */, denominator_{1} {}
 
 PolynomialFraction::PolynomialFraction(const Polynomial& numerator,
                                        const Polynomial& denominator)
     : numerator_{numerator}, denominator_{denominator} {
-  if (denominator_.EqualTo(Polynomial(0))) {
+  if (denominator_.EqualTo(Polynomial() /* zero polynomial */)) {
     throw std::invalid_argument(
         "PolynomialFraction: the denominator should not be 0.");
   }
@@ -33,7 +34,7 @@ void PolynomialFraction::CheckInvariant() const {
     std::ostringstream oss;
     oss << "Polynomial fraction " << *this
         << " does not satisfy the invariant because the following variable(s) "
-           "are used as indeteriminates in the numerator and decision "
+           "are used as indeterminates in the numerator and decision "
            "variables in the denominator at the same time:\n"
         << vars1 << ".";
     throw std::logic_error(oss.str());
@@ -109,7 +110,7 @@ PolynomialFraction& PolynomialFraction::operator*=(double c) {
 
 PolynomialFraction& PolynomialFraction::operator/=(
     const PolynomialFraction& f) {
-  if (f.numerator().EqualTo(Polynomial(0))) {
+  if (f.numerator().EqualTo(Polynomial())) {
     throw std::logic_error("PolynomialFraction: operator/=: The divider is 0.");
   }
   numerator_ *= f.denominator();
@@ -119,7 +120,7 @@ PolynomialFraction& PolynomialFraction::operator/=(
 }
 
 PolynomialFraction& PolynomialFraction::operator/=(const Polynomial& p) {
-  if (p.EqualTo(Polynomial(0))) {
+  if (p.EqualTo(Polynomial())) {
     throw std::logic_error("PolynomialFraction: operator/=: The divider is 0.");
   }
   denominator_ *= p;

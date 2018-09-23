@@ -189,6 +189,8 @@ TEST_F(SymbolicPolynomialFractionTest, Division) {
 
   EXPECT_THROW(f1 / 0, std::logic_error);
   EXPECT_THROW(f1 / polynomial_zero_, std::logic_error);
+  const PolynomialFraction polynomial_fraction_zero;
+  EXPECT_THROW(f1 / polynomial_fraction_zero, std::logic_error);
 }
 
 TEST_F(SymbolicPolynomialFractionTest, pow) {
