@@ -25,7 +25,7 @@ class SymbolicPolynomialFractionTest : public ::testing::Test {
 
   const Polynomial polynomial_zero_{0};
   const Polynomial polynomial_one_{1};
-  const Polynomial p1_{var_x_ * var_x_ * 2 + var_y_};
+  const Polynomial p1_{var_a_ * var_x_ * var_x_ * 2 + var_y_, var_xy_};
   const Polynomial p2_{var_x_ * var_x_ + 2 * var_y_};
   const Polynomial p3_{var_a_ * var_x_ + var_b_ + var_y_, var_xy_};
   const Polynomial p4_{2 * var_a_ * var_x_ + var_b_ + var_x_ * var_y_, var_xy_};
@@ -203,6 +203,35 @@ TEST_F(SymbolicPolynomialFractionTest, pow) {
   EXPECT_PRED2(PolyFractionEqual, pow(f, -1), PolynomialFraction(p2_, p1_));
   EXPECT_PRED2(PolyFractionEqual, pow(f, -2),
                PolynomialFraction(pow(p2_, 2), pow(p1_, 2)));
+}
+
+TEST_F(SymbolicPolynomialFractionTest, ProductAndAddition) {
+  // Test f1 * f2 + f3 * f4 where f's are all polynomial fractions. This
+  // prouduct-and-addition operation is used in matrix product.
+  const PolynomialFraction f1(p1_, p2_);
+  const PolynomialFraction f2(p3_, p4_);
+  const PolynomialFraction f3(p2_, p4_);
+  const PolynomialFraction f4(p3_, p1_);
+  // (p1 / p2) * (p3 / p4) + (p2 / p4) + (p3 / p1) = (p1*p1*p3*p4 +
+  // p2*p2*p3*p4)/(p1*p2*p4*p4)
+  const PolynomialFraction result = f1 * f2 + f3 * f4;
+  const PolynomialFraction result_expected(
+      p1_ * p1_ * p3_ * p4_ + p2_ * p2_ * p3_ * p4_, p1_ * p2_ * p4_ * p4_);
+  const PolynomialFraction f1_times_f2= f1 * f2;
+  const PolynomialFraction f1_times_f2_expected(p1_ * p3_, p2_ * p4_);
+  // The test in the next line is fine.
+  EXPECT_PRED2(PolyFractionEqual, f1_times_f2, f1_times_f2_expected);
+  const PolynomialFraction f3_times_f4 = f3 * f4;
+  const PolynomialFraction f3_times_f4_expected(p2_ * p3_, p1_ * p4_);
+  // The test in the next line is fine.
+  EXPECT_PRED2(PolyFractionEqual, f3_times_f4, f3_times_f4_expected);
+  // The test in the next line is NOT fine.
+  EXPECT_PRED2(PolyFractionEqual, f1_times_f2 + f3_times_f4, result_expected);
+  // The test in the next line is NOT fine.
+  EXPECT_PRED2(PolyFractionEqual, f1_times_f2_expected + f3_times_f4_expected,
+               result_expected);
+  // The test in the next line is NOT fine.
+  EXPECT_PRED2(PolyFractionEqual, result, result_expected);
 }
 
 }  // namespace
