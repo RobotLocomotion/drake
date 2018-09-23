@@ -3,9 +3,8 @@ namespace drake {
 namespace systems {
 
 /**
-@page stochastic_systems Stochastic Systems
-
-This page describes the implementation details of modeling a
+@defgroup stochastic_systems Stochastic Systems
+@brief This page describes the implementation details of modeling a
 stochastic system in Drake and writing algorithms that explicitly
 leverage the stochastic modeling framework.
 
@@ -64,6 +63,7 @@ System<T>::SetRandomState() and System<T>::SetRandomParameters() are
 expected to call the random number generators in the C++ Standard
 Library.
 
+@ingroup systems
 */
 
 }  // namespace systems

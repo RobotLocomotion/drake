@@ -5,7 +5,7 @@ namespace drake {
 namespace systems {
 
 /** @defgroup cache_design_notes System Cache Design and Implementation Notes
-    @ingroup drake_technical_notes
+    @ingroup systems
 
 <!-- Fluff needed to keep Doxygen from misformatting due to quotes and
      this being in the "autobrief" location. -->

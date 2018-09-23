@@ -1,6 +1,6 @@
 
 
-/** @defgroup rigid_body_systems Rigid-Body Systems
+/** @defgroup rigid_body_systems (Attic) Rigid-Body Tree/Plant
  * @{
  * @ingroup systems
  * @}
