@@ -1,11 +1,8 @@
 
-/** @defgroup automotive_systems Automotive Systems
- *
+/** @addtogroup automotive_systems
+ * @{
  * The `drake/automotive` folder collects automotive-specific System models and
  * related software.
- *
- * @{
- * @ingroup systems
  * @}
  */
 

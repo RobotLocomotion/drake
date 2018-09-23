@@ -5,6 +5,17 @@
 // For example, to link to the notation group: @ref multibody_notation
 // To link to the Spatial Inertia discussion: @ref multibody_spatial_inertia.
 
+
+//------------------------------------------------------------------------------
+// TODO(sherm1) Change Collision Concepts title here when #9467 is fixed.
+/** @addtogroup multibody Multibody Dynamics
+  @{
+    @ingroup algorithms
+    @defgroup multibody_concepts Multibody Dynamics Concepts
+    @defgroup collision_concepts Collision Concepts (RigidBodyPlant only)
+  @}
+ */
+
 //------------------------------------------------------------------------------
 /** @addtogroup multibody_concepts
 
@@ -98,6 +109,7 @@ but then refer in the text to A (source: just @c A) using the
 default font that is much easier to write and to read in the source.
 
 Next topic: @ref multibody_notation_basics
+@ingroup multibody_dynamics
 **/
 
 // Developers: this document is somewhat of an exception to the motherhood-

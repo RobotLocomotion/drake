@@ -39,7 +39,9 @@ namespace multibody_plant {
 
 /// %MultibodyPlant is a Drake system framework representation (see
 /// systems::System) for the model of a physical system consisting of a
-/// collection of interconnected bodies.
+/// collection of interconnected bodies.  See @ref multibody for an overview of
+/// concepts/notation.
+///
 /// %MultibodyPlant provides a user-facing API to:
 /// - add bodies, joints, force elements, and constraints,
 /// - register geometries to a provided SceneGraph instance,
@@ -181,6 +183,7 @@ namespace multibody_plant {
 ///
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
+/// @ingroup systems
 template<typename T>
 class MultibodyPlant : public systems::LeafSystem<T> {
  public:
