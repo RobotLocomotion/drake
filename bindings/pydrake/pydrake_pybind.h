@@ -10,7 +10,7 @@ namespace drake {
 namespace pydrake {
 
 /**
-@page python_bindings Python Bindings
+@defgroup python_bindings Python Bindings
 
 # Overview
 

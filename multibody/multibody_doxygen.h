@@ -5,8 +5,13 @@
 // For example, to link to the notation group: @ref multibody_notation
 // To link to the Spatial Inertia discussion: @ref multibody_spatial_inertia.
 
+
 //------------------------------------------------------------------------------
-/** @addtogroup multibody_concepts
+/** @addtogroup multibody Multibody Dynamics
+
+
+//------------------------------------------------------------------------------
+/** @addtogroup multibody_concepts Multibody Dynamics Concepts
 
 Translating from the mathematics of multibody mechanics to correct code is a
 difficult process and requires careful discipline to ensure that the resulting
@@ -98,6 +103,7 @@ but then refer in the text to A (source: just @c A) using the
 default font that is much easier to write and to read in the source.
 
 Next topic: @ref multibody_notation_basics
+@ingroup multibody_dynamics
 **/
 
 // Developers: this document is somewhat of an exception to the motherhood-
