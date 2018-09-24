@@ -170,19 +170,19 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
   // Load dynamic geometry into their own frames.
   for (const auto& pair : state.frames_) {
     const internal::InternalFrame& frame = pair.second;
-    SourceId s_id = state.get_source_id(frame.get_id());
+    SourceId s_id = state.get_source_id(frame.id());
     const std::string& src_name = state.get_source_name(s_id);
     // TODO(SeanCurtis-TRI): The name in the load message *must* match the name
     // in the update message. Make sure this code and the SceneGraph output
     // use a common code-base to translate (source_id, frame) -> name.
-    message.link[link_index].name = src_name + "::" + frame.get_name();
-    message.link[link_index].robot_num = frame.get_frame_group();
+    message.link[link_index].name = src_name + "::" + frame.name();
+    message.link[link_index].robot_num = frame.frame_group();
     const int geom_count = static_cast<int>(
-        frame.get_child_geometries().size());
+        frame.child_geometries().size());
     message.link[link_index].num_geom = geom_count;
     message.link[link_index].geom.resize(geom_count);
     int geom_index = 0;
-    for (GeometryId geom_id : frame.get_child_geometries()) {
+    for (GeometryId geom_id : frame.child_geometries()) {
       const InternalGeometry& geometry = state.geometries_.at(geom_id);
       GeometryIndex index = geometry.get_engine_index();
       const Isometry3<double> X_FG = state.X_FG_.at(index);
