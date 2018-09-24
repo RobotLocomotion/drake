@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <stdexcept>
+#include <unordered_set>
 #include <utility>
 
 #include "drake/common/autodiff.h"
@@ -1208,6 +1209,26 @@ MatrixX<double> MultibodyTree<T>::MakeStateSelectorMatrix(
   }
 
   return Sx;
+}
+
+template <typename T>
+MatrixX<double> MultibodyTree<T>::MakeStateSelectorMatrix(
+    const std::vector<std::string>& selected_joints) const {
+  // We create a set as we scan selected_joints in order to verify that joint
+  // names in selected_joints appear only once.
+  std::unordered_set<std::string> joints_set;
+
+  // Vector of joint indexes in the order specified in selected_joints.
+  std::vector<JointIndex> selected_joints_indexes;
+  for (const auto& joint_name : selected_joints) {
+    const auto insertion_result = joints_set.insert(joint_name);
+    if (!insertion_result.second) {
+      throw std::logic_error(
+          "Joint named '" + joint_name + "' is repeated multiple times.");
+    }
+    selected_joints_indexes.push_back(GetJointByName(joint_name).index());
+  }
+  return MakeStateSelectorMatrix(selected_joints_indexes);
 }
 
 template <typename T>

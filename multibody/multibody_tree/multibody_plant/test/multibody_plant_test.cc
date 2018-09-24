@@ -1821,6 +1821,10 @@ GTEST_TEST(KukaWithSimpleGripper, StateSelection) {
   EXPECT_EQ(plant.num_positions(), 9);
   EXPECT_EQ(plant.num_velocities(), 9);
 
+  // Selected joints by name.
+  const std::vector<std::string> arm_selected_joints_by_name =
+      {"iiwa_joint_2", "iiwa_joint_7", "iiwa_joint_3"};
+
   std::vector<JointIndex> arm_selected_joints;
   // For this example we are only interested in the state for joints:
   //  - iiwa_joint_2
@@ -1828,12 +1832,10 @@ GTEST_TEST(KukaWithSimpleGripper, StateSelection) {
   //  - iiwa_joint_3
   // In that order.
   // We therefore create a user to joint index map accordingly.
-  arm_selected_joints.push_back(
-      plant.GetJointByName("iiwa_joint_2").index());  // user index = 0.
-  arm_selected_joints.push_back(
-      plant.GetJointByName("iiwa_joint_7").index());  // user index = 1.
-  arm_selected_joints.push_back(
-      plant.GetJointByName("iiwa_joint_3").index());  // user index = 2.
+  for (const auto& joint_name : arm_selected_joints_by_name) {
+    arm_selected_joints.push_back(
+        plant.GetJointByName(joint_name).index());
+  }
 
   // State selector for the arm.
   const MatrixX<double> Sx_arm =
@@ -1860,6 +1862,12 @@ GTEST_TEST(KukaWithSimpleGripper, StateSelection) {
   Sx_arm_expected(4, nq + 6) = 1;  // velocity for second joint, iiwa_joint_7.
   Sx_arm_expected(5, nq + 2) = 1;  // velocity for third joint, iiwa_joint_3.
   EXPECT_EQ(Sx_arm, Sx_arm_expected);
+
+  // State selection using alternative API in which joints are specified by
+  // name.
+  const MatrixX<double> Sx_arm_by_name =
+      plant.tree().MakeStateSelectorMatrix(arm_selected_joints_by_name);
+  EXPECT_EQ(Sx_arm_by_name, Sx_arm_expected);
 
   // Verify the arm's actuation selector.
   MatrixX<double> Su_arm_expected =
