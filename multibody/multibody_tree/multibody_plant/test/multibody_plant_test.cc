@@ -1869,6 +1869,15 @@ GTEST_TEST(KukaWithSimpleGripper, StateSelection) {
       plant.tree().MakeStateSelectorMatrix(arm_selected_joints_by_name);
   EXPECT_EQ(Sx_arm_by_name, Sx_arm_expected);
 
+  // Intentionally attempt to create a state selector from a vector with
+  // repeated joint names in order to verify the method throws.
+  const std::vector<std::string> repeated_joint_names =
+      {"iiwa_joint_2", "iiwa_joint_3", "iiwa_joint_7", "iiwa_joint_3"};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.tree().MakeStateSelectorMatrix(repeated_joint_names),
+      std::logic_error,
+      "Joint named 'iiwa_joint_3' is repeated multiple times.");
+
   // Verify the arm's actuation selector.
   MatrixX<double> Su_arm_expected =
       MatrixX<double>::Zero(plant.num_actuators(), 3);
