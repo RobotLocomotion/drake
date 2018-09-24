@@ -26,8 +26,44 @@ drake_cc_package_library(
     name = "parsing",
     deps = [
         ":multibody_plant_sdf_parser",
+        ":package_map",
+        ":parser_path_utils",
         ":scene_graph_parser_detail",
         ":sdf_parser_common",
+    ],
+)
+
+drake_cc_library(
+    name = "package_map",
+    srcs = [
+        "package_map.cc",
+    ],
+    hdrs = [
+        "package_map.h",
+    ],
+    deps = [
+        "//common",
+        "@spruce",
+        "@tinydir",
+        "@tinyxml2",
+    ],
+)
+
+drake_cc_library(
+    name = "parser_path_utils",
+    srcs = [
+        "parser_path_utils.cc",
+    ],
+    hdrs = [
+        "parser_path_utils.h",
+    ],
+    visibility = [
+        "//attic:__subpackages__",
+    ],
+    deps = [
+        ":package_map",
+        "//common",
+        "@spruce",
     ],
 )
 
@@ -55,10 +91,11 @@ drake_cc_library(
         "scene_graph_parser_detail.h",
     ],
     deps = [
+        ":package_map",
+        ":parser_path_utils",
         ":sdf_parser_common",
         "//geometry:scene_graph",
         "//multibody/multibody_tree/multibody_plant:coulomb_friction",
-        "//multibody/parsers:find_files",
         "@sdformat",
     ],
 )
@@ -84,7 +121,6 @@ drake_cc_googletest(
     data = [
         ":test_models",
         "//multibody/benchmarks/acrobot:models",
-        "//multibody/shapes:test_models",
     ],
     deps = [
         ":multibody_plant_sdf_parser",
@@ -102,6 +138,24 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "package_map_test",
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        ":package_map",
+        "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "parser_path_utils_test",
+    deps = [
+        ":parser_path_utils",
     ],
 )
 

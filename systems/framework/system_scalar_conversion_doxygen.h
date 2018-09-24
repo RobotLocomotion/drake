@@ -1,5 +1,6 @@
 //------------------------------------------------------------------------------
 /** @defgroup system_scalar_conversion System Scalar Conversion
+    @ingroup technical_notes
 
 System scalar conversion refers to cloning a System templatized by one scalar
 type into an identical System that is templatized by a different scalar type.

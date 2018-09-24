@@ -41,8 +41,8 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":find_files",
+        "//attic/multibody/rigid_body_plant:compliant_material",
         "//multibody:rigid_body_tree",
-        "//multibody/rigid_body_plant:compliant_material",
         "@tinydir",
         "@tinyxml2",
     ],
@@ -50,45 +50,19 @@ drake_cc_library(
 
 drake_cc_library(
     name = "find_files",
-    srcs = [
-        "package_map.cc",
-        "parser_path_utils.cc",
-    ],
     hdrs = [
         "package_map.h",
         "parser_path_utils.h",
     ],
     deps = [
-        "//common",
-        "@spruce",
-        "@tinydir",
-        "@tinyxml2",
+        "//multibody/multibody_tree/parsing:package_map",
+        "//multibody/multibody_tree/parsing:parser_path_utils",
     ],
 )
 
 drake_cc_googletest(
     name = "compliant_material_parse_test",
     deps = [":parsers"],
-)
-
-drake_cc_googletest(
-    name = "package_map_test",
-    srcs = ["test/package_map_test/package_map_test.cc"],
-    data = [
-        ":test_models",
-    ],
-    deps = [
-        ":find_files",
-        "//common:find_resource",
-    ],
-)
-
-drake_cc_googletest(
-    name = "parser_path_utils_test",
-    srcs = ["test/parser_path_utils_test.cc"],
-    deps = [
-        ":find_files",
-    ],
 )
 
 drake_cc_googletest(

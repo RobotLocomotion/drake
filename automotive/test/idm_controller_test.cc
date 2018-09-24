@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/dragway/road_geometry.h"
-#include "drake/automotive/monolane_onramp_merge.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"

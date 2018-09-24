@@ -1,4 +1,4 @@
-#include "drake/multibody/parsers/parser_path_utils.h"
+#include "drake/multibody/multibody_tree/parsing/parser_path_utils.h"
 
 #include <fstream>
 #include <string>
@@ -9,7 +9,8 @@
 using std::string;
 
 namespace drake {
-namespace parsers {
+namespace multibody {
+namespace parsing {
 namespace {
 
 // Verifies that GetFullPath() promotes a relative path to an absolute path,
@@ -48,5 +49,6 @@ GTEST_TEST(ParserPathUtilsTest, TestGetFullPathOfEmptyPath) {
 }
 
 }  // namespace
-}  // namespace parsers
+}  // namespace parsing
+}  // namespace multibody
 }  // namespace drake

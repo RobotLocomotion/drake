@@ -15,37 +15,6 @@ First, you **must** install Bazel and build Drake with Bazel, following
 
 To use Drake with CLion, your Drake checkout **must** be named ``drake``.
 
-(See note below about CLion versions compatible with Bazel.)
-
-A Note About Environment Variables
-----------------------------------
-CLion forwards environment variables to the processes it launches, including
-the Bazel client and server. We have a number of Bazel repository rules that
-consult environment variables, especially ``PATH``, to locate external
-dependencies. Therefore, some care is necessary to make sure CLion is launched
-with the environment you actually want!
-
-**Ubuntu users** will generally get good behavior by default, because ``apt``
-installs binaries in reasonable, standard paths, and because most CLion launch
-mechanisms will have already sourced the ``.bashrc``.
-
-**macOS users** will get broken behavior by default.  When you run an macOS app
-graphically, the parent process is `launchd` (PID 1), which provides its own
-standard environment variables to the child process.  In particular, it provides
-a minimal ``PATH`` that does not include ``/usr/local/bin``, where most Homebrew
-executables are installed.  Consequently, the Bazel build will fail to find
-Homebrew dependencies like ``glib`` and ``pkg-config``.
-
-The simplest solution is not to launch CLion graphically. Instead, configure
-your shell environment properly in ``.bashrc``, and launch CLion from the
-command line::
-
-  /Applications/CLion.app/Contents/MacOS/clion
-
-If you strongly prefer clicking on buttons, you might be able to configure the
-``launchd`` environment using ``launchctl``, but this process is finicky. We
-have no reliable recipe for it yet.
-
 Installing CLion
 ----------------
 
@@ -57,10 +26,17 @@ Installing CLion
    academic license `here <https://www.jetbrains.com/shop/eform/students>`_.
 
 The most recent versions that we have tested for compatibility are:
+  - Ubuntu 16.04
   - Bazel 0.16.1
   - CLion 2018.1.6 with:
 
     - Bazel plug-in 2018.08.06.0.1.
+
+Many versions the above (Bazel / CLion / plug-in) are *not* compatible with
+each other.  We strongly suggest using only the versions shown above, when
+working with Drake.
+
+For developers on macOS, see the :ref:`macOS` details.
 
 Upgrading CLion
 ---------------
@@ -358,3 +334,62 @@ Change the following fields in the instructions given above:
 Building the drake addenda lint tool:
 
 ``bazel build //tools/lint:drakelint``
+
+.. _macos:
+
+macOS support
+=============
+
+Google's Bazel plug-in for CLion does not officially support macOS, per
+`bazelbuild/intellij#109 <https://github.com/bazelbuild/intellij/issues/109>`_.
+However, on a best-effort basis, we will document here any tips that Drake
+developers have discovered to fix the compatibility problems.
+
+CPP toolchain
+-------------
+
+CLion users on macOS **must** set this environment variable before starting
+CLion:
+
+``export BAZEL_USE_CPP_ONLY_TOOLCHAIN=1``
+
+CLion's editor needs to locate all C/C++ targets and parse their code (e.g.,
+resolve ``#include`` statements).  Without this variable, the compiler
+auto-detection works well enough to compile the code, but fails to report
+itself as a C/C++ compiler to the IDE.
+
+When this variable is set and the IDE is working correctly, the Bazel Console
+will report a line such as this:
+
+``953 unique C configurations (0 reused), 1104 C targets``
+
+When this variable is *not* set, the IDE will show pervasive "unknown symbol"
+red squiggles, and the Bazel Console will report a line such as this:
+
+``0 unique C configurations (0 reused), 0 C targets``
+
+Environment Variables
+---------------------
+
+CLion forwards environment variables to the processes it launches, including
+the Bazel client and server. We have a number of Bazel repository rules that
+consult environment variables to locate external dependencies, e.g.,
+``SNOPT_PATH`` or ``GUROBI_PATH``. Therefore, some care is necessary to make
+sure CLion is launched with the environment you actually want!
+
+macOS users will get broken behavior by default.  When you run an macOS app
+graphically, the parent process is `launchd` (PID 1), which provides its own
+standard environment variables to the child process.  In particular, it provides
+a minimal ``PATH`` that does not include ``/usr/local/bin``, where most Homebrew
+executables are installed.  Consequently, the Bazel build may fail to find
+Homebrew dependencies like ``glib`` and ``pkg-config``.
+
+The simplest solution is not to launch CLion graphically. Instead, configure
+your shell environment properly in ``.bashrc``, and launch CLion from the
+command line::
+
+  /Applications/CLion.app/Contents/MacOS/clion
+
+If you strongly prefer clicking on buttons, you might be able to configure the
+``launchd`` environment using ``launchctl``, but this process is finicky. We
+have no reliable recipe for it yet.

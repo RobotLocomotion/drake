@@ -9,8 +9,9 @@
 namespace drake {
 namespace pydrake {
 
-/**
-@page python_bindings Python Bindings
+/** @defgroup python_bindings Python Bindings
+@ingroup technical_notes
+@brief Details on implementing python bindings for the C++ code.
 
 # Overview
 
@@ -164,6 +165,19 @@ in `pybind`, and ensure that the trampoline class inherits from the
 `py::wrapper<>` class specific to our fork of `pybind`. This ensures that no
 slicing happens with the subclassed instances.
 
+## Convenience aliases
+
+Some aliases are provided; prefer these to the full spellings.
+
+`namespace py` is a shorthand alias to `pybind11` for consistency.
+
+@see py_reference, py_reference_internal for dealing with %common ownership
+     issues.
+
+@note Downstream users should avoid `using namespace drake::pydrake`, as
+this may create ambiguous aliases (especially for GCC). Instead, consider
+an alias.
+
 # Interactive Debugging with Bazel
 
 If you would like to interactively debug binding code (using IPython for
@@ -204,13 +218,9 @@ If using CLion, consider using `gdbserver`.
 
 // TODO(eric.cousineau): Add API naming conventions (#7819).
 
-/// @defgroup Convenience aliases
-/// @{
-
-/// Shorthand alias to `pybind` for consistency.
-/// @note Downstream users should avoid `using namespace drake::pydrake`, as
-/// this may create ambiguous aliases (especially for GCC). Instead, consider
-/// an alias.
+// Note: Doxygen apparently doesn't process comments for namespace aliases. If
+// you put Doxygen comments here they will apply instead to py_reference. See
+// the "Convenience aliases" section above for documentation.
 namespace py = pybind11;
 
 /// Used when returning `T& or `const T&`, as pybind's default behavior is to
@@ -222,8 +232,6 @@ const auto py_reference = py::return_value_policy::reference;
 /// implies "Keep alive, reference: `return` keeps` self` alive".
 const auto py_reference_internal =
     py::return_value_policy::reference_internal;
-
-/// @}
 
 // Implementation for `overload_cast_explicit`. We must use this structure so
 // that we can constrain what is inferred. Otherwise, the ambiguity confuses

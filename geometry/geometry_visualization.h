@@ -66,7 +66,9 @@ class GeometryVisualizationImpl {
  @pre The given `scene_graph` must be contained within the supplied
       DiagramBuilder.
 
- @see geometry::DispatchLoadMessage() */
+ @see geometry::DispatchLoadMessage()
+ @ingroup visualization
+ */
 void ConnectDrakeVisualizer(systems::DiagramBuilder<double>* builder,
                             const SceneGraph<double>& scene_graph,
                             lcm::DrakeLcmInterface* lcm = nullptr);

@@ -260,6 +260,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "implicit_euler_integrator_test",
     timeout = "moderate",
+    shard_count = 2,
     # Adding cache invalidation made this take too long with Valgrind.
     # See Drake issue #9261.
     tags = [
@@ -295,10 +296,10 @@ drake_cc_googletest(
     timeout = "moderate",
     deps = [
         ":runge_kutta3_integrator",
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant",
         "//systems/analysis/test_utilities",
     ],
 )
@@ -309,8 +310,8 @@ drake_cc_googletest(
     deps = [
         ":explicit_euler_integrator",
         ":semi_explicit_euler_integrator",
-        "//multibody/joints",
-        "//multibody/rigid_body_plant",
+        "//attic/multibody/joints",
+        "//attic/multibody/rigid_body_plant",
         "//systems/analysis/test_utilities",
     ],
 )

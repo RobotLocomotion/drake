@@ -302,6 +302,18 @@ Formula operator>=(const Expression& e1, const Expression& e2);
  */
 Formula isnan(const Expression& e);
 
+/** Returns a Formula determining if the given expression @p e is a
+ * positive or negative infinity.
+ * @throws std::runtime_error if NaN is detected during evaluation.
+ */
+Formula isinf(const Expression& e);
+
+/** Returns a Formula determining if the given expression @p e has a finite
+ * value.
+ * @throws std::runtime_error if NaN is detected during evaluation.
+ */
+Formula isfinite(const Expression& e);
+
 /** Returns a symbolic formula constraining @p m to be a positive-semidefinite
  * matrix. By definition, a symmetric matrix @p m is positive-semidefinte if xᵀ
  * m x ≥ 0 for all vector x ∈ ℝⁿ.
@@ -1086,10 +1098,14 @@ struct ConditionTraits<symbolic::Formula> {
 /// Specialization of ExtractBoolOrThrow for `Bool<symbolic::Expression>` which
 /// includes `symbolic::Formula`. It calls `Evaluate` with an empty environment
 /// and throws if there are free variables in the expression.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <>
+DRAKE_DEPRECATED("Bool<T> is deprecated.")
 inline bool ExtractBoolOrThrow(const Bool<symbolic::Expression>& b) {
   return b.value().Evaluate();
 }
+#pragma GCC diagnostic pop
 
 }  // namespace drake
 

@@ -29,16 +29,20 @@ using Which = api::LaneEnd::Which;
 // StartReference::Spec using an Endpoint.
 GTEST_TEST(StartReferenceSpecTest, Endpoint) {
   const Endpoint point{{1., 2., 3.}, {4., 5., 6., 7.}};
-  const double kVeryExact{1e-15};
+  constexpr double kEndpointLinearTolerance{1e-15};
+  constexpr double kEndpointAngularTolerance{1e-15};
 
   const StartReference::Spec forward_dut =
       StartReference().at(point, Direction::kForward);
-  EXPECT_TRUE(test::IsEndpointClose(forward_dut.endpoint(), point, kVeryExact));
+  EXPECT_TRUE(test::IsEndpointClose(forward_dut.endpoint(), point,
+                                    kEndpointLinearTolerance,
+                                    kEndpointAngularTolerance));
 
   const StartReference::Spec reversed_dut =
       StartReference().at(point, Direction::kReverse);
   EXPECT_TRUE(test::IsEndpointClose(reversed_dut.endpoint(), point.reverse(),
-                                    kVeryExact));
+                                    kEndpointLinearTolerance,
+                                    kEndpointAngularTolerance));
 }
 
 // StartReference::Spec using a connection's reference curve.
@@ -56,7 +60,8 @@ GTEST_TEST(StartReferenceSpecTest, Connection) {
   const Connection conn("conn", kStartEndpoint, kFlatZ, 2, 0., 1., 1.5, 1.5,
                         kLineOffset, kLinearTolerance, kScaleLength,
                         kComputationPolicy);
-  const double kVeryExact{1e-15};
+  constexpr double kEndpointLinearTolerance{1e-15};
+  constexpr double kEndpointAngularTolerance{1e-15};
 
   const StartReference::Spec forward_start_dut =
       StartReference().at(conn, Which::kStart, Direction::kForward);
@@ -64,7 +69,8 @@ GTEST_TEST(StartReferenceSpecTest, Connection) {
                                                  kFlatZWithoutThetaDot};
   EXPECT_TRUE(test::IsEndpointClose(forward_start_dut.endpoint(),
                                     expected_forward_start_endpoint,
-                                    kVeryExact));
+                                    kEndpointLinearTolerance,
+                                    kEndpointAngularTolerance));
 
   const StartReference::Spec reversed_start_dut =
       StartReference().at(conn, Which::kStart, Direction::kReverse);
@@ -72,36 +78,44 @@ GTEST_TEST(StartReferenceSpecTest, Connection) {
       kStartXy.reverse(), kFlatZWithoutThetaDot.reverse()};
   EXPECT_TRUE(test::IsEndpointClose(reversed_start_dut.endpoint(),
                                     expected_reversed_start_endpoint,
-                                    kVeryExact));
+                                    kEndpointLinearTolerance,
+                                    kEndpointAngularTolerance));
 
   const StartReference::Spec forward_end_dut =
       StartReference().at(conn, Which::kFinish, Direction::kForward);
   const Endpoint expected_forward_end_endpoint{kEndXy, kFlatZWithoutThetaDot};
   EXPECT_TRUE(test::IsEndpointClose(forward_end_dut.endpoint(),
-                                    expected_forward_end_endpoint, kVeryExact));
+                                    expected_forward_end_endpoint,
+                                    kEndpointLinearTolerance,
+                                    kEndpointAngularTolerance));
 
   const StartReference::Spec reversed_end_dut =
       StartReference().at(conn, Which::kFinish, Direction::kReverse);
   const Endpoint expected_reversed_end_endpoint{
       kEndXy.reverse(), kFlatZWithoutThetaDot.reverse()};
-  EXPECT_TRUE(test::IsEndpointClose(
-      reversed_end_dut.endpoint(), expected_reversed_end_endpoint, kVeryExact));
+  EXPECT_TRUE(test::IsEndpointClose(reversed_end_dut.endpoint(),
+                                    expected_reversed_end_endpoint,
+                                    kEndpointLinearTolerance,
+                                    kEndpointAngularTolerance));
 }
 
 // EndReference::Spec using an EndpointZ.
 GTEST_TEST(EndReferenceSpecTest, Endpoint) {
   const EndpointZ z_point{4., 5., 6., 7.};
-  const double kVeryExact{1e-15};
+  constexpr double kEndpointLinearTolerance{1e-15};
+  constexpr double kEndpointAngularTolerance{1e-15};
 
   const EndReference::Spec z_forward_dut =
       EndReference().z_at(z_point, Direction::kForward);
-  EXPECT_TRUE(
-      test::IsEndpointZClose(z_forward_dut.endpoint_z(), z_point, kVeryExact));
+  EXPECT_TRUE(test::IsEndpointZClose(
+      z_forward_dut.endpoint_z(), z_point,
+      kEndpointLinearTolerance, kEndpointAngularTolerance));
 
   const EndReference::Spec z_reversed_dut =
       EndReference().z_at(z_point, Direction::kReverse);
-  EXPECT_TRUE(test::IsEndpointZClose(z_reversed_dut.endpoint_z(),
-                                     z_point.reverse(), kVeryExact));
+  EXPECT_TRUE(test::IsEndpointZClose(
+      z_reversed_dut.endpoint_z(), z_point.reverse(),
+      kEndpointLinearTolerance, kEndpointAngularTolerance));
 }
 
 // EndReference::Spec using a connection's reference curve.
@@ -117,30 +131,37 @@ GTEST_TEST(EndReferenceSpecTest, Connection) {
   const Connection conn("conn", kStartEndpoint, kFlatZ, 2, 0., 1., 1.5, 1.5,
                         LineOffset(10.), kLinearTolerance, kScaleLength,
                         kComputationPolicy);
-  const double kVeryExact{1e-15};
+  constexpr double kEndpointLinearTolerance{1e-15};
+  constexpr double kEndpointAngularTolerance{1e-15};
 
   const EndReference::Spec forward_start_dut =
       EndReference().z_at(conn, Which::kStart, Direction::kForward);
   const EndpointZ expected_forward_start_endpoint{kFlatZWithoutThetaDot};
   EXPECT_TRUE(test::IsEndpointZClose(forward_start_dut.endpoint_z(),
-                                     kFlatZWithoutThetaDot, kVeryExact));
+                                     kFlatZWithoutThetaDot,
+                                     kEndpointLinearTolerance,
+                                     kEndpointAngularTolerance));
 
   const EndReference::Spec reversed_start_dut =
       EndReference().z_at(conn, Which::kStart, Direction::kReverse);
   EXPECT_TRUE(test::IsEndpointZClose(reversed_start_dut.endpoint_z(),
                                      kFlatZWithoutThetaDot.reverse(),
-                                     kVeryExact));
+                                     kEndpointLinearTolerance,
+                                     kEndpointAngularTolerance));
 
   const EndReference::Spec forward_end_dut =
       EndReference().z_at(conn, Which::kFinish, Direction::kForward);
   EXPECT_TRUE(test::IsEndpointZClose(forward_end_dut.endpoint_z(),
-                                     kFlatZWithoutThetaDot, kVeryExact));
+                                     kFlatZWithoutThetaDot,
+                                     kEndpointLinearTolerance,
+                                     kEndpointAngularTolerance));
 
   const EndReference::Spec reversed_end_dut =
       EndReference().z_at(conn, Which::kFinish, Direction::kReverse);
   EXPECT_TRUE(test::IsEndpointZClose(reversed_end_dut.endpoint_z(),
                                      kFlatZWithoutThetaDot.reverse(),
-                                     kVeryExact));
+                                     kEndpointLinearTolerance,
+                                     kEndpointAngularTolerance));
 }
 
 // LaneLayout check.
@@ -169,7 +190,8 @@ GTEST_TEST(MultilaneBuilderTest, ParameterConstructor) {
   const ComputationPolicy kComputationPolicy{
     ComputationPolicy::kPreferAccuracy};
   Builder builder(kLaneWidth, kElevationBounds, kLinearTolerance,
-                  kAngularTolerance, kScaleLength, kComputationPolicy);
+                  kAngularTolerance, kScaleLength, kComputationPolicy,
+                  std::make_unique<GroupFactory>());
   EXPECT_EQ(builder.get_lane_width(), kLaneWidth);
   EXPECT_TRUE(api::test::IsHBoundsClose(builder.get_elevation_bounds(),
                                         kElevationBounds, 0.));
@@ -181,16 +203,18 @@ GTEST_TEST(MultilaneBuilderTest, ParameterConstructor) {
 
 // Checks that Connection instances are properly built by the Builder.
 GTEST_TEST(MultilaneBuilderTest, ProperConnections) {
-  const double kVeryExact = 1e-15;
-  const double kLaneWidth = 4.;
+  constexpr double kLaneWidth = 4.;
   const api::HBounds kElevationBounds(0., 5.);
-  const double kLinearTolerance = 0.01;
-  const double kAngularTolerance = 0.01 * M_PI;
-  const double kScaleLength = 1.0;
-  const ComputationPolicy kComputationPolicy{
+  constexpr double kLinearTolerance = 0.01;
+  constexpr double kAngularTolerance = 0.01 * M_PI;
+  constexpr double kEndpointLinearTolerance{1e-15};
+  constexpr double kEndpointAngularTolerance{1e-15};
+  constexpr double kScaleLength = 1.0;
+  constexpr ComputationPolicy kComputationPolicy{
     ComputationPolicy::kPreferAccuracy};
   Builder builder(kLaneWidth, kElevationBounds, kLinearTolerance,
-                  kAngularTolerance, kScaleLength, kComputationPolicy);
+                  kAngularTolerance, kScaleLength, kComputationPolicy,
+                  std::make_unique<GroupFactory>());
 
   const double kLeftShoulder = 2.;
   const double kRightShoulder = 2.;
@@ -212,7 +236,9 @@ GTEST_TEST(MultilaneBuilderTest, ProperConnections) {
   EXPECT_EQ(line_connection->id(), "line");
   EXPECT_EQ(line_connection->r0(), kRefR0);
   EXPECT_TRUE(test::IsEndpointClose(line_connection->start(),
-                                    kStartEndpoint, kVeryExact));
+                                    kStartEndpoint,
+                                    kEndpointLinearTolerance,
+                                    kEndpointAngularTolerance));
   EXPECT_EQ(line_connection->lane_width(), kLaneWidth);
   EXPECT_EQ(line_connection->left_shoulder(), kLeftShoulder);
   EXPECT_EQ(line_connection->right_shoulder(), kRightShoulder);
@@ -230,7 +256,8 @@ GTEST_TEST(MultilaneBuilderTest, ProperConnections) {
   EXPECT_EQ(arc_connection->r0(), kRefR0);
   EXPECT_TRUE(test::IsEndpointClose(arc_connection->start(),
                                     line_connection->end(),
-                                    kVeryExact));
+                                    kEndpointLinearTolerance,
+                                    kEndpointAngularTolerance));
   EXPECT_EQ(arc_connection->lane_width(), kLaneWidth);
   EXPECT_EQ(arc_connection->left_shoulder(), kLeftShoulder);
   EXPECT_EQ(arc_connection->right_shoulder(), kRightShoulder);
@@ -249,9 +276,8 @@ GTEST_TEST(MultilaneBuilderTest, Fig8) {
   const double kScaleLength = 1.0;
   const ComputationPolicy kComputationPolicy{
     ComputationPolicy::kPreferAccuracy};
-  Builder b(kLaneWidth, kElevationBounds,
-            kLinearTolerance, kAngularTolerance,
-            kScaleLength, kComputationPolicy);
+  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
+            kScaleLength, kComputationPolicy, std::make_unique<GroupFactory>());
 
   const double kLeftShoulder = 2.;
   const double kRightShoulder = 2.;
@@ -374,9 +400,8 @@ GTEST_TEST(MultilaneBuilderTest, QuadRing) {
   const double kScaleLength = 1.0;
   const ComputationPolicy kComputationPolicy{
     ComputationPolicy::kPreferAccuracy};
-  Builder b(kLaneWidth, kElevationBounds,
-            kLinearTolerance, kAngularTolerance,
-            kScaleLength, kComputationPolicy);
+  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
+            kScaleLength, kComputationPolicy, std::make_unique<GroupFactory>());
 
   const double kLeftShoulder = 2.;
   const double kRightShoulder = 2.;
@@ -538,7 +563,7 @@ class MultilaneBuilderReferenceCurvePrimitivesTest : public ::testing::Test {
 // Checks that a multi-lane line segment is correctly created.
 TEST_F(MultilaneBuilderReferenceCurvePrimitivesTest, LineSegment) {
   Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
-            kScaleLength, kComputationPolicy);
+            kScaleLength, kComputationPolicy, std::make_unique<GroupFactory>());
 
   const LineOffset kLineOffset(50.);
   b.Connect("c0", kLaneLayout, StartReference().at(kStart, Direction::kForward),
@@ -591,7 +616,7 @@ TEST_F(MultilaneBuilderReferenceCurvePrimitivesTest, LineSegment) {
 // Checks that a multi-lane arc segment is correctly created.
 TEST_F(MultilaneBuilderReferenceCurvePrimitivesTest, ArcSegment) {
   Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
-            kScaleLength, kComputationPolicy);
+            kScaleLength, kComputationPolicy, std::make_unique<GroupFactory>());
 
   const double kRadius = 30.;
   const double kDTheta = 0.5 * M_PI;
@@ -687,7 +712,7 @@ class MultilaneBuilderPrimitiveContinuityConstraintTest
 // to zero always because of infinite curvature radius of a line.
 TEST_F(MultilaneBuilderPrimitiveContinuityConstraintTest, MonolaneLineSegment) {
   Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
-            kScaleLength, kComputationPolicy);
+            kScaleLength, kComputationPolicy, std::make_unique<GroupFactory>());
   const LineOffset kLineOffset(50.);
   auto c0 =
       b.Connect("c0", kLaneLayout,
@@ -696,20 +721,20 @@ TEST_F(MultilaneBuilderPrimitiveContinuityConstraintTest, MonolaneLineSegment) {
   EXPECT_NE(c0, nullptr);
   EXPECT_TRUE(test::IsEndpointClose(
       c0->start(), {kStartEndpoint.xy(), {1., 2., M_PI / 6., 0.}},
-      kLinearTolerance));
+      kLinearTolerance, kAngularTolerance));
   EXPECT_TRUE(
       test::IsEndpointClose(c0->end(),
                             {{50. * std::cos(kStartHeading),
                               50. * std::sin(kStartHeading), kStartHeading},
                              {4., 5., -M_PI / 6., 0.}},
-                            kLinearTolerance));
+                            kLinearTolerance, kAngularTolerance));
 }
 
 // Checks how theta_dot is adjusted at the end points of the connection based
 // on curvature and angular displacement.
 TEST_F(MultilaneBuilderPrimitiveContinuityConstraintTest, MonolaneArcSegment) {
   Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
-            kScaleLength, kComputationPolicy);
+            kScaleLength, kComputationPolicy, std::make_unique<GroupFactory>());
   const double kRadius = 30.;
   const double kDTheta = 0.5 * M_PI;
   auto counter_clockwise_conn =
@@ -721,12 +746,12 @@ TEST_F(MultilaneBuilderPrimitiveContinuityConstraintTest, MonolaneArcSegment) {
   EXPECT_TRUE(test::IsEndpointClose(
       counter_clockwise_conn->start(),
       {kStartEndpoint.xy(), {1., 2., M_PI / 6., -0.0298142396999972}},
-      kLinearTolerance));
+      kLinearTolerance, kAngularTolerance));
   EXPECT_TRUE(test::IsEndpointClose(
       counter_clockwise_conn->end(),
       {{kRadius * std::sqrt(2.), 0., kStartHeading + kDTheta},
        {4., 5., -M_PI / 6., -0.0326860225230307}},
-      kLinearTolerance));
+      kLinearTolerance, kAngularTolerance));
 
   auto clockwise_conn =
       b.Connect("clockwise", kLaneLayout,
@@ -737,12 +762,12 @@ TEST_F(MultilaneBuilderPrimitiveContinuityConstraintTest, MonolaneArcSegment) {
   EXPECT_TRUE(test::IsEndpointClose(
       clockwise_conn->start(),
       {kStartEndpoint.xy(), {1., 2., M_PI / 6., 0.0298142396999972}},
-      kLinearTolerance));
+      kLinearTolerance, kAngularTolerance));
   EXPECT_TRUE(test::IsEndpointClose(
       clockwise_conn->end(),
       {{0., -kRadius * std::sqrt(2.), kStartHeading - kDTheta},
        {4., 5., -M_PI / 6., 0.0326860225230307}},
-      kLinearTolerance));
+      kLinearTolerance, kAngularTolerance));
 }
 
 // Holds common properties for lane-to-lane curve primitive tests.
@@ -773,7 +798,7 @@ class MultilaneBuilderLaneToLanePrimitivesTest : public ::testing::Test {
 // Checks that a multi-lane line segment is correctly created.
 TEST_F(MultilaneBuilderLaneToLanePrimitivesTest, FlatLineSegment) {
   Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
-            kScaleLength, kComputationPolicy);
+            kScaleLength, kComputationPolicy, std::make_unique<GroupFactory>());
 
   const LineOffset kLineOffset(50.);
   b.Connect("c0", kLaneLayout,
@@ -828,7 +853,7 @@ TEST_F(MultilaneBuilderLaneToLanePrimitivesTest, FlatLineSegment) {
 // Checks that a multi-lane line segment is correctly created.
 TEST_F(MultilaneBuilderLaneToLanePrimitivesTest, ElevatedEndLineSegment) {
   Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
-            kScaleLength, kComputationPolicy);
+            kScaleLength, kComputationPolicy, std::make_unique<GroupFactory>());
 
   const double kLength{50.};
   const LineOffset kLineOffset(kLength);
@@ -895,7 +920,7 @@ TEST_F(MultilaneBuilderLaneToLanePrimitivesTest, ElevatedEndLineSegment) {
 // Checks that a multi-lane arc segment is correctly created.
 TEST_F(MultilaneBuilderLaneToLanePrimitivesTest, ArcSegment) {
   Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
-            kScaleLength, kComputationPolicy);
+            kScaleLength, kComputationPolicy, std::make_unique<GroupFactory>());
 
   const double kRadius = 30.;
   const double kDTheta = 0.5 * M_PI;
@@ -952,7 +977,7 @@ TEST_F(MultilaneBuilderLaneToLanePrimitivesTest, ArcSegment) {
 // Checks that a multi-lane arc segment is correctly created.
 TEST_F(MultilaneBuilderLaneToLanePrimitivesTest, ElevatedEndArcSegment) {
   Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
-            kScaleLength, kComputationPolicy);
+            kScaleLength, kComputationPolicy, std::make_unique<GroupFactory>());
 
   const double kRadius = 30.;
   const double kDTheta = 0.5 * M_PI;
@@ -1220,7 +1245,7 @@ class MultilaneBuilderMultilaneCrossTest : public ::testing::Test {
 
 TEST_F(MultilaneBuilderMultilaneCrossTest, MultilaneRefCurveToRefCurve) {
   Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
-            kScaleLength, kComputationPolicy);
+            kScaleLength, kComputationPolicy, std::make_unique<GroupFactory>());
   // Creates connections.
   b.Connect(
       "c1",
@@ -1275,7 +1300,7 @@ TEST_F(MultilaneBuilderMultilaneCrossTest, MultilaneRefCurveToRefCurve) {
 
 TEST_F(MultilaneBuilderMultilaneCrossTest, MultilaneLaneCurveToLaneCurve) {
   Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
-            kScaleLength, kComputationPolicy);
+            kScaleLength, kComputationPolicy, std::make_unique<GroupFactory>());
 
   // Creates connections.
   auto c1 = b.Connect(

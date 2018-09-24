@@ -41,6 +41,7 @@ import numpy as np
 from pydrake.common import FindResourceOrThrow
 from pydrake.util.eigen_geometry import Isometry3
 from pydrake.systems.framework import InputPort, OutputPort
+from pydrake.math import RollPitchYaw
 
 
 def get_index_class(cls):
@@ -228,6 +229,88 @@ class TestMultibodyTree(unittest.TestCase):
         # Verify we did modify the state stored in context.
         x = tree.get_multibody_state_vector(context)
         self.assertTrue(np.allclose(x, x0))
+
+    def test_model_instance_state_access(self):
+        # Create a multibodyplant with a kuka arm and a schunk gripper.
+        # the arm is welded to the world, the gripper is welded to the
+        # arm's end effector.
+        wsg50_sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/" +
+            "wsg_50_description/sdf/schunk_wsg_50.sdf")
+        iiwa_sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/" +
+            "iiwa_description/sdf/iiwa14_no_collision.sdf")
+
+        timestep = 0.0002
+        plant = MultibodyPlant(timestep)
+
+        iiwa_model = AddModelFromSdfFile(
+            file_name=iiwa_sdf_path, model_name='robot',
+            scene_graph=None, plant=plant)
+        gripper_model = AddModelFromSdfFile(
+            file_name=wsg50_sdf_path, model_name='gripper',
+            scene_graph=None, plant=plant)
+
+        # Weld the base of arm and gripper to reduce the number of states.
+        X_EeGripper = Isometry3.Identity()
+        X_EeGripper.set_translation([0, 0, 0.081])
+        X_EeGripper.set_rotation(
+            RollPitchYaw(np.pi / 2, 0, np.pi / 2).
+            ToRotationMatrix().matrix())
+        plant.WeldFrames(
+            A=plant.world_frame(),
+            B=plant.GetFrameByName("iiwa_link_0", iiwa_model))
+        plant.WeldFrames(
+            A=plant.GetFrameByName("iiwa_link_7", iiwa_model),
+            B=plant.GetFrameByName("body", gripper_model),
+            X_AB=X_EeGripper)
+        plant.Finalize()
+
+        # Create a context of the MBP and set the state of the context
+        # to desired values.
+        context = plant.CreateDefaultContext()
+        tree = plant.tree()
+
+        nq = plant.num_positions()
+        nv = plant.num_velocities()
+
+        q_iiwa_desired = np.zeros(7)
+        v_iiwa_desired = np.zeros(7)
+        q_gripper_desired = np.zeros(2)
+        v_gripper_desired = np.zeros(2)
+
+        q_iiwa_desired[2] = np.pi/3
+        q_gripper_desired[0] = 0.1
+        v_iiwa_desired[1] = 5.0
+        q_gripper_desired[0] = -0.3
+
+        x_plant_desired = np.zeros(nq + nv)
+        x_plant_desired[0:7] = q_iiwa_desired
+        x_plant_desired[7:9] = q_gripper_desired
+        x_plant_desired[nq:nq+7] = v_iiwa_desired
+        x_plant_desired[nq+7:nq+nv] = v_gripper_desired
+
+        x_plant = tree.get_mutable_multibody_state_vector(context)
+        x_plant[:] = x_plant_desired
+
+        # Get state from context.
+        x = tree.get_multibody_state_vector(context)
+        q = x[0:nq]
+        v = x[nq:nq+nv]
+
+        # Get positions and velocities of specific model instances
+        # from the postion/velocity vector of the plant.
+        q_iiwa = tree.get_positions_from_array(iiwa_model, q)
+        q_gripper = tree.get_positions_from_array(gripper_model, q)
+        v_iiwa = tree.get_velocities_from_array(iiwa_model, v)
+        v_gripper = tree.get_velocities_from_array(gripper_model, v)
+
+        # Assert that the get_positions_from_array return
+        # the desired values set earlier.
+        self.assertTrue(np.allclose(q_iiwa_desired, q_iiwa))
+        self.assertTrue(np.allclose(v_iiwa_desired, v_iiwa))
+        self.assertTrue(np.allclose(q_gripper_desired, q_gripper))
+        self.assertTrue(np.allclose(v_gripper_desired, v_gripper))
 
     def test_set_free_body_pose(self):
         file_name = FindResourceOrThrow(

@@ -19,50 +19,67 @@ using ::testing::MatchResultListener;
 // Compares equality within @p tolerance deviation of two EndpointXy objects.
 // @param xy1 An EndpointXy object to compare.
 // @param xy2 An EndpointXy object to compare.
-// @param tolerance An allowable absolute deviation for each EndpointXy's
-// coordinate.
+// @param linear_tolerance An allowable absolute deviation for each EndpointXy's
+//                         x and y position coordinates, in meters.
+// @param angular_tolerance An allowable absolute deviation for EndpointXy's
+//                          heading angle, in radians.
 // @return ::testing::AssertionFailure() When EndpointXy objects are different.
-// @return ::testing::AssertionSuccess() When EndpointXy objects are within
-// the @p tolerance deviation.
-
-// TODO(agalbachicar)    Given that EndpointXy is composed of two lengths and
-//                       one angle, tolerance must be replaced into two distinct
-//                       values to match each magnitude.
+// @return ::testing::AssertionSuccess() When EndpointXy objects' quantities
+//                                       are within @p linear_tolerance or
+//                                       @p angular_tolerance, as appropriate.
 ::testing::AssertionResult IsEndpointXyClose(const EndpointXy& xy1,
                                              const EndpointXy& xy2,
-                                             double tolerance);
+                                             double linear_tolerance,
+                                             double angular_tolerance);
 
 // Compares equality within @p tolerance deviation of two EndpointZ objects.
 // @param z1 An EndpointZ object to compare.
 // @param z2 An EndpointZ object to compare.
-// @param tolerance An allowable absolute deviation for each EndpointZ's
-// coordinate.
+// @param linear_tolerance An allowable absolute deviation, in meters, for
+//                         EndpointZ's z position coordinate, as well as
+//                         elevation derivative ż through the linear deviation
+//                         that would result of moving 1 m along the reference
+//                         curve path for which the derivative is defined.
+// @param angular_tolerance An allowable absolute deviation, in radians, for
+//                          each EndpointZ's heading angle and superelevation
+//                          angle θ, as well as superelevation derivative θ_dot
+//                          through the angular deviation that would result of
+//                          moving 1 m along the reference curve path for which
+//                          the derivative is defined.
 // @return ::testing::AssertionFailure() When EndpointZ objects are different.
-// @return ::testing::AssertionSuccess() When EndpointZ objects are within
-// the @p tolerance deviation.
-
-// TODO(agalbachicar)    Given that EndpointZ is composed of different
-//                       magnitudes, tolerance must be replaced into distinct
-//                       values to match each magnitude.
+// @return ::testing::AssertionSuccess() When EndpointZ objects' quantities
+//                                       are within @p linear_tolerance or
+//                                       @p angular_tolerance, as appropriate.
+// TODO(hidmic): Review tolerances definition, units and usage for elevation
+//               and superelevation derivatives in EndpointZ instances.
 ::testing::AssertionResult IsEndpointZClose(const EndpointZ& z1,
                                             const EndpointZ& z2,
-                                            double tolerance);
+                                            double linear_tolerance,
+                                            double angular_tolerance);
 
 // Compares equality within @p tolerance deviation of two Endpoint objects.
 // @param pos1 An Endpoint object to compare.
 // @param pos2 An Endpoint object to compare.
-// @param tolerance An allowable absolute deviation for each Endpoint's
-// coordinate.
+// @param linear_tolerance An allowable absolute deviation, in meters, for each
+//                         Endpoint's x, y and z position coordinates, as well
+//                         as elevation derivative ż through the linear
+//                         deviation that would result of moving 1 m along the
+//                         reference curve path for which the derivative is
+//                         defined.
+// @param angular_tolerance An allowable absolute deviation, in radians, for
+//                          each Endpoint's heading angle and superelevation
+//                          angle θ, as well as superelevation derivative θ_dot
+//                          through the angular deviation that would result of
+//                          moving 1 m along the reference curve path for which
+//                          the derivative is defined.
 // @return ::testing::AssertionFailure() When Endpoint objects are different.
-// @return ::testing::AssertionSuccess() When Endpoint objects are within
-// the @p tolerance deviation.
-
-// TODO(agalbachicar)    Given that EndpointXy and EndpointZ are composed of
-//                       different magnitudes, tolerance must be replaced into
-//                       distinct values to match each magnitude.
+// @return ::testing::AssertionSuccess() When Endpoint objects' quantities
+//                                       are within @p linear_tolerance or
+//                                       @p angular_tolerance, as appropriate.
 ::testing::AssertionResult IsEndpointClose(const Endpoint& pos1,
                                            const Endpoint& pos2,
-                                           double tolerance);
+                                           double linear_tolerance,
+                                           double angular_tolerance);
 
 // Compares equality within @p linear_tolerance and @p angular_tolerance
 // deviations of two ArcOffset objects.
@@ -221,114 +238,135 @@ class StartReferenceSpecMatcher
     : public MatcherInterface<const StartReference::Spec&> {
  public:
   StartReferenceSpecMatcher(const StartReference::Spec& start_reference,
-                            double tolerance)
-      : start_reference_(start_reference), tolerance_(tolerance) {}
+                            double linear_tolerance, double angular_tolerance)
+      : start_reference_(start_reference),
+        linear_tolerance_(linear_tolerance),
+        angular_tolerance_(angular_tolerance) {}
 
   bool MatchAndExplain(const StartReference::Spec& other,
                        MatchResultListener*) const override {
     return IsEndpointClose(start_reference_.endpoint(), other.endpoint(),
-                           tolerance_);
+                           linear_tolerance_, angular_tolerance_);
   }
 
   void DescribeTo(std::ostream* os) const override {
-    *os << "is within tolerance: [" << tolerance_ << "] of start_reference: ["
-        << start_reference_ << "].";
+    *os << "is within linear tolerance: [" << linear_tolerance_
+        << "] and angular tolerance: [" << angular_tolerance_
+        << "] of start_reference: [" << start_reference_ << "].";
   }
 
  private:
   const StartReference::Spec start_reference_;
-  const double tolerance_{};
+  const double linear_tolerance_{};
+  const double angular_tolerance_{};
 };
 
 /// @return A Matcher<const StartReference::Spec&> of type
 /// StartReferenceSpecMatcher.
 Matcher<const StartReference::Spec&> Matches(
-    const StartReference::Spec& start_reference, double tolerance);
+    const StartReference::Spec& start_reference,
+    double linear_tolerance, double angular_tolerance);
 
 /// Wraps a EndReference::Spec comparison into a MatcherInterface.
 class EndReferenceSpecMatcher
     : public MatcherInterface<const EndReference::Spec&> {
  public:
   EndReferenceSpecMatcher(const EndReference::Spec& end_reference,
-                          double tolerance)
-      : end_reference_(end_reference), tolerance_(tolerance) {}
+                          double linear_tolerance, double angular_tolerance)
+      : end_reference_(end_reference),
+        linear_tolerance_(linear_tolerance),
+        angular_tolerance_(angular_tolerance) {}
 
   bool MatchAndExplain(const EndReference::Spec& other,
                        MatchResultListener*) const override {
     return IsEndpointZClose(end_reference_.endpoint_z(), other.endpoint_z(),
-                            tolerance_);
+                            linear_tolerance_, angular_tolerance_);
   }
 
   void DescribeTo(std::ostream* os) const override {
-    *os << "is within tolerance: [" << tolerance_ << "] of end_reference: ["
-        << end_reference_ << "].";
+    *os << "is within linear tolerance: [" << linear_tolerance_
+        << "] and angular tolerance: [" << angular_tolerance_
+        << "] of end_reference: [" << end_reference_ << "].";
   }
 
  private:
   const EndReference::Spec end_reference_;
-  const double tolerance_{};
+  const double linear_tolerance_{};
+  const double angular_tolerance_{};
 };
 
 /// Wraps a StartLane::Spec comparison into a MatcherInterface.
 class StartLaneSpecMatcher : public MatcherInterface<const StartLane::Spec&> {
  public:
   StartLaneSpecMatcher(const StartLane::Spec& start_lane,
-                       double tolerance)
-      : start_lane_(start_lane), tolerance_(tolerance) {}
+                       double linear_tolerance, double angular_tolerance)
+      : start_lane_(start_lane),
+        linear_tolerance_(linear_tolerance),
+        angular_tolerance_(angular_tolerance) {}
 
   bool MatchAndExplain(const StartLane::Spec& other,
                        MatchResultListener*) const override {
-    return IsEndpointClose(start_lane_.endpoint(), other.endpoint(),
-                           tolerance_) &&
-           start_lane_.lane_id() == other.lane_id();
+    return (IsEndpointClose(start_lane_.endpoint(), other.endpoint(),
+                            linear_tolerance_, angular_tolerance_)
+            && start_lane_.lane_id() == other.lane_id());
   }
 
   void DescribeTo(std::ostream* os) const override {
-    *os << "is within tolerance: [" << tolerance_
+    *os << "is within linear tolerance: [" << linear_tolerance_
+        << "] and angular tolerance: [" << angular_tolerance_
         << "] and lane ID is equal to start_lane: ["
         << start_lane_ << "].";
   }
 
  private:
   const StartLane::Spec start_lane_;
-  const double tolerance_{};
+  const double linear_tolerance_{};
+  const double angular_tolerance_{};
 };
 
 /// @return A Matcher<const StartLane::Spec&> of type StartLaneSpecMatcher.
 Matcher<const StartLane::Spec&> Matches(
-    const StartLane::Spec& start_reference, double tolerance);
+    const StartLane::Spec& start_reference,
+    double linear_tolerance, double angular_tolerance);
 
 /// @return A Matcher<const EndReference::Spec&> of type
 /// EndReferenceSpecMatcher.
 Matcher<const EndReference::Spec&> Matches(
-    const EndReference::Spec& end_reference, double tolerance);
+    const EndReference::Spec& end_reference,
+    double linear_tolerance, double angular_tolerance);
 
 /// Wraps a EndLane::Spec comparison into a MatcherInterface.
 class EndLaneSpecMatcher : public MatcherInterface<const EndLane::Spec&> {
  public:
-  EndLaneSpecMatcher(const EndLane::Spec& end_lane, double tolerance)
-      : end_lane_(end_lane), tolerance_(tolerance) {}
+  EndLaneSpecMatcher(const EndLane::Spec& end_lane, double linear_tolerance,
+                     double angular_tolerance)
+      : end_lane_(end_lane),
+        linear_tolerance_(linear_tolerance),
+        angular_tolerance_(angular_tolerance) {}
 
   bool MatchAndExplain(const EndLane::Spec& other,
                        MatchResultListener*) const override {
     return IsEndpointZClose(end_lane_.endpoint_z(), other.endpoint_z(),
-                            tolerance_);
+                            linear_tolerance_, angular_tolerance_);
   }
 
   void DescribeTo(std::ostream* os) const override {
-    *os << "is within tolerance: [" << tolerance_
+    *os << "is within linear tolerance: [" << linear_tolerance_
+        << "] and angular tolerance: [" << angular_tolerance_
         << "] and lane ID is equal to end_lane: ["
         << end_lane_ << "].";
   }
 
  private:
   const EndLane::Spec end_lane_;
-  const double tolerance_{};
+  const double linear_tolerance_{};
+  const double angular_tolerance_{};
 };
 
 /// @return A Matcher<const EndLane::Spec&> of type EndLaneSpecMatcher.
 Matcher<const EndLane::Spec&> Matches(
-    const EndLane::Spec& end_lane, double tolerance);
+    const EndLane::Spec& end_lane,
+    double linear_tolerance, double angular_tolerance);
 
 }  // namespace test
 }  // namespace multilane

@@ -94,7 +94,10 @@ drake_cc_library(
 
 drake_cc_library(
     name = "drake_bool",
-    hdrs = ["drake_bool.h"],
+    hdrs = [
+        "drake_bool.h",
+        "drake_bool_deprecated.h",
+    ],
     deps = [
         ":autodiff",
         ":cond",
@@ -141,7 +144,6 @@ drake_cc_library(
     deps = [
         ":essential",
         ":nice_type_name",
-        ":number_traits",
     ],
 )
 
@@ -556,6 +558,19 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_bool_test",
+    deps = [
+        ":drake_bool",
+        ":symbolic",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "drake_bool_deprecated_test",
+    copts = [
+        # This test for deprecated functions; so we don't want this warning.
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":drake_bool",
         ":symbolic",

@@ -1,4 +1,4 @@
-#include "drake/multibody/parsers/package_map.h"
+#include "drake/multibody/multibody_tree/parsing/package_map.h"
 
 #include <algorithm>
 
@@ -11,11 +11,13 @@ using std::map;
 using std::string;
 
 namespace drake {
-namespace parsers {
+namespace multibody {
+namespace parsing {
 namespace {
 
 string GetTestDataRoot() {
-  const string desired_dir = "drake/multibody/parsers/test/package_map_test/";
+  const string desired_dir =
+      "drake/multibody/multibody_tree/parsing/test/";
   const string contained_file =
       "package_map_test_packages/package_map_test_package_a/package.xml";
   const string absolute_file_path = FindResourceOrThrow(
@@ -104,7 +106,7 @@ GTEST_TEST(PackageMapTest, TestPopulateMapFromFolderExtraTrailingSlashes) {
 GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrake) {
   const string root_path = GetTestDataRoot();
   const string sdf_file_name = FindResourceOrThrow(
-      "drake/multibody/parsers/test/package_map_test/"
+      "drake/multibody/multibody_tree/parsing/test/"
       "package_map_test_packages/package_map_test_package_a/"
       "sdf/test_model.sdf");
 
@@ -151,5 +153,6 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
 }
 
 }  // namespace
-}  // namespace parsers
+}  // namespace parsing
+}  // namespace multibody
 }  // namespace drake

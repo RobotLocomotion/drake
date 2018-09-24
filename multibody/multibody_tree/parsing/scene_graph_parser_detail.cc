@@ -9,8 +9,8 @@
 
 #include "drake/geometry/geometry_instance.h"
 #include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
+#include "drake/multibody/multibody_tree/parsing/parser_path_utils.h"
 #include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
-#include "drake/multibody/parsers/parser_path_utils.h"
 
 namespace drake {
 namespace multibody {
@@ -337,7 +337,7 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
 }
 
 sdf::Visual ResolveVisualUri(const sdf::Visual& original,
-                             const parsers::PackageMap& package_map,
+                             const parsing::PackageMap& package_map,
                              const std::string& root_dir) {
   std::shared_ptr<sdf::Element> visual_element = original.Element()->Clone();
   sdf::Element* geom_element =
@@ -349,7 +349,7 @@ sdf::Visual ResolveVisualUri(const sdf::Visual& original,
       if (uri_element) {
         const std::string uri = uri_element->Get<std::string>();
         const std::string resolved_name =
-            parsers::ResolveFilename(uri, package_map, root_dir);
+            parsing::ResolveFilename(uri, package_map, root_dir);
         if (!resolved_name.empty()) {
           uri_element->Set(resolved_name);
         } else {

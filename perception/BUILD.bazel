@@ -121,8 +121,8 @@ drake_cc_googletest(
     srcs = ["test/transform_point_cloud_test.cc"],
     deps = [
         ":transform_point_cloud",
+        "//attic/multibody/rigid_body_plant",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/rigid_body_plant",
     ],
 )
 

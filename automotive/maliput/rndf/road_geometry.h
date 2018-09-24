@@ -74,6 +74,12 @@ class RoadGeometry : public api::RoadGeometry {
                                      api::GeoPosition* nearest_position,
                                      double* distance) const override;
 
+  // TODO(maddog@tri.global)  rndf backend is not scale_length aware in any way,
+  //                          and really this property should be consistent
+  //                          with the geometry of the curves themselves.
+  //                          This value of 1 has been picked arbitrarily.
+  double do_scale_length() const override { return 1.; }
+
   double do_linear_tolerance() const override { return linear_tolerance_; }
 
   double do_angular_tolerance() const override { return angular_tolerance_; }

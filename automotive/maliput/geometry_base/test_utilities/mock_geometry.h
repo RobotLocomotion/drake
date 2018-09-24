@@ -41,11 +41,13 @@ class MockRoadGeometry : public geometry_base::RoadGeometry {
   /// @param angular_tolerance the angular tolerance
   ///
   /// @throws std::exception if either `linear_tolerance` or
-  ///         `angular_tolerance` is non-positive.
+  ///         `angular_tolerance` or `scale_length` is non-positive.
   MockRoadGeometry(const api::RoadGeometryId& id,
-                   const double linear_tolerance,
-                   const double angular_tolerance)
-      : geometry_base::RoadGeometry(id, linear_tolerance, angular_tolerance) {}
+                   double linear_tolerance,
+                   double angular_tolerance,
+                   double scale_length)
+      : geometry_base::RoadGeometry(id, linear_tolerance, angular_tolerance,
+                                    scale_length) {}
 
  private:
   api::RoadPosition DoToRoadPosition(const api::GeoPosition& geo_position,

@@ -19,12 +19,12 @@ drake_cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        "//attic/multibody/rigid_body_plant",
         "//examples/kuka_iiwa_arm:iiwa_common",
         "//examples/kuka_iiwa_arm:oracular_state_estimator",
         "//manipulation/schunk_wsg:schunk_wsg_constants",
         "//manipulation/util:sim_diagram_builder",
         "//manipulation/util:world_sim_tree_builder",
-        "//multibody/rigid_body_plant",
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/controllers:pid_controller",
         "//systems/framework:diagram",

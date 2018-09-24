@@ -118,7 +118,6 @@ drake_cc_googletest(
         "//manipulation/models/wsg_50_description:models",
         "//multibody/benchmarks/acrobot:models",
         "//multibody/multibody_tree/parsing:test_models",
-        "//multibody/shapes:test_models",
     ],
     deps = [
         ":multibody_plant",
