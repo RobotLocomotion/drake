@@ -76,6 +76,12 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
       tree.get_positions_from_array(instance1, pos_vector);
   EXPECT_TRUE(CompareMatrices(instance1_pos, Eigen::Vector2d(8, 10)));
 
+  // Change the positions for this instance and check again.
+  const Eigen::Vector2d new_pos(21, 23);
+  tree.set_positions_in_array(instance1, new_pos, &pos_vector);
+  instance1_pos = tree.get_positions_from_array(instance1, pos_vector);
+  EXPECT_TRUE(CompareMatrices(instance1_pos, new_pos));
+
   Eigen::VectorXd instance2_pos =
       tree.get_positions_from_array(instance2, pos_vector);
 
@@ -89,6 +95,12 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   Eigen::VectorXd instance1_vel =
       tree.get_velocities_from_array(instance1, vel_vector);
   EXPECT_TRUE(CompareMatrices(instance1_vel, Eigen::Vector2d(17, 19)));
+
+  // Change the velocities for this instance and check again.
+  const Eigen::Vector2d new_vel(29, 31);
+  tree.set_velocities_in_array(instance1, new_vel, &vel_vector);
+  instance1_vel = tree.get_velocities_from_array(instance1, vel_vector);
+  EXPECT_TRUE(CompareMatrices(instance1_vel, new_vel));
 
   Eigen::VectorXd instance2_vel =
       tree.get_velocities_from_array(instance2, vel_vector);

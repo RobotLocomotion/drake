@@ -42,6 +42,22 @@ VectorX<T> ModelInstance<T>::get_positions_from_array(
   return positions;
 }
 
+template <class T>
+void ModelInstance<T>::set_positions_in_array(
+    const Eigen::Ref<const VectorX<T>>& model_q,
+    EigenPtr<VectorX<T>> q_array) const {
+  DRAKE_DEMAND(q_array->size() == this->get_parent_tree().num_positions());
+  DRAKE_DEMAND(model_q.size() == num_positions());
+  int position_offset = 0;
+  for (const Mobilizer<T>* mobilizer : mobilizers_) {
+    const int mobilizer_positions = mobilizer->num_positions();
+    q_array->segment(mobilizer->position_start_in_q(), mobilizer_positions) =
+        model_q.segment(position_offset, mobilizer_positions);
+    position_offset += mobilizer_positions;
+    DRAKE_DEMAND(position_offset <= q_array->size());
+  }
+}
+
 template <typename T>
 VectorX<T> ModelInstance<T>::get_velocities_from_array(
     const Eigen::Ref<const VectorX<T>>& v_array) const {
@@ -57,6 +73,22 @@ VectorX<T> ModelInstance<T>::get_velocities_from_array(
     DRAKE_DEMAND(velocity_offset <= velocities.size());
   }
   return velocities;
+}
+
+template <class T>
+void ModelInstance<T>::set_velocities_in_array(
+    const Eigen::Ref<const VectorX<T>>& model_v,
+    EigenPtr<VectorX<T>> v_array) const {
+  DRAKE_DEMAND(v_array->size() == this->get_parent_tree().num_velocities());
+  DRAKE_DEMAND(model_v.size() == num_velocities());
+  int velocity_offset = 0;
+  for (const Mobilizer<T>* mobilizer : mobilizers_) {
+    const int mobilizer_velocities = mobilizer->num_velocities();
+    v_array->segment(mobilizer->velocity_start_in_v(), mobilizer_velocities) =
+        model_v.segment(velocity_offset, mobilizer_velocities);
+    velocity_offset += mobilizer_velocities;
+    DRAKE_DEMAND(velocity_offset <= v_array->size());
+  }
 }
 
 }  // namespace internal

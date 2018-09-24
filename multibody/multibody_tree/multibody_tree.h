@@ -1412,6 +1412,15 @@ class MultibodyTree {
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& q_array) const;
 
+  /// Sets the vector of generalized positions for `model_instance` using
+  /// `q_array`, leaving all other elements in the array untouched. This method
+  /// aborts if `q_array` is not of size MultibodyTree::num_positions() or
+  /// `model_q` is not of size `MultibodyTree::num_positions(model_instance)`.
+  void set_positions_in_array(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& model_q,
+      EigenPtr<VectorX<T>> q_array) const;
+
   /// Returns a vector of generalized velocities for @p model_instance from a
   /// vector `v_array` of generalized velocities for the entire MultibodyTree
   /// model.  This method aborts if the input array is not of size
@@ -1419,6 +1428,15 @@ class MultibodyTree {
   VectorX<T> get_velocities_from_array(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& v_array) const;
+
+  /// Sets the vector of generalized velocities for `model_instance` using
+  /// `model_v`, leaving all other elements in the array untouched. This method
+  /// aborts if `v_array` is not of size MultibodyTree::num_velocities() or
+  /// `model_v` is not of size `MultibodyTree::num_positions(model_instance)`.
+  void set_velocities_in_array(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& model_v,
+      EigenPtr<VectorX<T>> v_array) const;
 
   /// @}
   // End of "Model instance accessors" section.

@@ -86,12 +86,29 @@ VectorX<T> MultibodyTree<T>::get_positions_from_array(
   return model_instances_.at(model_instance)->get_positions_from_array(q_array);
 }
 
+template <class T>
+void MultibodyTree<T>::set_positions_in_array(
+    ModelInstanceIndex model_instance,
+    const Eigen::Ref<const VectorX<T>>& model_q,
+    EigenPtr<VectorX<T>> q_array) const {
+  model_instances_.at(model_instance)->set_positions_in_array(model_q, q_array);
+}
+
 template <typename T>
 VectorX<T> MultibodyTree<T>::get_velocities_from_array(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& v_array) const {
   return model_instances_.at(model_instance)->get_velocities_from_array(
       v_array);
+}
+
+template <class T>
+void MultibodyTree<T>::set_velocities_in_array(
+    ModelInstanceIndex model_instance,
+    const Eigen::Ref<const VectorX<T>>& model_v,
+    EigenPtr<VectorX<T>> v_array) const {
+  model_instances_.at(model_instance)->set_velocities_in_array(
+      model_v, v_array);
 }
 
 template <typename T>

@@ -119,16 +119,34 @@ class ModelInstance :
   /// Returns a const Eigen expression of the vector of generalized positions
   /// for `this` model instance from a vector `q_array` of generalized
   /// positions for the entire MultibodyTree model.
-  /// @pre @p q_array is of size MultibodyTree::num_positions().
+  /// @pre `q_array` is of size MultibodyTree::num_positions().
   VectorX<T> get_positions_from_array(
       const Eigen::Ref<const VectorX<T>>& q_array) const;
+
+  /// Sets the vector of generalized positions for `this` model instance in
+  /// the proper location of an array corresponding to the positions for the
+  /// entire MultibodyTree model.
+  /// @pre `q_array` is of size MultibodyTree::num_positions().
+  /// @pre `model_q` is of size num_positions().
+  void set_positions_in_array(
+      const Eigen::Ref<const VectorX<T>>& model_q,
+      EigenPtr<VectorX<T>> q_array) const;
 
   /// Returns a const Eigen expression of the vector of generalized velocities
   /// for `this` mobilizer from a vector `v_array` of generalized velocities for
   /// the entire MultibodyTree model.
-  /// @pre @p v_array is of size MultibodyTree::num_velocities().
+  /// @pre `v_array` is of size MultibodyTree::num_velocities().
   VectorX<T> get_velocities_from_array(
       const Eigen::Ref<const VectorX<T>>& v_array) const;
+
+  /// Sets the vector of generalized velocities for `this` model instance in
+  /// the proper location of an array corresponding to the velocities for the
+  /// entire MultibodyTree model.
+  /// @pre `v_array` is of size MultibodyTree::num_velocities().
+  /// @pre `model_v` is of size num_velocities().
+  void set_velocities_in_array(
+      const Eigen::Ref<const VectorX<T>>& model_v,
+      EigenPtr<VectorX<T>> v_array) const;
 
  private:
   void DoSetTopology(const MultibodyTreeTopology&) final {}
