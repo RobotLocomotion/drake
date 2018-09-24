@@ -217,8 +217,10 @@ TEST_F(SymbolicPolynomialFractionTest, ProductAndAddition) {
   const PolynomialFraction result = f1 * f2 + f3 * f4;
   const PolynomialFraction result_expected(
       p1_ * p1_ * p3_ * p4_ + p2_ * p2_ * p3_ * p4_, p1_ * p2_ * p4_ * p4_);
-  EXPECT_TRUE(result.numerator().EqualToAfterExpansion(result_expected.numerator()));
-  EXPECT_TRUE(result.denominator().EqualToAfterExpansion(result_expected.denominator()));
+  EXPECT_PRED2(test::PolyEqualAfterExpansion, result.numerator(),
+               result_expected.numerator());
+  EXPECT_PRED2(test::PolyEqualAfterExpansion, result.denominator(),
+               result_expected.denominator());
 }
 
 }  // namespace

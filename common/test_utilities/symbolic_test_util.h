@@ -80,6 +80,7 @@ inline bool PolyEqualAfterExpansion(const Polynomial& p1,
 inline bool PolyNotEqualAfterExpansion(const Polynomial& p1,
                                        const Polynomial& p2) {
   return !p1.EqualToAfterExpansion(p2);
+}
 
 inline bool PolyFractionEqual(const PolynomialFraction& f1,
                               const PolynomialFraction& f2) {
