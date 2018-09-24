@@ -815,6 +815,28 @@ TEST_F(SymbolicPolynomialTest, RemoveTermsWithSmallCoefficients) {
                Polynomial(p3_map).RemoveTermsWithSmallCoefficients(1E-3),
                Polynomial(p3_expected_map));
 }
+
+TEST_F(SymbolicPolynomialTest, EqualTo) {
+  const Polynomial p1{var_x_};
+  EXPECT_PRED2(PolyEqual, p1, Polynomial(var_x_));
+  EXPECT_PRED2(PolyEqual, Polynomial(var_a_ * var_x_, var_xy_),
+               Polynomial(var_x_ * var_a_, var_xy_));
+  EXPECT_PRED2(test::PolyNotEqual, Polynomial(var_a_ * var_x_, var_xy_),
+               Polynomial(var_b_ * var_x_, var_xy_));
+}
+
+TEST_F(SymbolicPolynomialTest, EqualToAfterExpansion) {
+  const Polynomial p1(2 * var_a_ * var_x_ * var_x_ + var_y_, var_xy_);
+  const Polynomial p2(var_x_ * var_x_ + 2 * var_y_, var_xy_);
+  const Polynomial p3(2 * var_a_ * var_x_ + var_b_ * var_x_ * var_y_, var_xy_);
+  // p2 * p3 * p1 and p1 * p2 * p3 are not structurally equal.
+  EXPECT_PRED2(test::PolyNotEqual, p2 * p3 * p1, p1 * p2 * p3);
+  // But they are equal after expansion.
+  EXPECT_PRED2(test::PolyEqualAfterExpansion, p2 * p3 * p1, p1 * p2 * p3);
+
+  // p1 * p2 is not equal to p2 * p3 after expansion.
+  EXPECT_PRED2(test::PolyNotEqualAfterExpansion, p1 * p2, p2 * p3);
+}
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
