@@ -43,53 +43,77 @@ class ConstantPositionInput {
     allegro_command.joint_torque.resize(kAllegroNumJoints, 0.);
 
     flag_moving = true;
-    Eigen::VectorXd target_joint_pose(kAllegroNumJoints);
-    target_joint_pose.setZero();
-    MovetoPositionUntilStuck(target_joint_pose);
+    Eigen::VectorXd target_joint_position(kAllegroNumJoints);
+    target_joint_position.setZero();
+    MovetoPositionUntilStuck(target_joint_position);
 
     // close thumb
-    target_joint_pose(0) = 1.396;
-    target_joint_pose(1) = 0.3;
-    MovetoPositionUntilStuck(target_joint_pose);
+    target_joint_position(0) = 1.396;
+    target_joint_position(1) = 0.3;
+    MovetoPositionUntilStuck(target_joint_position);
 
     // close other fingers
-    target_joint_pose.segment(0, 4) = hand_state.FingerGraspJointPosition(0);
-    target_joint_pose.segment(4, 4) = hand_state.FingerGraspJointPosition(1);
-    target_joint_pose.segment(8, 4) = hand_state.FingerGraspJointPosition(2);
-    target_joint_pose.segment(12, 4) = hand_state.FingerGraspJointPosition(3);
-    MovetoPositionUntilStuck(target_joint_pose);
+    target_joint_position.segment<4>(0) =
+        hand_state.FingerGraspJointPosition(0);
+    target_joint_position.segment<4>(4) =
+        hand_state.FingerGraspJointPosition(1);
+    target_joint_position.segment<4>(8) =
+        hand_state.FingerGraspJointPosition(2);
+    target_joint_position.segment<4>(12) =
+        hand_state.FingerGraspJointPosition(3);
+    MovetoPositionUntilStuck(target_joint_position);
     sleep(2);
 
     // twisting the cup repeatly
-    while (0 == lcm_.handleTimeout(1000)) {
+    while (0 == lcm_.handleTimeout(10)) {
     }
-    Eigen::VectorXd close_finger_pose = Eigen::Map<Eigen::VectorXd>(
+    Eigen::VectorXd close_hand_joint_position = Eigen::Map<Eigen::VectorXd>(
         &(allegro_status_.joint_position_measured[0]), kAllegroNumJoints);
     while (true) {
-      target_joint_pose = close_finger_pose;
-      target_joint_pose.segment(9, 3) += (0.15 * Eigen::Vector3d(1, 1, 0.5));
-      target_joint_pose.segment(0, 4) = hand_state.FingerGraspJointPosition(0);
-      target_joint_pose.segment(5, 3) += (0.6 * Eigen::Vector3d(1, 0.3, 0.5));
-      MovetoPositionUntilStuck(target_joint_pose);
+      target_joint_position = close_hand_joint_position;
+      // The middle finger works as a pivot finger for the rotation, and exert
+      // a little force to maintain the stabilization of the mug, which is
+      // realized by adding some extra pushing motion towards the balance
+      // position. Eigen::Vector3d(1, 1, 0.5) is a number based on experience
+      // to keep the finger position, and 0.1 is the coefficient related to
+      // the extra force to apply.
+      target_joint_position.segment<3>(9) +=
+          (0.1 * Eigen::Vector3d(1, 1, 0.5));
+      // The thumb works as another pivot finger, and is expected to exert a
+      // large force in order to keep stabilization.
+      target_joint_position.segment<4>(0) =
+          hand_state.FingerGraspJointPosition(0);
+      // The index finger works as the actuating finger, where (1, 0.3, 0.5) is
+      // the portion of the joint motion for actuating the mug rotation, 0.6 is
+      // the coefficient to determine how much the rotation should be.
+      target_joint_position.segment<3>(5) +=
+          (0.6 * Eigen::Vector3d(1, 0.3, 0.5));
+      MovetoPositionUntilStuck(target_joint_position);
 
-      target_joint_pose = close_finger_pose;
-      target_joint_pose.segment(9, 3) += (0.15 * Eigen::Vector3d(1, 1, 0.5));
-      target_joint_pose.segment(0, 4) = hand_state.FingerGraspJointPosition(0);
-      target_joint_pose.segment(13, 3) += (0.6 * Eigen::Vector3d(1, 0.3, 0.5));
-      MovetoPositionUntilStuck(target_joint_pose);
+      target_joint_position = close_hand_joint_position;
+      target_joint_position.segment<3>(9) +=
+          (0.1 * Eigen::Vector3d(1, 1, 0.5));
+      target_joint_position.segment<4>(0) =
+          hand_state.FingerGraspJointPosition(0);
+      // The ring finger works as the actuating finger now to rotate the mug in
+      // the opposite direction.
+      target_joint_position.segment<3>(13) +=
+          (0.6 * Eigen::Vector3d(1, 0.3, 0.5));
+      MovetoPositionUntilStuck(target_joint_position);
     }
   }
 
  private:
-  inline void PublishPositionCommand(const Eigen::VectorXd target_joint_pose) {
+  inline void PublishPositionCommand(
+      const Eigen::VectorXd target_joint_position) {
     Eigen::VectorXd::Map(&allegro_command.joint_position[0],
-                         kAllegroNumJoints) = target_joint_pose;
+                         kAllegroNumJoints) = target_joint_position;
     lcm_.publish(kLcmCommandChannel, &allegro_command);
   }
 
   inline void MovetoPositionUntilStuck(
-      const Eigen::VectorXd target_joint_pose) {
-    PublishPositionCommand(target_joint_pose);
+      const Eigen::VectorXd target_joint_position) {
+    PublishPositionCommand(target_joint_position);
     for (int i = 0; i < 40; i++) {
       while (0 == lcm_.handleTimeout(10) || allegro_status_.utime == -1) {
       }

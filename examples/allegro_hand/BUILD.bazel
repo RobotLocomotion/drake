@@ -54,3 +54,15 @@ drake_cc_binary(
         "@gflags",
     ],
 )
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "allegro_lcm_test",
+    deps = [
+        ":allegro_lcm",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//manipulation/util:world_sim_tree_builder",
+        "//systems/framework",
+    ],
+)

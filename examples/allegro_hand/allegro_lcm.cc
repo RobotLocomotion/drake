@@ -18,23 +18,23 @@ using systems::DiscreteUpdateEvent;
 AllegroCommandReceiver::AllegroCommandReceiver(int num_joints)
     : num_joints_(num_joints) {
   this->DeclareAbstractInputPort();
-  this->DeclareVectorOutputPort(
+  state_output_port_ = this->DeclareVectorOutputPort(
       systems::BasicVector<double>(num_joints_ * 2),
       [this](const Context<double>& c, BasicVector<double>* o) {
         this->CopyStateToOutput(c, 0, num_joints_ * 2, o);
-      });
-  this->DeclareVectorOutputPort(
+      }).get_index();
+  torque_output_port_ = this->DeclareVectorOutputPort(
       systems::BasicVector<double>(num_joints_),
       [this](const Context<double>& c, BasicVector<double>* o) {
         this->CopyStateToOutput(c, num_joints_ * 2, num_joints_, o);
-      });
+      }).get_index();
   this->DeclarePeriodicDiscreteUpdate(kLcmStatusPeriod);
   // State + torque
   this->DeclareDiscreteState(num_joints_ * 3);
 }
 
 void AllegroCommandReceiver::set_initial_position(
-    Context<double>* context, const Eigen::Ref<const VectorX<double>> x) const {
+    Context<double>* context, const Eigen::Ref<const VectorX<double>>& x) const {
   auto state_value = context->get_mutable_discrete_state(0).get_mutable_value();
   DRAKE_ASSERT(x.size() == num_joints_);
   state_value.setZero();
@@ -86,11 +86,14 @@ void AllegroCommandReceiver::CopyStateToOutput(
 AllegroStatusSender::AllegroStatusSender(int num_joints)
     : num_joints_(num_joints) {
   // Commanded state.
-  this->DeclareInputPort(systems::kVectorValued, num_joints_ * 2);
+  command_input_port_ = this->DeclareInputPort(
+                        systems::kVectorValued, num_joints_ * 2).get_index();
   // Measured state.
-  this->DeclareInputPort(systems::kVectorValued, num_joints_ * 2);
+  state_input_port_ = this->DeclareInputPort(
+                      systems::kVectorValued, num_joints_ * 2).get_index();
   // Commanded torque.
-  this->DeclareInputPort(systems::kVectorValued, num_joints_);
+  command_torque_input_port_ = this->DeclareInputPort(
+                              systems::kVectorValued, num_joints_).get_index();
 
   this->DeclareAbstractOutputPort(&AllegroStatusSender::MakeOutputStatus,
                                   &AllegroStatusSender::OutputStatus);

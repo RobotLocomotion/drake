@@ -41,14 +41,14 @@ class AllegroCommandReceiver : public systems::LeafSystem<double> {
   /// function is not called, the open hand pose will be the zero
   /// configuration.
   void set_initial_position(systems::Context<double>* context,
-                            const Eigen::Ref<const VectorX<double>> x) const;
+                            const Eigen::Ref<const VectorX<double>>& x) const;
 
   const systems::OutputPort<double>& get_commanded_state_output_port() const {
-    return this->get_output_port(0);
+    return this->get_output_port(state_output_port_);
   }
 
   const systems::OutputPort<double>& get_commanded_torque_output_port() const {
-    return this->get_output_port(1);
+    return this->get_output_port(torque_output_port_);
   }
 
  private:
@@ -62,6 +62,8 @@ class AllegroCommandReceiver : public systems::LeafSystem<double> {
       systems::DiscreteValues<double>* discrete_state) const override;
 
  private:
+  int state_output_port_ = 0;
+  int torque_output_port_ = 0;
   const int num_joints_ = 16;
 };
 
@@ -88,15 +90,15 @@ class AllegroStatusSender : public systems::LeafSystem<double> {
   explicit AllegroStatusSender(int num_joints = kAllegroNumJoints);
 
   const systems::InputPort<double>& get_command_input_port() const {
-    return this->get_input_port(0);
+    return this->get_input_port(command_input_port_);
   }
 
   const systems::InputPort<double>& get_state_input_port() const {
-    return this->get_input_port(1);
+    return this->get_input_port(state_input_port_);
   }
 
   const systems::InputPort<double>& get_commanded_torque_input_port() const {
-    return this->get_input_port(2);
+    return this->get_input_port(command_torque_input_port_);
   }
 
  private:
@@ -106,6 +108,10 @@ class AllegroStatusSender : public systems::LeafSystem<double> {
   // This is the calculator method for the output port.
   void OutputStatus(const systems::Context<double>& context,
                     lcmt_allegro_status* output) const;
+
+  int command_input_port_ = 0;
+  int state_input_port_ = 0;
+  int command_torque_input_port_ = 0;
 
   const int num_joints_ = 16;
 };
