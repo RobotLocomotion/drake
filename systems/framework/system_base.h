@@ -653,7 +653,7 @@ class SystemBase : public internal::SystemMessageInterface {
   recomputation of an iterative approximation of contact forces.
   @see kinematics_ticket()
 
-  @bug Currently there is no way to declare specific variables and parameters
+  @note Currently there is no way to declare specific variables and parameters
   to be configuration-affecting so we include all state variables and
   parameters except for generalized velocities v. */
   // TODO(sherm1) Remove the above bug notice once #9171 is resolved.
@@ -669,7 +669,7 @@ class SystemBase : public internal::SystemMessageInterface {
   source values. This _does not_ include time or input ports.
   @see configuration_ticket()
 
-  @bug Currently there is no way to declare specific variables and parameters
+  @note Currently there is no way to declare specific variables and parameters
   to be configuration- or velocity-affecting so we include all state variables
   and parameters. */
   // TODO(sherm1) Remove the above bug notice once #9171 is resolved.
