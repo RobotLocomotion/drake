@@ -399,7 +399,7 @@ class Context : public ContextBase {
   /// state. Sends out of date notifications for all computations that depend
   /// on this discrete state group.
   /// @pre @p index must identify an existing group.
-  /// @bug Currently notifies dependents of _all_ groups.
+  /// @note Currently notifies dependents of _all_ groups.
   // TODO(sherm1) Invalidate only dependents of this one discrete group.
   BasicVector<T>& get_mutable_discrete_state(int index) {
     DiscreteValues<T>& xd = get_mutable_discrete_state();
@@ -421,7 +421,7 @@ class Context : public ContextBase {
   /// abstract state variable.
   /// @pre @p index must identify an existing element.
   /// @pre the abstract state's type must match the template argument.
-  /// @bug Currently notifies dependents of _any_ abstract state variable.
+  /// @note Currently notifies dependents of _any_ abstract state variable.
   // TODO(sherm1) Invalidate only dependents of this one abstract variable.
   template <typename U>
   U& get_mutable_abstract_state(int index) {
@@ -444,7 +444,7 @@ class Context : public ContextBase {
   /// (numeric) parameters. Sends out of date notifications for all computations
   /// dependent on this parameter.
   /// @pre @p index must identify an existing numeric parameter.
-  /// @bug Currently notifies dependents of _all_ numeric parameters.
+  /// @note Currently notifies dependents of _all_ numeric parameters.
   // TODO(sherm1) Invalidate only dependents of this one parameter.
   BasicVector<T>& get_mutable_numeric_parameter(int index) {
     const int64_t change_event = this->start_new_change_event();
@@ -457,7 +457,7 @@ class Context : public ContextBase {
   /// parameters. Sends out of date notifications for all computations dependent
   /// on this parameter.
   /// @pre @p index must identify an existing abstract parameter.
-  /// @bug Currently notifies dependents of _all_ abstract parameters.
+  /// @note Currently notifies dependents of _all_ abstract parameters.
   // TODO(sherm1) Invalidate only dependents of this one parameter.
   AbstractValue& get_mutable_abstract_parameter(int index) {
     const int64_t change_event = this->start_new_change_event();
@@ -471,7 +471,7 @@ class Context : public ContextBase {
   /// Sends out of date notifications for all dependent computations in this
   /// context.
   /// @throws std::logic_error if this is not the root context.
-  /// @bug Currently does not copy fixed input port values from `source`.
+  /// @note Currently does not copy fixed input port values from `source`.
   /// See System::FixInputPortsFrom() if you want to copy those.
   // TODO(sherm1) Should treat fixed input port values same as parameters.
   // TODO(sherm1) Change the name of this method to be more inclusive since it
