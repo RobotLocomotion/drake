@@ -15,7 +15,12 @@ namespace examples {
 namespace pendulum {
 
 /// A model of a simple pendulum
-/// @f[ ml^2 \ddot\theta + b\dot\theta + mgl\sin\theta = u @f]
+/// @f[ ml^2 \ddot\theta + b\dot\theta + mgl\sin\theta = \tau @f]
+///
+/// @system{PendulumPlant,
+///    @input_port{tau},
+///    @output_port{state} @output_port{geometry pose}
+/// }
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
