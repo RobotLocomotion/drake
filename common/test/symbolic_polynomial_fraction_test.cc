@@ -217,21 +217,8 @@ TEST_F(SymbolicPolynomialFractionTest, ProductAndAddition) {
   const PolynomialFraction result = f1 * f2 + f3 * f4;
   const PolynomialFraction result_expected(
       p1_ * p1_ * p3_ * p4_ + p2_ * p2_ * p3_ * p4_, p1_ * p2_ * p4_ * p4_);
-  const PolynomialFraction f1_times_f2= f1 * f2;
-  const PolynomialFraction f1_times_f2_expected(p1_ * p3_, p2_ * p4_);
-  // The test in the next line is fine.
-  EXPECT_PRED2(PolyFractionEqual, f1_times_f2, f1_times_f2_expected);
-  const PolynomialFraction f3_times_f4 = f3 * f4;
-  const PolynomialFraction f3_times_f4_expected(p2_ * p3_, p1_ * p4_);
-  // The test in the next line is fine.
-  EXPECT_PRED2(PolyFractionEqual, f3_times_f4, f3_times_f4_expected);
-  // The test in the next line is NOT fine.
-  EXPECT_PRED2(PolyFractionEqual, f1_times_f2 + f3_times_f4, result_expected);
-  // The test in the next line is NOT fine.
-  EXPECT_PRED2(PolyFractionEqual, f1_times_f2_expected + f3_times_f4_expected,
-               result_expected);
-  // The test in the next line is NOT fine.
-  EXPECT_PRED2(PolyFractionEqual, result, result_expected);
+  EXPECT_TRUE(result.numerator().EqualToAfterExpansion(result_expected.numerator()));
+  EXPECT_TRUE(result.denominator().EqualToAfterExpansion(result_expected.denominator()));
 }
 
 }  // namespace
