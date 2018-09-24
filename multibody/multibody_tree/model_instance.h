@@ -143,7 +143,7 @@ class ModelInstance :
       const Eigen::Ref<const VectorX<T>>& v_array) const;
 
   /// Sets the vector of generalized velocities for `this` model instance in
-  /// the proper location of an array corresponding to the velocities for the
+  /// the relevant locations of an array corresponding to the velocities for the
   /// entire MultibodyTree model. Elements of the array that do not
   /// correspond to `this` are not altered. Note that calling
   /// `set_velocities_in_array(model_v, v_array)` causes
