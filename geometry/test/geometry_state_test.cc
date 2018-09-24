@@ -31,7 +31,7 @@ class GeometryStateTester {
   void set_state(GeometryState<T>* state) { state_ = state; }
 
   FrameId get_world_frame() const {
-    return internal::InternalFrame::get_world_frame_id();
+    return internal::InternalFrame::world_frame_id();
   }
 
   const std::unordered_map<SourceId, std::string>& get_source_name_map() const {
@@ -502,14 +502,14 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
     auto test_frame = [internal_frames, this, s_id](int i, FrameId parent_id,
                                                     int num_child_frames) {
       const auto& frame = internal_frames.at(frames_[i]);
-      EXPECT_EQ(frame.get_source_id(), s_id);
-      EXPECT_EQ(frame.get_id(), frames_[i]);
-      EXPECT_EQ(frame.get_name(), "f" + to_string(i));
-      EXPECT_EQ(frame.get_frame_group(), 0);  // Defaults to zero.
-      EXPECT_EQ(frame.get_pose_index(), i);   // ith frame added.
-      EXPECT_EQ(frame.get_parent_frame_id(), parent_id);
-      EXPECT_EQ(frame.get_child_frames().size(), num_child_frames);
-      const auto& child_geometries = frame.get_child_geometries();
+      EXPECT_EQ(frame.source_id(), s_id);
+      EXPECT_EQ(frame.id(), frames_[i]);
+      EXPECT_EQ(frame.name(), "f" + to_string(i));
+      EXPECT_EQ(frame.frame_group(), 0);  // Defaults to zero.
+      EXPECT_EQ(frame.pose_index(), i);   // ith frame added.
+      EXPECT_EQ(frame.parent_frame_id(), parent_id);
+      EXPECT_EQ(frame.child_frames().size(), num_child_frames);
+      const auto& child_geometries = frame.child_geometries();
       EXPECT_EQ(child_geometries.size(), 2);
       EXPECT_NE(child_geometries.find(geometries_[i * 2]),
                                       child_geometries.end());
@@ -517,7 +517,7 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
                                       child_geometries.end());
       const auto& frame_in_parent = gs_tester_.get_frame_parent_poses();
       EXPECT_TRUE(
-          CompareMatrices(frame_in_parent[frame.get_pose_index()].matrix(),
+          CompareMatrices(frame_in_parent[frame.pose_index()].matrix(),
                           X_PF_[i].matrix()));
     };
     test_frame(0, gs_tester_.get_world_frame(), 0);
@@ -1262,7 +1262,7 @@ TEST_F(GeometryStateTest, GetGeometryIdFromName) {
       std::logic_error, "Referenced frame \\d+ has not been registered.");
 
   // Bad *anchored* geometry name.
-  const FrameId world_id = internal::InternalFrame::get_world_frame_id();
+  const FrameId world_id = gs_tester_.get_world_frame();
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.GetGeometryFromName(world_id, "bad"), std::logic_error,
       "The frame 'world' .\\d+. has no geometry with the canonical name .+");

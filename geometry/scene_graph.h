@@ -378,7 +378,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   /** Reports the identifier for the world frame. */
   static FrameId world_frame_id() {
-    return internal::InternalFrame::get_world_frame_id();
+    return internal::InternalFrame::world_frame_id();
   }
 
   /** Returns an inspector on the system's *model* scene graph data.

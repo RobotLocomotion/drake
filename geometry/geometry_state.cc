@@ -112,7 +112,7 @@ int GeometryState<T>::get_frame_group(FrameId frame_id) const {
     return "No frame group available for invalid frame id: " +
            to_string(frame_id);
   });
-  return frames_.at(frame_id).get_frame_group();
+  return frames_.at(frame_id).frame_group();
 }
 
 template <typename T>
@@ -121,7 +121,7 @@ const std::string& GeometryState<T>::get_frame_name(FrameId frame_id) const {
     return "No frame name available for invalid frame id: " +
            to_string(frame_id);
   });
-  return frames_.at(frame_id).get_name();
+  return frames_.at(frame_id).name();
 }
 
 template <typename T>
@@ -150,7 +150,7 @@ GeometryId GeometryState<T>::GetGeometryFromName(
   int count = 0;
   std::string frame_name;
 
-  if (frame_id == InternalFrame::get_world_frame_id()) {
+  if (frame_id == InternalFrame::world_frame_id()) {
     frame_name = "world";
     for (const auto& pair : anchored_geometries_) {
       const InternalAnchoredGeometry& geometry = pair.second;
@@ -161,8 +161,8 @@ GeometryId GeometryState<T>::GetGeometryFromName(
     }
   } else {
     const InternalFrame& frame = GetValueOrThrow(frame_id, frames_);
-    frame_name = frame.get_name();
-    for (GeometryId geometry_id : frame.get_child_geometries()) {
+    frame_name = frame.name();
+    for (GeometryId geometry_id : frame.child_geometries()) {
       const InternalGeometry& geometry = geometries_.at(geometry_id);
       if (geometry.get_name() == canonical_name) {
         ++count;
@@ -189,7 +189,7 @@ const Isometry3<T>& GeometryState<T>::get_pose_in_world(
     return "No world pose available for invalid frame id: " +
            to_string(frame_id);
   });
-  return X_WF_[frames_.at(frame_id).get_pose_index()];
+  return X_WF_[frames_.at(frame_id).pose_index()];
 }
 
 template <typename T>
@@ -211,7 +211,7 @@ const Isometry3<T>& GeometryState<T>::get_pose_in_parent(
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "No pose available for invalid frame id: " + to_string(frame_id);
   });
-  return X_PF_[frames_.at(frame_id).get_pose_index()];
+  return X_PF_[frames_.at(frame_id).pose_index()];
 }
 
 template <typename T>
@@ -280,7 +280,7 @@ SourceId GeometryState<T>::RegisterNewSource(const std::string& name) {
 template <typename T>
 FrameId GeometryState<T>::RegisterFrame(SourceId source_id,
                                         const GeometryFrame& frame) {
-  return RegisterFrame(source_id, InternalFrame::get_world_frame_id(), frame);
+  return RegisterFrame(source_id, InternalFrame::world_frame_id(), frame);
 }
 
 template <typename T>
@@ -295,7 +295,7 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
   }
 
   FrameIdSet& f_set = GetMutableValueOrThrow(source_id, &source_frame_id_map_);
-  if (parent_id != InternalFrame::get_world_frame_id()) {
+  if (parent_id != InternalFrame::world_frame_id()) {
     FindOrThrow(parent_id, f_set, [parent_id, source_id]() {
       return "Indicated parent id " + to_string(parent_id) + " does not belong "
           "to the indicated source id " + to_string(source_id) + ".";
@@ -365,7 +365,7 @@ GeometryId GeometryState<T>::RegisterGeometry(
                        geometry->visual_material()));
 
 
-  int child_count = static_cast<int>(frame.get_child_geometries().size());
+  int child_count = static_cast<int>(frame.child_geometries().size());
   if (child_count > 1) {
     // Filter collisions between geometries affixed to the same frame. We only
     // add a clique to a frame's geometries when there are *multiple* child
@@ -377,7 +377,7 @@ GeometryId GeometryState<T>::RegisterGeometry(
           &engine, engine_index, frame.clique());
     } else {  // child_count == 2.
       // We *now* have multiple child geometries -- assign to clique.
-      for (GeometryId child_id : frame.get_child_geometries()) {
+      for (GeometryId child_id : frame.child_geometries()) {
         GeometryIndex child_index = geometries_[child_id].get_engine_index();
         GeometryStateCollisionFilterAttorney::set_dynamic_geometry_clique(
             &engine, child_index, frame.clique());
@@ -584,7 +584,7 @@ void GeometryState<T>::CollectIndices(
     }
 
     const auto& frame = iterator->second;
-    for (auto geometry_id : frame.get_child_geometries()) {
+    for (auto geometry_id : frame.child_geometries()) {
       dynamic->insert(geometries_[geometry_id].get_engine_index());
     }
   }
@@ -641,27 +641,26 @@ void GeometryState<T>::ValidateFrameIds(
 template <typename T>
 SourceId GeometryState<T>::get_source_id(FrameId frame_id) const {
   const auto& frame = GetValueOrThrow(frame_id, frames_);
-  return frame.get_source_id();
+  return frame.source_id();
 }
 
 template <typename T>
 void GeometryState<T>::UpdatePosesRecursively(
     const internal::InternalFrame& frame, const Isometry3<T>& X_WP,
     const FramePoseVector<T>& poses) {
-  const auto frame_id = frame.get_id();
+  const auto frame_id = frame.id();
   const auto& X_PF = poses.value(frame_id);
   // Cache this transform for later use.
-  X_PF_[frame.get_pose_index()] = X_PF;
+  X_PF_[frame.pose_index()] = X_PF;
   Isometry3<T> X_WF = X_WP * X_PF;
   // TODO(SeanCurtis-TRI): Replace this when we have a transform object that
   // allows proper multiplication between an AutoDiff type and a double type.
   // For now, it allows me to perform the multiplication by multiplying the
   // fully-defined transformation (with [0 0 0 1] on the bottom row).
   X_WF.makeAffine();
-  X_WF_[frame.get_pose_index()] = X_WF;
-
+  X_WF_[frame.pose_index()] = X_WF;
   // Update the geometry which belong to *this* frame.
-  for (auto child_id : frame.get_child_geometries()) {
+  for (auto child_id : frame.child_geometries()) {
     auto& child_geometry = geometries_[child_id];
     auto child_index = child_geometry.get_engine_index();
     // TODO(SeanCurtis-TRI): See note above about replacing this when we have a
@@ -674,7 +673,7 @@ void GeometryState<T>::UpdatePosesRecursively(
   }
 
   // Update each child frame.
-  for (auto child_id : frame.get_child_frames()) {
+  for (auto child_id : frame.child_frames()) {
     auto& child_frame = frames_[child_id];
     UpdatePosesRecursively(child_frame, X_WF, poses);
   }
