@@ -110,7 +110,10 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTrue(plant.is_finalized())
         self.assertTrue(plant.HasBodyNamed(name="Link1"))
         self.assertTrue(plant.HasJointNamed(name="ShoulderJoint"))
-        self._test_joint_api(plant.GetJointByName(name="ShoulderJoint"))
+        shoulder = plant.GetJointByName(name="ShoulderJoint")
+        self._test_joint_api(shoulder)
+        np.testing.assert_array_equal(shoulder.lower_limits(), [-np.inf])
+        np.testing.assert_array_equal(shoulder.upper_limits(), [np.inf])
         self._test_joint_actuator_api(
             plant.GetJointActuatorByName(name="ElbowJoint"))
         self._test_body_api(plant.GetBodyByName(name="Link1"))

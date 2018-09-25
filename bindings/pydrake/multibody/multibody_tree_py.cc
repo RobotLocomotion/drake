@@ -106,7 +106,9 @@ void init_module(py::module m) {
         .def("position_start", &Class::position_start)
         .def("velocity_start", &Class::velocity_start)
         .def("num_positions", &Class::num_positions)
-        .def("num_velocities", &Class::num_velocities);
+        .def("num_velocities", &Class::num_velocities)
+        .def("lower_limits", &Class::lower_limits)
+        .def("upper_limits", &Class::upper_limits);
 
     // Add deprecated methods.
 #pragma GCC diagnostic push
