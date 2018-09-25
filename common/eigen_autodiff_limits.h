@@ -1,5 +1,9 @@
 #pragma once
 
+// Redundant #define guards for the benefit of @pybind11//:mkdoc.py.
+#ifndef DRAKE_COMMON_EIGEN_AUTODIFF_LIMITS_H_
+#define DRAKE_COMMON_EIGEN_AUTODIFF_LIMITS_H_
+
 #ifndef DRAKE_COMMON_AUTODIFF_HEADER
 // TODO(soonho-tri): Change to #error.
 #warning Do not directly include this file. Include "drake/common/autodiff.h".
@@ -18,3 +22,5 @@ class numeric_limits<Eigen::AutoDiffScalar<T>>
 }  // namespace std
 
 #endif  // Eigen Version < v3.3.4
+
+#endif  // DRAKE_COMMON_EIGEN_AUTODIFF_LIMITS_H_

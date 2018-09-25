@@ -1,4 +1,9 @@
 #pragma once
+
+// Redundant #define guards for the benefit of @pybind11//:mkdoc.py.
+#ifndef DRAKE_COMMON_SYMBOLIC_EXPRESSION_CELL_H_
+#define DRAKE_COMMON_SYMBOLIC_EXPRESSION_CELL_H_
+
 /// @file
 ///
 /// Provides implementation-details of symbolic expressions.
@@ -1163,3 +1168,5 @@ std::shared_ptr<ExpressionUninterpretedFunction> to_uninterpreted_function(
 
 }  // namespace symbolic
 }  // namespace drake
+
+#endif  // DRAKE_COMMON_SYMBOLIC_EXPRESSION_CELL_H_
