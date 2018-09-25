@@ -2053,9 +2053,8 @@ class MathematicalProgram {
    * The users can refer to DSOS and SDSOS Optimization: More Tractable
    * Alternatives to Sum of Squares and Semidefinite Optimization by Amir Ali
    * Ahmadi and Anirudha Majumdar.
-   * @param X The symmetric matrix X in the documentation above. We
-   * will assume that @p X is already symmetric. It is the user's responsibility
-   * to guarantee the symmetry.
+   * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
+   * X.
    * @return Y The slack variable. Y(i, j) represents |X(i, j)| ∀ j ≠ i, with
    * the constraint Y(i, j) >= X(i, j) and Y(i, j) >= -X(i, j). Y is a symmetric
    * matrix. The diagonal entries Y(i, i) = X(i, i)
@@ -2071,14 +2070,14 @@ class MathematicalProgram {
    * d(i)X(i, i) ≥ ∑ⱼ |d(j)X(i, j)| ∀ j ≠ i
    * where d(i) = D(i, i).
    * X being sdd is equivalent to the existence of symmetric matrices Mⁱʲ∈ ℝⁿˣⁿ
-   * i < j, such that all entriex in Mⁱʲ are 0, except Mⁱʲ(i, i), Mⁱʲ(i, j),
-   * Mⁱʲ(j, j), (Mⁱʲ(i, i), Mⁱʲ(j, j), Mⁱʲ(i, j)) is in the rotated
-   * Lorentz cone, X = ∑ᵢⱼ Mⁱʲ
+   * i < j, such that all entries in Mⁱʲ are 0, except Mⁱʲ(i, i), Mⁱʲ(i, j),
+   * Mⁱʲ(j, j). (Mⁱʲ(i, i), Mⁱʲ(j, j), Mⁱʲ(i, j)) is in the rotated
+   * Lorentz cone, and X = ∑ᵢⱼ Mⁱʲ
    * The users can refer to DSOS and SDSOS Optimization: More Tractable
    * Alternatives to Sum of Squares and Semidefinite Optimization by Amir Ali
    * Ahmadi and Anirudha Majumdar.
-   * @param X The symmetric matrix X. We will assume that @p X is already
-   * symmetric. It is the user's responsibility to guarantee the symmetry.
+   * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
+   * X.
    * @pre X(i, j) should be a linear expression of decision variables.
    * @return M for i < j, M[i][j] is the 2 x 2 symmetric matrix
    * [Mⁱʲ(i, i), Mⁱʲ(i, j)]
