@@ -1782,9 +1782,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   std::unique_ptr<implicit_stribeck::ImplicitStribeckSolver<T>>
       implicit_stribeck_solver_;
 
-  // Cache entries.
-  systems::CacheIndex position_kinematics_cache_index_;
-  systems::CacheIndex velocity_kinematics_cache_index_;
+  // Cache entries that belong to MBPlant, not MBTree.
   systems::CacheIndex contact_results_cache_index_;
 
   // TODO(amcastro-tri): Remove this when caching lands and properly cache the
