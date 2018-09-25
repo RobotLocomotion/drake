@@ -246,6 +246,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "proximity_engine_test",
+    data = ["test/quad_cube.obj"],
     deps = [
         ":proximity_engine",
         ":shape_specification",
