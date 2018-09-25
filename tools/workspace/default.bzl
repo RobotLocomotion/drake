@@ -8,6 +8,7 @@ load("@drake//tools/workspace/buildifier:repository.bzl", "buildifier_repository
 load("@drake//tools/workspace/bullet:repository.bzl", "bullet_repository")
 load("@drake//tools/workspace/cc:repository.bzl", "cc_repository")
 load("@drake//tools/workspace/ccd:repository.bzl", "ccd_repository")
+load("@drake//tools/workspace/clang_cindex_python3:repository.bzl", "clang_cindex_python3_repository")  # noqa
 load("@drake//tools/workspace/com_google_protobuf:repository.bzl", "com_google_protobuf_repository")  # noqa
 load("@drake//tools/workspace/com_jidesoft_jide_oss:repository.bzl", "com_jidesoft_jide_oss_repository")  # noqa
 load("@drake//tools/workspace/commons_io:repository.bzl", "commons_io_repository")  # noqa
@@ -92,6 +93,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         cc_repository(name = "cc")
     if "ccd" not in excludes:
         ccd_repository(name = "ccd", mirrors = mirrors)
+    if "clang_cindex_python3" not in excludes:
+        clang_cindex_python3_repository(name = "clang_cindex_python3", mirrors = mirrors)  # noqa
     if "com_google_protobuf" not in excludes:
         com_google_protobuf_repository(name = "com_google_protobuf")
     if "com_jidesoft_jide_oss" not in excludes:
