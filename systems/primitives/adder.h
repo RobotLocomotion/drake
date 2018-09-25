@@ -12,8 +12,8 @@ namespace systems {
 /// @ingroup primitive_systems
 ///
 /// @system{Adder,
-///    @input_port{Input1} @input_port{...} @input_port{InputN},
-///    @output_port{Sum}
+///    @input_port{input(0)} @input_port{...} @input_port{input(N-1)},
+///    @output_port{sum}
 /// }
 ///
 /// @tparam T The type of mathematical object being added.
