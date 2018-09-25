@@ -46,7 +46,6 @@ drake_cc_binary(
     srcs = ["yaml_to_obj.cc"],
     deps = [
         ":utility",
-        "//automotive/maliput/monolane",
         "//automotive/maliput/multilane",
         "//common:text_logging_gflags",
         "@yaml_cpp",
@@ -93,7 +92,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":utility",
-        "//automotive/maliput/monolane",
+        "//automotive/maliput/multilane",
         "//common",
         "@spruce",
     ],
@@ -103,7 +102,7 @@ drake_cc_googletest(
     name = "generate_urdf_test",
     deps = [
         ":utility",
-        "//automotive/maliput/monolane",
+        "//automotive/maliput/multilane",
         "@spruce",
     ],
 )
@@ -122,7 +121,6 @@ drake_py_unittest(
     args = ["$(location :yaml_to_obj)"],
     data = [
         ":yaml_to_obj",
-        "//automotive/maliput/monolane:yamls",
         "//automotive/maliput/multilane:yamls",
     ],
 )
