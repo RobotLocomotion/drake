@@ -25,7 +25,13 @@
 #ifndef DRAKE_COMMON_AUTODIFF_HEADER
 // TODO(soonho-tri): Change to #error.
 #warning Do not directly include this file. Include "drake/common/autodiff.h".
-#endif
+
+// Ensure that this header is self-contained for the benefit of
+// @pybind11//:mkdoc.py.
+#include <Eigen/Core>
+#include <unsupported/Eigen/AutoDiff>
+
+#endif  // DRAKE_COMMON_AUTODIFF_HEADER
 
 #include <cmath>
 #include <limits>

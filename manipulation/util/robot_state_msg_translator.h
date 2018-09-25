@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <utility>
 
-#include "lcmtypes/bot_core/robot_state_t.hpp"
+#include "bot_core/robot_state_t.hpp"
 
 #include "drake/multibody/rigid_body_tree.h"
 

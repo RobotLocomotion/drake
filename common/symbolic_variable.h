@@ -20,6 +20,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/hash.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace symbolic {

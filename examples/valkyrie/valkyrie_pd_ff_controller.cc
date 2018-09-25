@@ -5,8 +5,8 @@
 #include <memory>
 #include <string>
 
-#include "lcmtypes/bot_core/atlas_command_t.hpp"
-#include "lcmtypes/bot_core/robot_state_t.hpp"
+#include "bot_core/atlas_command_t.hpp"
+#include "bot_core/robot_state_t.hpp"
 
 #include "drake/common/find_resource.h"
 #include "drake/examples/valkyrie/robot_state_decoder.h"
