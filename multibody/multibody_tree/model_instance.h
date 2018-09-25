@@ -111,7 +111,14 @@ class ModelInstance :
   ///   joints in this model instance.
   /// @param[out] u
   ///   The vector containing the actuation values for the entire MultibodyTree
-  ///   model to which `this` actuator belongs to.
+  ///   model to which `this` actuator belongs to. It must be of size equal to
+  ///   the number of degrees of freedom of all of the actuated joints in the
+  ///   entire MultibodyTree model.
+  /// @throws std::logic_error if `u_instance` is not of size equal to the
+  ///         number of degrees of freedom of all of the actuated joints in this
+  ///         model or `u` is not of size equal to the number of degrees of
+  ///         freedom of all of the actuated joints in the entire MultibodyTree
+  ///         model to which `this` actuator belongs to.
   void set_actuation_vector(
       const Eigen::Ref<const VectorX<T>>& u_instance,
       EigenPtr<VectorX<T>> u) const;
@@ -119,7 +126,8 @@ class ModelInstance :
   /// Returns a const Eigen expression of the vector of generalized positions
   /// for `this` model instance from a vector `q_array` of generalized
   /// positions for the entire MultibodyTree model.
-  /// @pre `q_array` is of size MultibodyTree::num_positions().
+  /// @throws std::logic_error if `q_array` is not of size
+  ///         MultibodyTree::num_positions().
   VectorX<T> get_positions_from_array(
       const Eigen::Ref<const VectorX<T>>& q_array) const;
 
@@ -129,8 +137,9 @@ class ModelInstance :
   /// correspond to `this` are not altered. Note that calling
   /// `set_positions_in_array(model_q, q_array)` causes
   /// `get_positions_from_array(q_array)` to yield `model_q`.
-  /// @pre `q_array` is of size MultibodyTree::num_positions().
-  /// @pre `model_q` is of size num_positions().
+  /// @throws std::logic_error if `q_array` is not of size
+  ///         MultibodyTree::num_positions() or `model_q` is not of size
+  ///         num_positions().
   void set_positions_in_array(
       const Eigen::Ref<const VectorX<T>>& model_q,
       EigenPtr<VectorX<T>> q_array) const;
@@ -138,7 +147,8 @@ class ModelInstance :
   /// Returns a const Eigen expression of the vector of generalized velocities
   /// for `this` mobilizer from a vector `v_array` of generalized velocities for
   /// the entire MultibodyTree model.
-  /// @pre `v_array` is of size MultibodyTree::num_velocities().
+  /// @throws std::logic_error if `v_array` is not of size
+  ///         MultibodyTree::num_velocities().
   VectorX<T> get_velocities_from_array(
       const Eigen::Ref<const VectorX<T>>& v_array) const;
 
@@ -148,8 +158,9 @@ class ModelInstance :
   /// correspond to `this` are not altered. Note that calling
   /// `set_velocities_in_array(model_v, v_array)` causes
   /// `get_velocities_from_array(v_array)` to yield `model_v`.
-  /// @pre `v_array` is of size MultibodyTree::num_velocities().
-  /// @pre `model_v` is of size num_velocities().
+  /// @throws std::logic_error if `v_array` is not of size
+  ///         MultibodyTree::num_velocities() or `model_v` is not of size
+  ///         num_velocities().
   void set_velocities_in_array(
       const Eigen::Ref<const VectorX<T>>& model_v,
       EigenPtr<VectorX<T>> v_array) const;

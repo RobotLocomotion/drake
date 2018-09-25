@@ -1393,10 +1393,12 @@ class MultibodyTree {
 
   /// Given the actuation values @p u_instance for all actuators in @p
   /// model_instance, this method sets the actuation vector u for the entire
-  /// MultibodyTree model to which this actuator belongs to.
+  /// MultibodyTree model to which this actuator belongs to. This method throws
+  /// an exception if the size of `u_instance` is not equal to the number of
+  /// degrees of freedom of all of the actuated joints in `model_instance`.
   /// @param[in] u_instance Actuation values for the actuators. It must be of
   ///   size equal to the number of degrees of freedom of all of the actuated
-  ///   joints in @p model_instance.
+  ///   joints in `model_instance`.
   /// @param[out] u
   ///   The vector containing the actuation values for the entire MultibodyTree.
   void set_actuation_vector(
@@ -1404,9 +1406,9 @@ class MultibodyTree {
       const Eigen::Ref<const VectorX<T>>& u_instance,
       EigenPtr<VectorX<T>> u) const;
 
-  /// Returns a vector of generalized positions for @p model_instance from a
+  /// Returns a vector of generalized positions for `model_instance` from a
   /// vector `q_array` of generalized positions for the entire MultibodyTree
-  /// model.  This method aborts if `q_array` is not of size
+  /// model.  This method throws an exception if `q_array` is not of size
   /// MultibodyTree::num_positions().
   VectorX<T> get_positions_from_array(
       ModelInstanceIndex model_instance,
@@ -1414,7 +1416,7 @@ class MultibodyTree {
 
   /// Sets the vector of generalized positions for `model_instance` in
   /// `q_array` using `model_q`, leaving all other elements in the array
-  /// untouched. This method aborts if `q_array` is not of size
+  /// untouched. This method throws an exception if `q_array` is not of size
   /// MultibodyTree::num_positions() or `model_q` is not of size
   /// `MultibodyTree::num_positions(model_instance)`.
   void set_positions_in_array(
@@ -1424,7 +1426,7 @@ class MultibodyTree {
 
   /// Returns a vector of generalized velocities for @p model_instance from a
   /// vector `v_array` of generalized velocities for the entire MultibodyTree
-  /// model.  This method aborts if the input array is not of size
+  /// model.  This method throws an exception if the input array is not of size
   /// MultibodyTree::num_velocities().
   VectorX<T> get_velocities_from_array(
       ModelInstanceIndex model_instance,
@@ -1432,7 +1434,7 @@ class MultibodyTree {
 
   /// Sets the vector of generalized velocities for `model_instance` in
   /// `v_array` using `model_v`, leaving all other elements in the array
-  /// untouched. This method aborts if `v_array` is not of size
+  /// untouched. This method throws an exception if `v_array` is not of size
   /// MultibodyTree::num_velocities() or `model_v` is not of size
   /// `MultibodyTree::num_positions(model_instance)`.
   void set_velocities_in_array(

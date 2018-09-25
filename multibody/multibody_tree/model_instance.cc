@@ -13,8 +13,11 @@ void ModelInstance<T>::set_actuation_vector(
     const Eigen::Ref<const VectorX<T>>& u_instance,
     EigenPtr<VectorX<T>> u) const {
   DRAKE_DEMAND(u != nullptr);
-  DRAKE_DEMAND(u->size() == this->get_parent_tree().num_actuated_dofs());
-  DRAKE_DEMAND(u_instance.size() == num_actuated_dofs_);
+  if (u->size() != this->get_parent_tree().num_actuated_dofs() ||
+      u_instance.size() != num_actuated_dofs_) {
+    throw std::logic_error("Passed in array(s) is not properly sized.");
+  }
+
   int u_instance_offset = 0;
   for (const JointActuator<T>* actuator : joint_actuators_) {
     const int num_dofs = actuator->joint().num_velocities();
@@ -28,8 +31,8 @@ void ModelInstance<T>::set_actuation_vector(
 template <typename T>
 VectorX<T> ModelInstance<T>::get_positions_from_array(
     const Eigen::Ref<const VectorX<T>>& q_array) const {
-  DRAKE_DEMAND(
-      q_array.size() == this->get_parent_tree().num_positions());
+  if (q_array.size() != this->get_parent_tree().num_positions())
+    throw std::logic_error("Passed in array is not properly sized.");
   VectorX<T> positions(num_positions_);
   int position_offset = 0;
   for (const Mobilizer<T>* mobilizer : mobilizers_) {
@@ -46,23 +49,26 @@ template <class T>
 void ModelInstance<T>::set_positions_in_array(
     const Eigen::Ref<const VectorX<T>>& model_q,
     EigenPtr<VectorX<T>> q_array) const {
-  DRAKE_DEMAND(q_array->size() == this->get_parent_tree().num_positions());
-  DRAKE_DEMAND(model_q.size() == num_positions());
+  DRAKE_DEMAND(q_array);
+  if (q_array->size() != this->get_parent_tree().num_positions() ||
+      model_q.size() != num_positions()) {
+    throw std::logic_error("Passed in array(s) is not properly sized.");
+  }
   int position_offset = 0;
   for (const Mobilizer<T>* mobilizer : mobilizers_) {
     const int mobilizer_positions = mobilizer->num_positions();
     q_array->segment(mobilizer->position_start_in_q(), mobilizer_positions) =
         model_q.segment(position_offset, mobilizer_positions);
     position_offset += mobilizer_positions;
-    DRAKE_DEMAND(position_offset <= q_array->size());
+    DRAKE_DEMAND(position_offset <= model_q.size());
   }
 }
 
 template <typename T>
 VectorX<T> ModelInstance<T>::get_velocities_from_array(
     const Eigen::Ref<const VectorX<T>>& v_array) const {
-  DRAKE_DEMAND(
-      v_array.size() == this->get_parent_tree().num_velocities());
+  if (v_array.size() != this->get_parent_tree().num_velocities())
+    throw std::logic_error("Passed in array is not properly sized.");
   VectorX<T> velocities(num_velocities_);
   int velocity_offset = 0;
   for (const Mobilizer<T>* mobilizer : mobilizers_) {
@@ -87,7 +93,7 @@ void ModelInstance<T>::set_velocities_in_array(
     v_array->segment(mobilizer->velocity_start_in_v(), mobilizer_velocities) =
         model_v.segment(velocity_offset, mobilizer_velocities);
     velocity_offset += mobilizer_velocities;
-    DRAKE_DEMAND(velocity_offset <= v_array->size());
+    DRAKE_DEMAND(velocity_offset <= model_v.size());
   }
 }
 
