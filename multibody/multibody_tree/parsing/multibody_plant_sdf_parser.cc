@@ -1,5 +1,6 @@
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 
+#include <limits>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -210,14 +211,23 @@ std::pair<double, double> ParseJointLimits(const sdf::Joint& joint_spec) {
     throw std::runtime_error(
         "An axis must be specified for joint '" + joint_spec.Name() + "'");
   }
-  const double lower_limit = axis->Lower();
-  const double upper_limit = axis->Upper();
+
+  // SDF defaults to ±1.0e16 for joints with no limits, see
+  // http://sdformat.org/spec?ver=1.6&elem=joint#axis_limit.
+  // Drake marks joints with no limits with ±numeric_limits<double>::infinity()
+  // and therefore we make the change here.
+  const double lower_limit =
+      axis->Lower() == -1.0e16 ?
+      -std::numeric_limits<double>::infinity() : axis->Lower();
+  const double upper_limit =
+      axis->Upper() == 1.0e16 ?
+      std::numeric_limits<double>::infinity() : axis->Upper();
   if (lower_limit > upper_limit) {
     throw std::runtime_error(
         "The lower limit must be lower (or equal) than the upper limit for "
         "joint '" + joint_spec.Name() + "'.");
   }
-  return std::make_pair(axis->Lower(), axis->Upper());
+  return std::make_pair(lower_limit, upper_limit);
 }
 
 // Helper method to add joints to a MultibodyPlant given an sdf::Joint

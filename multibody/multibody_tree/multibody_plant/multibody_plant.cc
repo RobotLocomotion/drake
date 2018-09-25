@@ -467,10 +467,9 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
     const double penalty_time_scale = kAlpha * time_step();
 
     if (revolute_joint) {
-      // We only compute parameters if they are far from being infinity.
-      // SDF defaults to 1.0e16 instead of infinity.
-      if (-1.0e16 < revolute_joint->lower_limit() ||
-          revolute_joint->upper_limit() < 1.0e16) {
+      // We only compute parameters if joints do have upper/lower bounds.
+      if (!std::isinf(revolute_joint->lower_limit()) ||
+          !std::isinf(revolute_joint->upper_limit())) {
         joint_limits_parameters_.joints_with_limits.push_back(
             revolute_joint->index());
 
@@ -490,10 +489,9 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
     }
 
     if (prismatic_joint) {
-      // We only compute parameters if they are far from being infinity.
-      // SDF defaults to 1.0e16 instead of infinity.
-      if (-1.0e16 < prismatic_joint->lower_limit() ||
-          prismatic_joint->upper_limit() < 1.0e16) {
+      // We only compute parameters if joints do have upper/lower bounds.
+      if (!std::isinf(prismatic_joint->lower_limit()) ||
+          !std::isinf(prismatic_joint->upper_limit())) {
         joint_limits_parameters_.joints_with_limits.push_back(
             prismatic_joint->index());
 
