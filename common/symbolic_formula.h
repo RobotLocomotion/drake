@@ -1,5 +1,9 @@
 #pragma once
 
+// Redundant #define guards for the benefit of @pybind11//:mkdoc.py.
+#ifndef DRAKE_COMMON_SYMBOLIC_FORMULA_H_
+#define DRAKE_COMMON_SYMBOLIC_FORMULA_H_
+
 #ifndef DRAKE_COMMON_SYMBOLIC_HEADER
 // TODO(soonho-tri): Change to #error, when #6613 merged.
 #warning Do not directly include this file. Include "drake/common/symbolic.h".
@@ -1322,3 +1326,5 @@ struct scalar_cmp_op<drake::symbolic::Variable, drake::symbolic::Variable,
 }  // namespace internal
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
+
+#endif  // DRAKE_COMMON_SYMBOLIC_FORMULA_H_

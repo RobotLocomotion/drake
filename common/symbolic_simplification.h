@@ -1,5 +1,9 @@
 #pragma once
 
+// Redundant #define guards for the benefit of @pybind11//:mkdoc.py.
+#ifndef DRAKE_COMMON_SYMBOLIC_SIMPLIFICATION_H_
+#define DRAKE_COMMON_SYMBOLIC_SIMPLIFICATION_H_
+
 #include <functional>
 #include <utility>
 
@@ -56,3 +60,5 @@ Rewriter MakeRuleRewriter(const RewritingRule& r);
 
 }  // namespace symbolic
 }  // namespace drake
+
+#endif  // DRAKE_COMMON_SYMBOLIC_SIMPLIFICATION_H_
