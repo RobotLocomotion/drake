@@ -1,10 +1,30 @@
 # -*- python -*-
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_runfiles_binary.bzl", "drake_runfiles_binary")
 
 exports_files(
     ["package-create-cps.py"],
     visibility = ["@pybind11//:__pkg__"],
+)
+
+# TODO(jamiesnape): Once we only support Python 3.x, delete this target and
+# modify any targets that depend on it to depend on @pybind11//:mkdoc directly.
+py_binary(
+    name = "run_mkdoc_with_python3",
+    srcs = ["run_mkdoc_with_python3.py"],
+    data = [
+        "@pybind11//:mkdoc",
+        "@python3",
+    ],
+    default_python_version = "PY2",
+    deps = ["@clang_cindex_python3//:clang"],
+)
+
+drake_runfiles_binary(
+    name = "mkdoc",
+    target = ":run_mkdoc_with_python3",
+    visibility = ["//bindings:__subpackages__"],
 )
 
 add_lint_tests()

@@ -49,6 +49,13 @@ cc_library(
     ],
 )
 
+py_binary(
+    name = "mkdoc",
+    srcs = ["tools/mkdoc.py"],
+    default_python_version = "PY3",
+    deps = ["@clang_cindex_python3//:clang"],
+)
+
 cmake_config(
     package = "pybind11",
     script = "@drake//tools/workspace/pybind11:package-create-cps.py",
