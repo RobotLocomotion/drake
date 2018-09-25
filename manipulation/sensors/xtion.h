@@ -37,6 +37,8 @@ namespace sensors {
  *  builder.Connect(plant->get_output_port_state(),
  *                  camera->get_input_port_state());
  * @endcode
+ *
+ * @ingroup manipulation_systems
  */
 // TODO(eric.cousineau): Delegate most of this class's functionality to
 // definition files once sensor tags are supported. At present, this is

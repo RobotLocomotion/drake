@@ -14,6 +14,7 @@ namespace schunk_wsg {
 /// consists of a PID controller (which controls the target position
 /// from the command message) combined with a saturation block (which
 /// applies the force control from the command message).
+/// @ingroup manipulation_systems
 class SchunkWsgController : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgController)

@@ -29,6 +29,8 @@ namespace util {
  * specified. This system takes an abstract valued input of type
  * KinematicResults<double> and generates an abstract value output of type
  * geometry::FramePoseVector<double>.
+ *
+ * @ingroup manipulation_systems
  */
 // TODO(rcory): Template FramePoseTracker on type T
 class FramePoseTracker : public systems::LeafSystem<double> {

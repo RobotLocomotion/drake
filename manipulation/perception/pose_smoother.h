@@ -29,6 +29,8 @@ namespace perception {
  * Averaging",
  *  NASA Technical note, available to download at
  *  https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20070017872.pdf
+ *
+ *  @ingroup manipulation_systems
  */
 class PoseSmoother : public systems::LeafSystem<double> {
  public:
