@@ -96,6 +96,15 @@ class AcrobotModelTests : public ::testing::Test {
   std::unique_ptr<systems::Context<double>> benchmark_context_;
 };
 
+// Verifies that the default joint limits when no limits are specified in the
+// SDF file are ±infinity.
+TEST_F(AcrobotModelTests, DefaultJointLimits) {
+  EXPECT_TRUE(std::isinf(shoulder_->lower_limit()));
+  EXPECT_TRUE(std::isinf(shoulder_->upper_limit()));
+  EXPECT_TRUE(std::isinf(elbow_->lower_limit()));
+  EXPECT_TRUE(std::isinf(elbow_->upper_limit()));
+}
+
 // This test verifies a number of invariants such as model sizes and that body
 // and joint models were properly added.
 TEST_F(AcrobotModelTests, ModelBasics) {
