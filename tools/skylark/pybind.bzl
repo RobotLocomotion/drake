@@ -137,6 +137,7 @@ def drake_pybind_library(
         cc_srcs = cc_srcs,
         cc_deps = cc_deps + [
             "//:drake_shared_library",
+            "//bindings/pydrake:documentation_pybind",
             "//bindings/pydrake:pydrake_pybind",
         ],
         cc_binary_rule = drake_cc_binary,
@@ -286,3 +287,69 @@ def drake_pybind_cc_googletest(
         # such as numpy(!!) do so unconditionally.  We should allow that.
         allow_import_unittest = True,
     )
+
+def _generate_pybind_documentation_header_impl(ctx):
+    compile_flags = []
+    transitive_headers = []
+    package_headers = []
+    for target in ctx.attr.targets:
+        if hasattr(target, "cc"):
+            compile_flags += [
+                compile_flag.replace(" ", "")
+                for compile_flag in target.cc.compile_flags
+            ]
+            transitive_headers += target.cc.transitive_headers.to_list()
+            package_headers += [
+                transitive_header
+                for transitive_header in target.cc.transitive_headers
+                if (target.label.package == transitive_header.owner.package and
+                    target.label.workspace_root == transitive_header.owner.workspace_root)  # noqa
+            ]
+
+    for deps in ctx.attr.deps:
+        if hasattr(deps, "cc"):
+            compile_flags += [
+                compile_flag.replace(" ", "")
+                for compile_flag in deps.cc.compile_flags
+            ]
+            transitive_headers += deps.cc.transitive_headers.to_list()
+
+    mkdoc = ctx.file._mkdoc
+
+    args = ctx.actions.args()
+    args.add_all(compile_flags, uniquify = True)
+    args.add("-quiet")
+
+    # Replace with ctx.fragments.cpp.cxxopts in Bazel 0.17.1.
+    args.add("-std=c++14")
+    args.add("-Wno-#warnings")
+    args.add("-Wno-pragma-once-outside-header")
+    args.add_all(package_headers, uniquify = True)
+
+    ctx.actions.run_shell(
+        outputs = [ctx.outputs.out],
+        inputs = transitive_headers,
+        tools = [mkdoc],
+        arguments = [args],
+        command = "{} $@ > {}".format(mkdoc.path, ctx.outputs.out.path),
+    )
+
+generate_pybind_documentation_header = rule(
+    attrs = {
+        "targets": attr.label_list(
+            allow_files = True,
+            mandatory = True,
+        ),
+        "_mkdoc": attr.label(
+            default = Label("//tools/workspace/pybind11:mkdoc"),
+            allow_single_file = True,
+            cfg = "host",
+            executable = True,
+        ),
+        "out": attr.output(mandatory = True),
+        "deps": attr.label_list(),
+    },
+    fragments = ["cpp"],
+    implementation = _generate_pybind_documentation_header_impl,
+    output_to_genfiles = True,
+)
