@@ -61,11 +61,12 @@ GTEST_TEST(CppTemplateTest, TemplateClass) {
   m.def("simple_func", [](const SimpleTemplate<int>&) {});
 
   // Check error message if a function is called with the incorrect arguments.
-  // N.B. We use `[\s\S]` because C++ regex does not have an equivalent of
-  // Python re's DOTALL flag.
+  // N.B. We use `[^\0]` because C++ regex does not have an equivalent of
+  // Python re's DOTALL flag. `[\s\S]` *should* work, but Apple LLVM 10.0.0
+  // does not work with it.
   DRAKE_EXPECT_THROWS_MESSAGE(
       py::eval("simple_func('incorrect value')"), std::runtime_error,
-      R"([\s\S]*incompatible function arguments[\s\S]*\(arg0: __main__\.SimpleTemplate\[int\]\)[\s\S]*)");  // NOLINT
+      R"([^\0]*incompatible function arguments[^\0]*\(arg0: __main__\.SimpleTemplate\[int\]\)[^\0]*)");  // NOLINT
 }
 
 template <typename ... Ts>
