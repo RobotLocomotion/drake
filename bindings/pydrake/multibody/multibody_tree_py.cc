@@ -212,11 +212,10 @@ void init_module(py::module m) {
              py::keep_alive<0, 2>(), py::arg("context"))
         .def(
             "CalcPointsPositions",
-            [](
-                const Class* self,
-                const Context<T>& context, const Frame<T>& frame_B,
-                const Eigen::Ref<const MatrixX<T>>& p_BQi,
-                const Frame<T>& frame_A) {
+            [](const Class* self,
+               const Context<T>& context, const Frame<T>& frame_B,
+               const Eigen::Ref<const MatrixX<T>>& p_BQi,
+               const Frame<T>& frame_A) {
               MatrixX<T> p_AQi(p_BQi.rows(), p_BQi.cols());
               self->CalcPointsPositions(
                   context, frame_B, p_BQi, frame_A, &p_AQi);
@@ -226,10 +225,9 @@ void init_module(py::module m) {
             py::arg("frame_A"))
         .def(
             "CalcFrameGeometricJacobianExpressedInWorld",
-            [](
-                const Class* self,
-                const Context<T>& context,
-                const Frame<T>& frame_B, const Vector3<T>& p_BoFo_B) {
+            [](const Class* self,
+               const Context<T>& context,
+               const Frame<T>& frame_B, const Vector3<T>& p_BoFo_B) {
               MatrixX<T> Jv_WF(6, self->num_velocities());
               self->CalcFrameGeometricJacobianExpressedInWorld(
                   context, frame_B, p_BoFo_B, &Jv_WF);
@@ -254,7 +252,39 @@ void init_module(py::module m) {
             py::arg("model_instance"), py::arg("q_array"))
         .def("get_velocities_from_array",
             &Class::get_velocities_from_array,
-            py::arg("model_instance"), py::arg("v_array"));
+            py::arg("model_instance"), py::arg("v_array"))
+        .def("SetFreeBodySpatialVelocityOrThrow",
+            [](const Class* self, const Body<T>& body,
+               const SpatialVelocity<T>& V_WB, Context<T>* context) {
+              self->SetFreeBodySpatialVelocityOrThrow(body, V_WB, context);
+            },
+            py::arg("body"), py::arg("V_WB"), py::arg("context")).
+        def("CalcAllBodySpatialVelocitiesInWorld",
+            [](const Class* self, const Context<T>& context) {
+              std::vector<SpatialVelocity<T>> V_WB;
+              self->CalcAllBodySpatialVelocitiesInWorld(context, &V_WB);
+              return V_WB;
+            },
+            py::arg("context")).
+        def("EvalBodyPoseInWorld",
+            [](const Class* self, const Context<T>& context,
+               const Body<T>& body_B) {
+              return self->EvalBodyPoseInWorld(context, body_B);
+            },
+            py::arg("context"), py::arg("body")).
+        def("EvalBodySpatialVelocityInWorld",
+            [](const Class* self, const Context<T>& context,
+               const Body<T>& body_B) {
+              return self->EvalBodySpatialVelocityInWorld(context, body_B);
+            },
+            py::arg("context"), py::arg("body")).
+        def("CalcAllBodyPosesInWorld",
+            [](const Class* self, const Context<T>& context) {
+              std::vector<Isometry3<T>> X_WB;
+              self->CalcAllBodyPosesInWorld(context, &X_WB);
+              return X_WB;
+            },
+            py::arg("context"));
   }
 }
 
