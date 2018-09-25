@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-#include "lcmtypes/bot_core/atlas_command_t.hpp"
+#include "bot_core/atlas_command_t.hpp"
 
 namespace drake {
 namespace systems {
