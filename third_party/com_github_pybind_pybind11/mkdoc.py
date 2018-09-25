@@ -327,7 +327,7 @@ if __name__ == '__main__':
         else:
             name_prev = name
             name_ctr = 1
-        print('\nstatic const char *%s =%sR"doc(%s)doc";' %
+        print('\nstatic const char *%s [[gnu::unused]] =%sR"doc(%s)doc";' %
               (name, '\n' if '\n' in comment else ' ', comment))
 
     print('''
