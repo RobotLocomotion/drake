@@ -52,6 +52,8 @@ optional<int> FindOptitrackObjectId(
  * Extracts and provides an output of the pose of a desired object as an
  * Eigen::Isometry3d from an Optitrack LCM OPTITRACK_FRAME_T message, the
  * pose transformed to a desired coordinate frame.
+ *
+ * @ingroup manipulation_systems
  */
 class OptitrackPoseExtractor : public systems::LeafSystem<double> {
  public:

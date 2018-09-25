@@ -101,6 +101,8 @@ enum class ControlMode { kPosition = 0, kForce = 1 };
  * Note that the "feed forward force" input is ignored for
  * ControlMode::kPosition and the "desired grip state" input is ignored for
  * ControlMode::kPosition.
+ *
+ * @ingroup manipulation_systems
  */
 class SchunkWsgPlainController
     : public systems::Diagram<double>,

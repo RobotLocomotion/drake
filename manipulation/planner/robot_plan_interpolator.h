@@ -32,6 +32,8 @@ enum class InterpolatorType {
 ///
 /// If a plan is received with no knot points, the system will create
 /// a plan which commands the arm to hold at the measured position.
+///
+/// @ingroup manipulation_systems
 class RobotPlanInterpolator : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotPlanInterpolator)
