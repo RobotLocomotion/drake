@@ -1,5 +1,9 @@
 #pragma once
 
+// Redundant #define guards for the benefit of @pybind11//:mkdoc.py.
+#ifndef DRAKE_COMMON_EIGEN_AUTODIFF_TYPES_H_
+#define DRAKE_COMMON_EIGEN_AUTODIFF_TYPES_H_
+
 /// @file
 /// This file contains abbreviated definitions for certain uses of
 /// AutoDiffScalar that are commonly used in Drake.
@@ -36,3 +40,5 @@ using AutoDiffVecd = Eigen::Matrix<AutoDiffd<num_vars>, rows, 1>;
 typedef AutoDiffVecd<Eigen::Dynamic, Eigen::Dynamic> AutoDiffVecXd;
 
 }  // namespace drake
+
+#endif  // DRAKE_COMMON_EIGEN_AUTODIFF_TYPES_H_

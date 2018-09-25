@@ -1,5 +1,9 @@
 #pragma once
 
+// Redundant #define guards for the benefit of @pybind11//:mkdoc.py.
+#ifndef DRAKE_COMMON_SYMBOLIC_FORMULA_VISITOR_H_
+#define DRAKE_COMMON_SYMBOLIC_FORMULA_VISITOR_H_
+
 #ifndef DRAKE_COMMON_SYMBOLIC_HEADER
 // TODO(soonho-tri): Change to #error, when #6613 merged.
 #warning Do not directly include this file. Include "drake/common/symbolic.h".
@@ -64,3 +68,5 @@ Result VisitFormula(Visitor* v, const Formula& f, Args&&... args) {
 
 }  // namespace symbolic
 }  // namespace drake
+
+#endif  // DRAKE_COMMON_SYMBOLIC_FORMULA_VISITOR_H_

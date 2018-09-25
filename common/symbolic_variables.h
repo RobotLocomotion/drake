@@ -1,5 +1,9 @@
 #pragma once
 
+// Redundant #define guards for the benefit of @pybind11//:mkdoc.py.
+#ifndef DRAKE_COMMON_SYMBOLIC_VARIABLES_H_
+#define DRAKE_COMMON_SYMBOLIC_VARIABLES_H_
+
 #ifndef DRAKE_COMMON_SYMBOLIC_HEADER
 // TODO(soonho-tri): Change to #error, when #6613 merged.
 #warning Do not directly include this file. Include "drake/common/symbolic.h".
@@ -177,3 +181,5 @@ namespace std {
 template <> struct hash<drake::symbolic::Variables>
     : public drake::DefaultHash {};
 }  // namespace std
+
+#endif  // DRAKE_COMMON_SYMBOLIC_VARIABLES_H_

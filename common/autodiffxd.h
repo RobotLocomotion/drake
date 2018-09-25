@@ -1,5 +1,9 @@
 #pragma once
 
+// Redundant #define guards for the benefit of @pybind11//:mkdoc.py.
+#ifndef DRAKE_COMMON_AUTODIFFXD_H_
+#define DRAKE_COMMON_AUTODIFFXD_H_
+
 // This file is a modification of Eigen-3.3.3's AutoDiffScalar.h file which is
 // available at
 // https://bitbucket.org/eigen/eigen/raw/67e894c6cd8f5f1f604b27d37ed47fdf012674ff/unsupported/Eigen/src/AutoDiff/AutoDiffScalar.h
@@ -422,3 +426,5 @@ inline const AutoDiffScalar<VectorXd> pow(const AutoDiffScalar<VectorXd>& a,
 #endif
 
 }  // namespace Eigen
+
+#endif  // DRAKE_COMMON_AUTODIFFXD_H_

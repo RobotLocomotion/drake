@@ -1,4 +1,9 @@
 #pragma once
+
+// Redundant #define guards for the benefit of @pybind11//:mkdoc.py.
+#ifndef DRAKE_COMMON_SYMBOLIC_FORMULA_CELL_H_
+#define DRAKE_COMMON_SYMBOLIC_FORMULA_CELL_H_
+
 /// @file
 ///
 /// Provides implementation-details of symbolic formulas.
@@ -645,3 +650,5 @@ std::shared_ptr<FormulaPositiveSemidefinite> to_positive_semidefinite(
 
 }  // namespace symbolic
 }  // namespace drake
+
+#endif  // DRAKE_COMMON_SYMBOLIC_FORMULA_CELL_H_

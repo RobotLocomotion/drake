@@ -1,5 +1,9 @@
 #pragma once
 
+// Redundant #define guards for the benefit of @pybind11//:mkdoc.py.
+#ifndef DRAKE_COMMON_SYMBOLIC_EXPRESSION_H_
+#define DRAKE_COMMON_SYMBOLIC_EXPRESSION_H_
+
 #ifndef DRAKE_COMMON_SYMBOLIC_HEADER
 // TODO(soonho-tri): Change to #error, when #6613 merged.
 #warning Do not directly include this file. Include "drake/common/symbolic.h".
@@ -1003,3 +1007,5 @@ struct is_eigen_vector_expression_double_pair
                     is_eigen_vector_of<DerivedB, double>::value> {};
 
 }  // namespace drake
+
+#endif  // DRAKE_COMMON_SYMBOLIC_EXPRESSION_H_
