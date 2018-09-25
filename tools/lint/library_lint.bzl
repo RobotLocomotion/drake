@@ -136,6 +136,7 @@ def library_lint(
     # Report all of the library_lint results.
     py_test_isolated(
         name = "library_lint",
+        size = "small",
         srcs = ["@drake//tools/lint:library_lint_reporter.py"],
         main = "@drake//tools/lint:library_lint_reporter.py",
         args = library_lint_reporter_args,

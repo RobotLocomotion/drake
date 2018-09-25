@@ -55,6 +55,7 @@ def install_lint(
             data.append(label)
         py_test_isolated(
             name = "install_lint",
+            size = "small",
             srcs = ["@drake//tools/lint:install_lint_reporter.py"],
             main = "@drake//tools/lint:install_lint_reporter.py",
             args = args,
