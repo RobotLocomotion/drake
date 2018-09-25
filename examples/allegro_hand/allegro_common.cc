@@ -42,6 +42,8 @@ std::map<std::string, int> GetJointNameMapping() {
   return joint_name_mapping;
 }
 
+// TODO (WenzhenYuan-TRI): Merge this function with the updated functions in
+// multibody plant (#9455)
 void GetControlPortMapping(
     const multibody::multibody_plant::MultibodyPlant<double>& plant,
     MatrixX<double>* Px, MatrixX<double>* Py) {
