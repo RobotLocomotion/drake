@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-#include "lcmtypes/bot_core/robot_state_t.hpp"
+#include "bot_core/robot_state_t.hpp"
 
 #include "drake/manipulation/util/robot_state_msg_translator.h"
 #include "drake/multibody/rigid_body_frame.h"
