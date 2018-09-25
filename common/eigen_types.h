@@ -37,7 +37,11 @@ using Vector3 = Eigen::Matrix<Scalar, 3, 1>;
 template <typename Scalar>
 using Vector4 = Eigen::Matrix<Scalar, 4, 1>;
 
-/// A column vector of size 6.
+/// A column vector of size 5, templated on scalar type.
+template <typename Scalar>
+using Vector5 = Eigen::Matrix<Scalar, 5, 1>;
+
+/// A column vector of size 6, templated on scalar type.
 template <typename Scalar>
 using Vector6 = Eigen::Matrix<Scalar, 6, 1>;
 
