@@ -10,7 +10,6 @@
 #include "drake/automotive/gen/maliput_railcar_params.h"
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
-#include "drake/automotive/monolane_onramp_merge.h"
 #include "drake/automotive/multilane_onramp_merge.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging_gflags.h"
@@ -75,32 +74,30 @@ DEFINE_double(dragway_lane_speed_delta, 2,
 DEFINE_double(dragway_vehicle_spacing, 10,
               "The initial spacing (in meters) between consecutive vehicles "
               "traveling on a lane.");
-
-DEFINE_bool(with_onramp, false, "Loads the onramp road network. Only one road "
-            "network can be enabled. Thus, if this option is enabled, no other "
-            "road network can be enabled.");
-DEFINE_bool(with_multilane_onramp, false,
-            "Loads the onramp road network. Only one road "
-            "network can be enabled. Thus, if this option is enabled, no other "
-            "road network can be enabled.");
-DEFINE_int32(multilane_num_lanes, 1,
-             "The number of lanes on the multilane. The number of lanes is by "
-             "default one. A multilane road network is only enabled when the "
-             "user specifies <with_multilane_onramp> flag.");
-DEFINE_double(multilane_lane_width, 3.7, "The multilane lane width.");
-DEFINE_double(multilane_shoulder_width, 3.0, "The multilane's shoulder width.");
-DEFINE_double(onramp_base_speed, 25, "The speed of the vehicles added to the "
-              "onramp or multilane_onramp scenarios, i.e. this option is only "
-              "valid when either `with_onramp` or `with_multilane_onramp` "
-              "options are used.");
-DEFINE_bool(onramp_swap_start, false, "Whether to swap the starting lanes of "
-            "the vehicles on the onramp or multilane_onramp scenarios, i.e. "
-            " this option is only valid when either `with_onramp` or "
-            "`with_multilane_onramp` options are used.");
-
 DEFINE_bool(with_stalled_cars, false, "Places a stalled vehicle at the end of "
             "each lane of a dragway. This option is only enabled when the "
             "road is a dragway.");
+
+DEFINE_bool(with_onramp, false,
+            "Loads the onramp road network. Only one road network can be "
+            "enabled. Thus, if this option is enabled, no other road network "
+            "can be enabled.");
+DEFINE_int32(onramp_num_lanes, 1,
+             "The number of lanes on the onramp. The number of lanes is by "
+             "default 1 (one). This option is only valid when `with_onramp` "
+             "option is used.");
+DEFINE_double(onramp_lane_width, 3.7,
+              "The onramp lane width. This option is only valid when "
+              "`with_onramp` option is used.");
+DEFINE_double(onramp_shoulder_width, 3.0,
+              "The onramp's road shoulder width. This option is only valid "
+              "when `with_onramp` option is used.");
+DEFINE_double(onramp_base_speed, 25, "The speed of the vehicles "
+              "added to the onramp, i.e. this option is only valid when "
+              "`with_onramp` option is used.");
+DEFINE_bool(onramp_swap_start, false, "Whether to swap the starting "
+            "lanes of the vehicles on the onramp scenario, i.e. this "
+            "option is only valid when `with_onramp` option is used.");
 
 namespace drake {
 
@@ -119,7 +116,6 @@ enum class RoadNetworkType {
   flat = 0,
   dragway = 1,
   onramp = 2,
-  multilane_onramp = 3,
 };
 
 std::string MakeChannelName(const std::string& name) {
@@ -186,26 +182,15 @@ void AddMaliputRailcar(int num_cars, bool idm_controlled, int initial_s_offset,
 //
 // @param idm_controlled Whether the vehicle should be IDM-controlled.
 //
-// @param road_network_type The road network type. It must be one of the onramp
-// types.
-//
 // @param simulator The simulator to modify.
 // TODO(agalbachicar):  Refactor this function and merge it with
 //                      AddMaliputRailcar() so there is a better interface to
 //                      add cars.
 void AddOnrampMaliputRailcars(int num_cars, bool idm_controlled,
-    RoadNetworkType road_network_type,
     AutomotiveSimulator<double>* simulator) {
-  DRAKE_DEMAND(road_network_type == RoadNetworkType::onramp ||
-               road_network_type == RoadNetworkType::multilane_onramp);
-  auto lane_name_selector = [road_network_type](int index) {
-    if (road_network_type == RoadNetworkType::onramp) {
-      return (index % 2 == 0) ? "l:onramp0" : "l:pre0";
-    } else if (road_network_type == RoadNetworkType::multilane_onramp) {
-      return (index % 2 == 0) ? "l:onramp0_0" : "l:pre0_0";
-    } else {
-      DRAKE_ABORT();
-    }
+  DRAKE_DEMAND(simulator != nullptr);
+  auto lane_name_selector = [](int index) {
+    return (index % 2 == 0) ? "l:onramp0_0" : "l:pre0_0";
   };
   auto maliput_railcar_name = [](int car_index) {
     return "MaliputRailcar" + std::to_string(car_index);
@@ -362,12 +347,8 @@ void AddVehicles(RoadNetworkType road_network_type,
 
   } else if (road_network_type == RoadNetworkType::onramp) {
     DRAKE_DEMAND(road_geometry != nullptr);
-    AddOnrampMaliputRailcars(FLAGS_num_maliput_railcar,
-        false /* IDM controlled */, road_network_type, simulator);
-  } else if (road_network_type == RoadNetworkType::multilane_onramp) {
-    DRAKE_DEMAND(road_geometry != nullptr);
-    AddOnrampMaliputRailcars(FLAGS_num_maliput_railcar,
-        false /* IDM controlled */, road_network_type, simulator);
+    AddOnrampMaliputRailcars(
+        FLAGS_num_maliput_railcar, false /* IDM controlled */, simulator);
   } else {
     for (int i = 0; i < FLAGS_num_trajectory_car; ++i) {
       const auto& params = CreateTrajectoryParams(i);
@@ -411,19 +392,12 @@ const maliput::api::RoadGeometry* AddDragway(
   return simulator->SetRoadGeometry(std::move(road_geometry));
 }
 
-// Adds a monolane-based onramp road network to the provided `simulator`.
+// Adds a multilane-based onramp road network to the provided `simulator`.
 const maliput::api::RoadGeometry* AddOnramp(
     AutomotiveSimulator<double>* simulator) {
-  auto onramp_generator = std::make_unique<MonolaneOnrampMerge>();
-  return simulator->SetRoadGeometry(onramp_generator->BuildOnramp());
-}
-
-// Adds a multilane-based onramp road network to the provided `simulator`.
-const maliput::api::RoadGeometry* AddMultilaneOnramp(
-    AutomotiveSimulator<double>* simulator) {
   const MultilaneRoadCharacteristics rc(
-      FLAGS_multilane_lane_width, FLAGS_multilane_shoulder_width,
-      FLAGS_multilane_shoulder_width, FLAGS_multilane_num_lanes);
+      FLAGS_onramp_lane_width, FLAGS_onramp_shoulder_width,
+      FLAGS_onramp_shoulder_width, FLAGS_onramp_num_lanes);
   auto onramp_generator = std::make_unique<MultilaneOnrampMerge>(rc);
   return simulator->SetRoadGeometry(onramp_generator->BuildOnramp());
 }
@@ -448,10 +422,6 @@ const maliput::api::RoadGeometry* AddTerrain(RoadNetworkType road_network_type,
       road_geometry = AddOnramp(simulator);
       break;
     }
-    case RoadNetworkType::multilane_onramp: {
-      road_geometry = AddMultilaneOnramp(simulator);
-      break;
-    }
   }
   return road_geometry;
 }
@@ -461,7 +431,6 @@ const maliput::api::RoadGeometry* AddTerrain(RoadNetworkType road_network_type,
 RoadNetworkType DetermineRoadNetworkType() {
   int num_environments_selected{0};
   if (FLAGS_with_onramp) ++num_environments_selected;
-  if (FLAGS_with_multilane_onramp) ++num_environments_selected;
   if (FLAGS_num_dragway_lanes) ++num_environments_selected;
   if (num_environments_selected > 1) {
     throw std::runtime_error("ERROR: More than one road network selected. Only "
@@ -472,8 +441,6 @@ RoadNetworkType DetermineRoadNetworkType() {
     return RoadNetworkType::dragway;
   } else if (FLAGS_with_onramp) {
     return RoadNetworkType::onramp;
-  } else if (FLAGS_with_multilane_onramp) {
-    return RoadNetworkType::multilane_onramp;
   } else {
     return RoadNetworkType::flat;
   }
