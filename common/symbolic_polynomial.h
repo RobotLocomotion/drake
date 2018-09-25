@@ -153,6 +153,10 @@ class Polynomial {
   /// Returns true if this polynomial and @p p are structurally equal.
   bool EqualTo(const Polynomial& p) const;
 
+  /// Returns true if this polynomial and @p p are equal, after expanding the
+  /// coefficients.
+  bool EqualToAfterExpansion(const Polynomial& p) const;
+
   /// Returns a symbolic formula representing the condition where this
   /// polynomial and @p p are the same.
   Formula operator==(const Polynomial& p) const;
