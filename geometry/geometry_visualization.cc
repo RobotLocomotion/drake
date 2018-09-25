@@ -111,8 +111,14 @@ class ShapeToLcm : public ShapeReifier {
     geometry_data_.string_data = mesh.filename();
   }
 
-  // TODO(DamrongGuoy) Implement this for #9511
-  void ImplementGeometry(const Convex&, void*) override {
+  // For visualization, Convex is the same as Mesh.
+  void ImplementGeometry(const Convex& mesh, void*) override {
+    geometry_data_.type = geometry_data_.MESH;
+    geometry_data_.num_float_data = 3;
+    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
+    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
+    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
+    geometry_data_.string_data = mesh.filename();
   }
 
  private:

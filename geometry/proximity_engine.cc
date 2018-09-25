@@ -669,7 +669,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       double x = *(iter++) * scale;
       double y = *(iter++) * scale;
       double z = *(iter++) * scale;
-      vertices.emplace_back(Vector3d(x, y, z));
+      vertices.emplace_back(x, y, z);
     }
 
     return vertices;
@@ -731,8 +731,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
         convex.filename().c_str(), mtl_basedir, do_tinyobj_triangulation);
     if (!ret || !err.empty()) {
-      throw std::runtime_error("Error parsing file `" + convex.filename() +
-          "` : " + err);
+      throw std::runtime_error("Error parsing file '" + convex.filename() +
+          "' : " + err);
     }
 
     // TODO(DamrongGuoy) Check that the input is a valid convex polyhedron.
