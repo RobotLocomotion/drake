@@ -17,6 +17,7 @@ load(
 load(
     "//tools/skylark:pybind.bzl",
     "drake_pybind_library",
+    "generate_pybind_documentation_header",
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
@@ -28,6 +29,69 @@ package(default_visibility = [
 # This determines how `PYTHONPATH` is configured, and how to install the
 # bindings.
 PACKAGE_INFO = get_pybind_package_info(base_package = "//bindings")
+
+generate_pybind_documentation_header(
+    name = "generate_pybind_documentation_header",
+    out = "documentation_pybind.h",
+    targets = [
+        "//attic/multibody:approximate_ik",
+        "//attic/multibody:inverse_kinematics",
+        "//attic/multibody:rigid_body_actuator",
+        "//attic/multibody:rigid_body_tree_construction",
+        "//attic/multibody:rigid_body_tree",
+        "//attic/multibody:rigid_body",
+        "//attic/multibody/collision",
+        "//attic/multibody/joints",
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant:drake_visualizer",
+        "//attic/multibody/rigid_body_plant",
+        "//attic/multibody/shapes",
+        "//automotive",
+        "//automotive/maliput/api",
+        "//automotive/maliput/dragway",
+        "//common:autodiff",
+        "//common:essential",
+        "//common:find_resource",
+        "//common:nice_type_name",
+        # TODO(jamiesnape): Fix compilation errors in //common:symbolic.
+        # "//common:symbolic",
+        "//common:temp_directory",
+        "//common:type_safe_index",
+        "//common/trajectories",
+        "//examples/acrobot:acrobot_plant",
+        "//examples/compass_gait",
+        "//examples/pendulum:pendulum_plant",
+        "//examples/rimless_wheel",
+        "//examples/van_der_pol",
+        "//geometry",
+        "//lcm",
+        "//manipulation/planner",
+        "//math",
+        "//multibody/benchmarks/acrobot",
+        "//multibody/inverse_kinematics",
+        "//multibody/multibody_tree",
+        "//multibody/multibody_tree/math",
+        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/multibody_tree/parsing",
+        "//solvers",
+        "//systems/analysis",
+        "//systems/controllers",
+        "//systems/framework",
+        "//systems/lcm",
+        "//systems/primitives",
+        "//systems/rendering",
+        "//systems/sensors",
+        "//systems/trajectory_optimization",
+    ],
+    deps = ["//:drake_shared_library"],
+)
+
+drake_cc_library(
+    name = "documentation_pybind",
+    hdrs = ["documentation_pybind.h"],
+    tags = ["nolint"],
+    visibility = ["//visibility:public"],
+)
 
 drake_cc_library(
     name = "pydrake_pybind",
