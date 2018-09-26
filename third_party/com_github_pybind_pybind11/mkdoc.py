@@ -1,21 +1,36 @@
 #!/usr/bin/env python3
+# -*- coding: UTF-8 -*-
 #
-#  Syntax: mkdoc.py [-I<path> ..] [.. a list of header files ..]
+#  Syntax: mkdoc.py [-I<path> ..] [-quiet] [.. a list of header files ..]
 #
 #  Extract documentation from C++ header files to use it in Python bindings
 #
 
+from collections import OrderedDict, defaultdict
 import os
 import sys
 import platform
 import re
+from tempfile import NamedTemporaryFile
 import textwrap
 
 from clang import cindex
-from clang.cindex import CursorKind
-from collections import OrderedDict
-from threading import Thread, Semaphore
-from multiprocessing import cpu_count
+from clang.cindex import AccessSpecifier, CursorKind
+
+CLASS_KINDS = [
+    CursorKind.CLASS_DECL,
+    CursorKind.STRUCT_DECL,
+    CursorKind.CLASS_TEMPLATE,
+]
+
+FUNCTION_KINDS = [
+    CursorKind.FUNCTION_DECL,
+    CursorKind.FUNCTION_TEMPLATE,
+    CursorKind.CONVERSION_FUNCTION,
+    CursorKind.CXX_METHOD,
+    CursorKind.CONSTRUCTOR,
+]
+
 
 RECURSE_LIST = [
     CursorKind.TRANSLATION_UNIT,
@@ -26,17 +41,9 @@ RECURSE_LIST = [
     CursorKind.CLASS_TEMPLATE
 ]
 
-PRINT_LIST = [
-    CursorKind.CLASS_DECL,
-    CursorKind.STRUCT_DECL,
+PRINT_LIST = CLASS_KINDS + FUNCTION_KINDS + [
     CursorKind.ENUM_DECL,
     CursorKind.ENUM_CONSTANT_DECL,
-    CursorKind.CLASS_TEMPLATE,
-    CursorKind.FUNCTION_DECL,
-    CursorKind.FUNCTION_TEMPLATE,
-    CursorKind.CONVERSION_FUNCTION,
-    CursorKind.CXX_METHOD,
-    CursorKind.CONSTRUCTOR,
     CursorKind.FIELD_DECL
 ]
 
@@ -53,26 +60,83 @@ CPP_OPERATORS = {
 CPP_OPERATORS = OrderedDict(
     sorted(CPP_OPERATORS.items(), key=lambda t: -len(t[0])))
 
-job_count = cpu_count()
-job_semaphore = Semaphore(job_count)
+SKIP_FULL_NAMES = [
+    'Eigen',
+    'detail',
+    'internal',
+    'std',
+]
 
-output = []
+SKIP_PARTIAL_NAMES = [
+    'operator new',
+    'operator delete',
+    'operator=',
+    'operator->',
+]
 
-def d(s):
+SKIP_ACCESS = [
+    AccessSpecifier.PRIVATE,
+]
+
+
+def utf8(s):
+    # Decodes a string to utf8.
     return s.decode('utf8')
 
 
+class Symbol(object):
+    def __init__(self, node, name, include, line, comment):
+        self.node = node
+        self.name = name
+        self.include = include
+        self.line = line
+        self.comment = comment
+
+    def sorting_key(self):
+        return (self.name, self.include, self.line)
+
+
+def eprint(*args):
+    print(*args, file=sys.stderr)
+
+
+def is_accepted_symbol(node):
+    """
+    Determines if a symbol should be visited or not.
+    """
+    name = utf8(node.spelling)
+    if name in SKIP_FULL_NAMES:
+        return False
+    for bad in SKIP_PARTIAL_NAMES:
+        if bad in name:
+            return False
+    if node.access_specifier in SKIP_ACCESS:
+        return False
+    # TODO(eric.cousineau): Remove `node.is_default_method()`? May make things
+    # unstable.
+    # TODO(eric.cousineau): Figure out how to strip forward declarations.
+    return True
+
+
 def sanitize_name(name):
+    """
+    Sanitizes a C++ symbol to be variable-friendly.
+    """
     name = re.sub(r'type-parameter-0-([0-9]+)', r'T\1', name)
     for k, v in CPP_OPERATORS.items():
         name = name.replace('operator%s' % k, 'operator_%s' % v)
     name = re.sub('<.*>', '', name)
+    name = name.replace('::', '_')
     name = ''.join([ch if ch.isalnum() else '_' for ch in name])
-    name = re.sub('_$', '', re.sub('_+', '_', name))
-    return '__doc_' + name
+    name = re.sub('_+', '_', name)
+    return name
 
 
 def process_comment(comment):
+    """
+    Converts Doxygen-formatted string to look presentable in a Python
+    docstring.
+    """
     result = ''
 
     # Remove C++ comment syntax
@@ -98,56 +162,74 @@ def process_comment(comment):
         result = result2
 
     # Doxygen tags
-    cpp_group = '([\w:]+)'
-    param_group = '([\[\w:\]]+)'
+    cpp_group = r'([\w:]+)'
+    param_group = r'([\[\w:\]]+)'
 
     s = result
-    s = re.sub(r'\\c\s+%s' % cpp_group, r'``\1``', s)
-    s = re.sub(r'\\a\s+%s' % cpp_group, r'*\1*', s)
-    s = re.sub(r'\\e\s+%s' % cpp_group, r'*\1*', s)
-    s = re.sub(r'\\em\s+%s' % cpp_group, r'*\1*', s)
-    s = re.sub(r'\\b\s+%s' % cpp_group, r'**\1**', s)
-    s = re.sub(r'\\ingroup\s+%s' % cpp_group, r'', s)
-    s = re.sub(r'\\param%s?\s+%s' % (param_group, cpp_group),
+    s = re.sub(r'[@\\]c\s+%s' % cpp_group, r'``\1``', s)
+    s = re.sub(r'[@\\]p\s+%s' % cpp_group, r'``\1``', s)
+    s = re.sub(r'[@\\]a\s+%s' % cpp_group, r'*\1*', s)
+    s = re.sub(r'[@\\]e\s+%s' % cpp_group, r'*\1*', s)
+    s = re.sub(r'[@\\]em\s+%s' % cpp_group, r'*\1*', s)
+    s = re.sub(r'[@\\]b\s+%s' % cpp_group, r'**\1**', s)
+    s = re.sub(r'[@\\]ingroup\s+%s' % cpp_group, r'', s)
+    s = re.sub(r'[@\\]param%s?\s+%s' % (param_group, cpp_group),
                r'\n\n$Parameter ``\2``:\n\n', s)
-    s = re.sub(r'\\tparam%s?\s+%s' % (param_group, cpp_group),
+    s = re.sub(r'[@\\]tparam%s?\s+%s' % (param_group, cpp_group),
                r'\n\n$Template parameter ``\2``:\n\n', s)
+    s = re.sub(r'[@\\]retval\s+%s' % cpp_group,
+               r'\n\n$Returns ``\1``:\n\n', s)
 
     for in_, out_ in {
+        'result': 'Returns',
+        'returns': 'Returns',
         'return': 'Returns',
-        'author': 'Author',
         'authors': 'Authors',
+        'author': 'Authors',
         'copyright': 'Copyright',
         'date': 'Date',
+        'note': 'Note',
+        'remarks': 'Remark',
         'remark': 'Remark',
         'sa': 'See also',
         'see': 'See also',
         'extends': 'Extends',
-        'throw': 'Throws',
-        'throws': 'Throws'
+        'throws': 'Throws',
+        'throw': 'Throws'
     }.items():
-        s = re.sub(r'\\%s\s*' % in_, r'\n\n$%s:\n\n' % out_, s)
+        s = re.sub(r'[@\\]%s\s*' % in_, r'\n\n$%s:\n\n' % out_, s)
 
-    s = re.sub(r'\\details\s*', r'\n\n', s)
-    s = re.sub(r'\\brief\s*', r'', s)
-    s = re.sub(r'\\short\s*', r'', s)
-    s = re.sub(r'\\ref\s*', r'', s)
+    s = re.sub(r'[@\\]details\s*', r'\n\n', s)
+    s = re.sub(r'[@\\]brief\s*', r'', s)
+    s = re.sub(r'[@\\]short\s*', r'', s)
+    s = re.sub(r'[@\\]ref\s*', r'', s)
 
-    s = re.sub(r'\\code\s?(.*?)\s?\\endcode',
+    s = re.sub(r'[@\\]code\s?(.*?)\s?[@\\]endcode',
                r"```\n\1\n```\n", s, flags=re.DOTALL)
+
+    s = re.sub(r'%(\S+)', r'\1', s)
 
     # HTML/TeX tags
     s = re.sub(r'<tt>(.*?)</tt>', r'``\1``', s, flags=re.DOTALL)
     s = re.sub(r'<pre>(.*?)</pre>', r"```\n\1\n```\n", s, flags=re.DOTALL)
     s = re.sub(r'<em>(.*?)</em>', r'*\1*', s, flags=re.DOTALL)
     s = re.sub(r'<b>(.*?)</b>', r'**\1**', s, flags=re.DOTALL)
-    s = re.sub(r'\\f\$(.*?)\\f\$', r'$\1$', s, flags=re.DOTALL)
+    s = re.sub(r'[@\\]f\$(.*?)[@\\]f\$', r'$\1$', s, flags=re.DOTALL)
     s = re.sub(r'<li>', r'\n\n* ', s)
     s = re.sub(r'</?ul>', r'', s)
     s = re.sub(r'</li>', r'\n\n', s)
 
     s = s.replace('``true``', '``True``')
     s = s.replace('``false``', '``False``')
+
+    # Exceptions
+    s = s.replace('std::bad_alloc', 'MemoryError')
+    s = s.replace('std::domain_error', 'ValueError')
+    s = s.replace('std::exception', 'RuntimeError')
+    s = s.replace('std::invalid_argument', 'ValueError')
+    s = s.replace('std::length_error', 'ValueError')
+    s = s.replace('std::out_of_range', 'ValueError')
+    s = s.replace('std::range_error', 'ValueError')
 
     # Re-flow text
     wrapper = textwrap.TextWrapper()
@@ -182,49 +264,152 @@ def process_comment(comment):
     return result.rstrip().lstrip('\n')
 
 
-def extract(filename, node, prefix):
-    if not (node.location.file is None or
-            os.path.samefile(d(node.location.file.name), filename)):
-        return 0
-    if node.kind in RECURSE_LIST:
-        sub_prefix = prefix
-        if node.kind != CursorKind.TRANSLATION_UNIT:
-            if len(sub_prefix) > 0:
-                sub_prefix += '_'
-            sub_prefix += d(node.spelling)
+def get_name_chain(node):
+    """
+    Extracts the pieces for a namespace-qualified name for a symbol.
+    """
+    name = [utf8(node.spelling)]
+    p = node.semantic_parent
+    while p.kind != CursorKind.TRANSLATION_UNIT:
+        piece = utf8(p.spelling)  # Pass-through for anonymous structs.
+        if len(piece) > 0:
+            name.insert(0, piece)
+        p = p.semantic_parent
+    return tuple(name)
+
+
+class SymbolTree(object):
+    """
+    Contains symbols that (a) may have 0 or more pieces of documentation and
+    (b) may have child objects.
+    """
+
+    def __init__(self):
+        self.root = SymbolTree.Leaf()
+
+    def append(self, symbol):
+        leaf = self.root
+        for piece in symbol.name:
+            leaf = leaf.get_child(piece)
+        leaf.symbols.append(symbol)
+
+    class Leaf(object):
+        def __init__(self):
+            self.symbols = []
+            self.children_map = defaultdict(SymbolTree.Leaf)
+
+        def get_child(self, piece):
+            return self.children_map[piece]
+
+
+def extract(include_map, node, output):
+    """
+    Extracts libclang cursors and add to a symbol tree.
+    """
+    if node.kind == CursorKind.TRANSLATION_UNIT:
         for i in node.get_children():
-            extract(filename, i, sub_prefix)
+            extract(include_map, i, output)
+        return
+    assert node.location.file is not None
+    filename = utf8(node.location.file.name)
+    include = include_map.get(filename)
+    if include is None:
+        return
+    if not is_accepted_symbol(node):
+        return
+    if node.kind in RECURSE_LIST:
+        for i in node.get_children():
+            extract(include_map, i, output)
     if node.kind in PRINT_LIST:
-        comment = d(node.raw_comment) if node.raw_comment is not None else ''
-        comment = process_comment(comment)
-        sub_prefix = prefix
-        if len(sub_prefix) > 0:
-            sub_prefix += '_'
         if len(node.spelling) > 0:
-            name = sanitize_name(sub_prefix + d(node.spelling))
-            global output
-            output.append((name, filename, comment))
+            comment = utf8(
+                node.raw_comment) if node.raw_comment is not None else ''
+            comment = process_comment(comment)
+            name = get_name_chain(node)
+            line = node.location.line
+            output.append(Symbol(node, name, include, line, comment))
 
 
-class ExtractionThread(Thread):
-    def __init__(self, filename, parameters):
-        Thread.__init__(self)
-        self.filename = filename
-        self.parameters = parameters
-        job_semaphore.acquire()
+def print_symbols(name, leaf, level=0):
+    """
+    Prints C++ code for containing documentation.
+    """
+    if len(leaf.symbols) == 0:
+        full_name = name
+    else:
+        top = leaf.symbols[0]
+        full_pieces = top.name
+        assert name == full_pieces[-1]
+        full_name = "::".join(full_pieces)
+        # Override variable.
+        if top.node.kind == CursorKind.CONSTRUCTOR:
+            name = "ctor"
 
-    def run(self):
-        print('Processing "%s" ..' % self.filename, file=sys.stderr)
-        try:
-            index = cindex.Index(
-                cindex.conf.lib.clang_createIndex(False, True))
-            tu = index.parse(self.filename, self.parameters)
-            extract(self.filename, tu.cursor, '')
-        finally:
-            job_semaphore.release()
+    name = sanitize_name(name)
 
-if __name__ == '__main__':
-    parameters = ['-x', 'c++', '-std=c++11']
+    indent = '  ' * level
+
+    def iprint(s): return print((indent + s).rstrip())
+    iprint('// {}'.format(full_name))
+    modifier = ""
+    if level == 0:
+        modifier = "constexpr "
+    iprint('{}struct /* {} */ {{'.format(modifier, name))
+    iprint('')
+    symbol_iter = sorted(leaf.symbols, key=Symbol.sorting_key)
+    for i, symbol in enumerate(symbol_iter):
+        assert full_pieces == symbol.name
+        var = "doc"
+        if i > 0:
+            var += "_{}".format(i + 1)
+        delim = "\n"
+        if "\n" not in symbol.comment and len(symbol.comment) < 40:
+            delim = " "
+        iprint('  // {}:{}'.format(symbol.include, symbol.line))
+        iprint('  const char* {} ={}R"""({})""";'.format(var, delim,
+                                                         symbol.comment))
+        iprint('')
+    keys = sorted(leaf.children_map.keys())
+    for key in keys:
+        child = leaf.children_map[key]
+        print_symbols(key, child, level=level + 1)
+    iprint('}} {};'.format(name))
+    iprint('')
+
+
+def drake_genfile_path_to_include_path(filename):
+    # TODO(eric.cousineau): Is there a simple way to generalize this, given
+    # include paths?
+    pieces = filename.split('/')
+    assert pieces.count('drake') == 1
+    drake_index = pieces.index('drake')
+    return '/'.join(pieces[drake_index:])
+
+
+class FileDict(object):
+    """
+    Provides a dictionary that hashes based on a file's true path.
+    """
+
+    def __init__(self, items):
+        self._d = {self._key(file): value for file, value in items}
+
+    def _key(self, file):
+        return os.path.realpath(os.path.abspath(file))
+
+    def get(self, file, default=None):
+        return self._d.get(self._key(file), default)
+
+    def __contains__(self, file):
+        return self._key(file) in self._d
+
+    def __getitem__(self, file):
+        key = self._key(file)
+        return self._d[key]
+
+
+def main():
+    parameters = ['-x', 'c++', '-D__MKDOC_PY__']
     filenames = []
 
     if platform.system() == 'Darwin':
@@ -241,64 +426,70 @@ if __name__ == '__main__':
             parameters.append('-isysroot')
             parameters.append(sysroot_dir)
 
+    quiet = False
+    std = '-std=c++11'
+    root_name = 'pydrake_doc'
+
     for item in sys.argv[1:]:
-        if item.startswith('-'):
+        if item == '-quiet':
+            quiet = True
+        elif item.startswith('-std='):
+            std = item
+        elif item.startswith('-root-name='):
+            root_name = item[len('-root-name='):]
+        elif item.startswith('-'):
             parameters.append(item)
         else:
             filenames.append(item)
 
+    parameters.append(std)
+
     if len(filenames) == 0:
-        print('Syntax: %s [.. a list of header files ..]' % sys.argv[0])
+        eprint('Syntax: %s [.. a list of header files ..]' % sys.argv[0])
         exit(-1)
 
-    print('''/*
-  This file contains docstrings for the Python bindings.
-  Do not edit! These were automatically extracted by mkdoc.py
- */
+    # N.B. We substitue the `GENERATED FILE...` bits in this fashion because
+    # otherwise Reviewable gets confused.
+    print('''#pragma once
 
-#define __EXPAND(x)                                      x
-#define __COUNT(_1, _2, _3, _4, _5, _6, _7, COUNT, ...)  COUNT
-#define __VA_SIZE(...)                                   __EXPAND(__COUNT(__VA_ARGS__, 7, 6, 5, 4, 3, 2, 1))
-#define __CAT1(a, b)                                     a ## b
-#define __CAT2(a, b)                                     __CAT1(a, b)
-#define __DOC1(n1)                                       __doc_##n1
-#define __DOC2(n1, n2)                                   __doc_##n1##_##n2
-#define __DOC3(n1, n2, n3)                               __doc_##n1##_##n2##_##n3
-#define __DOC4(n1, n2, n3, n4)                           __doc_##n1##_##n2##_##n3##_##n4
-#define __DOC5(n1, n2, n3, n4, n5)                       __doc_##n1##_##n2##_##n3##_##n4##_##n5
-#define __DOC6(n1, n2, n3, n4, n5, n6)                   __doc_##n1##_##n2##_##n3##_##n4##_##n5##_##n6
-#define __DOC7(n1, n2, n3, n4, n5, n6, n7)               __doc_##n1##_##n2##_##n3##_##n4##_##n5##_##n6##_##n7
-#define DOC(...)                                         __EXPAND(__EXPAND(__CAT2(__DOC, __VA_SIZE(__VA_ARGS__)))(__VA_ARGS__))
+// {0} {1}
+// This file contains docstrings for the Python bindings that were
+// automatically extracted by mkdoc.py.
 
 #if defined(__GNUG__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
-''')
+'''.format('GENERATED FILE', 'DO NOT EDIT'))
 
-    output.clear()
-    for filename in filenames:
-        thr = ExtractionThread(filename, parameters)
-        thr.start()
+    includes = list(map(drake_genfile_path_to_include_path, filenames))
+    include_map = FileDict(zip(filenames, includes))
+    # TODO(eric.cousineau): Sort files based on include path?
+    with NamedTemporaryFile('w') as include_file:
+        for include in includes:
+            include_file.write("#include \"{}\"\n".format(include))
+        include_file.flush()
+        if not quiet:
+            eprint("Parse header...")
+        index = cindex.Index(
+            cindex.conf.lib.clang_createIndex(False, True))
+        tu = index.parse(include_file.name, parameters)
 
-    print('Waiting for jobs to finish ..', file=sys.stderr)
-    for i in range(job_count):
-        job_semaphore.acquire()
+    if not quiet:
+        eprint("Extract relevant symbols...")
+    output = SymbolTree()
+    extract(include_map, tu.cursor, output)
 
-    name_ctr = 1
-    name_prev = None
-    for name, _, comment in list(sorted(output, key=lambda x: (x[0], x[1]))):
-        if name == name_prev:
-            name_ctr += 1
-            name = name + "_%i" % name_ctr
-        else:
-            name_prev = name
-            name_ctr = 1
-        print('\nstatic const char *%s =%sR"doc(%s)doc";' %
-              (name, '\n' if '\n' in comment else ' ', comment))
+    if not quiet:
+        eprint("Writing header file...")
+    print_symbols(root_name, output.root)
 
     print('''
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
 ''')
+
+
+if __name__ == '__main__':
+    main()
