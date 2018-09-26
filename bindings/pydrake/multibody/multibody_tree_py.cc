@@ -3,6 +3,7 @@
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/bindings/pydrake/util/deprecation_pybind.h"
 #include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/util/eigen_geometry_pybind.h"
@@ -14,6 +15,8 @@
 #include "drake/multibody/multibody_tree/math/spatial_vector.h"
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"
 #include "drake/multibody/multibody_tree/multibody_forces.h"
+#include "drake/multibody/multibody_tree/multibody_plant/contact_info.h"
+#include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
@@ -185,6 +188,28 @@ void init_module(py::module m) {
     cls
         .def(py::init<MultibodyTree<double>&>(), py::arg("model"));
   }
+
+  // PointPairContactInfo
+  {
+    using Class = multibody::multibody_plant::PointPairContactInfo<T>;
+    py::class_<Class>(m, "PointPairContactInfo")
+        .def("bodyA_index", &Class::bodyA_index)
+        .def("bodyB_index", &Class::bodyB_index)
+        .def("contact_force", &Class::contact_force)
+        .def("contact_point", &Class::contact_point)
+        .def("slip_speed", &Class::slip_speed)
+        .def("separation_speed", &Class::separation_speed);
+  }
+
+  // ContactResults
+  {
+    using Class = multibody::multibody_plant::ContactResults<T>;
+    py::class_<Class>(m, "ContactResults")
+        .def("num_contacts", &Class::num_contacts)
+        .def("contact_info", &Class::contact_info);
+    pysystems::AddValueInstantiation<Class>(m);
+  }
+
 
   // Tree.
   {
