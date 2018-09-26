@@ -11,6 +11,8 @@ namespace drake {
 namespace pydrake {
 
 /// Binds a TypeSafeIndex instantiation.
+// TODO(jamiesnape): Find a way to add documentation to bindings that use this
+// function.
 template <typename Type>
 auto BindTypeSafeIndex(py::module m, const std::string& name) {
   py::class_<Type> cls(m, name.c_str());
