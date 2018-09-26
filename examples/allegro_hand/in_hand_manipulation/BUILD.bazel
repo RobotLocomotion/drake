@@ -1,0 +1,86 @@
+# -*- python -*-
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/install:install_data.bzl", "install_data")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+install_data()
+
+drake_cc_library(
+    name = "mug_state_set",
+    hdrs = ["mug_state_set.h"],
+    srcs = ["mug_state_set.cc"],
+    deps = [
+        "//lcm",
+        "//lcmtypes:viewer",
+        "//math",
+    ],
+)
+
+drake_cc_library(
+    name = "object_pose_publisher",
+    hdrs = ["object_pose_publisher.h"],
+    srcs = ["object_pose_publisher.cc"],
+    deps = [
+        "//lcm",
+        "//multibody/multibody_tree/multibody_plant",
+        "//systems/framework:leaf_system",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
+drake_cc_binary(
+    name = "run_rotating_mug",
+    srcs = ["run_rotating_mug.cc"],
+    data = [
+        "//manipulation/models/allegro_hand_description:models",
+    ],
+    deps = [
+        ":mug_state_set",
+        "//examples/allegro_hand:allegro_common",
+        "//examples/allegro_hand:allegro_lcm",
+        "//multibody/inverse_kinematics:inverse_kinematics",
+        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//manipulation/planner:differential_inverse_kinematics",
+        "//lcm",
+        "//lcmtypes:allegro",
+        "@gflags",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
+drake_cc_binary(
+    name = "allegro_single_object_simulation",
+    srcs = ["allegro_single_object_simulation.cc"],
+    data = [
+        "//manipulation/models/allegro_hand_description:models",
+        ":models",
+    ],
+    deps = [
+        ":object_pose_publisher",
+        "//common:find_resource",
+        "//common:text_logging_gflags",
+        "//examples/allegro_hand:allegro_common",
+        "//examples/allegro_hand:allegro_lcm",
+        "//lcm",
+        "//lcmtypes:allegro",
+        "//geometry:geometry_visualization",
+        "//math",
+        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/multibody_tree/multibody_plant:contact_results_to_lcm",
+        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//systems/analysis",
+        "//systems/controllers:pid_controller",
+        "//systems/primitives",
+        "//systems/rendering:pose_bundle_to_draw_message",
+        "//systems/lcm:lcm_pubsub_system",
+        "@gflags",
+    ],
+)
