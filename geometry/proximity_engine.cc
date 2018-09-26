@@ -744,10 +744,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // Now we convert tinyobj data for fcl::Convex.
     //
 
-    // We only support an OBJ file with only one polyhedron.
     if (shapes.size() != 1) {
-      throw std::runtime_error("We only support an OBJ file with only one "
-                               "polyhedron.");
+      throw std::runtime_error("For Convex geometry, the OBJ file must have one"
+                               " and only one object defined in it");
     }
 
     std::vector<Vector3d> vertices =

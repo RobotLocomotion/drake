@@ -205,8 +205,11 @@ class Convex final : public Shape {
                                 We assume that the polyhedron is convex.
    @param scale                 An optional scale to coordinates.
 
-   \warning Gives error if the OBJ file has two or more objects, i.e.,
-   the file has two or more object-name statements (o object_name).
+   @throws std::runtime_error   if the OBJ file doesn't define a single object.
+                                This can happen if it is empty, if there are
+                                multiple object-name statements (e.g., o
+                                object name), or if there are faces defined
+                                outside a single object-name statement.
    */
   explicit Convex(const std::string& absolute_filename, double scale = 1.0);
 
