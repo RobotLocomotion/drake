@@ -15,28 +15,28 @@ namespace bowling_ball {
 /// This class provides an analytical solution for the motion of a spherically-
 /// symmetric ball B that is in contact with a flat horizontal plane N.
 /// The solution accurately predicts transition from sliding to rolling.
-/// Plane N passes through a point No (the origin of N) and is perpendicular to
-/// a vertically-upward unit vector Ny.  Two relevant points of ball B are
-/// point Bcm (B's center of mass, located at B's geometric center) and
-/// point BN (the point of B in contact with N -- the lowest point of B).
+/// The horizontal plane N passes through a point No (the origin of N) and is
+/// perpendicular to a vertically-upward unit vector Ny.  Two relevant points of
+/// ball B are point Bcm (B's center of mass, located at B's geometric center)
+/// and point BN (the point of B in contact with N -- the lowest point of B).
 /// The gravitational forces on B are equivalent to `-m*g*Ny` at Bcm.
-/// The contact force on B at point BN of B consists of an upward normal force
+/// The contact force on B at point BN consists of an upward normal force
 /// `F_normal*Ny` and a horizontal friction force `Fx*Nx + Fy*Nz` (where Nx and
-/// Ny are horizontal unit vectors fixed in N).  At any time t, Bcm's position
+/// Nz are horizontal unit vectors fixed in N).  At any time t, Bcm's position
 /// from No is `x*Nx + r*Ny + z*Nz`, where x(t) and z(t) are time-dependent
 /// variables and r is the ball's radius (constant).  Other constants are
 /// m (B's mass), g (Earth's gravitational acceleration), I (B's moment of
 /// inertia about any line passing through Bcm), and muk (coefficient of kinetic
 /// friction between B and N).  Ball B has 5 degrees-of-freedom when it slides
-/// and 3 degrees-of-freedom when it rolls.
+/// on N and 3 degrees-of-freedom when it rolls on N.
 ///
 /// The solution at time t depends on the initial (t = 0) values of:
 /// ----------|----------------------------------------------------------
-/// w_NB_N    | B's angular velocity in N, expressed in frame N (world).
+/// w_NB_N    | B's angular velocity in N, expressed in terms of Nx, Ny, Nz.
 ///           | `w_NB_N = wx*Nx + wy*Ny + wz*Nz`
-/// v_NBcm_N  | Point Bcm's velocity in N, expressed in frame N (world).
+/// v_NBcm_N  | Point Bcm's velocity in N, expressed in terms of Nx, Ny, Nz.
 ///           | `v_NBcm_N = ẋ*Nx + ż*Nz`
-/// r_NoBcm_N | Position vector from point No to Bcm, expressed in frame N.
+/// r_NoBcm_N | Position from point No to Bcm, expressed in terms of Nx, Ny, Nz.
 ///           | `r_NoBcm_N = x*Nx + r*Ny + z*Nz`
 ///
 /// @note All units must be self-consistent (e.g., standard SI with MKS units).
@@ -49,25 +49,26 @@ class BowlingBallAnalyticalSolution {
   /// Construct a spherically-symmetric ball with default initialization.
   BowlingBallAnalyticalSolution() {}
 
-  /// @param[in] r Ball's radius (e.g., 0.10795 meters).
-  /// @param[in] m Ball's mass (e.g., 6.35 kg).
-  /// @param[in] I Ball's moment of inertia about Bcm (e.g., 0.0296 kg*m^2).
-  /// @param[in] g Earth's local gravitational acceleration (e.g., 9.8 m/s^2).
-  /// @param[in] muk Ball-to-plane coefficient of kinetic friction (e.g., 0.12).
-  void SetConstantValues(const T r, const T m, const T I,
-                         const T g, const T muk) {
-    r_ = r;
-    m_ = m;
-    I_ = I;
-    g_ = g;
-    muk_ = muk;
-  }
+  /// @param[in] r Ball B's radius (default is 0.10795 meters).
+  void SetRadius(const T r) { r_ = r; }
 
-  /// Sets ball B's initial position, velocity, and angular velocity.
+  /// @param[in] m Ball B's mass (default is 6.35 kg).
+  void SetMass(const T m) { m_ = m; }
+
+  /// @param[in] I Bs moment of inertia about Bcm (default is 0.0296 kg*m^2).
+  void SetMomentOfInertiaAboutBcm(const T I) { I_ = I; }
+
+  /// @param[in] g Earth's gravitational acceleration (default is 9.8 m/s^2).
+  void SetEarthGravityAcceleration(const T g) { g_ = g; }
+
+  /// @param[in] muk Coefficient of kinetic friction (default is 0.12).
+  void SetCoefficientOfKineticFriction(const T muk) { muk_ = muk; }
+
+  /// Sets ball B's initial position, velocity, and angular velocity in N.
   /// @param[in] x0  Nx measure of Bcm's position from No at t = 0.
   /// @param[in] z0  Nz measure of Bcm's position from No at t = 0.
-  /// @param[in] xDt0 Nx measure of Bcm's velocity in N at t = 0.
-  /// @param[in] zDt0 Nz measure of Bcm's velocity in N at t = 0.
+  /// @param[in] xDt0 Nx measure of Bcm's velocity in N at t = 0, i.e., ẋ(t=0).
+  /// @param[in] zDt0 Nz measure of Bcm's velocity in N at t = 0, i.e., ż̇(t=0).
   /// @param[in] wx0  Nx measure of B's angular velocity in N at t = 0.
   /// @param[in] wy0  Ny measure of B's angular velocity in N at t = 0.
   /// @param[in] wz0  Nz measure of B's angular velocity in N at t = 0.
@@ -88,18 +89,18 @@ class BowlingBallAnalyticalSolution {
   /// Calculate the maximum difference between the analytical closed-form
   /// solution calculated by this class and the arguments to this method.
   /// @param[in] t The time at which the analytical solution is to be evaluated.
-  /// @param[in] p_NoBcm_N Bcm's position from No,expressed in N (estimated).
-  /// @param[in] v_NBcm_N, Bcm's velocity in N, expressed in N (estimated).
-  /// @param[in] w_NB_N, B's angular velocity in N, expressed in N (estimate).
+  /// @param[in] p_NoBcm_N Bcm's position from No,expressed in N.
+  /// @param[in] v_NBcm_N, Bcm's velocity in N, expressed in N.
+  /// @param[in] w_NB_N, B's angular velocity in N, expressed in N.
   /// @returns maximum absolute difference between the analytical closed-form
   /// solution calculated by this class and the arguments to this method
-  /// (which may be either estimated or expected quantities).
+  /// (the arguments may be estimated or expected quantities).
   T CalcMaxDifferenceWithAnalyticalSolution(const T t,
                                             const Vector3<T>& p_NoBcm_N,
                                             const Vector3<T>& v_NBcm_N,
                                             const Vector3<T>& w_NB_N) {
-    Vector3<T> p, v, w;
-    CalcPositionAndMotion(t, &p, &v, &w);
+    Vector3<T> p, v, a, w, alpha;
+    CalcPositionAndMotion(t, &p, &v, &a, &w, &alpha);
     const Vector3<T> p_diff = p - p_NoBcm_N;
     const Vector3<T> v_diff = v - v_NBcm_N;
     const Vector3<T> w_diff = w - w_NB_N;
@@ -112,32 +113,21 @@ class BowlingBallAnalyticalSolution {
     return max_diff;
   }
 
-  /// Calculate B's position, velocity, and angular velocity at time t.
-  /// @param[in] t The time at which the solution is to be evaluated.
-  /// @param[out] p_NoBcm_N Bcm's position from No,expressed in N (at time t).
-  /// @param[out] v_NBcm_N, Bcm's velocity in N, expressed in N (at time t).
-  /// @param[out] w_NB_N, B's angular velocity in N, expressed in N (at time t).
-  void CalcPositionAndMotion(const T t,
-                             Vector3<T>* p_NoBcm_N,
-                             Vector3<T>* v_NBcm_N,
-                             Vector3<T>* w_NB_N);
-
   /// @returns time t >= 0 at which rolling starts.
   T CalcTimeAtWhichRollingStarts() {
     const Vector3<T> v0_BN_N = CalcInitialContactPointVelocity();
     const T v0_BN_N_magnitude = v0_BN_N.norm();
 
     // If at time t = 0, |v_BN_N| <= v_epsilon, B is initially rolling on N.
-    // Otherwise, calculate the time t_start at which rolling starts.
     const double v_epsilon = CalcEpsilonContactSpeed();
     if (v0_BN_N_magnitude <= v_epsilon) return 0.0;
 
-    // If muk is 0 or negative (or g is 0 or negative), it never rolls.
+    // If muk is 0 or negative (or g is 0 or negative), assume B never rolls.
     // Rather than returning +infinite, just return largest double number.
     const T muk_g =   muk_ * g_;
     if (muk_g <= 0.0) return std::numeric_limits<double>::max();
 
-    // Calculate time that B transitions from sliding to rolling.
+    // Calculate time t at which B transitions from sliding to rolling.
     const Vector3<T> v0_NBcm_N = InitialVelocityBcm();
     const Vector3<T> vRoll = CalcVelocityBcmIfRolling();
     const Vector3<T> vDiff = v0_NBcm_N - vRoll;
@@ -145,15 +135,31 @@ class BowlingBallAnalyticalSolution {
     return 1 / muk_g * vDiff.dot(u);
   }
 
+  /// Calculate B's position, velocity, and angular velocity at time t.
+  /// @param[in] t The time at which the solution is to be evaluated.
+  /// @param[out] p_NoBcm_N Bcm's position from No,expressed in N (at time t).
+  /// @param[out] v_NBcm_N, Bcm's velocity in N, expressed in N (at time t).
+  /// @param[out] a_NBcm_N, Bcm's acceleration in N, expressed in N (at time t).
+  /// @param[out] w_NB_N, B's angular velocity in N, expressed in N (at time t).
+  /// @param[out] alpha_NB_N, B's angular acceleration in N, expressed in N.
+  void CalcPositionAndMotion(const T t,
+       Vector3<T>* p_NoBcm_N, Vector3<T>* v_NBcm_N, Vector3<T>* a_NBcm_N,
+                              Vector3<T>* w_NB_N,  Vector3<T>* alpha_NB_N);
+
  private:
-  // Get vertically-upward unit vector, expressed in N.
+  // Get vertically-upward unit vector, expressed in N (i.e., Ny).
   Vector3<T> VerticallyUpwardUnitVector() const {
     return Vector3<T>(0, 1, 0);
   }
 
-  // Get position of Bcm (B's center of mass) from No at time t = 0.
-  Vector3<T> InitialPositionBcm() const {
+  // Get position vector from No to Bcm (B's center of mass) at time t = 0.
+  Vector3<T> InitialPositionVectorNoToBcm() const {
     return Vector3<T>(x0_, r_, z0_);
+  }
+
+  // Get position vector from Bcm to BN, expressed in N.
+  Vector3<T> PositionVectorBcmToBN() const {
+    return Vector3<T>(0, -r_, 0);
   }
 
   // Get velocity of Bcm (B's center of mass) in N at time t = 0.
@@ -215,11 +221,6 @@ class BowlingBallAnalyticalSolution {
     return Vector3<T>(v[0], 0, v[1]);
   }
 
-  // Returns position vector from Bcm to BN, expressed in N.
-  Vector3<T> PositionVectorBcmToBN() const {
-    return Vector3<T>(0, -r_, 0);
-  }
-
   // @returns epsilon_v, a very small contact speed for bowling.
   // Assumes there may be as many of 6 of the 53 mantissa bits to be inaccurate
   // and bowling speeds of up to 20 mph = 8.94 m/s.
@@ -230,21 +231,20 @@ class BowlingBallAnalyticalSolution {
   }
 
   // Class data with default bowling ball physical parameters (constants).
-  T r_{ 0.10795 };     // Ball's radius.
-  T m_{ 6.35 };        // Ball's mass.
-  T I_{ 0.0296 };      // Ball's moment of inertia about Bcm.
-  T g_{ 9.8 };         // Earth's local gravitational acceleration.
-  T muk_{ 0.12 };      // Ball-to-plane coefficient of kinetic friction.
+  T r_{ 0.10795 };      // Ball's radius.
+  T m_{ 6.35 };         // Ball's mass.
+  T I_{ 0.0296 };       // Ball's moment of inertia about Bcm.
+  T g_{ 9.8 };          // Earth's local gravitational acceleration.
+  T muk_{ 0.12 };       // Ball-to-plane coefficient of kinetic friction.
 
   // Class data with default initial values (at time t = 0).
-  static constexpr double _pi{ 3.14159265358979 };
-  T x0_{ 0 };          // Initial value of x.
-  T z0_{ 0 };          // Initial value of z.
-  T xDt0_{ 0 };        // Initial value of x'.
-  T zDt0_{ 8 };        // Initial value of z'.
-  T wx0_{ 0 };         // Initial value of wx.
-  T wy0_{ 0 };         // Initial value of wy.
-  T wz0_{ -8 * _pi };  // Initial value of wz (-4 revolutions/second).
+  T x0_{ 0 };           // Initial value of x.
+  T z0_{ 0 };           // Initial value of z.
+  T xDt0_{ 0 };         // Initial value of ẋ.
+  T zDt0_{ 8 };         // Initial value of ż.
+  T wx0_{ 0 };          // Initial value of wx.
+  T wy0_{ 0 };          // Initial value of wy.
+  T wz0_{ -8 * M_PI };  // Initial value of wz (-4 revolutions/second).
 };
 
 }  // namespace bowling_ball
