@@ -122,54 +122,54 @@ void DoMain() {
   MatrixX<double> Px, Py;
   GetControlPortMapping(plant, &Px, &Py);
   SetPositionControlledGains(&kp, &ki, &kd);
-  auto hand_controller = builder.AddSystem<systems::controllers::PidController>(
+  auto& hand_controller = *builder.AddSystem<systems::controllers::PidController>(
       Px, Py, kp, ki, kd);
   builder.Connect(plant.get_continuous_state_output_port(),
-                  hand_controller->get_input_port_estimated_state());
-  builder.Connect(hand_controller->get_output_port_control(),
+                  hand_controller.get_input_port_estimated_state());
+  builder.Connect(hand_controller.get_output_port_control(),
                   plant.get_actuation_input_port());
 
-  // Creat an output port of the continuous from the plant that only ouput the
-  // status of the hand finger joints related DOFs, and put them in the
-  // pre-defined order that is easy for understanding.
-  const auto hand_status_converter =
-      builder.AddSystem<systems::MatrixGain<double>>(Px);
+  // Creat an output port of the continuous state from the plant that only
+  // output the status of the hand finger joints related DOFs, and put them in
+  // the pre-defined order that is easy for understanding.
+  const auto& hand_status_converter =
+      *builder.AddSystem<systems::MatrixGain<double>>(Px);
   builder.Connect(plant.get_continuous_state_output_port(),
-                  hand_status_converter->get_input_port());
-  const auto hand_output_torque_converter =
-      builder.AddSystem<systems::MatrixGain<double>>(Py);
-  builder.Connect(hand_controller->get_output_port_control(),
-                  hand_output_torque_converter->get_input_port());
+                  hand_status_converter.get_input_port());
+  const auto& hand_output_torque_converter =
+      *builder.AddSystem<systems::MatrixGain<double>>(Py);
+  builder.Connect(hand_controller.get_output_port_control(),
+                  hand_output_torque_converter.get_input_port());
 
   // Create the command subscriber and status publisher for the hand.
-  auto hand_command_sub = builder.AddSystem(
+  auto& hand_command_sub = *builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_allegro_command>(
           "ALLEGRO_COMMAND", &lcm));
-  hand_command_sub->set_name("hand_command_subscriber");
-  auto hand_command_receiver =
-      builder.AddSystem<AllegroCommandReceiver>(kAllegroNumJoints);
-  hand_command_receiver->set_name("hand_command_receiver");
-  auto hand_status_pub = builder.AddSystem(
+  hand_command_sub.set_name("hand_command_subscriber");
+  auto& hand_command_receiver =
+      *builder.AddSystem<AllegroCommandReceiver>(kAllegroNumJoints);
+  hand_command_receiver.set_name("hand_command_receiver");
+  auto& hand_status_pub = *builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_allegro_status>(
           "ALLEGRO_STATUS", &lcm));
-  hand_status_pub->set_name("hand_status_publisher");
-  hand_status_pub->set_publish_period(kLcmStatusPeriod);
-  auto status_sender =
-      builder.AddSystem<AllegroStatusSender>(kAllegroNumJoints);
-  status_sender->set_name("status_sender");
+  hand_status_pub.set_name("hand_status_publisher");
+  hand_status_pub.set_publish_period(kLcmStatusPeriod);
+  auto& status_sender =
+      *builder.AddSystem<AllegroStatusSender>(kAllegroNumJoints);
+  status_sender.set_name("status_sender");
 
-  builder.Connect(hand_command_sub->get_output_port(),
-                  hand_command_receiver->get_input_port(0));
-  builder.Connect(hand_command_receiver->get_commanded_state_output_port(),
-                  hand_controller->get_input_port_desired_state());
-  builder.Connect(hand_status_converter->get_output_port(),
-                  status_sender->get_state_input_port());
-  builder.Connect(hand_command_receiver->get_output_port(0),
-                  status_sender->get_command_input_port());
-  builder.Connect(hand_output_torque_converter->get_output_port(),
-                  status_sender->get_commanded_torque_input_port());
-  builder.Connect(status_sender->get_output_port(0),
-                  hand_status_pub->get_input_port());
+  builder.Connect(hand_command_sub.get_output_port(),
+                  hand_command_receiver.get_input_port(0));
+  builder.Connect(hand_command_receiver.get_commanded_state_output_port(),
+                  hand_controller.get_input_port_desired_state());
+  builder.Connect(hand_status_converter.get_output_port(),
+                  status_sender.get_state_input_port());
+  builder.Connect(hand_command_receiver.get_output_port(0),
+                  status_sender.get_command_input_port());
+  builder.Connect(hand_output_torque_converter.get_output_port(),
+                  status_sender.get_commanded_torque_input_port());
+  builder.Connect(status_sender.get_output_port(0),
+                  hand_status_pub.get_input_port());
 
   // Now the model is complete.
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
@@ -206,8 +206,8 @@ void DoMain() {
   simulator.Initialize();
 
   // set the initial command for the hand
-  hand_command_receiver->set_initial_position(
-      &diagram->GetMutableSubsystemContext(*hand_command_receiver,
+  hand_command_receiver.set_initial_position(
+      &diagram->GetMutableSubsystemContext(hand_command_receiver,
                                            &simulator.get_mutable_context()),
       VectorX<double>::Zero(plant.num_actuators()));
 

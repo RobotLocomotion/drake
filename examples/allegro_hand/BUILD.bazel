@@ -29,7 +29,6 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":allegro_common",
-        "//common/trajectories:piecewise_polynomial",
         "//lcmtypes:allegro",
         "//systems/framework:leaf_system",
     ],
