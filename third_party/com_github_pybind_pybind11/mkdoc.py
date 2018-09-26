@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
+# -*- coding: UTF-8 -*-
 #
-#  Syntax: mkdoc.py [-I<path> ..] [.. a list of header files ..]
+#  Syntax: mkdoc.py [-I<path> ..] [-quiet] [.. a list of header files ..]
 #
 #  Extract documentation from C++ header files to use it in Python bindings
 #
 
+from collections import OrderedDict
 import os
 import sys
 import platform
 import re
+from tempfile import NamedTemporaryFile
 import textwrap
 
 from clang import cindex
 from clang.cindex import CursorKind
-from collections import OrderedDict
-from threading import Thread, Semaphore
-from multiprocessing import cpu_count
 
 RECURSE_LIST = [
     CursorKind.TRANSLATION_UNIT,
@@ -53,10 +53,8 @@ CPP_OPERATORS = {
 CPP_OPERATORS = OrderedDict(
     sorted(CPP_OPERATORS.items(), key=lambda t: -len(t[0])))
 
-job_count = cpu_count()
-job_semaphore = Semaphore(job_count)
-
 output = []
+
 
 def d(s):
     return s.decode('utf8')
@@ -102,52 +100,70 @@ def process_comment(comment):
     param_group = '([\[\w:\]]+)'
 
     s = result
-    s = re.sub(r'\\c\s+%s' % cpp_group, r'``\1``', s)
-    s = re.sub(r'\\a\s+%s' % cpp_group, r'*\1*', s)
-    s = re.sub(r'\\e\s+%s' % cpp_group, r'*\1*', s)
-    s = re.sub(r'\\em\s+%s' % cpp_group, r'*\1*', s)
-    s = re.sub(r'\\b\s+%s' % cpp_group, r'**\1**', s)
-    s = re.sub(r'\\ingroup\s+%s' % cpp_group, r'', s)
-    s = re.sub(r'\\param%s?\s+%s' % (param_group, cpp_group),
+    s = re.sub(r'[@\\]c\s+%s' % cpp_group, r'``\1``', s)
+    s = re.sub(r'[@\\]p\s+%s' % cpp_group, r'``\1``', s)
+    s = re.sub(r'[@\\]a\s+%s' % cpp_group, r'*\1*', s)
+    s = re.sub(r'[@\\]e\s+%s' % cpp_group, r'*\1*', s)
+    s = re.sub(r'[@\\]em\s+%s' % cpp_group, r'*\1*', s)
+    s = re.sub(r'[@\\]b\s+%s' % cpp_group, r'**\1**', s)
+    s = re.sub(r'[@\\]ingroup\s+%s' % cpp_group, r'', s)
+    s = re.sub(r'[@\\]param%s?\s+%s' % (param_group, cpp_group),
                r'\n\n$Parameter ``\2``:\n\n', s)
-    s = re.sub(r'\\tparam%s?\s+%s' % (param_group, cpp_group),
+    s = re.sub(r'[@\\]tparam%s?\s+%s' % (param_group, cpp_group),
                r'\n\n$Template parameter ``\2``:\n\n', s)
+    s = re.sub(r'[@\\]retval\s+%s' % cpp_group,
+               r'\n\n$Returns ``\1``:\n\n', s)
 
     for in_, out_ in {
+        'result': 'Returns',
+        'returns': 'Returns',
         'return': 'Returns',
-        'author': 'Author',
         'authors': 'Authors',
+        'author': 'Authors',
         'copyright': 'Copyright',
         'date': 'Date',
+        'note': 'Note',
+        'remarks': 'Remark',
         'remark': 'Remark',
         'sa': 'See also',
         'see': 'See also',
         'extends': 'Extends',
-        'throw': 'Throws',
-        'throws': 'Throws'
+        'throws': 'Throws',
+        'throw': 'Throws'
     }.items():
-        s = re.sub(r'\\%s\s*' % in_, r'\n\n$%s:\n\n' % out_, s)
+        s = re.sub(r'[@\\]%s\s*' % in_, r'\n\n$%s:\n\n' % out_, s)
 
-    s = re.sub(r'\\details\s*', r'\n\n', s)
-    s = re.sub(r'\\brief\s*', r'', s)
-    s = re.sub(r'\\short\s*', r'', s)
-    s = re.sub(r'\\ref\s*', r'', s)
+    s = re.sub(r'[@\\]details\s*', r'\n\n', s)
+    s = re.sub(r'[@\\]brief\s*', r'', s)
+    s = re.sub(r'[@\\]short\s*', r'', s)
+    s = re.sub(r'[@\\]ref\s*', r'', s)
 
-    s = re.sub(r'\\code\s?(.*?)\s?\\endcode',
+    s = re.sub(r'[@\\]code\s?(.*?)\s?[@\\]endcode',
                r"```\n\1\n```\n", s, flags=re.DOTALL)
+
+    s = re.sub(r'%(\S+)', r'\1', s)
 
     # HTML/TeX tags
     s = re.sub(r'<tt>(.*?)</tt>', r'``\1``', s, flags=re.DOTALL)
     s = re.sub(r'<pre>(.*?)</pre>', r"```\n\1\n```\n", s, flags=re.DOTALL)
     s = re.sub(r'<em>(.*?)</em>', r'*\1*', s, flags=re.DOTALL)
     s = re.sub(r'<b>(.*?)</b>', r'**\1**', s, flags=re.DOTALL)
-    s = re.sub(r'\\f\$(.*?)\\f\$', r'$\1$', s, flags=re.DOTALL)
+    s = re.sub(r'[@\\]f\$(.*?)[@\\]f\$', r'$\1$', s, flags=re.DOTALL)
     s = re.sub(r'<li>', r'\n\n* ', s)
     s = re.sub(r'</?ul>', r'', s)
     s = re.sub(r'</li>', r'\n\n', s)
 
     s = s.replace('``true``', '``True``')
     s = s.replace('``false``', '``False``')
+
+    # Exceptions
+    s = s.replace('std::bad_alloc', 'MemoryError')
+    s = s.replace('std::domain_error', 'ValueError')
+    s = s.replace('std::exception', 'RuntimeError')
+    s = s.replace('std::invalid_argument', 'ValueError')
+    s = s.replace('std::length_error', 'ValueError')
+    s = s.replace('std::out_of_range', 'ValueError')
+    s = s.replace('std::range_error', 'ValueError')
 
     # Re-flow text
     wrapper = textwrap.TextWrapper()
@@ -182,10 +198,16 @@ def process_comment(comment):
     return result.rstrip().lstrip('\n')
 
 
-def extract(filename, node, prefix):
-    if not (node.location.file is None or
-            os.path.samefile(d(node.location.file.name), filename)):
-        return 0
+def extract(include_map, node, prefix):
+    if node.location.file is None:
+        # This should only happen on the input source file.
+        assert node.kind == CursorKind.TRANSLATION_UNIT
+        include = None
+    else:
+        filename = d(node.location.file.name)
+        include = include_map.get(filename)
+        if include is None:
+            return 0
     if node.kind in RECURSE_LIST:
         sub_prefix = prefix
         if node.kind != CursorKind.TRANSLATION_UNIT:
@@ -193,7 +215,7 @@ def extract(filename, node, prefix):
                 sub_prefix += '_'
             sub_prefix += d(node.spelling)
         for i in node.get_children():
-            extract(filename, i, sub_prefix)
+            extract(include_map, i, sub_prefix)
     if node.kind in PRINT_LIST:
         comment = d(node.raw_comment) if node.raw_comment is not None else ''
         comment = process_comment(comment)
@@ -203,28 +225,39 @@ def extract(filename, node, prefix):
         if len(node.spelling) > 0:
             name = sanitize_name(sub_prefix + d(node.spelling))
             global output
-            output.append((name, filename, comment))
+            assert include is not None
+            output.append((name, include, comment))
 
 
-class ExtractionThread(Thread):
-    def __init__(self, filename, parameters):
-        Thread.__init__(self)
-        self.filename = filename
-        self.parameters = parameters
-        job_semaphore.acquire()
+def drake_genfile_path_to_include_path(filename):
+    # TODO(eric.cousineau): Is there a simple way to generalize this, given
+    # include paths?
+    pieces = filename.split('/')
+    assert pieces.count('drake') == 1
+    drake_index = pieces.index('drake')
+    return '/'.join(pieces[drake_index:])
 
-    def run(self):
-        print('Processing "%s" ..' % self.filename, file=sys.stderr)
-        try:
-            index = cindex.Index(
-                cindex.conf.lib.clang_createIndex(False, True))
-            tu = index.parse(self.filename, self.parameters)
-            extract(self.filename, tu.cursor, '')
-        finally:
-            job_semaphore.release()
+
+class FileDict(object):
+    def __init__(self, items):
+        self._d = {self._key(file): value for file, value in items}
+
+    def _key(self, file):
+        return os.path.realpath(os.path.abspath(file))
+
+    def get(self, file, default=None):
+        return self._d.get(self._key(file), default)
+
+    def __contains__(self, file):
+        return self._key(file) in self._d
+
+    def __getitem__(self, file):
+        key = self._key(file)
+        return self._d[key]
+
 
 if __name__ == '__main__':
-    parameters = ['-x', 'c++', '-std=c++11']
+    parameters = ['-x', 'c++', '-D__MKDOC_PY__']
     filenames = []
 
     if platform.system() == 'Darwin':
@@ -241,20 +274,31 @@ if __name__ == '__main__':
             parameters.append('-isysroot')
             parameters.append(sysroot_dir)
 
+    quiet = False
+    std = '-std=c++11'
+
     for item in sys.argv[1:]:
-        if item.startswith('-'):
+        if item == '-quiet':
+            quiet = True
+        elif item.startswith('-std='):
+            std = item
+        elif item.startswith('-'):
             parameters.append(item)
         else:
             filenames.append(item)
 
+    parameters.append(std)
+
     if len(filenames) == 0:
-        print('Syntax: %s [.. a list of header files ..]' % sys.argv[0])
+        print('Syntax: %s [.. a list of header files ..]' % sys.argv[0],
+              file=sys.stderr)
         exit(-1)
 
-    print('''/*
-  This file contains docstrings for the Python bindings.
-  Do not edit! These were automatically extracted by mkdoc.py
- */
+    print('''#pragma once
+
+// {} {}
+// This file contains docstrings for the Python bindings that were
+// automatically extracted by mkdoc.py from pybind11.
 
 #define __EXPAND(x)                                      x
 #define __COUNT(_1, _2, _3, _4, _5, _6, _7, COUNT, ...)  COUNT
@@ -274,19 +318,31 @@ if __name__ == '__main__':
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
-''')
+'''.format('GENERATED FILE', 'DO NOT EDIT'))  # noqa
 
     output.clear()
-    for filename in filenames:
-        thr = ExtractionThread(filename, parameters)
-        thr.start()
 
-    print('Waiting for jobs to finish ..', file=sys.stderr)
-    for i in range(job_count):
-        job_semaphore.acquire()
+    text = ""
+    includes = list(map(drake_genfile_path_to_include_path, filenames))
+    include_map = FileDict(zip(filenames, includes))
+    # TODO(eric.cousineau): Sort files based on include path?
+    with NamedTemporaryFile('w') as include_file:
+        for include in includes:
+            include_file.write("#include \"{}\"\n".format(include))
+        include_file.flush()
+        if not quiet:
+            print("Parse header...", file=sys.stderr)
+        index = cindex.Index(
+            cindex.conf.lib.clang_createIndex(False, True))
+        tu = index.parse(include_file.name, parameters)
+        if not quiet:
+            print("Extract relevant symbols...", file=sys.stderr)
+        # The extract() appends to the output global variable.
+        extract(include_map, tu.cursor, '')
 
     name_ctr = 1
     name_prev = None
+    # TODO(eric.cousineau): Sort based on filename + line.
     for name, _, comment in list(sorted(output, key=lambda x: (x[0], x[1]))):
         if name == name_prev:
             name_ctr += 1
@@ -294,7 +350,9 @@ if __name__ == '__main__':
         else:
             name_prev = name
             name_ctr = 1
-        print('\nstatic const char *%s =%sR"doc(%s)doc";' %
+        # Add [[gnu::unused]] to output to work around bug related to
+        # #pragma GCC diagnostic push ... pop in GCC.
+        print('\nstatic const char *%s [[gnu::unused]] =%sR"doc(%s)doc";' %
               (name, '\n' if '\n' in comment else ' ', comment))
 
     print('''
