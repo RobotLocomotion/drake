@@ -17,8 +17,13 @@ load(
 load(
     "//tools/skylark:pybind.bzl",
     "drake_pybind_library",
+    "generate_pybind_documentation_header",
     "get_drake_py_installs",
     "get_pybind_package_info",
+)
+load(
+    "//tools/install/libdrake:build_components.bzl",
+    "LIBDRAKE_COMPONENTS",
 )
 
 package(default_visibility = [
@@ -28,6 +33,27 @@ package(default_visibility = [
 # This determines how `PYTHONPATH` is configured, and how to install the
 # bindings.
 PACKAGE_INFO = get_pybind_package_info(base_package = "//bindings")
+
+LIBDRAKE_NONVISIBLE_COMPONENTS = [
+    "//common:drake_marker_shared_library",
+    "//common:text_logging_gflags_h",
+]
+
+generate_pybind_documentation_header(
+    name = "generate_pybind_documentation_header",
+    out = "documentation_pybind.h",
+    targets = [
+        component
+        for component in LIBDRAKE_COMPONENTS
+        if component not in LIBDRAKE_NONVISIBLE_COMPONENTS
+    ],
+)
+
+drake_cc_library(
+    name = "documentation_pybind",
+    hdrs = ["documentation_pybind.h"],
+    tags = ["nolint"],
+)
 
 drake_cc_library(
     name = "pydrake_pybind",
@@ -218,6 +244,20 @@ install(
     py_dest = PACKAGE_INFO.py_dest,
     visibility = ["//visibility:public"],
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
+)
+
+drake_py_unittest(
+    name = "documentation_pybind_test",
+    data = [
+        ":documentation_pybind.h",
+    ],
+)
+
+drake_cc_googletest(
+    name = "documentation_pybind_usage_test",
+    deps = [
+        ":documentation_pybind",
+    ],
 )
 
 drake_py_unittest(
