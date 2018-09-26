@@ -34,20 +34,19 @@ void RationalFunction::CheckIndeterminates() const {
                                   denominator_.indeterminates())};
   if (!vars1.empty() || !vars2.empty()) {
     std::ostringstream oss;
-    oss << "RationalFunction " << *this
-        << " is invalid.\n" ;
+    oss << "RationalFunction " << *this << " is invalid.\n";
     if (!vars1.empty()) {
-    oss << "The following variable(s) "
-           "are used as indeterminates in the numerator and decision "
-           "variables in the denominator at the same time:\n"
-        << vars1 << ".";
+      oss << "The following variable(s) "
+             "are used as indeterminates in the numerator and decision "
+             "variables in the denominator at the same time:\n"
+          << vars1 << ".";
     }
     if (!vars2.empty()) {
-    oss << "The following variable(s) "
-           "are used as decision variables in the numerator and indeterminates"
-           "variables in the denominator at the same time:\n"
-        << vars2 << ".";
-
+      oss << "The following variable(s) "
+             "are used as decision variables in the numerator and "
+             "indeterminates"
+             "variables in the denominator at the same time:\n"
+          << vars2 << ".";
     }
     throw std::logic_error(oss.str());
   }
