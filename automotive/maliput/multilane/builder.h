@@ -59,9 +59,9 @@ class StartReference {
   }
 
   /// Builds a Spec at `connection`'s `end` side with `direction` direction.
-  /// When `direction` == `Direction::kReverse`, `end`-side endpoint is
-  /// reversed. Spec endpoint's theta_dot will be ignored so that the Builder
-  /// can adjust it to match road continuity constraints.
+  /// `connection`'s theta_dot at the given `end` will be ignored by the new
+  /// Spec so that the Builder can adjust it to match road continuity
+  /// constraints.
   Spec at(const Connection& connection, api::LaneEnd::Which end,
           Direction direction) const {
     Endpoint endpoint = end == api::LaneEnd::Which::kStart ? connection.start()
@@ -131,10 +131,9 @@ class StartLane {
   }
 
   /// Builds a Spec at `connection`'s `lane_id` lane at `end` side with
-  /// `direction` direction. When `direction` == `Direction::kReverse`,
-  /// `end`-side endpoint is reversed. Spec endpoint's theta_dot will be
-  /// ignored so that the Builder can adjust it to match road continuity
-  /// constraints.
+  /// `direction` direction. `connection`'s theta_dot at the given `end`
+  /// will be ignored by the new Spec so that the Builder can adjust it
+  /// to match road continuity constraints.
   ///
   /// `lane_id` must be non-negative and smaller than `connection`'s number of
   /// lanes.
@@ -190,9 +189,9 @@ class EndReference {
   EndReference() = default;
 
   /// Builds a Spec at `connection`'s `end` side with `direction` direction.
-  /// When `direction` == `Direction::kReverse`, `end`-side endpoint_z
-  /// is reversed. Spec endpoint's theta_dot will be ignored so
-  /// that the Builder can adjust it to match road continuity constraints.
+  /// `connection`'s theta_dot at the given `end` will be ignored by the new
+  /// Spec so that the Builder can adjust it to match road continuity
+  /// constraints.
   Spec z_at(const Connection& connection, api::LaneEnd::Which end,
             Direction direction) const {
     EndpointZ endpoint_z = end == api::LaneEnd::Which::kStart
@@ -258,9 +257,9 @@ class EndLane {
   }
 
   /// Builds a Spec at `connection`'s `end` side with `direction` direction.
-  /// When `direction` == `Direction::kReverse`, `end`-side endpoint_z
-  /// is reversed. Spec endpoint_z's theta_dot will be ignored so that
-  /// the Builder can adjust it to match road continuity constraints.
+  /// `connection`'s theta_dot at the given `end` will be ignored by the new
+  /// Spec so that the Builder can adjust it to match road continuity
+  /// constraints.
   ///
   /// `lane_id` must be non-negative and smaller than `connection`'s number of
   /// lanes.
@@ -525,15 +524,15 @@ class BuilderFactoryBase {
 /// the Segments associated with the grouped Connections; ungrouped
 /// Connections each receive their own Junction.
 ///
-/// To match continuity constraints (G1) at each BranchPoint, the Builder may
-/// adjust Θ' i.e. the superelevation angle derivative with respect to an
-/// arc-length coordinate t that travels along the Connection curve’s projection
-/// over the z = 0 plane. That is always the case when no Θ' value is provided.
-/// Explicitly set Θ' values are only honored for Connections that are built
-/// from explicit Endpoints (via reference curve-based Builder::Connect()
-/// flavors with Specs built from Endpoints). In all other cases, the specified
-/// Θ' value will be ignored by the Builder. As a side effect, this may cause
-/// Builder::Build() to throw if it's unable to produce a valid RoadGeometry.
+/// At Endpoints where theta_dot (i.e. the rate of change of superelevation with
+/// respect to an arc-length coordinate t that travels along the Connection
+/// curve’s projection over the z = 0 plane) has not been explicitly specified
+/// the Builder will automatically calculate theta_dot values to preserve G1
+/// continuity across Connections. theta_dot values can only be explicitly
+/// specified for a Connection created from a reference curve with an explicit
+/// start or end Endpoint. However, specifying an explicit theta_dot may cause
+/// Builder::Build() to throw if it cannot assemble a G1 continuous
+/// RoadGeometry.
 ///
 /// Specific suffixes are used to name Maliput entities. The following list
 /// explains the naming convention:

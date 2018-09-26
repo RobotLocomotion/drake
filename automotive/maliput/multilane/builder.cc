@@ -328,17 +328,17 @@ Vector3<double> DirectionOutFromLane(const api::Lane* const lane,
 }
 
 
-// Checks if the heading direction of the all the given lanes at an
-// `r_offset` leftwards of the centerlines when traveling outwards from
-// their specified end in `parallel_set` matches the reference
-// `direction_at_r_offset`, down to the given `angular_tolerance`.
+// Checks if the heading direction of the all the given lanes at an `r_offset`
+// leftwards of the centerlines when traveling outwards from their specified
+// end in `set` matches the reference `direction_at_r_offset`, down to the
+// given `angular_tolerance`.
 bool AreLanesDirectionsWithinTolerance(
     const Vector3<double>& direction_at_r_offset, double r_offset,
-    const api::LaneEndSet* parallel_set, double angular_tolerance) {
-  DRAKE_DEMAND(parallel_set != nullptr);
+    const api::LaneEndSet* set, double angular_tolerance) {
+  DRAKE_DEMAND(set != nullptr);
 
-  for (int i = 0; i < parallel_set->size(); ++i) {
-    const api::LaneEnd& le = parallel_set->get(i);
+  for (int i = 0; i < set->size(); ++i) {
+    const api::LaneEnd& le = set->get(i);
     const Vector3<double> other_direction =
         DirectionOutFromLane(le.lane, le.end, r_offset);
     const double angular_deviation =
@@ -354,7 +354,7 @@ bool AreLanesDirectionsWithinTolerance(
 // Checks if the `lane` is G1 continuous along an `r_offset` leftwards of
 // the `lane` centerline when traveling outwards from the given `end`, at the
 // branch point and down to the given `angular_tolerance`. `lane` is assumed
-// to have an into-the-lane tangent vector that is coincident with those of
+// to have an out-of-the-lane tangent vector that is coincident with those of
 // the lanes in the `parallel_set`, which in turn are anti-parallel to
 // those of the lanes in the `antiparallel_set`.
 bool IsLaneContinuousAtBranchPointAlongROffset(
@@ -380,7 +380,7 @@ bool IsLaneContinuousAtBranchPointAlongROffset(
 
 // Checks if the `lane` is G1 continuous at the branchpoint on the given
 // `end`, down to an `angular_tolerance`. `lane` is assumed to have an
-// into-the-lane tangent vector that is coincident with those of the
+// out-of-the-lane tangent vector that is coincident with those of the
 // lanes in the `parallel_set`, which in turn are anti-parallel to those
 // of the lanes in the `antiparallel_set`.
 bool IsLaneContinuousAtBranchPoint(
