@@ -20,8 +20,9 @@ namespace acrobot {
 template <typename T>
 AcrobotPlant<T>::AcrobotPlant()
     : systems::LeafSystem<T>(systems::SystemTypeTag<acrobot::AcrobotPlant>{}) {
-  this->DeclareVectorInputPort(AcrobotInput<T>());
-  this->DeclareVectorOutputPort(AcrobotState<T>(), &AcrobotPlant::CopyStateOut);
+  this->DeclareVectorInputPort("elbow torque", AcrobotInput<T>());
+  this->DeclareVectorOutputPort("state", AcrobotState<T>(),
+                                &AcrobotPlant::CopyStateOut);
   this->DeclareContinuousState(AcrobotState<T>(), 2 /* num_q */, 2 /* num_v */,
                                0 /* num_z */);
   this->DeclareNumericParameter(AcrobotParams<T>());

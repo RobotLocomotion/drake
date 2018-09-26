@@ -14,9 +14,19 @@ namespace drake {
 namespace examples {
 namespace acrobot {
 
+/// @defgroup acrobot_systems Acrobot
+/// @{
+/// @brief Systems related to the Acrobot example.
+/// @ingroup example_systems
+/// @}
+
 /// The Acrobot - a canonical underactuated system as described in <a
 /// href="http://underactuated.mit.edu/underactuated.html?chapter=3">Chapter 3
 /// of Underactuated Robotics</a>.
+///
+/// @system{ AcrobotPlant,
+///   @input_port{elbow torque},
+///   @output_port{state} }
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
@@ -24,6 +34,8 @@ namespace acrobot {
 /// - double
 /// - drake::AutoDiffXd
 /// - symbolic::Expression
+///
+/// @ingroup acrobot_systems
 template <typename T>
 class AcrobotPlant : public systems::LeafSystem<T> {
  public:
