@@ -309,16 +309,18 @@ void SceneGraph<T>::FullPoseUpdate(const GeometryContext<T>& context) const {
     if (pair.second.size() > 0) {
       SourceId source_id = pair.first;
       const auto itr = input_source_ids_.find(source_id);
-      DRAKE_ASSERT(itr != input_source_ids_.end());
-      const int pose_port = itr->second.pose_port;
-      const auto pose_port_value =
-          this->template EvalAbstractInput(context, pose_port);
-      if (pose_port_value) {
-        const auto& poses =
-            pose_port_value->template GetValue<FramePoseVector<T>>();
-        mutable_state.SetFramePoses(poses);
-      } else {
-        throw_error(source_id, "pose");
+      // The source id *could* be the internal source and we skip it.
+      if (itr != input_source_ids_.end()) {
+        const int pose_port = itr->second.pose_port;
+        const auto pose_port_value =
+            this->template EvalAbstractInput(context, pose_port);
+        if (pose_port_value) {
+          const auto& poses =
+              pose_port_value->template GetValue<FramePoseVector<T>>();
+          mutable_state.SetFramePoses(poses);
+        } else {
+          throw_error(source_id, "pose");
+        }
       }
     }
   }

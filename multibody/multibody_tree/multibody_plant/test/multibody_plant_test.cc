@@ -1051,22 +1051,27 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   scene_graph.get_query_output_port().Calc(*context, state_value.get());
 
   const SceneGraphInspector<double>& inspector = query_object.inspector();
-  const VisualMaterial* test_material =
-      inspector.GetVisualMaterial(ground_id);
-  EXPECT_NE(test_material, nullptr);
-  EXPECT_TRUE(CompareMatrices(test_material->diffuse(),
-                              VisualMaterial().diffuse(), 0.0,
-                              MatrixCompareType::absolute));
+  {
+    const VisualMaterial& test_material =
+        inspector.GetVisualMaterial(ground_id);
+    EXPECT_TRUE(CompareMatrices(test_material.diffuse(),
+                                VisualMaterial().diffuse(), 0.0,
+                                MatrixCompareType::absolute));
+  }
 
-  test_material = inspector.GetVisualMaterial(sphere1_id);
-  EXPECT_NE(test_material, nullptr);
-  EXPECT_TRUE(CompareMatrices(test_material->diffuse(), sphere1_diffuse, 0.0,
-                              MatrixCompareType::absolute));
+  {
+    const VisualMaterial& test_material =
+        inspector.GetVisualMaterial(sphere1_id);
+    EXPECT_TRUE(CompareMatrices(test_material.diffuse(), sphere1_diffuse, 0.0,
+                                MatrixCompareType::absolute));
+  }
 
-  test_material = inspector.GetVisualMaterial(sphere2_id);
-  EXPECT_NE(test_material, nullptr);
-  EXPECT_TRUE(CompareMatrices(test_material->diffuse(), sphere2_diffuse, 0.0,
-                              MatrixCompareType::absolute));
+  {
+    const VisualMaterial& test_material =
+        inspector.GetVisualMaterial(sphere2_id);
+    EXPECT_TRUE(CompareMatrices(test_material.diffuse(), sphere2_diffuse, 0.0,
+                                MatrixCompareType::absolute));
+  }
 }
 
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {

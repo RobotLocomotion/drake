@@ -10,13 +10,13 @@ InternalFrame::InternalFrame() {}
 
 InternalFrame::InternalFrame(SourceId source_id, FrameId frame_id,
                              const std::string& name, int frame_group,
-                             PoseIndex pose_index, FrameId parent_id,
+                             InternalIndex internal_index, FrameId parent_id,
                              int clique)
     : source_id_(source_id),
       id_(frame_id),
       name_(name),
       frame_group_(frame_group),
-      pose_index_(pose_index),
+      internal_index_(internal_index),
       clique_(clique),
       parent_id_(parent_id) {}
 
