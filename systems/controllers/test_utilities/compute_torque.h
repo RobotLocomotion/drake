@@ -51,7 +51,7 @@ VectorX<double> ComputeTorque(
   tree.CalcVelocityKinematicsCache(*context, pcache, &vcache);
 
   // Compute inverse dynamics.
-  VectorX<double> tau_applied = VectorX<double>::Zero(tree.num_velocities());
+  VectorX<double> tau_applied = tree.CalcGravityGeneralizedForces(*context);
   std::vector<multibody::SpatialAcceleration<double>> A_WB_array(
       tree.num_bodies());
   std::vector<multibody::SpatialForce<double>> F_BMo_W_array(
