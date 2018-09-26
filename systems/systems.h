@@ -33,6 +33,7 @@
 ///   @defgroup message_passing Message Passing
 ///   @defgroup stochastic_systems Stochastic Systems
 ///   @defgroup visualization Visualization
+///   @defgroup example_systems Examples
 ///   @defgroup rigid_body_systems (Attic) Rigid-Body Systems
 /// @}
 
@@ -90,3 +91,8 @@
 /// </ul>
 /// @}
 // TODO(russt): Add pointers to / support for for RViz.
+
+/// @addtogroup example_systems
+/// @{
+/// @brief The examples contain a number of useful System implementations.
+/// @}

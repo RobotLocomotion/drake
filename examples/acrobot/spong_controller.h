@@ -11,7 +11,11 @@
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/primitives/linear_system.h"
 
-/// @file The Spong acrobot swing-up controller implemented as a LeafSystem.
+namespace drake {
+namespace examples {
+namespace acrobot {
+
+/// The Spong acrobot swing-up controller as described in:
 ///   Spong, Mark W. "Swing up control of the acrobot." Robotics and Automation,
 ///   1994. Proceedings., 1994 IEEE International Conference on. IEEE, 1994.
 ///
@@ -20,21 +24,18 @@
 /// functional set of gains to stabilize the robot about its upright fixed
 /// point using the parameters of the physical robot we have in lab.
 ///
-
-namespace drake {
-namespace examples {
-namespace acrobot {
-
-using std::cout;
-using std::endl;
-
+/// @system{ AcrobotSpongController,
+///   @input_port{acrobot_state},
+///   @output_port{elbow_torque} }
+///
+/// @ingroup acrobot_systems
 template <typename T>
 class AcrobotSpongController : public systems::LeafSystem<T> {
  public:
   AcrobotSpongController()
       : acrobot_{}, acrobot_context_(acrobot_.CreateDefaultContext()) {
-    this->DeclareVectorInputPort(AcrobotState<T>());
-    this->DeclareVectorOutputPort(AcrobotInput<T>(),
+    this->DeclareVectorInputPort("acrobot_state", AcrobotState<T>());
+    this->DeclareVectorOutputPort("elbow_torque", AcrobotInput<T>(),
                                   &AcrobotSpongController::CalcControlTorque);
 
     // Setup context for linearization.
