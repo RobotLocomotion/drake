@@ -64,8 +64,6 @@
 /// @brief Systems implementations that specifically support dexterous
 /// manipulation capabilities in robotics.
 /// @}
-// TODO(russt): curate the System contents of the manipulation directories into
-// this documentation group.
 
 /// @addtogroup message_passing
 /// @{

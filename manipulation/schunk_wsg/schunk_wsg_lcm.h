@@ -25,6 +25,7 @@ namespace schunk_wsg {
 /// reach the commanded target.  The force portion of the command
 /// message is passed through this system, but does not affect the
 /// generated trajectory.
+/// @ingroup manipulation_systems
 class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
  public:
   /// @param input_size The size of the state input port to create
@@ -90,6 +91,7 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
 /// system has one input port for the current state of the simulated
 /// WSG (probably a RigidBodyPlant), and one optional input port for the
 /// measured gripping force.
+/// @ingroup manipulation_systems
 class SchunkWsgStatusSender : public systems::LeafSystem<double> {
  public:
   SchunkWsgStatusSender(int input_state_size, int input_torque_size,
