@@ -98,12 +98,12 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
 
   /// Returns the size of the generalized positions vector.
   int num_positions() const {
-    return this->get_continuous_state().get_generalized_position().size();
+    return topology_.num_positions();
   }
 
   /// Returns the size of the generalized velocities vector.
   int num_velocities() const {
-    return this->get_continuous_state().get_generalized_velocity().size();
+    return topology_.num_velocities();
   }
 
   /// Returns `true` if the state is discrete and `false` if the state is
