@@ -1,12 +1,11 @@
 /// @file
 ///
-/// This file set up a simulation environment of an allegro hand an object. It
-/// is intended to be a be a direct replacement for the Allegro Hand driver and
-/// the actual robot hardware. The system is designed for position control of
-/// the hand, with a PID controller to control the output torque. The system
-/// communicate with the external program through LCM system, with a publisher
-/// to publish the current state of the hand, and a subscriber to read the
-/// posiiton commands of the finger joints.
+/// This file set up a simulation environment of an allegro hand and an object.
+/// The system is designed for position control of the hand, with a PID
+/// controller to control the output torque. The system communicate with the
+/// external program through LCM system, with a publisher to publish the
+/// current state of the hand, and a subscriber to read the posiiton commands
+/// of the finger joints.
 
 #include <gflags/gflags.h>
 

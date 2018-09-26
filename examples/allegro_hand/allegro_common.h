@@ -30,8 +30,8 @@ void GetControlPortMapping(
     const multibody::multibody_plant::MultibodyPlant<double>& plant,
     MatrixX<double>* Px, MatrixX<double>* Py);
 
-/// Create a map from finger joint names into the index, so that the joints are
-/// reordered into a "desired order":
+/// Create a map from finger joint names (in the SDF file) into the index, so
+/// that the joints are reordered into a "desired order":
 /// thumb(4DOFs)-index(4DOFs)-middle(4DOFs)-ring(4DOFs)
 std::map<std::string, int> GetJointNameMapping();
 
@@ -47,34 +47,37 @@ class AllegroHandState {
 
   AllegroHandState();
 
-  // Update the states of the joints and fingers upon receiving the new message
-  // about hand staties.
+  /// Update the states of the joints and fingers upon receiving the new
+  /// message. about hand staties.
   void Update(const lcmt_allegro_status& allegro_state_msg);
 
-  // Pre-set joint positions for grasping objects and open hands.
-  // @param finger_index: the index of the fingers whose joint values are in
-  // request.
+  /// Pre-set joint positions for grasping objects and open hands.
+  /// @param finger_index: the index of the fingers whose joint values are in
+  /// request.
   Eigen::Vector4d FingerGraspJointPosition(int finger_index) const;
   Eigen::Vector4d FingerOpenJointPosition(int finger_index) const;
 
+  /// Returns true when the finger is stuck, which means the joints on the
+  /// finger stops moving or back driving, regardless of it having reached the
+  /// target position or not.
   bool IsFingerStuck(int finger_index) const {
-    return is_finger_stuck(finger_index);
+    return is_finger_stuck_(finger_index);
   }
-  bool IsAllFingersStuck() const { return is_finger_stuck.all(); }
-  // Return whether any of the fingers, other than the thumb, is struck.
+  bool IsAllFingersStuck() const { return is_finger_stuck_.all(); }
+  /// Return whether any of the fingers, other than the thumb, is stuck.
   bool IsAnyHighFingersStuck() const {
-    return is_finger_stuck.segment<3>(1).any();
+    return is_finger_stuck_.segment<3>(1).any();
   }
 
  private:
-  int allegro_num_joints_;
-  int finger_num_;
+  int allegro_num_joints_{16};
+  int finger_num_{4};
 
-  Eigen::Array<bool, Eigen::Dynamic, 1> is_joint_stuck;
-  Eigen::Array<bool, Eigen::Dynamic, 1> is_finger_stuck;
+  Eigen::Array<bool, Eigen::Dynamic, 1> is_joint_stuck_;
+  Eigen::Array<bool, Eigen::Dynamic, 1> is_finger_stuck_;
 
-  // The velocity threhold under which the joint is considered not moving.
-  double velocity_thresh = 0.07;
+  /// The velocity threhold under which the joint is considered not moving.
+  const double velocity_thresh_ = 0.07;
 };
 
 }  // namespace allegro_hand

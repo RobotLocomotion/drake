@@ -10,15 +10,12 @@
 /// has finished the current motion, either by reaching the target position or
 /// get stuck by collisions.
 
-#include <iomanip>
-
 #include <Eigen/Dense>
 #include "lcm/lcm-cpp.hpp"
 
-#include "drake/common/drake_assert.h"
 #include "drake/examples/allegro_hand/allegro_common.h"
 #include "drake/examples/allegro_hand/allegro_lcm.h"
-#include "drake/lcmt_allegro_command.hpp"
+#include "drake/lcmt_allegro_command_.hpp"
 #include "drake/lcmt_allegro_status.hpp"
 
 namespace drake {
@@ -27,20 +24,20 @@ namespace allegro_hand {
 namespace {
 
 const char* const kLcmStatusChannel = "ALLEGRO_STATUS";
-const char* const kLcmCommandChannel = "ALLEGRO_COMMAND";
+const char* const kLcmCommandChannel = "allegro_command_";
 
-class ConstantPositionInput {
+class PositionCommander {
  public:
-  ConstantPositionInput() {
-    lcm_.subscribe(kLcmStatusChannel, &ConstantPositionInput::HandleStatus,
+  PositionCommander() {
+    lcm_.subscribe(kLcmStatusChannel, &PositionCommander::HandleStatus,
                    this);
   }
 
   void Run() {
-    allegro_command.num_joints = kAllegroNumJoints;
-    allegro_command.joint_position.resize(kAllegroNumJoints, 0.);
-    allegro_command.num_torques = 0;
-    allegro_command.joint_torque.resize(kAllegroNumJoints, 0.);
+    allegro_command_.num_joints = kAllegroNumJoints;
+    allegro_command_.joint_position.resize(kAllegroNumJoints, 0.);
+    allegro_command_.num_torques = 0;
+    allegro_command_.joint_torque.resize(0, 0.);
 
     flag_moving = true;
     Eigen::VectorXd target_joint_position(kAllegroNumJoints);
@@ -54,19 +51,19 @@ class ConstantPositionInput {
 
     // close other fingers
     target_joint_position.segment<4>(0) =
-        hand_state.FingerGraspJointPosition(0);
+        hand_state_.FingerGraspJointPosition(0);
     target_joint_position.segment<4>(4) =
-        hand_state.FingerGraspJointPosition(1);
+        hand_state_.FingerGraspJointPosition(1);
     target_joint_position.segment<4>(8) =
-        hand_state.FingerGraspJointPosition(2);
+        hand_state_.FingerGraspJointPosition(2);
     target_joint_position.segment<4>(12) =
-        hand_state.FingerGraspJointPosition(3);
+        hand_state_.FingerGraspJointPosition(3);
     MovetoPositionUntilStuck(target_joint_position);
     sleep(2);
-
-    // twisting the cup repeatly
     while (0 == lcm_.handleTimeout(10)) {
     }
+
+    // twisting the cup repeatly
     Eigen::VectorXd close_hand_joint_position = Eigen::Map<Eigen::VectorXd>(
         &(allegro_status_.joint_position_measured[0]), kAllegroNumJoints);
     while (true) {
@@ -82,7 +79,7 @@ class ConstantPositionInput {
       // The thumb works as another pivot finger, and is expected to exert a
       // large force in order to keep stabilization.
       target_joint_position.segment<4>(0) =
-          hand_state.FingerGraspJointPosition(0);
+          hand_state_.FingerGraspJointPosition(0);
       // The index finger works as the actuating finger, where (1, 0.3, 0.5) is
       // the portion of the joint motion for actuating the mug rotation, 0.6 is
       // the coefficient to determine how much the rotation should be.
@@ -94,7 +91,7 @@ class ConstantPositionInput {
       target_joint_position.segment<3>(9) +=
           (0.1 * Eigen::Vector3d(1, 1, 0.5));
       target_joint_position.segment<4>(0) =
-          hand_state.FingerGraspJointPosition(0);
+          hand_state_.FingerGraspJointPosition(0);
       // The ring finger works as the actuating finger now to rotate the mug in
       // the opposite direction.
       target_joint_position.segment<3>(13) +=
@@ -105,19 +102,16 @@ class ConstantPositionInput {
 
  private:
   inline void PublishPositionCommand(
-      const Eigen::VectorXd target_joint_position) {
-    Eigen::VectorXd::Map(&allegro_command.joint_position[0],
+      const Eigen::VectorXd& target_joint_position) {
+    Eigen::VectorXd::Map(&allegro_command_.joint_position[0],
                          kAllegroNumJoints) = target_joint_position;
-    lcm_.publish(kLcmCommandChannel, &allegro_command);
+    lcm_.publish(kLcmCommandChannel, &allegro_command_);
   }
 
   inline void MovetoPositionUntilStuck(
-      const Eigen::VectorXd target_joint_position) {
+      const Eigen::VectorXd& target_joint_position) {
     PublishPositionCommand(target_joint_position);
-    for (int i = 0; i < 40; i++) {
-      while (0 == lcm_.handleTimeout(10) || allegro_status_.utime == -1) {
-      }
-    }
+    sleep(2);
     // wait until the fingers are stuck, or stop moving.
     while (flag_moving) {
       while (0 == lcm_.handleTimeout(10) || allegro_status_.utime == -1) {
@@ -128,20 +122,20 @@ class ConstantPositionInput {
   void HandleStatus(const ::lcm::ReceiveBuffer*, const std::string&,
                     const lcmt_allegro_status* status) {
     allegro_status_ = *status;
-    hand_state.Update(allegro_status_);
-    flag_moving = !hand_state.IsAllFingersStuck();
+    hand_state_.Update(allegro_status_);
+    flag_moving = !hand_state_.IsAllFingersStuck();
   }
 
   ::lcm::LCM lcm_;
   lcmt_allegro_status allegro_status_;
-  lcmt_allegro_command allegro_command;
-  AllegroHandState hand_state;
+  lcmt_allegro_command_ allegro_command_;
+  AllegroHandState hand_state_;
 
   bool flag_moving = true;
 };
 
 int do_main() {
-  ConstantPositionInput runner;
+  PositionCommander runner;
   runner.Run();
   return 0;
 }

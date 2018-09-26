@@ -85,8 +85,8 @@ void GetControlPortMapping(
 AllegroHandState::AllegroHandState()
     : allegro_num_joints_(kAllegroNumJoints),
       finger_num_(allegro_num_joints_ / 4),
-      is_joint_stuck(allegro_num_joints_),
-      is_finger_stuck(finger_num_) {}
+      is_joint_stuck_(allegro_num_joints_),
+      is_finger_stuck_(finger_num_) {}
 
 void AllegroHandState::Update(const lcmt_allegro_status& allegro_state_msg) {
   const lcmt_allegro_status status = allegro_state_msg;
@@ -97,23 +97,23 @@ void AllegroHandState::Update(const lcmt_allegro_status& allegro_state_msg) {
   const Eigen::ArrayXd torque_command = Eigen::Map<const Eigen::ArrayXd>(
       &(status.joint_torque_commanded[0]), allegro_num_joints_);
 
-  is_joint_stuck = joint_velocity.abs() < velocity_thresh;
+  is_joint_stuck_ = joint_velocity.abs() < velocity_thresh_;
 
   // Detect whether the joint is moving in the opposite direction of the
   // command. If yes, it is most likely the joint is stuck.
   Eigen::Array<bool, Eigen::Dynamic, 1> motor_reverse =
       (joint_velocity * torque_command) < -0.001;
-  is_joint_stuck += motor_reverse;
+  is_joint_stuck_ += motor_reverse;
 
-  is_finger_stuck.setZero();
-  if (is_joint_stuck.segment<4>(0).all()) is_finger_stuck(0) = true;
-  if (is_joint_stuck.segment<3>(5).all()) is_finger_stuck(1) = true;
-  if (is_joint_stuck.segment<3>(9).all()) is_finger_stuck(2) = true;
-  if (is_joint_stuck.segment<3>(13).all()) is_finger_stuck(3) = true;
+  is_finger_stuck_.setZero();
+  if (is_joint_stuck_.segment<4>(0).all()) is_finger_stuck_(0) = true;
+  if (is_joint_stuck_.segment<3>(5).all()) is_finger_stuck_(1) = true;
+  if (is_joint_stuck_.segment<3>(9).all()) is_finger_stuck_(2) = true;
+  if (is_joint_stuck_.segment<3>(13).all()) is_finger_stuck_(3) = true;
 
-  if (motor_reverse.segment<3>(5).any()) is_finger_stuck(1) = true;
-  if (motor_reverse.segment<3>(9).any()) is_finger_stuck(2) = true;
-  if (motor_reverse.segment<3>(13).any()) is_finger_stuck(3) = true;
+  if (motor_reverse.segment<3>(5).any()) is_finger_stuck_(1) = true;
+  if (motor_reverse.segment<3>(9).any()) is_finger_stuck_(2) = true;
+  if (motor_reverse.segment<3>(13).any()) is_finger_stuck_(3) = true;
 }
 
 Eigen::Vector4d AllegroHandState::FingerGraspJointPosition(
