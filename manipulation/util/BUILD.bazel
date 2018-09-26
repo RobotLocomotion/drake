@@ -156,6 +156,11 @@ drake_py_binary(
     ],
 )
 
+drake_py_binary(
+    name = "meshlab_to_sdf",
+    srcs = ["meshlab_to_sdf.py"],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -244,6 +249,14 @@ drake_py_unittest(
         ":show_model",
         "//examples/acrobot:models",
         "//examples/pendulum:models",
+    ],
+)
+
+drake_py_unittest(
+    name = "meshlab_to_sdf_test",
+    srcs = [
+        "meshlab_to_sdf.py",
+        "test/meshlab_to_sdf_test.py",
     ],
 )
 
