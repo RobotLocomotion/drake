@@ -47,4 +47,10 @@ exports_files(
     visibility = ["//bindings/pydrake/third_party:__pkg__"],
 )
 
+exports_files(
+    glob(["com_github_pybind_pybind11/**"]),
+    licenses = ["notice"],  # BSD-3-Clause
+    visibility = ["//tools/workspace/pybind11:__pkg__"],
+)
+
 add_lint_tests()
