@@ -99,7 +99,7 @@ GTEST_TEST(ProximityEngineTests, ExceptionTwoObjectsInObjFileForConvex) {
   Convex convex{drake::FindResourceOrThrow(
       "drake/geometry/test/forbidden_two_cubes.obj"), 1.0};
   DRAKE_EXPECT_THROWS_MESSAGE(engine.AddDynamicGeometry(convex),
-      std::runtime_error, ".*only one polyhedron.*");
+      std::runtime_error, ".*one and only one object.*");
 }
 
 // Tests for copy/move semantics.  ---------------------------------------------
