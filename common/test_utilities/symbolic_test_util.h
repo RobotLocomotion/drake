@@ -82,14 +82,14 @@ inline bool PolyNotEqualAfterExpansion(const Polynomial& p1,
   return !p1.EqualToAfterExpansion(p2);
 }
 
-inline bool PolyFractionEqual(const PolynomialFraction& f1,
-                              const PolynomialFraction& f2) {
+inline bool RationalFunctionEqual(const RationalFunction& f1,
+                                  const RationalFunction& f2) {
   return f1.EqualTo(f2);
 }
 
-inline bool PolyFractionNotEqual(const PolynomialFraction& f1,
-                                 const PolynomialFraction& f2) {
-  return !PolyFractionEqual(f1, f2);
+inline bool RationalFunctionNotEqual(const RationalFunction& f1,
+                                     const RationalFunction& f2) {
+  return !RationalFunctionEqual(f1, f2);
 }
 
 template <typename F>
