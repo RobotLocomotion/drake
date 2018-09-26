@@ -320,6 +320,13 @@ class AcrobotPlantTests : public ::testing::Test {
     discrete_context_->FixInputPort(
         discrete_plant_->get_actuation_input_port().get_index(),
         Vector1<double>(0.0));
+
+    const auto& mbt_context =
+        dynamic_cast<MultibodyTreeContext<double>&>(*discrete_context_);
+    ASSERT_EQ(mbt_context.num_positions(), 2);
+    ASSERT_EQ(mbt_context.num_velocities(), 2);
+    ASSERT_EQ(mbt_context.get_positions().size(), 2);
+    ASSERT_EQ(mbt_context.get_velocities().size(), 2);
   }
 
   // Computes the vector of generalized forces due to gravity.
