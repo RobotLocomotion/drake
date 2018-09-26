@@ -585,6 +585,7 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
         plant_->GetBodyFrameIdIfExists(body_index);
     ASSERT_TRUE(optional_id.has_value());
     EXPECT_EQ(frame_id, *optional_id);
+    EXPECT_EQ(body_index, plant_->GetBodyFromFrameId(frame_id)->index());
     const Isometry3<double>& X_WB = poses.value(frame_id);
     const Isometry3<double>& X_WB_expected = X_WB_all[body_index];
     EXPECT_TRUE(CompareMatrices(X_WB.matrix(), X_WB_expected.matrix(),

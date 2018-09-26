@@ -209,6 +209,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     // Copy of all members related with geometry registration.
     source_id_ = other.source_id_;
     body_index_to_frame_id_ = other.body_index_to_frame_id_;
+    frame_id_to_body_index_ = other.frame_id_to_body_index_;
     geometry_id_to_body_index_ = other.geometry_id_to_body_index_;
     geometry_id_to_visual_index_ = other.geometry_id_to_visual_index_;
     geometry_id_to_collision_index_ = other.geometry_id_to_collision_index_;
@@ -995,6 +996,14 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return !!source_id_;
   }
 
+  /// Given a geometry frame identifier, returns a pointer to the body
+  /// associated with that id (nullptr if there is no such body).
+  const Body<T>* GetBodyFromFrameId(geometry::FrameId frame_id) const {
+    const auto it = frame_id_to_body_index_.find(frame_id);
+    if (it == frame_id_to_body_index_.end()) return nullptr;
+    return &tree().get_body(it->second);
+  }
+
   /// If the body with `body_index` has geometry registered with it, it returns
   /// the geometry::FrameId associated with it. Otherwise, it returns nullopt.
   /// @throws if called pre-finalize.
@@ -1728,6 +1737,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   // Iteration order on this map DOES matter, and therefore we use an std::map.
   std::map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;
+
+  // Data to get back from a SceneGraph-reported frame id to its associated
+  // body.
+  std::unordered_map<geometry::FrameId, BodyIndex> frame_id_to_body_index_;
 
   // Map from GeometryId to BodyIndex. During contact queries, it allows to find
   // out to which body a given geometry corresponds to.
