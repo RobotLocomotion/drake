@@ -62,7 +62,8 @@ def _check_shebang(filename):
     shebang_whitelist = {
         "bash": "#!/bin/bash",
         "directorPython": "#!/usr/bin/env directorPython",
-        "python": "#!/usr/bin/env python2"
+        "python": "#!/usr/bin/env python2",
+        "python3": "#!/usr/bin/env python3"
     }
     if has_shebang and shebang not in shebang_whitelist.values():
         print(("ERROR: shebang '{}' in the file '{}' is not in the shebang "
