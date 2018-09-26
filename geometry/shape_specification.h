@@ -202,10 +202,11 @@ class Convex final : public Shape {
    factor.
    @param absolute_filename     The file name with absolute path. We only
                                 support an OBJ file with only one polyhedron.
-                                If the file contains two or more polyhedrons, we
-                                will ignore all except the first one. We also
-                                assume that the polyhedron is convex.
+                                We assume that the polyhedron is convex.
    @param scale                 An optional scale to coordinates.
+
+   \warning Gives error if the OBJ file has two or more objects, i.e.,
+   the file has two or more object-name statements (o object_name).
    */
   explicit Convex(const std::string& absolute_filename, double scale = 1.0);
 

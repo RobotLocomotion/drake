@@ -743,14 +743,17 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     //
     // Now we convert tinyobj data for fcl::Convex.
     //
-    DRAKE_DEMAND(shapes.begin() != shapes.end());
+
+    // We only support an OBJ file with only one polyhedron.
+    if (shapes.size() != 1) {
+      throw std::runtime_error("We only support an OBJ file with only one "
+                               "polyhedron.");
+    }
 
     std::vector<Vector3d> vertices =
         TinyObjToFclVertices(attrib, convex.scale());
 
-    // We support only the first shape.
-    const auto& first_shape = *(shapes.begin());
-    const tinyobj::mesh_t& mesh = first_shape.mesh;
+    const tinyobj::mesh_t& mesh = shapes[0].mesh;
 
     // We will have `faces.size()` larger than the number of faces. For each
     // face_i, the vector `faces` contains both the number and indices of its

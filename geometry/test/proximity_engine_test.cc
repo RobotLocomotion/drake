@@ -7,6 +7,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -88,6 +89,17 @@ GTEST_TEST(ProximityEngineTests, AddMixedGeometry) {
   EXPECT_EQ(engine.num_geometries(), 2);
   EXPECT_EQ(engine.num_anchored(), 1);
   EXPECT_EQ(engine.num_dynamic(), 1);
+}
+
+// Tests for reading OBJ files. ------------------------------------------------
+
+// Tests exception when we read an OBJ file with two objects into Convex
+GTEST_TEST(ProximityEngineTests, ExceptionTwoObjectsInObjFileForConvex) {
+  ProximityEngine<double> engine;
+  Convex convex{drake::FindResourceOrThrow(
+      "drake/geometry/test/forbidden_two_cubes.obj"), 1.0};
+  DRAKE_EXPECT_THROWS_MESSAGE(engine.AddDynamicGeometry(convex),
+      std::runtime_error, ".*only one polyhedron.*");
 }
 
 // Tests for copy/move semantics.  ---------------------------------------------
