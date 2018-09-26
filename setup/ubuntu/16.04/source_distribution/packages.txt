@@ -13,6 +13,7 @@ graphviz
 kcov-35
 libblas-dev
 libbz2-dev
+libclang-4.0-dev
 libexpat1-dev
 libfreetype6-dev
 libglib2.0-dev
