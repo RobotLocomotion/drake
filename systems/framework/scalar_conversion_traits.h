@@ -2,6 +2,8 @@
 
 #include <type_traits>
 
+#include "drake/common/symbolic.h"
+
 namespace drake {
 namespace systems {
 namespace scalar_conversion {
