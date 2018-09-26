@@ -15,7 +15,7 @@
 
 #include "drake/examples/allegro_hand/allegro_common.h"
 #include "drake/examples/allegro_hand/allegro_lcm.h"
-#include "drake/lcmt_allegro_command_.hpp"
+#include "drake/lcmt_allegro_command.hpp"
 #include "drake/lcmt_allegro_status.hpp"
 
 namespace drake {
@@ -24,7 +24,7 @@ namespace allegro_hand {
 namespace {
 
 const char* const kLcmStatusChannel = "ALLEGRO_STATUS";
-const char* const kLcmCommandChannel = "allegro_command_";
+const char* const kLcmCommandChannel = "ALLEGRO_COMMAND";
 
 class PositionCommander {
  public:
@@ -37,7 +37,7 @@ class PositionCommander {
     allegro_command_.num_joints = kAllegroNumJoints;
     allegro_command_.joint_position.resize(kAllegroNumJoints, 0.);
     allegro_command_.num_torques = 0;
-    allegro_command_.joint_torque.resize(0, 0.);
+    allegro_command_.joint_torque.resize(0);
 
     flag_moving = true;
     Eigen::VectorXd target_joint_position(kAllegroNumJoints);
@@ -63,9 +63,11 @@ class PositionCommander {
     while (0 == lcm_.handleTimeout(10)) {
     }
 
-    // twisting the cup repeatly
+    // Record the joint position q when the fingers are close and gripping the
+    // object
     Eigen::VectorXd close_hand_joint_position = Eigen::Map<Eigen::VectorXd>(
         &(allegro_status_.joint_position_measured[0]), kAllegroNumJoints);
+    // twisting the cup repeatly
     while (true) {
       target_joint_position = close_hand_joint_position;
       // The middle finger works as a pivot finger for the rotation, and exert
@@ -111,7 +113,12 @@ class PositionCommander {
   inline void MovetoPositionUntilStuck(
       const Eigen::VectorXd& target_joint_position) {
     PublishPositionCommand(target_joint_position);
-    sleep(2);
+    // A time delay at the intial moving stage so that the noisy data from the
+    // hand motion is filtered.
+    for (int i = 0; i < 40; i++) {
+      while (0 == lcm_.handleTimeout(10) || allegro_status_.utime == -1) {
+      }
+    }
     // wait until the fingers are stuck, or stop moving.
     while (flag_moving) {
       while (0 == lcm_.handleTimeout(10) || allegro_status_.utime == -1) {
@@ -128,8 +135,8 @@ class PositionCommander {
 
   ::lcm::LCM lcm_;
   lcmt_allegro_status allegro_status_;
-  lcmt_allegro_command_ allegro_command_;
-  AllegroHandState hand_state_;
+  lcmt_allegro_command allegro_command_;
+  AllegroHandMotionState hand_state_;
 
   bool flag_moving = true;
 };

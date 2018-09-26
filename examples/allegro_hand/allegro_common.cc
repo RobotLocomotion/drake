@@ -4,6 +4,8 @@ namespace drake {
 namespace examples {
 namespace allegro_hand {
 
+const double AllegroHandMotionState::velocity_thresh_ = 0.07;
+
 void SetPositionControlledGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
                                 Eigen::VectorXd* Kd) {
   *Kp = Eigen::VectorXd::Ones(kAllegroNumJoints) * 0.05;
@@ -82,13 +84,13 @@ void GetControlPortMapping(
   }
 }
 
-AllegroHandState::AllegroHandState()
-    : allegro_num_joints_(kAllegroNumJoints),
-      finger_num_(allegro_num_joints_ / 4),
+AllegroHandMotionState::AllegroHandMotionState()
+    : finger_num_(allegro_num_joints_ / 4),
       is_joint_stuck_(allegro_num_joints_),
       is_finger_stuck_(finger_num_) {}
 
-void AllegroHandState::Update(const lcmt_allegro_status& allegro_state_msg) {
+void AllegroHandMotionState::Update(
+    const lcmt_allegro_status& allegro_state_msg) {
   const lcmt_allegro_status status = allegro_state_msg;
 
   const double* ptr = &(status.joint_velocity_estimated[0]);
@@ -116,7 +118,7 @@ void AllegroHandState::Update(const lcmt_allegro_status& allegro_state_msg) {
   if (motor_reverse.segment<3>(13).any()) is_finger_stuck_(3) = true;
 }
 
-Eigen::Vector4d AllegroHandState::FingerGraspJointPosition(
+Eigen::Vector4d AllegroHandMotionState::FingerGraspJointPosition(
     int finger_index) const {
   Eigen::Vector4d position;
   // The numbers corresponds to the joint positions when the hand grasps a
@@ -134,7 +136,7 @@ Eigen::Vector4d AllegroHandState::FingerGraspJointPosition(
   return position;
 }
 
-Eigen::Vector4d AllegroHandState::FingerOpenJointPosition(
+Eigen::Vector4d AllegroHandMotionState::FingerOpenJointPosition(
     int finger_index) const {
   Eigen::Vector4d position;
   // The preset postion of the joints when the hand is open. The thumb joints

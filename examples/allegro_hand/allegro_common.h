@@ -41,14 +41,14 @@ std::map<std::string, int> GetJointNameMapping();
 /// the state according to the position, velocity, and command position of each
 /// joint. The class also contains two commonly used pre-set joint state for
 /// opening the hand and closing the hand for grasping.
-class AllegroHandState {
+class AllegroHandMotionState {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AllegroHandState)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AllegroHandMotionState)
 
-  AllegroHandState();
+  AllegroHandMotionState();
 
   /// Update the states of the joints and fingers upon receiving the new
-  /// message. about hand staties.
+  /// message about hand staties.
   void Update(const lcmt_allegro_status& allegro_state_msg);
 
   /// Pre-set joint positions for grasping objects and open hands.
@@ -70,14 +70,14 @@ class AllegroHandState {
   }
 
  private:
-  int allegro_num_joints_{16};
-  int finger_num_{4};
+  int allegro_num_joints_{kAllegroNumJoints};
+  int finger_num_{0};
 
   Eigen::Array<bool, Eigen::Dynamic, 1> is_joint_stuck_;
   Eigen::Array<bool, Eigen::Dynamic, 1> is_finger_stuck_;
 
   /// The velocity threhold under which the joint is considered not moving.
-  const double velocity_thresh_ = 0.07;
+  static const double velocity_thresh_;
 };
 
 }  // namespace allegro_hand
