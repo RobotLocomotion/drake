@@ -102,7 +102,7 @@ def eprint(*args):
 
 def is_accepted_symbol(node):
     """
-    Determine if a symbol should be visited or not.
+    Determines if a symbol should be visited or not.
     """
     name = utf8(node.spelling)
     if name in SKIP_FULL_NAMES:
@@ -120,7 +120,7 @@ def is_accepted_symbol(node):
 
 def sanitize_name(name):
     """
-    Sanitize a C++ symbol to be variable-friendly.
+    Sanitizes a C++ symbol to be variable-friendly.
     """
     name = re.sub(r'type-parameter-0-([0-9]+)', r'T\1', name)
     for k, v in CPP_OPERATORS.items():
@@ -134,7 +134,7 @@ def sanitize_name(name):
 
 def process_comment(comment):
     """
-    Convert Doxygen-formatted string to look presentable in a Python docstring.
+    Converts Doxygen-formatted string to look presentable in a Python docstring.
     """
     result = ''
 
@@ -303,7 +303,7 @@ class SymbolTree(object):
 
 def extract(include_map, node, output):
     """
-    Extract libclang cursors and add to a symbol tree.
+    Extracts libclang cursors and add to a symbol tree.
     """
     if node.kind == CursorKind.TRANSLATION_UNIT:
         for i in node.get_children():
@@ -449,7 +449,6 @@ def main():
 
     print('''#pragma once
 
-// {} {}
 // GENERATED FILE DO NOT EDIT
 // This file contains docstrings for the Python bindings that were
 // automatically extracted by mkdoc.py.
@@ -458,7 +457,7 @@ def main():
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
-'''.format('GENERATED FILE', 'DO NOT EDIT'))
+''')
 
     includes = list(map(drake_genfile_path_to_include_path, filenames))
     include_map = FileDict(zip(filenames, includes))
