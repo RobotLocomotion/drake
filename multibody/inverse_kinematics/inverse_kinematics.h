@@ -35,7 +35,7 @@ class InverseKinematics {
    * in frame A.
    * @param frameB The frame in which point Q is fixed.
    * @param p_BQ The position of the point Q, rigidly attached to frame B,
-   * measured and expressed in frame A.
+   * measured and expressed in frame B.
    * @param frameA The frame in which the bounding box p_AQ_lower <= p_AQ <=
    * p_AQ_upper is expressed.
    * @param p_AQ_lower The lower bound on the position of point Q, measured and

@@ -19,7 +19,7 @@ class PositionConstraint : public solvers::Constraint {
   // should be alive during the whole lifetime of this constraint.
   // @param frameB_idx The index of frame B.
   // @param p_BQ The position of the point Q, rigidly attached to frame B,
-  // measured and expressed in frame A.
+  // measured and expressed in frame B.
   // @param frameA_idx The index of frame A.
   // @param p_AQ_lower The lower bound on the position of point Q, measured and
   // expressed in frame A.
