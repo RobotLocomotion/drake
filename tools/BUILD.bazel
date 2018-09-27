@@ -30,6 +30,16 @@ drake_runfiles_binary(
     target = ":drake_visualizer_py",
 )
 
+sh_test(
+    name = "drake_visualizer_test",
+    srcs = [":drake_visualizer"],
+    # This argument is not present in the output of `--help`, but does take
+    # effect. Unfortunately, this does create a graphical window.
+    args = ["--testing"],
+    # This may not work without `local` on Ubuntu.
+    tags = ["local"],
+)
+
 # === config_setting rules ===
 
 config_setting(
