@@ -173,6 +173,26 @@ operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<RationalFunction>() *
          rhs.template cast<RationalFunction>();
 }
+
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        ((std::is_same<typename MatrixL::Scalar, RationalFunction>::value &&
+          (std::is_same<typename MatrixR::Scalar, Polynomial>::value ||
+           std::is_same<typename MatrixR::Scalar, double>::value)) ||
+         (std::is_same<typename MatrixR::Scalar, RationalFunction>::value &&
+          (std::is_same<typename MatrixL::Scalar, Polynomial>::value ||
+           std::is_same<typename MatrixL::Scalar, double>::value))) &&
+        (MatrixL::RowsAtCompileTime == Eigen::Dynamic &&
+         MatrixL::ColsAtCompileTime == Eigen::Dynamic &&
+         MatrixR::RowsAtCompileTime == Eigen::Dynamic &&
+         MatrixR::RowsAtCompileTime == Eigen::Dynamic),
+    Eigen::Matrix<RationalFunction, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime>>::type
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  return lhs.lazyProduct(rhs);
+}
 #endif
 }  // namespace symbolic
 }  // namespace drake
@@ -198,7 +218,7 @@ struct NumTraits<drake::symbolic::RationalFunction>
 
 // Informs Eigen that LhsType op RhsType gets ResultType
 // where op ∈ {+, -, *, /, conj_product}.
-#define DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(  \
+#define DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(           \
     LhsType, RhsType, ResultType)                                             \
   DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS(LhsType, RhsType,                    \
                                          internal::scalar_sum_op, ResultType) \

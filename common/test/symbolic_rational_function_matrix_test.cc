@@ -168,6 +168,7 @@ CheckVectorVectorBinaryOperations(const Eigen::MatrixBase<Derived1>& m1,
   // CheckConjugateProdocut(m1, m2);
 }
 
+/*
 TEST_F(SymbolicRationalFunctionMatrixTest, RationalFunctionOpRationalFunction) {
   Matrix2<RationalFunction> M2;
   M2 << RationalFunction(p2_, p3_ + 2 * p4_),
@@ -189,7 +190,7 @@ TEST_F(SymbolicRationalFunctionMatrixTest, RationalFunctionOpRationalFunction) {
                                     v_rational_function_dynamic_);
   CheckMatrixVectorBinaryOperations(M_rational_function_dynamic_,
                                     v_rational_function_dynamic_);
-}
+}*/
 
 TEST_F(SymbolicRationalFunctionMatrixTest, RationalFunctionOpPolynomial) {
   CheckMatrixMatrixBinaryOperations(M_rational_function_static_,
@@ -198,8 +199,10 @@ TEST_F(SymbolicRationalFunctionMatrixTest, RationalFunctionOpPolynomial) {
                                     M_poly_dynamic_);
   CheckMatrixMatrixBinaryOperations(M_rational_function_dynamic_,
                                     M_poly_static_);
-  // The 3 lines above are fine. But when we have the next line, we run into
-  // compiler issue.
+  // The 3 lines above are fine. 
+  // Calling lazyProduct directly also works.
+  M_rational_function_dynamic_.lazyProduct(M_poly_dynamic_);
+  // Calling lazyProduct through templated function doesn't work.
   CheckMatrixMatrixBinaryOperations(M_rational_function_dynamic_,
                                     M_poly_dynamic_);
 
