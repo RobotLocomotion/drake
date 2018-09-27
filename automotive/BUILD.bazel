@@ -30,11 +30,8 @@ drake_cc_package_library(
     deps = [
         ":automotive_simulator",
         ":bicycle_car",
-        ":box_car_vis",
         ":calc_ongoing_road_position",
         ":calc_smooth_acceleration",
-        ":car_vis",
-        ":car_vis_applicator",
         ":create_trajectory_params",
         ":curve2",
         ":driving_command_mux",
@@ -48,7 +45,6 @@ drake_cc_package_library(
         ":mobil_planner",
         ":multilane_onramp_merge",
         ":pose_selector",
-        ":prius_vis",
         ":pure_pursuit",
         ":pure_pursuit_controller",
         ":road_odometry",
@@ -118,42 +114,6 @@ drake_cc_library(
         ":generated_vectors",
         "//common:symbolic",
         "//systems/framework:leaf_system",
-    ],
-)
-
-drake_cc_library(
-    name = "box_car_vis",
-    srcs = ["box_car_vis.cc"],
-    hdrs = ["box_car_vis.h"],
-    deps = [
-        ":car_vis",
-        "//attic/multibody/shapes",
-        "//systems/rendering:drake_visualizer_client",
-    ],
-)
-
-drake_cc_library(
-    name = "car_vis",
-    srcs = ["car_vis.cc"],
-    hdrs = ["car_vis.h"],
-    deps = [
-        "//lcmtypes:viewer",
-        "//systems/rendering:pose_bundle",
-    ],
-)
-
-drake_cc_library(
-    name = "car_vis_applicator",
-    srcs = ["car_vis_applicator.cc"],
-    hdrs = ["car_vis_applicator.h"],
-    deps = [
-        ":box_car_vis",
-        ":car_vis",
-        ":generated_vectors",
-        "//lcmtypes:viewer",
-        "//systems/framework",
-        "//systems/rendering:drake_visualizer_client",
-        "//systems/rendering:pose_aggregator",
     ],
 )
 
@@ -295,23 +255,6 @@ drake_cc_library(
         "//automotive/maliput/api",
         "//common:autodiffxd_make_coherent",
         "//common:extract_double",
-        "//systems/rendering:pose_bundle",
-        "//systems/rendering:pose_vector",
-    ],
-)
-
-drake_cc_library(
-    name = "prius_vis",
-    srcs = ["prius_vis.cc"],
-    hdrs = ["prius_vis.h"],
-    data = ["//automotive/models:prod_models"],
-    deps = [
-        ":car_vis",
-        "//attic/multibody/joints",
-        "//attic/multibody/parsers",
-        "//attic/multibody/rigid_body_plant:create_load_robot_message",
-        "//common:find_resource",
-        "//lcmtypes:viewer",
         "//systems/rendering:pose_bundle",
         "//systems/rendering:pose_vector",
     ],
@@ -472,7 +415,6 @@ drake_cc_library(
     srcs = ["automotive_simulator.cc"],
     hdrs = ["automotive_simulator.h"],
     deps = [
-        ":car_vis_applicator",
         ":driving_command_mux",
         ":generated_translators",
         ":generated_vectors",
@@ -480,16 +422,15 @@ drake_cc_library(
         ":lane_direction",
         ":maliput_railcar",
         ":mobil_planner",
-        ":prius_vis",
         ":pure_pursuit_controller",
         ":simple_car",
         ":trajectory_car",
         ":trivial_right_of_way_state_provider",
-        "//attic/multibody/parsers",
-        "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//automotive/maliput/api",
         "//automotive/maliput/utility",
         "//common:temp_directory",
+        "//geometry:geometry_visualization",
+        "//geometry:scene_graph",
         "//lcm",
         "//systems/analysis",
         "//systems/lcm:lcm_pubsub_system",
@@ -497,6 +438,7 @@ drake_cc_library(
         "//systems/primitives:constant_value_source",
         "//systems/rendering:pose_aggregator",
         "//systems/rendering:pose_bundle_to_draw_message",
+        "//systems/rendering:render_pose_to_geometry_pose",
     ],
 )
 
@@ -596,24 +538,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "box_car_vis_test",
-    deps = [
-        ":box_car_vis",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//systems/rendering:pose_vector",
-    ],
-)
-
-drake_cc_googletest(
-    name = "car_vis_applicator_test",
-    deps = [
-        ":car_vis_applicator",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:geometric_transform",
-    ],
-)
-
-drake_cc_googletest(
     name = "curve2_test",
     deps = [
         "//automotive:curve2",
@@ -704,15 +628,6 @@ drake_cc_googletest(
         "//automotive/maliput/dragway",
         "//automotive/maliput/multilane:builder",
         "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "prius_vis_test",
-    deps = [
-        ":prius_vis",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:geometric_transform",
     ],
 )
 
