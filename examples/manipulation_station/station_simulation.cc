@@ -1,0 +1,292 @@
+#include "drake/examples/manipulation_station/station_simulation.h"
+
+#include "drake/common/find_resource.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/systems/controllers/inverse_dynamics_controller.h"
+#include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/linear_system.h"
+#include "drake/systems/primitives/pass_through.h"
+
+namespace drake {
+namespace examples {
+namespace manipulation_station {
+
+using Eigen::Isometry3d;
+using Eigen::MatrixXd;
+using Eigen::Vector3d;
+using Eigen::VectorXd;
+using geometry::SceneGraph;
+using math::RigidTransform;
+using math::RollPitchYaw;
+using multibody::RevoluteJoint;
+using multibody::multibody_plant::MultibodyPlant;
+using multibody::parsing::AddModelFromSdfFile;
+
+template <typename T>
+StationSimulation<T>::StationSimulation(double timestep)
+    : owned_plant_(std::make_unique<MultibodyPlant<T>>(timestep)),
+      owned_scene_graph_(std::make_unique<SceneGraph<T>>()),
+      owned_controller_plant_(std::make_unique<MultibodyPlant<T>>()) {
+  // This class holds the unique_ptrs explicitly for plant and scene_graph
+  // until Finalize() is called (when they are moved into the Diagram). Grab
+  // the raw pointers, which should stay valid for the lifetime of the Diagram.
+  plant_ = owned_plant_.get();
+  scene_graph_ = owned_scene_graph_.get();
+
+  // Add a table for the robot.
+  const std::string table_sdf_path = FindResourceOrThrow(
+      "drake/examples/kuka_iiwa_arm/models/table/"
+      "extra_heavy_duty_table_surface_only_collision.sdf");
+  const auto robot_table =
+      AddModelFromSdfFile(table_sdf_path, "robot_table", plant_, scene_graph_);
+  plant_->WeldFrames(plant_->world_frame(),
+                     plant_->GetFrameByName("link", robot_table));
+
+  // Add the Kuka IIWA.
+  const std::string iiwa_sdf_path = FindResourceOrThrow(
+      "drake/manipulation/models/iiwa_description/"
+      "sdf/iiwa14_no_collision.sdf");
+  iiwa_model_ =
+      AddModelFromSdfFile(iiwa_sdf_path, "iiwa", plant_, scene_graph_);
+  const double table_top_z_in_world = 0.736 + 0.057 / 2;
+  plant_->WeldFrames(
+      plant_->world_frame(), plant_->GetFrameByName("iiwa_link_0", iiwa_model_),
+      RigidTransform<double>(Vector3d(0, 0, table_top_z_in_world))
+          .GetAsIsometry3());
+
+  // Add the Schunk gripper and weld it to the end of the IIWA.
+  const std::string wsg_sdf_path = FindResourceOrThrow(
+      "drake/manipulation/models/"
+      "wsg_50_description/sdf/schunk_wsg_50.sdf");
+  wsg_model_ =
+      AddModelFromSdfFile(wsg_sdf_path, "gripper", plant_, scene_graph_);
+  const Isometry3d wsg_pose =
+      RigidTransform<double>(
+          RollPitchYaw<double>(M_PI_2, 0, M_PI_2).ToRotationMatrix(),
+          Vector3d(0, 0, 0.081))
+          .GetAsIsometry3();
+  plant_->WeldFrames(plant_->GetFrameByName("iiwa_link_7", iiwa_model_),
+                     plant_->GetFrameByName("body", wsg_model_), wsg_pose);
+
+  // Add a second table that is the main robot workspace.
+  const auto table =
+      AddModelFromSdfFile(table_sdf_path, "table", plant_, scene_graph_);
+  plant_->WeldFrames(
+      plant_->world_frame(), plant_->GetFrameByName("link", table),
+      RigidTransform<double>(Vector3d(0.8, 0, 0.0)).GetAsIsometry3());
+
+  plant_->template AddForceElement<multibody::UniformGravityFieldElement>(
+      -9.81 * Vector3d::UnitZ());
+
+  // Build the controller's version of the plant, which only contains the
+  // IIWA and the equivalent inertia of the gripper.
+  const auto controller_iiwa_model =
+      AddModelFromSdfFile(iiwa_sdf_path, "iiwa", owned_controller_plant_.get());
+  owned_controller_plant_->WeldFrames(owned_controller_plant_->world_frame(),
+                                    owned_controller_plant_->GetFrameByName(
+                                        "iiwa_link_0", controller_iiwa_model),
+                                    Isometry3d::Identity());
+  // Add a single body to represent the IIWA pendant's calibration of the
+  // gripper.  The body of the WSG accounts for >90% of the total mass
+  // (according to the sdf)... and we don't believe our inertia calibration
+  // on the hardware to be so precise, so we simply ignore the inertia
+  // contribution from the fingers here.
+  const multibody::RigidBody<T>& wsg_body =
+      dynamic_cast<const multibody::RigidBody<T>&>(
+          plant_->GetBodyByName("body", wsg_model_));
+  const multibody::RigidBody<T>& wsg_equivalent =
+      owned_controller_plant_->AddRigidBody("wsg_equivalent",
+                                          controller_iiwa_model,
+                                          wsg_body.default_spatial_inertia());
+  owned_controller_plant_->WeldFrames(owned_controller_plant_->GetFrameByName(
+                                        "iiwa_link_7", controller_iiwa_model),
+                                    wsg_equivalent.body_frame(), wsg_pose);
+
+  owned_controller_plant_
+      ->template AddForceElement<multibody::UniformGravityFieldElement>(
+          -9.81 * Vector3d::UnitZ());
+}
+
+template <typename T>
+void StationSimulation<T>::Finalize() {
+  // Note: This deferred diagram construction method/workflow exists because we
+  //   - cannot finalize plant until all of my objects are added, and
+  //   - cannot wire up my diagram until we have finalized the plant.
+
+  const int kDoF = 7;
+  plant_->Finalize(scene_graph_);
+
+  systems::DiagramBuilder<T> builder;
+
+  builder.AddSystem(std::move(owned_plant_));
+  builder.AddSystem(std::move(owned_scene_graph_));
+
+  builder.Connect(
+      plant_->get_geometry_poses_output_port(),
+      scene_graph_->get_source_pose_port(plant_->get_source_id().value()));
+  builder.Connect(scene_graph_->get_query_output_port(),
+                  plant_->get_geometry_query_input_port());
+
+  // Export the commanded positions via a PassThrough.
+  auto iiwa_position = builder.template AddSystem<systems::PassThrough>(kDoF);
+  builder.ExportInput(iiwa_position->get_input_port(), "iiwa_position");
+  builder.ExportOutput(iiwa_position->get_output_port(),
+                       "iiwa_position_commanded");
+
+  // Export iiwa "state" outputs.
+  {
+    auto demux =
+        builder.template AddSystem<systems::Demultiplexer>(2 * kDoF, kDoF);
+    builder.Connect(plant_->get_continuous_state_output_port(iiwa_model_),
+                    demux->get_input_port(0));
+    builder.ExportOutput(demux->get_output_port(0), "iiwa_position_measured");
+    builder.ExportOutput(demux->get_output_port(1), "iiwa_velocity_estimated");
+  }
+
+  // Add the IIWA controller "stack".
+  {
+    owned_controller_plant_->Finalize();
+
+    // Add the inverse dynamics controller.
+    VectorX<double> iiwa_kp = VectorXd::Constant(kDoF, 100);
+    VectorX<double> iiwa_kd(kDoF);
+    for (int i = 0; i < kDoF; i++) {
+      // Critical damping gains.
+      iiwa_kd[i] = 2 * std::sqrt(iiwa_kp[i]);
+    }
+    VectorX<double> iiwa_ki = VectorXd::Constant(kDoF, 1);
+    auto iiwa_controller = builder.template AddSystem<
+        systems::controllers ::InverseDynamicsController>(
+        *owned_controller_plant_, iiwa_kp, iiwa_ki, iiwa_kd, false);
+    iiwa_controller->set_name("iiwa_controller");
+    builder.Connect(plant_->get_continuous_state_output_port(iiwa_model_),
+                    iiwa_controller->get_input_port_estimated_state());
+
+    // Add in feedforward torque.
+    auto adder = builder.template AddSystem<systems::Adder>(2, kDoF);
+    builder.Connect(iiwa_controller->get_output_port_control(),
+                    adder->get_input_port(0));
+    builder.ExportInput(adder->get_input_port(1), "iiwa_feedforward_torque");
+    builder.Connect(adder->get_output_port(),
+                    plant_->get_actuation_input_port(iiwa_model_));
+
+    // Approximate desired state command from a discrete derivative of the
+    // position command input port.  This is implemented as a LinearSystem
+    // with state variables to store the last position command.
+    //    x[n+1] = u[n]
+    //    y[n] = [u[n]; (u[n] - x[n])/h]
+    // where u[n] is the positions, y[n] output the positions and
+    // velocities, and h is the timestep.
+    const double time_step = plant_->time_step();
+    MatrixXd C(2 * kDoF, kDoF), D(2 * kDoF, kDoF);
+    C << MatrixXd::Zero(kDoF, kDoF),
+        -time_step * MatrixXd::Identity(kDoF, kDoF);
+    D << MatrixXd::Identity(kDoF, kDoF),
+        time_step * MatrixXd::Identity(kDoF, kDoF);
+    auto desired_state_from_position =
+        builder.template AddSystem<systems::LinearSystem>(
+            MatrixXd::Zero(kDoF, kDoF),      // A = 0
+            MatrixXd::Identity(kDoF, kDoF),  // B = I
+            C, D, time_step);
+    desired_state_from_position->set_name("desired_state_from_position");
+    builder.Connect(desired_state_from_position->get_output_port(),
+                    iiwa_controller->get_input_port_desired_state());
+    builder.Connect(iiwa_position->get_output_port(),
+                    desired_state_from_position->get_input_port());
+
+    // Export commanded torques:
+    builder.ExportOutput(adder->get_output_port(), "iiwa_torque_commanded");
+    builder.ExportOutput(adder->get_output_port(), "iiwa_torque_measured");
+  }
+
+  // TODO(russt): Add the WSG controller "stack".
+  {
+    // For now, just send zero force inputs.
+    const auto wsg_command =
+        builder.template AddSystem<systems::ConstantVectorSource>(
+            Eigen::Vector2d::Zero());
+    builder.Connect(wsg_command->get_output_port(),
+                    plant_->get_actuation_input_port(wsg_model_));
+  }
+
+  builder.ExportOutput(
+      plant_->get_generalized_contact_forces_output_port(iiwa_model_),
+      "iiwa_torque_external");
+  builder.ExportOutput(scene_graph_->get_pose_bundle_output_port(),
+                       "pose_bundle");
+
+  builder.BuildInto(this);
+}
+
+template <typename T>
+VectorX<T> StationSimulation<T>::GetIiwaPosition(
+    const systems::Context<T>& station_context) const {
+  VectorX<T> q(7);
+  auto& plant_context =
+      this->GetSubsystemContext(*plant_, station_context);
+  for (int i = 0; i < 7; i++) {
+    q(i) = plant_
+               ->template GetJointByName<RevoluteJoint>("iiwa_joint_" +
+                                                        std::to_string(i + 1))
+               .get_angle(plant_context);
+  }
+  return q;
+}
+
+template <typename T>
+void StationSimulation<T>::SetIiwaPosition(
+    const Eigen::Ref<const drake::VectorX<T>>& q,
+    drake::systems::Context<T>* station_context) const {
+  auto& plant_context =
+      this->GetMutableSubsystemContext(*plant_, station_context);
+  for (int i = 0; i < 7; i++) {
+    plant_
+        ->template GetJointByName<RevoluteJoint>("iiwa_joint_" +
+                                                 std::to_string(i + 1))
+        .set_angle(&plant_context, q(i));
+  }
+}
+
+template <typename T>
+VectorX<T> StationSimulation<T>::GetIiwaVelocity(
+    const systems::Context<T>& station_context) const {
+  VectorX<T> v(7);
+  auto& plant_context =
+      this->GetSubsystemContext(*plant_, station_context);
+  for (int i = 0; i < 7; i++) {
+    v(i) = plant_
+        ->template GetJointByName<RevoluteJoint>("iiwa_joint_" +
+                                                 std::to_string(i + 1))
+        .get_angular_rate(plant_context);
+  }
+  return v;
+}
+
+template <typename T>
+void StationSimulation<T>::SetIiwaVelocity(
+    const Eigen::Ref<const drake::VectorX<T>>& v,
+    drake::systems::Context<T>* station_context) const {
+  auto& plant_context =
+      this->GetMutableSubsystemContext(*plant_, station_context);
+  for (int i = 0; i < 7; i++) {
+    plant_
+        ->template GetJointByName<RevoluteJoint>("iiwa_joint_" +
+                                                 std::to_string(i + 1))
+        .set_angular_rate(&plant_context, v(i));
+  }
+}
+
+}  // namespace manipulation_station
+}  // namespace examples
+}  // namespace drake
+
+// TODO(russt): Support at least NONSYMBOLIC_SCALARS.  See #9573.
+//   (and don't forget to include default_scalars.h)
+template class ::drake::examples::manipulation_station::StationSimulation<
+    double>;

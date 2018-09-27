@@ -1,0 +1,60 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_library(
+    name = "station_simulation",
+    srcs = [
+        "station_simulation.cc",
+    ],
+    hdrs = [
+        "station_simulation.h",
+    ],
+    data = [
+        "//examples/kuka_iiwa_arm/models",
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common:find_resource",
+        "//geometry:scene_graph",
+        "//math:geometric_transform",
+        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//systems/controllers:inverse_dynamics_controller",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_binary(
+    name = "proof_of_life",
+    srcs = [
+        "proof_of_life.cc",
+    ],
+    add_test_rule = 1,
+    test_rule_args = ["--target_realtime_rate=0.0"],
+    deps = [
+        ":station_simulation",
+        "//geometry:geometry_visualization",
+        "//systems/analysis:simulator",
+        "@gflags",
+    ],
+)
+
+drake_cc_googletest(
+    name = "station_simulation_test",
+    deps = [
+        ":station_simulation",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+add_lint_tests()
