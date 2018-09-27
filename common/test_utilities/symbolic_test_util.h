@@ -82,6 +82,16 @@ inline bool PolyNotEqualAfterExpansion(const Polynomial& p1,
   return !p1.EqualToAfterExpansion(p2);
 }
 
+inline bool RationalFunctionEqual(const RationalFunction& f1,
+                                  const RationalFunction& f2) {
+  return f1.EqualTo(f2);
+}
+
+inline bool RationalFunctionNotEqual(const RationalFunction& f1,
+                                     const RationalFunction& f2) {
+  return !RationalFunctionEqual(f1, f2);
+}
+
 template <typename F>
 bool all_of(const std::vector<Formula>& formulas, const F& f) {
   return std::all_of(formulas.begin(), formulas.end(), f);
