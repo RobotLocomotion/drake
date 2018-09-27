@@ -219,6 +219,7 @@ void init_module(py::module m) {
     py::class_<Class>(m, "MultibodyTree")
         .def("CalcRelativeTransform", &Class::CalcRelativeTransform,
              py::arg("context"), py::arg("frame_A"), py::arg("frame_B"))
+        .def("get_body", &Class::get_body, py::arg("BodyIndex"))
         .def("get_multibody_state_vector",
              [](const MultibodyTree<T>* self,
                 const Context<T>& context) -> Eigen::Ref<const VectorX<T>> {
@@ -308,6 +309,24 @@ void init_module(py::module m) {
               std::vector<Isometry3<T>> X_WB;
               self->CalcAllBodyPosesInWorld(context, &X_WB);
               return X_WB;
+            },
+            py::arg("context"))
+        .def("CalcMassMatrixViaInverseDynamics",
+            [](const Class* self, const Context<T>& context) {
+              MatrixX<T> H;
+              const int n = self->num_velocities();
+              H.resize(n, n);
+              self->CalcMassMatrixViaInverseDynamics(context, &H);
+              return H;
+            },
+            py::arg("context"))
+        .def("CalcBiasTerm",
+            [](const Class* self, const Context<T>& context) {
+              VectorX<T> Cv;
+              const int n = self->num_velocities();
+              Cv.resize(n);
+              self->CalcBiasTerm(context, &Cv);
+              return Cv;
             },
             py::arg("context"));
   }
