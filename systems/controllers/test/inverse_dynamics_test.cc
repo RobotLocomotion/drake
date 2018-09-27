@@ -138,7 +138,7 @@ class InverseDynamicsTest : public ::testing::Test {
               std::numeric_limits<double>::epsilon();
   }
 
- protected:
+ private:
   int num_positions() const {
     if (rigid_body_tree_)
       return rigid_body_tree_->get_num_positions();
