@@ -78,30 +78,30 @@ GTEST_TEST(BowlingBallAnalyticalSolution, BowlingBallSlidingToRolling) {
 
   // Compare with MotionGenesis test results near half-way to start of rolling.
   double t = 1.0;
-  Vector3<double> p_NoBcm_N(0.1888469, ball.radius(), 7.443151);
-  Vector3<double> v_NBcm_N(0.3776938, 0, 6.886302);
-  Vector3<double> w_NB_N(25.79123, 0, -16.38603);
+  Vector3<double> p_NoBcm_N(0.188846948, ball.radius(), 7.44315099);
+  Vector3<double> v_NBcm_N(0.377693896, 0, 6.88630198);
+  Vector3<double> w_NB_N(25.7912332, 0, -16.3860333);
   double max_diff = ball.CalcMaxDifferenceWithAnalyticalSolution(
                          t, p_NoBcm_N, v_NBcm_N, w_NB_N);
-  EXPECT_LE(max_diff, 1.0E-5);
+  EXPECT_LE(max_diff, 2.0E-6);
 
   // Test results at start of rolling (compare with MotionGenesis results).
   t = 2.054;
-  p_NoBcm_N = Vector3<double>(0.7967288, ball.radius(), 14.08270);
-  v_NBcm_N = Vector3<double>(0.7751817, 0, 5.714238);
-  w_NB_N = Vector3<double>(52.93412, 0, -7.180933);
+  p_NoBcm_N = Vector3<double>(0.796728926, ball.radius(), 14.0827022);
+  v_NBcm_N = Vector3<double>(0.775181741, 0, 5.71423797);
+  w_NB_N = Vector3<double>(52.9341173, 0, -7.18093322);
   max_diff = ball.CalcMaxDifferenceWithAnalyticalSolution(
                   t, p_NoBcm_N, v_NBcm_N, w_NB_N);
-  EXPECT_LE(max_diff, 1.0E-5);
+  EXPECT_LE(max_diff, 2.0E-7);
 
   // Test results at start of rolling (compare with MotionGenesis results).
   t = 2.4;
-  p_NoBcm_N = Vector3<double>(1.064940, ball.radius(), 16.05983);
-  v_NBcm_N = Vector3<double>(0.7751817, 0, 5.714238);
-  w_NB_N = Vector3<double>(52.93412, 0, -7.180933);
+  p_NoBcm_N = Vector3<double>(1.06494181, ball.radius(), 16.0598286);
+  v_NBcm_N = Vector3<double>(0.775181741, 0, 5.71423797);
+  w_NB_N = Vector3<double>(52.9341173, 0, -7.18093321);
   max_diff = ball.CalcMaxDifferenceWithAnalyticalSolution(
       t, p_NoBcm_N, v_NBcm_N, w_NB_N);
-  EXPECT_LE(max_diff, 1.0E-5);
+  EXPECT_LE(max_diff, 4.0E-7);
 }
 
 }  // namespace
