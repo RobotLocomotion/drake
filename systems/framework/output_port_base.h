@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "drake/systems/framework/framework_common.h"
 
 namespace drake {
@@ -46,6 +48,9 @@ class OutputPortBase {
     return owning_system_;
   }
 
+  /** Gets port name. */
+  const std::string& get_name() const { return name_; }
+
 #ifndef DRAKE_DOXYGEN_CXX
   // Internal use only. Returns the prerequisite for this output port -- either
   // a cache entry in this System, or an output port of a child System.
@@ -60,6 +65,9 @@ class OutputPortBase {
 
   @param owning_system
     The System that owns this output port.
+  @param name
+    A name for the port. Must not be empty. Output port names should be unique
+    within a single System.
   @param index
     The index to be assigned to this OutputPort.
   @param ticket
@@ -69,7 +77,7 @@ class OutputPortBase {
   @param size
     If the port described is vector-valued, the number of elements expected,
     otherwise ignored. */
-  OutputPortBase(SystemBase* owning_system,
+  OutputPortBase(SystemBase* owning_system, std::string name,
                  OutputPortIndex index, DependencyTicket ticket,
                  PortDataType data_type, int size);
 
@@ -85,6 +93,7 @@ class OutputPortBase {
  private:
   // Associated System and System resources.
   SystemBase& owning_system_;
+  const std::string name_;
   const OutputPortIndex index_;
   const DependencyTicket ticket_;
 

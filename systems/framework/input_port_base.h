@@ -39,7 +39,7 @@ class InputPortBase {
   /** Returns a reference to the SystemBase that owns this input port. Note that
   for a diagram input port this will be the diagram, not the leaf system whose
   input port was exported. */
-  const SystemBase& get_system_base() const { return system_; }
+  const SystemBase& get_system_base() const { return owning_system_; }
 
   /** Returns the port data type. */
   PortDataType get_data_type() const { return data_type_; }
@@ -61,6 +61,11 @@ class InputPortBase {
   /** Provides derived classes the ability to set the base
   class members at construction.
 
+  @param owning_system
+    The System that owns this input port.
+  @param name
+    A name for the port. Input port names should be non-empty and unique
+    within a single System.
   @param index
     The index to be assigned to this InputPort.
   @param ticket
@@ -70,23 +75,17 @@ class InputPortBase {
   @param size
     If the port described is vector-valued, the number of elements, or kAutoSize
     if determined by connections. Ignored for abstract-valued ports.
-  @param name
-    A name for the port.  Input port names should be non-empty and unique
-    within a single System.
   @param random_type
     Input ports may optionally be labeled as random, if the port is intended to
-    model a random-source "noise" or "disturbance" input.
-  @param system_base
-    The System that will own this new input port. */
-  InputPortBase(InputPortIndex index, DependencyTicket ticket,
+    model a random-source "noise" or "disturbance" input. */
+  InputPortBase(SystemBase* owning_system, std::string name,
+                InputPortIndex index, DependencyTicket ticket,
                 PortDataType data_type, int size,
-                const std::string& name,
-                const optional<RandomDistribution>& random_type,
-                SystemBase* system_base);
+                const optional<RandomDistribution>& random_type);
 
  private:
   // Associated System and System resources.
-  const SystemBase& system_;
+  const SystemBase& owning_system_;
   const InputPortIndex index_;
   const DependencyTicket ticket_;
 

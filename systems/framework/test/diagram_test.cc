@@ -698,8 +698,11 @@ TEST_F(DiagramTest, Graphviz) {
   EXPECT_NE(std::string::npos, dot.find(
       "_" + id + "_y2[color=green, label=\"y2\"")) << dot;
   // Check that subsystem records appear.
-  EXPECT_NE(std::string::npos, dot.find(
-      "[shape=record, label=\"adder1|{{<u0>u0|<u1>u1} | {<y0>y0}}\"]")) << dot;
+  EXPECT_NE(
+      std::string::npos,
+      dot.find(
+          "[shape=record, label=\"adder1|{{<u0>u0|<u1>u1} | {<y0>sum}}\"]"))
+      << dot;
   // Check that internal edges appear.
   const std::string adder1_id = std::to_string(
       reinterpret_cast<int64_t>(diagram_->adder1()));
@@ -908,6 +911,12 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
   for (InputPortIndex i{0}; i < diagram_->get_num_input_ports(); i++) {
     EXPECT_EQ(diagram_->get_input_port(i).get_name(),
               ad_diagram->get_input_port(i).get_name());
+  }
+
+  // Make sure that the output port names survive type conversion.
+  for (OutputPortIndex i{0}; i < diagram_->get_num_output_ports(); i++) {
+    EXPECT_EQ(diagram_->get_output_port(i).get_name(),
+              ad_diagram->get_output_port(i).get_name());
   }
 
   // When the Diagram contains a System that does not support AutoDiffXd,
@@ -1440,10 +1449,10 @@ GTEST_TEST(PortDependentFeedthroughTest, DetectFeedthrough) {
 class RandomInputSystem : public LeafSystem<double> {
  public:
   RandomInputSystem() {
-    this->DeclareInputPort(kVectorValued, 1);
-    this->DeclareInputPort(kVectorValued, 1, "uniform",
+    this->DeclareInputPort("deterministic", kVectorValued, 1);
+    this->DeclareInputPort("uniform", kVectorValued, 1,
                            RandomDistribution::kUniform);
-    this->DeclareInputPort(kVectorValued, 1, "gaussian",
+    this->DeclareInputPort("gaussian", kVectorValued, 1,
                            RandomDistribution::kGaussian);
   }
 };

@@ -103,6 +103,8 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   }
 
  private:
+  systems::OutputPortIndex AllocateGeometryPoseOutputPort();
+
   // This is the calculator method for the state output port.
   void CopyStateOut(const systems::Context<T>& context,
                     PendulumState<T>* output) const;

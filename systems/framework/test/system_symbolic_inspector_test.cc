@@ -24,7 +24,7 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
                                   &SparseSystem::CalcY0);
     this->DeclareVectorOutputPort(BasicVector<symbolic::Expression>(kSize),
                                   &SparseSystem::CalcY1);
-    this->DeclareAbstractOutputPort(42, &SparseSystem::CalcNothing);
+    this->DeclareAbstractOutputPort("port_42", 42, &SparseSystem::CalcNothing);
 
     this->DeclareContinuousState(kSize);
     this->DeclareDiscreteState(kSize);
