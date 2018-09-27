@@ -160,8 +160,11 @@ cc_library(
         "@tinyxml2",
     ] + [
         # The list of depended-on header-only libraries.
+        "//lcmtypes:drake_lcmtypes",
         "@eigen",
         "@fmt",
+        "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion",
+        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
         "@stx",
     ],
 )

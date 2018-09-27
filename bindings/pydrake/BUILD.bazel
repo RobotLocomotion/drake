@@ -33,11 +33,8 @@ PACKAGE_INFO = get_pybind_package_info(base_package = "//bindings")
 generate_pybind_documentation_header(
     name = "generate_pybind_documentation_header",
     out = "documentation_pybind.h",
-    # TODO(eric.cousineau): This is a minimal, hand-curated set of targets,
-    # made due to compilation errors when using `drake_shared_library` /
-    # `build_components.bzl`. Use either one of these once #9530 is resolved.
     targets = [
-        "//math",
+        "//:drake_shared_library",
     ],
 )
 
