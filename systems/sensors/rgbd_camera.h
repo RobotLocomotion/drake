@@ -23,8 +23,6 @@ namespace systems {
 namespace sensors {
 /// An RGB-D camera system that provides RGB, depth and label images using
 /// visual elements of RigidBodyTree.
-/// Its image resolution is fixed at VGA (640 x 480 pixels) for all three
-/// images. The default depth sensing range is from 0.5 m to 5.0 m.
 ///
 /// Let `W` be the world coordinate system. In addition to `W`, there are three
 /// more coordinate systems that are associated with an RgbdCamera. They are
@@ -109,20 +107,20 @@ class RgbdCamera final : public LeafSystem<double> {
   /// defines the orientation component of `X_WB`.
   ///
   /// @param z_near The minimum depth distance RgbdCamera can measure.
-  /// The default is 0.5 meters.
   ///
   /// @param z_far The maximum depth distance RgbdCamera can measure.
-  /// The default is 5 meters.
   ///
   /// @param fov_y The RgbdCamera's vertical field of view.
-  /// The default is PI / 4.
   ///
   /// @param show_window A flag for showing a visible window.  If this is false,
   /// offscreen rendering is executed. This is useful for debugging purposes.
-  /// The default is true.
+  ///
+  /// @param width Width of output image.
+  ///
+  /// @param height Height of output image.
   ///
   /// @param flat_terrain A flag to add a flat terrain at z = 0 in the world
-  /// coordinate system.  The default is true.
+  /// coordinate system.
   ///
   /// @throws std::logic_error When the number of rigid bodies in the scene
   /// exceeds the maximum limit 1535.
@@ -158,20 +156,20 @@ class RgbdCamera final : public LeafSystem<double> {
   /// @param frame The frame in @tree to which this camera is attached.
   ///
   /// @param z_near The minimum depth distance RgbdCamera can measure.
-  /// The default is 0.5 meters.
   ///
   /// @param z_far The maximum depth distance RgbdCamera can measure.
-  /// The default is 5 meters.
   ///
   /// @param fov_y The RgbdCamera's vertical field of view.
-  /// The default is PI / 4.
   ///
   /// @param show_window A flag for showing a visible window.  If this is false,
   /// offscreen rendering is executed. This is useful for debugging purposes.
-  /// The default is true.
+  ///
+  /// @param width Width of output image.
+  ///
+  /// @param height Height of output image.
   ///
   /// @param flat_terrain A flag to add a flat terrain at z = 0 in the world
-  /// coordinate system.  The default is true.
+  /// coordinate system.
   ///
   /// @throws std::logic_error When the number of rigid bodies in the scene
   /// exceeds the maximum limit 1535.
@@ -212,6 +210,9 @@ class RgbdCamera final : public LeafSystem<double> {
   /// Camera configuration parameters are obtained from the RenderingConfig
   /// settings in the renderer. The renderer will be owned by this camera.
   ///
+  /// @param flat_terrain A flag to add a flat terrain at z = 0 in the world
+  /// coordinate system.
+  ///
   /// @throws std::logic_error When the number of rigid bodies in the scene
   /// exceeds the maximum limit 1535.
   RgbdCamera(const std::string& name,
@@ -241,6 +242,9 @@ class RgbdCamera final : public LeafSystem<double> {
   /// @param renderer The rendering backend to render images for the camera.
   /// Camera configuration parameters are obtained from the RenderingConfig
   /// settings in the renderer. The renderer will be owned by this camera.
+  ///
+  /// @param flat_terrain A flag to add a flat terrain at z = 0 in the world
+  /// coordinate system.
   ///
   /// @throws std::logic_error When the number of rigid bodies in the scene
   /// exceeds the maximum limit 1535.
