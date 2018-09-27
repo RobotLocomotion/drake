@@ -89,7 +89,7 @@
     },
     "drake-lcmtypes-cpp": {
       "Type": "interface",
-      "Includes": ["@prefix@/include/drake_lcmtypes"],
+      "Includes": ["@prefix@/include/lcmtypes_drake"],
       "Requires": ["lcm:lcm-coretypes"]
     },
     "drake-lcmtypes-java": {
