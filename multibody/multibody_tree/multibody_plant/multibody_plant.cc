@@ -386,7 +386,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
   DRAKE_ASSERT(scene_graph == scene_graph_);
   // If not already done, register a frame for this body.
   if (!body_has_registered_frame(body)) {
-    body_index_to_frame_id_[body.index()] = scene_graph->RegisterFrame(
+    FrameId frame_id = scene_graph->RegisterFrame(
         source_id_.value(),
         GeometryFrame(
             body.name(),
@@ -395,6 +395,8 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
             /* TODO(@SeanCurtis-TRI): Add test coverage for this
              * model-instance support as requested in #9390. */
             body.model_instance()));
+    body_index_to_frame_id_[body.index()] = frame_id;
+    frame_id_to_body_index_[frame_id] = body.index();
   }
 
   // Register geometry in the body frame.
