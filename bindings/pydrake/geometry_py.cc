@@ -51,12 +51,25 @@ PYBIND11_MODULE(geometry, m) {
   BindIdentifier<GeometryId>(m, "GeometryId");
 
   py::module::import("pydrake.systems.lcm");
-  m.def("ConnectDrakeVisualizer", &ConnectDrakeVisualizer,
+  m.def("ConnectDrakeVisualizer",
+        py::overload_cast<systems::DiagramBuilder<double>*,
+            const SceneGraph<double>&, lcm::DrakeLcmInterface*>(
+                &ConnectDrakeVisualizer),
         py::arg("builder"), py::arg("scene_graph"), py::arg("lcm") = nullptr,
         // Keep alive, ownership: `return` keeps `builder` alive.
         py::keep_alive<0, 1>(),
         // TODO(eric.cousineau): Figure out why this is necessary (#9398).
         py_reference, doc.ConnectDrakeVisualizer.doc);
+  m.def("ConnectDrakeVisualizer",
+        py::overload_cast<systems::DiagramBuilder<double>*,
+            const SceneGraph<double>&, const systems::OutputPort<double>&,
+                lcm::DrakeLcmInterface*>(&ConnectDrakeVisualizer),
+    py::arg("builder"), py::arg("scene_graph"), py::arg
+            ("pose_bundle_output_port"), py::arg("lcm") = nullptr,
+    // Keep alive, ownership: `return` keeps `builder` alive.
+    py::keep_alive<0, 1>(),
+    // TODO(eric.cousineau): Figure out why this is necessary (#9398).
+    py_reference, doc.ConnectDrakeVisualizer.doc);
   m.def("DispatchLoadMessage", &DispatchLoadMessage,
         py::arg("scene_graph"), py::arg("lcm"), doc.DispatchLoadMessage.doc);
 
