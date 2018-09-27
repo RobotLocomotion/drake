@@ -72,6 +72,22 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
     const SceneGraph<double>& scene_graph,
     lcm::DrakeLcmInterface* lcm = nullptr);
 
+/** Implements ConnectDrakeVisualizer, but using @p pose_bundle_output_port to
+ explicitly specify the output port used to get pose bundles for
+ @p scene_graph.  This is required, for instance, when the SceneGraph is
+ inside a Diagram, and the Diagram exports the pose bundle port.
+
+ @pre pose_bundle_output_port must be connected directly to the
+ pose_bundle_output_port of @p scene_graph.
+
+ @see ConnectDrakeVisualizer().
+ */
+systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
+    systems::DiagramBuilder<double>* builder,
+    const SceneGraph<double>& scene_graph,
+    const systems::OutputPort<double>& pose_bundle_output_port,
+    lcm::DrakeLcmInterface* lcm = nullptr);
+
 /** (Advanced) Explicitly dispatches an LCM load message based on the registered
  geometry. Normally this is done automatically at Simulator initialization. But
  if you have to do it yourself (likely because you are not using a Simulator),
