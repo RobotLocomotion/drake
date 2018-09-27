@@ -12,67 +12,104 @@ namespace allegro_hand {
 /// Allegro hand's fingertips, so that it would matches the desired pose of the
 /// mug object. By following the target positions, the hand could move the mug
 /// to the corresponding pose. The class is only used for run_rotating_mug.cc.
-class SetMugStateControl {
+class MugStateSet {
  public:
-  SetMugStateControl();
+  MugStateSet();
 
-  /// Returns the frames of the 4 fingertips' target when trying to grasp on
+  /// Returns the poses of the 4 fingertips' target when trying to grasp on
   /// the mug using the hand.
+  /// @param X_WO: the pose of the object frame measured in the world frame
   /// @param finger_frames: the target frames for the IK solver to produce
   /// the initial target
   /// @param relative_finger_pose: the target frames for the differentcial IK
   /// when updating the target position, due to the motion of the mug
   void GetGraspTargetFrames(
-      const Isometry3<double>& obj_frame,
+      const Isometry3<double>& X_WO,
       std::vector<Isometry3<double>>* finger_frames,
-      std::vector<Isometry3<double>>* relative_finger_pose);
+      std::vector<Isometry3<double>>* relative_finger_pose) const;
 
-  /// Calculates the desired fingertip pose when aiming at rotate the mug
+  /// Calculates the desired fingertip pose when aiming at rotating the mug
   /// along X axis (in the world frame) and the mug center for
-  /// @param rotation_angle degrees. @param rotation angle is in radian
-  /// The rotation is based on the saved mug position ref_mug_pose_
-  void GetXRotatedTargetFrame(const double rotation_angle,
-                              std::vector<Isometry3<double>>* finger_frames);
-  /// Calculates the desired fingertip pose when aiming at rotate the mug
-  /// along Y axis (in the world frame) and the mug center for
-  /// @param rotation_angle degrees. @param rotation angle is in radian
-  /// The rotation is based on the saved mug position ref_mug_pose_
-  void GetYRotatedTargetFrame(const double rotation_angle,
-                              std::vector<Isometry3<double>>* finger_frames);
-  /// Calculates the desired fingertip pose when aiming at rotate the mug
-  /// along Z axis (in the world frame) and the mug center for
-  /// @param rotation_angle degrees. @param rotation angle is in radian
-  /// The rotation is based on the saved mug position ref_mug_pose_
-  void GetZRotatedTargetFrame(const double rotation_angle,
-                              std::vector<Isometry3<double>>* finger_frames);
-  /// Calculates the desired fingertip pose when aiming moving the mug along
-  /// the vector @param translation_vector in the world frame.
-  /// The translation is based on the saved mug position ref_mug_pose_
-  void GetTransTargetFrame(const Vector3<double> translation_vector,
-                           std::vector<Isometry3<double>>* finger_frames);
+  /// @param rotation_angle_rad.
+  /// The rotation is based on the saved mug position X_WO_ref_
+  void CalcFingerPoseWithMugXRotation(
+      double rotation_angle_rad,
+      std::vector<Isometry3<double>>* finger_frames) const;
+  void CalcFingerPoseWithMugXRotation(
+      double rotation_angle_rad, std::vector<Isometry3<double>>* finger_frames,
+      const Isometry3<double>& X_WO) {
+    UpdateReferenceMugPose(X_WO);
+    CalcFingerPoseWithMugXRotation(rotation_angle_rad, finger_frames);
+  }
 
-  void UpdateMugPose(const Isometry3<double>& mug_frame) {
-    ref_mug_pose_ = mug_frame;
+  /// Calculates the desired fingertip pose when aiming at rotating the mug
+  /// along Y axis (in the world frame) and the mug center for
+  /// @param rotation_angle_rad.
+  /// The rotation is based on the saved mug position X_WO_ref_
+  void CalcFingerPoseWithMugYRotation(
+      double rotation_angle_rad,
+      std::vector<Isometry3<double>>* finger_frames) const;
+  void CalcFingerPoseWithMugYRotation(
+      double rotation_angle_rad, std::vector<Isometry3<double>>* finger_frames,
+      const Isometry3<double>& X_WO) {
+    UpdateReferenceMugPose(X_WO);
+    CalcFingerPoseWithMugYRotation(rotation_angle_rad, finger_frames);
+  }
+
+  /// Calculates the desired fingertip pose when aiming at rotating the mug
+  /// along Z axis (in the world frame) and the mug center for
+  /// @param rotation_angle_rad.
+  /// The rotation is based on the saved mug position X_WO_ref_
+  void CalcFingerPoseWithMugZRotation(
+      double rotation_angle_rad,
+      std::vector<Isometry3<double>>* finger_frames) const;
+  void CalcFingerPoseWithMugZRotation(
+      double rotation_angle_rad, std::vector<Isometry3<double>>* finger_frames,
+      const Isometry3<double>& X_WO) {
+    UpdateReferenceMugPose(X_WO);
+    CalcFingerPoseWithMugZRotation(rotation_angle_rad, finger_frames);
+  }
+
+  /// Calculates the desired fingertip pose when aiming at moving the mug along
+  /// @param v_W is the target translation of the mug in the world frame.
+  /// The translation is based on the saved mug position X_WO_ref_
+  void CalcFingerPoseWithMugTranslation(
+      const Vector3<double>& v_W,
+      std::vector<Isometry3<double>>* finger_frames) const;
+  void CalcFingerPoseWithMugTranslation(
+      const Vector3<double>& v_W, std::vector<Isometry3<double>>* finger_frames,
+      const Isometry3<double>& X_WO) {
+    UpdateReferenceMugPose(X_WO);
+    CalcFingerPoseWithMugTranslation(v_W, finger_frames);
+  }
+
+  void UpdateReferenceMugPose(const Isometry3<double>& X_WO) {
+    X_WO_ref_ = X_WO;
   }
 
   /// Publish the target pose of the fingers to LCM, so that the drake
   /// visualizer could display the frames. This is used only for test
   /// purpose.
-  void PublishTargetFrametoLcm(const Isometry3<double>& mug_frame);
+  /// @param X_WO the pose of the mug measured in the world frame
+  void PublishTargetFingerPoseToLcm(const Isometry3<double>& X_WO) const;
 
  private:
-  /// frames of the selected fingertip frame on the cup
-  std::vector<Isometry3<double>> contact_mug_frames_;
+  /// frames of the selected fingertip frame on the cup. F represents the
+  /// fingertip frames
+  std::vector<Isometry3<double>> X_OF_contact_;
 
   /// Saved mug position, used as a reference for rotation.
-  Isometry3<double> ref_mug_pose_;
+  Isometry3<double> X_WO_ref_;
 
   /// dimension of the mug
   const double MugHeight_ = 0.14;
   const double MugRadius_ = 0.04;
-  /// parameters about the grasp points on the mug
+  /// parameters about the grasp points on the mug, along the Z direction,
+  /// which corresponds to the height direction of the mug
   const double central_point_ = MugHeight_ / 2;
   const double index_finger_interval_ = 0.045;
+  /// desired position of the thumb on the mug frame, deviated from the center
+  /// point on the height direction
   const double thumb_partial_ = 0.012;
 };
 

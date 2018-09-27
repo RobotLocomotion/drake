@@ -100,24 +100,21 @@ class HandPositionCommander {
   /// Rotating the mug along X axis repeatively, for @parm rotation_angle
   /// angle. Must be called after the mug is in gripping
   void run_rotate_X(double rotation_angle) {
-    mug_state_.UpdateMugPose(mug_pose_);
-    mug_state_.GetXRotatedTargetFrame(rotation_angle / 180.0 * M_PI,
-                                      &target_fingertip_frame_);
+    mug_state_.CalcFingerPoseWithMugXRotation(
+        rotation_angle / 180.0 * M_PI, &target_fingertip_frame_, mug_pose_);
     iniIKtarget();
     std::cout << "Rotating in one direction \n";
     KeepMovingUntilStuck(2000);
 
     while (true) {
-      mug_state_.UpdateMugPose(mug_pose_);
-      mug_state_.GetXRotatedTargetFrame(-rotation_angle / 90.0 * M_PI,
-                                        &target_fingertip_frame_);
+      mug_state_.CalcFingerPoseWithMugXRotation(
+          -rotation_angle / 90.0 * M_PI, &target_fingertip_frame_, mug_pose_);
       iniIKtarget();
       std::cout << "Rotating in one direction \n";
       KeepMovingUntilStuck(2000);
 
-      mug_state_.UpdateMugPose(mug_pose_);
-      mug_state_.GetXRotatedTargetFrame(rotation_angle / 90.0 * M_PI,
-                                        &target_fingertip_frame_);
+      mug_state_.CalcFingerPoseWithMugXRotation(
+          rotation_angle / 90.0 * M_PI, &target_fingertip_frame_, mug_pose_);
       iniIKtarget();
       std::cout << "Rotating in one direction \n";
       KeepMovingUntilStuck(2000);
@@ -127,24 +124,21 @@ class HandPositionCommander {
   /// Rotating the mug along Y axis repeatively, for @parm rotation_angle
   /// angle. Must be called after the mug is in gripping
   void run_rotate_Y(double rotation_angle) {
-    mug_state_.UpdateMugPose(mug_pose_);
-    mug_state_.GetYRotatedTargetFrame(rotation_angle / 180.0 * M_PI,
-                                      &target_fingertip_frame_);
+    mug_state_.CalcFingerPoseWithMugYRotation(
+        rotation_angle / 180.0 * M_PI, &target_fingertip_frame_, mug_pose_);
     iniIKtarget();
     std::cout << "Rotating in one direction \n";
     KeepMovingUntilStuck(2000);
 
     while (true) {
-      mug_state_.UpdateMugPose(mug_pose_);
-      mug_state_.GetYRotatedTargetFrame(-rotation_angle / 90.0 * M_PI,
-                                        &target_fingertip_frame_);
+      mug_state_.CalcFingerPoseWithMugYRotation(
+          -rotation_angle / 90.0 * M_PI, &target_fingertip_frame_, mug_pose_);
       iniIKtarget();
       std::cout << "Rotating in one direction \n";
       KeepMovingUntilStuck(2000);
 
-      mug_state_.UpdateMugPose(mug_pose_);
-      mug_state_.GetYRotatedTargetFrame(rotation_angle / 90.0 * M_PI,
-                                        &target_fingertip_frame_);
+      mug_state_.CalcFingerPoseWithMugYRotation(
+          rotation_angle / 90.0 * M_PI, &target_fingertip_frame_, mug_pose_);
       iniIKtarget();
       std::cout << "Rotating in one direction \n";
       KeepMovingUntilStuck(2000);
@@ -154,24 +148,21 @@ class HandPositionCommander {
   /// Rotating the mug along Z axis repeatively, for @parm rotation_angle
   /// angle. Must be called after the mug is in gripping
   void run_rotate_Z(double rotation_angle) {
-    mug_state_.UpdateMugPose(mug_pose_);
-    mug_state_.GetZRotatedTargetFrame(rotation_angle / 180.0 * M_PI,
-                                      &target_fingertip_frame_);
+    mug_state_.CalcFingerPoseWithMugZRotation(
+        rotation_angle / 180.0 * M_PI, &target_fingertip_frame_, mug_pose_);
     iniIKtarget();
     std::cout << "Rotating in one direction \n";
     KeepMovingUntilStuck(2000);
 
     while (true) {
-      mug_state_.UpdateMugPose(mug_pose_);
-      mug_state_.GetZRotatedTargetFrame(-rotation_angle / 90.0 * M_PI,
-                                        &target_fingertip_frame_);
+      mug_state_.CalcFingerPoseWithMugZRotation(
+          -rotation_angle / 90.0 * M_PI, &target_fingertip_frame_, mug_pose_);
       iniIKtarget();
       std::cout << "Rotating in one direction \n";
       KeepMovingUntilStuck(2000);
 
-      mug_state_.UpdateMugPose(mug_pose_);
-      mug_state_.GetZRotatedTargetFrame(rotation_angle / 90.0 * M_PI,
-                                        &target_fingertip_frame_);
+      mug_state_.CalcFingerPoseWithMugZRotation(
+          rotation_angle / 90.0 * M_PI, &target_fingertip_frame_, mug_pose_);
       iniIKtarget();
       std::cout << "Rotating in one direction \n";
       KeepMovingUntilStuck(2000);
@@ -180,24 +171,24 @@ class HandPositionCommander {
 
   /// Translate the mug position in the space
   void run_translation() {
-    mug_state_.UpdateMugPose(mug_pose_);
-    mug_state_.GetTransTargetFrame(Eigen::Vector3d(-0.015, -0.006, 0.006),
-                                   &target_fingertip_frame_);
+    mug_state_.CalcFingerPoseWithMugTranslation(
+        Eigen::Vector3d(-0.015, -0.006, 0.006), &target_fingertip_frame_,
+        mug_pose_);
     iniIKtarget();
     std::cout << "Translating in one direction \n";
     KeepMovingUntilStuck(2000);
 
     while (true) {
-      mug_state_.UpdateMugPose(mug_pose_);
-      mug_state_.GetTransTargetFrame(Eigen::Vector3d(0.012, 0.012, -0.012),
-                                     &target_fingertip_frame_);
+      mug_state_.CalcFingerPoseWithMugTranslation(
+          Eigen::Vector3d(0.012, 0.012, -0.012), &target_fingertip_frame_,
+          mug_pose_);
       iniIKtarget();
       std::cout << "Translating in one direction \n";
       KeepMovingUntilStuck(2000);
 
-      mug_state_.UpdateMugPose(mug_pose_);
-      mug_state_.GetTransTargetFrame(Eigen::Vector3d(-0.012, -0.012, 0.012),
-                                     &target_fingertip_frame_);
+      mug_state_.CalcFingerPoseWithMugTranslation(
+          Eigen::Vector3d(-0.012, -0.012, 0.012), &target_fingertip_frame_,
+          mug_pose_);
       iniIKtarget();
       std::cout << "Translating in one direction \n";
       KeepMovingUntilStuck(2000);
@@ -360,7 +351,7 @@ class HandPositionCommander {
         msg_mug_pose_->orientation.y, msg_mug_pose_->orientation.z));
 
     // display the target points for on the mug
-    mug_state_.PublishTargetFrametoLcm(mug_pose_);
+    mug_state_.PublishTargetFingerPoseToLcm(mug_pose_);
 
     if (updating_target_frame_) updateIKtarget();
   }
@@ -382,7 +373,7 @@ class HandPositionCommander {
   Eigen::VectorXd saved_joint_command;
 
   // control part for the target finger positions
-  SetMugStateControl mug_state_;
+  MugStateSet mug_state_;
   Isometry3<double> mug_pose_;
   std::vector<Isometry3<double>> target_fingertip_frame_;
   std::vector<Isometry3<double>> target_frame_for_differentialIK_;
@@ -402,6 +393,4 @@ int do_main() {
 }  // namespace examples
 }  // namespace drake
 
-int main() { 
-  return drake::examples::allegro_hand::do_main(); 
-}
+int main() { return drake::examples::allegro_hand::do_main(); }

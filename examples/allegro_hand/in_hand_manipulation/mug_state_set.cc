@@ -5,48 +5,46 @@ namespace drake {
 namespace examples {
 namespace allegro_hand {
 
-SetMugStateControl::SetMugStateControl() {
-  // Ini the target fingertip poses on the mug
-  Eigen::MatrixXd TargetGraspPos(4, 3);
-  TargetGraspPos.row(2) << 0, MugRadius_, central_point_;
-  TargetGraspPos.row(1) << 0, MugRadius_,
-      central_point_ - index_finger_interval_;
-  TargetGraspPos.row(3) << 0, MugRadius_,
-      central_point_ + index_finger_interval_;
-  TargetGraspPos.row(0) << 0, -MugRadius_, central_point_ - thumb_partial_;
+MugStateSet::MugStateSet() {
+  // Ini the target fingertip positions on the mug. F is the fingertip frame.
+  // Each col corresponds to a finger, in the order of thumb-index-middle-ring
+  Eigen::Matrix<double, 3, 4> p_OF;
+  p_OF.col(2) << 0, MugRadius_, central_point_;
+  p_OF.col(1) << 0, MugRadius_, central_point_ - index_finger_interval_;
+  p_OF.col(3) << 0, MugRadius_, central_point_ + index_finger_interval_;
+  p_OF.col(0) << 0, -MugRadius_, central_point_ - thumb_partial_;
   Eigen::Vector4d TargetRotAngle(M_PI / 2, -M_PI / 2, -M_PI / 2, -M_PI / 2);
 
-  Eigen::Isometry3d X_BF;
-  X_BF.matrix().setIdentity();
+  Eigen::Isometry3d X_OF;
+  X_OF.matrix().setIdentity();
   for (int i = 0; i < 4; i++) {
-    X_BF.translation() = TargetGraspPos.row(i);
-    X_BF.linear() =
+    X_OF.translation() = p_OF.col(i);
+    X_OF.linear() =
         math::RotationMatrix<double>(math::RollPitchYaw<double>(Eigen::Vector3d(
                                          TargetRotAngle(i), 0, 0)))
             .matrix();
-    contact_mug_frames_.push_back(X_BF);
+    X_OF_contact_.push_back(X_OF);
   }
 }
 
-void SetMugStateControl::GetGraspTargetFrames(
-    const Isometry3<double>& obj_frame,
-    std::vector<Isometry3<double>>* frame_poses,
-    std::vector<Isometry3<double>>* relative_finger_pose) {
+void MugStateSet::GetGraspTargetFrames(
+    const Isometry3<double>& X_WO, std::vector<Isometry3<double>>* frame_poses,
+    std::vector<Isometry3<double>>* relative_finger_pose) const {
   if (frame_poses->size() < 4)
     *frame_poses = std::vector<drake::Isometry3<double>>(4);
   if (relative_finger_pose->size() < 4)
     *relative_finger_pose = std::vector<drake::Isometry3<double>>(4);
 
-  // setting the target pose of the fingertips to be a some poses in the minus
-  // Z direction, so that the fingers can exerting some force on the mug after
-  // reaching the target surface.
+  // setting the target position of the fingertips to be a position in the
+  // minus Z direction, so that the fingers can exerting some force on the mug
+  // after reaching the target surface.
   Isometry3<double> grasp_offset;
   grasp_offset.matrix().setIdentity();
   grasp_offset.translation() = Eigen::Vector3d(0, 0, -0.007);
 
   for (int i = 0; i < 4; i++) {
-    (*relative_finger_pose)[i] = contact_mug_frames_[i] * grasp_offset;
-    (*frame_poses)[i] = obj_frame * contact_mug_frames_[i] * grasp_offset;
+    (*relative_finger_pose)[i] = X_OF_contact_[i] * grasp_offset;
+    (*frame_poses)[i] = X_WO * X_OF_contact_[i] * grasp_offset;
   }
   // For the initial IK calculation, the target of the thumb is set to be lower
   // than the actual target, so that to prevent collision with the mug.
@@ -54,8 +52,9 @@ void SetMugStateControl::GetGraspTargetFrames(
   (*frame_poses)[0] = (*frame_poses)[0] * grasp_offset;
 }
 
-void SetMugStateControl::GetXRotatedTargetFrame(
-    const double rotation_angle, std::vector<Isometry3<double>>* frame_poses) {
+void MugStateSet::CalcFingerPoseWithMugXRotation(
+    double rotation_angle_rad,
+    std::vector<Isometry3<double>>* frame_poses) const {
   if (frame_poses->size() < 4)
     *frame_poses = std::vector<drake::Isometry3<double>>(4);
 
@@ -69,20 +68,21 @@ void SetMugStateControl::GetXRotatedTargetFrame(
   tar_mug_frame.matrix().setIdentity();
   tar_mug_frame.translation() << 0, 0, -MugHeight_ * 0.5;
   temp.rotate(
-      Eigen::AngleAxis<double>(rotation_angle, Eigen::Vector3d::UnitX()));
+      Eigen::AngleAxis<double>(rotation_angle_rad, Eigen::Vector3d::UnitX()));
   tar_mug_frame = temp * tar_mug_frame;
   temp.matrix().setIdentity();
   temp.translation() << 0, 0, MugHeight_ * 0.5;
   tar_mug_frame = temp * tar_mug_frame;
-  tar_mug_frame = ref_mug_pose_ * tar_mug_frame;
+  tar_mug_frame = X_WO_ref_ * tar_mug_frame;
 
   for (int i = 0; i < 4; i++) {
-    (*frame_poses)[i] = tar_mug_frame * contact_mug_frames_[i] * grasp_offset;
+    (*frame_poses)[i] = tar_mug_frame * X_OF_contact_[i] * grasp_offset;
   }
 }
 
-void SetMugStateControl::GetYRotatedTargetFrame(
-    const double rotation_angle, std::vector<Isometry3<double>>* frame_poses) {
+void MugStateSet::CalcFingerPoseWithMugYRotation(
+    double rotation_angle_rad,
+    std::vector<Isometry3<double>>* frame_poses) const {
   if (frame_poses->size() < 4)
     *frame_poses = std::vector<drake::Isometry3<double>>(4);
 
@@ -96,20 +96,21 @@ void SetMugStateControl::GetYRotatedTargetFrame(
   tar_mug_frame.matrix().setIdentity();
   tar_mug_frame.translation() << 0, 0, -MugHeight_ * 0.5;
   temp.rotate(
-      Eigen::AngleAxis<double>(rotation_angle, Eigen::Vector3d::UnitY()));
+      Eigen::AngleAxis<double>(rotation_angle_rad, Eigen::Vector3d::UnitY()));
   tar_mug_frame = temp * tar_mug_frame;
   temp.matrix().setIdentity();
   temp.translation() << 0, 0, MugHeight_ * 0.5;
   tar_mug_frame = temp * tar_mug_frame;
-  tar_mug_frame = ref_mug_pose_ * tar_mug_frame;
+  tar_mug_frame = X_WO_ref_ * tar_mug_frame;
 
   for (int i = 0; i < 4; i++) {
-    (*frame_poses)[i] = tar_mug_frame * contact_mug_frames_[i] * grasp_offset;
+    (*frame_poses)[i] = tar_mug_frame * X_OF_contact_[i] * grasp_offset;
   }
 }
 
-void SetMugStateControl::GetZRotatedTargetFrame(
-    const double rotation_angle, std::vector<Isometry3<double>>* frame_poses) {
+void MugStateSet::CalcFingerPoseWithMugZRotation(
+    double rotation_angle_rad,
+    std::vector<Isometry3<double>>* frame_poses) const {
   if (frame_poses->size() < 4)
     *frame_poses = std::vector<drake::Isometry3<double>>(4);
 
@@ -120,37 +121,36 @@ void SetMugStateControl::GetZRotatedTargetFrame(
   Isometry3<double> tar_mug_frame;
   tar_mug_frame.matrix().setIdentity();
   tar_mug_frame.rotate(
-      Eigen::AngleAxis<double>(rotation_angle, Eigen::Vector3d::UnitZ()));
-  tar_mug_frame = ref_mug_pose_ * tar_mug_frame;
+      Eigen::AngleAxis<double>(rotation_angle_rad, Eigen::Vector3d::UnitZ()));
+  tar_mug_frame = X_WO_ref_ * tar_mug_frame;
 
   for (int i = 0; i < 4; i++) {
-    (*frame_poses)[i] = tar_mug_frame * contact_mug_frames_[i] * grasp_offset;
+    (*frame_poses)[i] = tar_mug_frame * X_OF_contact_[i] * grasp_offset;
   }
 }
 
-void SetMugStateControl::GetTransTargetFrame(
-    const Vector3<double> translation_vector,
-    std::vector<Isometry3<double>>* frame_poses) {
-  Isometry3<double> tar_mug_frame = ref_mug_pose_;
-  tar_mug_frame.translation() += translation_vector;
+void MugStateSet::CalcFingerPoseWithMugTranslation(
+    const Vector3<double>& v_W,
+    std::vector<Isometry3<double>>* frame_poses) const {
+  Isometry3<double> tar_mug_frame = X_WO_ref_;
+  tar_mug_frame.translation() += v_W;
 
   Isometry3<double> grasp_offset;
   grasp_offset.matrix().setIdentity();
   grasp_offset.translation() = Eigen::Vector3d(0, 0, -0.001);
   for (int i = 0; i < 4; i++) {
-    (*frame_poses)[i] = tar_mug_frame * contact_mug_frames_[i] * grasp_offset;
+    (*frame_poses)[i] = tar_mug_frame * X_OF_contact_[i] * grasp_offset;
   }
 }
 
-void SetMugStateControl::PublishTargetFrametoLcm(
-    const Isometry3<double>& mug_frame) {
+void MugStateSet::PublishTargetFingerPoseToLcm(
+    const Isometry3<double>& X_WO) const {
   lcm::DrakeLcm lcm;
-
   std::vector<std::string> frame_names;
   std::vector<Isometry3<double>> frame_poses;
   for (int i = 0; i < 4; i++) {
     frame_names.push_back("FingerTargetFrame" + std::to_string(i));
-    frame_poses.push_back(mug_frame * contact_mug_frames_[i]);
+    frame_poses.push_back(X_WO * X_OF_contact_[i]);
   }
   PublishFramesToLcm("FingerTargetFrame", frame_poses, frame_names, &lcm);
 }
