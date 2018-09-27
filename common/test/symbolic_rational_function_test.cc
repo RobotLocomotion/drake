@@ -66,11 +66,22 @@ TEST_F(SymbolicRationalFunctionTest, ConstructorWithError) {
   // numerator.
   const Polynomial p1(var_x_ * var_a_, {var_x_});
   const Polynomial p2(var_x_ * var_b_ + var_y_, {var_b_, var_y_});
-  EXPECT_THROW(RationalFunction(p2, p1), std::logic_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RationalFunction(p2, p1), std::logic_error,
+      "[^]* are used as decision variables in the numerator [^]*");
   // The indeterminate in the numerator is a decision variable in the
   // denominator.
   const symbolic::Polynomial p3(var_x_ * var_y_, {var_y_});
-  EXPECT_THROW(RationalFunction(p1, p3), std::logic_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RationalFunction(p1, p3), std::logic_error,
+      "[^]* are used as indeterminates in the numerator [^]*");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RationalFunction(Polynomial(var_a_ * var_x_, {var_x_}),
+                       Polynomial(var_a_ * var_x_, {var_a_})),
+      std::logic_error,
+      "[^]* are used as indeterminates in the numerator [^]* are used as "
+      "decision variables in the numerator [^]*");
 }
 
 TEST_F(SymbolicRationalFunctionTest, EqualTo) {
@@ -309,7 +320,7 @@ TEST_F(SymbolicRationalFunctionTest, Division) {
                               zero_divider_error);
 }
 
-TEST_F(SymbolicRationalFunctionTest, pow) {
+TEST_F(SymbolicRationalFunctionTest, Exponentiation) {
   const RationalFunction f(p1_, p2_);
   EXPECT_PRED2(RationalFunctionEqual, pow(f, 0),
                RationalFunction(polynomial_one_, polynomial_one_));
