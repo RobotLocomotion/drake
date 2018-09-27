@@ -71,5 +71,8 @@ Mesh::Mesh(const std::string& absolute_filename, double scale)
                      filename_);
 }
 
+Convex::Convex(const std::string& absolute_filename, double scale)
+    : Shape(ShapeTag<Convex>()), filename_(absolute_filename), scale_(scale) {}
+
 }  // namespace geometry
 }  // namespace drake
