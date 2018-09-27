@@ -3,8 +3,8 @@
 
 """
 Makes selected VTK headers and precompiled shared libraries available to be
-used as a C++ dependency. On Ubuntu Xenial, a VTK archive is downloaded and
-unpacked. On macOS, VTK must be installed from the robotlocomotion/director tap
+used as a C++ dependency. On Ubuntu, a VTK archive is downloaded and unpacked.
+On macOS, VTK must be installed from the robotlocomotion/director tap
 (https://git.io/vN6ft) using Homebrew.
 
 Archive naming convention:

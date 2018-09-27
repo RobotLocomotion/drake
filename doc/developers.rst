@@ -76,27 +76,33 @@ integration. All other configurations are provided on a best-effort basis.
 Drake requires a compiler running in C++14 mode or greater. MATLAB is only
 supported for CMake builds using the "Unix Makefiles" generator.
 
-+-----------------------------+-----------------+--------------------+------------+-------------------+--------+
-| Operating System            | Build System    | C/C++ Compiler     | Java       | MATLAB (Optional) | Python |
-+=============================+=================+====================+============+===================+========+
-+-----------------------------+-----------------+--------------------+------------+-------------------+--------+
-| Ubuntu 16.04 LTS ("Xenial") | | Bazel 0.16.1  | | Clang 4.0        | OpenJDK 8  | R2017a            | 2.7.11 |
-|                             | | CMake 3.5.1   | | GCC 5.4          |            |                   |        |
-+-----------------------------+-----------------+--------------------+------------+                   +--------+
-| macOS 10.12 ("Sierra")      | | Bazel 0.16.1  | Apple Clang 9.0.0  | Oracle 10  |                   | 2.7.15 |
-+-----------------------------+ | CMake 3.12.1  |                    |            +-------------------+        |
-| macOS 10.13 ("High Sierra") |                 |                    |            | R2017b            |        |
-+-----------------------------+-----------------+--------------------+------------+-------------------+--------+
++-----------------------------+-----------------+-----------------+------------+-------------------+--------+
+| Operating System            | Build System    | C/C++ Compiler  | Java       | MATLAB (Optional) | Python |
++=============================+=================+=================+============+===================+========+
++-----------------------------+-----------------+-----------------+------------+-------------------+--------+
+| Ubuntu 16.04 LTS ("Xenial") | | Bazel 0.16.1  | | Clang 6.0     | OpenJDK 8  | R2017a            | 2.7.11 |
+|                             | | CMake 3.5.1   | | GCC 5.4       |            |                   |        |
++-----------------------------+-----------------+-----------------+------------+-------------------+--------+
+| Ubuntu 18.04 LTS ("Bionic") | | Bazel 0.17.2  | | Clang 6.0     | OpenJDK 11 | R2018b            | 2.7.15 |
+|                             | | CMake 3.10.2  | | GCC 7.3       |            |                   |        |
++-----------------------------+-----------------+-----------------+------------+                   |        |
+| macOS 10.12 ("High Sierra") | | Bazel 0.17.2  | Apple LLVM 10.0 | Oracle 11  |                   |        |
++-----------------------------+ | CMake 3.12.2  |                 |            |                   |        |
+| macOS 10.13 ("Mojave")      |                 |                 |            |                   |        |
++-----------------------------+-----------------+-----------------+------------+-------------------+--------+
 
-macOS 10.13 ("High Sierra") MATLAB support is experimental and untested in continuous
-integration.
+
+Ubuntu 18.04 C++ abd Python support is experimental and has limited testing in
+continuous integration. macOS 10.13 C++ and Python support and macOS and Ubuntu
+18.04 MATLAB support is experimental and untested in continuous integration.
 
 .. _binary-packages:
 
 Binary Packages
 ---------------
 
-The binary releases of Drake are built with GCC 5.4 on Ubuntu 16.04 and Apple Clang 9.0 on macOS 10.13.
+The binary releases of Drake are built with GCC 5.4 on Ubuntu 16.04 and Apple
+LLVM 10.0 on macOS 10.13.
 
 The links for these packages are listed in :ref:`binary-installation`.
 
