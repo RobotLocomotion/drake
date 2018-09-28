@@ -362,6 +362,24 @@ TEST_F(SystemTest, PortNameTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       system_.DeclareInputPort("my_input", kAbstractValued, 0),
       std::logic_error, ".*already has an input port named.*");
+
+  // Test string-based get_input_port accessors.
+  EXPECT_EQ(&system_.get_input_port("u0"), &unnamed_input);
+  EXPECT_EQ(&system_.get_input_port("my_input"), &named_input);
+  EXPECT_EQ(&system_.get_input_port("abstract"), &named_abstract_input);
+
+  // Test output port names.
+  const auto& output_port = system_.AddAbstractOutputPort();
+  EXPECT_EQ(output_port.get_name(), "y0");
+  EXPECT_EQ(&system_.get_output_port("y0"), &output_port);
+
+  // Requesting a non-existing port name should throw.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      system_.get_input_port("not_my_input"),
+      std::logic_error, ".*does not have an input port named.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      system_.get_output_port("not_my_output"),
+      std::logic_error, ".*does not have an output port named.*");
 }
 
 // Tests the constraint list logic.

@@ -256,9 +256,21 @@ struct Impl {
         // Topology.
         .def("get_num_input_ports", &System<T>::get_num_input_ports)
         .def("get_input_port",
-             &System<T>::get_input_port, py_reference_internal)
+             overload_cast_explicit<const InputPort<T>&, int>(
+                 &System<T>::get_input_port),
+             py_reference_internal)
+        .def("get_input_port",
+             overload_cast_explicit<const InputPort<T>&, const std::string&>(
+                 &System<T>::get_input_port),
+             py_reference_internal)
         .def("get_num_output_ports", &System<T>::get_num_output_ports)
-        .def("get_output_port", &System<T>::get_output_port,
+        .def("get_output_port",
+             overload_cast_explicit<const OutputPort<T>&, int>(
+                 &System<T>::get_output_port),
+             py_reference_internal)
+        .def("get_output_port",
+             overload_cast_explicit<const OutputPort<T>&, const std::string&>(
+                 &System<T>::get_output_port),
              py_reference_internal)
         .def("_DeclareInputPort",
              overload_cast_explicit<const InputPort<T>&, std::string,
