@@ -3,7 +3,7 @@
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
 )
@@ -52,8 +52,9 @@ drake_cc_library(
     deps = [":wrap_function"],
 )
 
-# This is a pure-python, standalone library SET.
-# Keep this away from `common_py` to simplify test dependencies.
+# These utilities do not need any of the bound Drake C++ code. To simplify
+# test dependencies, this module does not declare a dependency on
+# `pydrake:module_py`, as would be customary for any other `module_py` target.
 drake_py_library(
     name = "module_py",
     srcs = ["__init__.py"],
@@ -66,7 +67,7 @@ drake_py_library(
     imports = PACKAGE_INFO.py_imports,
 )
 
-# N.B. Since `common_py` incorporates `deprecation_py`, C++ Python libraries
+# N.B. Since `:module_py` incorporates `deprecation_py`, C++ Python libraries
 # need not worry about it.
 drake_cc_library(
     name = "deprecation_pybind",
