@@ -98,7 +98,7 @@ class RationalFunction {
 
   /**
    * Returns a symbolic formula representing the condition where this rational
-   * function and @p f are ot the same.
+   * function and @p f are not the same.
    */
   Formula operator!=(const RationalFunction& f) const;
 
@@ -150,13 +150,12 @@ RationalFunction operator/(double c, const RationalFunction& f);
  */
 RationalFunction pow(const RationalFunction& f, int n);
 /**
- * Provides the following operations
- *  - Matrix<RationalFunction> * Matrix<Polynomial> =>
- * Matrix<RationalFunction>
- *  - Matrix<RationalFunction> * Matrix<double> => Matrix<RationalFunction>
- *  - Matrix<Polynomial> * Matrix<RationalFunction> =>
- * Matrix<RationalFunction>
- *  - Matrix<double> * Matrix<RationalFunction> => Matrix<RationalFunction>
+ *  Provides the following operations:
+ *  - Matrix<RF>         * Matrix<Polynomial> => Matrix<RF>
+ *  - Matrix<RF>         * Matrix<double>     => Matrix<RF>
+ *  - Matrix<Polynomial> * Matrix<RF>         => Matrix<RF>
+ *  - Matrix<double>     * Matrix<RF>         => Matrix<RF>
+ * where RF is a shorthand for RelationalFunction.
  *
  * @note that these operator overloadings are necessary even after providing
  * Eigen::ScalarBinaryOpTraits. See
@@ -167,8 +166,7 @@ RationalFunction pow(const RationalFunction& f, int n);
 template <typename MatrixL, typename MatrixR>
 Eigen::Matrix<RationalFunction, MatrixL::RowsAtCompileTime,
               MatrixR::ColsAtCompileTime>
-operator*(const Eigen::MatrixBase<MatrixL>& lhs,
-          const Eigen::MatrixBase<MatrixR>& rhs);
+operator*(const MatrixL& lhs, const MatrixR& rhs);
 #else
 template <typename MatrixL, typename MatrixR>
 typename std::enable_if<

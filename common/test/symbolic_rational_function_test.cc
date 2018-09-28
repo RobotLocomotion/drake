@@ -75,8 +75,10 @@ TEST_F(SymbolicRationalFunctionTest, Constructor3) {
 TEST_F(SymbolicRationalFunctionTest, ConstructorWithError) {
   // Test throwing error in the constructor.
   // Denominator is 0.
-  EXPECT_THROW(RationalFunction(polynomial_one_, polynomial_zero_),
-               std::logic_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RationalFunction(polynomial_one_, polynomial_zero_),
+      std::invalid_argument,
+      "RationalFunction: the denominator should not be 0.");
   // The indeterminate in the denominator is a decision variable in the
   // numerator.
   const Polynomial p1(var_x_ * var_a_, {var_x_});
