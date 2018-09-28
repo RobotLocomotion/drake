@@ -88,6 +88,8 @@ class TestGeneral(unittest.TestCase):
         system = Adder(3, 10)
         self.assertEqual(system.get_num_input_ports(), 3)
         self.assertEqual(system.get_num_output_ports(), 1)
+        self.assertEqual(system.GetInputPort("u1").get_index(), 1)
+        self.assertEqual(system.GetOutputPort("sum").get_index(), 0)
         # Test deprecated methods.
         context = system.CreateDefaultContext()
         with warnings.catch_warnings(record=True) as w:
