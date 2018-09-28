@@ -131,7 +131,7 @@ void DoMain() {
   builder.Connect(hand_controller->get_output_port_control(),
                   plant->get_actuation_input_port());
 
-  // Creatd an output port from the plant that only outputs the status of the
+  // Create an output port from the plant that only outputs the status of the
   // hand fingers
   const auto hand_status_converter =
       builder.AddSystem<systems::MatrixGain<double>>(Px);
