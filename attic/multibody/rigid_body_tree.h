@@ -127,6 +127,12 @@ class RigidBodyTree {
   }
 
   /**
+   * When @p val is true, drake::log()->debug() will be used instead of
+   * drake::log()->info().
+   */
+  void set_print_level_to_debug(bool val) { print_level_is_debug_ = val; }
+
+  /**
    * Adds a new model instance to this `RigidBodyTree`. The model instance is
    * identified by a unique model instance ID, which is the return value of
    * this method.
@@ -1693,6 +1699,9 @@ class RigidBodyTree {
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces
 
  private:
+  // drake::log()->debug will be used for prints if true.
+  bool print_level_is_debug_{true};
+
   // The number of generalized position states in this rigid body tree.
   int num_positions_{};
 
