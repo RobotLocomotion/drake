@@ -51,14 +51,14 @@ class RationalFunction {
    * denominator.
    * @param p The numerator of the rational function.
    */
-  RationalFunction(const Polynomial& p);
+  explicit RationalFunction(const Polynomial& p);
 
   /**
    * Constructs the rational function: c / 1. Note that we use 1 as the
    * denominator.
    * @param c The numerator of the rational function.
    */
-  RationalFunction(double c);
+  explicit RationalFunction(double c);
 
   ~RationalFunction() = default;
 
@@ -88,6 +88,19 @@ class RationalFunction {
    * Returns true if this rational function and f are structurally equal.
    */
   bool EqualTo(const RationalFunction& f) const;
+
+  /**
+   * Returns a symbolic formula representing the condition where this rational
+   * function and @p f are the same.
+   * If f1 = p1 / q1, f2 = p2 / q2, then f1 == f2 <=> p1 * q2 == p2 * q1
+   */
+  Formula operator==(const RationalFunction& f) const;
+
+  /**
+   * Returns a symbolic formula representing the condition where this rational
+   * function and @p f are ot the same.
+   */
+  Formula operator!=(const RationalFunction& f) const;
 
   friend std::ostream& operator<<(std::ostream&, const RationalFunction& f);
 
@@ -157,7 +170,6 @@ Eigen::Matrix<RationalFunction, MatrixL::RowsAtCompileTime,
 operator*(const Eigen::MatrixBase<MatrixL>& lhs,
           const Eigen::MatrixBase<MatrixR>& rhs);
 #else
-/*
 template <typename MatrixL, typename MatrixR>
 typename std::enable_if<
     std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
@@ -173,26 +185,6 @@ typename std::enable_if<
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<RationalFunction>() *
          rhs.template cast<RationalFunction>();
-}*/
-
-template <typename MatrixL, typename MatrixR>
-typename std::enable_if<
-    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
-        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
-        ((std::is_same<typename MatrixL::Scalar, RationalFunction>::value &&
-          (std::is_same<typename MatrixR::Scalar, Polynomial>::value ||
-           std::is_same<typename MatrixR::Scalar, double>::value)) ||
-         (std::is_same<typename MatrixR::Scalar, RationalFunction>::value &&
-          (std::is_same<typename MatrixL::Scalar, Polynomial>::value ||
-           std::is_same<typename MatrixL::Scalar, double>::value))) &&
-        (MatrixL::RowsAtCompileTime == Eigen::Dynamic &&
-         MatrixL::ColsAtCompileTime == Eigen::Dynamic &&
-         MatrixR::RowsAtCompileTime == Eigen::Dynamic &&
-         MatrixR::RowsAtCompileTime == Eigen::Dynamic),
-    Eigen::Matrix<RationalFunction, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime>>::type
-operator*(const MatrixL& lhs, const MatrixR& rhs) {
-  return lhs.lazyProduct(rhs);
 }
 #endif
 }  // namespace symbolic

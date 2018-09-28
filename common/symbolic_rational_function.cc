@@ -28,6 +28,14 @@ bool RationalFunction::EqualTo(const RationalFunction& f) const {
          denominator_.EqualTo(f.denominator());
 }
 
+Formula RationalFunction::operator==(const RationalFunction& f) const {
+  return denominator_ * f.numerator() == numerator_ * f.denominator();
+}
+
+Formula RationalFunction::operator!=(const RationalFunction& f) const {
+  return !(*this == f);
+}
+
 std::ostream& operator<<(std::ostream& os, const RationalFunction& f) {
   os << "(" << f.numerator() << ") / (" << f.denominator() << ")";
   return os;

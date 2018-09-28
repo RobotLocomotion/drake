@@ -70,8 +70,7 @@ template <typename Derived1, typename Derived2>
 typename std::enable_if<
     std::is_same<typename Derived1::Scalar, RationalFunction>::value &&
     std::is_same<typename Derived2::Scalar, RationalFunction>::value>::type
-CompareMatrixWithRationalFunction(const Eigen::MatrixBase<Derived1>& m1,
-                                  const Eigen::MatrixBase<Derived2>& m2) {
+CompareMatrixWithRationalFunction(const Derived1& m1, const Derived2& m2) {
   EXPECT_EQ(m1.rows(), m2.rows());
   EXPECT_EQ(m1.cols(), m2.cols());
   for (int i = 0; i < m1.rows(); ++i) {
@@ -85,8 +84,7 @@ CompareMatrixWithRationalFunction(const Eigen::MatrixBase<Derived1>& m1,
 }
 
 template <typename Derived1, typename Derived2>
-void CheckAddition(const Eigen::MatrixBase<Derived1>& m1,
-                   const Eigen::MatrixBase<Derived2>& m2) {
+void CheckAddition(const Derived1& m1, const Derived2& m2) {
   DRAKE_DEMAND(m1.rows() == m2.rows());
   DRAKE_DEMAND(m1.cols() == m2.cols());
   MatrixX<RationalFunction> m1_add_m2_expected(m1.rows(), m1.cols());
@@ -104,8 +102,7 @@ void CheckAddition(const Eigen::MatrixBase<Derived1>& m1,
 }
 
 template <typename Derived1, typename Derived2>
-void CheckSubtraction(const Eigen::MatrixBase<Derived1>& m1,
-                      const Eigen::MatrixBase<Derived2>& m2) {
+void CheckSubtraction(const Derived1& m1, const Derived2& m2) {
   DRAKE_DEMAND(m1.rows() == m2.rows());
   DRAKE_DEMAND(m1.cols() == m2.cols());
   MatrixX<RationalFunction> m1_minus_m2_expected(m1.rows(), m1.cols());
@@ -124,6 +121,9 @@ void CheckSubtraction(const Eigen::MatrixBase<Derived1>& m1,
 
 template <typename Derived1, typename Derived2>
 void CheckProduct(const Derived1& m1, const Derived2& m2) {
+  // If we change the type from Derived1 to Eigen::MatrixBase<Derived1>, the
+  // compiler would fail, as the SFINAE fails for the overloaded operator* in
+  // symbolic_ration_function.h.
   DRAKE_DEMAND(m1.cols() == m2.rows());
   MatrixX<RationalFunction> m1_times_m2_expected(m1.rows(), m2.cols());
   for (int i = 0; i < m1.rows(); ++i) {
@@ -142,6 +142,24 @@ void CheckProduct(const Derived1& m1, const Derived2& m2) {
 }
 
 template <typename Derived1, typename Derived2>
+typename std::enable_if<is_eigen_vector<Derived1>::value &&
+                        is_eigen_vector<Derived2>::value>::type
+CheckConjugateProdocut(const Derived1& v1, const Derived2& v2) {
+  DRAKE_DEMAND(v1.rows() == v2.rows());
+  RationalFunction v1_dot_v2_expected;
+  for (int i = 0; i < v1.rows(); ++i) {
+    v1_dot_v2_expected += v1(i) * v2(i);
+  }
+  static_assert(std::is_same<decltype(v1.dot(v2)), RationalFunction>::value,
+                "v1.dot(v2) should be RationalFunction.");
+  const RationalFunction v1_dot_v2 = v1.dot(v2);
+  EXPECT_PRED2(test::PolyEqualAfterExpansion, v1_dot_v2.denominator(),
+               v1_dot_v2_expected.denominator());
+  EXPECT_PRED2(test::PolyEqualAfterExpansion, v1_dot_v2.numerator(),
+               v1_dot_v2_expected.numerator());
+}
+
+template <typename Derived1, typename Derived2>
 void CheckMatrixMatrixBinaryOperations(const Derived1& m1, const Derived2& m2) {
   CheckAddition(m1, m2);
   CheckSubtraction(m1, m2);
@@ -151,19 +169,17 @@ void CheckMatrixMatrixBinaryOperations(const Derived1& m1, const Derived2& m2) {
 
 template <typename Derived1, typename Derived2>
 typename std::enable_if<is_eigen_vector<Derived2>::value>::type
-CheckMatrixVectorBinaryOperations(const Eigen::MatrixBase<Derived1>& m1,
-                                  const Eigen::MatrixBase<Derived2>& m2) {
-  // CheckProduct(m1, m2);
+CheckMatrixVectorBinaryOperations(const Derived1& m1, const Derived2& m2) {
+  CheckProduct(m1, m2);
 }
 
 template <typename Derived1, typename Derived2>
 typename std::enable_if<is_eigen_vector<Derived1>::value &&
                         is_eigen_vector<Derived2>::value>::type
-CheckVectorVectorBinaryOperations(const Eigen::MatrixBase<Derived1>& m1,
-                                  const Eigen::MatrixBase<Derived2>& m2) {
+CheckVectorVectorBinaryOperations(const Derived1& m1, const Derived2& m2) {
   CheckAddition(m1, m2);
   CheckSubtraction(m1, m2);
-  // CheckConjugateProdocut(m1, m2);
+  CheckConjugateProdocut(m1, m2);
 }
 
 TEST_F(SymbolicRationalFunctionMatrixTest, RationalFunctionOpRationalFunction) {
@@ -199,52 +215,52 @@ TEST_F(SymbolicRationalFunctionMatrixTest, RationalFunctionOpPolynomial) {
   CheckMatrixMatrixBinaryOperations(M_rational_function_dynamic_,
                                     M_poly_dynamic_);
 
-  /*CheckVectorVectorBinaryOperations(v_rational_function_static_,
-  v_poly_static_);
   CheckVectorVectorBinaryOperations(v_rational_function_static_,
-  v_poly_dynamic_);
+                                    v_poly_static_);
+  CheckVectorVectorBinaryOperations(v_rational_function_static_,
+                                    v_poly_dynamic_);
   CheckVectorVectorBinaryOperations(v_rational_function_dynamic_,
-  v_poly_static_);
+                                    v_poly_static_);
   CheckVectorVectorBinaryOperations(v_rational_function_dynamic_,
-  v_poly_dynamic_);
+                                    v_poly_dynamic_);
 
   CheckMatrixVectorBinaryOperations(M_rational_function_static_,
-  v_poly_static_);
+                                    v_poly_static_);
   CheckMatrixVectorBinaryOperations(M_rational_function_static_,
-  v_poly_dynamic_);
+                                    v_poly_dynamic_);
   CheckMatrixVectorBinaryOperations(M_rational_function_dynamic_,
-  v_poly_static_);
+                                    v_poly_static_);
   CheckMatrixVectorBinaryOperations(M_rational_function_dynamic_,
-  v_poly_dynamic_);*/
+                                    v_poly_dynamic_);
 }
 
 TEST_F(SymbolicRationalFunctionMatrixTest, RationalFunctionOpDouble) {
-  /*CheckMatrixMatrixBinaryOperations(M_rational_function_static_,
-  M_double_static_);
   CheckMatrixMatrixBinaryOperations(M_rational_function_static_,
-  M_double_dynamic_);
+                                    M_double_static_);
+  CheckMatrixMatrixBinaryOperations(M_rational_function_static_,
+                                    M_double_dynamic_);
   CheckMatrixMatrixBinaryOperations(M_rational_function_dynamic_,
-  M_double_static_);
+                                    M_double_static_);
   CheckMatrixMatrixBinaryOperations(M_rational_function_dynamic_,
                                     M_double_dynamic_);
 
   CheckVectorVectorBinaryOperations(v_rational_function_static_,
-  v_double_static_);
+                                    v_double_static_);
   CheckVectorVectorBinaryOperations(v_rational_function_static_,
-  v_double_dynamic_);
+                                    v_double_dynamic_);
   CheckVectorVectorBinaryOperations(v_rational_function_dynamic_,
-  v_double_static_);
+                                    v_double_static_);
   CheckVectorVectorBinaryOperations(v_rational_function_dynamic_,
                                     v_double_dynamic_);
 
   CheckMatrixVectorBinaryOperations(M_rational_function_static_,
-  v_double_static_);
+                                    v_double_static_);
   CheckMatrixVectorBinaryOperations(M_rational_function_static_,
-  v_double_dynamic_);
+                                    v_double_dynamic_);
   CheckMatrixVectorBinaryOperations(M_rational_function_dynamic_,
-  v_double_static_);
+                                    v_double_static_);
   CheckMatrixVectorBinaryOperations(M_rational_function_dynamic_,
-                                    v_double_dynamic_);*/
+                                    v_double_dynamic_);
 }
 }  // namespace symbolic
 }  // namespace drake
