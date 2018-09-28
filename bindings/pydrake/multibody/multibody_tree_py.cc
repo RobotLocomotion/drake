@@ -476,7 +476,14 @@ void init_multibody_plant(py::module m) {
                 const Vector3<T>,
                 const T&,
                 const T&,
-                const geometry::PenetrationAsPointPair<T>>())
+                const geometry::PenetrationAsPointPair<T>>(),
+                py::arg("bodyA_index"),
+                py::arg("bodyB_index"),
+                py::arg("f_Bc_W"),
+                py::arg("p_WC"),
+                py::arg("separation_speed"),
+                py::arg("slip_speed"),
+                py::arg("point_pair"))
       .def("bodyA_index", &Class::bodyA_index)
       .def("bodyB_index", &Class::bodyB_index)
       .def("contact_force", &Class::contact_force)

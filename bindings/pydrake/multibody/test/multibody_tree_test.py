@@ -24,6 +24,8 @@ from pydrake.multibody.multibody_tree.math import (
 )
 from pydrake.multibody.multibody_tree.multibody_plant import (
     MultibodyPlant,
+    ContactResults,
+    PointPairContactInfo,
 )
 from pydrake.multibody.multibody_tree.parsing import (
     AddModelFromSdfFile,
@@ -32,6 +34,10 @@ from pydrake.multibody.benchmarks.acrobot import (
     AcrobotParameters,
     MakeAcrobotPlant,
 )
+from pydrake.geometry import (
+    PenetrationAsPointPair,
+    GeometryId)
+
 
 import copy
 import math
@@ -409,3 +415,12 @@ class TestMultibodyTree(unittest.TestCase):
 
         self.assertTrue(H.shape == (2, 2))
         self.assertTrue(Cv.shape == (2, ))
+
+    def test_contact(self):
+        # PenetrationAsContactPair
+        point_pair = PenetrationAsPointPair()
+        self.assertTrue(isinstance(point_pair.id_A, GeometryId))
+        self.assertTrue(isinstance(point_pair.id_B, GeometryId))
+        self.assertTrue(point_pair.p_WCa.shape == (3,))
+        self.assertTrue(point_pair.p_WCb.shape == (3,))
+        self.assertTrue(isinstance(point_pair.depth, float))
