@@ -20,6 +20,7 @@ drake_cc_package_library(
         ":pose_bundle_to_draw_message",
         ":pose_stamped_t_pose_vector_translator",
         ":pose_vector",
+        ":render_pose_to_geometry_pose",
     ],
 )
 
@@ -105,6 +106,17 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "render_pose_to_geometry_pose",
+    srcs = ["render_pose_to_geometry_pose.cc"],
+    hdrs = ["render_pose_to_geometry_pose.h"],
+    deps = [
+        ":pose_vector",
+        "//geometry:frame_kinematics",
+        "//systems/framework:leaf_system",
+    ],
+)
+
 drake_cc_googletest(
     name = "pose_aggregator_test",
     deps = [
@@ -154,6 +166,15 @@ drake_cc_googletest(
         ":drake_visualizer_client",
         "//common:find_resource",
         "//lcmtypes:viewer",
+    ],
+)
+
+drake_cc_googletest(
+    name = "render_pose_to_geometry_pose_test",
+    deps = [
+        ":render_pose_to_geometry_pose",
+        "//common/test_utilities",
+        "//systems/framework/test_utilities",
     ],
 )
 
