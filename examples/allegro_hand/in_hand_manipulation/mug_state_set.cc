@@ -66,12 +66,10 @@ void MugStateSet::CalcFingerPoseWithMugRotation(
   X_O_Ocenter.setIdentity();
   Isometry3<double> X_rotation;
   X_rotation.setIdentity();
-  X_O_Ocenter.translation() << 0, 0, -MugHeight_ * 0.5;
+  X_O_Ocenter.translation() << 0, 0, MugHeight_ * 0.5;
   X_rotation.rotate(
       Eigen::AngleAxis<double>(rotation_angle_rad, rotation_axis));
-  X_rotation = X_rotation * X_O_Ocenter;
-  X_O_Ocenter.translation() << 0, 0, MugHeight_ * 0.5;
-  X_rotation = X_O_Ocenter * X_rotation;
+  X_rotation = X_O_Ocenter * X_rotation * X_O_Ocenter.inverse();
 
   Isometry3<double> X_WO_target;
   X_WO_target = X_WO_ref_ * X_rotation;

@@ -180,39 +180,40 @@ class HandPositionCommander {
   /// Using IK to find the joint positions so that the fingertips will reach
   /// X_WF_target_, and send the command for the joint positions
   /// through LCM
-  /// @param target_tor: tolerance of the IK calculation, unit mm
+  /// @param target_tor: tolerance of the IK calculation, unit m
   void InItIKTarget(double target_tor = 5e-3) {
     multibody::InverseKinematics ik_(*plant_);
     const Frame<double>& WorldFrame = plant_->world_frame();
 
-    Eigen::Vector3d p_W_tor = Eigen::Vector3d::Constant(target_tor);
-    Eigen::Vector3d p_W;
-    Isometry3<double> p_TipCenter_Surface;
-    p_TipCenter_Surface.setIdentity();
+    Eigen::Vector3d p_WTipcenter_tor = Eigen::Vector3d::Constant(target_tor);
+    Eigen::Vector3d p_WTipcenter;
+    Isometry3<double> p_FTipcenter;
+    p_FTipcenter.setIdentity();
     Isometry3<double> X_W_TipCenter;
     // 0.012 is the radis of the sphere on the fingertip. In the planning, we
     // consider the center of the fingertip sphere as the origin of the
     // fingertip frame, and this offset ensured the sphere shaped fingertip
     // would reach the target position, no matter where is the contact point on
     // the fingertip
-    p_TipCenter_Surface.translation() = Eigen::Vector3d(0, 0, 0.012);
+    p_FTipcenter.translation() = Eigen::Vector3d(0, 0, 0.012);
     for (int cur_finger = 0; cur_finger < 4; cur_finger++) {
-      Eigen::Vector3d X_Finger_TipCenter(0, 0, 0.0267);
+      Eigen::Vector3d p_Finger_TipCenter(0, 0, 0.0267);
       const Frame<double>* FingertipFrame{nullptr};
       if (cur_finger == 0) {  // if it's the thumb
         // the offset of the tip center on the thumb is different
-        X_Finger_TipCenter(2) = 0.0423;
+        p_Finger_TipCenter(2) = 0.0423;
         FingertipFrame = &(plant_->GetFrameByName("link_15"));
       } else {
         FingertipFrame = &(plant_->GetFrameByName(
             "link_" + std::to_string(cur_finger * 4 - 1)));
       }
 
-      X_W_TipCenter = X_WF_target_[cur_finger] * p_TipCenter_Surface;
-      p_W = X_W_TipCenter.translation();
+      X_W_TipCenter = X_WF_target_[cur_finger] * p_FTipcenter;
+      p_WTipcenter = X_W_TipCenter.translation();
       X_W_TipCenter_saved_[cur_finger] = X_W_TipCenter;
-      ik_.AddPositionConstraint(*FingertipFrame, X_Finger_TipCenter, WorldFrame,
-                                p_W - p_W_tor, p_W + p_W_tor);
+      ik_.AddPositionConstraint(
+          *FingertipFrame, p_Finger_TipCenter, WorldFrame,
+          p_WTipcenter - p_WTipcenter_tor, p_WTipcenter + p_WTipcenter_tor);
     }
 
     const auto result = ik_.get_mutable_prog()->Solve();
@@ -246,22 +247,22 @@ class HandPositionCommander {
     params_->set_joint_position_limits(q_bounds);
     params_->set_joint_velocity_limits(v_bounds);
 
-    Eigen::Vector3d p_W;
+    Eigen::Vector3d p_WTipcenter;
     bool target_updated_flag = false;
-    Isometry3<double> p_TipCenter_Surface;
-    p_TipCenter_Surface.setIdentity();
-    p_TipCenter_Surface.translation() += Eigen::Vector3d(0, 0, 0.012);
+    Isometry3<double> p_FTipcenter;
+    p_FTipcenter.setIdentity();
+    p_FTipcenter.translation() += Eigen::Vector3d(0, 0, 0.012);
     for (int cur_finger = 0; cur_finger < 4; cur_finger++) {
       // if the new position is similar to the saved one, don't need to update
       Isometry3<double> X_W_TipCenter =
-          X_WO_ * X_WF_target_ForDiffIK_[cur_finger] * p_TipCenter_Surface;
+          X_WO_ * X_WF_target_ForDiffIK_[cur_finger] * p_FTipcenter;
       if (X_W_TipCenter_saved_[cur_finger].isApprox(X_W_TipCenter)) continue;
 
       // offset from the fingertip to the frame of the end link of the finger
-      Eigen::Vector3d X_Finger_TipCenter(0, 0, 0.0267);
+      Eigen::Vector3d p_Finger_TipCenter(0, 0, 0.0267);
       const Frame<double>* FingertipFrame{nullptr};
       if (cur_finger == 0) {  // if it's the thumb
-        X_Finger_TipCenter(2) = 0.0423;
+        p_Finger_TipCenter(2) = 0.0423;
         FingertipFrame = &(plant_->GetFrameByName("link_15"));
       } else {
         FingertipFrame = &(plant_->GetFrameByName(
