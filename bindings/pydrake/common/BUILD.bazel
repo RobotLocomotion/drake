@@ -3,7 +3,13 @@
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load(
     "//tools/skylark:pybind.bzl",
+    "drake_pybind_cc_googletest",
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
@@ -11,7 +17,12 @@ load(
 load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_library",
+    "drake_py_test",
     "drake_py_unittest",
+)
+load(
+    "//tools/workspace/pybind11:repository.bzl",
+    "generate_pybind11_version_py_file",
 )
 
 package(default_visibility = [
@@ -22,62 +33,58 @@ package(default_visibility = [
 # bindings.
 PACKAGE_INFO = get_pybind_package_info("//bindings")
 
+# N.B. We use an intermediate `_init_py` between `module_py` to avoid
+# dependency cycles with `pydrake:module_py`.
+# TODO(eric.cousineau): Decouple this module from the full-fledged
+# `libdrake.so`.
+drake_pybind_library(
+    name = "_init_py",
+    cc_so_name = "_module_py",
+    cc_srcs = ["module_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_srcs = [
+        "__init__.py",
+    ],
+)
+
 drake_py_library(
     name = "module_py",
-    srcs = ["__init__.py"],
-    imports = PACKAGE_INFO.py_imports,
     deps = [
         "//bindings/pydrake:module_py",
     ],
 )
 
-drake_pybind_library(
-    name = "planner_py",
-    cc_deps = [
-        "//bindings/pydrake/util:drake_optional_pybind",
-        "//bindings/pydrake/util:eigen_pybind",
-    ],
-    cc_so_name = "planner",
-    cc_srcs = ["planner_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":module_py",
-    ],
-)
-
 PY_LIBRARIES_WITH_INSTALL = [
-    ":planner_py",
+    ":_init_py",
 ]
-
-PY_LIBRARIES = [
-    ":module_py",
-]
-
-drake_py_unittest(
-    name = "planner_test",
-    deps = [
-        ":planner_py",
-    ],
-)
 
 # Symbol roll-up (for user ease).
 drake_py_library(
     name = "all_py",
     srcs = ["all.py"],
-    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
+    deps = PY_LIBRARIES_WITH_INSTALL + [
+        ":module_py",
+    ],
 )
 
 # Package roll-up (for Bazel dependencies).
 drake_py_library(
-    name = "manipulation",
+    name = "common",
+    imports = PACKAGE_INFO.py_imports,
     deps = [":all_py"],
 )
 
 install(
     name = "install",
-    targets = PY_LIBRARIES + [":all_py"],
+    targets = [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
+)
+
+drake_py_unittest(
+    name = "module_test",
+    data = ["//examples/atlas:models"],
+    deps = [":module_py"],
 )
 
 add_lint_tests()
