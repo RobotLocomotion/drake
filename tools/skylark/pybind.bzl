@@ -328,6 +328,7 @@ def _generate_pybind_documentation_header_impl(ctx):
     args = ctx.actions.args()
     args.add_all(compile_flags, uniquify = True)
     args.add("-quiet")
+    args.add("-root-name=" + ctx.attr.root_name)
 
     # Replace with ctx.fragments.cpp.cxxopts in Bazel 0.17+.
     args.add("-std=c++14")
@@ -362,6 +363,7 @@ generate_pybind_documentation_header = rule(
         ),
         "out": attr.output(mandatory = True),
         "deps": attr.label_list(),
+        "root_name": attr.string(default = "pydrake_doc"),
     },
     fragments = ["cpp"],
     implementation = _generate_pybind_documentation_header_impl,
