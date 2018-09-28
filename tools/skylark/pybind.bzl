@@ -137,7 +137,6 @@ def drake_pybind_library(
         cc_srcs = cc_srcs,
         cc_deps = cc_deps + [
             "//:drake_shared_library",
-            "//bindings/pydrake:documentation_pybind",
             "//bindings/pydrake:pydrake_pybind",
         ],
         cc_binary_rule = drake_cc_binary,
