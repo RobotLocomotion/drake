@@ -394,3 +394,18 @@ class TestMultibodyTree(unittest.TestCase):
 
         for joint in joints:
             self._test_joint_api(joint)
+
+    def test_multibody_dynamics(self):
+        file_name = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        plant = MultibodyPlant()
+        AddModelFromSdfFile(file_name, plant)
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+        tree = plant.tree()
+
+        H = tree.CalcMassMatrixViaInverseDynamics(context)
+        Cv = tree.CalcBiasTerm(context)
+
+        self.assertTrue(H.shape == (2, 2))
+        self.assertTrue(Cv.shape == (2, ))

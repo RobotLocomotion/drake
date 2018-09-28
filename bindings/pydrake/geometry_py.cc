@@ -59,7 +59,6 @@ PYBIND11_MODULE(geometry, m) {
     .def_readwrite("p_WCb", &PenetrationAsPointPair<T>::p_WCb)
     .def_readwrite("nhat_BA_W", &PenetrationAsPointPair<T>::nhat_BA_W)
     .def_readwrite("depth", &PenetrationAsPointPair<T>::depth);
-
 }
 
 }  // namespace
