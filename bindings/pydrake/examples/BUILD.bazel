@@ -22,16 +22,12 @@ package(default_visibility = [
 # bindings.
 PACKAGE_INFO = get_pybind_package_info("//bindings")
 
-# @note Symbols are NOT imported directly into
-# `__init__.py` to simplify dependency management, meaning that
-# classes are organized by their directory structure rather than
-# by C++ namespace.
 drake_py_library(
     name = "module_py",
     srcs = ["__init__.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [
-        "//bindings/pydrake:common_py",
+        "//bindings/pydrake:module_py",
     ],
 )
 
