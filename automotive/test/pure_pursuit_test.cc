@@ -258,7 +258,7 @@ TEST_F(PurePursuitTest, ComputeGoalPoint) {
   EXPECT_EQ(0., goal_position.z());
 }
 // TODO(jadecastro): Test with curved lanes once
-// monolane::Lane::ToRoadPosition() is implemented.
+// multilane::Lane::ToRoadPosition() is implemented.
 
 }  // namespace
 }  // namespace automotive
