@@ -339,7 +339,6 @@ def _generate_pybind_documentation_header_impl(ctx):
 generate_pybind_documentation_header = rule(
     attrs = {
         "targets": attr.label_list(
-            allow_files = True,
             mandatory = True,
         ),
         "_mkdoc": attr.label(
