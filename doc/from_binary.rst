@@ -19,6 +19,9 @@ For the compilers used to produce these releases, see :ref:`binary-packages`.
 If you are unsure of which approach to use, we suggest you :ref:`build from source <build_from_source>`
 instead.
 
+For using Python bindings, see :ref:`Binary Installation for Python
+<python-bindings-binary>`.
+
 Using older (2015) releases
 ===========================
 
