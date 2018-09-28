@@ -1,12 +1,12 @@
 /// @file
 ///
-/// This file set up a simulation environment of an allegro hand an object.The
-/// only controllable interface in this instance is the target positions of the
-/// joints on the hand fingers. The simulator connects with the control program
-/// through LCM, with the output of the hand state, and take in the command of
-/// the finger joint positions. The simulation also measures the pose of the
-/// object and publish it through LCM, which is similar to an ideal motion
-/// tracking system.
+/// This file set up a simulation environment of an allegro hand and an object.
+/// The only controllable interface in this instance is the target positions of
+/// the joints on the hand fingers. The simulator connects with the control
+/// program through LCM, with the output of the hand state, and take in the
+/// command of the finger joint positions. The simulation also measures the
+/// pose of the object and publish it through LCM, which is similar to an ideal
+/// motion tracking system.
 
 #include <gflags/gflags.h>
 
@@ -131,7 +131,7 @@ void DoMain() {
   builder.Connect(hand_controller->get_output_port_control(),
                   plant->get_actuation_input_port());
 
-  // Creat an output port from the plant that only outputs the status of the
+  // Creatd an output port from the plant that only outputs the status of the
   // hand fingers
   const auto hand_status_converter =
       builder.AddSystem<systems::MatrixGain<double>>(Px);
@@ -197,13 +197,13 @@ void DoMain() {
   std::vector<Eigen::Isometry3d> X_WB_all;
   plant->tree().CalcAllBodyPosesInWorld(plant_context, &X_WB_all);
   const Eigen::Vector3d& p_WHand = X_WB_all[hand.index()].translation();
-  Eigen::Isometry3d X_WM;
+  Eigen::Isometry3d X_WO;
   Eigen::Vector3d rpy(M_PI / 2, 0, 0);
-  X_WM.linear() =
+  X_WO.linear() =
       math::RotationMatrix<double>(math::RollPitchYaw<double>(rpy)).matrix();
-  X_WM.translation() = p_WHand + Eigen::Vector3d(0.095, 0.075, 0.100);
-  X_WM.makeAffine();
-  plant->tree().SetFreeBodyPoseOrThrow(mug, X_WM, &plant_context);
+  X_WO.translation() = p_WHand + Eigen::Vector3d(0.095, 0.075, 0.100);
+  X_WO.makeAffine();
+  plant->tree().SetFreeBodyPoseOrThrow(mug, X_WO, &plant_context);
 
   lcm.StartReceiveThread();
 

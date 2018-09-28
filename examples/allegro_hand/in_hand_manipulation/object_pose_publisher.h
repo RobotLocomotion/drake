@@ -21,7 +21,7 @@ const std::string kObjectPoseLCMChannel = "TARGET_OBJ_POSE";
 
 const double kObjectStatePublishPeriod = 0.05;
 
-/// The class track the pose of the target object and publish it
+/// The class tracks the pose of the target object and publishes it
 /// to LCM channel
 class ObjectPosePublisher : public systems::LeafSystem<double> {
  public:

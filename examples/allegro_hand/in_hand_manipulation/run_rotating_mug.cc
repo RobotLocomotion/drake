@@ -62,16 +62,16 @@ class HandPositionCommander {
     plant_->Finalize();
     plant_context_ = plant_->CreateDefaultContext();
 
-    // Ini the port mapping matril Px for Allegro Hand. Px_half is the
+    // Ini the port mapping matrix Px for Allegro Hand. Px_position is the
     // submatrix for only the position mapping
     MatrixX<double> Px, Py;
     GetControlPortMapping(*plant_, &Px, &Py);
-    Px_half = Px.block(0, 0, 16, 16);
+    Px_position = Px.block(0, 0, 16, 16);
 
     updating_target_frame_ = false;
-    mug_pose_.matrix().setIdentity();
-    saved_target.resize(4);
-    target_fingertip_frame_.resize(4);
+    X_WO_.setIdentity();
+    X_W_TipCenter_saved_.resize(4);
+    X_WF_target_.resize(4);
 
     // Ini command for Allegro hand
     allegro_command_.num_joints = kAllegroNumJoints;
@@ -80,125 +80,127 @@ class HandPositionCommander {
     allegro_command_.joint_torque.resize(0);
   }
 
-  void run_close_hand() {
-    Eigen::VectorXd target_joint_pose(kAllegroNumJoints);
-    target_joint_pose.setZero();
-    target_joint_pose(0) = 1.396;
-    target_joint_pose(1) = 0.3;
+  void RunCloseHand() {
+    Eigen::VectorXd target_joint_position(kAllegroNumJoints);
+    target_joint_position.setZero();
+    // set the thumb root joint to the upper limit, so that the thumb is placed
+    // under the object
+    target_joint_position(0) = 1.396; 
+    target_joint_position(1) = 0.3;
     // move to the position of opening the hand
-    MovetoPositionUntilStuck(target_joint_pose);
+    MovetoPositionUntilStuck(target_joint_position);
 
     // grasp on points
-    mug_state_.GetGraspTargetFrames(mug_pose_, &target_fingertip_frame_,
-                                    &target_frame_for_differentialIK_);
-    iniIKtarget();
+    mug_state_.CalcFingerPoseForGrasp(X_WO_, &X_WF_target_,
+                                    &X_WF_target_ForDiffIK_);
+    InItIKTarget();
     updating_target_frame_ = true;
     KeepMovingUntilStuck(200);
     updating_target_frame_ = false;
   }
 
-  /// Rotating the mug along X axis repeatively, for @parm rotation_angle
-  /// angle. Must be called after the mug is in gripping
-  void run_rotate_X(double rotation_angle) {
+  /// Rotating the mug along X axis repeatively, for @parm rotation_angle_deg
+  /// angle.
+  void RunRotateX(double rotation_angle_deg) {
     mug_state_.CalcFingerPoseWithMugXRotation(
-        rotation_angle / 180.0 * M_PI, &target_fingertip_frame_, mug_pose_);
-    iniIKtarget();
+        rotation_angle_deg / 180.0 * M_PI, &X_WF_target_, X_WO_);
+    InItIKTarget();
     std::cout << "Rotating in one direction \n";
     KeepMovingUntilStuck(2000);
 
     while (true) {
       mug_state_.CalcFingerPoseWithMugXRotation(
-          -rotation_angle / 90.0 * M_PI, &target_fingertip_frame_, mug_pose_);
-      iniIKtarget();
-      std::cout << "Rotating in one direction \n";
+          rotation_angle_deg * 2 /180.0 * M_PI, &X_WF_target_, X_WO_);
+      InItIKTarget();
+      std::cout << "Rotating in the opposite direction \n";
       KeepMovingUntilStuck(2000);
 
       mug_state_.CalcFingerPoseWithMugXRotation(
-          rotation_angle / 90.0 * M_PI, &target_fingertip_frame_, mug_pose_);
-      iniIKtarget();
+          rotation_angle_deg / 90.0 * M_PI, &X_WF_target_, X_WO_);
+      InItIKTarget();
       std::cout << "Rotating in one direction \n";
       KeepMovingUntilStuck(2000);
     }
   }
 
-  /// Rotating the mug along Y axis repeatively, for @parm rotation_angle
-  /// angle. Must be called after the mug is in gripping
-  void run_rotate_Y(double rotation_angle) {
+  /// Rotating the mug along Y axis repeatively, for @parm rotation_angle_deg
+  /// angle.
+  void RunRotateY(double rotation_angle_deg) {
     mug_state_.CalcFingerPoseWithMugYRotation(
-        rotation_angle / 180.0 * M_PI, &target_fingertip_frame_, mug_pose_);
-    iniIKtarget();
+        rotation_angle_deg / 180.0 * M_PI, &X_WF_target_, X_WO_);
+    InItIKTarget();
     std::cout << "Rotating in one direction \n";
     KeepMovingUntilStuck(2000);
 
     while (true) {
       mug_state_.CalcFingerPoseWithMugYRotation(
-          -rotation_angle / 90.0 * M_PI, &target_fingertip_frame_, mug_pose_);
-      iniIKtarget();
-      std::cout << "Rotating in one direction \n";
+          -rotation_angle_deg * 2 / 180.0 * M_PI, &X_WF_target_, X_WO_);
+      InItIKTarget();
+      std::cout << "Rotating in the opposite direction \n";
       KeepMovingUntilStuck(2000);
 
       mug_state_.CalcFingerPoseWithMugYRotation(
-          rotation_angle / 90.0 * M_PI, &target_fingertip_frame_, mug_pose_);
-      iniIKtarget();
+          rotation_angle_deg * 2 / 180.0 * M_PI, &X_WF_target_, X_WO_);
+      InItIKTarget();
       std::cout << "Rotating in one direction \n";
       KeepMovingUntilStuck(2000);
     }
   }
 
-  /// Rotating the mug along Z axis repeatively, for @parm rotation_angle
-  /// angle. Must be called after the mug is in gripping
-  void run_rotate_Z(double rotation_angle) {
+  /// Rotating the mug along Z axis repeatively, for @parm rotation_angle_deg
+  /// angle.
+  void RunRotateZ(double rotation_angle_deg) {
     mug_state_.CalcFingerPoseWithMugZRotation(
-        rotation_angle / 180.0 * M_PI, &target_fingertip_frame_, mug_pose_);
-    iniIKtarget();
+        rotation_angle_deg / 180.0 * M_PI, &X_WF_target_, X_WO_);
+    InItIKTarget();
     std::cout << "Rotating in one direction \n";
     KeepMovingUntilStuck(2000);
 
     while (true) {
       mug_state_.CalcFingerPoseWithMugZRotation(
-          -rotation_angle / 90.0 * M_PI, &target_fingertip_frame_, mug_pose_);
-      iniIKtarget();
-      std::cout << "Rotating in one direction \n";
+          rotation_angle_deg * 2 /180.0 * M_PI, &X_WF_target_, X_WO_);
+      InItIKTarget();
+      std::cout << "Rotating in the opposite direction \n";
       KeepMovingUntilStuck(2000);
 
       mug_state_.CalcFingerPoseWithMugZRotation(
-          rotation_angle / 90.0 * M_PI, &target_fingertip_frame_, mug_pose_);
-      iniIKtarget();
+          rotation_angle_deg * 2 / 180.0 * M_PI, &X_WF_target_, X_WO_);
+      InItIKTarget();
       std::cout << "Rotating in one direction \n";
       KeepMovingUntilStuck(2000);
     }
   }
 
   /// Translate the mug position in the space
-  void run_translation() {
+  void RunTranslation() {
     mug_state_.CalcFingerPoseWithMugTranslation(
-        Eigen::Vector3d(-0.015, -0.006, 0.006), &target_fingertip_frame_,
-        mug_pose_);
-    iniIKtarget();
+        Eigen::Vector3d(-0.015, -0.006, 0.006), &X_WF_target_,
+        X_WO_);
+    InItIKTarget();
     std::cout << "Translating in one direction \n";
     KeepMovingUntilStuck(2000);
 
     while (true) {
       mug_state_.CalcFingerPoseWithMugTranslation(
-          Eigen::Vector3d(0.012, 0.012, -0.012), &target_fingertip_frame_,
-          mug_pose_);
-      iniIKtarget();
-      std::cout << "Translating in one direction \n";
+          Eigen::Vector3d(0.012, 0.012, -0.012), &X_WF_target_,
+          X_WO_);
+      InItIKTarget();
+      std::cout << "Translating in the opposite direction \n";
       KeepMovingUntilStuck(2000);
 
       mug_state_.CalcFingerPoseWithMugTranslation(
-          Eigen::Vector3d(-0.012, -0.012, 0.012), &target_fingertip_frame_,
-          mug_pose_);
-      iniIKtarget();
+          Eigen::Vector3d(-0.012, -0.012, 0.012), &X_WF_target_,
+          X_WO_);
+      InItIKTarget();
       std::cout << "Translating in one direction \n";
       KeepMovingUntilStuck(2000);
     }
   }
 
  private:
-  inline void PublishPositionCommand(const Eigen::VectorXd target_joint_pose) {
+  inline void PublishPositionCommand(const Eigen::VectorXd target_joint_position) {
     Eigen::VectorXd::Map(&allegro_command_.joint_position[0],
-                         kAllegroNumJoints) = target_joint_pose;
+                         kAllegroNumJoints) = target_joint_position;
     lcm_.publish(kLcmCommandChannel, &allegro_command_);
   }
 
@@ -217,63 +219,70 @@ class HandPositionCommander {
   }
 
   inline void MovetoPositionUntilStuck(
-      const Eigen::VectorXd target_joint_pose) {
-    PublishPositionCommand(target_joint_pose);
+      const Eigen::VectorXd target_joint_position) {
+    PublishPositionCommand(target_joint_position);
     KeepMovingUntilStuck(100);
   }
 
   /// Using IK to find the joint positions so that the fingertips will reach
-  /// target_fingertip_frame_, and send the command for the joint positions
+  /// X_WF_target_, and send the command for the joint positions
   /// through LCM
-  void iniIKtarget(double target_tor = 5e-3) {
+  /// @param target_tor: tolerance of the IK calculation, unit mm
+  void InItIKTarget(double target_tor = 5e-3) {
     multibody::InverseKinematics ik_(*plant_);
     const Frame<double>& WorldFrame = plant_->world_frame();
 
     Eigen::Vector3d p_W_tor = Eigen::Vector3d::Constant(target_tor);
     Eigen::Vector3d p_W;
-    Isometry3<double> fingertip_offset;
-    fingertip_offset.matrix().setIdentity();
-    Isometry3<double> finger_target_transfer;
-    fingertip_offset.translation() = Eigen::Vector3d(0, 0, 0.012);
-    for (unsigned int cur_finger = 0; cur_finger < 4; cur_finger++) {
-      Eigen::Vector3d p_TipFinger(0, 0, 0.0267);
-      const Frame<double>* fingertip_frame{nullptr};
+    Isometry3<double> p_TipCenter_Surface;
+    p_TipCenter_Surface.setIdentity();
+    Isometry3<double> X_W_TipCenter;
+    // 0.012 is the radis of the sphere on the fingertip. In the planning, we
+    // consider the center of the fingertip sphere as the origin of the
+    // fingertip frame, and this offset ensured the sphere shaped fingertip
+    // would reach the target position, no matter where is the contact point on
+    // the fingertip
+    p_TipCenter_Surface.translation() = Eigen::Vector3d(0, 0, 0.012);
+    for (int cur_finger = 0; cur_finger < 4; cur_finger++) {
+      Eigen::Vector3d X_Finger_TipCenter(0, 0, 0.0267);
+      const Frame<double>* FingertipFrame{nullptr};
       if (cur_finger == 0) {  // if it's the thumb
-        p_TipFinger(2) = 0.0423;
-        fingertip_frame = &(plant_->GetFrameByName("link_15"));
+        // the offset of the tip center on the thumb is different
+        X_Finger_TipCenter(2) = 0.0423;
+        FingertipFrame = &(plant_->GetFrameByName("link_15"));
       } else {
-        fingertip_frame = &(plant_->GetFrameByName(
+        FingertipFrame = &(plant_->GetFrameByName(
             "link_" + std::to_string(cur_finger * 4 - 1)));
       }
 
-      finger_target_transfer =
-          target_fingertip_frame_[cur_finger] * fingertip_offset;
-      p_W = finger_target_transfer.translation();
-      saved_target[cur_finger] = finger_target_transfer;
-      ik_.AddPositionConstraint(*fingertip_frame, p_TipFinger, WorldFrame,
+      X_W_TipCenter =
+          X_WF_target_[cur_finger] * p_TipCenter_Surface;
+      p_W = X_W_TipCenter.translation();
+      X_W_TipCenter_saved_[cur_finger] = X_W_TipCenter;
+      ik_.AddPositionConstraint(*FingertipFrame, X_Finger_TipCenter, WorldFrame,
                                 p_W - p_W_tor, p_W + p_W_tor);
     }
 
     const auto result = ik_.get_mutable_prog()->Solve();
     std::cout << "Did IK find result? " << result << std::endl;
     const auto q_sol = ik_.prog().GetSolution(ik_.q());
-    saved_joint_command = q_sol;
+    q_command_saved_ = q_sol;
     SendJointCommand();
   }
 
   /// Using differential IK to update the target joint positions of the fingers
-  /// so that the fingertips will reach target_frame_for_differentialIK_, and
+  /// so that the fingertips will reach X_WF_target_ForDiffIK_, and
   /// send the command for the joint positions through LCM
-  void updateIKtarget() {
+  void UpdateIKTarget() {
     // update context of the plant
     plant_->tree()
         .get_mutable_multibody_state_vector(plant_context_.get())
-        .head(16) = saved_joint_command;
+        .head(16) = q_command_saved_;
 
     // set parameters for differential IK
     std::unique_ptr<DifferentialInverseKinematicsParameters> params_ =
         std::make_unique<DifferentialInverseKinematicsParameters>(16, 16);
-    params_->set_nominal_joint_position(saved_joint_command);
+    params_->set_nominal_joint_position(q_command_saved_);
     params_->set_unconstrained_degrees_of_freedom_velocity_limit(0.6);
     params_->set_timestep(1e-3);
     // This is only an approximate boundary for the joint positions
@@ -287,40 +296,41 @@ class HandPositionCommander {
 
     Eigen::Vector3d p_W;
     bool target_updated_flag = false;
-    Isometry3<double> fingertip_offset;
-    fingertip_offset.matrix().setIdentity();
-    fingertip_offset.translation() += Eigen::Vector3d(0, 0, 0.012);
-    for (unsigned int cur_finger = 0; cur_finger < 4; cur_finger++) {
+    Isometry3<double> p_TipCenter_Surface;
+    p_TipCenter_Surface.setIdentity();
+    p_TipCenter_Surface.translation() += Eigen::Vector3d(0, 0, 0.012);
+    for (int cur_finger = 0; cur_finger < 4; cur_finger++) {
       // if the new position is similar to the saved one, don't need to update
-      Isometry3<double> finger_target_transfer =
-          mug_pose_ * target_frame_for_differentialIK_[cur_finger] *
-          fingertip_offset;
-      if (saved_target[cur_finger].isApprox(finger_target_transfer)) continue;
+      Isometry3<double> X_W_TipCenter =
+          X_WO_ * X_WF_target_ForDiffIK_[cur_finger] *
+          p_TipCenter_Surface;
+      if (X_W_TipCenter_saved_[cur_finger].isApprox(X_W_TipCenter)) continue;
 
-      Eigen::Vector3d p_TipFinger(0, 0, 0.0267);
-      const Frame<double>* fingertip_frame{nullptr};
+      // offset from the fingertip to the frame of the end link of the finger
+      Eigen::Vector3d X_Finger_TipCenter(0, 0, 0.0267);
+      const Frame<double>* FingertipFrame{nullptr};
       if (cur_finger == 0) {  // if it's the thumb
-        p_TipFinger(2) = 0.0423;
-        fingertip_frame = &(plant_->GetFrameByName("link_15"));
+        X_Finger_TipCenter(2) = 0.0423;
+        FingertipFrame = &(plant_->GetFrameByName("link_15"));
       } else {
-        fingertip_frame = &(plant_->GetFrameByName(
+        FingertipFrame = &(plant_->GetFrameByName(
             "link_" + std::to_string(cur_finger * 4 - 1)));
       }
       Vector6<double> V_WE_desired =
           manipulation::planner::ComputePoseDiffInCommonFrame(
-              saved_target[cur_finger], finger_target_transfer);
+              X_W_TipCenter_saved_[cur_finger], X_W_TipCenter);
       MatrixX<double> J_WE(6, 16);
       plant_->tree().CalcFrameGeometricJacobianExpressedInWorld(
-          *plant_context_, *fingertip_frame, Vector3<double>::Zero(), &J_WE);
+          *plant_context_, *FingertipFrame, Vector3<double>::Zero(), &J_WE);
 
       DifferentialInverseKinematicsResult mbt_result =
-          DoDifferentialInverseKinematics(saved_joint_command,
+          DoDifferentialInverseKinematics(q_command_saved_,
                                           Eigen::VectorXd::Zero(16),
                                           V_WE_desired, J_WE, *params_);
       if (mbt_result.status ==
           DifferentialInverseKinematicsStatus::kSolutionFound) {
-        saved_joint_command += mbt_result.joint_velocities.value();
-        saved_target[cur_finger] = finger_target_transfer;
+        q_command_saved_ += mbt_result.joint_velocities.value();
+        X_W_TipCenter_saved_[cur_finger] = X_W_TipCenter;
         target_updated_flag = true;
       }
     }
@@ -329,7 +339,7 @@ class HandPositionCommander {
 
   void SendJointCommand() {
     Eigen::VectorXd::Map(&allegro_command_.joint_position[0],
-                         kAllegroNumJoints) = Px_half * saved_joint_command;
+                         kAllegroNumJoints) = Px_position * q_command_saved_;
     lcm_.publish(kLcmCommandChannel, &allegro_command_);
   }
 
@@ -341,19 +351,19 @@ class HandPositionCommander {
   }
 
   void TargetFrameInput(const ::lcm::ReceiveBuffer*, const std::string&,
-                        const robotlocomotion::pose_t* msg_mug_pose_) {
+                        const robotlocomotion::pose_t* msg_X_WO_) {
     // update the pose of the mug
-    mug_pose_.matrix().setIdentity();
-    mug_pose_.translation() << msg_mug_pose_->position.x,
-        msg_mug_pose_->position.y, msg_mug_pose_->position.z;
-    mug_pose_.rotate(Eigen::Quaternion<double>(
-        msg_mug_pose_->orientation.w, msg_mug_pose_->orientation.x,
-        msg_mug_pose_->orientation.y, msg_mug_pose_->orientation.z));
+    X_WO_.setIdentity();
+    X_WO_.translation() << msg_X_WO_->position.x,
+        msg_X_WO_->position.y, msg_X_WO_->position.z;
+    X_WO_.rotate(Eigen::Quaternion<double>(
+        msg_X_WO_->orientation.w, msg_X_WO_->orientation.x,
+        msg_X_WO_->orientation.y, msg_X_WO_->orientation.z));
 
     // display the target points for on the mug
-    mug_state_.PublishTargetFingerPoseToLcm(mug_pose_);
+    mug_state_.PublishTargetFingerPoseToLcm(X_WO_);
 
-    if (updating_target_frame_) updateIKtarget();
+    if (updating_target_frame_) UpdateIKTarget();
   }
 
   ::lcm::LCM lcm_;
@@ -367,24 +377,24 @@ class HandPositionCommander {
   // params for the hand plant
   std::unique_ptr<MultibodyPlant<double>> plant_;
   std::unique_ptr<systems::Context<double>> plant_context_;
-  MatrixX<double> Px_half;
-  std::vector<Isometry3<double>> saved_target;
+  MatrixX<double> Px_position;
+  std::vector<Isometry3<double>> X_W_TipCenter_saved_;
   // The current joint position targets that has been sent through LCM
-  Eigen::VectorXd saved_joint_command;
+  Eigen::VectorXd q_command_saved_;
 
   // control part for the target finger positions
   MugStateSet mug_state_;
-  Isometry3<double> mug_pose_;
-  std::vector<Isometry3<double>> target_fingertip_frame_;
-  std::vector<Isometry3<double>> target_frame_for_differentialIK_;
+  Isometry3<double> X_WO_;
+  std::vector<Isometry3<double>> X_WF_target_;
+  std::vector<Isometry3<double>> X_WF_target_ForDiffIK_;
 };
 
 int do_main() {
   HandPositionCommander runner;
-  runner.run_close_hand();
-  // test moving the mug into different poses. Could choose from run_rotate_Y,
-  // run_rotate_Z, or run_translation
-  runner.run_rotate_X(8.0);
+  runner.RunCloseHand();
+  // test moving the mug into different poses. Could choose from RunRotateY,
+  // RunRotateZ, or RunTranslation
+  runner.RunRotateX(8.0);
   return 0;
 }
 

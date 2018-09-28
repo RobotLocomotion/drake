@@ -25,15 +25,15 @@ void ObjectPosePublisher::DoPublish(
   const auto X_WF = plant_->tree().CalcRelativeTransform(
       *plant_context_, plant_->world_frame(),
       plant_->GetFrameByName(obj_body_name_));
-  Eigen::Quaternion<double> obj_roation_quaternion(X_WF.rotation());
+  const Eigen::Quaternion<double> obj_rotation_quaternion(X_WF.rotation());
   robotlocomotion::pose_t msg_obj_pose;
   msg_obj_pose.position.x = X_WF.translation()(0);
   msg_obj_pose.position.y = X_WF.translation()(1);
   msg_obj_pose.position.z = X_WF.translation()(2);
-  msg_obj_pose.orientation.w = obj_roation_quaternion.w();
-  msg_obj_pose.orientation.x = obj_roation_quaternion.x();
-  msg_obj_pose.orientation.y = obj_roation_quaternion.y();
-  msg_obj_pose.orientation.z = obj_roation_quaternion.z();
+  msg_obj_pose.orientation.w = obj_rotation_quaternion.w();
+  msg_obj_pose.orientation.x = obj_rotation_quaternion.x();
+  msg_obj_pose.orientation.y = obj_rotation_quaternion.y();
+  msg_obj_pose.orientation.z = obj_rotation_quaternion.z();
 
   lcm::DrakeLcm lcm;
   lcm.get_lcm_instance()->publish(kObjectPoseLCMChannel, &msg_obj_pose);
