@@ -127,6 +127,60 @@ modules should not re-define this alias at global scope.
 may use `using namespace drake::systems::sensors` within functions or
 anonymous namespaces. Avoid `using namespace` directives otherwise.
 
+## Documentation
+
+Drake uses a modified version of `mkdoc.py` from `pybind11`, where `libclang`
+Python bindings are used to generate C++ docstrings accessible to the C++
+binding code.
+
+An example of incorporating docstrings:
+
+    #include "drake/bindings/pydrake/documentation_pybind.h"
+
+    PYBIND11_MODULE(math, m) {
+      using namespace drake::math;
+      auto& doc = pydrake_doc.drake.math;
+      using T = double;
+      py::class_<RigidTransform<T>>(m, "RigidTransform", doc.RigidTransform.doc)
+          .def(py::init(), doc.ExampleClass.ctor.doc_3)
+          ...
+          .def(py::init<const RotationMatrix<T>&>(), py::arg("R"),
+               doc.RigidTransform.ctor.doc_5)
+          ...
+          .def("set_rotation", &RigidTransform<T>::set_rotation, py::arg("R"),
+               doc.RigidTransform.set_rotation.doc)
+      ...
+    }
+
+To see what indices are present, generate and open the docstring header:
+
+    bazel build //bindings/pydrake:generate_pybind_documentation_header
+    $EDITOR bazel-genfiles/bindings/pydrake/documentation_pybind.h
+
+You can search for the symbol you want, e.g.
+`drake::math::RigidTransform::RigidTransform<T>`, and view the include file
+and line corresponding to the symbol that the docstring was pulled from.
+
+@note This file may be large, on the order of ~100K lines; be sure to use an
+efficient editor!
+
+For more detail:
+
+- Each docstring is stored in `documentation_pybind.h` in the nested structure
+`pydrake_doc`.
+- The first docstring for a symbol will be accessible via
+`pydrake_doc.drake.{namespace...}.{symbol}.doc`.
+- Any additional docstrings (e.g. overloads) will be accessible as `.doc_2`,
+`.doc_3`, etc; these indices are sorted lexically, by `(include_file, line)`.
+- Constructors are accessible as `{symbol}.ctor.doc`, `{symbol}.ctor.doc_2`,
+etc.
+
+@note Macros are interpreted via `libclang` and could introduce more symbols.
+As an example, if a class uses `DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN` at the
+the top of its definition, and then defines a custom constructor below this,
+the custom constructor's documentation will be accessible as
+`{symbol}.ctor.doc_3`.
+
 ## Keep Alive Behavior
 
 `py::keep_alive` is used heavily throughout this code. For more
