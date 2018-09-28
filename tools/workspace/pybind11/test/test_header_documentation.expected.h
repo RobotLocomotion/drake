@@ -9,6 +9,8 @@
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
 
+// #include "drake/tools/workspace/pybind11/test/test_header.h"
+
 // Symbol: test_header_doc
 constexpr struct /* test_header_doc */ {
   // Symbol: RootLevelSymbol
