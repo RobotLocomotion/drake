@@ -9,10 +9,12 @@ Build Cop
 Overview
 --------
 
-The Drake build cop monitors `continuous production <https://drake-
-jenkins.csail.mit.edu/view/Continuous%20Production/>`_ and `nightly production
-<https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/>`_ continuous
-integration failures in the RobotLocomotion/drake GitHub repo.
+The Drake build cop monitors `continuous <https://drake-
+jenkins.csail.mit.edu/view/Continuous%20Production/>`_, `nightly
+<https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/>`_, and
+`weekly <https://drake-jenkins.csail.mit.edu/view/Weekly%20Production/>`_
+production continuous integration failures in the RobotLocomotion/drake GitHub
+repo.
 
 The build cop will rotate on a weekly basis. The
 `schedule <https://github.com/RobotLocomotion/drake-ci/wiki/Build-Cop-Rotation>`_
@@ -25,8 +27,8 @@ Process
 The build cop is expected to be on duty during normal business hours Eastern
 Time, approximately 9am to 5pm on weekdays, holidays excepted. Developers are
 encouraged, but not required, to merge pull requests during times when the build
-cop is on duty. Nightly build failures will be addressed the following weekday
-morning.
+cop is on duty. Nightly and weekly build failures will be addressed the
+following weekday morning.
 
 When a CI build failure occurs, the build cop will be notified by email.
 Notifications are sent to ``drake-alerts+jenkins@tri.global`` and
@@ -67,9 +69,9 @@ author, and include the following template in the PR description.
  Dear $AUTHOR,
 
  The on-call build cop, $BUILD_COP, believes that your PR $NUMBER may have
- broken one or more of Drake's continuous integration builds [1,2]. It is
+ broken one or more of Drake's continuous integration builds [1]. It is
  possible to break a build even if your PR passed continuous integration
- pre-merge because additional platforms and tests are built post-merge.
+ pre-merge because additional platforms are tested post-merge.
 
  The specific build failures under investigation are:
  $LINK_TO_BROKEN_BUILD_ON_JENKINS
@@ -91,14 +93,13 @@ author, and include the following template in the PR description.
  reverted, please review and LGTM this PR. This allows the build cop to merge
  without waiting for CI results.
 
- For advice on how to handle a build cop revert, see [3].
+ For advice on how to handle a build cop revert, see [2].
 
  Thanks!
- Your Friendly Oncall Buildcop
+ Your Friendly On-call Build Cop
 
- [1] CI Continuous Production Dashboard: https://drake-jenkins.csail.mit.edu/view/Continuous%20Production/
- [2] CI Nightly Production Dashboard: https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/
- [3] https://drake.mit.edu/buildcop.html#workflow-for-handling-a-build-cop-revert
+ [1] CI Production Dashboard: https://drake-jenkins.csail.mit.edu/view/Production/
+ [2] https://drake.mit.edu/buildcop.html#workflow-for-handling-a-build-cop-revert
 
 .. _handling_a_build_cop_revert:
 
@@ -136,11 +137,13 @@ Check the `Continuous Production <https://drake-jenkins.csail.mit.edu/view/Conti
 build dashboard in Jenkins at least once an hour during on-call hours. These
 builds run after every merge to Drake. Also check the
 `Nightly Production <https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/>`_
-build dashboard every morning. These builds are unusually resource-intensive,
-and therefore run just once per day.
+build dashboard every morning and
+`Weekly Production <https://drake-jenkins.csail.mit.edu/view/Weekly%20Production/>`_
+build dashboard on Monday morning. These builds are unusually
+resource-intensive, and therefore run at most once per day.
 
-If any Continuous or Nightly Production builds turn yellow or red, you need
-to act.
+If any Continuous, Nightly, or Weekly Production builds turn yellow or red, you
+need to act.
 
 In Jenkins, builds that are in progress (blinking on and off) will show the
 color of the previous build.
@@ -160,7 +163,7 @@ click on the build that is yellow or red in Jenkins, then click on the first
 breaking change in the Build History. You will see a list of the new commits
 in that particular run.
 
-Determine if an open Github Drake issue describes the situation. For example,
+Determine if an open GitHub Drake issue describes the situation. For example,
 some tests are flaky for reasons that have no known resolution, but are
 described by Drake issues. If you find that your broken build is described by
 such an issue, consider adding the build information to the issue for future
