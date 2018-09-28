@@ -12,10 +12,12 @@ class TestDocumentationPybind(unittest.TestCase):
             "struct /* drake */ {",
             # Anonymous struct variable
             "} drake;",
-            # Qualified symbol
-            "// drake::math::RigidTransform::RigidTransform<T>",
+            # Qualified symbol for namespace (not documented)
+            "// Symbol: drake::multibody::multibody_plant",
+            # Qualified symbol for documented item
+            "// Symbol: drake::math::RigidTransform::RigidTransform<T>",
             # File with line number
-            "// drake/math/rigid_transform.h:",
+            "// Source: drake/math/rigid_transform.h:",
             # First symbol documentation
             "const char* doc =",
             # Overload symbol documentation
