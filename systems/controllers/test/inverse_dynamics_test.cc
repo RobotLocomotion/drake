@@ -194,9 +194,7 @@ TEST_F(InverseDynamicsTest, GravityCompensationTestMBT) {
   mbp->WeldFrames(mbp->world_frame(),
                   mbp->GetFrameByName("iiwa_link_0"));
 
-  // Add gravitational forces, finalize the model, and transfer ownership.
-  mbp->AddForceElement<multibody::UniformGravityFieldElement>(-9.8 *
-      Vector3<double>::UnitZ());
+  // Finalize the model and transfer ownership.
   mbp->Finalize();
   Init(std::move(mbp),
        InverseDynamics<double>::InverseDynamicsMode::kGravityCompensation);
@@ -204,6 +202,22 @@ TEST_F(InverseDynamicsTest, GravityCompensationTestMBT) {
   // Defines an arbitrary robot position vector.
   Eigen::VectorXd robot_position = Eigen::VectorXd::Zero(7);
   robot_position << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
+
+  // Verify that gravity is *not* modeled.
+  EXPECT_FALSE(GravityModeled(robot_position));
+
+  // Re-initialize the model so we can add gravity.  
+  mbp = std::make_unique<MultibodyPlant<double>>();
+  multibody::parsing::AddModelFromSdfFile(full_name, mbp.get());
+  mbp->WeldFrames(mbp->world_frame(),
+                  mbp->GetFrameByName("iiwa_link_0"));
+
+  // Add gravitational forces, finalize the model, and transfer ownership.
+  mbp->AddForceElement<multibody::UniformGravityFieldElement>(-9.8 *
+      Vector3<double>::UnitZ());
+  mbp->Finalize();
+  Init(std::move(mbp),
+       InverseDynamics<double>::InverseDynamicsMode::kGravityCompensation);
 
   // Verify that gravity is modeled.
   EXPECT_TRUE(GravityModeled(robot_position));
