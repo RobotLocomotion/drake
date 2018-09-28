@@ -51,17 +51,15 @@ PYBIND11_MODULE(geometry, m) {
         py::arg("scene_graph"), py::arg("lcm"));
 
   // PenetrationAsPointPair
-  {
-    using Class = PenetrationAsPointPair<T>;
-    py::class_<Class>(m, "PenetrationAsPointPair")
-      .def(py::init<>())
-      .def_readwrite("id_A", &Class::id_A)
-      .def_readwrite("id_B", &Class::id_B)
-      .def_readwrite("p_WCa", &Class::p_WCa)
-      .def_readwrite("p_WCb", &Class::p_WCb)
-      .def_readwrite("nhat_BA_W", &Class::nhat_BA_W)
-      .def_readwrite("depth", &Class::depth);
-  }
+  py::class_<PenetrationAsPointPair<T>>(m, "PenetrationAsPointPair")
+    .def(py::init<>())
+    .def_readwrite("id_A", &PenetrationAsPointPair<T>::id_A)
+    .def_readwrite("id_B", &PenetrationAsPointPair<T>::id_B)
+    .def_readwrite("p_WCa", &PenetrationAsPointPair<T>::p_WCa)
+    .def_readwrite("p_WCb", &PenetrationAsPointPair<T>::p_WCb)
+    .def_readwrite("nhat_BA_W", &PenetrationAsPointPair<T>::nhat_BA_W)
+    .def_readwrite("depth", &PenetrationAsPointPair<T>::depth);
+
 }
 
 }  // namespace
