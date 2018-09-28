@@ -206,7 +206,7 @@ TEST_F(InverseDynamicsTest, GravityCompensationTestMBT) {
   // Verify that gravity is *not* modeled.
   EXPECT_FALSE(GravityModeled(robot_position));
 
-  // Re-initialize the model so we can add gravity.  
+  // Re-initialize the model so we can add gravity.
   mbp = std::make_unique<MultibodyPlant<double>>();
   multibody::parsing::AddModelFromSdfFile(full_name, mbp.get());
   mbp->WeldFrames(mbp->world_frame(),
