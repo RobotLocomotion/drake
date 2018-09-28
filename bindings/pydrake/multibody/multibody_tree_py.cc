@@ -496,6 +496,7 @@ void init_multibody_plant(py::module m) {
   {
     using Class = ContactResults<T>;
     py::class_<Class>(m, "ContactResults")
+        .def(py::init<>())
         .def("num_contacts", &Class::num_contacts)
         .def("AddContactInfo", &Class::AddContactInfo,
           py::arg("point_pair_info"))
