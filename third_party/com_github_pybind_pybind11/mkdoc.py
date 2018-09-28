@@ -7,9 +7,10 @@
 #
 
 from collections import OrderedDict, defaultdict
+from fnmatch import fnmatch
 import os
-import sys
 import platform
+import sys
 import re
 from tempfile import NamedTemporaryFile
 import textwrap
@@ -405,18 +406,6 @@ def print_symbols(name, leaf, level=0):
     iprint('}} {};'.format(name_var))
 
 
-def drake_genfile_path_to_include_path(filename):
-    # TODO(eric.cousineau): Is there a simple way to generalize this, given
-    # include paths?
-    pieces = filename.split('/')
-    if 'lcmtypes' in pieces:
-        # Do not care about lcm-generated symbols.
-        return None
-    assert pieces.count('drake') == 1, filename
-    drake_index = pieces.index('drake')
-    return '/'.join(pieces[drake_index:])
-
-
 class FileDict(object):
     """
     Provides a dictionary that hashes based on a file's true path.
@@ -463,7 +452,8 @@ def main():
 
     quiet = False
     std = '-std=c++11'
-    root_name = 'pydrake_doc'
+    root_name = 'mkdoc_doc'
+    ignore_patterns = []
 
     for item in sys.argv[1:]:
         if item == '-quiet':
@@ -472,6 +462,8 @@ def main():
             std = item
         elif item.startswith('-root-name='):
             root_name = item[len('-root-name='):]
+        elif item.startswith('-exclude-hdr-patterns='):
+            ignore_patterns.append(item[len('-exclude-hdr-patterns='):])
         elif item.startswith('-'):
             parameters.append(item)
         else:
@@ -497,28 +489,54 @@ def main():
 #endif
 '''.format('GENERATED FILE', 'DO NOT EDIT'))
 
+    # Determine project include directories.
+    # N.B. For simplicity when using with Bazel, we do not try to get canonical
+    # file paths for determining includes. We also assume the first path match
+    # is the best, which may not always be the case.
+    include_dirs = []
+    for param in parameters:
+        # Only check for normal includes.
+        if param.startswith("-I"):
+            include_dirs.append(param[2:])
+    # Create mapping from filename to include.
     includes = []
     include_map = FileDict()
     for filename in filenames:
-        include = drake_genfile_path_to_include_path(filename)
-        if include is not None:
+        for include_dir in include_dirs:
+            prefix = include_dir + "/"
+            if filename.startswith(prefix):
+                include = filename[len(prefix):]
+                break
+        else:
+            raise RuntimeError(
+                "Filename not incorporated into -I includes: {}".format(
+                    filename))
+        for p in ignore_patterns:
+            if fnmatch(include, p):
+                break
+        else:
             includes.append(include)
             include_map[filename] = include
+    assert len(includes) > 0
+    # Generate include file and parse.
     with NamedTemporaryFile('w') as include_file:
-        for include in includes:
-            include_file.write("#include \"{}\"\n".format(include))
+        for include in sorted(includes):
+            line = "#include \"{}\"".format(include)
+            include_file.write(line + "\n")
+            print("// " + line)
+        print()
         include_file.flush()
         if not quiet:
-            eprint("Parse header...")
+            eprint("Parse headers...")
         index = cindex.Index(
             cindex.conf.lib.clang_createIndex(False, True))
         tu = index.parse(include_file.name, parameters)
-
+    # Extract symbols.
     if not quiet:
         eprint("Extract relevant symbols...")
     output = SymbolTree()
     extract(include_map, tu.cursor, output)
-
+    # Write header file.
     if not quiet:
         eprint("Writing header file...")
     print_symbols(root_name, output.root)
