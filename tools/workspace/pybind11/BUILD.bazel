@@ -2,6 +2,13 @@
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:drake_runfiles_binary.bzl", "drake_runfiles_binary")
+load("//tools/skylark:pybind.bzl", "generate_pybind_documentation_header")
+load("@drake//tools/skylark:drake_py.bzl", "drake_py_unittest")
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
 
 exports_files(
     ["package-create-cps.py"],
@@ -25,6 +32,56 @@ drake_runfiles_binary(
     visibility = ["//visibility:public"],
 )
 
-# TODO(eric.cousineau): Unittest `mkdoc`.
+drake_cc_library(
+    name = "test_dep_header",
+    testonly = 1,
+    hdrs = ["test/test_dep_header.h"],
+)
+
+drake_cc_library(
+    name = "test_header",
+    testonly = 1,
+    hdrs = ["test/test_header.h"],
+    # N.B. We purposely do not include `test_dep_header` to exercise starlark
+    # parameters.
+    deps = [
+        "//common:essential",
+    ],
+)
+
+generate_pybind_documentation_header(
+    name = "generate_test_header",
+    testonly = 1,
+    out = "test/test_header_documentation.h",
+    root_name = "test_header_doc",
+    targets = [
+        ":test_header",
+    ],
+    deps = [
+        ":test_dep_header",
+    ],
+)
+
+drake_cc_library(
+    name = "test_header_documentation",
+    testonly = 1,
+    hdrs = ["test/test_header_documentation.h"],
+    tags = ["nolint"],
+)
+
+drake_cc_googletest(
+    name = "test_header_documentation_cc_test",
+    deps = [
+        ":test_header_documentation",
+    ],
+)
+
+drake_py_unittest(
+    name = "test_header_documentation_py_test",
+    data = [
+        "test/test_header_documentation.expected.h",
+        "test/test_header_documentation.h",
+    ],
+)
 
 add_lint_tests()
