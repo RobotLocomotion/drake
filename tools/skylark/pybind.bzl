@@ -329,6 +329,8 @@ def _generate_pybind_documentation_header_impl(ctx):
     args.add_all(compile_flags, uniquify = True)
     args.add("-quiet")
     args.add("-root-name=" + ctx.attr.root_name)
+    for p in ctx.attr.exclude_hdr_patterns:
+        args.add("-exclude-hdr-patterns=" + p)
 
     # Replace with ctx.fragments.cpp.cxxopts in Bazel 0.17+.
     args.add("-std=c++14")
@@ -350,6 +352,8 @@ def _generate_pybind_documentation_header_impl(ctx):
 # strings generated.
 # @param deps Targets necessary for compilation, but whose symbols do not need
 # to be in the generated documentation strings.
+# @param ignore_hdrs Headers whose symbols should be ignored. Can be glob
+# patterns.
 generate_pybind_documentation_header = rule(
     attrs = {
         "targets": attr.label_list(
@@ -364,6 +368,7 @@ generate_pybind_documentation_header = rule(
         "out": attr.output(mandatory = True),
         "deps": attr.label_list(),
         "root_name": attr.string(default = "pydrake_doc"),
+        "exclude_hdr_patterns": attr.string_list(),
     },
     fragments = ["cpp"],
     implementation = _generate_pybind_documentation_header_impl,
