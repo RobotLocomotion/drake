@@ -127,6 +127,15 @@ class RigidBodyTree {
   }
 
   /**
+   * When @p val is true, diagnostics in compile() will be printed with
+   * drake::log()->info(). When false, drake::log()->debug() will be used
+   * instead.
+   */
+  void print_joint_welding_diagnostics(bool wants_to_print) {
+    print_weld_diasnostics_ = wants_to_print;
+  }
+
+  /**
    * Adds a new model instance to this `RigidBodyTree`. The model instance is
    * identified by a unique model instance ID, which is the return value of
    * this method.
@@ -1693,6 +1702,10 @@ class RigidBodyTree {
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces
 
  private:
+  // drake::log()->info() is used for prints if true, and
+  // drake::log()->debug() is used otherwise.
+  bool print_weld_diasnostics_{false};
+
   // The number of generalized position states in this rigid body tree.
   int num_positions_{};
 
