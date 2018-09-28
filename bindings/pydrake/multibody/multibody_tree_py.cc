@@ -189,28 +189,6 @@ void init_module(py::module m) {
         .def(py::init<MultibodyTree<double>&>(), py::arg("model"));
   }
 
-  // PointPairContactInfo
-  {
-    using Class = multibody::multibody_plant::PointPairContactInfo<T>;
-    py::class_<Class>(m, "PointPairContactInfo")
-        .def("bodyA_index", &Class::bodyA_index)
-        .def("bodyB_index", &Class::bodyB_index)
-        .def("contact_force", &Class::contact_force)
-        .def("contact_point", &Class::contact_point)
-        .def("slip_speed", &Class::slip_speed)
-        .def("separation_speed", &Class::separation_speed);
-  }
-
-  // ContactResults
-  {
-    using Class = multibody::multibody_plant::ContactResults<T>;
-    py::class_<Class>(m, "ContactResults")
-        .def("num_contacts", &Class::num_contacts)
-        .def("contact_info", &Class::contact_info);
-    pysystems::AddValueInstantiation<Class>(m);
-  }
-
-
   // Tree.
   {
     // N.B. Pending a concrete direction on #9366, a minimal subset of the
@@ -219,7 +197,8 @@ void init_module(py::module m) {
     py::class_<Class>(m, "MultibodyTree")
         .def("CalcRelativeTransform", &Class::CalcRelativeTransform,
              py::arg("context"), py::arg("frame_A"), py::arg("frame_B"))
-        .def("get_body", &Class::get_body, py::arg("BodyIndex"))
+        .def("get_body", &Class::get_body, py::arg("body_index"),
+              py_reference_internal)
         .def("get_multibody_state_vector",
              [](const MultibodyTree<T>* self,
                 const Context<T>& context) -> Eigen::Ref<const VectorX<T>> {
@@ -329,6 +308,27 @@ void init_module(py::module m) {
               return Cv;
             },
             py::arg("context"));
+  }
+
+  // PointPairContactInfo
+  {
+    using Class = PointPairContactInfo<T>;
+    py::class_<Class>(m, "PointPairContactInfo")
+        .def("bodyA_index", &Class::bodyA_index)
+        .def("bodyB_index", &Class::bodyB_index)
+        .def("contact_force", &Class::contact_force)
+        .def("contact_point", &Class::contact_point)
+        .def("slip_speed", &Class::slip_speed)
+        .def("separation_speed", &Class::separation_speed);
+  }
+
+  // ContactResults
+  {
+    using Class = ContactResults<T>;
+    py::class_<Class>(m, "ContactResults")
+        .def("num_contacts", &Class::num_contacts)
+        .def("contact_info", &Class::contact_info);
+    pysystems::AddValueInstantiation<Class>(m);
   }
 }
 
@@ -485,6 +485,8 @@ void init_multibody_plant(py::module m) {
     DeprecateAttribute(
         cls, "model", cls.attr("message_model"));
   }
+
+
 }
 
 void init_parsing(py::module m) {
