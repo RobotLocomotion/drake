@@ -312,6 +312,14 @@ def _generate_pybind_documentation_header_impl(ctx):
                     target.label.workspace_root == transitive_header.owner.workspace_root)  # noqa
             ]))
 
+    for deps in ctx.attr.deps:
+        if hasattr(deps, "cc"):
+            compile_flags += [
+                compile_flag.replace(" ", "")
+                for compile_flag in deps.cc.compile_flags
+            ]
+            transitive_headers_depsets.append(deps.cc.transitive_headers)
+
     transitive_headers = depset(transitive = transitive_headers_depsets)
     package_headers = depset(transitive = package_headers_depsets)
 
@@ -342,6 +350,8 @@ def _generate_pybind_documentation_header_impl(ctx):
 # transitive headers of the given targets.
 # @param targets Targets with header files that should have documentation
 # strings generated.
+# @param deps Targets necessary for compilation, but whose symbols do not need
+# to be in the generated documentation strings.
 # @param ignore_hdrs Headers whose symbols should be ignored. Can be glob
 # patterns.
 generate_pybind_documentation_header = rule(
@@ -356,6 +366,7 @@ generate_pybind_documentation_header = rule(
             executable = True,
         ),
         "out": attr.output(mandatory = True),
+        "deps": attr.label_list(),
         "root_name": attr.string(default = "pydrake_doc"),
         "exclude_hdr_patterns": attr.string_list(),
     },
