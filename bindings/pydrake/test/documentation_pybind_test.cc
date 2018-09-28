@@ -1,8 +1,8 @@
+#include "drake/bindings/pydrake/documentation_pybind.h"
+
 #include <cstring>
 
 #include <gtest/gtest.h>
-
-#include "drake/bindings/pydrake/documentation_pybind.h"
 
 namespace {
 
