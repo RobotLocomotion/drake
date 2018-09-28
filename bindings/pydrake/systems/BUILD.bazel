@@ -9,7 +9,7 @@ load(
     "get_pybind_package_info",
 )
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_library",
 )
 load(
