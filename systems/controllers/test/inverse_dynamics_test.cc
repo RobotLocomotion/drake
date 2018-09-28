@@ -128,6 +128,8 @@ class InverseDynamicsTest : public ::testing::Test {
   // Determines whether gravity is modeled by checking the generalized forces
   // due to gravity.
   bool GravityModeled(const VectorXd& q) const {
+    // The state can only be altered in this way because the state is known to
+    // be continuous while the state can generally be discrete for MBT/MBP.
     multibody_context_->get_mutable_continuous_state().
         get_mutable_generalized_position().SetFromVector(q);
 
