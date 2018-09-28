@@ -123,8 +123,7 @@ void CheckSubtraction(const Eigen::MatrixBase<Derived1>& m1,
 }
 
 template <typename Derived1, typename Derived2>
-void CheckProduct(const Eigen::MatrixBase<Derived1>& m1,
-                  const Eigen::MatrixBase<Derived2>& m2) {
+void CheckProduct(const Derived1& m1, const Derived2& m2) {
   DRAKE_DEMAND(m1.cols() == m2.rows());
   MatrixX<RationalFunction> m1_times_m2_expected(m1.rows(), m2.cols());
   for (int i = 0; i < m1.rows(); ++i) {
@@ -143,12 +142,11 @@ void CheckProduct(const Eigen::MatrixBase<Derived1>& m1,
 }
 
 template <typename Derived1, typename Derived2>
-void CheckMatrixMatrixBinaryOperations(const Eigen::MatrixBase<Derived1>& m1,
-                                       const Eigen::MatrixBase<Derived2>& m2) {
+void CheckMatrixMatrixBinaryOperations(const Derived1& m1, const Derived2& m2) {
   CheckAddition(m1, m2);
   CheckSubtraction(m1, m2);
   CheckProduct(m1, m2);
-  // CheckProduct(m2, m1);
+  CheckProduct(m2, m1);
 }
 
 template <typename Derived1, typename Derived2>
@@ -168,7 +166,6 @@ CheckVectorVectorBinaryOperations(const Eigen::MatrixBase<Derived1>& m1,
   // CheckConjugateProdocut(m1, m2);
 }
 
-/*
 TEST_F(SymbolicRationalFunctionMatrixTest, RationalFunctionOpRationalFunction) {
   Matrix2<RationalFunction> M2;
   M2 << RationalFunction(p2_, p3_ + 2 * p4_),
@@ -190,7 +187,7 @@ TEST_F(SymbolicRationalFunctionMatrixTest, RationalFunctionOpRationalFunction) {
                                     v_rational_function_dynamic_);
   CheckMatrixVectorBinaryOperations(M_rational_function_dynamic_,
                                     v_rational_function_dynamic_);
-}*/
+}
 
 TEST_F(SymbolicRationalFunctionMatrixTest, RationalFunctionOpPolynomial) {
   CheckMatrixMatrixBinaryOperations(M_rational_function_static_,
@@ -199,10 +196,6 @@ TEST_F(SymbolicRationalFunctionMatrixTest, RationalFunctionOpPolynomial) {
                                     M_poly_dynamic_);
   CheckMatrixMatrixBinaryOperations(M_rational_function_dynamic_,
                                     M_poly_static_);
-  // The 3 lines above are fine. 
-  // Calling lazyProduct directly also works.
-  M_rational_function_dynamic_.lazyProduct(M_poly_dynamic_);
-  // Calling lazyProduct through templated function doesn't work.
   CheckMatrixMatrixBinaryOperations(M_rational_function_dynamic_,
                                     M_poly_dynamic_);
 

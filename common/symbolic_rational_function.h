@@ -157,6 +157,7 @@ Eigen::Matrix<RationalFunction, MatrixL::RowsAtCompileTime,
 operator*(const Eigen::MatrixBase<MatrixL>& lhs,
           const Eigen::MatrixBase<MatrixR>& rhs);
 #else
+/*
 template <typename MatrixL, typename MatrixR>
 typename std::enable_if<
     std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
@@ -172,7 +173,7 @@ typename std::enable_if<
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<RationalFunction>() *
          rhs.template cast<RationalFunction>();
-}
+}*/
 
 template <typename MatrixL, typename MatrixR>
 typename std::enable_if<
