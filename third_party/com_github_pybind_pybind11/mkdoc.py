@@ -381,7 +381,10 @@ def drake_genfile_path_to_include_path(filename):
     # TODO(eric.cousineau): Is there a simple way to generalize this, given
     # include paths?
     pieces = filename.split('/')
-    assert pieces.count('drake') == 1
+    if 'lcmtypes' in pieces:
+        # Do not care about lcm-generated symbols.
+        return None
+    assert pieces.count('drake') == 1, filename
     drake_index = pieces.index('drake')
     return '/'.join(pieces[drake_index:])
 
@@ -391,7 +394,7 @@ class FileDict(object):
     Provides a dictionary that hashes based on a file's true path.
     """
 
-    def __init__(self, items):
+    def __init__(self, items=[]):
         self._d = {self._key(file): value for file, value in items}
 
     def _key(self, file):
@@ -406,6 +409,10 @@ class FileDict(object):
     def __getitem__(self, file):
         key = self._key(file)
         return self._d[key]
+
+    def __setitem__(self, file, value):
+        key = self._key(file)
+        self._d[key] = value
 
 
 def main():
@@ -462,9 +469,13 @@ def main():
 #endif
 '''.format('GENERATED FILE', 'DO NOT EDIT'))
 
-    includes = list(map(drake_genfile_path_to_include_path, filenames))
-    include_map = FileDict(zip(filenames, includes))
-    # TODO(eric.cousineau): Sort files based on include path?
+    includes = []
+    include_map = FileDict()
+    for filename in filenames:
+        include = drake_genfile_path_to_include_path(filename)
+        if include is not None:
+            includes.append(include)
+            include_map[filename] = include
     with NamedTemporaryFile('w') as include_file:
         for include in includes:
             include_file.write("#include \"{}\"\n".format(include))
