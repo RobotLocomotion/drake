@@ -309,27 +309,6 @@ void init_module(py::module m) {
             },
             py::arg("context"));
   }
-
-  // PointPairContactInfo
-  {
-    using Class = PointPairContactInfo<T>;
-    py::class_<Class>(m, "PointPairContactInfo")
-        .def("bodyA_index", &Class::bodyA_index)
-        .def("bodyB_index", &Class::bodyB_index)
-        .def("contact_force", &Class::contact_force)
-        .def("contact_point", &Class::contact_point)
-        .def("slip_speed", &Class::slip_speed)
-        .def("separation_speed", &Class::separation_speed);
-  }
-
-  // ContactResults
-  {
-    using Class = ContactResults<T>;
-    py::class_<Class>(m, "ContactResults")
-        .def("num_contacts", &Class::num_contacts)
-        .def("contact_info", &Class::contact_info);
-    pysystems::AddValueInstantiation<Class>(m);
-  }
 }
 
 void init_math(py::module m) {
@@ -486,7 +465,26 @@ void init_multibody_plant(py::module m) {
         cls, "model", cls.attr("message_model"));
   }
 
+  // PointPairContactInfo
+  {
+    using Class = PointPairContactInfo<T>;
+    py::class_<Class>(m, "PointPairContactInfo")
+        .def("bodyA_index", &Class::bodyA_index)
+        .def("bodyB_index", &Class::bodyB_index)
+        .def("contact_force", &Class::contact_force)
+        .def("contact_point", &Class::contact_point)
+        .def("slip_speed", &Class::slip_speed)
+        .def("separation_speed", &Class::separation_speed);
+  }
 
+  // ContactResults
+  {
+    using Class = ContactResults<T>;
+    py::class_<Class>(m, "ContactResults")
+        .def("num_contacts", &Class::num_contacts)
+        .def("contact_info", &Class::contact_info);
+    pysystems::AddValueInstantiation<Class>(m);
+  }
 }
 
 void init_parsing(py::module m) {
