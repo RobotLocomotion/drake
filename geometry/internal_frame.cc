@@ -17,8 +17,8 @@ InternalFrame::InternalFrame(SourceId source_id, FrameId frame_id,
       name_(name),
       frame_group_(frame_group),
       pose_index_(pose_index),
-      parent_id_(parent_id),
-      clique_(clique) {}
+      clique_(clique),
+      parent_id_(parent_id) {}
 
 bool InternalFrame::operator==(const InternalFrame& other) const {
   return id_ == other.id_;
