@@ -49,7 +49,7 @@ drake_py_binary(
     ],
 )
 
-PY_TARGETS = [
+PY_LIBRARIES = [
     ":cart_pole_passive_simulation",
 ]
 
@@ -58,12 +58,12 @@ PY_TARGETS = [
 drake_py_library(
     name = "multibody",
     imports = PACKAGE_INFO.py_imports,
-    deps = PY_TARGETS,
+    deps = PY_LIBRARIES,
 )
 
 install(
     name = "install",
-    targets = PY_TARGETS,
+    targets = PY_LIBRARIES,
     py_dest = PACKAGE_INFO.py_dest,
 )
 
