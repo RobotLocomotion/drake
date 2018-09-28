@@ -29,45 +29,23 @@ class MugStateSet {
       std::vector<Isometry3<double>>* X_WF_target_ForDiffIK) const;
 
   /// Calculates the desired fingertip pose when aiming at rotating the mug
-  /// along X axis (in the world frame) and the mug center for
+  /// along @param rotation_axis (in the world frame) and the mug center for
   /// @param rotation_angle_rad.
   /// The rotation is based on the saved mug position X_WO_ref_
-  void CalcFingerPoseWithMugXRotation(
+  void CalcFingerPoseWithMugRotation(
       double rotation_angle_rad,
+      const Eigen::Ref<const Eigen::Vector3d>& rotation_axis,
       std::vector<Isometry3<double>>* X_WF_target) const;
-  void CalcFingerPoseWithMugXRotation(
-      double rotation_angle_rad, std::vector<Isometry3<double>>* X_WF_target,
+  void CalcFingerPoseWithMugRotation(
+      double rotation_angle_rad, char rotation_axis_name,
+      std::vector<Isometry3<double>>* X_WF_target) const;
+  void CalcFingerPoseWithMugRotation(
+      double rotation_angle_rad, char rotation_axis_name,
+      std::vector<Isometry3<double>>* X_WF_target,
       const Isometry3<double>& X_WO) {
     UpdateReferenceMugPose(X_WO);
-    CalcFingerPoseWithMugXRotation(rotation_angle_rad, X_WF_target);
-  }
-
-  /// Calculates the desired fingertip pose when aiming at rotating the mug
-  /// along Y axis (in the world frame) and the mug center for
-  /// @param rotation_angle_rad.
-  /// The rotation is based on the saved mug position X_WO_ref_
-  void CalcFingerPoseWithMugYRotation(
-      double rotation_angle_rad,
-      std::vector<Isometry3<double>>* X_WF_target) const;
-  void CalcFingerPoseWithMugYRotation(
-      double rotation_angle_rad, std::vector<Isometry3<double>>* X_WF_target,
-      const Isometry3<double>& X_WO) {
-    UpdateReferenceMugPose(X_WO);
-    CalcFingerPoseWithMugYRotation(rotation_angle_rad, X_WF_target);
-  }
-
-  /// Calculates the desired fingertip pose when aiming at rotating the mug
-  /// along Z axis (in the world frame) and the mug center for
-  /// @param rotation_angle_rad.
-  /// The rotation is based on the saved mug position X_WO_ref_
-  void CalcFingerPoseWithMugZRotation(
-      double rotation_angle_rad,
-      std::vector<Isometry3<double>>* X_WF_target) const;
-  void CalcFingerPoseWithMugZRotation(
-      double rotation_angle_rad, std::vector<Isometry3<double>>* X_WF_target,
-      const Isometry3<double>& X_WO) {
-    UpdateReferenceMugPose(X_WO);
-    CalcFingerPoseWithMugZRotation(rotation_angle_rad, X_WF_target);
+    CalcFingerPoseWithMugRotation(rotation_angle_rad, rotation_axis_name,
+                                  X_WF_target);
   }
 
   /// Calculates the desired fingertip pose when aiming at moving the mug along

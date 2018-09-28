@@ -52,8 +52,9 @@ void MugStateSet::CalcFingerPoseForGrasp(
   (*X_WF_target)[0] = (*X_WF_target)[0] * p_F_Offset;
 }
 
-void MugStateSet::CalcFingerPoseWithMugXRotation(
+void MugStateSet::CalcFingerPoseWithMugRotation(
     double rotation_angle_rad,
+    const Eigen::Ref<const Eigen::Vector3d>& rotation_axis,
     std::vector<Isometry3<double>>* X_WF_target) const {
   DRAKE_DEMAND(X_WF_target);
   if (X_WF_target->size() < 4)
@@ -61,67 +62,39 @@ void MugStateSet::CalcFingerPoseWithMugXRotation(
 
   const Eigen::Translation3d p_F_Offset(0, 0, -0.002);
 
-  Isometry3<double> temp;
-  temp.setIdentity();
+  Isometry3<double> X_O_Ocenter;
+  X_O_Ocenter.setIdentity();
+  Isometry3<double> X_rotation;
+  X_rotation.setIdentity();
+  X_O_Ocenter.translation() << 0, 0, -MugHeight_ * 0.5;
+  X_rotation.rotate(
+      Eigen::AngleAxis<double>(rotation_angle_rad, rotation_axis));
+  X_rotation = X_rotation * X_O_Ocenter;
+  X_O_Ocenter.translation() << 0, 0, MugHeight_ * 0.5;
+  X_rotation = X_O_Ocenter * X_rotation;
+
   Isometry3<double> X_WO_target;
-  X_WO_target.setIdentity();
-  X_WO_target.translation() << 0, 0, -MugHeight_ * 0.5;
-  temp.rotate(
-      Eigen::AngleAxis<double>(rotation_angle_rad, Eigen::Vector3d::UnitX()));
-  X_WO_target = temp * X_WO_target;
-  temp.setIdentity();
-  temp.translation() << 0, 0, MugHeight_ * 0.5;
-  X_WO_target = temp * X_WO_target;
-  X_WO_target = X_WO_ref_ * X_WO_target;
+  X_WO_target = X_WO_ref_ * X_rotation;
 
   for (int i = 0; i < 4; i++) {
     (*X_WF_target)[i] = X_WO_target * X_OF_contact_[i] * p_F_Offset;
   }
 }
 
-void MugStateSet::CalcFingerPoseWithMugYRotation(
-    double rotation_angle_rad,
+void MugStateSet::CalcFingerPoseWithMugRotation(
+    double rotation_angle_rad, char rotation_axis_name,
     std::vector<Isometry3<double>>* X_WF_target) const {
-  if (X_WF_target->size() < 4)
-    *X_WF_target = std::vector<drake::Isometry3<double>>(4);
-
-  Eigen::Translation3d p_F_Offset(0, 0, -0.002);
-
-  Isometry3<double> temp;
-  temp.setIdentity();
-  Isometry3<double> X_WO_target;
-  X_WO_target.setIdentity();
-  X_WO_target.translation() << 0, 0, -MugHeight_ * 0.5;
-  temp.rotate(
-      Eigen::AngleAxis<double>(rotation_angle_rad, Eigen::Vector3d::UnitY()));
-  X_WO_target = temp * X_WO_target;
-  temp.setIdentity();
-  temp.translation() << 0, 0, MugHeight_ * 0.5;
-  X_WO_target = temp * X_WO_target;
-  X_WO_target = X_WO_ref_ * X_WO_target;
-
-  for (int i = 0; i < 4; i++) {
-    (*X_WF_target)[i] = X_WO_target * X_OF_contact_[i] * p_F_Offset;
-  }
-}
-
-void MugStateSet::CalcFingerPoseWithMugZRotation(
-    double rotation_angle_rad,
-    std::vector<Isometry3<double>>* X_WF_target) const {
-  if (X_WF_target->size() < 4)
-    *X_WF_target = std::vector<drake::Isometry3<double>>(4);
-
-  Eigen::Translation3d p_F_Offset(0, 0, -0.002);
-
-  Isometry3<double> X_WO_target;
-  X_WO_target.setIdentity();
-  X_WO_target.rotate(
-      Eigen::AngleAxis<double>(rotation_angle_rad, Eigen::Vector3d::UnitZ()));
-  X_WO_target = X_WO_ref_ * X_WO_target;
-
-  for (int i = 0; i < 4; i++) {
-    (*X_WF_target)[i] = X_WO_target * X_OF_contact_[i] * p_F_Offset;
-  }
+  if (rotation_axis_name == 'X')
+    CalcFingerPoseWithMugRotation(rotation_angle_rad, Eigen::Vector3d::UnitX(),
+                                  X_WF_target);
+  else if (rotation_axis_name == 'Y')
+    CalcFingerPoseWithMugRotation(rotation_angle_rad, Eigen::Vector3d::UnitY(),
+                                  X_WF_target);
+  else if (rotation_axis_name == 'Z')
+    CalcFingerPoseWithMugRotation(rotation_angle_rad, Eigen::Vector3d::UnitZ(),
+                                  X_WF_target);
+  else
+    throw std::runtime_error("Unknown rotation axis.");
 }
 
 void MugStateSet::CalcFingerPoseWithMugTranslation(

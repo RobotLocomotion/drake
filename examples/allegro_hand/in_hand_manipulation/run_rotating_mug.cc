@@ -85,86 +85,41 @@ class HandPositionCommander {
     target_joint_position.setZero();
     // set the thumb root joint to the upper limit, so that the thumb is placed
     // under the object
-    target_joint_position(0) = 1.396; 
+    target_joint_position(0) = 1.396;
     target_joint_position(1) = 0.3;
     // move to the position of opening the hand
     MovetoPositionUntilStuck(target_joint_position);
 
     // grasp on points
     mug_state_.CalcFingerPoseForGrasp(X_WO_, &X_WF_target_,
-                                    &X_WF_target_ForDiffIK_);
+                                      &X_WF_target_ForDiffIK_);
     InItIKTarget();
     updating_target_frame_ = true;
     KeepMovingUntilStuck(200);
     updating_target_frame_ = false;
   }
 
-  /// Rotating the mug along X axis repeatively, for @parm rotation_angle_deg
-  /// angle.
-  void RunRotateX(double rotation_angle_deg) {
-    mug_state_.CalcFingerPoseWithMugXRotation(
-        rotation_angle_deg / 180.0 * M_PI, &X_WF_target_, X_WO_);
+  /// Rotating the mug repeatively, for @parm rotation_angle_deg
+  void RunRotate(double rotation_angle_deg, char rotation_axis_name,
+                 int round) {
+    mug_state_.CalcFingerPoseWithMugRotation(rotation_angle_deg / 180.0 * M_PI,
+                                             rotation_axis_name, &X_WF_target_,
+                                             X_WO_);
     InItIKTarget();
     std::cout << "Rotating in one direction \n";
     KeepMovingUntilStuck(2000);
 
-    while (true) {
-      mug_state_.CalcFingerPoseWithMugXRotation(
-          rotation_angle_deg * 2 /180.0 * M_PI, &X_WF_target_, X_WO_);
+    for (int i = 0; i < round; i++) {
+      mug_state_.CalcFingerPoseWithMugRotation(
+          -rotation_angle_deg * 2 / 180.0 * M_PI, rotation_axis_name,
+          &X_WF_target_, X_WO_);
       InItIKTarget();
       std::cout << "Rotating in the opposite direction \n";
       KeepMovingUntilStuck(2000);
 
-      mug_state_.CalcFingerPoseWithMugXRotation(
-          rotation_angle_deg / 90.0 * M_PI, &X_WF_target_, X_WO_);
-      InItIKTarget();
-      std::cout << "Rotating in one direction \n";
-      KeepMovingUntilStuck(2000);
-    }
-  }
-
-  /// Rotating the mug along Y axis repeatively, for @parm rotation_angle_deg
-  /// angle.
-  void RunRotateY(double rotation_angle_deg) {
-    mug_state_.CalcFingerPoseWithMugYRotation(
-        rotation_angle_deg / 180.0 * M_PI, &X_WF_target_, X_WO_);
-    InItIKTarget();
-    std::cout << "Rotating in one direction \n";
-    KeepMovingUntilStuck(2000);
-
-    while (true) {
-      mug_state_.CalcFingerPoseWithMugYRotation(
-          -rotation_angle_deg * 2 / 180.0 * M_PI, &X_WF_target_, X_WO_);
-      InItIKTarget();
-      std::cout << "Rotating in the opposite direction \n";
-      KeepMovingUntilStuck(2000);
-
-      mug_state_.CalcFingerPoseWithMugYRotation(
-          rotation_angle_deg * 2 / 180.0 * M_PI, &X_WF_target_, X_WO_);
-      InItIKTarget();
-      std::cout << "Rotating in one direction \n";
-      KeepMovingUntilStuck(2000);
-    }
-  }
-
-  /// Rotating the mug along Z axis repeatively, for @parm rotation_angle_deg
-  /// angle.
-  void RunRotateZ(double rotation_angle_deg) {
-    mug_state_.CalcFingerPoseWithMugZRotation(
-        rotation_angle_deg / 180.0 * M_PI, &X_WF_target_, X_WO_);
-    InItIKTarget();
-    std::cout << "Rotating in one direction \n";
-    KeepMovingUntilStuck(2000);
-
-    while (true) {
-      mug_state_.CalcFingerPoseWithMugZRotation(
-          rotation_angle_deg * 2 /180.0 * M_PI, &X_WF_target_, X_WO_);
-      InItIKTarget();
-      std::cout << "Rotating in the opposite direction \n";
-      KeepMovingUntilStuck(2000);
-
-      mug_state_.CalcFingerPoseWithMugZRotation(
-          rotation_angle_deg * 2 / 180.0 * M_PI, &X_WF_target_, X_WO_);
+      mug_state_.CalcFingerPoseWithMugRotation(
+          rotation_angle_deg * 2 / 180.0 * M_PI, rotation_axis_name,
+          &X_WF_target_, X_WO_);
       InItIKTarget();
       std::cout << "Rotating in one direction \n";
       KeepMovingUntilStuck(2000);
@@ -172,25 +127,22 @@ class HandPositionCommander {
   }
 
   /// Translate the mug position in the space
-  void RunTranslation() {
+  void RunTranslation(int round) {
     mug_state_.CalcFingerPoseWithMugTranslation(
-        Eigen::Vector3d(-0.015, -0.006, 0.006), &X_WF_target_,
-        X_WO_);
+        Eigen::Vector3d(-0.001, -0.002, 0.002), &X_WF_target_, X_WO_);
     InItIKTarget();
     std::cout << "Translating in one direction \n";
     KeepMovingUntilStuck(2000);
 
-    while (true) {
+    for (int i = 0; i < round; i++) {
       mug_state_.CalcFingerPoseWithMugTranslation(
-          Eigen::Vector3d(0.012, 0.012, -0.012), &X_WF_target_,
-          X_WO_);
+          Eigen::Vector3d(0.01, 0.01, -0.01), &X_WF_target_, X_WO_);
       InItIKTarget();
       std::cout << "Translating in the opposite direction \n";
       KeepMovingUntilStuck(2000);
 
       mug_state_.CalcFingerPoseWithMugTranslation(
-          Eigen::Vector3d(-0.012, -0.012, 0.012), &X_WF_target_,
-          X_WO_);
+          Eigen::Vector3d(-0.01, -0.01, 0.01), &X_WF_target_, X_WO_);
       InItIKTarget();
       std::cout << "Translating in one direction \n";
       KeepMovingUntilStuck(2000);
@@ -198,7 +150,8 @@ class HandPositionCommander {
   }
 
  private:
-  inline void PublishPositionCommand(const Eigen::VectorXd target_joint_position) {
+  inline void PublishPositionCommand(
+      const Eigen::VectorXd target_joint_position) {
     Eigen::VectorXd::Map(&allegro_command_.joint_position[0],
                          kAllegroNumJoints) = target_joint_position;
     lcm_.publish(kLcmCommandChannel, &allegro_command_);
@@ -255,8 +208,7 @@ class HandPositionCommander {
             "link_" + std::to_string(cur_finger * 4 - 1)));
       }
 
-      X_W_TipCenter =
-          X_WF_target_[cur_finger] * p_TipCenter_Surface;
+      X_W_TipCenter = X_WF_target_[cur_finger] * p_TipCenter_Surface;
       p_W = X_W_TipCenter.translation();
       X_W_TipCenter_saved_[cur_finger] = X_W_TipCenter;
       ik_.AddPositionConstraint(*FingertipFrame, X_Finger_TipCenter, WorldFrame,
@@ -302,8 +254,7 @@ class HandPositionCommander {
     for (int cur_finger = 0; cur_finger < 4; cur_finger++) {
       // if the new position is similar to the saved one, don't need to update
       Isometry3<double> X_W_TipCenter =
-          X_WO_ * X_WF_target_ForDiffIK_[cur_finger] *
-          p_TipCenter_Surface;
+          X_WO_ * X_WF_target_ForDiffIK_[cur_finger] * p_TipCenter_Surface;
       if (X_W_TipCenter_saved_[cur_finger].isApprox(X_W_TipCenter)) continue;
 
       // offset from the fingertip to the frame of the end link of the finger
@@ -354,8 +305,8 @@ class HandPositionCommander {
                         const robotlocomotion::pose_t* msg_X_WO_) {
     // update the pose of the mug
     X_WO_.setIdentity();
-    X_WO_.translation() << msg_X_WO_->position.x,
-        msg_X_WO_->position.y, msg_X_WO_->position.z;
+    X_WO_.translation() << msg_X_WO_->position.x, msg_X_WO_->position.y,
+        msg_X_WO_->position.z;
     X_WO_.rotate(Eigen::Quaternion<double>(
         msg_X_WO_->orientation.w, msg_X_WO_->orientation.x,
         msg_X_WO_->orientation.y, msg_X_WO_->orientation.z));
@@ -392,9 +343,8 @@ class HandPositionCommander {
 int do_main() {
   HandPositionCommander runner;
   runner.RunCloseHand();
-  // test moving the mug into different poses. Could choose from RunRotateY,
-  // RunRotateZ, or RunTranslation
-  runner.RunRotateX(8.0);
+  runner.RunTranslation(1);
+  runner.RunRotate(5.0, 'X', 1);
   return 0;
 }
 
