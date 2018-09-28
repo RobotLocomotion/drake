@@ -57,14 +57,14 @@ TEST_F(SymbolicRationalFunctionTest, Constructor) {
   EXPECT_PRED2(PolyEqual, f_p1_p2.denominator(), p2);
 }
 
-TEST_F(SymbolicRationalFunctionTest, Constructor2) {
+TEST_F(SymbolicRationalFunctionTest, Constructor_with_polynomial) {
   // Constructor with numerator only.
   RationalFunction f1(p1_);
   EXPECT_PRED2(PolyEqual, f1.numerator(), p1_);
   EXPECT_PRED2(PolyEqual, f1.denominator(), polynomial_one_);
 }
 
-TEST_F(SymbolicRationalFunctionTest, Constructor3) {
+TEST_F(SymbolicRationalFunctionTest, Constructor_with_double) {
   // Constructor with a double scalar.
   const double c = 5;
   RationalFunction f1(c);
@@ -109,6 +109,16 @@ TEST_F(SymbolicRationalFunctionTest, EqualTo) {
   EXPECT_FALSE(f.EqualTo(RationalFunction(2 * p1, 2 * p2)));
   EXPECT_FALSE(f.EqualTo(RationalFunction(p1, 2 * p2)));
   EXPECT_FALSE(f.EqualTo(RationalFunction(2 * p1, p2)));
+}
+
+TEST_F(SymbolicRationalFunctionTest, OperatorEqual) {
+  EXPECT_EQ(RationalFunction(p1_, p2_), RationalFunction(p1_, p2_));
+  EXPECT_EQ(RationalFunction(p1_, p2_), RationalFunction(2 * p1_, 2 * p2_));
+}
+
+TEST_F(SymbolicRationalFunctionTest, OperatorNotEqual) {
+  EXPECT_NE(RationalFunction(p1_, p2_), RationalFunction(p1_ + 1, p2_));
+  EXPECT_NE(RationalFunction(p1_, p2_), RationalFunction(p1_, p2_ + 1));
 }
 
 TEST_F(SymbolicRationalFunctionTest, UnaryMinus) {
