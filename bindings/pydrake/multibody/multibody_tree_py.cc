@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/util/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/util/type_safe_index_pybind.h"
+#include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/joints/weld_joint.h"
@@ -469,12 +470,19 @@ void init_multibody_plant(py::module m) {
   {
     using Class = PointPairContactInfo<T>;
     py::class_<Class>(m, "PointPairContactInfo")
-        .def("bodyA_index", &Class::bodyA_index)
-        .def("bodyB_index", &Class::bodyB_index)
-        .def("contact_force", &Class::contact_force)
-        .def("contact_point", &Class::contact_point)
-        .def("slip_speed", &Class::slip_speed)
-        .def("separation_speed", &Class::separation_speed);
+      .def(py::init<BodyIndex,
+                BodyIndex,
+                const Vector3<T>,
+                const Vector3<T>,
+                const T&,
+                const T&,
+                const geometry::PenetrationAsPointPair<T>>())
+      .def("bodyA_index", &Class::bodyA_index)
+      .def("bodyB_index", &Class::bodyB_index)
+      .def("contact_force", &Class::contact_force)
+      .def("contact_point", &Class::contact_point)
+      .def("slip_speed", &Class::slip_speed)
+      .def("separation_speed", &Class::separation_speed);
   }
 
   // ContactResults
@@ -482,7 +490,9 @@ void init_multibody_plant(py::module m) {
     using Class = ContactResults<T>;
     py::class_<Class>(m, "ContactResults")
         .def("num_contacts", &Class::num_contacts)
-        .def("contact_info", &Class::contact_info);
+        .def("AddContactInfo", &Class::AddContactInfo,
+          py::arg("point_pair_info"))
+        .def("contact_info", &Class::contact_info, py::arg("i"));
     pysystems::AddValueInstantiation<Class>(m);
   }
 }
