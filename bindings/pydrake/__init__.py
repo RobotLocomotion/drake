@@ -20,18 +20,20 @@ try:
 except ImportError:
     pass
 
+# When running from python, turn DRAKE_ASSERT and DRAKE_DEMAND failures into
+# SystemExit, instead of process aborts.  See RobotLocomotion/drake#5268.
 # We specifically load `common` prior to loading any other pydrake modules,
 # in order to get assertion configuration done as early as possible.
 from . import common
 from .util.deprecation import ModuleShim
 
+__all__ = ['common', 'getDrakePath']
+common.set_assertion_failure_to_throw_exception()
+
 
 def getDrakePath():
     # Compatibility alias.
     return abspath(common.GetDrakePath())
-
-
-__all__ = ['common', 'getDrakePath']
 
 
 def _getattr_handler(name):

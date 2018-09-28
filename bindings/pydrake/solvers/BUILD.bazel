@@ -29,7 +29,7 @@ drake_py_library(
     srcs = ["__init__.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [
-        "//bindings/pydrake:common_py",
+        "//bindings/pydrake:module_py",
     ],
 )
 
