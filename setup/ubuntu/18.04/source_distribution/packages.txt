@@ -1,8 +1,9 @@
 bash-completion
-clang-4.0
-clang-format-4.0
+clang
+clang-format
 coinor-libclp-dev
 coinor-libipopt-dev
+default-jdk
 diffstat
 doxygen
 file
@@ -13,7 +14,7 @@ graphviz
 kcov-35
 libblas-dev
 libbz2-dev
-libclang-4.0-dev
+libclang-6.0-dev
 libexpat1-dev
 libfreetype6-dev
 libglib2.0-dev
@@ -37,8 +38,7 @@ libtool
 libxml2-dev
 libxt-dev
 libyaml-cpp-dev
-lldb-4.0
-openjdk-8-jdk
+lldb
 patchelf
 patchutils
 pkg-config

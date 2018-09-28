@@ -16,7 +16,7 @@ runfiles_dir = os.environ.get('DRAKE_BAZEL_RUNFILES')
 assert runfiles_dir, 'Environment variable DRAKE_BAZEL_RUNFILES is NOT set.'
 
 if sys.platform.startswith('linux'):
-    prepend_path('LD_LIBRARY_PATH', '/usr/lib/llvm-4.0/lib')
+    prepend_path('LD_LIBRARY_PATH', '/usr/lib/llvm-6.0/lib')
 
 os.environ['LANG'] = 'en_US.UTF-8'
 

@@ -4,8 +4,9 @@
 Bazel build system
 ******************
 
-The Bazel build system is officially supported for a subset of Drake on
-Ubuntu Xenial and macOS.
+The Bazel build system is officially supported for a subset of Drake on Ubuntu
+Xenial and Bionic and macOS High Sierra and Mojave.
+
 For more information, see:
 
  * https://bazel.build/
@@ -37,19 +38,23 @@ target label (and optional configuration options if desired).  We give some
 typical examples below; for more reading about target patterns, see:
 https://docs.bazel.build/versions/master/user-manual.html#target-patterns.
 
-On Ubuntu Xenial, the default compiler is the first ``gcc`` compiler in the
-``PATH``, usually GCC 5.4. On macOS, the default compiler is Apple Clang. To
-use Clang 4.0 on Ubuntu Xenial, set the ``CC`` and ``CXX`` environment
-variables before running **bazel build**, **bazel test**, or any other
-**bazel** commands.
+On Ubuntu, the default compiler is the first ``gcc`` compiler in the
+``PATH``, usually GCC 5.4 on Xenial and GCC 7.3 on Bionic. On macOS, the
+default compiler is the Apple LLVM compiler. To use Clang 6.0 on Ubuntu, set
+the ``CC`` and ``CXX`` environment variables before running **bazel build**,
+**bazel test**, or any other **bazel** commands.
 
 Cheat sheet for operating on the entire project::
 
   cd /path/to/drake
   bazel build //...                               # Build the entire project.
   bazel test //...                                # Build and test the entire project.
-  CC=clang-4.0 CXX=clang++-4.0 bazel build //...  # Build using Clang 4.0 on Xenial.
-  CC=clang-4.0 CXX=clang++-4.0 bazel test //...   # Build and test using Clang 4.0 on Xenial.
+
+  CC=clang-6.0 CXX=clang++-6.0 bazel build //...  # Build using Clang 6.0 on Xenial.
+  CC=clang-6.0 CXX=clang++-6.0 bazel test //...   # Build and test using Clang 6.0 on Xenial.
+
+  CC=clang CXX=clang++ bazel build //...          # Build using Clang 6.0 on Bionic.
+  CC=clang CXX=clang++ bazel test //...           # Build and test using Clang 6.0 on Bionic.
 
 - The "``//``" means "starting from the root of the project".
 - The "``...``" means "everything including the subdirectories' ``BUILD`` files".
