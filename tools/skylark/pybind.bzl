@@ -320,6 +320,9 @@ def _generate_pybind_documentation_header_impl(ctx):
     args = ctx.actions.args()
     args.add_all(compile_flags, uniquify = True)
     args.add("-quiet")
+    args.add("-root-name=" + ctx.attr.root_name)
+    for p in ctx.attr.exclude_hdr_patterns:
+        args.add("-exclude-hdr-patterns=" + p)
 
     # Replace with ctx.fragments.cpp.cxxopts in Bazel 0.17+.
     args.add("-std=c++14")
@@ -337,6 +340,10 @@ def _generate_pybind_documentation_header_impl(ctx):
 # Generates a header that defines variables containing a representation of the
 # contents of Doxygen comments for each class, function, etc. in the
 # transitive headers of the given targets.
+# @param targets Targets with header files that should have documentation
+# strings generated.
+# @param ignore_hdrs Headers whose symbols should be ignored. Can be glob
+# patterns.
 generate_pybind_documentation_header = rule(
     attrs = {
         "targets": attr.label_list(
@@ -349,6 +356,8 @@ generate_pybind_documentation_header = rule(
             executable = True,
         ),
         "out": attr.output(mandatory = True),
+        "root_name": attr.string(default = "pydrake_doc"),
+        "exclude_hdr_patterns": attr.string_list(),
     },
     fragments = ["cpp"],
     implementation = _generate_pybind_documentation_header_impl,
