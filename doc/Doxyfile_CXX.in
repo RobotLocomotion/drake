@@ -288,7 +288,7 @@ EXPAND_ONLY_PREDEF     = YES
 SEARCH_INCLUDES        = YES
 INCLUDE_PATH           =
 INCLUDE_FILE_PATTERNS  =
-PREDEFINED += DRAKE_DOXYGEN_CXX=1
+PREDEFINED += DRAKE_DOXYGEN_CXX=1 HAVE_SPDLOG=1
 # =============================================================================
 # N.B. The spelling of the macro names between common/drake_copyable.h and this
 # file must be kept in sync!

@@ -1,5 +1,6 @@
 #include "drake/common/text_logging.h"
 
+#include <memory>
 #include <mutex>
 
 #ifdef HAVE_SPDLOG
