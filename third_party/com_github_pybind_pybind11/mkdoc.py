@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 #
-#  Syntax: mkdoc.py [-I<path> ..] [-quiet] [.. a list of header files ..]
+#  Syntax:
+#     mkdoc.py [-output=<file>] [-I<path> ..] [-quiet] [.. header files ..]
 #
 #  Extract documentation from C++ header files to use it in Python bindings
 #
 
 from collections import OrderedDict, defaultdict
+from fnmatch import fnmatch
 import os
-import sys
 import platform
+import sys
 import re
 from tempfile import NamedTemporaryFile
 import textwrap
@@ -63,8 +65,10 @@ CPP_OPERATORS = OrderedDict(
 SKIP_FULL_NAMES = [
     'Eigen',
     'detail',
+    'google',
     'internal',
     'std',
+    'tinyxml2',
 ]
 
 SKIP_PARTIAL_NAMES = [
@@ -72,6 +76,8 @@ SKIP_PARTIAL_NAMES = [
     'operator delete',
     'operator=',
     'operator->',
+    'operator<<',
+    'operator>>',
 ]
 
 SKIP_ACCESS = [
@@ -85,35 +91,38 @@ def utf8(s):
 
 
 class Symbol(object):
-    def __init__(self, node, name, include, line, comment):
-        self.node = node
-        self.name = name
+    """
+    Contains a cursor and additional processed metadata.
+    """
+    def __init__(self, cursor, name_chain, include, line, comment):
+        self.cursor = cursor
+        self.name_chain = name_chain
         self.include = include
         self.line = line
         self.comment = comment
 
     def sorting_key(self):
-        return (self.name, self.include, self.line)
+        return (self.name_chain, self.include, self.line)
 
 
 def eprint(*args):
     print(*args, file=sys.stderr)
 
 
-def is_accepted_symbol(node):
+def is_accepted_cursor(cursor):
     """
     Determines if a symbol should be visited or not.
     """
-    name = utf8(node.spelling)
+    name = utf8(cursor.spelling)
     if name in SKIP_FULL_NAMES:
         return False
     for bad in SKIP_PARTIAL_NAMES:
         if bad in name:
             return False
-    if node.access_specifier in SKIP_ACCESS:
+    if cursor.access_specifier in SKIP_ACCESS:
         return False
-    # TODO(eric.cousineau): Remove `node.is_default_method()`? May make things
-    # unstable.
+    # TODO(eric.cousineau): Remove `cursor.is_default_method()`? May make
+    # things unstable.
     # TODO(eric.cousineau): Figure out how to strip forward declarations.
     return True
 
@@ -264,18 +273,20 @@ def process_comment(comment):
     return result.rstrip().lstrip('\n')
 
 
-def get_name_chain(node):
+def get_name_chain(cursor):
     """
     Extracts the pieces for a namespace-qualified name for a symbol.
     """
-    name = [utf8(node.spelling)]
-    p = node.semantic_parent
+    name_chain = [utf8(cursor.spelling)]
+    p = cursor.semantic_parent
     while p.kind != CursorKind.TRANSLATION_UNIT:
-        piece = utf8(p.spelling)  # Pass-through for anonymous structs.
-        if len(piece) > 0:
-            name.insert(0, piece)
+        piece = utf8(p.spelling)
+        name_chain.insert(0, piece)
         p = p.semantic_parent
-    return tuple(name)
+    # Do not try to specify names for anonymous structs.
+    while '' in name_chain:
+        name_chain.remove('')
+    return tuple(name_chain)
 
 
 class SymbolTree(object):
@@ -285,105 +296,124 @@ class SymbolTree(object):
     """
 
     def __init__(self):
-        self.root = SymbolTree.Leaf()
+        self.root = SymbolTree.Node()
 
-    def append(self, symbol):
-        leaf = self.root
-        for piece in symbol.name:
-            leaf = leaf.get_child(piece)
-        leaf.symbols.append(symbol)
+    def get_node(self, name_chain):
+        """
+        Gets symbol node for a name chain, creating a fresh node if
+        necessary.
+        """
+        node = self.root
+        for piece in name_chain:
+            node = node.get_child(piece)
+        return node
 
-    class Leaf(object):
+    class Node(object):
+        """Node for a given name chain."""
         def __init__(self):
-            self.symbols = []
-            self.children_map = defaultdict(SymbolTree.Leaf)
+            # First encountered occurence of a symbol when extracting, used to
+            # label symbols that do not have documentation. Will only be None
+            # for the root node.
+            self.first_symbol = None
+            # May be empty if no documented symbols are present.
+            self.doc_symbols = []
+            # Maps name to child nodes.
+            self.children_map = defaultdict(SymbolTree.Node)
 
         def get_child(self, piece):
             return self.children_map[piece]
 
 
-def extract(include_map, node, output):
+def extract(include_file_map, cursor, symbol_tree):
     """
     Extracts libclang cursors and add to a symbol tree.
     """
-    if node.kind == CursorKind.TRANSLATION_UNIT:
-        for i in node.get_children():
-            extract(include_map, i, output)
+    if cursor.kind == CursorKind.TRANSLATION_UNIT:
+        for i in cursor.get_children():
+            extract(include_file_map, i, symbol_tree)
         return
-    assert node.location.file is not None
-    filename = utf8(node.location.file.name)
-    include = include_map.get(filename)
+    assert cursor.location.file is not None
+    filename = utf8(cursor.location.file.name)
+    include = include_file_map.get(filename)
+    line = cursor.location.line
     if include is None:
         return
-    if not is_accepted_symbol(node):
+    if not is_accepted_cursor(cursor):
         return
-    if node.kind in RECURSE_LIST:
-        for i in node.get_children():
-            extract(include_map, i, output)
-    if node.kind in PRINT_LIST:
-        if len(node.spelling) > 0:
+    name_chain = None
+
+    def get_node():
+        name_chain = get_name_chain(cursor)
+        node = symbol_tree.get_node(name_chain)
+        if node.first_symbol is None:
+            node.first_symbol = Symbol(
+                cursor, name_chain, include, line, None)
+        return name_chain, node
+
+    if cursor.kind in RECURSE_LIST:
+        if name_chain is None:
+            name_chain, node = get_node()
+        for i in cursor.get_children():
+            extract(include_file_map, i, symbol_tree)
+    if cursor.kind in PRINT_LIST:
+        if name_chain is None:
+            name_chain, node = get_node()
+        if len(cursor.spelling) > 0:
             comment = utf8(
-                node.raw_comment) if node.raw_comment is not None else ''
+                cursor.raw_comment) if cursor.raw_comment is not None else ''
             comment = process_comment(comment)
-            name = get_name_chain(node)
-            line = node.location.line
-            output.append(Symbol(node, name, include, line, comment))
+            symbol = Symbol(cursor, name_chain, include, line, comment)
+            node.doc_symbols.append(symbol)
 
 
-def print_symbols(name, leaf, level=0):
+def print_symbols(f, name, node, level=0):
     """
-    Prints C++ code for containing documentation.
+    Prints C++ code for releveant documentation.
     """
-    if len(leaf.symbols) == 0:
-        full_name = name
-    else:
-        top = leaf.symbols[0]
-        full_pieces = top.name
-        assert name == full_pieces[-1]
-        full_name = "::".join(full_pieces)
-        # Override variable.
-        if top.node.kind == CursorKind.CONSTRUCTOR:
-            name = "ctor"
-
-    name = sanitize_name(name)
-
     indent = '  ' * level
 
-    def iprint(s): return print((indent + s).rstrip())
-    iprint('// {}'.format(full_name))
+    def iprint(s):
+        f.write((indent + s).rstrip() + "\n")
+
+    name_var = name
+    if not node.first_symbol:
+        assert level == 0
+        full_name = name
+    else:
+        name_chain = node.first_symbol.name_chain
+        assert name == name_chain[-1]
+        full_name = "::".join(name_chain)
+        # Override variable.
+        if node.first_symbol.cursor.kind == CursorKind.CONSTRUCTOR:
+            name_var = "ctor"
+
+    name_var = sanitize_name(name_var)
+    # We may get empty symbols if `libclang` produces warnings.
+    assert len(name_var) > 0, node.first_symbol.sorting_key()
+    iprint('// Symbol: {}'.format(full_name))
     modifier = ""
     if level == 0:
         modifier = "constexpr "
-    iprint('{}struct /* {} */ {{'.format(modifier, name))
-    iprint('')
-    symbol_iter = sorted(leaf.symbols, key=Symbol.sorting_key)
+    iprint('{}struct /* {} */ {{'.format(modifier, name_var))
+    # Print documentation items.
+    symbol_iter = sorted(node.doc_symbols, key=Symbol.sorting_key)
     for i, symbol in enumerate(symbol_iter):
-        assert full_pieces == symbol.name
-        var = "doc"
+        assert name_chain == symbol.name_chain
+        doc_var = "doc"
         if i > 0:
-            var += "_{}".format(i + 1)
+            doc_var += "_{}".format(i + 1)
         delim = "\n"
         if "\n" not in symbol.comment and len(symbol.comment) < 40:
             delim = " "
-        iprint('  // {}:{}'.format(symbol.include, symbol.line))
-        iprint('  const char* {} ={}R"""({})""";'.format(var, delim,
-                                                         symbol.comment))
-        iprint('')
-    keys = sorted(leaf.children_map.keys())
+        iprint('  // Source: {}:{}'.format(symbol.include, symbol.line))
+        iprint('  const char* {} ={}R"""({})""";'.format(
+            doc_var, delim, symbol.comment))
+    # Recurse into child elements.
+    keys = sorted(node.children_map.keys())
     for key in keys:
-        child = leaf.children_map[key]
-        print_symbols(key, child, level=level + 1)
-    iprint('}} {};'.format(name))
-    iprint('')
-
-
-def drake_genfile_path_to_include_path(filename):
-    # TODO(eric.cousineau): Is there a simple way to generalize this, given
-    # include paths?
-    pieces = filename.split('/')
-    assert pieces.count('drake') == 1
-    drake_index = pieces.index('drake')
-    return '/'.join(pieces[drake_index:])
+        child = node.children_map[key]
+        print_symbols(f, key, child, level=level + 1)
+    iprint('}} {};'.format(name_var))
 
 
 class FileDict(object):
@@ -391,7 +421,7 @@ class FileDict(object):
     Provides a dictionary that hashes based on a file's true path.
     """
 
-    def __init__(self, items):
+    def __init__(self, items=[]):
         self._d = {self._key(file): value for file, value in items}
 
     def _key(self, file):
@@ -406,6 +436,10 @@ class FileDict(object):
     def __getitem__(self, file):
         key = self._key(file)
         return self._d[key]
+
+    def __setitem__(self, file, value):
+        key = self._key(file)
+        self._d[key] = value
 
 
 def main():
@@ -428,15 +462,21 @@ def main():
 
     quiet = False
     std = '-std=c++11'
-    root_name = 'pydrake_doc'
+    root_name = 'mkdoc_doc'
+    ignore_patterns = []
+    output_filename = None
 
     for item in sys.argv[1:]:
         if item == '-quiet':
             quiet = True
+        elif item.startswith('-output='):
+            output_filename = item[len('-output='):]
         elif item.startswith('-std='):
             std = item
         elif item.startswith('-root-name='):
             root_name = item[len('-root-name='):]
+        elif item.startswith('-exclude-hdr-patterns='):
+            ignore_patterns.append(item[len('-exclude-hdr-patterns='):])
         elif item.startswith('-'):
             parameters.append(item)
         else:
@@ -444,13 +484,15 @@ def main():
 
     parameters.append(std)
 
-    if len(filenames) == 0:
-        eprint('Syntax: %s [.. a list of header files ..]' % sys.argv[0])
+    if output_filename is None or len(filenames) == 0:
+        eprint('Syntax: %s -output=<file> [.. a list of header files ..]'
+               % sys.argv[0])
         exit(-1)
 
+    f = open(output_filename, 'w')
     # N.B. We substitue the `GENERATED FILE...` bits in this fashion because
     # otherwise Reviewable gets confused.
-    print('''#pragma once
+    f.write('''#pragma once
 
 // {0} {1}
 // This file contains docstrings for the Python bindings that were
@@ -460,31 +502,65 @@ def main():
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
+
 '''.format('GENERATED FILE', 'DO NOT EDIT'))
 
-    includes = list(map(drake_genfile_path_to_include_path, filenames))
-    include_map = FileDict(zip(filenames, includes))
-    # TODO(eric.cousineau): Sort files based on include path?
-    with NamedTemporaryFile('w') as include_file:
-        for include in includes:
-            include_file.write("#include \"{}\"\n".format(include))
-        include_file.flush()
+    # Determine project include directories.
+    # N.B. For simplicity when using with Bazel, we do not try to get canonical
+    # file paths for determining include files.
+    include_paths = []
+    for param in parameters:
+        # Only check for normal include directories.
+        if param.startswith("-I"):
+            include_paths.append(param[2:])
+    # Use longest include directories first to get shortest include file
+    # overall.
+    include_paths = list(sorted(include_paths, key=len))[::-1]
+    include_files = []
+    # Create mapping from filename to include file.
+    include_file_map = FileDict()
+    for filename in filenames:
+        for include_path in include_paths:
+            prefix = include_path + "/"
+            if filename.startswith(prefix):
+                include_file = filename[len(prefix):]
+                break
+        else:
+            raise RuntimeError(
+                "Filename not incorporated into -I includes: {}".format(
+                    filename))
+        for p in ignore_patterns:
+            if fnmatch(include_file, p):
+                break
+        else:
+            include_files.append(include_file)
+            include_file_map[filename] = include_file
+    assert len(include_files) > 0
+    # Generate the glue include file, which will include all relevant include
+    # files, and parse.
+    with NamedTemporaryFile('w') as glue_include_file:
+        for include_file in sorted(include_files):
+            line = "#include \"{}\"".format(include_file)
+            glue_include_file.write(line + "\n")
+            f.write("// " + line + "\n")
+        f.write("\n")
+        glue_include_file.flush()
         if not quiet:
-            eprint("Parse header...")
+            eprint("Parse headers...")
         index = cindex.Index(
             cindex.conf.lib.clang_createIndex(False, True))
-        tu = index.parse(include_file.name, parameters)
-
+        translation_unit = index.parse(glue_include_file.name, parameters)
+    # Extract symbols.
     if not quiet:
         eprint("Extract relevant symbols...")
-    output = SymbolTree()
-    extract(include_map, tu.cursor, output)
-
+    symbol_tree = SymbolTree()
+    extract(include_file_map, translation_unit.cursor, symbol_tree)
+    # Write header file.
     if not quiet:
         eprint("Writing header file...")
-    print_symbols(root_name, output.root)
+    print_symbols(f, root_name, symbol_tree.root)
 
-    print('''
+    f.write('''
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
