@@ -568,23 +568,27 @@ void Simulator<T>::StepTo(const T& boundary_time) {
   DRAKE_DEMAND(merged_events != nullptr);
   DRAKE_DEMAND(witnessed_events != nullptr);
 
-  while (context_->get_time() < boundary_time || sample_time_hit) {
+  // Merge events together.
+  merged_events->Clear();
+  merged_events->Merge(*per_step_events_);
+
+  // Publish before the loop begins.
+  HandlePublish(merged_events->get_publish_events());
+
+  // TODO(siyuan): transfer per step publish entirely to individual systems.
+  // Allow System a chance to produce some output.
+  if (get_publish_every_time_step()) {
+    system_.Publish(*context_);
+    ++num_publishes_;
+  }
+
+  while (true) {
     // Starting a new step on the trajectory.
     const T step_start_time = context_->get_time();
     SPDLOG_TRACE(log(), "Starting a simulation step at {}", step_start_time);
 
     // Delay to match target realtime rate if requested and possible.
     PauseIfTooFast();
-
-    // Merge events together.
-    merged_events->Clear();
-    merged_events->Merge(*per_step_events_);
-
-    // Only merge timed / witnessed events in if the sample time was hit.
-    if (sample_time_hit) {
-      merged_events->Merge(*timed_events);
-      merged_events->Merge(*witnessed_events);
-    }
 
     // The general policy here is to do actions in decreasing order of
     // "violence" to the state, i.e. unrestricted -> discrete -> publish.
@@ -594,15 +598,6 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     HandleUnrestrictedUpdate(merged_events->get_unrestricted_update_events());
     // Do restricted (discrete variable) updates next.
     HandleDiscreteUpdate(merged_events->get_discrete_update_events());
-    // Do any publishes last.
-    HandlePublish(merged_events->get_publish_events());
-
-    // TODO(siyuan): transfer per step publish entirely to individual systems.
-    // Allow System a chance to produce some output.
-    if (get_publish_every_time_step()) {
-      system_.Publish(*context_);
-      ++num_publishes_;
-    }
 
     // How far can we go before we have to take a sampling break?
     const T next_sample_time =
@@ -636,6 +631,30 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     ++num_steps_taken_;
 
     // TODO(sherm1) Constraint projection goes here.
+
+    // Stop looping if the boundary time is reached or the sample time is hit.
+    if (!(context_->get_time() < boundary_time || sample_time_hit))
+      break;
+
+    // Merge events together.
+    merged_events->Clear();
+    merged_events->Merge(*per_step_events_);
+
+    // Only merge timed / witnessed events in if the sample time was hit.
+    if (sample_time_hit) {
+      merged_events->Merge(*timed_events);
+      merged_events->Merge(*witnessed_events);
+    }
+
+    // Handle any publish events at the end of the loop.
+    HandlePublish(merged_events->get_publish_events());
+
+    // TODO(siyuan): transfer per step publish entirely to individual systems.
+    // Allow System a chance to produce some output.
+    if (get_publish_every_time_step()) {
+      system_.Publish(*context_);
+      ++num_publishes_;
+    }
   }
 
   // TODO(edrumwri): Add test coverage to complete #8490.

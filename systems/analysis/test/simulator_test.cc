@@ -1085,21 +1085,25 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
 // A mock System that requests discrete update at 1 kHz, and publishes at 400
 // Hz. Calls user-configured callbacks on DoPublish,
 // DoCalcDiscreteVariableUpdates, and EvalTimeDerivatives.
-class DiscreteSystem : public LeafSystem<double> {
+class MixedContinuousDiscreteSystem : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedContinuousDiscreteSystem)
 
-  DiscreteSystem() {
+  MixedContinuousDiscreteSystem() {
     // Deliberately choose a period that is identical to, and therefore courts
     // floating-point error with, the default max step size.
     const double offset = 0.0;
     this->DeclarePeriodicDiscreteUpdate(kUpdatePeriod, offset);
     this->DeclarePeriodicPublish(kPublishPeriod);
 
+    // We need some continuous state (which will be unused) so that the
+    // continuous state integration will not be bypassed.
+    this->DeclareContinuousState(1);
+
     set_name("TestSystem");
   }
 
-  ~DiscreteSystem() override {}
+  ~MixedContinuousDiscreteSystem() override {}
 
   void DoCalcDiscreteVariableUpdates(
       const Context<double>& context,
@@ -1154,11 +1158,11 @@ bool CheckSampleTime(const Context<double>& context, double period) {
   return std::abs(k - int_k) < kTolerance;
 }
 
-// Tests that the Simulator invokes the DiscreteSystem's update method every
-// 0.001 sec, and its publish method every 0.0025 sec, without missing any
-// updates.
+// Tests that the Simulator invokes the MixedContinuousDiscreteSystem's
+// update method every 0.001 sec, and its publish method every 0.0025 sec,
+// without missing any updates.
 GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
-  DiscreteSystem system;
+  MixedContinuousDiscreteSystem system;
   int num_disc_updates = 0;
   system.set_update_callback([&](const Context<double>& context) {
     ASSERT_TRUE(CheckSampleTime(context, system.update_period()));
@@ -1181,12 +1185,13 @@ GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
 // Tests that the order of events in a simulator time step is first update
 // discrete state, then publish, then integrate.
 GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
-  DiscreteSystem system;
+  MixedContinuousDiscreteSystem system;
   Simulator<double> simulator(system);
-  enum EventType { kUpdate = 0, kPublish = 1, kIntegrate = 2 };
+  enum EventType { kPublish = 0, kUpdate = 1, kIntegrate = 2 };
 
-  // Write down the order in which the DiscreteSystem is asked to compute
-  // discrete updates, do publishes, or compute derivatives at each time step.
+  // Write down the order in which the MixedContinuousDiscreteSystem is asked to
+  // compute discrete updates, do publishes, or compute derivatives at each
+  // time step.
   std::map<int, std::vector<EventType>> events;
   system.set_update_callback(
       [&events, &simulator](const Context<double>& context) {
@@ -1205,6 +1210,9 @@ GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
   simulator.set_publish_every_time_step(true);
   simulator.StepTo(0.5);
 
+  // Verify that at least one of each event type was triggered.
+  int triggers[kIntegrate + 1] = { 0, 0, 0 };
+
   // Check that all the update events precede all the publish events, and all
   // the publish events precede all the eval-derivatives events, for each
   // time step in the simulation.
@@ -1212,10 +1220,14 @@ GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
     ASSERT_GE(log.second.size(), 0u);
     EventType state = log.second[0];
     for (const EventType& event : log.second) {
+      ++triggers[event];
       ASSERT_TRUE(event >= state);
       state = event;
     }
   }
+  EXPECT_GT(triggers[kUpdate], 0);
+  EXPECT_GT(triggers[kPublish], 0);
+  EXPECT_GT(triggers[kIntegrate], 0);
 }
 
 // A basic sanity check that AutoDiff works.
