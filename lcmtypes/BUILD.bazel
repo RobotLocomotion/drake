@@ -5,6 +5,7 @@ package(default_visibility = ["//visibility:public"])
 load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
     "drake_transitive_installed_hdrs_filegroup",
 )
 load(
@@ -309,14 +310,20 @@ drake_lcm_py_library(
 )
 
 drake_lcm_java_library(
-    name = "lcmtypes_drake_java",
+    name = "lcmtypes_java",
     lcm_package = "drake",
     lcm_srcs = glob(["*.lcm"]) + _AUTOMOTIVE_LCM_SRCS,
     deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_java"],
 )
 
+# TODO(eric.cousineau): Deprecate and remove this target.
+alias(
+    name = "lcmtypes_drake_java",
+    actual = "lcmtypes_java",
+)
+
 # This should list every LCM type that is known to Drake.
-DRAKE_LCMTYPES = [
+LCMTYPES_CC = [
     ":acrobot",
     ":automotive",
     ":body_acceleration",
@@ -358,16 +365,21 @@ drake_java_binary(
     main_class = "lcm.spy.Spy",
     visibility = ["//visibility:private"],
     runtime_deps = [
-        ":lcmtypes_drake_java",
+        ":lcmtypes_java",
         "@lcmtypes_bot2_core//:lcmtypes_bot2_core_java",
         "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_java",
         "@optitrack_driver//lcmtypes:lcmtypes_optitrack",
     ],
 )
 
+drake_cc_library(
+    name = "lcmtypes_cc",
+    deps = LCMTYPES_CC,
+)
+
 drake_transitive_installed_hdrs_filegroup(
-    name = "drake_lcmtypes_headers",
-    deps = DRAKE_LCMTYPES,
+    name = "lcmtypes_cc_headers",
+    deps = LCMTYPES_CC,
 )
 
 # The drake-lcmtypes-cpp library is distinct from (but required by) the drake
@@ -375,12 +387,12 @@ drake_transitive_installed_hdrs_filegroup(
 # Therefore, we install Drake's lcmtypes C++ headers to a different directory
 # than the drake library's include path; this ensures that downstream code is
 # using the correct include paths for the libraries they need.  The path to
-# `include/drake_lcmtypes` is provided to downstream code via `drake.cps` and
+# `include/lcmtypes_drake` is provided to downstream code via `drake.cps` and
 # its generated cmake config `lib/cmake/drake/drake-config.cmake.
 install(
     name = "install_cc_headers",
-    hdrs = [":drake_lcmtypes_headers"],
     hdr_dest = "include/drake_lcmtypes",
+    hdrs = [":lcmtypes_cc_headers"],
     visibility = ["//visibility:private"],
 )
 
@@ -390,7 +402,7 @@ install(
     targets = [
         ":drake-lcm-spy-launcher",
         ":drake-lcm-spy",
-        ":lcmtypes_drake_java",
+        ":lcmtypes_java",
         ":lcmtypes_py",
     ],
     rename = {
