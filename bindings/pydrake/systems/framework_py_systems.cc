@@ -255,11 +255,15 @@ struct Impl {
         .def("set_name", &System<T>::set_name)
         // Topology.
         .def("get_num_input_ports", &System<T>::get_num_input_ports)
-        .def("get_input_port",
-             &System<T>::get_input_port, py_reference_internal)
+        .def("get_input_port", &System<T>::get_input_port,
+             py_reference_internal, py::arg("port_index"))
+        .def("GetInputPort", &System<T>::GetInputPort,
+             py_reference_internal, py::arg("port_name"))
         .def("get_num_output_ports", &System<T>::get_num_output_ports)
         .def("get_output_port", &System<T>::get_output_port,
-             py_reference_internal)
+             py_reference_internal, py::arg("port_index"))
+        .def("GetOutputPort", &System<T>::GetOutputPort,
+             py_reference_internal, py::arg("port_name"))
         .def("_DeclareInputPort",
              overload_cast_explicit<const InputPort<T>&, std::string,
                  PortDataType, int, optional<RandomDistribution>>
