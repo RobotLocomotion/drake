@@ -90,6 +90,14 @@ drake_cc_library(
     hdrs = [
         "scene_graph_parser_detail.h",
     ],
+    install_hdrs_exclude = [
+        # This header includes `sdformat` directly, which we do not want to
+        # expose externally.
+        "scene_graph_parser_detail.h",
+    ],
+    visibility = [
+        "//visibility:private",
+    ],
     deps = [
         ":package_map",
         ":parser_path_utils",
