@@ -473,7 +473,7 @@ drake_java_binary(
     name = "lcm-spy",
     main_class = "lcm.spy.Spy",
     runtime_deps = [
-        "//lcmtypes:lcmtypes_drake_java",
+        "//lcmtypes:lcmtypes_java",
     ],
 )
 
