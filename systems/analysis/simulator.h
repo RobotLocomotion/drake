@@ -23,11 +23,12 @@
 namespace drake {
 namespace systems {
 
-/// A forward dynamics solver for hybrid dynamic systems represented by
-/// `System<T>` objects. Starting with an initial Context for a given System,
-/// %Simulator advances time and produces a series of Context values that forms
-/// a trajectory satisfying the system's dynamic equations to a specified
-/// accuracy. Only the Context is modified by a %Simulator; the System is const.
+/// A class for advancing the state of hybrid dynamic systems, represented by
+/// `System<T>` objects, forward in time. Starting with an initial Context for a
+/// given System, %Simulator advances time and produces a series of Context
+/// values that forms a trajectory satisfying the system's dynamic equations to
+/// a specified accuracy. Only the Context is modified by a %Simulator; the
+/// System is const.
 ///
 /// A Drake System is a continuous/discrete/hybrid dynamic system where the
 /// continuous part is a DAE, that is, it is expected to consist of a set of
@@ -50,10 +51,9 @@ namespace systems {
 /// and mode variables when an event has been isolated.
 ///
 /// The continuous parts of the trajectory are advanced using a numerical
-/// integrator. Different integrators have different properties; if you know
-/// about that you can choose the one that is most appropriate for your
-/// application. Otherwise, a default is provided which is adequate for most
-/// systems.
+/// integrator. Different integrators have different properties; you can choose
+/// the one that is most appropriate for your application or use the default
+/// which is adequate for most systems.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
@@ -93,20 +93,38 @@ class Simulator {
   /// constraint-satisfying initial condition.
   void Initialize();
 
-  // TODO(edrumwri): add ability to account for final time
-  /// Advance the System's trajectory until `boundary_time` is reached in
-  /// the context or some
-  /// other termination condition occurs. A variety of `std::runtime_error`
-  /// conditions are possible here, as well as error conditions that may be
-  /// thrown by the System when it is asked to perform computations. Be sure to
-  /// enclose your simulation in a `try-catch` block and display the
-  /// `what()` message.
+  /// Advances the System's trajectory until `boundary_time` is reached in
+  /// the context or some other termination condition occurs. A variety of
+  /// `std::runtime_error` conditions are possible here, as well as error
+  /// conditions that may be thrown by the System when it is asked to perform
+  /// computations. Be sure to enclose your simulation in a `try-catch` block
+  /// and display the `what()` message.
   ///
   /// We recommend that you call `Initialize()` prior to making the first call
   /// to `StepTo()`. However, if you don't it will be called for you the first
   /// time you attempt a step, possibly resulting in unexpected error
   /// conditions. See documentation for `Initialize()` for the error conditions
   /// it might produce.
+  ///
+  /// StepTo() first publishes any "per step" Event (see
+  /// Event::TriggerType::kPerStep) and then performs the following loop until
+  /// the boundary time is reached **and** there are no more events to be
+  /// processed:
+  /// 1. Handles any events that are allowed to update the system state without
+  ///    restriction (an UnrestrictedUpdateEvent).
+  /// 2. Handles any events that are permitted to update only discrete state
+  ///    variables (a DiscreteUpdateEvent).
+  /// 3. Integrates the smooth system (the ODE or DAE) forward in time.
+  /// 4. Performs post-step stabilization for DAEs (if desired).
+  /// 5. Handles any events that are unable to alter any state data
+  ///    (a PublishEvent).
+  ///
+  /// These steps therefore update the hybrid system "mode" first (through
+  /// instantaneous changes to abstract, discrete, and continuous variables),
+  /// any discrete variables next, and time and continuous variables last.
+  /// @param boundary_time The time to advance the context to.
+  /// @pre The simulation state is valid  (i.e., no discrete updates or state
+  /// projections are necessary) at the present time.
   void StepTo(const T& boundary_time);
 
   /// Slow the simulation down to *approximately* synchronize with real time
@@ -541,15 +559,6 @@ void Simulator<T>::HandlePublish(
   }
 }
 
-/// Steps the simulation to the specified time.
-/// The simulation loop is as follows:
-/// 1. Perform necessary discrete variable updates.
-/// 2. Publish.
-/// 3. Integrate the smooth system (the ODE or DAE)
-/// 4. Perform post-step stabilization for DAEs (if desired).
-/// @param boundary_time The time to advance the context to.
-/// @pre The simulation state is valid  (i.e., no discrete updates or state
-/// projections are necessary) at the present time.
 template <typename T>
 void Simulator<T>::StepTo(const T& boundary_time) {
   if (!initialization_done_) Initialize();
@@ -632,8 +641,9 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
     // TODO(sherm1) Constraint projection goes here.
 
-    // Stop looping if the boundary time is reached or the sample time is hit.
-    if (!(context_->get_time() < boundary_time || sample_time_hit))
+    // Stop looping if the boundary time is reached and there is no "sample hit"
+    // (i.e., event processing).
+    if (context_->get_time() > boundary_time && !sample_time_hit)
       break;
 
     // Merge events together.
