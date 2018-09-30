@@ -166,8 +166,8 @@ class InverseKinematics {
 
   std::unique_ptr<solvers::MathematicalProgram> prog_;
   const multibody_plant::MultibodyPlant<double>& plant_;
-  std::unique_ptr<MultibodyTree<AutoDiffXd>> tree_;
-  std::unique_ptr<systems::LeafContext<AutoDiffXd>> const context_;
+  const MultibodyTreeSystem<AutoDiffXd> system_;
+  std::unique_ptr<systems::Context<AutoDiffXd>> const context_;
   solvers::VectorXDecisionVariable q_;
 };
 }  // namespace multibody

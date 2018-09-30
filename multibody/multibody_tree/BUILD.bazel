@@ -101,6 +101,7 @@ drake_cc_library(
         "model_instance.cc",
         "multibody_forces.cc",
         "multibody_tree.cc",
+        "multibody_tree_system.cc",
         "prismatic_mobilizer.cc",
         "quaternion_floating_mobilizer.cc",
         "revolute_mobilizer.cc",
@@ -129,6 +130,7 @@ drake_cc_library(
         "model_instance.h",
         "multibody_forces.h",
         "multibody_tree.h",
+        "multibody_tree_system.h",
         "prismatic_mobilizer.h",
         "quaternion_floating_mobilizer.h",
         "revolute_mobilizer.h",
@@ -148,6 +150,7 @@ drake_cc_library(
         "//common:autodiff",
         "//common:nice_type_name",
         "//math:geometric_transform",
+        "//systems/framework:leaf_system",
     ],
 )
 

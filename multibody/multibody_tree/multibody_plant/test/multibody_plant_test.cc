@@ -252,7 +252,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
           "AnotherJoint", link1.body_frame(), link2.body_frame(),
           Vector3d::UnitZ())),
       std::logic_error,
-      "This MultibodyTree is finalized already. .*");
+      ".*MultibodyTree.*finalized already.*");
   // TODO(amcastro-tri): add test to verify that requesting a joint of the wrong
   // type throws an exception. We need another joint type to do so.
 }
