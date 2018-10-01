@@ -8,7 +8,6 @@
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/weld_joint.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
-#include "drake/multibody/multibody_tree/multibody_tree_system.h"
 #include "drake/multibody/multibody_tree/position_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/spatial_inertia.h"
@@ -28,70 +27,70 @@ constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 class SpringDamperTester : public ::testing::Test {
  public:
   void SetUp() override {
-    // Create an empty model.
-    auto model = std::make_unique<MultibodyTree<double>>();
+    bodyA_ = &model_.AddRigidBody(
+        "BodyA", SpatialInertia<double>());
+    bodyB_ = &model_.AddRigidBody(
+        "BodyB", SpatialInertia<double>());
 
-    bodyA_ = &model->AddRigidBody("BodyA", SpatialInertia<double>());
-    bodyB_ = &model->AddRigidBody("BodyB", SpatialInertia<double>());
-
-    model->AddJoint<WeldJoint>(
-        "WeldBodyAToWorld", model->world_body(), {}, *bodyA_, {},
+    model_.AddJoint<WeldJoint>(
+        "WeldBodyAToWorld", model_.world_body(), {}, *bodyA_, {},
         Isometry3<double>::Identity());
 
     // Allow body B to slide along the x axis.
-    slider_ = &model->AddJoint<PrismaticJoint>(
-        "Slider", model->world_body(), {}, *bodyB_, {},
+    slider_ = &model_.AddJoint<PrismaticJoint>(
+        "Slider", model_.world_body(), {}, *bodyB_, {},
         Vector3<double>::UnitX());
 
-    spring_damper_ = &model->AddForceElement<LinearSpringDamper>(
+    spring_damper_ = &model_.AddForceElement<LinearSpringDamper>(
         *bodyA_, p_AP_, *bodyB_, p_BQ_, free_length_, stiffness_, damping_);
 
     // Verify the the constructor for the spring-damper throws if either the
     // rest length, stiffness or damping are negative numbers.
     DRAKE_EXPECT_THROWS_MESSAGE(
-        model->AddForceElement<LinearSpringDamper>(
+        model_.AddForceElement<LinearSpringDamper>(
             *bodyA_, p_AP_, *bodyB_, p_BQ_,
             -1.0 /* negative rest length */, stiffness_, damping_),
         std::exception,
         ".*condition 'free_length > 0' failed.*");
 
     DRAKE_EXPECT_THROWS_MESSAGE(
-        model->AddForceElement<LinearSpringDamper>(
+        model_.AddForceElement<LinearSpringDamper>(
             *bodyA_, p_AP_, *bodyB_, p_BQ_,
             free_length_, -1.0  /* negative stiffness */, damping_),
         std::exception,
         ".*condition 'stiffness >= 0' failed.*");
 
     DRAKE_EXPECT_THROWS_MESSAGE(
-        model->AddForceElement<LinearSpringDamper>(
+        model_.AddForceElement<LinearSpringDamper>(
             *bodyA_, p_AP_, *bodyB_, p_BQ_,
             free_length_, stiffness_, -1.0 /* negative damping */),
         std::exception,
         ".*condition 'damping >= 0' failed.*");
 
-    // We are done adding modeling elements. Transfer tree to system and get
-    // a Context.
-    system_ = std::make_unique<MultibodyTreeSystem<double>>(std::move(model));
-    context_ = system_->CreateDefaultContext();
+    model_.Finalize();
 
+    context_ = model_.CreateDefaultContext();
     mbt_context_ = dynamic_cast<MultibodyTreeContext<double>*>(context_.get());
     ASSERT_TRUE(mbt_context_ != nullptr);
-
-    context_->EnableCaching();
-
-    forces_ = std::make_unique<MultibodyForces<double>>(tree());
+    pc_ = std::make_unique<PositionKinematicsCache<double>>(
+        model_.get_topology());
+    vc_ = std::make_unique<VelocityKinematicsCache<double>>(
+        model_.get_topology());
+    forces_ = std::make_unique<MultibodyForces<double>>(model_);
   }
 
   void SetSliderState(double position, double position_rate) {
     slider_->set_translation(context_.get(), position);
     slider_->set_translation_rate(context_.get(), position_rate);
+    // Update the kinematics cache.
+    model_.CalcPositionKinematicsCache(*context_, pc_.get());
+    model_.CalcVelocityKinematicsCache(*context_, *pc_, vc_.get());
   }
 
   void CalcSpringDamperForces() const {
     forces_->SetZero();
     spring_damper_->CalcAndAddForceContribution(
-        *mbt_context_, tree().EvalPositionKinematics(*context_),
-        tree().EvalVelocityKinematics(*context_), forces_.get());
+        *mbt_context_, *pc_, *vc_, forces_.get());
   }
 
   const SpatialForce<double>& GetSpatialForceOnBodyA() const {
@@ -102,13 +101,12 @@ class SpringDamperTester : public ::testing::Test {
     return forces_->body_forces().at(bodyB_->node_index());
   }
 
-  const MultibodyTree<double>& tree() const { return system_->tree(); }
-
  protected:
-  std::unique_ptr<MultibodyTreeSystem<double>> system_;
+  MultibodyTree<double> model_;
   std::unique_ptr<Context<double>> context_;
   MultibodyTreeContext<double>* mbt_context_{nullptr};
-
+  std::unique_ptr<PositionKinematicsCache<double>> pc_;
+  std::unique_ptr<VelocityKinematicsCache<double>> vc_;
   const RigidBody<double>* bodyA_{nullptr};
   const RigidBody<double>* bodyB_{nullptr};
   const PrismaticJoint<double>* slider_{nullptr};
@@ -145,8 +143,8 @@ TEST_F(SpringDamperTester, RestLength) {
   EXPECT_EQ(F_B_W.get_coeffs(), SpatialForce<double>::Zero().get_coeffs());
 
   // Verify the potential energy is zero.
-  const double potential_energy = spring_damper_->CalcPotentialEnergy(
-      *mbt_context_, tree().EvalPositionKinematics(*context_));
+  const double potential_energy =
+      spring_damper_->CalcPotentialEnergy(*mbt_context_, *pc_);
   EXPECT_NEAR(potential_energy, 0.0, kTolerance);
 }
 
@@ -182,15 +180,14 @@ TEST_F(SpringDamperTester, LengthLargerThanRestLength) {
   // Verify the value of the potential energy.
   const double potential_energy_expected =
       0.5 * stiffness_ * (length - free_length_) * (length - free_length_);
-  const double potential_energy = spring_damper_->CalcPotentialEnergy(
-      *mbt_context_, tree().EvalPositionKinematics(*context_));
+  const double potential_energy =
+      spring_damper_->CalcPotentialEnergy(*mbt_context_, *pc_);
   EXPECT_NEAR(potential_energy, potential_energy_expected, kTolerance);
 
   // Since the spring configuration is static, that is velocities are zero, we
   // expect zero conservative and non-conservative power.
-  const double conservative_power = spring_damper_->CalcConservativePower(
-      *mbt_context_, tree().EvalPositionKinematics(*context_),
-      tree().EvalVelocityKinematics(*context_));
+  const double conservative_power =
+      spring_damper_->CalcConservativePower(*mbt_context_, *pc_, *vc_);
   EXPECT_NEAR(conservative_power, 0.0, kTolerance);
 }
 
@@ -260,23 +257,20 @@ TEST_F(SpringDamperTester, Power) {
   const double length_dot = 1.0;
   SetSliderState(length, length_dot);
 
-  const double conservative_power = spring_damper_->CalcConservativePower(
-      *mbt_context_, tree().EvalPositionKinematics(*context_),
-      tree().EvalVelocityKinematics(*context_));
+  const double conservative_power =
+      spring_damper_->CalcConservativePower(*mbt_context_, *pc_, *vc_);
   const double conservative_power_expected =
       -stiffness_ * (length - free_length_) * length_dot;
   EXPECT_NEAR(conservative_power, conservative_power_expected, kTolerance);
 
   const double non_conservative_power =
-      spring_damper_->CalcNonConservativePower(
-          *mbt_context_, tree().EvalPositionKinematics(*context_),
-          tree().EvalVelocityKinematics(*context_));
+      spring_damper_->CalcNonConservativePower(*mbt_context_, *pc_, *vc_);
   const double non_conservative_power_expected =
       -damping_ * length_dot * length_dot;
   // It should always be non-positive.
   EXPECT_LT(non_conservative_power, 0.0);
-  EXPECT_NEAR(non_conservative_power, non_conservative_power_expected,
-              kTolerance);
+  EXPECT_NEAR(non_conservative_power,
+              non_conservative_power_expected, kTolerance);
 }
 
 }  // namespace

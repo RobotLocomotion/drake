@@ -170,8 +170,8 @@ class MobilizerImpl : public Mobilizer<T> {
     MultibodyTreeContext<T>* mbt_context =
         dynamic_cast<MultibodyTreeContext<T>*>(context);
     if (mbt_context == nullptr) {
-      throw std::logic_error("The provided systems::Context is not a "
-                             "drake::multibody::MultibodyTreeContext.");
+      throw std::logic_error("The provided systems::Context is not a"
+                               "drake::multibody::MultibodyTreeContext.");
     }
     return *mbt_context;
   }

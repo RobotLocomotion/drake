@@ -11,11 +11,10 @@ TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
   const FrameIndex frameB_index = GetFrameIndex("iiwa_link_7");
   const FrameIndex frameA_index = GetFrameIndex("iiwa_link_3");
   PositionConstraint constraint1(
-      iiwa_autodiff_.tree(), frameB_index, p_BQ, frameA_index, p_AQ_lower,
-      p_AQ_upper,
+      *iiwa_autodiff_, frameB_index, p_BQ, frameA_index, p_AQ_lower, p_AQ_upper,
       dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(context_autodiff_.get()));
 
-  EXPECT_EQ(constraint1.num_vars(), iiwa_autodiff_.tree().num_positions());
+  EXPECT_EQ(constraint1.num_vars(), iiwa_autodiff_->num_positions());
   EXPECT_EQ(constraint1.num_constraints(), 3);
   EXPECT_EQ(constraint1.lower_bound(), p_AQ_lower);
   EXPECT_EQ(constraint1.upper_bound(), p_AQ_upper);
@@ -31,9 +30,9 @@ TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
   auto mbt_context_double =
       dynamic_cast<MultibodyTreeContext<double>*>(context_double_.get());
   mbt_context_double->get_mutable_positions() = q;
-  iiwa_double_.tree().CalcPointsPositions(
-      *context_double_, iiwa_double_.tree().get_frame(frameB_index), p_BQ,
-      iiwa_double_.tree().get_frame(frameA_index), &y_expected);
+  iiwa_double_->CalcPointsPositions(
+      *context_double_, iiwa_double_->get_frame(frameB_index), p_BQ,
+      iiwa_double_->get_frame(frameA_index), &y_expected);
   const double tol = 1E-12;
   EXPECT_TRUE(CompareMatrices(y, y_expected, tol));
 
@@ -42,9 +41,9 @@ TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
   constraint1.Eval(q_autodiff, &y_autodiff);
   AutoDiffVecd<Eigen::Dynamic, 3> p_BQ_autodiff;
   Vector3<AutoDiffXd> y_autodiff_expected;
-  iiwa_autodiff_.tree().CalcPointsPositions(
-      *context_autodiff_, iiwa_autodiff_.tree().get_frame(frameB_index),
-      p_BQ.cast<AutoDiffXd>(), iiwa_autodiff_.tree().get_frame(frameA_index),
+  iiwa_autodiff_->CalcPointsPositions(
+      *context_autodiff_, iiwa_autodiff_->get_frame(frameB_index),
+      p_BQ.cast<AutoDiffXd>(), iiwa_autodiff_->get_frame(frameA_index),
       &y_autodiff_expected);
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, tol);
 }
@@ -65,13 +64,13 @@ TEST_F(TwoFreeBodiesConstraintTest, PositionConstraint) {
       ->get_mutable_positions() = q;
   const Eigen::Vector3d p_BQ(0.2, 0.3, 0.4);
   Eigen::Vector3d p_AQ;
-  two_bodies_double_.tree().CalcPointsPositions(
-      *context_double_, two_bodies_double_.tree().get_frame(body1_index_), p_BQ,
-      two_bodies_double_.tree().get_frame(body2_index_), &p_AQ);
+  two_bodies_double_->CalcPointsPositions(
+      *context_double_, two_bodies_double_->get_frame(body1_index_), p_BQ,
+      two_bodies_double_->get_frame(body2_index_), &p_AQ);
 
   {
     PositionConstraint good_constraint(
-        two_bodies_autodiff_.tree(), body1_index_, p_BQ, body2_index_,
+        *two_bodies_autodiff_, body1_index_, p_BQ, body2_index_,
         p_AQ - Eigen::Vector3d::Constant(0.001),
         p_AQ + Eigen::Vector3d::Constant(0.001),
         dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(
@@ -80,7 +79,7 @@ TEST_F(TwoFreeBodiesConstraintTest, PositionConstraint) {
   }
   {
     PositionConstraint bad_constraint(
-        two_bodies_autodiff_.tree(), body1_index_, p_BQ, body2_index_,
+        *two_bodies_autodiff_, body1_index_, p_BQ, body2_index_,
         p_AQ - Eigen::Vector3d::Constant(0.002),
         p_AQ - Eigen::Vector3d::Constant(0.001),
         dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(

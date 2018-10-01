@@ -12,8 +12,6 @@
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
-#include "drake/multibody/multibody_tree/position_kinematics_cache.h"
-#include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
 
 namespace drake {
 namespace multibody {
