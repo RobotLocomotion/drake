@@ -5,6 +5,7 @@ package(default_visibility = ["//visibility:public"])
 load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
     "drake_transitive_installed_hdrs_filegroup",
 )
 load(
@@ -316,7 +317,7 @@ drake_lcm_java_library(
 )
 
 # This should list every LCM type that is known to Drake.
-DRAKE_LCMTYPES = [
+LCMTYPES_CC = [
     ":acrobot",
     ":automotive",
     ":body_acceleration",
@@ -365,9 +366,14 @@ drake_java_binary(
     ],
 )
 
+drake_cc_library(
+    name = "lcmtypes_cc",
+    deps = LCMTYPES_CC,
+)
+
 drake_transitive_installed_hdrs_filegroup(
-    name = "drake_lcmtypes_headers",
-    deps = DRAKE_LCMTYPES,
+    name = "lcmtypes_cc_headers",
+    deps = LCMTYPES_CC,
 )
 
 # The drake-lcmtypes-cpp library is distinct from (but required by) the drake
@@ -379,7 +385,7 @@ drake_transitive_installed_hdrs_filegroup(
 # its generated cmake config `lib/cmake/drake/drake-config.cmake.
 install(
     name = "install_cc_headers",
-    hdrs = [":drake_lcmtypes_headers"],
+    hdrs = [":lcmtypes_cc_headers"],
     hdr_dest = "include/drake_lcmtypes",
     visibility = ["//visibility:private"],
 )
