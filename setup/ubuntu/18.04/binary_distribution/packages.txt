@@ -1,6 +1,7 @@
 coinor-libclp1
 coinor-libcoinutils3v5
 coinor-libipopt1v5
+default-jre
 libblas3
 libboost-all-dev
 libexpat1
@@ -28,7 +29,6 @@ libtinyxml2.6.2v5
 libxml2
 libxt6
 libyaml-cpp0.5v5
-openjdk-8-jre
 python
 python-lxml
 python-matplotlib

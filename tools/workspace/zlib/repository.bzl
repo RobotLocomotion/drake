@@ -3,10 +3,10 @@
 
 """
 Makes a system-installed zlib image compression library headers and library
-available to be used as a C/C++ dependency. On Ubuntu Xenial,  pkg-config is
-used to locate the zlib headers and library. On macOS, no pkg-config zlib.pc
-file is installed, but the zlib headers are included in the macOS SDK and the
-library is always located at /usr/lib.
+available to be used as a C/C++ dependency. On Ubuntu, pkg-config is used to
+locate the zlib headers and library. On macOS, no pkg-config zlib.pc file is
+installed, but the zlib headers are included in the macOS SDK and the library
+is always located at /usr/lib.
 
 Example:
     WORKSPACE:
