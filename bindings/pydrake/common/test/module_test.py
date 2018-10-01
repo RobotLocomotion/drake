@@ -38,3 +38,6 @@ class TestCommon(unittest.TestCase):
         pydrake.common.RandomDistribution.kUniform
         pydrake.common.RandomDistribution.kGaussian
         pydrake.common.RandomDistribution.kExponential
+
+    def test_logging_enabled(self):
+        self.assertTrue(pydrake.common._module_py._HAVE_SPDLOG)

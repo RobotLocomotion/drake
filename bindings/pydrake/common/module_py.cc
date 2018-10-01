@@ -9,6 +9,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
+#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace pydrake {
@@ -24,6 +25,8 @@ void trigger_an_assertion_failure() {
 
 PYBIND11_MODULE(_module_py, m) {
   m.doc() = "Bindings for //common:common";
+
+  m.attr("_HAVE_SPDLOG") = logging::kHaveSpdlog;
 
   py::enum_<drake::RandomDistribution>(m, "RandomDistribution")
     .value("kUniform", drake::RandomDistribution::kUniform)
