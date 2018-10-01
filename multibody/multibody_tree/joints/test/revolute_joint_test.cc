@@ -27,41 +27,36 @@ class RevoluteJointTest : public ::testing::Test {
     // these tests and therefore we do not initialize it.
     const SpatialInertia<double> M_B;  // Default construction is ok for this.
 
-    // Create an empty model.
-    auto model = std::make_unique<MultibodyTree<double>>();
-
     // Add some bodies so we can add joints between them:
-    body1_ = &model->AddBody<RigidBody>(M_B);
+    body1_ = &model_.AddBody<RigidBody>(M_B);
 
     // Add a revolute joint between the world and body1:
     const double lower_limit = -1.0;
     const double upper_limit = 1.5;
     const double damping = 3.0;
-    joint1_ = &model->AddJoint<RevoluteJoint>(
+    joint1_ = &model_.AddJoint<RevoluteJoint>(
         "Joint1",
-        model->world_body(), {}, *body1_, {},
+        model_.world_body(), {}, *body1_, {},
         Vector3d::UnitZ(), lower_limit, upper_limit, damping);
 
-    // We are done adding modeling elements. Transfer tree to system and get
-    // a Context.
-    system_ = std::make_unique<MultibodyTreeSystem<double>>(std::move(model));
-    context_ = system_->CreateDefaultContext();
+    // We are done adding modeling elements. Finalize the model:
+    model_.Finalize();
+
+    // Create a context to store the state for this model:
+    context_ = model_.CreateDefaultContext();
   }
 
-  const MultibodyTree<double>& tree() const { return system_->tree(); }
-
  protected:
-  std::unique_ptr<MultibodyTreeSystem<double>> system_;
-  std::unique_ptr<Context<double>> context_;
-
+  MultibodyTree<double> model_;
   const RigidBody<double>* body1_{nullptr};
   const RevoluteJoint<double>* joint1_{nullptr};
+  std::unique_ptr<Context<double>> context_;
 };
 
 // Verify the expected number of dofs.
 TEST_F(RevoluteJointTest, NumDOFs) {
-  EXPECT_EQ(tree().num_positions(), 1);
-  EXPECT_EQ(tree().num_velocities(), 1);
+  EXPECT_EQ(model_.num_positions(), 1);
+  EXPECT_EQ(model_.num_velocities(), 1);
   EXPECT_EQ(joint1_->num_positions(), 1);
   EXPECT_EQ(joint1_->num_velocities(), 1);
   EXPECT_EQ(joint1_->position_start(), 0);
@@ -96,14 +91,14 @@ TEST_F(RevoluteJointTest, ContextDependentAccess) {
 TEST_F(RevoluteJointTest, AddInTorques) {
   const double some_value = M_PI_2;
   // Default initialized to zero forces:
-  MultibodyForces<double> forces1(tree());
+  MultibodyForces<double> forces1(model_);
 
   // Add value twice:
   joint1_->AddInTorque(*context_, some_value, &forces1);
   joint1_->AddInTorque(*context_, some_value, &forces1);
 
 
-  MultibodyForces<double> forces2(tree());
+  MultibodyForces<double> forces2(model_);
   // Add value only once:
   joint1_->AddInTorque(*context_, some_value, &forces2);
   // Add forces2 into itself (same as adding torque twice):
@@ -117,7 +112,7 @@ TEST_F(RevoluteJointTest, AddInTorques) {
 }
 
 TEST_F(RevoluteJointTest, Clone) {
-  auto model_clone = tree().CloneToScalar<AutoDiffXd>();
+  auto model_clone = model_.CloneToScalar<AutoDiffXd>();
   const auto& joint1_clone = model_clone->get_variant(*joint1_);
 
   EXPECT_EQ(joint1_clone.name(), joint1_->name());

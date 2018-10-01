@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "drake/multibody/multibody_tree/multibody_tree.h"
-#include "drake/multibody/multibody_tree/multibody_tree_system.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/space_xyz_mobilizer.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -28,7 +27,7 @@ namespace test {
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template<typename T>
-class FreeRotatingBodyPlant final : public MultibodyTreeSystem<T> {
+class FreeRotatingBodyPlant final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FreeRotatingBodyPlant)
 
@@ -73,9 +72,11 @@ class FreeRotatingBodyPlant final : public MultibodyTreeSystem<T> {
   /// SetDefaultState(). Currently a non-zero value.
   Vector3<double> get_default_initial_angular_velocity() const;
 
-  using MultibodyTreeSystem<T>::tree;
-
  private:
+  // Override of context construction so that we can delegate it to
+  // MultibodyTree.
+  std::unique_ptr<systems::LeafContext<T>> DoMakeLeafContext() const override;
+
   void DoCalcTimeDerivatives(
       const systems::Context<T> &context,
       systems::ContinuousState<T> *derivatives) const override;
@@ -95,7 +96,7 @@ class FreeRotatingBodyPlant final : public MultibodyTreeSystem<T> {
 
   double I_{0};
   double J_{0};
-
+  MultibodyTree<T> model_;
   const RigidBody<T>* body_{nullptr};
   const SpaceXYZMobilizer<T>* mobilizer_{nullptr};
 };

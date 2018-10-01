@@ -25,29 +25,22 @@ class WeldJointTest : public ::testing::Test {
     // these tests and therefore we do not initialize it.
     const SpatialInertia<double> M_B;
 
-    // Create an empty model.
-    auto model = std::make_unique<MultibodyTree<double>>();
-
     // Add a body so we can add joint to it.
-    body_ = &model->AddBody<RigidBody>(M_B);
+    body_ = &model_.AddBody<RigidBody>(M_B);
 
     // Add a prismatic joint between the world and the body.
-    joint_ = &model->AddJoint<WeldJoint>(
+    joint_ = &model_.AddJoint<WeldJoint>(
         "Welder",
-        model->world_body(), {},  // X_PF
+        model_.world_body(), {},  // X_PF
         *body_, {},               // X_BM
         X_FM_);                   // X_FM
 
-    // We are done adding modeling elements. Transfer tree to system for
-    // computation.
-    system_ = std::make_unique<MultibodyTreeSystem<double>>(std::move(model));
+    // We are done adding modeling elements. Finalize the model:
+    model_.Finalize();
   }
 
-  const MultibodyTree<double>& tree() const { return system_->tree(); }
-
  protected:
-  std::unique_ptr<MultibodyTreeSystem<double>> system_;
-
+  MultibodyTree<double> model_;
   const RigidBody<double>* body_{nullptr};
   const WeldJoint<double>* joint_{nullptr};
   const Isometry3d X_FM_{Translation3d(0, 0.5, 0)};
@@ -55,8 +48,8 @@ class WeldJointTest : public ::testing::Test {
 
 // Verify the expected number of dofs.
 TEST_F(WeldJointTest, NumDOFs) {
-  EXPECT_EQ(tree().num_positions(), 0);
-  EXPECT_EQ(tree().num_velocities(), 0);
+  EXPECT_EQ(model_.num_positions(), 0);
+  EXPECT_EQ(model_.num_velocities(), 0);
   EXPECT_EQ(joint_->num_positions(), 0);
   EXPECT_EQ(joint_->num_velocities(), 0);
   // We just verify we can call these methods. However their return value is

@@ -64,23 +64,23 @@ class IiwaKinematicConstraintTest : public ::testing::Test {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaKinematicConstraintTest)
 
   IiwaKinematicConstraintTest()
-      : iiwa_autodiff_(benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel<
-            AutoDiffXd>(true /* finalized model. */)),
-        iiwa_double_(benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel<double>(
-            true /* finalized model. */)),
-        context_autodiff_(iiwa_autodiff_.CreateDefaultContext()),
-        context_double_(iiwa_double_.CreateDefaultContext()) {}
+      : iiwa_autodiff_{benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel<
+            AutoDiffXd>(true /* finalized model. */)},
+        iiwa_double_{benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel<double>(
+            true /* finalized model. */)},
+        context_autodiff_(iiwa_autodiff_->CreateDefaultContext()),
+        context_double_(iiwa_double_->CreateDefaultContext()) {}
 
   FrameIndex GetFrameIndex(const std::string& name) {
     // TODO(hongkai.dai): call GetFrameByName() directly.
-    return iiwa_autodiff_.tree().GetFrameByName(name).index();
+    return iiwa_autodiff_->GetFrameByName(name).index();
   }
 
  protected:
-  MultibodyTreeSystem<AutoDiffXd> iiwa_autodiff_;
-  MultibodyTreeSystem<double> iiwa_double_;
-  std::unique_ptr<systems::Context<AutoDiffXd>> context_autodiff_;
-  std::unique_ptr<systems::Context<double>> context_double_;
+  std::unique_ptr<MultibodyTree<AutoDiffXd>> iiwa_autodiff_;
+  std::unique_ptr<MultibodyTree<double>> iiwa_double_;
+  std::unique_ptr<systems::LeafContext<AutoDiffXd>> context_autodiff_;
+  std::unique_ptr<systems::LeafContext<double>> context_double_;
 };
 
 // Test kinematic constraints on two free floating bodies.
@@ -91,26 +91,22 @@ class TwoFreeBodiesConstraintTest : public ::testing::Test {
   TwoFreeBodiesConstraintTest()
       : two_bodies_autodiff_(ConstructTwoFreeBodies<AutoDiffXd>()),
         two_bodies_double_(ConstructTwoFreeBodies<double>()),
-        body1_index_(two_bodies_autodiff_.tree()
-                         .GetBodyByName("body1")
-                         .body_frame()
-                         .index()),
-        body2_index_(two_bodies_autodiff_.tree()
-                         .GetBodyByName("body2")
-                         .body_frame()
-                         .index()),
-        context_autodiff_(two_bodies_autodiff_.CreateDefaultContext()),
-        context_double_(two_bodies_double_.CreateDefaultContext()) {}
+        body1_index_(
+            two_bodies_autodiff_->GetBodyByName("body1").body_frame().index()),
+        body2_index_(
+            two_bodies_autodiff_->GetBodyByName("body2").body_frame().index()),
+        context_autodiff_(two_bodies_autodiff_->CreateDefaultContext()),
+        context_double_(two_bodies_double_->CreateDefaultContext()) {}
 
   ~TwoFreeBodiesConstraintTest() override {}
 
  protected:
-  MultibodyTreeSystem<AutoDiffXd> two_bodies_autodiff_;
-  MultibodyTreeSystem<double> two_bodies_double_;
+  std::unique_ptr<MultibodyTree<AutoDiffXd>> two_bodies_autodiff_;
+  std::unique_ptr<MultibodyTree<double>> two_bodies_double_;
   FrameIndex body1_index_;
   FrameIndex body2_index_;
-  std::unique_ptr<systems::Context<AutoDiffXd>> context_autodiff_;
-  std::unique_ptr<systems::Context<double>> context_double_;
+  std::unique_ptr<systems::LeafContext<AutoDiffXd>> context_autodiff_;
+  std::unique_ptr<systems::LeafContext<double>> context_double_;
 };
 }  // namespace internal
 }  // namespace multibody
