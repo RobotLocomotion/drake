@@ -309,10 +309,16 @@ drake_lcm_py_library(
 )
 
 drake_lcm_java_library(
-    name = "lcmtypes_drake_java",
+    name = "lcmtypes_java",
     lcm_package = "drake",
     lcm_srcs = glob(["*.lcm"]) + _AUTOMOTIVE_LCM_SRCS,
     deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_java"],
+)
+
+# TODO(eric.cousineau): Deprecate and remove this target.
+alias(
+    name = "lcmtypes_drake_java",
+    actual = "lcmtypes_java",
 )
 
 # This should list every LCM type that is known to Drake.
@@ -358,7 +364,7 @@ drake_java_binary(
     main_class = "lcm.spy.Spy",
     visibility = ["//visibility:private"],
     runtime_deps = [
-        ":lcmtypes_drake_java",
+        ":lcmtypes_java",
         "@lcmtypes_bot2_core//:lcmtypes_bot2_core_java",
         "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_java",
         "@optitrack_driver//lcmtypes:lcmtypes_optitrack",
@@ -390,7 +396,7 @@ install(
     targets = [
         ":drake-lcm-spy-launcher",
         ":drake-lcm-spy",
-        ":lcmtypes_drake_java",
+        ":lcmtypes_java",
         ":lcmtypes_py",
     ],
     rename = {
