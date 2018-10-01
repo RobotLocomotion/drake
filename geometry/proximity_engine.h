@@ -74,13 +74,18 @@ class ProximityEngine {
   /** @name Topology management */
   //@{
 
-  /** Adds the given `shape` to the engine's dynamic geometry.  */
-  GeometryIndex AddDynamicGeometry(const Shape& shape);
+  /** Adds the given `shape` to the engine's dynamic geometry. Also provides the
+   dynamic geometry's internal index for the shape so it can be mapped back into
+   the world. */
+  ProximityIndex AddDynamicGeometry(const Shape& shape, InternalIndex index);
 
   /** Adds the given `shape` to the engine's anchored geometry at the fixed
-   pose given by `X_WG` (in the world frame W).  */
-  AnchoredGeometryIndex AddAnchoredGeometry(const Shape& shape,
-                                            const Isometry3<double>& X_WG);
+   pose given by `X_WG` (in the world frame W). Also provides the
+   dynamic geometry's internal index for the shape so it can be mapped back into
+   the world. */
+  ProximityIndex AddAnchoredGeometry(const Shape& shape,
+                                     const Isometry3<double>& X_WG,
+                                     InternalIndex index);
 
   /** Reports the _total_ number of geometries in the engine -- dynamic and
    anchored (spanning all sources).  */
@@ -130,11 +135,9 @@ class ProximityEngine {
    each pair between an element in @p dynamic_map and another element in
    @p anchored_map. The order and size of the closest points are invariant
    when the poses of the objects are changed.
-   @param[in]   dynamic_map   A map from geometry _index_ to the corresponding
-                              global geometry identifier for dynamic geometries.
-   @param[in]   anchored_map  A map from geometry _index_ to the corresponding
-                              global geometry identifier for anchored
-                              geometries.
+
+   @param[in]   geometry_map  A map from geometry _index_ to the corresponding
+                              global geometry identifier.
    @returns signed_distance_pair A vector populated with all pairs of witness
                                  points. For a pair consisting of geometries A
                                  and B, distances will always be reported as the
@@ -145,8 +148,7 @@ class ProximityEngine {
    */
   std::vector<SignedDistancePair<double>>
   ComputeSignedDistancePairwiseClosestPoints(
-      const std::vector<GeometryId>& dynamic_map,
-      const std::vector<GeometryId>& anchored_map) const;
+      const std::vector<GeometryId>& geometry_map) const;
   //@}
 
 
@@ -177,16 +179,12 @@ class ProximityEngine {
    For two penetrating geometries g₁ and g₂, it is guaranteed that they will
    map to `id_A` and `id_B` in a fixed, repeatable manner.
 
-   @param[in]   dynamic_map   A map from geometry _index_ to the corresponding
-                              global geometry identifier for dynamic geometries.
-   @param[in]   anchored_map  A map from geometry _index_ to the corresponding
-                              global geometry identifier for anchored
-                              geometries.
+   @param[in]   geometry_map  A map from geometry _index_ to the corresponding
+                              global geometry identifier.
    @returns A vector populated with all detected penetrations characterized as
             point pairs. */
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration(
-      const std::vector<GeometryId>& dynamic_map,
-      const std::vector<GeometryId>& anchored_map) const;
+      const std::vector<GeometryId>& geometry_map) const;
 
   //@}
 
@@ -208,8 +206,8 @@ class ProximityEngine {
    @param[in]   anchored    The set of _anchored_ geometry indices for which no
                             collisions can be reported.  */
   void ExcludeCollisionsWithin(
-      const std::unordered_set<GeometryIndex>& dynamic,
-      const std::unordered_set<AnchoredGeometryIndex>& anchored);
+      const std::unordered_set<InternalIndex>& dynamic,
+      const std::unordered_set<InternalIndex>& anchored);
 
   /** Excludes geometry pairs from collision evaluation by updating the
    candidate pair set `C = C - P`, where `P = {(a, b)}, ∀ a ∈ A, b ∈ B` and
@@ -217,10 +215,10 @@ class ProximityEngine {
    `B = dynamic2 ⋃ anchored2 = {b₀, b₁, ..., bₙ}`. This does _not_
    preclude collisions between members of the _same_ set.   */
   void ExcludeCollisionsBetween(
-      const std::unordered_set<GeometryIndex>& dynamic1,
-      const std::unordered_set<AnchoredGeometryIndex>& anchored1,
-      const std::unordered_set<GeometryIndex>& dynamic2,
-      const std::unordered_set<AnchoredGeometryIndex>& anchored2);
+      const std::unordered_set<InternalIndex>& dynamic1,
+      const std::unordered_set<InternalIndex>& anchored1,
+      const std::unordered_set<InternalIndex>& dynamic2,
+      const std::unordered_set<InternalIndex>& anchored2);
 
   //@}
 
@@ -234,7 +232,7 @@ class ProximityEngine {
   // Assigns the given clique to the dynamic geometry indicated by `index`.
   // This is exposed via the GeometryStateCollisionFilterAttorney to allow
   // GeometryState to set up cliques between sibling geometries.
-  void set_clique(GeometryIndex index, int clique);
+  void set_clique(int index, int clique);
 
   ////////////////////////////////////////////////////////////////////////////
 
@@ -307,7 +305,7 @@ class GeometryStateCollisionFilterAttorney {
   // and gⱼ are affixed to the same frame.
   template <typename T>
   static void set_dynamic_geometry_clique(ProximityEngine<T>* engine,
-                                          GeometryIndex geometry_index,
+                                          InternalIndex geometry_index,
                                           int clique) {
     engine->set_clique(geometry_index, clique);
   }

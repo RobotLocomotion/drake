@@ -248,9 +248,11 @@ void SceneGraph<T>::CalcQueryObject(const Context<T>& context,
 template <typename T>
 PoseBundle<T> SceneGraph<T>::MakePoseBundle() const {
   const auto& g_state = *initial_state_;
-  PoseBundle<T> bundle(g_state.get_num_frames());
+  // Don't include the world frame.
+  PoseBundle<T> bundle(g_state.get_num_frames() - 1);
   int i = 0;
   for (FrameId f_id : g_state.get_frame_ids()) {
+    if (f_id == world_frame_id()) continue;
     int frame_group = g_state.get_frame_group(f_id);
     bundle.set_model_instance_id(i, frame_group);
 
@@ -279,6 +281,7 @@ void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
   FullPoseUpdate(g_context);
   const auto& g_state = g_context.get_geometry_state();
   for (FrameId f_id : g_state.get_frame_ids()) {
+    if (f_id == world_frame_id()) continue;
     output->set_pose(i, g_state.get_pose_in_world(f_id));
     // TODO(SeanCurtis-TRI): Handle velocity.
     ++i;
@@ -308,16 +311,18 @@ void SceneGraph<T>::FullPoseUpdate(const GeometryContext<T>& context) const {
     if (pair.second.size() > 0) {
       SourceId source_id = pair.first;
       const auto itr = input_source_ids_.find(source_id);
-      DRAKE_ASSERT(itr != input_source_ids_.end());
-      const int pose_port = itr->second.pose_port;
-      const auto pose_port_value =
-          this->template EvalAbstractInput(context, pose_port);
-      if (pose_port_value) {
-        const auto& poses =
-            pose_port_value->template GetValue<FramePoseVector<T>>();
-        mutable_state.SetFramePoses(poses);
-      } else {
-        throw_error(source_id, "pose");
+      // The source id *could* be the internal source and we skip it.
+      if (itr != input_source_ids_.end()) {
+        const int pose_port = itr->second.pose_port;
+        const auto pose_port_value =
+            this->template EvalAbstractInput(context, pose_port);
+        if (pose_port_value) {
+          const auto& poses =
+              pose_port_value->template GetValue<FramePoseVector<T>>();
+          mutable_state.SetFramePoses(poses);
+        } else {
+          throw_error(source_id, "pose");
+        }
       }
     }
   }

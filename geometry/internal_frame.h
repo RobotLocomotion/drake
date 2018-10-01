@@ -46,8 +46,8 @@ class InternalFrame {
    @param clique        The clique that will be used to prevent self-collision
                         among geometries rigidly affixed to this frame.  */
   InternalFrame(SourceId source_id, FrameId frame_id, const std::string &name,
-                int frame_group, PoseIndex pose_index, FrameId parent_id,
-                int clique);
+                int frame_group, InternalIndex internal_index,
+                FrameId parent_id, int clique);
 
   /** Compares two %InternalFrame instances for "equality". Two internal frames
    are considered equal if they have the same frame identifier.  */
@@ -74,8 +74,8 @@ class InternalFrame {
    internal significance or dependencies.  */
   int frame_group() const { return frame_group_; }
 
-  /** Returns the pose index of this frame in the full scene graph.  */
-  PoseIndex pose_index() const { return pose_index_; }
+  /** Returns the internal index of this frame in the full scene graph.  */
+  InternalIndex internal_index() const { return internal_index_; }
 
   /** Returns the clique associated with this frame.  */
   int clique() const { return clique_; }
@@ -164,7 +164,7 @@ class InternalFrame {
   int frame_group_{0};
 
   // The index in the pose vector where this frame's pose lives.
-  PoseIndex pose_index_;
+  InternalIndex internal_index_{};
 
   // The clique used to prevent self-collision among the geometries affixed to
   // this frame.
