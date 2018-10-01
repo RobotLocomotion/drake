@@ -479,7 +479,7 @@ drake_py_binary(
     name = "steering_command_driver",
     srcs = ["steering_command_driver.py"],
     deps = [
-        "//lcmtypes:lcmtypes_py",
+        "//lcmtypes:lcmtypes_drake_py",
         "@lcm//:lcm-python",
     ],
 )
