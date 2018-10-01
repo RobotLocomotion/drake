@@ -77,7 +77,7 @@ class FrameTests : public ::testing::Test {
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.
     system_ = std::make_unique<MultibodyTreeSystem<double>>(std::move(model));
-    auto context = system_->CreateDefaultContext();
+    context_ = system_->CreateDefaultContext();
 
     // An arbitrary pose of an arbitrary frame G in an arbitrary frame F.
     X_FG_ = AngleAxisd(M_PI / 6.0, Vector3d::UnitY()) *
