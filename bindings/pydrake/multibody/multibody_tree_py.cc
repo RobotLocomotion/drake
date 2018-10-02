@@ -3,10 +3,12 @@
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/bindings/pydrake/util/deprecation_pybind.h"
 #include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/util/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/util/type_safe_index_pybind.h"
+#include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/joints/weld_joint.h"
@@ -14,6 +16,8 @@
 #include "drake/multibody/multibody_tree/math/spatial_vector.h"
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"
 #include "drake/multibody/multibody_tree/multibody_forces.h"
+#include "drake/multibody/multibody_tree/multibody_plant/contact_info.h"
+#include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
@@ -196,6 +200,8 @@ void init_module(py::module m) {
     py::class_<Class>(m, "MultibodyTree")
         .def("CalcRelativeTransform", &Class::CalcRelativeTransform,
              py::arg("context"), py::arg("frame_A"), py::arg("frame_B"))
+        .def("get_body", &Class::get_body, py::arg("body_index"),
+              py_reference_internal)
         .def("get_multibody_state_vector",
              [](const MultibodyTree<T>* self,
                 const Context<T>& context) -> Eigen::Ref<const VectorX<T>> {
@@ -285,6 +291,24 @@ void init_module(py::module m) {
               std::vector<Isometry3<T>> X_WB;
               self->CalcAllBodyPosesInWorld(context, &X_WB);
               return X_WB;
+            },
+            py::arg("context"))
+        .def("CalcMassMatrixViaInverseDynamics",
+            [](const Class* self, const Context<T>& context) {
+              MatrixX<T> H;
+              const int n = self->num_velocities();
+              H.resize(n, n);
+              self->CalcMassMatrixViaInverseDynamics(context, &H);
+              return H;
+            },
+            py::arg("context"))
+        .def("CalcBiasTerm",
+            [](const Class* self, const Context<T>& context) {
+              VectorX<T> Cv;
+              const int n = self->num_velocities();
+              Cv.resize(n);
+              self->CalcBiasTerm(context, &Cv);
+              return Cv;
             },
             py::arg("context"));
   }
@@ -442,6 +466,35 @@ void init_multibody_plant(py::module m) {
     cls.attr("message_model") = "Please use tree().";
     DeprecateAttribute(
         cls, "model", cls.attr("message_model"));
+  }
+
+  // PointPairContactInfo
+  {
+    using Class = PointPairContactInfo<T>;
+    py::class_<Class>(m, "PointPairContactInfo")
+      .def(py::init<BodyIndex, BodyIndex, const Vector3<T>, const Vector3<T>,
+          const T&, const T&, const geometry::PenetrationAsPointPair<T>>(),
+          py::arg("bodyA_index"), py::arg("bodyB_index"), py::arg("f_Bc_W"),
+          py::arg("p_WC"), py::arg("separation_speed"), py::arg("slip_speed"),
+          py::arg("point_pair"))
+      .def("bodyA_index", &Class::bodyA_index)
+      .def("bodyB_index", &Class::bodyB_index)
+      .def("contact_force", &Class::contact_force)
+      .def("contact_point", &Class::contact_point)
+      .def("slip_speed", &Class::slip_speed)
+      .def("separation_speed", &Class::separation_speed);
+  }
+
+  // ContactResults
+  {
+    using Class = ContactResults<T>;
+    py::class_<Class>(m, "ContactResults")
+        .def(py::init<>())
+        .def("num_contacts", &Class::num_contacts)
+        .def("AddContactInfo", &Class::AddContactInfo,
+          py::arg("point_pair_info"))
+        .def("contact_info", &Class::contact_info, py::arg("i"));
+    pysystems::AddValueInstantiation<Class>(m);
   }
 }
 
