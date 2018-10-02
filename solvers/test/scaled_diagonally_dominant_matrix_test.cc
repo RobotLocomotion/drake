@@ -59,6 +59,9 @@ bool IsMatrixSDD(const Eigen::Ref<Eigen::MatrixXd>& X) {
   // A matrix X is scaled diagonally dominant, if there exists a positive vector
   // d, such that the matrix A defined as A(i, j) = d(j) * X(i, j) is diagonally
   // dominant with positive diagonals.
+  // This is explained as Remark 6 of DSOS and SDSOS optimization: more
+  // tractable alternatives to sum of squares and semidefinite optimization by
+  // Amir Ali Ahmadi and Anirudha Majumdar.
   const int nx = X.rows();
   MathematicalProgram prog;
   auto d = prog.NewContinuousVariables(nx);
