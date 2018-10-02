@@ -13,10 +13,13 @@
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
 
+using Eigen::Isometry3d;
+using Eigen::Translation3d;
 using Eigen::Vector3d;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
@@ -27,6 +30,7 @@ using multibody::Body;
 using multibody::parsing::AddModelFromSdfFile;
 using multibody::parsing::AddModelsFromSdfFile;
 using multibody::parsing::default_friction;
+using multibody::parsing::detail::ToIsometry3;
 using systems::Context;
 
 namespace multibody {
@@ -150,6 +154,26 @@ TEST_F(AcrobotModelTests, ModelBasics) {
   EXPECT_EQ(link1_frame.name(), "Link1");
   const Frame<double>& link2_frame = plant_->GetFrameByName("Link2");
   EXPECT_EQ(link2_frame.name(), "Link2");
+  const Frame<double>& arbitrary_frame =
+      plant_->GetFrameByName("ArbitraryFrame");
+  EXPECT_EQ(arbitrary_frame.name(), "ArbitraryFrame");
+  EXPECT_EQ(arbitrary_frame.body().name(), "Link2");
+  const Frame<double>& child_frame =
+      plant_->GetFrameByName("ArbitraryFrameChild");
+  auto context = plant_->CreateDefaultContext();
+  const Isometry3d X_2A_expected =
+      ToIsometry3(ignition::math::Pose3d(0.1, 0.2, 0.3, 0.4, 0.5, 0.6));
+  const Isometry3d X_2A =
+      plant_->tree().CalcRelativeTransform(
+          *context, link2_frame, arbitrary_frame);
+  const double eps = std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(X_2A_expected.matrix(), X_2A.matrix(), eps));
+  const Isometry3d X_2C_expected = X_2A_expected * ToIsometry3(
+      ignition::math::Pose3d(0.1, 0, 0, 0, 0, 0));
+  const Isometry3d X_2C =
+      plant_->tree().CalcRelativeTransform(
+          *context, link2_frame, child_frame);
+  EXPECT_TRUE(CompareMatrices(X_2C_expected.matrix(), X_2C.matrix(), eps));
 }
 
 // Verify the parsed model computes the same mass matrix as a Drake benchmark
@@ -420,6 +444,19 @@ GTEST_TEST(SdfParserThrowsWhen, JointDampingIsNegative) {
       /* Verify this method is throwing for the right reasons. */
       "Joint damping is negative for joint '.*'. "
           "Joint damping must be a non-negative number.");
+}
+
+// Verify that our SDF parser throws an exception when a user specifies a frame
+// whose parent frame is specified with an empty string.
+GTEST_TEST(SdfParserThrowsWhen, PoseEmptyFrame) {
+  const std::string sdf_file_path =
+      "drake/multibody/multibody_tree/parsing/test/bad_frame_empty.sdf";
+  MultibodyPlant<double> plant;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AddModelFromSdfFile(FindResourceOrThrow(sdf_file_path), &plant),
+      std::runtime_error,
+      "The 'frame' attribute for a 'pose' element cannot be empty; it must be "
+      "a nonempty string, or not defined at all.");
 }
 
 GTEST_TEST(SdfParser, IncludeTags) {

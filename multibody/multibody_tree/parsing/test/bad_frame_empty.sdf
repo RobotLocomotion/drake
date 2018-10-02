@@ -1,0 +1,8 @@
+<sdf version='1.6'>
+  <model name='bad_frame'> 
+    <frame name='bad_frame_thing'>
+      <!-- Empty frame names should trigger an error. -->
+      <pose frame="">0 0 0 0 0 0</pose>
+    </frame>
+  </model>
+</sdf>
