@@ -274,6 +274,16 @@ GTEST_TEST(MultibodyTreeSystem, CatchBadBehavior) {
       ".*MultibodyTreeSystem().*MultibodyTree was null.*");
 }
 
+GTEST_TEST(MultibodyTree, BackwardsCompatibility) {
+  auto owned_tree = std::make_unique<MultibodyTree<double>>();
+  auto* tree = owned_tree.get();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+    tree->CreateDefaultContext(), std::runtime_error,
+    ".*that is owned by a MultibodyPlant.*");
+  MultibodyTreeSystem<double> system(std::move(owned_tree));
+  EXPECT_NO_THROW(tree->CreateDefaultContext());
+}
+
 // Fixture to perform a number of computational tests on a KUKA Iiwa model.
 class KukaIiwaModelTests : public ::testing::Test {
  public:
