@@ -111,6 +111,8 @@ class IiwaCommandSender : public systems::LeafSystem<double> {
 ///
 /// All ports will continue to output their initial state (typically
 /// zero) until a message is received.
+///
+/// @see `lcmt_iiwa_status.lcm` for additional documentation.
 class IiwaStatusReceiver : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaStatusReceiver)
@@ -166,6 +168,8 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
 ///
 /// This system is presently only used in simulation. The robot hardware drivers
 /// publish directly to LCM and do not make use of this system.
+///
+/// @see `lcmt_iiwa_status.lcm` for additional documentation.
 class IiwaStatusSender : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaStatusSender)
