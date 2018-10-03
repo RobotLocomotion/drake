@@ -7,7 +7,7 @@ namespace multibody {
 namespace parsing {
 
 /// Default value of the Coulomb's law coefficients of friction for when they
-/// are not specified in the SDF file.
+/// are not specified in the URDF/SDF file.
 // Note:
 //   static global variables are strongly discouraged by the C++ style guide:
 // http://drake.mit.edu/styleguide/cppguide.html#Static_and_Global_Variables
