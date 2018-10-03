@@ -9,6 +9,27 @@ namespace symbolic {
 using test::RationalFunctionEqual;
 
 class SymbolicRationalFunctionMatrixTest : public ::testing::Test {
+ public:
+  void SetUp() override {
+    M_rational_function_dynamic_ << RationalFunction(p1_, p2_),
+        RationalFunction(p1_, p3_), RationalFunction(p2_, p3_),
+        RationalFunction(p1_, p2_ + p3_);
+    M_rational_function_static_ = M_rational_function_dynamic_;
+    v_rational_function_dynamic_ << RationalFunction(p2_, p4_),
+        RationalFunction(p3_, p2_ + p4_);
+    v_rational_function_static_ = v_rational_function_dynamic_;
+
+    M_poly_dynamic_ << p1_, p2_, p5_, p6_;
+    M_poly_static_ = M_poly_dynamic_;
+    v_poly_dynamic_ << p1_, p3_;
+    v_poly_static_ = v_poly_dynamic_;
+
+    M_double_dynamic_ << 1, 2, 3, 4;
+    M_double_static_ = M_double_dynamic_;
+    v_double_dynamic_ << 1, 2;
+    v_double_static_ = v_double_dynamic_;
+  }
+
  protected:
   const Variable var_x_{"x"};
   const Variable var_y_{"y"};
@@ -44,26 +65,6 @@ class SymbolicRationalFunctionMatrixTest : public ::testing::Test {
   Eigen::Matrix2d M_double_static_;
   Eigen::VectorXd v_double_dynamic_{2};
   Eigen::Vector2d v_double_static_;
-
-  void SetUp() override {
-    M_rational_function_dynamic_ << RationalFunction(p1_, p2_),
-        RationalFunction(p1_, p3_), RationalFunction(p2_, p3_),
-        RationalFunction(p1_, p2_ + p3_);
-    M_rational_function_static_ = M_rational_function_dynamic_;
-    v_rational_function_dynamic_ << RationalFunction(p2_, p4_),
-        RationalFunction(p3_, p2_ + p4_);
-    v_rational_function_static_ = v_rational_function_dynamic_;
-
-    M_poly_dynamic_ << p1_, p2_, p5_, p6_;
-    M_poly_static_ = M_poly_dynamic_;
-    v_poly_dynamic_ << p1_, p3_;
-    v_poly_static_ = v_poly_dynamic_;
-
-    M_double_dynamic_ << 1, 2, 3, 4;
-    M_double_static_ = M_double_dynamic_;
-    v_double_dynamic_ << 1, 2;
-    v_double_static_ = v_double_dynamic_;
-  }
 };
 
 template <typename Derived1, typename Derived2>

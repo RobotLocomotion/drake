@@ -155,7 +155,7 @@ RationalFunction pow(const RationalFunction& f, int n);
  *  - Matrix<RF>         * Matrix<double>     => Matrix<RF>
  *  - Matrix<Polynomial> * Matrix<RF>         => Matrix<RF>
  *  - Matrix<double>     * Matrix<RF>         => Matrix<RF>
- * where RF is a shorthand for RelationalFunction.
+ * where RF is a shorthand for RationalFunction.
  *
  * @note that these operator overloadings are necessary even after providing
  * Eigen::ScalarBinaryOpTraits. See
