@@ -160,6 +160,7 @@ drake_cc_library(
     name = "type_safe_index_pybind",
     hdrs = ["type_safe_index_pybind.h"],
     visibility = ["//visibility:public"],
+    deps = ["//bindings/pydrake:documentation_pybind"],
 )
 
 generate_pybind11_version_py_file(
