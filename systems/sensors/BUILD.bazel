@@ -437,7 +437,7 @@ drake_cc_googletest(
     data = [
         ":test_models",
     ],
-    tags = vtk_test_tags,
+    tags = vtk_test_tags.append("no_tsan"),
     deps = [
         ":rgbd_camera",
         "//attic/multibody/parsers",
@@ -474,7 +474,7 @@ drake_cc_googletest(
     data = [
         ":test_models",
     ],
-    tags = vtk_test_tags,
+    tags = vtk_test_tags.append("no_tsan"),
     deps = [
         ":rgbd_renderer",
         ":rgbd_renderer_test_util",
