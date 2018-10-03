@@ -4,6 +4,12 @@
 Using Drake from Python
 ***********************
 
+.. toctree::
+		:maxdepth: 1
+
+		pydrake/index
+
+
 A limited subset of the Drake C++ functionality is available from Python. The
 Drake Python bindings are generated using `pybind11
 <https://github.com/pybind/pybind11>`_, which means that every function or
@@ -180,9 +186,6 @@ explicitly refer to each symbol:
 Documentation
 =============
 
-There is not yet a comprehensive API documentation for the Python bindings
-(tracked by `#7914 <https://github.com/RobotLocomotion/drake/issues/7914>`_).
-
 In general, the Python API should be close to the
 `C++ API <doxygen_cxx/index.html#://>`_. There are some exceptions:
 
@@ -273,3 +276,5 @@ If you are developing Python bindings, please see the Doxygen page for
 `Python Bindings <https://drake.mit.edu/doxygen_cxx/python_bindings.html>`_.
 This provides information on programming conventions as well as tips for
 debugging.
+
+.. automodule:: pydrake

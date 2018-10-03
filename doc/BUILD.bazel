@@ -7,6 +7,23 @@ load(
     "drake_py_binary",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_runfiles_binary.bzl", "drake_runfiles_binary")
+
+# We need pydrake to be in the PYTHONPATH for sphinx.ext.autodoc to generate
+# API documentation.
+drake_py_binary(
+    name = "sphinx_build_wrapper",
+    srcs = ["sphinx_build_wrapper.py"],
+    data = ["@sphinx//:sphinx-build"],
+    visibility = ["//visibility:private"],
+    deps = ["//bindings/pydrake"],
+)
+
+drake_runfiles_binary(
+    name = "sphinx_build",
+    target = ":sphinx_build_wrapper",
+    visibility = ["//visibility:private"],
+)
 
 genrule(
     name = "sphinx",
@@ -21,9 +38,9 @@ genrule(
     outs = ["sphinx.zip"],
     cmd = " ".join([
         # Run sphinx-build.
-        "$(location @sphinx//:sphinx-build) -b html",  # HTML output.
+        "$(location :sphinx_build) -b html",  # HTML output.
         "-a -E -d $(@D)/.doctrees/",  # Don't use caching.
-        "-W -N -q",  # Turn warnings into errors; else be quiet.
+        "-N -q",  # Be quiet. TODO(jamiesnape): Fix warnings due to pydrake.
         "$$(dirname $(location conf.py))",  # Source dir.
         "$(@D)/.tmpout",  # Output dir.
         "&&",
@@ -36,7 +53,7 @@ genrule(
     # Some (currently disabled) Sphinx extensions try to reach out to the
     # network; we should fail-fast if someone tries to turn them on.
     tags = ["block-network"],
-    tools = ["@sphinx//:sphinx-build"],
+    tools = [":sphinx_build"],
 )
 
 drake_py_binary(

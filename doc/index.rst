@@ -1,6 +1,6 @@
 
 .. image:: images/logo_w_text.jpg
-	:align: center   
+	:align: center
 	:width: 60%
 
 
