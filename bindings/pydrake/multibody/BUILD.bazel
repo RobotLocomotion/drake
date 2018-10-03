@@ -33,6 +33,7 @@ drake_py_library(
 
 drake_pybind_library(
     name = "benchmarks_py",
+    cc_deps = ["//bindings/pydrake:documentation_pybind"],
     cc_so_name = "benchmarks",
     cc_srcs = ["benchmarks_py.cc"],
     package_info = PACKAGE_INFO,
@@ -45,6 +46,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "multibody_tree_py",
     cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/systems:systems_pybind",
         "//bindings/pydrake/util:deprecation_pybind",
         "//bindings/pydrake/util:drake_optional_pybind",
@@ -64,6 +66,7 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "parsers_py",
+    cc_deps = ["//bindings/pydrake:documentation_pybind"],
     cc_so_name = "parsers",
     cc_srcs = ["parsers_py.cc"],
     package_info = PACKAGE_INFO,
@@ -75,6 +78,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "rigid_body_plant_py",
     cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/systems:systems_pybind",
         "//lcmtypes:viewer",
     ],
@@ -93,6 +97,7 @@ drake_pybind_library(
     name = "rigid_body_tree_py",
     cc_deps = [
         "//bindings/pydrake:autodiff_types_pybind",
+        "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/util:type_pack",
     ],
     cc_so_name = "rigid_body_tree",
@@ -112,6 +117,7 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "collision_py",
+    cc_deps = ["//bindings/pydrake:documentation_pybind"],
     cc_so_name = "collision",
     cc_srcs = ["collision_py.cc"],
     package_info = PACKAGE_INFO,
@@ -125,6 +131,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "joints_py",
     cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/util:eigen_geometry_pybind",
     ],
     cc_so_name = "joints",
@@ -138,6 +145,7 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "rigid_body_py",
+    cc_deps = ["//bindings/pydrake:documentation_pybind"],
     cc_so_name = "rigid_body",
     cc_srcs = ["rigid_body_py.cc"],
     package_info = PACKAGE_INFO,
@@ -149,6 +157,7 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "shapes_py",
+    cc_deps = ["//bindings/pydrake:documentation_pybind"],
     cc_so_name = "shapes",
     cc_srcs = ["shapes_py.cc"],
     package_info = PACKAGE_INFO,
@@ -161,6 +170,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "inverse_kinematics_py",
     cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
     ],
     cc_so_name = "inverse_kinematics",

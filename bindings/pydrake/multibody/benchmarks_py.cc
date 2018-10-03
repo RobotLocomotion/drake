@@ -1,6 +1,7 @@
 #include "pybind11/eval.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 
@@ -16,19 +17,22 @@ using T = double;
 void init_acrobot(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody::benchmarks::acrobot;
+  auto& doc = pydrake_doc.drake.multibody.benchmarks.acrobot;
 
   py::module::import("pydrake.geometry");
   // `MultibodyTree` is used by `MakeAcrobotPlant`.
   py::module::import("pydrake.multibody.multibody_tree");
 
-  py::class_<AcrobotParameters>(m, "AcrobotParameters")
-      .def(py::init());
+  py::class_<AcrobotParameters>(m, "AcrobotParameters",
+                                doc.AcrobotParameters.doc)
+      .def(py::init(), doc.AcrobotParameters.ctor.doc);
 
   m.def("MakeAcrobotPlant",
         py::overload_cast<const AcrobotParameters&, bool, SceneGraph<double>*>(
             &MakeAcrobotPlant),
         py::arg("default_parameters"), py::arg("finalize"),
-        py::arg("scene_graph") = nullptr);
+        py::arg("scene_graph") = nullptr,
+        doc.MakeAcrobotPlant.doc);
 }
 
 void init_all(py::module m) {
