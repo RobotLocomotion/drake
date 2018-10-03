@@ -300,6 +300,7 @@ TEST_F(MultibodyPlantSdfParser, LinksWithCollisions) {
       plant_.default_coulomb_friction(link3_collision_geometry_ids[0]) ==
           default_friction());
 }
+
 // Verifies model instances are correctly created in the plant.
 TEST_F(MultibodyPlantSdfParser, ModelInstanceTest) {
   // We start with the world and default model instances.

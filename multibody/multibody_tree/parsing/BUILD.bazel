@@ -27,6 +27,7 @@ drake_cc_package_library(
     deps = [
         ":multibody_plant_sdf_parser",
         ":package_map",
+        ":parser_common",
         ":parser_path_utils",
         ":scene_graph_parser_detail",
         ":sdf_parser_common",
@@ -68,6 +69,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "parser_common",
+    hdrs = [
+        "parser_common.h",
+    ],
+    deps = [
+        "//multibody/multibody_tree/multibody_plant:coulomb_friction",
+    ],
+)
+
+drake_cc_library(
     name = "sdf_parser_common",
     srcs = [
         "sdf_parser_common.cc",
@@ -76,6 +87,7 @@ drake_cc_library(
         "sdf_parser_common.h",
     ],
     deps = [
+        ":parser_common",
         "//common:essential",
         "//multibody/multibody_tree/multibody_plant:coulomb_friction",
         "@sdformat",
