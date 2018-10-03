@@ -136,6 +136,44 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "multibody_plant_parser_test_loaders",
+    testonly = 1,
+    hdrs = [
+        "test/multibody_plant_parser_test_loaders.h",
+    ],
+    deps = [
+        ":multibody_plant_sdf_parser",
+        ":parser_common",
+        "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_acrobot_parser_test",
+    data = [
+        ":test_models",
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":multibody_plant_parser_test_loaders",
+        "//common/test_utilities",
+        "//multibody/benchmarks/acrobot",
+        "//multibody/benchmarks/acrobot:make_acrobot_plant",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_parser_common_test",
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        ":multibody_plant_parser_test_loaders",
+        "//common/test_utilities",
+    ],
+)
+
 drake_cc_googletest(
     name = "multibody_plant_sdf_parser_test",
     data = [
@@ -146,8 +184,6 @@ drake_cc_googletest(
         ":multibody_plant_sdf_parser",
         "//common:find_resource",
         "//common/test_utilities",
-        "//multibody/benchmarks/acrobot",
-        "//multibody/benchmarks/acrobot:make_acrobot_plant",
     ],
 )
 
