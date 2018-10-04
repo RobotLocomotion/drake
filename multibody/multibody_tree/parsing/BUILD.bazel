@@ -30,6 +30,7 @@ drake_cc_package_library(
         ":parser_path_utils",
         ":scene_graph_parser_detail",
         ":sdf_parser_common",
+        ":tinyxml_util",
     ],
 )
 
@@ -109,6 +110,23 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "tinyxml_util",
+    srcs = [
+        "tinyxml_util.cc",
+    ],
+    hdrs = [
+        "tinyxml_util.h",
+    ],
+    visibility = [
+        "//visibility:private",
+    ],
+    deps = [
+        "//math:geometric_transform",
+        "@tinyxml2",
+    ],
+)
+
+drake_cc_library(
     name = "multibody_plant_sdf_parser",
     srcs = [
         "multibody_plant_sdf_parser.cc",
@@ -164,6 +182,14 @@ drake_cc_googletest(
     name = "parser_path_utils_test",
     deps = [
         ":parser_path_utils",
+    ],
+)
+
+drake_cc_googletest(
+    name = "tinyxml_util_test",
+    deps = [
+        ":tinyxml_util",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
