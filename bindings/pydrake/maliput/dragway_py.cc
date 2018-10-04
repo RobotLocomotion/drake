@@ -3,6 +3,7 @@
 
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
+#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 
 namespace drake {
@@ -14,11 +15,14 @@ using std::unique_ptr;
 PYBIND11_MODULE(dragway, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::maliput;
+  auto& doc = pydrake_doc.drake.maliput;
 
   m.doc() = "Bindings for the Dragway backend.";
 
-  py::class_<dragway::RoadGeometry, api::RoadGeometry>(m, "RoadGeometry");
+  py::class_<dragway::RoadGeometry, api::RoadGeometry>(m, "RoadGeometry",
+    doc.dragway.RoadGeometry.doc);
 
+  // TODO(m-chaturvedi) Add Pybind11 documentation.
   m.def("create_dragway",
         [](api::RoadGeometryId road_id, int num_lanes, double length,
            double lane_width, double shoulder_width, double maximum_height,
