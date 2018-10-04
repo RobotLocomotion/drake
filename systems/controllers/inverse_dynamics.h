@@ -105,6 +105,8 @@ class InverseDynamics : public LeafSystem<T> {
   InverseDynamics(const multibody::multibody_plant::MultibodyPlant<T>* plant,
                   InverseDynamicsMode mode);
 
+  ~InverseDynamics() override;
+
   /**
    * Returns the input port for the estimated state.
    */
