@@ -141,6 +141,11 @@ InverseDynamicsController<T>::InverseDynamicsController(
   SetUp(kp, ki, kd, *inverse_dynamics, &builder);
 }
 
+// We need this in the *.cc file so that rigid_body_tree.h does not need to be
+// included by our header file.
+template <typename T>
+InverseDynamicsController<T>::~InverseDynamicsController() = default;
+
 template class InverseDynamicsController<double>;
 // TODO(siyuan) template on autodiff.
 // template class InverseDynamicsController<AutoDiffXd>;
