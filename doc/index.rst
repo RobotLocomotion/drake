@@ -1,6 +1,6 @@
 
 .. image:: images/logo_w_text.jpg
-	:align: center   
+	:align: center
 	:width: 60%
 
 
@@ -125,7 +125,8 @@ Next steps
    installation
    gallery
    getting_help
-   Doxygen (C++) <doxygen_cxx/index.html#://>
+   API Documentation (C++) <doxygen_cxx/index.html#://>
+   API Documentation (Python) <pydrake/index.html#://>
    GitHub <https://github.com/RobotLocomotion/drake>
    developers
    credits
