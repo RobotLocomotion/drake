@@ -104,6 +104,8 @@ class InverseDynamicsController : public Diagram<T>,
       const VectorX<double>& kd,
       bool has_reference_acceleration);
 
+  ~InverseDynamicsController() override;
+
   /**
    * Sets the integral part of the PidController to @p value.
    * @p value must be a column vector of the appropriate size.
