@@ -114,6 +114,11 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
   }
 }
 
+// We need this in the *.cc file so that rigid_body_tree.h does not need to be
+// included by our header file.
+template <typename T>
+InverseDynamics<T>::~InverseDynamics() = default;
+
 template <typename T>
 void InverseDynamics<T>::CalcOutputForce(const Context<T>& context,
                                           BasicVector<T>* output) const {
