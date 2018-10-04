@@ -1,9 +1,11 @@
+#include "pybind11/eigen.h"
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/scene_graph.h"
 
 namespace drake {
@@ -48,6 +50,16 @@ PYBIND11_MODULE(geometry, m) {
         py::arg("builder"), py::arg("scene_graph"), py::arg("lcm") = nullptr);
   m.def("DispatchLoadMessage", &DispatchLoadMessage,
         py::arg("scene_graph"), py::arg("lcm"));
+
+  // PenetrationAsPointPair
+  py::class_<PenetrationAsPointPair<T>>(m, "PenetrationAsPointPair")
+    .def(py::init<>())
+    .def_readwrite("id_A", &PenetrationAsPointPair<T>::id_A)
+    .def_readwrite("id_B", &PenetrationAsPointPair<T>::id_B)
+    .def_readwrite("p_WCa", &PenetrationAsPointPair<T>::p_WCa)
+    .def_readwrite("p_WCb", &PenetrationAsPointPair<T>::p_WCb)
+    .def_readwrite("nhat_BA_W", &PenetrationAsPointPair<T>::nhat_BA_W)
+    .def_readwrite("depth", &PenetrationAsPointPair<T>::depth);
 }
 
 }  // namespace

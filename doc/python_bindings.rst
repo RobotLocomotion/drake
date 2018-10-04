@@ -13,6 +13,38 @@ installed as a single package called ``pydrake``.
 
 Python 2.7 is currently the only supported version for these bindings.
 
+.. _python-bindings-binary:
+
+Binary Installation for Python
+------------------------------
+
+First, download and extract an :ref:`available binary package
+<binary-installation>`.
+
+As an example, here is how to download and extract one of the latest releases
+to ``/opt`` (where ``<platform>`` could be ``xenial`` or ``mac``):
+
+.. code-block:: shell
+
+    curl -o drake.tar.gz https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-<platform>.tar.gz
+    rm -rf /opt/drake
+    tar -xvzf drake.tar.gz -C /opt
+
+Ensure that you have the system dependencies:
+
+.. code-block:: shell
+
+    /opt/drake/share/drake/setup/install_prereqs
+
+Next, ensure that your ``PYTHONPATH`` is properly configured:
+
+.. code-block:: shell
+
+    export PYTHONPATH=/opt/drake/lib/python2.7/site-packages:${PYTHONPATH}
+
+See :ref:`below <using-python-bindings>` for usage instructions. If using
+macOS, pay special attention to :ref:`this note <using-python-mac-os-path>`.
+
 Building the Python Bindings
 ----------------------------
 
@@ -41,12 +73,7 @@ MOSEK, without building tests:
 
     cmake -DWITH_GUROBI=ON -DWITH_MOSEK=ON ../drake
 
-Using the Python Bindings
--------------------------
-
-To use the Drake Python bindings, follow the build steps above or ensure that
-you have installed Drake appropriately. You will also need to have your
-``PYTHONPATH`` configured correctly.
+You will also need to have your ``PYTHONPATH`` configured correctly.
 
 As an example, continuing from the code snippets from above:
 
@@ -55,16 +82,28 @@ As an example, continuing from the code snippets from above:
     cd drake-build
     export PYTHONPATH=${PWD}/install/lib/python2.7/site-packages:${PYTHONPATH}
 
-To check this:
+.. _using-python-bindings:
+
+Using the Python Bindings
+-------------------------
+
+To use the Drake Python bindings, follow the steps above to install or build
+Drake. To check this:
 
 .. code-block:: shell
 
     python -c 'import pydrake; print(pydrake.__file__)'
 
+.. _using-python-mac-os-path:
+
 .. note::
 
     If you are using macOS, you must ensure that you are using the ``python2``
-    executable to run these scripts.
+    executable to run these scripts. As an example for Homebrew:
+
+    .. code-block:: shell
+
+        export PATH=/usr/local/opt/python/libexec/bin:${PATH}
 
     If you would like to use ``jupyter``, then be sure to install it via
     ``pip2 install jupyter`` (*not* ``brew install jupyter``) to ensure that it

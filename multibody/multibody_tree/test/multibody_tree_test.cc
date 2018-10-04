@@ -12,9 +12,11 @@
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/multibody_tree_system.h"
 #include "drake/multibody/multibody_tree/weld_mobilizer.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace multibody {
@@ -29,6 +31,7 @@ using Eigen::MatrixXd;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 using multibody_tree::test_utilities::SpatialKinematicsPVA;
+using systems::BasicVector;
 using systems::Context;
 using systems::ContinuousState;
 
@@ -233,35 +236,85 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
   VerifyModelBasics(*model);
 }
 
+// MBPlant provides most of the testing for MBTreeSystem. Here we just want
+// to make sure that a badly-behaved derived class is notified.
+class BadDerivedMBSystem : public MultibodyTreeSystem<double> {
+ public:
+  explicit BadDerivedMBSystem(bool double_finalize)
+      : MultibodyTreeSystem<double>() {
+    mutable_tree().AddBody<RigidBody>(SpatialInertia<double>());
+    Finalize();
+    if (double_finalize) {
+      Finalize();
+    }
+  }
+
+  // Make this accessible so we can intentionally call it after finalizing
+  // and check the error message.
+  using MultibodyTreeSystem<double>::mutable_tree;
+};
+
+GTEST_TEST(MultibodyTreeSystem, CatchBadBehavior) {
+  // Create the internal tree and finalize the MBSystem correctly.
+  BadDerivedMBSystem finalized(false);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      finalized.mutable_tree(), std::logic_error,
+      ".*mutable_tree().*MultibodyTree.*finalized.*already.*");
+
+  // Make the MBSystem behave badly.
+  DRAKE_EXPECT_THROWS_MESSAGE(BadDerivedMBSystem(true), std::logic_error,
+                              ".*Finalize().*repeated.*not allowed.*");
+
+  auto model = std::make_unique<MultibodyTree<double>>();
+  EXPECT_NO_THROW(MultibodyTreeSystem<double>(std::move(model)));
+  EXPECT_EQ(model, nullptr);  // Should have been moved from.
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MultibodyTreeSystem<double>(std::move(model)), std::logic_error,
+      ".*MultibodyTreeSystem().*MultibodyTree was null.*");
+}
+
+GTEST_TEST(MultibodyTree, BackwardsCompatibility) {
+  auto owned_tree = std::make_unique<MultibodyTree<double>>();
+  auto* tree = owned_tree.get();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+    tree->CreateDefaultContext(), std::runtime_error,
+    ".*that is owned by a MultibodyPlant.*");
+  MultibodyTreeSystem<double> system(std::move(owned_tree));
+  EXPECT_NO_THROW(tree->CreateDefaultContext());
+}
+
 // Fixture to perform a number of computational tests on a KUKA Iiwa model.
 class KukaIiwaModelTests : public ::testing::Test {
  public:
   /// Creates MultibodyTree for a KUKA Iiwa robot arm.
   void SetUp() override {
-    model_ = MakeKukaIiwaModel<double>(true /* Finalize model */, gravity_);
+    system_ = std::make_unique<MultibodyTreeSystem<double>>(
+        MakeKukaIiwaModel<double>(true /* Finalize model */, gravity_));
 
     // Keep pointers to the modeling elements.
-    end_effector_link_ = &model_->GetBodyByName("iiwa_link_7");
-    joints_.push_back(&model_->GetJointByName<RevoluteJoint>("iiwa_joint_1"));
-    joints_.push_back(&model_->GetJointByName<RevoluteJoint>("iiwa_joint_2"));
-    joints_.push_back(&model_->GetJointByName<RevoluteJoint>("iiwa_joint_3"));
-    joints_.push_back(&model_->GetJointByName<RevoluteJoint>("iiwa_joint_4"));
-    joints_.push_back(&model_->GetJointByName<RevoluteJoint>("iiwa_joint_5"));
-    joints_.push_back(&model_->GetJointByName<RevoluteJoint>("iiwa_joint_6"));
-    joints_.push_back(&model_->GetJointByName<RevoluteJoint>("iiwa_joint_7"));
+    end_effector_link_ = &tree().GetBodyByName("iiwa_link_7");
+    joints_.push_back(&tree().GetJointByName<RevoluteJoint>("iiwa_joint_1"));
+    joints_.push_back(&tree().GetJointByName<RevoluteJoint>("iiwa_joint_2"));
+    joints_.push_back(&tree().GetJointByName<RevoluteJoint>("iiwa_joint_3"));
+    joints_.push_back(&tree().GetJointByName<RevoluteJoint>("iiwa_joint_4"));
+    joints_.push_back(&tree().GetJointByName<RevoluteJoint>("iiwa_joint_5"));
+    joints_.push_back(&tree().GetJointByName<RevoluteJoint>("iiwa_joint_6"));
+    joints_.push_back(&tree().GetJointByName<RevoluteJoint>("iiwa_joint_7"));
 
-    context_ = model_->CreateDefaultContext();
+    context_ = system_->CreateDefaultContext();
 
     // Scalar-convert the model and create a default context for it.
-    model_autodiff_ = model_->ToAutoDiffXd();
-    context_autodiff_ = model_autodiff_->CreateDefaultContext();
+    system_autodiff_ = std::make_unique<MultibodyTreeSystem<AutoDiffXd>>(
+        tree().ToAutoDiffXd());
+    context_autodiff_ = system_autodiff_->CreateDefaultContext();
   }
 
   // Gets an arm state to an arbitrary configuration in which joint angles and
   // rates are non-zero.
   void GetArbitraryNonZeroConfiguration(
       VectorX<double>* q, VectorX<double>* v) {
-    const int kNumPositions = model_->num_positions();
+    const int kNumPositions = tree().num_positions();
     q->resize(kNumPositions);
     v->resize(kNumPositions);  // q and v have the same dimension for kuka.
 
@@ -340,11 +393,17 @@ class KukaIiwaModelTests : public ::testing::Test {
         context_on_T, linkG_on_T.body_frame(), p_EPi, p_WPi, Jv_WPi);
   }
 
+  const MultibodyTree<double>& tree() const { return system_->tree(); }
+
+  const MultibodyTree<AutoDiffXd>& tree_autodiff() const {
+    return system_autodiff_->tree();
+  }
+
  protected:
   // Acceleration of gravity:
   const double gravity_{9.81};
   // The model plant:
-  std::unique_ptr<MultibodyTree<double>> model_;
+  std::unique_ptr<MultibodyTreeSystem<double>> system_;
   // Workspace including context and derivatives vector:
   std::unique_ptr<Context<double>> context_;
   // Non-owning pointer to the end effector link:
@@ -353,7 +412,7 @@ class KukaIiwaModelTests : public ::testing::Test {
   std::vector<const RevoluteJoint<double>*> joints_;
 
   // AutoDiffXd model to compute automatic derivatives:
-  std::unique_ptr<MultibodyTree<AutoDiffXd>> model_autodiff_;
+  std::unique_ptr<MultibodyTreeSystem<AutoDiffXd>> system_autodiff_;
   std::unique_ptr<Context<AutoDiffXd>> context_autodiff_;
 
   // And independent benchmarking set of solutions.
@@ -363,7 +422,7 @@ class KukaIiwaModelTests : public ::testing::Test {
 // Verifies the integrity of a scalar converted MultibodyTree from <double> to
 // <AutoDiffXd>.
 TEST_F(KukaIiwaModelTests, VerifyScalarConversionToAutoDiffXd) {
-  VerifyModelBasics(*model_autodiff_);
+  VerifyModelBasics(tree_autodiff());
 }
 
 // This test is used to verify the correctness of the method
@@ -380,13 +439,13 @@ TEST_F(KukaIiwaModelTests, VerifyScalarConversionToAutoDiffXd) {
 // - MultibodyTree::CalcAllBodySpatialVelocitiesInWorld()
 TEST_F(KukaIiwaModelTests, GeometricJacobian) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
-  const int kNumPositions = model_->num_positions();
-  const int kNumStates = model_->num_states();
+  const int kNumPositions = tree().num_positions();
+  const int kNumStates = tree().num_states();
 
   ASSERT_EQ(kNumPositions, 7);
 
-  ASSERT_EQ(model_autodiff_->num_positions(), kNumPositions);
-  ASSERT_EQ(model_autodiff_->num_states(), kNumStates);
+  ASSERT_EQ(tree_autodiff().num_positions(), kNumPositions);
+  ASSERT_EQ(tree_autodiff().num_states(), kNumStates);
 
   ASSERT_EQ(context_->get_continuous_state().size(), kNumStates);
   ASSERT_EQ(context_autodiff_->get_continuous_state().size(), kNumStates);
@@ -408,7 +467,7 @@ TEST_F(KukaIiwaModelTests, GeometricJacobian) {
   }
 
   // Compute the value of the end effector's velocity using <double>.
-  Vector3<double> v_WE = CalcEndEffectorVelocity(*model_, *context_);
+  Vector3<double> v_WE = CalcEndEffectorVelocity(tree(), *context_);
 
   context_autodiff_->SetTimeStateAndParametersFrom(*context_);
 
@@ -420,7 +479,7 @@ TEST_F(KukaIiwaModelTests, GeometricJacobian) {
       get_mutable_generalized_velocity().SetFromVector(v_autodiff);
 
   const Vector3<AutoDiffXd> v_WE_autodiff =
-      CalcEndEffectorVelocity(*model_autodiff_, *context_autodiff_);
+      CalcEndEffectorVelocity(tree_autodiff(), *context_autodiff_);
 
   const Vector3<double> v_WE_value = math::autoDiffToValueMatrix(v_WE_autodiff);
   const MatrixX<double> v_WE_derivs =
@@ -436,10 +495,10 @@ TEST_F(KukaIiwaModelTests, GeometricJacobian) {
   EXPECT_EQ(v_WE_derivs.cols(), kNumPositions);
 
   Vector3<double> p_WE;
-  Matrix3X<double> Jv_WE(3, model_->num_velocities());
+  Matrix3X<double> Jv_WE(3, tree().num_velocities());
   // The end effector (G) Jacobian is computed by asking the Jacobian for a
   // point P with position p_GP = 0 in the G frame.
-  model_->CalcPointsGeometricJacobianExpressedInWorld(
+  tree().CalcPointsGeometricJacobianExpressedInWorld(
       *context_, end_effector_link_->body_frame(),
       Vector3<double>::Zero(), &p_WE, &Jv_WE);
 
@@ -456,7 +515,7 @@ TEST_F(KukaIiwaModelTests, GeometricJacobian) {
   // Verify that MultibodyTree::CalcPointsPositions() computes the same value
   // of p_WE. Even both code paths resolve to CalcPointsPositions(), here we
   // call this method explicitly to provide unit testing for this API.
-  Vector3<double> p2_WE = CalcEndEffectorPosition(*model_, *context_);
+  Vector3<double> p2_WE = CalcEndEffectorPosition(tree(), *context_);
   EXPECT_TRUE(CompareMatrices(p2_WE, p_WE,
                               kTolerance, MatrixCompareType::relative));
 
@@ -472,7 +531,7 @@ TEST_F(KukaIiwaModelTests, GeometricJacobian) {
       get_mutable_generalized_velocity().SetFromVector(v_autodiff);
 
   Vector3<AutoDiffXd> p_WE_autodiff = CalcEndEffectorPosition(
-      *model_autodiff_, *context_autodiff_);
+      tree_autodiff(), *context_autodiff_);
   Vector3<double> p_WE_derivs(
       p_WE_autodiff[0].derivatives()[0],
       p_WE_autodiff[1].derivatives()[0],
@@ -517,7 +576,7 @@ TEST_F(KukaIiwaModelTests, AnalyticJacobian) {
   // Since for the Kuka iiwa arm v = q̇, the analytic Jacobian Jq_WPi equals the
   // geometric Jacobian Jv_Wpi.
   CalcPointsOnEndEffectorGeometricJacobian(
-      *model_, *context_, p_EPi, &p_WPi, &Jq_WPi);
+      tree(), *context_, p_EPi, &p_WPi, &Jq_WPi);
 
   // Alternatively, compute the analytic Jacobian by taking the gradient of
   // the positions p_WPi(q) with respect to the generalized positions. We do
@@ -535,7 +594,7 @@ TEST_F(KukaIiwaModelTests, AnalyticJacobian) {
   MatrixX<AutoDiffXd> Jq_WPi_autodiff(3 * kNumPoints, kNumPositions);
 
   CalcPointsOnEndEffectorGeometricJacobian(
-      *model_autodiff_, *context_autodiff_,
+      tree_autodiff(), *context_autodiff_,
       p_EPi_autodiff, &p_WPi_autodiff, &Jq_WPi_autodiff);
 
   // Extract values and derivatives:
@@ -579,11 +638,11 @@ TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
 
   // Spatial velocity of the end effector in the world frame.
   const SpatialVelocity<double>& V_WE =
-      model_->EvalBodySpatialVelocityInWorld(*context_, *end_effector_link_);
+      tree().EvalBodySpatialVelocityInWorld(*context_, *end_effector_link_);
 
   // Pose of the end effector in the world frame.
   const Isometry3<double>& X_WE =
-      model_->EvalBodyPoseInWorld(*context_, *end_effector_link_);
+      tree().EvalBodyPoseInWorld(*context_, *end_effector_link_);
 
   // Independent benchmark solution.
   const SpatialKinematicsPVA<double> MG_kinematics =
@@ -601,13 +660,13 @@ TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
 
 TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
-  const int kNumPositions = model_->num_positions();
-  const int kNumStates = model_->num_states();
+  const int kNumPositions = tree().num_positions();
+  const int kNumStates = tree().num_states();
 
   ASSERT_EQ(kNumPositions, 7);
 
-  ASSERT_EQ(model_autodiff_->num_positions(), kNumPositions);
-  ASSERT_EQ(model_autodiff_->num_states(), kNumStates);
+  ASSERT_EQ(tree_autodiff().num_positions(), kNumPositions);
+  ASSERT_EQ(tree_autodiff().num_states(), kNumStates);
 
   ASSERT_EQ(context_->get_continuous_state().size(), kNumStates);
   ASSERT_EQ(context_autodiff_->get_continuous_state().size(), kNumStates);
@@ -630,11 +689,11 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
 
   // Spatial velocity of the end effector.
   const SpatialVelocity<double>& V_WE =
-      model_->EvalBodySpatialVelocityInWorld(*context_, *end_effector_link_);
+      tree().EvalBodySpatialVelocityInWorld(*context_, *end_effector_link_);
 
   // Pose of the end effector.
   const Isometry3d& X_WE =
-      model_->EvalBodyPoseInWorld(*context_, *end_effector_link_);
+      tree().EvalBodyPoseInWorld(*context_, *end_effector_link_);
 
   // Position of a frame F measured and expressed in frame E.
   const Vector3d p_EoFo_E = Vector3d(0.2, -0.1, 0.5);
@@ -647,10 +706,10 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
   // "shifting" from E by an offset p_EoFo.
   const SpatialVelocity<double> V_WEf = V_WE.Shift(p_EoFo_W);
 
-  MatrixX<double> Jv_WF(6, model_->num_velocities());
+  MatrixX<double> Jv_WF(6, tree().num_velocities());
   // Compute the Jacobian Jv_WF for that relate the generalized velocities with
   // the spatial velocity of frame F.
-  model_->CalcFrameGeometricJacobianExpressedInWorld(
+  tree().CalcFrameGeometricJacobianExpressedInWorld(
       *context_,
       end_effector_link_->body_frame(), p_EoFo_E, &Jv_WF);
 
@@ -671,7 +730,7 @@ TEST_F(KukaIiwaModelTests, PointsGeometricJacobianForTheWorldFrame) {
   // a zero Jacobian for the world body.
   const Matrix3X<double> p_WP_set = Matrix3X<double>::Identity(3, 10);
 
-  const int nv = model_->num_velocities();
+  const int nv = tree().num_velocities();
   const int npoints = p_WP_set.cols();
 
   // We set the output arrays to garbage so that upon returning from
@@ -683,8 +742,8 @@ TEST_F(KukaIiwaModelTests, PointsGeometricJacobianForTheWorldFrame) {
   // The state stored in the context should not affect the result of this test.
   // Therefore we do not set it.
 
-  model_->CalcPointsGeometricJacobianExpressedInWorld(
-      *context_, model_->world_body().body_frame(), p_WP_set,
+  tree().CalcPointsGeometricJacobianExpressedInWorld(
+      *context_, tree().world_body().body_frame(), p_WP_set,
       &p_WP_out, &Jv_WP);
 
   // Since in this case we are querying for the world frame:
@@ -703,7 +762,7 @@ TEST_F(KukaIiwaModelTests, FrameGeometricJacobianForTheWorldFrame) {
   // zero Jacobian for the world body.
   const Vector3<double> p_WP(1.0, 1.0, 1.0);
 
-  const int nv = model_->num_velocities();
+  const int nv = tree().num_velocities();
 
   // We set the output Jacobian to garbage so that upon returning from
   // CalcFrameGeometricJacobianExpressedInWorld() we can verify it was
@@ -713,8 +772,8 @@ TEST_F(KukaIiwaModelTests, FrameGeometricJacobianForTheWorldFrame) {
   // The state stored in the context should not affect the result of this test.
   // Therefore we do not set it.
 
-  model_->CalcFrameGeometricJacobianExpressedInWorld(
-      *context_, model_->world_body().body_frame(), p_WP, &Jv_WP);
+  tree().CalcFrameGeometricJacobianExpressedInWorld(
+      *context_, tree().world_body().body_frame(), p_WP, &Jv_WP);
 
   // Since in this case we are querying for the world frame, the Jacobian should
   // be exactly zero.
@@ -746,23 +805,26 @@ class WeldMobilizerTest : public ::testing::Test {
     // these tests since they are all kinematic.
     const SpatialInertia<double> M_B;
 
-    body1_ = &model_.AddBody<RigidBody>(M_B);
-    body2_ = &model_.AddBody<RigidBody>(M_B);
+    // Create an empty model.
+    auto model = std::make_unique<MultibodyTree<double>>();
 
-    model_.AddMobilizer<WeldMobilizer>(
-        model_.world_body().body_frame(), body1_->body_frame(), X_WB1_);
+    body1_ = &model->AddBody<RigidBody>(M_B);
+    body2_ = &model->AddBody<RigidBody>(M_B);
+
+    model->AddMobilizer<WeldMobilizer>(
+        model->world_body().body_frame(), body1_->body_frame(), X_WB1_);
 
     // Add a weld joint between bodies 1 and 2 by welding together inboard
     // frame F (on body 1) with outboard frame M (on body 2).
-    const auto& frame_F = model_.AddFrame<FixedOffsetFrame>(*body1_, X_B1F_);
-    const auto& frame_M = model_.AddFrame<FixedOffsetFrame>(*body2_, X_B2M_);
-    model_.AddMobilizer<WeldMobilizer>(frame_F, frame_M, X_FM_);
+    const auto& frame_F = model->AddFrame<FixedOffsetFrame>(*body1_, X_B1F_);
+    const auto& frame_M = model->AddFrame<FixedOffsetFrame>(*body2_, X_B2M_);
+    model->AddMobilizer<WeldMobilizer>(frame_F, frame_M, X_FM_);
 
-    // We are done adding modeling elements. Finalize the model:
-    model_.Finalize();
-
-    // Create a context to store the state for this model:
-    context_ = model_.CreateDefaultContext();
+    // We are done adding modeling elements. Transfer tree to system and get
+    // a Context.
+    system_ = std::make_unique<MultibodyTreeSystem<double>>(std::move(model));
+    // Create a context to store the state for this tree:
+    context_ = system_->CreateDefaultContext();
 
     // Expected pose of body 2 in the world.
     X_WB2_.translation() =
@@ -772,11 +834,14 @@ class WeldMobilizerTest : public ::testing::Test {
     X_WB2_.makeAffine();
   }
 
+  const MultibodyTree<double>& tree() const { return system_->tree(); }
+
  protected:
-  MultibodyTree<double> model_;
+  std::unique_ptr<MultibodyTreeSystem<double>> system_;
+  std::unique_ptr<Context<double>> context_;
   const RigidBody<double>* body1_{nullptr};
   const RigidBody<double>* body2_{nullptr};
-  std::unique_ptr<Context<double>> context_;
+
   Isometry3d X_WB1_{
       AngleAxisd(-M_PI_4, Vector3d::UnitZ()) * Translation3d(0.5, 0.0, 0.0)};
   Isometry3d X_FM_{AngleAxisd(-M_PI_2, Vector3d::UnitZ())};
@@ -786,8 +851,8 @@ class WeldMobilizerTest : public ::testing::Test {
 };
 
 TEST_F(WeldMobilizerTest, StateHasZeroSize) {
-  EXPECT_EQ(model_.num_positions(), 0);
-  EXPECT_EQ(model_.num_velocities(), 0);
+  EXPECT_EQ(tree().num_positions(), 0);
+  EXPECT_EQ(tree().num_velocities(), 0);
   EXPECT_EQ(context_->get_continuous_state().size(), 0);
 }
 
@@ -796,7 +861,7 @@ TEST_F(WeldMobilizerTest, PositionKinematics) {
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
   std::vector<Isometry3d> body_poses;
-  model_.CalcAllBodyPosesInWorld(*context_, &body_poses);
+  tree().CalcAllBodyPosesInWorld(*context_, &body_poses);
 
   EXPECT_TRUE(CompareMatrices(
       body_poses[body1_->index()].matrix(), X_WB1_.matrix(),

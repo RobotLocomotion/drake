@@ -1086,11 +1086,41 @@ class System : public SystemBase {
         this->GetInputPortBaseOrThrow(__func__, port_index));
   }
 
+  /// Returns the typed input port with the unique name @p port_name.
+  /// The current implementation performs a linear search over strings; prefer
+  /// get_input_port() when performance is a concern.
+  /// @throws std::logic_error if port_name is not found.
+  const InputPort<T>& GetInputPort(const std::string& port_name) const {
+    for (InputPortIndex i{0}; i < get_num_input_ports(); i++) {
+      if (port_name == get_input_port_base(i).get_name()) {
+        return get_input_port(i);
+      }
+    }
+    throw std::logic_error("System " + GetSystemName() +
+                           " does not have an input port named " +
+                           port_name);
+  }
+
   /// Returns the typed output port at index @p port_index.
   // TODO(sherm1) Make this an OutputPortIndex.
   const OutputPort<T>& get_output_port(int port_index) const {
     return dynamic_cast<const OutputPort<T>&>(
         this->GetOutputPortBaseOrThrow(__func__, port_index));
+  }
+
+  /// Returns the typed output port with the unique name @p port_name.
+  /// The current implementation performs a linear search over strings; prefer
+  /// get_output_port() when performance is a concern.
+  /// @throws std::logic_error if port_name is not found.
+  const OutputPort<T>& GetOutputPort(const std::string& port_name) const {
+    for (OutputPortIndex i{0}; i < get_num_output_ports(); i++) {
+      if (port_name == get_output_port_base(i).get_name()) {
+        return get_output_port(i);
+      }
+    }
+    throw std::logic_error("System " + GetSystemName() +
+                           " does not have an output port named " +
+                           port_name);
   }
 
   /// Returns the number of constraints specified for the system.

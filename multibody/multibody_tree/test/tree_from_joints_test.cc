@@ -11,6 +11,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/multibody_tree_system.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/framework/context.h"
@@ -103,7 +104,7 @@ class DoublePendulumModel {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DoublePendulumModel)
 
   DoublePendulumModel() {
-    tree_ = std::make_unique<MultibodyTree<T>>();
+    auto model = std::make_unique<MultibodyTree<double>>();
 
     // Position of L1's COM measured in L1, expressed in L1.
     Vector3d p_L1oL1cm = Vector3d::Zero();  // L1 is at the link's COM.
@@ -127,9 +128,9 @@ class DoublePendulumModel {
     SpatialInertia<double> M2_L2 = M2_L2cm.Shift(-p_L2oL2cm);
 
     // Adds the upper and lower links of the pendulum:
-    link1_ = &tree_->template AddBody<RigidBody>(M1_L1);
-    link2_ = &tree_->template AddBody<RigidBody>(M2_L2);
-    world_body_ = &tree_->world_body();
+    link1_ = &model->template AddBody<RigidBody>(M1_L1);
+    link2_ = &model->template AddBody<RigidBody>(M2_L2);
+    world_body_ = &model->world_body();
 
     // The shoulder joint connects the world with link 1.
     // Its inboard frame, Si, is the world frame.
@@ -139,7 +140,7 @@ class DoublePendulumModel {
     // frame.
     const Isometry3d X_L1So{Translation3d(0.0, half_length1_, 0.0)};
 
-    shoulder_ = &tree_->template AddJoint<RevoluteJoint>(
+    shoulder_ = &model->template AddJoint<RevoluteJoint>(
         "ShoulderJoint",
         *world_body_,
         {},      /* Default to Identity; frame Si IS the world frame W. */
@@ -157,7 +158,7 @@ class DoublePendulumModel {
     // X_L1Ei defines the pose of the elbow inboard frame Ei link 1's frame L1.
     const Isometry3d X_L1Ei{Translation3d(0.0, -half_length1_, 0.0)};
 
-    elbow_ = &tree_->template AddJoint<RevoluteJoint>(
+    elbow_ = &model->template AddJoint<RevoluteJoint>(
         "ElbowJoint",
         *link1_,
         X_L1Ei,  /* Pose of Ei in L1. */
@@ -168,15 +169,11 @@ class DoublePendulumModel {
     // Add force element for a constant gravity pointing downwards, that is, in
     // the minus y-axis direction.
     gravity_element_ =
-        &tree_->template AddForceElement<UniformGravityFieldElement>(
+        &model->template AddForceElement<UniformGravityFieldElement>(
             Vector3d(0.0, -acceleration_of_gravity_, 0.0));
 
     // We are done adding modeling elements.
-    tree_->Finalize();
-  }
-
-  const MultibodyTree<T>& get_tree() const {
-    return *tree_;
+    system_ = std::make_unique<MultibodyTreeSystem<double>>(std::move(model));
   }
 
   double mass1() const { return mass1_; }
@@ -198,8 +195,15 @@ class DoublePendulumModel {
     return *gravity_element_;
   }
 
+  const MultibodyTree<double>& tree() const { return system_->tree(); }
+
+  std::unique_ptr<Context<double>> CreateDefaultContext() const {
+    return system_->CreateDefaultContext();
+  }
+
  private:
-  std::unique_ptr<MultibodyTree<T>> tree_;
+  std::unique_ptr<MultibodyTreeSystem<T>> system_;
+
   const Body<T>* world_body_{nullptr};
   // Bodies:
   const RigidBody<T>* link1_{nullptr};
@@ -226,13 +230,12 @@ class DoublePendulumModel {
   const double acceleration_of_gravity_ = 9.81;
 };
 
+// Creates a DoublePendulumModel class with an underlying MultibodyTree model
+// of a double pendulum.
 class PendulumTests : public ::testing::Test {
  public:
-  // Creates a DoublePendulumModel class with an underlying MultibodyTree model
-  // of a double pendulum.
   void SetUp() override {
-    tree_ = &model_.get_tree();
-    context_ = tree_->CreateDefaultContext();
+      context_ = pendulum_.CreateDefaultContext();
   }
 
   // For the double pendulum system it turns out that the mass matrix is only a
@@ -243,12 +246,12 @@ class PendulumTests : public ::testing::Test {
   void VerifyCalcMassMatrixViaInverseDynamics(
       double theta1, double theta2) {
     const double kTolerance = 10 * kEpsilon;
-    model_.shoulder().set_angle(context_.get(), theta1);
-    model_.elbow().set_angle(context_.get(), theta2);
+    pendulum_.shoulder().set_angle(context_.get(), theta1);
+    pendulum_.elbow().set_angle(context_.get(), theta2);
 
     // MultibodyTree mass matrix:
     Matrix2d H;
-    tree_->CalcMassMatrixViaInverseDynamics(*context_, &H);
+    tree().CalcMassMatrixViaInverseDynamics(*context_, &H);
 
     // Benchmark mass matrix:
     Matrix2d H_expected = acrobot_benchmark_.CalcMassMatrix(theta2);
@@ -264,11 +267,11 @@ class PendulumTests : public ::testing::Test {
   // implements a handwritten computation of these forces.
   void VerifyGravityGeneralizedForces(double theta1, double theta2) const {
     const double kTolerance = 10 * kEpsilon;
-    model_.shoulder().set_angle(context_.get(), theta1);
-    model_.elbow().set_angle(context_.get(), theta2);
+    pendulum_.shoulder().set_angle(context_.get(), theta1);
+    pendulum_.elbow().set_angle(context_.get(), theta2);
 
     const UniformGravityFieldElement<double>& gravity_element =
-        model_.gravity_element();
+        pendulum_.gravity_element();
 
     Vector2d tau_g =
         gravity_element.CalcGravityGeneralizedForces(*context_);
@@ -294,12 +297,12 @@ class PendulumTests : public ::testing::Test {
     const double kTolerance = 10 * kEpsilon;
 
     // Set up workspace:
-    const int nv = tree_->num_velocities();
+    const int nv = tree().num_velocities();
     // External forces:
-    MultibodyForces<double> forces(model_.get_tree());
+    MultibodyForces<double> forces(pendulum_.tree());
     // Accelerations of the bodies:
     std::vector<SpatialAcceleration<double>> A_WB_array(
-        tree_->num_bodies());
+        tree().num_bodies());
     // Generalized accelerations:
     VectorX<double> vdot = VectorX<double>::Zero(nv);
 
@@ -309,33 +312,33 @@ class PendulumTests : public ::testing::Test {
     VectorX<double>& tau_array = forces.mutable_generalized_forces();
 
     // Set angles:
-    model_.shoulder().set_angle(context_.get(), theta1);
-    model_.elbow().set_angle(context_.get(), theta2);
+    pendulum_.shoulder().set_angle(context_.get(), theta1);
+    pendulum_.elbow().set_angle(context_.get(), theta2);
 
     // Set angular rates:
-    model_.shoulder().set_angular_rate(context_.get(), theta1dot);
-    model_.elbow().set_angular_rate(context_.get(), theta2dot);
+    pendulum_.shoulder().set_angular_rate(context_.get(), theta1dot);
+    pendulum_.elbow().set_angular_rate(context_.get(), theta2dot);
 
-    PositionKinematicsCache<double> pc(tree_->get_topology());
-    VelocityKinematicsCache<double> vc(tree_->get_topology());
-    tree_->CalcPositionKinematicsCache(*context_, &pc);
-    tree_->CalcVelocityKinematicsCache(*context_, pc, &vc);
+    PositionKinematicsCache<double> pc(tree().get_topology());
+    VelocityKinematicsCache<double> vc(tree().get_topology());
+    tree().CalcPositionKinematicsCache(*context_, &pc);
+    tree().CalcVelocityKinematicsCache(*context_, pc, &vc);
 
     // Compute forces applied through force elements. This initializes the
     // forces to zero and adds in contributions due to force elements:
-    tree_->CalcForceElementsContribution(*context_, pc, vc, &forces);
+    tree().CalcForceElementsContribution(*context_, pc, vc, &forces);
 
     // Apply external torques at the joints:
-    model_.shoulder().AddInTorque(*context_, tau1, &forces);
-    model_.elbow().AddInTorque(*context_, tau2, &forces);
+    pendulum_.shoulder().AddInTorque(*context_, tau1, &forces);
+    pendulum_.elbow().AddInTorque(*context_, tau2, &forces);
 
     // Arrays for output forces:
-    std::vector<SpatialForce<double>> F_BMo_W(tree_->num_bodies());
-    VectorX<double> tau(tree_->num_velocities());
+    std::vector<SpatialForce<double>> F_BMo_W(tree().num_bodies());
+    VectorX<double> tau(tree().num_velocities());
 
     // With vdot = 0, this computes:
     //   rhs = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
-    tree_->CalcInverseDynamics(
+    tree().CalcInverseDynamics(
         *context_, pc, vc, vdot,
         F_BBo_W_array, tau_array,
         &A_WB_array,
@@ -354,28 +357,26 @@ class PendulumTests : public ::testing::Test {
 
     // Verify alternative APIs for inverse dynamics.
     const VectorX<double> tau_id2 =
-        tree_->CalcInverseDynamics(*context_, vdot, forces);
+        tree().CalcInverseDynamics(*context_, vdot, forces);
     EXPECT_TRUE(CompareMatrices(
         tau_id2, rhs, kTolerance, MatrixCompareType::relative));
   }
 
+  const MultibodyTree<double>& tree() const { return pendulum_.tree(); }
+
  protected:
   // The MultibodyTree model under test.
-  DoublePendulumModel<double> model_;
-
-  // Pointer to the underlying model. model_ owns it.
-  const MultibodyTree<double>* tree_{nullptr};
-
+  DoublePendulumModel<double> pendulum_;
   std::unique_ptr<Context<double>> context_;
 
   // Reference benchmark for verification.
   Acrobot<double> acrobot_benchmark_{
       Vector3d::UnitZ() /* Plane normal */, Vector3d::UnitY() /* Up vector */,
-      model_.mass1(), model_.mass2(),
-      model_.length1(), model_.length2(),
-      model_.half_length1(), model_.half_length2(),
-      model_.Ic1(), model_.Ic2(), 0.0, 0.0,
-      model_.gravity()};
+      pendulum_.mass1(), pendulum_.mass2(),
+      pendulum_.length1(), pendulum_.length2(),
+      pendulum_.half_length1(), pendulum_.half_length2(),
+      pendulum_.Ic1(), pendulum_.Ic2(), 0.0, 0.0,
+      pendulum_.gravity()};
 };
 
 // Compute the mass matrix using the inverse dynamics method.

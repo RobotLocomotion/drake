@@ -14,6 +14,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
+#include "drake/common/pointer_cast.h"
 #include "drake/multibody/multibody_tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/body.h"
 #include "drake/multibody/multibody_tree/body_node.h"
@@ -25,6 +26,7 @@
 #include "drake/multibody/multibody_tree/model_instance.h"
 #include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
+#include "drake/multibody/multibody_tree/multibody_tree_system.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 #include "drake/multibody/multibody_tree/position_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
@@ -1462,16 +1464,21 @@ class MultibodyTree {
   // automatically when CreateDefaultContext() is called.
   void Finalize();
 
-  /// Allocates a new context for this %MultibodyTree uniquely identifying the
-  /// state of the multibody system.
+  /// (Advanced) Allocates a new context for this %MultibodyTree uniquely
+  /// identifying the state of the multibody system.
   ///
-  /// @pre The method Finalize() must be called before attempting to create a
-  /// context in order for the %MultibodyTree topology to be valid at the moment
-  /// of allocation.
-  ///
-  /// @throws std::logic_error If users attempt to call this method on a
-  ///         %MultibodyTree with an invalid topology.
-  std::unique_ptr<systems::LeafContext<T>> CreateDefaultContext() const;
+  /// @throws std::runtime_error if this is not owned by a MultibodyPlant /
+  /// MultibodyTreeSystem.
+  std::unique_ptr<systems::LeafContext<T>> CreateDefaultContext() const {
+    if (tree_system_ == nullptr) {
+      throw std::runtime_error(
+        "MultibodyTree::CreateDefaultContext(): can only be called from a "
+        "MultibodyTree that is owned by a MultibodyPlant / "
+        "MultibodyTreeSystem");
+    }
+    return dynamic_pointer_cast<systems::LeafContext<T>>(
+        tree_system_->CreateDefaultContext());
+  }
 
   /// Sets default values in the context. For mobilizers, this method sets them
   /// to their _zero_ configuration according to
@@ -2484,18 +2491,32 @@ class MultibodyTree {
   }
 
   /// Evaluates position kinematics cached in context.
-  /// @param context A MultibodyTreeContext on which to update position
-  /// kinematics.
+  /// @param context A Context whose position kinematics cache will be
+  ///                updated and returned.
   /// @return Reference to the PositionKinematicsCache of context.
   const PositionKinematicsCache<T>& EvalPositionKinematics(
-      const systems::Context<T>& context) const;
+      const systems::Context<T>& context) const {
+    DRAKE_ASSERT(tree_system_ != nullptr);
+    return tree_system_->EvalPositionKinematics(context);
+  }
 
-  /// Evaluates velocity kinematics cached in context.
-  /// @param context A MultibodyTreeContext on which to update velocity
-  /// kinematics.
+  /// Evaluates velocity kinematics cached in context. This will also
+  /// force position kinematics to be updated if it hasn't already.
+  /// @param context A Context whose velocity kinematics cache will be
+  ///                updated and returned.
   /// @return Reference to the VelocityKinematicsCache of context.
   const VelocityKinematicsCache<T>& EvalVelocityKinematics(
-      const systems::Context<T>& context) const;
+      const systems::Context<T>& context) const {
+    DRAKE_ASSERT(tree_system_ != nullptr);
+    return tree_system_->EvalVelocityKinematics(context);
+  }
+
+  /// (Internal use only) Informs the MultibodyTree how to access its resources
+  /// within a Context.
+  void set_tree_system(MultibodyTreeSystem<T>* tree_system) {
+    DRAKE_DEMAND(tree_system != nullptr && tree_system_ == nullptr);
+    tree_system_ = tree_system;
+  }
 
  private:
   // Make MultibodyTree templated on every other scalar type a friend of
@@ -2866,6 +2887,8 @@ class MultibodyTree {
   std::vector<std::vector<BodyNodeIndex>> body_node_levels_;
 
   MultibodyTreeTopology topology_;
+
+  const MultibodyTreeSystem<T>* tree_system_{};
 };
 
 /// @cond

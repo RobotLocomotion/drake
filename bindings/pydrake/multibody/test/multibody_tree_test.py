@@ -24,6 +24,8 @@ from pydrake.multibody.multibody_tree.math import (
 )
 from pydrake.multibody.multibody_tree.multibody_plant import (
     MultibodyPlant,
+    ContactResults,
+    PointPairContactInfo,
 )
 from pydrake.multibody.multibody_tree.parsing import (
     AddModelFromSdfFile,
@@ -32,6 +34,10 @@ from pydrake.multibody.benchmarks.acrobot import (
     AcrobotParameters,
     MakeAcrobotPlant,
 )
+from pydrake.geometry import (
+    PenetrationAsPointPair,
+    GeometryId)
+
 
 import copy
 import math
@@ -397,3 +403,49 @@ class TestMultibodyTree(unittest.TestCase):
 
         for joint in joints:
             self._test_joint_api(joint)
+
+    def test_multibody_dynamics(self):
+        file_name = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        plant = MultibodyPlant()
+        AddModelFromSdfFile(file_name, plant)
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+        tree = plant.tree()
+
+        H = tree.CalcMassMatrixViaInverseDynamics(context)
+        Cv = tree.CalcBiasTerm(context)
+
+        self.assertTrue(H.shape == (2, 2))
+        self.assertTrue(Cv.shape == (2, ))
+
+    def test_contact(self):
+        # PenetrationAsContactPair
+        point_pair = PenetrationAsPointPair()
+        self.assertTrue(isinstance(point_pair.id_A, GeometryId))
+        self.assertTrue(isinstance(point_pair.id_B, GeometryId))
+        self.assertTrue(point_pair.p_WCa.shape == (3,))
+        self.assertTrue(point_pair.p_WCb.shape == (3,))
+        self.assertTrue(isinstance(point_pair.depth, float))
+
+        # PointPairContactInfo
+        id_A = BodyIndex(0)
+        id_B = BodyIndex(1)
+        contact_info = PointPairContactInfo(
+            bodyA_index=id_A, bodyB_index=id_B,
+            f_Bc_W=np.array([0, 0, 1]), p_WC=np.array([0, 0, 0]),
+            separation_speed=0, slip_speed=0, point_pair=point_pair)
+        self.assertTrue(
+            isinstance(contact_info.bodyA_index(), BodyIndex))
+        self.assertTrue(
+            isinstance(contact_info.bodyB_index(), BodyIndex))
+        self.assertTrue(contact_info.contact_force().shape == (3,))
+        self.assertTrue(contact_info.contact_point().shape == (3,))
+        self.assertTrue(isinstance(contact_info.slip_speed(), float))
+
+        # ContactResults
+        contact_results = ContactResults()
+        contact_results.AddContactInfo(contact_info)
+        self.assertTrue(contact_results.num_contacts() == 1)
+        self.assertTrue(
+            isinstance(contact_results.contact_info(0), PointPairContactInfo))

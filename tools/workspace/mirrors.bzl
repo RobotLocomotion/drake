@@ -25,9 +25,9 @@ DEFAULT_MIRRORS = {
         "https://s3.amazonaws.com/drake-mirror/bitbucket/{repository}/{commit}.tar.gz",  # noqa
     ],
     "buildifier": [
-        "https://github.com/bazelbuild/buildtools/releases/download/{version}/{filename}",  # noqa
         "https://drake-mirror.csail.mit.edu/github/bazelbuild/buildtools/releases/{version}/{filename}",  # noqa
         "https://s3.amazonaws.com/drake-mirror/github/bazelbuild/buildtools/releases/{version}/{filename}",  # noqa
+        "https://github.com/bazelbuild/buildtools/releases/download/{version}/{filename}",  # noqa
     ],
     "director": [
         "https://drake-packages.csail.mit.edu/director/{archive}",

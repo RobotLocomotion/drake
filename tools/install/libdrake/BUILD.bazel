@@ -159,9 +159,15 @@ cc_library(
         "@scs//:scsdir",
         "@tinyxml2",
     ] + [
-        # The list of depended-on header-only libraries.
+        # The list of depended-on header-only libraries that libdrake's header
+        # files depend on.
+        "//lcmtypes:lcmtypes_cc",
         "@eigen",
         "@fmt",
+        "@lcmtypes_bot2_core//:lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion",
+        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
+        "@spdlog",
         "@stx",
     ],
 )

@@ -48,7 +48,7 @@ setup steps:
     :maxdepth: 1
 
     mac
-    ubuntu_xenial
+    ubuntu
 
 See :ref:`supported configurations <supported-configurations>`
 for the configurations and platforms that Drake officially supports.
