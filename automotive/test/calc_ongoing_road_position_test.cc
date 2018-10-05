@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/dragway/road_geometry.h"
-#include "drake/automotive/monolane_onramp_merge.h"
+#include "drake/automotive/multilane_onramp_merge.h"
 #include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
@@ -17,7 +17,6 @@ using maliput::api::LaneEnd;
 using maliput::api::LanePosition;
 using maliput::api::RoadPosition;
 using maliput::api::Rotation;
-using math::RollPitchYawToQuaternion;
 using systems::rendering::FrameVelocity;
 using systems::rendering::PoseVector;
 
@@ -36,16 +35,17 @@ void SetOnrampPoses(const Lane* lane, LanePolarity polarity,
   const GeoPosition xyz = lane->ToGeoPosition(kSomeLanePosition);
   pose->set_translation(Translation3<T>(T(xyz.x()), T(xyz.y()), T(xyz.z())));
   const Rotation rotation = lane->GetOrientation(kSomeLanePosition);
+  const double roll = rotation.roll();
+  const double pitch = rotation.pitch();
   const double yaw =
       rotation.yaw() - ((polarity == LanePolarity::kWithS) ? 0. : M_PI);
-  const Rotation new_rotation =
-      Rotation::FromRpy(rotation.roll(), rotation.pitch(), yaw);
-  pose->set_rotation(RollPitchYawToQuaternion(new_rotation.rpy()));
+  const math::RollPitchYaw<double> new_rotation(roll, pitch, yaw);
+  pose->set_rotation(new_rotation.ToQuaternion());
 
-  const Matrix3<T> rotmat = math::rpy2rotmat(new_rotation.rpy());
+  const math::RotationMatrix<double> rotmat(new_rotation);
   Vector6<T> velocity_vector{};
-  velocity_vector.head(3) = Vector3<T>::Zero();         /* ω */
-  velocity_vector.tail(3) = speed * rotmat.leftCols(1); /* v */
+  velocity_vector.head(3) = Vector3<T>::Zero();                   // ω
+  velocity_vector.tail(3) = speed * rotmat.matrix().leftCols(1);  // v
   velocity->set_velocity(multibody::SpatialVelocity<T>(velocity_vector));
 }
 
@@ -69,7 +69,7 @@ void PerformTest(const maliput::api::RoadGeometry& rg, const Lane* lane,
   DRAKE_DEMAND(lane != nullptr);
 
   // Set the hypothetical pose at s = 10 in `post0`.
-  RoadPosition rp(GetLaneFromId(rg, "l:post0"), {10., 0., 0.});
+  RoadPosition rp(GetLaneFromId(rg, "l:post0_0"), {10., 0., 0.});
 
   // Set the actual pose in the requested lane.
   PoseVector<double> pose;
@@ -89,7 +89,7 @@ void PerformTest(const maliput::api::RoadGeometry& rg, const Lane* lane,
 
 GTEST_TEST(CalcOngoingRoadPosition, TestOngoingLanes) {
   // N.B. In this road, `post0` branches into `pre0` and `onramp1`.
-  std::unique_ptr<MonolaneOnrampMerge> merge_road(new MonolaneOnrampMerge);
+  auto merge_road = std::make_unique<MultilaneOnrampMerge>();
   std::unique_ptr<const maliput::api::RoadGeometry> rg =
       merge_road->BuildOnramp();
 
@@ -97,20 +97,20 @@ GTEST_TEST(CalcOngoingRoadPosition, TestOngoingLanes) {
   // s-direction.
   for (const auto polarity : {LanePolarity::kWithS, LanePolarity::kAgainstS}) {
     for (const double speed : {10., 0.}) {
-      const Lane* post0 = GetLaneFromId(*rg, "l:post0");
+      const Lane* post0 = GetLaneFromId(*rg, "l:post0_0");
       PerformTest(*rg, post0, polarity, speed, post0, kSomeLanePosition);
 
-      const Lane* pre0 = GetLaneFromId(*rg, "l:pre0");
+      const Lane* pre0 = GetLaneFromId(*rg, "l:pre0_0");
       PerformTest(*rg, pre0, polarity, speed, pre0, kSomeLanePosition);
 
-      const Lane* onramp1 = GetLaneFromId(*rg, "l:onramp1");
+      const Lane* onramp1 = GetLaneFromId(*rg, "l:onramp1_0");
       PerformTest(*rg, onramp1, polarity, speed, onramp1, kSomeLanePosition);
     }
   }
 }
 
 GTEST_TEST(CalcOngoingRoadPosition, TestInvalidLanes) {
-  std::unique_ptr<MonolaneOnrampMerge> merge_road(new MonolaneOnrampMerge);
+  auto merge_road = std::make_unique<MultilaneOnrampMerge>();
   std::unique_ptr<const maliput::api::RoadGeometry> rg =
       merge_road->BuildOnramp();
 
@@ -126,14 +126,14 @@ GTEST_TEST(CalcOngoingRoadPosition, TestInvalidLanes) {
   RoadPosition rp(nullptr, LanePosition{0., 0., 0.});
 
   // Set the actual pose somewhere well outside the RoadGeometry.
-  SetOnrampPoses(GetLaneFromId(*rg, "l:post5"), LanePolarity::kWithS, speed,
+  SetOnrampPoses(GetLaneFromId(*rg, "l:post5_0"), LanePolarity::kWithS, speed,
                  &pose, &velocity);
   pose.set_translation(Eigen::Translation3d(1000., 1000., 0.));
 
   CalcOngoingRoadPosition(pose, velocity, *rg, &rp);
 
   // Expect RoadPosition to be closest to `onramp0`.
-  EXPECT_EQ(GetLaneFromId(*rg, "l:onramp0"), rp.lane);
+  EXPECT_EQ(GetLaneFromId(*rg, "l:onramp0_0"), rp.lane);
   EXPECT_TRUE(CompareMatrices(
       LanePosition{100., -4., 0.}.srh(), rp.pos.srh(), 1e-10));
 }

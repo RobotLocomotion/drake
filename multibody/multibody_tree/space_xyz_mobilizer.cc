@@ -41,8 +41,7 @@ const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::SetFromRotationMatrix(
   // rotation matrix with round-off errors.
   const math::RotationMatrix<T> Rproj_FM =
       math::RotationMatrix<T>::ProjectToRotationMatrix(R_FM);
-
-  q = math::rotmat2rpy(Rproj_FM.matrix());
+  q = math::RollPitchYaw<T>(Rproj_FM).vector();
   return *this;
 }
 
@@ -62,9 +61,9 @@ const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angular_velocity(
 
 template <typename T>
 const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angular_velocity(
-    const systems::Context<T>&, const Vector3<T>& w_FM,
+    const systems::Context<T>& context, const Vector3<T>& w_FM,
     systems::State<T>* state) const {
-  auto v = this->get_mutable_velocities(state);
+  auto v = this->get_mutable_velocities(context, state);
   DRAKE_ASSERT(v.size() == kNv);
   v = w_FM;
   return *this;
@@ -79,12 +78,12 @@ void SpaceXYZMobilizer<T>::set_zero_state(const systems::Context<T>& context,
 template <typename T>
 Isometry3<T> SpaceXYZMobilizer<T>::CalcAcrossMobilizerTransform(
     const MultibodyTreeContext<T>& context) const {
-  const auto& angles = this->get_positions(context);
-  DRAKE_ASSERT(angles.size() == kNq);
+  const Eigen::Matrix<T, 3, 1>& rpy = this->get_positions(context);
+  DRAKE_ASSERT(rpy.size() == kNq);
   Isometry3<T> X_FM = Isometry3<T>::Identity();
-  // Notice math::rpy2rotmat(rpy) assumes entries rpy(0), rpy(1) and rpy(2)
-  // correspond to roll, pitch and yaw angles respectively.
-  X_FM.linear() = math::rpy2rotmat(angles);
+  const math::RollPitchYaw<T> roll_pitch_yaw(rpy(0), rpy(1), rpy(2));
+  const math::RotationMatrix<T> R(roll_pitch_yaw);
+  X_FM.linear() = R.matrix();
   return X_FM;
 }
 

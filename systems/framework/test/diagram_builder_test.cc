@@ -45,7 +45,7 @@ class ConstAndEcho final : public LeafSystem<T> {
   template <typename U>
   explicit ConstAndEcho(const ConstAndEcho<U>&) : ConstAndEcho() {}
 
-  const systems::InputPortDescriptor<T>& get_vec_input_port() {
+  const systems::InputPort<T>& get_vec_input_port() {
     return this->get_input_port(0);
   }
 
@@ -197,8 +197,119 @@ GTEST_TEST(DiagramBuilderTest, SystemsThatAreNotAddedThrow) {
 template <typename T>
 class Sink : public LeafSystem<T> {
  public:
-  Sink() { this->DeclareInputPort(kVectorValued, 1); }
+  Sink() { this->DeclareInputPort("in", kVectorValued, 1); }
 };
+
+// Helper class that has no input port, and one output port.
+template <typename T>
+class Source : public LeafSystem<T> {
+ public:
+  Source() { this->DeclareVectorOutputPort("out", &Source<T>::CalcOutput); }
+  void CalcOutput(const Context<T>& context, BasicVector<T>* output) const {}
+};
+
+GTEST_TEST(DiagramBuilderTest, DefaultInputPortNamesAreUniqueTest) {
+  DiagramBuilder<double> builder;
+
+  auto sink1 = builder.AddSystem<Sink<double>>();
+  auto sink2 = builder.AddSystem<Sink<double>>();
+
+  builder.ExportInput(sink1->get_input_port(0));
+  builder.ExportInput(sink2->get_input_port(0));
+
+  // If the port names were not unique, then the build step would throw.
+  EXPECT_NO_THROW(builder.Build());
+}
+
+GTEST_TEST(DiagramBuilderTest, DefaultOutputPortNamesAreUniqueTest) {
+  DiagramBuilder<double> builder;
+
+  auto source1 = builder.AddSystem<Source<double>>();
+  auto source2 = builder.AddSystem<Source<double>>();
+
+  builder.ExportOutput(source1->get_output_port(0));
+  builder.ExportOutput(source2->get_output_port(0));
+
+  // If the port names were not unique, then the build step would throw.
+  EXPECT_NO_THROW(builder.Build());
+}
+
+GTEST_TEST(DiagramBuilderTest, DefaultPortNamesAreUniqueTest2) {
+  DiagramBuilder<double> builder;
+
+  // This time, we assign system names manually.
+  auto sink1 = builder.AddSystem<Sink<double>>();
+  sink1->set_name("sink1");
+  auto sink2 = builder.AddSystem<Sink<double>>();
+  sink2->set_name("sink2");
+
+  auto source1 = builder.AddSystem<Source<double>>();
+  source1->set_name("source1");
+  auto source2 = builder.AddSystem<Source<double>>();
+  source2->set_name("source2");
+
+  const auto sink1_in = builder.ExportInput(sink1->get_input_port(0));
+  const auto sink2_in = builder.ExportInput(sink2->get_input_port(0));
+  const auto source1_out = builder.ExportOutput(source1->get_output_port(0));
+  const auto source2_out = builder.ExportOutput(source2->get_output_port(0));
+
+  auto diagram = builder.Build();
+
+  EXPECT_EQ(diagram->get_input_port(sink1_in).get_name(), "sink1_in");
+  EXPECT_EQ(diagram->get_input_port(sink2_in).get_name(), "sink2_in");
+  EXPECT_EQ(diagram->get_output_port(source1_out).get_name(), "source1_out");
+  EXPECT_EQ(diagram->get_output_port(source2_out).get_name(), "source2_out");
+}
+
+GTEST_TEST(DiagramBuilderTest, SetPortNamesTest) {
+  DiagramBuilder<double> builder;
+
+  auto sink1 = builder.AddSystem<Sink<double>>();
+  auto sink2 = builder.AddSystem<Sink<double>>();
+  auto source1 = builder.AddSystem<Source<double>>();
+  auto source2 = builder.AddSystem<Source<double>>();
+
+  const auto sink1_in = builder.ExportInput(sink1->get_input_port(0), "sink1");
+  const auto sink2_in = builder.ExportInput(sink2->get_input_port(0), "sink2");
+  const auto source1_out =
+      builder.ExportOutput(source1->get_output_port(0), "source1");
+  const auto source2_out =
+      builder.ExportOutput(source2->get_output_port(0), "source2");
+
+  auto diagram = builder.Build();
+
+  EXPECT_EQ(diagram->get_input_port(sink1_in).get_name(), "sink1");
+  EXPECT_EQ(diagram->get_input_port(sink2_in).get_name(), "sink2");
+  EXPECT_EQ(diagram->get_output_port(source1_out).get_name(), "source1");
+  EXPECT_EQ(diagram->get_output_port(source2_out).get_name(), "source2");
+}
+
+GTEST_TEST(DiagramBuilderTest, DuplicateInputPortNamesThrow) {
+  DiagramBuilder<double> builder;
+
+  auto sink1 = builder.AddSystem<Sink<double>>();
+  auto sink2 = builder.AddSystem<Sink<double>>();
+
+  builder.ExportInput(sink1->get_input_port(0), "sink");
+  builder.ExportInput(sink2->get_input_port(0), "sink");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(builder.Build(), std::logic_error,
+                              ".*already has an input port named.*");
+}
+
+GTEST_TEST(DiagramBuilderTest, DuplicateOutputPortNamesThrow) {
+  DiagramBuilder<double> builder;
+
+  auto sink1 = builder.AddSystem<Source<double>>();
+  auto sink2 = builder.AddSystem<Source<double>>();
+
+  builder.ExportOutput(sink1->get_output_port(0), "source");
+  builder.ExportOutput(sink2->get_output_port(0), "source");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(builder.Build(), std::logic_error,
+                              ".*already has an output port named.*");
+}
+
 
 // Tests the sole-port based overload of Connect().
 class DiagramBuilderSolePortsTest : public ::testing::Test {

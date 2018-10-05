@@ -19,12 +19,13 @@ PYBIND11_MODULE(_autodiffutils_py, m) {
 
   // Install NumPy warning filtres.
   // N.B. This may interfere with other code, but until that is a confirmed
-  // issue, we should agressively try to avoid these warnings.
+  // issue, we should aggressively try to avoid these warnings.
   py::module::import("pydrake.util.deprecation")
       .attr("install_numpy_warning_filters")();
 
   py::class_<AutoDiffXd> autodiff(m, "AutoDiffXd");
   autodiff
+    .def(py::init<double>())
     .def(py::init<const double&, const Eigen::VectorXd&>())
     .def("value", [](const AutoDiffXd& self) {
       return self.value();
@@ -73,6 +74,9 @@ PYBIND11_MODULE(_autodiffutils_py, m) {
            return pow(base, exponent);
          }, py::is_operator())
     .def("__abs__", [](const AutoDiffXd& x) { return abs(x); });
+
+  py::implicitly_convertible<double, AutoDiffXd>();
+  py::implicitly_convertible<int, AutoDiffXd>();
 
     // Add overloads for `math` functions.
     auto math = py::module::import("pydrake.math");

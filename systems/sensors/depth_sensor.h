@@ -142,9 +142,9 @@ class DepthSensor : public systems::LeafSystem<double> {
     return specification_.num_depth_readings();
   }
 
-  /// Returns a descriptor of the input port containing the generalized state of
-  /// the RigidBodyTree.
-  const InputPortDescriptor<double>& get_rigid_body_tree_state_input_port()
+  /// Returns the input port containing the generalized state of the
+  /// RigidBodyTree.
+  const InputPort<double>& get_rigid_body_tree_state_input_port()
       const;
 
   /// Returns the state output port, which contains the sensor's
@@ -166,6 +166,14 @@ class DepthSensor : public systems::LeafSystem<double> {
   void CalcPoseOutput(const Context<double>& context,
                       rendering::PoseVector<double>* pose_output) const;
 
+  // Allocator for our CacheEntry. Returns a KinematicsCache suitable for
+  // the RigidBodyTree we're using.
+  KinematicsCache<double> AllocateKinematicsCache() const;
+
+  // Calculator for the CacheEntry. Updates the KinematicsCache to reflect
+  // the current q's at the input port.
+  void CalcKinematics(const Context<double>& context,
+                      KinematicsCache<double>*) const;
 
   // The depth sensor will cast a ray with its start point at (0,0,0) in the
   // sensor's base frame (as defined by get_frame()). Its end, also in the
@@ -189,6 +197,7 @@ class DepthSensor : public systems::LeafSystem<double> {
   int input_port_index_{};
   int depth_output_port_index_{};
   int pose_output_port_index_{};
+  const CacheEntry* kinematics_cache_entry_{};
 
   // A cache of where a depth measurement ray endpoint would be if the maximum
   // range were achieved. This is cached to avoid repeated allocation and

@@ -5,7 +5,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/geometry/geometry_system.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 
@@ -29,19 +29,24 @@ class PendulumParameters {
   ///   Value of the mass of the pendulum's point mass [kg].
   /// @param length
   ///   Length of the massless rod connecting the point mass to the world [m].
+  /// @param damping
+  ///   The joint's damping in N⋅m⋅s.
   /// @param gravity
   ///   Gravitational constant (m/s²).
   PendulumParameters(
       double mass = 1.0,
       double length = 0.5,
+      double damping = 0.1,
       double gravity = 9.81) :
       mass_(mass),
       length_(length),
+      damping_(damping),
       g_(gravity) {}
 
   // getters for pendulum parameters
   double m() const { return mass_; }
   double l() const { return length_; }
+  double damping() const { return damping_; }
   double g() const { return g_; }
   // Radius of the sphere used to visualize the point mass
   double point_mass_radius() const { return 0.025; }
@@ -63,6 +68,7 @@ class PendulumParameters {
   // quick detection of uninitialized values.
   double mass_{nan()},    // In kilograms.
       length_{nan()},     // In meters.
+      damping_{nan()},    // Damping in N⋅m⋅s.
       g_{nan()};          // In m/s².
 
   // Modeling elements' names.
@@ -88,15 +94,14 @@ class PendulumParameters {
 /// @param[in] default_parameters
 ///   Default parameters of the model set at construction. Refer to the
 ///   documentation of PendulumParameters for further details.
-/// @param geometry_system
-///   If a GeometrySystem is provided with this argument, this factory method
+/// @param scene_graph
+///   If a SceneGraph is provided with this argument, this factory method
 ///   will register the new multibody plant to be a source for that geometry
 ///   system and it will also register geometry for visualization.
 ///   If this argument is omitted, no geometry will be registered.
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
-MakePendulumPlant(
-    const PendulumParameters& default_parameters,
-    geometry::GeometrySystem<double>* geometry_system = nullptr);
+MakePendulumPlant(const PendulumParameters& default_parameters,
+                  geometry::SceneGraph<double>* scene_graph = nullptr);
 
 }  // namespace pendulum
 }  // namespace benchmarks

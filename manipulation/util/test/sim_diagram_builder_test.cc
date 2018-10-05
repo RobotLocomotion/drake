@@ -59,6 +59,55 @@ std::unique_ptr<RigidBodyTree<double>> build_tree(
   return tree_builder->Build();
 }
 
+GTEST_TEST(WorldSimTreeBuilderTest, TestFindNotStoredModel) {
+  auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>();
+  // Should throw if we are trying to find a model that doesn't exist.
+  EXPECT_THROW(
+      tree_builder->AddFixedModelInstance("233", Vector3<double>::Zero()),
+      std::exception);
+}
+
+GTEST_TEST(WorldSimTreeBuilderTest, TestBuildWithInitialRigidBodyTree) {
+  // First make a RBT with 1 iiwa.
+  std::vector<ModelInstanceInfo<double>> iiwas, grippers;
+  std::unique_ptr<RigidBodyTree<double>> tree =
+      build_tree(1, 0, &iiwas, &grippers);
+
+  EXPECT_EQ(tree->get_num_positions(), 7);
+
+  // Get a WorldSimTreeBuilder starting from tree.
+  auto tree_builder =
+      std::make_unique<WorldSimTreeBuilder<double>>(true, std::move(tree));
+
+  tree_builder->StoreDrakeModel(
+      "second_iiwa",
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_polytope_collision.urdf");
+
+  // Add a second arm
+  Isometry3<double> expected_pose = Isometry3<double>::Identity();
+  expected_pose.translation()[0] = 233;
+  int id = tree_builder->AddFixedModelInstance("second_iiwa",
+      expected_pose.translation());
+  ModelInstanceInfo<double> second_iiwa_info =
+      tree_builder->get_model_info_for_instance(id);
+
+  tree = tree_builder->Build();
+
+  // Check kinematics.
+  VectorX<double> q = tree->getZeroConfiguration();
+  KinematicsCache<double> cache = tree->doKinematics(q);
+
+  RigidBody<double>* second_base =
+      tree->FindBody("base", "iiwa14", second_iiwa_info.instance_id);
+  EXPECT_TRUE(second_base != nullptr);
+  Isometry3<double> second_base_pose = tree->CalcBodyPoseInWorldFrame(
+      cache, *second_base);
+
+  EXPECT_TRUE(CompareMatrices(second_base_pose.matrix(), expected_pose.matrix(),
+                              1e-15, MatrixCompareType::absolute));
+}
+
 // Builds a diagram with 2 iiwa arm with inverse dynamics controllers. Start
 // the simulation from a non zero configuration with the controller trying to
 // maintain the initial configuration. Assert that after simulation, the robots
@@ -129,7 +178,7 @@ GTEST_TEST(SimDiagramBuilderTest, TestSimulation) {
   simulator.Initialize();
   simulator.StepTo(0.02);
 
-  auto state_output = diagram->AllocateOutput(simulator.get_context());
+  auto state_output = diagram->AllocateOutput();
   diagram->CalcOutput(simulator.get_context(), state_output.get());
   const auto final_output_data = state_output->get_vector_data(0)->get_value();
 

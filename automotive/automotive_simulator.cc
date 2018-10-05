@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <utility>
 
+#include "drake/automotive/driving_command_mux.h"
 #include "drake/automotive/gen/driving_command.h"
 #include "drake/automotive/gen/driving_command_translator.h"
 #include "drake/automotive/gen/maliput_railcar_state_translator.h"
@@ -11,16 +12,18 @@
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/segment.h"
-#include "drake/automotive/maliput/utility/generate_urdf.h"
-#include "drake/automotive/prius_vis.h"
+#include "drake/automotive/maliput/utility/generate_obj.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
+#include "drake/geometry/geometry_frame.h"
+#include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/geometry_visualization.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
-#include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/create_load_robot_message.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
@@ -28,16 +31,17 @@
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 #include "drake/systems/primitives/constant_value_source.h"
-#include "drake/systems/primitives/multiplexer.h"
+#include "drake/systems/rendering/render_pose_to_geometry_pose.h"
 
 namespace drake {
+
+using Eigen::Isometry3d;
 
 using maliput::api::Lane;
 using maliput::api::LaneEnd;
 using maliput::api::LaneId;
 using maliput::api::RoadGeometry;
 using maliput::api::RoadGeometryId;
-using multibody::joints::kRollPitchYaw;
 using systems::AbstractValue;
 using systems::lcm::LcmPublisherSystem;
 using systems::OutputPort;
@@ -61,14 +65,8 @@ AutomotiveSimulator<T>::AutomotiveSimulator(
   aggregator_->set_name("pose_aggregator");
 
   if (lcm_) {
-    car_vis_applicator_ =
-        builder_->template AddSystem<CarVisApplicator<T>>();
-    car_vis_applicator_->set_name("car_vis_applicator");
-
-    bundle_to_draw_ =
-        builder_->template
-        AddSystem<systems::rendering::PoseBundleToDrawMessage>();
-    bundle_to_draw_->set_name("bundle_to_draw");
+    scene_graph_ = builder_->template AddSystem<geometry::SceneGraph>();
+    geometry::ConnectDrakeVisualizer(builder_.get(), *scene_graph_, lcm_.get());
   }
 }
 
@@ -98,11 +96,89 @@ void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
   DRAKE_DEMAND(&pose_output.get_system() == &velocity_output.get_system());
   const std::string name = pose_output.get_system().get_name();
   auto ports = aggregator_->AddSinglePoseAndVelocityInput(name, id);
-  builder_->Connect(pose_output, ports.pose_descriptor);
-  builder_->Connect(velocity_output, ports.velocity_descriptor);
-  if (lcm_) {
-    car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, name));
+  builder_->Connect(pose_output, ports.pose_input_port);
+  builder_->Connect(velocity_output, ports.velocity_input_port);
+
+  if (!scene_graph_) {
+    return;
   }
+
+  // Register a (visual only) geometry frame for us to fiddle with.
+  const geometry::SourceId source_id = scene_graph_->RegisterSource(
+      "car_" + std::to_string(id));
+  const geometry::FrameId frame_id = scene_graph_->RegisterFrame(
+      source_id,
+      geometry::GeometryFrame("car_origin", Isometry3d::Identity()));
+
+  // Defines the distance between the SDF model's origin and the middle of the
+  // rear axle.  This offset is necessary because the pose_output frame's
+  // origin is centered at the midpoint of the vehicle's rear axle, whereas the
+  // prius.sdf model's origin is centered in the middle of a body called
+  // "chassis_floor". The axes of the two frames are parallel with each
+  // other. However, the distance between the origins of the two frames is
+  // 1.40948 m along the model's x-axis.  We need to apply this offset to the
+  // position literals that we've transcribed from the SDF.
+  const double kVisOffsetInX{1.40948};
+
+  // Add visualization geometry.
+  // TODO(jeremy.nimmer) These hard-coded shapes duplicate the contents of the
+  // SDF.  We should try to load the SDF instead, but there is not any geometry
+  // code exposed for that yet.
+  scene_graph_->RegisterGeometry(
+      source_id, frame_id,
+      std::make_unique<geometry::GeometryInstance>(
+          Isometry3d(Eigen::Translation3d(
+              -2.27 + kVisOffsetInX, -0.911, -0.219 + 0.385)),
+          std::make_unique<geometry::Mesh>(
+              FindResourceOrThrow("drake/automotive/models/prius/prius.obj")),
+          "prius_body"));
+  const geometry::VisualMaterial gray(Eigen::Vector4d(0.2, 0.2, 0.2, 1.0));
+  scene_graph_->RegisterGeometry(
+      source_id, frame_id,
+      std::make_unique<geometry::GeometryInstance>(
+          math::RigidTransformd(
+              math::RotationMatrixd(math::RollPitchYawd(M_PI_2, 0.0, 0.0)),
+              Eigen::Vector3d(1.409 + kVisOffsetInX, 0.802, 0.316))
+          .GetAsIsometry3(),
+          std::make_unique<geometry::Cylinder>(0.323, 0.215),
+          "left_wheel", gray));
+  scene_graph_->RegisterGeometry(
+      source_id, frame_id,
+      std::make_unique<geometry::GeometryInstance>(
+          math::RigidTransformd(
+              math::RotationMatrixd(math::RollPitchYawd(M_PI_2, 0.0, 0.0)),
+              Eigen::Vector3d(1.409 + kVisOffsetInX, -0.802, 0.316))
+          .GetAsIsometry3(),
+          std::make_unique<geometry::Cylinder>(0.323, 0.215),
+          "right_wheel", gray));
+  scene_graph_->RegisterGeometry(
+      source_id, frame_id,
+      std::make_unique<geometry::GeometryInstance>(
+          math::RigidTransformd(
+              math::RotationMatrixd(math::RollPitchYawd(M_PI_2, 0.0, 0.0)),
+              Eigen::Vector3d(-1.409 + kVisOffsetInX, 0.802, 0.323))
+          .GetAsIsometry3(),
+          std::make_unique<geometry::Cylinder>(0.323, 0.215),
+          "left_wheel_rear", gray));
+  scene_graph_->RegisterGeometry(
+      source_id, frame_id,
+      std::make_unique<geometry::GeometryInstance>(
+          math::RigidTransformd(
+              math::RotationMatrixd(math::RollPitchYawd(M_PI_2, 0.0, 0.0)),
+              Eigen::Vector3d(-1.409 + kVisOffsetInX, -0.802, 0.323))
+          .GetAsIsometry3(),
+          std::make_unique<geometry::Cylinder>(0.323, 0.215),
+          "right_wheel_rear", gray));
+
+  // Convert PoseVector into FramePoseVector.
+  using Converter = systems::rendering::RenderPoseToGeometryPose<T>;
+  auto* converter = builder_->template AddSystem<Converter>(
+      source_id, frame_id);
+
+  // Cascade the needful.
+  builder_->Connect(pose_output, converter->get_input_port());
+  builder_->Connect(converter->get_output_port(),
+                    scene_graph_->get_source_pose_port(source_id));
 }
 
 // TODO(jwnimmer-tri): Modify the various vehicle model systems to be more
@@ -173,8 +249,7 @@ int AutomotiveSimulator<T>::AddMobilControlledSimpleCar(
   simple_car_initial_states_[simple_car].set_value(initial_state.get_value());
   auto pursuit = builder_->template AddSystem<PurePursuitController<T>>();
   pursuit->set_name(name + "_pure_pursuit_controller");
-  auto mux = builder_->template AddSystem<systems::Multiplexer<T>>(
-      DrivingCommand<T>());
+  auto mux = builder_->template AddSystem<DrivingCommandMux<T>>();
   mux->set_name(name + "_mux");
 
   // Wire up MobilPlanner and IdmController.
@@ -197,9 +272,9 @@ int AutomotiveSimulator<T>::AddMobilControlledSimpleCar(
   builder_->Connect(mobil_planner->lane_output(), pursuit->lane_input());
   // Build DrivingCommand via a mux of two scalar outputs (a BasicVector where
   // row 0 = steering command, row 1 = acceleration command).
-  builder_->Connect(pursuit->steering_command_output(), mux->get_input_port(0));
+  builder_->Connect(pursuit->steering_command_output(), mux->steering_input());
   builder_->Connect(idm_controller->acceleration_output(),
-                    mux->get_input_port(1));
+                    mux->acceleration_input());
   builder_->Connect(mux->get_output_port(0), simple_car->get_input_port(0));
 
   ConnectCarOutputsAndPriusVis(id, simple_car->pose_output(),
@@ -281,8 +356,7 @@ int AutomotiveSimulator<T>::AddIdmControlledCar(
 
   auto pursuit = builder_->template AddSystem<PurePursuitController<T>>();
   pursuit->set_name(name + "_pure_pursuit_controller");
-  auto mux = builder_->template AddSystem<systems::Multiplexer<T>>(
-      DrivingCommand<T>());
+  auto mux = builder_->template AddSystem<DrivingCommandMux<T>>();
   mux->set_name(name + "_mux");
 
   // Wire up the simple car and pose aggregator to IdmController.
@@ -299,9 +373,9 @@ int AutomotiveSimulator<T>::AddIdmControlledCar(
   // Build DrivingCommand via a mux of two scalar outputs (a BasicVector where
   // row 0 = steering command, row 1 = acceleration command).
   builder_->Connect(pursuit->steering_command_output(),
-                    mux->get_input_port(0));
+                    mux->steering_input());
   builder_->Connect(idm_controller->acceleration_output(),
-                    mux->get_input_port(1));
+                    mux->acceleration_input());
   builder_->Connect(mux->get_output_port(0), simple_car->get_input_port(0));
 
   ConnectCarOutputsAndPriusVis(id, simple_car->pose_output(),
@@ -411,7 +485,7 @@ const RoadGeometry* AutomotiveSimulator<T>::SetRoadGeometry(
     std::unique_ptr<const RoadGeometry> road) {
   DRAKE_DEMAND(!has_started());
   road_ = std::move(road);
-  GenerateAndLoadRoadNetworkUrdf();
+  AddRoadNetworkToSceneGraph();
   return road_.get();
 }
 
@@ -440,19 +514,26 @@ const maliput::api::Lane* AutomotiveSimulator<T>::FindLane(
 }
 
 template <typename T>
-void AutomotiveSimulator<T>::GenerateAndLoadRoadNetworkUrdf() {
+void AutomotiveSimulator<T>::AddRoadNetworkToSceneGraph() {
+  if (!scene_graph_) {
+    return;
+  }
+
+  // Convert the road surfaces to a visualization mesh.
   std::string filename = road_->id().string();
   std::transform(filename.begin(), filename.end(), filename.begin(),
                  [](char ch) { return ch == ' ' ? '_' : ch; });
   const std::string tmpdir = drake::temp_directory();
-  maliput::utility::GenerateUrdfFile(road_.get(),
-                                     tmpdir, filename,
-                                     maliput::utility::ObjFeatures());
-  const std::string urdf_filepath = tmpdir + "/" + filename + ".urdf";
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      urdf_filepath,
-      drake::multibody::joints::kFixed,
-      tree_.get());
+  maliput::utility::GenerateObjFile(road_.get(), tmpdir, filename, {});
+  const std::string obj_filepath = tmpdir + "/" + filename + ".obj";
+
+  // Add to scene graph
+  scene_graph_->RegisterAnchoredGeometry(
+      scene_graph_->RegisterSource("road_network"),
+      std::make_unique<geometry::GeometryInstance>(
+          math::RigidTransformd().GetAsIsometry3(),
+          std::make_unique<geometry::Mesh>(obj_filepath),
+          "road_network_obj"));
 }
 
 template <typename T>
@@ -525,48 +606,9 @@ const systems::System<T>& AutomotiveSimulator<T>::GetDiagramSystemByName(
 }
 
 template <typename T>
-void AutomotiveSimulator<T>::TransmitLoadMessage() {
-  const lcmt_viewer_load_robot load_car_message =
-      car_vis_applicator_->get_load_robot_message();
-  const lcmt_viewer_load_robot load_terrain_message =
-      multibody::CreateLoadRobotMessage<T>(*tree_);
-  lcmt_viewer_load_robot load_message;
-  load_message.num_links = load_car_message.num_links +
-                           load_terrain_message.num_links;
-  for (int i = 0; i < load_car_message.num_links; ++i) {
-    load_message.link.push_back(load_car_message.link.at(i));
-  }
-  for (int i = 0; i < load_terrain_message.num_links; ++i) {
-    load_message.link.push_back(load_terrain_message.link.at(i));
-  }
-  SendLoadRobotMessage(load_message);
-}
-
-template <typename T>
-void AutomotiveSimulator<T>::SendLoadRobotMessage(
-    const lcmt_viewer_load_robot& message) {
-  DRAKE_DEMAND(lcm_ != nullptr);
-  Publish(lcm_.get(), "DRAKE_VIEWER_LOAD_ROBOT", message);
-}
-
-template <typename T>
 void AutomotiveSimulator<T>::Build() {
   DRAKE_DEMAND(diagram_ == nullptr);
 
-  if (lcm_) {
-    builder_->Connect(
-        aggregator_->get_output_port(0),
-        car_vis_applicator_->get_car_poses_input_port());
-    builder_->Connect(
-        car_vis_applicator_->get_visual_geometry_poses_output_port(),
-        bundle_to_draw_->get_input_port(0));
-    lcm_publisher_ = builder_->AddSystem(
-        LcmPublisherSystem::Make<lcmt_viewer_draw>("DRAKE_VIEWER_DRAW",
-                                                   lcm_.get()));
-    builder_->Connect(
-        bundle_to_draw_->get_output_port(0),
-        lcm_publisher_->get_input_port());
-  }
   pose_bundle_output_port_ =
       builder_->ExportOutput(aggregator_->get_output_port(0));
 
@@ -599,10 +641,6 @@ void AutomotiveSimulator<T>::Start(
   DRAKE_DEMAND(!has_started());
 
   BuildAndInitialize(std::move(initial_context));
-
-  if (lcm_) {
-    TransmitLoadMessage();
-  }
 
   simulator_->set_target_realtime_rate(target_realtime_rate);
   const double max_step_size = 0.01;
@@ -696,8 +734,7 @@ template <typename T>
 PoseBundle<T> AutomotiveSimulator<T>::GetCurrentPoses() const {
   DRAKE_DEMAND(has_started());
   const auto& context = simulator_->get_context();
-  std::unique_ptr<SystemOutput<T>> system_output = diagram_->AllocateOutput(
-      context);
+  std::unique_ptr<SystemOutput<T>> system_output = diagram_->AllocateOutput();
   diagram_->CalcOutput(context, system_output.get());
   DRAKE_DEMAND(system_output->get_num_ports() == 1);
   const AbstractValue* abstract_value = system_output->get_data(0);

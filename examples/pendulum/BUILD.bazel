@@ -2,9 +2,9 @@
 
 load(
     "//tools:drake.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
-    "drake_cc_binary",
 )
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -30,6 +30,8 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":pendulum_vector_types",
+        "//geometry:scene_graph",
+        "//math:geometric_transform",
         "//systems/framework",
     ],
 )
@@ -43,11 +45,8 @@ drake_cc_binary(
     deps = [
         ":pendulum_plant",
         "//common:find_resource",
+        "//geometry:geometry_visualization",
         "//lcm",
-        "//multibody:rigid_body_tree",
-        "//multibody/joints",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/primitives:constant_vector_source",
@@ -64,10 +63,8 @@ drake_cc_binary(
     deps = [
         ":pendulum_plant",
         "//common:find_resource",
+        "//geometry:geometry_visualization",
         "//lcm",
-        "//multibody/joints",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/framework:leaf_system",
@@ -85,10 +82,8 @@ drake_cc_binary(
         ":pendulum_plant",
         "//common:find_resource",
         "//common:is_approx_equal_abstol",
+        "//geometry:geometry_visualization",
         "//lcm",
-        "//multibody/joints",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/controllers:linear_quadratic_regulator",
         "//systems/framework:diagram",
@@ -104,13 +99,11 @@ drake_cc_binary(
     data = [":models"],
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
-        "pendulum_plant",
+        ":pendulum_plant",
         "//common:find_resource",
         "//common:is_approx_equal_abstol",
+        "//geometry:geometry_visualization",
         "//lcm",
-        "//multibody/joints",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/controllers:pid_controlled_system",
         "//systems/framework",
@@ -130,6 +123,16 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "pendulum_parameters_derivatives",
+    srcs = ["pendulum_parameters_derivatives.cc"],
+    add_test_rule = 1,
+    deps = [
+        ":pendulum_plant",
+        ":pendulum_vector_types",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -137,11 +140,11 @@ drake_cc_googletest(
     data = ["Pendulum.urdf"],
     deps = [
         ":pendulum_plant",
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody:rigid_body_tree",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant",
     ],
 )
 

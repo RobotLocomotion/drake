@@ -73,18 +73,18 @@ class Saturation : public LeafSystem<T> {
   void get_output_port(int) = delete;
 
   /// Returns the input port.
-  const InputPortDescriptor<T>& get_input_port() const {
+  const InputPort<T>& get_input_port() const {
     return System<T>::get_input_port(input_port_index_);
   }
 
   /// Returns the min value port.
-  const InputPortDescriptor<T>& get_min_value_port() const {
+  const InputPort<T>& get_min_value_port() const {
     DRAKE_THROW_UNLESS(min_max_ports_enabled_);
     return System<T>::get_input_port(min_value_port_index_);
   }
 
   /// Returns the max value port.
-  const InputPortDescriptor<T>& get_max_value_port() const {
+  const InputPort<T>& get_max_value_port() const {
     DRAKE_THROW_UNLESS(min_max_ports_enabled_);
     return System<T>::get_input_port(max_value_port_index_);
   }

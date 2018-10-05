@@ -11,6 +11,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
+#include "drake/multibody/multibody_tree/multibody_tree_system.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
@@ -40,16 +41,17 @@ class FrameTests : public ::testing::Test {
     // properties do not play any role.)
     SpatialInertia<double> M_Bo_B;
 
-    model_ = std::make_unique<MultibodyTree<double>>();
+    // Create an empty model.
+    auto model = std::make_unique<MultibodyTree<double>>();
 
-    bodyB_ = &model_->AddBody<RigidBody>(M_Bo_B);
+    bodyB_ = &model->AddBody<RigidBody>(M_Bo_B);
     frameB_ = &bodyB_->body_frame();
 
     // Mobilizer connecting bodyB to the world.
     // The mobilizer is only needed because it is a requirement of MultibodyTree
     // that all bodies in the model must have an inboard mobilizer.
-    model_->AddMobilizer<RevoluteMobilizer>(
-        model_->world_frame(), bodyB_->body_frame(),
+    model->AddMobilizer<RevoluteMobilizer>(
+        model->world_frame(), bodyB_->body_frame(),
         Vector3d::UnitZ() /*revolute axis*/);
 
     // Some arbitrary pose of frame P in the body frame B.
@@ -58,7 +60,7 @@ class FrameTests : public ::testing::Test {
             Translation3d(0.0, -1.0, 0.0);
     // Frame P is rigidly attached to B with pose X_BP.
     frameP_ =
-        &model_->AddFrame<FixedOffsetFrame>(bodyB_->body_frame(), X_BP_);
+        &model->AddFrame<FixedOffsetFrame>(bodyB_->body_frame(), X_BP_);
 
     // Some arbitrary pose of frame Q in frame P.
     X_PQ_ = AngleAxisd(-M_PI / 3.0, Vector3d::UnitZ()) *
@@ -66,10 +68,16 @@ class FrameTests : public ::testing::Test {
             Translation3d(0.5, 1.0, -2.0);
     // Frame Q is rigidly attached to P with pose X_PQ.
     frameQ_ =
-        &model_->AddFrame<FixedOffsetFrame>(*frameP_, X_PQ_);
+        &model->AddFrame<FixedOffsetFrame>(*frameP_, X_PQ_);
 
-    model_->Finalize();
-    context_ = model_->CreateDefaultContext();
+    // Frame R is arbitrary, but named.
+    frameR_ = &model->AddFrame<FixedOffsetFrame>(
+        "R", *frameP_, Isometry3d::Identity());
+
+    // We are done adding modeling elements. Transfer tree to system and get
+    // a Context.
+    system_ = std::make_unique<MultibodyTreeSystem<double>>(std::move(model));
+    context_ = system_->CreateDefaultContext();
 
     // An arbitrary pose of an arbitrary frame G in an arbitrary frame F.
     X_FG_ = AngleAxisd(M_PI / 6.0, Vector3d::UnitY()) *
@@ -84,8 +92,10 @@ class FrameTests : public ::testing::Test {
     X_QG_ = X_FG_;
   }
 
+  const MultibodyTree<double>& tree() const { return system_->tree(); }
+
  protected:
-  std::unique_ptr<MultibodyTree<double>> model_;
+  std::unique_ptr<MultibodyTreeSystem<double>> system_;
   std::unique_ptr<Context<double>> context_;
   // Bodies:
   const RigidBody<double>* bodyB_;
@@ -93,6 +103,7 @@ class FrameTests : public ::testing::Test {
   const Frame<double>* frameB_{};
   const Frame<double>* frameP_{};
   const Frame<double>* frameQ_{};
+  const Frame<double>* frameR_{};
   // Poses:
   Isometry3d X_BP_;
   Isometry3d X_PQ_;
@@ -110,11 +121,20 @@ TEST_F(FrameTests, BodyFrameCalcPoseMethods) {
   EXPECT_TRUE(frameB_->CalcPoseInBodyFrame(*context_).
       isApprox(Isometry3d::Identity()));
 
+  // Now verify the fixed pose version of the same method.
+  EXPECT_TRUE(frameB_->GetFixedPoseInBodyFrame().
+      isApprox(Isometry3d::Identity()));
+
   // Verify this method computes the pose of a frame G measured in this
   // frame F given the pose of frame G in this frame F as: X_BG = X_BF * X_FG.
   // Since in this case frame F IS the body frame B, X_BF = Id and this method
   // simply returns X_FG.
   EXPECT_TRUE(frameB_->CalcOffsetPoseInBody(*context_, X_FG_).isApprox(X_FG_));
+
+  // Now verify the fixed pose version of the same method.
+  // As in the variant above, since in this case frame F IS the body frame B,
+  // X_BF = Id and this method simply returns X_FG.
+  EXPECT_TRUE(frameB_->GetFixedOffsetPoseInBody(X_FG_).isApprox(X_FG_));
 }
 
 // Verifies the FixedOffsetFrame methods to compute poses in different frames.
@@ -127,11 +147,17 @@ TEST_F(FrameTests, FixedOffsetFrameCalcPoseMethods) {
   // Verify this method returns the pose X_BP of frame P in body frame B.
   EXPECT_TRUE(frameP_->CalcPoseInBodyFrame(*context_).isApprox(X_BP_));
 
+  // Now verify the fixed pose version of the same method.
+  EXPECT_TRUE(frameP_->GetFixedPoseInBodyFrame().isApprox(X_BP_));
+
   // Verify this method computes the pose X_BQ of a third frame Q measured in
   // the body frame B given we know the pose X_PQ of frame G in our frame P as:
   // X_BQ = X_BP * X_PQ
   EXPECT_TRUE(frameP_->CalcOffsetPoseInBody(*context_, X_PQ_).
       isApprox(X_BP_ * X_PQ_));
+
+  // Now verify the fixed pose version of the same method.
+  EXPECT_TRUE(frameP_->GetFixedOffsetPoseInBody(X_PQ_).isApprox(X_BP_ * X_PQ_));
 }
 
 // Verifies FixedOffsetFrame methods to compute poses in different frames when
@@ -142,15 +168,27 @@ TEST_F(FrameTests, FixedOffsetFrameCalcPoseMethods) {
 //         X_BP       X_PQ
 //     B -------> P -------> Q
 TEST_F(FrameTests, ChainedFixedOffsetFrames) {
+  EXPECT_TRUE(frameQ_->name().empty());
   // Verify this method computes the pose of frame Q in the body frame B as:
   // X_BQ = X_BP * X_PQ
   EXPECT_TRUE(frameQ_->CalcPoseInBodyFrame(*context_).isApprox(X_BP_ * X_PQ_));
+
+  // Now verify the fixed pose version of the same method.
+  EXPECT_TRUE(frameQ_->GetFixedPoseInBodyFrame().isApprox(X_BP_ * X_PQ_));
 
   // Verify this method computes the pose X_BG of a fourth frame G measured in
   // the body frame B given we know the pose X_QG of frame G in our frame Q as:
   // X_BG = X_BP * X_PQ * X_QG
   EXPECT_TRUE(frameQ_->CalcOffsetPoseInBody(*context_, X_QG_).
       isApprox(X_BP_ * X_PQ_ * X_QG_));
+
+  // Now verify the fixed pose version of the same method.
+  EXPECT_TRUE(frameQ_->GetFixedOffsetPoseInBody(X_QG_).
+      isApprox(X_BP_ * X_PQ_ * X_QG_));
+}
+
+TEST_F(FrameTests, NamedFrame) {
+  EXPECT_EQ(frameR_->name(), "R");
 }
 
 }  // namespace

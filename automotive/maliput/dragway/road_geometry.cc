@@ -27,6 +27,13 @@ RoadGeometry::RoadGeometry(const api::RoadGeometryId& id,
   : id_(id),
     linear_tolerance_(linear_tolerance),
     angular_tolerance_(angular_tolerance),
+    // Dragway is completely flat and featureless, so the scale-length might
+    // as well be any value that characterizes its overall size.
+    // TODO(maddog@tri.global)  If this code is ever re-arranged in a way that
+    //                          makes it possible to query the segment for its
+    //                          `road_width`, then use the max of length and
+    //                          width.
+    scale_length_(length),
     junction_(this, num_lanes, length,
               lane_width, shoulder_width, maximum_height) {
   DRAKE_DEMAND(length > 0);
@@ -35,6 +42,8 @@ RoadGeometry::RoadGeometry(const api::RoadGeometryId& id,
   DRAKE_DEMAND(maximum_height >= 0);
   DRAKE_DEMAND(linear_tolerance >= 0);
   DRAKE_DEMAND(angular_tolerance >= 0);
+
+  id_index_.WalkAndAddAll(this);
 }
 
 const api::Junction* RoadGeometry::do_junction(int index) const {

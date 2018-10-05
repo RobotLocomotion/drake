@@ -64,7 +64,7 @@ def worker_summarize_cpplint(cmdline_and_files, args):
 
 def multiprocess_cpplint(cmdline, files, args):
     """Given a cpplint subprocess command line (just the program and arguments),
-    separate list of files, and number of processess (None for "all CPUs"), run
+    separate list of files, and number of processes (None for "all CPUs"), run
     cpplint, display a progress bar, warning summary, and return a shell
     exitcode (0 on success, 1 on failure).
     """

@@ -14,16 +14,22 @@ namespace schunk_wsg {
 /// consists of a PID controller (which controls the target position
 /// from the command message) combined with a saturation block (which
 /// applies the force control from the command message).
+/// @ingroup manipulation_systems
 class SchunkWsgController : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgController)
-  SchunkWsgController();
 
-  const systems::InputPortDescriptor<double>& get_command_input_port() const {
+  // The gains here are somewhat arbitrary.  The goal is to make sure
+  // that the maximum force is generated except when very close to the
+  // target.
+  explicit SchunkWsgController(double kp = 2000.0, double ki = 0.0,
+                               double kd = 5.0);
+
+  const systems::InputPort<double>& get_command_input_port() const {
     return this->get_input_port(command_input_port_);
   }
 
-  const systems::InputPortDescriptor<double>& get_state_input_port() const {
+  const systems::InputPort<double>& get_state_input_port() const {
     return this->get_input_port(state_input_port_);
   }
 

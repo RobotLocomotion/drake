@@ -1,0 +1,149 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <!-- Note: This is the accompaning SDF file for the example demo in
+       simple_gripper.cc and therefore these two files must be kept in sync.
+
+         This file defines the model for a simple gripper having two fingers.
+       The right finger is fixed to the body of the gripper. The left finger
+       is attached to the main body by a prismatic joint that allows it to
+       perform a grip.
+         The frame of the gripper, G, has its x-axis pointing to the right
+       of the gripper, its y-axis pointing "forward" (towards the fingers
+       side) and, the z-axis pointing upwards. This file only defines visual
+       geometry but not contact geometry, allowing the demo in
+       simple_gripper.cc to add contact geometry programmatically.
+  -->
+  <model name='simple_gripper'>
+    <!-- Pose X_WG of the gripper model frame G in the world frame W. -->
+    <pose>0.0555 0 0.0505 0 0 1.57</pose>
+
+    <joint name='weld_base' type='fixed'>
+      <parent>world</parent>
+      <child>y_translate_link</child>
+      <pose>0 0 0 0 0 0</pose>
+    </joint>
+
+    <link name='y_translate_link'>
+      <pose frame=''>0 0 0 0 -0 0</pose>
+      <inertial>
+        <mass>0.0001</mass>
+        <inertia>
+          <ixx>0.0001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.0001</iyy>
+          <iyz>0</iyz>
+          <izz>0.0001</izz>
+        </inertia>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+      </inertial>
+    </link>
+
+    <joint name='translate_joint' type='prismatic'>
+      <parent>y_translate_link</parent>
+      <child>body</child>
+      <pose frame=''>0 0 0 0 -0 0</pose>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <use_parent_model_frame>1</use_parent_model_frame>
+        <!-- Drake attaches an actuator to all joints with a non-zero effort
+             limit. We do want an actuator for this joint. -->
+        <limit>
+          <effort>500</effort>
+        </limit>
+      </axis>
+    </joint>
+
+    <link name='body'>
+      <pose frame=''>0 -0.049133 0 0 -0 0</pose>
+      <inertial>
+        <mass>0.988882</mass>
+        <inertia>
+          <ixx>0.162992</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.162992</iyy>
+          <iyz>0</iyz>
+          <izz>0.164814</izz>
+        </inertia>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+      </inertial>
+      <visual name='visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.146 0.0725 0.049521</size>
+          </box>
+        </geometry>
+      </visual>
+    </link>
+
+    <link name='left_finger'>
+      <pose frame=''>0.040 0.029 0 0 -0 0</pose>
+      <inertial>
+        <mass>0.05</mass>
+        <inertia>
+          <ixx>0.16</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.16</iyy>
+          <iyz>0</iyz>
+          <izz>0.16</izz>
+        </inertia>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+      </inertial>
+      <visual name='visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.007 0.081 0.028</size>
+          </box>
+        </geometry>
+      </visual>
+    </link>
+    <link name='right_finger'>
+      <pose frame=''>0.047 0.029 0 0 0 0</pose>
+      <inertial>
+        <mass>0.05</mass>
+        <inertia>
+          <ixx>0.16</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.16</iyy>
+          <iyz>0</iyz>
+          <izz>0.16</izz>
+        </inertia>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+      </inertial>
+      <visual name='visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.007 0.081 0.028</size>
+          </box>
+        </geometry>
+      </visual>
+    </link>
+
+    <joint name='weld_right_finger' type='fixed'>
+      <parent>body</parent>
+      <child>right_finger</child>
+      <pose>0 0 0 0 0 0</pose>
+    </joint>
+
+    <joint name='finger_sliding_joint' type='prismatic'>
+      <parent>right_finger</parent>
+      <child>left_finger</child>
+      <pose frame=''>0 0 0 0 -0 0</pose>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <use_parent_model_frame>0</use_parent_model_frame>
+        <!-- Drake attaches an actuator to all joints with a non-zero effort
+             limit. We do want an actuator for this joint. -->
+        <limit>
+          <effort>500</effort>
+        </limit>
+      </axis>
+    </joint>
+  </model>
+</sdf>

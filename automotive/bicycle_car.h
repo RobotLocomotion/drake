@@ -36,9 +36,9 @@ namespace automotive {
 ///
 /// Inputs:
 ///  - Angle of the front wheel of the bicycle δ [rad]
-///    (InputPortDescriptor getter: get_steering_input_port())
+///    (InputPort getter: get_steering_input_port())
 ///  - Force acting on the rigid body F_in [N]
-///    (InputPortDescriptor getter: get_force_input_port())
+///    (InputPort getter: get_force_input_port())
 ///
 /// Output:
 ///  - A BicycleCarState containing the 6-dimensional state vector of the
@@ -75,12 +75,11 @@ class BicycleCar final : public systems::LeafSystem<T> {
 
   ~BicycleCar() override;
 
-  /// Returns a descriptor of the input port that contains the steering angle.
-  const systems::InputPortDescriptor<T>& get_steering_input_port() const;
+  /// Returns the input port that contains the steering angle.
+  const systems::InputPort<T>& get_steering_input_port() const;
 
-  /// Returns a descriptor of the input port that contains the applied
-  /// powertrain force.
-  const systems::InputPortDescriptor<T>& get_force_input_port() const;
+  /// Returns the input port that contains the applied powertrain force.
+  const systems::InputPort<T>& get_force_input_port() const;
 
   /// Returns the output port that contains the bicycle states.
   const systems::OutputPort<T>& get_state_output_port() const;

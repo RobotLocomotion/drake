@@ -1,0 +1,17 @@
+package drake;
+
+// Commands a single set of joint states for the hand.
+struct lcmt_allegro_command {
+  // The timestamp in microseconds.
+  int64_t utime;
+
+  // The reference joint positions. 
+  int32_t num_joints;
+  double joint_position[num_joints];
+
+  // The reference joint torques. They should only be sent when the hand is in
+  // torque control mode. Otherwise, num_torques should be set to zero, and
+  // the numbers in joint_torque, if any, are ignored.
+  int32_t num_torques;
+  double joint_torque[num_torques];
+}

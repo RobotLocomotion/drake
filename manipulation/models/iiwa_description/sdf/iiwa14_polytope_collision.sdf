@@ -1,0 +1,499 @@
+<?xml version="1.0" ?>
+<!--
+SDF automatically generated with: gz sdf -p ../urdf/iiwa14_polytope_collision.urdf > /iiwa14_polytope_collision.sdf
+
+Later edited by hand to rename the base link and remove damping from the joints.
+-->
+<sdf version='1.6'>
+  <model name='iiwa14'>
+    <link name='iiwa_link_0'>
+      <pose frame=''>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose frame=''>-0.1 0 0.07 0 -0 0</pose>
+        <mass>5</mass>
+        <inertia>
+          <ixx>0.05</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.06</iyy>
+          <iyz>0</iyz>
+          <izz>0.03</izz>
+        </inertia>
+      </inertial>
+      <visual name='iiwa_link_0_fixed_joint_lump__iiwa_link_0_visual'>
+        <pose frame=''>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/link_0.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.4 0.4 0.4 1.0</diffuse>
+        </material>
+      </visual>
+      <gravity>1</gravity>
+      <velocity_decay/>
+      <self_collide>0</self_collide>
+    </link>
+
+    <link name='iiwa_link_1'>
+      <pose frame=''>0 0 0.1575 0 -0 0</pose>
+      <inertial>
+        <pose frame=''>0 -0.03 0.12 0 -0 0</pose>
+        <mass>5.76</mass>
+        <inertia>
+          <ixx>0.033</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.0333</iyy>
+          <iyz>0</iyz>
+          <izz>0.0123</izz>
+        </inertia>
+      </inertial>
+      <visual name='iiwa_link_1_visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/link_1.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.4 0.4 0.4 1.0</diffuse>
+        </material>
+      </visual>
+      <gravity>1</gravity>
+      <velocity_decay/>
+      <self_collide>0</self_collide>
+    </link>
+    <joint name='iiwa_joint_1' type='revolute'>
+      <child>iiwa_link_1</child>
+      <parent>iiwa_link_0</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-2.96706</lower>
+          <upper>2.96706</upper>
+          <effort>300</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.0</damping>
+          <friction>0</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='iiwa_link_2'>
+      <pose frame=''>0 0 0.36 1.5708 -0 -3.14159</pose>
+      <inertial>
+        <pose frame=''>0.0003 0.059 0.042 0 -0 0</pose>
+        <mass>6.35</mass>
+        <inertia>
+          <ixx>0.0305</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.0304</iyy>
+          <iyz>0</iyz>
+          <izz>0.011</izz>
+        </inertia>
+      </inertial>
+      <visual name='iiwa_link_2_visual_grey'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/link_2_grey.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.4 0.4 0.4 1.0</diffuse>
+        </material>
+      </visual>
+      <visual name='iiwa_link_2_visual_orange'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/link_2_orange.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
+        </material>
+      </visual>
+      <gravity>1</gravity>
+      <velocity_decay/>
+      <self_collide>0</self_collide>
+    </link>
+    <joint name='iiwa_joint_2' type='revolute'>
+      <child>iiwa_link_2</child>
+      <parent>iiwa_link_1</parent>
+      <axis>
+        <xyz>-0 1 0</xyz>
+        <limit>
+          <lower>-2.0944</lower>
+          <upper>2.0944</upper>
+          <effort>300</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.0</damping>
+          <friction>0</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='iiwa_link_3'>
+      <pose frame=''>0 -0 0.5645 0 0 0</pose>
+      <inertial>
+        <pose frame=''>0 0.03 0.13 0 -0 0</pose>
+        <mass>3.5</mass>
+        <inertia>
+          <ixx>0.025</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.0238</iyy>
+          <iyz>0</iyz>
+          <izz>0.0076</izz>
+        </inertia>
+      </inertial>
+      <visual name='iiwa_link_3_visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/link_3.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.4 0.4 0.4 1.0</diffuse>
+        </material>
+      </visual>
+      <visual name='iiwa_link_3_visual_band'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/band.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.6 0.6 0.6 1.0</diffuse>
+        </material>
+      </visual>
+      <visual name='iiwa_link_3_visual_kuka'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/kuka.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0 0 0 1</diffuse>
+        </material>
+      </visual>
+      <gravity>1</gravity>
+      <velocity_decay/>
+      <self_collide>0</self_collide>
+    </link>
+    <joint name='iiwa_joint_3' type='revolute'>
+      <child>iiwa_link_3</child>
+      <parent>iiwa_link_2</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-2.96706</lower>
+          <upper>2.96706</upper>
+          <effort>300</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.0</damping>
+          <friction>0</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='iiwa_link_4'>
+      <pose frame=''>0 -0 0.78 1.5708 0 0</pose>
+      <inertial>
+        <pose frame=''>0 0.067 0.034 0 -0 0</pose>
+        <mass>3.5</mass>
+        <inertia>
+          <ixx>0.017</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.0164</iyy>
+          <iyz>0</iyz>
+          <izz>0.006</izz>
+        </inertia>
+      </inertial>
+      <visual name='iiwa_link_4_visual_grey'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/link_4_grey.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.4 0.4 0.4 1.0</diffuse>
+        </material>
+      </visual>
+      <visual name='iiwa_link_4_visual_orange'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/link_4_orange.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
+        </material>
+      </visual>
+      <gravity>1</gravity>
+      <velocity_decay/>
+      <self_collide>0</self_collide>
+    </link>
+    <joint name='iiwa_joint_4' type='revolute'>
+      <child>iiwa_link_4</child>
+      <parent>iiwa_link_3</parent>
+      <axis>
+        <xyz>0 -1 0</xyz>
+        <limit>
+          <lower>-2.0944</lower>
+          <upper>2.0944</upper>
+          <effort>300</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.0</damping>
+          <friction>0</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='iiwa_link_5'>
+      <pose frame=''>0 -0 0.9645 0 -0 -3.14159</pose>
+      <inertial>
+        <pose frame=''>0.0001 0.021 0.076 0 -0 0</pose>
+        <mass>3.5</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.0087</iyy>
+          <iyz>0</iyz>
+          <izz>0.00449</izz>
+        </inertia>
+      </inertial>
+      <visual name='iiwa_link_5_visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/link_5.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.4 0.4 0.4 1.0</diffuse>
+        </material>
+      </visual>
+      <visual name='iiwa_link_5_visual_band'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/band.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.6 0.6 0.6 1.0</diffuse>
+        </material>
+      </visual>
+      <visual name='iiwa_link_5_visual_kuka'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/kuka.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0 0 0 1</diffuse>
+        </material>
+      </visual>
+      <gravity>1</gravity>
+      <velocity_decay/>
+      <self_collide>0</self_collide>
+    </link>
+    <joint name='iiwa_joint_5' type='revolute'>
+      <child>iiwa_link_5</child>
+      <parent>iiwa_link_4</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-2.96706</lower>
+          <upper>2.96706</upper>
+          <effort>300</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.0</damping>
+          <friction>0</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='iiwa_link_6'>
+      <pose frame=''>0 0 1.18 1.5708 -0 -3.14159</pose>
+      <inertial>
+        <pose frame=''>0 0.0006 0.0004 0 -0 0</pose>
+        <mass>1.8</mass>
+        <inertia>
+          <ixx>0.0049</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.0047</iyy>
+          <iyz>0</iyz>
+          <izz>0.0036</izz>
+        </inertia>
+      </inertial>
+      <visual name='iiwa_link_6_visual_grey'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/link_6_grey.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.4 0.4 0.4 1.0</diffuse>
+        </material>
+      </visual>
+      <visual name='iiwa_link_6_visual_orange'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/link_6_orange.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
+        </material>
+      </visual>
+      <gravity>1</gravity>
+      <velocity_decay/>
+      <self_collide>0</self_collide>
+    </link>
+    <joint name='iiwa_joint_6' type='revolute'>
+      <child>iiwa_link_6</child>
+      <parent>iiwa_link_5</parent>
+      <axis>
+        <xyz>-0 1 -0</xyz>
+        <limit>
+          <lower>-2.0944</lower>
+          <upper>2.0944</upper>
+          <effort>300</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.0</damping>
+          <friction>0</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='iiwa_link_7'>
+      <pose frame=''>0 0 1.261 0 0 0</pose>
+      <inertial>
+        <pose frame=''>0 0 0.02 0 -0 0</pose>
+        <mass>1.2</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='iiwa_link_7_collision'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/collision/link_7_polytope.obj</uri>
+          </mesh>
+        </geometry>
+        <surface>
+          <contact>
+            <ode/>
+          </contact>
+          <friction>
+            <ode>
+              <mu>0.2</mu>
+              <mu2>0.2</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='iiwa_link_7_visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/visual/link_7.obj</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.4 0.4 0.4 1.0</diffuse>
+        </material>
+      </visual>
+      <gravity>1</gravity>
+      <velocity_decay/>
+      <self_collide>0</self_collide>
+    </link>
+    <joint name='iiwa_joint_7' type='revolute'>
+      <child>iiwa_link_7</child>
+      <parent>iiwa_link_6</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-3.05433</lower>
+          <upper>3.05433</upper>
+          <effort>300</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.0</damping>
+          <friction>0</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <static>0</static>
+    <plugin name='gazebo_ros_controller' filename='libgazebo_ros_control.so'>
+      <robotNamespace>/iiwa</robotNamespace>
+    </plugin>
+  </model>
+</sdf>

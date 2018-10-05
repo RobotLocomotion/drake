@@ -10,7 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/fixed_input_port_value.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::Vector2d;
@@ -39,7 +39,7 @@ GTEST_TEST(GainScalarTypeTest, AutoDiff) {
   const double kGain = 2.0;
   auto gain = make_unique<Gain<T>>(kGain /* gain */, 3 /* size */);
   auto context = gain->CreateDefaultContext();
-  auto output = gain->AllocateOutput(*context);
+  auto output = gain->AllocateOutput();
   auto input = make_unique<BasicVector<T>>(3 /* size */);
 
   // Sets the input values.
@@ -85,7 +85,7 @@ class SymbolicGainTest : public ::testing::Test {
     gain_ = make_unique<Gain<symbolic::Expression>>(kGain_ /* gain */,
                                                     3 /* length */);
     context_ = gain_->CreateDefaultContext();
-    output_ = gain_->AllocateOutput(*context_);
+    output_ = gain_->AllocateOutput();
     input_ = make_unique<BasicVector<symbolic::Expression>>(3 /* length */);
   }
 

@@ -22,7 +22,7 @@ class AffineSystemTest : public AffineLinearSystemTest {
     dut_->set_name("test_affine_system");
     context_ = dut_->CreateDefaultContext();
     input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
-    system_output_ = dut_->AllocateOutput(*context_);
+    system_output_ = dut_->AllocateOutput();
     state_ = &context_->get_mutable_continuous_state();
     derivatives_ = dut_->AllocateTimeDerivatives();
     updates_ = dut_->AllocateDiscreteVariables();
@@ -206,7 +206,7 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
   EXPECT_TRUE(CompareMatrices(system.y0(t), y0));
 
   // Compare the calculated output against the expected output.
-  auto system_output = system.AllocateOutput(*context);
+  auto system_output = system.AllocateOutput();
   system.CalcOutput(*context, system_output.get());
   EXPECT_TRUE(CompareMatrices(system_output->get_vector_data(0)->get_value(),
                               C * x0 + D * u0 + y0));
@@ -263,7 +263,7 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, EvalTest) {
   EXPECT_TRUE(CompareMatrices(sys.A(t) * x + 42.0 * sys.B(t),
                               derivs->CopyToVector()));
 
-  auto output = sys.AllocateOutput(*context);
+  auto output = sys.AllocateOutput();
   sys.CalcOutput(*context, output.get());
   EXPECT_TRUE(CompareMatrices(x + sys.y0(t) + 42.0 * sys.D(t),
                               output->get_vector_data(0)->CopyToVector()));
@@ -284,7 +284,7 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, DiscreteEvalTest) {
   EXPECT_TRUE(CompareMatrices(sys.A(t) * x + 42.0 * sys.B(t),
                               updates->get_vector().CopyToVector()));
 
-  auto output = sys.AllocateOutput(*context);
+  auto output = sys.AllocateOutput();
   sys.CalcOutput(*context, output.get());
   EXPECT_TRUE(CompareMatrices(x + sys.y0(t) + 42.0 * sys.D(t),
                               output->get_vector_data(0)->CopyToVector()));

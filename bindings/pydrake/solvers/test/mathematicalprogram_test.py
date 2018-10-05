@@ -1,6 +1,7 @@
 from __future__ import print_function, absolute_import
 
 from pydrake.solvers import mathematicalprogram as mp
+from pydrake.solvers.mathematicalprogram import SolverType
 
 import numpy as np
 import unittest
@@ -39,6 +40,8 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = mp.MathematicalProgram()
         vars = prog.NewContinuousVariables(5, "x")
         self.assertEqual(vars.dtype, sym.Variable)
+        vars_all = prog.decision_variables()
+        self.assertEqual(vars_all.shape, (5,))
 
     def test_mixed_integer_optimization(self):
         prog = mp.MathematicalProgram()
@@ -70,6 +73,8 @@ class TestMathematicalProgram(unittest.TestCase):
         # Redundant cost just to check the spelling.
         prog.AddQuadraticErrorCost(vars=x, Q=np.eye(2),
                                    x_desired=np.zeros(2))
+        prog.AddL2NormCost(A=np.eye(2), b=np.zeros(2), vars=x)
+
         result = prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
 
@@ -158,6 +163,54 @@ class TestMathematicalProgram(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             c = binding.constraint()
             self.assertEqual(len(w), 1)
+
+    def test_constraint_api(self):
+        prog = mp.MathematicalProgram()
+        x0, = prog.NewContinuousVariables(1, "x")
+        c = prog.AddLinearConstraint(x0 >= 2).evaluator()
+        ce = prog.AddLinearEqualityConstraint(2*x0, 1).evaluator()
+
+        def check_bounds(c, A, lb, ub):
+            self.assertTrue(np.allclose(c.A(), A))
+            self.assertTrue(np.allclose(c.lower_bound(), lb))
+            self.assertTrue(np.allclose(c.upper_bound(), ub))
+
+        check_bounds(c, [1.], [2.], [np.inf])
+        c.UpdateLowerBound([3.])
+        check_bounds(c, [1.], [3.], [np.inf])
+        c.UpdateUpperBound([4.])
+        check_bounds(c, [1.], [3.], [4.])
+        c.set_bounds([-10.], [10.])
+        check_bounds(c, [1.], [-10.], [10.])
+        c.UpdateCoefficients([10.], [-20.], [-30.])
+        check_bounds(c, [10.], [-20.], [-30.])
+
+        check_bounds(ce, [2.], [1.], [1.])
+        ce.UpdateCoefficients([10.], [20.])
+        check_bounds(ce, [10.], [20.], [20.])
+
+    def test_cost_api(self):
+        prog = mp.MathematicalProgram()
+        x0, = prog.NewContinuousVariables(1, "x")
+        lc = prog.AddLinearCost(1*x0 + 2).evaluator()
+        qc = prog.AddQuadraticCost(0.5*x0**2 + 2*x0 + 3).evaluator()
+
+        def check_linear_cost(cost, a, b):
+            self.assertTrue(np.allclose(cost.a(), a))
+            self.assertTrue(np.allclose(cost.b(), b))
+
+        check_linear_cost(lc, [1.], 2.)
+        lc.UpdateCoefficients([10.])
+        check_linear_cost(lc, [10.], 0.)
+
+        def check_quadratic_cost(cost, Q, b, c):
+            self.assertTrue(np.allclose(cost.Q(), Q))
+            self.assertTrue(np.allclose(cost.b(), b))
+            self.assertTrue(np.allclose(cost.c(), c))
+
+        check_quadratic_cost(qc, [1.], [2.], 3.)
+        qc.UpdateCoefficients([10.], [20.])
+        check_quadratic_cost(qc, [10.], [20.], 0)
 
     def test_eval_binding(self):
         qp = TestQP()
@@ -266,7 +319,8 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertIsInstance(binding.evaluator(),
                               mp.LinearComplementarityConstraint)
 
-    def test_bounding_box(self):
+    def test_linear_constraints(self):
+        # TODO(eric.cousineau): Add more general tests
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, 'x')
         lb = [0., 0.]
@@ -274,6 +328,11 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddBoundingBoxConstraint(lb, ub, x)
         prog.AddBoundingBoxConstraint(0., 1., x[0])
         prog.AddBoundingBoxConstraint(0., 1., x)
+        prog.AddLinearConstraint(np.eye(2), np.zeros(2), np.ones(2), x)
+
+        prog.AddLinearEqualityConstraint(np.eye(2), np.zeros(2), x)
+        prog.AddLinearEqualityConstraint(x[0] == 1)
+        prog.AddLinearEqualityConstraint(x[0] + x[1], 1)
 
     def test_pycost_and_pyconstraint(self):
         prog = mp.MathematicalProgram()
@@ -288,4 +347,78 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddCost(cost, x)
         prog.AddConstraint(constraint, [0.], [2.], x)
         prog.Solve()
-        self.assertAlmostEquals(prog.GetSolution(x)[0], 1.)
+        self.assertAlmostEqual(prog.GetSolution(x)[0], 1.)
+
+    def test_addcost_symbolic(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(1, 'x')
+        prog.AddCost((x[0]-1.)**2)
+        prog.AddConstraint(0 <= x[0])
+        prog.AddConstraint(x[0] <= 2)
+        prog.Solve()
+        self.assertAlmostEqual(prog.GetSolution(x)[0], 1.)
+
+    def test_initial_guess(self):
+        prog = mp.MathematicalProgram()
+        count = 6
+        shape = (2, 3)
+        x = prog.NewContinuousVariables(count, 'x')
+        x_matrix = x.reshape(shape)
+        x0 = np.arange(count)
+        x0_matrix = x0.reshape(shape)
+        all_nan = np.full(x.shape, np.nan)
+        self.assertTrue(np.isnan(prog.GetInitialGuess(x)).all())
+
+        def check_and_reset():
+            self.assertTrue((prog.GetInitialGuess(x) == x0).all())
+            self.assertTrue(
+                (prog.GetInitialGuess(x_matrix) == x0_matrix).all())
+            prog.SetInitialGuess(x, all_nan)
+            self.assertTrue(np.isnan(prog.GetInitialGuess(x)).all())
+
+        # Test setting individual variables
+        for i in xrange(count):
+            prog.SetInitialGuess(x[i], x0[i])
+            self.assertEqual(prog.GetInitialGuess(x[i]), x0[i])
+        check_and_reset()
+
+        # Test setting matrix values using both
+        # 1d and 2d np arrays.
+        prog.SetInitialGuess(x, x0)
+        check_and_reset()
+        prog.SetInitialGuess(x_matrix, x0_matrix)
+        check_and_reset()
+
+        # Test setting all values at once.
+        prog.SetInitialGuessForAllVariables(x0)
+        check_and_reset()
+
+    def test_lorentz_cone_constraint(self):
+        # Set Up Mathematical Program
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, "x")
+        z = prog.NewContinuousVariables(1, "z")
+        prog.AddCost(z[0])
+
+        # Add LorentzConeConstraints
+        prog.AddLorentzConeConstraint(np.array([0*x[0]+1, x[0]-1, x[1]-1]))
+        prog.AddLorentzConeConstraint(np.array([z[0], x[0], x[1]]))
+
+        # Test result
+        result = prog.Solve()
+        self.assertEqual(result, mp.SolutionResult.kSolutionFound)
+
+        # Check answer
+        x_expected = np.array([1-2**(-0.5), 1-2**(-0.5)])
+        self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
+
+    def test_solver_options(self):
+        prog = mp.MathematicalProgram()
+
+        prog.SetSolverOption(SolverType.kGurobi, "double_key", 1.0)
+        prog.SetSolverOption(SolverType.kGurobi, "int_key", 2)
+        prog.SetSolverOption(SolverType.kGurobi, "string_key", "3")
+
+        options = prog.GetSolverOptions(SolverType.kGurobi)
+        self.assertDictEqual(
+            options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})

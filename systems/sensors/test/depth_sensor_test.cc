@@ -5,7 +5,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/output_port_value.h"
+#include "drake/systems/framework/system_output.h"
 #include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/depth_sensor_output.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"
@@ -67,7 +67,7 @@ void DoEmptyWorldTest(const char* const name,
   DepthSensor dut(name, tree, frame, specification);
 
   unique_ptr<Context<double>> context = dut.CreateDefaultContext();
-  unique_ptr<SystemOutput<double>> output = dut.AllocateOutput(*context);
+  unique_ptr<SystemOutput<double>> output = dut.AllocateOutput();
 
   int input_port_index = dut.get_rigid_body_tree_state_input_port().get_index();
   context->FixInputPort(
@@ -168,7 +168,7 @@ std::pair<VectorX<double>, Matrix3Xd> DoBoxOcclusionTest(
   DepthSensor dut(name, tree, *frame, specification);
 
   unique_ptr<Context<double>> context = dut.CreateDefaultContext();
-  unique_ptr<SystemOutput<double>> output = dut.AllocateOutput(*context);
+  unique_ptr<SystemOutput<double>> output = dut.AllocateOutput();
 
   int input_port_index = dut.get_rigid_body_tree_state_input_port().get_index();
   context->FixInputPort(input_port_index,

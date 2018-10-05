@@ -7,6 +7,9 @@
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/math/barycentric.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/math/wrap_to.h"
 
 namespace drake {
@@ -17,6 +20,8 @@ PYBIND11_MODULE(math, m) {
   using namespace drake::math;
 
   m.doc() = "Bindings for //math.";
+
+  py::module::import("pydrake.util.eigen_geometry");
 
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar
@@ -49,6 +54,72 @@ PYBIND11_MODULE(math, m) {
                                           const Eigen::Ref<const VectorX<T>>&>(
                        &BarycentricMesh<T>::Eval))
       .def("MeshValuesFrom", &BarycentricMesh<T>::MeshValuesFrom);
+
+  py::class_<RigidTransform<T>>(m, "RigidTransform")
+      .def(py::init())
+      .def(py::init<const RotationMatrix<T>&, const Vector3<T>&>(),
+           py::arg("R"), py::arg("p"))
+      .def(py::init<const RotationMatrix<T>&>(), py::arg("R"))
+      .def(py::init<const Vector3<T>&>(), py::arg("p"))
+      .def(py::init<const Isometry3<T>&>(), py::arg("pose"))
+      .def("set", &RigidTransform<T>::set, py::arg("R"), py::arg("p"))
+      .def("SetFromIsometry3", &RigidTransform<T>::SetFromIsometry3,
+           py::arg("pose"))
+      .def_static("Identity", &RigidTransform<T>::Identity)
+      .def("rotation", &RigidTransform<T>::rotation, py_reference_internal)
+      .def("set_rotation", &RigidTransform<T>::set_rotation, py::arg("R"))
+      .def("translation", &RigidTransform<T>::translation,
+           py_reference_internal)
+      .def("set_translation", &RigidTransform<T>::set_translation, py::arg("p"))
+      .def("GetAsMatrix4", &RigidTransform<T>::GetAsMatrix4)
+      .def("GetAsMatrix34", &RigidTransform<T>::GetAsMatrix34)
+      .def("GetAsIsometry3", &RigidTransform<T>::GetAsIsometry3)
+      .def("SetIdentity", &RigidTransform<T>::SetIdentity)
+      // .def("IsExactlyIdentity", ...)
+      // .def("IsIdentityToEpsilon", ...)
+      .def("inverse", &RigidTransform<T>::inverse)
+      // TODO(eric.cousineau): Use `matmul` operator once we support Python3.
+      .def("multiply", [](
+          const RigidTransform<T>* self, const RigidTransform<T>& other) {
+        return *self * other;
+      }, py::arg("other"))
+      .def("multiply", [](
+          const RigidTransform<T>* self, const Vector3<T>& p_BoQ_B) {
+        return *self * p_BoQ_B;
+      }, py::arg("p_BoQ_B"));
+      // .def("IsNearlyEqualTo", ...)
+      // .def("IsExactlyEqualTo", ...)
+
+  py::class_<RollPitchYaw<T>>(m, "RollPitchYaw")
+      .def(py::init<const Vector3<T>>(), py::arg("rpy"))
+      .def(py::init<const T&, const T&, const T&>(),
+           py::arg("roll"), py::arg("pitch"), py::arg("yaw"))
+      .def(py::init<const RotationMatrix<T>&>(), py::arg("R"))
+      .def(py::init<const Eigen::Quaternion<T>&>(), py::arg("quaternion"))
+      .def("vector", &RollPitchYaw<T>::vector)
+      .def("roll_angle", &RollPitchYaw<T>::roll_angle)
+      .def("pitch_angle", &RollPitchYaw<T>::pitch_angle)
+      .def("yaw_angle", &RollPitchYaw<T>::yaw_angle)
+      .def("ToQuaternion", &RollPitchYaw<T>::ToQuaternion)
+      .def("ToRotationMatrix", &RollPitchYaw<T>::ToRotationMatrix);
+
+  py::class_<RotationMatrix<T>>(m, "RotationMatrix")
+      .def(py::init())
+      .def(py::init<const Matrix3<T>&>(), py::arg("R"))
+      .def(py::init<Eigen::Quaternion<T>>(), py::arg("quaternion"))
+      .def(py::init<const RollPitchYaw<T>&>(), py::arg("rpy"))
+      .def("matrix", &RotationMatrix<T>::matrix)
+      // Do not define an operator until we have the Python3 `@` operator so
+      // that operations are similar to those of arrays.
+      .def("multiply",
+           [](const RotationMatrix<T>& self, const RotationMatrix<T>& other) {
+             return self * other;
+           })
+      .def("inverse", &RotationMatrix<T>::inverse)
+      .def("ToQuaternion",
+           overload_cast_explicit<Eigen::Quaternion<T>>(
+              &RotationMatrix<T>::ToQuaternion))
+      .def_static("Identity", &RotationMatrix<T>::Identity);
 
   // General math overloads.
   // N.B. Additional overloads will be added for autodiff, symbolic, etc, by

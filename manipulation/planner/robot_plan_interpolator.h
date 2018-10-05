@@ -32,6 +32,8 @@ enum class InterpolatorType {
 ///
 /// If a plan is received with no knot points, the system will create
 /// a plan which commands the arm to hold at the measured position.
+///
+/// @ingroup manipulation_systems
 class RobotPlanInterpolator : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotPlanInterpolator)
@@ -41,11 +43,11 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
                         double update_interval = kDefaultPlanUpdateInterval);
   ~RobotPlanInterpolator() override;
 
-  const systems::InputPortDescriptor<double>& get_plan_input_port() const {
+  const systems::InputPort<double>& get_plan_input_port() const {
     return this->get_input_port(plan_input_port_);
   }
 
-  const systems::InputPortDescriptor<double>& get_state_input_port() const {
+  const systems::InputPort<double>& get_state_input_port() const {
     return this->get_input_port(state_input_port_);
   }
 

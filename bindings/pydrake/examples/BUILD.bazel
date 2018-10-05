@@ -22,16 +22,12 @@ package(default_visibility = [
 # bindings.
 PACKAGE_INFO = get_pybind_package_info("//bindings")
 
-# @note Symbols are NOT imported directly into
-# `__init__.py` to simplify dependency management, meaning that
-# classes are organized by their directory structure rather than
-# by C++ namespace.
 drake_py_library(
     name = "module_py",
     srcs = ["__init__.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [
-        "//bindings/pydrake:common_py",
+        "//bindings/pydrake:module_py",
     ],
 )
 
@@ -42,6 +38,20 @@ drake_pybind_library(
     ],
     cc_so_name = "acrobot",
     cc_srcs = ["acrobot_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/systems",
+    ],
+)
+
+drake_pybind_library(
+    name = "compass_gait_py",
+    cc_deps = [
+        "//examples/compass_gait",
+    ],
+    cc_so_name = "compass_gait",
+    cc_srcs = ["compass_gait_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
@@ -93,15 +103,19 @@ drake_pybind_library(
 
 PY_LIBRARIES_WITH_INSTALL = [
     ":acrobot_py",
+    ":compass_gait_py",
     ":pendulum_py",
     ":rimless_wheel_py",
     ":van_der_pol_py",
+    "//bindings/pydrake/examples/multibody",
 ]
 
 PY_LIBRARIES = [
     ":module_py",
 ]
 
+# Package roll-up (for Bazel dependencies).
+# N.B. `examples` packages do not have `all` modules.
 drake_py_library(
     name = "examples",
     imports = PACKAGE_INFO.py_imports,
@@ -117,15 +131,21 @@ install(
 
 drake_py_unittest(
     name = "acrobot_test",
-    size = "small",
     deps = [
         ":acrobot_py",
     ],
 )
 
 drake_py_unittest(
-    name = "pendulum_test",
+    name = "compass_gait_test",
     size = "small",
+    deps = [
+        ":compass_gait_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "pendulum_test",
     deps = [
         ":pendulum_py",
     ],
@@ -133,7 +153,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "rimless_wheel_test",
-    size = "small",
     deps = [
         ":rimless_wheel_py",
     ],
@@ -141,7 +160,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "van_der_pol_test",
-    size = "small",
     deps = [
         ":van_der_pol_py",
     ],

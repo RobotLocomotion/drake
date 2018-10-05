@@ -29,13 +29,14 @@ drake_py_library(
     srcs = ["__init__.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [
-        "//bindings/pydrake:common_py",
+        "//bindings/pydrake:module_py",
     ],
 )
 
 # TODO(eric.cousineau): Move this into `multibody`.
 drake_pybind_library(
     name = "ik_py",
+    cc_deps = ["//bindings/pydrake:documentation_pybind"],
     cc_srcs = ["ik_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -50,7 +51,9 @@ drake_pybind_library(
     name = "mathematicalprogram_py",
     cc_deps = [
         "//bindings/pydrake:autodiff_types_pybind",
+        "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/util:deprecation_pybind",
         "//bindings/pydrake/util:drake_optional_pybind",
     ],
     cc_srcs = ["mathematicalprogram_py.cc"],
@@ -64,6 +67,7 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "gurobi_py",
+    cc_deps = ["//bindings/pydrake:documentation_pybind"],
     cc_so_name = "gurobi",
     cc_srcs = ["gurobi_py.cc"],
     package_info = PACKAGE_INFO,
@@ -72,6 +76,7 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "ipopt_py",
+    cc_deps = ["//bindings/pydrake:documentation_pybind"],
     cc_so_name = "ipopt",
     cc_srcs = ["ipopt_py.cc"],
     package_info = PACKAGE_INFO,
@@ -80,8 +85,18 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "mosek_py",
+    cc_deps = ["//bindings/pydrake:documentation_pybind"],
     cc_so_name = "mosek",
     cc_srcs = ["mosek_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [":mathematicalprogram_py"],
+)
+
+drake_pybind_library(
+    name = "osqp_py",
+    cc_deps = ["//bindings/pydrake:documentation_pybind"],
+    cc_so_name = "osqp",
+    cc_srcs = ["osqp_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [":mathematicalprogram_py"],
 )
@@ -92,6 +107,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":ipopt_py",
     ":mathematicalprogram_py",
     ":mosek_py",
+    ":osqp_py",
 ]
 
 PY_LIBRARIES = [
@@ -120,14 +136,12 @@ install(
 
 drake_py_unittest(
     name = "gurobi_solver_test",
-    size = "small",
     tags = gurobi_test_tags(),
     deps = [":gurobi_py"],
 )
 
 drake_py_unittest(
     name = "ipopt_solver_test",
-    size = "small",
     args = select({
         "//tools:no_ipopt": ["TestIpoptSolver.unavailable"],
         "//conditions:default": [],
@@ -137,21 +151,27 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "mosek_solver_test",
-    size = "small",
     tags = mosek_test_tags(),
     deps = [":mosek_py"],
 )
 
 drake_py_unittest(
+    name = "osqp_solver_test",
+    args = select({
+        "//tools:no_osqp": ["TestOsqpSolver.unavailable"],
+        "//conditions:default": [],
+    }),
+    deps = [":osqp_py"],
+)
+
+drake_py_unittest(
     name = "mathematicalprogram_test",
-    size = "small",
     tags = gurobi_test_tags(),
     deps = [":mathematicalprogram_py"],
 )
 
 drake_py_test(
     name = "pr2_ik_test",
-    size = "small",
     # TODO(jwnimmer-tri) Port this to drake_py_unittest.
     allow_import_unittest = True,
     data = ["//examples/pr2:models"],
@@ -161,7 +181,6 @@ drake_py_test(
 
 drake_py_unittest(
     name = "rbt_ik_test",
-    size = "small",
     data = ["//examples/pendulum:models"],
     tags = ["snopt"],
     deps = [":ik_py"],

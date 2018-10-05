@@ -9,7 +9,7 @@ load(
     "get_pybind_package_info",
 )
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_library",
 )
 load(
@@ -36,37 +36,64 @@ drake_py_library(
     srcs = ["__init__.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [
-        "//bindings/pydrake:common_py",
+        "//bindings/pydrake:module_py",
     ],
 )
 
-# N.B. Any C++ libraries that include this must include `cpp_template_py`.
+# N.B. Any C++ libraries that include this must include `cpp_template_py` when
+# being used in Python.
 drake_cc_library(
     name = "systems_pybind",
     hdrs = ["systems_pybind.h"],
-    deps = ["//bindings/pydrake/util:cpp_template_pybind"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//bindings/pydrake:autodiff_types_pybind",
+        "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/util:cpp_template_pybind",
+    ],
 )
 
 drake_pybind_library(
     name = "framework_py",
     cc_deps = [
         ":systems_pybind",
+        "//bindings/pydrake/util:deprecation_pybind",
         "//bindings/pydrake/util:drake_optional_pybind",
         "//bindings/pydrake/util:eigen_pybind",
         "//bindings/pydrake/util:type_safe_index_pybind",
+        "//bindings/pydrake/util:wrap_pybind",
     ],
     cc_so_name = "framework",
-    cc_srcs = ["framework_py.cc"],
+    cc_srcs = [
+        "framework_py.cc",
+        "framework_py_semantics.cc",
+        "framework_py_semantics.h",
+        "framework_py_systems.cc",
+        "framework_py_systems.h",
+        "framework_py_values.cc",
+        "framework_py_values.h",
+    ],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        "//bindings/pydrake:autodiffutils_py",
+        "//bindings/pydrake:symbolic_py",
         "//bindings/pydrake/util:cpp_template_py",
+    ],
+)
+
+drake_py_library(
+    name = "scalar_conversion_py",
+    srcs = ["scalar_conversion.py"],
+    deps = [
+        ":framework_py",
     ],
 )
 
 drake_pybind_library(
     name = "primitives_py",
     cc_deps = [
+        ":systems_pybind",
         "//bindings/pydrake/util:drake_optional_pybind",
     ],
     cc_so_name = "primitives",
@@ -80,6 +107,9 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "analysis_py",
+    cc_deps = [
+        ":systems_pybind",
+    ],
     cc_so_name = "analysis",
     cc_srcs = ["analysis_py.cc"],
     package_info = PACKAGE_INFO,
@@ -93,7 +123,7 @@ drake_pybind_library(
     name = "controllers_py",
     cc_deps = [
         "//bindings/pydrake:symbolic_types_pybind",
-        "//bindings/pydrake/util:wrap_function",
+        "//bindings/pydrake/util:wrap_pybind",
     ],
     cc_so_name = "controllers",
     cc_srcs = ["controllers_py.cc"],
@@ -168,10 +198,35 @@ drake_py_library(
     deps = [":module_py"],
 )
 
+drake_pybind_library(
+    name = "lcm_py",
+    cc_deps = [
+        "//bindings/pydrake/systems:systems_pybind",
+    ],
+    cc_so_name = "_lcm_py",
+    cc_srcs = ["lcm_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":framework_py",
+        ":module_py",
+        "//bindings/pydrake:lcm_py",
+    ],
+    py_srcs = ["lcm.py"],
+)
+
+drake_py_unittest(
+    name = "lcm_test",
+    deps = [
+        ":lcm_py",
+        "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_py",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":analysis_py",
     ":controllers_py",
     ":framework_py",
+    ":lcm_py",
     ":primitives_py",
     ":rendering_py",
     ":sensors_py",
@@ -205,7 +260,6 @@ install(
 
 drake_py_unittest(
     name = "general_test",
-    size = "small",
     deps = [
         ":analysis_py",
         ":framework_py",
@@ -216,10 +270,18 @@ drake_py_unittest(
 drake_py_binary(
     name = "drawing_graphviz_example",
     srcs = ["drawing_graphviz_example.py"],
+    add_test_rule = 1,
+    data = [
+        "//examples/multibody/cart_pole:cart_pole.sdf",
+    ],
+    test_rule_args = ["--test"],
     deps = [
         ":drawing_py",
         ":framework_py",
         ":primitives_py",
+        "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake:lcm_py",
+        "//bindings/pydrake/multibody:multibody_tree_py",
     ],
 )
 
@@ -252,7 +314,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "custom_test",
-    size = "small",
     deps = [
         ":analysis_py",
         ":framework_py",
@@ -263,7 +324,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "value_test",
-    size = "small",
     deps = [
         ":framework_py",
         ":test_util_py",
@@ -272,27 +332,30 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "controllers_test",
-    size = "small",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
     deps = [
         ":controllers_py",
         "//bindings/pydrake/examples:pendulum_py",
+        "//bindings/pydrake/multibody:multibody_tree_py",
+        "//bindings/pydrake/multibody:rigid_body_tree_py",
     ],
 )
 
 drake_py_unittest(
     name = "primitives_test",
-    size = "small",
     deps = [
         ":analysis_py",
         ":framework_py",
         ":primitives_py",
         ":test_util_py",
+        "//bindings/pydrake:trajectories_py",
     ],
 )
 
 drake_py_unittest(
     name = "rendering_test",
-    size = "small",
     deps = [
         ":rendering_py",
         "//bindings/pydrake/multibody:multibody_tree_py",
@@ -300,8 +363,15 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "scalar_conversion_test",
+    deps = [
+        ":framework_py",
+        ":scalar_conversion_py",
+    ],
+)
+
+drake_py_unittest(
     name = "sensors_test",
-    size = "small",
     data = [
         "//systems/sensors:test_models",
     ],
@@ -312,7 +382,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "trajectory_optimization_test",
-    size = "small",
     deps = [
         ":trajectory_optimization_py",
         "//bindings/pydrake/examples:pendulum_py",

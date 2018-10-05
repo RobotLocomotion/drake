@@ -15,7 +15,6 @@ namespace util {
 
 using drake::systems::KinematicsResults;
 using drake::parsers::ModelInstanceIdTable;
-using systems::rendering::PoseBundle;
 using manipulation::util::FramePoseTracker;
 
 const char* const kIiwaUrdf =
@@ -66,7 +65,7 @@ class FramePoseTrackerTest : public ::testing::Test {
     }
   }
 
-  PoseBundle<double> UpdateInputCalcOutput(
+  geometry::FramePoseVector<double> UpdateInputCalcOutput(
       const FramePoseTracker& dut,
       const KinematicsResults<double>& input_results) {
     std::unique_ptr<systems::AbstractValue> input(
@@ -74,7 +73,7 @@ class FramePoseTrackerTest : public ::testing::Test {
     input->SetValue(input_results);
 
     auto context_ = dut.CreateDefaultContext();
-    auto output_ = dut.AllocateOutput(*context_);
+    auto output_ = dut.AllocateOutput();
     context_->FixInputPort(
         dut.get_kinematics_input_port_index() /* input port ID*/,
         std::move(input));
@@ -82,9 +81,9 @@ class FramePoseTrackerTest : public ::testing::Test {
     dut.CalcUnrestrictedUpdate(*context_, &context_->get_mutable_state());
     dut.CalcOutput(*context_, output_.get());
     auto output_value =
-        output_->get_data(dut.get_pose_bundle_output_port_index());
+        output_->get_data(dut.get_pose_vector_output_port_index());
 
-    return output_value->GetValue<PoseBundle<double>>();
+    return output_value->GetValue<geometry::FramePoseVector<double>>();
   }
 
   std::unique_ptr<RigidBodyTree<double>> tree_;
@@ -137,26 +136,24 @@ TEST_F(FramePoseTrackerTest, ValidFrameInfoTest) {
   q << 0.3, 0.3, 0.3, 0, 0, 0, 0;  // Pick an arbitrary iiwa pose.
   kres.Update(q, v.setZero());
 
-  PoseBundle<double> frames_bundle = UpdateInputCalcOutput(dut, kres);
-  EXPECT_EQ(frames_bundle.get_num_poses(), frames_.size());
+  geometry::FramePoseVector<double> frames_vector =
+      UpdateInputCalcOutput(dut, kres);
+  EXPECT_EQ(frames_vector.size(), frames_.size());
 
-  // Create a frame name to index map for easy indexing within the PoseBundle.
-  std::map<std::string, int> frame_name_to_index_map;
-  for (int i = 0; i < frames_bundle.get_num_poses(); i++) {
-    frame_name_to_index_map[frames_bundle.get_name(i)] = i;
-  }
+  const std::map<std::string, geometry::FrameId>& frame_name_to_id_map =
+      dut.get_frame_name_to_id_map();
 
   for (auto& frame : frames_) {
     // Get the body pose w.r.t. the world and the frame pose w.r.t. the body.
     // Multiply these two and the result should equal the pose contained in the
-    // PoseBundle object, i.e., the frame pose w.r.t. the world.
+    // FramePoseVector object, i.e., the frame pose w.r.t. the world.
     Eigen::Isometry3d X_WB =
         kres.get_pose_in_world(frame.get()->get_rigid_body());
     Eigen::Isometry3d X_BF = frame.get()->get_transform_to_body();
 
-    // Extract the appropriate frame from the PoseBundle object.
-    int frame_pose_index = frame_name_to_index_map.at(frame.get()->get_name());
-    Eigen::Isometry3d X_WF = frames_bundle.get_pose(frame_pose_index);
+    // Extract the appropriate frame from the FramePoseVector object.
+    Eigen::Isometry3d X_WF = frames_vector.value(
+        frame_name_to_id_map.at(frame.get()->get_name()));
 
     EXPECT_TRUE(X_WF.isApprox(X_WB * X_BF, 1e-6));
   }
@@ -173,27 +170,25 @@ TEST_F(FramePoseTrackerTest, ValidFrameTest) {
   q << 0.3, 0.3, 0.3, 0, 0, 0, 0;  // Pick an arbitrary iiwa pose.
   kres.Update(q, v.setZero());
 
-  PoseBundle<double> frames_bundle = UpdateInputCalcOutput(dut, kres);
-  EXPECT_EQ(frames_bundle.get_num_poses(), num_frames_in);
+  geometry::FramePoseVector<double> frames_vector =
+      UpdateInputCalcOutput(dut, kres);
+  EXPECT_EQ(frames_vector.size(), num_frames_in);
 
-  // Create a frame name to index map for easy searching within the PoseBundle.
-  std::map<std::string, int> frame_name_to_index_map;
-  for (int i = 0; i < frames_bundle.get_num_poses(); i++) {
-    frame_name_to_index_map[frames_bundle.get_name(i)] = i;
-  }
+  const std::map<std::string, geometry::FrameId>& frame_name_to_id_map =
+      dut.get_frame_name_to_id_map();
 
-  std::vector<std::string> frame_names = dut.get_tracked_frame_names();
-  for (auto& frame_name : frame_names) {
+  for (auto it = frame_name_to_id_map.begin();
+       it != frame_name_to_id_map.end(); ++it) {
     // Get the body pose w.r.t. the world and the frame pose w.r.t. the body.
     // Multiply these two and the result should equal the pose contained in the
-    // PoseBundle object, i.e., the frame pose w.r.t. the world.
+    // FramePoseVector object, i.e., the frame pose w.r.t. the world.
+    const std::string& frame_name = it->first;
     RigidBodyFrame<double>* frame = dut.get_mutable_frame(frame_name);
     Eigen::Isometry3d X_WB = kres.get_pose_in_world(frame->get_rigid_body());
     Eigen::Isometry3d X_BF = frame->get_transform_to_body();
 
-    // Extract the appropriate frame from the PoseBundle object.
-    int frame_pose_index = frame_name_to_index_map.at(frame->get_name());
-    Eigen::Isometry3d X_WF = frames_bundle.get_pose(frame_pose_index);
+    // Extract the appropriate frame from the FramePoseVector object.
+    Eigen::Isometry3d X_WF = frames_vector.value(it->second);
 
     EXPECT_TRUE(X_WF.isApprox(X_WB * X_BF, 1e-6));
   }

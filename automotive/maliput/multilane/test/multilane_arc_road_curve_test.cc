@@ -21,26 +21,81 @@ class MultilaneArcRoadCurveTest : public ::testing::Test {
   const double kTheta1{3.0 * M_PI / 4.0};
   const double kDTheta{kTheta1 - kTheta0};
   const CubicPolynomial zp;
+  const double kZeroTolerance{0.};
+  const double kLinearTolerance{0.01};
+  const double kZeroScaleLength{0.};
+  const double kScaleLength{1.};
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
   const double kRMin{-0.5 * kRadius};
   const double kRMax{ 0.5 * kRadius};
   const api::HBounds height_bounds{0.0, 10.0};
   const double kVeryExact{1e-12};
-  const double kNoOffset{0.0};
+  const double kR0Offset{0.0};
+  const double kROffset{5.0};
 };
 
 // Checks ArcRoadCurve constructor constraints.
 TEST_F(MultilaneArcRoadCurveTest, ConstructorTest) {
-  EXPECT_THROW(ArcRoadCurve(kCenter, -kRadius, kTheta0, kDTheta, zp, zp),
+  EXPECT_THROW(ArcRoadCurve(kCenter, -kRadius, kTheta0, kDTheta, zp, zp,
+                            kLinearTolerance, kScaleLength,
+                            kComputationPolicy),
                std::runtime_error);
-  EXPECT_NO_THROW(ArcRoadCurve(kCenter, kRadius, kTheta0, kDTheta, zp, zp));
+
+  EXPECT_THROW(ArcRoadCurve(kCenter, kRadius, kTheta0, kDTheta, zp, zp,
+                            kZeroTolerance, kScaleLength, kComputationPolicy),
+               std::runtime_error);
+
+  EXPECT_THROW(ArcRoadCurve(kCenter, kRadius, kTheta0, kDTheta, zp, zp,
+                            -kLinearTolerance, kScaleLength,
+                            kComputationPolicy),
+               std::runtime_error);
+
+  EXPECT_THROW(ArcRoadCurve(kCenter, kRadius, kTheta0, kDTheta, zp, zp,
+                            kLinearTolerance, -kScaleLength,
+                            kComputationPolicy),
+               std::runtime_error);
+
+  EXPECT_THROW(ArcRoadCurve(kCenter, kRadius, kTheta0, kDTheta, zp, zp,
+                            kLinearTolerance, kZeroScaleLength,
+                            kComputationPolicy),
+               std::runtime_error);
+
+  EXPECT_NO_THROW(ArcRoadCurve(kCenter, kRadius, kTheta0, kDTheta, zp, zp,
+                               kLinearTolerance, kScaleLength,
+                               kComputationPolicy));
 }
 
 // Checks arc reference curve interpolations, derivatives, and lengths.
 TEST_F(MultilaneArcRoadCurveTest, ArcGeometryTest) {
-  const ArcRoadCurve dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp);
-  // Checks the length.
-  EXPECT_NEAR(dut.p_scale(), kDTheta * kRadius, kVeryExact);
-  EXPECT_NEAR(dut.s_from_p(1., kNoOffset), kDTheta * kRadius, kVeryExact);
+  const ArcRoadCurve dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp,
+                         kLinearTolerance, kScaleLength, kComputationPolicy);
+  // Checks curve length computations along the centerline.
+  const double kExpectedLength = kDTheta * kRadius;
+  // The total path length of the reference curve l_max and the total path
+  // length of the curve along the centerline s_max for r = h = 0 should match
+  // provided that the curve shows no elevation.
+  EXPECT_NEAR(dut.l_max(), kExpectedLength, kVeryExact);
+  std::function<double(double)> s_from_p_at_r0 =
+      dut.OptimizeCalcSFromP(kR0Offset);
+  const double centerline_length = s_from_p_at_r0(1.);
+  EXPECT_NEAR(centerline_length, kExpectedLength, kVeryExact);
+  // Checks that both `s` and `p` bounds are enforced on
+  // mapping evaluation along the centerline
+  std::function<double(double)> p_from_s_at_r0 =
+      dut.OptimizeCalcPFromS(kR0Offset);
+  EXPECT_THROW(s_from_p_at_r0(2.), std::runtime_error);
+  EXPECT_THROW(p_from_s_at_r0(2. * centerline_length), std::runtime_error);
+  // Checks that both `s` and `p` bounds are enforced on
+  // mapping evaluation at an offset
+  std::function<double(double)> s_from_p_at_r =
+      dut.OptimizeCalcSFromP(kROffset);
+  std::function<double(double)> p_from_s_at_r =
+      dut.OptimizeCalcPFromS(kROffset);
+  const double offset_line_length = s_from_p_at_r(1.);
+  EXPECT_THROW(s_from_p_at_r(2.), std::runtime_error);
+  EXPECT_THROW(p_from_s_at_r(2. * offset_line_length), std::runtime_error);
+
   // Checks the evaluation of xy at different values over the reference curve.
   EXPECT_TRUE(CompareMatrices(
       dut.xy_of_p(0.0), kCenter + Vector2<double>(kRadius * std::cos(kTheta0),
@@ -102,10 +157,15 @@ GTEST_TEST(MultilaneArcRoadCurve, IsValidTest) {
   const CubicPolynomial constant_superelevation(M_PI / 4.0, 0.0, 0.0, 0.0);
   const api::HBounds height_bounds(0.0, 10.0);
   const CubicPolynomial zp;
+  const double kLinearTolerance{0.01};
+  const double kScaleLength{1.};
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
 
   // Checks over a flat arc surface.
   const ArcRoadCurve flat_arc_geometry(kZeroCenter, kRadius, kInitTheta,
-                                       kDTheta1, zp, zp);
+                                       kDTheta1, zp, zp, kLinearTolerance,
+                                       kScaleLength, kComputationPolicy);
   EXPECT_TRUE(
       flat_arc_geometry.IsValid(-0.5 * kRadius, 0.5 * kRadius, height_bounds));
   EXPECT_TRUE(flat_arc_geometry.IsValid(-0.25 * kRadius, 0.25 * kRadius,
@@ -120,7 +180,8 @@ GTEST_TEST(MultilaneArcRoadCurve, IsValidTest) {
 
   // Checks over a right handed cone.
   const ArcRoadCurve right_handed_cone_geometry(
-      kZeroCenter, kRadius, kInitTheta, kDTheta1, zp, constant_superelevation);
+      kZeroCenter, kRadius, kInitTheta, kDTheta1, zp, constant_superelevation,
+      kLinearTolerance, kScaleLength, kComputationPolicy);
   EXPECT_TRUE(right_handed_cone_geometry.IsValid(-0.5 * kRadius, 0.5 * kRadius,
                                                  height_bounds));
   EXPECT_TRUE(right_handed_cone_geometry.IsValid(
@@ -136,7 +197,8 @@ GTEST_TEST(MultilaneArcRoadCurve, IsValidTest) {
 
   // Checks over a left handed cone.
   const ArcRoadCurve left_handed_cone_geometry(
-      kZeroCenter, kRadius, kInitTheta, kDTheta2, zp, constant_superelevation);
+      kZeroCenter, kRadius, kInitTheta, kDTheta2, zp, constant_superelevation,
+      kLinearTolerance, kScaleLength, kComputationPolicy);
   EXPECT_TRUE(left_handed_cone_geometry.IsValid(-0.5 * kRadius, 0.5 * kRadius,
                                                 height_bounds));
   EXPECT_TRUE(left_handed_cone_geometry.IsValid(-0.25 * kRadius, 0.25 * kRadius,
@@ -154,7 +216,8 @@ GTEST_TEST(MultilaneArcRoadCurve, IsValidTest) {
 // Checks the ToCurve frame coordinate conversion for different points in world
 // coordinates.
 TEST_F(MultilaneArcRoadCurveTest, ToCurveFrameTest) {
-  const ArcRoadCurve dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp);
+  const ArcRoadCurve dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp,
+                         kLinearTolerance, kScaleLength, kComputationPolicy);
   // Checks points over the composed curve.
   EXPECT_TRUE(CompareMatrices(
       dut.ToCurveFrame(
@@ -199,30 +262,37 @@ TEST_F(MultilaneArcRoadCurveTest, ToCurveFrameTest) {
       kVeryExact));
 }
 
-// Checks that p_scale(), p_from_s() and s_from_p() with constant superelevation
-// polynomial and up to linear elevation polynomial behave properly.
+// Checks that l_max(), p_from_s() and s_from_p() with constant
+// superelevation polynomial and up to linear elevation polynomial behave
+// properly.
 TEST_F(MultilaneArcRoadCurveTest, OffsetTest) {
   const std::vector<double> r_vector{-0.5 * kRadius, 0.0, 0.5 * kRadius};
   const std::vector<double> p_vector{0., 0.1, 0.2, 0.5, 0.7, 1.0};
 
   // Checks for flat ArcRoadCurve.
-  const ArcRoadCurve flat_dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp);
-  EXPECT_DOUBLE_EQ(flat_dut.p_scale(), kRadius * kDTheta);
+  const ArcRoadCurve flat_dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp,
+                              kLinearTolerance, kScaleLength,
+                              kComputationPolicy);
+  EXPECT_DOUBLE_EQ(flat_dut.l_max(), kRadius * kDTheta);
   // Checks that functions throw when lateral offset is exceeded.
-  EXPECT_THROW(flat_dut.p_from_s(0., kRadius), std::runtime_error);
-  EXPECT_THROW(flat_dut.p_from_s(0., 2.0 * kRadius), std::runtime_error);
-  EXPECT_THROW(flat_dut.s_from_p(0., kRadius), std::runtime_error);
-  EXPECT_THROW(flat_dut.s_from_p(0., 2.0 * kRadius), std::runtime_error);
+  EXPECT_THROW(flat_dut.OptimizeCalcPFromS(kRadius), std::runtime_error);
+  EXPECT_THROW(flat_dut.OptimizeCalcPFromS(2.0 * kRadius), std::runtime_error);
+  EXPECT_THROW(flat_dut.OptimizeCalcPFromS(kRadius), std::runtime_error);
+  EXPECT_THROW(flat_dut.OptimizeCalcSFromP(2.0 * kRadius), std::runtime_error);
   // Evaluates inverse function for different path length and offset values.
   for (double r : r_vector) {
+    std::function<double(double)> p_from_s_at_r =
+        flat_dut.OptimizeCalcPFromS(r);
     for (double p : p_vector) {
-      EXPECT_DOUBLE_EQ(flat_dut.p_from_s(p * (kRadius - r) * kDTheta, r), p);
+      EXPECT_DOUBLE_EQ(p_from_s_at_r(p * (kRadius - r) * kDTheta), p);
     }
   }
   // Evaluates the path length integral for different offset values.
   for (double r : r_vector) {
+    std::function<double(double)> s_from_p_at_r =
+        flat_dut.OptimizeCalcSFromP(r);
     for (double p : p_vector) {
-      EXPECT_DOUBLE_EQ(flat_dut.s_from_p(p, r), p * (kRadius - r) * kDTheta);
+      EXPECT_DOUBLE_EQ(s_from_p_at_r(p), p * (kRadius - r) * kDTheta);
     }
   }
 
@@ -230,16 +300,21 @@ TEST_F(MultilaneArcRoadCurveTest, OffsetTest) {
   const double slope = 10. / (kRadius * kDTheta);
   const CubicPolynomial linear_elevation(10., slope, 0., 0.);
   const ArcRoadCurve elevated_dut(kCenter, kRadius, kTheta0, kDTheta,
-                                  linear_elevation, zp);
-  EXPECT_DOUBLE_EQ(elevated_dut.p_scale(), kRadius * kDTheta);
+                                  linear_elevation, zp, kLinearTolerance,
+                                  kScaleLength, kComputationPolicy);
+  EXPECT_DOUBLE_EQ(elevated_dut.l_max(), kRadius * kDTheta);
   // Evaluates inverse function and path length integral for different values of
   // p and r lateral offsets.
   for (double r : r_vector) {
+    std::function<double(double)> s_from_p_at_r =
+        elevated_dut.OptimizeCalcSFromP(r);
+    std::function<double(double)> p_from_s_at_r =
+        elevated_dut.OptimizeCalcPFromS(r);
     for (double p : p_vector) {
       const double s = p * kRadius * kDTheta *
           std::sqrt(std::pow((kRadius - r) / kRadius, 2.) + slope * slope);
-      EXPECT_DOUBLE_EQ(elevated_dut.p_from_s(s , r), p);
-      EXPECT_DOUBLE_EQ(elevated_dut.s_from_p(p, r), s);
+      EXPECT_DOUBLE_EQ(p_from_s_at_r(s), p);
+      EXPECT_DOUBLE_EQ(s_from_p_at_r(p), s);
     }
   }
 }
@@ -251,7 +326,9 @@ TEST_F(MultilaneArcRoadCurveTest, WorldFunction) {
   const std::vector<double> h_vector{-5., 0., 5.};
 
   // Checks for a flat curve.
-  const ArcRoadCurve flat_dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp);
+  const ArcRoadCurve flat_dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp,
+                              kLinearTolerance, kScaleLength,
+                              kComputationPolicy);
   const Vector3<double> kGeoCenter(kCenter.x(), kCenter.y(), 0.);
   for (double p : p_vector) {
     for (double r : r_vector) {
@@ -274,7 +351,8 @@ TEST_F(MultilaneArcRoadCurveTest, WorldFunction) {
   const CubicPolynomial linear_elevation(kElevationOffset, kElevationSlope, 0.,
                                          0.);
   const ArcRoadCurve elevated_dut(kCenter, kRadius, kTheta0, kDTheta,
-                                  linear_elevation, zp);
+                                  linear_elevation, zp, kLinearTolerance,
+                                  kScaleLength, kComputationPolicy);
   // Computes the rotation along the RoadCurve.
   const Vector3<double> z_vector(0., 0., kRadius * kDTheta);
   const double kZeroRoll{0.};
@@ -301,7 +379,9 @@ TEST_F(MultilaneArcRoadCurveTest, WorldFunction) {
   const CubicPolynomial constant_offset_superelevation(
       kSuperelevationOffset / (kRadius * kDTheta), 0., 0., 0.);
   const ArcRoadCurve superelevated_dut(kCenter, kRadius, kTheta0, kDTheta, zp,
-                                       constant_offset_superelevation);
+                                       constant_offset_superelevation,
+                                       kLinearTolerance, kScaleLength,
+                                       kComputationPolicy);
   for (double p : p_vector) {
     for (double r : r_vector) {
       for (double h : h_vector) {
@@ -346,7 +426,9 @@ TEST_F(MultilaneArcRoadCurveTest, WorldFunctionDerivative) {
   };
 
   // Checks for a flat curve.
-  const ArcRoadCurve flat_dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp);
+  const ArcRoadCurve flat_dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp,
+                              kLinearTolerance, kScaleLength,
+                              kComputationPolicy);
   const Vector3<double> kGeoCenter(kCenter.x(), kCenter.y(), 0.);
   for (double p : p_vector) {
     for (double r : r_vector) {
@@ -372,7 +454,8 @@ TEST_F(MultilaneArcRoadCurveTest, WorldFunctionDerivative) {
   const CubicPolynomial linear_elevation(kElevationOffset, kElevationSlope, 0.,
                                          0.);
   const ArcRoadCurve elevated_dut(kCenter, kRadius, kTheta0, kDTheta,
-                                  linear_elevation, zp);
+                                  linear_elevation, zp, kLinearTolerance,
+                                  kScaleLength, kComputationPolicy);
   for (double p : p_vector) {
     for (double r : r_vector) {
       for (double h : h_vector) {
@@ -396,7 +479,9 @@ TEST_F(MultilaneArcRoadCurveTest, WorldFunctionDerivative) {
   const CubicPolynomial constant_offset_superelevation(
       kSuperelevationOffset / (kRadius * kDTheta), 0., 0., 0.);
   const ArcRoadCurve superelevated_dut(kCenter, kRadius, kTheta0, kDTheta, zp,
-                                       constant_offset_superelevation);
+                                       constant_offset_superelevation,
+                                       kLinearTolerance, kScaleLength,
+                                       kComputationPolicy);
   for (double p : p_vector) {
     for (double r : r_vector) {
       for (double h : h_vector) {
@@ -431,7 +516,9 @@ TEST_F(MultilaneArcRoadCurveTest, ReferenceCurveRotation) {
   const double kZeroPitch{0.};
   // Checks for a flat curve.
   {
-    const ArcRoadCurve flat_dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp);
+    const ArcRoadCurve flat_dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp,
+                                kLinearTolerance, kScaleLength,
+                                kComputationPolicy);
 
     // Computes the rotation matrix and r versor at different p values and
     // checks versor direction and pitch and yaw angles which are not constants.
@@ -479,7 +566,8 @@ TEST_F(MultilaneArcRoadCurveTest, ReferenceCurveRotation) {
     const CubicPolynomial linear_elevation(kElevationOffset, kElevationSlope,
                                            0., 0.);
     const ArcRoadCurve elevated_dut(kCenter, kRadius, kTheta0, kDTheta,
-                                    linear_elevation, zp);
+                                    linear_elevation, zp, kLinearTolerance,
+                                    kScaleLength, kComputationPolicy);
 
     // Computes the rotation matrix and r versor at different p values and
     // checks versor direction and pitch and yaw angles which are not constants.
@@ -525,7 +613,9 @@ TEST_F(MultilaneArcRoadCurveTest, ReferenceCurveRotation) {
     const CubicPolynomial constant_offset_superelevation(
         kSuperelevationOffset / (kRadius * kDTheta), 0., 0., 0.);
     const ArcRoadCurve superelevated_dut(kCenter, kRadius, kTheta0, kDTheta, zp,
-                                         constant_offset_superelevation);
+                                         constant_offset_superelevation,
+                                         kLinearTolerance, kScaleLength,
+                                         kComputationPolicy);
 
     // Computes the rotation matrix and r versor at different p values and
     // checks versor direction and pitch and yaw angles which are not constants.
@@ -583,7 +673,9 @@ TEST_F(MultilaneArcRoadCurveTest, Orientation) {
   };
 
   // Checks for a flat curve.
-  const ArcRoadCurve flat_dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp);
+  const ArcRoadCurve flat_dut(
+      kCenter, kRadius, kTheta0, kDTheta, zp, zp,
+      kLinearTolerance, kScaleLength, kComputationPolicy);
   const double kZeroRoll{0.};
   const double kZeroPitch{0.};
   for (double p : p_vector) {
@@ -604,7 +696,8 @@ TEST_F(MultilaneArcRoadCurveTest, Orientation) {
   const CubicPolynomial linear_elevation(kElevationOffset, kElevationSlope, 0.,
                                          0.);
   const ArcRoadCurve elevated_dut(kCenter, kRadius, kTheta0, kDTheta,
-                                  linear_elevation, zp);
+                                  linear_elevation, zp, kLinearTolerance,
+                                  kScaleLength, kComputationPolicy);
   // Checks that the roll angle remains zero for all the points.
   for (double p : p_vector) {
     for (double r : r_vector) {
@@ -637,7 +730,9 @@ TEST_F(MultilaneArcRoadCurveTest, Orientation) {
   const CubicPolynomial constant_offset_superelevation(
       kSuperelevationOffset / (kRadius * kDTheta), 0., 0., 0.);
   const ArcRoadCurve superelevated_dut(kCenter, kRadius, kTheta0, kDTheta, zp,
-                                       constant_offset_superelevation);
+                                       constant_offset_superelevation,
+                                       kLinearTolerance, kScaleLength,
+                                       kComputationPolicy);
   for (double p : p_vector) {
     for (double r : r_vector) {
       for (double h : h_vector) {

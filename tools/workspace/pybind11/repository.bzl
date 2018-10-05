@@ -5,9 +5,9 @@ load("@drake//tools/workspace:github.bzl", "github_archive")
 
 _REPOSITORY = "RobotLocomotion/pybind11"
 
-_COMMIT = "1151a8a1090c7e2ffa74ef5073449347cc12af2e"
+_COMMIT = "cd239232aa51cbb12045d6283ccecac6df26f6b9"
 
-_SHA256 = "ac392ff3455445e76f1c0de438fbc833ef5e97c7f408016d2bef305b19a886b6"
+_SHA256 = "bff3e651c80ac46b582edf92a846b514618d2ef5ebe3ccdec223cd4ae44b7e65"
 
 def pybind11_repository(
         name,
@@ -37,5 +37,5 @@ Provides information on the external fork of `pybind11` used by `pydrake`.
 repository = {repository}
 commit = {commit}
 sha256 = {sha256}
-'''.format(**vars)
+'''.format(**vars),
     )

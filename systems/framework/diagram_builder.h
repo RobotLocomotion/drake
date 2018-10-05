@@ -6,6 +6,7 @@
 #include <set>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -33,6 +34,9 @@ class DiagramBuilder {
 
   DiagramBuilder() {}
   virtual ~DiagramBuilder() {}
+
+  // TODO(sherm1) The AddSystem methods (or some variant) should take the system
+  // name as their first parameter. See discussion in issue #5895.
 
   /// Takes ownership of @p system and adds it to the builder. Returns a bare
   /// pointer to the System, which will remain valid for the lifetime of the
@@ -126,7 +130,7 @@ class DiagramBuilder {
 
   /// Declares that input port @p dest is connected to output port @p src.
   void Connect(const OutputPort<T>& src,
-               const InputPortDescriptor<T>& dest) {
+               const InputPort<T>& dest) {
     DRAKE_DEMAND(src.size() == dest.size());
     InputPortLocator dest_id{dest.get_system(), dest.get_index()};
     OutputPortLocator src_id{&src.get_system(), src.get_index()};
@@ -157,26 +161,51 @@ class DiagramBuilder {
   }
 
   /// Declares that the given @p input port of a constituent system is an input
-  /// to the entire Diagram.
+  /// to the entire Diagram.  @p name is an optional name for the input port;
+  /// if it is unspecified, then a default name will be provided.
+  /// @pre If supplied at all, @p name must not be empty.
   /// @return The index of the exported input port of the entire diagram.
-  InputPortIndex ExportInput(const InputPortDescriptor<T>& input) {
+  InputPortIndex ExportInput(const InputPort<T>& input,
+                             std::string name = kUseDefaultName) {
+    DRAKE_DEMAND(!name.empty());
     InputPortLocator id{input.get_system(), input.get_index()};
     ThrowIfInputAlreadyWired(id);
     ThrowIfSystemNotRegistered(input.get_system());
     InputPortIndex return_id(input_port_ids_.size());
     input_port_ids_.push_back(id);
+
+    // The requirement that subsystem names are unique guarantees uniqueness
+    // of the port names.
+    std::string port_name =
+        name == kUseDefaultName
+            ? input.get_system()->get_name() + "_" + input.get_name()
+            : std::move(name);
+    input_port_names_.emplace_back(std::move(port_name));
+
     diagram_input_set_.insert(id);
     return return_id;
   }
 
   /// Declares that the given @p output port of a constituent system is an
-  /// output of the entire diagram.
+  /// output of the entire diagram.  @p name is an optional name for the output
+  /// port; if it is unspecified, then a default name will be provided.
+  /// @pre If supplied at all, @p name must not be empty.
   /// @return The index of the exported output port of the entire diagram.
-  OutputPortIndex ExportOutput(const OutputPort<T>& output) {
+  OutputPortIndex ExportOutput(const OutputPort<T>& output,
+                               std::string name = kUseDefaultName) {
     ThrowIfSystemNotRegistered(&output.get_system());
     OutputPortIndex return_id(output_port_ids_.size());
     output_port_ids_.push_back(
         OutputPortLocator{&output.get_system(), output.get_index()});
+
+    // The requirement that subsystem names are unique guarantees uniqueness
+    // of the port names.
+    std::string port_name =
+        name == kUseDefaultName
+            ? output.get_system().get_name() + "_" + output.get_name()
+            : std::move(name);
+    output_port_names_.emplace_back(std::move(port_name));
+
     return return_id;
   }
 
@@ -185,7 +214,7 @@ class DiagramBuilder {
   /// not buildable.
   std::unique_ptr<Diagram<T>> Build() {
     std::unique_ptr<Diagram<T>> diagram(new Diagram<T>(Compile()));
-    return std::move(diagram);
+    return diagram;
   }
 
   /// Configures @p target to have the topology that has been described by
@@ -356,7 +385,9 @@ class DiagramBuilder {
 
     auto blueprint = std::make_unique<typename Diagram<T>::Blueprint>();
     blueprint->input_port_ids = input_port_ids_;
+    blueprint->input_port_names = input_port_names_;
     blueprint->output_port_ids = output_port_ids_;
+    blueprint->output_port_names = output_port_names_;
     blueprint->connection_map = connection_map_;
     blueprint->systems = std::move(registered_systems_);
 
@@ -365,7 +396,9 @@ class DiagramBuilder {
 
   // The ordered inputs and outputs of the Diagram to be built.
   std::vector<InputPortLocator> input_port_ids_;
+  std::vector<std::string> input_port_names_;
   std::vector<OutputPortLocator> output_port_ids_;
+  std::vector<std::string> output_port_names_;
 
   // For fast membership queries: has this input port already been declared?
   std::set<InputPortLocator> diagram_input_set_;

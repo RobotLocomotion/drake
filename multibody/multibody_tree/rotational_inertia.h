@@ -87,8 +87,8 @@ namespace multibody {
 /// rotational inertia operations in debug releases only.  This provides speed
 /// in a release build while facilitating debugging in debug builds.
 /// In addition, these validity tests are only performed for scalar types for
-/// which drake::is_numeric<T> is `true`. For instance, validity checks are not
-/// performed when T is symbolic::Expression.
+/// which drake::scalar_predicate<T>::is_bool is `true`. For instance, validity
+/// checks are not performed when T is symbolic::Expression.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 /// Various methods in this class require numerical (not symbolic) data types.
@@ -218,8 +218,8 @@ class RotationalInertia {
   ///    in `this` and `other` can be converted to a double (discarding
   ///    supplemental scalar data such as derivatives of an AutoDiffScalar).
   ///    It fails at runtime if type T cannot be converted to `double`.
-  Bool<T> IsNearlyEqualTo(
-      const RotationalInertia& other, double precision) const {
+  boolean<T> IsNearlyEqualTo(const RotationalInertia& other,
+                             double precision) const {
     using std::min;
     const T I_maxA = CalcMaximumPossibleMomentOfInertia();
     const T I_maxB = other.CalcMaximumPossibleMomentOfInertia();
@@ -378,7 +378,7 @@ class RotationalInertia {
 
   /// Returns `true` if any moment/product in `this` rotational inertia is NaN.
   /// Otherwise returns `false`.
-  Bool<T> IsNaN() const {
+  boolean<T> IsNaN() const {
     using std::isnan;
     // Only check the lower-triangular part of this symmetric matrix for NaN.
     // The three upper off-diagonal products of inertia should be/remain NaN.
@@ -481,7 +481,7 @@ class RotationalInertia {
   /// @throws std::runtime_error if principal moments of inertia cannot be
   ///         calculated (eigenvalue solver) or if scalar type T cannot be
   ///         converted to a double.
-  Bool<T> CouldBePhysicallyValid() const {
+  boolean<T> CouldBePhysicallyValid() const {
     // To check the validity of rotational inertia use an epsilon value that is
     // a number related to machine precision multiplied by the largest possible
     // element that can appear in a valid `this` rotational inertia.  Note: The
@@ -836,8 +836,8 @@ class RotationalInertia {
   //          product absolute value in `other`.  Otherwise returns `false`.
   // @note Trace() / 2 is a rotational inertia's maximum possible element,
   // e.g., consider: epsilon = 1E-9 * Trace()  (where 1E-9 is a heuristic).
-  Bool<T> IsApproxMomentsAndProducts(
-      const RotationalInertia& other, const T& epsilon) const {
+  boolean<T> IsApproxMomentsAndProducts(const RotationalInertia& other,
+                                        const T& epsilon) const {
     const Vector3<T> moment_difference = get_moments() - other.get_moments();
     const Vector3<T> product_difference = get_products() - other.get_products();
     const T moment_max = moment_difference.template lpNorm<Eigen::Infinity>();
@@ -863,7 +863,8 @@ class RotationalInertia {
   //       rotational inertia (e.g., Ixx + Iyy + Izz), one can prove:
   //       0 <= Imin <= tr/3,   tr/3 <= Imed <= tr/2,   tr/3 <= Imax <= tr/2.
   //       If Imin == 0, then Imed == Imax == tr / 2.
-  static Bool<T> AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
+  static boolean<T>
+  AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
       const T& Ixx, const T& Iyy, const T& Izz, const T& epsilon) {
     const auto are_moments_near_positive = AreMomentsOfInertiaNearPositive(
         Ixx, Iyy, Izz, epsilon);
@@ -881,7 +882,7 @@ class RotationalInertia {
   // @param epsilon Real positive number that is significantly smaller than the
   //        largest possible element in a valid rotational inertia.
   //        Heuristically, `epsilon` is a small multiplier of Trace() / 2.
-  static Bool<T> AreMomentsOfInertiaNearPositive(
+  static boolean<T> AreMomentsOfInertiaNearPositive(
       const T& Ixx, const T& Iyy, const T& Izz, const T& epsilon) {
     return Ixx + epsilon >= 0  &&  Iyy + epsilon >= 0  &&  Izz + epsilon >= 0;
   }
@@ -899,9 +900,9 @@ class RotationalInertia {
   // eigenvalues and checking if they are positive and satisfy the triangle
   // inequality.
   template <typename T1 = T>
-  typename std::enable_if<is_numeric<T1>::value>::type
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool>
   ThrowIfNotPhysicallyValid() {
-    if (!CouldBePhysicallyValid().value()) {
+    if (!CouldBePhysicallyValid()) {
       throw std::logic_error("Error: Rotational inertia did not pass test: "
                              "CouldBePhysicallyValid().");
     }
@@ -910,13 +911,13 @@ class RotationalInertia {
   // SFINAE for non-numeric types. See documentation in the implementation for
   // numeric types.
   template <typename T1 = T>
-  typename std::enable_if<!is_numeric<T1>::value>::type
+  typename std::enable_if_t<!scalar_predicate<T1>::is_bool>
   ThrowIfNotPhysicallyValid() {}
 
   // Throws an exception if a rotational inertia is multiplied by a negative
   // number - which implies that the resulting rotational inertia is invalid.
   template <typename T1 = T>
-  static typename std::enable_if<is_numeric<T1>::value>::type
+  static typename std::enable_if_t<scalar_predicate<T1>::is_bool>
   ThrowIfMultiplyByNegativeScalar(const T& nonnegative_scalar) {
     if (nonnegative_scalar < 0) {
       throw std::logic_error("Error: Rotational inertia is multiplied by a "
@@ -927,13 +928,13 @@ class RotationalInertia {
   // SFINAE for non-numeric types. See documentation in the implementation for
   // numeric types.
   template <typename T1 = T>
-  static typename std::enable_if<!is_numeric<T1>::value>::type
+  static typename std::enable_if_t<!scalar_predicate<T1>::is_bool>
   ThrowIfMultiplyByNegativeScalar(const T&) {}
 
   // Throws an exception if a rotational inertia is divided by a non-positive
   // number - which implies that the resulting rotational inertia is invalid.
   template <typename T1 = T>
-  static typename std::enable_if<is_numeric<T1>::value>::type
+  static typename std::enable_if_t<scalar_predicate<T1>::is_bool>
   ThrowIfDivideByZeroOrNegativeScalar(const T& positive_scalar) {
     if (positive_scalar == 0)
       throw std::logic_error("Error: Rotational inertia is divided by 0.");
@@ -946,7 +947,7 @@ class RotationalInertia {
   // SFINAE for non-numeric types. See documentation in the implementation for
   // numeric types.
   template <typename T1 = T>
-  static typename std::enable_if<!is_numeric<T1>::value>::type
+  static typename std::enable_if_t<!scalar_predicate<T1>::is_bool>
   ThrowIfDivideByZeroOrNegativeScalar(const T&) {}
 
   // The 3x3 inertia matrix is symmetric and its diagonal elements (moments of

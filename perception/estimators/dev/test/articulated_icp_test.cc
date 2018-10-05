@@ -4,7 +4,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/lcmt_viewer_load_robot.hpp"
-#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/create_load_robot_message.h"
 #include "drake/multibody/rigid_body_plant/viewer_draw_translator.h"
@@ -53,14 +53,7 @@ class ArticulatedIcpVisualizer : public PointCloudVisualizer {
     const ViewerDrawTranslator draw_msg_tx(scene_->tree());
     drake::lcmt_viewer_draw draw_msg{};
     vector<uint8_t> bytes;
-    const int num_q = scene_->tree().get_num_positions();
-    const int num_v = scene_->tree().get_num_velocities();
-    const int num_x = num_q + num_v;
-    BasicVector<double> x(num_x);
-    auto xb = x.get_mutable_value();
-    xb.setZero();
-    xb.head(num_q) = scene_state.q();
-    draw_msg_tx.Serialize(0, x, &bytes);
+    draw_msg_tx.Serialize(0, BasicVector<double>{scene_state.q()}, &bytes);
     lcm().Publish("DRAKE_VIEWER_DRAW", bytes.data(), bytes.size(), {});
   }
 
@@ -88,13 +81,14 @@ class ArticulatedIcpTest : public TestWithParam<ObjectTestType> {
     tree_.reset(mutable_tree_);
     tree_cache_.reset(new KinematicsCached(tree_->CreateKinematicsCache()));
 
-    const Vector3d obj_xyz = setup.X_WB.translation();
     // TODO(eric.cousineau): change X_WB.rotation() to X_WB.linear() once #7035
     // is resolved.
-    const Vector3d obj_rpy = math::rotmat2rpy(setup.X_WB.rotation());
-    const int nq = tree_->get_num_positions();
+    const math::RotationMatrix<double> R_WB(setup.X_WB.rotation());
+    const Vector3d obj_rpy = math::RollPitchYaw<double>(R_WB).vector();
+    const Vector3d obj_xyz = setup.X_WB.translation();
 
     // Perturbation for initializing local ICP.
+    const int nq = tree_->get_num_positions();
     q_perturb_.resize(nq);
 
     // Set additional parameters

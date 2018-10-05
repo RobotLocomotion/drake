@@ -2,12 +2,17 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import os
+from os.path import join
 import unittest
 
 import pydrake
+from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.forwarddiff import jacobian
+from pydrake.multibody.collision import CollisionElement
+from pydrake.multibody.joints import PrismaticJoint, RevoluteJoint
 from pydrake.multibody.parsers import PackageMap
+from pydrake.multibody.rigid_body import RigidBody
 from pydrake.multibody.rigid_body_tree import (
     AddFlatTerrainToWorld,
     RigidBodyFrame,
@@ -35,6 +40,18 @@ class TestRigidBodyTree(unittest.TestCase):
         kinsol = tree.doKinematics(q, v)
         p = tree.transformPoints(kinsol, np.zeros(3), 0, 1)
         self.assertTrue(np.allclose(p, np.zeros(3)))
+
+        # Ensure mismatched sizes throw an error.
+        q_bad = np.zeros(num_q + 1)
+        v_bad = np.zeros(num_v + 1)
+        bad_args_list = (
+            (q_bad,),
+            (q_bad, v),
+            (q, v_bad),
+        )
+        for bad_args in bad_args_list:
+            with self.assertRaises(SystemExit):
+                tree.doKinematics(*bad_args)
 
         # AutoDiff jacobians.
 
@@ -78,6 +95,158 @@ class TestRigidBodyTree(unittest.TestCase):
             [0, 0, 0, 1]])
         self.assertTrue(np.allclose(T, T_expected))
 
+        # Geometric Jacobian.
+        # Construct a new tree with a quaternion floating base.
+        tree = RigidBodyTree(FindResourceOrThrow(
+            "drake/examples/pendulum/Pendulum.urdf"),
+            floating_base_type=FloatingBaseType.kQuaternion)
+        num_q = 8
+        num_v = 7
+        self.assertEqual(tree.number_of_positions(), num_q)
+        self.assertEqual(tree.number_of_velocities(), num_v)
+
+        q = tree.getZeroConfiguration()
+        v = np.zeros(num_v)
+        kinsol = tree.doKinematics(q, v)
+        # - Sanity check sizes.
+        J_default, v_indices_default = tree.geometricJacobian(kinsol, 0, 2, 0)
+        J_eeDotTimesV = tree.geometricJacobianDotTimesV(kinsol, 0, 2, 0)
+
+        self.assertEqual(J_default.shape[0], 6)
+        self.assertEqual(J_default.shape[1], num_v)
+        self.assertEqual(len(v_indices_default), num_v)
+        self.assertEqual(J_eeDotTimesV.shape[0], 6)
+
+        # - Check QDotToVelocity and VelocityToQDot methods
+        q = tree.getZeroConfiguration()
+        v_real = np.zeros(num_v)
+        q_ad = np.array(map(AutoDiffXd, q))
+        v_real_ad = np.array(map(AutoDiffXd, v_real))
+
+        kinsol = tree.doKinematics(q)
+        kinsol_ad = tree.doKinematics(q_ad)
+        qd = tree.transformVelocityToQDot(kinsol, v_real)
+        v = tree.transformQDotToVelocity(kinsol, qd)
+        qd_ad = tree.transformVelocityToQDot(kinsol_ad, v_real_ad)
+        v_ad = tree.transformQDotToVelocity(kinsol_ad, qd_ad)
+        self.assertEqual(qd.shape, (num_q,))
+        self.assertEqual(v.shape, (num_v,))
+        self.assertEqual(qd_ad.shape, (num_q,))
+        self.assertEqual(v_ad.shape, (num_v,))
+
+        v_to_qdot = tree.GetVelocityToQDotMapping(kinsol)
+        qdot_to_v = tree.GetQDotToVelocityMapping(kinsol)
+        v_to_qdot_ad = tree.GetVelocityToQDotMapping(kinsol_ad)
+        qdot_to_v_ad = tree.GetQDotToVelocityMapping(kinsol_ad)
+        self.assertEqual(v_to_qdot.shape, (num_q, num_v))
+        self.assertEqual(qdot_to_v.shape, (num_v, num_q))
+        self.assertEqual(v_to_qdot_ad.shape, (num_q, num_v))
+        self.assertEqual(qdot_to_v_ad.shape, (num_v, num_q))
+
+        v_map = tree.transformVelocityMappingToQDotMapping(kinsol,
+                                                           np.eye(num_v))
+        qd_map = tree.transformQDotMappingToVelocityMapping(kinsol,
+                                                            np.eye(num_q))
+        v_map_ad = tree.transformVelocityMappingToQDotMapping(kinsol_ad,
+                                                              np.eye(num_v))
+        qd_map_ad = tree.transformQDotMappingToVelocityMapping(kinsol_ad,
+                                                               np.eye(num_q))
+        self.assertEqual(v_map.shape, (num_v, num_q))
+        self.assertEqual(qd_map.shape, (num_q, num_v))
+        self.assertEqual(v_map_ad.shape, (num_v, num_q))
+        self.assertEqual(qd_map_ad.shape, (num_q, num_v))
+
+        # - Check FindBody and FindBodyIndex methods
+        body_name = "arm"
+        body = tree.FindBody(body_name)
+        self.assertEqual(body.get_body_index(), tree.FindBodyIndex(body_name))
+
+        # - Check ChildOfJoint methods
+        body = tree.FindChildBodyOfJoint("theta")
+        self.assertIsInstance(body, RigidBody)
+        self.assertEqual(body.get_name(), "arm")
+        self.assertEqual(tree.FindIndexOfChildBodyOfJoint("theta"), 2)
+
+        # - Check that default value for in_terms_of_qdot is false.
+        J_not_in_terms_of_q_dot, v_indices_not_in_terms_of_qdot = \
+            tree.geometricJacobian(kinsol, 0, 2, 0, False)
+        self.assertTrue((J_default == J_not_in_terms_of_q_dot).all())
+        self.assertEqual(v_indices_default, v_indices_not_in_terms_of_qdot)
+
+        # - Check with in_terms_of_qdot set to True.
+        J_in_terms_of_q_dot, v_indices_in_terms_of_qdot = \
+            tree.geometricJacobian(kinsol, 0, 2, 0, True)
+        self.assertEqual(J_in_terms_of_q_dot.shape[0], 6)
+        self.assertEqual(J_in_terms_of_q_dot.shape[1], num_q)
+        self.assertEqual(len(v_indices_in_terms_of_qdot), num_q)
+
+        # - Check transformPointsJacobian methods
+        q = tree.getZeroConfiguration()
+        v = np.zeros(num_v)
+        kinsol = tree.doKinematics(q, v)
+        Jv = tree.transformPointsJacobian(cache=kinsol, points=np.zeros(3),
+                                          from_body_or_frame_ind=0,
+                                          to_body_or_frame_ind=1,
+                                          in_terms_of_qdot=False)
+        Jq = tree.transformPointsJacobian(cache=kinsol, points=np.zeros(3),
+                                          from_body_or_frame_ind=0,
+                                          to_body_or_frame_ind=1,
+                                          in_terms_of_qdot=True)
+        JdotV = tree.transformPointsJacobianDotTimesV(cache=kinsol,
+                                                      points=np.zeros(3),
+                                                      from_body_or_frame_ind=0,
+                                                      to_body_or_frame_ind=1)
+        self.assertEqual(Jv.shape, (3, num_v))
+        self.assertEqual(Jq.shape, (3, num_q))
+        self.assertEqual(JdotV.shape, (3,))
+
+        # - Check that drawKinematicTree runs
+        tree.drawKinematicTree(
+            join(os.environ["TEST_TMPDIR"], "test_graph.dot"))
+
+        # - Check relative twist method
+        twist = tree.relativeTwist(cache=kinsol,
+                                   base_or_frame_ind=0,
+                                   body_or_frame_ind=1,
+                                   expressed_in_body_or_frame_ind=0)
+        self.assertEqual(twist.shape[0], 6)
+
+    def test_constraint_api(self):
+        tree = RigidBodyTree(FindResourceOrThrow(
+            "drake/examples/simple_four_bar/FourBar.urdf"))
+        num_q = 9
+        num_con = 7
+
+        bodyA = 1
+        bodyB = 2
+        point = np.ones(3)
+        distance = 1
+
+        q = tree.getZeroConfiguration()
+        v = np.zeros(num_q)
+        q_ad = np.array(map(AutoDiffXd, q))
+        v_ad = np.array(map(AutoDiffXd, v))
+        kinsol = tree.doKinematics(q, v)
+        kinsol_ad = tree.doKinematics(q_ad, v_ad)
+
+        self.assertEqual(tree.getNumPositionConstraints(), num_con - 1)
+        tree.addDistanceConstraint(bodyA, point, bodyB, point, distance)
+        self.assertEqual(tree.getNumPositionConstraints(), num_con)
+
+        constraint = tree.positionConstraints(kinsol)
+        J = tree.positionConstraintsJacobian(kinsol)
+        JdotV = tree.positionConstraintsJacDotTimesV(kinsol)
+        constraint_ad = tree.positionConstraints(kinsol_ad)
+        J_ad = tree.positionConstraintsJacobian(kinsol_ad)
+        JdotV_ad = tree.positionConstraintsJacDotTimesV(kinsol_ad)
+
+        self.assertEqual(constraint.shape, (num_con,))
+        self.assertEqual(J.shape, (num_con, num_q))
+        self.assertEqual(JdotV.shape, (num_con,))
+        self.assertEqual(constraint_ad.shape, (num_con,))
+        self.assertEqual(J_ad.shape, (num_con, num_q))
+        self.assertEqual(JdotV_ad.shape, (num_con,))
+
     def test_frame_api(self):
         tree = RigidBodyTree(FindResourceOrThrow(
             "drake/examples/pendulum/Pendulum.urdf"))
@@ -119,6 +288,9 @@ class TestRigidBodyTree(unittest.TestCase):
             [0., 1., 0., 0.2425, 0., 0., 0.],
             [0., 0., 1., 0., 0., 0., 0.]])
         self.assertTrue(np.allclose(Jc, Jc_expected))
+        # - JacobianDotTimesV
+        JcDotV = tree.centerOfMassJacobianDotTimesV(kinsol)
+        self.assertEqual(JcDotV.shape, (3,))
 
         # Specific body.
         arm_com = tree.FindBody("arm_com")
@@ -143,6 +315,10 @@ class TestRigidBodyTree(unittest.TestCase):
         v = np.zeros(num_v)
         # Update kinematics.
         kinsol = tree.doKinematics(q, v)
+        # AutoDiff
+        q_ad = np.array(map(AutoDiffXd, q))
+        v_ad = np.array(map(AutoDiffXd, v))
+        kinsol_ad = tree.doKinematics(q_ad, v_ad)
         # Sanity checks:
         # - Actuator map.
         self.assertEqual(tree.B.shape, (num_v, num_u))
@@ -151,16 +327,23 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertTrue(np.allclose(tree.B, B_expected))
         # - Mass matrix.
         H = tree.massMatrix(kinsol)
+        H_ad = tree.massMatrix(kinsol_ad)
         self.assertEqual(H.shape, (num_v, num_v))
+        self.assertEqual(H_ad.shape, (num_v, num_v))
         assert_sane(H)
         self.assertTrue(np.allclose(H[-1, -1], 0.25))
         # - Bias terms.
         C = tree.dynamicsBiasTerm(kinsol, {})
+        C_ad = tree.dynamicsBiasTerm(kinsol_ad, {})
         self.assertEqual(C.shape, (num_v,))
+        self.assertEqual(C_ad.shape, (num_v,))
         assert_sane(C)
         # - Inverse dynamics.
         vd = np.zeros(num_v)
         tau = tree.inverseDynamics(kinsol, {}, vd)
+        tau_ad = tree.inverseDynamics(kinsol_ad, {}, vd)
+        self.assertEqual(tau.shape, (num_v,))
+        self.assertEqual(tau_ad.shape, (num_v,))
         assert_sane(tau)
         # - Friction torques.
         friction_torques = tree.frictionTorques(v)
@@ -244,3 +427,116 @@ class TestRigidBodyTree(unittest.TestCase):
         #    the floating-base joints, as they are not present in the URDF.
         self.assertAlmostEqual(np.min(tree.joint_limit_min[6:]), -3.011)
         self.assertAlmostEqual(np.max(tree.joint_limit_max[6:]), 3.14159)
+
+    def test_rigid_body_api(self):
+        # Tests as much of the RigidBody API as is possible in isolation.
+        # Adding collision geometry is *not* tested here, as it needs to
+        # be done in the context of the RigidBodyTree.
+        body = RigidBody()
+        name = "body"
+        body.set_name(name)
+        self.assertEqual(body.get_name(), name)
+        inertia = np.eye(6)
+        body.set_spatial_inertia(inertia)
+        self.assertTrue(np.allclose(inertia, body.get_spatial_inertia()))
+
+        # Try adding a joint to a dummy body.
+        body_joint = PrismaticJoint("z", np.eye(4),
+                                    np.array([0., 0., 1.]))
+        self.assertFalse(body.has_joint())
+        dummy_body = RigidBody()
+        body.add_joint(dummy_body, body_joint)
+        self.assertEqual(body.getJoint(), body_joint)
+        self.assertTrue(body.has_joint())
+
+        # Try adding visual geometry.
+        box_element = shapes.Box([1.0, 1.0, 1.0])
+        box_visual_element = shapes.VisualElement(
+            box_element, np.eye(4), [1., 0., 0., 1.])
+        body.AddVisualElement(box_visual_element)
+        body_visual_elements = body.get_visual_elements()
+        self.assertEqual(len(body_visual_elements), 1)
+        self.assertEqual(body_visual_elements[0].getGeometry().getShape(),
+                         box_visual_element.getGeometry().getShape())
+
+        # Test collision-related methods.
+        self.assertEqual(body.get_num_collision_elements(), 0)
+        self.assertEqual(len(body.get_collision_element_ids()), 0)
+
+    def test_joints_api(self):
+        # Verify construction from both Isometry3d and 4x4 arrays,
+        # and sanity-check that the accessors function.
+        name = "z"
+        prismatic_joint_np = PrismaticJoint(name, np.eye(4),
+                                            np.array([0., 0., 1.]))
+        prismatic_joint_isom = PrismaticJoint(name, Isometry3.Identity(),
+                                              np.array([0., 0., 1.]))
+        self.assertEqual(prismatic_joint_isom.get_num_positions(), 1)
+        self.assertEqual(prismatic_joint_isom.get_name(), name)
+
+        name = "theta"
+        revolute_joint_np = RevoluteJoint(name, np.eye(4),
+                                          np.array([0., 0., 1.]))
+        revolute_joint_isom = RevoluteJoint(name, Isometry3.Identity(),
+                                            np.array([0., 0., 1.]))
+        self.assertEqual(revolute_joint_isom.get_num_positions(), 1)
+        self.assertEqual(revolute_joint_isom.get_name(), name)
+
+    def test_collision_element_api(self):
+        # Verify construction from both Isometry3d and 4x4 arrays.
+        box_element = shapes.Box([1.0, 1.0, 1.0])
+        box_collision_element_np = CollisionElement(box_element, np.eye(4))
+        box_collision_element_isom = CollisionElement(
+            box_element, Isometry3.Identity())
+        body = RigidBody()
+        box_collision_element_isom.set_body(body)
+        self.assertEqual(box_collision_element_isom.get_body(), body)
+
+    def test_rigid_body_tree_programmatic_construction(self):
+        # Tests RBT programmatic construction methods by assembling
+        # a simple RBT with a prismatic and revolute joint, with
+        # both visual and collision geometry on the last joint.
+        rbt = RigidBodyTree()
+        world_body = rbt.world()
+
+        # body_1 is connected to the world via a prismatic joint along
+        # the +z axis.
+        body_1 = RigidBody()
+        body_1.set_name("body_1")
+        body_1_joint = PrismaticJoint("z", np.eye(4),
+                                      np.array([0., 0., 1.]))
+        body_1.add_joint(world_body, body_1_joint)
+        rbt.add_rigid_body(body_1)
+
+        # body_2 is connected to body_1 via a revolute joint around the z-axis.
+        body_2 = RigidBody()
+        body_2.set_name("body_2")
+        body_2_joint = RevoluteJoint("theta", np.eye(4),
+                                     np.array([0., 0., 1.]))
+        body_2.add_joint(body_1, body_2_joint)
+        box_element = shapes.Box([1.0, 1.0, 1.0])
+        box_visual_element = shapes.VisualElement(
+            box_element, np.eye(4), [1., 0., 0., 1.])
+        body_2.AddVisualElement(box_visual_element)
+        body_2_visual_elements = body_2.get_visual_elements()
+        rbt.add_rigid_body(body_2)
+
+        box_collision_element = CollisionElement(box_element, np.eye(4))
+        box_collision_element.set_body(body_2)
+        rbt.addCollisionElement(box_collision_element, body_2, "default")
+
+        rbt.DefineCollisionFilterGroup(name="test_group")
+        rbt.AddCollisionFilterGroupMember(
+            group_name="test_group", body_name="body_2", model_id=0)
+
+        self.assertFalse(rbt.initialized())
+        rbt.compile()
+        self.assertTrue(rbt.initialized())
+
+        # The RBT's position vector should now be [z, theta].
+        self.assertEqual(body_1.get_position_start_index(), 0)
+        self.assertEqual(body_2.get_position_start_index(), 1)
+
+        self.assertIsNotNone(
+            rbt.FindCollisionElement(
+                body_2.get_collision_element_ids()[0]))

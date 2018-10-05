@@ -11,6 +11,16 @@ import sys
 def _write_stderr(bytes):
     os.write(2, bytes)
 
+def gdb_compatible_strings(args):
+    '''Examine the args and conditionally inject the compiler argument for the
+    benefit of non-GCC compilers to to compile gdb-friendly STL symbols.
+    Modifies the args in place.'''
+    if 'dbg' in args:
+        # Place the compiler argument after the dbg command.
+        insert_point = args.index('dbg') + 1
+        args.insert(insert_point, '--copt=-D_GLIBCXX_DEBUG')
+
+
 def main(argv, execvp, write_stderr, popen):
     # Find the WORKSPACE file.  Bail out if its not Drake's workspace.  (Note
     # that when calling execvp, our process is replaced with the bazel process;
@@ -30,6 +40,8 @@ def main(argv, execvp, write_stderr, popen):
 
     # Copy args for modification.
     args = argv[1:]
+
+    gdb_compatible_strings(args)
 
     # If this magic argument is found and we're in Drake's workspace, then
     # replace it with Drake's hooks instead.

@@ -5,12 +5,13 @@ load("//tools/workspace:bitbucket.bzl", "bitbucket_archive")
 def sdformat_repository(
         name,
         mirrors = None):
+    commit = "8db558193cb3"
     bitbucket_archive(
         name = name,
         repository = "osrf/sdformat",
-        commit = "ac1aff4f7207",
-        sha256 = "7d69ca086ef9ea4a495130c8fa1a7a1409a24e497f8c08a6467e8a2bbfa445d3",  # noqa
-        strip_prefix = "osrf-sdformat-ac1aff4f7207",
+        commit = commit,
+        sha256 = "eddd4bbddf2ebee1e832efa95ff00140b5ddff90a253653397a5f299169db74e",  # noqa
+        strip_prefix = "osrf-sdformat-%s" % (commit),
         build_file = "@drake//tools/workspace/sdformat:package.BUILD.bazel",
         mirrors = mirrors,
     )

@@ -6,7 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 using Eigen::Vector3d;
@@ -32,7 +32,7 @@ void TestSineSystem(const Sine<T>& sine_system,
 
   // Verifies that Sine allocates no state variables in the context.
   EXPECT_EQ(0, context->get_continuous_state().size());
-  auto output = sine_system.AllocateOutput(*context);
+  auto output = sine_system.AllocateOutput();
 
   if (sine_system.is_time_based()) {
     // If the system is time based, the input_vectors Matrix should only contain

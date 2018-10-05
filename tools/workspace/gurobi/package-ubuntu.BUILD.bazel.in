@@ -12,28 +12,38 @@ licenses(["by_exception_only"])  # Gurobi
 genrule(
     name = "error-message",
     outs = ["error-message.h"],
-    cmd = "echo 'error: The value of environment variable GUROBI_PATH=\"{gurobi_path}\" is invalid; export GUROBI_PATH to the correct value.' && false",  # noqa
+    cmd = "echo 'error: Gurobi 8.0.0 is not installed at {gurobi_path}, export GUROBI_PATH to the correct value' && false",  # noqa
     visibility = ["//visibility:private"],
 )
 
-GUROBI_HDRS = glob([
+GUROBI_C_HDRS = glob([
+    "gurobi-distro/include/gurobi_c.h",
+]) or [":error-message.h"]
+
+GUROBI_CXX_HDRS = glob([
     "gurobi-distro/include/gurobi_c.h",
     "gurobi-distro/include/gurobi_c++.h",
 ]) or [":error-message.h"]
 
-# In the Gurobi package, libgurobi75.so is a symlink to libgurobi.so.7.5.2.
-# However, if we use libgurobi.so.7.5.2 in srcs, executables that link this
+# In the Gurobi package, libgurobi80.so is a symlink to libgurobi.so.8.0.0.
+# However, if we use libgurobi.so.8.0.0 in srcs, executables that link this
 # library will be unable to find it at runtime in the Bazel sandbox,
 # because the NEEDED statements in the executable will not square with the
 # RPATH statements.  I don't really know why this happens, but I suspect it
 # might be a Bazel bug.
-GUROBI_SRCS = glob([
-    "gurobi-distro/lib/libgurobi75.so",
+
+GUROBI_C_SRCS = glob([
+    "gurobi-distro/lib/libgurobi80.so",
+]) or [":error-message.h"]
+
+GUROBI_CXX_SRCS = glob([
+    "gurobi-distro/lib/libgurobi80.so",
+    "gurobi-distro/lib/libgurobi_g++5.2.a",
 ]) or [":error-message.h"]
 
 GUROBI_INSTALL_LIBRARIES = glob([
-    "gurobi-distro/lib/libgurobi.so.7.5.2",
-    "gurobi-distro/lib/libgurobi75.so",
+    "gurobi-distro/lib/libgurobi.so.8.0.0",
+    "gurobi-distro/lib/libgurobi80.so",
 ]) or [":error-message.h"]
 
 GUROBI_DOCS = glob([
@@ -41,11 +51,29 @@ GUROBI_DOCS = glob([
 ]) or [":error-message.h"]
 
 cc_library(
-    name = "gurobi",
-    srcs = GUROBI_SRCS,
-    hdrs = GUROBI_HDRS,
+    name = "gurobi_c",
+    srcs = GUROBI_C_SRCS,
+    hdrs = GUROBI_C_HDRS,
     includes = ["gurobi-distro/include"],
     linkopts = ["-pthread"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "gurobi_cxx",
+    srcs = GUROBI_CXX_SRCS,
+    hdrs = GUROBI_CXX_HDRS,
+    includes = ["gurobi-distro/include"],
+    linkopts = ["-pthread"],
+    visibility = ["//visibility:public"],
+)
+
+# TODO(pvarin): Remove this alias and deprecation message after 2018-09-21
+alias(
+    name = "gurobi",
+    actual = "gurobi_c",
+    deprecation = "The @gurobi//:gurobi target is deprecated, \
+                   you should use @gurobi//:gurobi_c instead",
     visibility = ["//visibility:public"],
 )
 

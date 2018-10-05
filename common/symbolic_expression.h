@@ -8,6 +8,7 @@
 #include <algorithm>  // for cpplint only
 #include <cstddef>
 #include <functional>
+#include <limits>
 #include <map>
 #include <memory>
 #include <ostream>
@@ -299,8 +300,8 @@ class Expression {
 
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
-  friend void hash_append(
-      HashAlgorithm& hasher, const Expression& item) noexcept {
+  friend void hash_append(HashAlgorithm& hasher,
+                          const Expression& item) noexcept {
     DelegatingHasher delegating_hasher(
         [&hasher](const void* data, const size_t length) {
           return hasher(data, length);
@@ -398,8 +399,8 @@ class Expression {
   friend Expression if_then_else(const Formula& f_cond,
                                  const Expression& e_then,
                                  const Expression& e_else);
-  friend Expression uninterpreted_function(const std::string& name,
-                                           const Variables& vars);
+  friend Expression uninterpreted_function(std::string name,
+                                           std::vector<Expression> arguments);
 
   friend std::ostream& operator<<(std::ostream& os, const Expression& e);
   friend void swap(Expression& a, Expression& b) { std::swap(a.ptr_, b.ptr_); }
@@ -513,14 +514,15 @@ Expression floor(const Expression& e);
 Expression if_then_else(const Formula& f_cond, const Expression& e_then,
                         const Expression& e_else);
 
-/** Constructs an uninterpreted-function expression with @p name and @p vars.
- * An uninterpreted function is an opaque function that has no other property
- * than its name and a set of its arguments. This is useful to applications
- * where it is good enough to provide abstract information of a function without
- * exposing full details. Declaring sparsity of a system is a typical example.
+/** Constructs an uninterpreted-function expression with @p name and @p
+ * arguments. An uninterpreted function is an opaque function that has no other
+ * property than its name and a list of its arguments. This is useful to
+ * applications where it is good enough to provide abstract information of a
+ * function without exposing full details. Declaring sparsity of a system is a
+ * typical example.
  */
-Expression uninterpreted_function(const std::string& name,
-                                  const Variables& vars);
+Expression uninterpreted_function(std::string name,
+                                  std::vector<Expression> arguments);
 void swap(Expression& a, Expression& b);
 
 std::ostream& operator<<(std::ostream& os, const Expression& e);
@@ -581,6 +583,10 @@ bool is_tanh(const Expression& e);
 bool is_min(const Expression& e);
 /** Checks if @p e is a max expression. */
 bool is_max(const Expression& e);
+/** Checks if @p e is a ceil expression. */
+bool is_ceil(const Expression& e);
+/** Checks if @p e is a floor expression. */
+bool is_floor(const Expression& e);
 /** Checks if @p e is an if-then-else expression. */
 bool is_if_then_else(const Expression& e);
 /** Checks if @p e is an uninterpreted-function expression. */
@@ -632,9 +638,15 @@ const std::map<Expression, Expression>&
 get_base_to_exponent_map_in_multiplication(const Expression& e);
 
 /** Returns the name of an uninterpreted-function expression @p e.
- *  \pre{@p e is an uninterpreted-function expression.}
+ *  \pre @p e is an uninterpreted-function expression.
  */
 const std::string& get_uninterpreted_function_name(const Expression& e);
+
+/** Returns the arguments of an uninterpreted-function expression @p e.
+ *  \pre @p e is an uninterpreted-function expression.
+ */
+const std::vector<Expression>& get_uninterpreted_function_arguments(
+    const Expression& e);
 
 /** Returns the conditional formula in the if-then-else expression @p e.
  * @pre @p e is an if-then-else expression.
@@ -746,6 +758,26 @@ auto operator*(
     const Eigen::Transform<Expression, Dim, RhsMode, RhsOptions>& t2) {
   return t1.template cast<Expression>() * t2;
 }
+
+/// Evaluates a symbolic matrix `m` using the `env` by evaluating each element.
+/// @returns a matrix of double whose size is the size of `m`.
+/// @throws std::runtime_error if NaN is detected during evaluation.
+template <typename Derived>
+auto Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
+  static_assert(std::is_same<typename Derived::Scalar, Expression>::value,
+                "Evaluate only accepts a symbolic matrix.");
+  // Without the trailing `.eval()`, it returns an Eigen Expression (of type
+  // CwiseUnaryOp) and `symbolic::Expression::Evaluate` is only called when a
+  // value is needed (i.e. lazy-evaluation). We add the trailing `.eval()` call
+  // to enforce eager-evaluation and provide a fully evaluated matrix (of
+  // double) to a caller.
+  //
+  // Please refer to https://eigen.tuxfamily.org/dox/TopicPitfalls.html for more
+  // information.
+  return m.unaryExpr([&env](const Expression& e) { return e.Evaluate(env); })
+      .eval();
+}
+
 }  // namespace symbolic
 
 /** Provides specialization of @c cond function defined in drake/common/cond.h
@@ -765,11 +797,16 @@ struct dummy_value<symbolic::Expression> {
   static symbolic::Expression get() { return symbolic::Expression::NaN(); }
 };
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 /** Specializes is_numeric to be false for symbolic::Expression type. */
 template <>
 struct is_numeric<symbolic::Expression> {
+  // TODO(jwnimmer-tri) Remove number_traits.h on or about 2018-12-01.
+  DRAKE_DEPRECATED("This trait will be removed")
   static constexpr bool value = false;
 };
+#pragma GCC diagnostic pop
 
 /// Returns the symbolic expression's value() as a double.
 ///
@@ -782,11 +819,10 @@ double ExtractDoubleOrThrow(const symbolic::Expression& e);
 namespace std {
 /* Provides std::hash<drake::symbolic::Expression>. */
 template <>
-struct hash<drake::symbolic::Expression>
-    : public drake::DefaultHash {};
+struct hash<drake::symbolic::Expression> : public drake::DefaultHash {};
 #if defined(__GLIBCXX__)
 // https://gcc.gnu.org/onlinedocs/libstdc++/manual/unordered_associative.html
-template<>
+template <>
 struct __is_fast_hash<hash<drake::symbolic::Expression>> : std::false_type {};
 #endif
 
@@ -807,6 +843,11 @@ struct equal_to<drake::symbolic::Expression> {
     return lhs.EqualTo(rhs);
   }
 };
+
+/* Provides std::numeric_limits<drake::symbolic::Expression>. */
+template <>
+struct numeric_limits<drake::symbolic::Expression>
+    : public numeric_limits<double> {};
 
 }  // namespace std
 
@@ -879,8 +920,9 @@ namespace drake {
 namespace symbolic {
 
 /// Constructs a vector of variables from the vector of variable expressions.
-/// \pre{@p evec is a vector of variable expressions.}
-VectorX<Variable> get_variable_vector(
+/// @throw std::logic_error if there is an expression in @p vec which is not a
+/// variable.
+VectorX<Variable> GetVariableVector(
     const Eigen::Ref<const VectorX<Expression>>& evec);
 
 /// Computes the Jacobian matrix J of the vector function @p f with respect to
@@ -904,6 +946,18 @@ MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
 /// @pre {@p vars is non-empty}.
 MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
                              const Eigen::Ref<const VectorX<Variable>>& vars);
+
+/// Returns the Taylor series expansion of `f` around `a` of order `order`.
+///
+/// @param[in] f     Symbolic expression to approximate using Taylor series
+///                  expansion.
+/// @param[in] a     Symbolic environment which specifies the point of
+///                  approximation. If a partial environment is provided,
+///                  the unspecified variables are treated as symbolic
+///                  variables (e.g. decision variable).
+/// @param[in] order Positive integer which specifies the maximum order of the
+///                  resulting polynomial approximating `f` around `a`.
+Expression TaylorExpand(const Expression& f, const Environment& a, int order);
 
 /// Returns the distinct variables in the matrix of expressions.
 Variables GetDistinctVariables(const Eigen::Ref<const MatrixX<Expression>>& v);

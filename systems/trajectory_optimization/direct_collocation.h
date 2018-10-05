@@ -66,7 +66,7 @@ class DirectCollocation : public MultipleShooting {
   const System<double>* system_{nullptr};
   const std::unique_ptr<Context<double>> context_{nullptr};
   const std::unique_ptr<ContinuousState<double>> continuous_state_{nullptr};
-  FreestandingInputPortValue* input_port_value_{nullptr};
+  FixedInputPortValue* input_port_value_{nullptr};
 };
 
 /// Implements the direct collocation constraints for a first-order hold on
@@ -91,10 +91,13 @@ class DirectCollocationConstraint : public solvers::Constraint {
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override;
+              Eigen::VectorXd* y) const override;
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override;
+              AutoDiffVecXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override;
 
  private:
   DirectCollocationConstraint(const System<double>& system,
@@ -106,7 +109,7 @@ class DirectCollocationConstraint : public solvers::Constraint {
 
   std::unique_ptr<System<AutoDiffXd>> system_;
   std::unique_ptr<Context<AutoDiffXd>> context_;
-  FreestandingInputPortValue* input_port_value_{nullptr};
+  FixedInputPortValue* input_port_value_{nullptr};
   std::unique_ptr<ContinuousState<AutoDiffXd>> derivatives_;
 
   const int num_states_{0};

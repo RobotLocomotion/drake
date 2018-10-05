@@ -1,6 +1,7 @@
 // NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
 #include <cstddef>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <set>
 #include <sstream>
@@ -15,6 +16,7 @@ namespace drake {
 namespace symbolic {
 
 using std::make_shared;
+using std::numeric_limits;
 using std::ostream;
 using std::ostringstream;
 using std::set;
@@ -25,7 +27,7 @@ bool operator<(FormulaKind k1, FormulaKind k2) {
   return static_cast<int>(k1) < static_cast<int>(k2);
 }
 
-Formula::Formula(shared_ptr<FormulaCell> ptr) : ptr_{std::move(ptr)} {}
+Formula::Formula(std::shared_ptr<FormulaCell> ptr) : ptr_{std::move(ptr)} {}
 
 Formula::Formula(const Variable& var) : ptr_{make_shared<FormulaVar>(var)} {}
 
@@ -281,6 +283,16 @@ Formula operator>=(const Expression& e1, const Expression& e2) {
 
 Formula isnan(const Expression& e) {
   return Formula{make_shared<FormulaIsnan>(e)};
+}
+
+Formula isinf(const Expression& e) {
+  const double inf{numeric_limits<double>::infinity()};
+  return (-inf == e) || (e == inf);
+}
+
+Formula isfinite(const Expression& e) {
+  const double inf{numeric_limits<double>::infinity()};
+  return (-inf < e) && (e < inf);
 }
 
 Formula positive_semidefinite(const Eigen::Ref<const MatrixX<Expression>>& m) {

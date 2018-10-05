@@ -28,8 +28,8 @@ ABBREVIATE_BRIEF       = a \
 ALWAYS_DETAILED_SEC    = NO
 INLINE_INHERITED_MEMB  = NO
 FULL_PATH_NAMES        = YES
-STRIP_FROM_PATH        = "@DRAKE_WORKSPACE_ROOT@"
-STRIP_FROM_INC_PATH    = "@DRAKE_WORKSPACE_ROOT@"
+STRIP_FROM_PATH        = "@INPUT_ROOT@"
+STRIP_FROM_INC_PATH    = "@INPUT_ROOT@"
 SHORT_NAMES            = NO
 JAVADOC_AUTOBRIEF      = YES
 QT_AUTOBRIEF           = NO
@@ -38,7 +38,10 @@ INHERIT_DOCS           = YES
 SEPARATE_MEMBER_PAGES  = NO
 TAB_SIZE               = 2
 ALIASES                = "default=@n @a Default: " \
-                         "concept{1}=@ingroup \1\n@par Implemented concepts:\n@ref \1"
+                         "concept{1}=@ingroup \1\n@par Implemented concepts:\n@ref \1" \
+                         "system{3}=<table align=center cellpadding=0 cellspacing=0><tr align=center><td><table cellspacing=0 cellpadding=0>\2</table></td><td align=center style=\"border:solid;padding-left:20px;padding-right:20px\" bgcolor=#F0F0F0>\1</td><td><table cellspacing=0 cellpadding=0>\3</table></td></tr></table>" \
+                         "input_port{1}=<tr><td align=right style=\"padding:5px 0px 5px 0px\">\1 &rarr;</td></tr>"\
+                         "output_port{1}=<tr><td align=left style=\"padding:5px 0px 5px 0px\">&rarr; \1</td></tr>"
 TCL_SUBST              =
 OPTIMIZE_OUTPUT_FOR_C  = NO
 OPTIMIZE_OUTPUT_JAVA   = NO
@@ -96,7 +99,7 @@ SHOW_USED_FILES        = YES
 SHOW_FILES             = YES
 SHOW_NAMESPACES        = YES
 FILE_VERSION_FILTER    =
-LAYOUT_FILE            = "@DRAKE_WORKSPACE_ROOT@/doc/DoxygenLayout.xml"
+LAYOUT_FILE            = "@INPUT_ROOT@/drake/doc/DoxygenLayout.xml"
 CITE_BIB_FILES         =
 #---------------------------------------------------------------------------
 # Configuration options related to warning and progress messages
@@ -112,7 +115,7 @@ WARN_LOGFILE           = "@BINARY_DIR@/doxygen_cxx.log"
 #---------------------------------------------------------------------------
 # Configuration options related to the input files
 #---------------------------------------------------------------------------
-INPUT                  = "@DRAKE_WORKSPACE_ROOT@"
+INPUT                  = "@INPUT_ROOT@"
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          = *.c \
                          *.cc \
@@ -125,16 +128,14 @@ FILE_PATTERNS          = *.c \
                          *.hpp \
                          *.h++
 RECURSIVE              = YES
-EXCLUDE                = "@DRAKE_WORKSPACE_ROOT@/build" \
-                         "@DRAKE_WORKSPACE_ROOT@/third_party"
+EXCLUDE                =
 EXCLUDE_SYMLINKS       = NO
-EXCLUDE_PATTERNS       = "@DRAKE_WORKSPACE_ROOT@/bazel-*" \
-                         "@DRAKE_WORKSPACE_ROOT@/*/dev/*"
+EXCLUDE_PATTERNS       = "@INPUT_ROOT@/*/dev/*"
 EXCLUDE_SYMBOLS        =
 EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       =
 EXAMPLE_RECURSIVE      = NO
-IMAGE_PATH             = "@DRAKE_WORKSPACE_ROOT@"
+IMAGE_PATH             = "@INPUT_ROOT@/drake"
 INPUT_FILTER           =
 FILTER_PATTERNS        =
 FILTER_SOURCE_FILES    = NO
@@ -206,7 +207,7 @@ FORMULA_FONTSIZE       = 10
 FORMULA_TRANSPARENT    = YES
 USE_MATHJAX            = YES
 MATHJAX_FORMAT         = HTML-CSS
-MATHJAX_RELPATH        = http://cdn.mathjax.org/mathjax/latest
+MATHJAX_RELPATH        = https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5
 MATHJAX_EXTENSIONS     =
 MATHJAX_CODEFILE       =
 SEARCHENGINE           = YES
@@ -287,7 +288,7 @@ EXPAND_ONLY_PREDEF     = YES
 SEARCH_INCLUDES        = YES
 INCLUDE_PATH           =
 INCLUDE_FILE_PATTERNS  =
-PREDEFINED += DRAKE_DOXYGEN_CXX=1
+PREDEFINED += DRAKE_DOXYGEN_CXX=1 HAVE_SPDLOG=1
 # =============================================================================
 # N.B. The spelling of the macro names between common/drake_copyable.h and this
 # file must be kept in sync!
@@ -325,7 +326,7 @@ PERL_PATH              =
 #---------------------------------------------------------------------------
 # Configuration options related to the dot tool
 #---------------------------------------------------------------------------
-CLASS_DIAGRAMS         = YES
+CLASS_DIAGRAMS         = NO
 MSCGEN_PATH            =
 DIA_PATH               =
 HIDE_UNDOC_RELATIONS   = NO
@@ -334,16 +335,16 @@ DOT_NUM_THREADS        = 0
 DOT_FONTNAME           = Helvetica
 DOT_FONTSIZE           = 10
 DOT_FONTPATH           =
-CLASS_GRAPH            = YES
-COLLABORATION_GRAPH    = YES
-GROUP_GRAPHS           = YES
+CLASS_GRAPH            = NO
+COLLABORATION_GRAPH    = NO
+GROUP_GRAPHS           = NO
 UML_LOOK               = NO
 UML_LIMIT_NUM_FIELDS   = 10
 TEMPLATE_RELATIONS     = NO
 INCLUDE_GRAPH          = YES
 INCLUDED_BY_GRAPH      = YES
-CALL_GRAPH             = YES
-CALLER_GRAPH           = YES
+CALL_GRAPH             = NO
+CALLER_GRAPH           = NO
 GRAPHICAL_HIERARCHY    = YES
 DIRECTORY_GRAPH        = YES
 DOT_IMAGE_FORMAT       = svg

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -10,7 +12,9 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
+#include "drake/common/pointer_cast.h"
 #include "drake/multibody/multibody_tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/body.h"
 #include "drake/multibody/multibody_tree/body_node.h"
@@ -19,16 +23,29 @@
 #include "drake/multibody/multibody_tree/joint_actuator.h"
 #include "drake/multibody/multibody_tree/joints/joint.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
+#include "drake/multibody/multibody_tree/model_instance.h"
 #include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
+#include "drake/multibody/multibody_tree/multibody_tree_system.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 #include "drake/multibody/multibody_tree/position_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
+#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
+
+/// @cond
+// Helper macro to throw an exception within methods that should not be called
+// post-finalize.
+#define DRAKE_MBT_THROW_IF_FINALIZED() ThrowIfFinalized(__func__)
+
+// Helper macro to throw an exception within methods that should not be called
+// pre-finalize.
+#define DRAKE_MBT_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
+/// @endcond
 
 /// %MultibodyTree provides a representation for a physical system consisting of
 /// a collection of interconnected rigid and deformable bodies. As such, it owns
@@ -107,19 +124,25 @@ class MultibodyTree {
     std::tie(body_index, body_frame_index) = topology_.add_body();
     // These tests MUST be performed BEFORE frames_.push_back() and
     // owned_bodies_.push_back() below. Do not move them around!
-    DRAKE_ASSERT(body_index == num_bodies());
-    DRAKE_ASSERT(body_frame_index == num_frames());
+    DRAKE_DEMAND(body_index == num_bodies());
+    DRAKE_DEMAND(body_frame_index == num_frames());
+    DRAKE_DEMAND(body->model_instance().is_valid());
 
     // TODO(amcastro-tri): consider not depending on setting this pointer at
     // all. Consider also removing MultibodyTreeElement altogether.
     body->set_parent_tree(this, body_index);
     // MultibodyTree can access selected private methods in Body through its
     // BodyAttorney.
+    // - Register body frame.
     Frame<T>* body_frame =
         &internal::BodyAttorney<T>::get_mutable_body_frame(body.get());
     body_frame->set_parent_tree(this, body_frame_index);
+    DRAKE_ASSERT(body_frame->name() == body->name());
+    frame_name_to_index_.insert({body_frame->name(), body_frame_index});
     frames_.push_back(body_frame);
+    // - Register body.
     BodyType<T>* raw_body_ptr = body.get();
+    body_name_to_index_.insert({body->name(), body->index()});
     owned_bodies_.push_back(std::move(body));
     return *raw_body_ptr;
   }
@@ -163,9 +186,57 @@ class MultibodyTree {
     return AddBody(std::make_unique<BodyType<T>>(std::forward<Args>(args)...));
   }
 
-  /// Creates a rigid body model with the provided name and spatial inertia.
-  /// This method returns a constant reference to the body just added, which
-  /// will remain valid for the lifetime of `this` %MultibodyTree.
+  /// Creates a rigid body with the provided name, model instance, and spatial
+  /// inertia.  This method returns a constant reference to the body just added,
+  /// which will remain valid for the lifetime of `this` %MultibodyTree.
+  ///
+  /// Example of usage:
+  /// @code
+  ///   MultibodyTree<T> model;
+  ///   // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
+  ///   ModelInstanceIndex model_instance = model.AddModelInstance("instance");
+  ///   const RigidBody<T>& body =
+  ///     model.AddRigidBody("BodyName", model_instance, spatial_inertia);
+  /// @endcode
+  ///
+  /// @param[in] name
+  ///   A string that identifies the new body to be added to `this` model. A
+  ///   std::runtime_error is thrown if a body named `name` already is part of
+  ///   @p model_instance. See HasBodyNamed(), Body::name().
+  /// @param[in] model_instance
+  ///   A model instance index which this body is part of.
+  /// @param[in] M_BBo_B
+  ///   The SpatialInertia of the new rigid body to be added to `this` model,
+  ///   computed about the body frame origin `Bo` and expressed in the body
+  ///   frame B.
+  /// @returns A constant reference to the new RigidBody just added, which will
+  ///          remain valid for the lifetime of `this` %MultibodyTree.
+  /// @throws std::logic_error if a body named `name` already exists in this
+  ///         model instance.
+  /// @throws std::logic_error if the model instance does not exist.
+  const RigidBody<T>& AddRigidBody(
+      const std::string& name, ModelInstanceIndex model_instance,
+      const SpatialInertia<double>& M_BBo_B) {
+    if (model_instance >= num_model_instances()) {
+      throw std::logic_error("Invalid model instance specified.");
+    }
+
+    if (HasBodyNamed(name, model_instance)) {
+      throw std::logic_error(
+          "Model instance '" + instance_index_to_name_.at(model_instance) +
+          "' already contains a body named '" + name + "'. " +
+          "Body names must be unique within a given model.");
+    }
+
+    const RigidBody<T>& body =
+        this->template AddBody<RigidBody>(name, model_instance, M_BBo_B);
+    return body;
+  }
+
+  /// Creates a rigid body with the provided name, model instance, and spatial
+  /// inertia.  The newly created body will be placed in the default model
+  /// instance.  This method returns a constant reference to the body just
+  /// added, which will remain valid for the lifetime of `this` %MultibodyTree.
   ///
   /// Example of usage:
   /// @code
@@ -176,25 +247,28 @@ class MultibodyTree {
   /// @endcode
   ///
   /// @param[in] name
-  ///   A string that uniquely identifies the new body to be added to `this`
-  ///   model. A std::runtime_error is thrown if a body named `name` already is
-  ///   part of the model. See HasBodyNamed(), Body::name().
+  ///   A string that identifies the new body to be added to `this` model. A
+  ///   std::runtime_error is thrown if a body named `name` already is part of
+  ///   the model in the default model instance. See HasBodyNamed(),
+  ///   Body::name().
   /// @param[in] M_BBo_B
   ///   The SpatialInertia of the new rigid body to be added to `this` model,
   ///   computed about the body frame origin `Bo` and expressed in the body
   ///   frame B.
   /// @returns A constant reference to the new RigidBody just added, which will
   ///          remain valid for the lifetime of `this` %MultibodyTree.
+  /// @throws std::logic_error if a body named `name` already exists.
+  /// @throws std::logic_error if additional model instances have been created
+  ///                          beyond the world and default instances.
   const RigidBody<T>& AddRigidBody(
       const std::string& name, const SpatialInertia<double>& M_BBo_B) {
-    if (HasBodyNamed(name)) {
+    if (num_model_instances() != 2) {
       throw std::logic_error(
-          "This model already contains a body named '" + name + "'. " +
-          "Body names must be unique within a given model.");
+          "This model has more model instances than the default.  Please "
+          "call AddRigidBody with an explicit model instance.");
     }
-    const RigidBody<T>& body = this->template AddBody<RigidBody>(name, M_BBo_B);
-    body_name_to_index_[name] = body.index();
-    return body;
+
+    return AddRigidBody(name, default_model_instance(), M_BBo_B);
   }
 
   /// Takes ownership of `frame` and adds it to `this` %MultibodyTree. Returns
@@ -237,12 +311,15 @@ class MultibodyTree {
     FrameIndex frame_index = topology_.add_frame(frame->body().index());
     // This test MUST be performed BEFORE frames_.push_back() and
     // owned_frames_.push_back() below. Do not move it around!
-    DRAKE_ASSERT(frame_index == num_frames());
+    DRAKE_DEMAND(frame_index == num_frames());
+    DRAKE_DEMAND(frame->model_instance().is_valid());
+
     // TODO(amcastro-tri): consider not depending on setting this pointer at
     // all. Consider also removing MultibodyTreeElement altogether.
     frame->set_parent_tree(this, frame_index);
     FrameType<T>* raw_frame_ptr = frame.get();
     frames_.push_back(raw_frame_ptr);
+    frame_name_to_index_.insert(std::make_pair(frame->name(), frame_index));
     owned_frames_.push_back(std::move(frame));
     return *raw_frame_ptr;
   }
@@ -301,7 +378,7 @@ class MultibodyTree {
   ///   // MultibodyTree::AddFrame() ...
   ///   const RevoluteMobilizer<T>& pin =
   ///     model.AddMobilizer(std::make_unique<RevoluteMobilizer<T>>(
-  ///       inboard_frame, elbow_outboard_frame,
+  ///       inboard_frame, outboard_frame,
   ///       Vector3d::UnitZ() /*revolute axis*/));
   /// @endcode
   ///
@@ -358,6 +435,14 @@ class MultibodyTree {
     // This DRAKE_ASSERT MUST be performed BEFORE owned_mobilizers_.push_back()
     // below. Do not move it around!
     DRAKE_ASSERT(mobilizer_index == num_mobilizers());
+
+    // TODO(sammy-tri) This effectively means that there's no way to
+    // programmatically add mobilizers from outside of MultibodyTree
+    // itself with multiple model instances.  I'm not convinced that
+    // this is a problem.
+    if (!mobilizer->model_instance().is_valid()) {
+      mobilizer->set_model_instance(default_model_instance());
+    }
 
     // TODO(amcastro-tri): consider not depending on setting this pointer at
     // all. Consider also removing MultibodyTreeElement altogether.
@@ -438,20 +523,109 @@ class MultibodyTree {
     ForceElementIndex force_element_index = topology_.add_force_element();
     // This test MUST be performed BEFORE owned_force_elements_.push_back()
     // below. Do not move it around!
-    DRAKE_ASSERT(force_element_index == num_force_elements());
+    DRAKE_DEMAND(force_element_index == num_force_elements());
+    DRAKE_DEMAND(force_element->model_instance().is_valid());
     force_element->set_parent_tree(this, force_element_index);
+
     ForceElementType<T>* raw_force_element_ptr = force_element.get();
     owned_force_elements_.push_back(std::move(force_element));
     return *raw_force_element_ptr;
   }
 
+  /// Adds a new force element model of type `ForceElementType` to `this`
+  /// %MultibodyTree.  The arguments to this method `args` are forwarded to
+  /// `ForceElementType`'s constructor.
+  /// @param[in] args
+  ///   Zero or more parameters provided to the constructor of the new force
+  ///   element. It must be the case that
+  ///   `JointType<T>(args)` is a valid constructor.
+  /// @tparam ForceElementType
+  ///   The type of the ForceElement to add.
+  ///   This method can only be called once for elements of type
+  ///   UniformGravityFieldElement. That is, gravity can only be specified once
+  ///   and std::runtime_error is thrown if the model already contains a gravity
+  ///   field element.
+  /// @returns A constant reference to the new ForceElement just added, of type
+  ///   `ForceElementType<T>` specialized on the scalar type T of `this`
+  ///   %MultibodyTree. It will remain valid for the lifetime of `this`
+  ///   %MultibodyTree.
+  /// @see The ForceElement class's documentation for further details on how a
+  /// force element is defined.
+  /// @throws std::exception if gravity was already added to the model.
   template<template<typename Scalar> class ForceElementType, typename... Args>
-  const ForceElementType<T>& AddForceElement(Args&&... args) {
+#ifdef DRAKE_DOXYGEN_CXX
+  const ForceElementType<T>&
+#else
+  typename std::enable_if<!std::is_same<
+      ForceElementType<T>,
+      UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
+#endif
+  AddForceElement(Args&&... args) {
     static_assert(std::is_base_of<ForceElement<T>, ForceElementType<T>>::value,
-                  "ForceElementType<T> must be a sub-class of "
-                  "ForceElement<T>.");
+        "ForceElementType<T> must be a sub-class of "
+            "ForceElement<T>.");
     return AddForceElement(
         std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...));
+  }
+
+  // SFINAE overload for ForceElementType = UniformGravityFieldElement.
+  // This allow us to keep track of the gravity field parameters.
+  template<template<typename Scalar> class ForceElementType, typename... Args>
+  typename std::enable_if<std::is_same<
+      ForceElementType<T>,
+      UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
+  AddForceElement(Args&&... args) {
+    if (gravity_field_.has_value()) {
+      throw std::runtime_error(
+          "This model already contains a gravity field element. "
+          "Only one gravity field element is allowed per model.");
+    }
+    // We save the force element so that we can grant users access to it for
+    // gravity field specific queries.
+    gravity_field_ = &AddForceElement(
+        std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...));
+    return *gravity_field_.value();
+  }
+
+  /// This method adds a Joint of type `JointType` between the frames specified
+  /// by the joint.
+  ///
+  /// @param[in] joint
+  ///   Joint to be added.
+  /// @tparam JointType
+  ///   The type of the new joint to add, which must be a subclass of Joint<T>.
+  /// @returns A const lvalue reference to the added joint.
+  ///
+  /// @see The Joint class's documentation for further details on how a Joint
+  /// is defined, or the semi-emplace `AddJoint<>` overload below.
+  template <template<typename Scalar> class JointType>
+  const JointType<T>& AddJoint(
+      std::unique_ptr<JointType<T>> joint) {
+    static_assert(std::is_convertible<JointType<T>*, Joint<T>*>::value,
+                  "JointType must be a sub-class of Joint<T>.");
+
+    if (HasJointNamed(joint->name(), joint->model_instance())) {
+      throw std::logic_error(
+          "Model instance '" +
+              instance_index_to_name_.at(joint->model_instance()) +
+              "' already contains a joint named '" + joint->name() + "'. " +
+              "Joint names must be unique within a given model.");
+    }
+
+    if (topology_is_valid()) {
+      throw std::logic_error("This MultibodyTree is finalized already. "
+                             "Therefore adding more joints is not allowed. "
+                             "See documentation for Finalize() for details.");
+    }
+    if (joint == nullptr) {
+      throw std::logic_error("Input joint is a nullptr.");
+    }
+    const JointIndex joint_index(owned_joints_.size());
+    joint->set_parent_tree(this, joint_index);
+    JointType<T>* raw_joint_ptr = joint.get();
+    joint_name_to_index_.insert({joint->name(), joint->index()});
+    owned_joints_.push_back(std::move(joint));
+    return *raw_joint_ptr;
   }
 
   /// This method helps to create a Joint of type `JointType` between two
@@ -464,7 +638,7 @@ class MultibodyTree {
   /// bodies.
   /// As explained in the Joint class's documentation, in Drake we define a
   /// frame F attached to the parent body P with pose `X_PF` and a frame M
-  /// attached to the child body B with pose `X_BM`. This method helps creating
+  /// attached to the child body B with pose `X_BM`. This method helps create
   /// a joint between two bodies with fixed poses `X_PF` and `X_BM`.
   /// Refer to the Joint class's documentation for more details.
   ///
@@ -472,7 +646,7 @@ class MultibodyTree {
   /// constructor. The newly created `JointType` object will be specialized on
   /// the scalar type T of this %MultibodyTree.
   ///
-  /// @param name
+  /// @param[in] name
   ///   The name of the joint.
   /// @param[in] parent
   ///   The parent body connected by the new joint.
@@ -491,7 +665,7 @@ class MultibodyTree {
   ///   your intention is to make a frame F with pose `X_PF`, provide
   ///   `Isometry3<double>::Identity()` as your input.
   /// @tparam JointType
-  ///   The type of the new joint to add, which must be a subclass of Joint.
+  ///   The type of the new joint to add, which must be a subclass of Joint<T>.
   /// @returns A constant reference to the new joint just added, of type
   ///   `JointType<T>` specialized on the scalar type T of `this`
   ///   %MultibodyTree. It will remain valid for the lifetime of `this`
@@ -529,11 +703,6 @@ class MultibodyTree {
       Args&&... args) {
     static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
                   "JointType<T> must be a sub-class of Joint<T>.");
-    if (HasJointNamed(name)) {
-      throw std::logic_error(
-          "This model already contains a joint named '" + name + "'. " +
-          "Joint names must be unique within a given model.");
-    }
 
     const Frame<T>* frame_on_parent;
     if (X_PF) {
@@ -554,7 +723,6 @@ class MultibodyTree {
             name,
             *frame_on_parent, *frame_on_child,
             std::forward<Args>(args)...));
-    joint_name_to_index_[name] = joint.index();
     return joint;
   }
 
@@ -564,9 +732,10 @@ class MultibodyTree {
   /// will remain valid for the lifetime of `this` %MultibodyTree.
   ///
   /// @param[in] name
-  ///   A string that uniquely identifies the new actuator to be added to `this`
+  ///   A string that identifies the new actuator to be added to `this`
   ///   model. An exception is thrown if an actuator with the same name
-  ///   already exists in the model. See HasJointActuatorNamed().
+  ///   already exists in the same model instance as @p joint. See
+  ///   HasJointActuatorNamed().
   /// @param[in] joint
   ///   The Joint to be actuated by the new JointActuator.
   /// @returns A constant reference to the new JointActuator just added, which
@@ -577,10 +746,12 @@ class MultibodyTree {
   // joint with a single call. Maybe MBT::AddActuatedJoint() or the like.
   const JointActuator<T>& AddJointActuator(
       const std::string& name, const Joint<T>& joint) {
-    if (HasJointActuatorNamed(name)) {
+    if (HasJointActuatorNamed(name, joint.model_instance())) {
       throw std::logic_error(
-          "This model already contains a joint actuator named '" + name +
-          "'. Joint actuator names must be unique within a given model.");
+          "Model instance '" +
+          instance_index_to_name_.at(joint.model_instance()) +
+          "' already contains a joint actuator named '" + name + "'. " +
+          "Joint actuator names must be unique within a given model.");
     }
 
     if (topology_is_valid()) {
@@ -590,12 +761,39 @@ class MultibodyTree {
     }
 
     const JointActuatorIndex actuator_index =
-        topology_.add_joint_actuator(joint.num_dofs());
+        topology_.add_joint_actuator(joint.num_velocities());
     owned_actuators_.push_back(std::make_unique<JointActuator<T>>(name, joint));
     JointActuator<T>* actuator = owned_actuators_.back().get();
     actuator->set_parent_tree(this, actuator_index);
-    actuator_name_to_index_[name] = actuator_index;
+    actuator_name_to_index_.insert(std::make_pair(name, actuator_index));
     return *actuator;
+  }
+
+  /// Creates a new model instance.  Returns the index for a new model
+  /// instance (as there is no concrete object beyond the index).
+  ///
+  /// @param[in] name
+  ///   A string that uniquely identifies the new instance to be added to `this`
+  ///   model. An exception is thrown if an instance with the same name
+  ///   already exists in the model. See HasModelInstanceNamed().
+  /// @throws std::logic_error if Finalize() was already called on `this` tree.
+  ModelInstanceIndex AddModelInstance(const std::string& name) {
+    if (HasModelInstanceNamed(name)) {
+      throw std::logic_error(
+          "This model already contains a model instance named '" + name +
+          "'. Model instance names must be unique within a given model.");
+    }
+
+    if (topology_is_valid()) {
+      throw std::logic_error("This MultibodyTree is finalized already. "
+                             "Therefore adding more model instances is not "
+                             "allowed. See documentation for Finalize() for "
+                             "details.");
+    }
+    const ModelInstanceIndex index(num_model_instances());
+    instance_name_to_index_[name] = index;
+    instance_index_to_name_[index] = name;
+    return index;
   }
 
   /// @}
@@ -637,9 +835,20 @@ class MultibodyTree {
     return static_cast<int>(owned_force_elements_.size());
   }
 
+  /// Returns the number of model instances in the MultibodyTree.
+  int num_model_instances() const {
+    return static_cast<int>(instance_name_to_index_.size());
+  }
+
   /// Returns the number of generalized positions of the model.
   int num_positions() const {
     return topology_.num_positions();
+  }
+
+  /// Returns the number of generalized positions in a specific model instance.
+  int num_positions(ModelInstanceIndex model_instance) const {
+    DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+    return model_instances_.at(model_instance)->num_positions();
   }
 
   /// Returns the number of generalized velocities of the model.
@@ -647,15 +856,35 @@ class MultibodyTree {
     return topology_.num_velocities();
   }
 
+  /// Returns the number of generalized velocities in a specific model instance.
+  int num_velocities(ModelInstanceIndex model_instance) const {
+    DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+    return model_instances_.at(model_instance)->num_velocities();
+  }
+
   /// Returns the total size of the state vector in the model.
   int num_states() const {
     return topology_.num_states();
+  }
+
+  /// Returns the total size of the state vector in a specific model instance.
+  int num_states(ModelInstanceIndex model_instance) const {
+    DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+    return model_instances_.at(model_instance)->num_positions() +
+        model_instances_.at(model_instance)->num_velocities();
   }
 
   /// Returns the total number of Joint degrees of freedom actuated by the set
   /// of JointActuator elements added to `this` model.
   int num_actuated_dofs() const {
     return topology_.num_actuated_dofs();
+  }
+
+  /// Returns the total number of Joint degrees of freedom actuated by the set
+  /// of JointActuator elements added to a specific model instance.
+  int num_actuated_dofs(ModelInstanceIndex model_instance) const {
+    DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+    return model_instances_.at(model_instance)->num_actuated_dofs();
   }
 
   /// Returns the height of the tree data structure of `this` %MultibodyTree.
@@ -725,6 +954,20 @@ class MultibodyTree {
     return *owned_mobilizers_[mobilizer_index];
   }
 
+  /// Returns the name of a model_instance.
+  /// @throws std::logic_error when `model_instance` does not correspond to a
+  /// model in this multibody tree.
+  const std::string& GetModelInstanceName(
+      ModelInstanceIndex model_instance) const {
+    const auto it = instance_index_to_name_.find(model_instance);
+    if (it == instance_index_to_name_.end()) {
+      throw std::logic_error("There is no model instance id " +
+                             std::to_string(model_instance) +
+                             " in the model.");
+    }
+    return it->second;
+  }
+
   /// @name Querying for multibody elements by name
   /// These methods allow a user to query whether a given multibody element is
   /// part of `this` model. These queries can be performed at any time during
@@ -736,20 +979,137 @@ class MultibodyTree {
 
   /// @returns `true` if a body named `name` was added to the model.
   /// @see AddRigidBody().
+  ///
+  /// @throws std::logic_error if the body name occurs in multiple model
+  /// instances.
   bool HasBodyNamed(const std::string& name) const {
-    return body_name_to_index_.find(name) != body_name_to_index_.end();
+    const int count = body_name_to_index_.count(name);
+    if (count > 1) {
+      throw std::logic_error(
+          "Body " + name + " appears in multiple model instances.");
+    }
+    return count > 0;
+  }
+
+  /// @returns `true` if a body named `name` was added to @p model_instance.
+  /// @see AddRigidBody().
+  ///
+  /// @throws if @p model_instance is not valid for this model.
+  bool HasBodyNamed(const std::string& name,
+                    ModelInstanceIndex model_instance) const {
+    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    // Search linearly on the assumption that we won't often have lots of
+    // bodies with the same name in different model instances.  If this turns
+    // out to be incorrect we can switch to a different data structure.
+    // N.B. Please sync with `HasFrameNamed`, `HasJointNamed`, and
+    // `HasJointActuatorNamed` if you change or remove this comment.
+    const auto range = body_name_to_index_.equal_range(name);
+    for (auto it = range.first; it != range.second; ++it) {
+      if (get_body(it->second).model_instance() == model_instance) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// @returns `true` if a frame named `name` was added to the model.
+  /// @see AddFrame().
+  ///
+  /// @throws std::logic_error if the frame name occurs in multiple model
+  /// instances.
+  bool HasFrameNamed(const std::string& name) const {
+    const int count = frame_name_to_index_.count(name);
+    if (count > 1) {
+      throw std::logic_error(
+          "Frame " + name + " appears in multiple model instances.");
+    }
+    return count > 0;
+  }
+
+  /// @returns `true` if a frame named `name` was added to @p model_instance.
+  /// @see AddFrame().
+  ///
+  /// @throws if @p model_instance is not valid for this model.
+  bool HasFrameNamed(const std::string& name,
+                     ModelInstanceIndex model_instance) const {
+    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    // See notes in `HasBodyNamed`.
+    const auto range = frame_name_to_index_.equal_range(name);
+    for (auto it = range.first; it != range.second; ++it) {
+      if (get_frame(it->second).body().model_instance() == model_instance) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// @returns `true` if a joint named `name` was added to the model.
   /// @see AddJoint().
+  ///
+  /// @throws std::logic_error if the joint name occurs in multiple model
+  /// instances.
   bool HasJointNamed(const std::string& name) const {
-    return joint_name_to_index_.find(name) != joint_name_to_index_.end();
+    const int count = joint_name_to_index_.count(name);
+    if (count > 1) {
+      throw std::logic_error(
+          "Joint " + name + " appears in multiple model instances.");
+    }
+    return count > 0;
+  }
+
+  /// @returns `true` if a joint named `name` was added to @p model_instance.
+  /// @see AddJoint().
+  ///
+  /// @throws if @p model_instance is not valid for this model.
+  bool HasJointNamed(const std::string& name,
+                     ModelInstanceIndex model_instance) const {
+    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    // See notes in `HasBodyNamed`.
+    const auto range = joint_name_to_index_.equal_range(name);
+    for (auto it = range.first; it != range.second; ++it) {
+      if (get_joint(it->second).model_instance() == model_instance) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// @returns `true` if a joint actuator named `name` was added to the model.
   /// @see AddJointActuator().
+  ///
+  /// @throws std::logic_error if the actuator name occurs in multiple model
+  /// instances.
   bool HasJointActuatorNamed(const std::string& name) const {
-    return actuator_name_to_index_.find(name) != actuator_name_to_index_.end();
+    const int count = actuator_name_to_index_.count(name);
+    if (count > 1) {
+      throw std::logic_error(
+          "Joint actuator " + name + " appears in multiple model instances.");
+    }
+    return count > 0;
+  }
+
+  /// @returns `true` if a joint actuator named `name` was added to
+  /// @p model_instance.
+  /// @see AddJointActuator().
+  ///
+  /// @throws if @p model_instance is not valid for this model.
+  bool HasJointActuatorNamed(const std::string& name,
+                             ModelInstanceIndex model_instance) const {
+    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    const auto range = actuator_name_to_index_.equal_range(name);
+    // See notes in `HasBodyNamed`.
+    for (auto it = range.first; it != range.second; ++it) {
+      if (get_joint_actuator(it->second).model_instance() == model_instance) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// @returns `true` if a model instance named `name` was added to the model.
+  /// @see AddModelInstance().
+  bool HasModelInstanceNamed(const std::string& name) const {
+    return instance_name_to_index_.find(name) != instance_name_to_index_.end();
   }
   /// @}
 
@@ -757,29 +1117,90 @@ class MultibodyTree {
   /// These methods allow a user to retrieve a reference to a multibody element
   /// by its name. A std::logic_error is thrown if there is no element with the
   /// requested name.
+  ///
   /// These queries can be performed at any time during the lifetime of a
   /// %MultibodyTree model, i.e. there is no restriction on whether they must
   /// be called before or after Finalize(). This implies that these queries can
   /// be performed while new multibody elements are being added to the model.
+  ///
+  /// If the named element is present in more than one model instance and a
+  /// model instance is not explicitly specified, std::logic_error is thrown.
+  ///
   /// @{
 
-  /// Returns a constant reference to the body that is uniquely identified
-  /// by the string `name` in `this` model.
+  /// Returns a constant reference to a body that is identified by the
+  /// string `name` in `this` model.
   /// @throws std::logic_error if there is no body with the requested name.
+  /// @throws std::logic_error if the body name occurs in multiple model
+  /// instances.
   /// @see HasBodyNamed() to query if there exists a body in `this` model with a
   /// given specified name.
   const Body<T>& GetBodyByName(const std::string& name) const {
-    auto it = body_name_to_index_.find(name);
-    if (it == body_name_to_index_.end()) {
-      throw std::logic_error("There is no body named '" + name +
-          "' in the model.");
-    }
-    return get_body(it->second);
+    return get_body(
+        GetElementIndex<BodyIndex>(name, "Body", body_name_to_index_));
   }
 
-  /// Returns a constant reference to the rigid body that is uniquely identified
+  /// Returns a constant reference to the body that is uniquely identified
+  /// by the string `name` in @p model_instance.
+  /// @throws std::logic_error if there is no body with the requested name.
+  /// @throws std::runtime_error if @p model_instance is not valid for this
+  ///         model.
+  /// @see HasBodyNamed() to query if there exists a body in `this` model with a
+  /// given specified name.
+  const Body<T>& GetBodyByName(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    const auto range = body_name_to_index_.equal_range(name);
+    for (auto it = range.first; it != range.second; ++it) {
+      const Body<T>& body = get_body(it->second);
+      if (body.model_instance() == model_instance) {
+        return body;
+      }
+    }
+    throw std::logic_error(
+        "There is no body named '" + name + "' in model instance '" +
+        instance_index_to_name_.at(model_instance) + "'.");
+  }
+
+  /// Returns a constant reference to a frame that is identified by the
+  /// string `name` in `this` model.
+  /// @throws std::logic_error if there is no frame with the requested name.
+  /// @throws std::logic_error if the frame name occurs in multiple model
+  /// instances.
+  /// @see HasFrameNamed() to query if there exists a body in `this` model with
+  /// a given specified name.
+  const Frame<T>& GetFrameByName(const std::string& name) const {
+    return get_frame(
+        GetElementIndex<FrameIndex>(name, "Frame", frame_name_to_index_));
+  }
+
+  /// Returns a constant reference to the frame that is uniquely identified
+  /// by the string `name` in @p model_instance.
+  /// @throws std::logic_error if there is no frame with the requested name.
+  /// @throws std::runtime_error if @p model_instance is not valid for this
+  ///         model.
+  /// @see HasFrameNamed() to query if there exists a frame in `this` model with
+  /// a given specified name.
+  const Frame<T>& GetFrameByName(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    const auto range = frame_name_to_index_.equal_range(name);
+    for (auto it = range.first; it != range.second; ++it) {
+      const Frame<T>& frame = get_frame(it->second);
+      if (frame.body().model_instance() == model_instance) {
+        return frame;
+      }
+    }
+    throw std::logic_error(
+        "There is no frame named '" + name + "' in model instance '" +
+        instance_index_to_name_.at(model_instance) + "'.");
+  }
+
+  /// Returns a constant reference to a rigid body that is identified
   /// by the string `name` in `this` model.
   /// @throws std::logic_error if there is no body with the requested name.
+  /// @throws std::logic_error if the body name occurs in multiple model
+  /// instances.
   /// @throws std::logic_error if the requested body is not a RigidBody.
   /// @see HasBodyNamed() to query if there exists a body in `this` model with a
   /// given specified name.
@@ -792,18 +1213,59 @@ class MultibodyTree {
     return *body;
   }
 
-  /// Returns a constant reference to the joint that is uniquely identified
+  /// Returns a constant reference to the rigid body that is uniquely identified
+  /// by the string `name` in @p model_instance.
+  /// @throws std::logic_error if there is no body with the requested name.
+  /// @throws std::logic_error if the requested body is not a RigidBody.
+  /// @throws std::runtime_error if @p model_instance is not valid for this
+  ///         model.
+  /// @see HasBodyNamed() to query if there exists a body in `this` model with a
+  /// given specified name.
+  const RigidBody<T>& GetRigidBodyByName(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    const RigidBody<T>* body =
+        dynamic_cast<const RigidBody<T>*>(&GetBodyByName(name, model_instance));
+    if (body == nullptr) {
+      throw std::logic_error(
+          "Body '" + name + "' in model instance '" +
+          instance_index_to_name_.at(model_instance)  +"' is not a RigidBody.");
+    }
+    return *body;
+  }
+
+  /// Returns a constant reference to a joint that is identified
   /// by the string `name` in `this` model.
   /// @throws std::logic_error if there is no joint with the requested name.
+  /// @throws std::logic_error if the joint name occurs in multiple model
+  /// instances.
   /// @see HasJointNamed() to query if there exists a joint in `this` model with
   /// a given specified name.
   const Joint<T>& GetJointByName(const std::string& name) const {
-    auto it = joint_name_to_index_.find(name);
-    if (it == joint_name_to_index_.end()) {
-      throw std::logic_error("There is no joint named '" + name +
-          "' in the model.");
+    return get_joint(
+        GetElementIndex<JointIndex>(name, "Joint", joint_name_to_index_));
+  }
+
+  /// Returns a constant reference to the joint that is uniquely identified
+  /// by the string `name` in @p model_instance.
+  /// @throws std::logic_error if there is no joint with the requested name.
+  /// @throws std::runtime_error if @p model_instance is not valid for this
+  ///         model.
+  /// @see HasJointNamed() to query if there exists a joint in `this` model with
+  /// a given specified name.
+  const Joint<T>& GetJointByName(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    const auto range = joint_name_to_index_.equal_range(name);
+    for (auto it = range.first; it != range.second; ++it) {
+      const Joint<T>& joint = get_joint(it->second);
+      if (joint.model_instance() == model_instance) {
+        return joint;
+      }
     }
-    return get_joint(it->second);
+    throw std::logic_error(
+        "There is no joint named '" + name + "' in model instance '" +
+        instance_index_to_name_.at(model_instance) + "'.");
   }
 
   /// A templated version of GetJointByName() to return a constant reference of
@@ -813,6 +1275,8 @@ class MultibodyTree {
   /// be a subclass of Joint.
   /// @throws std::logic_error if the named joint is not of type `JointType` or
   /// if there is no Joint with that name.
+  /// @throws std::logic_error if the joint name occurs in multiple model
+  /// instances.
   /// @see HasJointNamed() to query if there exists a joint in `this` model with
   /// a given specified name.
   template <template<typename> class JointType>
@@ -829,19 +1293,83 @@ class MultibodyTree {
     return *joint;
   }
 
-  /// Returns a constant reference to the actuator that is uniquely identified
+  /// A templated version of GetJointByName() to return a constant reference of
+  /// the specified type `JointType` in place of the base Joint class. See
+  /// GetJointByName() for details.
+  /// @tparam JointType The specific type of the Joint to be retrieved. It must
+  /// be a subclass of Joint.
+  /// @throws std::logic_error if the named joint is not of type `JointType` or
+  /// @throws std::runtime_error if @p model_instance is not valid for this
+  ///         model.
+  /// if there is no Joint with that name.
+  /// @see HasJointNamed() to query if there exists a joint in `this` model with
+  /// a given specified name.
+  template <template<typename> class JointType>
+  const JointType<T>& GetJointByName(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+                  "JointType<T> must be a sub-class of Joint<T>.");
+    const JointType<T>* joint =
+        dynamic_cast<const JointType<T>*>(
+            &GetJointByName(name, model_instance));
+    if (joint == nullptr) {
+      throw std::logic_error(
+          "Joint '" + name + "' in model instance " +
+          model_instances_.at(model_instance)->name() + "is not of type '" +
+          NiceTypeName::Get<JointType<T>>() + "' but of type '" +
+          NiceTypeName::Get(GetJointByName(name)) + "'.");
+    }
+    return *joint;
+  }
+
+  /// Returns a constant reference to an actuator that is identified
   /// by the string `name` in `this` model.
   /// @throws std::logic_error if there is no actuator with the requested name.
+  /// @throws std::logic_error if the actuator name occurs in multiple model
+  /// instances.
   /// @see HasJointActuatorNamed() to query if there exists an actuator in
   /// `this` model with a given specified name.
   const JointActuator<T>& GetJointActuatorByName(
       const std::string& name) const {
-    const auto it = actuator_name_to_index_.find(name);
-    if (it == actuator_name_to_index_.end()) {
-      throw std::logic_error("There is no joint actuator named '" + name +
+    return get_joint_actuator(
+        GetElementIndex<JointActuatorIndex>(
+            name, "Joint actuator", actuator_name_to_index_));
+  }
+
+  /// Returns a constant reference to the actuator that is uniquely identified
+  /// by the string `name` in @p model_instance.
+  /// @throws std::logic_error if there is no actuator with the requested name.
+  /// @throws std::runtime_error if @p model_instance is not valid for this
+  ///         model.
+  /// @see HasJointActuatorNamed() to query if there exists an actuator in
+  /// `this` model with a given specified name.
+  const JointActuator<T>& GetJointActuatorByName(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    const auto range = actuator_name_to_index_.equal_range(name);
+    for (auto it = range.first; it != range.second; ++it) {
+      const JointActuator<T>& actuator = get_joint_actuator(it->second);
+      if (actuator.model_instance() == model_instance) {
+        return actuator;
+      }
+    }
+    throw std::logic_error(
+        "There is no joint actuator named '" + name + "' in model instance '" +
+        instance_index_to_name_.at(model_instance) + "'.");
+  }
+
+  /// Returns the index to the model instance that is uniquely identified
+  /// by the string `name` in `this` model.
+  /// @throws std::logic_error if there is no instance with the requested name.
+  /// @see HasModelInstanceNamed() to query if there exists an instance in
+  /// `this` model with a given specified name.
+  ModelInstanceIndex GetModelInstanceByName(const std::string& name) const {
+    const auto it = instance_name_to_index_.find(name);
+    if (it == instance_name_to_index_.end()) {
+      throw std::logic_error("There is no model instance named '" + name +
           "' in the model.");
     }
-    return get_joint_actuator(it->second);
+    return it->second;
   }
   /// @}
 
@@ -857,6 +1385,67 @@ class MultibodyTree {
   /// bookkeeping detail. Used at Finalize() stage by multibody elements to
   /// retrieve a local copy of their topology.
   const MultibodyTreeTopology& get_topology() const { return topology_; }
+
+  /// @name Model instance accessors
+  /// Many functions on %MultibodyTree expect vectors of tree state or
+  /// joint actuator inputs which encompass the entire tree.  Methods
+  /// in this section are convenience accessors for the portion of
+  /// those vectors which apply to a single model instance only.
+  /// @{
+
+  /// Given the actuation values @p u_instance for all actuators in @p
+  /// model_instance, this method sets the actuation vector u for the entire
+  /// MultibodyTree model to which this actuator belongs to. This method throws
+  /// an exception if the size of `u_instance` is not equal to the number of
+  /// degrees of freedom of all of the actuated joints in `model_instance`.
+  /// @param[in] u_instance Actuation values for the actuators. It must be of
+  ///   size equal to the number of degrees of freedom of all of the actuated
+  ///   joints in `model_instance`.
+  /// @param[out] u
+  ///   The vector containing the actuation values for the entire MultibodyTree.
+  void set_actuation_vector(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& u_instance,
+      EigenPtr<VectorX<T>> u) const;
+
+  /// Returns a vector of generalized positions for `model_instance` from a
+  /// vector `q_array` of generalized positions for the entire MultibodyTree
+  /// model.  This method throws an exception if `q_array` is not of size
+  /// MultibodyTree::num_positions().
+  VectorX<T> get_positions_from_array(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& q_array) const;
+
+  /// Sets the vector of generalized positions for `model_instance` in
+  /// `q_array` using `model_q`, leaving all other elements in the array
+  /// untouched. This method throws an exception if `q_array` is not of size
+  /// MultibodyTree::num_positions() or `model_q` is not of size
+  /// `MultibodyTree::num_positions(model_instance)`.
+  void set_positions_in_array(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& model_q,
+      EigenPtr<VectorX<T>> q_array) const;
+
+  /// Returns a vector of generalized velocities for @p model_instance from a
+  /// vector `v_array` of generalized velocities for the entire MultibodyTree
+  /// model.  This method throws an exception if the input array is not of size
+  /// MultibodyTree::num_velocities().
+  VectorX<T> get_velocities_from_array(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& v_array) const;
+
+  /// Sets the vector of generalized velocities for `model_instance` in
+  /// `v_array` using `model_v`, leaving all other elements in the array
+  /// untouched. This method throws an exception if `v_array` is not of size
+  /// MultibodyTree::num_velocities() or `model_v` is not of size
+  /// `MultibodyTree::num_positions(model_instance)`.
+  void set_velocities_in_array(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& model_v,
+      EigenPtr<VectorX<T>> v_array) const;
+
+  /// @}
+  // End of "Model instance accessors" section.
 
   /// This method must be called after all elements in the tree (joints, bodies,
   /// force elements, constraints) were added and before any computations are
@@ -875,16 +1464,21 @@ class MultibodyTree {
   // automatically when CreateDefaultContext() is called.
   void Finalize();
 
-  /// Allocates a new context for this %MultibodyTree uniquely identifying the
-  /// state of the multibody system.
+  /// (Advanced) Allocates a new context for this %MultibodyTree uniquely
+  /// identifying the state of the multibody system.
   ///
-  /// @pre The method Finalize() must be called before attempting to create a
-  /// context in order for the %MultibodyTree topology to be valid at the moment
-  /// of allocation.
-  ///
-  /// @throws std::logic_error If users attempt to call this method on a
-  ///         %MultibodyTree with an invalid topology.
-  std::unique_ptr<systems::LeafContext<T>> CreateDefaultContext() const;
+  /// @throws std::runtime_error if this is not owned by a MultibodyPlant /
+  /// MultibodyTreeSystem.
+  std::unique_ptr<systems::LeafContext<T>> CreateDefaultContext() const {
+    if (tree_system_ == nullptr) {
+      throw std::runtime_error(
+        "MultibodyTree::CreateDefaultContext(): can only be called from a "
+        "MultibodyTree that is owned by a MultibodyPlant / "
+        "MultibodyTreeSystem");
+    }
+    return dynamic_pointer_cast<systems::LeafContext<T>>(
+        tree_system_->CreateDefaultContext());
+  }
 
   /// Sets default values in the context. For mobilizers, this method sets them
   /// to their _zero_ configuration according to
@@ -896,6 +1490,20 @@ class MultibodyTree {
   /// Mobilizer::set_zero_configuration().
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const;
+
+  /// Returns a const Eigen vector containing the multibody state `x = [q; v]`
+  /// of the model with q the vector of generalized positions and v the vector
+  /// of generalized velocities.
+  Eigen::VectorBlock<const VectorX<T>> get_multibody_state_vector(
+      const systems::Context<T>& context) const;
+
+  /// Returns a mutable Eigen vector containing the multibody state `x = [q; v]`
+  /// of the model with q the vector of generalized positions and v the vector
+  /// of generalized velocities.
+  /// @throws std::exception if the `context` is nullptr or if it does not
+  /// correspond to the context for a multibody model.
+  Eigen::VectorBlock<VectorX<T>> get_mutable_multibody_state_vector(
+      systems::Context<T>* context) const;
 
   /// Sets `context` to store the pose `X_WB` of a given `body` B in the world
   /// frame W.
@@ -1123,10 +1731,57 @@ class MultibodyTree {
   /// the same size as the input array `p_BQi_set`.
   /// @throws an exception if `Jv_WQi` is nullptr or if it does not have the
   /// appropriate size, see documentation for `Jv_WQi` for details.
+  // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
+  // most applications it is all we need and it is more efficient to compute.
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
       EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Jv_WQi) const;
+
+  /// This is a variant to compute the geometric Jacobian `Jv_WQi` for a set of
+  /// points `Qi` moving with `frame_B`, given that we know the position `p_WQi`
+  /// of each point in the set measured and expressed in the world frame W. The
+  /// geometric Jacobian `Jv_WQi` is defined such that: <pre>
+  ///   v_WQi(q, v) = Jv_WQi(q)⋅v
+  /// </pre>
+  /// where `v_WQi(q, v)` is the translational velocity of point `Qi` in the
+  /// world frame W and q and v are the vectors of generalized position and
+  /// velocity, respectively. Since the spatial velocity of each
+  /// point `Qi` is linear in the generalized velocities, the geometric
+  /// Jacobian `Jv_WQi` is a function of the generalized coordinates q only.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q.
+  /// @param[in] frame_B
+  ///   Points `Qi` in the set instantaneously move with this frame.
+  /// @param[in] p_WQi_set
+  ///   A matrix with the fixed position of a set of points `Qi` measured and
+  ///   expressed in the world frame W.
+  ///   Each column of this matrix contains the position vector `p_WQi` for a
+  ///   point `Qi` measured and expressed in the world frame W. Therefore this
+  ///   input matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
+  /// @param[out] Jv_WQi
+  ///   The geometric Jacobian `Jv_WQi(q)`, function of the generalized
+  ///   positions q only. This Jacobian relates the translational velocity
+  ///   `v_WQi` of each point `Qi` in the input set by: <pre>
+  ///     `v_WQi(q, v) = Jv_WQi(q)⋅v`
+  ///   </pre>
+  ///   so that `v_WQi` is a column vector of size `3⋅np` concatenating the
+  ///   velocity of all points `Qi` in the same order they were given in the
+  ///   input set. Therefore `J_WQi` is a matrix of size `3⋅np x nv`, with `nv`
+  ///   the number of generalized velocities. On input, matrix `J_WQi` **must**
+  ///   have size `3⋅np x nv` or this method throws a std::runtime_error
+  ///   exception.
+  ///
+  /// @throws an exception if `Jv_WQi` is nullptr or if it does not have the
+  /// appropriate size, see documentation for `Jv_WQi` for details.
+  // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
+  // most applications it is all we need and it is more efficient to compute.
+  void CalcPointsGeometricJacobianExpressedInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_WQi_set,
+      EigenPtr<MatrixX<T>> Jv_WQi) const;
 
   /// Given a frame F with fixed position `p_BoFo_B` in a frame B, this method
   /// computes the geometric Jacobian `Jv_WF` defined by:
@@ -1290,6 +1945,49 @@ class MultibodyTree {
 
   /// Given the state of `this` %MultibodyTree in `context` and a known vector
   /// of generalized accelerations `vdot`, this method computes the
+  /// set of generalized forces `tau` that would need to be applied in order to
+  /// attain the specified generalized accelerations.
+  /// Mathematically, this method computes: <pre>
+  ///   tau = M(q)v̇ + C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W
+  /// </pre>
+  /// where `M(q)` is the %MultibodyTree mass matrix, `C(q, v)v` is the bias
+  /// term containing Coriolis and gyroscopic effects and `tau_app` consists
+  /// of a vector applied generalized forces. The last term is a summation over
+  /// all bodies in the model where `Fapp_Bo_W` is an applied spatial force on
+  /// body B at `Bo` which gets projected into the space of generalized forces
+  /// with the geometric Jacobian `J_WB(q)` which maps generalized velocities
+  /// into body B spatial velocity as `V_WB = J_WB(q)v`.
+  /// This method does not compute explicit expressions for the mass matrix nor
+  /// for the bias term, which would be of at least `O(n²)` complexity, but it
+  /// implements an `O(n)` Newton-Euler recursive algorithm, where n is the
+  /// number of bodies in the %MultibodyTree. The explicit formation of the
+  /// mass matrix `M(q)` would require the calculation of `O(n²)` entries while
+  /// explicitly forming the product `C(q, v) * v` could require up to `O(n³)`
+  /// operations (see [Featherstone 1987, §4]), depending on the implementation.
+  /// The recursive Newton-Euler algorithm is the most efficient currently known
+  /// general method for solving inverse dynamics [Featherstone 2008].
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model.
+  /// @param[in] known_vdot
+  ///   A vector with the known generalized accelerations `vdot` for the full
+  ///   %MultibodyTree model. Use the provided Joint APIs in order to access
+  ///   entries into this array.
+  /// @param[in] external_forces
+  ///   A set of forces to be applied to the system either as body spatial
+  ///   forces `Fapp_Bo_W` or generalized forces `tau_app`, see MultibodyForces
+  ///   for details.
+  ///
+  /// @returns the vector of generalized forces that would need to be applied to
+  /// the mechanical system in order to achieve the desired acceleration given
+  /// by `known_vdot`.
+  VectorX<T> CalcInverseDynamics(
+      const systems::Context<T>& context,
+      const VectorX<T>& known_vdot,
+      const MultibodyForces<T>& external_forces) const;
+
+  /// (Advanced) Given the state of `this` %MultibodyTree in `context` and a
+  /// known vector of generalized accelerations `vdot`, this method computes the
   /// set of generalized forces `tau` that would need to be applied at each
   /// Mobilizer in order to attain the specified generalized accelerations.
   /// Mathematically, this method computes: <pre>
@@ -1510,6 +2208,31 @@ class MultibodyTree {
   ///   proper size.
   void CalcBiasTerm(
       const systems::Context<T>& context, EigenPtr<VectorX<T>> Cv) const;
+
+  /// Computes the generalized forces `tau_g(q)` due to gravity as a function
+  /// of the generalized positions `q` stored in the input `context`.
+  /// The vector of generalized forces due to gravity `tau_g(q)` is defined such
+  /// that it appears on the right hand side of the equations of motion together
+  /// with any other generalized forces, like so:
+  /// <pre>
+  ///   Mv̇ + C(q, v)v = tau_g(q) + tau_app
+  /// </pre>
+  /// where `tau_app` includes any other generalized forces applied on the
+  /// system.
+  ///
+  /// @param[in] context
+  ///   The context storing the state of the multibody model.
+  /// @returns tau_g
+  ///   A vector containing the generalized forces due to gravity.
+  ///   The generalized forces are consistent with the vector of
+  ///   generalized velocities `v` for `this` MultibodyTree model so that
+  ///   the inner product `v⋅tau_g` corresponds to the power applied by the
+  ///   gravity forces on the mechanical system. That is, `v⋅tau_g > 0`
+  ///   corresponds to potential energy going into the system, as either
+  ///   mechanical kinetic energy, some other potential energy, or heat, and
+  ///   therefore to a decrease of the gravitational potential energy.
+  VectorX<T> CalcGravityGeneralizedForces(
+      const systems::Context<T>& context) const;
 
   /// Transforms generalized velocities v to time derivatives `qdot` of the
   /// generalized positions vector `q` (stored in `context`). `v` and `qdot`
@@ -1755,13 +2478,44 @@ class MultibodyTree {
     // required to be finalized.
     tree_clone->topology_ = this->topology_;
     tree_clone->body_name_to_index_ = this->body_name_to_index_;
+    tree_clone->frame_name_to_index_ = this->frame_name_to_index_;
     tree_clone->joint_name_to_index_ = this->joint_name_to_index_;
     tree_clone->actuator_name_to_index_ = this->actuator_name_to_index_;
+    tree_clone->instance_name_to_index_ = this->instance_name_to_index_;
+    tree_clone->instance_index_to_name_ = this->instance_index_to_name_;
 
     // All other internals templated on T are created with the following call to
     // FinalizeInternals().
     tree_clone->FinalizeInternals();
     return tree_clone;
+  }
+
+  /// Evaluates position kinematics cached in context.
+  /// @param context A Context whose position kinematics cache will be
+  ///                updated and returned.
+  /// @return Reference to the PositionKinematicsCache of context.
+  const PositionKinematicsCache<T>& EvalPositionKinematics(
+      const systems::Context<T>& context) const {
+    DRAKE_ASSERT(tree_system_ != nullptr);
+    return tree_system_->EvalPositionKinematics(context);
+  }
+
+  /// Evaluates velocity kinematics cached in context. This will also
+  /// force position kinematics to be updated if it hasn't already.
+  /// @param context A Context whose velocity kinematics cache will be
+  ///                updated and returned.
+  /// @return Reference to the VelocityKinematicsCache of context.
+  const VelocityKinematicsCache<T>& EvalVelocityKinematics(
+      const systems::Context<T>& context) const {
+    DRAKE_ASSERT(tree_system_ != nullptr);
+    return tree_system_->EvalVelocityKinematics(context);
+  }
+
+  /// (Internal use only) Informs the MultibodyTree how to access its resources
+  /// within a Context.
+  void set_tree_system(MultibodyTreeSystem<T>* tree_system) {
+    DRAKE_DEMAND(tree_system != nullptr && tree_system_ == nullptr);
+    tree_system_ = tree_system;
   }
 
  private:
@@ -1772,26 +2526,6 @@ class MultibodyTree {
 
   // Friend class to facilitate testing.
   friend class MultibodyTreeTester;
-
-  template <template<typename Scalar> class JointType>
-  const JointType<T>& AddJoint(
-      std::unique_ptr<JointType<T>> joint) {
-    static_assert(std::is_convertible<JointType<T>*, Joint<T>*>::value,
-                  "JointType must be a sub-class of Joint<T>.");
-    if (topology_is_valid()) {
-      throw std::logic_error("This MultibodyTree is finalized already. "
-                             "Therefore adding more joints is not allowed. "
-                             "See documentation for Finalize() for details.");
-    }
-    if (joint == nullptr) {
-      throw std::logic_error("Input joint is a nullptr.");
-    }
-    const JointIndex joint_index(owned_joints_.size());
-    joint->set_parent_tree(this, joint_index);
-    JointType<T>* raw_joint_ptr = joint.get();
-    owned_joints_.push_back(std::move(joint));
-    return *raw_joint_ptr;
-  }
 
   // Finalizes the MultibodyTreeTopology of this tree.
   void FinalizeTopology();
@@ -1876,6 +2610,17 @@ class MultibodyTree {
       const VelocityKinematicsCache<T>& vc,
       EigenPtr<VectorX<T>> Cv) const;
 
+  // Helper method to apply forces due to damping at the joints.
+  // MultibodyTree treats damping forces separately from other ForceElement
+  // forces for a quick simple solution. This allows clients of MBT (namely MBP)
+  // to implement their own customized (implicit) time stepping schemes.
+  // TODO(amcastro-tri): Consider updating ForceElement to also compute a
+  // Jacobian for general force models. That would allow us to implement
+  // implicit schemes for any forces using a more general infrastructure rather
+  // than having to deal with damping in a special way.
+  void AddJointDampingForces(
+      const systems::Context<T>& context, MultibodyForces<T>* forces) const;
+
   // Implementation of CalcPotentialEnergy().
   // It is assumed that the position kinematics cache pc is in sync with
   // context.
@@ -1891,6 +2636,8 @@ class MultibodyTree {
 
   void CreateBodyNode(BodyNodeIndex body_node_index);
 
+  void CreateModelInstances();
+
   // Helper method to create a clone of `frame` and add it to `this` tree.
   template <typename FromScalar>
   Frame<T>* CloneFrameAndAdd(const Frame<FromScalar>& frame) {
@@ -1898,6 +2645,7 @@ class MultibodyTree {
 
     auto frame_clone = frame.CloneToScalar(*this);
     frame_clone->set_parent_tree(this, frame_index);
+    frame_clone->set_model_instance(frame.model_instance());
 
     Frame<T>* raw_frame_clone_ptr = frame_clone.get();
     // The order in which frames are added into frames_ is important to keep the
@@ -1921,11 +2669,13 @@ class MultibodyTree {
 
     auto body_clone = body.CloneToScalar(*this);
     body_clone->set_parent_tree(this, body_index);
+    body_clone->set_model_instance(body.model_instance());
     // MultibodyTree can access selected private methods in Body through its
     // BodyAttorney.
     Frame<T>* body_frame_clone =
         &internal::BodyAttorney<T>::get_mutable_body_frame(body_clone.get());
     body_frame_clone->set_parent_tree(this, body_frame_index);
+    body_frame_clone->set_model_instance(body.model_instance());
 
     // The order in which frames are added into frames_ is important to keep the
     // topology invariant. Therefore we index new clones according to the
@@ -1946,6 +2696,7 @@ class MultibodyTree {
     MobilizerIndex mobilizer_index = mobilizer.index();
     auto mobilizer_clone = mobilizer.CloneToScalar(*this);
     mobilizer_clone->set_parent_tree(this, mobilizer_index);
+    mobilizer_clone->set_model_instance(mobilizer.model_instance());
     Mobilizer<T>* raw_mobilizer_clone_ptr = mobilizer_clone.get();
     owned_mobilizers_.push_back(std::move(mobilizer_clone));
     return raw_mobilizer_clone_ptr;
@@ -1959,6 +2710,7 @@ class MultibodyTree {
     ForceElementIndex force_element_index = force_element.index();
     auto force_element_clone = force_element.CloneToScalar(*this);
     force_element_clone->set_parent_tree(this, force_element_index);
+    force_element_clone->set_model_instance(force_element.model_instance());
     owned_force_elements_.push_back(std::move(force_element_clone));
   }
 
@@ -1968,6 +2720,7 @@ class MultibodyTree {
     JointIndex joint_index = joint.index();
     auto joint_clone = joint.CloneToScalar(*this);
     joint_clone->set_parent_tree(this, joint_index);
+    joint_clone->set_model_instance(joint.model_instance());
     owned_joints_.push_back(std::move(joint_clone));
     return owned_joints_.back().get();
   }
@@ -1981,6 +2734,7 @@ class MultibodyTree {
     std::unique_ptr<JointActuator<T>> actuator_clone =
         actuator.CloneToScalar(*this);
     actuator_clone->set_parent_tree(this, actuator_index);
+    actuator_clone->set_model_instance(actuator.model_instance());
     owned_actuators_.push_back(std::move(actuator_clone));
   }
 
@@ -2056,17 +2810,26 @@ class MultibodyTree {
     return *joint_variant;
   }
 
-  // Helper method to Eval() position kinematics cached in the context.
-  const PositionKinematicsCache<T>& EvalPositionKinematics(
-      const systems::Context<T>& context) const;
-
-  // Helper method to Eval() velocity kinematics cached in the context.
-  const VelocityKinematicsCache<T>& EvalVelocityKinematics(
-      const systems::Context<T>& context) const;
-
-  // Helper method to allocate fake cache entries.
-  // TODO(amcastro-tri): Remove when MultibodyCachingEvaluatorInterface lands.
-  void AllocateFakeCacheEntries();
+  // Helper function to find the element index for an element in the tree from
+  // a multimap of name to index.  It finds the element from any model
+  // instance and ensures only one element of that name exists.
+  template<typename ElementIndex>
+  static ElementIndex GetElementIndex(
+      const std::string& name, const std::string& element_description,
+      const std::unordered_multimap<std::string, ElementIndex>& name_to_index) {
+    const auto range = name_to_index.equal_range(name);
+    if (range.first == range.second) {
+      std::string lower = element_description;
+      std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+      throw std::logic_error("There is no " + lower + " named '" +
+                             name + "' in the model.");
+    } else if (std::next(range.first) != range.second) {
+      throw std::logic_error(
+          element_description + " "  + name +
+          " appears in multiple model instances.");
+    }
+    return range.first->second;
+  }
 
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
   // a method that verifies the state of the topology with a signature similar
@@ -2079,6 +2842,7 @@ class MultibodyTree {
   std::vector<std::unique_ptr<ForceElement<T>>> owned_force_elements_;
   std::vector<std::unique_ptr<JointActuator<T>>> owned_actuators_;
   std::vector<std::unique_ptr<internal::BodyNode<T>>> body_nodes_;
+  std::vector<std::unique_ptr<internal::ModelInstance<T>>> model_instances_;
 
   std::vector<std::unique_ptr<Joint<T>>> owned_joints_;
 
@@ -2087,17 +2851,35 @@ class MultibodyTree {
   // pointer to each BodyFrame, which are owned by their corresponding Body.
   std::vector<const Frame<T>*> frames_;
 
+  // The gravity field force element.
+  optional<const UniformGravityFieldElement<T>*> gravity_field_;
+
   // TODO(amcastro-tri): Consider moving these maps into MultibodyTreeTopology
   // since they are not templated on <T>.
 
-  // Map used to find body indexes by their unique body name.
-  std::unordered_map<std::string, BodyIndex> body_name_to_index_;
+  // The xxx_name_to_index_ structures are multimaps because
+  // bodies/joints/actuators/etc may appear with the same name in different
+  // model instances.  The index values are still unique across the entire
+  // %MultibodyTree.
+
+  // Map used to find body indexes by their body name.
+  std::unordered_multimap<std::string, BodyIndex> body_name_to_index_;
+
+  // Map used to find frame indexes by their frame name.
+  std::unordered_multimap<std::string, FrameIndex> frame_name_to_index_;
 
   // Map used to find joint indexes by their joint name.
-  std::unordered_map<std::string, JointIndex> joint_name_to_index_;
+  std::unordered_multimap<std::string, JointIndex> joint_name_to_index_;
 
   // Map used to find actuator indexes by their actuator name.
-  std::unordered_map<std::string, JointActuatorIndex> actuator_name_to_index_;
+  std::unordered_multimap<std::string,
+                          JointActuatorIndex> actuator_name_to_index_;
+
+  // Map used to find a model instance index by its model instance name.
+  std::unordered_map<std::string, ModelInstanceIndex> instance_name_to_index_;
+
+  // Map used to find a model instance name by its model instance index.
+  std::unordered_map<ModelInstanceIndex, std::string> instance_index_to_name_;
 
   // Body node indexes ordered by level (a.k.a depth). Therefore for the
   // i-th level body_node_levels_[i] contains the list of all body node indexes
@@ -2106,11 +2888,18 @@ class MultibodyTree {
 
   MultibodyTreeTopology topology_;
 
-  // Temporary solution for fake cache entries to help statbilize the API.
-  // TODO(amcastro-tri): Remove when MultibodyCachingEvaluatorInterface lands.
-  std::unique_ptr<PositionKinematicsCache<T>> pc_;
-  std::unique_ptr<VelocityKinematicsCache<T>> vc_;
+  const MultibodyTreeSystem<T>* tree_system_{};
 };
+
+/// @cond
+// Undef macros defined at the top of the file. From the GSG:
+// "Exporting macros from headers (i.e. defining them in a header without
+// #undefing them before the end of the header) is extremely strongly
+// discouraged."
+// This will require us to re-define them in the .cc file.
+#undef DRAKE_MBT_THROW_IF_FINALIZED
+#undef DRAKE_MBT_THROW_IF_NOT_FINALIZED
+/// @endcond
 
 }  // namespace multibody
 }  // namespace drake

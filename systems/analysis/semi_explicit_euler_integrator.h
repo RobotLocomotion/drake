@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/integrator_base.h"
 
 namespace drake {
@@ -64,6 +65,8 @@ namespace systems {
 template <class T>
 class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SemiExplicitEulerIntegrator)
+
   virtual ~SemiExplicitEulerIntegrator() {}
 
   // TODO(edrumwri): update documentation to account for stretching (after

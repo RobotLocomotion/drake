@@ -1,7 +1,10 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <Eigen/Dense>
 
@@ -20,10 +23,6 @@ namespace systems {
 namespace sensors {
 /// An RGB-D camera system that provides RGB, depth and label images using
 /// visual elements of RigidBodyTree.
-/// RgbdCamera uses [VTK](https://github.com/Kitware/VTK) as the rendering
-/// backend.
-/// Its image resolution is fixed at VGA (640 x 480 pixels) for all three
-/// images. The default depth sensing range is from 0.5 m to 5.0 m.
 ///
 /// Let `W` be the world coordinate system. In addition to `W`, there are three
 /// more coordinate systems that are associated with an RgbdCamera. They are
@@ -86,7 +85,8 @@ class RgbdCamera final : public LeafSystem<double> {
                                             const CameraInfo& camera_info,
                                             Eigen::Matrix3Xf* point_cloud);
 
-  /// A constructor for %RgbdCamera that defines `B` using Euler angles.
+  /// A constructor that uses the default RgbdRendererVTK renderer and
+  /// defines `B` using Euler angles.
   /// The pose of %RgbdCamera will be fixed to the world coordinate system
   /// throughout the simulation.
   ///
@@ -107,20 +107,25 @@ class RgbdCamera final : public LeafSystem<double> {
   /// defines the orientation component of `X_WB`.
   ///
   /// @param z_near The minimum depth distance RgbdCamera can measure.
-  /// The default is 0.5 meters.
   ///
   /// @param z_far The maximum depth distance RgbdCamera can measure.
-  /// The default is 5 meters.
   ///
   /// @param fov_y The RgbdCamera's vertical field of view.
-  /// The default is PI / 4.
   ///
   /// @param show_window A flag for showing a visible window.  If this is false,
   /// offscreen rendering is executed. This is useful for debugging purposes.
-  /// The default is true.
+  ///
+  /// @param width Width of output image.
+  ///
+  /// @param height Height of output image.
+  ///
+  /// @param flat_terrain A flag to add a flat terrain at z = 0 in the world
+  /// coordinate system.
   ///
   /// @throws std::logic_error When the number of rigid bodies in the scene
   /// exceeds the maximum limit 1535.
+  // TODO(kunimatsu-tri) Use the information from RigidBodyTree for rendering
+  // the flat terrain.
   RgbdCamera(const std::string& name,
              const RigidBodyTree<double>& tree,
              const Eigen::Vector3d& position,
@@ -128,9 +133,13 @@ class RgbdCamera final : public LeafSystem<double> {
              double z_near = 0.5,
              double z_far = 5.0,
              double fov_y = M_PI_4,
-             bool show_window = RenderingConfig::kDefaultShowWindow);
+             bool show_window = RenderingConfig::kDefaultShowWindow,
+             int width = RenderingConfig::kDefaultWidth,
+             int height = RenderingConfig::kDefaultHeight,
+             bool flat_terrain = true);
 
-  /// A constructor for %RgbdCamera that defines `B` using a RigidBodyFrame.
+  /// A constructor that uses the default RgbdRendererVTK renderer and
+  /// defines `B` using a RigidBodyFrame.
   /// The pose of %RgbdCamera is fixed to a user-defined frame and will be
   /// updated during the simulation.
   ///
@@ -147,29 +156,126 @@ class RgbdCamera final : public LeafSystem<double> {
   /// @param frame The frame in @tree to which this camera is attached.
   ///
   /// @param z_near The minimum depth distance RgbdCamera can measure.
-  /// The default is 0.5 meters.
   ///
   /// @param z_far The maximum depth distance RgbdCamera can measure.
-  /// The default is 5 meters.
   ///
   /// @param fov_y The RgbdCamera's vertical field of view.
-  /// The default is PI / 4.
   ///
   /// @param show_window A flag for showing a visible window.  If this is false,
   /// offscreen rendering is executed. This is useful for debugging purposes.
-  /// The default is true.
+  ///
+  /// @param width Width of output image.
+  ///
+  /// @param height Height of output image.
+  ///
+  /// @param flat_terrain A flag to add a flat terrain at z = 0 in the world
+  /// coordinate system.
   ///
   /// @throws std::logic_error When the number of rigid bodies in the scene
   /// exceeds the maximum limit 1535.
+  // TODO(kunimatsu-tri) Use the information from RigidBodyTree for rendering
+  // the flat terrain.
   RgbdCamera(const std::string& name,
              const RigidBodyTree<double>& tree,
              const RigidBodyFrame<double>& frame,
              double z_near = 0.5,
              double z_far = 5.0,
              double fov_y = M_PI_4,
-             bool show_window = RenderingConfig::kDefaultShowWindow);
+             bool show_window = RenderingConfig::kDefaultShowWindow,
+             int width = RenderingConfig::kDefaultWidth,
+             int height = RenderingConfig::kDefaultHeight,
+             bool flat_terrain = true);
+
+  /// A constructor that takes a renderer and defines `B` using Euler angles.
+  /// The pose of %RgbdCamera will be fixed to the world coordinate system
+  /// throughout the simulation.
+  ///
+  /// @param name The name of the RgbdCamera.  This can be any value, but
+  /// should typically be unique among all sensors attached to a particular
+  /// model instance.
+  ///
+  /// @param tree The RigidBodyTree containing the geometric description of the
+  /// world. The life span of this parameter must exceed that of this class's
+  /// instance. The maximum number of bodies in the `tree` must be less than
+  /// 1536 based on the number of the colors used for the label image, otherwise
+  /// an exception will be thrown.
+  ///
+  /// @param position The x-y-z position of `B` in `W`. This defines the
+  /// translation component of `X_WB`.
+  ///
+  /// @param orientation The roll-pitch-yaw orientation of `B` in `W`. This
+  /// defines the orientation component of `X_WB`.
+  ///
+  /// @param renderer The rendering backend to render images for the camera.
+  /// Camera configuration parameters are obtained from the RenderingConfig
+  /// settings in the renderer. The renderer will be owned by this camera.
+  ///
+  /// @param flat_terrain A flag to add a flat terrain at z = 0 in the world
+  /// coordinate system.
+  ///
+  /// @throws std::logic_error When the number of rigid bodies in the scene
+  /// exceeds the maximum limit 1535.
+  RgbdCamera(const std::string& name,
+             const RigidBodyTree<double>& tree,
+             const Eigen::Vector3d& position,
+             const Eigen::Vector3d& orientation,
+             std::unique_ptr<RgbdRenderer> renderer,
+             bool flat_terrain = true);
+
+  /// A constructor that takes a renderer and defines `B` using a
+  /// RigidBodyFrame.
+  /// The pose of %RgbdCamera is fixed to a user-defined frame and will be
+  /// updated during the simulation.
+  ///
+  /// @param name The name of the RgbdCamera.  This can be any value, but
+  /// should typically be unique among all sensors attached to a particular
+  /// model instance.
+  ///
+  /// @param tree The RigidBodyTree containing the geometric description of the
+  /// world. The life span of this parameter must exceed that of this class's
+  /// instance. The maximum number of bodies in the `tree` must be less than
+  /// 1536 based on the number of the colors used for the label image, otherwise
+  /// an exception will be thrown.
+  ///
+  /// @param frame The frame in @tree to which this camera is attached.
+  ///
+  /// @param renderer The rendering backend to render images for the camera.
+  /// Camera configuration parameters are obtained from the RenderingConfig
+  /// settings in the renderer. The renderer will be owned by this camera.
+  ///
+  /// @param flat_terrain A flag to add a flat terrain at z = 0 in the world
+  /// coordinate system.
+  ///
+  /// @throws std::logic_error When the number of rigid bodies in the scene
+  /// exceeds the maximum limit 1535.
+  RgbdCamera(const std::string& name,
+             const RigidBodyTree<double>& tree,
+             const RigidBodyFrame<double>& frame,
+             std::unique_ptr<RgbdRenderer> renderer,
+             bool flat_terrain = true);
 
   ~RgbdCamera() = default;
+
+  /// Sets and initializes RgbdRenderer. The viewpoint of renderer will be
+  /// appropriately handled inside this function.
+  /// Note that if any visual element is registered with renderer before
+  /// this method is called, its behavior will not be guaranteed.
+  DRAKE_DEPRECATED(
+      "`ResetRenderer` will be removed after 2018/10/01; please update your "
+      "code to specify the `RgbdRenderer` instance at construction time.")
+  void ResetRenderer(std::unique_ptr<RgbdRenderer> renderer) {
+    renderer_ = std::move(renderer);
+    InitRenderer();
+    // This is needed only for camera_fixed_ is true since UpdateViewpoint()
+    // will be called while rendering related output ports are evaluated
+    // if it is false.
+    if (camera_fixed_) {
+      renderer_->UpdateViewpoint(X_WB_initial_ * X_BC_);
+    }
+  }
+
+  /// Reterns mutable renderer.
+  RgbdRenderer& mutable_renderer() { return *renderer_; }
 
   /// Reterns the color sensor's info.
   const CameraInfo& color_camera_info() const { return color_camera_info_; }
@@ -198,10 +304,10 @@ class RgbdCamera final : public LeafSystem<double> {
   /// Returns the RigidBodyTree to which this RgbdCamera is attached.
   const RigidBodyTree<double>& tree() const { return tree_; }
 
-  /// Returns a descriptor of the vector valued input port that takes a vector
-  /// of `q, v` corresponding to the positions and velocities associated with
-  /// the RigidBodyTree.
-  const InputPortDescriptor<double>& state_input_port() const;
+  /// Returns the vector valued input port that takes a vector of `q, v`
+  /// corresponding to the positions and velocities associated with the
+  /// RigidBodyTree.
+  const InputPort<double>& state_input_port() const;
 
   /// Returns the abstract valued output port that contains a RGBA image of the
   /// type ImageRgba8U.
@@ -218,7 +324,9 @@ class RgbdCamera final : public LeafSystem<double> {
   const OutputPort<double>& camera_base_pose_output_port() const;
 
  private:
-  void Init(const std::string& name);
+  void InitPorts(const std::string& name);
+
+  void InitRenderer();
 
   // These are the calculator methods for the four output ports.
   void OutputColorImage(const Context<double>& context,
@@ -235,7 +343,7 @@ class RgbdCamera final : public LeafSystem<double> {
   // now it has to be repeated before each image output port calculation.
   void UpdateModelPoses(const BasicVector<double>& input_vector) const;
 
-  const InputPortDescriptor<double>* state_input_port_{};
+  const InputPort<double>* state_input_port_{};
   const OutputPort<double>* color_image_port_{};
   const OutputPort<double>* depth_image_port_{};
   const OutputPort<double>* label_image_port_{};
@@ -243,8 +351,10 @@ class RgbdCamera final : public LeafSystem<double> {
 
   const RigidBodyTree<double>& tree_;
   const RigidBodyFrame<double> frame_;
-
+  using VisualIndex = RgbdRenderer::VisualIndex;
+  std::map<int, std::vector<VisualIndex>> body_visual_indices_map_;
   const bool camera_fixed_;
+  const bool flat_terrain_;
   const CameraInfo color_camera_info_;
   const CameraInfo depth_camera_info_;
   const Eigen::Isometry3d X_WB_initial_;
@@ -296,7 +406,7 @@ class RgbdCameraDiscrete final : public systems::Diagram<double> {
   double period() const { return period_; }
 
   /// @see RgbdCamera::state_input_port().
-  const InputPortDescriptor<double>& state_input_port() const {
+  const InputPort<double>& state_input_port() const {
     return get_input_port(input_port_state_);
   }
 

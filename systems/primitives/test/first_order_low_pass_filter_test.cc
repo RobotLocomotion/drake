@@ -57,9 +57,9 @@ class FirstOrderLowPassFilterTest : public ::testing::Test {
 TEST_F(FirstOrderLowPassFilterTest, Topology) {
   SetUpSingleTimeConstantFilter();
   ASSERT_EQ(1, filter_->get_num_input_ports());
-  const auto& input_descriptor = filter_->get_input_port();
-  EXPECT_EQ(kVectorValued, input_descriptor.get_data_type());
-  EXPECT_EQ(kSignalSize, input_descriptor.size());
+  const auto& input_input_port = filter_->get_input_port();
+  EXPECT_EQ(kVectorValued, input_input_port.get_data_type());
+  EXPECT_EQ(kSignalSize, input_input_port.size());
 
   ASSERT_EQ(1, filter_->get_num_output_ports());
   const auto& output_port = filter_->get_output_port();

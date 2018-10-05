@@ -6,10 +6,12 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
+#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant_bridge.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/simulator.h"
@@ -48,8 +50,6 @@ DEFINE_double(dissipation, 1.0, "The contact model's dissipation (s/m)");
 DEFINE_double(contact_radius, 1e-3,
               "The characteristic scale of radius (m) of the contact area");
 DEFINE_double(sim_duration, 3, "The simulation duration (s)");
-DEFINE_bool(playback, true,
-            "If true, enters looping playback after sim finished");
 DEFINE_string(system_type, "continuous", "The type of system to use: "
               "'continuous' or 'discretized'");
 DEFINE_double(dt, 1e-3, "The step size to use for "
@@ -111,8 +111,13 @@ int main() {
   // RigidBodyActuators.
   DRAKE_DEMAND(tree.actuators.size() == 2u);
 
-  // LCM communication.
-  DrakeLcm lcm;
+  auto scene_graph = builder.AddSystem<geometry::SceneGraph<double>>();
+  scene_graph->set_name("scene_graph");
+
+  auto rbt_sg_bridge = builder.AddSystem<systems::RigidBodyPlantBridge<double>>(
+      &tree, scene_graph);
+  builder.Connect(plant.state_output_port(),
+                  rbt_sg_bridge->rigid_body_plant_state_input_port());
 
   // Pusher
   VectorXd push_value(1);      // Single actuator.
@@ -127,23 +132,19 @@ int main() {
   builder.Connect(push_source.get_output_port(), plant.get_input_port(0));
   builder.Connect(push_source.get_output_port(), plant.get_input_port(1));
 
-  // Visualizer.
-  const auto visualizer_publisher =
-      builder.template AddSystem<DrakeVisualizer>(tree, &lcm, true);
-  visualizer_publisher->set_name("visualizer_publisher");
+  builder.Connect(
+      rbt_sg_bridge->geometry_pose_output_port(),
+      scene_graph->get_source_pose_port(rbt_sg_bridge->source_id()));
 
-  // Raw state vector to visualizer.
-  builder.Connect(plant.state_output_port(),
-                  visualizer_publisher->get_input_port(0));
-
+  geometry::ConnectDrakeVisualizer(&builder, *scene_graph);
   auto diagram = builder.Build();
 
   // Create simulator.
-  auto simulator = std::make_unique<Simulator<double>>(*diagram);
-  Context<double>& context = simulator->get_mutable_context();
-  simulator->reset_integrator<RungeKutta2Integrator<double>>(*diagram,
-                                                             FLAGS_timestep,
-                                                             &context);
+  Simulator<double> simulator(*diagram);
+  Context<double>& context = simulator.get_mutable_context();
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(*diagram,
+                                                            FLAGS_timestep,
+                                                            &context);
   // Set initial state.
   Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, &context);
@@ -156,9 +157,7 @@ int main() {
                    FLAGS_v, 0, 0, 0, 0, 0;     // brick 2 velocity
   plant.set_state_vector(&plant_context, initial_state);
 
-  simulator->StepTo(FLAGS_sim_duration);
-
-  while (FLAGS_playback) visualizer_publisher->ReplayCachedSimulation();
+  simulator.StepTo(FLAGS_sim_duration);
 
   return 0;
 }

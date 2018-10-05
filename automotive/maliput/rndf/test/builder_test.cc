@@ -111,7 +111,7 @@ GTEST_TEST(RNDFBuilder, ZigZagLane) {
   EXPECT_EQ(road_geometry->branch_point(3)->GetASide()->size(), 1);
   EXPECT_EQ(road_geometry->branch_point(3)->GetBSide()->size(), 0);
 
-  // Checks branch point assigment regarding the lanes.
+  // Checks branch point assignment regarding the lanes.
   EXPECT_EQ(road_geometry->junction(0)->segment(0)->lane(0)->GetBranchPoint(
                 api::LaneEnd::kStart),
             road_geometry->branch_point(0));

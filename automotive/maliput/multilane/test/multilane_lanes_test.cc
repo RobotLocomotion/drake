@@ -23,8 +23,7 @@ namespace {
 
 const double kLinearTolerance = 1e-6;
 const double kAngularTolerance = 1e-6;
-const double kVeryExact = 1e-11;
-
+const double kVeryExact = 1e-12;
 
 GTEST_TEST(MultilaneLanesTest, Rot3) {
   // Spot-check that Rot3 is behaving as advertised.
@@ -44,31 +43,22 @@ class MultilaneLanesParamTest : public ::testing::TestWithParam<double> {
     r0 = this->GetParam();
   }
 
+  const double kScaleLength{1.};
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
   const CubicPolynomial zp{0., 0., 0., 0.};
   const double kHalfWidth{10.};
   const double kMaxHeight{5.};
   const double kHalfLaneWidth{5.};
   double r0{};
-  // NB:  kIntegrationScaleMap and kIntegrationFactorMap are regression
-  //      coefficients to match within the integration tolerance the path
-  //      integral of motion derivatives of the lane. The key of the maps is the
-  //      lateral offset r0 and value are scale and factor respectively.
-  const std::map<double, int> kIntegrationScaleMap{
-      {0., 158597}, {5., 150822}, {-5., 166380}};
-  // NB:  '287' is a fudge-factor.  We know the steps should scale roughly
-  //      as (r / r0), but not exactly because of the elevation curve.
-  //      Mostly, we are testing that we end up in the right place in
-  //      roughly the right number of steps. The same applies for -8017 and
-  //      9373 for other offsets.
-  const std::map<double, int> kIntegrationFactorMap{
-      {0., 287}, {5., -8017}, {-5., 9373}};
 };
 
 TEST_P(MultilaneLanesParamTest, FlatLineLane) {
   RoadGeometry rg(api::RoadGeometryId{"apple"},
-                  kLinearTolerance, kAngularTolerance);
+                  kLinearTolerance, kAngularTolerance, kScaleLength);
   std::unique_ptr<RoadCurve> road_curve_1 = std::make_unique<LineRoadCurve>(
-      Vector2<double>(100., -75.), Vector2<double>(100., 50.), zp, zp);
+      Vector2<double>(100., -75.), Vector2<double>(100., 50.), zp, zp,
+      kLinearTolerance, kScaleLength, kComputationPolicy);
   const Vector3<double> s_vector = Vector3<double>(100., 50., 0.).normalized();
   const Vector3<double> r_vector = Vector3<double>(-50, 100., 0.).normalized();
   const Vector3<double> r_offset_vector = r0 * r_vector;
@@ -167,7 +157,8 @@ TEST_P(MultilaneLanesParamTest, FlatLineLane) {
   const double length = std::sqrt(std::pow(100, 2.) + std::pow(50, 2.));
   std::unique_ptr<RoadCurve> road_curve_2 = std::make_unique<LineRoadCurve>(
       Vector2<double>(100., -75.), Vector2<double>(100., 50.),
-      CubicPolynomial(elevation / length, 0.0, 0.0, 0.0), zp);
+      CubicPolynomial(elevation / length, 0.0, 0.0, 0.0), zp,
+      kLinearTolerance, kScaleLength, kComputationPolicy);
   Segment* s2 = rg.NewJunction(api::JunctionId{"j2"})
                     ->NewSegment(api::SegmentId{"s2"}, std::move(road_curve_2),
                                  -kHalfWidth + r0, kHalfWidth + r0,
@@ -237,10 +228,252 @@ TEST_P(MultilaneLanesParamTest, FlatLineLane) {
       api::LanePosition(1., 2., 3.), kVeryExact));
 }
 
+namespace {
+
+// Exact corkscrew curve parameterization, for numerical
+// approximation validation.
+//
+// @tparam T must be a valid Eigen ScalarType.
+template <typename T>
+class CorkScrew {
+ public:
+  // Constructs a corkscrew with the given @p radius,
+  // @p axial_length and @p number_of_turns.
+  CorkScrew(const T& radius, const T& axial_length, const T& number_of_turns);
+
+  // Returns the (x, y, z) position in the global frame at the
+  // provided @p srh location on the corkscrew.
+  Vector3<T> position_at_srh(const Vector3<T>& srh) const;
+
+  // Returns the (r, p, y) orientation triplet in the global frame
+  // at the provided @p srh location on the corkscrew.
+  Vector3<T> orientation_at_srh(const Vector3<T>& srh) const;
+
+  // Returns the (ṡ, ṙ, ḣ) velocity at the provided @p srh location
+  // on the corkscrew, scaled by the @p iso_v velocity in the
+  // (σ, ρ, η) frame i.e. a frame attached to the corkscrew frame
+  // but isotropic with the global frame (such that said velocity
+  // represents a real velocity).
+  Vector3<T> motion_derivative_at_srh(const Vector3<T>& srh,
+                                      const Vector3<T>& iso_v) const;
+
+  // Returns the path length of the corkscrew.
+  inline T length() const { return length_; }
+
+ private:
+  // The radius of the corkscrew.
+  const double radius_;
+  // The axial length of the corkscrew, as seen
+  // if projected onto the x-axis, in meters.
+  const double axial_length_;
+  // The total angular rotation undergone by the
+  // corkscrew, as seen if projected over the x = 0
+  // plane, in rads.
+  const double angular_length_;
+  // The path length of the corkscrew, in meters.
+  const double length_;
+};
+
+template <typename T>
+CorkScrew<T>::CorkScrew(const T& radius, const T& axial_length,
+                        const T& number_of_turns)
+    : radius_(radius),
+      axial_length_(axial_length),
+      angular_length_(2 * M_PI * number_of_turns),
+      length_(std::sqrt(std::pow(axial_length_, 2) +
+                        std::pow(angular_length_ * radius_, 2))) {}
+
+template <typename T>
+Vector3<T> CorkScrew<T>::position_at_srh(const Vector3<T>& srh) const {
+  // TODO(hidmic): Assuming the LANE frame s-axis is always aligned
+  //               with the GLOBAL frame x-axis is incorrect. However,
+  //               this same bug is present in Multilane. Fix this
+  //               computation when the implementation gets fixed.
+  const T p = srh(0) / length();
+  const T effective_r_offset = srh(1) + radius_;
+  const T sgamma = std::sin(angular_length_ * p);
+  const T cgamma = std::cos(angular_length_ * p);
+  return Vector3<T>(axial_length_ * p,
+                    effective_r_offset * cgamma - srh(2) * sgamma,
+                    effective_r_offset * sgamma + srh(2) * cgamma);
+}
+
+template <typename T>
+Vector3<T> CorkScrew<T>::motion_derivative_at_srh(
+    const Vector3<T>& srh, const Vector3<T>& iso_v) const {
+  // TODO(hidmic): Assuming the LANE frame s-axis is always aligned
+  //               with the GLOBAL frame x-axis is incorrect. However,
+  //               this same bug is present in Multilane. Fix this
+  //               computation when the implementation gets fixed.
+  const T p = srh(0) / length();
+  const T sgamma = std::sin(angular_length_ * p);
+  const T cgamma = std::cos(angular_length_ * p);
+  const T alpha = angular_length_ * (srh(1) + radius_);
+  const T alpha0 = angular_length_ * radius_;
+  const T beta = angular_length_ * srh(2);
+  const Vector3<T> position_derivative_at_p00(
+      axial_length_, -alpha0 * sgamma, alpha0 * cgamma);
+  const Vector3<T> position_derivative_at_prh(
+      axial_length_, -alpha * sgamma - beta * cgamma,
+      alpha * cgamma - beta * sgamma);
+  return iso_v.cwiseProduct(
+      Vector3<T>(position_derivative_at_p00.norm() /
+                 position_derivative_at_prh.norm(), 1., 1.));
+}
+
+template <typename T>
+Vector3<T> CorkScrew<T>::orientation_at_srh(const Vector3<T>& srh) const {
+  // TODO(hidmic): Assuming the LANE frame s-axis is always aligned
+  //               with the GLOBAL frame x-axis is incorrect. However,
+  //               this same bug is present in Multilane. Fix this
+  //               computation when the implementation gets fixed.
+  const T p = srh(0) / length();
+  const T effective_r_offset = srh(1) + radius_;
+  const T sgamma = std::sin(angular_length_ * p);
+  const T cgamma = std::cos(angular_length_ * p);
+  const Vector3<T> s_vec(
+      axial_length_,
+      -angular_length_ * (effective_r_offset * sgamma + srh(2) * cgamma),
+      angular_length_ * (effective_r_offset * cgamma - srh(2) * sgamma));
+  const Vector3<T> s_hat = s_vec.normalized();
+  const Vector3<T> r_hat(0., cgamma, sgamma);
+  // TODO(hidmic): Make use of math::RollPitchYaw:
+  //
+  // Matrix3<T> rotmat;
+  // rotmat << s_hat, r_hat, s_hat.cross(r_hat);
+  // return math::RollPitchYaw<T>(math::RotationMatrix<T>(rotmat)).vector();
+  //
+  // Code below is a verbatim partial transcription of the
+  // RoadCurve::Orientation() method implementation that, somehow, gives a
+  // different output than that of above's code snippet for the same input.
+  const T gamma = std::atan2(s_hat.y(), s_hat.x());
+  const T beta =
+      std::atan2(-s_hat.z(), Vector2<T>(s_hat.x(), s_hat.y()).norm());
+  const T cb = std::cos(beta);
+  const T alpha = std::atan2(
+      r_hat.z() / cb, ((r_hat.y() * s_hat.x()) - (r_hat.x() * s_hat.y())) / cb);
+  return Vector3<T>(alpha, beta, gamma);
+}
+
+}  // namespace
+
+// Checks Lane position, orientation and motion derivative computations
+// accuracy for a linearly superelevated, corkscrew-like baseline. The
+// numerical based approach used by the RoadCurve to deal with this kind
+// of complex shapes are compared against exact results.
+TEST_P(MultilaneLanesParamTest, CorkScrewLane) {
+  const int kTurns = 10;
+  const double kLength = 20.;
+  const CorkScrew<double> corkscrew_curve(r0, kLength, kTurns);
+  // Reproduces the same superelevation profile as that of the corkscrew.
+  const CubicPolynomial corkscrew_polynomial(
+      0., 2. * M_PI * kTurns / kLength, 0., 0.);
+
+  // Road curve's scale length is computed as
+  // half the path length of a single corkscrew
+  // turn.
+  const double kCorkscrewScaleLength =
+      corkscrew_curve.length() / (2 * kTurns);
+  std::unique_ptr<RoadCurve> road_curve =
+      std::make_unique<LineRoadCurve>(
+          Vector2<double>(0., 0.), Vector2<double>(kLength, 0.),
+          zp, corkscrew_polynomial, kLinearTolerance,
+          kCorkscrewScaleLength, kComputationPolicy);
+
+  RoadGeometry rg(api::RoadGeometryId{"corkscrew"},
+                  kLinearTolerance,
+                  kAngularTolerance,
+                  kScaleLength);
+  Segment* s1 =
+      rg.NewJunction(api::JunctionId{"j1"})
+          ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve),
+                       -kHalfWidth + r0, kHalfWidth + r0, {0., kMaxHeight});
+  Lane* l1 =
+      s1->NewLane(api::LaneId{"l1"}, r0, {-kHalfLaneWidth, kHalfLaneWidth});
+
+  EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
+
+  EXPECT_EQ(l1->id(), api::LaneId("l1"));
+  EXPECT_EQ(l1->segment(), s1);
+  EXPECT_EQ(l1->index(), 0);
+  EXPECT_EQ(l1->to_left(), nullptr);
+  EXPECT_EQ(l1->to_right(), nullptr);
+  EXPECT_EQ(l1->r0(), r0);
+
+  EXPECT_NEAR(l1->length(), corkscrew_curve.length(), kLinearTolerance);
+
+  EXPECT_TRUE(api::test::IsRBoundsClose(
+      l1->lane_bounds(0.),
+      api::RBounds(-kHalfLaneWidth, kHalfLaneWidth), kVeryExact));
+  EXPECT_TRUE(api::test::IsRBoundsClose(
+      l1->driveable_bounds(0.),
+      api::RBounds(-kHalfWidth, kHalfWidth), kVeryExact));
+  EXPECT_TRUE(api::test::IsHBoundsClose(
+      l1->elevation_bounds(0., 0.),
+      api::HBounds(0., kMaxHeight), kVeryExact));
+
+  const api::IsoLaneVelocity lane_velocity(1., 10., 100.);
+  const Vector3<double> lane_velocity_as_vector(
+      lane_velocity.sigma_v, lane_velocity.rho_v, lane_velocity.eta_v);
+
+  const std::vector<double> lane_position_s_offsets = {
+    0., 1., l1->length() / 2., l1->length() - 1., l1->length()
+  };
+  const std::vector<double> lane_position_r_offsets = {
+    -kHalfWidth, -kHalfWidth + 1., -1., 0., 1., kHalfWidth - 1., kHalfWidth
+  };
+  const std::vector<double> lane_position_h_offsets = {
+    0., 1., kMaxHeight / 2., kMaxHeight - 1., kMaxHeight
+  };
+
+  for (double s_offset : lane_position_s_offsets) {
+    for (double r_offset : lane_position_r_offsets) {
+      for (double h_offset : lane_position_h_offsets) {
+        // Instantiates lane position with current offsets.
+        const api::LanePosition lane_position(
+            s_offset, r_offset, h_offset);
+
+        // Checks position in the (x, y, z) frame i.e. world
+        // down to kLinearTolerance accuracy (as that's the
+        // tolerance the RoadGeometry was constructed with).
+        EXPECT_TRUE(api::test::IsGeoPositionClose(
+            l1->ToGeoPosition(lane_position),
+            api::GeoPosition::FromXyz(
+                corkscrew_curve.position_at_srh(
+                    lane_position.srh())),
+            kLinearTolerance));
+
+        // Checks orientation in the (x, y, z) frame i.e. world
+        // down to kAngularTolerance accuracy (as that's the
+        // tolerance the RoadGeometry was constructed with).
+        EXPECT_TRUE(api::test::IsRotationClose(
+            l1->GetOrientation(lane_position),
+            api::Rotation::FromRpy(
+                corkscrew_curve.orientation_at_srh(
+                    lane_position.srh())),
+            kAngularTolerance));
+
+        // Checks motion derivatives in the (s, r, h) frame i.e.
+        // lane down to kLinearTolerance accuracy (as that's
+        // the tolerance the RoadGeometry was constructed with).
+        EXPECT_TRUE(api::test::IsLanePositionClose(
+            l1->EvalMotionDerivatives(
+                lane_position, lane_velocity),
+            api::LanePosition::FromSrh(
+                corkscrew_curve.motion_derivative_at_srh(
+                    lane_position.srh(), lane_velocity_as_vector)),
+            kLinearTolerance));
+
+        // TODO(hidmic): Add Lane::ToLanePosition() tests when the zero
+        //               superelevation restriction in Multilane is lifted.
+      }
+    }
+  }
+}
 
 TEST_P(MultilaneLanesParamTest, FlatArcLane) {
   RoadGeometry rg(api::RoadGeometryId{"apple"},
-                  kLinearTolerance, kAngularTolerance);
+                  kLinearTolerance, kAngularTolerance, kScaleLength);
   const double theta0 = 0.25 * M_PI;
   const double d_theta = 1.5 * M_PI;
   const double radius = 100.;
@@ -248,7 +481,9 @@ TEST_P(MultilaneLanesParamTest, FlatArcLane) {
   const double offset_radius = radius - r0;
 
   std::unique_ptr<RoadCurve> road_curve_1 =
-      std::make_unique<ArcRoadCurve>(center, radius, theta0, d_theta, zp, zp);
+      std::make_unique<ArcRoadCurve>(center, radius, theta0, d_theta, zp, zp,
+                                     kLinearTolerance, kScaleLength,
+                                     kComputationPolicy);
   Segment* s1 = rg.NewJunction(api::JunctionId{"j1"})
                     ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve_1),
                                  -kHalfWidth + r0, kHalfWidth + r0,
@@ -360,7 +595,8 @@ TEST_P(MultilaneLanesParamTest, FlatArcLane) {
   const double elevation = 10.;
   std::unique_ptr<RoadCurve> road_curve_2 = std::make_unique<ArcRoadCurve>(
       center, radius, theta0, d_theta,
-      CubicPolynomial(elevation / radius / d_theta, 0.0, 0.0, 0.0), zp);
+      CubicPolynomial(elevation / radius / d_theta, 0.0, 0.0, 0.0), zp,
+      kLinearTolerance, kScaleLength, kComputationPolicy);
   Segment* s2 = rg.NewJunction(api::JunctionId{"j2"})
                     ->NewSegment(api::SegmentId{"s2"}, std::move(road_curve_2),
                                  -kHalfWidth + r0, kHalfWidth + r0,
@@ -388,7 +624,8 @@ TEST_P(MultilaneLanesParamTest, FlatArcLane) {
   // The result should be identical to Case 1.
   const double d_theta_overlap = 3 * M_PI;
   std::unique_ptr<RoadCurve> road_curve_3 = std::make_unique<ArcRoadCurve>(
-      center, radius, theta0, d_theta_overlap, zp, zp);
+      center, radius, theta0, d_theta_overlap, zp, zp,
+      kLinearTolerance, kScaleLength, kComputationPolicy);
   Segment* s3 =
       rg.NewJunction(api::JunctionId{"j3"})
       ->NewSegment(api::SegmentId{"s3"}, std::move(road_curve_3),
@@ -420,7 +657,8 @@ TEST_P(MultilaneLanesParamTest, FlatArcLane) {
   const double theta0_wrap = 1.2 * M_PI;
   const double d_theta_wrap = -0.4 * M_PI;
   std::unique_ptr<RoadCurve> road_curve_4 = std::make_unique<ArcRoadCurve>(
-      center, radius, theta0_wrap, d_theta_wrap, zp, zp);
+      center, radius, theta0_wrap, d_theta_wrap, zp, zp,
+      kLinearTolerance, kScaleLength, kComputationPolicy);
   Segment* s4 = rg.NewJunction(api::JunctionId{"j4"})
                     ->NewSegment(api::SegmentId{"s4"}, std::move(road_curve_4),
                                  -kHalfWidth + r0, kHalfWidth + r0,
@@ -520,72 +758,100 @@ api::LanePosition IntegrateTrivially(const api::Lane* lane,
 }
 
 
+// Checks EvalMotionDerivatives() correctness on a non-trivial road surface.
 TEST_P(MultilaneLanesParamTest, HillIntegration) {
+  // Sets up a single segment road with three (3) adjacent lanes, whose
+  // reference curve is a piece of an arc with cubic elevation and zero
+  // superelevation.
   RoadGeometry rg(api::RoadGeometryId{"apple"},
-                  kLinearTolerance, kAngularTolerance);
+                  kLinearTolerance, kAngularTolerance, kScaleLength);
   const double theta0 = 0.25 * M_PI;
   const double d_theta = 0.5 * M_PI;
   const double theta1 = theta0 + d_theta;
   const double radius = 100.;
   const double offset_radius = radius - r0;
-  const double p_scale = radius * d_theta;
+  const double l_max = radius * d_theta;
   const double z0 = 0.;
   const double z1 = 20.;
   // A cubic polynomial such that:
-  //   f(0) = (z0 / p_scale), f(1) = (z1 / p_scale), and f'(0) = f'(1) = 0.
-  const CubicPolynomial kHillPolynomial(z0 / p_scale, 0.,
-                                        (3. * (z1 - z0) / p_scale),
-                                        (-2. * (z1 - z0) / p_scale));
-  std::unique_ptr<RoadCurve> road_curve_1 =
+  //   f(0) = (z0 / l_max),
+  ///  f(1) = (z1 / l_max),
+  //   and f'(0) = f'(1) = 0.
+  const CubicPolynomial kHillPolynomial(z0 / l_max, 0.,
+                                        (3. * (z1 - z0) / l_max),
+                                        (-2. * (z1 - z0) / l_max));
+  std::unique_ptr<RoadCurve> road_curve =
       std::make_unique<ArcRoadCurve>(Vector2<double>(-100., -100.), radius,
-                                     theta0, d_theta, kHillPolynomial, zp);
-  Segment* s1 = rg.NewJunction(api::JunctionId{"j1"})
-                    ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve_1),
-                                 -kHalfWidth + r0, kHalfWidth + r0,
-                                 {0., kMaxHeight});
-  Lane* l1 = s1->NewLane(api::LaneId{"l2"}, r0,
-                         {-kHalfLaneWidth, kHalfLaneWidth});
-
+                                     theta0, d_theta, kHillPolynomial, zp,
+                                     kLinearTolerance, kScaleLength,
+                                     kComputationPolicy);
+  const double kLaneSpacing = 2. * kHalfLaneWidth;
+  const double kLeftWidth = kLaneSpacing + kHalfLaneWidth;
+  const double kRightWidth = kLaneSpacing + kHalfLaneWidth;
+  Junction* junction = rg.NewJunction(api::JunctionId{"junction"});
+  Segment* segment = junction->NewSegment(
+      api::SegmentId{"segment"}, std::move(road_curve),
+      -kLeftWidth + r0, r0 + kRightWidth, {0., kMaxHeight});
+  Lane* right_lane = segment->NewLane(
+      api::LaneId{"right_lane"}, r0 - kLaneSpacing,
+      {-kHalfLaneWidth, kHalfLaneWidth});
+  Lane* center_lane = segment->NewLane(
+      api::LaneId{"center_lane"}, r0,
+      {-kHalfLaneWidth, kHalfLaneWidth});
+  Lane* left_lane = segment->NewLane(
+      api::LaneId{"left_lane"}, r0 + kLaneSpacing,
+      {-kHalfLaneWidth, kHalfLaneWidth});
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
 
-  const api::IsoLaneVelocity kVelocity {1., 0., 0. };
-  const double kTimeStep = 0.001;
-  const int kStepsForZeroR = kIntegrationScaleMap.find(r0)->second;
-  const double kIntegrationTolerance = 3e-4;
-
-  const api::LanePosition kLpInitialA{0., 0., 0.};
+  // Checks center lane endpoints' position in the world frame
+  // against their analytically known values.
+  const api::LanePosition kInitialLanePosition{0., 0., 0.};
   EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l1->ToGeoPosition(kLpInitialA),
+      center_lane->ToGeoPosition(kInitialLanePosition),
       api::GeoPosition(-100. + (offset_radius * std::cos(theta0)),
                        -100. + (offset_radius * std::sin(theta0)), z0),
       kLinearTolerance));
 
-  api::LanePosition lp_final_a =
-      IntegrateTrivially(l1, kLpInitialA, kVelocity, kTimeStep,
-                         kStepsForZeroR);
+  const api::LanePosition kFinalLanePosition{center_lane->length(), 0., 0.};
   EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l1->ToGeoPosition(lp_final_a),
+      center_lane->ToGeoPosition(kFinalLanePosition),
       api::GeoPosition(-100. + (offset_radius * std::cos(theta1)),
                        -100. + (offset_radius * std::sin(theta1)), z1),
-      kIntegrationTolerance));
-
-  const api::LanePosition kLpInitialB{0., -10., 0.};
-  EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l1->ToGeoPosition(kLpInitialB),
-      api::GeoPosition(-100. + ((offset_radius + 10.) * std::cos(theta0)),
-                       -100. + ((offset_radius + 10.) * std::sin(theta0)), z0),
       kLinearTolerance));
 
-  const int kStepsForR10 = ((offset_radius + 10.) / radius * kStepsForZeroR) -
-                           kIntegrationFactorMap.find(r0)->second;
-  api::LanePosition lp_final_b =
-      IntegrateTrivially(l1, kLpInitialB, kVelocity, kTimeStep,
-                         kStepsForR10);
-  EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l1->ToGeoPosition(lp_final_b),
-      api::GeoPosition(-100. + ((offset_radius + 10.) * std::cos(theta1)),
-                       -100. + ((offset_radius + 10.) * std::sin(theta1)), z1),
-      kIntegrationTolerance));
+  // Checks EvalMotionDerivatives() accuracy. To that end, motion derivatives
+  // are (1) queried for a given constant velocity σᵥ from the center lane at an
+  // r-offset that matches that of an adjacent lane centerline, (2) integrated
+  // using Euler's method with a fixed time step dt and (3) compared against the
+  // center lane's length. Total integration steps count n is estimated based
+  // on the corresponding adjacent lane's length l and velocity σᵥ as
+  // n = l / (σᵥ * dt). Path length estimation error is expected to be higher
+  // than that achievable by a RoadCurve instance.
+  const double kTimeStep{0.001};
+  const api::IsoLaneVelocity kVelocity{1., 0., 0. };
+  const double kIntegrationTolerance{1e-3};
+
+  // Tests using the lane on the right side.
+  const int kStepCountR =
+      right_lane->length() / (kVelocity.sigma_v * kTimeStep);
+  const api::LanePosition kInitialLanePositionR{0., -kLaneSpacing, 0.};
+  const api::LanePosition kExpectedFinalLanePositionR{
+    center_lane->length(), -kLaneSpacing, 0.};
+  EXPECT_TRUE(api::test::IsLanePositionClose(
+      IntegrateTrivially(center_lane, kInitialLanePositionR,
+                         kVelocity, kTimeStep, kStepCountR),
+      kExpectedFinalLanePositionR, kIntegrationTolerance));
+
+  // Tests using the lane on the left side.
+  const int kStepCountL =
+      left_lane->length() / (kVelocity.sigma_v * kTimeStep);
+  const api::LanePosition kInitialLanePositionL{0., kLaneSpacing, 0.};
+  const api::LanePosition kExpectedFinalLanePositionL{
+    center_lane->length(), kLaneSpacing, 0.};
+  EXPECT_TRUE(api::test::IsLanePositionClose(
+      IntegrateTrivially(center_lane, kInitialLanePositionL,
+                         kVelocity, kTimeStep, kStepCountL),
+      kExpectedFinalLanePositionL, kIntegrationTolerance));
 }
 
 
@@ -595,6 +861,9 @@ INSTANTIATE_TEST_CASE_P(Offset, MultilaneLanesParamTest,
 
 GTEST_TEST(MultilaneLanesTest, ArcLaneWithConstantSuperelevation) {
   CubicPolynomial zp{0., 0., 0., 0.};
+  const double kScaleLength{1.};
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
   const double kTheta = 0.10 * M_PI;  // superelevation
   const double kR0 = 0.;
   const double kHalfWidth = 10.;
@@ -602,10 +871,11 @@ GTEST_TEST(MultilaneLanesTest, ArcLaneWithConstantSuperelevation) {
   const double kMaxHeight = 5.;
 
   RoadGeometry rg(api::RoadGeometryId{"apple"},
-                  kLinearTolerance, kAngularTolerance);
+                  kLinearTolerance, kAngularTolerance, kScaleLength);
   std::unique_ptr<RoadCurve> road_curve_1 = std::make_unique<ArcRoadCurve>(
       Vector2<double>(100., -75.), 100.0, 0.25 * M_PI, 1.5 * M_PI, zp,
-      CubicPolynomial((kTheta) / (100. * 1.5 * M_PI), 0., 0., 0.));
+      CubicPolynomial((kTheta) / (100. * 1.5 * M_PI), 0., 0., 0.),
+      kLinearTolerance, kScaleLength, kComputationPolicy);
   Segment* s1 = rg.NewJunction(api::JunctionId{"j1"})
                     ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve_1),
                                  -kHalfWidth + kR0, kHalfWidth + kR0,
@@ -699,6 +969,9 @@ GTEST_TEST(MultilaneLanesTest, ArcLaneWithConstantSuperelevation) {
 class MultilaneMultipleLanesTest : public ::testing::Test {
  protected:
   const CubicPolynomial zp{0., 0., 0., 0.};
+  const double kScaleLength{1.};
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
   const double kR0{10.};
   const double kRSpacing{15.};
   const double kRMin{2.};
@@ -710,9 +983,10 @@ class MultilaneMultipleLanesTest : public ::testing::Test {
 
 TEST_F(MultilaneMultipleLanesTest, MultipleLineLanes) {
   RoadGeometry rg(api::RoadGeometryId{"apple"}, kLinearTolerance,
-                  kAngularTolerance);
+                  kAngularTolerance, kScaleLength);
   std::unique_ptr<RoadCurve> road_curve = std::make_unique<LineRoadCurve>(
-      Vector2<double>(100., -75.), Vector2<double>(100., 50.), zp, zp);
+      Vector2<double>(100., -75.), Vector2<double>(100., 50.), zp, zp,
+      kLinearTolerance, kScaleLength, kComputationPolicy);
   Segment* s1 =
       rg.NewJunction(api::JunctionId{"j1"})
           ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve), kRMin,
@@ -845,9 +1119,10 @@ TEST_F(MultilaneMultipleLanesTest, MultipleArcLanes) {
   const Vector3<double> kGeoCenter{kCenter(0), kCenter(1), 0.};
 
   RoadGeometry rg(api::RoadGeometryId{"apple"}, kLinearTolerance,
-                  kAngularTolerance);
+                  kAngularTolerance, kScaleLength);
   std::unique_ptr<RoadCurve> road_curve = std::make_unique<ArcRoadCurve>(
-      kCenter, kRadius, kTheta0, kDTheta, zp, zp);
+      kCenter, kRadius, kTheta0, kDTheta, zp, zp, kLinearTolerance,
+      kScaleLength, kComputationPolicy);
   Segment* s1 =
       rg.NewJunction(api::JunctionId{"j1"})
           ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve), kRMin,

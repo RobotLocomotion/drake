@@ -31,8 +31,25 @@ class Monomial {
   /** Constructs a monomial equal to 1. Namely the total degree is zero. */
   Monomial() = default;
 
-  /** Constructs a Monomial from @p powers. */
+  /** Constructs a default value.  This overload is used by Eigen when
+   * EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.
+   */
+  explicit Monomial(std::nullptr_t) : Monomial() {}
+
+  /** Constructs a Monomial from @p powers.
+   * @throws std::logic_error if `powers` includes a negative exponent.
+   */
   explicit Monomial(const std::map<Variable, int>& powers);
+
+  /** Constructs a Monomial from a vector of variables `vars` and their
+   * corresponding integer exponents `exponents`.
+   * For example, `Monomial([x, y, z], [2, 0, 1])` constructs a Monomial `x²z`.
+   *
+   * @pre The size of `vars` should be the same as the size of `exponents`.
+   * @throws std::logic_error if `exponents` includes a negative integer.
+   */
+  Monomial(const Eigen::Ref<const VectorX<Variable>>& vars,
+           const Eigen::Ref<const Eigen::VectorXi>& exponents);
 
   /**
    * Converts an expression to a monomial if the expression is written as
@@ -44,7 +61,7 @@ class Monomial {
   /** Constructs a Monomial from @p var. */
   explicit Monomial(const Variable& var);
 
-  /** Constructs a Monomial from @p var and @exponent. */
+  /** Constructs a Monomial from @p var and @p exponent. */
   Monomial(const Variable& var, int exponent);
 
   /** Returns the degree of this Monomial in a variable @p v. */

@@ -2,9 +2,9 @@
 
 load(
     "//tools:drake.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
-    "drake_cc_binary",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -13,9 +13,10 @@ drake_cc_library(
     srcs = ["simulated_schunk_wsg_system.cc"],
     hdrs = ["simulated_schunk_wsg_system.h"],
     deps = [
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant",
         "//common:find_resource",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant",
+        "//manipulation/schunk_wsg",
     ],
 )
 
@@ -31,16 +32,16 @@ drake_cc_binary(
     test_rule_flaky = 1,
     deps = [
         ":simulated_schunk_wsg_system",
+        "//attic/multibody/rigid_body_plant",
+        "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//lcm",
         "//lcmtypes:schunk",
         "//manipulation/schunk_wsg:schunk_wsg_constants",
         "//manipulation/schunk_wsg:schunk_wsg_controller",
         "//manipulation/schunk_wsg:schunk_wsg_lcm",
-        "//multibody/rigid_body_plant",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/framework",
-        "//systems/lcm",
+        "//systems/lcm:lcm_pubsub_system",
         "@gflags",
     ],
 )
@@ -49,7 +50,7 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "schunk_wsg_lift_test",
-    size = "large",
+    timeout = "moderate",
     data = [
         "test/test_lifter.sdf",
         "//manipulation/models/wsg_50_description:models",
@@ -61,18 +62,18 @@ drake_cc_googletest(
     # causes timeouts in kcov.
     tags = ["no_kcov"],
     deps = [
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant",
+        "//attic/multibody/rigid_body_plant:contact_results_to_lcm",
+        "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//common:essential",
         "//common:find_resource",
         "//common/trajectories:piecewise_polynomial",
         "//common/trajectories:trajectory",
         "//lcm",
-        "//manipulation/schunk_wsg:schunk_wsg_constants",
+        "//manipulation/schunk_wsg",
         "//multibody:rigid_body_tree",
         "//multibody:rigid_body_tree_construction",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant",
-        "//multibody/rigid_body_plant:contact_results_to_lcm",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis",
         "//systems/controllers:pid_controlled_system",
         "//systems/framework:diagram_builder",
@@ -85,15 +86,14 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "simulated_schunk_wsg_system_test",
-    # Test size increased to not timeout when run with Valgrind.
-    size = "medium",
+    timeout = "moderate",
     data = [
         "//manipulation/models/wsg_50_description:models",
     ],
     deps = [
         ":simulated_schunk_wsg_system",
+        "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//lcm",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/primitives:constant_vector_source",

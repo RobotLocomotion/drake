@@ -1,25 +1,45 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_package_library",
+)
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_unittest",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "util",
+    deps = [
+        ":bot_core_lcm_encode_decode",
+        ":frame_pose_tracker",
+        ":moving_average_filter",
+        ":robot_state_msg_translator",
+        ":sim_diagram_builder",
+        ":simple_tree_visualizer",
+        ":trajectory_utils",
+        ":world_sim_tree_builder",
+    ],
+)
 
 drake_cc_library(
     name = "world_sim_tree_builder",
     srcs = ["world_sim_tree_builder.cc"],
     hdrs = ["world_sim_tree_builder.h"],
     deps = [
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant:compliant_contact_model",
         "//common:find_resource",
         "//multibody:rigid_body_tree",
         "//multibody:rigid_body_tree_construction",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant:compliant_contact_model",
     ],
 )
 
@@ -51,8 +71,8 @@ drake_cc_library(
     srcs = ["sim_diagram_builder.cc"],
     hdrs = ["sim_diagram_builder.h"],
     deps = [
-        "//multibody/rigid_body_plant",
-        "//multibody/rigid_body_plant:drake_visualizer",
+        "//attic/multibody/rigid_body_plant",
+        "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//systems/controllers:state_feedback_controller_interface",
         "//systems/framework",
     ],
@@ -63,11 +83,11 @@ drake_cc_library(
     srcs = ["simple_tree_visualizer.cc"],
     hdrs = ["simple_tree_visualizer.h"],
     deps = [
+        "//attic/multibody/rigid_body_plant:create_load_robot_message",
+        "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//common:essential",
         "//lcm",
         "//lcmtypes:viewer",
-        "//multibody/rigid_body_plant:create_load_robot_message",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/framework",
         "//systems/rendering:drake_visualizer_client",
     ],
@@ -98,10 +118,10 @@ drake_cc_binary(
     test_rule_args = ["--num_configurations=1"],
     deps = [
         ":simple_tree_visualizer",
+        "//attic/multibody/parsers",
         "//common:essential",
         "//common:find_resource",
         "//lcm",
-        "//multibody/parsers",
         "//systems/framework",
         "@gflags",
     ],
@@ -120,13 +140,25 @@ drake_cc_library(
     srcs = ["frame_pose_tracker.cc"],
     hdrs = ["frame_pose_tracker.h"],
     deps = [
+        "//attic/multibody/rigid_body_plant",
+        "//geometry:frame_kinematics",
         "//multibody:rigid_body_tree",
         "//multibody/multibody_tree/math:spatial_velocity",
-        "//multibody/rigid_body_plant",
         "//systems/framework:leaf_system",
-        "//systems/rendering:frame_velocity",
-        "//systems/rendering:pose_bundle",
     ],
+)
+
+drake_py_binary(
+    name = "show_model",
+    srcs = ["show_model.py"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_binary(
+    name = "meshlab_to_sdf",
+    srcs = ["meshlab_to_sdf.py"],
 )
 
 # === test/ ===
@@ -150,11 +182,11 @@ drake_cc_googletest(
     ],
     deps = [
         ":robot_state_msg_translator",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
         "//multibody:rigid_body_tree_construction",
-        "//multibody/parsers",
     ],
 )
 
@@ -185,10 +217,10 @@ drake_cc_googletest(
     ],
     deps = [
         ":sim_diagram_builder",
+        "//attic/multibody/rigid_body_plant",
         "//common/test_utilities:eigen_matrix_compare",
         "//lcm",
         "//manipulation/util:world_sim_tree_builder",
-        "//multibody/rigid_body_plant",
         "//systems/analysis",
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/controllers:pid_controller",
@@ -202,13 +234,34 @@ drake_cc_googletest(
     data = ["//manipulation/models/iiwa_description:models"],
     deps = [
         ":frame_pose_tracker",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_geometry_compare",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody:rigid_body_tree",
-        "//multibody/parsers",
         "//systems/framework",
     ],
 )
 
-add_lint_tests()
+drake_py_unittest(
+    name = "show_model_test",
+    data = [
+        ":show_model",
+        "//examples/acrobot:models",
+        "//examples/pendulum:models",
+    ],
+)
+
+drake_py_unittest(
+    name = "meshlab_to_sdf_test",
+    srcs = [
+        "meshlab_to_sdf.py",
+        "test/meshlab_to_sdf_test.py",
+    ],
+)
+
+add_lint_tests(
+    python_lint_extra_srcs = [
+        "convert_to_visualize_collisions.py",
+    ],
+)

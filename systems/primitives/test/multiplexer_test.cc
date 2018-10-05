@@ -8,7 +8,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
@@ -20,10 +20,16 @@ namespace {
 
 class MultiplexerTest : public ::testing::Test {
  protected:
-  void Reset(std::vector<int> input_sizes) {
+  void InitializeFromSizes(std::vector<int> input_sizes) {
     mux_ = make_unique<Multiplexer<double>>(input_sizes);
     context_ = mux_->CreateDefaultContext();
-    output_ = mux_->AllocateOutput(*context_);
+    output_ = mux_->AllocateOutput();
+  }
+
+  void InitializeFromMyVector() {
+    mux_ = make_unique<Multiplexer<double>>(MyVector<2, double>());
+    context_ = mux_->CreateDefaultContext();
+    output_ = mux_->AllocateOutput();
   }
 
   std::unique_ptr<System<double>> mux_;
@@ -32,7 +38,7 @@ class MultiplexerTest : public ::testing::Test {
 };
 
 TEST_F(MultiplexerTest, Basic) {
-  Reset({2, 1, 3});
+  InitializeFromSizes({2, 1, 3});
 
   // Confirm the shape.
   ASSERT_EQ(3, mux_->get_num_input_ports());
@@ -65,7 +71,7 @@ TEST_F(MultiplexerTest, Basic) {
 TEST_F(MultiplexerTest, ScalarConstructor) {
   mux_ = make_unique<Multiplexer<double>>(4);
   context_ = mux_->CreateDefaultContext();
-  output_ = mux_->AllocateOutput(*context_);
+  output_ = mux_->AllocateOutput();
 
   // Confirm the shape.
   ASSERT_EQ(4, mux_->get_num_input_ports());
@@ -81,9 +87,7 @@ TEST_F(MultiplexerTest, ScalarConstructor) {
 }
 
 TEST_F(MultiplexerTest, ModelVectorConstructor) {
-  mux_ = make_unique<Multiplexer<double>>(MyVector<2, double>());
-  context_ = mux_->CreateDefaultContext();
-  output_ = mux_->AllocateOutput(*context_);
+  InitializeFromMyVector();
 
   // Confirm the shape.
   ASSERT_EQ(2, mux_->get_num_input_ports());
@@ -102,13 +106,12 @@ TEST_F(MultiplexerTest, ModelVectorConstructor) {
 }
 
 TEST_F(MultiplexerTest, IsStateless) {
-  Reset({1});
+  InitializeFromSizes({1});
   EXPECT_EQ(0, context_->get_continuous_state().size());
 }
 
-// Tests conversion to AutoDiffXd.
-TEST_F(MultiplexerTest, ToAutoDiff) {
-  Reset({1, 1, 1});
+TEST_F(MultiplexerTest, ToAutoDiffPass) {
+  InitializeFromSizes({1, 1, 1});
   EXPECT_TRUE(is_autodiffxd_convertible(*mux_, [&](const auto& converted) {
     EXPECT_EQ(3, converted.get_num_input_ports());
     EXPECT_EQ(1, converted.get_num_output_ports());
@@ -120,9 +123,16 @@ TEST_F(MultiplexerTest, ToAutoDiff) {
   }));
 }
 
-// Tests conversion to symbolic::Expression.
+TEST_F(MultiplexerTest, ToAutoDiffFail) {
+  InitializeFromMyVector();
+  // This is not yet supported, as getting the model_value subtype converted to
+  // a different underlying scalar is not yet supported by the BasicVector API
+  // (see #5454).
+  EXPECT_FALSE(is_autodiffxd_convertible(*mux_));
+}
+
 TEST_F(MultiplexerTest, ToSymbolic) {
-  Reset({1, 1, 1});
+  InitializeFromSizes({1, 1, 1});
   EXPECT_TRUE(is_symbolic_convertible(*mux_, [&](const auto& converted) {
     EXPECT_EQ(3, converted.get_num_input_ports());
     EXPECT_EQ(1, converted.get_num_output_ports());

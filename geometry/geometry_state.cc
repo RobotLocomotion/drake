@@ -11,13 +11,16 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/proximity_engine.h"
+#include "drake/geometry/utilities.h"
 
 namespace drake {
 namespace geometry {
 
+using internal::GeometryStateCollisionFilterAttorney;
 using internal::InternalAnchoredGeometry;
 using internal::InternalFrame;
 using internal::InternalGeometry;
+using internal::ProximityEngine;
 using std::make_pair;
 using std::make_unique;
 using std::move;
@@ -109,7 +112,7 @@ int GeometryState<T>::get_frame_group(FrameId frame_id) const {
     return "No frame group available for invalid frame id: " +
            to_string(frame_id);
   });
-  return frames_.at(frame_id).get_frame_group();
+  return frames_.at(frame_id).frame_group();
 }
 
 template <typename T>
@@ -118,7 +121,65 @@ const std::string& GeometryState<T>::get_frame_name(FrameId frame_id) const {
     return "No frame name available for invalid frame id: " +
            to_string(frame_id);
   });
-  return frames_.at(frame_id).get_name();
+  return frames_.at(frame_id).name();
+}
+
+template <typename T>
+const std::string& GeometryState<T>::get_name(GeometryId geometry_id) const {
+  const auto& dynamic_iterator = geometries_.find(geometry_id);
+  if (dynamic_iterator != geometries_.end()) {
+    return dynamic_iterator->second.get_name();
+  }
+
+  const auto& anchored_iterator = anchored_geometries_.find(geometry_id);
+  if (anchored_iterator != anchored_geometries_.end()) {
+    return anchored_iterator->second.get_name();
+  }
+
+  throw std::logic_error("No geometry available for invalid geometry id: " +
+      to_string(geometry_id));
+}
+
+template <typename T>
+GeometryId GeometryState<T>::GetGeometryFromName(
+    FrameId frame_id, const std::string& name) const {
+  const std::string canonical_name = detail::CanonicalizeStringName(name);
+  // TODO(SeanCurtis-TRI): Account for geometry role once implemented.
+
+  GeometryId result;
+  int count = 0;
+  std::string frame_name;
+
+  if (frame_id == InternalFrame::world_frame_id()) {
+    frame_name = "world";
+    for (const auto& pair : anchored_geometries_) {
+      const InternalAnchoredGeometry& geometry = pair.second;
+      if (geometry.get_name() == canonical_name) {
+        ++count;
+        result = pair.first;
+      }
+    }
+  } else {
+    const InternalFrame& frame = GetValueOrThrow(frame_id, frames_);
+    frame_name = frame.name();
+    for (GeometryId geometry_id : frame.child_geometries()) {
+      const InternalGeometry& geometry = geometries_.at(geometry_id);
+      if (geometry.get_name() == canonical_name) {
+        ++count;
+        result = geometry_id;
+      }
+    }
+  }
+
+  if (count == 1) return result;
+  if (count < 1) {
+    throw std::logic_error("The frame '" + frame_name + "' (" +
+        to_string(frame_id) + ") has no geometry with the canonical name '" +
+        canonical_name + "'");
+  }
+  throw std::logic_error("The frame '" + frame_name + "' (" +
+      to_string(frame_id) + ") has multiple geometries with the canonical " +
+      "name'" + canonical_name + "'");
 }
 
 template <typename T>
@@ -128,12 +189,15 @@ const Isometry3<T>& GeometryState<T>::get_pose_in_world(
     return "No world pose available for invalid frame id: " +
            to_string(frame_id);
   });
-  return X_WF_[frames_.at(frame_id).get_pose_index()];
+  return X_WF_[frames_.at(frame_id).pose_index()];
 }
 
 template <typename T>
 const Isometry3<T>& GeometryState<T>::get_pose_in_world(
     GeometryId geometry_id) const {
+  // TODO(SeanCurtis-TRI): This is an BUG! If you pass in the id of an
+  // anchored geometry, this will throw an exception. See
+  // https://github.com/RobotLocomotion/drake/issues/9145.
   FindOrThrow(geometry_id, geometries_, [geometry_id]() {
     return "No world pose available for invalid geometry id: " +
            to_string(geometry_id);
@@ -147,7 +211,7 @@ const Isometry3<T>& GeometryState<T>::get_pose_in_parent(
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "No pose available for invalid frame id: " + to_string(frame_id);
   });
-  return X_PF_[frames_.at(frame_id).get_pose_index()];
+  return X_PF_[frames_.at(frame_id).pose_index()];
 }
 
 template <typename T>
@@ -170,6 +234,26 @@ const Isometry3<double>& GeometryState<T>::GetPoseInParent(
     GeometryId geometry_id) const {
   const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
   return geometry.get_pose_in_parent();
+}
+
+template <typename T>
+const VisualMaterial* GeometryState<T>::get_visual_material(
+    GeometryId geometry_id) const {
+  // TODO(SeanCurtis-TRI): Wrap this in a function accessible to all geometry
+  // property introspection functions.
+  {
+    auto iterator = geometries_.find(geometry_id);
+    if (iterator != geometries_.end()) {
+      return &iterator->second.get_visual_material();
+    }
+  }
+  {
+    auto iterator = anchored_geometries_.find(geometry_id);
+    if (iterator != anchored_geometries_.end()) {
+      return &iterator->second.get_visual_material();
+    }
+  }
+  throw std::logic_error(get_missing_id_message(geometry_id));
 }
 
 template <typename T>
@@ -196,7 +280,7 @@ SourceId GeometryState<T>::RegisterNewSource(const std::string& name) {
 template <typename T>
 FrameId GeometryState<T>::RegisterFrame(SourceId source_id,
                                         const GeometryFrame& frame) {
-  return RegisterFrame(source_id, InternalFrame::get_world_frame_id(), frame);
+  return RegisterFrame(source_id, InternalFrame::world_frame_id(), frame);
 }
 
 template <typename T>
@@ -211,7 +295,7 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
   }
 
   FrameIdSet& f_set = GetMutableValueOrThrow(source_id, &source_frame_id_map_);
-  if (parent_id != InternalFrame::get_world_frame_id()) {
+  if (parent_id != InternalFrame::world_frame_id()) {
     FindOrThrow(parent_id, f_set, [parent_id, source_id]() {
       return "Indicated parent id " + to_string(parent_id) + " does not belong "
           "to the indicated source id " + to_string(source_id) + ".";
@@ -227,9 +311,11 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
   DRAKE_ASSERT(pose_index == static_cast<int>(pose_index_to_frame_map_.size()));
   pose_index_to_frame_map_.push_back(frame_id);
   f_set.insert(frame_id);
-  frames_.emplace(
-      frame_id, InternalFrame(source_id, frame_id, frame.name(),
-                              frame.frame_group(), pose_index, parent_id));
+  int clique = GeometryStateCollisionFilterAttorney::get_next_clique(
+      geometry_engine_.get_mutable());
+  frames_.emplace(frame_id, InternalFrame(source_id, frame_id, frame.name(),
+                                          frame.frame_group(), pose_index,
+                                          parent_id, clique));
   return frame_id;
 }
 
@@ -256,21 +342,50 @@ GeometryId GeometryState<T>::RegisterGeometry(
     return "Referenced frame " + to_string(frame_id) + " for source " +
         to_string(source_id) + ", but the frame doesn't belong to the source.";
   });
-  geometry_index_id_map_.push_back(geometry_id);
 
   // Pass the geometry to the engine.
   GeometryIndex engine_index =
       geometry_engine_->AddDynamicGeometry(geometry->shape());
+  DRAKE_DEMAND(engine_index == geometry_index_id_map_.size());
+  geometry_index_id_map_.push_back(geometry_id);
 
   // Configure topology.
-  frames_[frame_id].add_child(geometry_id);
-  // TODO(SeanCurtis-TRI): Get name from geometry instance (when available).
+  // TODO(SeanCurtis-TRI): Once geometry roles are implemented, test for
+  // uniqueness of the canonical name in that role for the given frame.
+  // NOTE: It is important to test for name validity *before* adding this
+  // geometry to the frame.
+
+  InternalFrame& frame = frames_[frame_id];
+  frame.add_child(geometry_id);
+
   geometries_.emplace(
       geometry_id,
       InternalGeometry(geometry->release_shape(), frame_id, geometry_id,
-                       geometry->pose(), engine_index,
+                       geometry->name(), geometry->pose(), engine_index,
                        geometry->visual_material()));
-  // TODO(SeanCurtis-TRI): Enforcing the invariant that the indexes are
+
+
+  int child_count = static_cast<int>(frame.child_geometries().size());
+  if (child_count > 1) {
+    // Filter collisions between geometries affixed to the same frame. We only
+    // add a clique to a frame's geometries when there are *multiple* child
+    // geometries.
+    ProximityEngine<T>& engine = *geometry_engine_.get_mutable();
+    if (child_count > 2) {
+      // Assume all previous geometries have had the clique assigned.
+      GeometryStateCollisionFilterAttorney::set_dynamic_geometry_clique(
+          &engine, engine_index, frame.clique());
+    } else {  // child_count == 2.
+      // We *now* have multiple child geometries -- assign to clique.
+      for (GeometryId child_id : frame.child_geometries()) {
+        GeometryIndex child_index = geometries_[child_id].get_engine_index();
+        GeometryStateCollisionFilterAttorney::set_dynamic_geometry_clique(
+            &engine, child_index, frame.clique());
+      }
+    }
+  }
+
+  // TODO(SeanCurtis-TRI): Enforcing the invariant that the indices are
   // compactly distributed. Is there a more robust way to do this?
   DRAKE_ASSERT(static_cast<int>(X_FG_.size()) == engine_index);
   DRAKE_ASSERT(static_cast<int>(geometry_index_id_map_.size()) - 1 ==
@@ -350,15 +465,33 @@ GeometryId GeometryState<T>::RegisterAnchoredGeometry(
   // Pass the geometry to the engine.
   auto engine_index = geometry_engine_->AddAnchoredGeometry(geometry->shape(),
                                                             geometry->pose());
+
+
+  // TODO(SeanCurtis-TRI): Once geometry roles are implemented, test for
+  // uniqueness of the canonical name in that role for the given frame.
+  // NOTE: It is important to test for name validity *before* adding this
+  // geometry to the frame.
+
   DRAKE_ASSERT(static_cast<int>(anchored_geometry_index_id_map_.size()) ==
                engine_index);
   anchored_geometry_index_id_map_.push_back(geometry_id);
+
   anchored_geometries_.emplace(
       geometry_id,
-      InternalAnchoredGeometry(
-          geometry->release_shape(), geometry_id, geometry->pose(),
-          engine_index, geometry->visual_material()));
+      InternalAnchoredGeometry(geometry->release_shape(), geometry_id,
+                               geometry->name(), geometry->pose(), engine_index,
+                               geometry->visual_material()));
   return geometry_id;
+}
+
+template <typename T>
+bool GeometryState<T>::IsValidGeometryName(
+    FrameId frame_id, const std::string& candidate_name) const {
+  FindOrThrow(frame_id, frames_, [frame_id]() {
+    return "Given frame id is not valid: " + to_string(frame_id);
+  });
+  // TODO(SeanCurtis-TRI): Test for uniquness after geometry roles are added.
+  return !detail::CanonicalizeStringName(candidate_name).empty();
 }
 
 template <typename T>
@@ -400,11 +533,75 @@ const FrameIdSet& GeometryState<T>::GetFramesForSource(
 }
 
 template <typename T>
+void GeometryState<T>::ExcludeCollisionsWithin(const GeometrySet& set) {
+  // There is no work to be done if:
+  //   1. the set contains a single frame and no geometries -- geometries *on*
+  //      that single frame have already been handled, or
+  //   2. there are no frames and a single geometry.
+  if ((set.num_frames() == 1 && set.num_geometries() == 0) ||
+      (set.num_frames() == 0 && set.num_geometries() == 1)) {
+    return;
+  }
+
+  std::unordered_set<GeometryIndex> dynamic;
+  std::unordered_set<AnchoredGeometryIndex> anchored;
+  CollectIndices(set, &dynamic, &anchored);
+
+  geometry_engine_->ExcludeCollisionsWithin(dynamic, anchored);
+}
+
+template <typename T>
+void GeometryState<T>::ExcludeCollisionsBetween(const GeometrySet& setA,
+                                                const GeometrySet& setB) {
+  std::unordered_set<GeometryIndex> dynamic1;
+  std::unordered_set<AnchoredGeometryIndex> anchored1;
+  CollectIndices(setA, &dynamic1, &anchored1);
+  std::unordered_set<GeometryIndex> dynamic2;
+  std::unordered_set<AnchoredGeometryIndex> anchored2;
+  CollectIndices(setB, &dynamic2, &anchored2);
+
+  geometry_engine_->ExcludeCollisionsBetween(dynamic1, anchored1, dynamic2,
+                                             anchored2);
+}
+
+template <typename T>
 std::unique_ptr<GeometryState<AutoDiffXd>> GeometryState<T>::ToAutoDiffXd()
     const {
   return std::unique_ptr<GeometryState<AutoDiffXd>>(
       new GeometryState<AutoDiffXd>(*this));
 }
+
+template <typename T>
+void GeometryState<T>::CollectIndices(
+    const GeometrySet& geometry_set, std::unordered_set<GeometryIndex>* dynamic,
+    std::unordered_set<AnchoredGeometryIndex>* anchored) {
+  for (auto frame_id : geometry_set.frames()) {
+    auto iterator = frames_.find(frame_id);
+    if (iterator == frames_.end()) {
+      throw std::logic_error(
+          "Geometry set includes a frame id that doesn't belong to the "
+          "SceneGraph: " + to_string(frame_id));
+    }
+
+    const auto& frame = iterator->second;
+    for (auto geometry_id : frame.child_geometries()) {
+      dynamic->insert(geometries_[geometry_id].get_engine_index());
+    }
+  }
+
+  for (auto geometry_id : geometry_set.geometries()) {
+    if (geometries_.count(geometry_id) == 1) {
+      dynamic->insert(geometries_[geometry_id].get_engine_index());
+    } else if (anchored_geometries_.count(geometry_id) == 1) {
+      anchored->insert(anchored_geometries_[geometry_id].get_engine_index());
+    } else {
+      throw std::logic_error(
+          "Geometry set includes a geometry id that doesn't belong to the "
+          "SceneGraph: " + to_string(geometry_id));
+    }
+  }
+}
+
 template <typename T>
 void GeometryState<T>::SetFramePoses(const FramePoseVector<T>& poses) {
   // TODO(SeanCurtis-TRI): Down the road, make this validation depend on
@@ -444,27 +641,26 @@ void GeometryState<T>::ValidateFrameIds(
 template <typename T>
 SourceId GeometryState<T>::get_source_id(FrameId frame_id) const {
   const auto& frame = GetValueOrThrow(frame_id, frames_);
-  return frame.get_source_id();
+  return frame.source_id();
 }
 
 template <typename T>
 void GeometryState<T>::UpdatePosesRecursively(
     const internal::InternalFrame& frame, const Isometry3<T>& X_WP,
     const FramePoseVector<T>& poses) {
-  const auto frame_id = frame.get_id();
+  const auto frame_id = frame.id();
   const auto& X_PF = poses.value(frame_id);
   // Cache this transform for later use.
-  X_PF_[frame.get_pose_index()] = X_PF;
+  X_PF_[frame.pose_index()] = X_PF;
   Isometry3<T> X_WF = X_WP * X_PF;
   // TODO(SeanCurtis-TRI): Replace this when we have a transform object that
   // allows proper multiplication between an AutoDiff type and a double type.
   // For now, it allows me to perform the multiplication by multiplying the
   // fully-defined transformation (with [0 0 0 1] on the bottom row).
   X_WF.makeAffine();
-  X_WF_[frame.get_pose_index()] = X_WF;
-
+  X_WF_[frame.pose_index()] = X_WF;
   // Update the geometry which belong to *this* frame.
-  for (auto child_id : frame.get_child_geometries()) {
+  for (auto child_id : frame.child_geometries()) {
     auto& child_geometry = geometries_[child_id];
     auto child_index = child_geometry.get_engine_index();
     // TODO(SeanCurtis-TRI): See note above about replacing this when we have a
@@ -477,7 +673,7 @@ void GeometryState<T>::UpdatePosesRecursively(
   }
 
   // Update each child frame.
-  for (auto child_id : frame.get_child_frames()) {
+  for (auto child_id : frame.child_frames()) {
     auto& child_frame = frames_[child_id];
     UpdatePosesRecursively(child_frame, X_WF, poses);
   }

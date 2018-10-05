@@ -10,32 +10,20 @@ namespace drake {
 namespace maliput {
 namespace multilane {
 
-double ArcRoadCurve::p_from_s(double s, double r) const {
-  // TODO(@maddog-tri) We should take care of the superelevation() scale that
-  //                   will modify curve's path length.
-  DRAKE_DEMAND(r == 0. || (superelevation().a() == 0. &&
-               superelevation().b() == 0. && superelevation().c() == 0. &&
-               superelevation().d() == 0.));
+double ArcRoadCurve::FastCalcPFromS(double s, double r) const {
   const double effective_radius = offset_radius(r);
-  DRAKE_THROW_UNLESS(effective_radius > 0.0);
   const double elevation_domain = effective_radius / radius_;
-  return s / (p_scale() * std::sqrt(elevation_domain * elevation_domain +
-                                    elevation().fake_gprime(1.) *
-                                        elevation().fake_gprime(1.)));
+  return s / (l_max() * std::sqrt(elevation_domain * elevation_domain +
+                                  elevation().fake_gprime(1.) *
+                                  elevation().fake_gprime(1.)));
 }
 
-double ArcRoadCurve::s_from_p(double p, double r) const {
-  // TODO(@maddog-tri) We should take care of the superelevation() scale that
-  //                   will modify curve's path length.
-  DRAKE_DEMAND(r == 0. || (superelevation().a() == 0. &&
-               superelevation().b() == 0. && superelevation().c() == 0. &&
-               superelevation().d() == 0.));
+double ArcRoadCurve::FastCalcSFromP(double p, double r) const {
   const double effective_radius = offset_radius(r);
-  DRAKE_THROW_UNLESS(effective_radius > 0.0);
   const double elevation_domain = effective_radius / radius_;
-  return p * p_scale() * std::sqrt(elevation_domain * elevation_domain +
-                                   elevation().fake_gprime(p) *
-                                       elevation().fake_gprime(p));
+  return p * l_max() * std::sqrt(elevation_domain * elevation_domain +
+                                 elevation().fake_gprime(p) *
+                                 elevation().fake_gprime(p));
 }
 
 namespace {
@@ -129,7 +117,7 @@ Vector3<double> ArcRoadCurve::ToCurveFrame(
   // Calculate the (uniform) road elevation.
   // N.B. h is the geo z-coordinate referenced against the lane elevation (whose
   // `a` coefficient is normalized by lane length).
-  const double h_unsaturated = geo_coordinate.z() - elevation().a() * p_scale();
+  const double h_unsaturated = geo_coordinate.z() - elevation().a() * l_max();
   const double h = math::saturate(h_unsaturated, height_bounds.min(),
                                   height_bounds.max());
   return Vector3<double>(p, r, h);

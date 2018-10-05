@@ -55,9 +55,9 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
   /**
    * Getter for the input port corresponding to the abstract input with iiwa
    * state message (LCM `lcmt_iiwa_status` message).
-   * @return The corresponding `sytems::InputPortDescriptor`.
+   * @return The corresponding `sytems::InputPort`.
    */
-  const systems::InputPortDescriptor<double>& get_input_port_iiwa_state()
+  const systems::InputPort<double>& get_input_port_iiwa_state()
       const {
     return this->get_input_port(input_port_iiwa_state_);
   }
@@ -65,9 +65,9 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
   /**
    * Getter for the input port corresponding to the abstract input with iiwa
    * base pose.
-   * @return The corresponding `sytems::InputPortDescriptor`.
+   * @return The corresponding `sytems::InputPort`.
    */
-  const systems::InputPortDescriptor<double>& get_input_port_iiwa_base_pose()
+  const systems::InputPort<double>& get_input_port_iiwa_base_pose()
       const {
     return this->get_input_port(input_port_iiwa_base_pose_);
   }
@@ -75,18 +75,18 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
   /**
    * Getter for the input port corresponding to the abstract input with box
    * state message (LCM `botcore::robot_state_t` message).
-   * @return The corresponding `sytems::InputPortDescriptor`.
+   * @return The corresponding `systems::InputPort`.
    */
-  const systems::InputPortDescriptor<double>& get_input_port_box_state() const {
+  const systems::InputPort<double>& get_input_port_box_state() const {
     return this->get_input_port(input_port_box_state_);
   }
 
   /**
    * Getter for the input port corresponding to the abstract input with box
    * state message (LCM `botcore::robot_state_t` message).
-   * @return The corresponding `sytems::InputPortDescriptor`.
+   * @return The corresponding `sytems::InputPort`.
    */
-  const systems::InputPortDescriptor<double>& get_input_port_table_state(
+  const systems::InputPort<double>& get_input_port_table_state(
       int index) const {
     DRAKE_THROW_UNLESS(
         index >= 0 && index < static_cast<int>(input_port_table_state_.size()));
@@ -96,9 +96,9 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
   /**
    * Getter for the input port corresponding to the abstract input with the wsg
    * status message (LCM `lcmt_schunk_wsg_status` message).
-   * @return The corresponding `sytems::InputPortDescriptor`.
+   * @return The corresponding `systems::InputPort`.
    */
-  const systems::InputPortDescriptor<double>& get_input_port_wsg_status()
+  const systems::InputPort<double>& get_input_port_wsg_status()
       const {
     return this->get_input_port(input_port_wsg_status_);
   }

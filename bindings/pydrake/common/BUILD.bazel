@@ -1,0 +1,88 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:pybind.bzl",
+    "drake_pybind_library",
+    "get_drake_py_installs",
+    "get_pybind_package_info",
+)
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+    "drake_py_unittest",
+)
+
+package(default_visibility = [
+    "//bindings/pydrake:__subpackages__",
+])
+
+# This determines how `PYTHONPATH` is configured, and how to install the
+# bindings.
+PACKAGE_INFO = get_pybind_package_info("//bindings")
+
+# N.B. We use an intermediate `_init_py` between `module_py` to avoid
+# dependency cycles with `pydrake:module_py`.
+# TODO(eric.cousineau): Decouple this module from the full-fledged
+# `libdrake.so`.
+drake_pybind_library(
+    name = "_init_py",
+    cc_deps = ["//bindings/pydrake:documentation_pybind"],
+    cc_so_name = "_module_py",
+    cc_srcs = ["module_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_srcs = [
+        "__init__.py",
+    ],
+    visibility = [
+        "//bindings/pydrake:__pkg__",
+    ],
+)
+
+drake_py_library(
+    name = "module_py",
+    deps = [
+        # This `_init_py` is redundant since `pydrake:module_py` uses it, but
+        # it is placed here for clarity.
+        ":_init_py",
+        "//bindings/pydrake:module_py",
+    ],
+)
+
+PY_LIBRARIES_WITH_INSTALL = [
+    ":_init_py",
+]
+
+PY_LIBRARIES = [
+    ":module_py",
+]
+
+# Symbol roll-up (for user ease).
+drake_py_library(
+    name = "all_py",
+    srcs = ["all.py"],
+    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
+)
+
+# Package roll-up (for Bazel dependencies).
+drake_py_library(
+    name = "common",
+    imports = PACKAGE_INFO.py_imports,
+    deps = [":all_py"],
+)
+
+install(
+    name = "install",
+    targets = PY_LIBRARIES + [":all_py"],
+    py_dest = PACKAGE_INFO.py_dest,
+    deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
+)
+
+drake_py_unittest(
+    name = "module_test",
+    data = ["//examples/atlas:models"],
+    deps = [":module_py"],
+)
+
+add_lint_tests()

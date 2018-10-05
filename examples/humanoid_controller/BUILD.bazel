@@ -79,11 +79,11 @@ drake_cc_library(
         ":atlas_command_translator_system",
         ":humanoid_plan_eval_system",
         ":humanoid_status_translator_system",
+        "//attic/multibody/parsers",
         "//lcm",
-        "//multibody/parsers",
         "//systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics_system",  # noqa
         "//systems/framework",
-        "//systems/lcm",
+        "//systems/lcm:lcm_pubsub_system",
         "@lcmtypes_bot2_core",
     ],
 )
@@ -97,11 +97,11 @@ drake_cc_binary(
         "//examples/valkyrie:models",
     ],
     deps = [
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//examples/valkyrie:valkyrie_constants",
         "//manipulation/util:robot_state_msg_translator",
         "//multibody:rigid_body_tree",
-        "//multibody/parsers",
         "@gflags",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
@@ -137,9 +137,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":atlas_command_translator_system",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
         "//systems/framework",
     ],
 )
@@ -156,10 +156,10 @@ drake_cc_googletest(
     deps = [
         ":humanoid_plan_eval_system",
         ":humanoid_status",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//examples/valkyrie:valkyrie_constants",
-        "//multibody/parsers",
         "//systems/analysis:simulator",
         "//systems/controllers:setpoint",
         "//systems/controllers/qp_inverse_dynamics:param_parser",

@@ -10,6 +10,7 @@
 #include "drake/automotive/maliput/multilane/road_curve.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 
 namespace drake {
 namespace maliput {
@@ -66,21 +67,24 @@ std::ostream& operator<<(std::ostream& out, const EndpointXy& endpoint_xy);
 ///  - theta: superelevation (rotation of road surface around r = 0 centerline;
 ///           when theta > 0, elevation at r > 0 is above elevation at r < 0)
 ///  - theta_dot: rate of change of superelevation with respect to arc length
-///               of the reference path
+///               of the reference path. It is optional because it may be
+///               unknown when building a RoadGeometry and the Builder may need
+///               to adjust it to force the same orientation for all r at a
+///               certain s coordinate of the Segment surface.
 class EndpointZ {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EndpointZ)
   // Constructs an EndpointZ with all zero parameters.
   EndpointZ() = default;
 
-  EndpointZ(double z, double z_dot, double theta, double theta_dot)
+  EndpointZ(double z, double z_dot, double theta, optional<double> theta_dot)
       : z_(z), z_dot_(z_dot), theta_(theta), theta_dot_(theta_dot) {}
 
   /// Returns an EndpointZ with reversed direction.
   ///
   /// Reversing direction is equivalent to rotating s (and along with it, r)
   /// around the h-axis by 180 degrees, thus flipping the signs of z_dot
-  /// and theta.
+  /// and theta. theta_dot will remain the same.
   EndpointZ reverse() const {
     return EndpointZ(z_, -z_dot_, -theta_, theta_dot_);
   }
@@ -91,14 +95,16 @@ class EndpointZ {
 
   double theta() const { return theta_; }
 
-  double theta_dot() const { return theta_dot_; }
+  const optional<double>& theta_dot() const { return theta_dot_; }
+
+  optional<double>& get_mutable_theta_dot() { return theta_dot_; }
 
  private:
   double z_{};
   double z_dot_{};
 
   double theta_{};
-  double theta_dot_{};
+  optional<double> theta_dot_{};
 };
 
 /// Streams a string representation of `endpoint_z` into `out`. Returns
@@ -129,6 +135,8 @@ class Endpoint {
   /// aspects.
   const EndpointZ& z() const { return z_; }
 
+  EndpointZ& get_mutable_z() { return z_; }
+
  private:
   EndpointXy xy_;
   EndpointZ z_;
@@ -138,6 +146,29 @@ class Endpoint {
 /// `out`. This method is provided for the purposes of debugging or
 /// text-logging. It is not intended for serialization.
 std::ostream& operator<<(std::ostream& out, const Endpoint& endpoint);
+
+/// Specification for path offset along a line.
+///  * length: length of the line, which must be nonnegative.
+class LineOffset {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LineOffset)
+
+  LineOffset() = default;
+
+  explicit LineOffset(double length) : length_(length) {
+    DRAKE_DEMAND(length_ >= 0.);
+  }
+
+  double length() const { return length_; }
+
+ private:
+  double length_{};
+};
+
+/// Streams a string representation of `line_offset` into `out`. Returns `out`.
+/// This method is provided for the purposes of debugging or text-logging.
+/// It is not intended for serialization.
+std::ostream& operator<<(std::ostream& out, const LineOffset& line_offset);
 
 /// Specification for path offset along a circular arc.
 ///  * radius: radius of the arc, which must be positive
@@ -192,11 +223,12 @@ class Connection {
   /// Constructs a line-segment connection.
   ///
   /// Segment's reference curve begins at `start` and extends on the plane
-  /// z=0 `line_length` distance with `start.xy().heading()` heading angle.
+  /// z=0 `line_offset.length()` distance with `start.xy().heading()` heading
+  /// angle.
   /// `end_z` will be used to build elevation and superelevation information of
   /// the road.
   ///
-  /// `line_length` must be non negative.
+  /// `line_offset` holds the length of the line.
   ///
   /// Segments will contain `num_lanes` lanes, which must be greater than zero.
   /// First Lane centerline will be placed at `r0` distance from the reference
@@ -206,10 +238,17 @@ class Connection {
   /// `left_shoulder` and `right_shoulder` are extra spaces added to the right
   /// and left side of the first and last lanes of the Segment. They will be
   /// added to Segment's bounds and must be greater or equal to zero.
+  ///
+  /// `scale_length` constrains the maximum level of detail captured by the
+  /// underlying RoadCurve.
+  ///
+  /// `linear_tolerance` and `computation_policy` set the efficiency vs. speed
+  /// balance for computations in the underlying RoadCurve.
   Connection(const std::string& id, const Endpoint& start,
              const EndpointZ& end_z, int num_lanes, double r0,
              double lane_width, double left_shoulder, double right_shoulder,
-             double line_length);
+             const LineOffset& line_offset, double linear_tolerance,
+             double scale_length, ComputationPolicy computation_policy);
 
   /// Constructs an arc-segment connection.
   ///
@@ -230,10 +269,20 @@ class Connection {
   /// `left_shoulder` and `right_shoulder` are extra spaces added to the right
   /// and left side of the first and last lanes of the Segment. They will be
   /// added to Segment's bounds and must be greater or equal to zero.
+  ///
+  /// `linear_tolerance` applies to all RoadCurve-level computations. It must be
+  /// positive.
+  ///
+  /// `scale_length` constrains the maximum level of detail captured by the
+  /// underlying RoadCurve. It must be positive.
+  ///
+  /// `computation_policy` sets the speed vs. accuracy for computations in the
+  /// underlying RoadCurve.
   Connection(const std::string& id, const Endpoint& start,
              const EndpointZ& end_z, int num_lanes, double r0,
              double lane_width, double left_shoulder, double right_shoulder,
-             const ArcOffset& arc_offset);
+             const ArcOffset& arc_offset, double linear_tolerance,
+             double scale_length, ComputationPolicy computation_policy);
 
   /// Returns the geometric type of the path.
   Type type() const { return type_; }
@@ -298,6 +347,21 @@ class Connection {
   /// Segment.
   double r_max() const { return r_max_; }
 
+  /// Returns the linear tolerance, in meters, that applies to RoadCurve
+  /// instances as constructed by this Connection. Refer to RoadCurve class
+  /// documentation for further details.
+  double linear_tolerance() const { return linear_tolerance_; }
+
+  /// Returns the scale length, in meters, that applies to RoadCurve instances
+  /// as constructed by this Connection. Refer to RoadCurve class documentation
+  /// for further details.
+  double scale_length() const { return scale_length_; }
+
+  /// Returns the computation policy that applies to RoadCurve instances as
+  /// constructed by this Connection. Refer to RoadCurve class documentation
+  /// for further details.
+  ComputationPolicy computation_policy() const { return computation_policy_; }
+
   /// Returns an Endpoint describing the start of the `lane_index` lane.
   Endpoint LaneStart(int lane_index) const;
 
@@ -319,6 +383,9 @@ class Connection {
   const double right_shoulder_{};
   const double r_min_{};
   const double r_max_{};
+  const double linear_tolerance_{};
+  const double scale_length_{};
+  const ComputationPolicy computation_policy_;
   std::unique_ptr<RoadCurve> road_curve_;
   // Bits specific to type_ == kLine:
   double line_length_{};
@@ -334,46 +401,118 @@ class Connection {
 ///
 /// Upon building the RoadGeometry, a Group yields a Junction containing the
 /// corresponding Segments specified by all the Connections in the Group.
+///
+/// Users should construct Groups via a Builder using one of the
+/// Builder::MakeGroup() methods.
 class Group {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Group)
 
-  /// Constructs an empty Group with the specified `id`.
-  explicit Group(const std::string& id) : id_(id) {}
+  Group() = default;
 
-  /// Constructs a Group with `id`, populated by `connections`.
-  ///
-  /// `connections` must not contain duplicates.
-  Group(const std::string& id,
-        const std::vector<const Connection*>& connections)
-      : id_(id) {
-    for (const Connection* connection : connections) {
-      Add(connection);
-    }
-  }
+  virtual ~Group() = default;
 
-  /// Adds a Connection.
-  ///
-  /// `connection` must not already be added.
-  void Add(const Connection* connection) {
-    auto result = connection_set_.insert(connection);
-    DRAKE_DEMAND(result.second);
-    connection_vector_.push_back(connection);
-  }
+  /// Adds a `connection` to the group.
+  virtual void Add(const Connection* connection) = 0;
 
   /// Returns the ID string.
-  const std::string& id() const { return id_; }
+  virtual const std::string& id() const = 0;
 
   /// Returns the grouped Connections.
-  const std::vector<const Connection*>& connections() const {
-    return connection_vector_;
+  virtual const std::vector<const Connection*>& connections() const = 0;
+};
+
+/// Factory interface to construct Group instances.
+///
+/// Defined for testing purposes, and production code must use GroupFactory
+/// objects.
+class GroupFactoryBase {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GroupFactoryBase)
+
+  GroupFactoryBase() = default;
+
+  virtual ~GroupFactoryBase() = default;
+
+  /// Makes an empty Group with the specified `id`.
+  virtual std::unique_ptr<Group> Make(const std::string& id) const = 0;
+
+  /// Makes a Group with `id`, populated by `connections`.
+  ///
+  /// `connections` must not contain duplicates.
+  virtual std::unique_ptr<Group> Make(
+      const std::string& id,
+      const std::vector<const Connection*>& connections) const = 0;
+};
+
+
+/// Implements a GroupFactoryBase to construct Group objects.
+class GroupFactory : public GroupFactoryBase {
+ private:
+  // A group of Connections.
+  //
+  // Upon building the RoadGeometry, a Group yields a Junction containing the
+  // corresponding Segments specified by all the Connections in the Group.
+  class RealGroup : public Group {
+   public:
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RealGroup)
+
+    // Constructs an empty Group with the specified `id`.
+    explicit RealGroup(const std::string& id) : id_(id) {}
+
+    // Constructs a Group with `id`, populated by `connections`.
+    //
+    // `connections` must not contain duplicates.
+    RealGroup(const std::string& id,
+              const std::vector<const Connection*>& connections)
+        : id_(id) {
+      for (const Connection* connection : connections) {
+        Add(connection);
+      }
+    }
+
+    // Adds a Connection.
+    //
+    // `connection` must not already be added.
+    void Add(const Connection* connection) override {
+      auto result = connection_set_.insert(connection);
+      DRAKE_DEMAND(result.second);
+      connection_vector_.push_back(connection);
+    }
+
+    // Returns the ID string.
+    const std::string& id() const override { return id_; }
+
+    // Returns the grouped Connections.
+    const std::vector<const Connection*>& connections() const override {
+      return connection_vector_;
+    }
+
+   private:
+    std::string id_;
+    std::unordered_set<const Connection*> connection_set_;
+    std::vector<const Connection*> connection_vector_;
+  };
+
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GroupFactory)
+
+  GroupFactory() = default;
+
+  virtual ~GroupFactory() = default;
+
+  virtual std::unique_ptr<Group> Make(const std::string& id) const {
+    return std::make_unique<RealGroup>(id);
   }
 
- private:
-  std::string id_;
-  std::unordered_set<const Connection*> connection_set_;
-  std::vector<const Connection*> connection_vector_;
+  virtual std::unique_ptr<Group> Make(
+      const std::string& id,
+      const std::vector<const Connection*>& connections) const {
+    return std::make_unique<RealGroup>(id, connections);
+  }
 };
+
+
 
 }  // namespace multilane
 }  // namespace maliput

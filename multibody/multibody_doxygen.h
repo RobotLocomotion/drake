@@ -5,8 +5,20 @@
 // For example, to link to the notation group: @ref multibody_notation
 // To link to the Spatial Inertia discussion: @ref multibody_spatial_inertia.
 
+
 //------------------------------------------------------------------------------
-/** @defgroup multibody_concepts Multibody Dynamics Concepts
+// TODO(sherm1) Change Collision Concepts title here when #9467 is fixed.
+/** @addtogroup multibody Multibody Dynamics
+  @{
+    @ingroup algorithms
+    @defgroup multibody_concepts Multibody Dynamics Concepts
+    @defgroup collision_concepts Collision Concepts (RigidBodyPlant only)
+  @}
+ */
+
+//------------------------------------------------------------------------------
+/** @addtogroup multibody_concepts
+@{
 
 Translating from the mathematics of multibody mechanics to correct code is a
 difficult process and requires careful discipline to ensure that the resulting
@@ -35,19 +47,26 @@ is included in the external documentation.
 @warning Drake is under development and these concepts have not yet been
 adopted consistently throughout the code. New code uses these concepts and
 older code will be retrofitted over time. The documentation here applies to
-the new `MultibodyTree` family of classes; there are some differences from the
-earlier `RigidBodyTree` family.
+the new @ref drake::multibody::MultibodyTree "MultibodyTree "/
+@ref drake::multibody::multibody_plant::MultibodyPlant "MultibodyPlant"
+family of classes; there are some differences from the earlier `RigidBodyTree`
+family.
 
 <em><b>Developers</b>: you can link directly to specific discussion topics here
 from your Doxygen comments; instructions are at the top of the source file used
 to generate them.</em>
 
 Next topic: @ref multibody_notation
+
+  @defgroup multibody_notation Terminology and Notation
+  @defgroup multibody_spatial_algebra Spatial Algebra
+  @defgroup constraint_overview Multibody dynamics constraints
+@}
 **/
 
 
 //------------------------------------------------------------------------------
-/** @defgroup multibody_notation Terminology and Notation
+/** @addtogroup multibody_notation
 @ingroup multibody_concepts
 
 Drake uses consistent terminology and notation for multibody mechanics
@@ -324,7 +343,7 @@ Quantity            |Symbol|     Typeset    |   Code   | Meaning †
 Rotation matrix     |  R   |@f$^BR^C@f$     |`R_BC`    |Frame C's orientation in B
 Position vector     |  p   |@f$^Pp^Q@f$     |`p_PQ`    |Position from point P to point Q
 Transform/pose      |  X   |@f$^BX^C@f$     |`X_BC`    |Frame C's transform (pose) in B
-Angular velocity    |  w   |@f$^B\omega^C@f$|`w_BC`    |Frame C's angular velocity in B
+Angular velocity    |  w   |@f$^B\omega^C@f$|`w_BC`    |Frame C's angular velocity in B †
 Velocity            |  v   |@f$^Bv^Q@f$     |`v_BQ`    |%Point Q's velocity in B
 Spatial velocity    |  V   |@f$^BV^C@f$     |`V_BC`    |Frame C's spatial velocity in B
 Angular acceleration|alpha |@f$^B\alpha^C@f$|`alpha_BC`|Frame C's angular acceleration in B
@@ -333,10 +352,16 @@ Spatial acceleration|  A   |@f$^BA^C@f$     |`A_BC`    |Frame C's spatial accele
 Torque              |  t   |@f$\tau^{B}@f$  |`t_B`     |Torque on a body (or frame) B
 Force               |  f   |@f$f^{P}@f$     |`f_P`     |Force on a point P
 Spatial force       |  F   |@f$F^{P}@f$     |`F_P`     |Spatial force (torque/force) ††
+Inertia matrix      |  I   |@f$I^{B/Bo}@f$  |`I_BBo`   |Body B's inertia matrix about Bo
+Spatial inertia     |  M   |@f$M^{B/Bo}@f$  |`M_BBo`   |Body B's spatial inertia bout Bo †
 
 † In code, a vector has an expressed-in-frame which appears after the quantity.
 <br>Example: `w_BC_E` is C's angular velocity in B, expressed in frame E, typeset
 as @f$[^B\omega^C]_E @f$.
+<br>Similarly, an inertia matrix or spatial inertia has an expressed-in-frame.
+<br>Example: `I_BBo_E` is body B's inertia matrix about Bo,
+expressed in frame E, typeset as @f$[I^{B/Bo}]_E@f$.
+<br>For more information, see @ref multibody_spatial_inertia
 
 †† In mechanical systems, it is often useful to <b>replace</b> a set of forces
 by an equivalent set with a force fᴾ placed at an arbitrary point P (fᴾ is equal
@@ -399,7 +424,7 @@ Next topic: @ref multibody_spatial_algebra
 **/
 
 //------------------------------------------------------------------------------
-/** @defgroup multibody_spatial_algebra Spatial Algebra
+/** @addtogroup multibody_spatial_algebra
 @ingroup multibody_concepts
 
 Multibody dynamics involves both rotational and translational quantities, for

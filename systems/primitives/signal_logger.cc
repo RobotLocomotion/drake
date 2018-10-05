@@ -8,7 +8,12 @@ namespace systems {
 template <typename T>
 SignalLogger<T>::SignalLogger(int input_size, int batch_allocation_size)
     : log_(input_size, batch_allocation_size) {
-  this->DeclareInputPort(kVectorValued, input_size);
+  this->DeclareInputPort("data", kVectorValued, input_size);
+}
+
+template <typename T>
+void SignalLogger<T>::set_publish_period(double period) {
+  this->DeclarePeriodicPublish(period);
 }
 
 template <typename T>
@@ -20,7 +25,7 @@ void SignalLogger<T>::DoPublish(const Context<T>& context,
 }
 
 template <typename T>
-const InputPortDescriptor<T>& SignalLogger<T>::get_input_port()
+const InputPort<T>& SignalLogger<T>::get_input_port()
 const {
   return System<T>::get_input_port(0);
 }

@@ -13,12 +13,12 @@
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
+#include "drake/geometry/geometry_set.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/internal_geometry.h"
 #include "drake/geometry/proximity_engine.h"
 
 namespace drake {
-
 namespace geometry {
 
 #ifndef DRAKE_DOXYGEN_CXX
@@ -71,7 +71,8 @@ class GeometryFrame;
 
 class GeometryInstance;
 
-template <typename T> class GeometrySystem;
+template <typename T>
+class SceneGraph;
 
 /** @name Structures for maintaining the entity relationships */
 //@{
@@ -82,10 +83,10 @@ using FrameIdSet = std::unordered_set<FrameId>;
 //@}
 
 /**
- The context-dependent state of GeometrySystem. This serves as an AbstractValue
- in the context. GeometrySystem's time-dependent state includes more than just
+ The context-dependent state of SceneGraph. This serves as an AbstractValue
+ in the context. SceneGraph's time-dependent state includes more than just
  values; objects can be added to or removed from the world over time. Therefore,
- GeometrySystem's context-dependent state includes values (the poses) and
+ SceneGraph's context-dependent state includes values (the poses) and
  structure (the topology of the world).
 
  @tparam T The scalar type. Must be a valid Eigen scalar.
@@ -183,6 +184,27 @@ class GeometryState {
    @throws std::logic_error if the frame id is not valid. */
   const std::string& get_frame_name(FrameId frame_id) const;
 
+  /** Reports the stored, canonical name of the geometry (see
+   @ref canonicalized_geometry_names "GeometryInstance" for details).
+   @param geometry_id  The identifier of the queried geometry.
+   @returns The name of the identified geometry.
+   @throws std::logic_error if the geometry id is not valid. */
+  const std::string& get_name(GeometryId geometry_id) const;
+
+  /** Reports the id for the uniquely named geometry affixed to the indicated
+   frame.
+   @param frame_id  The id of the parent frame.
+   @param name      The name of the geometry to query for. The name will be
+                    canonicalized prior to lookup (see
+                    @ref canonicalized_geometry_names "GeometryInstance" for
+                    details).
+   @return The id of the requested frame.
+   @throws std::logic_error if no such geometry exists, multiple geometries have
+                            that name, or if the frame doesn't exist. */
+  // TODO(SeanCurtis-TRI): Account for role when geometry roles exist.
+  GeometryId GetGeometryFromName(FrameId frame_id,
+                                 const std::string& name) const;
+
   /** Reports the pose of the frame with the given id.
    @param frame_id  The identifier of the queried frame.
    @returns The pose in the world (X_WF) of the identified frame.
@@ -225,6 +247,12 @@ class GeometryState {
    @throws std::logic_error  If the `geometry_id` does _not_ map to a valid
                              GeometryInstance. */
   const Isometry3<double>& GetPoseInParent(GeometryId geometry_id) const;
+
+  /** Returns the visual material defined for geometry indicated by the given
+   `geometry_id` (if defined).
+   @throws std::logic_error If the `geometry_id` does _not_ map to a valid
+                            GeometryInstance. */
+  const VisualMaterial* get_visual_material(GeometryId geometry_id) const;
 
   //@}
 
@@ -276,10 +304,12 @@ class GeometryState {
                        ownership of the geometry.
    @returns  A newly allocated geometry id.
    @throws std::logic_error  1. the `source_id` does _not_ map to a registered
-                             source, or
+                             source,
                              2. the `frame_id` doesn't belong to the source,
-                             3. The `geometry` is equal to `nullptr`, or
-                             4. `geometry` has a previously registered id. */
+                             3. the `geometry` is equal to `nullptr`,
+                             4. `geometry` has a previously registered id, or
+                             5. the geometry's name doesn't satisfy the
+                             requirements outlined in GeometryInstance.  */
   GeometryId RegisterGeometry(SourceId source_id, FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
@@ -297,10 +327,12 @@ class GeometryState {
                        ownership of the geometry.
    @returns  A newly allocated geometry id.
    @throws std::logic_error 1. the `source_id` does _not_ map to a registered
-                            source, or
+                            source,
                             2. the `geometry_id` doesn't belong to the source,
-                            3. the `geometry` is equal to `nullptr`, or
-                            4. `geometry` has a previously registered id. */
+                            3. the `geometry` is equal to `nullptr`,
+                            4. `geometry` has a previously registered id,  or
+                            5. the geometry's name doesn't satisfy the
+                            requirements outlined in GeometryInstance.  */
   GeometryId RegisterGeometryWithParent(
       SourceId source_id, GeometryId geometry_id,
       std::unique_ptr<GeometryInstance> geometry);
@@ -315,12 +347,28 @@ class GeometryState {
    @param geometry     The geometry to get the id for. The state takes
                        ownership of the geometry.
    @returns  A newly allocated geometry id.
-   @throws std::logic_error  If the `source_id` does _not_ map to a registered
-                             source, or
-                             `geometry` has a previously registered id. */
+   @throws std::logic_error  1. the `source_id` does _not_ map to a registered
+                             source,
+                             2. `geometry` has a previously registered id, or
+                             3. the geometry's name doesn't satisfy the
+                             requirements outlined in GeometryInstance.  */
   GeometryId RegisterAnchoredGeometry(
       SourceId source_id,
       std::unique_ptr<GeometryInstance> geometry);
+
+  /** Reports whether the canonicalized version of the given candidate geometry
+   name is considered valid. This tests the requirements described in the
+   documentation of @ref canonicalized_geometry_names "GeometryInstance". When
+   adding a geometry to a frame, if there is doubt if a proposed name is valid,
+   the name can be tested prior to registering the geometry.
+   @param frame_id        The id of the frame to which the geometry would be
+                          assigned.
+   @param candidate_name  The name to validate.
+   @return true if the `candidate_name` can be given to a `GeometryInstance`
+   assigned to the indicated frame.
+   @throws if `frame_id` does not refer to a valid frame.  */
+  bool IsValidGeometryName(FrameId frame_id,
+                           const std::string& candidate_name) const;
 
   //@}
 
@@ -383,6 +431,60 @@ class GeometryState {
 
   //@}
 
+  /** @name               Collision filters
+
+   This interface allows control over which pairs of geometries can even be
+   considered for collision.
+
+   See @ref scene_graph_collision_filtering "Scene Graph Collision Filtering"
+   for more details.   */
+  //@{
+
+  /** Excludes geometry pairs from collision evaluation by updating the
+   candidate pair set `C = C - P`, where `P = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ G` and
+   `G = {g₀, g₁, ..., gₘ}` is the input `set` of geometries.
+
+   @throws std::logic_error if the set includes ids that don't exist in the
+                            scene graph.  */
+  void ExcludeCollisionsWithin(const GeometrySet& set);
+
+  /** Excludes geometry pairs from collision evaluation by updating the
+   candidate pair set `C = C - P`, where `P = {(a, b)}, ∀ a ∈ A, b ∈ B` and
+   `A = {a₀, a₁, ..., aₘ}` and `B = {b₀, b₁, ..., bₙ}` are the input sets of
+   geometries `setA` and `setB`, respectively. This does _not_ preclude
+   collisions between members of the _same_ set.
+
+   @throws std::logic_error if the groups include ids that don't exist in the
+                            scene graph.   */
+  void ExcludeCollisionsBetween(const GeometrySet& setA,
+                                const GeometrySet& setB);
+
+  //---------------------------------------------------------------------------
+  /**@name                Signed Distance Queries
+
+  Refer to @ref signed_distance_query "Signed Distance Queries" for more details.
+  */
+
+  //@{
+
+  /**
+   * Computes the signed distance together with the witness points across all
+   * pairs of geometries in the world. Reports both the separating geometries
+   * and penetrating geometries.
+   * @retval witness_pairs A vector of reporting the signed distance
+   * characterized as witness point pairs. Notice that this is an O(N²)
+   * operation, where N is the number of geometries in the world. We report the
+   * distance between dynamic objects, or between a dynamic object and an
+   * anchored object. We DO NOT report the distance between two anchored
+   * objects.
+   */
+  std::vector<SignedDistancePair<double>>
+  ComputeSignedDistancePairwiseClosestPoints() const {
+    return geometry_engine_->ComputeSignedDistancePairwiseClosestPoints(
+        geometry_index_id_map_, anchored_geometry_index_id_map_);
+  }
+  //@}
+
   /** @name Scalar conversion */
   //@{
 
@@ -436,12 +538,26 @@ class GeometryState {
   // mechanism.
   friend class internal::GeometryVisualizationImpl;
 
-  // Allow GeometrySystem unique access to the state members to perform queries.
-  friend class GeometrySystem<T>;
+  // Allow SceneGraph unique access to the state members to perform queries.
+  friend class SceneGraph<T>;
 
   // Friend declaration so that the internals of the state can be confirmed in
   // unit tests.
   template <class U> friend class GeometryStateTester;
+
+  // Function to facilitate testing.
+  int peek_next_clique() const {
+    return internal::GeometryStateCollisionFilterAttorney::peek_next_clique(
+        *geometry_engine_);
+  }
+
+  // Takes the frame and geometry ids from the given geometry set and
+  // populates the sets of geometry *indices* for the dynamic and anchored
+  // geometries implied by the group. Ids that can't be identified will cause
+  // an exception to be thrown.
+  void CollectIndices(const GeometrySet& geometry_set,
+                      std::unordered_set<GeometryIndex>* dynamic,
+                      std::unordered_set<AnchoredGeometryIndex>* anchored);
 
   // Sets the kinematic poses for the frames indicated by the given ids.
   // @param poses The frame id and pose values.

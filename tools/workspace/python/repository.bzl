@@ -30,17 +30,23 @@ Arguments:
     to be found.
 """
 
+load("@drake//tools/workspace:execute.bzl", "which")
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
-def _py_exec(ctx, bin, cmd):
-    args = [bin, "-c", "{}".format(cmd)]
-    return _exec(ctx, args)
+def _impl(repository_ctx):
+    python_config = which(repository_ctx, "python{}-config".format(
+        repository_ctx.attr.version,
+    ))
 
 def _exec(ctx, args):
     result = ctx.execute(args)
     if result.return_code != 0:
         fail("Could not execute {}: {}".format(args, result.stderr))
     return result.stdout
+
+def _py_exec(ctx, bin, cmd):
+    args = [bin, "-c", "{}".format(cmd)]
+    return _exec(ctx, args)
 
 _VERSION_MAJOR_MINOR_SUPPORTED = [
     "2.7",  # Ubuntu 16.04
@@ -137,9 +143,18 @@ def _impl(repo_ctx):
 
 licenses(["notice"])  # Python-2.0 / Python-3.0
 
+# Only include first level of headers included from `python_repository`
+# (`include/<destination>/*`). This should exclude third party C headers which
+# may be nested within `/usr/include/python2.7`, such as `numpy` when installed
+# via `apt` on Ubuntu.
+headers = glob(
+    ["include/*/*"],
+    exclude_directories = 1,
+)
+
 cc_library(
     name = "python_headers",
-    hdrs = glob(["include/**"]),
+    hdrs = headers,
     includes = {},
     visibility = ["//visibility:private"],
 )

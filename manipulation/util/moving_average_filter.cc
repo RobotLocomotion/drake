@@ -21,7 +21,7 @@ MovingAverageFilter<T>::MovingAverageFilter(int window_size)
 
 template <typename T>
 T MovingAverageFilter<T>::Update(const T& new_data) {
-  // First intialize sum (needed when type is not a scalar)
+  // First initialize sum (needed when type is not a scalar)
 
   if (window_.size() == 0) {
     sum_ = new_data;
@@ -39,7 +39,7 @@ T MovingAverageFilter<T>::Update(const T& new_data) {
     sum_ -= window_.front();
     window_.pop();
   }
-  return (1.0 / window_.size()) * sum_;
+  return moving_average();
 }
 
 template class MovingAverageFilter<double>;

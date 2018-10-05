@@ -70,6 +70,15 @@ class BodyFrame final : public Frame<T> {
     return X_FQ;
   }
 
+  Isometry3<T> GetFixedPoseInBodyFrame() const override {
+    return Isometry3<T>::Identity();
+  }
+
+  Isometry3<T> GetFixedOffsetPoseInBody(
+      const Isometry3<T>& X_FQ) const override {
+    return X_FQ;
+  }
+
  protected:
   // Frame<T>::DoCloneToScalar() overrides.
   std::unique_ptr<Frame<double>> DoCloneToScalar(
@@ -91,7 +100,7 @@ class BodyFrame final : public Frame<T> {
 
   // Only Body objects can create BodyFrame objects since Body is a friend of
   // BodyFrame.
-  explicit BodyFrame(const Body<T>& body) : Frame<T>(body) {}
+  explicit BodyFrame(const Body<T>& body) : Frame<T>(body.name(), body) {}
 
   // Helper method to make a clone templated on any other scalar type.
   // This method holds the common implementation for the different overrides to
@@ -147,13 +156,13 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Body)
 
-  /// Creates a %Body with a BodyFrame associated with it.
-  Body() : body_frame_(*this) {}
-
-  /// Creates a %Body named `name` with a given `default_mass` and a BodyFrame
-  /// associated with it.
-  explicit Body(const std::string& name, double default_mass) :
-      name_(name), body_frame_(*this), default_mass_(default_mass) {}
+  /// Creates a %Body named `name` in model instance `model_instance`
+  /// with a given `default_mass` and a BodyFrame associated with it.
+  Body(const std::string& name, ModelInstanceIndex model_instance,
+       double default_mass)
+      : MultibodyTreeElement<Body<T>, BodyIndex>(model_instance),
+        name_(name),
+        body_frame_(*this), default_mass_(default_mass) {}
 
   /// Gets the `name` associated with `this` body.
   const std::string& name() const { return name_; }

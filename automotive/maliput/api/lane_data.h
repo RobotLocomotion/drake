@@ -12,6 +12,7 @@
 #include "drake/common/extract_double.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace maliput {
@@ -69,7 +70,7 @@ class Rotation {
   /// expressing a roll around X, followed by pitch around Y,
   /// followed by yaw around Z (with all angles in radians).
   static Rotation FromRpy(const Vector3<double>& rpy) {
-    return Rotation(math::RollPitchYawToQuaternion(rpy));
+    return Rotation(math::RollPitchYaw<double>(rpy).ToQuaternion());
   }
 
   /// Constructs a Rotation expressing a @p roll around X, followed by
@@ -92,8 +93,8 @@ class Rotation {
 
   /// Provides a representation of rotation as a vector of angles
   /// `[roll, pitch, yaw]` (in radians).
-  Vector3<double> rpy() const {
-    return math::QuaternionToSpaceXYZ(quaternion_);
+  math::RollPitchYaw<double> rpy() const {
+    return math::RollPitchYaw<double>(quaternion_);
   }
 
   // TODO(maddog@tri.global)  Deprecate and/or remove roll()/pitch()/yaw(),
@@ -101,13 +102,13 @@ class Rotation {
   //                          most call-sites should probably be using something
   //                          else (e.g., quaternion) anyway.
   /// Returns the roll component of the Rotation (in radians).
-  double roll() const { return rpy().x(); }
+  double roll() const { return rpy().roll_angle(); }
 
   /// Returns the pitch component of the Rotation (in radians).
-  double pitch() const { return rpy().y(); }
+  double pitch() const { return rpy().pitch_angle(); }
 
   /// Returns the yaw component of the Rotation (in radians).
-  double yaw() const { return rpy().z(); }
+  double yaw() const { return rpy().yaw_angle(); }
 
  private:
   explicit Rotation(const Quaternion<double>& quat) : quaternion_(quat) {}

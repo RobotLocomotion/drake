@@ -6,6 +6,7 @@
 
 #include <spruce.hh>
 
+#include "drake/common/drake_marker.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/find_loaded_library.h"
 #include "drake/common/never_destroyed.h"
@@ -107,12 +108,14 @@ optional<std::string> getenv_optional(const char* const name) {
   return nullopt;
 }
 
-// If we are linked against libdrake.so, return a candidate directory based on
-// libdrake.so's path; otherwise, return nullopt.  The resulting string will
-// already end with "drake"; that is, the directory will contain files named
-// like "common/foo.txt", not "drake/common/foo.txt".
-optional<std::string>  GetCandidateDirFromLibdrake() {
-  optional<std::string> libdrake_dir = LoadedLibraryPath("libdrake.so");
+// If we are linked against libdrake_marker.so, return a candidate directory
+// based on libdrake_marker.so's path; otherwise, return nullopt.  The
+// resulting string will already end with "drake"; that is, the directory will
+// contain files named like "common/foo.txt", not "drake/common/foo.txt".
+optional<std::string>  GetCandidateDirFromLibDrakeMarker() {
+  // Ensure that we have the library loaded.
+  DRAKE_DEMAND(drake::internal::drake_marker_lib_check() == 1234);
+  optional<std::string> libdrake_dir = LoadedLibraryPath("libdrake_marker.so");
   if (libdrake_dir) {
     libdrake_dir = libdrake_dir.value() + "/../share/drake";
   }
@@ -190,8 +193,7 @@ optional<string> GetTestRunfilesDir() {
 // path element, or possibly a related name like "drake2"; that is, they will
 // contain files named like "common/foo.txt", not "drake/common/foo.txt".
 optional<string> FindSentinelDir() {
-  spruce::path candidate_dir;
-  candidate_dir.setAsCurrent();
+  spruce::path candidate_dir = spruce::dir::getcwd();
   int num_attempts = 0;
   while (true) {
     DRAKE_THROW_UNLESS(num_attempts < 1000);  // Insanity fail-fast.
@@ -213,12 +215,43 @@ optional<string> FindSentinelDir() {
   }
 }
 
+bool StartsWith(const string& str, const string& prefix) {
+  return str.compare(0, prefix.size(), prefix) == 0;
+}
+
+// Opportunistically searches inside the attic for multibody resource paths.
+// This function is not unit tested -- only acceptance-tested by the fact that
+// none of the tests in the attic fail.
+Result MaybeFindResourceInAttic(const string& resource_path) {
+  const string prefix("drake/");
+  DRAKE_DEMAND(StartsWith(resource_path, prefix));
+  const string substr = resource_path.substr(prefix.size());
+  for (const auto& directory : {
+           "multibody/collision/test",
+           "multibody/parsers/test/package_map_test",
+           "multibody/parsers/test/parsers_frames_test",
+           "multibody/parsers/test/urdf_parser_test",
+           "multibody/rigid_body_plant/test",
+           "multibody/shapes/test",
+           "multibody/test"
+       }) {
+    if (StartsWith(substr, directory)) {
+      const Result attic_result =
+          FindResource(prefix + string("attic/") + substr);
+      if (attic_result.get_absolute_path() != nullopt) {
+        return attic_result;
+      }
+    }
+  }
+  return Result::make_error(resource_path, "Not an attic path");
+}
+
 }  // namespace
 
 const char* const kDrakeResourceRootEnvironmentVariableName =
     "DRAKE_RESOURCE_ROOT";
 
-// Saves search directorys path in a persistent variable.
+// Saves search directories path in a persistent variable.
 // This function is only accessible from this file and should not
 // be used outside of `GetResourceSearchPaths()` and
 // `AddResourceSearchPath()`.
@@ -234,6 +267,8 @@ std::vector<string> GetResourceSearchPaths() {
 }
 
 void AddResourceSearchPath(string search_path) {
+  // Throw an error if path is relative.
+  DRAKE_THROW_UNLESS(!IsRelativePath(search_path));
   GetMutableResourceSearchPaths().push_back(std::move(search_path));
 }
 
@@ -250,7 +285,7 @@ Result FindResource(string resource_path) {
         "resource_path is not a relative path");
   }
   const std::string prefix("drake/");
-  if (resource_path.compare(0, prefix.size(), prefix) != 0) {
+  if (!StartsWith(resource_path, prefix)) {
     return Result::make_error(
         std::move(resource_path),
         "resource_path does not start with " + prefix);
@@ -275,9 +310,10 @@ Result FindResource(string resource_path) {
     candidate_dirs.emplace_back(CheckCandidateDir(candidate_dir));
   }
 
-  // (3) Find where `librake.so` is, and add search path that corresponds to
-  // resource folder in install tree based on `libdrake.so` location.
-  candidate_dirs.emplace_back(GetCandidateDirFromLibdrake());
+  // (3) Find where `libdrake_marker.so` is, and add search path that
+  // corresponds to resource folder in install tree based on
+  // `libdrake_marker.so` location.
+  candidate_dirs.emplace_back(GetCandidateDirFromLibDrakeMarker());
 
   // (4) Find resources during `bazel test` execution.
   candidate_dirs.emplace_back(GetTestRunfilesDir());
@@ -286,12 +322,31 @@ Result FindResource(string resource_path) {
   // resource-root sentinel file.
   candidate_dirs.emplace_back(FindSentinelDir());
 
+  // Make sure that candidate_dirs are not relative paths. This could cause
+  // bugs, but in theory it should never happen as the code above should
+  // guard against it.
+  for (const auto& candidate_dir : candidate_dirs) {
+    if (candidate_dir && IsRelativePath(candidate_dir.value())) {
+        string error_message = "path is not absolute: " + candidate_dir.value();
+        return Result::make_error(std::move(resource_path), error_message);
+      }
+    }
+
   // See which (if any) candidate contains the requested resource.
   for (const auto& candidate_dir : candidate_dirs) {
     if (auto absolute_path = FileExists(candidate_dir, resource_path_substr)) {
       return Result::make_success(
           std::move(resource_path), std::move(*absolute_path));
     }
+  }
+
+  // As a compatibility shim, for resource paths that have been moved into the
+  // attic, we opportunistically try a fallback search path for them.  This
+  // heuristic is only helpful for source trees -- any install data files from
+  // the attic should be installed without the "attic/" portion of their path.
+  const Result attic_result = MaybeFindResourceInAttic(resource_path);
+  if (attic_result.get_absolute_path() != nullopt) {
+    return attic_result;
   }
 
   // Nothing found.

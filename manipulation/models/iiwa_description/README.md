@@ -1,5 +1,5 @@
 Execute the following commands to regenerate the URDF files using xacro. Note
-that ROS Jade or newer must be used becase the xacro scripts make use of more
+that ROS Jade or newer must be used because the xacro scripts make use of more
 expressive conditional statements [1].
 
 ```

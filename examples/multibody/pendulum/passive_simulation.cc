@@ -3,10 +3,9 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/geometry/geometry_system.h"
 #include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
@@ -14,14 +13,11 @@
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/lcm/lcm_publisher_system.h"
-#include "drake/systems/lcm/serializer.h"
 #include "drake/systems/primitives/constant_vector_source.h"
-#include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
 namespace drake {
 
-using geometry::GeometrySystem;
+using geometry::SceneGraph;
 using geometry::SourceId;
 using lcm::DrakeLcm;
 using multibody::benchmarks::pendulum::MakePendulumPlant;
@@ -29,9 +25,6 @@ using multibody::benchmarks::pendulum::PendulumParameters;
 using multibody::multibody_plant::MultibodyPlant;
 using multibody::RevoluteJoint;
 using systems::ImplicitEulerIntegrator;
-using systems::lcm::LcmPublisherSystem;
-using systems::lcm::Serializer;
-using systems::rendering::PoseBundleToDrawMessage;
 using systems::RungeKutta3Integrator;
 using systems::SemiExplicitEulerIntegrator;
 
@@ -51,9 +44,8 @@ DEFINE_string(integration_scheme, "runge_kutta3",
 int do_main() {
   systems::DiagramBuilder<double> builder;
 
-  GeometrySystem<double>& geometry_system =
-      *builder.AddSystem<GeometrySystem>();
-  geometry_system.set_name("geometry_system");
+  SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
+  scene_graph.set_name("scene_graph");
 
   // The model's parameters:
   PendulumParameters parameters;
@@ -76,7 +68,7 @@ int do_main() {
   const double target_accuracy = 0.001;
 
   MultibodyPlant<double>& pendulum =
-      *builder.AddSystem(MakePendulumPlant(parameters, &geometry_system));
+      *builder.AddSystem(MakePendulumPlant(parameters, &scene_graph));
   const RevoluteJoint<double>& pin =
       pendulum.GetJointByName<RevoluteJoint>(parameters.pin_joint_name());
 
@@ -88,33 +80,15 @@ int do_main() {
   builder.Connect(torque_source->get_output_port(),
                   pendulum.get_actuation_input_port());
 
-  // Boilerplate used to connect the plant to a GeometrySystem for
-  // visualization.
-  DrakeLcm lcm;
-  const PoseBundleToDrawMessage& converter =
-      *builder.template AddSystem<PoseBundleToDrawMessage>();
-  LcmPublisherSystem& publisher =
-      *builder.template AddSystem<LcmPublisherSystem>(
-          "DRAKE_VIEWER_DRAW",
-          std::make_unique<Serializer<drake::lcmt_viewer_draw>>(), &lcm);
-  publisher.set_publish_period(1 / 60.0);
-
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(!!pendulum.get_source_id());
 
   builder.Connect(
       pendulum.get_geometry_poses_output_port(),
-      geometry_system.get_source_pose_port(pendulum.get_source_id().value()));
+      scene_graph.get_source_pose_port(pendulum.get_source_id().value()));
 
-  builder.Connect(geometry_system.get_pose_bundle_output_port(),
-                  converter.get_input_port(0));
-  builder.Connect(converter, publisher);
-
-  // Last thing before building the diagram; dispatch the message to load
-  // geometry.
-  geometry::DispatchLoadMessage(geometry_system);
-
-  std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
+  geometry::ConnectDrakeVisualizer(&builder, scene_graph);
+  auto diagram = builder.Build();
 
   auto diagram_context = diagram->CreateDefaultContext();
   systems::Context<double>& pendulum_context =
@@ -159,7 +133,11 @@ int do_main() {
 
   // Checks for variable time step integrators.
   if (!integrator->get_fixed_step_mode()) {
-    DRAKE_DEMAND(integrator->get_largest_step_size_taken() <= max_time_step);
+    // From IntegratorBase::set_maximum_step_size():
+    // "The integrator may stretch the maximum step size by as much as 1% to
+    // reach discrete event." Thus the 1.01 factor in this DRAKE_DEMAND.
+    DRAKE_DEMAND(
+        integrator->get_largest_step_size_taken() <= 1.01 * max_time_step);
     DRAKE_DEMAND(integrator->get_smallest_adapted_step_size_taken() <=
         integrator->get_largest_step_size_taken());
     DRAKE_DEMAND(

@@ -22,7 +22,7 @@ Description Format), which are both XML formats.
 
 * `SDF Reference <http://sdformat.org/>`_
 
-* `Drake's version of URDF <http://drake.mit.edu/drake-urdf-schema-documentation/drakeURDF.html>`_.  Drake's URDF has
+* `Drake's version of URDF <https://drake.mit.edu/drake-urdf-schema-documentation/drakeURDF.html>`_.  Drake's URDF has
   extensions to the `official ROS URDF <http://wiki.ros.org/urdf/XML>`_.
 
 The target audience for this document is for those who want to model a
@@ -74,7 +74,7 @@ digital representation of an object's surface. A texture may include color,
 brightness, transparency, reflectivity, and other aspects. The texture is
 mapped onto a preexisting surface - typically a mesh.
 
-`URDF <http://drake.mit.edu/drake-urdf-schema-documentation/drakeURDF.html>`_- Unified Robot Description Format, an XML
+`URDF <https://drake.mit.edu/drake-urdf-schema-documentation/drakeURDF.html>`_- Unified Robot Description Format, an XML
 format for representing one model of a robot or other object. Unlike SDF,
 only one object can be modeled per file, and pose cannot be modeled. Drake's
 URDF extends the `official ROS URDF <http://wiki.ros.org/urdf/XML>`_.
@@ -154,7 +154,7 @@ a VTM texture by running this `Python script
 Save the script to the place where your DAE file is stored. Then run the
 following commands, and the script will create VTM and VTP files::
 
-    $ sudo apt-get install python-collada
+    $ sudo apt install python-collada
     $ python convertCollada.py my_file.dae
 
 .. _models_contents:
@@ -167,7 +167,7 @@ existing, working model.  `This tutorial <https://www.youtube
 .com/watch?v=gugV8IMyHnY>`_ walks through editing a model in Drake.
 
 For detailed information on the elements of a model, see the
-`URDF <http://drake.mit.edu/drake-urdf-schema-documentation/drakeURDF.html>`_ or `SDF <http://sdformat.org/>`_
+`URDF <https://drake.mit.edu/drake-urdf-schema-documentation/drakeURDF.html>`_ or `SDF <http://sdformat.org/>`_
 references for more information.
 
 .. _models_shape:
@@ -197,7 +197,7 @@ The ``<visual>`` tag is used in visualization programs like
 `Director external <https://github.com/RobotLocomotion/director>`_). Drake does
 not process the visual tag, unless you have something specific in your code that
 will process it, like
-`RgbdCamera <http://drake.mit.edu/doxygen_cxx/rgbd__camera_8h.html>`_.
+`RgbdCamera <https://drake.mit.edu/doxygen_cxx/rgbd__camera_8h.html>`_.
 Regardless of what program is processing the visual data, the processing time
 of visual elements is generally not an issue.
 

@@ -45,8 +45,8 @@ class BuildifierTest(unittest.TestCase):
             ("ERROR: tmp/BUILD.bazel:1: " +
              "error: the required formatting is incorrect"),
             ("ERROR: tmp/BUILD.bazel:1: note: " +
-             "fix via 'bazel-bin/tools/lint/buildifier' 'tmp/BUILD.bazel'"),
-            "NOTE: see http://drake.mit.edu/bazel.html#buildifier"
+             "fix via bazel-bin/tools/lint/buildifier tmp/BUILD.bazel"),
+            "NOTE: see https://drake.mit.edu/bazel.html#buildifier"
         ])
 
     def test_mode_fix(self):

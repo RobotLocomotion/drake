@@ -30,7 +30,6 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "MG_chaotic_babyboot_test",
-    size = "small",
     deps = [
         ":MG_chaotic_babyboot_lib",
     ],

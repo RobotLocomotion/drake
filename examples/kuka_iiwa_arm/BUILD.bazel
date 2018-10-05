@@ -2,10 +2,9 @@
 
 load(
     "//tools:drake.bzl",
-    "drake_cc_library",
     "drake_cc_binary",
     "drake_cc_googletest",
-    "drake_example_cc_binary",
+    "drake_cc_library",
 )
 load(
     "//tools/skylark:drake_py.bzl",
@@ -32,11 +31,10 @@ drake_cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/trajectories:piecewise_polynomial",
-        "//multibody:inverse_kinematics",
         "//multibody:rigid_body_tree",
-        "//multibody/parsers",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],
@@ -50,11 +48,11 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":iiwa_common",
+        "//attic/multibody/rigid_body_plant:contact_results",
         "//common/trajectories:piecewise_polynomial",
         "//lcmtypes:iiwa",
         "//multibody:inverse_kinematics",
         "//multibody:rigid_body_tree",
-        "//multibody/rigid_body_plant:contact_results",
         "//systems/framework:leaf_system",
     ],
 )
@@ -88,7 +86,24 @@ drake_cc_library(
     ],
 )
 
-drake_example_cc_binary(
+drake_cc_library(
+    name = "kuka_torque_controller",
+    srcs = ["kuka_torque_controller.cc"],
+    hdrs = ["kuka_torque_controller.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//multibody:rigid_body_tree",
+        "//systems/controllers:inverse_dynamics",
+        "//systems/controllers:pid_controller",
+        "//systems/controllers:state_feedback_controller_interface",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
+        "//systems/primitives:adder",
+        "//systems/primitives:pass_through",
+    ],
+)
+
+drake_cc_binary(
     name = "iiwa_controller",
     srcs = ["iiwa_controller.cc"],
     data = [
@@ -98,11 +113,13 @@ drake_example_cc_binary(
     deps = [
         ":iiwa_common",
         ":lcm_plan_interpolator",
-        "@gflags",
+        "//common:text_logging_gflags",
+        "//lcm",
+        "//systems/lcm:lcm_driven_loop",
     ],
 )
 
-drake_example_cc_binary(
+drake_cc_binary(
     name = "iiwa_wsg_simulation",
     srcs = ["iiwa_wsg_simulation.cc"],
     add_test_rule = 1,
@@ -121,12 +138,15 @@ drake_example_cc_binary(
         ":iiwa_common",
         ":iiwa_lcm",
         ":oracular_state_estimator",
+        "//common:text_logging_gflags",
         "//examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
-        "@gflags",
+        "//lcm",
+        "//manipulation/schunk_wsg",
+        "//systems/analysis",
     ],
 )
 
-drake_example_cc_binary(
+drake_cc_binary(
     name = "kuka_simulation",
     srcs = ["kuka_simulation.cc"],
     add_test_rule = 1,
@@ -143,11 +163,19 @@ drake_example_cc_binary(
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
-        "@gflags",
+        ":kuka_torque_controller",
+        "//attic/multibody/rigid_body_plant:frame_visualizer",
+        "//common:text_logging_gflags",
+        "//lcm",
+        "//manipulation/util:sim_diagram_builder",
+        "//multibody:rigid_body_tree_construction",
+        "//systems/analysis",
+        "//systems/controllers:inverse_dynamics_controller",
+        "//systems/controllers:state_feedback_controller_interface",
     ],
 )
 
-drake_example_cc_binary(
+drake_cc_binary(
     name = "kuka_plan_runner",
     srcs = ["kuka_plan_runner.cc"],
     data = [
@@ -171,11 +199,11 @@ drake_cc_binary(
     ],
     deps = [
         ":iiwa_common",
+        "//attic/multibody/parsers",
         "//common:text_logging_gflags",
         "//lcmtypes:iiwa",
         "//manipulation/planner:constraint_relaxing_ik",
         "//math:geometric_transform",
-        "//multibody/parsers",
         "@lcm",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
@@ -206,6 +234,20 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//manipulation/util:world_sim_tree_builder",
         "//systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "kuka_torque_controller_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":iiwa_common",
+        ":kuka_torque_controller",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody:rigid_body_tree",
+        "//multibody:rigid_body_tree_construction",
     ],
 )
 

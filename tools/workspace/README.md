@@ -94,7 +94,7 @@ match the `commit=` tag, they should be updated (this is rare).
 Commit and pull-request the changed lines to Drake as usual.  Many changes like
 this will be susceptible to Ubuntu vs macOS differences, so please opt-in to
 the macOS build(s) in Jenkins before merging, using the instructions at
-http://drake.mit.edu/jenkins.html#running-an-on-demand-build.
+https://drake.mit.edu/jenkins.html#running-an-on-demand-build.
 
 ## Updating bitbucket_archive software versions
 
@@ -112,7 +112,7 @@ remove its commenting-out.  Then, `bazel build` should succeed.
 Commit and pull-request the changed lines to Drake as usual.  Many changes like
 this will be susceptible to Ubuntu vs macOS differences, so please opt-in to
 the macOS build(s) in Jenkins before merging, using the instructions at
-http://drake.mit.edu/jenkins.html#running-an-on-demand-build.
+https://drake.mit.edu/jenkins.html#running-an-on-demand-build.
 
 ## Updating pkg_config_repository software versions
 
@@ -157,7 +157,7 @@ it into Drake are roughly:
 
 ## When using a library from the host operating system
 
-See `blas` or `glib` for examples.
+See `glib` for an example.
 
 Update the package setup lists to mention the new package:
 

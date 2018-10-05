@@ -1,7 +1,7 @@
 #include "drake/examples/valkyrie/robot_command_to_desired_effort_converter.h"
 
 #include <gtest/gtest.h>
-#include "lcmtypes/bot_core/atlas_command_t.hpp"
+#include "bot_core/atlas_command_t.hpp"
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -52,7 +52,7 @@ void TestCommandToDesiredEffortConverter(
   auto diagram = builder.Build();
 
   auto context = diagram->CreateDefaultContext();
-  auto output = diagram->AllocateOutput(*context);
+  auto output = diagram->AllocateOutput();
   diagram->CalcOutput(*context, output.get());
 
   // TODO(tkoolen): assumption about ordering of exported output ports.

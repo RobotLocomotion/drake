@@ -101,6 +101,32 @@ void MultipleShooting::AddDurationBounds(double lower_bound,
                       h_vars_);
 }
 
+solvers::Binding<solvers::VisualizationCallback>
+MultipleShooting::AddInputTrajectoryCallback(
+    const MultipleShooting::TrajectoryCallback& callback) {
+  return AddVisualizationCallback(
+      [this, callback](const Eigen::Ref<const Eigen::VectorXd>& x) {
+        const Eigen::VectorXd times = GetSampleTimes(x.head(h_vars_.size()));
+        const Eigen::Map<const Eigen::MatrixXd> inputs(
+            x.data() + h_vars_.size(), num_inputs_, N_);
+        callback(times, inputs);
+      },
+      {h_vars_, u_vars_});
+}
+
+solvers::Binding<solvers::VisualizationCallback>
+MultipleShooting::AddStateTrajectoryCallback(
+    const MultipleShooting::TrajectoryCallback& callback) {
+  return AddVisualizationCallback(
+      [this, callback](const Eigen::Ref<const Eigen::VectorXd>& x) {
+        const Eigen::VectorXd times = GetSampleTimes(x.head(h_vars_.size()));
+        const Eigen::Map<const Eigen::MatrixXd> states(
+            x.data() + h_vars_.size(), num_states_, N_);
+        callback(times, states);
+      },
+      {h_vars_, x_vars_});
+}
+
 void MultipleShooting::SetInitialTrajectory(
     const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
@@ -150,14 +176,14 @@ void MultipleShooting::SetInitialTrajectory(
   SetInitialGuess(x_vars_, guess_x);
 }
 
-Eigen::VectorXd MultipleShooting::GetSampleTimes() const {
+Eigen::VectorXd MultipleShooting::GetSampleTimes(
+    const Eigen::Ref<const Eigen::VectorXd>& h_var_values) const {
   Eigen::VectorXd times(N_);
 
   if (timesteps_are_decision_variables_) {
-    const auto h_values = GetSolution(h_vars_);
     times[0] = 0.0;
     for (int i = 1; i < N_; i++) {
-      times[i] = times[i - 1] + h_values(i - 1);
+      times[i] = times[i - 1] + h_var_values(i - 1);
     }
   } else {
     for (int i = 0; i < N_; i++) {

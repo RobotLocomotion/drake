@@ -6,8 +6,8 @@
 
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/framework/input_port_value.h"
-#include "drake/systems/framework/output_port_value.h"
+#include "drake/systems/framework/fixed_input_port_value.h"
+#include "drake/systems/framework/system_output.h"
 
 namespace drake {
 namespace manipulation {
@@ -19,7 +19,7 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgTrajectoryGeneratorTest) {
   std::unique_ptr<systems::Context<double>> context =
       dut.CreateDefaultContext();
   std::unique_ptr<systems::SystemOutput<double>> output =
-      dut.AllocateOutput(*context);
+      dut.AllocateOutput();
 
   // Start off with the gripper closed (zero) and a command to open to
   // 100mm.
@@ -32,7 +32,7 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgTrajectoryGeneratorTest) {
 
   // Step a little bit. We should be commanding a point on the
   // trajectory wider than zero, but not to the target yet.
-  const double expected_target = -0.05;  // 50mm
+  const double expected_target = -0.1;  // 100mm
   systems::Simulator<double> simulator(dut, std::move(context));
   simulator.StepTo(0.1);
   dut.CalcOutput(simulator.get_context(), output.get());

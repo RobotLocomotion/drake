@@ -2,9 +2,9 @@
 
 load(
     "//tools:drake.bzl",
-    "drake_cc_library",
     "drake_cc_binary",
     "drake_cc_googletest",
+    "drake_cc_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -21,8 +21,8 @@ drake_cc_library(
         "jaco_common.h",
     ],
     deps = [
+        "//attic/multibody/parsers",
         "//multibody:rigid_body_tree",
-        "//multibody/parsers",
     ],
 )
 
@@ -49,8 +49,8 @@ drake_cc_binary(
         "//lcm",
         "//manipulation/planner:robot_plan_interpolator",
         "//systems/controllers:pid_controller",
-        "//systems/lcm",
         "//systems/lcm:lcm_driven_loop",
+        "//systems/lcm:lcm_pubsub_system",
         "//systems/primitives:adder",
         "//systems/primitives:demultiplexer",
         "//systems/primitives:multiplexer",
@@ -70,12 +70,12 @@ drake_cc_binary(
     test_rule_args = ["--simulation_sec=0.1"],
     deps = [
         ":jaco_common",
+        "//attic/multibody/rigid_body_plant",
+        "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//common:find_resource",
         "//common:text_logging_gflags",
         "//lcm",
         "//multibody:rigid_body_tree_construction",
-        "//multibody/rigid_body_plant",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/primitives:constant_vector_source",
         "@gflags",
@@ -89,18 +89,14 @@ drake_cc_binary(
     data = [
         "//manipulation/models/jaco_description:models",
     ],
-    # It's not clear why this test takes so much longer than
-    # run_controlled_jaco_demo under memcheck, but it does, so it's
-    # disabled in that configuration.
-    tags = ["no_memcheck"],
     test_rule_args = ["--simulation_sec=0.1"],
     deps = [
         ":jaco_common",
+        "//attic/multibody/rigid_body_plant",
+        "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//common:find_resource",
         "//lcm",
         "//multibody:rigid_body_tree_construction",
-        "//multibody/rigid_body_plant",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/primitives:constant_vector_source",
@@ -118,13 +114,13 @@ drake_cc_binary(
     test_rule_args = ["--simulation_sec=0.1"],
     deps = [
         ":jaco_common",
+        "//attic/multibody/rigid_body_plant",
+        "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//common:find_resource",
         "//common/trajectories:piecewise_polynomial",
         "//lcm",
         "//multibody:inverse_kinematics",
         "//multibody:rigid_body_tree_construction",
-        "//multibody/rigid_body_plant",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/primitives:trajectory_source",

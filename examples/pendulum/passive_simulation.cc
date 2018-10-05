@@ -4,11 +4,8 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
+#include "drake/geometry/geometry_visualization.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -24,11 +21,7 @@ DEFINE_double(target_realtime_rate, 1.0,
               "Simulator::set_target_realtime_rate() for details.");
 
 int DoMain() {
-  lcm::DrakeLcm lcm;
-  auto tree = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"),
-      multibody::joints::kFixed, tree.get());
+  PendulumParams<double> params;
 
   PendulumInput<double> input;
   input.set_tau(0.0);
@@ -38,10 +31,14 @@ int DoMain() {
   source->set_name("tau");
   auto pendulum = builder.AddSystem<PendulumPlant>();
   pendulum->set_name("pendulum");
-  auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
-  publisher->set_name("publisher");
   builder.Connect(source->get_output_port(), pendulum->get_input_port());
-  builder.Connect(pendulum->get_output_port(), publisher->get_input_port(0));
+
+  auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
+  pendulum->RegisterGeometry(params, scene_graph);
+  builder.Connect(pendulum->get_geometry_pose_output_port(),
+                  scene_graph->get_source_pose_port(pendulum->source_id()));
+
+  geometry::ConnectDrakeVisualizer(&builder, *scene_graph);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);

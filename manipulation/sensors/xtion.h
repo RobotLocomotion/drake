@@ -37,6 +37,8 @@ namespace sensors {
  *  builder.Connect(plant->get_output_port_state(),
  *                  camera->get_input_port_state());
  * @endcode
+ *
+ * @ingroup manipulation_systems
  */
 // TODO(eric.cousineau): Delegate most of this class's functionality to
 // definition files once sensor tags are supported. At present, this is
@@ -83,7 +85,7 @@ class Xtion : public systems::Diagram<double> {
                     bool add_lcm_publisher = false,
                     bool add_frame_visualizer = false);
 
-  const systems::InputPortDescriptor<double>& get_input_port_state() const {
+  const systems::InputPort<double>& get_input_port_state() const {
     return get_input_port(input_port_state_);
   }
   const systems::OutputPort<double>& get_output_port_color_image() const {

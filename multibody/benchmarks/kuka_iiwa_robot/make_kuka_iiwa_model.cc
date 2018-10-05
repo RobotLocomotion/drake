@@ -1,7 +1,8 @@
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
 
 #include "drake/common/default_scalars.h"
-#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
+#include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 
@@ -14,6 +15,7 @@ using Eigen::Isometry3d;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 
+using drake::multibody::FixedOffsetFrame;
 using drake::multibody::RevoluteJoint;
 using drake::multibody::RigidBody;
 using drake::multibody::RotationalInertia;
@@ -27,7 +29,7 @@ using std::unique_ptr;
 /// Utility method for creating a transform from frame A to frame B.
 /// @param[in] R_AB Rotation matrix relating Ax, Ay, Az to Bx, By, Bz.
 /// @param[in] p_AoBo_A Position vector from Ao to Bo, expressed in A.
-/// @retval X_AB Tranform relating frame A to frame B.
+/// @retval X_AB Transform relating frame A to frame B.
 Eigen::Isometry3d MakeIsometry3d(const Eigen::Matrix3d& R_AB,
                                  const Eigen::Vector3d& p_AoBo_A) {
   // Initialize all of X_AB (may be more than just linear and translation).
@@ -51,8 +53,9 @@ KukaIiwaModelBuilder<T>::AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
     const Body<T>& B, const Vector3<double>& revolute_unit_vector,
     MultibodyTree<T>* model) {
   // Create transform from inboard body A to mobilizer inboard frame Ab.
-  const Eigen::Isometry3d X_AAb = MakeIsometry3d(math::rpy2rotmat(q123A),
-                                                 xyzA);
+  const math::RollPitchYaw<double> rpy(q123A);
+  const math::RotationMatrix<double> R_AAb(rpy);
+  const Eigen::Isometry3d X_AAb = MakeIsometry3d(R_AAb.matrix(), xyzA);
 
   // Create transform from outboard body B to mobilizer outboard frame Ba.
   const Eigen::Isometry3d X_BBa = MakeIsometry3d(Eigen::Matrix3d::Identity(),
@@ -157,6 +160,11 @@ unique_ptr<MultibodyTree<T>> KukaIiwaModelBuilder<T>::Build() const {
       linkF, joint_7_rpy_, joint_7_xyz_,
       linkG, Eigen::Vector3d::UnitZ(), model.get());
   model->AddJointActuator("iiwa_actuator_7", *joint);
+
+  // Add arbitrary tool frame.
+  model->template AddFrame<FixedOffsetFrame>(
+      "tool_arbitrary", model->GetFrameByName("iiwa_link_7"),
+      Isometry3d(Translation3d(0.1, 0.2, 0.3)));
 
   // Add force element for a constant gravity pointing downwards, that is, in
   // the negative z-axis direction.

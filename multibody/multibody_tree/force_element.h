@@ -12,6 +12,8 @@
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
+#include "drake/multibody/multibody_tree/position_kinematics_cache.h"
+#include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
 
 namespace drake {
 namespace multibody {
@@ -39,7 +41,9 @@ class ForceElement : public
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ForceElement)
 
   /// Default constructor for a generic force element.
-  ForceElement() {}
+  explicit ForceElement(ModelInstanceIndex model_instance)
+      : MultibodyTreeElement<ForceElement<T>, ForceElementIndex>(
+            model_instance) {}
 
   /// Computes the force contribution for `this` force element and **adds** it
   /// to the output arrays of forces. Depending on their model, different force

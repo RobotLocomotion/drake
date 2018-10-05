@@ -186,14 +186,13 @@ class NonConvexQPproblem1 {
 
     template <typename ScalarType>
     void eval(detail::VecIn<ScalarType> const& x,
-              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-              detail::VecOut<ScalarType>& y) const {
+              detail::VecOut<ScalarType>* y) const {
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-      DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-      y(0) = (-50.0 * x(0) * x(0)) + (42 * x(0)) - (50.0 * x(1) * x(1)) +
-             (44 * x(1)) - (50.0 * x(2) * x(2)) + (45 * x(2)) -
-             (50.0 * x(3) * x(3)) + (47 * x(3)) - (50.0 * x(4) * x(4)) +
-             (47.5 * x(4));
+      DRAKE_ASSERT(static_cast<size_t>(y->rows()) == numOutputs());
+      (*y)(0) = (-50.0 * x(0) * x(0)) + (42 * x(0)) - (50.0 * x(1) * x(1)) +
+                (44 * x(1)) - (50.0 * x(2) * x(2)) + (45 * x(2)) -
+                (50.0 * x(3) * x(3)) + (47 * x(3)) - (50.0 * x(4) * x(4)) +
+                (47.5 * x(4));
     }
   };
 
@@ -245,14 +244,13 @@ class NonConvexQPproblem2 {
 
     template <typename ScalarType>
     void eval(detail::VecIn<ScalarType> const& x,
-              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-              detail::VecOut<ScalarType>& y) const {
+              detail::VecOut<ScalarType>* y) const {
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-      DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-      y(0) = (-50.0 * x(0) * x(0)) + (-10.5 * x(0)) - (50.0 * x(1) * x(1)) +
-             (-7.5 * x(1)) - (50.0 * x(2) * x(2)) + (-3.5 * x(2)) -
-             (50.0 * x(3) * x(3)) + (-2.5 * x(3)) - (50.0 * x(4) * x(4)) +
-             (-1.5 * x(4)) + (-10.0 * x(5));
+      DRAKE_ASSERT(static_cast<size_t>(y->rows()) == numOutputs());
+      (*y)(0) = (-50.0 * x(0) * x(0)) + (-10.5 * x(0)) - (50.0 * x(1) * x(1)) +
+                (-7.5 * x(1)) - (50.0 * x(2) * x(2)) + (-3.5 * x(2)) -
+                (50.0 * x(3) * x(3)) + (-2.5 * x(3)) - (50.0 * x(4) * x(4)) +
+                (-1.5 * x(4)) + (-10.0 * x(5));
     }
   };
 
@@ -303,13 +301,12 @@ class LowerBoundedProblem {
 
     template <typename ScalarType>
     void eval(detail::VecIn<ScalarType> const& x,
-              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-              detail::VecOut<ScalarType>& y) const {
+              detail::VecOut<ScalarType>* y) const {
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-      DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-      y(0) = -25 * (x(0) - 2) * (x(0) - 2) + (x(1) - 2) * (x(1) - 2) -
-             (x(2) - 1) * (x(2) - 1) - (x(3) - 4) * (x(3) - 4) -
-             (x(4) - 1) * (x(4) - 1) - (x(5) - 4) * (x(5) - 4);
+      DRAKE_ASSERT(static_cast<size_t>(y->rows()) == numOutputs());
+      (*y)(0) = -25 * (x(0) - 2) * (x(0) - 2) + (x(1) - 2) * (x(1) - 2) -
+                (x(2) - 1) * (x(2) - 1) - (x(3) - 4) * (x(3) - 4) -
+                (x(4) - 1) * (x(4) - 1) - (x(5) - 4) * (x(5) - 4);
     }
   };
 
@@ -327,26 +324,29 @@ class LowerBoundedProblem {
    protected:
     // For just these two types, implementing this locally is almost cleaner...
     void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                Eigen::VectorXd& y) const override {
+                Eigen::VectorXd* y) const override {
       EvalImpl(x, y);
     }
     void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-                AutoDiffVecXd& y) const override {
+                AutoDiffVecXd* y) const override {
       // Check that the autodiff vector was initialized to the proper (minimal)
       // size.
       EXPECT_EQ(x.size(), x(0).derivatives().size());
-
       EvalImpl(x, y);
+    }
+    void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+                VectorX<symbolic::Expression>*) const override {
+      throw std::logic_error(
+          "LowerBoundTestConstraint does not support symbolic evaluation.");
     }
 
    private:
     template <typename ScalarType>
     void EvalImpl(
         const Eigen::Ref<const Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>>& x,
-        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-        Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>& y) const {
-      y.resize(1);
-      y(0) = (x(i1_) - 3) * (x(i1_) - 3) + x(i2_);
+        Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>* y) const {
+      y->resize(1);
+      (*y)(0) = (x(i1_) - 3) * (x(i1_) - 3) + x(i2_);
     }
 
     int i1_;
@@ -407,11 +407,10 @@ class GloptiPolyConstrainedMinimizationProblem {
 
     template <typename ScalarType>
     void eval(detail::VecIn<ScalarType> const& x,
-              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-              detail::VecOut<ScalarType>& y) const {
+              detail::VecOut<ScalarType>* y) const {
       DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-      DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-      y(0) = -2 * x(0) + x(1) - x(2);
+      DRAKE_ASSERT(static_cast<size_t>(y->rows()) == numOutputs());
+      (*y)(0) = -2 * x(0) + x(1) - x(2);
     }
   };
 
@@ -429,12 +428,19 @@ class GloptiPolyConstrainedMinimizationProblem {
    protected:
     // For just these two types, implementing this locally is almost cleaner.
     void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                Eigen::VectorXd& y) const override {
-      EvalImpl(x, &y);
+                Eigen::VectorXd* y) const override {
+      EvalImpl(x, y);
     }
     void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-                AutoDiffVecXd& y) const override {
-      EvalImpl(x, &y);
+                AutoDiffVecXd* y) const override {
+      EvalImpl(x, y);
+    }
+
+    void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+                VectorX<symbolic::Expression>*) const override {
+      throw std::logic_error(
+          "GloptipolyConstrainedExampleConstraint does not support symbolic "
+          "evaluation.");
     }
 
    private:
@@ -567,6 +573,121 @@ class UnitLengthProgramExample : public MathematicalProgram {
 
  private:
   VectorDecisionVariable<4> x_;
+};
+
+// Finds a point Q outside a tetrahedron, and with a specified distance to the
+// tetrahedron. The tetrahedron's shape is fixed. Both the point and the
+// tetrahedron can move in space.
+// We pick this problem to break SNOPT 7.6, as explained in
+// https://github.com/snopt/snopt-interface/issues/19#issuecomment-410346280
+// This is just a feasibility problem, without a cost.
+class DistanceToTetrahedronExample : public MathematicalProgram {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DistanceToTetrahedronExample)
+
+  explicit DistanceToTetrahedronExample(double distance_expected);
+
+  ~DistanceToTetrahedronExample() override {}
+
+  const VectorDecisionVariable<18>& x() const { return x_; }
+
+  const Eigen::Matrix<double, 4, 3> A_tetrahedron() const {
+    return A_tetrahedron_;
+  }
+
+  const Eigen::Vector4d b_tetrahedron() const { return b_tetrahedron_; }
+
+ private:
+  // TODO(hongkai.dai): explain the mathematical formulation of this constraint.
+  class DistanceToTetrahedronNonlinearConstraint : public Constraint {
+   public:
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DistanceToTetrahedronNonlinearConstraint)
+
+    DistanceToTetrahedronNonlinearConstraint(
+        const Eigen::Matrix<double, 4, 3>& A_tetrahedron,
+        const Eigen::Vector4d& b_tetrahedron);
+
+    ~DistanceToTetrahedronNonlinearConstraint() override {}
+
+   private:
+    template <typename DerivedX, typename ScalarY>
+    void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
+                       VectorX<ScalarY>* y) const {
+      DRAKE_DEMAND(x.size() == 18);
+      y->resize(15);
+      using ScalarX = typename DerivedX::Scalar;
+      Vector3<ScalarX> p_WB = x.template head<3>();
+      Vector3<ScalarX> p_WQ = x.template segment<3>(3);
+      Vector3<ScalarX> n_W = x.template segment<3>(6);
+      Vector4<ScalarX> quat_WB = x.template segment<4>(9);
+      Vector3<ScalarX> p_WP = x.template segment<3>(13);
+      ScalarX d = x(16);
+      ScalarX phi = x(17);
+
+      // p_BV are the vertices of the tetrahedron in the body frame B.
+      Eigen::Matrix<double, 4, 3> p_BV;
+      // clang-format off
+      p_BV << 0, 0, 0,
+              1, 0, 0,
+              0, 1, 0,
+              0, 0, 1;
+      // clang-format on
+      (*y)(0) = quat_WB.dot(quat_WB);
+      (*y)(1) = n_W.dot(n_W);
+      (*y)(2) = n_W.dot(p_WP) - d;
+      (*y)(3) = phi - n_W.dot(p_WQ - p_WP);
+      y->template segment<3>(4) = n_W * phi - p_WQ + p_WP;
+
+      const ScalarX ww = quat_WB(0) * quat_WB(0);
+      const ScalarX xx = quat_WB(1) * quat_WB(1);
+      const ScalarX yy = quat_WB(2) * quat_WB(2);
+      const ScalarX zz = quat_WB(3) * quat_WB(3);
+      const ScalarX wx = quat_WB(0) * quat_WB(1);
+      const ScalarX wy = quat_WB(0) * quat_WB(2);
+      const ScalarX wz = quat_WB(0) * quat_WB(3);
+      const ScalarX xy = quat_WB(1) * quat_WB(2);
+      const ScalarX xz = quat_WB(1) * quat_WB(3);
+      const ScalarX yz = quat_WB(2) * quat_WB(3);
+      Matrix3<ScalarX> R_WB;
+      // clang-format off
+      R_WB <<  ww + xx - yy - zz, 2 * xy - 2 * wz, 2 * xz + 2 * wy,
+               2 * xy + 2 * wz, ww  + yy - xx - zz, 2 * yz - 2 * wx,
+               2 * xz - 2 * wy, 2 * yz + 2 * wx, ww + zz - xx - yy;
+      // clang-format on
+      for (int i = 0; i < 4; ++i) {
+        const Vector3<ScalarX> p_WVi = p_WB + R_WB * p_BV.row(i).transpose();
+        (*y)(7 + i) = n_W.dot(p_WVi) - d;
+      }
+      // A * (R_WBᵀ * (p_WQ - p_WB))
+      y->template segment<4>(11) =
+          A_tetrahedron_ * R_WB.transpose() * (p_WQ - p_WB);
+    }
+
+    void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                Eigen::VectorXd* y) const override {
+      DoEvalGeneric(x, y);
+    }
+
+    void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                AutoDiffVecXd* y) const override {
+      DoEvalGeneric(x, y);
+    }
+
+    void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+                VectorX<symbolic::Expression>* y) const override {
+      DoEvalGeneric(x.cast<symbolic::Expression>(), y);
+    }
+
+   private:
+    Eigen::Matrix<double, 4, 3> A_tetrahedron_;
+  };
+
+  VectorDecisionVariable<18> x_;
+  // The tetrahedron can be described as A_tetrahedron * x<=b_tetrahedron, where
+  // x is the position of a point within the tetrahedron, in the tetrahedron
+  // body frame B.
+  Eigen::Matrix<double, 4, 3> A_tetrahedron_;
+  Eigen::Vector4d b_tetrahedron_;
 };
 
 std::set<CostForm> linear_cost_form();

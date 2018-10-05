@@ -15,6 +15,7 @@
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
+#include "drake/examples/kuka_iiwa_arm/kuka_torque_controller.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -25,6 +26,7 @@
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
+#include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -39,6 +41,7 @@ DEFINE_bool(visualize_frames, true, "Visualize end effector frames");
 DEFINE_double(target_realtime_rate, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
+DEFINE_bool(torque_control, false, "Simulate using torque control mode.");
 
 namespace drake {
 namespace examples {
@@ -52,6 +55,8 @@ using systems::DiagramBuilder;
 using systems::FrameVisualizer;
 using systems::RigidBodyPlant;
 using systems::Simulator;
+using systems::controllers::InverseDynamicsController;
+using systems::controllers::StateFeedbackControllerInterface;
 
 int DoMain() {
   drake::lcm::DrakeLcm lcm;
@@ -77,30 +82,30 @@ int DoMain() {
 
   const RigidBodyTree<double>& tree = plant->get_rigid_body_tree();
   const int num_joints = tree.get_num_positions();
+  DRAKE_DEMAND(num_joints % kIiwaArmNumJoints == 0);
+  const int num_iiwa = num_joints/kIiwaArmNumJoints;
 
-  // Adds a iiwa controller
-  VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
-  SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
-
-  DRAKE_DEMAND(tree.get_num_positions() % kIiwaArmNumJoints == 0);
-  for (int offset = kIiwaArmNumJoints; offset < tree.get_num_positions();
-       offset += kIiwaArmNumJoints) {
-    const int end = offset + kIiwaArmNumJoints;
-    iiwa_kp.conservativeResize(end);
-    iiwa_kp.segment(offset, kIiwaArmNumJoints) =
-        iiwa_kp.head(kIiwaArmNumJoints);
-    iiwa_ki.conservativeResize(end);
-    iiwa_ki.segment(offset, kIiwaArmNumJoints) =
-        iiwa_ki.head(kIiwaArmNumJoints);
-    iiwa_kd.conservativeResize(end);
-    iiwa_kd.segment(offset, kIiwaArmNumJoints) =
-        iiwa_kd.head(kIiwaArmNumJoints);
+  // Adds a iiwa controller.
+  StateFeedbackControllerInterface<double>* controller = nullptr;
+  if (FLAGS_torque_control) {
+    VectorX<double> stiffness, damping_ratio;
+    SetTorqueControlledIiwaGains(&stiffness, &damping_ratio);
+    stiffness = stiffness.replicate(num_iiwa, 1);
+    damping_ratio = damping_ratio.replicate(num_iiwa, 1);
+    controller = builder.AddController<KukaTorqueController<double>>(
+        RigidBodyTreeConstants::kFirstNonWorldModelInstanceId, tree.Clone(),
+        stiffness, damping_ratio);
+  } else {
+    VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
+    SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
+    iiwa_kp = iiwa_kp.replicate(num_iiwa, 1);
+    iiwa_kd = iiwa_kd.replicate(num_iiwa, 1);
+    iiwa_ki = iiwa_ki.replicate(num_iiwa, 1);
+    controller = builder.AddController<InverseDynamicsController<double>>(
+        RigidBodyTreeConstants::kFirstNonWorldModelInstanceId, tree.Clone(),
+        iiwa_kp, iiwa_ki, iiwa_kd,
+        false /* without feedforward acceleration */);
   }
-
-  auto controller = builder.AddController<
-      systems::controllers::InverseDynamicsController<double>>(
-      RigidBodyTreeConstants::kFirstNonWorldModelInstanceId, tree.Clone(),
-      iiwa_kp, iiwa_ki, iiwa_kd, false /* without feedforward acceleration */);
 
   // Create the command subscriber and status publisher.
   systems::DiagramBuilder<double>* base_builder = builder.get_mutable_builder();
@@ -142,6 +147,14 @@ int DoMain() {
                         status_sender->get_external_torque_input_port());
   base_builder->Connect(status_sender->get_output_port(0),
                         status_pub->get_input_port());
+  // Connect the torque input in torque control
+  if (FLAGS_torque_control) {
+    KukaTorqueController<double>* torque_controller =
+        dynamic_cast<KukaTorqueController<double>*>(controller);
+    DRAKE_DEMAND(torque_controller);
+    base_builder->Connect(command_receiver->get_output_port(1),
+                          torque_controller->get_input_port_commanded_torque());
+  }
 
   if (FLAGS_visualize_frames) {
     // TODO(sam.creasey) This try/catch block is here because even

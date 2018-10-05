@@ -62,19 +62,19 @@ PYBIND11_MODULE(rendering, m) {
     .def("set_model_instance_id", &PoseBundle<T>::set_model_instance_id);
   pysystems::AddValueInstantiation<PoseBundle<T>>(m);
 
-  py::class_<PoseVelocityInputPortDescriptors<T>>(
-      m, "PoseVelocityInputPortDescriptors")
+  py::class_<PoseVelocityInputPorts<T>>(
+      m, "PoseVelocityInputPorts")
       // N.B. We use lambdas below since we cannot use `def_readonly` with
       // reference members.
-      .def_property_readonly("pose_descriptor",
-           [](PoseVelocityInputPortDescriptors<T>* self) ->
-           const InputPortDescriptor<T>& {
-             return self->pose_descriptor;
+      .def_property_readonly("pose_input_port",
+           [](PoseVelocityInputPorts<T>* self) ->
+           const InputPort<T>& {
+             return self->pose_input_port;
            })
-      .def_property_readonly("velocity_descriptor",
-           [](PoseVelocityInputPortDescriptors<T>* self) ->
-           const InputPortDescriptor<T>& {
-             return self->velocity_descriptor;
+      .def_property_readonly("velocity_input_port",
+           [](PoseVelocityInputPorts<T>* self) ->
+           const InputPort<T>& {
+             return self->velocity_input_port;
            });
 
   py::class_<PoseAggregator<T>, LeafSystem<T>>(m, "PoseAggregator")

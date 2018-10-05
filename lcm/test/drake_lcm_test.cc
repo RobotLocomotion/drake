@@ -93,7 +93,7 @@ TEST_F(DrakeLcmTest, PublishTest) {
 
   MessageSubscriber subscriber(channel_name, dut.get_lcm_instance());
 
-  // Start the LCM recieve thread after all objects it can potentially use like
+  // Start the LCM receive thread after all objects it can potentially use like
   // subscribers are instantiated. Since objects are destructed in the reverse
   // order of construction, this ensures the LCM receive thread stops before any
   // resources it uses are destroyed. If the Lcm receive thread is stopped after
@@ -225,12 +225,21 @@ TEST_F(DrakeLcmTest, SubscribeTest) {
 
 TEST_F(DrakeLcmTest, EmptyChannelTest) {
   DrakeLcm dut;
+  EXPECT_EQ(dut.get_requested_lcm_url(), "");
 
   MessageHandler handler;
   EXPECT_THROW(dut.Subscribe("", &handler), std::exception);
 
   lcmt_drake_signal message{};
   EXPECT_THROW(Publish(&dut, "", message), std::exception);
+}
+
+
+TEST_F(DrakeLcmTest, UrlTest) {
+  const std::string custom_url = "udpm://239.255.66.66:6666?ttl=0";
+  const DrakeLcm dut(custom_url);
+
+  EXPECT_EQ(dut.get_requested_lcm_url(), custom_url);
 }
 
 }  // namespace

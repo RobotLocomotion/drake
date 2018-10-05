@@ -4,12 +4,8 @@
 Binary installation (macOS, Ubuntu)
 ***********************************
 
-Important Note (October, 2016)
-==============================
-
-Drake is currently undergoing a major renovation, with all of the core
-libraries moving into C++.  The examples will move and the existing APIs will
-change.
+Nightly releases
+================
 
 There are `experimental binary packages <https://github.com/RobotLocomotion/drake/issues/1766#issuecomment-318955338>`_ of Drake available at:
 
@@ -22,6 +18,9 @@ Example usages of these binaries are shown in this `example CMake project <https
 For the compilers used to produce these releases, see :ref:`binary-packages`.
 If you are unsure of which approach to use, we suggest you :ref:`build from source <build_from_source>`
 instead.
+
+For using Python bindings, see :ref:`Binary Installation for Python
+<python-bindings-binary>`.
 
 Using older (2015) releases
 ===========================
@@ -60,7 +59,7 @@ To work around this issue, the symbolic link for the standard C++ library provid
 
 First, make sure that a suitable version of the standard library is installed::
 
-	sudo apt-get install g++-4.4
+	sudo apt install g++-4.4
 
 Now, the symbolic link in MATLAB must be updated to point to the version that was just installed in `/usr/lib`.  An example for MATLAB R2014a is shown below::
 

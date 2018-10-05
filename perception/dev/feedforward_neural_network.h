@@ -36,7 +36,7 @@ class FeedforwardNeuralNetwork final : public NeuralNetwork<T> {
     return systems::LeafSystem<T>::ToAutoDiffXd(*this);
   }
 
-  const systems::InputPortDescriptor<T>& input() const;
+  const systems::InputPort<T>& input() const;
   const systems::OutputPort<T>& output() const;
 
   int get_num_layers() const;

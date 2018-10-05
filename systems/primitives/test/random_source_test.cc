@@ -33,8 +33,6 @@ void CheckStatistics(
   auto logger = LogOutput(source->get_output_port(0), &builder);
   logger->set_name("logger");
 
-  source->set_random_seed(42);
-
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
@@ -86,7 +84,7 @@ GTEST_TEST(RandomSourceTest, UniformWhiteNoise) {
   const double min_value = 0.0;
   const double max_value = 1.0;
   const double h = 0.1;
-  const double fudge_factor = 1.0;
+  const double fudge_factor = 1.5;
   CheckStatistics(Phi, min_value, max_value, h, fudge_factor,
                   std::move(random_source));
 }
@@ -127,7 +125,6 @@ class TestSystem : public LeafSystem<double> {
   using LeafSystem::EvalVectorInput;
 };
 
-
 //      +-------------------------+
 //      |                         |
 //      | +--------+              |
@@ -151,13 +148,18 @@ GTEST_TEST(RandomSourceTest, AddToDiagramBuilderTest) {
   DiagramBuilder<double> builder;
 
   auto* sys1 = builder.AddSystem<TestSystem>();
-  sys1->DeclareInputPort(kVectorValued, 3, RandomDistribution::kUniform);
-  sys1->DeclareInputPort(kVectorValued, 2, RandomDistribution::kExponential);
+  sys1->DeclareInputPort("uniform", kVectorValued, 3,
+                         RandomDistribution::kUniform);
+  sys1->DeclareInputPort("exponential", kVectorValued, 2,
+                         RandomDistribution::kExponential);
 
   auto* sys2 = builder.AddSystem<TestSystem>();
-  sys2->DeclareInputPort(kVectorValued, 5, RandomDistribution::kGaussian);
-  sys2->DeclareInputPort(kVectorValued, 2, RandomDistribution::kExponential);
-  sys2->DeclareInputPort(kVectorValued, 1, RandomDistribution::kGaussian);
+  sys2->DeclareInputPort("gaussian", kVectorValued, 5,
+                         RandomDistribution::kGaussian);
+  sys2->DeclareInputPort("exponential", kVectorValued, 2,
+                         RandomDistribution::kExponential);
+  sys2->DeclareInputPort("scalar_gaussian", kVectorValued, 1,
+                         RandomDistribution::kGaussian);
 
   // Export input 1.
   builder.ExportInput(sys2->get_input_port(1));
@@ -231,6 +233,31 @@ GTEST_TEST(RandomSourceTest, CorrelationTest) {
     // using the same seed will lead to numbers ≊ 1.
     EXPECT_LE(xcorr / N, 0.1);
   }
+}
+
+// Make sure that calling SetRandomContext changes the output, and
+// SetDefaultContext returns it to the original (default) output.
+GTEST_TEST(RandomSourceTest, SetRandomContextTest) {
+  UniformRandomSource random_source(2, 0.0025);
+  auto output = random_source.get_output_port(0).Allocate();
+  const BasicVector<double>& output_values =
+      output->GetValueOrThrow<systems::BasicVector<double>>();
+
+  auto context = random_source.CreateDefaultContext();
+
+  random_source.get_output_port(0).Calc(*context, output.get());
+  Eigen::Vector2d default_values = output_values.CopyToVector();
+
+  RandomGenerator generator;
+  random_source.SetRandomContext(context.get(), &generator);
+  random_source.get_output_port(0).Calc(*context, output.get());
+  EXPECT_NE(default_values[0], output_values.GetAtIndex(0));
+  EXPECT_NE(default_values[1], output_values.GetAtIndex(1));
+
+  random_source.SetDefaultContext(context.get());
+  random_source.get_output_port(0).Calc(*context, output.get());
+  EXPECT_EQ(default_values[0], output_values.GetAtIndex(0));
+  EXPECT_EQ(default_values[1], output_values.GetAtIndex(1));
 }
 
 }  // namespace

@@ -12,6 +12,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/geometry_set.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -30,7 +31,7 @@ class GeometryStateTester {
   void set_state(GeometryState<T>* state) { state_ = state; }
 
   FrameId get_world_frame() const {
-    return internal::InternalFrame::get_world_frame_id();
+    return internal::InternalFrame::world_frame_id();
   }
 
   const std::unordered_map<SourceId, std::string>& get_source_name_map() const {
@@ -99,9 +100,17 @@ class GeometryStateTester {
     state_->SetFramePoses(poses);
   }
 
+  void FinalizePoseUpdate() {
+    state_->FinalizePoseUpdate();
+  }
+
   template <typename ValueType>
   void ValidateFrameIds(const FrameKinematicsVector<ValueType>& data) const {
     state_->ValidateFrameIds(data);
+  }
+
+  int peek_next_clique() const {
+    return state_->peek_next_clique();
   }
 
  private:
@@ -110,6 +119,7 @@ class GeometryStateTester {
 
 namespace {
 
+using Eigen::Isometry3d;
 using std::make_unique;
 using std::move;
 using std::unique_ptr;
@@ -121,7 +131,7 @@ class GeometryStateTest : public ::testing::Test {
                                         Isometry3<double>::Identity());
     instance_pose_.translation() << 10, 20, 30;
     instance_ = make_unique<GeometryInstance>(
-        instance_pose_, unique_ptr<Shape>(new Sphere(1.0)));
+        instance_pose_, make_unique<Sphere>(1.0), "instance");
     gs_tester_.set_state(&geometry_state_);
   }
 
@@ -135,25 +145,42 @@ class GeometryStateTest : public ::testing::Test {
   // geometries per frame.
   //
   //  Creates the following tree:
-  //                                        s_id
-  //                                        ╱  ╲
-  //                                       f0   f1
+  //                                      s_id
+  //                                        ├───┬────────────┐
+  //                                        │   │            │
+  //                                       f0   f1           a
   //                                      ╱ │    ├───┬───┐
   //                                    g0  g1   │   │   │
   //                                             f2  g2  g3
   //                                            ╱ ╲
   //                                           g4 g5
   //
-  // Frame configuration
+  // Default frame configuration
   //  f0 is @ <1, 2, 3>, with a 90-degree rotation around x.
   //  f1 is @ <10, 20, 30>, with a 90-degree rotation around y.
   //  f2 is @ <-10, -20, -30>, with a -90-degree rotation around y.
+  //    NOTE: f2's pose is the inverse of f1. As such, for g4 & g5, the pose
+  //    relative to the parent frame f2 is the same as to the world, e.g.,
+  //    X_PG = X_WG.
+  //  a is an anchored box of size (100, 100, 2), positioned at <0, 0 -1> (so
+  //     that it's top face lies on the z = 0 plane.
   // Geometry configuration
   //  gi is at position <i + 1, 0, 0>, with a rotation of iπ/2 radians around
   //    the x-axis.
-  // f2's pose is the inverse of f1. As such, for g4 & g5, the pose
-  // relative to the parent frame f2 is the same as to the world, e.g.,
-  // X_PG = X_WG.
+  //  Each of the dynamic geometries are spheres of radius one at the following
+  //  positions (expressed in the world frame) (with identity rotation):
+  //   p_WG0 = <1, 2, 3>
+  //   p_WG1 = <2, 2, 3>
+  //   p_WG2 = <10, 20, 33>
+  //   p_WG3 = <10, 20, 34>
+  //   p_WG4 = <5, 0, 0>
+  //   p_WG5 = <6, 0, 0)
+  //
+  //  In the default configuration, there are only two colliding pairs:
+  //    (a, g4) and (a, g5)
+  //  Although the sibling geometries affixed to each frame overlap, the pairs
+  //  (g0, g1), (g2, g3), and (g4, g5) are implicitly filtered because they are
+  //  sibling geometries affixed to the same frame.
   SourceId SetUpSingleSourceTree() {
     using std::to_string;
 
@@ -177,8 +204,7 @@ class GeometryStateTest : public ::testing::Test {
     X_PF_.push_back(pose);
 
     // Create f2.
-    pose.translation() << -10, -20, -30;
-    pose.linear() << 0, 0, 1, 0, 1, 0, -1, 0, 0;  // -90° around y-axis.
+    pose = pose.inverse();
     frames_.push_back(geometry_state_.RegisterFrame(
         source_id_, frames_[1], GeometryFrame("f2", pose)));
     X_WF_.push_back(X_WF_[1] * pose);
@@ -187,27 +213,47 @@ class GeometryStateTest : public ::testing::Test {
     // Add geometries to each frame.
     const Vector3<double> x_axis(1, 0, 0);
     geometries_.resize(kFrameCount * kGeometryCount);
+    geometry_names_.resize(geometries_.size());
     int g_count = 0;
     for (auto frame_id : frames_) {
       for (int i = 0; i < kGeometryCount; ++i) {
         pose.translation() << g_count + 1, 0, 0;
         pose.linear() =
             AngleAxis<double>(g_count * M_PI / 2.0, x_axis).matrix();
+        // Have the name reflect the frame and the index in the geometry.
+        const std::string& name =
+            to_string(frame_id) + "_g" + std::to_string(i);
+        geometry_names_[g_count] = name;
         geometries_[g_count] = geometry_state_.RegisterGeometry(
             source_id_, frame_id,
-            make_unique<GeometryInstance>(
-                pose, std::unique_ptr<Shape>(new Sphere(1))));
+            make_unique<GeometryInstance>(pose, make_unique<Sphere>(1), name));
         X_FG_.push_back(pose);
         ++g_count;
       }
     }
+
+    // Create anchored geometry.
+    pose = Isometry3<double>::Identity();
+    pose.translation() << 0, 0, -1;
+    anchored_geometry_ = geometry_state_.RegisterAnchoredGeometry(
+        source_id_, make_unique<GeometryInstance>(
+                        pose, make_unique<Box>(100, 100, 2), anchored_name_));
     return source_id_;
   }
 
   // Reports characteristics of the dummy tree.
   int single_tree_frame_count() const { return kFrameCount; }
+
   int single_tree_geometry_count() const {
     return kFrameCount * kGeometryCount;
+  }
+
+  int anchored_geometry_count() const { return 1; }
+
+  int default_collision_pair_count() const {
+    // Without filtering, this should be the expected pairs:
+    // (a, g4), (a, g5)
+    return 2;
   }
 
   // This method confirms that the stored dummy identifiers don't map to any
@@ -270,6 +316,12 @@ class GeometryStateTest : public ::testing::Test {
   vector<FrameId> frames_;
   // The geometry ids created in the dummy tree instantiation.
   vector<GeometryId> geometries_;
+  // The names for all the geometries (as registered).
+  vector<std::string> geometry_names_;
+  // The single, anchored geometry id.
+  GeometryId anchored_geometry_;
+  // The registered name of the anchored geometry.
+  const std::string anchored_name_{"anchored"};
   // The id of the single-source tree.
   SourceId source_id_;
 
@@ -324,6 +376,8 @@ TEST_F(GeometryStateTest, GeometryStatistics) {
   EXPECT_EQ(geometry_state_.get_num_sources(), 1);
   EXPECT_EQ(geometry_state_.get_num_frames(), single_tree_frame_count());
   EXPECT_EQ(geometry_state_.get_num_geometries(), single_tree_geometry_count());
+  EXPECT_EQ(geometry_state_.get_num_anchored_geometries(),
+            anchored_geometry_count());
   SourceId false_id = SourceId::get_new_id();
   EXPECT_FALSE(geometry_state_.source_is_registered(false_id));
 }
@@ -448,14 +502,14 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
     auto test_frame = [internal_frames, this, s_id](int i, FrameId parent_id,
                                                     int num_child_frames) {
       const auto& frame = internal_frames.at(frames_[i]);
-      EXPECT_EQ(frame.get_source_id(), s_id);
-      EXPECT_EQ(frame.get_id(), frames_[i]);
-      EXPECT_EQ(frame.get_name(), "f" + to_string(i));
-      EXPECT_EQ(frame.get_frame_group(), 0);  // Defaults to zero.
-      EXPECT_EQ(frame.get_pose_index(), i);   // ith frame added.
-      EXPECT_EQ(frame.get_parent_frame_id(), parent_id);
-      EXPECT_EQ(frame.get_child_frames().size(), num_child_frames);
-      const auto& child_geometries = frame.get_child_geometries();
+      EXPECT_EQ(frame.source_id(), s_id);
+      EXPECT_EQ(frame.id(), frames_[i]);
+      EXPECT_EQ(frame.name(), "f" + to_string(i));
+      EXPECT_EQ(frame.frame_group(), 0);  // Defaults to zero.
+      EXPECT_EQ(frame.pose_index(), i);   // ith frame added.
+      EXPECT_EQ(frame.parent_frame_id(), parent_id);
+      EXPECT_EQ(frame.child_frames().size(), num_child_frames);
+      const auto& child_geometries = frame.child_geometries();
       EXPECT_EQ(child_geometries.size(), 2);
       EXPECT_NE(child_geometries.find(geometries_[i * 2]),
                                       child_geometries.end());
@@ -463,7 +517,7 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
                                       child_geometries.end());
       const auto& frame_in_parent = gs_tester_.get_frame_parent_poses();
       EXPECT_TRUE(
-          CompareMatrices(frame_in_parent[frame.get_pose_index()].matrix(),
+          CompareMatrices(frame_in_parent[frame.pose_index()].matrix(),
                           X_PF_[i].matrix()));
     };
     test_frame(0, gs_tester_.get_world_frame(), 0);
@@ -691,8 +745,8 @@ TEST_F(GeometryStateTest, RegisterGeometryonValidGeometry) {
   const int parent_index = 0;
   const GeometryId parent_id = geometries_[parent_index];
   const FrameId frame_id = geometry_state_.GetFrameId(parent_id);
-  auto instance =
-      make_unique<GeometryInstance>(pose, unique_ptr<Shape>(new Sphere(1)));
+  auto instance = make_unique<GeometryInstance>(
+      pose, make_unique<Sphere>(1), "sphere");
   GeometryId expected_g_id = instance->id();
   GeometryId g_id =
       geometry_state_.RegisterGeometryWithParent(s_id,
@@ -727,8 +781,8 @@ TEST_F(GeometryStateTest, RegisterGeometryonValidGeometry) {
 TEST_F(GeometryStateTest, RegisterGeometryonInvalidGeometry) {
   SourceId s_id = SetUpSingleSourceTree();
   Isometry3<double> pose = Isometry3<double>::Identity();
-  auto instance =
-      make_unique<GeometryInstance>(pose, unique_ptr<Shape>(new Sphere(1)));
+  auto instance = make_unique<GeometryInstance>(
+      pose, make_unique<Sphere>(1), "sphere");
   GeometryId junk_id = GeometryId::get_new_id();
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.RegisterGeometryWithParent(s_id, junk_id, move(instance)),
@@ -752,7 +806,7 @@ TEST_F(GeometryStateTest, RegisterAnchoredGeometry) {
   SourceId s_id = NewSource("new source");
   Isometry3<double> pose = Isometry3<double>::Identity();
   auto instance = make_unique<GeometryInstance>(
-      pose, unique_ptr<Shape>(new Sphere(1)));
+      pose, make_unique<Sphere>(1), "sphere");
   GeometryId expected_g_id = instance->id();
   auto g_id = geometry_state_.RegisterAnchoredGeometry(s_id, move(instance));
   EXPECT_EQ(g_id, expected_g_id);
@@ -775,7 +829,7 @@ TEST_F(GeometryStateTest, RegisterDuplicateAnchoredGeometry) {
 TEST_F(GeometryStateTest, RegisterAnchoredGeometryInvalidSource) {
   Isometry3<double> pose = Isometry3<double>::Identity();
   auto instance = make_unique<GeometryInstance>(
-      pose, unique_ptr<Shape>(new Sphere(1)));
+      pose, make_unique<Sphere>(1), "sphere");
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.RegisterAnchoredGeometry(SourceId::get_new_id(),
                                                move(instance)),
@@ -825,7 +879,8 @@ TEST_F(GeometryStateTest, SourceOwnershipInvalidSource) {
   GeometryId anchored_id = geometry_state_.RegisterAnchoredGeometry(
       source_id_,
       make_unique<GeometryInstance>(Isometry3<double>::Identity(),
-                                    std::unique_ptr<Shape>(new Sphere(1))));
+                                    make_unique<Sphere>(1),
+                                    "sphere"));
   // Valid frame/geometry ids.
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.BelongsToSource(frames_[0], source_id), std::logic_error,
@@ -856,10 +911,9 @@ TEST_F(GeometryStateTest, SourceOwnershipFrameId) {
 TEST_F(GeometryStateTest, SourceOwnershipGeometryId) {
   SourceId s_id = SetUpSingleSourceTree();
   GeometryId anchored_id = geometry_state_.RegisterAnchoredGeometry(
-      s_id,
-      make_unique<GeometryInstance>(
-          Isometry3<double>::Identity(),
-          std::unique_ptr<Shape>(new Sphere(1))));
+      s_id, make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+                                          make_unique<Sphere>(1),
+                                          "sphere"));
   // Test for invalid geometry.
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.BelongsToSource(GeometryId::get_new_id(), s_id),
@@ -889,7 +943,7 @@ TEST_F(GeometryStateTest, ValidateFrameIds) {
   EXPECT_NO_THROW(gs_tester_.ValidateFrameIds(frame_set));
 
   // Case: Right number, wrong frames.
-  std::vector<FrameId> bad_frames;
+  vector<FrameId> bad_frames;
   for (int i = 0; i < kFrameCount; ++i) {
     bad_frames.push_back(FrameId::get_new_id());
   }
@@ -900,7 +954,7 @@ TEST_F(GeometryStateTest, ValidateFrameIds) {
           "in the provided kinematics data.");
 
   // Case: Too few frames.
-  std::vector<FrameId> missing_frames;
+  vector<FrameId> missing_frames;
   for (int i = 0; i < kFrameCount - 1; ++i) {
     missing_frames.push_back(frames_[i]);
   }
@@ -1028,6 +1082,276 @@ TEST_F(GeometryStateTest, QueryFrameProperties) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.get_pose_in_parent(FrameId::get_new_id()),
       std::logic_error, "No pose available for invalid frame id: \\d+");
+}
+
+// Test disallowing collisions among members of a group (self collisions).
+TEST_F(GeometryStateTest, ExcludeCollisionsWithin) {
+  SetUpSingleSourceTree();
+
+  // Pose all of the frames to the specified poses in their parent frame.
+  FramePoseVector<double> poses(source_id_, frames_);
+  poses.clear();
+  for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
+    poses.set_value(frames_[f], X_PF_[f]);
+  }
+  gs_tester_.SetFramePoses(poses);
+  gs_tester_.FinalizePoseUpdate();
+
+  // This is *non* const; we'll decrement it as we filter more and more
+  // collisions.
+  int expected_collisions = default_collision_pair_count();
+
+  // Baseline collision - the unfiltered collisions.
+  auto pairs = geometry_state_.ComputePointPairPenetration();
+  EXPECT_EQ(static_cast<int>(pairs.size()), expected_collisions);
+
+  int next_clique = gs_tester_.peek_next_clique();
+  // A GeometrySet with a single frame (and no geometry) should have no change
+  // on the outcome.
+  geometry_state_.ExcludeCollisionsWithin(
+      GeometrySet({frames_[0]}));
+  pairs = geometry_state_.ComputePointPairPenetration();
+  ASSERT_EQ(static_cast<int>(pairs.size()), expected_collisions);
+  // A clique was *not* consumed.
+  EXPECT_EQ(gs_tester_.peek_next_clique(), next_clique);
+
+  // A GeometrySet with a single geometry (and no frames) should have no change
+  // on the outcome.
+  geometry_state_.ExcludeCollisionsWithin(
+      GeometrySet({geometries_[0]}));
+  pairs = geometry_state_.ComputePointPairPenetration();
+  ASSERT_EQ(static_cast<int>(pairs.size()), expected_collisions);
+  // A clique was *not* consumed.
+  EXPECT_EQ(gs_tester_.peek_next_clique(), next_clique);
+
+  // Frames 0 & 1 do *not* have colliding geometry; adding a filter should have
+  // *no* impact on the number of reported collisions.
+  geometry_state_.ExcludeCollisionsWithin(
+      GeometrySet({anchored_geometry_}, {frames_[0], frames_[1]}));
+  pairs = geometry_state_.ComputePointPairPenetration();
+  ASSERT_EQ(static_cast<int>(pairs.size()), expected_collisions);
+
+  // Frame 2 has *two* geometries that collide with the anchored geometry. This
+  // eliminates those collisions.
+  geometry_state_.ExcludeCollisionsWithin(
+      GeometrySet({anchored_geometry_}, {frames_[2]}));
+  expected_collisions -= 2;
+  pairs = geometry_state_.ComputePointPairPenetration();
+  ASSERT_EQ(static_cast<int>(pairs.size()), expected_collisions);
+}
+
+// Test disallowing collision between members fo two groups.
+TEST_F(GeometryStateTest, ExcludeCollisionsBetween) {
+  SetUpSingleSourceTree();
+
+  // Pose all of the frames to the specified poses in their parent frame.
+  FramePoseVector<double> poses(source_id_, frames_);
+  poses.clear();
+  for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
+    poses.set_value(frames_[f], X_PF_[f]);
+  }
+  gs_tester_.SetFramePoses(poses);
+  gs_tester_.FinalizePoseUpdate();
+
+  // This is *non* const; we'll decrement it as we filter more and more
+  // collisions.
+  int expected_collisions = default_collision_pair_count();
+
+  // Baseline collision - the unfiltered collisions.
+  auto pairs = geometry_state_.ComputePointPairPenetration();
+  EXPECT_EQ(static_cast<int>(pairs.size()), expected_collisions);
+
+  // Frames 0 & 1 do *not* have colliding geometry; adding a filter should have
+  // *no* impact on the number of reported collisions.
+  geometry_state_.ExcludeCollisionsBetween(
+      GeometrySet{frames_[0], frames_[1]},
+      GeometrySet(anchored_geometry_));
+  pairs = geometry_state_.ComputePointPairPenetration();
+  ASSERT_EQ(static_cast<int>(pairs.size()), expected_collisions);
+
+  // Frame 2 has *two* geometries that collide with the anchored geometry. Test
+  // that the removal of collision between frame 2's geometries and the anchored
+  // geometry leave the collisions *between* geometries g4 and g5 intact.
+  geometry_state_.ExcludeCollisionsBetween(GeometrySet{frames_[2]},
+                                           GeometrySet{anchored_geometry_});
+  expected_collisions -= 2;
+  pairs = geometry_state_.ComputePointPairPenetration();
+  ASSERT_EQ(static_cast<int>(pairs.size()), expected_collisions);
+}
+
+// Tests the documented error conditions of ExcludeCollisionsWithin.
+TEST_F(GeometryStateTest, SelfCollisionFilterExceptions) {
+  SetUpSingleSourceTree();
+
+  // NOTE: a collision group with a single frame or geometry doesn't exercise
+  // self-collision filtering logic.
+  GeometrySet set_bad_frame{FrameId::get_new_id(), FrameId::get_new_id()};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.ExcludeCollisionsWithin(set_bad_frame), std::logic_error,
+      "Geometry set includes a frame id that doesn't belong to the "
+          "SceneGraph: \\d+");
+
+  GeometrySet set_bad_geometry{GeometryId::get_new_id(),
+                               GeometryId::get_new_id()};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.ExcludeCollisionsWithin(set_bad_geometry),
+      std::logic_error,
+      "Geometry set includes a geometry id that doesn't belong to the "
+          "SceneGraph: \\d+");
+}
+
+// Tests the documented error conditions of ExcludeCollisionsWithin.
+TEST_F(GeometryStateTest, CrossCollisionFilterExceptions) {
+  SetUpSingleSourceTree();
+
+  GeometrySet set_bad_frame{FrameId::get_new_id()};
+  GeometrySet set_good_frame{frames_[0]};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.ExcludeCollisionsBetween(set_bad_frame,
+                                               set_good_frame),
+      std::logic_error,
+      "Geometry set includes a frame id that doesn't belong to the "
+          "SceneGraph: \\d+");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.ExcludeCollisionsBetween(set_good_frame,
+                                               set_bad_frame),
+      std::logic_error,
+      "Geometry set includes a frame id that doesn't belong to the "
+          "SceneGraph: \\d+");
+
+  GeometrySet set_bad_geometry{GeometryId::get_new_id()};
+  GeometrySet set_good_geometry{geometries_[0]};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.ExcludeCollisionsBetween(set_bad_geometry,
+                                               set_good_geometry),
+      std::logic_error,
+      "Geometry set includes a geometry id that doesn't belong to the "
+          "SceneGraph: \\d+");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.ExcludeCollisionsBetween(set_good_geometry,
+                                               set_bad_geometry),
+      std::logic_error,
+      "Geometry set includes a geometry id that doesn't belong to the "
+          "SceneGraph: \\d+");
+}
+
+// Tests the ability to query for a geometry from the name of a geometry.
+TEST_F(GeometryStateTest, GetGeometryIdFromName) {
+  SetUpSingleSourceTree();
+  // Frame i has geometries f * kFrameCount + g, where g ∈ [0, kGeometryCount).
+  for (int f = 0; f < kFrameCount; ++f) {
+    for (int g = 0; g < kGeometryCount; ++g) {
+      int g_index = f * kGeometryCount + g;
+      GeometryId expected_id = geometries_[g_index];
+      // Look up with the canonical name.
+      EXPECT_EQ(geometry_state_.GetGeometryFromName(frames_[f],
+                                                    geometry_names_[g_index]),
+                expected_id);
+      // Look up with non-canonical name.
+      EXPECT_EQ(geometry_state_.GetGeometryFromName(
+                    frames_[f], " " + geometry_names_[g_index]),
+                expected_id);
+    }
+  }
+
+  // Failure cases.
+
+  // Bad frame id.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.GetGeometryFromName(FrameId::get_new_id(), "irrelevant"),
+      std::logic_error, "Referenced frame \\d+ has not been registered.");
+
+  // Bad *anchored* geometry name.
+  const FrameId world_id = gs_tester_.get_world_frame();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.GetGeometryFromName(world_id, "bad"), std::logic_error,
+      "The frame 'world' .\\d+. has no geometry with the canonical name .+");
+
+  // Bad *dynamic* geometry name.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.GetGeometryFromName(frames_[0], "bad_name"),
+      std::logic_error,
+      "The frame '.+?' .\\d+. has no geometry with the canonical name .+");
+}
+
+// Confirms that the name *stored* with the geometry is the trimmed version of
+// the requested name.
+TEST_F(GeometryStateTest, GeometryNameStorage) {
+  SetUpSingleSourceTree();
+
+  const Isometry3d X_FG = Isometry3d::Identity();
+  const std::string name = "unique test name";
+
+  // White space trimmed off and new string stored.
+  {
+    GeometryId id = geometry_state_.RegisterGeometry(
+        source_id_, frames_[0],
+        make_unique<GeometryInstance>(
+            X_FG, make_unique<Sphere>(1), " " + name));
+    EXPECT_EQ(geometry_state_.get_name(id), name);
+  }
+
+  // Valid name that is unchanged after trimming is stored as is.
+  // Note: This assigns a geometry fo the *same* name to a *different* frame.
+  {
+    GeometryId id = geometry_state_.RegisterGeometry(
+        source_id_, frames_[1],
+        make_unique<GeometryInstance>(
+            X_FG, make_unique<Sphere>(1), name));
+    EXPECT_EQ(geometry_state_.get_name(id), name);
+  }
+}
+
+// Tests the logic for confirming if a name is valid or not.
+TEST_F(GeometryStateTest, GeometryNameValidation) {
+  SetUpSingleSourceTree();
+
+  // Case: Invalid frame should throw (regardless of name contents).
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.IsValidGeometryName(FrameId::get_new_id(), ""),
+      std::logic_error, "Given frame id is not valid: \\d+");
+
+  auto expect_bad_name = [this](const std::string& name,
+                                const std::string& exception_message,
+                                const std::string& printable_name) {
+    EXPECT_FALSE(geometry_state_.IsValidGeometryName(frames_[0], name))
+        << "Failed on input name: " << printable_name;
+  };
+
+  // Invalid cases:
+  // Empty.
+  expect_bad_name("", "The proposed geometry name is empty", "");
+
+  // Nothing but whitespace.
+  const std::string whitespace_message{
+      "The proposed geometry name contains only whitespace"};
+  expect_bad_name(" ", whitespace_message, "' '");
+  expect_bad_name("\t", whitespace_message, "'\\t'");
+  expect_bad_name(" \t", whitespace_message, "' \\t'");
+
+  // Case: Valid (as a control case).
+  const std::string unique = "unique";
+  EXPECT_TRUE(geometry_state_.IsValidGeometryName(frames_[0], unique));
+
+  // Querying with non-canonical names test as the canonical name.
+  vector<std::string> names{" " + unique, unique + " ", " " + unique + " "};
+  for (const auto& name : names) {
+    EXPECT_TRUE(geometry_state_.IsValidGeometryName(frames_[0], name));
+  }
+
+  // Duplicate name is considered valid
+  // TODO(SeanCurtis-TRI): WHen geometry roles are introduced and duplicates
+  // are no longer valid, update this test.
+  EXPECT_TRUE(geometry_state_.IsValidGeometryName(
+      frames_[0],
+      gs_tester_.get_geometries().at(geometries_[0]).get_name()));
+
+  // Case: Whitespace that SDF nevertheless considers not whitespace.
+  // Update this when the following sdformat issue is resolved:
+  // https://bitbucket.org/osrf/sdformat/issues/194/string-trimming-only-considers-space-and
+  for (const std::string& s : {"\n", " \n\t", " \f", "\v", "\r", "\ntest"}) {
+    EXPECT_TRUE(geometry_state_.IsValidGeometryName(frames_[0], s));
+  }
 }
 
 }  // namespace

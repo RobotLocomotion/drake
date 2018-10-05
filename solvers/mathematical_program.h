@@ -38,7 +38,7 @@
 namespace drake {
 namespace solvers {
 
-/** @defgroup solvers Formulating and Solving Optimization Problems
+/** @addtogroup solvers
  * @{
  * Drake wraps a number of commercial solvers (+ a few custom solvers) to
  * provide a common interface for convex optimization, mixed-integer convex
@@ -297,6 +297,8 @@ struct assert_if_is_constraint {
  * MathematicalProgram stores the decision variables, the constraints and costs
  * of an optimization problem. The user can solve the problem by calling Solve()
  * function, and obtain the results of the optimization.
+ *
+ * @ingroup solvers
  */
 class MathematicalProgram {
  public:
@@ -390,7 +392,7 @@ class MathematicalProgram {
    */
   template <int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
   MatrixDecisionVariable<Rows, Cols> NewContinuousVariables(
-      int rows, int cols, const std::string& name) {
+      int rows, int cols, const std::string& name = "X") {
     rows = Rows == Eigen::Dynamic ? rows : Rows;
     cols = Cols == Eigen::Dynamic ? cols : Cols;
     auto names =
@@ -595,7 +597,6 @@ class MathematicalProgram {
   std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
   NewSosPolynomial(const symbolic::Variables& indeterminates, int degree);
 
-
   /**
    * Adds indeterminates, appending them to an internal vector of any
    * existing indeterminates.
@@ -767,10 +768,10 @@ class MathematicalProgram {
    * optimization.
    *
    * Note: Just like other costs/constraints, not all solvers support callbacks.
-   * Adding a callback here may change will force MathematicalProgram::Solve to
-   * select a solver that support callbacks.  For instance, adding a
-   * visualization callback to a quadratic programming problem may result in
-   * using a nonlinear programming solver as the default solver.
+   * Adding a callback here will force MathematicalProgram::Solve to select a
+   * solver that support callbacks.  For instance, adding a visualization
+   * callback to a quadratic programming problem may result in using a nonlinear
+   * programming solver as the default solver.
    *
    * @param callback a std::function that accepts an Eigen::Vector of doubles
    * representing the bound decision variables.
@@ -785,10 +786,10 @@ class MathematicalProgram {
    * optimization.
    *
    * Note: Just like other costs/constraints, not all solvers support callbacks.
-   * Adding a callback here may change will force MathematicalProgram::Solve to
-   * select a solver that support callbacks.  For instance, adding a
-   * visualization callback to a quadratic programming problem may result in
-   * using a nonlinear programming solver as the default solver.
+   * Adding a callback here will force MathematicalProgram::Solve to select a
+   * solver that support callbacks.  For instance, adding a visualization
+   * callback to a quadratic programming problem may result in using a nonlinear
+   * programming solver as the default solver.
    *
    * @param callback a std::function that accepts an Eigen::Vector of doubles
    * representing the for the bound decision variables.
@@ -1305,8 +1306,8 @@ class MathematicalProgram {
     } else {
       std::stringstream oss;
       oss << "Formulas are non-linear.";
-      throw std::runtime_error("AddLinearConstraint called but formulas are "
-                                   "non-linear");
+      throw std::runtime_error(
+          "AddLinearConstraint called but formulas are non-linear");
     }
   }
 
@@ -2039,6 +2040,29 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
+   * Adds the constraint that a symmetric matrix is diagonally dominant with
+   * non-negative diagonal entries.
+   * A symmetric matrix X is diagonally dominant with non-negative diagonal
+   * entries if
+   * X(i, i) >= ∑ⱼ |X(i, j)| ∀ j ≠ i
+   * namely in each row, the diagonal entry is larger than the sum of the
+   * absolute values of all other entries in the same row. A matrix being
+   * diagonally dominant with non-negative diagonals is a sufficient (but not
+   * necessary) condition of a matrix being positive semidefinite.
+   * Internally we will create a matrix Y as slack variables, such that Y(i, j)
+   * represents the absolute value |X(i, j)| ∀ j ≠ i. The diagonal entries
+   * Y(i, i) = X(i, i)
+   * @param X The symmetric matrix X in the documentation above. We
+   * will assume that @p X is already symmetric. It is the user's responsibility
+   * to guarantee the symmetry.
+   * @return Y The slack variable. Y(i, j) represents |X(i, j)| ∀ j ≠ i, with
+   * the constraint Y(i, j) >= X(i, j) and Y(i, j) >= -X(i, j). Y is a symmetric
+   * matrix. The diagonal entries Y(i, i) = X(i, i)
+   */
+  MatrixX<symbolic::Expression> AddPositiveDiagonallyDominantMatrixConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
+
+  /**
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),
    * that is, @p p can be decomposed into `mᵀQm`, where m is the @p
    * monomial_basis. It returns a pair of constraint bindings expressing:
@@ -2060,7 +2084,7 @@ class MathematicalProgram {
    *  - The coefficients matching conditions in linear equality constraint.
    */
   std::pair<Binding<PositiveSemidefiniteConstraint>,
-      Binding<LinearEqualityConstraint>>
+            Binding<LinearEqualityConstraint>>
   AddSosConstraint(const symbolic::Polynomial& p);
 
   /**
@@ -2073,7 +2097,7 @@ class MathematicalProgram {
    *  - The coefficients matching conditions in linear equality constraint.
    */
   std::pair<Binding<PositiveSemidefiniteConstraint>,
-      Binding<LinearEqualityConstraint>>
+            Binding<LinearEqualityConstraint>>
   AddSosConstraint(
       const symbolic::Expression& e,
       const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
@@ -2156,7 +2180,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Set the intial guess for ALL decision variables.
+   * Set the initial guess for ALL decision variables.
    * Note that variables begin with a default initial guess of NaN to indicate
    * that no guess is available.
    * @param x0 A vector of appropriate size (num_vars() x 1).
@@ -2199,11 +2223,11 @@ class MathematicalProgram {
    *
    * Supported solver names/options:
    *
-   * "SNOPT" -- Paramater names and values as specified in SNOPT
+   * "SNOPT" -- Parameter names and values as specified in SNOPT
    * User's Guide section 7.7 "Description of the optional parameters",
    * used as described in section 7.5 for snSet().
    *
-   * "IPOPT" -- Paramater names and values as specified in IPOPT users
+   * "IPOPT" -- Parameter names and values as specified in IPOPT users
    * guide section "Options Reference"
    * http://www.coin-or.org/Ipopt/documentation/node40.html
    *
@@ -2228,18 +2252,30 @@ class MathematicalProgram {
   }
 
   const std::map<std::string, double>& GetSolverOptionsDouble(
-      const SolverId& solver_id) {
-    return solver_options_double_[solver_id];
+      const SolverId& solver_id) const {
+    // Aliases for brevity.
+    const auto& options = solver_options_double_;
+    const auto& empty = solver_options_double_empty_;
+    const auto iter = options.find(solver_id);
+    return (iter != options.end()) ? iter->second : empty;
   }
 
   const std::map<std::string, int>& GetSolverOptionsInt(
-      const SolverId& solver_id) {
-    return solver_options_int_[solver_id];
+      const SolverId& solver_id) const {
+    // Aliases for brevity.
+    const auto& options = solver_options_int_;
+    const auto& empty = solver_options_int_empty_;
+    const auto iter = options.find(solver_id);
+    return (iter != options.end()) ? iter->second : empty;
   }
 
   const std::map<std::string, std::string>& GetSolverOptionsStr(
-      const SolverId& solver_id) {
-    return solver_options_str_[solver_id];
+      const SolverId& solver_id) const {
+    // Aliases for brevity.
+    const auto& options = solver_options_str_;
+    const auto& empty = solver_options_str_empty_;
+    const auto iter = options.find(solver_id);
+    return (iter != options.end()) ? iter->second : empty;
   }
 
   /**
@@ -2401,7 +2437,7 @@ class MathematicalProgram {
   const Eigen::VectorXd& initial_guess() const { return x_initial_guess_; }
 
   /** Returns the index of the decision variable. Internally the solvers thinks
-   * all variables are stored in an array, and it acceses each individual
+   * all variables are stored in an array, and it accesses each individual
    * variable using its index. This index is used when adding constraints
    * and costs for each solver.
    * @pre{@p var is a decision variable in the mathematical program, otherwise
@@ -2411,7 +2447,8 @@ class MathematicalProgram {
 
   /**
    * Returns the indices of the decision variables. Internally the solvers
-   * thinks all variables are stored in an array, and it acceses each individual
+   * thinks all variables are stored in an array, and it accesses each
+   * individual
    * variable using its index. This index is used when adding constraints
    * and costs for each solver.
    * @pre{@p vars are decision variables in the mathematical program, otherwise
@@ -2424,7 +2461,7 @@ class MathematicalProgram {
   int num_indeterminates() const { return indeterminates_.rows(); }
 
   /** Returns the index of the indeterminate. Internally a solver
-   * thinks all indeterminates are stored in an array, and it acceses each
+   * thinks all indeterminates are stored in an array, and it accesses each
    * individual indeterminate using its index. This index is used when adding
    * constraints and costs for each solver.
    * @pre @p var is a indeterminate in the mathematical program,
@@ -2511,7 +2548,7 @@ class MathematicalProgram {
       binding_x(i) =
           prog_var_vals(FindDecisionVariableIndex(binding.variables()(i)));
     }
-    binding.evaluator()->Eval(binding_x, binding_y);
+    binding.evaluator()->Eval(binding_x, &binding_y);
     return binding_y;
   }
 
@@ -2643,9 +2680,15 @@ class MathematicalProgram {
   // The lower bound of the objective found by the solver, during the
   // optimization process.
   double lower_bound_cost_{};
+
+  // The actual per-solver customization options.
   std::map<SolverId, std::map<std::string, double>> solver_options_double_;
   std::map<SolverId, std::map<std::string, int>> solver_options_int_;
   std::map<SolverId, std::map<std::string, std::string>> solver_options_str_;
+  // Dummy (empty) options, for when the solver_id is not in the above maps.
+  const std::map<std::string, double> solver_options_double_empty_;
+  const std::map<std::string, int> solver_options_int_empty_;
+  const std::map<std::string, std::string> solver_options_str_empty_;
 
   AttributesSet required_capabilities_{0};
 

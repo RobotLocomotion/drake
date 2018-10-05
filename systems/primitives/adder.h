@@ -10,6 +10,12 @@ namespace systems {
 
 /// An adder for arbitrarily many inputs of equal size.
 /// @ingroup primitive_systems
+///
+/// @system{Adder,
+///    @input_port{input(0)} @input_port{...} @input_port{input(N-1)},
+///    @output_port{sum}
+/// }
+///
 /// @tparam T The type of mathematical object being added.
 ///
 /// Instantiated templates for the following kinds of T's are provided:

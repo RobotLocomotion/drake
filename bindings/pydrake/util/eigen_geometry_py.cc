@@ -64,6 +64,14 @@ void CheckQuaternion(const Eigen::Quaternion<T>& q) {
       "Quaternion is not normalized");
 }
 
+template <typename T>
+void CheckAngleAxis(const Eigen::AngleAxis<T>& value) {
+  const T norm_error = fabs(value.axis().norm() - 1);
+  DRAKE_THROW_UNLESS(
+      norm_error < kCheckTolerance &&
+      "Axis is not normalized");
+}
+
 }  // namespace
 
 PYBIND11_MODULE(eigen_geometry, m) {
@@ -109,6 +117,10 @@ PYBIND11_MODULE(eigen_geometry, m) {
         out.translation() = translation;
         return out;
       }), py::arg("quaternion"), py::arg("translation"))
+      .def(py::init([](const Class& other) {
+        CheckIsometry(other);
+        return other;
+      }), py::arg("other"))
       .def("matrix", [](const Class* self) -> Matrix4<T> {
         return self->matrix();
       })
@@ -139,7 +151,19 @@ PYBIND11_MODULE(eigen_geometry, m) {
       })
       .def("__str__", [](py::object self) {
         return py::str(self.attr("matrix")());
+      })
+      // Do not define operator `__mul__` until we have the Python3 `@`
+      // operator so that operations are similar to those of arrays.
+      .def("multiply", [](const Class& self, const Class& other) {
+        return self * other;
+      }, py::arg("other"))
+      .def("multiply", [](const Class& self, const Vector3<T>& position) {
+        return self * position;
+      }, py::arg("position"))
+      .def("inverse", [](const Class* self) {
+        return self->inverse();
       });
+    py::implicitly_convertible<Matrix4<T>, Class>();
   }
 
   // Quaternion.
@@ -174,6 +198,10 @@ PYBIND11_MODULE(eigen_geometry, m) {
         CheckQuaternion(out);
         return out;
       }), py::arg("rotation"))
+      .def(py::init([](const Class& other) {
+        CheckQuaternion(other);
+        return other;
+      }), py::arg("other"))
       .def("w", [](const Class* self) { return self->w(); })
       .def("x", [](const Class* self) { return self->x(); })
       .def("y", [](const Class* self) { return self->y(); })
@@ -208,6 +236,96 @@ PYBIND11_MODULE(eigen_geometry, m) {
         return py::str("{}(w={}, x={}, y={}, z={})").format(
             py_class_obj.attr("__name__"),
             self->w(), self->x(), self->y(), self->z());
+      })
+      // Do not define operator `__mul__` until we have the Python3 `@`
+      // operator so that operations are similar to those of arrays.
+      .def("multiply", [](const Class& self, const Class& other) {
+        return self * other;
+      })
+      .def("multiply", [](const Class& self, const Vector3<T>& position) {
+        return self * position;
+      }, py::arg("position"))
+      .def("inverse", [](const Class* self) {
+        return self->inverse();
+      })
+      .def("conjugate", [](const Class* self) {
+        return self->conjugate();
+      });
+  }
+
+  // Angle-axis.
+  {
+    using Class = Eigen::AngleAxis<T>;
+    py::class_<Class> py_class(m, "AngleAxis");
+    py_class.attr("__doc__") =
+        "Bindings for Eigen::AngleAxis<>.";
+    py::object py_class_obj = py_class;
+    py_class
+      .def(py::init([]() {
+        return Class::Identity();
+      }))
+      .def_static("Identity", []() {
+        return Class::Identity();
+      })
+      .def(py::init([](const T& angle, const Vector3<T>& axis) {
+        Class out(angle, axis);
+        CheckAngleAxis(out);
+        return out;
+      }), py::arg("angle"), py::arg("axis"))
+      .def(py::init([](const Eigen::Quaternion<T>& q) {
+        Class out(q);
+        CheckAngleAxis(out);
+        return out;
+      }), py::arg("quaternion"))
+      .def(py::init([](const Matrix3<T>& rotation) {
+        Class out(rotation);
+        CheckAngleAxis(out);
+        return out;
+      }), py::arg("rotation"))
+      .def(py::init([](const Class& other) {
+        CheckAngleAxis(other);
+        return other;
+      }), py::arg("other"))
+      .def("angle", [](const Class* self) { return self->angle(); })
+      .def("axis", [](const Class* self) { return self->axis(); })
+      .def("set_angle", [](Class* self, const T& angle) {
+        // N.B. Since `axis` should already be valid, do not need to check.
+        self->angle() = angle;
+      }, py::arg("angle"))
+      .def("set_axis", [](Class* self, const Vector3<T>& axis) {
+        Class update(self->angle(), axis);
+        CheckAngleAxis(update);
+        *self = update;
+      }, py::arg("axis"))
+      .def("rotation", [](const Class* self) {
+        return self->toRotationMatrix();
+      })
+      .def("set_rotation", [](Class* self, const Matrix3<T>& rotation) {
+        Class update(rotation);
+        CheckAngleAxis(update);
+        *self = update;
+      })
+      .def("quaternion", [](const Class* self) {
+        return Eigen::Quaternion<T>(*self);
+      })
+      .def("set_quaternion", [](Class* self, const Eigen::Quaternion<T>& q) {
+        CheckQuaternion(q);
+        Class update(q);
+        CheckAngleAxis(update);
+        *self = update;
+      })
+      .def("__str__", [py_class_obj](const Class* self) {
+        return py::str("{}(angle={}, axis={})").format(
+            py_class_obj.attr("__name__"),
+            self->angle(), self->axis());
+      })
+      // Do not define operator `__mul__` until we have the Python3 `@`
+      // operator so that operations are similar to those of arrays.
+      .def("multiply", [](const Class& self, const Class& other) {
+        return self * other;
+      })
+      .def("inverse", [](const Class* self) {
+        return self->inverse();
       });
   }
 }

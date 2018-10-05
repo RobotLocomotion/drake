@@ -45,7 +45,25 @@ class TestTrajectoryOptimization(unittest.TestCase):
         initial_x = PiecewisePolynomial()
         dircol.SetInitialTrajectory(initial_u, initial_x)
 
+        global input_was_called
+        input_was_called = False
+        global state_was_called
+        state_was_called = False
+
+        def input_callback(t, u):
+            global input_was_called
+            input_was_called = True
+
+        def state_callback(t, x):
+            global state_was_called
+            state_was_called = True
+
+        dircol.AddInputTrajectoryCallback(input_callback)
+        dircol.AddStateTrajectoryCallback(state_callback)
+
         dircol.Solve()
+        self.assertTrue(input_was_called)
+        self.assertTrue(state_was_called)
 
         times = dircol.GetSampleTimes()
         inputs = dircol.GetInputSamples()

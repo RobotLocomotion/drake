@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cmath>
 #include <exception>
+#include <limits>
 #include <map>
 #include <set>
 #include <stdexcept>
@@ -19,6 +20,7 @@
 
 namespace drake {
 
+using std::numeric_limits;
 using test::IsMemcpyMovable;
 
 namespace symbolic {
@@ -432,7 +434,7 @@ TEST_F(SymbolicFormulaTest, Eq) {
   EXPECT_EQ(f3.Evaluate(env), (2 + 3) == (2 + 3));
   EXPECT_EQ(f4.Evaluate(env), (2 - 3) == (2 + 3));
 
-  EXPECT_EQ((5 + x_ == 3 + y_).to_string(), "((5 + x) = (3 + y))");
+  EXPECT_EQ((5 + x_ == 3 + y_).to_string(), "((5 + x) == (3 + y))");
 }
 
 TEST_F(SymbolicFormulaTest, Neq) {
@@ -577,7 +579,7 @@ TEST_F(SymbolicFormulaTest, And2) {
   EXPECT_EQ(f_and_.Evaluate(env3_), (-2 + -5 > 0) && (-2 * -5 < 5));
   EXPECT_EQ(f_and_.Evaluate(env4_), (-1 + -1 > 0) && (-1 * -1 < 5));
 
-  EXPECT_EQ((x_ == 3 && y_ == 5).to_string(), "((x = 3) and (y = 5))");
+  EXPECT_EQ((x_ == 3 && y_ == 5).to_string(), "((x == 3) and (y == 5))");
   EXPECT_TRUE(is_conjunction(x_ == 3 && y_ == 5));
   EXPECT_TRUE(is_nary(x_ == 3 && y_ == 5));
 }
@@ -666,7 +668,7 @@ TEST_F(SymbolicFormulaTest, Or2) {
   EXPECT_EQ(f_or_.Evaluate(env3_), (-2 + -5 > 0) || (-2 * -5 < 5));
   EXPECT_EQ(f_or_.Evaluate(env4_), (-1 + -1 > 0) || (-1 * -1 < 5));
 
-  EXPECT_EQ((x_ == 3 || y_ == 5).to_string(), "((x = 3) or (y = 5))");
+  EXPECT_EQ((x_ == 3 || y_ == 5).to_string(), "((x == 3) or (y == 5))");
   EXPECT_TRUE(is_disjunction(x_ == 3 || y_ == 5));
   EXPECT_TRUE(is_nary(x_ == 3 || y_ == 5));
 }
@@ -748,7 +750,7 @@ TEST_F(SymbolicFormulaTest, Not2) {
   EXPECT_EQ(not_f_or_.Evaluate(env3_), !((-2 + -5 > 0) || (-2 * -5 < 5)));
   EXPECT_EQ(not_f_or_.Evaluate(env4_), !((-1 + -1 > 0) || (-1 * -1 < 5)));
 
-  EXPECT_EQ((!(x_ == 5)).to_string(), "!((x = 5))");
+  EXPECT_EQ((!(x_ == 5)).to_string(), "!((x == 5))");
   EXPECT_TRUE(is_negation(!(x_ == 5)));
 }
 
@@ -1185,6 +1187,46 @@ TEST_F(SymbolicFormulaTest, GetMatrixInPSD_NonSymmetric_Dynamic) {
       sym_from_upper));
 }
 
+TEST_F(SymbolicFormulaTest, Isinf) {
+  // Checks the std::isinf and symbolic isinf agree on non-NaN values.
+  const double inf{numeric_limits<double>::infinity()};
+  EXPECT_EQ(std::isinf(inf), isinf(Expression(inf)).Evaluate());
+  EXPECT_EQ(std::isinf(3e18), isinf(Expression(3e18)).Evaluate());
+  EXPECT_EQ(std::isinf(3.0), isinf(Expression(3.0)).Evaluate());
+  EXPECT_EQ(std::isinf(0.0), isinf(Expression(0.0)).Evaluate());
+  EXPECT_EQ(std::isinf(-3.0), isinf(Expression(-3.0)).Evaluate());
+  EXPECT_EQ(std::isinf(-3e18), isinf(Expression(-3e18)).Evaluate());
+  EXPECT_EQ(std::isinf(-inf), isinf(Expression(-inf)).Evaluate());
+
+  // Note that constructing isinf with an expression including NaN does *not*
+  // throw.
+  EXPECT_NO_THROW(isinf(Expression::NaN()));
+
+  // For NaN, symbolic::isinf will throw an exception when evaluated while
+  // std::isfinite returns false.
+  EXPECT_THROW(isinf(Expression::NaN()).Evaluate(), std::runtime_error);
+}
+
+TEST_F(SymbolicFormulaTest, Isfinite) {
+  // Checks the std::isfinite and symbolic isfinte agree on non-NaN values.
+  const double inf{numeric_limits<double>::infinity()};
+  EXPECT_EQ(std::isfinite(inf), isfinite(Expression(inf)).Evaluate());
+  EXPECT_EQ(std::isfinite(3e18), isfinite(Expression(3e18)).Evaluate());
+  EXPECT_EQ(std::isfinite(3.0), isfinite(Expression(3.0)).Evaluate());
+  EXPECT_EQ(std::isfinite(0.0), isfinite(Expression(0.0)).Evaluate());
+  EXPECT_EQ(std::isfinite(-3.0), isfinite(Expression(-3.0)).Evaluate());
+  EXPECT_EQ(std::isfinite(-3e18), isfinite(Expression(-3e18)).Evaluate());
+  EXPECT_EQ(std::isfinite(-inf), isfinite(Expression(-inf)).Evaluate());
+
+  // Note that constructing isfinite with an expression including NaN does *not*
+  // throw.
+  EXPECT_NO_THROW(isfinite(Expression::NaN()));
+
+  // For NaN, symbolic::isfinite will throw an exception when evaluated while
+  // std::isfinite returns false.
+  EXPECT_THROW(isfinite(Expression::NaN()).Evaluate(), std::runtime_error);
+}
+
 // Confirm that formulas compile (and pass) Drake's assert-like checks.
 TEST_F(SymbolicFormulaTest, DrakeAssert) {
   Formula mutable_f{x_ > 0};
@@ -1215,6 +1257,33 @@ TEST_F(SymbolicFormulaTest, DrakeAssert) {
   DRAKE_THROW_UNLESS(f_forall_);
   DRAKE_THROW_UNLESS(f_isnan_);
   DRAKE_THROW_UNLESS(mutable_f);
+}
+
+// Tests that default constructor and EIGEN_INITIALIZE_MATRICES_BY_ZERO
+// constructor both create the same value.
+GTEST_TEST(FormulaTest, DefaultConstructors) {
+  const Formula f_default;
+  const Formula f_zero(0);
+  EXPECT_TRUE(is_false(f_default));
+  EXPECT_TRUE(is_false(f_zero));
+}
+
+// Tests the `bool`-literal constructor.
+GTEST_TEST(FormulaTest, CxxBoolLiteralConstructor) {
+  const Formula f_true(true);
+  const Formula f_false(false);
+  EXPECT_TRUE(is_true(f_true));
+  EXPECT_TRUE(is_false(f_false));
+}
+
+// Tests the `bool`-variable constructor.
+GTEST_TEST(FormulaTest, CxxBoolVariableConstructor) {
+  const bool true_variable = true;
+  const bool false_variable = false;
+  const Formula f_true(true_variable);
+  const Formula f_false(false_variable);
+  EXPECT_TRUE(is_true(f_true));
+  EXPECT_TRUE(is_false(f_false));
 }
 
 // This test checks whether symbolic::Formula is compatible with

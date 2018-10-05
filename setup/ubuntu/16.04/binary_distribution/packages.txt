@@ -1,10 +1,12 @@
 coinor-libclp1
 coinor-libcoinutils3v5
 coinor-libipopt1v5
+default-jre
 libblas3
 libboost-all-dev
 libexpat1
 libgflags-dev
+libgfortran3
 libgl1-mesa-glx
 libglib2.0-0
 libhdf5-10
@@ -19,6 +21,7 @@ libpng12-0
 libprotobuf-dev
 libqt5multimedia5
 libqt5x11extras5
+libtbb2
 libtheora0
 libtiff5
 libtinyxml2-dev
@@ -26,11 +29,13 @@ libtinyxml2.6.2v5
 libxml2
 libxt6
 libyaml-cpp0.5v5
-openjdk-8-jre
 python
 python-lxml
+python-matplotlib
 python-numpy
+python-pydot
 python-scipy
+python-tk
 python-yaml
 qtbase5-dev
 zlib1g

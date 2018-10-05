@@ -24,8 +24,8 @@ drake_cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        "//attic/multibody/rigid_body_plant:compliant_contact_model",
         "//common",
-        "//multibody/rigid_body_plant:compliant_contact_model",
     ],
 )
 
@@ -69,6 +69,7 @@ drake_cc_library(
     ],
     deps = [
         ":pick_and_place_configuration",
+        "//attic/multibody/parsers",
         "//common:essential",
         "//common/trajectories:piecewise_polynomial",
         "//common/trajectories:piecewise_quaternion",
@@ -80,7 +81,6 @@ drake_cc_library(
         "//manipulation/util:world_sim_tree_builder",
         "//multibody:inverse_kinematics",
         "//multibody:rigid_body_tree",
-        "//multibody/parsers",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],

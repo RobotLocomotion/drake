@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/geometry/geometry_system.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 
 namespace drake {
@@ -23,8 +23,8 @@ namespace bouncing_ball {
 ///   The Coulomb's law coefficients of friction.
 /// @param[in] gravity_W
 ///   The acceleration of gravity vector, expressed in the world frame W.
-/// @param geometry_system
-///   If a GeometrySystem is provided with this argument, this factory method
+/// @param scene_graph
+///   If a SceneGraph is provided with this argument, this factory method
 ///   will register the new multibody plant to be a source for that geometry
 ///   system and it will also register geometry for collision.
 ///   If this argument is omitted, no geometry will be registered.
@@ -32,8 +32,9 @@ std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakeBouncingBallPlant(
     double radius, double mass,
     const drake::multibody::multibody_plant::CoulombFriction<double>&
-    surface_friction, const Vector3<double>& gravity_W,
-    geometry::GeometrySystem<double>* geometry_system = nullptr);
+        surface_friction,
+    const Vector3<double>& gravity_W,
+    geometry::SceneGraph<double>* scene_graph = nullptr);
 
 }  // namespace bouncing_ball
 }  // namespace multibody

@@ -1,0 +1,105 @@
+# -*- python -*-
+
+load(
+    "@drake//attic:build_macros.bzl",
+    drake_cc_googletest = "attic_drake_cc_googletest",
+    drake_cc_library = "attic_drake_cc_library",
+)
+load("//tools/skylark:test_tags.bzl", "gurobi_test_tags")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_library(
+    name = "global_inverse_kinematics_test_util",
+    testonly = 1,
+    srcs = [
+        "test/global_inverse_kinematics_test_util.cc",
+    ],
+    hdrs = [
+        "test/global_inverse_kinematics_test_util.h",
+    ],
+    deps = [
+        "//attic/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody:global_inverse_kinematics",
+        "//multibody:inverse_kinematics",
+        "//multibody:rigid_body_tree_construction",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_googletest(
+    name = "global_inverse_kinematics_test",
+    timeout = "moderate",
+    srcs = ["test/global_inverse_kinematics_test.cc"],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    tags = gurobi_test_tags() + [
+        # Takes too long to run with Valgrind.
+        "no_memcheck",
+        # Excluding because an assertion fails in LLVM code. Issue #6179.
+        "no_tsan",
+    ],
+    deps = [
+        ":global_inverse_kinematics_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "global_inverse_kinematics_reachable_test",
+    timeout = "moderate",
+    srcs = ["test/global_inverse_kinematics_reachable_test.cc"],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    tags = gurobi_test_tags() + [
+        # Takes too long to run with Valgrind.
+        "no_memcheck",
+        # Excluding because an assertion fails in LLVM code. Issue #6179.
+        "no_tsan",
+    ],
+    deps = [
+        ":global_inverse_kinematics_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "global_inverse_kinematics_collision_avoidance_test",
+    timeout = "moderate",
+    srcs = ["test/global_inverse_kinematics_collision_avoidance_test.cc"],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    tags = gurobi_test_tags() + [
+        # Takes too long to run with Valgrind.
+        "no_memcheck",
+        # Excluding because an assertion fails in LLVM code. Issue #6179.
+        "no_tsan",
+    ],
+    deps = [
+        ":global_inverse_kinematics_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "global_inverse_kinematics_feasible_posture_test",
+    timeout = "long",
+    srcs = ["test/global_inverse_kinematics_feasible_posture_test.cc"],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    tags = gurobi_test_tags() + [
+        "no_asan",
+        # Takes too long to run with Valgrind.
+        "no_memcheck",
+        "no_tsan",
+    ],
+    deps = [
+        ":global_inverse_kinematics_test_util",
+    ],
+)
+
+add_lint_tests(
+    cpplint_data = ["//attic:CPPLINT.cfg"],
+)

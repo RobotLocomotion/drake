@@ -7,7 +7,7 @@ def _drake_runfiles_binary_impl(ctx):
     # `short_path` semi-solves it, but for externals, sometimes resolves to
     # `../*` instead of `external/*`
     target_relpath = ctx.executable.target.short_path
-    if target_relpath.startswith('../'):
+    if target_relpath.startswith("../"):
         target_relpath = "external/" + target_relpath[3:]
     info = dict(
         target_relpath = target_relpath,
@@ -40,7 +40,7 @@ exec "${{target_path}}" "$@"
     return [DefaultInfo(
         runfiles = ctx.runfiles(
             # Inherit `target`s runfiles.
-            files = list(ctx.attr.target.data_runfiles.files),
+            files = ctx.attr.target.data_runfiles.files.to_list(),
         ),
     )]
 

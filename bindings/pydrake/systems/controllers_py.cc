@@ -5,38 +5,23 @@
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
-#include "drake/bindings/pydrake/util/wrap_function.h"
+#include "drake/bindings/pydrake/util/wrap_pybind.h"
+#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/controllers/dynamic_programming.h"
+#include "drake/systems/controllers/inverse_dynamics.h"
+#include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 
 namespace drake {
 namespace pydrake {
 
-namespace {
-
-template <typename T, typename = void>
-struct wrap_ptr : public wrap_arg_default<T> {};
-
-template <typename T>
-struct wrap_ptr<const systems::Context<T>&> {
-  using Type = systems::Context<T>;
-  static auto wrap(const Type& arg) { return &arg; }
-  static auto unwrap(const Type* arg_wrapped) { return *arg_wrapped; }
-};
-
-// Ensures that `const Context<T>&` is wrapped with `const Context<T>*`.
-// TODO(eric.cousineau): Replace this with general wrappper, place in
-// `pydrake_pybind` or somewhere related.
-template <typename Func>
-auto WrapPtr(Func&& func) {
-  return WrapFunction<wrap_ptr>(std::forward<Func>(func));
-}
-
-}  // namespace
-
 PYBIND11_MODULE(controllers, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::controllers;
+  using drake::multibody::multibody_plant::MultibodyPlant;
+  using drake::systems::Diagram;
+  using drake::systems::LeafSystem;
 
   py::module::import("pydrake.math");
   py::module::import("pydrake.symbolic");
@@ -58,10 +43,56 @@ PYBIND11_MODULE(controllers, m) {
       .def_readwrite("visualization_callback",
                      &DynamicProgrammingOptions::visualization_callback);
 
-  m.def("FittedValueIteration", WrapPtr(&FittedValueIteration));
+  py::class_<InverseDynamics<double>, LeafSystem<double>> idyn(
+    m, "InverseDynamics");
+  idyn.def(py::init<const RigidBodyTree<double>*,
+      InverseDynamics<double>::InverseDynamicsMode>(),
+      py::arg("tree"),
+      py::arg("mode"));
+  idyn.def("is_pure_gravity_compensation",
+      &InverseDynamics<double>::is_pure_gravity_compensation);
+
+  py::enum_<InverseDynamics<double>::InverseDynamicsMode>(
+      idyn, "InverseDynamicsMode")
+      .value("kInverseDynamics", InverseDynamics<double>::kInverseDynamics)
+      .value("kGravityCompensation",
+          InverseDynamics<double>::kGravityCompensation)
+      .export_values();
+
+  py::class_<InverseDynamicsController<double>, Diagram<double>>(
+      m, "InverseDynamicsController")
+      .def(py::init<std::unique_ptr<RigidBodyTree<double>>,
+                    const VectorX<double>&,
+                    const VectorX<double>&,
+                    const VectorX<double>&,
+                    bool>(),
+           py::arg("robot"),
+           py::arg("kp"),
+           py::arg("ki"),
+           py::arg("kd"),
+           py::arg("has_reference_acceleration"),
+           // Keep alive, ownership: RigidBodyTree keeps this alive.
+           // See "Keep Alive Behavior" in pydrake_pybind.h for details.
+           py::keep_alive<2 /* Nurse */, 1 /* Patient */>())
+      .def(py::init<const MultibodyPlant<double>&,
+                    const VectorX<double>&,
+                    const VectorX<double>&,
+                    const VectorX<double>&,
+                    bool>(),
+           py::arg("robot"),
+           py::arg("kp"),
+           py::arg("ki"),
+           py::arg("kd"),
+           py::arg("has_reference_acceleration"),
+           // Keep alive, reference: `self` keeps `MultibodyPlant` alive.
+           py::keep_alive<1, 2>())
+      .def("set_integral_value",
+           &InverseDynamicsController<double>::set_integral_value);
+
+  m.def("FittedValueIteration", WrapCallbacks(&FittedValueIteration));
 
   m.def("LinearProgrammingApproximateDynamicProgramming",
-        WrapPtr(&LinearProgrammingApproximateDynamicProgramming));
+        WrapCallbacks(&LinearProgrammingApproximateDynamicProgramming));
 
   m.def("LinearQuadraticRegulator",
         [](const Eigen::Ref<const Eigen::MatrixXd>& A,

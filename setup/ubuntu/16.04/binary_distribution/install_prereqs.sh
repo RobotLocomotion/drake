@@ -10,13 +10,8 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
-apt update
-apt install --no-install-recommends $(tr '\n' ' ' <<EOF
-apt-transport-https
-ca-certificates
-lsb-release
-EOF
-)
+apt-get update
+apt-get install --no-install-recommends lsb-release
 
 if [[ "$(lsb_release -sc)" != 'xenial' ]]; then
   echo 'This script requires Ubuntu 16.04 (Xenial)' >&2
@@ -56,10 +51,10 @@ mark_auto \
   2.6.5.20180123154310.gitf618c7b296182f90a84d54936d144b87df0747b9~16.04 \
   2.6.5.20180211084215.gitd1419538b4d818ed1cf21a01896bc5eaae5d1d57~16.04
 
-apt install --no-install-recommends $(tr '\n' ' ' <<EOF
+apt-get install --no-install-recommends $(tr '\n' ' ' <<EOF
 build-essential
 cmake
 EOF
 )
 
-apt install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages.txt" | tr '\n' ' ')
+apt-get install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages.txt" | tr '\n' ' ')

@@ -3,7 +3,6 @@
 #include <cmath>
 #include <cstddef>
 #include <ios>
-#include <limits>
 #include <map>
 #include <memory>
 #include <stdexcept>
@@ -12,6 +11,8 @@
 #include <vector>
 
 #include <Eigen/Core>
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
@@ -23,6 +24,7 @@
 namespace drake {
 namespace symbolic {
 
+using std::logic_error;
 using std::make_shared;
 using std::map;
 using std::numeric_limits;
@@ -71,7 +73,8 @@ Expression NegateMultiplication(const Expression& e) {
 Expression::Expression(const Variable& var)
     : ptr_{make_shared<ExpressionVar>(var)} {}
 Expression::Expression(const double d) : ptr_{make_cell(d)} {}
-Expression::Expression(shared_ptr<ExpressionCell> ptr) : ptr_{std::move(ptr)} {}
+Expression::Expression(std::shared_ptr<ExpressionCell> ptr)
+    : ptr_{std::move(ptr)} {}
 
 ExpressionKind Expression::get_kind() const {
   DRAKE_ASSERT(ptr_ != nullptr);
@@ -745,8 +748,9 @@ Expression if_then_else(const Formula& f_cond, const Expression& e_then,
   return Expression{make_shared<ExpressionIfThenElse>(f_cond, e_then, e_else)};
 }
 
-Expression uninterpreted_function(const string& name, const Variables& vars) {
-  return Expression{make_shared<ExpressionUninterpretedFunction>(name, vars)};
+Expression uninterpreted_function(string name, vector<Expression> arguments) {
+  return Expression{make_shared<ExpressionUninterpretedFunction>(
+      std::move(name), std::move(arguments))};
 }
 
 bool is_constant(const Expression& e) { return is_constant(*e.ptr_); }
@@ -822,6 +826,11 @@ const string& get_uninterpreted_function_name(const Expression& e) {
   return to_uninterpreted_function(e)->get_name();
 }
 
+const vector<Expression>& get_uninterpreted_function_arguments(
+    const Expression& e) {
+  return to_uninterpreted_function(e)->get_arguments();
+}
+
 const Formula& get_conditional_formula(const Expression& e) {
   return to_if_then_else(e)->get_conditional_formula();
 }
@@ -837,11 +846,16 @@ const Expression& get_else_expression(const Expression& e) {
 Expression operator+(const Variable& var) { return Expression{var}; }
 Expression operator-(const Variable& var) { return -Expression{var}; }
 
-VectorX<Variable> get_variable_vector(
+VectorX<Variable> GetVariableVector(
     const Eigen::Ref<const VectorX<Expression>>& evec) {
   VectorX<Variable> vec(evec.size());
   for (int i = 0; i < evec.size(); i++) {
-    vec(i) = get_variable(evec(i));
+    const Expression e_i{evec(i)};
+    if (is_variable(e_i)) {
+      vec(i) = get_variable(e_i);
+    } else {
+      throw logic_error(fmt::format("{} is not a variable.", e_i));
+    }
   }
   return vec;
 }
@@ -863,6 +877,135 @@ MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
 MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
                              const Eigen::Ref<const VectorX<Variable>>& vars) {
   return Jacobian(f, vector<Variable>(vars.data(), vars.data() + vars.size()));
+}
+
+namespace {
+// Helper functions for TaylorExpand.
+//
+// We use the multi-index notation. Please read
+// https://en.wikipedia.org/wiki/Multi-index_notation for more information.
+
+// α = (a₁, ..., aₙ) where αᵢ ∈ Z.
+using MultiIndex = vector<int>;
+
+// Generates multi-indices of order `order` whose size is `num_vars` and append
+// to `vec`. It generates the indices by increasing the elements of the given
+// `base`. It only changes the i-th dimension which is greater than or equal to
+// `start_dim` to avoid duplicates.
+void DoEnumerateMultiIndex(const int order, const int num_vars,
+                           const int start_dim, const MultiIndex& base,
+                           vector<MultiIndex>* const vec) {
+  DRAKE_ASSERT(order > 0);
+  DRAKE_ASSERT(start_dim >= 0);
+  DRAKE_ASSERT(base.size() == static_cast<size_t>(num_vars));
+  if (order == 0) {
+    return;
+  }
+  if (order == 1) {
+    for (int i = start_dim; i < num_vars; ++i) {
+      MultiIndex alpha = base;
+      ++alpha[i];
+      vec->push_back(std::move(alpha));
+    }
+    return;
+  } else {
+    for (int i = start_dim; i < num_vars; ++i) {
+      MultiIndex alpha = base;
+      ++alpha[i];
+      DoEnumerateMultiIndex(order - 1, num_vars, i, alpha, vec);
+    }
+  }
+}
+
+// Returns the set of multi-indices of order `order` whose size is `num-vars`.
+vector<MultiIndex> EnumerateMultiIndex(const int order, const int num_vars) {
+  DRAKE_ASSERT(order > 0);
+  DRAKE_ASSERT(num_vars >= 1);
+  vector<MultiIndex> vec;
+  MultiIndex base(num_vars, 0);  // base = (0, ..., 0)
+  DoEnumerateMultiIndex(order, num_vars, 0, base, &vec);
+  return vec;
+}
+
+// Computes the factorial of n.
+int Factorial(const int n) {
+  DRAKE_ASSERT(n >= 0);
+  int f = 1;
+  for (int i = 2; i <= n; ++i) {
+    f *= i;
+  }
+  return f;
+}
+
+// Given a multi index α = (α₁, ..., αₙ), returns α₁! * ... * αₙ!.
+int FactorialProduct(const MultiIndex& alpha) {
+  int ret = 1;
+  for (const int i : alpha) {
+    ret *= Factorial(i);
+  }
+  return ret;
+}
+
+// Computes ∂fᵅ(a) = ∂ᵅ¹...∂ᵅⁿf(a).
+Expression Derivative(Expression f, const MultiIndex& alpha,
+                      const Environment& a) {
+  int i = 0;
+  for (const pair<const Variable, double>& p : a) {
+    const Variable& v = p.first;
+    for (int j = 0; j < alpha[i]; ++j) {
+      f = f.Differentiate(v);
+    }
+    ++i;
+  }
+  return f.EvaluatePartial(a);
+}
+
+// Given terms = [e₁, ..., eₙ] and alpha = (α₁, ..., αₙ), returns
+// pow(e₁,α₁) * ... * pow(eₙ,αₙ)
+Expression Exp(const vector<Expression>& terms, const MultiIndex& alpha) {
+  DRAKE_ASSERT(terms.size() == alpha.size());
+  ExpressionMulFactory factory;
+  for (size_t i = 0; i < terms.size(); ++i) {
+    factory.AddExpression(pow(terms[i], alpha[i]));
+  }
+  return factory.GetExpression();
+}
+
+// Computes ∑_{|α| = order} ∂fᵅ(a) / α! * (x - a)ᵅ.
+void DoTaylorExpand(const Expression& f, const Environment& a,
+                    const vector<Expression>& terms, const int order,
+                    const int num_vars, ExpressionAddFactory* const factory) {
+  DRAKE_ASSERT(order > 0);
+  DRAKE_ASSERT(terms.size() == static_cast<size_t>(num_vars));
+  const vector<MultiIndex> multi_indices{EnumerateMultiIndex(order, num_vars)};
+  for (const MultiIndex& alpha : multi_indices) {
+    factory->AddExpression(Derivative(f, alpha, a) * Exp(terms, alpha) /
+                           FactorialProduct(alpha));
+  }
+}
+}  // namespace
+
+Expression TaylorExpand(const Expression& f, const Environment& a,
+                        const int order) {
+  // The implementation uses the formulation:
+  //      Taylor(f, a, order) = ∑_{|α| ≤ order} ∂fᵅ(a) / α! * (x - a)ᵅ.
+  DRAKE_DEMAND(order >= 1);
+  ExpressionAddFactory factory;
+  factory.AddExpression(f.EvaluatePartial(a));
+  const int num_vars = a.size();
+  if (num_vars == 0) {
+    return f;
+  }
+  vector<Expression> terms;  // (x - a)
+  for (const pair<const Variable, double>& p : a) {
+    const Variable& var = p.first;
+    const double v = p.second;
+    terms.push_back(var - v);
+  }
+  for (int i = 1; i <= order; ++i) {
+    DoTaylorExpand(f, a, terms, i, num_vars, &factory);
+  }
+  return factory.GetExpression();
 }
 
 Variables GetDistinctVariables(const Eigen::Ref<const MatrixX<Expression>>& v) {

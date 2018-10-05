@@ -14,6 +14,7 @@ namespace drake {
 namespace symbolic {
 
 using std::accumulate;
+using std::logic_error;
 using std::make_pair;
 using std::map;
 using std::ostream;
@@ -77,7 +78,32 @@ map<Variable, int> ToMonomialPower(const Expression& e) {
   }
   return powers;
 }
+
+// Converts a pair of variables and their integer exponents into an internal
+// representation of Monomial class, a mapping from a base (Variable) to its
+// exponent (int). This function is called in the constructor taking the same
+// types of arguments.
+map<Variable, int> ToMonomialPower(
+    const Eigen::Ref<const VectorX<Variable>>& vars,
+    const Eigen::Ref<const Eigen::VectorXi>& exponents) {
+  DRAKE_DEMAND(vars.size() == exponents.size());
+  map<Variable, int> powers;
+  for (int i = 0; i < vars.size(); ++i) {
+    if (exponents[i] > 0) {
+      powers.emplace(vars[i], exponents[i]);
+    } else if (exponents[i] < 0) {
+      throw std::logic_error("The exponent is negative.");
+    }
+  }
+  return powers;
+}
+
 }  // namespace
+
+Monomial::Monomial(const Eigen::Ref<const VectorX<Variable>>& vars,
+                   const Eigen::Ref<const Eigen::VectorXi>& exponents)
+    : total_degree_{exponents.sum()},
+      powers_{ToMonomialPower(vars, exponents)} {}
 
 Monomial::Monomial(const Variable& var) : total_degree_{1}, powers_{{var, 1}} {}
 
@@ -96,7 +122,7 @@ Monomial::Monomial(const map<Variable, int>& powers)
     if (exponent > 0) {
       powers_.insert(p);
     } else if (exponent < 0) {
-      throw std::runtime_error("The exponent is negative.");
+      throw std::logic_error("The exponent is negative.");
     }
     // Ignore the entry if exponent == 0.
   }
@@ -123,7 +149,26 @@ Variables Monomial::GetVariables() const {
 }
 
 bool Monomial::operator==(const Monomial& m) const {
-  return powers_ == m.powers_;
+  // The first test below checks the number of factors in each monomial, e.g., x
+  // * y^2 * z^3 differs from x * y^2 due to a different number of factors. x *
+  // y^2 * z^3 and x * y^2 * z^7 have the same number of factors and this first
+  // test is inconclusive as to whether the monomials are equal.
+  if (powers_.size() != m.powers_.size()) return false;
+  // The second test compares the variables and exponents on each factor, e.g.,
+  // x * y^2 * z^3 and x * y^2 * z^7 returns false (different exponent on z).
+  // x * y^2 * z^3 and x * y^2 * b^3 returns false (different variable z vs. b).
+  // x * y^2 * z^3 and x * y^2 * z^3 returns true (equal monomials).
+  for (auto it1 = powers_.begin(), it2 = m.powers_.begin();
+       it1 != powers_.end(); ++it1, ++it2) {
+    const Variable& var1{it1->first};
+    const Variable& var2{it2->first};
+    const int exponent1{it1->second};
+    const int exponent2{it2->second};
+    if (!var1.equal_to(var2) || exponent1 != exponent2) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool Monomial::operator!=(const Monomial& m) const { return !(*this == m); }

@@ -20,7 +20,7 @@ GTEST_TEST(IiwaLcmTest, IiwaCommandReceiverTest) {
   std::unique_ptr<systems::Context<double>> context =
       dut.CreateDefaultContext();
   std::unique_ptr<systems::SystemOutput<double>> output =
-      dut.AllocateOutput(*context);
+      dut.AllocateOutput();
 
   // Check that the commanded pose starts out at zero, and that we can
   // set a different initial position.
@@ -60,7 +60,7 @@ GTEST_TEST(IiwaLcmTest, IiwaCommandReceiverTest) {
       dut.AllocateDiscreteVariables();
   update->SetFrom(context->get_mutable_discrete_state());
   dut.CalcDiscreteVariableUpdates(*context, update.get());
-  context->set_discrete_state(std::move(update));
+  context->get_mutable_discrete_state().SetFrom(*update);
 
   dut.CalcOutput(*context, output.get());
   EXPECT_TRUE(CompareMatrices(
@@ -88,7 +88,7 @@ GTEST_TEST(IiwaLcmTest, IiwaCommandReceiverTest) {
       0, std::make_unique<systems::Value<lcmt_iiwa_command>>(command));
   update = dut.AllocateDiscreteVariables();
   dut.CalcDiscreteVariableUpdates(*context, update.get());
-  context->set_discrete_state(std::move(update));
+  context->get_mutable_discrete_state().SetFrom(*update);
   dut.CalcOutput(*context, output.get());
 
   EXPECT_TRUE(CompareMatrices(
@@ -102,7 +102,7 @@ GTEST_TEST(IiwaLcmTest, IiwaCommandSenderTest) {
   std::unique_ptr<systems::Context<double>>
       context = dut.CreateDefaultContext();
   std::unique_ptr<systems::SystemOutput<double>> output =
-      dut.AllocateOutput(*context);
+      dut.AllocateOutput();
 
   Eigen::VectorXd position(kNumJoints);
   position << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7;
@@ -136,7 +136,7 @@ GTEST_TEST(IiwaLcmTest, IiwaStatusReceiverTest) {
   std::unique_ptr<systems::Context<double>> context =
       dut.CreateDefaultContext();
   std::unique_ptr<systems::SystemOutput<double>> output =
-      dut.AllocateOutput(*context);
+      dut.AllocateOutput();
 
   lcmt_iiwa_status status{};
   status.num_joints = kNumJoints;
@@ -162,7 +162,7 @@ GTEST_TEST(IiwaLcmTest, IiwaStatusReceiverTest) {
       dut.AllocateDiscreteVariables();
   update->SetFrom(context->get_mutable_discrete_state());
   dut.CalcDiscreteVariableUpdates(*context, update.get());
-  context->set_discrete_state(std::move(update));
+  context->get_mutable_discrete_state().SetFrom(*update);
 
   dut.CalcOutput(*context, output.get());
   const auto measured = output->get_vector_data(
@@ -186,7 +186,7 @@ GTEST_TEST(IiwaLcmTest, IiwaStatusSenderTest) {
   std::unique_ptr<systems::Context<double>>
       context = dut.CreateDefaultContext();
   std::unique_ptr<systems::SystemOutput<double>> output =
-      dut.AllocateOutput(*context);
+      dut.AllocateOutput();
 
   Eigen::VectorXd position(kNumJoints);
   position << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7;
@@ -256,7 +256,7 @@ GTEST_TEST(IiwaLcmTest, IiwaContactResultsToExternalTorque) {
   std::unique_ptr<systems::Context<double>>
       context = dut.CreateDefaultContext();
   std::unique_ptr<systems::SystemOutput<double>> output =
-      dut.AllocateOutput(*context);
+      dut.AllocateOutput();
 
   VectorX<double> expected(tree->get_num_velocities());
   for (int i = 0; i < expected.size(); i++)

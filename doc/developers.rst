@@ -8,6 +8,8 @@ For Developers
    :depth: 3
    :local:
 
+.. _pull_request:
+
 Introduction
 ============
 
@@ -74,19 +76,25 @@ integration. All other configurations are provided on a best-effort basis.
 Drake requires a compiler running in C++14 mode or greater. MATLAB is only
 supported for CMake builds using the "Unix Makefiles" generator.
 
-+-----------------------------+-----------------+--------------------+------------+-------------------+--------+
-| Operating System            | Build System    | C/C++ Compiler     | Java       | MATLAB (Optional) | Python |
-+=============================+=================+====================+============+===================+========+
-+-----------------------------+-----------------+--------------------+------------+-------------------+--------+
-| Ubuntu 16.04 LTS ("Xenial") | | Bazel 0.10.1  | | Clang 4.0        | OpenJDK 8  | R2017a            | 2.7.11 |
-|                             | | CMake 3.5.1   | | GCC 5.4          |            |                   |        |
-+-----------------------------+-----------------+--------------------+------------+                   +--------+
-| macOS 10.12 ("Sierra")      | | Bazel 0.12.0  | Apple Clang 9.0.0  | Oracle 1.8 |                   | 2.7.14 |
-+-----------------------------+ | CMake 3.11.0  |                    |            +-------------------+        |
-| macOS 10.13 ("High Sierra") |                 |                    |            | R2017b            |        |
-+-----------------------------+-----------------+--------------------+------------+-------------------+--------+
++----------------------------------+-----------------+-----------------+------------+-------------------+--------+
+| Operating System                 | Build System    | C/C++ Compiler  | Java       | MATLAB (Optional) | Python |
++==================================+=================+=================+============+===================+========+
++----------------------------------+-----------------+-----------------+------------+-------------------+--------+
+| Ubuntu 16.04 LTS (Xenial Xerus)  | | Bazel 0.16.1  | | Clang 6.0     | OpenJDK 8  | R2017a            | 2.7.11 |
+|                                  | | CMake 3.5.1   | | GCC 5.4       |            |                   |        |
++----------------------------------+-----------------+-----------------+------------+-------------------+--------+
+| Ubuntu 18.04 LTS (Bionic Beaver) | | Bazel 0.17.2  | | Clang 6.0     | OpenJDK 11 | R2018b            | 2.7.15 |
+|                                  | | CMake 3.10.2  | | GCC 7.3       |            |                   |        |
++----------------------------------+-----------------+-----------------+------------+                   |        |
+| macOS High Sierra (10.13)        | | Bazel 0.17.2  | Apple LLVM 10.0 | Oracle 11  |                   |        |
++----------------------------------+ | CMake 3.12.2  |                 |            |                   |        |
+| macOS Mojave (10.14)             |                 |                 |            |                   |        |
++----------------------------------+-----------------+-----------------+------------+-------------------+--------+
 
-macOS 10.13 ("High Sierra") MATLAB support is experimental and untested in continuous
+
+Ubuntu Bionic C++ and Python support is experimental and has limited testing
+in continuous integration. macOS Mojave C++ and Python support and macOS and
+Ubuntu Bionic MATLAB support is experimental and untested in continuous
 integration.
 
 .. _binary-packages:
@@ -94,9 +102,18 @@ integration.
 Binary Packages
 ---------------
 
-The binary releases of Drake are built with GCC 5.4 on Ubuntu 16.04 and Apple Clang 9.0 on macOS 10.13.
+The binary releases of Drake are built with GCC 5.4 on Ubuntu Xenial and Apple
+LLVM 10.0 on macOS High Sierra.
 
 The links for these packages are listed in :ref:`binary-installation`.
+
+Issue Tracking
+==============
+
+.. toctree::
+    :maxdepth: 1
+
+    issues
 
 Code Review
 ===========
@@ -159,7 +176,6 @@ make the review faster.
 - @EricCousineau-TRI (Toyota Research Institute)
 - @ggould-tri (Toyota Research Institute)
 - @jwnimmer-tri (Toyota Research Institute)
-- @psiorx (MIT)
 - @sammy-tri (Toyota Research Institute)
 - @SeanCurtis-TRI (Toyota Research Institute)
 - @sherm1 (Toyota Research Institute)
@@ -184,6 +200,42 @@ Review Process Tooling
     reviewable
 
 .. _continuous_integration_notes:
+
+User Assistance
+===============
+
+The user-facing instructions for requesting assistance are located in
+:ref:`getting_help`. The two main options for requesting assistance are either
+posting a GitHub issue or a StackOverflow question.
+
+Handling User GitHub Issues
+---------------------------
+
+See :ref:`issues`.
+
+If a GitHub issue should instead be a StackOverflow question (e.g. it is of a
+tutorial nature that does not require code or documentation modification),
+please request that the user repost the question on StackOverflow, post the
+new link on the GitHub issue, and close the issue.
+
+Handling User StackOverflow Questions
+-------------------------------------
+
+Please subscribe to the ``drake`` tag by following
+`these general instructions <https://meta.stackoverflow.com/a/336515/7829525>`_,
+if you are able to.
+
+Please also monitor for `unanswered StackOverflow posts
+<https://stackoverflow.com/unanswered/tagged/drake?tab=noanswers>`_
+once per day. If there are unanswered questions that you are unsure of the
+answer, consider posting on the Slack ``#onramp`` channel to see if someone
+can can look into the question.
+
+The following developers are subscribed to the ``drake`` tag, and will monitor
+it:
+
+  - Russ Tedrake
+  - Eric Cousineau
 
 Continuous Integration Notes
 ============================
@@ -213,6 +265,7 @@ IDE and Text Editor Notes
     Eclipse <https://github.com/tkoolen/drake/wiki/Eclipse-setup-(experimental)>
     sublime_text
     unicode_tips_tricks
+    vim
 
 Operating System Notes
 ======================

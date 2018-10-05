@@ -25,7 +25,9 @@ namespace manipulation {
 namespace util {
 
 template <typename T>
-WorldSimTreeBuilder<T>::WorldSimTreeBuilder() {
+WorldSimTreeBuilder<T>::WorldSimTreeBuilder(
+    bool compile_tree, std::unique_ptr<RigidBodyTree<T>> base_tree)
+    : compile_tree_(compile_tree) {
   // TODO(SeanCurtis-TRI): These values preserve the historical behavior of the
   // compliant contact model. However, it has several issues:
   //  1. Young's modulus is far too small (it does not reflect a reasonable
@@ -45,6 +47,12 @@ WorldSimTreeBuilder<T>::WorldSimTreeBuilder() {
   default_contact_material_.set_youngs_modulus(20000);    // Pa
   default_contact_material_.set_dissipation(2);           // s/m
   default_contact_material_.set_friction(0.9, 0.5);
+
+  if (base_tree) {
+    rigid_body_tree_ = std::move(base_tree);
+  } else {
+    rigid_body_tree_ = std::make_unique<RigidBodyTree<T>>();
+  }
 }
 
 template <typename T>
@@ -95,7 +103,10 @@ int WorldSimTreeBuilder<T>::AddModelInstanceToFrame(
     const drake::multibody::joints::FloatingBaseType floating_base_type) {
   DRAKE_DEMAND(!built_);
 
-  spruce::path p(model_map_[model_name]);
+  auto it = model_map_.find(model_name);
+  DRAKE_THROW_UNLESS(it != model_map_.end());
+
+  spruce::path p(it->second);
 
   // Converts the file extension to be lower case.
   auto extension = p.extension();
@@ -108,12 +119,12 @@ int WorldSimTreeBuilder<T>::AddModelInstanceToFrame(
   if (extension == ".urdf") {
     table = drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         model_map_[model_name], floating_base_type, weld_to_frame,
-        rigid_body_tree_.get());
+        compile_tree_, rigid_body_tree_.get());
 
   } else if (extension == ".sdf") {
     table = drake::parsers::sdf::AddModelInstancesFromSdfFile(
         model_map_[model_name], floating_base_type, weld_to_frame,
-        rigid_body_tree_.get());
+        compile_tree_, rigid_body_tree_.get());
   }
   const int model_instance_id = table.begin()->second;
 

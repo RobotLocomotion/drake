@@ -1,5 +1,6 @@
 //------------------------------------------------------------------------------
 /** @defgroup system_scalar_conversion System Scalar Conversion
+    @ingroup technical_notes
 
 System scalar conversion refers to cloning a System templatized by one scalar
 type into an identical System that is templatized by a different scalar type.
@@ -30,7 +31,7 @@ code sample compiles and runs successfully.
   //   tau = 0, theta = 0.1, thetadot = 0.2.
   auto plant = std::make_unique<PendulumPlant<double>>();
   auto context = plant->CreateDefaultContext();
-  context->FixInputPort(0, Vector1d::Zero());  // tau
+  context->FixInputPort(0, {0.0});  // tau
   auto* state = dynamic_cast<PendulumState<double>*>(
       context->get_mutable_continuous_state_vector());
   state->set_theta(0.1);

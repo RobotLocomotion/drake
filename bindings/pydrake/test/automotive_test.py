@@ -1,8 +1,12 @@
 from pydrake.automotive import (
+    AheadOrBehind,
+    ClosestPose,
     DrivingCommand,
     IdmController,
     LaneDirection,
+    PoseSelector,
     PurePursuitController,
+    RoadOdometry,
     RoadPositionStrategy,
     ScanStrategy,
     SimpleCar,
@@ -17,6 +21,7 @@ import pydrake.systems.framework as framework
 from pydrake.maliput.api import (
     LanePosition,
     RoadGeometryId,
+    RoadPosition,
 )
 from pydrake.maliput.dragway import (
     create_dragway,
@@ -46,6 +51,61 @@ def make_two_lane_road():
 
 
 class TestAutomotive(unittest.TestCase):
+    def test_road_odometry(self):
+        RoadOdometry()
+        rg = make_two_lane_road()
+        lane_0 = rg.junction(0).segment(0).lane(0)
+        lane_1 = rg.junction(0).segment(0).lane(1)
+        lane_pos = LanePosition(s=1., r=2., h=3.)
+        road_pos = RoadPosition(lane=lane_0, pos=lane_pos)
+        w = [5., 7., 9.]
+        v = [11., 13., 15.]
+        frame_velocity = FrameVelocity(SpatialVelocity(w=w, v=v))
+        road_odom = RoadOdometry(
+            road_position=road_pos, frame_velocity=frame_velocity)
+
+        self.assertEqual(road_odom.lane.id().string(), lane_0.id().string())
+        self.assertTrue(np.allclose(road_odom.pos.srh(), lane_pos.srh()))
+        self.assertTrue(np.allclose(
+            frame_velocity.get_velocity().translational(),
+            road_odom.vel.get_velocity().translational()))
+        lane_pos_new = LanePosition(s=10., r=20., h=30.)
+        v_new = [42., 43., 44.]
+        frame_velocity_new = FrameVelocity(SpatialVelocity(w=w, v=v_new))
+        road_odom.lane = lane_1
+        road_odom.pos = lane_pos_new
+        road_odom.vel = frame_velocity_new
+
+        self.assertEqual(road_odom.lane.id().string(), lane_1.id().string())
+        self.assertTrue(np.allclose(road_odom.pos.srh(), lane_pos_new.srh()))
+        self.assertTrue(np.allclose(
+            frame_velocity_new.get_velocity().translational(),
+            road_odom.vel.get_velocity().translational()))
+
+    def test_closest_pose(self):
+        ClosestPose()
+        rg = make_two_lane_road()
+        lane_0 = rg.junction(0).segment(0).lane(0)
+        lane_1 = rg.junction(0).segment(0).lane(1)
+        lane_pos = LanePosition(s=1., r=2., h=3.)
+        road_pos = RoadPosition(lane=lane_0, pos=lane_pos)
+        w = [5., 7., 9.]
+        v = [11., 13., 15.]
+        frame_velocity = FrameVelocity(SpatialVelocity(w=w, v=v))
+        road_odom = RoadOdometry(
+            road_position=road_pos, frame_velocity=frame_velocity)
+
+        closest_pose = ClosestPose(odom=road_odom, dist=12.7)
+        self.assertEqual(closest_pose.odometry.lane.id().string(),
+                         lane_0.id().string())
+        self.assertEqual(closest_pose.distance, 12.7)
+
+        closest_pose.odometry.lane = lane_1
+        closest_pose.distance = 5.9
+        self.assertEqual(closest_pose.odometry.lane.id().string(),
+                         lane_1.id().string())
+        self.assertEqual(closest_pose.distance, 5.9)
+
     def test_lane_direction(self):
         rg = make_two_lane_road()
         lane1 = rg.junction(0).segment(0).lane(0)
@@ -79,7 +139,7 @@ class TestAutomotive(unittest.TestCase):
         lane = rg.junction(0).segment(0).lane(0)
         pure_pursuit = PurePursuitController()
         context = pure_pursuit.CreateDefaultContext()
-        output = pure_pursuit.AllocateOutput(context)
+        output = pure_pursuit.AllocateOutput()
 
         # Fix the inputs.
         ld_value = framework.AbstractValue.Make(
@@ -87,7 +147,7 @@ class TestAutomotive(unittest.TestCase):
         lane_index = pure_pursuit.lane_input().get_index()
         context.FixInputPort(lane_index, ld_value)
 
-        pos = [1., 2., 3.]  # An aribtrary position with the lane.
+        pos = [1., 2., 3.]  # An arbitrary position with the lane.
         pose_vector = PoseVector()
         pose_vector.set_translation(pos)
         pose_index = pure_pursuit.ego_pose_input().get_index()
@@ -105,6 +165,23 @@ class TestAutomotive(unittest.TestCase):
         self.assertEqual(len(steering.get_value()), 1)
         self.assertTrue(steering.get_value() < 0.)
 
+    def test_simple_car_state(self):
+        simple_car_state = SimpleCarState()
+        self.assertTrue(isinstance(simple_car_state, framework.BasicVector))
+        self.assertEqual(simple_car_state.size(), 4)
+        self.assertNotEqual(simple_car_state.x(), 5.)
+        simple_car_state.set_x(5.)
+        self.assertEqual(simple_car_state.x(), 5.)
+        self.assertNotEqual(simple_car_state.y(), 2.)
+        simple_car_state.set_y(2.)
+        self.assertEqual(simple_car_state.y(), 2.)
+        self.assertNotEqual(simple_car_state.heading(), 14.)
+        simple_car_state.set_heading(14.)
+        self.assertEqual(simple_car_state.heading(), 14.)
+        self.assertNotEqual(simple_car_state.velocity(), 52.)
+        simple_car_state.set_velocity(52.)
+        self.assertEqual(simple_car_state.velocity(), 52.)
+
     def test_idm_controller(self):
         rg = make_two_lane_road()
         idm = IdmController(
@@ -112,7 +189,7 @@ class TestAutomotive(unittest.TestCase):
             road_position_strategy=RoadPositionStrategy.kExhaustiveSearch,
             period_sec=0.)
         context = idm.CreateDefaultContext()
-        output = idm.AllocateOutput(context)
+        output = idm.AllocateOutput()
 
         # Fix the inputs.
         pose_vector1 = PoseVector()
@@ -158,7 +235,7 @@ class TestAutomotive(unittest.TestCase):
         simple_car = SimpleCar()
         simulator = Simulator(simple_car)
         context = simulator.get_mutable_context()
-        output = simple_car.AllocateOutput(context)
+        output = simple_car.AllocateOutput()
 
         # Fix the input.
         command = DrivingCommand()
@@ -191,3 +268,48 @@ class TestAutomotive(unittest.TestCase):
         velocity_value = output.get_vector_data(velocity_index)
         self.assertIsInstance(velocity_value, FrameVelocity)
         self.assertTrue(velocity_value.get_velocity().translational()[0] > 0.)
+
+    def test_pose_selector(self):
+        kScanDistance = 4.
+        rg = make_two_lane_road()
+        lane = rg.junction(0).segment(0).lane(0)
+        pose0 = PoseVector()
+        pose0.set_translation([1., 0., 0.])
+        pose1 = PoseVector()
+        # N.B. Set pose1 3 meters ahead of pose0.
+        pose1.set_translation([4., 0., 0.])
+
+        bundle = PoseBundle(num_poses=2)
+        bundle.set_pose(0, Isometry3(Quaternion(), pose0.get_translation()))
+        bundle.set_pose(1, Isometry3(Quaternion(), pose1.get_translation()))
+
+        closest_pose = PoseSelector.FindSingleClosestPose(
+            lane=lane, ego_pose=pose0, traffic_poses=bundle,
+            scan_distance=kScanDistance, side=AheadOrBehind.kAhead,
+            path_or_branches=ScanStrategy.kPath)
+        self.assertEqual(closest_pose.odometry.lane.id().string(),
+                         lane.id().string())
+        self.assertTrue(closest_pose.distance == 3.)
+
+        closest_pair = PoseSelector.FindClosestPair(
+            lane=lane, ego_pose=pose0, traffic_poses=bundle,
+            scan_distance=kScanDistance, path_or_branches=ScanStrategy.kPath)
+        self.assertEqual(
+            closest_pair[AheadOrBehind.kAhead].odometry.lane.id().string(),
+            lane.id().string())
+        self.assertEqual(closest_pair[AheadOrBehind.kAhead].distance, 3.)
+        self.assertEqual(
+            closest_pair[AheadOrBehind.kBehind].odometry.lane.id().string(),
+            lane.id().string())
+        self.assertEqual(closest_pair[AheadOrBehind.kBehind].distance,
+                         float('inf'))
+
+        lane_pos = LanePosition(s=1., r=0., h=0.)
+        road_pos = RoadPosition(lane=lane, pos=lane_pos)
+        w = [1., 2., 3.]
+        v = [-4., -5., -6.]
+        frame_velocity = FrameVelocity(SpatialVelocity(w=w, v=v))
+        road_odom = RoadOdometry(
+            road_position=road_pos, frame_velocity=frame_velocity)
+        sigma_v = PoseSelector.GetSigmaVelocity(road_odom)
+        self.assertEqual(sigma_v, v[0])

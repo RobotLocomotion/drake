@@ -2,10 +2,8 @@
 namespace drake {
 namespace systems {
 
-/**
-@page stochastic_systems Stochastic Systems
-
-This page describes the implementation details of modeling a
+/** @addtogroup stochastic_systems
+@brief This page describes the implementation details of modeling a
 stochastic system in Drake and writing algorithms that explicitly
 leverage the stochastic modeling framework.
 
@@ -47,7 +45,7 @@ internal::RandomSource system blocks; we have provided the
 AddRandomInputs() method to facilitate this.
 
 Algorithms written for Systems can query the property of the
-InputPortDescriptor to find the input ports that are labeled as
+InputPort to find the input ports that are labeled as
 random, and the random vector distribution type.  The list of
 supported distributions for random input ports is intentionally very
 limited (to simplify algorithm development); we place the burden on
@@ -64,6 +62,7 @@ System<T>::SetRandomState() and System<T>::SetRandomParameters() are
 expected to call the random number generators in the C++ Standard
 Library.
 
+@ingroup systems
 */
 
 }  // namespace systems

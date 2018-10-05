@@ -1,17 +1,21 @@
 # -*- python -*-
 
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-drake_cc_library(
+drake_cc_package_library(
     name = "primitives",
-    srcs = [],
-    hdrs = [],
     deps = [
         ":adder",
         ":affine_system",
+        ":barycentric_system",
         ":constant_value_source",
         ":constant_vector_source",
         ":demultiplexer",
@@ -28,8 +32,10 @@ drake_cc_library(
         ":saturation",
         ":signal_log",
         ":signal_logger",
+        ":sine",
         ":time_varying_data",
         ":trajectory_source",
+        ":wrap_to_system",
         ":zero_order_hold",
     ],
 )
@@ -81,7 +87,8 @@ drake_cc_library(
     srcs = ["constant_vector_source.cc"],
     hdrs = ["constant_vector_source.h"],
     deps = [
-        "//common:symbolic",
+        "//common:default_scalars",
+        "//common:extract_double",
         "//systems/framework",
     ],
 )
@@ -353,7 +360,7 @@ drake_cc_googletest(
         ":constant_vector_source",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/framework",
-        "//systems/framework/test_utilities:my_vector",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -504,6 +511,7 @@ drake_cc_googletest(
     name = "signal_logger_test",
     deps = [
         ":affine_system",
+        ":constant_vector_source",
         ":linear_system",
         ":signal_logger",
         "//common/test_utilities:eigen_matrix_compare",

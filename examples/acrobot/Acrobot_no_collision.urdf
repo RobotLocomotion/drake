@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 
-<robot xmlns="http://drake.mit.edu"
+<robot xmlns="https://drake.mit.edu"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="Acrobot">
+ xsi:schemaLocation="https://drake.mit.edu ../../doc/drakeURDF.xsd" name="Acrobot">
 
   <link name="base_link">
     <visual>

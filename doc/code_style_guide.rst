@@ -28,7 +28,7 @@ C++ Style
 
 The Drake C++ style guide (which is derived from the Google C++ style guide)
 can be found
-`on its own page <http://drake.mit.edu/styleguide/cppguide.html>`_.
+`on its own page <https://drake.mit.edu/styleguide/cppguide.html>`_.
 Its source lives in
 `the styleguide repository <https://github.com/RobotLocomotion/styleguide>`_.
 

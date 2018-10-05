@@ -1,15 +1,42 @@
 # -*- python -*-
 
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "controllers",
+    deps = [
+        ":control_util",
+        ":dynamic_programming",
+        ":instantaneous_qp_controller",
+        ":inverse_dynamics",
+        ":inverse_dynamics_controller",
+        ":linear_model_predictive_controller",
+        ":linear_quadratic_regulator",
+        ":pid_controlled_system",
+        ":pid_controller",
+        ":polynomial_encode_decode",
+        ":qp_common",
+        ":setpoint",
+        ":side",
+        ":state_feedback_controller_interface",
+        ":yaml_util",
+        ":zmp_planner",
+        ":zmp_util",
+    ],
+)
 
 drake_cc_library(
     name = "state_feedback_controller_interface",
     hdrs = ["state_feedback_controller_interface.h"],
     deps = [
-        "//systems/framework:input_port_descriptor",
         "//systems/framework:system",
     ],
 )
@@ -34,6 +61,7 @@ drake_cc_library(
     hdrs = ["inverse_dynamics.h"],
     deps = [
         "//multibody:rigid_body_tree",
+        "//multibody/multibody_tree/multibody_plant",
         "//systems/framework",
     ],
 )
@@ -47,6 +75,7 @@ drake_cc_library(
         ":pid_controller",
         ":state_feedback_controller_interface",
         "//multibody:rigid_body_tree",
+        "//multibody/multibody_tree/multibody_plant",
         "//systems/framework",
         "//systems/primitives:adder",
         "//systems/primitives:constant_vector_source",
@@ -212,14 +241,14 @@ drake_cc_library(
         ":polynomial_encode_decode",
         ":qp_common",
         ":yaml_util",
+        "//attic/multibody/joints",
+        "//attic/multibody/parsers",
         "//common:essential",
         "//common:find_resource",
         "//common:is_approx_equal_abstol",
         "//lcmtypes:qp_controller_input",
         "//lcmtypes:zmp_com_observer_state",
         "//math:geometric_transform",
-        "//multibody/joints",
-        "//multibody/parsers",
         "//solvers:gurobi_qp",
         "//util",
     ],
@@ -239,8 +268,8 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "dynamic_programming_test",
-    # Test size increased to not timeout when run with Valgrind.
-    size = "medium",
+    # Test timeout increased to not timeout when run with Valgrind.
+    timeout = "long",
     deps = [
         ":dynamic_programming",
         ":linear_quadratic_regulator",
@@ -268,9 +297,11 @@ drake_cc_googletest(
     ],
     deps = [
         ":inverse_dynamics",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
+        "//multibody/multibody_tree/parsing",
+        "//systems/controllers/test_utilities",
     ],
 )
 
@@ -281,9 +312,11 @@ drake_cc_googletest(
     ],
     deps = [
         ":inverse_dynamics_controller",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
+        "//multibody/multibody_tree/parsing",
+        "//systems/controllers/test_utilities",
     ],
 )
 

@@ -74,7 +74,7 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
       this_x(i) = tx(prog->FindDecisionVariableIndex(binding.variables()(i)));
     }
 
-    binding.evaluator()->Eval(this_x, ty);
+    binding.evaluator()->Eval(this_x, &ty);
 
     cost += ty(0).value();
     if (!grad.empty()) {
@@ -160,7 +160,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   }
 
   // http://ab-initio.mit.edu/wiki/index.php/NLopt_Reference#Vector-valued_constraints
-  // explicity tells us that it's allocated m * n array elements
+  // explicitly tells us that it's allocated m * n array elements
   // before invoking this function.  It does not seem to have been
   // zeroed, and not all constraints will store gradients for all
   // decision variables (so don't leave junk in the other array
@@ -177,7 +177,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   AutoDiffVecXd ty(num_constraints);
   AutoDiffVecXd this_x =
       MakeInputAutoDiffVec(*(wrapped->prog), xvec, *(wrapped->vars));
-  c->Eval(this_x, ty);
+  c->Eval(this_x, &ty);
 
   const Eigen::VectorXd& lower_bound = c->lower_bound();
   const Eigen::VectorXd& upper_bound = c->upper_bound();

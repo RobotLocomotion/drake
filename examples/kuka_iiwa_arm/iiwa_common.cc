@@ -11,10 +11,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
-#include "drake/multibody/ik_options.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_constraint.h"
-#include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/util/drakeGeometryUtil.h"
 
@@ -134,6 +131,21 @@ void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
     (*Kd)[i] = 2 * std::sqrt((*Kp)[i]);
   }
   *Ki = Eigen::VectorXd::Zero(7);
+}
+
+void SetTorqueControlledIiwaGains(Eigen::VectorXd* stiffness,
+                                  Eigen::VectorXd* damping_ratio) {
+  // All the gains are for directly generating torques. These gains are set
+  // according to the values in the drake-iiwa-driver repository:
+  // https://github.com/RobotLocomotion/drake-iiwa-driver/blob/master/kuka-driver/sunrise_1.11/DrakeFRITorqueDriver.java NOLINT
+
+  // The spring stiffness in Nm/rad.
+  stiffness->resize(7);
+  *stiffness << 1000, 1000, 1000, 500, 500, 500, 500;
+
+  // A dimensionless damping ratio. See KukaTorqueController for details.
+  damping_ratio->resize(stiffness->size());
+  damping_ratio->setConstant(1.0);
 }
 
 void ApplyJointVelocityLimits(const MatrixX<double>& keyframes,

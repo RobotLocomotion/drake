@@ -6,7 +6,6 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -48,10 +47,11 @@ void TestAccelerometerFreeFall(const Eigen::Vector3d& xyz,
 
   // Adds a frame to the RigidBodyTree called "accelerometer frame" that is
   // coincident with the "box" body within the RigidBodyTree.
-  const Eigen::Matrix3d R_BA = drake::math::rpy2rotmat(rpy);
+  const math::RollPitchYaw<double> roll_pitch_yaw(rpy);
+  const math::RotationMatrix<double> R_BA(roll_pitch_yaw);
 
   Eigen::Isometry3d X_BA;  // Transform from accelerometer's to body's frames.
-  X_BA.matrix() << R_BA, xyz, 0, 0, 0, 1;
+  X_BA.matrix() << R_BA.matrix(), xyz, 0, 0, 0, 1;
 
   auto sensor_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "accelerometer frame",
@@ -85,18 +85,15 @@ void TestAccelerometerFreeFall(const Eigen::Vector3d& xyz,
       dut.get_plant_state_derivative_input_port().get_index(),
       make_unique<BasicVector<double>>(VectorX<double>::Zero(num_states)));
 
-  unique_ptr<SystemOutput<double>> output = dut.AllocateOutput(*dut_context);
+  unique_ptr<SystemOutput<double>> output = dut.AllocateOutput();
   ASSERT_EQ(output->get_num_ports(), 1);
   dut.CalcOutput(*dut_context, output.get());
 
   // The frame of the RigidBody to which the sensor is attached is coincident
-  // with the world frame.
-  const Eigen::Matrix3d R_BW = Eigen::Matrix3d::Identity();
-  // Since R_BA is orthogonal its inverse is equal to its transpose.
-  // Eigen::Matrix3d::transpose() is used below because it's computationally
-  // cheaper than Eigen::Matrix3d::inverse().
-  const auto R_AB = R_BA.transpose();
-  Vector3d expected_measurement = R_AB * R_BW * tree->a_grav.tail<3>();
+  // with the world frame (the default RotationMatrix constructor is identity).
+  const math::RotationMatrix<double> R_BW;
+  const math::RotationMatrix<double> R_AB = R_BA.inverse();
+  const Vector3d expected_measurement = R_AB * R_BW * tree->a_grav.tail<3>();
   EXPECT_TRUE(CompareMatrices(output->get_vector_data(0)->get_value(),
                               expected_measurement, 1e-10,
                               MatrixCompareType::absolute));

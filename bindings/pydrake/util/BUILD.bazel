@@ -3,7 +3,7 @@
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
 )
@@ -36,21 +36,25 @@ PACKAGE_INFO = get_pybind_package_info("//bindings")
 drake_cc_library(
     name = "type_pack",
     hdrs = ["type_pack.h"],
+    visibility = ["//visibility:public"],
 )
 
 drake_cc_library(
     name = "wrap_function",
     hdrs = ["wrap_function.h"],
+    visibility = ["//visibility:public"],
 )
 
 drake_cc_library(
     name = "wrap_pybind",
     hdrs = ["wrap_pybind.h"],
+    visibility = ["//visibility:public"],
     deps = [":wrap_function"],
 )
 
-# This is a pure-python, standalone library SET.
-# Keep this away from `common_py` to simplify test dependencies.
+# These utilities do not need any of the bound Drake C++ code. To simplify
+# test dependencies, this module does not declare a dependency on
+# `pydrake:module_py`, as would be customary for any other `module_py` target.
 drake_py_library(
     name = "module_py",
     srcs = ["__init__.py"],
@@ -63,15 +67,26 @@ drake_py_library(
     imports = PACKAGE_INFO.py_imports,
 )
 
+# N.B. Since `:module_py` incorporates `deprecation_py`, C++ Python libraries
+# need not worry about it.
+drake_cc_library(
+    name = "deprecation_pybind",
+    hdrs = ["deprecation_pybind.h"],
+    visibility = ["//visibility:public"],
+    deps = ["//bindings/pydrake:pydrake_pybind"],
+)
+
 drake_cc_library(
     name = "eigen_pybind",
     hdrs = ["eigen_pybind.h"],
+    visibility = ["//visibility:public"],
     deps = ["//bindings/pydrake:pydrake_pybind"],
 )
 
 drake_cc_library(
     name = "eigen_geometry_pybind",
     hdrs = ["eigen_geometry_pybind.h"],
+    visibility = ["//visibility:public"],
     deps = ["//bindings/pydrake:pydrake_pybind"],
 )
 
@@ -89,6 +104,7 @@ drake_cc_library(
     name = "cpp_param_pybind",
     srcs = ["cpp_param_pybind.cc"],
     hdrs = ["cpp_param_pybind.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":type_pack",
         "//bindings/pydrake:pydrake_pybind",
@@ -117,6 +133,7 @@ drake_cc_library(
     name = "cpp_template_pybind",
     srcs = [],
     hdrs = ["cpp_template_pybind.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":cpp_param_pybind",
         "//bindings/pydrake:pydrake_pybind",
@@ -136,11 +153,14 @@ drake_py_library(
 drake_cc_library(
     name = "drake_optional_pybind",
     hdrs = ["drake_optional_pybind.h"],
+    visibility = ["//visibility:public"],
 )
 
 drake_cc_library(
     name = "type_safe_index_pybind",
     hdrs = ["type_safe_index_pybind.h"],
+    visibility = ["//visibility:public"],
+    deps = ["//bindings/pydrake:documentation_pybind"],
 )
 
 generate_pybind11_version_py_file(
@@ -164,11 +184,20 @@ drake_py_library(
     ],
 )
 
+drake_py_library(
+    name = "compatibility_py",
+    srcs = ["compatibility.py"],
+    deps = [
+        ":module_py",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":eigen_geometry_py",
 ]
 
 PY_LIBRARIES = [
+    ":compatibility_py",
     ":containers_py",
     ":cpp_const_py",
     ":cpp_param_py",
@@ -214,12 +243,25 @@ drake_cc_googletest(
     ],
 )
 
+drake_pybind_library(
+    name = "deprecation_example_cc_module_py",
+    testonly = 1,
+    add_install = False,
+    cc_deps = ["//bindings/pydrake/util:deprecation_pybind"],
+    cc_so_name = "test/deprecation_example/cc_module",
+    cc_srcs = ["test/deprecation_example/cc_module_py.cc"],
+    package_info = PACKAGE_INFO,
+)
+
 drake_py_library(
     name = "deprecation_example",
     testonly = 1,
     srcs = glob(["test/deprecation_example/*.py"]),
     imports = ["test"],
-    deps = [":deprecation_py"],
+    deps = [
+        ":deprecation_example_cc_module_py",
+        ":deprecation_py",
+    ],
 )
 
 drake_py_unittest(
@@ -261,6 +303,7 @@ drake_pybind_cc_googletest(
     cc_deps = [
         ":cpp_template_pybind",
         "//common:nice_type_name",
+        "//common/test_utilities:expect_throws_message",
     ],
     py_deps = [":cpp_template_py"],
 )
@@ -302,6 +345,30 @@ drake_py_unittest(
     name = "containers_test",
     deps = [
         ":containers_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "compatibility_test",
+    deps = [
+        ":compatibility_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "wrap_test_util_py",
+    testonly = 1,
+    add_install = False,
+    cc_deps = [":wrap_pybind"],
+    cc_so_name = "wrap_test_util",
+    cc_srcs = ["test/wrap_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
+)
+
+drake_py_unittest(
+    name = "wrap_pybind_test",
+    deps = [
+        ":wrap_test_util_py",
     ],
 )
 

@@ -60,12 +60,19 @@ Isometry3<double> HalfSpace::MakePose(const Vector3<double>& Cz_F,
   return X_FC;
 }
 
+Box::Box(double width, double depth, double height)
+    : Shape(ShapeTag<Box>()),
+      size_(width, depth, height) {}
+
 Mesh::Mesh(const std::string& absolute_filename, double scale)
     : Shape(ShapeTag<Mesh>()), filename_(absolute_filename), scale_(scale) {
   // TODO(SeanCurtis-TRI): Remove this when meshes are properly supported.
   drake::log()->warn("Meshes are only supported for drake_visualizer ({})",
                      filename_);
 }
+
+Convex::Convex(const std::string& absolute_filename, double scale)
+    : Shape(ShapeTag<Convex>()), filename_(absolute_filename), scale_(scale) {}
 
 }  // namespace geometry
 }  // namespace drake

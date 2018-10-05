@@ -17,12 +17,24 @@ namespace sensors {
 
 /// Common configurations of rendering systems.
 struct RenderingConfig {
+  RenderingConfig(int width_in, int height_in, double fov_y_in,
+                  double z_near_in, double z_far_in, bool show_window_in)
+      : width(width_in),
+        height(height_in),
+        fov_y(fov_y_in),
+        z_near(z_near_in),
+        z_far(z_far_in),
+        show_window(show_window_in) {}
   // TODO(eric.cousineau): Define all default values be defined here to
   // minimize duplication.
   /// The width of the image to be rendered in pixels.
-  const int width;
+  const int width{kDefaultWidth};
+  /// Default value for `width`.
+  static constexpr int kDefaultWidth{640};
   /// The height of the image to be rendered in pixels.
-  const int height;
+  const int height{kDefaultHeight};
+  /// Default value for `height`.
+  static constexpr int kDefaultHeight{480};
   /// The renderer's camera vertical field of view in radians.
   const double fov_y;
   /// The minimum depth RgbdRenderer can output. Note that this is different

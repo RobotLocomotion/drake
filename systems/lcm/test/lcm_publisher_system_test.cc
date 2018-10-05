@@ -5,6 +5,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/is_dynamic_castable.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 #include "drake/lcmt_drake_signal.hpp"
@@ -25,14 +27,16 @@ const int kDim = 10;
 const int kPortNumber = 0;
 
 using drake::lcm::CompareLcmtDrakeSignalMessages;
+using drake::lcm::DrakeLcmInterface;
 using drake::lcm::DrakeMockLcm;
+using drake::lcm::DrakeLcm;
 
 void TestPublisher(const std::string& channel_name, lcm::DrakeMockLcm* lcm,
                    LcmPublisherSystem* dut) {
   EXPECT_EQ(dut->get_name(), "LcmPublisherSystem(" + channel_name + ")");
 
   unique_ptr<Context<double>> context = dut->CreateDefaultContext();
-  unique_ptr<SystemOutput<double>> output = dut->AllocateOutput(*context);
+  unique_ptr<SystemOutput<double>> output = dut->AllocateOutput();
 
   // Verifies that the context has one input port.
   EXPECT_EQ(context->get_num_input_ports(), 1);
@@ -82,6 +86,64 @@ void TestPublisher(const std::string& channel_name, lcm::DrakeMockLcm* lcm,
   EXPECT_EQ(
       lcm->get_last_publication_time(dut->get_channel_name()).value_or(-1.0),
       time);
+}
+
+// Test that failure to specify an LCM interface results in an internal one
+// of being allocated. Can't check for operation in this case
+// since we won't have a mock LCM to look at.
+GTEST_TEST(LcmPublisherSystemTest, DefaultLcmTest) {
+  const std::string channel_name = "junk";
+
+  // Use a translator just so we can invoke a constructor.
+  LcmtDrakeSignalTranslator translator(kDim);
+
+  // Provide an explicit LCM interface and check that it gets used.
+  DrakeMockLcm mock_lcm;
+  LcmPublisherSystem dut1(channel_name, translator, &mock_lcm);
+  EXPECT_EQ(&dut1.lcm(), &mock_lcm);
+
+  // Now leave out the LCM interface and check that a DrakeLcm gets allocated.
+  LcmPublisherSystem dut2(channel_name, translator, nullptr);
+  EXPECT_TRUE(is_dynamic_castable<DrakeLcm>(&dut2.lcm()));
+}
+
+// Test that an initialization publisher gets invoked properly by an
+// initialization event, and that the initialization event doesn't cause
+// publishing.
+GTEST_TEST(LcmPublisherSystemTest, TestInitializationEvent) {
+  const std::string channel_name = "junk";
+
+  // Use a translator just so we can invoke a constructor.
+  LcmtDrakeSignalTranslator translator(kDim);
+
+  DrakeMockLcm mock_lcm;
+  LcmPublisherSystem dut1(channel_name, translator, &mock_lcm);
+
+  bool init_was_called{false};
+  dut1.AddInitializationMessage([&dut1, &init_was_called](
+      const Context<double>&, DrakeLcmInterface* lcm) {
+    EXPECT_EQ(lcm, &dut1.lcm());
+    init_was_called = true;
+  });
+
+  auto context = dut1.AllocateContext();
+
+  // Put something on the input port so that an attempt to publish would
+  // succeed if (erroneously) attempted after initialization.
+  auto vec = make_unique<BasicVector<double>>(kDim);
+  for (int i = 0; i < kDim; ++i) (*vec)[i] = i;
+  context->FixInputPort(kPortNumber, std::move(vec));
+
+  // Get the initialization event and publish it (this is mocking
+  // Simulator::Initialize() behavior.
+  auto init_events = dut1.AllocateCompositeEventCollection();
+  dut1.GetInitializationEvents(*context, &*init_events);
+  dut1.Publish(*context, init_events->get_publish_events());
+
+  EXPECT_TRUE(init_was_called);
+
+  // Nothing should have been published to this channel.
+  EXPECT_FALSE(mock_lcm.get_last_publication_time(channel_name));
 }
 
 // Tests LcmPublisherSystem using a translator.
@@ -138,7 +200,7 @@ GTEST_TEST(LcmPublisherSystemTest, SerializerTest) {
 
   // Establishes the context, output, and input for the dut.
   unique_ptr<Context<double>> context = dut->CreateDefaultContext();
-  unique_ptr<SystemOutput<double>> output = dut->AllocateOutput(*context);
+  unique_ptr<SystemOutput<double>> output = dut->AllocateOutput();
   const lcmt_drake_signal sample_data{
     2, { 1.0, 2.0, }, { "x", "y", }, 12345,
   };

@@ -2,9 +2,10 @@
 
 #include <map>
 #include <string>
+#include <utility>
 
 #include "drake/manipulation/util/frame_pose_tracker.h"
-#include "drake/systems/sensors/optitrack_encoder.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/systems/sensors/optitrack_sender.h"
 
 namespace drake {
@@ -15,8 +16,8 @@ namespace pick_and_place {
 using manipulation::util::FramePoseTracker;
 using manipulation::util::ModelInstanceInfo;
 using manipulation::util::WorldSimTreeBuilder;
-using systems::sensors::OptitrackEncoder;
-using systems::sensors::OptitrackLCMFrameSender;
+using systems::sensors::OptitrackLcmFrameSender;
+using drake::math::RigidTransform;
 
 namespace {
 
@@ -61,10 +62,10 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildPickAndPlacePlant(
     const std::string robot_tag{"robot_" + std::to_string(i)};
     tree_builder->StoreDrakeModel(robot_tag, configuration.robot_models[i]);
     // Add the arm.
-    const Isometry3<double>& robot_base_pose{configuration.robot_poses[i]};
-    int robot_base_id = tree_builder->AddFixedModelInstance(
-        robot_tag, robot_base_pose.translation(),
-        drake::math::rotmat2rpy(robot_base_pose.linear()));
+    const RigidTransform<double> X_WRobot(configuration.robot_poses[i]);
+    const drake::math::RollPitchYaw<double> rpy_WRobot(X_WRobot.rotation());
+    const int robot_base_id = tree_builder->AddFixedModelInstance(
+        robot_tag, X_WRobot.translation(), rpy_WRobot.vector());
     arm_instances->push_back(
         tree_builder->get_model_info_for_instance(robot_base_id));
     if (wsg_instances) {
@@ -84,11 +85,13 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildPickAndPlacePlant(
     }
 
     // Add the table that the arm sits on.
-    const Isometry3<double> X_WT{
-        robot_base_pose *
-        Isometry3<double>::TranslationType(0.0, 0.0, -kTableTopZInWorld)};
-    tree_builder->AddFixedModelInstance("table", X_WT.translation(),
-                                        drake::math::rotmat2rpy(X_WT.linear()));
+    const Eigen::Vector3d p_RobotTable_Robot(0.0, 0.0, -kTableTopZInWorld);
+    const RigidTransform<double> X_RobotTable(
+        drake::math::RotationMatrix<double>::Identity(), p_RobotTable_Robot);
+    const RigidTransform<double> X_WTable = X_WRobot * X_RobotTable;
+    const drake::math::RollPitchYaw<double> rpy_WTable(X_WTable.rotation());
+    tree_builder->AddFixedModelInstance("table", X_WTable.translation(),
+                                                 rpy_WTable.vector());
   }
 
   // Add the objects.
@@ -98,9 +101,10 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildPickAndPlacePlant(
   for (int i = 0; i < num_objects; ++i) {
     const std::string object_tag{"object_" + std::to_string(i)};
     tree_builder->StoreDrakeModel(object_tag, configuration.object_models[i]);
-    int object_id = tree_builder->AddFloatingModelInstance(
-        object_tag, configuration.object_poses[i].translation(),
-        drake::math::rotmat2rpy(configuration.object_poses[i].linear()));
+    const RigidTransform<double> X(configuration.object_poses[i]);
+    const drake::math::RollPitchYaw<double> rpy(X.rotation());
+    const int object_id = tree_builder->AddFloatingModelInstance(object_tag,
+                                                 X.translation(), rpy.vector());
     object_instances->push_back(
         tree_builder->get_model_info_for_instance(object_id));
   }
@@ -112,9 +116,10 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildPickAndPlacePlant(
   for (int i = 0; i < num_tables; ++i) {
     const std::string table_tag{"table_" + std::to_string(i)};
     tree_builder->StoreDrakeModel(table_tag, configuration.table_models[i]);
-    int table_id = tree_builder->AddFixedModelInstance(
-        table_tag, configuration.table_poses[i].translation(),
-        drake::math::rotmat2rpy(configuration.table_poses[i].linear()));
+    const RigidTransform<double> X(configuration.table_poses[i]);
+    const drake::math::RollPitchYaw<double> rpy(X.rotation());
+    const int table_id = tree_builder->AddFixedModelInstance(
+        table_tag, X.translation(), rpy.vector());
     table_instances->push_back(
         tree_builder->get_model_info_for_instance(table_id));
   }
@@ -186,23 +191,25 @@ const systems::OutputPort<double>& AddOptitrackComponents(
   }
   auto pose_tracker = builder->AddSystem<FramePoseTracker>(tree, &frames);
 
-  // Create the OptitrackEncoder system. This assigns a unique Optitrack ID to
-  // each tracked frame (similar to the Motive software). These are used to
-  // create a tracked Optitrack body.
-  auto optitrack_encoder =
-      builder->AddSystem<OptitrackEncoder>(frame_name_to_id_map);
+  std::map<geometry::FrameId, std::pair<std::string, int>> frame_map;
+  const std::map<std::string, geometry::FrameId>&
+      frame_name_to_geometry_id_map =
+      pose_tracker->get_frame_name_to_id_map();
+  for (auto it = frame_name_to_id_map.begin();
+       it != frame_name_to_id_map.end(); ++it) {
+    frame_map[frame_name_to_geometry_id_map.at(it->first)] =
+        std::pair<std::string, int>(it->first, it->second);
+  }
 
   // Create the Optitrack sender.
   auto optitrack_sender =
-      builder->AddSystem<OptitrackLCMFrameSender>(frame_name_to_id_map.size());
+      builder->AddSystem<OptitrackLcmFrameSender>(frame_map);
 
   // Connect the systems related to tracking bodies.
   builder->Connect(kinematics_port,
                    pose_tracker->get_kinematics_input_port());
-  builder->Connect(pose_tracker->get_pose_bundle_output_port(),
-                  optitrack_encoder->get_pose_bundle_input_port());
-  builder->Connect(optitrack_encoder->get_optitrack_output_port(),
-                  optitrack_sender->get_optitrack_input_port());
+  builder->Connect(pose_tracker->get_pose_vector_output_port(),
+                   optitrack_sender->get_optitrack_input_port());
 
   return optitrack_sender->get_lcm_output_port();
 }

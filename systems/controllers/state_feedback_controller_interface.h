@@ -1,7 +1,7 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
-#include "drake/systems/framework/input_port_descriptor.h"
+#include "drake/systems/framework/input_port.h"
 #include "drake/systems/framework/output_port.h"
 
 namespace drake {
@@ -21,13 +21,13 @@ class StateFeedbackControllerInterface {
   /**
    * Returns the input port for the estimated state.
    */
-  virtual const InputPortDescriptor<T>& get_input_port_estimated_state()
+  virtual const InputPort<T>& get_input_port_estimated_state()
       const = 0;
 
   /**
    * Returns the input port for the desired state.
    */
-  virtual const InputPortDescriptor<T>& get_input_port_desired_state()
+  virtual const InputPort<T>& get_input_port_desired_state()
       const = 0;
 
   /**

@@ -12,7 +12,6 @@
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/road_odometry.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/systems/rendering/pose_bundle.h"
 #include "drake/systems/rendering/pose_vector.h"
 
@@ -80,7 +79,7 @@ class PoseSelector {
   ///
   /// Users should take heed to the fact that ScanStrategy::kBranches does _not_
   /// assess the relationship between traffic and ego vehicle velocity when
-  /// selecting poses.  Thus, cars with in the same lane as the ego but with
+  /// selecting poses.  Thus, cars within the same lane as the ego but with
   /// negative net-velocity (approaching the ego car, from the ego's
   /// point-of-view) could be ignored in favor of a car in a branch with
   /// positive net-velocity.
@@ -99,7 +98,7 @@ class PoseSelector {
   /// traffic cars are found.  Note that when no vehicle is detected in front of
   /// (resp. behind) the ego vehicle, the respective RoadPosition within
   /// ClosestPoses will contain an `s`-value of positive (resp. negative)
-  /// infinity.  Any traffic poses that are redunant with `ego_pose` (i.e. have
+  /// infinity.  Any traffic poses that are redundant with `ego_pose` (i.e. have
   /// the same RoadPosition as the ego car and thus the same `s` and `r` value)
   /// are discarded.  If no leading/trailing vehicles are seen within
   /// scan-distance of the ego car, `s`-positions are taken to be at infinite

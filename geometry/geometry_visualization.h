@@ -1,12 +1,14 @@
 /** @file
  Provides a set of functions to facilitate visualization operations based on
- geometry world state. */
+ SceneGraph system state. */
 
 #pragma once
 
 #include "drake/geometry/geometry_state.h"
-#include "drake/geometry/geometry_system.h"
+#include "drake/geometry/scene_graph.h"
+#include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcmt_viewer_load_robot.hpp"
+#include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
 namespace geometry {
@@ -27,12 +29,61 @@ class GeometryVisualizationImpl {
 }  // namespace internal
 #endif  // DRAKE_DOXYGEN_CXX
 
-/** Dispatches an LCM load message based on the registered geometry. It should
- be invoked _after_ registration is complete, but before context allocation.
- @param system      The system whose geometry will be sent in an LCM message.
- @throws std::logic_error if the system has already had its context allocated.
+/** Extends a Diagram with the required components to interface with
+ drake_visualizer. This must be called _during_ Diagram building and
+ uses the given `builder` to add relevant subsystems and connections.
+
+ This is a convenience method to simplify some common boilerplate for adding
+ visualization capability to a Diagram. What it does is:
+ - adds an initialization event that sends the required load message to set up
+   the visualizer with the relevant geometry,
+ - adds systems PoseBundleToDrawMessage and LcmPublisherSystem to
+   the Diagram and connects the draw message output to the publisher input,
+ - connects the `scene_graph` pose bundle output to the PoseBundleToDrawMessage
+   system, and
+ - sets the publishing rate to 1/60 of a second (simulated time).
+
+ You can then connect source output ports for visualization like this:
+ @code
+   builder->Connect(pose_output_port,
+                    scene_graph.get_source_pose_port(source_id));
+ @endcode
+
+ @note The initialization event occurs when Simulator::Initialize() is called
+ (explicitly or implicitly at the start of a simulation). If you aren't going
+ to be using a Simulator, use DispatchLoadMessage() to send the message
+ yourself.
+
+ @param builder      The diagram builder being used to construct the Diagram.
+ @param scene_graph  The System in `builder` containing the geometry to be
+                     visualized.
+ @param lcm          An optional lcm interface through which lcm messages will
+                     be dispatched. Will be allocated internally if none is
+                     supplied.
+
+ @pre This method has not been previously called while building the
+      builder's current Diagram.
+ @pre The given `scene_graph` must be contained within the supplied
+      DiagramBuilder.
+
+ @see geometry::DispatchLoadMessage()
+ @ingroup visualization
  */
-void DispatchLoadMessage(const GeometrySystem<double>& system);
+void ConnectDrakeVisualizer(systems::DiagramBuilder<double>* builder,
+                            const SceneGraph<double>& scene_graph,
+                            lcm::DrakeLcmInterface* lcm = nullptr);
+
+/** (Advanced) Explicitly dispatches an LCM load message based on the registered
+ geometry. Normally this is done automatically at Simulator initialization. But
+ if you have to do it yourself (likely because you are not using a Simulator),
+ it should be invoked _after_ registration is complete. Typically this is used
+ after ConnectDrakeVisualizer() has been used to add visualization to the
+ Diagram that contains the given `scene_graph`. The message goes to
+ LCM channel "DRAKE_VIEWER_LOAD_ROBOT".
+
+ @see geometry::ConnectDrakeVisualizer() */
+void DispatchLoadMessage(
+    const SceneGraph<double>& scene_graph, lcm::DrakeLcmInterface* lcm);
 
 }  // namespace geometry
 }  // namespace drake

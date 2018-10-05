@@ -11,186 +11,49 @@ Drake Gallery
 If you have an example from your own work that you would like to showcase, please edit ``doc/gallery.rst`` directly and submit a pull request!
 
 
-Legged Robots
-=============
+Manipulation
+============
 
-
-The Rimless Wheel
------------------
-
-The simplest and perhaps the most elegant example of the principles of passive dynamic walking.
+The Robotics team at TRI is working hard to close the gap between simulation and
+reality.  For manipulation, one important piece is accurate simulation of
+rigid-body contact.
 
 .. raw :: html
 
-	<script type="text/javascript">
-    swfobject.embedSWF("http://groups.csail.mit.edu/locomotion/drake/movies/rimlessWheel.swf", "rimlessWheel", "500", "200", "9.0.0"); <!-- ,"expressInstall.swf",{},{menu:"true"});-->
-	</script>
+  <iframe width="800" height="224" src="https://www.youtube.com/embed/X9QuMrx-psk" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
 
-	<div id="rimlessWheel">
-		<p>Rimless Wheel video</p>
-	</div>
+  <p/>
 
-*Source Code:* `drake/examples/RimlessWheel <https://github.com/RobotLocomotion/drake/tree/last_sha_with_original_matlab/drake/examples/RimlessWheel>`_
+  <iframe width="800" height="224" src="https://www.youtube.com/embed/b_HfjGCa0jU" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
+*Source Code:* `drake/examples/kuka_iiwa_arm <https://github.com/RobotLocomotion/drake/tree/master/examples/kuka_iiwa_arm>`_
 
 
-The Compass Gait
-----------------
+Trajectory Optimization
+=======================
 
-One of the simplest bipedal walking systems, it walks passively down a ramp or can be actuated by a torque at the hip or impulse at the toe to walk on more general terrain.
+Michael Posa and the UPenn DAIR lab have an implementation of DIRCON,
+as described in
 
-.. raw :: html
+  Michael Posa, Scott Kuindersma, Russ Tedrake. "Optimization and
+  Stabilization of Trajectories for Constrained Dynamical Systems." ICRA, 2016.
 
-	<script type="text/javascript">
-			swfobject.embedSWF("http://groups.csail.mit.edu/locomotion/drake/movies/compassGait.swf", "compassGait", "350", "200", "9.0.0");
-	</script>
-
-	<div id="compassGait">
-		<p>Compass Gait video</p>
-	</div>
-
-*Source Code:* `drake/examples/CompassGait <https://github.com/RobotLocomotion/drake/tree/last_sha_with_original_matlab/drake/examples/CompassGait>`_
+*Source Code:* https://github.com/DAIRLab/dairlib-public/tree/master/systems/trajectory_optimization
 
 
-The Planar Monopod Hopper
--------------------------
+Third Party Documentation / Tutorials
+=====================================
 
-A simple model of the famous hopping robots from MIT's Leg Laboratory.
+Greg Izatt put together a nice tutorial demonstrating how to put together a
+pretty complete simulation of kuka iiwa picking up a block with dynamics,
+planning, control, and depth sensing, all through the pydrake interface.
 
 .. raw :: html
 
-	<script type="text/javascript">
-			swfobject.embedSWF("http://groups.csail.mit.edu/locomotion/drake/movies/hopper.swf", "hopper", "500", "200", "9.0.0"); <!--,"expressInstall.swf",{},{loop:"true"});-->
-	</script>
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/JS5l5lrEhJw" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
 
-	<div id="hopper">
-		<p>Planar Monopod Hopper video</p>
-	</div>
 
-*Source Code:* `drake/examples/PlanarMonopodHopper <https://github.com/RobotLocomotion/drake/tree/last_sha_with_original_matlab/drake/examples/PlanarMonopodHopper>`_
-
-
-LittleDog Gait Optimization
----------------------------
-
-.. raw :: html
-
-	<iframe width="560" height="315" src="https://www.youtube.com/embed/Yvg35TGJuFw?rel=0" frameborder="0" allowfullscreen></iframe>
-
-*Source Code:* `drake/examples/LittleDog <https://github.com/RobotLocomotion/LittleDog>`_
-
-
-Strandbeest
------------
-
-A dynamical model of a robot inspired by Theo Jansen's `Strandbeest <http://www.strandbeest.com/>`_ walking creatures. The model has over 100 joints, but just one degree of freedom thanks to its complex mechanical linkages. It can also `walk passively downhill <https://www.youtube.com/watch?v=nsBxa_lxT7s>`_.
-
-.. raw :: html
-
-	<iframe width="560" height="315" src="https://www.youtube.com/embed/H6fL-8ScUnU?rel=0" frameborder="0" allowfullscreen></iframe>
-
-*Source Code:* `drake/examples/Strandbeest <https://github.com/RobotLocomotion/drake/tree/last_sha_with_original_matlab/drake/examples/Strandbeest>`_
-
-
-Unmanned Aerial Vehicles
-========================
-
-The Perching Glider
--------------------
-
-.. raw :: html
-
-	<script type="text/javascript">
-			swfobject.embedSWF("http://groups.csail.mit.edu/locomotion/drake/movies/perchingGlider.swf", "perchingGlider", "500", "500", "9.0.0");
-	</script>
-
-	<div id="perchingGlider">
-		<p>Perching Glider video</p>
-	</div>
-
-*Source Code:* `drake/examples/Glider <https://github.com/RobotLocomotion/drake/tree/last_sha_with_original_matlab/drake/examples/Glider>`_
-
-
-Quadrotor Forest Trajectory Optimization
-----------------------------------------
-
-A simple demonstration of collision-free dynamic trajectory optimization.
-
-.. raw :: html
-
-	<iframe width="560" height="315" src="https://www.youtube.com/embed/bNm-Eu3RlCM?rel=0" frameborder="0" allowfullscreen></iframe>
-
-*Source Code:* `drake/examples/Quadrotor/runDircolWObs.m <https://github.com/RobotLocomotion/drake/tree/last_sha_with_original_matlab/drake/examples/Quadrotor/runDircolWObs.m>`_
-
-
-Quadrotor Online Obstacle Avoidance
-----------------------------------------
-
-A demonstration of using funnel libraries to dynamically navigate a simulated forest.
-
-.. raw :: html
-
-	<iframe width="560" height="315" src="https://youtu.be/lnvR_tWXzi4" frameborder="0" allowfullscreen></iframe>
-
-*Source Code:* `drake/examples/Quadrotor/runOnlinePlanning.m <https://github.com/RobotLocomotion/drake/tree/last_sha_with_original_matlab/drake/examples/Quadrotor/runOnlinePlanning.m>`_
-
-
-Quadrotor Simulation with Onboard Lidar
-----------------------------------------
-
-A demonstration of using Drake to simulate a lidar sensor onboard a quadrotor in C++.
-
-.. raw :: html
-
-	<iframe width="560" height="315" src="https://www.youtube.com/watch?v=oB73wTbvnHI" frameborder="0" allowfullscreen></iframe>
-
-*Source Code:* `drake/examples/Quadrotor/run_quadrotor_dynamics.cc <https://github.com/RobotLocomotion/drake/tree/master/drake/examples/Quadrotor/run_quadrotor_dynamics.cc>`_
-
-
-Robot Manipulation
-==================
-
-
-
-Humanoid Robots
-===============
-
-
-Cars
-====
-
-
-A simulation of a dynamical car model based on the Toyota Prius body, simulated in the Drake toolkit.
-
-.. raw :: html
-
-	<iframe width="560" height="315" src="https://www.youtube.com/embed/dbtz6Gvs1Q8?rel=0" frameborder="0" allowfullscreen></iframe>
-
-*Source Code:* `drake/automotive <https://github.com/RobotLocomotion/drake/tree/master/drake/automotive>`_
-
-
-Canonical Underactuated Systems
-===============================
-
-
-Physics Engine
-==============
-
-
-Drake's rigid-body manipulator classes support frictional contact, aerodynamics, and a rich set of forces, sensors, and kinematic constraints.  This video just shows a few quick examples; the source code can be found in the examples and test directories of the Drake distribution.
-
-.. raw :: html
-
-	<iframe width="420" height="315" src="https://www.youtube.com/embed/M3m-rmPzbRk?rel=0" frameborder="0" allowfullscreen></iframe>
-
-
-20 falling capsules.  It's not fast to simulate, but it works.
-
-.. raw :: html
-
-	<iframe width="560" height="315" src="https://www.youtube.com/embed/gsebSpj4KK8?rel=0" frameborder="0" allowfullscreen></iframe>
-
-
-
+*Source Code:* https://github.com/gizatt/drake_periscope_tutorial
 
 
 

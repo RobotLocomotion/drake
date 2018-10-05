@@ -19,37 +19,109 @@ std::unique_ptr<ContextBase> ContextBase::Clone() const {
 
   // Create a complete mapping of tracker pointers.
   DependencyTracker::PointerMap tracker_map;
-  BuildTrackerPointerMap(clone, &tracker_map);
+  BuildTrackerPointerMap(*this, clone, &tracker_map);
 
   // Then do a pointer fixup pass.
-  clone.FixTrackerPointers(source, tracker_map);
+  FixContextPointers(source, tracker_map, &clone);
   return clone_ptr;
 }
 
 ContextBase::~ContextBase() {}
 
-void ContextBase::DisableCaching() const {
-  cache_.DisableCaching();
-  // TODO(sherm1) Recursive disabling of descendents goes here.
-}
-
-void ContextBase::EnableCaching() const {
-  cache_.EnableCaching();
-  // TODO(sherm1) Recursive enabling of descendents goes here.
-}
-
-void ContextBase::SetAllCacheEntriesOutOfDate() const {
-  cache_.SetAllEntriesOutOfDate();
-  // TODO(sherm1) Recursive update of descendents goes here.
-}
-
 std::string ContextBase::GetSystemPathname() const {
-  // TODO(sherm1) Replace with the real pathname.
-  return "/dummy/system/pathname";
+  const std::string parent_path = get_parent_base()
+                                      ? get_parent_base()->GetSystemPathname()
+                                      : std::string();
+  return parent_path + internal::SystemMessageInterface::path_separator() +
+         GetSystemName();
+}
+
+FixedInputPortValue& ContextBase::FixInputPort(
+    int index, std::unique_ptr<AbstractValue> value) {
+  std::unique_ptr<FixedInputPortValue> fixed =
+      detail::ContextBaseFixedInputAttorney::CreateFixedInputPortValue(
+          std::move(value));
+  FixedInputPortValue& fixed_ref = *fixed;
+  SetFixedInputPortValue(InputPortIndex(index), std::move(fixed));
+  return fixed_ref;
+}
+
+void ContextBase::AddInputPort(InputPortIndex expected_index,
+                               DependencyTicket ticket) {
+  DRAKE_DEMAND(expected_index.is_valid() && ticket.is_valid());
+  DRAKE_DEMAND(expected_index == get_num_input_ports());
+  DRAKE_DEMAND(input_port_tickets_.size() == input_port_values_.size());
+  auto& ui_tracker = graph_.CreateNewDependencyTracker(
+      ticket, "u_" + std::to_string(expected_index));
+  input_port_values_.emplace_back(nullptr);
+  input_port_tickets_.emplace_back(ticket);
+  auto& u_tracker = graph_.get_mutable_tracker(
+      DependencyTicket(internal::kAllInputPortsTicket));
+  u_tracker.SubscribeToPrerequisite(&ui_tracker);
+}
+
+void ContextBase::AddOutputPort(
+    OutputPortIndex expected_index, DependencyTicket ticket,
+    const internal::OutputPortPrerequisite& prerequisite) {
+  DRAKE_DEMAND(expected_index.is_valid() && ticket.is_valid());
+  DRAKE_DEMAND(expected_index == get_num_output_ports());
+  auto& yi_tracker = graph_.CreateNewDependencyTracker(
+      ticket, "y_" + std::to_string(expected_index));
+  output_port_tickets_.push_back(ticket);
+  // If no child subsystem was specified then this output port's dependency is
+  // resolvable within this subcontext so we can subscribe now. Inter-subcontext
+  // dependencies are set up by Diagram after all child intra-subcontext
+  // dependency trackers have been allocated.
+  if (!prerequisite.child_subsystem) {
+    yi_tracker.SubscribeToPrerequisite(
+        &get_mutable_tracker(prerequisite.dependency));
+  }
+}
+
+void ContextBase::SetFixedInputPortValue(
+    InputPortIndex index,
+    std::unique_ptr<FixedInputPortValue> port_value) {
+  DRAKE_DEMAND(0 <= index && index < get_num_input_ports());
+  DRAKE_DEMAND(port_value != nullptr);
+
+  DependencyTracker& port_tracker =
+      get_mutable_tracker(input_port_tickets_[index]);
+  FixedInputPortValue* old_value =
+      input_port_values_[index].get_mutable();
+
+  DependencyTicket ticket_to_use;
+  if (old_value != nullptr) {
+    // All the dependency wiring should be in place already.
+    ticket_to_use = old_value->ticket();
+    DRAKE_DEMAND(graph_.has_tracker(ticket_to_use));
+    DRAKE_ASSERT(graph_.get_tracker(ticket_to_use).HasSubscriber(port_tracker));
+    DRAKE_ASSERT(
+        port_tracker.HasPrerequisite(graph_.get_tracker(ticket_to_use)));
+  } else {
+    // Create a new tracker and subscribe to it.
+    DependencyTracker& value_tracker = graph_.CreateNewDependencyTracker(
+        "Value for fixed input port " + std::to_string(index));
+    ticket_to_use = value_tracker.ticket();
+    port_tracker.SubscribeToPrerequisite(&value_tracker);
+  }
+
+  // Fill in the FixedInputPortValue object and install it.
+  detail::ContextBaseFixedInputAttorney::set_ticket(port_value.get(),
+                                                    ticket_to_use);
+  detail::ContextBaseFixedInputAttorney::set_owning_subcontext(
+      port_value.get(), this);
+  input_port_values_[index] = std::move(port_value);
+
+  // Invalidate anyone who cares about this input port.
+  graph_.get_tracker(ticket_to_use).NoteValueChange(start_new_change_event());
 }
 
 // Set up trackers for independent sources: time, accuracy, state, parameters,
-// and input ports.
+// and input ports, and the predefined computations for derivatives, energy,
+// and power. This code should set up everything listed in the
+// internal::BuiltInTicketNumbers enum, and do so in the same order. The code
+// for individual trackers below must be kept up to date with the API contracts
+// for the corresponding tickets in SystemBase.
 void ContextBase::CreateBuiltInTrackers() {
   DependencyGraph& graph = graph_;
   // This is the dummy "tracker" used for constants and anything else that has
@@ -57,11 +129,15 @@ void ContextBase::CreateBuiltInTrackers() {
   graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kNothingTicket), "nothing");
 
-  // Allocate trackers for time, accuracy, q, v, z.
+  // Allocate trackers for time and accuracy.
   auto& time_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kTimeTicket), "t");
   auto& accuracy_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kAccuracyTicket), "accuracy");
+
+  // Allocate trackers for continuous state variables. These are independent
+  // in leaf systems but diagrams must add dependencies on their children's
+  // q, v, and z trackers respectively.
   auto& q_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kQTicket), "q");
   auto& v_tracker = graph.CreateNewDependencyTracker(
@@ -78,13 +154,15 @@ void ContextBase::CreateBuiltInTrackers() {
 
   // Allocate the "all discrete variables" xd tracker. The associated System is
   // responsible for allocating the individual discrete variable group xdᵢ
-  // trackers and subscribing this one to each of those.
+  // trackers and subscribing this one to each of those. Diagrams must add
+  // dependencies on each child subcontext's xd tracker.
   auto& xd_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kXdTicket), "xd");
 
   // Allocate the "all abstract variables" xa tracker. The associated System is
   // responsible for allocating the individual abstract variable xaᵢ
-  // trackers and subscribing this one to each of those.
+  // trackers and subscribing this one to each of those. Diagrams must add
+  // dependencies on each child subcontext's xa tracker.
   auto& xa_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kXaTicket), "xa");
 
@@ -95,11 +173,25 @@ void ContextBase::CreateBuiltInTrackers() {
   x_tracker.SubscribeToPrerequisite(&xd_tracker);
   x_tracker.SubscribeToPrerequisite(&xa_tracker);
 
-  // Allocate the "all parameters" p tracker. The associated System is
-  // responsible for allocating the individual numeric parameter pnᵢ and
-  // abstract paraemter paᵢ trackers and subscribing this one to each of those.
+  // Allocate a tracker representing all the numeric parameters. The associated
+  // System is responsible for allocating the individual numeric parameters pnᵢ
+  // and subscribing the pn tracker to each one. Diagrams must add dependencies
+  // on each child subcontext's pn tracker.
+  auto& pn_tracker = graph.CreateNewDependencyTracker(
+      DependencyTicket(internal::kPnTicket), "pn");
+
+  // Allocate a tracker representing all the abstract parameters. The associated
+  // System is responsible for allocating the individual numeric parameters paᵢ
+  // and subscribing the pa tracker to each one. Diagrams must add dependencies
+  // on each child subcontext's pa tracker.
+  auto& pa_tracker = graph.CreateNewDependencyTracker(
+      DependencyTicket(internal::kPaTicket), "pa");
+
+  // Allocate a tracker representing all the parameters, p={pn,pa}.
   auto& p_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kAllParametersTicket), "p");
+  p_tracker.SubscribeToPrerequisite(&pn_tracker);
+  p_tracker.SubscribeToPrerequisite(&pa_tracker);
 
   // Allocate the "all input ports" u tracker. The associated System is
   // responsible for allocating the individual input port uᵢ
@@ -128,59 +220,89 @@ void ContextBase::CreateBuiltInTrackers() {
   // discrete variables. And it should be possible to switch between continuous
   // and discrete representations without having to change the specified
   // dependency, which remains "configuration" either way.
+  //
+  // See SystemBase::configuration_ticket() and kinematics_ticket() for the API
+  // contract that must be implemented here and make sure this code is kept
+  // up to date with that contract.
 
-  // Should track changes to configuration regardless of how represented. The
-  // default is that the continuous "q" variables represent the configuration.
+  // TODO(sherm1) Should track changes to configuration and velocity regardless
+  // of how represented. See issue #9171. Until that is resolved, we must
+  // assume that "configuration" results (like end effector location and PE)
+  // can be affected by anything *except* time, v, and u; and "kinematics"
+  // results (like end effector velocity and KE) can be affected by anything
+  // except time and u.
   auto& configuration_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kConfigurationTicket), "configuration");
-  // This default subscription must be changed if configuration is not
-  // represented by q in this System.
-  configuration_tracker.SubscribeToPrerequisite(&q_tracker);
-
-  // Should track changes to configuration time rate of change (i.e., velocity)
-  // regardless of how represented. The default is that the continuous "v"
-  // variables represent the configuration rate of change.
-  auto& velocity_tracker = graph.CreateNewDependencyTracker(
-      DependencyTicket(internal::kVelocityTicket), "velocity");
-  // This default subscription must be changed if velocity is not
-  // represented by v in this System.
-  velocity_tracker.SubscribeToPrerequisite(&v_tracker);
+  // Compare with "all sources" above.
+  configuration_tracker.SubscribeToPrerequisite(&accuracy_tracker);
+  configuration_tracker.SubscribeToPrerequisite(&q_tracker);  // Not v.
+  configuration_tracker.SubscribeToPrerequisite(&z_tracker);
+  configuration_tracker.SubscribeToPrerequisite(&xd_tracker);
+  configuration_tracker.SubscribeToPrerequisite(&xa_tracker);
+  configuration_tracker.SubscribeToPrerequisite(&p_tracker);
 
   // This tracks configuration & velocity regardless of how represented.
   auto& kinematics_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kKinematicsTicket), "kinematics");
   kinematics_tracker.SubscribeToPrerequisite(&configuration_tracker);
-  kinematics_tracker.SubscribeToPrerequisite(&velocity_tracker);
+  kinematics_tracker.SubscribeToPrerequisite(&v_tracker);
+
+  // The following trackers are for well-known cache entries which don't
+  // exist yet at this point in Context creation. When the corresponding cache
+  // entry values are created (by SystemBase), these trackers will be subscribed
+  // to the Calc() method's prerequisites, and set to invalidate the cache entry
+  // value when the prerequisites change. Diagrams must add dependencies on
+  // their constituent subcontexts' corresponding trackers.
 
   auto& xcdot_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kXcdotTicket), "xcdot");
-  // TODO(sherm1) Connect to cache entry.
   unused(xcdot_tracker);
 
-  auto& xdhat_tracker = graph.CreateNewDependencyTracker(
-      DependencyTicket(internal::kXdhatTicket), "xdhat");
-  // TODO(sherm1) Connect to cache entry.
-  unused(xdhat_tracker);
+  auto& pe_tracker = graph.CreateNewDependencyTracker(
+      DependencyTicket(internal::kPeTicket), "PE");
+  unused(pe_tracker);
+
+  auto& ke_tracker = graph.CreateNewDependencyTracker(
+      DependencyTicket(internal::kKeTicket), "KE");
+  unused(ke_tracker);
+
+  auto& pc_tracker = graph.CreateNewDependencyTracker(
+      DependencyTicket(internal::kPcTicket), "pc");
+  unused(pc_tracker);
+
+  auto& pnc_tracker = graph.CreateNewDependencyTracker(
+      DependencyTicket(internal::kPncTicket), "pnc");
+  unused(pnc_tracker);
 }
 
 void ContextBase::BuildTrackerPointerMap(
-    const ContextBase& clone,
-    DependencyTracker::PointerMap* tracker_map) const {
+    const ContextBase& source, const ContextBase& clone,
+    DependencyTracker::PointerMap* tracker_map) {
   // First map the pointers local to this context.
-  graph_.AppendToTrackerPointerMap(clone.get_dependency_graph(),
-                                   &(*tracker_map));
-  // TODO(sherm1) Recursive update of descendents goes here.
+  source.graph_.AppendToTrackerPointerMap(clone.get_dependency_graph(),
+                                          &*tracker_map);
+
+  // Then recursively ask our descendants to add their information to the map.
+  source.DoPropagateBuildTrackerPointerMap(clone, &*tracker_map);
 }
 
-void ContextBase::FixTrackerPointers(
-    const ContextBase& source,
-    const DependencyTracker::PointerMap& tracker_map) {
+void ContextBase::FixContextPointers(
+    const ContextBase& source, const DependencyTracker::PointerMap& tracker_map,
+    ContextBase* clone) {
   // First repair pointers local to this context.
-  graph_.RepairTrackerPointers(source.get_dependency_graph(), tracker_map, this,
-                               &cache_);
-  // Cache and only needs its back pointers set to this.
-  cache_.RepairCachePointers(this);
-  // TODO(sherm1) Recursive update of descendents goes here.
+  clone->graph_.RepairTrackerPointers(source.get_dependency_graph(),
+                                      tracker_map, clone, &clone->cache_);
+  // Cache and FixedInputs only need their back pointers set to `this`.
+  clone->cache_.RepairCachePointers(clone);
+  for (auto& fixed_input : clone->input_port_values_) {
+    if (fixed_input != nullptr) {
+      detail::ContextBaseFixedInputAttorney::set_owning_subcontext(
+          fixed_input.get_mutable(), clone);
+    }
+  }
+
+  // Then recursively ask our descendants to repair their pointers.
+  clone->DoPropagateFixContextPointers(source, tracker_map);
 }
 
 }  // namespace systems

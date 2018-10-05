@@ -25,6 +25,7 @@ namespace schunk_wsg {
 /// reach the commanded target.  The force portion of the command
 /// message is passed through this system, but does not affect the
 /// generated trajectory.
+/// @ingroup manipulation_systems
 class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
  public:
   /// @param input_size The size of the state input port to create
@@ -35,11 +36,11 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
   /// which contains the position of the actuated finger.
   SchunkWsgTrajectoryGenerator(int input_size, int position_index);
 
-  const systems::InputPortDescriptor<double>& get_command_input_port() const {
+  const systems::InputPort<double>& get_command_input_port() const {
     return this->get_input_port(0);
   }
 
-  const systems::InputPortDescriptor<double>& get_state_input_port() const {
+  const systems::InputPort<double>& get_state_input_port() const {
     return this->get_input_port(1);
   }
 
@@ -90,16 +91,17 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
 /// system has one input port for the current state of the simulated
 /// WSG (probably a RigidBodyPlant), and one optional input port for the
 /// measured gripping force.
+/// @ingroup manipulation_systems
 class SchunkWsgStatusSender : public systems::LeafSystem<double> {
  public:
   SchunkWsgStatusSender(int input_state_size, int input_torque_size,
                         int position_index, int velocity_index);
 
-  const systems::InputPortDescriptor<double>& get_input_port_wsg_state() const {
+  const systems::InputPort<double>& get_input_port_wsg_state() const {
     return this->get_input_port(input_port_wsg_state_);
   }
 
-  const systems::InputPortDescriptor<double>& get_input_port_measured_torque()
+  const systems::InputPort<double>& get_input_port_measured_torque()
       const {
     return this->get_input_port(input_port_measured_torque_);
   }

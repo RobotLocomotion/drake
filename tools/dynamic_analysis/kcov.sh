@@ -10,12 +10,6 @@ if [ ! -f "${WORKSPACE}/WORKSPACE" ]; then
   exit 1
 fi
 
-# Just in case, don't collect data from cpplint tests.
-if echo "$@" | grep -q _cpplint ; then
-    "$@"
-    exit $?
-fi
-
 kcov \
     --include-path=$WORKSPACE \
     --verify \

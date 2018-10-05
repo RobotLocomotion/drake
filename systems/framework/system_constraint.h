@@ -6,8 +6,8 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_bool.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/number_traits.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/common/unused.h"
 
@@ -93,27 +93,26 @@ class SystemConstraint {
   /// are within the desired bounds.
   // TODO(russt): Resolve names differences across the codebase. The vector
   // gen scripts call this IsValid, but Constraint calls it CheckSatisfied.
-  template <typename T1 = T>
-  typename std::enable_if<is_numeric<T1>::value, bool>::type CheckSatisfied(
-      const Context<T1>& context, double tol) const {
+  boolean<T> CheckSatisfied(const Context<T>& context, double tol) const {
     DRAKE_DEMAND(tol >= 0.0);
     VectorX<T> value(count_);
     Calc(context, &value);
+    // Special-case (tol == 0.0) cases both so that the symbolic form is
+    // elegant, and so that double evaluation is as fast as possible.
     if (type_ == SystemConstraintType::kEquality) {
-      return (value.template lpNorm<Eigen::Infinity>() <= tol);
+      if (tol == 0.0) {
+        return all(value.array() == 0.0);
+      } else {
+        return all(value.cwiseAbs().array() <= tol);
+      }
     } else {
-      return (value.array() >= -tol).all();
+      DRAKE_ASSERT(type_ == SystemConstraintType::kInequality);
+      if (tol == 0.0) {
+        return all(value.array() >= 0.0);  // N.B. Not -tol, which is -0.0.
+      } else {
+        return all(value.array() >= -tol);
+      }
     }
-  }
-
-  /// Supports CheckSatisfied calls for non-numeric scalar types by simply
-  /// returning true.
-  template <typename T1 = T>
-  typename std::enable_if<!is_numeric<T1>::value, bool>::type CheckSatisfied(
-      const Context<T1>& context, double tol) const {
-    DRAKE_DEMAND(tol >= 0.0);
-    unused(context);
-    return true;
   }
 
   // Accessor methods.

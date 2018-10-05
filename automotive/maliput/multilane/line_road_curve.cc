@@ -1,5 +1,6 @@
 #include "drake/automotive/maliput/multilane/line_road_curve.h"
 
+#include "drake/common/unused.h"
 #include "drake/math/saturate.h"
 
 namespace drake {
@@ -8,24 +9,14 @@ namespace multilane {
 
 const double LineRoadCurve::kMinimumNorm = 1e-12;
 
-double LineRoadCurve::p_from_s(double s, double r) const {
-  // TODO(@maddog-tri) We should take care of the superelevation() scale that
-  //                   will modify curve's path length.
-  DRAKE_DEMAND(r == 0. || (superelevation().a() == 0. &&
-               superelevation().b() == 0. && superelevation().c() == 0. &&
-               superelevation().d() == 0.));
+double LineRoadCurve::FastCalcPFromS(double s, double r) const {
   unused(r);
-  return elevation().p_s(s / p_scale());
+  return elevation().p_s(s / l_max());
 }
 
-double LineRoadCurve::s_from_p(double p, double r) const {
-  // TODO(@maddog-tri) We should take care of the superelevation() scale that
-  //                   will modify curve's path length.
-  DRAKE_DEMAND(r == 0. || (superelevation().a() == 0. &&
-               superelevation().b() == 0. && superelevation().c() == 0. &&
-               superelevation().d() == 0.));
+double LineRoadCurve::FastCalcSFromP(double p, double r) const {
   unused(r);
-  return p_scale() * elevation().s_p(p);
+  return l_max() * elevation().s_p(p);
 }
 
 Vector3<double> LineRoadCurve::ToCurveFrame(
@@ -42,13 +33,13 @@ Vector3<double> LineRoadCurve::ToCurveFrame(
   const Vector2<double> lane_origin_to_q = q - p0_;
 
   // Compute the distance from `q` to the start of the lane.
-  const double p_unsaturated = lane_origin_to_q.dot(s_unit_vector) / p_scale();
+  const double p_unsaturated = lane_origin_to_q.dot(s_unit_vector) / l_max();
   const double p = math::saturate(p_unsaturated, 0., 1.);
   const double r_unsaturated = lane_origin_to_q.dot(r_unit_vector);
   const double r = math::saturate(r_unsaturated, r_min, r_max);
   // N.B. h is the geo z-coordinate referenced against the lane elevation (whose
   // `a` coefficient is normalized by lane length).
-  const double h_unsaturated = geo_coordinate.z() - elevation().a() * p_scale();
+  const double h_unsaturated = geo_coordinate.z() - elevation().a() * l_max();
   const double h = math::saturate(h_unsaturated, height_bounds.min(),
                                   height_bounds.max());
   return Vector3<double>(p, r, h);
