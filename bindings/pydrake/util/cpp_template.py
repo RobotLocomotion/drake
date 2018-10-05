@@ -19,16 +19,15 @@ def get_or_init(scope, name, template_cls, *args, **kwargs):
     `template_cls(name, *args, **kwargs)`.
     (`module_name=...` is also set, but should not be important).
 
-    @param scope
-        Scope that contains the template object (this may not necessarily be
-        the scope of the instantiation).
-    @param name
-        Name of the template object.
-    @param template_cls
-        Class (either `TemplateBase` or a derivative).
-    @param args, kwargs
-        Passed to the template class's constructor.
-    @returns The existing (or newly created) template object.
+    Args:
+        scope: Scope that contains the template object (this may not
+            necessarily be the scope of the instantiation).
+        name: Name of the template object.
+        template_cls: Class (either `TemplateBase` or a derivative).
+        args, kwargs: Passed to the template class's constructor.
+
+    Returns:
+        The existing (or newly created) template object.
     """
     template = getattr(scope, name, None)
     if template is None:
@@ -49,8 +48,8 @@ class TemplateBase(object):
         """
         Args:
             name: Name of the template object.
-            allow_default: (optional) Allow a default value (None) to resolve
-                to the parameters of the instantiation that was first added.
+            allow_default: Allow a default value (None) to resolve to the
+                parameters of the instantiation that was first added.
             module_name: Parent module for the template object.
         """
         self.name = name
