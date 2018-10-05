@@ -930,7 +930,7 @@ VectorX<T> MultibodyTree<T>::CalcBiasForPointsGeometricJacobianExpressedInWorld(
     const Matrix3<T>& R_WB = pc.get_X_WB(body_B.node_index()).linear();
 
     // We need to compute p_BQi_W, the position of Qi in B, expressed in W.
-    const Isometry3<T> X_BF = frame_F.CalcPoseInBodyFrame(context);
+    const Isometry3<T> X_BF = frame_F.GetFixedPoseInBodyFrame();
     const Vector3<T> p_BQi = X_BF * p_FQi;
     const Vector3<T> p_BQi_W = R_WB * p_BQi;
 
