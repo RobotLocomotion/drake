@@ -1,0 +1,7 @@
+pydrake.util.deprecation
+========================
+
+.. automodule:: pydrake.util.deprecation
+    :members:
+    :imported-members:
+    :undoc-members:

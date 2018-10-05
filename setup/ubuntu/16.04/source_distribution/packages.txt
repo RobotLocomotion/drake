@@ -48,6 +48,7 @@ python-gtk2
 python-protobuf
 python-pygame
 python-sphinx
+python-sphinx-rtd-theme
 ruby
 unzip
 valgrind
