@@ -1,6 +1,7 @@
 """Provides a roll-up of all user-visible modules and symbols in `pydrake`.
 
 Things to note:
+
 * The `.all` modules in `pydrake` are intended as convenient end-user shortcut
   for interactive or tutorial use.
 * Code within pydrake itself should not use the all shortcut, but rather
