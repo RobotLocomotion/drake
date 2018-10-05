@@ -8,7 +8,6 @@
 #include <initializer_list>
 #include <tuple>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include "fmt/ostream.h"
@@ -133,39 +132,6 @@ class GeoNormal {
   api::GeoPosition n_;
 };
 
-// A line segment between two vertices
-class GeoLineSegment {
- public:
-  GeoLineSegment() = delete;
-
-  GeoLineSegment(const GeoVertex& start, const GeoVertex& end)
-      : start_(start), end_(end) {}
-
-  // Returns if a point lies inside the line segment, using a default
-  // tolerance.
-  bool Includes(const GeoVertex& vertex) {
-    return Includes(vertex, kDistanceTolerance);
-  }
-
-  // Returns if a point lies inside the line segment
-  bool Includes(const GeoVertex& vertex, double tolerance) {
-    const Vector3<double> start_pos = start_.v().xyz();
-    const Vector3<double> end_pos = end_.v().xyz();
-    const Vector3<double> vertex_pos = vertex.v().xyz();
-
-    const double distance =
-        (vertex_pos - start_pos).cross(vertex_pos - end_pos).norm() /
-        (end_pos - start_pos).norm();
-
-    return distance < tolerance;
-  }
-
- private:
-  static constexpr double kDistanceTolerance{1e-6};
-
-  const GeoVertex start_;
-  const GeoVertex end_;
-};
 
 // A world frame face:  a sequence of vertices with corresponding normals.
 class GeoFace {
@@ -192,248 +158,6 @@ class GeoFace {
   std::vector<GeoNormal> normals_;
 };
 
-// @return If two adjacent quads on R can be merged into a single one that will
-// represent the same surface. The received faces are expected to be quads
-// (4-vertex faces) and vertices to be defined counter-clockwise.
-//
-//           ^ +s
-//           |
-//           |
-//     +r <--o
-//
-// left_face - v2     left_face - v1    right_face - v2     right_face - v1
-//              o <-- o                               o <-- o
-//              |     ^                               |     ^
-//              v     |                               v     |
-//              o --> *                               o --> *
-// left_face - v3      left_face - v0   right_face - v3      right_face - v0
-//
-//
-// @param right_face  the GeoFace on the right hand-side.
-// @param left_face   the GeoFace on the left hand-side.
-bool CanMergeQuadsInR(const GeoFace& right_face, const GeoFace& left_face) {
-  DRAKE_DEMAND(right_face.vertices().size() == 4);
-  DRAKE_DEMAND(left_face.vertices().size() == 4);
-  return
-      // Quads must share two vertices
-      right_face.vertices()[2].v().xyz() == left_face.vertices()[1].v().xyz() &&
-      right_face.vertices()[3].v().xyz() == left_face.vertices()[0].v().xyz() &&
-      // The normals of the shared vertices should match
-      right_face.normals()[2].n().xyz() == left_face.normals()[1].n().xyz() &&
-      right_face.normals()[3].n().xyz() == left_face.normals()[0].n().xyz() &&
-      // Removing the intermediate vertices shouldn't change the geometry
-      GeoLineSegment(right_face.vertices()[1], left_face.vertices()[2])
-          .Includes(right_face.vertices()[2]) &&
-      GeoLineSegment(right_face.vertices()[0], left_face.vertices()[3])
-          .Includes(right_face.vertices()[3]);
-}
-
-// Merges two adjacent quads in R.
-// The received faces are expected to be mergeable (@see CanMergeQuadsInR).
-//
-// left_face - v2     left_face - v1    right_face - v2     right_face - v1
-//              o <-- o                               o <-- o
-//              |     ^                               |     ^
-//              v     |                               v     |
-//              o --> *                               o --> *
-// left_face - v3     left_face - v0    right_face - v3     right_face - v0
-//
-// Result:
-//
-// left_face - v2        right_face - v1
-//              o <----- o
-//              |        ^
-//              v        |
-//              o -----> *
-// left_face - v3        right_face - v0
-//
-// @param right_face  the GeoFace on the right hand-side.
-// @param left_face   the GeoFace on the left hand-side.
-GeoFace MergeQuadsInR(const GeoFace& right_face, const GeoFace& left_face) {
-  return GeoFace({right_face.vertices()[0], right_face.vertices()[1],
-                  left_face.vertices()[2], left_face.vertices()[3]},
-                 {right_face.normals()[0], right_face.normals()[1],
-                  left_face.normals()[2], left_face.normals()[3]});
-}
-
-// @return If two adjacent quads on S can be merged into a single one that will
-// represent the same surface. The received faces are expected to be quads
-// (4-vertex faces) and vertices to be defined counter-clockwise.
-//
-//    top_face - v2     top_face - v1            ^ +s
-//                o <-- o                        |
-//                |     ^                        |
-//                v     |                  +r <--o
-//                o --> *
-//    top_face - v3     top_face - v0
-//
-// bottom_face - v2     bottom_face - v1
-//                o <-- o
-//                |     ^
-//                v     |
-//                o --> *
-// bottom_face - v3      bottom_face - v0
-//
-// @param bottom_face  the GeoFace at the bottom.
-// @param top_face     the GeoFace at the top.
-bool CanMergeQuadsInS(const GeoFace& bottom_face, const GeoFace& top_face) {
-  DRAKE_DEMAND(bottom_face.vertices().size() == 4);
-  DRAKE_DEMAND(top_face.vertices().size() == 4);
-  return
-      // Quads must share two vertices
-      bottom_face.vertices()[1].v().xyz() == top_face.vertices()[0].v().xyz() &&
-      bottom_face.vertices()[2].v().xyz() == top_face.vertices()[3].v().xyz() &&
-      // The normals of the shared vertices should match
-      bottom_face.normals()[1].n().xyz() == top_face.normals()[0].n().xyz() &&
-      bottom_face.normals()[2].n().xyz() == top_face.normals()[3].n().xyz() &&
-      // Removing the intermediate vertices shouldn't change the geometry
-      GeoLineSegment(bottom_face.vertices()[0], top_face.vertices()[1])
-          .Includes(top_face.vertices()[0]) &&
-      GeoLineSegment(bottom_face.vertices()[3], top_face.vertices()[2])
-          .Includes(top_face.vertices()[3]);
-}
-
-// Merges two adjacent quads in S.
-// The received faces are expected to be mergeable (@see CanMergeQuadsInS).
-//
-//    top_face - v2     top_face - v1            ^ +s
-//                o <-- o                        |
-//                |     ^                        |
-//                v     |                  +r <--o
-//                o --> *
-//    top_face - v3     top_face - v0
-//
-// bottom_face - v2     bottom_face - v1
-//                o <-- o
-//                |     ^
-//                v     |
-//                o --> *
-// bottom_face - v3      bottom_face - v0
-//
-// Result:
-//
-//    top_face - v2     top_face - v1
-//                o <-- o
-//                |     ^
-//                |     |
-//                v     |
-//                o --> *
-// bottom_face - v3      bottom_face - v0
-//
-// @param bottom_face  the GeoFace at the bottom.
-// @param top_face     the GeoFace at the top.
-GeoFace MergeQuadsInS(const GeoFace& bottom_face, const GeoFace& top_face) {
-  return GeoFace({bottom_face.vertices()[0], top_face.vertices()[1],
-                  top_face.vertices()[2], bottom_face.vertices()[3]},
-                 {bottom_face.normals()[0], top_face.normals()[1],
-                  top_face.normals()[2], bottom_face.normals()[3]});
-}
-
-// Merges as many adjacent quads as possible.
-// Quads are assumed to be ordered from right to left in lane coordinates
-// (i.e. increasing in s).
-//
-// @param quads  the collection of quads we attempt to merge.
-// @return a new collection of quads.
-std::vector<GeoFace> MergeRowQuads(const std::vector<GeoFace>& quads) {
-  if (quads.size() < 2) {
-    return quads;
-  }
-
-  std::vector<GeoFace> merged_quads;
-  GeoFace accumulated = quads[0];
-
-  for (size_t index = 1; index < quads.size(); ++index) {
-    const GeoFace& current_face = quads[index];
-    if (CanMergeQuadsInR(accumulated, current_face)) {
-      accumulated = MergeQuadsInR(accumulated, current_face);
-    } else {
-      merged_quads.push_back(accumulated);
-      accumulated = current_face;
-    }
-  }
-
-  merged_quads.push_back(accumulated);
-
-  return merged_quads;
-}
-
-// Merge as many adjacent quads (`s`-wise) as possible between two rows of
-// quads. On each quad row, quads are assumed to be ordered from right to left
-// in lane coordinates (i.e. increasing in `r`). Rows in turn are supposed to
-// be ordered in `s` (i.e. `bottom_row` should come before `top_row` in terms
-// of `s`).
-//
-// @param bottom_row  a collection of quads.
-// @param top_row     a collection of quads.
-// @return a pair of of new quad collections, where merged quads (if any) only
-//         appear in the new top row.
-std::pair<std::vector<GeoFace>, std::vector<GeoFace>> MergeQuadsAcrossRows(
-    const std::vector<GeoFace>& bottom_row,
-    const std::vector<GeoFace>& top_row) {
-  if (bottom_row.empty()) {
-    return std::make_pair(bottom_row, top_row);
-  } else {
-    std::vector<GeoFace> optimized_bottom_row;
-    std::vector<GeoFace> optimized_top_row;
-
-    size_t bottom_index = 0;
-    size_t top_index = 0;
-
-    // The rightmost vertex of the strip. This vertex is shared by the first
-    // quad of each row.
-    const Vector3<double> start_xyz = top_row[0].vertices()[0].v().xyz();
-
-    while (bottom_index < bottom_row.size() && top_index < top_row.size()) {
-      const GeoFace& bottom_row_face = bottom_row[bottom_index];
-      const GeoFace& top_row_face = top_row[top_index];
-
-      // If the top row quad has the same bottom-left vertex as the bottom row
-      // top-left then we either merge them or add them to their respective
-      // optimized collections.
-      if (top_row_face.vertices()[3].v().xyz() ==
-          bottom_row_face.vertices()[2].v().xyz()) {
-        if (CanMergeQuadsInS(bottom_row_face, top_row_face)) {
-          optimized_top_row.push_back(
-              MergeQuadsInS(bottom_row_face, top_row_face));
-        } else {
-          optimized_top_row.push_back(top_row_face);
-          optimized_bottom_row.push_back(bottom_row_face);
-        }
-        ++bottom_index;
-        ++top_index;
-      } else {
-        // Otherwise, look for the "nearest" face wrt the start point and add
-        // that one to its corresponding optimized collection.
-        const double top_end_distance =
-            (top_row_face.vertices()[3].v().xyz() - start_xyz).norm();
-        const double bottom_end_distance =
-            (bottom_row_face.vertices()[2].v().xyz() - start_xyz).norm();
-
-        if (top_end_distance > bottom_end_distance) {
-          optimized_bottom_row.push_back(bottom_row_face);
-          ++bottom_index;
-        } else {
-          optimized_top_row.push_back(top_row_face);
-          ++top_index;
-        }
-      }
-    }
-
-    // Add any missing quads to the optimized bottom row.
-    while (bottom_index < bottom_row.size()) {
-      optimized_bottom_row.push_back(bottom_row[bottom_index]);
-      ++bottom_index;
-    }
-
-    // Add any missing quads to the optimized top row.
-    while (top_index < top_row.size()) {
-      optimized_top_row.push_back(top_row[top_index]);
-      ++top_index;
-    }
-    return std::make_pair(optimized_bottom_row, optimized_top_row);
-  }
-}
 
 // A face --- a sequence of vertices with normals --- in which the
 // vertices and normals are represented by integer indices into some
@@ -583,9 +307,6 @@ void CoverLaneWithQuads(
     bool use_driveable_bounds,
     const std::function<double(double, double)>& elevation) {
   const double s_max = lane->length();
-  std::vector<GeoFace> prev_row_faces;
-  std::vector<GeoFace> this_row_faces;
-
   for (double s0 = 0; s0 < s_max; s0 += grid_unit) {
     double s1 = s0 + grid_unit;
     if (s1 > s_max) { s1 = s_max; }
@@ -595,52 +316,54 @@ void CoverLaneWithQuads(
     const api::RBounds rb1 = use_driveable_bounds ?
         lane->driveable_bounds(s1) : lane->lane_bounds(s1);
 
+    // Left side of lane (r >= 0).
+    {
+      double r00 = 0.;
+      double r10 = 0.;
+      while ((r00 < rb0.max()) && (r10 < rb1.max())) {
+        const double r01 = std::min(r00 + grid_unit, rb0.max());
+        const double r11 = std::min(r10 + grid_unit, rb1.max());
+        //
+        // (s1,r11) o <-- o (s1,r10)       ^ +s
+        //          |     ^                |
+        //          v     |          +r <--o
+        // (s0,r01) o --> * (s0,r00)
+        //
+        SrhFace srh_face({
+            {s0, r00, elevation(s0, r00)},
+            {s1, r10, elevation(s1, r10)},
+            {s1, r11, elevation(s1, r11)},
+            {s0, r01, elevation(s0, r01)}}, {0., 0., 1.});
+        mesh->PushFace(srh_face.ToGeoFace(lane));
 
-    prev_row_faces = this_row_faces;
-
-    this_row_faces.clear();
-
-    double r00 = rb0.min();
-    double r10 = rb1.min();
-
-    // Generate a strip of quads, starting at the rightmost boundary and moving
-    // to the left.
-    while ((r00 < rb0.max()) && (r10 < rb1.max())) {
-      const double r01 = std::min(r00 + grid_unit, rb0.max());
-      const double r11 = std::min(r10 + grid_unit, rb1.max());
-      //
-      // (s1,r11) o <-- o (s1,r10)       ^ +s
-      //          |     ^                |
-      //          v     |          +r <--o
-      // (s0,r01) o --> * (s0,r00)
-      SrhFace srh_face({{s0, r00, elevation(s0, r00)},
-                        {s1, r10, elevation(s1, r10)},
-                        {s1, r11, elevation(s1, r11)},
-                        {s0, r01, elevation(s0, r01)}},
-                       {0., 0., 1.});
-
-      this_row_faces.push_back(srh_face.ToGeoFace(lane));
-
-      r00 += grid_unit;
-      r10 += grid_unit;
+        r00 += grid_unit;
+        r10 += grid_unit;
+      }
     }
+    // Right side of lane (r <= 0).
+    {
+      double r00 = 0.;
+      double r10 = 0.;
+      while ((r00 > rb0.min()) && (r10 > rb1.min())) {
+        const double r01 = std::max(r00 - grid_unit, rb0.min());
+        const double r11 = std::max(r10 - grid_unit, rb1.min());
+        //
+        // (s1,r10) o <-- o (s1,r11)  ^ +s
+        //          |     ^           |
+        //          v     |           o--> -r
+        // (s0,r00) * --> o (s0,r01)
+        //
+        SrhFace srh_face({
+            {s0, r00, elevation(s0, r00)},
+            {s0, r01, elevation(s0, r01)},
+            {s1, r11, elevation(s1, r11)},
+            {s1, r10, elevation(s1, r10)}}, {0., 0., 1.});
+        mesh->PushFace(srh_face.ToGeoFace(lane));
 
-    // Create an optimized version of the strip in terms of used quads.
-    this_row_faces = MergeRowQuads(this_row_faces);
-
-    // Merge quads between rows. Carry on merged quads to `this_row_faces`
-    std::pair<std::vector<GeoFace>, std::vector<GeoFace>> new_rows =
-        MergeQuadsAcrossRows(prev_row_faces, this_row_faces);
-
-    this_row_faces = new_rows.second;
-    // Add to the mesh the faces that couldn't be merged.
-    for (size_t i = 0; i < new_rows.first.size(); ++i) {
-      mesh->PushFace(new_rows.first[i]);
+        r00 -= grid_unit;
+        r10 -= grid_unit;
+      }
     }
-  }
-  // Add to the mesh the final row.
-  for (size_t i = 0; i < this_row_faces.size(); ++i) {
-    mesh->PushFace(this_row_faces[i]);
   }
 }
 
@@ -659,10 +382,6 @@ void StripeLaneBounds(GeoMesh* mesh, const api::Lane* lane,
   const double half_stripe = 0.5 * stripe_width;
 
   const double s_max = lane->length();
-
-  GeoFace prev_left_face;
-  GeoFace prev_right_face;
-
   for (double s0 = 0; s0 < s_max; s0 += grid_unit) {
     double s1 = s0 + grid_unit;
     if (s1 > s_max) { s1 = s_max; }
@@ -677,41 +396,18 @@ void StripeLaneBounds(GeoMesh* mesh, const api::Lane* lane,
           {s1, rb1.max() - half_stripe, h_offset},
           {s1, rb1.max() + half_stripe, h_offset},
           {s0, rb0.max() + half_stripe, h_offset}}, {0., 0., 1.});
-      GeoFace geo_face = srh_face.ToGeoFace(lane);
-      if (s0 == 0) {
-        prev_left_face = geo_face;
-      } else {
-        if (CanMergeQuadsInS(prev_left_face, geo_face)) {
-          prev_left_face = MergeQuadsInS(prev_left_face, geo_face);
-        } else {
-          mesh->PushFace(prev_left_face);
-          prev_left_face = geo_face;
-        }
-      }
+      mesh->PushFace(srh_face.ToGeoFace(lane));
     }
-
-    // Right side of lane
+    // Right side of lane.
     {
       SrhFace srh_face({
           {s0, rb0.min() - half_stripe, h_offset},
           {s1, rb1.min() - half_stripe, h_offset},
           {s1, rb1.min() + half_stripe, h_offset},
           {s0, rb0.min() + half_stripe, h_offset}}, {0., 0., 1.});
-      GeoFace geo_face = srh_face.ToGeoFace(lane);
-      if (s0 == 0) {
-        prev_right_face = geo_face;
-      } else {
-        if (CanMergeQuadsInS(prev_right_face, geo_face)) {
-          prev_right_face = MergeQuadsInS(prev_right_face, geo_face);
-        } else {
-          mesh->PushFace(prev_right_face);
-          prev_right_face = geo_face;
-        }
-      }
+      mesh->PushFace(srh_face.ToGeoFace(lane));
     }
   }
-  mesh->PushFace(prev_left_face);
-  mesh->PushFace(prev_right_face);
 }
 
 
