@@ -896,10 +896,12 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
 }
 
 template <typename T>
-VectorX<T> MultibodyTree<T>::CalcPointsGeometricJacobianBiasExpressedInWorld(
+VectorX<T> MultibodyTree<T>::CalcBiasForPointsGeometricJacobianExpressedInWorld(
     const systems::Context<T>& context,
     const Frame<T>& frame_F,
     const Eigen::Ref<const MatrixX<T>>& p_FQi_set) const {
+  DRAKE_THROW_UNLESS(p_FQi_set.rows() == 3);
+
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
 
@@ -922,7 +924,7 @@ VectorX<T> MultibodyTree<T>::CalcPointsGeometricJacobianBiasExpressedInWorld(
   VectorX<T> Ab_WB_array(3 * num_points);
 
   for (int ipoint = 0; ipoint < num_points; ++ipoint) {
-    const auto p_FQi = p_FQi_set.col(ipoint);
+    const Vector3<T> p_FQi = p_FQi_set.col(ipoint);
 
     // Body B's orientation.
     const Matrix3<T>& R_WB = pc.get_X_WB(body_B.node_index()).linear();

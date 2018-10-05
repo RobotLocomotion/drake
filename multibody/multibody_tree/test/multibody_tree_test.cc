@@ -540,6 +540,86 @@ TEST_F(KukaIiwaModelTests, GeometricJacobian) {
                               kTolerance, MatrixCompareType::relative));
 }
 
+// Unit tests MBT::CalcBiasForPointsGeometricJacobianExpressedInWorld() using
+// AutoDiffXd to compute time derivatives of the geometric Jacobian to obtain a
+// reference solution.
+TEST_F(KukaIiwaModelTests, CalcBiasForPointsGeometricJacobianExpressedInWorld) {
+  // The number of generalized positions in the Kuka iiwa robot arm model.
+  const int kNumPositions = tree().num_positions();
+
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
+  // A set of values for the joint's angles chosen mainly to avoid in-plane
+  // motions.
+  VectorX<double> q, v;
+  GetArbitraryNonZeroConfiguration(&q, &v);
+  const VectorX<double> vdot = VectorX<double>::Zero(kNumPositions);
+
+  // Set generalized positions and velocities.
+  int angle_index = 0;
+  for (const RevoluteJoint<double>* joint : joints_) {
+    joint->set_angle(context_.get(), q[angle_index]);
+    joint->set_angular_rate(context_.get(), v[angle_index]);
+    angle_index++;
+  }
+
+  context_autodiff_->SetTimeStateAndParametersFrom(*context_);
+
+  // Initialize q_autodiff and v_autodiff so that we differentiate with respect
+  // to time.
+  // Note: here we pass MatrixXd(v) so that the return gradient uses AutoDiffXd
+  // (for which we do have explicit instantiations) instead of
+  // AutoDiffScalar<Matrix1d>.
+  auto q_autodiff = math::initializeAutoDiffGivenGradientMatrix(q, MatrixXd(v));
+  auto v_autodiff =
+      math::initializeAutoDiffGivenGradientMatrix(v, MatrixXd(vdot));
+
+  VectorX<AutoDiffXd> x_autodiff(2 * kNumPositions);
+  x_autodiff << q_autodiff, v_autodiff;
+
+  // Set the context for AutoDiffXd computations.
+  tree_autodiff().get_mutable_multibody_state_vector(context_autodiff_.get())
+      = x_autodiff;
+
+  // A set of points Pi attached to the end effector, thus we a fixed position
+  // in its frame G.
+  const int kNumPoints = 2;  // The set stores 2 points.
+  MatrixX<double> p_EPi(3, kNumPoints);
+  p_EPi.col(0) << 0.1, -0.05, 0.02;
+  p_EPi.col(1) << 0.2, 0.3, -0.15;
+
+  MatrixX<double> p_WPi(3, kNumPoints);
+  MatrixX<double> Jq_WPi(3 * kNumPoints, kNumPositions);
+
+  const MatrixX<AutoDiffXd> p_EPi_autodiff = p_EPi;
+  MatrixX<AutoDiffXd> p_WPi_autodiff(3, kNumPoints);
+  MatrixX<AutoDiffXd> Jq_WPi_autodiff(3 * kNumPoints, kNumPositions);
+
+  // Compute J̇_WEp using AutoDiffXd.
+  CalcPointsOnEndEffectorGeometricJacobian(
+      tree_autodiff(), *context_autodiff_, p_EPi_autodiff,
+      &p_WPi_autodiff, &Jq_WPi_autodiff);
+
+  // Extract time derivatives:
+  MatrixX<double> Jq_WPi_derivs =
+      math::autoDiffToGradientMatrix(Jq_WPi_autodiff);
+  Jq_WPi_derivs.resize(3 * kNumPoints, kNumPositions);
+
+  // Compute the expected value of the bias terms using the time derivatives
+  // computed with AutoDiffXd.
+  const VectorX<double> Ab_WBp_expected = Jq_WPi_derivs * v;
+
+  // Compute points geometric Jacobian bias.
+  const VectorX<double> Ab_WBp =
+      tree().CalcBiasForPointsGeometricJacobianExpressedInWorld(
+      *context_, end_effector_link_->body_frame(), p_EPi);
+
+  EXPECT_EQ(Ab_WBp.size(), 3 * kNumPoints);
+  EXPECT_TRUE(CompareMatrices(Ab_WBp, Ab_WBp_expected,
+                              kTolerance, MatrixCompareType::relative));
+}
+
 // Given a set of points Pi attached to the end effector frame G, this test
 // computes the analytic Jacobian Jq_WPi of these points using two methods:
 // 1. Since for the Kuka iiwa arm v = q̇, the analytic Jacobian equals the
