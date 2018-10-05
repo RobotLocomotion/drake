@@ -83,5 +83,9 @@ build --deleted_packages=//multibody/collision,//multibody/joints,//multibody/pa
 # To retain CI coverage of the deprecated packages (e.g., to ensure they load
 # correctly, don't have any lint, etc.) we enable them for "everything" builds.
 # Most Drake developers do not build in configuration, so for most developers
-# the deprecation warnings will still remain suppressed.
-build:everything --deleted_packages=
+# the deprecation warnings will still remain suppressed. Also we delete the
+# //bindings/pydrake/doc package to reduce overall compilation time.
+build:everything --deleted_packages=//bindings/pydrake/doc
+build:gurobi --deleted_packages=//bindings/pydrake/doc
+build:mosek --deleted_packages=//bindings/pydrake/doc
+build:snopt --deleted_packages=//bindings/pydrake/doc
