@@ -57,11 +57,28 @@ TEST_F(SymbolicRationalFunctionTest, Constructor) {
   EXPECT_PRED2(PolyEqual, f_p1_p2.denominator(), p2);
 }
 
+TEST_F(SymbolicRationalFunctionTest, Constructor_with_polynomial) {
+  // Constructor with numerator only.
+  RationalFunction f1(p1_);
+  EXPECT_PRED2(PolyEqual, f1.numerator(), p1_);
+  EXPECT_PRED2(PolyEqual, f1.denominator(), polynomial_one_);
+}
+
+TEST_F(SymbolicRationalFunctionTest, Constructor_with_double) {
+  // Constructor with a double scalar.
+  const double c = 5;
+  RationalFunction f1(c);
+  EXPECT_PRED2(PolyEqual, f1.numerator(), c * polynomial_one_);
+  EXPECT_PRED2(PolyEqual, f1.denominator(), polynomial_one_);
+}
+
 TEST_F(SymbolicRationalFunctionTest, ConstructorWithError) {
   // Test throwing error in the constructor.
   // Denominator is 0.
-  EXPECT_THROW(RationalFunction(polynomial_one_, polynomial_zero_),
-               std::logic_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RationalFunction(polynomial_one_, polynomial_zero_),
+      std::invalid_argument,
+      "RationalFunction: the denominator should not be 0.");
   // The indeterminate in the denominator is a decision variable in the
   // numerator.
   const Polynomial p1(var_x_ * var_a_, {var_x_});
@@ -92,6 +109,16 @@ TEST_F(SymbolicRationalFunctionTest, EqualTo) {
   EXPECT_FALSE(f.EqualTo(RationalFunction(2 * p1, 2 * p2)));
   EXPECT_FALSE(f.EqualTo(RationalFunction(p1, 2 * p2)));
   EXPECT_FALSE(f.EqualTo(RationalFunction(2 * p1, p2)));
+}
+
+TEST_F(SymbolicRationalFunctionTest, OperatorEqual) {
+  EXPECT_EQ(RationalFunction(p1_, p2_), RationalFunction(p1_, p2_));
+  EXPECT_EQ(RationalFunction(p1_, p2_), RationalFunction(2 * p1_, 2 * p2_));
+}
+
+TEST_F(SymbolicRationalFunctionTest, OperatorNotEqual) {
+  EXPECT_NE(RationalFunction(p1_, p2_), RationalFunction(p1_ + 1, p2_));
+  EXPECT_NE(RationalFunction(p1_, p2_), RationalFunction(p1_, p2_ + 1));
 }
 
 TEST_F(SymbolicRationalFunctionTest, UnaryMinus) {

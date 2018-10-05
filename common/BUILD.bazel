@@ -994,6 +994,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "symbolic_rational_function_matrix_test",
+    deps = [
+        ":essential",
+        ":symbolic",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
     name = "symbolic_substitution_test",
     deps = [
         ":essential",

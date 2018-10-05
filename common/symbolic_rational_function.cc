@@ -17,9 +17,23 @@ RationalFunction::RationalFunction(const Polynomial& numerator,
   CheckIndeterminates();
 }
 
+RationalFunction::RationalFunction(const Polynomial& p)
+    : RationalFunction(p, Polynomial(1)) {}
+
+RationalFunction::RationalFunction(double c)
+    : RationalFunction(Polynomial(c), Polynomial(1)) {}
+
 bool RationalFunction::EqualTo(const RationalFunction& f) const {
   return numerator_.EqualTo(f.numerator()) &&
          denominator_.EqualTo(f.denominator());
+}
+
+Formula RationalFunction::operator==(const RationalFunction& f) const {
+  return denominator_ * f.numerator() == numerator_ * f.denominator();
+}
+
+Formula RationalFunction::operator!=(const RationalFunction& f) const {
+  return !(*this == f);
 }
 
 std::ostream& operator<<(std::ostream& os, const RationalFunction& f) {
