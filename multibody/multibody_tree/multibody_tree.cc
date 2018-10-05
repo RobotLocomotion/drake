@@ -896,6 +896,56 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
 }
 
 template <typename T>
+VectorX<T> MultibodyTree<T>::CalcPointsGeometricJacobianBiasExpressedInWorld(
+    const systems::Context<T>& context,
+    const Frame<T>& frame_F,
+    const Eigen::Ref<const MatrixX<T>>& p_FQi_set) const {
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+
+  // TODO(amcastro-tri): Consider caching Ab_WB(q, v), the bias term for each
+  // body, and compute the bias as Ab_WBq = Ab_WB.Shift(p_BQ_W, w_WB).
+  // Where the body bias terms is defined s.t. A_WB = J_WB⋅v̇ + Ab_WB or,
+  // Ab_WB = J̇_WB⋅v
+
+  std::vector<SpatialAcceleration<T>> A_WB_array(num_bodies());
+  const VectorX<T> vdot = VectorX<T>::Zero(num_velocities());
+  CalcSpatialAccelerationsFromVdot(context, pc, vc, vdot, &A_WB_array);
+
+  const Body<T>& body_B = frame_F.body();
+  // Bias for body B spatial acceleration.
+  const SpatialAcceleration<T>& Ab_WB = A_WB_array[body_B.node_index()];
+
+  const int num_points = p_FQi_set.cols();
+
+  // Allocate output vector.
+  VectorX<T> Ab_WB_array(3 * num_points);
+
+  for (int ipoint = 0; ipoint < num_points; ++ipoint) {
+    const auto p_FQi = p_FQi_set.col(ipoint);
+
+    // Body B's orientation.
+    const Matrix3<T>& R_WB = pc.get_X_WB(body_B.node_index()).linear();
+
+    // We need to compute p_BQi_W, the position of Qi in B, expressed in W.
+    const Isometry3<T> X_BF = frame_F.CalcPoseInBodyFrame(context);
+    const Vector3<T> p_BQi = X_BF * p_FQi;
+    const Vector3<T> p_BQi_W = R_WB * p_BQi;
+
+    // Body B's velocity in the world frame W.
+    const Vector3<T>& w_WB = vc.get_V_WB(body_B.node_index()).rotational();
+
+    // Shift body B's bias term to point Qi.
+    const SpatialAcceleration<T> Ab_WBq = Ab_WB.Shift(p_BQi_W, w_WB);
+
+    // Output translational component only.
+    Ab_WB_array.template segment<3>(3 * ipoint) = Ab_WBq.translational();
+  }
+
+  return Ab_WB_array;
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
     const systems::Context<T>& context,
     const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_WQi_set,
