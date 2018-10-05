@@ -2128,9 +2128,14 @@ class System : public SystemBase {
         abstract_value->MaybeGetValue<BasicVector<T>>();
     DRAKE_DEMAND(basic_value != nullptr);
 
-    // Shouldn't have been possible to create this vector-valued port with
-    // the wrong size.
-    DRAKE_DEMAND(basic_value->size() == port.size());
+    if (basic_value->size() != port.size()) {
+      const std::string msg =
+          this->GetSystemPathname() +
+          "has a vector-valued port initialized with a basic vector with size "
+          + std::to_string(basic_value->size()) + " but the port size is " +
+          std::to_string(port.size());
+      DRAKE_ABORT_MSG(msg.c_str());
+    }
 
     return basic_value;
   }
