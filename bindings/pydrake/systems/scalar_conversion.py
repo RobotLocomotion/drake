@@ -55,6 +55,7 @@ class TemplateSystem(TemplateClass):
         MySystem = MySystem_[None]  # Default instantiation.
 
     Things to note:
+
     * When defining `_construct_copy`, if you are delegating to `_construct`
       within the same class, you should use `Impl._construct(self, ...)`; if
       you use `self._construct`, then you may get a child class's constructor
