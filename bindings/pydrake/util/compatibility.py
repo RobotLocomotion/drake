@@ -1,5 +1,6 @@
 """Contains routines to monkey patch or provide alternatives to upstream code
-which may need changes for compatibility."""
+which may need changes for compatibility.
+"""
 
 import numpy as np
 

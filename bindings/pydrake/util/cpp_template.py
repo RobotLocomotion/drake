@@ -47,13 +47,11 @@ class TemplateBase(object):
     """
     def __init__(self, name, allow_default=True, module_name=None):
         """
-        @param name
-            Name of the template object.
-        @param allow_default
-            (optional) Allow a default value (None) to resolve to the
-            parameters of the instantiation that was first added.
-        @param module_name
-            Parent module for the template object.
+        Args:
+            name: Name of the template object.
+            allow_default: (optional) Allow a default value (None) to resolve
+                to the parameters of the instantiation that was first added.
+            module_name: Parent module for the template object.
         """
         self.name = name
         self.param_list = []
@@ -101,10 +99,13 @@ class TemplateBase(object):
     def get_instantiation(self, param=None, throw_error=True):
         """Gets the instantiation for the given parameters.
 
-        @param param
-            Can be None, a single parameter, or a tuple/list of parameters.
-        @returns (instantiation, param), where `param` is the resolved
-        set of parameters.
+        Args:
+            param: Can be None, a single parameter, or a tuple/list of
+                parameters.
+
+        Returns:
+            (instantiation, param), where `param` is the resolved set of
+            parameters.
         """
         param = self._param_resolve(param)
         instantiation = self._instantiation_map.get(param)
@@ -120,7 +121,8 @@ class TemplateBase(object):
     def add_instantiation(self, param, instantiation):
         """Adds a unique instantiation.
 
-        @pre `param` must not have already been added.
+        Note:
+            `param` must not have already been added.
         """
         # Ensure that we do not already have this tuple.
         param = get_param_canonical(self._param_resolve(param))
@@ -143,14 +145,15 @@ class TemplateBase(object):
         """Adds a set of instantiations given a function and a list of
         parameter sets.
 
-        @pre This method can only be called once.
-        @param instantiation_func
-            Function of the form `f(template, param)`, where `template` is the
-            current template and `param` is the parameter set for the current
-            instantiation.
-        @param param_list
-            Ordered container of parameter sets that these instantiations
-            should be produced for.
+        Note:
+            This method can only be called once.
+
+        Args:
+            instantiation_func: Function of the form `f(template, param)`,
+                where `template` is the current template and `param` is the
+                parameter set for the current instantiation.
+            param_list: Ordered container of parameter sets that these
+            instantiations should be produced for.
         """
         assert instantiation_func is not None
         if self._instantiation_func is not None:
@@ -163,7 +166,9 @@ class TemplateBase(object):
     def get_param_set(self, instantiation):
         """Returns all parameters for a given `instantiation`.
 
-        @returns A set of instantiations. """
+        Returns:
+            A set of instantiations.
+        """
         param_list = []
         for param, check in self._instantiation_map.iteritems():
             if check == instantiation:
@@ -215,27 +220,26 @@ class TemplateBase(object):
         `add_instantiations`, where the instantiation function is the decorated
         function.
 
-        @param name
-            Name of the template. This should generally match the name of the
-            object being decorated for clarity.
-        @param param_list
-            Ordered container of parameter sets. For more information, see
-            `add_instantiations`.
+        Args:
+            name: Name of the template. This should generally match the name
+                of the object being decorated for clarity.
+            param_list: Ordered container of parameter sets. For more
+                information, see `add_instantiations`.
 
-        Note that the name of the inner class will not matter as it will be
-        overritten with the template instantiation name.
-        In the below example, ``Impl` will be renamed to
-        `MyTemplate[int]` when `param=(int,)`.
+        Note:
+            The name of the inner class will not matter as it will be
+            overwritten with the template instantiation name. In the below
+            example, ``Impl` will be renamed to `MyTemplate[int]` when
+            `param=(int,)`.
 
         Example:
-
-        @TemplateClass.define("MyTemplate", param_list=[(int,), (float,)])
-        def MyTemplate(param):
-            T, = param
-            class Impl(object):
-                def __init__(self):
-                    self.T = T
-            return Impl
+            @TemplateClass.define("MyTemplate", param_list=[(int,), (float,)])
+            def MyTemplate(param):
+                T, = param
+                class Impl(object):
+                    def __init__(self):
+                        self.T = T
+                return Impl
         """
         template = cls(name, *args, **kwargs)
 
@@ -271,7 +275,8 @@ class TemplateClass(TemplateBase):
     def is_subclass_of_instantiation(self, obj):
         """Determines if `obj` is a subclass of one of the instantiations.
 
-        @return The first instantiation of which `obj` is a subclass.
+        Returns:
+            The first instantiation of which `obj` is a subclass.
         """
         for param in self.param_list:
             instantiation, _ = self.get_instantiation(param)
@@ -281,12 +286,12 @@ class TemplateClass(TemplateBase):
 
 
 class TemplateFunction(TemplateBase):
-    """Extension of `TemplateBase` for functions. """
+    """Extension of `TemplateBase` for functions."""
     pass
 
 
 class TemplateMethod(TemplateBase):
-    """Extension of `TemplateBase` for class methods. """
+    """Extension of `TemplateBase` for class methods."""
     def __init__(self, name, cls, module_name=None, **kwargs):
         if module_name is None:
             module_name = _get_module_name_from_stack()
@@ -294,7 +299,7 @@ class TemplateMethod(TemplateBase):
         self._cls = cls
 
     def __get__(self, obj, objtype):
-        """Provides descriptor accessor. """
+        """Provides descriptor accessor."""
         if obj is None:
             return self
         else:

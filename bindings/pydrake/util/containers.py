@@ -1,6 +1,4 @@
-"""
-Provides extensions for containers of Drake-related objects.
-"""
+"""Provides extensions for containers of Drake-related objects."""
 
 
 class _EqualityProxyBase(object):
@@ -70,7 +68,10 @@ class _DictKeyWrap(dict):
 
     def raw(self):
         """Returns a dict with the original keys.
-        N.B. Copying to a `dict` will maintain the proxy keys."""
+
+        Note:
+            Copying to a `dict` will maintain the proxy keys.
+        """
         return dict(self.iteritems())
 
 

@@ -1,6 +1,4 @@
-"""
-Provides an example translation of `cart_pole_passive_simluation.cc`.
-"""
+"""Provides an example translation of `cart_pole_passive_simluation.cc`."""
 
 import argparse
 
