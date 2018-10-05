@@ -6,6 +6,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/bindings/pydrake/util/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/util/eigen_geometry_pybind.h"
@@ -37,6 +38,7 @@ PYBIND11_MODULE(sensors, m) {
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::sensors;
+  auto& doc = pydrake_doc.drake.systems.sensors;
 
   m.doc() = "Bindings for the sensors portion of the Systems framework.";
 
@@ -65,6 +67,7 @@ PYBIND11_MODULE(sensors, m) {
 
     // Simple constexpr for-loop.
     int i = 0;
+    // See # 9600
     auto instantiation_visitor = [&](auto param) {
       // Extract information from inferred parameter.
       using Param = decltype(param);
@@ -109,18 +112,19 @@ PYBIND11_MODULE(sensors, m) {
 
       py::class_<ImageT> image(m, TemporaryClassName<ImageT>().c_str());
       image
-          .def(py::init<int, int>())
-          .def(py::init<int, int, T>())
-          .def("width", &ImageT::width)
-          .def("height", &ImageT::height)
-          .def("size", &ImageT::size)
-          .def("resize", &ImageT::resize)
+          .def(py::init<int, int>(), doc.Image.ctor.doc_3)
+          .def(py::init<int, int, T>(), doc.Image.ctor.doc_4)
+          .def("width", &ImageT::width, doc.Image.width.doc)
+          .def("height", &ImageT::height, doc.Image.height.doc)
+          .def("size", &ImageT::size, doc.Image.size.doc)
+          .def("resize", &ImageT::resize, doc.Image.resize.doc)
           .def("at", [=](ImageT* self, int x, int y) {
                 check_coord(self, x, y);
                 Map<VectorX<T>> pixel(
                     self->at(x, y), int{ImageTraitsT::kNumChannels});
                 return pixel;
-              }, py::arg("x"), py::arg("y"), py_reference_internal)
+              }, py::arg("x"), py::arg("y"), py_reference_internal,
+               doc.Image.at.doc)
           // Non-C++ properties. Make them Pythonic.
           .def_property_readonly("shape", get_shape)
           .def_property_readonly("data", get_data, py_reference_internal)
@@ -152,21 +156,22 @@ PYBIND11_MODULE(sensors, m) {
   using T = double;
 
   // Systems.
-  py::class_<CameraInfo>(m, "CameraInfo")
+  py::class_<CameraInfo>(m, "CameraInfo", doc.CameraInfo.doc)
     .def(py::init<int, int, double>(),
          py::arg("width"), py::arg("height"),
-         py::arg("fov_y"))
+         py::arg("fov_y"), doc.CameraInfo.ctor.doc_4)
     .def(py::init<int, int, double, double, double, double>(),
          py::arg("width"), py::arg("height"),
          py::arg("focal_x"), py::arg("focal_y"),
-         py::arg("center_x"), py::arg("center_y"))
-    .def("width", &CameraInfo::width)
-    .def("height", &CameraInfo::height)
-    .def("focal_x", &CameraInfo::focal_x)
-    .def("focal_y", &CameraInfo::focal_y)
-    .def("center_x", &CameraInfo::center_x)
-    .def("center_y", &CameraInfo::center_y)
-    .def("intrinsic_matrix", &CameraInfo::intrinsic_matrix);
+         py::arg("center_x"), py::arg("center_y"), doc.CameraInfo.ctor.doc_3)
+    .def("width", &CameraInfo::width, doc.CameraInfo.width.doc)
+    .def("height", &CameraInfo::height, doc.CameraInfo.height.doc)
+    .def("focal_x", &CameraInfo::focal_x, doc.CameraInfo.focal_x.doc)
+    .def("focal_y", &CameraInfo::focal_y, doc.CameraInfo.focal_y.doc)
+    .def("center_x", &CameraInfo::center_x, doc.CameraInfo.center_x.doc)
+    .def("center_y", &CameraInfo::center_y, doc.CameraInfo.center_y.doc)
+    .def("intrinsic_matrix", &CameraInfo::intrinsic_matrix,
+      doc.CameraInfo.intrinsic_matrix.doc);
 
   auto def_camera_ports = [](auto* ppy_class) {
     auto& py_class = *ppy_class;
@@ -199,19 +204,24 @@ PYBIND11_MODULE(sensors, m) {
       py::arg("width") = int{RenderingConfig::kDefaultWidth},
       py::arg("height") = int{RenderingConfig::kDefaultHeight},
       // Keep alive, reference: `this` keeps  `RigidBodyTree` alive.
-      py::keep_alive<1, 3>())
+      py::keep_alive<1, 3>(), doc.RgbdCamera.ctor.doc_3)
     .def("color_camera_info", &RgbdCamera::color_camera_info,
-         py_reference_internal)
+         py_reference_internal, doc.RgbdCamera.color_camera_info.doc)
     .def("depth_camera_info", &RgbdCamera::depth_camera_info,
-         py_reference_internal)
-    .def("color_camera_optical_pose", &RgbdCamera::color_camera_optical_pose)
-    .def("depth_camera_optical_pose", &RgbdCamera::depth_camera_optical_pose)
-    .def("frame", &RgbdCamera::frame, py_reference_internal)
-    .def("tree", &RgbdCamera::tree, py_reference);
+         py_reference_internal, doc.RgbdCamera.depth_camera_info.doc)
+    .def("color_camera_optical_pose", &RgbdCamera::color_camera_optical_pose,
+        doc.RgbdCamera.color_camera_optical_pose.doc)
+    .def("depth_camera_optical_pose", &RgbdCamera::depth_camera_optical_pose,
+        doc.RgbdCamera.depth_camera_optical_pose.doc)
+    .def("frame", &RgbdCamera::frame, py_reference_internal,
+        doc.RgbdCamera.frame.doc)
+    .def("frame", &RgbdCamera::frame, py_reference_internal,
+        doc.RgbdCamera.frame.doc)
+    .def("tree", &RgbdCamera::tree, py_reference, doc.RgbdCamera.tree.doc);
   def_camera_ports(&rgbd_camera);
 
   py::class_<RgbdCameraDiscrete, Diagram<T>> rgbd_camera_discrete(
-      m, "RgbdCameraDiscrete");
+      m, "RgbdCameraDiscrete", doc.RgbdCameraDiscrete.doc);
   rgbd_camera_discrete
     .def(
       py::init<unique_ptr<RgbdCamera>, double, bool>(),
@@ -219,12 +229,15 @@ PYBIND11_MODULE(sensors, m) {
       py::arg("period") = double{RgbdCameraDiscrete::kDefaultPeriod},
       py::arg("render_label_image") = true,
       // Keep alive, ownership: `RgbdCamera` keeps `this` alive.
-      py::keep_alive<2, 1>())
+      py::keep_alive<2, 1>(), doc.RgbdCameraDiscrete.ctor.doc_3)
     // N.B. Since `camera` is already connected, we do not need additional
     // `keep_alive`s.
-    .def("camera", &RgbdCameraDiscrete::camera)
-    .def("mutable_camera", &RgbdCameraDiscrete::mutable_camera)
-    .def("period", &RgbdCameraDiscrete::period);
+    .def("camera", &RgbdCameraDiscrete::camera,
+      doc.RgbdCameraDiscrete.camera.doc)
+    .def("mutable_camera", &RgbdCameraDiscrete::mutable_camera,
+      doc.RgbdCameraDiscrete.mutable_camera.doc)
+    .def("period", &RgbdCameraDiscrete::period,
+      doc.RgbdCameraDiscrete.period.doc);
   def_camera_ports(&rgbd_camera_discrete);
   rgbd_camera_discrete.attr("kDefaultPeriod") =
       double{RgbdCameraDiscrete::kDefaultPeriod};
