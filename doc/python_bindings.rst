@@ -177,13 +177,10 @@ explicitly refer to each symbol:
     simulator = pydrake.systems.analysis.Simulator(
         pydrake.multibody.rigid_body_plant.RigidBodyPlant(tree))
 
-Documentation
-=============
+Differences with C++ API
+========================
 
-There is not yet a comprehensive API documentation for the Python bindings
-(tracked by `#7914 <https://github.com/RobotLocomotion/drake/issues/7914>`_).
-
-In general, the Python API should be close to the
+In general, the `Python API <pydrake/index.html#://>`_ should be close to the
 `C++ API <doxygen_cxx/index.html#://>`_. There are some exceptions:
 
 C++ Template Instantiations in Python
