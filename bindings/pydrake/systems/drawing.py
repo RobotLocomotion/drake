@@ -1,7 +1,9 @@
 """
 Provides general visualization utilities. This is NOT related to `rendering`.
-@note This is an optional module, dependent on `pydot` and `matplotlib` being
-installed.
+
+Note:
+    This is an optional module, dependent on `pydot` and `matplotlib` being
+    installed.
 """
 
 from tempfile import NamedTemporaryFile
@@ -35,5 +37,5 @@ def plot_graphviz(dot_text):
 
 
 def plot_system_graphviz(system):
-    """Renders a System's Graphviz representation in `matplotlib`. """
+    """Renders a System's Graphviz representation in `matplotlib`."""
     return plot_graphviz(system.GetGraphvizString())

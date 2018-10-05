@@ -238,10 +238,11 @@ def to_mutable(obj, force=False):
 def is_const_test(obj):
     """Determines if `obj` is const-proxied.
 
-    WARNING: Do NOT use this for branching in production code unless
-    const-proxying is guaranteed to be enabled or the branching is designed
-    not to fail in this case (the code will always work the same, whether
-    const-proxying is enabled or disabled).
+    Warning:
+        Do NOT use this for branching in production code unless const-proxying
+        is guaranteed to be enabled or the branching is designed not to fail
+        in this case (the code will always work the same, whether
+        const-proxying is enabled or disabled).
     """
     if isinstance(obj, _Const):
         return True
@@ -252,10 +253,11 @@ def is_const_test(obj):
 def is_const_or_immutable_test(obj):
     """Determines if `obj` is const-proxied or immutable.
 
-    WARNING: Do NOT use this for branching in production code unless
-    const-proxying is guaranteed to be enabled or the branching is designed
-    not to fail in this case (the code will always work the same, whether
-    const-proxying is enabled or disabled).
+    Warning:
+        Do NOT use this for branching in production code unless const-proxying
+        is guaranteed to be enabled or the branching is designed not to fail
+        in this case (the code will always work the same, whether
+        const-proxying is enabled or disabled).
     """
     return is_const_test(obj) or _is_immutable(obj)
 
@@ -278,6 +280,7 @@ def _raise_mutable_method_error(obj, name):
 
 def mutable_method(func):
     """Returns a function decorated as mutable.
+
     This is for decorating methods.
     """
     func._is_mutable_method = True
@@ -286,6 +289,7 @@ def mutable_method(func):
 
 def const_decorated(owned_properties=None, mutable_methods=None):
     """Returns a class decorated with const-proxy metadata.
+
     This is for decorating classes.
     """
 

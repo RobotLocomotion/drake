@@ -3,10 +3,8 @@ from __future__ import absolute_import, print_function
 import ctypes
 import numpy as np
 
-"""
-@file
-Defines a mapping between Python and alias types, and provides canonical Python
-types as they relate to C++.
+"""Defines a mapping between Python and alias types, and provides canonical
+Python types as they relate to C++.
 """
 
 
@@ -79,11 +77,13 @@ _param_aliases = _ParamAliases()
 
 def get_param_canonical(param):
     """Gets the canonical types for a set of Python types (canonical as in
-    how they relate to C++ types. """
+    how they relate to C++ types.
+    """
     return tuple(map(_param_aliases.get_canonical, param))
 
 
 def get_param_names(param):
-    """Gets the canonical type names for a set of Python types (canonical as in
-    how they relate to C++ types. """
+    """Gets the canonical type names for a set of Python types (canonical as
+    in how they relate to C++ types.
+    """
     return tuple(map(_param_aliases.get_name, param))
