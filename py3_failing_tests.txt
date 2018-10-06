@@ -18,7 +18,7 @@ bazel-test //bindings/pydrake/...
 //bindings/pydrake:py/all_test
 //bindings/pydrake:py/automotive_test
 //bindings/pydrake:py/math_overloads_test
-5: //bindings/pydrake:py/symbolic_test
+5 (FIXED): //bindings/pydrake:py/symbolic_test
 //bindings/pydrake:py/trajectories_test
 //bindings/pydrake/examples:py/acrobot_test
 //bindings/pydrake/examples:py/compass_gait_test
@@ -28,7 +28,7 @@ bazel-test //bindings/pydrake/...
 //bindings/pydrake/examples/multibody:cart_pole_passive_simulation_test
 7: //bindings/pydrake/maliput:py/maliput_test
 //bindings/pydrake/multibody:py/inverse_kinematics_test
-2: //bindings/pydrake/multibody:py/multibody_tree_test
+8: //bindings/pydrake/multibody:py/multibody_tree_test
 //bindings/pydrake/multibody:py/rigid_body_plant_test
 6 (FIXED): //bindings/pydrake/multibody:py/rigid_body_tree_test
 //bindings/pydrake/solvers:py/gurobi_solver_test
@@ -48,7 +48,7 @@ bazel-test //bindings/pydrake/...
 (FIXED) //bindings/pydrake/systems:py/value_test
 1 (FIXED): //bindings/pydrake/util:py/cpp_const_test
 4 (FIXED): //bindings/pydrake/util:py/cpp_template_pybind_test
-3: //bindings/pydrake/util:py/deprecation_test
+3 (FIXED): //bindings/pydrake/util:py/deprecation_test
 
 
 1:   NameError: name 'unicode' is not defined
@@ -72,3 +72,4 @@ bazel-test //bindings/pydrake/...
 7:   ImportError: ImportError: generic_type: type "SystemScalarConverter" is already registered!
 
 
+8:   ImportError: generic_type: type "FrameIndex" is already registered!
