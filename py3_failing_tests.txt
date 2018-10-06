@@ -12,6 +12,7 @@ bazel-run() { (
 ) }
 
 bazel-test //bindings/pydrake/...
+--trace=user -f
 
 
 //bindings/pydrake:py/all_test
@@ -41,12 +42,12 @@ bazel-test //bindings/pydrake/...
 //bindings/pydrake/systems:py/lifetime_test
 2: //bindings/pydrake/systems:py/primitives_test
 2: //bindings/pydrake/systems:py/rendering_test
-7: //bindings/pydrake/systems:py/scalar_conversion_test
+7 (FIXED): //bindings/pydrake/systems:py/scalar_conversion_test
 //bindings/pydrake/systems:py/sensors_test
 //bindings/pydrake/systems:py/trajectory_optimization_test
 //bindings/pydrake/systems:py/value_test
 1 (FIXED): //bindings/pydrake/util:py/cpp_const_test
-4: //bindings/pydrake/util:py/cpp_template_pybind_test
+4 (FIXED): //bindings/pydrake/util:py/cpp_template_pybind_test
 3: //bindings/pydrake/util:py/deprecation_test
 
 
