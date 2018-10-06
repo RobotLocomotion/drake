@@ -46,6 +46,10 @@ void CheckValue(const string& expr, const T& expected) {
   EXPECT_EQ(py::eval(expr).cast<T>(), expected);
 }
 
+void sync(py::module m) {
+  py::globals().attr("update")(m.attr("__dict__"));  // For Python3
+}
+
 GTEST_TEST(CppTemplateTest, TemplateClass) {
   py::module m("__main__");
 
@@ -54,12 +58,14 @@ GTEST_TEST(CppTemplateTest, TemplateClass) {
 
   const vector<string> expected_1 = {"int"};
   const vector<string> expected_2 = {"int", "double"};
-  py::globals().attr("update")(m.attr("__dict__"));  // For Python3
+  sync(m);
+
   CheckValue("DefaultInst().GetNames()", expected_1);
   CheckValue("SimpleTemplate[int]().GetNames()", expected_1);
   CheckValue("SimpleTemplate[int, float]().GetNames()", expected_2);
 
   m.def("simple_func", [](const SimpleTemplate<int>&) {});
+  sync(m);
 
   // Check error message if a function is called with the incorrect arguments.
   // N.B. We use `[^\0]` because C++ regex does not have an equivalent of

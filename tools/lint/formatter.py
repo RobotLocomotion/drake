@@ -51,6 +51,7 @@ class FormatterBase(object):
         for line in self._original_lines:
             assert line.endswith("\n"), line
         for line in self._working_lines:
+            assert isinstance(line, str), (type(line), line)
             assert line.endswith("\n"), line
 
     def is_same_as_original(self):
@@ -204,6 +205,7 @@ class FormatterBase(object):
         formatter = Popen(command, stdin=PIPE, stdout=PIPE)
         stdout, _ = formatter.communicate(input=(
             "".join(self._working_lines).encode('utf8')))
+        stdout = stdout.decode('utf8')
 
         # Handle errors, otherwise reset the working list.
         if formatter.returncode != 0:
