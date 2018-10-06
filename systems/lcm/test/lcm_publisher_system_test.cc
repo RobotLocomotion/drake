@@ -153,12 +153,9 @@ GTEST_TEST(LcmPublisherSystemTest, PublishTest) {
       "drake_system2_lcm_test_publisher_channel_name";
   LcmtDrakeSignalTranslator translator(kDim);
 
-  // Instantiates an LcmPublisherSystem that takes as input System 2.0 Vectors
-  // of type drake::systems::VectorBase and publishes LCM messages of type
+  // Instantiates an LcmPublisherSystem that takes as input of type
+  // drake::systems::VectorBase and publishes LCM messages of type
   // drake::lcmt_drake_signal.
-  //
-  // The LcmPublisherSystem is called "dut" to indicate it is the
-  // "device under test".
   LcmPublisherSystem dut(channel_name, translator, &lcm);
 
   TestPublisher(channel_name, &lcm, &dut);
@@ -178,12 +175,9 @@ GTEST_TEST(LcmPublisherSystemTest, PublishTestUsingDictionary) {
 
   EXPECT_TRUE(dictionary.HasTranslator(channel_name));
 
-  // Instantiates an LcmPublisherSystem that takes as input System 2.0 Vectors
-  // of type drake::systems::VectorBase and publishes LCM messages of type
+  // Instantiates an LcmPublisherSystem that takes as input of type
+  // drake::systems::VectorBase and publishes LCM messages of type
   // drake::lcmt_drake_signal.
-  //
-  // The LcmPublisherSystem is called "dut" to indicate it is the
-  // "device under test".
   LcmPublisherSystem dut(channel_name, dictionary, &lcm);
 
   TestPublisher(channel_name, &lcm, &dut);
@@ -245,6 +239,16 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
     EXPECT_EQ(lcm.DecodeLastPublishedMessageAs<lcmt_drake_signal>(
       channel_name).timestamp, expected_time);
   }
+}
+
+GTEST_TEST(LcmPublisherSystemTest, OwnedTranslatorTest) {
+  lcm::DrakeMockLcm lcm;
+  const std::string channel_name = "my_channel";
+  auto translator = std::make_unique<LcmtDrakeSignalTranslator>(kDim);
+
+  LcmPublisherSystem dut(channel_name, std::move(translator), &lcm);
+
+  TestPublisher(channel_name, &lcm, &dut);
 }
 
 }  // namespace
