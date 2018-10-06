@@ -34,6 +34,7 @@ drake_py_library(
 drake_pybind_library(
     name = "acrobot_py",
     cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
         "//examples/acrobot:acrobot_plant",
     ],
     cc_so_name = "acrobot",
@@ -48,6 +49,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "compass_gait_py",
     cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
         "//examples/compass_gait",
     ],
     cc_so_name = "compass_gait",
@@ -62,6 +64,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "pendulum_py",
     cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
         "//examples/pendulum:pendulum_plant",
     ],
     cc_so_name = "pendulum",
@@ -76,6 +79,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "rimless_wheel_py",
     cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
         "//examples/rimless_wheel",
     ],
     cc_so_name = "rimless_wheel",
@@ -90,6 +94,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "van_der_pol_py",
     cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
         "//examples/van_der_pol",
     ],
     cc_so_name = "van_der_pol",
