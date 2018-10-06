@@ -310,5 +310,23 @@ struct overload_cast_impl {
 template <typename Return, typename... Args>
 constexpr auto overload_cast_explicit = overload_cast_impl<Return, Args...>{};
 
+#if PY_MAJOR_VERSION >= 3
+// pybind11 in Python3 may reconstruct a module if it is imported in the middle
+// of it being constructed. We can circumvent this by storing a weak reference
+// to the module being constructed, and re-return it.
+// Use this ONLY when necessary (e.g. when using a utility method which imports
+// the module, within the module itself).
+#define PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable) \
+  static py::handle variable##_original; \
+  if (variable##_original) { \
+    variable = py::reinterpret_borrow<py::module>(variable##_original); \
+    return; \
+  } else { \
+    variable##_original = variable; \
+  }
+#else  // PY_MAJOR_VERSION >= 3
+#define PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable)
+#endif  // PY_MAJOR_VERSION >= 3
+
 }  // namespace pydrake
 }  // namespace drake

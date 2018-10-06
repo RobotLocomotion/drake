@@ -96,7 +96,7 @@ void DefineFrameworkPyValues(py::module m) {
     .def("set_value", abstract_stub("set_value"));
 
   // Add `Value<std::string>` instantiation (visible in Python as `Value[str]`).
-  AddValueInstantiation<string>(m, m);
+  AddValueInstantiation<string>(m);
 
   // Add `Value[object]` instantiation.
   // N.B. If any code explicitly uses `Value<py::object>` for whatever reason,
@@ -113,7 +113,7 @@ void DefineFrameworkPyValues(py::module m) {
       return std::make_unique<PyObjectValue>(py_copy(get_value()));
     }
   };
-  AddValueInstantiation<py::object, PyObjectValue>(m, m);
+  AddValueInstantiation<py::object, PyObjectValue>(m);
 
   py::object py_type_func = py::eval("type");
   py::object py_object_type = py::eval("object");

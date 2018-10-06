@@ -3,6 +3,7 @@
 
 import os
 import six
+from six.moves import xrange
 from subprocess import Popen, PIPE, CalledProcessError
 
 import drake.tools.lint.clang_format as clang_format_lib

@@ -28,7 +28,7 @@ bazel-test //bindings/pydrake/...
 //bindings/pydrake/examples/multibody:cart_pole_passive_simulation_test
 7: //bindings/pydrake/maliput:py/maliput_test
 //bindings/pydrake/multibody:py/inverse_kinematics_test
-8: //bindings/pydrake/multibody:py/multibody_tree_test
+8 (FIXED): //bindings/pydrake/multibody:py/multibody_tree_test
 //bindings/pydrake/multibody:py/rigid_body_plant_test
 6 (FIXED): //bindings/pydrake/multibody:py/rigid_body_tree_test
 //bindings/pydrake/solvers:py/gurobi_solver_test
