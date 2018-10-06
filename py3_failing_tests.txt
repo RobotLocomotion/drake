@@ -2,12 +2,14 @@ python3 -m virtualenv --system-site-packages --python python3 build/py3
 source build/py3/bin/activate
 pip install --user protobuf
 
-bazel-test() {
+bazel-test() { (
+    set -x
     bazel test --python_path=$(which python) --test_tag_filters=-lint "$@"
-}
-bazel-run() {
+) }
+bazel-run() { (
+    set -x
     bazel run --python_path=$(which python) "$@"
-}
+) }
 
 bazel-test //bindings/pydrake/...
 
@@ -27,7 +29,7 @@ bazel-test //bindings/pydrake/...
 //bindings/pydrake/multibody:py/inverse_kinematics_test
 2: //bindings/pydrake/multibody:py/multibody_tree_test
 //bindings/pydrake/multibody:py/rigid_body_plant_test
-6: //bindings/pydrake/multibody:py/rigid_body_tree_test
+6 (FIXED): //bindings/pydrake/multibody:py/rigid_body_tree_test
 //bindings/pydrake/solvers:py/gurobi_solver_test
 //bindings/pydrake/solvers:py/mathematicalprogram_test
 //bindings/pydrake/solvers:py/mosek_solver_test
