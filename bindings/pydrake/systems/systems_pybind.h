@@ -34,11 +34,15 @@ void DefClone(PyClass* ppy_class) {
 /// only meant to bind `Value<T>` (or specializations thereof).
 /// @prereq `T` must have already been exposed to `pybind11`.
 /// @param scope Parent scope.
+/// @param py_framework (Internal) Specify this if adding a value instantiation
+/// from `pydrake.systems.framework`. (pybind11 in Python3 may reconstruct a
+/// module if it is imported in the middle of it being constructed.)
 /// @tparam T Inner parameter of `Value<T>`.
 /// @tparam Class Class to be bound. By default, `Value<T>` is used.
 /// @returns Reference to the registered Python type.
 template <typename T, typename Class = systems::Value<T>>
-py::object AddValueInstantiation(py::module scope) {
+py::object AddValueInstantiation(
+    py::module scope, py::module py_framework = {}) {
   py::class_<Class, systems::AbstractValue> py_class(
       scope, TemporaryClassName<Class>().c_str());
   // Only use copy (clone) construction.
@@ -83,8 +87,10 @@ be destroyed when it is replaced, since it is stored using `unique_ptr<>`.
   }
   py_class.def("set_value", &Class::set_value, set_value_docstring.c_str());
   // Register instantiation.
-  py::module py_module = py::module::import("pydrake.systems.framework");
-  AddTemplateClass(py_module, "Value", py_class, GetPyParam<T>());
+  if (!py_framework) {
+    py_framework = py::module::import("pydrake.systems.framework");
+  }
+  AddTemplateClass(py_framework, "Value", py_class, GetPyParam<T>());
   return py_class;
 }
 
