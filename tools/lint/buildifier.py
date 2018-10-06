@@ -36,7 +36,7 @@ def _help(command):
     # and make one or the other required.
     head = re.sub(r'\[(files\.\.\.)\]', r'<\1 | --all>', lines.pop(0))
     for line in [head] + lines:
-        print line
+        print(line)
     print("")
     print("=== Drake-specific additions ===")
     print("")

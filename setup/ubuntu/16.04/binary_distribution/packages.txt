@@ -37,5 +37,13 @@ python-pydot
 python-scipy
 python-tk
 python-yaml
+python3
+python3-lxml
+python3-matplotlib
+python3-numpy
+python3-pydot
+python3-scipy
+python3-tk
+python3-yaml
 qtbase5-dev
 zlib1g

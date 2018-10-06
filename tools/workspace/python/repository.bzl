@@ -33,10 +33,6 @@ Arguments:
 load("@drake//tools/workspace:execute.bzl", "which")
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
-def _impl(repository_ctx):
-    python_config = which(repository_ctx, "python{}-config".format(
-        repository_ctx.attr.version,
-    ))
 
 def _exec(ctx, args):
     result = ctx.execute(args)

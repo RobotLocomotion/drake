@@ -16,8 +16,8 @@ class TestCommon(unittest.TestCase):
             self.fail("Did not get a SystemExit")
         except SystemExit as e:
             self.assertTrue(e.code is not None)
-            self.assertRegexpMatches(
-                e.message,
+            self.assertRegex(
+                str(e),
                 ".*".join([
                     "Failure at ",
                     " trigger_an_assertion_failure",

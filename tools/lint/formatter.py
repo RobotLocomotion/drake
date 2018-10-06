@@ -158,7 +158,7 @@ class FormatterBase(object):
     def get_non_format_indices(self):
         """Return the complement of get_format_indices().
         """
-        all_indices = set(xrange(len(self._working_lines)))
+        all_indices = set(range(len(self._working_lines)))
         return sorted(all_indices - set(self.get_format_indices()))
 
     @staticmethod
@@ -202,7 +202,8 @@ class FormatterBase(object):
             "-assume-filename=%s" % self._filename] + \
             lines_args
         formatter = Popen(command, stdin=PIPE, stdout=PIPE)
-        stdout, _ = formatter.communicate(input="".join(self._working_lines))
+        stdout, _ = formatter.communicate(input=(
+            "".join(self._working_lines).encode('utf8')))
 
         # Handle errors, otherwise reset the working list.
         if formatter.returncode != 0:
