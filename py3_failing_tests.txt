@@ -45,7 +45,7 @@ bazel-test //bindings/pydrake/...
 7 (FIXED): //bindings/pydrake/systems:py/scalar_conversion_test
 //bindings/pydrake/systems:py/sensors_test
 //bindings/pydrake/systems:py/trajectory_optimization_test
-//bindings/pydrake/systems:py/value_test
+(FIXED) //bindings/pydrake/systems:py/value_test
 1 (FIXED): //bindings/pydrake/util:py/cpp_const_test
 4 (FIXED): //bindings/pydrake/util:py/cpp_template_pybind_test
 3: //bindings/pydrake/util:py/deprecation_test

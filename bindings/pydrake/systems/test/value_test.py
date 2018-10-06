@@ -35,7 +35,7 @@ class TestValue(unittest.TestCase):
             for wrap in [pass_through, np.array]:
                 # Ensure that we can get vectors templated on double by
                 # reference.
-                expected_init = wrap(map(float, range(n)))
+                expected_init = wrap([float(x) for x in range(n)])
                 expected_add = wrap([x + 1 for x in expected_init])
                 expected_set = wrap([x + 10 for x in expected_init])
 
@@ -140,12 +140,12 @@ class TestValue(unittest.TestCase):
         with self.assertRaises(RuntimeError) as cm:
             value.get_value()
         self.assertTrue(all(
-            s in cm.exception.message for s in [
+            s in str(cm.exception) for s in [
                 "AbstractValue",
                 "UnknownType",
                 "get_value",
                 "AddValueInstantiation",
-            ]), cm.exception.message)
+            ]), cm.exception)
 
     def test_parameters_api(self):
 
