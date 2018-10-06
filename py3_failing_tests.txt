@@ -1,4 +1,15 @@
-bazel test --python_path=$(which python) --test_tag_filters=-lint //bindings/pydrake/...
+python3 -m virtualenv --system-site-packages --python python3 build/py3
+source build/py3/bin/activate
+pip install --user protobuf
+
+bazel-test() {
+    bazel test --python_path=$(which python) --test_tag_filters=-lint "$@"
+}
+bazel-run() {
+    bazel run --python_path=$(which python) "$@"
+}
+
+bazel-test //bindings/pydrake/...
 
 
 //bindings/pydrake:py/all_test
