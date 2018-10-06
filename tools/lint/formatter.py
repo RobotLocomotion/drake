@@ -2,9 +2,14 @@
 """
 
 import os
+import six
 from subprocess import Popen, PIPE, CalledProcessError
 
 import drake.tools.lint.clang_format as clang_format_lib
+
+_VALID_STR_TYPES = [str]
+if six.PY2:
+    _VALID_STR_TYPES.append(unicode)
 
 
 class FormatterBase(object):
@@ -51,7 +56,7 @@ class FormatterBase(object):
         for line in self._original_lines:
             assert line.endswith("\n"), line
         for line in self._working_lines:
-            assert isinstance(line, str), (type(line), line)
+            assert isinstance(line, _VALID_STR_TYPES), (type(line), line)
             assert line.endswith("\n"), line
 
     def is_same_as_original(self):
