@@ -18,7 +18,9 @@ from six.moves.queue import Queue
 from drake.common.proto.matlab_rpc_pb2 import MatlabArray, MatlabRPC
 
 if six.PY3:
-    map = lambda f, xs: [f(x) for x in xs]
+
+    def map(f, xs):
+        return [f(x) for x in xs]
 
 
 def _ensure_sigint_handler():

@@ -175,15 +175,17 @@ class SteeringCommandPublisher:
         self.font = pygame.font.SysFont('Courier', 20)
         if input_method == 'keyboard':
             self.event_processor = KeyboardEventProcessor()
-            print(bcolors.OKBLUE + '--- Keyboard Control Instruction --- '\
-                + bcolors.ENDC)
-            print('To increase the throttle/brake: press and hold the Up/Down'\
-                + ' Arrow')
+            print(bcolors.OKBLUE + '--- Keyboard Control Instruction --- '
+                  + bcolors.ENDC)
+            print('To increase the throttle/brake: press and hold the Up/Down'
+                  + ' Arrow')
             print('To decrease the throttle/brake: release the Up/Down Arrow')
-            print('To keep the the current throttle/brake: press the Space Bar')
-            print('To increase left/right steering: press the Left/Right Arrow')
-            print(bcolors.OKBLUE + '------------------------------------ ' \
-                + bcolors.ENDC)
+            print(
+                'To keep the the current throttle/brake: press the Space Bar')
+            print(
+                'To increase left/right steering: press the Left/Right Arrow')
+            print(bcolors.OKBLUE + '------------------------------------ '
+                  + bcolors.ENDC)
         else:
             self.event_processor = JoystickEventProcessor(joy_name)
         self.last_value = SteeringThrottleBrake(0, 0, 0)
@@ -261,7 +263,8 @@ def main():
         return 0
 
     if 'pygame' not in sys.modules:
-        print('error: missing pygame; see README.md for help.', file=sys.stderr)
+        print('error: missing pygame; see README.md for help.',
+              file=sys.stderr)
         return 1
 
     publisher = SteeringCommandPublisher(
