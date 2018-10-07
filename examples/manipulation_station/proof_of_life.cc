@@ -1,4 +1,3 @@
-
 #include <gflags/gflags.h>
 
 #include "drake/common/is_approx_equal_abstol.h"
@@ -23,7 +22,7 @@ using Eigen::VectorXd;
 DEFINE_double(target_realtime_rate, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
-DEFINE_double(duration, 1.0, "Simulation duration.");
+DEFINE_double(duration, 4.0, "Simulation duration.");
 
 int do_main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -64,20 +63,8 @@ int do_main(int argc, char* argv[]) {
 
   // Check that the arm is (very roughly) in the commanded position.
   VectorXd q = station->GetIiwaPosition(context);
-  if (~is_approx_equal_abstol(q, q0, 0.1)) {
-    // For debugging (will be removed before merge):
-    std::cout << "q  = " << q.transpose() << std::endl;
-    std::cout << "q0 = " << q0.transpose() << std::endl;
-    std::cout << "tau_commanded = " << station->GetOutputPort
-        ("iiwa_torque_commanded").Eval<systems::BasicVector<double>>(context)
-        .get_value().transpose() << std::endl;
-    std::cout << "tau_external = " << station->GetOutputPort
-        ("iiwa_torque_external").Eval<systems::BasicVector<double>>(context)
-        .get_value().transpose() << std::endl;
-
-    auto next_state = station->AllocateDiscreteVariables();
-    station->CalcDiscreteVariableUpdates(context, next_state.get());
-
+  if (!is_approx_equal_abstol(q, q0, 0.1)) {
+    std::cout << "q - q0  = " << (q-q0).transpose() << std::endl;
     DRAKE_ABORT_MSG("q is not sufficiently close to q0.");
   }
 

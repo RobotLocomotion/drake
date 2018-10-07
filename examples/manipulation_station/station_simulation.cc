@@ -1,5 +1,9 @@
 #include "drake/examples/manipulation_station/station_simulation.h"
 
+#include <memory>
+#include <string>
+#include <utility>
+
 #include "drake/common/find_resource.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
@@ -24,9 +28,72 @@ using Eigen::VectorXd;
 using geometry::SceneGraph;
 using math::RigidTransform;
 using math::RollPitchYaw;
+using multibody::Joint;
 using multibody::RevoluteJoint;
+using multibody::SpatialInertia;
 using multibody::multibody_plant::MultibodyPlant;
 using multibody::parsing::AddModelFromSdfFile;
+
+// TODO(amcastro-tri): Refactor this into schunk_wsg directory, and cover it
+// with a unit test.  Potentially tighten the tolerance in
+// station_simulation_test.
+SpatialInertia<double> MakeCompositeGripperInertia(const std::string&
+wsg_sdf_path) {
+  MultibodyPlant<double> plant;
+  AddModelFromSdfFile(wsg_sdf_path, &plant);
+  plant.Finalize();
+  const auto& gripper_body = plant.tree().GetRigidBodyByName("body");
+  const auto& left_finger = plant.tree().GetRigidBodyByName("left_finger");
+  const auto& right_finger = plant.tree().GetRigidBodyByName("right_finger");
+  const auto& left_slider = plant.GetJointByName("left_finger_sliding_joint");
+  const auto& right_slider = plant.GetJointByName("right_finger_sliding_joint");
+  const SpatialInertia<double>& M_GGo_G =
+      gripper_body.default_spatial_inertia();
+  const SpatialInertia<double>& M_LLo_L =
+      left_finger.default_spatial_inertia();
+  const SpatialInertia<double>& M_RRo_R =
+      right_finger.default_spatial_inertia();
+  auto CalcFingerPoseInGripperFrame = [](const Joint<double>& slider) {
+    // Pose of the joint's parent frame P (attached on gripper body G) in the
+    // frame of the gripper G.
+    const Isometry3<double> X_GP =
+        slider.frame_on_parent().GetFixedPoseInBodyFrame();
+    // Pose of the joint's child frame C (attached on the slider's finger body)
+    // in the frame of the slider's finger F.
+    const Isometry3<double> X_FC =
+        slider.frame_on_child().GetFixedPoseInBodyFrame();
+    // When the slider's translational dof is zero, then P coincides with C.
+    // Therefore:
+    const Isometry3<double> X_GF = X_GP * X_FC.inverse();
+    return X_GF;
+  };
+  // Pose of the left finger L in the gripper frame G when the slider's dof is
+  // zero.
+  const Isometry3<double> X_GL = CalcFingerPoseInGripperFrame(left_slider);
+  // Pose of the right finger R in the gripper frame G when the slider's dof is
+  // zero.
+  const Isometry3<double> X_GR = CalcFingerPoseInGripperFrame(right_slider);
+  // Helper to compute the spatial inertia of a finger F in about the gripper's
+  // origin Go, expressed in G.
+  auto CalcFingerSpatialInertiaInGripperFrame = [](
+      const SpatialInertia<double>& M_FFo_F, const Isometry3<double>& X_GF) {
+    const auto M_FFo_G = M_FFo_F.ReExpress(X_GF.linear());
+    const auto p_FoGo_G = -X_GF.translation();
+    const auto M_FGo_G = M_FFo_G.Shift(p_FoGo_G);
+    return M_FGo_G;
+  };
+  // Shift and re-express in G frame the finger's spatial inertias.
+  const auto M_LGo_G = CalcFingerSpatialInertiaInGripperFrame(M_LLo_L, X_GL);
+  const auto M_RGo_G = CalcFingerSpatialInertiaInGripperFrame(M_RRo_R, X_GR);
+  // With everything about the same point Go and expressed in the same frame G,
+  // proceed to compose into composite body C:
+  // TODO(amcastro-tri): Implement operator+() in SpatialInertia.
+  SpatialInertia<double> M_CGo_G = M_GGo_G;
+  M_CGo_G += M_LGo_G;
+  M_CGo_G += M_RGo_G;
+  return M_CGo_G;
+}
+
 
 template <typename T>
 StationSimulation<T>::StationSimulation(double timestep)
@@ -97,13 +164,10 @@ StationSimulation<T>::StationSimulation(double timestep)
   // (according to the sdf)... and we don't believe our inertia calibration
   // on the hardware to be so precise, so we simply ignore the inertia
   // contribution from the fingers here.
-  const multibody::RigidBody<T>& wsg_body =
-      dynamic_cast<const multibody::RigidBody<T>&>(
-          plant_->GetBodyByName("body", wsg_model_));
   const multibody::RigidBody<T>& wsg_equivalent =
-      owned_controller_plant_->AddRigidBody("wsg_equivalent",
-                                          controller_iiwa_model,
-                                          wsg_body.default_spatial_inertia());
+      owned_controller_plant_->AddRigidBody(
+          "wsg_equivalent", controller_iiwa_model,
+          MakeCompositeGripperInertia(wsg_sdf_path));
   owned_controller_plant_->WeldFrames(owned_controller_plant_->GetFrameByName(
                                         "iiwa_link_7", controller_iiwa_model),
                                     wsg_equivalent.body_frame(), wsg_pose);
@@ -185,10 +249,12 @@ void StationSimulation<T>::Finalize() {
     // velocities, and h is the timestep.
     const double time_step = plant_->time_step();
     MatrixXd C(2 * kDoF, kDoF), D(2 * kDoF, kDoF);
+    // clang-format off
     C << MatrixXd::Zero(kDoF, kDoF),
-        -time_step * MatrixXd::Identity(kDoF, kDoF);
+         -MatrixXd::Identity(kDoF, kDoF) / time_step;
     D << MatrixXd::Identity(kDoF, kDoF),
-        time_step * MatrixXd::Identity(kDoF, kDoF);
+         MatrixXd::Identity(kDoF, kDoF) / time_step;
+    // clang-format on
     auto desired_state_from_position =
         builder.template AddSystem<systems::LinearSystem>(
             MatrixXd::Zero(kDoF, kDoF),      // A = 0

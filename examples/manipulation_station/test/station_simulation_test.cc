@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 
 namespace drake {
 namespace examples {
@@ -69,10 +70,16 @@ GTEST_TEST(SimulationStationTest, CheckPlantBasics) {
                               station.GetOutputPort("iiwa_torque_measured")
                                   .Eval<BasicVector<double>>(*context)
                                   .get_value()));
+
+  // Check that iiwa_torque_external == 0 (no contact).
+  EXPECT_TRUE(station.GetOutputPort("iiwa_torque_external")
+                  .Eval<BasicVector<double>>(*context)
+                  .get_value()
+                  .isZero());
 }
 
-GTEST_TEST(SimulationStationTest, CheckDynamics) {
-  const double kTimeStep = 0.001;
+GTEST_TEST(SimulationStationTest, CheckStateFromPosition) {
+  const double kTimeStep = 0.002;
   StationSimulation<double> station(kTimeStep);
   station.Finalize();
 
@@ -86,13 +93,16 @@ GTEST_TEST(SimulationStationTest, CheckDynamics) {
   const int plant_index = 0, state_from_position_index = 1;
   EXPECT_GT(context->get_discrete_state(plant_index).size(),
             7);  // iiwa+wsg pos+vel.
+  const int plant_state_size = context->get_discrete_state(plant_index).size();
   EXPECT_EQ(context->get_discrete_state(state_from_position_index).size(), 7);
 
-  // If all inputs and states are zero, (robot is vertical, and desired state
-  // == actual state), then it just so happens to be a fixed point for the
-  // controller (torque_commanded == 0).
+  // Expect continuous state from the integral term in the PID from the
+  // inverse dynamics controller.
+  EXPECT_EQ(context->get_continuous_state().size(), 7);
+
+  const VectorXd iiwa_position = VectorXd::LinSpaced(7, 0.43, 0.7);
   context->FixInputPort(station.GetInputPort("iiwa_position").get_index(),
-                        VectorXd::Zero(7));
+                        iiwa_position);
   context->FixInputPort(
       station.GetInputPort("iiwa_feedforward_torque").get_index(),
       VectorXd::Zero(7));
@@ -102,31 +112,65 @@ GTEST_TEST(SimulationStationTest, CheckDynamics) {
   auto next_state = station.AllocateDiscreteVariables();
   station.CalcDiscreteVariableUpdates(*context, next_state.get());
 
-  EXPECT_TRUE(
-      next_state->get_vector(state_from_position_index).get_value().isZero(0));
+  EXPECT_TRUE(CompareMatrices(
+      next_state->get_vector(state_from_position_index).get_value(),
+      iiwa_position));
 
-  EXPECT_TRUE(station.GetOutputPort("iiwa_torque_commanded")
-                  .Eval<BasicVector<double>>(*context)
-                  .get_value()
-                  .isZero(0));
+  // Partially check M(q)vdot ≈ Mₑ(q)vdot_desired + τ_feedforward + τ_external
+  // by setting the right side to zero and confirming that vdot ≈ 0.
+  const auto& plant = station.get_mutable_multibody_plant();
+  // Make up some state (with zeros for non-iiwa states).
+  VectorXd arbitrary_plant_state = VectorXd::Zero(plant_state_size);
+  const auto& base_joint =
+      plant.GetJointByName<multibody::RevoluteJoint>("iiwa_joint_1");
+  const int iiwa_position_start = base_joint.position_start();
+  const int iiwa_velocity_start =
+      plant.num_positions() + base_joint.velocity_start();
+  arbitrary_plant_state.segment<7>(iiwa_position_start) =
+      VectorXd::LinSpaced(7, 0.735, 0.983);
+  arbitrary_plant_state.segment<7>(iiwa_velocity_start) =
+      VectorXd::LinSpaced(7, -1.23, 0.456);
+  context->get_mutable_discrete_state(plant_index)
+      .SetFromVector(arbitrary_plant_state);
 
-  // Note the large tolerance here (still investigating):
-  EXPECT_TRUE(next_state->get_vector(plant_index).get_value().isZero(1e-4));
-
-  // Pretend we had previously commanded some non-zero position.  This would
-  // lead a non-zero desired velocity, which should make the commanded torque
-  // no-longer zero.
-  VectorXd last_position_command = VectorXd::LinSpaced(7, 0.432, 0.641);
+  // Set desired position to actual position and the desired velocity to the
+  // actual velocity.
+  context->FixInputPort(station.GetInputPort("iiwa_position").get_index(),
+                        arbitrary_plant_state.segment<7>(iiwa_position_start));
+  // Last iiwa_position should have been iiwa_position - time_step*velocity.
   context->get_mutable_discrete_state(state_from_position_index)
-      .SetFromVector(last_position_command);
+      .SetFromVector(arbitrary_plant_state.segment<7>(iiwa_position_start) -
+                     kTimeStep *
+                         arbitrary_plant_state.segment<7>(iiwa_velocity_start));
+  // Set integral terms to zero.
+  context->get_mutable_continuous_state_vector().SetZero();
 
-  EXPECT_FALSE(station.GetOutputPort("iiwa_torque_commanded")
+  // Ensure that the feedforward torque is zero.
+  context->FixInputPort(
+      station.GetInputPort("iiwa_feedforward_torque").get_index(),
+      VectorXd::Zero(7));
+
+  // Check that iiwa_torque_external == 0 (no contact).
+  EXPECT_TRUE(station.GetOutputPort("iiwa_torque_external")
                   .Eval<BasicVector<double>>(*context)
                   .get_value()
-                  .isZero(0));
+                  .isZero());
+
+  station.CalcDiscreteVariableUpdates(*context, next_state.get());
+
+  // Check that vdot ≈ 0 by checking that next velocity ≈ velocity.
+  VectorXd vddot = (next_state->get_vector(plant_index)
+                        .get_value()
+                        .segment<7>(iiwa_velocity_start) -
+                    arbitrary_plant_state.segment<7>(iiwa_velocity_start)) /
+                   kTimeStep;
+
+  // Note: This tolerance could be 2e-12 if the wsg was not attached.
+  const double kTolerance = 0.04;  // rad/sec^2.
+  EXPECT_TRUE(CompareMatrices(vddot, VectorXd::Zero(7), kTolerance));
 }
 
 }  // namespace
-}  // namespace acrobot
+}  // namespace manipulation_station
 }  // namespace examples
 }  // namespace drake

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
@@ -45,15 +47,16 @@ namespace manipulation_station {
 ///
 /// This model of the IIWA internal controller in the FRI software's
 /// `JointImpedanceControlMode` is:
-///   τ_commanded = M(q)vdot_desired + C(q, v)v - τ_g(q)- τ_joint_friction
-///                 + τ_feedforward
-///   vdot_desired = PID(q_commanded, q, v_commanded, v_measured)
-/// where these M, c, and τ_friction terms are now (Kuka's) estimates of the
-/// true model, q, v, and vdot are measured/estimation, and v_commanded must
-/// be obtained from an online (causal) derivative of q_commanded.  The
-/// result, assuming that the model is perfect is the dynamics
-///   M(q)vdot = M(q)vdot_desired + τ_feedforward + τ_external
-///
+///   τ_commanded = Mₑ(qₑ)vdot_desired + Cₑ(qₑ, vₑ)vₑ - τₑ_g(q)
+///                 - τₑ_joint_friction + τ_feedforward
+///   vdot_desired = PID(q_commanded, qₑ, v_commanded, vₑ)
+/// where Mₑ, Cₑ, τₑ_g, and τₑ_friction terms are now (Kuka's) estimates of the
+/// true model, qₑ and vₑ are measured/estimation, and v_commanded
+/// must be obtained from an online (causal) derivative of q_commanded.  The
+/// result is
+///   M(q)vdot ≈ Mₑ(q)vdot_desired + τ_feedforward + τ_external,
+/// where the "approximately equal" comes from the differences due to the
+/// estimated model/state.
 ///
 /// The model implemented in this System assumes that M, C, and τ_friction
 /// terms are perfect (except that they contain only a lumped mass
@@ -88,6 +91,8 @@ namespace manipulation_station {
 /// @}
 // TODO(russt): Add WSG I/O and helper methods for setting the context.
 // TODO(russt): Add camera outputs.
+// TODO(russt): Refactor kuka+wsg subset into a reusable component during the
+//              upcoming kuka_iiwa directory cleanup.
 template <typename T>
 class StationSimulation : public systems::Diagram<T> {
  public:
@@ -95,7 +100,7 @@ class StationSimulation : public systems::Diagram<T> {
 
   /// Construct the station model with @p timestep as the time step used by
   /// MultibodyPlant<T>.
-  StationSimulation(double timestep = 0.002);
+  explicit StationSimulation(double timestep = 0.002);
 
   // TODO(russt): Add scalar copy constructor etc once we support more
   // scalar types than T=double.  See #9573.
