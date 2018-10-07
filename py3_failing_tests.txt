@@ -26,13 +26,13 @@ bazel-test //bindings/pydrake/...
 
 
 (FIXED) //tools/clion:bazel_wrapper_test
-2:  //:py/install_test
+2 (FIXED):  //:py/install_test
 4 (FIXED):  //automotive:demo_dry_run_test
 3 (FIXED):  //common:py/cpplint_wrapper_test
 (FIXED) //common:py/drake_cc_googletest_main_test
 (FIXED) //common:py/resource_tool_test
 (FIXED) //lcm:py/import_lcm_test
-//tools/install:py/install_test_helper_test
+(FIXED) //tools/install:py/install_test_helper_test
 (FIXED) //tools/lint:py/buildifier_test
 1 (FIXED):  //common/proto:call_python_test
 (FIXED) //automotive:py/steering_command_driver_test
