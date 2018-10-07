@@ -2,6 +2,15 @@ python3 -m virtualenv --system-site-packages --python python3 build/py3
 source build/py3/bin/activate
 pip install --user protobuf
 
+{
+bazel-build() { (
+    set -x
+    bazel build --python_path=$(which python) "$@"
+) }
+bazel-run() { (
+    set -x
+    bazel run --python_path=$(which python) "$@"
+) }
 bazel-test() { (
     set -x
     bazel test --python_path=$(which python) "$@"
@@ -10,6 +19,7 @@ bazel-run() { (
     set -x
     bazel run --python_path=$(which python) "$@"
 ) }
+}
 
 bazel-test //bindings/pydrake/...
 --trace=user -f

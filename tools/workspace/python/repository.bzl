@@ -33,7 +33,6 @@ Arguments:
 load("@drake//tools/workspace:execute.bzl", "which")
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
-
 def _exec(ctx, args):
     result = ctx.execute(args)
     if result.return_code != 0:
@@ -55,34 +54,51 @@ def _impl(repo_ctx):
     if version == "path":
         tmp = repo_ctx.which("python")
         version = _py_exec(
-            repo_ctx, tmp,
-            "import sys; print(sys.version_info.major)").strip()
+            repo_ctx,
+            tmp,
+            "import sys; print(sys.version_info.major)",
+        ).strip()
 
     python_config = repo_ctx.which("python{}-config".format(version))
     if not python_config:
         fail("Could NOT find python{}-config".format(
-            version))
+            version,
+        ))
     python = repo_ctx.which("python{}".format(version))
+
     # Estimate that we're using the same configuration between
     # `python{version}` and `python-config{version}`.
     py_configdir = _py_exec(
-        repo_ctx, python,
-        "import sysconfig; print(sysconfig.get_config_var(\"LIBPL\"))").strip()
+        repo_ctx,
+        python,
+        "import sysconfig; print(sysconfig.get_config_var(\"LIBPL\"))",
+    ).strip()
     py_config_configdir = _exec(
-        repo_ctx, [python_config, "--configdir"]).strip()
+        repo_ctx,
+        [python_config, "--configdir"],
+    ).strip()
     if (py_configdir != py_config_configdir):
         fail("Mismatch between {} and {}: {} != {}".format(
-            python, python_config, py_configdir, py_config_configdir))
+            python,
+            python_config,
+            py_configdir,
+            py_config_configdir,
+        ))
 
     version_major_minor = _py_exec(
-        repo_ctx, python,
+        repo_ctx,
+        python,
         "import sys; v = sys.version_info; " +
-        "print(\"{}.{}\".format(v.major, v.minor))").strip()
+        "print(\"{}.{}\".format(v.major, v.minor))",
+    ).strip()
     if version_major_minor not in _VERSION_MAJOR_MINOR_SUPPORTED:
         msg = (
             "Python {} is not a supported / tested version for use with " +
-            "Drake.\n  Supported versions: {}\n").format(
-                version_major_minor, _VERSION_MAJOR_MINOR_SUPPORTED)
+            "Drake.\n  Supported versions: {}\n"
+        ).format(
+            version_major_minor,
+            _VERSION_MAJOR_MINOR_SUPPORTED,
+        )
         if repo_ctx.attr.if_unsupported == "warn":
             print("WARNING: " + msg)
         elif repo_ctx.attr.if_unsupported == "fail":
@@ -174,7 +190,10 @@ cc_library(
     """.format(includes, linkopts, linkopts_direct_link)
 
     repo_ctx.file(
-        "BUILD.bazel", content = file_content, executable = False)
+        "BUILD.bazel",
+        content = file_content,
+        executable = False,
+    )
 
     skylark_content = """
 
