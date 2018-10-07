@@ -128,4 +128,4 @@ def check_output(*args, **kwargs):
     calls `subprocess.check_output()` and updates the current working directory
     to `/`.
     """
-    return subprocess.check_output(cwd='/', *args, **kwargs)
+    return subprocess.check_output(cwd='/', *args, **kwargs).decode('utf8')
