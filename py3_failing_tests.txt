@@ -34,7 +34,7 @@ bazel-test //bindings/pydrake/...
 (FIXED) //lcm:py/import_lcm_test
 //tools/install:py/install_test_helper_test
 (FIXED) //tools/lint:py/buildifier_test
-1:  //common/proto:call_python_test
+1 (FIXED):  //common/proto:call_python_test
 (FIXED) //automotive:py/steering_command_driver_test
 
 

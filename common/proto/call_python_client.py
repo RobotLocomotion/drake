@@ -1,7 +1,6 @@
 from __future__ import print_function
 import argparse
 import os
-from Queue import Queue
 import signal
 import stat
 import sys
@@ -9,12 +8,17 @@ from threading import Thread
 import time
 import traceback
 
-import numpy as np
 # Hacky, but this is the simplest route right now.
 # @ref https://www.datadoghq.com/blog/engineering/protobuf-parsing-in-python/
 from google.protobuf.internal.decoder import _DecodeVarint32
+import numpy as np
+import six
+from six.moves.queue import Queue
 
 from drake.common.proto.matlab_rpc_pb2 import MatlabArray, MatlabRPC
+
+if six.PY3:
+    map = lambda f, xs: [f(x) for x in xs]
 
 
 def _ensure_sigint_handler():
@@ -113,23 +117,7 @@ def _cexec(stmt, globals_, locals_):
 
 
 def _cexec_impl(_stmt, _locals):
-    # Implementation for `_cexec` to capture locals and globals.
-    locals().update(_locals)
-    _old_vars = None
-    _new_vars = None
-    _old_vars = locals().keys()
-    # Execute with context.
-    exec _stmt
-    # Figure out new things.
-    locals_new = locals()
-    _new_vars = set(locals_new.keys()) - set(_old_vars)
-    for var in _locals.keys():
-        if var not in locals_new:
-            del _locals[var]
-        else:
-            _locals[var] = locals()[var]
-    for var in _new_vars:
-        _locals[var] = locals()[var]
+    six.exec_(_stmt, _locals)
 
 
 class _ExecutionCheck(object):
@@ -341,7 +329,7 @@ class CallPythonClient(object):
                 value = self._to_array(arg, np.double)
             elif arg.type == MatlabArray.CHAR:
                 assert arg.rows == 1
-                value = str(arg_raw)
+                value = arg_raw.decode('utf8')
             elif arg.type == MatlabArray.LOGICAL:
                 value = self._to_array(arg, np.bool)
             elif arg.type == MatlabArray.INT:
@@ -357,6 +345,7 @@ class CallPythonClient(object):
         # Call the function
         # N.B. No security measures to sanitize function name.
         function_name = msg.function_name
+        assert isinstance(function_name, str)
         out_id = None
         if len(msg.lhs) > 0:
             assert len(msg.lhs) == 1
