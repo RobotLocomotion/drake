@@ -4,7 +4,7 @@ pip install --user protobuf
 
 bazel-test() { (
     set -x
-    bazel test --python_path=$(which python) --test_tag_filters=-lint "$@"
+    bazel test --python_path=$(which python) "$@"
 ) }
 bazel-run() { (
     set -x
@@ -15,63 +15,9 @@ bazel-test //bindings/pydrake/...
 --trace=user -f
 
 
-//bindings/pydrake:py/all_test
-//bindings/pydrake:py/automotive_test
-//bindings/pydrake:py/math_overloads_test
-5 (FIXED): //bindings/pydrake:py/symbolic_test
-//bindings/pydrake:py/trajectories_test
-//bindings/pydrake/examples:py/acrobot_test
-//bindings/pydrake/examples:py/compass_gait_test
-//bindings/pydrake/examples:py/pendulum_test
-//bindings/pydrake/examples:py/rimless_wheel_test
-//bindings/pydrake/examples:py/van_der_pol_test
-//bindings/pydrake/examples/multibody:cart_pole_passive_simulation_test
-7: //bindings/pydrake/maliput:py/maliput_test
-//bindings/pydrake/multibody:py/inverse_kinematics_test
-8 (FIXED): //bindings/pydrake/multibody:py/multibody_tree_test
-//bindings/pydrake/multibody:py/rigid_body_plant_test
-6 (FIXED): //bindings/pydrake/multibody:py/rigid_body_tree_test
-//bindings/pydrake/solvers:py/gurobi_solver_test
-//bindings/pydrake/solvers:py/mathematicalprogram_test
-//bindings/pydrake/solvers:py/mosek_solver_test
-//bindings/pydrake/systems:drawing_graphviz_example_test
-//bindings/pydrake/systems:py/controllers_test
-//bindings/pydrake/systems:py/custom_test
-//bindings/pydrake/systems:py/general_test
-//bindings/pydrake/systems:py/lcm_test ^
-//bindings/pydrake/systems:py/lifetime_test
-2: //bindings/pydrake/systems:py/primitives_test
-2: //bindings/pydrake/systems:py/rendering_test
-7 (FIXED): //bindings/pydrake/systems:py/scalar_conversion_test
-//bindings/pydrake/systems:py/sensors_test
-//bindings/pydrake/systems:py/trajectory_optimization_test
-(FIXED) //bindings/pydrake/systems:py/value_test
-1 (FIXED): //bindings/pydrake/util:py/cpp_const_test
-4 (FIXED): //bindings/pydrake/util:py/cpp_template_pybind_test
-3 (FIXED): //bindings/pydrake/util:py/deprecation_test
+1: //bindings/pydrake/util:py/wrap_pybind_cpplint
+2 (FIXED): //bindings/pydrake/examples/multibody:py/bazel_codestyle
 
+1:  Failing with exit code 1?
 
-1:   NameError: name 'unicode' is not defined
-
-
-2:   what():  SystemError: <built-in method __contains__ of dict object at 0x7f438fa1af48> returned a result with an error set
-
-
-3:   warnings and unittest not playing well together  
-
-
-4:   err.what() evaluates to NameError: name 'simple_func' is not defined
-
-
-5:   UnicodeDecodeError: 'ascii' codec can't decode byte 0xc2 in position 1148: ordinal not in range(128)
-
-    Does not make sense; only happens with `bazel test`
-
-
-6:   bad usage of `map()`
-
-
-7:   ImportError: ImportError: generic_type: type "SystemScalarConverter" is already registered!
-
-
-8:   ImportError: generic_type: type "FrameIndex" is already registered!
+2:  TypeError: unorderable types: function() < function()
