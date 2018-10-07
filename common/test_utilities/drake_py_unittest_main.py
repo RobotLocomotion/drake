@@ -33,7 +33,7 @@ if __name__ == '__main__':
     if not found_filename:
         raise RuntimeError("No such file found {}!".format(
             test_filename))
-    with open(found_filename, "r") as infile:
+    with open(found_filename, "r", encoding="utf-8") as infile:
         for line in infile.readlines():
             if any([line.startswith("if __name__ =="),
                     line.strip().startswith("unittest.main")]):

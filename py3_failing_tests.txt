@@ -65,6 +65,8 @@ bazel-test //bindings/pydrake/...
 
 5:   UnicodeDecodeError: 'ascii' codec can't decode byte 0xc2 in position 1148: ordinal not in range(128)
 
+    Does not make sense; only happens with `bazel test`
+
 
 6:   bad usage of `map()`
 
