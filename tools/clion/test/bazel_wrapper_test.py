@@ -165,7 +165,3 @@ class TestBazelWrapper(unittest.TestCase):
             ["terminate", "wait"])
         for orig, edit in zip(edited_lines, self._stderr.splitlines()):
             self.assertEqual(orig, edit)
-
-
-if __name__ == '__main__':
-    unittest.main()
