@@ -10,6 +10,13 @@ from subprocess import Popen, PIPE, CalledProcessError
 import drake.tools.lint.clang_format as clang_format_lib
 
 
+def _open(filename, mode):
+    if six.PY2:
+        return open(filename, mode)
+    else:
+        return open(filename, mode, encoding="utf-8")
+
+
 class FormatterBase(object):
     """A base class for formatting-related tools, with the ability to load a
     file, add / remove / modify lines, clang-format selected regions, and
@@ -40,7 +47,7 @@ class FormatterBase(object):
         """
         self._filename = filename
         if readlines is None:
-            with open(filename, "r") as opened:
+            with _open(filename, "r") as opened:
                 self._original_lines = opened.readlines()
         else:
             self._original_lines = list(readlines)
@@ -225,7 +232,7 @@ class FormatterBase(object):
         """
         self._pre_rewrite_file()
         temp_filename = self._filename + ".drake-formatter"
-        with open(temp_filename, "w") as opened:
+        with _open(temp_filename, "w") as opened:
             for line in self._working_lines:
                 opened.write(line)
         os.rename(temp_filename, self._filename)
