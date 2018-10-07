@@ -336,12 +336,13 @@ struct Impl {
         // Sugar.
         .def(
             "GetGraphvizString",
-            [str_py](const System<T>* self) {
+            [str_py](const System<T>* self, int max_depth) {
               // @note This is a workaround; for some reason,
               // casting this using `py::str` does not work, but directly
               // calling the Python function (`str_py`) does.
-              return str_py(self->GetGraphvizString());
-            }, doc.System.GetGraphvizString.doc)
+              return str_py(self->GetGraphvizString(max_depth));
+            }, doc.System.GetGraphvizString.doc,
+            py::arg("max_depth") = std::numeric_limits<int>::max() )
         // Events.
         .def("Publish",
              overload_cast_explicit<void, const Context<T>&>(
