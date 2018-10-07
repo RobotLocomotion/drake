@@ -185,10 +185,12 @@ void StationSimulation<T>::Finalize() {
     // velocities, and h is the timestep.
     const double time_step = plant_->time_step();
     MatrixXd C(2 * kDoF, kDoF), D(2 * kDoF, kDoF);
+    // clang-format off
     C << MatrixXd::Zero(kDoF, kDoF),
-        -time_step * MatrixXd::Identity(kDoF, kDoF);
+         -MatrixXd::Identity(kDoF, kDoF) / time_step;
     D << MatrixXd::Identity(kDoF, kDoF),
-        time_step * MatrixXd::Identity(kDoF, kDoF);
+         MatrixXd::Identity(kDoF, kDoF) / time_step;
+    // clang-format on
     auto desired_state_from_position =
         builder.template AddSystem<systems::LinearSystem>(
             MatrixXd::Zero(kDoF, kDoF),      // A = 0
