@@ -46,8 +46,13 @@ PYBIND11_MODULE(geometry, m) {
   BindIdentifier<FrameId>(m, "FrameId");
   BindIdentifier<GeometryId>(m, "GeometryId");
 
+  py::module::import("pydrake.systems.lcm");
   m.def("ConnectDrakeVisualizer", &ConnectDrakeVisualizer,
-        py::arg("builder"), py::arg("scene_graph"), py::arg("lcm") = nullptr);
+        py::arg("builder"), py::arg("scene_graph"), py::arg("lcm") = nullptr,
+        // Keep alive, ownership: `return` keeps `builder` alive.
+        py::keep_alive<0, 1>(),
+        // TODO(eric.cousineau): Figure out why this is necessary (#9398).
+        py_reference);
   m.def("DispatchLoadMessage", &DispatchLoadMessage,
         py::arg("scene_graph"), py::arg("lcm"));
 

@@ -9,7 +9,9 @@
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/lcm/lcm_publisher_system.h"
 
 namespace drake {
 namespace multibody {
@@ -62,6 +64,40 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
   // A mapping from body index values to body names.
   std::vector<std::string> body_names_;
 };
+
+
+/** Extends a Diagram with the required components to publish contact results
+ to drake_visualizer. This must be called _during_ Diagram building and
+ uses the given `builder` to add relevant subsystems and connections.
+
+ This is a convenience method to simplify some common boilerplate for adding
+ contact results visualization capability to a Diagram. What it does is:
+ - adds systems ContactResultsToLcmSystem and LcmPublisherSystem to
+   the Diagram and connects the draw message output to the publisher input,
+ - connects the `multibody_plant` contact results output to the
+   ContactResultsToLcmSystem system, and
+ - sets the publishing rate to 1/60 of a second (simulated time).
+
+ @param builder          The diagram builder being used to construct the
+                         Diagram.
+ @param multibody_plant  The System in `builder` containing the plant whose
+                         contact results are to be visualized.
+ @param lcm              An optional lcm interface through which lcm messages
+                         will be dispatched. Will be allocated internally if
+                         none is supplied.
+
+ @pre The given `multibody_plant` must be contained within the supplied
+      DiagramBuilder.
+
+ @returns the LcmPublisherSystem (in case callers, e.g., need to change the
+ default publishing rate).
+
+ @ingroup visualization
+ */
+systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
+    systems::DiagramBuilder<double>* builder,
+    const MultibodyPlant<double>& multibody_plant,
+    lcm::DrakeLcmInterface* lcm = nullptr);
 
 }  // namespace multibody_plant
 }  // namespace multibody

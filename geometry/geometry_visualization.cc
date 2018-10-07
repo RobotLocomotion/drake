@@ -224,9 +224,10 @@ void DispatchLoadMessage(const SceneGraph<double>& scene_graph,
   Publish(lcm, "DRAKE_VIEWER_LOAD_ROBOT", message);
 }
 
-void ConnectDrakeVisualizer(systems::DiagramBuilder<double>* builder,
-                            const SceneGraph<double>& scene_graph,
-                            lcm::DrakeLcmInterface* lcm_optional) {
+systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
+    systems::DiagramBuilder<double>* builder,
+    const SceneGraph<double>& scene_graph,
+    lcm::DrakeLcmInterface* lcm_optional) {
   using systems::lcm::LcmPublisherSystem;
   using systems::lcm::Serializer;
   using systems::rendering::PoseBundleToDrawMessage;
@@ -258,6 +259,8 @@ void ConnectDrakeVisualizer(systems::DiagramBuilder<double>* builder,
   builder->Connect(scene_graph.get_pose_bundle_output_port(),
                    converter->get_input_port(0));
   builder->Connect(*converter, *publisher);
+
+  return publisher;
 }
 
 }  // namespace geometry
