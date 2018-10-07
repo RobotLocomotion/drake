@@ -11,6 +11,16 @@ import sys
 import trace
 import unittest
 
+import six
+
+
+def _open(filename, mode):
+    if six.PY2:
+        return open(filename, mode)
+    else:
+        return open(filename, mode, encoding="utf-8")
+
+
 if __name__ == '__main__':
     # Obtain the full path for this test case; it looks a bit like this:
     # .../execroot/.../foo_test.runfiles/.../drake_py_unittest_main.py
@@ -33,7 +43,7 @@ if __name__ == '__main__':
     if not found_filename:
         raise RuntimeError("No such file found {}!".format(
             test_filename))
-    with open(found_filename, "r", encoding="utf-8") as infile:
+    with _open(found_filename, "r") as infile:
         for line in infile.readlines():
             if any([line.startswith("if __name__ =="),
                     line.strip().startswith("unittest.main")]):
