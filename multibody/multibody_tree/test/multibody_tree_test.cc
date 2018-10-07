@@ -9,8 +9,12 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
+#include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_tree_system.h"
 #include "drake/multibody/multibody_tree/weld_mobilizer.h"
@@ -30,6 +34,8 @@ using Eigen::Isometry3d;
 using Eigen::MatrixXd;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
+using math::RigidTransform;
+using math::RollPitchYaw;
 using multibody_tree::test_utilities::SpatialKinematicsPVA;
 using systems::BasicVector;
 using systems::Context;
@@ -289,18 +295,32 @@ class KukaIiwaModelTests : public ::testing::Test {
  public:
   /// Creates MultibodyTree for a KUKA Iiwa robot arm.
   void SetUp() override {
-    system_ = std::make_unique<MultibodyTreeSystem<double>>(
-        MakeKukaIiwaModel<double>(true /* Finalize model */, gravity_));
+    {
+      // We limit the scope for this MultibodyTree since it only is used for the
+      // creation of the model. Ownership is later transferred to system_, which
+      // is responsible for context resources.
+      auto tree = MakeKukaIiwaModel<double>(
+          false /* do not finalize model yet */, gravity_);
 
-    // Keep pointers to the modeling elements.
-    end_effector_link_ = &tree().GetBodyByName("iiwa_link_7");
-    joints_.push_back(&tree().GetJointByName<RevoluteJoint>("iiwa_joint_1"));
-    joints_.push_back(&tree().GetJointByName<RevoluteJoint>("iiwa_joint_2"));
-    joints_.push_back(&tree().GetJointByName<RevoluteJoint>("iiwa_joint_3"));
-    joints_.push_back(&tree().GetJointByName<RevoluteJoint>("iiwa_joint_4"));
-    joints_.push_back(&tree().GetJointByName<RevoluteJoint>("iiwa_joint_5"));
-    joints_.push_back(&tree().GetJointByName<RevoluteJoint>("iiwa_joint_6"));
-    joints_.push_back(&tree().GetJointByName<RevoluteJoint>("iiwa_joint_7"));
+      // Keep pointers to the modeling elements.
+      end_effector_link_ = &tree->GetBodyByName("iiwa_link_7");
+      joints_.push_back(&tree->GetJointByName<RevoluteJoint>("iiwa_joint_1"));
+      joints_.push_back(&tree->GetJointByName<RevoluteJoint>("iiwa_joint_2"));
+      joints_.push_back(&tree->GetJointByName<RevoluteJoint>("iiwa_joint_3"));
+      joints_.push_back(&tree->GetJointByName<RevoluteJoint>("iiwa_joint_4"));
+      joints_.push_back(&tree->GetJointByName<RevoluteJoint>("iiwa_joint_5"));
+      joints_.push_back(&tree->GetJointByName<RevoluteJoint>("iiwa_joint_6"));
+      joints_.push_back(&tree->GetJointByName<RevoluteJoint>("iiwa_joint_7"));
+
+      // Add a frame H with a fixed pose X_GH in the end effector frame G.
+      // Note: frame names are documented in MakeKukaIiwaModel().
+      frame_H_ = &tree->AddFrame<FixedOffsetFrame>(
+          "H", *end_effector_link_, X_GH_.GetAsIsometry3());
+
+      // Create a system to manage context resources.
+      system_ =
+          std::make_unique<MultibodyTreeSystem<double>>(std::move(tree));
+    }
 
     context_ = system_->CreateDefaultContext();
 
@@ -393,6 +413,22 @@ class KukaIiwaModelTests : public ::testing::Test {
         context_on_T, linkG_on_T.body_frame(), p_EPi, p_WPi, Jv_WPi);
   }
 
+  // Computes the geometric Jacobian Jv_WHp for a set of points Pi moving with
+  // frame H with fixed pose X_GH in the end effector frame G, given their
+  // (fixed) position p_HPi.
+  // See MultibodyTree::CalcPointsGeometricJacobianExpressedInWorld() for
+  // details.
+  template <typename T>
+  void CalcPointsOnFrameHGeometricJacobian(
+      const MultibodyTree<T>& model_on_T,
+      const Context<T>& context_on_T,
+      const MatrixX<T>& p_HPi,
+      MatrixX<T>* p_WPi, MatrixX<T>* Jv_WHp) const {
+    const Frame<T>& frameH_on_T = model_on_T.get_variant(*frame_H_);
+    model_on_T.CalcPointsGeometricJacobianExpressedInWorld(
+        context_on_T, frameH_on_T, p_HPi, p_WPi, Jv_WHp);
+  }
+
   const MultibodyTree<double>& tree() const { return system_->tree(); }
 
   const MultibodyTree<AutoDiffXd>& tree_autodiff() const {
@@ -408,6 +444,11 @@ class KukaIiwaModelTests : public ::testing::Test {
   std::unique_ptr<Context<double>> context_;
   // Non-owning pointer to the end effector link:
   const Body<double>* end_effector_link_{nullptr};
+  // Non-owning pointer to a fixed pose frame on the end effector link:
+  const Frame<double>* frame_H_{nullptr};
+  RigidTransform<double> X_GH_{
+      RollPitchYaw<double>{M_PI_2, 0, M_PI_2}.ToRotationMatrix(),
+      Vector3d{0, 0, 0.081}};
   // Non-owning pointers to the joints:
   std::vector<const RevoluteJoint<double>*> joints_;
 
@@ -554,7 +595,13 @@ TEST_F(KukaIiwaModelTests, CalcBiasForPointsGeometricJacobianExpressedInWorld) {
   // motions.
   VectorX<double> q, v;
   GetArbitraryNonZeroConfiguration(&q, &v);
-  const VectorX<double> vdot = VectorX<double>::Zero(kNumPositions);
+
+  // Since the bias term is a function of q and v only (i.e. it is not a
+  // function of vdot), we choose a set of arbitrary values for the generalized
+  // accelerations. We do purposely set this values to be non-zero to stress
+  // the fact that the bias term is not a function of vdot.
+  VectorX<double> vdot(kNumPositions);
+  vdot << 1, 2, 3, 4, 5, 6, 7;
 
   // Set generalized positions and velocities.
   int angle_index = 0;
@@ -582,42 +629,51 @@ TEST_F(KukaIiwaModelTests, CalcBiasForPointsGeometricJacobianExpressedInWorld) {
   tree_autodiff().get_mutable_multibody_state_vector(context_autodiff_.get())
       = x_autodiff;
 
-  // A set of points Pi attached to the end effector, thus we a fixed position
-  // in its frame G.
+  // A set of points Pi attached to frame H on the end effector.
   const int kNumPoints = 2;  // The set stores 2 points.
-  MatrixX<double> p_EPi(3, kNumPoints);
-  p_EPi.col(0) << 0.1, -0.05, 0.02;
-  p_EPi.col(1) << 0.2, 0.3, -0.15;
+  MatrixX<double> p_HPi(3, kNumPoints);
+  p_HPi.col(0) << 0.1, -0.05, 0.02;
+  p_HPi.col(1) << 0.2, 0.3, -0.15;
 
   MatrixX<double> p_WPi(3, kNumPoints);
-  MatrixX<double> Jq_WPi(3 * kNumPoints, kNumPositions);
+  MatrixX<double> Jv_WHp(3 * kNumPoints, kNumPositions);
 
-  const MatrixX<AutoDiffXd> p_EPi_autodiff = p_EPi;
+  const MatrixX<AutoDiffXd> p_HPi_autodiff = p_HPi;
   MatrixX<AutoDiffXd> p_WPi_autodiff(3, kNumPoints);
-  MatrixX<AutoDiffXd> Jq_WPi_autodiff(3 * kNumPoints, kNumPositions);
+  MatrixX<AutoDiffXd> Jv_WHp_autodiff(3 * kNumPoints, kNumPositions);
 
-  // Compute J̇_WEp using AutoDiffXd.
-  CalcPointsOnEndEffectorGeometricJacobian(
-      tree_autodiff(), *context_autodiff_, p_EPi_autodiff,
-      &p_WPi_autodiff, &Jq_WPi_autodiff);
+  // Compute J̇_WHp using AutoDiffXd.
+  CalcPointsOnFrameHGeometricJacobian(
+      tree_autodiff(), *context_autodiff_, p_HPi_autodiff,
+      &p_WPi_autodiff, &Jv_WHp_autodiff);
 
   // Extract time derivatives:
-  MatrixX<double> Jq_WPi_derivs =
-      math::autoDiffToGradientMatrix(Jq_WPi_autodiff);
-  Jq_WPi_derivs.resize(3 * kNumPoints, kNumPositions);
+  MatrixX<double> Jv_WHp_derivs =
+      math::autoDiffToGradientMatrix(Jv_WHp_autodiff);
+  Jv_WHp_derivs.resize(3 * kNumPoints, kNumPositions);
 
   // Compute the expected value of the bias terms using the time derivatives
   // computed with AutoDiffXd.
-  const VectorX<double> Ab_WBp_expected = Jq_WPi_derivs * v;
+  const VectorX<double> Ab_WHp_expected = Jv_WHp_derivs * v;
 
   // Compute points geometric Jacobian bias.
-  const VectorX<double> Ab_WBp =
+  const VectorX<double> Ab_WHp =
       tree().CalcBiasForPointsGeometricJacobianExpressedInWorld(
-      *context_, end_effector_link_->body_frame(), p_EPi);
+      *context_, *frame_H_, p_HPi);
 
-  EXPECT_EQ(Ab_WBp.size(), 3 * kNumPoints);
-  EXPECT_TRUE(CompareMatrices(Ab_WBp, Ab_WBp_expected,
+  EXPECT_EQ(Ab_WHp.size(), 3 * kNumPoints);
+  EXPECT_TRUE(CompareMatrices(Ab_WHp, Ab_WHp_expected,
                               kTolerance, MatrixCompareType::relative));
+
+  // Verify CalcBiasForPointsGeometricJacobianExpressedInWorld() throws an
+  // exception if the input set of points is not represented as a matrix with
+  // three rows.
+  MatrixX<double> p_HQi(5, kNumPoints);  // an invalid size input set.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      tree().CalcBiasForPointsGeometricJacobianExpressedInWorld(
+          *context_, *frame_H_, p_HQi),
+      std::exception,
+      ".* condition 'p_FQi_set.rows\\(\\) == 3' failed.");
 }
 
 // Given a set of points Pi attached to the end effector frame G, this test

@@ -905,6 +905,25 @@ VectorX<T> MultibodyTree<T>::CalcBiasForPointsGeometricJacobianExpressedInWorld(
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
 
+  // For a frame F instantaneously moving with a body frame B, the spatial
+  // acceleration of the frame F shifted to frame Fq with origin at point Q
+  // fixed in frame F, can be computed as:
+  //   A_WFq = Jv_WFq⋅v̇ + Ab_WFq,
+  // where Jv_WFq is the geometric Jacobian of frame Fq and Ab_WFq is the bias
+  // term for that Jacobian, defined as Ab_WFq = J̇v_WFq⋅v. The bias terms
+  // contains the Coriolis and centrifugal contributions to the total spatial
+  // acceleration due to non-zero velocities. Therefore, the bias term for
+  // Jv_WFq is the spatial acceleration of Fq when v̇ = 0, that is:
+  //   Ab_WFq = A_WFq(q, v, v̇ = 0)
+  // Given the position p_BQ_W of point Q on body frame B, we can compute the
+  // spatial acceleration Ab_WFq from the body spatial acceleration A_WB by
+  // simply performing a shift operation:
+  //   Ab_WFq = A_WB.Shift(p_BQ_W, w_WB)
+  // where the shift operation also includes the angular velocity w_WB of B in
+  // W since rigid shifts on acceleration will usually include additional
+  // centrifugal and Coriolis terms, see SpatialAcceleration::Shift() for a
+  // detailed derivation of these terms.
+
   // TODO(amcastro-tri): Consider caching Ab_WB(q, v), the bias term for each
   // body, and compute the bias as Ab_WBq = Ab_WB.Shift(p_BQ_W, w_WB).
   // Where the body bias terms is defined s.t. A_WB = J_WB⋅v̇ + Ab_WB or,
