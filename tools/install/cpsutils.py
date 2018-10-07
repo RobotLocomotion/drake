@@ -6,6 +6,12 @@ import sys
 version_file = sys.argv[1]
 dependency_cps_files = sys.argv[2:]
 
+if sys.version_info.major >= 3:
+    _open = open
+
+    def open(file, mode='r'):
+        return _open(file, mode, encoding='utf8')
+
 
 def read_defs(pattern, groups=(1, 2)):
     defs = {}
