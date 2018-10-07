@@ -31,10 +31,12 @@ const int kPortIndex = 0;
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
     const LcmAndVectorBaseTranslator* translator,
+    std::unique_ptr<const LcmAndVectorBaseTranslator> owned_translator,
     std::unique_ptr<SerializerInterface> serializer,
     DrakeLcmInterface* lcm)
     : channel_(channel),
-      translator_(translator),
+      translator_(owned_translator ? owned_translator.get() : translator),
+      owned_translator_(std::move(owned_translator)),
       serializer_(std::move(serializer)),
       owned_lcm_(lcm ? nullptr : new DrakeLcm()),
       lcm_(lcm ? lcm : owned_lcm_.get()) {
@@ -42,25 +44,33 @@ LcmPublisherSystem::LcmPublisherSystem(
   DRAKE_DEMAND(lcm_);
 
   if (translator_ != nullptr) {
-    DeclareInputPort(kVectorValued, translator_->get_vector_size());
+    DeclareInputPort("lcm_message", kVectorValued,
+                     translator_->get_vector_size());
   } else {
-    DeclareAbstractInputPort();
+    DeclareAbstractInputPort("lcm_message");
   }
 
   set_name(make_name(channel_));
 }
 
 LcmPublisherSystem::LcmPublisherSystem(
-    const std::string& channel,
-    std::unique_ptr<SerializerInterface> serializer,
+    const std::string& channel, std::unique_ptr<SerializerInterface> serializer,
     drake::lcm::DrakeLcmInterface* lcm)
-    : LcmPublisherSystem(channel, nullptr, std::move(serializer), lcm) {}
+    : LcmPublisherSystem(channel, nullptr, nullptr, std::move(serializer),
+                         lcm) {}
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
     const LcmAndVectorBaseTranslator& translator,
     drake::lcm::DrakeLcmInterface* lcm)
-    : LcmPublisherSystem(channel, &translator, nullptr, lcm) {}
+    : LcmPublisherSystem(channel, &translator, nullptr, nullptr, lcm) {}
+
+LcmPublisherSystem::LcmPublisherSystem(
+    const std::string& channel,
+    std::unique_ptr<const LcmAndVectorBaseTranslator> translator,
+    drake::lcm::DrakeLcmInterface* lcm)
+    : LcmPublisherSystem(channel, nullptr, std::move(translator), nullptr,
+                         lcm) {}
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
