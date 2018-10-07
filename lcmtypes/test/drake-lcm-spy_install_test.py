@@ -25,7 +25,7 @@ class TestLcmSpy(unittest.TestCase):
                 "drake-lcm-spy execution passed instead of failing. Update test"  # noqa
                 )
         except subprocess.CalledProcessError as e:
-            self.assertIn("usage: lcm-spy [options]", e.output)
+            self.assertIn("usage: lcm-spy [options]", e.output.decode("utf8"))
 
 
 if __name__ == '__main__':
