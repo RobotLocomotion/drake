@@ -173,7 +173,7 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEqual(DummyC.method[int], DummyC.dummy_c)
         if six.PY2:
             self.assertEqual(str(DummyC.method[int]),
-                              "<unbound method DummyC.dummy_c>")
+                             "<unbound method DummyC.dummy_c>")
         else:
             self.assertTrue(str(DummyC.method[int]).startswith(
                 "<function DummyC.dummy_c at "),

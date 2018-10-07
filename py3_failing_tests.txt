@@ -15,7 +15,7 @@ bazel-test //bindings/pydrake/...
 --trace=user -f
 
 
-1: //bindings/pydrake/util:py/wrap_pybind_cpplint
+1 (FIXED): //bindings/pydrake/util:py/wrap_pybind_cpplint
 2 (FIXED): //bindings/pydrake/examples/multibody:py/bazel_codestyle
 
 1:  Failing with exit code 1?
