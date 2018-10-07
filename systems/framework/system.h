@@ -1238,11 +1238,16 @@ class System : public SystemBase {
   /// Returns a Graphviz string describing this System.  To render the string,
   /// use the Graphviz tool, ``dot``.
   /// http://www.graphviz.org/Documentation/dotguide.pdf
-  std::string GetGraphvizString() const {
+  ///
+  /// @param max_depth Sets a limit to the depth of nested diagrams to
+  // visualize.  Set to zero to render a diagram as a single system block.
+  std::string GetGraphvizString(
+      int max_depth = std::numeric_limits<int>::max()) const {
+    DRAKE_DEMAND(max_depth >= 0);
     std::stringstream dot;
     dot << "digraph _" << this->GetGraphvizId() << " {" << std::endl;
     dot << "rankdir=LR" << std::endl;
-    GetGraphvizFragment(&dot);
+    GetGraphvizFragment(max_depth, &dot);
     dot << "}" << std::endl;
     return dot.str();
   }
@@ -1250,22 +1255,28 @@ class System : public SystemBase {
   /// Appends a Graphviz fragment to the @p dot stream.  The fragment must be
   /// valid Graphviz when wrapped in a `digraph` or `subgraph` stanza.  Does
   /// nothing by default.
-  virtual void GetGraphvizFragment(std::stringstream* dot) const {
-    unused(dot);
+  ///
+  /// @param max_depth Sets a limit to the depth of nested diagrams to
+  // visualize.  Set to zero to render a diagram as a single system block.
+  virtual void GetGraphvizFragment(int max_depth,
+                                   std::stringstream* dot) const {
+    unused(dot, max_depth);
   }
 
   /// Appends a fragment to the @p dot stream identifying the graphviz node
   /// representing @p port. Does nothing by default.
   virtual void GetGraphvizInputPortToken(const InputPort<T>& port,
+                                         int max_depth,
                                          std::stringstream* dot) const {
-    unused(port, dot);
+    unused(port, max_depth, dot);
   }
 
   /// Appends a fragment to the @p dot stream identifying the graphviz node
   /// representing @p port. Does nothing by default.
   virtual void GetGraphvizOutputPortToken(const OutputPort<T>& port,
+                                          int max_depth,
                                           std::stringstream* dot) const {
-    unused(port, dot);
+    unused(port, max_depth, dot);
   }
 
   /// Returns an opaque integer that uniquely identifies this system in the
