@@ -23,6 +23,7 @@ PYBIND11_MODULE(_autodiffutils_py, m) {
   py::module::import("pydrake.util.deprecation")
       .attr("install_numpy_warning_filters")();
 
+  // TODO(m-chaturvedi) Add Pybind11 documentation.
   py::class_<AutoDiffXd> autodiff(m, "AutoDiffXd");
   autodiff
     .def(py::init<double>())
