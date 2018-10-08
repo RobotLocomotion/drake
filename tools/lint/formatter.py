@@ -9,15 +9,14 @@ from subprocess import Popen, PIPE, CalledProcessError
 
 import drake.tools.lint.clang_format as clang_format_lib
 
-
 if six.PY3:
     _open = open
     def open(filename, mode): return _open(filename, mode, encoding="utf8")
-    def encode(b): return b.encode("utf8")
-    def decode(s): return s.decode("utf8")
+    def encode(s): return s.encode("utf8")
+    def decode(b): return b.decode("utf8")
 else:
-    def encode(b): return str(b)
-    def decode(s): return bytes(s)
+    def encode(s): return bytes(s)
+    def decode(b): return str(b)
 
 
 class FormatterBase(object):
