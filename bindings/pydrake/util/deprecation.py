@@ -39,6 +39,7 @@ class ModuleShim(object):
         # https://stackoverflow.com/a/16237698/7829525
         object.__setattr__(self, '_orig_module', orig_module)
         object.__setattr__(self, '_handler', handler)
+        object.__setattr__(self, '__doc__', orig_module.__doc__)
 
     def __getattr__(self, name):
         # Use the original module if possible.
