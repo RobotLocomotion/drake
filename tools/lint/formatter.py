@@ -10,11 +10,14 @@ from subprocess import Popen, PIPE, CalledProcessError
 import drake.tools.lint.clang_format as clang_format_lib
 
 
-def _open(filename, mode):
-    if six.PY2:
-        return open(filename, mode)
-    else:
-        return open(filename, mode, encoding="utf-8")
+if six.PY3:
+    _open = open
+    def open(filename, mode): return _open(filename, mode, encoding="utf8")
+    def encode(b): return b.encode("utf8")
+    def decode(s): return s.decode("utf8")
+else:
+    def encode(b): return str(b)
+    def decode(s): return bytes(s)
 
 
 class FormatterBase(object):
@@ -47,7 +50,7 @@ class FormatterBase(object):
         """
         self._filename = filename
         if readlines is None:
-            with _open(filename, "r") as opened:
+            with open(filename, "r") as opened:
                 self._original_lines = opened.readlines()
         else:
             self._original_lines = list(readlines)
@@ -214,8 +217,8 @@ class FormatterBase(object):
             lines_args
         formatter = Popen(command, stdin=PIPE, stdout=PIPE)
         stdout, _ = formatter.communicate(input=(
-            "".join(self._working_lines).encode('utf8')))
-        stdout = stdout.decode('utf8')
+            encode("".join(self._working_lines))))
+        stdout = decode(stdout)
 
         # Handle errors, otherwise reset the working list.
         if formatter.returncode != 0:
@@ -232,7 +235,7 @@ class FormatterBase(object):
         """
         self._pre_rewrite_file()
         temp_filename = self._filename + ".drake-formatter"
-        with _open(temp_filename, "w") as opened:
+        with open(temp_filename, "w") as opened:
             for line in self._working_lines:
                 opened.write(line)
         os.rename(temp_filename, self._filename)
