@@ -15,10 +15,6 @@ bazel-test() { (
     set -x
     bazel test --python_path=$(which python) "$@"
 ) }
-bazel-run() { (
-    set -x
-    bazel run --python_path=$(which python) "$@"
-) }
 }
 
 bazel-test //bindings/pydrake/...
