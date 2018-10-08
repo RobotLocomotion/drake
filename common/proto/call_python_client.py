@@ -1,7 +1,6 @@
 from __future__ import print_function
 import argparse
 import os
-from Queue import Queue
 import signal
 import stat
 import sys
@@ -9,12 +8,19 @@ from threading import Thread
 import time
 import traceback
 
-import numpy as np
 # Hacky, but this is the simplest route right now.
 # @ref https://www.datadoghq.com/blog/engineering/protobuf-parsing-in-python/
 from google.protobuf.internal.decoder import _DecodeVarint32
+import numpy as np
+import six
+from six import text_type as unicode
+from six.moves.queue import Queue
 
 from drake.common.proto.matlab_rpc_pb2 import MatlabArray, MatlabRPC
+
+if six.PY3:
+
+    def map(f, xs): return [f(x) for x in xs]
 
 
 def _ensure_sigint_handler():
@@ -72,7 +78,7 @@ def _get_required_helpers(scope_locals):
         """Create a scalar or tuple for accessing objects via slices. """
         out = [None] * len(args)
         for i, arg in enumerate(args):
-            if isinstance(arg, str):
+            if isinstance(arg, (str, unicode)):
                 out[i] = _make_slice(arg)
             else:
                 out[i] = arg
@@ -101,35 +107,6 @@ def _get_required_helpers(scope_locals):
 class _KwArgs(dict):
     # Indicates values meant solely for `**kwargs`.
     pass
-
-
-def _cexec(stmt, globals_, locals_):
-    # Enable executing a statement via evaluation so that we may control
-    # "locals" and "globals" explicitly.
-    eval_locals = dict(stmt=stmt, locals_=locals_, _cexec_impl=_cexec_impl)
-    # Dispatch to function that calls "exec" so that we can control locals
-    # and globals.
-    eval("_cexec_impl(stmt, locals_)", eval_locals, globals_)
-
-
-def _cexec_impl(_stmt, _locals):
-    # Implementation for `_cexec` to capture locals and globals.
-    locals().update(_locals)
-    _old_vars = None
-    _new_vars = None
-    _old_vars = locals().keys()
-    # Execute with context.
-    exec _stmt
-    # Figure out new things.
-    locals_new = locals()
-    _new_vars = set(locals_new.keys()) - set(_old_vars)
-    for var in _locals.keys():
-        if var not in locals_new:
-            del _locals[var]
-        else:
-            _locals[var] = locals()[var]
-    for var in _new_vars:
-        _locals[var] = locals()[var]
 
 
 class _ExecutionCheck(object):
@@ -341,7 +318,7 @@ class CallPythonClient(object):
                 value = self._to_array(arg, np.double)
             elif arg.type == MatlabArray.CHAR:
                 assert arg.rows == 1
-                value = str(arg_raw)
+                value = arg_raw.decode('utf8')
             elif arg.type == MatlabArray.LOGICAL:
                 value = self._to_array(arg, np.bool)
             elif arg.type == MatlabArray.INT:
@@ -357,6 +334,7 @@ class CallPythonClient(object):
         # Call the function
         # N.B. No security measures to sanitize function name.
         function_name = msg.function_name
+        assert isinstance(function_name, (str, unicode)), type(function_name)
         out_id = None
         if len(msg.lhs) > 0:
             assert len(msg.lhs) == 1
@@ -367,7 +345,7 @@ class CallPythonClient(object):
         if function_name == "exec":
             assert len(inputs) == 1
             assert kwargs is None or len(kwargs) == 0
-            _cexec(inputs[0], self.scope_globals, self.scope_locals)
+            six.exec_(inputs[0], self.scope_globals, self.scope_locals)
             out = None
         else:
             out = eval(function_name + "(*_tmp_args, **_tmp_kwargs)",

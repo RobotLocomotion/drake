@@ -181,7 +181,7 @@ def main():
         with open(filename) as log_file:
             log_text = "".join(log_file.readlines())
         sdf_text = convert(log_text, args.scale, args.mass_kg)
-        print sdf_text
+        print(sdf_text)
     else:
         print("Can't handle a '{}' file (wanted '.txt')".format(
             ext))

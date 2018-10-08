@@ -6,8 +6,8 @@ import argparse
 import collections
 import os
 import subprocess
-import yaml
 
+import yaml
 import google.protobuf.text_format
 
 from drake.tools.vector_gen import named_vector_pb2
