@@ -1,0 +1,66 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:private"])
+
+load("@drake//tools/skylark:drake_py.bzl", "drake_py_binary")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_runfiles_binary.bzl", "drake_runfiles_binary")
+
+# We need pydrake to be in the PYTHONPATH for sphinx.ext.autodoc to generate
+# API documentation.
+# TODO(jamiesnape): Can we avoid the need to re-compile pydrake for the host
+# architecture?
+drake_py_binary(
+    name = "sphinx_build_wrapper",
+    srcs = ["sphinx_build_wrapper.py"],
+    data = ["@sphinx//:sphinx-build"],
+    deps = ["//bindings/pydrake"],
+)
+
+drake_runfiles_binary(
+    name = "sphinx_build",
+    target = ":sphinx_build_wrapper",
+)
+
+drake_py_binary(
+    name = "refresh_doc_modules",
+    srcs = ["refresh_doc_modules.py"],
+    deps = ["//bindings/pydrake"],
+)
+
+# TODO(jamiesnape): Refactor into a Starlark rule to share with with
+# //doc:sphinx.
+genrule(
+    name = "sphinx",
+    srcs = glob([
+        "**/*.rst",
+    ]) + ["conf.py"],
+    outs = ["sphinx.zip"],
+    cmd = " ".join([
+        # Run sphinx-build.
+        "$(location :sphinx_build) -b html",  # HTML output.
+        "-a -E -d $(@D)/.doctrees/",  # Don't use caching.
+        "-N -Q",  # Be very quiet.
+        "$$(dirname $(location conf.py))",  # Source dir.
+        "$(@D)/.tmpout",  # Output dir.
+        "&&",
+        # Create zipfile.
+        "( CWD=`pwd` && cd $(@D)/.tmpout && zip -q -r $$CWD/$@ ./ )",
+        "&&",
+        # Cleanup temporary files.
+        "rm -rf $(@D)/.doctrees/ $(@D)/.tmpout",
+    ]),
+    # Some (currently disabled) Sphinx extensions try to reach out to the
+    # network; we should fail-fast if someone tries to turn them on.
+    tags = ["block-network"],
+    tools = [":sphinx_build"],
+)
+
+# TODO(jamiesnape): Refactor to share logic with //doc:serve_sphinx.
+drake_py_binary(
+    name = "serve_sphinx",
+    srcs = ["serve_sphinx.py"],
+    data = [":sphinx.zip"],
+)
+
+add_lint_tests(python_lint_exclude = [":conf.py"])
