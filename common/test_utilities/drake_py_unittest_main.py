@@ -13,12 +13,10 @@ import unittest
 
 import six
 
+if six.PY3:
+    _open = open
 
-def _open(filename, mode):
-    if six.PY2:
-        return open(filename, mode)
-    else:
-        return open(filename, mode, encoding="utf-8")
+    def open(filename, mode="r"): return _open(filename, mode, encoding="utf8")
 
 
 if __name__ == '__main__':
@@ -43,7 +41,7 @@ if __name__ == '__main__':
     if not found_filename:
         raise RuntimeError("No such file found {}!".format(
             test_filename))
-    with _open(found_filename, "r") as infile:
+    with open(found_filename, "r") as infile:
         for line in infile.readlines():
             if any([line.startswith("if __name__ =="),
                     line.strip().startswith("unittest.main")]):

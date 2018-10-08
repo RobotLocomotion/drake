@@ -5,12 +5,10 @@ import six
 
 from drake.tools.lint.formatter import IncludeFormatter
 
+if sys.version_info.major >= 3:
+    _open = open
 
-def _open(filename, mode):
-    if six.PY2:
-        return open(filename, mode)
-    else:
-        return open(filename, mode, encoding="utf-8")
+    def open(filename, mode="r"): return _open(filename, mode, encoding="utf8")
 
 
 def _check_invalid_line_endings(filename):
@@ -18,7 +16,7 @@ def _check_invalid_line_endings(filename):
     otherwise.
     """
     # Ask Python to read the file and determine the newlines convention.
-    with _open(filename, 'rU') as file:
+    with open(filename, 'rU') as file:
         if not file:
             print("ERROR: unable to open " + filename)
             return 1
@@ -57,7 +55,7 @@ def _check_shebang(filename):
     acceptable shebang lines, and 1 otherwise.
     """
     is_executable = os.access(filename, os.X_OK)
-    with _open(filename, 'r') as file:
+    with open(filename, 'r') as file:
         shebang = file.readline().rstrip("\n")
         has_shebang = shebang.startswith("#!")
     if is_executable and not has_shebang:

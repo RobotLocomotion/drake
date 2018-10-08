@@ -9,8 +9,7 @@ dependency_cps_files = sys.argv[2:]
 if sys.version_info.major >= 3:
     _open = open
 
-    def open(file, mode='r'):
-        return _open(file, mode, encoding='utf8')
+    def open(filename, mode="r"): return _open(filename, mode, encoding="utf8")
 
 
 def read_defs(pattern, groups=(1, 2)):
