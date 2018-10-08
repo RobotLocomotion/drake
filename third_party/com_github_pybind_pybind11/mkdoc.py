@@ -237,8 +237,12 @@ def process_comment(comment):
     s = s.replace('std::exception', 'RuntimeError')
     s = s.replace('std::invalid_argument', 'ValueError')
     s = s.replace('std::length_error', 'ValueError')
+    s = s.replace('std::logic_error', 'RuntimeError')
     s = s.replace('std::out_of_range', 'ValueError')
+    s = s.replace('std::overflow_error', 'RuntimeError')
     s = s.replace('std::range_error', 'ValueError')
+    s = s.replace('std::runtime_error', 'RuntimeError')
+    s = s.replace('std::underflow_error', 'RuntimeError')
 
     # Re-flow text
     wrapper = textwrap.TextWrapper()
