@@ -109,19 +109,6 @@ class _KwArgs(dict):
     pass
 
 
-def _cexec(stmt, globals_, locals_):
-    # Enable executing a statement via evaluation so that we may control
-    # "locals" and "globals" explicitly.
-    eval_locals = dict(stmt=stmt, locals_=locals_, _cexec_impl=_cexec_impl)
-    # Dispatch to function that calls "exec" so that we can control locals
-    # and globals.
-    eval("_cexec_impl(stmt, locals_)", eval_locals, globals_)
-
-
-def _cexec_impl(_stmt, _locals):
-    six.exec_(_stmt, _locals)
-
-
 class _ExecutionCheck(object):
     # Allows checking that we received and executed a complete set of
     # instructions.
@@ -358,7 +345,7 @@ class CallPythonClient(object):
         if function_name == "exec":
             assert len(inputs) == 1
             assert kwargs is None or len(kwargs) == 0
-            _cexec(inputs[0], self.scope_globals, self.scope_locals)
+            six.exec_(inputs[0], self.scope_globals, self.scope_locals)
             out = None
         else:
             out = eval(function_name + "(*_tmp_args, **_tmp_kwargs)",
