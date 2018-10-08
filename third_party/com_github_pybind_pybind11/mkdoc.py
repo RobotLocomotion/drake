@@ -203,8 +203,8 @@ def process_comment(comment):
         'sa': 'See also',
         'see': 'See also',
         'extends': 'Extends',
-        'throws': 'Throws',
-        'throw': 'Throws'
+        'throws': 'Raises',
+        'throw': 'Raises'
     }.items():
         s = re.sub(r'[@\\]%s\s*' % in_, r'\n\n$%s:\n\n' % out_, s)
 
