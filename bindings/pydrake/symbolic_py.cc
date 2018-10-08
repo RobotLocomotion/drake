@@ -358,14 +358,14 @@ PYBIND11_MODULE(_symbolic_py, m) {
       // `True` and `False` are reserved as of Python3
       .def_static("True_", &Formula::True)
       .def_static("False_", &Formula::False)
-      .def("__bool__", [](const Formula&) {
+      .def("__nonzero__", [](const Formula&) {
         throw std::runtime_error(
             "You should not call `__bool__` / `__nonzero__` on `Formula`. "
             "If you are trying to make a map with `Variable`, `Expression`, "
             "or `Polynomial` as keys (and then access the map in Python), "
             "please use pydrake.util.containers.EqualToDict`.");
       });
-  formula.attr("__nonzero__") = formula.attr("__bool__");
+  formula.attr("__bool__") = formula.attr("__nonzero__");
 
   // Cannot overload logical operators: http://stackoverflow.com/a/471561
   // Defining custom function for clarity.
