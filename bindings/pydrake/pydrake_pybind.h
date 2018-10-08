@@ -311,18 +311,19 @@ template <typename Return, typename... Args>
 constexpr auto overload_cast_explicit = overload_cast_impl<Return, Args...>{};
 
 #if PY_MAJOR_VERSION >= 3
-// pybind11 in Python3 may reconstruct a module if it is imported in the middle
-// of it being constructed. We can circumvent this by storing a weak reference
-// to the module being constructed, and re-return it.
+// The following works around pybind11 modules getting reconstructed /
+// reimported in Python3. See pybind/pybind11#1559 for more details.
 // Use this ONLY when necessary (e.g. when using a utility method which imports
 // the module, within the module itself).
 #define PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable) \
-  static py::handle variable##_original; \
-  if (variable##_original) { \
-    variable = py::reinterpret_borrow<py::module>(variable##_original); \
-    return; \
-  } else { \
-    variable##_original = variable; \
+  { \
+    static py::handle variable##_original; \
+    if (variable##_original) { \
+      variable = py::reinterpret_borrow<py::module>(variable##_original); \
+      return; \
+    } else { \
+      variable##_original = variable; \
+    } \
   }
 #else  // PY_MAJOR_VERSION >= 3
 #define PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable)
