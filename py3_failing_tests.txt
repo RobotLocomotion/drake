@@ -26,7 +26,4 @@ bazel-test //bindings/pydrake/...
 
 Python2
 
-    //examples/van_der_pol:py/van_der_pol_drakelint
-        UnicodeDecodeError: 'ascii' codec can't decode byte 0xcc in position 596: ordinal not in range(128)
-
 Python3
