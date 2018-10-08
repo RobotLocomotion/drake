@@ -13,14 +13,14 @@ import traceback
 from google.protobuf.internal.decoder import _DecodeVarint32
 import numpy as np
 import six
+from six import text_type as unicode
 from six.moves.queue import Queue
 
 from drake.common.proto.matlab_rpc_pb2 import MatlabArray, MatlabRPC
 
 if six.PY3:
 
-    def map(f, xs):
-        return [f(x) for x in xs]
+    def map(f, xs): return [f(x) for x in xs]
 
 
 def _ensure_sigint_handler():
@@ -78,7 +78,7 @@ def _get_required_helpers(scope_locals):
         """Create a scalar or tuple for accessing objects via slices. """
         out = [None] * len(args)
         for i, arg in enumerate(args):
-            if isinstance(arg, str):
+            if isinstance(arg, (str, unicode)):
                 out[i] = _make_slice(arg)
             else:
                 out[i] = arg
@@ -347,7 +347,7 @@ class CallPythonClient(object):
         # Call the function
         # N.B. No security measures to sanitize function name.
         function_name = msg.function_name
-        assert isinstance(function_name, str)
+        assert isinstance(function_name, (str, unicode)), type(function_name)
         out_id = None
         if len(msg.lhs) > 0:
             assert len(msg.lhs) == 1
