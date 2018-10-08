@@ -12,7 +12,7 @@ namespace pydrake {
 PYBIND11_MODULE(shapes, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace DrakeShapes;
-  auto& doc = pydrake_doc.DrakeShapes;
+  constexpr auto& doc = pydrake_doc.DrakeShapes;
 
   py::module::import("pydrake.util.eigen_geometry");
 

@@ -23,7 +23,7 @@ PYBIND11_MODULE(controllers, m) {
   using drake::multibody::multibody_plant::MultibodyPlant;
   using drake::systems::Diagram;
   using drake::systems::LeafSystem;
-  auto& doc = pydrake_doc.drake.systems.controllers;
+  constexpr auto& doc = pydrake_doc.drake.systems.controllers;
 
   py::module::import("pydrake.math");
   py::module::import("pydrake.symbolic");

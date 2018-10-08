@@ -245,7 +245,7 @@ struct Impl {
   static void DoDefinitions(py::module m) {
     // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
     using namespace drake::systems;
-    auto& doc = pydrake_doc.drake.systems;
+    constexpr auto& doc = pydrake_doc.drake.systems;
 
     // TODO(eric.cousineau): Resolve `str_py` workaround.
     auto str_py = py::eval("str");

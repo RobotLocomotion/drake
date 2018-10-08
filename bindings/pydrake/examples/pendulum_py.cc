@@ -22,7 +22,7 @@ PYBIND11_MODULE(pendulum, m) {
   using namespace drake::examples::pendulum;
 
   m.doc() = "Bindings for the Pendulum example.";
-  auto& doc = pydrake_doc.drake.examples.pendulum;
+  constexpr auto& doc = pydrake_doc.drake.examples.pendulum;
 
   py::module::import("pydrake.systems.framework");
 

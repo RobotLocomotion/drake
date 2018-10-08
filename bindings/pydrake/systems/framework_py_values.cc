@@ -24,10 +24,9 @@ using pysystems::DefClone;
 void DefineFrameworkPyValues(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
-  auto& doc = pydrake_doc.drake.systems;
+  constexpr auto& doc = pydrake_doc.drake.systems;
 
-  // See # 9600
-  auto bind_common_scalar_types = [&](auto dummy) {
+  auto bind_common_scalar_types = [m](auto dummy) {
     using T = decltype(dummy);
     // Value types.
     DefineTemplateClassWithDefault<VectorBase<T>>(

@@ -12,7 +12,7 @@ PYBIND11_MODULE(van_der_pol, m) {
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::examples::van_der_pol;
-  auto& doc = pydrake_doc.drake.examples.van_der_pol;
+  constexpr auto& doc = pydrake_doc.drake.examples.van_der_pol;
 
   m.doc() = "Bindings for the van_der_pol example.";
 

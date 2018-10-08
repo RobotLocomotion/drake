@@ -19,7 +19,7 @@ PYBIND11_MODULE(api, m) {
   using namespace drake::maliput::api;
 
   m.doc() = "Bindings for the Maliput API.";
-  auto& doc = pydrake_doc.drake.maliput.api;
+  constexpr auto& doc = pydrake_doc.drake.maliput.api;
 
   // TODO(jadecastro) These bindings are work-in-progress. Expose additional
   // Maliput API features, as necessary (see #7918).

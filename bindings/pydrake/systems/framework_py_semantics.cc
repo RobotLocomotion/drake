@@ -28,7 +28,7 @@ using pysystems::DefClone;
 void DefineFrameworkPySemantics(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
-  auto& doc = pydrake_doc.drake.systems;
+  constexpr auto& doc = pydrake_doc.drake.systems;
 
   m.attr("kAutoSize") = kAutoSize;
   m.attr("kUseDefaultName") = kUseDefaultName;
@@ -69,8 +69,7 @@ void DefineFrameworkPySemantics(py::module m) {
     .def("CopyFrom", &AbstractValues::CopyFrom,
          doc.AbstractValues.CopyFrom.doc);
 
-  // See # 9600
-  auto bind_common_scalar_types = [&](auto dummy) {
+  auto bind_common_scalar_types = [m](auto dummy) {
     using T = decltype(dummy);
     DefineTemplateClassWithDefault<Context<T>>(
         m, "Context", GetPyParam<T>(), doc.Context.doc)
