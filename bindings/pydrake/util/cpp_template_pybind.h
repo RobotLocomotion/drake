@@ -79,11 +79,11 @@ inline py::object AddTemplateClass(
 template <typename Class, typename... Options>
 py::class_<Class, Options...> DefineTemplateClassWithDefault(
     py::handle scope, const std::string& default_name, py::tuple param,
-    const std::string& template_suffix = "_") {
+    const char* ctor_doc_string, const std::string& template_suffix = "_") {
   const std::string template_name = default_name + template_suffix;
   // Define class with temporary name.
   py::class_<Class, Options...> py_class(
-      scope, TemporaryClassName<Class>().c_str());
+      scope, TemporaryClassName<Class>().c_str(), ctor_doc_string);
   // Register instantiation.
   AddTemplateClass(scope, template_name, py_class, param);
   // Declare default instantiation if it does not already exist.
