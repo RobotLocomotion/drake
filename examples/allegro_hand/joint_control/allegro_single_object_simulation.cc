@@ -105,17 +105,8 @@ void DoMain() {
                   plant.get_geometry_query_input_port());
 
   // Publish contact results for visualization.
-  const auto& contact_results_to_lcm =
-      *builder.AddSystem<multibody::multibody_plant::ContactResultsToLcmSystem>(
-          plant);
-  const auto& contact_results_publisher = *builder.AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
-          "CONTACT_RESULTS", &lcm));
-  // Contact results to lcm msg.
-  builder.Connect(plant.get_contact_results_output_port(),
-                  contact_results_to_lcm.get_input_port(0));
-  builder.Connect(contact_results_to_lcm.get_output_port(0),
-                  contact_results_publisher.get_input_port());
+  multibody::multibody_plant::ConnectContactResultsToDrakeVisualizer(
+      &builder, plant, &lcm);
 
   // PID controller for position control of the finger joints
   VectorX<double> kp, kd, ki;
