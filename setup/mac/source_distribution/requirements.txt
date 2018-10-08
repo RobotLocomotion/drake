@@ -1,2 +1,3 @@
 pygame
+six
 Sphinx
