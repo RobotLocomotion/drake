@@ -899,8 +899,8 @@ template <typename T>
 VectorX<T> MultibodyTree<T>::CalcBiasForPointsGeometricJacobianExpressedInWorld(
     const systems::Context<T>& context,
     const Frame<T>& frame_F,
-    const Eigen::Ref<const MatrixX<T>>& p_FQi_set) const {
-  DRAKE_THROW_UNLESS(p_FQi_set.rows() == 3);
+    const Eigen::Ref<const MatrixX<T>>& p_FQ_list) const {
+  DRAKE_THROW_UNLESS(p_FQ_list.rows() == 3);
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
@@ -937,13 +937,13 @@ VectorX<T> MultibodyTree<T>::CalcBiasForPointsGeometricJacobianExpressedInWorld(
   // Bias for body B spatial acceleration.
   const SpatialAcceleration<T>& Ab_WB = A_WB_array[body_B.node_index()];
 
-  const int num_points = p_FQi_set.cols();
+  const int num_points = p_FQ_list.cols();
 
   // Allocate output vector.
   VectorX<T> Ab_WB_array(3 * num_points);
 
   for (int ipoint = 0; ipoint < num_points; ++ipoint) {
-    const Vector3<T> p_FQi = p_FQi_set.col(ipoint);
+    const Vector3<T> p_FQi = p_FQ_list.col(ipoint);
 
     // Body B's orientation.
     const Matrix3<T>& R_WB = pc.get_X_WB(body_B.node_index()).linear();

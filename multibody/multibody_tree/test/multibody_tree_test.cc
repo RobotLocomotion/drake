@@ -293,7 +293,7 @@ GTEST_TEST(MultibodyTree, BackwardsCompatibility) {
 // Fixture to perform a number of computational tests on a KUKA Iiwa model.
 class KukaIiwaModelTests : public ::testing::Test {
  public:
-  /// Creates MultibodyTree for a KUKA Iiwa robot arm.
+  // Creates MultibodyTree for a KUKA Iiwa robot arm.
   void SetUp() override {
     {
       // We limit the scope for this MultibodyTree since it only is used for the
@@ -446,7 +446,7 @@ class KukaIiwaModelTests : public ::testing::Test {
   const Body<double>* end_effector_link_{nullptr};
   // Non-owning pointer to a fixed pose frame on the end effector link:
   const Frame<double>* frame_H_{nullptr};
-  RigidTransform<double> X_GH_{
+  const RigidTransform<double> X_GH_{
       RollPitchYaw<double>{M_PI_2, 0, M_PI_2}.ToRotationMatrix(),
       Vector3d{0, 0, 0.081}};
   // Non-owning pointers to the joints:
@@ -673,7 +673,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasForPointsGeometricJacobianExpressedInWorld) {
       tree().CalcBiasForPointsGeometricJacobianExpressedInWorld(
           *context_, *frame_H_, p_HQi),
       std::exception,
-      ".* condition 'p_FQi_set.rows\\(\\) == 3' failed.");
+      ".* condition '.*.rows\\(\\) == 3' failed.");
 }
 
 // Given a set of points Pi attached to the end effector frame G, this test

@@ -1791,8 +1791,8 @@ class MultibodyTree {
   /// </pre>
   /// where `b_WFq = J̇v_WFq(q, v)⋅v`.
   ///
-  /// This method computes `b_WFq` for each point `Qi` defined by its position
-  /// `p_FQi` in `frame_F`.
+  /// This method computes `b_WFq` for each point `Q` in `p_FQ_list` defined by
+  /// its position `p_FQ` in `frame_F`.
   ///
   /// @see CalcPointsGeometricJacobianExpressedInWorld() to compute the
   /// geometric Jacobian `Jv_WFq(q)`.
@@ -1801,25 +1801,25 @@ class MultibodyTree {
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q and generalized velocities v.
   /// @param[in] frame_F
-  ///   Points `Qi` in the set instantaneously move with this frame.
-  /// @param[in] p_FQi_set
-  ///   A matrix with the fixed position of a set of points `Qi` measured and
+  ///   Points `Q` in the list instantaneously move with this frame.
+  /// @param[in] p_FQ_list
+  ///   A matrix with the fixed position of a list of points `Q` measured and
   ///   expressed in `frame_F`.
-  ///   Each column of this matrix contains the position vector `p_FQi` for a
-  ///   point `Qi` measured and expressed in frame F. Therefore this input
-  ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
+  ///   Each column of this matrix contains the position vector `p_FQ` for a
+  ///   point `Q` measured and expressed in frame F. Therefore this input
+  ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the list.
   /// @returns b_WFq
   ///   The bias term, function of the generalized positions q and the
   ///   generalized velocities v as stored in `context`.
   ///   The returned vector has size `3⋅np`, with np the number of points in
-  ///   `p_FQi_set`, and concatenates the bias terms for each point `Qi` in the
-  ///   set in the same order they are specified on input.
+  ///   `p_FQ_list`, and concatenates the bias terms for each point `Q` in the
+  ///   list in the same order they are specified on input.
   ///
-  /// @throws std::exception if `p_FQi_set` does not have 3 rows.
+  /// @throws std::exception if `p_FQ_list` does not have 3 rows.
   VectorX<T> CalcBiasForPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
-      const Eigen::Ref<const MatrixX<T>>& p_FQi_set) const;
+      const Eigen::Ref<const MatrixX<T>>& p_FQ_list) const;
 
   /// Given a frame F with fixed position `p_BoFo_B` in a frame B, this method
   /// computes the geometric Jacobian `Jv_WF` defined by:
