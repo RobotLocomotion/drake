@@ -477,7 +477,7 @@ class PolynomialConstraint : public EvaluatorConstraint<PolynomialEvaluator> {
 // IntegerConstraint, ...
 
 /**
- * Implements a constraint of the form @f lb <= Ax <= ub @f
+ * Implements a constraint of the form @f$ lb <= Ax <= ub @f$
  */
 class LinearConstraint : public Constraint {
  public:
@@ -554,7 +554,7 @@ class LinearConstraint : public Constraint {
 };
 
 /**
- * Implements a constraint of the form @f Ax = b @f
+ * Implements a constraint of the form @f$ Ax = b @f$
  */
 class LinearEqualityConstraint : public LinearConstraint {
  public:
@@ -600,7 +600,7 @@ class LinearEqualityConstraint : public LinearConstraint {
 };
 
 /**
- * Implements a constraint of the form @f lb <= x <= ub @f
+ * Implements a constraint of the form @f$ lb <= x <= ub @f$
  *
  * Note: the base Constraint class (as implemented at the moment) could
  * play this role.  But this class enforces that it is ONLY a bounding
