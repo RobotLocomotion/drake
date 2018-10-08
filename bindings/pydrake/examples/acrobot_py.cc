@@ -20,7 +20,7 @@ PYBIND11_MODULE(acrobot, m) {
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::examples::acrobot;
-  auto& doc = pydrake_doc.drake.examples.acrobot;
+  constexpr auto& doc = pydrake_doc.drake.examples.acrobot;
 
   m.doc() = "Bindings for the Acrobot example.";
 

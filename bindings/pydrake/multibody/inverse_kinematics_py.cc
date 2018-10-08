@@ -12,7 +12,7 @@ namespace pydrake {
 PYBIND11_MODULE(inverse_kinematics, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-  auto& doc = pydrake_doc.drake.multibody;
+  constexpr auto& doc = pydrake_doc.drake.multibody;
 
   using multibody_plant::MultibodyPlant;
 

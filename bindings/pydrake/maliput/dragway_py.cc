@@ -15,7 +15,7 @@ using std::unique_ptr;
 PYBIND11_MODULE(dragway, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::maliput;
-  auto& doc = pydrake_doc.drake.maliput;
+  constexpr auto& doc = pydrake_doc.drake.maliput;
 
   m.doc() = "Bindings for the Dragway backend.";
 

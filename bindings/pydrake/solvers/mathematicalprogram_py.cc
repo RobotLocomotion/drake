@@ -169,7 +169,7 @@ class PyFunctionConstraint : public Constraint {
 
 PYBIND11_MODULE(_mathematicalprogram_py, m) {
   m.doc() = "Drake MathematicalProgram Bindings";
-  auto& doc = pydrake_doc.drake.solvers;
+  constexpr auto& doc = pydrake_doc.drake.solvers;
 
   py::module::import("pydrake.autodiffutils");
   py::object variable = py::module::import("pydrake.symbolic").attr("Variable");

@@ -139,7 +139,7 @@ An example of incorporating docstrings:
 
     PYBIND11_MODULE(math, m) {
       using namespace drake::math;
-      auto& doc = pydrake_doc.drake.math;
+      constexpr auto& doc = pydrake_doc.drake.math;
       using T = double;
       py::class_<RigidTransform<T>>(m, "RigidTransform", doc.RigidTransform.doc)
           .def(py::init(), doc.ExampleClass.ctor.doc_3)

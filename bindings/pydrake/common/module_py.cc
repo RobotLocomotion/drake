@@ -27,7 +27,7 @@ void trigger_an_assertion_failure() {
 PYBIND11_MODULE(_module_py, m) {
   m.doc() = "Bindings for //common:common";
 
-  auto& doc = pydrake_doc.drake;
+  constexpr auto& doc = pydrake_doc.drake;
   m.attr("_HAVE_SPDLOG") = logging::kHaveSpdlog;
 
   py::enum_<drake::RandomDistribution>(m, "RandomDistribution",

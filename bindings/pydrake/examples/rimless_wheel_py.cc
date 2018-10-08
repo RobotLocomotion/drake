@@ -15,7 +15,7 @@ PYBIND11_MODULE(rimless_wheel, m) {
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::examples::rimless_wheel;
-  auto& doc = pydrake_doc.drake.examples.rimless_wheel;
+  constexpr auto& doc = pydrake_doc.drake.examples.rimless_wheel;
 
   m.doc() = "Bindings for the rimless_wheel example.";
 

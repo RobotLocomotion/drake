@@ -19,7 +19,7 @@ PYBIND11_MODULE(rendering, m) {
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::rendering;
-  auto& doc = pydrake_doc.drake.systems.rendering;
+  constexpr auto& doc = pydrake_doc.drake.systems.rendering;
 
   m.doc() = "Bindings for the rendering portion of the Systems framework.";
 

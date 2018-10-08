@@ -25,7 +25,7 @@ namespace pydrake {
 
 
 PYBIND11_MODULE(rigid_body_tree, m) {
-  auto& doc = pydrake_doc;
+  constexpr auto& doc = pydrake_doc;
 
   m.doc() = "Bindings for the RigidBodyTree class";
 
@@ -265,38 +265,38 @@ PYBIND11_MODULE(rigid_body_tree, m) {
     // Type (a) methods:
     tree_cls
       .def("massMatrix", &RigidBodyTree<double>::massMatrix<T>,
-           pydrake_doc.RigidBodyTree.massMatrix.doc)
+           doc.RigidBodyTree.massMatrix.doc)
       .def("centerOfMass", &RigidBodyTree<double>::centerOfMass<T>,
            py::arg("cache"),
            py::arg("model_instance_id_set") =
                RigidBodyTreeConstants::default_model_instance_id_set,
-           pydrake_doc.RigidBodyTree.centerOfMass.doc)
+           doc.RigidBodyTree.centerOfMass.doc)
       .def("transformVelocityToQDot", [](const RigidBodyTree<double>& tree,
                                           const KinematicsCache<T>& cache,
                                           const VectorX<T>& v) {
              return tree.transformVelocityToQDot(cache, v);
            },
-           pydrake_doc.RigidBodyTree.transformVelocityToQDot.doc)
+           doc.RigidBodyTree.transformVelocityToQDot.doc)
       .def("transformQDotToVelocity", [](const RigidBodyTree<double>& tree,
                                           const KinematicsCache<T>& cache,
                                           const VectorX<T>& qdot) {
              return tree.transformQDotToVelocity(cache, qdot);
            },
-           pydrake_doc.RigidBodyTree.transformQDotToVelocity.doc)
+           doc.RigidBodyTree.transformQDotToVelocity.doc)
       .def("GetVelocityToQDotMapping", [](const RigidBodyTree<double>& tree,
                                           const KinematicsCache<T>& cache) {
              return tree.GetVelocityToQDotMapping(cache);
            },
-           pydrake_doc.RigidBodyTree.GetVelocityToQDotMapping.doc)
+           doc.RigidBodyTree.GetVelocityToQDotMapping.doc)
       .def("GetQDotToVelocityMapping", [](const RigidBodyTree<double>& tree,
                                           const KinematicsCache<T>& cache) {
              return tree.GetQDotToVelocityMapping(cache);
            },
-           pydrake_doc.RigidBodyTree.GetQDotToVelocityMapping.doc)
+           doc.RigidBodyTree.GetQDotToVelocityMapping.doc)
       .def("dynamicsBiasTerm", &RigidBodyTree<double>::dynamicsBiasTerm<T>,
            py::arg("cache"), py::arg("external_wrenches"),
            py::arg("include_velocity_terms") = true,
-           pydrake_doc.RigidBodyTree.dynamicsBiasTerm.doc)
+           doc.RigidBodyTree.dynamicsBiasTerm.doc)
       .def("geometricJacobian",
            [](const RigidBodyTree<double>& tree,
               const KinematicsCache<T>& cache, int base_body_or_frame_ind,
@@ -312,7 +312,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
            py::arg("end_effector_body_or_frame_ind"),
            py::arg("expressed_in_body_or_frame_ind"),
            py::arg("in_terms_of_qdot") = false,
-           pydrake_doc.RigidBodyTree.geometricJacobian.doc)
+           doc.RigidBodyTree.geometricJacobian.doc)
       .def("relativeTransform", [](const RigidBodyTree<double>& tree,
                                     const KinematicsCache<T>& cache,
                                     int base_or_frame_ind,
@@ -322,14 +322,14 @@ PYBIND11_MODULE(rigid_body_tree, m) {
            },
            py::arg("cache"),
            py::arg("base_or_frame_ind"), py::arg("body_or_frame_ind"),
-           pydrake_doc.RigidBodyTree.relativeTransform.doc)
+           doc.RigidBodyTree.relativeTransform.doc)
       .def("centerOfMassJacobian",
            &RigidBodyTree<double>::centerOfMassJacobian<T>,
            py::arg("cache"),
            py::arg("model_instance_id_set") =
              RigidBodyTreeConstants::default_model_instance_id_set,
            py::arg("in_terms_of_qdot") = false,
-           pydrake_doc.RigidBodyTree.centerOfMassJacobian.doc)
+           doc.RigidBodyTree.centerOfMassJacobian.doc)
       // centroidalMomentumMatrix
       // forwardKinPositionGradient
       .def("geometricJacobianDotTimesV",
@@ -338,27 +338,27 @@ PYBIND11_MODULE(rigid_body_tree, m) {
            py::arg("base_body_or_frame_ind"),
            py::arg("end_effector_body_or_frame_ind"),
            py::arg("expressed_in_body_or_frame_ind"),
-           pydrake_doc.RigidBodyTree.geometricJacobianDotTimesV.doc)
+           doc.RigidBodyTree.geometricJacobianDotTimesV.doc)
       .def("centerOfMassJacobianDotTimesV",
            &RigidBodyTree<double>::centerOfMassJacobianDotTimesV<T>,
            py::arg("cache"),
            py::arg("model_instance_id_set") =
              RigidBodyTreeConstants::default_model_instance_id_set,
-           pydrake_doc.RigidBodyTree.centerOfMassJacobianDotTimesV.doc)
+           doc.RigidBodyTree.centerOfMassJacobianDotTimesV.doc)
       // centroidalMomentumMatrixDotTimesV
       .def("positionConstraints",
            &RigidBodyTree<double>::positionConstraints<T>,
            py::arg("cache"),
-           pydrake_doc.RigidBodyTree.positionConstraints.doc)
+           doc.RigidBodyTree.positionConstraints.doc)
       .def("positionConstraintsJacobian",
            &RigidBodyTree<double>::positionConstraintsJacobian<T>,
            py::arg("cache"),
            py::arg("in_terms_of_qdot") = true,
-           pydrake_doc.RigidBodyTree.positionConstraintsJacobian.doc)
+           doc.RigidBodyTree.positionConstraintsJacobian.doc)
       .def("positionConstraintsJacDotTimesV",
            &RigidBodyTree<double>::positionConstraintsJacDotTimesV<T>,
            py::arg("cache"),
-           pydrake_doc.RigidBodyTree.positionConstraintsJacDotTimesV.doc)
+           doc.RigidBodyTree.positionConstraintsJacDotTimesV.doc)
       // jointLimitConstriants
       .def("relativeTwist",
            &RigidBodyTree<double>::relativeTwist<T>,
@@ -366,7 +366,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
            py::arg("base_or_frame_ind"),
            py::arg("body_or_frame_ind"),
            py::arg("expressed_in_body_or_frame_ind"),
-           pydrake_doc.RigidBodyTree.relativeTwist.doc)
+           doc.RigidBodyTree.relativeTwist.doc)
       // worldMomentumMatrix
       // worldMomentumMatrixDotTimesV
       // transformSpatialAcceleration
@@ -374,13 +374,13 @@ PYBIND11_MODULE(rigid_body_tree, m) {
            [](const RigidBodyTree<double>* self, const VectorX<T>& v) {
              return self->frictionTorques(v);
            },
-           pydrake_doc.RigidBodyTree.frictionTorques.doc)
+           doc.RigidBodyTree.frictionTorques.doc)
       .def("inverseDynamics", &RigidBodyTree<double>::inverseDynamics<T>,
            py::arg("cache"),
            py::arg("external_wrenches"),
            py::arg("vd"),
            py::arg("include_velocity_terms") = true,
-           pydrake_doc.RigidBodyTree.inverseDynamics.doc)
+           doc.RigidBodyTree.inverseDynamics.doc)
       // resolveCenterOfPressure
       .def("transformVelocityMappingToQDotMapping",
            [](const RigidBodyTree<double>& tree,
@@ -388,14 +388,14 @@ PYBIND11_MODULE(rigid_body_tree, m) {
               const MatrixX<T>& Av) {
              return tree.transformVelocityMappingToQDotMapping(cache, Av);
            },
-           pydrake_doc.RigidBodyTree.transformVelocityMappingToQDotMapping.doc)
+           doc.RigidBodyTree.transformVelocityMappingToQDotMapping.doc)
       .def("transformQDotMappingToVelocityMapping",
            [](const RigidBodyTree<double>& tree,
               const KinematicsCache<T>& cache,
               const MatrixX<T>& Ap) {
              return tree.transformQDotMappingToVelocityMapping(cache, Ap);
            },
-           pydrake_doc.RigidBodyTree.transformQDotMappingToVelocityMapping.doc)
+           doc.RigidBodyTree.transformQDotMappingToVelocityMapping.doc)
       // relativeQuaternionJacobian
       // relativeRollPitchYawJacobian
       // relativeRollPitchYawJacobianDotTimesV
@@ -405,13 +405,13 @@ PYBIND11_MODULE(rigid_body_tree, m) {
                               const VectorX<T>& q) {
              return tree.doKinematics(q);
            },
-           pydrake_doc.RigidBodyTree.doKinematics.doc)
+           doc.RigidBodyTree.doKinematics.doc)
       .def("doKinematics", [](const RigidBodyTree<double>& tree,
                               const VectorX<T>& q,
                               const VectorX<T>& v) {
              return tree.doKinematics(q, v);
            },
-           pydrake_doc.RigidBodyTree.doKinematics.doc_2);
+           doc.RigidBodyTree.doKinematics.doc_2);
       // CreateKinematicsCacheWithType
       // ComputeMaximumDepthCollisionPoints
     // Type (b) methods:
@@ -425,7 +425,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
              return tree.transformPoints(
                  cache, points, from_body_or_frame_ind, to_body_or_frame_ind);
            },
-           pydrake_doc.RigidBodyTree.transformPoints.doc)
+           doc.RigidBodyTree.transformPoints.doc)
       .def("transformPointsJacobian",
            [](const RigidBodyTree<double>& tree,
               const KinematicsCache<T>& cache,
@@ -441,7 +441,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
            py::arg("from_body_or_frame_ind"),
            py::arg("to_body_or_frame_ind"),
            py::arg("in_terms_of_qdot"),
-           pydrake_doc.RigidBodyTree.transformPointsJacobian.doc)
+           doc.RigidBodyTree.transformPointsJacobian.doc)
       .def("transformPointsJacobianDotTimesV",
            [](const RigidBodyTree<double>& tree,
               const KinematicsCache<T>& cache,
@@ -454,7 +454,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
            py::arg("cache"), py::arg("points"),
            py::arg("from_body_or_frame_ind"),
            py::arg("to_body_or_frame_ind"),
-           pydrake_doc.RigidBodyTree.transformPointsJacobianDotTimesV.doc);
+           doc.RigidBodyTree.transformPointsJacobianDotTimesV.doc);
   };
   // Bind for double and AutoDiff.
   type_visit(

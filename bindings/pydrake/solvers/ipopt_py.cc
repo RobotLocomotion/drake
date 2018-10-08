@@ -9,7 +9,7 @@ namespace pydrake {
 
 PYBIND11_MODULE(ipopt, m) {
   using drake::solvers::IpoptSolver;
-  auto& doc = pydrake_doc.drake.solvers;
+  constexpr auto& doc = pydrake_doc.drake.solvers;
 
   m.doc() = "Ipopt solver bindings for MathematicalProgram";
 

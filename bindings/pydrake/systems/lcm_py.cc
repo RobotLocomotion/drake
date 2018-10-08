@@ -66,7 +66,7 @@ PYBIND11_MODULE(_lcm_py, m) {
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::lcm;
-  auto& doc = pydrake_doc.drake.systems.lcm;
+  constexpr auto& doc = pydrake_doc.drake.systems.lcm;
 
   py::module::import("pydrake.lcm");
   py::module::import("pydrake.systems.framework");

@@ -11,7 +11,7 @@ PYBIND11_MODULE(gurobi, m) {
   using drake::solvers::GurobiSolver;
 
   m.doc() = "Gurobi solver bindings for MathematicalProgram";
-  auto& doc = pydrake_doc.drake.solvers;
+  constexpr auto& doc = pydrake_doc.drake.solvers;
 
   py::object solverinterface =
       py::module::import("pydrake.solvers.mathematicalprogram").attr(

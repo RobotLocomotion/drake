@@ -17,7 +17,7 @@ PYBIND11_MODULE(compass_gait, m) {
   using namespace drake::examples::compass_gait;
 
   m.doc() = "Bindings for the compass gait example.";
-  auto& doc = pydrake_doc.drake.examples.compass_gait;
+  constexpr auto& doc = pydrake_doc.drake.examples.compass_gait;
 
   py::module::import("pydrake.systems.framework");
 

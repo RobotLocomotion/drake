@@ -33,11 +33,10 @@ PYBIND11_MODULE(primitives, m) {
   using namespace drake::systems;
 
   m.doc() = "Bindings for the primitives portion of the Systems framework.";
-  auto& doc = pydrake_doc.drake.systems;
+  constexpr auto& doc = pydrake_doc.drake.systems;
 
   py::module::import("pydrake.systems.framework");
-  // See # 9600
-  auto bind_common_scalar_types = [&](auto dummy) {
+  auto bind_common_scalar_types = [m](auto dummy) {
     using T = decltype(dummy);
 
     DefineTemplateClassWithDefault<Adder<T>, LeafSystem<T>>(
