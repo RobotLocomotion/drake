@@ -1027,7 +1027,8 @@ class RigidBodyTree {
       RigidBody<T>& body, const std::string& group_name);
 
   /// Retrieve a `const` pointer to an element of the collision model.
-  /// Note: The use of Find (instead of get) and the use of CamelCase both
+  ///
+  /// @note The use of Find (instead of get) and the use of CamelCase both
   /// imply a potential runtime cost are carried over from the collision model
   /// accessor method.
   const drake::multibody::collision::Element* FindCollisionElement(

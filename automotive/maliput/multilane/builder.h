@@ -532,7 +532,7 @@ class BuilderFactoryBase {
 ///  - Lanes: "l:" + Connection::id() + "_" + lane_index
 ///  - BranchPoints: "bp:" + branch_point_index
 ///
-/// Note: 'lane_index' is the index in the Segment, and 'branch_point_index' is
+/// @note 'lane_index' is the index in the Segment, and 'branch_point_index' is
 /// is the index in the RoadGeometry.
 class Builder : public BuilderBase {
  public:
