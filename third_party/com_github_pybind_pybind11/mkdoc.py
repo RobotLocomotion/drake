@@ -193,18 +193,25 @@ def process_comment(comment):
         'result': 'Returns',
         'returns': 'Returns',
         'return': 'Returns',
+        'attention': 'Attention',
         'authors': 'Authors',
         'author': 'Authors',
         'copyright': 'Copyright',
         'date': 'Date',
+        'exception': 'Raises',
+        'invariant': 'Invariant',
         'note': 'Note',
+        'post': 'Postcondition',
+        'pre': 'Precondition',
         'remarks': 'Remark',
         'remark': 'Remark',
         'sa': 'See also',
         'see': 'See also',
         'extends': 'Extends',
         'throws': 'Raises',
-        'throw': 'Raises'
+        'throw': 'Raises',
+        'todo': 'Todo',
+        'warning': 'Warning'
     }.items():
         s = re.sub(r'[@\\]%s\s*' % in_, r'\n\n$%s:\n\n' % out_, s)
 
