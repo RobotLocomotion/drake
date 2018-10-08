@@ -3,9 +3,10 @@ from __future__ import print_function, absolute_import
 from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.mathematicalprogram import SolverType
 
-import numpy as np
 import unittest
 import warnings
+
+import numpy as np
 
 import pydrake
 import pydrake.symbolic as sym
@@ -377,7 +378,7 @@ class TestMathematicalProgram(unittest.TestCase):
             self.assertTrue(np.isnan(prog.GetInitialGuess(x)).all())
 
         # Test setting individual variables
-        for i in xrange(count):
+        for i in range(count):
             prog.SetInitialGuess(x[i], x0[i])
             self.assertEqual(prog.GetInitialGuess(x[i]), x0[i])
         check_and_reset()

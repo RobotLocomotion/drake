@@ -1,6 +1,7 @@
 """Provides containers for tracking instantiations of C++ templates. """
 
 import inspect
+import six
 from types import MethodType
 
 from pydrake.util.cpp_param import get_param_names, get_param_canonical
@@ -61,7 +62,7 @@ class TemplateBase(object):
         self._module_name = module_name
         self._instantiation_func = None
 
-    def __getitem__(self, param):
+    def __getitem__(self, *param):
         """Gets concrete class associate with the given arguments.
 
         Can be one of the following forms:
@@ -71,6 +72,9 @@ class TemplateBase(object):
             template[[param0, param1, ...]]
             template[None]   (first instantiation, if `allow_default` is True)
         """
+        # For compatibility with Python3.
+        if len(param) == 1:
+            param = param[0]
         return self.get_instantiation(param)[0]
 
     # Unique token to signify that this instantiation is deferred when using
@@ -169,7 +173,7 @@ class TemplateBase(object):
             A set of instantiations.
         """
         param_list = []
-        for param, check in self._instantiation_map.iteritems():
+        for param, check in six.iteritems(self._instantiation_map):
             if check == instantiation:
                 param_list.append(param)
         return set(param_list)
@@ -320,7 +324,10 @@ class TemplateMethod(TemplateBase):
 
         def __getitem__(self, param):
             unbound = self._tpl[param]
-            bound = MethodType(unbound, self._obj, self._tpl._cls)
+            if six.PY2:
+                bound = MethodType(unbound, self._obj, self._tpl._cls)
+            else:
+                bound = MethodType(unbound, self._obj)
             return bound
 
         def __str__(self):

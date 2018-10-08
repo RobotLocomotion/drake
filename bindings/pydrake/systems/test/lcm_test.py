@@ -4,6 +4,7 @@ import collections
 import unittest
 
 import numpy as np
+from six import text_type as unicode
 
 from robotlocomotion import quaternion_t
 

@@ -34,6 +34,7 @@ GTEST_TEST(TypeSafeIndexTest, CheckCasting) {
     EXPECT_EQ(x, 10);
     return x;
   });
+  py::globals().attr("update")(m.attr("__dict__"));  // For Python3
   CheckValue("pass_thru_int(10)", 10);
   CheckValue("pass_thru_int(Index(10))", 10);
   // TypeSafeIndex<> is not implicitly constructible from an int.
@@ -46,6 +47,9 @@ GTEST_TEST(TypeSafeIndexTest, CheckCasting) {
     EXPECT_EQ(x, 10);
     return x;
   });
+
+  py::globals().attr("update")(m.attr("__dict__"));  // For Python3
+
   // TypeSafeIndex<> is not implicitly constructible from an int.
   // TODO(eric.cousineau): Consider relaxing this to *only* accept `int`s, and
   // puke if another `TypeSafeIndex<U>` is encountered.
