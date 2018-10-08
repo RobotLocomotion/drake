@@ -2050,9 +2050,10 @@ class MathematicalProgram {
    * Internally we will create a matrix Y as slack variables, such that Y(i, j)
    * represents the absolute value |X(i, j)| ∀ j ≠ i. The diagonal entries
    * Y(i, i) = X(i, i)
-   * The users can refer to DSOS and SDSOS Optimization: More Tractable
-   * Alternatives to Sum of Squares and Semidefinite Optimization by Amir Ali
-   * Ahmadi and Anirudha Majumdar.
+   * The users can refer to "DSOS and SDSOS Optimization: More Tractable
+   * Alternatives to Sum of Squares and Semidefinite Optimization" by Amir Ali
+   * Ahmadi and Anirudha Majumdar, with arXiv link
+   * https://arxiv.org/abs/1706.02586
    * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
    * X.
    * @return Y The slack variable. Y(i, j) represents |X(i, j)| ∀ j ≠ i, with
@@ -2073,17 +2074,21 @@ class MathematicalProgram {
    * i < j, such that all entries in Mⁱʲ are 0, except Mⁱʲ(i, i), Mⁱʲ(i, j),
    * Mⁱʲ(j, j). (Mⁱʲ(i, i), Mⁱʲ(j, j), Mⁱʲ(i, j)) is in the rotated
    * Lorentz cone, and X = ∑ᵢⱼ Mⁱʲ
-   * The users can refer to DSOS and SDSOS Optimization: More Tractable
-   * Alternatives to Sum of Squares and Semidefinite Optimization by Amir Ali
-   * Ahmadi and Anirudha Majumdar.
+   * The users can refer to "DSOS and SDSOS Optimization: More Tractable
+   * Alternatives to Sum of Squares and Semidefinite Optimization" by Amir Ali
+   * Ahmadi and Anirudha Majumdar, with arXiv link
+   * https://arxiv.org/abs/1706.02586.
    * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
    * X.
    * @pre X(i, j) should be a linear expression of decision variables.
-   * @return M for i < j, M[i][j] is the 2 x 2 symmetric matrix
+   * @return M A vector of vectors of 2 x 2 symmetric matrices M. For i < j, 
+   * M[i][j] is 
+   * <pre>
    * [Mⁱʲ(i, i), Mⁱʲ(i, j)]
-   * [Mⁱʲ(i, j), Mⁱʲ(j, j)]
+   * [Mⁱʲ(i, j), Mⁱʲ(j, j)].
+   * </pre>
    * Note that M[i][j](0, 1) = Mⁱʲ(i, j) = (X(i, j) + X(j, i)) / 2
-   * for i >= j, M[i][j] is 0 matrix.
+   * for i >= j, M[i][j] is the zero matrix.
    */
   std::vector<std::vector<Matrix2<symbolic::Expression>>>
   AddScaledDiagonallyDominantMatrixConstraint(
