@@ -9,9 +9,8 @@ def pycps_repository(
         name = name,
         # PR DRAFT: Update this once upstream PR lands.
         repository = "EricCousineau-TRI/pycps",
-        commit = "950204d236a6bbed101645ae31d4ad05516cf3bd",
-        sha256 = "d7ad2454be456d0d47915dbd3802bd7da3e921068d63b794df1c6144c1238285",  # noqa
-        local_repository_override = "/home/eacousineau/proj/tri/repo/externals/pycps",
+        commit = "2e204d055cf8d9fd79554dc61562c41ac169f11d",
+        sha256 = "8951f3150da599ae0074788e06eb1a8fb6d2f8a6c8e29e9b1ce1285f10b8c56e",  # noqa
         build_file = "@drake//tools/workspace/pycps:package.BUILD.bazel",
         mirrors = mirrors,
     )
