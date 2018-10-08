@@ -666,8 +666,8 @@ class TestSymbolicFormula(SymbolicTestCase):
         self.assertEqual(x != x, ff)
         if six.PY2:
             # Use `getattr` to avoid syntax error in Python3.
-            self.assertTrue(getattr(sym.Formula, "True") is tt)
-            self.assertTrue(getattr(sym.Formula, "False") is ff)
+            self.assertEqual(getattr(sym.Formula, "True")(), tt)
+            self.assertEqual(getattr(sym.Formula, "False")(), ff)
 
     def test_repr(self):
         self.assertEqual(repr(x > y), '<Formula "(x > y)">')
