@@ -25,6 +25,13 @@ void LoadFromSdf(
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph);
 
+/// Load the model from an URDF with a resource path stem of @p base_name into
+/// @p plant.
+void LoadFromUrdf(
+    const std::string& base_name,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph);
+
 }  // namespace test
 }  // namespace parsing
 }  // namespace multibody
