@@ -26,6 +26,17 @@ std::vector<double> ConvertToDoubles(const std::string& str) {
 
 }  // namespace
 
+bool ParseStringAttribute(const tinyxml2::XMLElement* node,
+                          const char* attribute_name, std::string* val) {
+  const char* attr = node->Attribute(attribute_name);
+  if (attr) {
+    *val = attr;
+    return true;
+  }
+  val->clear();
+  return false;
+}
+
 bool ParseScalarAttribute(const tinyxml2::XMLElement* node,
                           const char* attribute_name, double* val) {
   const char* attr = node->Attribute(attribute_name);
@@ -77,7 +88,7 @@ bool ParseVectorAttribute(const tinyxml2::XMLElement* node,
 }
 
 Eigen::Isometry3d OriginAttributesToTransform(
-    tinyxml2::XMLElement* node) {
+    const tinyxml2::XMLElement* node) {
 
   Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
   Eigen::Vector3d xyz = Eigen::Vector3d::Zero();

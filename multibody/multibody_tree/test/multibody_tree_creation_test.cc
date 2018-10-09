@@ -710,6 +710,18 @@ GTEST_TEST(WeldedBodies, CreateListOfWeldedBodies) {
 
   // Verify the computed list has the expected entries.
   EXPECT_EQ(welded_bodies_set, expected_welded_bodies);
+
+  EXPECT_TRUE(topology.IsBodyAnchored(model.world_body().index()));
+  for (const std::set<BodyIndex>& welded_set : expected_welded_bodies) {
+    const bool world_in_welded_set = welded_set.count(world_index) > 0;
+    for (const BodyIndex body : welded_set) {
+      if (world_in_welded_set) {
+        EXPECT_TRUE(topology.IsBodyAnchored(body));
+      } else {
+        EXPECT_FALSE(topology.IsBodyAnchored(body));
+      }
+    }
+  }
 }
 
 }  // namespace
