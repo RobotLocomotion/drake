@@ -661,7 +661,8 @@ TEST_F(KukaIiwaModelTests, CalcBiasForPointsGeometricJacobianExpressedInWorld) {
       tree().CalcBiasForPointsGeometricJacobianExpressedInWorld(
       *context_, *frame_H_, p_HPi);
 
-  EXPECT_EQ(Ab_WHp.size(), 3 * kNumPoints);
+  // Ab_WHp is of size 3⋅kNumPoints x num_velocities. CompareMatrices() below
+  // verifies this, in addition to the numerical values of each element.
   EXPECT_TRUE(CompareMatrices(Ab_WHp, Ab_WHp_expected,
                               kTolerance, MatrixCompareType::relative));
 
