@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<robot name='test_robot'>
+  <!-- This urdf file defines a simple test robot with multiple links so that
+       we can test visuals and collisions are properly added to each link.
+       Values in <inertial> are not important for this test model since
+       it's only to test the parsing of visuals and collisions into a
+       MultibodyPlant.
+       This file is meant to be kept in sync with the corresponding unit
+       test file multibody_plant_urdf_parser_test.cc -->
+  <link name='link1'>
+    <inertial>
+      <mass value="1"/>
+    </inertial>
+    <visual name='link1_visual1'>
+      <geometry>
+        <sphere radius="1.0"/>
+      </geometry>
+    </visual>
+    <visual name='link1_visual2'>
+      <geometry>
+        <mesh filename="tri_cube.obj"/>
+      </geometry>
+    </visual>
+
+    <collision name = 'link1_collision1'>
+      <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
+      <geometry>
+        <cylinder radius="0.5" length="2.0"/>
+      </geometry>
+      <drake_compliance>
+        <static_friction>0.8</static_friction>
+        <dynamic_friction>0.3</dynamic_friction>
+      </drake_compliance>
+    </collision>
+
+    <collision name = 'link1_collision2'>
+      <geometry>
+        <sphere radius="1.0"/>
+      </geometry>
+      <drake_compliance>
+        <static_friction>1.5</static_friction>
+        <dynamic_friction>0.6</dynamic_friction>
+      </drake_compliance>
+    </collision>
+  </link>
+
+  <!-- Link 2 has no collision geometry. -->
+  <link name='link2'>
+    <inertial>
+      <mass value="1"/>
+    </inertial>
+    <visual name='link2_visual1'>
+      <geometry>
+        <sphere radius="1.0"/>
+      </geometry>
+    </visual>
+    <visual name='link2_visual2'>
+      <geometry>
+        <cylinder radius="0.5" length="2.0"/>
+      </geometry>
+    </visual>
+    <visual name='link2_visual3'>
+      <geometry>
+        <box size="1 2 3"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <!-- Link 3 has no visuals. -->
+  <link name='link3'>
+    <inertial>
+      <mass value="1"/>
+    </inertial>
+    <collision name = 'link3_collision'>
+      <geometry>
+        <box size="1.0 2.0 3.0"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- For now at least, We care only that Drake's custom tag doesn't break
+       parsing the rest of the elements in this file. -->
+  <collision_filter_group name="filter_group1">
+    <member link="link1"/>
+    <member link="link2"/>
+  </collision_filter_group>
+</robot>
