@@ -187,6 +187,7 @@ class TemplateSystem(TemplateClass):
                     self, *args, converter=converter, **kwargs)
 
         cls.__init__ = system_init
+        return cls
 
     def _check_if_copying(self, obj, *args, **kwargs):
         # Checks if a function signature implies a copy constructor.
