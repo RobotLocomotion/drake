@@ -238,9 +238,26 @@ void init_module(py::module m) {
         .def("CalcRelativeTransform", &Class::CalcRelativeTransform,
              py::arg("context"), py::arg("frame_A"), py::arg("frame_B"),
              doc.MultibodyTree.CalcRelativeTransform.doc)
+        .def("num_frames", &Class::num_frames,
+             doc.MultibodyTree.num_frames.doc)
         .def("get_body", &Class::get_body, py::arg("body_index"),
               py_reference_internal,
               doc.MultibodyTree.get_body.doc)
+        .def("get_joint", &Class::get_joint, py::arg("joint_index"),
+              py_reference_internal,
+              doc.MultibodyTree.get_joint.doc)
+        .def("get_joint_actuator", &Class::get_joint_actuator,
+              py::arg("actuator_index"), py_reference_internal,
+              doc.MultibodyTree.get_joint_actuator.doc)
+        .def("get_frame", &Class::get_frame, py::arg("frame_index"),
+              py_reference_internal,
+              doc.MultibodyTree.get_frame.doc)
+        .def("GetModelInstanceName",
+              overload_cast_explicit<const string&, ModelInstanceIndex>(
+                &Class::GetModelInstanceName),
+              py::arg("model_instance"),
+              py_reference_internal,
+              doc.MultibodyTree.GetModelInstanceName.doc)
         .def("get_multibody_state_vector",
              [](const MultibodyTree<T>* self,
                 const Context<T>& context) -> Eigen::Ref<const VectorX<T>> {
@@ -469,11 +486,21 @@ void init_multibody_plant(py::module m) {
         .def("HasBodyNamed",
              overload_cast_explicit<bool, const string&>(&Class::HasBodyNamed),
              py::arg("name"), doc.MultibodyPlant.HasBodyNamed.doc)
+        .def("HasBodyNamed",
+             overload_cast_explicit<bool, const string&, ModelInstanceIndex>(
+                &Class::HasBodyNamed),
+             py::arg("name"), py::arg("model_instance"),
+             doc.MultibodyPlant.HasBodyNamed.doc_2)
         .def("HasJointNamed",
              overload_cast_explicit<bool, const string&>(
                 &Class::HasJointNamed),
              py::arg("name"),
              doc.MultibodyPlant.HasJointNamed.doc)
+        .def("HasJointNamed",
+             overload_cast_explicit<bool, const string&, ModelInstanceIndex>(
+                &Class::HasJointNamed),
+             py::arg("name"), py::arg("model_instance"),
+             doc.MultibodyPlant.HasJointNamed.doc_2)
         .def("GetFrameByName",
              overload_cast_explicit<const Frame<T>&, const string&>(
                  &Class::GetFrameByName),
@@ -502,11 +529,23 @@ void init_multibody_plant(py::module m) {
              },
              py::arg("name"), py_reference_internal,
              doc.MultibodyPlant.GetJointByName.doc)
+        .def("GetJointByName",
+             [](const Class* self, const string& name,
+                  ModelInstanceIndex model_instance) -> auto& {
+               return self->GetJointByName(name, model_instance);
+             },
+             py::arg("name"), py::arg("model_instance"), py_reference_internal,
+             doc.MultibodyPlant.GetJointByName.doc_2)
         .def("GetJointActuatorByName",
              overload_cast_explicit<const JointActuator<T>&, const string&>(
                 &Class::GetJointActuatorByName),
              py::arg("name"), py_reference_internal,
-             doc.MultibodyPlant.GetJointActuatorByName.doc);
+             doc.MultibodyPlant.GetJointActuatorByName.doc)
+        .def("GetModelInstanceByName",
+             overload_cast_explicit<ModelInstanceIndex, const string&>(
+                &Class::GetModelInstanceByName),
+             py::arg("name"), py_reference_internal,
+             doc.MultibodyPlant.GetModelInstanceByName.doc);
     // Geometry.
     cls
         .def("get_source_id", &Class::get_source_id,
