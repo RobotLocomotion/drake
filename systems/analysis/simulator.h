@@ -577,19 +577,9 @@ void Simulator<T>::StepTo(const T& boundary_time) {
   DRAKE_DEMAND(merged_events != nullptr);
   DRAKE_DEMAND(witnessed_events != nullptr);
 
-  // Merge events together.
+  // Clear events for the loop iteration.
   merged_events->Clear();
   merged_events->Merge(*per_step_events_);
-
-  // Publish before the loop begins.
-  HandlePublish(merged_events->get_publish_events());
-
-  // TODO(siyuan): transfer per step publish entirely to individual systems.
-  // Allow System a chance to produce some output.
-  if (get_publish_every_time_step()) {
-    system_.Publish(*context_);
-    ++num_publishes_;
-  }
 
   while (true) {
     // Starting a new step on the trajectory.
@@ -641,13 +631,10 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
     // TODO(sherm1) Constraint projection goes here.
 
-    // Stop looping if the boundary time is reached and there is no "sample hit"
-    // (i.e., event processing).
-    if (context_->get_time() >= boundary_time && !sample_time_hit)
-      break;
-
-    // Merge events together.
+    // Clear events for the next loop iteration.
     merged_events->Clear();
+
+    // Merge in per-step events.
     merged_events->Merge(*per_step_events_);
 
     // Only merge timed / witnessed events in if the sample time was hit.
@@ -665,7 +652,17 @@ void Simulator<T>::StepTo(const T& boundary_time) {
       system_.Publish(*context_);
       ++num_publishes_;
     }
+
+    // Stop looping if the boundary time is reached. We perform this check here
+    // rather than after publishing to prevent double per-step publishing at a
+    // single instance in time when StepTo() is called twice.
+    if (context_->get_time() >= boundary_time)
+      break;
   }
+
+  // If the sample time was hit, do any final unrestricted or discrete updates.
+  HandleUnrestrictedUpdate(merged_events->get_unrestricted_update_events());
+  HandleDiscreteUpdate(merged_events->get_discrete_update_events());
 
   // TODO(edrumwri): Add test coverage to complete #8490.
   redetermine_active_witnesses_ = true;

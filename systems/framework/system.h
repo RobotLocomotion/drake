@@ -348,6 +348,7 @@ class System : public SystemBase {
   void Publish(const Context<T>& context,
                const EventCollection<PublishEvent<T>>& events) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
+    std::cout << "Publish called at time: " << context.get_time() << std::endl;
     DispatchPublishHandler(context, events);
   }
 
