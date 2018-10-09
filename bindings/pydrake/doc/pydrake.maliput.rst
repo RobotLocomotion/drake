@@ -14,3 +14,4 @@ pydrake.maliput
 .. automodule:: pydrake.maliput
     :members:
     :undoc-members:
+    :show-inheritance:

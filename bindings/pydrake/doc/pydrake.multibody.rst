@@ -22,3 +22,4 @@ pydrake.multibody
 .. automodule:: pydrake.multibody
     :members:
     :undoc-members:
+    :show-inheritance:

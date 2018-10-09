@@ -13,3 +13,4 @@ pydrake.common
     :members:
     :imported-members:
     :undoc-members:
+    :show-inheritance:
