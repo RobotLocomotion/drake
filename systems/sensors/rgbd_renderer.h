@@ -162,7 +162,7 @@ class RgbdRenderer {
   const RenderingConfig& config() const;
 
   /// Returns the color palette of this renderer.
-  const ColorPalette& color_palette() const;
+  const ColorPalette<int>& color_palette() const;
 
  private:
   virtual void ImplAddFlatTerrain() = 0;
@@ -188,7 +188,7 @@ class RgbdRenderer {
   /// TODO(thduynguyen, SeanCurtis-TRI): This is a world's property (colors for
   /// each object/segment) hence should be moved to GeometrSystem. That would
   /// also answer the question whether this heavy object should be a singleton.
-  ColorPalette color_palette_;
+  ColorPalette<int> color_palette_;
 };
 
 }  // namespace sensors
