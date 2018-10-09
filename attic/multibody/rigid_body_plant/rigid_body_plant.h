@@ -341,10 +341,12 @@ class RigidBodyPlant : public LeafSystem<T> {
   }
 
   /// Returns the output port containing the state of a
-  /// particular model with instance ID equal to `model_instance_id`. Throws a
-  /// std::runtime_error if `model_instance_id` does not exist. This method can
-  /// only be called when this class is instantiated with constructor parameter
-  /// `export_model_instance_centric_ports` equal to `true`.
+  /// particular model with instance ID equal to `model_instance_id`.
+  /// @throws std::runtime_error if `model_instance_id` does not exist.
+  ///
+  /// This method can only be called when this class is instantiated with
+  /// constructor parameter `export_model_instance_centric_ports` equal to
+  /// `true`.
   const OutputPort<T>& model_instance_state_output_port(
       int model_instance_id) const;
 
@@ -401,7 +403,7 @@ class RigidBodyPlant : public LeafSystem<T> {
                           std::unique_ptr<const RigidBodyTree<double>> tree,
                           double timestep = 0.0);
 
-  // Evaluates the actuator command input ports and throws a runtime_error
+  // Evaluates the actuator command input ports and throws a std::runtime_error
   // exception if at least one of the ports is not connected.
   VectorX<T> EvaluateActuatorInputs(const Context<T>& context) const;
 

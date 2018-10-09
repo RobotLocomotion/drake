@@ -888,7 +888,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// called for all the child nodes of `this` node (and, by recursive
   /// precondition, all successor nodes in the tree.)
   ///
-  /// @throws when called on the _root_ node or `abc` is nullptr.
+  /// @throws std::exception when called on the _root_ node or `abc` is nullptr.
   void CalcArticulatedBodyInertiaCache_TipToBase(
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,

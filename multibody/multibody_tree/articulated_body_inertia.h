@@ -126,7 +126,7 @@ class ArticulatedBodyInertia {
   ///                   articulated body inertia. Only the lower triangular
   ///                   region is used and the strictly upper part is ignored.
   ///
-  /// @throws an exception in Debug builds if IsPhysicallyValid() for `this`
+  /// @throws std::exception in Debug builds if IsPhysicallyValid() for `this`
   /// inertia is `false`.
   template <typename Derived>
   explicit ArticulatedBodyInertia(const Eigen::MatrixBase<Derived>& matrix) {

@@ -58,14 +58,14 @@ class SceneGraphInspector {
   // is defined.
 
   /** Reports the name for the given source id.
-   @throws  std::logic_error if the identifier is invalid.  */
+   @throws std::logic_error if the identifier is invalid.  */
   const std::string& GetSourceName(SourceId id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->get_source_name(id);
   }
 
   /** Reports the id of the frame to which the given geometry id is registered.
-   @throws  std::logic_error if the geometry id is invalid.  */
+   @throws std::logic_error if the geometry id is invalid.  */
   FrameId GetFrameId(GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->GetFrameId(geometry_id);
@@ -73,7 +73,7 @@ class SceneGraphInspector {
 
   /** Returns the visual material of the geometry indicated by the given
    `geometry_id` (if it exists).
-   @throws  std::logic_error if the geometry id is invalid.  */
+   @throws std::logic_error if the geometry id is invalid.  */
   const VisualMaterial* GetVisualMaterial(GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->get_visual_material(geometry_id);

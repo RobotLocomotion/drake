@@ -45,7 +45,7 @@ class OrientationConstraint : public solvers::Constraint {
   // orientation and frame B's orientation. It is denoted as θ_bound in the
   // class documentation. @p theta_bound is in radians.
   // @pre angle_bound >= 0.
-  // @throw invalid_argument if angle_bound < 0.
+  // @throws std::invalid_argument if angle_bound < 0.
   // @param context The Context that has been allocated for this @p tree. We
   // will update the context when evaluating the constraint. @p context should
   // be alive during the lifetime of this constraint.

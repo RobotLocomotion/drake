@@ -26,7 +26,7 @@ class FindResourceResult {
   optional<std::string> get_absolute_path() const;
 
   /// Either returns the get_absolute_path() iff the resource was found,
-  /// or else throws runtime_error.
+  /// or else throws std::runtime_error.
   std::string get_absolute_path_or_throw() const;
 
   /// Returns the error message, iff the resource was not found.
@@ -76,8 +76,8 @@ class FindResourceResult {
 /// are accumulated each time this function is called. It is searched after the
 /// path given by the environment variable but before the path that can be
 /// found with the sentinel `.drake-resource-sentinel`. This can be used to
-/// find data in installed distributions of drake (or in `pydrake`). The given
-/// path must be absolute or else throws runtime_error.
+/// find data in installed distributions of drake (or in `pydrake`).
+/// @throws std::runtime_error if the given path is not absolute.
 void AddResourceSearchPath(std::string root_directory);
 
 /// Gets current root directory value from a persistent variable.

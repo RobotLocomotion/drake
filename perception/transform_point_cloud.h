@@ -38,7 +38,7 @@ class TransformPointCloud final : public systems::LeafSystem<double> {
   /// `src_frame_index` to the world frame. The `tree` object must remain
   /// valid for the duration of this object.
   ///
-  /// @throw std::logic_error if there is no "world" frame in `tree`.
+  /// @throws std::logic_error if there is no "world" frame in `tree`.
   TransformPointCloud(const RigidBodyTree<double>& tree, int src_frame_index);
 
   /// Returns the abstract valued input port that contains a PointCloud.

@@ -63,7 +63,7 @@ namespace simplerulebook {
 /// root, with an entry bearing the key "maliput_simple_rulebook_v1".
 /// Only this entry is parsed; any other content is ignored.
 ///
-/// Throws `std::runtime_error` on parse errors, or failure of `AddRule()`.
+/// @throws `std::runtime_error` on parse errors, or failure of `AddRule()`.
 /// Internally calls `YAML::Load(std::istream&)`, and thus does whatever
 /// throwing/asserting which that function does.
 // TODO(maddog@tri.global)  If/when it ever becomes ok to expose YAML::Node

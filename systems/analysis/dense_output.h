@@ -87,7 +87,7 @@ class DenseOutput {
   /// Returns the output size (i.e. the number of elements in an
   /// output value).
   /// @pre Output is not empty i.e. is_empty() equals false.
-  /// @throw std::logic_error if any of the preconditions is not met.
+  /// @throws std::logic_error if any of the preconditions is not met.
   int size() const {
     ThrowIfOutputIsEmpty(__func__);
     return this->do_size();

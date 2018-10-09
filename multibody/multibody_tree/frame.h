@@ -63,7 +63,7 @@ class Frame : public FrameBase<T> {
 
   /// Variant of CalcPoseInBodyFrame() that returns the fixed pose `X_BF` of
   /// `this` frame F in the body frame B associated with this frame.
-  /// Throws std::logic_error if called on a %Frame that does not have a
+  /// @throws std::logic_error if called on a %Frame that does not have a
   /// fixed offset in the body frame.
   // %Frame sub-classes that can represent the fixed pose of `this` frame F in
   // a body frame B, must override this method.
@@ -96,7 +96,7 @@ class Frame : public FrameBase<T> {
   /// Variant of CalcOffsetPoseInBody() that given the offset pose `X_FQ` of a
   /// frame Q in `this` frame F, returns the pose `X_BQ` of frame Q in the body
   /// frame B to which this frame is attached.
-  /// Throws std::logic_error if called on a %Frame that does not have a
+  /// @throws std::logic_error if called on a %Frame that does not have a
   /// fixed offset in the body frame.
   virtual Isometry3<T> GetFixedOffsetPoseInBody(
       const Isometry3<T>& X_FQ) const {

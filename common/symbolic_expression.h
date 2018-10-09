@@ -810,8 +810,8 @@ struct is_numeric<symbolic::Expression> {
 
 /// Returns the symbolic expression's value() as a double.
 ///
-/// @throws If it is not possible to evaluate the symbolic expression with an
-/// empty environment.
+/// @throws std::exception if it is not possible to evaluate the symbolic
+/// expression with an empty environment.
 double ExtractDoubleOrThrow(const symbolic::Expression& e);
 
 }  // namespace drake
@@ -920,7 +920,7 @@ namespace drake {
 namespace symbolic {
 
 /// Constructs a vector of variables from the vector of variable expressions.
-/// @throw std::logic_error if there is an expression in @p vec which is not a
+/// @throws std::logic_error if there is an expression in @p vec which is not a
 /// variable.
 VectorX<Variable> GetVariableVector(
     const Eigen::Ref<const VectorX<Expression>>& evec);

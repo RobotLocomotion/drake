@@ -66,7 +66,9 @@ class TrajectoryCar final : public systems::LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryCar)
 
   /// Constructs a TrajectoryCar system that traces a given two-dimensional @p
-  /// curve.  Throws an error if the curve is empty (has a zero @p path_length).
+  /// curve.
+  /// @throws std::invalid_argument if the curve is empty (has a zero
+  /// @p path_length).
   explicit TrajectoryCar(const Curve2<double>& curve)
       : systems::LeafSystem<T>(
             systems::SystemTypeTag<automotive::TrajectoryCar>{}),

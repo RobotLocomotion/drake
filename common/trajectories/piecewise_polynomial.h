@@ -261,18 +261,18 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * segment will be continuous. Note that the periodic end condition does
    * not require the first and last knot to be collocated, nor does it add
    * an additional knot to connect the first and last segments. Only first
-   * and second derivative continuity is enforced. 
-   * See https://en.wikipedia.org/wiki/Spline_interpolation, 
+   * and second derivative continuity is enforced.
+   * See https://en.wikipedia.org/wiki/Spline_interpolation,
    * https://www.math.uh.edu/~jingqiu/math4364/spline.pdf, and
    * http://www.maths.lth.se/na/courses/FMN081/FMN081-06/lecture11.pdf
    * for more about cubic splines and their end conditions.
    * The MATLAB files "spline.m" and "csape.m" are also good references.
    *
-   * @p breaks and @p knots must have at least 3 elements. The "not-a-knot" 
-   * condition is ill-defined for two knots, and the "periodic" condition 
+   * @p breaks and @p knots must have at least 3 elements. The "not-a-knot"
+   * condition is ill-defined for two knots, and the "periodic" condition
    * would produce a straight line (use `FirstOrderHold` for this instead).
    *
-   * @param periodic_end_condition Determines whether the "not-a-knot" 
+   * @param periodic_end_condition Determines whether the "not-a-knot"
    * (`false`) or the periodic spline (`true`) end condition is used.
    *
    * @throws std::runtime_error if
@@ -411,8 +411,9 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   /// Checks if a PiecewisePolynomial is approximately equal to this one.
   /**
    * Checks that every coefficient of `other` is within `tol` of the
-   * corresponding coefficient of this PiecewisePolynomial. Throws an exception
-   * if any Polynomial in either PiecewisePolynomial is not univariate.
+   * corresponding coefficient of this PiecewisePolynomial.
+   * @throws std::exception if any Polynomial in either PiecewisePolynomial is
+   * not univariate.
    */
   bool isApprox(const PiecewisePolynomial& other, double tol) const;
 
@@ -420,12 +421,13 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   /// from current start_time() to @p other end_time().
   ///
   /// @param other PiecewisePolynomial instance to concatenate.
-  /// @throw std::runtime_error if trajectories' dimensions do not match
-  ///                           each other (either rows() or cols() does
-  ///                           not match between this and @p other).
-  /// @throw std::runtime_error if this end_time() and @p other start_time() are
-  ///                           not within PiecewiseTrajectory<T>::kEpsilonTime
-  ///                           from each other.
+  /// @throws std::runtime_error if trajectories' dimensions do not match
+  ///                            each other (either rows() or cols() does
+  ///                            not match between this and @p other).
+  /// @throws std::runtime_error if this end_time() and @p other start_time()
+  ///                            are not within
+  ///                            PiecewiseTrajectory<T>::kEpsilonTime from
+  ///                            each other.
   void ConcatenateInTime(const PiecewisePolynomial& other);
 
   void shiftRight(double offset);

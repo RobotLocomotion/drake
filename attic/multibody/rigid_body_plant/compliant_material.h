@@ -112,9 +112,9 @@ class CompliantMaterial {
   /** Reset the dissipation value to report the default value. */
   void set_dissipation_to_default() { dissipation_ = nullopt; }
 
-  /** Sets *both* coefficients of friction to the same value. Throws an
-   exception if the value is negative.  Returns a reference to `*this` so that
-   multiple invocations of `set` can be chained together. */
+  /** Sets *both* coefficients of friction to the same value.
+   @throws std::exception if the value is negative.  Returns a reference to
+   `*this` so that multiple invocations of `set` can be chained together. */
   CompliantMaterial& set_friction(double value);
 
   /** Sets the two coefficients of friction. The `dynamic_friction` values must

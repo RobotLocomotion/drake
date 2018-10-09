@@ -39,8 +39,8 @@ class Model {
 
    @return A pointer to the added element.
 
-   @throws A runtime_error if there was a problem (e.g., duplicate element id,
-   error configuring collision model, etc.) **/
+   @throws std::runtime_error if there was a problem (e.g., duplicate element
+   id, error configuring collision model, etc.) **/
   Element* AddElement(std::unique_ptr<Element> element);
 
   /** Removes a collision element from this model.

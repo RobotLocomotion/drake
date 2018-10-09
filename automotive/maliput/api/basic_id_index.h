@@ -25,33 +25,34 @@ class BasicIdIndex : public RoadGeometry::IdIndex {
 
   /// Adds @p lane to the index.
   ///
-  /// @throws if @p lane's id() already exists in the index.
+  /// @throws std::exception if @p lane's id() already exists in the index.
   /// @pre @p lane is not nullptr.
   void AddLane(const Lane* lane);
 
   /// Adds @p segment to the index.
   ///
-  /// @throws if @p segment's id() already exists in the index.
+  /// @throws std::exception if @p segment's id() already exists in the index.
   /// @pre @p segment is not nullptr.
   void AddSegment(const Segment* segment);
 
   /// Adds @p junction to the index.
   ///
-  /// @throws if @p junction's id() already exists in the index.
+  /// @throws std::exception if @p junction's id() already exists in the index.
   /// @pre @p junction is not nullptr.
   void AddJunction(const Junction* junction);
 
   /// Adds @p branch_point to the index.
   ///
-  /// @throws if @p branch_point's id() already exists in the index.
+  /// @throws std::exception if @p branch_point's id() already exists in the
+  /// index.
   /// @pre @p branch_point is not nullptr.
   void AddBranchPoint(const BranchPoint* branch_point);
 
   /// Walks the object graph rooted at @p road_geometry and adds all
   /// components (Lane, Segment, Junction, BranchPoint) to the index.
   ///
-  /// @throws if the graph of @p road_geometry contains any duplicate id's,
-  ///         or if any of its id's already exist in the index.
+  /// @throws std::exception if the graph of @p road_geometry contains any
+  /// duplicate id's, or if any of its id's already exist in the index.
   /// @pre @p road_geometry is not nullptr.
   void WalkAndAddAll(const RoadGeometry* road_geometry);
 

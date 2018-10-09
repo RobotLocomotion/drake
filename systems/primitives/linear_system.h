@@ -69,8 +69,8 @@ class LinearSystem : public AffineSystem<T> {
   /// Creates a unique pointer to LinearSystem<T> by decomposing @p dynamics and
   /// @p outputs using @p state_vars and @p input_vars.
   ///
-  /// @throws runtime_error if either @p dynamics or @p outputs is not linear in
-  /// @p state_vars and @p input_vars.
+  /// @throws std::runtime_error if either @p dynamics or @p outputs is not
+  /// linear in @p state_vars and @p input_vars.
   static std::unique_ptr<LinearSystem<T>> MakeLinearSystem(
       const Eigen::Ref<const VectorX<symbolic::Expression>>& dynamics,
       const Eigen::Ref<const VectorX<symbolic::Expression>>& output,

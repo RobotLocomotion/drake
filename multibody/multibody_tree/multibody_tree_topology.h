@@ -562,8 +562,8 @@ class MultibodyTreeTopology {
   ///
   /// @throws std::runtime_error if either `in_frame` or `out_frame` do not
   /// index frame topologies in `this` %MultibodyTreeTopology.
-  /// @throws a std::runtime_error if `in_frame == out_frame`.
-  /// @throws a std::runtime_error if `in_frame` and `out_frame` already are
+  /// @throws std::runtime_error if `in_frame == out_frame`.
+  /// @throws std::runtime_error if `in_frame` and `out_frame` already are
   /// connected by another mobilizer. More than one mobilizer between two frames
   /// is not allowed.
   /// @throws std::logic_error if Finalize() was already called on `this`

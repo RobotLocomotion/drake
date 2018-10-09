@@ -159,8 +159,8 @@ class Builder {
   /// @param segment_id The RNDF segment ID.
   /// @param connections A collection of Connections representing each RNDF lane
   /// in the segment.
-  /// @throw std::runtime_error When @p connections is a nullptr.
-  /// @throw std::runtime_error When @p connections is an empty collection.
+  /// @throws std::runtime_error When @p connections is a nullptr.
+  /// @throws std::runtime_error When @p connections is an empty collection.
   void CreateSegmentConnections(int segment_id,
                                 std::vector<Connection>* connections);
 
@@ -176,8 +176,8 @@ class Builder {
   /// fake inner lanes' lane bounds).
   /// @param perimeter_waypoints A collection of DirectedWaypoint objects
   /// describing the zone's perimeter.
-  /// @throw std::runtime_error When @p perimeter_waypoints is a nullptr.
-  /// @throw std::runtime_error When @p perimeter_waypoints is an empty
+  /// @throws std::runtime_error When @p perimeter_waypoints is a nullptr.
+  /// @throws std::runtime_error When @p perimeter_waypoints is an empty
   /// collection.
   void CreateConnectionsForZones(
       double width, std::vector<DirectedWaypoint>* perimeter_waypoints);
@@ -188,7 +188,7 @@ class Builder {
   /// @param width The connection's width.
   /// @param exit_id The start waypoint ID of the connection.
   /// @param entry_id The end waypoint ID of the connection.
-  /// @throw std::runtime_error When neither @p exit_id nor @p entry_id are
+  /// @throws std::runtime_error When neither @p exit_id nor @p entry_id are
   /// found.
   void CreateConnection(double width, const ignition::rndf::UniqueId& exit_id,
                         const ignition::rndf::UniqueId& entry_id);
@@ -200,7 +200,7 @@ class Builder {
   /// a Lane is added to the Segment. BranchPoints are updated as needed.
   /// @param id ID of the api::RoadGeometry to be built.
   /// @return The built api::RoadGeometry.
-  /// @throw std::runtime_error When the built RoadGeometry does not satisfy
+  /// @throws std::runtime_error When the built RoadGeometry does not satisfy
   /// Maliput roads' constraints (see api::RoadGeometry::CheckInvariants()).
   std::unique_ptr<const api::RoadGeometry> Build(const api::RoadGeometryId& id);
 

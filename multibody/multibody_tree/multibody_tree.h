@@ -387,7 +387,7 @@ class MultibodyTree {
   ///
   /// @throws std::logic_error if `mobilizer` is a nullptr.
   /// @throws std::logic_error if Finalize() was already called on `this` tree.
-  /// @throws a std::runtime_error if the new mobilizer attempts to connect a
+  /// @throws std::runtime_error if the new mobilizer attempts to connect a
   /// frame with itself.
   /// @throws std::runtime_error if attempting to connect two bodies with more
   /// than one mobilizer between them.
@@ -475,7 +475,7 @@ class MultibodyTree {
   /// class).
   ///
   /// @throws std::logic_error if Finalize() was already called on `this` tree.
-  /// @throws a std::runtime_error if the new mobilizer attempts to connect a
+  /// @throws std::runtime_error if the new mobilizer attempts to connect a
   /// frame with itself.
   /// @throws std::runtime_error if attempting to connect two bodies with more
   /// than one mobilizer between them.
@@ -690,7 +690,8 @@ class MultibodyTree {
   ///       Vector3d::UnitZ());     /* revolute axis in this case */
   /// @endcode
   ///
-  /// @throws if `this` model already contains a joint with the given `name`.
+  /// @throws std::exception if `this` model already contains a joint with the
+  /// given `name`.
   /// See HasJointNamed(), Joint::name().
   ///
   /// @see The Joint class's documentation for further details on how a Joint
@@ -740,8 +741,9 @@ class MultibodyTree {
   ///   The Joint to be actuated by the new JointActuator.
   /// @returns A constant reference to the new JointActuator just added, which
   /// will remain valid for the lifetime of `this` %MultibodyTree.
-  /// @throws if `this` model already contains a joint actuator with the given
-  /// `name`. See HasJointActuatorNamed(), JointActuator::get_name().
+  /// @throws std::exception if `this` model already contains a joint actuator
+  /// with the given `name`. See HasJointActuatorNamed(),
+  /// JointActuator::get_name().
   // TODO(amcastro-tri): consider adding sugar method to declare an actuated
   // joint with a single call. Maybe MBT::AddActuatedJoint() or the like.
   const JointActuator<T>& AddJointActuator(
@@ -912,8 +914,8 @@ class MultibodyTree {
   }
 
   /// Returns a constant reference to the body with unique index `body_index`.
-  /// @throws if `body_index` does not correspond to a body in this multibody
-  /// tree.
+  /// @throws std::exception if `body_index` does not correspond to a body in
+  /// this multibody tree.
   const Body<T>& get_body(BodyIndex body_index) const {
     DRAKE_THROW_UNLESS(body_index < num_bodies());
     return *owned_bodies_[body_index];
@@ -929,8 +931,8 @@ class MultibodyTree {
 
   /// Returns a constant reference to the joint actuator with unique index
   /// `actuator_index`.
-  /// @throws if `actuator_index` does not correspond to a joint actuator in
-  /// this multibody tree.
+  /// @throws std::exception if `actuator_index` does not correspond to a joint
+  /// actuator in this multibody tree.
   const JointActuator<T>& get_joint_actuator(
       JointActuatorIndex actuator_index) const {
     DRAKE_THROW_UNLESS(actuator_index < num_actuators());
@@ -938,8 +940,8 @@ class MultibodyTree {
   }
 
   /// Returns a constant reference to the frame with unique index `frame_index`.
-  /// @throws if `frame_index` does not correspond to a frame in `this`
-  /// multibody tree.
+  /// @throws std::exception if `frame_index` does not correspond to a frame in
+  /// `this` multibody tree.
   const Frame<T>& get_frame(FrameIndex frame_index) const {
     DRAKE_THROW_UNLESS(frame_index < num_frames());
     return *frames_[frame_index];
@@ -994,7 +996,7 @@ class MultibodyTree {
   /// @returns `true` if a body named `name` was added to @p model_instance.
   /// @see AddRigidBody().
   ///
-  /// @throws if @p model_instance is not valid for this model.
+  /// @throws std::exception if @p model_instance is not valid for this model.
   bool HasBodyNamed(const std::string& name,
                     ModelInstanceIndex model_instance) const {
     DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
@@ -1029,7 +1031,7 @@ class MultibodyTree {
   /// @returns `true` if a frame named `name` was added to @p model_instance.
   /// @see AddFrame().
   ///
-  /// @throws if @p model_instance is not valid for this model.
+  /// @throws std::exception if @p model_instance is not valid for this model.
   bool HasFrameNamed(const std::string& name,
                      ModelInstanceIndex model_instance) const {
     DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
@@ -1060,7 +1062,7 @@ class MultibodyTree {
   /// @returns `true` if a joint named `name` was added to @p model_instance.
   /// @see AddJoint().
   ///
-  /// @throws if @p model_instance is not valid for this model.
+  /// @throws std::exception if @p model_instance is not valid for this model.
   bool HasJointNamed(const std::string& name,
                      ModelInstanceIndex model_instance) const {
     DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
@@ -1092,7 +1094,7 @@ class MultibodyTree {
   /// @p model_instance.
   /// @see AddJointActuator().
   ///
-  /// @throws if @p model_instance is not valid for this model.
+  /// @throws std::exception if @p model_instance is not valid for this model.
   bool HasJointActuatorNamed(const std::string& name,
                              ModelInstanceIndex model_instance) const {
     DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
@@ -1568,7 +1570,7 @@ class MultibodyTree {
   ///   `nullptr`. Vector `X_WB` is resized when needed to have size
   ///   num_bodies().
   ///
-  /// @throws if X_WB is nullptr.
+  /// @throws std::exception if X_WB is nullptr.
   void CalcAllBodyPosesInWorld(
       const systems::Context<T>& context,
       std::vector<Isometry3<T>>* X_WB) const;
@@ -1587,7 +1589,7 @@ class MultibodyTree {
   ///   `V_WB` is `nullptr`. Vector `V_WB` is resized when needed to have size
   ///   num_bodies().
   ///
-  /// /// @throws if V_WB is nullptr.
+  /// @throws std::exception if V_WB is nullptr.
   void CalcAllBodySpatialVelocitiesInWorld(
       const systems::Context<T>& context,
       std::vector<SpatialVelocity<T>>* V_WB) const;
@@ -1655,8 +1657,8 @@ class MultibodyTree {
   ///   The body B for which the pose is requested.
   /// @retval X_WB
   ///   The pose of body frame B in the world frame W.
-  /// @throws if Finalize() was not called on `this` model or if `body_B` does
-  /// not belong to this model.
+  /// @throws std::exception if Finalize() was not called on `this` model or if
+  /// `body_B` does not belong to this model.
   const Isometry3<T>& EvalBodyPoseInWorld(
       const systems::Context<T>& context,
       const Body<T>& body_B) const;
@@ -1668,8 +1670,8 @@ class MultibodyTree {
   ///   The body B for which the spatial velocity is requested.
   /// @returns V_WB
   ///   The spatial velocity of body frame B in the world frame W.
-  /// @throws if Finalize() was not called on `this` model or if `body_B` does
-  /// not belong to this model.
+  /// @throws std::exception if Finalize() was not called on `this` model or if
+  /// `body_B` does not belong to this model.
   const SpatialVelocity<T>& EvalBodySpatialVelocityInWorld(
       const systems::Context<T>& context,
       const Body<T>& body_B) const;
@@ -1727,9 +1729,9 @@ class MultibodyTree {
   ///   have size `3⋅np x nv` or this method throws a std::runtime_error
   ///   exception.
   ///
-  /// @throws an exception if the output `p_WQi_set` is nullptr or does not have
-  /// the same size as the input array `p_BQi_set`.
-  /// @throws an exception if `Jv_WQi` is nullptr or if it does not have the
+  /// @throws std::exception if the output `p_WQi_set` is nullptr or does not
+  ///  have the same size as the input array `p_BQi_set`.
+  /// @throws std::exception if `Jv_WQi` is nullptr or if it does not have the
   /// appropriate size, see documentation for `Jv_WQi` for details.
   // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
   // most applications it is all we need and it is more efficient to compute.
@@ -1774,7 +1776,7 @@ class MultibodyTree {
   ///   have size `3⋅np x nv` or this method throws a std::runtime_error
   ///   exception.
   ///
-  /// @throws an exception if `Jv_WQi` is nullptr or if it does not have the
+  /// @throws std::exception if `Jv_WQi` is nullptr or if it does not have the
   /// appropriate size, see documentation for `Jv_WQi` for details.
   // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
   // most applications it is all we need and it is more efficient to compute.
@@ -1860,7 +1862,8 @@ class MultibodyTree {
   ///     SpatialVelocity<double> Jv_WF_times_v(Jv_WF * v);
   ///   </pre>
   ///
-  /// @throws if `J_WF` is nullptr or if it is not of size `6 x nv`.
+  /// @throws std::exception if `J_WF` is nullptr or if it is not of size
+  ///   `6 x nv`.
   void CalcFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BoFo_B,
