@@ -643,7 +643,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
     // Stop looping if the boundary time is reached and there is no "sample hit"
     // (i.e., event processing).
-    if (context_->get_time() > boundary_time && !sample_time_hit)
+    if (context_->get_time() >= boundary_time && !sample_time_hit)
       break;
 
     // Merge events together.
