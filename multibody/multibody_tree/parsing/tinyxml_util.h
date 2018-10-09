@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include <Eigen/Dense>
 #include <tinyxml2.h>
 
@@ -7,6 +9,13 @@ namespace drake {
 namespace multibody {
 namespace parsing {
 namespace detail {
+
+/// Parses a string attribute of @p node named @p attribute_name into @p val.
+/// If the attribute is not present, @p val will be cleared.
+///
+/// @returns false if the attribute is not present
+bool ParseStringAttribute(const tinyxml2::XMLElement* node,
+                          const char* attribute_name, std::string* val);
 
 /// Parses a scalar attribute of @p node named @p attribute_name into @p val.
 ///
@@ -45,7 +54,8 @@ bool ParseVectorAttribute(const tinyxml2::XMLElement* node,
 ///
 /// @throws std::invalid_argument if the "xyz" or "rpy" attributes are
 /// malformed.
-Eigen::Isometry3d OriginAttributesToTransform(tinyxml2::XMLElement* node);
+Eigen::Isometry3d OriginAttributesToTransform(
+    const tinyxml2::XMLElement* node);
 
 /// Parses a three vector value from parameter @p node, which is an
 /// XML node. The value is specified by an attribute within the XML
