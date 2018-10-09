@@ -258,7 +258,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
   // `rigid_body_tree.cc`; if the method is not yet bound, the name has a
   // comment as a placeholder.
   // Methods of type (b) are declared below methods of type (a).
-  auto add_rigid_body_tree_typed_methods = [m, &tree_cls](auto dummy) {
+  // N.B. Capturing `&doc` should not be required; workaround per #9600.
+  auto add_rigid_body_tree_typed_methods = [m, &doc, &tree_cls](auto dummy) {
     // N.B. The header files use `Scalar` as the scalar-type template
     // parameter, but `T` is used here for brevity.
     using T = decltype(dummy);

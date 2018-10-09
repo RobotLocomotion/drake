@@ -26,7 +26,7 @@ PYBIND11_MODULE(automotive, m) {
   using namespace drake::automotive;
 
   m.doc() = "Bindings for Automotive systems";
-  auto& doc = pydrake_doc.drake.automotive;
+  constexpr auto& doc = pydrake_doc.drake.automotive;
 
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.rendering");
