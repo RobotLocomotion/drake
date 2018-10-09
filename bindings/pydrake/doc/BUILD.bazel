@@ -6,6 +6,12 @@ load("@drake//tools/skylark:drake_py.bzl", "drake_py_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:drake_runfiles_binary.bzl", "drake_runfiles_binary")
 
+py_library(
+    name = "sphinx_pydrake",
+    srcs = ["sphinx_pydrake.py"],
+    imports = ["."],
+)
+
 # We need pydrake to be in the PYTHONPATH for sphinx.ext.autodoc to generate
 # API documentation.
 # TODO(jamiesnape): Can we avoid the need to re-compile pydrake for the host
@@ -14,7 +20,10 @@ drake_py_binary(
     name = "sphinx_build_wrapper",
     srcs = ["sphinx_build_wrapper.py"],
     data = ["@sphinx//:sphinx-build"],
-    deps = ["//bindings/pydrake"],
+    deps = [
+        ":sphinx_pydrake",
+        "//bindings/pydrake",
+    ],
 )
 
 drake_runfiles_binary(
@@ -40,6 +49,7 @@ genrule(
         "$(location :sphinx_build) -b html",  # HTML output.
         "-a -E -d $(@D)/.doctrees/",  # Don't use caching.
         "-N -Q",  # Be very quiet.
+        "-T",  # Traceback.
         "$$(dirname $(location conf.py))",  # Source dir.
         "$(@D)/.tmpout",  # Output dir.
         "&&",
