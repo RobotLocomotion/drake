@@ -195,8 +195,7 @@ void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarParams<T>& params,
   // Don't allow small negative velocities to affect position or heading.
   const T nonneg_velocity = max(T(0), state.velocity());
 
-  auto value = nonneg_velocity * cos(state.heading());
-  rates->set_x(value);
+  rates->set_x(nonneg_velocity * cos(state.heading());
   rates->set_y(nonneg_velocity * sin(state.heading()));
   rates->set_heading(curvature * nonneg_velocity);
   rates->set_velocity(smooth_acceleration);
