@@ -46,7 +46,7 @@ void RgbdRenderer::RenderLabelImage(ImageLabel16I* label_image_out) const {
 
 const RenderingConfig& RgbdRenderer::config() const { return config_; }
 
-const ColorPalette& RgbdRenderer::color_palette() const {
+const ColorPalette<int>& RgbdRenderer::color_palette() const {
   return color_palette_;
 }
 
