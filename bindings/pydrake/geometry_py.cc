@@ -32,7 +32,7 @@ void BindIdentifier(py::module m, const std::string& name) {
 PYBIND11_MODULE(geometry, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
-  auto& doc = pydrake_doc.drake.geometry;
+  constexpr auto& doc = pydrake_doc.drake.geometry;
 
   py::module::import("pydrake.systems.framework");
   py::class_<SceneGraph<T>, LeafSystem<T>>(m, "SceneGraph", doc.SceneGraph.doc)

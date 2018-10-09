@@ -21,7 +21,7 @@ PYBIND11_MODULE(math, m) {
   using namespace drake::math;
 
   m.doc() = "Bindings for //math.";
-  auto& doc = pydrake_doc.drake.math;
+  constexpr auto& doc = pydrake_doc.drake.math;
 
   py::module::import("pydrake.util.eigen_geometry");
 

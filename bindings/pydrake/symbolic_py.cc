@@ -23,7 +23,7 @@ using std::string;
 PYBIND11_MODULE(_symbolic_py, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::symbolic;
-  auto& doc = pydrake_doc.drake.symbolic;
+  constexpr auto& doc = pydrake_doc.drake.symbolic;
 
   // Install NumPy warning filtres.
   // N.B. This may interfere with other code, but until that is a confirmed
