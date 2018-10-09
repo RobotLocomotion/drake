@@ -13,7 +13,7 @@ namespace pydrake {
 PYBIND11_MODULE(trajectories, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::trajectories;
-  auto& doc = pydrake_doc.drake.trajectories;
+  constexpr auto& doc = pydrake_doc.drake.trajectories;
 
   using T = double;
 

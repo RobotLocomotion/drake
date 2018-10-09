@@ -17,7 +17,7 @@ namespace pydrake {
 PYBIND11_MODULE(lcm, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::lcm;
-  auto& doc = pydrake_doc.drake.lcm;
+  constexpr auto& doc = pydrake_doc.drake.lcm;
 
   // Use `py::bytes` as a mid-point between C++ LCM (`void* + int` /
   // `vector<uint8_t>`) and Python LCM (`str`).

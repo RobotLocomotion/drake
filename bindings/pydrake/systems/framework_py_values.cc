@@ -26,7 +26,8 @@ void DefineFrameworkPyValues(py::module m) {
   using namespace drake::systems;
   constexpr auto& doc = pydrake_doc.drake.systems;
 
-  auto bind_common_scalar_types = [m](auto dummy) {
+  // N.B. Capturing `&doc` should not be required; workaround per #9600.
+  auto bind_common_scalar_types = [m, &doc](auto dummy) {
     using T = decltype(dummy);
     // Value types.
     DefineTemplateClassWithDefault<VectorBase<T>>(
