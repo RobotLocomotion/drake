@@ -26,6 +26,7 @@ drake_cc_package_library(
     name = "parsing",
     deps = [
         ":multibody_plant_sdf_parser",
+        ":multibody_plant_urdf_parser",
         ":package_map",
         ":parser_common",
         ":parser_path_utils",
@@ -158,6 +159,26 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    # TODO(sam.creasey) Add the rest of the parsing code to this
+    # library once the PR for urdf_geometry is merged.
+    name = "multibody_plant_urdf_parser",
+    srcs = [
+        "urdf_geometry.cc",
+    ],
+    hdrs = [
+        "urdf_geometry.h",
+    ],
+    deps = [
+        ":package_map",
+        ":parser_common",
+        ":parser_path_utils",
+        ":tinyxml_util",
+        "//multibody/multibody_tree/multibody_plant",
+        "@tinyxml2",
+    ],
+)
+
+drake_cc_library(
     name = "test_loaders",
     testonly = 1,
     srcs = [
@@ -235,6 +256,18 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "urdf_geometry_test",
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        ":multibody_plant_urdf_parser",
+        "//common:find_resource",
+        "//common/test_utilities",
     ],
 )
 
