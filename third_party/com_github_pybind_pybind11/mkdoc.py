@@ -189,23 +189,30 @@ def process_comment(comment):
     s = re.sub(r'[@\\]retval\s+%s' % cpp_group,
                r'\n\n$Returns ``\1``:\n\n', s)
 
-    for in_, out_ in {
-        'result': 'Returns',
-        'returns': 'Returns',
-        'return': 'Returns',
-        'authors': 'Authors',
-        'author': 'Authors',
-        'copyright': 'Copyright',
-        'date': 'Date',
-        'note': 'Note',
-        'remarks': 'Remark',
-        'remark': 'Remark',
-        'sa': 'See also',
-        'see': 'See also',
-        'extends': 'Extends',
-        'throws': 'Raises',
-        'throw': 'Raises'
-    }.items():
+    for in_, out_ in (
+        ('result', 'Returns'),
+        ('returns', 'Returns'),
+        ('return', 'Returns'),
+        ('attention', 'Attention'),
+        ('authors', 'Authors'),
+        ('author', 'Authors'),
+        ('copyright', 'Copyright'),
+        ('date', 'Date'),
+        ('exception', 'Raises'),
+        ('invariant', 'Invariant'),
+        ('note', 'Note'),
+        ('post', 'Postcondition'),
+        ('pre', 'Precondition'),
+        ('remarks', 'Remark'),
+        ('remark', 'Remark'),
+        ('sa', 'See also'),
+        ('see', 'See also'),
+        ('extends', 'Extends'),
+        ('throws', 'Raises'),
+        ('throw', 'Raises'),
+        ('todo', 'Todo'),
+        ('warning', 'Warning'),
+    ):
         s = re.sub(r'[@\\]%s\s*' % in_, r'\n\n$%s:\n\n' % out_, s)
 
     s = re.sub(r'[@\\]details\s*', r'\n\n', s)
