@@ -14,6 +14,7 @@ namespace examples {
 namespace kuka_iiwa_arm {
 
 static const int kNumJoints = 7;
+using Eigen::VectorXd;
 
 GTEST_TEST(IiwaLcmTest, IiwaCommandReceiverTest) {
   IiwaCommandReceiver dut;
@@ -139,46 +140,97 @@ GTEST_TEST(IiwaLcmTest, IiwaStatusReceiverTest) {
       dut.AllocateOutput();
 
   lcmt_iiwa_status status{};
+
+  // Confirm that output is zero for uninitialized lcm input.
+  {
+    context->FixInputPort(
+        0, std::make_unique<systems::Value<lcmt_iiwa_status>>(status));
+    dut.CalcOutput(*context, output.get());
+
+    // Loop through the six output ports that have size kNumJoints.  They are
+    // the first six.
+    for (int i = 0; i < 6; i++) {
+      EXPECT_TRUE(CompareMatrices(output->get_vector_data(i)->get_value(),
+                                  VectorXd::Zero(kNumJoints)));
+    }
+    EXPECT_TRUE(CompareMatrices(
+        output->get_vector_data(dut.get_state_output_port().get_index())
+            ->get_value(),
+        VectorXd::Zero(kNumJoints * 2)));
+  }
+
   status.num_joints = kNumJoints;
-  status.joint_position_measured.resize(status.num_joints, 0);
-  status.joint_velocity_estimated.resize(status.num_joints, 0);
   status.joint_position_commanded.resize(status.num_joints, 0.1);
+  status.joint_position_measured.resize(status.num_joints, 0);
   status.joint_position_ipo.resize(status.num_joints, 0);
+  status.joint_velocity_estimated.resize(status.num_joints, 0);
   status.joint_torque_measured.resize(status.num_joints, 0);
   status.joint_torque_commanded.resize(status.num_joints, 0);
   status.joint_torque_external.resize(status.num_joints, 0);
 
-  Eigen::VectorXd delta(kNumJoints);
-  delta << 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007;
+  const VectorXd position_commanded = VectorXd::LinSpaced(kNumJoints, 0, 1);
+  const VectorXd position_measured = VectorXd::LinSpaced(kNumJoints, 2, 3);
+  const VectorXd velocity_estimated = VectorXd::LinSpaced(kNumJoints, 4, 5);
+  const VectorXd torque_commanded = VectorXd::LinSpaced(kNumJoints, 6, 7);
+  const VectorXd torque_measured = VectorXd::LinSpaced(kNumJoints, 8, 9);
+  const VectorXd torque_external = VectorXd::LinSpaced(kNumJoints, 10, 11);
   for (int i = 0; i < kNumJoints; i++) {
-    status.joint_position_measured[i] += delta(i);
-    status.joint_velocity_estimated[i] = delta(i) / kIiwaLcmStatusPeriod;
+    status.joint_position_commanded[i] = position_commanded(i);
+    status.joint_position_measured[i] = position_measured(i);
+    status.joint_velocity_estimated[i] = velocity_estimated(i);
+    status.joint_torque_commanded[i] = torque_commanded(i);
+    status.joint_torque_measured[i] = torque_measured(i);
+    status.joint_torque_external[i] = torque_external(i);
   }
 
   context->FixInputPort(
       0, std::make_unique<systems::Value<lcmt_iiwa_status>>(status));
 
-  std::unique_ptr<systems::DiscreteValues<double>> update =
-      dut.AllocateDiscreteVariables();
-  update->SetFrom(context->get_mutable_discrete_state());
-  dut.CalcDiscreteVariableUpdates(*context, update.get());
-  context->get_mutable_discrete_state().SetFrom(*update);
-
   dut.CalcOutput(*context, output.get());
-  const auto measured = output->get_vector_data(
-      dut.get_measured_position_output_port().get_index())->get_value();
-  const auto commanded = output->get_vector_data(
-      dut.get_commanded_position_output_port().get_index())->get_value();
 
-  const double tol = 1e-10;
   EXPECT_TRUE(CompareMatrices(
-      delta, measured.head(kNumJoints), tol, MatrixCompareType::absolute));
+      output
+          ->get_vector_data(
+              dut.get_position_commanded_output_port().get_index())
+          ->get_value(),
+      position_commanded));
   EXPECT_TRUE(CompareMatrices(
-      delta / kIiwaLcmStatusPeriod, measured.tail(kNumJoints),
-      tol, MatrixCompareType::absolute));
+      output
+          ->get_vector_data(
+              dut.get_position_measured_output_port().get_index())
+          ->get_value(),
+      position_measured));
   EXPECT_TRUE(CompareMatrices(
-      Eigen::VectorXd::Ones(kNumJoints)  * 0.1, commanded,
-      tol, MatrixCompareType::absolute));
+      output
+          ->get_vector_data(
+              dut.get_velocity_estimated_output_port().get_index())
+          ->get_value(),
+      velocity_estimated));
+  EXPECT_TRUE(CompareMatrices(
+      output
+          ->get_vector_data(
+              dut.get_torque_commanded_output_port().get_index())
+          ->get_value(),
+      torque_commanded));
+  EXPECT_TRUE(CompareMatrices(
+      output
+          ->get_vector_data(
+              dut.get_torque_measured_output_port().get_index())
+          ->get_value(),
+      torque_measured));
+  EXPECT_TRUE(CompareMatrices(
+      output
+          ->get_vector_data(
+              dut.get_torque_external_output_port().get_index())
+          ->get_value(),
+      torque_external));
+
+  VectorXd state(kNumJoints * 2);
+  state << position_measured, velocity_estimated;
+  EXPECT_TRUE(CompareMatrices(
+      output->get_vector_data(dut.get_state_output_port().get_index())
+          ->get_value(),
+      state));
 }
 
 GTEST_TEST(IiwaLcmTest, IiwaStatusSenderTest) {
