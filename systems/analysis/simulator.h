@@ -640,8 +640,10 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // Clear events for the next loop iteration.
     merged_events->Clear();
 
-    // Merge in per-step events.
-    merged_events->Merge(*per_step_events_);
+    // Merge in per-step events if this is not the last step.
+    const bool last_step = (context_->get_time() >= boundary_time);
+    if (!last_step)
+      merged_events->Merge(*per_step_events_);
 
     // Only merge timed / witnessed events in if the sample time was hit.
     if (sample_time_hit) {
@@ -659,19 +661,15 @@ void Simulator<T>::StepTo(const T& boundary_time) {
       ++num_publishes_;
     }
 
-    // Stop looping if the boundary time is reached. We perform this check here
-    // rather than after publishing to prevent double per-step publishing at a
-    // single instance in time when StepTo() is called twice.
-    if (context_->get_time() >= boundary_time)
+    // Break out of the loop after timed and witnessed events are merged in
+    // to the event collection and after any publishes.
+    if (last_step)
       break;
   }
 
   // Do any final unrestricted or discrete updates from timed or witnessed
   // events, only if the sample time was hit.
   if (sample_time_hit) {
-    merged_events->Clear();
-    merged_events->Merge(*timed_events);
-    merged_events->Merge(*witnessed_events);
     HandleUnrestrictedUpdate(merged_events->get_unrestricted_update_events());
     HandleDiscreteUpdate(merged_events->get_discrete_update_events());
   }

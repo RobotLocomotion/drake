@@ -49,9 +49,6 @@ class DummySys : public LeafSystem<double> {
   }
 
  private:
-//  void DoPublish(const Context<double>& context,
-//                 const std::vector<const systems::PublishEvent<double>*>&
-//                     events) const override {
     void DoCalcDiscreteVariableUpdates(
       const Context<double>& context,
       const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
@@ -76,7 +73,7 @@ class DummySys : public LeafSystem<double> {
   mutable std::vector<double> received_time_{0};
 };
 
-// Generates the log file and populates it through LCM outputs.
+// Generates the log file and populates it using LCM outputs (publishes).
 void GenerateLog() {
   drake::lcm::DrakeLcmLog w_log("test.log", true);
   auto pub0 = LcmPublisherSystem::Make<lcmt_drake_signal>("Ch0", &w_log);

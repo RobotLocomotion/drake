@@ -1538,6 +1538,8 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
   ASSERT_EQ(sys.get_discrete_update_times().size(), N);
   ASSERT_EQ(sys.get_unrestricted_update_times().size(), N);
   for (size_t i = 0; i < publish_times.size(); ++i) {
+    // Publish happens at the end of a step; unrestricted and discrete
+    // updates happen at the beginning of a step.
     EXPECT_NEAR(publish_times[i], (i + 1) * dt, 1e-12);
     EXPECT_NEAR(discrete_update_times[i], i * dt, 1e-12);
     EXPECT_NEAR(unrestricted_update_times[i], i * dt, 1e-12);
