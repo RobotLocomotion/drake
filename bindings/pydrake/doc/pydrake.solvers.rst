@@ -18,3 +18,4 @@ pydrake.solvers
 .. automodule:: pydrake.solvers
     :members:
     :undoc-members:
+    :show-inheritance:

@@ -16,3 +16,4 @@ pydrake.examples
 .. automodule:: pydrake.examples
     :members:
     :undoc-members:
+    :show-inheritance:

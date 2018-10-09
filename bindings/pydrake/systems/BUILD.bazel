@@ -243,6 +243,7 @@ PY_LIBRARIES_WITH_INSTALL = [
 
 PY_LIBRARIES = [
     ":drawing_py",
+    ":scalar_conversion_py",
     ":module_py",
 ]
 

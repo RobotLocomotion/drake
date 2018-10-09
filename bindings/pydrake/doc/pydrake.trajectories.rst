@@ -6,3 +6,4 @@ pydrake.trajectories
 .. automodule:: pydrake.trajectories
     :members:
     :undoc-members:
+    :show-inheritance:

@@ -7,3 +7,4 @@ pydrake.symbolic
     :members:
     :imported-members:
     :undoc-members:
+    :show-inheritance:

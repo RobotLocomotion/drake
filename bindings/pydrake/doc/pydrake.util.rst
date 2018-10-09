@@ -20,3 +20,4 @@ pydrake.util
 .. automodule:: pydrake.util
     :members:
     :undoc-members:
+    :show-inheritance:

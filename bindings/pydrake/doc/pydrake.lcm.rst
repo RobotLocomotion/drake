@@ -6,3 +6,4 @@ pydrake.lcm
 .. automodule:: pydrake.lcm
     :members:
     :undoc-members:
+    :show-inheritance:

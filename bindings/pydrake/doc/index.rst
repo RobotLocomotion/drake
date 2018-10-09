@@ -28,3 +28,4 @@ pydrake
 .. automodule:: pydrake
     :members:
     :undoc-members:
+    :show-inheritance:

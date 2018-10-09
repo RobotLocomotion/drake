@@ -6,3 +6,4 @@ pydrake.automotive
 .. automodule:: pydrake.automotive
     :members:
     :undoc-members:
+    :show-inheritance:

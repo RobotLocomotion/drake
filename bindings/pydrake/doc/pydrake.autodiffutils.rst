@@ -7,3 +7,4 @@ pydrake.autodiffutils
     :members:
     :imported-members:
     :undoc-members:
+    :show-inheritance:

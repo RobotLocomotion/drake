@@ -6,3 +6,4 @@ pydrake.multibody.collision
 .. automodule:: pydrake.multibody.collision
     :members:
     :undoc-members:
+    :show-inheritance:
