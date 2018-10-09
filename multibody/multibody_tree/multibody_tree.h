@@ -2302,6 +2302,9 @@ class MultibodyTree {
   /// positions for `user_to_joint_index_map[0]` are first, followed by the
   /// positions for `user_to_joint_index_map[1]`, etc. Similarly for the
   /// selected velocities vₛ.
+  ///
+  /// @throws std::logic_error if there are repeated indexes in
+  /// `user_to_joint_index_map`.
   // TODO(amcastro-tri): consider having an extra `free_body_index_map`
   // so that users could also re-order free bodies if they wanted to.
   MatrixX<double> MakeStateSelectorMatrix(
@@ -2309,8 +2312,9 @@ class MultibodyTree {
 
   /// Alternative signature to build a state selector matrix from a std::vector
   /// of joint names.
-  /// See MakeStateSelectorMatrix(const std::vector<JointIndex>&) for details.
-  /// The joint names in `selected_joints` must be unique within this model.
+  /// See MakeStateSelectorMatrixFromJointNames(const std::vector<JointIndex>&)
+  /// for details.
+  /// `selected_joints` must not contain any duplicates.
   ///
   /// A user specifies the preferred order in the selected states vector xₛ via
   /// `selected_joints`. The selected state is built such that selected
@@ -2320,12 +2324,10 @@ class MultibodyTree {
   /// `selected_joints[0]` are first, followed by the positions for
   /// `selected_joints[1]`, etc. Similarly for the selected velocities vₛ.
   ///
-  /// @throws std::logic_error if there are repeated names in `selected_joints`.
+  /// @throws std::logic_error if there are any duplicates in `selected_joints`.
   /// @throws std::logic_error if there is no joint in the model with a name
   /// specified in `selected_joints`.
-  /// @throws std::logic_error if any of the joint names occurs in multiple
-  /// models.
-  MatrixX<double> MakeStateSelectorMatrix(
+  MatrixX<double> MakeStateSelectorMatrixFromJointNames(
       const std::vector<std::string>& selected_joints) const;
 
   /// This method allows user to map a vector `uₛ` containing the actuation
@@ -2355,7 +2357,6 @@ class MultibodyTree {
   /// `user_to_joint_index_map` are actuated.
   /// See MakeActuatorSelectorMatrix(const std::vector<JointActuatorIndex>&) for
   /// details.
-  /// @pre Each joint in `user_to_joint_index_map` has an actuator.
   /// @throws std::logic_error if any of the joints in
   /// `user_to_joint_index_map` does not have an actuator.
   MatrixX<double> MakeActuatorSelectorMatrix(

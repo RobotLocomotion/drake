@@ -1170,6 +1170,17 @@ MatrixX<double> MultibodyTree<T>::MakeStateSelectorMatrix(
     const std::vector<JointIndex>& user_to_joint_index_map) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
 
+  // We create a set in order to verify that joint indexes appear only once.
+  std::unordered_set<JointIndex> already_selected_joints;
+  for (const auto& joint_index : user_to_joint_index_map) {
+    const bool inserted = already_selected_joints.insert(joint_index).second;
+    if (!inserted) {
+      throw std::logic_error(
+          "Joint named '" + get_joint(joint_index).name() +
+              "' is repeated multiple times.");
+    }
+  }
+
   // Determine the size of the vector of "selected" states xₛ.
   int num_selected_positions = 0;
   int num_selected_velocities = 0;
@@ -1212,20 +1223,10 @@ MatrixX<double> MultibodyTree<T>::MakeStateSelectorMatrix(
 }
 
 template <typename T>
-MatrixX<double> MultibodyTree<T>::MakeStateSelectorMatrix(
+MatrixX<double> MultibodyTree<T>::MakeStateSelectorMatrixFromJointNames(
     const std::vector<std::string>& selected_joints) const {
-  // We create a set as we scan selected_joints in order to verify that joint
-  // names in selected_joints appear only once.
-  std::unordered_set<std::string> joints_set;
-
-  // Vector of joint indexes in the order specified in selected_joints.
   std::vector<JointIndex> selected_joints_indexes;
   for (const auto& joint_name : selected_joints) {
-    const auto insertion_result = joints_set.insert(joint_name);
-    if (!insertion_result.second) {
-      throw std::logic_error(
-          "Joint named '" + joint_name + "' is repeated multiple times.");
-    }
     selected_joints_indexes.push_back(GetJointByName(joint_name).index());
   }
   return MakeStateSelectorMatrix(selected_joints_indexes);
@@ -1242,7 +1243,7 @@ MatrixX<double> MultibodyTree<T>::MakeActuatorSelectorMatrix(
   // the full vector of actuators: u = Sᵤ⋅uₛ.
   MatrixX<double> Su =
       MatrixX<double>::Zero(num_actuated_dofs(), num_selected_actuators);
-  int user_index(0);
+  int user_index = 0;
   for (JointActuatorIndex actuator_index : user_to_actuator_index_map) {
     Su(actuator_index, user_index) = 1.0;
     ++user_index;
