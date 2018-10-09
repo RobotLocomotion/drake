@@ -245,7 +245,7 @@ class Mesh : public Geometry {
         neighbors.
      3. Decomposed triangles must have an area larger than 10⁻¹⁰ m².
 
-  NOTE: The triangulation method is simple.  Even if these requirements are met,
+  @note The triangulation method is simple.  Even if these requirements are met,
   triangulation might fail.
 
   @param[out] vertices Vector of 3D vertices in the mesh.

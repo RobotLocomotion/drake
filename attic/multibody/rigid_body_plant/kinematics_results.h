@@ -20,7 +20,7 @@ class RigidBodyPlant;
 ///  - double
 ///  - AutoDiffXd
 ///
-/// Note: The templated ScalarTypes are used in the KinematicsCache, but all
+/// @note The templated ScalarTypes are used in the KinematicsCache, but all
 /// KinematicsResults use RigidBodyTree<double>.  This effectively implies
 /// that we can e.g. AutoDiffXd with respect to the configurations, but not
 /// the RigidBodyTree parameters.

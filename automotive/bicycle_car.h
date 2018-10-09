@@ -29,7 +29,7 @@ namespace automotive {
 ///  - x-position of the center of mass sx [m]
 ///  - y-position of the center of mass sy [m]
 ///
-/// N.B. "slip angle" (β) is the angle made between the body and the velocity
+/// @note "slip angle" (β) is the angle made between the body and the velocity
 /// vector.  Thus, the velocity vector can be resolved into the body-relative
 /// componenets `vx_body = cos(β)` and `vy_body = sin(β)`.  `β = 0` means the
 /// velocity vector is pointing along the bicycle's longitudinal axis.
