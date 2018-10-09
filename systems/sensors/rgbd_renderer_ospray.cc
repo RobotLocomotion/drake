@@ -184,8 +184,8 @@ void RgbdRendererOSPRay::Impl::ImplAddFlatTerrain() {
   vtkNew<vtkPolyDataMapper> mapper;
   mapper->SetInputConnection(plane->GetOutputPort());
   terrain_actor_->SetMapper(mapper.GetPointer());
-  auto color =
-      ColorPalette::Normalize(parent_->color_palette().get_terrain_color());
+  auto color = ColorPalette<int>::Normalize(
+      parent_->color_palette().get_terrain_color());
 
   terrain_actor_->GetProperty()->SetColor(color.r, color.g, color.b);
   terrain_actor_->GetProperty()->LightingOff();
