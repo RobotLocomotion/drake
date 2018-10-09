@@ -45,7 +45,7 @@ LcmPlanInterpolator::LcmPlanInterpolator(const std::string& model_path,
       builder.ExportOutput(command_sender->get_output_port(0));
 
   // Connect the subsystems.
-  builder.Connect(status_receiver->get_measured_position_output_port(),
+  builder.Connect(status_receiver->get_state_output_port(),
                   robot_plan_interpolator_->get_state_input_port());
   builder.Connect(robot_plan_interpolator_->get_output_port(0),
                   target_demux->get_input_port(0));
