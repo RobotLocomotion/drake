@@ -41,7 +41,7 @@ class SpeedLimitRule {
   /// @param max maximum speed
   ///
   /// `min` and `max` must be non-negative, and `min` must be less than
-  /// or equal to `max`, otherwise a runtime_error is thrown.
+  /// or equal to `max`, otherwise a std::runtime_error is thrown.
   SpeedLimitRule(const Id& id, const LaneSRange& zone, Severity severity,
                  double min, double max)
       : id_(id), zone_(zone), severity_(severity), min_(min), max_(max) {

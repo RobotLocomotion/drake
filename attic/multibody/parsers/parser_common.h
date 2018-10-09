@@ -53,7 +53,7 @@ struct FloatingJointConstants {
  *
  * @return The number of floating joint added to this rigid body tree.
  *
- * @throws A std::runtime_error if the floating_base_type is unrecognized or
+ * @throws std::runtime_error if the floating_base_type is unrecognized or
  * zero floating joints were added to the model.
  */
 int AddFloatingJoint(

@@ -33,14 +33,14 @@ class GazeTargetConstraint : public solvers::Constraint {
   // @param n_A The directional vector representing the center ray of the cone,
   // expressed in frame A.
   // @pre @p n_A cannot be a zero vector.
-  // @throw invalid_argument is n_A is close to a zero vector.
+  // @throws std::invalid_argument is n_A is close to a zero vector.
   // @param frameB_idx The frame where the target point T is fixed to.
   // @param p_BT The position of the target point T, measured and expressed in
   // frame B.
   // @param cone_half_angle The half angle of the cone. We denote it as θ in the
   // class documentation. @p cone_half_angle is in radians.
   // @pre @p 0 <= cone_half_angle <= pi.
-  // @throw invalid_argument if cone_half_angle is outside of the bound.
+  // @throws std::invalid_argument if cone_half_angle is outside of the bound.
   // @param context The Context that has been allocated for this @p tree. We
   // will update the context when evaluating the constraint. @p context should
   // be alive during the lifetime of this constraint.

@@ -345,11 +345,11 @@ class ConstraintSolver {
   ///           CalcContactForcesInContactFrames(). `cf` will be resized as
   ///           necessary.
   /// @pre Constraint data has been computed.
-  /// @throws a std::runtime_error if the constraint forces cannot be computed
+  /// @throws std::runtime_error if the constraint forces cannot be computed
   ///         (due to, e.g., the effects of roundoff error in attempting to
   ///         solve a complementarity problem); in such cases, it is
   ///         recommended to increase regularization and attempt again.
-  /// @throws a std::logic_error if `cf` is null.
+  /// @throws std::logic_error if `cf` is null.
   void SolveImpactProblem(const ConstraintVelProblemData<T>& problem_data,
                           VectorX<T>* cf) const;
 
@@ -406,9 +406,9 @@ class ConstraintSolver {
   ///           CalcContactForcesInContactFrames(). `cf` will be resized as
   ///           necessary.
   /// @pre Constraint data has been computed.
-  /// @throws a std::runtime_error if the constraint forces cannot be computed
+  /// @throws std::runtime_error if the constraint forces cannot be computed
   ///         (due to, e.g., an "inconsistent" rigid contact configuration).
-  /// @throws a std::logic_error if `cf` is null.
+  /// @throws std::logic_error if `cf` is null.
   void SolveConstraintProblem(const ConstraintAccelProblemData<T>& problem_data,
                               VectorX<T>* cf) const;
 

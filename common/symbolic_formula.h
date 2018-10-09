@@ -164,8 +164,8 @@ class Formula {
 
   /** Evaluates under a given environment (by default, an empty environment).
    *
-   * @throws runtime_error if a variable `v` is needed for an evaluation but not
-   * provided by @p env.
+   * @throws std::runtime_error if a variable `v` is needed for an evaluation
+   * but not provided by @p env.
    */
   bool Evaluate(const Environment& env = Environment{}) const;
 

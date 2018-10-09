@@ -37,7 +37,7 @@ class Curve2 {
   typedef Eigen::Matrix<T, 2, 1, Eigen::DontAlign> Point2T;
 
   /// Constructor that traces through the given @p waypoints in order.
-  /// Throws an error if @p waypoints.size() == 1.
+  /// @throws std::exception if @p waypoints.size() == 1.
   explicit Curve2(const std::vector<Point2>& waypoints)
       : waypoints_(waypoints), path_length_(GetLength(waypoints_)) {
     // TODO(jwnimmer-tri) We should reject duplicate adjacent

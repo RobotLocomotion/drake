@@ -105,7 +105,7 @@ class DifferentialInverseKinematicsParameters {
   /// @{
   /**
    * Sets timestep to @p dt.
-   * @throws if dt <= 0.
+   * @throws std::exception if dt <= 0.
    */
   void set_timestep(double dt) {
     DRAKE_THROW_UNLESS(dt > 0);
@@ -115,7 +115,7 @@ class DifferentialInverseKinematicsParameters {
   /**
    * Sets the max magnitude of the velocity in the unconstrained degree of
    * freedom to @p limit.
-   * @throws if limit < 0.
+   * @throws std::exception if limit < 0.
    */
   void set_unconstrained_degrees_of_freedom_velocity_limit(double limit) {
     DRAKE_THROW_UNLESS(limit >= 0);
@@ -124,7 +124,7 @@ class DifferentialInverseKinematicsParameters {
 
   /**
    * Sets the nominal joint position.
-   * @throws if @p nominal_joint_position's dimension differs.
+   * @throws std::exception if @p nominal_joint_position's dimension differs.
    */
   void set_nominal_joint_position(
       const Eigen::Ref<const VectorX<double>>& nominal_joint_position) {
@@ -135,7 +135,8 @@ class DifferentialInverseKinematicsParameters {
   /**
    * Sets the end effector gains in the body frame. Gains can be used to
    * specify relative importance among different dimensions.
-   * @throws if any element of @p gain_E is larger than 1 or smaller than 0.
+   * @throws std::exception if any element of @p gain_E is larger than 1 or
+   * smaller than 0.
    */
   void set_end_effector_velocity_gain(const Vector6<double>& gain_E) {
     DRAKE_THROW_UNLESS((gain_E.array() >= 0).all() &&
@@ -147,9 +148,9 @@ class DifferentialInverseKinematicsParameters {
    * Sets the joint position limits.
    * @param q_bounds The first element is the lower bound, and the second is
    * the upper bound.
-   * @throws if the first or second element of @p q_bounds has the wrong
-   * dimension or any element of the second element is smaller than its
-   * corresponding part in the first element.
+   * @throws std::exception if the first or second element of @p q_bounds has
+   * the wrong dimension or any element of the second element is smaller than
+   * its corresponding part in the first element.
    */
   void set_joint_position_limits(
       const std::pair<VectorX<double>, VectorX<double>>& q_bounds) {
@@ -164,9 +165,9 @@ class DifferentialInverseKinematicsParameters {
    * Sets the joint velocity limits.
    * @param q_bounds The first element is the lower bound, and the second is
    * the upper bound.
-   * @throws if the first or second element of @p q_bounds has the wrong
-   * dimension or any element of the second element is smaller than its
-   * corresponding part in the first element.
+   * @throws std::exception if the first or second element of @p q_bounds has
+   * the wrong dimension or any element of the second element is smaller than
+   * its corresponding part in the first element.
    */
   void set_joint_velocity_limits(
       const std::pair<VectorX<double>, VectorX<double>>& v_bounds) {
@@ -181,9 +182,9 @@ class DifferentialInverseKinematicsParameters {
    * Sets the joint acceleration limits.
    * @param q_bounds The first element is the lower bound, and the second is
    * the upper bound.
-   * @throws if the first or second element of @p q_bounds has the wrong
-   * dimension or any element of the second element is smaller than its
-   * corresponding part in the first element.
+   * @throws std::exception if the first or second element of @p q_bounds has
+   * the wrong dimension or any element of the second element is smaller than
+   * its corresponding part in the first element.
    */
   void set_joint_acceleration_limits(
       const std::pair<VectorX<double>, VectorX<double>>& vd_bounds) {

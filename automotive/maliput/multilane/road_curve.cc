@@ -29,7 +29,7 @@ struct ArcLengthDerivativeFunction {
   // @return The arc length derivative value at the specified point.
   // @pre The given parameter vector @p k is bi-dimensional (holding r and h
   //      coordinates only).
-  // @throw std::logic_error if preconditions are not met.
+  // @throws std::logic_error if preconditions are not met.
   double operator()(const double& p, const VectorX<double>& k) const {
     if (k.size() != 2) {
       throw std::logic_error("Arc length derivative expects only r and"
@@ -62,7 +62,7 @@ struct InverseArcLengthODEFunction {
   // @return The inverse arc length derivative value at the specified point.
   // @pre The given parameter vector @p k is bi-dimensional (holding r and h
   //      coordinates only).
-  // @throw std::logic_error if preconditions are not met.
+  // @throws std::logic_error if preconditions are not met.
   double operator()(const double& s, const double& p,
                     const VectorX<double>& k) {
     unused(s);

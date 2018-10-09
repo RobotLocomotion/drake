@@ -265,8 +265,9 @@ class AutomotiveSimulator {
   ///
   const maliput::api::Lane* FindLane(const std::string& name) const;
 
-  /// Returns the System whose name matches @p name.  Throws an exception if no
-  /// such system has been added, or multiple such systems have been added.
+  /// Returns the System whose name matches @p name.
+  /// @throws std::exception if no such system has been added, or multiple
+  /// such systems have been added.
   //
   /// This is the builder variant of the method.  It can only be used prior to
   /// Start() being called.
@@ -274,8 +275,9 @@ class AutomotiveSimulator {
   /// @pre Start() has NOT been called.
   systems::System<T>& GetBuilderSystemByName(std::string name);
 
-  /// Returns the System whose name matches @p name.  Throws an exception if no
-  /// such system has been added, or multiple such systems have been added.
+  /// Returns the System whose name matches @p name.
+  /// @throws std::exception if no such system has been added, or multiple such
+  /// systems have been added.
   ///
   /// This is the diagram variant of the method, which can only be used after
   /// Start() is called.
