@@ -27,6 +27,7 @@ drake_cc_package_library(
     deps = [
         ":multibody_plant_sdf_parser",
         ":package_map",
+        ":parser_common",
         ":parser_path_utils",
         ":scene_graph_parser_detail",
         ":sdf_parser_common",
@@ -69,6 +70,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "parser_common",
+    srcs = [
+        "parser_common.cc",
+    ],
+    hdrs = [
+        "parser_common.h",
+    ],
+    deps = [
+        "//multibody/multibody_tree/multibody_plant:coulomb_friction",
+    ],
+)
+
+drake_cc_library(
     name = "sdf_parser_common",
     srcs = [
         "sdf_parser_common.cc",
@@ -77,6 +91,7 @@ drake_cc_library(
         "sdf_parser_common.h",
     ],
     deps = [
+        ":parser_common",
         "//common:essential",
         "//multibody/multibody_tree/multibody_plant:coulomb_friction",
         "@sdformat",
@@ -142,6 +157,50 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "test_loaders",
+    testonly = 1,
+    srcs = [
+        "test/test_loaders.cc",
+    ],
+    hdrs = [
+        "test/test_loaders.h",
+    ],
+    visibility = [
+        "//visibility:private",
+    ],
+    deps = [
+        ":multibody_plant_sdf_parser",
+        ":parser_common",
+        "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "acrobot_parser_test",
+    data = [
+        ":test_models",
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":test_loaders",
+        "//common/test_utilities",
+        "//multibody/benchmarks/acrobot",
+        "//multibody/benchmarks/acrobot:make_acrobot_plant",
+    ],
+)
+
+drake_cc_googletest(
+    name = "common_parser_test",
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        ":test_loaders",
+        "//common/test_utilities",
+    ],
+)
+
 drake_cc_googletest(
     name = "multibody_plant_sdf_parser_test",
     data = [
@@ -152,8 +211,6 @@ drake_cc_googletest(
         ":multibody_plant_sdf_parser",
         "//common:find_resource",
         "//common/test_utilities",
-        "//multibody/benchmarks/acrobot",
-        "//multibody/benchmarks/acrobot:make_acrobot_plant",
     ],
 )
 
