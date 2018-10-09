@@ -1267,11 +1267,10 @@ GTEST_TEST(SimulatorTest, StretchedStep) {
   // Now step.
   simulator.StepTo(expected_t_final);
 
-  // Verify that the step size was stretched and that exactly two "steps" were
-  // taken (one to integrate the continuous variables forward and one strictly
-  // to publish).
+  // Verify that the step size was stretched and that exactly one "step" was
+  // taken to integrate the continuous variables forward.
   EXPECT_EQ(simulator.get_context().get_time(), expected_t_final);
-  EXPECT_EQ(simulator.get_num_steps_taken(), 2);
+  EXPECT_EQ(simulator.get_num_steps_taken(), 1);
 }
 
 // Verifies that an integrator will *not* stretch its integration step in the
@@ -1303,11 +1302,10 @@ GTEST_TEST(SimulatorTest, NoStretchedStep) {
   // Now step.
   simulator.StepTo(event_t_final);
 
-  // Verify that the step size was not stretched and that exactly three "steps"
-  // were taken (two to integrate the continuous variables forward and one
-  // strictly to publish).
+  // Verify that the step size was not stretched and that exactly two "steps"
+  // were taken to integrate the continuous variables forward.
   EXPECT_EQ(simulator.get_context().get_time(), event_t_final);
-  EXPECT_EQ(simulator.get_num_steps_taken(), 3);
+  EXPECT_EQ(simulator.get_num_steps_taken(), 2);
 }
 
 // Verifies that artificially limiting a step does not change the ideal next
@@ -1415,11 +1413,10 @@ GTEST_TEST(SimulatorTest, StretchedStepPerfectStorm) {
   integrator->set_throw_on_minimum_step_size_violation(false);
   simulator.StepTo(expected_t_final);
 
-  // Verify that the step size was stretched and that exactly two "steps" were
-  // taken (one to integrate the continuous variables forward and one strictly
-  // to publish).
+  // Verify that the step size was stretched and that exactly one "step" was
+  // taken to integrate the continuous variables forward.
   EXPECT_EQ(simulator.get_context().get_time(), expected_t_final);
-  EXPECT_EQ(simulator.get_num_steps_taken(), 2);
+  EXPECT_EQ(simulator.get_num_steps_taken(), 1);
 }
 
 // Tests per step publish, discrete and unrestricted update actions. Each
@@ -1532,15 +1529,16 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
   int N = static_cast<int>(0.1 / dt);
   // Need to change this if the default integrator step size is not 1ms.
   EXPECT_EQ(N, 100);
+  ASSERT_EQ(sim.get_num_steps_taken(), N);
 
   auto& publish_times = sys.get_publish_times();
   auto& discrete_update_times = sys.get_discrete_update_times();
   auto& unrestricted_update_times = sys.get_unrestricted_update_times();
-  EXPECT_EQ(publish_times.size(), N);
-  EXPECT_EQ(sys.get_discrete_update_times().size(), N);
-  EXPECT_EQ(sys.get_unrestricted_update_times().size(), N);
+  ASSERT_EQ(publish_times.size(), N);
+  ASSERT_EQ(sys.get_discrete_update_times().size(), N);
+  ASSERT_EQ(sys.get_unrestricted_update_times().size(), N);
   for (size_t i = 0; i < publish_times.size(); ++i) {
-    EXPECT_NEAR(publish_times[i], i * dt, 1e-12);
+    EXPECT_NEAR(publish_times[i], (i + 1) * dt, 1e-12);
     EXPECT_NEAR(discrete_update_times[i], i * dt, 1e-12);
     EXPECT_NEAR(unrestricted_update_times[i], i * dt, 1e-12);
   }

@@ -660,9 +660,15 @@ void Simulator<T>::StepTo(const T& boundary_time) {
       break;
   }
 
-  // If the sample time was hit, do any final unrestricted or discrete updates.
-  HandleUnrestrictedUpdate(merged_events->get_unrestricted_update_events());
-  HandleDiscreteUpdate(merged_events->get_discrete_update_events());
+  // Do any final unrestricted or discrete updates from timed or witnessed
+  // events, only if the sample time was hit.
+  if (sample_time_hit) {
+    merged_events->Clear();
+    merged_events->Merge(*timed_events);
+    merged_events->Merge(*witnessed_events);
+    HandleUnrestrictedUpdate(merged_events->get_unrestricted_update_events());
+    HandleDiscreteUpdate(merged_events->get_discrete_update_events());
+  }
 
   // TODO(edrumwri): Add test coverage to complete #8490.
   redetermine_active_witnesses_ = true;
