@@ -143,7 +143,7 @@ class PoseSelector {
   /// `road_odometry.pos` is not within the respective bounds of
   /// `road_odometry.lane`.
   ///
-  /// N.B. This function currently only provides exact derivatives for velocity
+  /// @note This function currently only provides exact derivatives for velocity
   /// in the `s` direction when the road is straight (no yaw angle variations).
   //
   // TODO(jadecastro) Enable AutoDiffXd for

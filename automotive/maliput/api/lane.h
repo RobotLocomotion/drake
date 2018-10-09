@@ -120,7 +120,7 @@ class Lane {
   ///
   /// They are already available to link against in the containing library.
   ///
-  /// Note: This is an experimental API that is not necessarily implemented in
+  /// @note This is an experimental API that is not necessarily implemented in
   /// all back-end implementations.
 
   // TODO(jadecastro): Apply this implementation in all the subclasses of
@@ -166,7 +166,7 @@ class Lane {
   ///
   /// They are already available to link against in the containing library.
   ///
-  /// Note: This is an experimental API that is not necessarily implemented in
+  /// @note This is an experimental API that is not necessarily implemented in
   /// all back-end implementations.
   //
   // TODO(jadecastro): Consider having the client enforce the geo_pos AutoDiffXd
