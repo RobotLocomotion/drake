@@ -35,6 +35,12 @@ struct Color {
   }
 };
 
+template <typename T>
+std::ostream& operator<<(std::ostream& out, const Color<T>& color) {
+  out << "(" << color.r << ", " << color.g << ", " << color.b << ")";
+  return out;
+}
+
 }  // namespace sensors
 }  // namespace systems
 }  // namespace drake
@@ -64,6 +70,9 @@ using ColorD = Color<double>;
 /// required colors. Black, white and gray, which has the same value for all the
 /// three color channels, are not part of this color palette. This color palette
 /// can hold up to 1535 colors.
+///
+/// @tparam IdType  The type of value used for label values.
+template <typename IdType>
 class ColorPalette {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ColorPalette)
@@ -81,7 +90,8 @@ class ColorPalette {
   ///
   /// @throws std::logic_error When @p num_colors exceeds the maximum limit,
   /// which is 1535.
-  ColorPalette(int num_colors, int terrain_id, int no_body_id) {
+  ColorPalette(int num_colors, IdType terrain_id, IdType no_body_id) :
+      terrain_id_(terrain_id), empty_id_(no_body_id) {
     // Dividing by six because we create "bands" of colors at various intensity
     // levels and the band width is six. In other words, six is the number of
     // `push_back` calls in the `for` loop below.
@@ -106,7 +116,7 @@ class ColorPalette {
 
     // Creates hash map for ID look up.
     for (size_t i = 0; i < colors_.size(); ++i) {
-      color_id_map_[colors_[i]] = i;
+      color_id_map_[colors_[i]] = IdType(i);
     }
     color_id_map_[kTerrainColor] = terrain_id;
     color_id_map_[kSkyColor] = no_body_id;
@@ -128,16 +138,22 @@ class ColorPalette {
   /// The pixel range of returned color is [0, 255].
   ///
   /// @param index An index that corresponds to the color to be returned.
-  const ColorI& get_color(int index) const {
-    DRAKE_DEMAND(0 <= index && index < static_cast<int>(colors_.size()));
-    return colors_[index];
+  const ColorI& get_color(IdType index) const {
+    if (index == terrain_id_) {
+      return get_terrain_color();
+    } else if (index == empty_id_) {
+      return get_sky_color();
+    } else {
+      DRAKE_DEMAND(0 <= index && index < static_cast<int>(colors_.size()));
+      return colors_[index];
+    }
   }
 
   /// Returns a color of type ColorD which corresponds to given index.
   /// The pixel range of returned color is [0, 1].
   ///
   /// @param index An index that corresponds to the color to be returned.
-  ColorD get_normalized_color(int index) const {
+  ColorD get_normalized_color(IdType index) const {
     ColorD color = Normalize(get_color(index));
     return color;
   }
@@ -170,7 +186,9 @@ class ColorPalette {
   const ColorI kTerrainColor{255, 229, 204};
   const ColorI kSkyColor{204, 229, 255};
   std::vector<ColorI> colors_;
-  std::unordered_map<ColorI, int> color_id_map_;
+  std::unordered_map<ColorI, IdType> color_id_map_;
+  IdType terrain_id_;
+  IdType empty_id_;
 };
 
 }  // namespace sensors

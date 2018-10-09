@@ -226,8 +226,8 @@ void RgbdRendererVTK::Impl::ImplAddFlatTerrain() {
   vtkNew<vtkOpenGLPolyDataMapper> mapper;
   mapper->SetInputConnection(plane->GetOutputPort());
   terrain_actor_->SetMapper(mapper.GetPointer());
-  auto color =
-      ColorPalette::Normalize(parent_->color_palette().get_terrain_color());
+  auto color = ColorPalette<int>::Normalize(
+      parent_->color_palette().get_terrain_color());
 
   terrain_actor_->GetProperty()->SetColor(color.r, color.g, color.b);
   terrain_actor_->GetProperty()->LightingOff();
@@ -362,7 +362,7 @@ RgbdRendererVTK::Impl::Impl(RgbdRendererVTK* parent,
   }
 
   const auto sky_color =
-      ColorPalette::Normalize(parent_->color_palette().get_sky_color());
+      ColorPalette<int>::Normalize(parent_->color_palette().get_sky_color());
   const vtkSmartPointer<vtkTransform> vtk_X_WC = ConvertToVtkTransform(X_WC);
 
   pipelines_[ImageType::kLabel]->window->SetMultiSamples(0);
