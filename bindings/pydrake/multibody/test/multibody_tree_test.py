@@ -115,11 +115,17 @@ class TestMultibodyTree(unittest.TestCase):
             plant.num_actuated_dofs(), benchmark.num_actuated_dofs())
         self.assertTrue(plant.is_finalized())
         self.assertTrue(plant.HasBodyNamed(name="Link1"))
+        self.assertTrue(plant.HasBodyNamed(
+            name="Link1", model_instance=model_instance))
         self.assertTrue(plant.HasJointNamed(name="ShoulderJoint"))
+        self.assertTrue(plant.HasJointNamed(
+            name="ShoulderJoint", model_instance=model_instance))
         shoulder = plant.GetJointByName(name="ShoulderJoint")
         self._test_joint_api(shoulder)
         np.testing.assert_array_equal(shoulder.lower_limits(), [-np.inf])
         np.testing.assert_array_equal(shoulder.upper_limits(), [np.inf])
+        self.assertIs(shoulder, plant.GetJointByName(
+            name="ShoulderJoint", model_instance=model_instance))
         self._test_joint_actuator_api(
             plant.GetJointActuatorByName(name="ElbowJoint"))
         self._test_body_api(plant.GetBodyByName(name="Link1"))
@@ -130,12 +136,23 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertIs(
             plant.GetFrameByName(name="Link1"),
             plant.GetFrameByName(name="Link1", model_instance=model_instance))
+        self.assertEqual(
+            model_instance, plant.GetModelInstanceByName(name="acrobot"))
         self.assertIsInstance(
             plant.get_actuation_input_port(), InputPort)
         self.assertIsInstance(
             plant.get_continuous_state_output_port(), OutputPort)
         self.assertIsInstance(
             plant.get_contact_results_output_port(), OutputPort)
+        tree = plant.tree()
+        self.assertIsInstance(tree.num_frames(), int)
+        self.assertIsInstance(tree.get_body(body_index=BodyIndex(0)), Body)
+        self.assertIs(shoulder, tree.get_joint(joint_index=JointIndex(0)))
+        self.assertIsInstance(tree.get_joint_actuator(
+            actuator_index=JointActuatorIndex(0)), JointActuator)
+        self.assertIsInstance(tree.get_frame(frame_index=FrameIndex(0)), Frame)
+        self.assertEqual("acrobot", tree.GetModelInstanceName(
+            model_instance=model_instance))
 
     def _test_multibody_tree_element_mixin(self, element):
         self.assertIsInstance(element.get_parent_tree(), MultibodyTree)
