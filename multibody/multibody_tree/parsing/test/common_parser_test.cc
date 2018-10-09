@@ -151,6 +151,11 @@ TEST_P(MultibodyPlantLinkTests, LinksWithCollisions) {
 INSTANTIATE_TEST_CASE_P(SdfMultibodyPlantLinkTests,
                         MultibodyPlantLinkTests,
                         ::testing::Values(test::LoadFromSdf));
+
+INSTANTIATE_TEST_CASE_P(UrdfMultibodyPlantLinkTests,
+                        MultibodyPlantLinkTests,
+                        ::testing::Values(test::LoadFromUrdf));
+
 }  // namespace
 }  // namespace parsing
 }  // namespace multibody

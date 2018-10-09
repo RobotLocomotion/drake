@@ -25,6 +25,11 @@ void LoadFromSdf(
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph);
 
+void LoadFromUrdf(
+    const std::string& base_name,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph);
+
 }  // namespace test
 }  // namespace parsing
 }  // namespace multibody
