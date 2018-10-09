@@ -14,6 +14,7 @@ pydrake.systems
     pydrake.systems.lcm
     pydrake.systems.primitives
     pydrake.systems.rendering
+    pydrake.systems.scalar_conversion
     pydrake.systems.sensors
     pydrake.systems.trajectory_optimization
 
@@ -21,3 +22,4 @@ pydrake.systems
 .. automodule:: pydrake.systems
     :members:
     :undoc-members:
+    :show-inheritance:

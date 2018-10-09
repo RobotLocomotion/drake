@@ -13,3 +13,4 @@ pydrake.manipulation
 .. automodule:: pydrake.manipulation
     :members:
     :undoc-members:
+    :show-inheritance:

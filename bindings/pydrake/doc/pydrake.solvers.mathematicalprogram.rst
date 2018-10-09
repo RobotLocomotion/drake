@@ -7,3 +7,4 @@ pydrake.solvers.mathematicalprogram
     :members:
     :imported-members:
     :undoc-members:
+    :show-inheritance:

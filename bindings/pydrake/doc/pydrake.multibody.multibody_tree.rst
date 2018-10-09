@@ -15,3 +15,4 @@ pydrake.multibody.multibody\_tree
 .. automodule:: pydrake.multibody.multibody_tree
     :members:
     :undoc-members:
+    :show-inheritance:
