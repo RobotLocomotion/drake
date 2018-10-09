@@ -28,8 +28,7 @@ drake_py_binary(
     deps = ["//bindings/pydrake"],
 )
 
-# TODO(jamiesnape): Refactor into a Starlark rule to share with with
-# //doc:sphinx.
+# TODO(jamiesnape): Refactor into a Starlark rule to share with //doc:sphinx.
 genrule(
     name = "sphinx",
     srcs = glob([
