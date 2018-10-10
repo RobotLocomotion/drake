@@ -8,6 +8,7 @@ load(
     "join_paths",
     "output_path",
 )
+load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 InstallInfo = provider()
 
@@ -376,7 +377,7 @@ def _install_test_actions(ctx):
     for test in ctx.attr.install_tests:
         for f in _depset_to_list(test.files):
             test_actions.append(
-                struct(src = f, cmd = f.path),
+                struct(src = f, cmd = f.short_path),
             )
 
     return test_actions
@@ -894,6 +895,60 @@ def install_test(
         timeout = "long",
         deps = ["//tools/install:install_test_helper"],
         **kwargs
+    )
+
+#------------------------------------------------------------------------------
+def generate_install_test_file(
+        name,
+        cmd = None):
+    """Generates boilerplate install test files.
+
+    Args:
+        cmd (:obj:`str`): Commmad to run from the root of the installation
+            directory. This will be formatted with the following variables:
+
+            - python: Shell prefix to use specific Python version. May
+              contain spaces.
+            - install_dir: Install directory.
+    """
+    fmt = dict(
+        python = "/usr/bin/env python2",
+        install_dir = "{install_dir}",
+    )
+    fmt["cmd"] = repr(cmd.format(**fmt))
+    template = """#!{python}
+
+import os
+import unittest
+
+import install_test_helper
+
+
+class TestInstall(unittest.TestCase):
+    def test_install(self):
+        # Get install directory
+        install_dir = install_test_helper.get_install_dir()
+        # Override PYTHONPATH to only use the installed `pydrake` module.
+        env_python_path = "PYTHONPATH"
+        tool_env = dict(os.environ)
+        tool_env[env_python_path] = os.path.abspath(
+            os.path.join(install_dir, "lib", "python2.7", "site-packages")
+        )
+        # Make sure the command can run without error.
+        install_test_helper.check_call(
+            {cmd}.format(install_dir=install_dir),
+            env=tool_env,
+            shell=True,
+        )
+
+
+if __name__ == '__main__':
+    unittest.main()
+"""
+    generate_file(
+        name = name,
+        content = template.format(**fmt),
+        is_executable = True,
     )
 
 #END macros
