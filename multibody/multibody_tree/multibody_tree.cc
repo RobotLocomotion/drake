@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <stdexcept>
+#include <unordered_set>
 #include <utility>
 
 #include "drake/common/autodiff.h"
@@ -1209,6 +1210,124 @@ void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
           mbt_context, pc, H_PB_W, abc);
     }
   }
+}
+
+template <typename T>
+MatrixX<double> MultibodyTree<T>::MakeStateSelectorMatrix(
+    const std::vector<JointIndex>& user_to_joint_index_map) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+
+  // We create a set in order to verify that joint indexes appear only once.
+  std::unordered_set<JointIndex> already_selected_joints;
+  for (const auto& joint_index : user_to_joint_index_map) {
+    const bool inserted = already_selected_joints.insert(joint_index).second;
+    if (!inserted) {
+      throw std::logic_error(
+          "Joint named '" + get_joint(joint_index).name() +
+              "' is repeated multiple times.");
+    }
+  }
+
+  // Determine the size of the vector of "selected" states xₛ.
+  int num_selected_positions = 0;
+  int num_selected_velocities = 0;
+  for (JointIndex joint_index : user_to_joint_index_map) {
+    num_selected_positions += get_joint(joint_index).num_positions();
+    num_selected_velocities += get_joint(joint_index).num_velocities();
+  }
+  const int num_selected_states =
+      num_selected_positions + num_selected_velocities;
+
+  // With state x of size n and selected state xₛ of size nₛ, Sx has size
+  // nₛ x n so that xₛ = Sx⋅x.
+  MatrixX<double> Sx =
+      MatrixX<double>::Zero(num_selected_states, num_states());
+
+  const int nq = num_positions();
+  // We place all selected positions first, followed by all the selected
+  // velocities, as in the original state x.
+  int selected_positions_index = 0;
+  int selected_velocities_index = num_selected_positions;
+  for (JointIndex joint_index : user_to_joint_index_map) {
+    const auto& joint = get_joint(joint_index);
+
+    const int pos_start = joint.position_start();
+    const int num_pos = joint.num_positions();
+    const int vel_start = joint.velocity_start();
+    const int num_vel = joint.num_velocities();
+
+    Sx.block(selected_positions_index, pos_start, num_pos, num_pos) =
+        MatrixX<double>::Identity(num_pos, num_pos);
+
+    Sx.block(selected_velocities_index, nq + vel_start, num_vel, num_vel) =
+        MatrixX<double>::Identity(num_vel, num_vel);
+
+    selected_positions_index += num_pos;
+    selected_velocities_index += num_vel;
+  }
+
+  return Sx;
+}
+
+template <typename T>
+MatrixX<double> MultibodyTree<T>::MakeStateSelectorMatrixFromJointNames(
+    const std::vector<std::string>& selected_joints) const {
+  std::vector<JointIndex> selected_joints_indexes;
+  for (const auto& joint_name : selected_joints) {
+    selected_joints_indexes.push_back(GetJointByName(joint_name).index());
+  }
+  return MakeStateSelectorMatrix(selected_joints_indexes);
+}
+
+template <typename T>
+MatrixX<double> MultibodyTree<T>::MakeActuatorSelectorMatrix(
+    const std::vector<JointActuatorIndex>& user_to_actuator_index_map) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+
+  const int num_selected_actuators = user_to_actuator_index_map.size();
+
+  // The actuation selector matrix maps the vector of "selected" actuators to
+  // the full vector of actuators: u = Sᵤ⋅uₛ.
+  MatrixX<double> Su =
+      MatrixX<double>::Zero(num_actuated_dofs(), num_selected_actuators);
+  int user_index = 0;
+  for (JointActuatorIndex actuator_index : user_to_actuator_index_map) {
+    Su(actuator_index, user_index) = 1.0;
+    ++user_index;
+  }
+
+  return Su;
+}
+
+template <typename T>
+MatrixX<double> MultibodyTree<T>::MakeActuatorSelectorMatrix(
+    const std::vector<JointIndex>& user_to_joint_index_map) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+
+  std::vector<JointActuatorIndex> joint_to_actuator_index(num_joints());
+  for (JointActuatorIndex actuator_index(0);
+       actuator_index < num_actuators(); ++actuator_index) {
+    const auto& actuator = get_joint_actuator(actuator_index);
+    joint_to_actuator_index[actuator.joint().index()] = actuator_index;
+  }
+
+  // Build a list of actuators in the order given by user_to_joint_index_map,
+  // which must contain actuated joints. We verify this.
+  std::vector<JointActuatorIndex> user_to_actuator_index_map;
+  for (JointIndex joint_index : user_to_joint_index_map) {
+    const auto& joint = get_joint(joint_index);
+
+    // If the map has an invalid index then this joint does not have an
+    // actuator.
+    if (!joint_to_actuator_index[joint_index].is_valid()) {
+      throw std::logic_error(
+          "Joint '" + joint.name() + "' does not have an actuator.");
+    }
+
+    user_to_actuator_index_map.push_back(joint_to_actuator_index[joint_index]);
+  }
+
+  return MakeActuatorSelectorMatrix(user_to_actuator_index_map);
 }
 
 // Explicitly instantiates on the most common scalar types.

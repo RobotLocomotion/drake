@@ -1813,6 +1813,204 @@ INSTANTIATE_TEST_CASE_P(
     Blank, KukaArmTest,
     testing::Values(0.0 /* continuous state */, 1e-3 /* discrete state */));
 
+GTEST_TEST(StateSelection, JointHasNoActuator) {
+  const std::string file_name =
+      "drake/multibody/benchmarks/acrobot/acrobot.sdf";
+  MultibodyPlant<double> plant;
+  AddModelFromSdfFile(FindResourceOrThrow(file_name), &plant);
+  plant.Finalize();
+
+  // Sanity checks.
+  ASSERT_EQ(plant.num_positions(), 2);
+  ASSERT_EQ(plant.num_velocities(), 2);
+  ASSERT_EQ(plant.num_actuators(), 1);  // ShoulderJoint is not actuated.
+
+  // Attempt to make an actuation selector matrix for ShoulderJoint, which is
+  // not actuated.
+  std::vector<JointIndex> selected_joints;
+  selected_joints.push_back(plant.GetJointByName("ShoulderJoint").index());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.tree().MakeActuatorSelectorMatrix(selected_joints),
+      std::logic_error,
+      "Joint 'ShoulderJoint' does not have an actuator.");
+}
+
+GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
+  const char kArmSdfPath[] =
+      "drake/manipulation/models/iiwa_description/sdf/"
+          "iiwa14_no_collision.sdf";
+
+  const char kWsg50SdfPath[] =
+      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf";
+
+  // We make a "floating" model of a Kuka arm with a Schunk WSG 50 gripper at
+  // the end effector. The purpose of having this floating model is to unit test
+  // the methods for making state/actuation selector matrices for more complex
+  // cases when we have floating robots in the model.
+  MultibodyPlant<double> plant;
+  const ModelInstanceIndex arm_model =
+      AddModelFromSdfFile(FindResourceOrThrow(kArmSdfPath), &plant);
+
+  // Add the gripper.
+  const ModelInstanceIndex gripper_model =
+      AddModelFromSdfFile(FindResourceOrThrow(kWsg50SdfPath), &plant);
+  const auto& end_effector = plant.GetBodyByName("iiwa_link_7", arm_model);
+  const auto& gripper_body = plant.GetBodyByName("body", gripper_model);
+  // We dont care for the actual pose of the gripper in the end effector frame
+  // for this example. We only care about the state size.
+  plant.WeldFrames(end_effector.body_frame(), gripper_body.body_frame());
+  plant.Finalize();
+
+  // Sanity check basic invariants.
+  const int num_floating_positions = 7;
+  const int num_floating_velocities = 6;
+
+  // Seven dofs for the arm and two for the gripper, plus floating base.
+  EXPECT_EQ(plant.num_positions(), 9 + num_floating_positions);
+  EXPECT_EQ(plant.num_velocities(), 9 + num_floating_velocities);
+
+  // Selected joints by name.
+  const std::vector<std::string> arm_selected_joints_by_name =
+      {"iiwa_joint_2", "iiwa_joint_7", "iiwa_joint_3"};
+
+  std::vector<JointIndex> arm_selected_joints;
+  // For this example we are only interested in the state for joints:
+  //  - iiwa_joint_2
+  //  - iiwa_joint_7
+  //  - iiwa_joint_3
+  // In that order.
+  // We therefore create a user to joint index map accordingly.
+  for (const auto& joint_name : arm_selected_joints_by_name) {
+    arm_selected_joints.push_back(
+        plant.GetJointByName(joint_name).index());
+  }
+
+  // State selector for the arm.
+  const MatrixX<double> Sx_arm =
+      plant.tree().MakeStateSelectorMatrix(arm_selected_joints);
+
+  // Actuation selector for the arm.
+  const MatrixX<double> Su_arm =
+      plant.tree().MakeActuatorSelectorMatrix(arm_selected_joints);
+
+  // Verify the sizes (all these joints are revolute with one q and one v).
+  const int num_selected_states = 2 * arm_selected_joints.size();
+  const int num_states = plant.tree().num_states();
+  ASSERT_EQ(Sx_arm.rows(), num_selected_states);
+  ASSERT_EQ(Sx_arm.cols(), num_states);
+
+  // We know what the selection matrix should be for this case:
+  const int nq = plant.num_positions();
+  MatrixX<double> Sx_arm_expected =
+      MatrixX<double>::Zero(num_selected_states, plant.num_multibody_states());
+  // position for first joint, iiwa_joint_2.
+  Sx_arm_expected(0, num_floating_positions + 1) = 1;
+  // position for second joint, iiwa_joint_7.
+  Sx_arm_expected(1, num_floating_positions + 6) = 1;
+  // position for third joint, iiwa_joint_3.
+  Sx_arm_expected(2, num_floating_positions + 2) = 1;
+  // velocity for first joint, iiwa_joint_2.
+  Sx_arm_expected(3, num_floating_velocities + nq + 1) = 1;
+  // velocity for second joint, iiwa_joint_7.
+  Sx_arm_expected(4, num_floating_velocities + nq + 6) = 1;
+  // velocity for third joint, iiwa_joint_3.
+  Sx_arm_expected(5, num_floating_velocities + nq + 2) = 1;
+  EXPECT_EQ(Sx_arm, Sx_arm_expected);
+
+  // State selection using alternative API in which joints are specified by
+  // name.
+  const MatrixX<double> Sx_arm_by_name =
+      plant.tree().MakeStateSelectorMatrixFromJointNames(
+          arm_selected_joints_by_name);
+  EXPECT_EQ(Sx_arm_by_name, Sx_arm_expected);
+
+  // Intentionally attempt to create a state selector from a vector with
+  // repeated joint names in order to verify the method throws.
+  const std::vector<std::string> repeated_joint_names =
+      {"iiwa_joint_2", "iiwa_joint_3", "iiwa_joint_7", "iiwa_joint_3"};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.tree().MakeStateSelectorMatrixFromJointNames(repeated_joint_names),
+      std::logic_error,
+      "Joint named 'iiwa_joint_3' is repeated multiple times.");
+
+  // Intentionally attempt to create a state selector from a vector with
+  // repeated joint indexes in order to verify the method throws.
+  std::vector<JointIndex> repeated_joint_indexes;
+  for (const auto& joint_name : repeated_joint_names) {
+    repeated_joint_indexes.push_back(plant.GetJointByName(joint_name).index());
+  }
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.tree().MakeStateSelectorMatrix(repeated_joint_indexes),
+      std::logic_error,
+      "Joint named 'iiwa_joint_3' is repeated multiple times.");
+
+  // Verify the arm's actuation selector.
+  MatrixX<double> Su_arm_expected =
+      MatrixX<double>::Zero(plant.num_actuators(), 3);
+  Su_arm_expected(1, 0) = 1;  // Actuator on first joint, iiwa_joint_2.
+  Su_arm_expected(6, 1) = 1;  // Actuator on second joint, iiwa_joint_7.
+  Su_arm_expected(2, 2) = 1;  // Actuator on third joint, iiwa_joint_3.
+  EXPECT_EQ(Su_arm, Su_arm_expected);
+
+  // We build a state selector for the gripper dofs.
+  std::vector<JointIndex> gripper_selected_joints;
+  gripper_selected_joints.push_back(plant.GetJointByName(
+      "left_finger_sliding_joint").index());  // user index = 0.
+  gripper_selected_joints.push_back(plant.GetJointByName(
+      "right_finger_sliding_joint").index());  // user index = 1.
+
+  // State selector for the griper.
+  const MatrixX<double> Sx_gripper =
+      plant.tree().MakeStateSelectorMatrix(gripper_selected_joints);
+
+  // Actuation selector for the gripper.
+  const MatrixX<double> Su_gripper =
+      plant.tree().MakeActuatorSelectorMatrix(gripper_selected_joints);
+
+  // Similarly we know the expected value for the gripper's selector matrix.
+  MatrixX<double> Sx_gripper_expected =
+      MatrixX<double>::Zero(4, plant.num_multibody_states());
+  // first joint position, left finger.
+  Sx_gripper_expected(0, num_floating_positions + 7) = 1;
+  // second joint position, right finger.
+  Sx_gripper_expected(1, num_floating_positions + 8) = 1;
+  // first joint velocity, left finger.
+  Sx_gripper_expected(2, num_floating_velocities + nq + 7) = 1;
+  // second joint velocity, right finger.
+  Sx_gripper_expected(3, num_floating_velocities + nq + 8) = 1;
+  EXPECT_EQ(Sx_gripper, Sx_gripper_expected);
+
+  // Verify the grippers's actuation selector.
+  MatrixX<double> Su_gripper_expected =
+      MatrixX<double>::Zero(plant.num_actuators(), 2);
+  Su_gripper_expected(7, 0) = 1;  // Actuator on first joint, left finger.
+  Su_gripper_expected(8, 1) = 1;  // Actuator on second joint, right finger.
+  EXPECT_EQ(Su_gripper, Su_gripper_expected);
+
+  // Verify we can make selector matrices from empty lists of joints/actuators.
+  const MatrixX<double> Sx_from_empty_names =
+      plant.tree().MakeStateSelectorMatrixFromJointNames(
+          std::vector<std::string>());
+  EXPECT_EQ(Sx_from_empty_names.rows(), 0);
+  EXPECT_EQ(Sx_from_empty_names.cols(), plant.num_multibody_states());
+
+  const MatrixX<double> Sx_from_empty_indexes =
+      plant.tree().MakeStateSelectorMatrix(std::vector<JointIndex>());
+  EXPECT_EQ(Sx_from_empty_indexes.rows(), 0);
+  EXPECT_EQ(Sx_from_empty_indexes.cols(), plant.num_multibody_states());
+
+  const MatrixX<double> Su_from_empty_actuators =
+      plant.tree().MakeActuatorSelectorMatrix(
+          std::vector<JointActuatorIndex>());
+  EXPECT_EQ(Su_from_empty_actuators.rows(), plant.num_actuators());
+  EXPECT_EQ(Su_from_empty_actuators.cols(), 0);
+
+  const MatrixX<double> Su_from_empty_joints =
+      plant.tree().MakeActuatorSelectorMatrix(std::vector<JointIndex>());
+  EXPECT_EQ(Su_from_empty_actuators.rows(), plant.num_actuators());
+  EXPECT_EQ(Su_from_empty_actuators.cols(), 0);
+}
+
 }  // namespace
 }  // namespace multibody_plant
 }  // namespace multibody
