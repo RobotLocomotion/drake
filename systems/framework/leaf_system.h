@@ -428,10 +428,13 @@ class LeafSystem : public System<T> {
     if (model_result) {
       return model_result.release();
     }
-    DRAKE_ABORT_MSG(
-        "A concrete leaf system with abstract input ports should "
-        "pass a model_value to DeclareAbstractInputPort, or else "
-        "must override DoAllocateInputAbstract");
+    throw std::logic_error(fmt::format(
+        "System::AllocateInputAbstract(): a System with abstract input ports "
+        "should pass a model_value to DeclareAbstractInputPort, or else must "
+        "override DoAllocateInputAbstract; the input port[{}] named '{}' did "
+        "not do either one (System {})",
+        input_port.get_index(), input_port.get_name(),
+        this->GetSystemPathname()));
   }
 
   /// Emits a graphviz fragment for this System. Leaf systems are visualized as
