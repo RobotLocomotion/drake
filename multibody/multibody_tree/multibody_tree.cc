@@ -1043,18 +1043,18 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
 template <typename T>
 void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
     const systems::Context<T>& context,
-    const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BoFo_B,
-    EigenPtr<MatrixX<T>> Jv_WF) const {
-  DRAKE_THROW_UNLESS(Jv_WF != nullptr);
-  DRAKE_THROW_UNLESS(Jv_WF->rows() == 6);
-  DRAKE_THROW_UNLESS(Jv_WF->cols() == num_velocities());
+    const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FQo,
+    EigenPtr<MatrixX<T>> Jv_WFq) const {
+  DRAKE_THROW_UNLESS(Jv_WFq != nullptr);
+  DRAKE_THROW_UNLESS(Jv_WFq->rows() == 6);
+  DRAKE_THROW_UNLESS(Jv_WFq->cols() == num_velocities());
 
   // If a user is re-using this Jacobian within a loop the first thing we'll
   // want to do is to re-initialize it to zero.
-  Jv_WF->setZero();
+  Jv_WFq->setZero();
 
   // Body to which frame B is attached to:
-  const Body<T>& body_B = frame_B.body();
+  const Body<T>& body_B = frame_F.body();
 
   // Do nothing for the world body and return a zero Jacobian.
   // That is, Jv_WQi * v = 0, always, for the world body.
@@ -1070,14 +1070,14 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
   std::vector<Vector6<T>> H_PB_W_cache(num_velocities());
   CalcAcrossNodeGeometricJacobianExpressedInWorld(context, pc, &H_PB_W_cache);
 
-  // Compute the position of F's origin in the world frame.
-  Vector3<T> p_WoFo_W;
+  // Compute the position of Fq's origin Qo in the world frame.
+  Vector3<T> p_WoQo_W;
   CalcPointsPositions(context,
-                      frame_B, p_BoFo_B,             /* From frame B */
-                      world_frame(), &p_WoFo_W);  /* To world frame W */
+                      frame_F, p_FQo,             /* From frame F */
+                      world_frame(), &p_WoQo_W);  /* To world frame W */
 
   // Performs a scan of all bodies in the kinematic path from the world to
-  // body_B, computing each node's contribution to Jv_WF.
+  // body_B, computing each node's contribution to Jv_WFq.
   // Skip the world (ilevel = 0).
   for (size_t ilevel = 1; ilevel < path_to_world.size(); ++ilevel) {
     BodyNodeIndex body_node_index = path_to_world[ilevel];
@@ -1092,30 +1092,30 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
 
     // Output block corresponding to mobilities in the current node.
     // This correspond to the geometric Jacobian to compute the spatial velocity
-    // of frame Bf (frame B shifted to Fo) measured in the inboard body frame P
-    // and expressed in world. That is, V_PBf_W = J_PBf_W * v(B), with v(B) the
+    // of frame Fq (frame F shifted to Qo) measured in the inboard body frame P
+    // and expressed in world. That is, V_PFq_W = J_PFq_W * v(B), with v(B) the
     // mobilities that correspond to the current node.
-    auto J_PBf_W = Jv_WF->block(0, start_index_in_v, 6, num_velocities);
+    auto J_PFq_W = Jv_WFq->block(0, start_index_in_v, 6, num_velocities);
 
     // Position of this node's body Bi in the world W.
     const Vector3<T>& p_WBi = pc.get_X_WB(node.index()).translation();
 
-    // Position of origin Fo measured from Bi, expressed in the world W.
-    const Vector3<T> p_BiFo_W = p_WoFo_W - p_WBi;
+    // Position of origin Qo measured from Bi, expressed in the world W.
+    const Vector3<T> p_BiQo_W = p_WoQo_W - p_WBi;
 
-    // Mutable aliases to Hw_PBf_W and Hv_PBf_W. Hw (Hv) denotes the
+    // Mutable aliases to Hw_PFq_W and Hv_PBf_W. Hw (Hv) denotes the
     // rotational (translational) components of the full geometric Jacobian.
-    auto Hw_PBf_W = J_PBf_W.template topRows<3>();
-    auto Hv_PBf_W = J_PBf_W.template bottomRows<3>();
+    auto Hw_PFq_W = J_PFq_W.template topRows<3>();
+    auto Hv_PBf_W = J_PFq_W.template bottomRows<3>();
 
     // Aliases to angular and translational components in H_PB_W:
     const auto Hw_PB_W = H_PB_W.template topRows<3>();
     const auto Hv_PB_W = H_PB_W.template bottomRows<3>();
 
-    // Now "shift" (See SpatialVelocity::Shift()) H_PB_W to H_PBf_W.
+    // Now "shift" (See SpatialVelocity::Shift()) H_PB_W to H_PFq_W.
     // We do it by shifting one column at a time:
-    Hw_PBf_W = Hw_PB_W;  // angular component statys the same.
-    Hv_PBf_W = Hv_PB_W + Hw_PB_W.colwise().cross(p_BiFo_W);
+    Hw_PFq_W = Hw_PB_W;  // angular component statys the same.
+    Hv_PBf_W = Hv_PB_W + Hw_PB_W.colwise().cross(p_BiQo_W);
   }  // body_node_index
 }
 
@@ -1125,6 +1125,30 @@ Vector6<T> MultibodyTree<T>::CalcBiasForFrameGeometricJacobianExpressedInWorld(
     const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FQo) const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+
+  // For a frame F instantaneously moves with its body frame B. The spatial
+  // acceleration of the frame F shifted to frame Fq with origin at point Qo
+  // fixed in frame F, can be computed as:
+  //   A_WFq = Jv_WFq⋅v̇ + Ab_WFq,
+  // where Jv_WFq is the frame geometric Jacobian for frame Fq and Ab_WFq is the
+  // bias term for that Jacobian, defined as Ab_WFq = J̇v_WFq⋅v. The bias term
+  // contains the Coriolis and centrifugal contributions to the total spatial
+  // acceleration due to non-zero velocities. Therefore, the bias term for
+  // Jv_WFq is the spatial acceleration of Fq when v̇ = 0, that is:
+  //   Ab_WFq = A_WFq(q, v, v̇ = 0)
+  // Given the position p_BQo_W of point Qo in body frame B, we can compute the
+  // spatial acceleration Ab_WFq from the body spatial acceleration A_WB by
+  // simply performing a shift operation:
+  //   Ab_WFq = A_WB.Shift(p_BQ_W, w_WB)
+  // where the shift operation also includes the angular velocity w_WB of B in
+  // W since rigid shifts on acceleration will usually include additional
+  // centrifugal and Coriolis terms, see SpatialAcceleration::Shift() for a
+  // detailed derivation of these terms.
+
+  // TODO(amcastro-tri): Consider caching Ab_WB(q, v), the bias term for each
+  // body, and compute the bias as Ab_WBq = Ab_WB.Shift(p_BQ_W, w_WB).
+  // Where the body bias terms is defined s.t. A_WB = J_WB⋅v̇ + Ab_WB or,
+  // Ab_WB = J̇_WB⋅v
 
   std::vector<SpatialAcceleration<T>> A_WB_array(num_bodies());
   const VectorX<T> vdot = VectorX<T>::Zero(num_velocities());

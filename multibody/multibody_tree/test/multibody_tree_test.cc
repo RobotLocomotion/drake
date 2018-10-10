@@ -429,7 +429,7 @@ class KukaIiwaModelTests : public ::testing::Test {
         context_on_T, frameH_on_T, p_HPi, p_WPi, Jv_WHp);
   }
 
-  // Computes the frame geometric Jacobian Jv_WHp for frame Hp which is the 
+  // Computes the frame geometric Jacobian Jv_WHp for frame Hp which is the
   // frame H (attached to the end effector, see test fixture docs) shifted to
   // have its origin at Po. Po's position p_HPo is specified in frame H.
   // See MultibodyTree::CalcFrameGeometricJacobianExpressedInWorld() for
@@ -871,7 +871,7 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
   EXPECT_TRUE(Jv_WF_times_v.IsApprox(V_WEf, kTolerance));
 }
 
-// Unit tests MBT::CalcBiasForPointsGeometricJacobianExpressedInWorld() using
+// Unit tests MBT::CalcBiasForFrameGeometricJacobianExpressedInWorld() using
 // AutoDiffXd to compute time derivatives of the geometric Jacobian to obtain a
 // reference solution.
 TEST_F(KukaIiwaModelTests, CalcBiasForFrameGeometricJacobianExpressedInWorld) {
@@ -922,7 +922,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasForFrameGeometricJacobianExpressedInWorld) {
   // Po specifies the position of a new frame Hp which is the result of shifting
   // frame H from Ho to Po.
   Vector3<double> p_HPo(0.1, -0.05, 0.02);
-  
+
   // Frame geometric Jacobian for frame H shifted to frame Hp.
   MatrixX<double> Jv_WHp(6, kNumVelocities);
 
