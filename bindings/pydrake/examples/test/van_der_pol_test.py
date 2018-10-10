@@ -1,3 +1,6 @@
+# N.B. This is duplicated from `//examples/van_der_pol`, and will be removed
+# as part of (#9645).
+
 from __future__ import print_function
 
 import unittest

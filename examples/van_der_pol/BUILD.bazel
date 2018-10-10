@@ -1,12 +1,26 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+)
+load(
+    "@drake//tools/skylark:pybind.bzl",
+    "drake_pybind_library",
+    "generate_pybind_documentation_header",
+)
+load(
+    "@drake//tools/install:install.bzl",
+    "generate_install_test_file",
+    "install",
+)
+load("@drake//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
     name = "van_der_pol",
@@ -41,6 +55,72 @@ drake_cc_googletest(
         ":van_der_pol",
         "//systems/framework/test_utilities:scalar_conversion",
     ],
+)
+
+# TODO(eric.cousineau): Try to hide more of these details for authoring Python
+# binding examples.
+
+generate_pybind_documentation_header(
+    name = "generate_documentation_pybind",
+    out = "documentation_pybind.h",
+    root_name = "van_der_pol_doc",
+    targets = [":van_der_pol"],
+)
+
+drake_cc_library(
+    name = "documentation_pybind",
+    hdrs = ["documentation_pybind.h"],
+    tags = ["nolint"],
+)
+
+van_der_pol_py = drake_pybind_library(
+    name = "van_der_pol_py",
+    # This is specific to `pydrake`.
+    add_install = 0,
+    cc_deps = [":documentation_pybind"],
+    cc_so_name = "van_der_pol",
+    cc_srcs = [
+        # To avoid ODR with static upstream dependencies of `:van_der_pol`, we
+        # will recompile the relevant source files.
+        "van_der_pol.cc",
+        "van_der_pol.h",
+        "van_der_pol_py.cc",
+    ],
+    py_deps = ["//bindings/pydrake"],
+)
+
+drake_py_binary(
+    name = "van_der_pol_py_example",
+    srcs = ["van_der_pol_example.py"],
+    add_test_rule = 1,
+    # N.B. Imports are only required by this binary in Bazel runfiles, because
+    # Bazel somehow munges the paths such that we do not already have access to
+    # `van_der_pol_py`. This will not be an issue for installation.
+    imports = ["."],
+    deps = ["van_der_pol_py"],
+)
+
+generate_install_test_file(
+    name = "test/van_der_pol_installed_test.py",
+    cmd = "{python} {install_dir}/share/drake/examples/van_der_pol/van_der_pol_example.py",  # noqa
+)
+
+install(
+    name = "install",
+    install_tests = [
+        ":test/van_der_pol_installed_test.py",
+    ],
+    targets = [
+        van_der_pol_py.cc_so_target,
+    ],
+    library_dest = "share/drake/examples/van_der_pol",
+    # N.B. We use `data` so that we may install the Python files; we should
+    # not be installing the Bazel-generated wrapper files.
+    data = [
+        "van_der_pol_example.py",
+    ],
+    data_dest = "share/drake/examples/van_der_pol",
+    visibility = ["//visibility:public"],
 )
 
 add_lint_tests()

@@ -65,6 +65,7 @@ filegroup(
 # issues #4224 and #1766).
 INSTALLED_EXAMPLES = [
     "//examples/kuka_iiwa_arm",
+    "//examples/van_der_pol",
 ]
 
 install(
