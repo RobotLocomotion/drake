@@ -182,6 +182,13 @@ drake_cc_googletest(
         ":test_models",
         "//multibody/benchmarks/acrobot:models",
     ],
+    # TODO(sam.creasey) Write a printer function (or another
+    # workaround) for ModelLoadFunction so that gtest won't trigger
+    # memcheck.  Related to
+    # https://github.com/google/googletest/issues/1610
+    tags = [
+        "no_memcheck",
+    ],
     deps = [
         ":test_loaders",
         "//common/test_utilities",
@@ -194,6 +201,13 @@ drake_cc_googletest(
     name = "common_parser_test",
     data = [
         ":test_models",
+    ],
+    # TODO(sam.creasey) Write a printer function (or another
+    # workaround) for ModelLoadFunction so that gtest won't trigger
+    # memcheck.  Related to
+    # https://github.com/google/googletest/issues/1610
+    tags = [
+        "no_memcheck",
     ],
     deps = [
         ":test_loaders",
