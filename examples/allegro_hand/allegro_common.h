@@ -30,10 +30,10 @@ void GetControlPortMapping(
     const multibody::multibody_plant::MultibodyPlant<double>& plant,
     MatrixX<double>* Px, MatrixX<double>* Py);
 
-/// Create a map from finger joint names (in the SDF file) into the index, so
-/// that the joints are reordered into a "desired order":
+/// Create a vector of finger joint names (in the SDF file), so that the joints
+/// are listed in a "desired order":
 /// thumb(4DOFs)-index(4DOFs)-middle(4DOFs)-ring(4DOFs)
-std::map<std::string, int> GetJointNameMapping();
+std::vector<std::string> GetJointNameMapping();
 
 /// Detecting the state of the fingers: whether the joints are moving, or
 /// reached the destination, or got stuck by external collisions in the midway.
