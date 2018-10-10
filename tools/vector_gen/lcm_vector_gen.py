@@ -116,7 +116,7 @@ def generate_indices_names_accessor_impl(cc, caller_context, fields):
     put(cc, INDICES_NAMES_ACCESSOR_IMPL_END % context, 2)
 
 
-# A second variant of a default constructor (field-by-field setting).
+# A default constructor with field-by-field setting.
 DEFAULT_CTOR_CUSTOM_BEGIN_API = """
   /// Default constructor.  Sets all rows to their default value:
 """
@@ -137,7 +137,6 @@ DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS = 'unknown'
 
 
 def generate_default_ctor(hh, caller_context, fields):
-    # Otherwise, emit a customized ctor.
     put(hh, DEFAULT_CTOR_CUSTOM_BEGIN_API % caller_context, 1)
     for field in fields:
         context = dict(caller_context)
@@ -162,6 +161,32 @@ def generate_default_ctor(hh, caller_context, fields):
         context.update(default_value=default_value)
         put(hh, DEFAULT_CTOR_CUSTOM_FIELD_BODY % context, 1)
     put(hh, DEFAULT_CTOR_CUSTOM_END % caller_context, 2)
+
+
+# The "rule of five methods" (but only four -- default dtor is fine).
+RULE_OF_FIVE = """
+  /// @name Implements CopyConstructible, CopyAssignable, MoveConstructible,
+  /// MoveAssignable
+  //@{
+  %(camel)s(const %(camel)s& other)
+      : drake::systems::BasicVector<T>(other.values()) {}
+  %(camel)s(%(camel)s&& other) noexcept
+      : drake::systems::BasicVector<T>(std::move(other.values())) {}
+  %(camel)s& operator=(const %(camel)s& other) {
+    this->values() = other.values();
+    return *this;
+  }
+  %(camel)s& operator=(%(camel)s&& other) noexcept {
+    this->values() = std::move(other.values());
+    return *this;
+  }
+  //@}
+"""
+
+
+def generate_rule_of_five(hh, caller_context):
+    # Otherwise, emit a customized ctor.
+    put(hh, RULE_OF_FIVE % caller_context, 2)
 
 
 # SetToNamedVariables (for symbolic::Expression only).
@@ -217,6 +242,16 @@ ACCESSOR_FIELD_METHODS = """
   const T& %(field)s() const { return this->GetAtIndex(K::%(kname)s); }
   void set_%(field)s(const T& %(field)s) {
     this->SetAtIndex(K::%(kname)s, %(field)s);
+  }
+  %(camel)s<T> with_%(field)s(const T& %(field)s) const& {
+    %(camel)s<T> result(*this);
+    result.set_%(field)s(%(field)s);
+    return result;
+  }
+  %(camel)s<T> with_%(field)s(const T& %(field)s) && {
+    %(camel)s<T> result(std::move(*this));
+    result.set_%(field)s(%(field)s);
+    return result;
   }
 """
 ACCESSOR_END = """
@@ -342,6 +377,7 @@ VECTOR_HH_PREAMBLE = """
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <utility>
 
 #include <Eigen/Core>
 
@@ -608,6 +644,7 @@ def generate_code(
             generate_indices_names_accessor_decl(hh, context)
             put(hh, VECTOR_CLASS_BEGIN % context, 2)
             generate_default_ctor(hh, context, fields)
+            generate_rule_of_five(hh, context)
             generate_set_to_named_variables(hh, context, fields)
             generate_do_clone(hh, context, fields)
             generate_accessors(hh, context, fields)

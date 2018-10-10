@@ -38,7 +38,7 @@ class BasicVector : public VectorBase<T> {
       : values_(VectorX<T>::Constant(size, dummy_value<T>::get())) {}
 
   /// Constructs a BasicVector with the specified @p data.
-  explicit BasicVector(const VectorX<T>& data) : values_(data) {}
+  explicit BasicVector(VectorX<T> data) : values_(std::move(data)) {}
 
   /// Constructs a BasicVector whose elements are the elements of @p data.
   BasicVector(const std::initializer_list<T>& data)
@@ -162,6 +162,12 @@ class BasicVector : public VectorBase<T> {
     data->SetAtIndex(index++, T(constructor_arg));
   }
 
+  /// Provides const access to the element storage.
+  const VectorX<T>& values() const { return values_; }
+
+  /// Provides mutable access to the element storage.
+  VectorX<T>& values() { return values_; }
+
  private:
   // Add in multiple scaled vectors to this vector. All vectors
   // must be the same size. This function overrides the default DoPlusEqScaled()
@@ -179,7 +185,7 @@ class BasicVector : public VectorBase<T> {
   VectorX<T> values_;
   // N.B. Do not add more member fields without considering the effect on
   // subclasses.  Derived class's Clone() methods currently assume that the
-  // BasicVector(const VectorX<T>&) constructor is all that is needed.
+  // BasicVector(VectorX<T>) constructor is all that is needed.
 };
 
 // Allows a BasicVector<T> to be streamed into a string. This is useful for

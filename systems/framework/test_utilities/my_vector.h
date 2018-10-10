@@ -56,6 +56,8 @@ class MyVector : public BasicVector<T> {
         BasicVector<T>::Clone());
   }
 
+  using BasicVector<T>::values;
+
  private:
   // BasicVector's Clone() method handles copying the values; DoClone() is
   // only supposed to allocate a vector of the right concrete type and size.
