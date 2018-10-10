@@ -576,6 +576,42 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   const WeldJoint<T>& WeldFrames(
       const Frame<T>& A, const Frame<T>& B,
       const Isometry3<double>& X_AB = Isometry3<double>::Identity());
+
+  /// Tells `this` MultibodyPlant that `model_instance` is free to float in the
+  /// world and that `base` is its floating base.
+  /// This method defines a local frame M for `model_instance`, such that we
+  /// can work with the pose of `base` in this local frame M. More specifically
+  /// SetFreeBodyPose() and GetFreeBodyPose() work with the pose `X_MB` of
+  /// `base` frame B in the local model instance frame M.
+  /// The pose `X_WM` can later be requested with
+  /// `get_free_model_instance_base_pose()`.
+  /// @note There can only be a single floating base per model instance.
+  ///
+  /// @param model_instance
+  ///   Index identifying the free floating model instance.
+  /// @param base
+  ///   The body requested to be the floating base for `model_instance`.
+  /// @param X_WM
+  ///   Fixed pose of the model instance frame M in the world. Poses in
+  ///   SetFreeBodyPose() and GetFreeBodyPose() are relative to this model
+  ///   instance frame M.
+  ///
+  /// @throws std::logic_error if `base` does not belong to `model_instance`.
+  /// @throws std::logic_error if this method was already called on
+  /// `model_instance`.
+  /// @throws std::exception if called pre-finalize.
+  void SetModelInstanceFloatingBase(
+      ModelInstanceIndex model_instance,
+      const Body<T>& base,
+      const Isometry3<double>& X_WM = Isometry3<double>::Identity()) const;
+
+  /// Returns the fixed pose `X_WM` of the local frame M for `model_instance`.
+  /// This pose gets defined with calls to SetModelInstanceFloatingBase().
+  /// Poses retrieved/set with GetFreeBodyPoseOrThrow()/SetFreeBodyPoseOrThrow()
+  /// are relative to this frame.
+  const Isometry3<double>& get_free_model_instance_base_pose(
+      ModelInstanceIndex model_instance) const;
+
   /// @}
 
   /// @name Querying for multibody elements by name
@@ -797,6 +833,56 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   ModelInstanceIndex GetModelInstanceByName(const std::string& name) const {
     return tree().GetModelInstanceByName(name);
   }
+  /// @}
+
+  /// @name Accessing the state
+
+  /// Evaluate the pose `X_WB` of a body B in the world frame W.
+  /// @param[in] context
+  ///   The context storing the state of the %MultibodyTree model.
+  /// @param[in] body_B
+  ///   The body B for which the pose is requested.
+  /// @retval X_WB
+  ///   The pose of body frame B in the world frame W.
+  /// @throws std::exception if Finalize() was not called on `this` model or if
+  /// `body_B` does not belong to this model.
+  const Isometry3<T>& EvalBodyPoseInWorld(
+      const systems::Context<T>& context,
+      const Body<T>& body_B) const;
+
+  /// @note To efficiently obtain the pose in the world of any body in the
+  /// system, make use of EvalBodyPoseInWorld().
+  Isometry3<T> GetFreeBodyPoseInModelFrame(
+      const systems::Context<T>& context, const Body<T>& body) const;
+
+  /// Sets `context` to store the pose `X_MB` of a given `body` B in its
+  /// model instance base frame M. The default pose X_WM of a free floating
+  /// model instance base frame in the world can be retrieved with
+  /// get_free_model_instance_base_pose().
+  /// A model instance base pose in the world can be set pre-finalize with
+  /// SetModelInstanceFloatingBase().
+  ///
+  /// @param context
+  ///   The context to store the new state of the MultibodyPlant.
+  /// @param body
+  ///   A free floating body for which we want to set its pose.
+  /// @param X_MB
+  ///   The new pose of `body` frame B in its model instance frame M.
+  ///   The pose of M in the world can be retrieved with
+  ///   get_free_model_instance_base_pose().
+  ///
+  /// @note In general setting the pose and/or velocity of a body in the model
+  /// would involve a complex inverse kinematics problem. This method allows us
+  /// to simplify this process when we know the body is free in space.
+  ///
+  /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::exception if called pre-finalize.
+  void SetFreeBodyPoseInModelFrame(
+      systems::Context<T>* context,
+      const Body<T>& body, const Isometry3<T>& X_MB) const;
+
+  // TODO(amcastro-tri): Add state accessors for free body spatial velocities.
+
   /// @}
 
   /// Registers `this` plant to serve as a source for an instance of

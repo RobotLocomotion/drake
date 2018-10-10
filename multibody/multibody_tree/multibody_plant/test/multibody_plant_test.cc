@@ -2011,6 +2011,65 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
   EXPECT_EQ(Su_from_empty_actuators.cols(), 0);
 }
 
+GTEST_TEST(StateSelection, FloatingBodies) {
+  const std::string iiwa_sdf_path = FindResourceOrThrow(
+      "drake/manipulation/models/iiwa_description/sdf/"
+          "iiwa14_no_collision.sdf";
+
+  const std::string table_sdf_path = FindResourceOrThrow(
+      "drake/examples/kuka_iiwa_arm/models/table/"
+          "extra_heavy_duty_table_surface_only_collision.sdf");
+
+  const std::string mug_sdf_path = FindResourceOrThrow(
+      "drake/examples/simple_gripper/simple_mug.sdf");
+
+  MultibodyPlant<double> plant;
+
+  // Load a model of a table where to put the robot on.
+  const ModelInstanceIndex robot_table_model =
+      AddModelFromSdfFile(table_sdf_path, &plant);
+  plant.WeldFrames(plant.world_frame(),
+                   plant.GetFrameByName("link", robot_table_model));
+
+  // Load the robot and weld it on top of the robot table.
+  const ModelInstanceIndex arm_model =
+      AddModelFromSdfFile(iiwa_sdf_path, &plant);
+
+  const double table_top_z_in_world =
+      // table's top height
+      0.736 +
+      // table's top width
+      0.057 / 2;
+  plant.WeldFrames(
+      plant.world_frame(), plant.GetFrameByName("iiwa_link_0", arm_model),
+      RigidTransform<double>(Vector3d(0, 0, table_top_z_in_world))
+          .GetAsIsometry3());
+
+  // Load a second table for objects.
+  const ModelInstanceIndex objects_table_model =
+      AddModelFromSdfFile(table_sdf_path, &plant);
+  plant.WeldFrames(plant.world_frame(),
+                   plant.GetFrameByName("link", objects_table_model),
+                   Translation3d(0.35, 0.0, 0.0));
+
+  // Define a fixed frame on the center of the objects table.
+  const auto& objects_frame_O =
+      plant.AddFrame(std::make_unique(FixedOffsetFrame<double>(
+          "objects_frame", plant.GetFrameByName("link", objects_table_model),
+          Translation3d(0.35, 0.0, table_top_z_in_world))));
+
+  // Add a floating mug, with a local reference frame on the center of table.
+  const ModelInstanceIndex mug_model =
+      AddModelFromSdfFile(table_sdf_path, &plant);
+  plant.SetModelInstanceFloatingBase(
+      mug_model, plant.GetBodyByName("main_body"), objects_frame_O);
+
+  plant.Finalize();
+
+  (void) mug_model;
+
+}
+
 }  // namespace
 }  // namespace multibody_plant
 }  // namespace multibody

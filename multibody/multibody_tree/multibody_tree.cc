@@ -113,6 +113,38 @@ void MultibodyTree<T>::set_velocities_in_array(
 }
 
 template <typename T>
+void MultibodyTree<T>::MakeFreeFloatingBody(
+    const Body<T>& body, const Isometry3<double>& X_WM) {
+  DRAKE_MBT_THROW_IF_FINALIZED();
+  const ModelInstanceIndex model_instance = body.model_instance();
+  if (free_model_instance_base_pose_.count(model_instance) != 0) {
+    throw std::logic_error("Model instance '" +
+        GetModelInstanceName(model_instance) + "' "
+        "already is a floating base. SetModelInstanceFloatingBase() can only "
+        "be called once per model instance.");
+  }
+  const auto& model_frame_M = AddFrame<FixedOffsetFrame>(world_frame(), X_WM);
+  std::unique_ptr<QuaternionFloatingMobilizer<T>> mobilizer =
+      std::make_unique<QuaternionFloatingMobilizer<T>>(
+          model_frame_M, body.body_frame());
+  mobilizer->set_model_instance(body.model_instance());
+  this->AddMobilizer(std::move(mobilizer));
+  free_model_instance_base_pose_[model_instance] = X_WM;
+}
+
+template<typename T>
+const Isometry3<double>& MultibodyTree<T>::get_free_model_instance_base_pose(
+    ModelInstanceIndex model_instance) const {
+  const auto it = free_model_instance_base_pose_.find(model_instance);
+  if (it == free_model_instance_base_pose_.end()) {
+    throw std::logic_error(
+        "Model instance '" + GetModelInstanceName(model_instance) +
+            "' does not have a free floating base.");
+  }
+  return it->second;
+}
+
+template <typename T>
 void MultibodyTree<T>::AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer() {
   DRAKE_DEMAND(!topology_is_valid());
   // Skip the world.
@@ -335,6 +367,17 @@ MultibodyTree<T>::get_mutable_multibody_state_vector(
         "The context provided is not compatible with a multibody model.");
   }
   return mbt_context->get_mutable_state_vector();
+}
+
+template <typename T>
+Isometry3<T> MultibodyTree<T>::GetFreeBodyPoseOrThrow(
+    const systems::Context<T>& context, const Body<T>& body) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  const QuaternionFloatingMobilizer<T>& mobilizer =
+      GetFreeBodyMobilizerOrThrow(body);
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+  return mobilizer.CalcAcrossMobilizerTransform(mbt_context);
 }
 
 template <typename T>
