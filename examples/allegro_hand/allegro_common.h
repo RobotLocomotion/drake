@@ -19,9 +19,12 @@ constexpr int kAllegroNumJoints = 16;
 void SetPositionControlledGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
                                 Eigen::VectorXd* Kd);
 
-/// Creat the projection matrices of the hand finger joints and the
+/// Create the selector matrices of the hand finger joints and the
 /// input/output ports of the multibody plant. The matrices are used to
 /// initialize the PID controller for the hand.
+/// @see MultibodyTree::MakeStateSelectorMatrix(),
+/// MultibodyTree::MakeActuatorSelectorMatrix() for detailed definitions for the
+/// selector matrices.
 /// @param Px the matrix to match the output state of the plant into the state
 /// of the finger joints in the desired order.
 /// @param Py the matrix to match the output torque for the hand joint
@@ -30,10 +33,10 @@ void GetControlPortMapping(
     const multibody::multibody_plant::MultibodyPlant<double>& plant,
     MatrixX<double>* Px, MatrixX<double>* Py);
 
-/// Create a map from finger joint names (in the SDF file) into the index, so
-/// that the joints are reordered into a "desired order":
+/// Create a vector of finger joint names (in the SDF file), so that the joints
+/// are listed in a "desired order":
 /// thumb(4DOFs)-index(4DOFs)-middle(4DOFs)-ring(4DOFs)
-std::map<std::string, int> GetJointNameMapping();
+std::vector<std::string> GetJointNameMapping();
 
 /// Detecting the state of the fingers: whether the joints are moving, or
 /// reached the destination, or got stuck by external collisions in the midway.
