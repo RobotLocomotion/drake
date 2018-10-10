@@ -1,6 +1,6 @@
 #pragma once
 
-// GENERATED FILE DO NOT EDIT
+// GENERATED GOAL DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
 #include <memory>
