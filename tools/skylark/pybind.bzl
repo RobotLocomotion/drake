@@ -106,6 +106,8 @@ def drake_pybind_library(
         py_srcs = [],
         py_deps = [],
         py_imports = [],
+        # TODO(eric.cousineau): Turn this off by default. Rename it to indicate
+        # that install is Drake-specific.
         add_install = True,
         visibility = None,
         testonly = None):
@@ -124,15 +126,19 @@ def drake_pybind_library(
         Shared object name. By default, this is `_${name}`, so that the C++
         code can be then imported in a more controlled fashion in Python.
         If overridden, this could be the public interface exposed to the user.
-    @param package_info
+    @param package_info (optional)
         This should be the result of `get_pybind_package_info` called from the
         current package. This dictates how `PYTHONPATH` is configured, and
         where the modules will be installed.
+        This is only required if `add_install` is True.
     @param add_install (optional)
         Add install targets.
     """
     if package_info == None:
-        fail("`package_info` must be supplied.")
+        if add_install:
+            fail("`package_info` must be supplied if `add_install` is True.")
+    else:
+        py_imports = package_info.py_imports + py_imports
     if not cc_so_name:
         cc_so_name = "_" + name
     install_name = name + "_install"
@@ -147,7 +153,7 @@ def drake_pybind_library(
         cc_binary_rule = drake_cc_binary,
         py_srcs = py_srcs,
         py_deps = py_deps,
-        py_imports = package_info.py_imports + py_imports,
+        py_imports = py_imports,
         py_library_rule = drake_py_library,
         testonly = testonly,
         visibility = visibility,
@@ -165,6 +171,7 @@ def drake_pybind_library(
             library_dest = package_info.py_dest,
             visibility = visibility,
         )
+    return targets
 
 def get_drake_py_installs(targets):
     """Gets install targets for Python targets / packages that have a sibling
