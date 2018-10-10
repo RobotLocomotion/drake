@@ -1120,6 +1120,39 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
 }
 
 template <typename T>
+Vector6<T> MultibodyTree<T>::CalcBiasForFrameGeometricJacobianExpressedInWorld(
+    const systems::Context<T>& context,
+    const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FQo) const {
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+
+  std::vector<SpatialAcceleration<T>> A_WB_array(num_bodies());
+  const VectorX<T> vdot = VectorX<T>::Zero(num_velocities());
+  CalcSpatialAccelerationsFromVdot(context, pc, vc, vdot, &A_WB_array);
+
+  const Body<T>& body_B = frame_F.body();
+  // Bias for body B spatial acceleration.
+  const SpatialAcceleration<T>& Ab_WB = A_WB_array[body_B.node_index()];
+
+  // Body B's orientation.
+  const Matrix3<T>& R_WB = pc.get_X_WB(body_B.node_index()).linear();
+
+  // We need to compute p_BoQo_W, the position of Qo from B's origin Bo,
+  // expressed in W.
+  const Isometry3<T> X_BF = frame_F.GetFixedPoseInBodyFrame();
+  const Vector3<T> p_BQo = X_BF * p_FQo;
+  const Vector3<T> p_BQo_W = R_WB * p_BQo;
+
+  // Body B's velocity in the world frame W.
+  const Vector3<T>& w_WB = vc.get_V_WB(body_B.node_index()).rotational();
+
+  // Shift body B's bias term to frame Q.
+  const SpatialAcceleration<T> Ab_WQ = Ab_WB.Shift(p_BQo_W, w_WB);
+
+  return Ab_WQ.get_coeffs();
+}
+
+template <typename T>
 T MultibodyTree<T>::CalcPotentialEnergy(
     const systems::Context<T>& context) const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);

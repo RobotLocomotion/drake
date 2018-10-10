@@ -1823,51 +1823,56 @@ class MultibodyTree {
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_FQ_list) const;
 
-  /// Given a frame F with fixed position `p_BoFo_B` in a frame B, this method
-  /// computes the geometric Jacobian `Jv_WF` defined by:
+  /// Given a frame Q with fixed origin position `p_FQo` in a frame F, this
+  /// method computes the geometric Jacobian `Jv_WQ` defined by:
   /// <pre>
-  ///   V_WF(q, v) = Jv_WF(q)⋅v
+  ///   V_WQ(q, v) = Jv_WQ(q)⋅v
   /// </pre>
-  /// where `V_WF(q, v)` is the spatial velocity of frame F measured and
+  /// where `V_WQ(q, v)` is the spatial velocity of frame Q measured and
   /// expressed in the world frame W and q and v are the vectors of generalized
   /// position and velocity, respectively. Since the spatial velocity of frame
-  /// F is linear in the generalized velocities, the geometric Jacobian `Jv_WF`
+  /// Q is linear in the generalized velocities, the geometric Jacobian `Jv_WQ`
   /// is a function of the generalized coordinates q only.
   ///
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q.
-  /// @param[in] frame_B
-  ///   The position `p_BoFo_B` of frame F is measured and expressed in this
-  ///   frame B.
-  /// @param[in] p_BoFo_B
-  ///   The (fixed) position of frame F as measured and expressed in frame B.
-  /// @param[out] Jv_WF
-  ///   The geometric Jacobian `Jv_WF(q)`, function of the generalized positions
-  ///   q only. This Jacobian relates to the spatial velocity `V_WF` of frame F
+  /// @param[in] frame_F
+  ///   The position `p_FQo` of frame Q is measured and expressed in this
+  ///   frame F.
+  /// @param[in] p_FQo
+  ///   The (fixed) position of the origin `Qo` of frame F as measured and
+  ///   expressed in frame F.
+  /// @param[out] Jv_WQ
+  ///   The geometric Jacobian `Jv_WQ(q)`, function of the generalized positions
+  ///   q only. This Jacobian relates to the spatial velocity `V_WQ` of frame Q
   ///   by: <pre>
-  ///     V_WF(q, v) = Jv_WF(q)⋅v
+  ///     V_WQ(q, v) = Jv_WQ(q)⋅v
   ///   </pre>
-  ///   Therefore `Jv_WF` is a matrix of size `6 x nv`, with `nv`
-  ///   the number of generalized velocities. On input, matrix `Jv_WF` **must**
+  ///   Therefore `Jv_WQ` is a matrix of size `6 x nv`, with `nv`
+  ///   the number of generalized velocities. On input, matrix `Jv_WQ` **must**
   ///   have size `6 x nv` or this method throws an exception. The top rows of
-  ///   this matrix (which can be accessed with Jv_WF.topRows<3>()) is the
-  ///   Jacobian `Hw_WF` related to the angular velocity of F in W by
-  ///   `w_WF = Hw_WF⋅v`. The bottom rows of this matrix (which can be accessed
-  ///   with Jv_WF.bottomRows<3>()) is the Jacobian `Hv_WF` related to the
-  ///   translational velocity of the origin of frame F in W by
-  ///   `v_WFo = Hw_WF⋅v`. This ordering is consistent with the internal storage
-  ///   of the SpatialVector class. Therefore the following operations results
+  ///   this matrix (which can be accessed with Jv_WQ.topRows<3>()) is the
+  ///   Jacobian `Hw_WQ` related to the angular velocity of Q in W by
+  ///   `w_WQ = Hw_WQ⋅v`. The bottom rows of this matrix (which can be accessed
+  ///   with Jv_WQ.bottomRows<3>()) is the Jacobian `Hv_WQ` related to the
+  ///   translational velocity of the origin `Qo` of frame Q in W by
+  ///   `v_WQo = Hv_WQ⋅v`. This ordering is consistent with the internal storage
+  ///   of the SpatialVelocity class. Therefore the following operations results
   ///   in a valid spatial velocity: <pre>
-  ///     SpatialVelocity<double> Jv_WF_times_v(Jv_WF * v);
+  ///     SpatialVelocity<double> Jv_WQ_times_v(Jv_WQ * v);
   ///   </pre>
   ///
-  /// @throws std::exception if `J_WF` is nullptr or if it is not of size
+  /// @throws std::exception if `J_WQ` is nullptr or if it is not of size
   ///   `6 x nv`.
   void CalcFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BoFo_B,
-      EigenPtr<MatrixX<T>> Jv_WF) const;
+      const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FQo,
+      EigenPtr<MatrixX<T>> Jv_WQ) const;
+
+  Vector6<T> CalcBiasForFrameGeometricJacobianExpressedInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FQo) const;
 
   /// @}
   // End of multibody Jacobian methods section.
