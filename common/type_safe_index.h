@@ -38,17 +38,17 @@ namespace drake {
 /// The type-safe index is a _stripped down_ `int`. Each uniquely declared
 /// index type has the following properties:
 ///
-///   - Valid index values are _explicitly_ constructed from `int` values.
-///   - The index is implicitly convertible to an `int` (to serve as an index).
-///   - The index supports increment, decrement, and in-place addition and
-///     subtraction to support standard index-like operations.
-///   - An index _cannot_ be constructed or compared to an index of another
-///     type.
-///   - In general, indices of different types are _not_ interconvertible.
-///   - Binary integer operators (e.g., +, -, |, *, etc.) _always_ produce `int`
-///     return values. One can even use operands of different index types in
-///     such a binary expression. It is the _programmer's_ responsibility to
-///     confirm that the resultant `int` value has meaning.
+/// - Valid index values are _explicitly_ constructed from `int` values.
+/// - The index is implicitly convertible to an `int` (to serve as an index).
+/// - The index supports increment, decrement, and in-place addition and
+///   subtraction to support standard index-like operations.
+/// - An index _cannot_ be constructed or compared to an index of another
+///   type.
+/// - In general, indices of different types are _not_ interconvertible.
+/// - Binary integer operators (e.g., +, -, |, *, etc.) _always_ produce `int`
+///   return values. One can even use operands of different index types in
+///   such a binary expression. It is the _programmer's_ responsibility to
+///   confirm that the resultant `int` value has meaning.
 ///
 /// While there _is_ the concept of an "invalid" index, this only exists to
 /// support default construction _where appropriate_ (e.g., using indices in

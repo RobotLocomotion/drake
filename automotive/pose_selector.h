@@ -55,6 +55,7 @@ enum class RoadPositionStrategy { kCache, kExhaustiveSearch };
 /// respect to a given ego vehicle driving within a given maliput road geometry.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///

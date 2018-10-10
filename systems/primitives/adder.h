@@ -19,6 +19,7 @@ namespace systems {
 /// @tparam T The type of mathematical object being added.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression

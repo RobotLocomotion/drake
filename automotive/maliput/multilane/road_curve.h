@@ -185,6 +185,7 @@ class RoadCurve {
   /// - p: [0, 1]
   /// - r: [@p r_min, @p r_max]
   /// - h: [@p height_bounds]
+  ///
   /// @param geo_coordinate A 3D vector in the world frame to be converted to
   /// the composed curve frame.
   /// @param r_min Minimum lateral distance from the composed curve to saturate,

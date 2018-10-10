@@ -27,26 +27,30 @@ namespace automotive {
 /// with Lz being gravity aligned (gravity acts in the negative Lz direction).
 ///
 /// The states of the model are:
-///   - Lx measure of the location of Cp from Lo `p_LoCp_x` [m]
-///   - Ly measure of the location of Cp from Lo `p_LoCp_y` [m]
-///   - Yaw angle from Lx to Cx with positive Lz sense `yaw_LC` [rad]
-///   - Cx measure of Cp's velocity in L `v_LCp_x` [m/s]
-///   - Cy measure of Cp's velocity in L `v_LCp_y` [m/s]
-///   - C's angular velocity in frame L `yawDt_LC` [rad/s]
+///
+/// - Lx measure of the location of Cp from Lo `p_LoCp_x` [m]
+/// - Ly measure of the location of Cp from Lo `p_LoCp_y` [m]
+/// - Yaw angle from Lx to Cx with positive Lz sense `yaw_LC` [rad]
+/// - Cx measure of Cp's velocity in L `v_LCp_x` [m/s]
+/// - Cy measure of Cp's velocity in L `v_LCp_y` [m/s]
+/// - C's angular velocity in frame L `yawDt_LC` [rad/s]
 ///
 /// Inputs to this system:
-///   - Steer angle from Cx to Dx with positive Cz sense `steer_CD` [rad]
-///   - The Cx measure of the Longitudinal force on body C at Cp `f_Cp_x` [N]
+///
+/// - Steer angle from Cx to Dx with positive Cz sense `steer_CD` [rad]
+/// - The Cx measure of the Longitudinal force on body C at Cp `f_Cp_x` [N]
 ///
 /// Outputs of this system:
-///   - A DynamicBicycleCarState containing the 6-dimensional state vector of
-///     the vehicle.
+///
+/// - A DynamicBicycleCarState containing the 6-dimensional state vector of
+///   the vehicle.
 ///
 /// Note that the vehicle's angular velocity in L `yawDt_LC` is sometimes
 /// referred to as the yaw rate `r`, and the tire angle is sometimes referred
 /// to as δ.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - drake::AutoDiffXd
 /// - drake::symbolic::Expression

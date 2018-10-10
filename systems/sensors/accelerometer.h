@@ -21,12 +21,13 @@ namespace sensors {
 /// frame associated with a RigidBodyPlant.
 ///
 /// The math implemented by this sensor is as follows. Let:
-///  - `v` be the RigidBodyPlant's generalized velocity state vector.
-///  - `A` be the accelerometer's frame with origin point `Ao`.
-///  - `W` be the world frame with origin point `Wo`.
-///  - `v_WAo_W` be `Ao`'s translational velocity in `W` expressed in `W`.
-///  - `J_WA` be the Jacobian matrix that relates `v_WAo_W` to `v`.
-///  - `R_AW` be the rotation matrix from `W` to `A`.
+///
+/// - `v` be the RigidBodyPlant's generalized velocity state vector.
+/// - `A` be the accelerometer's frame with origin point `Ao`.
+/// - `W` be the world frame with origin point `Wo`.
+/// - `v_WAo_W` be `Ao`'s translational velocity in `W` expressed in `W`.
+/// - `J_WA` be the Jacobian matrix that relates `v_WAo_W` to `v`.
+/// - `R_AW` be the rotation matrix from `W` to `A`.
 ///
 /// The equation for `v_WAo_W` is as follows:
 ///
@@ -55,9 +56,10 @@ namespace sensors {
 /// additional math:
 ///
 /// Let:
-///  - `g_W` be the acceleration due to gravity in `W`, as specified by
-///    RigidBodyTree::a_grav.
-///  - `g_A` be the acceleration due to gravity in `A`.
+///
+/// - `g_W` be the acceleration due to gravity in `W`, as specified by
+///   RigidBodyTree::a_grav.
+/// - `g_A` be the acceleration due to gravity in `A`.
 ///
 /// `g_A` is computed as follows:
 ///

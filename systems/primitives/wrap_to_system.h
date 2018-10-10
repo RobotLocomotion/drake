@@ -16,6 +16,7 @@ namespace systems {
 /// interval.
 ///
 /// Instantiated templates for the following scalar types @p T are provided:
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression

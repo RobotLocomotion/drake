@@ -30,30 +30,31 @@ namespace automotive {
 ///
 /// <B>Input Port Accessors:</B>
 ///
-///   - command_input(): Contains the desired acceleration. This port
-///     contains a systems::BasicVector of size 1. It is optional in that it
-///     need not be connected. When it is unconnected, the railcar will travel
-///     at its initial velocity, which is specified in MaliputRailcarParams.
+/// - command_input(): Contains the desired acceleration. This port
+///   contains a systems::BasicVector of size 1. It is optional in that it
+///   need not be connected. When it is unconnected, the railcar will travel
+///   at its initial velocity, which is specified in MaliputRailcarParams.
 ///
 /// <B>Output Port Accessors:</B>
 ///
-///   - state_output(): Contains this system's state vector. See
-///     MaliputRailcarState.
+/// - state_output(): Contains this system's state vector. See
+///   MaliputRailcarState.
 ///
-///   - lane_state_output(): Contains this system's lane direction state. See
-///     LaneDirection.
+/// - lane_state_output(): Contains this system's lane direction state. See
+///   LaneDirection.
 ///
-///   - pose_output(): Contains PoseVector `X_WC`, where `C` is the car frame
-///     and `W` is the world frame.
+/// - pose_output(): Contains PoseVector `X_WC`, where `C` is the car frame
+///   and `W` is the world frame.
 ///
-///   - velocity_output(): Contains FrameVelocity `V_WC_W`, where `C` is the car
-///     frame and `W` is the world frame. Currently the rotational component is
-///     always zero, see #5751.
+/// - velocity_output(): Contains FrameVelocity `V_WC_W`, where `C` is the car
+///   frame and `W` is the world frame. Currently the rotational component is
+///   always zero, see #5751.
 ///
 /// @tparam T must support certain arithmetic operations;
 /// for details, see drake::symbolic::Expression.
 ///
 /// Instantiated templates for the following ScalarTypes are provided:
+///
 /// - double
 ///
 /// They are already available to link against in the containing library.

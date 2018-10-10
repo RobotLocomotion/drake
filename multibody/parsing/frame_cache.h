@@ -18,6 +18,7 @@ namespace parsing {
 /// @note
 /// Instantiated templates for the following scalar types
 /// @p T are provided:
+///
 /// - double
 template <typename T>
 struct FramedIsometry3 {
@@ -38,6 +39,7 @@ struct FramedIsometry3 {
 /// @note
 /// Instantiated templates for the following scalar types
 /// @p T are provided:
+///
 /// - double
 template <typename T>
 class FrameCache {

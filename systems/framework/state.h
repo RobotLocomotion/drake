@@ -18,6 +18,7 @@ namespace systems {
 /// A System may not maintain state in any place other than a %State object.
 ///
 /// A %State `x` contains three types of state variables:
+///
 /// - ContinuousState `xc`
 /// - DiscreteState   `xd`
 /// - AbstractState   `xa`

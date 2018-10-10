@@ -113,6 +113,7 @@ namespace multibody_plant {
 ///
 /// Clients of a %MultibodyPlant can add multibody elements with the following
 /// methods:
+///
 /// - Bodies: AddRigidBody().
 /// - Joints: AddJoint().
 ///
@@ -141,6 +142,7 @@ namespace multibody_plant {
 /// SceneGraph::get_query_output_port().
 /// In summary, if %MultibodyPlant registers collision geometry, the setup
 /// process will include:
+///
 /// 1. Call to RegisterAsSourceForSceneGraph().
 /// 2. Calls to RegisterCollisionGeometry(), as many as needed.
 /// 3. Call to Finalize(), user is done specifying the model.
@@ -153,11 +155,13 @@ namespace multibody_plant {
 ///
 /// Once the user is done adding modeling elements and registering geometry, a
 /// call to Finalize() must be performed. This call will:
+///
 /// - Build the underlying MultibodyTree topology, see MultibodyTree::Finalize()
 ///   for details,
 /// - declare the plant's state,
 /// - declare the plant's input and output ports,
 /// - declare input and output ports for communication with a SceneGraph.
+///
 /// @cond
 /// TODO(amcastro-tri): Consider making the actual geometry registration with GS
 /// AFTER Finalize() so that we can tell if there are any bodies welded to the
@@ -167,6 +171,7 @@ namespace multibody_plant {
 /// @endcond
 ///
 /// <h3> References </h3>
+///
 /// - [Featherstone 2008] Featherstone, R., 2008.
 ///     Rigid body dynamics algorithms. Springer.
 /// - [Jain 2010] Jain, A., 2010.
@@ -179,6 +184,7 @@ namespace multibody_plant {
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///

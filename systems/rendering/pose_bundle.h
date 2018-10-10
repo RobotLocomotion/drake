@@ -30,6 +30,7 @@ namespace rendering {
 ///
 /// This class is explicitly instantiated for the following scalar types. No
 /// other scalar types are supported.
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression
