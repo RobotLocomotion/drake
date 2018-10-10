@@ -9,7 +9,6 @@
 
 #include "drake/geometry/geometry_instance.h"
 #include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
-#include "drake/multibody/multibody_tree/parsing/parser_common.h"
 #include "drake/multibody/multibody_tree/parsing/parser_path_utils.h"
 #include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
 
