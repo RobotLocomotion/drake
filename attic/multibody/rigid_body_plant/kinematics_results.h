@@ -17,6 +17,7 @@ class RigidBodyPlant;
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following ScalarTypes are provided:
+///
 ///  - double
 ///  - AutoDiffXd
 ///

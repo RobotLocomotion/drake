@@ -14,6 +14,7 @@ namespace bouncing_ball {
 /// of a ball dropping from a height and bouncing on a surface.
 ///
 /// Instantiated templates for the following scalar types @p T are provided:
+///
 /// - double
 /// - drake::AutoDiffXd
 /// - symbolic::Expression

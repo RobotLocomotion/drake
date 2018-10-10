@@ -57,6 +57,7 @@ namespace rndf {
 ///
 /// The resulting RoadGeometry presents the following naming for its composed
 /// entities:
+///
 /// - Lane naming: "l:$1-$2", where
 ///    1. RNDF exit waypoint ID.
 ///    2. RNDF entry waypoint ID.
@@ -114,6 +115,7 @@ namespace rndf {
 ///   - Lane 1.2.4-1.2.2
 ///
 /// General workflow with this class should be:
+///
 /// -# Create a Builder.
 /// -# Call SetBoundingBox().
 /// -# Call CreateSegmentConnections() for each RNDF segment.

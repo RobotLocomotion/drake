@@ -58,6 +58,7 @@ namespace internal {
 ///
 /// In summary, there will a %BodyNode for each Body in the MultibodyTree which
 /// encompasses:
+///
 /// - a body B in a given MultibodyTree,
 /// - the outboard frame M attached to this body B,
 /// - the inboard frame F attached to the unique parent body P of body B,

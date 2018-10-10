@@ -26,6 +26,7 @@ struct ModelInstanceInfo {
 /// @tparam T must be a valid Eigen ScalarType.
 ///
 /// Instantiated templates for the following ScalarTypes are provided:
+///
 /// - double
 ///
 template <typename T>

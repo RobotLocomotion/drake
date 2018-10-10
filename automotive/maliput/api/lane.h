@@ -114,6 +114,7 @@ class Lane {
   /// same quantity as the i-th derviative of another variable.
   ///
   /// Instantiated templates for the following kinds of T's are provided:
+  ///
   /// - double
   /// - drake::AutoDiffXd
   /// - drake::symbolic::Expression
@@ -160,6 +161,7 @@ class Lane {
   /// geo_pos's partial derivatives.
   ///
   /// Instantiated templates for the following kinds of T's are provided:
+  ///
   /// - double
   /// - drake::AutoDiffXd
   /// - drake::symbolic::Expression

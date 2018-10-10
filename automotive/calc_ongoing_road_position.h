@@ -16,6 +16,7 @@ namespace automotive {
 /// road.
 ///
 /// Instantiated templates for the following scalar types `T` are provided:
+///
 /// - double
 /// - drake::AutoDiffXd
 ///

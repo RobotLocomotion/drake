@@ -12,6 +12,7 @@ namespace automotive {
 /// constant except for @p current_velocity.
 ///
 /// Instantiated templates for the following ScalarTypes are provided:
+///
 /// - double
 /// - drake::AutoDiffXd
 /// - drake::symbolic::Expression

@@ -17,6 +17,7 @@ namespace automotive {
 /// list of waypoints, it traces a path between them.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - drake::AutoDiffXd
 ///
@@ -62,6 +63,7 @@ class Curve2 {
   /// respect to @p path_distance.
   ///
   /// The @p path_distance is clipped to the ends of the curve:
+  ///
   /// - A negative @p path_distance is interpreted as a @p path_distance
   ///   of zero.
   /// - A @p path_distance that exceeds the @p path_length() of the curve

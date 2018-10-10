@@ -17,12 +17,13 @@ namespace utility {
 /// @param features  parameters for constructing the mesh
 ///
 /// GenerateUrdfFile() actually produces three files:
-///  - [@p dirpath]/[@p fileroot].urdf the URDF file, which is little more
-///    than a wrapper for an OBJ file;
-///  - [@p dirpath]/[@p fileroot].obj a Wavefront OBJ file containing the
-///    visual mesh which models the surface;
-///  - [@p dirpath]/[@p fileroot].mtl a Wavefront MTL file describing
-///    the materials referenced by the OBJ file.
+///
+/// - [@p dirpath]/[@p fileroot].urdf the URDF file, which is little more
+///   than a wrapper for an OBJ file;
+/// - [@p dirpath]/[@p fileroot].obj a Wavefront OBJ file containing the
+///   visual mesh which models the surface;
+/// - [@p dirpath]/[@p fileroot].mtl a Wavefront MTL file describing
+///   the materials referenced by the OBJ file.
 ///
 /// The produced mesh covers the area within the lane-bounds of every
 /// api::Lane in the RoadGeometry.

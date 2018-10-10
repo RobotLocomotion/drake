@@ -22,6 +22,7 @@ namespace systems {
 /// so we expect there to be a well-defined time derivative `xcdot` ≜ `d/dt xc`.
 ///
 /// The contents of `xc` are conceptually partitioned into three groups:
+///
 /// - `q` is generalized position
 /// - `v` is generalized velocity
 /// - `z` is other continuous state

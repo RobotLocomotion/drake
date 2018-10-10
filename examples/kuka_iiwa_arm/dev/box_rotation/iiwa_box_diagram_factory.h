@@ -25,6 +25,7 @@ namespace box_rotation {
 ///
 /// This class is explicitly instantiated for the following scalar type(s). No
 /// other scalar types are supported.
+///
 /// - double
 template<typename T>
 class IiwaAndBoxPlantWithStateEstimator : public systems::Diagram<T> {

@@ -22,6 +22,7 @@ namespace systems {
 /// this class, please refer to https://drake.mit.edu/cxx_inl.html.
 ///
 /// Instantiated templates for the following scalar types @p T are provided:
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression

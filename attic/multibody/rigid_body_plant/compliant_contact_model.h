@@ -24,6 +24,7 @@ struct CompliantContactModelParameters {
 /// described in detail in @ref drake_contacts.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///

@@ -20,10 +20,11 @@ namespace multilane {
 /// the world frame.
 ///
 /// The three components are:
-///  - x: x position
-///  - y: y position
-///  - heading: counter-clockwise around z=cross(x,y). It is the heading of
-///             reference path (radians, zero == x-direction).
+///
+/// - x: x position
+/// - y: y position
+/// - heading: counter-clockwise around z=cross(x,y). It is the heading of
+///            reference path (radians, zero == x-direction).
 class EndpointXy {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EndpointXy)
@@ -61,16 +62,17 @@ std::ostream& operator<<(std::ostream& out, const EndpointXy& endpoint_xy);
 /// the world frame.
 ///
 /// The four components are:
-///  - z: elevation
-///  - z_dot: grade (rate of change of elevation with respect to
-///           arc length of the reference path)
-///  - theta: superelevation (rotation of road surface around r = 0 centerline;
-///           when theta > 0, elevation at r > 0 is above elevation at r < 0)
-///  - theta_dot: rate of change of superelevation with respect to arc length
-///               of the reference path. It is optional because it may be
-///               unknown when building a RoadGeometry and the Builder may need
-///               to adjust it to force the same orientation for all r at a
-///               certain s coordinate of the Segment surface.
+///
+/// - z: elevation
+/// - z_dot: grade (rate of change of elevation with respect to
+///          arc length of the reference path)
+/// - theta: superelevation (rotation of road surface around r = 0 centerline;
+///          when theta > 0, elevation at r > 0 is above elevation at r < 0)
+/// - theta_dot: rate of change of superelevation with respect to arc length
+///              of the reference path. It is optional because it may be
+///              unknown when building a RoadGeometry and the Builder may need
+///              to adjust it to force the same orientation for all r at a
+///              certain s coordinate of the Segment surface.
 class EndpointZ {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EndpointZ)

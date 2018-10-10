@@ -44,20 +44,21 @@ namespace sensors {
 /// and `D`, see the class documentation of CameraInfo.
 ///
 /// Output image format:
-///   - The RGB image has four channels in the following order: red, green
-///     blue, alpha. Each channel is represented by a uint8_t.
 ///
-///   - The depth image has a depth channel represented by a float. The value
-///     stored in the depth channel holds *the Z value in `D`.*  Note that this
-///     is different from the range data used by laser range finders (like that
-///     provided by DepthSensor) in which the depth value represents the
-///     distance from the sensor origin to the object's surface.
+/// - The RGB image has four channels in the following order: red, green
+///   blue, alpha. Each channel is represented by a uint8_t.
 ///
-///   - The label image has single channel represented by a int16_t. The value
-///     stored in the channel holds a model ID which corresponds to an object
-///     in the scene. For the pixels corresponding to no body, namely the sky
-///     and the flat terrain, we assign Label::kNoBody and Label::kFlatTerrain,
-///     respectively.
+/// - The depth image has a depth channel represented by a float. The value
+///   stored in the depth channel holds *the Z value in `D`.*  Note that this
+///   is different from the range data used by laser range finders (like that
+///   provided by DepthSensor) in which the depth value represents the
+///   distance from the sensor origin to the object's surface.
+///
+/// - The label image has single channel represented by a int16_t. The value
+///   stored in the channel holds a model ID which corresponds to an object
+///   in the scene. For the pixels corresponding to no body, namely the sky
+///   and the flat terrain, we assign Label::kNoBody and Label::kFlatTerrain,
+///   respectively.
 ///
 /// @ingroup sensor_systems
 class RgbdCamera final : public LeafSystem<double> {

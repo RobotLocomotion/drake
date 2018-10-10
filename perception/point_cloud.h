@@ -27,6 +27,7 @@ namespace perception {
 /// the cloud.
 ///
 /// Definitions:
+///
 ///  - point - An entry in a point cloud (not exclusively an XYZ point).
 ///  - feature - Abstract representation of local properties (geometric and
 /// non-geometric)
@@ -34,6 +35,7 @@ namespace perception {
 ///  - field - A feature or descriptor described by the point cloud.
 ///
 /// This point cloud class provides the following fields:
+///
 ///  - xyz - Cartesian XYZ coordinates (float[3]).
 ///  - descriptor - An descriptor that is run-time defined (float[X]).
 ///

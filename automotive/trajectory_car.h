@@ -27,18 +27,22 @@ namespace automotive {
 /// cannot travel in reverse.
 ///
 /// parameters:
+///
 /// * uses systems::Parameters wrapping a TrajectoryCarParams
 ///
 /// state vector:
+///
 /// * A TrajectoryCarState, consisting of a position and speed along the given
 ///   curve, provided as the constructor parameter.
 ///
 /// input vector:
+///
 /// * desired acceleration, a systems::BasicVector of size 1 (optional input).
 ///   If left unconnected, the trajectory car will travel at a constant speed
 ///   specified in the TrajectoryCarState.
 ///
 /// output port 0:
+///
 /// * position: x, y, heading;
 ///   heading is 0 rad when pointed +x, pi/2 rad when pointed +y;
 ///   heading is defined around the +z axis, so positive-turn-left
@@ -52,6 +56,7 @@ namespace automotive {
 ///   (OutputPort getter: velocity_output())
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - drake::AutoDiffXd
 ///

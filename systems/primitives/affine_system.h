@@ -133,6 +133,7 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
 /// @tparam T The scalar element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression

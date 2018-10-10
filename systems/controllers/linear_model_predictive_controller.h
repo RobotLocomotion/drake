@@ -28,6 +28,7 @@ namespace controllers {
 /// information between steps.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 ///
 /// @ingroup control_systems

@@ -37,6 +37,7 @@ namespace automotive {
 /// @tparam T must be a valid Eigen ScalarType.
 ///
 /// Instantiated templates for the following ScalarTypes are provided:
+///
 /// - double
 ///
 /// They are already available to link against in the containing library.

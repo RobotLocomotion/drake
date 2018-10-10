@@ -21,6 +21,7 @@ namespace automotive {
 ///
 /// This class is explicitly instantiated for the following scalar types. No
 /// other scalar types are supported.
+///
 /// - double
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.

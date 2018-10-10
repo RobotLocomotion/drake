@@ -26,6 +26,7 @@ namespace constraint {
 /// <h3>Definition of variables specific to this class</h3>
 /// (See @ref constraint_variable_defs) for the more general set of
 /// definitions).
+///
 /// - ns ∈ ℕ   The number of contacts at which sliding is occurring. Note
 ///            that nc = ns + nns, where nc is the number of points of contact.
 /// - nns ∈ ℕ   The number of contacts at which sliding is not occurring. Note

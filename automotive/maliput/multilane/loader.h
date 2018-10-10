@@ -52,15 +52,16 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 /// @ref drake::maliput::multilane::Builder "Builder" interface onto YAML.
 ///
 /// The basic idea is, however:
-///  - general parameters (i.e., lane_width, elevation bounds, linear and
-///    angular tolerance)
-///  - a collection of named 'points', which are specifications of explicitly
-///    named Endpoints
-///  - a collection of named 'connections', whose start Endpoints are specified
-///    by reference to either a named Endpoint or the start or end of
-///    a named Connection
-///  - a collection of named 'groups', specified by sequences of named
-///    Connections
+///
+/// - general parameters (i.e., lane_width, elevation bounds, linear and
+///   angular tolerance)
+/// - a collection of named 'points', which are specifications of explicitly
+///   named Endpoints
+/// - a collection of named 'connections', whose start Endpoints are specified
+///   by reference to either a named Endpoint or the start or end of
+///   a named Connection
+/// - a collection of named 'groups', specified by sequences of named
+///   Connections
 ///
 /// Parsing will fail if there is no way to concretely resolve all of the
 /// Endpoint references, e.g., if a document specifies that Connection-A
@@ -77,11 +78,11 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 ///
 /// The following list shows the expected units for floating-point quantities:
 ///
-///   - Positions, distances and lengths: meters [m].
-///   - Angles: degrees [°] (no minutes nor seconds, just degrees).
-///   - Derivatives of positions: meters per meter [m/m] \(i.e., a unitless
-///     slope).
-///   - Derivatives of angles: degrees per meter [°/m].
+/// - Positions, distances and lengths: meters [m].
+/// - Angles: degrees [°] (no minutes nor seconds, just degrees).
+/// - Derivatives of positions: meters per meter [m/m] \(i.e., a unitless
+///   slope).
+/// - Derivatives of angles: degrees per meter [°/m].
 ///
 /// All positions, distances, lengths, angles and derivatives are floating point
 /// numbers. Other type of quantities will be integers.
@@ -91,12 +92,12 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 /// Clarifications to better understand the nomenclature used within this
 /// description:
 ///
-///   - In code snippets, strings in capital letters represent values that the
-/// YAML writer must choose and the others are keywords to be parsed.
-///   - When referring to keywords in the YAML, `non-capitalized` strings will
-/// be used.
-///   - When referring to types within `maliput`, `Capitalized` strings will be
-/// used.
+/// - In code snippets, strings in capital letters represent values that the
+///   YAML writer must choose and the others are keywords to be parsed.
+/// - When referring to keywords in the YAML, `non-capitalized` strings will
+///   be used.
+/// - When referring to types within `maliput`, `Capitalized` strings will be
+///   used.
 ///
 /// <h3>Coordinates and frames</h3>
 ///
@@ -180,30 +181,32 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 /// @endcode
 ///
 /// Where:
-///   - _ID_ is a string scalar that defines the _ID_ of the `RoadGeometry`.
-///   - _LW_ is the width of the lanes. Lane’s centerline will be placed at
-/// the same lane width distance one from the other. It must be non negative.
-///   - _LS_ and _RS_ are default left and right shoulders are extra spaces
-/// added to the right of the last lane and left to the first lane respectively.
-///  Their purpose is to increase driveable bounds. Both must be non negative.
-///   - _EB\_MIN_ and _EB\_MAX_ define minimum and maximum height values of the
-/// road’s volume. The minimum value must be non positive, thus the maximum must
-/// be non negative.
-///   - _LT_ and _AT_ are position and orientation tolerances which are non
-/// negative numbers that define the error of mapping a world coordinate or
-/// orientation in a custom lane-frame.
-///   - _SL_ is the minimum spatial period of variation in `connections`'
-/// reference curve.
-///   - A _CP_ label, which could either be `prefer-accuracy` or `prefer-speed`
-/// The former guides the computations to be as accurate as precision states.
-/// The latter will be accurate whenever possible, but it's not guaranteed in
-/// favor of faster computations.
-///   - _points_ is a map of `endpoint`s to build `connection`s. At least one
-/// point is required to anchor the connections to world-frame.
-///   - _connections_ is a map that holds all the `connection` definitions. It
-/// may be empty if no `Connection` is going to be defined.
-///   - _groups_ is a map of `groups` where `connections` can be put together.
-/// It may be empty or not defined if no group is going to be made.
+///
+/// - _ID_ is a string scalar that defines the _ID_ of the `RoadGeometry`.
+/// - _LW_ is the width of the lanes. Lane’s centerline will be placed at
+///   the same lane width distance one from the other. It must be non negative.
+/// - _LS_ and _RS_ are default left and right shoulders are extra spaces
+///   added to the right of the last lane and left to the first lane
+///   respectively.
+///   Their purpose is to increase driveable bounds. Both must be non negative.
+/// - _EB\_MIN_ and _EB\_MAX_ define minimum and maximum height values of the
+///   road’s volume. The minimum value must be non positive, thus the maximum
+///   must be non negative.
+/// - _LT_ and _AT_ are position and orientation tolerances which are non
+///   negative numbers that define the error of mapping a world coordinate or
+///   orientation in a custom lane-frame.
+/// - _SL_ is the minimum spatial period of variation in `connections`'
+///   reference curve.
+/// - A _CP_ label, which could either be `prefer-accuracy` or `prefer-speed`
+///   The former guides the computations to be as accurate as precision states.
+///   The latter will be accurate whenever possible, but it's not guaranteed in
+///   favor of faster computations.
+/// - _points_ is a map of `endpoint`s to build `connection`s. At least one
+///   point is required to anchor the connections to world-frame.
+/// - _connections_ is a map that holds all the `connection` definitions. It
+///   may be empty if no `Connection` is going to be defined.
+/// - _groups_ is a map of `groups` where `connections` can be put together.
+///   It may be empty or not defined if no group is going to be made.
 ///
 ///
 /// <h3>`points`</h3>
@@ -223,8 +226,9 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 /// @endcode
 ///
 /// Where:
-///   - `xypoint` is the `endpoint_xy` sequence.
-///   - `zpoint` is the `endpoint_z` sequence.
+///
+/// - `xypoint` is the `endpoint_xy` sequence.
+/// - `zpoint` is the `endpoint_z` sequence.
 ///
 /// <h3>`endpoint_xy`</h3>
 ///
@@ -241,9 +245,10 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 /// @endcode
 ///
 /// Where:
-///   - _X_ is the `x` coordinate.
-///   - _Y_ is the `y` coordinate.
-///   - _THETA_ is the Θ coordinate.
+///
+/// - _X_ is the `x` coordinate.
+/// - _Y_ is the `y` coordinate.
+/// - _THETA_ is the Θ coordinate.
 ///
 /// <h3>`endpoint_z`</h3>
 ///
@@ -263,12 +268,14 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 /// @endcode
 ///
 /// Where:
-///   - _Z_ is the `z` coordinate.
-///   - _Z\_DOT_ is the `z′` coordinate.
-///   - _THETA_ is the Θ coordinate.
-///   - _THETA\_DOT_ is the Θ′ coordinate. This parameter is optional, and
-/// typically should be omitted. When omitted, this value will be automatically
-/// calculated such that _G1_ continuity of the road surface is preserved.
+///
+/// - _Z_ is the `z` coordinate.
+/// - _Z\_DOT_ is the `z′` coordinate.
+/// - _THETA_ is the Θ coordinate.
+/// - _THETA\_DOT_ is the Θ′ coordinate. This parameter is optional, and
+///   typically should be omitted. When omitted, this value will be
+///   automatically calculated such that _G1_ continuity of the road surface is
+///   preserved.
 ///
 /// <h3>`connections`</h3>
 ///
@@ -292,7 +299,7 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 ///
 /// Sample line-connections mapping are shown below:
 ///
-///   - Example 1: reference curve from points.
+/// - Example 1: reference curve from points.
 ///
 /// @code{.yml}
 ///
@@ -319,7 +326,7 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 /// @ref drake::maliput::multilane::Builder "Builder" to preserve _G1_ road
 /// surface continuity.
 ///
-///   - Example 2: reference curve from connections.
+/// - Example 2: reference curve from connections.
 ///
 /// @code{.yml}
 ///
@@ -352,7 +359,7 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 /// @ref drake::maliput::multilane::Builder "Builder" to preserve _G1_
 /// continuity of the road surface.
 ///
-///   - Example 3: lane curve from points.
+/// - Example 3: lane curve from points.
 ///
 /// @code{.yml}
 ///
@@ -372,7 +379,7 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 /// `start` or `z_end`. @ref drake::maliput::multilane::Builder "Builder" will
 /// adjust them to preserve _G1_ continuity of the road surface.
 ///
-///   - Example 4: lane curve from other connections' lane curves.
+/// - Example 4: lane curve from other connections' lane curves.
 ///
 /// @code{.yml}
 ///
@@ -399,46 +406,50 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 /// adjust them to preserve _G1_ continuity of the road surface.
 ///
 /// From examples above:
-///   - `lanes` holds number of lanes, reference lane and distance from the
-/// reference lane to the reference curve.
-///   - `left_shoulder` is the extra space at the right side of the last lane
-/// of the connection. It will override default values.
-///   - `right_shoulder` is the extra space at the left side of the first lane
-/// of the `connection`. It will override default values.
-///   - `start` is used to define the start `endpoint` of one the `connection`’s
-/// curves. It may have multiple options. Those can be split into two elements:
-///     - The first element could be:
-///       -# `ref` to point the reference curve.
-///       -# `lane.LN` to point a specific lane.\n
-///     - The second element is composed of one of the following options:
-///       -# A reference to an `endpoint` in the points collection. Either
-/// `forward` or `reverse` should be used to indicate the direction of the
-/// `endpoint`.
-///       -# The start or end `endpoint` of a `connection`’s reference curve or
-/// lane. Either forward or reverse should be used to indicate the direction of
-/// the `endpoint`. When using the forward the `endpoint` will be used as is.
-/// Otherwise (using `reverse`) the `Endpoint` will be reversed.
-///   - `length` is the `connection`’s reference road curve planar line length.
-///   - `arc` is the `connection`’s reference curve planar piece of arc.
-///   - `z_end` is the `endpoint_z` information to end one of the `connection`’s
-/// curves. It is composed of two elements too. The first one points to the
-/// reference curve when `ref` is present. Otherwise, `lane.LN` must be
-/// specified.
-///   - `explicit_end` is a node similar to `start`. It is composed of two
-/// parts. The first one points to the reference curve when `ref` is present.
-/// Otherwise, `lane.LN` must be specified. The second part is used to point the
-/// `endpoint` information which could be provided by a `connection` or the
-/// `points` collection. When using a `connection`, two options are available:
-/// the reference curve or a lane.
+///
+/// - `lanes` holds number of lanes, reference lane and distance from the
+///   reference lane to the reference curve.
+/// - `left_shoulder` is the extra space at the right side of the last lane
+///   of the connection. It will override default values.
+/// - `right_shoulder` is the extra space at the left side of the first lane
+///   of the `connection`. It will override default values.
+/// - `start` is used to define the start `endpoint` of one the `connection`’s
+///   curves. It may have multiple options. Those can be split into two
+///   elements:
+///   - The first element could be:
+///     -# `ref` to point the reference curve.
+///     -# `lane.LN` to point a specific lane.\n
+///   - The second element is composed of one of the following options:
+///     -# A reference to an `endpoint` in the points collection. Either
+///        `forward` or `reverse` should be used to indicate the direction of
+///        the `endpoint`.
+///     -# The start or end `endpoint` of a `connection`’s reference curve or
+///        lane. Either forward or reverse should be used to indicate the
+///        direction of the `endpoint`. When using the forward the `endpoint`
+///        will be used as is. Otherwise (using `reverse`) the `Endpoint` will
+///        be reversed.
+/// - `length` is the `connection`’s reference road curve planar line length.
+/// - `arc` is the `connection`’s reference curve planar piece of arc.
+/// - `z_end` is the `endpoint_z` information to end one of the `connection`’s
+///    curves. It is composed of two elements too. The first one points to the
+///    reference curve when `ref` is present. Otherwise, `lane.LN` must be
+///    specified.
+/// - `explicit_end` is a node similar to `start`. It is composed of two
+///    parts. The first one points to the reference curve when `ref` is present.
+///    Otherwise, `lane.LN` must be specified. The second part is used to point
+///    the `endpoint` information which could be provided by a `connection` or
+///    the `points` collection. When using a `connection`, two options are
+///    available: the reference curve or a lane.
 ///
 /// Possible combinations to define a `connection` node are:
-///   - Each `connection` must have either `length` or `arc`.
-///   - Each `connection` must have either `z_end` or `explicit_end`.
-///   - `start` and `explicit_end` possible combinations:
-///     -# This LANE from other LANE.
-///     -# This REF from other REF.
-///     -# This LANE from POINT.
-///     -# This REF from POINT.
+///
+/// - Each `connection` must have either `length` or `arc`.
+/// - Each `connection` must have either `z_end` or `explicit_end`.
+/// - `start` and `explicit_end` possible combinations:
+///   -# This LANE from other LANE.
+///   -# This REF from other REF.
+///   -# This LANE from POINT.
+///   -# This REF from POINT.
 ///
 /// At least one connection must _start_ with "LANE from POINT" or "REF from
 /// POINT" in order to anchor the road geometry in the world frame.
@@ -461,8 +472,9 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 /// @endcode
 ///
 /// Where:
-///   - _RADIUS_ is the radius of the `arc`.
-///   - _THETA_ is the angle span of the `arc`.
+///
+/// - _RADIUS_ is the radius of the `arc`.
+/// - _THETA_ is the angle span of the `arc`.
 ///
 /// <h3>`groups`</h3>
 ///
@@ -480,7 +492,8 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 /// @endcode
 ///
 /// Where:
-///   - `C\_1`, `C\_2`, `C\_3` are `connections`’ IDs.
+///
+/// - `C\_1`, `C\_2`, `C\_3` are `connections`’ IDs.
 
 }  // namespace multilane
 }  // namespace maliput

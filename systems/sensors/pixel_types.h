@@ -12,9 +12,10 @@ namespace sensors {
 /// The naming rule for the enum members is:
 /// k + (pixel format) + (bit per a channel) + (data type for channels).
 /// For the type for channels, one of the following capital letters is used.
-///   - I: int
-///   - U: unsigned int
-///   - F: float
+///
+/// - I: int
+/// - U: unsigned int
+/// - F: float
 enum class PixelType {
   /// The pixel format used by ImageRgb8U.
   kRgb8U = 0,

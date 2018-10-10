@@ -20,6 +20,7 @@ namespace automotive {
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following `T` values are provided:
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression
