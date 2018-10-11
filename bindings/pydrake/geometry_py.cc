@@ -4,6 +4,7 @@
 
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/util/deprecation_pybind.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
@@ -20,19 +21,35 @@ using T = double;
 
 template <typename Class>
 void BindIdentifier(py::module m, const std::string& name) {
-  py::class_<Class>(m, name.c_str())
-      .def(py::init<>())
-      .def("get_value", &Class::get_value)
-      .def("is_valid", &Class::is_valid)
+  auto& cls_doc = pydrake_doc.drake.geometry.Identifier;
+
+  py::class_<Class> cls(m, name.c_str());
+  py::handle cls_handle = cls;
+  cls
+      .def(py::init([cls_handle]() {
+        WarnDeprecated(
+          py::str(
+            "The constructor for {} in Python is deprecated. "
+            "Use `get_new_id()` if necessary.").format(cls_handle));
+        return Class{};
+      }), cls_doc.ctor.doc_3)
+      .def("get_value", &Class::get_value, cls_doc.get_value.doc)
+      .def("is_valid", &Class::is_valid, cls_doc.is_valid.doc)
       .def(py::self == py::self)
       .def(py::self != py::self)
-      .def(py::self < py::self);
+      .def(py::self < py::self)
+      .def_static("get_new_id", &Class::get_new_id, cls_doc.get_new_id.doc);
 }
 
 PYBIND11_MODULE(geometry, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
   constexpr auto& doc = pydrake_doc.drake.geometry;
+
+  // TODO(m-chaturvedi) Add Pybind11 documentation to aliases (#9599).
+  BindIdentifier<SourceId>(m, "SourceId");
+  BindIdentifier<FrameId>(m, "FrameId");
+  BindIdentifier<GeometryId>(m, "GeometryId");
 
   py::module::import("pydrake.systems.framework");
   py::class_<SceneGraph<T>, LeafSystem<T>>(m, "SceneGraph", doc.SceneGraph.doc)
@@ -43,12 +60,11 @@ PYBIND11_MODULE(geometry, m) {
            &SceneGraph<T>::get_pose_bundle_output_port, py_reference_internal,
            doc.SceneGraph.get_pose_bundle_output_port.doc)
       .def("get_query_output_port", &SceneGraph<T>::get_query_output_port,
-           py_reference_internal, doc.SceneGraph.get_query_output_port.doc);
-
-  // TODO(m-chaturvedi) Add Pybind11 documentation.
-  BindIdentifier<SourceId>(m, "SourceId");
-  BindIdentifier<FrameId>(m, "FrameId");
-  BindIdentifier<GeometryId>(m, "GeometryId");
+           py_reference_internal, doc.SceneGraph.get_query_output_port.doc)
+      .def("RegisterSource",
+           py::overload_cast<const std::string&>(
+               &SceneGraph<T>::RegisterSource),
+           py::arg("name") = "", doc.SceneGraph.RegisterSource.doc);
 
   py::module::import("pydrake.systems.lcm");
   m.def("ConnectDrakeVisualizer",
