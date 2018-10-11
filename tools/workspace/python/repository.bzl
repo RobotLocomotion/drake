@@ -49,32 +49,32 @@ _VERSION_MAJOR_MINOR_SUPPORTED = [
     "3.6",  # Homebrew
 ]
 
-def _impl(repo_ctx):
-    version = repo_ctx.attr.version
+def _impl(repository_ctx):
+    version = repository_ctx.attr.version
     if version == "path":
-        tmp = repo_ctx.which("python")
+        tmp = repository_ctx.which("python")
         version = _py_exec(
-            repo_ctx,
+            repository_ctx,
             tmp,
             "import sys; print(sys.version_info.major)",
         ).strip()
 
-    python_config = repo_ctx.which("python{}-config".format(version))
+    python_config = repository_ctx.which("python{}-config".format(version))
     if not python_config:
         fail("Could NOT find python{}-config".format(
             version,
         ))
-    python = repo_ctx.which("python{}".format(version))
+    python = repository_ctx.which("python{}".format(version))
 
     # Estimate that we're using the same configuration between
     # `python{version}` and `python-config{version}`.
     py_configdir = _py_exec(
-        repo_ctx,
+        repository_ctx,
         python,
         "import sysconfig; print(sysconfig.get_config_var(\"LIBPL\"))",
     ).strip()
     py_config_configdir = _exec(
-        repo_ctx,
+        repository_ctx,
         [python_config, "--configdir"],
     ).strip()
     if (py_configdir != py_config_configdir):
@@ -86,7 +86,7 @@ def _impl(repo_ctx):
         ))
 
     version_major_minor = _py_exec(
-        repo_ctx,
+        repository_ctx,
         python,
         "import sys; v = sys.version_info; " +
         "print(\"{}.{}\".format(v.major, v.minor))",
@@ -99,12 +99,12 @@ def _impl(repo_ctx):
             version_major_minor,
             _VERSION_MAJOR_MINOR_SUPPORTED,
         )
-        if repo_ctx.attr.if_unsupported == "warn":
+        if repository_ctx.attr.if_unsupported == "warn":
             print("WARNING: " + msg)
-        elif repo_ctx.attr.if_unsupported == "fail":
+        elif repository_ctx.attr.if_unsupported == "fail":
             fail(msg)
 
-    result = repo_ctx.execute([python_config, "--includes"])
+    result = repository_ctx.execute([python_config, "--includes"])
 
     if result.return_code != 0:
         fail("Could NOT determine Python includes", attr = result.stderr)
@@ -112,7 +112,7 @@ def _impl(repo_ctx):
     cflags = result.stdout.strip().split(" ")
     cflags = [cflag for cflag in cflags if cflag]
 
-    root = repo_ctx.path("")
+    root = repository_ctx.path("")
     root_len = len(str(root)) + 1
     base = root.get_child("include")
 
@@ -120,15 +120,15 @@ def _impl(repo_ctx):
 
     for cflag in cflags:
         if cflag.startswith("-I"):
-            source = repo_ctx.path(cflag[2:])
+            source = repository_ctx.path(cflag[2:])
             destination = base.get_child(str(source).replace("/", "_"))
             include = str(destination)[root_len:]
 
             if include not in includes:
-                repo_ctx.symlink(source, destination)
+                repository_ctx.symlink(source, destination)
                 includes += [include]
 
-    result = repo_ctx.execute([python_config, "--ldflags"])
+    result = repository_ctx.execute([python_config, "--ldflags"])
 
     if result.return_code != 0:
         fail("Could NOT determine Python linkopts", attr = result.stderr)
@@ -142,7 +142,7 @@ def _impl(repo_ctx):
 
     linkopts_direct_link = list(linkopts)
 
-    os_result = determine_os(repo_ctx)
+    os_result = determine_os(repository_ctx)
     if os_result.error != None:
         fail(os_result.error)
 
@@ -189,7 +189,7 @@ cc_library(
 )
     """.format(includes, linkopts, linkopts_direct_link)
 
-    repo_ctx.file(
+    repository_ctx.file(
         "BUILD.bazel",
         content = file_content,
         executable = False,
@@ -204,7 +204,7 @@ def python_version_major_minor():
 def python_lib_dir():
     return "lib/python{}"
 """.format(version_major_minor, version_major_minor)
-    repo_ctx.file("python.bzl", content = skylark_content, executable = False)
+    repository_ctx.file("python.bzl", content = skylark_content, executable = False)
 
 python_repository = repository_rule(
     _impl,
