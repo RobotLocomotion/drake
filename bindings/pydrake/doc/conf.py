@@ -32,6 +32,8 @@ extensions = [
     'sphinx.ext.napoleon',
 ]
 
+napoleon_include_init_with_doc = True
+
 # The suffix(es) of source filenames.
 source_suffix = '.rst'
 
