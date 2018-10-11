@@ -14,7 +14,7 @@
 
 try:
     import drake.lcmtypes
-    __path__.append(drake.lcmtypes.__path__[0] + "/drake")
+    __path__.append(list(drake.lcmtypes.__path__)[0] + "/drake")
     from drake.lcmtypes.drake import *
 except ImportError:
     pass

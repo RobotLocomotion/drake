@@ -667,6 +667,7 @@ void init_all(py::module m) {
 }  // namespace
 
 PYBIND11_MODULE(multibody_tree, m) {
+  PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   m.doc() = "MultibodyTree functionality.";
 
   // TODO(eric.cousineau): Split this into separate files. See discussion in

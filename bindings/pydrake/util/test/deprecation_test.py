@@ -5,6 +5,7 @@ from pydrake.util.deprecation import DrakeDeprecationWarning
 import pydoc
 import unittest
 import rlcompleter
+import six
 import sys
 from types import ModuleType
 import warnings
@@ -63,7 +64,7 @@ class TestDeprecation(unittest.TestCase):
     def test_module_import_exec(self):
         # Test `exec` workflow.
         temp = {}
-        exec "from deprecation_example import *" in temp
+        six.exec_("from deprecation_example import *", temp, temp)
         self.assertIsInstance(temp["sub_module"], str)
 
     def test_module_autocomplete(self):
@@ -74,7 +75,7 @@ class TestDeprecation(unittest.TestCase):
         namespace = locals()
         completer = rlcompleter.Completer(namespace)
         candidates = []
-        for i in xrange(1000):
+        for i in range(1000):
             candidate = completer.complete("deprecation_example.", i)
             if candidate is None:
                 break
@@ -106,6 +107,15 @@ class TestDeprecation(unittest.TestCase):
             "deprecation_example.sub_module",
             "deprecation_example.value",
         ]
+        if six.PY3:
+            candidates_expected += [
+                'deprecation_example.__ge__(',
+                'deprecation_example.__eq__(',
+                'deprecation_example.__le__(',
+                'deprecation_example.__lt__(',
+                'deprecation_example.__gt__(',
+                'deprecation_example.__ne__(',
+            ]
         self.assertSetEqual(set(candidates), set(candidates_expected))
 
     def _check_warning(
@@ -113,7 +123,7 @@ class TestDeprecation(unittest.TestCase):
         self.assertEqual(item.category, type)
         if type == DrakeDeprecationWarning:
             message_expected += DrakeDeprecationWarning.addendum
-        self.assertEqual(item.message.message, message_expected)
+        self.assertEqual(str(item.message), message_expected)
 
     def test_member_deprecation(self):
         from deprecation_example import ExampleClass
@@ -125,6 +135,12 @@ class TestDeprecation(unittest.TestCase):
         # At this point, no other deprecations should have been thrown, so we
         # will test with the default `once` filter.
         with warnings.catch_warnings(record=True) as w:
+            if six.PY3:
+                # Recreate warning environment.
+                warnings.simplefilter('ignore', DeprecationWarning)
+                warnings.simplefilter('once', DrakeDeprecationWarning)
+            # TODO(eric.cousineau): Also different behavior here...
+            # Is `unittest` setting a non-standard warning filter???
             base_deprecation()  # Should not appear.
             obj = ExampleClass()
             # Call each deprecated method / property repeatedly; it should only
@@ -144,7 +160,7 @@ class TestDeprecation(unittest.TestCase):
                 self.assertEqual(prop.__get__(obj), 2)
             self.assertEqual(prop.__doc__, ExampleClass.doc_prop)
             # Check warnings.
-            self.assertEqual(len(w), 2)
+            self.assertEqual(len(w), 2, "\n".join(map(str, w)))
             self._check_warning(w[0], ExampleClass.message_method)
             self._check_warning(w[1], ExampleClass.message_prop)
 

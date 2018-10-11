@@ -8,7 +8,9 @@ module to be robust against this situation.
 """
 
 import inspect
+import six
 from types import MethodType
+
 from pydrake.third_party.wrapt import ObjectProxy
 
 # TODO(eric.cousineau): Add mechanism for enabling / disabling const-proxying.
@@ -30,7 +32,11 @@ class _ConstClassMeta(object):
         self._owned_properties = set(owned_properties or set())
         self.mutable_methods = set(mutable_methods or set())
         # Add any decorated mutable methods.
-        methods = inspect.getmembers(cls, predicate=inspect.ismethod)
+        if six.PY2:
+            predicate = inspect.ismethod
+        else:
+            predicate = inspect.isfunction
+        methods = inspect.getmembers(cls, predicate=predicate)
         for name, method in methods:
             # TODO(eric.cousineau): Warn if there is a mix of mutable and
             # immutable methods with the same name.
@@ -174,6 +180,13 @@ class _Const(ObjectProxy):
         else:
             return out
 
+    def __str__(self):
+        T = type(self.__wrapped__)
+        if T.__str__ == object.__str__:
+            return self.__repr__()
+        else:
+            return self.__wrapped__.__str__()
+
 
 def _install_object_mutable_methods():
     # Installs methods to `_Const` that will always raise an error.
@@ -190,22 +203,31 @@ def _install_object_mutable_methods():
 
 _install_object_mutable_methods()
 
+_LITERAL_TYPES = {int, float, str, tuple, type(None)}
+if six.PY2:
+    _LITERAL_TYPES.add(unicode)
+
 
 def _is_immutable(obj):
     # Detects if a type is a immutable (or literal) type.
-    literal_types = [int, float, str, unicode, tuple, type(None)]
-    return type(obj) in literal_types
+    return type(obj) in _LITERAL_TYPES
 
 
-def _is_method_of(func, obj):
-    # Detects if `func` is a function bound to a given instance `obj`.
-    return inspect.ismethod(func) and func.im_self is obj
+if six.PY2:
+    def _is_method_of(func, obj):
+        # Detects if `func` is a function bound to a given instance `obj`.
+        return inspect.ismethod(func) and func.im_self is obj
 
+    def _rebind_method(bound, new_self):
+        # Rebinds `bound.im_self` to `new_self`.
+        # https://stackoverflow.com/a/14574713/7829525
+        return MethodType(bound.__func__, new_self, bound.im_class)
+else:
+    def _is_method_of(func, obj):
+        return getattr(func, '__self__', None) is obj
 
-def _rebind_method(bound, new_self):
-    # Rebinds `bound.im_self` to `new_self`.
-    # https://stackoverflow.com/a/14574713/7829525
-    return MethodType(bound.__func__, new_self, bound.im_class)
+    def _rebind_method(bound, new_self):
+        return MethodType(bound.__func__, new_self)
 
 
 def to_const(obj):

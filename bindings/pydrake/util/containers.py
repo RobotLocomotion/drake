@@ -1,5 +1,7 @@
 """Provides extensions for containers of Drake-related objects."""
 
+import six
+
 
 class _EqualityProxyBase(object):
     # Wraps an object with a non-compliant `__eq__` operator (returns a
@@ -37,7 +39,7 @@ class _DictKeyWrap(dict):
         # sidestepped by storing the properties in a `dict`.
         self._key_wrap = key_wrap
         self._key_unwrap = key_unwrap
-        for key, value in dict_in.iteritems():
+        for key, value in six.iteritems(dict_in):
             self[key] = value
 
     def __setitem__(self, key, value):
@@ -56,7 +58,12 @@ class _DictKeyWrap(dict):
         return zip(self.keys(), self.values())
 
     def keys(self):
-        return [self._key_unwrap(key) for key in dict.iterkeys(self)]
+        # `six.iterkeys` will not constrain the call to use `dict` methods.
+        if six.PY2:
+            keys_iter = dict.iterkeys(self)
+        else:
+            keys_iter = dict.keys(self)
+        return [self._key_unwrap(key) for key in keys_iter]
 
     def iterkeys(self):
         # Non-performant, but sufficient for now.
@@ -86,6 +93,9 @@ class EqualToDict(_DictKeyWrap):
                 T = type(self.value)
                 return (isinstance(other.value, T)
                         and self.value.EqualTo(other.value))
+
+            # https://stackoverflow.com/a/1608907/7829525
+            __hash__ = _EqualityProxyBase.__hash__
 
         dict_in = dict(*args, **kwargs)
         _DictKeyWrap.__init__(self, dict_in, Proxy, Proxy._get_value)
