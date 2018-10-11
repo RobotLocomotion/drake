@@ -413,6 +413,38 @@ GlobalInverseKinematics::BodyPointInOneOfRegions(
   return z;
 }
 
+solvers::VectorXDecisionVariable
+GlobalInverseKinematics::BodySphereInOneOfPolytopes(
+    int body_index, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+    double radius,
+    const std::vector<std::pair<Eigen::Matrix<double, Eigen::Dynamic, 3>,
+                                Eigen::VectorXd>>& polytopes) {
+  DRAKE_DEMAND(radius >= 0);
+  const int num_polytopes = static_cast<int>(polytopes.size());
+  const auto z = NewBinaryVariables(num_polytopes, "z");
+  // z1 + ... + zn = 1
+  AddLinearEqualityConstraint(Eigen::RowVectorXd::Ones(num_polytopes), 1, z);
+
+  const auto y =
+      NewContinuousVariables<3, Eigen::Dynamic>(3, num_polytopes, "y");
+  const Vector3<symbolic::Expression> p_WQ =
+      p_WBo_[body_index] + R_WB_[body_index] * p_BQ;
+  // p_WQ = y.col(0) + ... + y.col(n)
+  AddLinearEqualityConstraint(
+      p_WQ - y.cast<symbolic::Expression>().rowwise().sum(),
+      Eigen::Vector3d::Zero());
+
+  for (int i = 0; i < num_polytopes; ++i) {
+    DRAKE_DEMAND(polytopes[i].first.rows() == polytopes[i].second.rows());
+    AddLinearConstraint(
+        polytopes[i].first * y.col(i) <=
+        (polytopes[i].second - polytopes[i].first.rowwise().norm() * radius) *
+            z(i));
+  }
+
+  return z;
+}
+
 // Approximate a quadratic constraint (which could be formulated as a Lorentz
 // cone constraint) xᵀx ≤ c² by
 // -c ≤ xᵢ ≤ c

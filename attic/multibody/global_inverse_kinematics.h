@@ -257,6 +257,36 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
       const std::vector<Eigen::Matrix3Xd>& region_vertices);
 
   /**
+   * Adds the constraint that a sphere rigidly attached to a body has to be
+   * within one of the given bounded polytopes.
+   * If the i'th polytope is described as
+   * bᵢ_lb ≤ Aᵢ * x ≤ bᵢ_ub
+   * Then a sphere with center position p_WQ and radius r is within the i'th
+   * polytope, if
+   * Aᵢ * p_WQ ≤ bᵢ - aᵢr
+   * where aᵢ(j) = Aᵢ.row(j).norm()
+   * To constrain that the sphere is in one of the n polytopes, we introduce the
+   * binary variable z ∈{0, 1}ⁿ, together with continuous variables yᵢ ∈ ℝ³, i
+   * = 1, ..., n, such that
+   * p_WQ = y₁ + ... + yₙ
+   * Aᵢ * yᵢ ≤ (bᵢ - aᵢr)zᵢ
+   * z₁ + ... +zₙ  = 1
+   * @param body_index The index of the body to which the sphere is attached.
+   * @param p_BQ The position of the sphere center in the body frame B.
+   * @param radius The radius of the sphere.
+   * @param polytopes. polytopes[i] = (Aᵢ, bᵢ). We assume that Aᵢx≤ bᵢ is a
+   * bounded polytope. It is the user's responsibility to guarantee the
+   * boundedness.
+   * @retval z The newly added binary variables. If the sphere is in the i'th
+   * polytope, then z(i) = 1
+   */
+  solvers::VectorXDecisionVariable BodySphereInOneOfPolytopes(
+      int body_index, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+      double radius,
+      const std::vector<std::pair<Eigen::Matrix<double, Eigen::Dynamic, 3>,
+                                  Eigen::VectorXd>>& polytopes);
+
+  /**
    * Adds joint limits on a specified joint.
    * @param body_index The joint connecting the parent link to this body will be
    * constrained.
