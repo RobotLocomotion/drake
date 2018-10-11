@@ -3,7 +3,11 @@
 import os
 import sys
 
-from sphinx.cmd.build import main
-
 os.environ['LANG'] = 'en_US.UTF-8'
-main(sys.argv[1:])
+
+try:
+    from sphinx.cmd.build import main
+    sys.exit(main(sys.argv[1:]))
+except ImportError:
+    from sphinx import main
+    sys.exit(main(sys.argv))
