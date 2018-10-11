@@ -47,11 +47,13 @@ def _which(repository_ctx, bin_name):
         fail("Could NOT find {}".format(bin_name))
     return struct(ctx = repository_ctx, bin = bin)
 
-def _exec(exec_ctx, args):
+def _exec(exec_ctx, args, name = None):
     args = [exec_ctx.bin] + args
     result = exec_ctx.ctx.execute(args)
+    if name == None:
+        name = args
     if result.return_code != 0:
-        fail("Could not execute {}: {}".format(args, result.stderr))
+        fail("Could not execute {}: {}".format(name, result.stderr))
     return result.stdout.strip()
 
 def _get_and_validate_version(os_result, python, python_config):
@@ -112,7 +114,7 @@ def _impl(repository_ctx):
         python_config,
     )
 
-    cflags = _exec(python_config, ["--includes"]).split(" ")
+    cflags = _exec(python_config, ["--includes"], "include query").split(" ")
     cflags = [cflag for cflag in cflags if cflag]
 
     root = repository_ctx.path("")
@@ -131,7 +133,7 @@ def _impl(repository_ctx):
                 repository_ctx.symlink(source, destination)
                 includes += [include]
 
-    linkopts = _exec(python_config, ["--ldflags"]).split(" ")
+    linkopts = _exec(python_config, ["--ldflags"], "flag query").split(" ")
     linkopts = [linkopt for linkopt in linkopts if linkopt]
 
     for i in reversed(range(len(linkopts))):
@@ -145,8 +147,6 @@ def _impl(repository_ctx):
             if linkopts[i].find("python{}".format(version)) != -1:
                 linkopts.pop(i)
         linkopts = ["-undefined dynamic_lookup"] + linkopts
-
-    sys_prefix = _exec(python, ["-c", "import sys; print(sys.prefix)"])
 
     file_content = """# -*- python -*-
 
