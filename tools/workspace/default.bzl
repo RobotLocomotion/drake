@@ -195,7 +195,7 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "spdlog" not in excludes:
         spdlog_repository(name = "spdlog", mirrors = mirrors)
     if "sphinx" not in excludes:
-        sphinx_repository(name = "sphinx")
+        sphinx_repository(name = "sphinx_py", mirrors = mirrors)
     if "spruce" not in excludes:
         spruce_repository(name = "spruce")
     if "stx" not in excludes:

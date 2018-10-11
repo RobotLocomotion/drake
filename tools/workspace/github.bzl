@@ -10,6 +10,8 @@ def github_archive(
         build_file = None,
         local_repository_override = None,
         mirrors = None,
+        http_archive = http_archive,
+        strip_prefix = '',
         **kwargs):
     """A macro to be called in the WORKSPACE that adds an external from github
     using a workspace rule.
