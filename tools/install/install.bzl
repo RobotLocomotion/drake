@@ -8,6 +8,7 @@ load(
     "join_paths",
     "output_path",
 )
+load("@python//:python.bzl", "python_site_packages_suffix")
 
 InstallInfo = provider()
 
@@ -545,7 +546,7 @@ _install_rule = rule(
         "runtime_strip_prefix": attr.string_list(),
         "java_dest": attr.string(default = "share/java"),
         "java_strip_prefix": attr.string_list(),
-        "py_dest": attr.string(default = "lib/python2.7/site-packages"),
+        "py_dest": attr.string(default = python_site_packages_suffix()),
         "py_strip_prefix": attr.string_list(),
         "rename": attr.string_dict(),
         "install_tests": attr.label_list(
@@ -665,7 +666,7 @@ Args:
     java_dest: Destination for Java library targets (default = "share/java").
     java_strip_prefix: List of prefixes to remove from Java library paths.
     py_dest: Destination for Python targets
-        (default = "lib/python2.7/site-packages").
+        (default = "lib/python{MAJOR}.{MINOR}/site-packages").
     py_strip_prefix: List of prefixes to remove from Python paths.
     rename: Mapping of install paths to alternate file names, used to rename
       files upon installation.
