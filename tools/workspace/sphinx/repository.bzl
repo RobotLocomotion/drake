@@ -85,8 +85,9 @@ def sphinx_repository(name, mirrors = None):
     github_archive(
         name = name,
         repository = "sphinx-doc/sphinx",
-        commit = "v1.8.0",
-        sha256 = "7fa7e460ffcd4d276012dda5a662c4ce6c46454435c010c7382f3e6a4f16509f",
+        # Needs `typing` and `imagesize`...
+        commit = "v1.5.0", #"v1.8.0",
+        sha256 = "0" * 64,
         build_file = "@drake//tools/workspace/sphinx:package.BUILD.bazel",
         mirrors = mirrors,
         patch_cmds = [
@@ -99,3 +100,8 @@ def sphinx_repository(name, mirrors = None):
     #     name = name,
     #     repository = "rtfd/sphinx_rtd_theme",
     #     commit = "
+
+    # which_repository(
+    #     name = name,
+    #     command = "sphinx-build",
+    # )
