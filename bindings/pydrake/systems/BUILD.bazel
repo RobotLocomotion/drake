@@ -21,6 +21,7 @@ load(
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
+    "//examples:__subpackages__",
 ])
 
 # This determines how `PYTHONPATH` is configured, and how to install the
@@ -119,6 +120,10 @@ drake_pybind_library(
     py_deps = [
         ":framework_py",
         ":module_py",
+    ],
+    visibility = [
+        "//bindings/pydrake:__subpackages__",
+        "//examples:__subpackages__",
     ],
 )
 

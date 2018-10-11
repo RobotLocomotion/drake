@@ -12,6 +12,7 @@ load(":forward_files.bzl", "forward_files")
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
+    "//examples:__subpackages__",
 ])
 
 # This determines how `PYTHONPATH` is configured, and how to install the
