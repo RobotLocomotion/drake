@@ -39,9 +39,10 @@ class ArcRoadCurve : public RoadCurve {
   /// @param computation_policy Policy to guide all computations. If geared
   /// towards speed, computations will make use of analytical expressions even
   /// if not actually correct for the curve as specified.
-  /// @throw std::runtime_error if @p radius is not a positive number.
-  /// @throw std::runtime_error if @p linear_tolerance is not a positive number.
-  /// @throw std::runtime_error if @p scale_length is not a positive number.
+  /// @throws std::runtime_error if @p radius is not a positive number.
+  /// @throws std::runtime_error if @p linear_tolerance is not a positive
+  /// number.
+  /// @throws std::runtime_error if @p scale_length is not a positive number.
   explicit ArcRoadCurve(
       const Vector2<double>& center, double radius,
       double theta0, double d_theta,

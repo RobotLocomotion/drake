@@ -32,6 +32,7 @@ template <typename T> class Body;
 /// non-physical configuration and therefore this element throws a
 /// std::runtime_error exception in that case.
 /// Note that:
+///
 ///   - The applied force is always along the line connecting points P and Q.
 ///   - Damping always dissipates energy.
 ///   - Forces on bodies A and B are equal and opposite according to Newton's
@@ -40,6 +41,7 @@ template <typename T> class Body;
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///

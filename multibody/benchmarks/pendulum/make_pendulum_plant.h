@@ -83,6 +83,7 @@ class PendulumParameters {
 /// with the y-axis. Gravity points downwards in the -z axis direction.
 ///
 /// The parameters of the plant are:
+///
 /// - mass: the mass of the idealized point mass.
 /// - length: the length of the massless rod on which the mass is suspended.
 /// - gravity: the acceleration of gravity.

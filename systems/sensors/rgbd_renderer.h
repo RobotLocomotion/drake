@@ -60,23 +60,24 @@ struct RenderingConfig {
 /// rendered images.
 ///
 /// Output image format:
-///   - RGB (ImageRgba8U) : the RGB image has four channels in the following
-///     order: red, green, blue and alpha. Each channel is represented by
-///     a uint8_t.
 ///
-///   - Depth (ImageDepth32F) : the depth image has a depth channel represented
-///     by a float. For a point in space `P`, the value stored in the depth
-///     channel holds *the Z-component of the position vector `p_RP`.*
-///     Note that this is different from the range data used by laser
-///     range finders (like that provided by DepthSensor) in which the depth
-///     value represents the distance from the sensor origin to the object's
-///     surface.
+/// - RGB (ImageRgba8U) : the RGB image has four channels in the following
+///   order: red, green, blue and alpha. Each channel is represented by
+///   a uint8_t.
 ///
-///   - Label (ImageLabel16I) : the label image has single channel represented
-///     by a int16_t. The value stored in the channel holds a model ID which
-///     corresponds to an object in the scene. For the pixels corresponding to
-///     no body, namely the sky and the flat terrain, we assign Label::kNoBody
-///     and Label::kFlatTerrain, respectively.
+/// - Depth (ImageDepth32F) : the depth image has a depth channel represented
+///   by a float. For a point in space `P`, the value stored in the depth
+///   channel holds *the Z-component of the position vector `p_RP`.*
+///   Note that this is different from the range data used by laser
+///   range finders (like that provided by DepthSensor) in which the depth
+///   value represents the distance from the sensor origin to the object's
+///   surface.
+///
+/// - Label (ImageLabel16I) : the label image has single channel represented
+///   by a int16_t. The value stored in the channel holds a model ID which
+///   corresponds to an object in the scene. For the pixels corresponding to
+///   no body, namely the sky and the flat terrain, we assign Label::kNoBody
+///   and Label::kFlatTerrain, respectively.
 class RgbdRenderer {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdRenderer)
@@ -162,7 +163,7 @@ class RgbdRenderer {
   const RenderingConfig& config() const;
 
   /// Returns the color palette of this renderer.
-  const ColorPalette& color_palette() const;
+  const ColorPalette<int>& color_palette() const;
 
  private:
   virtual void ImplAddFlatTerrain() = 0;
@@ -188,7 +189,7 @@ class RgbdRenderer {
   /// TODO(thduynguyen, SeanCurtis-TRI): This is a world's property (colors for
   /// each object/segment) hence should be moved to GeometrSystem. That would
   /// also answer the question whether this heavy object should be a singleton.
-  ColorPalette color_palette_;
+  ColorPalette<int> color_palette_;
 };
 
 }  // namespace sensors

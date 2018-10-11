@@ -175,8 +175,8 @@ class Polynomial {
 
   /** Evaluate a univariate Polynomial at a specific point.
    *
-   * Evaluates a univariate Polynomial at the given x.  Throws an
-   * exception of this Polynomial is not univariate.
+   * Evaluates a univariate Polynomial at the given x.
+   * @throws std::runtime_error if this Polynomial is not univariate.
    *
    * x may be of any type supporting the ** and + operations (which can
    * be different from both CoefficientsType and RealScalar)
@@ -206,9 +206,9 @@ class Polynomial {
 
   /** Evaluate a multivariate Polynomial at a specific point.
    *
-   * Evaluates a Polynomial with the given values for each variable.  Throws
-   * std::out_of_range if the Polynomial contains variables for which values
-   * were not provided.
+   * Evaluates a Polynomial with the given values for each variable.
+   * @throws std::out_of_range if the Polynomial contains variables for which
+   * values were not provided.
    *
    * The provided values may be of any type which is std::is_arithmetic
    * (supporting the std::pow, *, and + operations) and need not be
@@ -275,7 +275,8 @@ class Polynomial {
   /** Takes the derivative of this (univariate) Polynomial.
    *
    * Returns a new Polynomial that is the derivative of this one in its sole
-   * variable.  Throws an exception of this Polynomial is not univariate.
+   * variable.
+   * @throws std::exception if this Polynomial is not univariate.
    *
    * If derivative_order is given, takes the nth derivative of this
    * Polynomial.
@@ -285,8 +286,9 @@ class Polynomial {
   /** Takes the integral of this (univariate, non-constant) Polynomial.
    *
    * Returns a new Polynomial that is the indefinite integral of this one in
-   * its sole variable.  Throws an exception of this Polynomial is not
-   * univariate, or if it has no variables.
+   * its sole variable.
+   * @throws std::exception if this Polynomial is not univariate, or if it has
+   * no variables.
    *
    * If integration_constant is given, adds that constant as the constant
    * term (zeroth-order coefficient) of the resulting Polynomial.
@@ -370,16 +372,16 @@ class Polynomial {
   /** Returns the roots of this (univariate) Polynomial.
    *
    * Returns the roots of a univariate Polynomial as an Eigen column vector of
-   * complex numbers whose components are of the RealScalar type.  Throws an
-   * exception of this Polynomial is not univariate.
+   * complex numbers whose components are of the RealScalar type.
+   * @throws std::exception of this Polynomial is not univariate.
    */
   RootsType Roots() const;
 
   /** Checks if a (univariate) Polynomial is approximately equal to this one.
    *
    * Checks that every coefficient of other is within tol of the
-   * corresponding coefficient of this Polynomial.  Throws an exception if
-   * either Polynomial is not univariate.
+   * corresponding coefficient of this Polynomial.
+   * @throws std::exception if either Polynomial is not univariate.
    */
   bool IsApprox(const Polynomial& other, const RealScalar& tol) const;
 

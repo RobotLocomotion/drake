@@ -234,10 +234,10 @@ class MultipleShooting : public solvers::MathematicalProgram {
   ///
   /// If time steps are decision variables, then the initial guess for
   /// the time steps are evenly distributed to match the duration of the
-  /// @p traj_init_u and @p traj_init_x. Throws std::runtime_error if
-  /// @p traj_init_u and @p traj_init_x are both empty, or if
-  /// @p traj_init_u and @p traj_init_x are both non-empty, and have
-  /// different start and end times.
+  /// @p traj_init_u and @p traj_init_x.
+  /// @throws std::runtime_error if @p traj_init_u and @p traj_init_x are both
+  /// empty, or if @p traj_init_u and @p traj_init_x are both non-empty, and
+  /// have different start and end times.
   // TODO(russt): Consider taking the actual breakpoints from
   // traj_init_{u,x} iff they match the number of sample times.
   void SetInitialTrajectory(

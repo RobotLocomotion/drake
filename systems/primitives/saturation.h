@@ -18,6 +18,7 @@ namespace systems {
 /// The input to this system directly feeds through to its output.
 ///
 /// Instantiated templates for the following scalar types @p T are provided:
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression

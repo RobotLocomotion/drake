@@ -55,6 +55,7 @@ enum class RoadPositionStrategy { kCache, kExhaustiveSearch };
 /// respect to a given ego vehicle driving within a given maliput road geometry.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///
@@ -139,11 +140,11 @@ class PoseSelector {
 
   /// Extracts the vehicle's `s`-direction velocity based on its RoadOdometry @p
   /// road_odometry in the Lane coordinate frame.  Assumes the road has zero
-  /// elevation and superelevation.  Throws if any element of
-  /// `road_odometry.pos` is not within the respective bounds of
-  /// `road_odometry.lane`.
+  /// elevation and superelevation.
+  /// @throws std::exception if any element of `road_odometry.pos` is not
+  /// within the respective bounds of `road_odometry.lane`.
   ///
-  /// N.B. This function currently only provides exact derivatives for velocity
+  /// @note This function currently only provides exact derivatives for velocity
   /// in the `s` direction when the road is straight (no yaw angle variations).
   //
   // TODO(jadecastro) Enable AutoDiffXd for

@@ -29,6 +29,7 @@ namespace systems {
 /// this class, please refer to https://drake.mit.edu/cxx_inl.html.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression

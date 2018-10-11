@@ -38,8 +38,9 @@ class LineRoadCurve : public RoadCurve {
   /// @param computation_policy Policy to guide all computations. If geared
   /// towards speed, computations will make use of analytical expressions even
   /// if not actually correct for the curve as specified.
-  /// @throw std::runtime_error if @p linear_tolerance is not a positive number.
-  /// @throw std::runtime_error if @p scale_length is not a positive number.
+  /// @throws std::runtime_error if @p linear_tolerance is not a positive
+  /// number.
+  /// @throws std::runtime_error if @p scale_length is not a positive number.
   explicit LineRoadCurve(
       const Vector2<double>& xy0, const Vector2<double>& dxy,
       const CubicPolynomial& elevation,

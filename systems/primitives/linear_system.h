@@ -29,6 +29,7 @@ namespace systems {
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression
@@ -69,8 +70,8 @@ class LinearSystem : public AffineSystem<T> {
   /// Creates a unique pointer to LinearSystem<T> by decomposing @p dynamics and
   /// @p outputs using @p state_vars and @p input_vars.
   ///
-  /// @throws runtime_error if either @p dynamics or @p outputs is not linear in
-  /// @p state_vars and @p input_vars.
+  /// @throws std::runtime_error if either @p dynamics or @p outputs is not
+  /// linear in @p state_vars and @p input_vars.
   static std::unique_ptr<LinearSystem<T>> MakeLinearSystem(
       const Eigen::Ref<const VectorX<symbolic::Expression>>& dynamics,
       const Eigen::Ref<const VectorX<symbolic::Expression>>& output,
@@ -106,6 +107,7 @@ class LinearSystem : public AffineSystem<T> {
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression

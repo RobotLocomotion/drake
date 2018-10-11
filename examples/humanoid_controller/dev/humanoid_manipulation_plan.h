@@ -111,7 +111,8 @@ class HumanoidManipulationPlan
    *
    * Aborts if assumptions about `T_plan` is not valid.
    *
-   * @throws if @p plan is not of type robotlocomotion::robot_plan_t
+   * @throws std::exception if @p plan is not of type
+   * robotlocomotion::robot_plan_t
    */
   void HandlePlanGenericPlanDerived(
       const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&

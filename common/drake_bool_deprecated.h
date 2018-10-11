@@ -27,9 +27,10 @@ using scalar_predicate_t DRAKE_DEPRECATED("Use boolean<T>.") = boolean<T>;
 
 /// Class representing a Boolean value independent of the underlying
 /// scalar type T:
-///  - For `double` or autodiff, this class embeds a `bool` value.
-///  - For `symbolic::Expression`, this class embeds a `symbolic::Formula`
-///    value.
+///
+/// - For `double` or autodiff, this class embeds a `bool` value.
+/// - For `symbolic::Expression`, this class embeds a `symbolic::Formula`
+///   value.
 ///
 /// When this class wraps a `bool` value (e.g. T = `double` or autodiff), this
 /// class is contextually convertible to bool. For example, the following works.

@@ -11,6 +11,7 @@ namespace multibody {
 /// visual geometries attached to the world body.
 ///
 /// Instantiated templates for the following ScalarTypes are provided:
+///
 /// - double
 ///
 /// They are already available to link against in the containing library.

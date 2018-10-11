@@ -2,7 +2,7 @@
 
 import inspect
 import six
-from types import MethodType
+import types
 
 from pydrake.util.cpp_param import get_param_names, get_param_canonical
 
@@ -57,10 +57,12 @@ class TemplateBase(object):
         self.param_list = []
         self._allow_default = allow_default
         self._instantiation_map = {}
+        self._instantiation_alias_map = {}
         if module_name is None:
             module_name = _get_module_name_from_stack()
         self._module_name = module_name
         self._instantiation_func = None
+        self.__doc__ = ""
 
     def __getitem__(self, *param):
         """Gets concrete class associate with the given arguments.
@@ -140,9 +142,13 @@ class TemplateBase(object):
     def _add_instantiation_internal(self, param, instantiation):
         # Adds instantiation. Permits overwriting for deferred cases.
         assert instantiation is not None
-        self._instantiation_map[param] = instantiation
         if instantiation is not TemplateBase._deferred:
-            self._on_add(param, instantiation)
+            old = instantiation
+            instantiation = self._on_add(param, instantiation)
+            assert instantiation is not None, (self, param, old)
+            if instantiation is not old:
+                self._instantiation_alias_map[old] = instantiation
+        self._instantiation_map[param] = instantiation
 
     def add_instantiations(self, instantiation_func, param_list):
         """Adds a set of instantiations given a function and a list of
@@ -183,6 +189,7 @@ class TemplateBase(object):
         # Use `get_instantiation` so that we can handled deferred cases.
         for param in self.param_list:
             instantiation, _ = self.get_instantiation(param)
+            obj = self._instantiation_alias_map.get(obj, obj)
             if instantiation is obj:
                 return True
         return False
@@ -214,7 +221,7 @@ class TemplateBase(object):
 
     def _on_add(self, param, instantiation):
         # To be overridden by child classes.
-        pass
+        return instantiation
 
     @classmethod
     def define(cls, name, param_list, *args, **kwargs):
@@ -232,17 +239,20 @@ class TemplateBase(object):
         Note:
             The name of the inner class will not matter as it will be
             overwritten with the template instantiation name. In the below
-            example, ``Impl` will be renamed to `MyTemplate[int]` when
+            example, `Impl` will be renamed to `MyTemplate[int]` when
             `param=(int,)`.
 
         Example:
-            @TemplateClass.define("MyTemplate", param_list=[(int,), (float,)])
-            def MyTemplate(param):
-                T, = param
-                class Impl(object):
-                    def __init__(self):
-                        self.T = T
-                return Impl
+            ::
+
+                @TemplateClass.define("MyTemplate",
+                                      param_list=[(int,), (float,)])
+                def MyTemplate(param):
+                    T, = param
+                    class Impl(object):
+                        def __init__(self):
+                            self.T = T
+                    return Impl
         """
         template = cls(name, *args, **kwargs)
 
@@ -254,7 +264,7 @@ class TemplateBase(object):
 
 
 class TemplateClass(TemplateBase):
-    """Extension of `TemplateBase` for classes. """
+    """Extension of `TemplateBase` for classes."""
     def __init__(self, name, override_meta=True, module_name=None, **kwargs):
         if module_name is None:
             module_name = _get_module_name_from_stack()
@@ -274,6 +284,7 @@ class TemplateClass(TemplateBase):
             # ensure this handles nesting.
             cls.__qualname__ = cls.__name__
             cls.__module__ = self._module_name
+        return cls
 
     def is_subclass_of_instantiation(self, obj):
         """Determines if `obj` is a subclass of one of the instantiations.
@@ -288,9 +299,40 @@ class TemplateClass(TemplateBase):
         return None
 
 
+def _rename_callable(f, module, name):
+    # Renames a function.
+    if (f.__module__, f.__name__) == (module, name):
+        # Short circuit.
+        return f
+    # If Python2, we have to wrap instancemethods + built-in functions to spoof
+    # the metadata.
+    type_requires_wrap = (
+        types.MethodType, types.BuiltinMethodType, types.BuiltinFunctionType,)
+    if isinstance(f, type_requires_wrap):
+        orig = f
+
+        def f(*args, **kwargs): return orig(*args, **kwargs)
+
+        f.__module__ = module
+        f.__name__ = name
+        f.__doc__ = orig.__doc__
+        f._original_name = orig.__name__
+        cls = getattr(orig, 'im_class', None)
+        if cls:
+            f = types.MethodType(f, None, cls)
+    else:
+        f._original_name = f.__name__
+        f.__module__ = module
+        f.__name__ = name
+    return f
+
+
 class TemplateFunction(TemplateBase):
     """Extension of `TemplateBase` for functions."""
-    pass
+    def _on_add(self, param, func):
+        func = _rename_callable(
+            func, self._module_name, self._instantiation_name(param))
+        return func
 
 
 class TemplateMethod(TemplateBase):
@@ -300,6 +342,11 @@ class TemplateMethod(TemplateBase):
             module_name = _get_module_name_from_stack()
         TemplateBase.__init__(self, name, module_name=module_name, **kwargs)
         self._cls = cls
+
+    def _on_add(self, param, func):
+        func = _rename_callable(
+            func, self._module_name, self._instantiation_name(param))
+        return func
 
     def __get__(self, obj, objtype):
         """Provides descriptor accessor."""
@@ -325,9 +372,9 @@ class TemplateMethod(TemplateBase):
         def __getitem__(self, param):
             unbound = self._tpl[param]
             if six.PY2:
-                bound = MethodType(unbound, self._obj, self._tpl._cls)
+                bound = types.MethodType(unbound, self._obj, self._tpl._cls)
             else:
-                bound = MethodType(unbound, self._obj)
+                bound = types.MethodType(unbound, self._obj)
             return bound
 
         def __str__(self):

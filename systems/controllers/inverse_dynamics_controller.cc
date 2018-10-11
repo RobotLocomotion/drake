@@ -130,7 +130,7 @@ InverseDynamicsController<T>::InverseDynamicsController(
   auto inverse_dynamics =
     builder.template AddSystem<InverseDynamics<T>>(
       multibody_plant_for_control_,
-      false /* pure gravity compensation */);
+      InverseDynamics<T>::kInverseDynamics);
 
   const int num_positions = multibody_plant_for_control_->num_positions();
   const int num_velocities = multibody_plant_for_control_->num_velocities();

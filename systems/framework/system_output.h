@@ -49,7 +49,7 @@ class SystemOutput {
 
   /** Returns the last-saved value of output port `index` as a `BasicVector<T>`,
   although the actual concrete type is preserved from the actual output port.
-  Throws std::bad_cast if the port is not vector-valued. */
+  @throws std::bad_cast if the port is not vector-valued. */
   const BasicVector<T>* get_vector_data(int index) const {
     DRAKE_ASSERT(0 <= index && index < get_num_ports());
     return &port_values_[index]->template GetValue<BasicVector<T>>();
@@ -69,7 +69,8 @@ class SystemOutput {
   suitable for holding the value of output port `index` of the allocating
   System. The object's concrete type is preserved from the output port. Most
   users should just call `System<T>::CalcOutputs()` to get all the output
-  port values at once. Throws std::bad_cast if the port is not vector-valued. */
+  port values at once.
+  @throws std::bad_cast if the port is not vector-valued. */
   BasicVector<T>* GetMutableVectorData(int index) {
     DRAKE_ASSERT(0 <= index && index < get_num_ports());
     return &port_values_[index]

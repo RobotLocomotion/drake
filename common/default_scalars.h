@@ -11,6 +11,7 @@
 /// leading `class` or `struct` keyword.
 ///
 /// Currently the supported types are:
+///
 /// - double
 /// - drake::AutoDiffXd
 /// - drake::symbolic::Expression

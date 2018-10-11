@@ -115,7 +115,7 @@ if __name__ == '__main__':
 
     if args.trace != "none":
         if args.trace == "user":
-            ignoredirs = sys.path
+            ignoredirs = ["/usr"]
         else:
             ignoredirs = []
         tracer = trace.Trace(trace=1, count=0, ignoredirs=ignoredirs)

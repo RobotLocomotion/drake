@@ -122,7 +122,9 @@ void PidController<T>::CalcControl(const Context<T>& context,
 
 // Adds a simple record-based representation of the PID controller to @p dot.
 template <typename T>
-void PidController<T>::GetGraphvizFragment(std::stringstream* dot) const {
+void PidController<T>::GetGraphvizFragment(int max_depth,
+                                           std::stringstream* dot) const {
+  unused(max_depth);
   std::string name = this->get_name();
   if (name.empty()) {
     name = "PID Controller";

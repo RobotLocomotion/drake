@@ -1077,6 +1077,12 @@ TEST_F(DiagramOfDiagramsTest, Graphviz) {
   const std::string id1 = std::to_string(
       reinterpret_cast<int64_t>(subdiagram1_));
   EXPECT_NE(std::string::npos, dot.find("_" + id0 + "_y0 -> _" + id1 + "_u0"));
+
+  const int max_depth = 0;
+  const std::string dot_no_depth = diagram_->GetGraphvizString(max_depth);
+  // Check that the subdiagrams no longer appear.
+  EXPECT_EQ(std::string::npos, dot_no_depth.find("label=\"subdiagram0\""));
+  EXPECT_EQ(std::string::npos, dot_no_depth.find("label=\"subdiagram1\""));
 }
 
 // Tests that a diagram composed of diagrams can be evaluated, and gives

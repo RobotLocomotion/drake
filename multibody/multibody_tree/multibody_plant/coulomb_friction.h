@@ -8,10 +8,12 @@ namespace multibody {
 namespace multibody_plant {
 
 /// Parameters for Coulomb's Law of Friction, namely:
+///
 /// - Static friction coefficient, for a pair of surfaces at rest relative to
 ///   each other.
 /// - Dynamic (or kinematic) friction coefficient, for a pair of surfaces in
 ///   relative motion.
+///
 /// These coefficients are an empirical property characterizing the
 /// interaction by friction between a pair of contacting surfaces. Friction
 /// coefficients depend upon the mechanical properties of the surfaces'
@@ -28,6 +30,7 @@ namespace multibody_plant {
 /// to obtain the Coulomb's law coefficients of friction characterizing the pair
 /// of surfaces, given the individual friction coefficients of each surface.
 /// We would like this __combination law__ to satisfy:
+///
 /// - The friction coefficient of two identical surfaces is the friction
 ///   coefficient of one of the surfaces.
 /// - The combination law is commutative. That is, surface A combined with
@@ -39,6 +42,7 @@ namespace multibody_plant {
 ///   sliding on ice (low friction coefficient). We'd like the surface pair
 ///   to be defined by a friction coefficient close to that of ice, since rubber
 ///   will easily slide on ice.
+///
 /// These requirements are met by the following ad-hoc combination law:
 /// <pre>
 ///   μ = 2μₘμₙ/(μₘ + μₙ)
@@ -56,6 +60,7 @@ namespace multibody_plant {
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression

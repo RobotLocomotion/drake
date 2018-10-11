@@ -17,6 +17,7 @@ namespace multibody {
 /// kinematics results of computations that depend not only on the generalized
 /// positions of the system, but also on its generalized velocities.
 /// Velocity kinematics results include:
+///
 /// - Spatial velocity `V_WB` for each body B in the model as measured and
 ///   expressed in the world frame W.
 /// - Spatial velocity `V_PB` for each body B in the model as measured and
@@ -29,6 +30,7 @@ namespace multibody {
 ///           scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///

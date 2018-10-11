@@ -22,7 +22,7 @@ PYBIND11_MODULE(analysis, m) {
   py::module::import("pydrake.systems.framework");
 
   auto bind_scalar_types = [m](auto dummy) {
-    auto& doc = pydrake_doc.drake.systems;
+    constexpr auto& doc = pydrake_doc.drake.systems;
     using T = decltype(dummy);
     DefineTemplateClassWithDefault<IntegratorBase<T>>(
         m, "IntegratorBase", GetPyParam<T>(), doc.IntegratorBase.doc)

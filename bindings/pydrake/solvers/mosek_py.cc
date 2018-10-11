@@ -9,7 +9,7 @@ namespace pydrake {
 
 PYBIND11_MODULE(mosek, m) {
   using drake::solvers::MosekSolver;
-  auto& doc = pydrake_doc.drake.solvers;
+  constexpr auto& doc = pydrake_doc.drake.solvers;
 
   m.doc() = "Mosek solver bindings for MathematicalProgram";
 

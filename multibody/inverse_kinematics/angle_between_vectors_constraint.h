@@ -23,20 +23,20 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
   // should be alive during the lifetime of this constraint.
   // @param frameA_idx The index of frame A.
   // @param na_A The vector na_A fixed to frame A, expressed in frame A.
-  // @pre na_A should be a non-zero vector. @throw logic error if na_A is close
-  // to zero.
+  // @pre na_A should be a non-zero vector.
+  // @throws std::logic_error if na_A is close to zero.
   // @param frameB_idx The index of frame B.
   // @param nb_B The vector nb fixed to frame B, expressed in frameB.
-  // @pre nb_B should be a non-zero vector. @throw logic error if nb_B is
-  // close to zero.
+  // @pre nb_B should be a non-zero vector.
+  // @throws std::logic_error if nb_B is close to zero.
   // @param angle_lower The lower bound on the angle between na and nb. It is
   // denoted as θ_lower in the class documentation.
   // @pre angle_lower >= 0.
-  // @throw invalid_argument error if angle_lower is negative.
+  // @throws std::invalid_argument error if angle_lower is negative.
   // @param angle_upper The upper bound on the angle between na and nb. it is
   // denoted as θ_upper in the class documentation.
   // @pre angle_lower <= angle_upper <= pi.
-  // @throw invalid_argument if angle_upper is outside the bounds.
+  // @throws std::invalid_argument if angle_upper is outside the bounds.
   // @param context The Context that has been allocated for this @p tree. We
   // will update the context when evaluating the constraint. @p context should
   // be alive during the lifetime of this constraint.

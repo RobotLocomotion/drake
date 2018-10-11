@@ -15,17 +15,19 @@ namespace automotive {
 ///
 /// The IDM equation produces accelerations that realize smooth transitions
 /// between the following three modes:
-///  - Free-road behavior: when the distance to the leading car is large, the
-///    IDM regulates acceleration to match the desired speed `v_0`.
-///  - Fast-closing-speed behavior: when the target distance decreases, an
-///    interaction term compensates for the velocity difference, while keeping
-///    deceleration comfortable according to parameter `b`.
-///  - Small-distance behavior: within small net distances to the lead vehicle,
-///    comfort is ignored in favor of increasing this distance to `s_0`.
+///
+/// - Free-road behavior: when the distance to the leading car is large, the
+///   IDM regulates acceleration to match the desired speed `v_0`.
+/// - Fast-closing-speed behavior: when the target distance decreases, an
+///   interaction term compensates for the velocity difference, while keeping
+///   deceleration comfortable according to parameter `b`.
+/// - Small-distance behavior: within small net distances to the lead vehicle,
+///   comfort is ignored in favor of increasing this distance to `s_0`.
 ///
 /// See the corresponding .cc file for details about the IDM equation.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - drake::AutoDiffXd
 /// - drake::symbolic::Expression

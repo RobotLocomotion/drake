@@ -220,13 +220,14 @@ Polynomial pow(const Polynomial& p, int n);
 std::ostream& operator<<(std::ostream& os, const Polynomial& p);
 
 /// Provides the following seven operations:
-///  - Matrix<Polynomial> * Matrix<Monomial> => Matrix<Polynomial>
-///  - Matrix<Polynomial> * Matrix<double> => Matrix<Polynomial>
-///  - Matrix<Monomial> * Matrix<Polynomial> => Matrix<Polynomial>
-///  - Matrix<Monomial> * Matrix<Monomial> => Matrix<Polynomial>
-///  - Matrix<Monomial> * Matrix<double> => Matrix<Polynomial>
-///  - Matrix<double> * Matrix<Polynomial> => Matrix<Polynomial>
-///  - Matrix<double> * Matrix<Monomial> => Matrix<Polynomial>
+///
+/// - Matrix<Polynomial> * Matrix<Monomial> => Matrix<Polynomial>
+/// - Matrix<Polynomial> * Matrix<double> => Matrix<Polynomial>
+/// - Matrix<Monomial> * Matrix<Polynomial> => Matrix<Polynomial>
+/// - Matrix<Monomial> * Matrix<Monomial> => Matrix<Polynomial>
+/// - Matrix<Monomial> * Matrix<double> => Matrix<Polynomial>
+/// - Matrix<double> * Matrix<Polynomial> => Matrix<Polynomial>
+/// - Matrix<double> * Matrix<Monomial> => Matrix<Polynomial>
 ///
 /// @note that these operator overloadings are necessary even after providing
 /// Eigen::ScalarBinaryOpTraits. See

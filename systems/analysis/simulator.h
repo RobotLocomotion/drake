@@ -36,18 +36,19 @@ namespace systems {
 /// contact.
 ///
 /// Given a current Context, we expect a System to provide us with
+///
 /// - derivatives for the continuous differential equations that already satisfy
-/// the differentiated form of the constraints (typically, acceleration
-/// constraints),
+///   the differentiated form of the constraints (typically, acceleration
+///   constraints),
 /// - a projection method for least-squares correction of violated higher-level
-/// constraints (position and velocity level),
+///   constraints (position and velocity level),
 /// - a time-of-next-update method that can be used to adjust the integrator
-/// step size in preparation for a discrete update,
+///   step size in preparation for a discrete update,
 /// - a method that can update discrete variables when their update time is
-/// reached,
+///   reached,
 /// - witness (guard) functions for event isolation,
 /// - event handlers (reset functions) for making appropriate changes to state
-/// and mode variables when an event has been isolated.
+///   and mode variables when an event has been isolated.
 ///
 /// The continuous parts of the trajectory are advanced using a numerical
 /// integrator. Different integrators have different properties; if you know
@@ -59,6 +60,7 @@ namespace systems {
 ///
 /// Instantiated templates for the following kinds of T's are provided and
 /// available to link against in the containing library:
+///
 /// - double
 /// - AutoDiffXd
 ///

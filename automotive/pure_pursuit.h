@@ -21,6 +21,7 @@ namespace automotive {
 /// See [1] and the corresponding .cc file for details on the algorithm.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///

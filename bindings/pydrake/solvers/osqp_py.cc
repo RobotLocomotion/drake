@@ -9,7 +9,7 @@ namespace pydrake {
 
 PYBIND11_MODULE(osqp, m) {
   using drake::solvers::OsqpSolver;
-  auto& doc = pydrake_doc.drake.solvers;
+  constexpr auto& doc = pydrake_doc.drake.solvers;
 
   m.doc() = "OSQP solver bindings for MathematicalProgram";
 

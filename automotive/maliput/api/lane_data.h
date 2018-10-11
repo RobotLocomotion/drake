@@ -126,6 +126,7 @@ std::ostream& operator<<(std::ostream& out, const Rotation& rotation);
 /// frame, consisting of three components x, y, and z.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - drake::AutoDiffXd
 /// - drake::symbolic::Expression
@@ -208,6 +209,7 @@ auto operator!=(const GeoPositionT<T>& lhs, const GeoPositionT<T>& rhs) {
 ///  * h is height above the road surface.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - drake::AutoDiffXd
 /// - drake::symbolic::Expression

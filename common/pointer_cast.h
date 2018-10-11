@@ -49,7 +49,7 @@ std::unique_ptr<T> dynamic_pointer_cast(std::unique_ptr<U>&& other) noexcept {
 /// transferred to the result and `other` is empty; on failure, `other` will
 /// retain its original managed value.
 ///
-/// @throw std::logic_error if the cast fails.
+/// @throws std::logic_error if the cast fails.
 ///
 /// Note that this function only supports default deleters.
 template <class T, class U>

@@ -16,9 +16,10 @@
 /// mathematical program -- many of these choices involve using more than
 /// the minimal three parameters and therefore require additional constraints
 /// For example:
-///  - the 4 parameters of a quaternion should form a vector with unit length.
-///  - the 9 parameters of a rotation matrix should form a matrix which is
-///    orthonormal (R.transpose() = R.inverse()) and det(R)=1.
+///
+/// - the 4 parameters of a quaternion should form a vector with unit length.
+/// - the 9 parameters of a rotation matrix should form a matrix which is
+///   orthonormal (R.transpose() = R.inverse()) and det(R)=1.
 ///
 /// Unfortunately, in the context of mathematical programming, most of these
 /// constraints are non-convex.  The methods below include convex relaxations

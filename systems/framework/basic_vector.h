@@ -70,7 +70,7 @@ class BasicVector : public VectorBase<T> {
 
   /// Sets the vector to the given value. After a.set_value(b.get_value()), a
   /// must be identical to b.
-  /// Throws std::out_of_range if the new value has different dimensions.
+  /// @throws std::out_of_range if the new value has different dimensions.
   void set_value(const Eigen::Ref<const VectorX<T>>& value) {
     if (value.rows() != values_.rows()) {
       throw std::out_of_range(

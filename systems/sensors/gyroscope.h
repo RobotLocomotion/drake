@@ -22,11 +22,12 @@ namespace sensors {
 /// <B>The Gyroscope Math:</B>
 ///
 /// Let:
-///  - `G` be the gyroscope's frame.
-///  - `W` be the world frame.
-///  - `ω_G_W` be `G`'s rotational velocity expressed in `W`.
-///  - `R_GW` be the rotation matrix from `W` to `G`.
-///  - `ω_G_G` be `G`'s rotational velocity expressed in `G`. This is the output
+///
+/// - `G` be the gyroscope's frame.
+/// - `W` be the world frame.
+/// - `ω_G_W` be `G`'s rotational velocity expressed in `W`.
+/// - `R_GW` be the rotation matrix from `W` to `G`.
+/// - `ω_G_G` be `G`'s rotational velocity expressed in `G`. This is the output
 ///     of the gyroscope.
 ///
 /// The math implemented by this sensor is as follows:
@@ -40,16 +41,16 @@ namespace sensors {
 /// This system has one input port that is accessible via the following
 /// accessor:
 ///
-///  - get_input_port(): Contains the state (i.e., position and velocity)
-///    vector, `x`, of the RigidBodyPlant being sensed by this sensor.
+/// - get_input_port(): Contains the state (i.e., position and velocity)
+///   vector, `x`, of the RigidBodyPlant being sensed by this sensor.
 ///
 /// <B>System Output Ports:</B>
 ///
 /// This system has one output port that is accessible via the following
 /// accessor method:
 ///
-///  - get_output_port(): Contains the sensed angular velocity data in this
-///    sensor's frame. See GyroscopeOutput.
+/// - get_output_port(): Contains the sensed angular velocity data in this
+///   sensor's frame. See GyroscopeOutput.
 ///
 /// @ingroup sensor_systems
 ///

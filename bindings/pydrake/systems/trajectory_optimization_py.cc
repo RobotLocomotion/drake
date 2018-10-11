@@ -15,7 +15,7 @@ namespace pydrake {
 PYBIND11_MODULE(trajectory_optimization, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::trajectory_optimization;
-  auto& doc = pydrake_doc.drake.systems.trajectory_optimization;
+  constexpr auto& doc = pydrake_doc.drake.systems.trajectory_optimization;
 
   using solvers::VectorXDecisionVariable;
 

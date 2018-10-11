@@ -164,8 +164,8 @@ class Formula {
 
   /** Evaluates under a given environment (by default, an empty environment).
    *
-   * @throws runtime_error if a variable `v` is needed for an evaluation but not
-   * provided by @p env.
+   * @throws std::runtime_error if a variable `v` is needed for an evaluation
+   * but not provided by @p env.
    */
   bool Evaluate(const Environment& env = Environment{}) const;
 
@@ -531,7 +531,7 @@ inline Formula logic_or(const Formula& f1, const Formula& f2) {
 /// Note that this function does *not* provide operator overloading for the
 /// following case. It returns `Eigen::Array<bool>` and is provided by Eigen.
 ///
-///    - Eigen::Array<double> == Eigen::Array<double>
+/// - Eigen::Array<double> == Eigen::Array<double>
 ///
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if<
@@ -893,7 +893,7 @@ operator!=(const ScalarType& v, const Derived& a) {
 /// Note that this function does *not* provide operator overloading for the
 /// following case. It returns `bool` and is provided by Eigen.
 ///
-///    - Eigen::Matrix<double> == Eigen::Matrix<double>
+/// - Eigen::Matrix<double> == Eigen::Matrix<double>
 ///
 /// Note that this method returns a conjunctive formula which keeps its
 /// conjuncts as `std::set<Formula>` internally. This set is ordered by
@@ -951,7 +951,7 @@ operator==(const DerivedA& m1, const DerivedB& m2) {
 /// Note that this function does *not* provide operator overloading for the
 /// following case. It returns `bool` and is provided by Eigen.
 ///
-///    - Eigen::Matrix<double> != Eigen::Matrix<double>
+/// - Eigen::Matrix<double> != Eigen::Matrix<double>
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if<
     std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,

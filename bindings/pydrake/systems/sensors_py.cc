@@ -38,7 +38,7 @@ PYBIND11_MODULE(sensors, m) {
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::sensors;
-  auto& doc = pydrake_doc.drake.systems.sensors;
+  constexpr auto& doc = pydrake_doc.drake.systems.sensors;
 
   m.doc() = "Bindings for the sensors portion of the Systems framework.";
 
@@ -67,7 +67,6 @@ PYBIND11_MODULE(sensors, m) {
 
     // Simple constexpr for-loop.
     int i = 0;
-    // See # 9600
     auto instantiation_visitor = [&](auto param) {
       // Extract information from inferred parameter.
       using Param = decltype(param);

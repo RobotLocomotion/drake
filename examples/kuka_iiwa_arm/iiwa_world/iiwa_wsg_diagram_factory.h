@@ -31,6 +31,7 @@ namespace kuka_iiwa_arm {
 ///
 /// This class is explicitly instantiated for the following scalar type(s). No
 /// other scalar types are supported.
+///
 /// - double
 template <typename T>
 class IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {

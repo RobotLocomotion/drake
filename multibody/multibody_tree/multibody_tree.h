@@ -56,6 +56,7 @@ namespace multibody {
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///
@@ -387,7 +388,7 @@ class MultibodyTree {
   ///
   /// @throws std::logic_error if `mobilizer` is a nullptr.
   /// @throws std::logic_error if Finalize() was already called on `this` tree.
-  /// @throws a std::runtime_error if the new mobilizer attempts to connect a
+  /// @throws std::runtime_error if the new mobilizer attempts to connect a
   /// frame with itself.
   /// @throws std::runtime_error if attempting to connect two bodies with more
   /// than one mobilizer between them.
@@ -475,7 +476,7 @@ class MultibodyTree {
   /// class).
   ///
   /// @throws std::logic_error if Finalize() was already called on `this` tree.
-  /// @throws a std::runtime_error if the new mobilizer attempts to connect a
+  /// @throws std::runtime_error if the new mobilizer attempts to connect a
   /// frame with itself.
   /// @throws std::runtime_error if attempting to connect two bodies with more
   /// than one mobilizer between them.
@@ -690,7 +691,8 @@ class MultibodyTree {
   ///       Vector3d::UnitZ());     /* revolute axis in this case */
   /// @endcode
   ///
-  /// @throws if `this` model already contains a joint with the given `name`.
+  /// @throws std::exception if `this` model already contains a joint with the
+  /// given `name`.
   /// See HasJointNamed(), Joint::name().
   ///
   /// @see The Joint class's documentation for further details on how a Joint
@@ -740,8 +742,9 @@ class MultibodyTree {
   ///   The Joint to be actuated by the new JointActuator.
   /// @returns A constant reference to the new JointActuator just added, which
   /// will remain valid for the lifetime of `this` %MultibodyTree.
-  /// @throws if `this` model already contains a joint actuator with the given
-  /// `name`. See HasJointActuatorNamed(), JointActuator::get_name().
+  /// @throws std::exception if `this` model already contains a joint actuator
+  /// with the given `name`. See HasJointActuatorNamed(),
+  /// JointActuator::get_name().
   // TODO(amcastro-tri): consider adding sugar method to declare an actuated
   // joint with a single call. Maybe MBT::AddActuatedJoint() or the like.
   const JointActuator<T>& AddJointActuator(
@@ -912,8 +915,8 @@ class MultibodyTree {
   }
 
   /// Returns a constant reference to the body with unique index `body_index`.
-  /// @throws if `body_index` does not correspond to a body in this multibody
-  /// tree.
+  /// @throws std::exception if `body_index` does not correspond to a body in
+  /// this multibody tree.
   const Body<T>& get_body(BodyIndex body_index) const {
     DRAKE_THROW_UNLESS(body_index < num_bodies());
     return *owned_bodies_[body_index];
@@ -929,8 +932,8 @@ class MultibodyTree {
 
   /// Returns a constant reference to the joint actuator with unique index
   /// `actuator_index`.
-  /// @throws if `actuator_index` does not correspond to a joint actuator in
-  /// this multibody tree.
+  /// @throws std::exception if `actuator_index` does not correspond to a joint
+  /// actuator in this multibody tree.
   const JointActuator<T>& get_joint_actuator(
       JointActuatorIndex actuator_index) const {
     DRAKE_THROW_UNLESS(actuator_index < num_actuators());
@@ -938,8 +941,8 @@ class MultibodyTree {
   }
 
   /// Returns a constant reference to the frame with unique index `frame_index`.
-  /// @throws if `frame_index` does not correspond to a frame in `this`
-  /// multibody tree.
+  /// @throws std::exception if `frame_index` does not correspond to a frame in
+  /// `this` multibody tree.
   const Frame<T>& get_frame(FrameIndex frame_index) const {
     DRAKE_THROW_UNLESS(frame_index < num_frames());
     return *frames_[frame_index];
@@ -994,7 +997,7 @@ class MultibodyTree {
   /// @returns `true` if a body named `name` was added to @p model_instance.
   /// @see AddRigidBody().
   ///
-  /// @throws if @p model_instance is not valid for this model.
+  /// @throws std::exception if @p model_instance is not valid for this model.
   bool HasBodyNamed(const std::string& name,
                     ModelInstanceIndex model_instance) const {
     DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
@@ -1029,7 +1032,7 @@ class MultibodyTree {
   /// @returns `true` if a frame named `name` was added to @p model_instance.
   /// @see AddFrame().
   ///
-  /// @throws if @p model_instance is not valid for this model.
+  /// @throws std::exception if @p model_instance is not valid for this model.
   bool HasFrameNamed(const std::string& name,
                      ModelInstanceIndex model_instance) const {
     DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
@@ -1060,7 +1063,7 @@ class MultibodyTree {
   /// @returns `true` if a joint named `name` was added to @p model_instance.
   /// @see AddJoint().
   ///
-  /// @throws if @p model_instance is not valid for this model.
+  /// @throws std::exception if @p model_instance is not valid for this model.
   bool HasJointNamed(const std::string& name,
                      ModelInstanceIndex model_instance) const {
     DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
@@ -1092,7 +1095,7 @@ class MultibodyTree {
   /// @p model_instance.
   /// @see AddJointActuator().
   ///
-  /// @throws if @p model_instance is not valid for this model.
+  /// @throws std::exception if @p model_instance is not valid for this model.
   bool HasJointActuatorNamed(const std::string& name,
                              ModelInstanceIndex model_instance) const {
     DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
@@ -1568,7 +1571,7 @@ class MultibodyTree {
   ///   `nullptr`. Vector `X_WB` is resized when needed to have size
   ///   num_bodies().
   ///
-  /// @throws if X_WB is nullptr.
+  /// @throws std::exception if X_WB is nullptr.
   void CalcAllBodyPosesInWorld(
       const systems::Context<T>& context,
       std::vector<Isometry3<T>>* X_WB) const;
@@ -1587,7 +1590,7 @@ class MultibodyTree {
   ///   `V_WB` is `nullptr`. Vector `V_WB` is resized when needed to have size
   ///   num_bodies().
   ///
-  /// /// @throws if V_WB is nullptr.
+  /// @throws std::exception if V_WB is nullptr.
   void CalcAllBodySpatialVelocitiesInWorld(
       const systems::Context<T>& context,
       std::vector<SpatialVelocity<T>>* V_WB) const;
@@ -1655,8 +1658,8 @@ class MultibodyTree {
   ///   The body B for which the pose is requested.
   /// @retval X_WB
   ///   The pose of body frame B in the world frame W.
-  /// @throws if Finalize() was not called on `this` model or if `body_B` does
-  /// not belong to this model.
+  /// @throws std::exception if Finalize() was not called on `this` model or if
+  /// `body_B` does not belong to this model.
   const Isometry3<T>& EvalBodyPoseInWorld(
       const systems::Context<T>& context,
       const Body<T>& body_B) const;
@@ -1668,8 +1671,8 @@ class MultibodyTree {
   ///   The body B for which the spatial velocity is requested.
   /// @returns V_WB
   ///   The spatial velocity of body frame B in the world frame W.
-  /// @throws if Finalize() was not called on `this` model or if `body_B` does
-  /// not belong to this model.
+  /// @throws std::exception if Finalize() was not called on `this` model or if
+  /// `body_B` does not belong to this model.
   const SpatialVelocity<T>& EvalBodySpatialVelocityInWorld(
       const systems::Context<T>& context,
       const Body<T>& body_B) const;
@@ -1727,9 +1730,9 @@ class MultibodyTree {
   ///   have size `3⋅np x nv` or this method throws a std::runtime_error
   ///   exception.
   ///
-  /// @throws an exception if the output `p_WQi_set` is nullptr or does not have
-  /// the same size as the input array `p_BQi_set`.
-  /// @throws an exception if `Jv_WQi` is nullptr or if it does not have the
+  /// @throws std::exception if the output `p_WQi_set` is nullptr or does not
+  ///  have the same size as the input array `p_BQi_set`.
+  /// @throws std::exception if `Jv_WQi` is nullptr or if it does not have the
   /// appropriate size, see documentation for `Jv_WQi` for details.
   // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
   // most applications it is all we need and it is more efficient to compute.
@@ -1774,7 +1777,7 @@ class MultibodyTree {
   ///   have size `3⋅np x nv` or this method throws a std::runtime_error
   ///   exception.
   ///
-  /// @throws an exception if `Jv_WQi` is nullptr or if it does not have the
+  /// @throws std::exception if `Jv_WQi` is nullptr or if it does not have the
   /// appropriate size, see documentation for `Jv_WQi` for details.
   // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
   // most applications it is all we need and it is more efficient to compute.
@@ -1782,6 +1785,44 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_WQi_set,
       EigenPtr<MatrixX<T>> Jv_WQi) const;
+
+  /// Computes the bias term `b_WFq` associated with the translational
+  /// acceleration `a_WFq` of a point `Q` instantaneously moving with a frame F.
+  /// That is, the translational acceleration of point `Q` can be computed as:
+  /// <pre>
+  ///   a_WFq = Jv_WFq(q)⋅v̇ + b_WFq(q, v)
+  /// </pre>
+  /// where `b_WFq = J̇v_WFq(q, v)⋅v`.
+  ///
+  /// This method computes `b_WFq` for each point `Q` in `p_FQ_list` defined by
+  /// its position `p_FQ` in `frame_F`.
+  ///
+  /// @see CalcPointsGeometricJacobianExpressedInWorld() to compute the
+  /// geometric Jacobian `Jv_WFq(q)`.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q and generalized velocities v.
+  /// @param[in] frame_F
+  ///   Points `Q` in the list instantaneously move with this frame.
+  /// @param[in] p_FQ_list
+  ///   A matrix with the fixed position of a list of points `Q` measured and
+  ///   expressed in `frame_F`.
+  ///   Each column of this matrix contains the position vector `p_FQ` for a
+  ///   point `Q` measured and expressed in frame F. Therefore this input
+  ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the list.
+  /// @returns b_WFq
+  ///   The bias term, function of the generalized positions q and the
+  ///   generalized velocities v as stored in `context`.
+  ///   The returned vector has size `3⋅np`, with np the number of points in
+  ///   `p_FQ_list`, and concatenates the bias terms for each point `Q` in the
+  ///   list in the same order they are specified on input.
+  ///
+  /// @throws std::exception if `p_FQ_list` does not have 3 rows.
+  VectorX<T> CalcBiasForPointsGeometricJacobianExpressedInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_F,
+      const Eigen::Ref<const MatrixX<T>>& p_FQ_list) const;
 
   /// Given a frame F with fixed position `p_BoFo_B` in a frame B, this method
   /// computes the geometric Jacobian `Jv_WF` defined by:
@@ -1822,7 +1863,8 @@ class MultibodyTree {
   ///     SpatialVelocity<double> Jv_WF_times_v(Jv_WF * v);
   ///   </pre>
   ///
-  /// @throws if `J_WF` is nullptr or if it is not of size `6 x nv`.
+  /// @throws std::exception if `J_WF` is nullptr or if it is not of size
+  ///   `6 x nv`.
   void CalcFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BoFo_B,
@@ -2312,6 +2354,84 @@ class MultibodyTree {
 
   /// @}
   // Closes "Computational methods" Doxygen section.
+
+  /// This method allows users to map the state of `this` model, x, into a
+  /// vector of selected state xₛ with a given preferred ordering.
+  /// The mapping, or selection, is returned in the form of a selector matrix
+  /// Sx such that `xₛ = Sx⋅x`. The size nₛ of xₛ is always smaller or equal
+  /// than the size of the full state x. That is, a user might be interested in
+  /// only a given portion of the full state x.
+  ///
+  /// This selection matrix is particularly useful when adding PID control
+  /// on a portion of the state, see systems::controllers::PidController.
+  ///
+  /// A user specifies the preferred order in xₛ via `user_to_joint_index_map`.
+  /// The selected state is built such that selected positions are followed
+  /// by selected velocities, as in `xₛ = [qₛ, vₛ]`.
+  /// The positions in qₛ are a concatenation of the positions for each joint
+  /// in the order they appear in `user_to_joint_index_map`. That is, the
+  /// positions for `user_to_joint_index_map[0]` are first, followed by the
+  /// positions for `user_to_joint_index_map[1]`, etc. Similarly for the
+  /// selected velocities vₛ.
+  ///
+  /// @throws std::logic_error if there are repeated indexes in
+  /// `user_to_joint_index_map`.
+  // TODO(amcastro-tri): consider having an extra `free_body_index_map`
+  // so that users could also re-order free bodies if they wanted to.
+  MatrixX<double> MakeStateSelectorMatrix(
+      const std::vector<JointIndex>& user_to_joint_index_map) const;
+
+  /// Alternative signature to build a state selector matrix from a std::vector
+  /// of joint names.
+  /// See MakeStateSelectorMatrixFromJointNames(const std::vector<JointIndex>&)
+  /// for details.
+  /// `selected_joints` must not contain any duplicates.
+  ///
+  /// A user specifies the preferred order in the selected states vector xₛ via
+  /// `selected_joints`. The selected state is built such that selected
+  /// positions are followed by selected velocities, as in `xₛ = [qₛ, vₛ]`.
+  /// The positions in qₛ are a concatenation of the positions for each joint
+  /// in the order they appear in `selected_joints`. That is, the positions for
+  /// `selected_joints[0]` are first, followed by the positions for
+  /// `selected_joints[1]`, etc. Similarly for the selected velocities vₛ.
+  ///
+  /// @throws std::logic_error if there are any duplicates in `selected_joints`.
+  /// @throws std::logic_error if there is no joint in the model with a name
+  /// specified in `selected_joints`.
+  MatrixX<double> MakeStateSelectorMatrixFromJointNames(
+      const std::vector<std::string>& selected_joints) const;
+
+  /// This method allows user to map a vector `uₛ` containing the actuation
+  /// for a set of selected actuators into the vector u containing the actuation
+  /// values for `this` full model.
+  /// The mapping, or selection, is returned in the form of a selector matrix
+  /// Su such that `u = Su⋅uₛ`. The size nₛ of uₛ is always smaller or equal
+  /// than the size of the full vector of actuation values u. That is, a user
+  /// might be interested in only a given subset of actuators in the model.
+  ///
+  /// This selection matrix is particularly useful when adding PID control
+  /// on a portion of the state, see systems::controllers::PidController.
+  ///
+  /// A user specifies the preferred order in uₛ via
+  /// `user_to_actuator_index_map`. The actuation values in uₛ are a
+  /// concatenation of the values for each actuator in the order they appear in
+  /// `user_to_actuator_index_map`.
+  /// The full vector of actuation values u is ordered by JointActuatorIndex.
+  MatrixX<double> MakeActuatorSelectorMatrix(
+      const std::vector<JointActuatorIndex>& user_to_actuator_index_map) const;
+
+  /// Alternative signature to build an actuation selector matrix `Su` such
+  /// that `u = Su⋅uₛ`, where u is the vector of actuation values for the full
+  /// model (ordered by JointActuatorIndex) and uₛ is a vector of actuation
+  /// values for the actuators acting on the joints listed by
+  /// `user_to_joint_index_map`. It is assumed that all joints referenced by
+  /// `user_to_joint_index_map` are actuated.
+  /// See MakeActuatorSelectorMatrix(const std::vector<JointActuatorIndex>&) for
+  /// details.
+  /// @throws std::logic_error if any of the joints in
+  /// `user_to_joint_index_map` does not have an actuator.
+  MatrixX<double> MakeActuatorSelectorMatrix(
+      const std::vector<JointIndex>& user_to_joint_index_map) const;
 
   /// @name Methods to retrieve multibody element variants
   ///

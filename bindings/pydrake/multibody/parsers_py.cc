@@ -9,7 +9,7 @@ namespace pydrake {
 
 PYBIND11_MODULE(parsers, m) {
   using drake::multibody::parsing::PackageMap;
-  auto& doc = pydrake_doc.drake.multibody.parsing;
+  constexpr auto& doc = pydrake_doc.drake.multibody.parsing;
 
   m.doc() = "Tools for loading robots from various files";
 

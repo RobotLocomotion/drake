@@ -7,10 +7,9 @@ def pycps_repository(
         mirrors = None):
     github_archive(
         name = name,
-        # PR DRAFT: Update this once upstream PR lands.
         repository = "mwoehlke/pycps",
-        commit = "cd77b4cec588253ea22bb2a262e0cc6b9400d5e7",
-        sha256 = "d3c6002ccc11b6cb01626098a11c91ceca719920e39bac6bc0eeece225bf67cc",  # noqa
+        commit = "d14257769e0110f542c7d3a0f6b0d2c80d59ff52",
+        sha256 = "3f36d5f2a7084749d4e602197c428816a5f28f39c13b6e01de78d8999bfc470e",  # noqa
         build_file = "@drake//tools/workspace/pycps:package.BUILD.bazel",
         mirrors = mirrors,
     )

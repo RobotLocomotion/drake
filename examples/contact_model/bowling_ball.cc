@@ -43,7 +43,7 @@
 namespace drake {
 namespace systems {
 
-using lcm::DrakeLcm;
+using drake::lcm::DrakeLcm;
 using multibody::joints::kQuaternion;
 using Eigen::VectorXd;
 using std::make_unique;

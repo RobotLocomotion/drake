@@ -12,7 +12,7 @@ namespace drake {
 namespace pydrake {
 
 PYBIND11_MODULE(rigid_body, m) {
-  auto& doc = pydrake_doc;
+  constexpr auto& doc = pydrake_doc;
 
   m.doc() = "Bindings for the individual RigidBody class.";
 

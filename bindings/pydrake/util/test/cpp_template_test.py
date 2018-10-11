@@ -159,6 +159,7 @@ class TestCppTemplate(unittest.TestCase):
         template.add_instantiation(float, dummy_b)
 
         self.assertEqual(template[int](), 1)
+        self.assertIn("<function func[int] ", str(template[int]))
         self.assertEqual(template[float](), 2)
         self.assertEqual(str(template), "<TemplateFunction {}.func>".format(
             _TEST_MODULE))
@@ -170,22 +171,24 @@ class TestCppTemplate(unittest.TestCase):
 
         self.assertEqual(str(DummyC.method),
                          "<unbound TemplateMethod DummyC.method>")
-        self.assertEqual(DummyC.method[int], DummyC.dummy_c)
+        self.assertTrue(DummyC.method.is_instantiation(DummyC.dummy_c))
         if six.PY2:
-            self.assertEqual(str(DummyC.method[int]),
-                             "<unbound method DummyC.dummy_c>")
+            self.assertEqual(
+                str(DummyC.method[int]), "<unbound method DummyC.method[int]>")
         else:
-            self.assertTrue(str(DummyC.method[int]).startswith(
-                "<function DummyC.dummy_c at "),
+            self.assertTrue(
+                str(DummyC.method[int]).startswith(
+                    "<function DummyC.method[int] at "),
                 str(DummyC.method[int]))
+
 
         obj = DummyC()
         self.assertTrue(
             str(obj.method).startswith(
                 "<bound TemplateMethod DummyC.method of "))
-        self.assertTrue(
-            str(obj.method[int]).startswith(
-                "<bound method DummyC.dummy_c of "))
+        self.assertIn(
+            "<bound method DummyC.method[int] of ",
+            str(obj.method[int]))
         self.assertEqual(obj.method[int](), (obj, 3))
         self.assertEqual(DummyC.method[int](obj), (obj, 3))
         self.assertEqual(obj.method[float](), (obj, 4))

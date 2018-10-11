@@ -12,7 +12,7 @@ namespace pydrake {
 PYBIND11_MODULE(planner, m) {
   using drake::manipulation::planner::DifferentialInverseKinematicsStatus;
   m.doc() = "Tools for manipulation planning.";
-  auto& doc = pydrake_doc.drake.manipulation.planner;
+  constexpr auto& doc = pydrake_doc.drake.manipulation.planner;
 
   py::enum_<DifferentialInverseKinematicsStatus>(
       m, "DifferentialInverseKinematicsStatus",
@@ -28,7 +28,7 @@ PYBIND11_MODULE(planner, m) {
 
   {
     using Class = manipulation::planner::DifferentialInverseKinematicsResult;
-    auto& class_doc = doc.DifferentialInverseKinematicsResult;
+    constexpr auto& class_doc = doc.DifferentialInverseKinematicsResult;
     py::class_<Class> cls(m, "DifferentialInverseKinematicsResult",
         doc.DifferentialInverseKinematicsResult.doc);
 
@@ -46,7 +46,7 @@ PYBIND11_MODULE(planner, m) {
   {
     using Class =
         manipulation::planner::DifferentialInverseKinematicsParameters;
-    auto& class_doc = doc.DifferentialInverseKinematicsParameters;
+    constexpr auto& class_doc = doc.DifferentialInverseKinematicsParameters;
 
     py::class_<Class> cls(m, "DifferentialInverseKinematicsParameters",
         doc.DifferentialInverseKinematicsParameters.doc);

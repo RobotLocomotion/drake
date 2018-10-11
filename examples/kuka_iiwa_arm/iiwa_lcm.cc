@@ -135,67 +135,128 @@ void IiwaCommandSender::OutputCommand(const Context<double>& context,
 
 IiwaStatusReceiver::IiwaStatusReceiver(int num_joints)
     : num_joints_(num_joints),
-      measured_position_output_port_(
+      position_commanded_output_port_(
           this->DeclareVectorOutputPort(
-                  systems::BasicVector<double>(num_joints_ * 2),
-                  &IiwaStatusReceiver::OutputMeasuredPosition)
-              .get_index()),
-      commanded_position_output_port_(
-          this->DeclareVectorOutputPort(
+                  "position_commanded",
                   systems::BasicVector<double>(num_joints_),
-                  &IiwaStatusReceiver::OutputCommandedPosition)
+                  &IiwaStatusReceiver::CopyLcmVectorOut<
+                      &lcmt_iiwa_status::joint_position_commanded>)
+              .get_index()),
+      position_measured_output_port_(
+          this->DeclareVectorOutputPort(
+                  "position_measured",
+                  systems::BasicVector<double>(num_joints_),
+                  &IiwaStatusReceiver::CopyLcmVectorOut<
+                      &lcmt_iiwa_status::joint_position_measured>)
+              .get_index()),
+      velocity_estimated_output_port_(
+          this->DeclareVectorOutputPort(
+                  "velocity_estimated",
+                  systems::BasicVector<double>(num_joints_),
+                  &IiwaStatusReceiver::CopyLcmVectorOut<
+                      &lcmt_iiwa_status::joint_velocity_estimated>)
+              .get_index()),
+      torque_commanded_output_port_(
+          this->DeclareVectorOutputPort(
+                  "torque_commanded", systems::BasicVector<double>(num_joints_),
+                  &IiwaStatusReceiver::CopyLcmVectorOut<
+                      &lcmt_iiwa_status::joint_torque_commanded>)
+              .get_index()),
+      torque_measured_output_port_(
+          this->DeclareVectorOutputPort(
+                  "torque_measured", systems::BasicVector<double>(num_joints_),
+                  &IiwaStatusReceiver::CopyLcmVectorOut<
+                      &lcmt_iiwa_status::joint_torque_measured>)
+              .get_index()),
+      torque_external_output_port_(
+          this->DeclareVectorOutputPort(
+                  "torque_external", systems::BasicVector<double>(num_joints_),
+                  &IiwaStatusReceiver::CopyLcmVectorOut<
+                      &lcmt_iiwa_status::joint_torque_external>)
+              .get_index()),
+      state_output_port_(
+          this->DeclareVectorOutputPort(
+                  "state",
+                  systems::BasicVector<double>(num_joints_ * 2),
+                  &IiwaStatusReceiver::OutputState)
+              .get_index()),
+      deprecated_measured_position_output_port_(
+          this->DeclareVectorOutputPort(
+                  "deprecated_measured_position",
+                  systems::BasicVector<double>(num_joints_ * 3),
+                  &IiwaStatusReceiver::OutputDeprecatedMeasuredPosition)
               .get_index()) {
-  this->DeclareAbstractInputPort();
-  this->DeclareDiscreteState(num_joints_ * 3);
-  this->DeclarePeriodicDiscreteUpdate(kIiwaLcmStatusPeriod);
+  this->DeclareAbstractInputPort("lcmt_iiwa_status");
 }
 
-void IiwaStatusReceiver::DoCalcDiscreteVariableUpdates(
-    const Context<double>& context,
-    const std::vector<const DiscreteUpdateEvent<double>*>&,
-    DiscreteValues<double>* discrete_state) const {
+template <std::vector<double> drake::lcmt_iiwa_status::* field>
+void IiwaStatusReceiver::CopyLcmVectorOut(
+    const systems::Context<double>& context,
+    systems::BasicVector<double>* output) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& status = input->GetValue<lcmt_iiwa_status>();
 
   // If we're using a default constructed message (haven't received
-  // status yet), keep using the initial state.
-  if (status.num_joints != 0) {
+  // status yet), output zero.
+  if (status.num_joints == 0) {
+    output->get_mutable_value().setZero();
+  } else {
     DRAKE_DEMAND(status.num_joints == num_joints_);
 
-    VectorX<double> measured_position(num_joints_);
-    VectorX<double> estimated_velocity(num_joints_);
-    VectorX<double> commanded_position(num_joints_);
-    for (int i = 0; i < status.num_joints; ++i) {
-      measured_position(i) = status.joint_position_measured[i];
-      estimated_velocity(i) = status.joint_velocity_estimated[i];
-      commanded_position(i) = status.joint_position_commanded[i];
+    Eigen::VectorBlock<VectorX<double>> output_vec =
+    output->get_mutable_value();
+    for (int i = 0; i < num_joints_; ++i) {
+      output_vec(i) = (status.*field)[i];
     }
-
-    BasicVector<double>& state = discrete_state->get_mutable_vector(0);
-    auto state_value = state.get_mutable_value();
-    state_value.head(num_joints_) = measured_position;
-    state_value.segment(num_joints_, num_joints_) = estimated_velocity;
-    state_value.tail(num_joints_) = commanded_position;
   }
 }
 
-void IiwaStatusReceiver::OutputMeasuredPosition(
-    const Context<double>& context, BasicVector<double>* output) const {
-  const auto state_value = context.get_discrete_state(0).get_value();
+void IiwaStatusReceiver::OutputState(
+    const drake::systems::Context<double>& context,
+    drake::systems::BasicVector<double>* output) const {
+  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
+  DRAKE_ASSERT(input != nullptr);
+  const auto& status = input->GetValue<lcmt_iiwa_status>();
 
-  Eigen::VectorBlock<VectorX<double>> measured_position_output =
-      output->get_mutable_value();
-  measured_position_output = state_value.head(num_joints_ * 2);
+  // If we're using a default constructed message (haven't received
+  // status yet), output zero.
+  if (status.num_joints == 0) {
+    output->get_mutable_value().setZero();
+  } else {
+    DRAKE_DEMAND(status.num_joints == num_joints_);
+
+    Eigen::VectorBlock<VectorX<double>> output_vec =
+        output->get_mutable_value();
+    for (int i = 0; i < num_joints_; ++i) {
+      output_vec(i) = status.joint_position_measured[i];
+      output_vec(i + num_joints_) = status.joint_velocity_estimated[i];
+    }
+  }
 }
 
-void IiwaStatusReceiver::OutputCommandedPosition(
-    const Context<double>& context, BasicVector<double>* output) const {
-  const auto state_value = context.get_discrete_state(0).get_value();
+void IiwaStatusReceiver::OutputDeprecatedMeasuredPosition(
+    const drake::systems::Context<double>& context,
+    drake::systems::BasicVector<double>* output) const {
+  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
+  DRAKE_ASSERT(input != nullptr);
+  const auto& status = input->GetValue<lcmt_iiwa_status>();
 
-  Eigen::VectorBlock<VectorX<double>> commanded_position_output =
-      output->get_mutable_value();
-  commanded_position_output = state_value.tail(num_joints_);
+  // If we're using a default constructed message (haven't received
+  // status yet), output zero.
+  if (status.num_joints == 0) {
+    output->get_mutable_value().setZero();
+  } else {
+    DRAKE_DEMAND(status.num_joints == num_joints_);
+
+    Eigen::VectorBlock<VectorX<double>> lumped_output =
+        output->get_mutable_value();
+    for (int i = 0; i < num_joints_; ++i) {
+      lumped_output(i) = status.joint_position_measured[i];
+      lumped_output(i + num_joints_) = status.joint_velocity_estimated[i];
+      lumped_output(i + 2 * num_joints_) = status.joint_position_commanded[i];
+    }
+  }
 }
 
 IiwaStatusSender::IiwaStatusSender(int num_joints) : num_joints_(num_joints) {

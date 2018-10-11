@@ -93,6 +93,8 @@ drake_cc_library(
         ":multibody_plant",
         "//lcmtypes:contact_info_for_viz",
         "//lcmtypes:contact_results_for_viz",
+        "//systems/framework:diagram_builder",
+        "//systems/lcm:lcm_pubsub_system",
     ],
 )
 
@@ -115,6 +117,7 @@ drake_cc_googletest(
     data = [
         "test/split_pendulum.sdf",
         "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
         "//multibody/benchmarks/acrobot:models",
         "//multibody/multibody_tree/parsing:test_models",
     ],
