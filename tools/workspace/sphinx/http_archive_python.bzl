@@ -1,15 +1,12 @@
 load(
     "@bazel_tools//tools/build_defs/repo:http.bzl",
-    "patch",
     "workspace_and_buildfile",
 )
 
-# https://github.com/bazelbuild/bazel/issues/1653
-# https://github.com/bazelbuild/bazel/blob/09f7cbc/tools/build_defs/repo/http.bzl
-
 def _extract(ctx, archive):
     script = "_extract.py"
-    ctx.symlink(Label("@drake//tools/workspace/sphinx:extract_utf8_robust.py"), script)
+    ctx.symlink(
+        Label("@drake//tools/workspace/sphinx:extract_utf8_robust.py"), script)
     args = [
         "/usr/bin/python2", script,
         "--strip_prefix", ctx.attr.strip_prefix,
@@ -20,17 +17,15 @@ def _extract(ctx, archive):
     args += [archive]
     result = ctx.execute(args)
     if result.return_code:
-        print(result.stdout)
-        print(result.stderr)
-        fail("Bad")
+        fail("Exit code {}:\n{}\n{}".format(
+            result.return_code, result.stdout, result.stderr))
     result = ctx.execute(["rm", script, archive])
     if result.return_code:
-        print(result.stdout)
-        print(result.stderr)
-        fail("Bad")
+        fail("Exit code {}:\n{}\n{}".format(
+            result.return_code, result.stdout, result.stderr))
 
 def _impl(ctx):
-    """Implementation of the http_archive rule."""
+    # Using API from: https://github.com/bazelbuild/bazel/blob/09f7cbc/tools/build_defs/repo/http.bzl  # noqa
     if not ctx.attr.url and not ctx.attr.urls:
         fail("At least one of url and urls must be provided")
     if ctx.attr.build_file and ctx.attr.build_file_content:
@@ -49,7 +44,6 @@ def _impl(ctx):
         False,
     )
     _extract(ctx, archive)
-    patch(ctx)
     workspace_and_buildfile(ctx)
 
 # Copy pasta.
@@ -61,13 +55,15 @@ _http_archive_attrs = {
     "type": attr.string(),
     "build_file": attr.label(allow_single_file = True),
     "build_file_content": attr.string(),
-    "patches": attr.label_list(default = []),
-    "patch_tool": attr.string(default = "patch"),
-    "patch_args": attr.string_list(default = ["-p0"]),
     "patch_cmds": attr.string_list(default = []),
     "workspace_file": attr.label(allow_single_file = True),
     "workspace_file_content": attr.string(),
 }
+
+"""
+Workaround to the following issue using a simple Python extract script:
+https://github.com/bazelbuild/bazel/issues/1653
+"""
 
 http_archive_python = repository_rule(
     implementation = _impl,
