@@ -5,10 +5,6 @@ import argparse
 import tarfile
 import subprocess
 
-import sys
-print(sys.argv[1:])
-# exit(10)
-
 parser = argparse.ArgumentParser()
 parser.add_argument("archive", type=str)
 parser.add_argument("--output_dir", type=str, default='.')
