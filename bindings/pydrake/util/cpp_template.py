@@ -299,11 +299,15 @@ class TemplateClass(TemplateBase):
         return None
 
 
-def _rename_callable(f, module, name):
+def _rename_callable(f, module, name, cls=None):
     # Renames a function.
     if (f.__module__, f.__name__) == (module, name):
         # Short circuit.
         return f
+    if cls is not None:
+        qualname = cls.__qualname__ + "." + name
+    else:
+        qualname = name
     # If Python2, we have to wrap instancemethods + built-in functions to spoof
     # the metadata.
     type_requires_wrap = (
@@ -315,15 +319,16 @@ def _rename_callable(f, module, name):
 
         f.__module__ = module
         f.__name__ = name
+        f.__qualname__ = qualname
         f.__doc__ = orig.__doc__
         f._original_name = orig.__name__
-        cls = getattr(orig, 'im_class', None)
-        if cls:
+        if cls and six.PY2:
             f = types.MethodType(f, None, cls)
     else:
         f._original_name = f.__name__
         f.__module__ = module
         f.__name__ = name
+        f.__qualname__ = qualname
     return f
 
 
@@ -345,7 +350,8 @@ class TemplateMethod(TemplateBase):
 
     def _on_add(self, param, func):
         func = _rename_callable(
-            func, self._module_name, self._instantiation_name(param))
+            func, self._module_name, self._instantiation_name(param),
+            self._cls)
         return func
 
     def __get__(self, obj, objtype):
