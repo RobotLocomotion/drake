@@ -47,7 +47,10 @@ drake_cc_library(
     name = "solar_system",
     srcs = ["solar_system.cc"],
     hdrs = ["solar_system.h"],
-    data = ["planet_rings.obj"],
+    data = [
+        "convexsat.obj",
+        "planet_rings.obj",
+    ],
     deps = [
         "//common",
         "//geometry:geometry_ids",

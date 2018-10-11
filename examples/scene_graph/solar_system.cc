@@ -16,6 +16,8 @@ namespace examples {
 namespace solar_system {
 
 using Eigen::Vector4d;
+using geometry::Box;
+using geometry::Convex;
 using geometry::Cylinder;
 using geometry::FrameId;
 using geometry::FramePoseVector;
@@ -66,10 +68,14 @@ void SolarSystem<T>::SetDefaultState(const systems::Context<T>&,
   // clang-format off
   initial_state << 0,               // Earth initial position
                    M_PI / 2,        // moon initial position
+                    7 * M_PI / 6,   // convexsat initial position
+                   11 * M_PI / 6,   // boxsat initial position
                    M_PI / 2,        // Mars initial position
                    0,               // phobos initial position
                    2 * M_PI / 5,    // Earth revolution lasts 5 seconds.
                    2 * M_PI,        // moon revolution lasts 1 second.
+                   2 * M_PI,        // convexsat revolution lasts 1 second.
+                   2 * M_PI,        // boxsat revolution lasts 1 second.
                    2 * M_PI / 6,    // Mars revolution lasts 6 seconds.
                    2 * M_PI / 1.1;  // phobos revolution lasts 1.1 seconds.
   // clang-format on
@@ -194,6 +200,36 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
       source_id_, luna_id, make_unique<GeometryInstance>(
                                X_LGl, make_unique<Sphere>(0.075f), "luna",
                                VisualMaterial(Vector4d(0.5, 0.5, 0.35, 1))));
+
+  // Convex satellite orbits Earth in the same way as Luna. We reuse X_EL,
+  // plane_normal, and X_LGl.
+  FrameId convexsat_id = scene_graph->RegisterFrame(source_id_, planet_id,
+                                          GeometryFrame("Convexsat", X_EL));
+  body_ids_.push_back(convexsat_id);
+  body_offset_.push_back(X_EL);
+  axes_.push_back(plane_normal.normalized());
+
+  std::string convexsat_absolute_path =
+      FindResourceOrThrow("drake/examples/scene_graph/convexsat.obj");
+  scene_graph->RegisterGeometry(
+      source_id_, convexsat_id,
+      make_unique<GeometryInstance>(
+          X_LGl, make_unique<Convex>(convexsat_absolute_path, 0.075),
+          "convexsat", VisualMaterial(Vector4d(1, 1, 0, 1))));
+
+  // Box satellite orbits Earth in the same way as Luna. We reuse X_EL,
+  // plane_normal, and X_LGl.
+  FrameId boxsat_id = scene_graph->RegisterFrame(source_id_, planet_id,
+                                                 GeometryFrame("Boxsat", X_EL));
+  body_ids_.push_back(boxsat_id);
+  body_offset_.push_back(X_EL);
+  axes_.push_back(plane_normal.normalized());
+
+  scene_graph->RegisterGeometry(
+      source_id_, boxsat_id,
+      make_unique<GeometryInstance>(
+          X_LGl, make_unique<Box>(0.15, 0.15, 0.15),
+          "boxsat", VisualMaterial(Vector4d(1, 0, 1, 1))));
 
   // Mars's frame M lies directly *below* the sun (to account for the orrery
   // arm).

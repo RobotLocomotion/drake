@@ -433,10 +433,14 @@ shared_ptr<fcl::ShapeBased> CopyShapeOrThrow(
       const auto& box = dynamic_cast<const fcl::Boxd&>(geometry);
       return make_shared<fcl::Boxd>(box.side);
     }
+    case fcl::GEOM_CONVEX: {
+      const auto& convex = dynamic_cast<const fcl::Convexd&>(geometry);
+      return make_shared<fcl::Convexd>(convex.num_vertices, convex.vertices,
+                                       convex.num_faces, convex.faces);
+    }
     case fcl::GEOM_ELLIPSOID:
     case fcl::GEOM_CAPSULE:
     case fcl::GEOM_CONE:
-    case fcl::GEOM_CONVEX:
     case fcl::GEOM_PLANE:
     case fcl::GEOM_TRIANGLE:
       throw std::logic_error(
