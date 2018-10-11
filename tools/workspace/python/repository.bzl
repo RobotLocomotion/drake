@@ -35,9 +35,9 @@ load("@drake//tools/workspace:execute.bzl", "which")
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
 def _exec_ctx(repository_ctx, bin):
-    return struct(ctx=repository_ctx, bin=bin)
+    return struct(ctx = repository_ctx, bin = bin)
 
-def _exec(exec_ctx, args, strip=True):
+def _exec(exec_ctx, args):
     args = [exec_ctx.bin] + args
     result = exec_ctx.ctx.execute(args)
     if result.return_code != 0:
@@ -56,7 +56,9 @@ def _impl(repository_ctx):
     if version == "bazel":
         tmp_ctx = _exec_ctx(repository_ctx, repository_ctx.which("python"))
         version = _exec(
-            tmp_ctx, ["-c", "import sys; print(sys.version_info.major)"])
+            tmp_ctx,
+            ["-c", "import sys; print(sys.version_info.major)"],
+        )
 
     python_config = repository_ctx.which("python{}-config".format(version))
     if not python_config:
@@ -72,7 +74,8 @@ def _impl(repository_ctx):
     # `python{version}` and `python-config{version}`.
     py_configdir = _exec(
         py_ctx,
-        ["-c", "import sysconfig; print(sysconfig.get_config_var(\"LIBPL\"))"])
+        ["-c", "import sysconfig; print(sysconfig.get_config_var(\"LIBPL\"))"],
+    )
     py_config_configdir = _exec(config_ctx, ["--configdir"])
     if (py_configdir != py_config_configdir):
         fail("Mismatch between {} and {}: {} != {}".format(
@@ -95,7 +98,8 @@ def _impl(repository_ctx):
     version_major_minor = _exec(
         py_ctx,
         ["-c", "from sys import version_info as v; print(\"{}.{}\"" +
-               ".format(v.major, v.minor))"])
+               ".format(v.major, v.minor))"],
+    )
     if version_major_minor not in supported:
         msg = (
             "Python {} is not a supported / tested version for use with " +
@@ -190,9 +194,12 @@ def python_version_major_minor():
 
 def python_lib_dir():
     return "lib/python{version}"
-""".format(version=version_major_minor)
+""".format(version = version_major_minor)
     repository_ctx.file(
-        "python.bzl", content = skylark_content, executable = False)
+        "python.bzl",
+        content = skylark_content,
+        executable = False,
+    )
 
 python_repository = repository_rule(
     _impl,
