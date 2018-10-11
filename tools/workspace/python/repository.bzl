@@ -33,31 +33,29 @@ Arguments:
 load("@drake//tools/workspace:execute.bzl", "which")
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
-def _exec(ctx, args):
-    result = ctx.execute(args)
+def _exec_ctx(repository_ctx, bin):
+    return struct(ctx=repository_ctx, bin=bin)
+
+def _exec(exec_ctx, args, strip=True):
+    args = [exec_ctx.bin] + args
+    result = exec_ctx.ctx.execute(args)
     if result.return_code != 0:
         fail("Could not execute {}: {}".format(args, result.stderr))
-    return result.stdout
+    return result.stdout.strip()
 
-def _py_exec(ctx, bin, cmd):
-    args = [bin, "-c", "{}".format(cmd)]
-    return _exec(ctx, args)
-
-_VERSION_MAJOR_MINOR_SUPPORTED = [
-    "2.7",  # Ubuntu 16.04
-    "3.5",  # Ubuntu 16.04
-    "3.6",  # Homebrew
-]
+_SUPPORT_MATRIX = {
+    "ubuntu:16.04": ["2.7", "3.5"],
+    "ubuntu:18.04": ["2.7", "3.5"],
+    "macOS:10.13": ["2.7", "3.6"],
+    "macOS:10.14": ["2.7", "3.6"],
+}
 
 def _impl(repository_ctx):
     version = repository_ctx.attr.version
-    if version == "path":
-        tmp = repository_ctx.which("python")
-        version = _py_exec(
-            repository_ctx,
-            tmp,
-            "import sys; print(sys.version_info.major)",
-        ).strip()
+    if version == "bazel":
+        tmp_ctx = _exec_ctx(repository_ctx, repository_ctx.which("python"))
+        version = _exec(
+            tmp_ctx, ["-c", "import sys; print(sys.version_info.major)"])
 
     python_config = repository_ctx.which("python{}-config".format(version))
     if not python_config:
@@ -66,17 +64,15 @@ def _impl(repository_ctx):
         ))
     python = repository_ctx.which("python{}".format(version))
 
+    py_ctx = _exec_ctx(repository_ctx, python)
+    config_ctx = _exec_ctx(repository_ctx, python_config)
+
     # Estimate that we're using the same configuration between
     # `python{version}` and `python-config{version}`.
-    py_configdir = _py_exec(
-        repository_ctx,
-        python,
-        "import sysconfig; print(sysconfig.get_config_var(\"LIBPL\"))",
-    ).strip()
-    py_config_configdir = _exec(
-        repository_ctx,
-        [python_config, "--configdir"],
-    ).strip()
+    py_configdir = _exec(
+        py_ctx,
+        ["-c", "import sysconfig; print(sysconfig.get_config_var(\"LIBPL\"))"])
+    py_config_configdir = _exec(config_ctx, ["--configdir"])
     if (py_configdir != py_config_configdir):
         fail("Mismatch between {} and {}: {} != {}".format(
             python,
@@ -85,31 +81,28 @@ def _impl(repository_ctx):
             py_config_configdir,
         ))
 
-    version_major_minor = _py_exec(
-        repository_ctx,
-        python,
-        "import sys; v = sys.version_info; " +
-        "print(\"{}.{}\".format(v.major, v.minor))",
-    ).strip()
-    if version_major_minor not in _VERSION_MAJOR_MINOR_SUPPORTED:
+    os_result = determine_os(repository_ctx)
+    if os_result.error != None:
+        fail(os_result.error)
+
+    if os_result.is_macos:
+        os_key = os_result.distribution + ":" + os_result.macos_release
+    else:
+        os_key = os_result.distribution + ":" + os_result.ubuntu_release
+    supported = _SUPPORT_MATRIX[os_key]
+
+    version_major_minor = _exec(
+        py_ctx,
+        ["-c", "from sys import version_info as v; print(\"{}.{}\"" +
+               ".format(v.major, v.minor))"])
+    if version_major_minor not in supported:
         msg = (
             "Python {} is not a supported / tested version for use with " +
             "Drake.\n  Supported versions: {}\n"
-        ).format(
-            version_major_minor,
-            _VERSION_MAJOR_MINOR_SUPPORTED,
-        )
-        if repository_ctx.attr.if_unsupported == "warn":
-            print("WARNING: " + msg)
-        elif repository_ctx.attr.if_unsupported == "fail":
-            fail(msg)
+        ).format(version_major_minor, supported)
+        fail(msg)
 
-    result = repository_ctx.execute([python_config, "--includes"])
-
-    if result.return_code != 0:
-        fail("Could NOT determine Python includes", attr = result.stderr)
-
-    cflags = result.stdout.strip().split(" ")
+    cflags = _exec(config_ctx, ["--includes"]).split(" ")
     cflags = [cflag for cflag in cflags if cflag]
 
     root = repository_ctx.path("")
@@ -128,12 +121,7 @@ def _impl(repository_ctx):
                 repository_ctx.symlink(source, destination)
                 includes += [include]
 
-    result = repository_ctx.execute([python_config, "--ldflags"])
-
-    if result.return_code != 0:
-        fail("Could NOT determine Python linkopts", attr = result.stderr)
-
-    linkopts = result.stdout.strip().split(" ")
+    linkopts = _exec(config_ctx, ["--ldflags"]).split(" ")
     linkopts = [linkopt for linkopt in linkopts if linkopt]
 
     for i in reversed(range(len(linkopts))):
@@ -142,15 +130,13 @@ def _impl(repository_ctx):
 
     linkopts_direct_link = list(linkopts)
 
-    os_result = determine_os(repository_ctx)
-    if os_result.error != None:
-        fail(os_result.error)
-
     if os_result.is_macos:
         for i in reversed(range(len(linkopts))):
             if linkopts[i].find("python{}".format(version)) != -1:
                 linkopts.pop(i)
         linkopts = ["-undefined dynamic_lookup"] + linkopts
+
+    sys_prefix = _exec(py_ctx, ["-c", "import sys; print(sys.prefix)"])
 
     file_content = """# -*- python -*-
 
@@ -199,18 +185,23 @@ cc_library(
 
 # DO NOT EDIT: generated by python_repository()
 def python_version_major_minor():
-    return "{}"
+    return "{version}"
 
 def python_lib_dir():
-    return "lib/python{}"
-""".format(version_major_minor, version_major_minor)
-    repository_ctx.file("python.bzl", content = skylark_content, executable = False)
+    return "lib/python{version}"
+
+def python_sys_prefix():
+    return "{prefix}"
+""".format(version=version_major_minor, prefix=sys_prefix)
+    repository_ctx.file(
+        "python.bzl", content = skylark_content, executable = False)
+
+    print(sys_prefix)
 
 python_repository = repository_rule(
     _impl,
     attrs = {
-        "version": attr.string(default = "path"),
-        "if_unsupported": attr.string(default = "warn"),
+        "version": attr.string(default = "bazel"),
     },
     local = True,
 )
