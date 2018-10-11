@@ -1,6 +1,6 @@
 python3 -m virtualenv --system-site-packages --python python3 build/py3
 source build/py3/bin/activate
-pip install --user protobuf
+pip install --user protobuf sphinx==1.8.1 sphinx_rtd_theme
 
 {
 bazel-build() { (

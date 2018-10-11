@@ -181,7 +181,6 @@ class TestCppTemplate(unittest.TestCase):
                     "<function DummyC.method[int] at "),
                 str(DummyC.method[int]))
 
-
         obj = DummyC()
         self.assertTrue(
             str(obj.method).startswith(
