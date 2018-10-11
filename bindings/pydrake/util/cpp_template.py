@@ -304,7 +304,7 @@ def _rename_callable(f, module, name, cls=None):
     if (f.__module__, f.__name__) == (module, name):
         # Short circuit.
         return f
-    if cls is not None:
+    if six.PY3 and cls is not None:
         qualname = cls.__qualname__ + "." + name
     else:
         qualname = name
