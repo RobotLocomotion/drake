@@ -11,6 +11,7 @@ class TestCommonInstall(unittest.TestCase):
         install_dir = install_test_helper.get_install_dir()
         env_python_path = "PYTHONPATH"
         tool_env = dict(os.environ)
+        install_dir = install_test_helper.get_install_dir()
         tool_env[env_python_path] = \
             install_test_helper.get_python_site_packages_dir(install_dir)
         data_folder = os.path.join(install_dir, "share", "drake")

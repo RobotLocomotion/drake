@@ -8,7 +8,7 @@ load(
     "join_paths",
     "output_path",
 )
-load("@python//:python.bzl", "python_lib_dir")
+load("@python//:python.bzl", "python_site_packages_suffix")
 
 InstallInfo = provider()
 
@@ -546,7 +546,7 @@ _install_rule = rule(
         "runtime_strip_prefix": attr.string_list(),
         "java_dest": attr.string(default = "share/java"),
         "java_strip_prefix": attr.string_list(),
-        "py_dest": attr.string(default = python_lib_dir() + "/site-packages"),
+        "py_dest": attr.string(default = python_site_packages_suffix()),
         "py_strip_prefix": attr.string_list(),
         "rename": attr.string_dict(),
         "install_tests": attr.label_list(

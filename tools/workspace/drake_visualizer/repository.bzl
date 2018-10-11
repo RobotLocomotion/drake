@@ -42,6 +42,7 @@ Argument:
 """
 
 load("@drake//tools/workspace:os.bzl", "determine_os")
+load("@python//:python.bzl", "python_site_packages_suffix")
 
 # TODO(jamiesnape): Publish scripts used to create binaries. There will be a CI
 # job for developers to build new binaries on demand.
@@ -108,10 +109,10 @@ filegroup(
     srcs = glob([
         "lib/libPythonQt.*",
         "lib/libddApp.*",
-        "lib/python2.7/site-packages/bot_lcmgl/**/*.py",
-        "lib/python2.7/site-packages/director/**/*.py",
-        "lib/python2.7/site-packages/director/**/*.so",
-        "lib/python2.7/site-packages/urdf_parser_py/**/*.py",
+        "{site_packages}/bot_lcmgl/**/*.py",
+        "{site_packages}/director/**/*.py",
+        "{site_packages}/director/**/*.so",
+        "{site_packages}/urdf_parser_py/**/*.py",
     ]) + [
         "bin/drake-visualizer",
         "share/doc/director/LICENSE.txt",
@@ -131,7 +132,7 @@ install_files(
     files = [":drake_visualizer"],
     visibility = ["//visibility:public"],
 )
-"""
+""".format(site_packages = python_site_packages_suffix())
 
     repository_ctx.file(
         "BUILD.bazel",
