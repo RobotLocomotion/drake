@@ -34,7 +34,17 @@ Arguments:
 load("@drake//tools/workspace:execute.bzl", "which")
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
-def _exec_ctx(repository_ctx, bin):
+_VERSION_MAJOR_MINOR_SUPPORT_MATRIX = {
+    "ubuntu:16.04": ["2.7", "3.5"],
+    "ubuntu:18.04": ["2.7"],
+    "macOS:10.13": ["2.7"],
+    "macOS:10.14": ["2.7"],
+}
+
+def _which(repository_ctx, bin_name):
+    bin = repository_ctx.which(bin_name)
+    if not bin:
+        fail("Could NOT find {}".format(bin_name))
     return struct(ctx = repository_ctx, bin = bin)
 
 def _exec(exec_ctx, args):
@@ -44,70 +54,65 @@ def _exec(exec_ctx, args):
         fail("Could not execute {}: {}".format(args, result.stderr))
     return result.stdout.strip()
 
-_SUPPORT_MATRIX = {
-    "ubuntu:16.04": ["2.7", "3.5"],
-    "ubuntu:18.04": ["2.7"],
-    "macOS:10.13": ["2.7"],
-    "macOS:10.14": ["2.7"],
-}
+def _get_and_validate_version(os_result, python, python_config):
+    version_major_minor = _exec(
+        python,
+        ["-c", "from sys import version_info as v; print(\"{}.{}\"" +
+               ".format(v.major, v.minor))"],
+    )
+
+    # Estimate that we're using the same configuration between
+    # `python{version}` and `python-config{version}`.
+    python_configdir = _exec(
+        python,
+        ["-c", "import sysconfig; print(sysconfig.get_config_var(\"LIBPL\"))"],
+    )
+    python_config_configdir = _exec(python_config, ["--configdir"])
+    if python_configdir != python_config_configdir:
+        fail("Mismatch in configdir:\n  {}: {}\n  {}: {}".format(
+            python.bin,
+            python_configdir,
+            python_config.bin,
+            python_config_configdir,
+        ))
+
+    # Ensure we have the correct platform support.
+    if os_result.is_macos:
+        os_key = os_result.distribution + ":" + os_result.macos_release
+    else:
+        os_key = os_result.distribution + ":" + os_result.ubuntu_release
+    version_major_minor_supported = _VERSION_MAJOR_MINOR_SUPPORT_MATRIX[os_key]
+    if version_major_minor not in version_major_minor_supported:
+        msg = (
+            "Python {} is not a supported / tested version for use with " +
+            "Drake.\n  Supported versions: {}\n"
+        ).format(version_major_minor, version_major_minor_supported)
+        fail(msg)
+    return version_major_minor
 
 def _impl(repository_ctx):
+    # Repository implementation.
     version = repository_ctx.attr.version
     if version == "bazel":
-        tmp_ctx = _exec_ctx(repository_ctx, repository_ctx.which("python"))
+        tmp_ctx = _which(repository_ctx, "python")
         version = _exec(
             tmp_ctx,
             ["-c", "import sys; print(sys.version_info.major)"],
         )
-
-    python_config = repository_ctx.which("python{}-config".format(version))
-    if not python_config:
-        fail("Could NOT find python{}-config".format(
-            version,
-        ))
-    python = repository_ctx.which("python{}".format(version))
-
-    py_ctx = _exec_ctx(repository_ctx, python)
-    config_ctx = _exec_ctx(repository_ctx, python_config)
-
-    # Estimate that we're using the same configuration between
-    # `python{version}` and `python-config{version}`.
-    py_configdir = _exec(
-        py_ctx,
-        ["-c", "import sysconfig; print(sysconfig.get_config_var(\"LIBPL\"))"],
-    )
-    py_config_configdir = _exec(config_ctx, ["--configdir"])
-    if (py_configdir != py_config_configdir):
-        fail("Mismatch between {} and {}: {} != {}".format(
-            python,
-            python_config,
-            py_configdir,
-            py_config_configdir,
-        ))
+    python_config = _which(repository_ctx, "python{}-config".format(version))
+    python = _which(repository_ctx, "python{}".format(version))
 
     os_result = determine_os(repository_ctx)
     if os_result.error != None:
         fail(os_result.error)
 
-    if os_result.is_macos:
-        os_key = os_result.distribution + ":" + os_result.macos_release
-    else:
-        os_key = os_result.distribution + ":" + os_result.ubuntu_release
-    supported = _SUPPORT_MATRIX[os_key]
-
-    version_major_minor = _exec(
-        py_ctx,
-        ["-c", "from sys import version_info as v; print(\"{}.{}\"" +
-               ".format(v.major, v.minor))"],
+    version_major_minor = _get_and_validate_version(
+        os_result,
+        python,
+        python_config,
     )
-    if version_major_minor not in supported:
-        msg = (
-            "Python {} is not a supported / tested version for use with " +
-            "Drake.\n  Supported versions: {}\n"
-        ).format(version_major_minor, supported)
-        fail(msg)
 
-    cflags = _exec(config_ctx, ["--includes"]).split(" ")
+    cflags = _exec(python_config, ["--includes"]).split(" ")
     cflags = [cflag for cflag in cflags if cflag]
 
     root = repository_ctx.path("")
@@ -126,7 +131,7 @@ def _impl(repository_ctx):
                 repository_ctx.symlink(source, destination)
                 includes += [include]
 
-    linkopts = _exec(config_ctx, ["--ldflags"]).split(" ")
+    linkopts = _exec(python_config, ["--ldflags"]).split(" ")
     linkopts = [linkopt for linkopt in linkopts if linkopt]
 
     for i in reversed(range(len(linkopts))):
@@ -141,7 +146,7 @@ def _impl(repository_ctx):
                 linkopts.pop(i)
         linkopts = ["-undefined dynamic_lookup"] + linkopts
 
-    sys_prefix = _exec(py_ctx, ["-c", "import sys; print(sys.prefix)"])
+    sys_prefix = _exec(python, ["-c", "import sys; print(sys.prefix)"])
 
     file_content = """# -*- python -*-
 
