@@ -5,6 +5,8 @@ Run this via:
   $ bazel run //doc:serve_sphinx
 """
 
+from __future__ import print_function
+
 import argparse
 import os
 import subprocess
