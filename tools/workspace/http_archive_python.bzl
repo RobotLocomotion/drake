@@ -6,7 +6,7 @@ load(
 def _extract(ctx, archive):
     script = "_extract.py"
     ctx.symlink(
-        Label("@drake//tools/workspace/sphinx:extract_utf8_robust.py"), script)
+        Label("@drake//tools/workspace:python_extract.py"), script)
     args = [
         "/usr/bin/python2", script,
         "--strip_prefix", ctx.attr.strip_prefix,
