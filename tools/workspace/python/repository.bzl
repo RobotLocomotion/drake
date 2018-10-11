@@ -27,7 +27,8 @@ Example:
 Arguments:
     name: A unique name for this rule.
     version: The major or major.minor version of Python headers and libraries
-    to be found.
+        to be found. If set to "bazel" (default), it will use the interpret that
+        Bazel is using (e.g. specified via `--python_path`).
 """
 
 load("@drake//tools/workspace:execute.bzl", "which")
@@ -45,9 +46,9 @@ def _exec(exec_ctx, args, strip=True):
 
 _SUPPORT_MATRIX = {
     "ubuntu:16.04": ["2.7", "3.5"],
-    "ubuntu:18.04": ["2.7", "3.5"],
-    "macOS:10.13": ["2.7", "3.6"],
-    "macOS:10.14": ["2.7", "3.6"],
+    "ubuntu:18.04": ["2.7"],
+    "macOS:10.13": ["2.7"],
+    "macOS:10.14": ["2.7"],
 }
 
 def _impl(repository_ctx):
@@ -189,14 +190,9 @@ def python_version_major_minor():
 
 def python_lib_dir():
     return "lib/python{version}"
-
-def python_sys_prefix():
-    return "{prefix}"
-""".format(version=version_major_minor, prefix=sys_prefix)
+""".format(version=version_major_minor)
     repository_ctx.file(
         "python.bzl", content = skylark_content, executable = False)
-
-    print(sys_prefix)
 
 python_repository = repository_rule(
     _impl,
