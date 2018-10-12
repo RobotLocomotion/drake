@@ -1824,9 +1824,9 @@ class MultibodyTree {
       const Eigen::Ref<const MatrixX<T>>& p_FQ_list) const;
 
   /// Given a frame `Fq` defined by shifting a frame F from its origin `Fo` to
-  /// a new origin `Qo`, this method computes the geometric Jacobian `Jv_WFq`
-  /// for frame `Fq`. The new origin `Qo` is specified by the position vector
-  /// `p_FQo` in frame F. The frame geometric Jacobian `Jv_WFq` is defined by:
+  /// a new origin `Q`, this method computes the geometric Jacobian `Jv_WFq`
+  /// for frame `Fq`. The new origin `Q` is specified by the position vector
+  /// `p_FQ` in frame F. The frame geometric Jacobian `Jv_WFq` is defined by:
   /// <pre>
   ///   V_WFq(q, v) = Jv_WFq(q)⋅v
   /// </pre>
@@ -1840,10 +1840,10 @@ class MultibodyTree {
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q.
   /// @param[in] frame_F
-  ///   The position `p_FQo` of frame `Fq` is measured and expressed in this
+  ///   The position `p_FQ` of frame `Fq` is measured and expressed in this
   ///   frame F.
-  /// @param[in] p_FQo
-  ///   The (fixed) position of the origin `Qo` of frame `Fq` as measured and
+  /// @param[in] p_FQ
+  ///   The (fixed) position of the origin `Q` of frame `Fq` as measured and
   ///   expressed in frame F.
   /// @param[out] Jv_WFq
   ///   The geometric Jacobian `Jv_WFq(q)`, function of the generalized
@@ -1858,7 +1858,7 @@ class MultibodyTree {
   ///   Jacobian `Hw_WFq` related to the angular velocity of `Fq` in W by
   ///   `w_WFq = Hw_WFq⋅v`. The bottom rows of this matrix (which can be
   ///   accessed with Jv_WFq.bottomRows<3>()) is the Jacobian `Hv_WFq` related
-  ///   to the translational velocity of the origin `Qo` of frame `Fq` in W by
+  ///   to the translational velocity of the origin `Q` of frame `Fq` in W by
   ///   `v_WFqo = Hv_WFq⋅v`. This ordering is consistent with the internal
   ///   storage of the SpatialVelocity class. Therefore the following operations
   ///   results in a valid spatial velocity: <pre>
@@ -1869,13 +1869,13 @@ class MultibodyTree {
   ///   `6 x nv`.
   void CalcFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FQo,
+      const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FQ,
       EigenPtr<MatrixX<T>> Jv_WFq) const;
 
   /// Given a frame `Fq` defined by shifting a frame F from its origin `Fo` to
-  /// a new origin `Qo`, this method computes the bias term `Ab_WFq` associated
+  /// a new origin `Q`, this method computes the bias term `Ab_WFq` associated
   /// with the spatial acceleration `A_WFq` a frame `Fq` instantaneously
-  /// moving with a frame F at a fixed position `p_FQo`.
+  /// moving with a frame F at a fixed position `p_FQ`.
   /// That is, the spatial acceleration of frame `Fq` can be computed as:
   /// <pre>
   ///   A_WFq = Jv_WFq(q)⋅v̇ + Ab_WFq(q, v)
@@ -1889,10 +1889,10 @@ class MultibodyTree {
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q and generalized velocities v.
   /// @param[in] frame_F
-  ///   The position `p_FQo` of frame `Fq` is measured and expressed in this
+  ///   The position `p_FQ` of frame `Fq` is measured and expressed in this
   ///   frame F.
-  /// @param[in] p_FQo
-  ///   The (fixed) position of the origin `Qo` of frame `Fq` as measured and
+  /// @param[in] p_FQ
+  ///   The (fixed) position of the origin `Q` of frame `Fq` as measured and
   ///   expressed in frame F.
   /// @returns Ab_WFq
   ///   The bias term, function of the generalized positions q and the
@@ -1903,7 +1903,7 @@ class MultibodyTree {
   /// @note SpatialAcceleration(Ab_WFq) defines a valid SpatialAcceleration.
   Vector6<T> CalcBiasForFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FQo) const;
+      const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FQ) const;
 
   /// @}
   // End of multibody Jacobian methods section.
