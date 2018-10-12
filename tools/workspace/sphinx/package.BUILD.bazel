@@ -1,0 +1,20 @@
+py_library(
+    name = "sphinx_py",
+    srcs = glob([
+        "sphinx/**/*.py",
+    ]),
+    data = glob(
+        [
+            "sphinx/locale/**",
+            "sphinx/templates/**",
+            "sphinx/themes/**",
+        ],
+        exclude = ["sphinx/**/*.py"],
+    ),
+    imports = ["."],
+    deps = [
+        "@sphinx_py_typing//:typing",
+        "@sphinx_py_imagesize//:imagesize",
+    ],
+    visibility = ["//visibility:public"],
+)

@@ -7,7 +7,6 @@ def pypi_archive(
         name,
         package = None,
         version = None,
-        build_file = None,
         sha256 = None,
         strip_prefix = None,
         mirrors = None,
@@ -56,10 +55,6 @@ def pypi_archive(
         version: The version of the PyPI package to be downloaded
             [String; required].
 
-        build_file: The file to use as the BUILD file for this repository.
-            This argument is a label relative to the WORKSPACE
-            [String; required].
-
         sha256: The expected SHA-256 hash of the archive to download. This
             argument must match the SHA-256 hash of the downloaded archive.
             The download will fail if omitted, but the checksum-mismatch error
@@ -78,9 +73,6 @@ def pypi_archive(
 
     if not version:
         fail("The version argument to pypi_archive is required.")
-
-    if not build_file:
-        fail("The build_file argument to pypi_archive is required.")
 
     if not sha256:
         # Set an incorrect default value to allow the download attempt to fail
@@ -103,7 +95,6 @@ def pypi_archive(
 
     http_archive(
         name = name,
-        build_file = build_file,
         sha256 = sha256,
         strip_prefix = strip_prefix,
         urls = urls,
