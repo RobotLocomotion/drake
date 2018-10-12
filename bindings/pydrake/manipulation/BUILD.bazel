@@ -56,8 +56,12 @@ PY_LIBRARIES = [
 
 drake_py_unittest(
     name = "planner_test",
+    data = [
+        "//multibody/benchmarks/acrobot:models",
+    ],
     deps = [
         ":planner_py",
+        "//bindings/pydrake/multibody",
     ],
 )
 
