@@ -1085,8 +1085,8 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
 // A mock System that requests discrete update at 1 kHz, and publishes at 400
 // Hz. Calls user-configured callbacks on DoPublish,
 // DoCalcDiscreteVariableUpdates, and EvalTimeDerivatives. This hybrid system
-// with both continuous and discrete state to verify expected state update
-// ordering (unrestricted, discrete, continuous, then publish).
+// with both continuous and discrete state allows verifying expected state
+// update ordering (unrestricted, discrete, continuous, then publish).
 class MixedContinuousDiscreteSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedContinuousDiscreteSystem)
@@ -1191,17 +1191,17 @@ GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
   Simulator<double> simulator(system);
   enum EventType { kPublish = 0, kUpdate = 1, kIntegrate = 2, kTypeCount = 3};
 
-  // Write down the order in which the MixedContinuousDiscreteSystem is asked to
-  // compute discrete updates, do publishes, or compute derivatives at each
+  // Record the order in which the MixedContinuousDiscreteSystem is asked to
+  // do publishes, compute discrete updates, or compute derivatives at each
   // time step.
   std::map<int, std::vector<EventType>> events;
-  system.set_update_callback(
-      [&events, &simulator](const Context<double>& context) {
-        events[simulator.get_num_steps_taken()].push_back(kUpdate);
-      });
   system.set_publish_callback(
       [&events, &simulator](const Context<double>& context) {
         events[simulator.get_num_steps_taken()].push_back(kPublish);
+      });
+  system.set_update_callback(
+      [&events, &simulator](const Context<double>& context) {
+        events[simulator.get_num_steps_taken()].push_back(kUpdate);
       });
   system.set_derivatives_callback(
       [&events, &simulator](const Context<double>& context) {
