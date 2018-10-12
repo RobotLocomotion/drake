@@ -49,10 +49,9 @@ drake_cc_library(
 drake_cc_googletest(
     name = "rod2d_time_stepping",
     data = [":models"],
-    # 
     tags = gurobi_test_tags() + [
         # This test breaks the build in a non-obvious way and the author
-        # (pangtao22) is unable to assist in debugging. 
+        # (pangtao22) is unable to assist in debugging.
         "manual",
     ],
     deps = [
