@@ -117,7 +117,7 @@ drake_cc_googletest(
     data = [
         "test/split_pendulum.sdf",
         "//examples/kuka_iiwa_arm/models",
-        "//examples/simple_gripper/",
+        "//examples/simple_gripper:models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//multibody/benchmarks/acrobot:models",

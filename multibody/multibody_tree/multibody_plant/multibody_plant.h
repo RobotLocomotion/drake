@@ -881,6 +881,15 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
       systems::Context<T>* context,
       const Body<T>& body, const Isometry3<T>& X_MB) const;
 
+  void SetFreeBodyPoseInWorldFrame(
+      systems::Context<T>* context,
+      const Body<T>& body, const Isometry3<T>& X_WB) const;
+
+  void SetFreeBodyPoseInAnchoredFrame(
+      systems::Context<T>* context,
+      const Frame<T>& frame_F, const Body<T>& body,
+      const Isometry3<T>& X_FB) const;
+
   // TODO(amcastro-tri): Add state accessors for free body spatial velocities.
 
   /// @}

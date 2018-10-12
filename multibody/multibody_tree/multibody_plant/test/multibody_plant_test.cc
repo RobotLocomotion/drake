@@ -2014,7 +2014,7 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
 GTEST_TEST(StateSelection, FloatingBodies) {
   const std::string iiwa_sdf_path = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/"
-          "iiwa14_no_collision.sdf";
+          "iiwa14_no_collision.sdf");
 
   const std::string table_sdf_path = FindResourceOrThrow(
       "drake/examples/kuka_iiwa_arm/models/table/"
@@ -2027,7 +2027,7 @@ GTEST_TEST(StateSelection, FloatingBodies) {
 
   // Load a model of a table where to put the robot on.
   const ModelInstanceIndex robot_table_model =
-      AddModelFromSdfFile(table_sdf_path, &plant);
+      AddModelFromSdfFile(table_sdf_path, "robot_table", &plant);
   plant.WeldFrames(plant.world_frame(),
                    plant.GetFrameByName("link", robot_table_model));
 
@@ -2047,27 +2047,42 @@ GTEST_TEST(StateSelection, FloatingBodies) {
 
   // Load a second table for objects.
   const ModelInstanceIndex objects_table_model =
-      AddModelFromSdfFile(table_sdf_path, &plant);
+      AddModelFromSdfFile(table_sdf_path, "objects_table", &plant);
+  const Isometry3d X_WT(Translation3d(0.8, 0.0, 0.0));
   plant.WeldFrames(plant.world_frame(),
-                   plant.GetFrameByName("link", objects_table_model),
-                   Translation3d(0.35, 0.0, 0.0));
+                   plant.GetFrameByName("link", objects_table_model), X_WT);
 
-  // Define a fixed frame on the center of the objects table.
+  // Define a fixed frame on the -x, -y corner of the objects table.
+  const Isometry3d X_TO = RigidTransform<double>(
+      RotationMatrix<double>::MakeXRotation(-M_PI_2),
+      Vector3<double>(-0.3, -0.3, table_top_z_in_world)).GetAsIsometry3();
   const auto& objects_frame_O =
-      plant.AddFrame(std::make_unique(FixedOffsetFrame<double>(
+      plant.AddFrame(std::make_unique<FixedOffsetFrame<double>>(
           "objects_frame", plant.GetFrameByName("link", objects_table_model),
-          Translation3d(0.35, 0.0, table_top_z_in_world))));
+          X_TO));
 
-  // Add a floating mug, with a local reference frame on the center of table.
+  // Add a floating mug.
   const ModelInstanceIndex mug_model =
-      AddModelFromSdfFile(table_sdf_path, &plant);
-  plant.SetModelInstanceFloatingBase(
-      mug_model, plant.GetBodyByName("main_body"), objects_frame_O);
+      AddModelFromSdfFile(mug_sdf_path, &plant);
+  const Body<double>& mug = plant.GetBodyByName("main_body", mug_model);
 
   plant.Finalize();
 
-  (void) mug_model;
+  auto context = plant.CreateDefaultContext();
 
+  // Initialize the pose X_OM of the mug frame M in the objects table frame O.
+  const Isometry3d X_OM(Translation3d(0.05, 0.0, 0.05));
+  plant.SetFreeBodyPoseInAnchoredFrame(
+      context.get(), objects_frame_O, mug, X_OM);
+
+  // Retrieve the pose of the mug in the world.
+  const Isometry3d& X_WM = plant.EvalBodyPoseInWorld(*context, mug);
+
+  const Isometry3d X_WM_expected = X_WT * X_TO * X_OM;
+
+  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(X_WM.matrix(), X_WM_expected.matrix(),
+                              kTolerance, MatrixCompareType::relative));
 }
 
 }  // namespace

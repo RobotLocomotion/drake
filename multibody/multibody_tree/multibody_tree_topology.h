@@ -897,6 +897,24 @@ class MultibodyTreeTopology {
     (*path_to_world)[0] = BodyNodeIndex(0);  // Add the world.
   }
 
+  bool IsBodyAnchored(BodyIndex body_index) const {
+    DRAKE_DEMAND(is_valid());
+    const BodyTopology& body = get_body(body_index);
+    std::vector<BodyNodeIndex> path_to_world;
+    GetKinematicPathToWorld(body.body_node, &path_to_world);
+    // Skip the world at path_to_world[0].
+    for (size_t path_index = 1; path_index < path_to_world.size();
+         ++path_index) {
+      const BodyNodeTopology& node = get_body_node(path_to_world[path_index]);
+      const MobilizerTopology& mobilizer = get_mobilizer(node.mobilizer);
+      // If any of the mobilizers in the path is not a weld mobilizer, the body
+      // is not anchored.
+      if (!mobilizer.is_weld_mobilizer()) return false;
+    }
+    // If the loop above completes, then body_index is anchored to the world.
+    return true;
+  }
+
   /// This method partitions the tree topology into sub-graphs such that two
   /// bodies are in the same sub-graph if there is a path between them which
   /// includes only welded-mobilizer.
