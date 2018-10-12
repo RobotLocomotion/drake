@@ -268,9 +268,22 @@ class TestCustom(unittest.TestCase):
         self.assertTrue(
             context.get_continuous_state_vector() is
             context.get_mutable_continuous_state_vector())
+        self.assertEqual(context.get_num_discrete_state_groups(), 1)
         self.assertTrue(
             context.get_discrete_state_vector() is
             context.get_mutable_discrete_state_vector())
+        self.assertTrue(
+            context.get_discrete_state(0) is
+            context.get_discrete_state_vector())
+        self.assertTrue(
+            context.get_discrete_state(0) is
+            context.get_discrete_state().get_vector(0))
+        self.assertTrue(
+            context.get_mutable_discrete_state(0) is
+            context.get_mutable_discrete_state_vector())
+        self.assertTrue(
+            context.get_mutable_discrete_state(0) is
+            context.get_mutable_discrete_state().get_vector(0))
         self.assertEqual(context.get_num_abstract_states(), 1)
         self.assertTrue(
             context.get_abstract_state() is
