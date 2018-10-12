@@ -1082,10 +1082,10 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   EXPECT_NEAR(spring_mass.get_velocity(context), v_final, 1.0e-5);
 }
 
-// A mock System that requests discrete update at 1 kHz, and publishes at 400
-// Hz. Calls user-configured callbacks on DoPublish,
-// DoCalcDiscreteVariableUpdates, and EvalTimeDerivatives. This hybrid system
-// with both continuous and discrete state allows verifying expected state
+// A mock hybrid continuous-discrete System with time as its only continuous
+// variable, discrete updates at 1 kHz, and publishes at 400 Hz. Calls
+// user-configured callbacks on DoPublish, DoCalcDiscreteVariableUpdates, and
+// EvalTimeDerivatives. This hybrid system will be used to verify expected state
 // update ordering (unrestricted, discrete, continuous, then publish).
 class MixedContinuousDiscreteSystem : public LeafSystem<double> {
  public:
