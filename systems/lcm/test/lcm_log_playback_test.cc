@@ -73,7 +73,7 @@ class DummySys : public LeafSystem<double> {
   mutable std::vector<double> received_time_{0};
 };
 
-// Generates the log file and populates it using LCM outputs (publishes).
+// Generates the log file and populates it using LCM outputs.
 void GenerateLog() {
   drake::lcm::DrakeLcmLog w_log("test.log", true);
   auto pub0 = LcmPublisherSystem::Make<lcmt_drake_signal>("Ch0", &w_log);

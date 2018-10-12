@@ -1084,7 +1084,9 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
 
 // A mock System that requests discrete update at 1 kHz, and publishes at 400
 // Hz. Calls user-configured callbacks on DoPublish,
-// DoCalcDiscreteVariableUpdates, and EvalTimeDerivatives.
+// DoCalcDiscreteVariableUpdates, and EvalTimeDerivatives. This hybrid system
+// with both continuous and discrete state to verify expected state update
+// ordering (unrestricted, discrete, continuous, then publish).
 class MixedContinuousDiscreteSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedContinuousDiscreteSystem)
@@ -1187,7 +1189,7 @@ GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
 GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
   MixedContinuousDiscreteSystem system;
   Simulator<double> simulator(system);
-  enum EventType { kPublish = 0, kUpdate = 1, kIntegrate = 2 };
+  enum EventType { kPublish = 0, kUpdate = 1, kIntegrate = 2, kTypeCount = 3};
 
   // Write down the order in which the MixedContinuousDiscreteSystem is asked to
   // compute discrete updates, do publishes, or compute derivatives at each
@@ -1211,23 +1213,23 @@ GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
   simulator.StepTo(0.5);
 
   // Verify that at least one of each event type was triggered.
-  int triggers[kIntegrate + 1] = { 0, 0, 0 };
+  bool triggers[kTypeCount] = { false, false, false };
 
-  // Check that all the update events precede all the publish events, and all
-  // the publish events precede all the eval-derivatives events, for each
+  // Check that all of the publish events precede all of the update events,
+  // which in turn precede all of the derivative evaluation events, for each
   // time step in the simulation.
   for (const auto& log : events) {
     ASSERT_GE(log.second.size(), 0u);
     EventType state = log.second[0];
     for (const EventType& event : log.second) {
-      ++triggers[event];
+      triggers[event] = true;
       ASSERT_TRUE(event >= state);
       state = event;
     }
   }
-  EXPECT_GT(triggers[kUpdate], 0);
-  EXPECT_GT(triggers[kPublish], 0);
-  EXPECT_GT(triggers[kIntegrate], 0);
+  EXPECT_TRUE(triggers[kUpdate]);
+  EXPECT_TRUE(triggers[kPublish]);
+  EXPECT_TRUE(triggers[kIntegrate]);
 }
 
 // A basic sanity check that AutoDiff works.

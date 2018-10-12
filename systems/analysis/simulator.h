@@ -108,7 +108,7 @@ class Simulator {
   ///
   /// StepTo() first collects any "per step" Event (see
   /// Event::TriggerType::kPerStep) and then performs the following loop until
-  /// the boundary time is reached:
+  /// `boundary_time` is reached:
   /// 1. Calls any event handlers allowed to update the system state without
   ///    restriction (i.e., due to an UnrestrictedUpdateEvent).
   /// 2. Calls any event handlers allowed to update only discrete state
@@ -117,11 +117,10 @@ class Simulator {
   /// 4. Performs post-step stabilization for DAEs (if desired).
   /// 5. Calls any event handlers that are unable to alter any state data
   ///    (i.e., due to a PublishEvent).
-  ///
-  /// Any events triggered before the loop terminates- witness function events
+  /// Any events triggered before the loop terminates -- witness function events
   /// (see Event::TriggerType::kWitness) and timed events
-  /// (see Event::TriggerType::kTimed and Event::TriggerType::kPeriodic)-
-  /// result in an additional unrestricted update, discrete state update, or
+  /// (see Event::TriggerType::kTimed and Event::TriggerType::kPeriodic) --
+  /// may result in additional unrestricted updates, discrete state updates, or
   /// both. Note that any publish action resulting from such a trigger is
   /// handled immediately before the loop terminates.
   ///

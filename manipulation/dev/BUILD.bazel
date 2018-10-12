@@ -49,7 +49,10 @@ drake_cc_library(
 drake_cc_googletest(
     name = "rod2d_time_stepping",
     data = [":models"],
-    tags = gurobi_test_tags(),
+    tags = [
+            gurobi_test_tags(),
+            "manual",
+    ],
     deps = [
         ":quasistatic_system",
         "//attic/multibody/joints",
