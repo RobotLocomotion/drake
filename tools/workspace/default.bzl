@@ -75,9 +75,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     than those built into Bazel, of course).  This is intended to be loaded and
     called from a WORKSPACE file.
 
-    You MUST load repositories from `add_default_pre_repositories` before using
-    this.
-
     Args:
         excludes: list of string names of repositories to exclude; this can
           be useful if a WORKSPACE file has already supplied its own external
@@ -179,6 +176,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         pycodestyle_repository(name = "pycodestyle", mirrors = mirrors)
     if "pycps" not in excludes:
         pycps_repository(name = "pycps", mirrors = mirrors)
+    if "python" not in excludes:
+        python_repository(name = "python")
     if "python3" not in excludes:
         python3_repository(name = "python3")
     if "qdldl" not in excludes:

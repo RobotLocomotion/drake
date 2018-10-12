@@ -5,10 +5,6 @@
 
 workspace(name = "drake")
 
-load("//tools/workspace:default_pre.bzl", "add_default_pre_repositories")
-
-add_default_pre_repositories()
-
 load("//tools/workspace:default.bzl", "add_default_repositories")
 
 add_default_repositories()
