@@ -596,6 +596,7 @@ drake_cc_googletest(
         "//common:essential",
         "//common:symbolic",
         "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework/test_utilities:my_vector",
     ],
 )
 
