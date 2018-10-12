@@ -112,7 +112,8 @@ def _repository_python_info(repository_ctx, version):
         python_config,
     )
     site_packages_relpath = "lib/python{}/site-packages".format(
-        version_major_minor)
+        version_major_minor,
+    )
     return struct(
         bin = python.bin,
         config_bin = python_config.bin,
@@ -125,7 +126,9 @@ def _repository_python_info(repository_ctx, version):
 def _impl(repository_ctx):
     # Repository implementation.
     py_info = _repository_python_info(
-        repository_ctx, repository_ctx.attr.version)
+        repository_ctx,
+        repository_ctx.attr.version,
+    )
     python = struct(ctx = repository_ctx, bin = py_info.bin)
     python_config = struct(ctx = repository_ctx, bin = py_info.config_bin)
 

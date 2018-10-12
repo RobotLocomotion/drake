@@ -22,7 +22,8 @@ genrule(
     srcs = ["drake.cps.in"],
     outs = ["drake.cps"],
     cmd = "cat \"$<\" | sed 's#@PY_VERSION_MAJOR_MINOR@#{}#g' > \"$@\"".format(
-        PY_VERSION_MAJOR_MINOR),
+        PY_VERSION_MAJOR_MINOR,
+    ),
     visibility = ["//visibility:private"],
 )
 
