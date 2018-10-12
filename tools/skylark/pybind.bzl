@@ -12,9 +12,9 @@ load(
     "drake_py_library",
     "drake_py_test",
 )
-load("@python//:python.bzl", "python_version_major_minor")
+load("@python//:python.bzl", "PY_VERSION_MAJOR_MINOR")
 
-_PY_VERSION = python_version_major_minor()
+_PY_VERSION = PY_VERSION_MAJOR_MINOR
 
 def pybind_py_library(
         name,
