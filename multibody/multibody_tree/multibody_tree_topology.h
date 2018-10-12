@@ -897,6 +897,9 @@ class MultibodyTreeTopology {
     (*path_to_world)[0] = BodyNodeIndex(0);  // Add the world.
   }
 
+  /// Returns `true` if `body_index` is anchored to the world.
+  /// A body is said to be "anchored" if its kinematics path to the world only
+  /// contains weld mobilizers.
   bool IsBodyAnchored(BodyIndex body_index) const {
     DRAKE_DEMAND(is_valid());
     const BodyTopology& body = get_body(body_index);

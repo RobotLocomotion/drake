@@ -2083,6 +2083,17 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(X_WM.matrix(), X_WM_expected.matrix(),
                               kTolerance, MatrixCompareType::relative));
+
+  // SetFreeBodyPoseInAnchoredFrame() should throw if the reference frame F is
+  // not anchored to the world.
+  const Frame<double>& end_effector_frame =
+      plant.GetFrameByName("iiwa_link_7", arm_model);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.SetFreeBodyPoseInAnchoredFrame(
+          context.get(), end_effector_frame, mug, X_OM),
+      std::logic_error,
+      "Frame 'iiwa_link_7' must be anchored to the world frame.");
 }
 
 }  // namespace

@@ -338,17 +338,6 @@ MultibodyTree<T>::get_mutable_multibody_state_vector(
 }
 
 template <typename T>
-Isometry3<T> MultibodyTree<T>::GetFreeBodyPoseOrThrow(
-    const systems::Context<T>& context, const Body<T>& body) const {
-  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-  const QuaternionFloatingMobilizer<T>& mobilizer =
-      GetFreeBodyMobilizerOrThrow(body);
-  const auto& mbt_context =
-      dynamic_cast<const MultibodyTreeContext<T>&>(context);
-  return mobilizer.CalcAcrossMobilizerTransform(mbt_context);
-}
-
-template <typename T>
 void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
     const Body<T>& body, const Isometry3<T>& X_WB,
     systems::Context<T>* context) const {

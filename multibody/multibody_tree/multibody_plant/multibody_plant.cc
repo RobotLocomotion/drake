@@ -442,6 +442,7 @@ template<typename T>
 const Isometry3<T>& MultibodyPlant<T>::EvalBodyPoseInWorld(
     const systems::Context<T>& context,
     const Body<T>& body_B) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   return tree().EvalBodyPoseInWorld(context, body_B);
 }
 
@@ -449,6 +450,7 @@ template<typename T>
 void MultibodyPlant<T>::SetFreeBodyPoseInWorldFrame(
     systems::Context<T>* context,
     const Body<T>& body, const Isometry3<T>& X_WB) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   tree().SetFreeBodyPoseOrThrow(body, X_WB, context);
 }
 
