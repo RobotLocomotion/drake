@@ -15,14 +15,14 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
 load("//tools:drake.bzl", "drake_cc_binary")
-load("@python//:python.bzl", "PY_VERSION_MAJOR_MINOR")
+load("@python//:version.bzl", "PY_VERSION")
 
 genrule(
     name = "drake_cps_generate",
     srcs = ["drake.cps.in"],
     outs = ["drake.cps"],
-    cmd = "cat \"$<\" | sed 's#@PY_VERSION_MAJOR_MINOR@#{}#g' > \"$@\"".format(
-        PY_VERSION_MAJOR_MINOR,
+    cmd = "cat \"$<\" | sed 's#@PY_VERSION@#{}#g' > \"$@\"".format(
+        PY_VERSION,
     ),
     visibility = ["//visibility:private"],
 )

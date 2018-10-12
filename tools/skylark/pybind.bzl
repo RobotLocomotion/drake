@@ -12,9 +12,7 @@ load(
     "drake_py_library",
     "drake_py_test",
 )
-load("@python//:python.bzl", "PY_VERSION_MAJOR_MINOR")
-
-_PY_VERSION = PY_VERSION_MAJOR_MINOR
+load("@python//:version.bzl", "PY_SITE_PACKAGES_RELPATH")
 
 def pybind_py_library(
         name,
@@ -203,14 +201,14 @@ def get_pybind_package_info(base_package, sub_package = None):
     package_info = _get_package_info(base_package, sub_package)
     return struct(
         py_imports = [package_info.base_path_rel],
-        py_dest = "lib/python{}/site-packages/{}".format(
-            _PY_VERSION,
+        py_dest = "{}/{}".format(
+            PY_SITE_PACKAGES_RELPATH,
             package_info.sub_path_rel,
         ),
     )
 
 def _get_package_info(base_package, sub_package = None):
-    # TODO(eric.cousineau): Move this to `python.bzl` or somewhere more
+    # TODO(eric.cousineau): Move this to `version.bzl` or somewhere more
     # general?
     base_package = base_package.lstrip("//")
     if sub_package == None:

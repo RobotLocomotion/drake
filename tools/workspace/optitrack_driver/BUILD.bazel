@@ -8,7 +8,7 @@ load(
     "install_files",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("@python//:python.bzl", "PY_SITE_PACKAGES_RELPATH")
+load("@python//:version.bzl", "PY_SITE_PACKAGES_RELPATH")
 
 package(default_visibility = ["//visibility:public"])
 

@@ -8,7 +8,7 @@ load(
     "join_paths",
     "output_path",
 )
-load("@python//:python.bzl", "PY_SITE_PACKAGES_RELPATH")
+load("@python//:version.bzl", "PY_SITE_PACKAGES_RELPATH")
 
 InstallInfo = provider()
 
