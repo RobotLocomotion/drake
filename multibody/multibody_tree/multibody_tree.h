@@ -1872,9 +1872,10 @@ class MultibodyTree {
       const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FQo,
       EigenPtr<MatrixX<T>> Jv_WFq) const;
 
-  /// Computes the bias term `Ab_WFq` associated with the spatial acceleration
-  /// `A_WFq` of a frame `Fq` instantaneously moving with a frame F at a fixed
-  /// positon `p_FQo`.
+  /// Given a frame `Fq` defined by shifting a frame F from its origin `Fo` to
+  /// a new origin `Qo`, this method computes the bias term `Ab_WFq` associated
+  /// with the spatial acceleration `A_WFq` a frame `Fq` instantaneously
+  /// moving with a frame F at a fixed position `p_FQo`.
   /// That is, the spatial acceleration of frame `Fq` can be computed as:
   /// <pre>
   ///   A_WFq = Jv_WFq(q)⋅v̇ + Ab_WFq(q, v)
@@ -1899,8 +1900,7 @@ class MultibodyTree {
   ///   The returned vector is of size 6, with the first three elements related
   ///   to the bias in angular acceleration and the with the last three elements
   ///   related to the bias in translational acceleration.
-  /// @note Given the ordering of the returned vector Ab_WFq,
-  /// SpatialAcceleration(Ab_WFq) forms a valid SpatialAcceleration.
+  /// @note SpatialAcceleration(Ab_WFq) defines a valid SpatialAcceleration.
   Vector6<T> CalcBiasForFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FQo) const;

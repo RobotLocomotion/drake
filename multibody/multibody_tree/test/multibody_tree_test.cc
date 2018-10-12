@@ -890,8 +890,9 @@ TEST_F(KukaIiwaModelTests, CalcBiasForFrameGeometricJacobianExpressedInWorld) {
   // function of vdot), we choose a set of arbitrary values for the generalized
   // accelerations. We do purposely set this values to be non-zero to stress
   // the fact that the bias term is not a function of vdot.
-  VectorX<double> vdot(kNumVelocities);
-  vdot << 1, 2, 3, 4, 5, 6, 7;
+  const VectorX<double> vdot =
+      VectorX<double>::Constant(
+          kNumVelocities, std::numeric_limits<double>::quiet_NaN());
 
   // Set generalized positions and velocities.
   int angle_index = 0;

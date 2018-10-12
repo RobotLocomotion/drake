@@ -1126,7 +1126,7 @@ Vector6<T> MultibodyTree<T>::CalcBiasForFrameGeometricJacobianExpressedInWorld(
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
 
-  // For a frame F instantaneously moves with its body frame B. The spatial
+  // For a frame F moving instantaneously with its body frame B, the spatial
   // acceleration of the frame F shifted to frame Fq with origin at point Qo
   // fixed in frame F, can be computed as:
   //   A_WFq = Jv_WFq⋅v̇ + Ab_WFq,
