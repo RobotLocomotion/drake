@@ -17,7 +17,7 @@ void SetPositionControlledGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
   *Ki = Eigen::VectorXd::Zero(kAllegroNumJoints);
 }
 
-std::vector<std::string> GetJointNameMapping() {
+std::vector<std::string> GetPreferredJointOrdering() {
   std::vector<std::string> joint_name_mapping;
 
   // Thumb finger
@@ -51,11 +51,12 @@ void GetControlPortMapping(
     const MultibodyPlant<double>& plant,
     MatrixX<double>* Px, MatrixX<double>* Py) {
   // Retrieve the list of finger joints in a user-defined ordering.
-  const std::vector<std::string> joint_name_mapping = GetJointNameMapping();
+  const std::vector<std::string> joints_in_preferred_order =
+      GetPreferredJointOrdering();
 
   // Make a list of the same joints but by JointIndex.
   std::vector<JointIndex> joint_index_mapping;
-  for (const auto& joint_name : joint_name_mapping) {
+  for (const auto& joint_name : joints_in_preferred_order) {
     joint_index_mapping.push_back(plant.GetJointByName(joint_name).index());
   }
 
