@@ -239,26 +239,6 @@ const WeldJoint<T>& MultibodyPlant<T>::WeldFrames(
       std::make_unique<WeldJoint<T>>(joint_name, A, B, X_AB));
 }
 
-template<typename T>
-void MultibodyPlant<T>::SetModelInstanceFloatingBase(
-    ModelInstanceIndex model_instance,
-    const Body<T>& base,
-    const Isometry3<double>& X_WM) const {
-  DRAKE_MBP_THROW_IF_FINALIZED();
-  if (base.model_instance() != model_instance) {
-    throw std::logic_error("The base body '" + base.name() +
-        "' does not belong to model instance '" +
-        tree().GetModelInstanceName(model_instance) + "'.");
-  }
-  this->mutable_tree().MakeFreeFloatingBody(base, X_WM);
-}
-
-template<typename T>
-const Isometry3<double>& MultibodyPlant<T>::get_free_model_instance_base_pose(
-    ModelInstanceIndex model_instance) const {
-  return tree().get_free_model_instance_base_pose(model_instance);
-}
-
 template <typename T>
 geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
     SceneGraph<T>* scene_graph) {
@@ -463,19 +443,6 @@ const Isometry3<T>& MultibodyPlant<T>::EvalBodyPoseInWorld(
     const systems::Context<T>& context,
     const Body<T>& body_B) const {
   return tree().EvalBodyPoseInWorld(context, body_B);
-}
-
-template<typename T>
-Isometry3<T> MultibodyPlant<T>::GetFreeBodyPoseInModelFrame(
-    const systems::Context<T>& context, const Body<T>& body) const {
-  return tree().GetFreeBodyPoseOrThrow(context, body);
-}
-
-template<typename T>
-void MultibodyPlant<T>::SetFreeBodyPoseInModelFrame(
-    systems::Context<T>* context,
-    const Body<T>& body, const Isometry3<T>& X_MB) const {
-  tree().SetFreeBodyPoseOrThrow(body, X_MB, context);
 }
 
 template<typename T>

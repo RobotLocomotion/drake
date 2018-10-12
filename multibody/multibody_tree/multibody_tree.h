@@ -799,36 +799,6 @@ class MultibodyTree {
     return index;
   }
 
-  /// This method makes `body` the floating base of the model instance it
-  /// belongs to.
-  /// This method defines a local frame M for this body's model instance, such
-  /// that we can work with the pose of `body` in this local frame M. More
-  /// specifically SetFreeBodyPoseOrThrow() and GetFreeBodyPoseOrThrow() work
-  /// with the pose `X_MB` of `body`'s frame B in the local model instance
-  /// frame M.
-  /// The pose `X_WM` can later be requested with
-  /// `get_free_model_instance_base_pose()`.
-  ///
-  /// @note There can only be a single floating base per model instance.
-  ///
-  /// @param body
-  ///   The body requested to be the floating base for its model instance.
-  /// @param X_WM
-  ///   Fixed pose of the model instance frame M in the world. Poses in
-  ///   SetFreeBodyPoseOrThrow() and GetFreeBodyPoseOrThrow() are relative to
-  ///   this model instance frame M.
-  ///
-  /// @throws std::logic_error if this method was already called on a body with
-  /// the same model instance.
-  /// @throws std::exception if called pre-finalize.
-  void MakeFreeFloatingBody(const Body<T>& body, const Isometry3<double>& X_WM);
-
-  /// Returns the fixed pose `X_WM` of the local frame M for `model_instance`.
-  /// Poses retrieved/set with GetFreeBodyPoseOrThrow()/SetFreeBodyPoseOrThrow()
-  /// are relative to this frame.
-  const Isometry3<double>& get_free_model_instance_base_pose(
-      ModelInstanceIndex model_instance) const;
-
   /// @}
   // Closes Doxygen section "Methods to add new MultibodyTree elements."
 
@@ -1551,11 +1521,8 @@ class MultibodyTree {
   Isometry3<T> GetFreeBodyPoseOrThrow(
       const systems::Context<T>& context, const Body<T>& body) const;
 
-  /// For a free floating body, this method sets `context` to store the pose
-  /// `X_MB` of a given `body` B in its model instance frame M.
-  /// The model instance frame M is the world frame W by default unless a call
-  /// to MakeFreeFloatingBody() with a non-identity pose `X_WM` was made.
-  ///
+  /// Sets `context` to store the pose `X_WB` of a given `body` B in the world
+  /// frame W.
   /// @note In general setting the pose and/or velocity of a body in the model
   /// would involve a complex inverse kinematics problem. This method allows us
   /// to simplify this process when we know the body is free in space.
@@ -1565,11 +1532,8 @@ class MultibodyTree {
       const Body<T>& body, const Isometry3<T>& X_WB,
       systems::Context<T>* context) const;
 
-  /// For a free floating body, this method sets `context` to store the spatial
-  /// velocity `V_MB` of a given `body` B in its model instance frame M.
-  /// The model instance frame M is the world frame W by default unless a call
-  /// to MakeFreeFloatingBody() with a non-identity pose `X_WM` was made.
-  ///
+  /// Sets `context` to store the spatial velocity `V_WB` of a given `body` B in
+  /// the world frame W.
   /// @note In general setting the pose and/or velocity of a body in the model
   /// would involve a complex inverse kinematics problem. This method allows us
   /// to simplify this process when we know the body is free in space.
@@ -1579,10 +1543,8 @@ class MultibodyTree {
       const Body<T>& body, const SpatialVelocity<T>& V_WB,
       systems::Context<T>* context) const;
 
-  /// For a free floating body, this method sets `sate` to store the pose `X_MB`
-  /// of a given `body` B in its model instance frame M.
-  /// The model instance frame M is the world frame W by default unless a call
-  /// to MakeFreeFloatingBody() with a non-identity pose `X_WM` was made.
+  /// Sets `sate` to store the pose `X_WB` of a given `body` B in the world
+  /// frame W, for a given `context` of `this` model.
   /// @note In general setting the pose and/or velocity of a body in the model
   /// would involve a complex inverse kinematics problem. This method allows us
   /// to simplify this process when we know the body is free in space.
@@ -1592,11 +1554,8 @@ class MultibodyTree {
       const Body<T>& body, const Isometry3<T>& X_WB,
       const systems::Context<T>& context, systems::State<T>* state) const;
 
-  /// For a free floating body, this method sets `state` to store the spatial
-  /// velocity `V_MB` of a given `body` B in its model instance frame M.
-  /// The model instance frame M is the world frame W by default unless a call
-  /// to MakeFreeFloatingBody() with a non-identity pose `X_WM` was made.
-  ///
+  /// Sets `state` to store the spatial velocity `V_WB` of a given `body` B in
+  /// the world frame W, for a given `context` of `this` model.
   /// @note In general setting the pose and/or velocity of a body in the model
   /// would involve a complex inverse kinematics problem. This method allows us
   /// to simplify this process when we know the body is free in space.
@@ -3059,13 +3018,6 @@ class MultibodyTree {
   // i-th level body_node_levels_[i] contains the list of all body node indexes
   // in that level.
   std::vector<std::vector<BodyNodeIndex>> body_node_levels_;
-
-  // This map stores the pose X_WM of the local reference frame M for each of
-  // the free floating model instances in the multibody system. Each free
-  // floating model instance has a base body. Poses X_MB in SetFreeBodyPose()
-  // and GetFreeBodyPose() are relative to this model instance frame M.
-  std::unordered_map<ModelInstanceIndex, Isometry3<double>>
-      free_model_instance_base_pose_;
 
   MultibodyTreeTopology topology_;
 
