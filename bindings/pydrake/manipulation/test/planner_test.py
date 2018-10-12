@@ -73,9 +73,9 @@ class TestPlanner(unittest.TestCase):
         frame = plant.GetFrameByName("Link2")
         parameters = mut.DifferentialInverseKinematicsParameters(2, 2)
 
-        mut.DoDifferentialInverseKinematics(plant.model(), context,
+        mut.DoDifferentialInverseKinematics(plant, context,
                                             np.zeros(6), frame, parameters)
 
-        mut.DoDifferentialInverseKinematics(plant.model(), context,
+        mut.DoDifferentialInverseKinematics(plant, context,
                                             Isometry3.Identity(), frame,
                                             parameters)

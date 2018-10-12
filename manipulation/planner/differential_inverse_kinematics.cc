@@ -251,11 +251,12 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 }
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::MultibodyTree<double>& robot,
+    const multibody::multibody_plant::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
     const Vector6<double>& V_WE_desired,
     const multibody::Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters) {
+  const multibody::MultibodyTree<double>& robot = plant.tree();
   const Isometry3<double> X_WE =
       robot.CalcRelativeTransform(context, robot.world_frame(), frame_E);
   MatrixX<double> J_WE(6, robot.num_velocities());
@@ -270,18 +271,18 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 }
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::MultibodyTree<double>& robot,
+    const multibody::multibody_plant::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
     const Isometry3<double>& X_WE_desired,
     const multibody::Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters) {
   const Isometry3<double> X_WE =
-      robot.EvalBodyPoseInWorld(context, frame_E.body()) *
+      plant.tree().EvalBodyPoseInWorld(context, frame_E.body()) *
       frame_E.CalcPoseInBodyFrame(context);
   const Vector6<double> V_WE_desired =
       ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) /
       parameters.get_timestep();
-  return DoDifferentialInverseKinematics(robot, context, V_WE_desired, frame_E,
+  return DoDifferentialInverseKinematics(plant, context, V_WE_desired, frame_E,
                                          parameters);
 }
 

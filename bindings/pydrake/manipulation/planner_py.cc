@@ -107,7 +107,7 @@ PYBIND11_MODULE(planner, m) {
         doc.DoDifferentialInverseKinematics.doc);
 
   m.def("DoDifferentialInverseKinematics",
-        [](const multibody::MultibodyTree<double>& robot,
+        [](const multibody::multibody_plant::MultibodyPlant<double>& robot,
            const systems::Context<double>& context,
            const Vector6<double>& V_WE_desired,
            const multibody::Frame<double>& frame_E,
@@ -121,7 +121,7 @@ PYBIND11_MODULE(planner, m) {
         doc.DoDifferentialInverseKinematics.doc_4);
 
   m.def("DoDifferentialInverseKinematics",
-        [](const multibody::MultibodyTree<double>& robot,
+        [](const multibody::multibody_plant::MultibodyPlant<double>& robot,
            const systems::Context<double>& context,
            const Isometry3<double>& X_WE_desired,
            const multibody::Frame<double>& frame_E,
