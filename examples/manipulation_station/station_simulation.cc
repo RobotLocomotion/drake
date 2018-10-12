@@ -207,6 +207,9 @@ void StationSimulation<T>::Finalize() {
                     demux->get_input_port(0));
     builder.ExportOutput(demux->get_output_port(0), "iiwa_position_measured");
     builder.ExportOutput(demux->get_output_port(1), "iiwa_velocity_estimated");
+
+    builder.ExportOutput(plant_->get_continuous_state_output_port
+        (iiwa_model_), "iiwa_state_estimated");
   }
 
   // Add the IIWA controller "stack".

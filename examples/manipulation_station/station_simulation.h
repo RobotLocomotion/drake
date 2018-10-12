@@ -30,6 +30,7 @@ namespace manipulation_station {
 ///   @output_port{iiwa_position_commanded}
 ///   @output_port{iiwa_position_measured}
 ///   @output_port{iiwa_velocity_estimated}
+///   @output_port{iiwa_state_estimated}
 ///   @output_port{iiwa_torque_commanded}
 ///   @output_port{iiwa_torque_measured}
 ///   @output_port{iiwa_torque_external}
@@ -90,7 +91,7 @@ namespace manipulation_station {
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 ///
-/// - double
+///   - double
 ///
 /// @ingroup manipulation_station_systems
 /// @}
@@ -121,16 +122,23 @@ class StationSimulation : public systems::Diagram<T> {
   /// Return a mutable reference to the main plant responsible for the
   /// dynamics of the robot and the environment.  This can be used to, e.g.,
   /// add additional elements into the world before calling Finalize().
-  multibody::multibody_plant::MultibodyPlant<T>& get_mutable_multibody_plant()
-      const {
+  multibody::multibody_plant::MultibodyPlant<T>& get_mutable_multibody_plant() {
     return *plant_;
   }
 
   /// Return a mutable reference to the SceneGraph responsible for all of the
   /// geometry for the robot and the environment.  This can be used to, e.g.,
   /// add additional elements into the world before calling Finalize().
-  geometry::SceneGraph<T>& get_mutable_scene_graph() const {
+  geometry::SceneGraph<T>& get_mutable_scene_graph() {
     return *scene_graph_;
+  }
+
+  /// Return a reference to the plant used by the inverse dynamics controller
+  /// (which contains only a model of the iiwa + equivalent mass of the
+  /// gripper).
+  const multibody::multibody_plant::MultibodyPlant<T>& get_controller_plant()
+      const {
+    return *owned_controller_plant_;
   }
 
   /// Get the number of joints in the IIWA (only -- does not include the
