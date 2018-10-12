@@ -10,6 +10,7 @@ from tempfile import NamedTemporaryFile
 from pydrake.common import temp_directory
 import matplotlib.pyplot as plt
 import pydot
+from sys import maxint
 
 
 # TODO(eric.cousineau): Move `plot_graphviz` to something more accessible to
@@ -36,6 +37,6 @@ def plot_graphviz(dot_text):
     return plt.imshow(plt.imread(f.name), aspect="equal")
 
 
-def plot_system_graphviz(system):
+def plot_system_graphviz(system, max_depth=maxint):
     """Renders a System's Graphviz representation in `matplotlib`."""
-    return plot_graphviz(system.GetGraphvizString())
+    return plot_graphviz(system.GetGraphvizString(max_depth))
