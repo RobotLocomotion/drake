@@ -257,6 +257,17 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
       const std::vector<Eigen::Matrix3Xd>& region_vertices);
 
   /**
+   * A bounded polytope in 3D is described as A * x <= b
+   */
+  struct Polytope3D {
+    Polytope3D(const Eigen::Ref<const Eigen::MatrixX3d>& m_A,
+               const Eigen::Ref<const Eigen::VectorXd>& m_b)
+        : A{m_A}, b{m_b} {}
+    Eigen::MatrixX3d A;
+    Eigen::VectorXd b;
+  };
+
+  /**
    * Adds the constraint that a sphere rigidly attached to a body has to be
    * within one of the given bounded polytopes.
    * If the i'th polytope is described as
@@ -288,9 +299,7 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    */
   solvers::VectorXDecisionVariable BodySphereInOneOfPolytopes(
       int body_index, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
-      double radius,
-      const std::vector<std::pair<Eigen::Matrix<double, Eigen::Dynamic, 3>,
-                                  Eigen::VectorXd>>& polytopes);
+      double radius, const std::vector<Polytope3D>& polytopes);
 
   /**
    * Adds joint limits on a specified joint.

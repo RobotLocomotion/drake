@@ -63,15 +63,13 @@ GTEST_TEST(GlobalInverseKinematicsTest, BodySphereInOneOfPolytopesTest) {
   // This box is not large enough to contain the sphere.
   boxes.emplace_back(Eigen::Vector3d(0.1, -0.5, 1.3),
                      Eigen::Vector3d(0.9, 1.5, 1.4));
-  std::vector<
-      std::pair<Eigen::Matrix<double, Eigen::Dynamic, 3>, Eigen::VectorXd>>
-      polytopes;
+  std::vector<GlobalInverseKinematics::Polytope3D> polytopes;
   for (const auto& box : boxes) {
-    Eigen::Matrix<double, Eigen::Dynamic, 3> A(6, 3);
+    Eigen::MatrixX3d A(6, 3);
     A << Eigen::Matrix3d::Identity(), -Eigen::Matrix3d::Identity();
     Eigen::VectorXd b(6);
     b << box.center + box.size / 2, box.size / 2 - box.center;
-    polytopes.push_back(std::make_pair(A, b));
+    polytopes.emplace_back(A, b);
   }
   auto z =
       global_ik.BodySphereInOneOfPolytopes(link_idx, p_BQ, radius, polytopes);

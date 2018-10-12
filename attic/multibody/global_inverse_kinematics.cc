@@ -417,8 +417,7 @@ solvers::VectorXDecisionVariable
 GlobalInverseKinematics::BodySphereInOneOfPolytopes(
     int body_index, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
     double radius,
-    const std::vector<std::pair<Eigen::Matrix<double, Eigen::Dynamic, 3>,
-                                Eigen::VectorXd>>& polytopes) {
+    const std::vector<GlobalInverseKinematics::Polytope3D>& polytopes) {
   DRAKE_DEMAND(radius >= 0);
   const int num_polytopes = static_cast<int>(polytopes.size());
   const auto z = NewBinaryVariables(num_polytopes, "z");
@@ -435,11 +434,10 @@ GlobalInverseKinematics::BodySphereInOneOfPolytopes(
       Eigen::Vector3d::Zero());
 
   for (int i = 0; i < num_polytopes; ++i) {
-    DRAKE_DEMAND(polytopes[i].first.rows() == polytopes[i].second.rows());
+    DRAKE_DEMAND(polytopes[i].A.rows() == polytopes[i].b.rows());
     AddLinearConstraint(
-        polytopes[i].first * y.col(i) <=
-        (polytopes[i].second - polytopes[i].first.rowwise().norm() * radius) *
-            z(i));
+        polytopes[i].A * y.col(i) <=
+        (polytopes[i].b - polytopes[i].A.rowwise().norm() * radius) * z(i));
   }
 
   return z;
