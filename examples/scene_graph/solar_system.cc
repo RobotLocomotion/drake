@@ -210,7 +210,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   axes_.push_back(plane_normal.normalized());
 
   std::string convexsat_absolute_path =
-      FindResourceOrThrow("drake/examples/scene_graph/convexsat.obj");
+      FindResourceOrThrow("drake/examples/scene_graph/cuboctahedron.obj");
   scene_graph->RegisterGeometry(
       source_id_, convexsat_id,
       make_unique<GeometryInstance>(

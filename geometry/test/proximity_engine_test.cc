@@ -115,6 +115,24 @@ GTEST_TEST(ProximityEngineTests, CopySemantics) {
   GeometryIndex g_index = ref_engine.AddDynamicGeometry(sphere);
   EXPECT_EQ(g_index, 0);
 
+  Cylinder cylinder{0.1,1.0};
+  GeometryIndex cylinder_index = ref_engine.AddDynamicGeometry(cylinder);
+  EXPECT_EQ(cylinder_index, 1);
+
+  Box box{0.1,0.2,0.3};
+  GeometryIndex box_index = ref_engine.AddDynamicGeometry(box);
+  EXPECT_EQ(box_index, 2);
+
+  HalfSpace halfspace{};
+  GeometryIndex halfspace_index = ref_engine.AddDynamicGeometry(halfspace);
+  EXPECT_EQ(halfspace_index, 3);
+
+  Convex convex{drake::FindResourceOrThrow(
+      "drake/geometry/test/quad_cube.obj"), 1.0};
+  GeometryIndex convex_index = ref_engine.AddDynamicGeometry(convex);
+  EXPECT_EQ(convex_index, 4);
+
+
   ProximityEngine<double> copy_construct(ref_engine);
   ProximityEngineTester::IsDeepCopy(copy_construct, ref_engine);
 

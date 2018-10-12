@@ -48,7 +48,7 @@ drake_cc_library(
     srcs = ["solar_system.cc"],
     hdrs = ["solar_system.h"],
     data = [
-        "convexsat.obj",
+        "cuboctahedron.obj",
         "planet_rings.obj",
     ],
     deps = [

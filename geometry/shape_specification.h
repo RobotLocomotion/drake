@@ -31,6 +31,19 @@ struct ShapeTag{};
   key properties:
    - it is cloneable, and
    - it can be "reified" (see ShapeReifier). */
+/** When you add a new subclass of Shape, you should:
+   1. add a pure virtual function ImplementGeometry() for the new shape in
+      ShapeReifier.
+   2. define ImplementGeometry() for the new shape in the subclasses of
+      ShapeReifier, e.g., ShapeToLCM, ProximityEngine, and ReifierTest.
+   3. modify CopyShapeOrThrow() of ProximityEngine to support the new shape and
+      add the corresponding test CopySemantics in proximity_engine_test.cc.
+   4. test the new shape in the class BoxPenetrationTest of
+      proximity_engine_test.cc
+
+  Please follow these steps. Otherwise, you might get a runtime error. We do not
+  have an automatic way to enforce them.
+ */
 class Shape {
  public:
   virtual ~Shape();

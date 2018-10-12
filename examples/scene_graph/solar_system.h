@@ -27,8 +27,9 @@ namespace solar_system {
  - The sun is stationary -- an anchored geometry.
  - Earth orbits on the xy-plane. Its moon (Luna) revolves around the earth on
    a different arbitrary plane (illustrating transform compositions).
- - Two satellites (Convex and Box) revolves around Earth in the same way as
-   Luna but different angular positions around their axis of rotation.
+ - Two satellites (Convex and Box) revolve around Earth in the same way as
+   Luna but at different relative angular positions around their axis of
+   rotation.
  - Mars orbits the sun at a farther distance on a plane that is tilted off of
  the xy-plane. Its moon (Phobos) orbits around Mars on a plane parallel to
  Mars's orbital plane, but in the opposite direction.
@@ -40,7 +41,7 @@ namespace solar_system {
  1. Registering anchored geometry.
  2. Registering frames as children of other frames.
  3. Allocating and calculating the FramePoseVector output for visualization.
- 4. Use convex polyhedrons for satellites
+ 4. Exercise all supported SceneGraph geometries in an illustration context.
 
  Illustration of the orrery:
 
