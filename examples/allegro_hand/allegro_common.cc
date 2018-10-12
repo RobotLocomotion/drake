@@ -49,7 +49,7 @@ std::vector<std::string> GetPreferredJointOrdering() {
 
 void GetControlPortMapping(
     const MultibodyPlant<double>& plant,
-    MatrixX<double>* Px, MatrixX<double>* Py) {
+    MatrixX<double>* Sx, MatrixX<double>* Sy) {
   // Retrieve the list of finger joints in a user-defined ordering.
   const std::vector<std::string> joints_in_preferred_order =
       GetPreferredJointOrdering();
@@ -60,8 +60,8 @@ void GetControlPortMapping(
     joint_index_mapping.push_back(plant.GetJointByName(joint_name).index());
   }
 
-  *Px = plant.tree().MakeStateSelectorMatrix(joint_index_mapping);
-  *Py = plant.tree().MakeActuatorSelectorMatrix(joint_index_mapping);
+  *Sx = plant.tree().MakeStateSelectorMatrix(joint_index_mapping);
+  *Sy = plant.tree().MakeActuatorSelectorMatrix(joint_index_mapping);
 }
 
 AllegroHandMotionState::AllegroHandMotionState()
