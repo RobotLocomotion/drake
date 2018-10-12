@@ -1208,6 +1208,9 @@ GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
         events[simulator.get_num_steps_taken()].push_back(kIntegrate);
       });
 
+  // Ensure that publish happens before any updates.
+  simulator.set_publish_at_initialization(true);
+
   // Run a simulation.
   simulator.set_publish_every_time_step(true);
   simulator.StepTo(0.5);
