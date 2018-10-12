@@ -62,6 +62,22 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
+    name = "manipulation_station_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//examples/manipulation_station:station_simulation",
+    ],
+    cc_so_name = "manipulation_station",
+    cc_srcs = ["manipulation_station_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/systems",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+drake_pybind_library(
     name = "pendulum_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
@@ -109,6 +125,7 @@ drake_pybind_library(
 PY_LIBRARIES_WITH_INSTALL = [
     ":acrobot_py",
     ":compass_gait_py",
+    ":manipulation_station_py",
     ":pendulum_py",
     ":rimless_wheel_py",
     ":van_der_pol_py",
@@ -146,6 +163,14 @@ drake_py_unittest(
     size = "small",
     deps = [
         ":compass_gait_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "manipulation_station_test",
+    deps = [
+        ":manipulation_station_py",
+        "//bindings/pydrake/multibody:multibody_tree_py",
     ],
 )
 
