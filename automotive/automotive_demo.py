@@ -12,6 +12,8 @@ To kill all the processes, just kill the script in the console with
 Control-C.
 """
 
+from __future__ import print_function
+
 import argparse
 import fcntl
 import glob
@@ -66,14 +68,14 @@ class Launcher(object):
         if label is None:
             label = os.path.basename(command[0])
         if not os.path.exists(command[0]):
-            print "[%s] Missing file %s; available files are:" % (
-                self.name, command[0])
+            print("[%s] Missing file %s; available files are:" % (
+                self.name, command[0]))
             sys.stdout.flush()
             subprocess.call(["/usr/bin/find", "-L", "."])
             raise RuntimeError(command[0] + " not found")
 
         if self.dry_run:
-            print ' '.join(command)
+            print(' '.join(command))
             return
 
         # Create a new execution environment by copying the current one, but
@@ -96,15 +98,15 @@ class Launcher(object):
         time.sleep(0.05)
         self._poll()
         if self.returncode is not None:
-            print process.stdout.read(),
-            print "[%s] %s failed to launch" % (self.name, label)
+            print(process.stdout.read())
+            print("[%s] %s failed to launch" % (self.name, label))
             sys.exit(self.returncode or 1)
 
     def _poll(self):
         for child in self.children:
             ret = child.process.poll()
             if ret is not None:
-                print "[%s] %s exited %d" % (self.name, child.label, ret)
+                print("[%s] %s exited %d" % (self.name, child.label, ret))
                 if self.returncode is None:
                     self.returncode = ret
         return self.returncode
@@ -120,8 +122,8 @@ class Launcher(object):
             now = time.time()
             elapsed = now - start
             if elapsed > duration:
-                print "[%s] %s exited via duration elapsed" % (
-                    self.name, self.name)
+                print("[%s] %s exited via duration elapsed" % (
+                    self.name, self.name))
                 self.returncode = 0
                 done = True
 
@@ -135,8 +137,8 @@ class Launcher(object):
                 if not lines:
                     continue
 
-                print '\n'.join(
-                    ["[%s] %s" % (child.label, line) for line in lines])
+                print('\n'.join(
+                    ["[%s] %s" % (child.label, line) for line in lines]))
 
     def wait(self, duration):
         """Wait for any of the managed processes to exit, for a keyboard
@@ -152,8 +154,8 @@ class Launcher(object):
             self._wait(duration)
         except KeyboardInterrupt:
             # This is considered success; we ran until the user stopped us.
-            print "[%s] %s exited via keyboard interrupt" % (
-                self.name, self.name)
+            print("[%s] %s exited via keyboard interrupt" % (
+                self.name, self.name))
             self.returncode = 0
         assert self.returncode is not None
 
@@ -228,7 +230,7 @@ def main():
         the_launcher.set_dry_run(True)
 
     try:
-        print "*** LCM logs will be in", os.getcwd()
+        print("*** LCM logs will be in", os.getcwd())
         the_launcher.launch([lcm_logger_path])
         the_launcher.launch([lcm_spy_path])
 

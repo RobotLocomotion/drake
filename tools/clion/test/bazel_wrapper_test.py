@@ -1,11 +1,11 @@
-
-import StringIO
 import imp
 import os
 import shutil
 import subprocess
 import tempfile
 import unittest
+
+from six import StringIO
 
 imp.load_source("bazel_wrapper", "tools/clion/bazel_wrapper")
 from bazel_wrapper import main as bazel_wrapper_main  # noqa
@@ -116,7 +116,7 @@ class TestBazelWrapper(unittest.TestCase):
 
     def test_subprocess(self):
         # The wrapper replaces the include paths and runs until EOF.
-        self._bazel_subprocess_mock.stderr = StringIO.StringIO("")
+        self._bazel_subprocess_mock.stderr = StringIO("")
         argv = ["bazel", "dummy_arg"]
         with self.assertRaises(SystemExit) as detail:
             self._do_main(argv)
@@ -152,7 +152,7 @@ class TestBazelWrapper(unittest.TestCase):
             "stuff/WORKSPACE:2",
             bold + "WORKSPACE:3",
         ]
-        self._bazel_subprocess_mock.stderr = StringIO.StringIO(
+        self._bazel_subprocess_mock.stderr = StringIO(
             "\n".join(original_lines))
         argv = ["bazel", "dummy_arg"]
         with self.assertRaises(SystemExit) as detail:
@@ -165,7 +165,3 @@ class TestBazelWrapper(unittest.TestCase):
             ["terminate", "wait"])
         for orig, edit in zip(edited_lines, self._stderr.splitlines()):
             self.assertEqual(orig, edit)
-
-
-if __name__ == '__main__':
-    unittest.main()

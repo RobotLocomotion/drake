@@ -6,9 +6,9 @@ import argparse
 import collections
 import os
 import subprocess
-import yaml
 
 import google.protobuf.text_format
+import yaml
 
 from drake.tools.vector_gen import named_vector_pb2
 from drake.tools.lint.clang_format import get_clang_format_path

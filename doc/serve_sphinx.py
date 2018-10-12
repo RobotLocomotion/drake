@@ -5,14 +5,17 @@ Run this via:
   $ bazel run //doc:serve_sphinx
 """
 
+from __future__ import print_function
+
 import argparse
 import os
 import subprocess
 import sys
 import webbrowser
 import zipfile
-from SimpleHTTPServer import SimpleHTTPRequestHandler
-from SocketServer import TCPServer
+
+from six.moves.SimpleHTTPServer import SimpleHTTPRequestHandler
+from six.moves.socketserver import TCPServer
 
 
 def str2bool(value):
@@ -47,16 +50,16 @@ httpd = TCPServer(sockaddr, Handler)
 http_url = "http://%s:%s/index.html" % sockaddr
 
 # Users can click these as a backup, if the auto-open below doesn't work.
-print >>sys.stderr, "Sphinx preview docs are available at:"
-print >>sys.stderr
-print >>sys.stderr, "  " + http_url
-print >>sys.stderr
-print >>sys.stderr, "  " + file_url
-print >>sys.stderr
+print("Sphinx preview docs are available at:", file=sys.stderr)
+print("", file=sys.stderr)
+print("  " + http_url, file=sys.stderr)
+print("", file=sys.stderr)
+print("  " + file_url, file=sys.stderr)
+print("", file=sys.stderr)
 
 # Try the default browser, then wait.
 if args.browser:
-    print >>sys.stderr, "Opening webbrowser"
+    print("Opening webbrowser", file=sys.stderr)
     if sys.platform == "darwin":
         # macOS
         webbrowser.open(http_url)
@@ -64,5 +67,5 @@ if args.browser:
         # Ubuntu
         webbrowser.open("./index.html")
 
-print >>sys.stderr, "Serving and waiting ... use Ctrl-C to exit."
+print("Serving and waiting ... use Ctrl-C to exit.", file=sys.stderr)
 httpd.serve_forever()

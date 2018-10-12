@@ -33,7 +33,7 @@ class TestGtestMain(unittest.TestCase):
             returncode, expected_returncode,
             "Expected returncode %r from %r but got %r with output %r" % (
                 expected_returncode, args, returncode, output))
-        return output
+        return output.decode('utf8')
 
     def test_pass(self):
         # The device under test should pass when -magic_number=1.0 is present.
