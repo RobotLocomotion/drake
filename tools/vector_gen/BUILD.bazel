@@ -86,6 +86,7 @@ drake_cc_googletest(
         ":sample",
         "//common:autodiff",
         "//common:symbolic",
+        "//common/test_utilities",
     ],
 )
 

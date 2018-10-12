@@ -10,6 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/systems/framework/test_utilities/my_vector.h"
 
 namespace drake {
 namespace systems {
@@ -254,6 +255,23 @@ GTEST_TEST(BasicVectorTest, DefaultCalcInequalityConstraint) {
   EXPECT_EQ(value.size(), 0);
 }
 
+// Tests the protected `::values()` methods.
+GTEST_TEST(BasicVectorTest, ValuesAccess) {
+  MyVector<2, double> dut;
+  dut[0] = 11.0;
+  dut[1] = 22.0;
+
+  // Values are as expected.
+  ASSERT_EQ(dut.values().size(), 2);
+  EXPECT_EQ(dut.values()[0], 11.0);
+  EXPECT_EQ(dut.values()[1], 22.0);
+  dut.values()[0] = 33.0;
+
+  // The const overload is the same.
+  const auto& const_dut = dut;
+  EXPECT_EQ(&dut.values(), &const_dut.values());
+  EXPECT_EQ(const_dut.values()[0], 33.0);
+}
 
 }  // namespace
 }  // namespace systems

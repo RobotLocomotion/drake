@@ -1,11 +1,12 @@
 #pragma once
 
-// GENERATED FILE DO NOT EDIT
+// GENERATED GOAL DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
 #include <cmath>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Core>
@@ -57,6 +58,24 @@ class Sample final : public drake::systems::BasicVector<T> {
     this->set_unset(drake::dummy_value<T>::get());
   }
 
+  /// @name Implements CopyConstructible, CopyAssignable, MoveConstructible,
+  /// MoveAssignable
+  //@{
+  Sample(const Sample& other)
+      : drake::systems::BasicVector<T>(other.values()) {}
+  Sample(Sample&& other) noexcept
+      : drake::systems::BasicVector<T>(std::move(other.values())) {}
+  Sample& operator=(const Sample& other) {
+    this->values() = other.values();
+    return *this;
+  }
+  Sample& operator=(Sample&& other) noexcept {
+    this->values() = std::move(other.values());
+    other.values().resize(0);
+    return *this;
+  }
+  //@}
+
   /// Create a symbolic::Variable for each element with the known variable
   /// name.  This is only available for T == symbolic::Expression.
   template <typename U = T>
@@ -75,21 +94,107 @@ class Sample final : public drake::systems::BasicVector<T> {
   /// Some coordinate
   /// @note @c x is expressed in units of m/s.
   /// @note @c x has a limited domain of [0.0, +Inf].
-  const T& x() const { return this->GetAtIndex(K::kX); }
-  void set_x(const T& x) { this->SetAtIndex(K::kX, x); }
+  const T& x() const {
+    ThrowIfEmpty();
+    return this->GetAtIndex(K::kX);
+  }
+  /// Setter that matches x().
+  void set_x(const T& x) {
+    ThrowIfEmpty();
+    this->SetAtIndex(K::kX, x);
+  }
+  /// Fluent setter that matches x().
+  /// Returns a copy of `this` with x set to a new value.
+  Sample<T> with_x(const T& x) const& {
+    Sample<T> result(*this);
+    result.set_x(x);
+    return result;
+  }
+  /// Fluent setter that matches x().
+  /// Returns a copy of `this` with x set to a new value.
+  /// This object is left in a valid-but-indeterminate state.
+  Sample<T> with_x(const T& x) && {
+    Sample<T> result(std::move(*this));
+    result.set_x(x);
+    return result;
+  }
   /// A very long documentation string that will certainly flow across multiple
   /// lines of C++
-  const T& two_word() const { return this->GetAtIndex(K::kTwoWord); }
+  const T& two_word() const {
+    ThrowIfEmpty();
+    return this->GetAtIndex(K::kTwoWord);
+  }
+  /// Setter that matches two_word().
   void set_two_word(const T& two_word) {
+    ThrowIfEmpty();
     this->SetAtIndex(K::kTwoWord, two_word);
+  }
+  /// Fluent setter that matches two_word().
+  /// Returns a copy of `this` with two_word set to a new value.
+  Sample<T> with_two_word(const T& two_word) const& {
+    Sample<T> result(*this);
+    result.set_two_word(two_word);
+    return result;
+  }
+  /// Fluent setter that matches two_word().
+  /// Returns a copy of `this` with two_word set to a new value.
+  /// This object is left in a valid-but-indeterminate state.
+  Sample<T> with_two_word(const T& two_word) && {
+    Sample<T> result(std::move(*this));
+    result.set_two_word(two_word);
+    return result;
   }
   /// A signed, normalized value
   /// @note @c absone has a limited domain of [-1.0, 1.0].
-  const T& absone() const { return this->GetAtIndex(K::kAbsone); }
-  void set_absone(const T& absone) { this->SetAtIndex(K::kAbsone, absone); }
+  const T& absone() const {
+    ThrowIfEmpty();
+    return this->GetAtIndex(K::kAbsone);
+  }
+  /// Setter that matches absone().
+  void set_absone(const T& absone) {
+    ThrowIfEmpty();
+    this->SetAtIndex(K::kAbsone, absone);
+  }
+  /// Fluent setter that matches absone().
+  /// Returns a copy of `this` with absone set to a new value.
+  Sample<T> with_absone(const T& absone) const& {
+    Sample<T> result(*this);
+    result.set_absone(absone);
+    return result;
+  }
+  /// Fluent setter that matches absone().
+  /// Returns a copy of `this` with absone set to a new value.
+  /// This object is left in a valid-but-indeterminate state.
+  Sample<T> with_absone(const T& absone) && {
+    Sample<T> result(std::move(*this));
+    result.set_absone(absone);
+    return result;
+  }
   /// A value that is unset by default
-  const T& unset() const { return this->GetAtIndex(K::kUnset); }
-  void set_unset(const T& unset) { this->SetAtIndex(K::kUnset, unset); }
+  const T& unset() const {
+    ThrowIfEmpty();
+    return this->GetAtIndex(K::kUnset);
+  }
+  /// Setter that matches unset().
+  void set_unset(const T& unset) {
+    ThrowIfEmpty();
+    this->SetAtIndex(K::kUnset, unset);
+  }
+  /// Fluent setter that matches unset().
+  /// Returns a copy of `this` with unset set to a new value.
+  Sample<T> with_unset(const T& unset) const& {
+    Sample<T> result(*this);
+    result.set_unset(unset);
+    return result;
+  }
+  /// Fluent setter that matches unset().
+  /// Returns a copy of `this` with unset set to a new value.
+  /// This object is left in a valid-but-indeterminate state.
+  Sample<T> with_unset(const T& unset) && {
+    Sample<T> result(std::move(*this));
+    result.set_unset(unset);
+    return result;
+  }
   //@}
 
   /// See SampleIndices::GetCoordinateNames().
@@ -117,6 +222,15 @@ class Sample final : public drake::systems::BasicVector<T> {
     (*value)[0] = x() - T(0.0);
     (*value)[1] = absone() - T(-1.0);
     (*value)[2] = T(1.0) - absone();
+  }
+
+ private:
+  void ThrowIfEmpty() const {
+    if (this->values().size() == 0) {
+      throw std::out_of_range(
+          "The Sample vector has been moved-from; "
+          "accessor methods may no longer be used");
+    }
   }
 };
 
