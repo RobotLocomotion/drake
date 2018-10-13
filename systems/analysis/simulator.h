@@ -129,6 +129,7 @@ class Simulator {
   /// time that you attempt a step, possibly resulting in unexpected error
   /// conditions. See documentation for `Initialize()` for the error conditions
   /// it might produce.
+  ///
   /// @param boundary_time The time to advance the context to.
   /// @pre The simulation state is valid (i.e., no discrete updates or state
   /// projections are necessary) at the present time.
