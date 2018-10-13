@@ -257,7 +257,8 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
       const std::vector<Eigen::Matrix3Xd>& region_vertices);
 
   /**
-   * A bounded polytope in 3D is described as A * x <= b
+   * Describes a polytope in 3D as 𝐀 * 𝐱 ≤ 𝐛  (a set of half-spaces),
+   * where 𝐀 ∈ ℝⁿˣ³, 𝐱 ∈ ℝ³, 𝐛 ∈ ℝⁿ.
    */
   struct Polytope3D {
     Polytope3D(const Eigen::Ref<const Eigen::MatrixX3d>& m_A,
@@ -269,9 +270,15 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
 
   /**
    * Adds the constraint that a sphere rigidly attached to a body has to be
-   * within one of the given bounded polytopes.
+   * within at least one of the given bounded polytopes. If the polytopes don't
+   * intersect, then the sphere is in one and only one polytope. Otherwise the
+   * sphere is in at least one of the polytopes (could be in the intersection of
+   * multiple polytopes.)
    * If the i'th polytope is described as
-   * Aᵢ * x ≤ bᵢ
+   * <pre>
+   *   Aᵢ * x ≤ bᵢ
+   * </pre>
+   * where Aᵢ ∈ ℝⁿ ˣ ³, bᵢ ∈ ℝⁿ.
    * Then a sphere with center position p_WQ and radius r is within the i'th
    * polytope, if
    * Aᵢ * p_WQ ≤ bᵢ - aᵢr
@@ -295,7 +302,9 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * bounded polytope. It is the user's responsibility to guarantee the
    * boundedness.
    * @retval z The newly added binary variables. If z(i) = 1, then the sphere is
-   * in the i'th polytope.
+   * in the i'th polytope. If two or more polytopes are intersecting, and the
+   * sphere is in the intersection region, then it is up to the solver to choose
+   * one of z(i) to be 1.
    */
   solvers::VectorXDecisionVariable BodySphereInOneOfPolytopes(
       int body_index, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
