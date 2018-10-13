@@ -15,6 +15,7 @@
 
 namespace drake {
 
+using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
@@ -22,6 +23,7 @@ using geometry::SceneGraph;
 using multibody::Body;
 using multibody::parsing::AddModelFromSdfFile;
 using multibody::parsing::AddModelsFromSdfFile;
+using multibody::parsing::detail::ToIsometry3;
 using multibody::multibody_plant::MultibodyPlant;
 using systems::Context;
 
@@ -141,6 +143,31 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.GetFrameByName("Link1"), std::logic_error,
       "Frame Link1 appears in multiple model instances.");
+
+  // Check model scope frames.
+  using ignition::math::Pose3d;
+  auto context = plant.CreateDefaultContext();
+  const double eps = std::numeric_limits<double>::epsilon();
+  auto check_frame = [&plant, instance1, &context, eps](
+      std::string name, std::string parent_name,
+      const Isometry3d& X_PF_expected) {
+    const Frame<double>& frame = plant.GetFrameByName(name, instance1);
+    const Frame<double>& parent_frame =
+        plant.GetFrameByName(parent_name, instance1);
+    const Isometry3d X_PF = plant.tree().CalcRelativeTransform(
+        *context, parent_frame, frame);
+    EXPECT_TRUE(CompareMatrices(X_PF_expected.matrix(), X_PF.matrix(), eps))
+        << name;
+  };
+  check_frame(
+      "model_scope_link1_frame", "link1",
+      ToIsometry3(Pose3d(0.1, 0.2, 0.3, 0.4, 0.5, 0.6)));
+  check_frame(
+      "model_scope_link1_frame_child", "model_scope_link1_frame",
+      ToIsometry3(Pose3d(0.1, 0, 0, 0, 0, 0)));
+  check_frame(
+      "model_scope_model_frame_implicit", "instance1",
+      ToIsometry3(Pose3d(0.7, 0.8, 0.9, 0, 0, 0)));
 }
 
 // Verify that our SDF parser throws an exception when a user specifies a joint
@@ -172,11 +199,11 @@ GTEST_TEST(SdfParser, IncludeTags) {
         sdf_file_path + "/include_models.sdf"), &plant);
   plant.Finalize();
 
-  // We should have loaded three more models.
+  // We should have loaded 3 more models.
   EXPECT_EQ(plant.num_model_instances(), 5);
-  // The models should have added 8 four more bodies.
+  // The models should have added 8 more bodies.
   EXPECT_EQ(plant.num_bodies(), 9);
-  // The models should have added five more joints.
+  // The models should have added 5 more joints.
   EXPECT_EQ(plant.num_joints(), 5);
 
   // There should be a model instance with the name "robot1".

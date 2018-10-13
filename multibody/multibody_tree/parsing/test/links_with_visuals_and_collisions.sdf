@@ -106,6 +106,26 @@
       </collision>
     </link>
 
+    <!-- Test frames -->
+    <frame name='model_scope_link1_frame'>
+      <pose frame='link1'>0.1 0.2 0.3 0.4 0.5 0.6</pose>
+    </frame>
+    <frame name='model_scope_link1_frame_child'>
+      <pose frame='model_scope_link1_frame'>0.1 0 0 0 0 0</pose>
+    </frame>
+    <!-- - Unnamed frame implies parent (model) -->
+    <frame name='model_scope_model_frame_implicit'>
+      <pose>0.7 0.8 0.9 0 0 0</pose>
+    </frame>
+    <!--
+    TODO(eric.cousineau): Address additional items:
+    - adding frames nested in other elements (joints, visuals, collisions, etc.)
+    - implicit frames for other elements (joints, visuals, collisions, etc.)
+    - explicitly referring to model frame?
+    See:
+    - https://bitbucket.org/osrf/sdformat/issues/200
+    -->
+
     <!-- For now at least, We care only that Drake's custom tag doesn't break
          parsing the rest of the elements in this file. -->
     <collision_filter_group name="filter_group1">
