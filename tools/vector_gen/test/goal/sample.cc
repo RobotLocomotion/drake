@@ -1,6 +1,6 @@
 #include "drake/tools/vector_gen/test/gen/sample.h"
 
-// GENERATED FILE DO NOT EDIT
+// GENERATED GOAL DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
 namespace drake {
