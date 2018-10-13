@@ -55,6 +55,31 @@ namespace systems {
 /// the one that is most appropriate for your application or use the default
 /// which is adequate for most systems.
 ///
+/// <h2>Simulation mechanics for hybrid discrete/continuous systems</h2>
+/// During a call to StepTo(), Simulator first collects any "per step" Event
+/// (see Event::TriggerType::kPerStep) and then performs the following loop
+/// until `boundary_time` is reached:
+/// 1. Calls any event handlers allowed to update the system state without
+///    restriction (i.e., due to an UnrestrictedUpdateEvent),
+/// 2. Calls any event handlers allowed to update only discrete state
+///    variables (i.e., due to a DiscreteUpdateEvent),
+/// 3. Integrates the smooth system (the ODE or DAE) forward in time by calling
+///    System::CalcTimeDerivatives() (*only called if the system has
+///    declared continuous state*),
+/// 4. Performs post-step stabilization for DAEs (if desired),
+/// 5. Calls any event handlers that are unable to alter any state data
+///    (i.e., due to a PublishEvent).
+/// Any state-updating events triggered before the loop terminates -- witness
+/// function triggered events (see Event::TriggerType::kWitness) and time
+/// triggered events (see Event::TriggerType::kTimed and
+/// Event::TriggerType::kPeriodic) -- may result in additional unrestricted
+/// updates, discrete state updates, or both before StepTo() returns control
+/// to the caller.
+///
+/// Summarizing, these steps update the hybrid system "mode" first (through
+/// instantaneous changes to abstract, discrete, and continuous variables),
+/// any discrete variables next, and time and continuous variables last.
+///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided and
@@ -106,27 +131,6 @@ class Simulator {
   /// conditions. See documentation for `Initialize()` for the error conditions
   /// it might produce.
   ///
-  /// StepTo() first collects any "per step" Event (see
-  /// Event::TriggerType::kPerStep) and then performs the following loop until
-  /// `boundary_time` is reached:
-  /// 1. Calls any event handlers allowed to update the system state without
-  ///    restriction (i.e., due to an UnrestrictedUpdateEvent).
-  /// 2. Calls any event handlers allowed to update only discrete state
-  ///    variables (i.e., due to a DiscreteUpdateEvent).
-  /// 3. Integrates the smooth system (the ODE or DAE) forward in time.
-  /// 4. Performs post-step stabilization for DAEs (if desired).
-  /// 5. Calls any event handlers that are unable to alter any state data
-  ///    (i.e., due to a PublishEvent).
-  /// Any events triggered before the loop terminates -- witness function events
-  /// (see Event::TriggerType::kWitness) and timed events
-  /// (see Event::TriggerType::kTimed and Event::TriggerType::kPeriodic) --
-  /// may result in additional unrestricted updates, discrete state updates, or
-  /// both. Note that any publish action resulting from such a trigger is
-  /// handled immediately before the loop terminates.
-  ///
-  /// Summarizing, these steps update the hybrid system "mode" first (through
-  /// instantaneous changes to abstract, discrete, and continuous variables),
-  /// any discrete variables next, and time and continuous variables last.
   /// @param boundary_time The time to advance the context to.
   /// @pre The simulation state is valid  (i.e., no discrete updates or state
   /// projections are necessary) at the present time.
