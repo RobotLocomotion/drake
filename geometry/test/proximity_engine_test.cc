@@ -115,11 +115,11 @@ GTEST_TEST(ProximityEngineTests, CopySemantics) {
   GeometryIndex g_index = ref_engine.AddDynamicGeometry(sphere);
   EXPECT_EQ(g_index, 0);
 
-  Cylinder cylinder{0.1,1.0};
+  Cylinder cylinder{0.1, 1.0};
   GeometryIndex cylinder_index = ref_engine.AddDynamicGeometry(cylinder);
   EXPECT_EQ(cylinder_index, 1);
 
-  Box box{0.1,0.2,0.3};
+  Box box{0.1, 0.2, 0.3};
   GeometryIndex box_index = ref_engine.AddDynamicGeometry(box);
   EXPECT_EQ(box_index, 2);
 
