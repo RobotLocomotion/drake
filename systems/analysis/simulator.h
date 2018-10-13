@@ -866,6 +866,18 @@ bool Simulator<T>::IntegrateContinuousState(
   const T t0 = context.get_time();
   const VectorX<T> x0 = context.get_continuous_state().CopyToVector();
 
+  // Note: this function is only called in one place and under the conditions
+  // that (1) t0 + next_update_dt equals *either* next_timed_event_time *or*
+  // infinity and (2) t0 + next_publish_dt equals *either*
+  // next_timed_event_time or infinity. This function should work without
+  // these assumptions being valid but might benefit from additional review.
+  const double inf = std::numeric_limits<double>::infinity();
+  const double zero_tol = 10 * std::numeric_limits<double>::epsilon();
+  DRAKE_ASSERT(next_update_dt == inf ||
+      abs(t0 + next_update_dt - next_timed_event_time) < zero_tol);
+  DRAKE_ASSERT(next_publish_dt == inf ||
+      abs(t0 + next_publish_dt - next_timed_event_time) < zero_tol);
+
   // Get the set of witness functions active at the current state.
   const System<T>& system = get_system();
   if (redetermine_active_witnesses_) {
