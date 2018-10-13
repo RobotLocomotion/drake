@@ -646,7 +646,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // Merge in per-step events.
     merged_events->Merge(*per_step_events_);
 
-    // Only merge timed / witnessed events in if an event was triggered. 
+    // Only merge timed / witnessed events in if an event was triggered.
     if (event_triggered) {
       merged_events->Merge(*timed_events);
       merged_events->Merge(*witnessed_events);
@@ -672,7 +672,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
   // events, only if an event was triggered. This handles the specific case
   // where the integrator advanced time to the boundary, *at which point a
   // timed witnessed event should occur*. This must be handled now else the
-  // trigger will be lost. 
+  // trigger will be lost.
   if (event_triggered) {
     // We need to clear any per-step events from the merged set, since per-step
     // publish events have already been handled (we do not want to publish
