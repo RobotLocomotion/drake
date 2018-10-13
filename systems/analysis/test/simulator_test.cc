@@ -41,8 +41,7 @@ namespace {
 
 // Stateless system with a DoCalcTimeDerivatives implementation. This class
 // will serve to test that the time derivative calculation is not called.
-class StatelessSystemPlusDerivs : public systems::LeafSystem<double>
-{
+class StatelessSystemPlusDerivs : public systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessSystemPlusDerivs)
 
  public:
