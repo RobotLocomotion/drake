@@ -306,8 +306,8 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * V_WE_E and the gains (specified in frame E) in @p parameters, and only
  * selecting the non zero elements. J is computed similarly.
  * @param robot A MultibodyPlant model.
- * @param context Must be a MultibodyTreeContext. Contains the current
- * generalized position and velocity.
+ * @param context Must be the Context of the MultibodyPlant. Contains the
+ * current generalized position and velocity.
  * @param V_WE_desired Desired world frame spatial velocity of @p frame_E.
  * @param frame_E End effector frame.
  * @param parameters Collection of various problem specific constraints and
@@ -330,8 +330,8 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) / dt, where X_WE is computed
  * from @p context, and dt is taken from @p parameters.
  * @param robot A MultibodyPlant model.
- * @param context Must be a MultibodyTreeContext. Contains the current
- * generalized position and velocity.
+ * @param context Must be the Context of the MultibodyPlant. Contains the
+ * current generalized position and velocity.
  * @param X_WE_desired Desired pose of @p frame_E in the world frame.
  * @param frame_E End effector frame.
  * @param parameters Collection of various problem specific constraints and

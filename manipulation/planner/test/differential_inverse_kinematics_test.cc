@@ -89,9 +89,7 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
         frame_E_->get_transform_to_body()));
     mbp_->Finalize();
 
-    owned_context_ = mbp_->CreateDefaultContext();
-    context_ = dynamic_cast<multibody::MultibodyTreeContext<double>*>(
-        owned_context_.get());
+    context_ = mbp_->CreateDefaultContext();
 
     SetMBTState(q, v);
   }
@@ -99,8 +97,10 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
   void SetMBTState(const VectorX<double>& q, const VectorX<double>& v) {
     DRAKE_DEMAND(q.size() == mbp_->num_positions());
     DRAKE_DEMAND(v.size() == mbp_->num_velocities());
-    context_->get_mutable_positions() = q;
-    context_->get_mutable_velocities() = v;
+    auto context = dynamic_cast<multibody::MultibodyTreeContext<double>*>(
+        context_.get());
+    context->get_mutable_positions() = q;
+    context->get_mutable_velocities() = v;
   }
 
   void CheckPositiveResult(const Vector6<double>& V_WE,
@@ -142,8 +142,7 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
   std::unique_ptr<DifferentialInverseKinematicsParameters> params_;
 
   std::unique_ptr<MultibodyPlant<double>> mbp_;
-  std::unique_ptr<systems::Context<double>> owned_context_;
-  multibody::MultibodyTreeContext<double>* context_;
+  std::unique_ptr<systems::Context<double>> context_;
   const FixedOffsetFrame<double>* frame_E_mbt_;
 };
 
