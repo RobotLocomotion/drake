@@ -1,10 +1,7 @@
-// N.B. This is duplicated from `//examples/van_der_pol`, and will be removed
-// as part of (#9645).
-
 #include "pybind11/pybind11.h"
 
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/examples/van_der_pol/documentation_pybind.h"
 #include "drake/examples/van_der_pol/van_der_pol.h"
 
 namespace drake {
@@ -15,7 +12,7 @@ PYBIND11_MODULE(van_der_pol, m) {
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::examples::van_der_pol;
-  constexpr auto& doc = pydrake_doc.drake.examples.van_der_pol;
+  constexpr auto& doc = van_der_pol_doc.drake.examples.van_der_pol;
 
   m.doc() = "Bindings for the van_der_pol example.";
 
