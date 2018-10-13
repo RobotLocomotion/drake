@@ -1190,7 +1190,7 @@ class MultibodyTree {
     const auto range = frame_name_to_index_.equal_range(name);
     for (auto it = range.first; it != range.second; ++it) {
       const Frame<T>& frame = get_frame(it->second);
-      if (frame.body().model_instance() == model_instance) {
+      if (frame.model_instance() == model_instance) {
         return frame;
       }
     }

@@ -137,6 +137,8 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   for (const std::string frame_name : kFrameNames) {
     const Frame<T>& frame = model.GetFrameByName(frame_name);
     EXPECT_EQ(frame.name(), frame_name);
+    EXPECT_EQ(
+        &frame, &model.GetFrameByName(frame_name, default_model_instance()));
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetFrameByName(kInvalidName), std::logic_error,
