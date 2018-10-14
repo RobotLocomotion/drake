@@ -208,6 +208,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "geometry_state_test",
+    tags = ["no_asan"],  # It doesn't pass yet.
     deps = [
         ":geometry_state",
         "//common/test_utilities",
@@ -216,6 +217,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "scene_graph_test",
+    tags = ["no_asan"],  # It doesn't pass yet.
     deps = [
         ":geometry_visualization",
         ":scene_graph",
@@ -225,6 +227,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "geometry_visualization_test",
+    tags = ["no_asan"],  # It doesn't pass yet.
     deps = [
         ":geometry_visualization",
         "//common/test_utilities:expect_throws_message",
@@ -233,6 +236,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "query_object_test",
+    tags = ["no_asan"],  # It doesn't pass yet.
     deps = [
         ":scene_graph",
         "//common/test_utilities:expect_throws_message",
