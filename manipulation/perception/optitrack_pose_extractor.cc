@@ -74,7 +74,9 @@ OptitrackPoseExtractor::OptitrackPoseExtractor(
   DeclareAbstractState(
       systems::AbstractValue::Make<Isometry3<double>>(
           Isometry3<double>::Identity()));
-  this->DeclareAbstractInputPort();
+  this->DeclareAbstractInputPort(
+      systems::kUseDefaultName,
+      systems::Value<optitrack::optitrack_frame_t>());
   // Internal state is an Isometry3d.
   this->DeclarePeriodicUnrestrictedUpdate(optitrack_lcm_status_period, 0);
 }

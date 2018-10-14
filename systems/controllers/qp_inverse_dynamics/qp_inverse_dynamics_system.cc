@@ -26,8 +26,12 @@ ValueType& get_mutable_value(systems::State<double>* state, int index) {
 QpInverseDynamicsSystem::QpInverseDynamicsSystem(
     const RigidBodyTree<double>* robot, double dt)
     : robot_(*robot), control_dt_(dt) {
-  input_port_index_kinematic_state_ = DeclareAbstractInputPort().get_index();
-  input_port_index_qp_input_ = DeclareAbstractInputPort().get_index();
+  input_port_index_kinematic_state_ = DeclareAbstractInputPort(
+      kUseDefaultName,
+      Value<RobotKinematicState<double>>{robot}).get_index();
+  input_port_index_qp_input_ = DeclareAbstractInputPort(
+      kUseDefaultName,
+      Value<QpInput>{}).get_index();
   output_port_index_qp_output_ =
       DeclareAbstractOutputPort(QpOutput(GetDofNames(robot_)),
                                 &QpInverseDynamicsSystem::CopyOutQpOutput)

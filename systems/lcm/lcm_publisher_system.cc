@@ -47,7 +47,7 @@ LcmPublisherSystem::LcmPublisherSystem(
     DeclareInputPort("lcm_message", kVectorValued,
                      translator_->get_vector_size());
   } else {
-    DeclareAbstractInputPort("lcm_message");
+    DeclareAbstractInputPort("lcm_message", *serializer_->CreateDefaultValue());
   }
 
   set_name(make_name(channel_));

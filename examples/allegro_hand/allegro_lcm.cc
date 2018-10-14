@@ -15,7 +15,9 @@ using systems::DiscreteUpdateEvent;
 
 AllegroCommandReceiver::AllegroCommandReceiver(int num_joints)
     : num_joints_(num_joints) {
-  this->DeclareAbstractInputPort();
+  this->DeclareAbstractInputPort(
+      systems::kUseDefaultName,
+      systems::Value<lcmt_allegro_command>{});
   state_output_port_ = this->DeclareVectorOutputPort(
       systems::BasicVector<double>(num_joints_ * 2),
       [this](const Context<double>& c, BasicVector<double>* o) {

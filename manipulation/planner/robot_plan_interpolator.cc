@@ -50,7 +50,9 @@ struct RobotPlanInterpolator::PlanData {
 RobotPlanInterpolator::RobotPlanInterpolator(
     const std::string& model_path, const InterpolatorType interp_type,
     double update_interval)
-    : plan_input_port_(this->DeclareAbstractInputPort().get_index()),
+    : plan_input_port_(this->DeclareAbstractInputPort(
+          systems::kUseDefaultName,
+          systems::Value<robot_plan_t>()).get_index()),
       interp_type_(interp_type) {
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       model_path, multibody::joints::kFixed, &tree_);

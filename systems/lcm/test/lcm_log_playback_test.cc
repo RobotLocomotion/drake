@@ -31,7 +31,7 @@ class DummySys : public LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummySys)
 
   DummySys() {
-    DeclareAbstractInputPort();
+    DeclareAbstractInputPort("lcmt_drake_signal", Value<lcmt_drake_signal>());
     DeclarePerStepEvent<PublishEvent<double>>(
         PublishEvent<double>(Event<double>::TriggerType::kPerStep));
   }

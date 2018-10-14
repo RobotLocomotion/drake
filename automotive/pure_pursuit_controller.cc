@@ -20,9 +20,11 @@ template <typename T>
 PurePursuitController<T>::PurePursuitController()
     : systems::LeafSystem<T>(
           systems::SystemTypeTag<automotive::PurePursuitController>{}),
-      lane_index_{this->DeclareAbstractInputPort().get_index()},
+      lane_index_{this->DeclareAbstractInputPort(
+          systems::kUseDefaultName, systems::Value<LaneDirection>())
+              .get_index()},
       ego_pose_index_{
-          this->DeclareInputPort(systems::kVectorValued, PoseVector<T>::kSize)
+          this->DeclareVectorInputPort(PoseVector<T>{})
               .get_index()},
       steering_command_index_{
           this->DeclareVectorOutputPort(
