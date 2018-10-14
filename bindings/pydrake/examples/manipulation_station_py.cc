@@ -19,38 +19,31 @@ PYBIND11_MODULE(manipulation_station, m) {
   using namespace drake::examples::manipulation_station;
 
   m.doc() = "Bindings for the Manipulation Station example.";
-  constexpr auto& doc = pydrake_doc.drake.examples.manipulation_station;
+//  constexpr auto& doc = pydrake_doc.drake.examples.manipulation_station;
 
   py::module::import("pydrake.systems.framework");
 
-  // StationSimulation currently only supports double.
+  // TODO(eric.cousineau): At present, we only bind doubles.
+  // In the future, we will bind more scalar types, and enable scalar
+  // conversion.
   using T = double;
 
   py::class_<StationSimulation<T>, Diagram<T>>(m, "StationSimulation")
-      .def(py::init<double>(), py::arg("timestep") = 0.002,
-           doc.StationSimulation.ctor.doc_3)
-      .def("Finalize", &StationSimulation<T>::Finalize,
-           doc.StationSimulation.Finalize.doc)
+      .def(py::init<double>(), py::arg("time_step") = 0.002)
+      .def("Finalize", &StationSimulation<T>::Finalize)
       .def("get_mutable_multibody_plant",
            &StationSimulation<T>::get_mutable_multibody_plant,
-           py_reference_internal,
-           doc.StationSimulation.get_mutable_multibody_plant.doc)
+           py_reference_internal)
       .def("get_mutable_scene_graph",
            &StationSimulation<T>::get_mutable_scene_graph,
-           py_reference_internal,
-           doc.StationSimulation.get_mutable_scene_graph.doc)
+           py_reference_internal)
       .def("get_controller_plant",
            &StationSimulation<T>::get_controller_plant,
-           py_reference_internal,
-           doc.StationSimulation.get_controller_plant.doc)
-      .def("GetIiwaPosition", &StationSimulation<T>::GetIiwaPosition,
-           doc.StationSimulation.GetIiwaPosition.doc)
-      .def("SetIiwaPosition", &StationSimulation<T>::SetIiwaPosition,
-           doc.StationSimulation.SetIiwaPosition.doc)
-      .def("GetIiwaVelocity", &StationSimulation<T>::GetIiwaVelocity,
-           doc.StationSimulation.GetIiwaVelocity.doc)
-      .def("SetIiwaVelocity", &StationSimulation<T>::SetIiwaVelocity,
-           doc.StationSimulation.SetIiwaVelocity.doc);
+           py_reference_internal)
+      .def("GetIiwaPosition", &StationSimulation<T>::GetIiwaPosition)
+      .def("SetIiwaPosition", &StationSimulation<T>::SetIiwaPosition)
+      .def("GetIiwaVelocity", &StationSimulation<T>::GetIiwaVelocity)
+      .def("SetIiwaVelocity", &StationSimulation<T>::SetIiwaVelocity);
 }
 
 }  // namespace pydrake

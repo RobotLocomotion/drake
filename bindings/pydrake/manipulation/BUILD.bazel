@@ -16,6 +16,7 @@ load(
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
+    "//examples:__subpackages__",
 ])
 
 # This determines how `PYTHONPATH` is configured, and how to install the
@@ -46,12 +47,20 @@ drake_pybind_library(
     ],
 )
 
+drake_py_library(
+    name = "simple_ui_py",
+    srcs = ["simple_ui.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [":module_py"],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":planner_py",
 ]
 
 PY_LIBRARIES = [
     ":module_py",
+    ":simple_ui_py",
 ]
 
 drake_py_unittest(
@@ -61,6 +70,17 @@ drake_py_unittest(
     ],
     deps = [
         ":planner_py",
+        "//bindings/pydrake/multibody",
+    ],
+)
+
+drake_py_unittest(
+    name = "simple_ui_test",
+    data = [
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":simple_ui_py",
         "//bindings/pydrake/multibody",
     ],
 )

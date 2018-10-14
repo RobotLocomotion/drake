@@ -315,6 +315,13 @@ void StationSimulation<T>::SetIiwaPosition(
   plant_->tree()
       .get_mutable_multibody_state_vector(&plant_context)
       .template segment<7>(0) = q;
+
+  // Set the position history in the state interpolator to match.
+  this->GetMutableSubsystemContext(
+          this->GetSubsystemByName("desired_state_from_position"),
+          station_context)
+      .get_mutable_discrete_state_vector()
+      .SetFromVector(q);
 }
 
 template <typename T>

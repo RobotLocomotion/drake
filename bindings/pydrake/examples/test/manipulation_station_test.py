@@ -9,7 +9,7 @@ from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
 class TestManipulationStation(unittest.TestCase):
     def test_station_simulation(self):
         # Just check the spelling.
-        station = StationSimulation(timestep=0.001)
+        station = StationSimulation(time_step=0.001)
         station.Finalize()
         station.get_mutable_multibody_plant()
         station.get_mutable_scene_graph()
