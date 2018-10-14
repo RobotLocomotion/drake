@@ -812,6 +812,17 @@ TEST_F(DiagramTest, AllocateInputs) {
   }
 }
 
+TEST_F(DiagramTest, GetSubsystemByName) {
+  const System<double>& stateless = diagram_->GetSubsystemByName("stateless");
+  EXPECT_NE(
+      dynamic_cast<const analysis_test::StatelessSystem<double>*>(&stateless),
+      nullptr);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      diagram_->GetSubsystemByName("not_a_subsystem"), std::logic_error,
+      "System .* does not have a subsystem named not_a_subsystem");
+}
+
 // Tests that ContextBase methods for affecting cache behavior propagate
 // through to subcontexts. Since leaf output ports have cache entries in their
 // corresponding subcontext, we'll pick one and check its behavior.
