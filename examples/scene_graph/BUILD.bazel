@@ -32,6 +32,10 @@ drake_cc_library(
 drake_cc_binary(
     name = "bouncing_ball_run_dynamics",
     srcs = ["bouncing_ball_run_dynamics.cc"],
+    add_test_rule = 1,
+    test_rule_args = [
+        "--simulation_time=0.1",
+    ],
     deps = [
         ":bouncing_ball_plant",
         "//geometry:geometry_visualization",
@@ -40,6 +44,7 @@ drake_cc_binary(
         "//systems/framework:diagram",
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:signal_logger",
+        "@gflags",
     ],
 )
 
@@ -71,6 +76,10 @@ drake_cc_library(
 drake_cc_binary(
     name = "solar_system_run_dynamics",
     srcs = ["solar_system_run_dynamics.cc"],
+    add_test_rule = 1,
+    test_rule_args = [
+        "--simulation_time=0.1",
+    ],
     deps = [
         ":solar_system",
         "//geometry:geometry_visualization",
@@ -79,6 +88,7 @@ drake_cc_binary(
         "//systems/framework:diagram",
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:signal_logger",
+        "@gflags",
     ],
 )
 

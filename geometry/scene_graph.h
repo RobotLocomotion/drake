@@ -434,6 +434,10 @@ class SceneGraph final : public systems::LeafSystem<T> {
                                 const GeometrySet& setB);
   //@}
 
+  /** Constructs an empty QueryObject. This is intended for only only by
+   * Systems to pass to DeclareAbstractInputPort as the model_value. */
+  QueryObject<T> MakeQueryObject() const;
+
  private:
   // Friend class to facilitate testing.
   friend class SceneGraphTester;
@@ -460,9 +464,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // Allow the load dispatch to peek into SceneGraph.
   friend void DispatchLoadMessage(const SceneGraph<double>&,
                                   lcm::DrakeLcmInterface*);
-
-  // Constructs a QueryObject for OutputPort allocation.
-  QueryObject<T> MakeQueryObject() const;
 
   // Sets the context into the output port value so downstream consumers can
   // perform queries.
