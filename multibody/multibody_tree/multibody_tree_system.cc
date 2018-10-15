@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
@@ -123,6 +124,25 @@ void MultibodyTreeSystem<T>::Finalize() {
       {this->kinematics_ticket()});
   velocity_kinematics_cache_index_ =
       velocity_kinematics_cache_entry.cache_index();
+
+  // Declare cache entry for H_PB_W(q).
+  // The type of this cache value is std::vector<Vector6<T>>.
+  auto& H_PB_W_cache_entry = this->DeclareCacheEntry(
+      std::string("H_PB_W(q)"),
+      [tree = tree_.get()]() {
+        return systems::AbstractValue::Make(
+            std::vector<Vector6<T>>(tree->num_velocities()));
+      },
+      [tree = tree_.get()](const systems::ContextBase& context_base,
+                           systems::AbstractValue* cache_value) {
+        auto& context = dynamic_cast<const Context<T>&>(context_base);
+        auto& H_PB_W_cache =
+            cache_value->GetMutableValue<std::vector<Vector6<T>>>();
+        tree->CalcAcrossNodeGeometricJacobianExpressedInWorld(
+            context, tree->EvalPositionKinematics(context), &H_PB_W_cache);
+      },
+      {this->cache_entry_ticket(position_kinematics_cache_index_)});
+  H_PB_W_cache_index_ = H_PB_W_cache_entry.cache_index();
 
   // TODO(sherm1) Allocate articulated body inertia cache.
 

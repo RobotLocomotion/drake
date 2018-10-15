@@ -3,7 +3,9 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
+#include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/position_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/cache_entry.h"
@@ -96,6 +98,23 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<VelocityKinematicsCache<T>>(context);
   }
 
+  /** Returns a reference to the up to date cache for the across mobilizer
+   * geometric Jacobian H_PB_W in the given Context, recalculating it first if
+   * necessary. Also if necessary, the PositionKinematicsCache will be
+   * recalculated as well.
+   * The geometric Jacobian `H_PB_W` relates to the spatial velocity of B in P
+   * by `V_PB_W = H_PB_W(q)⋅v_B`, where `v_B` corresponds to the generalized
+   * velocities associated to body B. `H_PB_W` has size `6 x nm` with `nm` the
+   * number of mobilities associated with body B.
+   * `H_PB_W_cache` stores the Jacobian matrices for all nodes in the tree as a
+   * vector of the columns of these matrices. Therefore `H_PB_W_cache` has as
+   * many entries as number of generalized velocities in the tree. */
+  const std::vector<Vector6<T>>& Eval_H_PB_W(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(H_PB_W_cache_index_)
+        .template Eval<std::vector<Vector6<T>>>(context);
+  }
+
   // TODO(sherm1) Add ArticulatedBodyInertiaCache.
 
  protected:
@@ -169,6 +188,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   std::unique_ptr<drake::multibody::MultibodyTree<T>> tree_;
   systems::CacheIndex position_kinematics_cache_index_;
   systems::CacheIndex velocity_kinematics_cache_index_;
+  systems::CacheIndex H_PB_W_cache_index_;
 
   // Used to enforce "finalize once" restriction for protected-API users.
   bool already_finalized_{false};
