@@ -20,6 +20,11 @@ namespace test {
                          I.matrix().block<3, 4>(0, 0));
 }
 
+GTEST_TEST(FrameKinematicsVector, DefaultConstructor) {
+  const FramePoseVector<double> dut;
+  EXPECT_FALSE(dut.source_id().is_valid());
+  EXPECT_EQ(dut.size(), 0);
+}
 
 GTEST_TEST(FrameKinematicsVector, Constructor) {
   SourceId source_id = SourceId::get_new_id();

@@ -86,7 +86,8 @@ RgbdCamera::RgbdCamera(const std::string& name, FrameId parent_frame,
 void RgbdCamera::InitPorts(const std::string& name) {
   this->set_name(name);
 
-  query_object_input_port_ = &this->DeclareAbstractInputPort("geometry_query");
+  query_object_input_port_ = &this->DeclareAbstractInputPort(
+      "geometry_query", systems::Value<geometry::dev::QueryObject<double>>{});
 
   ImageRgba8U color_image(color_camera_info_.width(),
                           color_camera_info_.height());

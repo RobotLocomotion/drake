@@ -1,9 +1,14 @@
+#include <gflags/gflags.h>
+
 #include "drake/examples/scene_graph/dev/solar_system.h"
 #include "drake/geometry/dev/geometry_visualization.h"
 #include "drake/geometry/dev/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
+
+DEFINE_double(simulation_time, 13.0,
+              "Desired duration of the simulation in seconds.");
 
 namespace drake {
 namespace examples {
@@ -36,7 +41,7 @@ int do_main() {
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(1);
   simulator.Initialize();
-  simulator.StepTo(13);
+  simulator.StepTo(FLAGS_simulation_time);
 
   return 0;
 }
@@ -46,4 +51,7 @@ int do_main() {
 }  // namespace examples
 }  // namespace drake
 
-int main() { return drake::examples::solar_system::do_main(); }
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  return drake::examples::solar_system::do_main();
+}
