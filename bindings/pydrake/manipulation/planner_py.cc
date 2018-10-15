@@ -107,7 +107,7 @@ PYBIND11_MODULE(planner, m) {
         doc.DoDifferentialInverseKinematics.doc);
 
   m.def("DoDifferentialInverseKinematics",
-        [](const multibody::MultibodyTree<double>& robot,
+        [](const multibody::multibody_plant::MultibodyPlant<double>& robot,
            const systems::Context<double>& context,
            const Vector6<double>& V_WE_desired,
            const multibody::Frame<double>& frame_E,
@@ -116,12 +116,12 @@ PYBIND11_MODULE(planner, m) {
           return manipulation::planner::DoDifferentialInverseKinematics(
               robot, context, V_WE_desired, frame_E, parameters);
         },
-        py::arg("robot"), py::arg("context"),
-        py::arg("V_WE_desired"), py::arg("frame_E"), py::arg("parameters"),
+        py::arg("robot"), py::arg("context"), py::arg("V_WE_desired"),
+        py::arg("frame_E"), py::arg("parameters"),
         doc.DoDifferentialInverseKinematics.doc_4);
 
   m.def("DoDifferentialInverseKinematics",
-        [](const multibody::MultibodyTree<double>& robot,
+        [](const multibody::multibody_plant::MultibodyPlant<double>& robot,
            const systems::Context<double>& context,
            const Isometry3<double>& X_WE_desired,
            const multibody::Frame<double>& frame_E,
@@ -130,8 +130,8 @@ PYBIND11_MODULE(planner, m) {
           return manipulation::planner::DoDifferentialInverseKinematics(
               robot, context, X_WE_desired, frame_E, parameters);
         },
-        py::arg("robot"), py::arg("context"),
-        py::arg("X_WE_desired"), py::arg("frame_E"), py::arg("parameters"),
+        py::arg("robot"), py::arg("context"), py::arg("X_WE_desired"),
+        py::arg("frame_E"), py::arg("parameters"),
         doc.DoDifferentialInverseKinematics.doc_5);
 }
 
