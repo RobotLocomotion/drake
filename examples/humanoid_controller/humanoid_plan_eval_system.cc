@@ -22,7 +22,9 @@ HumanoidPlanEvalSystem::HumanoidPlanEvalSystem(
     const std::string& alias_groups_file_name,
     const std::string& param_file_name, double dt)
     : PlanEvalBaseSystem(robot, alias_groups_file_name, param_file_name, dt) {
-  input_port_index_manip_plan_msg_ = DeclareAbstractInputPort().get_index();
+  input_port_index_manip_plan_msg_ = DeclareAbstractInputPort(
+      systems::kUseDefaultName,
+      systems::Value<robotlocomotion::robot_plan_t>{}).get_index();
 
   auto plan_as_value = systems::AbstractValue::Make<GenericPlan<double>>(
       HumanoidManipulationPlan<double>());

@@ -30,13 +30,13 @@ namespace {
 // fixed point and a state estimator in the loop. Run drake-visualizer to
 // see the animated result.
 
+DEFINE_double(simulation_sec, 5.0,
+              "Number of seconds to simulate.");
 DEFINE_double(realtime_factor, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
-int do_main(int argc, char* argv[]) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-
+int do_main() {
   // Make the robot.
   systems::DiagramBuilder<double> builder;
   auto acrobot_w_encoder = builder.AddSystem<AcrobotWEncoder<double>>(true);
@@ -136,7 +136,7 @@ int do_main(int argc, char* argv[]) {
   simulator.get_mutable_integrator()->set_maximum_step_size(0.01);
   simulator.get_mutable_integrator()->set_fixed_step_mode(true);
   simulator.Initialize();
-  simulator.StepTo(5);
+  simulator.StepTo(FLAGS_simulation_sec);
 
   // Plot the results (launch call_matlab_client to see the plots).
   using common::CallMatlab;
@@ -164,5 +164,6 @@ int do_main(int argc, char* argv[]) {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::examples::acrobot::do_main(argc, argv);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  return drake::examples::acrobot::do_main();
 }

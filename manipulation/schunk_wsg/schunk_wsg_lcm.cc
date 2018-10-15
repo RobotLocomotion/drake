@@ -29,7 +29,8 @@ SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(int input_size,
                                      BasicVector<double>(1),
                                      &SchunkWsgTrajectoryGenerator::OutputForce)
                                  .get_index()) {
-  this->DeclareAbstractInputPort();
+  this->DeclareAbstractInputPort(systems::kUseDefaultName,
+                                 systems::Value<lcmt_schunk_wsg_command>());
   this->DeclareInputPort(systems::kVectorValued, input_size);
   // The update period below matches the polling rate from
   // drake-schunk-driver.

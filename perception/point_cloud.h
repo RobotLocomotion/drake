@@ -86,7 +86,8 @@ class PointCloud final {
   ///   Fields that the point cloud contains.
   /// @param skip_initialize
   ///    Do not default-initialize new values.
-  explicit PointCloud(int new_size, pc_flags::Fields fields = pc_flags::kXYZs,
+  explicit PointCloud(int new_size = 0,
+                      pc_flags::Fields fields = pc_flags::kXYZs,
                       bool skip_initialize = false);
 
   /// Copies another point cloud's fields and data.

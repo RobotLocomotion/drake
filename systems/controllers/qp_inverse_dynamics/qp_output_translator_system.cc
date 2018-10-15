@@ -10,7 +10,8 @@ namespace qp_inverse_dynamics {
 QpOutputTranslatorSystem::QpOutputTranslatorSystem(
     const RigidBodyTree<double>& robot)
     : robot_(robot) {
-  input_port_index_qp_output_ = DeclareAbstractInputPort().get_index();
+  input_port_index_qp_output_ = DeclareAbstractInputPort(
+      kUseDefaultName, Value<QpOutput>()).get_index();
   output_port_index_torque_ =
       DeclareVectorOutputPort(
           systems::BasicVector<double>(robot_.get_num_actuators()),
