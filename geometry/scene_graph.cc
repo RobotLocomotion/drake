@@ -214,8 +214,10 @@ void SceneGraph<T>::MakeSourcePorts(SourceId source_id) {
   DRAKE_ASSERT(input_source_ids_.count(source_id) == 0);
   // Create and store the input ports for this source id.
   SourcePorts& source_ports = input_source_ids_[source_id];
-  source_ports.pose_port = this->DeclareAbstractInputPort
-      (initial_state_->get_source_name(source_id) + "_pose").get_index();
+  source_ports.pose_port =
+      this->DeclareAbstractInputPort(
+          initial_state_->get_source_name(source_id) + "_pose",
+          Value<FramePoseVector<T>>()).get_index();
 }
 
 template <typename T>
