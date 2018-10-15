@@ -171,6 +171,9 @@ class FrameKinematicsVector {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FrameKinematicsVector)
 
+  /** Initializes the vector using an invalid SourceId with no frames .*/
+  FrameKinematicsVector();
+
   /** Initializes the vector on the owned ids.
    @param source_id  The source id of the owning geometry source.
    @param ids        The set of *all* frames owned by this geometry source. All

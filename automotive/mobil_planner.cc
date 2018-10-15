@@ -40,7 +40,9 @@ MobilPlanner<T>::MobilPlanner(const RoadGeometry& road, bool initial_with_s,
           this->DeclareVectorInputPort(FrameVelocity<T>()).get_index()},
       ego_acceleration_index_{
           this->DeclareVectorInputPort(BasicVector<T>(1)).get_index()},
-      traffic_index_{this->DeclareAbstractInputPort().get_index()},
+      traffic_index_{this->DeclareAbstractInputPort(
+          systems::kUseDefaultName, systems::Value<PoseBundle<T>>())
+              .get_index()},
       lane_index_{
           this->DeclareAbstractOutputPort(&MobilPlanner::CalcLaneDirection)
               .get_index()} {

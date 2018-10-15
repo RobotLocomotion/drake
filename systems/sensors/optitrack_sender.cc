@@ -31,7 +31,9 @@ OptitrackLcmFrameSender::OptitrackLcmFrameSender(
     std::pair<std::string, int>>& frame_map)
     : num_rigid_bodies_(frame_map.size()),
       frame_map_(frame_map) {
-  pose_input_port_index_ = this->DeclareAbstractInputPort().get_index();
+  pose_input_port_index_ = this->DeclareAbstractInputPort(
+      kUseDefaultName,
+      Value<geometry::FramePoseVector<double>>()).get_index();
   this->DeclareAbstractOutputPort(
       optitrack::optitrack_frame_t(),
       &OptitrackLcmFrameSender::PopulatePoseMessage);

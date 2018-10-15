@@ -8,7 +8,8 @@ namespace systems {
 namespace rendering {
 
 PoseBundleToDrawMessage::PoseBundleToDrawMessage() {
-  this->DeclareAbstractInputPort();
+  this->DeclareAbstractInputPort(
+      kUseDefaultName, Value<PoseBundle<double>>());
   this->DeclareAbstractOutputPort(
       &PoseBundleToDrawMessage::CalcViewerDrawMessage);
 }

@@ -261,6 +261,11 @@ class QueryObject {
 
   //@}
 
+  /** (Advanced.)  Ideally, only the SceneGraph should be able to create this
+   class.  However, that is not currently realistic, so we've made it public
+   for the time being. */
+  QueryObject() = default;
+
  private:
   // SceneGraph is the only class that can instantiate QueryObjects.
   friend class SceneGraph<T>;
@@ -268,11 +273,6 @@ class QueryObject {
   friend class QueryObjectTester;
 
   const GeometryState<T>& geometry_state() const;
-
-  // Only the SceneGraph<T> can instantiate this class - it gets
-  // instantiated into a *copyable* default instance (to facilitate allocation
-  // in contexts).
-  QueryObject() = default;
 
   void set(const GeometryContext<T>* context,
            const SceneGraph<T>* scene_graph) {
