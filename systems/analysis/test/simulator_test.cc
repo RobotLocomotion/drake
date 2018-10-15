@@ -40,7 +40,7 @@ namespace {
 // @TODO(edrumwri): Use test fixtures to streamline this file and promote reuse.
 
 // Stateless system with a DoCalcTimeDerivatives implementation. This class
-// will serve to test that the time derivative calculation is not called.
+// will serve to confirm that the time derivative calculation is not called.
 class StatelessSystemPlusDerivs : public systems::LeafSystem<double>
 {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessSystemPlusDerivs)
@@ -48,22 +48,20 @@ class StatelessSystemPlusDerivs : public systems::LeafSystem<double>
  public:
   StatelessSystemPlusDerivs() {}
 
-  // Sets a function that is called when DoCalcTimeDerivatives is called.
-  void set_derivatives_callback(
-      std::function<void(const Context<double>&)> callback) {
-    derivatives_callback_ = callback;
+  bool was_do_calc_time_derivatives_called() const {
+    return do_calc_time_derivatives_called_;
   }
 
  private:
   void DoCalcTimeDerivatives(
       const Context<double>& context,
       ContinuousState<double>* derivatives) const override {
-    DRAKE_DEMAND(derivatives_callback_ != nullptr);
-    derivatives_callback_(context);
+    // Modifying system members is DoCalcTimeDerivatives() is an anti-pattern.
+    // It is done here only to simplify the testing code.
+    do_calc_time_derivatives_called_ = true;
   }
 
- private:
-  std::function<void(const Context<double>&)> derivatives_callback_{nullptr};
+  mutable bool do_calc_time_derivatives_called_{false};
 };
 
 // Empty diagram
@@ -116,15 +114,9 @@ class ExampleDiagram : public Diagram<double> {
 // Tests that DoCalcTimeDerivatives() is not called when the system has no
 // continuous state.
 GTEST_TEST(SimulatorTest, NoUnexpectedDoCalcTimeDerivativesCall) {
-  int num_calls = 0;
-  StatelessSystemPlusDerivs system;
-  system.set_derivatives_callback(
-      [&num_calls](const Context<double>&) {
-    ++num_calls;
-  });
-
   // Construct the simulation using the RK2 (fixed step) integrator with a small
   // time step.
+  StatelessSystemPlusDerivs system;
   const double final_time = 1.0;
   const double dt = 1e-3;
   Simulator<double> simulator(system);
@@ -134,7 +126,7 @@ GTEST_TEST(SimulatorTest, NoUnexpectedDoCalcTimeDerivativesCall) {
   simulator.StepTo(final_time);
 
   // Verify no derivative calculations.
-  EXPECT_EQ(num_calls, 0);
+  EXPECT_FALSE(system.was_do_calc_time_derivatives_called());
 }
 
 // Tests that simulation only takes a single step when there is no continuous
@@ -1133,11 +1125,12 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   EXPECT_NEAR(spring_mass.get_velocity(context), v_final, 1.0e-5);
 }
 
-// A mock hybrid continuous-discrete System with time as its only continuous
-// variable, discrete updates at 1 kHz, and requests publishes at 400 Hz. Calls
-// user-configured callbacks on DoPublish, DoCalcDiscreteVariableUpdates, and
-// EvalTimeDerivatives. This hybrid system will be used to verify expected state
-// update ordering -- discrete, continuous (i.e., integration), then publish.
+// A mock hybrid continuous-discrete System (with time as its only continuous
+// variable) that requests discrete updates at 1 kHz and publishes at 400 Hz.
+// Calls user-configured callbacks on DoPublish, DoCalcDiscreteVariableUpdates,
+// and EvalTimeDerivatives. This hybrid system will be used to verify expected
+// state update ordering -- discrete, continuous (i.e., integration), then
+// publish.
 class MixedContinuousDiscreteSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedContinuousDiscreteSystem)

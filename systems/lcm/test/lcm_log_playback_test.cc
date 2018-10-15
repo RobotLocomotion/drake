@@ -49,7 +49,12 @@ class DummySys : public LeafSystem<double> {
   }
 
  private:
-    void DoCalcDiscreteVariableUpdates(
+  // A discrete update is used here so that time does not advance between
+  // the message being received by the LCM Subscriber System (that this system
+  // is connected to) and the Publish. One could also accomplish this goal by
+  // using DoPublish() with more aggressive event triggering than what kPerStep
+  // can provide.
+  void DoCalcDiscreteVariableUpdates(
       const Context<double>& context,
       const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
       DiscreteValues<double>*) const override {

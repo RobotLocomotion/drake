@@ -33,20 +33,18 @@ void LcmLogPlaybackSystem::DoCalcNextUpdateTime(
   DRAKE_THROW_UNLESS(next_message_time > context.get_time());
 
   // Prepare a callback that dispatches message(s) to all the subscribers.
-  DiscreteUpdateEvent<double>::DiscreteUpdateCallback callback = [log = log_](
-      const Context<double>& callback_context,
-      const DiscreteUpdateEvent<double>&,
-      DiscreteValues<double>*) {
+  PublishEvent<double>::PublishCallback callback = [log = log_](
+      const Context<double>& callback_context, const PublishEvent<double>&) {
     // Use a loop to publish all messages that occur at the exact same time.
     while (log->GetNextMessageTime() == callback_context.get_time()) {
       log->DispatchMessageAndAdvanceLog(callback_context.get_time());
     }
   };
 
-  // Schedule a discrete update event at the next message time.
+  // Schedule a publish event at the next message time.
   *time = next_message_time;
-  events->get_mutable_discrete_update_events().add_event(
-      std::make_unique<systems::DiscreteUpdateEvent<double>>(
+  events->get_mutable_publish_events().add_event(
+      std::make_unique<systems::PublishEvent<double>>(
           Event<double>::TriggerType::kTimed, callback));
 }
 
