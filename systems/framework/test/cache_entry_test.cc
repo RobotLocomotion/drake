@@ -161,6 +161,11 @@ class MySystemBase final : public SystemBase {
 
   void DoCheckValidContext(const ContextBase&) const final {}
 
+  std::function<void(const AbstractValue&)> MakeFixInputPortTypeChecker(
+      InputPortIndex /* unused */) const final {
+    return {};
+  }
+
   const CacheEntry& entry0_;
   const CacheEntry& entry1_;
   const CacheEntry& entry2_;

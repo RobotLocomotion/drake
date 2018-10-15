@@ -95,8 +95,8 @@ class DiagramContextTest : public ::testing::Test {
     AddSystem(*system_with_abstract_parameters_, SubsystemIndex(7));
 
     // Fake up some input ports for this diagram.
-    context_->AddInputPort(InputPortIndex(0), DependencyTicket(100));
-    context_->AddInputPort(InputPortIndex(1), DependencyTicket(101));
+    context_->AddInputPort(InputPortIndex(0), DependencyTicket(100), {});
+    context_->AddInputPort(InputPortIndex(1), DependencyTicket(101), {});
 
     context_->MakeState();
     context_->MakeParameters();
