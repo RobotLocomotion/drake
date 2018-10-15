@@ -23,7 +23,9 @@ PlanEvalBaseSystem::PlanEvalBaseSystem(
     : robot_(*robot), control_dt_(dt), alias_groups_(robot) {
   DRAKE_DEMAND(control_dt_ > 0);
 
-  input_port_index_kinematic_state_ = DeclareAbstractInputPort().get_index();
+  input_port_index_kinematic_state_ = DeclareAbstractInputPort(
+      kUseDefaultName,
+      Value<RobotKinematicState<double>>{robot}).get_index();
   output_port_index_qp_input_ =
       DeclareAbstractOutputPort(QpInput(GetDofNames(robot_)),
                                 &PlanEvalBaseSystem::CopyOutQpInput)
