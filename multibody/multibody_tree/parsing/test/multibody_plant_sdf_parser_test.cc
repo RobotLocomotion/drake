@@ -10,18 +10,24 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
 
+using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::SceneGraph;
+using math::RigidTransform;
+using math::RollPitchYaw;
 using multibody::Body;
 using multibody::parsing::AddModelFromSdfFile;
 using multibody::parsing::AddModelsFromSdfFile;
+using multibody::parsing::detail::ToIsometry3;
 using multibody::multibody_plant::MultibodyPlant;
 using systems::Context;
 
@@ -29,6 +35,13 @@ namespace multibody {
 namespace parsing {
 namespace test {
 namespace {
+
+// TODO(eric.cousineau): Figure out a core location for a sugar method like
+// this.
+Isometry3d XyzRpy(const Vector3d& xyz, const Vector3d& rpy) {
+  return RigidTransform<double>(
+      RollPitchYaw<double>(rpy).ToRotationMatrix(), xyz).GetAsIsometry3();
+}
 
 // Verifies model instances are correctly created in the plant.
 GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
@@ -141,6 +154,30 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.GetFrameByName("Link1"), std::logic_error,
       "Frame Link1 appears in multiple model instances.");
+
+  // Check model scope frames.
+  auto context = plant.CreateDefaultContext();
+  const double eps = std::numeric_limits<double>::epsilon();
+  auto check_frame = [&plant, instance1, &context, eps](
+      std::string parent_name, std::string name,
+      const Isometry3d& X_PF_expected) {
+    const Frame<double>& frame = plant.GetFrameByName(name, instance1);
+    const Frame<double>& parent_frame =
+        plant.GetFrameByName(parent_name, instance1);
+    const Isometry3d X_PF = plant.tree().CalcRelativeTransform(
+        *context, parent_frame, frame);
+    EXPECT_TRUE(CompareMatrices(X_PF_expected.matrix(), X_PF.matrix(), eps))
+        << name;
+  };
+
+  const Isometry3d X_L1F1 = XyzRpy(
+      Vector3d(0.1, 0.2, 0.3), Vector3d(0.4, 0.5, 0.6));
+  check_frame("link1", "model_scope_link1_frame", X_L1F1);
+  const Isometry3d X_F1F2 = XyzRpy(Vector3d(0.1, 0.0, 0.0), Vector3d::Zero());
+  check_frame(
+      "model_scope_link1_frame", "model_scope_link1_frame_child", X_F1F2);
+  const Isometry3d X_MF3 = XyzRpy(Vector3d(0.7, 0.8, 0.9), Vector3d::Zero());
+  check_frame("instance1", "model_scope_model_frame_implicit", X_MF3);
 }
 
 // Verify that our SDF parser throws an exception when a user specifies a joint
@@ -172,11 +209,11 @@ GTEST_TEST(SdfParser, IncludeTags) {
         sdf_file_path + "/include_models.sdf"), &plant);
   plant.Finalize();
 
-  // We should have loaded three more models.
+  // We should have loaded 3 more models.
   EXPECT_EQ(plant.num_model_instances(), 5);
-  // The models should have added 8 four more bodies.
+  // The models should have added 8 more bodies.
   EXPECT_EQ(plant.num_bodies(), 9);
-  // The models should have added five more joints.
+  // The models should have added 5 more joints.
   EXPECT_EQ(plant.num_joints(), 5);
 
   // There should be a model instance with the name "robot1".
