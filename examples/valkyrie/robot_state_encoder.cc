@@ -33,8 +33,12 @@ RobotStateEncoder::RobotStateEncoder(
           DeclareAbstractOutputPort(&RobotStateEncoder::MakeRobotState,
                                     &RobotStateEncoder::OutputRobotState)
               .get_index()),
-      kinematics_results_port_index_(DeclareAbstractInputPort().get_index()),
-      contact_results_port_index_(DeclareAbstractInputPort().get_index()),
+      kinematics_results_port_index_(DeclareAbstractInputPort(
+          kUseDefaultName,
+          Value<KinematicsResults<double>>{&tree}).get_index()),
+      contact_results_port_index_(DeclareAbstractInputPort(
+          kUseDefaultName,
+          Value<ContactResults<double>>{}).get_index()),
       effort_port_indices_(DeclareEffortInputPorts()),
       force_torque_sensor_info_(ft_sensor_info) {
   int sensor_idx = 0;
