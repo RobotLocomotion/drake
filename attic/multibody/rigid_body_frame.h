@@ -40,7 +40,8 @@ class RigidBodyFrame final {
   // TODO(amcastro-tri): Remove this constructor. The appropriate signature
   // is described in #4407.
   RigidBodyFrame(const std::string& name, RigidBody<T>* body,
-                 const Eigen::Isometry3d& transform_to_body);
+                 const Eigen::Isometry3d& transform_to_body,
+                 int model_instance_id = -1);
 
   /**
    * A constructor where the transform-to-body is specified using
@@ -177,4 +178,5 @@ class RigidBodyFrame final {
   RigidBody<T>* body_{nullptr};
   Eigen::Isometry3d transform_to_body_;
   int frame_index_ = 0;  // this will be negative, but will also be gone soon!
+  int model_instance_id_ = -1;
 };
