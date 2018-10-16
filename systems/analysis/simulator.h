@@ -56,17 +56,17 @@ namespace systems {
 /// which is adequate for most systems.
 ///
 /// <h2>Simulation mechanics for hybrid discrete/continuous systems</h2>
-/// StepTo(), Simulator performs the following steps iteratively:
+/// In StepTo(), Simulator performs the following steps repeatedly:
 /// 1. Updates state variables without restriction (via an
 ///    UnrestrictedUpdateEvent),
 /// 2. Updates discrete state variables (via a DiscreteUpdateEvent),
-/// 3. Updates continuous variables, meaning integrating the smooth system (the
-///    ODE or DAE) forward in time by calling System::CalcTimeDerivatives()
-///    (*only called if the system has declared some continuous state*),
+/// 3. Updates continuous variables (both time and state), meaning integrating
+///    the smooth system (the ODE or DAE) forward in time- up to the next Event-
+///    by calling System::CalcTimeDerivatives() (*only called if the system has
+///    declared some continuous state*),
 /// 4. Generates any output (via a PublishEvent).
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
 /// Instantiated templates for the following kinds of T's are provided and
 /// available to link against in the containing library:
 /// - double
@@ -946,7 +946,10 @@ bool Simulator<T>::IntegrateContinuousState(
 
     // Indicate an event should be triggered if at least one witness function
     // triggered (meaning that an event should be handled on the next simulation
-    // loop).
+    // loop). If no witness functions triggered over a smaller interval (recall
+    // that we're in this if/then conditional block because a witness triggered
+    // over a larger interval), we know that time advanced and that no events
+    // triggered.
     return !triggered_witnesses_.empty();
   }
 

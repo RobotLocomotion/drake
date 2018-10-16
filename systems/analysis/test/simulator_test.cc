@@ -55,7 +55,7 @@ class StatelessSystemPlusDerivs : public systems::LeafSystem<double> {
   void DoCalcTimeDerivatives(
       const Context<double>& context,
       ContinuousState<double>* derivatives) const override {
-    // Modifying system members is DoCalcTimeDerivatives() is an anti-pattern.
+    // Modifying system members in DoCalcTimeDerivatives() is an anti-pattern.
     // It is done here only to simplify the testing code.
     do_calc_time_derivatives_called_ = true;
   }

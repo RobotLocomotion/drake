@@ -32,7 +32,7 @@ class DummySys : public LeafSystem<double> {
 
   DummySys() {
     DeclareAbstractInputPort("lcmt_drake_signal", Value<lcmt_drake_signal>());
-    DeclarePeriodicPublish(0.01 /* 100 Hz */, 0.0 /* no time offset */);
+    DeclarePeriodicPublish(1.0/publish_freq_, 0.0 /* no time offset */);
   }
 
   const std::vector<lcmt_drake_signal>& get_received_msgs() const {
@@ -48,9 +48,6 @@ class DummySys : public LeafSystem<double> {
   }
 
  private:
-  // A discrete update is used here so that time does not advance between
-  // the message being received by the LCM Subscriber system (that this system
-  // is connected to) and the publish.
   void DoPublish(
       const Context<double>& context,
       const std::vector<const systems::PublishEvent<double>*>&)
@@ -67,10 +64,22 @@ class DummySys : public LeafSystem<double> {
 
     if (is_new_msg) {
       received_msgs_.push_back(*msg);
-      received_time_.push_back(context.get_time());
+
+      // The diagram that this system is embedded in works the following way:
+      // The LCM Subscriber system receives a message and then requests an
+      // unrestricted update. The unrestricted update causes the input to this
+      // system (DummySys) to change on its next publish operation, which
+      // happens exactly one "tick" after the unrestricted update (Simulator
+      // docs indicate that the sequence of simulation actions is unrestricted
+      // event, discrete update event, continuous state update [integration],
+      // publish, meaning that time is advanced between the unrestricted update
+      // and the publish). Therefore, publish times are expected to be one
+      // "tick" behind because
+      received_time_.push_back(context.get_time() - 1.0/publish_freq_);
     }
   }
 
+  const double publish_freq_{100.0};  // In Hz.
   mutable std::vector<lcmt_drake_signal> received_msgs_;
   mutable std::vector<double> received_time_{0};
 };
