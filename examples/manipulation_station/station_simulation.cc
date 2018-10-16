@@ -92,8 +92,8 @@ SpatialInertia<double> MakeCompositeGripperInertia(
 }
 
 template <typename T>
-StationSimulation<T>::StationSimulation(double timestep)
-    : owned_plant_(std::make_unique<MultibodyPlant<T>>(timestep)),
+StationSimulation<T>::StationSimulation(double time_step)
+    : owned_plant_(std::make_unique<MultibodyPlant<T>>(time_step)),
       owned_scene_graph_(std::make_unique<SceneGraph<T>>()),
       owned_controller_plant_(std::make_unique<MultibodyPlant<T>>()) {
   // This class holds the unique_ptrs explicitly for plant and scene_graph
@@ -315,6 +315,13 @@ void StationSimulation<T>::SetIiwaPosition(
   plant_->tree()
       .get_mutable_multibody_state_vector(&plant_context)
       .template segment<7>(0) = q;
+
+  // Set the position history in the state interpolator to match.
+  this->GetMutableSubsystemContext(
+          this->GetSubsystemByName("desired_state_from_position"),
+          station_context)
+      .get_mutable_discrete_state_vector()
+      .SetFromVector(q);
 }
 
 template <typename T>
