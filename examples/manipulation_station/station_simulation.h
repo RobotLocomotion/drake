@@ -104,10 +104,10 @@ class StationSimulation : public systems::Diagram<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StationSimulation)
 
-  /// Construct the station model with @p timestep as the time step used by
+  /// Construct the station model with @p time_step as the time step used by
   /// MultibodyPlant<T>, and by the discrete derivative used to approximate
   /// velocity from the position command inputs.
-  explicit StationSimulation(double timestep = 0.002);
+  explicit StationSimulation(double time_step = 0.002);
 
   // TODO(russt): Add scalar copy constructor etc once we support more
   // scalar types than T=double.  See #9573.
@@ -150,6 +150,7 @@ class StationSimulation : public systems::Diagram<T> {
   VectorX<T> GetIiwaPosition(const systems::Context<T>& station_context) const;
 
   /// Convenience method for setting all of the joint angles of the Kuka IIWA.
+  /// Also sets the position history in the velocity command generator.
   /// @p q must have size num_iiwa_joints().
   void SetIiwaPosition(const Eigen::Ref<const VectorX<T>>& q,
                         systems::Context<T>* station_context) const;

@@ -27,7 +27,7 @@ PYBIND11_MODULE(manipulation_station, m) {
   using T = double;
 
   py::class_<StationSimulation<T>, Diagram<T>>(m, "StationSimulation")
-      .def(py::init<double>(), py::arg("timestep") = 0.002,
+      .def(py::init<double>(), py::arg("time_step") = 0.002,
            doc.StationSimulation.ctor.doc_3)
       .def("Finalize", &StationSimulation<T>::Finalize,
            doc.StationSimulation.Finalize.doc)
