@@ -48,7 +48,9 @@ PYBIND11_MODULE(rigid_body_tree, m) {
     .value("kRollPitchYaw", FloatingBaseType::kRollPitchYaw,
            doc.drake.multibody.joints.FloatingBaseType.kRollPitchYaw.doc)
     .value("kQuaternion", FloatingBaseType::kQuaternion,
-           doc.drake.multibody.joints.FloatingBaseType.kQuaternion.doc);
+           doc.drake.multibody.joints.FloatingBaseType.kQuaternion.doc)
+    .value("kImplicitQuaternion", FloatingBaseType::kImplicitQuaternion,
+           doc.drake.multibody.joints.FloatingBaseType.kImplicitQuaternion.doc);
 
   // TODO(eric.cousineau): Try to decouple these APIs so that `rigid_body_tree`
   // and `parsers` do not form a dependency cycle.
