@@ -140,46 +140,47 @@ namespace internal {
 
 lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
     const GeometryState<double>& state) {
-  using internal::InternalAnchoredGeometry;
   using internal::InternalGeometry;
 
   lcmt_viewer_load_robot message{};
   // Populate the message.
+  // This includes the world frame.
   const int frame_count = state.get_num_frames();
-  const int anchored_count =
-      static_cast<int>(state.anchored_geometry_index_id_map_.size());
+  const int anchored_count = state.GetNumFrameGeometries(
+      InternalFrame::world_frame_id());
 
-  // Include the world frame as one of the frames (if there are anchored
-  // geometries).
-  int total_link_count = frame_count + (anchored_count > 0 ? 1 : 0);
+  // If no anchored frames were found, remove the world frame from the count of
+  // total frames/links.
+  int total_link_count = anchored_count > 0 ? frame_count : frame_count - 1;
   message.num_links = total_link_count;
   message.link.resize(total_link_count);
 
   int link_index = 0;
   // Load anchored geometry into the world frame.
-  {
-    if (anchored_count) {
-      message.link[0].name = "world";
-      message.link[0].robot_num = 0;
-      message.link[0].num_geom = anchored_count;
-      message.link[0].geom.resize(anchored_count);
-      int geom_index = 0;
-      for (const auto& pair : state.anchored_geometries_) {
-        const InternalAnchoredGeometry& geometry = pair.second;
-        const Shape& shape = geometry.get_shape();
-        const Eigen::Vector4d& color =
-            geometry.get_visual_material().diffuse();
-        message.link[0].geom[geom_index] = MakeGeometryData(
-            shape, geometry.get_pose_in_parent(), color);
-        ++geom_index;
-      }
-      link_index = 1;
+  if (anchored_count) {
+    message.link[0].name = "world";
+    message.link[0].robot_num = 0;
+    message.link[0].num_geom = anchored_count;
+    message.link[0].geom.resize(anchored_count);
+    int geom_index = 0;
+    const InternalFrame& world_frame =
+        state.frames_.at(InternalFrame::world_frame_id());
+    for (const GeometryId id : world_frame.child_geometries()) {
+      const InternalGeometry& geometry = state.geometries_.at(id);
+      const Shape& shape = geometry.shape();
+      const Eigen::Vector4d& color = geometry.visual_material().diffuse();
+      message.link[0].geom[geom_index] = MakeGeometryData(
+          shape, geometry.X_FG(), color);
+      ++geom_index;
     }
+    link_index = 1;
   }
 
   // Load dynamic geometry into their own frames.
   for (const auto& pair : state.frames_) {
     const internal::InternalFrame& frame = pair.second;
+    // The world frame is handled specifically above.
+    if (frame.is_world()) continue;
     SourceId s_id = state.get_source_id(frame.id());
     const std::string& src_name = state.get_source_name(s_id);
     // TODO(SeanCurtis-TRI): The name in the load message *must* match the name
@@ -194,13 +195,10 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
     int geom_index = 0;
     for (GeometryId geom_id : frame.child_geometries()) {
       const InternalGeometry& geometry = state.geometries_.at(geom_id);
-      GeometryIndex index = geometry.get_engine_index();
-      const Isometry3<double> X_FG = state.X_FG_.at(index);
-      const Shape& shape = geometry.get_shape();
-      const Eigen::Vector4d& color =
-          geometry.get_visual_material().diffuse();
+      const Shape& shape = geometry.shape();
+      const Eigen::Vector4d& color = geometry.visual_material().diffuse();
       message.link[link_index].geom[geom_index] =
-          MakeGeometryData(shape, X_FG, color);
+          MakeGeometryData(shape, geometry.X_FG(), color);
       ++geom_index;
     }
     ++link_index;
