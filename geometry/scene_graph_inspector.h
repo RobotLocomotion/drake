@@ -17,24 +17,25 @@ class QueryObject;
  of the SceneGraph data that does *not* depend on input pose data. Including,
  but not limited to:
 
-   - names of frames and geometries
-   - hierarchies (parents of geometries, parents of frames, etc.)
-   - geometry parameters (e.g., contact, rendering, visualization)
-   - fixed poses of geometries relative to frames
+ - names of frames and geometries
+ - hierarchies (parents of geometries, parents of frames, etc.)
+ - geometry parameters (e.g., contact, rendering, visualization)
+ - fixed poses of geometries relative to frames
 
  In contrast, the following pieces of data *do* depend on input pose data and
  *cannot* be performed with the %SceneGraphInspector (see the QueryObject
  instead):
 
-   - world pose of frames or geometry
-   - collision queries
-   - proximity queries
+ - world pose of frames or geometry
+ - collision queries
+ - proximity queries
 
  A %SceneGraphInspector cannot be instantiated explicitly. Nor can it be copied
  or moved. A *reference* to a %SceneGraphInspector instance can be acquired from
-   - a SceneGraph instance (to inspect the state of the system's _model_), or
-   - a QueryObject instance (to inspect the state of the scene graph data stored
-     in the context).
+
+ - a SceneGraph instance (to inspect the state of the system's _model_), or
+ - a QueryObject instance (to inspect the state of the scene graph data stored
+   in the context).
 
  The reference should not be persisted (and, as previously indicated, cannot
  be copied). %SceneGraphInspector instances are cheap; they can be created,

@@ -688,6 +688,7 @@ class MultibodyTreeTopology {
   /// how bodies, joints and, any other elements connect with each other, and
   /// performs all the required pre-processing to perform computations at a
   /// later stage. This preprocessing includes:
+  ///
   /// - sorting in BFT order for fast recursions through the tree,
   /// - computation of state sizes and of pool sizes within cache entries,
   /// - computation of index maps to retrieve either state or cache entries for
@@ -906,6 +907,7 @@ class MultibodyTreeTopology {
   /// sub-graph will have all of the bodies welded to the world; all
   /// subsequent sub-graphs will be in no particular order.
   /// A few more notes:
+  ///
   /// - Each body in the topology is included in one set and one set only.
   /// - The maximum size of the list equals the number of bodies in the topology
   ///   (num_bodies()). This corresponds to a topology with no weld mobilizers.

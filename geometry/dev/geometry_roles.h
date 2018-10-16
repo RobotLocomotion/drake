@@ -106,6 +106,7 @@ namespace dev {
  Role assignment is achieved by assigning as set of role-related *properties*
  to a geometry (see SceneGraph::AssignRole()). The set *can* be empty. Each
  role has a specific property set associated with it:
+
    - __Proximity role__: ProximityProperties
    - __Perception role__: PerceptionProperties
    - __Illustration role__: IllustrationProperties

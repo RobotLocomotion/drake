@@ -190,6 +190,7 @@ struct AddRotationMatrixBoxSphereIntersectionReturn {
  * Adds binary variables that constrain the value of the column *and* row
  * vectors of R, in order to add the following (in some cases non-convex)
  * constraints as an MILP.  Specifically, for column vectors Ri, we constrain:
+ *
  * - forall i, |Ri| = 1 ± envelope,
  * - forall i,j. i ≠ j, Ri.dot(Rj) = 0 ± envelope,
  * - R2 = R0.cross(R1) ± envelope,

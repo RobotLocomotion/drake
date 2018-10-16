@@ -154,6 +154,7 @@ class WsgAction : public Action {
 
   /**
    * Returns true if the following criteria are satisfied:
+   *
    *  - The gripper speed is less than the final speed threshold.
    *  - 0.5 s have elapsed since the last Open/Close command was issued.
    *  - The gripper position is greater than (for an Open command) or less than

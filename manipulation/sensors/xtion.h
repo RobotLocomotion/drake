@@ -19,6 +19,7 @@ namespace sensors {
  * and provides the ability to add the camera as a system in a diagram builder.
  *
  * Frames:
+ *
  *  B - RgbdCamera sensor frame (X-forward, Y-left, Z-up).
  *  X - Xtion base frame
  *      Same orientation as RgbdCamera frame, but with different offset.
