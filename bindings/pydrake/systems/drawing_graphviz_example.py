@@ -43,7 +43,7 @@ ConnectDrakeVisualizer(builder=builder, scene_graph=scene_graph)
 diagram = builder.Build()
 diagram.set_name("graphviz_example")
 
-plot_system_graphviz(diagram)
+plot_system_graphviz(diagram, max_depth=2)
 
 if not args.test:
     plt.show()

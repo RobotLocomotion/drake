@@ -1190,7 +1190,7 @@ class MultibodyTree {
     const auto range = frame_name_to_index_.equal_range(name);
     for (auto it = range.first; it != range.second; ++it) {
       const Frame<T>& frame = get_frame(it->second);
-      if (frame.body().model_instance() == model_instance) {
+      if (frame.model_instance() == model_instance) {
         return frame;
       }
     }
@@ -1824,51 +1824,87 @@ class MultibodyTree {
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_FQ_list) const;
 
-  /// Given a frame F with fixed position `p_BoFo_B` in a frame B, this method
-  /// computes the geometric Jacobian `Jv_WF` defined by:
+  /// Given a frame `Fq` defined by shifting a frame F from its origin `Fo` to
+  /// a new origin `Q`, this method computes the geometric Jacobian `Jv_WFq`
+  /// for frame `Fq`. The new origin `Q` is specified by the position vector
+  /// `p_FQ` in frame F. The frame geometric Jacobian `Jv_WFq` is defined by:
   /// <pre>
-  ///   V_WF(q, v) = Jv_WF(q)⋅v
+  ///   V_WFq(q, v) = Jv_WFq(q)⋅v
   /// </pre>
-  /// where `V_WF(q, v)` is the spatial velocity of frame F measured and
+  /// where `V_WFq(q, v)` is the spatial velocity of frame `Fq` measured and
   /// expressed in the world frame W and q and v are the vectors of generalized
-  /// position and velocity, respectively. Since the spatial velocity of frame
-  /// F is linear in the generalized velocities, the geometric Jacobian `Jv_WF`
-  /// is a function of the generalized coordinates q only.
+  /// position and velocity, respectively.
+  /// The geometric Jacobian `Jv_WFq(q)` is a function of the generalized
+  /// coordinates q only.
   ///
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q.
-  /// @param[in] frame_B
-  ///   The position `p_BoFo_B` of frame F is measured and expressed in this
-  ///   frame B.
-  /// @param[in] p_BoFo_B
-  ///   The (fixed) position of frame F as measured and expressed in frame B.
-  /// @param[out] Jv_WF
-  ///   The geometric Jacobian `Jv_WF(q)`, function of the generalized positions
-  ///   q only. This Jacobian relates to the spatial velocity `V_WF` of frame F
-  ///   by: <pre>
-  ///     V_WF(q, v) = Jv_WF(q)⋅v
+  /// @param[in] frame_F
+  ///   The position `p_FQ` of frame `Fq` is measured and expressed in this
+  ///   frame F.
+  /// @param[in] p_FQ
+  ///   The (fixed) position of the origin `Q` of frame `Fq` as measured and
+  ///   expressed in frame F.
+  /// @param[out] Jv_WFq
+  ///   The geometric Jacobian `Jv_WFq(q)`, function of the generalized
+  ///   positions q only. This Jacobian relates to the spatial velocity `V_WFq`
+  ///   of frame `Fq` by: <pre>
+  ///     V_WFq(q, v) = Jv_WFq(q)⋅v
   ///   </pre>
-  ///   Therefore `Jv_WF` is a matrix of size `6 x nv`, with `nv`
-  ///   the number of generalized velocities. On input, matrix `Jv_WF` **must**
+  ///   Therefore `Jv_WFq` is a matrix of size `6 x nv`, with `nv`
+  ///   the number of generalized velocities. On input, matrix `Jv_WFq` **must**
   ///   have size `6 x nv` or this method throws an exception. The top rows of
-  ///   this matrix (which can be accessed with Jv_WF.topRows<3>()) is the
-  ///   Jacobian `Hw_WF` related to the angular velocity of F in W by
-  ///   `w_WF = Hw_WF⋅v`. The bottom rows of this matrix (which can be accessed
-  ///   with Jv_WF.bottomRows<3>()) is the Jacobian `Hv_WF` related to the
-  ///   translational velocity of the origin of frame F in W by
-  ///   `v_WFo = Hw_WF⋅v`. This ordering is consistent with the internal storage
-  ///   of the SpatialVector class. Therefore the following operations results
-  ///   in a valid spatial velocity: <pre>
-  ///     SpatialVelocity<double> Jv_WF_times_v(Jv_WF * v);
+  ///   this matrix (which can be accessed with Jv_WFq.topRows<3>()) is the
+  ///   Jacobian `Hw_WFq` related to the angular velocity of `Fq` in W by
+  ///   `w_WFq = Hw_WFq⋅v`. The bottom rows of this matrix (which can be
+  ///   accessed with Jv_WFq.bottomRows<3>()) is the Jacobian `Hv_WFq` related
+  ///   to the translational velocity of the origin `Q` of frame `Fq` in W by
+  ///   `v_WFqo = Hv_WFq⋅v`. This ordering is consistent with the internal
+  ///   storage of the SpatialVelocity class. Therefore the following operations
+  ///   results in a valid spatial velocity: <pre>
+  ///     SpatialVelocity<double> Jv_WFq_times_v(Jv_WFq * v);
   ///   </pre>
   ///
-  /// @throws std::exception if `J_WF` is nullptr or if it is not of size
+  /// @throws std::exception if `J_WFq` is nullptr or if it is not of size
   ///   `6 x nv`.
   void CalcFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BoFo_B,
-      EigenPtr<MatrixX<T>> Jv_WF) const;
+      const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FQ,
+      EigenPtr<MatrixX<T>> Jv_WFq) const;
+
+  /// Given a frame `Fq` defined by shifting a frame F from its origin `Fo` to
+  /// a new origin `Q`, this method computes the bias term `Ab_WFq` associated
+  /// with the spatial acceleration `A_WFq` a frame `Fq` instantaneously
+  /// moving with a frame F at a fixed position `p_FQ`.
+  /// That is, the spatial acceleration of frame `Fq` can be computed as:
+  /// <pre>
+  ///   A_WFq = Jv_WFq(q)⋅v̇ + Ab_WFq(q, v)
+  /// </pre>
+  /// where `Ab_WFq(q, v) = J̇v_WFq(q, v)⋅v`.
+  ///
+  /// @see CalcFrameGeometricJacobianExpressedInWorld() to compute the
+  /// geometric Jacobian `Jv_WFq(q)`.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q and generalized velocities v.
+  /// @param[in] frame_F
+  ///   The position `p_FQ` of frame `Fq` is measured and expressed in this
+  ///   frame F.
+  /// @param[in] p_FQ
+  ///   The (fixed) position of the origin `Q` of frame `Fq` as measured and
+  ///   expressed in frame F.
+  /// @returns Ab_WFq
+  ///   The bias term, function of the generalized positions q and the
+  ///   generalized velocities v as stored in `context`.
+  ///   The returned vector is of size 6, with the first three elements related
+  ///   to the bias in angular acceleration and the with the last three elements
+  ///   related to the bias in translational acceleration.
+  /// @note SpatialAcceleration(Ab_WFq) defines a valid SpatialAcceleration.
+  Vector6<T> CalcBiasForFrameGeometricJacobianExpressedInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FQ) const;
 
   /// @}
   // End of multibody Jacobian methods section.

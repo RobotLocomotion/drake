@@ -15,6 +15,10 @@ using std::make_pair;
 using std::move;
 
 template <typename KinematicsValue>
+FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector()
+    : FrameKinematicsVector<KinematicsValue>({}, {}) {}
+
+template <typename KinematicsValue>
 FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector(
     SourceId source_id, const std::vector<FrameId>& ids)
     : source_id_(source_id), values_(0) {

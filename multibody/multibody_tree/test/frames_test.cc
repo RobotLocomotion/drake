@@ -74,6 +74,14 @@ class FrameTests : public ::testing::Test {
     frameR_ = &model->AddFrame<FixedOffsetFrame>(
         "R", *frameP_, Isometry3d::Identity());
 
+    // Frame S is arbitrary, but named and with a specific model instance.
+    extra_instance_ = model->AddModelInstance("extra_instance");
+    frameS_ = &model->AddFrame<FixedOffsetFrame>(
+        "S", model->world_frame(), Isometry3d::Identity(), extra_instance_);
+    // Ensure that the model instance propagates implicitly.
+    frameSChild_ = &model->AddFrame<FixedOffsetFrame>(
+        "SChild", *frameS_, Isometry3d::Identity());
+
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.
     system_ = std::make_unique<MultibodyTreeSystem<double>>(std::move(model));
@@ -99,11 +107,15 @@ class FrameTests : public ::testing::Test {
   std::unique_ptr<Context<double>> context_;
   // Bodies:
   const RigidBody<double>* bodyB_;
+  // Model instances.
+  ModelInstanceIndex extra_instance_;
   // Frames:
   const Frame<double>* frameB_{};
   const Frame<double>* frameP_{};
   const Frame<double>* frameQ_{};
   const Frame<double>* frameR_{};
+  const Frame<double>* frameS_{};
+  const Frame<double>* frameSChild_{};
   // Poses:
   Isometry3d X_BP_;
   Isometry3d X_PQ_;
@@ -189,6 +201,12 @@ TEST_F(FrameTests, ChainedFixedOffsetFrames) {
 
 TEST_F(FrameTests, NamedFrame) {
   EXPECT_EQ(frameR_->name(), "R");
+}
+
+TEST_F(FrameTests, ModelInstanceOverride) {
+  EXPECT_EQ(frameR_->model_instance(), default_model_instance());
+  EXPECT_EQ(frameS_->model_instance(), extra_instance_);
+  EXPECT_EQ(frameSChild_->model_instance(), extra_instance_);
 }
 
 }  // namespace

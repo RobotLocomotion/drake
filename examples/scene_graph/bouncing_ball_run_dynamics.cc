@@ -1,6 +1,8 @@
 #include <memory>
 #include <utility>
 
+#include <gflags/gflags.h>
+
 #include "drake/examples/scene_graph/bouncing_ball_plant.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_visualization.h"
@@ -10,6 +12,9 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+
+DEFINE_double(simulation_time, 10.0,
+              "Desired duration of the simulation in seconds.");
 
 namespace drake {
 namespace examples {
@@ -82,7 +87,7 @@ int do_main() {
   simulator.get_mutable_integrator()->set_maximum_step_size(0.002);
   simulator.set_target_realtime_rate(1.f);
   simulator.Initialize();
-  simulator.StepTo(10);
+  simulator.StepTo(FLAGS_simulation_time);
 
   return 0;
 }
@@ -93,6 +98,7 @@ int do_main() {
 }  // namespace examples
 }  // namespace drake
 
-int main() {
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::scene_graph::bouncing_ball::do_main();
 }

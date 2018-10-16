@@ -51,9 +51,9 @@ if sys.platform.startswith("linux"):
     # for @vtk.
     set_path("LD_LIBRARY_PATH", "external/lcm")
     prepend_path("LD_LIBRARY_PATH", "external/vtk/lib")
-    prepend_path(
-        "PYTHONPATH", "external/vtk/lib/python{}.{}/site-packages".format(
-            sys.version_info.major, sys.version_info.minor))
+    # TODO(eric.cousineau): Ensure that Drake Visualizer works even when Bazel
+    # uses a separate version of Python.
+    prepend_path("PYTHONPATH", "external/vtk/lib/python2.7/site-packages")
 elif sys.platform == "darwin":
     # Ensure that we handle DYLD_LIBRARY_PATH for @lcm.
     set_path("DYLD_LIBRARY_PATH", "external/lcm")

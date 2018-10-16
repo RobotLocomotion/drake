@@ -34,6 +34,18 @@ std::unique_ptr<RigidBodyTree<double>> ConstructKuka() {
   return rigid_body_tree;
 }
 
+std::unique_ptr<RigidBodyTree<double>> ConstructSingleBody() {
+  std::unique_ptr<RigidBodyTree<double>> single_object =
+      std::make_unique<RigidBodyTree<double>>();
+  const std::string model_path =
+      FindResourceOrThrow("drake/multibody/models/box.urdf");
+  parsers::urdf::AddModelInstanceFromUrdfFile(
+      model_path, drake::multibody::joints::kQuaternion, nullptr,
+      single_object.get());
+
+  return single_object;
+}
+
 KukaTest::KukaTest()
     : rigid_body_tree_(ConstructKuka()),
       global_ik_(*rigid_body_tree_),  // Test with default options.

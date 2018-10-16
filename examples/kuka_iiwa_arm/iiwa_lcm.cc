@@ -27,7 +27,9 @@ const double kIiwaLcmStatusPeriod = 0.005;
 
 IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
     : num_joints_(num_joints) {
-  this->DeclareAbstractInputPort();
+  this->DeclareAbstractInputPort(
+      systems::kUseDefaultName,
+      systems::Value<lcmt_iiwa_command>{});
   this->DeclareVectorOutputPort(
       systems::BasicVector<double>(num_joints_ * 2),
       [this](const Context<double>& c, BasicVector<double>* o) {
@@ -186,7 +188,9 @@ IiwaStatusReceiver::IiwaStatusReceiver(int num_joints)
                   systems::BasicVector<double>(num_joints_ * 3),
                   &IiwaStatusReceiver::OutputDeprecatedMeasuredPosition)
               .get_index()) {
-  this->DeclareAbstractInputPort("lcmt_iiwa_status");
+  this->DeclareAbstractInputPort(
+      "lcmt_iiwa_status",
+      systems::Value<lcmt_iiwa_status>{});
 }
 
 template <std::vector<double> drake::lcmt_iiwa_status::* field>
@@ -360,7 +364,9 @@ IiwaContactResultsToExternalTorque::IiwaContactResultsToExternalTorque(
     }
   }
 
-  this->DeclareAbstractInputPort();
+  this->DeclareAbstractInputPort(
+      systems::kUseDefaultName,
+      systems::Value<systems::ContactResults<double>>{});
 
   this->DeclareVectorOutputPort(
       systems::BasicVector<double>(length),

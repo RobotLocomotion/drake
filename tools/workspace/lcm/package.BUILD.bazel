@@ -16,7 +16,6 @@ load(
     "install_files",
 )
 load("@drake//tools/lint:python_lint.bzl", "python_lint")
-load("@python//:version.bzl", "PY_SITE_PACKAGES_RELPATH")
 
 licenses([
     "notice",  # BSD-3-Clause
@@ -305,7 +304,7 @@ install(
         ":_lcm.so",
         ":lcm-python-upstream",
     ],
-    library_dest = PY_SITE_PACKAGES_RELPATH + "/lcm",
+    library_dest = "@PYTHON_SITE_PACKAGES@/lcm",
     py_strip_prefix = ["lcm-python"],
 )
 

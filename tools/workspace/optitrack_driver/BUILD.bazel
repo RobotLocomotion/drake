@@ -8,7 +8,6 @@ load(
     "install_files",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("@python//:version.bzl", "PY_SITE_PACKAGES_RELPATH")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -44,7 +43,7 @@ install(
     workspace = CMAKE_PACKAGE,
     targets = OPTITRACK_TARGETS,
     java_strip_prefix = ["**/"],
-    py_dest = PY_SITE_PACKAGES_RELPATH + "/optitrack",
+    py_dest = "@PYTHON_SITE_PACKAGES@/optitrack",
     py_strip_prefix = ["**/"],
     hdr_dest = "include",
     guess_hdrs = "PACKAGE",

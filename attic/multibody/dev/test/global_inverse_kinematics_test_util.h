@@ -9,6 +9,8 @@ namespace drake {
 namespace multibody {
 std::unique_ptr<RigidBodyTree<double>> ConstructKuka();
 
+std::unique_ptr<RigidBodyTree<double>> ConstructSingleBody();
+
 class KukaTest : public ::testing::Test {
  public:
   KukaTest();

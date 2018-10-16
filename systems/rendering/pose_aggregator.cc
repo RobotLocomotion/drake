@@ -185,7 +185,8 @@ PoseAggregator<T>::DeclareInput(const InputRecord& record) {
     case InputRecord::kSingleVelocity:
       return this->DeclareVectorInputPort(FrameVelocity<T>());
     case InputRecord::kBundle:
-      return this->DeclareAbstractInputPort();
+      return this->DeclareAbstractInputPort(
+          kUseDefaultName, Value<PoseBundle<T>>());
     case InputRecord::kUnknown:
       break;
   }
