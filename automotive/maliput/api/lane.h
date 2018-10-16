@@ -114,13 +114,14 @@ class Lane {
   /// same quantity as the i-th derviative of another variable.
   ///
   /// Instantiated templates for the following kinds of T's are provided:
+  ///
   /// - double
   /// - drake::AutoDiffXd
   /// - drake::symbolic::Expression
   ///
   /// They are already available to link against in the containing library.
   ///
-  /// Note: This is an experimental API that is not necessarily implemented in
+  /// @note This is an experimental API that is not necessarily implemented in
   /// all back-end implementations.
 
   // TODO(jadecastro): Apply this implementation in all the subclasses of
@@ -160,13 +161,14 @@ class Lane {
   /// geo_pos's partial derivatives.
   ///
   /// Instantiated templates for the following kinds of T's are provided:
+  ///
   /// - double
   /// - drake::AutoDiffXd
   /// - drake::symbolic::Expression
   ///
   /// They are already available to link against in the containing library.
   ///
-  /// Note: This is an experimental API that is not necessarily implemented in
+  /// @note This is an experimental API that is not necessarily implemented in
   /// all back-end implementations.
   //
   // TODO(jadecastro): Consider having the client enforce the geo_pos AutoDiffXd

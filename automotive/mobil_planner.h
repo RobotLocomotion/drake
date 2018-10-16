@@ -43,14 +43,16 @@ namespace automotive {
 /// provided RoadGeometry and the direction of travel.
 ///
 /// Assumptions:
-///   1) The planner supports only symmetric lane change rules, without giving
-///      preference to lanes to the left or right.
-///   2) The planner assumes all traffic behaves according to the Intelligent
-///      Driver Model (IDM).
-///   3) All neighboring lanes are confluent (i.e. with_s points in the same
-///      direction).
+///
+/// 1. The planner supports only symmetric lane change rules, without giving
+///    preference to lanes to the left or right.
+/// 2. The planner assumes all traffic behaves according to the Intelligent
+///    Driver Model (IDM).
+/// 3. All neighboring lanes are confluent (i.e. with_s points in the same
+///    direction).
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 ///
 /// They are already available to link against in the containing library.

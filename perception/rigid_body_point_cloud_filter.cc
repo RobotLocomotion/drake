@@ -11,7 +11,9 @@ RigidBodyPointCloudFilter::RigidBodyPointCloudFilter(
     RigidBodyTree<double>* tree, double collision_threshold)
     : tree_(tree), collision_threshold_(collision_threshold) {
   // Create input port for point cloud.
-  point_cloud_input_port_index_ = DeclareAbstractInputPort().get_index();
+  point_cloud_input_port_index_ = DeclareAbstractInputPort(
+      systems::kUseDefaultName,
+      systems::Value<PointCloud>{}).get_index();
 
   // Create input port for tree positions and velocities.
   state_input_port_index_ =

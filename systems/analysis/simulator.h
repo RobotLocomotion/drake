@@ -37,18 +37,19 @@ namespace systems {
 /// contact.
 ///
 /// Given a current Context, we expect a System to provide us with
+///
 /// - derivatives for the continuous differential equations that already satisfy
-/// the differentiated form of the constraints (typically, acceleration
-/// constraints),
+///   the differentiated form of the constraints (typically, acceleration
+///   constraints),
 /// - a projection method for least-squares correction of violated higher-level
-/// constraints (position and velocity level),
+///   constraints (position and velocity level),
 /// - a time-of-next-update method that can be used to adjust the integrator
-/// step size in preparation for a discrete update,
+///   step size in preparation for a discrete update,
 /// - a method that can update discrete variables when their update time is
-/// reached,
+///   reached,
 /// - witness (guard) functions for event isolation,
 /// - event handlers (reset functions) for making appropriate changes to state
-/// and mode variables when an event has been isolated.
+///   and mode variables when an event has been isolated.
 ///
 /// The continuous parts of the trajectory are advanced using a numerical
 /// integrator. Different integrators have different properties; you can choose
@@ -56,34 +57,20 @@ namespace systems {
 /// which is adequate for most systems.
 ///
 /// <h2>Simulation mechanics for hybrid discrete/continuous systems</h2>
-/// During a call to StepTo(), Simulator first collects any "per step" Event
-/// (see Event::TriggerType::kPerStep) and then performs the following loop
-/// until `boundary_time` is reached:
-/// 1. Calls any event handlers allowed to update the system state without
-///    restriction (i.e., due to an UnrestrictedUpdateEvent),
-/// 2. Calls any event handlers allowed to update only discrete state
-///    variables (i.e., due to a DiscreteUpdateEvent),
-/// 3. Integrates the smooth system (the ODE or DAE) forward in time by calling
-///    System::CalcTimeDerivatives() (*only called if the system has
-///    declared continuous state*),
-/// 4. Performs post-step stabilization for DAEs (if desired),
-/// 5. Calls any event handlers that are unable to alter any state data
-///    (i.e., due to a PublishEvent).
-/// Any state-updating events triggered before the loop terminates -- witness
-/// function triggered events (see Event::TriggerType::kWitness) and time
-/// triggered events (see Event::TriggerType::kTimed and
-/// Event::TriggerType::kPeriodic) -- may result in additional unrestricted
-/// updates, discrete state updates, or both before StepTo() returns control
-/// to the caller.
-///
-/// Summarizing, these steps update the hybrid system "mode" first (through
-/// instantaneous changes to abstract, discrete, and continuous variables),
-/// any discrete variables next, and time and continuous variables last.
+/// StepTo(), Simulator performs the following steps iteratively:
+/// 1. Updates state variables without restriction (via an
+///    UnrestrictedUpdateEvent),
+/// 2. Updates discrete state variables (via a DiscreteUpdateEvent),
+/// 3. Updates continuous variables, meaning integrating the smooth system (the
+///    ODE or DAE) forward in time by calling System::CalcTimeDerivatives()
+///    (*only called if the system has declared some continuous state*),
+/// 4. Generates any output (via a PublishEvent).
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided and
 /// available to link against in the containing library:
+///
 /// - double
 /// - AutoDiffXd
 ///

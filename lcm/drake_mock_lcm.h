@@ -42,9 +42,10 @@ class DrakeMockLcm : public DrakeLcmInterface {
   /**
    * Obtains the most recently "published" message on a particular channel.
    * This method automatically decodes the message into an LCM message whose
-   * type is specified by the template type. Throws a std::runtime_error
-   * exception if no LCM message was published on the provided channel or if the
-   * message failed to be decoded by the provided LCM message type.
+   * type is specified by the template type.
+   * @throws std::runtime_error if no LCM message was published on the provided
+   * channel or if the message failed to be decoded by the provided LCM message
+   * type.
    *
    * @tparam T The LCM message type.
    *

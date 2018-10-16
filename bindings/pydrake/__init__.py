@@ -1,3 +1,6 @@
+"""Python bindings for Drake.
+"""
+
 from __future__ import absolute_import, division, print_function
 from os.path import abspath
 from platform import python_version_tuple

@@ -6,6 +6,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/bindings/pydrake/util/deprecation_pybind.h"
@@ -244,6 +245,7 @@ struct Impl {
   static void DoDefinitions(py::module m) {
     // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
     using namespace drake::systems;
+    constexpr auto& doc = pydrake_doc.drake.systems;
 
     // TODO(eric.cousineau): Resolve `str_py` workaround.
     auto str_py = py::eval("str");
@@ -251,25 +253,32 @@ struct Impl {
     // TODO(eric.cousineau): Show constructor, but somehow make sure `pybind11`
     // knows this is abstract?
     DefineTemplateClassWithDefault<System<T>, PySystem>(
-        m, "System", GetPyParam<T>())
-        .def("set_name", &System<T>::set_name)
+        m, "System", GetPyParam<T>(), doc.SystemBase.doc)
+        .def("set_name", &System<T>::set_name, doc.SystemBase.set_name.doc)
         // Topology.
-        .def("get_num_input_ports", &System<T>::get_num_input_ports)
+        .def("get_num_input_ports", &System<T>::get_num_input_ports,
+          doc.SystemBase.get_num_input_ports.doc)
         .def("get_input_port", &System<T>::get_input_port,
-             py_reference_internal, py::arg("port_index"))
+             py_reference_internal, py::arg("port_index"),
+             doc.System.get_input_port.doc)
         .def("GetInputPort", &System<T>::GetInputPort,
-             py_reference_internal, py::arg("port_name"))
-        .def("get_num_output_ports", &System<T>::get_num_output_ports)
+             py_reference_internal, py::arg("port_name"),
+            doc.System.GetInputPort.doc)
+        .def("get_num_output_ports", &System<T>::get_num_output_ports,
+          doc.SystemBase.get_num_output_ports.doc)
         .def("get_output_port", &System<T>::get_output_port,
-             py_reference_internal, py::arg("port_index"))
+             py_reference_internal, py::arg("port_index"),
+          doc.System.get_output_port.doc)
         .def("GetOutputPort", &System<T>::GetOutputPort,
-             py_reference_internal, py::arg("port_name"))
+             py_reference_internal, py::arg("port_name"),
+          doc.System.GetOutputPort.doc)
         .def("_DeclareInputPort",
              overload_cast_explicit<const InputPort<T>&, std::string,
                  PortDataType, int, optional<RandomDistribution>>
                  (&PySystem::DeclareInputPort),
              py_reference_internal, py::arg("name"), py::arg("type"),
-             py::arg("size"), py::arg("random_type") = nullopt)
+             py::arg("size"), py::arg("random_type") = nullopt,
+          doc.System.DeclareInputPort.doc)
         .def("_DeclareInputPort",
              overload_cast_explicit<const InputPort<T>&, PortDataType, int,
                  optional<RandomDistribution>>(&PySystem::DeclareInputPort),
@@ -278,22 +287,26 @@ struct Impl {
         .def("_DeclareAbstractInputPort",
              overload_cast_explicit<const InputPort<T>&, std::string>(
                  &PySystem::DeclareAbstractInputPort),
-             py_reference_internal, py::arg("name"))
+             py_reference_internal, py::arg("name"),
+          doc.System.DeclareAbstractInputPort.doc)
         // - Feedthrough.
-        .def("HasAnyDirectFeedthrough", &System<T>::HasAnyDirectFeedthrough)
+        .def("HasAnyDirectFeedthrough", &System<T>::HasAnyDirectFeedthrough,
+             doc.System.HasAnyDirectFeedthrough.doc)
         .def("HasDirectFeedthrough",
              overload_cast_explicit<bool, int>(
                  &System<T>::HasDirectFeedthrough),
-             py::arg("output_port"))
+             py::arg("output_port"), doc.System.HasDirectFeedthrough.doc)
         .def("HasDirectFeedthrough",
              overload_cast_explicit<bool, int, int>(
                  &System<T>::HasDirectFeedthrough),
-             py::arg("input_port"), py::arg("output_port"))
+             py::arg("input_port"), py::arg("output_port"),
+             doc.System.HasDirectFeedthrough.doc_2)
         // Context.
-        .def("CreateDefaultContext", &System<T>::CreateDefaultContext)
+        .def("CreateDefaultContext", &System<T>::CreateDefaultContext,
+            doc.System.CreateDefaultContext.doc)
         .def("AllocateOutput",
              overload_cast_explicit<unique_ptr<SystemOutput<T>>>(
-                 &System<T>::AllocateOutput))
+                 &System<T>::AllocateOutput), doc.System.AllocateOutput.doc)
         // TODO(sherm1) Deprecate this next signature (context unused).
         .def("AllocateOutput",
              [](const System<T>* self, const Context<T>&) {
@@ -301,61 +314,66 @@ struct Impl {
                   "`System.AllocateOutput(self, Context)` is deprecated. "
                   "Please use `System.AllocateOutput(self)` instead.");
                return self->AllocateOutput();
-             }, py::arg("context"))
+             }, py::arg("context"), doc.System.AllocateOutput.doc)
         .def(
             "EvalVectorInput",
             [](const System<T>* self, const Context<T>& arg1, int arg2) {
               return self->EvalVectorInput(arg1, arg2);
             }, py_reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 2>())
+            py::keep_alive<0, 2>(), doc.System.EvalVectorInput.doc)
         .def(
             "EvalAbstractInput",
             [](const System<T>* self, const Context<T>& arg1, int arg2) {
               return self->EvalAbstractInput(arg1, arg2);
             }, py_reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 2>())
+            py::keep_alive<0, 2>(), doc.SystemBase.EvalAbstractInput.doc)
         // Computation.
-        .def("CalcOutput", &System<T>::CalcOutput)
-        .def("CalcTimeDerivatives", &System<T>::CalcTimeDerivatives)
+        .def("CalcOutput", &System<T>::CalcOutput, doc.System.CalcOutput.doc)
+        .def("CalcTimeDerivatives", &System<T>::CalcTimeDerivatives,
+            doc.System.CalcTimeDerivatives.doc)
         // Sugar.
         .def(
             "GetGraphvizString",
-            [str_py](const System<T>* self) {
+            [str_py](const System<T>* self, int max_depth) {
               // @note This is a workaround; for some reason,
               // casting this using `py::str` does not work, but directly
               // calling the Python function (`str_py`) does.
-              return str_py(self->GetGraphvizString());
-            })
+              return str_py(self->GetGraphvizString(max_depth));
+            }, doc.System.GetGraphvizString.doc,
+            py::arg("max_depth") = std::numeric_limits<int>::max() )
         // Events.
         .def("Publish",
              overload_cast_explicit<void, const Context<T>&>(
-                 &System<T>::Publish))
+                 &System<T>::Publish), doc.System.Publish.doc)
         // Scalar types.
         .def("ToAutoDiffXd", [](const System<T>& self) {
            return self.ToAutoDiffXd();
-        })
-        .def("ToAutoDiffXdMaybe", &System<T>::ToAutoDiffXdMaybe)
+        }, doc.System.ToAutoDiffXd.doc)
+        .def("ToAutoDiffXdMaybe", &System<T>::ToAutoDiffXdMaybe,
+             doc.System.ToAutoDiffXdMaybe.doc)
         .def("ToSymbolic", [](const System<T>& self) {
            return self.ToSymbolic();
-        })
-        .def("ToSymbolicMaybe", &System<T>::ToSymbolicMaybe);
+        }, doc.System.ToSymbolic.doc)
+        .def("ToSymbolicMaybe", &System<T>::ToSymbolicMaybe,
+             doc.System.ToSymbolicMaybe.doc);
 
     using AllocCallback = typename LeafOutputPort<T>::AllocCallback;
     using CalcCallback = typename LeafOutputPort<T>::CalcCallback;
     using CalcVectorCallback = typename LeafOutputPort<T>::CalcVectorCallback;
 
     DefineTemplateClassWithDefault<LeafSystem<T>, PyLeafSystem, System<T>>(
-      m, "LeafSystem", GetPyParam<T>())
-      .def(py::init<>())
+      m, "LeafSystem", GetPyParam<T>(), doc.LeafSystem.doc)
+      .def(py::init<>(), doc.LeafSystem.ctor.doc_3)
       // TODO(eric.cousineau): It'd be nice if we did not need the user to
       // propagate scalar conversion information. Ideally, if we could
       // intercept `self` at this point, when constructing `PyLeafSystem` for
       // extending Python, we could figure out what user-defined template is
       // being used, and pass that as the converter. However, that requires an
       // old-style `py::init`, which is deprecated in Python...
-      .def(py::init<SystemScalarConverter>(), py::arg("converter"))
+      .def(py::init<SystemScalarConverter>(), py::arg("converter"),
+        doc.LeafSystem.ctor.doc_4)
       .def("_DeclareAbstractOutputPort",
           WrapCallbacks([](PyLeafSystem* self, const std::string& name,
                            AllocCallback arg1, CalcCallback arg2) -> auto& {
@@ -368,7 +386,8 @@ struct Impl {
                               CalcCallback arg2) -> auto& {
                return self->DeclareAbstractOutputPort(arg1, arg2);
              }),
-             py_reference_internal, py::arg("alloc"), py::arg("calc"))
+             py_reference_internal, py::arg("alloc"), py::arg("calc"),
+             doc.LeafSystem.DeclareAbstractOutputPort.doc)
         .def("_DeclareVectorOutputPort",
              WrapCallbacks([](PyLeafSystem* self, const std::string& name,
                               const BasicVector<T>& arg1,
@@ -382,49 +401,60 @@ struct Impl {
                            CalcVectorCallback arg2) -> auto& {
                 return self->DeclareVectorOutputPort(arg1, arg2);
               }),
-          py_reference_internal)
+          py_reference_internal, doc.LeafSystem.DeclareVectorOutputPort.doc)
       .def("_DeclarePeriodicPublish", &PyLeafSystem::DeclarePeriodicPublish,
-           py::arg("period_sec"), py::arg("offset_sec") = 0.)
-      .def("_DoPublish", &LeafSystemPublic::DoPublish)
+           py::arg("period_sec"), py::arg("offset_sec") = 0.,
+           doc.LeafSystem.DeclarePeriodicPublish.doc)
+      .def("_DoPublish", &LeafSystemPublic::DoPublish,
+           doc.LeafSystem.DoPublish.doc)
       // System attributes.
       .def("_DoHasDirectFeedthrough",
-           &LeafSystemPublic::DoHasDirectFeedthrough)
+           &LeafSystemPublic::DoHasDirectFeedthrough,
+           doc.LeafSystem.DoHasDirectFeedthrough.doc)
       // Continuous state.
       .def("_DeclareContinuousState",
            py::overload_cast<int>(&LeafSystemPublic::DeclareContinuousState),
-           py::arg("num_state_variables"))
+           py::arg("num_state_variables"),
+           doc.LeafSystem.DeclareContinuousState.doc)
       .def("_DeclareContinuousState",
            py::overload_cast<int, int, int>(
               &LeafSystemPublic::DeclareContinuousState),
-           py::arg("num_q"), py::arg("num_v"), py::arg("num_z"))
+           py::arg("num_q"), py::arg("num_v"), py::arg("num_z"),
+           doc.LeafSystem.DeclareContinuousState.doc_2)
       .def("_DeclareContinuousState",
            py::overload_cast<const BasicVector<T>&>(
               &LeafSystemPublic::DeclareContinuousState),
-           py::arg("model_vector"))
+           py::arg("model_vector"),
+           doc.LeafSystem.DeclareContinuousState.doc_3)
       // TODO(eric.cousineau): Ideally the downstream class of `BasicVector<T>`
       // should expose `num_q`, `num_v`, and `num_z`?
       .def("_DeclareContinuousState",
            py::overload_cast<const BasicVector<T>&, int, int, int>(
               &LeafSystemPublic::DeclareContinuousState),
            py::arg("model_vector"),
-           py::arg("num_q"), py::arg("num_v"), py::arg("num_z"))
+           py::arg("num_q"), py::arg("num_v"), py::arg("num_z"),
+           doc.LeafSystem.DeclareContinuousState.doc_4)
       // Discrete state.
       // TODO(eric.cousineau): Should there be a `BasicVector<>` overload?
-      .def("_DeclareDiscreteState", &LeafSystemPublic::DeclareDiscreteState)
+      .def("_DeclareDiscreteState", &LeafSystemPublic::DeclareDiscreteState,
+          doc.LeafSystem.DeclareDiscreteState.doc)
       .def("_DeclarePeriodicDiscreteUpdate",
            &LeafSystemPublic::DeclarePeriodicDiscreteUpdate,
-           py::arg("period_sec"), py::arg("offset_sec") = 0.)
+           py::arg("period_sec"), py::arg("offset_sec") = 0.,
+           doc.LeafSystem.DeclarePeriodicDiscreteUpdate.doc)
       .def("_DoCalcTimeDerivatives", &LeafSystemPublic::DoCalcTimeDerivatives)
       .def("_DoCalcDiscreteVariableUpdates",
-           &LeafSystemPublic::DoCalcDiscreteVariableUpdates)
+           &LeafSystemPublic::DoCalcDiscreteVariableUpdates,
+          doc.LeafSystem.DoCalcDiscreteVariableUpdates.doc)
       // Abstract state.
       .def("_DeclareAbstractState",
            &LeafSystemPublic::DeclareAbstractState,
            // Keep alive, ownership: `AbstractValue` keeps `self` alive.
-           py::keep_alive<2, 1>());
+           py::keep_alive<2, 1>(),
+           doc.LeafSystem.DeclareAbstractState.doc);
 
     DefineTemplateClassWithDefault<Diagram<T>, System<T>>(
-        m, "Diagram", GetPyParam<T>())
+        m, "Diagram", GetPyParam<T>(), doc.Diagram.doc)
       .def("GetMutableSubsystemState",
           [](Diagram<T>* self, const System<T>& arg1, Context<T>* arg2)
           -> auto& {
@@ -432,14 +462,14 @@ struct Impl {
             return self->GetMutableSubsystemState(arg1, arg2);
           }, py_reference,
           // Keep alive, ownership: `return` keeps `Context` alive.
-          py::keep_alive<0, 3>())
+          py::keep_alive<0, 3>(), doc.Diagram.GetMutableSubsystemState.doc)
       .def("GetMutableSubsystemContext",
           [](Diagram<T>* self, const System<T>& arg1, Context<T>* arg2)
           -> auto&& {
             return self->GetMutableSubsystemContext(arg1, arg2);
           }, py_reference,
           // Keep alive, ownership: `return` keeps `Context` alive.
-          py::keep_alive<0, 3>());
+          py::keep_alive<0, 3>(), doc.Diagram.GetMutableSubsystemContext.doc);
 
     // N.B. This will effectively allow derived classes of `VectorSystem` to
     // override `LeafSystem` methods, disrespecting `final`-ity.
@@ -447,10 +477,10 @@ struct Impl {
     // we're already abusing Python and C++ enough.
     DefineTemplateClassWithDefault<
         VectorSystem<T>, PyVectorSystem, LeafSystem<T>>(
-        m, "VectorSystem", GetPyParam<T>())
+        m, "VectorSystem", GetPyParam<T>(), doc.VectorSystem.doc)
         .def(py::init([](int inputs, int outputs) {
           return new PyVectorSystem(inputs, outputs);
-        }));
+        }), doc.VectorSystem.ctor.doc);
     // TODO(eric.cousineau): Bind virtual methods once we provide a function
     // wrapper to convert `Map<Derived>*` arguments.
     // N.B. This could be mitigated by using `EigenPtr` in public interfaces in

@@ -45,6 +45,7 @@
 /// @endcode
 ///
 /// Checklist for reviewing a `hash_append` implementation:
+///
 /// - The function cites `@ref hash_append` in its Doxygen comment.
 /// - The function is marked `noexcept`.
 ///

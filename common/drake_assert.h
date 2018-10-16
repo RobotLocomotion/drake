@@ -20,6 +20,7 @@
 /// C++ exception that causes a python SystemExit exception.
 ///
 /// Assertions are enabled or disabled using the following pre-processor macros:
+///
 /// - If @p DRAKE_ENABLE_ASSERTS is defined, then @p DRAKE_ASSERT is armed.
 /// - If @p DRAKE_DISABLE_ASSERTS is defined, then @p DRAKE_ASSERT is disarmed.
 /// - If both macros are defined, then it is a compile-time error.

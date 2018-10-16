@@ -109,12 +109,31 @@ GTEST_TEST(ContactResultToLcmSystem, NonEmptyMultibodyPlantEmptyContact) {
 }
 
 // Confirm that the system can be transmogrified to other supported scalars.
-GTEST_TEST(ContractResultToLcmSystem, Transmogrify) {
+GTEST_TEST(ContactResultToLcmSystem, Transmogrify) {
   MultibodyPlant<double> plant;
   plant.Finalize();
   ContactResultsToLcmSystem<double> lcm_system(plant);
 
   ContactResultsToLcmSystem<AutoDiffXd> lcm_system_ad(lcm_system);
+}
+
+GTEST_TEST(ConnectContactResultsToDrakeVisualizer, BasicTest) {
+  systems::DiagramBuilder<double> builder;
+
+  // Make a trivial plant with at least one body and a discrete time step.
+  auto plant = builder.AddSystem<MultibodyPlant>(0.001);
+  plant->AddRigidBody("link", SpatialInertia<double>());
+  plant->Finalize();
+
+  auto publisher = ConnectContactResultsToDrakeVisualizer(&builder, *plant);
+
+  // Confirm that we get a non-null result.
+  EXPECT_NE(publisher, nullptr);
+
+  // Check that the publishing event was set as documented.
+  auto periodic_events = publisher->GetPeriodicEvents();
+  EXPECT_EQ(periodic_events.size(), 1);
+  EXPECT_EQ(periodic_events.begin()->first.period_sec(), 1/60.0);
 }
 
 }  // namespace

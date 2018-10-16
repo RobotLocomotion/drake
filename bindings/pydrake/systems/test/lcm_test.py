@@ -8,7 +8,8 @@ import numpy as np
 from robotlocomotion import quaternion_t
 
 from pydrake.lcm import DrakeMockLcm
-from pydrake.systems.framework import AbstractValue
+from pydrake.systems.framework import AbstractValue, DiagramBuilder
+from pydrake.systems.primitives import ConstantVectorSource
 
 
 # TODO(eric.cousieau): Move this to more generic code when another piece of
@@ -79,3 +80,11 @@ class TestSystemsLcm(unittest.TestCase):
         raw = lcm.get_last_published_message("TEST_CHANNEL")
         value = quaternion_t.decode(raw)
         self.assert_lcm_equal(value, model)
+
+    def test_connect_lcm_scope(self):
+        builder = DiagramBuilder()
+        source = builder.AddSystem(ConstantVectorSource(np.zeros(4)))
+        mut.ConnectLcmScope(src=source.get_output_port(0),
+                            channel="TEST_CHANNEL",
+                            builder=builder,
+                            lcm=DrakeMockLcm())

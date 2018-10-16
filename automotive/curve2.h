@@ -17,6 +17,7 @@ namespace automotive {
 /// list of waypoints, it traces a path between them.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - drake::AutoDiffXd
 ///
@@ -37,7 +38,7 @@ class Curve2 {
   typedef Eigen::Matrix<T, 2, 1, Eigen::DontAlign> Point2T;
 
   /// Constructor that traces through the given @p waypoints in order.
-  /// Throws an error if @p waypoints.size() == 1.
+  /// @throws std::exception if @p waypoints.size() == 1.
   explicit Curve2(const std::vector<Point2>& waypoints)
       : waypoints_(waypoints), path_length_(GetLength(waypoints_)) {
     // TODO(jwnimmer-tri) We should reject duplicate adjacent
@@ -62,6 +63,7 @@ class Curve2 {
   /// respect to @p path_distance.
   ///
   /// The @p path_distance is clipped to the ends of the curve:
+  ///
   /// - A negative @p path_distance is interpreted as a @p path_distance
   ///   of zero.
   /// - A @p path_distance that exceeds the @p path_length() of the curve

@@ -50,8 +50,8 @@ struct RoadCharacteristics {
 /// @param road_characteristics The common geometrical aspects to comply with
 /// when building the api::RoadGeometry.
 /// @return The built api::RoadGeometry.
-/// @throw std::runtime_error When the given file is not a valid RNDF.
-/// @throw std::runtime_error When the given RNDF doesn't have at least
+/// @throws std::runtime_error When the given file is not a valid RNDF.
+/// @throws std::runtime_error When the given RNDF doesn't have at least
 /// a single lane segment with one or more waypoints. RNDFs containing
 /// only zones are not supported.
 std::unique_ptr<const api::RoadGeometry> LoadFile(

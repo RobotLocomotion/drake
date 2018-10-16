@@ -556,7 +556,7 @@ class MathematicalProgram {
    * @pre `decision_variables` should not intersect with the existing variables
    * or indeterminates in the optimization program.
    * @pre Each entry in `decision_variables` should not be a dummy variable.
-   * @throw runtime_error if the preconditions are not satisfied.
+   * @throws std::runtime_error if the preconditions are not satisfied.
    */
   void AddDecisionVariables(
       const Eigen::Ref<const VectorXDecisionVariable>& decision_variables);
@@ -938,8 +938,8 @@ class MathematicalProgram {
    * Add a quadratic cost term of the form 0.5*x'*Q*x + b'*x + c.
    * Notice that in the optimization program, the constant term `c` in the cost
    * is ignored.
-   * @param e A quadratic symbolic expression. Throws a runtime error if the
-   * expression is not quadratic.
+   * @param e A quadratic symbolic expression.
+   * @throws std::runtime error if the expression is not quadratic.
    * @return The newly added cost together with the bound variables.
    */
   Binding<QuadraticCost> AddQuadraticCost(const symbolic::Expression& e);
@@ -1038,7 +1038,8 @@ class MathematicalProgram {
 
   /**
    * Adds one row of constraint lb <= e <= ub where @p e is a symbolic
-   * expression. Throws an exception if
+   * expression.
+   * @throws std::exception if
    *  1. <tt>lb <= e <= ub</tt> is a trivial constraint such as 1 <= 2 <= 3.
    *  2. <tt>lb <= e <= ub</tt> is unsatisfiable such as 1 <= -5 <= 3
    *
@@ -1218,7 +1219,8 @@ class MathematicalProgram {
 
   /**
    * Adds one row of linear constraint lb <= e <= ub where @p e is a symbolic
-   * expression. Throws an exception if
+   * expression.
+   * @throws std::exception if
    *  1. @p e is a non-linear expression.
    *  2. <tt>lb <= e <= ub</tt> is a trivial constraint such as 1 <= 2 <= 3.
    *  3. <tt>lb <= e <= ub</tt> is unsatisfiable such as 1 <= -5 <= 3
@@ -1320,7 +1322,8 @@ class MathematicalProgram {
 
   /**
    * Adds one row of linear constraint e = b where @p e is a symbolic
-   * expression. Throws an exception if
+   * expression.
+   * @throws std::exception if
    *  1. @p e is a non-linear expression.
    *  2. @p e is a constant.
    *
@@ -1347,7 +1350,8 @@ class MathematicalProgram {
 
   /**
    * Adds linear equality constraints \f$ v = b \f$, where \p v(i) is a symbolic
-   * linear expression. Throws an exception if
+   * linear expression.
+   * @throws std::exception if
    * 1. @p v(i) is a non-linear expression.
    * 2. @p v(i) is a constant.
    * @tparam DerivedV An Eigen Matrix type of Expression. A column vector.
@@ -1655,7 +1659,7 @@ class MathematicalProgram {
    *    Also the quadratic expression has to be convex, namely Q is a
    *    positive semidefinite matrix, and the quadratic expression needs
    *    to be non-negative for any x.
-   * Throws a runtime_error if the preconditions are not satisfied.
+   * @throws std::runtime_error if the preconditions are not satisfied.
    *
    * Notice this constraint is equivalent to the vector [z;y] is within a
    * Lorentz cone, where
@@ -1791,7 +1795,7 @@ class MathematicalProgram {
    *    Also the quadratic expression has to be convex, namely Q is a
    *    positive semidefinite matrix, and the quadratic expression needs
    *    to be non-negative for any x.
-   * Throws a runtime_error if the preconditions are not satisfied.
+   * @throws std::runtime_error if the preconditions are not satisfied.
    */
   Binding<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
       const symbolic::Expression& linear_expression1,
@@ -1972,8 +1976,9 @@ class MathematicalProgram {
 
   /**
    * Adds a positive semidefinite constraint on a symmetric matrix.
-   * In Debug mode, @throws error if
-   * @p symmetric_matrix_var is not symmetric.
+   *
+   * @throws std::runtime_error in Debug mode if @p symmetric_matrix_var is not
+   * symmetric.
    * @param symmetric_matrix_var A symmetric MatrixDecisionVariable object.
    */
   Binding<PositiveSemidefiniteConstraint> AddPositiveSemidefiniteConstraint(
@@ -2052,14 +2057,48 @@ class MathematicalProgram {
    * Internally we will create a matrix Y as slack variables, such that Y(i, j)
    * represents the absolute value |X(i, j)| ∀ j ≠ i. The diagonal entries
    * Y(i, i) = X(i, i)
-   * @param X The symmetric matrix X in the documentation above. We
-   * will assume that @p X is already symmetric. It is the user's responsibility
-   * to guarantee the symmetry.
+   * The users can refer to "DSOS and SDSOS Optimization: More Tractable
+   * Alternatives to Sum of Squares and Semidefinite Optimization" by Amir Ali
+   * Ahmadi and Anirudha Majumdar, with arXiv link
+   * https://arxiv.org/abs/1706.02586
+   * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
+   * X.
    * @return Y The slack variable. Y(i, j) represents |X(i, j)| ∀ j ≠ i, with
    * the constraint Y(i, j) >= X(i, j) and Y(i, j) >= -X(i, j). Y is a symmetric
    * matrix. The diagonal entries Y(i, i) = X(i, i)
    */
   MatrixX<symbolic::Expression> AddPositiveDiagonallyDominantMatrixConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
+
+  /**
+   * Adds the constraint that a symmetric matrix is scaled diagonally dominant
+   * (sdd). A matrix X is sdd if there exists a diagonal matrix D, such that
+   * the product DXD is diagonally dominant with non-negative diagonal entries,
+   * namely
+   * d(i)X(i, i) ≥ ∑ⱼ |d(j)X(i, j)| ∀ j ≠ i
+   * where d(i) = D(i, i).
+   * X being sdd is equivalent to the existence of symmetric matrices Mⁱʲ∈ ℝⁿˣⁿ
+   * i < j, such that all entries in Mⁱʲ are 0, except Mⁱʲ(i, i), Mⁱʲ(i, j),
+   * Mⁱʲ(j, j). (Mⁱʲ(i, i), Mⁱʲ(j, j), Mⁱʲ(i, j)) is in the rotated
+   * Lorentz cone, and X = ∑ᵢⱼ Mⁱʲ
+   * The users can refer to "DSOS and SDSOS Optimization: More Tractable
+   * Alternatives to Sum of Squares and Semidefinite Optimization" by Amir Ali
+   * Ahmadi and Anirudha Majumdar, with arXiv link
+   * https://arxiv.org/abs/1706.02586.
+   * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
+   * X.
+   * @pre X(i, j) should be a linear expression of decision variables.
+   * @return M A vector of vectors of 2 x 2 symmetric matrices M. For i < j,
+   * M[i][j] is
+   * <pre>
+   * [Mⁱʲ(i, i), Mⁱʲ(i, j)]
+   * [Mⁱʲ(i, j), Mⁱʲ(j, j)].
+   * </pre>
+   * Note that M[i][j](0, 1) = Mⁱʲ(i, j) = (X(i, j) + X(j, i)) / 2
+   * for i >= j, M[i][j] is the zero matrix.
+   */
+  std::vector<std::vector<Matrix2<symbolic::Expression>>>
+  AddScaledDiagonallyDominantMatrixConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
   /**
@@ -2124,7 +2163,7 @@ class MathematicalProgram {
   /**
    * Gets the initial guess for a single variable.
    * @pre @p decision_variable has been registered in the optimization program.
-   * @throw runtime error if the pre condition is not satisfied.
+   * @throws std::runtime_error if the pre condition is not satisfied.
    */
   double GetInitialGuess(const symbolic::Variable& decision_variable) const;
 
@@ -2132,7 +2171,7 @@ class MathematicalProgram {
    * Gets the initial guess for some variables.
    * @pre Each variable in @p decision_variable_mat has been registered in the
    * optimization program.
-   * @throw runtime error if the pre condition is not satisfied.
+   * @throws std::runtime_error if the pre condition is not satisfied.
    */
   template <typename Derived>
   typename std::enable_if<
@@ -2157,7 +2196,7 @@ class MathematicalProgram {
   /**
    * Sets the initial guess for a single variable @p decision_variable.
    * @pre decision_variable is a registered decision variable in the program.
-   * @throw a runtime error if precondition is not satisfied.
+   * @throws std::runtime_error if precondition is not satisfied.
    */
   void SetInitialGuess(const symbolic::Variable& decision_variable,
                        double variable_guess_value);
@@ -2500,7 +2539,7 @@ class MathematicalProgram {
   /**
    * Replaces the variables in an expression with the solutions to the
    * variables, returns the expression after substitution.
-   * @throw runtime error if some variables in the expression @p e are NOT
+   * @throws std::runtime_error if some variables in the expression @p e are NOT
    * decision variables or indeterminates in the optimization program.
    * @note If the expression @p e contains both decision variables and
    * indeterminates of the optimization program, then the decision variables
@@ -2512,8 +2551,8 @@ class MathematicalProgram {
   /**
    * Replaces the decision variables in a polynomial with the solutions to the
    * variables, returns the polynomial after substitution.
-   * @throw runtime error if some decision variables in the polynomial @p p are
-   * NOT decision variables in the optimization program.
+   * @throws std::runtime_error if some decision variables in the polynomial
+   * @p p are NOT decision variables in the optimization program.
    * @note If the polynomial @p p contains both decision variables and
    * indeterminates of the optimization program, then the decision variables
    * will be substituted by its solutions in double values, but not the
@@ -2527,7 +2566,8 @@ class MathematicalProgram {
    * @param binding A Binding whose variables are decision variables in this
    * program.
    * @param prog_var_vals The value of all the decision variables in this
-   * program. @throw a logic error if the size does not match.
+   * program.
+   * @throws std::logic_error if the size does not match.
    */
   template <typename C, typename DerivedX>
   typename std::enable_if<is_eigen_vector<DerivedX>::value,
@@ -2556,7 +2596,8 @@ class MathematicalProgram {
    * MathematicalProgram.
    *
    * @param prog_var_vals The value of all the decision variables in this
-   * program. @throw a logic error if the size does not match.
+   * program.
+   * @throws std::logic_error if the size does not match.
    **/
   void EvalVisualizationCallbacks(
       const Eigen::Ref<const Eigen::VectorXd>& prog_var_vals) const {

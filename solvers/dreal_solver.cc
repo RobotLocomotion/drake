@@ -501,7 +501,7 @@ symbolic::Formula ExtractLinearComplementarityConstraints(
 // Extracts generic constraints in @p prog into a symbolic formula. This is a
 // helper function used in DrealSolver::Solve.
 //
-// @throw std::logic_error if there is a generic-constraint which does not
+// @throws std::logic_error if there is a generic-constraint which does not
 // provide symbolic evaluation.
 symbolic::Formula ExtractGenericConstraints(const MathematicalProgram& prog) {
   return ExtractConstraints(prog.generic_constraints());

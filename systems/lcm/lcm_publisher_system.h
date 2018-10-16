@@ -33,6 +33,9 @@ namespace lcm {
  * interface in your program, you can let %LcmPublisherSystem allocate and
  * maintain a drake::lcm::DrakeLcm object internally.
  *
+ * @system{ LcmPublisherSystem,
+ *  @input_port{lcm_message}, }
+ *
  * @ingroup message_passing
  */
 class LcmPublisherSystem : public LeafSystem<double> {
@@ -98,6 +101,25 @@ class LcmPublisherSystem : public LeafSystem<double> {
   LcmPublisherSystem(const std::string& channel,
                      const LcmAndVectorBaseTranslator& translator,
                      drake::lcm::DrakeLcmInterface* lcm);
+
+  /**
+   * Constructor that passes a unique_ptr of the LcmAndVectorBaseTranslator,
+   * for the LcmPublisherSystem to own.
+   *
+   * @param[in] channel The LCM channel on which to publish.
+   *
+   * @param[in] translator The translator that converts between LCM message
+   * objects and drake::systems::VectorBase objects.
+   *
+   * @param lcm A pointer to the LCM subsystem to use, which must
+   * remain valid for the lifetime of this object. If null, a
+   * drake::lcm::DrakeLcm object is allocated and maintained internally, but
+   * see the note in the class comments.
+   */
+  LcmPublisherSystem(
+      const std::string& channel,
+      std::unique_ptr<const LcmAndVectorBaseTranslator> translator,
+      drake::lcm::DrakeLcmInterface* lcm);
 
   /**
    * Constructor that returns a publisher System that takes vector data on
@@ -200,6 +222,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
   // allocate and maintain a DrakeLcm object internally.
   LcmPublisherSystem(const std::string& channel,
                      const LcmAndVectorBaseTranslator* translator,
+                     std::unique_ptr<const LcmAndVectorBaseTranslator>
+                         owned_translator,
                      std::unique_ptr<SerializerInterface> serializer,
                      drake::lcm::DrakeLcmInterface* lcm);
 
@@ -218,6 +242,10 @@ class LcmPublisherSystem : public LeafSystem<double> {
   // Converts VectorBase objects into LCM message bytes.
   // Will be non-null iff our input port is vector-valued.
   const LcmAndVectorBaseTranslator* const translator_{};
+
+  // This will be non-null iff the unique_ptr constructor was called.
+  // Internal users should only use translator_.
+  std::unique_ptr<const LcmAndVectorBaseTranslator> const owned_translator_;
 
   // Converts Value<LcmMessage> objects into LCM message bytes.
   // Will be non-null iff our input port is abstract-valued.

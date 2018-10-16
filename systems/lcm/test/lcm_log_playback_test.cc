@@ -31,9 +31,8 @@ class DummySys : public LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummySys)
 
   DummySys() {
-    DeclareAbstractInputPort();
-    DeclarePerStepEvent<DiscreteUpdateEvent<double>>(
-        DiscreteUpdateEvent<double>(Event<double>::TriggerType::kPerStep));
+    DeclareAbstractInputPort("lcmt_drake_signal", Value<lcmt_drake_signal>());
+    DeclarePeriodicPublish(0.01 /* 100 Hz */, 0.0 /* no time offset */);
   }
 
   const std::vector<lcmt_drake_signal>& get_received_msgs() const {
@@ -50,11 +49,9 @@ class DummySys : public LeafSystem<double> {
 
  private:
   // A discrete update is used here so that time does not advance between
-  // the message being received by the LCM Subscriber System (that this system
-  // is connected to) and the Publish. One could also accomplish this goal by
-  // using DoPublish() with more aggressive event triggering than what kPerStep
-  // can provide.
-  void DoCalcDiscreteVariableUpdates(
+  // the message being received by the LCM Subscriber system (that this system
+  // is connected to) and the publish.
+  void DoPublish(
       const Context<double>& context,
       const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
       DiscreteValues<double>*) const override {

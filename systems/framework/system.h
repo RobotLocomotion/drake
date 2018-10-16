@@ -1170,7 +1170,8 @@ class System : public SystemBase {
 
   /// Checks that @p output is consistent with the number and size of output
   /// ports declared by the system.
-  /// @throw exception unless `output` is non-null and valid for this system.
+  /// @throws std::exception unless `output` is non-null and valid for this
+  /// system.
   void CheckValidOutput(const SystemOutput<T>* output) const {
     DRAKE_THROW_UNLESS(output != nullptr);
 
@@ -1193,7 +1194,7 @@ class System : public SystemBase {
   /// Checks that @p context is consistent for this System template. Supports
   /// any scalar type, but expects T by default.
   ///
-  /// @throw exception unless `context` is valid for this system.
+  /// @throws std::exception unless `context` is valid for this system.
   /// @tparam T1 the scalar type of the Context to check.
   // TODO(sherm1) This method needs to be unit tested.
   template <typename T1 = T>
@@ -1238,11 +1239,16 @@ class System : public SystemBase {
   /// Returns a Graphviz string describing this System.  To render the string,
   /// use the Graphviz tool, ``dot``.
   /// http://www.graphviz.org/Documentation/dotguide.pdf
-  std::string GetGraphvizString() const {
+  ///
+  /// @param max_depth Sets a limit to the depth of nested diagrams to
+  // visualize.  Set to zero to render a diagram as a single system block.
+  std::string GetGraphvizString(
+      int max_depth = std::numeric_limits<int>::max()) const {
+    DRAKE_DEMAND(max_depth >= 0);
     std::stringstream dot;
     dot << "digraph _" << this->GetGraphvizId() << " {" << std::endl;
     dot << "rankdir=LR" << std::endl;
-    GetGraphvizFragment(&dot);
+    GetGraphvizFragment(max_depth, &dot);
     dot << "}" << std::endl;
     return dot.str();
   }
@@ -1250,22 +1256,28 @@ class System : public SystemBase {
   /// Appends a Graphviz fragment to the @p dot stream.  The fragment must be
   /// valid Graphviz when wrapped in a `digraph` or `subgraph` stanza.  Does
   /// nothing by default.
-  virtual void GetGraphvizFragment(std::stringstream* dot) const {
-    unused(dot);
+  ///
+  /// @param max_depth Sets a limit to the depth of nested diagrams to
+  // visualize.  Set to zero to render a diagram as a single system block.
+  virtual void GetGraphvizFragment(int max_depth,
+                                   std::stringstream* dot) const {
+    unused(dot, max_depth);
   }
 
   /// Appends a fragment to the @p dot stream identifying the graphviz node
   /// representing @p port. Does nothing by default.
   virtual void GetGraphvizInputPortToken(const InputPort<T>& port,
+                                         int max_depth,
                                          std::stringstream* dot) const {
-    unused(port, dot);
+    unused(port, max_depth, dot);
   }
 
   /// Appends a fragment to the @p dot stream identifying the graphviz node
   /// representing @p port. Does nothing by default.
   virtual void GetGraphvizOutputPortToken(const OutputPort<T>& port,
+                                          int max_depth,
                                           std::stringstream* dot) const {
-    unused(port, dot);
+    unused(port, max_depth, dot);
   }
 
   /// Returns an opaque integer that uniquely identifies this system in the
@@ -1288,7 +1300,7 @@ class System : public SystemBase {
   /// Creates a deep copy of this System, transmogrified to use the autodiff
   /// scalar type, with a dynamic-sized vector of partial derivatives.  The
   /// result is never nullptr.
-  /// @throw exception if this System does not support autodiff
+  /// @throws std::exception if this System does not support autodiff
   ///
   /// See @ref system_scalar_conversion for detailed background and examples
   /// related to scalar-type conversion support.
@@ -1299,7 +1311,7 @@ class System : public SystemBase {
   /// Creates a deep copy of `from`, transmogrified to use the autodiff scalar
   /// type, with a dynamic-sized vector of partial derivatives.  The result is
   /// never nullptr.
-  /// @throw exception if `from` does not support autodiff
+  /// @throws std::exception if `from` does not support autodiff
   ///
   /// Usage: @code
   ///   MySystem<double> plant;
@@ -1344,7 +1356,7 @@ class System : public SystemBase {
 
   /// Creates a deep copy of this System, transmogrified to use the symbolic
   /// scalar type. The result is never nullptr.
-  /// @throw exception if this System does not support symbolic
+  /// @throws std::exception if this System does not support symbolic
   ///
   /// See @ref system_scalar_conversion for detailed background and examples
   /// related to scalar-type conversion support.
@@ -1354,7 +1366,7 @@ class System : public SystemBase {
 
   /// Creates a deep copy of `from`, transmogrified to use the symbolic scalar
   /// type. The result is never nullptr.
-  /// @throw exception if this System does not support symbolic
+  /// @throws std::exception if this System does not support symbolic
   ///
   /// Usage: @code
   ///   MySystem<double> plant;
@@ -1393,9 +1405,10 @@ class System : public SystemBase {
   //@{
 
   /// Fixes all of the input ports in @p target_context to their current values
-  /// in @p other_context, as evaluated by @p other_system. Throws an exception
-  /// unless `other_context` and `target_context` both have the same shape as
-  /// this System, and the `other_system`. Ignores disconnected inputs.
+  /// in @p other_context, as evaluated by @p other_system.
+  /// @throws std::exception unless `other_context` and `target_context` both
+  /// have the same shape as this System, and the `other_system`. Ignores
+  /// disconnected inputs.
   void FixInputPortsFrom(const System<double>& other_system,
                          const Context<double>& other_context,
                          Context<T>* target_context) const {

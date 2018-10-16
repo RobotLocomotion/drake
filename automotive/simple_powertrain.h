@@ -10,15 +10,18 @@ namespace automotive {
 /// to the road.
 ///
 /// Input:
-///  - A unitless scalar value representing the throttle input to the power
-///    system.
+///
+/// - A unitless scalar value representing the throttle input to the power
+///   system.
 ///
 /// Output:
-///  - The force transmitted from the vehicle to the road [N].
+///
+/// - The force transmitted from the vehicle to the road [N].
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression

@@ -33,7 +33,10 @@ BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
   DRAKE_DEMAND(scene_graph != nullptr);
   DRAKE_DEMAND(source_id_.is_valid());
 
-  geometry_query_port_ = this->DeclareAbstractInputPort().get_index();
+  const systems::Value<geometry::QueryObject<T>> query_object(
+      scene_graph->MakeQueryObject());
+  geometry_query_port_ = this->DeclareAbstractInputPort(
+      systems::kUseDefaultName, query_object).get_index();
   state_port_ =
       this->DeclareVectorOutputPort(BouncingBallVector<T>(),
                                     &BouncingBallPlant::CopyStateToOutput)

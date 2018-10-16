@@ -13,7 +13,7 @@ namespace drake {
 namespace pydrake {
 
 PYBIND11_MODULE(joints, m) {
-  auto& doc = pydrake_doc;
+  constexpr auto& doc = pydrake_doc;
 
   m.doc() = "Joint types supported by Drake.";
 

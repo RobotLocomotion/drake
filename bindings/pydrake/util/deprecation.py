@@ -1,5 +1,4 @@
-"""
-Provides deprecation warnings and utilities for triggering warnings.
+"""Provides deprecation warnings and utilities for triggering warnings.
 
 By default, this sets all `DrakeDeprecationWarnings` to be shown `"once"`,
 which overrides any `-W` command-line arguments. To change this behavior, you
@@ -28,7 +27,8 @@ class ModuleShim(object):
     This can be used to deprecate import alias in modules to simplify
     dependencies.
 
-    @see https://stackoverflow.com/a/7668273/7829525
+    See Also:
+        https://stackoverflow.com/a/7668273/7829525
     """
 
     def __init__(self, orig_module, handler):
@@ -39,6 +39,7 @@ class ModuleShim(object):
         # https://stackoverflow.com/a/16237698/7829525
         object.__setattr__(self, '_orig_module', orig_module)
         object.__setattr__(self, '_handler', handler)
+        object.__setattr__(self, '__doc__', orig_module.__doc__)
 
     def __getattr__(self, name):
         # Use the original module if possible.
@@ -76,16 +77,17 @@ class ModuleShim(object):
 
     @classmethod
     def _install(cls, name, handler):
-        """
-        Hook into module's attribute accessors and mutators.
-        @param name
-            Module name. Generally should be __name__.
-        @param handler
-            Function of the form `handler(var)`, where `var` is
-            the variable name.
-        @note This is private such that `install` does not pollute completion
-        candidations provided by `rlcompleter` when it iterates through
-        `__bases__`.
+        """Hook into module's attribute accessors and mutators.
+
+        Args:
+            name: Module name. Generally should be __name__.
+            handler: Function of the form `handler(var)`, where `var` is the
+                variable name.
+
+        Note:
+            This is private such that `install` does not pollute completion
+            candidations provided by `rlcompleter` when it iterates through
+            `__bases__`.
         """
         old_module = sys.modules[name]
         new_module = cls(old_module, handler)
@@ -94,7 +96,8 @@ class ModuleShim(object):
 
 class DrakeDeprecationWarning(DeprecationWarning):
     """Extends `DeprecationWarning` to permit Drake-specific warnings to
-    be filtered by default, without having side effects on other libraries."""
+    be filtered by default, without having side effects on other libraries.
+    """
     addendum = ("\n    Please see `help(pydrake.util.deprecation)` " +
                 "for more information.")
 
@@ -112,7 +115,8 @@ def _warn_deprecated(message, stacklevel=2):
 
 class _DeprecatedDescriptor(object):
     """Wraps a descriptor to warn that it is deprecated any time it is
-    acccessed."""
+    acccessed.
+    """
 
     def __init__(self, original, message):
         assert hasattr(original, '__get__'), "`original` must be a descriptor"
@@ -139,13 +143,16 @@ class _DeprecatedDescriptor(object):
 def deprecated(message):
     """Decorator that deprecates a member of a class based on access.
 
-    @param message Warning message when member is accessed.
+    Args:
+        message: Warning message when member is accessed.
 
-    @note This differs from other implementations in that it warns on
-    access, not when the method is called. For other methods, see
-    the examples in https://stackoverflow.com/a/40301488/7829525.
+    Note:
+        This differs from other implementations in that it warns on access,
+        not when the method is called. For other methods, see the examples in
+        https://stackoverflow.com/a/40301488/7829525.
 
-    Use `ModuleShim` for deprecating variables in a module."""
+    Use `ModuleShim` for deprecating variables in a module.
+    """
     def wrapped(original):
         return _DeprecatedDescriptor(original, message)
 

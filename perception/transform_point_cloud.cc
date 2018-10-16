@@ -45,7 +45,9 @@ void TransformPointCloud::ApplyTransformToPointCloud(
 
 void TransformPointCloud::CreatePorts() {
   // Create input port for point cloud.
-  point_cloud_input_port_index_ = DeclareAbstractInputPort().get_index();
+  point_cloud_input_port_index_ = DeclareAbstractInputPort(
+      systems::kUseDefaultName,
+      systems::Value<PointCloud>{}).get_index();
 
   // Create input port for state of a RigidBodyTree.
   const int q_dim = tree_.get_num_positions();

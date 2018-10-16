@@ -37,15 +37,15 @@ class VectorBase {
   /// memory.
   virtual int size() const = 0;
 
-  /// Returns the element at the given index in the vector. Throws
-  /// std::runtime_error if the index is >= size().
+  /// Returns the element at the given index in the vector.
+  /// @throws std::runtime_error if the index is >= size().
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
   virtual const T& GetAtIndex(int index) const = 0;
 
-  /// Returns the element at the given index in the vector. Throws
-  /// std::runtime_error if the index is >= size().
+  /// Returns the element at the given index in the vector.
+  /// @throws std::runtime_error if the index is >= size().
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
@@ -54,14 +54,15 @@ class VectorBase {
   T& operator[](std::size_t idx) { return GetAtIndex(idx); }
   const T& operator[](std::size_t idx) const { return GetAtIndex(idx); }
 
-  /// Replaces the state at the given index with the value. Throws
-  /// std::runtime_error if the index is >= size().
+  /// Replaces the state at the given index with the value.
+  /// @throws std::runtime_error if the index is >= size().
   void SetAtIndex(int index, const T& value) {
     GetAtIndex(index) = value;
   }
 
-  /// Replaces the entire vector with the contents of @p value. Throws
-  /// std::runtime_error if @p value is not a column vector with size() rows.
+  /// Replaces the entire vector with the contents of @p value.
+  /// @throws std::runtime_error if @p value is not a column vector with size()
+  /// rows.
   ///
   /// Implementations should ensure this operation is O(N) in the size of the
   /// value and allocates no memory.

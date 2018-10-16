@@ -18,6 +18,7 @@ namespace parsing {
 /// @note
 /// Instantiated templates for the following scalar types
 /// @p T are provided:
+///
 /// - double
 template <typename T>
 struct FramedIsometry3 {
@@ -38,6 +39,7 @@ struct FramedIsometry3 {
 /// @note
 /// Instantiated templates for the following scalar types
 /// @p T are provided:
+///
 /// - double
 template <typename T>
 class FrameCache {
@@ -55,14 +57,14 @@ class FrameCache {
   /// @param[in] source_frame the name of the source frame `S`. If it
   /// already exists in the cache, its transform will be updated.
   /// @param[in] X_TS the source frame `S`'s pose in the target frame.`T`.
-  /// @throw std::runtime_error if the target frame `T` is not in the cache.
+  /// @throws std::runtime_error if the target frame `T` is not in the cache.
   void Update(const std::string& target_frame,
               const std::string& source_frame,
               const Isometry3<T>& X_TS);
 
   /// Returns `X_TS`, that is the pose of the @p source_frame `S`
   /// in the @p target_frame `T`.
-  /// @throw std::runtime_error if either the target frame `T`
+  /// @throws std::runtime_error if either the target frame `T`
   /// or the source frame `S` are not in the cache.
   Isometry3<T> Transform(const std::string& target_frame,
                          const std::string& source_frame) const;

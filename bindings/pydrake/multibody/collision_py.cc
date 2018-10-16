@@ -13,7 +13,7 @@ namespace pydrake {
 PYBIND11_MODULE(collision, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody::collision;
-  auto& doc = pydrake_doc.drake.multibody.collision;
+  constexpr auto& doc = pydrake_doc.drake.multibody.collision;
 
   m.doc() = "Drake Collision types.";
 

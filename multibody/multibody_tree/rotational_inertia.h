@@ -94,6 +94,7 @@ namespace multibody {
 /// Various methods in this class require numerical (not symbolic) data types.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression

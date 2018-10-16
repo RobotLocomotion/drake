@@ -34,6 +34,7 @@ drake_py_library(
 drake_pybind_library(
     name = "acrobot_py",
     cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
         "//examples/acrobot:acrobot_plant",
     ],
     cc_so_name = "acrobot",
@@ -48,6 +49,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "compass_gait_py",
     cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
         "//examples/compass_gait",
     ],
     cc_so_name = "compass_gait",
@@ -60,8 +62,25 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
+    name = "manipulation_station_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//examples/manipulation_station:station_simulation",
+    ],
+    cc_so_name = "manipulation_station",
+    cc_srcs = ["manipulation_station_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/systems",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+drake_pybind_library(
     name = "pendulum_py",
     cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
         "//examples/pendulum:pendulum_plant",
     ],
     cc_so_name = "pendulum",
@@ -76,6 +95,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "rimless_wheel_py",
     cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
         "//examples/rimless_wheel",
     ],
     cc_so_name = "rimless_wheel",
@@ -90,6 +110,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "van_der_pol_py",
     cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
         "//examples/van_der_pol",
     ],
     cc_so_name = "van_der_pol",
@@ -104,6 +125,7 @@ drake_pybind_library(
 PY_LIBRARIES_WITH_INSTALL = [
     ":acrobot_py",
     ":compass_gait_py",
+    ":manipulation_station_py",
     ":pendulum_py",
     ":rimless_wheel_py",
     ":van_der_pol_py",
@@ -141,6 +163,14 @@ drake_py_unittest(
     size = "small",
     deps = [
         ":compass_gait_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "manipulation_station_test",
+    deps = [
+        ":manipulation_station_py",
+        "//bindings/pydrake/multibody:multibody_tree_py",
     ],
 )
 

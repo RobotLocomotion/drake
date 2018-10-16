@@ -85,7 +85,8 @@ FramePoseTracker::FramePoseTracker(
 
 void FramePoseTracker::Init() {
   // Abstract input port of type KinematicsResults
-  kinematics_input_port_index_ = this->DeclareAbstractInputPort().get_index();
+  kinematics_input_port_index_ = this->DeclareAbstractInputPort(
+      systems::Value<KinematicsResults<double>>(tree_)).get_index();
 
   // Make our frame ids and declare the output port.
   std::vector<geometry::FrameId> frame_ids;

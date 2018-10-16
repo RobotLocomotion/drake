@@ -366,7 +366,7 @@ class GeometryState {
    @param candidate_name  The name to validate.
    @return true if the `candidate_name` can be given to a `GeometryInstance`
    assigned to the indicated frame.
-   @throws if `frame_id` does not refer to a valid frame.  */
+   @throws std::exception if `frame_id` does not refer to a valid frame.  */
   bool IsValidGeometryName(FrameId frame_id,
                            const std::string& candidate_name) const;
 

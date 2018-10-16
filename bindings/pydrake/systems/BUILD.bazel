@@ -57,6 +57,7 @@ drake_pybind_library(
     name = "framework_py",
     cc_deps = [
         ":systems_pybind",
+        "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/util:deprecation_pybind",
         "//bindings/pydrake/util:drake_optional_pybind",
         "//bindings/pydrake/util:eigen_pybind",
@@ -94,6 +95,7 @@ drake_pybind_library(
     name = "primitives_py",
     cc_deps = [
         ":systems_pybind",
+        "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/util:drake_optional_pybind",
     ],
     cc_so_name = "primitives",
@@ -109,6 +111,7 @@ drake_pybind_library(
     name = "analysis_py",
     cc_deps = [
         ":systems_pybind",
+        "//bindings/pydrake:documentation_pybind",
     ],
     cc_so_name = "analysis",
     cc_srcs = ["analysis_py.cc"],
@@ -122,6 +125,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "controllers_py",
     cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/util:wrap_pybind",
     ],
@@ -141,6 +145,7 @@ drake_pybind_library(
     name = "rendering_py",
     cc_deps = [
         ":systems_pybind",
+        "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/util:eigen_geometry_pybind",
     ],
     cc_so_name = "rendering",
@@ -156,6 +161,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "sensors_py",
     cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/systems:systems_pybind",
         "//bindings/pydrake/util:cpp_template_pybind",
         "//bindings/pydrake/util:eigen_geometry_pybind",
@@ -176,6 +182,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "trajectory_optimization_py",
     cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
     ],
     cc_so_name = "trajectory_optimization",
@@ -201,6 +208,7 @@ drake_py_library(
 drake_pybind_library(
     name = "lcm_py",
     cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/systems:systems_pybind",
     ],
     cc_so_name = "_lcm_py",
@@ -218,6 +226,7 @@ drake_py_unittest(
     name = "lcm_test",
     deps = [
         ":lcm_py",
+        ":primitives_py",
         "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_py",
     ],
 )
@@ -235,6 +244,7 @@ PY_LIBRARIES_WITH_INSTALL = [
 
 PY_LIBRARIES = [
     ":drawing_py",
+    ":scalar_conversion_py",
     ":module_py",
 ]
 
@@ -291,6 +301,7 @@ drake_pybind_library(
     add_install = False,
     cc_deps = [
         ":systems_pybind",
+        "//bindings/pydrake:documentation_pybind",
     ],
     cc_so_name = "test/test_util",
     cc_srcs = ["test/test_util_py.cc"],

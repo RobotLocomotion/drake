@@ -183,7 +183,8 @@ class PidController : public StateFeedbackControllerInterface<T>,
    * controller, since the internal wiring is unimportant and hard for human
    * viewers to parse.
    */
-  void GetGraphvizFragment(std::stringstream* dot) const override;
+  void GetGraphvizFragment(int max_depth,
+                           std::stringstream* dot) const override;
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override;

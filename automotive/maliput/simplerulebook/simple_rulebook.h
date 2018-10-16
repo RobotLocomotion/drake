@@ -31,24 +31,24 @@ class SimpleRulebook : public api::rules::RoadRulebook {
 
   /// Adds a new RightOfWayRule.
   ///
-  /// Throws std::runtime_error if a rule with the same ID already exists
+  /// @throws std::runtime_error if a rule with the same ID already exists
   /// in the SimpleRulebook.
   void AddRule(const api::rules::RightOfWayRule& rule);
 
   /// Removes the RightOfWayRule labelled by `id`.
   ///
-  /// Throws std::runtime_error if no such rule exists.
+  /// @throws std::runtime_error if no such rule exists.
   void RemoveRule(const api::rules::RightOfWayRule::Id& id);
 
   /// Adds a new SpeedLimitRule.
   ///
-  /// Throws std::runtime_error if a rule with the same ID already exists
+  /// @throws std::runtime_error if a rule with the same ID already exists
   /// in the SimpleRulebook.
   void AddRule(const api::rules::SpeedLimitRule& rule);
 
   /// Removes the SpeedLimitRule labelled by `id`.
   ///
-  /// Throws std::runtime_error if no such rule exists.
+  /// @throws std::runtime_error if no such rule exists.
   void RemoveRule(const api::rules::SpeedLimitRule::Id& id);
 
  private:

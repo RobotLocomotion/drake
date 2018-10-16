@@ -130,7 +130,7 @@ InverseDynamicsController<T>::InverseDynamicsController(
   auto inverse_dynamics =
     builder.template AddSystem<InverseDynamics<T>>(
       multibody_plant_for_control_,
-      false /* pure gravity compensation */);
+      InverseDynamics<T>::kInverseDynamics);
 
   const int num_positions = multibody_plant_for_control_->num_positions();
   const int num_velocities = multibody_plant_for_control_->num_velocities();
@@ -140,6 +140,11 @@ InverseDynamicsController<T>::InverseDynamicsController(
   DRAKE_DEMAND(num_positions == num_actuators);
   SetUp(kp, ki, kd, *inverse_dynamics, &builder);
 }
+
+// We need this in the *.cc file so that rigid_body_tree.h does not need to be
+// included by our header file.
+template <typename T>
+InverseDynamicsController<T>::~InverseDynamicsController() = default;
 
 template class InverseDynamicsController<double>;
 // TODO(siyuan) template on autodiff.

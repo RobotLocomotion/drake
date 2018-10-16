@@ -31,6 +31,7 @@ namespace acrobot {
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - drake::AutoDiffXd
 /// - symbolic::Expression
@@ -55,9 +56,10 @@ class AcrobotPlant : public systems::LeafSystem<T> {
 
   ///@{
   /// Manipulator equation of Acrobot: M(q)q̈ + bias(q,q̇) = B*u.
+  ///
   /// - M[2x2] is the mass matrix.
   /// - bias[2x1] includes the Coriolis term, gravity term and the damping term,
-  ///     i.e. bias[2x1] = C(q,v)*v - τ_g(q) + [b1*q̇₁;b2*q̇₂].
+  ///   i.e. bias[2x1] = C(q,v)*v - τ_g(q) + [b1*q̇₁;b2*q̇₂].
   // TODO(russt): Update this to the newest conventions.
   Vector2<T> DynamicsBiasTerm(const systems::Context<T> &context) const;
   Matrix2<T> MassMatrix(const systems::Context<T> &context) const;

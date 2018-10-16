@@ -2,6 +2,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/rigid_body_ik.h"
@@ -12,23 +13,28 @@ namespace pydrake {
 
 PYBIND11_MODULE(_ik_py, m) {
   m.doc() = "RigidBodyTree inverse kinematics";
+  constexpr auto& doc = pydrake_doc;
 
-  py::class_<RigidBodyConstraint>(m, "RigidBodyConstraint");
+  py::class_<RigidBodyConstraint>(m, "RigidBodyConstraint",
+    doc.RigidBodyConstraint.doc);
 
-  py::class_<PostureConstraint, RigidBodyConstraint>(m, "PostureConstraint")
+  py::class_<PostureConstraint, RigidBodyConstraint>(m, "PostureConstraint",
+    doc.PostureConstraint.doc)
     .def(py::init<RigidBodyTree<double> *,
                   const Eigen::Vector2d& >(),
          py::arg("model"),
-         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan)
+         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
+         doc.PostureConstraint.ctor.doc)
     .def("setJointLimits",
          static_cast<void(PostureConstraint::*)(
              const Eigen::VectorXi&,
              const Eigen::VectorXd&,
              const Eigen::VectorXd&)>(
-                 &PostureConstraint::setJointLimits));
+                 &PostureConstraint::setJointLimits),
+        doc.PostureConstraint.setJointLimits.doc);
 
   py::class_<WorldPositionConstraint, RigidBodyConstraint>(
-    m, "WorldPositionConstraint")
+    m, "WorldPositionConstraint", doc.WorldPositionConstraint.doc)
     .def(py::init<RigidBodyTree<double>*,
                   int,
                   const Eigen::Matrix3Xd&,
@@ -40,10 +46,11 @@ PYBIND11_MODULE(_ik_py, m) {
          py::arg("pts"),
          py::arg("lb"),
          py::arg("ub"),
-         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
+         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
+         doc.WorldPositionConstraint.ctor.doc);
 
   py::class_<RelativePositionConstraint, RigidBodyConstraint>(
-    m, "RelativePositionConstraint")
+    m, "RelativePositionConstraint", doc.RelativePositionConstraint.doc)
     .def(py::init<RigidBodyTree<double>*,
                   const Eigen::Matrix3Xd&,
                   const Eigen::MatrixXd&,
@@ -59,10 +66,11 @@ PYBIND11_MODULE(_ik_py, m) {
          py::arg("bodyA_idx"),
          py::arg("bodyB_idx"),
          py::arg("bTbp"),
-         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
+         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
+         doc.RelativePositionConstraint.ctor.doc);
 
   py::class_<RelativeQuatConstraint, RigidBodyConstraint>(
-    m, "RelativeQuatConstraint")
+    m, "RelativeQuatConstraint", doc.RelativeQuatConstraint.doc)
     .def(py::init<RigidBodyTree<double>*,
                   int,
                   int,
@@ -74,10 +82,11 @@ PYBIND11_MODULE(_ik_py, m) {
          py::arg("bodyB_idx"),
          py::arg("quat_des"),
          py::arg("tol"),
-         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
+         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
+         doc.RelativeQuatConstraint.ctor.doc);
 
   py::class_<WorldPositionInFrameConstraint, RigidBodyConstraint>(
-    m, "WorldPositionInFrameConstraint")
+    m, "WorldPositionInFrameConstraint", doc.WorldPositionInFrameConstraint.doc)
     .def(py::init<RigidBodyTree<double>*,
                   int,
                   const Eigen::Matrix3Xd&,
@@ -91,10 +100,11 @@ PYBIND11_MODULE(_ik_py, m) {
          py::arg("T_world_to_frame"),
          py::arg("lb"),
          py::arg("ub"),
-         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
+         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
+         doc.WorldPositionInFrameConstraint.ctor.doc);
 
   py::class_<WorldGazeDirConstraint, RigidBodyConstraint>(
-    m, "WorldGazeDirConstraint")
+    m, "WorldGazeDirConstraint", doc.WorldGazeDirConstraint.doc)
     .def(py::init<RigidBodyTree<double>*,
                   int,
                   const Eigen::Vector3d&,
@@ -106,10 +116,11 @@ PYBIND11_MODULE(_ik_py, m) {
          py::arg("axis"),
          py::arg("dir"),
          py::arg("conethreshold"),
-         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
+         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
+         doc.WorldGazeDirConstraint.ctor.doc);
 
   py::class_<WorldGazeTargetConstraint, RigidBodyConstraint>(
-    m, "WorldGazeTargetConstraint")
+    m, "WorldGazeTargetConstraint", doc.WorldGazeTargetConstraint.doc)
     .def(py::init<RigidBodyTree<double>*,
                   int,
                   const Eigen::Vector3d&,
@@ -123,10 +134,11 @@ PYBIND11_MODULE(_ik_py, m) {
         py::arg("target"),
         py::arg("gaze_origin"),
         py::arg("conethreshold"),
-        py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
+        py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
+        doc.WorldGazeTargetConstraint.ctor.doc);
 
   py::class_<RelativeGazeDirConstraint, RigidBodyConstraint>(
-    m, "RelativeGazeDirConstraint")
+    m, "RelativeGazeDirConstraint", doc.RelativeGazeDirConstraint.doc)
     .def(py::init<RigidBodyTree<double>*,
                   int,
                   int,
@@ -140,10 +152,11 @@ PYBIND11_MODULE(_ik_py, m) {
          py::arg("axis"),
          py::arg("dir"),
          py::arg("conethreshold"),
-         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
+         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
+         doc.RelativeGazeDirConstraint.ctor.doc);
 
   py::class_<MinDistanceConstraint, RigidBodyConstraint>(
-    m, "MinDistanceConstraint")
+    m, "MinDistanceConstraint", doc.MinDistanceConstraint.doc)
     .def(py::init<RigidBodyTree<double>*,
                   double,
                   const std::vector<int>&,
@@ -153,10 +166,11 @@ PYBIND11_MODULE(_ik_py, m) {
          py::arg("min_distance"),
          py::arg("active_bodies_idx"),
          py::arg("active_group_names"),
-         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
+         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
+         doc.MinDistanceConstraint.ctor.doc);
 
   py::class_<WorldEulerConstraint, RigidBodyConstraint>(
-    m, "WorldEulerConstraint")
+    m, "WorldEulerConstraint", doc.WorldEulerConstraint.doc)
     .def(py::init<RigidBodyTree<double>*,
                   int,
                   const Eigen::Vector3d&,
@@ -166,10 +180,11 @@ PYBIND11_MODULE(_ik_py, m) {
          py::arg("body"),
          py::arg("lb"),
          py::arg("ub"),
-         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
+         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
+         doc.WorldEulerConstraint.ctor.doc);
 
   py::class_<WorldQuatConstraint, RigidBodyConstraint>(
-    m, "WorldQuatConstraint")
+    m, "WorldQuatConstraint", doc.WorldQuatConstraint.doc)
     .def(py::init<RigidBodyTree<double>*,
                   int,
                   const Eigen::Vector4d&,
@@ -179,58 +194,81 @@ PYBIND11_MODULE(_ik_py, m) {
          py::arg("body"),
          py::arg("quat_des"),
          py::arg("tol"),
-         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
+         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
+         doc.WorldQuatConstraint.ctor.doc);
 
   py::class_<QuasiStaticConstraint, RigidBodyConstraint>(
-    m, "QuasiStaticConstraint")
+    m, "QuasiStaticConstraint", doc.QuasiStaticConstraint.doc)
     .def(py::init<RigidBodyTree<double>*, const Eigen::Vector2d&>(),
         py::arg("model"),
-        py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan)
+        py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
+        doc.QuasiStaticConstraint.ctor.doc)
     .def(py::init<RigidBodyTree<double>*,
                   const Eigen::Vector2d&,
-                  const std::set<int>& >())
-    .def("setActive", &QuasiStaticConstraint::setActive)
-    .def("bounds", &QuasiStaticConstraint::bounds)
-    .def("setShrinkFactor", &QuasiStaticConstraint::setShrinkFactor)
+                  const std::set<int>& >(),
+        doc.QuasiStaticConstraint.ctor.doc)
+    .def("setActive", &QuasiStaticConstraint::setActive,
+        doc.QuasiStaticConstraint.setActive.doc)
+    .def("bounds", &QuasiStaticConstraint::bounds,
+        doc.QuasiStaticConstraint.bounds.doc)
+    .def("setShrinkFactor", &QuasiStaticConstraint::setShrinkFactor,
+        doc.QuasiStaticConstraint.setShrinkFactor.doc)
     .def("addContact",
          static_cast<void(QuasiStaticConstraint::*)(
              std::vector<int>, const Eigen::Matrix3Xd&)>(
-                 &QuasiStaticConstraint::addContact));
+                 &QuasiStaticConstraint::addContact),
+        doc.QuasiStaticConstraint.addContact.doc);
 
-  py::class_<IKoptions>(m, "IKoptions")
-    .def(py::init<RigidBodyTree<double>*>())
-    .def("setQ", &IKoptions::setQ)
-    .def("getQ", &IKoptions::getQ)
-    .def("setQa", &IKoptions::setQa)
-    .def("getQa", &IKoptions::getQa)
-    .def("setQv", &IKoptions::setQv)
-    .def("getQv", &IKoptions::getQv)
-    .def("setDebug", &IKoptions::setDebug)
-    .def("getDebug", &IKoptions::getDebug)
-    .def("setSequentialSeedFlag", &IKoptions::setSequentialSeedFlag)
-    .def("getSequentialSeedFlag", &IKoptions::getSequentialSeedFlag)
-    .def("setMajorOptimalityTolerance", &IKoptions::setMajorOptimalityTolerance)
-    .def("getMajorOptimalityTolerance", &IKoptions::getMajorOptimalityTolerance)
+  py::class_<IKoptions>(m, "IKoptions", doc.IKoptions.doc)
+    .def(py::init<RigidBodyTree<double>*>(), doc.IKoptions.ctor.doc)
+    .def("setQ", &IKoptions::setQ, doc.IKoptions.setQ.doc)
+    .def("getQ", &IKoptions::getQ, doc.IKoptions.getQ.doc)
+    .def("setQa", &IKoptions::setQa, doc.IKoptions.setQa.doc)
+    .def("getQa", &IKoptions::getQa, doc.IKoptions.getQa.doc)
+    .def("setQv", &IKoptions::setQv, doc.IKoptions.setQv.doc)
+    .def("getQv", &IKoptions::getQv, doc.IKoptions.getQv.doc)
+    .def("setDebug", &IKoptions::setDebug, doc.IKoptions.setDebug.doc)
+    .def("getDebug", &IKoptions::getDebug, doc.IKoptions.getDebug.doc)
+    .def("setSequentialSeedFlag", &IKoptions::setSequentialSeedFlag,
+      doc.IKoptions.setSequentialSeedFlag.doc)
+    .def("getSequentialSeedFlag", &IKoptions::getSequentialSeedFlag,
+      doc.IKoptions.getSequentialSeedFlag.doc)
+    .def("setMajorOptimalityTolerance", &IKoptions::setMajorOptimalityTolerance,
+      doc.IKoptions.setMajorOptimalityTolerance.doc)
+    .def("getMajorOptimalityTolerance", &IKoptions::getMajorOptimalityTolerance,
+      doc.IKoptions.getMajorOptimalityTolerance.doc)
     .def("setMajorFeasibilityTolerance",
-         &IKoptions::setMajorFeasibilityTolerance)
+         &IKoptions::setMajorFeasibilityTolerance,
+      doc.IKoptions.setMajorFeasibilityTolerance.doc)
     .def("getMajorFeasibilityTolerance",
-         &IKoptions::getMajorFeasibilityTolerance)
-    .def("setSuperbasicsLimit", &IKoptions::setSuperbasicsLimit)
-    .def("getSuperbasicsLimit", &IKoptions::getSuperbasicsLimit)
-    .def("setMajorIterationsLimit", &IKoptions::setMajorIterationsLimit)
-    .def("getMajorIterationsLimit", &IKoptions::getMajorIterationsLimit)
-    .def("setIterationsLimit", &IKoptions::setIterationsLimit)
-    .def("getIterationsLimit", &IKoptions::getIterationsLimit)
-    .def("setFixInitialState", &IKoptions::setFixInitialState)
-    .def("getFixInitialState", &IKoptions::getFixInitialState)
-    .def("setq0", &IKoptions::setq0)
-    .def("getq0", &IKoptions::getq0)
-    .def("setqd0", &IKoptions::setqd0)
-    .def("getqd0", &IKoptions::getqd0)
-    .def("setqdf", &IKoptions::setqdf)
-    .def("getqdf", &IKoptions::getqdf)
-    .def("setAdditionaltSamples", &IKoptions::setAdditionaltSamples)
-    .def("getAdditionaltSamples", &IKoptions::getAdditionaltSamples);
+         &IKoptions::getMajorFeasibilityTolerance,
+      doc.IKoptions.getMajorFeasibilityTolerance.doc)
+    .def("setSuperbasicsLimit", &IKoptions::setSuperbasicsLimit,
+      doc.IKoptions.setSuperbasicsLimit.doc)
+    .def("getSuperbasicsLimit", &IKoptions::getSuperbasicsLimit,
+      doc.IKoptions.getSuperbasicsLimit.doc)
+    .def("setMajorIterationsLimit", &IKoptions::setMajorIterationsLimit,
+      doc.IKoptions.setMajorIterationsLimit.doc)
+    .def("getMajorIterationsLimit", &IKoptions::getMajorIterationsLimit,
+      doc.IKoptions.getMajorIterationsLimit.doc)
+    .def("setIterationsLimit", &IKoptions::setIterationsLimit,
+      doc.IKoptions.setIterationsLimit.doc)
+    .def("getIterationsLimit", &IKoptions::getIterationsLimit,
+      doc.IKoptions.getIterationsLimit.doc)
+    .def("setFixInitialState", &IKoptions::setFixInitialState,
+      doc.IKoptions.setFixInitialState.doc)
+    .def("getFixInitialState", &IKoptions::getFixInitialState,
+      doc.IKoptions.getFixInitialState.doc)
+    .def("setq0", &IKoptions::setq0, doc.IKoptions.setq0.doc)
+    .def("getq0", &IKoptions::getq0, doc.IKoptions.getq0.doc)
+    .def("setqd0", &IKoptions::setqd0, doc.IKoptions.setqd0.doc)
+    .def("getqd0", &IKoptions::getqd0, doc.IKoptions.getqd0.doc)
+    .def("setqdf", &IKoptions::setqdf, doc.IKoptions.setqdf.doc)
+    .def("getqdf", &IKoptions::getqdf, doc.IKoptions.getqdf.doc)
+    .def("setAdditionaltSamples", &IKoptions::setAdditionaltSamples,
+      doc.IKoptions.setAdditionaltSamples.doc)
+    .def("getAdditionaltSamples", &IKoptions::getAdditionaltSamples,
+      doc.IKoptions.getAdditionaltSamples.doc);
 
   m.def("InverseKin",
         static_cast<IKResults(*)(
@@ -239,7 +277,7 @@ PYBIND11_MODULE(_ik_py, m) {
             const Eigen::VectorXd&,
             const std::vector<RigidBodyConstraint*>&,
             const IKoptions&)>(
-                &inverseKinSimple));
+                &inverseKinSimple), doc.inverseKin.doc);
 
   m.def("InverseKinPointwise",
         static_cast<IKResults(*)(
@@ -249,14 +287,16 @@ PYBIND11_MODULE(_ik_py, m) {
             const Eigen::MatrixXd&,
             const std::vector<RigidBodyConstraint*>&,
             const IKoptions&)>(
-                &inverseKinPointwiseSimple));
+                &inverseKinPointwiseSimple),
+            doc.inverseKinPointwise.doc);
 
-  m.def("InverseKinTraj", &inverseKinTrajSimple);
+  m.def("InverseKinTraj", &inverseKinTrajSimple, doc.inverseKinTraj.doc);
 
-  py::class_<IKResults>(m, "IKResults")
-    .def_readonly("q_sol", &IKResults::q_sol)
-    .def_readonly("info", &IKResults::info)
-    .def_readonly("infeasible_constraints", &IKResults::infeasible_constraints);
+  py::class_<IKResults>(m, "IKResults", doc.IKResults.doc)
+    .def_readonly("q_sol", &IKResults::q_sol, doc.IKResults.q_sol.doc)
+    .def_readonly("info", &IKResults::info, doc.IKResults.info.doc)
+    .def_readonly("infeasible_constraints", &IKResults::infeasible_constraints,
+      doc.IKResults.infeasible_constraints.doc);
 }
 
 }  // namespace pydrake

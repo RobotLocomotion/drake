@@ -41,8 +41,7 @@ namespace {
 
 // Stateless system with a DoCalcTimeDerivatives implementation. This class
 // will serve to confirm that the time derivative calculation is not called.
-class StatelessSystemPlusDerivs : public systems::LeafSystem<double>
-{
+class StatelessSystemPlusDerivs : public systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessSystemPlusDerivs)
 
  public:
@@ -706,24 +705,6 @@ GTEST_TEST(SimulatorTest, WitnessTestCountChallenging) {
 
   // Publication should occur only at witness function crossing.
   EXPECT_EQ(1, num_publishes);
-}
-
-// TODO(edrumwri): Add tests for verifying that correct interval returned
-// in the case of multiple witness functions. See issue #6184.
-
-GTEST_TEST(SimulatorTest, SecondConstructor) {
-  // Create the spring-mass system and context.
-  analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
-  auto context = spring_mass.CreateDefaultContext();
-
-  // Mark the context with an arbitrary value.
-  context->set_time(3.);
-
-  /// Construct the simulator with the created context.
-  Simulator<double> simulator(spring_mass, std::move(context));
-
-  // Verify that context pointers are equivalent.
-  EXPECT_EQ(simulator.get_context().get_time(), 3.);
 }
 
 GTEST_TEST(SimulatorTest, MiscAPI) {

@@ -133,6 +133,7 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
 /// @tparam T The scalar element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression
@@ -179,8 +180,8 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   /// Creates a unique pointer to AffineSystem<T> by decomposing @p dynamics and
   /// @p outputs using @p state_vars and @p input_vars.
   ///
-  /// @throws runtime_error if either @p dynamics or @p outputs is not affine in
-  /// @p state_vars and @p input_vars.
+  /// @throws std::runtime_error if either @p dynamics or @p outputs is not
+  /// affine in @p state_vars and @p input_vars.
   static std::unique_ptr<AffineSystem<T>> MakeAffineSystem(
       const Eigen::Ref<const VectorX<symbolic::Expression>>& dynamics,
       const Eigen::Ref<const VectorX<symbolic::Expression>>& output,

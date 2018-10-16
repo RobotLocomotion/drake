@@ -89,6 +89,7 @@ namespace multibody {
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///
@@ -126,7 +127,7 @@ class ArticulatedBodyInertia {
   ///                   articulated body inertia. Only the lower triangular
   ///                   region is used and the strictly upper part is ignored.
   ///
-  /// @throws an exception in Debug builds if IsPhysicallyValid() for `this`
+  /// @throws std::exception in Debug builds if IsPhysicallyValid() for `this`
   /// inertia is `false`.
   template <typename Derived>
   explicit ArticulatedBodyInertia(const Eigen::MatrixBase<Derived>& matrix) {

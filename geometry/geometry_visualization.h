@@ -9,6 +9,7 @@
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_publisher_system.h"
 
 namespace drake {
 namespace geometry {
@@ -43,12 +44,6 @@ class GeometryVisualizationImpl {
    system, and
  - sets the publishing rate to 1/60 of a second (simulated time).
 
- You can then connect source output ports for visualization like this:
- @code
-   builder->Connect(pose_output_port,
-                    scene_graph.get_source_pose_port(source_id));
- @endcode
-
  @note The initialization event occurs when Simulator::Initialize() is called
  (explicitly or implicitly at the start of a simulation). If you aren't going
  to be using a Simulator, use DispatchLoadMessage() to send the message
@@ -66,12 +61,32 @@ class GeometryVisualizationImpl {
  @pre The given `scene_graph` must be contained within the supplied
       DiagramBuilder.
 
+ @returns the LcmPublisherSystem (in case callers, e.g., need to change the
+ default publishing rate).
+
  @see geometry::DispatchLoadMessage()
  @ingroup visualization
  */
-void ConnectDrakeVisualizer(systems::DiagramBuilder<double>* builder,
-                            const SceneGraph<double>& scene_graph,
-                            lcm::DrakeLcmInterface* lcm = nullptr);
+systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
+    systems::DiagramBuilder<double>* builder,
+    const SceneGraph<double>& scene_graph,
+    lcm::DrakeLcmInterface* lcm = nullptr);
+
+/** Implements ConnectDrakeVisualizer, but using @p pose_bundle_output_port to
+ explicitly specify the output port used to get pose bundles for
+ @p scene_graph.  This is required, for instance, when the SceneGraph is
+ inside a Diagram, and the Diagram exports the pose bundle port.
+
+ @pre pose_bundle_output_port must be connected directly to the
+ pose_bundle_output_port of @p scene_graph.
+
+ @see ConnectDrakeVisualizer().
+ */
+systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
+    systems::DiagramBuilder<double>* builder,
+    const SceneGraph<double>& scene_graph,
+    const systems::OutputPort<double>& pose_bundle_output_port,
+    lcm::DrakeLcmInterface* lcm = nullptr);
 
 /** (Advanced) Explicitly dispatches an LCM load message based on the registered
  geometry. Normally this is done automatically at Simulator initialization. But

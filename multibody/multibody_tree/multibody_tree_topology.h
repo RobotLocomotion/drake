@@ -11,14 +11,15 @@
 /// All of the data structures defined in this file are meant to be the most
 /// minimalist representation that can store this information.
 /// These data structures are used in the following ways:
-///  - To aid the process of cloning or transmogrifying multibody tree
-///    components without having to create maps between the "original" and
-///    "cloned" objects. That process is tedious and error prone.
-///  - Each Multibody tree element has a copy (acquired at
-///    MultibodyTree::Finalize() stage) of its topology which serves as a
-///    key into the Context for that element's state.
-///  - The topology is also stored in the Context so that the Multibody tree's
-///    topology can be validated against the stored topology in debug builds.
+///
+/// - To aid the process of cloning or transmogrifying multibody tree
+///   components without having to create maps between the "original" and
+///   "cloned" objects. That process is tedious and error prone.
+/// - Each Multibody tree element has a copy (acquired at
+///   MultibodyTree::Finalize() stage) of its topology which serves as a
+///   key into the Context for that element's state.
+/// - The topology is also stored in the Context so that the Multibody tree's
+///   topology can be validated against the stored topology in debug builds.
 
 #include <algorithm>
 #include <queue>
@@ -127,11 +128,13 @@ struct FrameTopology {
 
 /// Data structure to store the topological information associated with a
 /// Mobilizer object. It stores:
+///
 /// - Indexes to the inboard/outboard frames of this mobilizer.
 /// - Indexes to the inboard/outboard bodies of this mobilizer.
 /// - Numbers of dofs admitted by this mobilizer.
 /// - Indexing information to retrieve entries from the parent MultibodyTree
 ///   Context.
+///
 /// Additional information on topology classes is given in this file's
 /// documentation at the top.
 struct MobilizerTopology {
@@ -562,8 +565,8 @@ class MultibodyTreeTopology {
   ///
   /// @throws std::runtime_error if either `in_frame` or `out_frame` do not
   /// index frame topologies in `this` %MultibodyTreeTopology.
-  /// @throws a std::runtime_error if `in_frame == out_frame`.
-  /// @throws a std::runtime_error if `in_frame` and `out_frame` already are
+  /// @throws std::runtime_error if `in_frame == out_frame`.
+  /// @throws std::runtime_error if `in_frame` and `out_frame` already are
   /// connected by another mobilizer. More than one mobilizer between two frames
   /// is not allowed.
   /// @throws std::logic_error if Finalize() was already called on `this`

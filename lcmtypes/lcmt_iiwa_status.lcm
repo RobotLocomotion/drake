@@ -6,13 +6,50 @@ struct lcmt_iiwa_status {
 
   int32_t num_joints;
 
-  // TODO(sam.creasey) add link to documentation(if I can) for what
-  // these values are.
+  // From FRI documentation: "The currently measured joint positions of the
+  // robot in radians."
   double joint_position_measured[num_joints];
+
+  // The FRI driver does not provide velocity; we estimate it in our driver via
+  // a low-pass filter.  Units are radians / sec.
   double joint_velocity_estimated[num_joints];
+
+  // From FRI documentation: "The last commanded joint positions of the robot in
+  // radians."
   double joint_position_commanded[num_joints];
+
+  // From FRI documentation:
+  // "The joint positions commanded by the interpolator in radians. When
+  // commanding a motion overlay in your robot application, this method will
+  // give access to the joint positions currently commanded by the motion
+  // interpolator.  This method will return NULL during monitoring mode."
+  //
+  // The Kuka motion interpolated code is a black-box to us, so we typically do
+  // not try to model/simulate this signal.
   double joint_position_ipo[num_joints];
+
+  // From FRI documentation: "The currently measured joint torques of the robot
+  // in Nm."
+  //
+  // This appears to be the raw measurement of the torque sensors, which is
+  // attempting to track joint_torque_commanded.
   double joint_torque_measured[num_joints];
+
+  // From FRI documentation: "The last commanded joint torques of the robot in
+  // Nm."
+  //
+  // This appears to be most similar to the torque input to multibody plant.
   double joint_torque_commanded[num_joints];
+
+  // From FRI documentation: "The currently measured external joint torques of
+  // the robot in Nm.  The external torques corresponds to the measured torques
+  // when removing the torques induced by the robot itself."
+  //
+  // This appears to be the contact forces (in joint coordinates) as well as any
+  // residuals from modeling errors (as computed by the onboard Kuka inverse
+  // dynamics model, which is a black-box to us). Recall that the inertia of
+  // the tool is included (potentially very approximately) in the onboard Kuka
+  // model, so long as a tool is defined in the active Sunrise project. You can
+  // use the Kuka pendant to teach the tool inertia.
   double joint_torque_external[num_joints];
 }

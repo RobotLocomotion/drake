@@ -428,10 +428,13 @@ class LeafSystem : public System<T> {
     if (model_result) {
       return model_result.release();
     }
-    DRAKE_ABORT_MSG(
-        "A concrete leaf system with abstract input ports should "
-        "pass a model_value to DeclareAbstractInputPort, or else "
-        "must override DoAllocateInputAbstract");
+    throw std::logic_error(fmt::format(
+        "System::AllocateInputAbstract(): a System with abstract input ports "
+        "should pass a model_value to DeclareAbstractInputPort, or else must "
+        "override DoAllocateInputAbstract; the input port[{}] named '{}' did "
+        "not do either one (System {})",
+        input_port.get_index(), input_port.get_name(),
+        this->GetSystemPathname()));
   }
 
   /// Emits a graphviz fragment for this System. Leaf systems are visualized as
@@ -449,7 +452,10 @@ class LeafSystem : public System<T> {
   /// |       | y0 |    |
   /// +-------+----+----+
   /// @endverbatim
-  void GetGraphvizFragment(std::stringstream* dot) const override {
+  void GetGraphvizFragment(int max_depth,
+                           std::stringstream* dot) const override {
+    unused(max_depth);
+
     // Use the this pointer as a unique ID for the node in the dotfile.
     const int64_t id = this->GetGraphvizId();
     std::string name = this->get_name();
@@ -481,13 +487,17 @@ class LeafSystem : public System<T> {
   }
 
   void GetGraphvizInputPortToken(const InputPort<T>& port,
+                                 int max_depth,
                                  std::stringstream *dot) const final {
+    unused(max_depth);
     DRAKE_DEMAND(port.get_system() == this);
     *dot << this->GetGraphvizId() << ":u" << port.get_index();
   }
 
   void GetGraphvizOutputPortToken(const OutputPort<T>& port,
+                                  int max_depth,
                                   std::stringstream *dot) const final {
+    unused(max_depth);
     DRAKE_DEMAND(&port.get_system() == this);
     *dot << this->GetGraphvizId() << ":y" << port.get_index();
   }

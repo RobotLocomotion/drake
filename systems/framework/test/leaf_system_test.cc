@@ -847,6 +847,26 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   EXPECT_EQ(in4.get_random_type(), RandomDistribution::kGaussian);
 }
 
+// A system that incorrectly declares an input port.
+class MissingModelAbstractInputSystem : public LeafSystem<double> {
+ public:
+  MissingModelAbstractInputSystem() {
+    this->DeclareAbstractInputPort("no_model_input");
+  }
+};
+
+GTEST_TEST(ModelLeafSystemTest, MissingModelAbstractInput) {
+  MissingModelAbstractInputSystem dut;
+  dut.set_name("dut");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.AllocateInputAbstract(dut.get_input_port(0)),
+      std::exception,
+      "System::AllocateInputAbstract\\(\\): a System with abstract input "
+      "ports should pass a model_value to DeclareAbstractInputPort, or else "
+      "must override DoAllocateInputAbstract; the input port\\[0\\] named "
+      "'no_model_input' did not do either one \\(System ::dut\\)");
+}
+
 // Check that names can be assigned to the ports through all of the various
 // APIs.
 GTEST_TEST(ModelLeafSystemTest, ModelPortNames) {

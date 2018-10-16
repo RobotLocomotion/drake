@@ -35,7 +35,7 @@ class DummySys : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummySys);
   DummySys() {
-    DeclareAbstractInputPort();
+    DeclareAbstractInputPort("lcmt_drake_signal", Value<lcmt_drake_signal>());
     DeclareVectorOutputPort(systems::BasicVector<double>(1),
                             &DummySys::CalcTimestamp);
   }

@@ -43,6 +43,7 @@ namespace sensors {
 /// variable inputs.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///

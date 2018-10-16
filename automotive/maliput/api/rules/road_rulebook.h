@@ -52,14 +52,14 @@ class RoadRulebook {
 
   /// Returns the RightOfWayRule with the specified `id`.
   ///
-  /// Throws std::out_of_range if `id` is unknown.
+  /// @throws std::out_of_range if `id` is unknown.
   RightOfWayRule GetRule(const RightOfWayRule::Id& id) const {
     return DoGetRule(id);
   }
 
   /// Returns the SpeedLimitRule with the specified `id`.
   ///
-  /// Throws std::out_of_range if `id` is unknown.
+  /// @throws std::out_of_range if `id` is unknown.
   SpeedLimitRule GetRule(const SpeedLimitRule::Id& id) const {
     return DoGetRule(id);
   }

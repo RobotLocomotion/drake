@@ -39,7 +39,6 @@ class TemplateSystem(TemplateClass):
     at the time of the first class instantiation.
 
     Example:
-
         @TemplateSystem.define("MySystem_")
         def MySystem_(T):
 
@@ -56,15 +55,16 @@ class TemplateSystem(TemplateClass):
         MySystem = MySystem_[None]  # Default instantiation.
 
     Things to note:
-    - When defining `_construct_copy`, if you are delegating to `_construct`
+
+    * When defining `_construct_copy`, if you are delegating to `_construct`
       within the same class, you should use `Impl._construct(self, ...)`; if
       you use `self._construct`, then you may get a child class's constructor
       if you are inheriting.
-    - If you are delegating construction to a parent Python class for both
+    * If you are delegating construction to a parent Python class for both
       constructors, use the parent class's `__init__` method, not its
       `_construct` or `_construct_copy` methods.
-    - `converter` should always be non-None, as guaranteed by the overriding
-      `__init__`. We use `converter=None` to imply it should be positional,
+    * `converter` should always be non-None, as guaranteed by the overriding
+       `__init__`. We use `converter=None` to imply it should be positional,
        since Python2 does not have keyword-only arguments.
     """
     # TODO(eric.cousineau): Figure out if there is a way to avoid needing to
@@ -73,15 +73,15 @@ class TemplateSystem(TemplateClass):
     def __init__(self, name, T_list=None, T_pairs=None, module_name=None):
         """Constructs `TemplateSystem`.
 
-        @param T_list
-            List of T's that the given system supports. By default, it is all
-            types supported by `LeafSystem`.
-        @param T_pairs List of pairs, (T, U), defining a conversion from a
-            scalar type of U to T.
-            If None, this will use all possible pairs that the Python bindings
-            of `SystemScalarConverter` support.
-        @param module_name
-            Defining `module_name`, per `TemplateClass`'s constructor.
+        Args:
+            T_list: List of T's that the given system supports. By default, it
+                is all types supported by `LeafSystem`.
+            T_pairs: List of pairs, (T, U), defining a conversion from a
+                scalar type of U to T. If None, this will use all possible
+                pairs that the Python bindings of `SystemScalarConverter`
+                support.
+            module_name: Defining `module_name`, per `TemplateClass`'s
+                constructor.
         """
         if module_name is None:
             module_name = _get_module_name_from_stack()
@@ -117,15 +117,13 @@ class TemplateSystem(TemplateClass):
         class which will be the instantation for type `T` of the given
         template.
 
-        @param name
-            Name of the system template. This should match the name of the
-            object being decorated.
-        @param T_list
-            See `__init__` for more information.
-        @param T_pairs
-            See `__init__` for more information.
-        @param args, kwargs
-            These are passed to the constructor of `TemplateSystem`.
+        Args:
+            name: Name of the system template. This should match the name of
+                the object being decorated.
+            T_list: See `__init__` for more information.
+            T_pairs: See `__init__` for more information.
+            args, kwargs: These are passed to the constructor of
+                `TemplateSystem`.
         """
         template = cls(name, T_list, T_pairs, *args, **kwargs)
         param_list = [(T,) for T in template._T_list]
@@ -189,6 +187,7 @@ class TemplateSystem(TemplateClass):
                     self, *args, converter=converter, **kwargs)
 
         cls.__init__ = system_init
+        return cls
 
     def _check_if_copying(self, obj, *args, **kwargs):
         # Checks if a function signature implies a copy constructor.

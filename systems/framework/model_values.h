@@ -60,8 +60,8 @@ class ModelValues {
   /// Returns a clone of the vector within the model value at @p index, which
   /// may be nullptr.
   ///
-  /// @throw exception if the index has a model but the model's type does not
-  /// match the given @p T
+  /// @throws std::exception if the index has a model but the model's type does
+  /// not match the given @p T
   template <typename T>
   std::unique_ptr<BasicVector<T>> CloneVectorModel(int index) const;
 

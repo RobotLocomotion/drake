@@ -22,7 +22,7 @@ namespace detail {
 /// should be used sparingly.  In particular, only a few select locations
 /// within the Systems Framework itself should likely call this function.
 ///
-/// @throw exception if invariants are violated or basic_vector is nullptr
+/// @throws std::exception if invariants are violated or basic_vector is nullptr
 template <typename T>
 void CheckBasicVectorInvariants(const BasicVector<T>* basic_vector) {
   DRAKE_THROW_UNLESS(basic_vector != nullptr);
@@ -53,7 +53,8 @@ void CheckBasicVectorInvariants(const BasicVector<T>* basic_vector) {
 /// @tparam T the supposed element type of the Value<BasicVector<T>> that has
 /// been erased into an AbstractValue
 ///
-/// @throw exception if invariants are violated or abstract_value is nullptr
+/// @throws std::exception if invariants are violated or abstract_value is
+/// nullptr
 template <typename T>
 void CheckVectorValueInvariants(const AbstractValue* abstract_value) {
   DRAKE_THROW_UNLESS(abstract_value != nullptr);

@@ -812,6 +812,17 @@ TEST_F(DiagramTest, AllocateInputs) {
   }
 }
 
+TEST_F(DiagramTest, GetSubsystemByName) {
+  const System<double>& stateless = diagram_->GetSubsystemByName("stateless");
+  EXPECT_NE(
+      dynamic_cast<const analysis_test::StatelessSystem<double>*>(&stateless),
+      nullptr);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      diagram_->GetSubsystemByName("not_a_subsystem"), std::logic_error,
+      "System .* does not have a subsystem named not_a_subsystem");
+}
+
 // Tests that ContextBase methods for affecting cache behavior propagate
 // through to subcontexts. Since leaf output ports have cache entries in their
 // corresponding subcontext, we'll pick one and check its behavior.
@@ -1077,6 +1088,12 @@ TEST_F(DiagramOfDiagramsTest, Graphviz) {
   const std::string id1 = std::to_string(
       reinterpret_cast<int64_t>(subdiagram1_));
   EXPECT_NE(std::string::npos, dot.find("_" + id0 + "_y0 -> _" + id1 + "_u0"));
+
+  const int max_depth = 0;
+  const std::string dot_no_depth = diagram_->GetGraphvizString(max_depth);
+  // Check that the subdiagrams no longer appear.
+  EXPECT_EQ(std::string::npos, dot_no_depth.find("label=\"subdiagram0\""));
+  EXPECT_EQ(std::string::npos, dot_no_depth.find("label=\"subdiagram1\""));
 }
 
 // Tests that a diagram composed of diagrams can be evaluated, and gives

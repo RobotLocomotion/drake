@@ -15,6 +15,7 @@ namespace multibody {
 /// articulated body algorithm.
 ///
 /// Articulated body inertia cache entries include:
+///
 /// - Articulated body inertia `Pplus_PB_W`, which can be thought of as the
 ///   articulated body inertia of parent body P as though it were inertialess,
 ///   but taken about Bo and expressed in W.
@@ -23,6 +24,7 @@ namespace multibody {
 ///           scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///

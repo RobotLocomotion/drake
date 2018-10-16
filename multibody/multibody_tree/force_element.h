@@ -24,6 +24,7 @@ namespace multibody {
 /// modeled with a %ForceElement.
 /// This abstract class provides an API that all force elements subclasses must
 /// implement in order to be fully defined. These are:
+///
 /// - CalcAndAddForceContribution(): computes the force contribution of a force
 ///   element in a %MultibodyTree model.
 /// - CalcPotentialEnergy(): computes a force element potential energy

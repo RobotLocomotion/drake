@@ -56,8 +56,8 @@ class LcmAndVectorBaseTranslator {
    * @param[out] vector_base A pointer to where the translation of the LCM
    * message should be stored. This pointer must not be `nullptr`.
    *
-   * @throws runtime_error If a received LCM message failed to be decoded, or
-   * if the decoded LCM message is incompatible with the @p vector_base.
+   * @throws std::runtime_error If a received LCM message failed to be decoded,
+   * or if the decoded LCM message is incompatible with the @p vector_base.
    * This often occurs when the size of the @p vector_base does not equal
    * or is incompatible with the size of the decoded LCM message.
    */

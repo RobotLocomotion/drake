@@ -27,6 +27,7 @@ namespace automotive {
 /// * velocity
 ///
 /// input vector:
+///
 /// * steering angle (virtual center wheel angle);
 ///   a positive angle means a positive change in heading (left turn);
 ///   the value must lie within (-pi, +pi).
@@ -41,6 +42,7 @@ namespace automotive {
 /// for details, see drake::symbolic::Expression.
 ///
 /// Instantiated templates for the following ScalarTypes are provided:
+///
 /// - double
 /// - drake::AutoDiffXd
 /// - drake::symbolic::Expression

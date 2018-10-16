@@ -45,6 +45,7 @@ namespace math {
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression
@@ -712,8 +713,8 @@ using RotationMatrixd = RotationMatrix<double>;
 /// @param[in] angle_lb the lower bound of the rotation angle θ.
 /// @param[in] angle_ub the upper bound of the rotation angle θ.
 /// @return Rotation angle θ of the projected matrix, angle_lb <= θ <= angle_ub
-/// @throws exception std::runtime_error if M is not a 3 x 3 matrix or if
-///                   axis is the zero vector or if angle_lb > angle_ub.
+/// @throws std::runtime_error if M is not a 3 x 3 matrix or if
+///         axis is the zero vector or if angle_lb > angle_ub.
 /// @note This function is useful for reconstructing a rotation matrix for a
 /// revolute joint with joint limits.
 /// @note This can be formulated as an optimization problem

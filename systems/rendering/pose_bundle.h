@@ -30,6 +30,7 @@ namespace rendering {
 ///
 /// This class is explicitly instantiated for the following scalar types. No
 /// other scalar types are supported.
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression
@@ -41,7 +42,7 @@ class PoseBundle {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PoseBundle)
 
-  explicit PoseBundle(int num_poses);
+  explicit PoseBundle(int num_poses = 0);
   ~PoseBundle();
 
   int get_num_poses() const;

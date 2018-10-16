@@ -65,6 +65,7 @@ template<typename T> class BodyNode;
 /// freedom associated with the particular type of %Mobilizer are added to the
 /// multibody system. In the example above for the single pendulum, adding a
 /// RevoluteMobilizer has two purposes:
+///
 /// - It defines the tree structure of the model. World is the inboard body
 ///   while "pendulum" is the outboard body in the MultibodyTree.
 /// - It informs the MultibodyTree of the degrees of freedom granted by the
@@ -80,6 +81,7 @@ template<typename T> class BodyNode;
 /// velocities v. Notice that in general `nq != nv`, though `nq == nv` is a very
 /// common case. The kinematic relationships introduced by a %Mobilizer are
 /// fully specified by, [Seth 2010]:
+///
 /// - X_FM(q):
 ///     The pose of the outboard frame M as measured and expressed in the
 ///     inboard frame F, as a function of the mobilizer's generalized positions.
