@@ -68,7 +68,7 @@ class Segment;
   the surface itself. The origin of the lane's frame is defined by the `o` along
   the above-shown `s = 0` line.
 
-  Note: Each dragway lane has a teleportation feature at both ends: the
+  @note Each dragway lane has a teleportation feature at both ends: the
   (default) ongoing lane for LaneEnd::kFinish is LaneEnd::kStart of the same
   lane, and vice versa.
 **/

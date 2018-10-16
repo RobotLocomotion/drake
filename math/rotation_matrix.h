@@ -122,7 +122,7 @@ class RotationMatrix {
   ///        ⎣    0       0   1⎦   ⎣-sin(p)  0  cos(p)⎦   ⎣0  sin(r)   cos(r)⎦
   ///      =       R_AB          *        R_BC          *        R_CD
   /// ```
-  /// Note: In this discussion, A is the Space frame and D is the Body frame.
+  /// @note In this discussion, A is the Space frame and D is the Body frame.
   /// One way to visualize this rotation sequence is by introducing intermediate
   /// frames B and C (useful constructs to understand this rotation sequence).
   /// Initially, the frames are aligned so `Di = Ci = Bi = Ai (i = x, y, z)`.

@@ -347,8 +347,8 @@ class SpatialInertia {
   /// @param[in] p_PQ_E Vector from the original about point P to the new
   ///                   about point Q, expressed in the same frame E `this`
   ///                   spatial inertia is expressed in.
-  /// @retval `M_SQ_E` This same spatial inertia for body or composite body S
-  ///                  but computed about about a new point Q.
+  /// @retval M_SQ_E    This same spatial inertia for body or composite body S
+  ///                   but computed about about a new point Q.
   SpatialInertia Shift(const Vector3<T>& p_PQ_E) const {
     return SpatialInertia(*this).ShiftInPlace(p_PQ_E);
   }

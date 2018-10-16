@@ -34,6 +34,7 @@ namespace controllers {
  *      into the inverse dynamics computation.
  *
  * Instantiated templates for the following kinds of T's are provided:
+ *
  * - double
  */
 template <typename T>

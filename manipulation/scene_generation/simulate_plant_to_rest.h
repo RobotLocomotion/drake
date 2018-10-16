@@ -19,7 +19,7 @@ namespace scene_generation {
  * simulation which enables the state of the plant to come to a rest from a
  * specified initial condition.
  *
- * Note: The actual time taken to come to rest is very strongly dependent on
+ * @note The actual time taken to come to rest is very strongly dependent on
  * the kind of bodies and their inertial properties. The parameters for
  * the simulation are currently hand-tuned to bring to rest 1-30 bodies
  * of dimension and mass comparable to the manipulation targets in
@@ -42,15 +42,15 @@ class SimulatePlantToRest {
 
   /**
    * Computes simulation runs of the system starting from the configuration
-   * @p q_initial and returns the final stable configuration. Internally keeps 
-   * repeating the run by halving the max_time_step as if the terminal velocity 
-   * is greater than `v_final`. 
-   * @param v_final A pointer to hold the resulting final velocity upon 
+   * @p q_initial and returns the final stable configuration. Internally keeps
+   * repeating the run by halving the max_time_step as if the terminal velocity
+   * is greater than `v_final`.
+   * @param v_final A pointer to hold the resulting final velocity upon
    * completion of this simulation run.
    * @param v_threshold threshold on the velocity to terminate the execution
    * and return the terminal state.
    * @param max_settling_time is the max time to wait for settling the
-   * clutter scene. Upon reaching @param max_settling_time, the simulation 
+   * clutter scene. Upon reaching @param max_settling_time, the simulation
    * terminates regardless of the specified @param v_threshold.
    * @returns The generalized coordinates q representing a settled configuration
    * of the RigidBodyPlant.
@@ -60,7 +60,7 @@ class SimulatePlantToRest {
                       double v_threshold = 0.1, double max_settling_time = 1.5);
 
   /**
-   * Returns a pointer to the Sim diagram which can then be used in a variety 
+   * Returns a pointer to the Sim diagram which can then be used in a variety
    * of custom simulations.
    */
   systems::Diagram<double>* GetSimDiagram();

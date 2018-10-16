@@ -108,7 +108,8 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
 
   /**
    * Getter for the internal quaternion knots.
-   * Note: the returned quaternions might be different from the ones used for
+   *
+   * @note The returned quaternions might be different from the ones used for
    * construction because the internal representations are set to always be
    * the "closest" w.r.t to the previous one.
    *

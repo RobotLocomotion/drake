@@ -105,7 +105,7 @@ GTEST_TEST(ProximityEngineTests, ExceptionTwoObjectsInObjFileForConvex) {
 // Tests for copy/move semantics.  ---------------------------------------------
 
 // Tests the copy semantics of the ProximityEngine -- the copy is a complete,
-// deep copy.
+// deep copy. Every type of shape specification must be included in this test.
 GTEST_TEST(ProximityEngineTests, CopySemantics) {
   ProximityEngine<double> ref_engine;
   Sphere sphere{0.5};
@@ -114,6 +114,19 @@ GTEST_TEST(ProximityEngineTests, CopySemantics) {
   EXPECT_EQ(a_index, 0);
   GeometryIndex g_index = ref_engine.AddDynamicGeometry(sphere);
   EXPECT_EQ(g_index, 0);
+
+  Cylinder cylinder{0.1, 1.0};
+  ref_engine.AddDynamicGeometry(cylinder);
+
+  Box box{0.1, 0.2, 0.3};
+  ref_engine.AddDynamicGeometry(box);
+
+  HalfSpace halfspace{};
+  ref_engine.AddDynamicGeometry(halfspace);
+
+  Convex convex{drake::FindResourceOrThrow(
+      "drake/geometry/test/quad_cube.obj"), 1.0};
+  ref_engine.AddDynamicGeometry(convex);
 
   ProximityEngine<double> copy_construct(ref_engine);
   ProximityEngineTester::IsDeepCopy(copy_construct, ref_engine);

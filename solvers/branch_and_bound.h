@@ -610,7 +610,7 @@ class MixedIntegerBranchAndBound {
    * in this node, but the remaining binary variables are all rounded to
    * the binary value that is closest to the solution of the optimization
    * program in this node.
-   * @Note this function is only called if the following conditions are
+   * @note this function is only called if the following conditions are
    * satisfied:
    * 1. The optimization problem in this node is feasible.
    * 2. The optimal solution to the problem in this node is not integral.

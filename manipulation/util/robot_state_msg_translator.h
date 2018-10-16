@@ -109,7 +109,7 @@ class RobotStateLcmMessageTranslator {
    * passed to the constructor.
    * @param[in] v Generalized velocity that corresponds to the rigid body tree
    * passed to the constructor.
-   * @param[in, out] msg Lcm message to be encoded.
+   * @param[in,out] msg Lcm message to be encoded.
    */
   void EncodeMessageKinematics(const Eigen::Ref<const VectorX<double>>& q,
                                const Eigen::Ref<const VectorX<double>>& v,

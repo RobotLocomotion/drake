@@ -128,7 +128,7 @@ class IntegratorBase {
    * a publish time, (status is kReachedPublishTime) the context may return an
    * interpolated value at an earlier time.
    *
-   * Note: the simulation step must always end at an update time but can end
+   * @note the simulation step must always end at an update time but can end
    * after a publish time.
    */
   // TODO(edrumwri): incorporate kReachedZeroCrossing into the simulator.
