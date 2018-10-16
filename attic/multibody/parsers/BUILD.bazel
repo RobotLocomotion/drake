@@ -89,6 +89,18 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "rbt_sdf_parser_test",
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        ":parsers",
+        "//common:find_resource",
+        "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "xml_util_test",
     deps = [
         ":parsers",
