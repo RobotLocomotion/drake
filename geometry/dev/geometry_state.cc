@@ -54,12 +54,6 @@ class GeometryStateTester {
     return state_.geometries_;
   }
 
-  const std::unordered_map<GeometryId,
-                           geometry::internal::InternalAnchoredGeometry>&
-  anchored_geometries() const {
-    return state_.anchored_geometries_;
-  }
-
   SourceId GetSourceId(GeometryId geometry_id) {
     return state_.get_source_id(state_.GetFrameId(geometry_id));
   }
@@ -268,27 +262,6 @@ GeometryState<T>& GeometryState<T>::operator=(
     }
   }
 
-  // Register only those geometries with non-zero alpha in the visual material.
-  // This is a bit of hack based on the fact that SDF parsing for MBP assigns
-  // an "invisible" material to all geometries registered as collision
-  // geometry.
-  // Register *anchored* geometries. They all affix directly to the world; so
-  // we can simply register them directly.
-  for (const auto& source_anchored : tester.source_anchored_geometry_map()) {
-    const SourceId source_id = source_anchored.first;
-    for (GeometryId geometry_id : source_anchored.second) {
-      const geometry::internal::InternalAnchoredGeometry& geometry =
-          tester.anchored_geometries().at(geometry_id);
-      const Vector4<double>& diffuse = geometry.get_visual_material().diffuse();
-      if (diffuse(3) > 0) {
-        RegisterValidGeometry(source_id, InternalFrame::world_frame_id(),
-                              geometry_id, geometry.get_shape().Clone(),
-                              geometry.get_name(),
-                              geometry.get_pose_in_parent(), diffuse, nullptr);
-      }
-    }
-  }
-
   // Register *dynamic* geometries. Like frames, geometries can be registered on
   // other geometries and they need to be registered *in order*.
   std::unordered_set<GeometryId> unprocessed_geometries;
@@ -297,7 +270,7 @@ GeometryState<T>& GeometryState<T>::operator=(
       GeometryId geometry_id) {
     const geometry::internal::InternalGeometry& geometry =
         tester.geometries().at(geometry_id);
-    if (!geometry.get_parent_id()) {
+    if (!geometry.parent_id()) {
       ordered_geometry.push_back(geometry_id);
     } else {
       auto iter = std::find(ordered_geometry.begin(), ordered_geometry.end(),
@@ -329,11 +302,11 @@ GeometryState<T>& GeometryState<T>::operator=(
   for (GeometryId geometry_id : ordered_geometry) {
     const geometry::internal::InternalGeometry& geometry =
         tester.geometries().at(geometry_id);
-    const Vector4<double>& diffuse = geometry.get_visual_material().diffuse();
+    const Vector4<double>& diffuse = geometry.visual_material().diffuse();
     if (diffuse(3) > 0) {
       internal::InternalGeometry* parent_geometry = nullptr;
-      if (geometry.get_parent_id()) {
-        GeometryId parent_id = *geometry.get_parent_id();
+      if (geometry.parent_id()) {
+        GeometryId parent_id = *geometry.parent_id();
         parent_geometry = &geometries_.at(parent_id);
       }
       // NOTE: This *could* fail if a geometry with non-zero alpha is parented
@@ -342,9 +315,9 @@ GeometryState<T>& GeometryState<T>::operator=(
       // the accompanying README.md.
       const SourceId source_id = tester.GetSourceId(geometry_id);
       RegisterValidGeometry(source_id,
-                            geometry.get_frame_id(), geometry_id,
-                            geometry.get_shape().Clone(), geometry.get_name(),
-                            geometry.get_pose_in_parent(), diffuse,
+                            geometry.frame_id(), geometry_id,
+                            geometry.shape().Clone(), geometry.name(),
+                            geometry.X_PG(), diffuse,
                             parent_geometry);
     }
   }
