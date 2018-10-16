@@ -74,8 +74,8 @@ class SceneGraphInspector {
 
   /** Returns the visual material of the geometry indicated by the given
    `geometry_id` (if it exists).
-   @throws std::logic_error if the geometry id is invalid.  */
-  const VisualMaterial* GetVisualMaterial(GeometryId geometry_id) const {
+   @throws  std::logic_error if the geometry id is invalid.  */
+  const VisualMaterial& GetVisualMaterial(GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->get_visual_material(geometry_id);
   }
