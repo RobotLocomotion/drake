@@ -16,6 +16,7 @@ namespace geometry {
  over to SceneGraph.
 
  A frame is defined by three pieces of information:
+
     - the name, which must be unique within a single geometry source,
     - the "frame group", an integer identifier that can be used to group frames
       together within a geometry source, and

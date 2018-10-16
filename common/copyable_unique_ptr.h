@@ -78,6 +78,7 @@ namespace drake {
  referenced object, such that the new copy contains an instance of `Base`
  instead of `Derived`. Some mistakes that would lead to this degenerate
  behavior:
+
    - The `Base` class has a public copy constructor.
    - The `Base` class's Clone() implementation does not invoke the `Derived`
    class's implementation of a suitable virtual method.

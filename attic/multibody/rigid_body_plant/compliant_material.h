@@ -58,6 +58,7 @@ class CompliantMaterial {
 
   /** Constructs fully specified material. Will throw an exception in any of the
    following circumstances:
+
      - `youngs_modulus` <= 0
      - `dissipation` < 0
      - `static_friction` < 0

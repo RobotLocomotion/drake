@@ -29,19 +29,22 @@ struct ShapeTag{};
 /** The base interface for all shape specifications. It has no public
   constructor and cannot be instantiated directly. The Shape class has two
   key properties:
+
    - it is cloneable, and
    - it can be "reified" (see ShapeReifier).
 
   When you add a new subclass of Shape, you must:
-   1. add a pure virtual function ImplementGeometry() for the new shape in
-      ShapeReifier.
-   2. define ImplementGeometry() for the new shape in the subclasses of
-      ShapeReifier.
-   3. modify CopyShapeOrThrow() of ProximityEngine to support the new shape and
-      add an instance of the new shape to the CopySemantics test in
-      proximity_engine_test.cc.
-   4. test the new shape in the class BoxPenetrationTest of
-      proximity_engine_test.cc
+
+  1. add a pure virtual function ImplementGeometry() for the new shape in
+     ShapeReifier.
+  2. define ImplementGeometry() for the new shape in the subclasses of
+     ShapeReifier.
+  3. modify CopyShapeOrThrow() of ProximityEngine to support the new shape and
+     add an instance of the new shape to the CopySemantics test in
+     proximity_engine_test.cc.
+  4. test the new shape in the class BoxPenetrationTest of
+     proximity_engine_test.cc
+
   Otherwise, you might get a runtime error. We do not have an automatic way to
   enforce them at compile time.
  */

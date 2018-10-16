@@ -16,6 +16,7 @@ namespace multibody_plant {
 /**
  A class containing information regarding contact response between two bodies
  including:
+
     - The pair of bodies that are contacting, referenced by their BodyIndex.
     - A resultant contact force.
     - A contact point.

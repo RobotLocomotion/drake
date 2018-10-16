@@ -25,7 +25,8 @@ class RigidBody {
   /**
    * Returns a clone of this RigidBody.
    *
-   * *Important note!* The following are not cloned:
+   * @attention The following are not cloned:
+   *
    *    - the joint
    *    - the parent %RigidBody
    *    - the visual elements
@@ -297,6 +298,7 @@ class RigidBody {
    * single inboard joint. This joint defines several frames, discussed in
    * @ref rigid_body_tree_frames, including its parent frame: `Pₖ ≡ Bₖ₋₁`. This
    * allows us to compute `X_Bₖ₋₁Bₖ` as follows:
+   *
    * - `X_Bₖ₋₁Bₖ = X_PₖBₖ` because `Pₖ ≡ Bₖ₋₁`
    * - `X_PₖBₖ ≡ X_PₖFₖ * X_FₖMₖ(q) * X_MₖBₖ`, where:
    *    - `X_MₖBₖ = I` in Drake's implementation.

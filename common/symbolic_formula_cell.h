@@ -372,6 +372,7 @@ class FormulaPositiveSemidefinite : public FormulaCell {
    * the two matrices `m1` in `psd1` and `m2` in `psd2`.
    *
    * First, we compare the size of `m1` and `m2`:
+   *
    * - If `m1` is smaller than `m2`, `psd1.Less(psd2)` is true.
    * - If `m2` is smaller than `m1`, `psd1.Less(psd2)` is false.
    *
@@ -389,7 +390,8 @@ class FormulaPositiveSemidefinite : public FormulaCell {
    * EXPECT_TRUE(psd1.Less(psd2));
    * @endcode
    *
-   * Note that in the code above, `psd1.Less(psd2)` holds because we have
+   * @note In the code above, `psd1.Less(psd2)` holds because we have
+   *
    *  - m1 in column-major ordering : (x + y)  -3.14   -3.14   y_
    *  - m2 in column-major ordering : (x + y)   3.14    3.14   y_.
    */
