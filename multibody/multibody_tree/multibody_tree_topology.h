@@ -898,9 +898,12 @@ class MultibodyTreeTopology {
     DRAKE_DEMAND(get_body_node((*path_to_world)[1]).level == 1);
   }
 
-  /// Returns `true` if `body_index` is anchored to the world.
+  /// Returns `true` if the body with index `body_index` is anchored to the
+  /// world.
   /// A body is said to be "anchored" if its kinematics path to the world only
   /// contains weld mobilizers.
+  /// The complexity of this operation is O(depth), where "depth" refers to the
+  /// depth in the tree of the body node associated with `body_index`.
   bool IsBodyAnchored(BodyIndex body_index) const {
     DRAKE_DEMAND(is_valid());
     const BodyTopology& body = get_body(body_index);

@@ -830,7 +830,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
       systems::Context<T>* context,
       const Body<T>& body, const Isometry3<T>& X_WB) const;
 
-  /// Sets `context` to store the pose `X_FB` of a given `body` B in a frame F.
+  /// Updates `context` to store the pose `X_FB` of a given `body` B in a frame
+  /// F.
   /// Frame F must be anchored, meaning that it is either directly welded to the
   /// world frame W or, more generally, that there is a kinematic path between
   /// frame F and the world frame W that only includes weld joints.

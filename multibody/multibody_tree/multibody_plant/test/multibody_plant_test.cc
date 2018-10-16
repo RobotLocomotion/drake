@@ -2025,7 +2025,7 @@ GTEST_TEST(StateSelection, FloatingBodies) {
 
   MultibodyPlant<double> plant;
 
-  // Load a model of a table where to put the robot on.
+  // Load a model of a table for the robot.
   const ModelInstanceIndex robot_table_model =
       AddModelFromSdfFile(table_sdf_path, "robot_table", &plant);
   plant.WeldFrames(plant.world_frame(),
