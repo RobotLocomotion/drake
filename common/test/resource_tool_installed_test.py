@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 """Performs tests for resource_tool as used _after_ installation.
 """
