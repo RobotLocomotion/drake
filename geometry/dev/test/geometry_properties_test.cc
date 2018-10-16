@@ -162,6 +162,29 @@ GTEST_TEST(GeometryProperties, GetPropertyOrDefault) {
   read_value = properties.GetPropertyOrDefault("invalid_group", "invalid_prop",
                                                default_value);
   EXPECT_EQ(default_value, read_value);
+
+  // Case: Property exists of different type.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      properties.GetPropertyOrDefault(group_name, prop_name, "test"),
+      std::logic_error,
+      ".*a request to extract a value of type 'std::string' failed .* actual "
+      "type was 'int'.")
+
+  // Using r-values as defaults; this tests both compilability and correctness.
+  properties.AddGroup("strings");
+  properties.AddProperty("strings", "valid_string", "valid_string");
+  const std::string& valid_ref = properties.GetPropertyOrDefault(
+      "strings", "valid_string", "missing");
+  EXPECT_EQ("valid_string", valid_ref);
+
+  // If there is no mis-use of the stack, these should both work and the
+  // sequential invocation will *not* cause the names to collide.
+  const std::string& missing_ref1 = properties.GetPropertyOrDefault(
+      "strings", "missing1", "missing_ref1");
+  const std::string& missing_ref2 = properties.GetPropertyOrDefault(
+      "strings", "missing1", "missing_ref2");
+  EXPECT_EQ("missing_ref1", missing_ref1);
+  EXPECT_EQ("missing_ref2", missing_ref2);
 }
 
 // Tests the unsuccessful access to properties (successful access has been
