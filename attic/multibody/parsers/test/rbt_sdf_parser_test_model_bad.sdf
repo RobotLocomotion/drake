@@ -1,0 +1,13 @@
+<sdf version='1.6'>
+  <model name='sdf_parser_test_model_bad'>
+    <!-- Test bad parsing. -->
+    <link name='link1'>
+      <!-- Ensure we have at least one link. -->
+    </link>
+    <!--  For RBT, unnamed frames is unsupported. -->
+    <frame name='model_scope_model_frame_implicit'>
+      <!-- This pose represents `X_MF3`. -->
+      <pose>0.7 0.8 0.9 0 0 0</pose>
+    </frame>
+  </model>
+</sdf>

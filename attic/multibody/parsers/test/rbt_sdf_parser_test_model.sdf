@@ -1,0 +1,39 @@
+<sdf version='1.6'>
+  <!-- Add a model to ensure `sdf_parser_test_model` does not share the same
+       model instance ID as the world body. -->
+  <model name='dummy_model'>
+    <link name='dummy_link'/>
+  </model>
+
+  <model name='sdf_parser_test_model'>
+    <!-- This is a subset of elements from:
+         //multibody/multibody_tree/parsing/test:links_with_visuals_and_collisions.sdf
+         This is meant to test a subset of porting backwards compatible
+         functionality. -->
+
+    <link name='link1'>
+      <!-- We will denote this link frame as `L1`. -->
+    </link>
+
+    <!-- Test new-style frames -->
+    <!-- We will define this frame as `F1`. -->
+    <frame name='model_scope_link1_frame'>
+      <!-- This pose represents `X_L1F1`. -->
+      <pose frame='link1'>0.1 0.2 0.3 0.4 0.5 0.6</pose>
+    </frame>
+    <!-- We will define this frame as `F2`. -->
+    <frame name='model_scope_link1_frame_child'>
+      <!-- This pose represents `X_F1F2`. -->
+      <pose frame='model_scope_link1_frame'>0.1 0 0 0 0 0</pose>
+    </frame>
+
+    <!-- Test old (Drake-specific) frames, NOT supported by sdformat
+         (i.e., MultibodyPlant) -->
+    <!-- We will define this frame as `O1`. -->
+    <frame name='old_style_frame'>
+      <link>link1</link>
+      <pose>1 2 3 4 5 6</pose>
+    </frame>
+
+  </model>
+</sdf>

@@ -12,6 +12,8 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/joints/drake_joints.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
@@ -20,16 +22,6 @@
 #include "drake/multibody/parsers/xml_util.h"
 #include "drake/multibody/rigid_body_plant/compliant_material.h"
 #include "drake/multibody/rigid_body_tree.h"
-
-// from
-// http://stackoverflow.com/questions/478898/how-to-execute-a-command-and-get-output-of-command-within-c
-#if defined(WIN32) || defined(WIN64)
-#define POPEN _popen
-#define PCLOSE _pclose
-#else
-#define POPEN popen
-#define PCLOSE pclose
-#endif
 
 namespace drake {
 namespace parsers {
@@ -57,6 +49,13 @@ using tinyxml2::XMLElement;
 using tinyxml2::XMLDocument;
 
 using drake::multibody::joints::FloatingBaseType;
+
+// TODO(eric.cousineau): Figure out a core location for a sugar method like
+// this.
+Isometry3d XyzRpy(const Vector3d& xyz, const Vector3d& rpy) {
+  return math::RigidTransform<double>(
+      math::RollPitchYaw<double>(rpy).ToRotationMatrix(), xyz).GetAsIsometry3();
+}
 
 void ParseSdfInertial(
     RigidBody<double>* body, XMLElement* node,
@@ -372,8 +371,9 @@ void setSDFDynamics(XMLElement* node,
   }
 }
 
-void ParseSdfFrame(RigidBodyTree<double>* rigid_body_tree, XMLElement* node,
-                   int model_instance_id) {
+void ParseSdfFrame(
+    RigidBodyTree<double>* rigid_body_tree, XMLElement* node,
+    int model_instance_id) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return;
 
@@ -383,18 +383,6 @@ void ParseSdfFrame(RigidBodyTree<double>* rigid_body_tree, XMLElement* node,
                         ": ERROR: Frame tag is missing a name attribute.");
   }
   string name(attr);
-
-  // Parses the body.
-  string body_name;
-  if (!parseStringValue(node, "link", body_name)) {
-    throw runtime_error(string(__FILE__) + ": " + __func__ +
-                        ": ERROR: Frame \"" + name +
-                        "\" doesn't have a link node.");
-  }
-
-  // The following will throw a std::runtime_error if the link doesn't exist.
-  RigidBody<double>* link =
-      rigid_body_tree->FindBody(body_name, "", model_instance_id);
 
   // Get the frame's pose
   XMLElement* pose = node->FirstChildElement("pose");
@@ -413,11 +401,55 @@ void ParseSdfFrame(RigidBodyTree<double>* rigid_body_tree, XMLElement* node,
     s >> xyz(0) >> xyz(1) >> xyz(2) >> rpy(0) >> rpy(1) >> rpy(2);
   }
 
-  // Create the frame
-  std::shared_ptr<RigidBodyFrame<double>> frame =
-      allocate_shared<RigidBodyFrame<double>>(
-          Eigen::aligned_allocator<RigidBodyFrame<double>>(),
-          name, link, xyz, rpy);
+  std::shared_ptr<RigidBodyFrame<double>> frame;
+
+  // Check for old (Drake-specific) or new (sdformat spec) style.
+  if (node->FirstChildElement("link")) {
+    // Old style.
+    // TODO(eric.cousineau): Consider deprecating this.
+    // Parses the body.
+    string body_name;
+    if (!parseStringValue(node, "link", body_name)) {
+      throw runtime_error(string(__FILE__) + ": " + __func__ +
+                          ": ERROR: Frame \"" + name +
+                          "\" doesn't have a link node.");
+    }
+
+    // The following will throw a std::runtime_error if the link doesn't exist.
+    RigidBody<double>* link =
+        rigid_body_tree->FindBody(body_name, "", model_instance_id);
+
+    // Create the frame
+    frame = allocate_shared<RigidBodyFrame<double>>(
+        Eigen::aligned_allocator<RigidBodyFrame<double>>(),
+        name, link, xyz, rpy);
+  } else {
+    // New style.
+    string pose_frame_name;
+    if (const char* tmp = pose->Attribute("frame")) {
+      pose_frame_name = tmp;
+    }
+    if (pose_frame_name.empty()) {
+      // Due to (a) ambiguities on how model frames should be referred to and
+      // (b) the inability to specify a model instance ID for a frame (not
+      // related to the kinematic body), we do not support default names at
+      // present.
+      throw runtime_error(
+          string(__FILE__) + ":" + __func__ +
+          ": ERROR: Frame \"" + name + "\" doesn't have a 'frame' attribute. "
+          "Implicit frames are unsupported in RigidBodyTree SDF parsing.");
+    }
+    std::shared_ptr<RigidBodyFrame<double>> pose_frame =
+        rigid_body_tree->findFrame(pose_frame_name, model_instance_id);
+
+    const Isometry3d X_BP = pose_frame->get_transform_to_body();
+    const Isometry3d X_PF = XyzRpy(xyz, rpy);
+
+    RigidBody<double>* body = pose_frame->get_mutable_rigid_body();
+    frame = allocate_shared<RigidBodyFrame<double>>(
+        Eigen::aligned_allocator<RigidBodyFrame<double>>(),
+        name, body, X_BP * X_PF);
+  }
 
   rigid_body_tree->addFrame(frame);
 }
