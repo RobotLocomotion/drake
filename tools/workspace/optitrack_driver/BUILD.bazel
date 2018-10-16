@@ -43,7 +43,7 @@ install(
     workspace = CMAKE_PACKAGE,
     targets = OPTITRACK_TARGETS,
     java_strip_prefix = ["**/"],
-    py_dest = "lib/python2.7/site-packages/optitrack",
+    py_dest = "@PYTHON_SITE_PACKAGES@/optitrack",
     py_strip_prefix = ["**/"],
     hdr_dest = "include",
     guess_hdrs = "PACKAGE",
