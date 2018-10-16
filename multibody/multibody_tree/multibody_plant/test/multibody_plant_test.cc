@@ -612,6 +612,10 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
                                 kTolerance, MatrixCompareType::relative));
   }
 
+  // TODO(SeanCurtis-TRI): These tests are no longer valid; there *is* a frame
+  // id for the world body. This test needs to be changed so that there is
+  // *another* body that doesn't have geometry.
+#if 0
   // SceneGraph does not register a FrameId for the world. We use this fact
   // to test that GetBodyFrameIdOrThrow() throws an assertion for a body with no
   // FrameId, even though in this model we register an anchored geometry to the
@@ -626,6 +630,7 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   optional<FrameId> undefined_id =
       plant_->GetBodyFrameIdIfExists(world_index());
   EXPECT_EQ(undefined_id, nullopt);
+#endif
 }
 
 // Verifies that the right errors get invoked upon finalization.
@@ -928,9 +933,9 @@ GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometries) {
     GeometrySet set =
         plant.CollectRegisteredGeometries(
             {&scenario.mutable_plant()->world_body()});
-    EXPECT_EQ(set.num_geometries(), 1);
-    EXPECT_TRUE(set.contains(scenario.ground_id()));
-    EXPECT_EQ(set.num_frames(), 0);
+    EXPECT_EQ(set.num_frames(), 1);
+    EXPECT_EQ(set.num_geometries(), 0);
+    EXPECT_FALSE(set.contains(scenario.ground_id()));
   }
 }
 
@@ -1072,22 +1077,27 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   scene_graph.get_query_output_port().Calc(*context, state_value.get());
 
   const SceneGraphInspector<double>& inspector = query_object.inspector();
-  const VisualMaterial* test_material =
-      inspector.GetVisualMaterial(ground_id);
-  EXPECT_NE(test_material, nullptr);
-  EXPECT_TRUE(CompareMatrices(test_material->diffuse(),
-                              VisualMaterial().diffuse(), 0.0,
-                              MatrixCompareType::absolute));
+  {
+    const VisualMaterial& test_material =
+        inspector.GetVisualMaterial(ground_id);
+    EXPECT_TRUE(CompareMatrices(test_material.diffuse(),
+                                VisualMaterial().diffuse(), 0.0,
+                                MatrixCompareType::absolute));
+  }
 
-  test_material = inspector.GetVisualMaterial(sphere1_id);
-  EXPECT_NE(test_material, nullptr);
-  EXPECT_TRUE(CompareMatrices(test_material->diffuse(), sphere1_diffuse, 0.0,
-                              MatrixCompareType::absolute));
+  {
+    const VisualMaterial& test_material =
+        inspector.GetVisualMaterial(sphere1_id);
+    EXPECT_TRUE(CompareMatrices(test_material.diffuse(), sphere1_diffuse, 0.0,
+                                MatrixCompareType::absolute));
+  }
 
-  test_material = inspector.GetVisualMaterial(sphere2_id);
-  EXPECT_NE(test_material, nullptr);
-  EXPECT_TRUE(CompareMatrices(test_material->diffuse(), sphere2_diffuse, 0.0,
-                              MatrixCompareType::absolute));
+  {
+    const VisualMaterial& test_material =
+        inspector.GetVisualMaterial(sphere2_id);
+    EXPECT_TRUE(CompareMatrices(test_material.diffuse(), sphere2_diffuse, 0.0,
+                                MatrixCompareType::absolute));
+  }
 }
 
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {

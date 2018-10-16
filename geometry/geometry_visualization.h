@@ -1,6 +1,6 @@
 /** @file
  Provides a set of functions to facilitate visualization operations based on
- SceneGraph system state. */
+ SceneGraph system state.  */
 
 #pragma once
 

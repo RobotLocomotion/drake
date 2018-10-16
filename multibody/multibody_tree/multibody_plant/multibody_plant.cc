@@ -249,6 +249,7 @@ geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
   // the user is making calls on the same GS instance. Only used for that
   // purpose, it gets nullified at Finalize().
   scene_graph_ = scene_graph;
+  body_index_to_frame_id_[world_index()] = scene_graph->world_frame_id();
   return source_id_.value();
 }
 
@@ -281,14 +282,12 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
         "SceneGraph used on the first call to "
         "RegisterAsSourceForSceneGraph()");
   }
-  GeometryId id;
+
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
-  // register anchored geometry on ANY body welded to the world.
-  if (body.index() == world_index()) {
-    id = RegisterAnchoredGeometry(X_BG, shape, name, material, scene_graph);
-  } else {
-    id = RegisterGeometry(body, X_BG, shape, name, material, scene_graph);
-  }
+  // register geometry that has a fixed path to world to the world body (i.e.,
+  // as anchored geometry).
+  GeometryId id = RegisterGeometry(body, X_BG, shape, name, material,
+      scene_graph);
   const int visual_index = geometry_id_to_visual_index_.size();
   geometry_id_to_visual_index_[id] = visual_index;
   DRAKE_ASSERT(num_bodies() == static_cast<int>(visual_geometries_.size()));
@@ -317,7 +316,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
         "SceneGraph used on the first call to "
         "RegisterAsSourceForSceneGraph()");
   }
-  GeometryId id;
+
   // We use an "invisible" color with alpha channel set to zero so that
   // collision geometry does not render on top of visual geometry in our
   // visualizer.
@@ -326,14 +325,10 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   const geometry::VisualMaterial invisible_material(
       Vector4<double>(0.0, 0.0, 0.0, 0.0));
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
-  // register anchored geometry on ANY body welded to the world.
-  if (body.index() == world_index()) {
-    id = RegisterAnchoredGeometry(X_BG, shape, name, invisible_material,
-                                  scene_graph);
-  } else {
-    id = RegisterGeometry(body, X_BG, shape, name, invisible_material,
-                          scene_graph);
-  }
+  // register geometry that has a fixed path to world to the world body (i.e.,
+  // as anchored geometry).
+  GeometryId id = RegisterGeometry(body, X_BG, shape, name, invisible_material,
+      scene_graph);
   const int collision_index = geometry_id_to_collision_index_.size();
   geometry_id_to_collision_index_[id] = collision_index;
   DRAKE_ASSERT(
@@ -362,11 +357,6 @@ geometry::GeometrySet MultibodyPlant<T>::CollectRegisteredGeometries(
     optional<FrameId> frame_id = GetBodyFrameIdIfExists(body->index());
     if (frame_id) {
       geometry_set.Add(frame_id.value());
-    } else if (body->index() == world_index()) {
-      // TODO(SeanCurtis-TRI): MBP shouldn't be storing these GeometryIds.
-      // Remove this when SG supports world frame id that can be mapped to
-      // MBP's world body.
-      geometry_set.Add(collision_geometries_[body->index()]);
     }
   }
   return geometry_set;
@@ -379,8 +369,6 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
     const std::string& name,
     const optional<geometry::VisualMaterial>& material,
     SceneGraph<T>* scene_graph) {
-  // This should never be called with the world index.
-  DRAKE_DEMAND(body.index() != world_index());
   DRAKE_ASSERT(!is_finalized());
   DRAKE_ASSERT(geometry_source_is_registered());
   DRAKE_ASSERT(scene_graph == scene_graph_);
@@ -412,29 +400,6 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
       source_id_.value(), body_index_to_frame_id_[body.index()],
       std::move(geometry_instance));
   geometry_id_to_body_index_[geometry_id] = body.index();
-  return geometry_id;
-}
-
-template <typename T>
-geometry::GeometryId MultibodyPlant<T>::RegisterAnchoredGeometry(
-    const Isometry3<double>& X_WG, const geometry::Shape& shape,
-    const std::string& name, const optional<geometry::VisualMaterial>& material,
-    SceneGraph<T>* scene_graph) {
-  DRAKE_ASSERT(!is_finalized());
-  DRAKE_ASSERT(geometry_source_is_registered());
-  DRAKE_ASSERT(scene_graph == scene_graph_);
-
-  std::unique_ptr<geometry::GeometryInstance> geometry_instance;
-  if (material) {
-    geometry_instance = std::make_unique<GeometryInstance>(
-        X_WG, shape.Clone(), name, material.value());
-  } else {
-    geometry_instance =
-        std::make_unique<GeometryInstance>(X_WG, shape.Clone(), name);
-  }
-  GeometryId geometry_id = scene_graph->RegisterAnchoredGeometry(
-      source_id_.value(), std::move(geometry_instance));
-  geometry_id_to_body_index_[geometry_id] = world_index();
   return geometry_id;
 }
 
@@ -1656,6 +1621,7 @@ void MultibodyPlant<T>::DeclareSceneGraphPorts() {
   // been registered.
   std::vector<FrameId> ids;
   for (auto it : body_index_to_frame_id_) {
+    if (it.first == world_index()) continue;
     ids.push_back(it.second);
   }
   geometry_pose_port_ =
@@ -1670,8 +1636,11 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_ASSERT(source_id_ != nullopt);
+  // NOTE: The body index to frame id map *always* includes the world body but
+  // the world body does *not* get reported in the frame poses; only dynamic
+  // frames do.
   DRAKE_ASSERT(
-      poses->size() == static_cast<int>(body_index_to_frame_id_.size()));
+      poses->size() == static_cast<int>(body_index_to_frame_id_.size() - 1));
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
   // TODO(amcastro-tri): Make use of Body::EvalPoseInWorld(context) once caching
@@ -1679,6 +1648,7 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
   poses->clear();
   for (const auto it : body_index_to_frame_id_) {
     const BodyIndex body_index = it.first;
+    if (body_index == world_index()) continue;
     const Body<T>& body = tree().get_body(body_index);
 
     // NOTE: The GeometryFrames for each body were registered in the world

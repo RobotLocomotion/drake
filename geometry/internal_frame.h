@@ -40,13 +40,12 @@ class InternalFrame {
    @param frame_id      The identifier of _this_ frame.
    @param name          The name of the frame.
    @param frame_group   The frame's frame group membership.
-   @param pose_index    The position in the pose vector of this frame's last
-                        known pose.
+   @param index         The index of this frame in the SceneGraph.
    @param parent_id     The id of the parent frame.
    @param clique        The clique that will be used to prevent self-collision
                         among geometries rigidly affixed to this frame.  */
-  InternalFrame(SourceId source_id, FrameId frame_id, const std::string &name,
-                int frame_group, PoseIndex pose_index, FrameId parent_id,
+  InternalFrame(SourceId source_id, FrameId frame_id, const std::string& name,
+                int frame_group, FrameIndex index, FrameId parent_id,
                 int clique);
 
   /** Compares two %InternalFrame instances for "equality". Two internal frames
@@ -74,8 +73,8 @@ class InternalFrame {
    internal significance or dependencies.  */
   int frame_group() const { return frame_group_; }
 
-  /** Returns the pose index of this frame in the full scene graph.  */
-  PoseIndex pose_index() const { return pose_index_; }
+  /** Returns the index of this frame in the full scene graph.  */
+  FrameIndex index() const { return index_; }
 
   /** Returns the clique associated with this frame.  */
   int clique() const { return clique_; }
@@ -147,6 +146,24 @@ class InternalFrame {
    world frame.  */
   static FrameId world_frame_id() { return kWorldFrame; }
 
+  /** Reports the reserved frame group for the world frame.  */
+  static int world_frame_group() {
+    // Pick a sentinel value that can't be mistaken for initialization noise.
+    // Users cannot declare geometry frames with negative frame groups
+    // so, using this value won't collide with any valid user-specified value.
+    return -1234567;
+  }
+
+  /** Reports the reserved clique for the world frame.  */
+  static int world_frame_clique() {
+    // Pick a sentinel value that can't be mistaken for initialization noise.
+    // Cliques are generated strictly internally. They start at zero and span
+    // the non-negative integers (if roll over occurs, an exception is thrown.)
+    // Therefore, a negative value here cannot collide with valid user values.
+    // Also, the world frame's clique is *not* used.
+    return -1234567;
+  }
+
  private:
   // The identifier of the source, to which this frame belongs.
   SourceId source_id_;
@@ -163,8 +180,8 @@ class InternalFrame {
   // The frame group to which this frame belongs.
   int frame_group_{0};
 
-  // The index in the pose vector where this frame's pose lives.
-  PoseIndex pose_index_;
+  // The index of this frame in the full SceneGraph.
+  FrameIndex index_;
 
   // The clique used to prevent self-collision among the geometries affixed to
   // this frame.
