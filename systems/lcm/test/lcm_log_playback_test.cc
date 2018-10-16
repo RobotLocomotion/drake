@@ -32,7 +32,7 @@ class DummySys : public LeafSystem<double> {
 
   DummySys() {
     DeclareAbstractInputPort("lcmt_drake_signal", Value<lcmt_drake_signal>());
-    DeclarePeriodicPublish(1.0/publish_freq_, 0.0 /* no time offset */);
+    DeclarePeriodicPublish(1.0 / publish_freq_, 0.0 /* no time offset */);
   }
 
   const std::vector<lcmt_drake_signal>& get_received_msgs() const {
@@ -74,8 +74,8 @@ class DummySys : public LeafSystem<double> {
       // event, discrete update event, continuous state update [integration],
       // publish, meaning that time is advanced between the unrestricted update
       // and the publish). Therefore, publish times are expected to be one
-      // "tick" behind because
-      received_time_.push_back(context.get_time() - 1.0/publish_freq_);
+      // "tick" behind.
+      received_time_.push_back(context.get_time() - 1.0 / publish_freq_);
     }
   }
 
