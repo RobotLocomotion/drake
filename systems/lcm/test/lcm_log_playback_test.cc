@@ -53,8 +53,8 @@ class DummySys : public LeafSystem<double> {
   // is connected to) and the publish.
   void DoPublish(
       const Context<double>& context,
-      const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
-      DiscreteValues<double>*) const override {
+      const std::vector<const systems::DiscreteUpdateEvent<double>*>&)
+  const override {
     const lcmt_drake_signal* msg =
         EvalInputValue<lcmt_drake_signal>(context, 0);
 
