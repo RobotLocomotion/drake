@@ -289,10 +289,10 @@ class GeometryProperties {
   }
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // Note: these two overloads of the property write methods exist to enable
+  // Note: these overloads of the property access methods exist to enable
   // calls like `properties.AddProperty("group", "property", "string literal");
   // Template matching would deduce that the `ValueType` in this case is a const
-  // char* (which is copyable). By explicitly declaring this API, we can
+  // char* (which is not copyable). By explicitly declaring this API, we can
   // implicitly convert the string literals to copyable std::strings. We omit
   // these from the doxygen because they provide no value there.
   bool AddProperty(const std::string& group_name, const std::string& name,
@@ -303,6 +303,12 @@ class GeometryProperties {
   void SetProperty(const std::string& group_name, const std::string& name,
                    const char* value) {
     SetProperty<std::string>(group_name, name, value);
+  }
+
+  std::string GetPropertyOrDefault(const std::string& group_name,
+                                   const std::string& name,
+                                   const char* default_value) const {
+    return GetPropertyOrDefault(group_name, name, std::string(default_value));
   }
 #endif
 
@@ -344,7 +350,16 @@ class GeometryProperties {
   }
 
   /** Retrieves the typed value from the property set (if it exists), otherwise
-   returns the given default value.  */
+   returns the given default value.
+
+   Generally, it is unnecessary to explicitly declare the `ValueType` of the
+   property value; it will be inferred from the provided default value. If,
+   however, there is an implicit conversion between what is provided as the
+   `default_value` and the _stored_ `ValueType` it will be necessary to
+   explicitly declare the return `ValueType` template parameter.
+
+   @throws std::logic_error if a property of the given name exists but is not
+                            of `ValueType`.  */
   template <typename ValueType>
   const ValueType& GetPropertyOrDefault(const std::string& group_name,
                                         const std::string& name,
@@ -358,6 +373,22 @@ class GeometryProperties {
       }
     }
     return default_value;
+  }
+
+  /** Overload which allows a temporary value as the default value.  */
+  template <typename ValueType>
+  ValueType GetPropertyOrDefault(const std::string& group_name,
+                                 const std::string& name,
+                                 ValueType&& default_value) const {
+    const auto iter = values_.find(group_name);
+    if (iter != values_.end()) {
+      const PropertyGroup& group = iter->second;
+      const auto value_iter = group.find(name);
+      if (value_iter != group.end()) {
+        return value_iter->second->GetValueOrThrow<ValueType>();
+      }
+    }
+    return static_cast<ValueType>(std::forward<ValueType>(default_value));
   }
 
   /** Retrieves the set of defined properties for the indicated `group`.

@@ -78,9 +78,6 @@ drake_cc_binary(
     name = "solar_system_run_dynamics",
     srcs = ["solar_system_run_dynamics.cc"],
     add_test_rule = 1,
-    tags = [
-        "no_asan",  # It doesn't pass yet.
-    ],
     test_rule_args = [
         "--simulation_time=0.1",
     ],
