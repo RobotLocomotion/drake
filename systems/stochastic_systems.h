@@ -9,9 +9,9 @@ leverage the stochastic modeling framework.
 
 A system in Drake can be viewed as having the state-space dynamics
 
-  x[n+1] = f(p; n, x[n], u[n], w[n]), 
+  x[n+1] = f(p; n, x[n], u[n], w[n]),
 
-  y[n] = g(p; n, x[n], u[n], w[n]), 
+  y[n] = g(p; n, x[n], u[n], w[n]),
 
 where n is the time index, x is the state, y is the output, u is the
 input, and p are the (constant) parameters.  This form also calls out
@@ -24,7 +24,7 @@ many signals will throughout the diagram become random variables, but
 this label is used to denote the "point of entry" for an independent
 random variable.
 
-Note: For simplicity, I've written only a simple discrete-time system
+@note For simplicity, I've written only a simple discrete-time system
 form above, but the same model holds for continuous-time systems, and
 multi-rate systems, and systems with multiple input/output ports as
 well, precisely because w is treated exactly as an additional input

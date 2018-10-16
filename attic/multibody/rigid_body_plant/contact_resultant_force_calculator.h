@@ -26,12 +26,15 @@ namespace systems {
  Center of Pressure (more precisely center of normal forces for planar contact)
  ==============================================================================
  For point `P` to be a center of pressure (as returned by this class):
+
     - The normal components of all forces must lie in the same direction, `n`.
     - The points, where each force is applied, must lie on one plane, `F`.
     - Plane `F` must be perpendicular to `n`.
+
  If these conditions are met, `P` will be the center of pressure and lie on
  plane `F`, and the minimum moment due to the normal forces will be zero.
- Note: this class does not rely on a center of pressure *existing*.
+
+ @note This class does not rely on a center of pressure *existing*.
 
  Usage
  =====
@@ -41,10 +44,12 @@ namespace systems {
  is processed and a contact force is computed, the details of the contact force
  are provided to the calculator (via calls to AddForce).
  Currently, the contact force is defined by four values (see ContactForce):
+
     - position of the force's point of application from a common origin O,
     - normal component of the contact force (i.e., in the *normal* direction),
     - tangential component of the contact force (e.g., friction force), and
     - Optional torque term (e.g., torsional friction).
+
  All input vectors must be expressed in a common frame and the position vector
  must be measured from that frame's origin.
 
@@ -134,8 +139,9 @@ namespace systems {
  @tparam T The scalar type. Must be a valid Eigen scalar.
 
  Instantiated templates for the following ScalarTypes are provided:
-   - double
-   - AutoDiffXd
+
+ - double
+ - AutoDiffXd
  */
 template <typename T>
 class ContactResultantForceCalculator {

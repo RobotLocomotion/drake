@@ -87,7 +87,9 @@ X_EL →├───┘       │  S  │           X_MP → ├───┘
  @tparam T The vector element type, which must be a valid Eigen scalar.
 
  Instantiated templates for the following kinds of T's are provided:
- - double */
+
+ - double
+*/
 template <typename T>
 class SolarSystem : public systems::LeafSystem<T> {
  public:
