@@ -913,8 +913,8 @@ bool Simulator<T>::IntegrateContinuousState(
     // are detected in the interval [t0, tf], any additional time-triggered
     // events are only relevant iff at least one witness function is
     // successfully isolated (see IsolateWitnessTriggers() for details).
-    IsolateWitnessTriggers(witness_functions, w0_, t0, x0, tf,
-                             &triggered_witnesses_);
+    IsolateWitnessTriggers(
+        witness_functions, w0_, t0, x0, tf, &triggered_witnesses_);
 
     // Store the state at x0 in the temporary continuous state. We only do this
     // if there are triggered witnesses (even though `witness_triggered` is
