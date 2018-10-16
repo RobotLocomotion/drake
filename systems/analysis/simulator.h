@@ -37,7 +37,6 @@ namespace systems {
 /// contact.
 ///
 /// Given a current Context, we expect a System to provide us with
-///
 /// - derivatives for the continuous differential equations that already satisfy
 ///   the differentiated form of the constraints (typically, acceleration
 ///   constraints),
@@ -70,7 +69,6 @@ namespace systems {
 ///
 /// Instantiated templates for the following kinds of T's are provided and
 /// available to link against in the containing library:
-///
 /// - double
 /// - AutoDiffXd
 ///
@@ -119,7 +117,7 @@ class Simulator {
   /// it might produce.
   ///
   /// @param boundary_time The time to advance the context to.
-  /// @pre The simulation state is valid  (i.e., no discrete updates or state
+  /// @pre The simulation state is valid (i.e., no discrete updates or state
   /// projections are necessary) at the present time.
   void StepTo(const T& boundary_time);
 
@@ -346,7 +344,7 @@ class Simulator {
 
   bool IntegrateContinuousState(const T& next_publish_dt,
       const T& next_update_dt,
-      const T& next_sample_time,
+      const T& next_timed_event_time,
       const T& boundary_dt,
       CompositeEventCollection<T>* events);
 
@@ -563,7 +561,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
   // Updates/publishes can be triggered throughout the integration process,
   // but are not active at the start of the step.
-  bool sample_time_hit = false;
+  bool event_triggered = false;
 
   // Integrate until desired interval has completed.
   auto timed_events = system_.AllocateCompositeEventCollection();
@@ -594,31 +592,32 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // Do restricted (discrete variable) updates next.
     HandleDiscreteUpdate(merged_events->get_discrete_update_events());
 
-    // How far can we go before we have to take a sampling break?
-    const T next_sample_time =
+    // How far can we go before we have to handle timed events?
+    const T next_timed_event_time =
         system_.CalcNextUpdateTime(*context_, timed_events.get());
 
-    DRAKE_DEMAND(next_sample_time >= step_start_time);
+    DRAKE_DEMAND(next_timed_event_time >= step_start_time);
 
     // Determine whether the set of events requested by the System at
-    // next_sample_time includes an Update action, a Publish action, or both.
+    // next_timed_event_time includes an Update action, a Publish action, or
+    // both.
     T next_update_dt = std::numeric_limits<double>::infinity();
     T next_publish_dt = std::numeric_limits<double>::infinity();
     if (timed_events->HasDiscreteUpdateEvents() ||
         timed_events->HasUnrestrictedUpdateEvents()) {
-      next_update_dt = next_sample_time - step_start_time;
+      next_update_dt = next_timed_event_time - step_start_time;
     }
     if (timed_events->HasPublishEvents()) {
-      next_publish_dt = next_sample_time - step_start_time;
+      next_publish_dt = next_timed_event_time - step_start_time;
     }
 
     // Get the dt that gets to the boundary time.
     const T boundary_dt = boundary_time - step_start_time;
 
     // Integrate the continuous state forward in time.
-    sample_time_hit = IntegrateContinuousState(next_publish_dt,
+    event_triggered = IntegrateContinuousState(next_publish_dt,
                                                next_update_dt,
-                                               next_sample_time,
+                                               next_timed_event_time,
                                                boundary_dt,
                                                witnessed_events.get());
 
@@ -633,8 +632,8 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // Merge in per-step events.
     merged_events->Merge(*per_step_events_);
 
-    // Only merge timed / witnessed events in if the sample time was hit.
-    if (sample_time_hit) {
+    // Only merge timed / witnessed events in if an event was triggered.
+    if (event_triggered) {
       merged_events->Merge(*timed_events);
       merged_events->Merge(*witnessed_events);
     }
@@ -656,8 +655,11 @@ void Simulator<T>::StepTo(const T& boundary_time) {
   }
 
   // Do any final unrestricted or discrete updates from timed or witnessed
-  // events, only if the sample time was hit.
-  if (sample_time_hit) {
+  // events, only if an event was triggered. This handles the specific case
+  // where the integrator advanced time to the boundary, *at which point a
+  // timed witnessed event should occur*. This must be handled now else the
+  // trigger will be lost.
+  if (event_triggered) {
     // We need to clear any per-step events from the merged set, since per-step
     // publish events have already been handled (we do not want to publish
     // twice).
@@ -823,22 +825,24 @@ void Simulator<T>::IsolateWitnessTriggers(
   }
 }
 
-// Integrates the continuous state forward in time while attempting to locate
+// Integrates the continuous state forward in time while also locating
 // the first zero of any triggered witness functions.
-// @param next_publish_dt the time step at which the next publish event occurs.
-// @param next_update_dt the time step at which the next update event occurs.
-// @param next_sample_time the time at which the next event occurs.
+// @param next_publish_dt the *time step* at which the next publish event
+//        occurs.
+// @param next_update_dt the *time step* at which the next update event occurs.
+// @param next_timed_event_time the *time* at which the next timed event occurs.
 // @param boundary_dt the maximum time step to take.
 // @param events a non-null collection of events, which the method will clear
 //        on entry.
-// @returns `true` if integration terminated on a sample time, indicating that
-//          an event needs to be handled at the state/time on return.
+// @returns `true` if integration terminated on an event trigger, indicating
+//          that an event needs to be handled at the state on return.
 template <class T>
-bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
-                                          const T& next_update_dt,
-                                          const T& next_sample_time,
-                                          const T& boundary_dt,
-                                          CompositeEventCollection<T>* events) {
+bool Simulator<T>::IntegrateContinuousState(
+    const T& next_publish_dt,
+    const T& next_update_dt,
+    const T& next_timed_event_time,
+    const T& boundary_dt,
+    CompositeEventCollection<T>* events) {
   // Clear the composite event collection.
   DRAKE_ASSERT(events);
   events->Clear();
@@ -847,6 +851,18 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
   const Context<T>& context = get_context();
   const T t0 = context.get_time();
   const VectorX<T> x0 = context.get_continuous_state().CopyToVector();
+
+  // Note: this function is only called in one place and under the conditions
+  // that (1) t0 + next_update_dt equals *either* next_timed_event_time *or*
+  // infinity and (2) t0 + next_publish_dt equals *either*
+  // next_timed_event_time or infinity. This function should work without
+  // these assumptions being valid but might benefit from additional review.
+  const double inf = std::numeric_limits<double>::infinity();
+  const double zero_tol = 10 * std::numeric_limits<double>::epsilon();
+  DRAKE_ASSERT(next_update_dt == inf ||
+      abs(t0 + next_update_dt - next_timed_event_time) < zero_tol);
+  DRAKE_ASSERT(next_publish_dt == inf ||
+      abs(t0 + next_publish_dt - next_timed_event_time) < zero_tol);
 
   // Get the set of witness functions active at the current state.
   const System<T>& system = get_system();
@@ -928,7 +944,7 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
           events);
     }
 
-    // Indicate a "sample time was hit" if at least one witness function
+    // Indicate an event should be triggered if at least one witness function
     // triggered (meaning that an event should be handled on the next simulation
     // loop).
     return !triggered_witnesses_.empty();
@@ -941,15 +957,15 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
   switch (result) {
     case IntegratorBase<T>::kReachedUpdateTime:
     case IntegratorBase<T>::kReachedPublishTime:
-      // Next line sets the time to the exact sample time rather than
+      // Next line sets the time to the exact event time rather than
       // introducing rounding error by summing the context time + dt.
-      context_->set_time(next_sample_time);
-      return true;            // Sample time hit.
+      context_->set_time(next_timed_event_time);
+      return true;            // Timed event hit.
       break;
 
     case IntegratorBase<T>::kTimeHasAdvanced:
     case IntegratorBase<T>::kReachedBoundaryTime:
-      return false;           // Did not hit a sample time.
+      return false;           // Did not hit a time for a timed event.
       break;
 
     default:DRAKE_ABORT_MSG("Unexpected integrator result.");

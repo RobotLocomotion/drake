@@ -707,6 +707,24 @@ GTEST_TEST(SimulatorTest, WitnessTestCountChallenging) {
   EXPECT_EQ(1, num_publishes);
 }
 
+// TODO(edrumwri): Add tests for verifying that correct interval returned
+// in the case of multiple witness functions. See issue #6184.
+
+GTEST_TEST(SimulatorTest, SecondConstructor) {
+  // Create the spring-mass system and context.
+  analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
+  auto context = spring_mass.CreateDefaultContext();
+
+  // Mark the context with an arbitrary value.
+  context->set_time(3.);
+
+  /// Construct the simulator with the created context.
+  Simulator<double> simulator(spring_mass, std::move(context));
+
+  // Verify that context pointers are equivalent.
+  EXPECT_EQ(simulator.get_context().get_time(), 3.);
+}
+
 GTEST_TEST(SimulatorTest, MiscAPI) {
   analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
@@ -1106,12 +1124,11 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   EXPECT_NEAR(spring_mass.get_velocity(context), v_final, 1.0e-5);
 }
 
-// A mock hybrid continuous-discrete System (with time as its only continuous
-// variable) that requests discrete updates at 1 kHz and publishes at 400 Hz.
-// Calls user-configured callbacks on DoPublish, DoCalcDiscreteVariableUpdates,
-// and EvalTimeDerivatives. This hybrid system will be used to verify expected
-// state update ordering -- discrete, continuous (i.e., integration), then
-// publish.
+// A mock hybrid continuous-discrete System with time as its only continuous
+// variable, discrete updates at 1 kHz, and requests publishes at 400 Hz. Calls
+// user-configured callbacks on DoPublish, DoCalcDiscreteVariableUpdates, and
+// EvalTimeDerivatives. This hybrid system will be used to verify expected state
+// update ordering -- discrete, continuous (i.e., integration), then publish.
 class MixedContinuousDiscreteSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedContinuousDiscreteSystem)
