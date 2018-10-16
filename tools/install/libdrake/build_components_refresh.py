@@ -33,7 +33,7 @@ def _is_full_package_library(one_label):
 
 
 def _bazel_query(args):
-    output = subprocess.check_output(["bazel", "query"] + args)
+    output = subprocess.check_output(["bazel", "query"] + args).decode('utf8')
     return [x for x in output.split('\n') if x]
 
 

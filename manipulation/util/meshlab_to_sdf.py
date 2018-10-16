@@ -24,6 +24,8 @@ This tool has been tested only with Meshlab v1.3.2, which is the version
 available in Ubuntu Xenial 16.04.  It might not work with other versions.
 """
 
+from __future__ import print_function
+
 import argparse
 import os
 import re
@@ -181,7 +183,7 @@ def main():
         with open(filename) as log_file:
             log_text = "".join(log_file.readlines())
         sdf_text = convert(log_text, args.scale, args.mass_kg)
-        print sdf_text
+        print(sdf_text)
     else:
         print("Can't handle a '{}' file (wanted '.txt')".format(
             ext))

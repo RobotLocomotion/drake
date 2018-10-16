@@ -35,6 +35,7 @@ LIBDRAKE_COMPONENTS = [
     "//automotive",
     "//automotive/maliput/api",
     "//automotive/maliput/dragway",
+    "//automotive/maliput/geometry_base",
     "//automotive/maliput/multilane",
     "//automotive/maliput/rndf",
     "//automotive/maliput/simplerulebook",
