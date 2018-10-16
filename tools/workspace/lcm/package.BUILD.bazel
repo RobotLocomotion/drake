@@ -304,7 +304,7 @@ install(
         ":_lcm.so",
         ":lcm-python-upstream",
     ],
-    library_dest = "lib/python2.7/site-packages/lcm",
+    library_dest = "@PYTHON_SITE_PACKAGES@/lcm",
     py_strip_prefix = ["lcm-python"],
 )
 
