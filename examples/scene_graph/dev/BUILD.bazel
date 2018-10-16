@@ -35,7 +35,11 @@ drake_cc_binary(
     srcs = ["bouncing_ball_run_dynamics.cc"],
     add_test_rule = 1,
     tags = [
-        "no_lsan",  # It doesn't pass yet.
+        # These errors seem to arise from OpenGL drivers. The CI errors have
+        # yet to be reproduced locally (although memcheck may produce a
+        # different set of errors locally).
+        "no_lsan",
+        "no_memcheck",
     ],
     test_rule_args = [
         "--simulation_time=0.1",
