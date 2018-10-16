@@ -54,6 +54,7 @@ class RobotStateLcmMessageTranslatorTest : public ::testing::Test {
         v_non_floating_joint_start_index = 6;
         break;
       case multibody::joints::FloatingBaseType::kQuaternion:
+      case multibody::joints::FloatingBaseType::kImplicitQuaternion:
         q_non_floating_joint_start_index = 7;
         v_non_floating_joint_start_index = 6;
         break;
