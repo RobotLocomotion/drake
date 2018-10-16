@@ -55,7 +55,12 @@ namespace systems {
 /// the one that is most appropriate for your application or use the default
 /// which is adequate for most systems.
 ///
-/// <h2>Simulation mechanics for hybrid discrete/continuous systems</h2>
+/// <h2>Simulation mechanics for systems with multiple event types</h2>
+/// This documentation is targeted toward users who have created a LeafSystem
+/// with multiple event types (unrestricted update, discrete update, and
+/// publish). For authors of such systems, it is useful to understand the
+/// simulation mechanics, which we now describe.
+///
 /// In StepTo(), Simulator performs the following steps repeatedly:
 /// 1. Updates state variables without restriction (via an
 ///    UnrestrictedUpdateEvent),
