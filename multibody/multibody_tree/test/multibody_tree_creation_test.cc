@@ -711,7 +711,7 @@ GTEST_TEST(WeldedBodies, CreateListOfWeldedBodies) {
   // Verify the computed list has the expected entries.
   EXPECT_EQ(welded_bodies_set, expected_welded_bodies);
 
-  EXPECT_FALSE(topology.IsBodyAnchored(model.world_body().index()));
+  EXPECT_TRUE(topology.IsBodyAnchored(model.world_body().index()));
   EXPECT_FALSE(topology.IsBodyAnchored(body_b.index()));
   EXPECT_FALSE(topology.IsBodyAnchored(body_c.index()));
   EXPECT_FALSE(topology.IsBodyAnchored(body_d.index()));

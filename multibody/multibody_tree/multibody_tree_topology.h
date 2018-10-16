@@ -886,6 +886,8 @@ class MultibodyTreeTopology {
 
     const int path_size = get_body_node(from).level + 1;
     path_to_world->resize(path_size);
+    (*path_to_world)[0] = BodyNodeIndex(0);  // Add the world.
+    if (from == BodyNodeIndex(0)) return;
 
     // Navigate the tree inwards starting at "from" and ending at the root.
     for (BodyNodeIndex node = from; node > BodyNodeIndex(0);
@@ -894,7 +896,6 @@ class MultibodyTreeTopology {
     }
     // Verify the last added node to the path is a child of the world.
     DRAKE_DEMAND(get_body_node((*path_to_world)[1]).level == 1);
-    (*path_to_world)[0] = BodyNodeIndex(0);  // Add the world.
   }
 
   /// Returns `true` if `body_index` is anchored to the world.
