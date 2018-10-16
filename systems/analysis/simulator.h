@@ -909,7 +909,10 @@ bool Simulator<T>::IntegrateContinuousState(
 
   // Triggering requires isolating the witness function time.
   if (witness_triggered) {
-    // Isolate the time that the witness function triggered.
+    // Isolate the time that the witness function triggered. If witness triggers
+    // are detected in the interval [t0, tf], any additional time-triggered
+    // events are only relevant iff at least one witness function is
+    //  successfully isolated (see IsolateWitnessTriggers() for details).
     IsolateWitnessTriggers(witness_functions, w0_, t0, x0, tf,
                              &triggered_witnesses_);
 
