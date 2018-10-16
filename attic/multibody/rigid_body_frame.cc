@@ -8,8 +8,10 @@
 
 template <typename T>
 RigidBodyFrame<T>::RigidBodyFrame(const std::string& name, RigidBody<T>* body,
-                 const Eigen::Isometry3d& transform_to_body)
-      : name_(name), body_(body), transform_to_body_(transform_to_body) {}
+                 const Eigen::Isometry3d& transform_to_body,
+                 int model_instance_id)
+      : name_(name), body_(body), transform_to_body_(transform_to_body),
+        model_instance_id_(model_instance_id) {}
 
 template <typename T>
 RigidBodyFrame<T>::RigidBodyFrame(const std::string& name, RigidBody<T>* body,
@@ -23,7 +25,11 @@ RigidBodyFrame<T>::RigidBodyFrame(const std::string& name, RigidBody<T>* body,
 
 template <typename T>
 int RigidBodyFrame<T>::get_model_instance_id() const {
-  return body_->get_model_instance_id();
+  if (model_instance_id_ == -1) {
+    return body_->get_model_instance_id();
+  } else {
+    return model_instance_id_;
+  }
 }
 
 template <typename T>
