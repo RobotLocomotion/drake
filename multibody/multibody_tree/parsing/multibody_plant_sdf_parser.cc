@@ -422,6 +422,17 @@ void AddLinksFromSpecification(
   }
 }
 
+template <typename T>
+const Frame<T>& GetFrameOrWorldByName(
+    const MultibodyPlant<T>& plant, const std::string& name,
+    ModelInstanceIndex model_instance) {
+  if (name == "world") {
+    return plant.world_frame();
+  } else {
+    return plant.GetFrameByName(name, model_instance);
+  }
+}
+
 void AddFramesFromSpecification(
     ModelInstanceIndex model_instance,
     sdf::ElementPtr parent_element,
@@ -443,7 +454,8 @@ void AddFramesFromSpecification(
       if (!pose_frame_name.empty()) {
         // TODO(eric.cousineau): Prevent instance name from leaking in? Throw
         // an error if a user ever specifies it?
-        pose_frame = &plant->GetFrameByName(pose_frame_name, model_instance);
+        pose_frame = &GetFrameOrWorldByName(
+            *plant, pose_frame_name, model_instance);
       }
       const Isometry3d X_PF =
           ToIsometry3(pose_element->Get<ignition::math::Pose3d>());
