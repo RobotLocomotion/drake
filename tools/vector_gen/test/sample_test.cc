@@ -1,11 +1,14 @@
 #include "drake/tools/vector_gen/test/gen/sample.h"
 
 #include <cmath>
+#include <stdexcept>
+#include <type_traits>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
 namespace tools {
@@ -38,6 +41,16 @@ GTEST_TEST(SampleTest, SimpleCoverage) {
   EXPECT_EQ(dut.x(), 11.0);
   EXPECT_EQ(dut.two_word(), 22.0);
 
+  // Chained construction from a prvalue.
+  const auto& chained = Sample<double>{}.with_x(33.0).with_two_word(44.0);
+  EXPECT_EQ(chained.x(), 33.0);
+  EXPECT_EQ(chained.two_word(), 44.0);
+
+  // Chained copying from an lvalue.
+  const auto& tweaked_dut = dut.with_x(55.0);
+  EXPECT_EQ(dut.x(), 11.0);
+  EXPECT_EQ(tweaked_dut.x(), 55.0);
+
   // Clone.
   auto cloned = dut.Clone();
   ASSERT_NE(cloned.get(), nullptr);
@@ -54,6 +67,65 @@ GTEST_TEST(SampleTest, SimpleCoverage) {
   for (int i = 0; i < dut.size(); ++i) {
     EXPECT_EQ(coordinate_names.at(i), expected_names.at(i));
   }
+}
+
+// When inheritance is in use, we should only permit public copy & move
+// operations to exist on classes that are marked as final.
+static_assert(
+    std::is_final<Sample<double>>::value,
+    "Sample<T> should have been final");
+
+// Confirm that copy semantics work.
+GTEST_TEST(SampleTest, Copy) {
+  Sample<double> first;
+  first.set_x(1.0);
+  const int nominal_size = SampleIndices::kNumCoordinates;
+
+  // Copy construction.
+  Sample<double> second(first);
+  EXPECT_EQ(first.size(), nominal_size);
+  EXPECT_EQ(second.size(), nominal_size);
+  EXPECT_EQ(first.x(), 1.0);
+  EXPECT_EQ(second.x(), 1.0);
+
+  // Copy assignment.
+  Sample<double> third;
+  DRAKE_DEMAND(third.x() != 1.0);  // Prove that assignment will change this.
+  third = second;
+  EXPECT_EQ(second.size(), nominal_size);
+  EXPECT_EQ(third.size(), nominal_size);
+  EXPECT_EQ(second.x(), 1.0);
+  EXPECT_EQ(third.x(), 1.0);
+}
+
+// Confirm that move semantics are efficient (no copying).
+GTEST_TEST(SampleTest, Move) {
+  Sample<double> first;
+  first.set_x(1.0);
+  const int nominal_size = SampleIndices::kNumCoordinates;
+  const double* const original_storage = &first.x();
+
+  // Note than we we move-construct or move-assign from a prvalue, the size of
+  // the donor object goes to zero, even though it is still a Sample object.
+  // That means that methods such as get_x etc. will throw if we call them.
+
+  // Move construction.  The heap storage of `first` is stolen.
+  Sample<double> second(std::move(first));
+  EXPECT_EQ(first.size(), 0);
+  DRAKE_EXPECT_THROWS_MESSAGE(first.x(), std::out_of_range, ".*moved-from.*");
+  EXPECT_EQ(second.size(), nominal_size);
+  EXPECT_EQ(second.x(), 1.0);
+  EXPECT_EQ(&second.x(), original_storage);
+
+  // Move assignment.  The heap storage of `second` is stolen.
+  Sample<double> third;
+  DRAKE_DEMAND(third.x() != 1.0);  // Prove that assignment will change this.
+  third = std::move(second);
+  EXPECT_EQ(second.size(), 0);
+  DRAKE_EXPECT_THROWS_MESSAGE(second.x(), std::out_of_range, ".*moved-from.*");
+  EXPECT_EQ(third.size(), nominal_size);
+  EXPECT_EQ(third.x(), 1.0);
+  EXPECT_EQ(&third.x(), original_storage);
 }
 
 // Cover Simple<double>::IsValid.

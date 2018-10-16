@@ -32,6 +32,7 @@ drake_cc_package_library(
         ":beam_model",
         ":beam_model_params",
         ":camera_info",
+        ":color_palette",
         ":depth_sensor",
         ":depth_sensor_to_lcm_point_cloud_message",
         ":gyroscope",
@@ -181,7 +182,12 @@ drake_cc_library(
     # We must not expose `#include <vtk/...>` in any of our installed headers;
     # vtk_util.h is only included internally within this package.
     install_hdrs_exclude = ["vtk_util.h"],
-    visibility = ["//visibility:private"],
+    # TODO(SeanCurtis-TRI): Remove this from sensors when the VTK rendering
+    # completely lives in geometry/render.
+    # Temporarily public so this can be shared by the old RgbdCamera in sensors
+    # and the *new* rendering infrastructure in geometry/render. Once the old
+    # is deprecated, this can be moved into geometry/render and made private.
+    visibility = ["//visibility:public"],
     deps = [
         "//common:essential",
         "@eigen",
@@ -192,6 +198,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "color_palette",
+    hdrs = ["color_palette.h"],
+    deps = ["//common"],
+)
+
+drake_cc_library(
     name = "rgbd_renderer",
     srcs = [
         "rgbd_renderer.cc",
@@ -199,13 +211,13 @@ drake_cc_library(
         "rgbd_renderer_vtk.cc",
     ],
     hdrs = [
-        "color_palette.h",
         "depth_shaders.h",
         "rgbd_renderer.h",
         "rgbd_renderer_ospray.h",
         "rgbd_renderer_vtk.h",
     ],
     deps = [
+        ":color_palette",
         ":image",
         ":vtk_util",
         "//attic/multibody/shapes",

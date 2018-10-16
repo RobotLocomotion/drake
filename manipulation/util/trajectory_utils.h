@@ -131,7 +131,7 @@ class PiecewiseCartesianTrajectory {
    * @param times Breaks used to build the splines.
    * @param poses Knots used to build the splines.
    * @param vel0 Start linear velocity.
-   * @parma vel1 End linear velocity.
+   * @param vel1 End linear velocity.
    */
   static PiecewiseCartesianTrajectory<T> MakeCubicLinearWithEndLinearVelocity(
       const std::vector<T>& times, const std::vector<Isometry3<T>>& poses,

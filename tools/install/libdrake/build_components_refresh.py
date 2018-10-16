@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 """This script creates build_components.bzl.new with new contents based on the
 current source tree.  It should be used to regularly update the version of
@@ -8,8 +8,6 @@ import argparse
 import os
 import subprocess
 import sys
-
-import six
 
 
 def _is_dev(label):

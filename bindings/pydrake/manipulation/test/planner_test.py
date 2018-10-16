@@ -5,6 +5,11 @@ import pydrake.manipulation.planner as mut
 import unittest
 import numpy as np
 
+from pydrake.common import FindResourceOrThrow
+from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
+from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
+from pydrake.util.eigen_geometry import Isometry3
+
 
 class TestPlanner(unittest.TestCase):
     def test_api(self):
@@ -55,3 +60,22 @@ class TestPlanner(unittest.TestCase):
         self.assertTrue(np.allclose(
             result.joint_velocities, [1, 0], atol=1e-8, rtol=0))
         self.assertEqual(result.status, enum.kSolutionFound)
+
+    def test_mbp_overloads(self):
+        file_name = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        plant = MultibodyPlant()
+        AddModelFromSdfFile(
+            file_name=file_name, plant=plant, scene_graph=None)
+        plant.Finalize()
+
+        context = plant.CreateDefaultContext()
+        frame = plant.GetFrameByName("Link2")
+        parameters = mut.DifferentialInverseKinematicsParameters(2, 2)
+
+        mut.DoDifferentialInverseKinematics(plant, context,
+                                            np.zeros(6), frame, parameters)
+
+        mut.DoDifferentialInverseKinematics(plant, context,
+                                            Isometry3.Identity(), frame,
+                                            parameters)

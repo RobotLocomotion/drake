@@ -28,35 +28,26 @@ Example:
 
 Arguments:
     name: A unique name for this rule.
-    version: Deprecated attribute.
 """
 
-load("@drake//tools/workspace:execute.bzl", "which")
+load("@drake//tools/workspace:execute.bzl", "execute_or_fail", "which")
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
 _VERSION_SUPPORT_MATRIX = {
-    "ubuntu:16.04": ["2.7", "3.5"],
+    "ubuntu:16.04": ["2.7", "3.5"],  # WIP
     "ubuntu:18.04": ["2.7"],
-    "macOS:10.13": ["2.7"],
-    "macOS:10.14": ["2.7"],
+    "macos:10.13": ["2.7"],
+    "macos:10.14": ["2.7"],
 }
 
-def _which(repository_ctx, bin_name):
-    bin = repository_ctx.which(bin_name)
-    if not bin:
-        fail("Could NOT find {}".format(bin_name))
-    return struct(ctx = repository_ctx, args = [bin])
-
-def _exec(exec_ctx, args, name = None):
-    args = exec_ctx.args + args
-    result = exec_ctx.ctx.execute(args)
-    if name == None:
-        name = args
-    if result.return_code != 0:
-        fail("Could not execute {}: {}".format(name, result.stderr))
-    return result.stdout.strip()
-
 def _repository_python_info(repository_ctx):
+    # Using `PYTHON_BIN_PATH` from the environment, determine:
+    # - `python` - binary path
+    # - `python_config` - configuration binary path
+    # - `site_packages_relpath` - relative to base of FHS
+    # - `version` - '{major}.{minor}`
+    # - `version_major` - major version
+    # - `os` - results from `determine_os(...)`
     os_result = determine_os(repository_ctx)
     if os_result.error != None:
         fail(os_result.error)
@@ -66,49 +57,49 @@ def _repository_python_info(repository_ctx):
         os_key = os_result.distribution + ":" + os_result.ubuntu_release
     versions_supported = _VERSION_SUPPORT_MATRIX[os_key]
 
-    if repository_ctx.attr.version:
-        print(
-            "WARNING: `python_repository`'s `version` attribute is " +
-            "deprecated, and will be removed on 11/01/2018.",
-        )
-    python_bin = repository_ctx.os.environ.get("PYTHON_BIN_PATH")
-    if not python_bin:
-        python = _which(
-            repository_ctx,
-            "python{}".format(versions_supported[0]),
-        )
-    else:
-        python = struct(ctx = repository_ctx, args = [python_bin])
-
-    # Unfortunately, it does not seem possible to get Bazel's Python]
+    # Bazel does not easily expose its --python_path to repository rules (e.g.
+    # the environment is unaffected). We must use a workaround as Tensorflow
+    # does in `python_configure.bzl` (https://git.io/fx4Pp).
+    # N.B. Unfortunately, it does not seem possible to get Bazel's Python
     # interpreter during a repository rule, thus we can only catch mismatch
     # issues via `//tools/workspace/python:py/python_bin_test`.
-    repository_ctx.symlink(
-        Label("@drake//tools/workspace/python:find_python_config.py"),
-        "_find_python_config.py",
-    )
-    python_config = struct(
-        ctx = repository_ctx,
-        args = [_exec(python, ["_find_python_config.py"])],
-    )
+    if os_result.is_macos:
+        version_supported_major, _ = versions_supported[0].split(".")
 
-    version = _exec(
-        python,
-        ["-c", "from sys import version_info as v; print(\"{}.{}\"" +
-               ".format(v.major, v.minor))"],
+        # N.B. On Mac, `which python{major}.{minor}` may refer to the system
+        # Python, not Homebrew Python.
+        python_default = "python{}".format(version_supported_major)
+    else:
+        python_default = "python{}".format(versions_supported[0])
+    python_from_env = repository_ctx.os.environ.get(
+        "PYTHON_BIN_PATH",
+        python_default,
     )
-
-    # Ensure we have the correct platform support.
-    if version not in versions_supported:
-        msg = (
-            "Python {} is not a supported / tested version for use with " +
-            "Drake.\n  Supported versions on {}: {}\n"
-        ).format(version, os_key, versions_supported)
-        fail(msg)
-
+    python = str(which(repository_ctx, python_from_env))
+    version = execute_or_fail(
+        repository_ctx,
+        [python, "-c", "from sys import version_info as v; print(\"{}.{}\"" +
+                       ".format(v.major, v.minor))"],
+    ).stdout.strip()
     version_major, _ = version.split(".")
+
+    # Development Note: This should generally be the correct configuration. If
+    # you are hacking with `virtualenv` (which is officially unsupported),
+    # ensure that you manually symlink the matching `*-config` binary in your
+    # `virtualenv` installation.
+    python_config = "{}-config".format(python)
+
+    # Warn if we do not the correct platform support.
+    if version not in versions_supported:
+        print((
+            "\n\nWARNING: Python {} is not a supported / tested version for " +
+            "use with Drake.\n  Supported versions on {}: {}\n\n"
+        ).format(version, os_key, versions_supported))
+
     site_packages_relpath = "lib/python{}/site-packages".format(version)
-    return python, python_config, struct(
+    return struct(
+        python = python,
+        python_config = python_config,
         site_packages_relpath = site_packages_relpath,
         version = version,
         version_major = version,
@@ -117,12 +108,15 @@ def _repository_python_info(repository_ctx):
 
 def _impl(repository_ctx):
     # Repository implementation.
-    python, python_config, py_info = _repository_python_info(
+    py_info = _repository_python_info(
         repository_ctx,
     )
 
     # Collect includes.
-    cflags = _exec(python_config, ["--includes"], "include query").split(" ")
+    cflags = execute_or_fail(
+        repository_ctx,
+        [py_info.python_config, "--includes"],
+    ).stdout.strip().split(" ")
     cflags = [cflag for cflag in cflags if cflag]
 
     root = repository_ctx.path("")
@@ -142,7 +136,10 @@ def _impl(repository_ctx):
                 includes += [include]
 
     # Collect linker paths.
-    linkopts = _exec(python_config, ["--ldflags"], "flag query").split(" ")
+    linkopts = execute_or_fail(
+        repository_ctx,
+        [py_info.python_config, "--ldflags"],
+    ).stdout.strip().split(" ")
     linkopts = [linkopt for linkopt in linkopts if linkopt]
 
     for i in reversed(range(len(linkopts))):
@@ -157,11 +154,35 @@ def _impl(repository_ctx):
                 linkopts.pop(i)
         linkopts = ["-undefined dynamic_lookup"] + linkopts
 
-    file_content = """# -*- python -*-
+    skylark_content = """
+# DO NOT EDIT: generated by python_repository()
+# WARNING: Avoid using this macro in any repository rules which require
+# `load()` at the WORKSPACE level. Instead, load these constants through
+# `BUILD.bazel` or `package.BUILD.bazel` files.
+
+PYTHON_BIN_PATH = "{bin_path}"
+PYTHON_VERSION = "{version}"
+PYTHON_SITE_PACKAGES_RELPATH = "{site_packages_relpath}"
+""".format(
+        bin_path = py_info.python,
+        version = py_info.version,
+        site_packages_relpath = py_info.site_packages_relpath,
+    )
+    repository_ctx.file(
+        "version.bzl",
+        content = skylark_content,
+        executable = False,
+    )
+    repository_ctx.file(
+        "bazel_python_actionenv.py",
+        content = skylark_content,
+        executable = False,
+    )
+
+    build_content = """# -*- python -*-
 
 # DO NOT EDIT: generated by python_repository()
 
-# For license naming conventions see: https://spdx.org/licenses/
 licenses(["notice"])  # Python-2.0
 
 # Only include first level of headers included from `python_repository`
@@ -205,41 +226,13 @@ py_library(
 
     repository_ctx.file(
         "BUILD.bazel",
-        content = file_content,
-        executable = False,
-    )
-
-    skylark_content = """
-# DO NOT EDIT: generated by python_repository()
-# WARNING: Do NOT use this macro file in any neighboring external repository
-# rules.
-
-PYTHON_BIN_PATH = "{bin_path}"
-PYTHON_VERSION = "{version}"
-PYTHON_SITE_PACKAGES_RELPATH = "{site_packages_relpath}"
-""".format(
-        bin_path = python.args[0],
-        version = py_info.version,
-        site_packages_relpath = py_info.site_packages_relpath,
-    )
-    repository_ctx.file(
-        "version.bzl",
-        content = skylark_content,
-        executable = False,
-    )
-    repository_ctx.file(
-        "bazel_python_actionenv.py",
-        content = skylark_content,
+        content = build_content,
         executable = False,
     )
 
 python_repository = repository_rule(
     _impl,
-    attrs = {"version": attr.string(default = "")},
     environ = [
-        # Bazel does not easily expose its --python_path to repository rules
-        # (e.g. the environment is unaffected). We must use a workaround as
-        # Tensorflow does in `python_configure.bzl` (https://git.io/fx4Pp).
         "PYTHON_BIN_PATH",
     ],
     local = True,

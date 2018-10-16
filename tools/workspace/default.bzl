@@ -70,10 +70,7 @@ load("@drake//tools/workspace/vtk:repository.bzl", "vtk_repository")
 load("@drake//tools/workspace/yaml_cpp:repository.bzl", "yaml_cpp_repository")
 load("@drake//tools/workspace/zlib:repository.bzl", "zlib_repository")
 
-def add_default_repositories(
-        excludes = [],
-        mirrors = DEFAULT_MIRRORS,
-        py_version = "bazel"):
+def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     """Declares workspace repositories for all externals needed by drake (other
     than those built into Bazel, of course).  This is intended to be loaded and
     called from a WORKSPACE file.
@@ -82,8 +79,6 @@ def add_default_repositories(
         excludes: list of string names of repositories to exclude; this can
           be useful if a WORKSPACE file has already supplied its own external
           of a given name.
-        mirrors: see `mirror.bzl` for an example.
-        py_version: see `python.bzl` for more information.
     """
     if "bazel_skylib" not in excludes:
         bazel_skylib_repository(name = "bazel_skylib", mirrors = mirrors)
@@ -182,7 +177,7 @@ def add_default_repositories(
     if "pycps" not in excludes:
         pycps_repository(name = "pycps", mirrors = mirrors)
     if "python" not in excludes:
-        python_repository(name = "python", version = py_version)
+        python_repository(name = "python")
     if "python3" not in excludes:
         python3_repository(name = "python3")
     if "qdldl" not in excludes:

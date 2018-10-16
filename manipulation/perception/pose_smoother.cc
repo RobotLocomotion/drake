@@ -110,7 +110,9 @@ PoseSmoother::PoseSmoother(double desired_max_linear_velocity,
   this->DeclareAbstractState(
       systems::AbstractValue::Make<InternalState>(
           InternalState(filter_window_size)));
-  this->DeclareAbstractInputPort();
+  this->DeclareAbstractInputPort(
+      systems::kUseDefaultName,
+      systems::Value<Isometry3d>(Isometry3d::Identity()));
   this->DeclarePeriodicUnrestrictedUpdate(period_sec, 0);
 }
 

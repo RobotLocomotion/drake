@@ -110,11 +110,11 @@ void DoMain() {
 
   // PID controller for position control of the finger joints
   VectorX<double> kp, kd, ki;
-  MatrixX<double> Px, Py;
-  GetControlPortMapping(plant, &Px, &Py);
+  MatrixX<double> Sx, Sy;
+  GetControlPortMapping(plant, &Sx, &Sy);
   SetPositionControlledGains(&kp, &ki, &kd);
   auto& hand_controller = *builder.AddSystem<
-      systems::controllers::PidController>(Px, Py, kp, ki, kd);
+      systems::controllers::PidController>(Sx, Sy, kp, ki, kd);
   builder.Connect(plant.get_continuous_state_output_port(),
                   hand_controller.get_input_port_estimated_state());
   builder.Connect(hand_controller.get_output_port_control(),
@@ -124,11 +124,11 @@ void DoMain() {
   // output the status of the hand finger joints related DOFs, and put them in
   // the pre-defined order that is easy for understanding.
   const auto& hand_status_converter =
-      *builder.AddSystem<systems::MatrixGain<double>>(Px);
+      *builder.AddSystem<systems::MatrixGain<double>>(Sx);
   builder.Connect(plant.get_continuous_state_output_port(),
                   hand_status_converter.get_input_port());
   const auto& hand_output_torque_converter =
-      *builder.AddSystem<systems::MatrixGain<double>>(Py);
+      *builder.AddSystem<systems::MatrixGain<double>>(Sy);
   builder.Connect(hand_controller.get_output_port_control(),
                   hand_output_torque_converter.get_input_port());
 

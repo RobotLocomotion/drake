@@ -40,8 +40,11 @@ namespace trajectories {
  * They cannot be divided because Polynomials are not closed
  * under division.
  *
- * @tparam T is a scalar type.  Explicit instantiations are provided for:
- *   - double
+ * @tparam T is a scalar type.
+ *
+ * Explicit instantiations are provided for:
+ *
+ * - double
  */
 template <typename T>
 class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
@@ -98,7 +101,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * is used as a knot point, and
    *   knots.cols() == breaks.size().
    *
-   * @overloads PiecewisePolynomial<T> ZeroOrderHold(breaks, knots)
+   * @overload PiecewisePolynomial<T> ZeroOrderHold(breaks, knots)
    */
   static PiecewisePolynomial<T> ZeroOrderHold(
       const Eigen::Ref<const Eigen::VectorXd>& breaks,
@@ -122,7 +125,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * is used as a knot point, and
    *   knots.cols() == breaks.size().
    *
-   * @overloads PiecewisePolynomial<T> FirstOrderHold(breaks, knots)
+   * @overload PiecewisePolynomial<T> FirstOrderHold(breaks, knots)
    */
   static PiecewisePolynomial<T> FirstOrderHold(
       const Eigen::Ref<const Eigen::VectorXd>& breaks,
@@ -174,7 +177,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * where each column of knots is used as a knot point, and
    *   knots.cols() == breaks.size().
    *
-   * @overloads PiecewisePolynomial<T> Pchip(breaks, knots,
+   * @overload PiecewisePolynomial<T> Pchip(breaks, knots,
    * zero_end_point_derivatives)
    */
   static PiecewisePolynomial<T> Pchip(
@@ -209,8 +212,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * where each column of knots is used as a knot point, and
    *   knots.cols() == breaks.size().
    *
-   * @overloads PiecewisePolynomial<T> Cubic(breaks, knots, knots_dot_start,
-   *   knots_dot_end)
+   * @overload PiecewisePolynomial<T> Cubic(breaks, knots, knots_dot_start,
+   * knots_dot_end)
    */
   static PiecewisePolynomial<T> Cubic(
       const Eigen::Ref<const Eigen::VectorXd>& breaks,
@@ -242,7 +245,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * and knots_dot are used as the knot point/derivative.
    *   knots.cols() == knots_dot.cols() == breaks.size().
    *
-   * @overloads PiecewisePolynomial<T> Cubic(breaks, knots, knots_dot)
+   * @overload PiecewisePolynomial<T> Cubic(breaks, knots, knots_dot)
    */
   static PiecewisePolynomial<T> Cubic(
       const Eigen::Ref<const Eigen::VectorXd>& breaks,
@@ -290,7 +293,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * Eigen version of Cubic(breaks, knots) where each column of knots is used
    * as a knot point and  knots.cols() == breaks.size().
    *
-   * @overloads PiecewisePolynomial<T> Cubic(breaks, knots)
+   * @overload PiecewisePolynomial<T> Cubic(breaks, knots)
    */
   static PiecewisePolynomial<T> Cubic(
       const Eigen::Ref<const Eigen::VectorXd>& breaks,

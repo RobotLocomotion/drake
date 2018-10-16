@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 """A re-implementation of CMake's configure_file substitution semantics.  This
 implementation is incomplete, and may not produce the same result as CMake in

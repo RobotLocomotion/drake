@@ -119,8 +119,10 @@ class Frame : public FrameBase<T> {
   /// Only derived classes can use this constructor. It creates a %Frame
   /// object attached to `body` and puts the frame in the body's model
   /// instance.
-  explicit Frame(const std::string& name, const Body<T>& body)
-      : FrameBase<T>(body.model_instance()),
+  explicit Frame(
+      const std::string& name, const Body<T>& body,
+      optional<ModelInstanceIndex> model_instance = {})
+      : FrameBase<T>(model_instance.value_or(body.model_instance())),
         name_(name), body_(body) {}
 
   /// Overload to permit constructing an unnamed frame.

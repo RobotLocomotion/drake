@@ -46,9 +46,13 @@ class FixedOffsetFrame final : public Frame<T> {
   /// @param[in] X_PF
   ///   The _default_ transform giving the pose of F in P, therefore only the
   ///   value (as an Isometry3<double>) is provided.
+  /// @param[in] model_instance
+  ///   The model instance to which this frame belongs to. If unspecified, will
+  ///   use P.body().model_instance().
   FixedOffsetFrame(
       const std::string& name, const Frame<T>& P,
-      const Isometry3<double>& X_PF);
+      const Isometry3<double>& X_PF,
+      optional<ModelInstanceIndex> model_instance = {});
 
   /// Creates an unnamed material Frame F. See overload with name for more
   /// information.

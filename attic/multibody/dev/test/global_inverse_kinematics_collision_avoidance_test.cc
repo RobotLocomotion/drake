@@ -38,6 +38,63 @@ void CheckPtCollisionFreeBinary(
   EXPECT_EQ(in_one_free_region, 1);
 }
 
+struct Box {
+  Box(const Eigen::Vector3d& m_center, const Eigen::Vector3d& m_size)
+      : center{m_center}, size{m_size} {}
+  Eigen::Vector3d center;
+  Eigen::Vector3d size;
+};
+
+GTEST_TEST(GlobalInverseKinematicsTest, BodySphereInOneOfPolytopesTest) {
+  auto single_body = ConstructSingleBody();
+
+  GlobalInverseKinematics::Options options;
+  options.num_intervals_per_half_axis = 2;
+  GlobalInverseKinematics global_ik(*single_body, options);
+
+  // Add a sphere of radius 0.5 in one of the polytopes.
+  const double radius = 0.5;
+  const Eigen::Vector3d p_BQ(0.1, 0.3, 0.4);
+  const int link_idx = 1;
+
+  std::vector<Box> boxes;
+  boxes.emplace_back(Eigen::Vector3d(0.2, 0.4, 1.2),
+                     Eigen::Vector3d(1.1, 1.2, 1.3));
+  // This box is not large enough to contain the sphere.
+  boxes.emplace_back(Eigen::Vector3d(0.1, -0.5, 1.3),
+                     Eigen::Vector3d(0.9, 1.5, 1.4));
+  std::vector<GlobalInverseKinematics::Polytope3D> polytopes;
+  for (const auto& box : boxes) {
+    Eigen::MatrixX3d A(6, 3);
+    A << Eigen::Matrix3d::Identity(), -Eigen::Matrix3d::Identity();
+    Eigen::VectorXd b(6);
+    b << box.center + box.size / 2, box.size / 2 - box.center;
+    polytopes.emplace_back(A, b);
+  }
+  auto z =
+      global_ik.BodySphereInOneOfPolytopes(link_idx, p_BQ, radius, polytopes);
+
+  solvers::GurobiSolver solver;
+  const auto result = solver.Solve(global_ik);
+  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
+
+  const auto p_WB_sol =
+      global_ik.GetSolution(global_ik.body_position(link_idx));
+  const auto R_WB_sol =
+      global_ik.GetSolution(global_ik.body_rotation_matrix(link_idx));
+
+  const Eigen::Vector3d p_WQ_sol = p_WB_sol + R_WB_sol * p_BQ;
+  const double tol = 1E-6;
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_LE(p_WQ_sol(i) + radius,
+              boxes[0].center(i) + boxes[0].size(i) / 2 + tol);
+    EXPECT_GE(p_WQ_sol(i) - radius,
+              boxes[0].center(i) - boxes[0].size(i) / 2 - tol);
+  }
+  EXPECT_TRUE(
+      CompareMatrices(global_ik.GetSolution(z), Eigen::Vector2d(1, 0), tol));
+}
+
 TEST_F(KukaTest, CollisionAvoidanceTest) {
   // Suppose there is a box with length 0.15m, located at [-0.5, 0, 0.4]
   // The goal is to reach the goal position, without colliding with the box

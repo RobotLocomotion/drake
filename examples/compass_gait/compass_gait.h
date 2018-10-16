@@ -28,7 +28,7 @@ namespace compass_gait {
 /// These are helpful for outputting the floating-base model coordinate, e.g.
 /// for visualization.
 ///
-/// Note: This model only supports walking downhill on the ramp, because that
+/// @note This model only supports walking downhill on the ramp, because that
 /// restriction enables a clean / numerically robust implementation of the foot
 /// collision witness function that avoids falls detections on the "foot
 /// scuffing" collision.

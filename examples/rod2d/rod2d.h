@@ -130,6 +130,7 @@ this class, please refer to https://drake.mit.edu/cxx_inl.html.
 @tparam T The vector element type, which must be a valid Eigen scalar.
 
 Instantiated templates for the following scalar types @p T are provided:
+
 - double
 
 They are already available to link against in the containing library.
@@ -142,7 +143,7 @@ States: planar position (state indices 0 and 1) and orientation (state
         index 2), and planar linear velocity (state indices 3 and 4) and
         scalar angular velocity (state index 5) in units of m, radians,
         m/s, and rad/s, respectively. Orientation is measured counter-
-        clockwise with respect to the x-axis. 
+        clockwise with respect to the x-axis.
 
 Outputs: Output Port 0 corresponds to the state vector; Output Port 1
          corresponds to a PoseVector giving the 3D pose of the rod in the world

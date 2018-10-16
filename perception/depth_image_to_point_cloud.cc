@@ -7,7 +7,9 @@ DepthImageToPointCloud::DepthImageToPointCloud(
     const systems::sensors::CameraInfo& camera_info)
     : camera_info_(camera_info) {
   // input port for depth image
-  input_port_depth_image_index_ = this->DeclareAbstractInputPort().get_index();
+  input_port_depth_image_index_ = this->DeclareAbstractInputPort(
+      systems::kUseDefaultName,
+      systems::Value<systems::sensors::ImageDepth32F>{}).get_index();
 
   /// output port for filtered point cloud
   this->DeclareAbstractOutputPort(

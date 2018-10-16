@@ -6,6 +6,9 @@ namespace allegro_hand {
 
 const double AllegroHandMotionState::velocity_thresh_ = 0.07;
 
+using drake::multibody::JointIndex;
+using drake::multibody::multibody_plant::MultibodyPlant;
+
 void SetPositionControlledGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
                                 Eigen::VectorXd* Kd) {
   *Kp = Eigen::VectorXd::Ones(kAllegroNumJoints) * 0.05;
@@ -14,74 +17,51 @@ void SetPositionControlledGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
   *Ki = Eigen::VectorXd::Zero(kAllegroNumJoints);
 }
 
-std::map<std::string, int> GetJointNameMapping() {
-  std::map<std::string, int> joint_name_mapping;
+std::vector<std::string> GetPreferredJointOrdering() {
+  std::vector<std::string> joint_name_mapping;
 
   // Thumb finger
-  joint_name_mapping["joint_12"] = 0;
-  joint_name_mapping["joint_13"] = 1;
-  joint_name_mapping["joint_14"] = 2;
-  joint_name_mapping["joint_15"] = 3;
+  joint_name_mapping.push_back("joint_12");
+  joint_name_mapping.push_back("joint_13");
+  joint_name_mapping.push_back("joint_14");
+  joint_name_mapping.push_back("joint_15");
 
   // Index finger
-  joint_name_mapping["joint_0"] = 4;
-  joint_name_mapping["joint_1"] = 5;
-  joint_name_mapping["joint_2"] = 6;
-  joint_name_mapping["joint_3"] = 7;
+  joint_name_mapping.push_back("joint_0");
+  joint_name_mapping.push_back("joint_1");
+  joint_name_mapping.push_back("joint_2");
+  joint_name_mapping.push_back("joint_3");
 
   // Middle finger
-  joint_name_mapping["joint_4"] = 8;
-  joint_name_mapping["joint_5"] = 9;
-  joint_name_mapping["joint_6"] = 10;
-  joint_name_mapping["joint_7"] = 11;
+  joint_name_mapping.push_back("joint_4");
+  joint_name_mapping.push_back("joint_5");
+  joint_name_mapping.push_back("joint_6");
+  joint_name_mapping.push_back("joint_7");
 
   // Ring finger
-  joint_name_mapping["joint_8"] = 12;
-  joint_name_mapping["joint_9"] = 13;
-  joint_name_mapping["joint_10"] = 14;
-  joint_name_mapping["joint_11"] = 15;
+  joint_name_mapping.push_back("joint_8");
+  joint_name_mapping.push_back("joint_9");
+  joint_name_mapping.push_back("joint_10");
+  joint_name_mapping.push_back("joint_11");
 
   return joint_name_mapping;
 }
 
-// TODO (WenzhenYuan-TRI): Merge this function with the updated functions in
-// multibody plant (#9455)
 void GetControlPortMapping(
-    const multibody::multibody_plant::MultibodyPlant<double>& plant,
-    MatrixX<double>* Px, MatrixX<double>* Py) {
-  std::map<std::string, int> joint_name_mapping = GetJointNameMapping();
+    const MultibodyPlant<double>& plant,
+    MatrixX<double>* Sx, MatrixX<double>* Sy) {
+  // Retrieve the list of finger joints in a user-defined ordering.
+  const std::vector<std::string> joints_in_preferred_order =
+      GetPreferredJointOrdering();
 
-  const int num_plant_positions = plant.num_positions();
-
-  // Projection matrix. We include "all" dofs in the hand.
-  // x_tilde = Px * x; where: x is the state in the MBP; x_tilde is the state
-  // in the desired order.
-  Px->resize(kAllegroNumJoints * 2, plant.num_multibody_states());
-  Px->setZero();
-
-  for (std::map<std::string, int>::iterator it = joint_name_mapping.begin();
-       it != joint_name_mapping.end(); it++) {
-    const auto& joint = plant.GetJointByName(it->first);
-    const int q_index = joint.position_start();
-    const int v_index = joint.velocity_start();
-
-    (*Px)(it->second, q_index) = 1.0;
-    (*Px)(kAllegroNumJoints + it->second, num_plant_positions + v_index) = 1.0;
+  // Make a list of the same joints but by JointIndex.
+  std::vector<JointIndex> joint_index_mapping;
+  for (const auto& joint_name : joints_in_preferred_order) {
+    joint_index_mapping.push_back(plant.GetJointByName(joint_name).index());
   }
 
-  // Build the projection matrix Py for the PID controller. Maps u_c from the
-  // controller into u for the MBP, that is, u = Py * u_c where:
-  // u_c is the output from the PID controller in our prefered order.
-  // u is the output as require by the MBP.
-  Py->resize(plant.num_actuated_dofs(), kAllegroNumJoints);
-  Py->setZero();
-  for (multibody::JointActuatorIndex actuator_index(0);
-       actuator_index < plant.num_actuated_dofs(); ++actuator_index) {
-    const auto& actuator = plant.tree().get_joint_actuator(actuator_index);
-    const auto& joint = actuator.joint();
-    if (joint_name_mapping.find(joint.name()) != joint_name_mapping.end())
-      (*Py)(actuator_index, joint_name_mapping[joint.name()]) = 1.0;
-  }
+  *Sx = plant.tree().MakeStateSelectorMatrix(joint_index_mapping);
+  *Sy = plant.tree().MakeActuatorSelectorMatrix(joint_index_mapping);
 }
 
 AllegroHandMotionState::AllegroHandMotionState()

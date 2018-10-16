@@ -189,6 +189,7 @@ class QueryObject;
  @tparam T The scalar type. Must be a valid Eigen scalar.
 
  Instantiated templates for the following kinds of T's are provided:
+
  - double
  - AutoDiffXd
 
@@ -434,6 +435,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
                                 const GeometrySet& setB);
   //@}
 
+  // TODO(SeanCurtis-TRI) We should make the QueryObject constructor public,
+  // instead of forcing users to call a SceneGraph method to obtain one.
+  /** Constructs an empty QueryObject. This is intended for only only by
+   Systems to pass to DeclareAbstractInputPort as the model_value. */
+  QueryObject<T> MakeQueryObject() const;
+
  private:
   // Friend class to facilitate testing.
   friend class SceneGraphTester;
@@ -460,9 +467,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // Allow the load dispatch to peek into SceneGraph.
   friend void DispatchLoadMessage(const SceneGraph<double>&,
                                   lcm::DrakeLcmInterface*);
-
-  // Constructs a QueryObject for OutputPort allocation.
-  QueryObject<T> MakeQueryObject() const;
 
   // Sets the context into the output port value so downstream consumers can
   // perform queries.
