@@ -114,6 +114,12 @@
       </collision>
     </link>
 
+    <!-- Ensure we can weld to the world. -->
+    <joint name='weld_link1' type='fixed'>
+      <parent>world</parent>
+      <child>link1</child>
+    </joint>
+
     <!-- Test frames -->
     <!-- We will define this frame as `F1`. -->
     <frame name='model_scope_link1_frame'>
@@ -131,6 +137,11 @@
     <frame name='model_scope_model_frame_implicit'>
       <!-- This pose represents `X_MF3`. -->
       <pose>0.7 0.8 0.9 0 0 0</pose>
+    </frame>
+    <!-- We will define this frame as `F4`. -->
+    <frame name='model_scope_world_frame'>
+      <!-- This pose represents `X_WF4`. -->
+      <pose frame='world'>1.1 1.2 1.3 0 0 0</pose>
     </frame>
 
     <!-- IMPORTANT NOTE: The model frame is NOT affixed to any particular
