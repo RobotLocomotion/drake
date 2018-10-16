@@ -4,7 +4,23 @@ namespace drake {
 namespace multibody {
 namespace joints {
 
-enum FloatingBaseType { kFixed = 0, kRollPitchYaw = 1, kQuaternion = 2 };
+/// Indicates how unattached links are to be mobilized in the world (fixed or
+/// floating) after parsing.
+enum FloatingBaseType {
+    /// A fixed body will be added to all unattached links. An error will be
+    // triggered if no unattached links are found.
+    kFixed = 0,
+    /// A floating roll-pitch-yaw joint will be added to all unattached links.
+    /// An error will be triggered if no unattached links are found.
+    kRollPitchYaw = 1,
+    /// A floating quaternion joint will be added to all unattached links. An
+    /// error will be triggered if no unattached links are found.
+    kQuaternion = 2,
+    /// Intended for compatibility with MultibodyPlant SDF parsing: A floating
+    /// quaternion joint will be added to all unattached links; however, it
+    /// does not trigger an error if no unattachced links are found.
+    kMultibodyPlantStyle = 3,
+};
 
 }  // namespace joints
 }  // namespace multibody
