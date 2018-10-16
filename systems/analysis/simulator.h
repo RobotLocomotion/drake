@@ -59,7 +59,8 @@ namespace systems {
 /// This documentation is targeted toward users who have created a LeafSystem
 /// with multiple event types (unrestricted update, discrete update, and
 /// publish). For authors of such systems, it is useful to understand the
-/// simulation mechanics, which we now describe.
+/// simulation mechanics in order to attain the desired state over time, and
+/// this behavior is dependent on the ordering in which events are processed.
 ///
 /// In StepTo(), Simulator performs the following steps repeatedly:
 /// 1. Updates state variables without restriction (via an
