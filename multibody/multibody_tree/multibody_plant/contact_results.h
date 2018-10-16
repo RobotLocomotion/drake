@@ -17,8 +17,9 @@ namespace multibody_plant {
  @tparam T      The scalar type. It must be a valid Eigen scalar.
 
  Instantiated templates for the following ScalarTypes are provided:
-   - double
-   - AutoDiffXd
+
+ - double
+ - AutoDiffXd
  */
 template <typename T>
 class ContactResults {

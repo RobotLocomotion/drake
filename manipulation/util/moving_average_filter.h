@@ -25,8 +25,9 @@ namespace util {
  *
  * @tparam T The element type.
  * Instantiated templates for the following kinds of T's are provided:
- *  - double
- *  - VectorX<double>
+ *
+ * - double
+ * - VectorX<double>
  */
 template <typename T>
 class MovingAverageFilter {

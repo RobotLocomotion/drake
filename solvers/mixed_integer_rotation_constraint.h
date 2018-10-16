@@ -199,11 +199,11 @@ struct AddRotationMatrixBoxSphereIntersectionReturn {
  * envelope decreases quickly as num_binary_variables_per_half_axis is
  * is increased.
  *
- * Note: Creates `9*2*num_binary_variables_per_half_axis binary` variables named
+ * @note Creates `9*2*num_binary_variables_per_half_axis binary` variables named
  * "BRpos*(*,*)" and "BRneg*(*,*)", and the same number of continuous variables
  * named "CRpos*(*,*)" and "CRneg*(*,*)".
  *
- * Note: The particular representation/algorithm here was developed in an
+ * @note The particular representation/algorithm here was developed in an
  * attempt:
  *  - to enable efficient reuse of the variables between the constraints
  *    between multiple rows/columns (e.g. the constraints on Rᵀ use the same

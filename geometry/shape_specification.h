@@ -175,7 +175,7 @@ class HalfSpace final : public Shape {
                     length.
    @param p_FC      A point lying on the half-space's boundary measured
                     and expressed in frame F.
-   @retval `X_FC`   The pose of the canonical half-space in frame F.
+   @retval X_FC     The pose of the canonical half-space in frame F.
    @throws std::logic_error if the normal is _close_ to a zero-vector (e.g.,
                             ‖normal_F‖₂ < ε). */
   static Isometry3<double> MakePose(const Vector3<double>& Cz_F,

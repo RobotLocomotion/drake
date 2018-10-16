@@ -577,7 +577,7 @@ class MathematicalProgram {
    * polynomial
    *   p = Q₍₀,₀₎x² + 2Q₍₁,₀₎xy + Q₍₁,₁₎y²
    * and a PSD constraint over Q.
-   * Note: Q is a symmetric monomial_basis.rows() x monomial_basis.rows()
+   * @note Q is a symmetric monomial_basis.rows() x monomial_basis.rows()
    * matrix.
    */
   std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
@@ -767,7 +767,7 @@ class MathematicalProgram {
    * Adds a callback method to visualize intermediate results of the
    * optimization.
    *
-   * Note: Just like other costs/constraints, not all solvers support callbacks.
+   * @note Just like other costs/constraints, not all solvers support callbacks.
    * Adding a callback here will force MathematicalProgram::Solve to select a
    * solver that support callbacks.  For instance, adding a visualization
    * callback to a quadratic programming problem may result in using a nonlinear
@@ -785,7 +785,7 @@ class MathematicalProgram {
    * Adds a callback method to visualize intermediate results of the
    * optimization.
    *
-   * Note: Just like other costs/constraints, not all solvers support callbacks.
+   * @note Just like other costs/constraints, not all solvers support callbacks.
    * Adding a callback here will force MathematicalProgram::Solve to select a
    * solver that support callbacks.  For instance, adding a visualization
    * callback to a quadratic programming problem may result in using a nonlinear

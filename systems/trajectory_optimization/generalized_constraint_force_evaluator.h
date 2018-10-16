@@ -21,7 +21,7 @@ class GeneralizedConstraintForceEvaluator : public solvers::EvaluatorBase {
    * @param tree Note @p tree is aliased for the lifetime of of this object.
    * @param num_vars Number of variables, including λ.
    * @param lambda_size λ is a lambda_size x 1 vector.
-   * @Note the Jᵀλ ∈ ℝ ᴺᵛ, where Nᵥ is the size of the generalized velocities.
+   * @note the Jᵀλ ∈ ℝ ᴺᵛ, where Nᵥ is the size of the generalized velocities.
    * So the size of the output vector is always Nᵥ. To evaluate Jᵀλ, it may or
    * may not depend on variables such as contact force λ, generalized position
    * q, or some additional variables, so the size of the input variable to this
