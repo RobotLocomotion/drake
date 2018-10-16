@@ -9,8 +9,6 @@ import os
 import subprocess
 import sys
 
-import six
-
 
 def _is_dev(label):
     return "/dev:" in label or "/dev/" in label

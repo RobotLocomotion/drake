@@ -4,6 +4,7 @@ import numpy as np
 import os
 from os.path import join
 import unittest
+import six
 
 import pydrake
 from pydrake.autodiffutils import AutoDiffXd
@@ -21,6 +22,11 @@ from pydrake.multibody.rigid_body_tree import (
     )
 import pydrake.multibody.shapes as shapes
 from pydrake.util.eigen_geometry import Isometry3
+
+if six.PY2:
+    lmap = map
+else:
+    def lmap(x): return list(map(x))
 
 
 class TestRigidBodyTree(unittest.TestCase):
@@ -120,8 +126,8 @@ class TestRigidBodyTree(unittest.TestCase):
         # - Check QDotToVelocity and VelocityToQDot methods
         q = tree.getZeroConfiguration()
         v_real = np.zeros(num_v)
-        q_ad = np.array(list(map(AutoDiffXd, q)))
-        v_real_ad = np.array(list(map(AutoDiffXd, v_real)))
+        q_ad = np.array(lmap(AutoDiffXd, q))
+        v_real_ad = np.array(lmap(AutoDiffXd, v_real))
 
         kinsol = tree.doKinematics(q)
         kinsol_ad = tree.doKinematics(q_ad)
@@ -224,8 +230,8 @@ class TestRigidBodyTree(unittest.TestCase):
 
         q = tree.getZeroConfiguration()
         v = np.zeros(num_q)
-        q_ad = np.array(list(map(AutoDiffXd, q)))
-        v_ad = np.array(list(map(AutoDiffXd, v)))
+        q_ad = np.array(lmap(AutoDiffXd, q))
+        v_ad = np.array(lmap(AutoDiffXd, v))
         kinsol = tree.doKinematics(q, v)
         kinsol_ad = tree.doKinematics(q_ad, v_ad)
 
@@ -316,8 +322,8 @@ class TestRigidBodyTree(unittest.TestCase):
         # Update kinematics.
         kinsol = tree.doKinematics(q, v)
         # AutoDiff
-        q_ad = np.array(list(map(AutoDiffXd, q)))
-        v_ad = np.array(list(map(AutoDiffXd, v)))
+        q_ad = np.array(lmap(AutoDiffXd, q))
+        v_ad = np.array(lmap(AutoDiffXd, v))
         kinsol_ad = tree.doKinematics(q_ad, v_ad)
         # Sanity checks:
         # - Actuator map.
