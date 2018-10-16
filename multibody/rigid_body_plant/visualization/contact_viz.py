@@ -6,6 +6,8 @@ from director import objectmodel as om
 from director import visualization as vis
 from director.debugVis import DebugData
 import numpy as np
+from six import iteritems
+
 import drake as lcmdrakemsg
 
 
@@ -84,7 +86,7 @@ class ContactVisualizer(object):
             else:
                 collision_pair_to_forces[key1] = [(point, point + mag * force)]
 
-        for key, list_of_forces in collision_pair_to_forces.iteritems():
+        for key, list_of_forces in iteritems(collision_pair_to_forces):
             d = DebugData()
             for force_pair in list_of_forces:
                 d.addArrow(start=force_pair[0],

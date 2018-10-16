@@ -4,14 +4,17 @@
 
 """
 
+from __future__ import print_function
+
 import argparse
+from collections import OrderedDict
 import os
+from os.path import dirname
 import shutil
 import subprocess
 import sys
 
-from collections import OrderedDict
-from os.path import dirname
+from six import iteritems
 
 def _get_drake_workspace():
     """Find and return the path to the drake workspace."""
@@ -78,7 +81,7 @@ def _run_doxygen(args):
             # just "don't do that".
             try:
                 shutil.copytree(abs_x, target)
-            except OSError, e:
+            except OSError as e:
                 print(str(e) + " during copytree.  Perhaps you tried to input "
                       "both a parent directory and its child?")
                 sys.exit(1)
@@ -94,7 +97,7 @@ def _run_doxygen(args):
         definitions["DOXYGEN_DOT_FOUND"] = "YES"
         definitions["DOXYGEN_DOT_EXECUTABLE"] = dot
     definition_args = ["-D%s=%s" % (key, value)
-                       for key, value in definitions.iteritems()]
+                       for key, value in iteritems(definitions)]
 
     # Create Doxyfile_CXX.
     in_filename = os.path.join(drake_workspace, "doc/Doxyfile_CXX.in")
@@ -108,12 +111,12 @@ def _run_doxygen(args):
     assert os.path.exists(doxyfile)
 
     # Run Doxygen.
-    print "Building C++ Doxygen documentation...",
+    print("Building C++ Doxygen documentation...")
     sys.stdout.flush()
     subprocess.check_call([doxygen, doxyfile], cwd=binary_dir)
     shutil.rmtree(input_root)  # Don't let Bazel find the build/input copy.
-    print "done"
-    print "See file://%s/doxygen_cxx/html/index.html" % binary_dir
+    print("done")
+    print("See file://%s/doxygen_cxx/html/index.html" % binary_dir)
 
 
 def main():
