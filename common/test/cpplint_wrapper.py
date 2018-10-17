@@ -1,5 +1,3 @@
-#!/usr/bin/env python2
-
 """cpplint_wrapper.py -- Run cpplint.py using Drake's standard settings,
 summarizing its output for cleanliness, and providing a --fast option
 to run multiple linters in parallel.
