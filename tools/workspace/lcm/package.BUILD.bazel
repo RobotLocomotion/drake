@@ -233,9 +233,12 @@ generate_file(
     content = """
 import ctypes
 import os.path
+import sys
 import six
-_lib = '_lcm_py{}.so'.format(sys.version_info.major)
-ctypes.cdll.LoadLibrary(os.path.realpath(__path__[0] + '/' + _lib))
+_lib_file = '_lcm_py{}.so'.format(sys.version_info.major)
+ctypes.cdll.LoadLibrary(os.path.realpath(__path__[0] + '/' + _lib_file))
+from . import _lcm_py2 as _lcm
+sys.modules['lcm._lcm'] = _lcm
 _filename = __path__[0] + \"/lcm-python/lcm/__init__.py\"
 if six.PY2:
     execfile(_filename)

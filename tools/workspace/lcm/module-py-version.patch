@@ -1,0 +1,27 @@
+--- lcm-python/module.c
++++ lcm-python/module.c
+@@ -36,9 +36,9 @@ __attribute__((visibility("default")))
+ #endif
+ PyMODINIT_FUNC
+ #if PY_MAJOR_VERSION >= 3
+-PyInit__lcm(void)
++PyInit__lcm_py3(void)
+ #else
+-init_lcm(void)
++init_lcm_py2(void)
+ #endif
+ {
+     PyObject *m;
+@@ -47,7 +47,11 @@ init_lcm(void)
+     Py_TYPE(&pylcm_type) = &PyType_Type;
+     Py_TYPE(&pylcm_subscription_type) = &PyType_Type;
+ 
+-    MOD_DEF(m, "_lcm", lcmmod_doc, lcmmod_methods);
++#if PY_MAJOR_VERSION >= 3
++    MOD_DEF(m, "_lcm_py3", lcmmod_doc, lcmmod_methods);
++#else
++    MOD_DEF(m, "_lcm_py2", lcmmod_doc, lcmmod_methods);
++#endif
+ 
+     Py_INCREF(&pylcmeventlog_type);
+     if (PyModule_AddObject(m, "EventLog", (PyObject *) &pylcmeventlog_type) != 0) {
