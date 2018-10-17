@@ -35,43 +35,46 @@ def py_and_py2(
         kwargs_py2,
         **kwargs):
     """
-    Provides Bazel Python (2 or 3) and Python2 targets, without duplication /
+    Provides Bazel Python (2 or 3) and Python2 targets, without duplication or
     conflict. This should be used **sparingly**, only when Python2 and Python3
-    support is simultaneously needed.
+    support is needed within the same build.
+
+    If Bazel Python is Python2:
+        Defines a Python2 target with `kwargs + kwargs_py`, and creates an
+    alias for the Python2 name (if it's unique).
+    If Bazel Python is Python3:
+        Defines a Python3 target with `kwargs + kwargs_py` and Python2 target
+    with `kwargs_py3`.
 
     @param rule
-        Macro describing rule (e.g. `py_library`, `cc_binary`).
+        Starlark rule (e.g. `py_library`, `cc_binary`).
     @param kwargs_py
         Arguments for Bazel Python target.
     @param kwargs_py2
         Arguments for Python2 target.
 
-    For Bazel Python versions:
-    - 2: Defines a Python2 target with `kwargs + kwargs_py`, and creates an
-    alias for the Python2 name (if its unique).
-    - 3: Defines a Python3 target with `kwargs + kwargs_py` and Python2 target
-    with `kwargs_py3`.
-
-    Formatting:
-        Values can be strings or lists of strings; any other types are ignored.
-        The following format variables are available:
-            {py_major}: Replaces with Python major version.
-            {py_site_packages}: Relpath for site-packages installation.
+    Strings and lists of strings in `kwargs`, `kwargs_py`, `kwargs_py2` can be
+    formatted by the following variables:
+        {py_major}: Python major version.
+        {py_site_packages}: Relpath for site-packages installation.
     """
     if _PY2["py_major"] != "2":
-        fail("@python2 is misconfigured: {}".format(_PY2))
-    kwargs_py = _format(kwargs + kwargs_py, _PY)  # Bazel Python
-    kwargs_py2 = _format(kwargs + kwargs_py2, _PY2)  # Python2
+        fail("@python2 has the wrong major version: {}".format(_PY2))
+
+    # Define Bazel Python target.
+    kwargs_py = _format(kwargs + kwargs_py, _PY)
     rule(**kwargs_py)
-    if _PY["py_major"] != _PY2["py_major"]:
-        # Duplicate the rule.
-        if kwargs_py2["name"] == kwargs_py["name"]:
-            fail(("Python2 name '{}' should not match Bazel Python " +
-                  "name '{}'").format(kwargs_py2["name"], kwargs_py["name"]))
+
+    # Define Python2...
+    kwargs_py2 = _format(kwargs + kwargs_py2, _PY2)
+    if _PY["py_major"] == "2":
+        # Alias.
+        if kwargs_py2["name"] != kwargs_py["name"]:
+            native.alias(
+                name = kwargs_py2["name"],
+                actual = kwargs_py["name"],
+                visibility = kwargs_py2.get("visibility"),
+            )
+    else:
+        # Target.
         rule(**kwargs_py2)
-    elif kwargs_py2["name"] != kwargs_py["name"]:
-        native.alias(
-            name = kwargs_py2["name"],
-            actual = kwargs_py["name"],
-            visibility = kwargs_py2.get("visibility"),
-        )
