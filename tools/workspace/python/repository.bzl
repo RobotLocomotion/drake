@@ -33,17 +33,32 @@ Arguments:
 load("@drake//tools/workspace:execute.bzl", "execute_or_fail", "which")
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
+# bazel - Version for Bazel's version of Python.
+# compat - Version for maintaining compatibility (e.g. with Drake Visualizer).
 _VERSION_SUPPORT_MATRIX = {
-    "ubuntu:16.04": ["2.7", "3.5"],  # WIP
-    "ubuntu:18.04": ["2.7"],
-    "macos:10.13": ["2.7"],
-    "macos:10.14": ["2.7"],
+    "ubuntu:16.04": struct(
+        bazel = ["2.7", "3.5"],  # DO NOT MERGE: WIP on 3.5
+        compat = [],
+    ),
+    "ubuntu:18.04": struct(
+        bazel = ["3.5"],  # DO NOT MERGE: Example of what stuff looks like.
+        compat = ["2.7"],
+    ),
+    "macos:10.13": struct(
+        bazel = ["2.7"],
+        compat = [],
+    ),
+    "macos:10.14": struct(
+        bazel = ["2.7"],
+        compat = [],
+    ),
 }
 
 def _repository_python_info(repository_ctx):
     # Using `PYTHON_BIN_PATH` from the environment, determine:
     # - `python` - binary path
     # - `python_config` - configuration binary path
+    # - `ext_suffix` - extension suffix
     # - `site_packages_relpath` - relative to base of FHS
     # - `version` - '{major}.{minor}`
     # - `version_major` - major version
@@ -64,23 +79,23 @@ def _repository_python_info(repository_ctx):
     # interpreter during a repository rule, thus we can only catch mismatch
     # issues via `//tools/workspace/python:py/python_bin_test`.
     if os_result.is_macos:
-        version_supported_major, _ = versions_supported[0].split(".")
+        version_supported_major, _ = versions_supported.bazel[0].split(".")
 
         # N.B. On Mac, `which python{major}.{minor}` may refer to the system
         # Python, not Homebrew Python.
         python_default = "python{}".format(version_supported_major)
     else:
-        python_default = "python{}".format(versions_supported[0])
+        python_default = "python{}".format(versions_supported.bazel[0])
 
-    version_attr = repository_ctx.attr.version
-    if not version_attr:
+    compat_version = repository_ctx.attr.compat_version
+    if compat_version:
+        python = str(which(repository_ctx, "python{}".format(compat_version)))
+    else:
         python_from_env = repository_ctx.os.environ.get(
             "PYTHON_BIN_PATH",
             python_default,
         )
         python = str(which(repository_ctx, python_from_env))
-    else:
-        python = str(which(repository_ctx, "python{}".format(version_attr)))
 
     version = execute_or_fail(
         repository_ctx,
@@ -96,23 +111,39 @@ def _repository_python_info(repository_ctx):
     python_config = "{}-config".format(python)
 
     # Warn if we do not the correct platform support.
-    if version not in versions_supported:
-        print((
-            "\n\nWARNING: Python {} is not a supported / tested version for " +
-            "use with Drake.\n  Supported versions on {}: {}\n\n"
-        ).format(version, os_key, versions_supported))
+    if not compat_version:
+        if version not in versions_supported.bazel:
+            print("""
+
+WARNING: Python {} is not a supported / tested version for use with Drake.
+  Supported versions on {}: {}
+
+""").format(version, os_key, versions_supported)
+    else:
+        versions_all = sorted(
+            versions_supported.bazel + versions_supported.compat)
+        if version not in versions_all:
+            print("""
+
+WARNING: Python {} is not a supported compatibility version.
+  Supported compatibility versions on {}: {}
+
+NOTE: Support of a compatibility version of Python does not imply that all of
+Drake buildable and tested against this version.
+
+""".format(version, os_key, versions_all))
 
     site_packages_relpath = "lib/python{}/site-packages".format(version)
 
     # Get extension.
     # `python-config` may not provide `--extension-suffix`, so we use raw
-    # Python.
-    # Strip the left '.' so that it's easier to see the boundary when using
-    # replacement tokens.
+    # Python. Strip the left '.' so that it's easier to see the boundary when
+    # using replacement tokens.
     ext_suffix = execute_or_fail(
         repository_ctx,
-        [python, "-c", "from sysconfig import get_config_var as get; " +
-                       "print(get('EXT_SUFFIX') or get('SO'))"],
+        [python, "-c",
+         "from sysconfig import get_config_var; " +
+         "print(get_config_var('EXT_SUFFIX') or get_config_var('SO'))"],
     ).stdout.strip().lstrip('.')
 
     return struct(
@@ -253,7 +284,7 @@ py_library(
 
 python_repository = repository_rule(
     _impl,
-    attrs = {"version": attr.string(default = "")},
+    attrs = {"compat_version": attr.string(default = "")},
     environ = [
         "PYTHON_BIN_PATH",
     ],
