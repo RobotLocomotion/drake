@@ -7,7 +7,6 @@ import collections
 import os
 import subprocess
 
-import yaml
 import google.protobuf.text_format
 import yaml
 
