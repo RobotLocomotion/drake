@@ -1,9 +1,11 @@
 python3 -m virtualenv --system-site-packages --python python3 build/py3
 source build/py3/bin/activate
-pip install --user protobuf sphinx==1.8.1 sphinx_rtd_theme
+rm build/py3/bin/python
+mv build/py3/bin/{python-config,python3-config}
+pip install protobuf sphinx==1.8.1 sphinx_rtd_theme
 
 {
-_py_arg="--python_path=$(which python) --action_env=PYTHON_BIN_PATH=$(which python)"
+_py_arg="--python_path=$(which python3) --action_env=PYTHON_BIN_PATH=$(which python3)"
 bazel-build() { (
     set -x
     bazel build ${_py_arg} "$@"
