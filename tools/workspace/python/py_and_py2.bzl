@@ -42,7 +42,7 @@ def py_and_py2(
     is unique.
     Otherwise, Python3 and Python2 targets will be defined.
 
-    For formatting:
+    Resolving `py_select` statements:
         `py_select(bazel=..., py2=...)` - Switch between Bazel Python and
             Python2 (depending on build target being generated).
         `py_select(py2=..., py3=...)` - Switch between Python 2 and Python 3
@@ -53,7 +53,7 @@ def py_and_py2(
     @param rule
         Starlark rule (e.g. `py_library`, `cc_binary`).
     @param kwargs
-        Arguments (which can be formatted).
+        Arguments (which are resolved as mentioned above).
     """
     if _PY2.major != "2":
         fail("@python2 has the wrong major version: {}".format(_PY2))

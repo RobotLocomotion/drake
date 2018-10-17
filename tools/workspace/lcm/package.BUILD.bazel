@@ -259,12 +259,10 @@ py_and_py2(
 py_and_py2(
     rule = py_library,
     name = py_select(bazel = "lcm-python", py2 = "lcm-python2"),
-    deps = [
-        py_select(
-            py2 = ":lcm-python2-upstream",
-            py3 = ":lcm-python3-upstream",
-        ),
-    ],
+    deps = py_select(
+        py2 = [":lcm-python2-upstream"],
+        py3 = [":lcm-python3-upstream"],
+    ),
     srcs = ["__init__.py"],  # Shim, from the genrule above.
 )
 
