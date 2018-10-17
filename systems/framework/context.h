@@ -14,14 +14,14 @@
 namespace drake {
 namespace systems {
 
+// TODO(sherm1) Add step information.
 /// Contains information about the independent variable including time and
 /// step number.
-// TODO(sherm1) Add step information.
 template <typename T>
 struct StepInfo {
+  // TODO(sherm1): Consider whether this is sufficiently robust.
   /// The time, in seconds. For typical T implementations based on
   /// doubles, time resolution will gradually degrade as time increases.
-  // TODO(sherm1): Consider whether this is sufficiently robust.
   T time_sec{0.0};
 };
 

@@ -72,8 +72,11 @@ class Curve2 {
   /// The @p position_dot derivative, when evaluated exactly at a waypoint,
   /// will be congruent with the direction of one of the (max two) segments
   /// that neighbor the waypoint.  (At the first and last waypoints, there
-  /// is only one neighboring segment.)  TODO(jwnimmer-tri) This will no
+  /// is only one neighboring segment.)
+  /// @cond
+  /// TODO(jwnimmer-tri) This will no
   /// longer be true once this class uses a spline.
+  /// @endcond
   PositionResult GetPosition(const T& path_distance) const {
     using std::max;
 

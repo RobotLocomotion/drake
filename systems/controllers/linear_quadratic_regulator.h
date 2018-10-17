@@ -40,6 +40,8 @@ LinearQuadraticRegulatorResult LinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& N =
         Eigen::Matrix<double, 0, 0>::Zero());
 
+// TODO(russt): Consider implementing the optional N argument as in the
+// continuous-time formulation.
 /// Computes the optimal feedback controller, u=-Kx, and the optimal
 /// cost-to-go J = x'Sx for the problem:
 ///
@@ -57,8 +59,6 @@ LinearQuadraticRegulatorResult LinearQuadraticRegulator(
 ///
 /// @throws std::runtime_error if R is not positive definite.
 /// @ingroup control_systems
-// TODO(russt): Consider implementing the optional N argument as in the
-// continuous-time formulation.
 LinearQuadraticRegulatorResult DiscreteTimeLinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::MatrixXd>& B,

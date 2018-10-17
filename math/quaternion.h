@@ -184,6 +184,7 @@ Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
   return ret;
 }
 
+// TODO(mitiguy) change all calling sites to this function.
 /**
  * Computes the rotation matrix from quaternion representation.
  * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
@@ -191,7 +192,6 @@ Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
  * @return 3 x 3 rotation matrix
  * (Deprecated), use @ref math::RotationMatrix(quaternion).
  */
-// TODO(mitiguy) change all calling sites to this function.
 template <typename Derived>
 Matrix3<typename Derived::Scalar> quat2rotmat(
     const Eigen::MatrixBase<Derived>& v) {
@@ -260,7 +260,9 @@ bool AreQuaternionsEqualForOrientation(
   return quat1_canonical.isApprox(quat2_canonical, tolerance);
 }
 
-
+// Note: To avoid dependence on Eigen's internal ordering of elements in its
+// Quaternion class, herein we use `e0 = quat.w()', `e1 = quat.x()`, etc.
+// Return value `quatDt` *does* have a specific order as defined above.
 /** This function calculates a quaternion's time-derivative from its quaternion
  * and angular velocity. Algorithm from [Kane, 1983] Section 1.13, Pages 58-59.
  *
@@ -274,9 +276,6 @@ bool AreQuaternionsEqualForOrientation(
  * @param w_AB_B  B's angular velocity in A, expressed in B.
  * @retval quatDt Time-derivative of quat_AB, i.e., [ẇ, ẋ, ẏ, ż].
  */
-// Note: To avoid dependence on Eigen's internal ordering of elements in its
-// Quaternion class, herein we use `e0 = quat.w()', `e1 = quat.x()`, etc.
-// Return value `quatDt` *does* have a specific order as defined above.
 template<typename T>
 Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
     const Eigen::Quaternion<T>& quat_AB,  const Vector3<T>& w_AB_B ) {
@@ -293,6 +292,9 @@ Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
 }
 
 
+// Note: To avoid dependence on Eigen's internal ordering of elements in its
+// Quaternion class, herein we use `e0 = quat.w()', `e1 = quat.x()`, etc.
+// Parameter `quatDt` *does* have a specific order as defined above.
 /** This function calculates angular velocity from a quaternion and its time-
  * derivative. Algorithm from [Kane, 1983] Section 1.13, Pages 58-59.
  *
@@ -306,9 +308,6 @@ Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
  * @param quatDt  Time-derivative of `quat_AB`, i.e. [ẇ, ẋ, ẏ, ż].
  * @retval w_AB_B  B's angular velocity in A, expressed in B.
  */
-// Note: To avoid dependence on Eigen's internal ordering of elements in its
-// Quaternion class, herein we use `e0 = quat.w()', `e1 = quat.x()`, etc.
-// Parameter `quatDt` *does* have a specific order as defined above.
 template <typename T>
 Vector3<T> CalculateAngularVelocityExpressedInBFromQuaternionDt(
     const Eigen::Quaternion<T>& quat_AB, const Vector4<T>& quatDt) {

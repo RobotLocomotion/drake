@@ -17,7 +17,7 @@ namespace collision {
 typedef std::pair<ElementId, ElementId> ElementIdPair;
 
 /** Model is an abstract base class of a collision model. Child classes of Model
- implement the actual collision detection logic. **/
+ implement the actual collision detection logic. */
 class Model {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Model)
@@ -40,7 +40,7 @@ class Model {
    @return A pointer to the added element.
 
    @throws std::runtime_error if there was a problem (e.g., duplicate element
-   id, error configuring collision model, etc.) **/
+   id, error configuring collision model, etc.) */
   Element* AddElement(std::unique_ptr<Element> element);
 
   /** Removes a collision element from this model.
@@ -48,7 +48,7 @@ class Model {
    @param id The id of the element that will be removed.
 
    @return True if the element is successfully removed, false if the model does
-   not contain an element with the given id. **/
+   not contain an element with the given id. */
   bool RemoveElement(ElementId id);
 
   /** Gets a read-only pointer to a collision element in this model.
@@ -57,7 +57,7 @@ class Model {
 
    @return A read-only pointer to the collision element corresponding to
    the given `id` or `nullptr` if no such collision element is present in the
-   model. **/
+   model. */
   virtual const Element* FindElement(ElementId id) const;
 
   /** Gets a pointer to a mutable collision element in this model.
@@ -67,7 +67,7 @@ class Model {
 
    @returns A pointer to a mutable collision element corresponding to
    the given `id` or `nullptr` if no such collision element is present in the
-   model. **/
+   model. */
   virtual Element* FindMutableElement(ElementId id);
 
   void GetTerrainContactPoints(ElementId id0, Eigen::Matrix3Xd* terrain_points);
@@ -81,7 +81,7 @@ class Model {
   virtual void NotifyFilterCriteriaChanged(ElementId) {}
 
   /** Updates the collision model. This method is typically called after changes
-   are made to its collision elements. **/
+   are made to its collision elements. */
   virtual void UpdateModel() = 0;
 
   /** Updates the stored transformation from a collision element's canonical
@@ -94,7 +94,7 @@ class Model {
    @param X_WL The new value for the local-to-world transform. It reflects the
    current world pose of the parent body in a given context.
 
-   @return Whether the update was successful. **/
+   @return Whether the update was successful. */
   virtual bool UpdateElementWorldTransform(
       ElementId id, const Eigen::Isometry3d& X_WL);
 
@@ -110,7 +110,7 @@ class Model {
    @param[out] closest_points A reference to a vector of PointPair objects that
    contains the closest point information after this method is called
 
-   @return Whether this method successfully ran. **/
+   @return Whether this method successfully ran. */
   virtual bool ClosestPointsAllToAll(
       const std::vector<ElementId>& ids_to_check, bool use_margins,
       std::vector<PointPair<double>>* closest_points) = 0;
@@ -124,7 +124,7 @@ class Model {
    @param[out] closest_points A reference to a vector of PointPair objects
    that contains the closest point information after this method is called.
 
-   @returns Whether this method successfully ran. **/
+   @returns Whether this method successfully ran. */
   virtual bool ComputeMaximumDepthCollisionPoints(
       bool use_margins, std::vector<PointPair<double>>* closest_points) = 0;
 
@@ -141,7 +141,7 @@ class Model {
    that contains the closest point information after this method is
    called
 
-   @return Whether this method successfully ran. **/
+   @return Whether this method successfully ran. */
   virtual bool ClosestPointsPairwise(
       const std::vector<ElementIdPair>& id_pairs, bool use_margins,
       std::vector<PointPair<double>>* closest_points) = 0;
@@ -159,7 +159,7 @@ class Model {
   Clearing cached results allows the collision model to perform a fresh
   computation without any coupling with previous history.
 
-  @see drake/multibody/collision/test/model_test.cc. **/
+  @see drake/multibody/collision/test/model_test.cc. */
   virtual void ClearCachedResults(bool use_margins) = 0;
 
   /** Computes the closest distance from each point to any surface in the
@@ -172,7 +172,7 @@ class Model {
    model with collision margins.
 
    @param[out] closest_points A vector of `N` PointPair instances such that the
-   i'th instance reports the query result for the i'th input point. **/
+   i'th instance reports the query result for the i'th input point. */
   virtual void CollisionDetectFromPoints(
       const Eigen::Matrix3Xd& points, bool use_margins,
       std::vector<PointPair<double>>* closest_points) = 0;
@@ -198,7 +198,7 @@ class Model {
   collide with the model within the specified threshold.
 
   @see drake/matlab/systems/plants/test/collidingPointsTest.m for a MATLAB
-  %test. **/
+  %test. */
   virtual std::vector<size_t> CollidingPoints(
       const std::vector<Eigen::Vector3d>& input_points,
       double collision_threshold) = 0;
@@ -219,7 +219,7 @@ class Model {
   @param collision_threshold The radius of a control sphere around each point
   used to check for collisions with the model.
 
-  @return Whether any of the points positively checks for collision. **/
+  @return Whether any of the points positively checks for collision. */
   virtual bool CollidingPointsCheckOnly(
       const std::vector<Eigen::Vector3d>& input_points,
       double collision_threshold) = 0;
@@ -239,7 +239,7 @@ class Model {
    @param[out] distance The distance to the first collision, or -1 if no
    collision occurs.
 
-   @return Whether this method successfully ran. **/
+   @return Whether this method successfully ran. */
   virtual bool CollisionRaycast(const Eigen::Matrix3Xd& origin,
                                 const Eigen::Matrix3Xd& ray_endpoint,
                                 bool use_margins, Eigen::VectorXd* distances,
@@ -254,7 +254,7 @@ class Model {
    @param transform_body_to_joint The transform from the collision element's
    link's frame to the joint's coordinate frame.
 
-   @return Whether the collision element was successfully updated. **/
+   @return Whether the collision element was successfully updated. */
   virtual bool TransformCollisionFrame(
       const drake::multibody::collision::ElementId& eid,
       const Eigen::Isometry3d& transform_body_to_joint);
@@ -268,7 +268,7 @@ class Model {
 
    @param element The element that has been added.
 
-   @throws std::runtime_error If there was a problem processing the element. **/
+   @throws std::runtime_error If there was a problem processing the element. */
   virtual void DoAddElement(const Element& element);
 
   /** Allows sub-classes to do additional processing when elements are
@@ -276,7 +276,7 @@ class Model {
    prior to removing id from elements. The derived class should not do this
    removal.
 
-   @param id The id of the element that will be removed. **/
+   @param id The id of the element that will be removed. */
   virtual void DoRemoveElement(ElementId id);
 
   // Protected member variables are forbidden by the style guide.

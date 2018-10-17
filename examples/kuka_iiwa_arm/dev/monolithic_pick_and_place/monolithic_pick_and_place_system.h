@@ -40,7 +40,7 @@ used to prevent an algebraic loop between the plant and the plan interpolator.
      │ │ └───────────────────┴────────────────────────────────────┘ │ │
      │ └────────────────────────────────────────────────────────────┘ │
      └────────────────────────────────────────────────────────────────┘
-**/
+*/
 
 class MonolithicPickAndPlaceSystem : public systems::Diagram<double> {
  public:

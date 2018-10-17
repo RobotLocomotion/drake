@@ -62,13 +62,13 @@ class LaneSRange {
 };
 
 
+// TODO(maddog@tri.global) Figure out if there would be any loss or gain of
+//                         utility if the contiguity requirement were removed.
 /// A longitudinal route, possibly spanning multiple (end-to-end) lanes.
 ///
 /// The sequence of LaneSRanges should be contiguous.  (In other words,
 /// taken as a Lane-space path with r=0 and h=0, it should present a
 /// G1-continuous curve.)
-// TODO(maddog@tri.global) Figure out if there would be any loss or gain of
-//                         utility if the contiguity requirement were removed.
 class LaneSRoute {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LaneSRoute);

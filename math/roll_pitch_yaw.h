@@ -635,8 +635,8 @@ template <typename T>
 Vector3<T> CalcRollPitchYawFromQuaternionAndRotationMatrix(
     const Eigen::Quaternion<T>& quaternion, const Matrix3<T>& R);
 
-/// (Deprecated), use @ref math::RollPitchYaw(quaternion).
 // TODO(mitiguy) Delete this code that was deprecated on April 27, 2018.
+/// (Deprecated), use @ref math::RollPitchYaw(quaternion).
 template <typename T>
 DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
                  "Use constructor RollPitchYaw(quaternion).")
@@ -648,8 +648,8 @@ Vector3<T> QuaternionToSpaceXYZ(const Eigen::Quaternion<T>& quaternion) {
 /// @relates RollPitchYaw
 using RollPitchYawd = RollPitchYaw<double>;
 
-/// (Deprecated), use @ref math::RollPitchYaw(rpy).ToQuaternion().
 // TODO(mitiguy) Delete this code that was deprecated on April 16, 2018.
+/// (Deprecated), use @ref math::RollPitchYaw(rpy).ToQuaternion().
 template <typename Derived>
 DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
                  "Use RollPitchYaw::ToQuaternion().")
@@ -661,8 +661,8 @@ Quaternion<typename Derived::Scalar> RollPitchYawToQuaternion(
   const Eigen::Quaternion<Scalar> quaternion = roll_pitch_yaw.ToQuaternion();
 }
 
-/// (Deprecated), use @ref math::RollPitchYaw(rpy).ToQuaternion().
 // TODO(mitiguy) Delete this code that was deprecated on April 16, 2018.
+/// (Deprecated), use @ref math::RollPitchYaw(rpy).ToQuaternion().
 template <typename Derived>
 DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
                  "Use RollPitchYaw::ToQuaternion().")

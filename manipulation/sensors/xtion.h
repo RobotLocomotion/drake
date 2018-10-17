@@ -14,6 +14,9 @@ namespace drake {
 namespace manipulation {
 namespace sensors {
 
+// TODO(eric.cousineau): Delegate most of this class's functionality to
+// definition files once sensor tags are supported. At present, this is
+// merely meant to be a convenience wrapper.
 /**
  * Attaches an Asus Xtion PRO Live camera to a given frame on a RigidBodyTree,
  * and provides the ability to add the camera as a system in a diagram builder.
@@ -41,9 +44,6 @@ namespace sensors {
  *
  * @ingroup manipulation_systems
  */
-// TODO(eric.cousineau): Delegate most of this class's functionality to
-// definition files once sensor tags are supported. At present, this is
-// merely meant to be a convenience wrapper.
 class Xtion : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Xtion)

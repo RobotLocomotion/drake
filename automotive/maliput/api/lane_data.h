@@ -51,8 +51,8 @@ struct LaneEnd {
 /// text-logging. It is not intended for serialization.
 std::ostream& operator<<(std::ostream& out, const LaneEnd::Which& which_end);
 
-/// A 3-dimensional rotation.
 // TODO(Mitiguy) Rename/move this class to drake/math alongside RotationMatrix.
+/// A 3-dimensional rotation.
 class Rotation {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Rotation)
@@ -204,9 +204,10 @@ auto operator!=(const GeoPositionT<T>& lhs, const GeoPositionT<T>& rhs) {
 }
 
 /// A 3-dimensional position in a `Lane`-frame, consisting of three components:
-///  * s is longitudinal position, as arc-length along a Lane's reference line.
-///  * r is lateral position, perpendicular to the reference line at s.
-///  * h is height above the road surface.
+///
+/// * s is longitudinal position, as arc-length along a Lane's reference line.
+/// * r is lateral position, perpendicular to the reference line at s.
+/// * h is height above the road surface.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 ///

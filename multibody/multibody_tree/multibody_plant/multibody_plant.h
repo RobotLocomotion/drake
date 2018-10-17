@@ -124,8 +124,10 @@ namespace multibody_plant {
 ///
 /// %MultibodyPlant users can register geometry with a SceneGraph for
 /// essentially two purposes; a) visualization and, b) contact modeling.
-// TODO(SeanCurtis-TRI): update this comment as the number of SceneGraph
-// roles changes.
+/// @cond
+/// // TODO(SeanCurtis-TRI): update this comment as the number of SceneGraph
+/// // roles changes.
+/// @endcond
 /// Before any geometry registration takes place, a user **must** first make a
 /// call to RegisterAsSourceForSceneGraph() in order to register the
 /// %MultibodyPlant as a client of a SceneGraph instance, point at which the
@@ -149,6 +151,7 @@ namespace multibody_plant {
 /// 3. Call to Finalize(), user is done specifying the model.
 /// 4. Connect SceneGraph::get_query_output_port() to
 ///    get_geometry_query_input_port().
+///
 /// Refer to the documentation provided in each of the methods above for further
 /// details.
 ///

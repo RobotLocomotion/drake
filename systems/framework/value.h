@@ -130,14 +130,13 @@ class AbstractValue {
         NiceTypeName::Demangle(type_info().name()));
   }
 
+  // TODO(david-german-tri): Once this uses static_cast under the hood in
+  // Release builds, lower-case it.
   /// Returns the value wrapped in this AbstractValue, which must be of
   /// exactly type T.  T cannot be a superclass, abstract or otherwise.
   /// In Debug builds, if the types don't match, an std::logic_error will be
   /// thrown with a helpful error message. In Release builds, this is not
   /// guaranteed.
-  ///
-  /// TODO(david-german-tri): Once this uses static_cast under the hood in
-  /// Release builds, lower-case it.
   template <typename T>
   const T& GetValue() const {
     return DownCastOrMaybeThrow<T>()->get_value();

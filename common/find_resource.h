@@ -91,10 +91,14 @@ std::vector<std::string> GetResourceSearchPaths();
 /// `drake/` will return a failed result.
 ///
 /// The search scans for the resource in the following places and in
-/// the following order: 1) in the DRAKE_RESOURCE_ROOT environment variable
-/// 2) in the directories specified by `AddResourceSearchPath()` and 3) in the
-/// drake source workspace. If all of these are unavailable, or do not have the
-/// resource, then it will return a failed result.
+/// the following order:
+///
+/// 1. In the DRAKE_RESOURCE_ROOT environment variable
+/// 2. In the directories specified by `AddResourceSearchPath()` and
+/// 3. In the drake source workspace.
+///
+/// If all of these are unavailable, or do not have the resource, then it will
+/// return a failed result.
 FindResourceResult FindResource(std::string resource_path);
 
 /// Convenient wrapper for querying FindResource(resource_path) followed by

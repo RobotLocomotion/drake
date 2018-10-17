@@ -32,11 +32,10 @@ namespace geometry_base {
 /// implement any of the fundamental geometric methods that define the
 /// immersion of lane-frame into world-frame; that is the job of each
 /// specific backend.
-///
-/// TODO(maddog@tri.global) Provide a basic naive implementation of
-///                         RoadGeometry::DoToRoadPosition() which
-///                         only requires generic calls to
-///                         Lane::ToLanePosition().
+// TODO(maddog@tri.global) Provide a basic naive implementation of
+//                         RoadGeometry::DoToRoadPosition() which
+//                         only requires generic calls to
+//                         Lane::ToLanePosition().
 
 /// geometry_base's implementation of api::RoadGeometry.
 class RoadGeometry : public api::RoadGeometry {
