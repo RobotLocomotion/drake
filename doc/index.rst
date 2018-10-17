@@ -74,7 +74,7 @@ Here is a quick summary of capabilities:
 * `System Identification <https://drake.mit.edu/doxygen_cxx/classdrake_1_1solvers_1_1_system_identification.html>`_
 	* Least-squares "equation error" minimization for rigid body systems (with automatic extraction of identifiable lumped parameters)
 	* Nonlinear "simulation error" minimization
-* `Many examples / benchmarks / model systems <https://github.com/RobotLocomotion/drake/tree/master/drake/examples>`_
+* `Many examples / benchmarks / model systems <https://github.com/RobotLocomotion/drake/tree/master/examples>`_
 	* Acrobot, Cart-Pole, Bouncing balls, ...
 	* Quadrotors
 	* `Automotive/Traffic <https://drake.mit.edu/doxygen_cxx/group__automotive__systems.html>`_
