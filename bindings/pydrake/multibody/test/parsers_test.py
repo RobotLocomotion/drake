@@ -19,6 +19,21 @@ from pydrake.multibody.rigid_body_tree import (
 
 
 class TestParsers(unittest.TestCase):
+    def test_enum_api(self):
+        # Existence check.
+        enums = [
+            FloatingBaseType.kFixed,
+            FloatingBaseType.kRollPitchYaw,
+            FloatingBaseType.kQuaternion,
+            # WARNING: This is experimental.
+            FloatingBaseType.kExperimentalMultibodyPlantStyle,
+        ]
+        for enum in enums:
+            # Expect a novel value.
+            self.assertEqual(enums.count(enum), 1)
+            # Expect documentation.
+            self.assertGreater(len(enum.__doc__), 0)
+
     def test_urdf(self):
         """Test that an instance of a URDF model can be loaded into a
         RigidBodyTree by passing a complete set of arguments to Drake's URDF
