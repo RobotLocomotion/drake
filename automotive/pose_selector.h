@@ -51,6 +51,7 @@ enum class ScanStrategy { kBranches, kPath };
 /// within RoadGeometry::ToRoadPosition().
 enum class RoadPositionStrategy { kCache, kExhaustiveSearch };
 
+// TODO(jadecastro): Enable AutoDiffXd support, and add unit tests.
 /// PoseSelector is a class that provides the relevant pose or poses with
 /// respect to a given ego vehicle driving within a given maliput road geometry.
 ///
@@ -60,8 +61,6 @@ enum class RoadPositionStrategy { kCache, kExhaustiveSearch };
 /// - AutoDiffXd
 ///
 /// They are already available to link against in the containing library.
-///
-/// TODO(jadecastro): Enable AutoDiffXd support, and add unit tests.
 template <typename T>
 class PoseSelector {
  public:

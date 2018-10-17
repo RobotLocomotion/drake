@@ -28,8 +28,9 @@ namespace drake {
   ScalarType because it provides <tt>symbolic::Formula
   operator<(symbolic::Expression, symbolic::Expression)</tt>.
 
+
+  @{
  */
-///@{
 template <typename ScalarType>
 ScalarType cond(const ScalarType& e) {
   return e;

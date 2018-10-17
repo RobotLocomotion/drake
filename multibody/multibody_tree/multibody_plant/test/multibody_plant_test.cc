@@ -2011,6 +2011,97 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
   EXPECT_EQ(Su_from_empty_actuators.cols(), 0);
 }
 
+// This unit test verifies the workings of
+// MBP::SetFreeBodyPoseInAnchoredFrame(). To that end we build a model
+// representative of a real setup consisting of a robot arm mounted on a robot
+// table, an objects table and a mug. This test defines an objects frame O with
+// its origin located a the -x, -y corner of the objects table. With this setup,
+// we test we can set the pose X_OM of the mug frame M in the objects frame O.
+GTEST_TEST(StateSelection, FloatingBodies) {
+  const std::string iiwa_sdf_path = FindResourceOrThrow(
+      "drake/manipulation/models/iiwa_description/sdf/"
+          "iiwa14_no_collision.sdf");
+
+  const std::string table_sdf_path = FindResourceOrThrow(
+      "drake/examples/kuka_iiwa_arm/models/table/"
+          "extra_heavy_duty_table_surface_only_collision.sdf");
+
+  const std::string mug_sdf_path = FindResourceOrThrow(
+      "drake/examples/simple_gripper/simple_mug.sdf");
+
+  MultibodyPlant<double> plant;
+
+  // Load a model of a table for the robot.
+  const ModelInstanceIndex robot_table_model =
+      AddModelFromSdfFile(table_sdf_path, "robot_table", &plant);
+  plant.WeldFrames(plant.world_frame(),
+                   plant.GetFrameByName("link", robot_table_model));
+
+  // Load the robot and weld it on top of the robot table.
+  const ModelInstanceIndex arm_model =
+      AddModelFromSdfFile(iiwa_sdf_path, &plant);
+
+  const double table_top_z_in_world =
+      // table's top height
+      0.736 +
+      // table's top width
+      0.057 / 2;
+  plant.WeldFrames(
+      plant.world_frame(), plant.GetFrameByName("iiwa_link_0", arm_model),
+      RigidTransform<double>(Vector3d(0, 0, table_top_z_in_world))
+          .GetAsIsometry3());
+
+  // Load a second table for objects.
+  const ModelInstanceIndex objects_table_model =
+      AddModelFromSdfFile(table_sdf_path, "objects_table", &plant);
+  const Isometry3d X_WT(Translation3d(0.8, 0.0, 0.0));
+  plant.WeldFrames(plant.world_frame(),
+                   plant.GetFrameByName("link", objects_table_model), X_WT);
+
+  // Define a fixed frame on the -x, -y corner of the objects table.
+  const Isometry3d X_TO = RigidTransform<double>(
+      RotationMatrix<double>::MakeXRotation(-M_PI_2),
+      Vector3<double>(-0.3, -0.3, table_top_z_in_world)).GetAsIsometry3();
+  const auto& objects_frame_O =
+      plant.AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+          "objects_frame", plant.GetFrameByName("link", objects_table_model),
+          X_TO));
+
+  // Add a floating mug.
+  const ModelInstanceIndex mug_model =
+      AddModelFromSdfFile(mug_sdf_path, &plant);
+  const Body<double>& mug = plant.GetBodyByName("main_body", mug_model);
+
+  plant.Finalize();
+
+  auto context = plant.CreateDefaultContext();
+
+  // Initialize the pose X_OM of the mug frame M in the objects table frame O.
+  const Isometry3d X_OM(Translation3d(0.05, 0.0, 0.05));
+  plant.SetFreeBodyPoseInAnchoredFrame(
+      context.get(), objects_frame_O, mug, X_OM);
+
+  // Retrieve the pose of the mug in the world.
+  const Isometry3d& X_WM = plant.EvalBodyPoseInWorld(*context, mug);
+
+  const Isometry3d X_WM_expected = X_WT * X_TO * X_OM;
+
+  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(X_WM.matrix(), X_WM_expected.matrix(),
+                              kTolerance, MatrixCompareType::relative));
+
+  // SetFreeBodyPoseInAnchoredFrame() should throw if the reference frame F is
+  // not anchored to the world.
+  const Frame<double>& end_effector_frame =
+      plant.GetFrameByName("iiwa_link_7", arm_model);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.SetFreeBodyPoseInAnchoredFrame(
+          context.get(), end_effector_frame, mug, X_OM),
+      std::logic_error,
+      "Frame 'iiwa_link_7' must be anchored to the world frame.");
+}
+
 }  // namespace
 }  // namespace multibody_plant
 }  // namespace multibody

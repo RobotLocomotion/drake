@@ -101,6 +101,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// shifting frame P to point `Bo` which instantaneously moves together with
   /// frame P. This requires adjusting the linear acceleration component to
   /// account for:
+  ///
   ///   1. the angular acceleration `alpha_WP` of frame P in W.
   ///   2. the centrifugal acceleration due to the angular velocity `w_WP` of
   ///      frame P in W.

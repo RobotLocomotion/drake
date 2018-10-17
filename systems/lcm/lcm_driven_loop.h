@@ -94,11 +94,12 @@ class UtimeMessageToSeconds : public LcmMessageToTimeInterface {
  * the same as the interval between consecutive driving messages.
  *
  * This implementation relies on several assumptions:
+ *
  * 1. The loop is blocked only on one Lcm message.
  * 2. It's pointless to for the handler system to perform any computation
- * without a new Lcm message, thus the handler loop is blocking.
+ *    without a new Lcm message, thus the handler loop is blocking.
  * 3. The computation for the given system should be faster than the incoming
- * message rate.
+ *    message rate.
  */
 class LcmDrivenLoop {
  public:

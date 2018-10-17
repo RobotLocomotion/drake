@@ -25,6 +25,11 @@
 namespace drake {
 namespace solvers {
 
+// TODO(eric.cousineau): Consider enabling the constraint class directly to
+// specify new slack variables.
+// TODO(eric.cousineau): Consider parameterized constraints:  e.g. the
+// acceleration constraints in the rigid body dynamics are constraints
+// on vdot and f, but are "parameterized" by q and v.
 /**
  * A constraint is a function + lower and upper bounds.
  *
@@ -35,11 +40,6 @@ namespace solvers {
  * It should support evaluating the constraint, and adding it to an optimization
  * problem.
  */
-// TODO(eric.cousineau): Consider enabling the constraint class directly to
-// specify new slack variables.
-// TODO(eric.cousineau): Consider parameterized constraints:  e.g. the
-// acceleration constraints in the rigid body dynamics are constraints
-// on vdot and f, but are "parameterized" by q and v.
 class Constraint : public EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Constraint)

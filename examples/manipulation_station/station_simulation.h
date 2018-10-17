@@ -19,6 +19,10 @@ namespace manipulation_station {
 /// @ingroup example_systems
 /// @}
 
+// TODO(russt): Add WSG I/O and helper methods for setting the context.
+// TODO(russt): Add camera outputs.
+// TODO(russt): Refactor kuka+wsg subset into a reusable component during the
+//              upcoming kuka_iiwa directory cleanup.
 /// A system that represents the complete manipulation station, including the
 /// robotic arm (a Kuka IIWA LWR), the gripper (a Schunk WSG 50), the
 /// externally mounted sensors, and the structure that it is mounted into.
@@ -95,10 +99,6 @@ namespace manipulation_station {
 ///
 /// @ingroup manipulation_station_systems
 /// @}
-// TODO(russt): Add WSG I/O and helper methods for setting the context.
-// TODO(russt): Add camera outputs.
-// TODO(russt): Refactor kuka+wsg subset into a reusable component during the
-//              upcoming kuka_iiwa directory cleanup.
 template <typename T>
 class StationSimulation : public systems::Diagram<T> {
  public:

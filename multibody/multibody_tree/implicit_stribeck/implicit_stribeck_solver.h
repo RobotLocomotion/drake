@@ -542,6 +542,7 @@ class ImplicitStribeckSolver {
   ///   2. changes to the problem data invalidate any solution performed by this
   ///      solver. In such a case, SetOneWayCoupledProblemData() and
   ///      SolveWithGuess() must be invoked again.
+  ///
   /// @throws std::exception if any of the data pointers are nullptr.
   /// @throws std::exception if the problem data sizes are not consistent as
   /// described above.
@@ -592,6 +593,7 @@ class ImplicitStribeckSolver {
   ///   2. changes to the problem data invalidate any solution performed by this
   ///      solver. In such a case, SetOneWayCoupledProblemData() and
   ///      SolveWithGuess() must be invoked again.
+  ///
   /// @throws std::exception if any of the data pointers are nullptr.
   /// @throws std::exception if the problem data sizes are not consistent as
   /// described above.

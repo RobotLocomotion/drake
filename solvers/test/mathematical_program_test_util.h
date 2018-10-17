@@ -21,6 +21,7 @@ void RunSolver(MathematicalProgram* prog,
                const MathematicalProgramSolverInterface& solver);
 
 /// Determine if two bindings are the same. Two bindings are the same if
+///
 /// 1. They contain the same constraint pointer.
 /// 2. Their bound variables are the same.
 template <typename Constraint>

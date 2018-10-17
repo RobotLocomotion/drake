@@ -147,8 +147,8 @@ struct type_visit_with_tag {
 template <typename T>
 using type_check_always_true = std::true_type;
 
-/// Provides backport of C++17 `std::negation`.
 // TODO(eric.cousineau): Remove this once C++17 is used.
+/// Provides backport of C++17 `std::negation`.
 template <typename T>
 using negation = std::integral_constant<bool, !T::value>;
 

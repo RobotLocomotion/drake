@@ -1265,7 +1265,7 @@ class RigidBodyTree {
 
    @throws std::runtime_error based on the criteria of DiscardZeroGradient()
    only if @p throws_if_missing_gradient is true.
-   **/
+   */
   template <typename U>
   std::vector<drake::multibody::collision::PointPair<U>>
   ComputeMaximumDepthCollisionPoints(const KinematicsCache<U>& cache,

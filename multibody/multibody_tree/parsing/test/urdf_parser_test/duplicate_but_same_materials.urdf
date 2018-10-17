@@ -46,4 +46,3 @@ should NOT be a problem.
     <limit effort="100" lower="1.092" upper="1.940" velocity="100"/>
   </joint>
 </robot>
-

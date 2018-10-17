@@ -12,9 +12,9 @@ namespace rules {
 namespace test {
 
 
-/// Predicate-formatter which tests equality of SpeedLimitRule::Severity.
 // TODO(maddog@tri.global)  This should be replaced by a generic predicate
 //                          which handles anything with operator==.
+/// Predicate-formatter which tests equality of SpeedLimitRule::Severity.
 ::testing::AssertionResult IsEqual(const char* a_expression,
                                    const char* b_expression,
                                    rules::SpeedLimitRule::Severity a,

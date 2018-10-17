@@ -106,6 +106,7 @@ class RotationMatrix {
     DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
   }
 
+  // TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
   /// Constructs a %RotationMatrix from an %RollPitchYaw.  In other words,
   /// makes the %RotationMatrix for a Space-fixed (extrinsic) X-Y-Z rotation by
   /// "roll-pitch-yaw" angles `[r, p, y]`, which is equivalent to a Body-fixed
@@ -135,7 +136,6 @@ class RotationMatrix {
   /// @li 3rd rotation R_AB: Frames D, C, B (collectively -- as if welded)
   /// rotate relative to frame A by a roll angle `y` about `Bz = Az`.
   /// Note: B and A are no longer aligned.
-  /// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
   explicit RotationMatrix(const RollPitchYaw<T>& rpy) {
     const T& r = rpy.roll_angle();
     const T& p = rpy.pitch_angle();
@@ -862,8 +862,8 @@ RotationMatrix<T>::ThrowIfNotValid(const Matrix3<S>& R) {
   }
 }
 
-/// (Deprecated), use @ref math::RotationMatrix::MakeXRotation().
 // TODO(mitiguy) Delete this code after October 6, 2018.
+/// (Deprecated), use @ref math::RotationMatrix::MakeXRotation().
 template <typename T>
 DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
                      "Use math::RotationMatrix::MakeXRotation(theta).")
@@ -871,8 +871,8 @@ Matrix3<T> XRotation(const T& theta) {
   return drake::math::RotationMatrix<T>::MakeXRotation(theta).matrix();
 }
 
-/// (Deprecated), use @ref math::RotationMatrix::MakeYRotation().
 // TODO(mitiguy) Delete this code after October 6, 2018.
+/// (Deprecated), use @ref math::RotationMatrix::MakeYRotation().
 template <typename T>
 DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
                      "Use math::RotationMatrix::MakeYRotation(theta).")
@@ -880,8 +880,8 @@ Matrix3<T> YRotation(const T& theta) {
   return drake::math::RotationMatrix<T>::MakeYRotation(theta).matrix();
 }
 
-/// (Deprecated), use @ref math::RotationMatrix::MakeZRotation().
 // TODO(mitiguy) Delete this code after October 6, 2018.
+/// (Deprecated), use @ref math::RotationMatrix::MakeZRotation().
 template <typename T>
 DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
                      "Use math::RotationMatrix::MakeZRotation(theta).")

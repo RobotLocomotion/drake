@@ -887,6 +887,8 @@ class MultibodyTreeTopology {
 
     const int path_size = get_body_node(from).level + 1;
     path_to_world->resize(path_size);
+    (*path_to_world)[0] = BodyNodeIndex(0);  // Add the world.
+    if (from == BodyNodeIndex(0)) return;
 
     // Navigate the tree inwards starting at "from" and ending at the root.
     for (BodyNodeIndex node = from; node > BodyNodeIndex(0);
@@ -895,7 +897,30 @@ class MultibodyTreeTopology {
     }
     // Verify the last added node to the path is a child of the world.
     DRAKE_DEMAND(get_body_node((*path_to_world)[1]).level == 1);
-    (*path_to_world)[0] = BodyNodeIndex(0);  // Add the world.
+  }
+
+  /// Returns `true` if the body with index `body_index` is anchored to the
+  /// world.
+  /// A body is said to be "anchored" if its kinematics path to the world only
+  /// contains weld mobilizers.
+  /// The complexity of this operation is O(depth), where "depth" refers to the
+  /// depth in the tree of the body node associated with `body_index`.
+  bool IsBodyAnchored(BodyIndex body_index) const {
+    DRAKE_DEMAND(is_valid());
+    const BodyTopology& body = get_body(body_index);
+    std::vector<BodyNodeIndex> path_to_world;
+    GetKinematicPathToWorld(body.body_node, &path_to_world);
+    // Skip the world at path_to_world[0].
+    for (size_t path_index = 1; path_index < path_to_world.size();
+         ++path_index) {
+      const BodyNodeTopology& node = get_body_node(path_to_world[path_index]);
+      const MobilizerTopology& mobilizer = get_mobilizer(node.mobilizer);
+      // If any of the mobilizers in the path is not a weld mobilizer, the body
+      // is not anchored.
+      if (!mobilizer.is_weld_mobilizer()) return false;
+    }
+    // If the loop above completes, then body_index is anchored to the world.
+    return true;
   }
 
   /// This method partitions the tree topology into sub-graphs such that two

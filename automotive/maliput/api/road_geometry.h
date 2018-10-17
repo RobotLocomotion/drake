@@ -22,11 +22,10 @@ class Junction;
 /// Persistent identifier for a RoadGeometry element.
 using RoadGeometryId = TypeSpecificIdentifier<class RoadGeometry>;
 
-
-/// Abstract API for the geometry of a road network, including both
-/// the network topology and the geometry of its embedding in 3-space.
 // TODO(maddog@tri.global)  This entire API should be templated on a
 //                          scalar type T like everything else in drake.
+/// Abstract API for the geometry of a road network, including both
+/// the network topology and the geometry of its embedding in 3-space.
 class RoadGeometry {
  public:
   class IdIndex;

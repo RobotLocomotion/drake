@@ -33,7 +33,7 @@ An example of the worst case scenario is given below:
  b = (15, 25, 35)
 @endverbatim
 
-In this case the algorithm needs to scan both vectors from start to end. **/
+In this case the algorithm needs to scan both vectors from start to end. */
 template <typename T>
 bool SortedVectorsHaveIntersection(const std::vector<T>& a,
                                    const std::vector<T>& b) {

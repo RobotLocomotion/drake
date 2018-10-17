@@ -60,8 +60,8 @@ class DrakeLcmInterface {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  /** A deprecated overload of Subscribe. */
   // TODO(jwnimmer-tri) Remove this deprecated method on or about 2018-06-01.
+  /** A deprecated overload of Subscribe. */
   DRAKE_DEPRECATED("Use the std::function overload instead")
   virtual void Subscribe(const std::string& channel,
                          DrakeLcmMessageHandlerInterface*) = 0;

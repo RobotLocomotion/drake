@@ -116,11 +116,11 @@ class DirectCollocationConstraint : public solvers::Constraint {
   const int num_inputs_{0};
 };
 
+// Note: The order of arguments is a compromise between GSG and the desire to
+// match the AddConstraint interfaces in MathematicalProgram.
 /// Helper method to add a DirectCollocationConstraint to the @p prog,
 /// ensuring that the order of variables in the binding matches the order
 /// expected by the constraint.
-// Note: The order of arguments is a compromise between GSG and the desire to
-// match the AddConstraint interfaces in MathematicalProgram.
 solvers::Binding<solvers::Constraint> AddDirectCollocationConstraint(
     std::shared_ptr<DirectCollocationConstraint> constraint,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& timestep,

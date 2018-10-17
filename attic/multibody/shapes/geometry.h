@@ -206,7 +206,7 @@ class Mesh : public Geometry {
 
   /** Constructs a representation of a mesh to be loaded from
   @p resolved_filename. @p uri provides a unique identifier used to interact
-  with BotVisualizer. **/
+  with BotVisualizer. */
   Mesh(const std::string& uri, const std::string& resolved_filename);
   virtual ~Mesh() {}
   Mesh* clone() const override;
@@ -239,11 +239,12 @@ class Mesh : public Geometry {
   a set of *equivalent* triangles. It places certain requirements on the
   mesh for the triangulation to be valid.  If these requirements are not met,
   an exception is thrown.  These requirements are:
-     1. Non-triangular faces cannot contain a sequence of co-linear vertices.
-     2. Non-triangular faces must be close to planar; the decomposed triangles
-        normals can deviate by no more than 30 degrees from their edge-adjacent
-        neighbors.
-     3. Decomposed triangles must have an area larger than 10⁻¹⁰ m².
+
+  1. Non-triangular faces cannot contain a sequence of co-linear vertices.
+  2. Non-triangular faces must be close to planar; the decomposed triangles
+     normals can deviate by no more than 30 degrees from their edge-adjacent
+     neighbors.
+  3. Decomposed triangles must have an area larger than 10⁻¹⁰ m².
 
   @note The triangulation method is simple.  Even if these requirements are met,
   triangulation might fail.
@@ -256,7 +257,7 @@ class Mesh : public Geometry {
 
   On output, `vertices.size()` corresponds to the number of vertices in the mesh
   while `triangles.size()` corresponds to the number of triangles in the mesh.
-  **/
+  */
   void LoadObjFile(
       PointsVector* vertices, TrianglesVector* triangles,
       TriangulatePolicy triangulate = TriangulatePolicy::kFailOnNonTri) const;

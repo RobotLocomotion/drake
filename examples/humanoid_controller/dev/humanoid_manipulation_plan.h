@@ -10,6 +10,7 @@ namespace drake {
 namespace examples {
 namespace humanoid_controller {
 
+// TODO(siyuan): make quaternion floating joint work.
 /**
  * A baseline manipulation plan interpretor for a humanoid robot. The plan
  * essentially consists of a sequence of time and generalized positions,
@@ -18,7 +19,6 @@ namespace humanoid_controller {
  *
  * @see HandlePlanGenericPlanDerived for more details about the behavior.
  */
-// TODO(siyuan): make quaternion floating joint work.
 template <typename T>
 class HumanoidManipulationPlan
     : public systems::controllers::plan_eval::GenericPlan<T> {

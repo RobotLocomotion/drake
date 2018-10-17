@@ -331,20 +331,20 @@ class DiagramContext final : public Context<T> {
     this->init_parameters(std::move(params));
   }
 
+  // TODO(david-german-tri): Rename to get_subsystem_context.
   /// Returns the context structure for a given constituent system @p index.
   /// Aborts if @p index is out of bounds, or if no system has been added to the
   /// DiagramContext at that index.
-  /// TODO(david-german-tri): Rename to get_subsystem_context.
   const Context<T>& GetSubsystemContext(SubsystemIndex index) const {
     DRAKE_DEMAND(index >= 0 && index < num_subcontexts());
     DRAKE_DEMAND(contexts_[index] != nullptr);
     return *contexts_[index].get();
   }
 
+  // TODO(david-german-tri): Rename to get_mutable_subsystem_context.
   /// Returns the context structure for a given subsystem @p index.
   /// Aborts if @p index is out of bounds, or if no system has been added to the
   /// DiagramContext at that index.
-  /// TODO(david-german-tri): Rename to get_mutable_subsystem_context.
   Context<T>& GetMutableSubsystemContext(SubsystemIndex index) {
     DRAKE_DEMAND(index >= 0 && index < num_subcontexts());
     DRAKE_DEMAND(contexts_[index] != nullptr);

@@ -710,6 +710,20 @@ GTEST_TEST(WeldedBodies, CreateListOfWeldedBodies) {
 
   // Verify the computed list has the expected entries.
   EXPECT_EQ(welded_bodies_set, expected_welded_bodies);
+
+  // All bodies in welded_bodies[0] are, by definition, anchored to the world.
+  // We verify this with IsBodyAnchored().
+  for (size_t welded_body_index = 0;
+       welded_body_index < welded_bodies.size(); ++welded_body_index) {
+    const std::set<BodyIndex>& welded_body = welded_bodies[welded_body_index];
+    // All bodies in welded_bodies[0] are, by definition, anchored to the world.
+    // We verify this with IsBodyAnchored().
+    for (BodyIndex body_index : welded_body) {
+        EXPECT_EQ(
+            topology.IsBodyAnchored(body_index),
+            welded_body_index == 0 /* 'true' for anchored bodies. */);
+    }
+  }
 }
 
 }  // namespace

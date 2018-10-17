@@ -23,6 +23,7 @@ using std::move;
 using std::unique_ptr;
 using drake::multibody::joints::FloatingBaseType;
 using drake::multibody::joints::kFixed;
+using drake::multibody::joints::kExperimentalMultibodyPlantStyle;
 using drake::multibody::joints::kRollPitchYaw;
 using drake::multibody::joints::kQuaternion;
 
@@ -105,7 +106,8 @@ void JoinBodies(const FloatingBaseType floating_base_type,
       joint.reset(
           new RollPitchYawFloatingJoint(joint_name, transform_to_world));
     } break;
-    case kQuaternion: {
+    case kQuaternion:
+    case kExperimentalMultibodyPlantStyle: {
       joint.reset(new QuaternionFloatingJoint(joint_name, transform_to_world));
     } break;
     default:
