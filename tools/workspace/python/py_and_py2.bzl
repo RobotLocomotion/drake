@@ -41,7 +41,7 @@ def py_and_py2(
         Starlark rule (e.g. `py_library`, `cc_binary`).
     @param **kwargs
         Arguments. You can specify `py_select` with the following options:
-            `py_select(bazel=.., py2=...)` - Value for 
+            `py_select(bazel=.., py2=...)` - Value for
 
     Strings and lists of strings in `kwargs`, `kwargs_py`, `kwargs_py2` can be
     formatted by the following variables:
@@ -76,7 +76,7 @@ def _format_scalar(value, build):
     if type(value) == type(""):
         return _format_str(value, build)
     elif type(value) == type(struct()):
-        if hasattr(value, 'bazel'):
+        if hasattr(value, "bazel"):
             value = getattr(value, build.build_field)
         else:
             value = getattr(value, build.version_field)
