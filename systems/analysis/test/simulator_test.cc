@@ -1260,9 +1260,9 @@ GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
   // Verify that at least one of each event type was triggered.
   bool triggers[kTypeCount] = { false, false, false };
 
-  // Check that all of the publish events precede all of the update events,
-  // which in turn precede all of the derivative evaluation events, for each
-  // time step in the simulation.
+  // Check that all of the publish events precede all of the update events
+  // (since "publish on init" was activated), which in turn precede all of the
+  // derivative evaluation events, for each time step in the simulation.
   for (const auto& log : events) {
     ASSERT_GE(log.second.size(), 0u);
     EventType state = log.second[0];
