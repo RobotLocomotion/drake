@@ -19,23 +19,26 @@ extern Eigen::Vector2d default_tspan;
 }
 
 /**
- * @class RigidBodyConstraint       The abstract base class. All constraints
- * used in the inverse kinematics problem are inherited from
- * RigidBodyConstraint. There are 6 main categories of the RigidBodyConstraint,
- * each category has its own interface
+ * Abstract base class. All constraints used in the inverse kinematics problem
+ * are inherited from RigidBodyConstraint. There are 6 main categories of the
+ * RigidBodyConstraint, each category has its own interface
  */
 class RigidBodyConstraint {
  public:
-  /* In each category, constraint classes share the same function interface,
-   * this value needs to be in consistent with that in MATLAB*/
+  /*
+   * In each category, constraint classes share the same function interface,
+   * this value needs to be in consistent with that in MATLAB.
+   */
   static const int SingleTimeKinematicConstraintCategory = -1;
   static const int MultipleTimeKinematicConstraintCategory = -2;
   static const int QuasiStaticConstraintCategory = -3;
   static const int PostureConstraintCategory = -4;
   static const int MultipleTimeLinearPostureConstraintCategory = -5;
   static const int SingleTimeLinearPostureConstraintCategory = -6;
-  /* Each non-abstrac RigidBodyConstraint class has a unique type. Make sure
-   * this value stays in consistent with the value in MATLAB*/
+  /*
+   * Each non-abstract RigidBodyConstraint class has a unique type. Make sure
+   * this value stays in consistent with the value in MATLAB.
+   */
   static const int QuasiStaticConstraintType = 1;
   static const int PostureConstraintType = 2;
   static const int SingleTimeLinearPostureConstraintType = 3;
@@ -83,39 +86,19 @@ class RigidBodyConstraint {
 };
 
 /**
- * @class QuasiStaticConstraint       -- Constrain the Center of Mass (CoM) is
- * within the support polygon. The support polygon is a shrunk area of the
- * contact polygon
- * @param robot
- * @param tspan           -- The time span of this constraint being active
- * @param model_instance_id_set   -- The set of the robots in the RigidBodyTree
- * for which the CoM is computed
- * @param shrinkFactor    -- The factor to shrink the contact polygon. The
- * shrunk area is the support polygon.
- * @param active          -- Whether the constraint is on/off. If active =
- * false, even the time t is within tspan, the constraint is still inactive
- * @param num_bodies      -- The total number of ground contact bodies/frames
- * @param num_pts         -- The total number of ground contact points
- * @param bodies          -- The index of ground contact bodies/frames
- * @param num_body_pts    -- The number of contact points on each contact
- * body/frame
- * @param body_pts        -- The contact points on each contact body/frame
- *
- * Function:
- *  @function eval     --evaluate the constraint
- *    @param t       --the time to evaluate the constraint
- *    @param weights --the weight associate with each ground contact point
- *    @param c       -- c = CoM-weights'*support_vertex
- *    @param dc      -- dc = [dcdq dcdweiths]
- *  @function addContact  -- add contact body and points
- *    @param num_new_bodies      -- number of new contact bodies
- *    @param body                -- the index of new contact bodies/frames
- *    @param body_pts            -- body_pts[i] are the contact points on
- * body[i]
+ * Constrain the Center of Mass (CoM) within the support polygon. The support
+ * polygon is a shrunk area of the
+ * contact polygon/
  */
-
 class QuasiStaticConstraint : public RigidBodyConstraint {
  public:
+  /**
+   * Constrain the Center of Mass (CoM) within the support polygon.
+   * @param robot
+   * @param tspan The time span of this constraint being active
+   * @param model_instance_id_set The set of the robots in the RigidBodyTree
+   * for which the CoM is computed
+   */
   QuasiStaticConstraint(
       RigidBodyTree<double>* robot,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan,
@@ -124,13 +107,34 @@ class QuasiStaticConstraint : public RigidBodyConstraint {
   virtual ~QuasiStaticConstraint(void);
   bool isTimeValid(const double* t) const;
   int getNumConstraint(const double* t) const;
+
+  /**
+   * Evaluate the constraint.
+   * @param t Time to evaluate the constraint.
+   * @param cache
+   * @param weights Weight associated with each ground contact point.
+   * @param c CoM-weights'*support_vertex.
+   * @param dc Gradient of the constraint.
+   */
   void eval(const double* t, KinematicsCache<double>& cache,
             const double* weights, Eigen::VectorXd& c,
             Eigen::MatrixXd& dc) const;
   void bounds(const double* t, Eigen::VectorXd& lb, Eigen::VectorXd& ub) const;
   void name(const double* t, std::vector<std::string>& name_str) const;
+
+  /**
+   * Return whether the constraint is on/off. If active = false, even the time
+   * t is within tspan, the constraint is still inactive.
+   */
   bool isActive() const { return active_; }
   int getNumWeights() const { return num_pts_; }
+
+  /**
+   * Add contact body and points.
+   * @param num_new_bodies Number of new contact bodies.
+   * @param body Index of new contact bodies/frames.
+   * @param body_pts body_pts[i] are the contact points on body[i].
+   */
   void addContact(int num_new_bodies, const int* body,
                   const Eigen::Matrix3Xd* body_pts);
 
@@ -138,6 +142,10 @@ class QuasiStaticConstraint : public RigidBodyConstraint {
     addContact(body.size(), body.data(), &body_pts);
   }
 
+  /**
+   * Set the factor to shrink the contact polygon. The shrunk area is the
+   * support polygon.
+   */
   void setShrinkFactor(double factor);
   void setActive(bool flag) { active_ = flag; }
   void updateRobot(RigidBodyTree<double>* robot);
@@ -148,33 +156,45 @@ class QuasiStaticConstraint : public RigidBodyConstraint {
   std::set<int> m_model_instance_id_set_;
   double shrink_factor_{};
   bool active_{};
+
+  // Total number of ground contact bodies/frames.
   int num_bodies_{};
+
+  // Total number of ground contact points.
   int num_pts_{};
+
+  // Index of ground contact bodies/frames.
   std::vector<int> bodies_;
+
+  // Number of contact points on each contact body/frame.
   std::vector<int> num_body_pts_;
+
+  // Contact points on each contact body/frame.
   std::vector<Eigen::Matrix3Xd> body_pts_;
 };
 
-/*
- * @class PostureConstraint   constrain the joint limits
- * @param tspan          -- The time span of the constraint being valid
- * @param lb             -- The lower bound of the joints
- * @param ub             -- The upper bound of the joints
- *
- * @function setJointLimits   set the limit of some joints
- *   @param num_idx    The number of joints whose limits are going to be set
- *   @param joint_idx  joint_idx[i] is the index of the i'th joint whose limits
- * are going to be set
- *   @param lb         lb[i] is the lower bound of the joint joint_idx[i]
- *   @param ub         ub[i] is the upper bound of the joint joint_idx[i]
- */
+/** Constrain the joint limits. */
 class PostureConstraint : public RigidBodyConstraint {
  public:
+  /**
+   * Constrain the joint limits.
+   * @param[in] model
+   * @param[in] tspan Time span of the constraint being valid
+   */
   PostureConstraint(
       RigidBodyTree<double>* model,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~PostureConstraint(void) {}
   bool isTimeValid(const double* t) const;
+
+  /**
+   * Set the limit of some joints.
+   * @param[in] num_idx Number of joints whose limits are going to be set.
+   * @param[in] joint_idx joint_idx[i] is the index of the i'th joint whose
+   * limits are going to be set.
+   * @param[in] lb lb[i] is the lower bound of the joint joint_idx[i].
+   * @param[in] ub ub[i] is the upper bound of the joint joint_idx[i].
+   */
   void setJointLimits(int num_idx, const int* joint_idx,
                       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub);
   void setJointLimits(const Eigen::VectorXi& joint_idx,
@@ -185,33 +205,20 @@ class PostureConstraint : public RigidBodyConstraint {
  private:
   Eigen::VectorXd joint_limit_min0_;
   Eigen::VectorXd joint_limit_max0_;
+
+  // Lower bound of the joints.
   Eigen::VectorXd lb_;
+
+  // Upper bound of the joints.
   Eigen::VectorXd ub_;
 };
 
-/*
- * @class MultipleTimeLinearPostureConstraint constrain the posture such that
+/**
+ * Constrain the posture such that
  * lb(t(1), t(2),..., t(n)) <=
  * A_mat(t(1), t(2), t(n))*[q(t(1));q(t(2));...;q(t(n))] <=
  * ub(t(1), t(2),..., t(n))
  * where A_mat is a sparse matrix that only depends on t(1), t(2),..., t(n)
- *
- * @function eval return the value and gradient of the constraint
- *   @param t      array of time
- *   @param n_breaks   the length of array t
- *   @param q     q.col(i) is the posture at t[i]
- *   @param c    the value of the constraint
- *   @param dc   the gradient of the constraint w.r.t. q
- *
- * @function feval returns the value of the constraint
- *
- * @function geval returns the gradient of the constraint, written in the sprase
- * matrix form
- *   @return iAfun    The row index of the non-zero entries in the gradient
- * matrix
- *   @return jAvar    The column index of the non-zero entries in the gradient
- * matrix
- *   @return A        The value of the non-zero entries in the gradient matrix
  */
 class MultipleTimeLinearPostureConstraint : public RigidBodyConstraint {
  public:
@@ -220,11 +227,30 @@ class MultipleTimeLinearPostureConstraint : public RigidBodyConstraint {
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~MultipleTimeLinearPostureConstraint() {}
   std::vector<bool> isTimeValid(const double* t, int n_breaks) const;
+
+  /**
+   * Return the value and gradient of the constraint.
+   * @param[in] t Array of time.
+   * @param[in] n_breaks Length of array t.
+   * @param[in] q q.col(i) is the posture at t[i].
+   * @param[out] c value of the constraint.
+   * @param[out] dc gradient of the constraint w.r.t. q.
+   */
   void eval(const double* t, int n_breaks, const Eigen::MatrixXd& q,
             Eigen::VectorXd& c, Eigen::SparseMatrix<double>& dc) const;
   virtual int getNumConstraint(const double* t, int n_breaks) const = 0;
+
+  /** Return the value of the constraint. */
   virtual void feval(const double* t, int n_breaks, const Eigen::MatrixXd& q,
                      Eigen::VectorXd& c) const = 0;
+
+  /**
+   * Return the gradient of the constraint, written in the sparse matrix form.
+   * @param[out] iAfun Row index of the non-zero entries in the gradient matrix.
+   * @param[out] jAvar Column index of the non-zero entries in the gradient
+   * matrix.
+   * @param[out] A Value of the non-zero entries in the gradient matrix.
+   */
   virtual void geval(const double* t, int n_breaks, Eigen::VectorXi& iAfun,
                      Eigen::VectorXi& jAvar, Eigen::VectorXd& A) const = 0;
   virtual void name(const double* t, int n_breaks,
@@ -238,38 +264,22 @@ class MultipleTimeLinearPostureConstraint : public RigidBodyConstraint {
                     Eigen::VectorXi& valid_t_ind) const;
 };
 
-/*
- * @class SingleTimeLinearPostureConstraint constrain the posture satisfies lb<=
- * A_mat*q <=ub at any time, where A_mat is a sparse matrix
- *
- * @function SingleTimeLinearPostureConstraint
- *   @param robot
- *   @param iAfun    The row indices of non zero entries
- *   @param jAvar    The column indices of non zero entries
- *   @param A        The values of non zero entries
- *   @param lb       The lower bound of the constraint, a column vector.
- *   @param ub       The upper bound of the constraint, a column vector.
- *   @param tspan    The time span [tspan[0] tspan[1]] is the time span of the
- * constraint being active
- * @function eval return the value and gradient of the constraint
- *   @param t      array of time
- *   @param n_breaks   the length of array t
- *   @param q     q.col(i) is the posture at t[i]
- *   @param c    the value of the constraint
- *   @param dc   the gradient of the constraint w.r.t. q
- *
- * @function feval returns the value of the constraint
- *
- * @function geval returns the gradient of the constraint, written in the sprase
- * matrix form
- *   @return iAfun    The row index of the non-zero entries in the gradient
- * matrix
- *   @return jAvar    The column index of the non-zero entries in the gradient
- * matrix
- *   @return A        The value of the non-zero entries in the gradient matrix
+/**
+ * Constrain the posture satisfies lb <= A_mat * q <= ub at any time, where
+ * A_mat is a sparse matrix.
  */
 class SingleTimeLinearPostureConstraint : public RigidBodyConstraint {
  public:
+  /**
+   * @param[in] robot
+   * @param[in] iAfun row indices of non zero entries
+   * @param[in] jAvar column indices of non zero entries
+   * @param[in] A values of non zero entries
+   * @param[in] lb lower bound of the constraint, a column vector.
+   * @param[in] ub upper bound of the constraint, a column vector.
+   * @param[in] tspan time span [tspan[0] tspan[1]] is the time span of the
+   * constraint being active.
+   */
   SingleTimeLinearPostureConstraint(
       RigidBodyTree<double>* robot, const Eigen::VectorXi& iAfun,
       const Eigen::VectorXi& jAvar, const Eigen::VectorXd& A,
@@ -279,10 +289,28 @@ class SingleTimeLinearPostureConstraint : public RigidBodyConstraint {
   bool isTimeValid(const double* t) const;
   int getNumConstraint(const double* t) const;
   void bounds(const double* t, Eigen::VectorXd& lb, Eigen::VectorXd& ub) const;
+
+  /** Return the value of the constraint. */
   void feval(const double* t, const Eigen::VectorXd& q,
              Eigen::VectorXd& c) const;
+
+  /**
+   * Return the gradient of the constraint, written in the sprase matrix form.
+   * @param[out] iAfun Row index of the non-zero entries in the gradient matrix.
+   * @param[out] jAvar Column index of the non-zero entries in the gradient matrix.
+   * @param[out] A Value of the non-zero entries in the gradient matrix
+   */
   void geval(const double* t, Eigen::VectorXi& iAfun, Eigen::VectorXi& jAvar,
              Eigen::VectorXd& A) const;
+
+  /**
+   * Return the value and gradient of the constraint.
+   * @param[in] t Array of time.
+   * @param[in] n_breaks Length of array t.
+   * @param[in] q q.col(i) is the posture at t[i].
+   * @param[out] c Value of the constraint.
+   * @param[out] dc Gradient of the constraint w.r.t. q.
+   */
   void eval(const double* t, const Eigen::VectorXd& q, Eigen::VectorXd& c,
             Eigen::SparseMatrix<double>& dc) const;
   void name(const double* t, std::vector<std::string>& name_str) const;
@@ -298,9 +326,8 @@ class SingleTimeLinearPostureConstraint : public RigidBodyConstraint {
 };
 
 /*
- * class SingleTimeKinematicConstraint   An abstract class that constrain the
- * kinematics of the robot at individual time. Need to call doKinematics first
- * for the robot and then evaulate this constraint.
+ * Constrain the kinematics of the robot at individual time. Need to call
+ * doKinematics first for the robot and then evaulate this constraint.
  */
 class SingleTimeKinematicConstraint : public RigidBodyConstraint {
  public:
@@ -881,8 +908,9 @@ class MinDistanceConstraint : public SingleTimeKinematicConstraint {
                     Eigen::VectorXd& c, Eigen::MatrixXd& dc) const;
   virtual void name(const double* t, std::vector<std::string>& name) const;
 
-  /** Evaluates a smooth hinge loss function for the elements of `distance`.
-   * Specifically, it sets `penalty[i]` to
+  /**
+   * Evaluate a smooth hinge loss function for the elements of `distance`.
+   * Specifically, sets `penalty[i]` to
    * f(`distance[i]`, `distance_threshold`) and `dpenalty_ddistance[i]` to
    * ∂f/∂x(`distance[i]`, `distance_threshold`), where
    *
@@ -908,7 +936,7 @@ class MinDistanceConstraint : public SingleTimeKinematicConstraint {
 };
 
 /**
- * Constrains the points Q on a body to be within a bounding box specified in a
+ * Constrain the points Q on a body to be within a bounding box specified in a
  * fixed frame F. Namely lb ≤ p_FQ ≤ ub.
  */
 class WorldPositionInFrameConstraint : public WorldPositionConstraint {
@@ -916,14 +944,14 @@ class WorldPositionInFrameConstraint : public WorldPositionConstraint {
   /**
    * Constrains the points Q on a body to be within a bounding box specified in
    * a fixed frame F.
-   * @param model The kinematics model of the whole robot.
-   * @param body The points Q are rigidly fixed to this body.
-   * @param pts The coordinates of Q in the body frame.
-   * @param T_frame_to_world The homogeneous transform from the frame F to the
+   * @param[in] model Kinematics model of the whole robot.
+   * @param[in] body Points Q are rigidly fixed to this body.
+   * @param[in] pts Coordinates of Q in the body frame.
+   * @param[in] T_frame_to_world Homogeneous transform from the frame F to the
    * world frame.
-   * @param lb The lower bound of the bounding box.
-   * @param ub The upper bound of the bounding box.
-   * @param tspan The time span of the constraint.
+   * @param[in] lb Lower bound of the bounding box.
+   * @param[in] ub Upper bound of the bounding box.
+   * @param[in] tspan Time span of the constraint.
    */
   WorldPositionInFrameConstraint(
       RigidBodyTree<double>* model, int body, const Eigen::Matrix3Xd& pts,
