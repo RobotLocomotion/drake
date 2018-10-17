@@ -10,6 +10,7 @@
 namespace drake {
 namespace trajectories {
 
+// TODO(siyuan.feng): check if this works for AutoDiffScalar.
 /**
  * A class representing a trajectory for quaternions that are interpolated
  * using piecewise slerp (spherical linear interpolation).
@@ -28,7 +29,6 @@ namespace trajectories {
  * @tparam T, double.
  *
  */
-// TODO(siyuan.feng): check if this works for AutoDiffScalar.
 template<typename T>
 class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
  public:
@@ -108,7 +108,8 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
 
   /**
    * Getter for the internal quaternion knots.
-   * Note: the returned quaternions might be different from the ones used for
+   *
+   * @note The returned quaternions might be different from the ones used for
    * construction because the internal representations are set to always be
    * the "closest" w.r.t to the previous one.
    *

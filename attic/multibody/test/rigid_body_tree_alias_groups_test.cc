@@ -52,6 +52,7 @@ void TestFullConfig(multibody::joints::FloatingBaseType type) {
   const std::vector<int>& v_indices = alias.get_velocity_group("j_group2");
   switch (type) {
     case drake::multibody::joints::kQuaternion:
+    case drake::multibody::joints::kExperimentalMultibodyPlantStyle:
       EXPECT_EQ(q_indices.size(), 8u);
       EXPECT_EQ(v_indices.size(), 7u);
       EXPECT_EQ(robot->get_position_name(q_indices[0]), "base_x");

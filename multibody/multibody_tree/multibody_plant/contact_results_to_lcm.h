@@ -24,8 +24,9 @@ namespace multibody_plant {
  @tparam T The scalar type. Must be a valid Eigen scalar.
 
  Instantiated templates for the following kinds of T's are provided:
-   - double
-   - AutoDiffXd
+
+ - double
+ - AutoDiffXd
 
  They are already available to link against in the containing library. No other
  values for T are currently supported.
@@ -72,6 +73,7 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
 
  This is a convenience method to simplify some common boilerplate for adding
  contact results visualization capability to a Diagram. What it does is:
+
  - adds systems ContactResultsToLcmSystem and LcmPublisherSystem to
    the Diagram and connects the draw message output to the publisher input,
  - connects the `multibody_plant` contact results output to the

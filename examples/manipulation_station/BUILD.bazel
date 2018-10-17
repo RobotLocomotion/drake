@@ -41,6 +41,7 @@ drake_cc_binary(
     ],
     add_test_rule = 1,
     test_rule_args = ["--target_realtime_rate=0.0"],
+    test_rule_timeout = "moderate",
     deps = [
         ":station_simulation",
         "//geometry:geometry_visualization",
@@ -49,11 +50,29 @@ drake_cc_binary(
     ],
 )
 
+# Tests
+
 drake_cc_googletest(
     name = "station_simulation_test",
     deps = [
         ":station_simulation",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+# Python examples
+
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+)
+
+drake_py_binary(
+    name = "joint_teleop",
+    srcs = ["joint_teleop.py"],
+    deps = [
+        "//bindings/pydrake",
     ],
 )
 

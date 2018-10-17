@@ -17,12 +17,12 @@ namespace systems {
 // the same meaning in both class hierarchies. A System and its Context always
 // have parallel internal structure.
 
-/** Identifies a particular source value or computation for purposes of
-declaring and managing dependencies. Unique only within a given subsystem
-and its corresponding subcontext. */
 // This is presented as an ID to end users but is implemented internally as
 // a typed integer index for fast access into the std::vector of dependency
 // trackers. That's why it is named differently than the other "indexes".
+/** Identifies a particular source value or computation for purposes of
+declaring and managing dependencies. Unique only within a given subsystem
+and its corresponding subcontext. */
 using DependencyTicket = TypeSafeIndex<class DependencyTag>;
 
 /** Serves as a unique identifier for a particular CacheEntry in a System and
@@ -67,17 +67,17 @@ typedef enum {
   kAbstractValued = 1,
 } PortDataType;
 
+// TODO(sherm1) Implement this.
 /** Port type indicating a vector value whose size is not prespecified but
 rather depends on what it is connected to (not yet implemented). */
-// TODO(sherm1) Implement this.
 constexpr int kAutoSize = -1;
 
+// TODO(sherm1) Consider using std::variant<string,systems::UseDefaultName>
+// as an alternative to this hack.
 /** Name to use when you want a default one generated. This is set to an ugly
 string that no one will want to use as an actual name. You should normally
 give meaningful names to all Drake System entities you create rather than
 using this. */
-// TODO(sherm1) Consider using std::variant<string,systems::UseDefaultName>
-// as an alternative to this hack.
 constexpr const char* kUseDefaultName = "__use_default_name__";
 
 #ifndef DRAKE_DOXYGEN_CXX

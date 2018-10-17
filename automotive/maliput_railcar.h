@@ -20,12 +20,15 @@ namespace automotive {
 /// were on rails and neglecting all physics.
 ///
 /// Parameters:
+///
 ///   * See MaliputRailcarParams.
 ///
 /// State vector:
+///
 ///   * See MaliputRailcarState.
 ///
 /// Abstract state:
+///
 ///   * See LaneDirection.
 ///
 /// <B>Input Port Accessors:</B>

@@ -74,6 +74,7 @@ namespace render {
  @cond
  NOTE: In many ways, this is very similar to the TypeSafeIndex class. There are
  several key differences:
+
    - added static members,
    - special values (empty and terrain),
    - arbitrarily limited domain (kLabelCount).

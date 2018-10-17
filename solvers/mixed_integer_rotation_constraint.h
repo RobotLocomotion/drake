@@ -190,6 +190,7 @@ struct AddRotationMatrixBoxSphereIntersectionReturn {
  * Adds binary variables that constrain the value of the column *and* row
  * vectors of R, in order to add the following (in some cases non-convex)
  * constraints as an MILP.  Specifically, for column vectors Ri, we constrain:
+ *
  * - forall i, |Ri| = 1 ± envelope,
  * - forall i,j. i ≠ j, Ri.dot(Rj) = 0 ± envelope,
  * - R2 = R0.cross(R1) ± envelope,
@@ -199,11 +200,11 @@ struct AddRotationMatrixBoxSphereIntersectionReturn {
  * envelope decreases quickly as num_binary_variables_per_half_axis is
  * is increased.
  *
- * Note: Creates `9*2*num_binary_variables_per_half_axis binary` variables named
+ * @note Creates `9*2*num_binary_variables_per_half_axis binary` variables named
  * "BRpos*(*,*)" and "BRneg*(*,*)", and the same number of continuous variables
  * named "CRpos*(*,*)" and "CRneg*(*,*)".
  *
- * Note: The particular representation/algorithm here was developed in an
+ * @note The particular representation/algorithm here was developed in an
  * attempt:
  *  - to enable efficient reuse of the variables between the constraints
  *    between multiple rows/columns (e.g. the constraints on Rᵀ use the same

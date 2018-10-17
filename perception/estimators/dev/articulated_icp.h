@@ -77,6 +77,7 @@ class ArticulatedIcpErrorCost {
   const Scene* scene_{};
 };
 
+// TODO(eric.cousineau): Consider merging with QP cost aggregator.
 /**
  * Aggregate L2 norm cost of point-to-point error set. The total cost, `E`, and
  * its Jacobian `J`, w.r.t. the
@@ -84,7 +85,6 @@ class ArticulatedIcpErrorCost {
  *   E = ∑ eᵢ'eᵢ
  *   J = ∑ 2 eᵢ'Jᵢ
  */
-// TODO(eric.cousineau): Consider merging with QP cost aggregator.
 class ArticulatedIcpErrorNormCost : public ArticulatedIcpErrorCost {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ArticulatedIcpErrorNormCost)

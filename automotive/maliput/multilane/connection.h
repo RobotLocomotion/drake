@@ -173,6 +173,7 @@ class LineOffset {
 std::ostream& operator<<(std::ostream& out, const LineOffset& line_offset);
 
 /// Specification for path offset along a circular arc.
+///
 ///  * radius: radius of the arc, which must be positive
 ///  * d_theta:  angle of arc segment (Δθ)
 ///    * d_theta > 0 is counterclockwise ('veer to left')

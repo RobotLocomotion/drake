@@ -11,6 +11,7 @@ namespace systems {
 
  Ultimately, a contact force consists of an application point, a spatial
  force, and a unit vector. The spatial force includes:
+
     - a translational force, that is a pure force applied at a point,
     - a torque, the rotational force. This is not the same as the moment
       induced by the translational force.  This torque can arise from a
@@ -30,6 +31,7 @@ namespace systems {
  @tparam T The scalar type. Must be a valid Eigen scalar.
 
  Instantiated templates for the following ScalarTypes are provided:
+
     - double
     - AutoDiffXd
  */

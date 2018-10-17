@@ -11,6 +11,9 @@
 #include "drake/multibody/rigid_body_tree_construction.h"
 
 namespace drake {
+
+using multibody::joints::FloatingBaseType;
+
 namespace manipulation {
 
 namespace {
@@ -23,7 +26,7 @@ class RobotStateLcmMessageTranslatorTest : public ::testing::Test {
 
   void Initialize(const std::string& model, bool is_urdf,
                   std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
-                  multibody::joints::FloatingBaseType floating_base_type) {
+                  FloatingBaseType floating_base_type) {
     base_type_ = floating_base_type;
     robot_ = std::make_unique<RigidBodyTree<double>>();
     if (is_urdf) {
@@ -49,15 +52,16 @@ class RobotStateLcmMessageTranslatorTest : public ::testing::Test {
     int q_non_floating_joint_start_index = 0;
     int v_non_floating_joint_start_index = 0;
     switch (base_type_) {
-      case multibody::joints::FloatingBaseType::kRollPitchYaw:
+      case FloatingBaseType::kRollPitchYaw:
         q_non_floating_joint_start_index = 6;
         v_non_floating_joint_start_index = 6;
         break;
-      case multibody::joints::FloatingBaseType::kQuaternion:
+      case FloatingBaseType::kQuaternion:
+      case FloatingBaseType::kExperimentalMultibodyPlantStyle:
         q_non_floating_joint_start_index = 7;
         v_non_floating_joint_start_index = 6;
         break;
-      case multibody::joints::FloatingBaseType::kFixed:
+      case FloatingBaseType::kFixed:
         q_non_floating_joint_start_index = 0;
         v_non_floating_joint_start_index = 0;
         break;
@@ -112,12 +116,12 @@ class RobotStateLcmMessageTranslatorTest : public ::testing::Test {
       dut_->DecodeMessageTorque(message_, torque_expected);
 
       // Checks q.
-      if (base_type_ == multibody::joints::FloatingBaseType::kFixed ||
-          base_type_ == multibody::joints::FloatingBaseType::kRollPitchYaw) {
+      if (base_type_ == FloatingBaseType::kFixed ||
+          base_type_ == FloatingBaseType::kRollPitchYaw) {
         EXPECT_TRUE(CompareMatrices(q_expected, q, tolerance_,
                                     MatrixCompareType::absolute));
       } else if (base_type_ ==
-                 multibody::joints::FloatingBaseType::kQuaternion) {
+                 FloatingBaseType::kQuaternion) {
         // Checks for -quat = quat.
         VectorX<double> q_expected_w_neg_quat = q_expected;
         q_expected_w_neg_quat.segment<4>(3) *= -1;
@@ -153,7 +157,7 @@ class RobotStateLcmMessageTranslatorTest : public ::testing::Test {
     }
   }
 
-  multibody::joints::FloatingBaseType base_type_;
+  FloatingBaseType base_type_;
   bot_core::robot_state_t message_{};
   // Same seed every time, but that's OK.
   std::default_random_engine rand_;
@@ -175,10 +179,10 @@ TEST_F(RobotStateLcmMessageTranslatorTest, TestEncodeDecode) {
           "drake/examples/valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf")};
 
-  std::vector<multibody::joints::FloatingBaseType> floating_types = {
-    multibody::joints::FloatingBaseType::kFixed,
-    multibody::joints::FloatingBaseType::kRollPitchYaw,
-    multibody::joints::FloatingBaseType::kQuaternion};
+  std::vector<FloatingBaseType> floating_types = {
+    FloatingBaseType::kFixed,
+    FloatingBaseType::kRollPitchYaw,
+    FloatingBaseType::kQuaternion};
 
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr,
@@ -199,10 +203,10 @@ TEST_F(RobotStateLcmMessageTranslatorTest, TestEncodeDecode) {
 TEST_F(RobotStateLcmMessageTranslatorTest, TestUnderActuated) {
   std::string model = FindResourceOrThrow(
       "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
-  std::vector<multibody::joints::FloatingBaseType> types = {
-      multibody::joints::FloatingBaseType::kFixed,
-      multibody::joints::FloatingBaseType::kQuaternion,
-      multibody::joints::FloatingBaseType::kFixed};
+  std::vector<FloatingBaseType> types = {
+      FloatingBaseType::kFixed,
+      FloatingBaseType::kQuaternion,
+      FloatingBaseType::kFixed};
 
   for (const auto& type : types) {
     Initialize(model, false, nullptr, type);
@@ -216,7 +220,7 @@ TEST_F(RobotStateLcmMessageTranslatorTest, TestSizeCheck) {
       "drake/manipulation/models/iiwa_description/urdf/"
       "iiwa14_polytope_collision.urdf");
   Initialize(model, true, nullptr,
-      multibody::joints::FloatingBaseType::kFixed);
+      FloatingBaseType::kFixed);
 
   message_.num_joints++;
   EXPECT_FALSE(
@@ -250,7 +254,7 @@ TEST_F(RobotStateLcmMessageTranslatorTest, TestEncodeDecodeExtraJointNames) {
   // Since this test only affects the non floating base joints, so fixed base
   // is sufficient.
   Initialize(model, true, nullptr,
-      multibody::joints::FloatingBaseType::kFixed);
+      FloatingBaseType::kFixed);
 
   VectorX<double> q, v, torque;
   SetRandomQVTorque(&q, &v, &torque);
@@ -314,7 +318,7 @@ TEST_F(RobotStateLcmMessageTranslatorTest, TestEncodeDecodeLessJointNames) {
   // Since this test only affects the non floating base joints, so fixed base
   // is sufficient.
   Initialize(model, true, nullptr,
-      multibody::joints::FloatingBaseType::kFixed);
+      FloatingBaseType::kFixed);
 
   VectorX<double> q, v, torque;
 

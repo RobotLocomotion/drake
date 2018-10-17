@@ -16,6 +16,9 @@
 namespace drake {
 namespace systems {
 
+// TODO(sherm1) Output ports that simply expose existing Context objects
+// should not require a cache entry. Add provision for that to avoid the
+// unnecessary copying currently done by Eval() for those.
 /** Implements an output port whose value is managed by a cache entry in the
 same LeafSystem as the port. This is intended for internal use in implementing
 the DeclareOutputPort() variants in LeafSystem.
@@ -23,15 +26,13 @@ the DeclareOutputPort() variants in LeafSystem.
 @tparam T The vector element type, which must be a valid Eigen scalar.
 
 Instantiated templates for the following kinds of T's are provided:
+
 - double
 - AutoDiffXd
 - symbolic::Expression
 
 They are already available to link against in the containing library.
 No other values for T are currently supported. */
-// TODO(sherm1) Output ports that simply expose existing Context objects
-// should not require a cache entry. Add provision for that to avoid the
-// unnecessary copying currently done by Eval() for those.
 template <typename T>
 class LeafOutputPort final : public OutputPort<T> {
  public:

@@ -48,12 +48,13 @@ class QueryObject;
  source owns, via a port connection on %SceneGraph.
 
  The basic workflow for interacting with %SceneGraph is:
-   - Register as a geometry source, acquiring a unique SourceId.
-   - Register geometry (anchored and dynamic) with the system.
-   - Connect source's geometry output ports to the corresponding %SceneGraph
-     input ports.
-     - Implement appropriate `Calc*` methods on the geometry output ports to
-       update geometry pose values.
+
+ - Register as a geometry source, acquiring a unique SourceId.
+ - Register geometry (anchored and dynamic) with the system.
+ - Connect source's geometry output ports to the corresponding %SceneGraph
+   input ports.
+   - Implement appropriate `Calc*` methods on the geometry output ports to
+     update geometry pose values.
 
  @section geom_sys_inputs Inputs
  @cond
@@ -189,6 +190,7 @@ class QueryObject;
  @tparam T The scalar type. Must be a valid Eigen scalar.
 
  Instantiated templates for the following kinds of T's are provided:
+
  - double
  - AutoDiffXd
 

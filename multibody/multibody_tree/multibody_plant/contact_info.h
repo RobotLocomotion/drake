@@ -16,6 +16,7 @@ namespace multibody_plant {
 /**
  A class containing information regarding contact response between two bodies
  including:
+
     - The pair of bodies that are contacting, referenced by their BodyIndex.
     - A resultant contact force.
     - A contact point.
@@ -25,8 +26,9 @@ namespace multibody_plant {
  @tparam T      The scalar type. It must be a valid Eigen scalar.
 
  Instantiated templates for the following ScalarTypes are provided:
-    - double
-    - AutoDiffXd
+
+ - double
+ - AutoDiffXd
  */
 template <typename T>
 class PointPairContactInfo {

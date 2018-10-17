@@ -59,18 +59,18 @@ namespace rndf {
 /// entities:
 ///
 /// - Lane naming: "l:$1-$2", where
-///    1. RNDF exit waypoint ID.
-///    2. RNDF entry waypoint ID.
+///   1. RNDF exit waypoint ID.
+///   2. RNDF entry waypoint ID.
 /// - Segment naming: "s:$1-$2-$3", where
-///    1. RNDF segment ID.
-///    2. Direction-based grouping index.
-///    3. RNDF segment piece index (in between every 2 waypoints).
+///   1. RNDF segment ID.
+///   2. Direction-based grouping index.
+///   3. RNDF segment piece index (in between every 2 waypoints).
 /// - Junction naming: "j:$1-$2-$3", where
-///    1. RNDF segment ID.
-///    2. Direction-based grouping index.
-///    3. RNDF segment piece index (in between every 2 waypoints).
+///   1. RNDF segment ID.
+///   2. Direction-based grouping index.
+///   3. RNDF segment piece index (in between every 2 waypoints).
 /// - BranchPoint naming: "bp:$1", where
-///    1. Index in RoadGeometry's inner collection.
+///   1. Index in RoadGeometry's inner collection.
 ///
 /// An example of how this is achieved is depicted in the following example.
 /// Note that '+' denotes RNDF waypoints, 'x' denotes invalid waypoints

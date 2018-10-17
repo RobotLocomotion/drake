@@ -14,7 +14,7 @@ namespace benchmarks {
 ///
 /// This system essentially is a double pendulum consisting of two links.
 /// Link 1 is connected to the world by a "shoulder" revolute joint
-//  parameterized by angle theta1 and Link 2 is connected to Link 1 by an
+/// parameterized by angle theta1 and Link 2 is connected to Link 1 by an
 /// "elbow" revolute joint parameterized by angle theta2.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
@@ -39,17 +39,18 @@ class Acrobot {
   /// </pre>
   /// The remaining arguments define the properties of the double pendulum
   /// system:
-  ///   - m1: mass of the first link.
-  ///   - m2: mass of the second link.
-  ///   - l1: length of the first link.
-  ///   - l2: length of the second link.
-  ///   - lc1: length from the shoulder to the center of mass of the first link.
-  ///   - lc2: length from the elbow to the center of mass of the second link.
-  ///   - Ic1: moment of inertia about the center of mass for the first link.
-  ///   - Ic2: moment of inertia about the center of mass for the second link.
-  ///   - b1: damping coefficient of the shoulder joint.
-  ///   - b2: damping coefficient of the elbow joint.
-  ///   - g: acceleration of gavity.
+  ///
+  /// - m1: mass of the first link.
+  /// - m2: mass of the second link.
+  /// - l1: length of the first link.
+  /// - l2: length of the second link.
+  /// - lc1: length from the shoulder to the center of mass of the first link.
+  /// - lc2: length from the elbow to the center of mass of the second link.
+  /// - Ic1: moment of inertia about the center of mass for the first link.
+  /// - Ic2: moment of inertia about the center of mass for the second link.
+  /// - b1: damping coefficient of the shoulder joint.
+  /// - b2: damping coefficient of the elbow joint.
+  /// - g: acceleration of gavity.
   Acrobot(const Vector3<T>& normal, const Vector3<T>& up,
           double m1 = 1.0,
           double m2 = 1.0,

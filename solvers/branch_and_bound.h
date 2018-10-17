@@ -499,10 +499,12 @@ class MixedIntegerBranchAndBound {
    * If a leaf node is fathomed, then there is no need to branch on this node
    * any more. A leaf node is fathomed is any of the following conditions are
    * satisfied:
+   *
    * 1. The optimization problem in the node is infeasible.
    * 2. The optimal cost of the node is larger than the best upper bound.
    * 3. The optimal solution to the node satisfies all the integral constraints.
    * 4. All binary variables are fixed to either 0 or 1 in this node.
+   *
    * @param leaf_node A leaf node to check if it is fathomed.
    * @pre The node should be a leaf node.
    * @throws std::runtime_error if the precondition is not satisfied.
@@ -610,11 +612,12 @@ class MixedIntegerBranchAndBound {
    * in this node, but the remaining binary variables are all rounded to
    * the binary value that is closest to the solution of the optimization
    * program in this node.
-   * @Note this function is only called if the following conditions are
+   * @note this function is only called if the following conditions are
    * satisfied:
    * 1. The optimization problem in this node is feasible.
    * 2. The optimal solution to the problem in this node is not integral.
    * 3. The user called SetSearchIntegralSolutionByRounding(true);
+   *
    * @note This method will change the data field such as solutions_ and/or
    * best_upper_bound_, if an integral solution is found.
    */

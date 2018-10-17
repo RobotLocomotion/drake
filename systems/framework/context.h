@@ -14,14 +14,14 @@
 namespace drake {
 namespace systems {
 
+// TODO(sherm1) Add step information.
 /// Contains information about the independent variable including time and
 /// step number.
-// TODO(sherm1) Add step information.
 template <typename T>
 struct StepInfo {
+  // TODO(sherm1): Consider whether this is sufficiently robust.
   /// The time, in seconds. For typical T implementations based on
   /// doubles, time resolution will gradually degrade as time increases.
-  // TODO(sherm1): Consider whether this is sufficiently robust.
   T time_sec{0.0};
 };
 
@@ -50,6 +50,7 @@ class Context : public ContextBase {
   /// @name           Accessors for locally-stored values
   /// Methods in this group provide `const` access to values stored locally in
   /// this %Context. The available values are:
+  ///
   /// - time
   /// - state
   /// - parameters
@@ -201,6 +202,7 @@ class Context : public ContextBase {
   /// @name           Methods for changing locally-stored values
   /// Methods in this group allow changes to the values of quantities stored
   /// locally in this %Context. The changeable quantities are:
+  ///
   /// - time
   /// - state
   /// - parameters
@@ -225,6 +227,7 @@ class Context : public ContextBase {
   ///
   /// <h3>Caching</h3>
   /// Drake provides a caching system that is responsible for
+  ///
   /// - storing computed results in the %Context's _cache_, and
   /// - ensuring that any cached result that _may_ be invalid is marked
   ///   "out of date".

@@ -18,12 +18,14 @@ namespace automotive {
 /// right but *cannot* travel in reverse.
 ///
 /// parameters:
+///
 /// * uses systems::Parameters wrapping a SimpleCarParams
 ///
 /// state vector (planar for now):
+///
 /// * position: x, y, heading;
 ///   heading is 0 rad when pointed +x, pi/2 rad when pointed +y;
-//    heading is defined around the +z axis, so positive-turn-left
+///   heading is defined around the +z axis, so positive-turn-left
 /// * velocity
 ///
 /// input vector:

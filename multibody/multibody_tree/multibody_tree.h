@@ -1923,6 +1923,7 @@ class MultibodyTree {
 
   /// Computes into the position kinematics `pc` all the kinematic quantities
   /// that depend on the generalized positions only. These include:
+  ///
   /// - For each body B, the pose `X_BF` of each of the frames F attached to
   ///   body B.
   /// - Pose `X_WB` of each body B in the model as measured and expressed in
@@ -2552,6 +2553,7 @@ class MultibodyTree {
   /// The new deep copy is guaranteed to have exactly the same
   /// MultibodyTreeTopology as the original tree the method is called on.
   /// This method ensures the following cloning order:
+  ///
   ///   - Body objects, and their corresponding BodyFrame objects.
   ///   - Frame objects.
   ///   - If a Frame is attached to another frame, its parent frame is

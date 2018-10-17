@@ -22,6 +22,7 @@ namespace rules {
 /// flows take turns traversing regions of the road network.
 ///
 /// Each rule instance comprises:
+///
 /// * a zone (a LaneSRoute) which specifies a contiguous longitudinal
 ///   lane-wise section of the road network to which the rule instance
 ///   applies;

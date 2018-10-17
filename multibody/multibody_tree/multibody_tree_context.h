@@ -18,6 +18,7 @@
 namespace drake {
 namespace multibody {
 
+// TODO(sherm1) Remove this class and just use a LeafContext directly.
 /// %MultibodyTreeContext is an object that contains all the information
 /// needed to uniquely determine the state of a MultibodyTree.
 /// %MultibodyTreeContext provides a collection of convenient access methods to
@@ -35,7 +36,6 @@ namespace multibody {
 /// - AutoDiffXd
 ///
 /// They are already available to link against in the containing library.
-// TODO(sherm1) Remove this class and just use a LeafContext directly.
 template <typename T>
 class MultibodyTreeContext: public systems::LeafContext<T> {
  public:

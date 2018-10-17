@@ -41,16 +41,16 @@ namespace sensors {
 /// are defined in terms of the sensor's base frame. Together they define a
 /// transform between the base frame and optical frame.
 ///
-///   1. yaw   - The horizontal scan angle that rotates about this sensor's base
-///              frame's +Z axis using the right-hand rule. When the pitch is
-///              zero, a yaw of zero results in this sensor measuring down the
-///              base frame's +X axis.
-///   2. pitch - The vertical scan angle that rotates about this sensor's base
-///              frames's -Y axis using using the right-hand rule. In other
-///              words, when the pitch increases from zero to PI / 2, this
-///              sensor's optical frame is tilted to point upward. When the yaw
-///              is zero, a pitch of zero results in this sensor measuring down
-///              the base frame's +X axis.
+/// 1. yaw   - The horizontal scan angle that rotates about this sensor's base
+///            frame's +Z axis using the right-hand rule. When the pitch is
+///            zero, a yaw of zero results in this sensor measuring down the
+///            base frame's +X axis.
+/// 2. pitch - The vertical scan angle that rotates about this sensor's base
+///            frames's -Y axis using using the right-hand rule. In other
+///            words, when the pitch increases from zero to PI / 2, this
+///            sensor's optical frame is tilted to point upward. When the yaw
+///            is zero, a pitch of zero results in this sensor measuring down
+///            the base frame's +X axis.
 ///
 /// To summarize, the location from which this sensor's rays emanate is
 /// (0, 0, 0) in the base frame. When both the yaw and pitch are zero, this

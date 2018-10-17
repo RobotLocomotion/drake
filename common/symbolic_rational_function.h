@@ -151,10 +151,12 @@ RationalFunction operator/(double c, const RationalFunction& f);
 RationalFunction pow(const RationalFunction& f, int n);
 /**
  *  Provides the following operations:
+ *
  *  - Matrix<RF>         * Matrix<Polynomial> => Matrix<RF>
  *  - Matrix<RF>         * Matrix<double>     => Matrix<RF>
  *  - Matrix<Polynomial> * Matrix<RF>         => Matrix<RF>
  *  - Matrix<double>     * Matrix<RF>         => Matrix<RF>
+ *
  * where RF is a shorthand for RationalFunction.
  *
  * @note that these operator overloadings are necessary even after providing

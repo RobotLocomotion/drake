@@ -47,6 +47,7 @@ class SceneGraph;
  @tparam T The scalar type. Must be a valid Eigen scalar.
 
  Instantiated templates for the following kinds of T's are provided:
+
  - double
  - AutoDiffXd
 
@@ -124,8 +125,8 @@ class QueryObject {
    If the objects do not overlap (i.e., A ⋂ B = ∅), φ > 0 and represents the
    minimal distance between the two objects. More formally:
    φ = min(|Aₚ - Bₚ|)
-   ∀ Aₚ ∈ A and Bₚ ∈ B. 
-   Note: the pair (Aₚ, Bₚ) is a "witness" of the distance.
+   ∀ Aₚ ∈ A and Bₚ ∈ B.
+   @note The pair (Aₚ, Bₚ) is a "witness" of the distance.
    The pair need not be unique (think of two parallel planes).
 
    If the objects touch or overlap (i.e., A ⋂ B ≠ ∅), φ ≤ 0 and can be
@@ -143,7 +144,7 @@ class QueryObject {
    This method is affected by collision filtering; geometry pairs that
    have been filtered will not produce signed distance query results.
 
-   Note: the signed distance function is a continuous function with respect to
+   @note The signed distance function is a continuous function with respect to
    the pose of the objects.
    */
 
@@ -155,7 +156,7 @@ class QueryObject {
    * and penetrating geometries. Notice that this is an O(N²) operation, where N
    * is the number of geometries remaining in the world after applying collision
    * filter. We report the distance between dynamic objects, and between dynamic
-   * and anchored objects. We DO NOT report the distance between two anchored 
+   * and anchored objects. We DO NOT report the distance between two anchored
    * objects.
    * @retval near_pairs The signed distance for all unfiltered geometry pairs.
    * TODO(hongkai.dai): add a distance bound as an optional input, such that the

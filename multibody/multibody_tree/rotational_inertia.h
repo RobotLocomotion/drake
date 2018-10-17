@@ -462,6 +462,7 @@ class RotationalInertia {
 
   /// Performs several necessary checks to verify whether `this` rotational
   /// inertia *could* be physically valid, including:
+  ///
   /// - No NaN moments or products of inertia.
   /// - Ixx, Iyy, Izz and principal moments are all non-negative.
   /// - Ixx, Iyy  Izz and principal moments satisfy the triangle inequality:

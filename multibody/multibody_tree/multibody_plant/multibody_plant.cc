@@ -439,6 +439,43 @@ geometry::GeometryId MultibodyPlant<T>::RegisterAnchoredGeometry(
 }
 
 template<typename T>
+const Isometry3<T>& MultibodyPlant<T>::EvalBodyPoseInWorld(
+    const systems::Context<T>& context,
+    const Body<T>& body_B) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return tree().EvalBodyPoseInWorld(context, body_B);
+}
+
+template<typename T>
+void MultibodyPlant<T>::SetFreeBodyPoseInWorldFrame(
+    systems::Context<T>* context,
+    const Body<T>& body, const Isometry3<T>& X_WB) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  tree().SetFreeBodyPoseOrThrow(body, X_WB, context);
+}
+
+template<typename T>
+void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
+    systems::Context<T>* context,
+    const Frame<T>& frame_F, const Body<T>& body,
+    const Isometry3<T>& X_FB) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+
+  if (!tree().get_topology().IsBodyAnchored(frame_F.body().index())) {
+    throw std::logic_error(
+        "Frame '" + frame_F.name() + "' must be anchored to the world frame.");
+  }
+
+  // Pose of frame F in its parent body frame P.
+  const Isometry3<T> X_PF = frame_F.GetFixedPoseInBodyFrame();
+  // Pose of frame F's parent body P in the world.
+  const Isometry3<T>& X_WP = EvalBodyPoseInWorld(*context, frame_F.body());
+  // Pose of "body" B in the world frame.
+  const Isometry3<T> X_WB = X_WP * X_PF * X_FB;
+  SetFreeBodyPoseInWorldFrame(context, body, X_WB);
+}
+
+template<typename T>
 void MultibodyPlant<T>::Finalize(geometry::SceneGraph<T>* scene_graph) {
   // After finalizing the base class, tree is read-only.
   MultibodyTreeSystem<T>::Finalize();
@@ -1613,11 +1650,8 @@ MultibodyPlant<T>::get_contact_results_output_port() const {
 
 template <typename T>
 void MultibodyPlant<T>::DeclareSceneGraphPorts() {
-  const systems::Value<geometry::QueryObject<T>> query_object(
-      scene_graph_->MakeQueryObject());
   geometry_query_port_ =
-      this->DeclareAbstractInputPort("geometry_query", query_object)
-          .get_index();
+      this->DeclareAbstractInputPort("geometry_query").get_index();
   // This presupposes that the source id has been assigned and _all_ frames have
   // been registered.
   std::vector<FrameId> ids;

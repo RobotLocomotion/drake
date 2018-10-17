@@ -53,6 +53,10 @@ namespace simplerulebook {
 /// the arguments to the constructor for that rule type.
 
 
+// TODO(maddog@tri.global)  If/when it ever becomes ok to expose YAML::Node
+//                          in a public drake/maliput header, this function
+//                          should just take a YAML::Node instead of a
+//                          std::istream.
 /// Loads rules parsed from `istream` into `rulebook`.
 /// See yaml_io.h for a description of the YAML syntax.
 ///
@@ -66,10 +70,6 @@ namespace simplerulebook {
 /// @throws `std::runtime_error` on parse errors, or failure of `AddRule()`.
 /// Internally calls `YAML::Load(std::istream&)`, and thus does whatever
 /// throwing/asserting which that function does.
-// TODO(maddog@tri.global)  If/when it ever becomes ok to expose YAML::Node
-//                          in a public drake/maliput header, this function
-//                          should just take a YAML::Node instead of a
-//                          std::istream.
 void LoadYaml(std::istream* istream, SimpleRulebook* rulebook);
 
 }  // namespace simplerulebook

@@ -128,7 +128,7 @@ class IntegratorBase {
    * a publish time, (status is kReachedPublishTime) the context may return an
    * interpolated value at an earlier time.
    *
-   * Note: the simulation step must always end at an update time but can end
+   * @note the simulation step must always end at an update time but can end
    * after a publish time.
    */
   // TODO(edrumwri): incorporate kReachedZeroCrossing into the simulator.
@@ -292,6 +292,7 @@ class IntegratorBase {
    * an appropriate minimum step and throw an exception if the requirements
    * can't be achieved without going below that. Methods in this section allow
    * you to influence two aspects of this procedure:
+   *
    * - you can increase the minimum step size, and
    * - you can control whether an exception is thrown if a smaller step would
    *   have been needed to achieve the aforementioned integrator requirements.
@@ -560,6 +561,7 @@ class IntegratorBase {
    *          typically call `IntegratorBase::IntegrateWithMultipleSteps()`.
    *
    * This method at a glance:
+   *
    * - For integrating ODEs/DAEs via Simulator
    * - Supports fixed step and variable step integration schemes
    * - Takes only a single step forward.
@@ -594,6 +596,7 @@ class IntegratorBase {
   ///     cannot advance time by @p dt in a single step.
   ///
   /// This method at a glance:
+  ///
   /// - For integrating ODEs/DAEs not using Simulator
   /// - Supports fixed step and variable step integration schemes
   /// - Takes as many steps as necessary until time has advanced by @p dt
@@ -646,6 +649,7 @@ class IntegratorBase {
   ///     necessary until time has been stepped forward by @p dt.
   ///
   /// This method at a glance:
+  ///
   /// - For integrating ODEs/DAEs not using Simulator
   /// - Fixed step integration (no step size reductions for error control or
   ///   integrator convergence)

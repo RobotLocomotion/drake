@@ -220,8 +220,15 @@ generate_file(
     content = """
 import ctypes
 import os.path
+import six
 ctypes.cdll.LoadLibrary(os.path.realpath(__path__[0] + '/_lcm.so'))
-execfile(__path__[0] + \"/lcm-python/lcm/__init__.py\")
+_filename = __path__[0] + \"/lcm-python/lcm/__init__.py\"
+if six.PY2:
+    execfile(_filename)
+else:
+    with open(_filename) as f:
+        _code = compile(f.read(), _filename, 'exec')
+        exec(_code)
 """,
     visibility = ["//visibility:private"],
 )
@@ -297,7 +304,7 @@ install(
         ":_lcm.so",
         ":lcm-python-upstream",
     ],
-    library_dest = "lib/python2.7/site-packages/lcm",
+    library_dest = "@PYTHON_SITE_PACKAGES@/lcm",
     py_strip_prefix = ["lcm-python"],
 )
 

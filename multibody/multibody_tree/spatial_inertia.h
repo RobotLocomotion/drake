@@ -211,6 +211,7 @@ class SpatialInertia {
   /// Performs a number of checks to verify that this is a physically valid
   /// spatial inertia.
   /// The checks performed are:
+  ///
   /// - No NaN entries.
   /// - Non-negative mass.
   /// - Non-negative principal moments about the center of mass.
@@ -219,6 +220,7 @@ class SpatialInertia {
   ///   - `Ixx + Iyy >= Izz`
   ///   - `Ixx + Izz >= Iyy`
   ///   - `Iyy + Izz >= Ixx`
+  ///
   /// These are the tests performed by
   /// RotationalInertia::CouldBePhysicallyValid() which become a sufficient
   /// condition when performed on a rotational inertia about a body's center of
@@ -347,8 +349,8 @@ class SpatialInertia {
   /// @param[in] p_PQ_E Vector from the original about point P to the new
   ///                   about point Q, expressed in the same frame E `this`
   ///                   spatial inertia is expressed in.
-  /// @retval `M_SQ_E` This same spatial inertia for body or composite body S
-  ///                  but computed about about a new point Q.
+  /// @retval M_SQ_E    This same spatial inertia for body or composite body S
+  ///                   but computed about about a new point Q.
   SpatialInertia Shift(const Vector3<T>& p_PQ_E) const {
     return SpatialInertia(*this).ShiftInPlace(p_PQ_E);
   }

@@ -318,11 +318,13 @@ class MathematicalProgram {
   /** Clones an optimization program.
    * The clone will be functionally equivalent to the source program with the
    * same:
+   *
    * - decision variables
    * - constraints
    * - costs
    * - solver settings
    * - initial guess
+   *
    * However, the clone's x values will be initialized to NaN, and all internal
    * solvers will be freshly constructed.
    * @retval new_prog. The newly constructed mathematical program.
@@ -577,7 +579,7 @@ class MathematicalProgram {
    * polynomial
    *   p = Q₍₀,₀₎x² + 2Q₍₁,₀₎xy + Q₍₁,₁₎y²
    * and a PSD constraint over Q.
-   * Note: Q is a symmetric monomial_basis.rows() x monomial_basis.rows()
+   * @note Q is a symmetric monomial_basis.rows() x monomial_basis.rows()
    * matrix.
    */
   std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
@@ -767,7 +769,7 @@ class MathematicalProgram {
    * Adds a callback method to visualize intermediate results of the
    * optimization.
    *
-   * Note: Just like other costs/constraints, not all solvers support callbacks.
+   * @note Just like other costs/constraints, not all solvers support callbacks.
    * Adding a callback here will force MathematicalProgram::Solve to select a
    * solver that support callbacks.  For instance, adding a visualization
    * callback to a quadratic programming problem may result in using a nonlinear
@@ -785,7 +787,7 @@ class MathematicalProgram {
    * Adds a callback method to visualize intermediate results of the
    * optimization.
    *
-   * Note: Just like other costs/constraints, not all solvers support callbacks.
+   * @note Just like other costs/constraints, not all solvers support callbacks.
    * Adding a callback here will force MathematicalProgram::Solve to select a
    * solver that support callbacks.  For instance, adding a visualization
    * callback to a quadratic programming problem may result in using a nonlinear
@@ -1040,8 +1042,8 @@ class MathematicalProgram {
    * Adds one row of constraint lb <= e <= ub where @p e is a symbolic
    * expression.
    * @throws std::exception if
-   *  1. <tt>lb <= e <= ub</tt> is a trivial constraint such as 1 <= 2 <= 3.
-   *  2. <tt>lb <= e <= ub</tt> is unsatisfiable such as 1 <= -5 <= 3
+   * 1. <tt>lb <= e <= ub</tt> is a trivial constraint such as 1 <= 2 <= 3.
+   * 2. <tt>lb <= e <= ub</tt> is unsatisfiable such as 1 <= -5 <= 3
    *
    * @param e A symbolic expression of the the decision variables.
    * @param lb A scalar, the lower bound.
@@ -1073,11 +1075,11 @@ class MathematicalProgram {
    * Add a constraint represented by a symbolic formula to the program. The
    * input formula @p f can be of the following forms:
    *
-   *  1. e1 <= e2
-   *  2. e1 >= e2
-   *  3. e1 == e2
-   *  4. A conjunction of relational formulas where each conjunct is
-   *     a relational formula matched by 1, 2, or 3.
+   * 1. e1 <= e2
+   * 2. e1 >= e2
+   * 3. e1 == e2
+   * 4. A conjunction of relational formulas where each conjunct is
+   *    a relational formula matched by 1, 2, or 3.
    *
    * Note that first two cases might return an object of
    * Binding<BoundingBoxConstraint>, Binding<LinearConstraint>, or
@@ -1114,9 +1116,9 @@ class MathematicalProgram {
    *
    * A formula in @p formulas can be of the following forms:
    *
-   *  1. e1 <= e2
-   *  2. e1 >= e2
-   *  3. e1 == e2
+   * 1. e1 <= e2
+   * 2. e1 >= e2
+   * 3. e1 == e2
    *
    * It throws an exception if AddConstraint(const symbolic::Formula& f)
    * throws an exception for f ∈ @p formulas.
@@ -1221,9 +1223,9 @@ class MathematicalProgram {
    * Adds one row of linear constraint lb <= e <= ub where @p e is a symbolic
    * expression.
    * @throws std::exception if
-   *  1. @p e is a non-linear expression.
-   *  2. <tt>lb <= e <= ub</tt> is a trivial constraint such as 1 <= 2 <= 3.
-   *  3. <tt>lb <= e <= ub</tt> is unsatisfiable such as 1 <= -5 <= 3
+   * 1. @p e is a non-linear expression.
+   * 2. <tt>lb <= e <= ub</tt> is a trivial constraint such as 1 <= 2 <= 3.
+   * 3. <tt>lb <= e <= ub</tt> is unsatisfiable such as 1 <= -5 <= 3
    *
    * @param e A linear symbolic expression in the form of <tt>c0 + c1 * v1 +
    * ... + cn * vn</tt> where @c c_i is a constant and @v_i is a variable.
@@ -1247,11 +1249,11 @@ class MathematicalProgram {
    * Add a linear constraint represented by a symbolic formula to the
    * program. The input formula @p f can be of the following forms:
    *
-   *  1. e1 <= e2
-   *  2. e1 >= e2
-   *  3. e1 == e2
-   *  4. A conjunction of relational formulas where each conjunct is
-   *     a relational formula matched by 1, 2, or 3.
+   * 1. e1 <= e2
+   * 2. e1 >= e2
+   * 3. e1 == e2
+   * 4. A conjunction of relational formulas where each conjunct is
+   *    a relational formula matched by 1, 2, or 3.
    *
    * Note that first two cases might return an object of
    * Binding<BoundingBoxConstraint> depending on @p f. Also the third case
@@ -1324,8 +1326,8 @@ class MathematicalProgram {
    * Adds one row of linear constraint e = b where @p e is a symbolic
    * expression.
    * @throws std::exception if
-   *  1. @p e is a non-linear expression.
-   *  2. @p e is a constant.
+   * 1. @p e is a non-linear expression.
+   * 2. @p e is a constant.
    *
    * @param e A linear symbolic expression in the form of <tt>c0 + c1 * x1 +
    * ... + cn * xn</tt> where @c c_i is a constant and @x_i is a variable.
@@ -1342,8 +1344,9 @@ class MathematicalProgram {
    * or a conjunction of equality formulas.
    *
    * It throws an exception if
-   *  1. @p f is neither an equality formula nor a conjunction of equalities.
-   *  2. @p f includes a non-linear expression.
+   *
+   * 1. @p f is neither an equality formula nor a conjunction of equalities.
+   * 2. @p f includes a non-linear expression.
    */
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const symbolic::Formula& f);
@@ -1354,6 +1357,7 @@ class MathematicalProgram {
    * @throws std::exception if
    * 1. @p v(i) is a non-linear expression.
    * 2. @p v(i) is a constant.
+   *
    * @tparam DerivedV An Eigen Matrix type of Expression. A column vector.
    * @tparam DerivedB An Eigen Matrix type of double. A column vector.
    * @param v v(i) is a linear symbolic expression in the form of
@@ -2105,6 +2109,7 @@ class MathematicalProgram {
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),
    * that is, @p p can be decomposed into `mᵀQm`, where m is the @p
    * monomial_basis. It returns a pair of constraint bindings expressing:
+   *
    *  - The coefficients matrix Q is PSD (positive semidefinite).
    *  - The coefficients matching conditions in linear equality constraint.
    */
@@ -2119,6 +2124,7 @@ class MathematicalProgram {
    * that is, @p p can be decomposed into `mᵀQm`, where m is the monomial
    * basis of all indeterminates in the program with degree equal to half the
    * TotalDegree of @p p. It returns a pair of constraint bindings expressing:
+   *
    *  - The coefficients matrix Q is PSD (positive semidefinite).
    *  - The coefficients matching conditions in linear equality constraint.
    */
@@ -2132,6 +2138,7 @@ class MathematicalProgram {
    * where m is the @p monomial_basis.  Note that it decomposes @p e into a
    * polynomial with respect to `indeterminates()` in this mathematical
    * program. It returns a pair of constraint bindings expressing:
+   *
    *  - The coefficients matrix Q is PSD (positive semidefinite).
    *  - The coefficients matching conditions in linear equality constraint.
    */
@@ -2147,6 +2154,7 @@ class MathematicalProgram {
    * @p e into a polynomial with respect to `indeterminates()` in this
    * mathematical program. It returns a pair of
    * constraint bindings expressing:
+   *
    *  - The coefficients matrix Q is PSD (positive semidefinite).
    *  - The coefficients matching conditions in linear equality constraint.
    */
@@ -2598,7 +2606,7 @@ class MathematicalProgram {
    * @param prog_var_vals The value of all the decision variables in this
    * program.
    * @throws std::logic_error if the size does not match.
-   **/
+   */
   void EvalVisualizationCallbacks(
       const Eigen::Ref<const Eigen::VectorXd>& prog_var_vals) const {
     if (prog_var_vals.rows() != num_vars()) {

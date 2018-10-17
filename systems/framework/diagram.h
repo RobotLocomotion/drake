@@ -359,13 +359,12 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     return *ret;
   }
 
+  // TODO(david-german-tri): Provide finer-grained accessors for finer-grained
+  // invalidation.
   /// Retrieves the state for a particular subsystem from the context for the
   /// entire diagram. Invalidates all entries in that subsystem's cache that
   /// depend on State. Aborts if @p subsystem is not actually a subsystem of
   /// this diagram.
-  ///
-  /// TODO(david-german-tri): Provide finer-grained accessors for finer-grained
-  /// invalidation.
   State<T>& GetMutableSubsystemState(const System<T>& subsystem,
                                      Context<T>* context) const {
     Context<T>& subcontext = GetMutableSubsystemContext(subsystem, context);

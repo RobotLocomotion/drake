@@ -17,26 +17,31 @@ namespace solar_system {
 // rotations become apparent as well (and not just revolutions).
 /** A model of an orrery -- a simple mechanical model of the solar system.
 
- The orrery contains one sun and four orbiting bodies: two planets (Earth and
- Mars) each with one moon. The orrery is articulated by placing the _frame_ for
- each body at its parent's origin, and then displacing the geometry from that
- origin to its orbital distance. Then each orbiting frame has a single degree of
- freedom: its angular position around its axis of rotation.
+ The orrery contains one sun and six orbiting bodies: two planets (Earth and
+ Mars) each with one moon and two satellites for Earth. The orrery is
+ articulated by placing the _frame_ for each body at its parent's origin, and
+ then displacing the geometry from that origin to its orbital distance. Then
+ each orbiting frame has a single degree of freedom: its angular position
+ around its axis of rotation.
 
  - The sun is stationary -- an anchored geometry.
- - Earth orbits on the xy-plane. Its moon (Luna) revolves around the earth on an
- different arbitrary plane (illustrating transform compositions).
+ - Earth orbits on the xy-plane. Its moon (Luna) revolves around the earth on
+   a different arbitrary plane (illustrating transform compositions).
+ - Two satellites (Convex and Box) revolve around Earth in the same way as
+   Luna but at different relative angular positions around their axis of
+   rotation.
  - Mars orbits the sun at a farther distance on a plane that is tilted off of
- the xy-plane. Its moon (Phobos) orbits around Mars on a plane parallel to
- Mars's orbital plane, but in the opposite direction.
+   the xy-plane. Its moon (Phobos) orbits around Mars on a plane parallel to
+   Mars's orbital plane, but in the opposite direction.
  - Mars has been given an arbitrary set of rings posed askew. The rings are
- declared as a child of mars's geometry.
+   declared as a child of mars's geometry.
 
  This system illustrates the following features:
 
  1. Registering anchored geometry.
  2. Registering frames as children of other frames.
  3. Allocating and calculating the FramePoseVector output for visualization.
+ 4. Exercise all supported SceneGraph geometries in an illustration context.
 
  Illustration of the orrery:
 
@@ -87,7 +92,9 @@ X_EL →├───┘       │  S  │           X_MP → ├───┘
  @tparam T The vector element type, which must be a valid Eigen scalar.
 
  Instantiated templates for the following kinds of T's are provided:
- - double */
+
+ - double
+*/
 template <typename T>
 class SolarSystem : public systems::LeafSystem<T> {
  public:
@@ -149,7 +156,7 @@ class SolarSystem : public systems::LeafSystem<T> {
   int geometry_pose_port_{-1};
 
   // Solar system specification
-  const int kBodyCount = 4;
+  const int kBodyCount = 6;
   // The ids for each celestial body frame
   std::vector<geometry::FrameId> body_ids_;
   // The axes around each body revolves (expressed in its parent's frame)

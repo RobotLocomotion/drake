@@ -77,14 +77,26 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "urdf_parser_test",
-    srcs = ["test/urdf_parser_test/urdf_parser_test.cc"],
+    srcs = ["test/urdf_parser_test.cc"],
     data = [
-        ":test_models",
         "//examples/atlas:models",
+        "//multibody/multibody_tree/parsing:test_models",
     ],
     deps = [
         ":parsers",
         "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rbt_sdf_parser_test",
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        ":parsers",
+        "//common:find_resource",
+        "//common/test_utilities",
     ],
 )
 

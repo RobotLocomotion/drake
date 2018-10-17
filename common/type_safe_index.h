@@ -327,8 +327,10 @@ class TypeSafeIndex {
   // without unsigned/signed comparison warnings (which Drake considers to be an
   // error). Furthermore, the SFINAE is necessary to prevent ambiguity.
   // Index == int can be resolved two ways:
-  //   - convert Index to int
-  //   - promote int to size_t
+  //
+  // - convert Index to int
+  // - promote int to size_t
+  //
   // SFINAE prevents the latter.
 
   /// Whitelist equality test with indices of this tag.

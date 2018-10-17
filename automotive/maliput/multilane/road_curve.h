@@ -19,12 +19,12 @@ namespace drake {
 namespace maliput {
 namespace multilane {
 
+// TODO(Mitiguy) Deprecate this class in favor of math::RollPitchYaw.
 /// An R^3 rotation parameterized by roll, pitch, yaw.
 ///
 /// This effects a compound rotation around space-fixed x-y-z axes:
 ///
 ///   Rot3(roll, pitch, yaw) * V = RotZ(yaw) * RotY(pitch) * RotX(roll) * V
-// TODO(Mitiguy) Deprecate this class in favor of math::RollPitchYaw.
 class Rot3 {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Rot3)
@@ -56,6 +56,8 @@ enum class ComputationPolicy {
                     ///  approximated analytical expressions).
 };
 
+// TODO(maddog-tri)  Add support for Lanes with both non-zero r0 and
+//                   superelevation polynomial.
 /// Defines an interface for a path in a Segment object surface. The path is
 /// defined by an elevation and superelevation CubicPolynomial objects and a
 /// reference curve. This reference curve is a C1 function in the z=0 plane.
@@ -103,9 +105,6 @@ enum class ComputationPolicy {
 ///
 /// where P:(s, r0) --> (p) is a (potentially non-linear) function dependent on
 /// the RoadCurve's reference-curve, elevation, and superelevation functions.
-///
-/// TODO(maddog-tri)  Add support for Lanes with both non-zero r0 and
-///                   superelevation polynomial.
 class RoadCurve {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RoadCurve)

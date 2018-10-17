@@ -64,6 +64,8 @@ using ColorI = Color<int>;
 /// blue. Each of these primary additive colors are in the range of [0, 1].
 using ColorD = Color<double>;
 
+// TODO(SeanCurtis-TRI): As indicated in #9628, provide unit tests for the
+// contents of this file.
 /// Creates and holds a palette of colors for visualizing different objects in a
 /// scene (the intent is for a different color to be applied to each identified
 /// object). The colors are chosen so as to be easily distinguishable. In other
@@ -73,8 +75,6 @@ using ColorD = Color<double>;
 /// can hold up to 1535 colors.
 ///
 /// @tparam IdType  The type of value used for label values.
-// TODO(SeanCurtis-TRI): As indicated in #9628, provide unit tests for the
-// contents of this file.
 template <typename IdType>
 class ColorPalette {
  public:

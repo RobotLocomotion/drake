@@ -82,6 +82,8 @@ class RgbdRenderer {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdRenderer)
 
+  // TODO(thduynguyen, kunimatsu-tri): Handle multiple viewpoints, e.g. for
+  // stereo depth camera?
   /// A constructor for %RgbdRenderer.
   ///
   /// @param config Configurations of the renderer. See RenderingConfig.
@@ -89,8 +91,6 @@ class RgbdRenderer {
   /// @param X_WC The initial pose of the renderer's unique camera viewpoint `C`
   /// in the world coordinate system. The camera pose `C` can be updated by
   /// calling `UpdateViewpoint` later on. Default value: Identity.
-  /// TODO(thduynguyen, kunimatsu-tri): Handle multiple viewpoints, e.g. for
-  /// stereo depth camera?
   RgbdRenderer(const RenderingConfig& config,
                const Eigen::Isometry3d& X_WC = Eigen::Isometry3d::Identity());
 
