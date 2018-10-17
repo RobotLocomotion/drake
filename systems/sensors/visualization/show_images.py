@@ -1,5 +1,3 @@
-#!/usr/bin/env directorPython
-
 """
 Visualize LCM images from robotlocomotion `image_array_t` and `image_t`.
 
