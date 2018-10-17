@@ -106,12 +106,11 @@ math::RigidTransform<T> Acrobot<T>::CalcLink1PoseInWorldFrame(
   using std::cos;
 
   // Center of mass position of link 1 in the model frame D.
-  Vector3<T> xcm1_D = lc1_ * Vector3<T>(sin(theta1), -cos(theta1), 0.0);
+  const Vector3<T> xcm1_D = lc1_ * Vector3<T>(sin(theta1), -cos(theta1), 0.0);
 
   // Pose of link 1 frame measured and expressed in D.
-  math::RigidTransform<T> X_DL1;
-  X_DL1.set_rotation(math::RotationMatrix<T>::MakeZRotation(theta1));
-  X_DL1.set_translation(xcm1_D);
+  const math::RigidTransform<T> X_DL1(
+      math::RotationMatrix<T>::MakeZRotation(theta1), xcm1_D);
 
   // Transformation to world frame W.
   return X_WD_ * X_DL1;
@@ -156,11 +155,11 @@ Vector6<T> Acrobot<T>::CalcLink1SpatialVelocityInWorldFrame(
   using std::cos;
 
   // Linear velocity of link1's center of mass expressed in model frame D.
-  Vector3<T> vcm1_D =
+  const Vector3<T> vcm1_D =
       lc1_ * Vector3<T>(cos(theta1), sin(theta1), 0.0) * theta1dot;
 
   // Angular velocity of link1 expressed in model frame D.
-  Vector3<T> wcm1_D = Vector3<T>::UnitZ() * theta1dot;
+  const Vector3<T> wcm1_D = Vector3<T>::UnitZ() * theta1dot;
 
   // Spatial velocity expressed in the world frame.
   Vector6<T> V_WL1;
@@ -225,7 +224,7 @@ Vector6<T> Acrobot<T>::CalcLink2SpatialAccelerationInWorldFrame(
   using std::cos;
 
   // Linear acceleration of link2's center of mass expressed in model frame D.
-  Vector3<T> acm2_D =
+  const Vector3<T> acm2_D =
       lc2_ * Vector3<T>(-sin(theta1 + theta2), cos(theta1 + theta2), 0.0) *
           (theta1dot + theta2dot) * (theta1dot + theta2dot) +
       lc2_ * Vector3<T>(cos(theta1 + theta2), sin(theta1 + theta2), 0.0) *
