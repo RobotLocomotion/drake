@@ -14,13 +14,13 @@ typedef KinematicsCache<double> KinematicsCached;
 typedef int BodyIndex;
 typedef int FrameIndex;
 
+// TODO(eric.cousineau): Replace with SceneGraph when it becomes available
+// Presently, RigidBodyTree<> can function as a (dense) scene graph of sorts.
 /**
  * A scene describes a group of objects (stored within a rigid body tree
  * structure), the world frame, and the camera frame. This is used to for
  * posing things such as an ICP formulation.
  */
-// TODO(eric.cousineau): Replace with SceneGraph when it becomes available
-// Presently, RigidBodyTree<> can function as a (dense) scene graph of sorts.
 class Scene {
  public:
   Scene(const RigidBodyTreed* tree, const FrameIndex frame_world,

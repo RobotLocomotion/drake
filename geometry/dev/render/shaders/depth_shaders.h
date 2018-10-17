@@ -19,11 +19,11 @@ namespace shaders {
 // TODO(SeanCurtis-TRI): Re-enable providing normals and texture coordinates
 // to the fragment shader when these quantities are used.
 
+// NOTE: For the VTK infrastructure, the shader should always start with the
+//  line:
+//    //VTK::System::Dec
 /// A vertex shader program for rendering depth images, which computes vertices
 /// and normals for the fragment shader program coming after.
-// NOTE: For the VTK infrastructure, the shader should always start with the
-// line:
-//   //VTK::System::Dec
 constexpr char kDepthVS[] = R"__(
     //VTK::System::Dec
     attribute vec4 vertexMC;
@@ -45,6 +45,11 @@ constexpr char kDepthVS[] = R"__(
 
 // TODO(SeanCurtis-TRI): Investigate rendering directly to a one-channel,
 // 32-bit float image so that the encoding isn't necessary.
+//
+// NOTE: For the VTK infrastructure, the shader should always start with the
+// lines:
+//   //VTK::System::Dec
+//   //VTK::Output::Dec
 /// A fragment shader program for rendering depth images, which computes depth
 /// values for each pixel in depth images, converts them to be in range [0, 1]
 /// and packs those values to three color channels. In other words, we encode
@@ -56,10 +61,6 @@ constexpr char kDepthVS[] = R"__(
 /// The reason is that we need to set one to alpha channel so that the rendered
 /// "image" will be opaque. Otherwise, we will have different colors from what
 /// we output here, thus expect, in the end.
-// NOTE: For the VTK infrastructure, the shader should always start with the
-// lines:
-//   //VTK::System::Dec
-//   //VTK::Output::Dec
 constexpr char kDepthFS[] = R"__(
     //VTK::System::Dec
     //VTK::Output::Dec
@@ -69,7 +70,7 @@ constexpr char kDepthFS[] = R"__(
     out vec4 color_out;
     uniform float z_near;
     uniform float z_far;
-    
+
     // This function splits a float value, whose range is [0, 1], to three
     // float values, whose ranges are also [0, 1] but will eventually be
     // converted to be [0, 255] of unsigned char. Each of the split float
@@ -81,25 +82,25 @@ constexpr char kDepthFS[] = R"__(
     // function.
     // Here we give you an example with concrete numbers using the base
     // number 100 instead of 255 just to help you understand better:
-    // 
+    //
     // `value` = 0.123456
     // `bit_shift` = `[1., 100., 10000.]`
     // `bit_mask` = `[0.01, 0.01, 0]`
-    // 
+    //
     // `res` = `fract(value * bit_shift)`
     //       = `fract(0.123456 * [1., 100., 10000.])`
     //       = `fract([0.123456, 12.3456, 1234.56]`
     //       = `[0.123456, 0.3456, 0.56]`
-    // 
+    //
     // `res.yzz` * `bit_mask` = `[0.3456, 0.56, 0.56]` * `[0.01, 0.01, 0]`
     //                        = `[0.003456, 0.0056, 0]`
-    // 
+    //
     // `return` = `res` - `res.yzz` * `bit_mask`
     //          = `[0.123456, 0.3456, 0.56]` - `[0.003456, 0.0056, 0]`
     //          = `[0.12, 0.34, 0.56]`.
-    // 
+    //
     // To decode this value, you will simply need to calculate the reverse:
-    // 
+    //
     // i.e. `decoded = 0.12 + 0.34 * 0.01 + 0.56 * 0.0001`
     //      `        = 0.12 + 0.0034 + 0.000056`
     //      `        = 0.123456`.
@@ -110,7 +111,7 @@ constexpr char kDepthFS[] = R"__(
       vec3 res = fract(value * bit_shift);
       return res - (res.yzz * bit_mask);
     }
-    
+
     void main () {
       // NOTE: This isn't the distance to the camera, but the distance to the
       // plane that is parallel with the camera's image plane on which the

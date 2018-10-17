@@ -136,7 +136,7 @@ class Formula {
   FormulaKind get_kind() const;
   /** Gets free variables (unquantified variables). */
   Variables GetFreeVariables() const;
-  /** Checks structural equality*/
+  /** Checks structural equality. */
   bool EqualTo(const Formula& f) const;
   /** Checks lexicographical ordering between this and @p e.
    *

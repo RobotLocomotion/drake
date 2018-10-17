@@ -8,10 +8,10 @@
 namespace drake {
 namespace pydrake {
 
+// TODO(eric.cousineau): Ensure that all C++ mutator call sites use `EigenPtr`.
 /// Provides a mutable Ref<> for a pointer.
 /// Meant to be used for decorating methods passed to `pybind11` (e.g. virtual
 /// function dispatch).
-// TODO(eric.cousineau): Ensure that all C++ mutator call sites use `EigenPtr`.
 template <typename Derived>
 auto ToEigenRef(Eigen::VectorBlock<Derived>* derived) {
   return Eigen::Ref<Derived>(*derived);

@@ -46,7 +46,7 @@ The block diagram for a system with a single arm is shown below:
       │                                               │
       │                                               │
       └───────────────────────────────────────────────┘
-**/
+*/
 
 class LcmPlant : public systems::Diagram<double> {
  public:

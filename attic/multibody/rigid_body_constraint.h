@@ -27,7 +27,7 @@ extern Eigen::Vector2d default_tspan;
 class RigidBodyConstraint {
  public:
   /* In each category, constraint classes share the same function interface,
-   * this value needs to be in consistent with that in MATLAB*/
+   * this value needs to be in consistent with that in MATLAB. */
   static const int SingleTimeKinematicConstraintCategory = -1;
   static const int MultipleTimeKinematicConstraintCategory = -2;
   static const int QuasiStaticConstraintCategory = -3;
@@ -35,7 +35,7 @@ class RigidBodyConstraint {
   static const int MultipleTimeLinearPostureConstraintCategory = -5;
   static const int SingleTimeLinearPostureConstraintCategory = -6;
   /* Each non-abstrac RigidBodyConstraint class has a unique type. Make sure
-   * this value stays in consistent with the value in MATLAB*/
+   * this value stays in consistent with the value in MATLAB. */
   static const int QuasiStaticConstraintType = 1;
   static const int PostureConstraintType = 2;
   static const int SingleTimeLinearPostureConstraintType = 3;

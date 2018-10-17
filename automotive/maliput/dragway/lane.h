@@ -71,7 +71,7 @@ class Segment;
   @note Each dragway lane has a teleportation feature at both ends: the
   (default) ongoing lane for LaneEnd::kFinish is LaneEnd::kStart of the same
   lane, and vice versa.
-**/
+*/
 class Lane final : public api::Lane {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Lane)

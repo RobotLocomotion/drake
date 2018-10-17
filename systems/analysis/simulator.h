@@ -23,6 +23,8 @@
 namespace drake {
 namespace systems {
 
+// TODO(sherm1) When API stabilizes, should list the methods above in addition
+// to describing them.
 /// A forward dynamics solver for hybrid dynamic systems represented by
 /// `System<T>` objects. Starting with an initial Context for a given System,
 /// %Simulator advances time and produces a series of Context values that forms
@@ -65,8 +67,6 @@ namespace systems {
 /// - AutoDiffXd
 ///
 /// Other instantiations are permitted but take longer to compile.
-// TODO(sherm1) When API stabilizes, should list the methods above in addition
-// to describing them.
 template <typename T>
 class Simulator {
  public:
@@ -545,10 +545,12 @@ void Simulator<T>::HandlePublish(
 
 /// Steps the simulation to the specified time.
 /// The simulation loop is as follows:
+///
 /// 1. Perform necessary discrete variable updates.
 /// 2. Publish.
 /// 3. Integrate the smooth system (the ODE or DAE)
 /// 4. Perform post-step stabilization for DAEs (if desired).
+///
 /// @param boundary_time The time to advance the context to.
 /// @pre The simulation state is valid  (i.e., no discrete updates or state
 /// projections are necessary) at the present time.

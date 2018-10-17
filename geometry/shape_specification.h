@@ -82,12 +82,12 @@ class Shape {
    and to maintain sanity, we place the following requirements on derived
    classes:
 
-     1. they must have a public copy constructor,
-     2. they must be marked as final, and
-     3. their constructors must invoke the parent constructor with a ShapeTag
-        instance (as noted above), and
-     4. The ShapeReifier class must be extended to include an invocation of
-        ShapeReifier::ImplementGeometry() on the derived Shape class.
+   1. they must have a public copy constructor,
+   2. they must be marked as final, and
+   3. their constructors must invoke the parent constructor with a ShapeTag
+      instance (as noted above), and
+   4. The ShapeReifier class must be extended to include an invocation of
+      ShapeReifier::ImplementGeometry() on the derived Shape class.
 
    @tparam S    The derived shape class. It must derive from Shape. */
   template <typename S>

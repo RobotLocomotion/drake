@@ -51,7 +51,7 @@ class Junction;
 
    Note that lane indices increase to the left, which matches the fact that
    within a Lane, `r` increases to the left.
-**/
+*/
 class Segment final : public api::Segment {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Segment)

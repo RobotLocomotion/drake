@@ -15,6 +15,7 @@ namespace drake {
 namespace examples {
 namespace rod2d {
 
+// TODO(edrumwri): Track energy and add a test to check it.
 /** Dynamical system representation of a rod contacting a half-space in
 two dimensions.
 
@@ -154,8 +155,7 @@ Outputs: Output Port 0 corresponds to the state vector; Output Port 1
          frame.
 
 - [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
-                   Impact". SIAM Rev., 42(1), 3-39, 2000. **/
-// TODO(edrumwri): Track energy and add a test to check it.
+                   Impact". SIAM Rev., 42(1), 3-39, 2000. */
 template <typename T>
 class Rod2D : public systems::LeafSystem<T> {
  public:

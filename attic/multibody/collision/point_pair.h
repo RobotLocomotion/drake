@@ -9,7 +9,7 @@ namespace drake {
 namespace multibody {
 namespace collision {
 
-/** Structure containing the results of a collision query. **/
+/** Structure containing the results of a collision query. */
 template <typename T>
 struct PointPair {
   PointPair() {}
@@ -23,35 +23,35 @@ struct PointPair {
         normal(normal_in),
         distance(distance_in) {}
 
-  /** Scalar-converting copy constructor. **/
+  /** Scalar-converting copy constructor. */
   template <typename U>
   explicit PointPair(const PointPair<U>& other)
       : PointPair<T>(other.elementA, other.elementB, other.ptA, other.ptB,
                      other.normal, other.distance) {}
 
-  /** Element A in the pair participating in the collision. **/
+  /** Element A in the pair participating in the collision. */
   const Element* elementA{nullptr};
 
-  /** Element B in the pair participating in the collision. **/
+  /** Element B in the pair participating in the collision. */
   const Element* elementB{nullptr};
 
-  /** Id of element A participating in the collision. **/
+  /** Id of element A participating in the collision. */
   ElementId idA{0};
 
-  /** Id of element B participating in the collision. **/
+  /** Id of element B participating in the collision. */
   ElementId idB{0};
 
-  /** Collision point on the surface of body A. **/
+  /** Collision point on the surface of body A. */
   Vector3<T> ptA;
 
-  /** Collision point on the surface of body B. **/
+  /** Collision point on the surface of body B. */
   Vector3<T> ptB;
 
   /** Outwards normal on body B. On body A it points in the opposite
-  direction. **/
+  direction. */
   Vector3<T> normal;
 
-  /** Distance between the point on body A and the point on body B. **/
+  /** Distance between the point on body A and the point on body B. */
   T distance{};
 };
 
