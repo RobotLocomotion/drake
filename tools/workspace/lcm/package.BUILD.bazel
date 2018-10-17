@@ -17,8 +17,8 @@ load(
 )
 load("@drake//tools/lint:python_lint.bzl", "python_lint")
 load(
-    "@drake//tools/workspace/python:py_and_maybe_py2.bzl",
-    "py_and_maybe_py2",
+    "@drake//tools/workspace/python:py_and_py2.bzl",
+    "py_and_py2",
 )
 
 licenses([
@@ -173,13 +173,13 @@ cc_binary(
     ],
 )
 
-py_and_maybe_py2(
+py_and_py2(
     rule = cc_binary,
     kwargs_config = dict(
-        name = "_lcm_py{version_major}.so",
+        name = "_lcm_py{py_2_or_3}.so",
         deps = [
             ":lcm",
-            "@python{maybe_version_major}//:python",
+            "@python{py_blank_or_2}//:python",
         ],
     ),
     kwargs = dict(
@@ -243,11 +243,11 @@ else:
     visibility = ["//visibility:private"],
 )
 
-py_and_maybe_py2(
+py_and_py2(
     rule = py_library,
     kwargs_config = dict(
-        name = "lcm-python{maybe_version_major}-upstream",
-        data = [":_lcm{version_major}.so"],
+        name = "lcm-python{py_blank_or_2}-upstream",
+        data = [":_lcm{py_2_or_3}.so"],
     ),
     kwargs = dict(
         srcs = ["lcm-python/lcm/__init__.py"],  # Actual code from upstream.
@@ -255,11 +255,11 @@ py_and_maybe_py2(
     ),
 )
 
-py_and_maybe_py2(
+py_and_py2(
     rule = py_library,
     kwargs_config = dict(
-        name = "lcm-python{maybe_version_major}",
-        deps = [":lcm-python{maybe_version_major}-upstream"],
+        name = "lcm-python{py_blank_or_2}",
+        deps = [":lcm-python{py_blank_or_2}-upstream"],
     ),
     kwargs = dict(
         srcs = ["__init__.py"],  # Shim, from the genrule above.
@@ -318,15 +318,16 @@ install_files(
     strip_prefix = ["**/"],
 )
 
-py_and_maybe_py2(
+py_and_py2(
     rule = install,
     kwargs_config = dict(
-        name = "install_python{maybe_version_major}",
+        name = "install_python{py_blank_or_2}",
         targets = [
-            ":_lcm_py{version_major}.so",
-            ":lcm-python{maybe_version_major}-upstream",
+            ":_lcm_py{py_2_or_3}.so",
+            ":lcm-python{py_blank_or_2}-upstream",
         ],
-        library_dest = "{site_packages}/lcm",
+        py_dest = "{py_site_packages}",
+        library_dest = "{py_site_packages}/lcm",
     ),
     kwargs = dict(
         py_strip_prefix = ["lcm-python"],
