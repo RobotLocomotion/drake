@@ -339,7 +339,8 @@ PYBIND11_MODULE(_symbolic_py, m) {
     return Jacobian(f, vars);
   }, doc.Expression.Jacobian.doc);
 
-  py::class_<Formula>(m, "Formula")
+  py::class_<Formula> formula(m, "Formula", doc.Formula.doc);
+  formula
       .def("GetFreeVariables", &Formula::GetFreeVariables,
         doc.Formula.GetFreeVariables.doc)
       .def("EqualTo", &Formula::EqualTo, doc.Formula.EqualTo.doc)
@@ -376,13 +377,17 @@ PYBIND11_MODULE(_symbolic_py, m) {
            [](const Formula& self) { return std::hash<Formula>{}(self); })
       .def_static("True", &Formula::True, doc.FormulaTrue.doc)
       .def_static("False", &Formula::False, doc.FormulaFalse.doc)
+      // `True` and `False` are reserved as of Python3
+      .def_static("True_", &Formula::True, doc.FormulaTrue.doc)
+      .def_static("False_", &Formula::False, doc.FormulaFalse.doc)
       .def("__nonzero__", [](const Formula&) {
         throw std::runtime_error(
-            "You should not call `__nonzero__` on `Formula`. If you are trying "
-            "to make a map with `Variable`, `Expression`, or `Polynomial` as "
-            "keys and access the keys, please use "
-            "`pydrake.util.containers.EqualToDict`.");
+            "You should not call `__bool__` / `__nonzero__` on `Formula`. "
+            "If you are trying to make a map with `Variable`, `Expression`, "
+            "or `Polynomial` as keys (and then access the map in Python), "
+            "please use pydrake.util.containers.EqualToDict`.");
       });
+  formula.attr("__bool__") = formula.attr("__nonzero__");
 
   // Cannot overload logical operators: http://stackoverflow.com/a/471561
   // Defining custom function for clarity.

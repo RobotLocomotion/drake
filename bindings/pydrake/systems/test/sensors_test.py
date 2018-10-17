@@ -1,3 +1,5 @@
+from __future__ import division
+
 import pydrake.systems.sensors as mut
 
 import numpy as np
@@ -76,8 +78,8 @@ class TestSensors(unittest.TestCase):
             self.assertEqual(image.data.shape, image.shape)
             self.assertEqual(image.data.dtype, ImageT.Traits.ChannelType)
 
-            w /= 2
-            h /= 2
+            w //= 2
+            h //= 2
             # WARNING: Resizing an image with an existing reference to
             # `image.data` will cause `image.data` + `image.mutable_data` to be
             # invalid.

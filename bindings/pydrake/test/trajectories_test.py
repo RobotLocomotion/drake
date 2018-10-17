@@ -55,7 +55,7 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(pp_sub.get_number_of_segments(), 1)
         self.assertEqual(pp_sub.start_time(), 1.)
         self.assertEqual(pp_sub.end_time(), 2.)
-        values_sub = np.array(map(pp_sub.value, [1., 2.]))
+        values_sub = np.array(list(map(pp_sub.value, [1., 2.])))
         self.assertTrue((values_sub == [[[20.]], [[30.]]]).all())
         pp_sub.shiftRight(10.)
         self.assertEqual(pp_sub.start_time(), 11.)

@@ -86,6 +86,8 @@ int main(int argc, char** argv) {
   // Define custom class only once here.
   py::class_<CustomCppType>(m, "CustomCppType");
 
+  // For Python3
+  py::globals().attr("update")(m.attr("__dict__"));
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
