@@ -211,6 +211,7 @@ class SpatialInertia {
   /// Performs a number of checks to verify that this is a physically valid
   /// spatial inertia.
   /// The checks performed are:
+  ///
   /// - No NaN entries.
   /// - Non-negative mass.
   /// - Non-negative principal moments about the center of mass.
@@ -219,6 +220,7 @@ class SpatialInertia {
   ///   - `Ixx + Iyy >= Izz`
   ///   - `Ixx + Izz >= Iyy`
   ///   - `Iyy + Izz >= Ixx`
+  ///
   /// These are the tests performed by
   /// RotationalInertia::CouldBePhysicallyValid() which become a sufficient
   /// condition when performed on a rotational inertia about a body's center of

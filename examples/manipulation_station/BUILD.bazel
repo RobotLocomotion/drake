@@ -41,6 +41,7 @@ drake_cc_binary(
     ],
     add_test_rule = 1,
     test_rule_args = ["--target_realtime_rate=0.0"],
+    test_rule_timeout = "moderate",
     deps = [
         ":station_simulation",
         "//geometry:geometry_visualization",

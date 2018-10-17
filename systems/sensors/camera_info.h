@@ -21,6 +21,7 @@ namespace sensors {
 ///
 /// There are three types of the coordinate systems that are relevant to this
 /// class:
+///
 ///   - the camera coordinate system
 ///   - the image coordinate system
 ///   - the pixel coordinate system.

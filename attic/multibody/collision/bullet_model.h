@@ -94,6 +94,7 @@ class BulletModel : public Model {
    * Computes the closest point in the collision world to each of a set of
    * points. For each query point, a PointPair instance, `p`, is returned with
    * the following semantics:
+   *
    *    - p.elementA = p.elementB = pointer to the closest element.
    *    - p.idA = p.idB = ElementId of closest element.
    *    - p.ptA = the point on the closest element's surface expressed and
@@ -104,6 +105,7 @@ class BulletModel : public Model {
    *        point, expressed in the world frame.
    *    - p.distance = The *signed* distance between the query point and the
    *        nearest point.  Negative values indicate penetration.
+   *
    * If there are no objects in the scene, then the pointers will be nullptr,
    * the ids, 0, the distance infinite, and the nearest points, infinitely far
    * away.

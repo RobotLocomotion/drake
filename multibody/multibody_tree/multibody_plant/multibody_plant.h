@@ -44,6 +44,7 @@ namespace multibody_plant {
 /// concepts/notation.
 ///
 /// %MultibodyPlant provides a user-facing API to:
+///
 /// - add bodies, joints, force elements, and constraints,
 /// - register geometries to a provided SceneGraph instance,
 /// - create and manipulate its Context,
@@ -151,7 +152,7 @@ namespace multibody_plant {
 /// Refer to the documentation provided in each of the methods above for further
 /// details.
 ///
-/// @section Finalize() stage
+/// @section finalize_stage Finalize() stage
 ///
 /// Once the user is done adding modeling elements and registering geometry, a
 /// call to Finalize() must be performed. This call will:

@@ -181,8 +181,10 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// This method is used by MultibodyTree within a base-to-tip loop to compute
   /// this node's kinematics that only depend on generalized positions.
   /// This method aborts in Debug builds when:
+  ///
   /// - Called on the _root_ node.
   /// - `pc` is nullptr.
+  ///
   /// @param[in] context The context with the state of the MultibodyTree model.
   /// @param[out] pc A pointer to a valid, non nullptr, kinematics cache.
   /// @pre CalcPositionKinematicsCache_BaseToTip() must have already been called

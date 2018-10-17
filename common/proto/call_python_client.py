@@ -18,10 +18,6 @@ from six.moves.queue import Queue
 
 from drake.common.proto.matlab_rpc_pb2 import MatlabArray, MatlabRPC
 
-if six.PY3:
-
-    def map(f, xs): return [f(x) for x in xs]
-
 
 def _ensure_sigint_handler():
     # @ref https://stackoverflow.com/a/47801921/2654527
@@ -68,7 +64,7 @@ def _get_required_helpers(scope_locals):
         """Parse a slice object from a string. """
         def to_piece(s):
             return s and int(s) or None
-        pieces = map(to_piece, expr.split(':'))
+        pieces = list(map(to_piece, expr.split(':')))
         if len(pieces) == 1:
             return slice(pieces[0], pieces[0] + 1)
         else:
@@ -78,7 +74,7 @@ def _get_required_helpers(scope_locals):
         """Create a scalar or tuple for accessing objects via slices. """
         out = [None] * len(args)
         for i, arg in enumerate(args):
-            if isinstance(arg, (str, unicode)):
+            if isinstance(arg, unicode):
                 out[i] = _make_slice(arg)
             else:
                 out[i] = arg
@@ -334,7 +330,7 @@ class CallPythonClient(object):
         # Call the function
         # N.B. No security measures to sanitize function name.
         function_name = msg.function_name
-        assert isinstance(function_name, (str, unicode)), type(function_name)
+        assert isinstance(function_name, unicode), type(function_name)
         out_id = None
         if len(msg.lhs) > 0:
             assert len(msg.lhs) == 1

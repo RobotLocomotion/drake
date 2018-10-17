@@ -12,6 +12,8 @@ To kill all the processes, just kill the script in the console with
 Control-C.
 """
 
+from __future__ import print_function
+
 import argparse
 import fcntl
 import glob

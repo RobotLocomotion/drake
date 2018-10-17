@@ -36,6 +36,7 @@ class GeometryVisualizationImpl {
 
  This is a convenience method to simplify some common boilerplate for adding
  visualization capability to a Diagram. What it does is:
+
  - adds an initialization event that sends the required load message to set up
    the visualizer with the relevant geometry,
  - adds systems PoseBundleToDrawMessage and LcmPublisherSystem to

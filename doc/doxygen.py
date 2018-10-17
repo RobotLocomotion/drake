@@ -4,14 +4,17 @@
 
 """
 
+from __future__ import print_function
+
 import argparse
+from collections import OrderedDict
 import os
+from os.path import dirname
 import shutil
 import subprocess
 import sys
 
-from collections import OrderedDict
-from os.path import dirname
+from six import iteritems
 
 def _get_drake_workspace():
     """Find and return the path to the drake workspace."""
@@ -94,7 +97,7 @@ def _run_doxygen(args):
         definitions["DOXYGEN_DOT_FOUND"] = "YES"
         definitions["DOXYGEN_DOT_EXECUTABLE"] = dot
     definition_args = ["-D%s=%s" % (key, value)
-                       for key, value in definitions.items()]
+                       for key, value in iteritems(definitions)]
 
     # Create Doxyfile_CXX.
     in_filename = os.path.join(drake_workspace, "doc/Doxyfile_CXX.in")

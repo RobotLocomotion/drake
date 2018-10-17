@@ -147,6 +147,7 @@ class GeometrySet {
 
    The interface for adding geometries to the set is simply an overload of the
    Add() method. For maximum flexibility, the Add method can take:
+
      - a single geometry id
      - a single frame id
      - an iterable object containing geometry ids

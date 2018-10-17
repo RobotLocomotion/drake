@@ -18,6 +18,7 @@ namespace lcm {
  avoided).
 
  What it does is:
+
  - adds systems LcmtDrakeSignalTranslator and LcmPublisherSystem to
    the Diagram and connects the translator output to the publisher input, and
  - connects the @p src output to the LcmtDrakeSignalTranslator

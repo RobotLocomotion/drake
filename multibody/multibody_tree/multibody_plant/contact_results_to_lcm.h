@@ -73,6 +73,7 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
 
  This is a convenience method to simplify some common boilerplate for adding
  contact results visualization capability to a Diagram. What it does is:
+
  - adds systems ContactResultsToLcmSystem and LcmPublisherSystem to
    the Diagram and connects the draw message output to the publisher input,
  - connects the `multibody_plant` contact results output to the

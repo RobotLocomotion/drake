@@ -31,10 +31,10 @@ namespace solar_system {
    Luna but at different relative angular positions around their axis of
    rotation.
  - Mars orbits the sun at a farther distance on a plane that is tilted off of
- the xy-plane. Its moon (Phobos) orbits around Mars on a plane parallel to
- Mars's orbital plane, but in the opposite direction.
+   the xy-plane. Its moon (Phobos) orbits around Mars on a plane parallel to
+   Mars's orbital plane, but in the opposite direction.
  - Mars has been given an arbitrary set of rings posed askew. The rings are
- declared as a child of mars's geometry.
+   declared as a child of mars's geometry.
 
  This system illustrates the following features:
 
