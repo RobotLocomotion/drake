@@ -19,6 +19,7 @@ load("@drake//tools/lint:python_lint.bzl", "python_lint")
 load(
     "@drake//tools/workspace/python:py_and_py2.bzl",
     "py_and_py2",
+    "py_select",
 )
 
 licenses([
@@ -175,19 +176,11 @@ cc_binary(
 
 py_and_py2(
     rule = cc_binary,
-    name = "_lcm_py{py_major}.so",
-    kwargs_py = dict(
-        deps = [
-            ":lcm",
-            "@python//:python",
-        ],
-    ),
-    kwargs_py2 = dict(
-        deps = [
-            ":lcm",
-            "@python2//:python",
-        ],
-    ),
+    name = py_select(py2="_lcm_py2.so", py3="_lcm_py3.so"),
+    deps = [
+        ":lcm",
+        py_select(bazel="@python//:python", py2="@python2//:python"),
+    ],
     srcs = [
         "lcm-python/module.c",
         "lcm-python/pyeventlog.c",
@@ -252,27 +245,16 @@ else:
 
 py_and_py2(
     rule = py_library,
-    kwargs_py = dict(
-        name = "lcm-python-upstream",
-    ),
-    kwargs_py2 = dict(
-        name = "lcm-python2-upstream",
-    ),
-    data = [":_lcm_py{py_major}.so"],
+    name = py_select(bazel="lcm-python-upstream", py2="lcm-python2-upstream"),
+    data = [py_select(py2="_lcm_py2.so", py3="_lcm_py3.so")],
     srcs = ["lcm-python/lcm/__init__.py"],  # Actual code from upstream.
     visibility = ["//visibility:private"],
 )
 
 py_and_py2(
     rule = py_library,
-    kwargs_py = dict(
-        name = "lcm-python",
-        deps = [":lcm-python-upstream"],
-    ),
-    kwargs_py2 = dict(
-        name = "lcm-python2",
-        deps = [":lcm-python2-upstream"],
-    ),
+    name = py_select(bazel="lcm-python", py2="lcm-python2"),
+    deps = [py_select(bazel=":lcm-python-upstream", py2="lcm-python2-upstream")],
     srcs = ["__init__.py"],  # Shim, from the genrule above.
 )
 
@@ -330,22 +312,14 @@ install_files(
 
 py_and_py2(
     rule = install,
-    kwargs_py = dict(
-        name = "install_python",
-        targets = [
-            ":_lcm_py{py_major}.so",
-            ":lcm-python-upstream",
-        ],
-    ),
-    kwargs_py2 = dict(
-        name = "install_python2",
-        targets = [
-            ":_lcm_py2.so",
-            ":lcm-python2-upstream",
-        ],
-    ),
-    library_dest = "{py_site_packages}/lcm",
-    py_dest = "{py_site_packages}",
+    name = py_select(bazel="install_python", py2="install_python2"),
+    targets = [
+        py_select(py2="_lcm_py2.so", py3="_lcm_py3.so"),
+        py_select(bazel=":lcm-python-upstream", py2=":lcm-python2-upstream"),
+    ],
+    library_dest = "@PYTHON_SITE_PACKAGES@/lcm",
+    # Re-declare for `py_and_py2` to intercept.
+    py_dest = "@PYTHON_SITE_PACKAGES@",
     py_strip_prefix = ["lcm-python"],
 )
 
