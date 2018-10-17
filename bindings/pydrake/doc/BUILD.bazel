@@ -17,18 +17,12 @@ py_library(
 # TODO(jamiesnape): Can we avoid the need to re-compile pydrake for the host
 # architecture?
 drake_py_binary(
-    name = "sphinx_build_wrapper",
-    srcs = ["sphinx_build_wrapper.py"],
-    data = ["@sphinx//:sphinx-build"],
+    name = "sphinx_build",
+    srcs = ["sphinx_build.py"],
     deps = [
         ":sphinx_pydrake",
         "//bindings/pydrake",
     ],
-)
-
-drake_runfiles_binary(
-    name = "sphinx_build",
-    target = ":sphinx_build_wrapper",
 )
 
 drake_py_binary(

@@ -108,7 +108,9 @@ if __name__ == '__main__':
 
     if args.trace != "none":
         if args.trace == "user":
-            ignoredirs = ["/usr"]
+            # Add `sys.prefix` here, just in case we're debugging with a
+            # virtualenv.
+            ignoredirs = ["/usr", sys.prefix]
         else:
             ignoredirs = []
         tracer = trace.Trace(trace=1, count=0, ignoredirs=ignoredirs)

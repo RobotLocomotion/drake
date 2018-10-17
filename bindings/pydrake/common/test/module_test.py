@@ -2,10 +2,16 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import unittest
+
+import six
+
 import pydrake.common
 
 
 class TestCommon(unittest.TestCase):
+    if six.PY2:
+        assertRegex = unittest.TestCase.assertRegexpMatches
+
     def test_drake_demand_throws(self):
         # Drake's assertion errors should turn into SystemExit by default,
         # without the user needing to do anything special.  Here, we trigger a
@@ -16,8 +22,8 @@ class TestCommon(unittest.TestCase):
             self.fail("Did not get a SystemExit")
         except SystemExit as e:
             self.assertTrue(e.code is not None)
-            self.assertRegexpMatches(
-                e.message,
+            self.assertRegex(
+                str(e),
                 ".*".join([
                     "Failure at ",
                     " trigger_an_assertion_failure",

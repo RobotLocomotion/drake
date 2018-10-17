@@ -1,6 +1,7 @@
 """Provides containers for tracking instantiations of C++ templates. """
 
 import inspect
+import six
 import types
 
 from pydrake.util.cpp_param import get_param_names, get_param_canonical
@@ -63,7 +64,7 @@ class TemplateBase(object):
         self._instantiation_func = None
         self.__doc__ = ""
 
-    def __getitem__(self, param):
+    def __getitem__(self, *param):
         """Gets concrete class associate with the given arguments.
 
         Can be one of the following forms:
@@ -73,6 +74,9 @@ class TemplateBase(object):
             template[[param0, param1, ...]]
             template[None]   (first instantiation, if `allow_default` is True)
         """
+        # For compatibility with Python3.
+        if len(param) == 1:
+            param = param[0]
         return self.get_instantiation(param)[0]
 
     # Unique token to signify that this instantiation is deferred when using
@@ -175,7 +179,7 @@ class TemplateBase(object):
             A set of instantiations.
         """
         param_list = []
-        for param, check in self._instantiation_map.iteritems():
+        for param, check in six.iteritems(self._instantiation_map):
             if check == instantiation:
                 param_list.append(param)
         return set(param_list)
@@ -295,11 +299,15 @@ class TemplateClass(TemplateBase):
         return None
 
 
-def _rename_callable(f, module, name):
+def _rename_callable(f, module, name, cls=None):
     # Renames a function.
     if (f.__module__, f.__name__) == (module, name):
         # Short circuit.
         return f
+    if six.PY3 and cls is not None:
+        qualname = cls.__qualname__ + "." + name
+    else:
+        qualname = name
     # If Python2, we have to wrap instancemethods + built-in functions to spoof
     # the metadata.
     type_requires_wrap = (
@@ -311,15 +319,16 @@ def _rename_callable(f, module, name):
 
         f.__module__ = module
         f.__name__ = name
+        f.__qualname__ = qualname
         f.__doc__ = orig.__doc__
         f._original_name = orig.__name__
-        cls = getattr(orig, 'im_class', None)
-        if cls:
+        if cls and six.PY2:
             f = types.MethodType(f, None, cls)
     else:
         f._original_name = f.__name__
         f.__module__ = module
         f.__name__ = name
+        f.__qualname__ = qualname
     return f
 
 
@@ -341,7 +350,8 @@ class TemplateMethod(TemplateBase):
 
     def _on_add(self, param, func):
         func = _rename_callable(
-            func, self._module_name, self._instantiation_name(param))
+            func, self._module_name, self._instantiation_name(param),
+            self._cls)
         return func
 
     def __get__(self, obj, objtype):
@@ -367,7 +377,10 @@ class TemplateMethod(TemplateBase):
 
         def __getitem__(self, param):
             unbound = self._tpl[param]
-            bound = types.MethodType(unbound, self._obj, self._tpl._cls)
+            if six.PY2:
+                bound = types.MethodType(unbound, self._obj, self._tpl._cls)
+            else:
+                bound = types.MethodType(unbound, self._obj)
             return bound
 
         def __str__(self):
