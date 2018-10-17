@@ -27,7 +27,7 @@ class BuildifierTest(unittest.TestCase):
         process = subprocess.Popen(
             command, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         stdout, _ = process.communicate()
-        return process.returncode, stdout
+        return process.returncode, stdout.decode('utf8')
 
     def test_mode_check(self):
         returncode, output = self._call_buildifier(
