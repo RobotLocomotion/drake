@@ -30,7 +30,7 @@ _str = type("")
 _struct = type(struct())
 
 def py_select(py2, py3):
-    return struct(py2=py2, py3=py3)
+    return struct(py2 = py2, py3 = py3)
 
 def py2_py3(
         rule,
@@ -55,6 +55,7 @@ def py2_py3(
             @PYTHON_SITE_PACKAGES@
             @PYTHON_EXT_SUFFIX@
     """
+
     # Define Python2 target.
     if _PY2.major != "2":
         fail("@python2 has the wrong major version: {}".format(_PY2))

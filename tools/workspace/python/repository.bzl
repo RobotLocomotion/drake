@@ -121,7 +121,8 @@ WARNING: Python {} is not a supported / tested version for use with Drake.
 """).format(version, os_key, versions_supported)
     else:
         versions_all = sorted(
-            versions_supported.bazel + versions_supported.compat)
+            versions_supported.bazel + versions_supported.compat,
+        )
         if version not in versions_all:
             print("""
 
@@ -141,10 +142,13 @@ Drake buildable and tested against this version.
     # using replacement tokens.
     ext_suffix = execute_or_fail(
         repository_ctx,
-        [python, "-c",
-         "from sysconfig import get_config_var; " +
-         "print(get_config_var('EXT_SUFFIX') or get_config_var('SO'))"],
-    ).stdout.strip().lstrip('.')
+        [
+            python,
+            "-c",
+            "from sysconfig import get_config_var; " +
+            "print(get_config_var('EXT_SUFFIX') or get_config_var('SO'))",
+        ],
+    ).stdout.strip().lstrip(".")
 
     return struct(
         python = python,
