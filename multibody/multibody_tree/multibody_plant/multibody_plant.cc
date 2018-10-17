@@ -1613,11 +1613,8 @@ MultibodyPlant<T>::get_contact_results_output_port() const {
 
 template <typename T>
 void MultibodyPlant<T>::DeclareSceneGraphPorts() {
-  const systems::Value<geometry::QueryObject<T>> query_object(
-      scene_graph_->MakeQueryObject());
   geometry_query_port_ =
-      this->DeclareAbstractInputPort("geometry_query", query_object)
-          .get_index();
+      this->DeclareAbstractInputPort("geometry_query").get_index();
   // This presupposes that the source id has been assigned and _all_ frames have
   // been registered.
   std::vector<FrameId> ids;
