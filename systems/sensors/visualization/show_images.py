@@ -1,5 +1,3 @@
-#!/usr/bin/env directorPython
-
 """
 Visualize LCM images from robotlocomotion `image_array_t` and `image_t`.
 
@@ -7,9 +5,6 @@ Example usage:
 
     drake-visualizer \
         --script drake/systems/sensors/visualization/show_images.py
-
-    # If you have `directorPython`
-    ./show_images.py
 
 This provides a simple image viewer widget, using portions of code from
 director (https://github.com/RobotLocomotion/director, sha: aefc063),
