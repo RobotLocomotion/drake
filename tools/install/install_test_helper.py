@@ -30,7 +30,7 @@ def install():
     os.makedirs(installation_folder)
     assert os.path.exists(installation_folder)
     # Install target and its dependencies in scratch space.
-    subprocess.check_call(["install", installation_folder])
+    subprocess.check_call([sys.executable, "install", installation_folder])
     # Change permissions to remove write access.
     for root, dirs, files in os.walk(installation_folder):
         for d in dirs:
@@ -128,7 +128,7 @@ def check_output(*args, **kwargs):
     calls `subprocess.check_output()` and updates the current working directory
     to `/`.
     """
-    return subprocess.check_output(cwd='/', *args, **kwargs)
+    return subprocess.check_output(cwd='/', *args, **kwargs).decode('utf8')
 
 
 def get_python_site_packages_dir(install_dir):
