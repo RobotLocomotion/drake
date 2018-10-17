@@ -48,12 +48,14 @@ def py2_py3(
         If specified, will create an alias to the version of the target for
         Bazel.
     @param kwargs
-        Arguments for the rule. that are resolve in the following fashion:
-        * If an argument's value comes from `py_select`, it will be replaced
-        based on the Python version using the `py2` or `py3` values.
-        * Strings have the following tokens replaced:
-            @PYTHON_SITE_PACKAGES@
-            @PYTHON_EXT_SUFFIX@
+        Arguments for the rule.
+
+    Arguments are resolved in the following fashion:
+    * If an argument's value comes from `py_select`, it will be replaced
+      based on the Python version using the `py2` or `py3` values.
+    * Strings have the following tokens replaced:
+        @PYTHON_SITE_PACKAGES@
+        @PYTHON_EXT_SUFFIX@
     """
 
     # Define Python2 target.
@@ -77,7 +79,25 @@ def py2_py3(
             visibility = kwargs_py2.get("visibility"),
         )
 
-def _format_raw(value, build):
+def _format(raw, build):
+    # Format a dict of arguments for `py2_py3`.
+    out = dict()
+    for key, value in raw.items():
+        if type(value) == _struct:
+            value = getattr(value, build.version_field)
+        out[key] = _format_value(value, build)
+    return out
+
+def _format_value(value, build):
+    # N.B. `str` and `list` do not work in this comparison.
+    if type(value) == _str:
+        return _format_str(value, build)
+    elif type(value) == _list:
+        return [_format_str(x, build) for x in value]
+    else:
+        return value
+
+def _format_str(value, build):
     subs = (
         ("@PYTHON_SITE_PACKAGES@", build.site_packages),
         ("@PYTHON_EXT_SUFFIX@", build.ext_suffix),
@@ -85,20 +105,3 @@ def _format_raw(value, build):
     for old, new in subs:
         value = value.replace(old, new)
     return value
-
-def _format_item(value, build):
-    # N.B. `str` and `list` do not work in this comparison.
-    if type(value) == _str:
-        return _format_raw(value, build)
-    elif type(value) == _list:
-        return [_format_raw(x, build) for x in value]
-    else:
-        return value
-
-def _format(raw, build):
-    out = dict()
-    for key, value in raw.items():
-        if type(value) == _struct:
-            value = getattr(value, build.version_field)
-        out[key] = _format_item(value, build)
-    return out
