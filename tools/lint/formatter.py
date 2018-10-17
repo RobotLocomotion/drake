@@ -2,9 +2,27 @@
 """
 
 import os
+import six
+from six import text_type as unicode
+from six.moves import xrange
 from subprocess import Popen, PIPE, CalledProcessError
 
 import drake.tools.lint.clang_format as clang_format_lib
+
+if six.PY3:
+    _open = open
+
+    def open(filename, mode): return _open(filename, mode, encoding="utf8")
+
+    def encode(s): return s.encode("utf8")
+
+    def decode(b): return b.decode("utf8")
+
+else:
+
+    def encode(s): return bytes(s)
+
+    def decode(b): return str(b)
 
 
 class FormatterBase(object):
@@ -51,6 +69,7 @@ class FormatterBase(object):
         for line in self._original_lines:
             assert line.endswith("\n"), line
         for line in self._working_lines:
+            assert isinstance(line, (str, unicode)), (type(line), line)
             assert line.endswith("\n"), line
 
     def is_same_as_original(self):
@@ -158,7 +177,7 @@ class FormatterBase(object):
     def get_non_format_indices(self):
         """Return the complement of get_format_indices().
         """
-        all_indices = set(xrange(len(self._working_lines)))
+        all_indices = set(range(len(self._working_lines)))
         return sorted(all_indices - set(self.get_format_indices()))
 
     @staticmethod
@@ -202,7 +221,9 @@ class FormatterBase(object):
             "-assume-filename=%s" % self._filename] + \
             lines_args
         formatter = Popen(command, stdin=PIPE, stdout=PIPE)
-        stdout, _ = formatter.communicate(input="".join(self._working_lines))
+        stdout, _ = formatter.communicate(input=(
+            encode("".join(self._working_lines))))
+        stdout = decode(stdout)
 
         # Handle errors, otherwise reset the working list.
         if formatter.returncode != 0:

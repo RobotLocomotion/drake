@@ -5,6 +5,8 @@ Google tool, the default mode is "-mode=fix".  In "-mode=check", we promote
 lint errors to a non-zero exitcode.
 """
 
+from __future__ import print_function
+
 import os
 import re
 import subprocess
@@ -36,7 +38,7 @@ def _help(command):
     # and make one or the other required.
     head = re.sub(r'\[(files\.\.\.)\]', r'<\1 | --all>', lines.pop(0))
     for line in [head] + lines:
-        print line
+        print(line)
     print("")
     print("=== Drake-specific additions ===")
     print("")
