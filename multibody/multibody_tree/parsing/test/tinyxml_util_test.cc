@@ -25,6 +25,11 @@ GTEST_TEST(TinyxmlUtilTest, ParseAttributeTest) {
   XMLElement* element = xml_doc.FirstChildElement("element");
   ASSERT_TRUE(element != nullptr);
 
+  std::string str;
+  EXPECT_TRUE(ParseStringAttribute(element, "bad", &str));
+  EXPECT_EQ(str, "one");
+  EXPECT_FALSE(ParseStringAttribute(element, "missing", &str));
+
   double scalar{};
   EXPECT_TRUE(ParseScalarAttribute(element, "scalar", &scalar));
   EXPECT_EQ(scalar, 1.);
