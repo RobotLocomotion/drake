@@ -175,28 +175,32 @@ cc_binary(
 
 py_and_py2(
     rule = cc_binary,
-    kwargs_config = dict(
-        name = "_lcm_py{py_2_or_3}.so",
+    name = "_lcm_py{py_major}.so",
+    kwargs_py = dict(
         deps = [
             ":lcm",
-            "@python{py_blank_or_2}//:python",
+            "@python//:python",
         ],
     ),
-    kwargs = dict(
-        srcs = [
-            "lcm-python/module.c",
-            "lcm-python/pyeventlog.c",
-            "lcm-python/pylcm.c",
-            "lcm-python/pylcm.h",
-            "lcm-python/pylcm_subscription.c",
-            "lcm-python/pylcm_subscription.h",
-            "lcm/dbg.h",
+    kwargs_py2 = dict(
+        deps = [
+            ":lcm",
+            "@python2//:python",
         ],
-        copts = LCM_COPTS,
-        linkshared = 1,
-        linkstatic = 1,
-        visibility = ["//visibility:private"],
     ),
+    srcs = [
+        "lcm-python/module.c",
+        "lcm-python/pyeventlog.c",
+        "lcm-python/pylcm.c",
+        "lcm-python/pylcm.h",
+        "lcm-python/pylcm_subscription.c",
+        "lcm-python/pylcm_subscription.h",
+        "lcm/dbg.h",
+    ],
+    copts = LCM_COPTS,
+    linkshared = 1,
+    linkstatic = 1,
+    visibility = ["//visibility:private"],
 )
 
 # Downstream users of lcm-python expect to say "import lcm".  However, in the
@@ -245,25 +249,28 @@ else:
 
 py_and_py2(
     rule = py_library,
-    kwargs_config = dict(
-        name = "lcm-python{py_blank_or_2}-upstream",
-        data = [":_lcm{py_2_or_3}.so"],
+    kwargs_py = dict(
+        name = "lcm-python-upstream",
     ),
-    kwargs = dict(
-        srcs = ["lcm-python/lcm/__init__.py"],  # Actual code from upstream.
-        visibility = ["//visibility:private"],
+    kwargs_py2 = dict(
+        name = "lcm-python2-upstream",
     ),
+    data = [":_lcm_py{py_major}.so"],
+    srcs = ["lcm-python/lcm/__init__.py"],  # Actual code from upstream.
+    visibility = ["//visibility:private"],
 )
 
 py_and_py2(
     rule = py_library,
-    kwargs_config = dict(
-        name = "lcm-python{py_blank_or_2}",
-        deps = [":lcm-python{py_blank_or_2}-upstream"],
+    kwargs_py = dict(
+        name = "lcm-python",
+        deps = [":lcm-python-upstream"],
     ),
-    kwargs = dict(
-        srcs = ["__init__.py"],  # Shim, from the genrule above.
+    kwargs_py2 = dict(
+        name = "lcm-python2",
+        deps = [":lcm-python2-upstream"],
     ),
+    srcs = ["__init__.py"],  # Shim, from the genrule above.
 )
 
 java_library(
@@ -320,18 +327,23 @@ install_files(
 
 py_and_py2(
     rule = install,
-    kwargs_config = dict(
-        name = "install_python{py_blank_or_2}",
+    kwargs_py = dict(
+        name = "install_python",
         targets = [
-            ":_lcm_py{py_2_or_3}.so",
-            ":lcm-python{py_blank_or_2}-upstream",
+            ":_lcm_py{py_major}.so",
+            ":lcm-python-upstream",
         ],
-        py_dest = "{py_site_packages}",
-        library_dest = "{py_site_packages}/lcm",
     ),
-    kwargs = dict(
-        py_strip_prefix = ["lcm-python"],
+    kwargs_py2 = dict(
+        name = "install_python2",
+        targets = [
+            ":_lcm_py2.so",
+            ":lcm-python2-upstream",
+        ],
     ),
+    library_dest = "{py_site_packages}/lcm",
+    py_dest = "{py_site_packages}",
+    py_strip_prefix = ["lcm-python"],
 )
 
 install(
