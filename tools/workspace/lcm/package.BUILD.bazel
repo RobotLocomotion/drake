@@ -245,7 +245,10 @@ else:
 
 py_and_py2(
     rule = py_library,
-    name = py_select(bazel = "lcm-python-upstream", py2 = "lcm-python2-upstream"),
+    name = py_select(
+        bazel = "lcm-python-upstream",
+        py2 = "lcm-python2-upstream",
+    ),
     data = [py_select(py2 = "_lcm_py2.so", py3 = "_lcm_py3.so")],
     srcs = ["lcm-python/lcm/__init__.py"],  # Actual code from upstream.
     visibility = ["//visibility:private"],
@@ -254,7 +257,12 @@ py_and_py2(
 py_and_py2(
     rule = py_library,
     name = py_select(bazel = "lcm-python", py2 = "lcm-python2"),
-    deps = [py_select(bazel = ":lcm-python-upstream", py2 = "lcm-python2-upstream")],
+    deps = [
+        py_select(
+            bazel = ":lcm-python-upstream",
+            py2 = "lcm-python2-upstream",
+        ),
+    ],
     srcs = ["__init__.py"],  # Shim, from the genrule above.
 )
 
@@ -315,7 +323,10 @@ py_and_py2(
     name = py_select(bazel = "install_python", py2 = "install_python2"),
     targets = [
         py_select(py2 = "_lcm_py2.so", py3 = "_lcm_py3.so"),
-        py_select(bazel = ":lcm-python-upstream", py2 = ":lcm-python2-upstream"),
+        py_select(
+            bazel = ":lcm-python-upstream",
+            py2 = ":lcm-python2-upstream",
+        ),
     ],
     library_dest = "@PYTHON_SITE_PACKAGES@/lcm",
     # Re-declare for `py_and_py2` to intercept.
