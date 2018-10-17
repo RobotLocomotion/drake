@@ -18,7 +18,7 @@ load(
 load("@drake//tools/lint:python_lint.bzl", "python_lint")
 load(
     "@drake//tools/workspace/python:py_and_py2.bzl",
-    "py_and_py2",
+    "py2_py3",
     "py_select",
 )
 
@@ -174,13 +174,20 @@ cc_binary(
     ],
 )
 
-py_and_py2(
+py2_py3(
     rule = cc_binary,
-    name = py_select(py2 = "_lcm_py2.so", py3 = "_lcm_py3.so"),
-    deps = [
-        ":lcm",
-        py_select(bazel = "@python//:python", py2 = "@python2//:python"),
-    ],
+    name = "_lcm.@PYTHON_EXT_SUFFIX@",
+    deps = py_select(
+        py2 = [
+            ":lcm",
+            "@python2//:python",
+        ],
+        py3 = [
+            ":lcm",
+            # N.B. This will only run when @python refers to Python3.
+            "@python//:python",
+        ],
+    ),
     srcs = [
         "lcm-python/module.c",
         "lcm-python/pyeventlog.c",
@@ -227,13 +234,12 @@ generate_file(
 import ctypes
 import os.path
 import sys
+from sysconfig import get_config_var
 import importlib
 import six
-_lib_name = '_lcm_py{}'.format(sys.version_info.major)
+_ext = get_config_var("EXT_SUFFIX") or get_config_var("SO")
 ctypes.cdll.LoadLibrary(
-    os.path.realpath(__path__[0] + '/' + _lib_name + '.so'))
-sys.modules[__name__ + '._lcm'] = importlib.import_module(
-    __name__ + "." + _lib_name)
+    os.path.realpath(__path__[0] + '/_lcm' + _ext))
 _filename = __path__[0] + \"/lcm-python/lcm/__init__.py\"
 if six.PY2:
     execfile(_filename)
@@ -245,20 +251,21 @@ else:
     visibility = ["//visibility:private"],
 )
 
-py_and_py2(
+py2_py3(
     rule = py_library,
     name = py_select(
         py2 = "lcm-python2-upstream",
         py3 = "lcm-python3-upstream",
     ),
-    data = [py_select(py2 = "_lcm_py2.so", py3 = "_lcm_py3.so")],
+    data = ["_lcm.@PYTHON_EXT_SUFFIX@"],
     srcs = ["lcm-python/lcm/__init__.py"],  # Actual code from upstream.
     visibility = ["//visibility:private"],
 )
 
-py_and_py2(
+py2_py3(
     rule = py_library,
-    name = py_select(bazel = "lcm-python", py2 = "lcm-python2"),
+    alias = "lcm-python",
+    name = py_select(py2 = "lcm-python2", py3 = "lcm-python3"),
     deps = py_select(
         py2 = [":lcm-python2-upstream"],
         py3 = [":lcm-python3-upstream"],
@@ -318,21 +325,22 @@ install_files(
     strip_prefix = ["**/"],
 )
 
-py_and_py2(
+py2_py3(
     rule = install,
-    name = py_select(bazel = "install_python", py2 = "install_python2"),
+    alias = "install_python",
+    name = py_select(py2 = "install_python2", py3 = "install_python3"),
     targets = py_select(
         py2 = [
-            "_lcm_py2.so",
+            "_lcm.@PYTHON_EXT_SUFFIX@",
             "lcm-python2-upstream",
         ],
         py3 = [
-            "_lcm_py3.so",
+            "_lcm.@PYTHON_EXT_SUFFIX@",
             "lcm-python3-upstream",
         ],
     ),
     library_dest = "@PYTHON_SITE_PACKAGES@/lcm",
-    # Re-declare for `py_and_py2` to intercept.
+    # Re-declare for `py2_py3` to intercept.
     py_dest = "@PYTHON_SITE_PACKAGES@",
     py_strip_prefix = ["lcm-python"],
 )
@@ -369,6 +377,8 @@ install(
     deps = [
         ":install_cmake_config",
         ":install_extra_cmake",
+        # Using an alias permits us to duplicate the target here in case of
+        # Python2.
         ":install_python",
         ":install_python2",
     ],

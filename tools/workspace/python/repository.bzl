@@ -103,12 +103,25 @@ def _repository_python_info(repository_ctx):
         ).format(version, os_key, versions_supported))
 
     site_packages_relpath = "lib/python{}/site-packages".format(version)
+
+    # Get extension.
+    # `python-config` may not provide `--extension-suffix`, so we use raw
+    # Python.
+    # Strip the left '.' so that it's easier to see the boundary when using
+    # replacement tokens.
+    ext_suffix = execute_or_fail(
+        repository_ctx,
+        [python, "-c", "from sysconfig import get_config_var as get; " +
+                       "print(get('EXT_SUFFIX') or get('SO'))"],
+    ).stdout.strip().lstrip('.')
+
     return struct(
         python = python,
         python_config = python_config,
         site_packages_relpath = site_packages_relpath,
         version = version,
         version_major = version,
+        ext_suffix = ext_suffix,
         os = os_result,
     )
 
@@ -168,10 +181,12 @@ def _impl(repository_ctx):
 
 PYTHON_BIN_PATH = "{bin_path}"
 PYTHON_VERSION = "{version}"
+PYTHON_EXT_SUFFIX = "{ext_suffix}"
 PYTHON_SITE_PACKAGES_RELPATH = "{site_packages_relpath}"
 """.format(
         bin_path = py_info.python,
         version = py_info.version,
+        ext_suffix = py_info.ext_suffix,
         site_packages_relpath = py_info.site_packages_relpath,
     )
     repository_ctx.file(
