@@ -1,7 +1,14 @@
 import os
 import sys
 
+import six
+
 from drake.tools.lint.formatter import IncludeFormatter
+
+if six.PY3:
+    _open = open
+
+    def open(filename, mode="r"): return _open(filename, mode, encoding="utf8")
 
 
 def _check_invalid_line_endings(filename):
