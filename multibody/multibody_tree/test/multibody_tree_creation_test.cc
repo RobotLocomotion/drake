@@ -711,20 +711,19 @@ GTEST_TEST(WeldedBodies, CreateListOfWeldedBodies) {
   // Verify the computed list has the expected entries.
   EXPECT_EQ(welded_bodies_set, expected_welded_bodies);
 
-  EXPECT_TRUE(topology.IsBodyAnchored(model.world_body().index()));
-  EXPECT_FALSE(topology.IsBodyAnchored(body_b.index()));
-  EXPECT_FALSE(topology.IsBodyAnchored(body_c.index()));
-  EXPECT_FALSE(topology.IsBodyAnchored(body_d.index()));
-  EXPECT_FALSE(topology.IsBodyAnchored(body_e.index()));
-  EXPECT_FALSE(topology.IsBodyAnchored(body_f.index()));
-  EXPECT_FALSE(topology.IsBodyAnchored(body_g.index()));
-  EXPECT_FALSE(topology.IsBodyAnchored(body_h.index()));
-  EXPECT_FALSE(topology.IsBodyAnchored(body_i.index()));
-  EXPECT_FALSE(topology.IsBodyAnchored(body_j.index()));
-  EXPECT_FALSE(topology.IsBodyAnchored(body_k.index()));
-  EXPECT_TRUE(topology.IsBodyAnchored(body_l.index()));
-  EXPECT_TRUE(topology.IsBodyAnchored(body_m.index()));
-  EXPECT_TRUE(topology.IsBodyAnchored(body_n.index()));
+  // All bodies in welded_bodies[0] are, by definition, anchored to the world.
+  // We verify this with IsBodyAnchored().
+  for (size_t welded_body_index = 0;
+       welded_body_index < welded_bodies.size(); ++welded_body_index) {
+    const std::set<BodyIndex>& welded_body = welded_bodies[welded_body_index];
+    // All bodies in welded_bodies[0] are, by definition, anchored to the world.
+    // We verify this with IsBodyAnchored().
+    for (BodyIndex body_index : welded_body) {
+        EXPECT_EQ(
+            topology.IsBodyAnchored(body_index),
+            welded_body_index == 0 /* 'true' for anchored bodies. */);
+    }
+  }
 }
 
 }  // namespace

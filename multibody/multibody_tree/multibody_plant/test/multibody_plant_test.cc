@@ -2011,6 +2011,12 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
   EXPECT_EQ(Su_from_empty_actuators.cols(), 0);
 }
 
+// This unit test verifies the workings of
+// MBP::SetFreeBodyPoseInAnchoredFrame(). To that end we build a model
+// representative of a real setup consisting of a robot arm mounted on a robot
+// table, an objects table and a mug. This test defines an objects frame O with
+// its origin located a the -x, -y corner of the objects table. With this setup,
+// we test we can set the pose X_OM of the mug frame M in the objects frame O.
 GTEST_TEST(StateSelection, FloatingBodies) {
   const std::string iiwa_sdf_path = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/"
