@@ -17,7 +17,7 @@ load(
 )
 load("@drake//tools/lint:python_lint.bzl", "python_lint")
 load(
-    "@drake//tools/workspace/python:py_and_py2.bzl",
+    "@drake//tools/workspace/python:py2_py3.bzl",
     "py2_py3",
     "py_select",
 )
@@ -231,16 +231,16 @@ py2_py3(
 generate_file(
     name = "__init__.py",
     content = """
-import ctypes
-import os.path
-import sys
+from ctypes.dll import LoadLibrary
+from os.path import realpath
 from sysconfig import get_config_var
-import importlib
+
 import six
+
 _ext = get_config_var("EXT_SUFFIX") or get_config_var("SO")
-ctypes.cdll.LoadLibrary(
-    os.path.realpath(__path__[0] + '/_lcm' + _ext))
+LoadLibrary(realpath(__path__[0] + '/_lcm' + _ext))
 _filename = __path__[0] + \"/lcm-python/lcm/__init__.py\"
+
 if six.PY2:
     execfile(_filename)
 else:
@@ -377,8 +377,8 @@ install(
     deps = [
         ":install_cmake_config",
         ":install_extra_cmake",
-        # Using an alias permits us to duplicate the target here in case of
-        # Python2.
+        # Using an alias enables us to install correctly for both Python2 and
+        # Python3.
         ":install_python",
         ":install_python2",
     ],

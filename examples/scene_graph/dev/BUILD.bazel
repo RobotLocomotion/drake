@@ -40,7 +40,7 @@ drake_cc_binary(
         # different set of errors locally).
         "no_lsan",
         "no_memcheck",
-        "manual", # DO NOT MERGE THIS!!!!!!!Q!QQQ!!QQQQ!Q          
+        "manual",  # DO NOT MERGE THIS!!!!!!!Q!QQQ!!QQQQ!Q
     ],
     test_rule_args = [
         "--simulation_time=0.1",

@@ -7,5 +7,5 @@ from lcm import LCM
 
 class TestLcmPython2and3(unittest.TestCase):
     def test_python2(self):
-        # This explicitly checks Python2.
+        # Explicitly check Python2.
         check_call(["python2", "-c", "from lcm import LCM"])
