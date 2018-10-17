@@ -6,8 +6,14 @@ import subprocess
 import sys
 import unittest
 
+import six
+
 
 class TestStringMethods(unittest.TestCase):
+
+    if six.PY2:
+        assertRegex = unittest.TestCase.assertRegexpMatches
+
     def setUp(self):
         self.cpplint_wrapper_exe, self.valid_header_filename = sys.argv[1:]
         self.assertTrue(
@@ -21,16 +27,16 @@ class TestStringMethods(unittest.TestCase):
         try:
             output = subprocess.check_output(
                 [sys.executable, self.cpplint_wrapper_exe] + args,
-                stderr=subprocess.STDOUT)
+                stderr=subprocess.STDOUT).decode('utf8')
             returncode = 0
         except subprocess.CalledProcessError as e:
-            output = e.output
+            output = e.output.decode('utf8')
             returncode = e.returncode
         self.assertEqual(returncode, expected_exitcode,
                          "output was:\n" + output)
         if expected_regexps is not None:
             for item in expected_regexps:
-                self.assertRegexpMatches(output, item)
+                self.assertRegex(output, item)
 
     def test_help(self):
         self.run_and_expect(
