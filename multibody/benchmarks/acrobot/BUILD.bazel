@@ -25,6 +25,7 @@ drake_cc_library(
     deps = [
         "//common:autodiff",
         "//common:extract_double",
+        "//math:geometric_transform",
     ],
 )
 
