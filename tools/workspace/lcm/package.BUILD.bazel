@@ -16,6 +16,10 @@ load(
     "install_files",
 )
 load("@drake//tools/lint:python_lint.bzl", "python_lint")
+load(
+    "@drake//tools/workspace/python:py_and_maybe_py2.bzl",
+    "py_and_maybe_py2",
+)
 
 licenses([
     "notice",  # BSD-3-Clause
@@ -169,25 +173,30 @@ cc_binary(
     ],
 )
 
-cc_binary(
-    name = "_lcm.so",
-    srcs = [
-        "lcm-python/module.c",
-        "lcm-python/pyeventlog.c",
-        "lcm-python/pylcm.c",
-        "lcm-python/pylcm.h",
-        "lcm-python/pylcm_subscription.c",
-        "lcm-python/pylcm_subscription.h",
-        "lcm/dbg.h",
-    ],
-    copts = LCM_COPTS,
-    linkshared = 1,
-    linkstatic = 1,
-    visibility = ["//visibility:private"],
-    deps = [
-        ":lcm",
-        "@python",
-    ],
+py_and_maybe_py2(
+    rule = cc_binary,
+    kwargs_config = dict(
+        name = "_lcm_py{version_major}.so",
+        deps = [
+            ":lcm",
+            "@python{maybe_version_major}//:python",
+        ],
+    ),
+    kwargs = dict(
+        srcs = [
+            "lcm-python/module.c",
+            "lcm-python/pyeventlog.c",
+            "lcm-python/pylcm.c",
+            "lcm-python/pylcm.h",
+            "lcm-python/pylcm_subscription.c",
+            "lcm-python/pylcm_subscription.h",
+            "lcm/dbg.h",
+        ],
+        copts = LCM_COPTS,
+        linkshared = 1,
+        linkstatic = 1,
+        visibility = ["//visibility:private"],
+    ),
 )
 
 # Downstream users of lcm-python expect to say "import lcm".  However, in the
@@ -221,7 +230,8 @@ generate_file(
 import ctypes
 import os.path
 import six
-ctypes.cdll.LoadLibrary(os.path.realpath(__path__[0] + '/_lcm.so'))
+_lib = '_lcm_py{}.so'.format(sys.version_info.major)
+ctypes.cdll.LoadLibrary(os.path.realpath(__path__[0] + '/' + _lib))
 _filename = __path__[0] + \"/lcm-python/lcm/__init__.py\"
 if six.PY2:
     execfile(_filename)
@@ -233,17 +243,27 @@ else:
     visibility = ["//visibility:private"],
 )
 
-py_library(
-    name = "lcm-python-upstream",
-    srcs = ["lcm-python/lcm/__init__.py"],  # Actual code from upstream.
-    data = [":_lcm.so"],
-    visibility = ["//visibility:private"],
+py_and_maybe_py2(
+    rule = py_library,
+    kwargs_config = dict(
+        name = "lcm-python{maybe_version_major}-upstream",
+        data = [":_lcm{version_major}.so"],
+    ),
+    kwargs = dict(
+        srcs = ["lcm-python/lcm/__init__.py"],  # Actual code from upstream.
+        visibility = ["//visibility:private"],
+    ),
 )
 
-py_library(
-    name = "lcm-python",
-    srcs = ["__init__.py"],  # Shim, from the genrule above.
-    deps = [":lcm-python-upstream"],
+py_and_maybe_py2(
+    rule = py_library,
+    kwargs_config = dict(
+        name = "lcm-python{maybe_version_major}",
+        deps = [":lcm-python{maybe_version_major}-upstream"],
+    ),
+    kwargs = dict(
+        srcs = ["__init__.py"],  # Shim, from the genrule above.
+    ),
 )
 
 java_library(
@@ -298,14 +318,19 @@ install_files(
     strip_prefix = ["**/"],
 )
 
-install(
-    name = "install_python",
-    targets = [
-        ":_lcm.so",
-        ":lcm-python-upstream",
-    ],
-    library_dest = "@PYTHON_SITE_PACKAGES@/lcm",
-    py_strip_prefix = ["lcm-python"],
+py_and_maybe_py2(
+    rule = install,
+    kwargs_config = dict(
+        name = "install_python{maybe_version_major}",
+        targets = [
+            ":_lcm_py{version_major}.so",
+            ":lcm-python{maybe_version_major}-upstream",
+        ],
+        library_dest = "{site_packages}/lcm",
+    ),
+    kwargs = dict(
+        py_strip_prefix = ["lcm-python"],
+    ),
 )
 
 install(
@@ -341,6 +366,7 @@ install(
         ":install_cmake_config",
         ":install_extra_cmake",
         ":install_python",
+        ":install_python2",
     ],
 )
 

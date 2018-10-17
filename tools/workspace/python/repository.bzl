@@ -71,11 +71,17 @@ def _repository_python_info(repository_ctx):
         python_default = "python{}".format(version_supported_major)
     else:
         python_default = "python{}".format(versions_supported[0])
-    python_from_env = repository_ctx.os.environ.get(
-        "PYTHON_BIN_PATH",
-        python_default,
-    )
-    python = str(which(repository_ctx, python_from_env))
+
+    version_attr = repository_ctx.attr.version
+    if not version_attr:
+        python_from_env = repository_ctx.os.environ.get(
+            "PYTHON_BIN_PATH",
+            python_default,
+        )
+        python = str(which(repository_ctx, python_from_env))
+    else:
+        python = str(which(repository_ctx, "python{}".format(version_attr)))
+
     version = execute_or_fail(
         repository_ctx,
         [python, "-c", "from sys import version_info as v; print(\"{}.{}\"" +
@@ -232,6 +238,7 @@ py_library(
 
 python_repository = repository_rule(
     _impl,
+    attrs = {"version": attr.string(default = "")},
     environ = [
         "PYTHON_BIN_PATH",
     ],
