@@ -22,6 +22,11 @@ _PY2 = struct(
     site_packages = PYTHON2_SITE_PACKAGES_RELPATH,
 )
 
+# Cannot use `type(x) == str`, etc., but can infer from literals?
+_list = type([])
+_str = type("")
+_struct = type(struct())
+
 def py_select(**kwargs):
     return struct(**kwargs)
 
@@ -37,16 +42,18 @@ def py_and_py2(
     is unique.
     Otherwise, Python3 and Python2 targets will be defined.
 
+    For formatting:
+        `py_select(bazel=..., py2=...)` - Switch between Bazel Python and
+            Python2 (depending on build target being generated).
+        `py_select(py2=..., py3=...)` - Switch between Python 2 and Python 3
+            (regardless of build target being generated).
+    Strings can also have `@PYTHON_SITE_PACKAGES` be replaced with the correct
+    version.
+
     @param rule
         Starlark rule (e.g. `py_library`, `cc_binary`).
-    @param **kwargs
-        Arguments. You can specify `py_select` with the following options:
-            `py_select(bazel=.., py2=...)` - Value for
-
-    Strings and lists of strings in `kwargs`, `kwargs_py`, `kwargs_py2` can be
-    formatted by the following variables:
-        {py_major}: Python major version.
-        {py_site_packages}: Relpath for site-packages installation.
+    @param kwargs
+        Arguments (which can be formatted).
     """
     if _PY2.major != "2":
         fail("@python2 has the wrong major version: {}".format(_PY2))
@@ -73,22 +80,25 @@ def _format_str(value, build):
     return value.replace("@PYTHON_SITE_PACKAGES@", build.site_packages)
 
 def _format_scalar(value, build):
-    if type(value) == type(""):
+    if type(value) == _str:
         return _format_str(value, build)
-    elif type(value) == type(struct()):
+    elif type(value) == _struct:
         if hasattr(value, "bazel"):
             value = getattr(value, build.build_field)
         else:
             value = getattr(value, build.version_field)
-        return _format_str(value, build)
+        if type(value) == _str:
+            return _format_str(value, build)
+        else:
+            return [_format_str(x, build) for x in value]
 
 def _format(raw, build):
     out = dict()
     for key, value in raw.items():
         # N.B. `str` and `list` do not work in this comparison.
-        if type(value) in [type(""), type(struct())]:
+        if type(value) in [_str, _struct]:
             value = _format_scalar(value, build)
-        elif type(value) == type([]):
+        elif type(value) == _list:
             value = [_format_scalar(x, build) for x in value]
         out[key] = value
     return out
