@@ -1,12 +1,12 @@
 load(
     "@python//:version.bzl",
-    "PYTHON_VERSION",
     "PYTHON_SITE_PACKAGES_RELPATH",
+    "PYTHON_VERSION",
 )
 load(
     "@python2//:version.bzl",
-    PYTHON2_VERSION="PYTHON_VERSION",
-    PYTHON2_SITE_PACKAGES_RELPATH="PYTHON_SITE_PACKAGES_RELPATH",
+    PYTHON2_SITE_PACKAGES_RELPATH = "PYTHON_SITE_PACKAGES_RELPATH",
+    PYTHON2_VERSION = "PYTHON_VERSION",
 )
 
 _PY = dict(
@@ -66,14 +66,12 @@ def py_and_py2(
     if _PY["py_major"] != _PY2["py_major"]:
         # Duplicate the rule.
         if kwargs_py2["name"] == kwargs_py["name"]:
-            fail(("Python2 name '{}' should not match Bazel Python " + 
+            fail(("Python2 name '{}' should not match Bazel Python " +
                   "name '{}'").format(kwargs_py2["name"], kwargs_py["name"]))
         rule(**kwargs_py2)
-    else:
-        # Alias the rule if the names do not conflict.
-        if kwargs_py2["name"] != kwargs_py["name"]:
-            native.alias(
-                name = kwargs_py2["name"],
-                actual = kwargs_py["name"],
-                visibility = kwargs.get("visibility"),
-            )
+    elif kwargs_py2["name"] != kwargs_py["name"]:
+        native.alias(
+            name = kwargs_py2["name"],
+            actual = kwargs_py["name"],
+            visibility = kwargs_py2.get("visibility"),
+        )
