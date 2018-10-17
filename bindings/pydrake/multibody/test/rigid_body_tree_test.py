@@ -26,7 +26,7 @@ from pydrake.util.eigen_geometry import Isometry3
 if six.PY2:
     lmap = map
 else:
-    def lmap(x): return list(map(x))
+    def lmap(f, x): return list(map(f, x))
 
 
 class TestRigidBodyTree(unittest.TestCase):

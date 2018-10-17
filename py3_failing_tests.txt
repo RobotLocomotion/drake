@@ -6,3 +6,4 @@ bazel-test //bindings/pydrake/...
 Python2
 
 Python3
+

@@ -68,8 +68,6 @@ def _check_shebang(filename):
         return 1
     shebang_whitelist = {
         "bash": "#!/bin/bash",
-        "directorPython": "#!/usr/bin/env directorPython",
-        "python": "#!/usr/bin/env python",
         "python2": "#!/usr/bin/env python2",
         "python3": "#!/usr/bin/env python3",
     }

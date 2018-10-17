@@ -30,7 +30,7 @@ def install():
     os.makedirs(installation_folder)
     assert os.path.exists(installation_folder)
     # Install target and its dependencies in scratch space.
-    subprocess.check_call(["install", installation_folder])
+    subprocess.check_call([sys.executable, "install", installation_folder])
     # Change permissions to remove write access.
     for root, dirs, files in os.walk(installation_folder):
         for d in dirs:
