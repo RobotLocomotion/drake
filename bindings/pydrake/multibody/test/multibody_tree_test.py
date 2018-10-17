@@ -43,6 +43,7 @@ import copy
 import math
 import unittest
 
+from six import text_type as unicode
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
@@ -60,7 +61,7 @@ def get_index_class(cls):
         Joint: JointIndex,
         JointActuator: JointActuatorIndex,
     }
-    for key_cls, index_cls in class_to_index_class_map.iteritems():
+    for key_cls, index_cls in class_to_index_class_map.items():
         if issubclass(cls, key_cls):
             return index_cls
     raise RuntimeError("Unknown class: {}".format(cls))
@@ -388,7 +389,7 @@ class TestMultibodyTree(unittest.TestCase):
         num_joints = 2
         plant = MultibodyPlant()
         instances = []
-        for i in xrange(num_joints + 1):
+        for i in range(num_joints + 1):
             instance = AddModelFromSdfFile(
                 instance_file, "instance_{}".format(i), plant)
             instances.append(instance)

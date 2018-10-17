@@ -8,8 +8,10 @@ class Comparison(object):
         self.lhs = lhs
         self.rhs = rhs
 
-    def __nonzero__(self):
+    def __bool__(self):
         raise ValueError("Should not be called")
+
+    __nonzero__ = __bool__
 
 
 class Item(object):
@@ -67,7 +69,9 @@ class TestEqualToDict(unittest.TestCase):
         # `dict`-inheriting types which does not have any hooks for key
         # transformations.
         raw_attempt = dict(d)
-        self.assertFalse(isinstance(raw_attempt.keys()[0], Item))
+        keys = list(raw_attempt.keys())
+        self.assertFalse(isinstance(keys[0], Item))
         # - Calling `raw()` should provide the desired behavior.
         raw = d.raw()
-        self.assertTrue(isinstance(raw.keys()[0], Item))
+        keys = list(raw.keys())
+        self.assertTrue(isinstance(keys[0], Item))

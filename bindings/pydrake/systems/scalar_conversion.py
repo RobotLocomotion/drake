@@ -215,5 +215,6 @@ class TemplateSystem(TemplateClass):
 
             converter.Add[T, U](conversion)
 
-        map(add_captured, self._T_pairs)
+        for T_pair in self._T_pairs:
+            add_captured(T_pair)
         return converter

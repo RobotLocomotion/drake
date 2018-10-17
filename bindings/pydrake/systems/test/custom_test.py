@@ -39,7 +39,7 @@ class CustomAdder(LeafSystem):
     # Reimplements `Adder`.
     def __init__(self, num_inputs, size):
         LeafSystem.__init__(self)
-        for i in xrange(num_inputs):
+        for i in range(num_inputs):
             self._DeclareInputPort(kUseDefaultName, PortDataType.kVectorValued,
                                    size)
         self._DeclareVectorOutputPort("sum", BasicVector(size), self._calc_sum)
@@ -49,7 +49,7 @@ class CustomAdder(LeafSystem):
         # since they are not stored densely.
         sum = sum_data.get_mutable_value()
         sum[:] = 0
-        for i in xrange(context.get_num_input_ports()):
+        for i in range(context.get_num_input_ports()):
             input_vector = self.EvalVectorInput(context, i)
             sum += input_vector.get_value()
 
