@@ -319,6 +319,8 @@ class ContactInformation {
 
 std::ostream& operator<<(std::ostream& out, const ContactInformation& contact);
 
+// TODO(siyuan.feng): Expand this to be expressed in other frame.
+// TODO(siyuan.feng): Expand this to have policies (controllers).
 /**
  * A wrapper class specifying desired body motion (acceleration) for a rigid
  * body and their corresponding weights for the QP.
@@ -329,9 +331,6 @@ std::ostream& operator<<(std::ostream& out, const ContactInformation& contact);
  *
  * The desired acceleration can be skipped, enforced as equality constraints
  * or optimized as a cost term depending on the constraint type.
- *
- * TODO: (siyuan.feng) Expand this to be expressed in other frame.
- * TODO: (siyuan.feng) Expand this to have policies (controllers).
  */
 class DesiredBodyMotion : public ConstrainedValues {
  public:
@@ -377,14 +376,13 @@ class DesiredBodyMotion : public ConstrainedValues {
 
 std::ostream& operator<<(std::ostream& out, const DesiredBodyMotion& input);
 
+// TODO(siyuan.feng): Expand this to have policies (controllers).
 /**
  * A wrapper class specifying desired DoF (degree of freedom)
  * motions (acceleration) and their corresponding weights for the QP.
  *
  * The desired acceleration can be skipped, enforced as equality constraints
  * or optimized as a cost term depending on the constraint type.
- *
- * TODO: (siyuan.feng) Expand this to have policies (controllers).
  */
 class DesiredDofMotions : public ConstrainedValues {
  public:
@@ -420,6 +418,7 @@ class DesiredDofMotions : public ConstrainedValues {
 
 std::ostream& operator<<(std::ostream& out, const DesiredDofMotions& input);
 
+// TODO(siyuan.feng): Expand this to have policies (controllers).
 /**
  * A wrapper class specifying desired centroidal momentum change and their
  * corresponding weights for the QP.
@@ -430,8 +429,6 @@ std::ostream& operator<<(std::ostream& out, const DesiredDofMotions& input);
  * The desired centroidal momentum change can be skipped, enforced as
  * equality constraints or optimized as a cost term depending on the
  * constraint type.
- *
- * TODO: (siyuan.feng) Expand this to have policies (controllers).
  */
 class DesiredCentroidalMomentumDot : public ConstrainedValues {
  public:

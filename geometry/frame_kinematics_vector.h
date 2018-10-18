@@ -63,7 +63,8 @@ struct KinematicsValueInitializer<Isometry3<S>> {
  is consumed by SceneGraph.
 
  <!--
-   TODO: The FrameVelocityVector and FrameAccelerationVector are still to come.
+   TODO(SeanCurtis-TRI): The FrameVelocityVector and FrameAccelerationVector
+   are still to come.
   -->
 
  The usage of this method would be in the allocation and calculation

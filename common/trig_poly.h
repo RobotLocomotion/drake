@@ -40,7 +40,8 @@
  *
  * NOTE:  Certain analyses may not succeed when individual Monomials contain
  * both x and sin(x) or cos(x) terms.  This restriction is not currently
- * enforced programmatically; TODO(ggould-tri) fix this in the future.
+ * enforced programmatically.
+ * <!-- TODO(ggould-tri): Fix this in the future. -->
  */
 template <typename _CoefficientType = double>
 class TrigPoly final {

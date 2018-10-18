@@ -41,7 +41,7 @@ namespace common {
 
 /// Serialize our favorite data types into the matlab_array structure.
 /// To support a calling call_matlab for a new data type, simply implement
-///  another one of these methods.
+/// another one of these methods.
 
 class MatlabRemoteVariable;
 

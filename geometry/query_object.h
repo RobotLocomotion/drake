@@ -150,6 +150,9 @@ class QueryObject {
 
   //@{
 
+  // TODO(hongkai.dai): add a distance bound as an optional input, such that the
+  // function doesn't return the pairs whose signed distance is larger than the
+  // distance bound.
   /**
    * Computes the signed distance together with the nearest points across all
    * pairs of geometries in the world. Reports both the separating geometries
@@ -159,9 +162,6 @@ class QueryObject {
    * and anchored objects. We DO NOT report the distance between two anchored
    * objects.
    * @retval near_pairs The signed distance for all unfiltered geometry pairs.
-   * TODO(hongkai.dai): add a distance bound as an optional input, such that the
-   * function doesn't return the pairs whose signed distance is larger than the
-   * distance bound.
    */
   std::vector<SignedDistancePair<double>>
   ComputeSignedDistancePairwiseClosestPoints() const;

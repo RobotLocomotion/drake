@@ -93,7 +93,6 @@ namespace sensors {
 /// @see DepthSensorOutput
 /// @see DepthSensorSpecification
 ///
-
 class DepthSensor : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DepthSensor)

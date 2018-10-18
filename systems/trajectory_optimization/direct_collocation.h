@@ -75,7 +75,6 @@ class DirectCollocation : public MultipleShooting {
 /// Note that the DirectCollocation implementation allocates only ONE of
 /// these constraints, but binds that constraint multiple times (with
 /// different decision variables, along the trajectory).
-
 class DirectCollocationConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectCollocationConstraint)

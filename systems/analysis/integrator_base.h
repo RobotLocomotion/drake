@@ -1318,13 +1318,12 @@ class IntegratorBase {
    */
   virtual void DoReset() {}
 
+  // TODO(hidmic): Make pure virtual and override on each subclass, as
+  // the 'optimal' dense output scheme is only known by the specific
+  // integration scheme being implemented.
   /**
    * Derived classes can override this method to provide a continuous
    * extension of their own when StartDenseIntegration() is called.
-   *
-   * TODO(hidmic): Make pure virtual and override on each subclass, as
-   * the 'optimal' dense output scheme is only known by the specific
-   * integration scheme being implemented.
    */
   virtual
   std::unique_ptr<StepwiseDenseOutput<T>> DoStartDenseIntegration() {
@@ -1362,6 +1361,9 @@ class IntegratorBase {
    */
   virtual bool DoStep(const T& dt) = 0;
 
+  // TODO(hidmic): Make pure virtual and override on each subclass, as
+  // the 'optimal' dense output scheme is only known by the specific
+  // integration scheme being implemented.
   /**
    * Derived classes may implement this method to (1) integrate the continuous
    * portion of this system forward by a single step of size @p dt, (2) set the
@@ -1373,10 +1375,6 @@ class IntegratorBase {
    *           unable to take a single step of size @p dt or to advance
    *           its dense output an equal step.
    * @sa DoStep()
-   *
-   * TODO(hidmic): Make pure virtual and override on each subclass, as
-   * the 'optimal' dense output scheme is only known by the specific
-   * integration scheme being implemented.
    */
   virtual bool DoDenseStep(const T& dt) {
     const ContinuousState<T>& state = context_->get_continuous_state();

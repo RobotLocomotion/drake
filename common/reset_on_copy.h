@@ -5,6 +5,15 @@
 
 namespace drake {
 
+// NOTE(sherm1) to future implementers: if you decide to extend this adapter for
+// use with class types, be sure to think carefully about the semantics of copy
+// and move and how to explain that to users. Be aware that for class types T,
+// the implementation of `T{}` (the default constructor, which may have been
+// user-supplied) won't necessarily reset T's members to zero, nor even
+// necessarily value-initialize T's members. Also, the "noexcept" reasoning
+// below is more than we need with the std::is_scalar<T> restriction, but is
+// strictly necessary for class types if you want std::vector to choose move
+// construction (content-preserving) over copy construction (resetting).
 /// Type wrapper that performs value-initialization on copy construction or
 /// assignment.
 ///
@@ -67,16 +76,6 @@ namespace drake {
 ///
 /// @tparam T must satisfy `std::is_scalar<T>`.
 /// @see reset_after_move
-
-// NOTE(sherm1) to future implementers: if you decide to extend this adapter for
-// use with class types, be sure to think carefully about the semantics of copy
-// and move and how to explain that to users. Be aware that for class types T,
-// the implementation of `T{}` (the default constructor, which may have been
-// user-supplied) won't necessarily reset T's members to zero, nor even
-// necessarily value-initialize T's members. Also, the "noexcept" reasoning
-// below is more than we need with the std::is_scalar<T> restriction, but is
-// strictly necessary for class types if you want std::vector to choose move
-// construction (content-preserving) over copy construction (resetting).
 template <typename T>
 class reset_on_copy {
  public:

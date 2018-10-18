@@ -32,7 +32,6 @@ using VectorIndeterminate = MatrixIndeterminate<rows, 1>;
  * Eigen::Matrix<symbolic::Variable, Eigen::Dynamic, Eigen::Dynamic>.
  * @see MatrixIndeterminate<int, int>
  */
-
 using MatrixXIndeterminate =
     MatrixIndeterminate<Eigen::Dynamic, Eigen::Dynamic>;
 

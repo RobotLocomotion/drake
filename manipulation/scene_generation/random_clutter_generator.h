@@ -24,19 +24,18 @@ namespace scene_generation {
  *
  * NOTES:
  * 1. Current version only ensures bounded clutter for the case of all model
- * instances on the tree containing the QuaternionFloatingJoint.
+ *    instances on the tree containing the QuaternionFloatingJoint.
  * 2. The current version has only been tested with SNOPT.
  * 3. The solvability of the problem is strongly dependent on the dimensions
- * of the clutter bounding volume as specified in clutter_size and the number
- * and geometry of the clutter model instances that are to be dealt with. There
- * is no explicit time-out on the execution and the GenerateFloatingClutter
- * will keep attempting to find a solution, if any.
+ *    of the clutter bounding volume as specified in clutter_size and the
+ *    number and geometry of the clutter model instances that are to be dealt
+ *    with. There is no explicit time-out on the execution and the
+ *    GenerateFloatingClutter will keep attempting to find a solution, if any.
  * 4. There are no explicit guarantees on the solvability.
  * 5. The underlying IK computations utilize the bullet collision library and
- * as such only process the convex-hull of the geometry. The resulting IK
- * solution will be subject to this simplification.
+ *    as such only process the convex-hull of the geometry. The resulting IK
+ *    solution will be subject to this simplification.
  */
-
 class RandomClutterGenerator {
  public:
   /**
