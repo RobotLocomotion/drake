@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":schunk_wsg_controller",
         ":schunk_wsg_lcm",
         ":schunk_wsg_plain_controller",
+        ":schunk_wsg_position_controller",
         ":schunk_wsg_trajectory_generator_state_vector",
     ],
 )
@@ -70,6 +71,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "schunk_wsg_position_controller",
+    srcs = ["schunk_wsg_position_controller.cc"],
+    hdrs = ["schunk_wsg_position_controller.h"],
+    deps = [
+        "//math:saturate",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
     name = "schunk_wsg_controller",
     srcs = ["schunk_wsg_controller.cc"],
     hdrs = ["schunk_wsg_controller.h"],
@@ -104,6 +115,20 @@ drake_cc_googletest(
     deps = [
         ":schunk_wsg_constants",
         ":schunk_wsg_controller",
+        "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "schunk_wsg_position_controller_test",
+    data = [
+        "//manipulation/models/wsg_50_description:models",
+    ],
+    deps = [
+        ":schunk_wsg_position_controller",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
         "//systems/analysis:simulator",
     ],
 )
