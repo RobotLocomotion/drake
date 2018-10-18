@@ -161,6 +161,10 @@ class WitnessTriggeredEventData : public EventData {
  * Currently, the System framework only supports three concrete event types:
  * PublishEvent, DiscreteUpdateEvent, and UnrestrictedUpdateEvent distinguished
  * by their callback functions' access level to the context.
+ *
+ * Event handling occurs during a simulation of a system. The logic that
+ * describes when particular event types are handled is described in the
+ * class documentation for Simulator.
  */
 template <typename T>
 class Event {
