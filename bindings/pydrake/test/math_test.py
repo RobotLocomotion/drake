@@ -100,7 +100,9 @@ class TestMath(unittest.TestCase):
         check_equality(mut.RigidTransform(), X_I)
         R_I = mut.RotationMatrix()
         p_I = np.zeros(3)
+        rpy_I = mut.RollPitchYaw(0, 0, 0)
         check_equality(mut.RigidTransform(R=R_I, p=p_I), X_I)
+        check_equality(mut.RigidTransform(rpy=rpy_I, p=p_I), X_I)
         check_equality(mut.RigidTransform(R=R_I), X_I)
         check_equality(mut.RigidTransform(p=p_I), X_I)
         # - Accessors, mutators, and general methods.
