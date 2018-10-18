@@ -36,7 +36,6 @@ constexpr char kDepthVS[] =
 /// The reason is that we need to set one to alpha channel so that the rendered
 /// "image" will be opaque. Otherwise, we will have different colors from what
 /// we output here, thus expect, in the end.
-
 constexpr char kDepthFS[] =
     "//VTK::System::Dec\n"  // Always start with this line.
     "//VTK::Output::Dec\n"  // Always have this line in your FS.

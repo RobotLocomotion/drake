@@ -86,8 +86,10 @@ class KinematicsCache {
   bool inertias_cached;
 
  public:
-  /// Preallocated scratch pad variables. These variables are used to prevent
-  /// dynamic memory allocation during runtime.
+  /// @name Preallocated scratch pad variables.
+  /// These variables are used to prevent dynamic memory allocation during
+  /// runtime.
+  /// @{
 
   /// Preallocated variables used in GeometricJacobian. Preallocated as the size
   /// of the path is dependent on the base body/frame and end effector
@@ -111,6 +113,8 @@ class KinematicsCache {
   };
   mutable DataInCalcFrameSpatialVelocityJacobianInWorldFrame
     spatial_velocity_jacobian_temp;
+
+  /// @}
 
   /// Constructor for a KinematicsCache given the number of positions and
   /// velocities per body in the vectors @p num_joint_positions and

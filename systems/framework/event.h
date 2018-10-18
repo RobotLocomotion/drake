@@ -240,7 +240,6 @@ class Event {
   /**
    * An object passed
    */
-
   virtual ~Event() {}
 
   /**

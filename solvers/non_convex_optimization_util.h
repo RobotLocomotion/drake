@@ -10,6 +10,8 @@
 
 namespace drake {
 namespace solvers {
+// TODO(hongkai.dai): templatize this function, to avoid dynamic memory
+// allocation.
 /**
  * For a non-convex homogeneous quadratic form xᵀQx, where Q is not necessarily
  * a positive semidefinite matrix, we decompose it as a difference between two
@@ -37,8 +39,6 @@ namespace solvers {
  * @param Q A square matrix.
  * @throws std::runtime_error if Q is not square.
  * @return The optimal decomposition (Q₁, Q₂)
- * TODO(hongkai.dai): templatize this function, to avoid dynamic memory
- * allocation.
  */
 std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
     const Eigen::Ref<const Eigen::MatrixXd>& Q);
