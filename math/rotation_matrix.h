@@ -159,6 +159,17 @@ class RotationMatrix {
     R_AB_.row(2) << Rzx, Rzy, Rzz;
   }
 
+  /// Constructs a %RotationMatrix `R` from three right-handed orthogonal unit
+  /// vectors, `x`, `y`, `z` so that the columns of `R` are `[x, y, z]`.
+  /// @param[in] x first unit vector in right-handed orthogonal set.
+  /// @param[in] y second unit vector in right-handed orthogonal set.
+  /// @param[in] z third unit vector in right-handed orthogonal set.
+  /// @throws std::logic_error in debug builds if R fails IsValid(R).
+  RotationMatrix(const Vector3<T>& x, const Vector3<T>& y, const Vector3<T>& z)
+      : R_AB_() {
+    set_columns(x, y, z);
+  }
+
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
   /// relative to a frame A by an angle `theta` about unit vector `Ax = Bx`.
   /// @param[in] theta radian measure of rotation angle about Ax.
@@ -259,6 +270,21 @@ class RotationMatrix {
   void set(const Matrix3<T>& R) {
     DRAKE_ASSERT_VOID(ThrowIfNotValid(R));
     SetUnchecked(R);
+  }
+
+  /// Sets `this` %RotationMatrix from three right-handed orthogonal unit
+  /// vectors, `x`, `y`, `z` that represent a 3x3 matrix `R = [x, y, z]`.
+  /// @param[in] x first unit vector in right-handed orthogonal set.
+  /// @param[in] y second unit vector in right-handed orthogonal set.
+  /// @param[in] z third unit vector in right-handed orthogonal set.
+  /// @throws std::logic_error in debug builds if R fails IsValid(R).
+  void set_columns(const Vector3<T>& x, const Vector3<T>& y,
+                   const Vector3<T>& z) {
+    Matrix3<T> R;
+    R.col(0) = x;
+    R.col(1) = y;
+    R.col(2) = z;
+    set(R);
   }
 
   /// Returns the 3x3 identity %RotationMatrix.

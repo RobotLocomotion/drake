@@ -74,6 +74,30 @@ GTEST_TEST(RotationMatrix, RotationMatrixConstructor) {
 #endif
 }
 
+// Test constructing or setting a RotationMatrix from three unit vectors.
+GTEST_TEST(RotationMatrix, RotationMatrixFrom3UnitVectors) {
+  const double cos_theta = std::cos(0.5);
+  const double sin_theta = std::sin(0.5);
+
+  const Vector3d x_unit_vector(1, 0, 0);
+  const Vector3d y_unit_vector(0, cos_theta, -sin_theta);
+  const Vector3d z_unit_vector(0, sin_theta,  cos_theta);
+  Matrix3d m_column;
+  m_column.col(0) = x_unit_vector;
+  m_column.col(1) = y_unit_vector;
+  m_column.col(2) = z_unit_vector;
+
+  // Test constructing a RotationMatrix from three unit vectors.
+  const RotationMatrix<double> R1(x_unit_vector, y_unit_vector, z_unit_vector);
+  Matrix3d zero_matrix = m_column - R1.matrix();
+  EXPECT_TRUE((zero_matrix.array() == 0).all());
+
+  // Test setting a RotationMatrix from three unit vectors.
+  RotationMatrix<double> R2;
+  R2.set_columns(x_unit_vector, y_unit_vector, z_unit_vector);
+  EXPECT_TRUE(R2.IsExactlyEqualTo(R1));
+}
+
 // Test setting a RotationMatrix from a Matrix3.
 GTEST_TEST(RotationMatrix, SetRotationMatrix) {
   const double cos_theta = std::cos(0.5);
