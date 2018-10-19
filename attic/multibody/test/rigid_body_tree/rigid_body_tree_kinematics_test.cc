@@ -140,7 +140,7 @@ class AcrobotTests : public ::testing::Test {
         robot_->CalcFramePoseInWorldFrame(*cache_, *link1_com_);
     math::RigidTransform<double> X_WL1cm_exact =
         acrobot_benchmark_.CalcLink1PoseInWorldFrame(theta1_rad);
-    constexpr double tolerance = Eigen::NumTraits<double>::epsilon();
+    const double tolerance = Eigen::NumTraits<double>::epsilon();
     EXPECT_TRUE(
         X_WL1cm.matrix().isApprox(X_WL1cm_exact.GetAsMatrix4(), tolerance));
     Isometry3<double> X_WL2cm =
