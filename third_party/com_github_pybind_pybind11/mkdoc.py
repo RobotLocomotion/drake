@@ -387,15 +387,20 @@ def process_comment(comment):
             result += x.strip()
         else:
             for y in re.split(r'(?: *\n *){2,}', x):
-                wrapped = wrapper.fill(re.sub(r'\s+', ' ', y).strip())
-                if len(wrapped) > 0 and wrapped[0] == '$':
-                    result += wrapped[1:] + '\n'
-                    wrapper.initial_indent = \
-                        wrapper.subsequent_indent = ' ' * 4
+                lines = re.split(r'(?: *\n *)', y)
+                # Do not re-flow lists.
+                if re.match('^(?:[*+\-]|[0-9]+[.)]) ', lines[0]):
+                    result += y + '\n\n'
                 else:
-                    if len(wrapped) > 0:
-                        result += wrapped + '\n\n'
-                    wrapper.initial_indent = wrapper.subsequent_indent = ''
+                    wrapped = wrapper.fill(re.sub(r'\s+', ' ', y).strip())
+                    if len(wrapped) > 0 and wrapped[0] == '$':
+                        result += wrapped[1:] + '\n'
+                        wrapper.initial_indent = \
+                            wrapper.subsequent_indent = ' ' * 4
+                    else:
+                        if len(wrapped) > 0:
+                            result += wrapped + '\n\n'
+                        wrapper.initial_indent = wrapper.subsequent_indent = ''
     return result.rstrip().lstrip('\n')
 
 
