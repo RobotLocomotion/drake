@@ -46,7 +46,9 @@ RECURSE_LIST = [
 PRINT_LIST = CLASS_KINDS + FUNCTION_KINDS + [
     CursorKind.ENUM_DECL,
     CursorKind.ENUM_CONSTANT_DECL,
-    CursorKind.FIELD_DECL
+    CursorKind.FIELD_DECL,
+    CursorKind.TYPE_ALIAS_DECL,  # using x = y
+    CursorKind.TYPEDEF_DECL
 ]
 
 CPP_OPERATORS = {
