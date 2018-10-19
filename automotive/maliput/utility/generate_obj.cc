@@ -465,9 +465,9 @@ void RenderSegment(const api::Segment* segment,
                        base_grid_unit,
                        true /*use_driveable_bounds*/,
                        [](double, double) { return 0.; });
-    if (features.simplify_mesh_faces) {
+    if (features.simplify_mesh_threshold != 0.) {
       asphalt_mesh->AddFacesFrom(SimplifyMeshFaces(
-          driveable_mesh, base_grid_unit / 50.));
+          driveable_mesh, features.simplify_mesh_threshold));
     } else {
       asphalt_mesh->AddFacesFrom(driveable_mesh);
     }
@@ -489,11 +489,11 @@ void RenderSegment(const api::Segment* segment,
         true /*use_driveable_bounds*/,
         [&segment](double s, double r) {
           return segment->lane(0)->elevation_bounds(s, r).min(); });
-    if (features.simplify_mesh_faces) {
+    if (features.simplify_mesh_threshold != 0.) {
       h_bounds_mesh->AddFacesFrom(SimplifyMeshFaces(
-          upper_h_bounds_mesh, base_grid_unit / 50.));
+          upper_h_bounds_mesh, features.simplify_mesh_threshold));
       h_bounds_mesh->AddFacesFrom(SimplifyMeshFaces(
-          lower_h_bounds_mesh, base_grid_unit / 50.));
+          lower_h_bounds_mesh, features.simplify_mesh_threshold));
     } else {
       h_bounds_mesh->AddFacesFrom(upper_h_bounds_mesh);
       h_bounds_mesh->AddFacesFrom(lower_h_bounds_mesh);
@@ -511,9 +511,9 @@ void RenderSegment(const api::Segment* segment,
                          [&features](double, double) {
                            return features.lane_haze_elevation;
                          });
-      if (features.simplify_mesh_faces) {
+      if (features.simplify_mesh_threshold != 0.) {
         lane_mesh->AddFacesFrom(SimplifyMeshFaces(
-            haze_mesh, grid_unit / 50.));
+            haze_mesh, features.simplify_mesh_threshold));
       } else {
         lane_mesh->AddFacesFrom(haze_mesh);
       }
@@ -523,9 +523,9 @@ void RenderSegment(const api::Segment* segment,
       StripeLaneBounds(&stripes_mesh, lane, grid_unit,
                        features.stripe_elevation,
                        features.stripe_width);
-      if (features.simplify_mesh_faces) {
+      if (features.simplify_mesh_threshold != 0.) {
         marker_mesh->AddFacesFrom(SimplifyMeshFaces(
-            stripes_mesh, grid_unit / 50.));
+            stripes_mesh, features.simplify_mesh_threshold));
       } else {
         marker_mesh->AddFacesFrom(stripes_mesh);
       }
@@ -534,9 +534,9 @@ void RenderSegment(const api::Segment* segment,
       GeoMesh arrows_mesh;
       MarkLaneEnds(&arrows_mesh, lane, grid_unit,
                    features.arrow_elevation);
-      if (features.simplify_mesh_faces) {
+      if (features.simplify_mesh_threshold != 0.) {
         marker_mesh->AddFacesFrom(SimplifyMeshFaces(
-            arrows_mesh, grid_unit / 50.));
+            arrows_mesh, features.simplify_mesh_threshold));
       } else {
         marker_mesh->AddFacesFrom(arrows_mesh);
       }
