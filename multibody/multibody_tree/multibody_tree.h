@@ -89,10 +89,10 @@ class MultibodyTree {
   ///
   /// Example of usage:
   /// @code
-  ///   MultibodyTree<T> model;
-  ///   // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
-  ///   const RigidBody<T>& body =
-  ///       model.AddBody(std::make_unique<RigidBody<T>>(spatial_inertia));
+  /// MultibodyTree<T> model;
+  /// // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
+  /// const RigidBody<T>& body =
+  ///     model.AddBody(std::make_unique<RigidBody<T>>(spatial_inertia));
   /// @endcode
   ///
   /// @throws std::logic_error if `body` is a nullptr.
@@ -154,18 +154,18 @@ class MultibodyTree {
   ///
   /// Example of usage:
   /// @code
-  ///   MultibodyTree<T> model;
-  ///   // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
-  ///   // Notice RigidBody is a template on a scalar type.
-  ///   const RigidBody<T>& body = model.AddBody<RigidBody>(spatial_inertia);
+  /// MultibodyTree<T> model;
+  /// // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
+  /// // Notice RigidBody is a template on a scalar type.
+  /// const RigidBody<T>& body = model.AddBody<RigidBody>(spatial_inertia);
   /// @endcode
   ///
   /// Note that for dependent names you must use the template keyword (say for
   /// instance you have a MultibodyTree<T> member within your custom class):
   ///
   /// @code
-  ///   MultibodyTree<T> model;
-  ///   auto body = model.template AddBody<RigidBody>(Args...);
+  /// MultibodyTree<T> model;
+  /// auto body = model.template AddBody<RigidBody>(Args...);
   /// @endcode
   ///
   /// @throws std::logic_error if Finalize() was already called on `this` tree.
@@ -193,11 +193,11 @@ class MultibodyTree {
   ///
   /// Example of usage:
   /// @code
-  ///   MultibodyTree<T> model;
-  ///   // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
-  ///   ModelInstanceIndex model_instance = model.AddModelInstance("instance");
-  ///   const RigidBody<T>& body =
-  ///     model.AddRigidBody("BodyName", model_instance, spatial_inertia);
+  /// MultibodyTree<T> model;
+  /// // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
+  /// ModelInstanceIndex model_instance = model.AddModelInstance("instance");
+  /// const RigidBody<T>& body =
+  ///   model.AddRigidBody("BodyName", model_instance, spatial_inertia);
   /// @endcode
   ///
   /// @param[in] name
@@ -241,10 +241,10 @@ class MultibodyTree {
   ///
   /// Example of usage:
   /// @code
-  ///   MultibodyTree<T> model;
-  ///   // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
-  ///   const RigidBody<T>& body =
-  ///     model.AddRigidBody("BodyName", spatial_inertia);
+  /// MultibodyTree<T> model;
+  /// // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
+  /// const RigidBody<T>& body =
+  ///   model.AddRigidBody("BodyName", spatial_inertia);
   /// @endcode
   ///
   /// @param[in] name
@@ -278,10 +278,10 @@ class MultibodyTree {
   ///
   /// Example of usage:
   /// @code
-  ///   MultibodyTree<T> model;
-  ///   // ... Define body and X_BF ...
-  ///   const FixedOffsetFrame<T>& frame =
-  ///       model.AddFrame(std::make_unique<FixedOffsetFrame<T>>(body, X_BF));
+  /// MultibodyTree<T> model;
+  /// // ... Define body and X_BF ...
+  /// const FixedOffsetFrame<T>& frame =
+  ///     model.AddFrame(std::make_unique<FixedOffsetFrame<T>>(body, X_BF));
   /// @endcode
   ///
   /// @throws std::logic_error if `frame` is a nullptr.
@@ -331,21 +331,21 @@ class MultibodyTree {
   ///
   /// Example of usage:
   /// @code
-  ///   MultibodyTree<T> model;
-  ///   // ... Define body and X_BF ...
-  ///   // Notice FixedOffsetFrame is a template an a scalar type.
-  ///   const FixedOffsetFrame<T>& frame =
-  ///       model.AddFrame<FixedOffsetFrame>(body, X_BF);
+  /// MultibodyTree<T> model;
+  /// // ... Define body and X_BF ...
+  /// // Notice FixedOffsetFrame is a template an a scalar type.
+  /// const FixedOffsetFrame<T>& frame =
+  ///     model.AddFrame<FixedOffsetFrame>(body, X_BF);
   /// @endcode
   ///
   /// Note that for dependent names you must use the template keyword (say for
   /// instance you have a MultibodyTree<T> member within your custom class):
   ///
   /// @code
-  ///   MultibodyTree<T> model;
-  ///   // ... Define body and X_BF ...
-  ///   const auto& frame =
-  ///       model.template AddFrame<FixedOffsetFrame>(body, X_BF);
+  /// MultibodyTree<T> model;
+  /// // ... Define body and X_BF ...
+  /// const auto& frame =
+  ///     model.template AddFrame<FixedOffsetFrame>(body, X_BF);
   /// @endcode
   ///
   /// @throws std::logic_error if Finalize() was already called on `this` tree.
@@ -374,13 +374,13 @@ class MultibodyTree {
   ///
   /// Example of usage:
   /// @code
-  ///   MultibodyTree<T> model;
-  ///   // ... Code to define inboard and outboard frames by calling
-  ///   // MultibodyTree::AddFrame() ...
-  ///   const RevoluteMobilizer<T>& pin =
-  ///     model.AddMobilizer(std::make_unique<RevoluteMobilizer<T>>(
-  ///       inboard_frame, outboard_frame,
-  ///       Vector3d::UnitZ() /*revolute axis*/));
+  /// MultibodyTree<T> model;
+  /// // ... Code to define inboard and outboard frames by calling
+  /// // MultibodyTree::AddFrame() ...
+  /// const RevoluteMobilizer<T>& pin =
+  ///   model.AddMobilizer(std::make_unique<RevoluteMobilizer<T>>(
+  ///     inboard_frame, outboard_frame,
+  ///     Vector3d::UnitZ() /*revolute axis*/));
   /// @endcode
   ///
   /// A %Mobilizer effectively connects the two bodies to which the inboard and
@@ -461,14 +461,14 @@ class MultibodyTree {
   ///
   /// Example of usage:
   /// @code
-  ///   MultibodyTree<T> model;
-  ///   // ... Code to define inboard and outboard frames by calling
-  ///   // MultibodyTree::AddFrame() ...
-  ///   // Notice RevoluteMobilizer is a template an a scalar type.
-  ///   const RevoluteMobilizer<T>& pin =
-  ///     model.template AddMobilizer<RevoluteMobilizer>(
-  ///       inboard_frame, outboard_frame,
-  ///       Vector3d::UnitZ() /*revolute axis*/);
+  /// MultibodyTree<T> model;
+  /// // ... Code to define inboard and outboard frames by calling
+  /// // MultibodyTree::AddFrame() ...
+  /// // Notice RevoluteMobilizer is a template an a scalar type.
+  /// const RevoluteMobilizer<T>& pin =
+  ///   model.template AddMobilizer<RevoluteMobilizer>(
+  ///     inboard_frame, outboard_frame,
+  ///     Vector3d::UnitZ() /*revolute axis*/);
   /// @endcode
   ///
   /// Note that for dependent names _only_ you must use the template keyword
@@ -674,21 +674,21 @@ class MultibodyTree {
   ///
   /// Example of usage:
   /// @code
-  ///   MultibodyTree<T> model;
-  ///   // ... Code to define a parent body P and a child body B.
-  ///   const Body<double>& parent_body =
-  ///     model.AddBody<RigidBody>(SpatialInertia<double>(...));
-  ///   const Body<double>& child_body =
-  ///     model.AddBody<RigidBody>(SpatialInertia<double>(...));
-  ///   // Define the pose X_BM of a frame M rigidly atached to child body B.
-  ///   const RevoluteJoint<double>& elbow =
-  ///     model.AddJoint<RevoluteJoint>(
-  ///       "Elbow",                /* joint name */
-  ///       model.world_body(),     /* parent body */
-  ///       {},                     /* frame F IS the parent body frame P */
-  ///       pendulum,               /* child body, the pendulum */
-  ///       X_BM,                   /* pose of frame M in the body frame B */
-  ///       Vector3d::UnitZ());     /* revolute axis in this case */
+  /// MultibodyTree<T> model;
+  /// // ... Code to define a parent body P and a child body B.
+  /// const Body<double>& parent_body =
+  ///   model.AddBody<RigidBody>(SpatialInertia<double>(...));
+  /// const Body<double>& child_body =
+  ///   model.AddBody<RigidBody>(SpatialInertia<double>(...));
+  /// // Define the pose X_BM of a frame M rigidly atached to child body B.
+  /// const RevoluteJoint<double>& elbow =
+  ///   model.AddJoint<RevoluteJoint>(
+  ///     "Elbow",                /* joint name */
+  ///     model.world_body(),     /* parent body */
+  ///     {},                     /* frame F IS the parent body frame P */
+  ///     pendulum,               /* child body, the pendulum */
+  ///     X_BM,                   /* pose of frame M in the body frame B */
+  ///     Vector3d::UnitZ());     /* revolute axis in this case */
   /// @endcode
   ///
   /// @throws std::exception if `this` model already contains a joint with the
@@ -2484,18 +2484,18 @@ class MultibodyTree {
   ///
   /// Consider the following code example:
   /// @code
-  ///   // The user creates a model.
-  ///   MultibodyTree<double> model;
-  ///   // User adds a body and keeps a reference to it.
-  ///   const RigidBody<double>& body = model.AddBody<RigidBody>(...);
-  ///   // User creates an AutoDiffXd variant. Variants on other scalar types
-  ///   // can be created with a call to CloneToScalar().
-  ///   std::unique_ptr<MultibodyTree<Tvariant>> variant_model =
-  ///       model.ToAutoDiffXd();
-  ///   // User retrieves the AutoDiffXd variant corresponding to the original
-  ///   // body added above.
-  ///   const RigidBody<AutoDiffXd>&
-  ///       variant_body = variant_model.get_variant(body);
+  /// // The user creates a model.
+  /// MultibodyTree<double> model;
+  /// // User adds a body and keeps a reference to it.
+  /// const RigidBody<double>& body = model.AddBody<RigidBody>(...);
+  /// // User creates an AutoDiffXd variant. Variants on other scalar types
+  /// // can be created with a call to CloneToScalar().
+  /// std::unique_ptr<MultibodyTree<Tvariant>> variant_model =
+  ///     model.ToAutoDiffXd();
+  /// // User retrieves the AutoDiffXd variant corresponding to the original
+  /// // body added above.
+  /// const RigidBody<AutoDiffXd>&
+  ///     variant_body = variant_model.get_variant(body);
   /// @endcode
   ///
   /// MultibodyTree::get_variant() is templated on the multibody element
@@ -2564,17 +2564,17 @@ class MultibodyTree {
   ///
   /// Consider the following code example:
   /// @code
-  ///   // The user creates a model.
-  ///   MultibodyTree<double> model;
-  ///   // User adds a body and keeps a reference to it.
-  ///   const RigidBody<double>& body = model.AddBody<RigidBody>(...);
-  ///   // User creates an AutoDiffXd variant, where ToScalar = AutoDiffXd.
-  ///   std::unique_ptr<MultibodyTree<AutoDiffXd>> model_autodiff =
-  ///       model.CloneToScalar<AutoDiffXd>();
-  ///   // User retrieves the AutoDiffXd variant corresponding to the original
-  ///   // body added above.
-  ///   const RigidBody<AutoDiffXd>&
-  ///       body_autodiff = model_autodiff.get_variant(body);
+  /// // The user creates a model.
+  /// MultibodyTree<double> model;
+  /// // User adds a body and keeps a reference to it.
+  /// const RigidBody<double>& body = model.AddBody<RigidBody>(...);
+  /// // User creates an AutoDiffXd variant, where ToScalar = AutoDiffXd.
+  /// std::unique_ptr<MultibodyTree<AutoDiffXd>> model_autodiff =
+  ///     model.CloneToScalar<AutoDiffXd>();
+  /// // User retrieves the AutoDiffXd variant corresponding to the original
+  /// // body added above.
+  /// const RigidBody<AutoDiffXd>&
+  ///     body_autodiff = model_autodiff.get_variant(body);
   /// @endcode
   ///
   /// MultibodyTree::get_variant() is templated on the multibody element

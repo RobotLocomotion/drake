@@ -92,16 +92,16 @@ namespace drake {
 /// failure.  However, comparisons or operations on _other_ types that are
 /// convertible to an int will succeed.  For example:
 /// @code
-///    using AIndex = TypeSafeIndex<class A>;
-///    using BIndex = TypeSafeIndex<class B>;
-///    AIndex a(1);
-///    BIndex b(1);
-///    if (a == 2) { ... }      // Ok.
-///    size_t sz = 7;
-///    if (a == sz) { ... }     // Ok.
-///    if (a == b) { ... }      // <-- Compiler error.
-///    AIndex invalid;          // Creates an invalid index.
-///    ++invalid;               // Runtime error in Debug build.
+/// using AIndex = TypeSafeIndex<class A>;
+/// using BIndex = TypeSafeIndex<class B>;
+/// AIndex a(1);
+/// BIndex b(1);
+/// if (a == 2) { ... }      // Ok.
+/// size_t sz = 7;
+/// if (a == sz) { ... }     // Ok.
+/// if (a == b) { ... }      // <-- Compiler error.
+/// AIndex invalid;          // Creates an invalid index.
+/// ++invalid;               // Runtime error in Debug build.
 /// @endcode
 ///
 /// As previously stated, the intent of this class is to seamlessly serve as an
@@ -111,14 +111,14 @@ namespace drake {
 /// can be used.  Specifically, we've lost a common index pattern:
 ///
 /// @code
-///    for (MyIndex a = 0; a < N; ++a) { ... }
+/// for (MyIndex a = 0; a < N; ++a) { ... }
 /// @endcode
 ///
 /// This pattern no longer works because it requires implicit conversion of int
 /// to TypeSafeIndex. Instead, the following pattern needs to be used:
 ///
 /// @code
-///    for (MyIndex a(0); a < N; ++a) { ... }
+/// for (MyIndex a(0); a < N; ++a) { ... }
 /// @endcode
 ///
 /// @sa drake::geometry::Identifier

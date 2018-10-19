@@ -305,8 +305,8 @@ class SystemBase : public internal::SystemMessageInterface {
   CacheIndex and DependencyTicket, which can be obtained from the returned
   %CacheEntry. The function signatures here are:
   @code
-    std::unique_ptr<AbstractValue> Alloc();
-    void Calc(const ContextBase&, AbstractValue*);
+  std::unique_ptr<AbstractValue> Alloc();
+  void Calc(const ContextBase&, AbstractValue*);
   @endcode
   where the AbstractValue objects must resolve to the same concrete type.
 
@@ -341,8 +341,8 @@ class SystemBase : public internal::SystemMessageInterface {
 
   /** Declares a cache entry by specifying member functions to use both for the
   allocator and calculator. The signatures are: @code
-    ValueType MySystem::MakeValueType() const;
-    void MySystem::CalcCacheValue(const MyContext&, ValueType*) const;
+  ValueType MySystem::MakeValueType() const;
+  void MySystem::CalcCacheValue(const MyContext&, ValueType*) const;
   @endcode
   where `MySystem` is a class derived from `SystemBase`, `MyContext` is a class
   derived from `ContextBase`, and `ValueType` is any concrete type such that
@@ -363,7 +363,7 @@ class SystemBase : public internal::SystemMessageInterface {
   /** Declares a cache entry by specifying a model value of concrete type
   `ValueType` and a calculator function that is a class member function (method)
   with signature: @code
-    void MySystem::CalcCacheValue(const MyContext&, ValueType*) const;
+  void MySystem::CalcCacheValue(const MyContext&, ValueType*) const;
   @endcode
   where `MySystem` is a class derived from `SystemBase`, `MyContext` is a class
   derived from `ContextBase`, and `ValueType` is any concrete type such that
@@ -382,7 +382,7 @@ class SystemBase : public internal::SystemMessageInterface {
   /** Declares a cache entry by specifying a model value of concrete type
   `ValueType` and a calculator function that is a class member function (method)
   with signature: @code
-    ValueType MySystem::CalcCacheValue(const MyContext&) const;
+  ValueType MySystem::CalcCacheValue(const MyContext&) const;
   @endcode
   Other than the calculator signature, this is identical to the other
   @ref DeclareCacheEntry_model_and_calc "model and calculator signature",
@@ -398,7 +398,7 @@ class SystemBase : public internal::SystemMessageInterface {
   /** Declares a cache entry by specifying only a calculator function that is a
   class member function (method) with signature:
   @code
-    void MySystem::CalcCacheValue(const MyContext&, ValueType*) const;
+  void MySystem::CalcCacheValue(const MyContext&, ValueType*) const;
   @endcode
   where `MySystem` is a class derived from `SystemBase` and `MyContext` is a
   class derived from `ContextBase`. `ValueType` is a concrete type such that
@@ -426,7 +426,7 @@ class SystemBase : public internal::SystemMessageInterface {
   /** Declares a cache entry by specifying only a calculator function that is a
   class member function (method) with signature:
   @code
-    ValueType MySystem::CalcCacheValue(const MyContext&) const;
+  ValueType MySystem::CalcCacheValue(const MyContext&) const;
   @endcode
   Other than the calculator method's signature, this is identical to the other
   @ref DeclareCacheEntry_calc_only "calculator-only signature";
@@ -443,7 +443,7 @@ class SystemBase : public internal::SystemMessageInterface {
   an exception with a helpful message if not. This is *very* expensive and
   should generally be done only in Debug builds, like this:
   @code
-     DRAKE_ASSERT_VOID(CheckValidContext(context));
+  DRAKE_ASSERT_VOID(CheckValidContext(context));
   @endcode */
   void CheckValidContext(const ContextBase& context) const {
     // TODO(sherm1) Add base class checks.

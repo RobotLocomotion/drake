@@ -46,8 +46,8 @@ class DiagramBuilder {
   /// as a default in order to have unique names within the diagram.
   ///
   /// @code
-  ///   DiagramBuilder<T> builder;
-  ///   auto foo = builder.AddSystem(std::make_unique<Foo<T>>());
+  /// DiagramBuilder<T> builder;
+  /// auto foo = builder.AddSystem(std::make_unique<Foo<T>>());
   /// @endcode
   ///
   /// @tparam S The type of system to add.
@@ -68,15 +68,15 @@ class DiagramBuilder {
   /// builder.
   ///
   /// @code
-  ///   DiagramBuilder<double> builder;
-  ///   auto foo = builder.AddSystem<Foo<double>>("name", 3.14);
+  /// DiagramBuilder<double> builder;
+  /// auto foo = builder.AddSystem<Foo<double>>("name", 3.14);
   /// @endcode
   ///
   /// Note that for dependent names you must use the template keyword:
   ///
   /// @code
-  ///   DiagramBuilder<T> builder;
-  ///   auto foo = builder.template AddSystem<Foo<T>>("name", 3.14);
+  /// DiagramBuilder<T> builder;
+  /// auto foo = builder.template AddSystem<Foo<T>>("name", 3.14);
   /// @endcode
   ///
   /// You may prefer the `unique_ptr` variant instead.
@@ -94,16 +94,16 @@ class DiagramBuilder {
   /// builder.
   ///
   /// @code
-  ///   DiagramBuilder<double> builder;
-  ///   // Foo must be a template.
-  ///   auto foo = builder.AddSystem<Foo>("name", 3.14);
+  /// DiagramBuilder<double> builder;
+  /// // Foo must be a template.
+  /// auto foo = builder.AddSystem<Foo>("name", 3.14);
   /// @endcode
   ///
   /// Note that for dependent names you must use the template keyword:
   ///
   /// @code
-  ///   DiagramBuilder<T> builder;
-  ///   auto foo = builder.template AddSystem<Foo>("name", 3.14);
+  /// DiagramBuilder<T> builder;
+  /// auto foo = builder.template AddSystem<Foo>("name", 3.14);
   /// @endcode
   ///
   /// You may prefer the `unique_ptr` variant instead.

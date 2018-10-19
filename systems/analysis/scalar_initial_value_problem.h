@@ -177,7 +177,7 @@ class ScalarInitialValueProblem {
   ///
   /// A usage example is shown below.
   /// @code{.cpp}
-  ///    scalar_ivp.reset_integrator<RungeKutta2Integrator<T>>(max_step);
+  /// scalar_ivp.reset_integrator<RungeKutta2Integrator<T>>(max_step);
   /// @endcode
   ///
   /// @param args The integrator type-specific arguments.

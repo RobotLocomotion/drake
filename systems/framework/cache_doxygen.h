@@ -257,10 +257,10 @@ is assumed.
 
 A typical declaration looks like this (in the constructor for a LeafSystem):
 @code{.cpp}
-  const CacheEntry& pe_cache_entry =
-      DeclareCacheEntry("potential energy", 0.0,
-                        &MySystem::CalcPotentialEnergy,
-                        {all_parameters_ticket(), q_ticket()});
+const CacheEntry& pe_cache_entry =
+    DeclareCacheEntry("potential energy", 0.0,
+                      &MySystem::CalcPotentialEnergy,
+                      {all_parameters_ticket(), q_ticket()});
 @endcode
 
 That is a templatized "sugar" method where the allocator has been specified to

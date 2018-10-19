@@ -30,16 +30,16 @@ namespace sensors {
  *      Render > Show Axis.
  *
  * @code{.cc}
- *  // Add to tree.
- *  auto* camera = new Xtion("xtion");
- *  // Add to tree.
- *  camera->AddToTree(&tree_builder, fixture_frame);
- *  // Build diagram.
- *  camera->BuildDiagram(&lcm, true, true);
- *  // Add to system.
- *  builder.AddSystem(std::unique_ptr<Xtion>(camera));
- *  builder.Connect(plant->get_output_port_state(),
- *                  camera->get_input_port_state());
+ * // Add to tree.
+ * auto* camera = new Xtion("xtion");
+ * // Add to tree.
+ * camera->AddToTree(&tree_builder, fixture_frame);
+ * // Build diagram.
+ * camera->BuildDiagram(&lcm, true, true);
+ * // Add to system.
+ * builder.AddSystem(std::unique_ptr<Xtion>(camera));
+ * builder.Connect(plant->get_output_port_state(),
+ *                 camera->get_input_port_state());
  * @endcode
  *
  * @ingroup manipulation_systems

@@ -10,10 +10,10 @@
 testing the error message against a provided regular expression. This is
 like GTest's `EXPECT_THROW` but is fussier about the particular error message.
 Usage example: @code
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      StatementUnderTest(), // You expect this statement to throw ...
-      std::logic_error,     // ... this exception with ...
-      ".*some important.*phrases.*that must appear.*");  // ... this message.
+DRAKE_EXPECT_THROWS_MESSAGE(
+    StatementUnderTest(), // You expect this statement to throw ...
+    std::logic_error,     // ... this exception with ...
+    ".*some important.*phrases.*that must appear.*");  // ... this message.
 @endcode
 The regular expression must match the entire error message. If there is
 boilerplate you don't care to match at the beginning and end, surround with

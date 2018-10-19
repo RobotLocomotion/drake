@@ -30,14 +30,14 @@ will finalize the tree if that hasn't already been done, interrogate it for the
 Context resources it needs, and allocate them. No further changes are possible
 to the MultibodyTree once it is owned by %MultibodyTreeSystem. For example,
 @code{.cpp}
-  // Create an empty model.
-  auto mb_tree = std::make_unique<MultibodyTree<double>>
-  mb_tree->AddBody<RigidBody>(...);
-  mb_tree->AddMobilizer<RevoluteMobilizer>(...);
-  // ...
-  // Done adding modeling elements. Transfer tree to system, get Context.
-  auto system = std::make_unique<MultibodyTreeSystem<double>>(std::move(model));
-  auto context = system->CreateDefaultContext();
+// Create an empty model.
+auto mb_tree = std::make_unique<MultibodyTree<double>>
+mb_tree->AddBody<RigidBody>(...);
+mb_tree->AddMobilizer<RevoluteMobilizer>(...);
+// ...
+// Done adding modeling elements. Transfer tree to system, get Context.
+auto system = std::make_unique<MultibodyTreeSystem<double>>(std::move(model));
+auto context = system->CreateDefaultContext();
 @endcode
 
 Derived classes may use an alternate protected interface that provides for

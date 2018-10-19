@@ -243,8 +243,8 @@ constructor should delegate to another regular constructor, rather than
 re-implementing its logic.  For example, in the `VectorSystem`-based example
 above we have:
 @code
-  MySystem() : VectorSystem<T>(SystemTypeTag<sample::MySystem>{}, 1, 1) {}
-  template <typename U> explicit MySystem(const MySystem<U>&) : MySystem<T>() {}
+MySystem() : VectorSystem<T>(SystemTypeTag<sample::MySystem>{}, 1, 1) {}
+template <typename U> explicit MySystem(const MySystem<U>&) : MySystem<T>() {}
 @endcode
 The default constructor configures the System to have a `input_size == 1` and
 `output_size == 1`.  The scalar-converting copy constructor delegates to the
@@ -252,10 +252,10 @@ default constructor to re-use that logic by stating `: MySystem<T>()`.
 
 Without delegation, we would  have to duplicate those arguments:
 @code
-  MySystem() : VectorSystem<T>(SystemTypeTag<sample::MySystem>{}, 1, 1) {}
-  // NOT RECOMMENDED because it duplicates the details of calling VectorSystem.
-  template <typename U> explicit MySystem(const MySystem<U>&)
-    : VectorSystem<T>(SystemTypeTag<sample::MySystem>{}, 1, 1) {}
+MySystem() : VectorSystem<T>(SystemTypeTag<sample::MySystem>{}, 1, 1) {}
+// NOT RECOMMENDED because it duplicates the details of calling VectorSystem.
+template <typename U> explicit MySystem(const MySystem<U>&)
+  : VectorSystem<T>(SystemTypeTag<sample::MySystem>{}, 1, 1) {}
 @endcode
 
 <h3>Instance data</h3>
@@ -265,8 +265,8 @@ or customizations, the scalar-converting copy constructor should propagate them
 from `other` to `this`.  For example, in the `LeafSystem`-based example above,
 we have:
 @code
-  template <typename U>
-  explicit MySystem(const MySystem<U>& other) : MySystem<T>(other.gain()) {}
+template <typename U>
+explicit MySystem(const MySystem<U>& other) : MySystem<T>(other.gain()) {}
 @endcode
 
 

@@ -121,7 +121,7 @@ class SystemMessageInterface {
   // this System. This is likely to be _very_ expensive and should generally be
   // done only in Debug builds, like this:
   // @code
-  //    DRAKE_ASSERT_VOID(ThrowIfContextNotCompatible(context));
+  // DRAKE_ASSERT_VOID(ThrowIfContextNotCompatible(context));
   // @endcode
   virtual void ThrowIfContextNotCompatible(const ContextBase&) const = 0;
 
@@ -268,10 +268,10 @@ std::vector<U*> Unpack(const std::vector<std::unique_ptr<U>>& in) {
 // Checks a vector of pointer-like objects to make sure no entries are null,
 // return false otherwise. Use this as a Debug-only check:
 // @code{.cpp}
-//   std::vector<Thing*> things;
-//   std::vector<std::unique_ptr<Thing> owned_things;
-//   DRAKE_ASSERT(internal::IsNonNull(things));
-//   DRAKE_ASSERT(internal::IsNonNull(owned_things);
+// std::vector<Thing*> things;
+// std::vector<std::unique_ptr<Thing> owned_things;
+// DRAKE_ASSERT(internal::IsNonNull(things));
+// DRAKE_ASSERT(internal::IsNonNull(owned_things);
 // @endcode
 // This function can be applied to an std::vector of any type T that can be
 // meaningfully compared to `nullptr`.

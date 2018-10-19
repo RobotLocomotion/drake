@@ -59,8 +59,8 @@ class GeometryVisualizationImpl {
 
  You can then connect source output ports for visualization like this:
  @code
-   builder->Connect(pose_output_port,
-                    scene_graph.get_source_pose_port(source_id));
+ builder->Connect(pose_output_port,
+                  scene_graph.get_source_pose_port(source_id));
  @endcode
 
  @note The initialization event occurs when Simulator::Initialize() is called

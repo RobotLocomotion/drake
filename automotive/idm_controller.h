@@ -24,12 +24,6 @@ namespace automotive {
 /// PoseSelector for details.  The output of this block is an acceleration value
 /// passed as a command to the vehicle.
 ///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-///
-/// They are already available to link against in the containing library.
-///
 /// Input Port 0: PoseVector for the ego car.
 ///   (InputPort getter: ego_pose_input())
 ///
@@ -42,7 +36,6 @@ namespace automotive {
 ///
 /// Output Port 0: A BasicVector containing the acceleration request.
 ///   (OutputPort getter: acceleration_output())
-///
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 ///

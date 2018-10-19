@@ -28,7 +28,7 @@ namespace drake {
  the contained object be "copyable". To be copyable, the class must have either
  an accessible copy constructor, or it must have an accessible clone method
  with signature @code
-   std::unique_ptr<Foo> Clone() const;
+ std::unique_ptr<Foo> Clone() const;
  @endcode
  where Foo is the type of the managed object. By "accessible" we mean either
  that the copy constructor or clone method is public, or

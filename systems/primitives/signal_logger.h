@@ -77,9 +77,9 @@ class SignalLogger : public LeafSystem<T> {
 /// the correct size, and connected to another output in a DiagramBuilder.
 ///
 /// @code
-///   DiagramBuilder<double> builder;
-///   auto foo = builder.AddSystem<Foo>("name", 3.14);
-///   auto logger = LogOutput(foo->get_output_port(), &builder);
+/// DiagramBuilder<double> builder;
+/// auto foo = builder.AddSystem<Foo>("name", 3.14);
+/// auto logger = LogOutput(foo->get_output_port(), &builder);
 /// @endcode
 
 template <typename T>

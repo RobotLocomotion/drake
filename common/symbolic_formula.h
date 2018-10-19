@@ -556,12 +556,12 @@ operator==(const DerivedA& a1, const DerivedB& a2) {
 ///
 /// Here is an example using this operator overloading.
 /// @code
-///     Eigen::Array<Variable, 2, 2> a;
-///     a << Variable{"x"}, Variable{"y"},
-///          Variable{"z"}, Variable{"w"};
-///     Eigen::Array<Formula, 2, 2> f = (a == 3.5);
-///     // Here f = |(x == 3.5)  (y == 3.5)|
-///     //          |(z == 3.5)  (w == 3.5)|.
+/// Eigen::Array<Variable, 2, 2> a;
+/// a << Variable{"x"}, Variable{"y"},
+///      Variable{"z"}, Variable{"w"};
+/// Eigen::Array<Formula, 2, 2> f = (a == 3.5);
+/// // Here f = |(x == 3.5)  (y == 3.5)|
+/// //          |(z == 3.5)  (w == 3.5)|.
 /// @endcode
 template <typename Derived, typename ScalarType>
 typename std::enable_if<
@@ -583,12 +583,12 @@ operator==(const Derived& a, const ScalarType& v) {
 ///
 /// Here is an example using this operator overloading.
 /// @code
-///     Eigen::Array<Variable, 2, 2> a;
-///     a << Variable{"x"}, Variable{"y"},
-///          Variable{"z"}, Variable{"w"};
-///     Eigen::Array<Formula, 2, 2> f = (3.5 == a);
-///     // Here f = |(3.5 == x)  (3.5 == y)|
-///     //          |(3.5 == z)  (3.5 == w)|.
+/// Eigen::Array<Variable, 2, 2> a;
+/// a << Variable{"x"}, Variable{"y"},
+///      Variable{"z"}, Variable{"w"};
+/// Eigen::Array<Formula, 2, 2> f = (3.5 == a);
+/// // Here f = |(3.5 == x)  (3.5 == y)|
+/// //          |(3.5 == z)  (3.5 == w)|.
 /// @endcode
 template <typename ScalarType, typename Derived>
 typename std::enable_if<
@@ -902,22 +902,22 @@ operator!=(const ScalarType& v, const Derived& a) {
 /// check the following example.
 ///
 /// @code
-///     // set up v1 = [y x y] and v2 = [1 2 1]
-///     VectorX<Expression> v1{3};
-///     VectorX<Expression> v2{3};
-///     const Variable x{"x"};
-///     const Variable y{"y"};
-///     v1 << y, x, y;
-///     v2 << 1, 2, 1;
-///     // Here v1_eq_v2 = ((x = 2) ∧ (y = 1))
-///     const Formula v1_eq_v2{v1 == v2};
-///     const std::set<Formula> conjuncts{get_operands(v1_eq_v2)};
-///     for (const Formula& f : conjuncts) {
-///       std::cerr << f << std::endl;
-///     }
-///     // The outcome of the above loop is:
-///     (x = 2)
-///     (y = 1)
+/// // set up v1 = [y x y] and v2 = [1 2 1]
+/// VectorX<Expression> v1{3};
+/// VectorX<Expression> v2{3};
+/// const Variable x{"x"};
+/// const Variable y{"y"};
+/// v1 << y, x, y;
+/// v2 << 1, 2, 1;
+/// // Here v1_eq_v2 = ((x = 2) ∧ (y = 1))
+/// const Formula v1_eq_v2{v1 == v2};
+/// const std::set<Formula> conjuncts{get_operands(v1_eq_v2)};
+/// for (const Formula& f : conjuncts) {
+///   std::cerr << f << std::endl;
+/// }
+/// // The outcome of the above loop is:
+/// (x = 2)
+/// (y = 1)
 /// @endcode
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if<

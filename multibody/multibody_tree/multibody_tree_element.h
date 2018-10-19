@@ -63,9 +63,9 @@ class MultibodyTreeElement;
 /// As an example of usage, consider the definition of a `ForceElement` class
 /// as a multibody tree element. This would be accomplished with:
 /// @code{.cpp}
-///   template <typename T>
-///   class ForceElement :
-///       public MultibodyTreeElement<ForceElement<T>, ForceElementIndex>;
+/// template <typename T>
+/// class ForceElement :
+///     public MultibodyTreeElement<ForceElement<T>, ForceElementIndex>;
 /// @endcode
 /// Notice that with the signature below the scalar type is automatically
 /// deduced from the template arguments.

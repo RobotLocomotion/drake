@@ -193,29 +193,29 @@ class ForceElement : public
   /// Consider the following example for a `SpringElement<T>` used to model
   /// an elastic spring between two bodies:
   /// @code
-  ///   template <typename T>
-  ///   class SpringElement {
-  ///    public:
-  ///     // Class's constructor.
-  ///     SpringElement(
+  /// template <typename T>
+  /// class SpringElement {
+  ///  public:
+  ///   // Class's constructor.
+  ///   SpringElement(
   ///       const Body<T>& body1, const Body<T>& body2, double stiffness);
-  ///     // Get the first body to which this spring is connected.
-  ///     const Body<T>& get_body1() const;
-  ///     // Get the second body to which this spring is connected.
-  ///     const Body<T>& get_body2() const;
-  ///     // Get the spring stiffness constant.
-  ///     double get_stiffness() const;
-  ///    protected:
-  ///     // Implementation of the scalar conversion from T to double.
-  ///     std::unique_ptr<ForceElement<double>> DoCloneToScalar(
-  ///       const MultibodyTree<double>& tree_clone) const) {
-  ///         const Body<ToScalar>& body1_clone =
-  ///           tree_clone.get_variant(get_body1());
-  ///         const Body<ToScalar>& body2_clone =
-  ///           tree_clone.get_variant(get_body2());
-  ///         return std::make_unique<SpringElement<double>>(
-  ///           body1_clone, body2_clone, get_stiffness());
-  ///     }
+  ///   // Get the first body to which this spring is connected.
+  ///   const Body<T>& get_body1() const;
+  ///   // Get the second body to which this spring is connected.
+  ///   const Body<T>& get_body2() const;
+  ///   // Get the spring stiffness constant.
+  ///   double get_stiffness() const;
+  ///  protected:
+  ///   // Implementation of the scalar conversion from T to double.
+  ///   std::unique_ptr<ForceElement<double>> DoCloneToScalar(
+  ///     const MultibodyTree<double>& tree_clone) const) {
+  ///       const Body<ToScalar>& body1_clone =
+  ///         tree_clone.get_variant(get_body1());
+  ///       const Body<ToScalar>& body2_clone =
+  ///         tree_clone.get_variant(get_body2());
+  ///       return std::make_unique<SpringElement<double>>(
+  ///         body1_clone, body2_clone, get_stiffness());
+  /// };
   /// @endcode
   ///
   /// MultibodyTree::get_variant() methods are available to retrieve cloned

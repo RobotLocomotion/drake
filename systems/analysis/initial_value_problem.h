@@ -181,7 +181,7 @@ class InitialValueProblem {
   ///
   /// A usage example is shown below.
   /// @code{.cpp}
-  ///    ivp.reset_integrator<RungeKutta2Integrator<T>>(max_step);
+  /// ivp.reset_integrator<RungeKutta2Integrator<T>>(max_step);
   /// @endcode
   ///
   /// @param args The integrator type-specific arguments.

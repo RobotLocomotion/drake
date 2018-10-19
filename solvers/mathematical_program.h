@@ -1104,12 +1104,12 @@ class MathematicalProgram {
    * using `A.array() <= B.array()`. See the following example.
    *
    * @code
-   *   MathematicalProgram prog;
-   *   Eigen::Matrix<double, 2, 2> A;
-   *   auto x = prog.NewContinuousVariables(2, "x");
-   *   Eigen::Vector2d b;
-   *   ... // set up A and b
-   *   prog.AddConstraint((A * x).array() <= b.array());
+   * MathematicalProgram prog;
+   * Eigen::Matrix<double, 2, 2> A;
+   * auto x = prog.NewContinuousVariables(2, "x");
+   * Eigen::Vector2d b;
+   * ... // set up A and b
+   * prog.AddConstraint((A * x).array() <= b.array());
    * @endcode
    *
    * A formula in @p formulas can be of the following forms:
@@ -1277,12 +1277,12 @@ class MathematicalProgram {
    * using `A.array() <= B.array()`. See the following example.
    *
    * @code
-   *   MathematicalProgram prog;
-   *   Eigen::Matrix<double, 2, 2> A;
-   *   auto x = prog.NewContinuousVariables(2, "x");
-   *   Eigen::Vector2d b;
-   *   ... // set up A and b
-   *   prog.AddLinearConstraint((A * x).array() <= b.array());
+   * MathematicalProgram prog;
+   * Eigen::Matrix<double, 2, 2> A;
+   * auto x = prog.NewContinuousVariables(2, "x");
+   * Eigen::Vector2d b;
+   * ... // set up A and b
+   * prog.AddLinearConstraint((A * x).array() <= b.array());
    * @endcode
    *
    * A formula in @p formulas can be of the following forms:
@@ -1412,13 +1412,13 @@ class MathematicalProgram {
    * Example: to add two equality constraints which only depend on two of the
    * elements of x, you could use
    * @code{.cc}
-   *   auto x = prog.NewContinuousDecisionVariable(6,"myvar");
-   *   Eigen::Matrix2d Aeq;
-   *   Aeq << -1, 2,
-   *           1, 1;
-   *   Eigen::Vector2d beq(1, 3);
-   *   prog.AddLinearEqualityConstraint(Aeq, beq, {x.segment<1>(2),
-   *                                    x.segment<1>(5)});
+   * auto x = prog.NewContinuousDecisionVariable(6,"myvar");
+   * Eigen::Matrix2d Aeq;
+   * Aeq << -1, 2,
+   *         1, 1;
+   * Eigen::Vector2d beq(1, 3);
+   * prog.AddLinearEqualityConstraint(Aeq, beq, {x.segment<1>(2),
+   *                                  x.segment<1>(5)});
    * @endcode
    * The code above imposes constraints
    * @f[-x(2) + 2x(5) = 1 @f]
@@ -1440,15 +1440,15 @@ class MathematicalProgram {
    * Example: to add two equality constraints which only depend on two of the
    * elements of x, you could use
    * @code{.cc}
-   *   auto x = prog.NewContinuousDecisionVariable(6,"myvar");
-   *   Eigen::Matrix2d Aeq;
-   *   Aeq << -1, 2,
-   *           1, 1;
-   *   Eigen::Vector2d beq(1, 3);
-   *   // Imposes constraint
-   *   // -x(0) + 2x(1) = 1
-   *   //  x(0) +  x(1) = 3
-   *   prog.AddLinearEqualityConstraint(Aeq, beq, x.head<2>());
+   * auto x = prog.NewContinuousDecisionVariable(6,"myvar");
+   * Eigen::Matrix2d Aeq;
+   * Aeq << -1, 2,
+   *         1, 1;
+   * Eigen::Vector2d beq(1, 3);
+   * // Imposes constraint
+   * // -x(0) + 2x(1) = 1
+   * //  x(0) +  x(1) = 3
+   * prog.AddLinearEqualityConstraint(Aeq, beq, x.head<2>());
    * @endcode
    */
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(

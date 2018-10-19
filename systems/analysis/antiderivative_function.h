@@ -179,7 +179,7 @@ class AntiderivativeFunction {
   ///
   /// A usage example is shown below.
   /// @code{.cpp}
-  ///    antiderivative_f.reset_integrator<RungeKutta2Integrator<T>>(max_step);
+  /// antiderivative_f.reset_integrator<RungeKutta2Integrator<T>>(max_step);
   /// @endcode
   ///
   /// @param args The integrator type-specific arguments.

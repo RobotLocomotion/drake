@@ -216,9 +216,9 @@ class System : public SystemBase {
   /// This default implementation calls SetDefaultState; override this method to
   /// provide random initial conditions using the stdc++ random library, e.g.:
   /// @code
-  ///   std::normal_distribution<T> gaussian();
-  ///   state->get_mutable_continuous_state()->get_mutable_vector()
-  ///        ->SetAtIndex(0, gaussian(*generator));
+  /// std::normal_distribution<T> gaussian();
+  /// state->get_mutable_continuous_state()->get_mutable_vector()
+  ///      ->SetAtIndex(0, gaussian(*generator));
   /// @endcode
   /// Overrides must not change the number of state variables.
   ///
@@ -233,9 +233,9 @@ class System : public SystemBase {
   /// This default implementation calls SetDefaultParameters; override this
   /// method to provide random parameters using the stdc++ random library, e.g.:
   /// @code
-  ///   std::uniform_real_distribution<T> uniform();
-  ///   parameters->get_mutable_numeric_parameter(0)
-  ///             ->SetAtIndex(0, uniform(*generator));
+  /// std::uniform_real_distribution<T> uniform();
+  /// parameters->get_mutable_numeric_parameter(0)
+  ///           ->SetAtIndex(0, uniform(*generator));
   /// @endcode
   /// Overrides must not change the number of state variables.
   ///
@@ -1314,10 +1314,10 @@ class System : public SystemBase {
   /// never nullptr.
   /// @throws std::exception if `from` does not support autodiff
   ///
-  /// Usage: @code
-  ///   MySystem<double> plant;
-  ///   std::unique_ptr<MySystem<AutoDiffXd>> ad_plant =
-  ///       systems::System<double>::ToAutoDiffXd(plant);
+  /// @code
+  /// MySystem<double> plant;
+  /// std::unique_ptr<MySystem<AutoDiffXd>> ad_plant =
+  ///     systems::System<double>::ToAutoDiffXd(plant);
   /// @endcode
   ///
   /// @tparam S The specific System type to accept and return.
@@ -1369,10 +1369,10 @@ class System : public SystemBase {
   /// type. The result is never nullptr.
   /// @throws std::exception if this System does not support symbolic
   ///
-  /// Usage: @code
-  ///   MySystem<double> plant;
-  ///   std::unique_ptr<MySystem<symbolic::Expression>> sym_plant =
-  ///       systems::System<double>::ToSymbolic(plant);
+  /// @code
+  /// MySystem<double> plant;
+  /// std::unique_ptr<MySystem<symbolic::Expression>> sym_plant =
+  ///     systems::System<double>::ToSymbolic(plant);
   /// @endcode
   ///
   /// @tparam S The specific System pointer type to return.

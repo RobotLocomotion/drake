@@ -45,15 +45,15 @@ namespace geometry {
  snippet:
 
  @code{xml}
-   ...
-   <visual name="  visual">
-     <geometry>
-       <sphere>
-         <radius>1.0</radius>
-       </sphere>
-     </geometry>
-   </visual>
-   ...
+ ...
+ <visual name="  visual">
+   <geometry>
+     <sphere>
+       <radius>1.0</radius>
+     </sphere>
+   </geometry>
+ </visual>
+ ...
  @endcode
 
  The name has two leading whitespace characters. The parsing process will

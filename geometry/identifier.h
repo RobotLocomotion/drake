@@ -83,20 +83,20 @@ namespace geometry {
  For example:
 
  @code
-    using AId = Identifier<class ATag>;
-    using BId = Identifier<class BTag>;
-    AId a1;                              // Compiler error; there is no
-                                         //   default constructor.
-    AId a2 = AId::get_new_id();          // Ok.
-    AId a3(a2);                          // Ok.
-    AId a4 = AId::get_new_id();          // Ok.
-    BId b = BId::get_new_id();           // Ok.
-    if ( a2 == 1 ) { ... }               // Compiler error.
-    if ( a2 == a4 ) { ... }              // Ok, evaluates to false.
-    if ( a2 == a3 ) { ... }              // Ok, evaluates to true.
-    if ( a2 == b ) { ... }               // Compiler error.
-    a4 = a2;                             // Ok.
-    a3 = 7;                              // Compiler error.
+ using AId = Identifier<class ATag>;
+ using BId = Identifier<class BTag>;
+ AId a1;                              // Compiler error; there is no
+                                      //   default constructor.
+ AId a2 = AId::get_new_id();          // Ok.
+ AId a3(a2);                          // Ok.
+ AId a4 = AId::get_new_id();          // Ok.
+ BId b = BId::get_new_id();           // Ok.
+ if ( a2 == 1 ) { ... }               // Compiler error.
+ if ( a2 == a4 ) { ... }              // Ok, evaluates to false.
+ if ( a2 == a3 ) { ... }              // Ok, evaluates to true.
+ if ( a2 == b ) { ... }               // Compiler error.
+ a4 = a2;                             // Ok.
+ a3 = 7;                              // Compiler error.
  @endcode
 
  @anchor TypeSafeIndexVsIndentifier

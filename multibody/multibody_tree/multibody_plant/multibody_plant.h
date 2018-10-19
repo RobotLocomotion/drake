@@ -85,11 +85,11 @@ namespace multibody_plant {
 /// Drake has the capability of loading multibody models from SDF files.
 /// Consider the example below which loads an acrobot model from a file:
 /// @code
-///   MultibodyPlant<T> acrobot;
-///   const std::string relative_name =
-///     "drake/multibody/benchmarks/acrobot/acrobot.sdf";
-///   const std::string full_name = FindResourceOrThrow(relative_name);
-///   AddModelFromSdfFile(full_name, &acrobot, &scene_graph);
+/// MultibodyPlant<T> acrobot;
+/// const std::string relative_name =
+///   "drake/multibody/benchmarks/acrobot/acrobot.sdf";
+/// const std::string full_name = FindResourceOrThrow(relative_name);
+/// AddModelFromSdfFile(full_name, &acrobot, &scene_graph);
 /// @endcode
 /// As in the example above, for models including visual geometry, collision
 /// geometry or both, the user must specify a SceneGraph for geometry handling.
@@ -316,11 +316,11 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   ///
   /// Example of usage:
   /// @code
-  ///   MultibodyPlant<T> plant;
-  ///   // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
-  ///   ModelInstanceIndex model_instance = plant.AddModelInstance("instance");
-  ///   const RigidBody<T>& body =
-  ///     plant.AddRigidBody("BodyName", model_instance, spatial_inertia);
+  /// MultibodyPlant<T> plant;
+  /// // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
+  /// ModelInstanceIndex model_instance = plant.AddModelInstance("instance");
+  /// const RigidBody<T>& body =
+  ///   plant.AddRigidBody("BodyName", model_instance, spatial_inertia);
   /// @endcode
   ///
   /// @param[in] name
@@ -361,10 +361,10 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   ///
   /// Example of usage:
   /// @code
-  ///   MultibodyPlant<T> plant;
-  ///   // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
-  ///   const RigidBody<T>& body =
-  ///     plant.AddRigidBody("BodyName", spatial_inertia);
+  /// MultibodyPlant<T> plant;
+  /// // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
+  /// const RigidBody<T>& body =
+  ///   plant.AddRigidBody("BodyName", spatial_inertia);
   /// @endcode
   ///
   /// @param[in] name
@@ -459,22 +459,22 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   ///
   /// Example of usage:
   /// @code
-  ///   MultibodyPlant<T> plant;
-  ///   // Code to define bodies serving as the joint's parent and child bodies.
-  ///   const RigidBody<double>& body_1 =
-  ///     plant.AddRigidBody("Body1", SpatialInertia<double>(...));
-  ///   const RigidBody<double>& body_2 =
-  ///     plant.AddRigidBody("Body2", SpatialInertia<double>(...));
-  ///   // Body 1 serves as parent, Body 2 serves as child.
-  ///   // Define the pose X_BM of a frame M rigidly atached to child body B.
-  ///   const RevoluteJoint<double>& elbow =
-  ///     plant.AddJoint<RevoluteJoint>(
-  ///       "Elbow",                /* joint name */
-  ///       body_1,                 /* parent body */
-  ///       {},                     /* frame F IS the parent body frame P */
-  ///       body_2,                 /* child body, the pendulum */
-  ///       X_BM,                   /* pose of frame M in the body frame B */
-  ///       Vector3d::UnitZ());     /* revolute axis in this case */
+  /// MultibodyPlant<T> plant;
+  /// // Code to define bodies serving as the joint's parent and child bodies.
+  /// const RigidBody<double>& body_1 =
+  ///   plant.AddRigidBody("Body1", SpatialInertia<double>(...));
+  /// const RigidBody<double>& body_2 =
+  ///   plant.AddRigidBody("Body2", SpatialInertia<double>(...));
+  /// // Body 1 serves as parent, Body 2 serves as child.
+  /// // Define the pose X_BM of a frame M rigidly atached to child body B.
+  /// const RevoluteJoint<double>& elbow =
+  ///   plant.AddJoint<RevoluteJoint>(
+  ///     "Elbow",                /* joint name */
+  ///     body_1,                 /* parent body */
+  ///     {},                     /* frame F IS the parent body frame P */
+  ///     body_2,                 /* child body, the pendulum */
+  ///     X_BM,                   /* pose of frame M in the body frame B */
+  ///     Vector3d::UnitZ());     /* revolute axis in this case */
   /// @endcode
   ///
   /// @throws std::exception if `this` %MultibodyPlant already contains a joint
