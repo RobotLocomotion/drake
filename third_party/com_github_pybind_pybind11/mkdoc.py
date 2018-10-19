@@ -379,12 +379,12 @@ def process_comment(comment):
     for x in re.split(r'(```)', s):
         if x == '```':
             if not in_code_segment:
-                result += '```\n'
+                result += '\n::\n'
             else:
-                result += '\n```\n\n'
+                result += '\n\n'
             in_code_segment = not in_code_segment
         elif in_code_segment:
-            result += x.strip()
+            result += '    '.join(('\n' + x.strip()).splitlines(True))
         else:
             for y in re.split(r'(?: *\n *){2,}', x):
                 lines = re.split(r'(?: *\n *)', y)
