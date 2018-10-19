@@ -266,7 +266,6 @@ Additionally, you may convert an instance (if the conversion is available) using
 For Developers
 --------------
 
-If you are developing Python bindings, please see the Doxygen page for
-`Python Bindings <https://drake.mit.edu/doxygen_cxx/python_bindings.html>`_.
-This provides information on programming conventions as well as tips for
-debugging.
+If you are developing Python bindings, please see the Doxygen page
+`Python Bindings <https://drake.mit.edu/doxygen_cxx/group__python__bindings.html>`_ which provides information on programming conventions, documentation, tips
+for debugging, and other advice.
