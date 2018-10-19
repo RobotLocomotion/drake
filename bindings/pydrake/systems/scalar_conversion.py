@@ -29,6 +29,7 @@ class TemplateSystem(TemplateClass):
     defining `f(T)` for convenience.
 
     Any class that is added must:
+
     - Not define `__init__`, as this will be overridden.
     - Define `_construct(self, <args>, converter=None, <kwargs>)` and
       `_construct_copy(self, other, converter=None)` instead.
@@ -38,7 +39,8 @@ class TemplateSystem(TemplateClass):
     If any of these constraints are violated, then an error will be thrown
     at the time of the first class instantiation.
 
-    Example:
+    Example::
+
         @TemplateSystem.define("MySystem_")
         def MySystem_(T):
 
