@@ -997,6 +997,22 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   geometry::GeometrySet CollectRegisteredGeometries(
       const std::vector<const Body<T>*>& bodies) const;
 
+  /// Returns all bodies that are welded to `body`. Meant to be used with
+  /// `CollectRegisteredGeometries`.
+  ///
+  /// @code
+  /// auto g_world = plant.CollectRegisteredGeometries(
+  ///     plant.GetBodiesWeldedTo(plant.world_body()));
+  /// auto g_door = plant.CollectRegisteredGeometries(
+  ///     plant.GetBodiesWeldedTo(plant.GetBodyByName("door")));
+  /// scene_graph.ExcludeCollisionsBetweeen(g_world, g_door);
+  /// @endcode
+  ///
+  /// @returns all bodies rigidly fixed to `body`. This does not return the
+  /// bodies in any prescribed order.
+  /// @throws std::exception if `body` is not part of this plant.
+  std::vector<const Body<T>*> GetBodiesWeldedTo(const Body<T>& body) const;
+
   /// Returns the friction coefficients provided during geometry registration
   /// for the given geometry `id`. We call these the "default" coefficients but
   /// note that we mean user-supplied per-geometry default, not something more
