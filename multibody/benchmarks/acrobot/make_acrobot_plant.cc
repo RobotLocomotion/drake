@@ -71,7 +71,7 @@ MakeAcrobotPlant(const AcrobotParameters& params, bool finalize,
                                   scene_graph);
 
     // Register some (anchored) geometry to the world.
-    const RigidTransformd X_WG;
+    const RigidTransformd X_WG;  // Default is identity transform.
     plant->RegisterVisualGeometry(
         plant->world_body(), X_WG.GetAsIsometry3(),
         Sphere(params.l1() / 8.0), /* Arbitrary radius to decorate the model. */

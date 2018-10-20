@@ -187,7 +187,7 @@ class Acrobot {
       g_{9.81};    // Gravitational constant (m/s^2).
 
   // Transformation from the model frame D to the world frame W.
-  math::RigidTransform<T> X_WD_;
+  math::RigidTransform<T> X_WD_;  // Default is identity transform.
 };
 
 }  // namespace benchmarks
