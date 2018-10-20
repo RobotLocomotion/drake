@@ -138,6 +138,15 @@ GTEST_TEST(RigidTransform, RigidTransformConstructorFromPositionVector) {
   EXPECT_TRUE(X.translation() == p);
 }
 
+// Tests constructing a RigidTransform from RollPitchYaw and a position vector.
+GTEST_TEST(RigidTransform, RigidTransformContructorRollPitchYawPositionVector) {
+  const RollPitchYaw<double> rpy(1, 2, 3);
+  const Vector3<double> position(4, 5, 6);
+  const RigidTransform<double> X(rpy, position);
+  EXPECT_TRUE(X.rotation().IsExactlyEqualTo(rpy.ToRotationMatrix()));
+  EXPECT_TRUE(X.translation() == position);
+}
+
 // Tests getting a 4x4 and 3x4 matrix from a RigidTransform.
 GTEST_TEST(RigidTransform, GetAsMatrices) {
   const RotationMatrix<double> R = GetRotationMatrixB();

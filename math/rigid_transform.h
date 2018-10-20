@@ -63,6 +63,16 @@ class RigidTransform {
   /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
   RigidTransform(const RotationMatrix<T>& R, const Vector3<T>& p) { set(R, p); }
 
+  /// Constructs a %RigidTransform from a RollPitchYaw and a position vector.
+  /// @param[in] rpy a %RollPitchYaw which is a Space-fixed (extrinsic) X-Y-Z
+  /// rotation with "roll-pitch-yaw" angles `[r, p, y]` or equivalently a Body-
+  /// fixed (intrinsic) Z-Y-X rotation with "yaw-pitch-roll" angles `[y, p, r]`.
+  /// @see math::RotationMatrix::RotationMatrix(const RollPitchYaw<T>&)
+  /// @param[in] p position vector from frame A's origin to frame B's origin,
+  /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
+  RigidTransform(const RollPitchYaw<T>& rpy, const Vector3<T>& p) :
+      RigidTransform(RotationMatrix<T>(rpy), p) {}
+
   /// Constructs a %RigidTransform with a given RotationMatrix and a zero
   /// position vector.
   /// @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`).
