@@ -143,7 +143,35 @@ GTEST_TEST(RigidTransform, RigidTransformContructorRollPitchYawPositionVector) {
   const RollPitchYaw<double> rpy(1, 2, 3);
   const Vector3<double> position(4, 5, 6);
   const RigidTransform<double> X(rpy, position);
+  // This only tests that the constructor calls the proper underlying
+  // RotationMatrix method and properly sets the position vector.
   EXPECT_TRUE(X.rotation().IsExactlyEqualTo(rpy.ToRotationMatrix()));
+  EXPECT_TRUE(X.translation() == position);
+}
+
+// Tests constructing a RigidTransform from a Quaterion and a position vector.
+GTEST_TEST(RigidTransform, RigidTransformContructorQuaternionPositionVector) {
+  // Note: Constructor says that the quaternion does not need to be unit length.
+  const Eigen::Quaternion<double> quaternion(1, 2, 3, 4);
+  const Vector3<double> position(4, 5, 6);
+  const RigidTransform<double> X(quaternion, position);
+  // This only tests that the constructor calls the proper underlying
+  // RotationMatrix method and properly sets the position vector.
+  const RotationMatrix<double> R(quaternion);
+  EXPECT_TRUE(X.rotation().IsExactlyEqualTo(R));
+  EXPECT_TRUE(X.translation() == position);
+}
+
+// Tests constructing a RigidTransform from an AngleAxis and a position vector.
+GTEST_TEST(RigidTransform, RigidTransformContructorAngleAxisPositionVector) {
+  // Note: Constructor says that the axis does not need to be unit length.
+  const Eigen::AngleAxis<double> theta_lambda(0.3, Eigen::Vector3d(3, 2, 1));
+  const Vector3<double> position(4, 5, 6);
+  const RigidTransform<double> X(theta_lambda, position);
+  // This only tests that the constructor calls the proper underlying
+  // RotationMatrix method and properly sets the position vector.
+  const RotationMatrix<double> R(theta_lambda);
+  EXPECT_TRUE(X.rotation().IsExactlyEqualTo(R));
   EXPECT_TRUE(X.translation() == position);
 }
 
