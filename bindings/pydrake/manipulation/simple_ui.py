@@ -8,7 +8,7 @@ import numpy as np
 
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
 from pydrake.multibody.multibody_tree import JointIndex
-from pydrake.systems.framework import VectorSystem
+from pydrake.systems.framework import BasicVector, LeafSystem, VectorSystem
 
 
 class JointSliders(VectorSystem):
@@ -23,7 +23,7 @@ class JointSliders(VectorSystem):
 
     def __init__(self, robot, lower_limit=-10., upper_limit=10.,
                  resolution=-1, update_period_sec=0.1,
-                 title=None):
+                 window=None, title=None):
         """"
         Args:
             robot:       A MultibodyPlant.
@@ -38,13 +38,16 @@ class JointSliders(VectorSystem):
             resolution:  A scalar or vector of length robot.num_positions()
                          that specifies the discretization of the slider.  Use
                          -1 (the default) to disable any rounding.
-            update_period_sec: Specifies how often the gui update() method gets
-                         called.
+            update_period_sec: Specifies how often the window update() method
+                         gets called.
+            window:      Optionally pass in a tkinter.Tk() object to add these
+                         widgets to.  Default behavior is to create a new
+                         window.
             title:       The string that appears as the title of the gui
-                         window.  Use None to generate a default title.
+                         window.  Use None to generate a default title.  This
+                         parameter is only used if a window==None.
         """
         VectorSystem.__init__(self, 0, robot.num_positions())
-        self._DeclarePeriodicPublish(update_period_sec, 0.0)
 
         def _reshape(x, num):
             x = np.array(x)
@@ -61,23 +64,31 @@ class JointSliders(VectorSystem):
             else:
                 title = "Multibody Joints"
 
-        self.root = tk.Tk()
-        self.root.title(title)
-        self.slider = []
+        if window is None:
+            self.window = tk.Tk()
+            self.window.title(title)
+        else:
+            self.window = window
+
+        # Schedule window updates in either case (new or existing window):
+        self._DeclarePeriodicPublish(update_period_sec, 0.0)
+
+        self._slider = []
         k = 0
         for i in range(0, robot.num_joints()):
             joint = robot.tree().get_joint(JointIndex(i))
             low = joint.lower_limits()
             upp = joint.upper_limits()
             for j in range(0, joint.num_positions()):
-                self.slider.append(tk.Scale(self.root,
-                                            from_=max(low[j], lower_limit[k]),
-                                            to=min(upp[j], upper_limit[k]),
-                                            resolution=resolution[k],
-                                            label=joint.name(),
-                                            length=200,
-                                            orient=tk.HORIZONTAL))
-                self.slider[k].pack()
+                self._slider.append(tk.Scale(self.window,
+                                             from_=max(low[j],
+                                                       lower_limit[k]),
+                                             to=min(upp[j], upper_limit[k]),
+                                             resolution=resolution[k],
+                                             label=joint.name(),
+                                             length=200,
+                                             orient=tk.HORIZONTAL))
+                self._slider[k].pack()
                 k += 1
 
         # TODO(russt): Consider resolving constraints in a slider event
@@ -90,14 +101,100 @@ class JointSliders(VectorSystem):
         Args:
             q: a vector of length robot.num_positions()
         """
-        assert(len(q) == len(self.slider))
-        for i in range(len(self.slider)):
-            self.slider[i].set(q[i])
+        assert(len(q) == len(self._slider))
+        for i in range(len(self._slider)):
+            self._slider[i].set(q[i])
 
     def _DoPublish(self, context, event):
-        self.root.update_idletasks()
-        self.root.update()
+        self.window.update_idletasks()
+        self.window.update()
 
     def _DoCalcVectorOutput(self, context, unused, unused2, output):
-        for i in range(0, len(self.slider)):
-            output[i] = self.slider[i].get()
+        for i in range(0, len(self._slider)):
+            output[i] = self._slider[i].get()
+
+
+class SchunkWsgButtons(LeafSystem):
+    """
+    Adds buttons to open/close the Schunk WSG gripper to an existing Tkinter
+    window.
+
+    @system{ SchunkWsgButtons,
+             , # no input ports
+             @output_port{position}
+             @output_port{max_force} }
+    """
+
+    def __init__(self, window=None, open_position=0.055,
+                 closed_position=0.002, force_limit=40, update_period_sec=0.1):
+        """"
+        Args:
+            window:          Optionally pass in a tkinter.Tk() object to add
+                             these widgets to.  Default behavior is to create
+                             a new window.
+            update_period_sec: Specifies how often the window update() method
+                             gets called.
+            open_position:   Target position for the finger when open.
+            closed_position: Target position for the gripper when closed.
+            force_limit:     Force limit to send to Schunk WSG controller.
+        """
+        LeafSystem.__init__(self)
+        self._DeclareVectorOutputPort("position", BasicVector(1),
+                                      self.CalcPositionOutput)
+        self._DeclareVectorOutputPort("force_limit", BasicVector(1),
+                                      self.CalcForceLimitOutput)
+
+        if window is None:
+            self.window = tk.Tk()
+            self.window.title(title)
+        else:
+            self.window = window
+
+        # Schedule window updates in either case (new or existing window):
+        self._DeclarePeriodicPublish(update_period_sec, 0.0)
+
+        self._open_button = tk.Button(self.window, text="Open Gripper",
+                                      state=tk.DISABLED,
+                                      command=self.open)
+        self._open_button.pack()
+        self._close_button = tk.Button(self.window, text="Close Gripper",
+                                       command=self.close)
+        self._close_button.pack()
+
+        self._open_state = True
+
+        self._open_position = open_position
+        self._closed_position = closed_position
+        self._force_limit = force_limit
+
+    def open(self):
+        """
+        Output a command that will open the gripper.
+        """
+        self._open_state = True
+        self._open_button.configure(state=tk.DISABLED)
+        self._close_button.configure(state=tk.NORMAL)
+
+    def close(self):
+        """
+        Output a command that will close the gripper.
+        """
+        self._open_state = False
+        self._open_button.configure(state=tk.NORMAL)
+        self._close_button.configure(state=tk.DISABLED)
+
+    def _DoPublish(self, context, event):
+        self.window.update_idletasks()
+        self.window.update()
+
+    def CalcPositionOutput(self, context, output):
+        if self._open_state:
+            # Push to joint limit specified in schunk_wsg_50.sdf.
+            output.SetAtIndex(0, self._open_position)
+        else:
+            # Closing to 0mm can smash the fingers together and keep applying
+            # force even when no object is grasped.
+            output.SetAtIndex(0, self._closed_position)
+
+    def CalcForceLimitOutput(self, context, output):
+        output.SetAtIndex(0, self._force_limit)
