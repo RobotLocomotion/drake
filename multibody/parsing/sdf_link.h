@@ -4,6 +4,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace multibody {
@@ -57,13 +58,13 @@ class SdfLink {
 
   /// Gets the pose `X_LIcm` of the inertial (`<inertial>`) frame `Icm` in the
   /// link frame L.
-  const Isometry3<double>& get_inertial_frame_pose() const {
+  const math::RigidTransform<double>& get_inertial_frame_pose() const {
     return X_LIcm_;
   }
 
   /// Sets the pose `X_LIcm` of the inertial (`<inertial>`) frame `Icm` in the
   /// link frame L.
-  void set_inertial_frame_pose(const Isometry3<double>& X_LIcm) {
+  void set_inertial_frame_pose(const math::RigidTransform<double>& X_LIcm) {
     X_LIcm_ = X_LIcm;
   }
 
@@ -77,7 +78,7 @@ class SdfLink {
 
   // The pose of the <inertial> frame I in a measured-in frame L.
   // TODO(amcastro-tri): default should ideally be provided by sdformat library.
-  Isometry3<double> X_LIcm_{Isometry3<double>::Identity()};
+  math::RigidTransform<double> X_LIcm_;  // Default is identity transform.
 
   // Rotational inertia of this link about its center of mass.
   // Icm denotes the <inertial> frame which, per SDF specification, must be at

@@ -6,6 +6,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace multibody {
@@ -53,34 +54,36 @@ GTEST_TEST(SdfParserTest, ParsingTest) {
 
   const SdfLink& lower_link = model.GetLinkByName("lower_link");
   const SdfLink& upper_link = model.GetLinkByName("upper_link");
-  const Isometry3<double> X_ML = model.GetPoseInModelFrame(lower_link.name());
-  const Isometry3<double> X_MU = model.GetPoseInModelFrame(upper_link.name());
+  const math::RigidTransform<double> X_ML(
+      model.GetPoseInModelFrame(lower_link.name()));
+  const math::RigidTransform<double> X_MU(
+      model.GetPoseInModelFrame(upper_link.name()));
 
   // Expected values of the links's poses in the model frame D.
-  const Isometry3<double> X_ML_expected =
-      Translation3<double>(0.25, 1.0, 2.1) *
-      AngleAxis<double>(-2.0, Vector3<double>::UnitX());
+  const math::RigidTransform<double> X_ML_expected(
+      math::RotationMatrix<double>::MakeXRotation(-2.0),
+      Eigen::Vector3d(0.25, 1.0, 2.1));
 
-  const Isometry3<double> X_MU_expected =
-      Translation3<double>(0.0, 0.0, 2.1) *
-      AngleAxis<double>(-1.5708, Vector3<double>::UnitX());
+  const math::RigidTransform<double> X_MU_expected(
+      math::RotationMatrix<double>::MakeXRotation(-1.5708),
+      Eigen::Vector3d(0.0, 0.0, 2.1));
 
-  EXPECT_TRUE(X_ML.isApprox(X_ML_expected, kTolerance));
-  EXPECT_TRUE(X_MU.isApprox(X_MU_expected, kTolerance));
+  EXPECT_TRUE(X_ML.IsNearlyEqualTo(X_ML_expected, kTolerance));
+  EXPECT_TRUE(X_MU.IsNearlyEqualTo(X_MU_expected, kTolerance));
 
   EXPECT_NEAR(lower_link.mass(), 30.0, kTolerance);
   EXPECT_NEAR(upper_link.mass(), 30.0, kTolerance);
 
   // Verify the value of the <inertial> frame poses in their respective link
   // frames.
-  const Isometry3<double>& X_UIcm = upper_link.get_inertial_frame_pose();
-  const Isometry3<double>& X_LIcm = lower_link.get_inertial_frame_pose();
+  const math::RigidTransformd& X_UIcm = upper_link.get_inertial_frame_pose();
+  const math::RigidTransformd& X_LIcm = lower_link.get_inertial_frame_pose();
 
-  const Isometry3<double> X_UIcm_expected(Translation3<double>(0.0, 0.0, 0.5));
-  const Isometry3<double> X_LIcm_expected(Translation3<double>(0.0, 0.0, 0.5));
+  const math::RigidTransformd X_UIcm_expected(Eigen::Vector3d(0.0, 0.0, 0.5));
+  const math::RigidTransformd X_LIcm_expected(Eigen::Vector3d(0.0, 0.0, 0.5));
 
-  EXPECT_TRUE(X_UIcm.isApprox(X_UIcm_expected, kTolerance));
-  EXPECT_TRUE(X_LIcm.isApprox(X_LIcm_expected, kTolerance));
+  EXPECT_TRUE(X_UIcm.IsNearlyEqualTo(X_UIcm_expected, kTolerance));
+  EXPECT_TRUE(X_LIcm.IsNearlyEqualTo(X_LIcm_expected, kTolerance));
 
   // Verify the value of the inertia matrix for each link.
   const Matrix3<double>& I_Icm = upper_link.get_inertia_matrix();
@@ -124,17 +127,17 @@ GTEST_TEST(SdfParserTest, ParsingTest) {
 
   // To create a model out of the SDF specs we'll need to get the pose of a
   // joint frame J in its child link frame. Here we test that:
-  const Isometry3<double> X_UJu =
-      model.GetPose(upper_link.name(), upper_joint.name());
-  const Matrix3<double> R_UJu_expected(
-      Eigen::AngleAxisd(M_PI / 2.0, Vector3<double>::UnitY()));
-  const Vector3<double> p_UJu_expected(-0.025, 0.0, 0.0);
-  EXPECT_TRUE(X_UJu.translation().isApprox(p_UJu_expected, kTolerance));
-  EXPECT_TRUE(X_UJu.linear().isApprox(R_UJu_expected, kTolerance));
+  const math::RigidTransform<double> X_UJu(
+      model.GetPose(upper_link.name(), upper_joint.name()));
+  const math::RigidTransform<double> X_UJu_expected(
+                        math::RotationMatrix<double>::MakeYRotation(M_PI / 2.0),
+                        Eigen::Vector3d(-0.025, 0.0, 0.0));
+  EXPECT_TRUE(X_UJu.IsNearlyEqualTo(X_UJu_expected, kTolerance));
 
-  const Isometry3<double> X_LJl =
-      model.GetPose(lower_link.name(), lower_joint.name());
-  EXPECT_TRUE(X_LJl.isApprox(Isometry3<double>::Identity(), kTolerance));
+  const math::RigidTransform<double> X_LJl(
+      model.GetPose(lower_link.name(), lower_joint.name()));
+  EXPECT_TRUE(X_LJl.IsNearlyEqualTo(math::RigidTransform<double>::Identity(),
+                                    kTolerance));
 }
 
 }  // namespace

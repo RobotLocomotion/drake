@@ -62,7 +62,7 @@ void ParseInertial(sdf::ElementPtr sdf_inertial_element, SdfLink *link) {
   // So far this parsing assumes the pose was given in the link's frame L.
   // TODO(amcastro-tri): register inertial frame and set its pose in an
   // arbitrary measured-in frame.
-  link->set_inertial_frame_pose(X_LIcm);
+  link->set_inertial_frame_pose(math::RigidTransform<double>(X_LIcm));
 
   if (sdf_inertial_element->HasElement("mass")) {
     sdf::ElementPtr sdf_mass_element = sdf_inertial_element->GetElement("mass");

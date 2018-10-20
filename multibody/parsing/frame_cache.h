@@ -6,6 +6,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace multibody {
@@ -68,6 +69,15 @@ class FrameCache {
   /// or the source frame `S` are not in the cache.
   Isometry3<T> Transform(const std::string& target_frame,
                          const std::string& source_frame) const;
+
+  /// Returns the RigidTransform `X_TS` that represents the pose of the
+  /// @p source_frame `S` in the @p target_frame `T`.
+  /// @throws std::runtime_error if either the target frame `T`
+  /// or the source frame `S` are not in the cache.
+  math::RigidTransform<T> RigidTransform(const std::string& target_frame,
+                                        const std::string& source_frame) const {
+    return math::RigidTransform<T>(Transform(target_frame, source_frame));
+  }
 
   /// Returns true if the given @p frame is known
   /// to the cache, false otherwise.
