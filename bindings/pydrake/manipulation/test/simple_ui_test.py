@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from pydrake.manipulation.simple_ui import JointSliders
+from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
 
 import unittest
 import numpy as np
@@ -8,6 +8,7 @@ import numpy as np
 from pydrake.common import FindResourceOrThrow
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
 from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
+from pydrake.systems.framework import BasicVector
 
 
 class TestSimpleUI(unittest.TestCase):
@@ -30,3 +31,30 @@ class TestSimpleUI(unittest.TestCase):
         slider.CalcOutput(context, output)
 
         np.testing.assert_array_equal(output.get_vector_data(0).get_value(), q)
+
+    def test_schunk_wsg_buttons(self):
+        plant = MultibodyPlant()
+        plant.Finalize()
+
+        slider = JointSliders(plant)
+        wsg_buttons = SchunkWsgButtons(slider.window)
+        context = wsg_buttons.CreateDefaultContext()
+        output = wsg_buttons.AllocateOutput()
+
+        # Check the port names.
+        wsg_buttons.GetOutputPort("position")
+        wsg_buttons.GetOutputPort("force_limit")
+
+        wsg_buttons.open()
+        wsg_buttons.CalcOutput(context, output)
+        np.testing.assert_array_equal(output.get_vector_data(0).get_value(),
+                                      [0.055])
+        np.testing.assert_array_equal(output.get_vector_data(1).get_value(),
+                                      [40.])
+
+        wsg_buttons.close()
+        wsg_buttons.CalcOutput(context, output)
+        np.testing.assert_array_equal(output.get_vector_data(0).get_value(),
+                                      [0.008])
+        np.testing.assert_array_equal(output.get_vector_data(1).get_value(),
+                                      [40.])
