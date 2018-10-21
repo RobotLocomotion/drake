@@ -106,6 +106,7 @@ def drake_py_binary(
         tags = [],
         add_test_rule = 0,
         test_rule_args = [],
+        test_rule_size = None,
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
 
@@ -139,6 +140,7 @@ def drake_py_binary(
             deps = deps,
             isolate = isolate,
             args = test_rule_args,
+            size = test_rule_size,
             tags = tags + ["nolint"],
             # N.B. Same as the warning in `drake_pybind_cc_googletest`: numpy
             # imports unittest unconditionally.
