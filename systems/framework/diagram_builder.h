@@ -129,9 +129,15 @@ class DiagramBuilder {
   }
 
   /// Declares that input port @p dest is connected to output port @p src.
-  void Connect(const OutputPort<T>& src,
-               const InputPort<T>& dest) {
-    DRAKE_DEMAND(src.size() == dest.size());
+  void Connect(const OutputPort<T>& src, const InputPort<T>& dest) {
+    if (src.size() != dest.size()) {
+      const std::string msg =
+          src.get_system().GetSystemPathname() + " output port " +
+          src.get_name() + " has size " + std::to_string(src.size()) + " but " +
+          dest.get_system()->GetSystemPathname() + " input port " +
+          dest.get_name() + " has size " + std::to_string(dest.size());
+      DRAKE_ABORT_MSG(msg.c_str());
+    }
     InputPortLocator dest_id{dest.get_system(), dest.get_index()};
     OutputPortLocator src_id{&src.get_system(), src.get_index()};
     ThrowIfInputAlreadyWired(dest_id);
