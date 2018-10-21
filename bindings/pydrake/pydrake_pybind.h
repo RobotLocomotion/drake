@@ -127,6 +127,7 @@ modules should not re-define this alias at global scope.
 may use `using namespace drake::systems::sensors` within functions or
 anonymous namespaces. Avoid `using namespace` directives otherwise.
 
+@anchor PydrakeDoc
 ## Documentation
 
 Drake uses a modified version of `mkdoc.py` from `pybind11`, where `libclang`
@@ -151,6 +152,14 @@ An example of incorporating docstrings:
                doc.RigidTransform.set_rotation.doc)
       ...
     }
+
+To view the documentation rendered in Sphinx:
+
+    bazel run //bindings/pydrake/doc:serve_sphinx [-- --browser=false]
+
+@note Drake's online Python documentation is generated on Ubuntu Bionic, and it
+is suggested to preview documentation using this platform. Other platforms may
+have slightly different generated documentation.
 
 To see what indices are present, generate and open the docstring header:
 
@@ -181,6 +190,7 @@ the top of its definition, and then defines a custom constructor below this,
 the custom constructor's documentation will be accessible as
 `{symbol}.ctor.doc_3`.
 
+@anchor PydrakeKeepAlive
 ## Keep Alive Behavior
 
 `py::keep_alive` is used heavily throughout this code. For more
@@ -200,6 +210,7 @@ objects from one container to another (e.g. transferring all `System`s
 from `DiagramBuilder` to `Diagram` when calling
 `DiagramBuilder.Build()`).
 
+@anchor PydrakeOverloads
 ## Function Overloads
 
 To bind function overloads, please try the following (in order):
@@ -232,6 +243,7 @@ Some aliases are provided; prefer these to the full spellings.
 this may create ambiguous aliases (especially for GCC). Instead, consider
 an alias.
 
+@anchor PydrakeBazelDebug
 # Interactive Debugging with Bazel
 
 If you would like to interactively debug binding code (using IPython for
