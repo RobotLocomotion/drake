@@ -24,6 +24,8 @@ drake_cc_library(
         "lane.cc",
         "lane_data.cc",
         "road_geometry.cc",
+        "rules/right_of_way_phase.cc",
+        "rules/right_of_way_phase_ring.cc",
     ],
     hdrs = [
         "basic_id_index.h",
@@ -33,6 +35,9 @@ drake_cc_library(
         "lane_data.h",
         "road_geometry.h",
         "rules/regions.h",
+        "rules/right_of_way_phase.h",
+        "rules/right_of_way_phase_provider.h",
+        "rules/right_of_way_phase_ring.h",
         "rules/right_of_way_rule.h",
         "rules/road_rulebook.h",
         "rules/speed_limit_rule.h",
