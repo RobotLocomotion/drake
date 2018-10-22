@@ -37,7 +37,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//examples/acrobot:acrobot_plant",
     ],
-    cc_so_name = "acrobot",
     cc_srcs = ["acrobot_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -52,7 +51,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//examples/compass_gait",
     ],
-    cc_so_name = "compass_gait",
     cc_srcs = ["compass_gait_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -67,7 +65,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//examples/manipulation_station:station_simulation",
     ],
-    cc_so_name = "manipulation_station",
     cc_srcs = ["manipulation_station_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -83,7 +80,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//examples/pendulum:pendulum_plant",
     ],
-    cc_so_name = "pendulum",
     cc_srcs = ["pendulum_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -98,7 +94,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//examples/rimless_wheel",
     ],
-    cc_so_name = "rimless_wheel",
     cc_srcs = ["rimless_wheel_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -113,7 +108,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//examples/van_der_pol",
     ],
-    cc_so_name = "van_der_pol",
     cc_srcs = ["van_der_pol_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [

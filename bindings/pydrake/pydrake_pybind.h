@@ -322,6 +322,13 @@ struct overload_cast_impl {
 template <typename Return, typename... Args>
 constexpr auto overload_cast_explicit = overload_cast_impl<Return, Args...>{};
 
+/// Executes Python code to introduce additional symbols for a given module.
+/// For a module with local name `{name}`, the code executed will be
+/// `_{name}_extra.py`. See #9599 for relevant background.
+inline void ExecuteExtraPythonCode(py::module m) {
+  py::module::import("pydrake").attr("_execute_extra_python_code")(m);
+}
+
 #if PY_MAJOR_VERSION >= 3
 // The following works around pybind11 modules getting reconstructed /
 // reimported in Python3. See pybind/pybind11#1559 for more details.

@@ -167,7 +167,7 @@ class PyFunctionConstraint : public Constraint {
 
 }  // namespace
 
-PYBIND11_MODULE(_mathematicalprogram_py, m) {
+PYBIND11_MODULE(mathematicalprogram, m) {
   m.doc() = "Drake MathematicalProgram Bindings";
   constexpr auto& doc = pydrake_doc.drake.solvers;
 
