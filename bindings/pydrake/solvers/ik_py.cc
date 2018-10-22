@@ -11,7 +11,7 @@
 namespace drake {
 namespace pydrake {
 
-PYBIND11_MODULE(_ik_py, m) {
+PYBIND11_MODULE(ik, m) {
   m.doc() = "RigidBodyTree inverse kinematics";
   constexpr auto& doc = pydrake_doc;
 
@@ -34,7 +34,7 @@ PYBIND11_MODULE(_ik_py, m) {
         doc.PostureConstraint.setJointLimits.doc);
 
   py::class_<WorldPositionConstraint, RigidBodyConstraint>(
-    m, "WorldPositionConstraint", doc.WorldPositionConstraint.doc)
+    m, "_WorldPositionConstraint", doc.WorldPositionConstraint.doc)
     .def(py::init<RigidBodyTree<double>*,
                   int,
                   const Eigen::Matrix3Xd&,
@@ -86,7 +86,8 @@ PYBIND11_MODULE(_ik_py, m) {
          doc.RelativeQuatConstraint.ctor.doc);
 
   py::class_<WorldPositionInFrameConstraint, RigidBodyConstraint>(
-    m, "WorldPositionInFrameConstraint", doc.WorldPositionInFrameConstraint.doc)
+    m, "_WorldPositionInFrameConstraint",
+    doc.WorldPositionInFrameConstraint.doc)
     .def(py::init<RigidBodyTree<double>*,
                   int,
                   const Eigen::Matrix3Xd&,
@@ -297,6 +298,8 @@ PYBIND11_MODULE(_ik_py, m) {
     .def_readonly("info", &IKResults::info, doc.IKResults.info.doc)
     .def_readonly("infeasible_constraints", &IKResults::infeasible_constraints,
       doc.IKResults.infeasible_constraints.doc);
+
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake
