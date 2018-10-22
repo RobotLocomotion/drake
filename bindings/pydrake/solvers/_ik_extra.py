@@ -1,26 +1,8 @@
+# See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
+# rationale.
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
-
-from ._ik_py import (IKResults,
-                     IKoptions,
-                     InverseKin,
-                     InverseKinTraj,
-                     InverseKinPointwise,
-                     PostureConstraint,
-                     RelativePositionConstraint,
-                     RelativeQuatConstraint,
-                     WorldEulerConstraint,
-                     WorldQuatConstraint,
-                     WorldGazeDirConstraint,
-                     WorldGazeTargetConstraint,
-                     RelativeGazeDirConstraint,
-                     MinDistanceConstraint,
-                     QuasiStaticConstraint)
-
-from ._ik_py import WorldPositionConstraint as _WorldPositionConstraint
-from ._ik_py import WorldPositionInFrameConstraint as \
-    _WorldPositionInFrameConstraint
 
 
 class WorldPositionConstraint(_WorldPositionConstraint):

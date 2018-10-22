@@ -126,6 +126,8 @@ class TestAll(unittest.TestCase):
             "Adder",
             # - rendering
             "PoseVector",
+            # - scalar_conversion
+            "TemplateSystem",
             # - sensors
             "Image",
             # util
