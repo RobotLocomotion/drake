@@ -1,0 +1,43 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_library(
+    name = "multibody_world",
+    srcs = [
+        "multibody_world.cc",
+    ],
+    hdrs = [
+        "multibody_world.h",
+    ],
+    deps = [
+        "//geometry:scene_graph",
+        "//lcm",
+        "//multibody/multibody_tree/multibody_plant",
+        "//systems/lcm",
+        "//systems/rendering:pose_bundle_to_draw_message",
+    ],
+)
+
+# -----------------------------------------------------
+
+drake_cc_googletest(
+    name = "multibody_world_test",
+    deps = [
+        ":multibody_world",
+        "//multibody/multibody_tree/parsing",
+    ],
+    data = [
+        "//examples/multibody/cart_pole:cart_pole.sdf",
+    ],
+)
+
+add_lint_tests()

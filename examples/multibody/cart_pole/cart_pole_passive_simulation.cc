@@ -6,7 +6,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/geometry/geometry_visualization.h"
-#include "drake/geometry/scene_graph.h"
+#include "drake/multibody_world/multibody_world.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
@@ -47,43 +47,38 @@ DEFINE_double(time_step, 0,
 int do_main() {
   systems::DiagramBuilder<double> builder;
 
-  SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
-  scene_graph.set_name("scene_graph");
+  auto& mbp_sg = *builder.AddSystem<MultibodyWorld<double>>(
+      FLAGS_time_step);
+  auto& cart_pole = mbp_sg.mutable_multibody_plant();
 
   // Make and add the cart_pole model.
   const std::string full_name = FindResourceOrThrow(
       "drake/examples/multibody/cart_pole/cart_pole.sdf");
-  MultibodyPlant<double>& cart_pole =
-      *builder.AddSystem<MultibodyPlant>(FLAGS_time_step);
-  AddModelFromSdfFile(full_name, &cart_pole, &scene_graph);
+  AddModelFromSdfFile(full_name, &cart_pole, &mbp_sg.mutable_scene_graph());
 
   // Add gravity to the model.
   cart_pole.AddForceElement<UniformGravityFieldElement>(
       -9.81 * Vector3<double>::UnitZ());
 
   // Now the model is complete.
-  cart_pole.Finalize(&scene_graph);
+  mbp_sg.Finalize();
 
-  // Sanity check on the availability of the optional source id before using it.
-  DRAKE_DEMAND(cart_pole.geometry_source_is_registered());
+  // We can now connect to DrakeVisualizer.
+  mbp_sg.ConnectDrakeVisualizer(&builder);
 
-  builder.Connect(
-      cart_pole.get_geometry_poses_output_port(),
-      scene_graph.get_source_pose_port(cart_pole.get_source_id().value()));
-
-  geometry::ConnectDrakeVisualizer(&builder, scene_graph);
+  // Create the Diagram.
   auto diagram = builder.Build();
 
   // Create a context for this system:
   std::unique_ptr<systems::Context<double>> diagram_context =
       diagram->CreateDefaultContext();
   diagram->SetDefaultContext(diagram_context.get());
-  systems::Context<double>& cart_pole_context =
-      diagram->GetMutableSubsystemContext(cart_pole, diagram_context.get());
+  systems::Context<double>& cart_pole_context = mbp_sg.
+      GetMutableMultibodyPlantContext(diagram.get(), diagram_context.get());
 
   // There is no input actuation in this example for the passive dynamics.
   cart_pole_context.FixInputPort(
-      cart_pole.get_actuation_input_port().get_index(), Vector1d(0));
+      mbp_sg.get_actuation_input_port().get_index(), Vector1d(0));
 
   // Get joints so that we can set initial conditions.
   const PrismaticJoint<double>& cart_slider =
