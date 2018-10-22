@@ -95,7 +95,7 @@ licenses([
 py_library(
     name = "drake_visualizer_python_deps",
     deps = [
-        "@lcm//:lcm-python",
+        "@lcm//:lcm-python2",
         "@lcmtypes_bot2_core//:lcmtypes_bot2_core_py",
         # TODO(eric.cousineau): Expose VTK Python libraries here for Linux.
         "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_py",

@@ -16,6 +16,11 @@ load(
     "install_files",
 )
 load("@drake//tools/lint:python_lint.bzl", "python_lint")
+load(
+    "@drake//tools/workspace/python:py2_py3.bzl",
+    "py2_py3",
+    "py_select",
+)
 
 licenses([
     "notice",  # BSD-3-Clause
@@ -169,8 +174,20 @@ cc_binary(
     ],
 )
 
-cc_binary(
-    name = "_lcm.so",
+py2_py3(
+    rule = cc_binary,
+    name = "_lcm.@PYTHON_EXT_SUFFIX@",
+    deps = py_select(
+        py2 = [
+            ":lcm",
+            "@python2//:python",
+        ],
+        py3 = [
+            ":lcm",
+            # N.B. This will only run when @python refers to Python3.
+            "@python//:python",
+        ],
+    ),
     srcs = [
         "lcm-python/module.c",
         "lcm-python/pyeventlog.c",
@@ -184,10 +201,6 @@ cc_binary(
     linkshared = 1,
     linkstatic = 1,
     visibility = ["//visibility:private"],
-    deps = [
-        ":lcm",
-        "@python",
-    ],
 )
 
 # Downstream users of lcm-python expect to say "import lcm".  However, in the
@@ -219,10 +232,15 @@ generate_file(
     name = "__init__.py",
     content = """
 import ctypes
-import os.path
+from os.path import realpath
+from sysconfig import get_config_var
+
 import six
-ctypes.cdll.LoadLibrary(os.path.realpath(__path__[0] + '/_lcm.so'))
+
+_ext = get_config_var("EXT_SUFFIX") or get_config_var("SO")
+ctypes.cdll.LoadLibrary(realpath(__path__[0] + '/_lcm' + _ext))
 _filename = __path__[0] + \"/lcm-python/lcm/__init__.py\"
+
 if six.PY2:
     execfile(_filename)
 else:
@@ -233,17 +251,26 @@ else:
     visibility = ["//visibility:private"],
 )
 
-py_library(
-    name = "lcm-python-upstream",
+py2_py3(
+    rule = py_library,
+    name = py_select(
+        py2 = "lcm-python2-upstream",
+        py3 = "lcm-python3-upstream",
+    ),
+    data = ["_lcm.@PYTHON_EXT_SUFFIX@"],
     srcs = ["lcm-python/lcm/__init__.py"],  # Actual code from upstream.
-    data = [":_lcm.so"],
     visibility = ["//visibility:private"],
 )
 
-py_library(
-    name = "lcm-python",
+py2_py3(
+    rule = py_library,
+    alias = "lcm-python",
+    name = py_select(py2 = "lcm-python2", py3 = "lcm-python3"),
+    deps = py_select(
+        py2 = [":lcm-python2-upstream"],
+        py3 = [":lcm-python3-upstream"],
+    ),
     srcs = ["__init__.py"],  # Shim, from the genrule above.
-    deps = [":lcm-python-upstream"],
 )
 
 java_library(
@@ -298,13 +325,23 @@ install_files(
     strip_prefix = ["**/"],
 )
 
-install(
-    name = "install_python",
-    targets = [
-        ":_lcm.so",
-        ":lcm-python-upstream",
-    ],
+py2_py3(
+    rule = install,
+    alias = "install_python",
+    name = py_select(py2 = "install_python2", py3 = "install_python3"),
+    targets = py_select(
+        py2 = [
+            "_lcm.@PYTHON_EXT_SUFFIX@",
+            "lcm-python2-upstream",
+        ],
+        py3 = [
+            "_lcm.@PYTHON_EXT_SUFFIX@",
+            "lcm-python3-upstream",
+        ],
+    ),
     library_dest = "@PYTHON_SITE_PACKAGES@/lcm",
+    # Re-declare for `py2_py3` to intercept.
+    py_dest = "@PYTHON_SITE_PACKAGES@",
     py_strip_prefix = ["lcm-python"],
 )
 
@@ -340,7 +377,10 @@ install(
     deps = [
         ":install_cmake_config",
         ":install_extra_cmake",
+        # Using an alias enables us to install correctly for both Python2 and
+        # Python3.
         ":install_python",
+        ":install_python2",
     ],
 )
 
