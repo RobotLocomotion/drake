@@ -1,5 +1,8 @@
+_dir=$(dirname ${BASH_SOURCE})
+
 py3-setup() { (
     set -x
+    cd ${_dir}
     python3 -m virtualenv --python python3 build/py3 --system-site-packages
     set +x
     source build/py3/bin/activate
@@ -14,11 +17,11 @@ py3-setup() { (
     sed -i 's#py3/bin/python\b#py3/bin/python3#g' build/py3/bin/python3-config
 ) }
 
-if [[ ! -f build/py3/bin/python3 ]]; then
+if [[ ! -f ${_dir}/build/py3/bin/python3 ]]; then
     py3-setup
 fi
 
-source build/py3/bin/activate
+source ${_dir}/build/py3/bin/activate
 _python_bin=$(which python3)
 
 bazel-py3() { (
