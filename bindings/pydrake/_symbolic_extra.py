@@ -1,11 +1,6 @@
-from __future__ import absolute_import, division, print_function
-
+# See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
+# rationale.
 import functools
-
-from ._symbolic_py import *
-
-# Explicitly import private symbols
-from ._symbolic_py import __logical_and, __logical_or
 
 
 def logical_and(*formulas):

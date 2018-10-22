@@ -93,7 +93,6 @@ drake_cc_library(
 drake_pybind_library(
     name = "eigen_geometry_py",
     cc_deps = [":eigen_geometry_pybind"],
-    cc_so_name = "eigen_geometry",
     cc_srcs = ["eigen_geometry_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [":module_py"],
@@ -360,7 +359,6 @@ drake_pybind_library(
     testonly = 1,
     add_install = False,
     cc_deps = [":wrap_pybind"],
-    cc_so_name = "wrap_test_util",
     cc_srcs = ["test/wrap_test_util_py.cc"],
     package_info = PACKAGE_INFO,
 )

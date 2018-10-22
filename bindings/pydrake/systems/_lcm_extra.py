@@ -1,6 +1,9 @@
-from pydrake.systems._lcm_py import *
+# See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
+# rationale.
 
-from pydrake.systems.framework import AbstractValue, Value
+# N.B. We must manually hide `AbstractValue` as Sphinx gets confused as to who
+# owns it due to how this file is executed.
+from pydrake.systems.framework import AbstractValue as _AbstractValue
 
 
 class PySerializer(SerializerInterface):
@@ -12,14 +15,14 @@ class PySerializer(SerializerInterface):
         self._lcm_type = lcm_type
 
     def CreateDefaultValue(self):
-        return AbstractValue.Make(self._lcm_type())
+        return _AbstractValue.Make(self._lcm_type())
 
     def Deserialize(self, buffer, value):
         message = self._lcm_type.decode(buffer)
         value.set_value(message)
 
     def Serialize(self, value):
-        assert isinstance(value, AbstractValue)
+        assert isinstance(value, _AbstractValue)
         message = value.get_value()
         assert isinstance(message, self._lcm_type)
         return message.encode()
