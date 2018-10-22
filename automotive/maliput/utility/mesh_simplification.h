@@ -31,12 +31,14 @@ struct DirectedEdgeIndex {
 };
 
 
-inline bool operator==(const DirectedEdgeIndex& lhs, const DirectedEdgeIndex& rhs) {
+inline bool operator==(const DirectedEdgeIndex& lhs,
+                       const DirectedEdgeIndex& rhs) {
   return (lhs.start_vertex_index == rhs.start_vertex_index
           && lhs.end_vertex_index == rhs.end_vertex_index);
 }
 
-inline bool operator!=(const DirectedEdgeIndex& lhs, const DirectedEdgeIndex& rhs) {
+inline bool operator!=(const DirectedEdgeIndex& lhs,
+                       const DirectedEdgeIndex& rhs) {
   return !(lhs == rhs);
 }
 

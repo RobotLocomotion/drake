@@ -272,7 +272,6 @@ TEST_F(GeoMeshSimplificationTest, FaceAdjacencyMapComputation) {
     EXPECT_EQ(face_edges[kThirdQuadHEdge.edge_index], kNoEdge);
     EXPECT_EQ(face_edges[kThirdQuadIEdge.edge_index], kNoEdge);
   }
-
 }
 
 

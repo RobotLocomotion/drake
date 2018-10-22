@@ -19,6 +19,7 @@ drake_cc_package_library(
     name = "utility",
     deps = [
         ":everything",
+        ":meshes",
     ],
 )
 
@@ -136,7 +137,7 @@ drake_py_unittest(
 drake_cc_googletest(
     name = "mesh_simplification_test",
     deps = [
-        ":meshes"
+        ":meshes",
     ],
 )
 

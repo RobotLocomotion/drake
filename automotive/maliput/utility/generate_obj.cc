@@ -6,8 +6,6 @@
 #include <fstream>
 #include <functional>
 #include <initializer_list>
-#include <queue>
-#include <set>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
@@ -22,7 +20,6 @@
 #include "drake/automotive/maliput/utility/mesh.h"
 #include "drake/automotive/maliput/utility/mesh_simplification.h"
 #include "drake/common/drake_assert.h"
-
 
 namespace drake {
 namespace maliput {

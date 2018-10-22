@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstddef>
 #include <initializer_list>
+#include <string>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
@@ -12,7 +13,6 @@
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/hash.h"
-
 
 namespace drake {
 namespace maliput {
@@ -257,7 +257,7 @@ class GeoMesh {
     for (const IndexFace& f : faces_) {
       fmt::print(os, "f");
       for (const IndexFace::Vertex& ifv : f.vertices()) {
-        fmt::print(os, " {}///{}",
+        fmt::print(os, " {}//{}",
                    (ifv.vertex_index + 1 + vertex_index_offset),
                    (ifv.normal_index + 1 + normal_index_offset));
       }

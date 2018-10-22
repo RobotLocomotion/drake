@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <queue>
 
-
 namespace drake {
 namespace maliput {
 namespace utility {
