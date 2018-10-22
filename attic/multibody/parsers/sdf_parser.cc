@@ -48,14 +48,9 @@ using std::unique_ptr;
 using tinyxml2::XMLElement;
 using tinyxml2::XMLDocument;
 
-using drake::multibody::joints::FloatingBaseType;
-
-// TODO(eric.cousineau): Figure out a core location for a sugar method like
-// this.
-Isometry3d XyzRpy(const Vector3d& xyz, const Vector3d& rpy) {
-  return math::RigidTransform<double>(
-      math::RollPitchYaw<double>(rpy).ToRotationMatrix(), xyz).GetAsIsometry3();
-}
+using math::RigidTransformd;
+using math::RollPitchYawd;
+using multibody::joints::FloatingBaseType;
 
 void ParseSdfInertial(
     RigidBody<double>* body, XMLElement* node,
@@ -441,7 +436,8 @@ void ParseSdfFrame(
     RigidBody<double>* body = FindBodyOrWorld(
         rigid_body_tree, body_name, model_instance_id);
     // Create the frame
-    const Isometry3d X_BF = XyzRpy(xyz, rpy);
+    const Isometry3d X_BF = RigidTransformd(
+        RollPitchYawd(rpy), xyz).GetAsIsometry3();
     frame = allocate_shared<RigidBodyFrame<double>>(
         Eigen::aligned_allocator<RigidBodyFrame<double>>(),
         name, body, X_BF, model_instance_id);
@@ -457,7 +453,8 @@ void ParseSdfFrame(
           rigid_body_tree, parent_frame_name, model_instance_id);
     }
     const Isometry3d X_BP = pose_frame->get_transform_to_body();
-    const Isometry3d X_PF = XyzRpy(xyz, rpy);
+    const Isometry3d X_PF = RigidTransformd(
+        RollPitchYawd(rpy), xyz).GetAsIsometry3();
     RigidBody<double>* body = pose_frame->get_mutable_rigid_body();
     frame = allocate_shared<RigidBodyFrame<double>>(
         Eigen::aligned_allocator<RigidBodyFrame<double>>(),

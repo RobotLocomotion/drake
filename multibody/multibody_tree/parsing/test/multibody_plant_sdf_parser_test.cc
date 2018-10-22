@@ -23,7 +23,9 @@ using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::SceneGraph;
 using math::RigidTransform;
+using math::RigidTransformd;
 using math::RollPitchYaw;
+using math::RollPitchYawd;
 using multibody::Body;
 using multibody::parsing::AddModelFromSdfFile;
 using multibody::parsing::AddModelsFromSdfFile;
@@ -35,13 +37,6 @@ namespace multibody {
 namespace parsing {
 namespace test {
 namespace {
-
-// TODO(eric.cousineau): Figure out a core location for a sugar method like
-// this.
-Isometry3d XyzRpy(const Vector3d& xyz, const Vector3d& rpy) {
-  return RigidTransform<double>(
-      RollPitchYaw<double>(rpy).ToRotationMatrix(), xyz).GetAsIsometry3();
-}
 
 // Verifies model instances are correctly created in the plant.
 GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
@@ -170,13 +165,15 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
         << name;
   };
 
-  const Isometry3d X_L1F1 = XyzRpy(
-      Vector3d(0.1, 0.2, 0.3), Vector3d(0.4, 0.5, 0.6));
+  const Isometry3d X_L1F1 = RigidTransformd(
+      RollPitchYawd(0.4, 0.5, 0.6), Vector3d(0.1, 0.2, 0.3)).GetAsIsometry3();
   check_frame("link1", "model_scope_link1_frame", X_L1F1);
-  const Isometry3d X_F1F2 = XyzRpy(Vector3d(0.1, 0.0, 0.0), Vector3d::Zero());
+  const Isometry3d X_F1F2 = RigidTransformd(
+      Vector3d(0.1, 0.0, 0.0)).GetAsIsometry3();
   check_frame(
       "model_scope_link1_frame", "model_scope_link1_frame_child", X_F1F2);
-  const Isometry3d X_MF3 = XyzRpy(Vector3d(0.7, 0.8, 0.9), Vector3d::Zero());
+  const Isometry3d X_MF3 = RigidTransformd(
+      Vector3d(0.7, 0.8, 0.9)).GetAsIsometry3();
   check_frame("instance1", "model_scope_model_frame_implicit", X_MF3);
 }
 
