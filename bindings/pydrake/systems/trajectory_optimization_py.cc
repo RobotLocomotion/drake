@@ -22,7 +22,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
   py::module::import("pydrake.symbolic");
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.primitives");
-  py::module::import("pydrake.solvers._mathematicalprogram_py");
+  py::module::import("pydrake.solvers.mathematicalprogram");
 
   py::class_<MultipleShooting, solvers::MathematicalProgram>(m,
                                                              "MultipleShooting",

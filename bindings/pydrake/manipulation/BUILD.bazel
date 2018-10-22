@@ -38,7 +38,6 @@ drake_pybind_library(
         "//bindings/pydrake/util:drake_optional_pybind",
         "//bindings/pydrake/util:eigen_pybind",
     ],
-    cc_so_name = "planner",
     cc_srcs = ["planner_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [

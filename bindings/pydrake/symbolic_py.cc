@@ -20,7 +20,7 @@ using std::map;
 using std::string;
 
 // TODO(eric.cousineau): Use py::self for operator overloads?
-PYBIND11_MODULE(_symbolic_py, m) {
+PYBIND11_MODULE(symbolic, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::symbolic;
   constexpr auto& doc = pydrake_doc.drake.symbolic;
@@ -524,6 +524,8 @@ PYBIND11_MODULE(_symbolic_py, m) {
                              drake::symbolic::Expression>();
   py::implicitly_convertible<drake::symbolic::Monomial,
                              drake::symbolic::Polynomial>();
+
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake

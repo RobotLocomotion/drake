@@ -2,9 +2,11 @@
 """
 
 from __future__ import absolute_import, division, print_function
-from os.path import abspath
+from os.path import abspath, dirname, join
 from platform import python_version_tuple
 from sys import stderr
+
+import six
 
 # When importing `pydrake` as an external under Bazel, Bazel will use a shared
 # library whose relative RPATHs are incorrect for `libdrake.so`, and thus will
@@ -49,6 +51,23 @@ def _getattr_handler(name):
         return pydrake.rbtree
     else:
         raise AttributeError()
+
+
+def _execute_extra_python_code(m):
+    # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
+    # rationale.
+    pydrake_dir = dirname(__file__)
+    orig_pieces = m.__name__.split(".")
+    assert orig_pieces[0] == __name__
+    pieces = [pydrake_dir] + orig_pieces[1:-1] + [
+        "_{}_extra.py".format(orig_pieces[-1])]
+    filename = join(*pieces)
+    if six.PY2:
+        execfile(filename, m.__dict__)
+    else:
+        with open(filename) as f:
+            _code = compile(f.read(), filename, 'exec')
+            exec(_code, m.__dict__, m.__dict__)
 
 
 ModuleShim._install(__name__, _getattr_handler)
