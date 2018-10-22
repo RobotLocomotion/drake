@@ -229,6 +229,8 @@ drake_cc_binary(
         "-simulation_sec=1.0",
         "-realtime_factor=0.0",
     ],
+    test_rule_flaky = 1,
+    test_rule_size = "medium",
     deps = [
         ":acrobot_lcm",
         ":acrobot_plant",
