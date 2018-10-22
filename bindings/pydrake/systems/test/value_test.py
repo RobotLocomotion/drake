@@ -6,9 +6,11 @@ import copy
 import unittest
 import numpy as np
 
+from pydrake.autodiffutils import AutoDiffXd
+from pydrake.symbolic import Expression
 from pydrake.systems.framework import (
     AbstractValue,
-    BasicVector,
+    BasicVector, BasicVector_,
     Parameters,
     Value,
     VectorBase,
@@ -82,7 +84,7 @@ class TestValue(unittest.TestCase):
     def test_abstract_value_copyable(self):
         expected = "Hello world"
         value = Value[str](expected)
-        self.assertTrue(isinstance(value, AbstractValue))
+        self.assertIsInstance(value, AbstractValue)
         self.assertEqual(value.get_value(), expected)
         expected_new = "New value"
         value.set_value(expected_new)
@@ -128,15 +130,18 @@ class TestValue(unittest.TestCase):
 
     def test_abstract_value_make(self):
         value = AbstractValue.Make("Hello world")
-        self.assertTrue(isinstance(value, Value[str]))
+        self.assertIsInstance(value, Value[str])
         value = AbstractValue.Make(MoveOnlyType(10))
-        self.assertTrue(isinstance(value, Value[MoveOnlyType]))
+        self.assertIsInstance(value, Value[MoveOnlyType])
         value = AbstractValue.Make({"x": 10})
-        self.assertTrue(isinstance(value, Value[object]))
+        self.assertIsInstance(value, Value[object])
+        for T in [float, AutoDiffXd, Expression]:
+            value = AbstractValue.Make(BasicVector_[T](size=1))
+            self.assertIsInstance(value, Value[BasicVector_[T]])
 
     def test_abstract_value_unknown(self):
         value = make_unknown_abstract_value()
-        self.assertTrue(isinstance(value, AbstractValue))
+        self.assertIsInstance(value, AbstractValue)
         with self.assertRaises(RuntimeError) as cm:
             value.get_value()
         self.assertTrue(all(

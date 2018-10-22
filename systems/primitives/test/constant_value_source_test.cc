@@ -20,8 +20,8 @@ namespace {
 class ConstantValueSourceTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    std::unique_ptr<AbstractValue> value(new Value<std::string>("foo"));
-    source_ = make_unique<ConstantValueSource<double>>(std::move(value));
+    source_ = make_unique<ConstantValueSource<double>>(
+        Value<std::string>("foo"));
     context_ = source_->CreateDefaultContext();
     output_ = source_->get_output_port(0).Allocate();
     input_ = make_unique<BasicVector<double>>(3 /* size */);
@@ -32,6 +32,10 @@ class ConstantValueSourceTest : public ::testing::Test {
   std::unique_ptr<AbstractValue> output_;
   std::unique_ptr<BasicVector<double>> input_;
 };
+
+TEST_F(ConstantValueSourceTest, UniquePtrCtor) {
+  ConstantValueSource<double>(AbstractValue::Make(std::string("foo")));
+}
 
 TEST_F(ConstantValueSourceTest, Output) {
   ASSERT_EQ(source_->get_num_input_ports(), context_->get_num_input_ports());
