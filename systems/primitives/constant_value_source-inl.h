@@ -16,6 +16,10 @@ namespace drake {
 namespace systems {
 
 template <typename T>
+ConstantValueSource<T>::ConstantValueSource(const AbstractValue& value)
+    : ConstantValueSource(value.Clone()) {}
+
+template <typename T>
 ConstantValueSource<T>::ConstantValueSource(
     std::unique_ptr<AbstractValue> value)
     : LeafSystem<T>(SystemTypeTag<systems::ConstantValueSource>{}),
