@@ -270,6 +270,7 @@ drake_cc_googletest(
 
 drake_py_unittest(
     name = "all_test",
+    timeout = "moderate",
     data = ["//examples/pendulum:models"],
     deps = [":all_py"],
 )
