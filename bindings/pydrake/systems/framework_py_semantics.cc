@@ -228,7 +228,15 @@ void DefineFrameworkPySemantics(py::module m) {
         m, "OutputPort", GetPyParam<T>(), doc.OutputPort.doc)
       .def("size", &OutputPort<T>::size, doc.OutputPortBase.size.doc)
       .def("get_index", &OutputPort<T>::get_index,
-           doc.OutputPortBase.get_index.doc);
+           doc.OutputPortBase.get_index.doc)
+      .def("EvalAbstract",
+           &OutputPort<T>::EvalAbstract, doc.OutputPort.EvalAbstract.doc,
+           py_reference_internal)
+      .def("Eval", [](const OutputPort<T>* self, const Context<T>& context) {
+             // Use type-erased signature to get value.
+             py::object value_ref = py::cast(&self->EvalAbstract(context));
+             return value_ref.attr("get_value")();
+           }, doc.OutputPort.Eval.doc);
 
     auto system_output = DefineTemplateClassWithDefault<SystemOutput<T>>(
         m, "SystemOutput", GetPyParam<T>(), doc.SystemOutput.doc);
@@ -260,7 +268,7 @@ void DefineFrameworkPySemantics(py::module m) {
     // remove it from the Python code.
     static_assert(
       std::is_same<InputPortDescriptor<T>, InputPort<T>>::value,
-      "Remove Python aliases once this causes a compilation error this fails");
+      "Remove Python aliases once this causes a compilation error");
   #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
     // Parameters.
