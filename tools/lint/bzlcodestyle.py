@@ -32,8 +32,13 @@ import pycodestyle
 import sys
 
 
-def whitespace_around_named_parameter_equals(logical_line, tokens):
+def whitespace_around_named_parameter_equals_positive(logical_line, tokens):
     """Require spaces around the '=' sign in function arguments."""
+    # N.B. Nominal `pycodestyle` includes a method named
+    # `whitespace_around_named_parameter_equals`, which is the negative case.
+    # Python3 struggles with a same-named method because it does not want to
+    # order functions (the sorting tuple is `(name, function, args)`).
+    # We must avoid colliding with this name, and ensure this takes precedence.
     parens = 0
     no_space = False
     prev_end = None
@@ -69,7 +74,8 @@ def whitespace_around_named_parameter_equals(logical_line, tokens):
 def _main():
     """Parse options and run checks on Skylark source."""
 
-    pycodestyle.register_check(whitespace_around_named_parameter_equals)
+    pycodestyle.register_check(
+        whitespace_around_named_parameter_equals_positive)
 
     style_guide = pycodestyle.StyleGuide(parse_argv=True)
     options = style_guide.options
