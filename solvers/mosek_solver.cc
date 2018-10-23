@@ -755,8 +755,8 @@ void MosekSolver::Solve(const MathematicalProgram& prog,
   result->get_mutable_solver_id() = id();
   // TODO(hongkai.dai@tri.global) : Add MOSEK parameters.
   // Mosek parameter are added by enum, not by string.
+  MSKsolstae solution_status;
   if (rescode == MSK_RES_OK) {
-    MSKsolstae solution_status;
     if (rescode == MSK_RES_OK) {
       rescode = MSK_getsolsta(task, solution_type, &solution_status);
     }
@@ -808,6 +808,16 @@ void MosekSolver::Solve(const MathematicalProgram& prog,
       }
     }
   }
+
+  MosekSolverDetails solver_details;
+  solver_details.rescode = rescode;
+  solver_details.solution_status = solution_status;
+  if (rescode == MSK_RES_OK) {
+    rescode = MSK_getdouinf(task, MSK_DINF_OPTIMIZER_TIME,
+                            &(solver_details.optimizer_time));
+  }
+  result->SetSolverDetails(
+      systems::AbstractValue::Make<MosekSolverDetails>(solver_details));
 
   if (rescode != MSK_RES_OK) {
     result->get_mutable_result() = SolutionResult::kUnknownError;

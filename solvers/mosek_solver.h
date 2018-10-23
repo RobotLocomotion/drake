@@ -11,6 +11,18 @@
 
 namespace drake {
 namespace solvers {
+struct MosekSolverDetails {
+  // The mosek optimization time.
+  double optimizer_time;
+  // The response code returned from mosek solver. Check
+  // https://docs.mosek.com/8.1/capi/response-codes.html for the meaning on the
+  // response code.
+  int rescode;
+  // The solution status after solving the problem. Check
+  // https://docs.mosek.com/8.1/capi/accessing-solution.html for the meaning on
+  // the solution status.
+  int solution_status;
+};
 
 class MosekSolver : public MathematicalProgramSolverInterface {
  public:
