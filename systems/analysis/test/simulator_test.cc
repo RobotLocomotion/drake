@@ -962,7 +962,7 @@ class TimedUpdater : public LeafSystem<double> {
                             CompositeEventCollection<double>* event_info,
                             double* time) const override {
     const double inf = std::numeric_limits<double>::infinity();
-    *time = (context.get_time() <= t_upd_) ? t_upd_ : inf;
+    *time = (context.get_time() < t_upd_) ? t_upd_ : inf;
 
     switch (event_type_) {
       case kPublish: {
