@@ -82,7 +82,9 @@ Additional Rules
 * When using the ``logging`` module, avoid its lazy-formatting
   syntax. Rationale: exceptions raised in lazy formatting get printed to
   ``stderr``, but are otherwise ignored, and thus may escape notice.
-* Executable files should use one of the following "shebang" lines::
+* Executable Python files should be limited to *only* scripts which are not run
+  via Bazel-generated Python proxy scripts [#bazel_py_script]_. If a script
+  qualifies, use one of the following "shebang" lines::
 
     #!/usr/bin/env python2
     #!/usr/bin/env python3
@@ -91,6 +93,9 @@ Additional Rules
   executable. On macOS systems configured for Drake, this gives a better result
   than ``/usr/bin/python`` (system Python 2.7). This is also recommended by
   `PEP 394 <https://www.python.org/dev/peps/pep-0394/>`_`.
+
+.. [#bazel_py_script] Generally, this means scripts that run via ``bazel run``,
+   ``bazel test``, or ``./bazel-bin/...``.
 
 .. _code-style-guide-matlab:
 
