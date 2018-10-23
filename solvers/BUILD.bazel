@@ -625,11 +625,13 @@ drake_cc_library(
     deps = select({
         "//tools:with_mosek": [
             ":mathematical_program_api",
+            ":mathematical_program_result",
             "//common:scoped_singleton",
             "@mosek",
         ],
         "//conditions:default": [
             ":mathematical_program_api",
+            ":mathematical_program_result",
         ],
     }),
 )

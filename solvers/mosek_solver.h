@@ -6,6 +6,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/mathematical_program_solver_interface.h"
 
 namespace drake {
@@ -23,6 +24,8 @@ class MosekSolver : public MathematicalProgramSolverInterface {
    */
   bool available() const override;
 
+  void Solve(const MathematicalProgram& prog,
+             MathematicalProgramResult* result) const;
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
   SolverId solver_id() const override;

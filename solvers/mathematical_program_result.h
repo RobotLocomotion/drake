@@ -59,6 +59,12 @@ class MathematicalProgramResult {
    * not been set*/
   const systems::AbstractValue& solver_details() const;
 
+  /**
+   * Convert MathematicalProgramResult to SolverResult.
+   * TODO(hongkai.dai): remove this function, when we remove SolverResult class.
+   */
+  SolverResult ConvertToSolverResult() const;
+
  private:
   SolutionResult result_;
   Eigen::VectorXd x_val_;
@@ -66,5 +72,6 @@ class MathematicalProgramResult {
   SolverId solver_id_;
   std::unique_ptr<systems::AbstractValue> solver_details_;
 };
+
 }  // namespace solvers
 }  // namespace drake

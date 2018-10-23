@@ -22,5 +22,14 @@ const systems::AbstractValue& MathematicalProgramResult::solver_details()
   }
   return *solver_details_;
 }
+
+SolverResult MathematicalProgramResult::ConvertToSolverResult() const {
+  SolverResult solver_result(solver_id_);
+  if (x_val_.size() != 0) {
+    solver_result.set_decision_variable_values(x_val_);
+  }
+  solver_result.set_optimal_cost(optimal_cost_);
+  return solver_result;
+}
 }  // namespace solvers
 }  // namespace drake
