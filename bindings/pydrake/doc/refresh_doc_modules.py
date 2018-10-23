@@ -59,9 +59,7 @@ def has_cc_imported_symbols(name):
         sub = pieces[-1]
         test = ".".join(pieces[:-1] + ["_{}_py".format(sub)])
         if test in sys.modules:
-            raise RuntimeError(
-                ("The module `{}` should not exist; instead, only `{}` should "
-                 "exist").format(test, name))
+            return True
     return False
 
 
