@@ -38,6 +38,7 @@ drake_cc_package_library(
         ":gyroscope",
         ":image",
         ":image_to_lcm_image_array_t",
+        ":image_writer",
         ":optitrack_sender",
         ":rgbd_camera",
         ":rgbd_renderer",
@@ -352,6 +353,21 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "image_writer",
+    srcs = ["image_writer.cc"],
+    hdrs = ["image_writer.h"],
+    deps = [
+        ":image",
+        ":vtk_util",
+        "//common:essential",
+        "//systems/framework",
+        "@spruce",
+        "@vtk//:vtkCommonDataModel",
+        "@vtk//:vtkIOImage",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -441,6 +457,18 @@ filegroup(
         "test/models/meshes/box2.obj",
         "test/models/nothing.sdf",
         "test/models/sphere.sdf",
+    ],
+)
+
+drake_cc_googletest(
+    name = "image_writer_test",
+    tags = vtk_test_tags,
+    deps = [
+        ":image_writer",
+        "//common:temp_directory",
+        "//common/test_utilities",
+        "@spruce",
+        "@vtk//:vtkIOImage",
     ],
 )
 
