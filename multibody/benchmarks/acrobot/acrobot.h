@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "drake/common/eigen_types.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace multibody {
@@ -88,7 +89,7 @@ class Acrobot {
   /// @param theta2 The elbow angle in radians.
   /// @returns X_WL1 the pose of link 1 measured and expressed in the world
   /// frame.
-  Isometry3<T> CalcLink1PoseInWorldFrame(const T& theta1) const;
+  math::RigidTransform<T> CalcLink1PoseInWorldFrame(const T& theta1) const;
 
   /// Computes the pose of the center of mass of link 2 measured and expressed
   /// in the world frame.
@@ -96,14 +97,14 @@ class Acrobot {
   /// @param theta2 The elbow angle in radians.
   /// @returns X_WL2 the pose of link 2 measured and expressed in the world
   /// frame.
-  Isometry3<T> CalcLink2PoseInWorldFrame(
+  math::RigidTransform<T> CalcLink2PoseInWorldFrame(
       const T& theta1, const T& theta2) const;
 
   /// Computes the pose of the elbow outboard frame `Eo` in the world frame W.
   /// @param theta1 The shoulder angle in radians.
   /// @param theta2 The elbow angle in radians.
   /// @returns X_WEo the pose of the elbow frame Eo in the world frame W.
-  Isometry3<T> CalcElbowOutboardFramePoseInWorldFrame(
+  math::RigidTransform<T> CalcElbowOutboardFramePoseInWorldFrame(
       const T& theta1, const T& theta2) const;
 
   /// Computes the spatial velocity of the center of mass of link 1 expressed
@@ -187,7 +188,7 @@ class Acrobot {
       g_{9.81};    // Gravitational constant (m/s^2).
 
   // Transformation from the model frame D to the world frame W.
-  Isometry3<T> X_WD_{Isometry3<T>::Identity()};
+  math::RigidTransform<T> X_WD_;  // Default is identity transform.
 };
 
 }  // namespace benchmarks
