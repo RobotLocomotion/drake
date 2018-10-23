@@ -81,8 +81,8 @@ class RigidTransform {
   /// @throws std::logic_error in debug builds if the rotation matrix
   /// that is built from `quaternion` is invalid.
   /// @see RotationMatrix::RotationMatrix(const Eigen::Quaternion<T>&)
-  RigidTransform(const Eigen::Quaternion<T>& quaternion, const Vector3<T>& p) :
-      RigidTransform(RotationMatrix<T>(quaternion), p) {}
+  RigidTransform(const Eigen::Quaternion<T>& quaternion, const Vector3<T>& p)
+      : RigidTransform(RotationMatrix<T>(quaternion), p) {}
 
   /// Constructs a %RigidTransform from a AngleAxis and a position vector.
   /// @param[in] theta_lambda an Eigen::AngleAxis whose associated axis (vector
