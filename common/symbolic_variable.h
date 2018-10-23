@@ -92,11 +92,11 @@ class Variable {
   Id id_{};  // Unique identifier.
   Type type_{Type::CONTINUOUS};
 
-  // Variable class has shared_ptr<string> instead of string to be
+  // Variable class has shared_ptr<const string> instead of string to be
   // drake::test::IsMemcpyMovable.
   // Please check https://github.com/RobotLocomotion/drake/issues/5974
   // for more information.
-  std::shared_ptr<std::string> name_;  // Name of variable.
+  std::shared_ptr<const std::string> name_;  // Name of variable.
 };
 
 std::ostream& operator<<(std::ostream& os, Variable::Type type);
