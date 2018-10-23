@@ -159,15 +159,23 @@ class RotationMatrix {
     R_AB_.row(2) << Rzx, Rzy, Rzz;
   }
 
-  /// Constructs a %RotationMatrix `R` from three right-handed orthogonal unit
-  /// vectors, `x`, `y`, `z` so that the columns of `R` are `[x, y, z]`.
-  /// @param[in] x first unit vector in right-handed orthogonal set.
-  /// @param[in] y second unit vector in right-handed orthogonal set.
-  /// @param[in] z third unit vector in right-handed orthogonal set.
-  /// @throws std::logic_error in debug builds if R fails IsValid(R).
-  RotationMatrix(const Vector3<T>& x, const Vector3<T>& y, const Vector3<T>& z)
-      : R_AB_() {
-    set_columns(x, y, z);
+  /// Makes the %RotationMatrix `R_AB` from right-handed orthogonal unit vectors
+  /// `Bx`, `By`, `Bz` so that the columns of `R_AB` are `[Bx, By, Bz]`.
+  /// @param[in] Bx first unit vector in right-handed orthogonal set.
+  /// @param[in] By second unit vector in right-handed orthogonal set.
+  /// @param[in] Bz third unit vector in right-handed orthogonal set.
+  /// @throws std::logic_error in debug builds if `R_AB` fails IsValid(R_AB).
+  /// @note To avoid creating an invalid %RotationMatrix in release builds, the
+  /// routine that calls this function should subsequently call R_AB.IsValid().
+  /// @note The rotation matrix `R_AB` relates two sets of right-handed
+  /// orthogonal unit vectors, namely `Ax`, `Ay`, `Az` and `Bx`, `By`, `Bz`.
+  /// The rows of `R_AB` are `Ax`, `Ay`, `Az` whereas the
+  /// columns of `R_AB` are `Bx`, `By`, `Bz`.
+  static RotationMatrix<T> MakeRotationMatrixColumnsFromOrthonormalBasis(
+      const Vector3<T>& Bx, const Vector3<T>& By, const Vector3<T>& Bz) {
+    RotationMatrix R;
+    R.set_columns(Bx, By, Bz);
+    return R;
   }
 
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
@@ -270,21 +278,6 @@ class RotationMatrix {
   void set(const Matrix3<T>& R) {
     DRAKE_ASSERT_VOID(ThrowIfNotValid(R));
     SetUnchecked(R);
-  }
-
-  /// Sets `this` %RotationMatrix from three right-handed orthogonal unit
-  /// vectors, `x`, `y`, `z` that represent a 3x3 matrix `R = [x, y, z]`.
-  /// @param[in] x first unit vector in right-handed orthogonal set.
-  /// @param[in] y second unit vector in right-handed orthogonal set.
-  /// @param[in] z third unit vector in right-handed orthogonal set.
-  /// @throws std::logic_error in debug builds if R fails IsValid(R).
-  void set_columns(const Vector3<T>& x, const Vector3<T>& y,
-                   const Vector3<T>& z) {
-    Matrix3<T> R;
-    R.col(0) = x;
-    R.col(1) = y;
-    R.col(2) = z;
-    set(R);
   }
 
   /// Returns the 3x3 identity %RotationMatrix.
@@ -583,6 +576,21 @@ class RotationMatrix {
   // test whether or not the parameter R is a valid rotation matrix.
   // @param[in] R an allegedly valid rotation matrix.
   void SetUnchecked(const Matrix3<T>& R) { R_AB_ = R; }
+
+  // Sets `this` %RotationMatrix from three right-handed orthogonal unit
+  // vectors, `x`, `y`, `z` that represent a 3x3 matrix `R = [x, y, z]`.
+  // @param[in] x first unit vector in right-handed orthogonal set.
+  // @param[in] y second unit vector in right-handed orthogonal set.
+  // @param[in] z third unit vector in right-handed orthogonal set.
+  // @throws std::logic_error in debug builds if R fails IsValid(R).
+  void set_columns(const Vector3<T>& x, const Vector3<T>& y,
+                   const Vector3<T>& z) {
+    Matrix3<T> R;
+    R.col(0) = x;
+    R.col(1) = y;
+    R.col(2) = z;
+    set(R);
+  }
 
   // Computes the infinity norm of R - `other` (i.e., the maximum absolute
   // value of the difference between the elements of R and `other`).
