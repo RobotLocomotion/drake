@@ -101,7 +101,7 @@ class TestMath(unittest.TestCase):
         R_I = mut.RotationMatrix()
         p_I = np.zeros(3)
         rpy_I = mut.RollPitchYaw(0, 0, 0)
-        quaternion_I = Quaternion.Identity();
+        quaternion_I = Quaternion.Identity()
         angle = np.pi * 0
         axis = [0, 0, 1]
         angle_axis = AngleAxis(angle=angle, axis=axis)
