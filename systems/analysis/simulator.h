@@ -102,7 +102,7 @@ class Simulator {
   explicit Simulator(const System<T>& system,
                      std::unique_ptr<Context<T>> context = nullptr);
 
-  /// Prepares the %Simulator for a simulation. If the initial Context does not
+  /// Prepares the %Simulator for a simulation. If the owned Context does not
   /// satisfy the System's constraints, an attempt is made to modify the values
   /// of the continuous state variables to satisfy the constraints. This method
   /// will throw `std::logic_error` if the combination of options doesn't make
@@ -496,6 +496,15 @@ void Simulator<T>::Initialize() {
   HandleDiscreteUpdate(init_events->get_discrete_update_events());
   // Do any publishes last.
   HandlePublish(init_events->get_publish_events());
+
+  // Handle any timed events for the current time.
+  auto timed_events = system_.AllocateCompositeEventCollection();
+  if (context_->get_time() == system_.CalcNextUpdateTime(
+      *context_, timed_events.get())) {
+    HandleUnrestrictedUpdate(timed_events->get_unrestricted_update_events());
+    HandleDiscreteUpdate(timed_events->get_discrete_update_events());
+    HandlePublish(timed_events->get_publish_events());
+  }
 
   // Gets all per-step events to be handled.
   per_step_events_ = system_.AllocateCompositeEventCollection();
