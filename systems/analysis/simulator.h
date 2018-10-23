@@ -107,6 +107,8 @@ class Simulator {
   /// will throw `std::logic_error` if the combination of options doesn't make
   /// sense, and `std::runtime_error` if it is unable to find a
   /// constraint-satisfying initial condition.
+  /// @warning You should call this method if you alter the state (including
+  ///          time) in the owned context *before calling StepTo()*.
   void Initialize();
 
   /// Advances the System's trajectory until `boundary_time` is reached in
