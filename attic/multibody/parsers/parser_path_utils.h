@@ -1,3 +1,5 @@
+#pragma once
+
 #include "drake/multibody/multibody_tree/parsing/parser_path_utils.h"
 
 namespace drake {
