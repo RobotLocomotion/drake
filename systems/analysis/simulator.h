@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <limits>
 #include <memory>
 #include <tuple>
@@ -849,6 +850,8 @@ bool Simulator<T>::IntegrateContinuousState(
     const T& next_timed_event_time,
     const T& boundary_dt,
     CompositeEventCollection<T>* events) {
+  using std::abs;
+
   // Clear the composite event collection.
   DRAKE_ASSERT(events);
   events->Clear();
