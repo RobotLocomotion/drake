@@ -2743,6 +2743,15 @@ class MultibodyTree {
       const PositionKinematicsCache<T>& pc,
       std::vector<Vector6<T>>* H_PB_W_cache) const;
 
+  void CalcFrameJacobianExpressedInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_F,
+      const Eigen::Ref<const MatrixX<T>>& p_WQ_list,
+      bool from_qdot,
+      bool include_angular_terms,
+      bool include_translational_terms,
+      EigenPtr<MatrixX<T>> Jv_WFq) const;
+
   // Implementation for CalcMassMatrixViaInverseDynamics().
   // It assumes:
   //  - The position kinematics cache object is already updated to be in sync
