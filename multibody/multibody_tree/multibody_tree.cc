@@ -977,20 +977,6 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
   DRAKE_THROW_UNLESS(Jv_WFq != nullptr);
   DRAKE_THROW_UNLESS(Jv_WFq->rows() == 3 * num_points);
   DRAKE_THROW_UNLESS(Jv_WFq->cols() == num_velocities());
-
-  // If a user is re-using this Jacobian within a loop the first thing we'll
-  // want to do is to re-initialize it to zero.
-  Jv_WFq->setZero();
-
-  // Body to which frame B is attached to:
-  const Body<T>& body_B = frame_F.body();
-
-  // Do nothing for the world body and return a zero Jacobian.
-  // That is, Jv_WQi * v = 0, always, for the world body.
-  if (body_B.index() == world_index()) {
-    return;
-  }
-
   CalcFrameJacobianExpressedInWorld(
       context, frame_F, p_WQ_list,
       false /* from v */,
