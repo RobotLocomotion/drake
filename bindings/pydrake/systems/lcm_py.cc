@@ -60,7 +60,7 @@ class PySerializerInterface : public py::wrapper<SerializerInterface> {
 
 }  // namespace
 
-PYBIND11_MODULE(lcm, m) {
+PYBIND11_MODULE(_lcm_py, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::lcm;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -113,8 +113,6 @@ PYBIND11_MODULE(lcm, m) {
         py::keep_alive<0, 2>(),
         // TODO(eric.cousineau): Figure out why this is necessary (#9398).
         py_reference, doc.ConnectLcmScope.doc);
-
-  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake
