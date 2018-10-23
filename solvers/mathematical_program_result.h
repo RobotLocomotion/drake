@@ -18,14 +18,35 @@ struct NoSolverDetails {};
  */
 class MathematicalProgramResult {
  public:
-  MathematicalProgramResult();
-
   /**
    * Constructs the result.
    * @note The solver_details is set to NoSolverDetails.
    */
-  MathematicalProgramResult(SolutionResult result, const Eigen::VectorXd& x_val,
-                            double optimal_cost, const SolverId& solver_id);
+  MathematicalProgramResult();
+
+  /** Getter for the mutable SolutionResult. */
+  SolutionResult& get_mutable_result() { return result_; }
+
+  /** Getter for the immutable SolutionResult. */
+  SolutionResult result() const { return result_; }
+
+  /** Getter for the mutable decision variable values. */
+  Eigen::VectorXd& get_mutable_x_val() { return x_val_; }
+
+  /** Getter for the immutable decision variable values. */
+  const Eigen::VectorXd& x_val() const { return x_val_; }
+
+  /** Getter for the mutable optimal cost. */
+  double& get_mutable_optimal_cost() { return optimal_cost_; }
+
+  /** Getter for the optimal cost. */
+  double optimal_cost() const { return optimal_cost_; }
+
+  /** Getter for the mutable solver id. */
+  SolverId& get_mutable_solver_id() { return solver_id_; }
+
+  /** Getter for the solver ID. */
+  const SolverId& solver_id() const { return solver_id_; }
 
   /**
    * Sets the solver details.
@@ -33,18 +54,6 @@ class MathematicalProgramResult {
    * own its recource after calling this function.
    */
   void SetSolverDetails(std::unique_ptr<systems::AbstractValue> solver_details);
-
-  /** Getter for the immutable SolutionResult. */
-  SolutionResult result() const { return result_; }
-
-  /** Getter for the immutable decision variable values. */
-  const Eigen::VectorXd& x_val() const { return x_val_; }
-
-  /** Getter for the optimal cost. */
-  double optimal_cost() const { return optimal_cost_; }
-
-  /** Getter for the solver ID. */
-  const SolverId& solver_id() const { return solver_id_; }
 
   /** Getter for the solver details. Throws an error if the solver_details has
    * not been set*/

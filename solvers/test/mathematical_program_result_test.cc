@@ -14,13 +14,15 @@ GTEST_TEST(MathematicalProgramResultTest, DefaultConstructor) {
   EXPECT_EQ(result.x_val().size(), 0);
   EXPECT_TRUE(std::isnan(result.optimal_cost()));
   EXPECT_EQ(result.solver_id().name(), "unknown");
-  DRAKE_EXPECT_THROWS_MESSAGE(result.solver_details(), std::logic_error,
-                              "The solver_details has not been set yet.");
+  EXPECT_NO_THROW(result.solver_details().GetValueOrThrow<NoSolverDetails>());
 }
 
 GTEST_TEST(MathematicalProgramResultTest, Constructor) {
-  MathematicalProgramResult result(SolutionResult::kSolutionFound,
-                                   Eigen::Vector2d::Zero(), 1, SolverId("foo"));
+  MathematicalProgramResult result;
+  result.get_mutable_result() = SolutionResult::kSolutionFound;
+  result.get_mutable_x_val() = Eigen::Vector2d::Zero();
+  result.get_mutable_optimal_cost() = 1;
+  result.get_mutable_solver_id() = SolverId("foo");
   EXPECT_EQ(result.result(), SolutionResult::kSolutionFound);
   EXPECT_TRUE(CompareMatrices(result.x_val(), Eigen::Vector2d::Zero()));
   EXPECT_EQ(result.optimal_cost(), 1);
