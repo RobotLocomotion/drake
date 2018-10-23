@@ -325,7 +325,7 @@ Drake style addenda
 
 Change the following fields in the instructions given above:
 
-  :Program: ``/bazel-bin/tools/lint/drakelint``
+  :Program: ``bazel-bin/tools/lint/drakelint``
   :Arguments: ``$FilePath$``
 
 Building the drake addenda lint tool:
