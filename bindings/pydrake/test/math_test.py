@@ -132,8 +132,6 @@ class TestMath(unittest.TestCase):
         self.assertTrue(np.allclose(R.matrix(), np.eye(3)))
         R = mut.RotationMatrix(rpy=mut.RollPitchYaw(rpy=[0, 0, 0]))
         self.assertTrue(np.allclose(R.matrix(), np.eye(3)))
-        R = mut.RotationMatrix(x=[1, 0, 0], y=[0, 1, 0], z=[0, 0, 1])
-        self.assertTrue(np.allclose(R.matrix(), np.eye(3)))
         # - Nontrivial quaternion.
         q = Quaternion(wxyz=[0.5, 0.5, 0.5, 0.5])
         R = mut.RotationMatrix(quaternion=q)

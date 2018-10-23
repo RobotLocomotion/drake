@@ -143,9 +143,6 @@ PYBIND11_MODULE(math, m) {
         doc.RotationMatrix.ctor.doc_5)
       .def(py::init<const RollPitchYaw<T>&>(), py::arg("rpy"),
         doc.RotationMatrix.ctor.doc_7)
-      .def(py::init<const Vector3<T>&, const Vector3<T>&, const Vector3<T>&>(),
-        py::arg("x"), py::arg("y"), py::arg("z"),
-        doc.RotationMatrix.ctor.doc_8)
       .def("matrix", &RotationMatrix<T>::matrix, doc.RotationMatrix.matrix.doc)
       // Do not define an operator until we have the Python3 `@` operator so
       // that operations are similar to those of arrays.

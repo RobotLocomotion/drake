@@ -90,8 +90,7 @@ GTEST_TEST(RotationMatrix, MakeRotationMatrixFrom3OrthonormalVectors) {
 
   // Test making a RotationMatrix from these three unit vectors.
   RotationMatrix<double> R =
-      RotationMatrix<double>::MakeRotationMatrixColumnsFromOrthonormalBasis(
-          Bx, By, Bz);
+      RotationMatrix<double>::MakeColumnsFromOrthonormalBasis(Bx, By, Bz);
   const Matrix3d zero_matrix = m_column - R.matrix();
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 
@@ -100,35 +99,35 @@ GTEST_TEST(RotationMatrix, MakeRotationMatrixFrom3OrthonormalVectors) {
   const Vector3d Ax(1, 0, delta);
   const Vector3d Ay(0, cos_theta, -sin_theta);
   const Vector3d Az(0, sin_theta,  cos_theta);
-#ifdef DRAKE_ASSERT_IS_ARMED
-  // Non-orthogonal matrix should throw an exception.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      R = RotationMatrix<double>::MakeRotationMatrixColumnsFromOrthonormalBasis(
-          Ax, Ay, Az),
+
+  // Non-orthogonal matrix should throw an exception (at least in debug builds).
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      R = RotationMatrix<double>::MakeColumnsFromOrthonormalBasis(Ax, Ay, Az),
       std::logic_error, "Error: Rotation matrix is not orthonormal.*")
 
   // Non-right handed matrix with determinant < 0 should throw an exception.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      R = RotationMatrix<double>::MakeRotationMatrixColumnsFromOrthonormalBasis(
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      R = RotationMatrix<double>::MakeColumnsFromOrthonormalBasis(
           Vector3d(-1, 0, 0), Ay, Az), std::logic_error,
       "Error: Rotation matrix determinant is negative.*");
 
   // Matrix with a NaN should throw an exception.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      R = RotationMatrix<double>::MakeRotationMatrixColumnsFromOrthonormalBasis(
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      R = RotationMatrix<double>::MakeColumnsFromOrthonormalBasis(
           Vector3d(std::numeric_limits<double>::quiet_NaN(), 0, 0), Ay, Az),
           std::logic_error,
         "Error: Rotation matrix contains an element that is infinity or NaN.*");
 
   // Matrix with an infinity should throw an exception.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      R = RotationMatrix<double>::MakeRotationMatrixColumnsFromOrthonormalBasis(
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      R = RotationMatrix<double>::MakeColumnsFromOrthonormalBasis(
           Vector3d(std::numeric_limits<double>::infinity(), 0, 0), Ay, Az),
           std::logic_error,
         "Error: Rotation matrix contains an element that is infinity or NaN.*");
-#else
-  R = RotationMatrix<double>::MakeRotationMatrixColumnsFromOrthonormalBasis(
-      Ax, Ay, Az);
+
+#ifndef DRAKE_ASSERT_IS_ARMED
+  // In release builds, check MakeColumnsFromOrthonormal() for valid matrix.
+  R = RotationMatrix<double>::MakeColumnsFromOrthonormalBasis(Ax, Ay, Az);
   EXPECT_FALSE(R.IsValid());
 #endif
 }

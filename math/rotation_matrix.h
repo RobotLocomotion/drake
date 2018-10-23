@@ -159,8 +159,8 @@ class RotationMatrix {
     R_AB_.row(2) << Rzx, Rzy, Rzz;
   }
 
-  /// Makes the %RotationMatrix `R_AB` from right-handed orthogonal unit vectors
-  /// `Bx`, `By`, `Bz` so that the columns of `R_AB` are `[Bx, By, Bz]`.
+  /// (Advanced) Makes the %RotationMatrix `R_AB` from right-handed orthonormal
+  /// vectors `Bx`, `By`, `Bz` so that the columns of `R_AB` are `[Bx, By, Bz]`.
   /// @param[in] Bx first unit vector in right-handed orthogonal set.
   /// @param[in] By second unit vector in right-handed orthogonal set.
   /// @param[in] Bz third unit vector in right-handed orthogonal set.
@@ -171,7 +171,7 @@ class RotationMatrix {
   /// orthogonal unit vectors, namely `Ax`, `Ay`, `Az` and `Bx`, `By`, `Bz`.
   /// The rows of `R_AB` are `Ax`, `Ay`, `Az` whereas the
   /// columns of `R_AB` are `Bx`, `By`, `Bz`.
-  static RotationMatrix<T> MakeRotationMatrixColumnsFromOrthonormalBasis(
+  static RotationMatrix<T> MakeColumnsFromOrthonormalBasis(
       const Vector3<T>& Bx, const Vector3<T>& By, const Vector3<T>& Bz) {
     RotationMatrix R;
     R.set_columns(Bx, By, Bz);
