@@ -7,6 +7,13 @@ exports_files(
     visibility = ["//tools:__pkg__"],
 )
 
+py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    visibility = [":__subpackages__"],
+    deps = ["//tools/workspace:module_py"],
+)
+
 # When developing within Drake, we don't want //tools:drake_visualizer to
 # depend on the entire pydrake library, because that adds a dependency on a
 # whole bunch of C++ code that is irrelevant for the visualizer.  So, here we
