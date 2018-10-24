@@ -20,12 +20,14 @@ GTEST_TEST(MathematicalProgramResultTest, DefaultConstructor) {
 GTEST_TEST(MathematicalProgramResultTest, Constructor) {
   MathematicalProgramResult result;
   result.get_mutable_result() = SolutionResult::kSolutionFound;
-  result.get_mutable_x_val() = Eigen::Vector2d::Zero();
-  result.get_mutable_optimal_cost() = 1;
+  const Eigen::Vector2d x_val(0, 0);
+  result.get_mutable_x_val() = x_val;
+  const double cost = 1;
+  result.get_mutable_optimal_cost() = cost;
   result.get_mutable_solver_id() = SolverId("foo");
   EXPECT_EQ(result.result(), SolutionResult::kSolutionFound);
-  EXPECT_TRUE(CompareMatrices(result.x_val(), Eigen::Vector2d::Zero()));
-  EXPECT_EQ(result.optimal_cost(), 1);
+  EXPECT_TRUE(CompareMatrices(result.x_val(), x_val));
+  EXPECT_EQ(result.optimal_cost(), cost);
   EXPECT_EQ(result.solver_id().name(), "foo");
   EXPECT_NO_THROW(result.solver_details().GetValueOrThrow<NoSolverDetails>());
 }
@@ -37,10 +39,11 @@ struct DummySolverDetails {
 
 GTEST_TEST(MathematicalProgramResultTest, SetSolverDetails) {
   MathematicalProgramResult result;
-  auto dummy_solver_result =
-      systems::AbstractValue::Make<DummySolverDetails>(1);
+  const int data = 1;
+  auto dummy_solver_result = systems::AbstractValue::Make<DummySolverDetails>(
+      DummySolverDetails(data));
   result.SetSolverDetails(std::move(dummy_solver_result));
-  EXPECT_EQ(result.solver_details().GetValue<DummySolverDetails>().data, 1);
+  EXPECT_EQ(result.solver_details().GetValue<DummySolverDetails>().data, data);
   EXPECT_FALSE(dummy_solver_result);
 }
 }  // namespace
