@@ -28,6 +28,7 @@ from .forwarddiff import *
 from .geometry import *
 from .lcm import *
 from .math import *
+from .perception import *
 from .symbolic import *
 from .trajectories import *
 
