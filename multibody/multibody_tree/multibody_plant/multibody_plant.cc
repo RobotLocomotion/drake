@@ -250,6 +250,7 @@ geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
   // purpose, it gets nullified at Finalize().
   scene_graph_ = scene_graph;
   body_index_to_frame_id_[world_index()] = scene_graph->world_frame_id();
+  DeclareSceneGraphPorts();
   return source_id_.value();
 }
 
@@ -539,9 +540,6 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
 template<typename T>
 void MultibodyPlant<T>::FinalizePlantOnly() {
   DeclareStateCacheAndPorts();
-  // Only declare ports to communicate with a SceneGraph if the plant is
-  // provided with a valid source id.
-  if (source_id_) DeclareSceneGraphPorts();
   scene_graph_ = nullptr;  // must not be used after Finalize().
   if (num_collision_geometries() > 0 &&
       penalty_method_contact_parameters_.time_scale < 0)
@@ -1617,18 +1615,26 @@ template <typename T>
 void MultibodyPlant<T>::DeclareSceneGraphPorts() {
   geometry_query_port_ = this->DeclareAbstractInputPort(
       "geometry_query", systems::Value<geometry::QueryObject<T>>{}).get_index();
-  // This presupposes that the source id has been assigned and _all_ frames have
-  // been registered.
-  std::vector<FrameId> ids;
-  for (auto it : body_index_to_frame_id_) {
-    if (it.first == world_index()) continue;
-    ids.push_back(it.second);
-  }
-  geometry_pose_port_ =
-      this->DeclareAbstractOutputPort("geometry_pose",
-                                      FramePoseVector<T>(*source_id_, ids),
-                                      &MultibodyPlant::CalcFramePoseOutput)
-          .get_index();
+  // Allocate pose port.
+  // TODO(eric.cousineau): Simplify this logic.
+  typename systems::LeafOutputPort<T>::AllocCallback pose_alloc = [this]() {
+    // This presupposes that the source id has been assigned and _all_ frames
+    // have been registered.
+    std::vector<FrameId> ids;
+    for (auto it : this->body_index_to_frame_id_) {
+      if (it.first == world_index()) continue;
+      ids.push_back(it.second);
+    }
+    return systems::AbstractValue::Make(
+        FramePoseVector<T>(*this->source_id_, ids));
+  };
+  typename systems::LeafOutputPort<T>::CalcCallback pose_callback = [this](
+      const Context<T>& context, systems::AbstractValue* value) {
+    this->CalcFramePoseOutput(
+        context, &value->GetMutableValue<FramePoseVector<T>>());
+  };
+  geometry_pose_port_ = this->DeclareAbstractOutputPort(
+      "geometry_pose", pose_alloc, pose_callback).get_index();
 }
 
 template <typename T>
@@ -1661,7 +1667,6 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
 template <typename T>
 const OutputPort<T>& MultibodyPlant<T>::get_geometry_poses_output_port()
 const {
-  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_DEMAND(geometry_source_is_registered());
   return systems::System<T>::get_output_port(geometry_pose_port_);
 }
@@ -1669,7 +1674,6 @@ const {
 template <typename T>
 const systems::InputPort<T>&
 MultibodyPlant<T>::get_geometry_query_input_port() const {
-  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_DEMAND(geometry_source_is_registered());
   return systems::System<T>::get_input_port(geometry_query_port_);
 }
