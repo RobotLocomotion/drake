@@ -103,7 +103,8 @@ def _run_doxygen(args):
     in_filename = os.path.join(drake_workspace, "doc/Doxyfile_CXX.in")
     doxyfile = os.path.join(binary_dir, "Doxyfile_CXX")
     subprocess.check_call(
-        [os.path.join(
+        [sys.executable,
+         os.path.join(
             drake_workspace, "tools/workspace/cmake_configure_file.py"),
          "--input", in_filename,
          "--output", doxyfile,
