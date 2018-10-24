@@ -2790,6 +2790,7 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_WQ_list,
+      bool from_qdot,
       bool include_angular_terms,
       bool include_translational_terms,
       EigenPtr<MatrixX<T>> J_WFq) const;
