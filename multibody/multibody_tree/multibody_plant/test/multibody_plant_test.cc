@@ -277,13 +277,13 @@ class AcrobotPlantTests : public ::testing::Test {
     // it.
     DRAKE_DEMAND(plant_->get_source_id() != nullopt);
 
-    // Verify that methods with pre-Finalize() conditions throw accordingly.
-    DRAKE_EXPECT_THROWS_MESSAGE(
+    // Ensure that we can access the geometry ports pre-finalize.
+    EXPECT_NO_THROW(plant_->get_geometry_query_input_port());
+    EXPECT_NO_THROW(plant_->get_geometry_poses_output_port());
+
+    builder.Connect(
         plant_->get_geometry_poses_output_port(),
-        std::logic_error,
-        /* Verify this method is throwing for the right reasons. */
-        "Pre-finalize calls to '.*' are not allowed; "
-        "you must call Finalize\\(\\) first.");
+        scene_graph_->get_source_pose_port(plant_->get_source_id().value()));
 
     DRAKE_EXPECT_THROWS_MESSAGE(
         plant_->get_continuous_state_output_port(),
@@ -292,13 +292,9 @@ class AcrobotPlantTests : public ::testing::Test {
         "Pre-finalize calls to '.*' are not allowed; "
         "you must call Finalize\\(\\) first.");
 
-    // Finalize() the plant before accessing its ports for communicating with
-    // SceneGraph.
+    // Finalize() the plant.
     plant_->Finalize(scene_graph_);
 
-    builder.Connect(
-        plant_->get_geometry_poses_output_port(),
-        scene_graph_->get_source_pose_port(plant_->get_source_id().value()));
     // And build the Diagram:
     diagram_ = builder.Build();
 

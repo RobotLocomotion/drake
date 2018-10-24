@@ -1036,14 +1036,12 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// connection with a SceneGraph.
   /// @throws std::exception if this system was not registered with a
   /// SceneGraph.
-  /// @throws std::exception if called pre-finalize. See Finalize().
   const systems::InputPort<T>& get_geometry_query_input_port() const;
 
   /// Returns the output port of frames' poses to communicate with a
   /// SceneGraph.
   /// @throws std::exception if this system was not registered with a
   /// SceneGraph.
-  /// @throws std::exception if called pre-finalize. See Finalize().
   const systems::OutputPort<T>& get_geometry_poses_output_port() const;
   /// @}
 
