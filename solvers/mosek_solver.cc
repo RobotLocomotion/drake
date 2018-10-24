@@ -756,7 +756,7 @@ MathematicalProgramResult MosekSolver::SolveConstProg(
   result.get_mutable_solver_id() = id();
   // TODO(hongkai.dai@tri.global) : Add MOSEK parameters.
   // Mosek parameter are added by enum, not by string.
-  MSKsolstae solution_status;
+  MSKsolstae solution_status{MSK_SOL_STA_UNKNOWN};
   if (rescode == MSK_RES_OK) {
     if (rescode == MSK_RES_OK) {
       rescode = MSK_getsolsta(task, solution_type, &solution_status);
