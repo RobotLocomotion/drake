@@ -70,7 +70,6 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/multibody_tree/multibody_plant",
     "//multibody/multibody_tree/multibody_plant:contact_results_to_lcm",  # unpackaged  # noqa
     "//multibody/multibody_tree/parsing",
-    "//multibody/parsing",
     "//perception",
     "//solvers",
     "//systems/analysis",

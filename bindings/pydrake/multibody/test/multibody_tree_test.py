@@ -205,7 +205,7 @@ class TestMultibodyTree(unittest.TestCase):
 
     def test_multibody_tree_kinematics(self):
         file_name = FindResourceOrThrow(
-            "drake/examples/double_pendulum/models/double_pendulum.sdf")
+            "drake/multibody/models/double_pendulum/double_pendulum.sdf")
         plant = MultibodyPlant()
         AddModelFromSdfFile(file_name, plant)
         plant.Finalize()
@@ -381,7 +381,7 @@ class TestMultibodyTree(unittest.TestCase):
         Tests joint constructors and `AddJoint`.
         """
         instance_file = FindResourceOrThrow(
-            "drake/examples/double_pendulum/models/double_pendulum.sdf")
+            "drake/multibody/models/double_pendulum/double_pendulum.sdf")
         # Add different joints between multiple model instances.
         # TODO(eric.cousineau): Remove the multiple instances and use
         # programmatically constructed bodies once this API is exposed in

@@ -41,7 +41,6 @@ INSTALLED_MODEL_PACKAGES = [
     "//examples/atlas",
     "//examples/contact_model",
     "//examples/compass_gait",
-    "//examples/double_pendulum",
     "//examples/irb140",
     "//examples/kuka_iiwa_arm",
     "//examples/multibody/cart_pole",

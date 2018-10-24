@@ -43,6 +43,7 @@ filegroup(
     srcs = [
         "models/box.urdf",
         "models/box_small.urdf",
+        "models/double_pendulum/double_pendulum.sdf",
     ],
 )
 
