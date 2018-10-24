@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <set>
 #include <string>
@@ -903,6 +904,13 @@ class SystemBase : public internal::SystemMessageInterface {
     child->parent_service_ = parent_service;
   }
 
+  /** (Internal use only) Given a `port_index`, returns a function to be called
+  when validating Context::FixInputPort requests. The function should attempt
+  to throw an exception if the input AbstractValue is invalid, so that errors
+  can be reported at Fix-time instead of EvalInput-time.*/
+  virtual std::function<void(const AbstractValue&)> MakeFixInputPortTypeChecker(
+      InputPortIndex port_index) const = 0;
+
   /** (Internal use only) Shared code for updating an input port and returning a
   pointer to its abstract value, or nullptr if the port is not connected. `func`
   should be the user-visible API function name obtained with __func__. */
@@ -939,6 +947,14 @@ class SystemBase : public internal::SystemMessageInterface {
   [[noreturn]] void ThrowInputPortHasWrongType(
       const char* func, InputPortIndex port_index,
       const std::string& expected_type, const std::string& actual_type) const;
+
+  // This method is static for use from outside the System hierarchy but where
+  // the problematic System is clear.
+  /** Throws std::logic_error because someone called API method `func` claiming
+  the input port had some value type that was wrong. */
+  [[noreturn]] static void ThrowInputPortHasWrongType(
+      const char* func, const std::string& system_pathname, InputPortIndex,
+      const std::string& expected_type, const std::string& actual_type);
 
   /** Throws std::logic_error because someone called API method `func`, that
   requires this input port to be evaluatable, but the port was neither
