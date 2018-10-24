@@ -867,6 +867,39 @@ GTEST_TEST(ModelLeafSystemTest, MissingModelAbstractInput) {
       "'no_model_input' did not do either one \\(System ::dut\\)");
 }
 
+// Check that model inputs place validity checks on FixInput calls.  (This is
+// more of an acceptance test than a unit test.  The relevant code is sprinkled
+// across a few files.)  Note that even the debug builds might not detect the
+// kind of use-after-free errors that this test tries to expose; the dynamic
+// analysis build configurations such as valgrind or msan might be needed in
+// order to detect the errors.
+GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
+  // The Context checks must be able to outlive the System that created them.
+  auto dut = std::make_unique<DeclaredModelPortsSystem>();
+  dut->set_name("dut");
+  auto context = dut->CreateDefaultContext();
+  dut.reset();
+
+  // The first port should only accept a 1d vector.
+  context->FixInputPort(0, Eigen::VectorXd::Constant(1, 0.0));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      context->FixInputPort(0, Eigen::VectorXd::Constant(2, 0.0)),
+      std::exception,
+      "System::FixInputPortTypeCheck\\(\\): expected value of type "
+      "drake::systems::BasicVector<double> with size=1 "
+      "for input port\\[0\\] but the actual type was "
+      "drake::systems::BasicVector<double> with size=2. "
+      "\\(System ::dut\\)");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      context->FixInputPort(0, Value<std::string>{}),
+      std::exception,
+      "System::FixInputPortTypeCheck\\(\\): expected value of type "
+      "drake::systems::Value<drake::systems::BasicVector<double>> "
+      "for input port\\[0\\] but the actual type was "
+      "drake::systems::Value<std::string>. "
+      "\\(System ::dut\\)");
+}
+
 // Check that names can be assigned to the ports through all of the various
 // APIs.
 GTEST_TEST(ModelLeafSystemTest, ModelPortNames) {
@@ -2219,7 +2252,6 @@ GTEST_TEST(InitializationTest, InitializationTest) {
   EXPECT_TRUE(dut.get_dis_update_init());
   EXPECT_TRUE(dut.get_unres_update_init());
 }
-
 
 }  // namespace
 }  // namespace systems
