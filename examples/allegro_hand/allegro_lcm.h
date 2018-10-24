@@ -19,7 +19,7 @@ namespace examples {
 namespace allegro_hand {
 
 // The publication period of hand status publish.
-// TODO (WenzhenYuan-TRI): match the value with the real hand's communication
+// TODO(WenzhenYuan-TRI): match the value with the real hand's communication
 // rate.
 const double kLcmStatusPeriod = 0.003;
 
@@ -115,6 +115,6 @@ class AllegroStatusSender : public systems::LeafSystem<double> {
   const int num_joints_ = 16;
 };
 
-}  // namespace kuka_iiwa_arm
+}  // namespace allegro_hand
 }  // namespace examples
 }  // namespace drake
