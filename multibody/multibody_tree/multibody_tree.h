@@ -1706,8 +1706,8 @@ class MultibodyTree {
   ///   point `Q` measured and expressed in frame F. Therefore this input
   ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
   /// @param[out] p_WQ_list
-  ///   The output positions of each point `Q` now computed as measured and
-  ///   expressed in frame W. These positions are computed in the process of
+  ///   The output positions of each point `Q` now measured and expressed in
+  //    the world frame W. These positions are computed in the process of
   ///   computing the geometric Jacobian `J_WQ` and therefore external storage
   ///   must be provided.
   ///   The output `p_WQ_list` **must** have the same size as the input set
@@ -1718,7 +1718,7 @@ class MultibodyTree {
   ///   The geometric Jacobian `Jv_WFq(q)`, function of the generalized
   ///   positions q only. This Jacobian relates the translational velocity
   ///   `v_WQ` of each point `Q` in the input set by: <pre>
-  ///     `v_WQ(q, v) = Jv_WFq(q)⋅v`
+  ///     v_WQ(q, v) = Jv_WFq(q)⋅v
   ///   </pre>
   ///   so that `v_WQ` is a column vector of size `3⋅np` concatenating the
   ///   velocity of all points `Q` in the same order they were given in the
@@ -2740,7 +2740,9 @@ class MultibodyTree {
       const PositionKinematicsCache<T>& pc,
       std::vector<Vector6<T>>* H_PB_W_cache) const;
 
-  // Helper method to compute the Jacobian matrix J_WFq.
+  // Helper method to compute the Jacobian matrix J_WFq for a list of points Q
+  // which instantaneously move with frame F that is, the position of these
+  // points Q is fixed in frame F.
   // J_WFq is defined such that the spatial velocity V_WFq of frame F shifted
   // to a frame Fq with origin at a point Q is given by:
   //   V_WFq = J_WFq⋅v
