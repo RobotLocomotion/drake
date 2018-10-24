@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
@@ -27,7 +28,7 @@ const char kObject2[] = "block_for_pick_and_place.urdf";
 
 const int kNumRepetitions = 2;
 const int kNumBodiesInClutter = 2 * kNumRepetitions;
-const double kZHeightCost = 100.0; // Chosen arbitrarily.
+const double kZHeightCost = 100.0;  // Chosen arbitrarily.
 
 namespace {
 // Verifies that the obtained clutter IK solution is a 'feasible' clutter, i.e.
