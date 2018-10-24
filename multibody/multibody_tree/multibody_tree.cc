@@ -450,7 +450,7 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
   // corresponding to flexible bodies.
 
   const std::vector<Vector6<T>>& H_PB_W_cache =
-      tree_system_->Eval_H_PB_W(context);
+      tree_system_->EvalAcrossNodeGeometricJacobianExpressedInWorld(context);
 
   // Performs a base-to-tip recursion computing body velocities.
   // This skips the world, depth = 0.
@@ -997,7 +997,7 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
   const std::vector<Vector6<T>>& H_PB_W_cache =
-      tree_system_->Eval_H_PB_W(context);
+      tree_system_->EvalAcrossNodeGeometricJacobianExpressedInWorld(context);
 
   // Performs a scan of all bodies in the kinematic path from body_B to the
   // world computing each node's contribution to Jv_WQi.
@@ -1065,7 +1065,7 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
   const std::vector<Vector6<T>>& H_PB_W_cache =
-      tree_system_->Eval_H_PB_W(context);
+      tree_system_->EvalAcrossNodeGeometricJacobianExpressedInWorld(context);
 
   // Compute the position of Fq's origin Q in the world frame.
   Vector3<T> p_WoQ_W;
@@ -1249,7 +1249,7 @@ void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
 
   const std::vector<Vector6<T>>& H_PB_W_cache =
-      tree_system_->Eval_H_PB_W(context);
+      tree_system_->EvalAcrossNodeGeometricJacobianExpressedInWorld(context);
 
   // Perform tip-to-base recursion, skipping the world.
   for (int depth = tree_height() - 1; depth > 0; depth--) {

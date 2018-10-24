@@ -98,19 +98,22 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<VelocityKinematicsCache<T>>(context);
   }
 
-  /** Returns a reference to the up to date cache for the across mobilizer
-   * geometric Jacobian H_PB_W in the given Context, recalculating it first if
-   * necessary. Also if necessary, the PositionKinematicsCache will be
-   * recalculated as well.
-   * The geometric Jacobian `H_PB_W` relates to the spatial velocity of B in P
-   * by `V_PB_W = H_PB_W(q)⋅v_B`, where `v_B` corresponds to the generalized
-   * velocities associated to body B. `H_PB_W` has size `6 x nm` with `nm` the
-   * number of mobilities associated with body B.
-   * `H_PB_W_cache` stores the Jacobian matrices for all nodes in the tree as a
-   * vector of the columns of these matrices. Therefore `H_PB_W_cache` has as
-   * many entries as number of generalized velocities in the tree. */
-  const std::vector<Vector6<T>>& Eval_H_PB_W(
-      const systems::Context<T>& context) const {
+  /** Returns a reference to the up to date cached value for the
+  across-mobilizer geometric Jacobian H_PB_W in the given Context, recalculating
+  it first if necessary. Also if necessary, the PositionKinematicsCache will be
+  recalculated as well (since it stores H_FM(q) for each mobilizer and X_WB(q)
+  for each body).
+  The geometric Jacobian `H_PB_W` relates to the spatial velocity of B in P
+  by `V_PB_W = H_PB_W(q)⋅v_B`, where `v_B` corresponds to the generalized
+  velocities associated to body B. `H_PB_W` has size `6 x nm` with `nm` the
+  number of mobilities associated with body B.
+  The returned `std::vector` stores the Jacobian matrices for all nodes in the
+  tree  as a vector of the columns of these matrices. Therefore
+  the returned `std::vector` of columns  has as many entries as number of
+  generalized velocities in the tree. */
+  const std::vector<Vector6<T>>&
+  EvalAcrossNodeGeometricJacobianExpressedInWorld(
+      const systems::Context<T> &context) const {
     return this->get_cache_entry(H_PB_W_cache_index_)
         .template Eval<std::vector<Vector6<T>>>(context);
   }
