@@ -7,6 +7,7 @@
 #include <tuple>
 #include <utility>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_autodiff_types.h"
@@ -933,6 +934,31 @@ GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometries) {
     EXPECT_EQ(set.num_geometries(), 0);
     EXPECT_FALSE(set.contains(scenario.ground_id()));
   }
+}
+
+// Verifies the process of getting welded bodies.
+GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
+  using ::testing::UnorderedElementsAreArray;
+  // This test expects that the following model has a world body and a pair of
+  // welded-together bodies.
+  const std::string sdf_file = FindResourceOrThrow(
+      "drake/multibody/multibody_tree/multibody_plant/test/"
+      "split_pendulum.sdf");
+  MultibodyPlant<double> plant;
+  AddModelFromSdfFile(sdf_file, &plant);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.GetBodiesWeldedTo(plant.world_body()), std::logic_error,
+      "Pre-finalize calls to 'GetBodiesWeldedTo\\(\\)' are not "
+      "allowed; you must call Finalize\\(\\) first.");
+  plant.Finalize();
+  const Body<double>& upper = plant.GetBodyByName("upper_section");
+  const Body<double>& lower = plant.GetBodyByName("lower_section");
+  EXPECT_THAT(
+      plant.GetBodiesWeldedTo(plant.world_body()),
+      UnorderedElementsAreArray({&plant.world_body()}));
+  EXPECT_THAT(
+      plant.GetBodiesWeldedTo(lower),
+      UnorderedElementsAreArray({&upper, &lower}));
 }
 
 // Verifies the process of collision geometry registration with a
