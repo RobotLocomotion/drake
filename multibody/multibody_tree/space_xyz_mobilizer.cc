@@ -114,6 +114,39 @@ void SpaceXYZMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
+MatrixX<T> SpaceXYZMobilizer<T>::CalcNplusMatrix(
+    const MultibodyTreeContext<T>& context) const {
+  // The linear map between q̇ and v is given by matrix E_F(q) defined by:
+  //          [ cos(y) * cos(p), -sin(y), 0]
+  // E_F(q) = [ sin(y) * cos(p),  cos(y), 0]
+  //          [         -sin(p),       0, 1]
+  //
+  // w_FM = E_F(q) * q̇; q̇ = [ṙ, ṗ, ẏ]ᵀ
+  //
+  // Here, following a convention used by many dynamicists, we are calling the
+  // angles θ₁, θ₂, θ₃ as roll (r), pitch (p) and yaw (y), respectively.
+  //
+  // See detailed developer comments for E_F(q) in the implementation for
+  // MapQDotToVelocity().
+
+  const Vector3<T> angles = get_angles(context);
+
+  const T sp = sin(angles[1]);
+  const T cp = cos(angles[1]);
+  const T sy = sin(angles[2]);
+  const T cy = cos(angles[2]);
+
+  MatrixX<T> Nplus = MatrixX<T>::Identity(kNv, kNq);
+
+  Nplus <<
+        cy * cp, -sy, 0.0,
+        sy * cp,  cy, 0.0,
+            -sp, 0.0, 1.0;
+
+  return Nplus;
+}
+
+template <typename T>
 void SpaceXYZMobilizer<T>::MapVelocityToQDot(
     const MultibodyTreeContext<T>& context,
     const Eigen::Ref<const VectorX<T>>& v,

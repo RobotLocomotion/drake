@@ -151,6 +151,9 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const final;
 
+  MatrixX<T> CalcNplusMatrix(
+      const MultibodyTreeContext<T>& context) const final;
+
   /// Computes the kinematic mapping from generalized velocities v to time
   /// derivatives of the generalized positions `q̇`. For this mobilizer `q̇ = v`.
   void MapVelocityToQDot(

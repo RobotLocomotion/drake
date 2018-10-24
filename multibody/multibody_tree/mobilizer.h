@@ -440,6 +440,9 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const = 0;
 
+  virtual MatrixX<T> CalcNplusMatrix(
+      const MultibodyTreeContext<T>& context) const = 0;
+
   /// Computes the kinematic mapping `q̇ = N(q)⋅v` between generalized
   /// velocities v and time derivatives of the generalized positions `qdot`.
   /// The generalized positions vector is stored in `context`.

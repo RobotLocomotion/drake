@@ -97,6 +97,12 @@ void RevoluteMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
+MatrixX<T> RevoluteMobilizer<T>::CalcNplusMatrix(
+      const MultibodyTreeContext<T>& context) const {
+  return MatrixX<T>::Identity(kNv, kNq);
+}
+
+template <typename T>
 void RevoluteMobilizer<T>::MapVelocityToQDot(
     const MultibodyTreeContext<T>&,
     const Eigen::Ref<const VectorX<T>>& v,

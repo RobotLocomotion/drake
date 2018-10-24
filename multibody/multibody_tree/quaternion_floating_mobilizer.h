@@ -197,6 +197,9 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const override;
 
+  MatrixX<T> CalcNplusMatrix(
+      const MultibodyTreeContext<T>& context) const override;
+
   void MapVelocityToQDot(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
