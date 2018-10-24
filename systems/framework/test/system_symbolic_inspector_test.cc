@@ -35,7 +35,9 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
                                       "inequality constraint");
   }
 
-  void AddAbstractInputPort() { this->DeclareAbstractInputPort(); }
+  void AddAbstractInputPort() {
+    this->DeclareAbstractInputPort(kUseDefaultName, Value<std::string>{});
+  }
 
   ~SparseSystem() override {}
 

@@ -284,9 +284,17 @@ struct Impl {
                  optional<RandomDistribution>>(&PySystem::DeclareInputPort),
              py_reference_internal, py::arg("type"),
              py::arg("size"), py::arg("random_type") = nullopt)
+        // TODO(jwnimmer-tri) We should add pydrake bindings for the LeafSystem
+        // DeclareAbstractInputPort overload that takes a model_value, and then
+        // deprecate this System overload.
         .def("_DeclareAbstractInputPort",
-             overload_cast_explicit<const InputPort<T>&, std::string>(
-                 &PySystem::DeclareAbstractInputPort),
+             [](PySystem* self, const std::string& name)
+               -> const InputPort<T>& {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+               return self->DeclareAbstractInputPort(name);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+             },
              py_reference_internal, py::arg("name"),
           doc.System.DeclareAbstractInputPort.doc)
         // - Feedthrough.

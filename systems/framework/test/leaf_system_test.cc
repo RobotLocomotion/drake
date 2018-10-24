@@ -848,10 +848,19 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
 }
 
 // A system that incorrectly declares an input port.
+//
+// At some point, the deprecated DeclareAbstractInputPort overload used by this
+// System will be removed.  At that point, this entire test case should be
+// removed, along with the code under test that its covering, because then all
+// abstract input declarations require a model value, so it'll be impossible
+// not to have one, so we won't need missing-model-value error handling.
 class MissingModelAbstractInputSystem : public LeafSystem<double> {
  public:
   MissingModelAbstractInputSystem() {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     this->DeclareAbstractInputPort("no_model_input");
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
   }
 };
 
@@ -862,9 +871,8 @@ GTEST_TEST(ModelLeafSystemTest, MissingModelAbstractInput) {
       dut.AllocateInputAbstract(dut.get_input_port(0)),
       std::exception,
       "System::AllocateInputAbstract\\(\\): a System with abstract input "
-      "ports should pass a model_value to DeclareAbstractInputPort, or else "
-      "must override DoAllocateInputAbstract; the input port\\[0\\] named "
-      "'no_model_input' did not do either one \\(System ::dut\\)");
+      "ports must pass a model_value to DeclareAbstractInputPort; the "
+      "port\\[0\\] named 'no_model_input' did not do so \\(System ::dut\\)");
 }
 
 // Check that model inputs place validity checks on FixInput calls.  (This is
@@ -1447,7 +1455,7 @@ class DefaultFeedthroughSystem : public LeafSystem<double> {
   ~DefaultFeedthroughSystem() override {}
 
   void AddAbstractInputPort() {
-    this->DeclareAbstractInputPort(kUseDefaultName);
+    this->DeclareAbstractInputPort(kUseDefaultName, Value<std::string>{});
   }
 
   void AddAbstractOutputPort() {
