@@ -151,7 +151,8 @@ void SystemBase::CreateSourceTrackers(ContextBase* context_ptr) const {
   // ports" tracker u to them. Doesn't use TrackerInfo so can't use the lambda.
   for (const auto& iport : input_ports_) {
     detail::SystemBaseContextBaseAttorney::AddInputPort(
-        &context, iport->get_index(), iport->ticket());
+        &context, iport->get_index(), iport->ticket(),
+        MakeFixInputPortTypeChecker(iport->get_index()));
   }
 }
 
@@ -220,10 +221,17 @@ void SystemBase::ThrowNotAVectorInputPort(const char* func,
 void SystemBase::ThrowInputPortHasWrongType(
     const char* func, InputPortIndex port, const std::string& expected_type,
     const std::string& actual_type) const {
+  ThrowInputPortHasWrongType(
+      func, GetSystemPathname(), port, expected_type, actual_type);
+}
+
+void SystemBase::ThrowInputPortHasWrongType(
+    const char* func, const std::string& system_pathname, InputPortIndex port,
+    const std::string& expected_type, const std::string& actual_type) {
   throw std::logic_error(fmt::format(
       "{}: expected value of type {} for input port[{}] "
           "but the actual type was {}. (System {})",
-      FmtFunc(func), expected_type, port, actual_type, GetSystemPathname()));
+      FmtFunc(func), expected_type, port, actual_type, system_pathname));
 }
 
 void SystemBase::ThrowCantEvaluateInputPort(const char* func,

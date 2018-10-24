@@ -46,15 +46,21 @@ FixedInputPortValue& ContextBase::FixInputPort(
   return fixed_ref;
 }
 
-void ContextBase::AddInputPort(InputPortIndex expected_index,
-                               DependencyTicket ticket) {
+void ContextBase::AddInputPort(
+    InputPortIndex expected_index, DependencyTicket ticket,
+    std::function<void(const AbstractValue&)> fixed_input_type_checker) {
   DRAKE_DEMAND(expected_index.is_valid() && ticket.is_valid());
   DRAKE_DEMAND(expected_index == get_num_input_ports());
   DRAKE_DEMAND(input_port_tickets_.size() == input_port_values_.size());
+  DRAKE_DEMAND(input_port_tickets_.size() == input_port_type_checkers_.size());
+  if (!fixed_input_type_checker) {
+    fixed_input_type_checker = [](const AbstractValue&) {};
+  }
   auto& ui_tracker = graph_.CreateNewDependencyTracker(
       ticket, "u_" + std::to_string(expected_index));
   input_port_values_.emplace_back(nullptr);
   input_port_tickets_.emplace_back(ticket);
+  input_port_type_checkers_.emplace_back(std::move(fixed_input_type_checker));
   auto& u_tracker = graph_.get_mutable_tracker(
       DependencyTicket(internal::kAllInputPortsTicket));
   u_tracker.SubscribeToPrerequisite(&ui_tracker);
@@ -83,6 +89,9 @@ void ContextBase::SetFixedInputPortValue(
     std::unique_ptr<FixedInputPortValue> port_value) {
   DRAKE_DEMAND(0 <= index && index < get_num_input_ports());
   DRAKE_DEMAND(port_value != nullptr);
+
+  // Fail-fast if the user supplied the wrong type or size.
+  input_port_type_checkers_[index](port_value->get_value());
 
   DependencyTracker& port_tracker =
       get_mutable_tracker(input_port_tickets_[index]);

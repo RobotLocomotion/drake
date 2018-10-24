@@ -10,6 +10,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
@@ -152,12 +153,19 @@ class LeafContextTest : public ::testing::Test {
     return free_value ? &free_value->get_value() : nullptr;
   }
 
-  // Mocks up some input ports sufficient to allow us to give them fixed values.
+  // Mocks up an input port sufficient to allow us to give it a fixed value.
+  template <typename T>
+  void AddInputPort(InputPortIndex i, LeafContext<T>* context,
+                    std::function<void(const AbstractValue&)> type_checker) {
+    input_port_tickets_.push_back(next_ticket_);
+    context->AddInputPort(i, next_ticket_++, std::move(type_checker));
+  }
+
+  // Mocks up input ports numbered [0, n).
   template <typename T>
   void AddInputPorts(int n, LeafContext<T>* context) {
     for (InputPortIndex i(0); i < n; ++i) {
-      input_port_tickets_.push_back(next_ticket_);
-      context->AddInputPort(i, next_ticket_++);
+      AddInputPort(i, context, {});
     }
   }
 
@@ -338,6 +346,7 @@ TEST_F(LeafContextTest, GetNumStates) {
 }
 
 TEST_F(LeafContextTest, GetVectorInput) {
+  // N.B. This test ignores the member field `context_`.
   LeafContext<double> context;
   AddInputPorts(2, &context);
 
@@ -354,6 +363,7 @@ TEST_F(LeafContextTest, GetVectorInput) {
 }
 
 TEST_F(LeafContextTest, GetAbstractInput) {
+  // N.B. This test ignores the member field `context_`.
   LeafContext<double> context;
   AddInputPorts(2, &context);
 
@@ -436,6 +446,35 @@ TEST_F(LeafContextTest, FixInputPort) {
 
   // N.B. The GetAbstractInput test case above already covers the FixInputPort
   // overloads for AbstractValue.
+
+  // Test that type-checking guards are called, for all overloads.
+  {
+    const InputPortIndex i_new{kNumInputPorts};
+    AddInputPort(i_new, &context_, [](const AbstractValue& value) {
+        throw std::runtime_error("Bad type " + NiceTypeName::Get(value));
+      });
+    const VectorXd zero = VectorXd::Zero(1);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        context_.FixInputPort(i_new, zero),
+        std::runtime_error,
+        "Bad type drake::systems::Value<drake::systems::BasicVector<double>>");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        context_.FixInputPort(i_new, BasicVector<double>(zero)),
+        std::runtime_error,
+        "Bad type drake::systems::Value<drake::systems::BasicVector<double>>");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        context_.FixInputPort(i_new, BasicVector<double>::Make(0.0)),
+        std::runtime_error,
+        "Bad type drake::systems::Value<drake::systems::BasicVector<double>>");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        context_.FixInputPort(i_new, Value<std::string>("foo")),
+        std::runtime_error,
+        "Bad type drake::systems::Value<std::string>");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        context_.FixInputPort(i_new, AbstractValue::Make<std::string>("foo")),
+        std::runtime_error,
+        "Bad type drake::systems::Value<std::string>");
+  }
 }
 
 TEST_F(LeafContextTest, Clone) {
