@@ -1615,6 +1615,12 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const Frame<T>& frame_A, const Frame<T>& frame_B) const;
 
+  /// Computes the relative orientation between two frames A and B and returns
+  /// it as a quaternion Q_AB.
+  Quaternion<T> CalcRelativeQuaternion(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_A, const Frame<T>& frame_B) const;
+
   /// Given the positions `p_BQi` for a set of points `Qi` measured and
   /// expressed in a frame B, this method computes the positions `p_AQi(q)` of
   /// each point `Qi` in the set as measured and expressed in another frame A,

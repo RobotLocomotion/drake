@@ -9,16 +9,20 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/gradient.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/body_node_welded.h"
 #include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/spatial_inertia.h"
+#include "drake/util/drakeGeometryUtil.h"
 
 namespace drake {
 namespace multibody {
 
 using internal::BodyNode;
 using internal::BodyNodeWelded;
+using math::RotationMatrix;
 
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
@@ -792,6 +796,14 @@ Isometry3<T> MultibodyTree<T>::CalcRelativeTransform(
       pc.get_X_WB(frame_B.body().node_index()) *
       frame_B.CalcPoseInBodyFrame(context);
   return X_WA.inverse() * X_WB;
+}
+
+template <typename T>
+Quaternion<T> MultibodyTree<T>::CalcRelativeQuaternion(
+    const systems::Context<T>& context,
+    const Frame<T>& frame_A, const Frame<T>& frame_B) const {
+  const Isometry3<T> X_AB = CalcRelativeTransform(context, frame_A, frame_B);
+  return RotationMatrix<T>::ToQuaternion(X_AB.linear());
 }
 
 template <typename T>
