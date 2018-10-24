@@ -997,6 +997,36 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   geometry::GeometrySet CollectRegisteredGeometries(
       const std::vector<const Body<T>*>& bodies) const;
 
+  /// Returns all bodies that are transitively welded, or rigidly affixed, to
+  /// `body`, per these two definitions:
+  ///
+  /// 1. A body is always considered welded to itself.
+  /// 2. Two unique bodies are considered welded together exclusively by the
+  /// presence of a weld joint, not by other constructs that prevent mobility
+  /// (e.g. constraints).
+  ///
+  /// Meant to be used with `CollectRegisteredGeometries`.
+  ///
+  /// The following example demonstrates filtering collisions between all
+  /// bodies rigidly affixed to a door (which could be moving) and all bodies
+  /// rigidly affixed to the world:
+  /// @code
+  /// GeometrySet g_world = plant.CollectRegisteredGeometries(
+  ///     plant.GetBodiesWeldedTo(plant.world_body()));
+  /// GeometrySet g_door = plant.CollectRegisteredGeometries(
+  ///     plant.GetBodiesWeldedTo(plant.GetBodyByName("door")));
+  /// scene_graph.ExcludeCollisionsBetweeen(g_world, g_door);
+  /// @endcode
+  /// @note Usages akin to this example may introduce redundant collision
+  /// filtering; this will not have a functional impact, but may have a minor
+  /// performance impact.
+  ///
+  /// @returns all bodies rigidly fixed to `body`. This does not return the
+  /// bodies in any prescribed order.
+  /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `body` is not part of this plant.
+  std::vector<const Body<T>*> GetBodiesWeldedTo(const Body<T>& body) const;
+
   /// Returns the friction coefficients provided during geometry registration
   /// for the given geometry `id`. We call these the "default" coefficients but
   /// note that we mean user-supplied per-geometry default, not something more
