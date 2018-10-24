@@ -70,8 +70,8 @@ class RigidTransform {
   /// @see RotationMatrix::RotationMatrix(const RollPitchYaw<T>&)
   /// @param[in] p position vector from frame A's origin to frame B's origin,
   /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
-  RigidTransform(const RollPitchYaw<T>& rpy, const Vector3<T>& p) :
-      RigidTransform(RotationMatrix<T>(rpy), p) {}
+  RigidTransform(const RollPitchYaw<T>& rpy, const Vector3<T>& p)
+      : RigidTransform(RotationMatrix<T>(rpy), p) {}
 
   /// Constructs a %RigidTransform from a Quaternion and a position vector.
   /// @param[in] quaternion a non-zero, finite quaternion which may or may not
@@ -81,8 +81,8 @@ class RigidTransform {
   /// @throws std::logic_error in debug builds if the rotation matrix
   /// that is built from `quaternion` is invalid.
   /// @see RotationMatrix::RotationMatrix(const Eigen::Quaternion<T>&)
-  RigidTransform(const Eigen::Quaternion<T>& quaternion, const Vector3<T>& p) :
-      RigidTransform(RotationMatrix<T>(quaternion), p) {}
+  RigidTransform(const Eigen::Quaternion<T>& quaternion, const Vector3<T>& p)
+      : RigidTransform(RotationMatrix<T>(quaternion), p) {}
 
   /// Constructs a %RigidTransform from a AngleAxis and a position vector.
   /// @param[in] theta_lambda an Eigen::AngleAxis whose associated axis (vector
@@ -93,8 +93,8 @@ class RigidTransform {
   /// @throws std::logic_error in debug builds if the rotation matrix
   /// that is built from `theta_lambda` is invalid.
   /// @see RotationMatrix::RotationMatrix(const Eigen::AngleAxis<T>&)
-  RigidTransform(const Eigen::AngleAxis<T>& theta_lambda, const Vector3<T>& p) :
-      RigidTransform(RotationMatrix<T>(theta_lambda), p) {}
+  RigidTransform(const Eigen::AngleAxis<T>& theta_lambda, const Vector3<T>& p)
+      : RigidTransform(RotationMatrix<T>(theta_lambda), p) {}
 
   /// Constructs a %RigidTransform with a given RotationMatrix and a zero
   /// position vector.
