@@ -1,5 +1,7 @@
 #include "drake/solvers/mathematical_program_result.h"
 
+#include <utility>
+
 namespace drake {
 namespace solvers {
 MathematicalProgramResult::MathematicalProgramResult()

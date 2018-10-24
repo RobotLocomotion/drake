@@ -37,6 +37,7 @@ drake_cc_package_library(
         ":linear_system_solver",
         ":mathematical_program",
         ":mathematical_program_api",
+        ":mathematical_program_result",
         ":mixed_integer_optimization_util",
         ":mixed_integer_rotation_constraint",
         ":moby_lcp_solver",
@@ -274,8 +275,8 @@ drake_cc_library(
 
 drake_cc_library(
     name = "mathematical_program_result",
-    hdrs = ["mathematical_program_result.h"],
     srcs = ["mathematical_program_result.cc"],
+    hdrs = ["mathematical_program_result.h"],
     deps = [
         ":mathematical_program_api",
         "//systems/framework:value",

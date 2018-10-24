@@ -31,7 +31,7 @@ GTEST_TEST(MathematicalProgramResultTest, Constructor) {
 }
 
 struct DummySolverDetails {
-  DummySolverDetails(int m_data) : data(m_data) {}
+  explicit DummySolverDetails(int m_data) : data(m_data) {}
   int data;
 };
 
