@@ -36,8 +36,11 @@ class MosekSolver : public MathematicalProgramSolverInterface {
    */
   bool available() const override;
 
-  void Solve(const MathematicalProgram& prog,
-             MathematicalProgramResult* result) const;
+  // Todo(hongkai.dai@tri.global): deprecate Solve with a non-const
+  // MathematicalProgram, and rename SolveConstProg as Solve.
+  MathematicalProgramResult SolveConstProg(
+      const MathematicalProgram& prog) const;
+
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
   SolverId solver_id() const override;
