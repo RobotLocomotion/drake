@@ -102,8 +102,14 @@ def _run_doxygen(args):
     # Create Doxyfile_CXX.
     in_filename = os.path.join(drake_workspace, "doc/Doxyfile_CXX.in")
     doxyfile = os.path.join(binary_dir, "Doxyfile_CXX")
+    # N.B. If we executed `cmake_configure_file.py` under `bazel-bin`, it would
+    # require that users do some form of `bazel build`, which would require an
+    # explicit change to the doxygen building workflow.
+    # TODO(eric.cousineau): Try to wrap at least bits of this in Bazel to
+    # minimize this constraint.
     subprocess.check_call(
-        [os.path.join(
+        [sys.executable,
+         os.path.join(
             drake_workspace, "tools/workspace/cmake_configure_file.py"),
          "--input", in_filename,
          "--output", doxyfile,
