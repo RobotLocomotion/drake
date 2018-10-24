@@ -436,12 +436,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
                                 const GeometrySet& setB);
   //@}
 
-  // TODO(SeanCurtis-TRI) We should make the QueryObject constructor public,
-  // instead of forcing users to call a SceneGraph method to obtain one.
-  /** Constructs an empty QueryObject. This is intended for only only by
-   Systems to pass to DeclareAbstractInputPort as the model_value.  */
-  QueryObject<T> MakeQueryObject() const;
-
  private:
   // Friend class to facilitate testing.
   friend class SceneGraphTester;
