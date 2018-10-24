@@ -171,6 +171,21 @@ drake_pybind_library(
     ],
 )
 
+drake_pybind_library(
+    name = "perception_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/systems:systems_pybind",
+    ],
+    cc_srcs = ["perception_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/systems:framework_py",
+        "//bindings/pydrake/systems:sensors_py",
+    ],
+)
+
 drake_cc_library(
     name = "symbolic_types_pybind",
     hdrs = ["symbolic_types_pybind.h"],
@@ -211,6 +226,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":geometry_py",
     ":lcm_py",
     ":math_py",
+    ":perception_py",
     ":symbolic_py",
     ":trajectories_py",
     "//bindings/pydrake/common",
@@ -361,6 +377,13 @@ drake_py_unittest(
         ":autodiffutils_py",
         ":math_py",
         ":symbolic_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "perception_test",
+    deps = [
+        ":perception_py",
     ],
 )
 
