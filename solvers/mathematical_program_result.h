@@ -11,9 +11,6 @@
 
 namespace drake {
 namespace solvers {
-/* The empty solver details. This is the default option for any solver. */
-struct NoSolverDetails {};
-
 /**
  * The result returned by solve(). It stores the SolutionResult (whether the
  * program is solved to optimality, detected infeasibility, etc), the optimal
@@ -25,7 +22,7 @@ class MathematicalProgramResult final {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MathematicalProgramResult)
   /**
    * Constructs the result.
-   * @note The solver_details is set to NoSolverDetails.
+   * @note The solver_details is set to nullptr.
    */
   MathematicalProgramResult();
 
@@ -56,7 +53,7 @@ class MathematicalProgramResult final {
   void set_solver_id(const SolverId& solver_id) { solver_id_ = solver_id; }
 
   /** Gets the solver details. Throws an error if the solver_details has not
-   * been set*/
+   * been set.*/
   const systems::AbstractValue& get_solver_details() const;
 
   /** Forces the solver_details to be stored using the given type T.

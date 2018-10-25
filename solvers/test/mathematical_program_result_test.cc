@@ -13,8 +13,8 @@ GTEST_TEST(MathematicalProgramResultTest, DefaultConstructor) {
   EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnknownError);
   EXPECT_EQ(result.get_x_val().size(), 0);
   EXPECT_TRUE(std::isnan(result.get_optimal_cost()));
-  EXPECT_NO_THROW(
-      result.get_solver_details().GetValueOrThrow<NoSolverDetails>());
+  DRAKE_EXPECT_THROWS_MESSAGE(result.get_solver_details(), std::logic_error,
+                              "The solver_details has not been set yet.");
 }
 
 GTEST_TEST(MathematicalProgramResultTest, Setters) {
@@ -29,13 +29,10 @@ GTEST_TEST(MathematicalProgramResultTest, Setters) {
   EXPECT_TRUE(CompareMatrices(result.get_x_val(), x_val));
   EXPECT_EQ(result.get_optimal_cost(), cost);
   EXPECT_EQ(result.get_solver_id().name(), "foo");
-  EXPECT_NO_THROW(
-      result.get_solver_details().GetValueOrThrow<NoSolverDetails>());
 }
 
 struct DummySolverDetails {
-  DummySolverDetails() : data(0) {}
-  int data;
+  int data{0};
 };
 
 GTEST_TEST(MathematicalProgramResultTest, SetSolverDetails) {
@@ -48,9 +45,17 @@ GTEST_TEST(MathematicalProgramResultTest, SetSolverDetails) {
             data);
   // Now we test if we call SetSolverDetailsType again, it doesn't allocate new
   // memory.
+  // First we check the address of (result.get_solver_details()) is unchanged.
   const systems::AbstractValue* details = &(result.get_solver_details());
   dummy_solver_details = result.SetSolverDetailsType<DummySolverDetails>();
   EXPECT_EQ(details, &(result.get_solver_details()));
+  // Now we check that the value in the solver details are unchanged, note that
+  // the default value for data is 0, as in the constructor of
+  // DummySolverDetails, so if the constructor were called,
+  // dummy_solver_details.data won't be equal to 1.
+  dummy_solver_details = result.SetSolverDetailsType<DummySolverDetails>();
+  EXPECT_EQ(result.get_solver_details().GetValue<DummySolverDetails>().data,
+            data);
 }
 }  // namespace
 }  // namespace solvers

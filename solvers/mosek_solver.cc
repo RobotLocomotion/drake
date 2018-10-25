@@ -818,6 +818,11 @@ MathematicalProgramResult MosekSolver::SolveConstProg(
     rescode = MSK_getdouinf(task, MSK_DINF_OPTIMIZER_TIME,
                             &(solver_details.optimizer_time));
   }
+  // rescode is not used after this. If in the future, the user wants to call
+  // more MSK functions after this line, then he/she needs to check if rescode
+  // is OK. But do not modify result.solution_result_ if rescode is not OK after
+  // this line.
+  unused(rescode);
 
   MSK_deletetask(&task);
   return result;
