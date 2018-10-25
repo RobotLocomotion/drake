@@ -172,16 +172,16 @@ const Connection* Builder::Connect(const std::string& id,
       -lane_layout.ref_r0() +
       lane_width_ *
           static_cast<double>(start_spec.lane_id() - lane_layout.ref_lane());
-  // Computes the displacement vector from lane point to the reference curve
-  // point.
-  const Vector3<double> start_lane_to_ref(
-      -start_lane_offset * std::cos(start_superelevation) *
-          std::sin(start_heading),
-      start_lane_offset * std::cos(start_superelevation) *
-          std::cos(start_heading),
-      start_lane_offset * std::sin(start_superelevation));
+
+  // Gets the rotation matrix at the start lane endpoint and translates the
+  // point to start_reference_position.
+  const api::Rotation start_rotation = api::Rotation::FromRpy(
+      start_superelevation, -std::atan(start_spec.endpoint().z().z_dot()),
+      start_heading);
   const Vector3<double> start_reference_position =
-      start_lane_position - start_lane_to_ref;
+      start_lane_position +
+      start_rotation.matrix() * Vector3<double>(0., -start_lane_offset, 0.);
+
   // Assigns the start endpoint.
   Endpoint start{
       EndpointXy(start_reference_position.x(), start_reference_position.y(),
@@ -225,14 +225,10 @@ const Connection* Builder::Connect(const std::string& id,
   const double curvature =
       std::copysign(1., arc_offset.d_theta()) / arc_offset.radius();
 
-  // Fills arc related parameters, computes end Endpoint and creates the
-  // RoadCurve.
-  const double theta0 = start_spec.endpoint().xy().heading() -
-                        std::copysign(M_PI / 2., arc_offset.d_theta());
   // Gets the initial heading and superelevation.
   const double start_superelevation = start_spec.endpoint().z().theta();
 
-  // Computes the center.
+  // Computes the start_lane_radius to scale z_dot.
   const double start_lane_offset =
       -lane_layout.ref_r0() +
       lane_width_ *
@@ -241,20 +237,26 @@ const Connection* Builder::Connect(const std::string& id,
                                    start_lane_offset *
                                        std::cos(start_superelevation) *
                                        std::copysign(1., arc_offset.d_theta());
-  const double cx =
-      start_spec.endpoint().xy().x() - std::cos(theta0) * start_lane_radius;
-  const double cy =
-      start_spec.endpoint().xy().y() - std::sin(theta0) * start_lane_radius;
   const double start_z_dot = start_spec.endpoint().z().z_dot() *
                              start_lane_radius / arc_offset.radius();
+
+  // Gets the rotation matrix at the start lane endpoint and translates the
+  // point to start_reference_position.
+  const api::Rotation start_rotation = api::Rotation::FromRpy(
+      start_superelevation, -std::atan(start_spec.endpoint().z().z_dot()),
+      start_spec.endpoint().xy().heading());
+  const Vector3<double> start_lane_position{start_spec.endpoint().xy().x(),
+                                            start_spec.endpoint().xy().y(),
+                                            start_spec.endpoint().z().z()};
+  const Vector3<double> start_reference_position =
+      start_lane_position +
+      start_rotation.matrix() * Vector3<double>(0., -start_lane_offset, 0.);
+
   // Assigns the start endpoint.
   Endpoint start{
-      EndpointXy(cx + arc_offset.radius() * std::cos(theta0),
-                 cy + arc_offset.radius() * std::sin(theta0),
+      EndpointXy(start_reference_position.x(), start_reference_position.y(),
                  start_spec.endpoint().xy().heading()),
-      EndpointZ(start_spec.endpoint().z().z() -
-                    start_lane_offset * std::sin(start_superelevation) *
-                        std::copysign(1., arc_offset.d_theta()),
+      EndpointZ(start_reference_position.z(),
                 start_z_dot, start_spec.endpoint().z().theta(), {})};
   ComputeContinuityConstraint(curvature, &(start.get_mutable_z()));
 

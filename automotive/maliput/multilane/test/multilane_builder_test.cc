@@ -1114,6 +1114,17 @@ class TurnBuildProcedure : public BuildProcedure {
     const api::Lane* straight_lane = straight_segment->lane(0);
     const api::Lane* curved_lane = curved_segment->lane(kLaneNum - 1);
 
+    const api::LaneEndSet *straight_lane_branches =
+        straight_lane->GetOngoingBranches(api::LaneEnd::kStart);
+    ASSERT_EQ(straight_lane_branches->size(), 1);
+    ASSERT_EQ(straight_lane_branches->get(0).lane, curved_lane);
+    ASSERT_EQ(straight_lane_branches->get(0).end, api::LaneEnd::kStart);
+    const api::LaneEndSet *curved_lane_branches =
+        curved_lane->GetOngoingBranches(api::LaneEnd::kStart);
+    ASSERT_EQ(curved_lane_branches->size(), 1);
+    ASSERT_EQ(curved_lane_branches->get(0).lane, straight_lane);
+    ASSERT_EQ(curved_lane_branches->get(0).end, api::LaneEnd::kStart);
+
     const double kS{0.};
     const double kH{0.};
     const api::RBounds lbounds = straight_lane->lane_bounds(kS);
@@ -1185,6 +1196,7 @@ class TurnUsingRefToRConn
     const int ref_lane{0};
     const double lane_width{builder->get_lane_width()};
     const double total_width{kLaneNum * lane_width};
+    // Locates the reference curve in the middle of the Connection segment.
     const LaneLayout lane_layout{kLeftShoulder, kRightShoulder, kLaneNum,
                                  ref_lane, -(total_width - lane_width) / 2.};
 
@@ -1215,6 +1227,7 @@ class TurnUsingRefToRRef
     const int ref_lane{0};
     const double lane_width{builder->get_lane_width()};
     const double total_width{kLaneNum * lane_width};
+    // Locates the reference curve in the middle of the Connection segment.
     const LaneLayout lane_layout{kLeftShoulder, kRightShoulder, kLaneNum,
                                  ref_lane, -(total_width - lane_width) / 2.};
 
@@ -1246,8 +1259,10 @@ class TurnUsingRefToRLane
     const int ref_lane{0};
     const double lane_width{builder->get_lane_width()};
     const double total_width{kLaneNum * lane_width};
-    const LaneLayout lane_layout{kLeftShoulder, kRightShoulder, kLaneNum,
-                                 ref_lane, -(total_width - lane_width) / 2.};
+    // Locates the reference curve in the middle of the Connection segment.
+    const LaneLayout lane_layout{
+      kLeftShoulder, kRightShoulder, kLaneNum,
+      ref_lane, -(total_width - lane_width) / 2.};
 
     const Connection* straight_conn = builder->Connect(
         kStraightConnName, lane_layout,
@@ -1256,8 +1271,10 @@ class TurnUsingRefToRLane
     ASSERT_TRUE(straight_conn != nullptr);
 
     const int other_lane{kLaneNum - 1};
-    const LaneLayout other_lane_layout{kLeftShoulder, kRightShoulder, kLaneNum,
-          ref_lane, -(total_width - lane_width) / 2.};
+    // Locates the reference curve in the middle of the Connection segment.
+    const LaneLayout other_lane_layout{
+      kLeftShoulder, kRightShoulder, kLaneNum,
+      ref_lane, -(total_width - lane_width) / 2.};
 
     const Connection* curved_conn = builder->Connect(
         kCurvedConnName, other_lane_layout, StartLane(ref_lane).at(
@@ -1340,20 +1357,11 @@ ListBadReverseBuildProcedures() {
           "BankedTurnUsingRefToRRefWithBadThetaDot",
           kBadStartEndpoint, kStraightConnLength,
           kCurvedConnRadius, kCurvedConnAngularDelta));
-  // TODO(hidmic): Fix Builder continuity checks and re-enable test
-  // below. This test provides an explicit theta_dot value during
-  // RoadGeometry construction that does not satisfy G1 continuity
-  // contraints, and thus the Builder should complaint. However, it's
-  // not. The discontinuity is large enough for the Builder to be
-  // unable to even acknowledge the connection intended during
-  // BranchPoint lookup and instead spurious BranchPoints are created,
-  // yielding an effectively disconnected road.
-  //
-  // procedures.push_back(
-  //     std::make_unique<TurnUsingRefToRLane>(
-  //         "BankedTurnUsingRefToRLaneWithBadThetaDot",
-  //         kBadStartEndpoint, kStraightConnLength,
-  //         kCurvedConnRadius, kCurvedConnAngularDelta));
+  procedures.push_back(
+      std::make_unique<TurnUsingRefToRLane>(
+          "BankedTurnUsingRefToRLaneWithBadThetaDot",
+          kBadStartEndpoint, kStraightConnLength,
+          kCurvedConnRadius, kCurvedConnAngularDelta));
   return procedures;
 }
 
