@@ -173,8 +173,27 @@ class RotationMatrix {
   /// columns of `R_AB` are `Bx`, `By`, `Bz`.
   static RotationMatrix<T> MakeColumnsFromOrthonormalBasis(
       const Vector3<T>& Bx, const Vector3<T>& By, const Vector3<T>& Bz) {
-    RotationMatrix R;
+    RotationMatrix<T> R;
     R.set_columns(Bx, By, Bz);
+    return R;
+  }
+
+  /// (Advanced) Makes the %RotationMatrix `R_AB` from right-handed orthonormal
+  /// vectors `Ax`, `Ay`, `Az` so that the rows of `R_AB` are `[Ax, Ay, Az]`.
+  /// @param[in] Ax first unit vector in right-handed orthogonal set.
+  /// @param[in] Ay second unit vector in right-handed orthogonal set.
+  /// @param[in] Az third unit vector in right-handed orthogonal set.
+  /// @throws std::logic_error in debug builds if `R_AB` fails IsValid(R_AB).
+  /// @note To avoid creating an invalid %RotationMatrix in release builds, the
+  /// routine that calls this function should subsequently call R_AB.IsValid().
+  /// @note The rotation matrix `R_AB` relates two sets of right-handed
+  /// orthogonal unit vectors, namely `Ax`, `Ay`, `Az` and `Bx`, `By`, `Bz`.
+  /// The rows of `R_AB` are `Ax`, `Ay`, `Az` whereas the
+  /// columns of `R_AB` are `Bx`, `By`, `Bz`.
+  static RotationMatrix<T> MakeRowsFromOrthonormalBasis(
+      const Vector3<T>& Ax, const Vector3<T>& Ay, const Vector3<T>& Az) {
+    RotationMatrix<T> R;
+    R.set_rows(Ax, Ay, Az);
     return R;
   }
 
@@ -577,19 +596,40 @@ class RotationMatrix {
   // @param[in] R an allegedly valid rotation matrix.
   void SetUnchecked(const Matrix3<T>& R) { R_AB_ = R; }
 
-  // Sets `this` %RotationMatrix from three right-handed orthogonal unit
-  // vectors, `x`, `y`, `z` that represent a 3x3 matrix `R = [x, y, z]`.
-  // @param[in] x first unit vector in right-handed orthogonal set.
-  // @param[in] y second unit vector in right-handed orthogonal set.
-  // @param[in] z third unit vector in right-handed orthogonal set.
-  // @throws std::logic_error in debug builds if R fails IsValid(R).
-  void set_columns(const Vector3<T>& x, const Vector3<T>& y,
-                   const Vector3<T>& z) {
-    Matrix3<T> R;
-    R.col(0) = x;
-    R.col(1) = y;
-    R.col(2) = z;
-    set(R);
+  // Sets `this` %RotationMatrix `R_AB` from right-handed orthonormal
+  // vectors `Bx`, `By`, `Bz` so that the columns of `this` are `[Bx, By, Bz]`.
+  // @param[in] Bx first unit vector in right-handed orthogonal set.
+  // @param[in] By second unit vector in right-handed orthogonal set.
+  // @param[in] Bz third unit vector in right-handed orthogonal set.
+  // @throws std::logic_error in debug builds if `R_AB` fails IsValid(R_AB).
+  // @note The rotation matrix `R_AB` relates two sets of right-handed
+  // orthogonal unit vectors, namely `Ax`, `Ay`, `Az` and `Bx`, `By`, `Bz`.
+  // The rows of `R_AB` are `Ax`, `Ay`, `Az` whereas the
+  // columns of `R_AB` are `Bx`, `By`, `Bz`.
+  void set_columns(const Vector3<T>& Bx, const Vector3<T>& By,
+                   const Vector3<T>& Bz) {
+    R_AB_.col(0) = Bx;
+    R_AB_.col(1) = By;
+    R_AB_.col(2) = Bz;
+    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+  }
+
+  // Sets `this` %RotationMatrix `R_AB` from right-handed orthonormal
+  // vectors `Ax`, `Ay`, `Az` so that the rows of `this` are `[Ax, Ay, Az]`.
+  // @param[in] Ax first unit vector in right-handed orthogonal set.
+  // @param[in] Ay second unit vector in right-handed orthogonal set.
+  // @param[in] Az third unit vector in right-handed orthogonal set.
+  // @throws std::logic_error in debug builds if `R_AB` fails R_AB.IsValid().
+  // @note The rotation matrix `R_AB` relates two sets of right-handed
+  // orthogonal unit vectors, namely `Ax`, `Ay`, `Az` and `Bx`, `By`, `Bz`.
+  // The rows of `R_AB` are `Ax`, `Ay`, `Az` whereas the
+  // columns of `R_AB` are `Bx`, `By`, `Bz`.
+  void set_rows(const Vector3<T>& Ax, const Vector3<T>& Ay,
+                const Vector3<T>& Az) {
+    R_AB_.row(0) = Ax;
+    R_AB_.row(1) = Ay;
+    R_AB_.row(2) = Az;
+    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
   }
 
   // Computes the infinity norm of R - `other` (i.e., the maximum absolute
