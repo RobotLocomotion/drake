@@ -29,6 +29,7 @@ drake_cc_package_library(
         ":gyroscope",
         ":image",
         ":image_to_lcm_image_array_t",
+        ":lcm_image_traits",
         ":optitrack_sender",
         ":rgbd_camera",
         ":rgbd_renderer",
@@ -99,6 +100,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "lcm_image_traits",
+    srcs = [
+        "lcm_image_traits.cc",
+    ],
+    hdrs = [
+        "lcm_image_traits.h",
+    ],
+    deps = [
+        ":image",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
+drake_cc_library(
     name = "image_to_lcm_image_array_t",
     srcs = [
         "image_to_lcm_image_array_t.cc",
@@ -107,10 +122,9 @@ drake_cc_library(
         "image_to_lcm_image_array_t.h",
     ],
     deps = [
-        ":image",
+        ":lcm_image_traits",
         "//common:essential",
         "//systems/framework",
-        "@lcmtypes_robotlocomotion",
         "@zlib",
     ],
 )
