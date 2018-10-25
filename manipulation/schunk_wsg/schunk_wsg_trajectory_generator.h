@@ -16,7 +16,7 @@ namespace schunk_wsg {
 // state of the gripper (particularly the maximum force).
 
 /// This system defines input ports for the desired finger position
-/// represented as the desired distance from the center (zero) position in
+/// represented as the desired distance between the fingers in
 /// meters and the desired force limit in newtons, and emits target
 /// position/velocity for the actuated finger to reach the commanded target,
 /// expressed as the negative of the distance between the two fingers in

@@ -66,11 +66,11 @@ void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
   const double desired_position =
       this->EvalEigenVectorInput(context, desired_position_input_port_)[0];
 
-  // The desired position input is the distance from each finger to the center
-  // of the gripper in meters.  This class generates trajectories for the
-  // negative of the distance between the fingers in meters.
+  // The desired position input is the distance between the fingers in meters.
+  // This class generates trajectories for the negative of the distance
+  // between the fingers in meters.
 
-  double target_position = -desired_position * 2;
+  double target_position = -desired_position;
 
   const systems::BasicVector<double>* state =
       this->EvalVectorInput(context, state_input_port_);
