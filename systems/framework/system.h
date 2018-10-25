@@ -2139,14 +2139,14 @@ class System : public SystemBase {
           const BasicVector<T>* const actual_vector =
               actual.MaybeGetValue<BasicVector<T>>();
           if (actual_vector == nullptr) {
-            ThrowInputPortHasWrongType(
+            SystemBase::ThrowInputPortHasWrongType(
                 "FixInputPortTypeCheck", pathname, port_index,
                 NiceTypeName::Get<Value<BasicVector<T>>>(),
                 NiceTypeName::Get(actual));
           }
           // Check that vector sizes match.
           if (actual_vector->size() != expected_size) {
-            ThrowInputPortHasWrongType(
+            SystemBase::ThrowInputPortHasWrongType(
                 "FixInputPortTypeCheck", pathname, port_index,
                 fmt::format("{} with size={}",
                             NiceTypeName::Get<BasicVector<T>>(),
