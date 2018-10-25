@@ -683,12 +683,6 @@ class LeafSystem : public System<T> {
     periodic_data.set_offset_sec(offset_sec);
     event.set_event_data(std::make_unique<PeriodicEventData>(periodic_data));
     periodic_events_.push_back(std::make_pair(periodic_data, event.Clone()));
-
-    // Create an initialization event, if necessary.
-    if (offset_sec == 0.0) {
-      EventType init_event(Event<T>::TriggerType::kInitialization);
-      DeclareInitializationEvent(init_event);
-    }
   }
 
   /// Declares that this System has a simple, fixed-period event specified by
