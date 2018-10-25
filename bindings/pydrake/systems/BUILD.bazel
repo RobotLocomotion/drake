@@ -204,7 +204,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/systems:systems_pybind",
     ],
-    cc_so_name = "_lcm_py",
     cc_srcs = ["lcm_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -212,7 +211,7 @@ drake_pybind_library(
         ":module_py",
         "//bindings/pydrake:lcm_py",
     ],
-    py_srcs = ["lcm.py"],
+    py_srcs = ["_lcm_extra.py"],
 )
 
 drake_py_unittest(
