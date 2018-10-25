@@ -631,7 +631,7 @@ drake_cc_library(
     name = "snopt_solver",
     srcs = select({
         "//tools:with_snopt": [
-            "snopt_solver.cc",
+            "snopt_solver_f2c.cc",
             "snopt_solver_common.cc",
         ],
         "//conditions:default": [
@@ -644,7 +644,7 @@ drake_cc_library(
     # result of `const char*` to a function taking a `char*`, or passing a
     # function pointer that receives parameters to a function that takes a
     # (mismatched) function pointer with no arguments.  We could carefully
-    # craft our snopt_solver.cc to have appropriate casts depending on the
+    # craft our snopt_solver_f2c.cc to have appropriate casts depending on the
     # signatures of the version of SNOPT in use, but choose instead to just
     # suppress all such warnings until we find some case where they matter.
     # (The next best step would be to write a sensible C++ SNOPT API wrapper,
@@ -1393,7 +1393,7 @@ add_lint_tests(cpplint_extra_srcs = [
     "qp.cc",
     "scs_solver.cc",
     "scs_solver_common.cc",
-    "snopt_solver.cc",
+    "snopt_solver_f2c.cc",
     "snopt_solver.h",
     "snopt_solver_common.cc",
 ])
