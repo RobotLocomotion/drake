@@ -1,7 +1,11 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 
+// TODO(hongkai.dai): separate SolutionResult and SolverResult from
+// mathematical_program_solver_interface, so that MathematicalProgramResult
+// won't link to mathematical_program_api.
 #include "drake/solvers/mathematical_program_solver_interface.h"
 #include "drake/systems/framework/value.h"
 
@@ -16,61 +20,71 @@ struct NoSolverDetails {};
  * value for the decision variables, the optimal cost, and solver specific
  * details.
  */
-class MathematicalProgramResult {
+class MathematicalProgramResult final {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MathematicalProgramResult)
   /**
    * Constructs the result.
    * @note The solver_details is set to NoSolverDetails.
    */
   MathematicalProgramResult();
 
-  /** Getter for the mutable SolutionResult. */
-  SolutionResult& get_mutable_result() { return result_; }
+  /** Gets SolutionResult. */
+  SolutionResult get_solution_result() const { return solution_result_; }
 
-  /** Getter for the immutable SolutionResult. */
-  SolutionResult result() const { return result_; }
+  /** Sets SolutionResult. */
+  void set_solution_result(SolutionResult solution_result) {
+    solution_result_ = solution_result;
+  }
 
-  /** Getter for the mutable decision variable values. */
-  Eigen::VectorXd& get_mutable_x_val() { return x_val_; }
+  /** Gets the decision variable values. */
+  const Eigen::VectorXd& get_x_val() const { return x_val_; }
 
-  /** Getter for the immutable decision variable values. */
-  const Eigen::VectorXd& x_val() const { return x_val_; }
+  /** Sets the decision variable values. */
+  void set_x_val(const Eigen::VectorXd& x_val) { x_val_ = x_val; }
 
-  /** Getter for the mutable optimal cost. */
-  double& get_mutable_optimal_cost() { return optimal_cost_; }
+  /** Gets the optimal cost. */
+  double get_optimal_cost() const { return optimal_cost_; }
 
-  /** Getter for the optimal cost. */
-  double optimal_cost() const { return optimal_cost_; }
+  /** Sets the optimal cost. */
+  void set_optimal_cost(double optimal_cost) { optimal_cost_ = optimal_cost; }
 
-  /** Getter for the mutable solver id. */
-  SolverId& get_mutable_solver_id() { return solver_id_; }
+  /** Gets the solver ID. */
+  const SolverId& get_solver_id() const { return solver_id_; }
 
-  /** Getter for the solver ID. */
-  const SolverId& solver_id() const { return solver_id_; }
+  /** Sets the solver ID. */
+  void set_solver_id(const SolverId& solver_id) { solver_id_ = solver_id; }
 
-  /**
-   * Sets the solver details.
-   * @param solver_details The details from the solver. solver_details will not
-   * own its recource after calling this function.
-   */
-  void SetSolverDetails(std::unique_ptr<systems::AbstractValue> solver_details);
+  /** Gets the solver details. Throws an error if the solver_details has not
+   * been set*/
+  const systems::AbstractValue& get_solver_details() const;
 
-  /** Getter for the solver details. Throws an error if the solver_details has
-   * not been set*/
-  const systems::AbstractValue& solver_details() const;
+  /** Forces the solver_details to be stored using the given type T.
+   * If the storage was already typed as T, this is a no-op.
+   * If there were not any solver_details previously, or if it was of a
+   * different type, initializes the storage to a default-constructed T.
+   * Returns a reference to the mutable solver_details object.
+   * The reference remains valid until the next call to this method, or
+   * until this MathematicalProgramResult is destroyed. */
+  template <typename T>
+  T& SetSolverDetailsType() {
+    if (!solver_details_ || solver_details_->MaybeGetValue<T>() == nullptr) {
+      solver_details_ = std::move(systems::AbstractValue::Make<T>(T()));
+    }
+    return solver_details_->GetMutableValue<T>();
+  }
 
   /**
    * Convert MathematicalProgramResult to SolverResult.
-   * TODO(hongkai.dai): remove this function, when we remove SolverResult class.
    */
   SolverResult ConvertToSolverResult() const;
 
  private:
-  SolutionResult result_;
+  SolutionResult solution_result_{};
   Eigen::VectorXd x_val_;
-  double optimal_cost_;
+  double optimal_cost_{};
   SolverId solver_id_;
-  std::unique_ptr<systems::AbstractValue> solver_details_;
+  copyable_unique_ptr<systems::AbstractValue> solver_details_;
 };
 
 }  // namespace solvers

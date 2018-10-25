@@ -729,7 +729,7 @@ MathematicalProgramResult MosekSolver::SolveConstProg(
   }
 
   MathematicalProgramResult result;
-  result.get_mutable_result() = SolutionResult::kUnknownError;
+  result.set_solution_result(SolutionResult::kUnknownError);
   // Run optimizer.
   if (rescode == MSK_RES_OK) {
     // TODO(hongkai.dai@tri.global): add trmcode to the returned struct.
@@ -753,7 +753,7 @@ MathematicalProgramResult MosekSolver::SolveConstProg(
     solution_type = MSK_SOL_ITR;
   }
 
-  result.get_mutable_solver_id() = id();
+  result.set_solver_id(id());
   // TODO(hongkai.dai@tri.global) : Add MOSEK parameters.
   // Mosek parameter are added by enum, not by string.
   MSKsolstae solution_status{MSK_SOL_STA_UNKNOWN};
@@ -767,7 +767,7 @@ MathematicalProgramResult MosekSolver::SolveConstProg(
         case MSK_SOL_STA_NEAR_OPTIMAL:
         case MSK_SOL_STA_INTEGER_OPTIMAL:
         case MSK_SOL_STA_NEAR_INTEGER_OPTIMAL: {
-          result.get_mutable_result() = SolutionResult::kSolutionFound;
+          result.set_solution_result(SolutionResult::kSolutionFound);
           MSKint32t num_mosek_vars;
           rescode = MSK_getnumvar(task, &num_mosek_vars);
           DRAKE_ASSERT(rescode == MSK_RES_OK);
@@ -783,56 +783,56 @@ MathematicalProgramResult MosekSolver::SolveConstProg(
             }
           }
           if (rescode == MSK_RES_OK) {
-            result.get_mutable_x_val() = sol_vector;
+            result.set_x_val(sol_vector);
           }
           MSKrealt optimal_cost;
           rescode = MSK_getprimalobj(task, solution_type, &optimal_cost);
           DRAKE_ASSERT(rescode == MSK_RES_OK);
           if (rescode == MSK_RES_OK) {
-            result.get_mutable_optimal_cost() = optimal_cost;
+            result.set_optimal_cost(optimal_cost);
           }
           break;
         }
         case MSK_SOL_STA_DUAL_INFEAS_CER:
         case MSK_SOL_STA_NEAR_DUAL_INFEAS_CER:
-          result.get_mutable_result() = SolutionResult::kDualInfeasible;
+          result.set_solution_result(SolutionResult::kDualInfeasible);
           break;
         case MSK_SOL_STA_PRIM_INFEAS_CER:
         case MSK_SOL_STA_NEAR_PRIM_INFEAS_CER: {
-          result.get_mutable_result() = SolutionResult::kInfeasibleConstraints;
+          result.set_solution_result(SolutionResult::kInfeasibleConstraints);
           break;
         }
         default: {
-          result.get_mutable_result() = SolutionResult::kUnknownError;
+          result.set_solution_result(SolutionResult::kUnknownError);
           break;
         }
       }
     }
   }
 
-  MosekSolverDetails solver_details;
+  MosekSolverDetails& solver_details =
+      result.SetSolverDetailsType<MosekSolverDetails>();
   solver_details.rescode = rescode;
   solver_details.solution_status = solution_status;
   if (rescode == MSK_RES_OK) {
     rescode = MSK_getdouinf(task, MSK_DINF_OPTIMIZER_TIME,
                             &(solver_details.optimizer_time));
   }
-  result.SetSolverDetails(
-      systems::AbstractValue::Make<MosekSolverDetails>(solver_details));
-
-  if (rescode != MSK_RES_OK) {
-    result.get_mutable_result() = SolutionResult::kUnknownError;
-  }
 
   MSK_deletetask(&task);
   return result;
+}
+
+MathematicalProgramResult MosekSolver::Solve(
+    const MathematicalProgram& prog) const {
+  return SolveConstProg(prog);
 }
 
 SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   const MathematicalProgramResult result = SolveConstProg(prog);
   const SolverResult solver_result = result.ConvertToSolverResult();
   prog.SetSolverResult(solver_result);
-  return result.result();
+  return result.get_solution_result();
 }
 
 }  // namespace solvers

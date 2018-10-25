@@ -26,6 +26,12 @@ SolutionResult MosekSolver::Solve(MathematicalProgram&) const {
       "solver.");
 }
 
+MathematicalProgramResult MosekSolver::Solve(const MathematicalProgram&) const {
+  throw runtime_error(
+      "Mosek is not installed in your build. You'll need to use a different "
+      "solver.");
+}
+
 MathematicalProgramResult MosekSolver::SolveConstProg(
     const MathematicalProgram&) const {
   throw runtime_error(

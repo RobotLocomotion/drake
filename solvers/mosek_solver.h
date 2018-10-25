@@ -12,16 +12,17 @@
 namespace drake {
 namespace solvers {
 struct MosekSolverDetails {
-  // The mosek optimization time.
-  double optimizer_time;
+  // The mosek optimization time. Please refer to MSK_DINF_OPTIMIZER_TIME in
+  // https://docs.mosek.com/8.1/capi/constants.html?highlight=msk_dinf_optimizer_time
+  double optimizer_time{};
   // The response code returned from mosek solver. Check
   // https://docs.mosek.com/8.1/capi/response-codes.html for the meaning on the
   // response code.
-  int rescode;
+  int rescode{};
   // The solution status after solving the problem. Check
   // https://docs.mosek.com/8.1/capi/accessing-solution.html for the meaning on
   // the solution status.
-  int solution_status;
+  int solution_status{};
 };
 
 class MosekSolver : public MathematicalProgramSolverInterface {
@@ -36,11 +37,10 @@ class MosekSolver : public MathematicalProgramSolverInterface {
    */
   bool available() const override;
 
-  // Todo(hongkai.dai@tri.global): deprecate Solve with a non-const
-  // MathematicalProgram, and rename SolveConstProg as Solve.
-  MathematicalProgramResult SolveConstProg(
-      const MathematicalProgram& prog) const;
+  MathematicalProgramResult Solve(const MathematicalProgram& prog) const;
 
+  // Todo(hongkai.dai@tri.global): deprecate Solve with a non-const
+  // MathematicalProgram.
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
   SolverId solver_id() const override;
@@ -83,6 +83,10 @@ class MosekSolver : public MathematicalProgramSolverInterface {
   static std::shared_ptr<License> AcquireLicense();
 
  private:
+  // TODO(hongkai.dai) remove this function when we remove Solve() with a
+  // non-cost MathematicalProgram.
+  MathematicalProgramResult SolveConstProg(
+      const MathematicalProgram& prog) const;
   // Note that this is mutable to allow latching the allocation of mosek_env_
   // during the first call of Solve() (which avoids grabbing a Mosek license
   // before we know that we actually want one).
