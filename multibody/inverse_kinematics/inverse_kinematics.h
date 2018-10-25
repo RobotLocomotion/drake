@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/geometry/scene_graph.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
@@ -28,6 +29,9 @@ class InverseKinematics {
    */
   explicit InverseKinematics(
       const multibody_plant::MultibodyPlant<double>& plant);
+
+  InverseKinematics(const multibody_plant::MultibodyPlant<double>& plant,
+                    const geometry::SceneGraph<double>& scene_graph);
 
   /** Adds the kinematic constraint that a point Q, fixed in frame B, should lie
    * within a bounding box expressed in another frame A as p_AQ_lower <= p_AQ <=

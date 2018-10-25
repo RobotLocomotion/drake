@@ -10,6 +10,7 @@
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/systems/framework/diagram.h"
 
 namespace drake {
 namespace multibody {
@@ -112,6 +113,30 @@ class TwoFreeBodiesConstraintTest : public ::testing::Test {
   std::unique_ptr<systems::Context<AutoDiffXd>> context_autodiff_;
   std::unique_ptr<systems::Context<double>> context_double_;
 };
+
+/** Test kinematic (mostly collision-related) constraint on two free floating
+ * spheres.*/
+class TwoFreeSpheresConstraintTest : public ::testing::Test {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TwoFreeSpheresConstraintTest)
+
+  TwoFreeSpheresConstraintTest();
+
+  ~TwoFreeSpheresConstraintTest() override {}
+
+ protected:
+  double radius1_{0.1};
+  double radius2_{0.2};
+  std::unique_ptr<systems::Diagram<AutoDiffXd>> diagram_;
+  multibody::multibody_plant::MultibodyPlant<AutoDiffXd>* two_spheres_plant_{
+      nullptr};
+  geometry::SceneGraph<AutoDiffXd>* scene_graph_{nullptr};
+  FrameIndex sphere1_index_;
+  FrameIndex sphere2_index_;
+  std::unique_ptr<systems::Context<AutoDiffXd>> diagram_context_autodiff_;
+  systems::Context<AutoDiffXd>* plant_context_autodiff_;
+};
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
