@@ -7,6 +7,7 @@
 #include <tuple>
 #include <utility>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_autodiff_types.h"
@@ -277,13 +278,13 @@ class AcrobotPlantTests : public ::testing::Test {
     // it.
     DRAKE_DEMAND(plant_->get_source_id() != nullopt);
 
-    // Verify that methods with pre-Finalize() conditions throw accordingly.
-    DRAKE_EXPECT_THROWS_MESSAGE(
+    // Ensure that we can access the geometry ports pre-finalize.
+    EXPECT_NO_THROW(plant_->get_geometry_query_input_port());
+    EXPECT_NO_THROW(plant_->get_geometry_poses_output_port());
+
+    builder.Connect(
         plant_->get_geometry_poses_output_port(),
-        std::logic_error,
-        /* Verify this method is throwing for the right reasons. */
-        "Pre-finalize calls to '.*' are not allowed; "
-        "you must call Finalize\\(\\) first.");
+        scene_graph_->get_source_pose_port(plant_->get_source_id().value()));
 
     DRAKE_EXPECT_THROWS_MESSAGE(
         plant_->get_continuous_state_output_port(),
@@ -292,13 +293,9 @@ class AcrobotPlantTests : public ::testing::Test {
         "Pre-finalize calls to '.*' are not allowed; "
         "you must call Finalize\\(\\) first.");
 
-    // Finalize() the plant before accessing its ports for communicating with
-    // SceneGraph.
+    // Finalize() the plant.
     plant_->Finalize(scene_graph_);
 
-    builder.Connect(
-        plant_->get_geometry_poses_output_port(),
-        scene_graph_->get_source_pose_port(plant_->get_source_id().value()));
     // And build the Diagram:
     diagram_ = builder.Build();
 
@@ -612,6 +609,10 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
                                 kTolerance, MatrixCompareType::relative));
   }
 
+  // TODO(SeanCurtis-TRI): These tests are no longer valid; there *is* a frame
+  // id for the world body. This test needs to be changed so that there is
+  // *another* body that doesn't have geometry.
+#if 0
   // SceneGraph does not register a FrameId for the world. We use this fact
   // to test that GetBodyFrameIdOrThrow() throws an assertion for a body with no
   // FrameId, even though in this model we register an anchored geometry to the
@@ -626,6 +627,7 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   optional<FrameId> undefined_id =
       plant_->GetBodyFrameIdIfExists(world_index());
   EXPECT_EQ(undefined_id, nullopt);
+#endif
 }
 
 // Verifies that the right errors get invoked upon finalization.
@@ -928,10 +930,35 @@ GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometries) {
     GeometrySet set =
         plant.CollectRegisteredGeometries(
             {&scenario.mutable_plant()->world_body()});
-    EXPECT_EQ(set.num_geometries(), 1);
-    EXPECT_TRUE(set.contains(scenario.ground_id()));
-    EXPECT_EQ(set.num_frames(), 0);
+    EXPECT_EQ(set.num_frames(), 1);
+    EXPECT_EQ(set.num_geometries(), 0);
+    EXPECT_FALSE(set.contains(scenario.ground_id()));
   }
+}
+
+// Verifies the process of getting welded bodies.
+GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
+  using ::testing::UnorderedElementsAreArray;
+  // This test expects that the following model has a world body and a pair of
+  // welded-together bodies.
+  const std::string sdf_file = FindResourceOrThrow(
+      "drake/multibody/multibody_tree/multibody_plant/test/"
+      "split_pendulum.sdf");
+  MultibodyPlant<double> plant;
+  AddModelFromSdfFile(sdf_file, &plant);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.GetBodiesWeldedTo(plant.world_body()), std::logic_error,
+      "Pre-finalize calls to 'GetBodiesWeldedTo\\(\\)' are not "
+      "allowed; you must call Finalize\\(\\) first.");
+  plant.Finalize();
+  const Body<double>& upper = plant.GetBodyByName("upper_section");
+  const Body<double>& lower = plant.GetBodyByName("lower_section");
+  EXPECT_THAT(
+      plant.GetBodiesWeldedTo(plant.world_body()),
+      UnorderedElementsAreArray({&plant.world_body()}));
+  EXPECT_THAT(
+      plant.GetBodiesWeldedTo(lower),
+      UnorderedElementsAreArray({&upper, &lower}));
 }
 
 // Verifies the process of collision geometry registration with a
@@ -1072,22 +1099,27 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   scene_graph.get_query_output_port().Calc(*context, state_value.get());
 
   const SceneGraphInspector<double>& inspector = query_object.inspector();
-  const VisualMaterial* test_material =
-      inspector.GetVisualMaterial(ground_id);
-  EXPECT_NE(test_material, nullptr);
-  EXPECT_TRUE(CompareMatrices(test_material->diffuse(),
-                              VisualMaterial().diffuse(), 0.0,
-                              MatrixCompareType::absolute));
+  {
+    const VisualMaterial& test_material =
+        inspector.GetVisualMaterial(ground_id);
+    EXPECT_TRUE(CompareMatrices(test_material.diffuse(),
+                                VisualMaterial().diffuse(), 0.0,
+                                MatrixCompareType::absolute));
+  }
 
-  test_material = inspector.GetVisualMaterial(sphere1_id);
-  EXPECT_NE(test_material, nullptr);
-  EXPECT_TRUE(CompareMatrices(test_material->diffuse(), sphere1_diffuse, 0.0,
-                              MatrixCompareType::absolute));
+  {
+    const VisualMaterial& test_material =
+        inspector.GetVisualMaterial(sphere1_id);
+    EXPECT_TRUE(CompareMatrices(test_material.diffuse(), sphere1_diffuse, 0.0,
+                                MatrixCompareType::absolute));
+  }
 
-  test_material = inspector.GetVisualMaterial(sphere2_id);
-  EXPECT_NE(test_material, nullptr);
-  EXPECT_TRUE(CompareMatrices(test_material->diffuse(), sphere2_diffuse, 0.0,
-                              MatrixCompareType::absolute));
+  {
+    const VisualMaterial& test_material =
+        inspector.GetVisualMaterial(sphere2_id);
+    EXPECT_TRUE(CompareMatrices(test_material.diffuse(), sphere2_diffuse, 0.0,
+                                MatrixCompareType::absolute));
+  }
 }
 
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {

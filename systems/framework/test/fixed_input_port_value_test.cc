@@ -22,8 +22,8 @@ namespace {
 class MyContextBase : public ContextBase {
  public:
   MyContextBase() {
-    AddInputPort(InputPortIndex(0), DependencyTicket(100));
-    AddInputPort(InputPortIndex(1), DependencyTicket(101));
+    AddInputPort(InputPortIndex(0), DependencyTicket(100), {});
+    AddInputPort(InputPortIndex(1), DependencyTicket(101), {});
   }
   MyContextBase(const MyContextBase&) = default;
 

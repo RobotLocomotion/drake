@@ -117,7 +117,7 @@ SceneGraph<T>::SceneGraph()
                                &SceneGraph::CalcPoseBundle).get_index();
 
   query_port_index_ =
-      this->DeclareAbstractOutputPort("query", &SceneGraph::MakeQueryObject,
+      this->DeclareAbstractOutputPort("query",
                                       &SceneGraph::CalcQueryObject)
           .get_index();
 }
@@ -309,13 +309,6 @@ void SceneGraph<T>::MakeSourcePorts(SourceId source_id) {
       this->DeclareAbstractInputPort(
           initial_state_->get_source_name(source_id) + "_pose",
           Value<FramePoseVector<T>>()).get_index();
-}
-
-template <typename T>
-QueryObject<T> SceneGraph<T>::MakeQueryObject() const {
-  // Returns a null-initialized QueryObject to be compatible with context
-  // allocation (see documentation on QueryObject).
-  return QueryObject<T>();
 }
 
 template <typename T>

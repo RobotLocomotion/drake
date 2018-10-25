@@ -20,6 +20,7 @@ CXX_FLAGS = [
 # The CLANG_FLAGS will be enabled for all C++ rules in the project when
 # building with clang (including the Apple LLVM compiler).
 CLANG_FLAGS = CXX_FLAGS + [
+    "-Werror=absolute-value",
     "-Werror=inconsistent-missing-override",
     "-Werror=non-virtual-dtor",
     "-Werror=return-stack-address",

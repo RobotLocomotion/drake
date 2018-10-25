@@ -64,7 +64,6 @@ drake_pybind_library(
         "//bindings/pydrake/util:type_safe_index_pybind",
         "//bindings/pydrake/util:wrap_pybind",
     ],
-    cc_so_name = "framework",
     cc_srcs = [
         "framework_py.cc",
         "framework_py_semantics.cc",
@@ -98,7 +97,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/util:drake_optional_pybind",
     ],
-    cc_so_name = "primitives",
     cc_srcs = ["primitives_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -113,7 +111,6 @@ drake_pybind_library(
         ":systems_pybind",
         "//bindings/pydrake:documentation_pybind",
     ],
-    cc_so_name = "analysis",
     cc_srcs = ["analysis_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -129,7 +126,6 @@ drake_pybind_library(
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/util:wrap_pybind",
     ],
-    cc_so_name = "controllers",
     cc_srcs = ["controllers_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -148,7 +144,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/util:eigen_geometry_pybind",
     ],
-    cc_so_name = "rendering",
     cc_srcs = ["rendering_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -167,7 +162,6 @@ drake_pybind_library(
         "//bindings/pydrake/util:eigen_geometry_pybind",
         "//bindings/pydrake/util:eigen_pybind",
     ],
-    cc_so_name = "sensors",
     cc_srcs = ["sensors_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -185,7 +179,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
     ],
-    cc_so_name = "trajectory_optimization",
     cc_srcs = ["trajectory_optimization_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -285,6 +278,7 @@ drake_py_binary(
         "//examples/multibody/cart_pole:cart_pole.sdf",
     ],
     test_rule_args = ["--test"],
+    test_rule_timeout = "moderate",
     deps = [
         ":drawing_py",
         ":framework_py",
@@ -311,6 +305,7 @@ drake_pybind_library(
         ":primitives_py",
         "//bindings/pydrake/util:cpp_template_py",
     ],
+    visibility = ["//visibility:private"],
 )
 
 drake_py_unittest(

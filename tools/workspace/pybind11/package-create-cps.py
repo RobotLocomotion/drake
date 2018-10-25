@@ -1,5 +1,3 @@
-#!/usr/bin/env python2
-
 import sys
 
 from drake.tools.install.cpsutils import read_defs

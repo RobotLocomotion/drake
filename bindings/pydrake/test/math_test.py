@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import pydrake.math as mut
 from pydrake.math import (BarycentricMesh, wrap_to)
-from pydrake.util.eigen_geometry import Isometry3, Quaternion
+from pydrake.util.eigen_geometry import Isometry3, Quaternion, AngleAxis
 
 import unittest
 import numpy as np
@@ -100,7 +100,15 @@ class TestMath(unittest.TestCase):
         check_equality(mut.RigidTransform(), X_I)
         R_I = mut.RotationMatrix()
         p_I = np.zeros(3)
+        rpy_I = mut.RollPitchYaw(0, 0, 0)
+        quaternion_I = Quaternion.Identity()
+        angle = np.pi * 0
+        axis = [0, 0, 1]
+        angle_axis = AngleAxis(angle=angle, axis=axis)
         check_equality(mut.RigidTransform(R=R_I, p=p_I), X_I)
+        check_equality(mut.RigidTransform(rpy=rpy_I, p=p_I), X_I)
+        check_equality(mut.RigidTransform(quaternion=quaternion_I, p=p_I), X_I)
+        check_equality(mut.RigidTransform(theta_lambda=angle_axis, p=p_I), X_I)
         check_equality(mut.RigidTransform(R=R_I), X_I)
         check_equality(mut.RigidTransform(p=p_I), X_I)
         # - Accessors, mutators, and general methods.

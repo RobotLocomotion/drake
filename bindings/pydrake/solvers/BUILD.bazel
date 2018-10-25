@@ -42,7 +42,7 @@ drake_pybind_library(
     py_deps = [
         "//bindings/pydrake/multibody:rigid_body_tree_py",
     ],
-    py_srcs = ["ik.py"],
+    py_srcs = ["_ik_extra.py"],
 )
 
 # TODO(eric.cousineau): Rename `mathematicalprogram` to
@@ -62,13 +62,11 @@ drake_pybind_library(
         "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake:symbolic_py",
     ],
-    py_srcs = ["mathematicalprogram.py"],
 )
 
 drake_pybind_library(
     name = "gurobi_py",
     cc_deps = ["//bindings/pydrake:documentation_pybind"],
-    cc_so_name = "gurobi",
     cc_srcs = ["gurobi_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [":mathematicalprogram_py"],
@@ -77,7 +75,6 @@ drake_pybind_library(
 drake_pybind_library(
     name = "ipopt_py",
     cc_deps = ["//bindings/pydrake:documentation_pybind"],
-    cc_so_name = "ipopt",
     cc_srcs = ["ipopt_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [":mathematicalprogram_py"],
@@ -86,7 +83,6 @@ drake_pybind_library(
 drake_pybind_library(
     name = "mosek_py",
     cc_deps = ["//bindings/pydrake:documentation_pybind"],
-    cc_so_name = "mosek",
     cc_srcs = ["mosek_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [":mathematicalprogram_py"],
@@ -95,7 +91,6 @@ drake_pybind_library(
 drake_pybind_library(
     name = "osqp_py",
     cc_deps = ["//bindings/pydrake:documentation_pybind"],
-    cc_so_name = "osqp",
     cc_srcs = ["osqp_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [":mathematicalprogram_py"],

@@ -1,5 +1,3 @@
-#!/usr/bin/env python2
-
 from drake.tools.install.cpsutils import read_version_defs, read_requires
 
 def_re = "project\(spdlog\sVERSION\s([0-9]+).([0-9]+).([0-9]+)"

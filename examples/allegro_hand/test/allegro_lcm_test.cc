@@ -1,10 +1,10 @@
-#include "drake/examples/allegro_hand/allegro_common.h"
 #include "drake/examples/allegro_hand/allegro_lcm.h"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/examples/allegro_hand/allegro_common.h"
 #include "drake/lcmt_allegro_command.hpp"
 #include "drake/lcmt_allegro_status.hpp"
 #include "drake/manipulation/util/world_sim_tree_builder.h"

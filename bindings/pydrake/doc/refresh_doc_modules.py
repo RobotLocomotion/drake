@@ -15,6 +15,7 @@ from pydrake.examples import (
     rimless_wheel,
     van_der_pol,
 )
+from pydrake.examples.multibody import cart_pole_passive_simulation
 # TODO(eric.cousineau): Indicate these as deprecated.
 from pydrake.util import (
     cpp_const,

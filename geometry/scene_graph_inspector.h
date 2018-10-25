@@ -74,8 +74,8 @@ class SceneGraphInspector {
 
   /** Returns the visual material of the geometry indicated by the given
    `geometry_id` (if it exists).
-   @throws std::logic_error if the geometry id is invalid.  */
-  const VisualMaterial* GetVisualMaterial(GeometryId geometry_id) const {
+   @throws  std::logic_error if the geometry id is invalid.  */
+  const VisualMaterial& GetVisualMaterial(GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->get_visual_material(geometry_id);
   }
@@ -104,7 +104,7 @@ class SceneGraphInspector {
                     details).
    @return The id of the queried geometry.
    @throws std::logic_error if no such geometry exists, multiple geometries have
-                            that name, or if the frame doesn't exist. */
+                            that name, or if the frame doesn't exist.  */
   // TODO(SeanCurtis-TRI): Extend to include role.
   GeometryId GetGeometryIdByName(FrameId frame_id,
                                  const std::string& name) const {

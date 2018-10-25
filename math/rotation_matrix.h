@@ -159,6 +159,25 @@ class RotationMatrix {
     R_AB_.row(2) << Rzx, Rzy, Rzz;
   }
 
+  /// (Advanced) Makes the %RotationMatrix `R_AB` from right-handed orthonormal
+  /// vectors `Bx`, `By`, `Bz` so that the columns of `R_AB` are `[Bx, By, Bz]`.
+  /// @param[in] Bx first unit vector in right-handed orthogonal set.
+  /// @param[in] By second unit vector in right-handed orthogonal set.
+  /// @param[in] Bz third unit vector in right-handed orthogonal set.
+  /// @throws std::logic_error in debug builds if `R_AB` fails IsValid(R_AB).
+  /// @note To avoid creating an invalid %RotationMatrix in release builds, the
+  /// routine that calls this function should subsequently call R_AB.IsValid().
+  /// @note The rotation matrix `R_AB` relates two sets of right-handed
+  /// orthogonal unit vectors, namely `Ax`, `Ay`, `Az` and `Bx`, `By`, `Bz`.
+  /// The rows of `R_AB` are `Ax`, `Ay`, `Az` whereas the
+  /// columns of `R_AB` are `Bx`, `By`, `Bz`.
+  static RotationMatrix<T> MakeColumnsFromOrthonormalBasis(
+      const Vector3<T>& Bx, const Vector3<T>& By, const Vector3<T>& Bz) {
+    RotationMatrix R;
+    R.set_columns(Bx, By, Bz);
+    return R;
+  }
+
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
   /// relative to a frame A by an angle `theta` about unit vector `Ax = Bx`.
   /// @param[in] theta radian measure of rotation angle about Ax.
@@ -557,6 +576,21 @@ class RotationMatrix {
   // test whether or not the parameter R is a valid rotation matrix.
   // @param[in] R an allegedly valid rotation matrix.
   void SetUnchecked(const Matrix3<T>& R) { R_AB_ = R; }
+
+  // Sets `this` %RotationMatrix from three right-handed orthogonal unit
+  // vectors, `x`, `y`, `z` that represent a 3x3 matrix `R = [x, y, z]`.
+  // @param[in] x first unit vector in right-handed orthogonal set.
+  // @param[in] y second unit vector in right-handed orthogonal set.
+  // @param[in] z third unit vector in right-handed orthogonal set.
+  // @throws std::logic_error in debug builds if R fails IsValid(R).
+  void set_columns(const Vector3<T>& x, const Vector3<T>& y,
+                   const Vector3<T>& z) {
+    Matrix3<T> R;
+    R.col(0) = x;
+    R.col(1) = y;
+    R.col(2) = z;
+    set(R);
+  }
 
   // Computes the infinity norm of R - `other` (i.e., the maximum absolute
   // value of the difference between the elements of R and `other`).

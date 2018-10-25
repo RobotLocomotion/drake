@@ -2115,6 +2115,52 @@ class System : public SystemBase {
     CheckValidContextT(*context);
   }
 
+  std::function<void(const AbstractValue&)> MakeFixInputPortTypeChecker(
+      InputPortIndex port_index) const final {
+    const InputPort<T>& port = this->get_input_port(port_index);
+    const std::string pathname = this->GetSystemPathname();
+
+    // Note that our lambdas below will capture all necessary items by-value,
+    // so that they do not rely on this System still being alive.  (We do not
+    // allow a Context and System to have pointers to each other.)
+    switch (port.get_data_type()) {
+      case kAbstractValued: {
+        // TODO(jwnimmer-tri) We should type-check abstract values, eventually.
+        return {};
+      }
+      case kVectorValued: {
+        // For vector inputs, check that the size is the same.
+        // TODO(jwnimmer-tri) We should type-check the vector, eventually.
+        const std::unique_ptr<BasicVector<T>> model_vector =
+            this->AllocateInputVector(port);
+        const int expected_size = model_vector->size();
+        return [expected_size, port_index, pathname](
+            const AbstractValue& actual) {
+          const BasicVector<T>* const actual_vector =
+              actual.MaybeGetValue<BasicVector<T>>();
+          if (actual_vector == nullptr) {
+            SystemBase::ThrowInputPortHasWrongType(
+                "FixInputPortTypeCheck", pathname, port_index,
+                NiceTypeName::Get<Value<BasicVector<T>>>(),
+                NiceTypeName::Get(actual));
+          }
+          // Check that vector sizes match.
+          if (actual_vector->size() != expected_size) {
+            SystemBase::ThrowInputPortHasWrongType(
+                "FixInputPortTypeCheck", pathname, port_index,
+                fmt::format("{} with size={}",
+                            NiceTypeName::Get<BasicVector<T>>(),
+                            expected_size),
+                fmt::format("{} with size={}",
+                            NiceTypeName::Get(*actual_vector),
+                            actual_vector->size()));
+          }
+        };
+      }
+    }
+    DRAKE_ABORT();
+  }
+
   // Shared code for updating a vector input port and returning a pointer to its
   // value as a BasicVector<T>, or nullptr if the port is not connected. Throws
   // a logic_error if the port_index is out of range or if the input port is not

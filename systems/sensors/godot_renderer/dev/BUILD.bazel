@@ -30,4 +30,9 @@ drake_cc_binary(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    cpplint_extra_srcs = [
+        "dummy_macos.cc",
+        "dummy_ubuntu.cc",
+    ],
+)
