@@ -8,8 +8,8 @@
 #include "drake/common/eigen_types.h"
 
 namespace drake {
-namespace multibody {
-namespace parsing {
+namespace examples {
+namespace double_pendulum {
 
 /// An isometric transform along with the frame in which it
 /// is defined. Useful for keeping collections of transforms
@@ -85,6 +85,6 @@ class FrameCache {
   std::map<std::string, FramedIsometry3<T>> X_TS_cache_;
 };
 
-}  // namespace parsing
-}  // namespace multibody
+}  // namespace double_pendulum
+}  // namespace examples
 }  // namespace drake
