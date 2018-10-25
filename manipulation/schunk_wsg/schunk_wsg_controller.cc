@@ -29,7 +29,7 @@ SchunkWsgController::SchunkWsgController(double kp, double ki, double kd) {
           kSchunkWsgPositionIndex);
   builder.Connect(state_pass_through->get_output_port(),
                   wsg_trajectory_generator->get_state_input_port());
-  builder.Connect(command_receiver->get_commanded_position_output_port(),
+  builder.Connect(command_receiver->get_position_output_port(),
                   wsg_trajectory_generator->get_desired_position_input_port());
   builder.Connect(command_receiver->get_force_limit_output_port(),
                   wsg_trajectory_generator->get_force_limit_input_port());

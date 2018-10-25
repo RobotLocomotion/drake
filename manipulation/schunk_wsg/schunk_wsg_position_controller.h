@@ -22,12 +22,13 @@ namespace schunk_wsg {
 /// gripper is open, q₀ < 0 and q₁ > 0.
 ///
 /// The physical gripper mechanically imposes that -q₀ = q₁, and implements a
-/// controller to track -q₀ = q₁ = q_d (the desired position).  We model that
-/// here with two PD controllers -- one that implements the physical constraint
+/// controller to track -q₀ = q₁ = q_d/2 (q_d is the desired position, which
+/// is the signed distance between the two fingers).  We model that here with
+/// two PD controllers -- one that implements the physical constraint
 /// (keeping the fingers centered):
 ///   f₀+f₁ = -kp_constraint*(q₀+q₁) - kd_constraint*(v₀+v₁),
 /// and another to implement the controller (opening/closing the fingers):
-///   -f₀+f₁ = sat(kp_command*(2*q_d + q₀ - q₁) + kd_command*(2*v_d + v₀ - v₁)),
+///   -f₀+f₁ = sat(kp_command*(q_d + q₀ - q₁) + kd_command*(v_d + v₀ - v₁)),
 /// where sat() saturates the command to be in the range [-force_limit,
 /// force_limit], and v_d is estimated from q_d via a discrete-time derivative:
 ///   v_d[n] = (q_d[n] - q_d[n-1])/h,
