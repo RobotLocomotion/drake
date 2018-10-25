@@ -2134,7 +2134,7 @@ class System : public SystemBase {
         const std::unique_ptr<BasicVector<T>> model_vector =
             this->AllocateInputVector(port);
         const int expected_size = model_vector->size();
-        return [expected_size, port_index, pathname](
+        return [this, expected_size, port_index, pathname](
             const AbstractValue& actual) {
           const BasicVector<T>* const actual_vector =
               actual.MaybeGetValue<BasicVector<T>>();
