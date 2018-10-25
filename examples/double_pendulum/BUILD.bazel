@@ -10,6 +10,20 @@ load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
+    name = "frame_cache",
+    srcs = [
+        "frame_cache.cc",
+    ],
+    hdrs = [
+        "frame_cache.h",
+    ],
+    deps = [
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
     name = "sdf_helpers",
     srcs = [
         "sdf_helpers.cc",
@@ -18,9 +32,9 @@ drake_cc_library(
         "sdf_helpers.h",
     ],
     deps = [
+        ":frame_cache",
         "//common:essential",
         "//multibody:rigid_body_tree",
-        "//multibody/parsing:frame_cache",
         "@eigen",
         "@sdformat",
     ],
@@ -65,6 +79,16 @@ drake_cc_library(
         "//attic/multibody/shapes",
         "//multibody:rigid_body",
         "@gtest//:without_main",
+    ],
+)
+
+drake_cc_googletest(
+    name = "frame_cache_test",
+    data = [
+        ":models",
+    ],
+    deps = [
+        ":frame_cache",
     ],
 )
 
