@@ -13,9 +13,9 @@ MathematicalProgramResult::MathematicalProgramResult()
     : solution_result_{SolutionResult::kUnknownError},
       x_val_{0},
       optimal_cost_{NAN},
-      solver_id_{UnknownId()},
-      solver_details_{
-          systems::AbstractValue::Make<NoSolverDetails>(NoSolverDetails())} {}
+      solver_id_{UnknownId()} {
+  this->SetSolverDetailsType<NoSolverDetails>();
+}
 
 const systems::AbstractValue& MathematicalProgramResult::get_solver_details()
     const {

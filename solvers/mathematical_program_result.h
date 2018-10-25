@@ -68,8 +68,13 @@ class MathematicalProgramResult final {
    * until this MathematicalProgramResult is destroyed. */
   template <typename T>
   T& SetSolverDetailsType() {
-    if (!solver_details_ || solver_details_->MaybeGetValue<T>() == nullptr) {
-      solver_details_ = std::move(systems::AbstractValue::Make<T>(T()));
+    // Leave the storage alone if it already has the correct type.
+    if (solver_details_type_ && (*solver_details_type_ == typeid(T))) {
+      DRAKE_ASSERT(solver_details_ != nullptr);
+      DRAKE_ASSERT(solver_details_->MaybeGetValue<T>() != nullptr);
+    } else {
+      solver_details_type_ = &typeid(T);
+      solver_details_ = std::make_unique<systems::Value<T>>();
     }
     return solver_details_->GetMutableValue<T>();
   }
@@ -84,6 +89,7 @@ class MathematicalProgramResult final {
   Eigen::VectorXd x_val_;
   double optimal_cost_{};
   SolverId solver_id_;
+  reset_after_move<const std::type_info*> solver_details_type_;
   copyable_unique_ptr<systems::AbstractValue> solver_details_;
 };
 
