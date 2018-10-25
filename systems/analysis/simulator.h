@@ -484,6 +484,7 @@ template <typename T>
 void Simulator<T>::Initialize() {
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
+//  using std::nexttoward;
 
   // Initialize the integrator.
   integrator_->Initialize();
@@ -499,10 +500,20 @@ void Simulator<T>::Initialize() {
   // Do any publishes last.
   HandlePublish(init_events->get_publish_events());
 
-  // Handle any timed events for the current time.
+  // Modify the context time so we can get the next update time.
+//  const double inf = std::numeric_limits<double>::infinity();
+  auto current_time = context_->get_time();
+//  context_->set_time(nexttoward(current_time), -inf);
+  context_->set_time(current_time - std::numeric_limits<double>::epsilon());
+
+  // Get the next update time.
   auto timed_events = system_.AllocateCompositeEventCollection();
-  if (context_->get_time() == system_.CalcNextUpdateTime(
-      *context_, timed_events.get())) {
+  auto next_update_time = system_.CalcNextUpdateTime(
+      *context_, timed_events.get());
+
+  // Reset the current time and handle the timed events, if any.
+  context_->set_time(current_time);
+  if (current_time == next_update_time) {
     HandleUnrestrictedUpdate(timed_events->get_unrestricted_update_events());
     HandleDiscreteUpdate(timed_events->get_discrete_update_events());
     HandlePublish(timed_events->get_publish_events());
