@@ -31,7 +31,7 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgCommandReceiverTest) {
   context->FixInputPort(
       0,
       systems::AbstractValue::Make<lcmt_schunk_wsg_command>(initial_command));
-  EXPECT_EQ(dut.get_commanded_position_output_port()
+  EXPECT_EQ(dut.get_position_output_port()
                 .Eval<BasicVector<double>>(*context)
                 .GetAtIndex(0),
             initial_position);
@@ -48,10 +48,10 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgCommandReceiverTest) {
   context->FixInputPort(
       0,
       systems::AbstractValue::Make<lcmt_schunk_wsg_command>(initial_command));
-  EXPECT_EQ(dut.get_commanded_position_output_port()
+  EXPECT_EQ(dut.get_position_output_port()
                 .Eval<BasicVector<double>>(*context)
                 .GetAtIndex(0),
-            0.05);
+            0.1);
   EXPECT_EQ(dut.get_force_limit_output_port()
                 .Eval<BasicVector<double>>(*context)
                 .GetAtIndex(0),
@@ -74,8 +74,8 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgStatusSenderTest) {
         dut.get_output_port(0).Eval<lcmt_schunk_wsg_status>(*context);
 
     EXPECT_EQ(status.actual_force, 0.0);
-    EXPECT_EQ(status.actual_position_mm, 2.0);
-    EXPECT_EQ(status.actual_speed_mm_per_s, 80.0);
+    EXPECT_EQ(status.actual_position_mm, 1.0);
+    EXPECT_EQ(status.actual_speed_mm_per_s, 40.0);
   }
 
   // Check that we can also set the force.
