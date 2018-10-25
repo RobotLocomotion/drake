@@ -16,20 +16,20 @@ namespace schunk_wsg {
 using systems::BasicVector;
 using systems::Context;
 
-SchunkWsgCommandReceiver::SchunkWsgCommandReceiver(
-    double initial_position, double initial_force)
+SchunkWsgCommandReceiver::SchunkWsgCommandReceiver(double initial_position,
+                                                   double initial_force)
     : initial_position_(initial_position),
       initial_force_(initial_force),
       commanded_position_output_port_(
           this->DeclareVectorOutputPort(
-              "commanded_position", BasicVector<double>(1),
-              &SchunkWsgCommandReceiver::CalcCommandedPositionOutput)
-          .get_index()),
+                  "commanded_position", BasicVector<double>(1),
+                  &SchunkWsgCommandReceiver::CalcCommandedPositionOutput)
+              .get_index()),
       force_limit_output_port_(
           this->DeclareVectorOutputPort(
-              "force_limit", BasicVector<double>(1),
-              &SchunkWsgCommandReceiver::CalcForceLimitOutput)
-          .get_index()) {
+                  "force_limit", BasicVector<double>(1),
+                  &SchunkWsgCommandReceiver::CalcForceLimitOutput)
+              .get_index()) {
   this->DeclareAbstractInputPort("wsg_command",
                                  systems::Value<lcmt_schunk_wsg_command>());
 }
@@ -54,7 +54,6 @@ void SchunkWsgCommandReceiver::CalcCommandedPositionOutput(
   output->SetAtIndex(0, target_position);
 }
 
-
 void SchunkWsgCommandReceiver::CalcForceLimitOutput(
     const Context<double>& context, BasicVector<double>* output) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
@@ -74,32 +73,46 @@ SchunkWsgStatusSender::SchunkWsgStatusSender(int input_state_size,
                                              int position_index,
                                              int velocity_index)
     : position_index_(position_index), velocity_index_(velocity_index) {
-  input_port_wsg_state_ =
-      this->DeclareInputPort(systems::kVectorValued, input_state_size)
-          .get_index();
-  input_port_measured_torque_ =
-      this->DeclareInputPort(systems::kVectorValued, input_torque_size)
-          .get_index();
+  input_port_wsg_state_ = this->DeclareInputPort(
+      systems::kVectorValued, input_state_size) force_input_port_ =
+      this->DeclareInputPort(systems::kVectorValued, 1).get_index();
+  this->DeclareAbstractOutputPort(&SchunkWsgStatusSender::OutputStatus);
+}
+
+SchunkWsgStatusSender::SchunkWsgStatusSender() {
+  state_input_port_ =
+      this->DeclareInputPort(systems::kVectorValued, 2).get_index();
+  force_input_port_ =
+      this->DeclareInputPort(systems::kVectorValued, 1).get_index();
   this->DeclareAbstractOutputPort(&SchunkWsgStatusSender::OutputStatus);
 }
 
 void SchunkWsgStatusSender::OutputStatus(const Context<double>& context,
                                          lcmt_schunk_wsg_status* output) const {
   lcmt_schunk_wsg_status& status = *output;
-
   status.utime = context.get_time() * 1e6;
-  const systems::BasicVector<double>* state =
-      this->EvalVectorInput(context, input_port_wsg_state_);
-  const systems::BasicVector<double>* force =
-      this->EvalVectorInput(context, input_port_measured_torque_);
-  // The position and speed reported in this message are between the
-  // two fingers rather than the position/speed of a single finger
-  // (so effectively doubled).
-  status.actual_position_mm = -2 * state->GetAtIndex(position_index_) * 1e3;
-  status.actual_speed_mm_per_s = -2 * state->GetAtIndex(velocity_index_) * 1e3;
 
+  // Maintain the deprecated mode for now.
+  if (input_port_wsg_state_ != -1) {
+    DRAKE_DEMAND(state_input_port_ == -1);
+    const systems::BasicVector<double>* state =
+        this->EvalVectorInput(context, input_port_wsg_state_);
+    status.actual_position_mm = -2 * state->GetAtIndex(0) * 1e3;
+    status.actual_speed_mm_per_s = -2 * state->GetAtIndex(1) * 1e3;
+  } else {
+    const systems::BasicVector<double>* state =
+        this->EvalVectorInput(context, state_input_port_);
+    // The position and speed reported in this message are between the
+    // two fingers rather than the position/speed of a single finger
+    // (so effectively doubled).
+    status.actual_position_mm = 2 * state->GetAtIndex(0) * 1e3;
+    status.actual_speed_mm_per_s = 2 * state->GetAtIndex(1) * 1e3;
+  }
+
+  const systems::BasicVector<double>* force =
+      this->EvalVectorInput(context, force_input_port_);
   if (force) {
-    status.actual_force = -force->GetAtIndex(0);
+    status.actual_force = force->GetAtIndex(0);
   } else {
     status.actual_force = 0;
   }
