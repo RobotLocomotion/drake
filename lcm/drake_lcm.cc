@@ -31,6 +31,13 @@ DrakeLcm::~DrakeLcm() { receive_thread_.reset(); }
 
 void DrakeLcm::StartReceiveThread() {
   DRAKE_DEMAND(receive_thread_ == nullptr);
+
+  // Ensure that LCM's self-test happens before our thread starts running.
+  // Without this, ThreadSanitizer builds may report false positives related to
+  // the self-test happening concurrently with the LCM publishing.
+  lcm_.getFileno();
+
+  // Now launch the thread.
   receive_thread_ = std::make_unique<LcmReceiveThread>(&lcm_);
 }
 
