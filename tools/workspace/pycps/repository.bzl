@@ -9,8 +9,8 @@ def pycps_repository(
         name = name,
         repository = "mwoehlke/pycps",
         # PR DRAFT: DO NOT MERGE
-        commit = "ec0c7adc9ef660bfcc2101a79bc12a2b577bb1a9",
-        sha256 = "1ee737974af204075ffb7ca5de6276972603d23ba126438b3d8acdeccc9d9096",  # noqa
+        commit = "688c21eb77ddc2b8afe471db0bc92ce7831ed6af",
+        sha256 = "b7164c68f65e76a6273e5d5a57f277da99de57488784d1b03b7f20692334de2d",  # noqa
         build_file = "@drake//tools/workspace/pycps:package.BUILD.bazel",
         mirrors = mirrors,
     )
