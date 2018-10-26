@@ -28,7 +28,7 @@ namespace manipulation_station {
 /// externally mounted sensors, and the structure that it is mounted into.
 /// @{
 ///
-/// @system{ StationSimulation,
+/// @system{ ManipulationStation,
 ///   @input_port{iiwa_position}
 ///   @input_port{iiwa_feedforward_torque},
 ///   @output_port{iiwa_position_commanded}
@@ -82,8 +82,8 @@ namespace manipulation_station {
 /// @code
 /// StationSimulation<double> station;
 /// AddModelFromSdfFile("my.sdf", "my_model",
-///                     station.get_mutable_multibody_plant(),
-///                     station.get_mutable_scene_graph());
+///                     &station.get_mutable_multibody_plant(),
+///                     &station.get_mutable_scene_graph());
 /// ...
 /// // coming soon -- sugar API for adding additional objects.
 /// station.Finalize()
@@ -100,14 +100,18 @@ namespace manipulation_station {
 /// @ingroup manipulation_station_systems
 /// @}
 template <typename T>
-class StationSimulation : public systems::Diagram<T> {
+class ManipulationStation : public systems::Diagram<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StationSimulation)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManipulationStation)
 
   /// Construct the station model with @p time_step as the time step used by
   /// MultibodyPlant<T>, and by the discrete derivative used to approximate
   /// velocity from the position command inputs.
-  explicit StationSimulation(double time_step = 0.002);
+  explicit ManipulationStation(double time_step = 0.002);
+
+  /// Add the geometry (and two extra degrees-of-freedom) of the optional
+  /// workstation cupboard to the model.
+  void AddCupboard();
 
   // TODO(russt): Add scalar copy constructor etc once we support more
   // scalar types than T=double.  See #9573.
