@@ -144,7 +144,7 @@ class InternalFrame {
    instances of SceneGraph. The world frame will eventually have an arbitrary
    number of child frames and geometries; but there will always only be one
    world frame.  */
-  static FrameId world_frame_id() { return kWorldFrame; }
+  static FrameId world_frame_id();
 
   /** Reports the reserved frame group for the world frame.  */
   static int world_frame_group() {
@@ -198,9 +198,6 @@ class InternalFrame {
   // that were hung on geometries that were already rigidly affixed.
   // It does *not* include geometries hung on child frames.
   std::unordered_set<GeometryId> child_geometries_;
-
-  // The frame identifier of the world frame.
-  static const FrameId kWorldFrame;
 };
 
 }  // namespace internal
