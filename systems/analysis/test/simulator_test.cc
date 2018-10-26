@@ -947,14 +947,58 @@ GTEST_TEST(SimulatorTest, SpringMass) {
 }
 
 namespace {
+// A simple discrete system with known solution.
+// Difference equation: x[n+1] = (-x[n] - 7*(n-1) - (n-2))/2.
+class SimpleDiscreteSystem : public LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleDiscreteSystem)
+
+  SimpleDiscreteSystem() {
+    this->DeclarePeriodicDiscreteUpdate(1.0, 0.0);
+    this->DeclareDiscreteState(2);
+  }
+
+ private:
+  void DoCalcDiscreteVariableUpdates(
+      const Context<double>& context,
+      const std::vector<const DiscreteUpdateEvent<double>*>&,
+      DiscreteValues<double>* x_next) const override {
+    double x = context.get_discrete_state()[0];
+    const double n = context.get_discrete_state()[1];
+    (*x_next)[0] = (-x - 7*(n-1) - (n-2))/2;
+    (*x_next)[1] = n + 1;
+  }
+};
+}  // namespace
+
+// Tests that the simulator captures an update at the exact time
+// (i.e., without accumulating floating point error).
+GTEST_TEST(SimulatorTest, SimpleDiscreteSystemSolution) {
+  SimpleDiscreteSystem discrete_system;
+  Simulator<double> simulator(discrete_system);
+
+  // Set the initial conditions (iterate and state).
+  simulator.get_mutable_context().get_mutable_discrete_state()[0] = 2.0;
+  simulator.get_mutable_context().get_mutable_discrete_state()[1] = 2.0;
+
+  // Simulate forward.
+  simulator.Initialize();
+  simulator.StepTo(1.);
+
+  // Check that the update occurs at exactly the desired time.
+  EXPECT_EQ(simulator.get_context().get_discrete_state()[0], -4.5);
+}
+
+namespace {
 // A mock System that requests a single update/publish at a specified time.
 class TimedUpdater : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TimedUpdater)
-  enum EventType { kPublish = 0, kUnrestrictedUpdate = 1, kDiscreteUpdate = 2 };
+  enum EventType { kNone = 0, kPublish = 1, kUnrestrictedUpdate = 2,
+    kDiscreteUpdate = 3 };
 
-  TimedUpdater(double t_upd, EventType event_type) :
-      t_upd_(t_upd), event_type_(event_type) {}
+  TimedUpdater(double t_upd, int event_types) :
+      t_upd_(t_upd), event_types_(event_types) {}
 
   ~TimedUpdater() override {}
 
@@ -964,26 +1008,19 @@ class TimedUpdater : public LeafSystem<double> {
     const double inf = std::numeric_limits<double>::infinity();
     *time = (context.get_time() < t_upd_) ? t_upd_ : inf;
 
-    switch (event_type_) {
-      case kPublish: {
-        PublishEvent<double> event(
-            Event<double>::TriggerType::kTimed);
-        event.add_to_composite(event_info);
-        break;
-      }
+    if ((event_types_ & kPublish) > 0) {
+      PublishEvent<double> event(Event<double>::TriggerType::kTimed);
+      event.add_to_composite(event_info);
+    }
 
-      case kUnrestrictedUpdate: {
-        UnrestrictedUpdateEvent<double> event(
-            Event<double>::TriggerType::kTimed);
-        event.add_to_composite(event_info);
-        break;
-      }
+    if ((event_types_ & kUnrestrictedUpdate) > 0) {
+      UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kTimed);
+      event.add_to_composite(event_info);
+    }
 
-      case kDiscreteUpdate:
-        DiscreteUpdateEvent<double> event(
-            Event<double>::TriggerType::kTimed);
+    if ((event_types_ & kDiscreteUpdate) > 0) {
+        DiscreteUpdateEvent<double> event(Event<double>::TriggerType::kTimed);
         event.add_to_composite(event_info);
-        break;
     }
   }
 
@@ -1023,7 +1060,7 @@ class TimedUpdater : public LeafSystem<double> {
 
  private:
   const double t_upd_{0.0};
-  EventType event_type_;
+  int event_types_;
 
   // Modifying system members in DoCalcTimeDerivatives() is an anti-pattern.
   // It is done here only to simplify the testing code.
@@ -1036,7 +1073,7 @@ class TimedUpdater : public LeafSystem<double> {
 };
 }  // namespace
 
-// Tests that the simulator captures an unrestricted update at the exact time
+// Tests that the simulator captures an update at the exact time
 // (i.e., without accumulating floating point error).
 GTEST_TEST(SimulatorTest, ExactUpdateTime) {
   // Create the UnrestrictedUpdater system.
@@ -1057,7 +1094,7 @@ GTEST_TEST(SimulatorTest, ExactUpdateTime) {
   EXPECT_EQ(unrest_upd.last_unrestricted_update_time(), t_upd);
 }
 
-// Tests that the simulator captures an unrestricted update at time zero.
+// Tests that the simulator captures a multiple updates at the time zero.
 GTEST_TEST(SimulatorTest, UnrestrictedUpdateTimeZero) {
   // Create the UnrestrictedUpdater system.
   TimedUpdater unrest_upd(0.0, TimedUpdater::kUnrestrictedUpdate);
