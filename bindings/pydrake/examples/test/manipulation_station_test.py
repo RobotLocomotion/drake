@@ -2,14 +2,14 @@
 import unittest
 import numpy as np
 
-from pydrake.examples.manipulation_station import StationSimulation
+from pydrake.examples.manipulation_station import ManipulationStation
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
 
 
 class TestManipulationStation(unittest.TestCase):
-    def test_station_simulation(self):
+    def test_manipulation_station(self):
         # Just check the spelling.
-        station = StationSimulation(time_step=0.001)
+        station = ManipulationStation(time_step=0.001)
         station.Finalize()
         station.get_mutable_multibody_plant()
         station.get_mutable_scene_graph()
