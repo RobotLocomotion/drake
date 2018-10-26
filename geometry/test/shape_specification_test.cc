@@ -288,6 +288,15 @@ GTEST_TEST(HalfSpaceTest, MakePose) {
   }
 }
 
+// Confirms the Box::MakeCube correctness.
+GTEST_TEST(BoxTest, Cube) {
+  Box cube = Box::MakeCube(1.0);
+  EXPECT_EQ(cube.width(), 1.0);
+  EXPECT_EQ(cube.depth(), 1.0);
+  EXPECT_EQ(cube.height(), 1.0);
+  EXPECT_TRUE(CompareMatrices(cube.size(), Eigen::Vector3d::Constant(1.0)));
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake
