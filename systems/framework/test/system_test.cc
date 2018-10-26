@@ -51,7 +51,6 @@ class TestSystem : public System<double> {
 
   using System::AddConstraint;  // allow access to protected method.
   using System::DeclareInputPort;
-  using System::DeclareAbstractInputPort;
 
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
       const override {
@@ -70,7 +69,7 @@ class TestSystem : public System<double> {
                             Parameters<double>* params) const override {}
 
   const InputPort<double>& AddAbstractInputPort() {
-    return this->DeclareAbstractInputPort();
+    return this->DeclareInputPort(kUseDefaultName, kAbstractValued, 0);
   }
 
   const LeafOutputPort<double>& AddAbstractOutputPort() {
@@ -133,14 +132,9 @@ class TestSystem : public System<double> {
   }
 
  protected:
-  BasicVector<double>* DoAllocateInputVector(
-      const InputPort<double>& input_port) const override {
-    return nullptr;
-  }
-
-  AbstractValue* DoAllocateInputAbstract(
-      const InputPort<double>& input_port) const override {
-    return nullptr;
+  std::unique_ptr<AbstractValue> DoAllocateInput(
+      const InputPort<double>&) const final {
+    return {};
   }
 
   void DoCalcTimeDerivatives(
@@ -352,7 +346,7 @@ TEST_F(SystemTest, PortNameTest) {
   const auto& named_input =
       system_.DeclareInputPort("my_input", kVectorValued, 3);
   const auto& named_abstract_input =
-      system_.DeclareAbstractInputPort("abstract");
+      system_.DeclareInputPort("abstract", kAbstractValued, 0);
 
   EXPECT_EQ(unnamed_input.get_name(), "u0");
   EXPECT_EQ(named_input.get_name(), "my_input");
@@ -464,7 +458,8 @@ class ValueIOTestSystem : public System<T> {
     this->set_forced_unrestricted_update_events(
         this->AllocateForcedUnrestrictedUpdateEventCollection());
 
-    this->DeclareAbstractInputPort();
+    this->DeclareInputPort(kUseDefaultName, kAbstractValued, 0);
+
     this->AddOutputPort(std::make_unique<LeafOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
@@ -520,18 +515,13 @@ class ValueIOTestSystem : public System<T> {
     DRAKE_ABORT();
   }
 
-  AbstractValue* DoAllocateInputAbstract(
+  std::unique_ptr<AbstractValue> DoAllocateInput(
       const InputPort<T>& input_port) const override {
-    // Should only get called for the first input.
-    EXPECT_EQ(input_port.get_index(), 0);
-    return AbstractValue::Make<std::string>("").release();
-  }
-
-  BasicVector<T>* DoAllocateInputVector(
-      const InputPort<T>& input_port) const override {
-    // Should not get called for the first (abstract) input.
-    EXPECT_GE(input_port.get_index(), 1);
-    return new TestTypedVector<T>();
+    if (input_port.get_index() == 0) {
+      return AbstractValue::Make<std::string>("");
+    } else {
+      return std::make_unique<Value<BasicVector<T>>>(TestTypedVector<T>{});
+    }
   }
 
   std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
@@ -928,10 +918,9 @@ class ComputationTestSystem final : public System<double> {
       Event<double>*, CompositeEventCollection<double>*) const final {
     DRAKE_ABORT_MSG("test should not get here");
   }
-  BasicVector<double>* DoAllocateInputVector(
-      const InputPort<double>&) const final { return nullptr; }
-  AbstractValue* DoAllocateInputAbstract(const InputPort<double>&) const final {
-    return nullptr;
+  std::unique_ptr<AbstractValue> DoAllocateInput(
+      const InputPort<double>&) const final {
+    return {};
   }
   void DispatchPublishHandler(
       const Context<double>& context,
