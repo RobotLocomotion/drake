@@ -1,74 +1,113 @@
 """
-This program serves sphinx.zip for a web browser.
-
-Run this via:
-  $ bazel run //doc:serve_sphinx
+Generates documentation for `pydrake`.
 """
 
-from __future__ import print_function
-
-import argparse
-import os
-import subprocess
+from os.path import abspath, dirname, isabs, join
 import sys
-import webbrowser
-import zipfile
 
-from six.moves.SimpleHTTPServer import SimpleHTTPRequestHandler
-from six.moves.socketserver import TCPServer
+import pydrake.all
+# TODO(eric.cousineau): Make an optional `.all` module.
+from pydrake.examples import (
+    acrobot,
+    compass_gait,
+    pendulum,
+    rimless_wheel,
+    van_der_pol,
+)
+from pydrake.examples.multibody import cart_pole_passive_simulation
+# TODO(eric.cousineau): Indicate these as deprecated.
+from pydrake.util import (
+    cpp_const,
+    cpp_param,
+    cpp_template,
+)
+import serve_sphinx_base
 
-
-def str2bool(value):
-    # From: https://stackoverflow.com/a/19233287/7829525
-    return value.lower() in ("yes", "y", "true", "t", "1")
-
-
-parser = argparse.ArgumentParser()
-parser.register('type', 'bool', str2bool)
-parser.add_argument(
-    "--browser", type='bool', default=True, metavar='BOOL',
-    help="Open browser. Disable this if you are frequently recompiling.")
-parser.add_argument(
-    "--port", type=int, default=8001, metavar='PORT',
-    help="Port for serving doc pages with a HTTP server.")
-args = parser.parse_args()
-
-# Unpack zipfile and chdir into it.
-with zipfile.ZipFile("bindings/pydrake/doc/sphinx.zip", "r") as archive:
-    archive.extractall("sphinx-tmp")
-os.chdir("sphinx-tmp")
-file_url = "file://%s/index.html " % os.path.abspath(os.getcwd())
+EXCLUDE = [
+    "pydrake.third_party",
+]
 
 
-# An HTTP handler without logging.
-class Handler(SimpleHTTPRequestHandler):
-    def log_request(*_):
-        pass
+def get_submodules(name):
+    prefix = name + "."
+    out = []
+    for s_name in sys.modules.keys():
+        if s_name in EXCLUDE:
+            continue
+        if not s_name.startswith(prefix):
+            continue
+        sub = s_name[len(prefix):]
+        # Ensure its an immediate child.
+        if "." in sub or sub.startswith("_"):
+            continue
+        # For some reason, things like `pydrake.util` has submodules like
+        # `inspect`, etc, whose value in `sys.modules` are none. Ignore those.
+        # TODO(eric.cousineau): Figure out where these come from, and remove
+        # them.
+        if sys.modules[s_name] is None:
+            continue
+        out.append(s_name)
+    return sorted(out)
 
 
-# Serve the current directory for local browsing.
-sockaddr = ("127.0.0.1", args.port)
-TCPServer.allow_reuse_address = True
-httpd = TCPServer(sockaddr, Handler)
-http_url = "http://%s:%s/index.html" % sockaddr
+def has_cc_imported_symbols(name):
+    # Check for `module_py`.
+    if name + "._module_py" in sys.modules:
+        return True
+    pieces = name.split(".")
+    if len(pieces) > 1:
+        sub = pieces[-1]
+        test = ".".join(pieces[:-1] + ["_{}_py".format(sub)])
+        if test in sys.modules:
+            raise RuntimeError(
+                ("The module `{}` should not exist; instead, only `{}` should "
+                 "exist").format(test, name))
+    return False
 
-# Users can click these as a backup, if the auto-open below doesn't work.
-print("Sphinx preview docs are available at:", file=sys.stderr)
-print("", file=sys.stderr)
-print("  " + http_url, file=sys.stderr)
-print("", file=sys.stderr)
-print("  " + file_url, file=sys.stderr)
-print("", file=sys.stderr)
 
-# Try the default browser, then wait.
-if args.browser:
-    print("Opening webbrowser", file=sys.stderr)
-    if sys.platform == "darwin":
-        # macOS
-        webbrowser.open(http_url)
-    else:
-        # Ubuntu
-        webbrowser.open("./index.html")
+def write_module(f_name, name, verbose):
+    if verbose:
+        print("Write: {}".format(name))
+    subs = get_submodules(name)
+    with open(f_name, 'w') as f:
+        f.write(".. GENERATED FILE DO NOT EDIT\n")
+        f.write("\n")
+        rst_name = name.replace("_", "\\_")
+        f.write("{}\n".format(rst_name))
+        f.write("=" * len(rst_name) + "\n")
+        f.write("\n")
+        if len(subs) > 0:
+            f.write(".. toctree::\n")
+            f.write("    :maxdepth: 1\n")
+            f.write("\n")
+            for sub in subs:
+                f.write("    {}\n".format(sub))
+            f.write("\n\n")
+        f.write(".. automodule:: {}\n".format(name))
+        f.write("    :members:\n")
+        # See if there's a corresponding private CcPybind library.
+        if has_cc_imported_symbols(name):
+            f.write("    :imported-members:\n")
+        f.write("    :undoc-members:\n")
+        f.write("    :show-inheritance:\n")
+    f_dir = dirname(f_name)
+    for sub in subs:
+        write_module(join(f_dir, sub) + ".rst", sub, verbose)
 
-print("Serving and waiting ... use Ctrl-C to exit.", file=sys.stderr)
-httpd.serve_forever()
+
+def write_doc_modules(output_dir, verbose=False):
+    if not isabs(output_dir):
+        raise RuntimeError(
+            "Please provide an absolute path: {}".format(output_dir))
+    index_file = join(output_dir, "index.rst")
+    write_module(index_file, "pydrake", verbose)
+
+
+def main():
+    input_dir = dirname(abspath(__file__))
+    serve_sphinx_base.main(
+        input_dir=input_dir, strict=False, src_func=write_doc_modules)
+
+
+if __name__ == "__main__":
+    main()
