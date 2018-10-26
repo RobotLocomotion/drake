@@ -1,22 +1,40 @@
 #pragma once
 
+/// @dir
+/// Directory documentation is ignored. Sit amet massa vitae tortor. Pulvinar
+/// pellentesque habitant morbi tristique senectus et. Lacus sed turpis
+/// tincidunt id.
+
 /// @file
-/// Sit amet nisl purus in mollis nunc sed id semper. Risus nec feugiat in
-/// fermentum posuere urna nec tincidunt praesent. Suscipit tellus mauris a
-/// diam.
+/// File documentation is ignored. Sit amet nisl purus in mollis nunc sed id
+/// semper. Risus nec feugiat in fermentum posuere urna nec tincidunt praesent.
+/// Suscipit tellus mauris a diam.
+
+/// @defgroup first_group Elementum pulvinar etiam non quam lacus.
+/// Ultrices in iaculis nunc sed augue lacus viverra. Dolor sit amet
+/// consectetur adipiscing elit duis tristique.
 
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/unused.h"
 
+/// @def PREPROCESSOR_DEFINITION
+/// Preprocessor definitions are ignored. In nibh mauris cursus mattis
+/// molestie a. Non arcu risus quis varius quam quisque id.
+#define PREPROCESSOR_DEFINITION "Nisl purus in mollis nunc sed id."
+
 /// Root-level symbol. Magna fermentum iaculis eu non diam phasellus
 /// vestibulum.
 struct RootLevelSymbol {};
 
+/// @namespace drake
+/// Namespaces are ignored. Enim blandit volutpat maecenas volutpat blandit. Eu
+/// feugiat pretium nibh ipsum consequat.
 namespace drake {
 
 /**
+ * @struct MidLevelSymbol
  * Mid-level symbol. Ut enim ad minim veniam, quis nostrud exercitation
  * ullamco laboris nisi ut aliquip ex ea commodo consequat.
  *
@@ -29,6 +47,25 @@ namespace drake {
  *    Pharetra convallis posuere morbi leo urna molestie. End third ordered
  *    list element.
  *
+ * @anchor anchor
+ * Senectus et netus et malesuada fames ac. Tincidunt lobortis feugiat vivamus
+ * at augue eget arcu dictum varius.
+ * @internal
+ * Begin ignored internal section. Est ante in nibh mauris cursus mattis
+ * molestie. Morbi tristique senectus et netus et malesuada. Magnis dis
+ * parturient montes nascetur ridiculus mus mauris. End ignored internal
+ * section.
+ * @endinternal
+ *
+ * @section first_level_heading First level heading
+ * Cursus in hac habitasse platea dictumst quisque sagittis purus sit. Et
+ * malesuada fames ac turpis.
+ * @subsection second_level_heading Second level heading
+ * Adipiscing diam donec adipiscing tristique risus nec feugiat. Condimentum
+ * vitae sapien pellentesque habitant.
+ * @subsubsection third_level_heading Third level heading
+ * Fermentum odio eu feugiat pretium nibh. Sed nisi lacus sed viverra.  Ut
+ * ornare lectus sit amet est.
  * @version 1.0.
  */
 struct MidLevelSymbol {};
@@ -50,9 +87,9 @@ void func(int* param);
 template <typename T>
 void func(T);
 
-/// Class.
-/// Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
-/// tempor incididunt ut labore et dolore magna aliqua.
+/// @class Class
+/// Class. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+/// eiusmod tempor incididunt ut labore et dolore magna aliqua.
 ///
 /// * Begin first unordered list element. Volutpat blandit aliquam etiam erat
 ///   velit scelerisque. End first unordered list element.
@@ -63,21 +100,47 @@ void func(T);
 ///   sagittis purus sit. End third unordered list element.
 ///
 /// Quisque sagittis purus sit amet volutpat.
+///
+/// # First level heading #
+/// Aliquet nec ullamcorper sit amet risus nullam eget felis. __Bold__. Hac
+/// habitasse platea dictumst quisque sagittis purus sit.
+///
+/// ## Second level heading ##
+/// Donec massa sapien faucibus et molestie ac feugiat sed lectus. _Italics_.
+/// Amet justo donec enim diam vulputate ut pharetra sit.
+///
+/// ### Third level heading ###
+/// Orci eu lobortis elementum nibh. `Typewriter`. Luctus venenatis lectus
+/// magna fringilla urna porttitor rhoncus dolor.
+///
+/// #### Fourth level heading ####
+/// Orci eu lobortis elementum nibh. Luctus venenatis lectus magna fringilla
+///  urna porttitor rhoncus dolor.
+///
+/// Tortor id aliquet lectus proin nibh. [Link](https://example.org). Cras
+/// semper auctor neque vitae tempus quam pellentesque nec.
 /// @sa Struct
 class Class {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Class)
 
-  // TODO(eric.cousineau): Make `mkdoc` recognize documentation for aliases. At
-  // present, neither `UsingAlias` nor `TypedefAlias` show up.
+  /// @name Name. Augue neque gravida in fermentum et.
+  /// @{
 
+  /// @public
   /// Using alias. @a Italics. Sit amet nisl purus in mollis nunc sed id
   /// semper.
   using UsingAlias = std::vector<Class>;
 
+  /// @typedef std::vector<Class> TypedefAlias
   /// Typedef alias. @b Bold. Risus nec feugiat in fermentum posuere urna nec
   /// tincidunt praesent.
   typedef std::vector<Class> TypedefAlias;
+
+  /// @}
+
+  /// @addtogroup second_group Luctus venenatis lectus magna fringilla urna.
+  /// @{
 
   /// Custom constructor 1.
   Class() {}
@@ -97,23 +160,30 @@ class Class {
     unused(param);
   }
 
+  /// @}
+
   /// Custom constructor 3. @em Italics. Integer quis auctor elit sed vulputate
   /// mi sit.
   /// @param[in] param1 Begin first input parameter. Mollis nunc sed id semper
   /// risus in hendrerit gravida rutrum. End first input parameter.
   /// @param[in] param2 Begin second input parameter. Tristique senectus et
   /// netus et malesuada fames ac turpis. End second input parameter.
+  /// @ingroup first_group second_group
   explicit Class(int param1, std::vector<int> param2) {
     unused(param1);
     unused(param2);
   }
 
+  /// @fn void PublicMethod()
   /// Public method. @f$ A = \pi r^2 @f$. Condimentum id venenatis a
   /// condimentum vitae sapien pellentesque habitant morbi.
-  /// @cond
-  /// Private documentation. Tortor vitae purus faucibus ornare suspendisse.
-  /// Orci dapibus ultrices in iaculis.
+  /// @cond TEST
+  /// Begin ignored conditional section. Tortor vitae purus faucibus ornare
+  /// suspendisse. Orci dapibus ultrices in iaculis. End ignored conditional
+  /// section.
   /// @endcond
+  /// @callgraph
+  /// @callergraph
   void PublicMethod() {}
 
   // Private documentation.
@@ -121,11 +191,16 @@ class Class {
   /// purus ut faucibus pulvinar.
   /// @tparam T Begin template parameter. acilisi etiam dignissim diam quis. Ut
   /// pharetra sit amet aliquam. End template parameter.
+  /// @hidecallgraph
+  /// @hidecallergraph
   template <typename T>
   void PublicTemplateMethod() {}
 
-  /// Static method. @p Typewriter. Sed faucibus turpis in eu mi bibendum neque
-  /// egestas.
+  /// @static
+  /// @brief Static method. @p Typewriter. Sed faucibus turpis in eu mi
+  /// bibendum neque egestas.
+  /// @details Vitae sapien pellentesque habitant morbi tristique senectus.
+  /// Iaculis eu non diam phasellus vestibulum.
   /// @invariant Begin invariant. Odio euismod lacinia at quis risus sed
   /// vulputate odio. End invariant.
   /// @pre Begin precondition. Cras fermentum odio eu feugiat pretium nibh.
@@ -135,8 +210,9 @@ class Class {
   static void PublicStatic() {}
 
  protected:
-  /// Protected method. Nibh sed pulvinar proin gravida hendrerit. Orci
-  /// phasellus egestas tellus rutrum tellus pellentesque eu.
+  /// @protected
+  /// Protected method. **Bold**. Nibh sed pulvinar proin gravida hendrerit.
+  /// Orci phasellus egestas tellus rutrum tellus pellentesque eu.
   /// @returns Begin returns. Faucibus interdum posuere lorem ipsum dolor.
   /// Malesuada proin libero nunc consequat interdum varius sit amet. End
   /// returns.
@@ -144,8 +220,8 @@ class Class {
     return 0;
   }
 
-  /// Protected nested class. Sed turpis tincidunt id aliquet. Egestas sed sed
-  /// risus pretium.
+  /// Protected nested class. *Italics*. Sed turpis tincidunt id aliquet.
+  /// Egestas sed sed risus pretium.
   /// @bug Begin bug report. Cras pulvinar mattis nunc sed blandit libero. Eget
   /// est lorem ipsum dolor sit amet consectetur. End bug report.
   /// @test Begin test case. Sem integer vitae justo eget magna fermentum.
@@ -153,11 +229,14 @@ class Class {
   /// test case.
   class Nested {};
 
-  /// Protected member. Porttitor eget dolor morbi non arcu risus quis varius
-  /// quam.
+  /// @var int protected_member_
+  /// Protected member. ``Typewriter``. Porttitor eget dolor morbi non arcu
+  /// risus quis varius quam.
+  /// @hideinitializer
   int protected_member_{};
 
  private:
+  /// @private
   /// Private method, public documentation. Senectus et netus et malesuada
   /// fames ac.
   /// @todo Begin TODO. Ut tellus elementum sagittis vitae et leo duis ut diam.
@@ -177,7 +256,8 @@ struct Struct {
   /// Field 1. Sit amet cursus sit amet dictum sit amet. Id leo in vitae turpis
   /// massa sed elementum tempus.
   /// @attention Begin attention. Ultricies lacus sed turpis tincidunt id
-  /// aliquet risus feugiat.  End attention.
+  /// aliquet risus feugiat. End attention.
+  /// @showinitializer
   int field_1;
   /// Field 2. Consectetur libero id faucibus nisl tincidunt eget nullam non
   /// nisi.
@@ -190,6 +270,7 @@ struct Struct {
 /// elementum.
 /// @tparam T Begin template parameter. Feugiat scelerisque varius morbi enim
 /// nunc faucibus a. End template parameter.
+/// @relatesalso Struct
 template <typename T>
 class TemplateClass {
  public:
@@ -208,8 +289,10 @@ template <>
 class TemplateClass<int> {
 };
 
+/// @enum Enum
 /// Enumeration. Feugiat scelerisque varius morbi enim.  Facilisis leo vel
 /// fringilla est ullamcorper eget nulla facilisi.
+/// @relates Class
 enum Enum {
   /// Enumeration constant.
   EnumConstant,
