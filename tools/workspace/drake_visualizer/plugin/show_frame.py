@@ -4,6 +4,7 @@ from sets import Set
 from director import lcmUtils
 from director import applogic
 from director import objectmodel as om
+from director import transformUtils
 from director import visualization as vis
 import robotlocomotion as lcmrobotlocomotion
 
