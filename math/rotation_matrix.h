@@ -20,6 +20,12 @@
 namespace drake {
 namespace math {
 
+#ifndef DRAKE_DOXYGEN_CXX
+namespace internal {
+  enum EnumSkipInitializeToIdentityMatrix { kSkipInitializeToIdentityMatrix };
+}  // namespace internal
+#endif
+
 /// This class represents a 3x3 rotation matrix between two arbitrary frames
 /// A and B and helps ensure users create valid rotation matrices.  This class
 /// relates right-handed orthogonal unit vectors Ax, Ay, Az fixed in frame A
@@ -173,7 +179,7 @@ class RotationMatrix {
   /// columns of `R_AB` are `Bx`, `By`, `Bz`.
   static RotationMatrix<T> MakeColumnsFromOrthonormalBasis(
       const Vector3<T>& Bx, const Vector3<T>& By, const Vector3<T>& Bz) {
-    RotationMatrix<T> R(true);
+    RotationMatrix<T> R(internal::kSkipInitializeToIdentityMatrix);
     R.set_columns(Bx, By, Bz);
     return R;
   }
@@ -192,7 +198,7 @@ class RotationMatrix {
   /// columns of `R_AB` are `Bx`, `By`, `Bz`.
   static RotationMatrix<T> MakeRowsFromOrthonormalBasis(
       const Vector3<T>& Ax, const Vector3<T>& Ay, const Vector3<T>& Az) {
-    RotationMatrix<T> R(true);
+    RotationMatrix<T> R(internal::kSkipInitializeToIdentityMatrix);
     R.set_rows(Ax, Ay, Az);
     return R;
   }
@@ -586,13 +592,8 @@ class RotationMatrix {
 
   // Constructs a %RotationMatrix without initializing the underlying 3x3 matrix
   // to the identity matrix.
-  // TODO(Mitiguy) Remove NOLINTNEXTLINE(readability/casting) when cpplint bug
-  // is fixed.  cpplint interprets the unnamed bool in RotationMatrix(bool) as a
-  // C-style cast.  Similarly if bool is changed to int. Strangely, things like:
-  // RotationMatrix(const bool) don't trigger the lint error. That suggests
-  // naive string matching in cpplint: See issue# 9815.
-  // NOLINTNEXTLINE(readability/casting)
-  explicit RotationMatrix(bool) : R_AB_() {}
+  explicit RotationMatrix(internal::EnumSkipInitializeToIdentityMatrix)
+      : R_AB_() {}
 
   // Constructs a %RotationMatrix from a Matrix3.  No check is performed to test
   // whether or not the parameter R is a valid rotation matrix.
@@ -945,6 +946,7 @@ RotationMatrix<T>::ThrowIfNotValid(const Matrix3<S>& R) {
                                "It is possible a basis is left-handed");
   }
 }
+
 
 // TODO(mitiguy) Delete this code after October 6, 2018.
 /// (Deprecated), use @ref math::RotationMatrix::MakeXRotation().
