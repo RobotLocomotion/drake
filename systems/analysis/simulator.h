@@ -484,10 +484,19 @@ template <typename T>
 void Simulator<T>::Initialize() {
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
-//  using std::nexttoward;
 
   // Initialize the integrator.
   integrator_->Initialize();
+
+  // Restore default values.
+  ResetStatistics();
+
+  // TODO(siyuan): transfer publish entirely to individual systems.
+  // Do a publish before the simulation starts.
+  if (publish_at_initialization_) {
+    system_.Publish(*context_);
+    ++num_publishes_;
+  }
 
   // Process all the initialization events.
   auto init_events = system_.AllocateCompositeEventCollection();
@@ -500,39 +509,10 @@ void Simulator<T>::Initialize() {
   // Do any publishes last.
   HandlePublish(init_events->get_publish_events());
 
-  // Modify the context time so we can get the next update time.
-//  const double inf = std::numeric_limits<double>::infinity();
-  auto current_time = context_->get_time();
-//  context_->set_time(nexttoward(current_time), -inf);
-  context_->set_time(current_time - std::numeric_limits<double>::epsilon());
-
-  // Get the next update time.
-  auto timed_events = system_.AllocateCompositeEventCollection();
-  auto next_update_time = system_.CalcNextUpdateTime(
-      *context_, timed_events.get());
-
-  // Reset the current time and handle the timed events, if any.
-  context_->set_time(current_time);
-  if (current_time == next_update_time) {
-    HandleUnrestrictedUpdate(timed_events->get_unrestricted_update_events());
-    HandleDiscreteUpdate(timed_events->get_discrete_update_events());
-    HandlePublish(timed_events->get_publish_events());
-  }
-
   // Gets all per-step events to be handled.
   per_step_events_ = system_.AllocateCompositeEventCollection();
   DRAKE_DEMAND(per_step_events_ != nullptr);
   system_.GetPerStepEvents(*context_, per_step_events_.get());
-
-  // Restore default values.
-  ResetStatistics();
-
-  // TODO(siyuan): transfer publish entirely to individual systems.
-  // Do a publish before the simulation starts.
-  if (publish_at_initialization_) {
-    system_.Publish(*context_);
-    ++num_publishes_;
-  }
 
   // Initialize runtime variables.
   initialization_done_ = true;
