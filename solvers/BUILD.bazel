@@ -631,6 +631,10 @@ drake_cc_library(
     name = "snopt_solver",
     srcs = select({
         "//tools:with_snopt": [
+            "snopt_solver.cc",
+            "snopt_solver_common.cc",
+        ],
+        "//tools:with_snopt_f2c": [
             "snopt_solver_f2c.cc",
             "snopt_solver_common.cc",
         ],
@@ -650,12 +654,22 @@ drake_cc_library(
     # (The next best step would be to write a sensible C++ SNOPT API wrapper,
     # and contain the language abuses there, so that the actual logic of our
     # snopt_wrapper.cc could still have full `-pedantic` checks enabled.)
-    copts = ["-fpermissive"],
+    copts = select({
+        "//tools:with_snopt_f2c": [
+            "-fpermissive",
+        ],
+        "//conditions:default": [],
+    }),
     deps = select({
         "//tools:with_snopt": [
             ":mathematical_program_api",
             "//math:autodiff",
             "@snopt//:snopt_cwrap",
+        ],
+        "//tools:with_snopt_f2c": [
+            ":mathematical_program_api",
+            "//math:autodiff",
+            "@snopt//:snopt_c",
         ],
         "//conditions:default": [
             ":mathematical_program_api",
@@ -1393,7 +1407,8 @@ add_lint_tests(cpplint_extra_srcs = [
     "qp.cc",
     "scs_solver.cc",
     "scs_solver_common.cc",
-    "snopt_solver_f2c.cc",
+    "snopt_solver.cc",
     "snopt_solver.h",
     "snopt_solver_common.cc",
+    "snopt_solver_f2c.cc",
 ])
