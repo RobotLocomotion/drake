@@ -111,6 +111,16 @@ TEST_F(ReifierTest, ReificationDifferentiation) {
 
   Reset();
 
+  Box cube = Box::MakeCube(1);
+  cube.Reify(this);
+  EXPECT_FALSE(sphere_made_);
+  EXPECT_FALSE(half_space_made_);
+  EXPECT_FALSE(cylinder_made_);
+  EXPECT_TRUE(box_made_);
+  EXPECT_FALSE(convex_made_);
+
+  Reset();
+
   Convex convex{"fictitious_name.obj", 1.0};
   convex.Reify(this);
   EXPECT_FALSE(sphere_made_);
