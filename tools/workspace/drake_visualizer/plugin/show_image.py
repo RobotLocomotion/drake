@@ -36,6 +36,8 @@ from PythonQt import QtGui
 
 import robotlocomotion as rl
 
+from drake.tools.workspace.drake_visualizer.plugin import scoped_singleton_func
+
 _is_vtk_5 = vtk.vtkVersion().GetVTKMajorVersion() == 5
 
 _verbose = False
@@ -507,50 +509,19 @@ class TestImageHandler(ImageHandler):
         return True
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '--test_image', action='store_true',
-        help="Use a test image handler.")
-    parser.add_argument(
-        '--channel', type=str, default=DEFAULT_CHANNEL,
-        help="Channel for LCM.")
-    parser.add_argument(
-        '--frame_names', type=str, nargs='+', default=None,
-        help="By default, will populate with first set of frames." +
-             "Otherwise, can be manually specified")
-    parser.add_argument(
-        '--max_depth', type=float, default=_max_depth,
-        help="Set the maximum depth for depth images." +
-             "Use -1 for autoscaling.")
-    parser.add_argument('--verbose', action='store_true')
-
-    is_drake_visualizer = 'app' in globals()
-    if is_drake_visualizer:
-        # TODO(eric.cousineau): See if there is a way to pass --args past
-        # `drake-visualizer`.
-        # At present, there is no way to change these if using
-        # `drake-visualizer`, and `directorPython` is unavailable.
-        argv = _argv
+@scoped_singleton_func
+def init_visualizer(debug=False):
+    if not debug:
+        return DrakeLcmImageViewer(DEFAULT_CHANNEL)
     else:
-        argv = sys.argv
-    args = parser.parse_args(argv[1:])
-
-    # Uncomment this line to test the viewer if `directorPython` is not found.
-    # args.test_image = True
-
-    _max_depth = args.max_depth
-    _verbose = args.verbose
-
-    if args.test_image:
         print("Using test image viewer")
-        image_viewer = ImageArrayWidget([
+        return ImageArrayWidget([
             TestImageHandler(do_color=True),
             TestImageHandler(do_color=False),
             ])
-    else:
-        image_viewer = DrakeLcmImageViewer(args.channel, args.frame_names)
 
-    if not is_drake_visualizer:
-        app = consoleapp.ConsoleApp()
-        app.start()
+
+# Activate the plugin if this script is run directly; store the results to keep
+# the plugin objects in scope.
+if __name__ == "__main__":
+    image_viz = init_visualizer()

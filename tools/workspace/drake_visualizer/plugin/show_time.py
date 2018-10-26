@@ -1,9 +1,11 @@
-# Note that this script runs in the main context of drake-visulizer,
-# where many modules and variables already exist in the global scope.
+import time
+
+import bot_core as lcmbotcore
 from director import lcmUtils
 from director import applogic
-import bot_core as lcmbotcore
-import time
+from director.visualization import updateText
+
+from drake.tools.workspace.drake_visualizer.plugin import scoped_singleton_func
 
 
 class TimeVisualizer(object):
@@ -33,7 +35,7 @@ class TimeVisualizer(object):
 
         lcmUtils.removeSubscriber(self._subscriber)
         self._subscriber = None
-        vis.updateText('', 'text')
+        updateText('', 'text')
 
     def is_enabled(self):
         return self._subscriber is not None
@@ -62,12 +64,12 @@ class TimeVisualizer(object):
 
             my_text = my_text + ', real time factor: %.2f' % rt_ratio
 
-        vis.updateText(my_text, 'text')
+        updateText(my_text, 'text')
 
 
+@scoped_singleton_func
 def init_visualizer():
     time_viz = TimeVisualizer()
-
     # Adds to the "Tools" menu.
     applogic.MenuActionToggleHelper(
         'Tools', time_viz._name,
@@ -75,5 +77,7 @@ def init_visualizer():
     return time_viz
 
 
-# Creates the visualizer when this script is executed.
-time_viz = init_visualizer()
+# Activate the plugin if this script is run directly; store the results to keep
+# the plugin objects in scope.
+if __name__ == "__main__":
+    time_viz = init_visualizer()
