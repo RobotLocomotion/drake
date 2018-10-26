@@ -1,4 +1,4 @@
-#include "drake/examples/manipulation_station/station_simulation.h"
+#include "drake/examples/manipulation_station/manipulation_station.h"
 
 #include <memory>
 #include <string>
@@ -6,6 +6,8 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
+#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
@@ -27,7 +29,9 @@ using Eigen::VectorXd;
 using geometry::SceneGraph;
 using math::RigidTransform;
 using math::RollPitchYaw;
+using math::RotationMatrix;
 using multibody::Joint;
+using multibody::RevoluteJoint;
 using multibody::SpatialInertia;
 using multibody::multibody_plant::MultibodyPlant;
 using multibody::parsing::AddModelFromSdfFile;
@@ -92,7 +96,7 @@ SpatialInertia<double> MakeCompositeGripperInertia(
 }
 
 template <typename T>
-StationSimulation<T>::StationSimulation(double time_step)
+ManipulationStation<T>::ManipulationStation(double time_step)
     : owned_plant_(std::make_unique<MultibodyPlant<T>>(time_step)),
       owned_scene_graph_(std::make_unique<SceneGraph<T>>()),
       owned_controller_plant_(std::make_unique<MultibodyPlant<T>>()) {
@@ -102,14 +106,18 @@ StationSimulation<T>::StationSimulation(double time_step)
   plant_ = owned_plant_.get();
   scene_graph_ = owned_scene_graph_.get();
 
-  // Add a table for the robot.
+  // Add the table and 80/20 workcell frame.
+  const double dx_table_center_to_robot_base = 0.3257;
+  const double dz_table_top_robot_base = 0.0127;
   const std::string table_sdf_path = FindResourceOrThrow(
-      "drake/examples/kuka_iiwa_arm/models/table/"
-      "extra_heavy_duty_table_surface_only_collision.sdf");
-  const auto robot_table =
-      AddModelFromSdfFile(table_sdf_path, "robot_table", plant_, scene_graph_);
-  plant_->WeldFrames(plant_->world_frame(),
-                     plant_->GetFrameByName("link", robot_table));
+      "drake/examples/manipulation_station/models/amazon_table_simplified.sdf");
+  const auto table =
+      AddModelFromSdfFile(table_sdf_path, "table", plant_, scene_graph_);
+  plant_->WeldFrames(
+      plant_->world_frame(), plant_->GetFrameByName("amazon_table", table),
+      RigidTransform<double>(
+          Vector3d(dx_table_center_to_robot_base, 0, -dz_table_top_robot_base))
+          .GetAsIsometry3());
 
   // Add the Kuka IIWA.
   const std::string iiwa_sdf_path = FindResourceOrThrow(
@@ -117,11 +125,8 @@ StationSimulation<T>::StationSimulation(double time_step)
       "sdf/iiwa14_no_collision.sdf");
   iiwa_model_ =
       AddModelFromSdfFile(iiwa_sdf_path, "iiwa", plant_, scene_graph_);
-  const double table_top_z_in_world = 0.736 + 0.057 / 2;
-  plant_->WeldFrames(
-      plant_->world_frame(), plant_->GetFrameByName("iiwa_link_0", iiwa_model_),
-      RigidTransform<double>(Vector3d(0, 0, table_top_z_in_world))
-          .GetAsIsometry3());
+  plant_->WeldFrames(plant_->world_frame(),
+                     plant_->GetFrameByName("iiwa_link_0", iiwa_model_));
 
   // Add the Schunk gripper and weld it to the end of the IIWA.
   const std::string wsg_sdf_path = FindResourceOrThrow(
@@ -136,13 +141,6 @@ StationSimulation<T>::StationSimulation(double time_step)
           .GetAsIsometry3();
   plant_->WeldFrames(plant_->GetFrameByName("iiwa_link_7", iiwa_model_),
                      plant_->GetFrameByName("body", wsg_model_), wsg_pose);
-
-  // Add a second table that is the main robot workspace.
-  const auto table =
-      AddModelFromSdfFile(table_sdf_path, "table", plant_, scene_graph_);
-  plant_->WeldFrames(
-      plant_->world_frame(), plant_->GetFrameByName("link", table),
-      RigidTransform<double>(Vector3d(0.8, 0, 0.0)).GetAsIsometry3());
 
   plant_->template AddForceElement<multibody::UniformGravityFieldElement>(
       -9.81 * Vector3d::UnitZ());
@@ -174,7 +172,29 @@ StationSimulation<T>::StationSimulation(double time_step)
 }
 
 template <typename T>
-void StationSimulation<T>::Finalize() {
+void ManipulationStation<T>::AddCupboard() {
+  const double dx_table_center_to_robot_base = 0.3257;
+  const double dz_table_top_robot_base = 0.0127;
+  const double dx_cupboard_to_table_center = 0.43 + 0.15;
+  const double dz_cupboard_to_table_center = 0.02;
+  const double cupboard_height = 0.815;
+
+  const std::string sdf_path = FindResourceOrThrow(
+      "drake/examples/manipulation_station/models/cupboard.sdf");
+  const auto cupboard =
+      AddModelFromSdfFile(sdf_path, "cupboard", plant_, scene_graph_);
+  plant_->WeldFrames(
+      plant_->world_frame(), plant_->GetFrameByName("cupboard_body", cupboard),
+      RigidTransform<double>(
+          RotationMatrix<double>::MakeZRotation(M_PI),
+          Vector3d(dx_table_center_to_robot_base + dx_cupboard_to_table_center,
+                   0, dz_cupboard_to_table_center + cupboard_height / 2.0 -
+                          dz_table_top_robot_base))
+          .GetAsIsometry3());
+}
+
+template <typename T>
+void ManipulationStation<T>::Finalize() {
   // Note: This deferred diagram construction method/workflow exists because we
   //   - cannot finalize plant until all of my objects are added, and
   //   - cannot wire up my diagram until we have finalized the plant.
@@ -208,8 +228,8 @@ void StationSimulation<T>::Finalize() {
     builder.ExportOutput(demux->get_output_port(0), "iiwa_position_measured");
     builder.ExportOutput(demux->get_output_port(1), "iiwa_velocity_estimated");
 
-    builder.ExportOutput(plant_->get_continuous_state_output_port
-        (iiwa_model_), "iiwa_state_estimated");
+    builder.ExportOutput(plant_->get_continuous_state_output_port(iiwa_model_),
+                         "iiwa_state_estimated");
   }
 
   // Add the IIWA controller "stack".
@@ -290,31 +310,36 @@ void StationSimulation<T>::Finalize() {
 }
 
 template <typename T>
-VectorX<T> StationSimulation<T>::GetIiwaPosition(
+VectorX<T> ManipulationStation<T>::GetIiwaPosition(
     const systems::Context<T>& station_context) const {
-  auto& plant_context = this->GetSubsystemContext(*plant_, station_context);
-  // This assumes that the IIWA state comes first.  A unit test in
-  // station_simulation_test.cc validates this assumption.
+  const auto& plant_context =
+      this->GetSubsystemContext(*plant_, station_context);
   // TODO(russt): update upon resolution of #9623.
-  return plant_->tree()
-      .get_multibody_state_vector(plant_context)
-      .template segment<7>(0);
+  VectorX<T> q(7);
+  for (int i = 0; i < 7; i++) {
+    q(i) = plant_
+               ->template GetJointByName<RevoluteJoint>("iiwa_joint_" +
+                                                        std::to_string(i + 1))
+               .get_angle(plant_context);
+  }
+  return q;
 }
 
 template <typename T>
-void StationSimulation<T>::SetIiwaPosition(
+void ManipulationStation<T>::SetIiwaPosition(
     const Eigen::Ref<const drake::VectorX<T>>& q,
     drake::systems::Context<T>* station_context) const {
   DRAKE_DEMAND(station_context != nullptr);
   DRAKE_DEMAND(q.size() == 7);
   auto& plant_context =
       this->GetMutableSubsystemContext(*plant_, station_context);
-  // This assumes that the IIWA state comes first.  A unit test in
-  // station_simulation_test.cc validates this assumption.
   // TODO(russt): update upon resolution of #9623.
-  plant_->tree()
-      .get_mutable_multibody_state_vector(&plant_context)
-      .template segment<7>(0) = q;
+  for (int i = 0; i < 7; i++) {
+    plant_
+        ->template GetJointByName<RevoluteJoint>("iiwa_joint_" +
+                                                 std::to_string(i + 1))
+        .set_angle(&plant_context, q(i));
+  }
 
   // Set the position history in the state interpolator to match.
   this->GetMutableSubsystemContext(
@@ -325,32 +350,36 @@ void StationSimulation<T>::SetIiwaPosition(
 }
 
 template <typename T>
-VectorX<T> StationSimulation<T>::GetIiwaVelocity(
+VectorX<T> ManipulationStation<T>::GetIiwaVelocity(
     const systems::Context<T>& station_context) const {
-  auto& plant_context = this->GetSubsystemContext(*plant_, station_context);
-  // This assumes that the IIWA state comes first, and that velocities follow
-  // positions.  A unit test in station_simulation_test.cc validates this
-  // assumption.
+  const auto& plant_context =
+      this->GetSubsystemContext(*plant_, station_context);
+  VectorX<T> v(7);
   // TODO(russt): update upon resolution of #9623.
-  return plant_->tree()
-      .get_multibody_state_vector(plant_context)
-      .template segment<7>(plant_->num_positions());
+  for (int i = 0; i < 7; i++) {
+    v(i) = plant_
+               ->template GetJointByName<RevoluteJoint>("iiwa_joint_" +
+                                                        std::to_string(i + 1))
+               .get_angular_rate(plant_context);
+  }
+  return v;
 }
 
 template <typename T>
-void StationSimulation<T>::SetIiwaVelocity(
+void ManipulationStation<T>::SetIiwaVelocity(
     const Eigen::Ref<const drake::VectorX<T>>& v,
     drake::systems::Context<T>* station_context) const {
   DRAKE_DEMAND(station_context != nullptr);
   DRAKE_DEMAND(v.size() == 7);
   auto& plant_context =
       this->GetMutableSubsystemContext(*plant_, station_context);
-  // This assumes that the IIWA state comes first.  A unit test in
-  // station_simulation_test.cc validates this assumption.
   // TODO(russt): update upon resolution of #9623.
-  plant_->tree()
-      .get_mutable_multibody_state_vector(&plant_context)
-      .template segment<7>(plant_->num_positions()) = v;
+  for (int i = 0; i < 7; i++) {
+    plant_
+        ->template GetJointByName<RevoluteJoint>("iiwa_joint_" +
+                                                 std::to_string(i + 1))
+        .set_angular_rate(&plant_context, v(i));
+  }
 }
 
 }  // namespace manipulation_station
@@ -359,5 +388,5 @@ void StationSimulation<T>::SetIiwaVelocity(
 
 // TODO(russt): Support at least NONSYMBOLIC_SCALARS.  See #9573.
 //   (and don't forget to include default_scalars.h)
-template class ::drake::examples::manipulation_station::StationSimulation<
+template class ::drake::examples::manipulation_station::ManipulationStation<
     double>;

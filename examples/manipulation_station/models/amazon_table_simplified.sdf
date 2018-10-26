@@ -1,0 +1,230 @@
+<?xml version="1.0"?>
+<sdf version='1.6'>
+<model name="amazon_table">
+  <link name="amazon_table">
+    <pose>0 0 0 0 0 0 </pose>
+    <inertial>
+      <mass>1</mass>
+        <inertia>
+          <ixx>1</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1</iyy>
+          <iyz>0</iyz>
+          <izz>1</izz>
+        </inertia>
+    </inertial>
+
+    <visual name='tabletop'>
+      <pose>0 0 -0.01 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>1.220 0.762 0.02</size>
+        </box>
+      </geometry>
+      <material>
+        <diffuse>0.57 0.63 0.67 1.0</diffuse>
+      </material>
+    </visual>
+
+    <visual name='upper_right_post'>
+      <pose>0.559 0.330 0.61 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>0.0762 0.0381 1.22</size>
+        </box>
+      </geometry>
+      <material>
+        <diffuse>0.57 0.63 0.67 1.0</diffuse>
+      </material>
+    </visual>
+
+    <visual name='upper_left_post'>
+      <pose>0.559 -0.330 0.61 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>0.0762 0.0381 1.22</size>
+        </box>
+      </geometry>
+      <material>
+        <diffuse>0.57 0.63 0.67 1.0</diffuse>
+      </material>
+    </visual>
+
+    <visual name='lower_right_post'>
+      <pose>-0.559 0.330  0.61 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>0.0762 0.0381 1.22</size>
+        </box>
+      </geometry>
+      <material>
+        <diffuse>0.57 0.63 0.67 1.0</diffuse>
+      </material>
+    </visual>
+
+    <visual name='lower_left_post'>
+      <pose>-0.559 -0.330 0.61 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>0.0762 0.0381 1.22</size>
+        </box>
+      </geometry>
+      <material>
+        <diffuse>0.57 0.63 0.67 1.0</diffuse>
+      </material>
+    </visual>
+
+    <visual name='top_left_bar'>
+      <pose>0 0.371 1.171 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>0.965 0.038 0.038</size>
+        </box>
+      </geometry>
+      <material>
+        <diffuse>0.57 0.63 0.67 1.0</diffuse>
+      </material>
+    </visual>
+
+    <visual name='top_middle_bar'>
+      <pose>0 0 1.209 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>1.220 0.038 0.038</size>
+        </box>
+      </geometry>
+      <material>
+        <diffuse>0.57 0.63 0.67 1.0</diffuse>
+      </material>
+    </visual>
+
+    <visual name='top_right_bar'>
+      <pose>0 -0.371 1.171 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>0.965 0.038 0.038</size>
+        </box>
+      </geometry>
+      <material>
+        <diffuse>0.57 0.63 0.67 1.0</diffuse>
+      </material>
+    </visual>
+
+    <visual name='top_back_bar'>
+      <pose>-0.501 0 1.171 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>0.038 0.78 0.038</size>
+        </box>
+      </geometry>
+      <material>
+        <diffuse>0.57 0.63 0.67 1.0</diffuse>
+      </material>
+    </visual>
+
+    <visual name='top_front_bar'>
+      <pose>0.501 0 1.171 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>0.038 0.78 0.038</size>
+        </box>
+      </geometry>
+      <material>
+        <diffuse>0.57 0.63 0.67 1.0</diffuse>
+      </material>
+    </visual>
+
+    <collision name='tabletop'>
+      <pose>0 0 -0.01 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>1.220 0.762 0.02</size>
+        </box>
+      </geometry>
+    </collision>
+
+    <collision name='upper_right_post'>
+      <pose>0.559 0.330 0.61 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>0.076 0.038 1.219</size>
+        </box>
+      </geometry>
+    </collision>
+
+    <collision name='upper_left_post'>
+      <pose>0.559 -0.330 0.61 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>0.076 0.038 1.219</size>
+        </box>
+      </geometry>
+    </collision>
+
+    <collision name='lower_right_post'>
+      <pose>-0.559 0.330  0.61 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>0.076 0.038 1.219</size>
+        </box>
+      </geometry>
+    </collision>
+
+    <collision name='lower_left_post'>
+      <pose>-0.559 -0.330 0.61 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>0.076 0.038 1.219</size>
+        </box>
+      </geometry>
+    </collision>
+
+    <collision name='top_left_bar'>
+      <pose>0 0.371 1.171 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>0.964 0.037 0.037</size>
+        </box>
+      </geometry>
+    </collision>
+
+    <collision name='top_middle_bar'>
+      <pose>0 0 1.209 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>1.219 0.037 0.037</size>
+        </box>
+      </geometry>
+    </collision>
+
+    <collision name='top_right_bar'>
+      <pose>0 -0.371 1.171 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>0.964 0.037 0.037</size>
+        </box>
+      </geometry>
+    </collision>
+
+    <collision name='top_back_bar'>
+      <pose>-0.501 0 1.171 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>0.037 0.779 0.037</size>
+        </box>
+      </geometry>
+    </collision>
+
+    <collision name='top_front_bar'>
+      <pose>0.501 0 1.171 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>0.037 0.779 0.037</size>
+        </box>
+      </geometry>
+    </collision>
+
+   </link>
+</model>
+</sdf>

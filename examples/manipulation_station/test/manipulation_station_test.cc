@@ -1,9 +1,11 @@
-#include "drake/examples/manipulation_station/station_simulation.h"
+#include "drake/examples/manipulation_station/manipulation_station.h"
 
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 
 namespace drake {
 namespace examples {
@@ -14,8 +16,15 @@ using Eigen::VectorXd;
 using systems::BasicVector;
 using multibody::RevoluteJoint;
 
-GTEST_TEST(SimulationStationTest, CheckPlantBasics) {
-  StationSimulation<double> station(0.001);
+GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
+  ManipulationStation<double> station(0.001);
+  station.AddCupboard();
+  multibody::parsing::AddModelFromSdfFile(
+      FindResourceOrThrow(
+          "drake/examples/manipulation_station/models"
+          "/061_foam_brick.sdf"),
+      "object", &station.get_mutable_multibody_plant(),
+      &station.get_mutable_scene_graph());
   station.Finalize();
 
   auto& plant = station.get_mutable_multibody_plant();
@@ -92,9 +101,9 @@ GTEST_TEST(SimulationStationTest, CheckPlantBasics) {
                   .isZero());
 }
 
-GTEST_TEST(SimulationStationTest, CheckStateFromPosition) {
+GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
   const double kTimeStep = 0.002;
-  StationSimulation<double> station(kTimeStep);
+  ManipulationStation<double> station(kTimeStep);
   station.Finalize();
 
   auto context = station.CreateDefaultContext();

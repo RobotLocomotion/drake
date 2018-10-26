@@ -61,7 +61,7 @@ generate_pybind_documentation_header(
         "//:drake_shared_library",
         "//examples/acrobot:acrobot_plant",
         "//examples/compass_gait:compass_gait",
-        "//examples/manipulation_station:station_simulation",
+        "//examples/manipulation_station:manipulation_station",
         "//examples/pendulum:pendulum_plant",
         "//examples/rimless_wheel:rimless_wheel",
         "//examples/van_der_pol:van_der_pol",
