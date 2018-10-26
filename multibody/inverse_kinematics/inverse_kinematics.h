@@ -26,12 +26,29 @@ class InverseKinematics {
    * Constructs an inverse kinematics problem for a MultibodyPlant.
    * @param plant The robot on which the inverse kinematics problem will be
    * solved.
+   * @note The inverse kinematics problem constructed in this way doesn't permit
+   * collision related constraint (such as AddMinimalDistanceConstraint). To
+   * enable collision related constraints, call InverseKinematics(const
+   * multibody_plant::MultibodyPlant<AutoDiffXd>& plant,
+   * systems::Context<AutoDiffXd>* context).
    */
   explicit InverseKinematics(
       const multibody_plant::MultibodyPlant<double>& plant);
 
-  InverseKinematics(const multibody_plant::MultibodyPlant<double>& plant,
-                    const geometry::SceneGraph<double>& scene_graph);
+  /**
+   * Constructs an inverse kinematics problem for a MultibodyPlant.
+   * @param plant The robot on which the inverse kinematics problem will be
+   * solved. If this plant has registered its geometry with a SceneGraph object,
+   * then the user can impose collision related constraint (like
+   * AddMinimalDistanceConstraint). TODO(hongkai.dai): change to
+   * MultibodyPlant<double> when we can compute analytical Jacobian without
+   * using autodiff.
+   * @param context The context The context used by @plant. TODO(hongkai.dai)
+   * change to Context<double> when we can compute analytical Jacobian without
+   * using autodiff.
+   */
+  InverseKinematics(const multibody_plant::MultibodyPlant<AutoDiffXd>& plant,
+                    systems::Context<AutoDiffXd>* context);
 
   /** Adds the kinematic constraint that a point Q, fixed in frame B, should lie
    * within a bounding box expressed in another frame A as p_AQ_lower <= p_AQ <=
@@ -153,6 +170,21 @@ class InverseKinematics {
       const Eigen::Ref<const Eigen::Vector3d>& nb_B, double angle_lower,
       double angle_upper);
 
+  /**
+   * Adds the constraint that the pairwise distance between objects should be no
+   * smaller than @p minimal distance. We consider the distance between pairs of
+   * 1. Anchored (static) object and a dynamic object.
+   * 2. A dynamic object and another dynamic object, if one is not the parent
+   * link of the other.
+   * @param minimal_distance The minimal value of the signed distance between
+   * any admissible pairs of objects.
+   * @pre The MultibodyPlant passed in the constructor of InverseKinematics has
+   * registered its geometry with a SceneGraph object already. @throw
+   * invalid_argument if the geometry hasn't been registered.
+   */
+  solvers::Binding<solvers::Constraint> AddMinimalDistanceConstraint(
+      double minimal_distance);
+
   /** Getter for q. q is the decision variable for the generalized positions of
    * the robot. */
   const solvers::VectorXDecisionVariable& q() const { return q_; }
@@ -164,14 +196,21 @@ class InverseKinematics {
   solvers::MathematicalProgram* get_mutable_prog() const { return prog_.get(); }
 
  private:
+  void AddDefaultJointLimitConstraint();
+
   MultibodyTreeContext<AutoDiffXd>* get_mutable_context() {
-    return dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(context_.get());
+    return dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(context_);
+  }
+
+  const MultibodyTree<AutoDiffXd>& tree() const {
+    return plant_autodiff_->tree();
   }
 
   std::unique_ptr<solvers::MathematicalProgram> prog_;
-  const multibody_plant::MultibodyPlant<double>& plant_;
-  const MultibodyTreeSystem<AutoDiffXd> system_;
-  std::unique_ptr<systems::Context<AutoDiffXd>> const context_;
+  std::unique_ptr<systems::System<AutoDiffXd>> owned_plant_;
+  const multibody_plant::MultibodyPlant<AutoDiffXd>* const plant_autodiff_;
+  std::unique_ptr<systems::Context<AutoDiffXd>> const owned_context_;
+  systems::Context<AutoDiffXd>* const context_;
   solvers::VectorXDecisionVariable q_;
 };
 }  // namespace multibody

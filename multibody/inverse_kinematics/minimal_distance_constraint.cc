@@ -1,4 +1,4 @@
-#include "drake/multibody/inverse_kinematics/collision_avoidance_constraint.h"
+#include "drake/multibody/inverse_kinematics/minimal_distance_constraint.h"
 
 #include <limits>
 #include <vector>
@@ -8,24 +8,30 @@
 namespace drake {
 namespace multibody {
 namespace internal {
-CollisionAvoidanceConstraint::CollisionAvoidanceConstraint(
+MinimalDistanceConstraint::MinimalDistanceConstraint(
     const multibody::multibody_plant::MultibodyPlant<AutoDiffXd>& plant,
     double minimal_distance, systems::Context<AutoDiffXd>* plant_context)
     : solvers::Constraint(1, plant.num_positions(), Vector1d(minimal_distance),
                           Vector1d(std::numeric_limits<double>::infinity())),
       plant_{plant},
       minimal_distance_{minimal_distance},
-      plant_context_{plant_context} {}
+      plant_context_{plant_context} {
+  if (!plant_.geometry_source_is_registered()) {
+    throw std::invalid_argument(
+        "MinimalDistanceConstraint: MultibodyPlant has not registered its "
+        "geometry source with SceneGraph yet.");
+  }
+}
 
-void CollisionAvoidanceConstraint::DoEval(
+void MinimalDistanceConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
   AutoDiffVecXd y_t;
   Eval(math::initializeAutoDiff(x), &y_t);
   *y = math::autoDiffToValueMatrix(y_t);
 }
 
-void CollisionAvoidanceConstraint::DoEval(
-    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
+void MinimalDistanceConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                                       AutoDiffVecXd* y) const {
   y->resize(1);
 
   UpdateContextConfiguration(

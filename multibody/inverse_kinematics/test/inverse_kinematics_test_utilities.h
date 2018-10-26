@@ -114,15 +114,17 @@ class TwoFreeBodiesConstraintTest : public ::testing::Test {
   std::unique_ptr<systems::Context<double>> context_double_;
 };
 
+}  // namespace internal
+
 /** Test kinematic (mostly collision-related) constraint on two free floating
  * spheres.*/
-class TwoFreeSpheresConstraintTest : public ::testing::Test {
+class TwoFreeSpheresTest : public ::testing::Test {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TwoFreeSpheresConstraintTest)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TwoFreeSpheresTest)
 
-  TwoFreeSpheresConstraintTest();
+  TwoFreeSpheresTest();
 
-  ~TwoFreeSpheresConstraintTest() override {}
+  ~TwoFreeSpheresTest() override {}
 
  protected:
   double radius1_{0.1};
@@ -137,6 +139,5 @@ class TwoFreeSpheresConstraintTest : public ::testing::Test {
   systems::Context<AutoDiffXd>* plant_context_autodiff_;
 };
 
-}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

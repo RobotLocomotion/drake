@@ -29,17 +29,17 @@ drake_cc_library(
     name = "kinematic_constraint",
     srcs = [
         "angle_between_vectors_constraint.cc",
-        "collision_avoidance_constraint.cc",
         "gaze_target_constraint.cc",
         "kinematic_constraint_utilities.cc",
+        "minimal_distance_constraint.cc",
         "orientation_constraint.cc",
         "position_constraint.cc",
     ],
     hdrs = [
         "angle_between_vectors_constraint.h",
-        "collision_avoidance_constraint.h",
         "gaze_target_constraint.h",
         "kinematic_constraint_utilities.h",
+        "minimal_distance_constraint.h",
         "orientation_constraint.h",
         "position_constraint.h",
     ],
@@ -64,7 +64,6 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":kinematic_constraint",
-        "//geometry:scene_graph",
         "//multibody/multibody_tree/multibody_plant",
         "//solvers:mathematical_program",
     ],
@@ -83,6 +82,7 @@ drake_cc_library(
     deps = [
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//geometry:scene_graph",
         "//geometry:shape_specification",
         "//math:gradient",
@@ -129,10 +129,11 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "collision_avoidance_constraint_test",
+    name = "minimal_distance_constraint_test",
     deps = [
         ":inverse_kinematics_test_utilities",
         ":kinematic_constraint",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

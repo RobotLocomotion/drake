@@ -44,8 +44,7 @@ ConstructTwoFreeBodiesPlant() {
   return model;
 }
 
-namespace internal {
-TwoFreeSpheresConstraintTest::TwoFreeSpheresConstraintTest() {
+TwoFreeSpheresTest::TwoFreeSpheresTest() {
   using T = AutoDiffXd;
   systems::DiagramBuilder<T> builder;
   scene_graph_ = builder.AddSystem<geometry::SceneGraph<T>>();
@@ -76,7 +75,6 @@ TwoFreeSpheresConstraintTest::TwoFreeSpheresConstraintTest() {
   plant_context_autodiff_ = &(diagram_->GetMutableSubsystemContext(
       *two_spheres_plant_, diagram_context_autodiff_.get()));
 }
-}  // namespace internal
 
 std::unique_ptr<multibody_plant::MultibodyPlant<double>> ConstructIiwaPlant(
     const std::string& iiwa_sdf_name, double time_step) {
