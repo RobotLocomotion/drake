@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
 #include "drake/solvers/create_constraint.h"
 
@@ -11,6 +12,13 @@ namespace multibody {
 Eigen::Quaterniond Vector4ToQuaternion(
     const Eigen::Ref<const Eigen::Vector4d>& q) {
   return Eigen::Quaterniond(q(0), q(1), q(2), q(3));
+}
+
+void AddUnitQuaternionConstraint(
+    const Eigen::Ref<const Vector4<symbolic::Variable>>& quat,
+    solvers::MathematicalProgram* prog) {
+  prog->AddConstraint(solvers::internal::ParseQuadraticConstraint(
+      quat.cast<symbolic::Expression>().squaredNorm(), 1, 1));
 }
 
 class TwoFreeBodiesTest : public ::testing::Test {
@@ -25,14 +33,8 @@ class TwoFreeBodiesTest : public ::testing::Test {
         ik_(*two_bodies_plant_) {
     // TODO(hongkai.dai): The unit quaternion constraint should be added by
     // InverseKinematics automatically.
-    ik_.get_mutable_prog()->AddConstraint(
-        solvers::internal::ParseQuadraticConstraint(
-            ik_.q().head<4>().cast<symbolic::Expression>().squaredNorm(), 1,
-            1));
-    ik_.get_mutable_prog()->AddConstraint(
-        solvers::internal::ParseQuadraticConstraint(
-            ik_.q().segment<4>(7).cast<symbolic::Expression>().squaredNorm(), 1,
-            1));
+    AddUnitQuaternionConstraint(ik_.q().head<4>(), ik_.get_mutable_prog());
+    AddUnitQuaternionConstraint(ik_.q().segment<4>(7), ik_.get_mutable_prog());
   }
 
   ~TwoFreeBodiesTest() override {}
@@ -200,6 +202,41 @@ TEST_F(TwoFreeBodiesTest, AngleBetweenVectorsConstraint) {
   const double angle =
       std::acos(n_A_W.dot(n_B_W) / (n_A_W.norm() * n_B_W.norm()));
   EXPECT_NEAR(angle, angle_lower, 1E-6);
+}
+
+TEST_F(TwoFreeBodiesTest, MinimalDistanceConstraint) {
+  // Expect to throw an error, when adding minimal distance constraint to two
+  // free bodies, since the geometry has not been registered in the scene graph
+  // yet.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ik_.AddMinimalDistanceConstraint(0.1), std::invalid_argument,
+      "MinimalDistanceConstraint: MultibodyPlant has not registered its "
+      "geometry source with SceneGraph yet.");
+}
+
+TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraint) {
+  InverseKinematics ik(*two_spheres_plant_, plant_context_autodiff_);
+  AddUnitQuaternionConstraint(ik.q().head<4>(), ik.get_mutable_prog());
+  AddUnitQuaternionConstraint(ik.q().segment<4>(7), ik.get_mutable_prog());
+  const double minimal_distance{0.2};
+  auto constraint = ik.AddMinimalDistanceConstraint(minimal_distance);
+
+  Eigen::Matrix<double, 14, 1> q0;
+  q0.setZero();
+  q0(0) = 1;
+  // If we comment out the next line that sets the position of sphere 1, hence
+  // both sphere 1 and 2 are at the origin, then the signed distance query takes
+  // forever.
+  q0.segment<3>(4) << 0.1, 0.2, 0.3;
+  q0(7) = 1;
+  ik.get_mutable_prog()->SetInitialGuess(ik.q(), q0);
+  const auto result = ik.get_mutable_prog()->Solve();
+  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
+  const auto q_val = ik.prog().GetSolution(ik.q());
+  const Eigen::Vector3d p_WA = q_val.segment<3>(4);
+  const Eigen::Vector3d p_WB = q_val.segment<3>(11);
+  const double tol{1E-5};
+  EXPECT_GE((p_WA - p_WB).norm() - radius1_ - radius2_, minimal_distance - tol);
 }
 }  // namespace multibody
 }  // namespace drake

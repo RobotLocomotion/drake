@@ -8,12 +8,12 @@
 namespace drake {
 namespace multibody {
 namespace internal {
-class CollisionAvoidanceConstraint : public solvers::Constraint {
+class MinimalDistanceConstraint : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CollisionAvoidanceConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinimalDistanceConstraint)
 
   /**
-   * Constructs the collision avoidance constraint, that the pairwise distance
+   * Constructs the minimal distance constraint, that the pairwise distance
    * between the objects in the world should be greater than some threshold.
    * We consider the distance between
    * 1. A dynamic object and a static (anchored) object.
@@ -30,11 +30,14 @@ class CollisionAvoidanceConstraint : public solvers::Constraint {
    * @param diagram_context The context that has been allocated for this
    * diagram. We will update the context when evaluating the constraint.
    */
-  CollisionAvoidanceConstraint(
+  MinimalDistanceConstraint(
       const multibody::multibody_plant::MultibodyPlant<AutoDiffXd>& plant,
       double minimal_distance, systems::Context<AutoDiffXd>* plant_context);
 
-  ~CollisionAvoidanceConstraint() override {}
+  ~MinimalDistanceConstraint() override {}
+
+  /** Getter for the minimal distance. */
+  double minimal_distance() const { return minimal_distance_; }
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -46,7 +49,7 @@ class CollisionAvoidanceConstraint : public solvers::Constraint {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
               VectorX<symbolic::Expression>*) const override {
     throw std::logic_error(
-        "CollisionAvoidanceConstraint::DoEval() does not work for symbolic "
+        "MinimalDistanceConstraint::DoEval() does not work for symbolic "
         "variables.");
   }
 
