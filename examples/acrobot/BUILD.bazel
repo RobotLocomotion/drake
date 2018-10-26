@@ -200,12 +200,6 @@ drake_cc_binary(
         "spong_controller_w_lcm.cc",
     ],
     add_test_rule = 1,
-    # TODO (betsymcphail): TSan fails in LCM for this test. See issue #9697.
-    # TODO (liang.fok): ASan non-determistically failed in CI. See issue #9809.
-    tags = [
-        "no_asan",
-        "no_tsan",
-    ],
     test_rule_args = [
         "-time_limit_sec=1.0",
     ],

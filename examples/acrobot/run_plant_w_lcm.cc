@@ -98,6 +98,7 @@ int DoMain() {
   simulator.Initialize();
   simulator.StepTo(FLAGS_simulation_sec);
 
+  lcm.StopReceiveThread();
   return 0;
 }
 }  // namespace

@@ -151,6 +151,7 @@ int DoMain(void) {
   lcm.StartReceiveThread();
   simulator.StepTo(FLAGS_simulation_sec);
 
+  lcm.StopReceiveThread();
   return 0;
 }
 

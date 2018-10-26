@@ -203,6 +203,8 @@ void DoMain() {
       VectorX<double>::Zero(plant.num_actuators()));
 
   simulator.StepTo(FLAGS_simulation_time);
+
+  lcm.StopReceiveThread();
 }
 
 }  // namespace

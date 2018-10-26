@@ -318,6 +318,7 @@ int DoMain() {
   simulator.set_publish_every_time_step(false);
   simulator.StepTo(FLAGS_simulation_sec);
 
+  lcm.StopReceiveThread();
   return 0;
 }
 
