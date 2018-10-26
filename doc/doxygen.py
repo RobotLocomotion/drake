@@ -64,8 +64,11 @@ def _run_doxygen(args):
         if rel_x.startswith("."): continue
         if rel_x.startswith("bazel"): continue
         if rel_x.startswith("build"): continue
+        if rel_x.startswith("cmake"): continue
         if rel_x.startswith("doc"): continue  # N.B. Done above.
+        if rel_x.startswith("setup"): continue
         if rel_x.startswith("third_party"): continue
+        if rel_x.startswith("tools"): continue
 
         # Copy the workspace files into the input scratch dir.
         target = os.path.join(source_root, rel_x)

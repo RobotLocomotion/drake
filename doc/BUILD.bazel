@@ -14,6 +14,7 @@ genrule(
         "**/*.rst",
     ]) + [
         "conf.py",
+        "images/favicon.ico",
         "images/logo_w_text.jpg",
         "images/doxygen_instructions/visual_studio_build_targets.png",
         "sample_vimrc",
