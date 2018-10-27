@@ -28,9 +28,6 @@ parser.register('type', 'bool', str2bool)
 parser.add_argument(
     "--browser", type='bool', default=True, metavar='BOOL',
     help="Open browser. Disable this if you are frequently recompiling.")
-parser.add_argument(
-    "--port", type=int, default=8000, metavar='PORT',
-    help="Port for serving doc pages with a HTTP server.")
 args = parser.parse_args()
 
 # Unpack zipfile and chdir into it.
@@ -47,7 +44,7 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 # Serve the current directory for local browsing.
-sockaddr = ("127.0.0.1", args.port)
+sockaddr = ("127.0.0.1", 8000)
 TCPServer.allow_reuse_address = True
 httpd = TCPServer(sockaddr, Handler)
 http_url = "http://%s:%s/index.html" % sockaddr
