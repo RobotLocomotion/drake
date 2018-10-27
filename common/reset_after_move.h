@@ -4,6 +4,7 @@
 
 namespace drake {
 
+// TODO(sherm1) Upgrade this to match reset_on_copy (e.g. noexcept).
 /// Type wrapper that performs value-initialization on the wrapped type, and
 /// guarantees that when moving from this type that the donor object is reset
 /// to its value-initialized value.
@@ -44,8 +45,6 @@ namespace drake {
 /// and MoveAssignable and must not throw exceptions during construction or
 /// assignment.
 /// @see reset_on_copy
-
-// TODO(sherm1) Upgrade this to match reset_on_copy (e.g. noexcept).
 template <typename T>
 class reset_after_move {
  public:

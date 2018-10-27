@@ -50,8 +50,8 @@ void DefineFrameworkPyValues(py::module m) {
       // N.B. Place `init<VectorX<T>>` `init<int>` so that we do not implicitly
       // convert scalar-size `np.array` objects to `int` (since this is normally
       // permitted).
-      .def(py::init<VectorX<T>>(), doc.BasicVector.ctor.doc)
-      .def(py::init<int>(), doc.BasicVector.ctor.doc_5)
+      .def(py::init<VectorX<T>>(), py::arg("data"), doc.BasicVector.ctor.doc_5)
+      .def(py::init<int>(), py::arg("size"), doc.BasicVector.ctor.doc_4)
       .def("get_value",
           [](const BasicVector<T>* self) -> Eigen::Ref<const VectorX<T>> {
             return self->get_value();
@@ -108,6 +108,14 @@ void DefineFrameworkPyValues(py::module m) {
 
   // Add `Value<std::string>` instantiation (visible in Python as `Value[str]`).
   AddValueInstantiation<string>(m);
+
+  // Add `Value<>` instantations for basic vectors templated on common scalar
+  // types.
+  auto bind_abstract_basic_vectors = [m](auto dummy) {
+    using T = decltype(dummy);
+    AddValueInstantiation<BasicVector<T>>(m);
+  };
+  type_visit(bind_abstract_basic_vectors, pysystems::CommonScalarPack{});
 
   // Add `Value[object]` instantiation.
   // N.B. If any code explicitly uses `Value<py::object>` for whatever reason,

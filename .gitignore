@@ -61,3 +61,5 @@ xcode
 .cproject
 .project
 .settings
+
+external/

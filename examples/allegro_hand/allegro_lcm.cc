@@ -1,8 +1,9 @@
 #include "drake/examples/allegro_hand/allegro_lcm.h"
-#include "drake/common/drake_assert.h"
 
 #include <utility>
 #include <vector>
+
+#include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace examples {
@@ -34,7 +35,8 @@ AllegroCommandReceiver::AllegroCommandReceiver(int num_joints)
 }
 
 void AllegroCommandReceiver::set_initial_position(
-    Context<double>* context, const Eigen::Ref<const VectorX<double>>& x) const {
+    Context<double>* context,
+    const Eigen::Ref<const VectorX<double>>& x) const {
   auto state_value = context->get_mutable_discrete_state(0).get_mutable_value();
   DRAKE_ASSERT(x.size() == num_joints_);
   state_value.setZero();

@@ -436,45 +436,52 @@ class Expression {
   // and not exposed to the user of drake/common/symbolic_expression.h
   // header. These functions are declared in
   // drake/common/symbolic_expression_cell.h header.
-  friend std::shared_ptr<ExpressionConstant> to_constant(const Expression& e);
-  friend std::shared_ptr<ExpressionVar> to_variable(const Expression& e);
-  friend std::shared_ptr<UnaryExpressionCell> to_unary(const Expression& e);
-  friend std::shared_ptr<BinaryExpressionCell> to_binary(const Expression& e);
-  friend std::shared_ptr<ExpressionAdd> to_addition(const Expression& e);
-  friend std::shared_ptr<ExpressionMul> to_multiplication(const Expression& e);
-  friend std::shared_ptr<ExpressionDiv> to_division(const Expression& e);
-  friend std::shared_ptr<ExpressionLog> to_log(const Expression& e);
-  friend std::shared_ptr<ExpressionAbs> to_abs(const Expression& e);
-  friend std::shared_ptr<ExpressionExp> to_exp(const Expression& e);
-  friend std::shared_ptr<ExpressionSqrt> to_sqrt(const Expression& e);
-  friend std::shared_ptr<ExpressionPow> to_pow(const Expression& e);
-  friend std::shared_ptr<ExpressionSin> to_sin(const Expression& e);
-  friend std::shared_ptr<ExpressionCos> to_cos(const Expression& e);
-  friend std::shared_ptr<ExpressionTan> to_tan(const Expression& e);
-  friend std::shared_ptr<ExpressionAsin> to_asin(const Expression& e);
-  friend std::shared_ptr<ExpressionAcos> to_acos(const Expression& e);
-  friend std::shared_ptr<ExpressionAtan> to_atan(const Expression& e);
-  friend std::shared_ptr<ExpressionAtan2> to_atan2(const Expression& e);
-  friend std::shared_ptr<ExpressionSinh> to_sinh(const Expression& e);
-  friend std::shared_ptr<ExpressionCosh> to_cosh(const Expression& e);
-  friend std::shared_ptr<ExpressionTanh> to_tanh(const Expression& e);
-  friend std::shared_ptr<ExpressionMin> to_min(const Expression& e);
-  friend std::shared_ptr<ExpressionMax> to_max(const Expression& e);
-  friend std::shared_ptr<ExpressionCeiling> to_ceil(const Expression& e);
-  friend std::shared_ptr<ExpressionFloor> to_floor(const Expression& e);
-  friend std::shared_ptr<ExpressionIfThenElse> to_if_then_else(
+  friend std::shared_ptr<const ExpressionConstant> to_constant(
       const Expression& e);
-  friend std::shared_ptr<ExpressionUninterpretedFunction>
+  friend std::shared_ptr<const ExpressionVar> to_variable(const Expression& e);
+  friend std::shared_ptr<const UnaryExpressionCell> to_unary(
+      const Expression& e);
+  friend std::shared_ptr<const BinaryExpressionCell> to_binary(
+      const Expression& e);
+  friend std::shared_ptr<const ExpressionAdd> to_addition(const Expression& e);
+  friend std::shared_ptr<const ExpressionMul> to_multiplication(
+      const Expression& e);
+  friend std::shared_ptr<const ExpressionDiv> to_division(const Expression& e);
+  friend std::shared_ptr<const ExpressionLog> to_log(const Expression& e);
+  friend std::shared_ptr<const ExpressionAbs> to_abs(const Expression& e);
+  friend std::shared_ptr<const ExpressionExp> to_exp(const Expression& e);
+  friend std::shared_ptr<const ExpressionSqrt> to_sqrt(const Expression& e);
+  friend std::shared_ptr<const ExpressionPow> to_pow(const Expression& e);
+  friend std::shared_ptr<const ExpressionSin> to_sin(const Expression& e);
+  friend std::shared_ptr<const ExpressionCos> to_cos(const Expression& e);
+  friend std::shared_ptr<const ExpressionTan> to_tan(const Expression& e);
+  friend std::shared_ptr<const ExpressionAsin> to_asin(const Expression& e);
+  friend std::shared_ptr<const ExpressionAcos> to_acos(const Expression& e);
+  friend std::shared_ptr<const ExpressionAtan> to_atan(const Expression& e);
+  friend std::shared_ptr<const ExpressionAtan2> to_atan2(const Expression& e);
+  friend std::shared_ptr<const ExpressionSinh> to_sinh(const Expression& e);
+  friend std::shared_ptr<const ExpressionCosh> to_cosh(const Expression& e);
+  friend std::shared_ptr<const ExpressionTanh> to_tanh(const Expression& e);
+  friend std::shared_ptr<const ExpressionMin> to_min(const Expression& e);
+  friend std::shared_ptr<const ExpressionMax> to_max(const Expression& e);
+  friend std::shared_ptr<const ExpressionCeiling> to_ceil(const Expression& e);
+  friend std::shared_ptr<const ExpressionFloor> to_floor(const Expression& e);
+  friend std::shared_ptr<const ExpressionIfThenElse> to_if_then_else(
+      const Expression& e);
+  friend std::shared_ptr<const ExpressionUninterpretedFunction>
   to_uninterpreted_function(const Expression& e);
 
   friend class ExpressionAddFactory;
   friend class ExpressionMulFactory;
 
  private:
-  explicit Expression(std::shared_ptr<ExpressionCell> ptr);
+  explicit Expression(std::shared_ptr<const ExpressionCell> ptr);
   void HashAppend(DelegatingHasher* hasher) const;
 
-  std::shared_ptr<ExpressionCell> ptr_;
+  // Note: We use "const" ExpressionCell type here because an ExpressionCell
+  // object can be shared by multiple expressions, an expression should _not_ be
+  // able to change the cell that it points to.
+  std::shared_ptr<const ExpressionCell> ptr_;
 };
 
 Expression operator+(Expression lhs, const Expression& rhs);

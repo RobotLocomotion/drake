@@ -1,28 +1,13 @@
 """Classes to support C++ code formatting tools.
 """
 
+import io
 import os
-import six
 from six import text_type as unicode
 from six.moves import xrange
 from subprocess import Popen, PIPE, CalledProcessError
 
 import drake.tools.lint.clang_format as clang_format_lib
-
-if six.PY3:
-    _open = open
-
-    def open(filename, mode): return _open(filename, mode, encoding="utf8")
-
-    def encode(s): return s.encode("utf8")
-
-    def decode(b): return b.decode("utf8")
-
-else:
-
-    def encode(s): return bytes(s)
-
-    def decode(b): return str(b)
 
 
 class FormatterBase(object):
@@ -55,10 +40,10 @@ class FormatterBase(object):
         """
         self._filename = filename
         if readlines is None:
-            with open(filename, "r") as opened:
+            with io.open(filename, "r", encoding="utf8") as opened:
                 self._original_lines = opened.readlines()
         else:
-            self._original_lines = list(readlines)
+            self._original_lines = [unicode(line) for line in readlines]
         self._working_lines = list(self._original_lines)
         self._check_rep()
         if any(["\r" in line for line in self._working_lines]):
@@ -67,9 +52,10 @@ class FormatterBase(object):
     def _check_rep(self):
         assert self._filename
         for line in self._original_lines:
+            assert isinstance(line, unicode), (type(line), line)
             assert line.endswith("\n"), line
         for line in self._working_lines:
-            assert isinstance(line, (str, unicode)), (type(line), line)
+            assert isinstance(line, unicode), (type(line), line)
             assert line.endswith("\n"), line
 
     def is_same_as_original(self):
@@ -120,16 +106,16 @@ class FormatterBase(object):
 
     def set_line(self, index, line):
         assert self.is_valid_index(index)
-        self._working_lines[index] = line
+        self._working_lines[index] = unicode(line)
         self._check_rep()
 
     def set_all_lines(self, lines):
-        self._working_lines = list(lines)
+        self._working_lines = [unicode(line) for line in lines]
         self._check_rep()
 
     def insert_lines(self, index, lines):
         assert 0 <= index and index <= len(self._working_lines)
-        self._working_lines[index:0] = lines
+        self._working_lines[index:0] = [unicode(line) for line in lines]
         self._check_rep()
 
     def remove_all(self, indices):
@@ -221,9 +207,9 @@ class FormatterBase(object):
             "-assume-filename=%s" % self._filename] + \
             lines_args
         formatter = Popen(command, stdin=PIPE, stdout=PIPE)
-        stdout, _ = formatter.communicate(input=(
-            encode("".join(self._working_lines))))
-        stdout = decode(stdout)
+        text = "".join(self._working_lines)
+        stdout, _ = formatter.communicate(input=text.encode("utf8"))
+        stdout = stdout.decode("utf8")
 
         # Handle errors, otherwise reset the working list.
         if formatter.returncode != 0:
@@ -240,7 +226,7 @@ class FormatterBase(object):
         """
         self._pre_rewrite_file()
         temp_filename = self._filename + ".drake-formatter"
-        with open(temp_filename, "w") as opened:
+        with io.open(temp_filename, "w", encoding="utf8") as opened:
             for line in self._working_lines:
                 opened.write(line)
         os.rename(temp_filename, self._filename)
@@ -263,7 +249,7 @@ class IncludeFormatter(FormatterBase):
         # manually compute that the related-header pathname here.
         if filename.endswith('-inl.h'):
             prior_to_ext = filename[:-len('-inl.h')]
-            self._related_headers.append('#include "%s.h"\n' % prior_to_ext)
+            self._related_headers.append(u'#include "%s.h"\n' % prior_to_ext)
 
     def _pre_rewrite_file(self):
         # Sanity check before writing out again.
@@ -309,7 +295,7 @@ class IncludeFormatter(FormatterBase):
 
         # Add priority spacers after every group of #include statements.  We
         # will turn these spacers into whitespace separators when we're done.
-        SPACERS = ["#include <clang-format-priority-%d>\n" % priority
+        SPACERS = [u"#include <clang-format-priority-%d>\n" % priority
                    for priority in [15, 25, 35, 45]]
         for one_range in reversed(self.get_format_ranges()):
             last_include_index = one_range[-1]
@@ -331,7 +317,7 @@ class IncludeFormatter(FormatterBase):
             if all([x in include_indices
                     for x in [before_spacer, after_spacer]]):
                 # Interior group of spacers.  Replace with a blank line.
-                self.set_line(one_range[0], "\n")
+                self.set_line(one_range[0], u"\n")
                 one_range = one_range[1:]
             spacer_indices_to_remove.extend(one_range)
         self.remove_all(spacer_indices_to_remove)

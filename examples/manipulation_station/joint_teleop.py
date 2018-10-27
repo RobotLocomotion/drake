@@ -7,7 +7,7 @@ import numpy as np
 
 from pydrake.examples.manipulation_station import StationSimulation
 from pydrake.geometry import ConnectDrakeVisualizer
-from pydrake.manipulation.simple_ui import JointSliders
+from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
 
@@ -18,6 +18,7 @@ station = builder.AddSystem(StationSimulation())
 station.Finalize()
 
 teleop = builder.AddSystem(JointSliders(station.get_controller_plant()))
+wsg_buttons = builder.AddSystem(SchunkWsgButtons(teleop.window))
 builder.Connect(teleop.get_output_port(0), station.GetInputPort(
     "iiwa_position"))
 

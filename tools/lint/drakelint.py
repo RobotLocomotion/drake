@@ -5,7 +5,7 @@ import six
 
 from drake.tools.lint.formatter import IncludeFormatter
 
-if sys.version_info.major >= 3:
+if six.PY3:
     _open = open
 
     def open(filename, mode="r"): return _open(filename, mode, encoding="utf8")
@@ -68,7 +68,7 @@ def _check_shebang(filename):
         return 1
     shebang_whitelist = {
         "bash": "#!/bin/bash",
-        "python2": "#!/usr/bin/env python2",
+        "python": "#!/usr/bin/env python2",
         "python3": "#!/usr/bin/env python3",
     }
     if has_shebang and shebang not in shebang_whitelist.values():

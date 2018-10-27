@@ -101,11 +101,16 @@ def drake_py_binary(
         name,
         srcs = None,
         main = None,
+        data = [],
         deps = None,
         isolate = False,
         tags = [],
         add_test_rule = 0,
         test_rule_args = [],
+        test_rule_data = [],
+        test_rule_size = None,
+        test_rule_timeout = None,
+        test_rule_flaky = 0,
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
 
@@ -127,6 +132,7 @@ def drake_py_binary(
         isolate = isolate,
         srcs = srcs,
         main = main,
+        data = data,
         deps = deps,
         tags = tags,
         **kwargs
@@ -139,6 +145,10 @@ def drake_py_binary(
             deps = deps,
             isolate = isolate,
             args = test_rule_args,
+            data = data + test_rule_data,
+            size = test_rule_size,
+            timeout = test_rule_timeout,
+            flaky = test_rule_flaky,
             tags = tags + ["nolint"],
             # N.B. Same as the warning in `drake_pybind_cc_googletest`: numpy
             # imports unittest unconditionally.

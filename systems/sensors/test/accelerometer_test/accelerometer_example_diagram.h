@@ -58,7 +58,6 @@ namespace sensors {
 /// in the pendlum swing arm's frame.
 ///
 /// A logger is used to store both the plant's state and accelerometer readings.
-
 class AccelerometerExampleDiagram : public Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AccelerometerExampleDiagram);

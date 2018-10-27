@@ -23,7 +23,8 @@ namespace automotive {
 ///
 /// They are already available to link against in the containing library.
 ///
-/// TODO(jwnimmer-tri) We will soon trace the path using a spline, but
+/// <!-- TODO(jwnimmer-tri) -->
+/// @note We will soon trace the path using a spline, but
 /// for now it's easiest to just interpolate straight segments, as a
 /// starting point.  Callers should not yet rely on <em>how</em> we
 /// are traversing between the waypoints.

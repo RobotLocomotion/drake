@@ -177,7 +177,6 @@ namespace solvers {
  * (note that some have free licenses for academics).
  * @}
  */
-
 class MathematicalProgram;
 
 enum ProgramAttributes {
@@ -672,7 +671,6 @@ class MathematicalProgram {
    * The name of the indeterminates is only used for the user in order to ease
    * readability.
    */
-
   template <int rows, int cols>
   MatrixIndeterminate<rows, cols> NewIndeterminates(
       const std::string& name = "X") {

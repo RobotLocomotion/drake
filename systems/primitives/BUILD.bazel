@@ -19,6 +19,7 @@ drake_cc_package_library(
         ":constant_value_source",
         ":constant_vector_source",
         ":demultiplexer",
+        ":discrete_derivative",
         ":first_order_low_pass_filter",
         ":gain",
         ":integrator",
@@ -98,6 +99,16 @@ drake_cc_library(
     srcs = ["demultiplexer.cc"],
     hdrs = ["demultiplexer.h"],
     deps = [
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "discrete_derivative",
+    srcs = ["discrete_derivative.cc"],
+    hdrs = ["discrete_derivative.h"],
+    deps = [
+        ":linear_system",
         "//systems/framework",
     ],
 )
@@ -369,6 +380,20 @@ drake_cc_googletest(
     deps = [
         ":demultiplexer",
         "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "discrete_derivative_test",
+    deps = [
+        ":discrete_derivative",
+        ":signal_logger",
+        ":trajectory_source",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/trajectories:piecewise_polynomial",
+        "//systems/analysis:simulator",
         "//systems/framework",
         "//systems/framework/test_utilities",
     ],

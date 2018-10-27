@@ -74,13 +74,14 @@ PYBIND11_MODULE(primitives, m) {
             doc.TimeVaryingAffineSystem.time_period.doc);
 
     DefineTemplateClassWithDefault<ConstantValueSource<T>, LeafSystem<T>>(
-        m, "ConstantValueSource", GetPyParam<T>(),
-            doc.ConstantValueSource.doc);
+        m, "ConstantValueSource", GetPyParam<T>(), doc.ConstantValueSource.doc)
+        .def(py::init<const AbstractValue&>(), py::arg("value"),
+             doc.ConstantValueSource.ctor.doc_3);
 
     DefineTemplateClassWithDefault<ConstantVectorSource<T>, LeafSystem<T>>(
         m, "ConstantVectorSource", GetPyParam<T>(),
             doc.ConstantValueSource.doc)
-        .def(py::init<VectorX<T>>(),
+        .def(py::init<VectorX<T>>(), py::arg("source_value"),
              doc.ConstantValueSource.ctor.doc_3);
 
     DefineTemplateClassWithDefault<Demultiplexer<T>, LeafSystem<T>>(
@@ -154,7 +155,12 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<ZeroOrderHold<T>, LeafSystem<T>>(
         m, "ZeroOrderHold", GetPyParam<T>(), doc.ZeroOrderHold.doc)
-        .def(py::init<double, int>(), doc.ZeroOrderHold.ctor.doc_3);
+        .def(py::init<double, int>(),
+             py::arg("period_sec"), py::arg("vector_size"),
+             doc.ZeroOrderHold.ctor.doc_3)
+        .def(py::init<double, const AbstractValue&>(),
+             py::arg("period_sec"), py::arg("abstract_model_value"),
+             doc.ZeroOrderHold.ctor.doc_4);
   };
   type_visit(bind_common_scalar_types, pysystems::CommonScalarPack{});
 

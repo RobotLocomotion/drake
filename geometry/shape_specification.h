@@ -137,8 +137,12 @@ class Box final : public Shape {
 
   /** Constructs a box with the given `width`, `depth`, and `height`, which
    specify the box's dimension along the canonical x-, y-, and z-axes,
-   respectively.  */
+   respectively. */
   Box(double width, double depth, double height);
+
+  /** Constructs a cube with the given `edge_size` for its width, depth, and
+   height. */
+  static Box MakeCube(double edge_size);
 
   /** Returns the box's dimension along the x axis. */
   double width() const { return size_(0); }

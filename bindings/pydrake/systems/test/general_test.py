@@ -22,6 +22,7 @@ from pydrake.systems.analysis import (
     Simulator, Simulator_,
     )
 from pydrake.systems.framework import (
+    AbstractValue,
     BasicVector, BasicVector_,
     Context_,
     ContinuousState, ContinuousState_,
@@ -41,14 +42,14 @@ from pydrake.systems.framework import (
     Subvector_,
     Supervector_,
     System_,
-    SystemOutput_,
-    VectorBase, VectorBase_,
+    SystemOutput_,    VectorBase, VectorBase_,
     VectorSystem_,
     )
 from pydrake.systems import primitives
 from pydrake.systems.primitives import (
     Adder, Adder_,
     AffineSystem,
+    ConstantValueSource,
     ConstantVectorSource, ConstantVectorSource_,
     Integrator,
     LinearSystem,
@@ -347,3 +348,33 @@ class TestGeneral(unittest.TestCase):
             RungeKutta3Integrator(
                 system=system,
                 context=simulator.get_mutable_context()))
+
+    def test_eval(self):
+        """Tests evaluation (e.g. caching, API sugars, etc.)."""
+        # `Eval` and `EvalAbstract`: Test with constant systems.
+        model_values = [
+            AbstractValue.Make("Hello World"),
+            AbstractValue.Make(BasicVector([1., 2., 3.])),
+        ]
+        for model_value in model_values:
+            is_abstract = not isinstance(model_value.get_value(), BasicVector)
+            if is_abstract:
+                zoh = ConstantValueSource(copy.copy(model_value))
+            else:
+                zoh = ConstantVectorSource(model_value.get_value().get_value())
+            context = zoh.CreateDefaultContext()
+            output_port = zoh.get_output_port(0)
+            value_abstract = output_port.EvalAbstract(context)
+            value = output_port.Eval(context)
+            self.assertEqual(type(value_abstract), type(model_value))
+            self.assertEqual(type(value), type(model_value.get_value()))
+            if is_abstract:
+                check = self.assertEqual
+            else:
+
+                def check(a, b):
+                    self.assertEqual(type(a.get_value()), type(b.get_value()))
+                    np.testing.assert_equal(a.get_value(), b.get_value())
+
+            check(value_abstract.get_value(), model_value.get_value())
+            check(value, model_value.get_value())

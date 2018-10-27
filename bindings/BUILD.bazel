@@ -20,7 +20,6 @@ package(default_visibility = [
 drake_pybind_library(
     name = "bazel_workaround_4594_libdrake_py",
     add_install = False,
-    cc_so_name = "bazel_workaround_4594_libdrake",
     cc_srcs = ["bazel_workaround_4594_libdrake_py.cc"],
     # Since `package_info` must be a `struct`, we must define this in a `*.bzl`
     # file.

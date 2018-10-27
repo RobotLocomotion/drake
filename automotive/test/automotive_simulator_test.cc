@@ -131,6 +131,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCarInitialState) {
   const double kY{5.5};
   const double kHeading{M_PI_2};
   const double kVelocity{4.5};
+  const double kStepSize = 1e-3;
 
   SimpleCarState<double> initial_state;
   initial_state.set_x(kX);
@@ -140,7 +141,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCarInitialState) {
 
   simulator->AddPriusSimpleCar("My Test Model", "Channel", initial_state);
   simulator->Start();
-  simulator->StepBy(1e-3);
+  simulator->StepBy(kStepSize);
 
   lcm::DrakeMockLcm* mock_lcm =
       dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
@@ -149,8 +150,10 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCarInitialState) {
       mock_lcm->DecodeLastPublishedMessageAs<lcmt_simple_car_state_t>(
           "0_SIMPLE_CAR_STATE");
 
+  // Final publish happens at time kStepSize. Since the heading is pi/2, only
+  // the y-component of state should be updated.
   EXPECT_EQ(state_message.x, kX);
-  EXPECT_EQ(state_message.y, kY);
+  EXPECT_EQ(state_message.y, kY + kVelocity * kStepSize);
   EXPECT_EQ(state_message.heading, kHeading);
   EXPECT_EQ(state_message.velocity, kVelocity);
 }

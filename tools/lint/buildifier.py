@@ -5,6 +5,8 @@ Google tool, the default mode is "-mode=fix".  In "-mode=check", we promote
 lint errors to a non-zero exitcode.
 """
 
+from __future__ import print_function
+
 import os
 import re
 import subprocess

@@ -27,7 +27,6 @@ namespace symbolic {
  * checking functions (Variables::IsSubsetOf, Variables::IsSupersetOf,
  * Variables::IsStrictSubsetOf, Variables::IsStrictSupersetOf).
  */
-
 class Variables {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variables)

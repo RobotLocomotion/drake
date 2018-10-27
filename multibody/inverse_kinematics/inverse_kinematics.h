@@ -8,12 +8,12 @@
 
 namespace drake {
 namespace multibody {
+// TODO(hongkai.dai) The bounds on the generalized positions (i.e., joint
+// limits) should be imposed automatically.
 /**
  * Solves an inverse kinematics (IK) problem on a MultibodyPlant, to find the
  * postures of the robot satisfying certain constraints.
  * The decision variables include the generalized position of the robot.
- * TODO(hongkai.dai) The bounds on the generalized positions (i.e., joint
- * limits) should be imposed automatially.
  */
 class InverseKinematics {
  public:

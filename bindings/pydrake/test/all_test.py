@@ -103,6 +103,8 @@ class TestAll(unittest.TestCase):
             # TODO(eric.cousineau): Avoid collision with `collision.Element`.
             # Import modules, since these names are generic.
             "Element",
+            # perception
+            "PointCloud",
             # solvers
             # - gurobi
             "GurobiSolver",
@@ -126,6 +128,8 @@ class TestAll(unittest.TestCase):
             "Adder",
             # - rendering
             "PoseVector",
+            # - scalar_conversion
+            "TemplateSystem",
             # - sensors
             "Image",
             # util

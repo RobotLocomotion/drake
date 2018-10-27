@@ -189,13 +189,12 @@ operator!(const Bool<T>& b) {
   return Bool<T>{!b.value()};
 }
 
+// Note that we need to have `#include "drake/common/autodiff.h"` atop this
+// file because, in case of T = AutoDiffXd, this template function calls
+// another template function defined in common/autodiff.h. See
+// https://clang.llvm.org/compatibility.html#dep_lookup for more information.
 /// Allows users to use `if_then_else` with a conditional of `Bool<T>` type in
 /// addition to `Bool<T>::value_type`.
-///
-/// Note that we need to have `#include "drake/common/autodiff.h"` atop this
-/// file because, in case of T = AutoDiffXd, this template function calls
-/// another template function defined in common/autodiff.h. See
-/// https://clang.llvm.org/compatibility.html#dep_lookup for more information.
 template <typename T>
 DRAKE_DEPRECATED("Bool<T> is deprecated")
 T if_then_else(const Bool<T>& b, const T& v_then, const T& v_else) {

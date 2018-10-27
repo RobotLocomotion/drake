@@ -899,18 +899,20 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
       const Isometry3d& X_WU = get_body_pose_in_world(tree(), pc, *upper_link_);
       const Isometry3d& X_WL = get_body_pose_in_world(tree(), pc, *lower_link_);
 
-      const Isometry3d X_WU_expected =
+      const math::RigidTransformd X_WU_expected =
           acrobot_benchmark_.CalcLink1PoseInWorldFrame(shoulder_angle);
 
-      const Isometry3d X_WL_expected =
+      const math::RigidTransformd X_WL_expected =
           acrobot_benchmark_.CalcElbowOutboardFramePoseInWorldFrame(
               shoulder_angle, elbow_angle);
 
       // Asserts that the retrieved poses match with the ones specified by the
       // unit test method SetPendulumPoses().
       EXPECT_TRUE(X_WW.matrix().isApprox(Matrix4d::Identity(), kTolerance));
-      EXPECT_TRUE(X_WU.matrix().isApprox(X_WU_expected.matrix(), kTolerance));
-      EXPECT_TRUE(X_WL.matrix().isApprox(X_WL_expected.matrix(), kTolerance));
+      EXPECT_TRUE(
+          X_WU.matrix().isApprox(X_WU_expected.GetAsMatrix4(), kTolerance));
+      EXPECT_TRUE(
+          X_WL.matrix().isApprox(X_WL_expected.GetAsMatrix4(), kTolerance));
     }
   }
 }
@@ -1189,11 +1191,11 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
           const Isometry3<AutoDiffXd>& X_WL =
               get_body_pose_in_world(tree_autodiff, pc, lower_link_autodiff);
 
-          const Isometry3d X_WU_expected =
+          const math::RigidTransformd X_WU_expected =
               acrobot_benchmark_.CalcLink1PoseInWorldFrame(
                   shoulder_angle.value());
 
-          const Isometry3d X_WL_expected =
+          const math::RigidTransformd X_WL_expected =
               acrobot_benchmark_.CalcElbowOutboardFramePoseInWorldFrame(
                   shoulder_angle.value(), elbow_angle.value());
 
@@ -1212,8 +1214,10 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
 
           // Asserts that the retrieved poses match with the ones specified by
           // the unit test method SetPendulumPoses().
-          EXPECT_TRUE(X_WU_value.isApprox(X_WU_expected.matrix(), kTolerance));
-          EXPECT_TRUE(X_WL_value.isApprox(X_WL_expected.matrix(), kTolerance));
+          EXPECT_TRUE(
+              X_WU_value.isApprox(X_WU_expected.GetAsMatrix4(), kTolerance));
+          EXPECT_TRUE(
+              X_WL_value.isApprox(X_WL_expected.GetAsMatrix4(), kTolerance));
 
           // Extract the transformations' time derivatives.
           Eigen::MatrixXd X_WU_dot =

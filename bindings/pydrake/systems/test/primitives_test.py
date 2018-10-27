@@ -17,7 +17,7 @@ from pydrake.systems.primitives import (
     Adder, Adder_,
     AddRandomInputs,
     AffineSystem, AffineSystem_,
-    ConstantValueSource_,
+    ConstantValueSource, ConstantValueSource_,
     ConstantVectorSource, ConstantVectorSource_,
     ControllabilityMatrix,
     Demultiplexer, Demultiplexer_,
@@ -40,7 +40,7 @@ from pydrake.systems.primitives import (
     UniformRandomSource,
     TrajectorySource,
     WrapToSystem, WrapToSystem_,
-    ZeroOrderHold_,
+    ZeroOrderHold, ZeroOrderHold_,
 )
 from pydrake.trajectories import PiecewisePolynomial
 
@@ -333,3 +333,14 @@ class TestGeneral(unittest.TestCase):
         # Note: There are no random inputs to add to the empty diagram, but it
         # confirms the API works.
         AddRandomInputs(sampling_interval_sec=0.01, builder=builder)
+
+    def test_ctor_api(self):
+        """Tests construction of systems for systems whose executions semantics
+        are not tested above.
+        """
+        ConstantValueSource(AbstractValue.Make("Hello world"))
+        ConstantVectorSource(source_value=[1., 2.])
+        ZeroOrderHold(period_sec=0.1, vector_size=2)
+        ZeroOrderHold(
+            period_sec=0.1,
+            abstract_model_value=AbstractValue.Make("Hello world"))

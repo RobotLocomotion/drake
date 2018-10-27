@@ -29,6 +29,7 @@ namespace geometry {
 
 using Eigen::Isometry3d;
 using systems::Context;
+using systems::rendering::PoseBundle;
 using systems::System;
 using std::make_unique;
 using std::unique_ptr;
@@ -75,6 +76,18 @@ class SceneGraphTester {
                                       const systems::Context<T>& context,
                                       QueryObject<T>* handle) {
     scene_graph.CalcQueryObject(context, handle);
+  }
+
+  template <typename T>
+  static PoseBundle<T> MakePoseBundle(const SceneGraph<T>& scene_graph) {
+    return scene_graph.MakePoseBundle();
+  }
+
+  template <typename T>
+  static void CalcPoseBundle(const SceneGraph<T>& scene_graph,
+                             const systems::Context<T>& context,
+                             PoseBundle<T>* bundle) {
+    return scene_graph.CalcPoseBundle(context, bundle);
   }
 };
 
@@ -535,6 +548,95 @@ GTEST_TEST(SceneGraphAutoDiffTest, InstantiateAutoDiff) {
   QueryObject<AutoDiffXd> handle =
       QueryObjectTester::MakeNullQueryObject<AutoDiffXd>();
   SceneGraphTester::GetQueryObjectPortValue(scene_graph, *context, &handle);
+}
+
+// Tests the pose vector output port -- specifically, the pose vector should
+// *never* include the world frame.
+GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
+  // Case: No registered source, frames, or geometry --> empty pose vector.
+  {
+    SceneGraph<double> scene_graph;
+    PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
+    EXPECT_EQ(0, poses.get_num_poses());
+    auto context = scene_graph.AllocateContext();
+    EXPECT_NO_THROW(SceneGraphTester::CalcPoseBundle(scene_graph, *context,
+                                                     &poses));
+  }
+
+  // Case: Registered source but no frames or geometry --> empty pose vector.
+  {
+    SceneGraph<double> scene_graph;
+    scene_graph.RegisterSource("dummy");
+    PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
+    EXPECT_EQ(0, poses.get_num_poses());
+    auto context = scene_graph.AllocateContext();
+    EXPECT_NO_THROW(SceneGraphTester::CalcPoseBundle(scene_graph, *context,
+                                                     &poses));
+  }
+
+  // Case: Registered source with anchored geometry but no frames or dynamic
+  // geometry --> empty pose vector.
+  {
+    SceneGraph<double> scene_graph;
+    SourceId s_id = scene_graph.RegisterSource("dummy");
+    scene_graph.RegisterGeometry(
+        s_id, scene_graph.world_frame_id(),
+        make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+                                      make_unique<Sphere>(1.0), "sphere"));
+    PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
+    EXPECT_EQ(0, poses.get_num_poses());
+    auto context = scene_graph.AllocateContext();
+    EXPECT_NO_THROW(SceneGraphTester::CalcPoseBundle(scene_graph, *context,
+                                                     &poses));
+  }
+
+  const Isometry3<double> kIdentity = Isometry3<double>::Identity();
+
+  // Case: Registered source with anchored geometry and frame but no dynamic
+  // geometry --> pose vector with one entry.
+  {
+    SceneGraph<double> scene_graph;
+    SourceId s_id = scene_graph.RegisterSource("dummy");
+    scene_graph.RegisterGeometry(
+        s_id, scene_graph.world_frame_id(),
+        make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+                                      make_unique<Sphere>(1.0), "sphere"));
+    FrameId f_id =
+        scene_graph.RegisterFrame(s_id, GeometryFrame("f", kIdentity));
+    PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
+    EXPECT_EQ(1, poses.get_num_poses());
+    auto context = scene_graph.AllocateContext();
+    FramePoseVector<double> pose_vector(s_id, {f_id});
+    context->FixInputPort(scene_graph.get_source_pose_port(s_id).get_index(),
+                          systems::Value<FramePoseVector<double>>(pose_vector));
+    EXPECT_NO_THROW(
+        SceneGraphTester::CalcPoseBundle(scene_graph, *context, &poses));
+  }
+
+  // Case: Registered source with anchored geometry and frame with dynamic
+  // geometry --> pose vector with one entry.
+  {
+    SceneGraph<double> scene_graph;
+    SourceId s_id = scene_graph.RegisterSource("dummy");
+    scene_graph.RegisterGeometry(
+        s_id, scene_graph.world_frame_id(),
+        make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+                                      make_unique<Sphere>(1.0), "sphere"));
+    FrameId f_id =
+        scene_graph.RegisterFrame(s_id, GeometryFrame("f", kIdentity));
+    scene_graph.RegisterGeometry(
+        s_id, f_id,
+        make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+                                      make_unique<Sphere>(1.0), "sphere"));
+    PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
+    EXPECT_EQ(1, poses.get_num_poses());
+    auto context = scene_graph.AllocateContext();
+    FramePoseVector<double> pose_vector(s_id, {f_id});
+    context->FixInputPort(scene_graph.get_source_pose_port(s_id).get_index(),
+                          systems::Value<FramePoseVector<double>>(pose_vector));
+    EXPECT_NO_THROW(SceneGraphTester::CalcPoseBundle(scene_graph, *context,
+                                                     &poses));
+  }
 }
 
 }  // namespace
