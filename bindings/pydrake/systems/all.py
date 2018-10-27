@@ -12,3 +12,8 @@ try:
     from .drawing import *
 except ImportError:
     pass
+
+try:
+    from .meshcat_visualizer import *
+except ImportError:
+    pass
