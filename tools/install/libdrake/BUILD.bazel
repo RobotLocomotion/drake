@@ -14,7 +14,7 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
-load("//tools:drake.bzl", "drake_cc_binary")
+load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_binary")
 load("@python//:version.bzl", "PYTHON_VERSION")
 
 genrule(
