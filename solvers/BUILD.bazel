@@ -37,6 +37,7 @@ drake_cc_package_library(
         ":linear_system_solver",
         ":mathematical_program",
         ":mathematical_program_api",
+        ":mathematical_program_result",
         ":mixed_integer_optimization_util",
         ":mixed_integer_rotation_constraint",
         ":moby_lcp_solver",
@@ -269,6 +270,16 @@ drake_cc_library(
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+    ],
+)
+
+drake_cc_library(
+    name = "mathematical_program_result",
+    srcs = ["mathematical_program_result.cc"],
+    hdrs = ["mathematical_program_result.h"],
+    deps = [
+        ":mathematical_program_api",
+        "//systems/framework:value",
     ],
 )
 
@@ -615,11 +626,13 @@ drake_cc_library(
     deps = select({
         "//tools:with_mosek": [
             ":mathematical_program_api",
+            ":mathematical_program_result",
             "//common:scoped_singleton",
             "@mosek",
         ],
         "//conditions:default": [
             ":mathematical_program_api",
+            ":mathematical_program_result",
         ],
     }),
 )
@@ -1361,6 +1374,15 @@ drake_cc_googletest(
         ":mathematical_program",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mathematical_program_result_test",
+    deps = [
+        ":mathematical_program_result",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
