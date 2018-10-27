@@ -3,8 +3,8 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/solvers/solver_id.h"
 #include "drake/common/drake_optional.h"
+#include "drake/solvers/solver_id.h"
 
 namespace drake {
 namespace solvers {
@@ -30,7 +30,7 @@ class SolverResult {
    * MathematicalProgram::decision_variables_(i) will have value `values(i)`.
    */
   void set_decision_variable_values(
-      const Eigen::Ref<const Eigen::VectorXd>& values); 
+      const Eigen::Ref<const Eigen::VectorXd>& values);
 
   const optional<Eigen::VectorXd>& decision_variable_values() const {
     return decision_variable_values_;

@@ -4,9 +4,9 @@
 #include <typeinfo>
 #include <utility>
 
-#include "drake/systems/framework/value.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/solver_result.h"
+#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace solvers {
