@@ -231,14 +231,14 @@ py2_py3(
 generate_file(
     name = "__init__.py",
     content = """
-from ctypes.dll import LoadLibrary
+import ctypes
 from os.path import realpath
 from sysconfig import get_config_var
 
 import six
 
 _ext = get_config_var("EXT_SUFFIX") or get_config_var("SO")
-LoadLibrary(realpath(__path__[0] + '/_lcm' + _ext))
+ctypes.cdll.LoadLibrary(realpath(__path__[0] + '/_lcm' + _ext))
 _filename = __path__[0] + \"/lcm-python/lcm/__init__.py\"
 
 if six.PY2:
