@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <typeinfo>
 #include <utility>
 
 // TODO(hongkai.dai): separate SolutionResult and SolverResult from
@@ -12,10 +13,10 @@
 namespace drake {
 namespace solvers {
 /**
- * The result returned by solve(). It stores the SolutionResult (whether the
- * program is solved to optimality, detected infeasibility, etc), the optimal
- * value for the decision variables, the optimal cost, and solver specific
- * details.
+ * The result returned by MathematicalProgram::Solve(). It stores the
+ * solvers::SolutionResult (whether the program is solved to optimality,
+ * detected infeasibility, etc), the optimal * value for the decision variables,
+ * the optimal cost, and solver specific details.
  */
 class MathematicalProgramResult final {
  public:
@@ -78,6 +79,10 @@ class MathematicalProgramResult final {
 
   /**
    * Convert MathematicalProgramResult to SolverResult.
+   * @note This function doesn't set optimal_cost_lower_bound. If
+   * SolverResult.optimal_cost_lower_bound needs to be set (like in
+   * GurobiSolver), then the user will have to set it after calling
+   * ConvertToSolverResult.
    */
   SolverResult ConvertToSolverResult() const;
 

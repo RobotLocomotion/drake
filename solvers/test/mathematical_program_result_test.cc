@@ -57,6 +57,23 @@ GTEST_TEST(MathematicalProgramResultTest, SetSolverDetails) {
   EXPECT_EQ(result.get_solver_details().GetValue<DummySolverDetails>().data,
             data);
 }
+
+GTEST_TEST(MathematicalProgramResultTest, ConvertToSolverResult) {
+  MathematicalProgramResult result;
+  result.set_solver_id(SolverId("foo"));
+  result.set_optimal_cost(2);
+  // The x_val is not set. So solver_result.decision_variable_values should be
+  // empty.
+  SolverResult solver_result = result.ConvertToSolverResult();
+  EXPECT_FALSE(solver_result.decision_variable_values());
+  // Now set x_val.
+  result.set_x_val(Eigen::Vector2d::Ones());
+  solver_result = result.ConvertToSolverResult();
+  EXPECT_EQ(result.get_solver_id(), solver_result.solver_id());
+  EXPECT_TRUE(CompareMatrices(
+      result.get_x_val(), solver_result.decision_variable_values().value()));
+  EXPECT_EQ(result.get_optimal_cost(), solver_result.optimal_cost());
+}
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

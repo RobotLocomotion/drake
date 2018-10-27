@@ -31,10 +31,6 @@ SolverResult MathematicalProgramResult::ConvertToSolverResult() const {
     solver_result.set_decision_variable_values(x_val_);
   }
   solver_result.set_optimal_cost(optimal_cost_);
-  // This function doesn't set optimal_cost_lower_bound. If
-  // SolverResult.optimal_cost_lower_bound needs to be set (like in
-  // GurobiSolver), then the user will have to set it after calling
-  // ConvertToSolverResult.
   return solver_result;
 }
 }  // namespace solvers
