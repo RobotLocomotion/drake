@@ -46,6 +46,7 @@ LIBDRAKE_COMPONENTS = [
     "//common/trajectories",
     "//common:drake_marker_shared_library",  # unpackaged
     "//common:text_logging_gflags_h",  # unpackaged
+    "//examples/manipulation_station:manipulation_station",  # unpackaged
     "//geometry",
     "//geometry/dev",
     "//geometry/dev/render",
