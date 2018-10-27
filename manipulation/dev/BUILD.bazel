@@ -7,9 +7,17 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "gurobi_test_tags")
+
+filegroup(
+    name = "test_models",
+    testonly = 1,
+    srcs = glob([
+        "*.sdf",
+        "*.urdf",
+    ]),
+)
 
 drake_cc_library(
     name = "quasistatic_system",
@@ -48,7 +56,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "rod2d_time_stepping",
-    data = [":models"],
+    data = [":test_models"],
     tags = gurobi_test_tags() + [
         # This test breaks the build in a non-obvious way and the author
         # (pangtao22) is unable to assist in debugging.
@@ -92,7 +100,7 @@ drake_cc_binary(
     data = [
         ":double_dumbbell_for_pick_up.sdf",
         ":dumbbell_for_pick_up.sdf",
-        ":models",
+        ":test_models",
         "//examples/kuka_iiwa_arm:models",
         "//manipulation/models/iiwa_description:models",
     ],
@@ -118,7 +126,5 @@ drake_cc_binary(
         "@lcmtypes_robotlocomotion",
     ],
 )
-
-install_data()
 
 add_lint_tests()
