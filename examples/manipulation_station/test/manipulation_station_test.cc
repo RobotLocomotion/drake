@@ -6,12 +6,14 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/systems/sensors/image.h"
 
 namespace drake {
 namespace examples {
 namespace manipulation_station {
 namespace {
 
+using Eigen::Vector2d;
 using Eigen::VectorXd;
 using systems::BasicVector;
 using multibody::RevoluteJoint;
@@ -20,9 +22,8 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   ManipulationStation<double> station(0.001);
   station.AddCupboard();
   multibody::parsing::AddModelFromSdfFile(
-      FindResourceOrThrow(
-          "drake/examples/manipulation_station/models"
-          "/061_foam_brick.sdf"),
+      FindResourceOrThrow("drake/examples/manipulation_station/models"
+                          "/061_foam_brick.sdf"),
       "object", &station.get_mutable_multibody_plant(),
       &station.get_mutable_scene_graph());
   station.Finalize();
@@ -108,8 +109,9 @@ GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
 
   auto context = station.CreateDefaultContext();
 
-  // Expect state from the desired_state_from_position and from the plant.
-  EXPECT_EQ(context->get_num_discrete_state_groups(), 2);
+  // Expect state from the velocity interpolators in the iiwa and the wsg and
+  // from the multibody state of the plant.
+  EXPECT_EQ(context->get_num_discrete_state_groups(), 3);
 
   // The tests below expect desired_state_from_position to be the second
   // state.  Verify this by checking the sizes.
@@ -129,6 +131,10 @@ GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
   context->FixInputPort(
       station.GetInputPort("iiwa_feedforward_torque").get_index(),
       VectorXd::Zero(7));
+  context->FixInputPort(station.GetInputPort("wsg_position").get_index(),
+                        Vector1d(0.05));
+  context->FixInputPort(station.GetInputPort("wsg_force_limit").get_index(),
+                        Vector1d(40));
   context->get_mutable_discrete_state(plant_index).SetZero();
   context->get_mutable_discrete_state(state_from_position_index).SetZero();
 
@@ -201,6 +207,55 @@ GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
   // as well.
   const double kTolerance = 0.04;  // rad/sec^2.
   EXPECT_TRUE(CompareMatrices(vddot, VectorXd::Zero(7), kTolerance));
+}
+
+GTEST_TEST(ManipulationStationTest, CheckWsg) {
+  ManipulationStation<double> station(0.001);
+  station.Finalize();
+
+  auto context = station.CreateDefaultContext();
+
+  const double q = 0.023;
+  const double v = 0.12;
+
+  station.SetWsgPosition(q, context.get());
+  EXPECT_EQ(station.GetWsgPosition(*context), q);
+
+  station.SetWsgVelocity(v, context.get());
+  EXPECT_EQ(station.GetWsgVelocity(*context), v);
+
+  EXPECT_TRUE(CompareMatrices(station.GetOutputPort("wsg_state_measured")
+                                  .Eval<BasicVector<double>>(*context)
+                                  .get_value(),
+                              Vector2d(q, v)));
+
+  EXPECT_NO_THROW(station.GetOutputPort("wsg_force_measured"));
+}
+
+GTEST_TEST(ManipulationStationTest, CheckRGBDOutputs) {
+  ManipulationStation<double> station(0.001);
+  station.Finalize();
+
+  auto context = station.CreateDefaultContext();
+
+  const int kNumCameras = 3;
+  for (int i = 0; i < kNumCameras; i++) {
+    // Make sure the camera outputs can be evaluated, and are non-empty.
+    EXPECT_GE(station.GetOutputPort("camera" + std::to_string(i) + "_rgb_image")
+                  .Eval<systems::sensors::ImageRgba8U>(*context)
+                  .size(),
+              0);
+    EXPECT_GE(
+        station.GetOutputPort("camera" + std::to_string(i) + "_depth_image")
+            .Eval<systems::sensors::ImageDepth32F>(*context)
+            .size(),
+        0);
+    EXPECT_GE(
+        station.GetOutputPort("camera" + std::to_string(i) + "_label_image")
+            .Eval<systems::sensors::ImageLabel16I>(*context)
+            .size(),
+        0);
+  }
 }
 
 }  // namespace

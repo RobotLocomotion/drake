@@ -52,8 +52,8 @@ std::unique_ptr<systems::MatrixGain<T>>
 MakeMultibodyStateToWsgStateSystem() {
   Eigen::Matrix<double, 2, 4> D;
   // clang-format off
-  D << 1, -1, 0,  0,
-      0,  0, 1, -1;
+  D << -1, 1, 0,  0,
+      0,  0, -1, 1;
   // clang-format on
   return std::make_unique<systems::MatrixGain<T>>(D);
 }
