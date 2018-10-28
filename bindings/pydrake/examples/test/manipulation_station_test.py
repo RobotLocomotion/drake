@@ -23,3 +23,12 @@ class TestManipulationStation(unittest.TestCase):
         np.testing.assert_array_equal(q, station.GetIiwaPosition(context))
         station.SetIiwaVelocity(v, context)
         np.testing.assert_array_equal(v, station.GetIiwaVelocity(context))
+
+        q = 4.23
+        v = 8.51
+        station.SetWsgPosition(q, context)
+        self.assertEqual(q, station.GetWsgPosition(context))
+        station.SetWsgVelocity(v, context)
+        self.assertEqual(v, station.GetWsgVelocity(context))
+
+        station.get_camera_pose(0)

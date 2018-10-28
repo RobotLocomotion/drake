@@ -27,11 +27,15 @@ drake_cc_library(
     deps = [
         "//common:find_resource",
         "//geometry:scene_graph",
+        "//geometry/dev:scene_graph",
+        "//manipulation/schunk_wsg:schunk_wsg_constants",
+        "//manipulation/schunk_wsg:schunk_wsg_position_controller",
         "//math:geometric_transform",
         "//multibody/multibody_tree/multibody_plant",
         "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/framework",
+        "//systems/sensors/dev:rgbd_camera",
     ],
 )
 
@@ -55,6 +59,11 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "manipulation_station_test",
+    tags = [
+        # Due to a known issue with dev/scene_graph (#9686).
+        "no_lsan",
+        "no_memcheck",
+    ],
     deps = [
         ":manipulation_station",
         "//common/test_utilities:eigen_matrix_compare",
