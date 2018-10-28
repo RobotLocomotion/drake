@@ -38,6 +38,7 @@ LIBDRAKE_COMPONENTS = [
     "//automotive/maliput/geometry_base",
     "//automotive/maliput/multilane",
     "//automotive/maliput/rndf",
+    "//automotive/maliput/simple_phase_provider",
     "//automotive/maliput/simplerulebook",
     "//automotive/maliput/utility",
     "//common",
@@ -46,8 +47,12 @@ LIBDRAKE_COMPONENTS = [
     "//common:drake_marker_shared_library",  # unpackaged
     "//common:text_logging_gflags_h",  # unpackaged
     "//geometry",
+    "//geometry/dev",
+    "//geometry/dev/render",
+    "//geometry/dev/render/shaders",
     "//geometry/query_results",
     "//lcm",
+    "//manipulation/dev:remote_tree_viewer_wrapper",  # unpackaged
     "//manipulation/perception",
     "//manipulation/planner",
     "//manipulation/scene_generation:random_clutter_generator",  # unpackaged
@@ -84,6 +89,7 @@ LIBDRAKE_COMPONENTS = [
     "//systems/rendering",
     "//systems/robotInterfaces",
     "//systems/sensors",
+    "//systems/sensors/dev",
     "//systems/trajectory_optimization",
     "//util",
 ]

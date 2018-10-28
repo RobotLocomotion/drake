@@ -10,15 +10,6 @@ import subprocess
 import sys
 
 
-def _is_dev(label):
-    return "/dev:" in label or "/dev/" in label
-
-
-def _remove_dev(components):
-    # Filter out components that are in a dev (unsupported) package.
-    return [x for x in components if not _is_dev(x)]
-
-
 def _label_sort_key(label):
     # How to compare labels (lexicographically by subpackage names).
     return label.split("/")
@@ -64,7 +55,6 @@ kind("cc_library", visible("//tools/install/libdrake:libdrake.so", "//..."))
             "except deps({}, 1)".format(x)
             for x in package_libs
         ])])
-    misc_libs = _remove_dev(misc_libs)
     # Sort the result for consistency.
     return sorted(package_libs + misc_libs, key=_label_sort_key)
 
