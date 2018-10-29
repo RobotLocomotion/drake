@@ -10,6 +10,7 @@
 #include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/util/eigen_pybind.h"
 #include "drake/bindings/pydrake/util/type_safe_index_pybind.h"
+#include "drake/bindings/pydrake/util/wrap_pybind.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/event.h"
@@ -68,6 +69,20 @@ void DefineFrameworkPySemantics(py::module m) {
         doc.AbstractValues.get_mutable_value.doc)
     .def("CopyFrom", &AbstractValues::CopyFrom,
          doc.AbstractValues.CopyFrom.doc);
+
+  {
+    using Class = TriggerType;
+    constexpr auto& cls_doc = doc.TriggerType;
+    py::enum_<TriggerType>(m, "TriggerType", cls_doc.doc)
+      .value("kUnknown", Class::kUnknown, cls_doc.kUnknown.doc)
+      .value("kInitialization", Class::kInitialization,
+             cls_doc.kInitialization.doc)
+      .value("kForced", Class::kForced, cls_doc.kForced.doc)
+      .value("kTimed", Class::kTimed, cls_doc.kTimed.doc)
+      .value("kPeriodic", Class::kPeriodic, cls_doc.kPeriodic.doc)
+      .value("kPerStep", Class::kPerStep, cls_doc.kPerStep.doc)
+      .value("kWitness", Class::kWitness, cls_doc.kWitness.doc);
+  }
 
   // N.B. Capturing `&doc` should not be required; workaround per #9600.
   auto bind_common_scalar_types = [m, &doc](auto dummy) {
@@ -188,9 +203,18 @@ void DefineFrameworkPySemantics(py::module m) {
 
     // Event mechanisms.
     DefineTemplateClassWithDefault<Event<T>>(m, "Event", GetPyParam<T>(),
-        doc.Event.doc);
+        doc.Event.doc)
+      .def("get_trigger_type", &Event<T>::get_trigger_type,
+           doc.Event.get_trigger_type.doc);
     DefineTemplateClassWithDefault<PublishEvent<T>, Event<T>>(
-        m, "PublishEvent", GetPyParam<T>(), doc.PublishEvent.doc);
+        m, "PublishEvent", GetPyParam<T>(), doc.PublishEvent.doc)
+        .def(py::init(WrapCallbacks(
+            [](const TriggerType& trigger_type,
+               const typename PublishEvent<T>::PublishCallback& callback) {
+              return std::make_unique<PublishEvent<T>>(trigger_type, callback);
+            })),
+            py::arg("trigger_type"), py::arg("callback"),
+            doc.PublishEvent.ctor.doc_4);
     DefineTemplateClassWithDefault<DiscreteUpdateEvent<T>, Event<T>>(
         m, "DiscreteUpdateEvent", GetPyParam<T>(),
             doc.DiscreteUpdateEvent.doc);

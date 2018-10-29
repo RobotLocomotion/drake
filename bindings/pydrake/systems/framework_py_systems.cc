@@ -73,6 +73,7 @@ struct Impl {
     using Base::DeclareAbstractOutputPort;
     using Base::DeclareVectorOutputPort;
     using Base::DeclarePeriodicPublish;
+    using Base::DeclareInitializationEvent;
     using Base::DeclareContinuousState;
     using Base::DeclareDiscreteState;
     using Base::DeclarePeriodicDiscreteUpdate;
@@ -413,6 +414,9 @@ struct Impl {
       .def("_DeclarePeriodicPublish", &PyLeafSystem::DeclarePeriodicPublish,
            py::arg("period_sec"), py::arg("offset_sec") = 0.,
            doc.LeafSystem.DeclarePeriodicPublish.doc)
+      .def("_DeclareInitializationEvent",
+           &PyLeafSystem::DeclareInitializationEvent, py::arg("event"),
+           doc.LeafSystem.DeclareInitializationEvent.doc)
       .def("_DoPublish", &LeafSystemPublic::DoPublish,
            doc.LeafSystem.DoPublish.doc)
       // System attributes.
