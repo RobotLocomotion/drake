@@ -1325,6 +1325,12 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     tree().SetDefaultState(context, state);
   }
 
+  // Helper method to compute penetration point pairs for a given `context`.
+  // Having this as a separate method allows us to control specializations for
+  // different scalar types.
+  std::vector<geometry::PenetrationAsPointPair<T>>
+  CalcPointPairPenetrations(const systems::Context<T>& context) const;
+
   using MultibodyTreeSystem<T>::is_discrete;
   using MultibodyTreeSystem<T>::tree;
   using MultibodyTreeSystem<T>::EvalPositionKinematics;
@@ -1520,12 +1526,6 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   bool is_collision_geometry(geometry::GeometryId id) const {
     return geometry_id_to_collision_index_.count(id) > 0;
   }
-
-  // Helper method to compute penetration point pairs for a given `context`.
-  // Having this as a separate method allows us to control specializations for
-  // different scalar types.
-  std::vector<geometry::PenetrationAsPointPair<T>>
-  CalcPointPairPenetrations(const systems::Context<T>& context) const;
 
   // This helper method combines the friction properties for each pair of
   // contact points in `point_pairs` according to

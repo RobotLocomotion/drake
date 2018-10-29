@@ -575,7 +575,16 @@ void init_multibody_plant(py::module m) {
              overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_contact_results_output_port),
              py_reference_internal,
-             doc.MultibodyPlant.get_contact_results_output_port.doc);
+             doc.MultibodyPlant.get_contact_results_output_port.doc)
+        .def("GetVisualGeometriesForBody",
+             &Class::GetVisualGeometriesForBody,
+             doc.MultibodyPlant.GetVisualGeometriesForBody.doc)
+        .def("GetCollisionGeometriesForBody",
+             &Class::GetCollisionGeometriesForBody,
+             doc.MultibodyPlant.GetCollisionGeometriesForBody.doc)
+        .def("CalcPointPairPenetrations",
+             &Class::CalcPointPairPenetrations,
+             doc.MultibodyPlant.CalcPointPairPenetrations.doc);
     // Property accessors.
     cls
         .def("world_body", &Class::world_body, py_reference_internal,
