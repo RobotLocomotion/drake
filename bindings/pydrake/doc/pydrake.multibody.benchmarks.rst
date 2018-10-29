@@ -13,3 +13,4 @@ pydrake.multibody.benchmarks
 .. automodule:: pydrake.multibody.benchmarks
     :members:
     :undoc-members:
+    :show-inheritance:

@@ -141,10 +141,10 @@ class DiagramBuilder {
   }
 
   /// Declares that sole input port on the @p dest system is connected to sole
-  /// output port on the @p src system.  Throws an exception if the sole-port
-  /// precondition is not met (i.e., if @p dest has no input ports, or @p dest
-  /// has more than one input port, or @p src has no output ports, or @p src
-  /// has more than one output port).
+  /// output port on the @p src system.
+  /// @throws std::exception if the sole-port precondition is not met (i.e.,
+  /// if @p dest has no input ports, or @p dest has more than one input port,
+  /// or @p src has no output ports, or @p src has more than one output port).
   void Connect(const System<T>& src, const System<T>& dest) {
     DRAKE_THROW_UNLESS(src.get_num_output_ports() == 1);
     DRAKE_THROW_UNLESS(dest.get_num_input_ports() == 1);
@@ -152,10 +152,10 @@ class DiagramBuilder {
   }
 
   /// Cascades @p src and @p dest.  The sole input port on the @p dest system
-  /// is connected to sole output port on the @p src system.  Throws an
-  /// exception if the sole-port precondition is not met (i.e., if @p dest has
-  /// no input ports, or @p dest has more than one input port, or @p src has no
-  /// output ports, or @p src has more than one output port).
+  /// is connected to sole output port on the @p src system.
+  /// @throws std::exception if the sole-port precondition is not met (i.e., if
+  /// @p dest has no input ports, or @p dest has more than one input port, or
+  /// @p src has no output ports, or @p src has more than one output port).
   void Cascade(const System<T>& src, const System<T>& dest) {
     Connect(src, dest);
   }
@@ -210,16 +210,16 @@ class DiagramBuilder {
   }
 
   /// Builds the Diagram that has been described by the calls to Connect,
-  /// ExportInput, and ExportOutput. Throws std::logic_error if the graph is
-  /// not buildable.
+  /// ExportInput, and ExportOutput.
+  /// @throws std::logic_error if the graph is not buildable.
   std::unique_ptr<Diagram<T>> Build() {
     std::unique_ptr<Diagram<T>> diagram(new Diagram<T>(Compile()));
     return diagram;
   }
 
   /// Configures @p target to have the topology that has been described by
-  /// the calls to Connect, ExportInput, and ExportOutput. Throws
-  /// std::logic_error if the graph is not buildable.
+  /// the calls to Connect, ExportInput, and ExportOutput.
+  /// @throws std::logic_error if the graph is not buildable.
   ///
   /// Only Diagram subclasses should call this method. The target must not
   /// already be initialized.

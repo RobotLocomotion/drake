@@ -21,7 +21,7 @@ PYBIND11_MODULE(math, m) {
   using namespace drake::math;
 
   m.doc() = "Bindings for //math.";
-  auto& doc = pydrake_doc.drake.math;
+  constexpr auto& doc = pydrake_doc.drake.math;
 
   py::module::import("pydrake.util.eigen_geometry");
 
@@ -69,12 +69,18 @@ PYBIND11_MODULE(math, m) {
       .def(py::init(), doc.RigidTransform.ctor.doc_3)
       .def(py::init<const RotationMatrix<T>&, const Vector3<T>&>(),
            py::arg("R"), py::arg("p"), doc.RigidTransform.ctor.doc_4)
+      .def(py::init<const RollPitchYaw<T>&, const Vector3<T>&>(),
+           py::arg("rpy"), py::arg("p"), doc.RigidTransform.ctor.doc_5)
+      .def(py::init<const Eigen::Quaternion<T>&, const Vector3<T>&>(),
+           py::arg("quaternion"), py::arg("p"), doc.RigidTransform.ctor.doc_6)
+      .def(py::init<const Eigen::AngleAxis<T>&, const Vector3<T>&>(),
+           py::arg("theta_lambda"), py::arg("p"), doc.RigidTransform.ctor.doc_7)
       .def(py::init<const RotationMatrix<T>&>(), py::arg("R"),
-          doc.RigidTransform.ctor.doc_5)
+          doc.RigidTransform.ctor.doc_8)
       .def(py::init<const Vector3<T>&>(), py::arg("p"),
-          doc.RigidTransform.ctor.doc_6)
+          doc.RigidTransform.ctor.doc_9)
       .def(py::init<const Isometry3<T>&>(), py::arg("pose"),
-          doc.RigidTransform.ctor.doc_7)
+          doc.RigidTransform.ctor.doc_10)
       .def("set", &RigidTransform<T>::set, py::arg("R"), py::arg("p"),
           doc.RigidTransform.set.doc)
       .def("SetFromIsometry3", &RigidTransform<T>::SetFromIsometry3,

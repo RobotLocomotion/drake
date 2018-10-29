@@ -177,7 +177,6 @@ namespace solvers {
  * (note that some have free licenses for academics).
  * @}
  */
-
 class MathematicalProgram;
 
 enum ProgramAttributes {
@@ -318,11 +317,13 @@ class MathematicalProgram {
   /** Clones an optimization program.
    * The clone will be functionally equivalent to the source program with the
    * same:
+   *
    * - decision variables
    * - constraints
    * - costs
    * - solver settings
    * - initial guess
+   *
    * However, the clone's x values will be initialized to NaN, and all internal
    * solvers will be freshly constructed.
    * @retval new_prog. The newly constructed mathematical program.
@@ -556,7 +557,7 @@ class MathematicalProgram {
    * @pre `decision_variables` should not intersect with the existing variables
    * or indeterminates in the optimization program.
    * @pre Each entry in `decision_variables` should not be a dummy variable.
-   * @throw runtime_error if the preconditions are not satisfied.
+   * @throws std::runtime_error if the preconditions are not satisfied.
    */
   void AddDecisionVariables(
       const Eigen::Ref<const VectorXDecisionVariable>& decision_variables);
@@ -577,7 +578,7 @@ class MathematicalProgram {
    * polynomial
    *   p = Q₍₀,₀₎x² + 2Q₍₁,₀₎xy + Q₍₁,₁₎y²
    * and a PSD constraint over Q.
-   * Note: Q is a symmetric monomial_basis.rows() x monomial_basis.rows()
+   * @note Q is a symmetric monomial_basis.rows() x monomial_basis.rows()
    * matrix.
    */
   std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
@@ -670,7 +671,6 @@ class MathematicalProgram {
    * The name of the indeterminates is only used for the user in order to ease
    * readability.
    */
-
   template <int rows, int cols>
   MatrixIndeterminate<rows, cols> NewIndeterminates(
       const std::string& name = "X") {
@@ -767,7 +767,7 @@ class MathematicalProgram {
    * Adds a callback method to visualize intermediate results of the
    * optimization.
    *
-   * Note: Just like other costs/constraints, not all solvers support callbacks.
+   * @note Just like other costs/constraints, not all solvers support callbacks.
    * Adding a callback here will force MathematicalProgram::Solve to select a
    * solver that support callbacks.  For instance, adding a visualization
    * callback to a quadratic programming problem may result in using a nonlinear
@@ -785,7 +785,7 @@ class MathematicalProgram {
    * Adds a callback method to visualize intermediate results of the
    * optimization.
    *
-   * Note: Just like other costs/constraints, not all solvers support callbacks.
+   * @note Just like other costs/constraints, not all solvers support callbacks.
    * Adding a callback here will force MathematicalProgram::Solve to select a
    * solver that support callbacks.  For instance, adding a visualization
    * callback to a quadratic programming problem may result in using a nonlinear
@@ -938,8 +938,8 @@ class MathematicalProgram {
    * Add a quadratic cost term of the form 0.5*x'*Q*x + b'*x + c.
    * Notice that in the optimization program, the constant term `c` in the cost
    * is ignored.
-   * @param e A quadratic symbolic expression. Throws a runtime error if the
-   * expression is not quadratic.
+   * @param e A quadratic symbolic expression.
+   * @throws std::runtime error if the expression is not quadratic.
    * @return The newly added cost together with the bound variables.
    */
   Binding<QuadraticCost> AddQuadraticCost(const symbolic::Expression& e);
@@ -1038,9 +1038,10 @@ class MathematicalProgram {
 
   /**
    * Adds one row of constraint lb <= e <= ub where @p e is a symbolic
-   * expression. Throws an exception if
-   *  1. <tt>lb <= e <= ub</tt> is a trivial constraint such as 1 <= 2 <= 3.
-   *  2. <tt>lb <= e <= ub</tt> is unsatisfiable such as 1 <= -5 <= 3
+   * expression.
+   * @throws std::exception if
+   * 1. <tt>lb <= e <= ub</tt> is a trivial constraint such as 1 <= 2 <= 3.
+   * 2. <tt>lb <= e <= ub</tt> is unsatisfiable such as 1 <= -5 <= 3
    *
    * @param e A symbolic expression of the the decision variables.
    * @param lb A scalar, the lower bound.
@@ -1072,11 +1073,11 @@ class MathematicalProgram {
    * Add a constraint represented by a symbolic formula to the program. The
    * input formula @p f can be of the following forms:
    *
-   *  1. e1 <= e2
-   *  2. e1 >= e2
-   *  3. e1 == e2
-   *  4. A conjunction of relational formulas where each conjunct is
-   *     a relational formula matched by 1, 2, or 3.
+   * 1. e1 <= e2
+   * 2. e1 >= e2
+   * 3. e1 == e2
+   * 4. A conjunction of relational formulas where each conjunct is
+   *    a relational formula matched by 1, 2, or 3.
    *
    * Note that first two cases might return an object of
    * Binding<BoundingBoxConstraint>, Binding<LinearConstraint>, or
@@ -1113,9 +1114,9 @@ class MathematicalProgram {
    *
    * A formula in @p formulas can be of the following forms:
    *
-   *  1. e1 <= e2
-   *  2. e1 >= e2
-   *  3. e1 == e2
+   * 1. e1 <= e2
+   * 2. e1 >= e2
+   * 3. e1 == e2
    *
    * It throws an exception if AddConstraint(const symbolic::Formula& f)
    * throws an exception for f ∈ @p formulas.
@@ -1218,10 +1219,11 @@ class MathematicalProgram {
 
   /**
    * Adds one row of linear constraint lb <= e <= ub where @p e is a symbolic
-   * expression. Throws an exception if
-   *  1. @p e is a non-linear expression.
-   *  2. <tt>lb <= e <= ub</tt> is a trivial constraint such as 1 <= 2 <= 3.
-   *  3. <tt>lb <= e <= ub</tt> is unsatisfiable such as 1 <= -5 <= 3
+   * expression.
+   * @throws std::exception if
+   * 1. @p e is a non-linear expression.
+   * 2. <tt>lb <= e <= ub</tt> is a trivial constraint such as 1 <= 2 <= 3.
+   * 3. <tt>lb <= e <= ub</tt> is unsatisfiable such as 1 <= -5 <= 3
    *
    * @param e A linear symbolic expression in the form of <tt>c0 + c1 * v1 +
    * ... + cn * vn</tt> where @c c_i is a constant and @v_i is a variable.
@@ -1245,11 +1247,11 @@ class MathematicalProgram {
    * Add a linear constraint represented by a symbolic formula to the
    * program. The input formula @p f can be of the following forms:
    *
-   *  1. e1 <= e2
-   *  2. e1 >= e2
-   *  3. e1 == e2
-   *  4. A conjunction of relational formulas where each conjunct is
-   *     a relational formula matched by 1, 2, or 3.
+   * 1. e1 <= e2
+   * 2. e1 >= e2
+   * 3. e1 == e2
+   * 4. A conjunction of relational formulas where each conjunct is
+   *    a relational formula matched by 1, 2, or 3.
    *
    * Note that first two cases might return an object of
    * Binding<BoundingBoxConstraint> depending on @p f. Also the third case
@@ -1320,9 +1322,10 @@ class MathematicalProgram {
 
   /**
    * Adds one row of linear constraint e = b where @p e is a symbolic
-   * expression. Throws an exception if
-   *  1. @p e is a non-linear expression.
-   *  2. @p e is a constant.
+   * expression.
+   * @throws std::exception if
+   * 1. @p e is a non-linear expression.
+   * 2. @p e is a constant.
    *
    * @param e A linear symbolic expression in the form of <tt>c0 + c1 * x1 +
    * ... + cn * xn</tt> where @c c_i is a constant and @x_i is a variable.
@@ -1339,17 +1342,20 @@ class MathematicalProgram {
    * or a conjunction of equality formulas.
    *
    * It throws an exception if
-   *  1. @p f is neither an equality formula nor a conjunction of equalities.
-   *  2. @p f includes a non-linear expression.
+   *
+   * 1. @p f is neither an equality formula nor a conjunction of equalities.
+   * 2. @p f includes a non-linear expression.
    */
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const symbolic::Formula& f);
 
   /**
    * Adds linear equality constraints \f$ v = b \f$, where \p v(i) is a symbolic
-   * linear expression. Throws an exception if
+   * linear expression.
+   * @throws std::exception if
    * 1. @p v(i) is a non-linear expression.
    * 2. @p v(i) is a constant.
+   *
    * @tparam DerivedV An Eigen Matrix type of Expression. A column vector.
    * @tparam DerivedB An Eigen Matrix type of double. A column vector.
    * @param v v(i) is a linear symbolic expression in the form of
@@ -1655,7 +1661,7 @@ class MathematicalProgram {
    *    Also the quadratic expression has to be convex, namely Q is a
    *    positive semidefinite matrix, and the quadratic expression needs
    *    to be non-negative for any x.
-   * Throws a runtime_error if the preconditions are not satisfied.
+   * @throws std::runtime_error if the preconditions are not satisfied.
    *
    * Notice this constraint is equivalent to the vector [z;y] is within a
    * Lorentz cone, where
@@ -1791,7 +1797,7 @@ class MathematicalProgram {
    *    Also the quadratic expression has to be convex, namely Q is a
    *    positive semidefinite matrix, and the quadratic expression needs
    *    to be non-negative for any x.
-   * Throws a runtime_error if the preconditions are not satisfied.
+   * @throws std::runtime_error if the preconditions are not satisfied.
    */
   Binding<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
       const symbolic::Expression& linear_expression1,
@@ -1972,8 +1978,9 @@ class MathematicalProgram {
 
   /**
    * Adds a positive semidefinite constraint on a symmetric matrix.
-   * In Debug mode, @throws error if
-   * @p symmetric_matrix_var is not symmetric.
+   *
+   * @throws std::runtime_error in Debug mode if @p symmetric_matrix_var is not
+   * symmetric.
    * @param symmetric_matrix_var A symmetric MatrixDecisionVariable object.
    */
   Binding<PositiveSemidefiniteConstraint> AddPositiveSemidefiniteConstraint(
@@ -2083,8 +2090,8 @@ class MathematicalProgram {
    * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
    * X.
    * @pre X(i, j) should be a linear expression of decision variables.
-   * @return M A vector of vectors of 2 x 2 symmetric matrices M. For i < j, 
-   * M[i][j] is 
+   * @return M A vector of vectors of 2 x 2 symmetric matrices M. For i < j,
+   * M[i][j] is
    * <pre>
    * [Mⁱʲ(i, i), Mⁱʲ(i, j)]
    * [Mⁱʲ(i, j), Mⁱʲ(j, j)].
@@ -2100,6 +2107,7 @@ class MathematicalProgram {
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),
    * that is, @p p can be decomposed into `mᵀQm`, where m is the @p
    * monomial_basis. It returns a pair of constraint bindings expressing:
+   *
    *  - The coefficients matrix Q is PSD (positive semidefinite).
    *  - The coefficients matching conditions in linear equality constraint.
    */
@@ -2114,6 +2122,7 @@ class MathematicalProgram {
    * that is, @p p can be decomposed into `mᵀQm`, where m is the monomial
    * basis of all indeterminates in the program with degree equal to half the
    * TotalDegree of @p p. It returns a pair of constraint bindings expressing:
+   *
    *  - The coefficients matrix Q is PSD (positive semidefinite).
    *  - The coefficients matching conditions in linear equality constraint.
    */
@@ -2127,6 +2136,7 @@ class MathematicalProgram {
    * where m is the @p monomial_basis.  Note that it decomposes @p e into a
    * polynomial with respect to `indeterminates()` in this mathematical
    * program. It returns a pair of constraint bindings expressing:
+   *
    *  - The coefficients matrix Q is PSD (positive semidefinite).
    *  - The coefficients matching conditions in linear equality constraint.
    */
@@ -2142,6 +2152,7 @@ class MathematicalProgram {
    * @p e into a polynomial with respect to `indeterminates()` in this
    * mathematical program. It returns a pair of
    * constraint bindings expressing:
+   *
    *  - The coefficients matrix Q is PSD (positive semidefinite).
    *  - The coefficients matching conditions in linear equality constraint.
    */
@@ -2158,7 +2169,7 @@ class MathematicalProgram {
   /**
    * Gets the initial guess for a single variable.
    * @pre @p decision_variable has been registered in the optimization program.
-   * @throw runtime error if the pre condition is not satisfied.
+   * @throws std::runtime_error if the pre condition is not satisfied.
    */
   double GetInitialGuess(const symbolic::Variable& decision_variable) const;
 
@@ -2166,7 +2177,7 @@ class MathematicalProgram {
    * Gets the initial guess for some variables.
    * @pre Each variable in @p decision_variable_mat has been registered in the
    * optimization program.
-   * @throw runtime error if the pre condition is not satisfied.
+   * @throws std::runtime_error if the pre condition is not satisfied.
    */
   template <typename Derived>
   typename std::enable_if<
@@ -2191,7 +2202,7 @@ class MathematicalProgram {
   /**
    * Sets the initial guess for a single variable @p decision_variable.
    * @pre decision_variable is a registered decision variable in the program.
-   * @throw a runtime error if precondition is not satisfied.
+   * @throws std::runtime_error if precondition is not satisfied.
    */
   void SetInitialGuess(const symbolic::Variable& decision_variable,
                        double variable_guess_value);
@@ -2534,7 +2545,7 @@ class MathematicalProgram {
   /**
    * Replaces the variables in an expression with the solutions to the
    * variables, returns the expression after substitution.
-   * @throw runtime error if some variables in the expression @p e are NOT
+   * @throws std::runtime_error if some variables in the expression @p e are NOT
    * decision variables or indeterminates in the optimization program.
    * @note If the expression @p e contains both decision variables and
    * indeterminates of the optimization program, then the decision variables
@@ -2546,8 +2557,8 @@ class MathematicalProgram {
   /**
    * Replaces the decision variables in a polynomial with the solutions to the
    * variables, returns the polynomial after substitution.
-   * @throw runtime error if some decision variables in the polynomial @p p are
-   * NOT decision variables in the optimization program.
+   * @throws std::runtime_error if some decision variables in the polynomial
+   * @p p are NOT decision variables in the optimization program.
    * @note If the polynomial @p p contains both decision variables and
    * indeterminates of the optimization program, then the decision variables
    * will be substituted by its solutions in double values, but not the
@@ -2561,7 +2572,8 @@ class MathematicalProgram {
    * @param binding A Binding whose variables are decision variables in this
    * program.
    * @param prog_var_vals The value of all the decision variables in this
-   * program. @throw a logic error if the size does not match.
+   * program.
+   * @throws std::logic_error if the size does not match.
    */
   template <typename C, typename DerivedX>
   typename std::enable_if<is_eigen_vector<DerivedX>::value,
@@ -2590,8 +2602,9 @@ class MathematicalProgram {
    * MathematicalProgram.
    *
    * @param prog_var_vals The value of all the decision variables in this
-   * program. @throw a logic error if the size does not match.
-   **/
+   * program.
+   * @throws std::logic_error if the size does not match.
+   */
   void EvalVisualizationCallbacks(
       const Eigen::Ref<const Eigen::VectorXd>& prog_var_vals) const {
     if (prog_var_vals.rows() != num_vars()) {

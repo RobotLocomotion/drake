@@ -46,8 +46,8 @@ class AbstractValues {
   AbstractValue& get_mutable_value(int index);
 
   /// Copies all of the AbstractValues in @p other into this. Asserts if the
-  /// two are not equal in size. Throws if any of the elements are of
-  /// incompatible type.
+  /// two are not equal in size.
+  /// @throws std::exception if any of the elements are of incompatible type.
   void CopyFrom(const AbstractValues& other);
 
   /// Returns a deep copy of all the data in this AbstractValues. The clone

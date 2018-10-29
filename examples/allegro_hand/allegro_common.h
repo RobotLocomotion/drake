@@ -19,21 +19,27 @@ constexpr int kAllegroNumJoints = 16;
 void SetPositionControlledGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
                                 Eigen::VectorXd* Kd);
 
-/// Creat the projection matrices of the hand finger joints and the
-/// input/output ports of the multibody plant. The matrices are used to
-/// initialize the PID controller for the hand.
-/// @param Px the matrix to match the output state of the plant into the state
+/// Creates selector matrices which extract state xₛ in a known order from the
+/// plant's full x (`xₛ = Sx⋅x`) and promote the controller's ordered yₛ into
+/// the full plant's input actuation (`u = Su⋅uₛ`).
+/// The matrices are used to initialize the PID controller for the hand.
+/// @see MultibodyTree::MakeStateSelectorMatrix(),
+/// MultibodyTree::MakeActuatorSelectorMatrix() for detailed definitions for the
+/// selector matrices.
+/// @see systems::controllers::PidController for documentation on how these
+/// selector matrices are used in the PID controller.
+/// @param Sx the matrix to match the output state of the plant into the state
 /// of the finger joints in the desired order.
-/// @param Py the matrix to match the output torque for the hand joint
+/// @param Sy the matrix to match the output torque for the hand joint
 /// actuators in the desired order into the input actuation of the plant.
 void GetControlPortMapping(
     const multibody::multibody_plant::MultibodyPlant<double>& plant,
-    MatrixX<double>* Px, MatrixX<double>* Py);
+    MatrixX<double>* Sx, MatrixX<double>* Sy);
 
-/// Create a map from finger joint names (in the SDF file) into the index, so
-/// that the joints are reordered into a "desired order":
-/// thumb(4DOFs)-index(4DOFs)-middle(4DOFs)-ring(4DOFs)
-std::map<std::string, int> GetJointNameMapping();
+/// Defines the desired ordering of the finger joints by name. The fingers are
+/// ordered as [thumb, index, middle, ring] and the joints of each finger are
+/// ordered from most proximal to most distal (relative to the palm).
+std::vector<std::string> GetPreferredJointOrdering();
 
 /// Detecting the state of the fingers: whether the joints are moving, or
 /// reached the destination, or got stuck by external collisions in the midway.

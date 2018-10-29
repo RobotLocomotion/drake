@@ -253,7 +253,7 @@ class DependencyTracker {
 
   /** @name                     Runtime statistics
   These methods track runtime operations and are useful for debugging and for
-  performance analysis. **/
+  performance analysis. */
   //@{
 
   /** What is the total number of notifications received by this tracker?

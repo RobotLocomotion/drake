@@ -11,14 +11,15 @@
 /// All of the data structures defined in this file are meant to be the most
 /// minimalist representation that can store this information.
 /// These data structures are used in the following ways:
-///  - To aid the process of cloning or transmogrifying multibody tree
-///    components without having to create maps between the "original" and
-///    "cloned" objects. That process is tedious and error prone.
-///  - Each Multibody tree element has a copy (acquired at
-///    MultibodyTree::Finalize() stage) of its topology which serves as a
-///    key into the Context for that element's state.
-///  - The topology is also stored in the Context so that the Multibody tree's
-///    topology can be validated against the stored topology in debug builds.
+///
+/// - To aid the process of cloning or transmogrifying multibody tree
+///   components without having to create maps between the "original" and
+///   "cloned" objects. That process is tedious and error prone.
+/// - Each Multibody tree element has a copy (acquired at
+///   MultibodyTree::Finalize() stage) of its topology which serves as a
+///   key into the Context for that element's state.
+/// - The topology is also stored in the Context so that the Multibody tree's
+///   topology can be validated against the stored topology in debug builds.
 
 #include <algorithm>
 #include <queue>
@@ -127,11 +128,13 @@ struct FrameTopology {
 
 /// Data structure to store the topological information associated with a
 /// Mobilizer object. It stores:
+///
 /// - Indexes to the inboard/outboard frames of this mobilizer.
 /// - Indexes to the inboard/outboard bodies of this mobilizer.
 /// - Numbers of dofs admitted by this mobilizer.
 /// - Indexing information to retrieve entries from the parent MultibodyTree
 ///   Context.
+///
 /// Additional information on topology classes is given in this file's
 /// documentation at the top.
 struct MobilizerTopology {
@@ -562,8 +565,8 @@ class MultibodyTreeTopology {
   ///
   /// @throws std::runtime_error if either `in_frame` or `out_frame` do not
   /// index frame topologies in `this` %MultibodyTreeTopology.
-  /// @throws a std::runtime_error if `in_frame == out_frame`.
-  /// @throws a std::runtime_error if `in_frame` and `out_frame` already are
+  /// @throws std::runtime_error if `in_frame == out_frame`.
+  /// @throws std::runtime_error if `in_frame` and `out_frame` already are
   /// connected by another mobilizer. More than one mobilizer between two frames
   /// is not allowed.
   /// @throws std::logic_error if Finalize() was already called on `this`
@@ -685,6 +688,7 @@ class MultibodyTreeTopology {
   /// how bodies, joints and, any other elements connect with each other, and
   /// performs all the required pre-processing to perform computations at a
   /// later stage. This preprocessing includes:
+  ///
   /// - sorting in BFT order for fast recursions through the tree,
   /// - computation of state sizes and of pool sizes within cache entries,
   /// - computation of index maps to retrieve either state or cache entries for
@@ -883,6 +887,8 @@ class MultibodyTreeTopology {
 
     const int path_size = get_body_node(from).level + 1;
     path_to_world->resize(path_size);
+    (*path_to_world)[0] = BodyNodeIndex(0);  // Add the world.
+    if (from == BodyNodeIndex(0)) return;
 
     // Navigate the tree inwards starting at "from" and ending at the root.
     for (BodyNodeIndex node = from; node > BodyNodeIndex(0);
@@ -891,7 +897,30 @@ class MultibodyTreeTopology {
     }
     // Verify the last added node to the path is a child of the world.
     DRAKE_DEMAND(get_body_node((*path_to_world)[1]).level == 1);
-    (*path_to_world)[0] = BodyNodeIndex(0);  // Add the world.
+  }
+
+  /// Returns `true` if the body with index `body_index` is anchored to the
+  /// world.
+  /// A body is said to be "anchored" if its kinematics path to the world only
+  /// contains weld mobilizers.
+  /// The complexity of this operation is O(depth), where "depth" refers to the
+  /// depth in the tree of the body node associated with `body_index`.
+  bool IsBodyAnchored(BodyIndex body_index) const {
+    DRAKE_DEMAND(is_valid());
+    const BodyTopology& body = get_body(body_index);
+    std::vector<BodyNodeIndex> path_to_world;
+    GetKinematicPathToWorld(body.body_node, &path_to_world);
+    // Skip the world at path_to_world[0].
+    for (size_t path_index = 1; path_index < path_to_world.size();
+         ++path_index) {
+      const BodyNodeTopology& node = get_body_node(path_to_world[path_index]);
+      const MobilizerTopology& mobilizer = get_mobilizer(node.mobilizer);
+      // If any of the mobilizers in the path is not a weld mobilizer, the body
+      // is not anchored.
+      if (!mobilizer.is_weld_mobilizer()) return false;
+    }
+    // If the loop above completes, then body_index is anchored to the world.
+    return true;
   }
 
   /// This method partitions the tree topology into sub-graphs such that two
@@ -903,6 +932,7 @@ class MultibodyTreeTopology {
   /// sub-graph will have all of the bodies welded to the world; all
   /// subsequent sub-graphs will be in no particular order.
   /// A few more notes:
+  ///
   /// - Each body in the topology is included in one set and one set only.
   /// - The maximum size of the list equals the number of bodies in the topology
   ///   (num_bodies()). This corresponds to a topology with no weld mobilizers.

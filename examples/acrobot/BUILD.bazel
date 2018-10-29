@@ -75,7 +75,10 @@ drake_cc_binary(
     srcs = ["run_lqr.cc"],
     add_test_rule = 1,
     data = [":models"],
-    test_rule_args = ["-realtime_factor=0.0"],
+    test_rule_args = [
+        "-simulation_sec=1.0",
+        "-realtime_factor=0.0",
+    ],
     deps = [
         ":acrobot_plant",
         "//attic/multibody/parsers",
@@ -94,7 +97,10 @@ drake_cc_binary(
     srcs = ["run_lqr_w_estimator.cc"],
     add_test_rule = 1,
     data = [":models"],
-    test_rule_args = ["-realtime_factor=0.0"],
+    test_rule_args = [
+        "-simulation_sec=1.0",
+        "-realtime_factor=0.0",
+    ],
     deps = [
         ":acrobot_plant",
         "//attic/multibody/joints",
@@ -119,7 +125,10 @@ drake_cc_binary(
     srcs = ["run_passive.cc"],
     add_test_rule = 1,
     data = [":models"],
-    test_rule_args = ["-realtime_factor=0.0"],
+    test_rule_args = [
+        "-simulation_sec=1.0",
+        "-realtime_factor=0.0",
+    ],
     deps = [
         ":acrobot_plant",
         "//attic/multibody/joints",
@@ -142,7 +151,11 @@ drake_cc_binary(
     ],
     add_test_rule = 1,
     data = [":models"],
-    test_rule_args = ["-realtime_factor=0.0"],
+    test_rule_args = [
+        # N.B. We can't set -simulation_sec here, because the demo program has
+        # success criteria that it asserts after the simulation expires.
+        "-realtime_factor=0.0",
+    ],
     deps = [
         ":acrobot_plant",
         "//attic/multibody/joints",
@@ -186,6 +199,16 @@ drake_cc_binary(
         "spong_controller.h",
         "spong_controller_w_lcm.cc",
     ],
+    add_test_rule = 1,
+    # TODO (betsymcphail): TSan fails in LCM for this test. See issue #9697.
+    # TODO (liang.fok): ASan non-determistically failed in CI. See issue #9809.
+    tags = [
+        "no_asan",
+        "no_tsan",
+    ],
+    test_rule_args = [
+        "-time_limit_sec=1.0",
+    ],
     deps = [
         ":acrobot_lcm",
         ":acrobot_plant",
@@ -195,13 +218,21 @@ drake_cc_binary(
         "//multibody:rigid_body_tree",
         "//systems/analysis",
         "//systems/controllers:linear_quadratic_regulator",
+        "@gflags",
     ],
 )
 
 drake_cc_binary(
     name = "run_plant_w_lcm",
     srcs = ["run_plant_w_lcm.cc"],
+    add_test_rule = 1,
     data = [":models"],
+    test_rule_args = [
+        "-simulation_sec=1.0",
+        "-realtime_factor=0.0",
+    ],
+    test_rule_flaky = 1,
+    test_rule_size = "medium",
     deps = [
         ":acrobot_lcm",
         ":acrobot_plant",

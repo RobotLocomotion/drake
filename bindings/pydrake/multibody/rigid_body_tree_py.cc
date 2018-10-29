@@ -41,14 +41,18 @@ PYBIND11_MODULE(rigid_body_tree, m) {
   py::module::import("pydrake.multibody.shapes");
   py::module::import("pydrake.util.eigen_geometry");
 
+  constexpr auto& joints_doc = doc.drake.multibody.joints;
   py::enum_<FloatingBaseType>(m, "FloatingBaseType",
                               doc.drake.multibody.joints.FloatingBaseType.doc)
     .value("kFixed", FloatingBaseType::kFixed,
-           doc.drake.multibody.joints.FloatingBaseType.kFixed.doc)
+           joints_doc.FloatingBaseType.kFixed.doc)
     .value("kRollPitchYaw", FloatingBaseType::kRollPitchYaw,
-           doc.drake.multibody.joints.FloatingBaseType.kRollPitchYaw.doc)
+           joints_doc.FloatingBaseType.kRollPitchYaw.doc)
     .value("kQuaternion", FloatingBaseType::kQuaternion,
-           doc.drake.multibody.joints.FloatingBaseType.kQuaternion.doc);
+           joints_doc.FloatingBaseType.kQuaternion.doc)
+    .value("kExperimentalMultibodyPlantStyle",
+           FloatingBaseType::kExperimentalMultibodyPlantStyle,
+           joints_doc.FloatingBaseType.kExperimentalMultibodyPlantStyle.doc);
 
   // TODO(eric.cousineau): Try to decouple these APIs so that `rigid_body_tree`
   // and `parsers` do not form a dependency cycle.
@@ -258,7 +262,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
   // `rigid_body_tree.cc`; if the method is not yet bound, the name has a
   // comment as a placeholder.
   // Methods of type (b) are declared below methods of type (a).
-  auto add_rigid_body_tree_typed_methods = [m, &tree_cls](auto dummy) {
+  // N.B. Capturing `&doc` should not be required; workaround per #9600.
+  auto add_rigid_body_tree_typed_methods = [m, &doc, &tree_cls](auto dummy) {
     // N.B. The header files use `Scalar` as the scalar-type template
     // parameter, but `T` is used here for brevity.
     using T = decltype(dummy);

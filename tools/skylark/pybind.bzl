@@ -3,7 +3,7 @@
 # @see bazelbuild/bazel#3493 for needing `@drake//` when loading `install`.
 load("@drake//tools/install:install.bzl", "install")
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
 )
@@ -12,8 +12,6 @@ load(
     "drake_py_library",
     "drake_py_test",
 )
-
-_PY_VERSION = "2.7"
 
 def pybind_py_library(
         name,
@@ -62,6 +60,11 @@ def pybind_py_library(
         # This is how you tell Bazel to create a shared library.
         linkshared = 1,
         linkstatic = 1,
+        copts = [
+            # GCC and Clang don't always agree / succeed when inferring storage
+            # duration (#9600). Workaround it for now.
+            "-Wno-unused-lambda-capture",
+        ],
         # Always link to pybind11.
         deps = [
             "@pybind11",
@@ -116,9 +119,8 @@ def drake_pybind_library(
         By default, this includes `pydrake_pybind` and
         `//:drake_shared_library`.
     @param cc_so_name (optional)
-        Shared object name. By default, this is `_${name}`, so that the C++
-        code can be then imported in a more controlled fashion in Python.
-        If overridden, this could be the public interface exposed to the user.
+        Shared object name. By default, this is `${name}` (without the `_py`
+        suffix if it's present).
     @param package_info
         This should be the result of `get_pybind_package_info` called from the
         current package. This dictates how `PYTHONPATH` is configured, and
@@ -129,7 +131,10 @@ def drake_pybind_library(
     if package_info == None:
         fail("`package_info` must be supplied.")
     if not cc_so_name:
-        cc_so_name = "_" + name
+        if name.endswith("_py"):
+            cc_so_name = name[:-3]
+        else:
+            cc_so_name = name
     install_name = name + "_install"
     targets = pybind_py_library(
         name = name,
@@ -197,8 +202,7 @@ def get_pybind_package_info(base_package, sub_package = None):
     package_info = _get_package_info(base_package, sub_package)
     return struct(
         py_imports = [package_info.base_path_rel],
-        py_dest = "lib/python{}/site-packages/{}".format(
-            _PY_VERSION,
+        py_dest = "@PYTHON_SITE_PACKAGES@/{}".format(
             package_info.sub_path_rel,
         ),
     )

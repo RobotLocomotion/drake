@@ -143,7 +143,7 @@ class MobilizerImpl : public Mobilizer<T> {
 
   /// Helper method to retrieve a const reference to the MultibodyTreeContext
   /// object referenced by `context`.
-  /// @throws `std::logic_error` if `context` is not a MultibodyTreeContext
+  /// @throws std::logic_error if `context` is not a MultibodyTreeContext
   /// object.
   static const MultibodyTreeContext<T>& GetMultibodyTreeContextOrThrow(
       const systems::Context<T>& context) {
@@ -161,7 +161,7 @@ class MobilizerImpl : public Mobilizer<T> {
 
   /// Helper method to retrieve a mutable pointer to the MultibodyTreeContext
   /// object referenced by `context`.
-  /// @throws `std::logic_error` if `context` is not a MultibodyTreeContext
+  /// @throws std::logic_error if `context` is not a MultibodyTreeContext
   /// object.
   MultibodyTreeContext<T>& GetMutableMultibodyTreeContextOrThrow(
       systems::Context<T>* context) const {

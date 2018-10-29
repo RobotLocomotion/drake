@@ -83,23 +83,23 @@ be destroyed when it is replaced, since it is stored using `unique_ptr<>`.
   }
   py_class.def("set_value", &Class::set_value, set_value_docstring.c_str());
   // Register instantiation.
-  py::module py_module = py::module::import("pydrake.systems.framework");
-  AddTemplateClass(py_module, "Value", py_class, GetPyParam<T>());
+  py::module py_framework = py::module::import("pydrake.systems.framework");
+  AddTemplateClass(py_framework, "Value", py_class, GetPyParam<T>());
   return py_class;
 }
 
-/// Type pack defining common scalar types.
 // N.B. This should be kept in sync with the `*_DEFAULT_SCALARS` macro in
 // `default_scalars.h`.
+/// Type pack defining common scalar types.
 using CommonScalarPack = type_pack<
     double,
     AutoDiffXd,
     symbolic::Expression
     >;
 
-/// Type pack for non-symbolic common scalar types.
 // N.B. This should be kept in sync with the `*_DEFAULT_NONSYMBOLIC_SCALARS`
 // macro in `default_scalars.h`.
+/// Type pack for non-symbolic common scalar types.
 using NonSymbolicScalarPack = type_pack<
     double,
     AutoDiffXd

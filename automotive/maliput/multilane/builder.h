@@ -502,14 +502,15 @@ class BuilderFactoryBase {
 /// network.
 ///
 /// multilane is a simple road-network implementation:
-///  - multiple lanes per segment;
-///  - constant lane width, lane_bounds, and elevation_bounds, same for all
-///    lanes;
-///  - only linear and constant-curvature-arc primitives in XY-plane;
-///  - cubic polynomials (parameterized on XY-arc-length) for elevation
-///    and superelevation;
-///  - superelevation (bank of road) rotates around the reference line (r = 0)
-///    of the path.
+///
+/// - multiple lanes per segment;
+/// - constant lane width, lane_bounds, and elevation_bounds, same for all
+///   lanes;
+/// - only linear and constant-curvature-arc primitives in XY-plane;
+/// - cubic polynomials (parameterized on XY-arc-length) for elevation
+///   and superelevation;
+/// - superelevation (bank of road) rotates around the reference line (r = 0)
+///   of the path.
 ///
 /// The Builder class simplifies the assembly of multilane road network
 /// components into a valid RoadGeometry.  In the Builder model, an Endpoint
@@ -526,11 +527,11 @@ class BuilderFactoryBase {
 /// Specific suffixes are used to name Maliput entities. The following list
 /// explains the naming convention:
 ///
-///  - Junctions: "j:" + Group::id(), or "j" + Connection::id() for an
-///    ungrouped Connection.
-///  - Segments: "s:" + Connection::id()
-///  - Lanes: "l:" + Connection::id() + "_" + lane_index
-///  - BranchPoints: "bp:" + branch_point_index
+/// - Junctions: "j:" + Group::id(), or "j" + Connection::id() for an
+///   ungrouped Connection.
+/// - Segments: "s:" + Connection::id()
+/// - Lanes: "l:" + Connection::id() + "_" + lane_index
+/// - BranchPoints: "bp:" + branch_point_index
 ///
 /// @note 'lane_index' is the index in the Segment, and 'branch_point_index' is
 /// is the index in the RoadGeometry.

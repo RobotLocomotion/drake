@@ -20,6 +20,7 @@ namespace drake {
 namespace parsers {
 
 using drake::multibody::joints::FloatingBaseType;
+using drake::multibody::joints::kExperimentalMultibodyPlantStyle;
 using drake::multibody::joints::kFixed;
 using drake::multibody::joints::kRollPitchYaw;
 using drake::multibody::joints::kQuaternion;
@@ -96,7 +97,8 @@ int AddFloatingJoint(
           tree->get_bodies()[i]->setJoint(move(joint));
           num_floating_joints_added++;
         } break;
-        case kQuaternion: {
+        case kQuaternion:
+        case kExperimentalMultibodyPlantStyle: {
           unique_ptr<DrakeJoint> joint(new QuaternionFloatingJoint(
               floating_joint_name, transform_to_world * transform_to_model));
           tree->get_bodies()[i]->setJoint(move(joint));
@@ -108,7 +110,8 @@ int AddFloatingJoint(
     }
   }
 
-  if (num_floating_joints_added == 0) {
+  if (floating_base_type != kExperimentalMultibodyPlantStyle &&
+      num_floating_joints_added == 0) {
     // TODO(liang.fok) Handle this by disconnecting one of the internal nodes,
     // replacing the disconnected joint with a loop joint, and then connecting
     // the newly freed body (i.e., the body without a joint) to the world.

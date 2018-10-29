@@ -2,8 +2,10 @@
 This program serves sphinx.zip for a web browser.
 
 Run this via:
-  $ bazel run //bindings/pydrake/doc:serve_sphinx
+  $ bazel run //doc:serve_sphinx
 """
+
+from __future__ import print_function
 
 import argparse
 import os
@@ -11,8 +13,9 @@ import subprocess
 import sys
 import webbrowser
 import zipfile
-from SimpleHTTPServer import SimpleHTTPRequestHandler
-from SocketServer import TCPServer
+
+from six.moves.SimpleHTTPServer import SimpleHTTPRequestHandler
+from six.moves.socketserver import TCPServer
 
 
 def str2bool(value):
@@ -25,6 +28,9 @@ parser.register('type', 'bool', str2bool)
 parser.add_argument(
     "--browser", type='bool', default=True, metavar='BOOL',
     help="Open browser. Disable this if you are frequently recompiling.")
+parser.add_argument(
+    "--port", type=int, default=8001, metavar='PORT',
+    help="Port for serving doc pages with a HTTP server.")
 args = parser.parse_args()
 
 # Unpack zipfile and chdir into it.
@@ -41,22 +47,22 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 # Serve the current directory for local browsing.
-sockaddr = ("127.0.0.1", 8001)
+sockaddr = ("127.0.0.1", args.port)
 TCPServer.allow_reuse_address = True
 httpd = TCPServer(sockaddr, Handler)
 http_url = "http://%s:%s/index.html" % sockaddr
 
 # Users can click these as a backup, if the auto-open below doesn't work.
-print >>sys.stderr, "Sphinx preview docs are available at:"
-print >>sys.stderr
-print >>sys.stderr, "  " + http_url
-print >>sys.stderr
-print >>sys.stderr, "  " + file_url
-print >>sys.stderr
+print("Sphinx preview docs are available at:", file=sys.stderr)
+print("", file=sys.stderr)
+print("  " + http_url, file=sys.stderr)
+print("", file=sys.stderr)
+print("  " + file_url, file=sys.stderr)
+print("", file=sys.stderr)
 
 # Try the default browser, then wait.
 if args.browser:
-    print >>sys.stderr, "Opening webbrowser"
+    print("Opening webbrowser", file=sys.stderr)
     if sys.platform == "darwin":
         # macOS
         webbrowser.open(http_url)
@@ -64,5 +70,5 @@ if args.browser:
         # Ubuntu
         webbrowser.open("./index.html")
 
-print >>sys.stderr, "Serving and waiting ... use Ctrl-C to exit."
+print("Serving and waiting ... use Ctrl-C to exit.", file=sys.stderr)
 httpd.serve_forever()

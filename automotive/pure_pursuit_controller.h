@@ -18,6 +18,7 @@ namespace automotive {
 /// for details on the approach.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///

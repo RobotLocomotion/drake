@@ -16,6 +16,7 @@ namespace systems {
 /// @ingroup primitive_systems
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression

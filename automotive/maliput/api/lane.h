@@ -102,6 +102,8 @@ class Lane {
     return DoToGeoPosition(lane_pos);
   }
 
+  // TODO(jadecastro): Apply this implementation in all the subclasses of
+  // `api::Lane`.
   /// Generalization of ToGeoPosition to arbitrary scalar types, where the
   /// structures `LanePositionT<T>` and `GeoPositionT<T>` are used in place of
   /// `LanePosition` and `GeoPosition`, respectively.
@@ -114,6 +116,7 @@ class Lane {
   /// same quantity as the i-th derviative of another variable.
   ///
   /// Instantiated templates for the following kinds of T's are provided:
+  ///
   /// - double
   /// - drake::AutoDiffXd
   /// - drake::symbolic::Expression
@@ -122,9 +125,6 @@ class Lane {
   ///
   /// @note This is an experimental API that is not necessarily implemented in
   /// all back-end implementations.
-
-  // TODO(jadecastro): Apply this implementation in all the subclasses of
-  // `api::Lane`.
   template <typename T>
   GeoPositionT<T> ToGeoPositionT(const LanePositionT<T>& lane_pos) const;
 
@@ -160,6 +160,7 @@ class Lane {
   /// geo_pos's partial derivatives.
   ///
   /// Instantiated templates for the following kinds of T's are provided:
+  ///
   /// - double
   /// - drake::AutoDiffXd
   /// - drake::symbolic::Expression

@@ -137,6 +137,8 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   for (const std::string frame_name : kFrameNames) {
     const Frame<T>& frame = model.GetFrameByName(frame_name);
     EXPECT_EQ(frame.name(), frame_name);
+    EXPECT_EQ(
+        &frame, &model.GetFrameByName(frame_name, default_model_instance()));
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetFrameByName(kInvalidName), std::logic_error,
@@ -427,6 +429,21 @@ class KukaIiwaModelTests : public ::testing::Test {
     const Frame<T>& frameH_on_T = model_on_T.get_variant(*frame_H_);
     model_on_T.CalcPointsGeometricJacobianExpressedInWorld(
         context_on_T, frameH_on_T, p_HPi, p_WPi, Jv_WHp);
+  }
+
+  // Computes the frame geometric Jacobian Jv_WHp for frame Hp which is the
+  // frame H (attached to the end effector, see test fixture docs) shifted to
+  // have its origin at Po. Po's position p_HPo is specified in frame H.
+  // See MultibodyTree::CalcFrameGeometricJacobianExpressedInWorld() for
+  // details.
+  template <typename T>
+  void CalcFrameHpGeometricJacobian(
+      const MultibodyTree<T>& model_on_T,
+      const Context<T>& context_on_T,
+      const Vector3<T>& p_HPo, MatrixX<T>* Jv_WHp) const {
+    const Frame<T>& frameH_on_T = model_on_T.get_variant(*frame_H_);
+    model_on_T.CalcFrameGeometricJacobianExpressedInWorld(
+        context_on_T, frameH_on_T, p_HPo, Jv_WHp);
   }
 
   const MultibodyTree<double>& tree() const { return system_->tree(); }
@@ -854,6 +871,89 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
   const SpatialVelocity<double> Jv_WF_times_v(Jv_WF * v);
 
   EXPECT_TRUE(Jv_WF_times_v.IsApprox(V_WEf, kTolerance));
+}
+
+// Unit tests MBT::CalcBiasForFrameGeometricJacobianExpressedInWorld() using
+// AutoDiffXd to compute time derivatives of the geometric Jacobian to obtain a
+// reference solution.
+TEST_F(KukaIiwaModelTests, CalcBiasForFrameGeometricJacobianExpressedInWorld) {
+  // The number of generalized velocities in the Kuka iiwa robot arm model.
+  const int kNumVelocities = tree().num_velocities();
+
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
+  // A set of values for the joint's angles chosen mainly to avoid in-plane
+  // motions.
+  VectorX<double> q, v;
+  GetArbitraryNonZeroConfiguration(&q, &v);
+
+  // Since the bias term is a function of q and v only (i.e. it is not a
+  // function of vdot), we choose a set of arbitrary values for the generalized
+  // accelerations. We do purposely set this values to be non-zero to stress
+  // the fact that the bias term is not a function of vdot.
+  const VectorX<double> vdot =
+      VectorX<double>::Constant(
+          kNumVelocities, std::numeric_limits<double>::quiet_NaN());
+
+  // Set generalized positions and velocities.
+  int angle_index = 0;
+  for (const RevoluteJoint<double>* joint : joints_) {
+    joint->set_angle(context_.get(), q[angle_index]);
+    joint->set_angular_rate(context_.get(), v[angle_index]);
+    angle_index++;
+  }
+
+  context_autodiff_->SetTimeStateAndParametersFrom(*context_);
+
+  // Initialize q_autodiff and v_autodiff so that we differentiate with respect
+  // to time.
+  // Note: here we pass MatrixXd(v) so that the return gradient uses AutoDiffXd
+  // (for which we do have explicit instantiations) instead of
+  // AutoDiffScalar<Matrix1d>.
+  auto q_autodiff = math::initializeAutoDiffGivenGradientMatrix(q, MatrixXd(v));
+  auto v_autodiff =
+      math::initializeAutoDiffGivenGradientMatrix(v, MatrixXd(vdot));
+
+  VectorX<AutoDiffXd> x_autodiff(2 * kNumVelocities);
+  x_autodiff << q_autodiff, v_autodiff;
+
+  // Set the context for AutoDiffXd computations.
+  tree_autodiff().get_mutable_multibody_state_vector(context_autodiff_.get())
+      = x_autodiff;
+
+  // Po specifies the position of a new frame Hp which is the result of shifting
+  // frame H from Ho to Po.
+  Vector3<double> p_HPo(0.1, -0.05, 0.02);
+
+  // Frame geometric Jacobian for frame H shifted to frame Hp.
+  MatrixX<double> Jv_WHp(6, kNumVelocities);
+
+  const Vector3<AutoDiffXd> p_HPo_autodiff = p_HPo;
+  MatrixX<AutoDiffXd> Jv_WHp_autodiff(6, kNumVelocities);
+
+  // Compute J̇_WHp using AutoDiffXd.
+  CalcFrameHpGeometricJacobian(
+      tree_autodiff(), *context_autodiff_, p_HPo_autodiff, &Jv_WHp_autodiff);
+
+  // Extract time derivatives:
+  MatrixX<double> Jv_WHp_derivs =
+      math::autoDiffToGradientMatrix(Jv_WHp_autodiff);
+  Jv_WHp_derivs.resize(6, kNumVelocities);
+
+  // Compute the expected value of the bias terms using the time derivatives
+  // computed with AutoDiffXd.
+  const VectorX<double> Ab_WHp_expected = Jv_WHp_derivs * v;
+
+  // Compute frame Hp geometric Jacobian bias.
+  const VectorX<double> Ab_WHp =
+      tree().CalcBiasForFrameGeometricJacobianExpressedInWorld(
+          *context_, *frame_H_, p_HPo);
+
+  // Ab_WHp is of size 6 x num_velocities. CompareMatrices() below
+  // verifies this, in addition to the numerical values of each element.
+  EXPECT_TRUE(CompareMatrices(Ab_WHp, Ab_WHp_expected,
+                              kTolerance, MatrixCompareType::relative));
 }
 
 // Verify that even when the input set of points and/or the Jacobian might

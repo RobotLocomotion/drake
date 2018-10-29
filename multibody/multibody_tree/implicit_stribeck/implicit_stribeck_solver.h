@@ -82,38 +82,39 @@ namespace internal {
 ///
 /// In what follows we list a number of special scenarios dealt with by
 /// LimitDirectionChange. We use the observations made above.
-///  - LimitDirectionChange first deals with the case ‖vₜ‖ < εᵥ to avoid
-///    divisions by zero in the subsequent cases. It essentially clips vₜᵏ⁺¹
-///    to have magnitude vₛ/2 when the update Δvₜᵏ ≠ 0. For small updates
-///    Δvₜᵏ leading to vₜᵏ⁺¹ within the stiction region, we take  α = 1.
-///    See implementation notes for CalcAlpha() for further details.
-///  - Transition from ‖vₜ‖ < εᵥ (stiction) to ‖vₜ‖/vₛ > 1 (sliding). Since
-///    we are in a region of "weak" gradients (due to "norm softening",
-///    see discussion above), we limit the update to vₜᵏ⁺¹ = vₜᵏ/‖vₜᵏ‖⋅vₛ/2.
-///    In other words, if the speed would grow too fast, we cap it at vₛ/2
-///    so that at least two Newton iterations are required to go from near-0
-///    sticking to sliding.
-///  - Transition from sliding ‖vₜᵏ‖/vₛ > 1 to an almost perfect stiction with
-///    ‖vₜᵏ⁺¹‖ < εᵥ. In an attempt to avoid weak gradients for the next
-///    iteration, we impose the limit vₜᵏ⁺¹ = vₜᵏ/‖vₜᵏ‖⋅vₛ/2, placing the
-///    velocity "in the same direction where it came from", within the stiction
-///    region, but where gradients are strong.
-///  - Velocity change Δvₜᵏ intersects the stiction circle. To be more precise,
-///    the line connecting vₜᵏ and vₜᵏ + Δvₜᵏ crosses the stiction region.
-///    This situation implies that most likely a stiction transition could
-///    happen but the pure Newton-Raphson would miss it. This situation is
-///    outlined in [Uchida et al., 2015]. In this case LimitDirectionChange
-///    computes α so that vₜᵏ⁺¹ =  vₜᵏ + αΔvₜᵏ is the closest vector to the
-///    origin. This corresponds to the geometric condition
-///    dot(vₜᵏ⁺¹, Δvₜᵏ) = 0.
-///  - Velocity change Δvₜᵏ does not intersect the stiction circle, i.e.
-///    changes happen in a region away from stiction (within the sliding
-///    region). However, large angular changes (measured by the angle
-///    θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)) between vₜᵏ⁺¹ and vₜᵏ)
-///    might indicate a solution that is attempting to reach a stiction region.
-///    In order to aid convergence, we limit the angle change to θₘₐₓ, and
-///    therefore (see [Uchida et al., 2015]) we compute α so that
-///    θₘₐₓ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)).
+///
+/// - LimitDirectionChange first deals with the case ‖vₜ‖ < εᵥ to avoid
+///   divisions by zero in the subsequent cases. It essentially clips vₜᵏ⁺¹
+///   to have magnitude vₛ/2 when the update Δvₜᵏ ≠ 0. For small updates
+///   Δvₜᵏ leading to vₜᵏ⁺¹ within the stiction region, we take  α = 1.
+///   See implementation notes for CalcAlpha() for further details.
+/// - Transition from ‖vₜ‖ < εᵥ (stiction) to ‖vₜ‖/vₛ > 1 (sliding). Since
+///   we are in a region of "weak" gradients (due to "norm softening",
+///   see discussion above), we limit the update to vₜᵏ⁺¹ = vₜᵏ/‖vₜᵏ‖⋅vₛ/2.
+///   In other words, if the speed would grow too fast, we cap it at vₛ/2
+///   so that at least two Newton iterations are required to go from near-0
+///   sticking to sliding.
+/// - Transition from sliding ‖vₜᵏ‖/vₛ > 1 to an almost perfect stiction with
+///   ‖vₜᵏ⁺¹‖ < εᵥ. In an attempt to avoid weak gradients for the next
+///   iteration, we impose the limit vₜᵏ⁺¹ = vₜᵏ/‖vₜᵏ‖⋅vₛ/2, placing the
+///   velocity "in the same direction where it came from", within the stiction
+///   region, but where gradients are strong.
+/// - Velocity change Δvₜᵏ intersects the stiction circle. To be more precise,
+///   the line connecting vₜᵏ and vₜᵏ + Δvₜᵏ crosses the stiction region.
+///   This situation implies that most likely a stiction transition could
+///   happen but the pure Newton-Raphson would miss it. This situation is
+///   outlined in [Uchida et al., 2015]. In this case LimitDirectionChange
+///   computes α so that vₜᵏ⁺¹ =  vₜᵏ + αΔvₜᵏ is the closest vector to the
+///   origin. This corresponds to the geometric condition
+///   dot(vₜᵏ⁺¹, Δvₜᵏ) = 0.
+/// - Velocity change Δvₜᵏ does not intersect the stiction circle, i.e.
+///   changes happen in a region away from stiction (within the sliding
+///   region). However, large angular changes (measured by the angle
+///   θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)) between vₜᵏ⁺¹ and vₜᵏ)
+///   might indicate a solution that is attempting to reach a stiction region.
+///   In order to aid convergence, we limit the angle change to θₘₐₓ, and
+///   therefore (see [Uchida et al., 2015]) we compute α so that
+///   θₘₐₓ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)).
 ///
 /// Uchida, T.K., Sherman, M.A. and Delp, S.L., 2015.
 ///   Making a meaningful impact: modelling simultaneous frictional collisions
@@ -541,6 +542,7 @@ class ImplicitStribeckSolver {
   ///   2. changes to the problem data invalidate any solution performed by this
   ///      solver. In such a case, SetOneWayCoupledProblemData() and
   ///      SolveWithGuess() must be invoked again.
+  ///
   /// @throws std::exception if any of the data pointers are nullptr.
   /// @throws std::exception if the problem data sizes are not consistent as
   /// described above.
@@ -591,6 +593,7 @@ class ImplicitStribeckSolver {
   ///   2. changes to the problem data invalidate any solution performed by this
   ///      solver. In such a case, SetOneWayCoupledProblemData() and
   ///      SolveWithGuess() must be invoked again.
+  ///
   /// @throws std::exception if any of the data pointers are nullptr.
   /// @throws std::exception if the problem data sizes are not consistent as
   /// described above.

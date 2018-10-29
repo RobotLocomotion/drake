@@ -241,6 +241,7 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
       v_non_floating_joint_start_index = 6;
       break;
     case FloatingBaseType::kQuaternion:
+    case FloatingBaseType::kExperimentalMultibodyPlantStyle:
       q_non_floating_joint_start_index = 7;
       v_non_floating_joint_start_index = 6;
       break;

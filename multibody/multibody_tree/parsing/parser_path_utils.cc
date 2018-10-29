@@ -67,10 +67,6 @@ bool GetPackagePath(const string& package, const PackageMap& package_map,
 }
 }  // namespace
 
-// The unit test that most directly covers this method is:
-// drake/attic/multibody/parsers/test/urdf_parser_test/urdf_parser_test.cc.
-// TODO(jwnimmer-tri) Port a more direct unit test to this package, so we
-// are not relying on attic code to test this non-attic function.
 string ResolveFilename(const string& filename, const PackageMap& package_map,
                        const string& root_dir) {
   spruce::path full_filename_spruce;

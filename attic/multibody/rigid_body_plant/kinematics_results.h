@@ -17,6 +17,7 @@ class RigidBodyPlant;
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following ScalarTypes are provided:
+///
 ///  - double
 ///  - AutoDiffXd
 ///
@@ -68,17 +69,17 @@ class KinematicsResults {
   TwistVector<T> get_twist_in_world_aligned_body_frame(
       const RigidBody<T>& body) const;
 
+  // TODO(tkoolen) should pass in joint instead of body, but that's currently
+  // not convenient.
   /// Returns the joint position vector associated with the joint between
   /// @p body and @p body's parent.
-  /// TODO(tkoolen) should pass in joint instead of body, but that's currently
-  /// not convenient.
   Eigen::VectorBlock<const VectorX<T>> get_joint_position(
       const RigidBody<T>& body) const;
 
+  // TODO(tkoolen): should pass in joint instead of body, but that's currently
+  // not convenient.
   /// Returns the joint velocity vector associated with the joint between
   /// @p body and @p body's parent.
-  /// TODO(tkoolen) should pass in joint instead of body, but that's currently
-  /// not convenient.
   Eigen::VectorBlock<const VectorX<T>> get_joint_velocity(
       const RigidBody<T>& body) const;
 

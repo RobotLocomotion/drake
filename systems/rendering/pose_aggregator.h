@@ -33,6 +33,7 @@ struct PoseVelocityInputPorts {
 /// PoseAggregator is a multiplexer for heterogeneous sources of poses and the
 /// velocities of those poses.
 /// Supported sources are:
+///
 /// - A PoseVector input, which is a single pose {R, p}, and is vector-valued.
 /// - A FrameVelocity input, which corresponds to a PoseVector input, and
 ///   contains a single velocity {ω, v}, and is vector-valued.
@@ -47,6 +48,7 @@ struct PoseVelocityInputPorts {
 /// of reference.
 ///
 /// The output poses are named in the form `<source>` or `<source>::<pose>`.
+///
 /// - For poses derived from a PoseVector input, <source> is the bundle name
 ///   provided at construction time, and "::<pose>" is omitted.
 /// - For poses derived from a PoseBundle input, <source> is the bundle name
@@ -59,6 +61,7 @@ struct PoseVelocityInputPorts {
 /// an integer that is greater than or equal to zero. All poses with the same
 /// model instance ID must have unique names. This enables PoseAggregator to
 /// aggregate multiple instances of the same model.
+///
 /// - For poses derived from a PoseVector input, the instance ID is specified
 ///   when the input is declared.
 /// - For poses derived from a PoseBundle input, the instance ID is obtained
@@ -71,6 +74,7 @@ struct PoseVelocityInputPorts {
 ///
 /// This class is explicitly instantiated for the following scalar types. No
 /// other scalar types are supported.
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression

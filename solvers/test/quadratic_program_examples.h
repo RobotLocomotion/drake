@@ -53,7 +53,7 @@ class QuadraticProgram0 : public OptimizationProgram {
   Eigen::Vector2d x_expected_;
 };
 
-/// Adapt from the simple test on the Gurobi documentation.
+// Adapted from the simple test on the Gurobi documentation.
 //  min    x^2 + x*y + y^2 + y*z + z^2 + 2 x
 //  subj to 4 <=   x + 2 y + 3 z <= inf
 //       -inf <=  -x -   y       <= -1

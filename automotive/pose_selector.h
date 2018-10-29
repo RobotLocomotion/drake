@@ -51,16 +51,16 @@ enum class ScanStrategy { kBranches, kPath };
 /// within RoadGeometry::ToRoadPosition().
 enum class RoadPositionStrategy { kCache, kExhaustiveSearch };
 
+// TODO(jadecastro): Enable AutoDiffXd support, and add unit tests.
 /// PoseSelector is a class that provides the relevant pose or poses with
 /// respect to a given ego vehicle driving within a given maliput road geometry.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///
 /// They are already available to link against in the containing library.
-///
-/// TODO(jadecastro): Enable AutoDiffXd support, and add unit tests.
 template <typename T>
 class PoseSelector {
  public:
@@ -139,9 +139,9 @@ class PoseSelector {
 
   /// Extracts the vehicle's `s`-direction velocity based on its RoadOdometry @p
   /// road_odometry in the Lane coordinate frame.  Assumes the road has zero
-  /// elevation and superelevation.  Throws if any element of
-  /// `road_odometry.pos` is not within the respective bounds of
-  /// `road_odometry.lane`.
+  /// elevation and superelevation.
+  /// @throws std::exception if any element of `road_odometry.pos` is not
+  /// within the respective bounds of `road_odometry.lane`.
   ///
   /// @note This function currently only provides exact derivatives for velocity
   /// in the `s` direction when the road is straight (no yaw angle variations).

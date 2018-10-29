@@ -63,7 +63,8 @@ struct KinematicsValueInitializer<Isometry3<S>> {
  is consumed by SceneGraph.
 
  <!--
-   TODO: The FrameVelocityVector and FrameAccelerationVector are still to come.
+   TODO(SeanCurtis-TRI): The FrameVelocityVector and FrameAccelerationVector
+   are still to come.
   -->
 
  The usage of this method would be in the allocation and calculation
@@ -171,6 +172,12 @@ class FrameKinematicsVector {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FrameKinematicsVector)
 
+  // TODO(SeanCurtis-TRI) Find some API language that cautions users that this
+  // result is not terribly useful on its own, but instead it will usually be
+  // assigned into (using operator=) from another FrameKinematicsVector.
+  /** Initializes the vector using an invalid SourceId with no frames .*/
+  FrameKinematicsVector();
+
   /** Initializes the vector on the owned ids.
    @param source_id  The source id of the owning geometry source.
    @param ids        The set of *all* frames owned by this geometry source. All
@@ -237,6 +244,7 @@ class FrameKinematicsVector {
  @tparam T The scalar type. Must be a valid Eigen scalar.
 
  Instantiated templates for the following kinds of T's are provided:
+
  - double
  - AutoDiffXd
 

@@ -149,7 +149,7 @@ class TestMathOverloads(unittest.TestCase):
         def check_eval(functions, nargs):
             # Generate arguments.
             args_float = args_float_all[:nargs]
-            args_T = map(overload.to_type, args_float)
+            args_T = list(map(overload.to_type, args_float))
             # Check each supported function.
             for f_drake, f_builtin in functions:
                 if not overload.supports(f_drake):

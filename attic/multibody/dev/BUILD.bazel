@@ -17,6 +17,10 @@ drake_cc_library(
     hdrs = [
         "test/global_inverse_kinematics_test_util.h",
     ],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+        "//multibody:models",
+    ],
     deps = [
         "//attic/multibody/parsers",
         "//common:find_resource",
@@ -32,9 +36,6 @@ drake_cc_googletest(
     name = "global_inverse_kinematics_test",
     timeout = "moderate",
     srcs = ["test/global_inverse_kinematics_test.cc"],
-    data = [
-        "//manipulation/models/iiwa_description:models",
-    ],
     tags = gurobi_test_tags() + [
         # Takes too long to run with Valgrind.
         "no_memcheck",
@@ -50,9 +51,6 @@ drake_cc_googletest(
     name = "global_inverse_kinematics_reachable_test",
     timeout = "moderate",
     srcs = ["test/global_inverse_kinematics_reachable_test.cc"],
-    data = [
-        "//manipulation/models/iiwa_description:models",
-    ],
     tags = gurobi_test_tags() + [
         # Takes too long to run with Valgrind.
         "no_memcheck",
@@ -68,9 +66,6 @@ drake_cc_googletest(
     name = "global_inverse_kinematics_collision_avoidance_test",
     timeout = "moderate",
     srcs = ["test/global_inverse_kinematics_collision_avoidance_test.cc"],
-    data = [
-        "//manipulation/models/iiwa_description:models",
-    ],
     tags = gurobi_test_tags() + [
         # Takes too long to run with Valgrind.
         "no_memcheck",
@@ -86,9 +81,6 @@ drake_cc_googletest(
     name = "global_inverse_kinematics_feasible_posture_test",
     timeout = "long",
     srcs = ["test/global_inverse_kinematics_feasible_posture_test.cc"],
-    data = [
-        "//manipulation/models/iiwa_description:models",
-    ],
     tags = gurobi_test_tags() + [
         "no_asan",
         # Takes too long to run with Valgrind.

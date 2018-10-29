@@ -48,6 +48,7 @@ namespace controllers {
  *      inverse dynamics computation.
  *
  * Instantiated templates for the following kinds of T's are provided:
+ *
  * - double
  *
  * @ingroup control_systems

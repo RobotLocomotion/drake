@@ -15,6 +15,7 @@ from pydrake.examples import (
     rimless_wheel,
     van_der_pol,
 )
+from pydrake.examples.multibody import cart_pole_passive_simulation
 # TODO(eric.cousineau): Indicate these as deprecated.
 from pydrake.util import (
     cpp_const,
@@ -58,7 +59,9 @@ def has_cc_imported_symbols(name):
         sub = pieces[-1]
         test = ".".join(pieces[:-1] + ["_{}_py".format(sub)])
         if test in sys.modules:
-            return True
+            raise RuntimeError(
+                ("The module `{}` should not exist; instead, only `{}` should "
+                 "exist").format(test, name))
     return False
 
 
@@ -86,6 +89,7 @@ def write_module(f_name, name, verbose):
         if has_cc_imported_symbols(name):
             f.write("    :imported-members:\n")
         f.write("    :undoc-members:\n")
+        f.write("    :show-inheritance:\n")
     f_dir = dirname(f_name)
     for sub in subs:
         write_module(join(f_dir, sub) + ".rst", sub, verbose)

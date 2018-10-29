@@ -2,7 +2,7 @@
 
 /** @file
 Provides a portable macro for use in generating compile-time warnings for
-use of code that is permitted but discouraged. **/
+use of code that is permitted but discouraged. */
 
 #ifdef DRAKE_DOXYGEN_CXX
 /** Use `DRAKE_DEPRECATED("message")` to discourage use of particular
@@ -29,7 +29,7 @@ Usage: @code
 
 This feature is standard in C++14 compilers via the `[[deprecated]]` attribute,
 and this macro will generate the standard attribute when compiled with a
-C++14-compliant compiler. **/
+C++14-compliant compiler. */
 #define DRAKE_DEPRECATED(message)
 
 #else  // DRAKE_DOXYGEN_CXX

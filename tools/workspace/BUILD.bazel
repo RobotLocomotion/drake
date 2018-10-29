@@ -8,6 +8,13 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    visibility = [":__subpackages__"],
+    deps = ["//tools:module_py"],
+)
+
 drake_py_binary(
     name = "cmake_configure_file",
     srcs = ["cmake_configure_file.py"],

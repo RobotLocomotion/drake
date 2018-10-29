@@ -16,12 +16,16 @@
 namespace drake {
 namespace systems {
 
+// TODO(sherm1) The ordering of the composite xc is useless and prevents us
+//              from describing every xc as a sequence [q v z]. Consider
+//              reimplementing so that xc=[q₁q₂ v₁v₂ z₁z₂].
 /// %ContinuousState is a view of, and optionally a container for, all the
 /// continuous state variables `xc` of a Drake System. Continuous state
 /// variables are those whose values are defined by differential equations,
 /// so we expect there to be a well-defined time derivative `xcdot` ≜ `d/dt xc`.
 ///
 /// The contents of `xc` are conceptually partitioned into three groups:
+///
 /// - `q` is generalized position
 /// - `v` is generalized velocity
 /// - `z` is other continuous state
@@ -69,9 +73,6 @@ namespace systems {
 /// @see DiagramContinuousState for more information.
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
-// TODO(sherm1) The ordering of the composite xc is useless and prevents us
-//              from describing every xc as a sequence [q v z]. Consider
-//              reimplementing so that xc=[q₁q₂ v₁v₂ z₁z₂].
 template <typename T>
 class ContinuousState {
  public:

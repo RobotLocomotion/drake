@@ -27,15 +27,17 @@ namespace perception {
 /// the cloud.
 ///
 /// Definitions:
-///  - point - An entry in a point cloud (not exclusively an XYZ point).
-///  - feature - Abstract representation of local properties (geometric and
-/// non-geometric)
-///  - descriptor - Concrete representation of a feature.
-///  - field - A feature or descriptor described by the point cloud.
+///
+/// - point - An entry in a point cloud (not exclusively an XYZ point).
+/// - feature - Abstract representation of local properties (geometric and
+///   non-geometric)
+/// - descriptor - Concrete representation of a feature.
+/// - field - A feature or descriptor described by the point cloud.
 ///
 /// This point cloud class provides the following fields:
-///  - xyz - Cartesian XYZ coordinates (float[3]).
-///  - descriptor - An descriptor that is run-time defined (float[X]).
+///
+/// - xyz - Cartesian XYZ coordinates (float[3]).
+/// - descriptor - An descriptor that is run-time defined (float[X]).
 ///
 /// @note "contiguous" here means contiguous in memory. This was chosen to
 /// avoid ambiguity between PCL and Eigen, where in PCL "dense" implies that
@@ -84,7 +86,8 @@ class PointCloud final {
   ///   Fields that the point cloud contains.
   /// @param skip_initialize
   ///    Do not default-initialize new values.
-  explicit PointCloud(int new_size, pc_flags::Fields fields = pc_flags::kXYZs,
+  explicit PointCloud(int new_size = 0,
+                      pc_flags::Fields fields = pc_flags::kXYZs,
                       bool skip_initialize = false);
 
   /// Copies another point cloud's fields and data.

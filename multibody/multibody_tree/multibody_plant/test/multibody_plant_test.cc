@@ -7,6 +7,7 @@
 #include <tuple>
 #include <utility>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_autodiff_types.h"
@@ -277,13 +278,13 @@ class AcrobotPlantTests : public ::testing::Test {
     // it.
     DRAKE_DEMAND(plant_->get_source_id() != nullopt);
 
-    // Verify that methods with pre-Finalize() conditions throw accordingly.
-    DRAKE_EXPECT_THROWS_MESSAGE(
+    // Ensure that we can access the geometry ports pre-finalize.
+    EXPECT_NO_THROW(plant_->get_geometry_query_input_port());
+    EXPECT_NO_THROW(plant_->get_geometry_poses_output_port());
+
+    builder.Connect(
         plant_->get_geometry_poses_output_port(),
-        std::logic_error,
-        /* Verify this method is throwing for the right reasons. */
-        "Pre-finalize calls to '.*' are not allowed; "
-        "you must call Finalize\\(\\) first.");
+        scene_graph_->get_source_pose_port(plant_->get_source_id().value()));
 
     DRAKE_EXPECT_THROWS_MESSAGE(
         plant_->get_continuous_state_output_port(),
@@ -292,13 +293,9 @@ class AcrobotPlantTests : public ::testing::Test {
         "Pre-finalize calls to '.*' are not allowed; "
         "you must call Finalize\\(\\) first.");
 
-    // Finalize() the plant before accessing its ports for communicating with
-    // SceneGraph.
+    // Finalize() the plant.
     plant_->Finalize(scene_graph_);
 
-    builder.Connect(
-        plant_->get_geometry_poses_output_port(),
-        scene_graph_->get_source_pose_port(plant_->get_source_id().value()));
     // And build the Diagram:
     diagram_ = builder.Build();
 
@@ -612,6 +609,10 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
                                 kTolerance, MatrixCompareType::relative));
   }
 
+  // TODO(SeanCurtis-TRI): These tests are no longer valid; there *is* a frame
+  // id for the world body. This test needs to be changed so that there is
+  // *another* body that doesn't have geometry.
+#if 0
   // SceneGraph does not register a FrameId for the world. We use this fact
   // to test that GetBodyFrameIdOrThrow() throws an assertion for a body with no
   // FrameId, even though in this model we register an anchored geometry to the
@@ -626,6 +627,7 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   optional<FrameId> undefined_id =
       plant_->GetBodyFrameIdIfExists(world_index());
   EXPECT_EQ(undefined_id, nullopt);
+#endif
 }
 
 // Verifies that the right errors get invoked upon finalization.
@@ -928,10 +930,35 @@ GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometries) {
     GeometrySet set =
         plant.CollectRegisteredGeometries(
             {&scenario.mutable_plant()->world_body()});
-    EXPECT_EQ(set.num_geometries(), 1);
-    EXPECT_TRUE(set.contains(scenario.ground_id()));
-    EXPECT_EQ(set.num_frames(), 0);
+    EXPECT_EQ(set.num_frames(), 1);
+    EXPECT_EQ(set.num_geometries(), 0);
+    EXPECT_FALSE(set.contains(scenario.ground_id()));
   }
+}
+
+// Verifies the process of getting welded bodies.
+GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
+  using ::testing::UnorderedElementsAreArray;
+  // This test expects that the following model has a world body and a pair of
+  // welded-together bodies.
+  const std::string sdf_file = FindResourceOrThrow(
+      "drake/multibody/multibody_tree/multibody_plant/test/"
+      "split_pendulum.sdf");
+  MultibodyPlant<double> plant;
+  AddModelFromSdfFile(sdf_file, &plant);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.GetBodiesWeldedTo(plant.world_body()), std::logic_error,
+      "Pre-finalize calls to 'GetBodiesWeldedTo\\(\\)' are not "
+      "allowed; you must call Finalize\\(\\) first.");
+  plant.Finalize();
+  const Body<double>& upper = plant.GetBodyByName("upper_section");
+  const Body<double>& lower = plant.GetBodyByName("lower_section");
+  EXPECT_THAT(
+      plant.GetBodiesWeldedTo(plant.world_body()),
+      UnorderedElementsAreArray({&plant.world_body()}));
+  EXPECT_THAT(
+      plant.GetBodiesWeldedTo(lower),
+      UnorderedElementsAreArray({&upper, &lower}));
 }
 
 // Verifies the process of collision geometry registration with a
@@ -1072,22 +1099,27 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   scene_graph.get_query_output_port().Calc(*context, state_value.get());
 
   const SceneGraphInspector<double>& inspector = query_object.inspector();
-  const VisualMaterial* test_material =
-      inspector.GetVisualMaterial(ground_id);
-  EXPECT_NE(test_material, nullptr);
-  EXPECT_TRUE(CompareMatrices(test_material->diffuse(),
-                              VisualMaterial().diffuse(), 0.0,
-                              MatrixCompareType::absolute));
+  {
+    const VisualMaterial& test_material =
+        inspector.GetVisualMaterial(ground_id);
+    EXPECT_TRUE(CompareMatrices(test_material.diffuse(),
+                                VisualMaterial().diffuse(), 0.0,
+                                MatrixCompareType::absolute));
+  }
 
-  test_material = inspector.GetVisualMaterial(sphere1_id);
-  EXPECT_NE(test_material, nullptr);
-  EXPECT_TRUE(CompareMatrices(test_material->diffuse(), sphere1_diffuse, 0.0,
-                              MatrixCompareType::absolute));
+  {
+    const VisualMaterial& test_material =
+        inspector.GetVisualMaterial(sphere1_id);
+    EXPECT_TRUE(CompareMatrices(test_material.diffuse(), sphere1_diffuse, 0.0,
+                                MatrixCompareType::absolute));
+  }
 
-  test_material = inspector.GetVisualMaterial(sphere2_id);
-  EXPECT_NE(test_material, nullptr);
-  EXPECT_TRUE(CompareMatrices(test_material->diffuse(), sphere2_diffuse, 0.0,
-                              MatrixCompareType::absolute));
+  {
+    const VisualMaterial& test_material =
+        inspector.GetVisualMaterial(sphere2_id);
+    EXPECT_TRUE(CompareMatrices(test_material.diffuse(), sphere2_diffuse, 0.0,
+                                MatrixCompareType::absolute));
+  }
 }
 
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
@@ -1812,6 +1844,295 @@ TEST_P(KukaArmTest, CheckContinuousOrDiscreteModel) {
 INSTANTIATE_TEST_CASE_P(
     Blank, KukaArmTest,
     testing::Values(0.0 /* continuous state */, 1e-3 /* discrete state */));
+
+GTEST_TEST(StateSelection, JointHasNoActuator) {
+  const std::string file_name =
+      "drake/multibody/benchmarks/acrobot/acrobot.sdf";
+  MultibodyPlant<double> plant;
+  AddModelFromSdfFile(FindResourceOrThrow(file_name), &plant);
+  plant.Finalize();
+
+  // Sanity checks.
+  ASSERT_EQ(plant.num_positions(), 2);
+  ASSERT_EQ(plant.num_velocities(), 2);
+  ASSERT_EQ(plant.num_actuators(), 1);  // ShoulderJoint is not actuated.
+
+  // Attempt to make an actuation selector matrix for ShoulderJoint, which is
+  // not actuated.
+  std::vector<JointIndex> selected_joints;
+  selected_joints.push_back(plant.GetJointByName("ShoulderJoint").index());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.tree().MakeActuatorSelectorMatrix(selected_joints),
+      std::logic_error,
+      "Joint 'ShoulderJoint' does not have an actuator.");
+}
+
+GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
+  const char kArmSdfPath[] =
+      "drake/manipulation/models/iiwa_description/sdf/"
+          "iiwa14_no_collision.sdf";
+
+  const char kWsg50SdfPath[] =
+      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf";
+
+  // We make a "floating" model of a Kuka arm with a Schunk WSG 50 gripper at
+  // the end effector. The purpose of having this floating model is to unit test
+  // the methods for making state/actuation selector matrices for more complex
+  // cases when we have floating robots in the model.
+  MultibodyPlant<double> plant;
+  const ModelInstanceIndex arm_model =
+      AddModelFromSdfFile(FindResourceOrThrow(kArmSdfPath), &plant);
+
+  // Add the gripper.
+  const ModelInstanceIndex gripper_model =
+      AddModelFromSdfFile(FindResourceOrThrow(kWsg50SdfPath), &plant);
+  const auto& end_effector = plant.GetBodyByName("iiwa_link_7", arm_model);
+  const auto& gripper_body = plant.GetBodyByName("body", gripper_model);
+  // We dont care for the actual pose of the gripper in the end effector frame
+  // for this example. We only care about the state size.
+  plant.WeldFrames(end_effector.body_frame(), gripper_body.body_frame());
+  plant.Finalize();
+
+  // Sanity check basic invariants.
+  const int num_floating_positions = 7;
+  const int num_floating_velocities = 6;
+
+  // Seven dofs for the arm and two for the gripper, plus floating base.
+  EXPECT_EQ(plant.num_positions(), 9 + num_floating_positions);
+  EXPECT_EQ(plant.num_velocities(), 9 + num_floating_velocities);
+
+  // Selected joints by name.
+  const std::vector<std::string> arm_selected_joints_by_name =
+      {"iiwa_joint_2", "iiwa_joint_7", "iiwa_joint_3"};
+
+  std::vector<JointIndex> arm_selected_joints;
+  // For this example we are only interested in the state for joints:
+  //  - iiwa_joint_2
+  //  - iiwa_joint_7
+  //  - iiwa_joint_3
+  // In that order.
+  // We therefore create a user to joint index map accordingly.
+  for (const auto& joint_name : arm_selected_joints_by_name) {
+    arm_selected_joints.push_back(
+        plant.GetJointByName(joint_name).index());
+  }
+
+  // State selector for the arm.
+  const MatrixX<double> Sx_arm =
+      plant.tree().MakeStateSelectorMatrix(arm_selected_joints);
+
+  // Actuation selector for the arm.
+  const MatrixX<double> Su_arm =
+      plant.tree().MakeActuatorSelectorMatrix(arm_selected_joints);
+
+  // Verify the sizes (all these joints are revolute with one q and one v).
+  const int num_selected_states = 2 * arm_selected_joints.size();
+  const int num_states = plant.tree().num_states();
+  ASSERT_EQ(Sx_arm.rows(), num_selected_states);
+  ASSERT_EQ(Sx_arm.cols(), num_states);
+
+  // We know what the selection matrix should be for this case:
+  const int nq = plant.num_positions();
+  MatrixX<double> Sx_arm_expected =
+      MatrixX<double>::Zero(num_selected_states, plant.num_multibody_states());
+  // position for first joint, iiwa_joint_2.
+  Sx_arm_expected(0, num_floating_positions + 1) = 1;
+  // position for second joint, iiwa_joint_7.
+  Sx_arm_expected(1, num_floating_positions + 6) = 1;
+  // position for third joint, iiwa_joint_3.
+  Sx_arm_expected(2, num_floating_positions + 2) = 1;
+  // velocity for first joint, iiwa_joint_2.
+  Sx_arm_expected(3, num_floating_velocities + nq + 1) = 1;
+  // velocity for second joint, iiwa_joint_7.
+  Sx_arm_expected(4, num_floating_velocities + nq + 6) = 1;
+  // velocity for third joint, iiwa_joint_3.
+  Sx_arm_expected(5, num_floating_velocities + nq + 2) = 1;
+  EXPECT_EQ(Sx_arm, Sx_arm_expected);
+
+  // State selection using alternative API in which joints are specified by
+  // name.
+  const MatrixX<double> Sx_arm_by_name =
+      plant.tree().MakeStateSelectorMatrixFromJointNames(
+          arm_selected_joints_by_name);
+  EXPECT_EQ(Sx_arm_by_name, Sx_arm_expected);
+
+  // Intentionally attempt to create a state selector from a vector with
+  // repeated joint names in order to verify the method throws.
+  const std::vector<std::string> repeated_joint_names =
+      {"iiwa_joint_2", "iiwa_joint_3", "iiwa_joint_7", "iiwa_joint_3"};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.tree().MakeStateSelectorMatrixFromJointNames(repeated_joint_names),
+      std::logic_error,
+      "Joint named 'iiwa_joint_3' is repeated multiple times.");
+
+  // Intentionally attempt to create a state selector from a vector with
+  // repeated joint indexes in order to verify the method throws.
+  std::vector<JointIndex> repeated_joint_indexes;
+  for (const auto& joint_name : repeated_joint_names) {
+    repeated_joint_indexes.push_back(plant.GetJointByName(joint_name).index());
+  }
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.tree().MakeStateSelectorMatrix(repeated_joint_indexes),
+      std::logic_error,
+      "Joint named 'iiwa_joint_3' is repeated multiple times.");
+
+  // Verify the arm's actuation selector.
+  MatrixX<double> Su_arm_expected =
+      MatrixX<double>::Zero(plant.num_actuators(), 3);
+  Su_arm_expected(1, 0) = 1;  // Actuator on first joint, iiwa_joint_2.
+  Su_arm_expected(6, 1) = 1;  // Actuator on second joint, iiwa_joint_7.
+  Su_arm_expected(2, 2) = 1;  // Actuator on third joint, iiwa_joint_3.
+  EXPECT_EQ(Su_arm, Su_arm_expected);
+
+  // We build a state selector for the gripper dofs.
+  std::vector<JointIndex> gripper_selected_joints;
+  gripper_selected_joints.push_back(plant.GetJointByName(
+      "left_finger_sliding_joint").index());  // user index = 0.
+  gripper_selected_joints.push_back(plant.GetJointByName(
+      "right_finger_sliding_joint").index());  // user index = 1.
+
+  // State selector for the griper.
+  const MatrixX<double> Sx_gripper =
+      plant.tree().MakeStateSelectorMatrix(gripper_selected_joints);
+
+  // Actuation selector for the gripper.
+  const MatrixX<double> Su_gripper =
+      plant.tree().MakeActuatorSelectorMatrix(gripper_selected_joints);
+
+  // Similarly we know the expected value for the gripper's selector matrix.
+  MatrixX<double> Sx_gripper_expected =
+      MatrixX<double>::Zero(4, plant.num_multibody_states());
+  // first joint position, left finger.
+  Sx_gripper_expected(0, num_floating_positions + 7) = 1;
+  // second joint position, right finger.
+  Sx_gripper_expected(1, num_floating_positions + 8) = 1;
+  // first joint velocity, left finger.
+  Sx_gripper_expected(2, num_floating_velocities + nq + 7) = 1;
+  // second joint velocity, right finger.
+  Sx_gripper_expected(3, num_floating_velocities + nq + 8) = 1;
+  EXPECT_EQ(Sx_gripper, Sx_gripper_expected);
+
+  // Verify the grippers's actuation selector.
+  MatrixX<double> Su_gripper_expected =
+      MatrixX<double>::Zero(plant.num_actuators(), 2);
+  Su_gripper_expected(7, 0) = 1;  // Actuator on first joint, left finger.
+  Su_gripper_expected(8, 1) = 1;  // Actuator on second joint, right finger.
+  EXPECT_EQ(Su_gripper, Su_gripper_expected);
+
+  // Verify we can make selector matrices from empty lists of joints/actuators.
+  const MatrixX<double> Sx_from_empty_names =
+      plant.tree().MakeStateSelectorMatrixFromJointNames(
+          std::vector<std::string>());
+  EXPECT_EQ(Sx_from_empty_names.rows(), 0);
+  EXPECT_EQ(Sx_from_empty_names.cols(), plant.num_multibody_states());
+
+  const MatrixX<double> Sx_from_empty_indexes =
+      plant.tree().MakeStateSelectorMatrix(std::vector<JointIndex>());
+  EXPECT_EQ(Sx_from_empty_indexes.rows(), 0);
+  EXPECT_EQ(Sx_from_empty_indexes.cols(), plant.num_multibody_states());
+
+  const MatrixX<double> Su_from_empty_actuators =
+      plant.tree().MakeActuatorSelectorMatrix(
+          std::vector<JointActuatorIndex>());
+  EXPECT_EQ(Su_from_empty_actuators.rows(), plant.num_actuators());
+  EXPECT_EQ(Su_from_empty_actuators.cols(), 0);
+
+  const MatrixX<double> Su_from_empty_joints =
+      plant.tree().MakeActuatorSelectorMatrix(std::vector<JointIndex>());
+  EXPECT_EQ(Su_from_empty_actuators.rows(), plant.num_actuators());
+  EXPECT_EQ(Su_from_empty_actuators.cols(), 0);
+}
+
+// This unit test verifies the workings of
+// MBP::SetFreeBodyPoseInAnchoredFrame(). To that end we build a model
+// representative of a real setup consisting of a robot arm mounted on a robot
+// table, an objects table and a mug. This test defines an objects frame O with
+// its origin located a the -x, -y corner of the objects table. With this setup,
+// we test we can set the pose X_OM of the mug frame M in the objects frame O.
+GTEST_TEST(StateSelection, FloatingBodies) {
+  const std::string iiwa_sdf_path = FindResourceOrThrow(
+      "drake/manipulation/models/iiwa_description/sdf/"
+          "iiwa14_no_collision.sdf");
+
+  const std::string table_sdf_path = FindResourceOrThrow(
+      "drake/examples/kuka_iiwa_arm/models/table/"
+          "extra_heavy_duty_table_surface_only_collision.sdf");
+
+  const std::string mug_sdf_path = FindResourceOrThrow(
+      "drake/examples/simple_gripper/simple_mug.sdf");
+
+  MultibodyPlant<double> plant;
+
+  // Load a model of a table for the robot.
+  const ModelInstanceIndex robot_table_model =
+      AddModelFromSdfFile(table_sdf_path, "robot_table", &plant);
+  plant.WeldFrames(plant.world_frame(),
+                   plant.GetFrameByName("link", robot_table_model));
+
+  // Load the robot and weld it on top of the robot table.
+  const ModelInstanceIndex arm_model =
+      AddModelFromSdfFile(iiwa_sdf_path, &plant);
+
+  const double table_top_z_in_world =
+      // table's top height
+      0.736 +
+      // table's top width
+      0.057 / 2;
+  plant.WeldFrames(
+      plant.world_frame(), plant.GetFrameByName("iiwa_link_0", arm_model),
+      RigidTransform<double>(Vector3d(0, 0, table_top_z_in_world))
+          .GetAsIsometry3());
+
+  // Load a second table for objects.
+  const ModelInstanceIndex objects_table_model =
+      AddModelFromSdfFile(table_sdf_path, "objects_table", &plant);
+  const Isometry3d X_WT(Translation3d(0.8, 0.0, 0.0));
+  plant.WeldFrames(plant.world_frame(),
+                   plant.GetFrameByName("link", objects_table_model), X_WT);
+
+  // Define a fixed frame on the -x, -y corner of the objects table.
+  const Isometry3d X_TO = RigidTransform<double>(
+      RotationMatrix<double>::MakeXRotation(-M_PI_2),
+      Vector3<double>(-0.3, -0.3, table_top_z_in_world)).GetAsIsometry3();
+  const auto& objects_frame_O =
+      plant.AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+          "objects_frame", plant.GetFrameByName("link", objects_table_model),
+          X_TO));
+
+  // Add a floating mug.
+  const ModelInstanceIndex mug_model =
+      AddModelFromSdfFile(mug_sdf_path, &plant);
+  const Body<double>& mug = plant.GetBodyByName("main_body", mug_model);
+
+  plant.Finalize();
+
+  auto context = plant.CreateDefaultContext();
+
+  // Initialize the pose X_OM of the mug frame M in the objects table frame O.
+  const Isometry3d X_OM(Translation3d(0.05, 0.0, 0.05));
+  plant.SetFreeBodyPoseInAnchoredFrame(
+      context.get(), objects_frame_O, mug, X_OM);
+
+  // Retrieve the pose of the mug in the world.
+  const Isometry3d& X_WM = plant.EvalBodyPoseInWorld(*context, mug);
+
+  const Isometry3d X_WM_expected = X_WT * X_TO * X_OM;
+
+  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(X_WM.matrix(), X_WM_expected.matrix(),
+                              kTolerance, MatrixCompareType::relative));
+
+  // SetFreeBodyPoseInAnchoredFrame() should throw if the reference frame F is
+  // not anchored to the world.
+  const Frame<double>& end_effector_frame =
+      plant.GetFrameByName("iiwa_link_7", arm_model);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.SetFreeBodyPoseInAnchoredFrame(
+          context.get(), end_effector_frame, mug, X_OM),
+      std::logic_error,
+      "Frame 'iiwa_link_7' must be anchored to the world frame.");
+}
 
 }  // namespace
 }  // namespace multibody_plant

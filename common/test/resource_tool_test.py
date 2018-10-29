@@ -31,7 +31,7 @@ class TestResourceTool(unittest.TestCase):
             returncode, expected_returncode,
             "Expected returncode %r from %r but got %r with output %r" % (
                 expected_returncode, args, returncode, output))
-        return output
+        return output.decode('utf8')
 
     def test_help(self):
         output = self._check_call([

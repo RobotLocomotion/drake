@@ -18,6 +18,7 @@ pydrake
     pydrake.manipulation
     pydrake.math
     pydrake.multibody
+    pydrake.perception
     pydrake.solvers
     pydrake.symbolic
     pydrake.systems
@@ -28,3 +29,4 @@ pydrake
 .. automodule:: pydrake
     :members:
     :undoc-members:
+    :show-inheritance:

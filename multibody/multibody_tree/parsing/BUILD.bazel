@@ -26,6 +26,7 @@ drake_cc_package_library(
     name = "parsing",
     deps = [
         ":multibody_plant_sdf_parser",
+        ":multibody_plant_urdf_parser",
         ":package_map",
         ":parser_common",
         ":parser_path_utils",
@@ -158,6 +159,26 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "multibody_plant_urdf_parser",
+    srcs = [
+        "multibody_plant_urdf_parser.cc",
+        "urdf_geometry.cc",
+    ],
+    hdrs = [
+        "multibody_plant_urdf_parser.h",
+        "urdf_geometry.h",
+    ],
+    deps = [
+        ":package_map",
+        ":parser_common",
+        ":parser_path_utils",
+        ":tinyxml_util",
+        "//multibody/multibody_tree/multibody_plant",
+        "@tinyxml2",
+    ],
+)
+
+drake_cc_library(
     name = "test_loaders",
     testonly = 1,
     srcs = [
@@ -171,6 +192,7 @@ drake_cc_library(
     ],
     deps = [
         ":multibody_plant_sdf_parser",
+        ":multibody_plant_urdf_parser",
         ":parser_common",
         "//common:find_resource",
     ],
@@ -181,6 +203,13 @@ drake_cc_googletest(
     data = [
         ":test_models",
         "//multibody/benchmarks/acrobot:models",
+    ],
+    # TODO(sam.creasey) Write a printer function (or another
+    # workaround) for ModelLoadFunction so that gtest won't trigger
+    # memcheck.  Related to
+    # https://github.com/google/googletest/issues/1610
+    tags = [
+        "no_memcheck",
     ],
     deps = [
         ":test_loaders",
@@ -194,6 +223,13 @@ drake_cc_googletest(
     name = "common_parser_test",
     data = [
         ":test_models",
+    ],
+    # TODO(sam.creasey) Write a printer function (or another
+    # workaround) for ModelLoadFunction so that gtest won't trigger
+    # memcheck.  Related to
+    # https://github.com/google/googletest/issues/1610
+    tags = [
+        "no_memcheck",
     ],
     deps = [
         ":test_loaders",
@@ -215,12 +251,40 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "multibody_plant_urdf_parser_test",
+    data = [
+        ":test_models",
+        "//examples/atlas:models",
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":multibody_plant_urdf_parser",
+        "//common:find_resource",
+        "//common/test_utilities",
+        "//multibody/benchmarks/acrobot",
+        "//multibody/benchmarks/acrobot:make_acrobot_plant",
+    ],
+)
+
+drake_cc_googletest(
     name = "scene_graph_parser_detail_test",
     deps = [
         ":scene_graph_parser_detail",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "urdf_geometry_test",
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        ":multibody_plant_urdf_parser",
+        "//common:find_resource",
+        "//common/test_utilities",
     ],
 )
 

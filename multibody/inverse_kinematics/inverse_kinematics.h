@@ -8,12 +8,12 @@
 
 namespace drake {
 namespace multibody {
+// TODO(hongkai.dai) The bounds on the generalized positions (i.e., joint
+// limits) should be imposed automatically.
 /**
  * Solves an inverse kinematics (IK) problem on a MultibodyPlant, to find the
  * postures of the robot satisfying certain constraints.
  * The decision variables include the generalized position of the robot.
- * TODO(hongkai.dai) The bounds on the generalized positions (i.e., joint
- * limits) should be imposed automatially.
  */
 class InverseKinematics {
  public:
@@ -99,14 +99,14 @@ class InverseKinematics {
    * @param n_A The directional vector representing the center ray of the
    * cone, expressed in frame A.
    * @pre @p n_A cannot be a zero vector.
-   * @throw invalid_argument is n_A is close to a zero vector.
+   * @throws std::invalid_argument is n_A is close to a zero vector.
    * @param frameB The frame where the target point T is fixed to.
    * @param p_BT The position of the target point T, measured and expressed in
    * frame B.
    * @param cone_half_angle The half angle of the cone. We denote it as θ in the
    * documentation. @p cone_half_angle is in radians.
    * @pre @p 0 <= cone_half_angle <= pi.
-   * @throw invalid_argument if cone_half_angle is outside of the bound.
+   * @throws std::invalid_argument if cone_half_angle is outside of the bound.
    */
   solvers::Binding<solvers::Constraint> AddGazeTargetConstraint(
       const Frame<double>& frameA,
@@ -127,20 +127,20 @@ class InverseKinematics {
    * @param frameA The frame to which na is fixed.
    * @param na_A The vector na fixed to frame A, expressed in frame A.
    * @pre na_A should be a non-zero vector.
-   * @throw invalid_argument if na_A is close to zero.
+   * @throws std::invalid_argument if na_A is close to zero.
    * @param frameB The frame to which nb is fixed.
    * @param nb_B The vector nb fixed to frame B, expressed in frame B.
    * @pre nb_B should be a non-zero vector.
-   * @throw invalid_argument if nb_B is close to zero.
+   * @throws std::invalid_argument if nb_B is close to zero.
    * @param angle_lower The lower bound on the angle between na and nb. It is
    * denoted as θ_lower in the documentation. @p angle_lower is in radians.
    * @pre angle_lower >= 0.
-   * @throw invalid_argument if angle_lower is negative.
+   * @throws std::invalid_argument if angle_lower is negative.
    * @param angle_upper The upper bound on the angle between na and nb. it is
    * denoted as θ_upper in the class documentation. @p angle_upper is in
    * radians.
    * @pre angle_lower <= angle_upper <= pi.
-   * @throw invalid_argument if angle_upper is outside the bounds.
+   * @throws std::invalid_argument if angle_upper is outside the bounds.
    */
   solvers::Binding<solvers::Constraint> AddAngleBetweenVectorsConstraint(
       const Frame<double>& frameA,

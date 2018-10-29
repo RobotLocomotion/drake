@@ -11,11 +11,14 @@ namespace systems {
 /// An element-wise wrapping block that transforms the specified indices
 /// of the input signal `u` into the interval `[low, high)`.  Precisely, the
 /// output element `i` is given the value:
+/// @code
 ///   outputᵢ = inputᵢ + kᵢ*(highᵢ-lowᵢ)
+/// @endcode
 /// for the unique integer value `kᵢ` that lands the output in the desired
 /// interval.
 ///
 /// Instantiated templates for the following scalar types @p T are provided:
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression

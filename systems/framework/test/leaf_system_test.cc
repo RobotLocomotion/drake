@@ -847,6 +847,67 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   EXPECT_EQ(in4.get_random_type(), RandomDistribution::kGaussian);
 }
 
+// A system that incorrectly declares an input port.
+//
+// At some point, the deprecated DeclareAbstractInputPort overload used by this
+// System will be removed.  At that point, this entire test case should be
+// removed, along with the code under test that its covering, because then all
+// abstract input declarations require a model value, so it'll be impossible
+// not to have one, so we won't need missing-model-value error handling.
+class MissingModelAbstractInputSystem : public LeafSystem<double> {
+ public:
+  MissingModelAbstractInputSystem() {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    this->DeclareAbstractInputPort("no_model_input");
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+  }
+};
+
+GTEST_TEST(ModelLeafSystemTest, MissingModelAbstractInput) {
+  MissingModelAbstractInputSystem dut;
+  dut.set_name("dut");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.AllocateInputAbstract(dut.get_input_port(0)),
+      std::exception,
+      "System::AllocateInputAbstract\\(\\): a System with abstract input "
+      "ports must pass a model_value to DeclareAbstractInputPort; the "
+      "port\\[0\\] named 'no_model_input' did not do so \\(System ::dut\\)");
+}
+
+// Check that model inputs place validity checks on FixInput calls.  (This is
+// more of an acceptance test than a unit test.  The relevant code is sprinkled
+// across a few files.)  Note that even the debug builds might not detect the
+// kind of use-after-free errors that this test tries to expose; the dynamic
+// analysis build configurations such as valgrind or msan might be needed in
+// order to detect the errors.
+GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
+  // The Context checks must be able to outlive the System that created them.
+  auto dut = std::make_unique<DeclaredModelPortsSystem>();
+  dut->set_name("dut");
+  auto context = dut->CreateDefaultContext();
+  dut.reset();
+
+  // The first port should only accept a 1d vector.
+  context->FixInputPort(0, Eigen::VectorXd::Constant(1, 0.0));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      context->FixInputPort(0, Eigen::VectorXd::Constant(2, 0.0)),
+      std::exception,
+      "System::FixInputPortTypeCheck\\(\\): expected value of type "
+      "drake::systems::BasicVector<double> with size=1 "
+      "for input port\\[0\\] but the actual type was "
+      "drake::systems::BasicVector<double> with size=2. "
+      "\\(System ::dut\\)");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      context->FixInputPort(0, Value<std::string>{}),
+      std::exception,
+      "System::FixInputPortTypeCheck\\(\\): expected value of type "
+      "drake::systems::Value<drake::systems::BasicVector<double>> "
+      "for input port\\[0\\] but the actual type was "
+      "drake::systems::Value<std::string>. "
+      "\\(System ::dut\\)");
+}
+
 // Check that names can be assigned to the ports through all of the various
 // APIs.
 GTEST_TEST(ModelLeafSystemTest, ModelPortNames) {
@@ -1394,7 +1455,7 @@ class DefaultFeedthroughSystem : public LeafSystem<double> {
   ~DefaultFeedthroughSystem() override {}
 
   void AddAbstractInputPort() {
-    this->DeclareAbstractInputPort(kUseDefaultName);
+    this->DeclareAbstractInputPort(kUseDefaultName, Value<std::string>{});
   }
 
   void AddAbstractOutputPort() {
@@ -2199,7 +2260,6 @@ GTEST_TEST(InitializationTest, InitializationTest) {
   EXPECT_TRUE(dut.get_dis_update_init());
   EXPECT_TRUE(dut.get_unres_update_init());
 }
-
 
 }  // namespace
 }  // namespace systems

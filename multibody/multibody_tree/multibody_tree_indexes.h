@@ -34,13 +34,13 @@ using JointActuatorIndex = TypeSafeIndex<class JointActuatorElementTag>;
 /// tree system.
 using ModelInstanceIndex = TypeSafeIndex<class ModelInstanceTag>;
 
-/// For every MultibodyTree the **world** body _always_ has this unique index
-/// and it is always zero.
 // Note:
 //   static global variables are strongly discouraged by the C++ style guide:
 // https://google.github.io/styleguide/cppguide.html#Static_and_Global_Variables
 // For this reason, we create and return an instance of BodyIndex
 // instead of using a static variable.
+/// For every MultibodyTree the **world** body _always_ has this unique index
+/// and it is always zero.
 inline BodyIndex world_index() { return BodyIndex(0); }
 
 }  // namespace multibody

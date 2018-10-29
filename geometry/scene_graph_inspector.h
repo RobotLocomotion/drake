@@ -17,24 +17,25 @@ class QueryObject;
  of the SceneGraph data that does *not* depend on input pose data. Including,
  but not limited to:
 
-   - names of frames and geometries
-   - hierarchies (parents of geometries, parents of frames, etc.)
-   - geometry parameters (e.g., contact, rendering, visualization)
-   - fixed poses of geometries relative to frames
+ - names of frames and geometries
+ - hierarchies (parents of geometries, parents of frames, etc.)
+ - geometry parameters (e.g., contact, rendering, visualization)
+ - fixed poses of geometries relative to frames
 
  In contrast, the following pieces of data *do* depend on input pose data and
  *cannot* be performed with the %SceneGraphInspector (see the QueryObject
  instead):
 
-   - world pose of frames or geometry
-   - collision queries
-   - proximity queries
+ - world pose of frames or geometry
+ - collision queries
+ - proximity queries
 
  A %SceneGraphInspector cannot be instantiated explicitly. Nor can it be copied
  or moved. A *reference* to a %SceneGraphInspector instance can be acquired from
-   - a SceneGraph instance (to inspect the state of the system's _model_), or
-   - a QueryObject instance (to inspect the state of the scene graph data stored
-     in the context).
+
+ - a SceneGraph instance (to inspect the state of the system's _model_), or
+ - a QueryObject instance (to inspect the state of the scene graph data stored
+   in the context).
 
  The reference should not be persisted (and, as previously indicated, cannot
  be copied). %SceneGraphInspector instances are cheap; they can be created,
@@ -58,14 +59,14 @@ class SceneGraphInspector {
   // is defined.
 
   /** Reports the name for the given source id.
-   @throws  std::logic_error if the identifier is invalid.  */
+   @throws std::logic_error if the identifier is invalid.  */
   const std::string& GetSourceName(SourceId id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->get_source_name(id);
   }
 
   /** Reports the id of the frame to which the given geometry id is registered.
-   @throws  std::logic_error if the geometry id is invalid.  */
+   @throws std::logic_error if the geometry id is invalid.  */
   FrameId GetFrameId(GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->GetFrameId(geometry_id);
@@ -74,7 +75,7 @@ class SceneGraphInspector {
   /** Returns the visual material of the geometry indicated by the given
    `geometry_id` (if it exists).
    @throws  std::logic_error if the geometry id is invalid.  */
-  const VisualMaterial* GetVisualMaterial(GeometryId geometry_id) const {
+  const VisualMaterial& GetVisualMaterial(GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->get_visual_material(geometry_id);
   }
@@ -103,7 +104,7 @@ class SceneGraphInspector {
                     details).
    @return The id of the queried geometry.
    @throws std::logic_error if no such geometry exists, multiple geometries have
-                            that name, or if the frame doesn't exist. */
+                            that name, or if the frame doesn't exist.  */
   // TODO(SeanCurtis-TRI): Extend to include role.
   GeometryId GetGeometryIdByName(FrameId frame_id,
                                  const std::string& name) const {

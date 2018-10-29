@@ -25,6 +25,7 @@ namespace math {
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 template <typename T>
 class BarycentricMesh {
@@ -161,10 +162,10 @@ class BarycentricMesh {
   /// value matrix that should be used to approximate the function with this
   /// barycentric interpolation.
   ///
-  /// Example usages:
-  ///  MatrixXd mesh_values = bary.MeshValuesFrom(
-  ///    [](const auto& x) { return Vector1d(std::sin(x[0])); });
-  ///
+  /// @code
+  ///   MatrixXd mesh_values = bary.MeshValuesFrom(
+  ///     [](const auto& x) { return Vector1d(std::sin(x[0])); });
+  /// @endcode
   MatrixX<T> MeshValuesFrom(
       const std::function<VectorX<T>(const Eigen::Ref<const VectorX<T>>&)>&
           vector_func) const;

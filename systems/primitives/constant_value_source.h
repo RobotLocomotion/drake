@@ -17,6 +17,7 @@ namespace systems {
 /// this class, please refer to https://drake.mit.edu/cxx_inl.html.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 ///
 /// They are already available to link against in the containing library.
@@ -25,7 +26,11 @@ class ConstantValueSource : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstantValueSource)
 
-  /// @p value The constant value to emit.
+  /// @param value The constant value to emit which is copied by this system.
+  explicit ConstantValueSource(const AbstractValue& value);
+
+  // TODO(eric.cousineau): Deprecate public access on 12/15/2018.
+  /// @param value The constant value which will be owned by this system.
   explicit ConstantValueSource(std::unique_ptr<AbstractValue> value);
 
   /// Scalar-converting copy constructor. See @ref system_scalar_conversion.

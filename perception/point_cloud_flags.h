@@ -169,15 +169,15 @@ class Fields {
   DescriptorType descriptor_type_{kDescriptorNone};
 };
 
+// Do not use implicit conversion because it becomes ambiguous.
 /// Makes operator| compatible for `BaseField` + `DescriptorType`.
 /// @see Fields::operator|= for preconditions.
-// Do not use implicit conversion because it becomes ambiguous.
 inline Fields operator|(const BaseFieldT& lhs, const DescriptorType& rhs) {
   return Fields(lhs) | Fields(rhs);
 }
 
 /// Makes operator| compatible for `DescriptorType` + `Fields`
-// (`DescriptorType` or `BaseFields`).
+/// (`DescriptorType` or `BaseFields`).
 /// @see Fields::operator|= for preconditions.
 inline Fields operator|(const DescriptorType& lhs, const Fields& rhs) {
   return Fields(lhs) | rhs;

@@ -14,7 +14,7 @@ using std::cos;
 namespace drake {
 namespace pydrake {
 
-PYBIND11_MODULE(_autodiffutils_py, m) {
+PYBIND11_MODULE(autodiffutils, m) {
   m.doc() = "Bindings for Eigen AutoDiff Scalars";
 
   // Install NumPy warning filtres.

@@ -8,6 +8,7 @@ load(
     "join_paths",
     "output_path",
 )
+load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH")
 
 InstallInfo = provider()
 
@@ -119,8 +120,13 @@ def _install_action(
     else:
         dest = dests
 
-    if "@WORKSPACE@" in dest:
-        dest = dest.replace("@WORKSPACE@", _workspace(ctx))
+    dest_replacements = (
+        ("@WORKSPACE@", _workspace(ctx)),
+        ("@PYTHON_SITE_PACKAGES@", PYTHON_SITE_PACKAGES_RELPATH),
+    )
+    for old, new in dest_replacements:
+        if old in dest:
+            dest = dest.replace(old, new)
 
     if type(strip_prefixes) == "dict":
         strip_prefix = strip_prefixes.get(
@@ -545,7 +551,7 @@ _install_rule = rule(
         "runtime_strip_prefix": attr.string_list(),
         "java_dest": attr.string(default = "share/java"),
         "java_strip_prefix": attr.string_list(),
-        "py_dest": attr.string(default = "lib/python2.7/site-packages"),
+        "py_dest": attr.string(default = "@PYTHON_SITE_PACKAGES@"),
         "py_strip_prefix": attr.string_list(),
         "rename": attr.string_dict(),
         "install_tests": attr.label_list(
@@ -587,9 +593,12 @@ bazel, but does not define an install) where this *is* the right thing to do,
 the ``allowed_externals`` argument may be used to specify a list of externals
 whose files it is okay to install, which will suppress the warning.
 
-Destination paths may include the placeholder ``@WORKSPACE@``, which is
-replaced with ``workspace`` (if specified) or the name of the workspace which
-invokes ``install``.
+Destination paths may include the following placeholders:
+
+* ``@WORKSPACE@``, replaced with ``workspace`` (if specified) or the name of
+  the workspace which invokes ``install``.
+* ``@PYTHON_SITE_PACKAGES``, replaced with the Python version-specific path of
+  "site-packages".
 
 Note:
     By default, headers and resource files to be installed must be explicitly
@@ -665,7 +674,7 @@ Args:
     java_dest: Destination for Java library targets (default = "share/java").
     java_strip_prefix: List of prefixes to remove from Java library paths.
     py_dest: Destination for Python targets
-        (default = "lib/python2.7/site-packages").
+        (default = "lib/python{MAJOR}.{MINOR}/site-packages").
     py_strip_prefix: List of prefixes to remove from Python paths.
     rename: Mapping of install paths to alternate file names, used to rename
       files upon installation.

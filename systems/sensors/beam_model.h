@@ -9,6 +9,7 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
+// TODO(russt): Add support for symbolic.
 /// Implements the "Beam Models of Range Finders" from section 6.3 of
 ///   Probabilistic Robotics (2006), by Thrun, Burgard, and Fox
 ///
@@ -43,11 +44,11 @@ namespace sensors {
 /// variable inputs.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///
 /// @ingroup sensor_systems
-// TODO(russt): Add support for symbolic.
 template <typename T>
 class BeamModel final : public LeafSystem<T> {
  public:

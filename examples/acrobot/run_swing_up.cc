@@ -23,13 +23,13 @@ namespace {
 // point, with a Spong swing-up controller designed to reach the unstable
 // fixed point.  Run drake-visualizer to see the animated result.
 
+DEFINE_double(simulation_sec, 10.0,
+              "Number of seconds to simulate.");
 DEFINE_double(realtime_factor, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
-int do_main(int argc, char* argv[]) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-
+int do_main() {
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
@@ -61,7 +61,7 @@ int do_main(int argc, char* argv[]) {
   state->set_theta2dot(0.02);
 
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
-  simulator.StepTo(10.);
+  simulator.StepTo(FLAGS_simulation_sec);
 
   DRAKE_DEMAND(std::abs(math::wrap_to(state->theta1(), 0., 2. * M_PI) - M_PI) <
                1e-2);
@@ -78,5 +78,6 @@ int do_main(int argc, char* argv[]) {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::examples::acrobot::do_main(argc, argv);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  return drake::examples::acrobot::do_main();
 }

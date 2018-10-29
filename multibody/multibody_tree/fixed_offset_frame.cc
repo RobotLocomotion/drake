@@ -15,8 +15,10 @@ namespace multibody {
 template <typename T>
 FixedOffsetFrame<T>::FixedOffsetFrame(
     const std::string& name, const Frame<T>& P,
-    const Isometry3<double>& X_PF) :
-    Frame<T>(name, P.body()), parent_frame_(P), X_PF_(X_PF) {}
+    const Isometry3<double>& X_PF,
+    optional<ModelInstanceIndex> model_instance) :
+    Frame<T>(name, P.body(), model_instance.value_or(P.model_instance())),
+    parent_frame_(P), X_PF_(X_PF) {}
 
 template <typename T>
 FixedOffsetFrame<T>::FixedOffsetFrame(

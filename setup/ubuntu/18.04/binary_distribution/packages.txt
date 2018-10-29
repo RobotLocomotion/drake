@@ -35,6 +35,7 @@ python-matplotlib
 python-numpy
 python-pydot
 python-scipy
+python-six
 python-tk
 python-yaml
 qtbase5-dev

@@ -8,6 +8,7 @@ pydrake.examples
 
     pydrake.examples.acrobot
     pydrake.examples.compass_gait
+    pydrake.examples.multibody
     pydrake.examples.pendulum
     pydrake.examples.rimless_wheel
     pydrake.examples.van_der_pol
@@ -16,3 +17,4 @@ pydrake.examples
 .. automodule:: pydrake.examples
     :members:
     :undoc-members:
+    :show-inheritance:

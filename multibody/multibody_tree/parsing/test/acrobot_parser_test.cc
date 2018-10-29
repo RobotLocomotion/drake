@@ -170,6 +170,12 @@ INSTANTIATE_TEST_CASE_P(SdfAcrobatModelTests,
                         AcrobotModelTests,
                         ::testing::Values(test::LoadFromSdf));
 
+
+INSTANTIATE_TEST_CASE_P(UrdfAcrobatModelTests,
+                        AcrobotModelTests,
+                        ::testing::Values(test::LoadFromUrdf));
+
+
 }  // namespace
 }  // namespace parsing
 }  // namespace multibody

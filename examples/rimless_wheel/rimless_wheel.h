@@ -19,11 +19,12 @@ namespace rimless_wheel {
 ///   http://underactuated.mit.edu/underactuated.html?chapter=simple_legs
 /// In addition, this model has two additional (discrete) state variables that
 /// are not required in the mathematical model:
-///   - the position of the stance toe along the ramp (helpful for outputting
-///     a floating-base model coordinate, e.g. for visualization),
-///   - a boolean indicator for "double support" (to avoid the numerical
-///     challenges of simulation around the Zeno phenomenon at the standing
-///     fixed point).
+///
+/// - the position of the stance toe along the ramp (helpful for outputting
+///   a floating-base model coordinate, e.g. for visualization),
+/// - a boolean indicator for "double support" (to avoid the numerical
+///   challenges of simulation around the Zeno phenomenon at the standing
+///   fixed point).
 ///
 /// Inputs: None.
 /// Continuous States: theta, thetadot.
@@ -36,6 +37,7 @@ namespace rimless_wheel {
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 /// Instantiated templates for the following scalar types @p T are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///

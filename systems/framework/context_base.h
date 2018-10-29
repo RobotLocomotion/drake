@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 #include <utility>
@@ -247,8 +248,16 @@ class ContextBase : public internal::ContextMessageInterface {
   //@{
 
   /** Adds the next input port. Expected index is supplied along with the
-  assigned ticket. Subscribes the "all input ports" tracker to this one. */
-  void AddInputPort(InputPortIndex expected_index, DependencyTicket ticket);
+  assigned ticket. Subscribes the "all input ports" tracker to this one.
+  The fixed_input_type_checker will be used for validation when setting a fixed
+  input, or may be null when no validation should be performed.  Typically the
+  fixed_input_type_checker is created by System::MakeFixInputPortTypeChecker.
+  The fixed_input_type_checker lifetime will be the same as this ContextBase,
+  so it should not depend on pointers that may go out of scope.  Most acutely,
+  the function must not depend on any captured SystemBase pointers. */
+  void AddInputPort(
+      InputPortIndex expected_index, DependencyTicket ticket,
+      std::function<void(const AbstractValue&)> fixed_input_type_checker);
 
   /** Adds the next output port. Expected index is supplied along with the
   assigned ticket. */
@@ -567,6 +576,11 @@ class ContextBase : public internal::ContextMessageInterface {
   std::vector<copyable_unique_ptr<FixedInputPortValue>>
       input_port_values_;
 
+  // For each input port, the type checker function will be used for validation
+  // when setting a fixed input.
+  std::vector<std::function<void(const AbstractValue&)>>
+      input_port_type_checkers_;
+
   // The cache of pre-computed values owned by this subcontext.
   mutable Cache cache_;
 
@@ -614,10 +628,12 @@ class SystemBaseContextBaseAttorney {
     return context.get_parent_base();
   }
 
-  static void AddInputPort(ContextBase* context, InputPortIndex expected_index,
-                           DependencyTicket ticket) {
+  static void AddInputPort(
+      ContextBase* context, InputPortIndex expected_index,
+      DependencyTicket ticket,
+      std::function<void(const AbstractValue&)> type_checker) {
     DRAKE_DEMAND(context != nullptr);
-    context->AddInputPort(expected_index, ticket);
+    context->AddInputPort(expected_index, ticket, std::move(type_checker));
   }
 
   static void AddOutputPort(

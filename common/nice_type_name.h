@@ -40,7 +40,7 @@ namespace or for function-local types. Names will still be produced but they
 won't be unique, pretty, or compiler-independent.
 
 This class exists only to group type name-related static methods; don't try
-to construct an object of this type. **/
+to construct an object of this type. */
 class NiceTypeName {
  public:
   /** Attempts to return a nicely demangled and canonicalized type name that is
@@ -48,7 +48,7 @@ class NiceTypeName {
   operation but is only done once per instantiation of NiceTypeName::Get<T>()
   for a given type `T`. The returned reference will not be deleted even at
   program termination, so feel free to use it in error messages even in
-  destructors that may be invoked during program tear-down. **/
+  destructors that may be invoked during program tear-down. */
   template <typename T>
   static const std::string& Get() {
     static const never_destroyed<std::string> canonical(
@@ -61,7 +61,7 @@ class NiceTypeName {
   so is expensive whenever called, though very reasonable for use in error
   messages. For non-polymorphic types this produces the same result as would
   `Get<decltype(thing)>()` but for polymorphic types the results will
-  differ. **/
+  differ. */
   template <typename T>
   static std::string Get(const T& thing) {
     return Canonicalize(Demangle(typeid(thing).name()));
@@ -70,7 +70,7 @@ class NiceTypeName {
   /** Using the algorithm appropriate to the current compiler, demangles a type
   name as returned by `typeid(T).name()`, with the result hopefully suitable for
   meaningful display to a human. The result is compiler-dependent.
-  @see Canonicalize() **/
+  @see Canonicalize() */
   static std::string Demangle(const char* typeid_name);
 
   /** Given a compiler-dependent demangled type name string as returned by
@@ -78,7 +78,7 @@ class NiceTypeName {
   the same for any compiler. Unnecessary spaces and superfluous keywords like
   "class" and "struct" are removed. The NiceTypeName::Get<T>() method
   uses this function to produce a human-friendly type name that is the same on
-  any platform. **/
+  any platform. */
   static std::string Canonicalize(const std::string& demangled_name);
 
   /** Given a canonical type name that may include leading namespaces, attempts

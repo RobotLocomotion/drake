@@ -7,6 +7,7 @@
 namespace drake {
 namespace systems {
 
+// TODO(SeanCurtis-TRI): Investigate templatizing this on scalar.
 /** The set of per-object compliant material parameters with one material
  applied to each collision object. The material parameters include:
    - Young's modulus with units of pascals (i.e.,N/m²). This is a measure of the
@@ -50,7 +51,6 @@ namespace systems {
  ```
 
  See @ref drake_contacts for semantics of these properties for dynamics. */
-// TODO(SeanCurtis-TRI): Investigate templatizing this on scalar.
 class CompliantMaterial {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CompliantMaterial)
@@ -58,6 +58,7 @@ class CompliantMaterial {
 
   /** Constructs fully specified material. Will throw an exception in any of the
    following circumstances:
+
      - `youngs_modulus` <= 0
      - `dissipation` < 0
      - `static_friction` < 0
@@ -112,9 +113,9 @@ class CompliantMaterial {
   /** Reset the dissipation value to report the default value. */
   void set_dissipation_to_default() { dissipation_ = nullopt; }
 
-  /** Sets *both* coefficients of friction to the same value. Throws an
-   exception if the value is negative.  Returns a reference to `*this` so that
-   multiple invocations of `set` can be chained together. */
+  /** Sets *both* coefficients of friction to the same value.
+   @throws std::exception if the value is negative.  Returns a reference to
+   `*this` so that multiple invocations of `set` can be chained together. */
   CompliantMaterial& set_friction(double value);
 
   /** Sets the two coefficients of friction. The `dynamic_friction` values must

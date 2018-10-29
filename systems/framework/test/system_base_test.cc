@@ -54,6 +54,11 @@ class MySystemBase final : public SystemBase {
       return;
     throw std::logic_error("This Context is totally unacceptable!");
   }
+
+  std::function<void(const AbstractValue&)> MakeFixInputPortTypeChecker(
+      InputPortIndex) const override {
+    return {};
+  }
 };
 
 // Verify that system name methods work properly. Can't fully test the

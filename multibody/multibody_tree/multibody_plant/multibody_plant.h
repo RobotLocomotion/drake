@@ -44,6 +44,7 @@ namespace multibody_plant {
 /// concepts/notation.
 ///
 /// %MultibodyPlant provides a user-facing API to:
+///
 /// - add bodies, joints, force elements, and constraints,
 /// - register geometries to a provided SceneGraph instance,
 /// - create and manipulate its Context,
@@ -113,6 +114,7 @@ namespace multibody_plant {
 ///
 /// Clients of a %MultibodyPlant can add multibody elements with the following
 /// methods:
+///
 /// - Bodies: AddRigidBody().
 /// - Joints: AddJoint().
 ///
@@ -122,8 +124,10 @@ namespace multibody_plant {
 ///
 /// %MultibodyPlant users can register geometry with a SceneGraph for
 /// essentially two purposes; a) visualization and, b) contact modeling.
-// TODO(SeanCurtis-TRI): update this comment as the number of SceneGraph
-// roles changes.
+/// @cond
+/// // TODO(SeanCurtis-TRI): update this comment as the number of SceneGraph
+/// // roles changes.
+/// @endcond
 /// Before any geometry registration takes place, a user **must** first make a
 /// call to RegisterAsSourceForSceneGraph() in order to register the
 /// %MultibodyPlant as a client of a SceneGraph instance, point at which the
@@ -141,23 +145,27 @@ namespace multibody_plant {
 /// SceneGraph::get_query_output_port().
 /// In summary, if %MultibodyPlant registers collision geometry, the setup
 /// process will include:
+///
 /// 1. Call to RegisterAsSourceForSceneGraph().
 /// 2. Calls to RegisterCollisionGeometry(), as many as needed.
 /// 3. Call to Finalize(), user is done specifying the model.
 /// 4. Connect SceneGraph::get_query_output_port() to
 ///    get_geometry_query_input_port().
+///
 /// Refer to the documentation provided in each of the methods above for further
 /// details.
 ///
-/// @section Finalize() stage
+/// @section finalize_stage Finalize() stage
 ///
 /// Once the user is done adding modeling elements and registering geometry, a
 /// call to Finalize() must be performed. This call will:
+///
 /// - Build the underlying MultibodyTree topology, see MultibodyTree::Finalize()
 ///   for details,
 /// - declare the plant's state,
 /// - declare the plant's input and output ports,
 /// - declare input and output ports for communication with a SceneGraph.
+///
 /// @cond
 /// TODO(amcastro-tri): Consider making the actual geometry registration with GS
 /// AFTER Finalize() so that we can tell if there are any bodies welded to the
@@ -167,6 +175,7 @@ namespace multibody_plant {
 /// @endcond
 ///
 /// <h3> References </h3>
+///
 /// - [Featherstone 2008] Featherstone, R., 2008.
 ///     Rigid body dynamics algorithms. Springer.
 /// - [Jain 2010] Jain, A., 2010.
@@ -179,6 +188,7 @@ namespace multibody_plant {
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///
@@ -467,8 +477,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   ///       Vector3d::UnitZ());     /* revolute axis in this case */
   /// @endcode
   ///
-  /// @throws if `this` %MultibodyPlant already contains a joint with the given
-  /// `name`.  See HasJointNamed(), Joint::name().
+  /// @throws std::exception if `this` %MultibodyPlant already contains a joint
+  /// with the given `name`.  See HasJointNamed(), Joint::name().
   ///
   /// @see The Joint class's documentation for further details on how a Joint
   /// is defined.
@@ -543,8 +553,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   ///   The Joint to be actuated by the new JointActuator.
   /// @returns A constant reference to the new JointActuator just added, which
   /// will remain valid for the lifetime of `this` plant.
-  /// @throws if `joint.num_velocities() > 1` since for now we only support
-  /// actuators for single dof joints.
+  /// @throws std::exception if `joint.num_velocities() > 1` since for now we
+  /// only support actuators for single dof joints.
   const JointActuator<T>& AddJointActuator(
       const std::string& name, const Joint<T>& joint) {
     DRAKE_THROW_UNLESS(joint.num_velocities() == 1);
@@ -594,7 +604,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// in @p model_instance.
   /// @see AddRigidBody().
   ///
-  /// @throws if @p model_instance is not valid for this model.
+  /// @throws std::exception if @p model_instance is not valid for this model.
   bool HasBodyNamed(
       const std::string& name, ModelInstanceIndex model_instance) const {
     return tree().HasBodyNamed(name, model_instance);
@@ -613,7 +623,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// in @p model_instance.
   /// @see AddJoint().
   ///
-  /// @throws if @p model_instance is not valid for this model.
+  /// @throws std::exception if @p model_instance is not valid for this model.
   bool HasJointNamed(
       const std::string& name, ModelInstanceIndex model_instance) const {
     return tree().HasJointNamed(name, model_instance);
@@ -633,7 +643,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// %MultibodyPlant in @p model_instance.
   /// @see AddJointActuator().
   ///
-  /// @throws if @p model_instance is not valid for this model.
+  /// @throws std::exception if @p model_instance is not valid for this model.
   bool HasJointActuatorNamed(
       const std::string& name, ModelInstanceIndex model_instance) const {
     return tree().HasJointActuatorNamed(name, model_instance);
@@ -720,7 +730,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// Returns a constant reference to the joint that is uniquely identified
   /// by the string `name` and @p model_instance in `this` %MultibodyPlant.
   /// @throws std::logic_error if there is no joint with the requested name.
-  /// @throws if @p model_instance is not valid for this model.
+  /// @throws std::exception if @p model_instance is not valid for this model.
   /// @see HasJointNamed() to query if there exists a joint in `this`
   /// %MultibodyPlant with a given specified name.
   const Joint<T>& GetJointByName(
@@ -751,7 +761,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// be a subclass of Joint.
   /// @throws std::logic_error if the named joint is not of type `JointType` or
   /// if there is no Joint with that name.
-  /// @throws if @p model_instance is not valid for this model.
+  /// @throws std::exception if @p model_instance is not valid for this model.
   /// @see HasJointNamed() to query if there exists a joint in `this`
   /// %MultibodyPlant with a given specified name.
   template <template<typename> class JointType>
@@ -775,7 +785,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// Returns a constant reference to the actuator that is uniquely identified
   /// by the string `name` and @p model_instance in `this` %MultibodyPlant.
   /// @throws std::logic_error if there is no actuator with the requested name.
-  /// @throws if @p model_instance is not valid for this model.
+  /// @throws std::exception if @p model_instance is not valid for this model.
   /// @see HasJointActuatorNamed() to query if there exists an actuator in
   /// `this` %MultibodyPlant with a given specified name.
   const JointActuator<T>& GetJointActuatorByName(
@@ -793,6 +803,53 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   }
   /// @}
 
+  /// @name Accessing the state
+
+  /// Evaluates the pose `X_WB` of a body B in the world frame W.
+  /// @param[in] context
+  ///   The context storing the state of the multibody system.
+  /// @param[in] body_B
+  ///   The body B for which the pose is requested.
+  /// @retval X_WB
+  ///   The pose of body frame B in the world frame W.
+  /// @throws std::logic_error if called pre-finalize.
+  const Isometry3<T>& EvalBodyPoseInWorld(
+      const systems::Context<T>& context,
+      const Body<T>& body_B) const;
+
+  /// Sets `context` to store the pose `X_WB` of a given `body` B in the world
+  /// frame W.
+  /// @param[in] context
+  ///   The context to store the pose `X_WB` of `body_B`.
+  /// @param[in] body_B
+  ///   The body B corresponding to the pose `X_WB` to be stored in `context`.
+  /// @retval X_WB
+  ///   The pose of body frame B in the world frame W.
+  /// @note In general setting the pose and/or velocity of a body in the model
+  /// would involve a complex inverse kinematics problem. This method allows us
+  /// to simplify this process when we know the body is free in space.
+  /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::logic_error if called pre-finalize.
+  void SetFreeBodyPoseInWorldFrame(
+      systems::Context<T>* context,
+      const Body<T>& body, const Isometry3<T>& X_WB) const;
+
+  /// Updates `context` to store the pose `X_FB` of a given `body` B in a frame
+  /// F.
+  /// Frame F must be anchored, meaning that it is either directly welded to the
+  /// world frame W or, more generally, that there is a kinematic path between
+  /// frame F and the world frame W that only includes weld joints.
+  /// @throws std::logic_error if called pre-finalize.
+  /// @throws std::logic_error if frame F is not anchored to the world.
+  void SetFreeBodyPoseInAnchoredFrame(
+      systems::Context<T>* context,
+      const Frame<T>& frame_F, const Body<T>& body,
+      const Isometry3<T>& X_FB) const;
+
+  // TODO(amcastro-tri): Add state accessors for free body spatial velocities.
+
+  /// @}
+
   /// Registers `this` plant to serve as a source for an instance of
   /// SceneGraph. This registration allows %MultibodyPlant to
   /// register geometry with `scene_graph` for visualization and/or
@@ -806,9 +863,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   ///   for further details.
   /// @returns the SourceId of `this` plant in `scene_graph`. It can also
   /// later on be retrieved with get_source_id().
-  /// @throws if called post-finalize.
-  /// @throws if `scene_graph` is the nullptr.
-  /// @throws if called more than once.
+  /// @throws std::exception if called post-finalize.
+  /// @throws std::exception if `scene_graph` is the nullptr.
+  /// @throws std::exception if called more than once.
   geometry::SourceId RegisterAsSourceForSceneGraph(
       geometry::SceneGraph<T>* scene_graph);
 
@@ -823,17 +880,17 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   ///   The geometry::Shape used for visualization. E.g.: geometry::Sphere,
   ///   geometry::Cylinder, etc.
   /// @param[in] name
-  ///   The name for the geometry. It must satsify the requirements defined in
+  ///   The name for the geometry. It must satisfy the requirements defined in
   ///   drake::geometry::GeometryInstance.
   /// @param[in] material
   ///   The visual material to assign to the geometry.
   /// @param[out] scene_graph
   ///   A valid non nullptr to a SceneGraph on which geometry will get
   ///   registered.
-  /// @throws if `scene_graph` is the nullptr.
-  /// @throws if called post-finalize.
-  /// @throws if `scene_graph` does not correspond to the same instance with
-  /// which RegisterAsSourceForSceneGraph() was called.
+  /// @throws std::exception if `scene_graph` is the nullptr.
+  /// @throws std::exception if called post-finalize.
+  /// @throws std::exception if `scene_graph` does not correspond to the same
+  /// instance with which RegisterAsSourceForSceneGraph() was called.
   /// @returns the id for the registered geometry.
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
@@ -926,17 +983,49 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// scene_graph.ExcludeCollisionsWithin(set);
   /// ```
   ///
-  /// Note: There is a *very* specific order of operations.
-  ///   1. Bodies and geometries must be added to the %MultibodyPlant.
-  ///   2. The %MultibodyPlant must be finalized (via Finalize()).
-  ///   3. Create GeometrySet instances from bodies (via this method).
-  ///   4. Invoke SceneGraph::ExcludeCollisions*() to filter collisions.
-  ///   5. Allocate context.
+  /// @note There is a *very* specific order of operations:
+  ///
+  /// 1. Bodies and geometries must be added to the %MultibodyPlant.
+  /// 2. The %MultibodyPlant must be finalized (via Finalize()).
+  /// 3. Create GeometrySet instances from bodies (via this method).
+  /// 4. Invoke SceneGraph::ExcludeCollisions*() to filter collisions.
+  /// 5. Allocate context.
+  ///
   /// Changing the order will cause exceptions to be thrown.
   ///
   /// @throws std::exception if called pre-finalize.
   geometry::GeometrySet CollectRegisteredGeometries(
       const std::vector<const Body<T>*>& bodies) const;
+
+  /// Returns all bodies that are transitively welded, or rigidly affixed, to
+  /// `body`, per these two definitions:
+  ///
+  /// 1. A body is always considered welded to itself.
+  /// 2. Two unique bodies are considered welded together exclusively by the
+  /// presence of a weld joint, not by other constructs that prevent mobility
+  /// (e.g. constraints).
+  ///
+  /// Meant to be used with `CollectRegisteredGeometries`.
+  ///
+  /// The following example demonstrates filtering collisions between all
+  /// bodies rigidly affixed to a door (which could be moving) and all bodies
+  /// rigidly affixed to the world:
+  /// @code
+  /// GeometrySet g_world = plant.CollectRegisteredGeometries(
+  ///     plant.GetBodiesWeldedTo(plant.world_body()));
+  /// GeometrySet g_door = plant.CollectRegisteredGeometries(
+  ///     plant.GetBodiesWeldedTo(plant.GetBodyByName("door")));
+  /// scene_graph.ExcludeCollisionsBetweeen(g_world, g_door);
+  /// @endcode
+  /// @note Usages akin to this example may introduce redundant collision
+  /// filtering; this will not have a functional impact, but may have a minor
+  /// performance impact.
+  ///
+  /// @returns all bodies rigidly fixed to `body`. This does not return the
+  /// bodies in any prescribed order.
+  /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `body` is not part of this plant.
+  std::vector<const Body<T>*> GetBodiesWeldedTo(const Body<T>& body) const;
 
   /// Returns the friction coefficients provided during geometry registration
   /// for the given geometry `id`. We call these the "default" coefficients but
@@ -977,14 +1066,12 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// connection with a SceneGraph.
   /// @throws std::exception if this system was not registered with a
   /// SceneGraph.
-  /// @throws std::exception if called pre-finalize. See Finalize().
   const systems::InputPort<T>& get_geometry_query_input_port() const;
 
   /// Returns the output port of frames' poses to communicate with a
   /// SceneGraph.
   /// @throws std::exception if this system was not registered with a
   /// SceneGraph.
-  /// @throws std::exception if called pre-finalize. See Finalize().
   const systems::OutputPort<T>& get_geometry_poses_output_port() const;
   /// @}
 
@@ -1007,7 +1094,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 
   /// If the body with `body_index` has geometry registered with it, it returns
   /// the geometry::FrameId associated with it. Otherwise, it returns nullopt.
-  /// @throws if called pre-finalize.
+  /// @throws std::exception if called pre-finalize.
   optional<geometry::FrameId> GetBodyFrameIdIfExists(
       BodyIndex body_index) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
@@ -1021,9 +1108,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// If the body with `body_index` has geometry registered with it, it returns
   /// the geometry::FrameId associated with it. Otherwise this method throws
   /// an exception.
-  /// @throws if no geometry has been registered with the body indicated by
-  /// `body_index`.
-  /// @throws if called pre-finalize.
+  /// @throws std::exception if no geometry has been registered with the body
+  /// indicated by `body_index`.
+  /// @throws std::exception if called pre-finalize.
   geometry::FrameId GetBodyFrameIdOrThrow(BodyIndex body_index) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     const auto it = body_index_to_frame_id_.find(body_index);
@@ -1049,17 +1136,17 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// port is a vector valued port, which can be set with
   /// JointActuator::set_actuation_vector().
   /// @pre Finalize() was already called on `this` plant.
-  /// @throws if called before Finalize(), if the model does not contain any
-  /// actuators, or if multiple model instances have actuated dofs.
+  /// @throws std::exception if called before Finalize(), if the model does not
+  /// contain any actuators, or if multiple model instances have actuated dofs.
   const systems::InputPort<T>& get_actuation_input_port() const;
 
   /// Returns a constant reference to the input port for external actuation for
   /// a specific model instance.  This input port is a vector valued port, which
   /// can be set with JointActuator::set_actuation_vector().
   /// @pre Finalize() was already called on `this` plant.
-  /// @throws if called before Finalize() or if the model instance does not
-  /// contain any actuators.
-  /// @throws if the model instance does not exist.
+  /// @throws std::exception if called before Finalize() or if the model
+  /// instance does not contain any actuators.
+  /// @throws std::exception if the model instance does not exist.
   const systems::InputPort<T>& get_actuation_input_port(
       ModelInstanceIndex model_instance) const;
 
@@ -1080,9 +1167,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// Returns a constant reference to the output port for the continuous
   /// state of a specific model instance.
   /// @pre Finalize() was already called on `this` plant.
-  /// @throws if called before Finalize() or if the model instance does not
-  /// have any state.
-  /// @throws if the model instance does not exist.
+  /// @throws std::exception if called before Finalize() or if the model
+  /// instance does not have any state.
+  /// @throws std::exception if the model instance does not exist.
   const systems::OutputPort<T>& get_continuous_state_output_port(
       ModelInstanceIndex model_instance) const;
   /// @}
@@ -1122,7 +1209,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 
   /// Returns a constant reference to the underlying MultibodyTree model for
   /// `this` plant.
-  /// @throws if called pre-finalize. See Finalize().
+  /// @throws std::exception if called pre-finalize. See Finalize().
   DRAKE_DEPRECATED("Please use tree().")
   const MultibodyTree<T>& model() const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
@@ -1317,7 +1404,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 
   /// Sets the state in `context` so that generalized positions and velocities
   /// are zero.
-  /// @throws if called pre-finalize. See Finalize().
+  /// @throws std::exception if called pre-finalize. See Finalize().
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
@@ -1465,23 +1552,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   // 2. RegisterAsSourceForSceneGraph() was called on `this` plant.
   // 3. `scene_graph` points to the same SceneGraph instance previously
   //    passed to RegisterAsSourceForSceneGraph().
-  // 4. The body is *not* the world body.
   geometry::GeometryId RegisterGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape,
-      const std::string& name,
-      const optional<geometry::VisualMaterial>& material,
-      geometry::SceneGraph<T>* scene_graph);
-
-  // Helper method to register anchored geometry to the world, either visual or
-  // collision. This associates a GeometryId with the world body.
-  // This assumes:
-  // 1. Finalize() was not called on `this` plant.
-  // 2. RegisterAsSourceForSceneGraph() was called on `this` plant.
-  // 3. `scene_graph` points to the same SceneGraph instance previously
-  //    passed to RegisterAsSourceForSceneGraph().
-  geometry::GeometryId RegisterAnchoredGeometry(
-      const Isometry3<double>& X_WG, const geometry::Shape& shape,
       const std::string& name,
       const optional<geometry::VisualMaterial>& material,
       geometry::SceneGraph<T>* scene_graph);

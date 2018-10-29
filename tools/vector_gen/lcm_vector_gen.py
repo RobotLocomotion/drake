@@ -6,9 +6,9 @@ import argparse
 import collections
 import os
 import subprocess
-import yaml
 
 import google.protobuf.text_format
+import yaml
 
 from drake.tools.vector_gen import named_vector_pb2
 from drake.tools.lint.clang_format import get_clang_format_path
@@ -116,7 +116,7 @@ def generate_indices_names_accessor_impl(cc, caller_context, fields):
     put(cc, INDICES_NAMES_ACCESSOR_IMPL_END % context, 2)
 
 
-# A second variant of a default constructor (field-by-field setting).
+# A default constructor with field-by-field setting.
 DEFAULT_CTOR_CUSTOM_BEGIN_API = """
   /// Default constructor.  Sets all rows to their default value:
 """
@@ -137,7 +137,6 @@ DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS = 'unknown'
 
 
 def generate_default_ctor(hh, caller_context, fields):
-    # Otherwise, emit a customized ctor.
     put(hh, DEFAULT_CTOR_CUSTOM_BEGIN_API % caller_context, 1)
     for field in fields:
         context = dict(caller_context)
@@ -162,6 +161,35 @@ def generate_default_ctor(hh, caller_context, fields):
         context.update(default_value=default_value)
         put(hh, DEFAULT_CTOR_CUSTOM_FIELD_BODY % context, 1)
     put(hh, DEFAULT_CTOR_CUSTOM_END % caller_context, 2)
+
+
+# The "rule of five methods" (but only four -- default dtor is fine).
+COPY_AND_ASSIGN = """
+  // Note: It's safe to implement copy and move because this class is final.
+
+  /// @name Implements CopyConstructible, CopyAssignable, MoveConstructible,
+  /// MoveAssignable
+  //@{
+  %(camel)s(const %(camel)s& other)
+      : drake::systems::BasicVector<T>(other.values()) {}
+  %(camel)s(%(camel)s&& other) noexcept
+      : drake::systems::BasicVector<T>(std::move(other.values())) {}
+  %(camel)s& operator=(const %(camel)s& other) {
+    this->values() = other.values();
+    return *this;
+  }
+  %(camel)s& operator=(%(camel)s&& other) noexcept {
+    this->values() = std::move(other.values());
+    other.values().resize(0);
+    return *this;
+  }
+  //@}
+"""
+
+
+def generate_copy_and_assign(hh, caller_context):
+    # Otherwise, emit a customized ctor.
+    put(hh, COPY_AND_ASSIGN % caller_context, 2)
 
 
 # SetToNamedVariables (for symbolic::Expression only).
@@ -214,9 +242,23 @@ ACCESSOR_FIELD_DOC_RANGE = """
   /// @note @c %(field)s has a limited domain of [%(min_doc)s, %(max_doc)s].
 """
 ACCESSOR_FIELD_METHODS = """
-  const T& %(field)s() const { return this->GetAtIndex(K::%(kname)s); }
+  const T& %(field)s() const {
+    ThrowIfEmpty();
+    return this->GetAtIndex(K::%(kname)s);
+  }
+  /// Setter that matches %(field)s().
   void set_%(field)s(const T& %(field)s) {
+    ThrowIfEmpty();
     this->SetAtIndex(K::%(kname)s, %(field)s);
+  }
+  /// Fluent setter that matches %(field)s().
+  /// Returns a copy of `this` with %(field)s set to a new value.
+  DRAKE_VECTOR_GEN_NODISCARD
+  %(camel)s<T>
+  with_%(field)s(const T& %(field)s) const {
+    %(camel)s<T> result(*this);
+    result.set_%(field)s(%(field)s);
+    return result;
   }
 """
 ACCESSOR_END = """
@@ -342,6 +384,7 @@ VECTOR_HH_PREAMBLE = """
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <utility>
 
 #include <Eigen/Core>
 
@@ -350,6 +393,13 @@ VECTOR_HH_PREAMBLE = """
 #include "drake/common/never_destroyed.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/framework/basic_vector.h"
+
+// TODO(jwnimmer-tri) Elevate this to drake/common.
+#if __has_cpp_attribute(nodiscard)
+#define DRAKE_VECTOR_GEN_NODISCARD [[nodiscard]]  // NOLINT(whitespace/braces)
+#else
+#define DRAKE_VECTOR_GEN_NODISCARD
+#endif
 
 %(opening_namespace)s
 """
@@ -365,11 +415,21 @@ class %(camel)s final : public drake::systems::BasicVector<T> {
 """
 
 VECTOR_CLASS_END = """
+ private:
+  void ThrowIfEmpty() const {
+    if (this->values().size() == 0) {
+      throw std::out_of_range(
+          "The %(camel)s vector has been moved-from; "
+          "accessor methods may no longer be used");
+    }
+  }
 };
 """
 
 VECTOR_HH_POSTAMBLE = """
 %(closing_namespace)s
+
+#undef DRAKE_VECTOR_GEN_NODISCARD
 """
 
 VECTOR_CC_PREAMBLE = """
@@ -608,6 +668,7 @@ def generate_code(
             generate_indices_names_accessor_decl(hh, context)
             put(hh, VECTOR_CLASS_BEGIN % context, 2)
             generate_default_ctor(hh, context, fields)
+            generate_copy_and_assign(hh, context)
             generate_set_to_named_variables(hh, context, fields)
             generate_do_clone(hh, context, fields)
             generate_accessors(hh, context, fields)

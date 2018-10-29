@@ -69,7 +69,8 @@ void DefineFrameworkPySemantics(py::module m) {
     .def("CopyFrom", &AbstractValues::CopyFrom,
          doc.AbstractValues.CopyFrom.doc);
 
-  auto bind_common_scalar_types = [m](auto dummy) {
+  // N.B. Capturing `&doc` should not be required; workaround per #9600.
+  auto bind_common_scalar_types = [m, &doc](auto dummy) {
     using T = decltype(dummy);
     DefineTemplateClassWithDefault<Context<T>>(
         m, "Context", GetPyParam<T>(), doc.Context.doc)
@@ -125,6 +126,18 @@ void DefineFrameworkPySemantics(py::module m) {
            py_reference_internal,
            doc.Context.get_mutable_continuous_state_vector.doc)
       // - Discrete.
+      .def("get_num_discrete_state_groups",
+           &Context<T>::get_num_discrete_state_groups, doc.Context
+               .get_num_discrete_state_groups.doc)
+      .def("get_discrete_state",
+           overload_cast_explicit<const DiscreteValues<T>&>(
+               &Context<T>::get_discrete_state),
+           py_reference_internal, doc.Context.get_discrete_state.doc)
+      .def("get_mutable_discrete_state",
+           overload_cast_explicit<DiscreteValues<T>&>(
+               &Context<T>::get_mutable_discrete_state),
+           py_reference_internal,
+           doc.Context.get_mutable_discrete_state.doc)
       .def("get_discrete_state_vector",
            &Context<T>::get_discrete_state_vector,
            py_reference_internal,
@@ -135,6 +148,15 @@ void DefineFrameworkPySemantics(py::module m) {
            },
            py_reference_internal,
            doc.Context.get_mutable_discrete_state_vector.doc)
+      .def("get_discrete_state",
+           overload_cast_explicit<const BasicVector<T>&, int>(
+               &Context<T>::get_discrete_state),
+           py_reference_internal, doc.Context.get_discrete_state.doc_2)
+      .def("get_mutable_discrete_state",
+           overload_cast_explicit<BasicVector<T>&, int>(
+               &Context<T>::get_mutable_discrete_state),
+           py_reference_internal,
+           doc.Context.get_mutable_discrete_state.doc_2)
       // - Abstract.
       .def("get_num_abstract_states", &Context<T>::get_num_abstract_states,
            doc.Context.get_num_abstract_states.doc)
@@ -206,7 +228,15 @@ void DefineFrameworkPySemantics(py::module m) {
         m, "OutputPort", GetPyParam<T>(), doc.OutputPort.doc)
       .def("size", &OutputPort<T>::size, doc.OutputPortBase.size.doc)
       .def("get_index", &OutputPort<T>::get_index,
-           doc.OutputPortBase.get_index.doc);
+           doc.OutputPortBase.get_index.doc)
+      .def("EvalAbstract",
+           &OutputPort<T>::EvalAbstract, doc.OutputPort.EvalAbstract.doc,
+           py_reference_internal)
+      .def("Eval", [](const OutputPort<T>* self, const Context<T>& context) {
+             // Use type-erased signature to get value.
+             py::object value_ref = py::cast(&self->EvalAbstract(context));
+             return value_ref.attr("get_value")();
+           }, doc.OutputPort.Eval.doc);
 
     auto system_output = DefineTemplateClassWithDefault<SystemOutput<T>>(
         m, "SystemOutput", GetPyParam<T>(), doc.SystemOutput.doc);
@@ -238,7 +268,7 @@ void DefineFrameworkPySemantics(py::module m) {
     // remove it from the Python code.
     static_assert(
       std::is_same<InputPortDescriptor<T>, InputPort<T>>::value,
-      "Remove Python aliases once this causes a compilation error this fails");
+      "Remove Python aliases once this causes a compilation error");
   #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
     // Parameters.

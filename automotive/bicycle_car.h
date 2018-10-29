@@ -22,12 +22,13 @@ namespace automotive {
 /// dynamics.
 ///
 /// The states of the model are:
-///  - yaw angle Ψ [rad]
-///  - yaw rate Ψ_dot [rad/s]
-///  - slip angle at the center of mass β [rad]
-///  - velocity magnitude (vector magnitude at the slip angle) vel [m/s]
-///  - x-position of the center of mass sx [m]
-///  - y-position of the center of mass sy [m]
+///
+/// - yaw angle Ψ [rad]
+/// - yaw rate Ψ_dot [rad/s]
+/// - slip angle at the center of mass β [rad]
+/// - velocity magnitude (vector magnitude at the slip angle) vel [m/s]
+/// - x-position of the center of mass sx [m]
+/// - y-position of the center of mass sy [m]
 ///
 /// @note "slip angle" (β) is the angle made between the body and the velocity
 /// vector.  Thus, the velocity vector can be resolved into the body-relative
@@ -35,17 +36,20 @@ namespace automotive {
 /// velocity vector is pointing along the bicycle's longitudinal axis.
 ///
 /// Inputs:
-///  - Angle of the front wheel of the bicycle δ [rad]
-///    (InputPort getter: get_steering_input_port())
-///  - Force acting on the rigid body F_in [N]
-///    (InputPort getter: get_force_input_port())
+///
+/// - Angle of the front wheel of the bicycle δ [rad]
+///   (InputPort getter: get_steering_input_port())
+/// - Force acting on the rigid body F_in [N]
+///   (InputPort getter: get_force_input_port())
 ///
 /// Output:
-///  - A BicycleCarState containing the 6-dimensional state vector of the
-///    bicycle.
-///    (OutputPort getter: get_state_output_port())
+///
+/// - A BicycleCarState containing the 6-dimensional state vector of the
+///   bicycle.
+///   (OutputPort getter: get_state_output_port())
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - drake::AutoDiffXd
 /// - drake::symbolic::Expression

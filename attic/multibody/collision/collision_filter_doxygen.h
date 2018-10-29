@@ -13,7 +13,7 @@ when bodies occupy the same space and, to a certain extent, quantify the degree
 to which they invalidate the collision constraint.
 
 Next topic: @ref collision_filter_concepts
-**/
+*/
 
 /** @defgroup collision_filter_concepts Collision Filter Concepts
 @ingroup collision_concepts
@@ -108,7 +108,7 @@ This representation is particularly helpful in discussing @ref collision_clique
 and in comparing @ref collision_clique with @ref collision_filter_group.
 
 Next topic: @ref collision_clique
-**/
+*/
 
 /** @defgroup collision_clique Collision Cliques
  @ingroup collision_filter_concepts
@@ -177,7 +177,7 @@ hold `E` and use a weld (fixed) joint to attach `Z` to `B`. `Z` will not be
 adjacent to A, so `E` will interact with `A`'s elements.
 
 Next topic: @ref collision_filter_group
-**/
+*/
 
 /** @defgroup collision_filter_group Collision Filter Groups
  @ingroup collision_filter_concepts
@@ -337,7 +337,7 @@ to bit zero. A collision element can be rendered "invisible" by assigning it
 to a group that ignores this universal group.
 
 Next topic: @ref collision_filter_mapping
-**/
+*/
 
 /** @defgroup collision_filter_mapping Relationship Between Collision Filter Implementations
  @ingroup collision_filter_concepts
@@ -475,7 +475,7 @@ costs and are ideally suited for excluding large classes of bodies from
 collision computation.
 
 Next topic: @ref collision_filter_file_semantics
-**/
+*/
 
 /** @defgroup collision_filter_file_semantics Input File Collision Semantics
  @ingroup collision_filter_concepts
@@ -493,7 +493,7 @@ Next topic: @ref collision_filter_file_semantics
  @note This section is incomplete.
 
  Next topic: @ref collision_filter_future
-**/
+*/
 
 /** @defgroup collision_filter_future Future Collision Filter Features
  @ingroup collision_filter_concepts
@@ -510,4 +510,4 @@ Next topic: @ref collision_filter_file_semantics
       - `SetCanCollide(tree1->bodies[i], tree1->bodies[j]);`
          `//` Exception to previous rule, such that body `i` in tree 1 can
          collide with body `j` in tree 2.
- **/
+ */

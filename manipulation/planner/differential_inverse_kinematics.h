@@ -9,9 +9,10 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -105,7 +106,7 @@ class DifferentialInverseKinematicsParameters {
   /// @{
   /**
    * Sets timestep to @p dt.
-   * @throws if dt <= 0.
+   * @throws std::exception if dt <= 0.
    */
   void set_timestep(double dt) {
     DRAKE_THROW_UNLESS(dt > 0);
@@ -115,7 +116,7 @@ class DifferentialInverseKinematicsParameters {
   /**
    * Sets the max magnitude of the velocity in the unconstrained degree of
    * freedom to @p limit.
-   * @throws if limit < 0.
+   * @throws std::exception if limit < 0.
    */
   void set_unconstrained_degrees_of_freedom_velocity_limit(double limit) {
     DRAKE_THROW_UNLESS(limit >= 0);
@@ -124,7 +125,7 @@ class DifferentialInverseKinematicsParameters {
 
   /**
    * Sets the nominal joint position.
-   * @throws if @p nominal_joint_position's dimension differs.
+   * @throws std::exception if @p nominal_joint_position's dimension differs.
    */
   void set_nominal_joint_position(
       const Eigen::Ref<const VectorX<double>>& nominal_joint_position) {
@@ -135,7 +136,8 @@ class DifferentialInverseKinematicsParameters {
   /**
    * Sets the end effector gains in the body frame. Gains can be used to
    * specify relative importance among different dimensions.
-   * @throws if any element of @p gain_E is larger than 1 or smaller than 0.
+   * @throws std::exception if any element of @p gain_E is larger than 1 or
+   * smaller than 0.
    */
   void set_end_effector_velocity_gain(const Vector6<double>& gain_E) {
     DRAKE_THROW_UNLESS((gain_E.array() >= 0).all() &&
@@ -147,9 +149,9 @@ class DifferentialInverseKinematicsParameters {
    * Sets the joint position limits.
    * @param q_bounds The first element is the lower bound, and the second is
    * the upper bound.
-   * @throws if the first or second element of @p q_bounds has the wrong
-   * dimension or any element of the second element is smaller than its
-   * corresponding part in the first element.
+   * @throws std::exception if the first or second element of @p q_bounds has
+   * the wrong dimension or any element of the second element is smaller than
+   * its corresponding part in the first element.
    */
   void set_joint_position_limits(
       const std::pair<VectorX<double>, VectorX<double>>& q_bounds) {
@@ -164,9 +166,9 @@ class DifferentialInverseKinematicsParameters {
    * Sets the joint velocity limits.
    * @param q_bounds The first element is the lower bound, and the second is
    * the upper bound.
-   * @throws if the first or second element of @p q_bounds has the wrong
-   * dimension or any element of the second element is smaller than its
-   * corresponding part in the first element.
+   * @throws std::exception if the first or second element of @p q_bounds has
+   * the wrong dimension or any element of the second element is smaller than
+   * its corresponding part in the first element.
    */
   void set_joint_velocity_limits(
       const std::pair<VectorX<double>, VectorX<double>>& v_bounds) {
@@ -181,9 +183,9 @@ class DifferentialInverseKinematicsParameters {
    * Sets the joint acceleration limits.
    * @param q_bounds The first element is the lower bound, and the second is
    * the upper bound.
-   * @throws if the first or second element of @p q_bounds has the wrong
-   * dimension or any element of the second element is smaller than its
-   * corresponding part in the first element.
+   * @throws std::exception if the first or second element of @p q_bounds has
+   * the wrong dimension or any element of the second element is smaller than
+   * its corresponding part in the first element.
    */
   void set_joint_acceleration_limits(
       const std::pair<VectorX<double>, VectorX<double>>& vd_bounds) {
@@ -304,8 +306,9 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * transforming @p V_WE to V_WE_E, then taking the element-wise product between
  * V_WE_E and the gains (specified in frame E) in @p parameters, and only
  * selecting the non zero elements. J is computed similarly.
- * @param robot A MultibodyTree model.
- * @param context Contains the current generalized position and velocity.
+ * @param robot A MultibodyPlant model.
+ * @param context Must be the Context of the MultibodyPlant. Contains the
+ * current generalized position and velocity.
  * @param V_WE_desired Desired world frame spatial velocity of @p frame_E.
  * @param frame_E End effector frame.
  * @param parameters Collection of various problem specific constraints and
@@ -314,7 +317,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * be set to v, otherwise it will be nullopt.
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::MultibodyTree<double>& robot,
+    const multibody::multibody_plant::MultibodyPlant<double>& robot,
     const systems::Context<double>& context,
     const Vector6<double>& V_WE_desired,
     const multibody::Frame<double>& frame_E,
@@ -327,8 +330,9 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * q_current and v_current are taken from @p cache. V_WE is computed by
  * ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) / dt, where X_WE is computed
  * from @p context, and dt is taken from @p parameters.
- * @param robot A MultibodyTree model.
- * @param context Contains the current generalized position and velocity.
+ * @param robot A MultibodyPlant model.
+ * @param context Must be the Context of the MultibodyPlant. Contains the
+ * current generalized position and velocity.
  * @param X_WE_desired Desired pose of @p frame_E in the world frame.
  * @param frame_E End effector frame.
  * @param parameters Collection of various problem specific constraints and
@@ -336,6 +340,28 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
  */
+DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
+    const multibody::multibody_plant::MultibodyPlant<double>& robot,
+    const systems::Context<double>& context,
+    const Isometry3<double>& X_WE_desired,
+    const multibody::Frame<double>& frame_E,
+    const DifferentialInverseKinematicsParameters& parameters);
+
+/**
+ * Deprecated: Please use the MultibodyPlant version.
+ */
+DRAKE_DEPRECATED("Please use the MultibodyPlant version.")
+DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
+    const multibody::MultibodyTree<double>& robot,
+    const systems::Context<double>& context,
+    const Vector6<double>& V_WE_desired,
+    const multibody::Frame<double>& frame_E,
+    const DifferentialInverseKinematicsParameters& parameters);
+
+/**
+ * Deprecated: Please use the MultibodyPlant version.
+ */
+DRAKE_DEPRECATED("Please use the MultibodyPlant version.")
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const multibody::MultibodyTree<double>& robot,
     const systems::Context<double>& context,

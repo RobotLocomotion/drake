@@ -8,8 +8,10 @@ pydrake.manipulation
 
     pydrake.manipulation.all
     pydrake.manipulation.planner
+    pydrake.manipulation.simple_ui
 
 
 .. automodule:: pydrake.manipulation
     :members:
     :undoc-members:
+    :show-inheritance:

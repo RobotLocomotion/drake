@@ -45,6 +45,7 @@ namespace math {
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression
@@ -105,6 +106,7 @@ class RotationMatrix {
     DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
   }
 
+  // TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
   /// Constructs a %RotationMatrix from an %RollPitchYaw.  In other words,
   /// makes the %RotationMatrix for a Space-fixed (extrinsic) X-Y-Z rotation by
   /// "roll-pitch-yaw" angles `[r, p, y]`, which is equivalent to a Body-fixed
@@ -121,7 +123,7 @@ class RotationMatrix {
   ///        ⎣    0       0   1⎦   ⎣-sin(p)  0  cos(p)⎦   ⎣0  sin(r)   cos(r)⎦
   ///      =       R_AB          *        R_BC          *        R_CD
   /// ```
-  /// Note: In this discussion, A is the Space frame and D is the Body frame.
+  /// @note In this discussion, A is the Space frame and D is the Body frame.
   /// One way to visualize this rotation sequence is by introducing intermediate
   /// frames B and C (useful constructs to understand this rotation sequence).
   /// Initially, the frames are aligned so `Di = Ci = Bi = Ai (i = x, y, z)`.
@@ -134,7 +136,6 @@ class RotationMatrix {
   /// @li 3rd rotation R_AB: Frames D, C, B (collectively -- as if welded)
   /// rotate relative to frame A by a roll angle `y` about `Bz = Az`.
   /// Note: B and A are no longer aligned.
-  /// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
   explicit RotationMatrix(const RollPitchYaw<T>& rpy) {
     const T& r = rpy.roll_angle();
     const T& p = rpy.pitch_angle();
@@ -156,6 +157,25 @@ class RotationMatrix {
     R_AB_.row(0) << Rxx, Rxy, Rxz;
     R_AB_.row(1) << Ryx, Ryy, Ryz;
     R_AB_.row(2) << Rzx, Rzy, Rzz;
+  }
+
+  /// (Advanced) Makes the %RotationMatrix `R_AB` from right-handed orthonormal
+  /// vectors `Bx`, `By`, `Bz` so that the columns of `R_AB` are `[Bx, By, Bz]`.
+  /// @param[in] Bx first unit vector in right-handed orthogonal set.
+  /// @param[in] By second unit vector in right-handed orthogonal set.
+  /// @param[in] Bz third unit vector in right-handed orthogonal set.
+  /// @throws std::logic_error in debug builds if `R_AB` fails IsValid(R_AB).
+  /// @note To avoid creating an invalid %RotationMatrix in release builds, the
+  /// routine that calls this function should subsequently call R_AB.IsValid().
+  /// @note The rotation matrix `R_AB` relates two sets of right-handed
+  /// orthogonal unit vectors, namely `Ax`, `Ay`, `Az` and `Bx`, `By`, `Bz`.
+  /// The rows of `R_AB` are `Ax`, `Ay`, `Az` whereas the
+  /// columns of `R_AB` are `Bx`, `By`, `Bz`.
+  static RotationMatrix<T> MakeColumnsFromOrthonormalBasis(
+      const Vector3<T>& Bx, const Vector3<T>& By, const Vector3<T>& Bz) {
+    RotationMatrix R;
+    R.set_columns(Bx, By, Bz);
+    return R;
   }
 
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
@@ -557,6 +577,21 @@ class RotationMatrix {
   // @param[in] R an allegedly valid rotation matrix.
   void SetUnchecked(const Matrix3<T>& R) { R_AB_ = R; }
 
+  // Sets `this` %RotationMatrix from three right-handed orthogonal unit
+  // vectors, `x`, `y`, `z` that represent a 3x3 matrix `R = [x, y, z]`.
+  // @param[in] x first unit vector in right-handed orthogonal set.
+  // @param[in] y second unit vector in right-handed orthogonal set.
+  // @param[in] z third unit vector in right-handed orthogonal set.
+  // @throws std::logic_error in debug builds if R fails IsValid(R).
+  void set_columns(const Vector3<T>& x, const Vector3<T>& y,
+                   const Vector3<T>& z) {
+    Matrix3<T> R;
+    R.col(0) = x;
+    R.col(1) = y;
+    R.col(2) = z;
+    set(R);
+  }
+
   // Computes the infinity norm of R - `other` (i.e., the maximum absolute
   // value of the difference between the elements of R and `other`).
   // @param[in] R matrix from which `other` is subtracted.
@@ -712,8 +747,8 @@ using RotationMatrixd = RotationMatrix<double>;
 /// @param[in] angle_lb the lower bound of the rotation angle θ.
 /// @param[in] angle_ub the upper bound of the rotation angle θ.
 /// @return Rotation angle θ of the projected matrix, angle_lb <= θ <= angle_ub
-/// @throws exception std::runtime_error if M is not a 3 x 3 matrix or if
-///                   axis is the zero vector or if angle_lb > angle_ub.
+/// @throws std::runtime_error if M is not a 3 x 3 matrix or if
+///         axis is the zero vector or if angle_lb > angle_ub.
 /// @note This function is useful for reconstructing a rotation matrix for a
 /// revolute joint with joint limits.
 /// @note This can be formulated as an optimization problem
@@ -861,8 +896,8 @@ RotationMatrix<T>::ThrowIfNotValid(const Matrix3<S>& R) {
   }
 }
 
-/// (Deprecated), use @ref math::RotationMatrix::MakeXRotation().
 // TODO(mitiguy) Delete this code after October 6, 2018.
+/// (Deprecated), use @ref math::RotationMatrix::MakeXRotation().
 template <typename T>
 DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
                      "Use math::RotationMatrix::MakeXRotation(theta).")
@@ -870,8 +905,8 @@ Matrix3<T> XRotation(const T& theta) {
   return drake::math::RotationMatrix<T>::MakeXRotation(theta).matrix();
 }
 
-/// (Deprecated), use @ref math::RotationMatrix::MakeYRotation().
 // TODO(mitiguy) Delete this code after October 6, 2018.
+/// (Deprecated), use @ref math::RotationMatrix::MakeYRotation().
 template <typename T>
 DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
                      "Use math::RotationMatrix::MakeYRotation(theta).")
@@ -879,8 +914,8 @@ Matrix3<T> YRotation(const T& theta) {
   return drake::math::RotationMatrix<T>::MakeYRotation(theta).matrix();
 }
 
-/// (Deprecated), use @ref math::RotationMatrix::MakeZRotation().
 // TODO(mitiguy) Delete this code after October 6, 2018.
+/// (Deprecated), use @ref math::RotationMatrix::MakeZRotation().
 template <typename T>
 DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
                      "Use math::RotationMatrix::MakeZRotation(theta).")

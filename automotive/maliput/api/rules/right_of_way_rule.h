@@ -22,6 +22,7 @@ namespace rules {
 /// flows take turns traversing regions of the road network.
 ///
 /// Each rule instance comprises:
+///
 /// * a zone (a LaneSRoute) which specifies a contiguous longitudinal
 ///   lane-wise section of the road network to which the rule instance
 ///   applies;
@@ -118,7 +119,7 @@ class RightOfWayRule final {
   /// @param controlled_zone LaneSRoute to which this rule applies
   /// @param type the static semantics of this rule
   ///
-  /// Throws a std::exception if `states` is empty or if `states` contains
+  /// @throws std::exception if `states` is empty or if `states` contains
   /// duplicate State::Id's.
   RightOfWayRule(const Id& id,
                  const LaneSRoute& zone,
@@ -155,7 +156,7 @@ class RightOfWayRule final {
   ///
   /// This is a convenience function for returning a static rule's single state.
   ///
-  /// Throws a std::exception if `is_static()` is false.
+  /// @throws std::exception if `is_static()` is false.
   const State& static_state() const {
     DRAKE_THROW_UNLESS(is_static());
     return states_.begin()->second;

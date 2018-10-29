@@ -64,6 +64,10 @@ Box::Box(double width, double depth, double height)
     : Shape(ShapeTag<Box>()),
       size_(width, depth, height) {}
 
+Box Box::MakeCube(double edge_size) {
+  return Box(edge_size, edge_size, edge_size);
+}
+
 Mesh::Mesh(const std::string& absolute_filename, double scale)
     : Shape(ShapeTag<Mesh>()), filename_(absolute_filename), scale_(scale) {
   // TODO(SeanCurtis-TRI): Remove this when meshes are properly supported.

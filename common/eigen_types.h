@@ -233,6 +233,9 @@ struct is_eigen_vector_of
           bool, is_eigen_scalar_same<Derived, Scalar>::value &&
                     is_eigen_vector<Derived>::value> {};
 
+// TODO(eric.cousineau): A 1x1 matrix will be disqualified in this case, and
+// this logic will qualify it as a vector. Address the downstream logic if this
+// becomes an issue.
 /*
  * Determines if a EigenBase<> type is a compile-time non-column-vector matrix
  * of a scalar type. This will not check for run-time size.
@@ -240,9 +243,6 @@ struct is_eigen_vector_of
  * exclusive to is_eigen_vector_of<> such that distinct specializations are not
  * ambiguous.
  */
-// TODO(eric.cousineau): A 1x1 matrix will be disqualified in this case, and
-// this logic will qualify it as a vector. Address the downstream logic if this
-// becomes an issue.
 template <typename Derived, typename Scalar>
 struct is_eigen_nonvector_of
     : std::integral_constant<

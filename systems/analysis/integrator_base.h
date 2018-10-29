@@ -128,7 +128,7 @@ class IntegratorBase {
    * a publish time, (status is kReachedPublishTime) the context may return an
    * interpolated value at an earlier time.
    *
-   * Note: the simulation step must always end at an update time but can end
+   * @note the simulation step must always end at an update time but can end
    * after a publish time.
    */
   // TODO(edrumwri): incorporate kReachedZeroCrossing into the simulator.
@@ -292,6 +292,7 @@ class IntegratorBase {
    * an appropriate minimum step and throw an exception if the requirements
    * can't be achieved without going below that. Methods in this section allow
    * you to influence two aspects of this procedure:
+   *
    * - you can increase the minimum step size, and
    * - you can control whether an exception is thrown if a smaller step would
    *   have been needed to achieve the aforementioned integrator requirements.
@@ -560,6 +561,7 @@ class IntegratorBase {
    *          typically call `IntegratorBase::IntegrateWithMultipleSteps()`.
    *
    * This method at a glance:
+   *
    * - For integrating ODEs/DAEs via Simulator
    * - Supports fixed step and variable step integration schemes
    * - Takes only a single step forward.
@@ -594,6 +596,7 @@ class IntegratorBase {
   ///     cannot advance time by @p dt in a single step.
   ///
   /// This method at a glance:
+  ///
   /// - For integrating ODEs/DAEs not using Simulator
   /// - Supports fixed step and variable step integration schemes
   /// - Takes as many steps as necessary until time has advanced by @p dt
@@ -646,6 +649,7 @@ class IntegratorBase {
   ///     necessary until time has been stepped forward by @p dt.
   ///
   /// This method at a glance:
+  ///
   /// - For integrating ODEs/DAEs not using Simulator
   /// - Fixed step integration (no step size reductions for error control or
   ///   integrator convergence)
@@ -1314,13 +1318,12 @@ class IntegratorBase {
    */
   virtual void DoReset() {}
 
+  // TODO(hidmic): Make pure virtual and override on each subclass, as
+  // the 'optimal' dense output scheme is only known by the specific
+  // integration scheme being implemented.
   /**
    * Derived classes can override this method to provide a continuous
    * extension of their own when StartDenseIntegration() is called.
-   *
-   * TODO(hidmic): Make pure virtual and override on each subclass, as
-   * the 'optimal' dense output scheme is only known by the specific
-   * integration scheme being implemented.
    */
   virtual
   std::unique_ptr<StepwiseDenseOutput<T>> DoStartDenseIntegration() {
@@ -1358,6 +1361,9 @@ class IntegratorBase {
    */
   virtual bool DoStep(const T& dt) = 0;
 
+  // TODO(hidmic): Make pure virtual and override on each subclass, as
+  // the 'optimal' dense output scheme is only known by the specific
+  // integration scheme being implemented.
   /**
    * Derived classes may implement this method to (1) integrate the continuous
    * portion of this system forward by a single step of size @p dt, (2) set the
@@ -1369,10 +1375,6 @@ class IntegratorBase {
    *           unable to take a single step of size @p dt or to advance
    *           its dense output an equal step.
    * @sa DoStep()
-   *
-   * TODO(hidmic): Make pure virtual and override on each subclass, as
-   * the 'optimal' dense output scheme is only known by the specific
-   * integration scheme being implemented.
    */
   virtual bool DoDenseStep(const T& dt) {
     const ContinuousState<T>& state = context_->get_continuous_state();

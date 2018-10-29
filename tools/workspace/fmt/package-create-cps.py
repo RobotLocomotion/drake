@@ -1,12 +1,10 @@
-#!/usr/bin/env python2
-
 from drake.tools.install.cpsutils import read_version_defs
 
 defs = read_version_defs("#define FMT_VERSION ([0-9]{1,2})([0-9]{2})([0-9]{2})$")
 
 # Skip leading zeros if any.
 assert len(defs) == 3
-defs = dict([(k, int(v)) for k, v in defs.iteritems()])
+defs = dict([(k, int(v)) for k, v in defs.items()])
 
 content = """
 {

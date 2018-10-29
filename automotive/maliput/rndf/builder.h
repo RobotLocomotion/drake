@@ -57,19 +57,20 @@ namespace rndf {
 ///
 /// The resulting RoadGeometry presents the following naming for its composed
 /// entities:
+///
 /// - Lane naming: "l:$1-$2", where
-///    1. RNDF exit waypoint ID.
-///    2. RNDF entry waypoint ID.
+///   1. RNDF exit waypoint ID.
+///   2. RNDF entry waypoint ID.
 /// - Segment naming: "s:$1-$2-$3", where
-///    1. RNDF segment ID.
-///    2. Direction-based grouping index.
-///    3. RNDF segment piece index (in between every 2 waypoints).
+///   1. RNDF segment ID.
+///   2. Direction-based grouping index.
+///   3. RNDF segment piece index (in between every 2 waypoints).
 /// - Junction naming: "j:$1-$2-$3", where
-///    1. RNDF segment ID.
-///    2. Direction-based grouping index.
-///    3. RNDF segment piece index (in between every 2 waypoints).
+///   1. RNDF segment ID.
+///   2. Direction-based grouping index.
+///   3. RNDF segment piece index (in between every 2 waypoints).
 /// - BranchPoint naming: "bp:$1", where
-///    1. Index in RoadGeometry's inner collection.
+///   1. Index in RoadGeometry's inner collection.
 ///
 /// An example of how this is achieved is depicted in the following example.
 /// Note that '+' denotes RNDF waypoints, 'x' denotes invalid waypoints
@@ -114,6 +115,7 @@ namespace rndf {
 ///   - Lane 1.2.4-1.2.2
 ///
 /// General workflow with this class should be:
+///
 /// -# Create a Builder.
 /// -# Call SetBoundingBox().
 /// -# Call CreateSegmentConnections() for each RNDF segment.
@@ -159,8 +161,8 @@ class Builder {
   /// @param segment_id The RNDF segment ID.
   /// @param connections A collection of Connections representing each RNDF lane
   /// in the segment.
-  /// @throw std::runtime_error When @p connections is a nullptr.
-  /// @throw std::runtime_error When @p connections is an empty collection.
+  /// @throws std::runtime_error When @p connections is a nullptr.
+  /// @throws std::runtime_error When @p connections is an empty collection.
   void CreateSegmentConnections(int segment_id,
                                 std::vector<Connection>* connections);
 
@@ -176,8 +178,8 @@ class Builder {
   /// fake inner lanes' lane bounds).
   /// @param perimeter_waypoints A collection of DirectedWaypoint objects
   /// describing the zone's perimeter.
-  /// @throw std::runtime_error When @p perimeter_waypoints is a nullptr.
-  /// @throw std::runtime_error When @p perimeter_waypoints is an empty
+  /// @throws std::runtime_error When @p perimeter_waypoints is a nullptr.
+  /// @throws std::runtime_error When @p perimeter_waypoints is an empty
   /// collection.
   void CreateConnectionsForZones(
       double width, std::vector<DirectedWaypoint>* perimeter_waypoints);
@@ -188,7 +190,7 @@ class Builder {
   /// @param width The connection's width.
   /// @param exit_id The start waypoint ID of the connection.
   /// @param entry_id The end waypoint ID of the connection.
-  /// @throw std::runtime_error When neither @p exit_id nor @p entry_id are
+  /// @throws std::runtime_error When neither @p exit_id nor @p entry_id are
   /// found.
   void CreateConnection(double width, const ignition::rndf::UniqueId& exit_id,
                         const ignition::rndf::UniqueId& entry_id);
@@ -200,7 +202,7 @@ class Builder {
   /// a Lane is added to the Segment. BranchPoints are updated as needed.
   /// @param id ID of the api::RoadGeometry to be built.
   /// @return The built api::RoadGeometry.
-  /// @throw std::runtime_error When the built RoadGeometry does not satisfy
+  /// @throws std::runtime_error When the built RoadGeometry does not satisfy
   /// Maliput roads' constraints (see api::RoadGeometry::CheckInvariants()).
   std::unique_ptr<const api::RoadGeometry> Build(const api::RoadGeometryId& id);
 

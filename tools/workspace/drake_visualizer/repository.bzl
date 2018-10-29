@@ -103,15 +103,17 @@ py_library(
     visibility = ["//visibility:public"],
 )
 
+# TODO(eric.cousineau): Ensure that Drake Visualizer works even when Bazel
+# uses a separate version of Python.
 filegroup(
     name = "drake_visualizer",
     srcs = glob([
         "lib/libPythonQt.*",
         "lib/libddApp.*",
-        "lib/python2.7/site-packages/bot_lcmgl/**/*.py",
-        "lib/python2.7/site-packages/director/**/*.py",
-        "lib/python2.7/site-packages/director/**/*.so",
-        "lib/python2.7/site-packages/urdf_parser_py/**/*.py",
+        "lib/python*.*/site-packages/bot_lcmgl/**/*.py",
+        "lib/python*.*/site-packages/director/**/*.py",
+        "lib/python*.*/site-packages/director/**/*.so",
+        "lib/python*.*/site-packages/urdf_parser_py/**/*.py",
     ]) + [
         "bin/drake-visualizer",
         "share/doc/director/LICENSE.txt",

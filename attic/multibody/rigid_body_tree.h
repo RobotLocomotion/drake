@@ -380,7 +380,7 @@ class RigidBodyTree {
   /// Computes the pose `X_WB` of @p body's frame B in the world frame W.
   /// @param cache Reference to the KinematicsCache.
   /// @param body Reference to the RigidBody.
-  /// @retval `X_WB`
+  /// @retval X_WB
   drake::Isometry3<T> CalcBodyPoseInWorldFrame(
       const KinematicsCache<T>& cache, const RigidBody<T>& body) const {
     return CalcFramePoseInWorldFrame(
@@ -393,7 +393,7 @@ class RigidBodyTree {
   /// RigidBodyTree.
   /// @param cache Reference to the KinematicsCache.
   /// @param frame_F Reference to the RigidBodyFrame.
-  /// @retval `X_WF`
+  /// @retval X_WF
   drake::Isometry3<T> CalcFramePoseInWorldFrame(
       const KinematicsCache<T>& cache, const RigidBodyFrame<T>& frame_F) const {
     return CalcFramePoseInWorldFrame(cache, frame_F.get_rigid_body(),
@@ -405,7 +405,7 @@ class RigidBodyTree {
   /// @param cache Reference to the KinematicsCache.
   /// @param body Reference to the RigidBody.
   /// @param X_BF The pose of frame F in body frame B.
-  /// @retval `X_WF`
+  /// @retval X_WF
   drake::Isometry3<T> CalcFramePoseInWorldFrame(
       const KinematicsCache<T>& cache, const RigidBody<T>& body,
       const drake::Isometry3<T>& X_BF) const;
@@ -414,7 +414,7 @@ class RigidBodyTree {
   /// expressed in the world frame W.
   /// @param cache Reference to the KinematicsCache.
   /// @param body Reference to the RigidBody.
-  /// @retval `V_WB`
+  /// @retval V_WB
   drake::Vector6<T> CalcBodySpatialVelocityInWorldFrame(
       const KinematicsCache<T>& cache, const RigidBody<T>& body) const;
 
@@ -424,7 +424,7 @@ class RigidBodyTree {
   /// @p frame_F attaches to has to be owned by this RigidBodyTree.
   /// @param cache Reference to the KinematicsCache.
   /// @param frame_F Reference to the RigidBodyFrame.
-  /// @retval `V_WF`
+  /// @retval V_WF
   drake::Vector6<T> CalcFrameSpatialVelocityInWorldFrame(
       const KinematicsCache<T>& cache, const RigidBodyFrame<T>& frame_F) const {
     return CalcFrameSpatialVelocityInWorldFrame(
@@ -437,7 +437,7 @@ class RigidBodyTree {
   /// @param cache Reference to the KinematicsCache.
   /// @param body Reference to the RigidBody.
   /// @param X_BF The pose of frame F in body frame B.
-  /// @retval `V_WF`
+  /// @retval V_WF
   drake::Vector6<T> CalcFrameSpatialVelocityInWorldFrame(
       const KinematicsCache<T>& cache, const RigidBody<T>& body,
       const drake::Isometry3<T>& X_BF) const;
@@ -452,7 +452,7 @@ class RigidBodyTree {
   /// @param in_terms_of_qdot `true` for `J_WF` computed with respect to the
   /// time derivative of the generalized position such that
   /// `V_WF = J_WF * qdot`. `false` for `J_WF` computed with respect to `v`.
-  /// @retval `J_WF`
+  /// @retval J_WF
   drake::Matrix6X<T> CalcFrameSpatialVelocityJacobianInWorldFrame(
       const KinematicsCache<T>& cache, const RigidBody<T>& body,
       const drake::Isometry3<T>& X_BF,
@@ -485,7 +485,7 @@ class RigidBodyTree {
   /// @param in_terms_of_qdot `true` for `J_WF` computed with respect to the
   /// time derivative of the generalized position such that
   /// `V_WF = J_WF * qdot`. `false` for `J_WF` computed with respect to `v`.
-  /// @retval `J_WF`
+  /// @retval J_WF
   drake::Matrix6X<T> CalcFrameSpatialVelocityJacobianInWorldFrame(
       const KinematicsCache<T>& cache, const RigidBodyFrame<T>& frame_F,
       bool in_terms_of_qdot = false) const {
@@ -524,7 +524,7 @@ class RigidBodyTree {
   /// @param in_terms_of_qdot `true` for `J_WB` computed with respect to the
   /// time derivative of the generalized position such that
   /// `V_WB = J_WB * qdot`. `false` for `J_WB` computed with respect to `v`.
-  /// @retval `J_WB`
+  /// @retval J_WB
   drake::Matrix6X<T> CalcBodySpatialVelocityJacobianInWorldFrame(
       const KinematicsCache<T>& cache, const RigidBody<T>& body,
       bool in_terms_of_qdot = false) const {
@@ -1265,7 +1265,7 @@ class RigidBodyTree {
 
    @throws std::runtime_error based on the criteria of DiscardZeroGradient()
    only if @p throws_if_missing_gradient is true.
-   **/
+   */
   template <typename U>
   std::vector<drake::multibody::collision::PointPair<U>>
   ComputeMaximumDepthCollisionPoints(const KinematicsCache<U>& cache,

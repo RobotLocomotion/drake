@@ -16,7 +16,6 @@ class CubicPolynomial {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CubicPolynomial)
 
   /// Default constructor, all zero coefficients.
-
   CubicPolynomial() : CubicPolynomial(0., 0., 0., 0.) {}
 
   /// Constructs a cubic polynomial given all four coefficients.

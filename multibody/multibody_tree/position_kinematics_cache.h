@@ -14,6 +14,7 @@ namespace multibody {
 /// kinematics results of computations that only depend on the generalized
 /// positions of the system.
 /// Kinematics results include:
+///
 /// - Body frame B poses X_WB measured and expressed in the world frame W.
 /// - Pose X_FM of a mobilizer's outboard frame M measured and expressed in the
 ///   inboard frame F.
@@ -25,6 +26,7 @@ namespace multibody {
 ///           scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///

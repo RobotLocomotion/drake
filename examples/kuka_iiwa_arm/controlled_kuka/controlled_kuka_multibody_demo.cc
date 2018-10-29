@@ -18,9 +18,8 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/multibody_tree/parsing/multibody_plant_urdf_parser.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
-#include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -33,7 +32,7 @@ using drake::lcm::DrakeLcm;
 using drake::multibody::Body;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::MultibodyTree;
-using drake::multibody::parsing::AddModelFromSdfFile;
+using drake::multibody::parsing::AddModelFromUrdfFile;
 using drake::multibody::UniformGravityFieldElement;
 
 namespace drake {
@@ -42,9 +41,9 @@ namespace kuka_iiwa_arm {
 namespace {
 using trajectories::PiecewisePolynomial;
 
-const char kSdfPath[] =
-    "drake/manipulation/models/iiwa_description/sdf/"
-        "iiwa14_no_collision.sdf";
+const char kUrdfPath[] =
+    "drake/manipulation/models/iiwa_description/urdf/"
+        "iiwa14_no_collision.urdf";
 
 int DoMain() {
   systems::DiagramBuilder<double> builder;
@@ -54,9 +53,10 @@ int DoMain() {
 
   // Make and add the kuka robot model.
   MultibodyPlant<double>& kuka_plant = *builder.AddSystem<MultibodyPlant>();
-  AddModelFromSdfFile(FindResourceOrThrow(kSdfPath), &kuka_plant, &scene_graph);
+  AddModelFromUrdfFile(
+      FindResourceOrThrow(kUrdfPath), &kuka_plant, &scene_graph);
   kuka_plant.WeldFrames(kuka_plant.world_frame(),
-                        kuka_plant.GetFrameByName("iiwa_link_0"));
+                        kuka_plant.GetFrameByName("base"));
 
   // Add gravity to the model.
   kuka_plant.AddForceElement<UniformGravityFieldElement>(

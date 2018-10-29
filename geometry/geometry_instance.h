@@ -23,6 +23,7 @@ namespace geometry {
  valid names in SDF files. Specifically, any user-specified name will have
  all leading and trailing space and tab characters trimmed off. The trimmed name
  will have to satisfy the following requirements:
+
    - cannot be empty, and
    - the name should be unique in the scope of its frame and role. For example,
      two GeometryInstances can both be called "ball" as long as they are
@@ -31,6 +32,7 @@ namespace geometry {
      but will be enforced in the future.
      <!-- TODO(SeanCurtis-TRI): When geometry roles lands, change this to
      indicate that this is enforced. -->
+
  If valid, the trimmed name will be assigned to the instance.
 
  Names *can* have internal whitespace (e.g., "my geometry name").

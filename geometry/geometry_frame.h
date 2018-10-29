@@ -16,6 +16,7 @@ namespace geometry {
  over to SceneGraph.
 
  A frame is defined by three pieces of information:
+
     - the name, which must be unique within a single geometry source,
     - the "frame group", an integer identifier that can be used to group frames
       together within a geometry source, and
@@ -37,13 +38,16 @@ class GeometryFrame {
    @param X_PF              The initial pose of this frame F, measured and
                             expressed in the _intended_ parent frame P.
    @param frame_group_id    The optional frame group identifier. If unspecified,
-                            defaults to the common, 0 group. */
+                            defaults to the common, 0 group. Must be
+                            non-negative.  */
   GeometryFrame(const std::string& frame_name, const Isometry3<double>& X_PF,
                 int frame_group_id = 0)
       : id_(FrameId::get_new_id()),
         name_(frame_name),
         X_PF_(X_PF),
-        frame_group_(frame_group_id) {}
+        frame_group_(frame_group_id) {
+    ThrowIfInvalid();
+  }
 
   /** Returns the globally unique id for this geometry specification. Every
    instantiation of %FrameInstance will contain a unique id value. The id
@@ -59,6 +63,14 @@ class GeometryFrame {
   int frame_group() const { return frame_group_; }
 
  private:
+  // Throws an exception if the GeometryFrame is ill configured.
+  void ThrowIfInvalid() const {
+    if (frame_group_ < 0) {
+      throw std::logic_error(
+          "GeometryFrame requires a non-negative frame group");
+    }
+  }
+
   // The *globally* unique identifier for this instance. It is functionally
   // const (i.e. defined in construction) but not marked const to allow for
   // default copying/assigning.

@@ -137,7 +137,8 @@ parameters derived from the CLion GUI. Below, we outline a number of common
 tools to aid with compliance with the Drake style guide. The work to create
 a new external tool is the same in all cases; only the specific tool settings
 differ from tool to tool. We'll outline the general work here and provide
-per-tool details below.
+per-tool details below. The GUI description applies to version 2018.1.6 and
+may be slightly different in previous versions.
 
 1. Open the Settings dialog (``File`` > ``Settings``) or ``Alt+Ctrl+S``.
 2. Navigate to ``Tools`` > ``External Tools``.
@@ -170,7 +171,7 @@ CLion such that the modification may not be immediately apparent. When in doubt,
 select away from the target file and back; this will cause the file to refresh
 and you can confirm that the file has been modified as expected.
 
-First, make sure you have installed ``clang-format-4.0``
+First, make sure you have installed ``clang-format-6.0``
 (see :doc:`code_style_tools`).
 
 Clang format selected file
@@ -181,9 +182,10 @@ following values for the fields:
 
   :Name: ``Clang Format Full File``
   :Description: ``Apply clang-format to the active file``
-  :Program: ``clang-format-4.0``
-  :Parameters: ``-i $FileName$``
+  :Program: ``clang-format-6.0``
+  :Arguments: ``-i $FileName$``
   :Working directory: ``$FileDir$``
+  :Advanced Options: Uncheck ``Open console for tool output``
 
 Leave the checkbox options in their default state.
 
@@ -195,9 +197,10 @@ following values for the fields:
 
   :Name: ``Clang Format Selected Lines``
   :Description: ``Apply clang-format to the selected lines``
-  :Program: ``clang-format-4.0``
-  :Parameters: ``-lines $SelectionStartLine$:$SelectionEndLine$ -i $FileName$``
+  :Program: ``clang-format-6.0``
+  :Arguments: ``-lines $SelectionStartLine$:$SelectionEndLine$ -i $FileName$``
   :Working directory: ``$FileDir$``
+  :Advanced Options: Uncheck ``Open console for tool output``
 
 Leave the checkbox options in their default state.
 
@@ -211,8 +214,9 @@ following values for the fields:
   :Description: ``Runs the clang format for correcting includes on the current
                   file``
   :Program: ``bazel``
-  :Parameters: ``run //tools/lint:clang-format-includes -- $FilePath$``
+  :Arguments: ``run //tools/lint:clang-format-includes -- $FilePath$``
   :Working directory: ``$Projectpath$``
+  :Advanced Options: Uncheck ``Open console for tool output``
 
 Leave the checkbox options in their default state.
 
@@ -252,23 +256,15 @@ following values for the fields:
   :Name: ``Cpplint File``
   :Description: ``Apply cpplint to the current file``
   :Program: ``bazel``
-  :Parameters: ``run @styleguide//:cpplint -- --output=eclipse
+  :Arguments: ``run @styleguide//:cpplint -- --output=eclipse
                  $FilePath$``
   :Working directory: ``$Projectpath$``
+  :Advanced Options: Confirm ``Open console for tool output`` is checked
 
-To configure the clickable links:
+To configure the clickable links, enter the following string in the ``Advanced
+Options`` > ``Output filters`` window:
 
-1. Click the ``Output Filters...`` button.
-2. Click the :raw-html:`<font size="5" color="green">+</font>` sign to add a
-   filter.
-3. Add the following values in the following fields (and click "OK):
-
-  :Name: ``Extract Links``
-  :Description: ``Convert file/line references into clickable links.``
-  :Regular expression to match output: ``$FILE_PATH$:$LINE$``
-
-4. Click ``OK`` on the ``Edit filter`` dialog.
-5. Click ``OK`` on the ``Output Filters`` dialog.
+    ``$FILE_PATH$:$LINE$``
 
 Lint selected file for Drake style addenda
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -284,8 +280,9 @@ following values for the fields:
   :Name: ``Drake Lint File``
   :Description: ``Apply drake lint to the current file``
   :Program: ``bazel``
-  :Parameters: ``run //tools/lint:drakelint -- $FilePath$``
+  :Arguments: ``run //tools/lint:drakelint -- $FilePath$``
   :Working directory: ``$Projectpath$``
+  :Advanced Options: Confirm ``Open console for tool output`` is checked
 
 In the event of finding a lint problem (e.g., out-of-order include files), the
 CLion output will contain a *single* clickable link. This link is only the
@@ -317,7 +314,7 @@ Google style guide linting
 Change the following fields in the instructions given above:
 
   :Program: ``bazel-bin/external/styleguide/cpplint_binary``
-  :Parameters: ``--output=eclipse $FilePath$``
+  :Arguments: ``--output=eclipse $FilePath$``
 
 Building the google styleguide lint tool:
 
@@ -328,8 +325,8 @@ Drake style addenda
 
 Change the following fields in the instructions given above:
 
-  :Program: ``/bazel-bin/tools/lint/drakelint``
-  :Parameters: ``$FilePath$``
+  :Program: ``bazel-bin/tools/lint/drakelint``
+  :Arguments: ``$FilePath$``
 
 Building the drake addenda lint tool:
 

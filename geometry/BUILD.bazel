@@ -214,6 +214,7 @@ drake_cc_library(
     deps = [
         ":geometry_ids",
         ":geometry_index",
+        ":internal_frame",
         ":materials",
         ":shape_specification",
         "//common:copyable_unique_ptr",
@@ -271,6 +272,7 @@ drake_cc_googletest(
     deps = [
         ":geometry_frame",
         "//common:essential",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

@@ -33,6 +33,7 @@ namespace systems {
     - . : No geometry is used, shapes of this type are *ignored*
 
  The columns of the table indicate the SceneGraph roles.
+
    - Proximity: The shape is used in proximity queries (e.g., penetration,
                 distance, ray-casting, etc.)
    - Visual:    The shape is displayed in drake_visualizer.
@@ -48,6 +49,7 @@ namespace systems {
   %MeshPoints | .         | .      | .
   %Plane      | V         | V      | .
   %Sphere     | V         | V      | .
+
  <h4>Table: Level of Support. Indication of what types of shapes (rows) are read
  from the RigidBodyTree, the role they played in the RigidBodyTree, collision or
  visual, (cell values "C", "V", or ".") and how they are used in SceneGraph
@@ -83,6 +85,7 @@ namespace systems {
  @tparam T The scalar type. Must be a valid Eigen scalar.
 
  Instantiated templates for the following kinds of T's are provided:
+
  - double
  - AutoDiffXd
 

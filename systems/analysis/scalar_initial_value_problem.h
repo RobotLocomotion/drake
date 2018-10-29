@@ -51,6 +51,7 @@ namespace systems {
 ///
 /// @note
 /// Instantiated templates for the following scalar types @p T are provided:
+///
 /// - double
 template <typename T>
 class ScalarInitialValueProblem {

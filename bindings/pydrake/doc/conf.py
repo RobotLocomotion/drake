@@ -27,8 +27,13 @@ release = u''
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
+    # Precede napolean, since it's greedy on `autodoc-skip-member`
+    'sphinx_pydrake',
     'sphinx.ext.napoleon',
 ]
+
+# Option available in Sphinx 1.5+.
+napoleon_include_init_with_doc = True
 
 # The suffix(es) of source filenames.
 source_suffix = '.rst'
