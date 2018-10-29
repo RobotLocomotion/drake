@@ -3,6 +3,7 @@
 /// @file This file contains classes dealing with sending/receiving
 /// LCM messages related to the Schunk WSG gripper.
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -12,13 +13,13 @@ namespace schunk_wsg {
 
 /// Handles lcmt_schunk_wsg_command messages from a LcmSubscriberSystem.  Has
 /// two output ports: one for the commanded finger position represented as the
-/// desired distance from the center (zero) position in meters, and one for
-/// the commanded force limit.  The commanded position and force limit are
-/// scalars (BasicVector<double> of size 1).
+/// desired distance between the fingers in meters, and one for the commanded
+/// force limit.  The commanded position and force limit are scalars
+/// (BasicVector<double> of size 1).
 ///
 /// @system{ SchunkWsgCommandReceiver,
 ///   @input_port{lcmt_schunk_wsg_command},
-///   @output_port{commanded_position}
+///   @output_port{position}
 ///   @output_port{force_limit} }
 class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
  public:
@@ -36,58 +37,82 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
     return this->get_input_port(0);
   }
 
-  const systems::OutputPort<double>& get_commanded_position_output_port()
-      const {
-    return this->get_output_port(commanded_position_output_port_);
+  const systems::OutputPort<double>& get_position_output_port() const {
+    return this->get_output_port(position_output_port_);
   }
 
-  const systems::OutputPort<double>& get_force_limit_output_port()
-      const {
+  const systems::OutputPort<double>& get_force_limit_output_port() const {
     return this->get_output_port(force_limit_output_port_);
   }
 
  private:
-  void CalcCommandedPositionOutput(
-      const systems::Context<double>& context,
-      systems::BasicVector<double>* output) const;
+  void CalcPositionOutput(const systems::Context<double>& context,
+                          systems::BasicVector<double>* output) const;
 
-  void CalcForceLimitOutput(
-      const systems::Context<double>& context,
-      systems::BasicVector<double>* output) const;
+  void CalcForceLimitOutput(const systems::Context<double>& context,
+                            systems::BasicVector<double>* output) const;
 
  private:
   const double initial_position_{};
   const double initial_force_{};
-  const systems::OutputPortIndex commanded_position_output_port_{};
+  const systems::OutputPortIndex position_output_port_{};
   const systems::OutputPortIndex force_limit_output_port_{};
 };
 
 /// Sends lcmt_schunk_wsg_status messages for a Schunk WSG.  This
-/// system has one input port for the current state of the simulated
-/// WSG (probably a RigidBodyPlant), and one optional input port for the
-/// measured gripping force.
+/// system has one input port for the current state of the WSG, and one
+/// optional input port for the measured gripping force.
+///
+/// @system{ SchunkStatusSender,
+///          @input_port{state}
+///          @input_port{force},
+///          @output_port{lcmt_schunk_wsg_status}
+/// }
+///
+/// The state input is a BasicVector<double> of size 2 -- with one position
+/// and one velocity -- representing the distance between the fingers (positive
+/// implies non-penetration).
+///
 /// @ingroup manipulation_systems
 class SchunkWsgStatusSender : public systems::LeafSystem<double> {
  public:
   SchunkWsgStatusSender(int input_state_size, int input_torque_size,
                         int position_index, int velocity_index);
 
+  DRAKE_DEPRECATED(
+      "Use get_state_input_port() instead which takes a "
+      "two-dimensional BasicVector<double>.")
   const systems::InputPort<double>& get_input_port_wsg_state() const {
+    DRAKE_DEMAND(input_port_wsg_state_.is_valid());
     return this->get_input_port(input_port_wsg_state_);
   }
 
-  const systems::InputPort<double>& get_input_port_measured_torque()
-      const {
-    return this->get_input_port(input_port_measured_torque_);
+  DRAKE_DEPRECATED("Use get_force_input_port() instead.")
+  const systems::InputPort<double>& get_input_port_measured_torque() {
+    return this->get_input_port(force_input_port_);
+  }
+
+  SchunkWsgStatusSender();
+
+  const systems::InputPort<double>& get_state_input_port() const {
+    DRAKE_DEMAND(state_input_port_.is_valid());
+    return this->get_input_port(state_input_port_);
+  }
+
+  const systems::InputPort<double>& get_force_input_port() const {
+    return this->get_input_port(force_input_port_);
   }
 
  private:
   void OutputStatus(const systems::Context<double>& context,
                     lcmt_schunk_wsg_status* output) const;
 
+  systems::InputPortIndex state_input_port_{};
+  systems::InputPortIndex force_input_port_{};
+
+  // TODO(russt): Remove this port after the deprecation timeline.
   const int position_index_{};
   const int velocity_index_{};
-  systems::InputPortIndex input_port_measured_torque_{};
   systems::InputPortIndex input_port_wsg_state_{};
 };
 
