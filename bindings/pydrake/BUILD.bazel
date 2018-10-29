@@ -8,14 +8,14 @@ load(
     "drake_cc_library",
 )
 load(
-    "//tools/skylark:drake_py.bzl",
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
     "drake_py_test",
     "drake_py_unittest",
 )
 load(
-    "//tools/skylark:pybind.bzl",
+    "@drake//tools/skylark:pybind.bzl",
     "drake_pybind_library",
     "generate_pybind_documentation_header",
     "get_drake_py_installs",

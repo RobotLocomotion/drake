@@ -64,7 +64,7 @@ drake_cc_googletest(
 # Python examples
 
 load(
-    "//tools/skylark:drake_py.bzl",
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
 )

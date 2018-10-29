@@ -17,7 +17,7 @@ load(
     "drake_py_test",
 )
 load(
-    "//tools/skylark:drake_lcm.bzl",
+    "@drake//tools/skylark:drake_lcm.bzl",
     "drake_lcm_cc_library",
     "drake_lcm_java_library",
     "drake_lcm_py_library",
