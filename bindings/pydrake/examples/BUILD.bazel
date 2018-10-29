@@ -63,7 +63,6 @@ drake_pybind_library(
     name = "manipulation_station_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
-        "//examples/manipulation_station",
     ],
     cc_srcs = ["manipulation_station_py.cc"],
     package_info = PACKAGE_INFO,

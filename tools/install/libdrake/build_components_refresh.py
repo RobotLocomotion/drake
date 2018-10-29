@@ -30,12 +30,18 @@ def _bazel_query(args):
 
 def _find_libdrake_components():
     # This forms the set of cc_library targets that will be installed.
+    # TODO(russt/eric-cousineau/jwnimmer): Remove any examples from
+    # libdrake.so, pending resolution of #9648.
     components_query = """
 kind("cc_library", visible("//tools/install/libdrake:libdrake.so", "//..."))
     except(attr("testonly", "1", "//..."))
     except("//:*")
     except("//bindings/pydrake/...")
-    except("//examples/...")
+    except(
+      "//examples/..." except(
+        "//examples/manipulation_station/..."
+      )
+    )
     except("//lcmtypes/...")
     except("//tools/install/libdrake:*")
     except(attr(tags, "exclude_from_libdrake", //...))
