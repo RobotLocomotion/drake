@@ -2470,7 +2470,7 @@ class MyEventTestSystem : public LeafSystem<double> {
       // Verify that no periodic discrete updates are registered.
       EXPECT_FALSE(this->GetUniquePeriodicDiscreteUpdateAttribute());
     } else {
-      DeclarePerStepEvent<PublishEvent<double>>(
+      DeclarePerStepEvent(
           PublishEvent<double>(Event<double>::TriggerType::kPerStep));
     }
     set_name(name);

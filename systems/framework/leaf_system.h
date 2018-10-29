@@ -702,8 +702,7 @@ class LeafSystem : public System<T> {
   /// Declares a per-step event using @p event, which is deep copied (the
   /// copy is maintained by `this`). @p event's associated trigger type must be
   /// set to Event::TriggerType::kPerStep. Aborts otherwise.
-  template <typename EventType>
-  void DeclarePerStepEvent(const EventType& event) {
+  void DeclarePerStepEvent(const Event<T>& event) {
     DRAKE_DEMAND(event.get_trigger_type() == Event<T>::TriggerType::kPerStep);
     event.add_to_composite(&per_step_events_);
   }
@@ -711,8 +710,7 @@ class LeafSystem : public System<T> {
   /// Declares an initialization event by deep copying @p event and storing it
   /// internally. @p event's associated trigger type must be
   /// Event::TriggerType::kInitialization. Aborts otherwise.
-  template <typename EventType>
-  void DeclareInitializationEvent(const EventType& event) {
+  void DeclareInitializationEvent(const Event<T>& event) {
     DRAKE_DEMAND(event.get_trigger_type() ==
                  Event<T>::TriggerType::kInitialization);
     event.add_to_composite(&initialization_events_);

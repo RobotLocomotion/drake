@@ -1610,7 +1610,7 @@ GTEST_TEST(SimulatorTest, Initialization) {
           Event<double>::TriggerType::kInitialization));
 
       DeclarePeriodicDiscreteUpdate(0.1);
-      DeclarePerStepEvent<UnrestrictedUpdateEvent<double>>(
+      DeclarePerStepEvent(
           UnrestrictedUpdateEvent<double>(
               Event<double>::TriggerType::kPerStep));
     }
