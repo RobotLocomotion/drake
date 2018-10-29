@@ -649,16 +649,11 @@ GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodiesSourceErrors) {
     EXPECT_NO_THROW(plant.Finalize(&scene_graph));
   }
 
-  // Case: Registered as source, but no scene graph passed to Finalize() -
-  // error.
+  // Case: Registered as source, correct finalization.
   {
     MultibodyPlant<double> plant;
     plant.RegisterAsSourceForSceneGraph(&scene_graph);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        plant.Finalize(), std::logic_error,
-        "This MultibodyPlant has been registered as a SceneGraph geometry "
-        "source. Finalize\\(\\) should be invoked with a pointer to the "
-        "SceneGraph instance");
+    EXPECT_NO_THROW(plant.Finalize());
   }
 
   // Case: Registered as source, but *wrong* scene graph passed to Finalize() -
@@ -669,15 +664,16 @@ GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodiesSourceErrors) {
     SceneGraph<double> other_graph;
     DRAKE_EXPECT_THROWS_MESSAGE(
         plant.Finalize(&other_graph), std::logic_error,
-        "Finalizing on a SceneGraph instance must be performed on the SAME "
-            "instance of SceneGraph used on the first call to "
-            "RegisterAsSourceForSceneGraph\\(\\)");
+        "Geometry registration.*first call to RegisterAsSourceForSceneGraph.*");
   }
 
-  // Case: Not registered as source, but passed SceneGraph in anyways.
+  // Case: Not registered as source, but passed SceneGraph in anyways - error.
   {
     MultibodyPlant<double> plant;
-    EXPECT_NO_THROW(plant.Finalize(&scene_graph));
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant.Finalize(&scene_graph), std::logic_error,
+        "This MultibodyPlant instance does not have a SceneGraph registered.*"
+        "RegisterAsSourceForSceneGraph.*");
   }
 }
 
