@@ -55,8 +55,25 @@ kind("cc_library", visible("//tools/install/libdrake:libdrake.so", "//..."))
             "except deps({}, 1)".format(x)
             for x in package_libs
         ])])
+    # Hunt down indirectly-installed components -- labels that are not visible
+    # to tools/install/libdrake or otherwise excluded, but are being installed
+    # anyway because they are dependencies of something that is installed.  We
+    # will mention these with a comment, to highlight them to reviewers.
+    indirects = _bazel_query([(
+        "kind('cc_library', deps(set({components})) intersect //..."
+        " except filter('_private_headers_impl$', //...)"
+        " except //lcmtypes/..."
+        " except deps(set({package_libs}), 1)"
+        " except set({misc_libs}))"
+        ).format(
+            components=" ".join(package_libs + misc_libs),
+            package_libs=" ".join(package_libs),
+            misc_libs=" ".join(misc_libs))])
+    commented_indirects = ["# {} (indirectly)".format(x) for x in indirects]
     # Sort the result for consistency.
-    return sorted(package_libs + misc_libs, key=_label_sort_key)
+    return (
+        sorted(package_libs + misc_libs, key=_label_sort_key) +
+        sorted(commented_indirects, key=_label_sort_key))
 
 
 def main():
@@ -112,9 +129,12 @@ def main():
         for one_line in header_lines:
             new.write(one_line)
         for one_label in component_labels:
-            line = '    "{}",'.format(one_label)
-            if ":" in one_label:
-                line += '  # unpackaged'
+            if '#' in one_label:
+                line = '    ' + one_label
+            else:
+                line = '    "{}",'.format(one_label)
+                if ":" in one_label:
+                    line += '  # unpackaged'
             new.write(line)
             if len(line) > 79:
                 new.write('  # noqa')

@@ -78,4 +78,5 @@ LIBDRAKE_COMPONENTS = [
     "//systems/sensors/dev",
     "//systems/trajectory_optimization",
     "//util",
+    # //examples/atlas:atlas_util (indirectly)
 ]
