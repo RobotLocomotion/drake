@@ -20,12 +20,6 @@
 namespace drake {
 namespace math {
 
-#ifndef DRAKE_DOXYGEN_CXX
-namespace internal {
-  enum EnumSkipInitializeToIdentityMatrix { kSkipInitializeToIdentityMatrix };
-}  // namespace internal
-#endif
-
 /// This class represents a 3x3 rotation matrix between two arbitrary frames
 /// A and B and helps ensure users create valid rotation matrices.  This class
 /// relates right-handed orthogonal unit vectors Ax, Ay, Az fixed in frame A
@@ -171,16 +165,16 @@ class RotationMatrix {
   /// @param[in] By second unit vector in right-handed orthogonal set.
   /// @param[in] Bz third unit vector in right-handed orthogonal set.
   /// @throws std::logic_error in debug builds if `R_AB` fails IsValid(R_AB).
-  /// @note: In release builds, the caller can subsequently test if R_AB` is,
+  /// @note: In release builds, the caller can subsequently test if `R_AB` is,
   /// in fact, a valid %RotationMatrix by calling `R_AB.IsValid()`.
   /// @note The rotation matrix `R_AB` relates two sets of right-handed
   /// orthogonal unit vectors, namely `Ax`, `Ay`, `Az` and `Bx`, `By`, `Bz`.
   /// The rows of `R_AB` are `Ax`, `Ay`, `Az` whereas the
   /// columns of `R_AB` are `Bx`, `By`, `Bz`.
-  static RotationMatrix<T> MakeColumnsFromOrthonormalBasis(
+  static RotationMatrix<T> MakeFromOrthonormalColumns(
       const Vector3<T>& Bx, const Vector3<T>& By, const Vector3<T>& Bz) {
-    RotationMatrix<T> R(internal::kSkipInitializeToIdentityMatrix);
-    R.set_columns(Bx, By, Bz);
+    RotationMatrix<T> R(DoNotInitializeMemberFields{});
+    R.SetFromOrthonormalColumns(Bx, By, Bz);
     return R;
   }
 
@@ -190,16 +184,16 @@ class RotationMatrix {
   /// @param[in] Ay second unit vector in right-handed orthogonal set.
   /// @param[in] Az third unit vector in right-handed orthogonal set.
   /// @throws std::logic_error in debug builds if `R_AB` fails IsValid(R_AB).
-  /// @note: In release builds, the caller can subsequently test if R_AB` is,
+  /// @note: In release builds, the caller can subsequently test if `R_AB` is,
   /// in fact, a valid %RotationMatrix by calling `R_AB.IsValid()`.
   /// @note The rotation matrix `R_AB` relates two sets of right-handed
   /// orthogonal unit vectors, namely `Ax`, `Ay`, `Az` and `Bx`, `By`, `Bz`.
   /// The rows of `R_AB` are `Ax`, `Ay`, `Az` whereas the
   /// columns of `R_AB` are `Bx`, `By`, `Bz`.
-  static RotationMatrix<T> MakeRowsFromOrthonormalBasis(
+  static RotationMatrix<T> MakeFromOrthonormalRows(
       const Vector3<T>& Ax, const Vector3<T>& Ay, const Vector3<T>& Az) {
-    RotationMatrix<T> R(internal::kSkipInitializeToIdentityMatrix);
-    R.set_rows(Ax, Ay, Az);
+    RotationMatrix<T> R(DoNotInitializeMemberFields{});
+    R.SetFromOrthonormalRows(Ax, Ay, Az);
     return R;
   }
 
@@ -591,8 +585,8 @@ class RotationMatrix {
       128 * std::numeric_limits<double>::epsilon() };
 
   // Constructs a RotationMatrix without initializing the underlying 3x3 matrix.
-  explicit RotationMatrix(internal::EnumSkipInitializeToIdentityMatrix)
-      : R_AB_() {}
+  struct DoNotInitializeMemberFields{};
+  explicit RotationMatrix(DoNotInitializeMemberFields) : R_AB_() {}
 
   // Constructs a %RotationMatrix from a Matrix3.  No check is performed to test
   // whether or not the parameter R is a valid rotation matrix.
@@ -608,16 +602,17 @@ class RotationMatrix {
 
   // Sets `this` %RotationMatrix `R_AB` from right-handed orthogonal unit
   // vectors `Bx`, `By`, `Bz` so that the columns of `this` are `[Bx, By, Bz]`.
-  // @param[in] Bx first unit vector in right-handed orthogonal set.
-  // @param[in] By second unit vector in right-handed orthogonal set.
-  // @param[in] Bz third unit vector in right-handed orthogonal set.
+  // @param[in] Bx first unit vector in right-handed orthogonal basis.
+  // @param[in] By second unit vector in right-handed orthogonal basis.
+  // @param[in] Bz third unit vector in right-handed orthogonal basis.
   // @throws std::logic_error in debug builds if `R_AB` fails IsValid(R_AB).
   // @note The rotation matrix `R_AB` relates two sets of right-handed
   // orthogonal unit vectors, namely `Ax`, `Ay`, `Az` and `Bx`, `By`, `Bz`.
   // The rows of `R_AB` are `Ax`, `Ay`, `Az` whereas the
   // columns of `R_AB` are `Bx`, `By`, `Bz`.
-  void set_columns(const Vector3<T>& Bx, const Vector3<T>& By,
-                   const Vector3<T>& Bz) {
+  void SetFromOrthonormalColumns(const Vector3<T>& Bx,
+                                 const Vector3<T>& By,
+                                 const Vector3<T>& Bz) {
     R_AB_.col(0) = Bx;
     R_AB_.col(1) = By;
     R_AB_.col(2) = Bz;
@@ -626,13 +621,14 @@ class RotationMatrix {
 
   // Sets `this` %RotationMatrix `R_AB` from right-handed orthogonal unit
   // vectors `Ax`, `Ay`, `Az` so that the rows of `this` are `[Ax, Ay, Az]`.
-  // @param[in] Ax first unit vector in right-handed orthogonal set.
-  // @param[in] Ay second unit vector in right-handed orthogonal set.
-  // @param[in] Az third unit vector in right-handed orthogonal set.
+  // @param[in] Ax first unit vector in right-handed orthogonal basis.
+  // @param[in] Ay second unit vector in right-handed orthogonal basis.
+  // @param[in] Az third unit vector in right-handed orthogonal basis.
   // @throws std::logic_error in debug builds if `R_AB` fails R_AB.IsValid().
-  // @see set_columns() for additional notes.
-  void set_rows(const Vector3<T>& Ax, const Vector3<T>& Ay,
-                const Vector3<T>& Az) {
+  // @see SetFromOrthonormalColumns() for additional notes.
+  void SetFromOrthonormalRows(const Vector3<T>& Ax,
+                              const Vector3<T>& Ay,
+                              const Vector3<T>& Az) {
     R_AB_.row(0) = Ax;
     R_AB_.row(1) = Ay;
     R_AB_.row(2) = Az;

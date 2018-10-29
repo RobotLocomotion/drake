@@ -40,7 +40,7 @@ Acrobot<T>::Acrobot(const Vector3<T>& normal, const Vector3<T>& up,
   Vector3<T> x_W = y_W.cross(z_W);
   // Rotation transformation from the model frame D to the world frame W.
   const math::RotationMatrix<T> R_WD =
-      math::RotationMatrix<T>::MakeColumnsFromOrthonormalBasis(x_W, y_W, z_W);
+      math::RotationMatrix<T>::MakeFromOrthonormalColumns(x_W, y_W, z_W);
   X_WD_.set_rotation(R_WD);
 }
 
