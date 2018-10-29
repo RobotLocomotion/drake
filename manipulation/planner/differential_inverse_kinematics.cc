@@ -138,6 +138,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     A.rightCols(1) = -V_dir;
     prog.AddLinearEqualityConstraint(
         A, VectorX<double>::Zero(num_cart_constraints), {v_next, alpha});
+    // TODO(russt): This should not be hard-coded.
     const double kCartesianTrackingWeight = 100;
     cart_cost =
         prog.AddQuadraticErrorCost(Vector1<double>(kCartesianTrackingWeight),
@@ -145,10 +146,14 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
             .evaluator()
             .get();
 
+    // Constrain the unconstrained DoFs velocity to be small, which is used
+    // to fulfill the regularization cost.  We use the svd of J = UΣV', in
+    // which the columns of V corresponding to the small/zero singular values
+    // in Σ are the "unconstrained" degrees of freedom.  Since JacobiSVD
+    // always sorts the singular values in decreasing order, we expect these
+    // to be the last columns.  We assume that J is full row-rank, so has
+    // num_cart_constraints non-zero singular values.
     Eigen::JacobiSVD<MatrixX<double>> svd(J, Eigen::ComputeFullV);
-
-    // Add constrained the unconstrained dof's velocity to be small, which is
-    // used to fulfil the regularization cost.
     if (parameters.get_unconstrained_degrees_of_freedom_velocity_limit()) {
       const double uncon_v =
           parameters.get_unconstrained_degrees_of_freedom_velocity_limit()
@@ -164,6 +169,10 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     prog.AddConstraint(
         solvers::Binding<solvers::LinearConstraint>(constraint, v_next));
   }
+
+  // A bunch of the operations below assume num_positions == num_velocities.
+  // TODO(russt): Generalize this
+  DRAKE_DEMAND(num_positions == num_velocities);
 
   // If redundant, add a small regularization term to q_nominal.
   const double dt{parameters.get_timestep()};
@@ -191,6 +200,8 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   // Add vd constraint.
   if (parameters.get_joint_acceleration_limits()) {
     prog.AddLinearConstraint(
+        // TODO(russt): This should be num_velocities if we generalize the
+        // implementation.
         identity_num_positions,
         parameters.get_joint_acceleration_limits()->first * dt + v_current,
         parameters.get_joint_acceleration_limits()->second * dt + v_current,
