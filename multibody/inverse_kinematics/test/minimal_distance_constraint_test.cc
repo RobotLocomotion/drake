@@ -39,11 +39,6 @@ TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraint) {
       (sphere1_position - sphere2_position).norm() - radius1_ - radius2_;
   EXPECT_NEAR(y_double(0), distance_expected, tol);
   EXPECT_NEAR(y(0).value(), distance_expected, tol);
-
-  q.segment<3>(4) = q.segment<3>(11);
-  q_autodiff = math::initializeAutoDiff(q);
-  constraint.Eval(q_autodiff, &y);
-  EXPECT_NEAR(y(0).value(), -radius1_ - radius2_, tol);
 }
 
 GTEST_TEST(MinimalDistanceConstraintTest,
