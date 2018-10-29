@@ -1,0 +1,2 @@
+# Import legacy .bazelrc file.
+import %workspace%/tools/bazel.rc
