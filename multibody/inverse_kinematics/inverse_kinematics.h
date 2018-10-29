@@ -43,7 +43,9 @@ class InverseKinematics {
    * AddMinimalDistanceConstraint). TODO(hongkai.dai): change to
    * MultibodyPlant<double> when we can compute analytical Jacobian without
    * using autodiff.
-   * @param context The context The context used by @plant. TODO(hongkai.dai)
+   * @param context The context The context used by @plant. @note
+   * InverseKinematics doesn't own this context. This context should be
+   * allocated by the diagram, which owns the MultibodyPlant. TODO(hongkai.dai)
    * change to Context<double> when we can compute analytical Jacobian without
    * using autodiff.
    */
