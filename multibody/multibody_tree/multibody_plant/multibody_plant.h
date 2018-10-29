@@ -885,9 +885,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// @param[in] material
   ///   The visual material to assign to the geometry.
   /// @param[out] scene_graph
-  ///   A valid non nullptr to a SceneGraph on which geometry will get
-  ///   registered.
-  /// @throws std::exception if `scene_graph` is the nullptr.
+  ///   (Deprecated) A valid non nullptr to a SceneGraph on which geometry will
+  ///   get registered.
   /// @throws std::exception if called post-finalize.
   /// @throws std::exception if `scene_graph` does not correspond to the same
   /// instance with which RegisterAsSourceForSceneGraph() was called.
@@ -896,14 +895,14 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
       const geometry::VisualMaterial& material,
-      geometry::SceneGraph<T>* scene_graph);
+      geometry::SceneGraph<T>* scene_graph = nullptr);
 
   /// Overload for visual geometry registration; it implicitly assigns the
   /// default material.
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
-      geometry::SceneGraph<T>* scene_graph);
+      geometry::SceneGraph<T>* scene_graph = nullptr);
 
   /// Returns an array of GeometryId's identifying the different visual
   /// geometries for `body` previously registered with a SceneGraph.
@@ -939,9 +938,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   ///   Coulomb's law of friction coefficients to model friction on the
   ///   surface of `shape` for the given `body`.
   /// @param[out] scene_graph
-  ///   A valid, non-null pointer to a SceneGraph on which geometry will get
-  ///   registered.
-  /// @throws std::exception if `scene_graph` is the nullptr.
+  ///   (Deprecated) A valid, non-null pointer to a SceneGraph on which
+  ///   geometry will get registered.
   /// @throws std::exception if called post-finalize.
   /// @throws std::exception if `scene_graph` does not correspond to the
   /// same instance with which RegisterAsSourceForSceneGraph() was called.
@@ -949,7 +947,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
       const CoulombFriction<double>& coulomb_friction,
-      geometry::SceneGraph<T>* scene_graph);
+      geometry::SceneGraph<T>* scene_graph = nullptr);
 
   /// Returns an array of GeometryId's identifying the different contact
   /// geometries for `body` previously registered with a SceneGraph.
@@ -1081,7 +1079,14 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// to query if `this` plant has been registered with a SceneGraph, either
   /// pre- or post-finalize, see Finalize().
   bool geometry_source_is_registered() const {
-    return !!source_id_;
+    if (source_id_) {
+      if (!is_finalized()) {
+        DRAKE_DEMAND(scene_graph_ != nullptr);
+      }
+      return true;
+    } else {
+      return false;
+    }
   }
 
   /// Given a geometry frame identifier, returns a pointer to the body
@@ -1245,8 +1250,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// @see is_finalized().
   ///
   /// @throws std::logic_error if
-  ///          1. the %MultibodyPlant has already been finalized,
-  ///          2. `scene_graph` isn't provided when required, or
+  ///          1. the %MultibodyPlant has already been finalized or
   ///          3. a different scene_graph instance is provided than the one
   ///             for which this plant is a geometry source.
   void Finalize(geometry::SceneGraph<T>* scene_graph = nullptr);
@@ -1439,10 +1443,18 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   // MultibodyTree::Finalize() was called.
   void FinalizePlantOnly();
 
+  // Helper to check when a deprecated user-provided `scene_graph` pointer is
+  // passed in via public API (aside form `RegisterAsSourceForSceneGraph`).
+  // @throws std::logic_error if `scene_graph` is non-null (non-default) and
+  // either no scene graph is registered or `scene_graph` is not the same as
+  // the registered instance.
+  void CheckUserProvidedSceneGraph(
+      const geometry::SceneGraph<T>* scene_graph) const;
+
   // Helper method to apply collision filters based on body-adjacency. By
   // default, we don't consider collisions between geometries affixed to
   // bodies connected by a joint.
-  void FilterAdjacentBodies(geometry::SceneGraph<T>* scene_graph);
+  void FilterAdjacentBodies();
 
   // For discrete models, MultibodyPlant uses a penalty method to impose joint
   // limits. In this penalty method a force law of the form:
@@ -1470,8 +1482,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   // This is a *temporary* method to eliminate visual geometries from collision
   // while we wait for geometry roles to be introduced.
   // TODO(SeanCurtis-TRI): Remove this when geometry roles are introduced.
-  void ExcludeCollisionsWithVisualGeometry(
-      geometry::SceneGraph<T>* scene_graph);
+  void ExcludeCollisionsWithVisualGeometry();
 
   // No inputs implies no feedthrough; this makes it explicit.
   // TODO(amcastro-tri): add input ports for actuators.
@@ -1828,10 +1839,11 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   systems::OutputPortIndex geometry_pose_port_;
 
   // For geometry registration with a GS, we save a pointer to the GS instance
-  // on which this plants calls RegisterAsSourceForSceneGraph(). This is
-  // ONLY (and it MUST ONLY be used) used to verify that successive registration
-  // calls are performed on the same instance of GS.
-  const geometry::SceneGraph<T>* scene_graph_{nullptr};
+  // on which this plants calls RegisterAsSourceForSceneGraph(). This will be
+  // set to `nullptr` after finalization, to mirror constraints presented by
+  // scalar conversion (where we cannot easily obtain a reference to the
+  // scalar-converted scene graph).
+  geometry::SceneGraph<T>* scene_graph_{nullptr};
 
   // Input/Output port indexes:
   // A vector containing actuation ports for each model instance indexed by
