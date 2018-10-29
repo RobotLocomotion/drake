@@ -4,6 +4,7 @@
 #
 # Do not update this list by hand; instead, run build_components_refresh.py.
 LIBDRAKE_COMPONENTS = [
+    "//attic/multibody",
     "//attic/multibody/collision",
     "//attic/multibody/joints",
     "//attic/multibody/parsers",
@@ -17,21 +18,6 @@ LIBDRAKE_COMPONENTS = [
     "//attic/multibody/rigid_body_plant:rigid_body_plant",  # unpackaged
     "//attic/multibody/rigid_body_plant:rigid_body_plant_bridge",  # unpackaged
     "//attic/multibody/shapes",
-    "//attic/multibody:approximate_ik",  # unpackaged
-    "//attic/multibody:global_inverse_kinematics",  # unpackaged
-    "//attic/multibody:inverse_kinematics",  # unpackaged
-    "//attic/multibody:kinematics_cache",  # unpackaged
-    "//attic/multibody:kinematics_cache_helper",  # unpackaged
-    "//attic/multibody:resolve_center_of_pressure",  # unpackaged
-    "//attic/multibody:rigid_body",  # unpackaged
-    "//attic/multibody:rigid_body_actuator",  # unpackaged
-    "//attic/multibody:rigid_body_constraint",  # unpackaged
-    "//attic/multibody:rigid_body_distance_constraint",  # unpackaged
-    "//attic/multibody:rigid_body_frame",  # unpackaged
-    "//attic/multibody:rigid_body_loop",  # unpackaged
-    "//attic/multibody:rigid_body_tree",  # unpackaged
-    "//attic/multibody:rigid_body_tree_alias_groups",  # unpackaged
-    "//attic/multibody:rigid_body_tree_construction",  # unpackaged
     "//automotive",
     "//automotive/maliput/api",
     "//automotive/maliput/dragway",
@@ -93,4 +79,5 @@ LIBDRAKE_COMPONENTS = [
     "//systems/sensors/dev",
     "//systems/trajectory_optimization",
     "//util",
+    # //examples/atlas:atlas_util (indirectly)
 ]
