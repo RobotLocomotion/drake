@@ -86,8 +86,8 @@ supported for CMake builds using the "Unix Makefiles" generator.
 | Ubuntu 18.04 LTS (Bionic Beaver) | | Bazel 0.17.2  | | Clang 6.0     | OpenJDK 11 | R2018b            | 2.7.15 |
 |                                  | | CMake 3.10.2  | | GCC 7.3       |            |                   |        |
 +----------------------------------+-----------------+-----------------+------------+                   |        |
-| macOS High Sierra (10.13)        | | Bazel 0.17.2  | Apple LLVM 10.0 | Oracle 11  |                   |        |
-+----------------------------------+ | CMake 3.12.2  |                 |            |                   |        |
+| macOS High Sierra (10.13)        | | Bazel 0.18.0  | Apple LLVM 10.0 | Oracle 11  |                   |        |
++----------------------------------+ | CMake 3.12.3  |                 |            |                   |        |
 | macOS Mojave (10.14)             |                 |                 |            |                   |        |
 +----------------------------------+-----------------+-----------------+------------+-------------------+--------+
 
