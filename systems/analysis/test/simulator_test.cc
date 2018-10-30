@@ -954,8 +954,7 @@ class SimpleDiscreteSystem : public LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleDiscreteSystem)
 
   SimpleDiscreteSystem() {
-    const double offset = 0.0;
-    this->DeclarePeriodicDiscreteUpdate(kPeriod, offset);
+    this->DeclarePeriodicDiscreteUpdate(kPeriod, kOffset);
     this->DeclareDiscreteState(1 /* single state variable */);
   }
 
@@ -964,17 +963,46 @@ class SimpleDiscreteSystem : public LeafSystem<double> {
       const Context<double>& context,
       const std::vector<const DiscreteUpdateEvent<double>*>&,
       DiscreteValues<double>* x_next) const override {
-    const double n = context.get_time() / kPeriod;
+    // Note that n must be offset.
+    const double n = (context.get_time()) / kPeriod - 1.0;
     double x = context.get_discrete_state()[0];
     (*x_next)[0] = (-x - 7*(n-1) - (n-2))/2;
   }
 
-  const double kPeriod = 1.0;
+  const double kPeriod = 1.0, kOffset = 3.0;
 };
+
+// A hybrid discrete-continuous system:
+// x[n+1] = x[n] + u[n]
+// x[0] = 0
+// u(t) = t
+class SimpleDiscreteSystem : public LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleDiscreteSystem)
+
+  SimpleDiscreteSystem() {
+    this->DeclarePeriodicDiscreteUpdate(kPeriod, kOffset);
+    this->DeclareDiscreteState(1 /* single state variable */);
+  }
+
+ private:
+  void DoCalcDiscreteVariableUpdates(
+      const Context<double>& context,
+      const std::vector<const DiscreteUpdateEvent<double>*>&,
+      DiscreteValues<double>* x_next) const override {
+    // Note that n must be offset.
+    const double n = (context.get_time()) / kPeriod - 1.0;
+    double x = context.get_discrete_state()[0];
+    (*x_next)[0] = (-x - 7*(n-1) - (n-2))/2;
+  }
+
+  const double kPeriod = 1.0, kOffset = 3.0;
+};
+
+
 }  // namespace
 
-// Tests that the simulator captures an update at the exact time
-// (i.e., without accumulating floating point error).
+// Tests that the simulator captures an update at
 GTEST_TEST(SimulatorTest, SimpleDiscreteSystemSolution) {
   SimpleDiscreteSystem discrete_system;
   Simulator<double> simulator(discrete_system);
