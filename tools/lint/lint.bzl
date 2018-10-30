@@ -15,6 +15,7 @@ def add_lint_tests(
         bazel_lint_ignore = None,
         bazel_lint_extra_srcs = None,
         bazel_lint_exclude = None,
+        enable_clang_format_lint = False,
         enable_install_lint = True,
         enable_library_lint = True):
     """For every rule in the BUILD file so far, and for all Bazel files in this
@@ -33,6 +34,7 @@ def add_lint_tests(
         existing_rules = existing_rules,
         data = cpplint_data,
         extra_srcs = cpplint_extra_srcs,
+        enable_clang_format_lint = enable_clang_format_lint,
     )
     python_lint(
         existing_rules = existing_rules,
