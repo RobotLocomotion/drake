@@ -34,8 +34,7 @@ void init_pc_flags(py::module m) {
     using Class = Fields;
     constexpr auto& cls_doc = doc.Fields;
     py::class_<Class>(m, "Fields", cls_doc.doc)
-        .def(py::init<BaseFieldT>(), py::arg("base_fields"),
-             cls_doc.ctor.doc_4)
+        .def(py::init<BaseFieldT>(), py::arg("base_fields"), cls_doc.ctor.doc_4)
         .def("base_fields", &Class::base_fields, cls_doc.base_fields.doc)
         .def("has_base_fields", &Class::has_base_fields,
              cls_doc.has_base_fields.doc)
@@ -65,15 +64,11 @@ void init_perception(py::module m) {
     cls.attr("D") = GetPyParam<Class::D>()[0];
     // N.B. Workaround linking error for `constexpr` bits.
     cls.attr("kDefaultValue") = Class::T{Class::kDefaultValue};
-    cls
-        .def_static(
-            "IsDefaultValue", &Class::IsDefaultValue, py::arg("value"),
-            cls_doc.IsDefaultValue.doc)
-        .def_static(
-            "IsInvalidValue", &Class::IsInvalidValue, py::arg("value"),
-            cls_doc.IsInvalidValue.doc)
-        .def(py::init<int, pc_flags::Fields>(),
-             py::arg("new_size") = 0,
+    cls.def_static("IsDefaultValue", &Class::IsDefaultValue, py::arg("value"),
+                   cls_doc.IsDefaultValue.doc)
+        .def_static("IsInvalidValue", &Class::IsInvalidValue, py::arg("value"),
+                    cls_doc.IsInvalidValue.doc)
+        .def(py::init<int, pc_flags::Fields>(), py::arg("new_size") = 0,
              py::arg("fields") = pc_flags::Fields(pc_flags::kXYZs),
              cls_doc.ctor.doc)
         .def(py::init<const PointCloud&>(), py::arg("other"),
@@ -81,9 +76,7 @@ void init_perception(py::module m) {
         .def("fields", &Class::fields, cls_doc.fields.doc)
         .def("size", &Class::size, cls_doc.size.doc)
         .def("resize",
-             [](PointCloud* self, int new_size) {
-               self->resize(new_size);
-             },
+             [](PointCloud* self, int new_size) { self->resize(new_size); },
              py::arg("new_size"), cls_doc.resize.doc)
         .def("has_xyzs", &Class::has_xyzs, cls_doc.has_xyzs.doc)
         .def("xyzs", &Class::xyzs, py_reference_internal, cls_doc.xyzs.doc)
@@ -104,8 +97,8 @@ void init_perception(py::module m) {
   {
     using Class = DepthImageToPointCloud;
     constexpr auto& cls_doc = doc.DepthImageToPointCloud;
-    py::class_<Class, LeafSystem<double>>(
-        m, "DepthImageToPointCloud", cls_doc.doc)
+    py::class_<Class, LeafSystem<double>>(m, "DepthImageToPointCloud",
+                                          cls_doc.doc)
         .def(py::init<const CameraInfo&>(), py::arg("camera_info"),
              cls_doc.ctor.doc_3)
         .def("depth_image_input_port", &Class::depth_image_input_port,
