@@ -4,7 +4,10 @@ package(default_visibility = ["//visibility:private"])
 
 load("@drake//tools/skylark:drake_py.bzl", "drake_py_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:drake_runfiles_binary.bzl", "drake_runfiles_binary")
+load(
+    "@drake//tools/skylark:drake_runfiles_binary.bzl",
+    "drake_runfiles_binary",
+)
 
 py_library(
     name = "sphinx_pydrake",

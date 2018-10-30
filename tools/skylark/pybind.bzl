@@ -3,12 +3,12 @@
 # @see bazelbuild/bazel#3493 for needing `@drake//` when loading `install`.
 load("@drake//tools/install:install.bzl", "install")
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
 )
 load(
-    "//tools/skylark:drake_py.bzl",
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_library",
     "drake_py_test",
 )
@@ -276,7 +276,7 @@ def drake_pybind_cc_googletest(
 
     # Use this Python test as the glue for Bazel to expose the appropriate
     # environment for the C++ binary.
-    py_main = "//tools/skylark:py_env_runner.py"
+    py_main = "@drake//tools/skylark:py_env_runner.py"
     drake_py_test(
         name = name,
         srcs = [py_main],

@@ -1,8 +1,11 @@
 #include <gflags/gflags.h>
 
+#include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/is_approx_equal_abstol.h"
-#include "drake/examples/manipulation_station/station_simulation.h"
+#include "drake/examples/manipulation_station/manipulation_station.h"
 #include "drake/geometry/geometry_visualization.h"
+#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -30,7 +33,13 @@ int do_main(int argc, char* argv[]) {
   systems::DiagramBuilder<double> builder;
 
   // Create the "manipulation station".
-  auto station = builder.AddSystem<StationSimulation>();
+  auto station = builder.AddSystem<ManipulationStation>();
+  station->AddCupboard();
+  multibody::parsing::AddModelFromSdfFile(
+      FindResourceOrThrow(
+          "drake/examples/manipulation_station/models/061_foam_brick.sdf"),
+      "object", &station->get_mutable_multibody_plant(),
+      &station->get_mutable_scene_graph());
   station->Finalize();
 
   geometry::ConnectDrakeVisualizer(&builder, station->get_mutable_scene_graph(),
@@ -39,32 +48,42 @@ int do_main(int argc, char* argv[]) {
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
-  auto &context = diagram->GetMutableSubsystemContext(
+  auto& station_context = diagram->GetMutableSubsystemContext(
       *station, &simulator.get_mutable_context());
 
-  // Set initial conditions for the IIWA:
-  VectorXd q0 = VectorXd::Zero(7);
-  q0(1) = 0.3;
-  station->SetIiwaPosition(q0, &context);
-  const VectorXd qdot0 = VectorXd::Zero(7);
-  station->SetIiwaVelocity(qdot0, &context);
+  // Set initial conditions for the IIWA to a position inside the cell with
+  // the hand pointed towards the work table.
+  const int kNumDofIiwa = 7;
+  VectorXd q0(kNumDofIiwa);
+  q0 << 0, 0.6, 0, -1.75, 0, 1.0, 0;
+  station->SetIiwaPosition(q0, &station_context);
+  const VectorXd qdot0 = VectorXd::Zero(kNumDofIiwa);
+  station->SetIiwaVelocity(qdot0, &station_context);
 
   // Position command should hold the arm at the initial state.
-  context.FixInputPort(station->GetInputPort("iiwa_position").get_index(), q0);
+  station_context.FixInputPort(
+      station->GetInputPort("iiwa_position").get_index(), q0);
 
   // Zero feed-forward torque.
-  context.FixInputPort(
+  station_context.FixInputPort(
       station->GetInputPort("iiwa_feedforward_torque").get_index(),
-      VectorXd::Zero(7));
+      VectorXd::Zero(kNumDofIiwa));
+
+  // Nominal WSG position is open.
+  station_context.FixInputPort(
+      station->GetInputPort("wsg_position").get_index(), Vector1d(0.1));
+  // Force limit at 40N.
+  station_context.FixInputPort(
+      station->GetInputPort("wsg_force_limit").get_index(), Vector1d(40.0));
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(FLAGS_duration);
 
   // Check that the arm is (very roughly) in the commanded position.
-  VectorXd q = station->GetIiwaPosition(context);
+  VectorXd q = station->GetIiwaPosition(station_context);
   if (!is_approx_equal_abstol(q, q0, 1.e-3)) {
-    std::cout << "q - q0  = " << (q-q0).transpose() << std::endl;
+    std::cout << "q - q0  = " << (q - q0).transpose() << std::endl;
     DRAKE_ABORT_MSG("q is not sufficiently close to q0.");
   }
 

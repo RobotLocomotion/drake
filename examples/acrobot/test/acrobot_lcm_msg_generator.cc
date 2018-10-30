@@ -58,6 +58,7 @@ int DoMain() {
     sleep_for(milliseconds(500));
   }
 
+  lcm.StopReceiveThread();
   return 0;
 }
 }  // namespace

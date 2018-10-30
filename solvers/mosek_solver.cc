@@ -652,7 +652,8 @@ std::shared_ptr<MosekSolver::License> MosekSolver::AcquireLicense() {
 
 bool MosekSolver::available() const { return true; }
 
-SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
+MathematicalProgramResult MosekSolver::SolveConstProg(
+    const MathematicalProgram& prog) const {
   const int num_vars = prog.num_vars();
   MSKtask_t task = nullptr;
   MSKrescodee rescode;
@@ -727,7 +728,8 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  SolutionResult result = SolutionResult::kUnknownError;
+  MathematicalProgramResult result;
+  result.set_solution_result(SolutionResult::kUnknownError);
   // Run optimizer.
   if (rescode == MSK_RES_OK) {
     // TODO(hongkai.dai@tri.global): add trmcode to the returned struct.
@@ -751,11 +753,11 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     solution_type = MSK_SOL_ITR;
   }
 
-  SolverResult solver_result(id());
+  result.set_solver_id(id());
   // TODO(hongkai.dai@tri.global) : Add MOSEK parameters.
   // Mosek parameter are added by enum, not by string.
+  MSKsolstae solution_status{MSK_SOL_STA_UNKNOWN};
   if (rescode == MSK_RES_OK) {
-    MSKsolstae solution_status;
     if (rescode == MSK_RES_OK) {
       rescode = MSK_getsolsta(task, solution_type, &solution_status);
     }
@@ -765,7 +767,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
         case MSK_SOL_STA_NEAR_OPTIMAL:
         case MSK_SOL_STA_INTEGER_OPTIMAL:
         case MSK_SOL_STA_NEAR_INTEGER_OPTIMAL: {
-          result = SolutionResult::kSolutionFound;
+          result.set_solution_result(SolutionResult::kSolutionFound);
           MSKint32t num_mosek_vars;
           rescode = MSK_getnumvar(task, &num_mosek_vars);
           DRAKE_ASSERT(rescode == MSK_RES_OK);
@@ -781,40 +783,61 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
             }
           }
           if (rescode == MSK_RES_OK) {
-            solver_result.set_decision_variable_values(sol_vector);
+            result.set_x_val(sol_vector);
           }
           MSKrealt optimal_cost;
           rescode = MSK_getprimalobj(task, solution_type, &optimal_cost);
           DRAKE_ASSERT(rescode == MSK_RES_OK);
           if (rescode == MSK_RES_OK) {
-            solver_result.set_optimal_cost(optimal_cost);
+            result.set_optimal_cost(optimal_cost);
           }
           break;
         }
         case MSK_SOL_STA_DUAL_INFEAS_CER:
         case MSK_SOL_STA_NEAR_DUAL_INFEAS_CER:
-          result = SolutionResult::kDualInfeasible;
+          result.set_solution_result(SolutionResult::kDualInfeasible);
           break;
         case MSK_SOL_STA_PRIM_INFEAS_CER:
         case MSK_SOL_STA_NEAR_PRIM_INFEAS_CER: {
-          result = SolutionResult::kInfeasibleConstraints;
+          result.set_solution_result(SolutionResult::kInfeasibleConstraints);
           break;
         }
         default: {
-          result = SolutionResult::kUnknownError;
+          result.set_solution_result(SolutionResult::kUnknownError);
           break;
         }
       }
     }
   }
 
-  prog.SetSolverResult(solver_result);
-  if (rescode != MSK_RES_OK) {
-    result = SolutionResult::kUnknownError;
+  MosekSolverDetails& solver_details =
+      result.SetSolverDetailsType<MosekSolverDetails>();
+  solver_details.rescode = rescode;
+  solver_details.solution_status = solution_status;
+  if (rescode == MSK_RES_OK) {
+    rescode = MSK_getdouinf(task, MSK_DINF_OPTIMIZER_TIME,
+                            &(solver_details.optimizer_time));
   }
+  // rescode is not used after this. If in the future, the user wants to call
+  // more MSK functions after this line, then he/she needs to check if rescode
+  // is OK. But do not modify result.solution_result_ if rescode is not OK after
+  // this line.
+  unused(rescode);
 
   MSK_deletetask(&task);
   return result;
+}
+
+MathematicalProgramResult MosekSolver::Solve(
+    const MathematicalProgram& prog) const {
+  return SolveConstProg(prog);
+}
+
+SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
+  const MathematicalProgramResult result = SolveConstProg(prog);
+  const SolverResult solver_result = result.ConvertToSolverResult();
+  prog.SetSolverResult(solver_result);
+  return result.get_solution_result();
 }
 
 }  // namespace solvers

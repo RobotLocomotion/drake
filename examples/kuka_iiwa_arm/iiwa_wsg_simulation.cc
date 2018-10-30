@@ -49,6 +49,8 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
+using manipulation::schunk_wsg::MakeMultibodyForceToWsgForceSystem;
+using manipulation::schunk_wsg::MakeMultibodyStateToWsgStateSystem;
 using manipulation::schunk_wsg::SchunkWsgStatusSender;
 using manipulation::schunk_wsg::SchunkWsgController;
 using manipulation::util::WorldSimTreeBuilder;
@@ -220,11 +222,11 @@ int DoMain() {
   wsg_status_pub->set_publish_period(
       manipulation::schunk_wsg::kSchunkWsgLcmStatusPeriod);
 
-  auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>(
-      model->get_output_port_wsg_state().size(),
-      model->get_output_port_wsg_measured_torque().size(),
-      manipulation::schunk_wsg::kSchunkWsgPositionIndex,
-      manipulation::schunk_wsg::kSchunkWsgVelocityIndex);
+  auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>();
+  auto mbp_state_to_wsg_state = builder.AddSystem
+      (MakeMultibodyStateToWsgStateSystem<double>());
+  auto mbp_force_to_wsg_force = builder.AddSystem
+      (MakeMultibodyForceToWsgForceSystem<double>());
   wsg_status_sender->set_name("wsg_status_sender");
 
   builder.Connect(wsg_command_sub->get_output_port(),
@@ -232,9 +234,13 @@ int DoMain() {
   builder.Connect(wsg_controller->get_output_port(0),
                   model->get_input_port_wsg_command());
   builder.Connect(model->get_output_port_wsg_state(),
-                  wsg_status_sender->get_input_port_wsg_state());
+                  mbp_state_to_wsg_state->get_input_port());
+  builder.Connect(mbp_state_to_wsg_state->get_output_port(),
+                  wsg_status_sender->get_state_input_port());
   builder.Connect(model->get_output_port_wsg_measured_torque(),
-                  wsg_status_sender->get_input_port_measured_torque());
+                  mbp_force_to_wsg_force->get_input_port());
+  builder.Connect(mbp_force_to_wsg_force->get_output_port(),
+                  wsg_status_sender->get_force_input_port());
   builder.Connect(model->get_output_port_wsg_state(),
                   wsg_controller->get_state_input_port());
   builder.Connect(*wsg_status_sender, *wsg_status_pub);
@@ -273,6 +279,7 @@ int DoMain() {
   simulator.set_publish_every_time_step(false);
   simulator.StepTo(FLAGS_simulation_sec);
 
+  lcm.StopReceiveThread();
   return 0;
 }
 

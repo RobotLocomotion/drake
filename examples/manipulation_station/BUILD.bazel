@@ -2,23 +2,24 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
-    name = "station_simulation",
+    name = "manipulation_station",
     srcs = [
-        "station_simulation.cc",
+        "manipulation_station.cc",
     ],
     hdrs = [
-        "station_simulation.h",
+        "manipulation_station.h",
     ],
     data = [
-        "//examples/kuka_iiwa_arm/models",
+        ":models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
     ],
@@ -26,11 +27,15 @@ drake_cc_library(
     deps = [
         "//common:find_resource",
         "//geometry:scene_graph",
+        "//geometry/dev:scene_graph",
+        "//manipulation/schunk_wsg:schunk_wsg_constants",
+        "//manipulation/schunk_wsg:schunk_wsg_position_controller",
         "//math:geometric_transform",
         "//multibody/multibody_tree/multibody_plant",
         "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/framework",
+        "//systems/sensors/dev:rgbd_camera",
     ],
 )
 
@@ -40,10 +45,10 @@ drake_cc_binary(
         "proof_of_life.cc",
     ],
     add_test_rule = 1,
-    test_rule_args = ["--target_realtime_rate=0.0"],
+    test_rule_args = ["--target_realtime_rate=0.0 --duration=0.1"],
     test_rule_timeout = "moderate",
     deps = [
-        ":station_simulation",
+        ":manipulation_station",
         "//geometry:geometry_visualization",
         "//systems/analysis:simulator",
         "@gflags",
@@ -53,9 +58,14 @@ drake_cc_binary(
 # Tests
 
 drake_cc_googletest(
-    name = "station_simulation_test",
+    name = "manipulation_station_test",
+    tags = [
+        # Due to a known issue with dev/scene_graph (#9686).
+        "no_lsan",
+        "no_memcheck",
+    ],
     deps = [
-        ":station_simulation",
+        ":manipulation_station",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -63,7 +73,7 @@ drake_cc_googletest(
 # Python examples
 
 load(
-    "//tools/skylark:drake_py.bzl",
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
 )
@@ -71,9 +81,13 @@ load(
 drake_py_binary(
     name = "joint_teleop",
     srcs = ["joint_teleop.py"],
+    add_test_rule = 1,
+    test_rule_args = ["--target_realtime_rate=0.0 --duration=0.1"],
     deps = [
         "//bindings/pydrake",
     ],
 )
+
+install_data()
 
 add_lint_tests()

@@ -113,6 +113,8 @@ int DoMain(void) {
     done = plant->is_done(
         sys->GetSubsystemContext(*plant, simulator.get_context()));
   }
+
+  lcm.StopReceiveThread();
   return 0;
 }
 
