@@ -25,6 +25,9 @@ std::unique_ptr<MathematicalProgramSolverInterface> ChooseBestSolver(
     return std::make_unique<EqualityConstrainedQPSolver>();
   } else if (MosekSolver::IsAvailable() &&
              MosekSolver::ProgramAttributesSatisfied(prog)) {
+    // TODO(hongkai.dai@tri.global): based on my limited experience, Mosek is
+    // faster than Gurobi for convex optimization problem. But we should run
+    // a more thorough comparison.
     return std::make_unique<MosekSolver>();
   } else if (GurobiSolver::IsAvailable() &&
              GurobiSolver::ProgramAttributesSatisfied(prog)) {
@@ -35,9 +38,6 @@ std::unique_ptr<MathematicalProgramSolverInterface> ChooseBestSolver(
   } else if (MobyLCPSolver<double>::IsAvailable() &&
              MobyLCPSolver<double>::ProgramAttributesSatisfied(prog)) {
     return std::make_unique<MobyLCPSolver<double>>();
-  } else if (UnrevisedLemkeSolver<double>::IsAvailable() &&
-             UnrevisedLemkeSolver<double>::ProgramAttributesSatisfied(prog)) {
-    return std::make_unique<UnrevisedLemkeSolver<double>>();
   } else if (SnoptSolver::IsAvailable() &&
              SnoptSolver::ProgramAttributesSatisfied(prog)) {
     return std::make_unique<SnoptSolver>();
@@ -49,6 +49,9 @@ std::unique_ptr<MathematicalProgramSolverInterface> ChooseBestSolver(
     return std::make_unique<NloptSolver>();
   } else if (ScsSolver::IsAvailable() &&
              ScsSolver::ProgramAttributesSatisfied(prog)) {
+    // Use SCS as the last resort. SCS uses ADMM method, which converges fast to
+    // modest accuracy quite fast, but then slows down significantly if the user
+    // wants high accuracy.
     return std::make_unique<ScsSolver>();
   }
 

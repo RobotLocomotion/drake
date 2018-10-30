@@ -37,8 +37,8 @@ bool DrealSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
           ProgramAttribute::kLinearComplementarityConstraint,
           ProgramAttribute::kLinearCost, ProgramAttribute::kQuadraticCost,
       });
-  return IsSubsetOfAnotherProgramAttributes(prog.required_capabilities(),
-                                            solver_capabilities.access());
+  return AreRequiredAttributesSupported(prog.required_capabilities(),
+                                        solver_capabilities.access());
 }
 
 }  // namespace solvers

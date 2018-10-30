@@ -896,6 +896,7 @@ SolutionResult MathematicalProgram::Solve() {
   // want to tweak the order of preference of solvers based on the types of
   // constraints present.
 
+  // This list is a duplicate of ChooseBestSolver(), they should keep in sync.
   if (linear_system_solver_->IsProgramAttributesSatisfied(*this) &&
       linear_system_solver_->available()) {
     // TODO(ggould-tri) Also allow quadratic objectives whose matrix is

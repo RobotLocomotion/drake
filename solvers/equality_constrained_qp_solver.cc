@@ -290,8 +290,8 @@ bool EqualityConstrainedQPSolver::ProgramAttributesSatisfied(
       std::initializer_list<ProgramAttribute>{
           ProgramAttribute::kQuadraticCost, ProgramAttribute::kLinearCost,
           ProgramAttribute::kLinearEqualityConstraint});
-  return IsSubsetOfAnotherProgramAttributes(prog.required_capabilities(),
-                                            solver_capabilities.access()) &&
+  return AreRequiredAttributesSupported(prog.required_capabilities(),
+                                        solver_capabilities.access()) &&
          prog.required_capabilities().count(ProgramAttribute::kQuadraticCost) >
              0;
 }

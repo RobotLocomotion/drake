@@ -32,8 +32,8 @@ bool MosekSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
           ProgramAttribute::kPositiveSemidefiniteConstraint,
           ProgramAttribute::kLinearCost, ProgramAttribute::kQuadraticCost,
           ProgramAttribute::kBinaryVariable});
-  return IsSubsetOfAnotherProgramAttributes(prog.required_capabilities(),
-                                            solver_capabilities.access());
+  return AreRequiredAttributesSupported(prog.required_capabilities(),
+                                        solver_capabilities.access());
 }
 
 }  // namespace solvers

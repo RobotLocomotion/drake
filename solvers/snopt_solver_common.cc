@@ -34,8 +34,8 @@ bool SnoptSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
           ProgramAttribute::kLinearComplementarityConstraint,
           ProgramAttribute::kGenericCost, ProgramAttribute::kLinearCost,
           ProgramAttribute::kQuadraticCost, ProgramAttribute::kCallback});
-  return IsSubsetOfAnotherProgramAttributes(prog.required_capabilities(),
-                                            solver_capabilities.access());
+  return AreRequiredAttributesSupported(prog.required_capabilities(),
+                                        solver_capabilities.access());
 }
 
 }  // namespace solvers

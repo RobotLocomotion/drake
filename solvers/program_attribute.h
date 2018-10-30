@@ -37,7 +37,7 @@ using ProgramAttributes = std::unordered_set<ProgramAttribute, DefaultHash>;
 /**
  * Returns true if @p subset is a subset of @p superset.
  */
-bool IsSubsetOfAnotherProgramAttributes(const ProgramAttributes& subset,
-                                        const ProgramAttributes& superset);
+bool AreRequiredAttributesSupported(const ProgramAttributes& required,
+                                    const ProgramAttributes& supported);
 }  // namespace solvers
 }  // namespace drake

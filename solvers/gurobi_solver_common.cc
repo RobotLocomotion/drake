@@ -34,8 +34,8 @@ bool GurobiSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
           ProgramAttribute::kLorentzConeConstraint,
           ProgramAttribute::kRotatedLorentzConeConstraint,
           ProgramAttribute::kBinaryVariable, ProgramAttribute::kCallback});
-  return IsSubsetOfAnotherProgramAttributes(prog.required_capabilities(),
-                                            solver_capabilities.access());
+  return AreRequiredAttributesSupported(prog.required_capabilities(),
+                                        solver_capabilities.access());
 }
 }  // namespace solvers
 }  // namespace drake

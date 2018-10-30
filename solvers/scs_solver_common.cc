@@ -23,7 +23,7 @@ bool ScsSolver::IsProgramAttributesSatisfied(
 }
 
 bool ScsSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
-  return IsSubsetOfAnotherProgramAttributes(
+  return AreRequiredAttributesSupported(
       prog.required_capabilities(),
       ProgramAttributes({ProgramAttribute::kLinearEqualityConstraint,
                          ProgramAttribute::kLinearConstraint,

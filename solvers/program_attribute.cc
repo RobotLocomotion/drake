@@ -2,13 +2,13 @@
 
 namespace drake {
 namespace solvers {
-bool IsSubsetOfAnotherProgramAttributes(const ProgramAttributes& subset,
-                                        const ProgramAttributes& superset) {
-  if (subset.size() > superset.size()) {
+bool AreRequiredAttributesSupported(const ProgramAttributes& required,
+                                    const ProgramAttributes& supported) {
+  if (required.size() > supported.size()) {
     return false;
   }
-  for (const auto& attribute : subset) {
-    if (superset.find(attribute) == superset.end()) {
+  for (const auto& attribute : required) {
+    if (supported.find(attribute) == supported.end()) {
       return false;
     }
   }

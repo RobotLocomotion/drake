@@ -34,8 +34,8 @@ bool NloptSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
           ProgramAttribute::kGenericCost, ProgramAttribute::kLinearCost,
           ProgramAttribute::kQuadraticCost,
       });
-  return IsSubsetOfAnotherProgramAttributes(prog.required_capabilities(),
-                                            solver_capabilities.access());
+  return AreRequiredAttributesSupported(prog.required_capabilities(),
+                                        solver_capabilities.access());
 }
 }  // namespace solvers
 }  // namespace drake
