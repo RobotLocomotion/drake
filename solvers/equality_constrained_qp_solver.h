@@ -15,9 +15,9 @@ class EqualityConstrainedQPSolver : public MathematicalProgramSolverInterface {
   EqualityConstrainedQPSolver() = default;
   ~EqualityConstrainedQPSolver() override = default;
 
-  bool IsAvailable() const override { return available(); }
+  bool available() const override { return IsAvailable(); };
 
-  static bool available();
+  static bool IsAvailable();
 
   /**
    * Solve the qudratic program with equality constraint.

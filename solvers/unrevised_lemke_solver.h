@@ -89,9 +89,9 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
                      VectorX<T>* z, int* num_pivots,
                      const T& zero_tol = T(-1)) const;
 
-  bool IsAvailable() const override { return available(); }
+  bool available() const override { return IsAvailable(); };
 
-  static bool available() { return true; }
+  static bool IsAvailable() { return true; }
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 

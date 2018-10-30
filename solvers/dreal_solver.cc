@@ -416,7 +416,7 @@ optional<DrealSolver::IntervalBox> DrealSolver::Minimize(
   }
 }
 
-bool DrealSolver::available() { return true; }
+bool DrealSolver::IsAvailable() { return true; }
 
 namespace {
 

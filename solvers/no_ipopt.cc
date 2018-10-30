@@ -7,7 +7,7 @@
 namespace drake {
 namespace solvers {
 
-bool IpoptSolver::available() { return false; }
+bool IpoptSolver::IsAvailable() { return false; }
 
 SolutionResult IpoptSolver::Solve(MathematicalProgram&) const {
   throw std::runtime_error(

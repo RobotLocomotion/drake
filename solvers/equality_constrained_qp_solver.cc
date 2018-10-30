@@ -15,7 +15,7 @@
 namespace drake {
 namespace solvers {
 
-bool EqualityConstrainedQPSolver::available() { return true; }
+bool EqualityConstrainedQPSolver::IsAvailable() { return true; }
 
 /**
  * Solves the un-constrained QP problem

@@ -318,7 +318,7 @@ bool IsVectorOfConstraintsSatisfiedAtSolution(
 }
 }  // anonymous namespace
 
-bool NloptSolver::available() { return true; }
+bool NloptSolver::IsAvailable() { return true; }
 
 SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
   const int nx = prog.num_vars();

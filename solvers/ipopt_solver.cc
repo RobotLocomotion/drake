@@ -502,7 +502,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 
 }  // namespace
 
-bool IpoptSolver::available() { return true; }
+bool IpoptSolver::IsAvailable() { return true; }
 
 SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
   DRAKE_ASSERT(prog.linear_complementarity_constraints().empty());

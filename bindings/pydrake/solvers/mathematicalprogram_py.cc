@@ -182,8 +182,8 @@ PYBIND11_MODULE(mathematicalprogram, m) {
   py::class_<MathematicalProgramSolverInterface>(
       m, "MathematicalProgramSolverInterface",
       doc.MathematicalProgramSolverInterface.doc)
-      .def("IsAvailable", &MathematicalProgramSolverInterface::IsAvailable,
-           doc.MathematicalProgramSolverInterface.IsAvailable.doc)
+      .def("available", &MathematicalProgramSolverInterface::available,
+           doc.MathematicalProgramSolverInterface.available.doc)
       .def("solver_id", &MathematicalProgramSolverInterface::solver_id,
            doc.MathematicalProgramSolverInterface.solver_id.doc)
       .def("Solve", &MathematicalProgramSolverInterface::Solve,

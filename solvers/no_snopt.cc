@@ -7,7 +7,7 @@
 namespace drake {
 namespace solvers {
 
-bool SnoptSolver::available() { return false; }
+bool SnoptSolver::IsAvailable() { return false; }
 
 SolutionResult SnoptSolver::Solve(MathematicalProgram&) const {
   throw std::runtime_error(

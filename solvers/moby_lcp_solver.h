@@ -266,9 +266,9 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
                                 int max_exp = 1, const T& piv_tol = T(-1),
                                 const T& zero_tol = T(-1)) const;
 
-  bool IsAvailable() const override { return available(); }
+  bool available() const override { return IsAvailable(); };
 
-  static bool available() { return true; }
+  static bool IsAvailable() { return true; }
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 

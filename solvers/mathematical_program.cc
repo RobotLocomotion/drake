@@ -897,41 +897,41 @@ SolutionResult MathematicalProgram::Solve() {
   // constraints present.
 
   if (linear_system_solver_->IsProgramAttributesSatisfied(*this) &&
-      linear_system_solver_->IsAvailable()) {
+      linear_system_solver_->available()) {
     // TODO(ggould-tri) Also allow quadratic objectives whose matrix is
     // Identity: This is the objective function the solver uses anyway when
     // underconstrainted, and is fairly common in real-world problems.
     return linear_system_solver_->Solve(*this);
   } else if (equality_constrained_qp_solver_->IsProgramAttributesSatisfied(
                  *this) &&
-             equality_constrained_qp_solver_->IsAvailable()) {
+             equality_constrained_qp_solver_->available()) {
     return equality_constrained_qp_solver_->Solve(*this);
   } else if (mosek_solver_->IsProgramAttributesSatisfied(*this) &&
-             mosek_solver_->IsAvailable()) {
+             mosek_solver_->available()) {
     // TODO(hongkai.dai@tri.global): based on my limited experience, Mosek is
     // faster than Gurobi for convex optimization problem. But we should run
     // a more thorough comparison.
     return mosek_solver_->Solve(*this);
   } else if (gurobi_solver_->IsProgramAttributesSatisfied(*this) &&
-             gurobi_solver_->IsAvailable()) {
+             gurobi_solver_->available()) {
     return gurobi_solver_->Solve(*this);
   } else if (osqp_solver_->IsProgramAttributesSatisfied(*this) &&
-             osqp_solver_->IsAvailable()) {
+             osqp_solver_->available()) {
     return osqp_solver_->Solve(*this);
   } else if (moby_lcp_solver_->IsProgramAttributesSatisfied(*this) &&
-             moby_lcp_solver_->IsAvailable()) {
+             moby_lcp_solver_->available()) {
     return moby_lcp_solver_->Solve(*this);
   } else if (snopt_solver_->IsProgramAttributesSatisfied(*this) &&
-             snopt_solver_->IsAvailable()) {
+             snopt_solver_->available()) {
     return snopt_solver_->Solve(*this);
   } else if (ipopt_solver_->IsProgramAttributesSatisfied(*this) &&
-             ipopt_solver_->IsAvailable()) {
+             ipopt_solver_->available()) {
     return ipopt_solver_->Solve(*this);
   } else if (nlopt_solver_->IsProgramAttributesSatisfied(*this) &&
-             nlopt_solver_->IsAvailable()) {
+             nlopt_solver_->available()) {
     return nlopt_solver_->Solve(*this);
   } else if (scs_solver_->IsProgramAttributesSatisfied(*this) &&
-             scs_solver_->IsAvailable()) {
+             scs_solver_->available()) {
     // Use SCS as the last resort. SCS uses ADMM method, which converges fast to
     // modest accuracy quite fast, but then slows down significantly if the user
     // wants high accuracy.

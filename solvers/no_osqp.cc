@@ -9,7 +9,7 @@
 namespace drake {
 namespace solvers {
 
-bool OsqpSolver::available() { return false; }
+bool OsqpSolver::IsAvailable() { return false; }
 
 SolutionResult OsqpSolver::Solve(MathematicalProgram&) const {
   throw std::runtime_error(

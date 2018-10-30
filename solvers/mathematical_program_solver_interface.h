@@ -20,7 +20,7 @@ class MathematicalProgramSolverInterface {
   virtual ~MathematicalProgramSolverInterface() = default;
 
   /// Returns true iff this solver was enabled at compile-time.
-  virtual bool IsAvailable() const = 0;
+  virtual bool available() const = 0;
 
   /// Sets values for the decision variables on the given MathematicalProgram
   /// @p prog, or:

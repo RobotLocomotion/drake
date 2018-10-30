@@ -17,9 +17,9 @@ class NloptSolver : public MathematicalProgramSolverInterface {
 
   // This solver is implemented in various pieces depending on if
   // NLOpt was available during compilation.
-  bool IsAvailable() const override { return available(); }
+  bool available() const override { return IsAvailable(); };
 
-  static bool available();
+  static bool IsAvailable();
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 

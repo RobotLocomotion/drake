@@ -10,7 +10,7 @@ std::shared_ptr<GurobiSolver::License> GurobiSolver::AcquireLicense() {
   return {};
 }
 
-bool GurobiSolver::available() { return false; }
+bool GurobiSolver::IsAvailable() { return false; }
 
 SolutionResult GurobiSolver::Solve(MathematicalProgram&) const {
   throw std::runtime_error(

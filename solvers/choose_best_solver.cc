@@ -17,37 +17,37 @@ namespace drake {
 namespace solvers {
 std::unique_ptr<MathematicalProgramSolverInterface> ChooseBestSolver(
     const MathematicalProgram& prog) {
-  if (LinearSystemSolver::available() &&
+  if (LinearSystemSolver::IsAvailable() &&
       LinearSystemSolver::ProgramAttributesSatisfied(prog)) {
     return std::make_unique<LinearSystemSolver>();
-  } else if (EqualityConstrainedQPSolver::available() &&
+  } else if (EqualityConstrainedQPSolver::IsAvailable() &&
              EqualityConstrainedQPSolver::ProgramAttributesSatisfied(prog)) {
     return std::make_unique<EqualityConstrainedQPSolver>();
-  } else if (MosekSolver::available() &&
+  } else if (MosekSolver::IsAvailable() &&
              MosekSolver::ProgramAttributesSatisfied(prog)) {
     return std::make_unique<MosekSolver>();
-  } else if (GurobiSolver::available() &&
+  } else if (GurobiSolver::IsAvailable() &&
              GurobiSolver::ProgramAttributesSatisfied(prog)) {
     return std::make_unique<GurobiSolver>();
-  } else if (OsqpSolver::available() &&
+  } else if (OsqpSolver::IsAvailable() &&
              OsqpSolver::ProgramAttributesSatisfied(prog)) {
     return std::make_unique<OsqpSolver>();
-  } else if (MobyLCPSolver<double>::available() &&
+  } else if (MobyLCPSolver<double>::IsAvailable() &&
              MobyLCPSolver<double>::ProgramAttributesSatisfied(prog)) {
     return std::make_unique<MobyLCPSolver<double>>();
-  } else if (UnrevisedLemkeSolver<double>::available() &&
+  } else if (UnrevisedLemkeSolver<double>::IsAvailable() &&
              UnrevisedLemkeSolver<double>::ProgramAttributesSatisfied(prog)) {
     return std::make_unique<UnrevisedLemkeSolver<double>>();
-  } else if (SnoptSolver::available() &&
+  } else if (SnoptSolver::IsAvailable() &&
              SnoptSolver::ProgramAttributesSatisfied(prog)) {
     return std::make_unique<SnoptSolver>();
-  } else if (IpoptSolver::available() &&
+  } else if (IpoptSolver::IsAvailable() &&
              IpoptSolver::ProgramAttributesSatisfied(prog)) {
     return std::make_unique<IpoptSolver>();
-  } else if (NloptSolver::available() &&
+  } else if (NloptSolver::IsAvailable() &&
              NloptSolver::ProgramAttributesSatisfied(prog)) {
     return std::make_unique<NloptSolver>();
-  } else if (ScsSolver::available() &&
+  } else if (ScsSolver::IsAvailable() &&
              ScsSolver::ProgramAttributesSatisfied(prog)) {
     return std::make_unique<ScsSolver>();
   }
