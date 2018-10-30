@@ -108,6 +108,9 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   EXPECT_DEFAULT_ERROR(default_object->ComputePointPairPenetration());
   EXPECT_DEFAULT_ERROR(
       default_object->ComputeSignedDistancePairwiseClosestPoints());
+  Vector3<double> p_WQ(0, 0, 0);
+  EXPECT_DEFAULT_ERROR(
+      default_object->ComputePointSignedDistances(p_WQ));
 
 #undef EXPECT_DEFAULT_ERROR
 }

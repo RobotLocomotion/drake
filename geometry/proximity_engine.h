@@ -8,6 +8,7 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
+#include "drake/geometry/query_results/signed_distance_field_value.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -155,8 +156,28 @@ class ProximityEngine {
   std::vector<SignedDistancePair<double>>
   ComputeSignedDistancePairwiseClosestPoints(
       const std::vector<GeometryId>& geometry_map) const;
-  //@}
 
+  /**
+   Compute signed distances and gradients from a query point to anchored
+   geometries (environment) in the scene.
+   @param[in] p_WQ            Position of a query point Q in world frame W.
+   @param[in] geometry_map    A map from geometry _index_ to the corresponding
+                              global geometry identifier.
+   @retval signed_distances   A vector populated with per-object signed
+                              distance values (and supporting data). For each
+                              object in the scene, it reports the global
+                              geometry identifier of the object, the position
+                              of the nearest point on the object to the query
+                              point, the signed distance from the query
+                              point, and the gradient vector of the distance
+                              function with respect to the query point.
+                              See SignedDistanceFieldValue for details.
+   */
+  std::vector<SignedDistanceFieldValue<double>>
+  ComputePointSignedDistances(
+      const Vector3<double>& p_WQ,
+      const std::vector<GeometryId>& geometry_map) const;
+  //@}
 
   //----------------------------------------------------------------------------
   /** @name                Collision Queries

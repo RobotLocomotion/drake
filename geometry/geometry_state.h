@@ -500,6 +500,26 @@ class GeometryState {
     return geometry_engine_->ComputeSignedDistancePairwiseClosestPoints(
         geometry_index_to_id_map_);
   }
+
+  /**
+   Compute signed distances and gradients from a query point to anchored
+   geometries (environment) in the scene.
+   @param[in] p_WQ            Position of a query point Q in world frame W.
+   @retval signed_distances   A vector populated with per-object signed
+                              distance values (and supporting data). For each
+                              object in the scene, it reports the global
+                              geometry identifier of the object, the position
+                              of the nearest point on the object to the query
+                              point, the signed distance from the query
+                              point, and the gradient vector of the distance
+                              function with respect to the query point.
+                              See SignedDistanceFieldValue for details.
+   */
+  std::vector<SignedDistanceFieldValue<double>>
+  ComputePointSignedDistances(const Vector3<double>& p_WQ) const {
+    return geometry_engine_->ComputePointSignedDistances(
+        p_WQ, geometry_index_to_id_map_);
+  }
   //@}
 
   /** @name Scalar conversion */
