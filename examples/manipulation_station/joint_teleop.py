@@ -39,7 +39,8 @@ station.Finalize()
 ConnectDrakeVisualizer(builder, station.get_mutable_scene_graph(),
                        station.GetOutputPort("pose_bundle"))
 
-teleop = builder.AddSystem(JointSliders(station.get_controller_plant()))
+teleop = builder.AddSystem(JointSliders(station.get_controller_plant(),
+                                        length=800))
 builder.Connect(teleop.get_output_port(0), station.GetInputPort(
     "iiwa_position"))
 

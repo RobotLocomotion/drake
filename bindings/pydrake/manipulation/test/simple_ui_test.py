@@ -24,7 +24,7 @@ class TestSimpleUI(unittest.TestCase):
 
         slider = JointSliders(robot=plant, lower_limit=-5., upper_limit=5.,
                               resolution=0.001, update_period_sec=0.01,
-                              title='test')
+                              title='test', length=300)
         context = slider.CreateDefaultContext()
         output = slider.AllocateOutput()
 
