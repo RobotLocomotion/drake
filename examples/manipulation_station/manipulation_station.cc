@@ -132,7 +132,7 @@ ManipulationStation<T>::ManipulationStation(double time_step)
   // Add the Kuka IIWA.
   const std::string iiwa_sdf_path = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/"
-      "sdf/iiwa14_no_collision.sdf");
+      "iiwa7/iiwa7_no_collision.sdf");
   iiwa_model_ =
       AddModelFromSdfFile(iiwa_sdf_path, "iiwa", plant_);
   plant_->WeldFrames(plant_->world_frame(),
@@ -146,8 +146,7 @@ ManipulationStation<T>::ManipulationStation(double time_step)
       AddModelFromSdfFile(wsg_sdf_path, "gripper", plant_);
   const Isometry3d wsg_pose =
       RigidTransform<double>(
-          RollPitchYaw<double>(M_PI_2, 0, M_PI_2).ToRotationMatrix(),
-          Vector3d(0, 0, 0.081))
+          RollPitchYaw<double>(M_PI_2, 0, M_PI_2), Vector3d(0, 0, 0.114))
           .GetAsIsometry3();
   plant_->WeldFrames(plant_->GetFrameByName("iiwa_link_7", iiwa_model_),
                      plant_->GetFrameByName("body", wsg_model_), wsg_pose);
