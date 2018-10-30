@@ -29,6 +29,8 @@ drake_cc_package_library(
         ":gyroscope",
         ":image",
         ":image_to_lcm_image_array_t",
+        ":lcm_image_array_to_images",
+        ":lcm_image_traits",
         ":optitrack_sender",
         ":rgbd_camera",
         ":rgbd_renderer",
@@ -99,6 +101,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "lcm_image_traits",
+    srcs = [
+        "lcm_image_traits.cc",
+    ],
+    hdrs = [
+        "lcm_image_traits.h",
+    ],
+    deps = [
+        ":image",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
+drake_cc_library(
     name = "image_to_lcm_image_array_t",
     srcs = [
         "image_to_lcm_image_array_t.cc",
@@ -107,11 +123,46 @@ drake_cc_library(
         "image_to_lcm_image_array_t.h",
     ],
     deps = [
-        ":image",
+        ":lcm_image_traits",
+        "//common:essential",
+        "//systems/framework",
+        "@zlib",
+    ],
+)
+
+drake_cc_library(
+    name = "lcm_image_array_to_images",
+    srcs = [
+        "lcm_image_array_to_images.cc",
+    ],
+    hdrs = [
+        "lcm_image_array_to_images.h",
+    ],
+    deps = [
+        ":lcm_image_traits",
         "//common:essential",
         "//systems/framework",
         "@lcmtypes_robotlocomotion",
+        "@libpng",
+        "@vtk//:vtkIOImage",
         "@zlib",
+    ],
+)
+
+drake_cc_binary(
+    name = "lcm_image_array_receive_example",
+    srcs = [
+        "lcm_image_array_receive_example.cc",
+    ],
+    deps = [
+        ":image_to_lcm_image_array_t",
+        ":lcm_image_array_to_images",
+        "//common:text_logging_gflags",
+        "//common:unused",
+        "//lcm",
+        "//systems/analysis:simulator",
+        "//systems/lcm:lcm_pubsub_system",
+        "@gflags",
     ],
 )
 
@@ -519,6 +570,18 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "image_to_lcm_image_array_t_test",
     deps = [":image_to_lcm_image_array_t"],
+)
+
+drake_cc_googletest(
+    name = "lcm_image_array_to_images_test",
+    data = glob([
+        "test/*.jpg",
+        "test/*.png",
+    ]),
+    deps = [
+        ":lcm_image_array_to_images",
+        "//common:find_resource",
+    ],
 )
 
 drake_cc_googletest(
