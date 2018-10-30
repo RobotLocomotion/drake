@@ -120,22 +120,24 @@ Expression ExpandMultiplication(const Expression& e1, const Expression& e2) {
     // = c0 * e2 + c1 * e_{1,1} * e2 + ... + c_n * e_{1,n} * e2
     const double c0{get_constant_in_addition(e1)};
     const map<Expression, double>& m1{get_expr_to_coeff_map_in_addition(e1)};
-    return accumulate(
-        m1.begin(), m1.end(), ExpandMultiplication(c0, e2),
-        [&e2](const Expression& init, const pair<Expression, double>& p) {
-          return init + ExpandMultiplication(p.second, p.first, e2);
-        });
+    ExpressionAddFactory fac;
+    fac.AddExpression(ExpandMultiplication(c0, e2));
+    for (const pair<const Expression, double>& p : m1) {
+      fac.AddExpression(ExpandMultiplication(p.second, p.first, e2));
+    }
+    return fac.GetExpression();
   }
   if (is_addition(e2)) {
     //   e1 * (c0 + c1 * e_{2,1} + ... + c_n * e_{2, n})
     // = e1 * c0 + e1 * c1 * e_{2,1} + ... + e1 * c_n * e_{2,n}
     const double c0{get_constant_in_addition(e2)};
     const map<Expression, double>& m1{get_expr_to_coeff_map_in_addition(e2)};
-    return accumulate(
-        m1.begin(), m1.end(), ExpandMultiplication(e1, c0),
-        [&e1](const Expression& init, const pair<Expression, double>& p) {
-          return init + ExpandMultiplication(e1, p.second, p.first);
-        });
+    ExpressionAddFactory fac;
+    fac.AddExpression(ExpandMultiplication(e1, c0));
+    for (const pair<const Expression, double>& p : m1) {
+      fac.AddExpression(ExpandMultiplication(e1, p.second, p.first));
+    }
+    return fac.GetExpression();
   }
   return e1 * e2;
 }
@@ -522,12 +524,11 @@ double ExpressionAdd::Evaluate(const Environment& env) const {
 Expression ExpressionAdd::Expand() const {
   //   (c0 + c1 * e_1 + ... + c_n * e_n).Expand()
   // =  c0 + c1 * e_1.Expand() + ... + c_n * e_n.Expand()
-  return accumulate(
-      expr_to_coeff_map_.begin(), expr_to_coeff_map_.end(),
-      Expression{constant_},
-      [](const Expression& init, const pair<Expression, double>& p) {
-        return init + ExpandMultiplication(p.first.Expand(), p.second);
-      });
+  ExpressionAddFactory fac{constant_, {}};
+  for (const pair<const Expression, double>& p : expr_to_coeff_map_) {
+    fac.AddExpression(ExpandMultiplication(p.first.Expand(), p.second));
+  }
+  return fac.GetExpression();
 }
 
 Expression ExpressionAdd::Substitute(const Substitution& s) const {
