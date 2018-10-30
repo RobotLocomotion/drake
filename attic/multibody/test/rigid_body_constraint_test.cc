@@ -65,7 +65,7 @@ GTEST_TEST(MinDistanceConstraintTests, PenaltyTest) {
       VectorX<double>::LinSpaced(num_evaluation_points, -1, 1);
   VectorX<double> penalty;
   VectorX<double> dpenalty_ddistance;
-  double tolerance = 64 * std::numeric_limits<double>::epsilon();
+  double tolerance = 128 * std::numeric_limits<double>::epsilon();
   for (double distance_threshold_numeric : {0.01, 0.1, 1.}) {
     MinDistanceConstraint::Penalty(distance_numeric, distance_threshold_numeric,
                                    &penalty, &dpenalty_ddistance);

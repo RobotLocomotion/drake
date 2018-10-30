@@ -543,11 +543,11 @@ Expression ExpressionAdd::Differentiate(const Variable& x) const {
   //   ∂/∂x (c_0 + c_1 * f_1 + ... + c_n * f_n)
   // = (∂/∂x c_0) + (∂/∂x c_1 * f_1) + ... + (∂/∂x c_n * f_n)
   // =  0.0       + c_1 * (∂/∂x f_1) + ... + c_n * (∂/∂x f_n)
-  return accumulate(
-      expr_to_coeff_map_.begin(), expr_to_coeff_map_.end(), Expression::Zero(),
-      [&x](const Expression& init, const pair<Expression, double>& p) {
-        return init + p.second * p.first.Differentiate(x);
-      });
+  ExpressionAddFactory fac;
+  for (const pair<const Expression, double>& p : expr_to_coeff_map_) {
+    fac.AddExpression(p.second * p.first.Differentiate(x));
+  }
+  return fac.GetExpression();
 }
 
 ostream& ExpressionAdd::Display(ostream& os) const {
@@ -831,23 +831,26 @@ Expression DifferentiatePow(const Expression& f, const Expression& g,
 }
 
 Expression ExpressionMul::Differentiate(const Variable& x) const {
-  // ∂/∂x (c   * f_1^g_1  * f_2^g_2        * ... * f_n^g_n
-  //= c * [expr * (∂/∂x f_1^g_1) / f_1^g_1 +
-  //       expr * (∂/∂x f_2^g_2) / f_2^g_2 +
-  //                      ...              +
-  //       expr * (∂/∂x f_n^g_n) / f_n^g_n]
+  // ∂/∂x (c   * f₁^g₁  * f₂^g₂        * ... * fₙ^gₙ
+  //= c * [expr * (∂/∂x f₁^g₁) / f₁^g₁ +
+  //       expr * (∂/∂x f₂^g₂) / f₂^g₂ +
+  //                      ...          +
+  //       expr * (∂/∂x fₙ^gₙ) / fₙ^gₙ]
+  // = c * expr * (∑ᵢ (∂/∂x fᵢ^gᵢ) / fᵢ^gᵢ)
   //
-  // where expr = (f_1^g_1 * f_2^g_2 * ... * f_n^g_n).
-  const map<Expression, Expression>& m{base_to_exponent_map_};
-  Expression ret{Expression::Zero()};
-  const Expression expr{
-      ExpressionMulFactory{1.0, base_to_exponent_map_}.GetExpression()};
-  for (const auto& term : m) {
+  // where expr = (f_1^g_1 * f₂^g₂ * ... * f_n^g_n).
+  // This factory will form the expression that we will return.
+  ExpressionMulFactory mul_fac{constant_, base_to_exponent_map_};
+  // This factory will form (∑ᵢ (∂/∂x fᵢ^gᵢ) / fᵢ^gᵢ).
+  ExpressionAddFactory add_fac;
+  for (const pair<const Expression, Expression>& term : base_to_exponent_map_) {
     const Expression& base{term.first};
     const Expression& exponent{term.second};
-    ret += expr * DifferentiatePow(base, exponent, x) * pow(base, -exponent);
+    add_fac.AddExpression(DifferentiatePow(base, exponent, x) *
+                          pow(base, -exponent));
   }
-  return constant_ * ret;
+  mul_fac.AddExpression(add_fac.GetExpression());
+  return mul_fac.GetExpression();
 }
 
 ostream& ExpressionMul::Display(ostream& os) const {

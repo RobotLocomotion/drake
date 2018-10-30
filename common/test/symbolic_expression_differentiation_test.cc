@@ -203,7 +203,8 @@ TEST_F(SymbolicDifferentiationTest, SymbolicCompoundCases) {
     const Expression& expr{get<0>(item)};
     const Variable& var{get<1>(item)};
     const Expression& diff_result{get<2>(item)};
-    EXPECT_PRED2(ExprEqual, expr.Differentiate(var), diff_result);
+    EXPECT_PRED2(ExprEqual, expr.Differentiate(var).Expand(),
+                 diff_result.Expand());
   }
 }
 
