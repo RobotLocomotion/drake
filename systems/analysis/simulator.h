@@ -252,6 +252,10 @@ class Simulator {
     return std::move(context_);
   }
 
+  /// Call this at the end of a simulation (i.e., after StepTo()) to handle any
+  /// events that have been triggered but not yet handled.
+  void Finalize();
+
   /// Forget accumulated statistics. Statistics are reset to the values they
   /// have post construction or immediately after `Initialize()`.
   void ResetStatistics();
@@ -432,6 +436,22 @@ class Simulator {
   // Initialize().
   std::unique_ptr<CompositeEventCollection<T>> per_step_events_;
 
+  // Timed events can be triggered either at a particular time (like an alarm)
+  // or periodically. This collection is set within Initialize().
+  std::unique_ptr<CompositeEventCollection<T>> timed_events_;
+
+  // Witnessed events are triggered as a witness function crosses zero during
+  // StepTo(). This collection is set within Initialize().
+  std::unique_ptr<CompositeEventCollection<T>> witnessed_events_;
+
+  // Indicates when a timed or witnessed event needs to be handled on the next
+  // call to StepTo() or Finalize().
+  bool timed_or_witnessed_event_triggered_{false};
+
+  // The time that the next timed event is to be handled. This value is set in
+  // both Initialize() and StepTo().
+  T next_timed_event_time_{-1};
+
   // Pre-allocated temporaries for updated discrete states.
   std::unique_ptr<DiscreteValues<T>> discrete_updates_;
 
@@ -514,6 +534,26 @@ void Simulator<T>::Initialize() {
   DRAKE_DEMAND(per_step_events_ != nullptr);
   system_.GetPerStepEvents(*context_, per_step_events_.get());
 
+  // TODO: CalcNextUpdateTime() requires a...
+  const T current_time = context_->get_time();
+  context_->set_time(current_time - 10 * std::numeric_limits<double>::epsilon());
+
+  // Get the next timed event.
+  timed_events_ = system_.AllocateCompositeEventCollection();
+  DRAKE_DEMAND(timed_events_ != nullptr);
+  next_timed_event_time_ =
+      system_.CalcNextUpdateTime(*context_, timed_events_.get());
+
+  // Reset the context time.
+  context_->set_time(current_time);
+
+  // Indicate a timed event is to be handled, if appropriate.
+  timed_or_witnessed_event_triggered_ =
+      (next_timed_event_time_ == current_time);
+
+  // Allocate the witness function collection.
+  witnessed_events_ = system_.AllocateCompositeEventCollection();
+
   // Initialize runtime variables.
   initialization_done_ = true;
 }
@@ -568,21 +608,21 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
   DRAKE_THROW_UNLESS(boundary_time >= context_->get_time());
 
-  // Updates/publishes can be triggered throughout the integration process,
-  // but are not active at the start of the step.
-  bool event_triggered = false;
-
   // Integrate until desired interval has completed.
-  auto timed_events = system_.AllocateCompositeEventCollection();
   auto merged_events = system_.AllocateCompositeEventCollection();
-  auto witnessed_events = system_.AllocateCompositeEventCollection();
-  DRAKE_DEMAND(timed_events != nullptr);
+  DRAKE_DEMAND(timed_events_ != nullptr);
+  DRAKE_DEMAND(witnessed_events_ != nullptr);
   DRAKE_DEMAND(merged_events != nullptr);
-  DRAKE_DEMAND(witnessed_events != nullptr);
 
   // Clear events for the loop iteration.
   merged_events->Clear();
   merged_events->Merge(*per_step_events_);
+
+  // Merge in timed and witnessed events, if necessary.
+  if (timed_or_witnessed_event_triggered_) {
+    merged_events->Merge(*timed_events_);
+    merged_events->Merge(*witnessed_events_);
+  }
 
   while (true) {
     // Starting a new step on the trajectory.
@@ -593,8 +633,8 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     PauseIfTooFast();
 
     // The general policy here is to do actions in decreasing order of
-    // "violence" to the state, i.e. unrestricted -> discrete -> publish.
-    // The "timed" actions happen before the "per step" ones.
+    // "violence" to the state, i.e. unrestricted -> discrete -> continuous ->
+    // publish. The "timed" actions happen before the "per step" ones.
 
     // Do unrestricted updates first.
     HandleUnrestrictedUpdate(merged_events->get_unrestricted_update_events());
@@ -602,33 +642,33 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     HandleDiscreteUpdate(merged_events->get_discrete_update_events());
 
     // How far can we go before we have to handle timed events?
-    const T next_timed_event_time =
-        system_.CalcNextUpdateTime(*context_, timed_events.get());
-
-    DRAKE_DEMAND(next_timed_event_time >= step_start_time);
+    next_timed_event_time_ =
+        system_.CalcNextUpdateTime(*context_, timed_events_.get());
+    DRAKE_DEMAND(next_timed_event_time_ >= step_start_time);
 
     // Determine whether the set of events requested by the System at
     // next_timed_event_time includes an Update action, a Publish action, or
     // both.
     T next_update_dt = std::numeric_limits<double>::infinity();
     T next_publish_dt = std::numeric_limits<double>::infinity();
-    if (timed_events->HasDiscreteUpdateEvents() ||
-        timed_events->HasUnrestrictedUpdateEvents()) {
-      next_update_dt = next_timed_event_time - step_start_time;
+    if (timed_events_->HasDiscreteUpdateEvents() ||
+        timed_events_->HasUnrestrictedUpdateEvents()) {
+      next_update_dt = next_timed_event_time_ - step_start_time;
     }
-    if (timed_events->HasPublishEvents()) {
-      next_publish_dt = next_timed_event_time - step_start_time;
+    if (timed_events_->HasPublishEvents()) {
+      next_publish_dt = next_timed_event_time_ - step_start_time;
     }
 
     // Get the dt that gets to the boundary time.
     const T boundary_dt = boundary_time - step_start_time;
 
     // Integrate the continuous state forward in time.
-    event_triggered = IntegrateContinuousState(next_publish_dt,
-                                               next_update_dt,
-                                               next_timed_event_time,
-                                               boundary_dt,
-                                               witnessed_events.get());
+    timed_or_witnessed_event_triggered_ = IntegrateContinuousState(
+        next_publish_dt,
+        next_update_dt,
+        next_timed_event_time_,
+        boundary_dt,
+        witnessed_events_.get());
 
     // Update the number of simulation steps taken.
     ++num_steps_taken_;
@@ -642,9 +682,9 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     merged_events->Merge(*per_step_events_);
 
     // Only merge timed / witnessed events in if an event was triggered.
-    if (event_triggered) {
-      merged_events->Merge(*timed_events);
-      merged_events->Merge(*witnessed_events);
+    if (timed_or_witnessed_event_triggered_) {
+      merged_events->Merge(*timed_events_);
+      merged_events->Merge(*witnessed_events_);
     }
 
     // Handle any publish events at the end of the loop.
@@ -663,28 +703,28 @@ void Simulator<T>::StepTo(const T& boundary_time) {
       break;
   }
 
-  // Do any final unrestricted or discrete updates from timed or witnessed
-  // events, only if an event was triggered. This handles the specific case
-  // where the integrator advanced time to the boundary, *at which point a
-  // timed witnessed event should occur*. This must be handled now else the
-  // trigger will be lost.
-  if (event_triggered) {
-    // We need to clear any per-step events from the merged set, since per-step
-    // publish events have already been handled (we do not want to publish
-    // twice).
-    // TODO(edrumwri): Consider a more elegant means to solve this problem
-    //                 (perhaps deleting the per-step events?)
-    merged_events->Clear();
-    merged_events->Merge(*timed_events);
-    merged_events->Merge(*witnessed_events);
+  // TODO(edrumwri): Add test coverage to complete #8490.
+  redetermine_active_witnesses_ = true;
+}
+
+template <class T>
+void Simulator<T>::Finalize() {
+  DRAKE_DEMAND(timed_events_ != nullptr);
+  DRAKE_DEMAND(witnessed_events_ != nullptr);
+  if (timed_or_witnessed_event_triggered_) {
+    // Do any final unrestricted or discrete updates from witnessed
+    // events, only if an event was triggered.     merged_events->Clear();
+    auto merged_events = system_.AllocateCompositeEventCollection();
+    merged_events->Merge(*timed_events_);
+    merged_events->Merge(*witnessed_events_);
 
     // Do the unrestricted and discrete updates.
     HandleUnrestrictedUpdate(merged_events->get_unrestricted_update_events());
     HandleDiscreteUpdate(merged_events->get_discrete_update_events());
-  }
 
-  // TODO(edrumwri): Add test coverage to complete #8490.
-  redetermine_active_witnesses_ = true;
+    // Reset the flag.
+    timed_or_witnessed_event_triggered_ = false;
+  }
 }
 
 template <class T>
