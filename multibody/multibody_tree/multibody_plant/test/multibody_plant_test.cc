@@ -649,16 +649,11 @@ GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodiesSourceErrors) {
     EXPECT_NO_THROW(plant.Finalize(&scene_graph));
   }
 
-  // Case: Registered as source, but no scene graph passed to Finalize() -
-  // error.
+  // Case: Registered as source, correct finalization.
   {
     MultibodyPlant<double> plant;
     plant.RegisterAsSourceForSceneGraph(&scene_graph);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        plant.Finalize(), std::logic_error,
-        "This MultibodyPlant has been registered as a SceneGraph geometry "
-        "source. Finalize\\(\\) should be invoked with a pointer to the "
-        "SceneGraph instance");
+    EXPECT_NO_THROW(plant.Finalize());
   }
 
   // Case: Registered as source, but *wrong* scene graph passed to Finalize() -
@@ -669,15 +664,16 @@ GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodiesSourceErrors) {
     SceneGraph<double> other_graph;
     DRAKE_EXPECT_THROWS_MESSAGE(
         plant.Finalize(&other_graph), std::logic_error,
-        "Finalizing on a SceneGraph instance must be performed on the SAME "
-            "instance of SceneGraph used on the first call to "
-            "RegisterAsSourceForSceneGraph\\(\\)");
+        "Geometry registration.*first call to RegisterAsSourceForSceneGraph.*");
   }
 
-  // Case: Not registered as source, but passed SceneGraph in anyways.
+  // Case: Not registered as source, but passed SceneGraph in anyways - error.
   {
     MultibodyPlant<double> plant;
-    EXPECT_NO_THROW(plant.Finalize(&scene_graph));
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant.Finalize(&scene_graph), std::logic_error,
+        "This MultibodyPlant instance does not have a SceneGraph registered.*"
+        "RegisterAsSourceForSceneGraph.*");
   }
 }
 
@@ -1308,9 +1304,18 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
   MultibodyPlant<double> plant;
   SceneGraph<double> scene_graph;
   AddModelFromSdfFile(full_name, &plant, &scene_graph);
+
+  // Try scalar-converting pre-finalize - error.
+  // N.B. Use extra parentheses; otherwise, compiler may think this is a
+  // declaration.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      (MultibodyPlant<AutoDiffXd>(plant)), std::logic_error,
+      ".*MultibodyTree with an invalid topology.*");
+
   plant.Finalize(&scene_graph);
 
   EXPECT_EQ(plant.num_bodies(), 4);  // It includes the world body.
+  EXPECT_TRUE(plant.geometry_source_is_registered());
   EXPECT_EQ(plant.num_visual_geometries(), 5);
   EXPECT_EQ(plant.num_collision_geometries(), 3);
 
@@ -1336,6 +1341,7 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
 
   // Scalar convert the plant and verify invariants.
   MultibodyPlant<AutoDiffXd> plant_autodiff(plant);
+  EXPECT_TRUE(plant_autodiff.geometry_source_is_registered());
   EXPECT_EQ(plant_autodiff.num_collision_geometries(),
             plant.num_collision_geometries());
   EXPECT_EQ(plant_autodiff.GetCollisionGeometriesForBody(
