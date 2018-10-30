@@ -21,7 +21,9 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
 
   // This solver is implemented in various pieces depending on if
   // Gurobi was available during compilation.
-  bool available() const override;
+  bool IsAvailable() const override { return available(); }
+
+  static bool available();
 
   /// Contains info returned to a user function that handles
   /// a Node or Solution callback.
@@ -110,6 +112,11 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
 
   /// @return same as MathematicalProgramSolverInterface::solver_id()
   static SolverId id();
+
+  bool IsProgramAttributesSatisfied(
+      const MathematicalProgram& prog) const override;
+
+  static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
 
   /**
    * This type contains a valid Gurobi license environment, and is only to be

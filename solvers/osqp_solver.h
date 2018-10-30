@@ -15,7 +15,9 @@ class OsqpSolver : public MathematicalProgramSolverInterface {
 
   // This solver is implemented in various pieces depending on if Osqp was
   // available during compilation.
-  bool available() const override;
+  bool IsAvailable() const override { return available(); }
+
+  static bool available();
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
@@ -23,6 +25,11 @@ class OsqpSolver : public MathematicalProgramSolverInterface {
 
   /// @return same as MathematicalProgramSolverInterface::solver_id()
   static SolverId id();
+
+  bool IsProgramAttributesSatisfied(
+      const MathematicalProgram& prog) const override;
+
+  static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
 };
 }  // namespace solvers
 }  // namespace drake

@@ -52,7 +52,7 @@ void RunNonlinearProgram(MathematicalProgram* prog,
       std::make_pair("Ipopt", &ipopt_solver)};
 
   for (const auto& solver : solvers) {
-    if (!solver.second->available()) {
+    if (!solver.second->IsAvailable()) {
       continue;
     }
     SolutionResult result = SolutionResult::kUnknownError;
@@ -423,7 +423,7 @@ GTEST_TEST(testNonlinearProgram, CallbackTest) {
       std::make_pair("Ipopt", &ipopt_solver)};
 
   for (const auto& solver : solvers) {
-    if (!solver.second->available()) {
+    if (!solver.second->IsAvailable()) {
       continue;
     }
     SolutionResult result = SolutionResult::kUnknownError;

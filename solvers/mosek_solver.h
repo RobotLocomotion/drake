@@ -35,7 +35,9 @@ class MosekSolver : public MathematicalProgramSolverInterface {
   /**
    * Defined true if Mosek was included during compilation, false otherwise.
    */
-  bool available() const override;
+  bool IsAvailable() const override { return available(); }
+
+  static bool available();
 
   MathematicalProgramResult Solve(const MathematicalProgram& prog) const;
 
@@ -47,6 +49,11 @@ class MosekSolver : public MathematicalProgramSolverInterface {
 
   /// @return same as MathematicalProgramSolverInterface::solver_id()
   static SolverId id();
+
+  bool IsProgramAttributesSatisfied(
+      const MathematicalProgram& prog) const override;
+
+  static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
 
   /**
    * Control stream logging. Refer to

@@ -15,7 +15,7 @@ void CheckSolver(const MathematicalProgram& prog, SolverId desired_solver_id) {
 
 void RunSolver(MathematicalProgram* prog,
                const MathematicalProgramSolverInterface& solver) {
-  if (!solver.available()) {
+  if (!solver.IsAvailable()) {
     throw std::runtime_error(
         "Solver " + solver.solver_id().name() + " is not available");
   }

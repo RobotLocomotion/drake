@@ -20,7 +20,7 @@ class MathematicalProgramSolverInterface {
   virtual ~MathematicalProgramSolverInterface() = default;
 
   /// Returns true iff this solver was enabled at compile-time.
-  virtual bool available() const = 0;
+  virtual bool IsAvailable() const = 0;
 
   /// Sets values for the decision variables on the given MathematicalProgram
   /// @p prog, or:
@@ -31,6 +31,11 @@ class MathematicalProgramSolverInterface {
 
   /// Returns the identifier of this solver.
   virtual SolverId solver_id() const = 0;
+
+  /// Returns true if the program attributes are satisfied by the solver's
+  /// capability.
+  virtual bool IsProgramAttributesSatisfied(
+      const MathematicalProgram& prog) const = 0;
 };
 
 }  // namespace solvers

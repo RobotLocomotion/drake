@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":bilinear_product_util",
         ":binding",
         ":branch_and_bound",
+        ":choose_best_solver",
         ":constraint",
         ":cost",
         ":create_constraint",
@@ -49,6 +50,7 @@ drake_cc_package_library(
         ":nlopt_solver",
         ":non_convex_optimization_util",
         ":osqp_solver",
+        ":program_attribute",
         ":rotation_constraint",
         ":scs_solver",
         ":snopt_solver",
@@ -89,6 +91,28 @@ drake_cc_library(
     hdrs = ["binding.h"],
     deps = [
         ":decision_variable",
+    ],
+)
+
+drake_cc_library(
+    name = "choose_best_solver",
+    srcs = ["choose_best_solver.cc"],
+    hdrs = ["choose_best_solver.h"],
+    deps = [
+        ":dreal_solver",
+        ":equality_constrained_qp_solver",
+        ":gurobi_solver",
+        ":ipopt_solver",
+        ":linear_system_solver",
+        ":mathematical_program",
+        ":mathematical_program_api",
+        ":moby_lcp_solver",
+        ":mosek_solver",
+        ":nlopt_solver",
+        ":osqp_solver",
+        ":scs_solver",
+        ":snopt_solver",
+        ":unrevised_lemke_solver",
     ],
 )
 
@@ -267,6 +291,7 @@ drake_cc_library(
         ":mosek_solver",
         ":nlopt_solver",
         ":osqp_solver",
+        ":program_attribute",
         ":scs_solver",
         ":snopt_solver",
         ":solution_result",
@@ -373,6 +398,15 @@ drake_cc_library(
         ":integer_optimization_util",
         ":mathematical_program",
         ":mixed_integer_optimization_util",
+    ],
+)
+
+drake_cc_library(
+    name = "program_attribute",
+    srcs = ["program_attribute.cc"],
+    hdrs = ["program_attribute.h"],
+    deps = [
+        "//common:hash",
     ],
 )
 
@@ -541,6 +575,7 @@ drake_cc_library(
         ":function",
         ":indeterminate",
         ":mathematical_program_result",
+        ":program_attribute",
         ":solution_result",
         ":solver_id",
         ":solver_result",
@@ -1414,6 +1449,13 @@ drake_cc_googletest(
         ":mathematical_program_result",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "choose_best_solver_test",
+    deps = [
+        ":choose_best_solver",
     ],
 )
 

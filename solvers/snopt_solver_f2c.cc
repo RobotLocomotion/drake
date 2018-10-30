@@ -599,7 +599,7 @@ void UpdateLinearConstraint(const MathematicalProgram& prog,
 }
 }  // anon namespace
 
-bool SnoptSolver::available() const { return true; }
+bool SnoptSolver::available() { return true; }
 
 SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   auto d = prog.GetSolverData<SNOPTData>();

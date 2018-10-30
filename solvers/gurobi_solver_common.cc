@@ -3,6 +3,7 @@
 /* clang-format on */
 
 #include "drake/common/never_destroyed.h"
+#include "drake/solvers/mathematical_program.h"
 
 // This file contains implementations that are common to both the available and
 // unavailable flavor of this class.
@@ -19,5 +20,22 @@ SolverId GurobiSolver::id() {
   return singleton.access();
 }
 
+bool GurobiSolver::IsProgramAttributesSatisfied(
+    const MathematicalProgram& prog) const {
+  return GurobiSolver::ProgramAttributesSatisfied(prog);
+}
+
+bool GurobiSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
+  static const never_destroyed<ProgramAttributes> solver_capabilities(
+      std::initializer_list<ProgramAttribute>{
+          ProgramAttribute::kLinearCost, ProgramAttribute::kQuadraticCost,
+          ProgramAttribute::kLinearConstraint,
+          ProgramAttribute::kLinearEqualityConstraint,
+          ProgramAttribute::kLorentzConeConstraint,
+          ProgramAttribute::kRotatedLorentzConeConstraint,
+          ProgramAttribute::kBinaryVariable, ProgramAttribute::kCallback});
+  return IsSubsetOfAnotherProgramAttributes(prog.required_capabilities(),
+                                            solver_capabilities.access());
+}
 }  // namespace solvers
 }  // namespace drake

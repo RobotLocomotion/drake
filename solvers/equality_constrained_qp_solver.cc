@@ -15,7 +15,7 @@
 namespace drake {
 namespace solvers {
 
-bool EqualityConstrainedQPSolver::available() const { return true; }
+bool EqualityConstrainedQPSolver::available() { return true; }
 
 /**
  * Solves the un-constrained QP problem
@@ -277,6 +277,23 @@ SolverId EqualityConstrainedQPSolver::solver_id() const { return id(); }
 SolverId EqualityConstrainedQPSolver::id() {
   static const never_destroyed<SolverId> singleton{"Equality constrained QP"};
   return singleton.access();
+}
+
+bool EqualityConstrainedQPSolver::IsProgramAttributesSatisfied(
+    const MathematicalProgram& prog) const {
+  return ProgramAttributesSatisfied(prog);
+}
+
+bool EqualityConstrainedQPSolver::ProgramAttributesSatisfied(
+    const MathematicalProgram& prog) {
+  static const never_destroyed<ProgramAttributes> solver_capabilities(
+      std::initializer_list<ProgramAttribute>{
+          ProgramAttribute::kQuadraticCost, ProgramAttribute::kLinearCost,
+          ProgramAttribute::kLinearEqualityConstraint});
+  return IsSubsetOfAnotherProgramAttributes(prog.required_capabilities(),
+                                            solver_capabilities.access()) &&
+         prog.required_capabilities().count(ProgramAttribute::kQuadraticCost) >
+             0;
 }
 
 }  // namespace solvers

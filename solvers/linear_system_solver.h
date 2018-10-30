@@ -15,7 +15,9 @@ class LinearSystemSolver : public MathematicalProgramSolverInterface {
   LinearSystemSolver() = default;
   ~LinearSystemSolver() override = default;
 
-  bool available() const override;
+  bool IsAvailable() const override { return available(); }
+
+  static bool available();
 
   /// Find the least-square solution to the linear system A * x = b.
   SolutionResult Solve(MathematicalProgram& prog) const override;
@@ -24,6 +26,11 @@ class LinearSystemSolver : public MathematicalProgramSolverInterface {
 
   /// @return same as MathematicalProgramSolverInterface::solver_id()
   static SolverId id();
+
+  bool IsProgramAttributesSatisfied(
+      const MathematicalProgram& prog) const override;
+
+  static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
 };
 
 }  // namespace solvers

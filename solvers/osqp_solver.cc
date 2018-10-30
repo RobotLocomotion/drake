@@ -199,7 +199,7 @@ void SetOsqpSolverSettings(MathematicalProgram* prog, OSQPSettings* settings) {
 }
 }  // namespace
 
-bool OsqpSolver::available() const { return true; }
+bool OsqpSolver::available() { return true; }
 
 SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   // OSQP solves a convex quadratic programming problem

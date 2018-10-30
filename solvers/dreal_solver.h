@@ -32,7 +32,9 @@ class DrealSolver : public MathematicalProgramSolverInterface {
 
   // This solver is implemented in various pieces depending on if
   // Dreal was available during compilation.
-  bool available() const override;
+  bool IsAvailable() const override { return available(); }
+
+  static bool available();
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
@@ -40,6 +42,11 @@ class DrealSolver : public MathematicalProgramSolverInterface {
 
   /// @return same as MathematicalProgramSolverInterface::solver_id()
   static SolverId id();
+
+  bool IsProgramAttributesSatisfied(
+      const MathematicalProgram& prog) const override;
+
+  static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
 
   /// Checks the satisfiability of a given formula @p f with a given precision
   /// @p delta.
