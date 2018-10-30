@@ -2549,10 +2549,9 @@ class MathematicalProgram {
    * Gets the solution of an Eigen matrix of decision variables.
    * @tparam Derived An Eigen matrix containing Variable.
    * @param var The decision variables.
-   * @param result The result returned from the solver, as the return argument
-   * from solvers::MathematicalProgramSolverInterface::Solve(const
-   * MathematicalProgram& result). @note This function doesn't use the decision
-   * variable values stored inside solvers::MathematicalProgram.
+   * @param result The result returned from the solver. @note This function
+   * doesn't use the decision variable values stored inside
+   * solvers::MathematicalProgram.
    * @return The value of the decision variable after solving the problem.
    */
   template <typename Derived>
@@ -2576,10 +2575,8 @@ class MathematicalProgram {
   /**
    * Gets the value of a single decision variable.
    * @param var The symbolic variable as a decision variable of the program.
-   * @param result The result returned from
-   * solvers::MathematicalProgramSolverInterface::Solve(const
-   * MathematicalProgram& prog). @pre result.get_x_vals() has has num_vars()
-   * rows. @throws std::invalid_argument if result.get_x_vals().rows() !=
+   * @param result The result returned from calling the solver.
+   * @throws std::invalid_argument if result.get_x_vals().rows() !=
    * num_vars().
    */
   double GetSolution(const symbolic::Variable& var,
