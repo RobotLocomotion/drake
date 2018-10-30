@@ -33,7 +33,7 @@ def drake_cc_proto_library(
 
     # Apply ubsan fixups.
     pb_ubsan_fixups = [x[:-len(".proto")] + "_ubsan_fixup.pb.cc" for x in srcs]
-    tool = "//tools/skylark:drake_proto_ubsan_fix"
+    tool = "@drake//tools/skylark:drake_proto_ubsan_fix"
     native.genrule(
         name = name + "_ubsan_fixup",
         srcs = pb_srcs,
