@@ -25,7 +25,8 @@ PYBIND11_MODULE(autodiffutils, m) {
 
   // TODO(m-chaturvedi) Add Pybind11 documentation.
   py::class_<AutoDiffXd> autodiff(m, "AutoDiffXd");
-  autodiff.def(py::init<double>())
+  autodiff  // BR
+      .def(py::init<double>())
       .def(py::init<const double&, const Eigen::VectorXd&>())
       .def("value", [](const AutoDiffXd& self) { return self.value(); })
       .def("derivatives",

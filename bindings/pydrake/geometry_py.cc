@@ -25,14 +25,15 @@ void BindIdentifier(py::module m, const std::string& name) {
 
   py::class_<Class> cls(m, name.c_str());
   py::handle cls_handle = cls;
-  cls.def(py::init([cls_handle]() {
-            WarnDeprecated(
-                py::str("The constructor for {} in Python is deprecated. "
-                        "Use `get_new_id()` if necessary.")
-                    .format(cls_handle));
-            return Class{};
-          }),
-          cls_doc.ctor.doc_3)
+  cls  // BR
+      .def(py::init([cls_handle]() {
+             WarnDeprecated(
+                 py::str("The constructor for {} in Python is deprecated. "
+                         "Use `get_new_id()` if necessary.")
+                     .format(cls_handle));
+             return Class{};
+           }),
+           cls_doc.ctor.doc_3)
       .def("get_value", &Class::get_value, cls_doc.get_value.doc)
       .def("is_valid", &Class::is_valid, cls_doc.is_valid.doc)
       .def(py::self == py::self)
@@ -61,10 +62,10 @@ PYBIND11_MODULE(geometry, m) {
            doc.SceneGraph.get_pose_bundle_output_port.doc)
       .def("get_query_output_port", &SceneGraph<T>::get_query_output_port,
            py_reference_internal, doc.SceneGraph.get_query_output_port.doc)
-      .def(
-          "RegisterSource",
-          py::overload_cast<const std::string&>(&SceneGraph<T>::RegisterSource),
-          py::arg("name") = "", doc.SceneGraph.RegisterSource.doc);
+      .def("RegisterSource",
+           py::overload_cast<const std::string&>(  // BR
+               &SceneGraph<T>::RegisterSource),
+           py::arg("name") = "", doc.SceneGraph.RegisterSource.doc);
 
   py::module::import("pydrake.systems.lcm");
   m.def("ConnectDrakeVisualizer",

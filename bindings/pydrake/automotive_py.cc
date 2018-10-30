@@ -63,7 +63,8 @@ PYBIND11_MODULE(automotive, m) {
 
   py::class_<RoadOdometry<T>> road_odometry(m, "RoadOdometry",
                                             doc.RoadOdometry.doc);
-  road_odometry.def(py::init<>(), doc.RoadOdometry.ctor.doc)
+  road_odometry  // BR
+      .def(py::init<>(), doc.RoadOdometry.ctor.doc)
       .def(py::init<const maliput::api::RoadPosition&,
                     const systems::rendering::FrameVelocity<T>&>(),
            py::arg("road_position"), py::arg("frame_velocity"),

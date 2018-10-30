@@ -182,7 +182,8 @@ PYBIND11_MODULE(math, m) {
   // always occur first, so it shouldn't be a problem.
   // See `math_overloads_test`, which tests this specifically.
   // TODO(m-chaturvedi) Add Pybind11 documentation.
-  m.def("log", [](double x) { return log(x); })
+  m  // BR
+      .def("log", [](double x) { return log(x); })
       .def("abs", [](double x) { return fabs(x); })
       .def("exp", [](double x) { return exp(x); })
       .def("sqrt", [](double x) { return sqrt(x); })
