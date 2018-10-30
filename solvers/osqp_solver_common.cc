@@ -32,7 +32,9 @@ bool OsqpSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
           ProgramAttribute::kLinearConstraint,
           ProgramAttribute::kLinearEqualityConstraint});
   return IsSubsetOfAnotherProgramAttributes(prog.required_capabilities(),
-                                            solver_capabilities.access());
+                                            solver_capabilities.access()) &&
+         prog.required_capabilities().count(ProgramAttribute::kQuadraticCost) >
+             0;
 }
 
 }  // namespace solvers
