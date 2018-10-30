@@ -1,5 +1,6 @@
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 
@@ -8,8 +9,6 @@ namespace multibody {
 namespace benchmarks {
 namespace pendulum {
 
-using Eigen::Isometry3d;
-using Eigen::Translation3d;
 using Eigen::Vector3d;
 
 using geometry::Cylinder;
@@ -50,18 +49,15 @@ MakePendulumPlant(const PendulumParameters& params,
   if (scene_graph != nullptr) {
     plant->RegisterAsSourceForSceneGraph(scene_graph);
     // Pose of the sphere used to visualize the point mass in the body frame B.
-    const Isometry3d X_BGs{
-        Translation3d(-params.l() * Vector3d::UnitZ())};
-    plant->RegisterVisualGeometry(point_mass, X_BGs,
+    const math::RigidTransformd X_BGs(-params.l() * Vector3d::UnitZ());
+    plant->RegisterVisualGeometry(point_mass, X_BGs.GetAsIsometry3(),
                                   Sphere(params.point_mass_radius()),
                                   params.body_name(), scene_graph);
 
     // Pose of the cylinder used to visualize the massless rod in frame B.
-    const Isometry3d X_BGc{
-        Translation3d(-params.l() / 2.0 * Vector3d::UnitZ())};
-    plant->RegisterVisualGeometry(
-        point_mass, X_BGc, Cylinder(params.massless_rod_radius(), params.l()),
-        "arm", scene_graph);
+    const math::RigidTransformd X_BGc(-params.l() / 2.0 * Vector3d::UnitZ());
+    plant->RegisterVisualGeometry(point_mass, X_BGc.GetAsIsometry3(),
+        Cylinder(params.massless_rod_radius(), params.l()), "arm", scene_graph);
   }
 
   const RevoluteJoint<double>& pin = plant->AddJoint<RevoluteJoint>(

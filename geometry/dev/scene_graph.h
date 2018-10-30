@@ -508,9 +508,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
   friend void DispatchLoadMessage(const SceneGraph<double>&,
                                   lcm::DrakeLcmInterface*);
 
-  // Constructs a QueryObject for OutputPort allocation.
-  QueryObject<T> MakeQueryObject() const;
-
   // Sets the context into the output port value so downstream consumers can
   // perform queries.
   void CalcQueryObject(const systems::Context<T>& context,

@@ -886,27 +886,17 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     }
   }
 
-  BasicVector<T>* DoAllocateInputVector(
-      const InputPort<T>& input_port) const override {
-    // Ask the subsystem to perform the allocation.
-    const InputPortLocator& id = input_port_ids_[input_port.get_index()];
-    const System<T>* subsystem = id.first;
-    const InputPortIndex subindex = id.second;
-    return subsystem->AllocateInputVector(subsystem->get_input_port(subindex))
-        .release();
-  }
-
-  AbstractValue* DoAllocateInputAbstract(
-      const InputPort<T>& input_port) const override {
-    // Ask the subsystem to perform the allocation.
-    const InputPortLocator& id = input_port_ids_[input_port.get_index()];
-    const System<T>* subsystem = id.first;
-    const InputPortIndex subindex = id.second;
-    return subsystem->AllocateInputAbstract(subsystem->get_input_port(subindex))
-        .release();
-  }
-
  private:
+  std::unique_ptr<AbstractValue> DoAllocateInput(
+      const InputPort<T>& input_port) const final {
+    // Ask the subsystem to perform the allocation.
+    const InputPortLocator& id = input_port_ids_[input_port.get_index()];
+    const System<T>* subsystem = id.first;
+    const InputPortIndex subindex = id.second;
+    return subsystem->AllocateInputAbstract(
+        subsystem->get_input_port(subindex));
+  }
+
   // Allocates a default-constructed diagram context containing the complete
   // diagram substructure of default-constructed subcontexts.
   std::unique_ptr<ContextBase> DoAllocateContext() const final {

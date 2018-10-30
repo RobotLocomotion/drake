@@ -3,7 +3,7 @@
 
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/examples/manipulation_station/station_simulation.h"
+#include "drake/examples/manipulation_station/manipulation_station.h"
 
 using std::make_unique;
 using std::unique_ptr;
@@ -23,34 +23,35 @@ PYBIND11_MODULE(manipulation_station, m) {
 
   py::module::import("pydrake.systems.framework");
 
-  // StationSimulation currently only supports double.
+  // ManipulationStation currently only supports double.
   using T = double;
 
-  py::class_<StationSimulation<T>, Diagram<T>>(m, "StationSimulation")
+  py::class_<ManipulationStation<T>, Diagram<T>>(m, "ManipulationStation")
       .def(py::init<double>(), py::arg("time_step") = 0.002,
-           doc.StationSimulation.ctor.doc_3)
-      .def("Finalize", &StationSimulation<T>::Finalize,
-           doc.StationSimulation.Finalize.doc)
+           doc.ManipulationStation.ctor.doc_3)
+      .def("AddCupboard", &ManipulationStation<T>::AddCupboard,
+           doc.ManipulationStation.AddCupboard.doc)
+      .def("Finalize", &ManipulationStation<T>::Finalize,
+           doc.ManipulationStation.Finalize.doc)
       .def("get_mutable_multibody_plant",
-           &StationSimulation<T>::get_mutable_multibody_plant,
+           &ManipulationStation<T>::get_mutable_multibody_plant,
            py_reference_internal,
-           doc.StationSimulation.get_mutable_multibody_plant.doc)
+           doc.ManipulationStation.get_mutable_multibody_plant.doc)
       .def("get_mutable_scene_graph",
-           &StationSimulation<T>::get_mutable_scene_graph,
+           &ManipulationStation<T>::get_mutable_scene_graph,
            py_reference_internal,
-           doc.StationSimulation.get_mutable_scene_graph.doc)
+           doc.ManipulationStation.get_mutable_scene_graph.doc)
       .def("get_controller_plant",
-           &StationSimulation<T>::get_controller_plant,
-           py_reference_internal,
-           doc.StationSimulation.get_controller_plant.doc)
-      .def("GetIiwaPosition", &StationSimulation<T>::GetIiwaPosition,
-           doc.StationSimulation.GetIiwaPosition.doc)
-      .def("SetIiwaPosition", &StationSimulation<T>::SetIiwaPosition,
-           doc.StationSimulation.SetIiwaPosition.doc)
-      .def("GetIiwaVelocity", &StationSimulation<T>::GetIiwaVelocity,
-           doc.StationSimulation.GetIiwaVelocity.doc)
-      .def("SetIiwaVelocity", &StationSimulation<T>::SetIiwaVelocity,
-           doc.StationSimulation.SetIiwaVelocity.doc);
+           &ManipulationStation<T>::get_controller_plant, py_reference_internal,
+           doc.ManipulationStation.get_controller_plant.doc)
+      .def("GetIiwaPosition", &ManipulationStation<T>::GetIiwaPosition,
+           doc.ManipulationStation.GetIiwaPosition.doc)
+      .def("SetIiwaPosition", &ManipulationStation<T>::SetIiwaPosition,
+           doc.ManipulationStation.SetIiwaPosition.doc)
+      .def("GetIiwaVelocity", &ManipulationStation<T>::GetIiwaVelocity,
+           doc.ManipulationStation.GetIiwaVelocity.doc)
+      .def("SetIiwaVelocity", &ManipulationStation<T>::SetIiwaVelocity,
+           doc.ManipulationStation.SetIiwaVelocity.doc);
 }
 
 }  // namespace pydrake

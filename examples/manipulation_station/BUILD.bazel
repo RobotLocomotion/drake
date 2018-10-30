@@ -2,23 +2,24 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
-    name = "station_simulation",
+    name = "manipulation_station",
     srcs = [
-        "station_simulation.cc",
+        "manipulation_station.cc",
     ],
     hdrs = [
-        "station_simulation.h",
+        "manipulation_station.h",
     ],
     data = [
-        "//examples/kuka_iiwa_arm/models",
+        ":models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
     ],
@@ -40,10 +41,10 @@ drake_cc_binary(
         "proof_of_life.cc",
     ],
     add_test_rule = 1,
-    test_rule_args = ["--target_realtime_rate=0.0"],
+    test_rule_args = ["--target_realtime_rate=0.0 --duration=0.5"],
     test_rule_timeout = "moderate",
     deps = [
-        ":station_simulation",
+        ":manipulation_station",
         "//geometry:geometry_visualization",
         "//systems/analysis:simulator",
         "@gflags",
@@ -53,9 +54,9 @@ drake_cc_binary(
 # Tests
 
 drake_cc_googletest(
-    name = "station_simulation_test",
+    name = "manipulation_station_test",
     deps = [
-        ":station_simulation",
+        ":manipulation_station",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -75,5 +76,7 @@ drake_py_binary(
         "//bindings/pydrake",
     ],
 )
+
+install_data()
 
 add_lint_tests()

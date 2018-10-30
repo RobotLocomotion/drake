@@ -44,6 +44,7 @@ GTEST_TEST(SchunkWsgControllerTest, SchunkWsgControllerTest) {
   // Start off with the gripper closed (zero) and a command to open to
   // 100mm.
   lcmt_schunk_wsg_command wsg_command{};
+  wsg_command.utime = 1;
   wsg_command.target_position_mm = 100;
   wsg_command.force = 40;
   std::pair<double, double> commanded_force =

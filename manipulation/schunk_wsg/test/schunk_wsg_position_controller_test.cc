@@ -69,8 +69,8 @@ GTEST_TEST(SchunkWsgControllerTest, SchunkWsgControllerTest) {
       diagram->GetMutableSubsystemContext(*controller, &context);
 
   // Start off with the gripper closed (zero) and a command to open to
-  // 50mm.
-  double desired_position = 0.05;
+  // 100mm.
+  double desired_position = 0.1;
   double force_limit = 40;
   FixInputsAndHistory(*controller, desired_position, force_limit,
                       &controller_context);
@@ -91,7 +91,7 @@ GTEST_TEST(SchunkWsgControllerTest, SchunkWsgControllerTest) {
 
   // Check that we achieved the desired position.
   EXPECT_TRUE(CompareMatrices(
-      wsg_state, Vector4d(-desired_position, desired_position, 0.0, 0.0),
+      wsg_state, Vector4d(-desired_position/2, desired_position/2, 0.0, 0.0),
       kTolerance));
   // The steady-state force should be near zero.
   EXPECT_NEAR(controller->get_grip_force_output_port()
@@ -100,13 +100,13 @@ GTEST_TEST(SchunkWsgControllerTest, SchunkWsgControllerTest) {
               0.0, kTolerance);
 
   // Move in toward the middle of the range with lower force from the outside.
-  desired_position = 0.025;
+  desired_position = 0.05;
   force_limit = 20;
   FixInputsAndHistory(*controller, desired_position, force_limit,
                       &controller_context);
   simulator.StepTo(2.0);
   EXPECT_TRUE(CompareMatrices(
-      wsg_state, Vector4d(-desired_position, desired_position, 0.0, 0.0),
+      wsg_state, Vector4d(-desired_position/2, desired_position/2, 0.0, 0.0),
       kTolerance));
   // The steady-state force should be near zero.
   EXPECT_NEAR(controller->get_grip_force_output_port()
@@ -115,7 +115,7 @@ GTEST_TEST(SchunkWsgControllerTest, SchunkWsgControllerTest) {
               0.0, kTolerance);
 
   // Move to more than closed, and see that the force is at the limit.
-  desired_position = -0.5;
+  desired_position = -1.0;
   force_limit = 20;
   FixInputsAndHistory(*controller, desired_position, force_limit,
                       &controller_context);
@@ -126,7 +126,7 @@ GTEST_TEST(SchunkWsgControllerTest, SchunkWsgControllerTest) {
               force_limit, kTolerance);
 
   // Set the position to the target and observe zero force.
-  wsg_state = Vector4d(-desired_position, desired_position, 0.0, 0.0);
+  wsg_state = Vector4d(-desired_position/2, desired_position/2, 0.0, 0.0);
 
   EXPECT_EQ(controller->get_grip_force_output_port()
                 .Eval<BasicVector<double>>(controller_context)

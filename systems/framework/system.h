@@ -104,31 +104,25 @@ class System : public SystemBase {
   virtual std::unique_ptr<CompositeEventCollection<T>>
       AllocateCompositeEventCollection() const = 0;
 
-  /// Given an input port, allocates the vector storage.  The default
-  /// implementation in this class allocates a BasicVector.  Subclasses must
-  /// override the NVI implementation of this function, DoAllocateInputVector,
-  /// to return input vector types other than BasicVector. The @p input_port
+  /// Given an input port, allocates the vector storage.  The @p input_port
   /// must match a port declared via DeclareInputPort.
   std::unique_ptr<BasicVector<T>> AllocateInputVector(
       const InputPort<T>& input_port) const {
-    DRAKE_ASSERT(input_port.get_data_type() == kVectorValued);
+    DRAKE_THROW_UNLESS(input_port.get_data_type() == kVectorValued);
     const int index = input_port.get_index();
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
     DRAKE_ASSERT(get_input_port(index).get_data_type() == kVectorValued);
-    return std::unique_ptr<BasicVector<T>>(DoAllocateInputVector(input_port));
+    std::unique_ptr<AbstractValue> value = DoAllocateInput(input_port);
+    return value->GetMutableValue<BasicVector<T>>().Clone();
   }
 
-  /// Given an input port, allocates the abstract storage. Subclasses with a
-  /// abstract input ports must override the NVI implementation of this
-  /// function, DoAllocateInputAbstract, to return an appropriate AbstractValue.
-  /// The @p input_port must match a port declared via DeclareInputPort.
+  /// Given an input port, allocates the abstract storage.  The @p input_port
+  /// must match a port declared via DeclareInputPort.
   std::unique_ptr<AbstractValue> AllocateInputAbstract(
       const InputPort<T>& input_port) const {
-    DRAKE_ASSERT(input_port.get_data_type() == kAbstractValued);
     const int index = input_port.get_index();
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
-    DRAKE_ASSERT(get_input_port(index).get_data_type() == kAbstractValued);
-    return std::unique_ptr<AbstractValue>(DoAllocateInputAbstract(input_port));
+    return DoAllocateInput(input_port);
   }
 
   /// Returns a container that can hold the values of all of this System's
@@ -1696,13 +1690,6 @@ class System : public SystemBase {
     return get_input_port(port_index);
   }
 
-  /// Adds an abstract-valued port to the input topology.
-  /// @returns the declared port.
-  /// @see DeclareInputPort() for more information.
-  const InputPort<T>& DeclareAbstractInputPort(std::string name) {
-    return DeclareInputPort(std::move(name),
-                            kAbstractValued, 0 /* size */);
-  }
   //@}
 
   // =========================================================================
@@ -1721,13 +1708,21 @@ class System : public SystemBase {
       optional<RandomDistribution> random_type = nullopt) {
     return DeclareInputPort(kUseDefaultName, type, size, random_type);
   }
-
-  /// See the nearly identical signature with an argument specifying the port
-  /// name.  This version will be deprecated as discussed in #9447.
-  const InputPort<T>& DeclareAbstractInputPort() {
-    return DeclareAbstractInputPort(kUseDefaultName);
-  }
   //@}
+
+#ifndef DRAKE_DOXYGEN_CXX
+  // Remove this overload on or about 2018-12-01.
+  DRAKE_DEPRECATED("Use one of the other overloads.")
+  const InputPort<T>& DeclareAbstractInputPort() {
+    return DeclareInputPort(kUseDefaultName, kAbstractValued, 0 /* size */);
+  }
+
+  // Remove this overload on or about 2018-12-01.
+  DRAKE_DEPRECATED("Use one of the other overloads.")
+  const InputPort<T>& DeclareAbstractInputPort(std::string name) {
+    return DeclareInputPort(std::move(name), kAbstractValued, 0 /* size */);
+  }
+#endif
 
   /// Adds an already-created constraint to the list of constraints for this
   /// System.  Ownership of the SystemConstraint is transferred to this system.
@@ -1737,23 +1732,6 @@ class System : public SystemBase {
     constraints_.push_back(std::move(constraint));
     return SystemConstraintIndex(constraints_.size() - 1);
   }
-
-  //----------------------------------------------------------------------------
-  /// @name               Virtual methods for input allocation
-  /// Authors of derived %Systems should override these methods to self-describe
-  /// acceptable inputs to the %System.
-  //@{
-
-  /// Allocates an input vector of the leaf type that the System requires on
-  /// the port specified by @p input_port. Caller owns the returned memory.
-  virtual BasicVector<T>* DoAllocateInputVector(
-      const InputPort<T>& input_port) const = 0;
-
-  /// Allocates an abstract input of the leaf type that the System requires on
-  /// the port specified by @p input_port. Caller owns the returned memory.
-  virtual AbstractValue* DoAllocateInputAbstract(
-      const InputPort<T>& input_port) const = 0;
-  //@}
 
   //----------------------------------------------------------------------------
   /// @name               Virtual methods for calculations
@@ -2108,11 +2086,62 @@ class System : public SystemBase {
   // Refer to SystemImpl comments for details.
   friend class SystemImpl;
 
+  // Allocates an input of the leaf type that the System requires on the port
+  // specified by @p input_port.  This is final in LeafSystem and Diagram.
+  virtual std::unique_ptr<AbstractValue> DoAllocateInput(
+      const InputPort<T>& input_port) const = 0;
+
   // SystemBase override checks a Context of same type T.
   void DoCheckValidContext(const ContextBase& context_base) const final {
     const Context<T>* context = dynamic_cast<const Context<T>*>(&context_base);
     DRAKE_THROW_UNLESS(context != nullptr);
     CheckValidContextT(*context);
+  }
+
+  std::function<void(const AbstractValue&)> MakeFixInputPortTypeChecker(
+      InputPortIndex port_index) const final {
+    const InputPort<T>& port = this->get_input_port(port_index);
+    const std::string pathname = this->GetSystemPathname();
+
+    // Note that our lambdas below will capture all necessary items by-value,
+    // so that they do not rely on this System still being alive.  (We do not
+    // allow a Context and System to have pointers to each other.)
+    switch (port.get_data_type()) {
+      case kAbstractValued: {
+        // TODO(jwnimmer-tri) We should type-check abstract values, eventually.
+        return {};
+      }
+      case kVectorValued: {
+        // For vector inputs, check that the size is the same.
+        // TODO(jwnimmer-tri) We should type-check the vector, eventually.
+        const std::unique_ptr<BasicVector<T>> model_vector =
+            this->AllocateInputVector(port);
+        const int expected_size = model_vector->size();
+        return [expected_size, port_index, pathname](
+            const AbstractValue& actual) {
+          const BasicVector<T>* const actual_vector =
+              actual.MaybeGetValue<BasicVector<T>>();
+          if (actual_vector == nullptr) {
+            SystemBase::ThrowInputPortHasWrongType(
+                "FixInputPortTypeCheck", pathname, port_index,
+                NiceTypeName::Get<Value<BasicVector<T>>>(),
+                NiceTypeName::Get(actual));
+          }
+          // Check that vector sizes match.
+          if (actual_vector->size() != expected_size) {
+            SystemBase::ThrowInputPortHasWrongType(
+                "FixInputPortTypeCheck", pathname, port_index,
+                fmt::format("{} with size={}",
+                            NiceTypeName::Get<BasicVector<T>>(),
+                            expected_size),
+                fmt::format("{} with size={}",
+                            NiceTypeName::Get(*actual_vector),
+                            actual_vector->size()));
+          }
+        };
+      }
+    }
+    DRAKE_ABORT();
   }
 
   // Shared code for updating a vector input port and returning a pointer to its

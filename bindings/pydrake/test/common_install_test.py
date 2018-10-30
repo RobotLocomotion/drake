@@ -1,5 +1,3 @@
-#!/usr/bin/env python2
-
 import os
 import install_test_helper
 import unittest

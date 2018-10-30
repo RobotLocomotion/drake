@@ -64,8 +64,11 @@ def _run_doxygen(args):
         if rel_x.startswith("."): continue
         if rel_x.startswith("bazel"): continue
         if rel_x.startswith("build"): continue
+        if rel_x.startswith("cmake"): continue
         if rel_x.startswith("doc"): continue  # N.B. Done above.
+        if rel_x.startswith("setup"): continue
         if rel_x.startswith("third_party"): continue
+        if rel_x.startswith("tools"): continue
 
         # Copy the workspace files into the input scratch dir.
         target = os.path.join(source_root, rel_x)
@@ -102,8 +105,14 @@ def _run_doxygen(args):
     # Create Doxyfile_CXX.
     in_filename = os.path.join(drake_workspace, "doc/Doxyfile_CXX.in")
     doxyfile = os.path.join(binary_dir, "Doxyfile_CXX")
+    # N.B. If we executed `cmake_configure_file.py` under `bazel-bin`, it would
+    # require that users do some form of `bazel build`, which would require an
+    # explicit change to the doxygen building workflow.
+    # TODO(eric.cousineau): Try to wrap at least bits of this in Bazel to
+    # minimize this constraint.
     subprocess.check_call(
-        [os.path.join(
+        [sys.executable,
+         os.path.join(
             drake_workspace, "tools/workspace/cmake_configure_file.py"),
          "--input", in_filename,
          "--output", doxyfile,
