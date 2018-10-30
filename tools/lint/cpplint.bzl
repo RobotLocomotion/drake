@@ -48,7 +48,12 @@ def _is_source_label(label):
             return True
     return False
 
-def _add_linter_rules(source_labels, source_filenames, name, data = None):
+def _add_linter_rules(
+        source_labels,
+        source_filenames,
+        name,
+        data = None,
+        enable_clang_format_lint = False):
     # Common attributes for all of our py_test invocations.
     data = (data or [])
     size = "small"
@@ -87,7 +92,23 @@ def _add_linter_rules(source_labels, source_filenames, name, data = None):
         tags = ["drakelint", "lint"],
     )
 
-def cpplint(existing_rules = None, data = None, extra_srcs = None):
+    # Possibly clang-format idempotence.
+    if enable_clang_format_lint:
+        py_test_isolated(
+            name = name + "_clang_format_lint",
+            srcs = ["@drake//tools/lint:clang_format_lint"],
+            data = data + source_labels,
+            args = source_filenames,
+            main = "@drake//tools/lint:clang_format_lint.py",
+            size = size,
+            tags = ["clang_format_lint", "lint"],
+        )
+
+def cpplint(
+        existing_rules = None,
+        data = None,
+        extra_srcs = None,
+        enable_clang_format_lint = False):
     """For every rule in the BUILD file so far, adds a test rule that runs
     cpplint over the C++ sources listed in that rule.  Thus, BUILD file authors
     should call this function at the *end* of every C++-related BUILD file.
@@ -128,8 +149,9 @@ def cpplint(existing_rules = None, data = None, extra_srcs = None):
             _add_linter_rules(
                 source_labels,
                 source_filenames,
-                rule["name"],
-                data,
+                name = rule["name"],
+                data = data,
+                enable_clang_format_lint = enable_clang_format_lint,
             )
 
     # Lint all of the extra_srcs separately in a single rule.
@@ -139,6 +161,7 @@ def cpplint(existing_rules = None, data = None, extra_srcs = None):
         _add_linter_rules(
             source_labels,
             source_filenames,
-            "extra_srcs_cpplint",
-            data,
+            name = "extra_srcs_cpplint",
+            data = data,
+            enable_clang_format_lint = enable_clang_format_lint,
         )
