@@ -4,10 +4,8 @@
 #include <typeinfo>
 #include <utility>
 
-// TODO(hongkai.dai): separate SolutionResult and SolverResult from
-// mathematical_program_solver_interface, so that MathematicalProgramResult
-// won't link to mathematical_program_api.
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solution_result.h"
+#include "drake/solvers/solver_result.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
