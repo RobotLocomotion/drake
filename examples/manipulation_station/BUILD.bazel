@@ -7,6 +7,7 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("@drake//tools/skylark:test_tags.bzl", "vtk_test_tags")
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -45,6 +46,7 @@ drake_cc_binary(
         "proof_of_life.cc",
     ],
     add_test_rule = 1,
+    tags = vtk_test_tags(),
     test_rule_args = ["--target_realtime_rate=0.0 --duration=0.1"],
     test_rule_timeout = "moderate",
     deps = [
@@ -59,11 +61,7 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "manipulation_station_test",
-    tags = [
-        # Due to a known issue with dev/scene_graph (#9686).
-        "no_lsan",
-        "no_memcheck",
-    ],
+    tags = vtk_test_tags(),
     deps = [
         ":manipulation_station",
         "//common/test_utilities:eigen_matrix_compare",
@@ -82,6 +80,7 @@ drake_py_binary(
     name = "joint_teleop",
     srcs = ["joint_teleop.py"],
     add_test_rule = 1,
+    tags = vtk_test_tags(),
     test_rule_args = ["--target_realtime_rate=0.0 --duration=0.1"],
     deps = [
         "//bindings/pydrake",
