@@ -8,6 +8,7 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
+#include "drake/geometry/query_results/signed_distance_field_value.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -157,6 +158,11 @@ class ProximityEngine {
       const std::vector<GeometryId>& geometry_map) const;
   //@}
 
+  //----------------------------------------------------------------------------
+  std::vector<SignedDistanceFieldValue<double>>
+  ComputeSignedDistancePointToAnchoredGeometries(
+      const Vector3<double>& query,
+      const std::vector<GeometryId>& geometry_map) const;
 
   //----------------------------------------------------------------------------
   /** @name                Collision Queries
