@@ -954,8 +954,9 @@ class SimpleDiscreteSystem : public LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleDiscreteSystem)
 
   SimpleDiscreteSystem() {
-    this->DeclarePeriodicDiscreteUpdate(1.0, 0.0);
-    this->DeclareDiscreteState(2);
+    const double offset = 0.0;
+    this->DeclarePeriodicDiscreteUpdate(kPeriod, offset);
+    this->DeclareDiscreteState(1 /* single state variable */);
   }
 
  private:
@@ -963,11 +964,12 @@ class SimpleDiscreteSystem : public LeafSystem<double> {
       const Context<double>& context,
       const std::vector<const DiscreteUpdateEvent<double>*>&,
       DiscreteValues<double>* x_next) const override {
+    const double n = context.get_time() / kPeriod;
     double x = context.get_discrete_state()[0];
-    const double n = context.get_discrete_state()[1];
     (*x_next)[0] = (-x - 7*(n-1) - (n-2))/2;
-    (*x_next)[1] = n + 1;
   }
+
+  const double kPeriod = 1.0;
 };
 }  // namespace
 
@@ -977,13 +979,14 @@ GTEST_TEST(SimulatorTest, SimpleDiscreteSystemSolution) {
   SimpleDiscreteSystem discrete_system;
   Simulator<double> simulator(discrete_system);
 
-  // Set the initial conditions (iterate and state).
+  // Set the initial conditions.
   simulator.get_mutable_context().get_mutable_discrete_state()[0] = 2.0;
-  simulator.get_mutable_context().get_mutable_discrete_state()[1] = 2.0;
+  simulator.get_mutable_context().set_time(2.0);  // n = 2.
 
   // Simulate forward.
   simulator.Initialize();
-  simulator.StepTo(1.);
+  simulator.StepTo(3.);
+  simulator.Finalize();
 
   // Check that the update occurs at exactly the desired time.
   EXPECT_EQ(simulator.get_context().get_discrete_state()[0], -4.5);
