@@ -22,6 +22,7 @@
 #include "drake/systems/analysis/test_utilities/stateless_system.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
+#include "drake/systems/primitives/zero_order_hold.h"
 
 using drake::systems::WitnessFunction;
 using drake::systems::Simulator;
@@ -947,42 +948,36 @@ GTEST_TEST(SimulatorTest, SpringMass) {
 }
 
 namespace {
-// A simple discrete system with known solution.
-// Difference equation: x[n+1] = (-x[n] - 7*(n-1) - (n-2))/2.
-class SimpleDiscreteSystem : public LeafSystem<double> {
+// A system that outputs the time.
+class TimeOutputter : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleDiscreteSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TimeOutputter)
 
-  SimpleDiscreteSystem() {
-    this->DeclarePeriodicDiscreteUpdate(kPeriod, kOffset);
-    this->DeclareDiscreteState(1 /* single state variable */);
+  TimeOutputter() {
+    this->DeclareVectorOutputPort("time",
+                                  BasicVector<double>(1),
+                                  &TimeOutputter::OutputTime);
   }
 
  private:
-  void DoCalcDiscreteVariableUpdates(
-      const Context<double>& context,
-      const std::vector<const DiscreteUpdateEvent<double>*>&,
-      DiscreteValues<double>* x_next) const override {
-    // Note that n must be offset.
-    const double n = (context.get_time()) / kPeriod - 1.0;
-    double x = context.get_discrete_state()[0];
-    (*x_next)[0] = (-x - 7*(n-1) - (n-2))/2;
+  void OutputTime(
+      const Context<double>& context, BasicVector<double>* output) const {
+    (*output)[0] = context.get_time();
   }
-
-  const double kPeriod = 1.0, kOffset = 3.0;
 };
 
 // A hybrid discrete-continuous system:
-// x[n+1] = x[n] + u[n]
+// x[n+1] = x[n] + u(t)
 // x[0] = 0
 // u(t) = t
-class SimpleDiscreteSystem : public LeafSystem<double> {
+class SimpleHybridSystem : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleDiscreteSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleHybridSystem)
 
-  SimpleDiscreteSystem() {
-    this->DeclarePeriodicDiscreteUpdate(kPeriod, kOffset);
+  explicit SimpleHybridSystem(double offset) {
+    this->DeclarePeriodicDiscreteUpdate(kPeriod, offset);
     this->DeclareDiscreteState(1 /* single state variable */);
+    this->DeclareVectorInputPort("u", systems::BasicVector<double>(1));
   }
 
  private:
@@ -990,19 +985,85 @@ class SimpleDiscreteSystem : public LeafSystem<double> {
       const Context<double>& context,
       const std::vector<const DiscreteUpdateEvent<double>*>&,
       DiscreteValues<double>* x_next) const override {
-    // Note that n must be offset.
-    const double n = (context.get_time()) / kPeriod - 1.0;
     double x = context.get_discrete_state()[0];
-    (*x_next)[0] = (-x - 7*(n-1) - (n-2))/2;
+    const BasicVector<double>* input = this->EvalVectorInput(context, 0);
+    DRAKE_DEMAND(input);
+    const double u = input->get_value()[0];
+    (*x_next)[0] = x + u;
   }
 
-  const double kPeriod = 1.0, kOffset = 3.0;
+  const double kPeriod = 1.0;
 };
-
-
 }  // namespace
 
-// Tests that the simulator captures an update at
+
+// TODO: Tests that ...
+GTEST_TEST(SimulatorTest, SimpleHybridSystemTest) {
+  DiagramBuilder<double> builder;
+  auto time_outputter = builder.AddSystem<TimeOutputter>();
+  auto hybrid_system = builder.AddSystem<SimpleHybridSystem>(1.0);
+  builder.Connect(time_outputter->get_output_port(0),
+                  hybrid_system->get_input_port(0));
+  auto diagram = builder.Build();
+  Simulator<double> simulator(*diagram);
+
+  // Set the initial conditions.
+  simulator.get_mutable_context().get_mutable_discrete_state()[0] = 0.0;
+
+  // Simulate forward.
+  simulator.StepTo(1.0);
+  simulator.Finalize();
+
+  // TODO: Check that the update occurs at exactly the desired time.
+  EXPECT_EQ(simulator.get_context().get_discrete_state()[0], 1.0);
+}
+
+// TODO: Tests that ...
+GTEST_TEST(SimulatorTest, SimpleHybridSystemTest2) {
+  DiagramBuilder<double> builder;
+  auto time_outputter = builder.AddSystem<TimeOutputter>();
+  auto hybrid_system = builder.AddSystem<SimpleHybridSystem>(0.0);
+  builder.Connect(time_outputter->get_output_port(0),
+                  hybrid_system->get_input_port(0));
+  auto diagram = builder.Build();
+  Simulator<double> simulator(*diagram);
+
+  // Set the initial conditions.
+  simulator.get_mutable_context().get_mutable_discrete_state()[0] = 0.0;
+
+  // Simulate forward.
+  simulator.StepTo(1.0);
+
+  // TODO: Check that the update occurs at exactly the desired time.
+  EXPECT_EQ(simulator.get_context().get_discrete_state()[0], 0.0);
+}
+
+// TODO: Tests that ...
+GTEST_TEST(SimulatorTest, SimpleHybridSystemTest3) {
+  DiagramBuilder<double> builder;
+  auto time_outputter = builder.AddSystem<TimeOutputter>();
+  auto zoh = builder.AddSystem<ZeroOrderHold<double>>(1.0, 1);
+  auto hybrid_system = builder.AddSystem<SimpleHybridSystem>(0.0);
+  builder.Connect(time_outputter->get_output_port(0),
+                  zoh->get_input_port());
+  builder.Connect(zoh->get_output_port(),
+                  hybrid_system->get_input_port(0));
+  auto diagram = builder.Build();
+  Simulator<double> simulator(*diagram);
+
+  // Set the initial conditions.
+  Context<double>& mutable_context = simulator.get_mutable_context();
+  diagram->GetMutableSubsystemContext(*hybrid_system, &mutable_context).
+      get_mutable_discrete_state()[0] = 0.0;
+
+  // Simulate forward.
+  simulator.StepTo(1.0);
+
+  // TODO: Check that the update occurs at exactly the desired time.
+  EXPECT_EQ(diagram->GetSubsystemContext(*hybrid_system, mutable_context).get_discrete_state()[0], 0.0);
+}
+
+// TODO: Tests that the simulator captures an update at
 GTEST_TEST(SimulatorTest, SimpleDiscreteSystemSolution) {
   SimpleDiscreteSystem discrete_system;
   Simulator<double> simulator(discrete_system);
