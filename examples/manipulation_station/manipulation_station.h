@@ -19,10 +19,6 @@ namespace manipulation_station {
 /// @ingroup example_systems
 /// @}
 
-// TODO(russt): Add WSG I/O and helper methods for setting the context.
-// TODO(russt): Add camera outputs.
-// TODO(russt): Refactor kuka+wsg subset into a reusable component during the
-//              upcoming kuka_iiwa directory cleanup.
 /// A system that represents the complete manipulation station, including the
 /// robotic arm (a Kuka IIWA LWR), the gripper (a Schunk WSG 50), the
 /// externally mounted sensors, and the structure that it is mounted into.
@@ -30,7 +26,9 @@ namespace manipulation_station {
 ///
 /// @system{ ManipulationStation,
 ///   @input_port{iiwa_position}
-///   @input_port{iiwa_feedforward_torque},
+///   @input_port{iiwa_feedforward_torque}
+///   @input_port{wsg_position}
+///   @input_port{wsg_force_limit},
 ///   @output_port{iiwa_position_commanded}
 ///   @output_port{iiwa_position_measured}
 ///   @output_port{iiwa_velocity_estimated}
@@ -38,6 +36,17 @@ namespace manipulation_station {
 ///   @output_port{iiwa_torque_commanded}
 ///   @output_port{iiwa_torque_measured}
 ///   @output_port{iiwa_torque_external}
+///   @output_port{wsg_state_measured}
+///   @output_port{wsg_force_measured}
+///   @output_port{camera0_rgb_image}
+///   @output_port{camera0_depth_image}
+///   @output_port{<b style="color:orange">camera0_label_image</b>}
+///   @output_port{camera1_rgb_image}
+///   @output_port{camera1_depth_image}
+///   @output_port{<b style="color:orange">camera1_label_image</b>}
+///   @output_port{camera2_rgb_image}
+///   @output_port{camera2_depth_image}
+///   @output_port{<b style="color:orange">camera2_label_image</b>}
 ///   @output_port{<b style="color:orange">pose_bundle</b>} }
 ///
 /// Note that outputs in <b style="color:orange">orange</b> are
@@ -133,9 +142,7 @@ class ManipulationStation : public systems::Diagram<T> {
   /// Return a mutable reference to the SceneGraph responsible for all of the
   /// geometry for the robot and the environment.  This can be used to, e.g.,
   /// add additional elements into the world before calling Finalize().
-  geometry::SceneGraph<T>& get_mutable_scene_graph() {
-    return *scene_graph_;
-  }
+  geometry::SceneGraph<T>& get_mutable_scene_graph() { return *scene_graph_; }
 
   /// Return a reference to the plant used by the inverse dynamics controller
   /// (which contains only a model of the iiwa + equivalent mass of the
@@ -157,19 +164,38 @@ class ManipulationStation : public systems::Diagram<T> {
   /// Also sets the position history in the velocity command generator.
   /// @p q must have size num_iiwa_joints().
   void SetIiwaPosition(const Eigen::Ref<const VectorX<T>>& q,
-                        systems::Context<T>* station_context) const;
+                       systems::Context<T>* station_context) const;
 
   /// Convenience method for getting all of the joint velocities of the Kuka
   // IIWA.  This does not include the gripper.
-  VectorX<T> GetIiwaVelocity(
-      const systems::Context<T>& station_context) const;
+  VectorX<T> GetIiwaVelocity(const systems::Context<T>& station_context) const;
 
   /// Convenience method for setting all of the joint velocities of the Kuka
   /// IIWA. @v must have size num_iiwa_joints().
   void SetIiwaVelocity(const Eigen::Ref<const VectorX<T>>& v,
-                         systems::Context<T>* station_context) const;
+                       systems::Context<T>* station_context) const;
 
-  // TODO(russt): Implement SetIiwaPIDGains(...).
+  /// Convenience method for getting the position of the Schunk WSG. Note
+  /// that the WSG position is the signed distance between the two fingers
+  /// (not the state of the fingers individually).
+  T GetWsgPosition(const systems::Context<T>& station_context) const;
+
+  /// Convenience method for getting the velocity of the Schunk WSG.
+  T GetWsgVelocity(const systems::Context<T>& station_context) const;
+
+  /// Convenience method for setting the position of the Schunk WSG. Also
+  /// sets the position history in the velocity interpolator.  Note that the
+  /// WSG position is the signed distance between the two fingers (not the
+  /// state of the fingers individually).
+  void SetWsgPosition(const T& q, systems::Context<T>* station_context) const;
+
+  /// Convenience method for setting the velocity of the Schunk WSG.
+  void SetWsgVelocity(const T& v, systems::Context<T>* station_context) const;
+
+  /// Get the pose of the RGB-D cameras mounted on the station in the world
+  /// frame.
+  // TODO(russt): Get camera parameters/poses/ids from a config file.
+  static Eigen::Isometry3d get_camera_pose(int camera_number);
 
  private:
   // These are only valid until Finalize() is called.

@@ -5,8 +5,12 @@
 #include <utility>
 
 #include "drake/common/find_resource.h"
+#include "drake/geometry/dev/scene_graph.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
@@ -16,7 +20,9 @@
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/linear_system.h"
+#include "drake/systems/primitives/matrix_gain.h"
 #include "drake/systems/primitives/pass_through.h"
+#include "drake/systems/sensors/dev/rgbd_camera.h"
 
 namespace drake {
 namespace examples {
@@ -31,6 +37,7 @@ using math::RigidTransform;
 using math::RollPitchYaw;
 using math::RotationMatrix;
 using multibody::Joint;
+using multibody::PrismaticJoint;
 using multibody::RevoluteJoint;
 using multibody::SpatialInertia;
 using multibody::multibody_plant::MultibodyPlant;
@@ -292,19 +299,68 @@ void ManipulationStation<T>::Finalize() {
     builder.ExportOutput(adder->get_output_port(), "iiwa_torque_measured");
   }
 
-  // TODO(russt): Add the WSG controller "stack".
   {
-    // For now, just send zero force inputs.
-    const auto wsg_command =
-        builder.template AddSystem<systems::ConstantVectorSource>(
-            Eigen::Vector2d::Zero());
-    builder.Connect(wsg_command->get_output_port(),
+    auto wsg_controller = builder.template AddSystem<
+        manipulation::schunk_wsg::SchunkWsgPositionController>();
+    wsg_controller->set_name("wsg_controller");
+
+    builder.Connect(wsg_controller->get_generalized_force_output_port(),
                     plant_->get_actuation_input_port(wsg_model_));
+    builder.Connect(plant_->get_continuous_state_output_port(wsg_model_),
+                    wsg_controller->get_state_input_port());
+
+    builder.ExportInput(wsg_controller->get_desired_position_input_port(),
+                        "wsg_position");
+    builder.ExportInput(wsg_controller->get_force_limit_input_port(),
+                        "wsg_force_limit");
+
+    auto wsg_mbp_state_to_wsg_state = builder.template AddSystem(
+        manipulation::schunk_wsg::MakeMultibodyStateToWsgStateSystem<double>());
+    builder.Connect(plant_->get_continuous_state_output_port(wsg_model_),
+                    wsg_mbp_state_to_wsg_state->get_input_port());
+
+    builder.ExportOutput(wsg_mbp_state_to_wsg_state->get_output_port(),
+                         "wsg_state_measured");
+
+    builder.ExportOutput(wsg_controller->get_grip_force_output_port(),
+                         "wsg_force_measured");
   }
 
   builder.ExportOutput(
       plant_->get_generalized_contact_forces_output_port(iiwa_model_),
       "iiwa_torque_external");
+
+  {  // RGB-D Cameras
+    auto render_scene_graph =
+        builder.template AddSystem<geometry::dev::SceneGraph>(*scene_graph_);
+
+    builder.Connect(plant_->get_geometry_poses_output_port(),
+                    render_scene_graph->get_source_pose_port(
+                        plant_->get_source_id().value()));
+
+    geometry::dev::render::DepthCameraProperties camera_properties(
+        640, 480, M_PI_4, geometry::dev::render::Fidelity::kLow, 0.1, 2.0);
+
+    // Create the cameras.
+    for (int i = 0; i < 3; i++) {
+      auto camera =
+          builder.template AddSystem<systems::sensors::dev::RgbdCamera>(
+              "camera" + std::to_string(i),
+              geometry::dev::SceneGraph<double>::world_frame_id(),
+              get_camera_pose(i), camera_properties, false);
+      builder.Connect(render_scene_graph->get_query_output_port(),
+                      camera->query_object_input_port());
+
+      // TODO(russt): Add additional cameras.
+      builder.ExportOutput(camera->color_image_output_port(),
+                           "camera" + std::to_string(i) + "_rgb_image");
+      builder.ExportOutput(camera->depth_image_output_port(),
+                           "camera" + std::to_string(i) + "_depth_image");
+      builder.ExportOutput(camera->label_image_output_port(),
+                           "camera" + std::to_string(i) + "_label_image");
+    }
+  }
+
   builder.ExportOutput(scene_graph_->get_pose_bundle_output_port(),
                        "pose_bundle");
 
@@ -382,6 +438,106 @@ void ManipulationStation<T>::SetIiwaVelocity(
                                                  std::to_string(i + 1))
         .set_angular_rate(&plant_context, v(i));
   }
+}
+
+template <typename T>
+T ManipulationStation<T>::GetWsgPosition(
+    const systems::Context<T>& station_context) const {
+  const auto& plant_context =
+      this->GetSubsystemContext(*plant_, station_context);
+
+  // TODO(russt): update upon resolution of #9623.
+  return plant_
+             ->template GetJointByName<PrismaticJoint>(
+                 "right_finger_sliding_joint", wsg_model_)
+             .get_translation(plant_context) -
+         plant_
+             ->template GetJointByName<PrismaticJoint>(
+                 "left_finger_sliding_joint", wsg_model_)
+             .get_translation(plant_context);
+}
+
+template <typename T>
+T ManipulationStation<T>::GetWsgVelocity(
+    const systems::Context<T>& station_context) const {
+  const auto& plant_context =
+      this->GetSubsystemContext(*plant_, station_context);
+
+  // TODO(russt): update upon resolution of #9623.
+  return plant_
+             ->template GetJointByName<PrismaticJoint>(
+                 "right_finger_sliding_joint", wsg_model_)
+             .get_translation_rate(plant_context) -
+         plant_
+             ->template GetJointByName<PrismaticJoint>(
+                 "left_finger_sliding_joint", wsg_model_)
+             .get_translation_rate(plant_context);
+}
+
+template <typename T>
+void ManipulationStation<T>::SetWsgPosition(
+    const T& q, drake::systems::Context<T>* station_context) const {
+  auto& plant_context =
+      this->GetMutableSubsystemContext(*plant_, station_context);
+
+  // TODO(russt): update upon resolution of #9623.
+  plant_
+      ->template GetJointByName<PrismaticJoint>("right_finger_sliding_joint",
+                                                wsg_model_)
+      .set_translation(&plant_context, q / 2);
+  plant_
+      ->template GetJointByName<PrismaticJoint>("left_finger_sliding_joint",
+                                                wsg_model_)
+      .set_translation(&plant_context, -q / 2);
+
+  // Set the position history in the state interpolator to match.
+  const auto& wsg_controller = dynamic_cast<
+      const manipulation::schunk_wsg::SchunkWsgPositionController&>(
+      this->GetSubsystemByName("wsg_controller"));
+  wsg_controller.set_desired_position_history(q,
+      &this->GetMutableSubsystemContext(wsg_controller, station_context));
+}
+
+template <typename T>
+void ManipulationStation<T>::SetWsgVelocity(
+    const T& v, drake::systems::Context<T>* station_context) const {
+  auto& plant_context =
+      this->GetMutableSubsystemContext(*plant_, station_context);
+
+  // TODO(russt): update upon resolution of #9623.
+  plant_
+      ->template GetJointByName<PrismaticJoint>("right_finger_sliding_joint",
+                                                wsg_model_)
+      .set_translation_rate(&plant_context, v / 2);
+  plant_
+      ->template GetJointByName<PrismaticJoint>("left_finger_sliding_joint",
+                                                wsg_model_)
+      .set_translation_rate(&plant_context, -v / 2);
+}
+
+template <typename T>
+Isometry3d ManipulationStation<T>::get_camera_pose(int camera_number) {
+  DRAKE_DEMAND(camera_number >= 0 && camera_number <= 2);
+
+  Vector3d p_WC;
+  Vector3d rpy_WC;
+
+  switch (camera_number) {
+    case 0:
+      p_WC << -0.233066, -0.451461, 0.466761;
+      rpy_WC << 1.69101, 0.176488, 0.432721;
+      break;
+    case 1:
+      p_WC << -0.197236, 0.468471, 0.436499;
+      rpy_WC << -1.68974, 0.20245, -0.706783;
+      break;
+    case 2:
+      p_WC << 0.786905, -0.0284378, 1.04287;
+      rpy_WC << 0.0438918, 1.03776, -3.13612;
+      break;
+  }
+  return RigidTransform<double>(RollPitchYaw<double>(rpy_WC), p_WC)
+      .GetAsIsometry3();
 }
 
 }  // namespace manipulation_station

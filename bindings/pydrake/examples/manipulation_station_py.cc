@@ -51,7 +51,17 @@ PYBIND11_MODULE(manipulation_station, m) {
       .def("GetIiwaVelocity", &ManipulationStation<T>::GetIiwaVelocity,
            doc.ManipulationStation.GetIiwaVelocity.doc)
       .def("SetIiwaVelocity", &ManipulationStation<T>::SetIiwaVelocity,
-           doc.ManipulationStation.SetIiwaVelocity.doc);
+           doc.ManipulationStation.SetIiwaVelocity.doc)
+      .def("GetWsgPosition", &ManipulationStation<T>::GetWsgPosition,
+           doc.ManipulationStation.GetWsgPosition.doc)
+      .def("SetWsgPosition", &ManipulationStation<T>::SetWsgPosition,
+           doc.ManipulationStation.SetWsgPosition.doc)
+      .def("GetWsgVelocity", &ManipulationStation<T>::GetWsgVelocity,
+           doc.ManipulationStation.GetWsgVelocity.doc)
+      .def("SetWsgVelocity", &ManipulationStation<T>::SetWsgVelocity,
+           doc.ManipulationStation.SetWsgVelocity.doc)
+      .def_static("get_camera_pose", &ManipulationStation<T>::get_camera_pose,
+           doc.ManipulationStation.get_camera_pose.doc);
 }
 
 }  // namespace pydrake

@@ -1318,7 +1318,7 @@ class MultibodyTree {
     if (joint == nullptr) {
       throw std::logic_error(
           "Joint '" + name + "' in model instance " +
-          model_instances_.at(model_instance)->name() + "is not of type '" +
+          instance_index_to_name_.at(model_instance) + " is not of type '" +
           NiceTypeName::Get<JointType<T>>() + "' but of type '" +
           NiceTypeName::Get(GetJointByName(name)) + "'.");
     }
