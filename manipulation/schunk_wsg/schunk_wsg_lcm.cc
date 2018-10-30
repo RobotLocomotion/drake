@@ -65,6 +65,67 @@ void SchunkWsgCommandReceiver::CalcForceLimitOutput(
   output->SetAtIndex(0, force_limit);
 }
 
+SchunkWsgCommandSender::SchunkWsgCommandSender()
+    : position_input_port_(this->DeclareVectorInputPort(
+                                   "position", systems::BasicVector<double>(1))
+                               .get_index()),
+      force_limit_input_port_(
+          this->DeclareVectorInputPort("force_limit",
+                                       systems::BasicVector<double>(1))
+              .get_index()) {
+  this->DeclareAbstractOutputPort("lcmt_schunk_wsg_command",
+                                  &SchunkWsgCommandSender::CalcCommandOutput);
+}
+
+void SchunkWsgCommandSender::CalcCommandOutput(
+    const drake::systems::Context<double>& context,
+    drake::lcmt_schunk_wsg_command* output) const {
+  lcmt_schunk_wsg_command& command = *output;
+
+  command.utime = context.get_time() * 1e6;
+  const double position =
+      this->EvalVectorInput(context, position_input_port_)->GetAtIndex(0);
+
+  command.target_position_mm = position * 1e3;
+
+  command.force =
+      this->EvalVectorInput(context, force_limit_input_port_)->GetAtIndex(0);
+}
+
+SchunkWsgStatusReceiver::SchunkWsgStatusReceiver()
+    : state_output_port_(this->DeclareVectorOutputPort(
+                                 "state", systems::BasicVector<double>(2),
+                                 &SchunkWsgStatusReceiver::CopyStateOut)
+                             .get_index()),
+      force_output_port_(this->DeclareVectorOutputPort(
+                                 "force", systems::BasicVector<double>(1),
+                                 &SchunkWsgStatusReceiver::CopyForceOut)
+                             .get_index()) {
+  this->DeclareAbstractInputPort("lcmt_schunk_wsg_status",
+                                 systems::Value<lcmt_schunk_wsg_status>());
+}
+
+void SchunkWsgStatusReceiver::CopyStateOut(
+    const drake::systems::Context<double>& context,
+    drake::systems::BasicVector<double>* output) const {
+  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
+  DRAKE_ASSERT(input != nullptr);
+  const auto& status = input->GetValue<lcmt_schunk_wsg_status>();
+
+  output->SetAtIndex(0, status.actual_position_mm / 1e3);
+  output->SetAtIndex(1, status.actual_speed_mm_per_s / 1e3);
+}
+
+void SchunkWsgStatusReceiver::CopyForceOut(
+    const drake::systems::Context<double>& context,
+    drake::systems::BasicVector<double>* output) const {
+  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
+  DRAKE_ASSERT(input != nullptr);
+  const auto& status = input->GetValue<lcmt_schunk_wsg_status>();
+
+  output->SetAtIndex(0, status.actual_force);
+}
+
 SchunkWsgStatusSender::SchunkWsgStatusSender(int input_state_size,
                                              int input_torque_size,
                                              int position_index,

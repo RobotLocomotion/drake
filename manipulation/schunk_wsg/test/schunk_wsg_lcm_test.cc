@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/systems/analysis/simulator.h"
@@ -56,6 +57,61 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgCommandReceiverTest) {
                 .Eval<BasicVector<double>>(*context)
                 .GetAtIndex(0),
             40);
+}
+
+GTEST_TEST(SchunkWsgLcmTest, SchunkWsgCommandSenderTest) {
+  SchunkWsgCommandSender dut;
+  std::unique_ptr<systems::Context<double>> context =
+      dut.CreateDefaultContext();
+
+  const double position = 0.0015;
+  context->FixInputPort(dut.get_position_input_port().get_index(),
+                        Vector1d(position));
+  const double force_limit = 25.0;
+  context->FixInputPort(dut.get_force_limit_input_port().get_index(),
+                        Vector1d(force_limit));
+
+  const lcmt_schunk_wsg_command& command =
+      dut.get_output_port(0).Eval<lcmt_schunk_wsg_command>(*context);
+
+  EXPECT_EQ(command.target_position_mm, 1.5);
+  EXPECT_EQ(command.force, 25.0);
+}
+
+GTEST_TEST(SchunkWsgLcmTest, SchunkWsgStatusReceiverTest) {
+  SchunkWsgStatusReceiver dut;
+  std::unique_ptr<systems::Context<double>> context =
+      dut.CreateDefaultContext();
+
+  // Check that we get zeros before receiving any messages (using the POD
+  // initialization via {}, as used in LcmSubscriberSystem).
+  lcmt_schunk_wsg_status status{};
+  context->FixInputPort(
+      0, systems::AbstractValue::Make<lcmt_schunk_wsg_status>(status));
+  EXPECT_TRUE(CompareMatrices(dut.get_state_output_port()
+                                  .Eval<BasicVector<double>>(*context)
+                                  .get_value(),
+                              Vector2d::Zero()));
+  EXPECT_EQ(dut.get_force_output_port()
+                .Eval<BasicVector<double>>(*context)
+                .GetAtIndex(0),
+            0.0);
+
+  // Check that we can read out valid input.
+  status.utime = 1;
+  status.actual_position_mm = 100;
+  status.actual_speed_mm_per_s = 324;
+  status.actual_force = 40;
+  context->FixInputPort(
+      0, systems::AbstractValue::Make<lcmt_schunk_wsg_status>(status));
+  EXPECT_TRUE(CompareMatrices(dut.get_state_output_port()
+                                  .Eval<BasicVector<double>>(*context)
+                                  .get_value(),
+                              Vector2d(.1, .324)));
+  EXPECT_EQ(dut.get_force_output_port()
+                .Eval<BasicVector<double>>(*context)
+                .GetAtIndex(0),
+            40.0);
 }
 
 GTEST_TEST(SchunkWsgLcmTest, SchunkWsgStatusSenderTest) {
