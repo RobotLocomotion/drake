@@ -74,7 +74,7 @@ class RotationMatrix {
   // TODO(mitiguy) Although this method is fairly efficient, consider adding an
   // optional second argument if `quaternion` is known to be normalized apriori
   // or for some reason the calling site does not want `quaternion` normalized.
-  explicit RotationMatrix(const Eigen::Quaternion<T>& quaternion) {
+  explicit RotationMatrix(const Eigen::Quaternion<T>& quaternion) : R_AB_() {
     // Cost for various way to create a rotation matrix from a quaternion.
     // Eigen quaternion.toRotationMatrix() = 12 multiplies, 12 adds.
     // Drake  QuaternionToRotationMatrix() = 12 multiplies, 12 adds.
@@ -98,7 +98,7 @@ class RotationMatrix {
   // %RotationMatrix constructor (above) with that un-normalized quaternion.
   // TODO(mitiguy) Consider adding an optional second argument if `lambda` is
   // known to be normalized apriori or calling site does not want normalization.
-  explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda) {
+  explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda) : R_AB_() {
     const Vector3<T>& lambda = theta_lambda.axis();
     const T norm = lambda.norm();
     const T& theta = theta_lambda.angle();
@@ -136,7 +136,7 @@ class RotationMatrix {
   /// @li 3rd rotation R_AB: Frames D, C, B (collectively -- as if welded)
   /// rotate relative to frame A by a roll angle `y` about `Bz = Az`.
   /// Note: B and A are no longer aligned.
-  explicit RotationMatrix(const RollPitchYaw<T>& rpy) {
+  explicit RotationMatrix(const RollPitchYaw<T>& rpy) : R_AB_() {
     const T& r = rpy.roll_angle();
     const T& p = rpy.pitch_angle();
     const T& y = rpy.yaw_angle();
@@ -173,7 +173,7 @@ class RotationMatrix {
   /// columns of `R_AB` are `Bx`, `By`, `Bz`.
   static RotationMatrix<T> MakeFromOrthonormalColumns(
       const Vector3<T>& Bx, const Vector3<T>& By, const Vector3<T>& Bz) {
-    RotationMatrix<T> R;
+    RotationMatrix<T> R(DoNotInitializeMemberFields{});
     R.SetFromOrthonormalColumns(Bx, By, Bz);
     return R;
   }
@@ -192,7 +192,7 @@ class RotationMatrix {
   /// columns of `R_AB` are `Bx`, `By`, `Bz`.
   static RotationMatrix<T> MakeFromOrthonormalRows(
       const Vector3<T>& Ax, const Vector3<T>& Ay, const Vector3<T>& Az) {
-    RotationMatrix<T> R;
+    RotationMatrix<T> R(DoNotInitializeMemberFields{});
     R.SetFromOrthonormalRows(Ax, Ay, Az);
     return R;
   }
@@ -583,6 +583,10 @@ class RotationMatrix {
   // epsilon) used to check whether or not a rotation matrix is orthonormal.
   static constexpr double kInternalToleranceForOrthonormality_{
       128 * std::numeric_limits<double>::epsilon() };
+
+  // Constructs a RotationMatrix without initializing the underlying 3x3 matrix.
+  struct DoNotInitializeMemberFields{};
+  explicit RotationMatrix(DoNotInitializeMemberFields) : R_AB_() {}
 
   // Constructs a %RotationMatrix from a Matrix3.  No check is performed to test
   // whether or not the parameter R is a valid rotation matrix.
