@@ -1063,24 +1063,6 @@ GTEST_TEST(SimulatorTest, SimpleHybridSystemTest3) {
   EXPECT_EQ(diagram->GetSubsystemContext(*hybrid_system, mutable_context).get_discrete_state()[0], 0.0);
 }
 
-// TODO: Tests that the simulator captures an update at
-GTEST_TEST(SimulatorTest, SimpleDiscreteSystemSolution) {
-  SimpleDiscreteSystem discrete_system;
-  Simulator<double> simulator(discrete_system);
-
-  // Set the initial conditions.
-  simulator.get_mutable_context().get_mutable_discrete_state()[0] = 2.0;
-  simulator.get_mutable_context().set_time(2.0);  // n = 2.
-
-  // Simulate forward.
-  simulator.Initialize();
-  simulator.StepTo(3.);
-  simulator.Finalize();
-
-  // Check that the update occurs at exactly the desired time.
-  EXPECT_EQ(simulator.get_context().get_discrete_state()[0], -4.5);
-}
-
 namespace {
 // A mock System that requests a single update/publish at a specified time.
 class TimedUpdater : public LeafSystem<double> {
