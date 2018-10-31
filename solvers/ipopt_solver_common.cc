@@ -28,12 +28,11 @@ bool IpoptSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
           ProgramAttribute::kGenericConstraint,
           ProgramAttribute::kLinearEqualityConstraint,
           ProgramAttribute::kLinearConstraint,
+          ProgramAttribute::kQuadraticConstraint,
           ProgramAttribute::kLorentzConeConstraint,
           ProgramAttribute::kRotatedLorentzConeConstraint,
-          ProgramAttribute::kPositiveSemidefiniteConstraint,
           ProgramAttribute::kGenericCost, ProgramAttribute::kLinearCost,
-          ProgramAttribute::kQuadraticCost,
-      });
+          ProgramAttribute::kQuadraticCost, ProgramAttribute::kCallback});
   return AreRequiredAttributesSupported(prog.required_capabilities(),
                                         solver_capabilities.access());
 }

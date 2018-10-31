@@ -290,10 +290,10 @@ bool EqualityConstrainedQPSolver::ProgramAttributesSatisfied(
       std::initializer_list<ProgramAttribute>{
           ProgramAttribute::kQuadraticCost, ProgramAttribute::kLinearCost,
           ProgramAttribute::kLinearEqualityConstraint});
+  // TODO(hongkai.dai) also make sure that there exists at least a quadratic
+  // cost.
   return AreRequiredAttributesSupported(prog.required_capabilities(),
-                                        solver_capabilities.access()) &&
-         prog.required_capabilities().count(ProgramAttribute::kQuadraticCost) >
-             0;
+                                        solver_capabilities.access());
 }
 
 }  // namespace solvers

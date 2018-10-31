@@ -28,9 +28,9 @@ bool SnoptSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
           ProgramAttribute::kGenericConstraint,
           ProgramAttribute::kLinearEqualityConstraint,
           ProgramAttribute::kLinearConstraint,
+          ProgramAttribute::kQuadraticConstraint,
           ProgramAttribute::kLorentzConeConstraint,
           ProgramAttribute::kRotatedLorentzConeConstraint,
-          ProgramAttribute::kPositiveSemidefiniteConstraint,
           ProgramAttribute::kLinearComplementarityConstraint,
           ProgramAttribute::kGenericCost, ProgramAttribute::kLinearCost,
           ProgramAttribute::kQuadraticCost, ProgramAttribute::kCallback});
