@@ -61,7 +61,8 @@ class RotationMatrix {
   /// Constructs a %RotationMatrix from a Matrix3.
   /// @param[in] R an allegedly valid rotation matrix.
   /// @throws std::logic_error in debug builds if R fails IsValid(R).
-  explicit RotationMatrix(const Matrix3<T>& R) : R_AB_() { set(R); }
+  explicit RotationMatrix(const Matrix3<T>& R)
+      : RotationMatrix(DoNotInitializeMemberFields{}) { set(R); }
 
   /// Constructs a %RotationMatrix from an Eigen::Quaternion.
   /// @param[in] quaternion a non-zero, finite quaternion which may or may not
@@ -74,15 +75,15 @@ class RotationMatrix {
   // TODO(mitiguy) Although this method is fairly efficient, consider adding an
   // optional second argument if `quaternion` is known to be normalized apriori
   // or for some reason the calling site does not want `quaternion` normalized.
-  explicit RotationMatrix(const Eigen::Quaternion<T>& quaternion) : R_AB_() {
+  explicit RotationMatrix(const Eigen::Quaternion<T>& quaternion)
+      : RotationMatrix(DoNotInitializeMemberFields{}) {
     // Cost for various way to create a rotation matrix from a quaternion.
     // Eigen quaternion.toRotationMatrix() = 12 multiplies, 12 adds.
     // Drake  QuaternionToRotationMatrix() = 12 multiplies, 12 adds.
     // Extra cost for two_over_norm_squared =  4 multiplies,  3 adds, 1 divide.
     // Extra cost if normalized = 4 multiplies, 3 adds, 1 sqrt, 1 divide.
     const T two_over_norm_squared = T(2) / quaternion.squaredNorm();
-    R_AB_ = QuaternionToRotationMatrix(quaternion, two_over_norm_squared);
-    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+    set(QuaternionToRotationMatrix(quaternion, two_over_norm_squared));
   }
 
   /// Constructs a %RotationMatrix from an Eigen::AngleAxis.
@@ -98,12 +99,12 @@ class RotationMatrix {
   // %RotationMatrix constructor (above) with that un-normalized quaternion.
   // TODO(mitiguy) Consider adding an optional second argument if `lambda` is
   // known to be normalized apriori or calling site does not want normalization.
-  explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda) : R_AB_() {
+  explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda)
+      : RotationMatrix(DoNotInitializeMemberFields{}) {
     const Vector3<T>& lambda = theta_lambda.axis();
     const T norm = lambda.norm();
     const T& theta = theta_lambda.angle();
-    R_AB_ = Eigen::AngleAxis<T>(theta, lambda / norm).toRotationMatrix();
-    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+    set(Eigen::AngleAxis<T>(theta, lambda / norm).toRotationMatrix());
   }
 
   // TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
@@ -136,7 +137,8 @@ class RotationMatrix {
   /// @li 3rd rotation R_AB: Frames D, C, B (collectively -- as if welded)
   /// rotate relative to frame A by a roll angle `y` about `Bz = Az`.
   /// Note: B and A are no longer aligned.
-  explicit RotationMatrix(const RollPitchYaw<T>& rpy) : R_AB_() {
+  explicit RotationMatrix(const RollPitchYaw<T>& rpy)
+      : RotationMatrix(DoNotInitializeMemberFields{}) {
     const T& r = rpy.roll_angle();
     const T& p = rpy.pitch_angle();
     const T& y = rpy.yaw_angle();
