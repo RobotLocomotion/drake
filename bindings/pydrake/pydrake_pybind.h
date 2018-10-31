@@ -322,6 +322,19 @@ struct overload_cast_impl {
 template <typename Return, typename... Args>
 constexpr auto overload_cast_explicit = overload_cast_impl<Return, Args...>{};
 
+/// Binds Pythonic `__copy__` and `__deepcopy__` for a class's copy
+/// constructor.
+/// @note Do not use this if the class's copy constructor does not imply a deep
+/// copy.
+template <typename PyClass>
+void DefCopyAndDeepCopy(PyClass* ppy_class) {
+  using Class = typename PyClass::type;
+  PyClass& py_class = *ppy_class;
+  py_class.def("__copy__", [](const Class* self) { return Class{*self}; })
+      .def("__deepcopy__",
+           [](const Class* self, py::dict /* memo */) { return Class{*self}; });
+}
+
 /// Executes Python code to introduce additional symbols for a given module.
 /// For a module with local name `{name}`, the code executed will be
 /// `_{name}_extra.py`. See #9599 for relevant background.
