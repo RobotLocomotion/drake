@@ -14,12 +14,12 @@ PYBIND11_MODULE(gurobi, m) {
   constexpr auto& doc = pydrake_doc.drake.solvers;
 
   py::object solverinterface =
-      py::module::import("pydrake.solvers.mathematicalprogram").attr(
-          "MathematicalProgramSolverInterface");
+      py::module::import("pydrake.solvers.mathematicalprogram")
+          .attr("MathematicalProgramSolverInterface");
 
   py::class_<GurobiSolver>(m, "GurobiSolver", solverinterface,
-    doc.GurobiSolver.doc)
-    .def(py::init<>(), doc.GurobiSolver.ctor.doc);
+                           doc.GurobiSolver.doc)
+      .def(py::init<>(), doc.GurobiSolver.ctor.doc);
 }
 
 }  // namespace pydrake
