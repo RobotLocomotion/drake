@@ -16,7 +16,7 @@ shared_ptr<MosekSolver::License> MosekSolver::AcquireLicense() {
   return shared_ptr<MosekSolver::License>();
 }
 
-bool MosekSolver::IsAvailable() { return false; }
+bool MosekSolver::is_available() { return false; }
 
 SolutionResult MosekSolver::Solve(MathematicalProgram&) const {
   throw runtime_error(

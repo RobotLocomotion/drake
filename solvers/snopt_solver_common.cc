@@ -17,7 +17,7 @@ SolverId SnoptSolver::id() {
   return singleton.access();
 }
 
-bool SnoptSolver::IsProgramAttributesSatisfied(
+bool SnoptSolver::AreProgramAttributesSatisfied(
     const MathematicalProgram& prog) const {
   return SnoptSolver::ProgramAttributesSatisfied(prog);
 }

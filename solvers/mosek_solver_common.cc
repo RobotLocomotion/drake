@@ -17,7 +17,7 @@ SolverId MosekSolver::id() {
   return singleton.access();
 }
 
-bool MosekSolver::IsProgramAttributesSatisfied(
+bool MosekSolver::AreProgramAttributesSatisfied(
     const MathematicalProgram& prog) const {
   return MosekSolver::ProgramAttributesSatisfied(prog);
 }

@@ -1,9 +1,7 @@
 #pragma once
 
-#include <memory>
-
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_id.h"
 
 namespace drake {
 namespace solvers {
@@ -12,7 +10,6 @@ namespace solvers {
  * the availability of the solvers.
  * @throw invalid_argument if there is no available solver for @p prog.
  */
-std::unique_ptr<MathematicalProgramSolverInterface> ChooseBestSolver(
-    const MathematicalProgram& prog);
+SolverId ChooseBestSolver(const MathematicalProgram& prog);
 }  // namespace solvers
 }  // namespace drake

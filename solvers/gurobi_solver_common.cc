@@ -20,7 +20,7 @@ SolverId GurobiSolver::id() {
   return singleton.access();
 }
 
-bool GurobiSolver::IsProgramAttributesSatisfied(
+bool GurobiSolver::AreProgramAttributesSatisfied(
     const MathematicalProgram& prog) const {
   return GurobiSolver::ProgramAttributesSatisfied(prog);
 }

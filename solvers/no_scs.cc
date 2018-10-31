@@ -9,7 +9,7 @@
 namespace drake {
 namespace solvers {
 
-bool ScsSolver::IsAvailable() { return false; }
+bool ScsSolver::is_available() { return false; }
 
 SolutionResult ScsSolver::Solve(MathematicalProgram&) const {
   throw std::runtime_error(

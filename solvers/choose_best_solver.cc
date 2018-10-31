@@ -11,48 +11,46 @@
 #include "drake/solvers/osqp_solver.h"
 #include "drake/solvers/scs_solver.h"
 #include "drake/solvers/snopt_solver.h"
-#include "drake/solvers/unrevised_lemke_solver.h"
 
 namespace drake {
 namespace solvers {
-std::unique_ptr<MathematicalProgramSolverInterface> ChooseBestSolver(
-    const MathematicalProgram& prog) {
-  if (LinearSystemSolver::IsAvailable() &&
+SolverId ChooseBestSolver(const MathematicalProgram& prog) {
+  if (LinearSystemSolver::is_available() &&
       LinearSystemSolver::ProgramAttributesSatisfied(prog)) {
-    return std::make_unique<LinearSystemSolver>();
-  } else if (EqualityConstrainedQPSolver::IsAvailable() &&
+    return LinearSystemSolver::id();
+  } else if (EqualityConstrainedQPSolver::is_available() &&
              EqualityConstrainedQPSolver::ProgramAttributesSatisfied(prog)) {
-    return std::make_unique<EqualityConstrainedQPSolver>();
-  } else if (MosekSolver::IsAvailable() &&
+    return EqualityConstrainedQPSolver::id();
+  } else if (MosekSolver::is_available() &&
              MosekSolver::ProgramAttributesSatisfied(prog)) {
     // TODO(hongkai.dai@tri.global): based on my limited experience, Mosek is
     // faster than Gurobi for convex optimization problem. But we should run
     // a more thorough comparison.
-    return std::make_unique<MosekSolver>();
-  } else if (GurobiSolver::IsAvailable() &&
+    return MosekSolver::id();
+  } else if (GurobiSolver::is_available() &&
              GurobiSolver::ProgramAttributesSatisfied(prog)) {
-    return std::make_unique<GurobiSolver>();
-  } else if (OsqpSolver::IsAvailable() &&
+    return GurobiSolver::id();
+  } else if (OsqpSolver::is_available() &&
              OsqpSolver::ProgramAttributesSatisfied(prog)) {
-    return std::make_unique<OsqpSolver>();
-  } else if (MobyLCPSolver<double>::IsAvailable() &&
+    return OsqpSolver::id();
+  } else if (MobyLCPSolver<double>::is_available() &&
              MobyLCPSolver<double>::ProgramAttributesSatisfied(prog)) {
-    return std::make_unique<MobyLCPSolver<double>>();
-  } else if (SnoptSolver::IsAvailable() &&
+    return MobyLcpSolverId::id();
+  } else if (SnoptSolver::is_available() &&
              SnoptSolver::ProgramAttributesSatisfied(prog)) {
-    return std::make_unique<SnoptSolver>();
-  } else if (IpoptSolver::IsAvailable() &&
+    return SnoptSolver::id();
+  } else if (IpoptSolver::is_available() &&
              IpoptSolver::ProgramAttributesSatisfied(prog)) {
-    return std::make_unique<IpoptSolver>();
-  } else if (NloptSolver::IsAvailable() &&
+    return IpoptSolver::id();
+  } else if (NloptSolver::is_available() &&
              NloptSolver::ProgramAttributesSatisfied(prog)) {
-    return std::make_unique<NloptSolver>();
-  } else if (ScsSolver::IsAvailable() &&
+    return NloptSolver::id();
+  } else if (ScsSolver::is_available() &&
              ScsSolver::ProgramAttributesSatisfied(prog)) {
     // Use SCS as the last resort. SCS uses ADMM method, which converges fast to
     // modest accuracy quite fast, but then slows down significantly if the user
     // wants high accuracy.
-    return std::make_unique<ScsSolver>();
+    return ScsSolver::id();
   }
 
   throw std::invalid_argument(

@@ -15,7 +15,7 @@
 namespace drake {
 namespace solvers {
 
-bool EqualityConstrainedQPSolver::IsAvailable() { return true; }
+bool EqualityConstrainedQPSolver::is_available() { return true; }
 
 /**
  * Solves the un-constrained QP problem
@@ -279,7 +279,7 @@ SolverId EqualityConstrainedQPSolver::id() {
   return singleton.access();
 }
 
-bool EqualityConstrainedQPSolver::IsProgramAttributesSatisfied(
+bool EqualityConstrainedQPSolver::AreProgramAttributesSatisfied(
     const MathematicalProgram& prog) const {
   return ProgramAttributesSatisfied(prog);
 }

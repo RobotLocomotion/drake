@@ -17,7 +17,7 @@ SolverId IpoptSolver::id() {
   return singleton.access();
 }
 
-bool IpoptSolver::IsProgramAttributesSatisfied(
+bool IpoptSolver::AreProgramAttributesSatisfied(
     const MathematicalProgram& prog) const {
   return IpoptSolver::ProgramAttributesSatisfied(prog);
 }

@@ -34,7 +34,7 @@ class MathematicalProgramSolverInterface {
 
   /// Returns true if the program attributes are satisfied by the solver's
   /// capability.
-  virtual bool IsProgramAttributesSatisfied(
+  virtual bool AreProgramAttributesSatisfied(
       const MathematicalProgram& prog) const = 0;
 };
 

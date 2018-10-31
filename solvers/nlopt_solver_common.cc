@@ -17,7 +17,7 @@ SolverId NloptSolver::id() {
   return singleton.access();
 }
 
-bool NloptSolver::IsProgramAttributesSatisfied(
+bool NloptSolver::AreProgramAttributesSatisfied(
     const MathematicalProgram& prog) const {
   return NloptSolver::ProgramAttributesSatisfied(prog);
 }

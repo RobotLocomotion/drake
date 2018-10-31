@@ -20,7 +20,7 @@ SolverId DrealSolver::id() {
   return singleton.access();
 }
 
-bool DrealSolver::IsProgramAttributesSatisfied(
+bool DrealSolver::AreProgramAttributesSatisfied(
     const MathematicalProgram& prog) const {
   return DrealSolver::ProgramAttributesSatisfied(prog);
 }

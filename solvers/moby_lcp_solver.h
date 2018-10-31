@@ -266,15 +266,15 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
                                 int max_exp = 1, const T& piv_tol = T(-1),
                                 const T& zero_tol = T(-1)) const;
 
-  bool available() const override { return IsAvailable(); };
+  bool available() const override { return is_available(); };
 
-  static bool IsAvailable() { return true; }
+  static bool is_available() { return true; }
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
   SolverId solver_id() const override;
 
-  bool IsProgramAttributesSatisfied(
+  bool AreProgramAttributesSatisfied(
       const MathematicalProgram& prog) const override;
 
   static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);

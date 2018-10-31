@@ -17,7 +17,7 @@ SolverId ScsSolver::id() {
   return singleton.access();
 }
 
-bool ScsSolver::IsProgramAttributesSatisfied(
+bool ScsSolver::AreProgramAttributesSatisfied(
     const MathematicalProgram& prog) const {
   return ScsSolver::ProgramAttributesSatisfied(prog);
 }

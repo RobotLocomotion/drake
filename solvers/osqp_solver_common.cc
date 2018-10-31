@@ -20,7 +20,7 @@ SolverId OsqpSolver::id() {
   return singleton.access();
 }
 
-bool OsqpSolver::IsProgramAttributesSatisfied(
+bool OsqpSolver::AreProgramAttributesSatisfied(
     const MathematicalProgram& prog) const {
   return OsqpSolver::ProgramAttributesSatisfied(prog);
 }

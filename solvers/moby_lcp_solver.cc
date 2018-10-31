@@ -1070,7 +1070,7 @@ SolverId MobyLcpSolverId::id() {
 }
 
 template <typename T>
-bool MobyLCPSolver<T>::IsProgramAttributesSatisfied(
+bool MobyLCPSolver<T>::AreProgramAttributesSatisfied(
     const MathematicalProgram& prog) const {
   return MobyLCPSolver<T>::ProgramAttributesSatisfied(prog);
 }

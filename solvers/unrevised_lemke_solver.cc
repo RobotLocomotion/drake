@@ -920,7 +920,7 @@ SolverId UnrevisedLemkeSolverId::id() {
 }
 
 template <typename T>
-bool UnrevisedLemkeSolver<T>::IsProgramAttributesSatisfied(
+bool UnrevisedLemkeSolver<T>::AreProgramAttributesSatisfied(
     const MathematicalProgram& prog) const {
   return UnrevisedLemkeSolver<T>::ProgramAttributesSatisfied(prog);
 }

@@ -19,6 +19,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/math/matrix_util.h"
+#include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/ipopt_solver.h"
@@ -892,55 +893,29 @@ void MathematicalProgram::SetInitialGuess(
 // implemented in mathematical_program_api.cc instead of this file.
 
 SolutionResult MathematicalProgram::Solve() {
-  // This implementation is simply copypasta for now; in the future we will
-  // want to tweak the order of preference of solvers based on the types of
-  // constraints present.
-
-  // This list is a duplicate of ChooseBestSolver(), they should keep in sync.
-  if (linear_system_solver_->IsProgramAttributesSatisfied(*this) &&
-      linear_system_solver_->available()) {
-    // TODO(ggould-tri) Also allow quadratic objectives whose matrix is
-    // Identity: This is the objective function the solver uses anyway when
-    // underconstrainted, and is fairly common in real-world problems.
+  const SolverId solver_id = ChooseBestSolver(*this);
+  if (solver_id == LinearSystemSolver::id()) {
     return linear_system_solver_->Solve(*this);
-  } else if (equality_constrained_qp_solver_->IsProgramAttributesSatisfied(
-                 *this) &&
-             equality_constrained_qp_solver_->available()) {
+  } else if (solver_id == EqualityConstrainedQPSolver::id()) {
     return equality_constrained_qp_solver_->Solve(*this);
-  } else if (mosek_solver_->IsProgramAttributesSatisfied(*this) &&
-             mosek_solver_->available()) {
-    // TODO(hongkai.dai@tri.global): based on my limited experience, Mosek is
-    // faster than Gurobi for convex optimization problem. But we should run
-    // a more thorough comparison.
+  } else if (solver_id == MosekSolver::id()) {
     return mosek_solver_->Solve(*this);
-  } else if (gurobi_solver_->IsProgramAttributesSatisfied(*this) &&
-             gurobi_solver_->available()) {
+  } else if (solver_id == GurobiSolver::id()) {
     return gurobi_solver_->Solve(*this);
-  } else if (osqp_solver_->IsProgramAttributesSatisfied(*this) &&
-             osqp_solver_->available()) {
+  } else if (solver_id == OsqpSolver::id()) {
     return osqp_solver_->Solve(*this);
-  } else if (moby_lcp_solver_->IsProgramAttributesSatisfied(*this) &&
-             moby_lcp_solver_->available()) {
+  } else if (solver_id == MobyLcpSolverId::id()) {
     return moby_lcp_solver_->Solve(*this);
-  } else if (snopt_solver_->IsProgramAttributesSatisfied(*this) &&
-             snopt_solver_->available()) {
+  } else if (solver_id == SnoptSolver::id()) {
     return snopt_solver_->Solve(*this);
-  } else if (ipopt_solver_->IsProgramAttributesSatisfied(*this) &&
-             ipopt_solver_->available()) {
+  } else if (solver_id == IpoptSolver::id()) {
     return ipopt_solver_->Solve(*this);
-  } else if (nlopt_solver_->IsProgramAttributesSatisfied(*this) &&
-             nlopt_solver_->available()) {
+  } else if (solver_id == NloptSolver::id()) {
     return nlopt_solver_->Solve(*this);
-  } else if (scs_solver_->IsProgramAttributesSatisfied(*this) &&
-             scs_solver_->available()) {
-    // Use SCS as the last resort. SCS uses ADMM method, which converges fast to
-    // modest accuracy quite fast, but then slows down significantly if the user
-    // wants high accuracy.
+  } else if (solver_id == ScsSolver::id()) {
     return scs_solver_->Solve(*this);
   } else {
-    throw runtime_error(
-        "MathematicalProgram::Solve: "
-        "No solver available for the given optimization problem!");
+    throw std::runtime_error("Unknown solver.");
   }
 }
 

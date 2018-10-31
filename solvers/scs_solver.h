@@ -15,9 +15,9 @@ class ScsSolver : public MathematicalProgramSolverInterface {
 
   // This solver is implemented in various pieces depending on if
   // SCS was available during compilation.
-  bool available() const override { return IsAvailable(); };
+  bool available() const override { return is_available(); };
 
-  static bool IsAvailable();
+  static bool is_available();
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
@@ -26,7 +26,7 @@ class ScsSolver : public MathematicalProgramSolverInterface {
   /// @return same as MathematicalProgramSolverInterface::solver_id()
   static SolverId id();
 
-  bool IsProgramAttributesSatisfied(
+  bool AreProgramAttributesSatisfied(
       const MathematicalProgram& prog) const override;
 
   static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);

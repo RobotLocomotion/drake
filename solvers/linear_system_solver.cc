@@ -12,7 +12,7 @@
 namespace drake {
 namespace solvers {
 
-bool LinearSystemSolver::IsAvailable() { return true; }
+bool LinearSystemSolver::is_available() { return true; }
 
 SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
   size_t num_constraints = 0;
@@ -70,7 +70,7 @@ SolverId LinearSystemSolver::id() {
   return singleton.access();
 }
 
-bool LinearSystemSolver::IsProgramAttributesSatisfied(
+bool LinearSystemSolver::AreProgramAttributesSatisfied(
     const MathematicalProgram& prog) const {
   return ProgramAttributesSatisfied(prog);
 }
