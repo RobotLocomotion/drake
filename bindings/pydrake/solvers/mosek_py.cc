@@ -14,12 +14,12 @@ PYBIND11_MODULE(mosek, m) {
   m.doc() = "Mosek solver bindings for MathematicalProgram";
 
   py::object solverinterface =
-      py::module::import("pydrake.solvers.mathematicalprogram").attr(
-          "MathematicalProgramSolverInterface");
+      py::module::import("pydrake.solvers.mathematicalprogram")
+          .attr("MathematicalProgramSolverInterface");
 
   py::class_<MosekSolver>(m, "MosekSolver", solverinterface,
-    doc.MosekSolver.doc)
-    .def(py::init<>(), doc.MosekSolver.ctor.doc);
+                          doc.MosekSolver.doc)
+      .def(py::init<>(), doc.MosekSolver.ctor.doc);
 }
 
 }  // namespace pydrake

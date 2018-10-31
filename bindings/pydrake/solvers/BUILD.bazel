@@ -185,4 +185,6 @@ drake_py_unittest(
     deps = [":ik_py"],
 )
 
-add_lint_tests()
+add_lint_tests(
+    enable_clang_format_lint = True,
+)
