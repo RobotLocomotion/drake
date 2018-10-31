@@ -1063,124 +1063,84 @@ GTEST_TEST(SimulatorTest, SimpleHybridSystemTest3) {
   EXPECT_EQ(diagram->GetSubsystemContext(*hybrid_system, mutable_context).get_discrete_state()[0], 0.0);
 }
 
+// A mock System that requests a single update at a prespecified time.
 namespace {
-// A mock System that requests a single update/publish at a specified time.
-class TimedUpdater : public LeafSystem<double> {
+class UnrestrictedUpdater : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TimedUpdater)
-  enum EventType { kNone = 0, kPublish = 1, kUnrestrictedUpdate = 2,
-    kDiscreteUpdate = 3 };
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrestrictedUpdater)
 
-  TimedUpdater(double t_upd, int event_types) :
-      t_upd_(t_upd), event_types_(event_types) {}
+  explicit UnrestrictedUpdater(double t_upd) : t_upd_(t_upd) {}
 
-  ~TimedUpdater() override {}
+  ~UnrestrictedUpdater() override {}
 
   void DoCalcNextUpdateTime(const Context<double>& context,
                             CompositeEventCollection<double>* event_info,
                             double* time) const override {
     const double inf = std::numeric_limits<double>::infinity();
     *time = (context.get_time() < t_upd_) ? t_upd_ : inf;
-
-    if ((event_types_ & kPublish) > 0) {
-      PublishEvent<double> event(Event<double>::TriggerType::kTimed);
-      event.add_to_composite(event_info);
-    }
-
-    if ((event_types_ & kUnrestrictedUpdate) > 0) {
-      UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kTimed);
-      event.add_to_composite(event_info);
-    }
-
-    if ((event_types_ & kDiscreteUpdate) > 0) {
-        DiscreteUpdateEvent<double> event(Event<double>::TriggerType::kTimed);
-        event.add_to_composite(event_info);
-    }
-  }
-
-  void DoCalcDiscreteVariableUpdates(
-      const Context<double>& context,
-      const std::vector<const DiscreteUpdateEvent<double>*>&,
-      DiscreteValues<double>*) const override {
-    ++num_discrete_updates_;
-    last_discrete_update_time_ = context.get_time();
+    UnrestrictedUpdateEvent<double> event(
+        Event<double>::TriggerType::kPeriodic);
+    event.add_to_composite(event_info);
   }
 
   void DoCalcUnrestrictedUpdate(
       const Context<double>& context,
-      const std::vector<const UnrestrictedUpdateEvent<double>*>&,
-      State<double>*) const override {
-    ++num_unrestricted_updates_;
-    last_unrestricted_update_time_ = context.get_time();
+      const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
+      State<double>* state) const override {
+    if (unrestricted_update_callback_ != nullptr)
+      unrestricted_update_callback_(context, state);
   }
 
-  void DoPublish(
+  void DoCalcTimeDerivatives(
       const Context<double>& context,
-      const std::vector<const PublishEvent<double>*>&) const override {
-    ++num_publishes_;
-    last_publish_time_ = context.get_time();
+      ContinuousState<double>* derivatives) const override {
+    if (derivatives_callback_ != nullptr) derivatives_callback_(context);
   }
 
-  int num_publishes() const { return num_publishes_; }
-  int num_discrete_updates() const { return num_discrete_updates_; }
-  int num_unrestricted_updates() const { return num_unrestricted_updates_; }
-  double last_publish_time() const { return last_publish_time_; }
-  double last_discrete_update_time() const {
-    return last_discrete_update_time_;
+  void set_unrestricted_update_callback(
+      std::function<void(const Context<double>&, State<double>*)> callback) {
+    unrestricted_update_callback_ = callback;
   }
-  double last_unrestricted_update_time() const {
-    return last_unrestricted_update_time_;
+
+  void set_derivatives_callback(
+      std::function<void(const Context<double>&)> callback) {
+    derivatives_callback_ = callback;
   }
 
  private:
   const double t_upd_{0.0};
-  int event_types_;
-
-  // Modifying system members in DoCalcTimeDerivatives() is an anti-pattern.
-  // It is done here only to simplify the testing code.
-  mutable double last_publish_time_{-1};
-  mutable double last_discrete_update_time_{-1};
-  mutable double last_unrestricted_update_time_{-1};
-  mutable int num_publishes_{0};
-  mutable int num_discrete_updates_{0};
-  mutable int num_unrestricted_updates_{0};
+  std::function<void(const Context<double>&, State<double>*)>
+      unrestricted_update_callback_{nullptr};
+  std::function<void(const Context<double>&)> derivatives_callback_{nullptr};
 };
 }  // namespace
 
-// Tests that the simulator captures an update at the exact time
+// Tests that the simulator captures an unrestricted update at the exact time
 // (i.e., without accumulating floating point error).
 GTEST_TEST(SimulatorTest, ExactUpdateTime) {
   // Create the UnrestrictedUpdater system.
   const double t_upd = 1e-10;  // Inexact floating point rep.
-  TimedUpdater unrest_upd(t_upd, TimedUpdater::kUnrestrictedUpdate);
+  UnrestrictedUpdater unrest_upd(t_upd);
   Simulator<double> simulator(unrest_upd);  // Use default Context.
 
   // Set time to an exact floating point representation; we want t_upd to
   // be much smaller in magnitude than the time, hence the negative time.
   simulator.get_mutable_context().set_time(-1.0 / 1024);
 
-  // Simulate forward.
-  simulator.Initialize();
-  simulator.StepTo(1.);
-
-  // Check that the update occurs at exactly the desired time.
-  EXPECT_EQ(unrest_upd.num_unrestricted_updates(), 1u);
-  EXPECT_EQ(unrest_upd.last_unrestricted_update_time(), t_upd);
-}
-
-// Tests that the simulator captures a multiple updates at the time zero.
-GTEST_TEST(SimulatorTest, UnrestrictedUpdateTimeZero) {
-  // Create the UnrestrictedUpdater system.
-  TimedUpdater unrest_upd(0.0, TimedUpdater::kUnrestrictedUpdate);
-  Simulator<double> simulator(unrest_upd);
+  // Capture the time at which an update is done using a callback function.
+  std::vector<double> updates;
+  unrest_upd.set_unrestricted_update_callback(
+      [&updates](const Context<double>& context, State<double>* state) {
+        updates.push_back(context.get_time());
+      });
 
   // Simulate forward.
   simulator.Initialize();
   simulator.StepTo(1.);
 
   // Check that the update occurs at exactly the desired time.
-  EXPECT_EQ(unrest_upd.num_unrestricted_updates(), 1u);
-  EXPECT_EQ(unrest_upd.last_unrestricted_update_time(), 0.0);
+  EXPECT_EQ(updates.size(), 1u);
+  EXPECT_EQ(updates.front(), t_upd);
 }
 
 // Tests Simulator for a Diagram system consisting of a tree of systems.
