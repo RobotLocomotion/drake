@@ -502,6 +502,8 @@ Simulator<T>::Simulator(const System<T>& system,
 
 template <typename T>
 void Simulator<T>::Initialize() {
+  using std::nexttoward;
+
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
 
@@ -526,8 +528,6 @@ void Simulator<T>::Initialize() {
   HandleUnrestrictedUpdate(init_events->get_unrestricted_update_events());
   // Do restricted (discrete variable) updates next.
   HandleDiscreteUpdate(init_events->get_discrete_update_events());
-  // Do any publishes last.
-  HandlePublish(init_events->get_publish_events());
 
   // Gets all per-step events to be handled.
   per_step_events_ = system_.AllocateCompositeEventCollection();
@@ -536,7 +536,8 @@ void Simulator<T>::Initialize() {
 
   // TODO: CalcNextUpdateTime() requires a...
   const T current_time = context_->get_time();
-  context_->set_time(current_time - 10 * std::numeric_limits<double>::epsilon());
+  const long double inf = -std::numeric_limits<long double>::infinity();
+  context_->set_time(nexttoward(current_time, -inf));
 
   // Get the next timed event.
   timed_events_ = system_.AllocateCompositeEventCollection();
@@ -553,6 +554,9 @@ void Simulator<T>::Initialize() {
 
   // Allocate the witness function collection.
   witnessed_events_ = system_.AllocateCompositeEventCollection();
+
+  // Do any publishes last.
+  HandlePublish(init_events->get_publish_events());
 
   // Initialize runtime variables.
   initialization_done_ = true;
