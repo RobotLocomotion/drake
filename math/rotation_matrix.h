@@ -56,12 +56,12 @@ class RotationMatrix {
 
   /// Constructs a 3x3 identity %RotationMatrix -- which corresponds to
   /// aligning two frames (so that unit vectors Ax = Bx, Ay = By, Az = Bz).
-  RotationMatrix() {}
+  RotationMatrix() : R_AB_(Matrix3<T>::Identity()) {}
 
   /// Constructs a %RotationMatrix from a Matrix3.
   /// @param[in] R an allegedly valid rotation matrix.
   /// @throws std::logic_error in debug builds if R fails IsValid(R).
-  explicit RotationMatrix(const Matrix3<T>& R) : R_AB_() { set(R); }
+  explicit RotationMatrix(const Matrix3<T>& R) { set(R); }
 
   /// Constructs a %RotationMatrix from an Eigen::Quaternion.
   /// @param[in] quaternion a non-zero, finite quaternion which may or may not
@@ -173,7 +173,7 @@ class RotationMatrix {
   /// columns of `R_AB` are `Bx`, `By`, `Bz`.
   static RotationMatrix<T> MakeFromOrthonormalColumns(
       const Vector3<T>& Bx, const Vector3<T>& By, const Vector3<T>& Bz) {
-    RotationMatrix<T> R;
+    RotationMatrix<T> R(DoNotInitializeMemberFields{});
     R.SetFromOrthonormalColumns(Bx, By, Bz);
     return R;
   }
@@ -192,7 +192,7 @@ class RotationMatrix {
   /// columns of `R_AB` are `Bx`, `By`, `Bz`.
   static RotationMatrix<T> MakeFromOrthonormalRows(
       const Vector3<T>& Ax, const Vector3<T>& Ay, const Vector3<T>& Az) {
-    RotationMatrix<T> R;
+    RotationMatrix<T> R(DoNotInitializeMemberFields{});
     R.SetFromOrthonormalRows(Ax, Ay, Az);
     return R;
   }
@@ -584,6 +584,10 @@ class RotationMatrix {
   static constexpr double kInternalToleranceForOrthonormality_{
       128 * std::numeric_limits<double>::epsilon() };
 
+  // Constructs a RotationMatrix without initializing the underlying 3x3 matrix.
+  struct DoNotInitializeMemberFields{};
+  explicit RotationMatrix(DoNotInitializeMemberFields) {}
+
   // Constructs a %RotationMatrix from a Matrix3.  No check is performed to test
   // whether or not the parameter R is a valid rotation matrix.
   // @param[in] R an allegedly valid rotation matrix.
@@ -768,8 +772,8 @@ class RotationMatrix {
   }
 
   // Stores the underlying rotation matrix relating two frames (e.g. A and B).
-  // The default initialization is the identity matrix.
-  Matrix3<T> R_AB_{Matrix3<T>::Identity()};
+  // For speed, `R_AB_` is uninitialized (public constructors set its value).
+  Matrix3<T> R_AB_;
 };
 
 /// Abbreviation (alias/typedef) for a RotationMatrix double scalar type.
