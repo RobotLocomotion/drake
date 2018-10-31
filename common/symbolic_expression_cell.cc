@@ -609,6 +609,7 @@ void ExpressionAddFactory::AddExpression(const Expression& e) {
   }
   if (is_multiplication(e)) {
     const double constant{get_constant_in_multiplication(e)};
+    DRAKE_ASSERT(constant != 0.0);
     if (constant != 1.0) {
       // Instead of adding (1.0 * (constant * b1^t1 ... bn^tn)),
       // add (constant, 1.0 * b1^t1 ... bn^tn).
@@ -660,6 +661,7 @@ void ExpressionAddFactory::AddConstant(const double constant) {
 
 void ExpressionAddFactory::AddTerm(const double coeff, const Expression& term) {
   DRAKE_ASSERT(!is_constant(term));
+  DRAKE_ASSERT(coeff != 0.0);
 
   const auto it(expr_to_coeff_map_.find(term));
   if (it != expr_to_coeff_map_.end()) {
@@ -682,6 +684,7 @@ void ExpressionAddFactory::AddTerm(const double coeff, const Expression& term) {
 void ExpressionAddFactory::AddMap(
     const map<Expression, double> expr_to_coeff_map) {
   for (const auto& p : expr_to_coeff_map) {
+    DRAKE_ASSERT(p.second != 0.0);
     AddTerm(p.second, p.first);
   }
 }
@@ -892,6 +895,13 @@ ExpressionMulFactory::ExpressionMulFactory(
                            ptr->get_base_to_exponent_map()} {}
 
 void ExpressionMulFactory::AddExpression(const Expression& e) {
+  if (constant_ == 0.0) {
+    return;  // Do nothing if it already represented 0.
+  }
+  if (is_zero(e)) {
+    // X * 0 => 0. So clear the constant and the map.
+    return SetZero();
+  }
   if (is_constant(e)) {
     return AddConstant(get_constant_value(e));
   }
@@ -904,8 +914,16 @@ void ExpressionMulFactory::AddExpression(const Expression& e) {
 }
 
 void ExpressionMulFactory::Add(const shared_ptr<const ExpressionMul>& ptr) {
+  if (constant_ == 0.0) {
+    return;  // Do nothing if it already represented 0.
+  }
   AddConstant(ptr->get_constant());
   AddMap(ptr->get_base_to_exponent_map());
+}
+
+void ExpressionMulFactory::SetZero() {
+  constant_ = 0.0;
+  base_to_exponent_map_.clear();
 }
 
 ExpressionMulFactory& ExpressionMulFactory::operator=(
@@ -934,6 +952,9 @@ Expression ExpressionMulFactory::GetExpression() const {
 }
 
 void ExpressionMulFactory::AddConstant(const double constant) {
+  if (constant == 0.0) {
+    return SetZero();
+  }
   constant_ *= constant;
 }
 
