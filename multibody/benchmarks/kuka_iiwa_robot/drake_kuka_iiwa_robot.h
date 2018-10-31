@@ -130,7 +130,7 @@ class DrakeKukaIIwaRobot {
 
     // Retrieve end-effector pose from position kinematics cache.
     tree().CalcPositionKinematicsCache(*context_, &pc);
-    const Isometry3<T>& X_NG = pc.get_X_WB(linkG_->node_index());
+    const math::RigidTransform<T> X_NG(pc.get_X_WB(linkG_->node_index()));
 
     // Retrieve end-effector spatial velocity from velocity kinematics cache.
     tree().CalcVelocityKinematicsCache(*context_, pc, &vc);
@@ -142,7 +142,7 @@ class DrakeKukaIIwaRobot {
     const SpatialAcceleration<T>& A_NG_N = A_WB[linkG_->node_index()];
 
     // Create a class to return the results.
-    return SpatialKinematicsPVA<T>(X_NG, V_NG_N, A_NG_N);
+    return SpatialKinematicsPVA<T>(X_NG.GetAsIsometry3(), V_NG_N, A_NG_N);
   }
 
   /// This method calculates joint reaction torques/forces for a 7-DOF KUKA iiwa

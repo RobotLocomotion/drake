@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/multibody_tree/joints/joint.h"
 #include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/weld_mobilizer.h"
@@ -34,20 +35,32 @@ class WeldJoint final : public Joint<T> {
   template<typename Scalar>
   using Context = systems::Context<Scalar>;
 
-  /// Constructor for a %WeldJoint between a `parent_frame_P` and a
-  /// `child_frame_C` so that their relative pose `X_PC` is fixed as if they
-  /// were "welded" together.
-  WeldJoint(const std::string& name,
-            const Frame<T>& parent_frame_P, const Frame<T>& child_frame_C,
+  /// Constructs a %WeldJoint between a parent frame `P` and a child frame `C`
+  /// with a constant pose `X_PC`, as if `P` and `C` were "welded" together.
+  /// @param[in] name Weld joint's name.
+  /// @param[in] P Weld joint's parent frame.
+  /// @param[in] C Weld joint's child frame.
+  /// @param[in] X_PC Pose relating parent frame P and child frame C.
+  WeldJoint(const std::string& name, const Frame<T>& P, const Frame<T>& C,
             const Isometry3<double>& X_PC) :
-      Joint<T>(name, parent_frame_P, child_frame_C,
-               VectorX<double>() /* no lower limits */,
-               VectorX<double>() /* no upper limits */), X_PC_(X_PC) {}
+      Joint<T>(name, P, C, VectorX<double>() /* no lower limits */,
+                           VectorX<double>() /* no upper limits */),
+                           X_PC_(X_PC) {}
 
-  /// Returns the pose X_PC of frame C in P.
-  const Isometry3<double>& X_PC() const {
-    return X_PC_;
-  }
+  /// Constructs a %WeldJoint between a parent frame `P` and a child frame `C`
+  /// with a constant pose `X_PC`, as if `P` and `C` were "welded" together.
+  /// @param[in] name Weld joint's name.
+  /// @param[in] P Weld joint's parent frame.
+  /// @param[in] C Weld joint's child frame.
+  /// @param[in] X_PC Pose relating parent frame P and child frame C.
+  WeldJoint(const std::string& name, const Frame<T>& P, const Frame<T>& C,
+            const math::RigidTransform<double>& X_PC) :
+      Joint<T>(name, P, C, VectorX<double>() /* no lower limits */,
+                           VectorX<double>() /* no upper limits */),
+                           X_PC_(X_PC.GetAsIsometry3()) {}
+
+  /// Returns the pose X_PC relating parent frame P and child frame C.
+  const Isometry3<double>& X_PC() const { return X_PC_; }
 
  protected:
   /// Joint<T> override called through public NVI, Joint::AddInForce().

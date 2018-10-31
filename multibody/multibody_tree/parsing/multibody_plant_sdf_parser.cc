@@ -289,7 +289,7 @@ void AddJointFromSpecification(
           joint_spec.Name(),
           parent_body, X_PJ,
           child_body, X_CJ,
-          Isometry3d::Identity() /* X_JpJc */);
+          math::RigidTransform<double>::Identity() /* X_JpJc */);
       break;
     }
     case sdf::JointType::PRISMATIC: {
