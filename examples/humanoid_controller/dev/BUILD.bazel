@@ -14,10 +14,10 @@ drake_cc_library(
         "humanoid_manipulation_plan.h",
     ],
     deps = [
+        "//attic/systems/controllers/plan_eval:generic_plan",
+        "//attic/systems/controllers/qp_inverse_dynamics:lcm_utils",
         "//manipulation/util:robot_state_msg_translator",
         "//systems/controllers:zmp_planner",
-        "//systems/controllers/plan_eval:generic_plan",
-        "//systems/controllers/qp_inverse_dynamics:lcm_utils",
         "//util",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",

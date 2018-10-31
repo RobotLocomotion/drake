@@ -233,7 +233,8 @@ Result MaybeFindResourceInAttic(const string& resource_path) {
            "multibody/parsers/test/urdf_parser_test",
            "multibody/rigid_body_plant/test",
            "multibody/shapes/test",
-           "multibody/test"
+           "multibody/test",
+           "systems/controllers/qp_inverse_dynamics/test"
        }) {
     if (StartsWith(substr, directory)) {
       const Result attic_result =
