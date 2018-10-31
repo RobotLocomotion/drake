@@ -1,9 +1,8 @@
-"""Refreshes *.rst files for Python modules."""
+"""
+Generates documentation for `pydrake`.
+"""
 
-import argparse
-import glob
-import os
-from os.path import dirname, isabs, isfile, join
+from os.path import abspath, dirname, isabs, join
 import sys
 
 import pydrake.all
@@ -22,6 +21,7 @@ from pydrake.util import (
     cpp_param,
     cpp_template,
 )
+from sphinx_base import gen_main
 
 EXCLUDE = [
     "pydrake.third_party",
@@ -95,37 +95,18 @@ def write_module(f_name, name, verbose):
         write_module(join(f_dir, sub) + ".rst", sub, verbose)
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--output_dir", type=str, required=True,
-        help="Output directory; must be an absolute path, and must already "
-             "exist.")
-    parser.add_argument(
-        "--pre_clean", action="store_true",
-        help="Remove `index.rst` and all `pydrake.*.rst` files before "
-             "generating.")
-    parser.add_argument("-v", "--verbose", action="store_true")
-    args = parser.parse_args()
-
-    output_dir = args.output_dir
+def write_doc_modules(output_dir, verbose=False):
     if not isabs(output_dir):
-        sys.stderr.write(
-            "Please provide an absolute path.\n")
-        sys.exit(1)
-    pre_clean = args.pre_clean
-    verbose = args.verbose
-
+        raise RuntimeError(
+            "Please provide an absolute path: {}".format(output_dir))
     index_file = join(output_dir, "index.rst")
-    if pre_clean:
-        old_files = glob.glob(join(output_dir, "pydrake.*.rst"))
-        if isfile(index_file):
-            old_files.append(index_file)
-        for old_file in sorted(old_files):
-            if verbose:
-                print("Remove: {}".format(old_file))
-            os.remove(old_file)
     write_module(index_file, "pydrake", verbose)
+
+
+def main():
+    input_dir = dirname(abspath(__file__))
+    gen_main(
+        input_dir=input_dir, strict=False, src_func=write_doc_modules)
 
 
 if __name__ == "__main__":
