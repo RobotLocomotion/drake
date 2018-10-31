@@ -633,12 +633,13 @@ PYBIND11_MODULE(mathematicalprogram, m) {
   py::class_<LinearEqualityConstraint, LinearConstraint,
              std::shared_ptr<LinearEqualityConstraint>>(
       m, "LinearEqualityConstraint", doc.LinearEqualityConstraint.doc)
-      .def(
-          "UpdateCoefficients",
-          [](LinearEqualityConstraint& self, const Eigen::MatrixXd& Aeq,
-             const Eigen::VectorXd& beq) { self.UpdateCoefficients(Aeq, beq); },
-          py::arg("Aeq"), py::arg("beq"),
-          doc.LinearEqualityConstraint.UpdateCoefficients.doc);
+      .def("UpdateCoefficients",
+           [](LinearEqualityConstraint& self,  // BR
+              const Eigen::MatrixXd& Aeq, const Eigen::VectorXd& beq) {
+             self.UpdateCoefficients(Aeq, beq);
+           },
+           py::arg("Aeq"), py::arg("beq"),
+           doc.LinearEqualityConstraint.UpdateCoefficients.doc);
 
   py::class_<BoundingBoxConstraint, LinearConstraint,
              std::shared_ptr<BoundingBoxConstraint>>(
@@ -703,7 +704,7 @@ PYBIND11_MODULE(mathematicalprogram, m) {
 
   RegisterBinding<VisualizationCallback>(&m, &prog_cls,
                                          "VisualizationCallback");
-}
+}  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake
 }  // namespace drake

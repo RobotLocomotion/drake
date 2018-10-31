@@ -25,7 +25,7 @@ PYBIND11_MODULE(ik, m) {
            py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
            doc.PostureConstraint.ctor.doc)
       .def("setJointLimits",
-           static_cast<void (PostureConstraint::*)(
+           static_cast<void (PostureConstraint::*)(  // NOLINT
                const Eigen::VectorXi&, const Eigen::VectorXd&,
                const Eigen::VectorXd&)>(&PostureConstraint::setJointLimits),
            doc.PostureConstraint.setJointLimits.doc);
@@ -140,7 +140,7 @@ PYBIND11_MODULE(ik, m) {
       .def("setShrinkFactor", &QuasiStaticConstraint::setShrinkFactor,
            doc.QuasiStaticConstraint.setShrinkFactor.doc)
       .def("addContact",
-           static_cast<void (QuasiStaticConstraint::*)(
+           static_cast<void (QuasiStaticConstraint::*)(  // NOLINT
                std::vector<int>, const Eigen::Matrix3Xd&)>(
                &QuasiStaticConstraint::addContact),
            doc.QuasiStaticConstraint.addContact.doc);
@@ -199,7 +199,7 @@ PYBIND11_MODULE(ik, m) {
            doc.IKoptions.getAdditionaltSamples.doc);
 
   m.def("InverseKin",
-        static_cast<IKResults (*)(
+        static_cast<IKResults (*)(  // NOLINT
             RigidBodyTree<double>*, const Eigen::VectorXd&,
             const Eigen::VectorXd&, const std::vector<RigidBodyConstraint*>&,
             const IKoptions&)>(&inverseKinSimple),
