@@ -26,7 +26,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, DoublePendulum) {
   std::string full_name = FindResourceOrThrow(
       "drake/multibody/benchmarks/acrobot/double_pendulum.urdf");
   AddModelFromUrdfFile(full_name, &plant, &scene_graph);
-  plant.Finalize(&scene_graph);
+  plant.Finalize();
 
   const MultibodyTree<double>& tree = plant.tree();
   EXPECT_EQ(tree.num_bodies(), 4);
@@ -64,7 +64,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestAtlasMinimalContact) {
       "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
 
   AddModelFromUrdfFile(full_name, &plant, &scene_graph);
-  plant.Finalize(&scene_graph);
+  plant.Finalize();
 
   EXPECT_EQ(plant.num_positions(), 37);
   EXPECT_EQ(plant.num_velocities(), 36);
@@ -83,6 +83,30 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestAddWithQuaternionFloatingDof) {
 
   EXPECT_EQ(plant.num_positions(), 7);
   EXPECT_EQ(plant.num_velocities(), 6);
+}
+
+GTEST_TEST(MultibodyPlantUrdfParserTest, TestOptionalSceneGraph) {
+  const std::string full_name = FindResourceOrThrow(
+      "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
+  int num_visuals_explicit{};
+  {
+    // Test explicitly specifying `scene_graph`.
+    MultibodyPlant<double> plant;
+    SceneGraph<double> scene_graph;
+    AddModelFromUrdfFile(full_name, &plant, &scene_graph);
+    plant.Finalize();
+    num_visuals_explicit = plant.num_visual_geometries();
+  }
+  EXPECT_NE(num_visuals_explicit, 0);
+  {
+    // Test implicitly specifying.
+    MultibodyPlant<double> plant;
+    SceneGraph<double> scene_graph;
+    plant.RegisterAsSourceForSceneGraph(&scene_graph);
+    AddModelFromUrdfFile(full_name, &plant);
+    plant.Finalize();
+    EXPECT_EQ(plant.num_visual_geometries(), num_visuals_explicit);
+  }
 }
 
 }  // namespace

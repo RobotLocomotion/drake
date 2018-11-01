@@ -384,7 +384,7 @@ void AddLinksFromSpecification(
     const RigidBody<double>& body =
         plant->AddRigidBody(link.Name(), model_instance, M_BBo_B);
 
-    if (scene_graph != nullptr) {
+    if (plant->geometry_source_is_registered()) {
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
            ++visual_index) {
         const sdf::Visual sdf_visual = detail::ResolveVisualUri(
