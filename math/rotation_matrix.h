@@ -81,8 +81,7 @@ class RotationMatrix {
     // Extra cost for two_over_norm_squared =  4 multiplies,  3 adds, 1 divide.
     // Extra cost if normalized = 4 multiplies, 3 adds, 1 sqrt, 1 divide.
     const T two_over_norm_squared = T(2) / quaternion.squaredNorm();
-    R_AB_ = QuaternionToRotationMatrix(quaternion, two_over_norm_squared);
-    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+    set(QuaternionToRotationMatrix(quaternion, two_over_norm_squared));
   }
 
   /// Constructs a %RotationMatrix from an Eigen::AngleAxis.
@@ -102,8 +101,7 @@ class RotationMatrix {
     const Vector3<T>& lambda = theta_lambda.axis();
     const T norm = lambda.norm();
     const T& theta = theta_lambda.angle();
-    R_AB_ = Eigen::AngleAxis<T>(theta, lambda / norm).toRotationMatrix();
-    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+    set(Eigen::AngleAxis<T>(theta, lambda / norm).toRotationMatrix());
   }
 
   // TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
