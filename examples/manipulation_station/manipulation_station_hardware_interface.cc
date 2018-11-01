@@ -27,7 +27,6 @@ using multibody::multibody_plant::MultibodyPlant;
 using multibody::parsing::AddModelFromSdfFile;
 using robotlocomotion::image_array_t;
 
-// TODO(russt): Set publishing defaults.
 // TODO(russt): Consider taking DrakeLcmInterface as an argument instead of
 // (only) constructing one internally.
 ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
@@ -42,6 +41,8 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
   auto iiwa_command_publisher = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<drake::lcmt_iiwa_command>(
           "IIWA_COMMAND", owned_lcm_.get()));
+  // IIWA driver won't respond faster than 200Hz.
+  iiwa_command_publisher->set_publish_period(0.005);
   builder.ExportInput(iiwa_command_sender->get_position_input_port(),
                       "iiwa_position");
   builder.ExportInput(iiwa_command_sender->get_torque_input_port(),
@@ -80,6 +81,8 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
   auto wsg_command_publisher = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<drake::lcmt_schunk_wsg_command>(
           "SCHUNK_WSG_COMMAND", owned_lcm_.get()));
+  // Schunk driver won't respond faster than 20Hz.
+  wsg_command_publisher->set_publish_period(0.05);
   builder.ExportInput(wsg_command_sender->get_position_input_port(),
                       "wsg_position");
   builder.ExportInput(wsg_command_sender->get_force_limit_input_port(),

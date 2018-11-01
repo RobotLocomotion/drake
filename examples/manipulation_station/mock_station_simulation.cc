@@ -102,6 +102,7 @@ int do_main(int argc, char* argv[]) {
   auto iiwa_status_publisher = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<drake::lcmt_iiwa_status>(
           "IIWA_STATUS", &lcm));
+  iiwa_status_publisher->set_publish_period(0.005);
   builder.Connect(iiwa_status->get_output_port(0),
                   iiwa_status_publisher->get_input_port());
 
@@ -128,6 +129,7 @@ int do_main(int argc, char* argv[]) {
   auto wsg_status_publisher = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<drake::lcmt_schunk_wsg_status>(
           "SCHUNK_WSG_STATUS", &lcm));
+  wsg_status_publisher->set_publish_period(0.05);
   builder.Connect(wsg_status->get_output_port(0),
                   wsg_status_publisher->get_input_port());
 
@@ -159,6 +161,7 @@ int do_main(int argc, char* argv[]) {
       pose, &station->GetMutableSubsystemContext(
                 station->get_mutable_multibody_plant(), &station_context));
 
+  simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.StepTo(FLAGS_duration);
 

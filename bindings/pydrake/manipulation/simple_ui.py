@@ -22,7 +22,7 @@ class JointSliders(VectorSystem):
     """
 
     def __init__(self, robot, lower_limit=-10., upper_limit=10.,
-                 resolution=-1, length=200, update_period_sec=0.1,
+                 resolution=-1, length=200, update_period_sec=0.005,
                  window=None, title=None):
         """"
         Args:
@@ -125,8 +125,9 @@ class SchunkWsgButtons(LeafSystem):
              @output_port{max_force} }
     """
 
-    def __init__(self, window=None, open_position=0.055,
-                 closed_position=0.002, force_limit=40, update_period_sec=0.1):
+    def __init__(self, window=None, open_position=0.107,
+                 closed_position=0.002, force_limit=40,
+                 update_period_sec=0.05):
         """"
         Args:
             window:          Optionally pass in a tkinter.Tk() object to add
