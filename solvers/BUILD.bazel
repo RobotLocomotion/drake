@@ -56,7 +56,7 @@ drake_cc_package_library(
         ":snopt_solver",
         ":solution_result",
         ":solver_id",
-        ":solver_option",
+        ":solver_options",
         ":solver_result",
         ":solver_type",
         ":solver_type_converter",
@@ -237,12 +237,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "solver_option",
-    srcs = ["solver_option.cc"],
-    hdrs = ["solver_option.h"],
+    name = "solver_options",
+    srcs = ["solver_options.cc"],
+    hdrs = ["solver_options.h"],
     deps = [
         ":solver_id",
-    ]
+    ],
 )
 
 drake_cc_library(
@@ -306,6 +306,7 @@ drake_cc_library(
         ":snopt_solver",
         ":solution_result",
         ":solver_id",
+        ":solver_options",
         ":solver_result",
         ":sos_basis_generator",
         ":symbolic_extraction",
@@ -588,6 +589,7 @@ drake_cc_library(
         ":program_attribute",
         ":solution_result",
         ":solver_id",
+        ":solver_options",
         ":solver_result",
         "//common:autodiff",
         "//common:essential",
