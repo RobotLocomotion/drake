@@ -356,9 +356,8 @@ class TestCustom(unittest.TestCase):
             class CustomAbstractSystem(LeafSystem_[T]):
                 def __init__(self):
                     LeafSystem_[T].__init__(self)
-                    test_input_type = AbstractValue.Make(
-                        default_value)
-                    self.input_port = self._DeclareAbstractInputPort("in")
+                    self.input_port = self._DeclareAbstractInputPort(
+                        "in", AbstractValue.Make(default_value))
                     self.output_port = self._DeclareAbstractOutputPort(
                         "out",
                         lambda: AbstractValue.Make(default_value),
@@ -384,3 +383,23 @@ class TestCustom(unittest.TestCase):
             system.CalcOutput(context, output)
             value = output.get_data(0)
             self.assertEqual(value.get_value(), expected_output_value)
+
+    def test_deprecated_abstract_input_port(self):
+        # A system that takes a Value[object] on its input, and parses it to a
+        # float on its output.
+        class ParseFloatSystem(LeafSystem_[float]):
+            def __init__(self):
+                LeafSystem_[float].__init__(self)
+                self._DeclareAbstractInputPort("in")
+                self._DeclareVectorOutputPort("out", BasicVector(1), self._Out)
+
+            def _Out(self, context, y_data):
+                py_obj = self.EvalAbstractInput(context, 0).get_value()
+                y_data.SetAtIndex(0, float(py_obj))
+
+        system = ParseFloatSystem()
+        context = system.CreateDefaultContext()
+        output = system.AllocateOutput()
+        context.FixInputPort(0, AbstractValue.Make("22.2"))
+        system.CalcOutput(context, output)
+        self.assertEqual(output.get_vector_data(0).GetAtIndex(0), 22.2)
