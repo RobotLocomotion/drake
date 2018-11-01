@@ -7,20 +7,40 @@
 namespace drake {
 namespace geometry {
 
+/** The data for reporting the signed distance from a query point to a geometry.
+ * @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+ */
+
 template <typename T>
 struct SignedDistanceFieldValue{
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SignedDistanceFieldValue)
 
   SignedDistanceFieldValue() = default;
 
-  SignedDistanceFieldValue(GeometryId a, const Vector3<T>& near, T dist,
-                           const Vector3<T>& grad)
-  : anchored_id(a), nearest_point(near), distance(dist), gradient(grad) {}
+  /** Constructor
+   * @param id_G_in  The id of the geometry G to which we measure distance from
+   *                 the query point.
+   * @param p_GN_in  The position of the nearest point N on G's surface from
+   *                 the query point, espressed in G's frame.
+   * @param dist     The distance from the query point Q to the nearest point N.
+   * @param v_QN_in  The gradient vector of the distance function with
+   *                 respect to the query point, expressed in Q's frame.
+   */
+  SignedDistanceFieldValue(GeometryId id_G_in, const Vector3<T>& p_GN_in,
+                           T dist, const Vector3<T>& v_QN_in)
+  : id_G(id_G_in), p_GN(p_GN_in), distance(dist), v_QN(v_QN_in) {}
 
-  GeometryId anchored_id;
-  Vector3<T> nearest_point;
+  /** The id of the geometry G to which we measure distance from the query
+   * point */
+  GeometryId id_G;
+  /** The position of the point N on the geometry G's surface nearest to the
+   * query point, expressed in G's frame. */
+  Vector3<T> p_GN;
+  /** The distance from the query point to the nearest point N */
   T distance{};
-  Vector3<T> gradient;
+  /** The gradient vector ∂d/∂q of the distance function with respect to the
+   * query point Q, expressed in Q's frame */
+  Vector3<T> v_QN;
 };
 
 }  // namespace geometry
