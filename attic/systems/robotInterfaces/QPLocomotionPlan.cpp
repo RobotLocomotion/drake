@@ -10,7 +10,6 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/constants.h"
-#include "drake/examples/atlas/atlasUtil.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/expmap.h"
@@ -18,6 +17,7 @@
 #include "drake/math/quaternion.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/controllers/polynomial_encode_decode.h"
+#include "drake/systems/robotInterfaces/atlasUtil.h"
 #include "drake/systems/robotInterfaces/convex_hull.h"
 #include "drake/systems/robotInterfaces/verify_subtype_sizes.h"
 #include "drake/util/drakeGeometryUtil.h"
