@@ -1,4 +1,4 @@
-"""Provides Sphinx plugins / monkey patches to:
+"""Provides Sphinx extensions / monkey patches to:
  - Remove excessive bases when documenting inheritance
  - Document parameterized bindings of templated methods / classes
 

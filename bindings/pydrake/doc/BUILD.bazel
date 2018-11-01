@@ -9,8 +9,7 @@ drake_py_binary(
     name = "gen_sphinx",
     srcs = [
         "gen_sphinx.py",
-        # TODO(eric.cousineau): Rename to `pydrake_sphinx_extension.py`.
-        "sphinx_pydrake.py",  # Plugin.
+        "pydrake_sphinx_extension.py",
     ],
     add_test_rule = 1,
     data = [
