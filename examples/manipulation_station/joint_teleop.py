@@ -98,5 +98,6 @@ teleop.set(q0)
 context.FixInputPort(station.GetInputPort(
     "iiwa_feedforward_torque").get_index(), np.zeros(7))
 
+simulator.set_publish_every_time_step(False)
 simulator.set_target_realtime_rate(args.target_realtime_rate)
 simulator.StepTo(args.duration)
