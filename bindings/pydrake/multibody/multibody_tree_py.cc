@@ -548,6 +548,9 @@ void init_multibody_plant(py::module m) {
              doc.MultibodyPlant.GetModelInstanceByName.doc);
     // Geometry.
     cls
+        .def("RegisterAsSourceForSceneGraph",
+             &Class::RegisterAsSourceForSceneGraph, py::arg("scene_graph"),
+             doc.MultibodyPlant.RegisterAsSourceForSceneGraph.doc)
         .def("get_source_id", &Class::get_source_id,
              doc.MultibodyPlant.get_source_id.doc)
         .def("get_geometry_query_input_port",
@@ -558,7 +561,9 @@ void init_multibody_plant(py::module m) {
              doc.MultibodyPlant.get_geometry_poses_output_port.doc)
         .def("geometry_source_is_registered",
              &Class::geometry_source_is_registered,
-             doc.MultibodyPlant.geometry_source_is_registered.doc);
+             doc.MultibodyPlant.geometry_source_is_registered.doc)
+        .def("GetBodyFromFrameId", &Class::GetBodyFromFrameId,
+             py_reference_internal, doc.MultibodyPlant.GetBodyFromFrameId.doc);
     // Port accessors.
     cls
         .def("get_actuation_input_port",

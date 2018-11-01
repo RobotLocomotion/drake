@@ -136,6 +136,7 @@ drake_pybind_library(
     name = "geometry_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/systems:systems_pybind",
         "//bindings/pydrake/util:deprecation_pybind",
         "//lcmtypes:viewer",
     ],
