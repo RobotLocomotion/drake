@@ -234,7 +234,11 @@ void DefineFrameworkPySemantics(py::module m) {
            py_reference_internal)
       .def("Eval", [](const OutputPort<T>* self, const Context<T>& context) {
              // Use type-erased signature to get value.
-             py::object value_ref = py::cast(&self->EvalAbstract(context));
+             py::object value_ref = py::cast(
+                 &self->EvalAbstract(context),
+                 // TODO(eric.cousineau): Figure out why `py_reference` is
+                 // necessary (#9398).
+                 py_reference);
              return value_ref.attr("get_value")();
            }, doc.OutputPort.Eval.doc);
 
