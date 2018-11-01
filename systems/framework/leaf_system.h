@@ -80,9 +80,9 @@ static T GetNextSampleTime(
 /// Drake has been designed to admit discrete systems, which are modeled by
 /// difference equations, in addition to continuous systems (modeled by ordinary
 /// differential equations). A simple difference equation is:
-/// @code
+/// @verbatim
 /// x[n+1] = x[n] + 1
-/// @endcode
+/// @endverbatim
 /// where `x` ∈ ℝ is the discrete variable ("discrete" refers to the
 /// countability of the elements of the sequence, x[1], ..., x[n] and not the
 /// values that x can take) and `n` ∈ ℤ is the variable iterate. The
@@ -98,7 +98,7 @@ static T GetNextSampleTime(
 /// class SimpleDiscreteSystem : public LeafSystem<double> {
 ///  public:
 ///   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleDiscreteSystem)
-///   SimpleHybridSystem() {
+///   SimpleDiscreteSystem() {
 ///     this->DeclarePeriodicDiscreteUpdate(kPeriod, kOffset);
 ///     this->DeclareDiscreteState(1 /* single state variable */);
 ///   }
@@ -108,7 +108,7 @@ static T GetNextSampleTime(
 ///       const Context<double>& context,
 ///       const std::vector<const DiscreteUpdateEvent<double>*>&,
 ///       DiscreteValues<double>* x_next) const override {
-///     double x = context.get_discrete_state()[0];
+///     const double x = context.get_discrete_state()[0];
 ///     (*x_next)[0] = x + 1;
 ///   }
 ///   const double kPeriod = 1.0;  // Update every second (h=1).
@@ -134,10 +134,10 @@ static T GetNextSampleTime(
 /// (resulting in slightly different evolutions) in Drake: the first update can
 /// happen at time zero or it can happen at time `h`. The two sequences below
 /// show the result of applying both strategies to `x[0] = x(0⁻) = 0`.
-/// @code
+/// @verbatim
 /// x(0⁺) = 1, x(1⁺) = 2, ..., x(i⁺) = i + 1    (first update at time zero)
 /// x(1⁺) = 1, x(2⁺) = 2, ..., x(i⁺) = i        (first update at time h)
-/// @endcode
+/// @endverbatim
 /// Note that the first element in each sequence is `x[1]`, the second `x[2]`,
 /// etc. Although the aggregate behavior differs, the two sequences do match
 /// at the pre-update time for the first sequence and the post-update time of
@@ -149,10 +149,10 @@ static T GetNextSampleTime(
 /// `h = 1`, `x[0] = 0`, and `u(t) = t`. Applying the two strategies to
 /// initial conditions `x[0] = x(0⁻) = 0` (i.e., advancing the system through
 /// time using Drake's Simulator)  yields:
-/// @code
+/// @verbatim
 /// x(0⁺) = 0, x(1⁺) = 1, x(2⁺) = 3 ...        (first update at time zero)
 /// x(1⁺) = 1, x(2⁺) = 3, x(3⁺) = 6 ...        (first update at time h)
-/// @endcode
+/// @endverbatim
 /// See the class documentation for Simulator for a detailed understanding of
 /// the stepping process.
 ///

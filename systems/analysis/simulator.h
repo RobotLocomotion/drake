@@ -63,15 +63,38 @@ namespace systems {
 /// simulation mechanics in order to attain the desired state over time, and
 /// this behavior is dependent on the ordering in which events are processed.
 ///
-/// In StepTo(), Simulator performs the following steps repeatedly:
-/// 1. Updates state variables without restriction (via an
-///    UnrestrictedUpdateEvent),
-/// 2. Updates discrete state variables (via a DiscreteUpdateEvent),
-/// 3. Updates continuous variables (both time and state), meaning integrating
-///    the smooth system (the ODE or DAE) forward in time- up to the next Event-
-///    by calling System::CalcTimeDerivatives() (*only called if the system has
-///    declared some continuous state*),
-/// 4. Generates any output (via a PublishEvent).
+/// The pseudocode for the algorithm that the simulator uses to step the state
+/// from time and state `{ t0, xc(t0), xd(t0⁻), xa(t0⁻) }` forward in time
+/// by length _no greater_ than Δt is: 
+/// @verbatim
+/// Step(t0, xc(t0⁻), xd(t0⁻), xa(t0⁻), Δt)
+///
+///   % Update any variables (no restrictions).
+///   { xc(t0*), xd(t0*), xa(t0*) } ← 
+///       DoAnyUnrestrictedUpdates(t0, xc(t0⁻), xd(t0⁻), xa(t0⁻))
+///
+///   % Update discrete variables.
+///   xd(t0⁺) ← DoAnyDiscreteUpdates(t0,  xc(t0*), xd(t0*), xa(t0*))
+///
+///   % See how far it is safe to integrate without missing any events.
+///   tₑ ← NextEventTime(t0, xc(t0*), xd(t0⁺), xa(t0*))
+///
+///   % Integrate continuous variables forward in time.
+///   h ← min(tₑ - t0, Δt)
+///   { t₁, xc(t₁⁻) } ← Integrate(t0, xc(t0*), xd(t0⁺), xa(t0*), h)
+///
+///   % Hold discrete and abstract variables values from t0* and t0⁺ to t₁⁻.
+///   xd(t₁⁻) ← xd(t0⁺)
+///   xa(t₁⁻) ← xa(t0*)
+///
+///   DoAnyPublishes(t₁, xc(t₁⁻), xd(t₁⁻), xa(t₁⁻))
+///
+///   return { t₁, xc(t₁⁻), xd(t₁⁻), xa(t₁⁻) }
+/// @endverbatim
+/// where we use the notation `xd(t⁻)` to denote a variable before any
+/// instantaneous (unrestricted or discrete) updates, `xd(t*)` to denote the
+/// same variable after an unrestricted update, and `xd(t⁺)` to denote the same
+/// variable after a discrete update. 
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 /// Instantiated templates for the following kinds of T's are provided and
