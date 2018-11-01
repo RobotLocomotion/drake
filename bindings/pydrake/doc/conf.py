@@ -27,8 +27,8 @@ release = u''
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
-    # Precede napolean, since it's greedy on `autodoc-skip-member`
-    'sphinx_pydrake',
+    # Precede napoleon, since it's greedy on `autodoc-skip-member`
+    'pydrake_sphinx_extension',
     'sphinx.ext.napoleon',
 ]
 
