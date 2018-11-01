@@ -90,8 +90,7 @@ void ParseBody(const PackageMap& package_map,
                ModelInstanceIndex model_instance,
                XMLElement* node,
                detail::MaterialMap* materials,
-               multibody_plant::MultibodyPlant<double>* plant,
-               geometry::SceneGraph<double>* scene_graph) {
+               multibody_plant::MultibodyPlant<double>* plant) {
   std::string drake_ignore;
   if (detail::ParseStringAttribute(node, "drake_ignore", &drake_ignore) &&
       drake_ignore == std::string("true")) {
@@ -121,7 +120,7 @@ void ParseBody(const PackageMap& package_map,
   const RigidBody<double>& body =
       plant->AddRigidBody(body_name, model_instance, M_BBo_B);
 
-  if (scene_graph != nullptr) {
+  if (plant->geometry_source_is_registered()) {
     for (XMLElement* visual_node = node->FirstChildElement("visual");
          visual_node;
          visual_node = visual_node->NextSiblingElement("visual")) {
@@ -130,8 +129,7 @@ void ParseBody(const PackageMap& package_map,
                               visual_node, materials);
       plant->RegisterVisualGeometry(
           body, geometry_instance.pose(), geometry_instance.shape(),
-          geometry_instance.name(), geometry_instance.visual_material(),
-          scene_graph);
+          geometry_instance.name(), geometry_instance.visual_material());
     }
 
     for (XMLElement* collision_node = node->FirstChildElement("collision");
@@ -143,7 +141,7 @@ void ParseBody(const PackageMap& package_map,
                                  collision_node, &friction);
       plant->RegisterCollisionGeometry(
           body, geometry_instance.pose(), geometry_instance.shape(),
-          geometry_instance.name(), friction, scene_graph);
+          geometry_instance.name(), friction);
     }
   }
 }
@@ -424,8 +422,7 @@ ModelInstanceIndex ParseUrdf(
     const PackageMap& package_map,
     const std::string& root_dir,
     XMLDocument* xml_doc,
-    multibody_plant::MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph) {
+    multibody_plant::MultibodyPlant<double>* plant) {
 
   XMLElement* node = xml_doc->FirstChildElement("robot");
   if (!node) {
@@ -458,7 +455,7 @@ ModelInstanceIndex ParseUrdf(
        link_node;
        link_node = link_node->NextSiblingElement("link")) {
     ParseBody(package_map, root_dir, model_instance, link_node,
-              &materials, plant, scene_graph);
+              &materials, plant);
   }
 
   // TODO(sam.creasey) Parse collision filter groups.
@@ -530,8 +527,7 @@ ModelInstanceIndex AddModelFromUrdfFile(
     plant->RegisterAsSourceForSceneGraph(scene_graph);
   }
 
-  return ParseUrdf(model_name_in, package_map, root_dir,
-                   &xml_doc, plant, scene_graph);
+  return ParseUrdf(model_name_in, package_map, root_dir, &xml_doc, plant);
 }
 
 ModelInstanceIndex AddModelFromUrdfFile(

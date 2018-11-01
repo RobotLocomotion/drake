@@ -361,7 +361,6 @@ void AddLinksFromSpecification(
     const ModelInstanceIndex model_instance,
     const sdf::Model& model,
     multibody_plant::MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph,
     const parsing::PackageMap& package_map,
     const std::string& root_dir) {
 
@@ -384,7 +383,7 @@ void AddLinksFromSpecification(
     const RigidBody<double>& body =
         plant->AddRigidBody(link.Name(), model_instance, M_BBo_B);
 
-    if (scene_graph != nullptr) {
+    if (plant->geometry_source_is_registered()) {
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
            ++visual_index) {
         const sdf::Visual sdf_visual = detail::ResolveVisualUri(
@@ -396,8 +395,7 @@ void AddLinksFromSpecification(
         if (geometry_instance) {
           plant->RegisterVisualGeometry(
               body, geometry_instance->pose(), geometry_instance->shape(),
-              geometry_instance->name(), geometry_instance->visual_material(),
-              scene_graph);
+              geometry_instance->name(), geometry_instance->visual_material());
         }
       }
 
@@ -415,7 +413,7 @@ void AddLinksFromSpecification(
               detail::MakeCoulombFrictionFromSdfCollisionOde(sdf_collision);
           plant->RegisterCollisionGeometry(body, X_LG, *shape,
                                            sdf_collision.Name(),
-                                           coulomb_friction, scene_graph);
+                                           coulomb_friction);
         }
       }
     }
@@ -472,7 +470,6 @@ ModelInstanceIndex AddModelFromSpecification(
     const sdf::Model& model,
     const std::string& model_name,
     multibody_plant::MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph,
     const parsing::PackageMap& package_map,
     const std::string& root_dir) {
 
@@ -491,7 +488,7 @@ ModelInstanceIndex AddModelFromSpecification(
 
   // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
   AddLinksFromSpecification(
-      model_instance, model, plant, scene_graph, package_map, root_dir);
+      model_instance, model, plant, package_map, root_dir);
 
   // Add all the joints
   // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
@@ -513,6 +510,15 @@ ModelInstanceIndex AddModelFromSpecification(
 
   return model_instance;
 }
+
+void MaybeRegisterSceneGraph(
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph) {
+  if (!plant->geometry_source_is_registered() && scene_graph != nullptr) {
+    plant->RegisterAsSourceForSceneGraph(scene_graph);
+  }
+}
+
 }  // namespace
 
 ModelInstanceIndex AddModelFromSdfFile(
@@ -535,15 +541,13 @@ ModelInstanceIndex AddModelFromSdfFile(
   // Get the only model in the file.
   const sdf::Model& model = *root.ModelByIndex(0);
 
-  if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
-    plant->RegisterAsSourceForSceneGraph(scene_graph);
-  }
+  MaybeRegisterSceneGraph(plant, scene_graph);
 
   const std::string model_name =
       model_name_in.empty() ? model.Name() : model_name_in;
 
   return AddModelFromSpecification(
-      model, model_name, plant, scene_graph, package_map, root_dir);
+      model, model_name, plant, package_map, root_dir);
 }
 
 ModelInstanceIndex AddModelFromSdfFile(
@@ -582,9 +586,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     throw std::runtime_error("A <world> and <model> cannot be siblings.");
   }
 
-  if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
-    plant->RegisterAsSourceForSceneGraph(scene_graph);
-  }
+  MaybeRegisterSceneGraph(plant, scene_graph);
 
   std::vector<ModelInstanceIndex> model_instances;
 
@@ -596,7 +598,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
       // Get the model.
       const sdf::Model& model = *root.ModelByIndex(i);
       model_instances.push_back(AddModelFromSpecification(
-            model, model.Name(), plant, scene_graph, package_map, root_dir));
+            model, model.Name(), plant, package_map, root_dir));
     }
   } else {
     // Load the world and all the models in the world.
@@ -607,7 +609,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
       // Get the model.
       const sdf::Model& model = *world.ModelByIndex(model_index);
       model_instances.push_back(AddModelFromSpecification(
-            model, model.Name(), plant, scene_graph, package_map, root_dir));
+            model, model.Name(), plant, package_map, root_dir));
     }
   }
 
