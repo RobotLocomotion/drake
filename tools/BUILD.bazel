@@ -48,6 +48,11 @@ config_setting(
 )
 
 config_setting(
+    name = "with_snopt_fortran",
+    values = {"define": "WITH_SNOPT_FORTRAN=ON"},
+)
+
+config_setting(
     name = "with_snopt_f2c",
     values = {"define": "WITH_SNOPT_F2C=ON"},
 )

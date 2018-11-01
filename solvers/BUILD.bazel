@@ -631,6 +631,10 @@ drake_cc_library(
     name = "snopt_solver",
     srcs = select({
         "//tools:with_snopt": [
+            "snopt_solver_f2c.cc",
+            "snopt_solver_common.cc",
+        ],
+        "//tools:with_snopt_fortran": [
             "snopt_solver.cc",
             "snopt_solver_common.cc",
         ],
@@ -658,10 +662,18 @@ drake_cc_library(
         "//tools:with_snopt_f2c": [
             "-fpermissive",
         ],
+        "//tools:with_snopt": [
+            "-fpermissive",
+        ],
         "//conditions:default": [],
     }),
     deps = select({
         "//tools:with_snopt": [
+            ":mathematical_program_api",
+            "//math:autodiff",
+            "@snopt//:snopt_c",
+        ],
+        "//tools:with_snopt_fortran": [
             ":mathematical_program_api",
             "//math:autodiff",
             "@snopt//:snopt_cwrap",
