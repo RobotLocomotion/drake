@@ -113,7 +113,7 @@ class TestMultibodyTree(unittest.TestCase):
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         plant = MultibodyPlant(time_step=0.01)
         model_instance = AddModelFromSdfFile(
-            file_name=file_name, plant=plant, scene_graph=None)
+            file_name=file_name, plant=plant)
         self.assertIsInstance(model_instance, ModelInstanceIndex)
         plant.Finalize()
         benchmark = MakeAcrobotPlant(AcrobotParameters(), True)
@@ -213,13 +213,12 @@ class TestMultibodyTree(unittest.TestCase):
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         plant = MultibodyPlant(time_step=0.01)
         model_instance = AddModelFromSdfFile(
-            file_name=file_name, plant=plant, scene_graph=None)
+            file_name=file_name, plant=plant)
         self.assertIsInstance(model_instance, ModelInstanceIndex)
 
         plant = MultibodyPlant(time_step=0.01)
         model_instance = AddModelFromSdfFile(
-            file_name=file_name, model_name="acrobot", plant=plant,
-            scene_graph=None)
+            file_name=file_name, model_name="acrobot", plant=plant)
 
     def test_multibody_tree_kinematics(self):
         file_name = FindResourceOrThrow(
@@ -327,11 +326,9 @@ class TestMultibodyTree(unittest.TestCase):
         plant = MultibodyPlant(timestep)
 
         iiwa_model = AddModelFromSdfFile(
-            file_name=iiwa_sdf_path, model_name='robot',
-            scene_graph=None, plant=plant)
+            file_name=iiwa_sdf_path, model_name='robot', plant=plant)
         gripper_model = AddModelFromSdfFile(
-            file_name=wsg50_sdf_path, model_name='gripper',
-            scene_graph=None, plant=plant)
+            file_name=wsg50_sdf_path, model_name='gripper', plant=plant)
 
         # Weld the base of arm and gripper to reduce the number of states.
         X_EeGripper = Isometry3.Identity()

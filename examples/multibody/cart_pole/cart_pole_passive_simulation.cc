@@ -62,7 +62,7 @@ int do_main() {
       -9.81 * Vector3<double>::UnitZ());
 
   // Now the model is complete.
-  cart_pole.Finalize(&scene_graph);
+  cart_pole.Finalize();
 
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(cart_pole.geometry_source_is_registered());
