@@ -4,6 +4,7 @@
 
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/bindings/pydrake/util/deprecation_pybind.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_visualization.h"
@@ -53,6 +54,11 @@ PYBIND11_MODULE(geometry, m) {
   BindIdentifier<GeometryId>(m, "GeometryId");
 
   py::module::import("pydrake.systems.framework");
+  py::class_<SceneGraphInspector<T>>(m, "SceneGraphInspector",
+                                     doc.SceneGraphInspector.doc)
+      .def("GetFrameId", &SceneGraphInspector<T>::GetFrameId,
+           py::arg("geometry_id"), doc.SceneGraphInspector.GetFrameId.doc);
+
   py::class_<SceneGraph<T>, LeafSystem<T>>(m, "SceneGraph", doc.SceneGraph.doc)
       .def(py::init<>(), doc.SceneGraph.ctor.doc_4)
       .def("get_source_pose_port", &SceneGraph<T>::get_source_pose_port,
@@ -66,6 +72,14 @@ PYBIND11_MODULE(geometry, m) {
            py::overload_cast<const std::string&>(  // BR
                &SceneGraph<T>::RegisterSource),
            py::arg("name") = "", doc.SceneGraph.RegisterSource.doc);
+
+  py::class_<QueryObject<T>>(m, "QueryObject", doc.QueryObject.doc)
+      .def("inspector", &QueryObject<T>::inspector, py_reference_internal,
+           doc.QueryObject.inspector.doc)
+      .def("ComputePointPairPenetration",
+           &QueryObject<T>::ComputePointPairPenetration,
+           doc.QueryObject.ComputePointPairPenetration.doc);
+  pysystems::AddValueInstantiation<QueryObject<T>>(m);
 
   py::module::import("pydrake.systems.lcm");
   m.def("ConnectDrakeVisualizer",

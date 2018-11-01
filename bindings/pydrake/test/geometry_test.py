@@ -38,6 +38,12 @@ class TestGeometry(unittest.TestCase):
             mut.DispatchLoadMessage(
                 scene_graph=scene_graph, lcm=lcm)
 
+    def test_query_object_api(self):
+        # TODO(eric.cousineau): Create simple, self-contained unittests.
+        # Pending that, this API is exercised via
+        # `test_scene_graph_queries` in `multibody_tree_test.py`.
+        pass
+
     def test_identifier_api(self):
         cls_list = [
             mut.SourceId,
