@@ -69,11 +69,10 @@ simulator = Simulator(diagram)
 context = diagram.GetMutableSubsystemContext(station,
                                              simulator.get_mutable_context())
 
-if args.hardware:
-    # Eval the output port once to read the initial positions of the IIWA.
-    q0 = station.GetOutputPort("iiwa_position_measured").Eval(
-        context).get_value()
-else:
+context.FixInputPort(station.GetInputPort(
+    "iiwa_feedforward_torque").get_index(), np.zeros(7))
+
+if not args.hardware:
     # Set the initial positions of the IIWA to a comfortable configuration
     # inside the workspace of the station.
     q0 = [0, 0.6, 0, -1.75, 0, 1.0, 0]
@@ -94,9 +93,13 @@ else:
             station.get_mutable_multibody_plant(),
             context))
 
+# Eval the output port once to read the initial positions of the IIWA.
+q0 = station.GetOutputPort("iiwa_position_measured").Eval(
+    context).get_value()
 teleop.set(q0)
-context.FixInputPort(station.GetInputPort(
-    "iiwa_feedforward_torque").get_index(), np.zeros(7))
+
+# This is important to avoid duplicate publishes to the hardware interface:
+simulator.set_publish_every_time_step(False)
 
 simulator.set_target_realtime_rate(args.target_realtime_rate)
 simulator.StepTo(args.duration)
