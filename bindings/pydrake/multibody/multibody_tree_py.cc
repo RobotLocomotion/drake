@@ -548,6 +548,9 @@ void init_multibody_plant(py::module m) {
              doc.MultibodyPlant.GetModelInstanceByName.doc);
     // Geometry.
     cls
+        .def("RegisterAsSourceForSceneGraph",
+             &Class::RegisterAsSourceForSceneGraph,
+             doc.MultibodyPlant.RegisterAsSourceForSceneGraph.doc)
         .def("get_source_id", &Class::get_source_id,
              doc.MultibodyPlant.get_source_id.doc)
         .def("get_geometry_query_input_port",

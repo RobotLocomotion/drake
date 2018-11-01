@@ -114,6 +114,7 @@ ManipulationStation<T>::ManipulationStation(double time_step)
   // the raw pointers, which should stay valid for the lifetime of the Diagram.
   plant_ = owned_plant_.get();
   scene_graph_ = owned_scene_graph_.get();
+  plant_->RegisterAsSourceForSceneGraph(scene_graph_);
 
   // Add the table and 80/20 workcell frame.
   const double dx_table_center_to_robot_base = 0.3257;
@@ -121,7 +122,7 @@ ManipulationStation<T>::ManipulationStation(double time_step)
   const std::string table_sdf_path = FindResourceOrThrow(
       "drake/examples/manipulation_station/models/amazon_table_simplified.sdf");
   const auto table =
-      AddModelFromSdfFile(table_sdf_path, "table", plant_, scene_graph_);
+      AddModelFromSdfFile(table_sdf_path, "table", plant_);
   plant_->WeldFrames(
       plant_->world_frame(), plant_->GetFrameByName("amazon_table", table),
       RigidTransform<double>(
@@ -133,7 +134,7 @@ ManipulationStation<T>::ManipulationStation(double time_step)
       "drake/manipulation/models/iiwa_description/"
       "sdf/iiwa14_no_collision.sdf");
   iiwa_model_ =
-      AddModelFromSdfFile(iiwa_sdf_path, "iiwa", plant_, scene_graph_);
+      AddModelFromSdfFile(iiwa_sdf_path, "iiwa", plant_);
   plant_->WeldFrames(plant_->world_frame(),
                      plant_->GetFrameByName("iiwa_link_0", iiwa_model_));
 
@@ -142,7 +143,7 @@ ManipulationStation<T>::ManipulationStation(double time_step)
       "drake/manipulation/models/"
       "wsg_50_description/sdf/schunk_wsg_50.sdf");
   wsg_model_ =
-      AddModelFromSdfFile(wsg_sdf_path, "gripper", plant_, scene_graph_);
+      AddModelFromSdfFile(wsg_sdf_path, "gripper", plant_);
   const Isometry3d wsg_pose =
       RigidTransform<double>(
           RollPitchYaw<double>(M_PI_2, 0, M_PI_2).ToRotationMatrix(),
@@ -191,7 +192,7 @@ void ManipulationStation<T>::AddCupboard() {
   const std::string sdf_path = FindResourceOrThrow(
       "drake/examples/manipulation_station/models/cupboard.sdf");
   const auto cupboard =
-      AddModelFromSdfFile(sdf_path, "cupboard", plant_, scene_graph_);
+      AddModelFromSdfFile(sdf_path, "cupboard", plant_);
   plant_->WeldFrames(
       plant_->world_frame(), plant_->GetFrameByName("cupboard_body", cupboard),
       RigidTransform<double>(
@@ -208,7 +209,7 @@ void ManipulationStation<T>::Finalize() {
   //   - cannot finalize plant until all of my objects are added, and
   //   - cannot wire up my diagram until we have finalized the plant.
 
-  plant_->Finalize(scene_graph_);
+  plant_->Finalize();
 
   systems::DiagramBuilder<T> builder;
 

@@ -63,7 +63,7 @@ int DoMain() {
       -9.81 * Vector3<double>::UnitZ());
 
   // Now the model is complete.
-  kuka_plant.Finalize(&scene_graph);
+  kuka_plant.Finalize();
   DRAKE_THROW_UNLESS(kuka_plant.num_positions() == 7);
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(!!kuka_plant.get_source_id());
