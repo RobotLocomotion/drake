@@ -64,6 +64,7 @@ void DoMain() {
 
   MultibodyPlant<double>& plant =
       *builder.AddSystem<MultibodyPlant>(FLAGS_max_time_step);
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
   std::string hand_model_path;
   if (FLAGS_use_right_hand)
     hand_model_path = FindResourceOrThrow(
@@ -76,10 +77,8 @@ void DoMain() {
 
   const std::string object_model_path = FindResourceOrThrow(
       "drake/examples/allegro_hand/joint_control/simple_mug.sdf");
-  multibody::parsing::AddModelFromSdfFile(hand_model_path, &plant,
-                                          &scene_graph);
-  multibody::parsing::AddModelFromSdfFile(object_model_path, &plant,
-                                          &scene_graph);
+  multibody::parsing::AddModelFromSdfFile(hand_model_path, &plant);
+  multibody::parsing::AddModelFromSdfFile(object_model_path, &plant);
 
   // Weld the hand to the world frame
   const auto& joint_hand_root = plant.GetBodyByName("hand_root");
@@ -93,7 +92,7 @@ void DoMain() {
         -9.81 * Eigen::Vector3d::UnitZ());
 
   // Finished building the plant
-  plant.Finalize(&scene_graph);
+  plant.Finalize();
 
   // Visualization
   geometry::ConnectDrakeVisualizer(&builder, scene_graph);

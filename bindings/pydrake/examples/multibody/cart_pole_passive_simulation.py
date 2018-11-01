@@ -33,10 +33,10 @@ def main():
     builder = DiagramBuilder()
     scene_graph = builder.AddSystem(SceneGraph())
     cart_pole = builder.AddSystem(MultibodyPlant(time_step=args.time_step))
-    AddModelFromSdfFile(
-        file_name=file_name, plant=cart_pole, scene_graph=scene_graph)
+    cart_pole.RegisterAsSourceForSceneGraph(scene_graph)
+    AddModelFromSdfFile(file_name=file_name, plant=cart_pole)
     cart_pole.AddForceElement(UniformGravityFieldElement([0, 0, -9.81]))
-    cart_pole.Finalize(scene_graph)
+    cart_pole.Finalize()
     assert cart_pole.geometry_source_is_registered()
 
     builder.Connect(

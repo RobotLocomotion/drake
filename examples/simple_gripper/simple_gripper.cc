@@ -123,13 +123,11 @@ const double kPadMinorRadius = 6e-3;   // 6 mm.
 // small spheres, approximates a torus attached to the finger.
 //
 // @param[in] plant the MultiBodyPlant in which to add the pads.
-// @param[in] scene_graph the associated SceneGraph.
 // @param[in] pad_offset the ring offset along the x-axis in the finger
 // coordinate frame, i.e., how far the ring protrudes from the center of the
 // finger.
 // @param[in] finger the Body representing the finger
 void AddGripperPads(MultibodyPlant<double>* plant,
-                    SceneGraph<double>* scene_graph,
                     const double pad_offset, const Body<double>& finger) {
   const int sample_count = FLAGS_ring_samples;
   const double sample_rotation = FLAGS_ring_orient * M_PI / 180.0;  // radians.
@@ -157,13 +155,11 @@ void AddGripperPads(MultibodyPlant<double>* plant,
         FLAGS_ring_static_friction, FLAGS_ring_static_friction);
 
     plant->RegisterCollisionGeometry(finger, X_FS, Sphere(kPadMinorRadius),
-                                     "collision" + std::to_string(i), friction,
-                                     scene_graph);
+                                     "collision" + std::to_string(i), friction);
 
     const geometry::VisualMaterial red(Vector4<double>(1.0, 0.0, 0.0, 1.0));
     plant->RegisterVisualGeometry(finger, X_FS, Sphere(kPadMinorRadius),
-                                  "visual" + std::to_string(i), red,
-                                  scene_graph);
+                                  "visual" + std::to_string(i), red);
   }
 }
 
@@ -179,13 +175,14 @@ int do_main() {
       FLAGS_time_stepping ?
       *builder.AddSystem<MultibodyPlant>(FLAGS_max_time_step) :
       *builder.AddSystem<MultibodyPlant>();
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
   std::string full_name =
       FindResourceOrThrow("drake/examples/simple_gripper/simple_gripper.sdf");
-  AddModelFromSdfFile(full_name, &plant, &scene_graph);
+  AddModelFromSdfFile(full_name, &plant);
 
   full_name =
       FindResourceOrThrow("drake/examples/simple_gripper/simple_mug.sdf");
-  AddModelFromSdfFile(full_name, &plant, &scene_graph);
+  AddModelFromSdfFile(full_name, &plant);
 
   // Obtain the "translate_joint" axis so that we know the direction of the
   // forced motions. We do not apply gravity if motions are forced in the
@@ -220,17 +217,17 @@ int do_main() {
     // We then fix everything to the right finger and leave the left finger
     // "free" with no applied forces (thus we see it not moving).
     const double finger_width = 0.007;  // From the visual in the SDF file.
-    AddGripperPads(&plant, &scene_graph, -pad_offset, right_finger);
-    AddGripperPads(&plant, &scene_graph,
+    AddGripperPads(&plant, -pad_offset, right_finger);
+    AddGripperPads(&plant,
                    -(FLAGS_grip_width + finger_width) + pad_offset,
                    right_finger);
   } else {
-    AddGripperPads(&plant, &scene_graph, -pad_offset, right_finger);
-    AddGripperPads(&plant, &scene_graph, +pad_offset, left_finger);
+    AddGripperPads(&plant, -pad_offset, right_finger);
+    AddGripperPads(&plant, +pad_offset, left_finger);
   }
 
   // Now the model is complete.
-  plant.Finalize(&scene_graph);
+  plant.Finalize();
 
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(FLAGS_penetration_allowance);

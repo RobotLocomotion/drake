@@ -74,7 +74,7 @@ GTEST_TEST(Box, UnderStiction) {
   plant.AddForceElement<UniformGravityFieldElement>(
       -g * Vector3<double>::UnitZ());
 
-  plant.Finalize(&scene_graph);  // Done creating the model.
+  plant.Finalize();  // Done creating the model.
 
   const MultibodyTree<double>& tree = plant.tree();
   // Set contact parameters.

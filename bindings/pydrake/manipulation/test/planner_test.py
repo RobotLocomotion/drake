@@ -65,8 +65,7 @@ class TestPlanner(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         plant = MultibodyPlant()
-        AddModelFromSdfFile(
-            file_name=file_name, plant=plant, scene_graph=None)
+        AddModelFromSdfFile(file_name=file_name, plant=plant)
         plant.Finalize()
 
         context = plant.CreateDefaultContext()
