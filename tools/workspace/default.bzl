@@ -67,6 +67,7 @@ load("@drake//tools/workspace/tinydir:repository.bzl", "tinydir_repository")
 load("@drake//tools/workspace/tinyobjloader:repository.bzl", "tinyobjloader_repository")  # noqa
 load("@drake//tools/workspace/tinyxml2:repository.bzl", "tinyxml2_repository")
 load("@drake//tools/workspace/tinyxml:repository.bzl", "tinyxml_repository")
+load("@drake//tools/workspace/u_msgpack_python:repository.bzl", "u_msgpack_python_repository")  # noqa
 load("@drake//tools/workspace/vtk:repository.bzl", "vtk_repository")
 load("@drake//tools/workspace/yaml_cpp:repository.bzl", "yaml_cpp_repository")
 load("@drake//tools/workspace/zlib:repository.bzl", "zlib_repository")
@@ -213,6 +214,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         tinyxml2_repository(name = "tinyxml2")
     if "tinyxml" not in excludes:
         tinyxml_repository(name = "tinyxml")
+    if "u_msgpack_python" not in excludes:
+        u_msgpack_python_repository(name = "u_msgpack_python", mirrors = mirrors)  # noqa
     if "vtk" not in excludes:
         vtk_repository(name = "vtk", mirrors = mirrors)
     if "yaml_cpp" not in excludes:

@@ -17,6 +17,7 @@ py_library(
     ]),
     imports = ["src"],
     visibility = ["//visibility:public"],
+    deps = ["@u_msgpack_python//:umsgpack"],
 )
 
 py_binary(

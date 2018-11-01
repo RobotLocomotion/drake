@@ -1,0 +1,20 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+
+licenses(["notice"])  # MIT
+
+py_library(
+    name = "umsgpack",
+    srcs = ["umsgpack.py"],
+    imports = ["."],
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    targets = [":umsgpack"],
+    docs = ["LICENSE"],
+    doc_dest = "share/doc/umsgpack",
+    visibility = ["//visibility:public"],
+)
