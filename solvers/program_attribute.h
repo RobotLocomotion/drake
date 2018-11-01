@@ -35,7 +35,7 @@ enum class ProgramAttribute {
 using ProgramAttributes = std::unordered_set<ProgramAttribute, DefaultHash>;
 
 /**
- * Returns true if @p subset is a subset of @p superset.
+ * Returns true if @p required is a subset of @p supported.
  */
 bool AreRequiredAttributesSupported(const ProgramAttributes& required,
                                     const ProgramAttributes& supported);

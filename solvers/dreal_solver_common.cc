@@ -33,10 +33,9 @@ bool DrealSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
           ProgramAttribute::kLinearConstraint,
           ProgramAttribute::kLorentzConeConstraint,
           ProgramAttribute::kRotatedLorentzConeConstraint,
-          ProgramAttribute::kPositiveSemidefiniteConstraint,
           ProgramAttribute::kLinearComplementarityConstraint,
           ProgramAttribute::kLinearCost, ProgramAttribute::kQuadraticCost,
-      });
+          ProgramAttribute::kBinaryVariable});
   return AreRequiredAttributesSupported(prog.required_capabilities(),
                                         solver_capabilities.access());
 }
