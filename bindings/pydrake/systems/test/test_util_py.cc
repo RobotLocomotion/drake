@@ -4,6 +4,7 @@
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/vector_system.h"
@@ -14,6 +15,7 @@ namespace drake {
 
 using systems::BasicVector;
 using systems::LeafSystem;
+using systems::Simulator;
 
 namespace pydrake {
 namespace {
@@ -123,6 +125,14 @@ PYBIND11_MODULE(test_util, m) {
       const LeafSystem<T>& system) {
     py::dict results;
     auto context = system.AllocateContext();
+    {
+      // Leverage simulator to call initialization events.
+      Simulator<T> simulator(system);
+      // Do not publish at initialization because we want to track publishes
+      // from only events of trigger type `kInitialization`.
+      simulator.set_publish_at_initialization(false);
+      simulator.Initialize();
+    }
     {
       // Call `Publish` to test `DoPublish`.
       auto events =
