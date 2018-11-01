@@ -52,12 +52,12 @@ MakePendulumPlant(const PendulumParameters& params,
     const math::RigidTransformd X_BGs(-params.l() * Vector3d::UnitZ());
     plant->RegisterVisualGeometry(point_mass, X_BGs.GetAsIsometry3(),
                                   Sphere(params.point_mass_radius()),
-                                  params.body_name(), scene_graph);
+                                  params.body_name());
 
     // Pose of the cylinder used to visualize the massless rod in frame B.
     const math::RigidTransformd X_BGc(-params.l() / 2.0 * Vector3d::UnitZ());
     plant->RegisterVisualGeometry(point_mass, X_BGc.GetAsIsometry3(),
-        Cylinder(params.massless_rod_radius(), params.l()), "arm", scene_graph);
+        Cylinder(params.massless_rod_radius(), params.l()), "arm");
   }
 
   const RevoluteJoint<double>& pin = plant->AddJoint<RevoluteJoint>(
@@ -76,7 +76,7 @@ MakePendulumPlant(const PendulumParameters& params,
   plant->AddForceElement<UniformGravityFieldElement>(
       -params.g() * Vector3d::UnitZ());
 
-  plant->Finalize(scene_graph);
+  plant->Finalize();
 
   return plant;
 }
