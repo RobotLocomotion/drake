@@ -5,7 +5,9 @@ from __future__ import print_function
 import pydrake.autodiffutils as mut
 from pydrake.autodiffutils import AutoDiffXd
 
+import copy
 import unittest
+
 import numpy as np
 import pydrake.math as drake_math
 
@@ -60,6 +62,9 @@ class TestAutoDiffXd(unittest.TestCase):
         self._check_scalar(
             autodiff_scalar_pass_through(1.),  # float
             AD(1., []))
+        # Ensure we can copy.
+        self._check_scalar(copy.copy(a), a)
+        self._check_scalar(copy.deepcopy(a), a)
 
     def test_array_api(self):
         a = AD(1, [1., 0])

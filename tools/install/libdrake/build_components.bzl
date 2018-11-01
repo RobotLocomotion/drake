@@ -33,6 +33,7 @@ LIBDRAKE_COMPONENTS = [
     "//common:drake_marker_shared_library",  # unpackaged
     "//common:text_logging_gflags_h",  # unpackaged
     "//examples/manipulation_station:manipulation_station",  # unpackaged
+    "//examples/manipulation_station:manipulation_station_hardware_interface",  # unpackaged  # noqa
     "//geometry",
     "//geometry/dev",
     "//geometry/dev/render",
@@ -80,4 +81,6 @@ LIBDRAKE_COMPONENTS = [
     "//systems/trajectory_optimization",
     "//util",
     # //examples/atlas:atlas_util (indirectly)
+    # //examples/kuka_iiwa_arm:iiwa_common (indirectly)
+    # //examples/kuka_iiwa_arm:iiwa_lcm (indirectly)
 ]

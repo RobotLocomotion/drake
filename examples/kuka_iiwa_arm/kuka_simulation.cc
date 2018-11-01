@@ -202,6 +202,7 @@ int DoMain() {
   // Simulate for a very long time.
   simulator.StepTo(FLAGS_simulation_sec);
 
+  lcm.StopReceiveThread();
   return 0;
 }
 

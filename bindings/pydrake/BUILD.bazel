@@ -8,14 +8,14 @@ load(
     "drake_cc_library",
 )
 load(
-    "//tools/skylark:drake_py.bzl",
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
     "drake_py_test",
     "drake_py_unittest",
 )
 load(
-    "//tools/skylark:pybind.bzl",
+    "@drake//tools/skylark:pybind.bzl",
     "drake_pybind_library",
     "generate_pybind_documentation_header",
     "get_drake_py_installs",
@@ -62,6 +62,7 @@ generate_pybind_documentation_header(
         "//examples/acrobot:acrobot_plant",
         "//examples/compass_gait:compass_gait",
         "//examples/manipulation_station:manipulation_station",
+        "//examples/manipulation_station:manipulation_station_hardware_interface",  # noqa
         "//examples/pendulum:pendulum_plant",
         "//examples/rimless_wheel:rimless_wheel",
         "//examples/van_der_pol:van_der_pol",
@@ -419,18 +420,19 @@ drake_py_unittest(
     ],
 )
 
-add_lint_tests(
-    python_lint_extra_srcs = [
-        ":test/all_install_test.py",
-        ":test/common_install_test.py",
-    ],
-)
-
 drake_py_binary(
     name = "math_example",
     srcs = ["math_example.py"],
     isolate = 1,
     deps = [
         ":math_py",
+    ],
+)
+
+add_lint_tests(
+    enable_clang_format_lint = True,
+    python_lint_extra_srcs = [
+        ":test/all_install_test.py",
+        ":test/common_install_test.py",
     ],
 )

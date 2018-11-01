@@ -119,6 +119,22 @@ PYBIND11_MODULE(rigid_body_tree, m) {
          doc.RigidBodyTree.compile.doc)
     .def("initialized", &RigidBodyTree<double>::initialized,
          doc.RigidBodyTree.initialized.doc)
+    .def("get_bodies",
+         [](const RigidBodyTree<double>& tree) {
+           auto& body_unique_ptrs = tree.get_bodies();
+           py::list py_bodies;
+           // Get self-reference to so that we can leverage keep-alive
+           // behavior.
+           py::object self = py::cast(&tree);
+           for (auto& body_unique_ptr : body_unique_ptrs) {
+            py_bodies.append(py::cast(
+                body_unique_ptr.get(), py_reference_internal, self));
+           }
+           return py_bodies;
+         },
+         doc.RigidBodyTree.get_bodies.doc)
+    .def("get_frames", &RigidBodyTree<double>::get_frames,
+         doc.RigidBodyTree.get_frames.doc)
     .def("drawKinematicTree", &RigidBodyTree<double>::drawKinematicTree,
          doc.RigidBodyTree.drawKinematicTree.doc)
     .def("getRandomConfiguration", [](const RigidBodyTree<double>& tree) {

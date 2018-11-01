@@ -120,22 +120,24 @@ Expression ExpandMultiplication(const Expression& e1, const Expression& e2) {
     // = c0 * e2 + c1 * e_{1,1} * e2 + ... + c_n * e_{1,n} * e2
     const double c0{get_constant_in_addition(e1)};
     const map<Expression, double>& m1{get_expr_to_coeff_map_in_addition(e1)};
-    return accumulate(
-        m1.begin(), m1.end(), ExpandMultiplication(c0, e2),
-        [&e2](const Expression& init, const pair<Expression, double>& p) {
-          return init + ExpandMultiplication(p.second, p.first, e2);
-        });
+    ExpressionAddFactory fac;
+    fac.AddExpression(ExpandMultiplication(c0, e2));
+    for (const pair<const Expression, double>& p : m1) {
+      fac.AddExpression(ExpandMultiplication(p.second, p.first, e2));
+    }
+    return fac.GetExpression();
   }
   if (is_addition(e2)) {
     //   e1 * (c0 + c1 * e_{2,1} + ... + c_n * e_{2, n})
     // = e1 * c0 + e1 * c1 * e_{2,1} + ... + e1 * c_n * e_{2,n}
     const double c0{get_constant_in_addition(e2)};
     const map<Expression, double>& m1{get_expr_to_coeff_map_in_addition(e2)};
-    return accumulate(
-        m1.begin(), m1.end(), ExpandMultiplication(e1, c0),
-        [&e1](const Expression& init, const pair<Expression, double>& p) {
-          return init + ExpandMultiplication(e1, p.second, p.first);
-        });
+    ExpressionAddFactory fac;
+    fac.AddExpression(ExpandMultiplication(e1, c0));
+    for (const pair<const Expression, double>& p : m1) {
+      fac.AddExpression(ExpandMultiplication(e1, p.second, p.first));
+    }
+    return fac.GetExpression();
   }
   return e1 * e2;
 }
@@ -522,12 +524,11 @@ double ExpressionAdd::Evaluate(const Environment& env) const {
 Expression ExpressionAdd::Expand() const {
   //   (c0 + c1 * e_1 + ... + c_n * e_n).Expand()
   // =  c0 + c1 * e_1.Expand() + ... + c_n * e_n.Expand()
-  return accumulate(
-      expr_to_coeff_map_.begin(), expr_to_coeff_map_.end(),
-      Expression{constant_},
-      [](const Expression& init, const pair<Expression, double>& p) {
-        return init + ExpandMultiplication(p.first.Expand(), p.second);
-      });
+  ExpressionAddFactory fac{constant_, {}};
+  for (const pair<const Expression, double>& p : expr_to_coeff_map_) {
+    fac.AddExpression(ExpandMultiplication(p.first.Expand(), p.second));
+  }
+  return fac.GetExpression();
 }
 
 Expression ExpressionAdd::Substitute(const Substitution& s) const {
@@ -543,11 +544,11 @@ Expression ExpressionAdd::Differentiate(const Variable& x) const {
   //   ∂/∂x (c_0 + c_1 * f_1 + ... + c_n * f_n)
   // = (∂/∂x c_0) + (∂/∂x c_1 * f_1) + ... + (∂/∂x c_n * f_n)
   // =  0.0       + c_1 * (∂/∂x f_1) + ... + c_n * (∂/∂x f_n)
-  return accumulate(
-      expr_to_coeff_map_.begin(), expr_to_coeff_map_.end(), Expression::Zero(),
-      [&x](const Expression& init, const pair<Expression, double>& p) {
-        return init + p.second * p.first.Differentiate(x);
-      });
+  ExpressionAddFactory fac;
+  for (const pair<const Expression, double>& p : expr_to_coeff_map_) {
+    fac.AddExpression(p.second * p.first.Differentiate(x));
+  }
+  return fac.GetExpression();
 }
 
 ostream& ExpressionAdd::Display(ostream& os) const {
@@ -608,6 +609,7 @@ void ExpressionAddFactory::AddExpression(const Expression& e) {
   }
   if (is_multiplication(e)) {
     const double constant{get_constant_in_multiplication(e)};
+    DRAKE_ASSERT(constant != 0.0);
     if (constant != 1.0) {
       // Instead of adding (1.0 * (constant * b1^t1 ... bn^tn)),
       // add (constant, 1.0 * b1^t1 ... bn^tn).
@@ -659,6 +661,7 @@ void ExpressionAddFactory::AddConstant(const double constant) {
 
 void ExpressionAddFactory::AddTerm(const double coeff, const Expression& term) {
   DRAKE_ASSERT(!is_constant(term));
+  DRAKE_ASSERT(coeff != 0.0);
 
   const auto it(expr_to_coeff_map_.find(term));
   if (it != expr_to_coeff_map_.end()) {
@@ -828,23 +831,26 @@ Expression DifferentiatePow(const Expression& f, const Expression& g,
 }
 
 Expression ExpressionMul::Differentiate(const Variable& x) const {
-  // ∂/∂x (c   * f_1^g_1  * f_2^g_2        * ... * f_n^g_n
-  //= c * [expr * (∂/∂x f_1^g_1) / f_1^g_1 +
-  //       expr * (∂/∂x f_2^g_2) / f_2^g_2 +
-  //                      ...              +
-  //       expr * (∂/∂x f_n^g_n) / f_n^g_n]
+  // ∂/∂x (c   * f₁^g₁  * f₂^g₂        * ... * fₙ^gₙ
+  //= c * [expr * (∂/∂x f₁^g₁) / f₁^g₁ +
+  //       expr * (∂/∂x f₂^g₂) / f₂^g₂ +
+  //                      ...          +
+  //       expr * (∂/∂x fₙ^gₙ) / fₙ^gₙ]
+  // = c * expr * (∑ᵢ (∂/∂x fᵢ^gᵢ) / fᵢ^gᵢ)
   //
-  // where expr = (f_1^g_1 * f_2^g_2 * ... * f_n^g_n).
-  const map<Expression, Expression>& m{base_to_exponent_map_};
-  Expression ret{Expression::Zero()};
-  const Expression expr{
-      ExpressionMulFactory{1.0, base_to_exponent_map_}.GetExpression()};
-  for (const auto& term : m) {
+  // where expr = (f₁^g₁ * f₂^g₂ * ... * fₙn^gₙ).
+  // This factory will form the expression that we will return.
+  ExpressionMulFactory mul_fac{constant_, base_to_exponent_map_};
+  // This factory will form (∑ᵢ (∂/∂x fᵢ^gᵢ) / fᵢ^gᵢ).
+  ExpressionAddFactory add_fac;
+  for (const pair<const Expression, Expression>& term : base_to_exponent_map_) {
     const Expression& base{term.first};
     const Expression& exponent{term.second};
-    ret += expr * DifferentiatePow(base, exponent, x) * pow(base, -exponent);
+    add_fac.AddExpression(DifferentiatePow(base, exponent, x) *
+                          pow(base, -exponent));
   }
-  return constant_ * ret;
+  mul_fac.AddExpression(add_fac.GetExpression());
+  return mul_fac.GetExpression();
 }
 
 ostream& ExpressionMul::Display(ostream& os) const {
@@ -891,6 +897,13 @@ ExpressionMulFactory::ExpressionMulFactory(
                            ptr->get_base_to_exponent_map()} {}
 
 void ExpressionMulFactory::AddExpression(const Expression& e) {
+  if (constant_ == 0.0) {
+    return;  // Do nothing if it already represented 0.
+  }
+  if (is_zero(e)) {
+    // X * 0 => 0. So clear the constant and the map.
+    return SetZero();
+  }
   if (is_constant(e)) {
     return AddConstant(get_constant_value(e));
   }
@@ -903,8 +916,16 @@ void ExpressionMulFactory::AddExpression(const Expression& e) {
 }
 
 void ExpressionMulFactory::Add(const shared_ptr<const ExpressionMul>& ptr) {
+  if (constant_ == 0.0) {
+    return;  // Do nothing if it already represented 0.
+  }
   AddConstant(ptr->get_constant());
   AddMap(ptr->get_base_to_exponent_map());
+}
+
+void ExpressionMulFactory::SetZero() {
+  constant_ = 0.0;
+  base_to_exponent_map_.clear();
 }
 
 ExpressionMulFactory& ExpressionMulFactory::operator=(
@@ -933,6 +954,9 @@ Expression ExpressionMulFactory::GetExpression() const {
 }
 
 void ExpressionMulFactory::AddConstant(const double constant) {
+  if (constant == 0.0) {
+    return SetZero();
+  }
   constant_ *= constant;
 }
 

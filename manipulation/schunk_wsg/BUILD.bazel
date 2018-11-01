@@ -153,6 +153,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":schunk_wsg_lcm",
+        "//common/test_utilities:eigen_matrix_compare",
         "//systems/analysis:simulator",
     ],
 )

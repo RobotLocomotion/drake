@@ -4,6 +4,7 @@
 /// LCM messages related to the Schunk WSG gripper.
 
 #include "drake/common/drake_deprecated.h"
+#include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -58,6 +59,94 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
   const systems::OutputPortIndex position_output_port_{};
   const systems::OutputPortIndex force_limit_output_port_{};
 };
+
+
+/// Send lcmt_schunk_wsg_command messages for a Schunk WSG gripper.  Has
+/// two input ports: one for the commanded finger position represented as the
+/// desired signed distance between the fingers in meters, and one for the
+/// commanded force limit.  The commanded position and force limit are
+/// scalars (BasicVector<double> of size 1).
+///
+/// @system{ SchunkWsgCommandSender,
+///   @input_port{position}
+///   @input_port{force_limit},
+///   @output_port{lcmt_schunk_wsg_command}
+/// }
+class SchunkWsgCommandSender : public systems::LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgCommandSender)
+
+  SchunkWsgCommandSender();
+
+  const systems::InputPort<double>& get_position_input_port()
+  const {
+    return this->get_input_port(position_input_port_);
+  }
+
+  const systems::InputPort<double>& get_force_limit_input_port()
+  const {
+    return this->get_input_port(force_limit_input_port_);
+  }
+
+  const systems::OutputPort<double>& get_command_output_port() const {
+    return this->get_output_port(0);
+  }
+
+ private:
+  void CalcCommandOutput(
+      const systems::Context<double>& context,
+      lcmt_schunk_wsg_command* output) const;
+
+ private:
+  const systems::InputPortIndex position_input_port_{};
+  const systems::InputPortIndex force_limit_input_port_{};
+};
+
+
+/// Handles lcmt_schunk_wsg_status messages from a LcmSubscriberSystem.  Has
+/// two output ports: one for the measured state of the gripper, represented as
+/// the signed distance between the fingers in meters and its corresponding
+/// velocity, and one for the measured force.
+///
+/// @system{ SchunkWsgStatusReceiver,
+///   @input_port{lcmt_schunk_wsg_status},
+///   @output_port{state}
+///   @output_port{force}
+/// }
+class SchunkWsgStatusReceiver : public systems::LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgStatusReceiver)
+
+  SchunkWsgStatusReceiver();
+
+  const systems::InputPort<double>& get_status_input_port() const {
+    return this->get_input_port(0);
+  }
+
+  const systems::OutputPort<double>& get_state_output_port()
+  const {
+    return this->get_output_port(state_output_port_);
+  }
+
+  const systems::OutputPort<double>& get_force_output_port()
+  const {
+    return this->get_output_port(force_output_port_);
+  }
+
+ private:
+  void CopyStateOut(
+      const systems::Context<double>& context,
+      systems::BasicVector<double>* output) const;
+
+  void CopyForceOut(
+      const systems::Context<double>& context,
+      systems::BasicVector<double>* output) const;
+
+ private:
+  const systems::OutputPortIndex state_output_port_{};
+  const systems::OutputPortIndex force_output_port_{};
+};
+
 
 /// Sends lcmt_schunk_wsg_status messages for a Schunk WSG.  This
 /// system has one input port for the current state of the WSG, and one

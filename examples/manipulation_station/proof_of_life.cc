@@ -69,6 +69,13 @@ int do_main(int argc, char* argv[]) {
       station->GetInputPort("iiwa_feedforward_torque").get_index(),
       VectorXd::Zero(kNumDofIiwa));
 
+  // Nominal WSG position is open.
+  station_context.FixInputPort(
+      station->GetInputPort("wsg_position").get_index(), Vector1d(0.1));
+  // Force limit at 40N.
+  station_context.FixInputPort(
+      station->GetInputPort("wsg_force_limit").get_index(), Vector1d(40.0));
+
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(FLAGS_duration);

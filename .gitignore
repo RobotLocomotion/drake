@@ -63,3 +63,4 @@ xcode
 .settings
 
 external/
+/user.bazelrc

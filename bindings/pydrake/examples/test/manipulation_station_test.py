@@ -2,7 +2,8 @@
 import unittest
 import numpy as np
 
-from pydrake.examples.manipulation_station import ManipulationStation
+from pydrake.examples.manipulation_station import (
+    ManipulationStation, ManipulationStationHardwareInterface)
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
 
 
@@ -23,3 +24,18 @@ class TestManipulationStation(unittest.TestCase):
         np.testing.assert_array_equal(q, station.GetIiwaPosition(context))
         station.SetIiwaVelocity(v, context)
         np.testing.assert_array_equal(v, station.GetIiwaVelocity(context))
+
+        q = 4.23
+        v = 8.51
+        station.SetWsgPosition(q, context)
+        self.assertEqual(q, station.GetWsgPosition(context))
+        station.SetWsgVelocity(v, context)
+        self.assertEqual(v, station.GetWsgVelocity(context))
+
+        station.get_camera_pose(0)
+
+    def test_manipulation_station_hardware_interface(self):
+        station = ManipulationStationHardwareInterface(
+            camera_ids=["123", "456"])
+        # Don't actually call Connect here, since it would block.
+        station.get_controller_plant()
