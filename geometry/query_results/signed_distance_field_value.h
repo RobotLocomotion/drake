@@ -36,7 +36,10 @@ struct SignedDistanceFieldValue{
   /** The position of the point N on the geometry G's surface nearest to the
    * query point, expressed in G's frame. */
   Vector3<T> p_GN;
-  /** The distance from the query point to the nearest point N */
+  /** The distance from the query point to the nearest point N. It is
+   * positive if the query point Q is outside the geometry G. It is zero if
+   * the query point is on the boundary of the geometry G. It is negative if
+   * the query point is inside the geometry G. */
   T distance{};
   /** The gradient vector ∂d/∂q of the distance function with respect to the
    * query point Q, expressed in Q's frame */
