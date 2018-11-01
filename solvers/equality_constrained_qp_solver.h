@@ -15,7 +15,9 @@ class EqualityConstrainedQPSolver : public MathematicalProgramSolverInterface {
   EqualityConstrainedQPSolver() = default;
   ~EqualityConstrainedQPSolver() override = default;
 
-  bool available() const override;
+  bool available() const override { return is_available(); };
+
+  static bool is_available();
 
   /**
    * Solve the qudratic program with equality constraint.
@@ -30,6 +32,11 @@ class EqualityConstrainedQPSolver : public MathematicalProgramSolverInterface {
 
   /// @return same as MathematicalProgramSolverInterface::solver_id()
   static SolverId id();
+
+  bool AreProgramAttributesSatisfied(
+      const MathematicalProgram& prog) const override;
+
+  static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
 };
 
 }  // namespace solvers

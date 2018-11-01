@@ -35,6 +35,7 @@
 #include "drake/solvers/indeterminate.h"
 #include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/program_attribute.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/solver_result.h"
 
@@ -181,25 +182,6 @@ namespace solvers {
  * @}
  */
 class MathematicalProgram;
-
-enum ProgramAttributes {
-  kNoCapabilities = 0,
-  kError = 1 << 0,  ///< Do not use, to avoid & vs. && typos.
-  kGenericCost = 1 << 1,
-  kGenericConstraint = 1 << 2,
-  kQuadraticCost = 1 << 3,
-  kQuadraticConstraint = 1 << 4,
-  kLinearCost = 1 << 5,
-  kLinearConstraint = 1 << 6,
-  kLinearEqualityConstraint = 1 << 7,
-  kLinearComplementarityConstraint = 1 << 8,
-  kLorentzConeConstraint = 1 << 9,
-  kRotatedLorentzConeConstraint = 1 << 10,
-  kPositiveSemidefiniteConstraint = 1 << 11,
-  kBinaryVariable = 1 << 12,
-  kCallback = 1 << 13
-};
-typedef uint32_t AttributesSet;
 
 template <int...>
 struct NewVariableNames {};
@@ -2720,6 +2702,12 @@ class MathematicalProgram {
   // of MathematicalProgram.
   void SetSolverResult(const SolverResult& solver_result);
 
+  /// Getter for the required capability on the solver, given the
+  /// cost/constraint/variable types in the program.
+  const ProgramAttributes& required_capabilities() const {
+    return required_capabilities_;
+  }
+
  private:
   static void AppendNanToEnd(int new_var_size, Eigen::VectorXd* vector);
   // maps the ID of a symbolic variable to the index of the variable stored in
@@ -2777,7 +2765,7 @@ class MathematicalProgram {
   const std::map<std::string, int> solver_options_int_empty_;
   const std::map<std::string, std::string> solver_options_str_empty_;
 
-  AttributesSet required_capabilities_{0};
+  ProgramAttributes required_capabilities_{};
 
   std::unique_ptr<MathematicalProgramSolverInterface> ipopt_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> nlopt_solver_;
@@ -2799,7 +2787,7 @@ class MathematicalProgram {
       case VarType::CONTINUOUS:
         break;
       case VarType::BINARY:
-        required_capabilities_ |= kBinaryVariable;
+        required_capabilities_.insert(ProgramAttribute::kBinaryVariable);
         break;
       case VarType::INTEGER:
         throw std::runtime_error(

@@ -12,7 +12,7 @@
 namespace drake {
 namespace solvers {
 
-bool LinearSystemSolver::available() const { return true; }
+bool LinearSystemSolver::is_available() { return true; }
 
 SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
   size_t num_constraints = 0;
@@ -68,6 +68,19 @@ SolverId LinearSystemSolver::solver_id() const { return id(); }
 SolverId LinearSystemSolver::id() {
   static const never_destroyed<SolverId> singleton{"Linear system"};
   return singleton.access();
+}
+
+bool LinearSystemSolver::AreProgramAttributesSatisfied(
+    const MathematicalProgram& prog) const {
+  return ProgramAttributesSatisfied(prog);
+}
+
+bool LinearSystemSolver::ProgramAttributesSatisfied(
+    const MathematicalProgram& prog) {
+  static const never_destroyed<ProgramAttributes> solver_capability(
+      std::initializer_list<ProgramAttribute>{
+          ProgramAttribute::kLinearEqualityConstraint});
+  return prog.required_capabilities() == solver_capability.access();
 }
 
 }  // namespace solvers

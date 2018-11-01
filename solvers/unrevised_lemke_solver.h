@@ -89,11 +89,18 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
                      VectorX<T>* z, int* num_pivots,
                      const T& zero_tol = T(-1)) const;
 
-  bool available() const override { return true; }
+  bool available() const override { return is_available(); };
+
+  static bool is_available() { return true; }
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
   SolverId solver_id() const override;
+
+  bool AreProgramAttributesSatisfied(
+      const MathematicalProgram& prog) const override;
+
+  static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
 
  private:
   friend class UnrevisedLemkePrivateTests;

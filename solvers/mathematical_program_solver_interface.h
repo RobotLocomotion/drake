@@ -31,6 +31,11 @@ class MathematicalProgramSolverInterface {
 
   /// Returns the identifier of this solver.
   virtual SolverId solver_id() const = 0;
+
+  /// Returns true if the program attributes are satisfied by the solver's
+  /// capability.
+  virtual bool AreProgramAttributesSatisfied(
+      const MathematicalProgram& prog) const = 0;
 };
 
 }  // namespace solvers

@@ -650,7 +650,7 @@ std::shared_ptr<MosekSolver::License> MosekSolver::AcquireLicense() {
   return GetScopedSingleton<MosekSolver::License>();
 }
 
-bool MosekSolver::available() const { return true; }
+bool MosekSolver::is_available() { return true; }
 
 MathematicalProgramResult MosekSolver::SolveConstProg(
     const MathematicalProgram& prog) const {

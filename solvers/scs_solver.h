@@ -15,7 +15,9 @@ class ScsSolver : public MathematicalProgramSolverInterface {
 
   // This solver is implemented in various pieces depending on if
   // SCS was available during compilation.
-  bool available() const override;
+  bool available() const override { return is_available(); };
+
+  static bool is_available();
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
@@ -23,6 +25,11 @@ class ScsSolver : public MathematicalProgramSolverInterface {
 
   /// @return same as MathematicalProgramSolverInterface::solver_id()
   static SolverId id();
+
+  bool AreProgramAttributesSatisfied(
+      const MathematicalProgram& prog) const override;
+
+  static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
 
   // If the user want the solver to print out debug message, then set this to
   // true; otherwise set it to false. The default is false.
