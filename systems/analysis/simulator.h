@@ -574,7 +574,7 @@ void Simulator<T>::Initialize() {
 
   // TODO: CalcNextUpdateTime() requires a...
   const T current_time = context_->get_time();
-  const long double inf = -std::numeric_limits<long double>::infinity();
+  const long double inf = std::numeric_limits<long double>::infinity();
   context_->set_time(nexttoward(current_time, -inf));
 
   // Get the next timed event.
