@@ -65,12 +65,6 @@ class SolverOptions {
       solver_options_int_{};
   std::map<SolverId, std::unordered_map<std::string, std::string>>
       solver_options_str_{};
-
-  static const std::unordered_map<std::string, double>
-      solver_options_double_empty_;
-  static const std::unordered_map<std::string, int> solver_options_int_empty_;
-  static const std::unordered_map<std::string, std::string>
-      solver_options_str_empty_;
 };
 }  // namespace solvers
 }  // namespace drake

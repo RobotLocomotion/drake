@@ -1,14 +1,9 @@
 #include "drake/solvers/solver_options.h"
 
+#include "drake/common/never_destroyed.h"
+
 namespace drake {
 namespace solvers {
-const std::unordered_map<std::string, double>
-    SolverOptions::solver_options_double_empty_{};
-const std::unordered_map<std::string, int>
-    SolverOptions::solver_options_int_empty_{};
-const std::unordered_map<std::string, std::string>
-    SolverOptions::solver_options_str_empty_{};
-
 void SolverOptions::SetSolverOption(const SolverId& solver_id,
                                     const std::string& solver_option,
                                     double option_value) {
@@ -31,27 +26,33 @@ const std::unordered_map<std::string, double>&
 SolverOptions::GetSolverOptionsDouble(const SolverId& solver_id) const {
   // Aliases for brevity.
   const auto& options = solver_options_double_;
-  const auto& empty = solver_options_double_empty_;
+  static never_destroyed<std::unordered_map<std::string, double>>
+      solver_options_double_empty{};
   const auto iter = options.find(solver_id);
-  return (iter != options.end()) ? iter->second : empty;
+  return (iter != options.end()) ? iter->second
+                                 : solver_options_double_empty.access();
 }
 
 const std::unordered_map<std::string, int>& SolverOptions::GetSolverOptionsInt(
     const SolverId& solver_id) const {
   // Aliases for brevity.
   const auto& options = solver_options_int_;
-  const auto& empty = solver_options_int_empty_;
+  static never_destroyed<std::unordered_map<std::string, int>>
+      solver_options_int_empty{};
   const auto iter = options.find(solver_id);
-  return (iter != options.end()) ? iter->second : empty;
+  return (iter != options.end()) ? iter->second
+                                 : solver_options_int_empty.access();
 }
 
 const std::unordered_map<std::string, std::string>&
 SolverOptions::GetSolverOptionsStr(const SolverId& solver_id) const {
   // Aliases for brevity.
   const auto& options = solver_options_str_;
-  const auto& empty = solver_options_str_empty_;
+  static never_destroyed<std::unordered_map<std::string, std::string>>
+      solver_options_str_empty{};
   const auto iter = options.find(solver_id);
-  return (iter != options.end()) ? iter->second : empty;
+  return (iter != options.end()) ? iter->second
+                                 : solver_options_str_empty.access();
 }
 }  // namespace solvers
 }  // namespace drake
