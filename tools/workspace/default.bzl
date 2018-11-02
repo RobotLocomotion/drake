@@ -37,6 +37,7 @@ load("@drake//tools/workspace/lcmtypes_robotlocomotion:repository.bzl", "lcmtype
 load("@drake//tools/workspace/liblz4:repository.bzl", "liblz4_repository")
 load("@drake//tools/workspace/libpng:repository.bzl", "libpng_repository")
 load("@drake//tools/workspace/libprotobuf:repository.bzl", "libprotobuf_repository")  # noqa
+load("@drake//tools/workspace/libtiff:repository.bzl", "libtiff_repository")
 load("@drake//tools/workspace/mosek:repository.bzl", "mosek_repository")
 load("@drake//tools/workspace/net_sf_jchart2d:repository.bzl", "net_sf_jchart2d_repository")  # noqa
 load("@drake//tools/workspace/nlopt:repository.bzl", "nlopt_repository")
@@ -152,6 +153,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         libpng_repository(name = "libpng")
     if "libprotobuf" not in excludes:
         libprotobuf_repository(name = "libprotobuf")
+    if "libtiff" not in excludes:
+        libtiff_repository(name = "libtiff")
     if "mosek" not in excludes:
         mosek_repository(name = "mosek")
     if "net_sf_jchart2d" not in excludes:

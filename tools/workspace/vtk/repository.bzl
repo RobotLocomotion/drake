@@ -504,6 +504,8 @@ licenses([
             "vtkJPEGReader.h",
             "vtkPNGReader.h",
             "vtkPNGWriter.h",
+            "vtkTIFFReader.h",
+            "vtkTIFFWriter.h",
         ],
         deps = [
             ":vtkCommonCore",
@@ -512,6 +514,7 @@ licenses([
             ":vtkmetaio",
             "@libpng",
             "@zlib",
+            "@libtiff",
         ],
     )
 
