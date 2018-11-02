@@ -65,25 +65,29 @@ namespace systems {
 ///
 /// The pseudocode for the algorithm that the simulator uses to step the state
 /// from time and state `{ t0, xc(t0), xd(t0⁻), xa(t0⁻) }` forward in time
-/// by length _no greater_ than Δt is: 
+/// by length _no greater_ than Δt will be presented shortly. We will make use
+/// of the notation `xd(t⁻)` to denote a variable before any instantaneous
+/// (unrestricted or discrete) updates, `xd(t*)` to denote the same variable
+/// after an unrestricted update, and `xd(t⁺)` to denote the same variable after
+/// a discrete update. The pseudodode follows:
 /// @verbatim
 /// Step(t0, xc(t0⁻), xd(t0⁻), xa(t0⁻), Δt)
 ///
-///   % Update any variables (no restrictions).
-///   { xc(t0*), xd(t0*), xa(t0*) } ← 
+///   // Update any variables (no restrictions).
+///   { xc(t0*), xd(t0*), xa(t0⁺) } ← 
 ///       DoAnyUnrestrictedUpdates(t0, xc(t0⁻), xd(t0⁻), xa(t0⁻))
 ///
-///   % Update discrete variables.
-///   xd(t0⁺) ← DoAnyDiscreteUpdates(t0,  xc(t0*), xd(t0*), xa(t0*))
+///   // Update discrete variables.
+///   xd(t0⁺) ← DoAnyDiscreteUpdates(t0,  xc(t0*), xd(t0*), xa(t0⁺))
 ///
-///   % See how far it is safe to integrate without missing any events.
-///   tₑ ← NextEventTime(t0, xc(t0*), xd(t0⁺), xa(t0*))
+///   // See how far it is safe to integrate without missing any events.
+///   tₑ ← NextEventTime(t0, xc(t0*), xd(t0⁺), xa(t0⁺))
 ///
-///   % Integrate continuous variables forward in time.
+///   // Integrate continuous variables forward in time.
 ///   h ← min(tₑ - t0, Δt)
 ///   { t₁, xc(t₁⁻) } ← Integrate(t0, xc(t0*), xd(t0⁺), xa(t0*), h)
 ///
-///   % Hold discrete and abstract variables values from t0* and t0⁺ to t₁⁻.
+///   // Hold discrete and abstract variables values from t0* and t0⁺ to t₁⁻.
 ///   xd(t₁⁻) ← xd(t0⁺)
 ///   xa(t₁⁻) ← xa(t0*)
 ///
@@ -91,10 +95,21 @@ namespace systems {
 ///
 ///   return { t₁, xc(t₁⁻), xd(t₁⁻), xa(t₁⁻) }
 /// @endverbatim
-/// where we use the notation `xd(t⁻)` to denote a variable before any
-/// instantaneous (unrestricted or discrete) updates, `xd(t*)` to denote the
-/// same variable after an unrestricted update, and `xd(t⁺)` to denote the same
-/// variable after a discrete update. 
+///
+/// We can use this algorithm to examine the Initialize(), StepTo(), and
+/// Finalize() functions, which we shall now do in reverse order. Finalize() is
+/// simply Step() with `t0 = get_context().get_time()`, and `Δt = 0`.
+/// StepTo(t_final) can be outlined as:
+/// @verbatim
+/// t ← current_time
+/// while t ≠ t_final
+///   { tnew, xc(tnew⁻), xd(tnew⁻), xa(tnew⁻) } ←
+///         StepTo(t, xc(t⁻), xd(t⁻), xa(t⁻), t_final - t)
+///   { t, xc(t⁻), xd(t⁻), xa(t⁻) } ← { tnew, xc(tnew⁻), xd(tnew⁻), xa(tnew⁻) }
+/// endwhile
+/// @endverbatim 
+/// Finally, Init() is Step() with `t0 = initial_time - ε` (for `ε ≪ 1`) and
+/// `Δt = 0`.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 /// Instantiated templates for the following kinds of T's are provided and
