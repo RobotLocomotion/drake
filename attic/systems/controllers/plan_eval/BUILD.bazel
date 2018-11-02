@@ -1,11 +1,11 @@
 # -*- python -*-
 
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_binary",
-    "drake_cc_googletest",
-    "drake_cc_library",
-    "drake_cc_package_library",
+    "@drake//attic:build_macros.bzl",
+    drake_cc_binary = "attic_drake_cc_binary",
+    drake_cc_googletest = "attic_drake_cc_googletest",
+    drake_cc_library = "attic_drake_cc_library",
+    drake_cc_package_library = "attic_drake_cc_package_library",
 )
 load("@drake//tools/skylark:test_tags.bzl", "gurobi_test_tags")
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -30,11 +30,11 @@ drake_cc_library(
         "generic_plan.h",
     ],
     deps = [
+        "//attic/systems/controllers/qp_inverse_dynamics:control",
+        "//attic/systems/controllers/qp_inverse_dynamics:param_parser",
         "//manipulation/util:trajectory_utils",
         "//multibody:rigid_body_tree_alias_groups",
         "//systems/controllers:setpoint",
-        "//systems/controllers/qp_inverse_dynamics:control",
-        "//systems/controllers/qp_inverse_dynamics:param_parser",
         "//systems/framework:value",
     ],
 )
@@ -61,8 +61,8 @@ drake_cc_library(
         "test/test_common.h",
     ],
     deps = [
+        "//attic/systems/controllers/qp_inverse_dynamics:param_parser",
         "//multibody:rigid_body_tree_alias_groups",
-        "//systems/controllers/qp_inverse_dynamics:param_parser",
     ],
 )
 
@@ -71,9 +71,9 @@ drake_cc_library(
     srcs = ["plan_eval_base_system.cc"],
     hdrs = ["plan_eval_base_system.h"],
     deps = [
+        "//attic/systems/controllers/qp_inverse_dynamics:param_parser",
         "//multibody:rigid_body_tree_alias_groups",
         "//systems/controllers:setpoint",
-        "//systems/controllers/qp_inverse_dynamics:param_parser",
         "//systems/framework:leaf_system",
     ],
 )
@@ -83,9 +83,9 @@ drake_cc_library(
 drake_cc_googletest(
     name = "generic_plan_test",
     data = [
+        "//attic/systems/controllers/qp_inverse_dynamics:test/iiwa.alias_groups",  # noqa
+        "//attic/systems/controllers/qp_inverse_dynamics:test/iiwa.id_controller_config",  # noqa
         "//manipulation/models/iiwa_description:models",
-        "//systems/controllers/qp_inverse_dynamics:test/iiwa.alias_groups",  # noqa
-        "//systems/controllers/qp_inverse_dynamics:test/iiwa.id_controller_config",  # noqa
     ],
     deps = [
         ":generic_plan",
@@ -100,9 +100,9 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "manipulator_plan_test",
     data = [
+        "//attic/systems/controllers/qp_inverse_dynamics:test/iiwa.alias_groups",  # noqa
+        "//attic/systems/controllers/qp_inverse_dynamics:test/iiwa.id_controller_config",  # noqa
         "//manipulation/models/iiwa_description:models",
-        "//systems/controllers/qp_inverse_dynamics:test/iiwa.alias_groups",  # noqa
-        "//systems/controllers/qp_inverse_dynamics:test/iiwa.id_controller_config",  # noqa
     ],
     deps = [
         ":manipulator_move_end_effector_plan",
@@ -114,4 +114,6 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    cpplint_data = ["//attic:CPPLINT.cfg"],
+)

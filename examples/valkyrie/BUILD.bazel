@@ -85,8 +85,8 @@ drake_cc_library(
     hdrs = ["robot_state_encoder.h"],
     deps = [
         "//attic/multibody/rigid_body_plant",
+        "//attic/systems/controllers:side",
         "//manipulation/util:robot_state_msg_translator",
-        "//systems/controllers:side",
         "//util",
     ],
 )
