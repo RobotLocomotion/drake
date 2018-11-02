@@ -101,6 +101,49 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     const MultibodyPlant<double>& multibody_plant,
     lcm::DrakeLcmInterface* lcm = nullptr);
 
+/** Extends a Diagram with the required components to publish contact results
+ to drake_visualizer. This must be called _during_ Diagram building and
+ uses the given `builder` to add relevant subsystems and connections.
+
+ This is a convenience method to simplify some common boilerplate for adding
+ contact results visualization capability to a Diagram. What it does is:
+
+ - adds systems ContactResultsToLcmSystem and LcmPublisherSystem to
+   the Diagram and connects the draw message output to the publisher input,
+ - connects the contact results output port to the ContactResultsToLcmSystem
+   system, and
+ - sets the publishing rate to 1/60 of a second (simulated time).
+
+ This variant supports situations where the multibody_plant's output port is
+ not directly exposed (e.g. it may be a subsystem in a Diagram that exports
+ the contact_results output port).
+
+ @param builder               The diagram builder being used to construct the
+                              Diagram.
+ @param multibody_plant       The System in `builder` containing the plant whose
+                              contact results are to be visualized.
+ @param contact_results_port  The output port that emits a
+                              ContactResults<double> signal.
+ @param lcm                   An optional lcm interface through which lcm
+                              messages will be dispatched. Will be allocated
+                              internally if none is supplied.
+
+ @pre The given `contact_results_port` must be the output of a System within
+      the supplied DiagramBuilder.
+ @pre The contact_results_port should emit the content from the
+      contact_results_port of the @p multibody_plant.
+
+ @returns the LcmPublisherSystem (in case callers, e.g., need to change the
+ default publishing rate).
+
+ @ingroup visualization
+ */
+systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
+    systems::DiagramBuilder<double>* builder,
+    const MultibodyPlant<double>& multibody_plant,
+    const systems::OutputPort<double>& contact_results_port,
+    lcm::DrakeLcmInterface* lcm = nullptr);
+
 }  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake

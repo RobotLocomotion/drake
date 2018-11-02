@@ -47,7 +47,10 @@ namespace manipulation_station {
 ///   @output_port{camera2_rgb_image}
 ///   @output_port{camera2_depth_image}
 ///   @output_port{<b style="color:orange">camera2_label_image</b>}
-///   @output_port{<b style="color:orange">pose_bundle</b>} }
+///   @output_port{<b style="color:orange">pose_bundle</b>}
+///   @output_port{<b style="color:orange">contact_results</b>}
+///   @output_port{<b style="color:orange">plant_continuous_state</b>}
+/// }
 ///
 /// Note that outputs in <b style="color:orange">orange</b> are
 /// available in the simulation, but not on the real robot.  The distinction
