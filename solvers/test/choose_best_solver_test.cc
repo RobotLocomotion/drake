@@ -35,9 +35,14 @@ class ChooseBestSolverTest : public ::testing::Test {
 
   ~ChooseBestSolverTest() {}
 
-  void CheckBestSolver(const SolverId& expected_solver_id) {
+  void CheckBestSolver(const SolverId& expected_solver_id) const {
     const SolverId solver_id = ChooseBestSolver(prog_);
     EXPECT_EQ(solver_id, expected_solver_id);
+  }
+
+  void CheckMakeSolver(const MathematicalProgramSolverInterface& solver) const {
+    auto new_solver = MakeSolver(solver.solver_id());
+    EXPECT_EQ(new_solver->solver_id(), solver.solver_id());
   }
 
   void CheckBestSolver(
@@ -151,6 +156,22 @@ TEST_F(ChooseBestSolverTest, NoAvailableSolver) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       ChooseBestSolver(prog_), std::invalid_argument,
       "There is no available solver for the optimization program");
+}
+
+TEST_F(ChooseBestSolverTest, MakeSolver) {
+  CheckMakeSolver(*linear_system_solver_);
+  CheckMakeSolver(*equality_constrained_qp_solver_);
+  CheckMakeSolver(*mosek_solver_);
+  CheckMakeSolver(*gurobi_solver_);
+  CheckMakeSolver(*osqp_solver_);
+  CheckMakeSolver(*moby_lcp_solver_);
+  CheckMakeSolver(*snopt_solver_);
+  CheckMakeSolver(*ipopt_solver_);
+  CheckMakeSolver(*nlopt_solver_);
+  CheckMakeSolver(*scs_solver_);
+  DRAKE_EXPECT_THROWS_MESSAGE(MakeSolver(SolverId("foo")),
+                              std::invalid_argument,
+                              "MakeSolver: no matching solver.");
 }
 }  // namespace solvers
 }  // namespace drake
