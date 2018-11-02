@@ -365,6 +365,11 @@ void ManipulationStation<T>::Finalize() {
   builder.ExportOutput(scene_graph_->get_pose_bundle_output_port(),
                        "pose_bundle");
 
+  builder.ExportOutput(plant_->get_contact_results_output_port(),
+      "contact_results");
+  builder.ExportOutput(plant_->get_continuous_state_output_port(),
+      "plant_continuous_state");
+
   builder.BuildInto(this);
 }
 

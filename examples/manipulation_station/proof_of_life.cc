@@ -5,6 +5,7 @@
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/manipulation_station/manipulation_station.h"
 #include "drake/geometry/geometry_visualization.h"
+#include "drake/multibody/multibody_tree/multibody_plant/contact_results_to_lcm.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
@@ -44,6 +45,9 @@ int do_main(int argc, char* argv[]) {
 
   geometry::ConnectDrakeVisualizer(&builder, station->get_mutable_scene_graph(),
                                    station->GetOutputPort("pose_bundle"));
+  multibody::multibody_plant::ConnectContactResultsToDrakeVisualizer(
+      &builder, station->get_mutable_multibody_plant(),
+      station->GetOutputPort("contact_results"));
 
   auto diagram = builder.Build();
 
