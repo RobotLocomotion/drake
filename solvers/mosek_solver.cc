@@ -652,8 +652,9 @@ std::shared_ptr<MosekSolver::License> MosekSolver::AcquireLicense() {
 
 bool MosekSolver::is_available() { return true; }
 
-MathematicalProgramResult MosekSolver::SolveConstProg(
-    const MathematicalProgram& prog) const {
+MathematicalProgramResult MosekSolver::Solve(
+    const MathematicalProgram& prog, const optional<Eigen::VectorXd>&,
+    const optional<SolverOptions>&) const {
   const int num_vars = prog.num_vars();
   MSKtask_t task = nullptr;
   MSKrescodee rescode;
@@ -828,13 +829,8 @@ MathematicalProgramResult MosekSolver::SolveConstProg(
   return result;
 }
 
-MathematicalProgramResult MosekSolver::Solve(
-    const MathematicalProgram& prog) const {
-  return SolveConstProg(prog);
-}
-
 SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
-  const MathematicalProgramResult result = SolveConstProg(prog);
+  const MathematicalProgramResult result = Solve(prog, {}, {});
   const SolverResult solver_result = result.ConvertToSolverResult();
   prog.SetSolverResult(solver_result);
   return result.get_solution_result();

@@ -597,6 +597,18 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "solve",
+    srcs = ["solve.cc"],
+    hdrs = ["solve.h"],
+    deps = [
+        ":mathematical_program",
+        ":mathematical_program_api",
+        ":choose_best_solver",
+    ],
+)
+
+
 # Internal Solvers.
 
 drake_cc_library(
@@ -1470,6 +1482,14 @@ drake_cc_googletest(
         ":choose_best_solver",
         ":mathematical_program",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "solve_test",
+    deps = [
+        ":solve",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
