@@ -850,7 +850,17 @@ def main():
     # Write header file.
     if not quiet:
         eprint("Writing header file...")
-    print_symbols(f, root_name, symbol_tree.root)
+    try:
+        print_symbols(f, root_name, symbol_tree.root)
+    except UnicodeEncodeError as e:
+        # User-friendly error for #9903.
+        print("""
+Encountered unicode error: {}
+If you are on Ubuntu, please ensure you have UTF8 locales generated:
+    apt-get install --no-recommends locales
+    locale-gen en_US.UTF-8
+""".format(e), file=sys.stderr)
+        exit(1)
 
     f.write('''
 #if defined(__GNUG__)
