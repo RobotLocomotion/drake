@@ -384,11 +384,8 @@ struct Impl {
                WarnDeprecated(
                    "`DeclareAbstractInputPort(self, name)` is deprecated. "
                    "Please use `(self, name, model_value)` instead.");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
                Value<py::object> model_value;
                return self->DeclareAbstractInputPort(name, model_value);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
              },
              py_reference_internal, py::arg("name"),
           doc.System.DeclareAbstractInputPort.doc_2)
