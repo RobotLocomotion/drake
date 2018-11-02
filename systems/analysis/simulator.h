@@ -56,12 +56,13 @@ namespace systems {
 /// the one that is most appropriate for your application or use the default
 /// which is adequate for most systems.
 ///
-/// <h2>Simulation mechanics for systems with multiple event types</h2>
+/// <h2>How the simulation is stepped: simulation mechanics for authors of
+///   systems with multiple event types (Advanced)</h2>
 /// This documentation is targeted toward users who have created a LeafSystem
 /// with multiple event types (unrestricted update, discrete update, and
 /// publish). For authors of such systems, it is useful to understand the
-/// simulation mechanics in order to attain the desired state over time, and
-/// this behavior is dependent on the ordering in which events are processed.
+/// simulation mechanics in order to attain the desired state over time.
+/// This behavior is dependent on the ordering in which events are processed.
 ///
 /// The pseudocode for the algorithm that the simulator uses to step the state
 /// from time and state `{ t0, xc(t0), xd(t0⁻), xa(t0⁻) }` forward in time
@@ -69,12 +70,12 @@ namespace systems {
 /// of the notation `xd(t⁻)` to denote a variable before any instantaneous
 /// (unrestricted or discrete) updates, `xd(t*)` to denote the same variable
 /// after an unrestricted update, and `xd(t⁺)` to denote the same variable after
-/// a discrete update. The pseudodode follows:
+/// a discrete update. The pseudocode follows:
 /// @verbatim
 /// Step(t0, xc(t0⁻), xd(t0⁻), xa(t0⁻), Δt)
 ///
 ///   // Update any variables (no restrictions).
-///   { xc(t0*), xd(t0*), xa(t0⁺) } ← 
+///   { xc(t0*), xd(t0*), xa(t0⁺) } ←
 ///       DoAnyUnrestrictedUpdates(t0, xc(t0⁻), xd(t0⁻), xa(t0⁻))
 ///
 ///   // Update discrete variables.
@@ -97,9 +98,9 @@ namespace systems {
 /// @endverbatim
 ///
 /// We can use this algorithm to examine the Initialize(), StepTo(), and
-/// Finalize() functions, which we shall now do in reverse order. Finalize() is
-/// simply Step() with `t0 = get_context().get_time()`, and `Δt = 0`.
-/// StepTo(t_final) can be outlined as:
+/// StepInPlace() functions, which we shall now do in reverse order.
+/// StepInPlace() is simply Step() with `t0 = get_context().get_time()`, and
+/// `Δt = 0`. StepTo(t_final) can be outlined as:
 /// @verbatim
 /// t ← current_time
 /// while t ≠ t_final
@@ -107,9 +108,9 @@ namespace systems {
 ///         StepTo(t, xc(t⁻), xd(t⁻), xa(t⁻), t_final - t)
 ///   { t, xc(t⁻), xd(t⁻), xa(t⁻) } ← { tnew, xc(tnew⁻), xd(tnew⁻), xa(tnew⁻) }
 /// endwhile
-/// @endverbatim 
-/// Finally, Init() is Step() with `t0 = initial_time - ε` (for `ε ≪ 1`) and
-/// `Δt = 0`.
+/// @endverbatim
+/// Finally, Initialize() is Step() with `t0 = initial_time - ε` (for `ε ≪ 1`)
+/// and `Δt = 0`.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 /// Instantiated templates for the following kinds of T's are provided and
@@ -290,9 +291,26 @@ class Simulator {
     return std::move(context_);
   }
 
-  /// Call this at the end of a simulation (i.e., after StepTo()) to handle any
-  /// events that have been triggered but not yet handled.
-  void Finalize();
+  /// Steps the state "forward to the current time", meaning that time and state
+  /// `{ t0, xc(t0⁻), xd(t0⁻), xa(t0⁻) }` are transformed to time and state
+  /// `{ t0, xc(t0*), xd(t0⁺), xa(t0⁺) )` using the notation introduced in
+  /// Simulator class documentation. StepInPlace() is _nearly_ equivalent
+  /// to calling `StepTo(context.get_time())` The difference is that function
+  /// handles any "per step" events (e.g., publishing) and also increments the
+  /// step counter; StepInPlace() does not. If no events have been triggered,
+  /// `StepInPlace()` will not modify the state and will not publish. It can
+  /// be determined in advance whether any modifications might occur by calling
+  /// timed_or_witnessed_events_have_triggered(); if that function returns
+  /// `false`, `StepInPlace()` can not alter the state.
+  void StepInPlace();
+
+  /// Determines whether any timed or witnessed events have been triggered but
+  /// not yet handled. If this returns `false`, calling StepInPlace() will not
+  /// alter the simulation state.
+  /// @see StepInPlace().
+  bool timed_or_witnessed_events_have_triggered() const {
+    return timed_or_witnessed_event_triggered_;
+  }
 
   /// Forget accumulated statistics. Statistics are reset to the values they
   /// have post construction or immediately after `Initialize()`.
@@ -483,7 +501,7 @@ class Simulator {
   std::unique_ptr<CompositeEventCollection<T>> witnessed_events_;
 
   // Indicates when a timed or witnessed event needs to be handled on the next
-  // call to StepTo() or Finalize().
+  // call to StepTo() or StepInPlace().
   bool timed_or_witnessed_event_triggered_{false};
 
   // The time that the next timed event is to be handled. This value is set in
@@ -572,7 +590,8 @@ void Simulator<T>::Initialize() {
   DRAKE_DEMAND(per_step_events_ != nullptr);
   system_.GetPerStepEvents(*context_, per_step_events_.get());
 
-  // TODO: CalcNextUpdateTime() requires a...
+  // Ensure that CalcNextUpdateTime() can return the current time by perturbing
+  // current time as slightly toward negative infinity as we can allow. 
   const T current_time = context_->get_time();
   const long double inf = std::numeric_limits<long double>::infinity();
   context_->set_time(nexttoward(current_time, -inf));
@@ -750,19 +769,19 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 }
 
 template <class T>
-void Simulator<T>::Finalize() {
+void Simulator<T>::StepInPlace() {
   DRAKE_DEMAND(timed_events_ != nullptr);
   DRAKE_DEMAND(witnessed_events_ != nullptr);
   if (timed_or_witnessed_event_triggered_) {
-    // Do any final unrestricted or discrete updates from witnessed
-    // events, only if an event was triggered.     merged_events->Clear();
+    // Do any final updates from timed or witnessed events, only if an event
+    // was triggered.
     auto merged_events = system_.AllocateCompositeEventCollection();
     merged_events->Merge(*timed_events_);
     merged_events->Merge(*witnessed_events_);
 
-    // Do the unrestricted and discrete updates.
     HandleUnrestrictedUpdate(merged_events->get_unrestricted_update_events());
     HandleDiscreteUpdate(merged_events->get_discrete_update_events());
+    HandlePublish(merged_events->get_publish_events());
 
     // Reset the flag.
     timed_or_witnessed_event_triggered_ = false;
