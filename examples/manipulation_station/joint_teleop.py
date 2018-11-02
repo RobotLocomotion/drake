@@ -66,23 +66,22 @@ builder.Connect(wsg_buttons.GetOutputPort("force_limit"),
 diagram = builder.Build()
 simulator = Simulator(diagram)
 
-context = diagram.GetMutableSubsystemContext(station,
-                                             simulator.get_mutable_context())
+station_context = diagram.GetMutableSubsystemContext(
+    station, simulator.get_mutable_context())
 
-if args.hardware:
-    # Eval the output port once to read the initial positions of the IIWA.
-    q0 = station.GetOutputPort("iiwa_position_measured").Eval(
-        context).get_value()
-else:
+station_context.FixInputPort(station.GetInputPort(
+    "iiwa_feedforward_torque").get_index(), np.zeros(7))
+
+if not args.hardware:
     # Set the initial positions of the IIWA to a comfortable configuration
     # inside the workspace of the station.
     q0 = [0, 0.6, 0, -1.75, 0, 1.0, 0]
-    station.SetIiwaPosition(q0, context)
-    station.SetIiwaVelocity(np.zeros(7), context)
+    station.SetIiwaPosition(q0, station_context)
+    station.SetIiwaVelocity(np.zeros(7), station_context)
 
     # Set the initial configuration of the gripper to open.
-    station.SetWsgPosition(0.1, context)
-    station.SetWsgVelocity(0, context)
+    station.SetWsgPosition(0.1, station_context)
+    station.SetWsgVelocity(0, station_context)
 
     # Place the object in the middle of the workspace.
     X_WObject = Isometry3.Identity()
@@ -92,11 +91,15 @@ else:
                                                             object),
         X_WObject, station.GetMutableSubsystemContext(
             station.get_mutable_multibody_plant(),
-            context))
+            station_context))
 
+# Eval the output port once to read the initial positions of the IIWA.
+q0 = station.GetOutputPort("iiwa_position_measured").Eval(
+    station_context).get_value()
 teleop.set(q0)
-context.FixInputPort(station.GetInputPort(
-    "iiwa_feedforward_torque").get_index(), np.zeros(7))
+
+# This is important to avoid duplicate publishes to the hardware interface:
+simulator.set_publish_every_time_step(False)
 
 simulator.set_target_realtime_rate(args.target_realtime_rate)
 simulator.StepTo(args.duration)
