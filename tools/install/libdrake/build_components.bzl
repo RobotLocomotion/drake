@@ -18,6 +18,10 @@ LIBDRAKE_COMPONENTS = [
     "//attic/multibody/rigid_body_plant:rigid_body_plant",  # unpackaged
     "//attic/multibody/rigid_body_plant:rigid_body_plant_bridge",  # unpackaged
     "//attic/multibody/shapes",
+    "//attic/systems/controllers",
+    "//attic/systems/controllers/plan_eval",
+    "//attic/systems/controllers/qp_inverse_dynamics",
+    "//attic/systems/robotInterfaces",
     "//automotive",
     "//automotive/maliput/api",
     "//automotive/maliput/dragway",
@@ -67,20 +71,16 @@ LIBDRAKE_COMPONENTS = [
     "//solvers",
     "//systems/analysis",
     "//systems/controllers",
-    "//systems/controllers/plan_eval",
-    "//systems/controllers/qp_inverse_dynamics",
     "//systems/estimators",
     "//systems/framework",
     "//systems/lcm",
     "//systems/plants/spring_mass_system",
     "//systems/primitives",
     "//systems/rendering",
-    "//systems/robotInterfaces",
     "//systems/sensors",
     "//systems/sensors/dev",
     "//systems/trajectory_optimization",
     "//util",
-    # //examples/atlas:atlas_util (indirectly)
     # //examples/kuka_iiwa_arm:iiwa_common (indirectly)
     # //examples/kuka_iiwa_arm:iiwa_lcm (indirectly)
 ]
