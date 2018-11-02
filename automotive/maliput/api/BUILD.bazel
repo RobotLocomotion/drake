@@ -36,6 +36,7 @@ drake_cc_library(
         "road_geometry.h",
         "rules/regions.h",
         "rules/right_of_way_phase.h",
+        "rules/right_of_way_phase_book.h",
         "rules/right_of_way_phase_provider.h",
         "rules/right_of_way_phase_ring.h",
         "rules/right_of_way_rule.h",
