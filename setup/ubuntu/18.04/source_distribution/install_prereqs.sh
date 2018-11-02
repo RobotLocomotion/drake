@@ -27,6 +27,9 @@ echo 'deb [arch=amd64] https://drake-apt.csail.mit.edu/bionic bionic main' > /et
 apt-get update
 apt-get install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages.txt" | tr '\n' ' ')
 
+# For using `mkdoc`.
+locale-gen en_US.UTF-8
+
 dpkg_install_from_wget() {
   package="$1"
   version="$2"
