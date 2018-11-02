@@ -12,6 +12,7 @@ py_library(
     ]),
     imports = ["src"],
     visibility = ["//visibility:public"],
+    deps = ["@u_msgpack_python//:umsgpack"],
 )
 
 # TODO(jamiesnape): Add acceptance test.
