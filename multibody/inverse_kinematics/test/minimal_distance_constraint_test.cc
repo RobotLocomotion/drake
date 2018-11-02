@@ -13,16 +13,14 @@ TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraint) {
   const MinimalDistanceConstraint constraint(*plant_autodiff_, minimal_distance,
                                              plant_context_autodiff_);
   EXPECT_EQ(constraint.num_constraints(), 1);
-  EXPECT_TRUE(
-      CompareMatrices(constraint.lower_bound(), Vector1d(minimal_distance)));
-  EXPECT_TRUE(
-      CompareMatrices(constraint.upper_bound(),
-                      Vector1d(std::numeric_limits<double>::infinity())));
+  EXPECT_TRUE(CompareMatrices(constraint.lower_bound(), Vector1d(0)));
+  EXPECT_TRUE(CompareMatrices(constraint.upper_bound(), Vector1d(0)));
 
   const Eigen::Quaterniond sphere1_quaternion(1, 0, 0, 0);
   const Eigen::Quaterniond sphere2_quaternion(1, 0, 0, 0);
-  const Eigen::Vector3d sphere1_position(0.2, 1.2, 0.3);
-  const Eigen::Vector3d sphere2_position(1.2, -0.4, 2.3);
+  // distance larger than minimal_distance;
+  Eigen::Vector3d sphere1_position(0.2, 1.2, 0.3);
+  Eigen::Vector3d sphere2_position(1.2, -0.4, 2.3);
   Eigen::Matrix<double, 14, 1> q;
   q << QuaternionToVectorWxyz(sphere1_quaternion), sphere1_position,
       QuaternionToVectorWxyz(sphere2_quaternion), sphere2_position;
@@ -35,10 +33,10 @@ TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraint) {
   // TODO(hongkai.dai): change this check once we add the penalty term to
   // evaluate MinimalDistanceConstraint.
   const double tol{1E-6};
-  const double distance_expected =
-      (sphere1_position - sphere2_position).norm() - radius1_ - radius2_;
-  EXPECT_NEAR(y_double(0), distance_expected, tol);
-  EXPECT_NEAR(y(0).value(), distance_expected, tol);
+  // const double distance_expected =
+  //   (sphere1_position - sphere2_position).norm() - radius1_ - radius2_;
+  EXPECT_NEAR(y_double(0), 0, tol);
+  EXPECT_NEAR(y(0).value(), 0, tol);
 }
 
 GTEST_TEST(MinimalDistanceConstraintTest,
@@ -50,6 +48,18 @@ GTEST_TEST(MinimalDistanceConstraintTest,
       std::invalid_argument,
       "MinimalDistanceConstraint: MultibodyPlant has not registered its "
       "geometry source with SceneGraph yet.");
+}
+
+TEST_F(TwoFreeSpheresTest, NonpositiveMinimalDistance) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MinimalDistanceConstraint(*plant_autodiff_, 0, plant_context_autodiff_),
+      std::invalid_argument,
+      "MinimalDistanceConstraint: minimal_distance should be positive.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MinimalDistanceConstraint(*plant_autodiff_, -0.1,
+                                plant_context_autodiff_),
+      std::invalid_argument,
+      "MinimalDistanceConstraint: minimal_distance should be positive.");
 }
 }  // namespace internal
 }  // namespace multibody

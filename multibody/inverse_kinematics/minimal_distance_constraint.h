@@ -8,27 +8,38 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+/**
+ * Constrain that the pairwise distance between objects should be no
+ * smaller than a positive threshold. We consider the distance between pairs of
+ * 1. Anchored (static) object and a dynamic object.
+ * 2. A dynamic object and another dynamic object, if one is not the parent
+ * link of the other.
+ */
 class MinimalDistanceConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinimalDistanceConstraint)
 
   /**
-   * Constructs the minimal distance constraint, that the pairwise distance
-   * between the objects in the world should be greater than some threshold.
-   * We consider the distance between
-   * 1. A dynamic object and a static (anchored) object.
-   * 2. Two dynamic objects.
-   * TODO(hongkai.dai): filter out between the pair of dynamic objects, that
-   * one is the parent of the other (connected by a mechanical joint).
-   * @param diagram The diagram that contains both the MultibodyPlant and the
-   * SceneGraph. TODO(hongkai.dai): replace this diagram with the
-   * MultiBodySceneGraph class when it is in drake.
-   * @param num_positions The number of generalized positions in MultibodyPlant.
-   * TODO(hongkai.dai): remove this argument when MultibodySceneGraph is ready.
-   * @param minimal_distance The minimal distance allowed between the pair of
-   * objects.
-   * @param diagram_context The context that has been allocated for this
-   * diagram. We will update the context when evaluating the constraint.
+   * @param plant The robot on which the inverse kinematics problem will be
+   * solved. If this plant has registered its geometry with a SceneGraph object,
+   * then the user can impose collision related constraint (like
+   * AddMinimalDistanceConstraint).
+   * @param minimal_distance The minimal value of the signed distance between
+   * any admissible pairs of objects.
+   * @pre The MultibodyPlant passed in the constructor of InverseKinematics has
+   * registered its geometry with a SceneGraph object already. @throw
+   * invalid_argument if the geometry hasn't been registered.
+   * @pre minimal_distance > 0. 
+   * The formulation of the constraint is
+   * ∑ γ(φᵢ/dₘᵢₙ - 1) = 0
+   * where φᵢ is the signed distance of the i'th pair, dₘᵢₙ is the minimal
+   * allowable distance, and γ is a penalizing function defined as
+   * γ(x) = 0 if x ≥ 0
+   * γ(x) = -x exp(1/x) if x < 0
+   * This formulation is described in section II.C of Whole-body Motion planning
+   * with Centroidal Dynamics and Full Kinematics by Hongkai Dai, Andres
+   * Valenzuela and Russ Tedrake, 2014 IEEE-RAS International Conference on
+   * Humanoid Robots.
    */
   MinimalDistanceConstraint(
       const multibody::multibody_plant::MultibodyPlant<AutoDiffXd>& plant,
