@@ -10,8 +10,8 @@ namespace multibody {
 namespace internal {
 TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraint) {
   const double minimal_distance(0.1);
-  const MinimalDistanceConstraint constraint(
-      *two_spheres_plant_, minimal_distance, plant_context_autodiff_);
+  const MinimalDistanceConstraint constraint(*plant_autodiff_, minimal_distance,
+                                             plant_context_autodiff_);
   EXPECT_EQ(constraint.num_constraints(), 1);
   EXPECT_TRUE(
       CompareMatrices(constraint.lower_bound(), Vector1d(minimal_distance)));

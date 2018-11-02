@@ -129,13 +129,18 @@ class TwoFreeSpheresTest : public ::testing::Test {
  protected:
   double radius1_{0.1};
   double radius2_{0.2};
-  std::unique_ptr<systems::Diagram<AutoDiffXd>> diagram_;
-  multibody::multibody_plant::MultibodyPlant<AutoDiffXd>* two_spheres_plant_{
+  std::unique_ptr<systems::Diagram<double>> diagram_double_;
+  std::unique_ptr<systems::Diagram<AutoDiffXd>> diagram_autodiff_;
+  multibody::multibody_plant::MultibodyPlant<double>* plant_double_{nullptr};
+  multibody::multibody_plant::MultibodyPlant<AutoDiffXd>* plant_autodiff_{
       nullptr};
-  geometry::SceneGraph<AutoDiffXd>* scene_graph_{nullptr};
+  geometry::SceneGraph<double>* scene_graph_double_{nullptr};
+  geometry::SceneGraph<AutoDiffXd>* scene_graph_autodiff_{nullptr};
   FrameIndex sphere1_index_;
   FrameIndex sphere2_index_;
+  std::unique_ptr<systems::Context<double>> diagram_context_double_;
   std::unique_ptr<systems::Context<AutoDiffXd>> diagram_context_autodiff_;
+  systems::Context<double>* plant_context_double_;
   systems::Context<AutoDiffXd>* plant_context_autodiff_;
 };
 

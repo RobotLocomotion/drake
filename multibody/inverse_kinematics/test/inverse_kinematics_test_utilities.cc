@@ -44,36 +44,63 @@ ConstructTwoFreeBodiesPlant() {
   return model;
 }
 
-TwoFreeSpheresTest::TwoFreeSpheresTest() {
-  using T = AutoDiffXd;
+template <typename T>
+struct DiagramAndContext {
+  std::unique_ptr<systems::Diagram<T>> diagram;
+  std::unique_ptr<systems::Context<T>> diagram_context;
+};
+
+template <typename T>
+DiagramAndContext<T> BuildTwoFreeSpheresDiagram(
+    double radius1, double radius2,
+    multibody::multibody_plant::MultibodyPlant<T>** plant,
+    geometry::SceneGraph<T>** scene_graph, FrameIndex* sphere1_index,
+    FrameIndex* sphere2_index, systems::Context<T>** plant_context) {
+  DiagramAndContext<T> ret;
   systems::DiagramBuilder<T> builder;
-  scene_graph_ = builder.AddSystem<geometry::SceneGraph<T>>();
+  *scene_graph = builder.template AddSystem<geometry::SceneGraph<T>>();
   auto model = ConstructTwoFreeBodiesHelper<multibody_plant::MultibodyPlant<T>>(
       "sphere1", "sphere2");
-  two_spheres_plant_ = builder.AddSystem(std::move(model));
-  two_spheres_plant_->RegisterAsSourceForSceneGraph(scene_graph_);
-  const auto& sphere1 = two_spheres_plant_->GetBodyByName("sphere1");
-  const auto& sphere2 = two_spheres_plant_->GetBodyByName("sphere2");
-  two_spheres_plant_->RegisterCollisionGeometry(
-      sphere1, Eigen::Isometry3d::Identity(), geometry::Sphere(radius1_),
+  *plant = builder.AddSystem(std::move(model));
+  (*plant)->RegisterAsSourceForSceneGraph(*scene_graph);
+  const auto& sphere1 = (*plant)->GetBodyByName("sphere1");
+  const auto& sphere2 = (*plant)->GetBodyByName("sphere2");
+  (*plant)->RegisterCollisionGeometry(
+      sphere1, Eigen::Isometry3d::Identity(), geometry::Sphere(radius1),
       "sphere1_collision",
-      multibody::multibody_plant::CoulombFriction<double>(), scene_graph_);
-  two_spheres_plant_->RegisterCollisionGeometry(
-      sphere2, Eigen::Isometry3d::Identity(), geometry::Sphere(radius2_),
+      multibody::multibody_plant::CoulombFriction<double>(), *scene_graph);
+  (*plant)->RegisterCollisionGeometry(
+      sphere2, Eigen::Isometry3d::Identity(), geometry::Sphere(radius2),
       "sphere2_collision",
-      multibody::multibody_plant::CoulombFriction<double>(), scene_graph_);
-  sphere1_index_ = sphere1.body_frame().index();
-  sphere2_index_ = sphere2.body_frame().index();
-  two_spheres_plant_->Finalize(scene_graph_);
+      multibody::multibody_plant::CoulombFriction<double>(), *scene_graph);
+  *sphere1_index = sphere1.body_frame().index();
+  *sphere2_index = sphere2.body_frame().index();
+  (*plant)->Finalize(*scene_graph);
   builder.Connect(
-      two_spheres_plant_->get_geometry_poses_output_port(),
-      scene_graph_->get_source_pose_port(*two_spheres_plant_->get_source_id()));
-  builder.Connect(scene_graph_->get_query_output_port(),
-                  two_spheres_plant_->get_geometry_query_input_port());
-  diagram_ = builder.Build();
-  diagram_context_autodiff_ = diagram_->CreateDefaultContext();
-  plant_context_autodiff_ = &(diagram_->GetMutableSubsystemContext(
-      *two_spheres_plant_, diagram_context_autodiff_.get()));
+      (*plant)->get_geometry_poses_output_port(),
+      (*scene_graph)->get_source_pose_port(*(*plant)->get_source_id()));
+  builder.Connect((*scene_graph)->get_query_output_port(),
+                  (*plant)->get_geometry_query_input_port());
+  ret.diagram = builder.Build();
+  ret.diagram_context = ret.diagram->CreateDefaultContext();
+  *plant_context = &(ret.diagram->GetMutableSubsystemContext(
+      **plant, ret.diagram_context.get()));
+  return ret;
+}
+
+TwoFreeSpheresTest::TwoFreeSpheresTest() {
+  auto diagram_and_context_double = BuildTwoFreeSpheresDiagram(
+      radius1_, radius2_, &plant_double_, &scene_graph_double_, &sphere1_index_,
+      &sphere2_index_, &plant_context_double_);
+  diagram_double_ = std::move(diagram_and_context_double.diagram);
+  diagram_context_double_ =
+      std::move(diagram_and_context_double.diagram_context);
+  auto diagram_and_context_autodiff = BuildTwoFreeSpheresDiagram(
+      radius1_, radius2_, &plant_autodiff_, &scene_graph_autodiff_,
+      &sphere1_index_, &sphere2_index_, &plant_context_autodiff_);
+  diagram_autodiff_ = std::move(diagram_and_context_autodiff.diagram);
+  diagram_context_autodiff_ =
+      std::move(diagram_and_context_autodiff.diagram_context);
 }
 
 std::unique_ptr<multibody_plant::MultibodyPlant<double>> ConstructIiwaPlant(
