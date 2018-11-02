@@ -1012,7 +1012,10 @@ GTEST_TEST(SimulatorTest, SimpleHybridSystemTest) {
 
   // Simulate forward.
   simulator.StepTo(1.0);
-  simulator.Finalize();
+
+  // There will be a pending event. Handle it by calling StepTo(1.0) one more
+  // time.
+  simulator.StepTo(1.0);
 
   // TODO: Check that the update occurs at exactly the desired time.
   EXPECT_EQ(simulator.get_context().get_discrete_state()[0], 1.0);

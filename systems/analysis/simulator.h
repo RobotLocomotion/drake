@@ -24,101 +24,105 @@
 namespace drake {
 namespace systems {
 
-/// A class for advancing the state of hybrid dynamic systems, represented by
-/// `System<T>` objects, forward in time. Starting with an initial Context for a
-/// given System, %Simulator advances time and produces a series of Context
-/// values that forms a trajectory satisfying the system's dynamic equations to
-/// a specified accuracy. Only the Context is modified by a %Simulator; the
-/// System is const.
-///
-/// A Drake System is a continuous/discrete/hybrid dynamic system where the
-/// continuous part is a DAE, that is, it is expected to consist of a set of
-/// differential equations and bilateral algebraic constraints. The set of
-/// active constraints may change as a result of particular events, such as
-/// contact.
-///
-/// Given a current Context, we expect a System to provide us with
-/// - derivatives for the continuous differential equations that already satisfy
-///   the differentiated form of the constraints (typically, acceleration
-///   constraints),
-/// - a projection method for least-squares correction of violated higher-level
-///   constraints (position and velocity level),
-/// - a time-of-next-update method that can be used to adjust the integrator
-///   step size in preparation for a discrete update,
-/// - a method that can update discrete variables when their update time is
-///   reached,
-/// - witness (guard) functions for event isolation,
-/// - event handlers (reset functions) for making appropriate changes to state
-///   and mode variables when an event has been isolated.
-///
-/// The continuous parts of the trajectory are advanced using a numerical
-/// integrator. Different integrators have different properties; you can choose
-/// the one that is most appropriate for your application or use the default
-/// which is adequate for most systems.
-///
-/// <h2>How the simulation is stepped: simulation mechanics for authors of
-///   systems with multiple event types (Advanced)</h2>
-/// This documentation is targeted toward users who have created a LeafSystem
-/// with multiple event types (unrestricted update, discrete update, and
-/// publish). For authors of such systems, it is useful to understand the
-/// simulation mechanics in order to attain the desired state over time.
-/// This behavior is dependent on the ordering in which events are processed.
-///
-/// The pseudocode for the algorithm that the simulator uses to step the state
-/// from time and state `{ t0, xc(t0), xd(t0⁻), xa(t0⁻) }` forward in time
-/// by length _no greater_ than Δt will be presented shortly. We will make use
-/// of the notation `xd(t⁻)` to denote a variable before any instantaneous
-/// (unrestricted or discrete) updates, `xd(t*)` to denote the same variable
-/// after an unrestricted update, and `xd(t⁺)` to denote the same variable after
-/// a discrete update. The pseudocode follows:
-/// @verbatim
-/// Step(t0, xc(t0⁻), xd(t0⁻), xa(t0⁻), Δt)
-///
-///   // Update any variables (no restrictions).
-///   { xc(t0*), xd(t0*), xa(t0⁺) } ←
-///       DoAnyUnrestrictedUpdates(t0, xc(t0⁻), xd(t0⁻), xa(t0⁻))
-///
-///   // Update discrete variables.
-///   xd(t0⁺) ← DoAnyDiscreteUpdates(t0,  xc(t0*), xd(t0*), xa(t0⁺))
-///
-///   // See how far it is safe to integrate without missing any events.
-///   tₑ ← NextEventTime(t0, xc(t0*), xd(t0⁺), xa(t0⁺))
-///
-///   // Integrate continuous variables forward in time.
-///   h ← min(tₑ - t0, Δt)
-///   { t₁, xc(t₁⁻) } ← Integrate(t0, xc(t0*), xd(t0⁺), xa(t0*), h)
-///
-///   // Hold discrete and abstract variables values from t0* and t0⁺ to t₁⁻.
-///   xd(t₁⁻) ← xd(t0⁺)
-///   xa(t₁⁻) ← xa(t0*)
-///
-///   DoAnyPublishes(t₁, xc(t₁⁻), xd(t₁⁻), xa(t₁⁻))
-///
-///   return { t₁, xc(t₁⁻), xd(t₁⁻), xa(t₁⁻) }
-/// @endverbatim
-///
-/// We can use this algorithm to examine the Initialize(), StepTo(), and
-/// StepInPlace() functions, which we shall now do in reverse order.
-/// StepInPlace() is simply Step() with `t0 = get_context().get_time()`, and
-/// `Δt = 0`. StepTo(t_final) can be outlined as:
-/// @verbatim
-/// t ← current_time
-/// while t ≠ t_final
-///   { tnew, xc(tnew⁻), xd(tnew⁻), xa(tnew⁻) } ←
-///         StepTo(t, xc(t⁻), xd(t⁻), xa(t⁻), t_final - t)
-///   { t, xc(t⁻), xd(t⁻), xa(t⁻) } ← { tnew, xc(tnew⁻), xd(tnew⁻), xa(tnew⁻) }
-/// endwhile
-/// @endverbatim
-/// Finally, Initialize() is Step() with `t0 = initial_time - ε` (for `ε ≪ 1`)
-/// and `Δt = 0`.
-///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-/// Instantiated templates for the following kinds of T's are provided and
-/// available to link against in the containing library:
-/// - double
-/// - AutoDiffXd
-///
-/// Other instantiations are permitted but take longer to compile.
+/**
+ A class for advancing the state of hybrid dynamic systems, represented by
+ `System<T>` objects, forward in time. Starting with an initial Context for a
+ given System, %Simulator advances time and produces a series of Context
+ values that forms a trajectory satisfying the system's dynamic equations to
+ a specified accuracy. Only the Context is modified by a %Simulator; the
+ System is const.
+
+ A Drake System is a continuous/discrete/hybrid dynamic system where the
+ continuous part is a DAE, that is, it is expected to consist of a set of
+ differential equations and bilateral algebraic constraints. The set of
+ active constraints may change as a result of particular events, such as
+ contact.
+
+ Given a current Context, we expect a System to provide us with
+ - derivatives for the continuous differential equations that already satisfy
+   the differentiated form of the constraints (typically, acceleration
+   constraints),
+ - a projection method for least-squares correction of violated higher-level
+   constraints (position and velocity level),
+ - a time-of-next-update method that can be used to adjust the integrator
+   step size in preparation for a discrete update,
+ - a method that can update discrete variables when their update time is
+   reached,
+ - witness (guard) functions for event isolation,
+ - event handlers (reset functions) for making appropriate changes to state
+   and mode variables when an event has been isolated.
+
+The continuous parts of the trajectory are advanced using a numerical
+integrator. Different integrators have different properties; you can choose
+the one that is most appropriate for your application or use the default
+which is adequate for most systems.
+
+<h2>How the simulation is stepped: simulation mechanics for authors of
+  hybrid or discrete systems (Advanced)</h2>
+This documentation is targeted toward users who have created a LeafSystem
+implementing a hybrid or discrete system. For authors of such systems, it is
+useful to understand the simulation mechanics in order to attain the desired
+state behavior over time. This behavior is dependent on the ordering in
+which events are processed.
+
+The pseudocode for the algorithm that the simulator uses to step the state
+from time and state `{ t0, xc(t0), xd(t0⁻), xa(t0⁻) }` forward in time
+by length _no greater_ than Δt will be presented shortly. We will make use
+of the notation `xd(t⁻)` to denote a variable before any instantaneous
+(unrestricted or discrete) updates, `xd(t*)` to denote the same variable
+after an unrestricted update, and `xd(t⁺)` to denote the same variable after
+a discrete update. The pseudocode follows:
+@verbatim
+procedure Step(t0, xc(t0⁻), xd(t0⁻), xa(t0⁻), Δt)
+
+// Update any variables (no restrictions).
+{ xc(t0*), xd(t0*), xa(t0⁺) } ←
+    DoAnyUnrestrictedUpdates(t0, xc(t0⁻), xd(t0⁻), xa(t0⁻))
+
+// Update discrete variables.
+xd(t0⁺) ← DoAnyDiscreteUpdates(t0,  xc(t0*), xd(t0*), xa(t0⁺))
+
+// See how far it is safe to integrate without missing any events.
+tₑ ← NextEventTime(t0, xc(t0*), xd(t0⁺), xa(t0⁺))
+
+// Integrate continuous variables forward in time.
+h ← min(tₑ - t0, Δt)
+{ t₁, xc(t₁⁻) } ← Integrate(t0, xc(t0*), xd(t0⁺), xa(t0*), h)
+
+// Hold discrete and abstract variables values from t0* and t0⁺ to t₁⁻.
+xd(t₁⁻) ← xd(t0⁺)
+xa(t₁⁻) ← xa(t0*)
+
+DoAnyPublishes(t₁, xc(t₁⁻), xd(t₁⁻), xa(t₁⁻))
+
+return { t₁, xc(t₁⁻), xd(t₁⁻), xa(t₁⁻) }
+@endverbatim
+
+We can use this algorithm to examine the Initialize(), StepTo(), and
+StepInPlace() functions, which we shall now do in reverse order.
+StepInPlace() is simply Step() called with `t0 = get_context().get_time()` and
+`Δt = 0`. StepTo() can be outlined as:
+@verbatim
+procedure StepTo(t_final)
+t ← current_time
+while t ≠ t_final
+  { tnew, xc(tnew⁻), xd(tnew⁻), xa(tnew⁻) } ←
+        Step(t, xc(t⁻), xd(t⁻), xa(t⁻), t_final - t)
+  { t, xc(t⁻), xd(t⁻), xa(t⁻) } ← { tnew, xc(tnew⁻), xd(tnew⁻), xa(tnew⁻) }
+endwhile
+@endverbatim
+Finally, Initialize() is equivalent to Step() with `t0 = initial_time - ε`
+(for `ε ≪ 1`) and `Δt = 0`.
+
+@tparam T The vector element type, which must be a valid Eigen scalar.
+Instantiated templates for the following kinds of T's are provided and
+available to link against in the containing library:
+ - double
+ - AutoDiffXd
+
+Other instantiations are permitted but take longer to compile.
+*/
+
 // TODO(sherm1) When API stabilizes, should list the methods above in addition
 // to describing them.
 template <typename T>
@@ -591,7 +595,7 @@ void Simulator<T>::Initialize() {
   system_.GetPerStepEvents(*context_, per_step_events_.get());
 
   // Ensure that CalcNextUpdateTime() can return the current time by perturbing
-  // current time as slightly toward negative infinity as we can allow. 
+  // current time as slightly toward negative infinity as we can allow.
   const T current_time = context_->get_time();
   const long double inf = std::numeric_limits<long double>::infinity();
   context_->set_time(nexttoward(current_time, -inf));
