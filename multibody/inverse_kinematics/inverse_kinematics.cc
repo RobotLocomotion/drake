@@ -13,6 +13,8 @@ namespace multibody {
 using multibody_plant::MultibodyPlant;
 InverseKinematics::InverseKinematics(const MultibodyPlant<double>& plant)
     : prog_{new solvers::MathematicalProgram()},
+      owned_diagram_{nullptr},
+      diagram_{nullptr},
       owned_plant_{plant.ToAutoDiffXd()},
       plant_autodiff_{
           dynamic_cast<MultibodyPlant<AutoDiffXd>*>(owned_plant_.get())},
@@ -24,14 +26,29 @@ InverseKinematics::InverseKinematics(const MultibodyPlant<double>& plant)
   // quaternion constraint here.
 }
 
+/**
+ * Given that @p diagram_double contains @p plant, and @p diagram_autodiff is
+ * transmogrofied from @p diagram_double, returns the pointer to
+ * MultibodyPlant<AutoDiffXd> in the transmogrofied diagram_autodiff.
+ */
+const multibody_plant::MultibodyPlant<AutoDiffXd>* FindMultibodyPlantInDiagram(
+    const multibody_plant::MultibodyPlant<double>& plant,
+    const systems::Diagram<AutoDiffXd>& diagram_autodiff) {
+  return dynamic_cast<const MultibodyPlant<AutoDiffXd>*>(
+      &(diagram_autodiff.GetSubsystemByName(plant.get_name())));
+}
+
 InverseKinematics::InverseKinematics(
-    const multibody_plant::MultibodyPlant<AutoDiffXd>& plant,
-    systems::Context<AutoDiffXd>* context)
+    const systems::Diagram<double>& diagram,
+    const multibody_plant::MultibodyPlant<double>& plant,
+    systems::Context<double>*)
     : prog_{new solvers::MathematicalProgram()},
+      owned_diagram_{diagram.ToAutoDiffXd()},
+      diagram_{dynamic_cast<const systems::Diagram<AutoDiffXd>* const>(owned_diagram_.get())},
       owned_plant_{nullptr},
-      plant_autodiff_(&plant),
-      owned_context_{nullptr},
-      context_{context},
+      plant_autodiff_{FindMultibodyPlantInDiagram(plant, *diagram_)},
+      owned_context_{owned_diagram_->CreateDefaultContext()},
+      context_{owned_context_.get()},
       q_(prog_->NewContinuousVariables(plant.num_positions(), "q")) {
   AddDefaultJointLimitConstraint();
   // TODO(hongkai.dai) Add other position constraints, such as unit length

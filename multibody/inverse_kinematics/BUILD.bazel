@@ -66,6 +66,7 @@ drake_cc_library(
         ":kinematic_constraint",
         "//multibody/multibody_tree/multibody_plant",
         "//solvers:mathematical_program",
+        "//systems/framework:diagram",
     ],
 )
 

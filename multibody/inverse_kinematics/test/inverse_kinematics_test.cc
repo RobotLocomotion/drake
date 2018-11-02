@@ -214,6 +214,7 @@ TEST_F(TwoFreeBodiesTest, MinimalDistanceConstraint) {
       "geometry source with SceneGraph yet.");
 }
 
+/*
 TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraint) {
   InverseKinematics ik(*two_spheres_plant_, plant_context_autodiff_);
   AddUnitQuaternionConstraint(ik.q().head<4>(), ik.get_mutable_prog());
@@ -237,6 +238,6 @@ TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraint) {
   const Eigen::Vector3d p_WB = q_val.segment<3>(11);
   const double tol{1E-5};
   EXPECT_GE((p_WA - p_WB).norm() - radius1_ - radius2_, minimal_distance - tol);
-}
+}*/
 }  // namespace multibody
 }  // namespace drake

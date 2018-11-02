@@ -6,6 +6,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/systems/framework/diagram.h"
 
 namespace drake {
 namespace multibody {
@@ -37,20 +38,20 @@ class InverseKinematics {
 
   /**
    * Constructs an inverse kinematics problem for a MultibodyPlant.
+   * @param diagram The diagram that contains the MultibodyPlant and the
+   * SceneGraph. TODO(hongkai.dai): remove diagram when we have analytical
+   * Jacobian.
    * @param plant The robot on which the inverse kinematics problem will be
    * solved. If this plant has registered its geometry with a SceneGraph object,
    * then the user can impose collision related constraint (like
-   * AddMinimalDistanceConstraint). TODO(hongkai.dai): change to
-   * MultibodyPlant<double> when we can compute analytical Jacobian without
-   * using autodiff.
+   * AddMinimalDistanceConstraint).
    * @param context The context The context used by @plant. @note
    * InverseKinematics doesn't own this context. This context should be
-   * allocated by the diagram, which owns the MultibodyPlant. TODO(hongkai.dai)
-   * change to Context<double> when we can compute analytical Jacobian without
-   * using autodiff.
+   * allocated by the diagram, which owns the MultibodyPlant.
    */
-  InverseKinematics(const multibody_plant::MultibodyPlant<AutoDiffXd>& plant,
-                    systems::Context<AutoDiffXd>* context);
+  InverseKinematics(const systems::Diagram<double>& diagram,
+                    const multibody_plant::MultibodyPlant<double>& plant,
+                    systems::Context<double>* context);
 
   /** Adds the kinematic constraint that a point Q, fixed in frame B, should lie
    * within a bounding box expressed in another frame A as p_AQ_lower <= p_AQ <=
@@ -209,6 +210,8 @@ class InverseKinematics {
   }
 
   std::unique_ptr<solvers::MathematicalProgram> prog_;
+  std::unique_ptr<systems::System<AutoDiffXd>> owned_diagram_;
+  const systems::Diagram<AutoDiffXd>* const diagram_;
   std::unique_ptr<systems::System<AutoDiffXd>> owned_plant_;
   const multibody_plant::MultibodyPlant<AutoDiffXd>* const plant_autodiff_;
   std::unique_ptr<systems::Context<AutoDiffXd>> const owned_context_;
