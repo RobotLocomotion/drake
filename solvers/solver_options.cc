@@ -2,21 +2,12 @@
 
 namespace drake {
 namespace solvers {
-SolverOptions::SolverOptions() {}
-
-SolverOptions& SolverOptions::operator=(const SolverOptions& other) {
-  solver_options_double_ = other.solver_options_double_;
-  solver_options_int_ = other.solver_options_int_;
-  solver_options_str_ = other.solver_options_str_;
-  return *this;
-}
-
-SolverOptions& SolverOptions::operator=(SolverOptions&& other) {
-  solver_options_double_ = other.solver_options_double_;
-  solver_options_int_ = other.solver_options_int_;
-  solver_options_str_ = other.solver_options_str_;
-  return *this;
-}
+const std::unordered_map<std::string, double>
+    SolverOptions::solver_options_double_empty_{};
+const std::unordered_map<std::string, int>
+    SolverOptions::solver_options_int_empty_{};
+const std::unordered_map<std::string, std::string>
+    SolverOptions::solver_options_str_empty_{};
 
 void SolverOptions::SetSolverOption(const SolverId& solver_id,
                                     const std::string& solver_option,

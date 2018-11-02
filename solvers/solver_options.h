@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/solvers/solver_id.h"
 
 namespace drake {
@@ -21,6 +22,8 @@ namespace solvers {
  * "SNOPT" -- Parameter names and values as specified in SNOPT
  * User's Guide section 7.7 "Description of the optional parameters",
  * used as described in section 7.5 for snSet().
+ * The SNOPT user guide can be obtained from
+ * https://web.stanford.edu/group/SOL/guides/sndoc7.pdf
  *
  * "IPOPT" -- Parameter names and values as specified in IPOPT users
  * guide section "Options Reference"
@@ -32,15 +35,9 @@ namespace solvers {
  */
 class SolverOptions {
  public:
-  SolverOptions();
+  SolverOptions() = default;
 
-  SolverOptions(const SolverOptions& other) = default;
-
-  SolverOptions(SolverOptions&& other) = default;
-
-  SolverOptions& operator=(const SolverOptions&);
-
-  SolverOptions& operator=(SolverOptions&&);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SolverOptions)
 
   void SetSolverOption(const SolverId& solver_id,
                        const std::string& solver_option, double option_value);
@@ -69,10 +66,11 @@ class SolverOptions {
   std::map<SolverId, std::unordered_map<std::string, std::string>>
       solver_options_str_{};
 
-  const std::unordered_map<std::string, double> solver_options_double_empty_{};
-  const std::unordered_map<std::string, int> solver_options_int_empty_{};
-  const std::unordered_map<std::string, std::string>
-      solver_options_str_empty_{};
+  static const std::unordered_map<std::string, double>
+      solver_options_double_empty_;
+  static const std::unordered_map<std::string, int> solver_options_int_empty_;
+  static const std::unordered_map<std::string, std::string>
+      solver_options_str_empty_;
 };
 }  // namespace solvers
 }  // namespace drake
