@@ -136,6 +136,32 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, BasicTest) {
   EXPECT_EQ(periodic_events.begin()->first.period_sec(), 1/60.0);
 }
 
+GTEST_TEST(ConnectContactResultsToDrakeVisualizer, NestedDiagramTest) {
+  systems::DiagramBuilder<double> interior_builder;
+
+  // Make a trivial plant with at least one body and a discrete time step.
+  auto plant = interior_builder.AddSystem<MultibodyPlant>(0.001);
+  plant->AddRigidBody("link", SpatialInertia<double>());
+  plant->Finalize();
+
+  interior_builder.ExportOutput(plant->get_contact_results_output_port(),
+      "contact_results");
+
+  systems::DiagramBuilder<double> builder;
+  auto interior_diagram = builder.AddSystem(interior_builder.Build());
+
+  auto publisher = ConnectContactResultsToDrakeVisualizer(&builder, *plant,
+      interior_diagram->GetOutputPort("contact_results"));
+
+  // Confirm that we get a non-null result.
+  EXPECT_NE(publisher, nullptr);
+
+  // Check that the publishing event was set as documented.
+  auto periodic_events = publisher->GetPeriodicEvents();
+  EXPECT_EQ(periodic_events.size(), 1);
+  EXPECT_EQ(periodic_events.begin()->first.period_sec(), 1/60.0);
+}
+
 }  // namespace
 }  // namespace multibody_plant
 }  // namespace multibody
