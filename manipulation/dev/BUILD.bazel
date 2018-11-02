@@ -28,11 +28,11 @@ drake_cc_library(
         "quasistatic_system.h",
     ],
     deps = [
+        "//attic/systems/controllers:control_util",
         "//math:geometric_transform",
         "//multibody:kinematics_cache",
         "//multibody:rigid_body_tree",
         "//solvers:mathematical_program",
-        "//systems/controllers:control_util",
         "//systems/framework:leaf_system",
     ],
 )

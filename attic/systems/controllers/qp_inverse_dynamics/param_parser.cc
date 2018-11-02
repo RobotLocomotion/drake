@@ -4,8 +4,12 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/proto/protobuf.h"
-#include "drake/systems/controllers/qp_inverse_dynamics/id_controller_config.pb.h"
 #include "drake/util/drakeUtil.h"
+
+// N.B. Usually we avoid "attic/" in our #include paths, but for this
+// protoc-generated file, it's not worth the effort of teaching the build
+// system how to omit it, specially since alias_groups.pb.h is not installed.
+#include "drake/attic/systems/controllers/qp_inverse_dynamics/id_controller_config.pb.h"
 
 namespace drake {
 namespace systems {
