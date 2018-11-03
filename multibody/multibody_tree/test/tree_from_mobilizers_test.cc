@@ -515,7 +515,7 @@ TEST_F(PendulumTests, CreateContext) {
   // Asserts that the retrieved poses match with the ones specified by the unit
   // test method SetPendulumPoses().
   EXPECT_TRUE(X_WW.GetAsMatrix4().isApprox(Matrix4d::Identity()));
-  EXPECT_TRUE(X_WLu.GetAsMatrix4().isApprox(X_WL_.GetAsMatrix4()));
+  EXPECT_TRUE(X_WLu.GetAsMatrix34().isApprox(X_WL_.GetAsMatrix34()));
 }
 
 // Unit test fixture to verify the correctness of MultibodyTree methods for
@@ -885,10 +885,8 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
           elbow_mobilizer_->get_topology().body_node;
 
       // Expected poses of the outboard frames measured in the inboard frame.
-      RotationMatrixd R_SiSo(AngleAxisd(shoulder_angle, Vector3d::UnitZ()));
-      RotationMatrixd R_EiEo(AngleAxisd(elbow_angle, Vector3d::UnitZ()));
-      const RigidTransformd X_SiSo(R_SiSo);
-      const RigidTransformd X_EiEo(R_EiEo);
+      RigidTransformd X_SiSo(RotationMatrixd::MakeZRotation(shoulder_angle));
+      RigidTransformd X_EiEo(RotationMatrixd::MakeZRotation(elbow_angle));
 
       // Verify the values in the position kinematics cache.
       EXPECT_TRUE(pc.get_X_FM(shoulder_node).matrix().isApprox(
@@ -921,10 +919,8 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
       // unit test method SetPendulumPoses().
       EXPECT_TRUE(
           X_WW.GetAsMatrix4().isApprox(Matrix4d::Identity(), kTolerance));
-      EXPECT_TRUE(X_WU.GetAsMatrix4().isApprox(X_WU_expected.GetAsMatrix4(),
-                                               kTolerance));
-      EXPECT_TRUE(X_WL.GetAsMatrix4().isApprox(X_WL_expected.GetAsMatrix4(),
-                                               kTolerance));
+      EXPECT_TRUE(X_WU.IsNearlyEqualTo(X_WU_expected, kTolerance));
+      EXPECT_TRUE(X_WL.IsNearlyEqualTo(X_WL_expected, kTolerance));
     }
   }
 }

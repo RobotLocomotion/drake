@@ -96,11 +96,11 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
       (1.5 * Vector3d::UnitX() +
        2.0 * Vector3d::UnitY() +
        3.0 * Vector3d::UnitZ()).normalized();
-  const Matrix3d R_WB_test = AngleAxisd(M_PI / 3.0, axis).toRotationMatrix();
-  mobilizer.SetFromRotationMatrix(&context, R_WB_test);
+  const math::RotationMatrixd R_WB_test(AngleAxisd(M_PI / 3.0, axis));
+  mobilizer.SetFromRotationMatrix(&context, R_WB_test.matrix());
   // Verify we get the right quaternion.
   const Quaterniond q_WB_test = mobilizer.get_quaternion(context);
-  const Quaterniond q_WB_test_expected(R_WB_test);
+  const Quaterniond q_WB_test_expected(R_WB_test.matrix());
   EXPECT_TRUE(CompareMatrices(
       q_WB_test.coeffs(), q_WB_test_expected.coeffs(),
       5 * kEpsilon, MatrixCompareType::relative));
@@ -186,8 +186,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
       benchmark_.CalculateExactTranslationalSolution(kEndTime);
 
   // Compare computed solution against benchmark:
-  EXPECT_TRUE(CompareMatrices(R_WB.matrix(), R_WB_exact.matrix(), kTolerance,
-                              MatrixCompareType::relative));
+  EXPECT_TRUE(R_WB.IsNearlyEqualTo(R_WB_exact, kTolerance));
   EXPECT_TRUE(CompareMatrices(p_WBcm, p_WBcm_exact, kTolerance,
                               MatrixCompareType::relative));
 
