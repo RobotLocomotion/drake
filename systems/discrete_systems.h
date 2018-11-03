@@ -23,13 +23,13 @@ the state and output are a function of a discrete process.
 
 @image html framework/images/discrete.png "Figure 1: Plots of state (x) and output (y) of a discrete system. This plot shows one possible relationship between iterate (n) and time (t)."
 
-Consider the simple discrete system:
+The following class implements the simple discrete system
 @verbatim
 x[n+1] = x[n] + 1
 y[n] = x[n].
 @endverbatim
+as a Drake LeafSystem:
 
-The following class implements this discrete system as a Drake System:
 @code
 class SimpleDiscreteSystem : public LeafSystem<double> {
  public:
@@ -86,13 +86,14 @@ Published 2.0 at t=3.0
 <h2>Interaction of discrete and continuous models: how Drake models discrete
  systems in a hybrid systems framework (ADVANCED)</h2>
 Drake can model continuous systems, discrete systems, and hybrid
-discrete/continuous systems. This section will describe design choices that the
-modeler must make to implement a discrete system in Drake.
+discrete/continuous systems. This section will primary focus upon a particular
+design choice for implementing discrete systems in Drake's' hybrid system
+framework.
 
-Discrete systems in Drake possess one or more discrete variables
-(DiscreteValues) and are usually updated at a specified periodicity (which
-we will denote `h`) as time advances. Observe that `h = 0.1` for the system
-shown in Figure 1.
+First, note that discrete systems in Drake possess one or more discrete
+variables (DiscreteValues) and are usually updated at a specified periodicity
+(which we will denote `h`) as time advances. Observe that `h = 0.1` for the
+system shown in Figure 1.
 
 The plot below shows the state evolution of this system over time. Since Drake
 permits continuous and discrete systems to interact, the discrete systems must
@@ -113,7 +114,11 @@ values at `t = 1.0`: `x[0]` (pre-update `x`) and `x[1]` (post-update `x`).
 We distinguish between pre-update and post-update times using `t⁻` and `t⁺`,
 respectively. Likewise, we can distinguish between the value of `x` at pre-
 and post-update times as `x(1.0⁻) = x[0]` and `x(1.0⁺) = x[1]`. We will
-make use of the same notation for `u(t)`. The parenthesis notation refers to the
+make use of the same notation for `u(t)`. You can think of tᵢ⁻ as the time at
+the end of the iᵗʰ time step, while you can think of tᵢ⁺ as the time at the
+beginning of time step i+1.
+
+Note well that the parenthesis notation refers to the
 value of the variable at a _time_ while the bracket notation refers to the value
 of the variable at an _iteration_.
 
@@ -138,7 +143,7 @@ Published 3.0 at t=3.0
 
 In order to understand the full implications of the choice of update
 time, we must examine how discrete and continuous systems interact.
-Consider the hybrid continuous-discrete system: `x[n+1] = x[n] + u(t)` where
+Consider the hybrid continuous-discrete system `x[n+1] = x[n] + u(t)` where
 `h = 1`, `x[0] = 0`, and `u(t) = t + 1`. Applying the two strategies to
 initial conditions `x[0] = x(0⁻) = 0` (i.e., advancing the system through
 time using Drake's Simulator) yields the plot shown in Figure 3.
@@ -160,6 +165,8 @@ _For the case of updates starting at time zero_ (blue line):
 2. The input is evaluated at the left end of each discrete interval, e.g.,
    x(0⁺) is computed using u(0).
 
+In conclusion, neither of these choices is right or wrong; each choice just
+carries its own implications.
 
 @ingroup systems
 */
