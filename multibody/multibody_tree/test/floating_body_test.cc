@@ -27,7 +27,6 @@ namespace {
 
 using benchmarks::free_body::FreeBody;
 using Eigen::AngleAxisd;
-using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
@@ -164,8 +163,9 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   simulator.StepTo(kEndTime);
 
   // Get solution:
-  const Isometry3d X_WB = free_body_plant.CalcPoseInWorldFrame(context);
-  const Matrix3d R_WB = X_WB.linear();
+  const math::RigidTransformd X_WB =
+      free_body_plant.CalcPoseInWorldFrame(context);
+  const math::RotationMatrixd R_WB = X_WB.rotation();
   const Vector3d p_WBcm = X_WB.translation();
   const SpatialVelocity<double> V_WB =
       free_body_plant.CalcSpatialVelocityInWorldFrame(context);
@@ -179,15 +179,14 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   std::tie(quat_WB_exact, quatDt_WB_exact, w_WB_B_exact, wDt_WB_B_exact) =
       benchmark_.CalculateExactRotationalSolutionNB(kEndTime);
 
-  Vector4d qv; qv << quat_WB_exact.w(), quat_WB_exact.vec();
-  const Matrix3d R_WB_exact = math::quat2rotmat(qv);
+  const math::RotationMatrixd R_WB_exact(quat_WB_exact);
   const Vector3d w_WB_exact = R_WB_exact * w_WB_B_exact;
   Vector3d p_WBcm_exact, v_WBcm_exact, a_WBcm_exact;
   std::tie(p_WBcm_exact, v_WBcm_exact, a_WBcm_exact) =
       benchmark_.CalculateExactTranslationalSolution(kEndTime);
 
   // Compare computed solution against benchmark:
-  EXPECT_TRUE(CompareMatrices(R_WB, R_WB_exact, kTolerance,
+  EXPECT_TRUE(CompareMatrices(R_WB.matrix(), R_WB_exact.matrix(), kTolerance,
                               MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(p_WBcm, p_WBcm_exact, kTolerance,
                               MatrixCompareType::relative));
@@ -282,12 +281,10 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
   // propagate to the time derivatives through the kinematic maps.
   EXPECT_TRUE(std::abs(q_WB.norm() - 1.0) < kEpsilon);
 
-  Isometry3d X_WB = Isometry3d::Identity();
-  X_WB.linear() = q_WB.matrix();
-  X_WB.translation() = p_WB;
+  const math::RigidTransformd X_WB(q_WB, p_WB);
   EXPECT_NO_THROW(
       model.SetFreeBodyPoseOrThrow(
-          free_body_plant.body(), X_WB, context.get()));
+          free_body_plant.body(), X_WB.GetAsIsometry3(), context.get()));
 
   // Set velocities.
   const Vector3d w_WB(1.0, 2.0, 3.0);
