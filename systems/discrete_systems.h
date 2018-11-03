@@ -26,7 +26,7 @@ the state and output are a function of a discrete process.
 The following class implements the simple discrete system
 @verbatim
 x[n+1] = x[n] + 1
-y[n] = x[n].
+y[n] = x[n] + 1
 @endverbatim
 as a Drake LeafSystem:
 
@@ -35,10 +35,11 @@ class SimpleDiscreteSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleDiscreteSystem)
   SimpleDiscreteSystem() {
+    const int state_dim = 1;
     this->DeclarePeriodicDiscreteUpdate(kPeriod, kOffset);
     this->DeclareVectorOutputPort("y", BasicVector<double>(1),
         &SimpleDiscreteSystem::CalcOutput);
-    this->DeclareDiscreteState(1 /* single state variable */);
+    this->DeclareDiscreteState(state_dim);
   }
 
   double GetX(const Context<double>& context) {
@@ -61,7 +62,7 @@ class SimpleDiscreteSystem : public LeafSystem<double> {
 
   void CalcOutput(
       const Context<double>& context, BasicVector<double>* output) const {
-    *output[0] = GetX(context);
+    *output[0] = GetX(context) + 1;
   }
 
   const double kPeriod = 1.0;  // Update every second (h=1).
@@ -96,12 +97,13 @@ variables (DiscreteValues) and are usually updated at a specified periodicity
 system shown in Figure 1.
 
 The plot below shows the state evolution of this system over time. Since Drake
-permits continuous and discrete systems to interact, the discrete systems must
+allows continuous and discrete systems to interact, the discrete systems must
 be sample-able at times that correspond to non-integer multiples of `h`.
-Contrast  how the values of `x` are held for finite time in Figure 2
-with the instantaneous values of `x` in Figure 1.
+Contrast how the values of `x` and `y` are held for finite time in Figure 2
+with the instantaneous values of `x` and `y` in Figure 1. The labels will be
+described in the next section (below).
 
-@image html framework/images/simple-discrete.png "Figure 2: Plots of state for the discrete system x[n+1] = x[n] + 1 (from x[0] = 0 and using h = 1). The colors correspond to the evolution of the system with first-update time at zero (black) and h (blue)."
+@image html framework/images/simple-discrete.png "Figure 2: Plots of state for the discrete system x[n+1] = x[n] + 1, y[n] = x[n] + 1 (from x[0] = 0 and using h = 1). The colors and stroke (solid=state, dashed=output) correspond to the evolution of the system with first-update time at zero (black) and h (blue)."
 
 Using time in place of iteration count allows Drake to
 model the evolution of hybrid continuous/discrete systems using a single
@@ -156,14 +158,14 @@ should become apparent.
 
 _For the case of updates starting at time `h`_ (black line):
 1. The discrete value is only advanced to `x[1]` when `t=h`.
-2. The input is evaluated at the right end of each interval, e.g.,
-x(h⁺) is computed using u(h).
+2. The first discrete update samples the input at `h`, i.e., x[1] = `x(h⁺)` is
+   computed using `u(h)`.
 
 _For the case of updates starting at time zero_ (blue line):
 1. Advancing time and state to that at `t = 1e-16` results in the discrete
    value being advanced to `x[1]`.
-2. The input is evaluated at the left end of each discrete interval, e.g.,
-   x(0⁺) is computed using u(0).
+2. The first discrete update samples the input at `0`, i.e., x[1] = x(0⁺) is
+   computed using u(0).
 
 In conclusion, neither of these choices is right or wrong; each choice just
 carries its own implications.
