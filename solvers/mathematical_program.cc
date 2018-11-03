@@ -115,9 +115,7 @@ std::unique_ptr<MathematicalProgram> MathematicalProgram::Clone() const {
 
   new_prog->x_initial_guess_ = x_initial_guess_;
   new_prog->solver_id_ = solver_id_;
-  new_prog->solver_options_double_ = solver_options_double_;
-  new_prog->solver_options_int_ = solver_options_int_;
-  new_prog->solver_options_str_ = solver_options_str_;
+  new_prog->solver_options_ = solver_options_;
 
   new_prog->required_capabilities_ = required_capabilities_;
   return new_prog;
