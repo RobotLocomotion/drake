@@ -2,8 +2,8 @@
 
 #include <cstring>
 #include <limits>
-#include <map>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include "drake/common/autodiff.h"
@@ -98,7 +98,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
 
   // The default tolerance is Eigen's dummy precision.
   double feasibility_tol = Eigen::NumTraits<double>::dummy_precision();
-  std::map<std::string, double> option_double =
+  std::unordered_map<std::string, double> option_double =
       prog.GetSolverOptionsDouble(EqualityConstrainedQPSolver::id());
   auto it = option_double.find("FeasibilityTol");
   if (it != option_double.end()) {

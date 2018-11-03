@@ -754,7 +754,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   snopt::doublereal sInf;
 
   // Determines if we should print out snopt debugging info.
-  const std::map<std::string, std::string>& snopt_option_str =
+  const std::unordered_map<std::string, std::string>& snopt_option_str =
       prog.GetSolverOptionsStr(id());
   const auto print_file_it = snopt_option_str.find("Print file");
   if (print_file_it != snopt_option_str.end()) {
