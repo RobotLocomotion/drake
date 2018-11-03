@@ -40,6 +40,9 @@ const std::unordered_map<std::string, int>& SolverOptions::GetSolverOptionsInt(
   static never_destroyed<std::unordered_map<std::string, int>>
       solver_options_int_empty{};
   const auto iter = options.find(solver_id);
+  // If the option hasn't been set for this solver, return the empty map. Here
+  // we save the effort to create an empty map, but return the static one by
+  // reference.
   return (iter != options.end()) ? iter->second
                                  : solver_options_int_empty.access();
 }

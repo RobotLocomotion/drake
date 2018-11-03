@@ -10,9 +10,8 @@
 namespace drake {
 namespace solvers {
 /**
- * Stores options for solvers.  This interface does not
- * do any verification of solver parameters beyond what an
- * individual solver does for itself.  It does not even verify that
+ * Stores options for multiple solvers.  This interface does not
+ * do any verification of solver parameters. It does not even verify that
  * the specified solver exists.  Use this only when you have
  * particular knowledge of what solver is being invoked, and exactly
  * what tuning is required.
