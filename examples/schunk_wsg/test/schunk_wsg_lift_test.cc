@@ -187,7 +187,7 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   int lifter_instance_id{};
   int gripper_instance_id{};
 
-  const double timestep = (GetParam()) ? 5e-3 : 0.0;
+  const double timestep = (GetParam()) ? 2.5e-3 : 0.0;
   systems::RigidBodyPlant<double>* plant =
       builder.AddSystem<systems::RigidBodyPlant<double>>(
           BuildLiftTestTree(&lifter_instance_id, &gripper_instance_id),

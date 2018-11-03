@@ -98,10 +98,8 @@ DoAnyPublishes(t₁, xc(t₁⁻), xd(t₁⁻), xa(t₁⁻))
 return { t₁, xc(t₁⁻), xd(t₁⁻), xa(t₁⁻) }
 @endverbatim
 
-We can use this algorithm to examine the Initialize(), StepTo(), and
-StepInPlace() functions, which we shall now do in reverse order.
-StepInPlace() is simply Step() called with `t0 = get_context().get_time()` and
-`Δt = 0`. StepTo() can be outlined as:
+We can use this algorithm to examine the Initialize() and StepTo() functions,
+which we shall now do in reverse order. StepTo() can be outlined as:
 @verbatim
 procedure StepTo(t_final)
 t ← current_time
@@ -111,7 +109,7 @@ while t ≠ t_final
   { t, xc(t⁻), xd(t⁻), xa(t⁻) } ← { tnew, xc(tnew⁻), xd(tnew⁻), xa(tnew⁻) }
 endwhile
 @endverbatim
-Finally, Initialize() is equivalent to Step() with `t0 = initial_time - ε`
+Initialize() is equivalent to Step() with `t0 = initial_time - ε`
 (for `ε ≪ 1`) and `Δt = 0`.
 
 @tparam T The vector element type, which must be a valid Eigen scalar.
@@ -293,27 +291,6 @@ class Simulator {
     integrator_->reset_context(nullptr);
     initialization_done_ = false;
     return std::move(context_);
-  }
-
-  /// Steps the state "forward to the current time", meaning that time and state
-  /// `{ t0, xc(t0⁻), xd(t0⁻), xa(t0⁻) }` are transformed to time and state
-  /// `{ t0, xc(t0*), xd(t0⁺), xa(t0⁺) )` using the notation introduced in
-  /// Simulator class documentation. StepInPlace() is _nearly_ equivalent
-  /// to calling `StepTo(context.get_time())` The difference is that function
-  /// handles any "per step" events (e.g., publishing) and also increments the
-  /// step counter; StepInPlace() does not. If no events have been triggered,
-  /// `StepInPlace()` will not modify the state and will not publish. It can
-  /// be determined in advance whether any modifications might occur by calling
-  /// timed_or_witnessed_events_have_triggered(); if that function returns
-  /// `false`, `StepInPlace()` can not alter the state.
-  void StepInPlace();
-
-  /// Determines whether any timed or witnessed events have been triggered but
-  /// not yet handled. If this returns `false`, calling StepInPlace() will not
-  /// alter the simulation state.
-  /// @see StepInPlace().
-  bool timed_or_witnessed_events_have_triggered() const {
-    return timed_or_witnessed_event_triggered_;
   }
 
   /// Forget accumulated statistics. Statistics are reset to the values they
@@ -667,6 +644,13 @@ void Simulator<T>::HandlePublish(
   }
 }
 
+// TODO(edrumwri): Consider adding a special function to "complete" a simulation
+//                 by calling, in effect, StepTo(get_context().get_time()) to
+//                 process any events that have triggered but not been processed
+//                 at the conclusion to a StepTo() call. At the present time, we
+//                 believe the issue of remaining, unprocessed events is rarely
+//                 likely to be important and can be circumvented in multiple
+//                 ways, like calling StepTo(get_context().get_time()).
 template <typename T>
 void Simulator<T>::StepTo(const T& boundary_time) {
   if (!initialization_done_) Initialize();
@@ -770,26 +754,6 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
   // TODO(edrumwri): Add test coverage to complete #8490.
   redetermine_active_witnesses_ = true;
-}
-
-template <class T>
-void Simulator<T>::StepInPlace() {
-  DRAKE_DEMAND(timed_events_ != nullptr);
-  DRAKE_DEMAND(witnessed_events_ != nullptr);
-  if (timed_or_witnessed_event_triggered_) {
-    // Do any final updates from timed or witnessed events, only if an event
-    // was triggered.
-    auto merged_events = system_.AllocateCompositeEventCollection();
-    merged_events->Merge(*timed_events_);
-    merged_events->Merge(*witnessed_events_);
-
-    HandleUnrestrictedUpdate(merged_events->get_unrestricted_update_events());
-    HandleDiscreteUpdate(merged_events->get_discrete_update_events());
-    HandlePublish(merged_events->get_publish_events());
-
-    // Reset the flag.
-    timed_or_witnessed_event_triggered_ = false;
-  }
 }
 
 template <class T>
