@@ -2246,33 +2246,33 @@ class MathematicalProgram {
 
   void SetSolverOption(const SolverId& solver_id,
                        const std::string& solver_option, double option_value) {
-    solver_options_.SetSolverOption(solver_id, solver_option, option_value);
+    solver_options_.SetOption(solver_id, solver_option, option_value);
   }
 
   void SetSolverOption(const SolverId& solver_id,
                        const std::string& solver_option, int option_value) {
-    solver_options_.SetSolverOption(solver_id, solver_option, option_value);
+    solver_options_.SetOption(solver_id, solver_option, option_value);
   }
 
   void SetSolverOption(const SolverId& solver_id,
                        const std::string& solver_option,
                        const std::string& option_value) {
-    solver_options_.SetSolverOption(solver_id, solver_option, option_value);
+    solver_options_.SetOption(solver_id, solver_option, option_value);
   }
 
   const std::unordered_map<std::string, double>& GetSolverOptionsDouble(
       const SolverId& solver_id) const {
-    return solver_options_.GetSolverOptionsDouble(solver_id);
+    return solver_options_.GetOptionsDouble(solver_id);
   }
 
   const std::unordered_map<std::string, int>& GetSolverOptionsInt(
       const SolverId& solver_id) const {
-    return solver_options_.GetSolverOptionsInt(solver_id);
+    return solver_options_.GetOptionsInt(solver_id);
   }
 
   const std::unordered_map<std::string, std::string>& GetSolverOptionsStr(
       const SolverId& solver_id) const {
-    return solver_options_.GetSolverOptionsStr(solver_id);
+    return solver_options_.GetOptionsStr(solver_id);
   }
 
   /**

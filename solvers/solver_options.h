@@ -38,23 +38,22 @@ class SolverOptions {
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SolverOptions)
 
-  void SetSolverOption(const SolverId& solver_id,
-                       const std::string& solver_option, double option_value);
+  void SetOption(const SolverId& solver_id, const std::string& solver_option,
+                 double option_value);
 
-  void SetSolverOption(const SolverId& solver_id,
-                       const std::string& solver_option, int option_value);
+  void SetOption(const SolverId& solver_id, const std::string& solver_option,
+                 int option_value);
 
-  void SetSolverOption(const SolverId& solver_id,
-                       const std::string& solver_option,
-                       const std::string& option_value);
+  void SetOption(const SolverId& solver_id, const std::string& solver_option,
+                 const std::string& option_value);
 
-  const std::unordered_map<std::string, double>& GetSolverOptionsDouble(
+  const std::unordered_map<std::string, double>& GetOptionsDouble(
       const SolverId& solver_id) const;
 
-  const std::unordered_map<std::string, int>& GetSolverOptionsInt(
+  const std::unordered_map<std::string, int>& GetOptionsInt(
       const SolverId& solver_id) const;
 
-  const std::unordered_map<std::string, std::string>& GetSolverOptionsStr(
+  const std::unordered_map<std::string, std::string>& GetOptionsStr(
       const SolverId& solver_id) const;
 
  private:
