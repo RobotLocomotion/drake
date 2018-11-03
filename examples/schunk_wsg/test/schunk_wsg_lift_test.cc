@@ -187,6 +187,8 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   int lifter_instance_id{};
   int gripper_instance_id{};
 
+  // Note: 5e-3 yields a simulation right on the edge of stability. We back off
+  // to 2.5e-3 to balance between test runtime and simulation stability.
   const double timestep = (GetParam()) ? 2.5e-3 : 0.0;
   systems::RigidBodyPlant<double>* plant =
       builder.AddSystem<systems::RigidBodyPlant<double>>(
