@@ -58,6 +58,20 @@ The material properties are simple to highlight the impact of the lighting model
 
   <iframe width="800" height="224" src="https://www.youtube.com/embed/UKxytyIJmq8" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
 
+
+Task and Motion Planning
+========================
+
+Caelan Garrett has examples using Drake in his STRIPStream/PDDLStream
+task-and-motion-planning framework.
+
+.. raw :: html
+
+  <img height="224" src="https://github.com/caelan/pddlstream/raw/d0eb256e88b8b5174fbd136a82867fd9e9cebc67/images/drake_kuka.png"/>
+
+*Source Code:* https://github.com/caelan/pddlstream#drake
+
+
 Third Party Documentation / Tutorials
 =====================================
 
