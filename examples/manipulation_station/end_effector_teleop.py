@@ -4,6 +4,7 @@ import argparse
 import Tkinter as tk
 import numpy as np
 
+from pydrake.common import FindResourceOrThrow
 from pydrake.examples.manipulation_station import (
     ManipulationStation, ManipulationStationHardwareInterface)
 from pydrake.geometry import ConnectDrakeVisualizer
@@ -11,6 +12,7 @@ from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
 from pydrake.manipulation.simple_ui import SchunkWsgButtons
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters, DoDifferentialInverseKinematics)
+from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
 from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (AbstractValue, BasicVector,
@@ -218,6 +220,10 @@ if args.hardware:
 else:
     station = builder.AddSystem(ManipulationStation())
     station.AddCupboard()
+    object = AddModelFromSdfFile(FindResourceOrThrow(
+        "drake/examples/manipulation_station/models/061_foam_brick.sdf"),
+        "object", station.get_mutable_multibody_plant(),
+        station.get_mutable_scene_graph())
     station.Finalize()
 
     ConnectDrakeVisualizer(builder, station.get_mutable_scene_graph(),
@@ -271,6 +277,16 @@ if not args.hardware:
     # Set the initial configuration of the gripper to open.
     station.SetWsgPosition(0.1, station_context)
     station.SetWsgVelocity(0, station_context)
+
+    # Place the object in the middle of the workspace.
+    X_WObject = Isometry3.Identity()
+    X_WObject.set_translation([.6, 0, 0])
+    station.get_mutable_multibody_plant().tree().SetFreeBodyPoseOrThrow(
+        station.get_mutable_multibody_plant().GetBodyByName("base_link",
+                                                            object),
+        X_WObject, station.GetMutableSubsystemContext(
+            station.get_mutable_multibody_plant(),
+            station_context))
 
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(
     station_context).get_value()
