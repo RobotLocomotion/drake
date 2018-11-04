@@ -10,6 +10,7 @@ load(
 )
 load(
     "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
     "drake_py_library",
     "drake_py_unittest",
 )
@@ -50,6 +51,20 @@ drake_py_library(
     srcs = ["simple_ui.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [":module_py"],
+)
+
+drake_py_binary(
+    name = "geometry_inspector",
+    srcs = ["geometry_inspector.py"],
+    deps = [
+        ":simple_ui_py",
+        "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake:lcm_py",
+        "//bindings/pydrake/multibody:multibody_tree_py",
+        "//bindings/pydrake/systems:analysis_py",
+        "//bindings/pydrake/systems:framework_py",
+        "//bindings/pydrake/systems:rendering_py",
+    ],
 )
 
 PY_LIBRARIES_WITH_INSTALL = [

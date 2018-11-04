@@ -15,6 +15,7 @@ drake_cc_package_library(
     deps = [
         ":drake_visualizer_client",
         ":frame_velocity",
+        ":multibody_position_to_geometry_pose",
         ":pose_aggregator",
         ":pose_bundle",
         ":pose_bundle_to_draw_message",
@@ -107,6 +108,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "multibody_position_to_geometry_pose",
+    srcs = ["multibody_position_to_geometry_pose.cc"],
+    hdrs = ["multibody_position_to_geometry_pose.h"],
+    deps = [
+        "//common:pointer_cast",
+        "//geometry:frame_kinematics",
+        "//multibody/multibody_tree/multibody_plant",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
     name = "render_pose_to_geometry_pose",
     srcs = ["render_pose_to_geometry_pose.cc"],
     hdrs = ["render_pose_to_geometry_pose.h"],
@@ -166,6 +179,18 @@ drake_cc_googletest(
         ":drake_visualizer_client",
         "//common:find_resource",
         "//lcmtypes:viewer",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_position_to_geometry_pose_test",
+    data = ["//manipulation/models/iiwa_description:models"],
+    deps = [
+        ":multibody_position_to_geometry_pose",
+        "//common:find_resource",
+        "//common/test_utilities",
+        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//systems/framework/test_utilities",
     ],
 )
 

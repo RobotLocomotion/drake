@@ -96,7 +96,7 @@ if not args.hardware:
 # Eval the output port once to read the initial positions of the IIWA.
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(
     station_context).get_value()
-teleop.set(q0)
+teleop.set_position(q0)
 
 # This is important to avoid duplicate publishes to the hardware interface:
 simulator.set_publish_every_time_step(False)
