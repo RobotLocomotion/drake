@@ -10,6 +10,7 @@ load(
 )
 load(
     "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
     "drake_py_library",
     "drake_py_unittest",
 )
@@ -215,6 +216,20 @@ filegroup(
     srcs = glob([
         "**/*.sdf",
     ]),
+)
+
+drake_py_binary(
+    name = "geometry_inspector",
+    srcs = ["geometry_inspector.py"],
+    deps = [
+        ":multibody_tree_py",
+        "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake:lcm_py",
+        "//bindings/pydrake/manipulation:simple_ui_py",
+        "//bindings/pydrake/systems:analysis_py",
+        "//bindings/pydrake/systems:framework_py",
+        "//bindings/pydrake/systems:rendering_py",
+    ],
 )
 
 drake_py_unittest(
