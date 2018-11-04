@@ -110,6 +110,44 @@ void RigidBody<T>::AddCollisionElement(
   collision_elements_.push_back(element);
 }
 
+namespace {
+
+template <typename Container, typename UnaryPredicate>
+inline void RemoveOrFail(UnaryPredicate pred, Container* container) {
+  auto iter = std::find_if(container->begin(), container->end(), pred);
+  DRAKE_DEMAND(iter != container->end());
+  container->erase(iter);
+}
+
+}  // namespace
+
+template <typename T>
+void RigidBody<T>::RemoveCollisionElement(
+    const std::string& group_name, drake::multibody::collision::ElementId id) {
+  RemoveOrFail(
+      [id](const auto& x) { return x == id; },
+      &collision_element_ids_);
+  RemoveOrFail(
+      [id](const auto& x) { return x == id; },
+      &collision_element_groups_[group_name]);
+  RemoveOrFail(
+      [id](const auto& e) { return e->getId() == id; },
+      &collision_elements_);
+}
+
+template <typename T>
+void RigidBody<T>::RemoveGroup(const std::string& group_name) {
+  auto iter = collision_element_groups_.find(group_name);
+  DRAKE_DEMAND(iter != collision_element_groups_.end());
+  auto copy = iter->second;
+  for (auto id : copy) {
+    RemoveCollisionElement(group_name, id);
+  }
+  RemoveOrFail(
+      [group_name](auto& x) { return x.first == group_name; },
+      &collision_element_groups_);
+}
+
 template <typename T>
 std::vector<drake::multibody::collision::ElementId>&
 RigidBody<T>::get_mutable_collision_element_ids() {
