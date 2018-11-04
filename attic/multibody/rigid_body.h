@@ -243,6 +243,14 @@ class RigidBody {
                            drake::multibody::collision::Element* element);
 
   /**
+   * (Advanced) Removes collision element group; does NOT unregister element
+   * from collision model.
+   * Do NOT call this directly; instead, use
+   * `RigidBodyTree::removeCollisionGroupsIf`.
+   */
+  void RemoveGroup(const std::string& group_name);
+
+  /**
    * @returns A reference to an `std::vector` of collision elements that
    * represent the collision geometry of this rigid body.
    */
@@ -440,6 +448,11 @@ class RigidBody {
   }
 
  private:
+  // (Advanced) Remove collision element.
+  void RemoveCollisionElement(
+      const std::string& group_name,
+      drake::multibody::collision::ElementId id);
+
   // TODO(tkoolen): It's very ugly, but parent, dofnum, and pitch also exist
   // currently (independently) at the RigidBodyTree level to represent the
   // featherstone structure. This version is for the kinematics.
