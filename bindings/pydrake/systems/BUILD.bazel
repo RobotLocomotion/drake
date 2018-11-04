@@ -361,6 +361,7 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "rendering_test",
+    data = ["//multibody/benchmarks/acrobot:models"],
     deps = [
         ":rendering_py",
         "//bindings/pydrake/multibody:multibody_tree_py",

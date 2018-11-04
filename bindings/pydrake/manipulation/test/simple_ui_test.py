@@ -29,7 +29,8 @@ class TestSimpleUI(unittest.TestCase):
         output = slider.AllocateOutput()
 
         q = [.1, .2]
-        slider.set(q)
+        slider.set_position(q)
+        slider.set_joint_position(q)
         slider.CalcOutput(context, output)
 
         np.testing.assert_array_equal(output.get_vector_data(0).get_value(), q)
