@@ -261,6 +261,7 @@ class RigidBody {
    * Returns a reference to an `std::vector` of collision elements that
    * represent the collision geometry of this rigid body.
    */
+  DRAKE_DEPRECATED("Mutable access to collision inormation is deprecated.");
   std::vector<drake::multibody::collision::ElementId>&
   get_mutable_collision_element_ids();
 
@@ -278,6 +279,7 @@ class RigidBody {
    * element IDs. These are the collision element groups created through calls
    * to RigidBody::AddCollisionElementToGroup().
    */
+  DRAKE_DEPRECATED("Mutable access to collision inormation is deprecated.");
   std::map<std::string, std::vector<drake::multibody::collision::ElementId>>&
   get_mutable_group_to_collision_ids_map();
 
@@ -429,13 +431,14 @@ class RigidBody {
 
   typedef std::vector<drake::multibody::collision::Element*>
       CollisionElementsVector;
-  typedef typename CollisionElementsVector::iterator CollisionElementsIterator;
+  typedef typename CollisionElementsVector::const_iterator
+      CollisionElementsIterator;
 
-  CollisionElementsIterator collision_elements_begin() {
+  CollisionElementsIterator collision_elements_begin() const {
     return collision_elements_.begin();
   }
 
-  CollisionElementsIterator collision_elements_end() {
+  CollisionElementsIterator collision_elements_end() const {
     return collision_elements_.end();
   }
 
