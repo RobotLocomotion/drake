@@ -14,11 +14,13 @@ from pydrake.systems.framework import BasicVector, LeafSystem, VectorSystem
 class JointSliders(VectorSystem):
     """
     Provides a simple tcl/tk gui with one slider per joint of the
-    MultibodyPlant.
+    MultibodyPlant.  Any positions that are not associated with joints (e.g.
+    floating-base "mobilizers") are held constant at the default value
+    obtained from robot.CreateDefaultContext().
 
     @system{ JointSliders,
              , # no input ports
-             @output_port{joint positions} }
+             @output_port{positions} }
     """
 
     def __init__(self, robot, lower_limit=-10., upper_limit=10.,
@@ -74,12 +76,18 @@ class JointSliders(VectorSystem):
         self._DeclarePeriodicPublish(update_period_sec, 0.0)
 
         self._slider = []
+        self._slider_position_start = []
+        context = robot.CreateDefaultContext()
+        state = robot.tree().get_multibody_state_vector(context)
+        self._default_position = state[:robot.num_positions()]
+
         k = 0
         for i in range(0, robot.num_joints()):
             joint = robot.tree().get_joint(JointIndex(i))
             low = joint.lower_limits()
             upp = joint.upper_limits()
             for j in range(0, joint.num_positions()):
+                self._slider_position_start.append(joint.position_start() + j)
                 self._slider.append(tk.Scale(self.window,
                                              from_=max(low[j],
                                                        lower_limit[k]),
@@ -110,8 +118,9 @@ class JointSliders(VectorSystem):
         self.window.update()
 
     def _DoCalcVectorOutput(self, context, unused, unused2, output):
+        output[:] = self._default_position
         for i in range(0, len(self._slider)):
-            output[i] = self._slider[i].get()
+            output[self._slider_position_start[i]] = self._slider[i].get()
 
 
 class SchunkWsgButtons(LeafSystem):
