@@ -1,5 +1,6 @@
 #include "drake/multibody/rigid_body.h"
 
+#include <algorithm>
 #include <stdexcept>
 
 #include "drake/common/autodiff.h"
@@ -100,14 +101,57 @@ const DrakeShapes::VectorOfVisualElements& RigidBody<T>::get_visual_elements()
   return visual_elements_;
 }
 
+namespace {
+
+// Removes a unique element given a predicate, or fail loudly.
+// N.B. On cppreference.com, `std::vector::erase` indicates that erasing
+// `end()` is an invalid operation, but does not indicate failure behavior. To
+// ensure fast failure, we make this explicit.
+template <typename Container, typename UnaryPredicate>
+inline void RemoveUniqueOrFail(UnaryPredicate pred, Container* container) {
+  auto iter = std::find_if(container->begin(), container->end(), pred);
+  DRAKE_DEMAND(iter != container->end());
+  container->erase(iter);
+  // Expect unique.
+  auto iter_check = std::find_if(container->begin(), container->end(), pred);
+  DRAKE_DEMAND(iter_check == container->end());
+}
+
+template <typename Container, typename Item>
+inline bool Contains(const Container& container, const Item& item) {
+  return std::find(
+      container.begin(), container.end(), item) != container.end();
+}
+
+}  // namespace
+
 template <typename T>
 void RigidBody<T>::AddCollisionElement(
     const std::string& group_name,
     drake::multibody::collision::Element* element) {
   drake::multibody::collision::ElementId id = element->getId();
+  DRAKE_DEMAND(!Contains(collision_elements_, element));
+  DRAKE_DEMAND(!Contains(collision_element_ids_, id));
+  DRAKE_DEMAND(!Contains(collision_element_groups_[group_name], id));
+  collision_elements_.push_back(element);
   collision_element_ids_.push_back(id);
   collision_element_groups_[group_name].push_back(id);
-  collision_elements_.push_back(element);
+}
+
+template <typename T>
+void RigidBody<T>::RemoveCollisionGroupAndElements(
+    const std::string& group_name) {
+  auto iter = collision_element_groups_.find(group_name);
+  DRAKE_DEMAND(iter != collision_element_groups_.end());
+  for (auto id : iter->second) {
+    RemoveUniqueOrFail(
+        [id](const auto& e) { return e->getId() == id; },
+        &collision_elements_);
+    RemoveUniqueOrFail(
+      [id](const auto& x) { return x == id; },
+      &collision_element_ids_);
+  }
+  collision_element_groups_.erase(iter);
 }
 
 template <typename T>
