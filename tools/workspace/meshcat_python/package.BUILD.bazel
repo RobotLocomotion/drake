@@ -1,0 +1,44 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install", "install_files")
+
+licenses(["notice"])  # MIT
+
+py_library(
+    name = "meshcat",
+    srcs = glob([
+        "src/meshcat/*.py",
+        "src/meshcat/servers/*.py",
+    ]),
+    imports = ["src"],
+    visibility = ["//visibility:public"],
+    deps = ["@u_msgpack_python//:umsgpack"],
+)
+
+# TODO(jamiesnape): Add acceptance test.
+py_binary(
+    name = "meshcat-server",
+    srcs = ["@drake//tools/workspace/meshcat_python:meshcat-server.py"],
+    legacy_create_init = 0,
+    deps = [":meshcat"],
+)
+
+# TODO(jamiesnape): Add an install test.
+install_files(
+    name = "install-meshcat-server",
+    dest = "bin",
+    files = ["@drake//tools/workspace/meshcat_python:meshcat-server"],
+    allowed_externals = [
+        "@drake//tools/workspace/meshcat_python:meshcat-server",
+    ],
+)
+
+install(
+    name = "install",
+    targets = [":meshcat"],
+    docs = ["LICENSE.txt"],
+    doc_dest = "share/doc/meshcat",
+    py_strip_prefix = ["src"],
+    visibility = ["//visibility:public"],
+    deps = [":install-meshcat-server"],
+)
