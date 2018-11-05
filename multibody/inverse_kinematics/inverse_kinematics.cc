@@ -44,11 +44,13 @@ InverseKinematics::InverseKinematics(
     systems::Context<double>*)
     : prog_{new solvers::MathematicalProgram()},
       owned_diagram_{diagram.ToAutoDiffXd()},
-      diagram_{dynamic_cast<const systems::Diagram<AutoDiffXd>* const>(owned_diagram_.get())},
+      diagram_{dynamic_cast<const systems::Diagram<AutoDiffXd>* const>(
+          owned_diagram_.get())},
       owned_plant_{nullptr},
       plant_autodiff_{FindMultibodyPlantInDiagram(plant, *diagram_)},
       owned_context_{owned_diagram_->CreateDefaultContext()},
-      context_{owned_context_.get()},
+      context_{&(diagram_->GetMutableSubsystemContext(*plant_autodiff_,
+                                                      owned_context_.get()))},
       q_(prog_->NewContinuousVariables(plant.num_positions(), "q")) {
   AddDefaultJointLimitConstraint();
   // TODO(hongkai.dai) Add other position constraints, such as unit length

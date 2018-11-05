@@ -45,13 +45,13 @@ class InverseKinematics {
    * solved. If this plant has registered its geometry with a SceneGraph object,
    * then the user can impose collision related constraint (like
    * AddMinimalDistanceConstraint).
-   * @param context The context The context used by @plant. @note
+   * @param plant_context The MultibodyPlant context. @note
    * InverseKinematics doesn't own this context. This context should be
    * allocated by the diagram, which owns the MultibodyPlant.
    */
   InverseKinematics(const systems::Diagram<double>& diagram,
                     const multibody_plant::MultibodyPlant<double>& plant,
-                    systems::Context<double>* context);
+                    systems::Context<double>* plant_context);
 
   /** Adds the kinematic constraint that a point Q, fixed in frame B, should lie
    * within a bounding box expressed in another frame A as p_AQ_lower <= p_AQ <=
