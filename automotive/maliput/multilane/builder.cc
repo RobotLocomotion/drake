@@ -243,7 +243,7 @@ const Connection* Builder::Connect(const std::string& id,
   // Gets the rotation matrix at the start lane endpoint and translates the
   // point to start_reference_position.
   const api::Rotation start_rotation = api::Rotation::FromRpy(
-      start_superelevation, -std::atan(start_spec.endpoint().z().z_dot()),
+      start_superelevation, -std::atan(start_z_dot),
       start_spec.endpoint().xy().heading());
   const Vector3<double> start_lane_position{start_spec.endpoint().xy().x(),
                                             start_spec.endpoint().xy().y(),
