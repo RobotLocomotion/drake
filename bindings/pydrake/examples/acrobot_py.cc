@@ -32,26 +32,26 @@ PYBIND11_MODULE(acrobot, m) {
   using T = double;
 
   py::class_<AcrobotPlant<T>, LeafSystem<T>>(m, "AcrobotPlant",
-    doc.AcrobotPlant.doc)
+                                             doc.AcrobotPlant.doc)
       .def(py::init<>(), doc.AcrobotPlant.ctor.doc_3)
       .def("CalcPotentialEnergy", &AcrobotPlant<T>::CalcPotentialEnergy,
-        doc.AcrobotPlant.DoCalcPotentialEnergy.doc)
+           doc.AcrobotPlant.DoCalcPotentialEnergy.doc)
       .def("CalcKineticEnergy", &AcrobotPlant<T>::CalcKineticEnergy,
-        doc.AcrobotPlant.DoCalcKineticEnergy.doc)
+           doc.AcrobotPlant.DoCalcKineticEnergy.doc)
       .def("DynamicsBiasTerm", &AcrobotPlant<T>::DynamicsBiasTerm,
-        doc.AcrobotPlant.DynamicsBiasTerm.doc)
+           doc.AcrobotPlant.DynamicsBiasTerm.doc)
       .def("MassMatrix", &AcrobotPlant<T>::MassMatrix,
-        doc.AcrobotPlant.MassMatrix.doc);
+           doc.AcrobotPlant.MassMatrix.doc);
 
   // TODO(russt): Remove custom bindings once #8096 is resolved.
   py::class_<AcrobotInput<T>, BasicVector<T>>(m, "AcrobotInput",
-      doc.AcrobotInput.doc)
+                                              doc.AcrobotInput.doc)
       .def(py::init<>(), doc.AcrobotInput.ctor.doc)
       .def("tau", &AcrobotInput<T>::tau, doc.AcrobotInput.tau.doc)
       .def("set_tau", &AcrobotInput<T>::set_tau, doc.AcrobotInput.set_tau.doc);
 
   py::class_<AcrobotParams<T>, BasicVector<T>>(m, "AcrobotParams",
-      doc.AcrobotParams.doc)
+                                               doc.AcrobotParams.doc)
       .def(py::init<>(), doc.AcrobotParams.ctor.doc)
       .def("m1", &AcrobotParams<T>::m1, doc.AcrobotParams.m1.doc)
       .def("m2", &AcrobotParams<T>::m2, doc.AcrobotParams.m2.doc)
@@ -73,25 +73,25 @@ PYBIND11_MODULE(acrobot, m) {
       .def("set_b1", &AcrobotParams<T>::set_b1, doc.AcrobotParams.set_b1.doc)
       .def("set_b2", &AcrobotParams<T>::set_b2, doc.AcrobotParams.set_b2.doc)
       .def("set_gravity", &AcrobotParams<T>::set_gravity,
-        doc.AcrobotParams.set_gravity.doc);
+           doc.AcrobotParams.set_gravity.doc);
 
   py::class_<AcrobotState<T>, BasicVector<T>>(m, "AcrobotState",
-      doc.AcrobotState.doc)
+                                              doc.AcrobotState.doc)
       .def(py::init<>(), doc.AcrobotState.ctor.doc)
       .def("theta1", &AcrobotState<T>::theta1, doc.AcrobotState.theta1.doc)
       .def("theta1dot", &AcrobotState<T>::theta1dot,
-        doc.AcrobotState.theta1dot.doc)
+           doc.AcrobotState.theta1dot.doc)
       .def("theta2", &AcrobotState<T>::theta2, doc.AcrobotState.theta2.doc)
       .def("theta2dot", &AcrobotState<T>::theta2dot,
-        doc.AcrobotState.theta2dot.doc)
+           doc.AcrobotState.theta2dot.doc)
       .def("set_theta1", &AcrobotState<T>::set_theta1,
-        doc.AcrobotState.set_theta1.doc)
+           doc.AcrobotState.set_theta1.doc)
       .def("set_theta1dot", &AcrobotState<T>::set_theta1dot,
-        doc.AcrobotState.set_theta1dot.doc)
+           doc.AcrobotState.set_theta1dot.doc)
       .def("set_theta2", &AcrobotState<T>::set_theta2,
-        doc.AcrobotState.set_theta2.doc)
+           doc.AcrobotState.set_theta2.doc)
       .def("set_theta2dot", &AcrobotState<T>::set_theta2dot,
-        doc.AcrobotState.set_theta2dot.doc);
+           doc.AcrobotState.set_theta2dot.doc);
 }
 
 }  // namespace pydrake
