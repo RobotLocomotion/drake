@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
@@ -72,7 +73,7 @@ class AxiallySymmetricFreeBodyPlant final :
       const systems::Context<T>& context) const;
 
   /// Computes the pose `X_WB` of the body in the world frame.
-  Isometry3<T> CalcPoseInWorldFrame(
+  math::RigidTransform<T> CalcPoseInWorldFrame(
       const systems::Context<T>& context) const;
 
   /// Computes the spatial velocity `V_WB` of the body in the world frame.

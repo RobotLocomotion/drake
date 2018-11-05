@@ -4,6 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/multibody_tree_system.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
@@ -14,9 +15,7 @@ namespace multibody {
 namespace multibody_tree {
 namespace {
 
-using Eigen::Isometry3d;
 using Eigen::Matrix3d;
-using Eigen::Translation3d;
 using Eigen::Vector3d;
 using std::make_unique;
 using std::unique_ptr;
@@ -115,16 +114,16 @@ TEST_F(PrismaticMobilizerTest, ZeroState) {
 TEST_F(PrismaticMobilizerTest, CalcAcrossMobilizerTransform) {
   const double translation = 1.5;
   slider_->set_translation(context_.get(), translation);
-  const Isometry3d X_FM = slider_->CalcAcrossMobilizerTransform(*mbt_context_);
+  const math::RigidTransformd X_FM(
+      slider_->CalcAcrossMobilizerTransform(*mbt_context_));
 
-  const Isometry3d X_FM_expected(
-      Translation3d(axis_F_.normalized() * translation));
+  const math::RigidTransformd X_FM_expected(
+      Vector3d(axis_F_.normalized() * translation));
 
   // Though checked below, we make it explicit here that this mobilizer should
   // introduce no rotations at all.
-  EXPECT_EQ(X_FM.linear(), Matrix3d::Identity());
-  EXPECT_TRUE(CompareMatrices(X_FM.matrix(), X_FM_expected.matrix(),
-                              kTolerance, MatrixCompareType::relative));
+  EXPECT_EQ(X_FM.rotation().matrix(), Matrix3d::Identity());
+  EXPECT_TRUE(X_FM.IsNearlyEqualTo(X_FM_expected, kTolerance));
 }
 
 TEST_F(PrismaticMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {

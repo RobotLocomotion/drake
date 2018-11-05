@@ -15,7 +15,6 @@ namespace test {
 namespace {
 
 using benchmarks::free_body::FreeBody;
-using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
@@ -88,9 +87,9 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
   simulator.StepTo(kEndTime);
 
   // Get solution:
-  Isometry3d X_WB = free_body_plant.CalcPoseInWorldFrame(context);
-  Matrix3d R_WB = X_WB.linear();
-  Vector3d p_WBcm = X_WB.translation();
+  math::RigidTransformd X_WB = free_body_plant.CalcPoseInWorldFrame(context);
+  const math::RotationMatrixd R_WB = X_WB.rotation();
+  const Vector3d p_WBcm = X_WB.translation();
   SpatialVelocity<double> V_WB =
       free_body_plant.CalcSpatialVelocityInWorldFrame(context);
   const Vector3d& w_WB = V_WB.rotational();
@@ -102,12 +101,11 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
   Vector3d w_WB_B_exact, wDt_WB_B_exact;
   std::tie(quat_WB_exact, quatDt_WB_exact, w_WB_B_exact, wDt_WB_B_exact) =
       benchmark_.CalculateExactRotationalSolutionNB(kEndTime);
-  Vector4d qv; qv << quat_WB_exact.w(), quat_WB_exact.vec();
-  Matrix3d R_WB_exact = math::quat2rotmat(qv);
-  Vector3d w_WB_exact = R_WB_exact * w_WB_B_exact;
+  const math::RotationMatrixd R_WB_exact(quat_WB_exact);
+  const Vector3d w_WB_exact = R_WB_exact * w_WB_B_exact;
 
   // Compare computed solution against benchmark:
-  EXPECT_TRUE(CompareMatrices(R_WB, R_WB_exact, kTolerance,
+  EXPECT_TRUE(CompareMatrices(R_WB.matrix(), R_WB_exact.matrix(), kTolerance,
                               MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(p_WBcm, Vector3d::Zero(), kTolerance,
                               MatrixCompareType::relative));

@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/multibody_tree_system.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
@@ -63,7 +64,7 @@ class FreeRotatingBodyPlant final : public MultibodyTreeSystem<T> {
       systems::Context<T>* context, const Vector3<T>& w_WB) const;
 
   /// Computes the pose `X_WB` of the body in the world frame.
-  Isometry3<T> CalcPoseInWorldFrame(
+  math::RigidTransform<T> CalcPoseInWorldFrame(
       const systems::Context<T>& context) const;
 
   /// Computes the spatial velocity `V_WB` of the body in the world frame.

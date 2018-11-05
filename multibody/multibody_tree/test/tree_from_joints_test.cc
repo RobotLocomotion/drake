@@ -23,9 +23,7 @@ namespace {
 const double kEpsilon = std::numeric_limits<double>::epsilon();
 
 using benchmarks::Acrobot;
-using Eigen::Isometry3d;
 using Eigen::Matrix2d;
-using Eigen::Translation3d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using std::make_unique;
@@ -138,14 +136,14 @@ class DoublePendulumModel {
     // L1's origin is located at the com of link 1.
     // X_L1So defines the pose of the shoulder outboard frame So in link 1's
     // frame.
-    const Isometry3d X_L1So{Translation3d(0.0, half_length1_, 0.0)};
+    const math::RigidTransformd X_L1So{Vector3d(0.0, half_length1_, 0.0)};
 
     shoulder_ = &model->template AddJoint<RevoluteJoint>(
         "ShoulderJoint",
         *world_body_,
         {},      /* Default to Identity; frame Si IS the world frame W. */
         *link1_,
-        X_L1So,  /* Pose of So in link 1's frame L1. */
+        X_L1So.GetAsIsometry3(),  /* Pose of So in link 1's frame L1. */
         Vector3d::UnitZ()  /* revolute axis */);
 
     // The elbow is the joint that connects links 1 and 2.
@@ -156,12 +154,12 @@ class DoublePendulumModel {
     // The elbow's outboard frame Eo is taken to be coincident with link 2's
     // frame L2 (i.e. L2o != L2cm).
     // X_L1Ei defines the pose of the elbow inboard frame Ei link 1's frame L1.
-    const Isometry3d X_L1Ei{Translation3d(0.0, -half_length1_, 0.0)};
+    const math::RigidTransformd X_L1Ei{Vector3d(0.0, -half_length1_, 0.0)};
 
     elbow_ = &model->template AddJoint<RevoluteJoint>(
         "ElbowJoint",
         *link1_,
-        X_L1Ei,  /* Pose of Ei in L1. */
+        X_L1Ei.GetAsIsometry3(),  /* Pose of Ei in L1. */
         *link2_,
         {},      /* Default to Identity; frame Eo IS frame L2. */
         Vector3d::UnitZ() /* revolute axis */);

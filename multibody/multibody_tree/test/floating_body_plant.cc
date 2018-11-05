@@ -78,11 +78,11 @@ Vector3<T> AxiallySymmetricFreeBodyPlant<T>::get_translational_velocity(
 }
 
 template<typename T>
-Isometry3<T> AxiallySymmetricFreeBodyPlant<T>::CalcPoseInWorldFrame(
+math::RigidTransform<T> AxiallySymmetricFreeBodyPlant<T>::CalcPoseInWorldFrame(
     const systems::Context<T>& context) const {
   PositionKinematicsCache<T> pc(this->tree().get_topology());
   this->tree().CalcPositionKinematicsCache(context, &pc);
-  return pc.get_X_WB(body_->node_index());
+  return math::RigidTransform<T>(pc.get_X_WB(body_->node_index()));
 }
 
 template<typename T>
