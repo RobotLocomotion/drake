@@ -62,8 +62,8 @@ PYBIND11_MODULE(controllers, m) {
            &InverseDynamics<double>::is_pure_gravity_compensation,
            doc.InverseDynamics.is_pure_gravity_compensation.doc);
 
-  py::enum_<InverseDynamics<double>::InverseDynamicsMode>(idyn,
-                                                          "InverseDynamicsMode")
+  py::enum_<InverseDynamics<double>::InverseDynamicsMode>(  // BR
+      idyn, "InverseDynamicsMode")
       .value("kInverseDynamics", InverseDynamics<double>::kInverseDynamics,
              doc.InverseDynamics.InverseDynamicsMode.doc)
       .value("kGravityCompensation",
