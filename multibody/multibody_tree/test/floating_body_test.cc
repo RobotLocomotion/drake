@@ -186,7 +186,8 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
       benchmark_.CalculateExactTranslationalSolution(kEndTime);
 
   // Compare computed solution against benchmark:
-  EXPECT_TRUE(R_WB.IsNearlyEqualTo(R_WB_exact, kTolerance));
+  EXPECT_TRUE(CompareMatrices(R_WB.matrix(), R_WB_exact.matrix(), kTolerance,
+                              MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(p_WBcm, p_WBcm_exact, kTolerance,
                               MatrixCompareType::relative));
 

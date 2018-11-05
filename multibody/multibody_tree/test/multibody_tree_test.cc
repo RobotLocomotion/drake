@@ -806,7 +806,9 @@ TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
 
   // Compare against benchmark.
   EXPECT_TRUE(V_WE.IsApprox(V_WE_benchmark, kTolerance));
-  EXPECT_TRUE(X_WE.IsNearlyEqualTo(X_WE_benchmark, kTolerance));
+  EXPECT_TRUE(CompareMatrices(X_WE.GetAsMatrix34(),
+                              X_WE_benchmark.GetAsMatrix34(),
+                              kTolerance, MatrixCompareType::relative));
 }
 
 TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
