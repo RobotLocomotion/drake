@@ -24,6 +24,7 @@ py_binary(
         "//automotive/models:prod_models",
         "//examples:prod_models",
         "@drake_visualizer",
+        "@drake_visualizer//:lcm_python",
     ],
     main = "//tools/workspace/drake_visualizer:drake_visualizer.py",
     # Python libraries to import.
