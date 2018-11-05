@@ -77,6 +77,9 @@ drake_py_unittest(
     data = [
         "//multibody/benchmarks/acrobot:models",
     ],
+    # TODO(eric.cousineau): Remove if/when we can somehow test code paths
+    # without a window popping up.
+    tags = ["manual"],
     deps = [
         ":simple_ui_py",
         "//bindings/pydrake/multibody",

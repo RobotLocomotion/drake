@@ -147,7 +147,9 @@ drake_py_binary(
     name = "end_effector_teleop",
     srcs = ["end_effector_teleop.py"],
     add_test_rule = 1,
-    tags = vtk_test_tags(),
+    # TODO(eric.cousineau): Remove `manual` tag if/when we can somehow test
+    # code paths without a window popping up.
+    tags = vtk_test_tags() + ["manual"],
     test_rule_args = ["--target_realtime_rate=0.0 --duration=0.1"],
     deps = [
         "//bindings/pydrake",
