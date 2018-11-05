@@ -1196,7 +1196,8 @@ class TurnUsingRefToRConn
     const int ref_lane{0};
     const double lane_width{builder->get_lane_width()};
     const double total_width{kLaneNum * lane_width};
-    // Locates the reference curve in the middle of the Connection segment.
+    // Locates the reference curve along the centerline of
+    // the Connection segment.
     const LaneLayout lane_layout{kLeftShoulder, kRightShoulder, kLaneNum,
                                  ref_lane, -(total_width - lane_width) / 2.};
 
@@ -1227,7 +1228,8 @@ class TurnUsingRefToRRef
     const int ref_lane{0};
     const double lane_width{builder->get_lane_width()};
     const double total_width{kLaneNum * lane_width};
-    // Locates the reference curve in the middle of the Connection segment.
+    // Locates the reference curve along the centerline of
+    // the Connection segment.
     const LaneLayout lane_layout{kLeftShoulder, kRightShoulder, kLaneNum,
                                  ref_lane, -(total_width - lane_width) / 2.};
 
@@ -1250,7 +1252,7 @@ class TurnUsingRefToRRef
 // it's reference curve starting at the endpoint and the
 // curved connection by reversing the former connection
 // reference lane at its start end.
-class TurnUsingRefToRLane
+class TurnUsingStraightRefToCurvedRLane
     : public TurnBuildProcedure {
  public:
   using TurnBuildProcedure::TurnBuildProcedure;
@@ -1259,10 +1261,13 @@ class TurnUsingRefToRLane
     const int ref_lane{0};
     const double lane_width{builder->get_lane_width()};
     const double total_width{kLaneNum * lane_width};
-    // Locates the reference curve in the middle of the Connection segment.
+    // Locates the reference curve on the left (for an observer
+    // looking in the direction of increasing s coordinates) of
+    // the Connection segment, half a lane width away from its
+    // centerline.
     const LaneLayout lane_layout{
       kLeftShoulder, kRightShoulder, kLaneNum,
-      ref_lane, -(total_width - lane_width) / 2.};
+      ref_lane, -(total_width + lane_width) / 2.};
 
     const Connection* straight_conn = builder->Connect(
         kStraightConnName, lane_layout,
@@ -1271,19 +1276,55 @@ class TurnUsingRefToRLane
     ASSERT_TRUE(straight_conn != nullptr);
 
     const int other_lane{kLaneNum - 1};
-    // Locates the reference curve in the middle of the Connection segment.
-    const LaneLayout other_lane_layout{
-      kLeftShoulder, kRightShoulder, kLaneNum,
-      ref_lane, -(total_width - lane_width) / 2.};
 
     const Connection* curved_conn = builder->Connect(
-        kCurvedConnName, other_lane_layout, StartLane(ref_lane).at(
+        kCurvedConnName, lane_layout, StartLane(ref_lane).at(
             *straight_conn, other_lane, api::LaneEnd::kStart,
             Direction::kReverse), arc_offset(),
         EndLane(ref_lane).z_at(kFlatZ, Direction::kForward));
     ASSERT_TRUE(curved_conn != nullptr);
   }
 };
+
+// An encapsulated Multilane turn build procedure that
+// constructs it by specifying the curved connection by
+// it's reference curve starting at the endpoint and the
+// straight connection by reversing the former connection
+// reference lane at its start end.
+class TurnUsingCurvedRefToStraightRLane
+    : public TurnBuildProcedure {
+ public:
+  using TurnBuildProcedure::TurnBuildProcedure;
+
+  void ApplyTo(Builder* builder) const override {
+    const int ref_lane{0};
+    const double lane_width{builder->get_lane_width()};
+    const double total_width{kLaneNum * lane_width};
+    // Locates the reference curve on the left (for an observer
+    // looking in the direction of increasing s coordinates) of
+    // the Connection segment, half a lane width away from its
+    // centerline.
+    const LaneLayout lane_layout{
+      kLeftShoulder, kRightShoulder, kLaneNum,
+      ref_lane, -(total_width + lane_width) / 2.};
+
+    const Connection* curved_conn = builder->Connect(
+        kCurvedConnName, lane_layout,
+        StartReference().at(start_endpoint(), Direction::kForward),
+        arc_offset(), EndReference().z_at(kFlatZ, Direction::kForward));
+    ASSERT_TRUE(curved_conn != nullptr);
+
+    const int other_lane{kLaneNum - 1};
+
+    const Connection* straight_conn = builder->Connect(
+        kStraightConnName, lane_layout, StartLane(ref_lane).at(
+            *curved_conn, other_lane, api::LaneEnd::kStart,
+            Direction::kReverse), line_offset(),
+        EndLane(ref_lane).z_at(kFlatZ, Direction::kForward));
+    ASSERT_TRUE(straight_conn != nullptr);
+  }
+};
+
 
 }  // namespace
 
@@ -1358,8 +1399,13 @@ ListBadReverseBuildProcedures() {
           kBadStartEndpoint, kStraightConnLength,
           kCurvedConnRadius, kCurvedConnAngularDelta));
   procedures.push_back(
-      std::make_unique<TurnUsingRefToRLane>(
-          "BankedTurnUsingRefToRLaneWithBadThetaDot",
+      std::make_unique<TurnUsingStraightRefToCurvedRLane>(
+          "BankedTurnUsingStraightRefToCurvedRLaneWithBadThetaDot",
+          kBadStartEndpoint, kStraightConnLength,
+          kCurvedConnRadius, kCurvedConnAngularDelta));
+  procedures.push_back(
+      std::make_unique<TurnUsingCurvedRefToStraightRLane>(
+          "BankedTurnUsingCurvedRefToStraightRLaneWithBadThetaDot",
           kBadStartEndpoint, kStraightConnLength,
           kCurvedConnRadius, kCurvedConnAngularDelta));
   return procedures;
@@ -1407,8 +1453,13 @@ ListGoodReverseBuildProcedures() {
           kStartEndpoint, kStraightConnLength,
           kCurvedConnRadius, kCurvedConnAngularDelta));
   procedures.push_back(
-      std::make_unique<TurnUsingRefToRLane>(
-          "BankedTurnUsingRefToRLaneWithoutThetaDot",
+      std::make_unique<TurnUsingStraightRefToCurvedRLane>(
+          "BankedTurnUsingStraightRefToCurvedRLaneWithoutThetaDot",
+          kStartEndpoint, kStraightConnLength,
+          kCurvedConnRadius, kCurvedConnAngularDelta));
+  procedures.push_back(
+      std::make_unique<TurnUsingCurvedRefToStraightRLane>(
+          "BankedTurnUsingCurvedRefToStraightRLaneWithoutThetaDot",
           kStartEndpoint, kStraightConnLength,
           kCurvedConnRadius, kCurvedConnAngularDelta));
   return procedures;
