@@ -19,8 +19,8 @@ PYBIND11_MODULE(dragway, m) {
 
   m.doc() = "Bindings for the Dragway backend.";
 
-  py::class_<dragway::RoadGeometry, api::RoadGeometry>(m, "RoadGeometry",
-    doc.dragway.RoadGeometry.doc);
+  py::class_<dragway::RoadGeometry, api::RoadGeometry>(
+      m, "RoadGeometry", doc.dragway.RoadGeometry.doc);
 
   m.def("create_dragway",
         [](api::RoadGeometryId road_id, int num_lanes, double length,
@@ -29,7 +29,8 @@ PYBIND11_MODULE(dragway, m) {
           return make_unique<dragway::RoadGeometry>(
               road_id, num_lanes, length, lane_width, shoulder_width,
               maximum_height, linear_tolerance, angular_tolerance);
-        }, py::arg("road_id"), py::arg("num_lanes"), py::arg("length"),
+        },
+        py::arg("road_id"), py::arg("num_lanes"), py::arg("length"),
         py::arg("lane_width"), py::arg("shoulder_width"),
         py::arg("maximum_height"), py::arg("linear_tolerance"),
         py::arg("angular_tolerance"), doc.dragway.RoadGeometry.ctor.doc_3);
