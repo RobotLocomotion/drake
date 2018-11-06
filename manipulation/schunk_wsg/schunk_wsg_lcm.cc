@@ -186,7 +186,18 @@ void SchunkWsgStatusSender::OutputStatus(const Context<double>& context,
   const systems::BasicVector<double>* force =
       this->EvalVectorInput(context, force_input_port_);
   if (force) {
-    status.actual_force = force->GetAtIndex(0);
+    // In drake-schunk-driver, the driver attempts to apply a sign to the
+    // force value based on the last reported direction of gripper movement
+    // (the gripper always reports positive values).  This does not work very
+    // well, and as a result the sign is almost always negative (when
+    // non-zero) regardless of which direction the gripper was moving in when
+    // motion was blocked.  As it's not a reliable source of information in
+    // the driver (and should be removed there at some point), we don't try to
+    // replicate it here and instead report positive forces.
+
+    // TODO(sammy-tri) once the deprecated constructor/ports are removed, this
+    // can just use force->GetAtIndex(0).
+    status.actual_force = force->get_value().cwiseAbs().sum();
   } else {
     status.actual_force = 0;
   }
