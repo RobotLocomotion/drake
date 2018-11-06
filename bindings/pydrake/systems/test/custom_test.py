@@ -407,8 +407,8 @@ class TestCustom(unittest.TestCase):
             self.assertEqual(value.get_value(), expected_output_value)
 
     def test_deprecated_abstract_input_port(self):
-        # A system that takes a Value[object] on its input, and parses it to a
-        # float on its output.
+        # A system that takes a Value[object] on its input, and parses the
+        # input value's first element to a float on its output.
         class ParseFloatSystem(LeafSystem_[float]):
             def __init__(self):
                 LeafSystem_[float].__init__(self)
@@ -416,12 +416,12 @@ class TestCustom(unittest.TestCase):
                 self._DeclareVectorOutputPort("out", BasicVector(1), self._Out)
 
             def _Out(self, context, y_data):
-                py_obj = self.EvalAbstractInput(context, 0).get_value()
+                py_obj = self.EvalAbstractInput(context, 0).get_value()[0]
                 y_data.SetAtIndex(0, float(py_obj))
 
         system = ParseFloatSystem()
         context = system.CreateDefaultContext()
         output = system.AllocateOutput()
-        context.FixInputPort(0, AbstractValue.Make("22.2"))
+        context.FixInputPort(0, AbstractValue.Make(["22.2"]))
         system.CalcOutput(context, output)
         self.assertEqual(output.get_vector_data(0).GetAtIndex(0), 22.2)

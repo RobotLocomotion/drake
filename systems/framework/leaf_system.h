@@ -851,6 +851,9 @@ class LeafSystem : public System<T> {
   /// Declares an abstract-valued input port using the given @p model_value.
   /// This is the best way to declare LeafSystem abstract input ports.
   ///
+  /// Any port connected to this input, and any call to FixInputPort for this
+  /// input, must provide for values whose type matches this @p model_value.
+  ///
   /// @see System::DeclareInputPort() for more information.
   const InputPort<T>& DeclareAbstractInputPort(
       std::string name, const AbstractValue& model_value) {
