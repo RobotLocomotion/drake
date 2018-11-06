@@ -20,13 +20,13 @@ drake_cc_library(
     srcs = ["quadrotor_plant.cc"],
     hdrs = ["quadrotor_plant.h"],
     deps = [
+        "//attic/util",
         "//common:default_scalars",
         "//math:geometric_transform",
         "//math:gradient",
         "//systems/controllers:linear_quadratic_regulator",
         "//systems/framework:leaf_system",
         "//systems/primitives:affine_system",
-        "//util",
     ],
 )
 

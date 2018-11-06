@@ -55,6 +55,7 @@ drake_cc_library(
         "//attic/systems/controllers:polynomial_encode_decode",
         "//attic/systems/controllers:side",
         "//attic/systems/controllers:zmp_util",
+        "//attic/util",
         "//common:essential",
         "//common:unused",
         "//common/trajectories:piecewise_polynomial",
@@ -64,7 +65,6 @@ drake_cc_library(
         "//math:geometric_transform",
         "//math:gradient",
         "//multibody:rigid_body_tree",
-        "//util",
     ],
 )
 

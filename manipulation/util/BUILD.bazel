@@ -60,8 +60,8 @@ drake_cc_library(
     hdrs = ["robot_state_msg_translator.h"],
     deps = [
         ":bot_core_lcm_encode_decode",
+        "//attic/util",
         "//multibody:rigid_body_tree",
-        "//util",
         "@lcmtypes_bot2_core",
     ],
 )
