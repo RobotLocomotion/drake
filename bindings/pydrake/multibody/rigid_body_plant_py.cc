@@ -32,15 +32,16 @@ PYBIND11_MODULE(rigid_body_plant, m) {
     using Class = CompliantContactModelParameters;
     py::class_<Class> cls(m, "CompliantContactModelParameters",
                           doc.CompliantContactModelParameters.doc);
-    cls.def(
-           // Implicit constructor does not have documentation.
-           py::init(
-               [](double v_stiction_tolerance, double characteristic_radius) {
-                 return Class{v_stiction_tolerance, characteristic_radius};
-               }),
-           py::arg("v_stiction_tolerance") = Class::kDefaultVStictionTolerance,
-           py::arg("characteristic_radius") =
-               Class::kDefaultCharacteristicRadius)
+    cls  // BR
+        .def(
+            // Implicit constructor does not have documentation.
+            py::init(
+                [](double v_stiction_tolerance, double characteristic_radius) {
+                  return Class{v_stiction_tolerance, characteristic_radius};
+                }),
+            py::arg("v_stiction_tolerance") = Class::kDefaultVStictionTolerance,
+            py::arg("characteristic_radius") =
+                Class::kDefaultCharacteristicRadius)
         .def_readwrite(
             "v_stiction_tolerance", &Class::v_stiction_tolerance,
             doc.CompliantContactModelParameters.v_stiction_tolerance.doc)
@@ -55,8 +56,9 @@ PYBIND11_MODULE(rigid_body_plant, m) {
   {
     using Class = ContactInfo<T>;
     py::class_<Class> cls(m, "ContactInfo", doc.ContactInfo.doc);
-    cls.def("get_element_id_1", &Class::get_element_id_1,
-            doc.ContactInfo.get_element_id_1.doc)
+    cls  // BR
+        .def("get_element_id_1", &Class::get_element_id_1,
+             doc.ContactInfo.get_element_id_1.doc)
         .def("get_element_id_2", &Class::get_element_id_2,
              doc.ContactInfo.get_element_id_2.doc)
         .def("get_resultant_force", &Class::get_resultant_force,
@@ -66,10 +68,11 @@ PYBIND11_MODULE(rigid_body_plant, m) {
   {
     using Class = ContactForce<T>;
     py::class_<Class> cls(m, "ContactForce", doc.ContactForce.doc);
-    cls.def(py::init<const Vector3<T>&, const Vector3<T>&, const Vector3<T>&,
-                     const Vector3<T>&>(),
-            py::arg("application_point"), py::arg("normal"), py::arg("force"),
-            py::arg("torque") = Vector3<T>::Zero(), doc.ContactForce.ctor.doc)
+    cls  // BR
+        .def(py::init<const Vector3<T>&, const Vector3<T>&, const Vector3<T>&,
+                      const Vector3<T>&>(),
+             py::arg("application_point"), py::arg("normal"), py::arg("force"),
+             py::arg("torque") = Vector3<T>::Zero(), doc.ContactForce.ctor.doc)
         .def("get_reaction_force", &Class::get_reaction_force,
              doc.ContactForce.get_reaction_force.doc)
         .def("get_application_point", &Class::get_application_point,
@@ -86,7 +89,8 @@ PYBIND11_MODULE(rigid_body_plant, m) {
   {
     using Class = ContactResults<T>;
     py::class_<Class> cls(m, "ContactResults", doc.ContactResults.doc);
-    cls.def(py::init<>(), doc.ContactResults.ctor.doc)
+    cls  // BR
+        .def(py::init<>(), doc.ContactResults.ctor.doc)
         .def("get_num_contacts", &Class::get_num_contacts,
              doc.ContactResults.get_num_contacts.doc)
         .def("get_contact_info", &Class::get_contact_info,
@@ -109,7 +113,8 @@ PYBIND11_MODULE(rigid_body_plant, m) {
   {
     using Class = CompliantMaterial;
     py::class_<Class> cls(m, "CompliantMaterial", doc.CompliantMaterial.doc);
-    cls.def(py::init<>(), doc.CompliantMaterial.ctor.doc)
+    cls  // BR
+        .def(py::init<>(), doc.CompliantMaterial.ctor.doc)
         .def(py::init<double, double, double, double>(),
              py::arg("youngs_modulus"), py::arg("dissipation"),
              py::arg("static_friction"), py::arg("dynamic_friction"),

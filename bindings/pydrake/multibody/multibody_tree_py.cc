@@ -44,7 +44,8 @@ template <typename PyClass>
 void BindMultibodyTreeElementMixin(PyClass* pcls) {
   using Class = typename PyClass::type;
   auto& cls = *pcls;
-  cls.def("get_parent_tree", &Class::get_parent_tree, py_reference_internal)
+  cls  // BR
+      .def("get_parent_tree", &Class::get_parent_tree, py_reference_internal)
       .def("index", &Class::index)
       .def("model_instance", &Class::model_instance);
 }
@@ -71,22 +72,22 @@ void init_module(py::module m) {
   BindTypeSafeIndex<BodyNodeIndex>(
       m, "BodyNodeIndex",
       "Type used to identify tree nodes by index within a multibody tree "
-      "system.");  // NOLINT(whitespace/line_length)
+      "system.");
   BindTypeSafeIndex<ForceElementIndex>(
       m, "ForceElementIndex",
       "Type used to identify force elements by index within a multibody tree "
-      "system.");  // NOLINT(whitespace/line_length)
+      "system.");
   BindTypeSafeIndex<JointIndex>(
       m, "JointIndex",
       "Type used to identify joints by index within a multibody tree system.");
   BindTypeSafeIndex<JointActuatorIndex>(
       m, "JointActuatorIndex",
       "Type used to identify actuators by index within a multibody tree "
-      "system.");  // NOLINT(whitespace/line_length)
+      "system.");
   BindTypeSafeIndex<ModelInstanceIndex>(
       m, "ModelInstanceIndex",
       "Type used to identify model instances by index within a multibody tree "
-      "system.");  // NOLINT(whitespace/line_length)
+      "system.");
   m.def("world_index", &world_index, doc.world_index.doc);
 
   // Frames.
@@ -94,7 +95,8 @@ void init_module(py::module m) {
     using Class = Frame<T>;
     py::class_<Class> cls(m, "Frame", doc.Frame.doc);
     BindMultibodyTreeElementMixin(&cls);
-    cls.def("name", &Class::name, doc.Frame.name.doc)
+    cls  // BR
+        .def("name", &Class::name, doc.Frame.name.doc)
         .def("body", &Class::body, py_reference_internal, doc.Frame.body.doc);
   }
 
@@ -109,7 +111,8 @@ void init_module(py::module m) {
     using Class = Body<T>;
     py::class_<Class> cls(m, "Body", doc.Body.doc);
     BindMultibodyTreeElementMixin(&cls);
-    cls.def("name", &Class::name, doc.Body.name.doc)
+    cls  // BR
+        .def("name", &Class::name, doc.Body.name.doc)
         .def("body_frame", &Class::body_frame, py_reference_internal,
              doc.Body.body_frame.doc);
   }
@@ -124,7 +127,8 @@ void init_module(py::module m) {
     using Class = Joint<T>;
     py::class_<Class> cls(m, "Joint", doc.Joint.doc);
     BindMultibodyTreeElementMixin(&cls);
-    cls.def("name", &Class::name, doc.Joint.name.doc)
+    cls  // BR
+        .def("name", &Class::name, doc.Joint.name.doc)
         .def("parent_body", &Class::parent_body, py_reference_internal,
              doc.Joint.parent_body.doc)
         .def("child_body", &Class::child_body, py_reference_internal,
@@ -157,8 +161,9 @@ void init_module(py::module m) {
     using Class = PrismaticJoint<T>;
     py::class_<Class, Joint<T>> cls(m, "PrismaticJoint",
                                     doc.PrismaticJoint.doc);
-    cls.def("get_translation", &Class::get_translation, py::arg("context"),
-            doc.PrismaticJoint.get_translation.doc)
+    cls  // BR
+        .def("get_translation", &Class::get_translation, py::arg("context"),
+             doc.PrismaticJoint.get_translation.doc)
         .def("set_translation", &Class::set_translation, py::arg("context"),
              py::arg("translation"), doc.PrismaticJoint.set_translation.doc)
         .def("get_translation_rate", &Class::get_translation_rate,
@@ -171,11 +176,12 @@ void init_module(py::module m) {
   {
     using Class = RevoluteJoint<T>;
     py::class_<Class, Joint<T>> cls(m, "RevoluteJoint", doc.RevoluteJoint.doc);
-    cls.def(py::init<const string&, const Frame<T>&, const Frame<T>&,
-                     const Vector3<T>&, double>(),
-            py::arg("name"), py::arg("frame_on_parent"),
-            py::arg("frame_on_child"), py::arg("axis"), py::arg("damping") = 0,
-            doc.RevoluteJoint.ctor.doc_4)
+    cls  // BR
+        .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
+                      const Vector3<T>&, double>(),
+             py::arg("name"), py::arg("frame_on_parent"),
+             py::arg("frame_on_child"), py::arg("axis"), py::arg("damping") = 0,
+             doc.RevoluteJoint.ctor.doc_4)
         .def("get_angle", &Class::get_angle, py::arg("context"),
              doc.RevoluteJoint.get_angle.doc)
         .def("set_angle", &Class::set_angle, py::arg("context"),
@@ -185,11 +191,12 @@ void init_module(py::module m) {
   {
     using Class = WeldJoint<T>;
     py::class_<Class, Joint<T>> cls(m, "WeldJoint", doc.WeldJoint.doc);
-    cls.def(py::init<const string&, const Frame<T>&, const Frame<T>&,
-                     const Isometry3<double>&>(),
-            py::arg("name"), py::arg("parent_frame_P"),
-            py::arg("child_frame_C"), py::arg("X_PC"),
-            doc.WeldJoint.ctor.doc_3);
+    cls  // BR
+        .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
+                      const Isometry3<double>&>(),
+             py::arg("name"), py::arg("parent_frame_P"),
+             py::arg("child_frame_C"), py::arg("X_PC"),
+             doc.WeldJoint.ctor.doc_3);
   }
 
   // Actuators.
@@ -197,7 +204,8 @@ void init_module(py::module m) {
     using Class = JointActuator<T>;
     py::class_<Class> cls(m, "JointActuator", doc.JointActuator.doc);
     BindMultibodyTreeElementMixin(&cls);
-    cls.def("name", &Class::name, doc.JointActuator.name.doc)
+    cls  // BR
+        .def("name", &Class::name, doc.JointActuator.name.doc)
         .def("joint", &Class::joint, py_reference_internal,
              doc.JointActuator.joint.doc);
   }
@@ -221,8 +229,9 @@ void init_module(py::module m) {
   {
     using Class = MultibodyForces<T>;
     py::class_<Class> cls(m, "MultibodyForces", doc.MultibodyForces.doc);
-    cls.def(py::init<MultibodyTree<double>&>(), py::arg("model"),
-            doc.MultibodyForces.ctor.doc);
+    cls  // BR
+        .def(py::init<MultibodyTree<double>&>(), py::arg("model"),
+             doc.MultibodyForces.ctor.doc);
   }
 
   // Tree.
@@ -411,7 +420,8 @@ void init_multibody_plant(py::module m) {
     // TODO(eric.cousineau): Add model-instance based overloads beyond
     // forwarded methods.
     // Forwarded methods from `MultibodyTree`.
-    cls.def(py::init<double>(), py::arg("time_step") = 0.)
+    cls  // BR
+        .def(py::init<double>(), py::arg("time_step") = 0.)
         .def("num_bodies", &Class::num_bodies,
              doc.MultibodyPlant.num_bodies.doc)
         .def("num_joints", &Class::num_joints,
@@ -440,12 +450,13 @@ void init_multibody_plant(py::module m) {
              overload_cast_explicit<int>(&Class::num_actuated_dofs),
              doc.MultibodyPlant.num_actuated_dofs.doc);
     // Construction.
-    cls.def("AddJoint",
-            [](Class * self, std::unique_ptr<Joint<T>> joint) -> auto& {
-              return self->AddJoint(std::move(joint));
-            },
-            py::arg("joint"), py_reference_internal,
-            doc.MultibodyPlant.AddJoint.doc)
+    cls  // BR
+        .def("AddJoint",
+             [](Class * self, std::unique_ptr<Joint<T>> joint) -> auto& {
+               return self->AddJoint(std::move(joint));
+             },
+             py::arg("joint"), py_reference_internal,
+             doc.MultibodyPlant.AddJoint.doc)
         .def("WeldFrames", &Class::WeldFrames, py::arg("A"), py::arg("B"),
              py::arg("X_AB") = Isometry3<double>::Identity(),
              py_reference_internal, doc.MultibodyPlant.WeldFrames.doc)
@@ -458,9 +469,10 @@ void init_multibody_plant(py::module m) {
              py::arg("force_element"), py_reference_internal,
              doc.MultibodyPlant.AddForceElement.doc);
     // Topology queries.
-    cls.def("HasBodyNamed",
-            overload_cast_explicit<bool, const string&>(&Class::HasBodyNamed),
-            py::arg("name"), doc.MultibodyPlant.HasBodyNamed.doc)
+    cls  // BR
+        .def("HasBodyNamed",
+             overload_cast_explicit<bool, const string&>(&Class::HasBodyNamed),
+             py::arg("name"), doc.MultibodyPlant.HasBodyNamed.doc)
         .def("HasBodyNamed",
              overload_cast_explicit<bool, const string&, ModelInstanceIndex>(
                  &Class::HasBodyNamed),
@@ -518,9 +530,10 @@ void init_multibody_plant(py::module m) {
              py::arg("name"), py_reference_internal,
              doc.MultibodyPlant.GetModelInstanceByName.doc);
     // Geometry.
-    cls.def("RegisterAsSourceForSceneGraph",
-            &Class::RegisterAsSourceForSceneGraph, py::arg("scene_graph"),
-            doc.MultibodyPlant.RegisterAsSourceForSceneGraph.doc)
+    cls  // BR
+        .def("RegisterAsSourceForSceneGraph",
+             &Class::RegisterAsSourceForSceneGraph, py::arg("scene_graph"),
+             doc.MultibodyPlant.RegisterAsSourceForSceneGraph.doc)
         .def("get_source_id", &Class::get_source_id,
              doc.MultibodyPlant.get_source_id.doc)
         .def("get_geometry_query_input_port",
@@ -535,11 +548,12 @@ void init_multibody_plant(py::module m) {
         .def("GetBodyFromFrameId", &Class::GetBodyFromFrameId,
              py_reference_internal, doc.MultibodyPlant.GetBodyFromFrameId.doc);
     // Port accessors.
-    cls.def("get_actuation_input_port",
-            overload_cast_explicit<const systems::InputPort<T>&>(
-                &Class::get_actuation_input_port),
-            py_reference_internal,
-            doc.MultibodyPlant.get_actuation_input_port.doc)
+    cls  // BR
+        .def("get_actuation_input_port",
+             overload_cast_explicit<const systems::InputPort<T>&>(
+                 &Class::get_actuation_input_port),
+             py_reference_internal,
+             doc.MultibodyPlant.get_actuation_input_port.doc)
         .def("get_continuous_state_output_port",
              overload_cast_explicit<const systems::OutputPort<T>&>(
                  &Class::get_continuous_state_output_port),
@@ -551,8 +565,9 @@ void init_multibody_plant(py::module m) {
              py_reference_internal,
              doc.MultibodyPlant.get_contact_results_output_port.doc);
     // Property accessors.
-    cls.def("world_body", &Class::world_body, py_reference_internal,
-            doc.MultibodyPlant.world_body.doc)
+    cls  // BR
+        .def("world_body", &Class::world_body, py_reference_internal,
+             doc.MultibodyPlant.world_body.doc)
         .def("world_frame", &Class::world_frame, py_reference_internal,
              doc.MultibodyPlant.world_frame.doc)
         .def("tree", &Class::tree, py_reference_internal,
