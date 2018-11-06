@@ -63,7 +63,7 @@ PYBIND11_MODULE(manipulation_station, m) {
       .def("SetWsgVelocity", &ManipulationStation<T>::SetWsgVelocity,
            doc.ManipulationStation.SetWsgVelocity.doc)
       .def_static("get_camera_pose", &ManipulationStation<T>::get_camera_pose,
-           doc.ManipulationStation.get_camera_pose.doc);
+                  doc.ManipulationStation.get_camera_pose.doc);
 
   py::class_<ManipulationStationHardwareInterface, Diagram<double>>(
       m, "ManipulationStationHardwareInterface")
