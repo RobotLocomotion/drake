@@ -18,7 +18,7 @@ void LinearSystemSolver::Solve(const MathematicalProgram& prog,
                                const optional<Eigen::VectorXd>& initial_guess,
                                const optional<SolverOptions>& solver_options,
                                MathematicalProgramResult* result) const {
-  // The initial guess doesn't help us, and we don't offer any turning options.
+  // The initial guess doesn't help us, and we don't offer any tuning options.
   unused(initial_guess, solver_options);
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
