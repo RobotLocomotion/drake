@@ -917,10 +917,15 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
 
       // Asserts that the retrieved poses match with the ones specified by the
       // unit test method SetPendulumPoses().
-      EXPECT_TRUE(
-          X_WW.GetAsMatrix4().isApprox(Matrix4d::Identity(), kTolerance));
-      EXPECT_TRUE(X_WU.IsNearlyEqualTo(X_WU_expected, kTolerance));
-      EXPECT_TRUE(X_WL.IsNearlyEqualTo(X_WL_expected, kTolerance));
+      EXPECT_TRUE(CompareMatrices(X_WW.GetAsMatrix4(),
+                                  Matrix4d::Identity(),
+                                  kTolerance, MatrixCompareType::relative));
+      EXPECT_TRUE(CompareMatrices(X_WU.GetAsMatrix34(),
+                                  X_WU_expected.GetAsMatrix34(),
+                                  kTolerance, MatrixCompareType::relative));
+      EXPECT_TRUE(CompareMatrices(X_WL.GetAsMatrix34(),
+                                  X_WL_expected.GetAsMatrix34(),
+                                  kTolerance, MatrixCompareType::relative));
     }
   }
 }
