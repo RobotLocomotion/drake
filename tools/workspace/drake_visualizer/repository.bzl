@@ -57,8 +57,9 @@ def _impl(repository_ctx):
         archive = "dv-0.1.0-316-g1c1d42b-python-2.7.12-qt-5.5.1-vtk-8.1.1-xenial-x86_64.tar.gz"  # noqa
         sha256 = "f31848d4e348cf56dee59597a21176574ea199a47284a88bc9e16812e96c57a3"  # noqa
     elif os_result.ubuntu_release == "18.04":
-        archive = "dv-0.1.0-316-g1c1d42b-python-2.7.15-qt-5.9.5-vtk-8.1.1-bionic-x86_64.tar.gz"  # noqa
-        sha256 = "b9462f9d2a1ab1b33c3725290e42cd8da2f04c5d80dce7fe3f9d98dbe6865a63"  # noqa
+        # TODO(jwnimmer-tri) Upgrade to 316-g1c1d42b once the packages are available.
+        archive = "dv-0.1.0-314-ga5a6f6f-python-2.7.15-qt-5.9.5-vtk-8.1.1-bionic-x86_64.tar.gz"  # noqa
+        sha256 = "49d4fe29285ebbc420d19bf91511e36e8b1eb03d23bc7912d982ae12c4b2b36c"  # noqa
     else:
         fail("Operating system is NOT supported", attr = os_result)
 
