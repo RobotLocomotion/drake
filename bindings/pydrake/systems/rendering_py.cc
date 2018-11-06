@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/util/eigen_geometry_pybind.h"
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"
 #include "drake/systems/rendering/frame_velocity.h"
+#include "drake/systems/rendering/multibody_position_to_geometry_pose.h"
 #include "drake/systems/rendering/pose_aggregator.h"
 #include "drake/systems/rendering/pose_vector.h"
 
@@ -104,6 +105,20 @@ PYBIND11_MODULE(rendering, m) {
       doc.PoseAggregator.AddSinglePoseAndVelocityInput.doc)
     .def("AddBundleInput", &PoseAggregator<T>::AddBundleInput,
          py_reference_internal, doc.PoseAggregator.AddBundleInput.doc);
+
+  py::class_<MultibodyPositionToGeometryPose<T>, LeafSystem<T>>(m,
+      "MultibodyPositionToGeometryPose", doc.MultibodyPositionToGeometryPose
+      .doc)
+      .def(py::init<const multibody::multibody_plant::MultibodyPlant<T>&>(),
+          doc.MultibodyPositionToGeometryPose.ctor.doc_3)
+      .def("get_input_port",
+          &MultibodyPositionToGeometryPose<T>::get_input_port,
+          py_reference_internal,
+          doc.MultibodyPositionToGeometryPose.get_input_port.doc)
+      .def("get_output_port",
+           &MultibodyPositionToGeometryPose<T>::get_output_port,
+           py_reference_internal,
+           doc.MultibodyPositionToGeometryPose.get_output_port.doc);
 
   // TODO(eric.cousineau): Add more systems as needed.
 }
