@@ -48,13 +48,31 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
   if (solver.available()) {
     // With dual reductions, Gurobi may not be able to differentiate between
     // infeasible and unbounded.
-    prog_->SetSolverOption(GurobiSolver::id(), "DualReductions", 1);
-    SolutionResult result = solver.Solve(*prog_);
-    EXPECT_EQ(result, SolutionResult::kInfeasible_Or_Unbounded);
-    prog_->SetSolverOption(GurobiSolver::id(), "DualReductions", 0);
-    result = solver.Solve(*prog_);
-    EXPECT_EQ(result, SolutionResult::kUnbounded);
-    EXPECT_EQ(prog_->GetOptimalCost(), MathematicalProgram::kUnboundedCost);
+    SolverOptions solver_options;
+    solver_options.SetOption(GurobiSolver::id(), "DualReductions", 1);
+    MathematicalProgramResult result;
+    solver.Solve(*prog_, {}, solver_options, &result);
+    EXPECT_EQ(result.get_solution_result(),
+              SolutionResult::kInfeasible_Or_Unbounded);
+    // This code is defined in
+    // http://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
+    const int GRB_INF_OR_UNBD = 4;
+    EXPECT_EQ(result.get_solver_details()
+                  .GetValue<GurobiSolverDetails>()
+                  .optimization_status,
+              GRB_INF_OR_UNBD);
+
+    solver_options.SetOption(GurobiSolver::id(), "DualReductions", 0);
+    solver.Solve(*prog_, {}, solver_options, &result);
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
+    // This code is defined in
+    // http://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
+    const int GRB_UNBOUNDED = 5;
+    EXPECT_EQ(result.get_solver_details()
+                  .GetValue<GurobiSolverDetails>()
+                  .optimization_status,
+              GRB_UNBOUNDED);
+    EXPECT_EQ(result.get_optimal_cost(), MathematicalProgram::kUnboundedCost);
   }
 }
 

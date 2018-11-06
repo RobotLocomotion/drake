@@ -129,7 +129,7 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
 
   void Solve(const MathematicalProgram&, const optional<Eigen::VectorXd>&,
              const optional<SolverOptions>&,
-             MathematicalProgramResult*) const override; 
+             MathematicalProgramResult*) const override;
 
   SolverId solver_id() const override;
 
