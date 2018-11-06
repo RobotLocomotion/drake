@@ -18,6 +18,7 @@ LIBDRAKE_COMPONENTS = [
     "//attic/multibody/rigid_body_plant:rigid_body_plant",  # unpackaged
     "//attic/multibody/rigid_body_plant:rigid_body_plant_bridge",  # unpackaged
     "//attic/multibody/shapes",
+    "//attic/perception",
     "//attic/systems/controllers",
     "//attic/systems/controllers/plan_eval",
     "//attic/systems/controllers/qp_inverse_dynamics",

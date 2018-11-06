@@ -17,8 +17,6 @@ drake_cc_package_library(
         ":depth_image_to_point_cloud",
         ":point_cloud",
         ":point_cloud_flags",
-        ":rigid_body_point_cloud_filter",
-        ":transform_point_cloud",
     ],
 )
 
@@ -53,19 +51,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "transform_point_cloud",
-    srcs = ["transform_point_cloud.cc"],
-    hdrs = ["transform_point_cloud.h"],
-    deps = [
-        ":point_cloud",
-        "//common:essential",
-        "//math:geometric_transform",
-        "//multibody:rigid_body_tree",
-        "//systems/framework",
-    ],
-)
-
 drake_cc_googletest(
     name = "depth_image_to_point_cloud_test",
     srcs = ["test/depth_image_to_point_cloud_test.cc"],
@@ -73,18 +58,6 @@ drake_cc_googletest(
         ":depth_image_to_point_cloud",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/sensors:camera_info",
-    ],
-)
-
-drake_cc_library(
-    name = "rigid_body_point_cloud_filter",
-    srcs = ["rigid_body_point_cloud_filter.cc"],
-    hdrs = ["rigid_body_point_cloud_filter.h"],
-    deps = [
-        ":point_cloud",
-        "//common:essential",
-        "//multibody:rigid_body_tree",
-        "//systems/framework",
     ],
 )
 
@@ -101,27 +74,6 @@ drake_cc_googletest(
     srcs = ["test/point_cloud_test.cc"],
     deps = [
         ":point_cloud",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "rigid_body_point_cloud_filter_test",
-    srcs = ["test/rigid_body_point_cloud_filter_test.cc"],
-    deps = [
-        ":point_cloud",
-        ":rigid_body_point_cloud_filter",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//multibody:rigid_body_tree",
-    ],
-)
-
-drake_cc_googletest(
-    name = "transform_point_cloud_test",
-    srcs = ["test/transform_point_cloud_test.cc"],
-    deps = [
-        ":transform_point_cloud",
-        "//attic/multibody/rigid_body_plant",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
