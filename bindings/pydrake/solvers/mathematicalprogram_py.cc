@@ -186,8 +186,12 @@ PYBIND11_MODULE(mathematicalprogram, m) {
            doc.MathematicalProgramSolverInterface.available.doc)
       .def("solver_id", &MathematicalProgramSolverInterface::solver_id,
            doc.MathematicalProgramSolverInterface.solver_id.doc)
-      .def("Solve", &MathematicalProgramSolverInterface::Solve,
-           doc.MathematicalProgramSolverInterface.Solve.doc)
+      .def("Solve",
+           // NOLINTNEXTLINE(whitespace/parens)
+           static_cast<SolutionResult (MathematicalProgramSolverInterface::*)(
+               MathematicalProgram&) const>(
+               &MathematicalProgramSolverInterface::Solve),
+           py::arg("prog"), doc.MathematicalProgramSolverInterface.Solve.doc)
       // TODO(m-chaturvedi) Add Pybind11 documentation.
       .def("solver_type",
            [](const MathematicalProgramSolverInterface& self) {

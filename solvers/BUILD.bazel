@@ -55,6 +55,7 @@ drake_cc_package_library(
         ":scs_solver",
         ":snopt_solver",
         ":solution_result",
+        ":solve",
         ":solver_id",
         ":solver_options",
         ":solver_result",
@@ -594,6 +595,16 @@ drake_cc_library(
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
+    ],
+)
+
+drake_cc_library(
+    name = "solve",
+    srcs = ["solve.cc"],
+    hdrs = ["solve.h"],
+    deps = [
+        ":choose_best_solver",
+        ":mathematical_program",
     ],
 )
 
@@ -1470,6 +1481,14 @@ drake_cc_googletest(
         ":choose_best_solver",
         ":mathematical_program",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "solve_test",
+    deps = [
+        ":solve",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
