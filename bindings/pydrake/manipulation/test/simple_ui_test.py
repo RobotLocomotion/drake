@@ -25,7 +25,7 @@ class TestSimpleUI(unittest.TestCase):
         slider = JointSliders(robot=plant, lower_limit=-5., upper_limit=5.,
                               resolution=0.001, update_period_sec=0.01,
                               title='test', length=300)
-        sliders.window.withdraw()  # Don't open a window during testing.
+        slider.window.withdraw()  # Don't open a window during testing.
         context = slider.CreateDefaultContext()
         output = slider.AllocateOutput()
 
