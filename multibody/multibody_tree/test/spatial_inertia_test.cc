@@ -10,6 +10,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
 #include "drake/multibody/multibody_tree/unit_inertia.h"
 
@@ -17,8 +18,8 @@ namespace drake {
 namespace multibody {
 namespace {
 
+using drake::math::RotationMatrixd;
 using drake::math::VectorToSkewSymmetric;
-using Eigen::AngleAxisd;
 using Eigen::Matrix3d;
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
@@ -211,8 +212,7 @@ GTEST_TEST(SpatialInertia, ReExpress) {
   M_CP_E.ShiftInPlace(Vector3d::UnitY());
 
   // Place B rotated +90 degrees about W's x-axis.
-  Matrix3<double> R_WE =
-      AngleAxisd(M_PI_2, Vector3d::UnitX()).toRotationMatrix();
+  const RotationMatrixd R_WE = RotationMatrixd::MakeXRotation(M_PI_2);
 
   SpatialInertia<double> M_CP_W = M_CP_E.ReExpress(R_WE);
 
@@ -244,8 +244,7 @@ GTEST_TEST(SpatialInertia, ReExpress) {
 GTEST_TEST(SpatialInertia, Shift) {
   // This defines the orientation of a frame B to be rotated +90 degrees about
   // the x-axis of a W frame.
-  Matrix3<double> R_WB =
-      AngleAxisd(M_PI_2, Vector3d::UnitX()).toRotationMatrix();
+  const RotationMatrixd R_WB = RotationMatrixd::MakeXRotation(M_PI_2);
 
   // Spatial inertia for a thin cylinder of computed about its center of
   // mass and expressed in frame W.

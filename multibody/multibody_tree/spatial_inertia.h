@@ -10,6 +10,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/cross_product.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/math/spatial_algebra.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
 #include "drake/multibody/multibody_tree/unit_inertia.h"
@@ -284,31 +285,45 @@ class SpatialInertia {
   /// taken about a point P and expressed in frame E, this method computes the
   /// same inertia re-expressed in another frame A.
   /// This operation is performed in-place modifying the original object.
-  ///
   /// @param[in] R_AE Rotation matrix from frame E to frame A.
   /// @returns A reference to `this` rotational inertia about the same point P
   ///          but now re-expressed in frame A, that is, `M_SP_A`.
-  ///
-  /// @warning This method does not check whether the input matrix `R_AE`
-  /// represents a valid rotation or not. It is the resposibility of users to
-  /// provide valid rotation matrices.
-  SpatialInertia& ReExpressInPlace(const Matrix3<T>& R_AE) {
+  SpatialInertia& ReExpressInPlace(const math::RotationMatrix<T>& R_AE) {
     p_PScm_E_ = R_AE * p_PScm_E_;    // Now p_PScm_A
     G_SP_E_.ReExpressInPlace(R_AE);  // Now I_SP_A
     return *this;                    // Now M_SP_A
   }
 
+#if 0
+// TODO(mitiguy) Delete this deprecated code after February 5, 2019.
+  DRAKE_DEPRECATED("ReExpressInPlace(Matrix3<T>&) is deprecated. "
+                   "Use ReExpressInPlace(RotationMatrix<T>&). "
+                   "Code marked to be deleted on February 5, 2019.")
+  SpatialInertia& ReExpressInPlace(const Matrix3<T>& R_AE) {
+    return ReExpressInPlace(math::RotationMatrix<T>(R_AE));
+  }
+#endif
+
   /// Given `this` spatial inertia `M_SP_E` for some body or composite body S,
   /// taken about a point P and expressed in frame E, this method computes the
   /// same inertia re-expressed in another frame A.
-  ///
-  /// @param[in] R_AE Rotation matrix from frame E to frame A.
+  /// @param[in] R_AE RotationMatrix relating frames A and E.
   /// @retval M_SP_A The same spatial inertia of S about P but now
   ///                re-expressed in frame A.
   /// @see ReExpressInPlace() for details.
+  SpatialInertia ReExpress(const math::RotationMatrix<T>& R_AE) const {
+    return SpatialInertia(*this).ReExpressInPlace(R_AE);
+  }
+
+#if 0
+// TODO(mitiguy) Delete this deprecated code after February 5, 2019.
+  DRAKE_DEPRECATED("SpatialInertia::ReExpress(Matrix3<T>&) is deprecated. "
+                   "Use SpatialInertia:ReExpress(RotationMatrix<T>&). "
+                   "Code marked to be deleted on February 5, 2019.")
   SpatialInertia ReExpress(const Matrix3<T>& R_AE) const {
     return SpatialInertia(*this).ReExpressInPlace(R_AE);
   }
+#endif
 
   /// Given `this` spatial inertia `M_SP_E` for some body or composite body S,
   /// computed about point P, and expressed in frame E, this method uses
