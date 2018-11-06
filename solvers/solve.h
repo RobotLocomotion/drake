@@ -1,7 +1,6 @@
 #pragma once
 
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
 
 namespace drake {
 namespace solvers {

@@ -80,7 +80,7 @@ std::unique_ptr<MathematicalProgramSolverInterface> MakeSolver(
   } else if (id == ScsSolver::id()) {
     return std::make_unique<ScsSolver>();
   } else {
-    throw std::invalid_argument("MakeSolver: no matching solver.");
+    throw std::invalid_argument("MakeSolver: no matching solver " + id.name());
   }
 }
 }  // namespace solvers

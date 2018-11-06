@@ -21,9 +21,9 @@ class OsqpSolver : public MathematicalProgramSolverInterface {
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
-  MathematicalProgramResult Solve(
-      const MathematicalProgram&, const optional<Eigen::VectorXd>&,
-      const optional<SolverOptions>&) const override {
+  void Solve(const MathematicalProgram&, const optional<Eigen::VectorXd>&,
+             const optional<SolverOptions>&,
+             MathematicalProgramResult*) const override {
     throw std::runtime_error("Not implemented yet.");
   }
 

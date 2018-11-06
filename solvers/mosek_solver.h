@@ -39,10 +39,10 @@ class MosekSolver : public MathematicalProgramSolverInterface {
 
   static bool is_available();
 
-  MathematicalProgramResult Solve(
-      const MathematicalProgram& prog,
-      const optional<Eigen::VectorXd>& initial_guess,
-      const optional<SolverOptions>& solver_options) const;
+  void Solve(const MathematicalProgram& prog,
+             const optional<Eigen::VectorXd>& initial_guess,
+             const optional<SolverOptions>& solver_options,
+             MathematicalProgramResult* result) const override;
 
   // Todo(hongkai.dai@tri.global): deprecate Solve with a non-const
   // MathematicalProgram.

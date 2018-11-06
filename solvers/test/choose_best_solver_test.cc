@@ -171,7 +171,7 @@ TEST_F(ChooseBestSolverTest, MakeSolver) {
   CheckMakeSolver(*scs_solver_);
   DRAKE_EXPECT_THROWS_MESSAGE(MakeSolver(SolverId("foo")),
                               std::invalid_argument,
-                              "MakeSolver: no matching solver.");
+                              "MakeSolver: no matching solver foo");
 }
 }  // namespace solvers
 }  // namespace drake

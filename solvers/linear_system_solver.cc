@@ -14,9 +14,10 @@ namespace solvers {
 
 bool LinearSystemSolver::is_available() { return true; }
 
-MathematicalProgramResult LinearSystemSolver::Solve(
-    const MathematicalProgram& prog, const optional<Eigen::VectorXd>&,
-    const optional<SolverOptions>&) const {
+void LinearSystemSolver::Solve(const MathematicalProgram& prog,
+                               const optional<Eigen::VectorXd>&,
+                               const optional<SolverOptions>&,
+                               MathematicalProgramResult* result) const {
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
     num_constraints += binding.evaluator()->A().rows();
@@ -52,21 +53,20 @@ MathematicalProgramResult LinearSystemSolver::Solve(
   const Eigen::VectorXd least_square_sol =
       Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq);
 
-  MathematicalProgramResult result;
-  result.set_solver_id(id());
-  result.set_x_val(least_square_sol);
+  result->set_solver_id(id());
+  result->set_x_val(least_square_sol);
   if (beq.isApprox(Aeq * least_square_sol)) {
-    result.set_optimal_cost(0.);
-    result.set_solution_result(SolutionResult::kSolutionFound);
+    result->set_optimal_cost(0.);
+    result->set_solution_result(SolutionResult::kSolutionFound);
   } else {
-    result.set_optimal_cost(MathematicalProgram::kGlobalInfeasibleCost);
-    result.set_solution_result(SolutionResult::kInfeasibleConstraints);
+    result->set_optimal_cost(MathematicalProgram::kGlobalInfeasibleCost);
+    result->set_solution_result(SolutionResult::kInfeasibleConstraints);
   }
-  return result;
 }
 
 SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
-  const MathematicalProgramResult result = Solve(prog, {}, {});
+  MathematicalProgramResult result;
+  Solve(prog, {}, {}, &result);
   const SolverResult solver_result = result.ConvertToSolverResult();
   prog.SetSolverResult(solver_result);
   return result.get_solution_result();

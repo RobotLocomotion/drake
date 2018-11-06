@@ -34,10 +34,10 @@ class MathematicalProgramSolverInterface {
   /// Solves an optimization program with optional initial guess and solver
   /// options. Note that these initial guess and solver options are not written
   /// to @p prog.
-  virtual MathematicalProgramResult Solve(
-      const MathematicalProgram& prog,
-      const optional<Eigen::VectorXd>& initial_guess,
-      const optional<SolverOptions>& solver_options) const = 0;
+  virtual void Solve(const MathematicalProgram& prog,
+                     const optional<Eigen::VectorXd>& initial_guess,
+                     const optional<SolverOptions>& solver_options,
+                     MathematicalProgramResult* result) const = 0;
 
   /// Returns the identifier of this solver.
   virtual SolverId solver_id() const = 0;

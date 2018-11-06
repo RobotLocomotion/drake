@@ -22,9 +22,10 @@ class LinearSystemSolver : public MathematicalProgramSolverInterface {
   /// Find the least-square solution to the linear system A * x = b.
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
-  MathematicalProgramResult Solve(
-      const MathematicalProgram&, const optional<Eigen::VectorXd>&,
-      const optional<SolverOptions>&) const override;
+  void Solve(const MathematicalProgram& prog,
+             const optional<Eigen::VectorXd>& initial_guess,
+             const optional<SolverOptions>& solver_options,
+             MathematicalProgramResult* result) const override;
 
   SolverId solver_id() const override;
 

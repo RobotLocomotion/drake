@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solver_id.h"
 

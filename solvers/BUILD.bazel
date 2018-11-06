@@ -55,6 +55,7 @@ drake_cc_package_library(
         ":scs_solver",
         ":snopt_solver",
         ":solution_result",
+        ":solve",
         ":solver_id",
         ":solver_options",
         ":solver_result",
@@ -602,12 +603,10 @@ drake_cc_library(
     srcs = ["solve.cc"],
     hdrs = ["solve.h"],
     deps = [
-        ":mathematical_program",
-        ":mathematical_program_api",
         ":choose_best_solver",
+        ":mathematical_program",
     ],
 )
-
 
 # Internal Solvers.
 
