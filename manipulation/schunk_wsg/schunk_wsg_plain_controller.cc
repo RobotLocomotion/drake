@@ -98,9 +98,9 @@ SchunkWsgPlainController::SchunkWsgPlainController(ControlMode control_mode,
   const auto max_force_passthrough =
       builder.AddSystem<systems::PassThrough<double>>(1);
   const auto positive_gain = builder.AddSystem<systems::MatrixGain<double>>(
-      MatrixX<double>::Ones(ng, 1));
+      0.5 * MatrixX<double>::Ones(ng, 1));
   const auto negative_gain = builder.AddSystem<systems::MatrixGain<double>>(
-      -MatrixX<double>::Ones(ng, 1));
+      -0.5 * MatrixX<double>::Ones(ng, 1));
   const auto saturation = builder.AddSystem<systems::Saturation<double>>(ng);
 
   // Add blocks to generate the desired control state.

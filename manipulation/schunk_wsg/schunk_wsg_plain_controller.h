@@ -42,7 +42,7 @@ enum class ControlMode { kPosition = 0, kForce = 1 };
  *                           │   ┌──────────┐   ┌───────────┐   │   │
  *                 ┌─────────│──▶│          │   │Grip Force │   │   │
  *                 │   ┌──┐  └──▶│Saturation├──▶│To Joint   ├──▶│   │
- * max force ──────┴──▶│-1├─────▶│          │   │Force      │   └───┘
+ * max force / 2 ──┴──▶│-1├─────▶│          │   │Force      │   └───┘
  *                     └──┘      └──────────┘   └───────────┘
  *```
  * The blocks with double outlines (══) differ between the two control modes:
