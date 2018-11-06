@@ -2108,8 +2108,24 @@ class System : public SystemBase {
     // allow a Context and System to have pointers to each other.)
     switch (port.get_data_type()) {
       case kAbstractValued: {
-        // TODO(jwnimmer-tri) We should type-check abstract values, eventually.
-        return {};
+        // For abstract inputs, we only need to ensure that both runtime values
+        // share the same base T in the Value<T>. Even if the System declared a
+        // model_value that was a subtype of T, there is no EvalInputValue
+        // sugar that allows the System to evaluate the input by downcasting to
+        // that subtype, so here we should not insist that some dynamic_cast
+        // would succeed. If the user writes the downcast on their own, it's
+        // fine to let them also handle detailed error reporting on their own.
+        const std::type_info& expected_type =
+            this->AllocateInputAbstract(port)->static_type_info();
+        return [&expected_type, port_index, pathname](
+            const AbstractValue& actual) {
+          if (actual.static_type_info() != expected_type) {
+            ThrowInputPortHasWrongType(
+                "FixInputPortTypeCheck", pathname, port_index,
+                NiceTypeName::Get(expected_type),
+                NiceTypeName::Get(actual.type_info()));
+          }
+        };
       }
       case kVectorValued: {
         // For vector inputs, check that the size is the same.

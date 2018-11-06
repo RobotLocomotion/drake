@@ -642,6 +642,7 @@ drake_cc_googletest(
         "//systems/primitives:demultiplexer",
         "//systems/primitives:gain",
         "//systems/primitives:integrator",
+        "//systems/primitives:pass_through",
     ],
 )
 
