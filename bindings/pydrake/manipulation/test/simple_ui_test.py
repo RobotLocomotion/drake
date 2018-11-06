@@ -25,6 +25,7 @@ class TestSimpleUI(unittest.TestCase):
         slider = JointSliders(robot=plant, lower_limit=-5., upper_limit=5.,
                               resolution=0.001, update_period_sec=0.01,
                               title='test', length=300)
+        sliders.window.withdraw()  # Don't open a window during testing.
         context = slider.CreateDefaultContext()
         output = slider.AllocateOutput()
 
@@ -36,6 +37,7 @@ class TestSimpleUI(unittest.TestCase):
 
     def test_schunk_wsg_buttons(self):
         window = tk.Tk()
+        window.withdraw()  # Don't open a window during testing.
         wsg_buttons = SchunkWsgButtons(window, closed_position=0.008,
                                        open_position=0.05, force_limit=50,
                                        update_period_sec=1.0)

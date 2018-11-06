@@ -137,7 +137,7 @@ drake_py_binary(
     srcs = ["joint_teleop.py"],
     add_test_rule = 1,
     tags = vtk_test_tags(),
-    test_rule_args = ["--target_realtime_rate=0.0 --duration=0.1"],
+    test_rule_args = ["--test --target_realtime_rate=0.0 --duration=0.1"],
     deps = [
         "//bindings/pydrake",
     ],
@@ -148,7 +148,7 @@ drake_py_binary(
     srcs = ["end_effector_teleop.py"],
     add_test_rule = 1,
     tags = vtk_test_tags(),
-    test_rule_args = ["--target_realtime_rate=0.0 --duration=0.1"],
+    test_rule_args = ["--test --target_realtime_rate=0.0 --duration=0.1"],
     deps = [
         "//bindings/pydrake",
     ],

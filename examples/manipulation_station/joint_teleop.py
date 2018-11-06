@@ -29,6 +29,8 @@ parser.add_argument(
     "--hardware", action='store_true',
     help="Use the ManipulationStationHardwareInterface instead of an "
          "in-process simulation.")
+parser.add_argument("--test", action='store_true',
+                    help="Disable opening the gui window for testing.")
 args = parser.parse_args()
 
 builder = DiagramBuilder()
@@ -54,6 +56,9 @@ else:
 
 teleop = builder.AddSystem(JointSliders(station.get_controller_plant(),
                                         length=800))
+if args.test:
+    teleop.window.withdraw()  # Don't display the window when testing.
+
 builder.Connect(teleop.get_output_port(0), station.GetInputPort(
     "iiwa_position"))
 
