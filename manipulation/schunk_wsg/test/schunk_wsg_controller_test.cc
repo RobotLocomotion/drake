@@ -49,15 +49,15 @@ GTEST_TEST(SchunkWsgControllerTest, SchunkWsgControllerTest) {
   wsg_command.force = 40;
   std::pair<double, double> commanded_force =
       RunWsgControllerTestStep(wsg_command, 0);
-  EXPECT_FLOAT_EQ(commanded_force.first, -wsg_command.force);
-  EXPECT_FLOAT_EQ(commanded_force.second, wsg_command.force);
+  EXPECT_FLOAT_EQ(commanded_force.first, -wsg_command.force * 0.5);
+  EXPECT_FLOAT_EQ(commanded_force.second, wsg_command.force * 0.5);
 
   // Move in toward the middle of the range with lower force from the outside.
   wsg_command.target_position_mm = 50;
   wsg_command.force = 20;
   commanded_force = RunWsgControllerTestStep(wsg_command, 100);
-  EXPECT_FLOAT_EQ(commanded_force.first, wsg_command.force);
-  EXPECT_FLOAT_EQ(commanded_force.second, -wsg_command.force);
+  EXPECT_FLOAT_EQ(commanded_force.first, wsg_command.force * 0.5);
+  EXPECT_FLOAT_EQ(commanded_force.second, -wsg_command.force * 0.5);
 
   // Set the position to something near the target and observe zero force.
   commanded_force = RunWsgControllerTestStep(
