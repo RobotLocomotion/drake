@@ -122,6 +122,11 @@ class AbstractValue {
   /// this returns the typeid of the most-derived type of the contained object.
   virtual const std::type_info& type_info() const = 0;
 
+  /// Returns typeid(T) for this Value<T> object. If T is polymorphic, this
+  /// does NOT reflect the typeid of the most-derived type of the contained
+  /// object; the result is always the base type T.
+  virtual const std::type_info& static_type_info() const = 0;
+
   /// Returns a human-readable name for the underlying type T. This may be
   /// slow but is useful for error messages. If T is polymorphic, this returns
   /// the typeid of the most-derived type of the contained object.
@@ -347,6 +352,10 @@ class Value : public AbstractValue {
 
   void SetFromOrThrow(const AbstractValue& other) override {
     value_ = Traits::to_storage(other.GetValueOrThrow<T>());
+  }
+
+  const std::type_info& static_type_info() const final {
+    return typeid(T);
   }
 
   const std::type_info& type_info() const override {
