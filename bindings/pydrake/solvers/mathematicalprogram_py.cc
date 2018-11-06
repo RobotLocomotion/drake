@@ -187,6 +187,7 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       .def("solver_id", &MathematicalProgramSolverInterface::solver_id,
            doc.MathematicalProgramSolverInterface.solver_id.doc)
       .def("Solve",
+           // NOLINTNEXTLINE(whitespace/parens)
            static_cast<SolutionResult (MathematicalProgramSolverInterface::*)(
                MathematicalProgram&) const>(
                &MathematicalProgramSolverInterface::Solve),
