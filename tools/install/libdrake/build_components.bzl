@@ -22,6 +22,7 @@ LIBDRAKE_COMPONENTS = [
     "//attic/systems/controllers/plan_eval",
     "//attic/systems/controllers/qp_inverse_dynamics",
     "//attic/systems/robotInterfaces",
+    "//attic/util",
     "//automotive",
     "//automotive/maliput/api",
     "//automotive/maliput/dragway",
@@ -80,7 +81,6 @@ LIBDRAKE_COMPONENTS = [
     "//systems/sensors",
     "//systems/sensors/dev",
     "//systems/trajectory_optimization",
-    "//util",
     # //examples/kuka_iiwa_arm:iiwa_common (indirectly)
     # //examples/kuka_iiwa_arm:iiwa_lcm (indirectly)
 ]
