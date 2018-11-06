@@ -906,6 +906,17 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
       "for input port\\[0\\] but the actual type was "
       "drake::systems::Value<std::string>. "
       "\\(System ::dut\\)");
+
+  // The second port should only accept ints.
+  context->FixInputPort(2, Value<int>(11));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      context->FixInputPort(2, Value<std::string>{}),
+      std::exception,
+      "System::FixInputPortTypeCheck\\(\\): expected value of type "
+      "int "
+      "for input port\\[2\\] but the actual type was "
+      "std::string. "
+      "\\(System ::dut\\)");
 }
 
 // Check that names can be assigned to the ports through all of the various
