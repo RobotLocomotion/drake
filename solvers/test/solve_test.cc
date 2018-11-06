@@ -28,5 +28,8 @@ GTEST_TEST(SolveTest, LinearSystemSolverTest) {
             MathematicalProgram::kGlobalInfeasibleCost);
   EXPECT_EQ(result.get_solver_id(), LinearSystemSolver::id());
 }
+
+// TODO(hongkai.dai): add a test that will appropriately set the initial guess
+// and the solver options. Probably for SNOPT.
 }  // namespace solvers
 }  // namespace drake
