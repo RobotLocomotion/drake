@@ -14,6 +14,7 @@
 #include "drake/automotive/maliput/api/test_utilities/check_id_indexing.h"
 #include "drake/automotive/maliput/api/test_utilities/maliput_types_compare.h"
 #include "drake/automotive/maliput/multilane/test_utilities/multilane_types_compare.h"
+#include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace maliput {
@@ -1047,6 +1048,8 @@ namespace {
 // An encapsulated Multilane road build procedure.
 class BuildProcedure {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BuildProcedure);
+
   // Constructs a named build procedure.
   explicit BuildProcedure(const std::string& name)
       : name_(name) {
@@ -1080,6 +1083,8 @@ std::ostream& operator<<(
 // An encapsulated Multilane road turn build procedure.
 class TurnBuildProcedure : public BuildProcedure {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TurnBuildProcedure);
+
   // Constructs a named build procedure for a turn.
   // @param name Name for the build procedure.
   // @param start_endpoint Turn's start endpoint.
@@ -1114,12 +1119,12 @@ class TurnBuildProcedure : public BuildProcedure {
     const api::Lane* straight_lane = straight_segment->lane(0);
     const api::Lane* curved_lane = curved_segment->lane(kLaneNum - 1);
 
-    const api::LaneEndSet *straight_lane_branches =
+    const api::LaneEndSet* straight_lane_branches =
         straight_lane->GetOngoingBranches(api::LaneEnd::kStart);
     ASSERT_EQ(straight_lane_branches->size(), 1);
     ASSERT_EQ(straight_lane_branches->get(0).lane, curved_lane);
     ASSERT_EQ(straight_lane_branches->get(0).end, api::LaneEnd::kStart);
-    const api::LaneEndSet *curved_lane_branches =
+    const api::LaneEndSet* curved_lane_branches =
         curved_lane->GetOngoingBranches(api::LaneEnd::kStart);
     ASSERT_EQ(curved_lane_branches->size(), 1);
     ASSERT_EQ(curved_lane_branches->get(0).lane, straight_lane);
@@ -1190,6 +1195,7 @@ class TurnBuildProcedure : public BuildProcedure {
 class TurnUsingRefToRConn
     : public TurnBuildProcedure {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TurnUsingRefToRConn);
   using TurnBuildProcedure::TurnBuildProcedure;
 
   void ApplyTo(Builder* builder) const override {
@@ -1222,6 +1228,7 @@ class TurnUsingRefToRConn
 class TurnUsingRefToRRef
     : public TurnBuildProcedure {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TurnUsingRefToRRef);
   using TurnBuildProcedure::TurnBuildProcedure;
 
   void ApplyTo(Builder* builder) const override {
@@ -1255,6 +1262,7 @@ class TurnUsingRefToRRef
 class TurnUsingStraightRefToCurvedRLane
     : public TurnBuildProcedure {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TurnUsingStraightRefToCurvedRLane);
   using TurnBuildProcedure::TurnBuildProcedure;
 
   void ApplyTo(Builder* builder) const override {
@@ -1294,6 +1302,7 @@ class TurnUsingStraightRefToCurvedRLane
 class TurnUsingCurvedRefToStraightRLane
     : public TurnBuildProcedure {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TurnUsingCurvedRefToStraightRLane);
   using TurnBuildProcedure::TurnBuildProcedure;
 
   void ApplyTo(Builder* builder) const override {

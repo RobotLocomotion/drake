@@ -312,7 +312,6 @@ Group* Builder::MakeGroup(const std::string& id,
 
 namespace {
 
-
 // Determine the heading direction at an `r_offset` leftwards of the `lane`
 // centerline when traveling outwards from the specified `end`.
 Vector3<double> DirectionOutFromLane(const api::Lane* const lane,
@@ -397,7 +396,7 @@ bool IsLaneContinuousAtBranchPoint(
   DRAKE_DEMAND(parallel_set != nullptr);
   DRAKE_DEMAND(antiparallel_set != nullptr);
 
-  constexpr const double kZeroROffset{0.};
+  constexpr double kZeroROffset{0.};
   const double s_at_branch_point =
       (end == api::LaneEnd::kFinish) ? lane->length() : 0.;
   const double max_r_offset =
@@ -464,7 +463,7 @@ void Builder::AttachBranchPoint(
   // the first lane-end.  Parallel: go to same, A-side; anti-parallel:
   // other, B-side.  Do this by examining the dot-product of the heading
   // vectors (rather than goofing around with cyclic angle arithmetic).
-  constexpr const double kZeroROffset{0.};
+  constexpr double kZeroROffset{0.};
   const Vector3<double> direction =
       DirectionOutFromLane(lane, end, kZeroROffset);
   const api::LaneEnd& old_le = bp->GetASide()->get(0);
