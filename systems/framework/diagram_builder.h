@@ -131,12 +131,44 @@ class DiagramBuilder {
   /// Declares that input port @p dest is connected to output port @p src.
   void Connect(const OutputPort<T>& src,
                const InputPort<T>& dest) {
-    DRAKE_DEMAND(src.size() == dest.size());
     InputPortLocator dest_id{dest.get_system(), dest.get_index()};
     OutputPortLocator src_id{&src.get_system(), src.get_index()};
+    ThrowIfSystemNotRegistered(src.get_system());
+    ThrowIfSystemNotRegistered(*dest.get_system());
     ThrowIfInputAlreadyWired(dest_id);
-    ThrowIfSystemNotRegistered(&src.get_system());
-    ThrowIfSystemNotRegistered(dest.get_system());
+    if (src.get_data_type() != dest.get_data_type()) {
+      throw std::logic_error(fmt::format(
+          "DiagramBuilder::Connect: Cannot mix vector-valued and abstract-"
+          "valued ports while connecting output port {} of System {} to "
+          "input port {} of System {}",
+          src.get_name(), src.get_system().get_name(),
+          dest.get_name(), dest.get_system()->get_name()));
+    }
+    if ((src.get_data_type() != kAbstractValued) &&
+        (src.size() != dest.size())) {
+      throw std::logic_error(fmt::format(
+          "DiagramBuilder::Connect: Mismatched vector sizes while connecting "
+          "output port {} of System {} (size {}) to "
+          "input port {} of System {} (size {})",
+          src.get_name(), src.get_system().get_name(), src.size(),
+          dest.get_name(), dest.get_system()->get_name(), dest.size()));
+    }
+    if (src.get_data_type() == kAbstractValued) {
+      auto model_output = src.Allocate();
+      auto model_input = dest.get_system()->AllocateInputAbstract(dest);
+      const std::type_info& output_type = model_output->static_type_info();
+      const std::type_info& input_type = model_input->static_type_info();
+      if (output_type != input_type) {
+        throw std::logic_error(fmt::format(
+            "DiagramBuilder::Connect: Mismatched value types while connecting "
+            "output port {} of System {} (type {}) to "
+            "input port {} of System {} (type {})",
+            src.get_name(), src.get_system().get_name(),
+            NiceTypeName::Get(output_type),
+            dest.get_name(), dest.get_system()->get_name(),
+            NiceTypeName::Get(input_type)));
+      }
+    }
     connection_map_[dest_id] = src_id;
   }
 
@@ -170,7 +202,7 @@ class DiagramBuilder {
     DRAKE_DEMAND(!name.empty());
     InputPortLocator id{input.get_system(), input.get_index()};
     ThrowIfInputAlreadyWired(id);
-    ThrowIfSystemNotRegistered(input.get_system());
+    ThrowIfSystemNotRegistered(*input.get_system());
     InputPortIndex return_id(input_port_ids_.size());
     input_port_ids_.push_back(id);
 
@@ -193,7 +225,7 @@ class DiagramBuilder {
   /// @return The index of the exported output port of the entire diagram.
   OutputPortIndex ExportOutput(const OutputPort<T>& output,
                                std::string name = kUseDefaultName) {
-    ThrowIfSystemNotRegistered(&output.get_system());
+    ThrowIfSystemNotRegistered(output.get_system());
     OutputPortIndex return_id(output_port_ids_.size());
     output_port_ids_.push_back(
         OutputPortLocator{&output.get_system(), output.get_index()});
@@ -245,8 +277,13 @@ class DiagramBuilder {
     }
   }
 
-  void ThrowIfSystemNotRegistered(const System<T>* system) const {
-    DRAKE_THROW_UNLESS(systems_.find(system) != systems_.end());
+  void ThrowIfSystemNotRegistered(const System<T>& system) const {
+    if (systems_.count(&system) == 0) {
+      throw std::logic_error(fmt::format(
+          "DiagramBuilder: Cannot operate on ports of System {} "
+          "until it has been registered using AddSystem",
+          system.get_name()));
+    }
   }
 
   // Helper method to do the algebraic loop test. It recursively performs the

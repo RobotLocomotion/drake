@@ -12,6 +12,7 @@
 #include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/gain.h"
 #include "drake/systems/primitives/integrator.h"
+#include "drake/systems/primitives/pass_through.h"
 
 namespace drake {
 namespace systems {
@@ -188,9 +189,100 @@ GTEST_TEST(DiagramBuilderTest, FinalizeWhenEmpty) {
 GTEST_TEST(DiagramBuilderTest, SystemsThatAreNotAddedThrow) {
   DiagramBuilder<double> builder;
   Adder<double> adder(1 /* inputs */, 1 /* size */);
-  EXPECT_THROW(builder.Connect(adder, adder), std::exception);
-  EXPECT_THROW(builder.ExportInput(adder.get_input_port(0)), std::exception);
-  EXPECT_THROW(builder.ExportOutput(adder.get_output_port()), std::exception);
+  adder.set_name("x");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.Connect(adder, adder),
+      std::logic_error,
+      "DiagramBuilder: Cannot operate on ports of System x "
+      "until it has been registered using AddSystem");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.ExportInput(adder.get_input_port(0)),
+      std::logic_error,
+      "DiagramBuilder: Cannot operate on ports of System x "
+      "until it has been registered using AddSystem");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.ExportOutput(adder.get_output_port()),
+      std::logic_error,
+      "DiagramBuilder: Cannot operate on ports of System x "
+      "until it has been registered using AddSystem");
+}
+
+GTEST_TEST(DiagramBuilderTest, ConnectVectorToAbstractThrow) {
+  DiagramBuilder<double> builder;
+  auto vector_system = builder.AddSystem<PassThrough<double>>(1 /* size */);
+  vector_system->set_name("vector_system");
+  auto abstract_system = builder.AddSystem<PassThrough<double>>(Value<int>{});
+  abstract_system->set_name("abstract_system");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.Connect(
+          vector_system->get_output_port(),
+          abstract_system->get_input_port()),
+      std::logic_error,
+      "DiagramBuilder::Connect: "
+      "Cannot mix vector-valued and abstract-valued ports while connecting "
+      "output port y0 of System vector_system to "
+      "input port u0 of System abstract_system");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.Connect(
+          abstract_system->get_output_port(),
+          vector_system->get_input_port()),
+      std::logic_error,
+      "DiagramBuilder::Connect: "
+      "Cannot mix vector-valued and abstract-valued ports while connecting "
+      "output port y0 of System abstract_system to "
+      "input port u0 of System vector_system");
+}
+
+GTEST_TEST(DiagramBuilderTest, ConnectVectorSizeMismatchThrow) {
+  DiagramBuilder<double> builder;
+  auto size1_system = builder.AddSystem<PassThrough<double>>(1 /* size */);
+  size1_system->set_name("size1_system");
+  auto size2_system = builder.AddSystem<PassThrough<double>>(2 /* size */);
+  size2_system->set_name("size2_system");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.Connect(
+          size1_system->get_output_port(),
+          size2_system->get_input_port()),
+      std::logic_error,
+      "DiagramBuilder::Connect: "
+      "Mismatched vector sizes while connecting "
+      "output port y0 of System size1_system \\(size 1\\) to "
+      "input port u0 of System size2_system \\(size 2\\)");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.Connect(
+          size2_system->get_output_port(),
+          size1_system->get_input_port()),
+      std::logic_error,
+      "DiagramBuilder::Connect: "
+      "Mismatched vector sizes while connecting "
+      "output port y0 of System size2_system \\(size 2\\) to "
+      "input port u0 of System size1_system \\(size 1\\)");
+}
+
+GTEST_TEST(DiagramBuilderTest, ConnectAbstractTypeMismatchThrow) {
+  DiagramBuilder<double> builder;
+  auto int_system = builder.AddSystem<PassThrough<double>>(Value<int>{});
+  int_system->set_name("int_system");
+  auto char_system = builder.AddSystem<PassThrough<double>>(Value<char>{});
+  char_system->set_name("char_system");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.Connect(
+          int_system->get_output_port(),
+          char_system->get_input_port()),
+      std::logic_error,
+      "DiagramBuilder::Connect: "
+      "Mismatched value types while connecting "
+      "output port y0 of System int_system \\(type int\\) to "
+      "input port u0 of System char_system \\(type char\\)");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.Connect(
+          char_system->get_output_port(),
+          int_system->get_input_port()),
+      std::logic_error,
+      "DiagramBuilder::Connect: "
+      "Mismatched value types while connecting "
+      "output port y0 of System char_system \\(type char\\) to "
+      "input port u0 of System int_system \\(type int\\)");
 }
 
 // Helper class that has one input port, and no output ports.
