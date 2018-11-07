@@ -43,7 +43,8 @@ PYBIND11_MODULE(api, m) {
 
   py::class_<RoadPosition> road_position(m, "RoadPosition",
                                          doc.RoadPosition.doc);
-  road_position.def(py::init<>(), doc.RoadPosition.ctor.doc)
+  road_position  // BR
+      .def(py::init<>(), doc.RoadPosition.ctor.doc)
       .def(py::init<const Lane*, const LanePosition&>(), py::arg("lane"),
            py::arg("pos"),
            // Keep alive, reference: `self` keeps `Lane*` alive.
