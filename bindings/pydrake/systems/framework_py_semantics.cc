@@ -150,9 +150,7 @@ void DefineFrameworkPySemantics(py::module m) {
              &Context<T>::get_discrete_state_vector, py_reference_internal,
              doc.Context.get_discrete_state_vector.doc)
         .def("get_mutable_discrete_state_vector",
-             [](Context<T> * self) -> auto& {
-               return self->get_mutable_discrete_state().get_mutable_vector();
-             },
+             &Context<T>::get_mutable_discrete_state_vector,
              py_reference_internal,
              doc.Context.get_mutable_discrete_state_vector.doc)
         .def("get_discrete_state",
@@ -168,9 +166,8 @@ void DefineFrameworkPySemantics(py::module m) {
         .def("get_num_abstract_states", &Context<T>::get_num_abstract_states,
              doc.Context.get_num_abstract_states.doc)
         .def("get_abstract_state",
-             [](const Context<T>* self) -> auto& {
-               return self->get_abstract_state();
-             },
+             static_cast<const AbstractValues& (Context<T>::*)() const>(
+                 &Context<T>::get_abstract_state),
              py_reference_internal, doc.Context.get_abstract_state.doc)
         .def("get_abstract_state",
              [](const Context<T>* self, int index) -> auto& {
@@ -178,12 +175,12 @@ void DefineFrameworkPySemantics(py::module m) {
              },
              py_reference_internal, doc.Context.get_abstract_state.doc)
         .def("get_mutable_abstract_state",
-             [](Context<T> * self) -> auto& {
+             [](Context<T>* self) -> AbstractValues& {
                return self->get_mutable_abstract_state();
              },
              py_reference_internal, doc.Context.get_mutable_abstract_state.doc)
         .def("get_mutable_abstract_state",
-             [](Context<T> * self, int index) -> auto& {
+             [](Context<T>* self, int index) -> AbstractValue& {
                return self->get_mutable_abstract_state().get_mutable_value(
                    index);
              },
@@ -337,7 +334,7 @@ void DefineFrameworkPySemantics(py::module m) {
              py_reference_internal, py::arg("index"),
              doc.Parameters.get_abstract_parameter.doc)
         .def("get_mutable_abstract_parameter",
-             [](Parameters<T> * self, int index) -> auto& {
+             [](Parameters<T>* self, int index) -> AbstractValue& {
                return self->get_mutable_abstract_parameter(index);
              },
              py_reference_internal, py::arg("index"),
