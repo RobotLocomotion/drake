@@ -33,7 +33,7 @@ GTEST_TEST(SolveTest, LinearSystemSolverTest) {
 
 GTEST_TEST(SolveTest, TestInitialGuessAndOptions) {
   // Test with gurobi solver, which accepts both initial guess and solver
-  // optins.
+  // options.
   MathematicalProgram prog;
   auto x = prog.NewBinaryVariables<1>();
   if (GurobiSolver::is_available() &&

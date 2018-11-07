@@ -648,6 +648,8 @@ void GurobiSolver::Solve(const MathematicalProgram& prog,
                          const optional<Eigen::VectorXd>& initial_guess,
                          const optional<SolverOptions>& solver_options,
                          MathematicalProgramResult* result) const {
+  // reset result.
+  *result = {};
   if (!license_) {
     license_ = AcquireLicense();
   }
