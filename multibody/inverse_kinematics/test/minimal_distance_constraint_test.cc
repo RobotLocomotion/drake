@@ -8,6 +8,21 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+// The penalty function explained in section II.C of Whole-body Motion planning
+// with Centroidal dynamics and full kinematics by Hongkai Dai, Andres
+// Valenzuela and Russ Tedrake.
+template <typename T>
+T Penalty(const T& distance, double minimal_distance) {
+  if (distance >= minimal_distance) {
+    return 0;
+  } else {
+    const T x = distance / minimal_distance - 1;
+    using std::exp;
+    const T penalty = -x * exp(1.0 / x);
+    return penalty;
+  }
+}
+
 TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraint) {
   const double minimal_distance(0.1);
   const MinimalDistanceConstraint constraint(*plant_autodiff_, minimal_distance,
@@ -30,13 +45,40 @@ TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraint) {
   AutoDiffVecXd y(1);
   constraint.Eval(q_autodiff, &y);
 
-  // TODO(hongkai.dai): change this check once we add the penalty term to
-  // evaluate MinimalDistanceConstraint.
-  const double tol{1E-6};
-  // const double distance_expected =
-  //   (sphere1_position - sphere2_position).norm() - radius1_ - radius2_;
-  EXPECT_NEAR(y_double(0), 0, tol);
-  EXPECT_NEAR(y(0).value(), 0, tol);
+  EXPECT_EQ(y_double(0), 0);
+  EXPECT_EQ(y(0).value(), 0);
+  EXPECT_TRUE(CompareMatrices(y(0).derivatives(),
+                              Eigen::Matrix<double, 14, 1>::Zero()));
+
+  // distance smaller than the minimal_distance;
+  sphere1_position << 0.1, 0.2, 0.3;
+  sphere2_position << 0.11, 0.21, 0.31;
+  q << QuaternionToVectorWxyz(sphere1_quaternion), sphere1_position,
+      QuaternionToVectorWxyz(sphere2_quaternion), sphere2_position;
+  const double distance_expected =
+      (sphere1_position - sphere2_position).norm() - radius1_ - radius2_;
+  constraint.Eval(q, &y_double);
+  const double penalty_expected = Penalty(distance_expected, minimal_distance);
+  const double tol{1E-5};
+  EXPECT_NEAR(y_double(0), penalty_expected, tol);
+  const Eigen::Vector3d distance_normal =
+      (sphere1_position - sphere2_position).normalized();
+  Eigen::RowVectorXd ddistance_dq(14);
+  ddistance_dq << Eigen::RowVector4d::Zero(), distance_normal.transpose(),
+      Eigen::RowVector4d::Zero(), -distance_normal.transpose();
+  const auto distance_autodiff = math::initializeAutoDiffGivenGradientMatrix(
+      Vector1d(distance_expected), ddistance_dq);
+  const auto penalty_autodiff = Penalty(distance_autodiff(0), minimal_distance);
+  q_autodiff = math::initializeAutoDiff(q);
+  constraint.Eval(q_autodiff, &y);
+  EXPECT_NEAR(y(0).value(), y_double(0), 1E-7);
+  // The gradient tolerance is very big, because the closest point computed
+  // from generaic EPA is not accurate. Hence the gradient of the signed
+  // distance to the generalized position (ddistance_dq) isn't accurate inside
+  // MinimalDistanceConstraint.Eval()
+  const double gradient_tol = 0.03;
+  EXPECT_TRUE(CompareMatrices(y(0).derivatives(),
+                              penalty_autodiff.derivatives(), gradient_tol));
 }
 
 GTEST_TEST(MinimalDistanceConstraintTest,

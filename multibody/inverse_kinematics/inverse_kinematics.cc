@@ -41,7 +41,7 @@ const multibody_plant::MultibodyPlant<AutoDiffXd>* FindMultibodyPlantInDiagram(
 InverseKinematics::InverseKinematics(
     const systems::Diagram<double>& diagram,
     const multibody_plant::MultibodyPlant<double>& plant,
-    systems::Context<double>*)
+    systems::Context<double>* plant_context)
     : prog_{new solvers::MathematicalProgram()},
       owned_diagram_{diagram.ToAutoDiffXd()},
       diagram_{dynamic_cast<const systems::Diagram<AutoDiffXd>* const>(
@@ -52,6 +52,7 @@ InverseKinematics::InverseKinematics(
       context_{&(diagram_->GetMutableSubsystemContext(*plant_autodiff_,
                                                       owned_context_.get()))},
       q_(prog_->NewContinuousVariables(plant.num_positions(), "q")) {
+  plant.CheckValidContext(*plant_context);
   AddDefaultJointLimitConstraint();
   // TODO(hongkai.dai) Add other position constraints, such as unit length
   // quaternion constraint here.

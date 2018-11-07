@@ -46,8 +46,9 @@ class InverseKinematics {
    * then the user can impose collision related constraint (like
    * AddMinimalDistanceConstraint).
    * @param plant_context The MultibodyPlant context. @note
-   * InverseKinematics doesn't own this context. This context should be
-   * allocated by the diagram, which owns the MultibodyPlant.
+   * InverseKinematics doesn't own this context. If plant_context contains some
+   * values at the construction of InverseKinematics, these values are not used
+   * during solving the inverse kinematics problem.
    */
   InverseKinematics(const systems::Diagram<double>& diagram,
                     const multibody_plant::MultibodyPlant<double>& plant,

@@ -228,15 +228,28 @@ TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraint) {
   // If we comment out the next line that sets the position of sphere 1, hence
   // both sphere 1 and 2 are at the origin, then the signed distance query takes
   // forever.
+  // The initial guess satisfy the minimal distance constraint.
   q0.segment<3>(4) << 0.1, 0.2, 0.3;
   q0(7) = 1;
   ik.get_mutable_prog()->SetInitialGuess(ik.q(), q0);
-  const auto result = ik.get_mutable_prog()->Solve();
+  auto result = ik.get_mutable_prog()->Solve();
   EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
-  const auto q_val = ik.prog().GetSolution(ik.q());
-  const Eigen::Vector3d p_WA = q_val.segment<3>(4);
-  const Eigen::Vector3d p_WB = q_val.segment<3>(11);
-  const double tol{1E-5};
+  auto q_val = ik.prog().GetSolution(ik.q());
+  Eigen::Vector3d p_WA = q_val.segment<3>(4);
+  Eigen::Vector3d p_WB = q_val.segment<3>(11);
+  // The tolerance is very loose, since currently we use EPA/GJK to compute
+  // the signed distance, which is known to be inaccurate.
+  const double tol{2E-2};
+  EXPECT_GE((p_WA - p_WB).norm() - radius1_ - radius2_, minimal_distance - tol);
+
+  // The initial guess doesn't satisfy the minimal distance constraint.
+  q0.segment<3>(4) << 0.02, 0.03, 0.04;
+  ik.get_mutable_prog()->SetInitialGuess(ik.q(), q0);
+  result = ik.get_mutable_prog()->Solve();
+  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
+  q_val = ik.prog().GetSolution(ik.q());
+  p_WA = q_val.segment<3>(4);
+  p_WB = q_val.segment<3>(11);
   EXPECT_GE((p_WA - p_WB).norm() - radius1_ - radius2_, minimal_distance - tol);
 }
 }  // namespace multibody

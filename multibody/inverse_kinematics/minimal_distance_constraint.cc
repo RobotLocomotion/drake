@@ -25,7 +25,7 @@ void Penalty(double distance, double distance_threshold, double* penalty,
     *penalty = 0;
     *dpenalty_ddistance = 0;
   } else {
-    const double x = distance / distance_threshold;
+    const double x = distance / distance_threshold - 1;
     const double exp_one_over_x = std::exp(1.0 / x);
     *penalty = -x * exp_one_over_x;
     const double dpenalty_dx = -exp_one_over_x + exp_one_over_x / x;
