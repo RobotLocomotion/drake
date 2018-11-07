@@ -105,7 +105,8 @@ SpatialInertia<double> MakeCompositeGripperInertia(
 }
 
 template <typename T>
-ManipulationStation<T>::ManipulationStation(double time_step)
+ManipulationStation<T>::ManipulationStation(double time_step,
+                                            IiwaCollisionModel collision_model)
     : owned_plant_(std::make_unique<MultibodyPlant<T>>(time_step)),
       owned_scene_graph_(std::make_unique<SceneGraph<T>>()),
       owned_controller_plant_(std::make_unique<MultibodyPlant<T>>()) {
@@ -130,11 +131,23 @@ ManipulationStation<T>::ManipulationStation(double time_step)
           .GetAsIsometry3());
 
   // Add the Kuka IIWA.
-  const std::string iiwa_sdf_path = FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/"
-      "iiwa7/iiwa7_no_collision.sdf");
-  iiwa_model_ =
-      AddModelFromSdfFile(iiwa_sdf_path, "iiwa", plant_);
+  std::string iiwa_sdf_path;
+  switch (collision_model) {
+    case IiwaCollisionModel::kNoCollision:
+      iiwa_sdf_path = FindResourceOrThrow(
+          "drake/manipulation/models/iiwa_description/iiwa7/"
+          "iiwa7_no_collision.sdf");
+      break;
+    case IiwaCollisionModel::kBoxCollision:
+      iiwa_sdf_path = FindResourceOrThrow(
+          "drake/manipulation/models/iiwa_description/iiwa7/"
+          "iiwa7_with_box_collision.sdf");
+      break;
+    default:
+      DRAKE_ABORT_MSG("Unrecognized collision_model.");
+  }
+
+  iiwa_model_ = AddModelFromSdfFile(iiwa_sdf_path, "iiwa", plant_);
   plant_->WeldFrames(plant_->world_frame(),
                      plant_->GetFrameByName("iiwa_link_0", iiwa_model_));
 
