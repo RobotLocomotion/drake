@@ -100,6 +100,10 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
                   .Eval<BasicVector<double>>(*context)
                   .get_value()
                   .isZero());
+
+  // Check that the additional output ports exist and are spelled correctly.
+  EXPECT_NO_THROW(station.GetOutputPort("contact_results"));
+  EXPECT_NO_THROW(station.GetOutputPort("plant_continuous_state"));
 }
 
 GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
