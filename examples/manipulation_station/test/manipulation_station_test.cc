@@ -15,8 +15,8 @@ namespace {
 
 using Eigen::Vector2d;
 using Eigen::VectorXd;
-using systems::BasicVector;
 using multibody::RevoluteJoint;
+using systems::BasicVector;
 
 GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   ManipulationStation<double> station(0.001);
@@ -260,6 +260,27 @@ GTEST_TEST(ManipulationStationTest, CheckRGBDOutputs) {
             .size(),
         0);
   }
+}
+
+GTEST_TEST(ManipulationStationTest, CheckCollisionVariants) {
+  ManipulationStation<double> station1(
+      0.002, ManipulationStation<double>::IiwaCollisionModel::kNoCollision);
+
+  // In this variant, there are collision geometries from the world and the
+  // gripper, but not from the iiwa.
+  const int num_collisions =
+      station1.get_mutable_multibody_plant().num_collision_geometries();
+
+  ManipulationStation<double> station2(
+      0.002, ManipulationStation<double>::IiwaCollisionModel::kBoxCollision);
+  // Check for additional collision elements (one for each link, which includes
+  // the base).
+  EXPECT_EQ(station2.get_mutable_multibody_plant().num_collision_geometries(),
+            num_collisions + 8);
+
+  // The controlled model does not register with a scene graph, so has zero
+  // collisions.
+  EXPECT_EQ(station2.get_controller_plant().num_collision_geometries(), 0);
 }
 
 }  // namespace

@@ -116,10 +116,18 @@ class ManipulationStation : public systems::Diagram<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManipulationStation)
 
-  /// Construct the station model with @p time_step as the time step used by
-  /// MultibodyPlant<T>, and by the discrete derivative used to approximate
-  /// velocity from the position command inputs.
-  explicit ManipulationStation(double time_step = 0.002);
+  /// Determines which sdf is loaded for the IIWA in the ManipulationStation.
+  enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
+
+  /// Construct the station model.
+  ///
+  /// @param time_step The time step used by MultibodyPlant<T>, and by the
+  ///   discrete derivative used to approximate velocity from the position
+  ///   command inputs
+  /// @param collision_model
+  ManipulationStation(
+      double time_step = 0.002,
+      IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
 
   /// Add the geometry (and two extra degrees-of-freedom) of the optional
   /// workstation cupboard to the model.
