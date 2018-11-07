@@ -470,20 +470,14 @@ struct Impl {
     DefineTemplateClassWithDefault<Diagram<T>, System<T>>(
         m, "Diagram", GetPyParam<T>(), doc.Diagram.doc)
         .def("GetMutableSubsystemState",
-             [](Diagram<T> * self, const System<T>& arg1,
-                Context<T>* arg2) -> auto& {
-               // @note Compiler does not like `py::overload_cast` with this
-               // setup?
-               return self->GetMutableSubsystemState(arg1, arg2);
-             },
+             overload_cast_explicit<State<T>&, const System<T>&, Context<T>*>(
+                 &Diagram<T>::GetMutableSubsystemState),
              py_reference,
              // Keep alive, ownership: `return` keeps `Context` alive.
              py::keep_alive<0, 3>(), doc.Diagram.GetMutableSubsystemState.doc)
         .def("GetMutableSubsystemContext",
-             [](Diagram<T> * self, const System<T>& arg1,
-                Context<T>* arg2) -> auto&& {
-               return self->GetMutableSubsystemContext(arg1, arg2);
-             },
+             overload_cast_explicit<Context<T>&, const System<T>&, Context<T>*>(
+                 &Diagram<T>::GetMutableSubsystemContext),
              py_reference,
              // Keep alive, ownership: `return` keeps `Context` alive.
              py::keep_alive<0, 3>(),
