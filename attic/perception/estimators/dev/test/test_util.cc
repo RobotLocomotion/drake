@@ -174,7 +174,8 @@ void GetObjectTestSetup(ObjectTestType type, ObjectTestSetup *setup) {
     case kSimpleCuboid: {
       // Simple URDF definition.
       setup->urdf_file =
-          "drake/perception/estimators/dev/test/simple_cuboid.urdf";
+          "drake/attic/perception/estimators/dev/test/"
+          "simple_cuboid.urdf";
       // Use a bound whose principal axes (in order) are NOT (x, y, z), but
       // rather (z, x, y).
       const Bounds box(
@@ -194,7 +195,8 @@ void GetObjectTestSetup(ObjectTestType type, ObjectTestSetup *setup) {
     }
     case kBlueFunnelScan: {
       setup->urdf_file =
-          "drake/perception/estimators/dev/test/blue_funnel.urdf";
+          "drake/attic/perception/estimators/dev/test/"
+          "blue_funnel.urdf";
       // `Wm` is the measured transform, from the CORL scene in Director.
       // This is distinguished from `W` so that we may change this in the
       // test code.
@@ -224,7 +226,8 @@ void GetObjectTestSetup(ObjectTestType type, ObjectTestSetup *setup) {
       Matrix3Xd points_Wm;
       LoadVTPPointCloud(
           FindResourceOrThrow(
-              "drake/perception/estimators/dev/test/blue_funnel_meas.vtp"),
+              "drake/attic/perception/estimators/dev/test/"
+              "blue_funnel_meas.vtp"),
           &points_Wm, distance_tolerance);
       setup->points_B = X_WmB.inverse() * points_Wm;
       break;
