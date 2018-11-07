@@ -57,6 +57,7 @@ SchunkWsgPositionController::SchunkWsgPositionController(double time_step,
   // Store the most recent position command as state (for the commanded
   // velocity interpolation).
   this->DeclareDiscreteState(1);
+  this->DeclarePeriodicDiscreteUpdate(time_step_);
   this->set_name("wsg_controller");
 }
 
