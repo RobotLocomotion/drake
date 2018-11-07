@@ -93,7 +93,6 @@ struct Impl {
   // Provide flexible inheritance to leverage prior binding information, per
   // documentation:
   // http://pybind11.readthedocs.io/en/stable/advanced/classes.html#combining-virtual-functions-and-inheritance
-  // // NOLINT
   template <typename LeafSystemBase = LeafSystemPublic>
   class PyLeafSystemBase : public py::wrapper<LeafSystemBase> {
    public:
@@ -276,18 +275,18 @@ struct Impl {
              py::arg("size"), py::arg("random_type") = nullopt,
              doc.System.DeclareInputPort.doc)
         .def("_DeclareInputPort",
-             overload_cast_explicit<const InputPort<T>&, PortDataType, int,
-                                    optional<RandomDistribution>>(
-                 &PySystem::DeclareInputPort),
+             overload_cast_explicit<  // BR
+                 const InputPort<T>&, PortDataType, int,
+                 optional<RandomDistribution>>(&PySystem::DeclareInputPort),
              py_reference_internal, py::arg("type"), py::arg("size"),
              py::arg("random_type") = nullopt)
         // - Feedthrough.
         .def("HasAnyDirectFeedthrough", &System<T>::HasAnyDirectFeedthrough,
              doc.System.HasAnyDirectFeedthrough.doc)
-        .def(
-            "HasDirectFeedthrough",
-            overload_cast_explicit<bool, int>(&System<T>::HasDirectFeedthrough),
-            py::arg("output_port"), doc.System.HasDirectFeedthrough.doc)
+        .def("HasDirectFeedthrough",
+             overload_cast_explicit<bool, int>(  // BR
+                 &System<T>::HasDirectFeedthrough),
+             py::arg("output_port"), doc.System.HasDirectFeedthrough.doc)
         .def("HasDirectFeedthrough",
              overload_cast_explicit<bool, int, int>(
                  &System<T>::HasDirectFeedthrough),
@@ -518,7 +517,8 @@ py::tuple GetPyParamList(type_pack<Packs...> = {}) {
 void DefineFrameworkPySystems(py::module m) {
   // System scalar conversion.
   py::class_<SystemScalarConverter> converter(m, "SystemScalarConverter");
-  converter.def(py::init())
+  converter  // BR
+      .def(py::init())
       .def("__copy__",
            [](const SystemScalarConverter& in) -> SystemScalarConverter {
              return in;
@@ -538,10 +538,13 @@ void DefineFrameworkPySystems(py::module m) {
   // N.B. When changing the pairs of supported types below, ensure that these
   // reflect the stanzas for the advanced constructor of
   // `SystemScalarConverter`.
-  using ConversionPairs = type_pack<
-      type_pack<AutoDiffXd, double>, type_pack<Expression, double>,
-      type_pack<double, AutoDiffXd>, type_pack<Expression, AutoDiffXd>,
-      type_pack<double, Expression>, type_pack<AutoDiffXd, Expression>>;
+  using ConversionPairs = type_pack<      // BR
+      type_pack<AutoDiffXd, double>,      //
+      type_pack<Expression, double>,      //
+      type_pack<double, AutoDiffXd>,      //
+      type_pack<Expression, AutoDiffXd>,  //
+      type_pack<double, Expression>,      //
+      type_pack<AutoDiffXd, Expression>>;
   type_visit(converter_methods, ConversionPairs{});
   // Add mention of what scalars are supported via `SystemScalarConverter`
   // through Python.

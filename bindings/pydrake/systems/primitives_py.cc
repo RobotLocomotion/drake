@@ -58,28 +58,28 @@ PYBIND11_MODULE(primitives, m) {
              doc.AffineSystem.ctor.doc_3)
         // TODO(eric.cousineau): Fix these to return references instead of
         // copies.
-        .def(
-            "A",
-            overload_cast_explicit<const Eigen::MatrixXd&>(&AffineSystem<T>::A),
-            doc.AffineSystem.A.doc)
-        .def(
-            "B",
-            overload_cast_explicit<const Eigen::MatrixXd&>(&AffineSystem<T>::B),
-            doc.AffineSystem.B.doc)
+        .def("A",
+             overload_cast_explicit<const Eigen::MatrixXd&>(  // BR
+                 &AffineSystem<T>::A),
+             doc.AffineSystem.A.doc)
+        .def("B",
+             overload_cast_explicit<const Eigen::MatrixXd&>(  // BR
+                 &AffineSystem<T>::B),
+             doc.AffineSystem.B.doc)
         .def("f0",
-             overload_cast_explicit<const Eigen::VectorXd&>(
+             overload_cast_explicit<const Eigen::VectorXd&>(  // BR
                  &AffineSystem<T>::f0),
              doc.AffineSystem.f0.doc)
-        .def(
-            "C",
-            overload_cast_explicit<const Eigen::MatrixXd&>(&AffineSystem<T>::C),
-            doc.AffineSystem.C.doc)
-        .def(
-            "D",
-            overload_cast_explicit<const Eigen::MatrixXd&>(&AffineSystem<T>::D),
-            doc.AffineSystem.D.doc)
+        .def("C",
+             overload_cast_explicit<const Eigen::MatrixXd&>(  // BR
+                 &AffineSystem<T>::C),
+             doc.AffineSystem.C.doc)
+        .def("D",
+             overload_cast_explicit<const Eigen::MatrixXd&>(  // BR
+                 &AffineSystem<T>::D),
+             doc.AffineSystem.D.doc)
         .def("y0",
-             overload_cast_explicit<const Eigen::VectorXd&>(
+             overload_cast_explicit<const Eigen::VectorXd&>(  // BR
                  &AffineSystem<T>::y0),
              doc.AffineSystem.y0.doc)
         .def("time_period", &AffineSystem<T>::time_period,
