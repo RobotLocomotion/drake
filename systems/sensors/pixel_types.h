@@ -2,7 +2,6 @@
 
 #include <cstdint>
 
-#include "drake/common/hash.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
@@ -130,10 +129,3 @@ struct ImageTraits<PixelType::kExpr> {
 }  // namespace sensors
 }  // namespace systems
 }  // namespace drake
-
-// Enable the pixel type enumeration to be used as a map key.
-namespace std {
-template <>
-struct hash<drake::systems::sensors::PixelType>
-    : public drake::DefaultHash {};
-}  // namespace std
