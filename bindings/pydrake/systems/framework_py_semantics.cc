@@ -58,7 +58,8 @@ void DefineFrameworkPySemantics(py::module m) {
   py::class_<AbstractValues> abstract_values(m, "AbstractValues",
                                              doc.AbstractValues.doc);
   DefClone(&abstract_values);
-  abstract_values.def(py::init<>(), doc.AbstractValues.ctor.doc_3)
+  abstract_values  // BR
+      .def(py::init<>(), doc.AbstractValues.ctor.doc_3)
       .def(py::init<AbstractValuePtrList>(), doc.AbstractValues.ctor.doc_4)
       .def("size", &AbstractValues::size, doc.AbstractValues.size.doc)
       .def("get_value", &AbstractValues::get_value, py_reference_internal,
@@ -247,11 +248,10 @@ void DefineFrameworkPySemantics(py::module m) {
         .def("Eval",
              [](const OutputPort<T>* self, const Context<T>& context) {
                // Use type-erased signature to get value.
+               // TODO(eric.cousineau): Figure out why `py_reference` is
+               // necessary below (#9398).
                py::object value_ref =
-                   py::cast(&self->EvalAbstract(context),
-                            // TODO(eric.cousineau): Figure out why
-                            // `py_reference` is necessary (#9398).
-                            py_reference);
+                   py::cast(&self->EvalAbstract(context), py_reference);
                return value_ref.attr("get_value")();
              },
              doc.OutputPort.Eval.doc);

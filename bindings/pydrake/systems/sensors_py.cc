@@ -60,8 +60,11 @@ PYBIND11_MODULE(sensors, m) {
         "kLabel16I",
     };
 
-    using ParamList = constant_pack<PixelType, PixelType::kRgba8U,
-                                    PixelType::kDepth32F, PixelType::kLabel16I>;
+    using ParamList = constant_pack<  // BR
+        PixelType,                    //
+        PixelType::kRgba8U,           //
+        PixelType::kDepth32F,         //
+        PixelType::kLabel16I>;
 
     // Simple constexpr for-loop.
     int i = 0;
@@ -108,7 +111,8 @@ PYBIND11_MODULE(sensors, m) {
       };
 
       py::class_<ImageT> image(m, TemporaryClassName<ImageT>().c_str());
-      image.def(py::init<int, int>(), doc.Image.ctor.doc_3)
+      image  // BR
+          .def(py::init<int, int>(), doc.Image.ctor.doc_3)
           .def(py::init<int, int, T>(), doc.Image.ctor.doc_4)
           .def("width", &ImageT::width, doc.Image.width.doc)
           .def("height", &ImageT::height, doc.Image.height.doc)

@@ -30,7 +30,8 @@ PYBIND11_MODULE(rendering, m) {
 
   py::class_<PoseVector<T>, BasicVector<T>> pose_vector(m, "PoseVector",
                                                         doc.PoseVector.doc);
-  pose_vector.def(py::init(), doc.PoseVector.ctor.doc)
+  pose_vector  // BR
+      .def(py::init(), doc.PoseVector.ctor.doc)
       .def(py::init<const Eigen::Quaternion<T>&,
                     const Eigen::Translation<T, 3>&>(),
            py::arg("rotation"), py::arg("translation"),
@@ -50,7 +51,8 @@ PYBIND11_MODULE(rendering, m) {
 
   py::class_<FrameVelocity<T>, BasicVector<T>> frame_velocity(
       m, "FrameVelocity", doc.FrameVelocity.doc);
-  frame_velocity.def(py::init(), doc.FrameVelocity.ctor.doc)
+  frame_velocity  // BR
+      .def(py::init(), doc.FrameVelocity.ctor.doc)
       .def(py::init<const multibody::SpatialVelocity<T>&>(),
            py::arg("velocity"), doc.FrameVelocity.ctor.doc_2)
       .def("get_velocity", &FrameVelocity<T>::get_velocity,
