@@ -56,7 +56,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     EXPECT_EQ(result.get_solution_result(),
               SolutionResult::kInfeasible_Or_Unbounded);
     // This code is defined in
-    // http://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
+    // https://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
     const int GRB_INF_OR_UNBD = 4;
     EXPECT_EQ(result.get_solver_details()
                   .GetValue<GurobiSolverDetails>()
@@ -67,7 +67,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     solver.Solve(*prog_, {}, solver_options, &result);
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
     // This code is defined in
-    // http://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
+    // https://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
     const int GRB_UNBOUNDED = 5;
     EXPECT_EQ(result.get_solver_details()
                   .GetValue<GurobiSolverDetails>()
@@ -130,7 +130,8 @@ GTEST_TEST(GurobiTest, TestInitialGuess) {
     Eigen::VectorXd initial_guess_wrong_size(2);
     DRAKE_EXPECT_THROWS_MESSAGE(
         solver.Solve(prog, initial_guess_wrong_size, {}, &result),
-        std::invalid_argument, "The initial guess has 2 rows, expect 1 rows.");
+        std::invalid_argument,
+        "The initial guess has 2 rows, but 1 rows were expected.");
   }
 }
 
@@ -342,7 +343,7 @@ GTEST_TEST(GurobiTest, GurobiErrorCode) {
     solver_options.SetOption(solver.solver_id(), "Foo", 1);
     solver.Solve(prog, {}, solver_options, &result);
     // The error code is listed in
-    // http://www.gurobi.com/documentation/8.0/refman/error_codes.html
+    // https://www.gurobi.com/documentation/8.0/refman/error_codes.html
     const int UNKNOWN_PARAMETER{10007};
     EXPECT_EQ(
         result.get_solver_details().GetValue<GurobiSolverDetails>().error_code,
@@ -352,7 +353,7 @@ GTEST_TEST(GurobiTest, GurobiErrorCode) {
     prog.AddQuadraticCost(x(0) * x(0) - x(1) * x(1));
     solver.Solve(prog, {}, {}, &result);
     // The error code is listed in
-    // http://www.gurobi.com/documentation/8.0/refman/error_codes.html
+    // https://www.gurobi.com/documentation/8.0/refman/error_codes.html
     const int Q_NOT_PSD{10020};
     EXPECT_EQ(
         result.get_solver_details().GetValue<GurobiSolverDetails>().error_code,

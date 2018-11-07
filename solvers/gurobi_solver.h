@@ -14,20 +14,20 @@ namespace solvers {
 
 struct GurobiSolverDetails {
   // The gurobi optimization time. Please refer to
-  // http://www.gurobi.com/documentation/8.0/refman/runtime.html
+  // https://www.gurobi.com/documentation/8.0/refman/runtime.html
   double optimizer_time{};
 
   // The error message returned from Gurobi call. Please refer to
-  // http://www.gurobi.com/documentation/8.0/refman/error_codes.html
+  // https://www.gurobi.com/documentation/8.0/refman/error_codes.html
   int error_code{};
 
   // The status code when the optimize call has returned. Please refer to
-  // http://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
+  // https://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
   int optimization_status{};
 
   // The best known bound on the optimal objective. This is used in mixed
   // integer optimization. Please refer to
-  // http://www.gurobi.com/documentation/8.0/refman/objbound.html#attr:ObjBound
+  // https://www.gurobi.com/documentation/8.0/refman/objbound.html
   double objective_bound{NAN};
 };
 

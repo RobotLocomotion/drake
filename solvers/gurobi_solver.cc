@@ -9,6 +9,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
+#include <fmt/format.h>
 
 // TODO(jwnimmer-tri) Eventually resolve these warnings.
 #pragma GCC diagnostic push
@@ -804,10 +805,9 @@ void GurobiSolver::Solve(const MathematicalProgram& prog,
 
   if (initial_guess.has_value()) {
     if (initial_guess.value().rows() != prog.num_vars()) {
-      throw std::invalid_argument("The initial guess has " +
-                                  std::to_string(initial_guess.value().rows()) +
-                                  " rows, expect " +
-                                  std::to_string(prog.num_vars()) + " rows.");
+      throw std::invalid_argument(fmt::format(
+          "The initial guess has {} rows, but {} rows were expected.",
+          initial_guess.value().rows(), prog.num_vars()));
     }
     for (int i = 0; i < static_cast<int>(prog.num_vars()); ++i) {
       if (!error) {
