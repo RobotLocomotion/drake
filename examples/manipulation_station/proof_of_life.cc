@@ -83,11 +83,11 @@ int do_main(int argc, char* argv[]) {
   // Place the object in the center of the table in front of the robot.
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
   pose.translation() = Eigen::Vector3d(.6, 0, 0);
-  station->get_mutable_multibody_plant().tree().SetFreeBodyPoseOrThrow(
-      station->get_mutable_multibody_plant().GetBodyByName("base_link",
+  station->get_multibody_plant().tree().SetFreeBodyPoseOrThrow(
+      station->get_multibody_plant().GetBodyByName("base_link",
                                                            object),
       pose, &station->GetMutableSubsystemContext(
-          station->get_mutable_multibody_plant(), &station_context));
+          station->get_multibody_plant(), &station_context));
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();

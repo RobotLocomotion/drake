@@ -116,10 +116,18 @@ class ManipulationStation : public systems::Diagram<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManipulationStation)
 
-  /// Construct the station model with @p time_step as the time step used by
-  /// MultibodyPlant<T>, and by the discrete derivative used to approximate
-  /// velocity from the position command inputs.
-  explicit ManipulationStation(double time_step = 0.002);
+  /// Determines which sdf is loaded for the IIWA in the ManipulationStation.
+  enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
+
+  /// Construct the station model.
+  ///
+  /// @param time_step The time step used by MultibodyPlant<T>, and by the
+  ///   discrete derivative used to approximate velocity from the position
+  ///   command inputs.
+  /// @param collision_model Determines which sdf is loaded for the IIWA.
+  ManipulationStation(
+      double time_step = 0.002,
+      IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
 
   /// Add the geometry (and two extra degrees-of-freedom) of the optional
   /// workstation cupboard to the model.
@@ -135,11 +143,26 @@ class ManipulationStation : public systems::Diagram<T> {
   /// @see multibody::multibody_plant::MultibodyPlant<T>::Finalize()
   void Finalize();
 
+  /// Return a reference to the main plant responsible for the dynamics of
+  /// the robot and the environment.  This can be used to, e.g., add
+  // additional elements into the world before calling Finalize().
+  const multibody::multibody_plant::MultibodyPlant<T>& get_multibody_plant()
+  const {
+    return *plant_;
+  }
+
   /// Return a mutable reference to the main plant responsible for the
   /// dynamics of the robot and the environment.  This can be used to, e.g.,
   /// add additional elements into the world before calling Finalize().
   multibody::multibody_plant::MultibodyPlant<T>& get_mutable_multibody_plant() {
     return *plant_;
+  }
+
+  /// Return a reference to the SceneGraph responsible for all of the geometry
+  /// for the robot and the environment.  This can be used to, e.g., add
+  /// additional elements into the world before calling Finalize().
+  const geometry::SceneGraph<T>& get_scene_graph() const {
+    return *scene_graph_;
   }
 
   /// Return a mutable reference to the SceneGraph responsible for all of the

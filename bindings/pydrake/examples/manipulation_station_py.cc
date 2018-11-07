@@ -28,42 +28,64 @@ PYBIND11_MODULE(manipulation_station, m) {
   // ManipulationStation currently only supports double.
   using T = double;
 
-  py::class_<ManipulationStation<T>, Diagram<T>>(m, "ManipulationStation")
-      .def(py::init<double>(), py::arg("time_step") = 0.002,
-           doc.ManipulationStation.ctor.doc_3)
-      .def("AddCupboard", &ManipulationStation<T>::AddCupboard,
-           doc.ManipulationStation.AddCupboard.doc)
-      .def("Finalize", &ManipulationStation<T>::Finalize,
-           doc.ManipulationStation.Finalize.doc)
-      .def("get_mutable_multibody_plant",
-           &ManipulationStation<T>::get_mutable_multibody_plant,
-           py_reference_internal,
-           doc.ManipulationStation.get_mutable_multibody_plant.doc)
-      .def("get_mutable_scene_graph",
-           &ManipulationStation<T>::get_mutable_scene_graph,
-           py_reference_internal,
-           doc.ManipulationStation.get_mutable_scene_graph.doc)
-      .def("get_controller_plant",
-           &ManipulationStation<T>::get_controller_plant, py_reference_internal,
-           doc.ManipulationStation.get_controller_plant.doc)
-      .def("GetIiwaPosition", &ManipulationStation<T>::GetIiwaPosition,
-           doc.ManipulationStation.GetIiwaPosition.doc)
-      .def("SetIiwaPosition", &ManipulationStation<T>::SetIiwaPosition,
-           doc.ManipulationStation.SetIiwaPosition.doc)
-      .def("GetIiwaVelocity", &ManipulationStation<T>::GetIiwaVelocity,
-           doc.ManipulationStation.GetIiwaVelocity.doc)
-      .def("SetIiwaVelocity", &ManipulationStation<T>::SetIiwaVelocity,
-           doc.ManipulationStation.SetIiwaVelocity.doc)
-      .def("GetWsgPosition", &ManipulationStation<T>::GetWsgPosition,
-           doc.ManipulationStation.GetWsgPosition.doc)
-      .def("SetWsgPosition", &ManipulationStation<T>::SetWsgPosition,
-           doc.ManipulationStation.SetWsgPosition.doc)
-      .def("GetWsgVelocity", &ManipulationStation<T>::GetWsgVelocity,
-           doc.ManipulationStation.GetWsgVelocity.doc)
-      .def("SetWsgVelocity", &ManipulationStation<T>::SetWsgVelocity,
-           doc.ManipulationStation.SetWsgVelocity.doc)
-      .def_static("get_camera_pose", &ManipulationStation<T>::get_camera_pose,
-                  doc.ManipulationStation.get_camera_pose.doc);
+  py::class_<ManipulationStation<T>, Diagram<T>> station(m,
+                                                         "ManipulationStation");
+
+  py::enum_<ManipulationStation<T>::IiwaCollisionModel>(station,
+                                                        "IiwaCollisionModel")
+      .value("kNoCollision",
+             ManipulationStation<T>::IiwaCollisionModel::kNoCollision,
+             doc.ManipulationStation.IiwaCollisionModel.kNoCollision.doc)
+      .value("kBoxCollision",
+             ManipulationStation<T>::IiwaCollisionModel::kBoxCollision,
+             doc.ManipulationStation.IiwaCollisionModel.kBoxCollision.doc)
+      .export_values();
+
+  station.def(py::init<double, ManipulationStation<T>::IiwaCollisionModel>(),
+              py::arg("time_step") = 0.002,
+              py::arg("collision_model") =
+                  ManipulationStation<T>::IiwaCollisionModel::kNoCollision,
+              doc.ManipulationStation.ctor.doc_3);
+  station.def("AddCupboard", &ManipulationStation<T>::AddCupboard,
+              doc.ManipulationStation.AddCupboard.doc);
+  station.def("Finalize", &ManipulationStation<T>::Finalize,
+              doc.ManipulationStation.Finalize.doc);
+  station.def(
+      "get_multibody_plant", &ManipulationStation<T>::get_multibody_plant,
+      py_reference_internal, doc.ManipulationStation.get_multibody_plant.doc);
+  station.def("get_mutable_multibody_plant",
+              &ManipulationStation<T>::get_mutable_multibody_plant,
+              py_reference_internal,
+              doc.ManipulationStation.get_mutable_multibody_plant.doc);
+  station.def("get_scene_graph", &ManipulationStation<T>::get_scene_graph,
+              py_reference_internal,
+              doc.ManipulationStation.get_scene_graph.doc);
+  station.def("get_mutable_scene_graph",
+              &ManipulationStation<T>::get_mutable_scene_graph,
+              py_reference_internal,
+              doc.ManipulationStation.get_mutable_scene_graph.doc);
+  station.def(
+      "get_controller_plant", &ManipulationStation<T>::get_controller_plant,
+      py_reference_internal, doc.ManipulationStation.get_controller_plant.doc);
+  station.def("GetIiwaPosition", &ManipulationStation<T>::GetIiwaPosition,
+              doc.ManipulationStation.GetIiwaPosition.doc);
+  station.def("SetIiwaPosition", &ManipulationStation<T>::SetIiwaPosition,
+              doc.ManipulationStation.SetIiwaPosition.doc);
+  station.def("GetIiwaVelocity", &ManipulationStation<T>::GetIiwaVelocity,
+              doc.ManipulationStation.GetIiwaVelocity.doc);
+  station.def("SetIiwaVelocity", &ManipulationStation<T>::SetIiwaVelocity,
+              doc.ManipulationStation.SetIiwaVelocity.doc);
+  station.def("GetWsgPosition", &ManipulationStation<T>::GetWsgPosition,
+              doc.ManipulationStation.GetWsgPosition.doc);
+  station.def("SetWsgPosition", &ManipulationStation<T>::SetWsgPosition,
+              doc.ManipulationStation.SetWsgPosition.doc);
+  station.def("GetWsgVelocity", &ManipulationStation<T>::GetWsgVelocity,
+              doc.ManipulationStation.GetWsgVelocity.doc);
+  station.def("SetWsgVelocity", &ManipulationStation<T>::SetWsgVelocity,
+              doc.ManipulationStation.SetWsgVelocity.doc);
+  station.def_static("get_camera_pose",
+                     &ManipulationStation<T>::get_camera_pose,
+                     doc.ManipulationStation.get_camera_pose.doc);
 
   py::class_<ManipulationStationHardwareInterface, Diagram<double>>(
       m, "ManipulationStationHardwareInterface")
