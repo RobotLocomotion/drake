@@ -51,7 +51,7 @@ else:
         station.get_mutable_scene_graph())
     station.Finalize()
 
-    ConnectDrakeVisualizer(builder, station.get_mutable_scene_graph(),
+    ConnectDrakeVisualizer(builder, station.get_scene_graph(),
                            station.GetOutputPort("pose_bundle"))
 
 teleop = builder.AddSystem(JointSliders(station.get_controller_plant(),
@@ -91,11 +91,11 @@ if not args.hardware:
     # Place the object in the middle of the workspace.
     X_WObject = Isometry3.Identity()
     X_WObject.set_translation([.6, 0, 0])
-    station.get_mutable_multibody_plant().tree().SetFreeBodyPoseOrThrow(
-        station.get_mutable_multibody_plant().GetBodyByName("base_link",
-                                                            object),
+    station.get_multibody_plant().tree().SetFreeBodyPoseOrThrow(
+        station.get_multibody_plant().GetBodyByName("base_link",
+                                                    object),
         X_WObject, station.GetMutableSubsystemContext(
-            station.get_mutable_multibody_plant(),
+            station.get_multibody_plant(),
             station_context))
 
 # Eval the output port once to read the initial positions of the IIWA.
