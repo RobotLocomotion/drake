@@ -871,8 +871,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return witness_pairs;
   }
 
-  std::vector<SignedDistanceFieldValue<double>>
-  ComputePointSignedDistances(
+
+  //
+  // \note {I still have to verify and resolve appropriate frames of references.
+  //       This is still a work in progress.  That's why the first parameter is
+  //       still called `query` instead of p_WQ.}
+  //
+  std::vector<SignedDistanceFieldValue<double>> ComputePointSignedDistances(
       const Vector3d& query,
       const std::vector<GeometryId>& geometry_map) const {
     // We create a sphere of zero radius centered at the query point and put
@@ -1234,10 +1239,9 @@ ProximityEngine<T>::ComputeSignedDistancePairwiseClosestPoints(
 template <typename T>
 std::vector<SignedDistanceFieldValue<double>>
 ProximityEngine<T>::ComputePointSignedDistances(
-    const Vector3<double> &query,
-    const std::vector<GeometryId> &geometry_map) const {
-  return impl_->ComputePointSignedDistances(query,
-                    geometry_map);
+    const Vector3<double>& query,
+    const std::vector<GeometryId>& geometry_map) const {
+  return impl_->ComputePointSignedDistances(query, geometry_map);
 }
 
 
