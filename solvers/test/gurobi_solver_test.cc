@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mixed_integer_optimization_util.h"
 #include "drake/solvers/test/linear_program_examples.h"
@@ -112,17 +113,24 @@ GTEST_TEST(GurobiTest, TestInitialGuess) {
     prog.SetSolverOption(GurobiSolver::id(), "Heuristics", 0.0);
 
     double x_expected0_to_test[] = {0.0, 1.0};
+    MathematicalProgramResult result;
     for (int i = 0; i < 2; i++) {
       Eigen::VectorXd x_expected(1);
       x_expected[0] = x_expected0_to_test[i];
       prog.SetInitialGuess(x, x_expected);
-      SolutionResult result = solver.Solve(prog);
-      EXPECT_EQ(result, SolutionResult::kSolutionFound);
-      const auto& x_value = prog.GetSolution(x);
+      solver.Solve(prog, x_expected, {}, &result);
+      EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+      const auto& x_value = prog.GetSolution(x, result);
       EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1E-6,
                                   MatrixCompareType::absolute));
-      ExpectSolutionCostAccurate(prog, 1E-6);
+      EXPECT_NEAR(result.get_optimal_cost(), 0, 1E-6);
     }
+
+    // Set wrong initial guess with incorrect size.
+    Eigen::VectorXd initial_guess_wrong_size(2);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        solver.Solve(prog, initial_guess_wrong_size, {}, &result),
+        std::invalid_argument, "The initial guess has 2 rows, expect 1 rows.");
   }
 }
 
@@ -318,6 +326,40 @@ GTEST_TEST(GurobiTest, MultipleThreadsSharingEnvironment) {
     test_threads[i].join();
   }
 }
+
+GTEST_TEST(GurobiTest, GurobiErrorCode) {
+  // This test verifies that we can return the error code reported by Gurobi.
+
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x(0) + x(1) <= 1);
+
+  GurobiSolver solver;
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    SolverOptions solver_options;
+    // Report error when we set an unknown attribute to Gurobi.
+    solver_options.SetOption(solver.solver_id(), "Foo", 1);
+    solver.Solve(prog, {}, solver_options, &result);
+    // The error code is listed in
+    // http://www.gurobi.com/documentation/8.0/refman/error_codes.html
+    const int UNKNOWN_PARAMETER{10007};
+    EXPECT_EQ(
+        result.get_solver_details().GetValue<GurobiSolverDetails>().error_code,
+        UNKNOWN_PARAMETER);
+
+    // Report error if the Q matrix in the QP cost is not positive semidefinite.
+    prog.AddQuadraticCost(x(0) * x(0) - x(1) * x(1));
+    solver.Solve(prog, {}, {}, &result);
+    // The error code is listed in
+    // http://www.gurobi.com/documentation/8.0/refman/error_codes.html
+    const int Q_NOT_PSD{10020};
+    EXPECT_EQ(
+        result.get_solver_details().GetValue<GurobiSolverDetails>().error_code,
+        Q_NOT_PSD);
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

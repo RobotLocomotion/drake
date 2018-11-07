@@ -3,6 +3,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/solvers/choose_best_solver.h"
+#include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/linear_system_solver.h"
 
 namespace drake {
@@ -29,7 +31,25 @@ GTEST_TEST(SolveTest, LinearSystemSolverTest) {
   EXPECT_EQ(result.get_solver_id(), LinearSystemSolver::id());
 }
 
-// TODO(hongkai.dai): add a test that will appropriately set the initial guess
-// and the solver options. Probably for SNOPT.
+GTEST_TEST(SolveTest, TestInitialGuessAndOptions) {
+  // Test with gurobi solver, which accepts both initial guess and solver
+  // optins.
+  MathematicalProgram prog;
+  auto x = prog.NewBinaryVariables<1>();
+  if (GurobiSolver::is_available() &&
+      ChooseBestSolver(prog) == GurobiSolver::id()) {
+    SolverOptions solver_options;
+    // Presolve and Heuristics would each independently solve
+    // this problem inside of the Gurobi solver, but without
+    // consulting the initial guess.
+    solver_options.SetOption(GurobiSolver::id(), "Presolve", 0);
+    solver_options.SetOption(GurobiSolver::id(), "Heuristics", 0.0);
+    Eigen::VectorXd x_expected(1);
+    x_expected(0) = 1;
+    MathematicalProgramResult result = Solve(prog, x_expected, solver_options);
+    EXPECT_TRUE(CompareMatrices(prog.GetSolution(x, result), x_expected, 1E-6));
+  }
+}
+
 }  // namespace solvers
 }  // namespace drake
