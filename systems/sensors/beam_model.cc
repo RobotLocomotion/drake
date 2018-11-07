@@ -53,11 +53,6 @@ BeamModel<T>::BeamModel(int num_depth_readings, double max_range)
 }
 
 template <typename T>
-BeamModel<T>::BeamModel(const DepthSensorSpecification& specification)
-    : BeamModel(specification.num_depth_readings(), specification.max_range()) {
-}
-
-template <typename T>
 BeamModelParams<T>& BeamModel<T>::get_mutable_parameters(
     Context<T>* context) const {
   return this->template GetMutableNumericParameter<BeamModelParams>(context, 0);

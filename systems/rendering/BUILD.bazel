@@ -13,7 +13,6 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "rendering",
     deps = [
-        ":drake_visualizer_client",
         ":frame_velocity",
         ":multibody_position_to_geometry_pose",
         ":pose_aggregator",
@@ -96,18 +95,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "drake_visualizer_client",
-    srcs = ["drake_visualizer_client.cc"],
-    hdrs = ["drake_visualizer_client.h"],
-    deps = [
-        "//attic/multibody/shapes",
-        "//lcmtypes:viewer",
-        "//math:geometric_transform",
-        "@eigen",
-    ],
-)
-
-drake_cc_library(
     name = "multibody_position_to_geometry_pose",
     srcs = ["multibody_position_to_geometry_pose.cc"],
     hdrs = ["multibody_position_to_geometry_pose.h"],
@@ -167,18 +154,6 @@ drake_cc_googletest(
     name = "pose_bundle_to_draw_message_test",
     deps = [
         ":pose_bundle_to_draw_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "drake_visualizer_client_test",
-    data = [
-        "//attic/multibody/shapes:test_models",
-    ],
-    deps = [
-        ":drake_visualizer_client",
-        "//common:find_resource",
-        "//lcmtypes:viewer",
     ],
 )
 

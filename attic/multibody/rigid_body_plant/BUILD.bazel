@@ -113,9 +113,9 @@ drake_cc_library(
     srcs = ["create_load_robot_message.cc"],
     hdrs = ["create_load_robot_message.h"],
     deps = [
+        "//attic/systems/rendering:drake_visualizer_client",
         "//lcmtypes:viewer",
         "//multibody:rigid_body_tree",
-        "//systems/rendering:drake_visualizer_client",
     ],
 )
 
@@ -131,12 +131,12 @@ drake_cc_library(
     ],
     deps = [
         ":create_load_robot_message",
+        "//attic/systems/rendering:drake_visualizer_client",
         "//common/trajectories:piecewise_polynomial",
         "//lcmtypes:viewer",
         "//multibody:rigid_body_tree",
         "//systems/lcm:lcm_pubsub_system",
         "//systems/primitives:signal_log",
-        "//systems/rendering:drake_visualizer_client",
     ],
 )
 

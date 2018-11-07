@@ -96,11 +96,11 @@ drake_cc_library(
     deps = [
         "//attic/multibody/rigid_body_plant:create_load_robot_message",
         "//attic/multibody/rigid_body_plant:drake_visualizer",
+        "//attic/systems/rendering:drake_visualizer_client",
         "//common:essential",
         "//lcm",
         "//lcmtypes:viewer",
         "//systems/framework",
-        "//systems/rendering:drake_visualizer_client",
     ],
 )
 
