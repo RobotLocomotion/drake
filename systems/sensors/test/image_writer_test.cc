@@ -454,11 +454,11 @@ TEST_F(ImageWriterTest, FileNameFormatting) {
 // directory path.
 TEST_F(ImageWriterTest, ValidateDirectory) {
   // Case: Non-existent directory.
-  EXPECT_TRUE(ImageWriterTester::DirectoryIsMissing(
-      "this/path/does/not_exist"));
+  EXPECT_TRUE(
+      ImageWriterTester::DirectoryIsMissing("this/path/does/not_exist"));
 
   // Case: No write permissions (assuming that this isn't run as root).
-EXPECT_TRUE(ImageWriterTester::DirectoryIsUnwritable("/root"));
+  EXPECT_TRUE(ImageWriterTester::DirectoryIsUnwritable("/usr"));
 
   // Case: the path is to a file.
   const std::string file_name = temp_name();
