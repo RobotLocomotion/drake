@@ -9,7 +9,6 @@
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
@@ -66,28 +65,27 @@ SpatialInertia<double> MakeCompositeGripperInertia(
   auto CalcFingerPoseInGripperFrame = [](const Joint<double>& slider) {
     // Pose of the joint's parent frame P (attached on gripper body G) in the
     // frame of the gripper G.
-    const Isometry3<double> X_GP =
-        slider.frame_on_parent().GetFixedPoseInBodyFrame();
+    const RigidTransform<double> X_GP(
+        slider.frame_on_parent().GetFixedPoseInBodyFrame());
     // Pose of the joint's child frame C (attached on the slider's finger body)
     // in the frame of the slider's finger F.
-    const Isometry3<double> X_FC =
-        slider.frame_on_child().GetFixedPoseInBodyFrame();
+    const RigidTransform<double> X_FC(
+        slider.frame_on_child().GetFixedPoseInBodyFrame());
     // When the slider's translational dof is zero, then P coincides with C.
     // Therefore:
-    const Isometry3<double> X_GF = X_GP * X_FC.inverse();
+    const RigidTransform<double> X_GF = X_GP * X_FC.inverse();
     return X_GF;
   };
-  // Pose of the left finger L in the gripper frame G when the slider's dof is
-  // zero.
-  const Isometry3<double> X_GL = CalcFingerPoseInGripperFrame(left_slider);
-  // Pose of the right finger R in the gripper frame G when the slider's dof is
-  // zero.
-  const Isometry3<double> X_GR = CalcFingerPoseInGripperFrame(right_slider);
+  // Pose of left finger L in gripper frame G when the slider's dof is zero.
+  const RigidTransform<double> X_GL(CalcFingerPoseInGripperFrame(left_slider));
+  // Pose of right finger R in gripper frame G when the slider's dof is zero.
+  const RigidTransform<double> X_GR(CalcFingerPoseInGripperFrame(right_slider));
   // Helper to compute the spatial inertia of a finger F in about the gripper's
   // origin Go, expressed in G.
   auto CalcFingerSpatialInertiaInGripperFrame = [](
-      const SpatialInertia<double>& M_FFo_F, const Isometry3<double>& X_GF) {
-    const auto M_FFo_G = M_FFo_F.ReExpress(X_GF.linear());
+      const SpatialInertia<double>& M_FFo_F,
+      const RigidTransform<double>& X_GF) {
+    const auto M_FFo_G = M_FFo_F.ReExpress(X_GF.rotation());
     const auto p_FoGo_G = -X_GF.translation();
     const auto M_FGo_G = M_FFo_G.Shift(p_FoGo_G);
     return M_FGo_G;
@@ -144,13 +142,11 @@ ManipulationStation<T>::ManipulationStation(double time_step)
       "wsg_50_description/sdf/schunk_wsg_50.sdf");
   wsg_model_ =
       AddModelFromSdfFile(wsg_sdf_path, "gripper", plant_);
-  const Isometry3d wsg_pose =
-      RigidTransform<double>(
-          RollPitchYaw<double>(M_PI_2, 0, M_PI_2).ToRotationMatrix(),
-          Vector3d(0, 0, 0.081))
-          .GetAsIsometry3();
+  const RigidTransform<double> wsg_pose(RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
+                                        Vector3d(0, 0, 0.081));
   plant_->WeldFrames(plant_->GetFrameByName("iiwa_link_7", iiwa_model_),
-                     plant_->GetFrameByName("body", wsg_model_), wsg_pose);
+                     plant_->GetFrameByName("body", wsg_model_),
+                     wsg_pose.GetAsIsometry3());
 
   plant_->template AddForceElement<multibody::UniformGravityFieldElement>(
       -9.81 * Vector3d::UnitZ());
@@ -174,7 +170,8 @@ ManipulationStation<T>::ManipulationStation(double time_step)
           MakeCompositeGripperInertia(wsg_sdf_path));
   owned_controller_plant_->WeldFrames(owned_controller_plant_->GetFrameByName(
                                           "iiwa_link_7", controller_iiwa_model),
-                                      wsg_equivalent.body_frame(), wsg_pose);
+                                      wsg_equivalent.body_frame(),
+                                      wsg_pose.GetAsIsometry3());
 
   owned_controller_plant_
       ->template AddForceElement<multibody::UniformGravityFieldElement>(

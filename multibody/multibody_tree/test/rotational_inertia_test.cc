@@ -8,6 +8,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rotation_matrix.h"
@@ -437,8 +438,11 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
                 expected_principal_moments.size());
 
   // Verify against the expected value.
-  EXPECT_TRUE(expected_principal_moments.isApprox(
-      principal_moments, NumTraits<double>::epsilon()));
+  const double max_inertia = I_BBcm_W.CalcMaximumPossibleMomentOfInertia();
+  const double kTolerance = 2 * max_inertia * NumTraits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(expected_principal_moments,
+                              principal_moments,
+                              kTolerance, MatrixCompareType::absolute));
 }
 
 // Test the method RotationalInertia::CalcPrincipalMomentsOfInertia() for a

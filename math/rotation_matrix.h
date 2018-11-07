@@ -152,9 +152,9 @@ class RotationMatrix {
     const T Rzx = -s1;
     const T Rzy = c1 * s0;
     const T Rzz = c1 * c0;
-    R_AB_.row(0) << Rxx, Rxy, Rxz;
-    R_AB_.row(1) << Ryx, Ryy, Ryz;
-    R_AB_.row(2) << Rzx, Rzy, Rzz;
+    SetFromOrthonormalRows(Vector3<T>(Rxx, Rxy, Rxz),
+                           Vector3<T>(Ryx, Ryy, Ryz),
+                           Vector3<T>(Rzx, Rzy, Rzz));
   }
 
   /// Constructs a %RotationMatrix `R_AB` from its 9 elements.
@@ -171,9 +171,9 @@ class RotationMatrix {
   explicit RotationMatrix(const T& Rxx, const T& Rxy, const T& Rxz,
                           const T& Ryx, const T& Ryy, const T& Ryz,
                           const T& Rzx, const T& Rzy, const T& Rzz) {
-    R_AB_.row(0) << Rxx, Rxy, Rxz;
-    R_AB_.row(1) << Ryx, Ryy, Ryz;
-    R_AB_.row(2) << Rzx, Rzy, Rzz;
+    SetFromOrthonormalRows(Vector3<T>(Rxx, Rxy, Rxz),
+                           Vector3<T>(Ryx, Ryy, Ryz),
+                           Vector3<T>(Rzx, Rzy, Rzz));
   }
 
   /// (Advanced) Makes the %RotationMatrix `R_AB` from right-handed orthogonal

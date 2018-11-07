@@ -292,6 +292,24 @@ GTEST_TEST(RotationMatrix, ConstructorWithRollPitchYaw) {
   EXPECT_TRUE(R_rpy.IsExactlyEqualTo(R_expected));
 }
 
+// Test constructing a rotation matrix from 9 elements.
+GTEST_TEST(RotationMatrix, ConstructorWith9Elements) {
+  const double r(0.5), p(0.4), y(0.3);
+  const Matrix3d m = (Eigen::AngleAxisd(y, Vector3d::UnitZ())
+                    * Eigen::AngleAxisd(p, Vector3d::UnitY())
+                    * Eigen::AngleAxisd(r, Vector3d::UnitX())).matrix();
+  const double Rxx = m(0, 0), Rxy = m(0, 1), Rxz = m(0, 2);
+  const double Ryx = m(1, 0), Ryy = m(1, 1), Ryz = m(1, 2);
+  const double Rzx = m(2, 0), Rzy = m(2, 1), Rzz = m(2, 2);
+
+  // Test that all 9 elements are properly set.
+  const RotationMatrix<double> R(Rxx, Rxy, Rxz,
+                                 Ryx, Ryy, Ryz,
+                                 Rzx, Rzy, Rzz);
+  EXPECT_TRUE(CompareMatrices(R.matrix(), m,
+                              kEpsilon, MatrixCompareType::absolute));
+}
+
 // Test calculating the inverse of a RotationMatrix.
 GTEST_TEST(RotationMatrix, Inverse) {
   const double cos_theta = std::cos(0.5);
