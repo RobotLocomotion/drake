@@ -19,6 +19,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/math/matrix_util.h"
+#include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/ipopt_solver.h"
@@ -64,57 +65,6 @@ using internal::CreateBinding;
 using internal::DecomposeLinearExpression;
 using internal::SymbolicError;
 
-namespace {
-
-// Solver for simple linear systems of equalities
-AttributesSet kLinearSystemSolverCapabilities = kLinearEqualityConstraint;
-
-// Solver for equality-constrained QPs
-AttributesSet kEqualityConstrainedQPCapabilities =
-    (kQuadraticCost | kLinearCost | kLinearEqualityConstraint);
-
-// Solver for Linear Complementarity Problems (LCPs)
-AttributesSet kMobyLcpCapabilities = kLinearComplementarityConstraint;
-
-// Gurobi solver capabilities.
-AttributesSet kGurobiCapabilities =
-    (kLinearEqualityConstraint | kLinearConstraint | kLorentzConeConstraint |
-     kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost |
-     kBinaryVariable);
-
-// OSQP solver capabilities. This is a QP solver.
-AttributesSet kOsqpCapabilities =
-    (kLinearEqualityConstraint | kLinearConstraint | kLinearCost |
-     kQuadraticCost);
-
-// Mosek solver capabilities.
-AttributesSet kMosekCapabilities =
-    (kLinearEqualityConstraint | kLinearConstraint | kLorentzConeConstraint |
-     kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost |
-     kPositiveSemidefiniteConstraint | kBinaryVariable);
-
-// Scs solver capatilities.
-AttributesSet kScsCapabilities =
-    (kLinearEqualityConstraint | kLinearConstraint | kLorentzConeConstraint |
-     kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost |
-     kPositiveSemidefiniteConstraint);
-
-// Solvers for generic systems of constraints and costs.
-AttributesSet kGenericSolverCapabilities =
-    (kGenericCost | kGenericConstraint | kQuadraticCost | kQuadraticConstraint |
-     kLorentzConeConstraint | kRotatedLorentzConeConstraint | kLinearCost |
-     kLinearConstraint | kLinearEqualityConstraint | kCallback);
-
-// Snopt solver capabilities.
-AttributesSet kSnoptCapabilities =
-    (kGenericSolverCapabilities | kLinearComplementarityConstraint);
-
-// Returns true iff no capabilities are in required and not in available.
-bool is_satisfied(AttributesSet required, AttributesSet available) {
-  return ((required & ~available) == kNoCapabilities);
-}
-}  // namespace
-
 constexpr double MathematicalProgram::kGlobalInfeasibleCost;
 constexpr double MathematicalProgram::kUnboundedCost;
 
@@ -122,7 +72,7 @@ MathematicalProgram::MathematicalProgram()
     : x_initial_guess_(0),
       optimal_cost_(numeric_limits<double>::quiet_NaN()),
       lower_bound_cost_(-numeric_limits<double>::infinity()),
-      required_capabilities_(kNoCapabilities),
+      required_capabilities_{},
       ipopt_solver_(new IpoptSolver()),
       nlopt_solver_(new NloptSolver()),
       snopt_solver_(new SnoptSolver()),
@@ -165,9 +115,7 @@ std::unique_ptr<MathematicalProgram> MathematicalProgram::Clone() const {
 
   new_prog->x_initial_guess_ = x_initial_guess_;
   new_prog->solver_id_ = solver_id_;
-  new_prog->solver_options_double_ = solver_options_double_;
-  new_prog->solver_options_int_ = solver_options_int_;
-  new_prog->solver_options_str_ = solver_options_str_;
+  new_prog->solver_options_ = solver_options_;
 
   new_prog->required_capabilities_ = required_capabilities_;
   return new_prog;
@@ -331,7 +279,7 @@ Binding<VisualizationCallback> MathematicalProgram::AddVisualizationCallback(
   visualization_callbacks_.push_back(
       internal::CreateBinding<VisualizationCallback>(
           make_shared<VisualizationCallback>(vars.size(), callback), vars));
-  required_capabilities_ |= kCallback;
+  required_capabilities_.insert(ProgramAttribute::kCallback);
   return visualization_callbacks_.back();
 }
 
@@ -344,7 +292,7 @@ Binding<Cost> MathematicalProgram::AddCost(const Binding<Cost>& binding) {
     return AddCost(internal::BindingDynamicCast<LinearCost>(binding));
   } else {
     CheckBinding(binding);
-    required_capabilities_ |= kGenericCost;
+    required_capabilities_.insert(ProgramAttribute::kGenericCost);
     generic_costs_.push_back(binding);
     return generic_costs_.back();
   }
@@ -353,7 +301,7 @@ Binding<Cost> MathematicalProgram::AddCost(const Binding<Cost>& binding) {
 Binding<LinearCost> MathematicalProgram::AddCost(
     const Binding<LinearCost>& binding) {
   CheckBinding(binding);
-  required_capabilities_ |= kLinearCost;
+  required_capabilities_.insert(ProgramAttribute::kLinearCost);
   linear_costs_.push_back(binding);
   return linear_costs_.back();
 }
@@ -371,7 +319,7 @@ Binding<LinearCost> MathematicalProgram::AddLinearCost(
 Binding<QuadraticCost> MathematicalProgram::AddCost(
     const Binding<QuadraticCost>& binding) {
   CheckBinding(binding);
-  required_capabilities_ |= kQuadraticCost;
+  required_capabilities_.insert(ProgramAttribute::kQuadraticCost);
   DRAKE_ASSERT(binding.evaluator()->Q().rows() ==
                    static_cast<int>(binding.GetNumElements()) &&
                binding.evaluator()->b().rows() ==
@@ -448,7 +396,7 @@ Binding<Constraint> MathematicalProgram::AddConstraint(
         internal::BindingDynamicCast<LinearConstraint>(binding));
   } else {
     CheckBinding(binding);
-    required_capabilities_ |= kGenericConstraint;
+    required_capabilities_.insert(ProgramAttribute::kGenericConstraint);
     generic_constraints_.push_back(binding);
     return generic_constraints_.back();
   }
@@ -538,7 +486,7 @@ Binding<LinearConstraint> MathematicalProgram::AddConstraint(
     DRAKE_ASSERT(binding.evaluator()->A().cols() ==
                  static_cast<int>(binding.GetNumElements()));
     CheckBinding(binding);
-    required_capabilities_ |= kLinearConstraint;
+    required_capabilities_.insert(ProgramAttribute::kLinearConstraint);
     linear_constraints_.push_back(binding);
     return linear_constraints_.back();
   }
@@ -557,7 +505,7 @@ Binding<LinearEqualityConstraint> MathematicalProgram::AddConstraint(
   DRAKE_ASSERT(binding.evaluator()->A().cols() ==
                static_cast<int>(binding.GetNumElements()));
   CheckBinding(binding);
-  required_capabilities_ |= kLinearEqualityConstraint;
+  required_capabilities_.insert(ProgramAttribute::kLinearEqualityConstraint);
   linear_equality_constraints_.push_back(binding);
   return linear_equality_constraints_.back();
 }
@@ -591,7 +539,7 @@ Binding<BoundingBoxConstraint> MathematicalProgram::AddConstraint(
   CheckBinding(binding);
   DRAKE_ASSERT(binding.evaluator()->num_outputs() ==
                static_cast<int>(binding.GetNumElements()));
-  required_capabilities_ |= kLinearConstraint;
+  required_capabilities_.insert(ProgramAttribute::kLinearConstraint);
   bbox_constraints_.push_back(binding);
   return bbox_constraints_.back();
 }
@@ -599,7 +547,7 @@ Binding<BoundingBoxConstraint> MathematicalProgram::AddConstraint(
 Binding<LorentzConeConstraint> MathematicalProgram::AddConstraint(
     const Binding<LorentzConeConstraint>& binding) {
   CheckBinding(binding);
-  required_capabilities_ |= kLorentzConeConstraint;
+  required_capabilities_.insert(ProgramAttribute::kLorentzConeConstraint);
   lorentz_cone_constraint_.push_back(binding);
   return lorentz_cone_constraint_.back();
 }
@@ -628,7 +576,8 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
 Binding<RotatedLorentzConeConstraint> MathematicalProgram::AddConstraint(
     const Binding<RotatedLorentzConeConstraint>& binding) {
   CheckBinding(binding);
-  required_capabilities_ |= kRotatedLorentzConeConstraint;
+  required_capabilities_.insert(
+      ProgramAttribute::kRotatedLorentzConeConstraint);
   rotated_lorentz_cone_constraint_.push_back(binding);
   return rotated_lorentz_cone_constraint_.back();
 }
@@ -675,7 +624,8 @@ Binding<LinearComplementarityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearComplementarityConstraint>& binding) {
   CheckBinding(binding);
 
-  required_capabilities_ |= kLinearComplementarityConstraint;
+  required_capabilities_.insert(
+      ProgramAttribute::kLinearComplementarityConstraint);
 
   linear_complementarity_constraints_.push_back(binding);
   return linear_complementarity_constraints_.back();
@@ -707,7 +657,8 @@ Binding<PositiveSemidefiniteConstraint> MathematicalProgram::AddConstraint(
   DRAKE_ASSERT(math::IsSymmetric(Eigen::Map<const MatrixXDecisionVariable>(
       binding.variables().data(), binding.evaluator()->matrix_rows(),
       binding.evaluator()->matrix_rows())));
-  required_capabilities_ |= kPositiveSemidefiniteConstraint;
+  required_capabilities_.insert(
+      ProgramAttribute::kPositiveSemidefiniteConstraint);
   positive_semidefinite_constraint_.push_back(binding);
   return positive_semidefinite_constraint_.back();
 }
@@ -740,7 +691,8 @@ Binding<LinearMatrixInequalityConstraint> MathematicalProgram::AddConstraint(
   CheckBinding(binding);
   DRAKE_ASSERT(static_cast<int>(binding.evaluator()->F().size()) ==
                static_cast<int>(binding.GetNumElements()) + 1);
-  required_capabilities_ |= kPositiveSemidefiniteConstraint;
+  required_capabilities_.insert(
+      ProgramAttribute::kPositiveSemidefiniteConstraint);
   linear_matrix_inequality_constraint_.push_back(binding);
   return linear_matrix_inequality_constraint_.back();
 }
@@ -939,55 +891,29 @@ void MathematicalProgram::SetInitialGuess(
 // implemented in mathematical_program_api.cc instead of this file.
 
 SolutionResult MathematicalProgram::Solve() {
-  // This implementation is simply copypasta for now; in the future we will
-  // want to tweak the order of preference of solvers based on the types of
-  // constraints present.
-
-  if (is_satisfied(required_capabilities_, kLinearSystemSolverCapabilities) &&
-      linear_system_solver_->available()) {
-    // TODO(ggould-tri) Also allow quadratic objectives whose matrix is
-    // Identity: This is the objective function the solver uses anyway when
-    // underconstrainted, and is fairly common in real-world problems.
+  const SolverId solver_id = ChooseBestSolver(*this);
+  if (solver_id == LinearSystemSolver::id()) {
     return linear_system_solver_->Solve(*this);
-  } else if (is_satisfied(required_capabilities_,
-                          kEqualityConstrainedQPCapabilities) &&
-             equality_constrained_qp_solver_->available()) {
+  } else if (solver_id == EqualityConstrainedQPSolver::id()) {
     return equality_constrained_qp_solver_->Solve(*this);
-  } else if (is_satisfied(required_capabilities_, kMosekCapabilities) &&
-             mosek_solver_->available()) {
-    // TODO(hongkai.dai@tri.global): based on my limited experience, Mosek is
-    // faster than Gurobi for convex optimization problem. But we should run
-    // a more thorough comparison.
+  } else if (solver_id == MosekSolver::id()) {
     return mosek_solver_->Solve(*this);
-  } else if (is_satisfied(required_capabilities_, kGurobiCapabilities) &&
-             gurobi_solver_->available()) {
+  } else if (solver_id == GurobiSolver::id()) {
     return gurobi_solver_->Solve(*this);
-  } else if ((required_capabilities_ & kQuadraticCost) &&
-             is_satisfied(required_capabilities_, kOsqpCapabilities) &&
-             osqp_solver_->available()) {
+  } else if (solver_id == OsqpSolver::id()) {
     return osqp_solver_->Solve(*this);
-  } else if (is_satisfied(required_capabilities_, kMobyLcpCapabilities) &&
-             moby_lcp_solver_->available()) {
+  } else if (solver_id == MobyLcpSolverId::id()) {
     return moby_lcp_solver_->Solve(*this);
-  } else if (is_satisfied(required_capabilities_, kSnoptCapabilities) &&
-             snopt_solver_->available()) {
+  } else if (solver_id == SnoptSolver::id()) {
     return snopt_solver_->Solve(*this);
-  } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
-             ipopt_solver_->available()) {
+  } else if (solver_id == IpoptSolver::id()) {
     return ipopt_solver_->Solve(*this);
-  } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
-             nlopt_solver_->available()) {
+  } else if (solver_id == NloptSolver::id()) {
     return nlopt_solver_->Solve(*this);
-  } else if (is_satisfied(required_capabilities_, kScsCapabilities) &&
-             scs_solver_->available()) {
-    // Use SCS as the last resort. SCS uses ADMM method, which converges fast to
-    // modest accuracy quite fast, but then slows down significantly if the user
-    // wants high accuracy.
+  } else if (solver_id == ScsSolver::id()) {
     return scs_solver_->Solve(*this);
   } else {
-    throw runtime_error(
-        "MathematicalProgram::Solve: "
-        "No solver available for the given optimization problem!");
+    throw std::runtime_error("Unknown solver.");
   }
 }
 

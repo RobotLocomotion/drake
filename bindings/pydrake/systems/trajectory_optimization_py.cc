@@ -24,52 +24,55 @@ PYBIND11_MODULE(trajectory_optimization, m) {
   py::module::import("pydrake.systems.primitives");
   py::module::import("pydrake.solvers.mathematicalprogram");
 
-  py::class_<MultipleShooting, solvers::MathematicalProgram>(m,
-                                                             "MultipleShooting",
-      doc.MultipleShooting.doc)
+  py::class_<MultipleShooting, solvers::MathematicalProgram>(
+      m, "MultipleShooting", doc.MultipleShooting.doc)
       .def("time", &MultipleShooting::time, doc.MultipleShooting.time.doc)
       .def("timestep", &MultipleShooting::timestep,
-        doc.MultipleShooting.timestep.doc)
+           doc.MultipleShooting.timestep.doc)
       .def("fixed_timestep", &MultipleShooting::fixed_timestep,
-        doc.MultipleShooting.fixed_timestep.doc)
+           doc.MultipleShooting.fixed_timestep.doc)
       // TODO(eric.cousineau): The original bindings returned references
       // instead of copies using VectorXBlock. Restore this once dtype=custom
       // is resolved.
       .def("state",
            [](const MultipleShooting& self) -> VectorXDecisionVariable {
              return self.state();
-           }, doc.MultipleShooting.state.doc)
+           },
+           doc.MultipleShooting.state.doc)
       .def("state",
-           [](const MultipleShooting& self, int index) ->
-               VectorXDecisionVariable {
-             return self.state(index);
-           }, doc.MultipleShooting.state.doc_2)
+           [](const MultipleShooting& self, int index)
+               -> VectorXDecisionVariable { return self.state(index); },
+           doc.MultipleShooting.state.doc_2)
       .def("initial_state",
            [](const MultipleShooting& self) -> VectorXDecisionVariable {
              return self.initial_state();
-           }, doc.MultipleShooting.initial_state.doc)
+           },
+           doc.MultipleShooting.initial_state.doc)
       .def("final_state",
            [](const MultipleShooting& self) -> VectorXDecisionVariable {
              return self.final_state();
-           }, doc.MultipleShooting.final_state.doc)
+           },
+           doc.MultipleShooting.final_state.doc)
       .def("input",
            [](const MultipleShooting& self) -> VectorXDecisionVariable {
              return self.input();
-           }, doc.MultipleShooting.input.doc)
+           },
+           doc.MultipleShooting.input.doc)
       .def("input",
-           [](const MultipleShooting& self, int index) ->
-                VectorXDecisionVariable {
-             return self.input(index);
-           }, doc.MultipleShooting.input.doc_2)
+           [](const MultipleShooting& self, int index)
+               -> VectorXDecisionVariable { return self.input(index); },
+           doc.MultipleShooting.input.doc_2)
       .def("AddRunningCost",
            [](MultipleShooting& prog, const symbolic::Expression& g) {
              prog.AddRunningCost(g);
-           }, doc.MultipleShooting.AddRunningCost.doc)
+           },
+           doc.MultipleShooting.AddRunningCost.doc)
       .def("AddRunningCost",
            [](MultipleShooting& prog,
               const Eigen::Ref<const MatrixX<symbolic::Expression>>& g) {
              prog.AddRunningCost(g);
-           }, doc.MultipleShooting.AddRunningCost.doc_2)
+           },
+           doc.MultipleShooting.AddRunningCost.doc_2)
       .def("AddConstraintToAllKnotPoints",
            &MultipleShooting::AddConstraintToAllKnotPoints,
            doc.MultipleShooting.AddConstraintToAllKnotPoints.doc)
@@ -80,14 +83,15 @@ PYBIND11_MODULE(trajectory_optimization, m) {
            doc.MultipleShooting.AddEqualTimeIntervalsConstraints.doc)
       .def("AddDurationBounds", &MultipleShooting::AddDurationBounds,
            doc.MultipleShooting.AddDurationBounds.doc)
-      .def("AddFinalCost", py::overload_cast<const symbolic::Expression&>(
-                               &MultipleShooting::AddFinalCost),
-            doc.MultipleShooting.AddFinalCost.doc)
+      .def("AddFinalCost",
+           py::overload_cast<const symbolic::Expression&>(
+               &MultipleShooting::AddFinalCost),
+           doc.MultipleShooting.AddFinalCost.doc)
       .def("AddFinalCost",
            py::overload_cast<
                const Eigen::Ref<const MatrixX<symbolic::Expression>>&>(
                &MultipleShooting::AddFinalCost),
-               doc.MultipleShooting.AddFinalCost.doc_2)
+           doc.MultipleShooting.AddFinalCost.doc_2)
       .def("AddInputTrajectoryCallback",
            &MultipleShooting::AddInputTrajectoryCallback,
            doc.MultipleShooting.AddInputTrajectoryCallback.doc)
@@ -96,8 +100,9 @@ PYBIND11_MODULE(trajectory_optimization, m) {
            doc.MultipleShooting.AddStateTrajectoryCallback.doc)
       .def("SetInitialTrajectory", &MultipleShooting::SetInitialTrajectory,
            doc.MultipleShooting.SetInitialTrajectory.doc)
-      .def("GetSampleTimes", overload_cast_explicit<Eigen::VectorXd>(
-                                 &MultipleShooting::GetSampleTimes),
+      .def("GetSampleTimes",
+           overload_cast_explicit<Eigen::VectorXd>(
+               &MultipleShooting::GetSampleTimes),
            doc.MultipleShooting.GetSampleTimes.doc)
       .def("GetInputSamples", &MultipleShooting::GetInputSamples,
            doc.MultipleShooting.GetInputSamples.doc)
@@ -111,7 +116,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
            doc.MultipleShooting.ReconstructStateTrajectory.doc);
 
   py::class_<DirectCollocation, MultipleShooting>(m, "DirectCollocation",
-      doc.DirectCollocation.doc)
+                                                  doc.DirectCollocation.doc)
       .def(py::init<const systems::System<double>*,
                     const systems::Context<double>&, int, double, double>(),
            py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
@@ -129,33 +134,32 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       m, "DirectCollocationConstraint", doc.DirectCollocationConstraint.doc)
       .def(py::init<const systems::System<double>&,
                     const systems::Context<double>&>(),
-      doc.DirectCollocationConstraint.ctor.doc_3);
+           doc.DirectCollocationConstraint.ctor.doc_3);
 
   m.def("AddDirectCollocationConstraint", &AddDirectCollocationConstraint,
-        py::arg("constraint"), py::arg("timestep"), py::arg
-            ("state"), py::arg("next_state"), py::arg("input"), py::arg
-            ("next_input"), py::arg("prog"),
-        doc.AddDirectCollocationConstraint.doc);
+        py::arg("constraint"), py::arg("timestep"), py::arg("state"),
+        py::arg("next_state"), py::arg("input"), py::arg("next_input"),
+        py::arg("prog"), doc.AddDirectCollocationConstraint.doc);
 
   py::class_<DirectTranscription, MultipleShooting>(m, "DirectTranscription",
-      doc.DirectTranscription.doc)
+                                                    doc.DirectTranscription.doc)
       .def(py::init<const systems::System<double>*,
                     const systems::Context<double>&, int>(),
            py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
-      doc.DirectTranscription.ctor.doc_3)
+           doc.DirectTranscription.ctor.doc_3)
       .def(py::init<const systems::LinearSystem<double>*,
                     const systems::Context<double>&, int>(),
            py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
-      doc.DirectTranscription.ctor.doc_4)
+           doc.DirectTranscription.ctor.doc_4)
       // TODO(russt): Add this once TimeVaryingLinearSystem is bound.
       //      .def(py::init<const TimeVaryingLinearSystem<double>*,
       //                    const Context<double>&, int>())
       .def("ReconstructInputTrajectory",
            &DirectTranscription::ReconstructInputTrajectory,
-        doc.DirectTranscription.ReconstructInputTrajectory.doc)
+           doc.DirectTranscription.ReconstructInputTrajectory.doc)
       .def("ReconstructStateTrajectory",
            &DirectTranscription::ReconstructStateTrajectory,
-        doc.DirectTranscription.ReconstructStateTrajectory.doc);
+           doc.DirectTranscription.ReconstructStateTrajectory.doc);
 }
 
 }  // namespace pydrake

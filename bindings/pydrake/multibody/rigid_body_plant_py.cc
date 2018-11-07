@@ -32,15 +32,14 @@ PYBIND11_MODULE(rigid_body_plant, m) {
     using Class = CompliantContactModelParameters;
     py::class_<Class> cls(m, "CompliantContactModelParameters",
                           doc.CompliantContactModelParameters.doc);
-    cls
+    cls  // BR
         .def(
             // Implicit constructor does not have documentation.
             py::init(
                 [](double v_stiction_tolerance, double characteristic_radius) {
                   return Class{v_stiction_tolerance, characteristic_radius};
                 }),
-            py::arg("v_stiction_tolerance") =
-                Class::kDefaultVStictionTolerance,
+            py::arg("v_stiction_tolerance") = Class::kDefaultVStictionTolerance,
             py::arg("characteristic_radius") =
                 Class::kDefaultCharacteristicRadius)
         .def_readwrite(
@@ -49,8 +48,7 @@ PYBIND11_MODULE(rigid_body_plant, m) {
         .def_readwrite(
             "characteristic_radius", &Class::characteristic_radius,
             doc.CompliantContactModelParameters.characteristic_radius.doc);
-    cls.attr("kDefaultVStictionTolerance") =
-        Class::kDefaultVStictionTolerance;
+    cls.attr("kDefaultVStictionTolerance") = Class::kDefaultVStictionTolerance;
     cls.attr("kDefaultCharacteristicRadius") =
         Class::kDefaultCharacteristicRadius;
   }
@@ -58,7 +56,7 @@ PYBIND11_MODULE(rigid_body_plant, m) {
   {
     using Class = ContactInfo<T>;
     py::class_<Class> cls(m, "ContactInfo", doc.ContactInfo.doc);
-    cls
+    cls  // BR
         .def("get_element_id_1", &Class::get_element_id_1,
              doc.ContactInfo.get_element_id_1.doc)
         .def("get_element_id_2", &Class::get_element_id_2,
@@ -70,18 +68,11 @@ PYBIND11_MODULE(rigid_body_plant, m) {
   {
     using Class = ContactForce<T>;
     py::class_<Class> cls(m, "ContactForce", doc.ContactForce.doc);
-    cls
-        .def(
-             py::init<
-                const Vector3<T>&,
-                const Vector3<T>&,
-                const Vector3<T>&,
-                const Vector3<T>&>(),
-             py::arg("application_point"),
-             py::arg("normal"),
-             py::arg("force"),
-             py::arg("torque") = Vector3<T>::Zero(),
-             doc.ContactForce.ctor.doc)
+    cls  // BR
+        .def(py::init<const Vector3<T>&, const Vector3<T>&, const Vector3<T>&,
+                      const Vector3<T>&>(),
+             py::arg("application_point"), py::arg("normal"), py::arg("force"),
+             py::arg("torque") = Vector3<T>::Zero(), doc.ContactForce.ctor.doc)
         .def("get_reaction_force", &Class::get_reaction_force,
              doc.ContactForce.get_reaction_force.doc)
         .def("get_application_point", &Class::get_application_point,
@@ -98,17 +89,17 @@ PYBIND11_MODULE(rigid_body_plant, m) {
   {
     using Class = ContactResults<T>;
     py::class_<Class> cls(m, "ContactResults", doc.ContactResults.doc);
-    cls
+    cls  // BR
         .def(py::init<>(), doc.ContactResults.ctor.doc)
         .def("get_num_contacts", &Class::get_num_contacts,
              doc.ContactResults.get_num_contacts.doc)
-        .def("get_contact_info",
-             &Class::get_contact_info, py_reference_internal,
-             doc.ContactResults.get_contact_info.doc)
+        .def("get_contact_info", &Class::get_contact_info,
+             py_reference_internal, doc.ContactResults.get_contact_info.doc)
         .def("set_generalized_contact_force",
-            [](Class* self, const Eigen::VectorXd& f) {
-                self->set_generalized_contact_force(f);
-            }, doc.ContactResults.set_generalized_contact_force.doc)
+             [](Class* self, const Eigen::VectorXd& f) {
+               self->set_generalized_contact_force(f);
+             },
+             doc.ContactResults.set_generalized_contact_force.doc)
         .def("get_generalized_contact_force",
              &Class::get_generalized_contact_force, py_reference_internal,
              doc.ContactResults.get_generalized_contact_force.doc)
@@ -122,13 +113,11 @@ PYBIND11_MODULE(rigid_body_plant, m) {
   {
     using Class = CompliantMaterial;
     py::class_<Class> cls(m, "CompliantMaterial", doc.CompliantMaterial.doc);
-    cls
+    cls  // BR
         .def(py::init<>(), doc.CompliantMaterial.ctor.doc)
         .def(py::init<double, double, double, double>(),
-             py::arg("youngs_modulus"),
-             py::arg("dissipation"),
-             py::arg("static_friction"),
-             py::arg("dynamic_friction"),
+             py::arg("youngs_modulus"), py::arg("dissipation"),
+             py::arg("static_friction"), py::arg("dynamic_friction"),
              doc.CompliantMaterial.ctor.doc_4)
         // youngs_modulus
         .def("set_youngs_modulus", &Class::set_youngs_modulus, py_reference,
@@ -152,8 +141,7 @@ PYBIND11_MODULE(rigid_body_plant, m) {
         .def("set_dissipation_to_default", &Class::set_dissipation_to_default,
              doc.CompliantMaterial.set_dissipation_to_default.doc)
         // friction
-        .def("set_friction",
-             py::overload_cast<double>(&Class::set_friction),
+        .def("set_friction", py::overload_cast<double>(&Class::set_friction),
              py::arg("value"), py_reference,
              doc.CompliantMaterial.set_friction.doc)
         .def("set_friction",
@@ -191,8 +179,7 @@ PYBIND11_MODULE(rigid_body_plant, m) {
              &Class::set_default_compliant_material,
              doc.RigidBodyPlant.set_default_compliant_material.doc)
         .def("get_rigid_body_tree", &Class::get_rigid_body_tree,
-             py_reference_internal,
-             doc.RigidBodyPlant.get_rigid_body_tree.doc)
+             py_reference_internal, doc.RigidBodyPlant.get_rigid_body_tree.doc)
         .def("get_num_bodies", &Class::get_num_bodies,
              doc.RigidBodyPlant.get_num_bodies.doc)
         .def("get_num_positions",
@@ -230,22 +217,21 @@ PYBIND11_MODULE(rigid_body_plant, m) {
         .def("set_velocity", &Class::set_velocity,
              doc.RigidBodyPlant.set_velocity.doc)
         .def("set_state_vector",
-             overload_cast_explicit<
-                 void, Context<T>*, const Eigen::Ref<const VectorX<T>>>(
-                     &Class::set_state_vector),
+             overload_cast_explicit<void, Context<T>*,
+                                    const Eigen::Ref<const VectorX<T>>>(
+                 &Class::set_state_vector),
              doc.RigidBodyPlant.set_state_vector.doc)
         .def("set_state_vector",
-             overload_cast_explicit<
-                 void, State<T>*, const Eigen::Ref<const VectorX<T>>>(
-                     &Class::set_state_vector),
+             overload_cast_explicit<void, State<T>*,
+                                    const Eigen::Ref<const VectorX<T>>>(
+                 &Class::set_state_vector),
              doc.RigidBodyPlant.set_state_vector.doc_2)
         .def("SetDefaultState", &Class::SetDefaultState,
              doc.RigidBodyPlant.SetDefaultState.doc)
         .def("FindInstancePositionIndexFromWorldIndex",
              &Class::FindInstancePositionIndexFromWorldIndex,
              doc.RigidBodyPlant.FindInstancePositionIndexFromWorldIndex.doc)
-        .def("actuator_command_input_port",
-             &Class::actuator_command_input_port,
+        .def("actuator_command_input_port", &Class::actuator_command_input_port,
              py_reference_internal,
              doc.RigidBodyPlant.actuator_command_input_port.doc)
         .def("model_instance_has_actuators",
@@ -255,9 +241,8 @@ PYBIND11_MODULE(rigid_body_plant, m) {
              &Class::model_instance_actuator_command_input_port,
              py_reference_internal,
              doc.RigidBodyPlant.model_instance_actuator_command_input_port.doc)
-        .def("state_output_port",
-             &Class::state_output_port, py_reference_internal,
-             doc.RigidBodyPlant.state_output_port.doc)
+        .def("state_output_port", &Class::state_output_port,
+             py_reference_internal, doc.RigidBodyPlant.state_output_port.doc)
         .def("state_derivative_output_port",
              &Class::state_derivative_output_port, py_reference_internal,
              doc.RigidBodyPlant.state_derivative_output_port.doc)
@@ -272,14 +257,15 @@ PYBIND11_MODULE(rigid_body_plant, m) {
         .def("kinematics_results_output_port",
              &Class::kinematics_results_output_port, py_reference_internal,
              doc.RigidBodyPlant.kinematics_results_output_port.doc)
-        .def("contact_results_output_port",
-             &Class::contact_results_output_port, py_reference_internal,
+        .def("contact_results_output_port", &Class::contact_results_output_port,
+             py_reference_internal,
              doc.RigidBodyPlant.contact_results_output_port.doc)
         .def("GetStateVector",
-             [](const Class* self, const Context<T>& context)
-                    -> Eigen::Ref<const VectorX<T>> {
-                return self->GetStateVector(context);
-             }, py_reference,
+             [](const Class* self,
+                const Context<T>& context) -> Eigen::Ref<const VectorX<T>> {
+               return self->GetStateVector(context);
+             },
+             py_reference,
              // Keep alive, ownership: `return` keeps `Context` alive.
              py::keep_alive<0, 2>(), doc.RigidBodyPlant.GetStateVector.doc)
         .def("is_state_discrete", &Class::is_state_discrete,

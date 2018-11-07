@@ -60,6 +60,7 @@ void DoMain() {
 
   MultibodyPlant<double>& plant = *builder.AddSystem<MultibodyPlant>
                                   (FLAGS_max_time_step);
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
   std::string full_name;
   if (FLAGS_use_right_hand)
     full_name = FindResourceOrThrow("drake/manipulation/models/"
@@ -68,8 +69,7 @@ void DoMain() {
     full_name = FindResourceOrThrow("drake/manipulation/models/"
       "allegro_hand_description/sdf/allegro_hand_description_left.sdf");
 
-  multibody::parsing::AddModelFromSdfFile(
-                          full_name, &plant, &scene_graph);
+  multibody::parsing::AddModelFromSdfFile(full_name, &plant);
 
   // Weld the hand to the world frame
   const auto& joint_hand_root = plant.GetBodyByName("hand_root");
@@ -82,7 +82,7 @@ void DoMain() {
         -9.81 * Eigen::Vector3d::UnitZ());
 
   // Now the model is complete.
-  plant.Finalize(&scene_graph);
+  plant.Finalize();
 
   DRAKE_DEMAND(plant.num_actuators() == 16);
   DRAKE_DEMAND(plant.num_actuated_dofs() == 16);

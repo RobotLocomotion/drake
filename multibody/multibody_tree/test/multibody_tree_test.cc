@@ -30,9 +30,7 @@ namespace {
 using benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel;
 using benchmarks::kuka_iiwa_robot::MG::MGKukaIIwaRobot;
 using Eigen::AngleAxisd;
-using Eigen::Isometry3d;
 using Eigen::MatrixXd;
-using Eigen::Translation3d;
 using Eigen::Vector3d;
 using math::RigidTransform;
 using math::RollPitchYaw;
@@ -795,8 +793,8 @@ TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
       tree().EvalBodySpatialVelocityInWorld(*context_, *end_effector_link_);
 
   // Pose of the end effector in the world frame.
-  const Isometry3<double>& X_WE =
-      tree().EvalBodyPoseInWorld(*context_, *end_effector_link_);
+  const math::RigidTransform<double> X_WE(
+      tree().EvalBodyPoseInWorld(*context_, *end_effector_link_));
 
   // Independent benchmark solution.
   const SpatialKinematicsPVA<double> MG_kinematics =
@@ -804,11 +802,12 @@ TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
           q, v, VectorX<double>::Zero(7) /* vdot */);
   const SpatialVelocity<double>& V_WE_benchmark =
       MG_kinematics.spatial_velocity();
-  const Isometry3<double>& X_WE_benchmark = MG_kinematics.transform();
+  const math::RigidTransform<double> X_WE_benchmark(MG_kinematics.transform());
 
   // Compare against benchmark.
   EXPECT_TRUE(V_WE.IsApprox(V_WE_benchmark, kTolerance));
-  EXPECT_TRUE(CompareMatrices(X_WE.matrix(), X_WE_benchmark.matrix(),
+  EXPECT_TRUE(CompareMatrices(X_WE.GetAsMatrix34(),
+                              X_WE_benchmark.GetAsMatrix34(),
                               kTolerance, MatrixCompareType::relative));
 }
 
@@ -846,13 +845,13 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
       tree().EvalBodySpatialVelocityInWorld(*context_, *end_effector_link_);
 
   // Pose of the end effector.
-  const Isometry3d& X_WE =
-      tree().EvalBodyPoseInWorld(*context_, *end_effector_link_);
+  const math::RigidTransformd X_WE(
+      tree().EvalBodyPoseInWorld(*context_, *end_effector_link_));
 
   // Position of a frame F measured and expressed in frame E.
   const Vector3d p_EoFo_E = Vector3d(0.2, -0.1, 0.5);
   // Express this same last vector in the world frame.
-  const Vector3d p_EoFo_W = X_WE.linear() * p_EoFo_E;
+  const Vector3d p_EoFo_W = X_WE.rotation() * p_EoFo_E;
 
   // The spatial velocity of a frame F moving with E can be obtained by
   // "shifting" the spatial velocity of frame E from Eo to Fo.
@@ -1048,14 +1047,18 @@ class WeldMobilizerTest : public ::testing::Test {
     body1_ = &model->AddBody<RigidBody>(M_B);
     body2_ = &model->AddBody<RigidBody>(M_B);
 
-    model->AddMobilizer<WeldMobilizer>(
-        model->world_body().body_frame(), body1_->body_frame(), X_WB1_);
+    model->AddMobilizer<WeldMobilizer>(model->world_body().body_frame(),
+                                       body1_->body_frame(),
+                                       X_WB1_.GetAsIsometry3());
 
     // Add a weld joint between bodies 1 and 2 by welding together inboard
     // frame F (on body 1) with outboard frame M (on body 2).
-    const auto& frame_F = model->AddFrame<FixedOffsetFrame>(*body1_, X_B1F_);
-    const auto& frame_M = model->AddFrame<FixedOffsetFrame>(*body2_, X_B2M_);
-    model->AddMobilizer<WeldMobilizer>(frame_F, frame_M, X_FM_);
+    const auto& frame_F =
+        model->AddFrame<FixedOffsetFrame>(*body1_, X_B1F_.GetAsIsometry3());
+    const auto& frame_M =
+        model->AddFrame<FixedOffsetFrame>(*body2_, X_B2M_.GetAsIsometry3());
+    model->AddMobilizer<WeldMobilizer>(frame_F, frame_M,
+                                       X_FM_.GetAsIsometry3());
 
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.
@@ -1064,11 +1067,9 @@ class WeldMobilizerTest : public ::testing::Test {
     context_ = system_->CreateDefaultContext();
 
     // Expected pose of body 2 in the world.
-    X_WB2_.translation() =
-        Vector3d(M_SQRT2 / 4, -M_SQRT2 / 4, 0.0) - Vector3d::UnitY() / M_SQRT2;
-    X_WB2_.linear() =
-        AngleAxisd(-3 * M_PI_4, Vector3d::UnitZ()).toRotationMatrix();
-    X_WB2_.makeAffine();
+    X_WB2_.set_translation(
+        Vector3d(M_SQRT2 / 4, -M_SQRT2 / 4, 0.0) - Vector3d::UnitY() / M_SQRT2);
+    X_WB2_.set_rotation(math::RotationMatrixd::MakeZRotation(-3 * M_PI_4));
   }
 
   const MultibodyTree<double>& tree() const { return system_->tree(); }
@@ -1079,12 +1080,13 @@ class WeldMobilizerTest : public ::testing::Test {
   const RigidBody<double>* body1_{nullptr};
   const RigidBody<double>* body2_{nullptr};
 
-  Isometry3d X_WB1_{
-      AngleAxisd(-M_PI_4, Vector3d::UnitZ()) * Translation3d(0.5, 0.0, 0.0)};
-  Isometry3d X_FM_{AngleAxisd(-M_PI_2, Vector3d::UnitZ())};
-  Isometry3d X_B1F_{Translation3d(0.5, 0.0, 0.0)};
-  Isometry3d X_B2M_{Translation3d(-0.5, 0.0, 0.0)};
-  Isometry3d X_WB2_;
+  const Eigen::Isometry3d X_WB1{AngleAxisd(-M_PI_4, Vector3d::UnitZ()) *
+                                Eigen::Translation3d(0.5, 0.0, 0.0)};
+  math::RigidTransformd X_WB1_{X_WB1};
+  math::RigidTransformd X_FM_{math::RotationMatrixd::MakeZRotation(-M_PI_2)};
+  math::RigidTransformd X_B1F_{Vector3d(0.5, 0.0, 0.0)};
+  math::RigidTransformd X_B2M_{Vector3d(-0.5, 0.0, 0.0)};
+  math::RigidTransformd X_WB2_;
 };
 
 TEST_F(WeldMobilizerTest, StateHasZeroSize) {
@@ -1097,14 +1099,14 @@ TEST_F(WeldMobilizerTest, PositionKinematics) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
-  std::vector<Isometry3d> body_poses;
+  std::vector<Eigen::Isometry3d> body_poses;
   tree().CalcAllBodyPosesInWorld(*context_, &body_poses);
 
   EXPECT_TRUE(CompareMatrices(
-      body_poses[body1_->index()].matrix(), X_WB1_.matrix(),
+      body_poses[body1_->index()].matrix(), X_WB1_.GetAsMatrix4(),
       kTolerance, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(
-      body_poses[body2_->index()].matrix(), X_WB2_.matrix(),
+      body_poses[body2_->index()].matrix(), X_WB2_.GetAsMatrix4(),
       kTolerance, MatrixCompareType::relative));
 }
 

@@ -252,6 +252,31 @@ GTEST_TEST(SdfParser, IncludeTags) {
   EXPECT_TRUE(plant.HasJointNamed("weld_robots", weld_model));
 }
 
+GTEST_TEST(SdfParser, TestOptionalSceneGraph) {
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/multibody_tree/parsing/test/"
+      "links_with_visuals_and_collisions.sdf");
+  int num_visuals_explicit{};
+  {
+    // Test explicitly specifying `scene_graph`.
+    MultibodyPlant<double> plant;
+    SceneGraph<double> scene_graph;
+    AddModelsFromSdfFile(full_name, &plant, &scene_graph);
+    plant.Finalize();
+    num_visuals_explicit = plant.num_visual_geometries();
+  }
+  EXPECT_NE(num_visuals_explicit, 0);
+  {
+    // Test implicitly specifying.
+    MultibodyPlant<double> plant;
+    SceneGraph<double> scene_graph;
+    plant.RegisterAsSourceForSceneGraph(&scene_graph);
+    AddModelsFromSdfFile(full_name, &plant);
+    plant.Finalize();
+    EXPECT_EQ(plant.num_visual_geometries(), num_visuals_explicit);
+  }
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace parsing

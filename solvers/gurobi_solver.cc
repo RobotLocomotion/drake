@@ -604,7 +604,7 @@ void AddSecondOrderConeVariables(
 }
 }  // anonymous namespace
 
-bool GurobiSolver::available() const { return true; }
+bool GurobiSolver::is_available() { return true; }
 
 /*
  * Implements RAII for a Gurobi license / environment.

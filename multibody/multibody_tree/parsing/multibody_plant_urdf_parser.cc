@@ -121,7 +121,7 @@ void ParseBody(const PackageMap& package_map,
   const RigidBody<double>& body =
       plant->AddRigidBody(body_name, model_instance, M_BBo_B);
 
-  if (scene_graph != nullptr) {
+  if (plant->geometry_source_is_registered()) {
     for (XMLElement* visual_node = node->FirstChildElement("visual");
          visual_node;
          visual_node = visual_node->NextSiblingElement("visual")) {

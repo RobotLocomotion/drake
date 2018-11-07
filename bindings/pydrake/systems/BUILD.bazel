@@ -361,6 +361,7 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "rendering_test",
+    data = ["//multibody/benchmarks/acrobot:models"],
     deps = [
         ":rendering_py",
         "//bindings/pydrake/multibody:multibody_tree_py",
@@ -404,4 +405,6 @@ drake_py_binary(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    enable_clang_format_lint = True,
+)

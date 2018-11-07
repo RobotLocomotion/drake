@@ -4,12 +4,15 @@ import argparse
 import Tkinter as tk
 import numpy as np
 
-from pydrake.examples.manipulation_station import ManipulationStation
+from pydrake.common import FindResourceOrThrow
+from pydrake.examples.manipulation_station import (
+    ManipulationStation, ManipulationStationHardwareInterface)
 from pydrake.geometry import ConnectDrakeVisualizer
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
 from pydrake.manipulation.simple_ui import SchunkWsgButtons
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters, DoDifferentialInverseKinematics)
+from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
 from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (AbstractValue, BasicVector,
@@ -203,25 +206,43 @@ parser.add_argument(
 parser.add_argument(
     "--duration", type=float, default=np.inf,
     help="Desired duration of the simulation in seconds.")
+parser.add_argument(
+    "--hardware", action='store_true',
+    help="Use the ManipulationStationHardwareInterface instead of an "
+         "in-process simulation.")
+parser.add_argument("--test", action='store_true',
+                    help="Disable opening the gui window for testing.")
 args = parser.parse_args()
 
 builder = DiagramBuilder()
 
-time_step = 0.002
-station = builder.AddSystem(ManipulationStation(time_step))
-station.AddCupboard()
-station.Finalize()
-q0 = [0, 0.6, 0, -1.75, 0, 1.0, 0]
+if args.hardware:
+    station = builder.AddSystem(ManipulationStationHardwareInterface())
+    station.Connect(wait_for_cameras=False)
+else:
+    station = builder.AddSystem(ManipulationStation())
+    station.AddCupboard()
+    object = AddModelFromSdfFile(FindResourceOrThrow(
+        "drake/examples/manipulation_station/models/061_foam_brick.sdf"),
+        "object", station.get_mutable_multibody_plant(),
+        station.get_mutable_scene_graph())
+    station.Finalize()
+
+    ConnectDrakeVisualizer(builder, station.get_mutable_scene_graph(),
+                           station.GetOutputPort("pose_bundle"))
 
 robot = station.get_controller_plant()
 params = DifferentialInverseKinematicsParameters(robot.num_positions(),
                                                  robot.num_velocities())
 
+time_step = 0.005
 params.set_timestep(time_step)
-params.set_nominal_joint_position(q0)
+# True velocity limits for the IIWA14 (in rad, rounded down to the first
+# decimal)
 iiwa14_velocity_limits = np.array([1.4, 1.4, 1.7, 1.3, 2.2, 2.3, 2.3])
-params.set_joint_velocity_limits((-.5*iiwa14_velocity_limits,
-                                  .5*iiwa14_velocity_limits))
+# Stay within a small fraction of those limits for this teleop demo.
+params.set_joint_velocity_limits((-.15*iiwa14_velocity_limits,
+                                  .15*iiwa14_velocity_limits))
 
 differential_ik = builder.AddSystem(DifferentialIK(
     robot, robot.GetFrameByName("iiwa_link_7"), params, time_step))
@@ -230,6 +251,9 @@ builder.Connect(differential_ik.GetOutputPort("joint_position_desired"),
                 station.GetInputPort("iiwa_position"))
 
 teleop = builder.AddSystem(EndEffectorTeleop())
+if args.test:
+    teleop.window.withdraw()  # Don't display the window when testing.
+
 builder.Connect(teleop.get_output_port(0),
                 differential_ik.GetInputPort("X_WE_desired"))
 
@@ -239,26 +263,45 @@ builder.Connect(wsg_buttons.GetOutputPort("position"), station.GetInputPort(
 builder.Connect(wsg_buttons.GetOutputPort("force_limit"),
                 station.GetInputPort("wsg_force_limit"))
 
-ConnectDrakeVisualizer(builder, station.get_mutable_scene_graph(),
-                       station.GetOutputPort("pose_bundle"))
-
 diagram = builder.Build()
 simulator = Simulator(diagram)
 
 station_context = diagram.GetMutableSubsystemContext(
     station, simulator.get_mutable_context())
 
-station.SetIiwaPosition(q0, station_context)
-station.SetIiwaVelocity(np.zeros(7), station_context)
-station.SetWsgPosition(0.1, station_context)
-station.SetWsgVelocity(0, station_context)
+station_context.FixInputPort(station.GetInputPort(
+    "iiwa_feedforward_torque").get_index(), np.zeros(7))
 
+if not args.hardware:
+    # Set the initial positions of the IIWA to a comfortable configuration
+    # inside the workspace of the station.
+    q0 = [0, 0.6, 0, -1.75, 0, 1.0, 0]
+    station.SetIiwaPosition(q0, station_context)
+    station.SetIiwaVelocity(np.zeros(7), station_context)
+
+    # Set the initial configuration of the gripper to open.
+    station.SetWsgPosition(0.1, station_context)
+    station.SetWsgVelocity(0, station_context)
+
+    # Place the object in the middle of the workspace.
+    X_WObject = Isometry3.Identity()
+    X_WObject.set_translation([.6, 0, 0])
+    station.get_mutable_multibody_plant().tree().SetFreeBodyPoseOrThrow(
+        station.get_mutable_multibody_plant().GetBodyByName("base_link",
+                                                            object),
+        X_WObject, station.GetMutableSubsystemContext(
+            station.get_mutable_multibody_plant(),
+            station_context))
+
+q0 = station.GetOutputPort("iiwa_position_measured").Eval(
+    station_context).get_value()
+differential_ik.parameters.set_nominal_joint_position(q0)
 teleop.SetPose(differential_ik.ForwardKinematics(q0))
 differential_ik.SetPositions(diagram.GetMutableSubsystemContext(
     differential_ik, simulator.get_mutable_context()), q0)
 
-station_context.FixInputPort(station.GetInputPort(
-    "iiwa_feedforward_torque").get_index(), np.zeros(7))
+# This is important to avoid duplicate publishes to the hardware interface:
+simulator.set_publish_every_time_step(False)
 
 simulator.set_target_realtime_rate(args.target_realtime_rate)
 simulator.StepTo(args.duration)

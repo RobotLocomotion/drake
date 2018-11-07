@@ -35,7 +35,9 @@
 #include "drake/solvers/indeterminate.h"
 #include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/program_attribute.h"
 #include "drake/solvers/solution_result.h"
+#include "drake/solvers/solver_options.h"
 #include "drake/solvers/solver_result.h"
 
 namespace drake {
@@ -181,25 +183,6 @@ namespace solvers {
  * @}
  */
 class MathematicalProgram;
-
-enum ProgramAttributes {
-  kNoCapabilities = 0,
-  kError = 1 << 0,  ///< Do not use, to avoid & vs. && typos.
-  kGenericCost = 1 << 1,
-  kGenericConstraint = 1 << 2,
-  kQuadraticCost = 1 << 3,
-  kQuadraticConstraint = 1 << 4,
-  kLinearCost = 1 << 5,
-  kLinearConstraint = 1 << 6,
-  kLinearEqualityConstraint = 1 << 7,
-  kLinearComplementarityConstraint = 1 << 8,
-  kLorentzConeConstraint = 1 << 9,
-  kRotatedLorentzConeConstraint = 1 << 10,
-  kPositiveSemidefiniteConstraint = 1 << 11,
-  kBinaryVariable = 1 << 12,
-  kCallback = 1 << 13
-};
-typedef uint32_t AttributesSet;
 
 template <int...>
 struct NewVariableNames {};
@@ -2261,69 +2244,35 @@ class MathematicalProgram {
     }
   }
 
-  /**
-   * Set an option for a particular solver.  This interface does not
-   * do any verification of solver parameters beyond what an
-   * individual solver does for itself.  It does not even verify that
-   * the specified solver exists.  Use this only when you have
-   * particular knowledge of what solver is being invoked, and exactly
-   * what tuning is required.
-   *
-   * Supported solver names/options:
-   *
-   * "SNOPT" -- Parameter names and values as specified in SNOPT
-   * User's Guide section 7.7 "Description of the optional parameters",
-   * used as described in section 7.5 for snSet().
-   *
-   * "IPOPT" -- Parameter names and values as specified in IPOPT users
-   * guide section "Options Reference"
-   * http://www.coin-or.org/Ipopt/documentation/node40.html
-   *
-   * "GUROBI" -- Parameter name and values as specified in Gurobi Reference
-   * Manual, section 10.2 "Parameter Descriptions"
-   * https://www.gurobi.com/documentation/7.5/refman/parameters.html
-   */
   void SetSolverOption(const SolverId& solver_id,
                        const std::string& solver_option, double option_value) {
-    solver_options_double_[solver_id][solver_option] = option_value;
+    solver_options_.SetOption(solver_id, solver_option, option_value);
   }
 
   void SetSolverOption(const SolverId& solver_id,
                        const std::string& solver_option, int option_value) {
-    solver_options_int_[solver_id][solver_option] = option_value;
+    solver_options_.SetOption(solver_id, solver_option, option_value);
   }
 
   void SetSolverOption(const SolverId& solver_id,
                        const std::string& solver_option,
                        const std::string& option_value) {
-    solver_options_str_[solver_id][solver_option] = option_value;
+    solver_options_.SetOption(solver_id, solver_option, option_value);
   }
 
-  const std::map<std::string, double>& GetSolverOptionsDouble(
+  const std::unordered_map<std::string, double>& GetSolverOptionsDouble(
       const SolverId& solver_id) const {
-    // Aliases for brevity.
-    const auto& options = solver_options_double_;
-    const auto& empty = solver_options_double_empty_;
-    const auto iter = options.find(solver_id);
-    return (iter != options.end()) ? iter->second : empty;
+    return solver_options_.GetOptionsDouble(solver_id);
   }
 
-  const std::map<std::string, int>& GetSolverOptionsInt(
+  const std::unordered_map<std::string, int>& GetSolverOptionsInt(
       const SolverId& solver_id) const {
-    // Aliases for brevity.
-    const auto& options = solver_options_int_;
-    const auto& empty = solver_options_int_empty_;
-    const auto iter = options.find(solver_id);
-    return (iter != options.end()) ? iter->second : empty;
+    return solver_options_.GetOptionsInt(solver_id);
   }
 
-  const std::map<std::string, std::string>& GetSolverOptionsStr(
+  const std::unordered_map<std::string, std::string>& GetSolverOptionsStr(
       const SolverId& solver_id) const {
-    // Aliases for brevity.
-    const auto& options = solver_options_str_;
-    const auto& empty = solver_options_str_empty_;
-    const auto iter = options.find(solver_id);
-    return (iter != options.end()) ? iter->second : empty;
+    return solver_options_.GetOptionsStr(solver_id);
   }
 
   /**
@@ -2720,6 +2669,12 @@ class MathematicalProgram {
   // of MathematicalProgram.
   void SetSolverResult(const SolverResult& solver_result);
 
+  /// Getter for the required capability on the solver, given the
+  /// cost/constraint/variable types in the program.
+  const ProgramAttributes& required_capabilities() const {
+    return required_capabilities_;
+  }
+
  private:
   static void AppendNanToEnd(int new_var_size, Eigen::VectorXd* vector);
   // maps the ID of a symbolic variable to the index of the variable stored in
@@ -2769,15 +2724,9 @@ class MathematicalProgram {
   double lower_bound_cost_{};
 
   // The actual per-solver customization options.
-  std::map<SolverId, std::map<std::string, double>> solver_options_double_;
-  std::map<SolverId, std::map<std::string, int>> solver_options_int_;
-  std::map<SolverId, std::map<std::string, std::string>> solver_options_str_;
-  // Dummy (empty) options, for when the solver_id is not in the above maps.
-  const std::map<std::string, double> solver_options_double_empty_;
-  const std::map<std::string, int> solver_options_int_empty_;
-  const std::map<std::string, std::string> solver_options_str_empty_;
+  SolverOptions solver_options_;
 
-  AttributesSet required_capabilities_{0};
+  ProgramAttributes required_capabilities_{};
 
   std::unique_ptr<MathematicalProgramSolverInterface> ipopt_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> nlopt_solver_;
@@ -2799,7 +2748,7 @@ class MathematicalProgram {
       case VarType::CONTINUOUS:
         break;
       case VarType::BINARY:
-        required_capabilities_ |= kBinaryVariable;
+        required_capabilities_.insert(ProgramAttribute::kBinaryVariable);
         break;
       case VarType::INTEGER:
         throw std::runtime_error(

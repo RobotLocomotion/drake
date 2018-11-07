@@ -1043,16 +1043,15 @@ class RigidBodyTree {
       for (const auto& group : body_ptr->get_group_to_collision_ids_map()) {
         const std::string& group_name = group.first;
         if (test(group_name)) {
-          auto& ids = body_ptr->get_mutable_collision_element_ids();
-          for (const auto& id : group.second) {
-            ids.erase(std::find(ids.begin(), ids.end(), id));
+          names_of_groups_to_delete.push_back(group_name);
+          for (auto id : group.second) {
             collision_model_->RemoveElement(id);
           }
-          names_of_groups_to_delete.push_back(group_name);
         }
       }
       for (const auto& group_name : names_of_groups_to_delete) {
-        body_ptr->get_mutable_group_to_collision_ids_map().erase(group_name);
+        drake::internal::RigidBodyAttorney::
+            RemoveCollisionGroupAndElements(body_ptr.get(), group_name);
       }
     }
   }

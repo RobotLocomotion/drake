@@ -100,6 +100,10 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
                   .Eval<BasicVector<double>>(*context)
                   .get_value()
                   .isZero());
+
+  // Check that the additional output ports exist and are spelled correctly.
+  EXPECT_NO_THROW(station.GetOutputPort("contact_results"));
+  EXPECT_NO_THROW(station.GetOutputPort("plant_continuous_state"));
 }
 
 GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
@@ -205,7 +209,7 @@ GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
   // will attempt to move, and since all dofs in the arm are coupled, including
   // those of the fingers, we see this error propagated into the other joints
   // as well.
-  const double kTolerance = 0.04;  // rad/sec^2.
+  const double kTolerance = 0.05;  // rad/sec^2.
   EXPECT_TRUE(CompareMatrices(vddot, VectorXd::Zero(7), kTolerance));
 }
 

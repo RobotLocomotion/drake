@@ -21,6 +21,7 @@ drake_py_binary(
     # network; we should fail-fast if someone tries to turn them on.
     tags = ["block-network"],
     test_rule_args = ["--out_dir=<test>"],
+    test_rule_size = "medium",
     deps = [
         "//bindings/pydrake",  # We must import `pydrake` to document it.
         "//doc:sphinx_base",
@@ -34,4 +35,7 @@ drake_py_binary(
     deps = ["//doc:sphinx_base"],
 )
 
-add_lint_tests(python_lint_exclude = [":conf.py"])
+add_lint_tests(
+    enable_clang_format_lint = True,
+    python_lint_exclude = [":conf.py"],
+)

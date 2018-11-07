@@ -23,8 +23,8 @@ from pydrake.multibody.multibody_tree.math import (
     SpatialVelocity,
 )
 from pydrake.multibody.multibody_tree.multibody_plant import (
-    MultibodyPlant,
     ContactResults,
+    MultibodyPlant,
     PointPairContactInfo,
 )
 from pydrake.multibody.multibody_tree.parsing import (
@@ -34,9 +34,13 @@ from pydrake.multibody.benchmarks.acrobot import (
     AcrobotParameters,
     MakeAcrobotPlant,
 )
+
 from pydrake.geometry import (
+    GeometryId,
     PenetrationAsPointPair,
-    GeometryId)
+    SceneGraph,
+)
+from pydrake.systems.framework import DiagramBuilder
 
 
 import copy
@@ -67,6 +71,20 @@ def get_index_class(cls):
     raise RuntimeError("Unknown class: {}".format(cls))
 
 
+def add_plant_and_scene_graph(builder):
+    # TODO(eric.cousineau): Hoist to C++.
+    plant = builder.AddSystem(MultibodyPlant())
+    scene_graph = builder.AddSystem(SceneGraph())
+    plant.RegisterAsSourceForSceneGraph(scene_graph)
+    builder.Connect(
+        scene_graph.get_query_output_port(),
+        plant.get_geometry_query_input_port())
+    builder.Connect(
+        plant.get_geometry_poses_output_port(),
+        scene_graph.get_source_pose_port(plant.get_source_id()))
+    return plant, scene_graph
+
+
 class TestMultibodyTreeMath(unittest.TestCase):
     def test_spatial_velocity(self):
         velocity = SpatialVelocity()
@@ -95,7 +113,7 @@ class TestMultibodyTree(unittest.TestCase):
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         plant = MultibodyPlant(time_step=0.01)
         model_instance = AddModelFromSdfFile(
-            file_name=file_name, plant=plant, scene_graph=None)
+            file_name=file_name, plant=plant)
         self.assertIsInstance(model_instance, ModelInstanceIndex)
         plant.Finalize()
         benchmark = MakeAcrobotPlant(AcrobotParameters(), True)
@@ -195,13 +213,12 @@ class TestMultibodyTree(unittest.TestCase):
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         plant = MultibodyPlant(time_step=0.01)
         model_instance = AddModelFromSdfFile(
-            file_name=file_name, plant=plant, scene_graph=None)
+            file_name=file_name, plant=plant)
         self.assertIsInstance(model_instance, ModelInstanceIndex)
 
         plant = MultibodyPlant(time_step=0.01)
         model_instance = AddModelFromSdfFile(
-            file_name=file_name, model_name="acrobot", plant=plant,
-            scene_graph=None)
+            file_name=file_name, model_name="acrobot", plant=plant)
 
     def test_multibody_tree_kinematics(self):
         file_name = FindResourceOrThrow(
@@ -309,11 +326,9 @@ class TestMultibodyTree(unittest.TestCase):
         plant = MultibodyPlant(timestep)
 
         iiwa_model = AddModelFromSdfFile(
-            file_name=iiwa_sdf_path, model_name='robot',
-            scene_graph=None, plant=plant)
+            file_name=iiwa_sdf_path, model_name='robot', plant=plant)
         gripper_model = AddModelFromSdfFile(
-            file_name=wsg50_sdf_path, model_name='gripper',
-            scene_graph=None, plant=plant)
+            file_name=wsg50_sdf_path, model_name='gripper', plant=plant)
 
         # Weld the base of arm and gripper to reduce the number of states.
         X_EeGripper = Isometry3.Identity()
@@ -467,3 +482,28 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTrue(contact_results.num_contacts() == 1)
         self.assertTrue(
             isinstance(contact_results.contact_info(0), PointPairContactInfo))
+
+    def test_scene_graph_queries(self):
+        builder = DiagramBuilder()
+        plant, scene_graph = add_plant_and_scene_graph(builder)
+        AddModelFromSdfFile(
+            FindResourceOrThrow(
+                "drake/bindings/pydrake/multibody/test/two_bodies.sdf"),
+            plant, scene_graph)
+        plant.Finalize(scene_graph)
+        diagram = builder.Build()
+        # The model `two_bodies` has two (implicitly) floating bodies that are
+        # placed in the same position. The default state would be for these two
+        # bodies to be coincident, and thus collide.
+        context = diagram.CreateDefaultContext()
+        sg_context = diagram.GetMutableSubsystemContext(scene_graph, context)
+        query_object = scene_graph.get_query_output_port().Eval(sg_context)
+        # Implicitly require that this should be size 1.
+        point_pair, = query_object.ComputePointPairPenetration()
+        self.assertIsInstance(point_pair, PenetrationAsPointPair)
+        inspector = query_object.inspector()
+        bodies = {plant.GetBodyFromFrameId(inspector.GetFrameId(id_))
+                  for id_ in [point_pair.id_A, point_pair.id_B]}
+        self.assertSetEqual(
+            bodies,
+            {plant.GetBodyByName("body1"), plant.GetBodyByName("body2")})
