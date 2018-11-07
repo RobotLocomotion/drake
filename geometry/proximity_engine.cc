@@ -872,7 +872,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   std::vector<SignedDistanceFieldValue<double>>
-  ComputeSignedDistancePointToAnchoredGeometries(
+  ComputePointSignedDistances(
       const Vector3d& query,
       const std::vector<GeometryId>& geometry_map) const {
     // We create a sphere of zero radius centered at the query point and put
@@ -1233,10 +1233,10 @@ ProximityEngine<T>::ComputeSignedDistancePairwiseClosestPoints(
 
 template <typename T>
 std::vector<SignedDistanceFieldValue<double>>
-ProximityEngine<T>::ComputeSignedDistancePointToAnchoredGeometries(
-    const Vector3<double>& query,
-    const std::vector<GeometryId>& geometry_map) const {
-  return impl_->ComputeSignedDistancePointToAnchoredGeometries(query,
+ProximityEngine<T>::ComputePointSignedDistances(
+    const Vector3<double> &query,
+    const std::vector<GeometryId> &geometry_map) const {
+  return impl_->ComputePointSignedDistances(query,
                     geometry_map);
 }
 

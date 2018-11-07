@@ -159,10 +159,16 @@ class ProximityEngine {
   //@}
 
   //----------------------------------------------------------------------------
+  /**
+   * Compute signed distances from a query point to
+   * @param query
+   * @param geometry_map
+   * @return
+   */
   std::vector<SignedDistanceFieldValue<double>>
-  ComputeSignedDistancePointToAnchoredGeometries(
-      const Vector3<double>& query,
-      const std::vector<GeometryId>& geometry_map) const;
+  ComputePointSignedDistances(
+      const Vector3<double> &query,
+      const std::vector<GeometryId> &geometry_map) const;
 
   //----------------------------------------------------------------------------
   /** @name                Collision Queries

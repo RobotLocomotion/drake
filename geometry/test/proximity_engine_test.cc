@@ -223,6 +223,29 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsMultipleAnchored) {
   EXPECT_EQ(results.size(), 0);
 }
 
+// Point signed distance tests -- testing data flow; not testing the value of
+// the query.
+
+// A scene with a single anchored geometry reports one distance.
+GTEST_TEST(ProximityEngineTests, PointSignedDistanceSingleAnchored) {
+  ProximityEngine<double> engine;
+  std::vector<GeometryId> geometry_map;
+
+  Sphere sphere{0.5};
+  Isometry3<double> pose = Isometry3<double>::Identity();
+  ProximityIndex index = engine.AddAnchoredGeometry(sphere, pose,
+                                                    GeometryIndex(0));
+  geometry_map.push_back(GeometryId::get_new_id());
+  EXPECT_EQ(index,0);
+
+  Vector3d query{1.0,0.0,0.0};
+  const auto results = engine.ComputePointSignedDistances (query,
+                                                           geometry_map);
+  EXPECT_EQ(results.size(), 1);
+  EXPECT_EQ(results.at(0).distance, 0.5);
+  EXPECT_EQ(results.at(0).grad_W, Vector3d(1.0,0.0,0.0));
+}
+
 // Penetration tests -- testing data flow; not testing the value of the query.
 
 // A scene with no geometry reports no penetrations.
