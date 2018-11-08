@@ -1552,7 +1552,7 @@ class MultibodyTree {
   Eigen::VectorBlock<const VectorX<T>> GetMultibodyStateVector(
       const systems::Context<T>& context) const;
 
-  #ifndef DRAKE_DOXYGEN_CXX
+#ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
   DRAKE_DEPRECATED("Call GetMultibodyStateVector().")
   /// Returns a Eigen vector containing the multibody state `x = [q; v]`
