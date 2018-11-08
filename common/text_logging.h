@@ -36,7 +36,7 @@ to be logged:
 We suggest using the Drake versions of these macros everywhere so that you don't
 have to decide when the argument-evaluation cost is going to be excessive.
 
-The format string syntax is fmtlib; see http://fmtlib.net/5.1.0/syntax.html.
+The format string syntax is fmtlib; see http://fmtlib.net/5.2.1/syntax.html.
 In particular, any class that overloads `operator<<` for `ostream` can be
 printed without any special handling.
 */

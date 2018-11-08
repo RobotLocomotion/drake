@@ -42,7 +42,8 @@ class TestGtestMain(unittest.TestCase):
     def test_no_arguments(self):
         # The device under test should fail when -magic_number=1.0 is missing.
         output = self._check_call([], expected_returncode=1)
-        self.assertTrue("Expected: FLAGS_magic_number" in output)
+        self.assertTrue("Expected equality of these values:\n"
+                        "  FLAGS_magic_number" in output)
 
     def test_help(self):
         # The help string should mention all options.  Just spot-check for one
