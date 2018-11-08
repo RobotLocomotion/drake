@@ -313,10 +313,10 @@ void init_module(py::module m) {
                  &Class::SetFreeBodyPoseOrThrow),
              py::arg("body"), py::arg("X_WB"), py::arg("context"),
              doc.MultibodyTree.SetFreeBodyPoseOrThrow.doc)
-        .def("get_positions_from_array", &Class::get_positions_from_array,
+        .def("GetPositionsFromArray", &Class::GetPositionsFromArray,
              py::arg("model_instance"), py::arg("q_array"),
              doc.MultibodyTree.get_positions_from_array.doc)
-        .def("get_velocities_from_array", &Class::get_velocities_from_array,
+        .def("GetVelocitiesFromArray", &Class::GetVelocitiesFromArray,
              py::arg("model_instance"), py::arg("v_array"),
              doc.MultibodyTree.get_velocities_from_array.doc)
         .def("SetFreeBodySpatialVelocityOrThrow",

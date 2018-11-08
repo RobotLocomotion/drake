@@ -310,6 +310,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// `v` the vector of generalized velocities.
   /// @note This method returns a reference to existing data, exhibits constant
   ///       i.e., O(1) time complexity, and runs very quickly.
+  /// @throws std::exception if the `context` does not
+  /// correspond to the context for a multibody model.
   Eigen::VectorBlock<const VectorX<T>> GetMultibodyStateVector(
       const systems::Context<T>& context) const {
     return tree().GetMultibodyStateVector(context);
@@ -329,6 +331,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// generalized positions.
   /// @note This method returns a reference to existing data, exhibits constant
   ///       i.e., O(1) time complexity, and runs very quickly.
+  /// @throws std::exception if the `context` does not
+  /// correspond to the context for a multibody model.
   Eigen::VectorBlock<const VectorX<T>> GetPositionsVector(
       const systems::Context<T>& context) const {
     // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
@@ -340,6 +344,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 
   /// Returns an Eigen vector containing the generalized positions for the
   /// given model instance.
+  /// @throws std::exception if the `context` does not
+  /// correspond to the context for a multibody model.
   VectorX<T> GetPositionsVector(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance) const {
@@ -351,6 +357,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// generalized positions.
   /// @note This method returns a reference to existing data, exhibits constant
   ///       i.e., O(1) time complexity, and runs very quickly.
+  /// @throws std::exception if the `context` is nullptr or if it does not
+  /// correspond to the context for a multibody model.
   Eigen::VectorBlock<VectorX<T>> GetMutablePositionsVector(
       systems::Context<T>* context) const {
     // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
@@ -361,6 +369,10 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   }
 
   /// Sets the positions for a particular model instance from the given vector.
+  /// @throws std::exception if the `context` is nullptr, if the context does
+  /// not correspond to the context for a multibody model, if the model instance
+  /// index is invalid, or if the length of `q_instance` is not equal to
+  /// `num_positions(model_instance)`.
   void SetPositionsFromVector(
       systems::Context<T>* context,
       ModelInstanceIndex model_instance, const VectorX<T>& q_instance) const {
@@ -383,6 +395,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 
   /// Returns an Eigen vector containing the generalized velocities for the
   /// given model instance.
+  /// @throws std::exception if the `context` does not
+  /// correspond to the context for a multibody model.
   VectorX<T> GetVelocitiesVector(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance) const {
@@ -394,6 +408,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// generalized velocities.
   /// @note This method returns a reference to existing data, exhibits constant
   ///       i.e., O(1) time complexity, and runs very quickly.
+  /// @throws std::exception if the `context` is nullptr or the context does
+  /// not correspond to the context for a multibody model.
   Eigen::VectorBlock<VectorX<T>> GetMutableVelocitiesVector(
       systems::Context<T>* context) const {
     // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
@@ -404,8 +420,13 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   }
 
   /// Sets the velocities for a particular model instance from the given vector.
+  /// @throws std::exception if the `context` is nullptr, if the context does
+  /// not correspond to the context for a multibody model, if the model instance
+  /// index is invalid, or if the length of `v_instance` is not equal to
+  /// `num_velocities(model_instance)`.
   void SetVelocitiesFromVector(
       systems::Context<T>* context,
+      ModelInstanceIndex model_instance, const VectorX<T>& v_instance) const {
       ModelInstanceIndex model_instance, const VectorX<T>& v_instance) const {
     Eigen::VectorBlock<VectorX<T>> v = GetMutableVelocitiesVector(context);
     tree().SetVelocitiesInArray(model_instance, v_instance, &v);
