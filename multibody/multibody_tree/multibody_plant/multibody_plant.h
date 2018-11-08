@@ -427,7 +427,6 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   void SetVelocitiesFromVector(
       systems::Context<T>* context,
       ModelInstanceIndex model_instance, const VectorX<T>& v_instance) const {
-      ModelInstanceIndex model_instance, const VectorX<T>& v_instance) const {
     Eigen::VectorBlock<VectorX<T>> v = GetMutableVelocitiesVector(context);
     tree().SetVelocitiesInArray(model_instance, v_instance, &v);
   }
