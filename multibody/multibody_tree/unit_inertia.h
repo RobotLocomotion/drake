@@ -114,8 +114,7 @@ class UnitInertia : public RotationalInertia<T> {
   DRAKE_DEPRECATED("Use UnitInertia::ReExpressInPlace(RotationMatrix<T>&). "
                    "Code will be deleted after February 5, 2019.")
   UnitInertia<T>& ReExpressInPlace(const Matrix3<T>& R_FE) {
-    RotationalInertia<T>::ReExpressInPlace(R_FE);
-    return *this;
+    return ReExpressInPlace(math::RotationMatrix<T>(R_FE));
   }
 
   /// Given `this` unit inertia `G_BP_E` of a body B about a point P and
@@ -129,10 +128,10 @@ class UnitInertia : public RotationalInertia<T> {
   }
 
   // TODO(mitiguy) Delete this deprecated code after February 5, 2019.
-  DRAKE_DEPRECATED("Use UnitInertia::ReExpressInPlace(RotationMatrix<T>&). "
+  DRAKE_DEPRECATED("Use UnitInertia::ReExpress(RotationMatrix<T>&). "
                    "Code will be deleted after February 5, 2019.")
   UnitInertia<T> ReExpress(const Matrix3<T>& R_FE) const {
-    return UnitInertia<T>(RotationalInertia<T>::ReExpress(R_FE));
+    return ReExpress(math::RotationMatrix<T>(R_FE));
   }
 
   /// For a central unit inertia `G_Bcm_E` computed about a body's center of

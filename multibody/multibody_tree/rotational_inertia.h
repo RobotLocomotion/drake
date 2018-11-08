@@ -562,7 +562,7 @@ class RotationalInertia {
                    "Code will be deleted after February 5, 2019.")
   RotationalInertia<T> ReExpress(const Matrix3<T>& R_AE) const
                                           __attribute__((warn_unused_result)) {
-    return RotationalInertia(*this).ReExpressInPlace(R_AE);
+    return ReExpress(math::RotationMatrix<T>(R_AE));
   }
 
   /// @name Shift methods
