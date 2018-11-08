@@ -379,12 +379,12 @@ class TestMultibodyTree(unittest.TestCase):
 
         # Get positions and velocities of specific model instances
         # from the postion/velocity vector of the plant.
-        q_iiwa = tree.get_positions_from_array(iiwa_model, q)
-        q_gripper = tree.get_positions_from_array(gripper_model, q)
-        v_iiwa = tree.get_velocities_from_array(iiwa_model, v)
-        v_gripper = tree.get_velocities_from_array(gripper_model, v)
+        q_iiwa = tree.GetPositionsFromArray(iiwa_model, q)
+        q_gripper = tree.GetPositionsFromArray(gripper_model, q)
+        v_iiwa = tree.GetVelocitiesFromArray(iiwa_model, v)
+        v_gripper = tree.GetVelocitiesFromArray(gripper_model, v)
 
-        # Assert that the get_positions_from_array return
+        # Assert that the GetPositionsFromArray return
         # the desired values set earlier.
         self.assertTrue(np.allclose(q_iiwa_desired, q_iiwa))
         self.assertTrue(np.allclose(v_iiwa_desired, v_iiwa))
