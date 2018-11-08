@@ -299,6 +299,12 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return tree().num_actuated_dofs(model_instance);
   }
 
+  /// @name Multibody state accessors and mutators.
+  /// Various methods for accessing and mutating the multibody state
+  /// `x = [q; v]`, where `q` is the vector of generalized positions and `v` is
+  /// the vector of generalized velocities, or some portion thereof (e.g.,
+  /// only `v`).
+
   /// Returns a const Eigen vector reference containing the multibody state
   /// `x = [q; v]` of the model with `q` the vector of generalized positions and
   /// `v` the vector of generalized velocities.
@@ -319,15 +325,6 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return tree().GetMutableMultibodyStateVector(context);
   }
 
-  /// Returns an Eigen vector containing the generalized positions for the
-  /// given model instance.
-  VectorX<T> GetPositionsVector(
-      const systems::Context<T>& context,
-      ModelInstanceIndex model_instance) const {
-    return tree().GetPositionsFromArray(
-        model_instance, GetMultibodyStateVector(context));
-  }
-
   /// Returns a const Eigen vector reference containing the vector of
   /// generalized positions.
   /// @note This method returns a reference to existing data, exhibits constant
@@ -339,6 +336,15 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     // call head() on it.
     return GetMultibodyStateVector(context).nestedExpression().head(
         num_positions());
+  }
+
+  /// Returns an Eigen vector containing the generalized positions for the
+  /// given model instance.
+  VectorX<T> GetPositionsVector(
+      const systems::Context<T>& context,
+      ModelInstanceIndex model_instance) const {
+    return tree().GetPositionsFromArray(
+        model_instance, GetPositionsVector(context));
   }
 
   /// Returns a mutable Eigen vector reference containing the vector of
@@ -354,10 +360,11 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
         head(num_positions());
   }
 
-  void SetPositionsVector(
+  /// Sets the positions for a particular model instance from the given vector.
+  void SetPositionsFromVector(
       systems::Context<T>* context,
       ModelInstanceIndex model_instance, const VectorX<T>& q_instance) const {
-    Eigen::VectorBlock<VectorX<T>> q = GetMutableMultibodyStateVector(context);
+    Eigen::VectorBlock<VectorX<T>> q = GetMutablePositionsVector(context);
     tree().SetPositionsInArray(model_instance, q_instance, &q);
   }
 
@@ -374,6 +381,15 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
         num_velocities());
   }
 
+  /// Returns an Eigen vector containing the generalized velocities for the
+  /// given model instance.
+  VectorX<T> GetVelocitiesVector(
+      const systems::Context<T>& context,
+      ModelInstanceIndex model_instance) const {
+    return tree().GetVelocitiesFromArray(
+        model_instance, GetVelocitiesVector(context));
+  }
+
   /// Returns a mutable Eigen vector reference containing the vector of
   /// generalized velocities.
   /// @note This method returns a reference to existing data, exhibits constant
@@ -387,15 +403,15 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
         tail(num_velocities());
   }
 
-  void SetVelocitiesVector(
+  /// Sets the velocities for a particular model instance from the given vector.
+  void SetVelocitiesFromVector(
       systems::Context<T>* context,
       ModelInstanceIndex model_instance, const VectorX<T>& v_instance) const {
-    Eigen::VectorBlock<VectorX<T>> v = GetMutableMultibodyStateVector(context);
+    Eigen::VectorBlock<VectorX<T>> v = GetMutableVelocitiesVector(context);
     tree().SetVelocitiesInArray(model_instance, v_instance, &v);
   }
-
-
-
+  /// @}
+  // end multibody state accessors.
 
   /// @name Adding new multibody elements
   /// %MultibodyPlant users will add modeling elements like bodies,
