@@ -141,7 +141,7 @@ class DifferentialIK(LeafSystem):
         # methods.
         self.robot_context = robot.CreateDefaultContext()
         # Confirm that all velocities are zero (they will not be reset below).
-        assert not self.robot.tree().get_multibody_state_vector(
+        assert not self.robot.tree().GetMultibodyStateVector(
             self.robot_context)[-robot.num_velocities():].any()
 
         # Store the robot positions as state.

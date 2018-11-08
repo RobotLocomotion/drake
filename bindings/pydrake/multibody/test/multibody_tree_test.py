@@ -300,7 +300,7 @@ class TestMultibodyTree(unittest.TestCase):
         x0 = np.concatenate([q0, v0])
 
         # The default state is all values set to zero.
-        x = tree.get_multibody_state_vector(context)
+        x = tree.GetMultibodyStateVector(context)
         self.assertTrue(np.allclose(x, np.zeros(4)))
 
         # Write into a mutable reference to the state vector.
@@ -308,7 +308,7 @@ class TestMultibodyTree(unittest.TestCase):
         x_reff[:] = x0
 
         # Verify we did modify the state stored in context.
-        x = tree.get_multibody_state_vector(context)
+        x = tree.GetMultibodyStateVector(context)
         self.assertTrue(np.allclose(x, x0))
 
     def test_model_instance_state_access(self):
@@ -373,7 +373,7 @@ class TestMultibodyTree(unittest.TestCase):
         x_plant[:] = x_plant_desired
 
         # Get state from context.
-        x = tree.get_multibody_state_vector(context)
+        x = tree.GetMultibodyStateVector(context)
         q = x[0:nq]
         v = x[nq:nq+nv]
 

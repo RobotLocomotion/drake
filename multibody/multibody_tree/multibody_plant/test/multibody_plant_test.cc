@@ -1863,8 +1863,10 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
       "drake/manipulation/models/iiwa_description/sdf/"
           "iiwa14_no_collision.sdf";
   plant_ = std::make_unique<MultibodyPlant<double>>(this->GetParam());
-  auto arm1 = AddModelFromSdfFile(FindResourceOrThrow(kSdfPath), "arm1", plant_.get());
-  auto arm2 = AddModelFromSdfFile(FindResourceOrThrow(kSdfPath), "arm2", plant_.get());
+  auto arm1 = AddModelFromSdfFile(
+      FindResourceOrThrow(kSdfPath), "arm1", plant_.get());
+  auto arm2 = AddModelFromSdfFile(
+      FindResourceOrThrow(kSdfPath), "arm2", plant_.get());
   plant_->WeldFrames(plant_->world_frame(),
                      plant_->GetFrameByName("iiwa_link_0", arm1));
   plant_->WeldFrames(plant_->world_frame(),
