@@ -1683,7 +1683,7 @@ class MultibodyTree {
   /// @name Methods to compute multibody Jacobians.
   /// @{
 
-  /// Given a list of points `Q` with fixed position vectors `p_FQ` in a frame
+  /// Given a list of points with fixed position vectors `p_FQ` in a frame
   /// F, (that is, their time derivative `DtF(p_FQ)` in frame F is zero),
   /// this method computes the geometric Jacobian `Jv_WFq` defined by:
   /// <pre>
@@ -2740,61 +2740,66 @@ class MultibodyTree {
       const PositionKinematicsCache<T>& pc,
       std::vector<Vector6<T>>* H_PB_W_cache) const;
 
-  // Helper method to compute the Jacobian matrix J_WFq for a list of points Q
-  // which instantaneously move with frame F that is, the position of these
-  // points Q is fixed in frame F.
-  // J_WFq is defined such that the spatial velocity V_WFq of frame F shifted
-  // to a frame Fq with origin at a point Q is given by:
-  //   V_WFq = J_WFq⋅v
+  // Helper method to compute the angular velocity Jacobian Jw_WFq and the
+  // translational velocity Jacobian Jv_WFq for a list of points Q which
+  // instantaneously move with frame F that is, the position of these points
+  // Q is fixed in frame F.
+  // Jacobians Jw_WFq and Jv_WFq are defined such that the angular velocity
+  // w_WFq and the translational velocity v_WFq of frame F shifted to a frame
+  // Fq with origin at a point Q are given by:
+  //   w_WFq = Jw_WFq⋅v
+  //   v_WFq = Jv_WFq⋅v
+  //
   // This method provides the option to specify whether angular and/or
   // translational terms need to be computed, however the caller must at least
   // request one of them.
-  // If include_angular_terms = false, then angular terms are not included and
-  // the Jacobian is defined such that the translational velocity v_WQ of point
-  // Q (the origin of Fq) is v_WQ = J_WFq⋅v.
-  // If include_translational_terms = false, then translational terms are not
-  // included and the Jacobian is defined such that the angular velocity w_WFq
-  // of frame Fq (which is the same as that of frame F) is w_WFq = J_WFq⋅v.
-  // If both include_angular_terms and include_translational_terms are true,
-  // then the Jacobian is defined such that V_WFq = J_WFq⋅v.
+  // If Jw_WFq is nullptr, then angular terms are not computed.
+  // If Jv_WFq is nullptr, then translational terms are not computed.
   //
-  // The format in which this Jacobian is computed is described below for when
-  // the full Jacobian is requested (both include_angular_terms and
-  // include_translational_terms are true). For the other two cases, angular
-  // velocities only and translational velocities only, details are given within
-  // parentheses, in that order.
-  // The Jacobian J_WFq(q), function of the generalized positions q only,
-  // relates to the the spatial (angular, translational) velocity
-  // V_WFq (w_WFq, v_WFq) of frame F shifted to frame Fq with origin at point Q
-  // in the input list by:
-  //   V_WFq(q, v) = J_WFq(q)⋅v
-  //   w_WFq(q, v) = J_WFq(q)⋅v  (include_translational_terms = false)
-  //   v_WFq(q, v) = J_WFq(q)⋅v  (include_angular_terms = false)
-  // so that V_WFq (w_WFq, v_WFq) is a column vector of size 6⋅np (3⋅np, 3⋅np)
-  // concatenating the velocity of all frames Fq in the same order points Q
-  // were given in the input list. Therefore J_WFq is a matrix of with 6⋅np
-  // (3⋅np, 3⋅np) rows and nv columns, with nv the number of generalized
-  // velocities. On input, matrix J_WFq **must** have the required size of
-  // 6⋅np x nv (or 3⋅np x nv) or this method throws a std::runtime_error
-  // exception.
+  //
+  //               Format of the Jacobian matrix Jw_WFq
+  //
+  // Notice that, the angular velocity of frame F shifted to a frame Fq with
+  // origin at a point Q is the same as that of frame F, for any point Q.
+  // That is, w_WFq = w_WF for any point Q. With this in mind, Jw_WFq is
+  // defined so that:
+  //   w_WFq = w_WF = Jw_WFq⋅v
+  // and therefore Jw_WFq is a matrix of size 3 x nv, with nv the number of
+  // generalized velocities. If not nullptr on input, matrix Jw_WFq **must**
+  // have the required size of 3 x nv or this method throws a
+  // std::runtime_error exception.
+  //
+  //
+  //               Format of the Jacobian matrix Jv_WFq
+  //
+  // We stack the translational velocity of each point Q into a row vector
+  // v_WFq = [v_WFq1; v_WFq2; ...] of size 3 x np, with np the number of
+  // points in the input list. Then the translational velocities Jacobian is
+  // defined as:
+  //   Jv_WFq = ∇ᵥv_WFq
+  // that is, the gradient with respect to the generalized velocities v.
+  // Therefore vector v_WFq stacking the translational velocity of each point
+  // Q is given by:
+  //   v_WFq = Jv_WFq⋅v
+  //
+  // Therefore Jv_WFq is a matrix with 3⋅np rows and nv columns. If not
+  // nullptr on input, matrix Jv_WFq **must** have the required size of
+  // 3⋅np x nv or this method throws a std::runtime_error exception.
   //
   // This helper throws std::runtime_error when:
   // - The number of rows in p_WQ_list does not equal three. That is, p_WQ_list
   //   must be a matrix with each column being a 3D vector for each point Q.
-  // - include_angular_terms and include_translational_terms are both false
-  //   (caller requests an empty Jacobian).
-  // - Jv_WFq is nullptr.
-  // - The number of columns of Jv_WFq does not equal num_velocities().
-  // - The number of rows of Jv_WFq does not equal 6 (include_angular_terms and
-  //   include_angular_terms are both true) or 3 (either include_angular_terms
-  //   or include_angular_terms is false).
+  // - Jw_WFq and Jv_WFq are both nullptr (caller must request at least one
+  //   Jacobian).
+  // - The number of columns of Jw_WFq and/or Jv_WFq does not equal
+  //   num_velocities().
+  // - The number of rows of Jw_WFq does not equal 3.
+  // - The number of rows of Jv_WFq does not equal 3 x np.
   void CalcFrameJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_WQ_list,
-      bool include_angular_terms,
-      bool include_translational_terms,
-      EigenPtr<MatrixX<T>> J_WFq) const;
+      EigenPtr<MatrixX<T>> Jw_WFq, EigenPtr<MatrixX<T>> Jv_WFq) const;
 
   // Implementation for CalcMassMatrixViaInverseDynamics().
   // It assumes:
