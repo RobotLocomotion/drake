@@ -51,14 +51,14 @@ def _impl(repository_ctx):
         fail(os_result.error)
 
     if os_result.is_macos:
-        archive = "dv-0.1.0-314-ga5a6f6f-python-2.7.15-qt-5.11.1-vtk-8.1.1-mac-x86_64.tar.gz"  # noqa
-        sha256 = "02f321cf6068068f1aa9747b6b7834c41cd5ccf53aef90ad58229f2c1bfa963c"  # noqa
+        archive = "dv-0.1.0-316-g1c1d42b-python-2.7.15-qt-5.11.2-vtk-8.1.1-mac-x86_64.tar.gz"  # noqa
+        sha256 = "be9dbe2dc5b75f8bb91183d15d24592f9251fed7ba0c3e68f3b701bca84c91ea"  # noqa
     elif os_result.ubuntu_release == "16.04":
-        archive = "dv-0.1.0-314-ga5a6f6f-python-2.7.12-qt-5.5.1-vtk-8.1.1-xenial-x86_64.tar.gz"  # noqa
-        sha256 = "4bd36e80295006ce4bab57fa57b95b69511623abba80094fb2fdf1eaa18607f9"  # noqa
+        archive = "dv-0.1.0-316-g1c1d42b-python-2.7.12-qt-5.5.1-vtk-8.1.1-xenial-x86_64.tar.gz"  # noqa
+        sha256 = "f31848d4e348cf56dee59597a21176574ea199a47284a88bc9e16812e96c57a3"  # noqa
     elif os_result.ubuntu_release == "18.04":
-        archive = "dv-0.1.0-314-ga5a6f6f-python-2.7.15-qt-5.9.5-vtk-8.1.1-bionic-x86_64.tar.gz"  # noqa
-        sha256 = "49d4fe29285ebbc420d19bf91511e36e8b1eb03d23bc7912d982ae12c4b2b36c"  # noqa
+        archive = "dv-0.1.0-316-g1c1d42b-python-2.7.15-qt-5.9.5-vtk-8.1.1-bionic-x86_64.tar.gz"  # noqa
+        sha256 = "b9462f9d2a1ab1b33c3725290e42cd8da2f04c5d80dce7fe3f9d98dbe6865a63"  # noqa
     else:
         fail("Operating system is NOT supported", attr = os_result)
 
@@ -95,10 +95,19 @@ licenses([
 py_library(
     name = "drake_visualizer_python_deps",
     deps = [
-        "@lcm//:lcm-python",
         "@lcmtypes_bot2_core//:lcmtypes_bot2_core_py",
         # TODO(eric.cousineau): Expose VTK Python libraries here for Linux.
         "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_py",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# TODO(jamiesnape): Install this when Drake supports Python 3 only.
+filegroup(
+    name = "lcm_python",
+    srcs = [
+        "lib/python2.7/site-packages/lcm/__init__.py",
+        "lib/python2.7/site-packages/lcm/_lcm.so",
     ],
     visibility = ["//visibility:public"],
 )
@@ -110,10 +119,10 @@ filegroup(
     srcs = glob([
         "lib/libPythonQt.*",
         "lib/libddApp.*",
-        "lib/python*.*/site-packages/bot_lcmgl/**/*.py",
-        "lib/python*.*/site-packages/director/**/*.py",
-        "lib/python*.*/site-packages/director/**/*.so",
-        "lib/python*.*/site-packages/urdf_parser_py/**/*.py",
+        "lib/python2.7/site-packages/bot_lcmgl/**/*.py",
+        "lib/python2.7/site-packages/director/**/*.py",
+        "lib/python2.7/site-packages/director/**/*.so",
+        "lib/python2.7/site-packages/urdf_parser_py/**/*.py",
     ]) + [
         "bin/drake-visualizer",
         "share/doc/director/LICENSE.txt",

@@ -20,9 +20,10 @@ brew 'protobuf'
 brew 'python@2'
 brew 'scipy'
 brew 'tinyxml'
-brew 'tinyxml2'
+brew 'tinyxml2@7.0'
 brew 'vtk@8.1'
 brew 'yaml-cpp'
+brew 'zeromq'
 
 cask 'java' unless system '/usr/libexec/java_home --version 1.8+ --failfast &> /dev/null'
 

@@ -1,4 +1,4 @@
-This folder contains a model of the Kuka LBR IIWA R820 14. The files were
+This folder contains a model of the Kuka LBR IIWA robot. The files were
 originally taken from https://github.com/SalvoVirga/iiwa_stack, SHA
 2fa5bd5. The original license for these files is given in the link below and
 copied into file iiwa_stack.LICENSE.txt.

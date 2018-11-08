@@ -1,5 +1,6 @@
 #include "drake/multibody/benchmarks/inclined_plane/make_inclined_plane_plant.h"
 
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 
 namespace drake {
@@ -48,57 +49,56 @@ std::unique_ptr<MultibodyPlant<double>> MakeInclinedPlanePlant(
   // A half-space for the inclined plane geometry.
   plant->RegisterCollisionGeometry(
       plant->world_body(), HalfSpace::MakePose(normal_W, point_W), HalfSpace(),
-      "collision", surface_friction, scene_graph);
+      "collision", surface_friction);
 
   // Visual for the ground.
   plant->RegisterVisualGeometry(plant->world_body(),
                                 HalfSpace::MakePose(normal_W, point_W),
-                                HalfSpace(), "visual", scene_graph);
+                                HalfSpace(), "visual");
 
   // Add sphere geometry for the ball.
+  // Pose X_BG of geometry frame G in the ball frame B is an identity transform.
+  const math::RigidTransformd X_BG;   // Identity transform.
   plant->RegisterCollisionGeometry(
       ball,
-      /* Pose X_BG of the geometry frame G in the ball frame B. */
-      Isometry3<double>::Identity(), Sphere(radius), "collision",
-      surface_friction, scene_graph);
+      X_BG.GetAsIsometry3(), Sphere(radius), "collision",
+      surface_friction);
 
   // Visual for the ball.
   const VisualMaterial orange(Vector4<double>(1.0, 0.55, 0.0, 1.0));
   plant->RegisterVisualGeometry(
       ball,
-      /* Pose X_BG of the geometry frame G in the ball frame B. */
-      Isometry3<double>::Identity(), Sphere(radius), "visual1", orange,
-      scene_graph);
+      X_BG.GetAsIsometry3(), Sphere(radius), "visual1", orange);
 
-  // Adds little spherical spokes highlight the sphere's rotation.
+  // Add little spherical spokes to highlight the sphere's rotation.
   const VisualMaterial red(Vector4<double>(1.0, 0.0, 0.0, 1.0));
   plant->RegisterVisualGeometry(
       ball,
-      /* Pose X_BG of the geometry frame G in the ball frame B. */
-      Isometry3<double>(Translation3<double>(0, 0, radius)), Sphere(radius / 5),
-      "visual2", red, scene_graph);
+      // Pose of 1st spoke frame in the ball frame B.
+      math::RigidTransformd(Vector3<double>(0, 0, radius)).GetAsIsometry3(),
+      Sphere(radius / 5), "visual2", red);
   plant->RegisterVisualGeometry(
       ball,
-      /* Pose X_BG of the geometry frame G in the ball frame B. */
-      Isometry3<double>(Translation3<double>(0, 0, -radius)),
-      Sphere(radius / 5), "visual3", red, scene_graph);
+      // Pose of 2nd spoke frame in the ball frame B.
+      math::RigidTransformd(Vector3<double>(0, 0, -radius)).GetAsIsometry3(),
+      Sphere(radius / 5), "visual3", red);
   plant->RegisterVisualGeometry(
       ball,
-      /* Pose X_BG of the geometry frame G in the ball frame B. */
-      Isometry3<double>(Translation3<double>(radius, 0, 0)), Sphere(radius / 5),
-      "visual4", red, scene_graph);
+      // Pose of 3rd spoke frame in the ball frame B.
+      math::RigidTransformd(Vector3<double>(radius, 0, 0)).GetAsIsometry3(),
+      Sphere(radius / 5), "visual4", red);
   plant->RegisterVisualGeometry(
       ball,
-      /* Pose X_BG of the geometry frame G in the ball frame B. */
-      Isometry3<double>(Translation3<double>(-radius, 0, 0)),
-      Sphere(radius / 5), "visual5", red, scene_graph);
+      // Pose of 4th spoke frame in the ball frame B.
+      math::RigidTransformd(Vector3<double>(-radius, 0, 0)).GetAsIsometry3(),
+      Sphere(radius / 5), "visual5", red);
 
   // Gravity acting in the -z direction.
   plant->AddForceElement<UniformGravityFieldElement>(
       -gravity * Vector3<double>::UnitZ());
 
   // We are done creating the plant.
-  plant->Finalize(scene_graph);
+  plant->Finalize();
 
   return plant;
 }

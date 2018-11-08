@@ -17,6 +17,16 @@
 #include "drake/multibody/collision/drake_collision.h"
 #include "drake/multibody/joints/drake_joint.h"
 
+#ifndef DRAKE_DOXYGEN_CXX
+namespace drake {
+namespace internal {
+
+class RigidBodyAttorney;
+
+}  // namespace internal
+}  // namespace drake
+#endif  // DRAKE_DOXYGEN_CXX
+
 template <typename T>
 class RigidBody {
  public:
@@ -238,6 +248,7 @@ class RigidBody {
    * Adds the given collision @p element to the body with the given group name.
    * @param[in] group_name The collision element's group name.
    * @param[in] element The element to associate with the rigid body.
+   * @pre `element` has not already been added to this body.
    */
   void AddCollisionElement(const std::string& group_name,
                            drake::multibody::collision::Element* element);
@@ -440,6 +451,19 @@ class RigidBody {
   }
 
  private:
+#ifndef DRAKE_DOXYGEN_CXX
+  friend class drake::internal::RigidBodyAttorney;
+#endif  // DRAKE_DOXYGEN_CXX
+
+  // Assumes that elements have only been added via `AddCollisionElement`,
+  // which should uphold the following:
+  // - collision_element_ids_ has no duplicates
+  // - collision_elements_ has exactly one entry per collision_element_ids item,
+  // with a matching id
+  // - collision_element_group_ ids have no duplicates, not even under
+  // different group names
+  void RemoveCollisionGroupAndElements(const std::string& group_name);
+
   // TODO(tkoolen): It's very ugly, but parent, dofnum, and pitch also exist
   // currently (independently) at the RigidBodyTree level to represent the
   // featherstone structure. This version is for the kinematics.
@@ -503,3 +527,30 @@ class RigidBody {
   // class only has runtime data.
   CollisionElementsVector collision_elements_;
 };
+
+// Forward declaration for attorney-client.
+template <typename T>
+class RigidBodyTree;
+
+#ifndef DRAKE_DOXYGEN_CXX
+namespace drake {
+namespace internal {
+
+class RigidBodyAttorney {
+ private:
+  template <typename T>
+  friend class ::RigidBodyTree;
+
+  // Removes collision element group, but does NOT make the
+  // necessary calls to `collision::Model::RemoveElement`.
+  // To be used by `RigidBodyTree::removeCollisionGroupsIf`.
+  template <typename T>
+  static void RemoveCollisionGroupAndElements(
+      RigidBody<T>* body, const std::string& group_name) {
+    body->RemoveCollisionGroupAndElements(group_name);
+  }
+};
+
+}  // namespace internal
+}  // namespace drake
+#endif  // DRAKE_DOXYGEN_CXX

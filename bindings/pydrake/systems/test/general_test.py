@@ -30,19 +30,21 @@ from pydrake.systems.framework import (
     DiagramBuilder, DiagramBuilder_,
     DiscreteUpdateEvent_,
     DiscreteValues_,
-    Event_,
+    Event, Event_,
     InputPort_,
     kUseDefaultName,
     LeafContext_,
     LeafSystem_,
     OutputPort_,
     Parameters_,
-    PublishEvent_,
+    PublishEvent, PublishEvent_,
     State_,
     Subvector_,
     Supervector_,
     System_,
-    SystemOutput_,    VectorBase, VectorBase_,
+    SystemOutput_,
+    VectorBase, VectorBase_,
+    TriggerType,
     VectorSystem_,
     )
 from pydrake.systems import primitives
@@ -111,6 +113,27 @@ class TestGeneral(unittest.TestCase):
         self.assertIsInstance(
             context.get_mutable_continuous_state_vector(), VectorBase)
         # TODO(eric.cousineau): Consolidate main API tests for `Context` here.
+
+    def test_event_api(self):
+        # TriggerType - existence check.
+        TriggerType.kUnknown
+        TriggerType.kInitialization
+        TriggerType.kForced
+        TriggerType.kTimed
+        TriggerType.kPeriodic
+        TriggerType.kPerStep
+        TriggerType.kWitness
+
+        # PublishEvent.
+        # TODO(eric.cousineau): Test other event types when it is useful to
+        # expose them.
+
+        def callback(context, event): pass
+
+        event = PublishEvent(
+            trigger_type=TriggerType.kInitialization, callback=callback)
+        self.assertIsInstance(event, Event)
+        self.assertEqual(event.get_trigger_type(), TriggerType.kInitialization)
 
     def test_instantiations(self):
         # Quick check of instantions for given types.

@@ -12,6 +12,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
@@ -43,14 +44,16 @@ const double kEpsilon = std::numeric_limits<double>::epsilon();
 
 using benchmarks::Acrobot;
 using Eigen::AngleAxisd;
-using Eigen::Isometry3d;
 using Eigen::Matrix2d;
 using Eigen::Matrix3d;
 using Eigen::Matrix4d;
-using Eigen::Translation3d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using math::RigidTransform;
+using math::RigidTransformd;
+using math::RotationMatrix;
+using math::RotationMatrixd;
 using std::make_unique;
 using std::unique_ptr;
 using std::vector;
@@ -173,7 +176,7 @@ class PendulumTests : public ::testing::Test {
     // upper_link.
     shoulder_outboard_frame_ =
         &model_->AddFrame<FixedOffsetFrame>(
-            upper_link_->body_frame(), X_USo_);
+            upper_link_->body_frame(), X_USo_.GetAsIsometry3());
 
     // Adds the shoulder and elbow mobilizers of the pendulum.
     // Using:
@@ -203,7 +206,7 @@ class PendulumTests : public ::testing::Test {
     // MultibodyTree::AddJoint() method do that for us:
     elbow_joint_ = &model_->AddJoint<RevoluteJoint>(
         "ElbowJoint",
-        *upper_link_, X_UEi_, /* Pose of Ei in U. */
+        *upper_link_, X_UEi_.GetAsIsometry3(), /* Pose of Ei in U. */
         *lower_link_, {},     /* No pose provided, frame Eo IS frame L. */
         Vector3d::UnitZ()     /* revolute axis */);
     elbow_inboard_frame_ = &elbow_joint_->frame_on_parent();
@@ -226,13 +229,15 @@ class PendulumTests : public ::testing::Test {
   // Replace this by a method Body<T>::get_pose_in_world(const Context<T>&)
   // when we can place cache entries in the context.
   template <typename T>
-  static const Isometry3<T>& get_body_pose_in_world(
+  static const RigidTransform<T> get_body_pose_in_world(
       const MultibodyTree<T>& tree,
       const PositionKinematicsCache<T>& pc,
       const Body<T>& body) {
     const MultibodyTreeTopology& topology = tree.get_topology();
     // Cache entries are accessed by BodyNodeIndex for fast traversals.
-    return pc.get_X_WB(topology.get_body(body.index()).body_node);
+    const BodyNodeIndex body_node_index =
+        topology.get_body(body.index()).body_node;
+    return RigidTransform<T>(pc.get_X_WB(body_node_index));
   }
 
   // Helper method to extract spatial velocity from the velocity kinematics
@@ -270,7 +275,7 @@ class PendulumTests : public ::testing::Test {
   // this method initializes the poses of each link in the position kinematics
   // cache.
   void SetPendulumPoses(PositionKinematicsCache<double>* pc) {
-    pc->get_mutable_X_WB(BodyNodeIndex(1)) = X_WL_;
+    pc->get_mutable_X_WB(BodyNodeIndex(1)) = X_WL_.GetAsIsometry3();
   }
 
   // Add elements to this model_ and then transfer the whole thing to
@@ -306,13 +311,13 @@ class PendulumTests : public ::testing::Test {
   const double acceleration_of_gravity_ = 9.81;
   // Poses:
   // Desired pose of the lower link frame L in the world frame W.
-  const Isometry3d X_WL_{Translation3d(0.0, -half_link1_length_, 0.0)};
+  const RigidTransformd X_WL_{Vector3d(0.0, -half_link1_length_, 0.0)};
   // Pose of the shoulder outboard frame So in the upper link frame U.
-  const Isometry3d X_USo_{Translation3d(0.0, half_link1_length_, 0.0)};
+  const RigidTransformd X_USo_{Vector3d(0.0, half_link1_length_, 0.0)};
   // Pose of the elbow inboard frame Ei in the upper link frame U.
-  const Isometry3d X_UEi_{Translation3d(0.0, -half_link1_length_, 0.0)};
+  const RigidTransformd X_UEi_{Vector3d(0.0, -half_link1_length_, 0.0)};
   // Pose of the elbow outboard frame Eo in the lower link frame L.
-  const Isometry3d X_LEo_{Translation3d(0.0, half_link2_length_, 0.0)};
+  const RigidTransformd X_LEo_{Vector3d(0.0, half_link2_length_, 0.0)};
 };
 
 TEST_F(PendulumTests, CreateModelBasics) {
@@ -424,8 +429,9 @@ TEST_F(PendulumTests, Finalize) {
   // Asserts that no more multibody elements can be added after finalize.
   SpatialInertia<double> M_Bo_B;
   EXPECT_THROW(model_->AddBody<RigidBody>(M_Bo_B), std::logic_error);
-  EXPECT_THROW(model_->AddFrame<FixedOffsetFrame>(*lower_link_, X_LEo_),
-               std::logic_error);
+  EXPECT_THROW(
+      model_->AddFrame<FixedOffsetFrame>(*lower_link_, X_LEo_.GetAsIsometry3()),
+      std::logic_error);
   EXPECT_THROW(model_->AddMobilizer<RevoluteMobilizer>(
       *shoulder_inboard_frame_, *shoulder_outboard_frame_,
       Vector3d::UnitZ()), std::logic_error);
@@ -501,15 +507,15 @@ TEST_F(PendulumTests, CreateContext) {
   SetPendulumPoses(&pc);
 
   // Retrieve body poses from position kinematics cache.
-  const Isometry3d& X_WW =
+  const RigidTransformd X_WW =
       get_body_pose_in_world(system.tree(), pc, *world_body_);
-  const Isometry3d& X_WLu =
+  const RigidTransformd X_WLu =
       get_body_pose_in_world(system.tree(), pc, *upper_link_);
 
   // Asserts that the retrieved poses match with the ones specified by the unit
   // test method SetPendulumPoses().
-  EXPECT_TRUE(X_WW.matrix().isApprox(Matrix4d::Identity()));
-  EXPECT_TRUE(X_WLu.matrix().isApprox(X_WL_.matrix()));
+  EXPECT_TRUE(X_WW.GetAsMatrix4().isApprox(Matrix4d::Identity()));
+  EXPECT_TRUE(X_WLu.GetAsMatrix34().isApprox(X_WL_.GetAsMatrix34()));
 }
 
 // Unit test fixture to verify the correctness of MultibodyTree methods for
@@ -879,14 +885,14 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
           elbow_mobilizer_->get_topology().body_node;
 
       // Expected poses of the outboard frames measured in the inboard frame.
-      Isometry3d X_SiSo(AngleAxisd(shoulder_angle, Vector3d::UnitZ()));
-      Isometry3d X_EiEo(AngleAxisd(elbow_angle, Vector3d::UnitZ()));
+      RigidTransformd X_SiSo(RotationMatrixd::MakeZRotation(shoulder_angle));
+      RigidTransformd X_EiEo(RotationMatrixd::MakeZRotation(elbow_angle));
 
       // Verify the values in the position kinematics cache.
       EXPECT_TRUE(pc.get_X_FM(shoulder_node).matrix().isApprox(
-          X_SiSo.matrix()));
+          X_SiSo.GetAsMatrix4()));
       EXPECT_TRUE(pc.get_X_FM(elbow_node).matrix().isApprox(
-          X_EiEo.matrix()));
+          X_EiEo.GetAsMatrix4()));
 
       // Verify that both, const and mutable versions point to the same address.
       EXPECT_EQ(&pc.get_X_FM(shoulder_node),
@@ -895,24 +901,31 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
                 &pc.get_mutable_X_FM(elbow_node));
 
       // Retrieve body poses from position kinematics cache.
-      const Isometry3d& X_WW = get_body_pose_in_world(tree(), pc, *world_body_);
-      const Isometry3d& X_WU = get_body_pose_in_world(tree(), pc, *upper_link_);
-      const Isometry3d& X_WL = get_body_pose_in_world(tree(), pc, *lower_link_);
+      const RigidTransformd X_WW =
+          get_body_pose_in_world(tree(), pc, *world_body_);
+      const RigidTransformd X_WU =
+          get_body_pose_in_world(tree(), pc, *upper_link_);
+      const RigidTransformd X_WL =
+          get_body_pose_in_world(tree(), pc, *lower_link_);
 
-      const math::RigidTransformd X_WU_expected =
+      const RigidTransformd X_WU_expected =
           acrobot_benchmark_.CalcLink1PoseInWorldFrame(shoulder_angle);
 
-      const math::RigidTransformd X_WL_expected =
+      const RigidTransformd X_WL_expected =
           acrobot_benchmark_.CalcElbowOutboardFramePoseInWorldFrame(
               shoulder_angle, elbow_angle);
 
       // Asserts that the retrieved poses match with the ones specified by the
       // unit test method SetPendulumPoses().
-      EXPECT_TRUE(X_WW.matrix().isApprox(Matrix4d::Identity(), kTolerance));
-      EXPECT_TRUE(
-          X_WU.matrix().isApprox(X_WU_expected.GetAsMatrix4(), kTolerance));
-      EXPECT_TRUE(
-          X_WL.matrix().isApprox(X_WL_expected.GetAsMatrix4(), kTolerance));
+      EXPECT_TRUE(CompareMatrices(X_WW.GetAsMatrix4(),
+                                  Matrix4d::Identity(),
+                                  kTolerance, MatrixCompareType::relative));
+      EXPECT_TRUE(CompareMatrices(X_WU.GetAsMatrix34(),
+                                  X_WU_expected.GetAsMatrix34(),
+                                  kTolerance, MatrixCompareType::relative));
+      EXPECT_TRUE(CompareMatrices(X_WL.GetAsMatrix34(),
+                                  X_WL_expected.GetAsMatrix34(),
+                                  kTolerance, MatrixCompareType::relative));
     }
   }
 }
@@ -944,8 +957,9 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       // Obtain the lower link center of mass to later shift its computed
       // spatial velocity and acceleration to the center of mass frame for
       // comparison with the benchmark.
-      const Isometry3d& X_WL = get_body_pose_in_world(tree(), pc, *lower_link_);
-      const Matrix3d R_WL = X_WL.linear();
+      const RigidTransformd X_WL =
+          get_body_pose_in_world(tree(), pc, *lower_link_);
+      const RotationMatrixd R_WL = X_WL.rotation();
       const Vector3d p_LoLcm_L = lower_link_->default_com();
       const Vector3d p_LoLcm_W = R_WL * p_LoLcm_L;
 
@@ -1186,24 +1200,24 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
           tree_autodiff.CalcPositionKinematicsCache(*context_autodiff, &pc);
 
           // Retrieve body poses from position kinematics cache.
-          const Isometry3<AutoDiffXd>& X_WU =
+          const RigidTransform<AutoDiffXd> X_WU =
               get_body_pose_in_world(tree_autodiff, pc, upper_link_autodiff);
-          const Isometry3<AutoDiffXd>& X_WL =
+          const RigidTransform<AutoDiffXd> X_WL =
               get_body_pose_in_world(tree_autodiff, pc, lower_link_autodiff);
 
-          const math::RigidTransformd X_WU_expected =
+          const RigidTransformd X_WU_expected =
               acrobot_benchmark_.CalcLink1PoseInWorldFrame(
                   shoulder_angle.value());
 
-          const math::RigidTransformd X_WL_expected =
+          const RigidTransformd X_WL_expected =
               acrobot_benchmark_.CalcElbowOutboardFramePoseInWorldFrame(
                   shoulder_angle.value(), elbow_angle.value());
 
           // Extract the transformations' values.
           Eigen::MatrixXd X_WU_value =
-              math::autoDiffToValueMatrix(X_WU.matrix());
+              math::autoDiffToValueMatrix(X_WU.GetAsMatrix4());
           Eigen::MatrixXd X_WL_value =
-              math::autoDiffToValueMatrix(X_WL.matrix());
+              math::autoDiffToValueMatrix(X_WL.GetAsMatrix4());
 
           // Obtain the lower link center of mass to later shift its computed
           // spatial velocity to the center of mass frame for comparison with
@@ -1221,10 +1235,10 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
 
           // Extract the transformations' time derivatives.
           Eigen::MatrixXd X_WU_dot =
-              math::autoDiffToGradientMatrix(X_WU.matrix());
+              math::autoDiffToGradientMatrix(X_WU.GetAsMatrix4());
           X_WU_dot.resize(4, 4);
           Eigen::MatrixXd X_WL_dot =
-              math::autoDiffToGradientMatrix(X_WL.matrix());
+              math::autoDiffToGradientMatrix(X_WL.GetAsMatrix4());
           X_WL_dot.resize(4, 4);
 
           // Convert transformations' time derivatives to spatial velocities.
@@ -1329,10 +1343,10 @@ TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
   EXPECT_TRUE(CompareMatrices(
       p_WPi_set, p_WPi_set_expected, kTolerance, MatrixCompareType::relative));
 
-  const Isometry3d X_UL = tree().CalcRelativeTransform(
-      *context_, upper_link_->body_frame(), lower_link_->body_frame());
+  const RigidTransformd X_UL(tree().CalcRelativeTransform(
+      *context_, upper_link_->body_frame(), lower_link_->body_frame()));
   const Vector3d p_UL = X_UL.translation();
-  const Matrix3d R_UL = X_UL.linear();
+  const RotationMatrixd R_UL = X_UL.rotation();
 
   const Vector3d p_UL_expected(0.0, -0.5, 0.0);
   const Matrix3d R_UL_expected(Eigen::AngleAxisd(M_PI_4, Vector3d::UnitZ()));
@@ -1340,7 +1354,7 @@ TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
   EXPECT_TRUE(CompareMatrices(
       p_UL, p_UL_expected, kTolerance, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(
-      R_UL, R_UL_expected, kTolerance, MatrixCompareType::relative));
+      R_UL.matrix(), R_UL_expected, kTolerance, MatrixCompareType::relative));
 }
 
 TEST_F(PendulumKinematicTests, PointsHaveTheWrongSize) {

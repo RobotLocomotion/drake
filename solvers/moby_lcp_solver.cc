@@ -1069,6 +1069,20 @@ SolverId MobyLcpSolverId::id() {
   return singleton.access();
 }
 
+template <typename T>
+bool MobyLCPSolver<T>::AreProgramAttributesSatisfied(
+    const MathematicalProgram& prog) const {
+  return MobyLCPSolver<T>::ProgramAttributesSatisfied(prog);
+}
+
+template <typename T>
+bool MobyLCPSolver<T>::ProgramAttributesSatisfied(
+    const MathematicalProgram& prog) {
+  return prog.required_capabilities() ==
+         ProgramAttributes(
+             {ProgramAttribute::kLinearComplementarityConstraint});
+}
+
 // Instantiate templates.
 template class MobyLCPSolver<double>;
 template class

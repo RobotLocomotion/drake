@@ -3,7 +3,7 @@
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
-    "//tools/skylark:pybind.bzl",
+    "@drake//tools/skylark:pybind.bzl",
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
@@ -13,7 +13,7 @@ load(
     "drake_cc_library",
 )
 load(
-    "//tools/skylark:drake_py.bzl",
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
     "drake_py_unittest",
@@ -204,7 +204,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/systems:systems_pybind",
     ],
-    cc_so_name = "_lcm_py",
     cc_srcs = ["lcm_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -212,7 +211,7 @@ drake_pybind_library(
         ":module_py",
         "//bindings/pydrake:lcm_py",
     ],
-    py_srcs = ["lcm.py"],
+    py_srcs = ["_lcm_extra.py"],
 )
 
 drake_py_unittest(
@@ -221,6 +220,17 @@ drake_py_unittest(
         ":lcm_py",
         ":primitives_py",
         "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_py",
+    ],
+)
+
+drake_py_library(
+    name = "meshcat_visualizer_py",
+    srcs = ["meshcat_visualizer.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        ":module_py",
+        "//lcmtypes:lcmtypes_py",
+        "@meshcat_python//:meshcat",
     ],
 )
 
@@ -237,6 +247,7 @@ PY_LIBRARIES_WITH_INSTALL = [
 
 PY_LIBRARIES = [
     ":drawing_py",
+    ":meshcat_visualizer_py",
     ":scalar_conversion_py",
     ":module_py",
 ]
@@ -350,6 +361,18 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "meshcat_visualizer_test",
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":meshcat_visualizer_py",
+        ":test_util_py",
+        "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake/multibody",
+    ],
+)
+
+drake_py_unittest(
     name = "primitives_test",
     deps = [
         ":analysis_py",
@@ -362,6 +385,7 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "rendering_test",
+    data = ["//multibody/benchmarks/acrobot:models"],
     deps = [
         ":rendering_py",
         "//bindings/pydrake/multibody:multibody_tree_py",
@@ -405,4 +429,6 @@ drake_py_binary(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    enable_clang_format_lint = True,
+)

@@ -14,15 +14,17 @@ from pydrake.systems.framework import BasicVector, LeafSystem, VectorSystem
 class JointSliders(VectorSystem):
     """
     Provides a simple tcl/tk gui with one slider per joint of the
-    MultibodyPlant.
+    MultibodyPlant.  Any positions that are not associated with joints (e.g.
+    floating-base "mobilizers") are held constant at the default value
+    obtained from robot.CreateDefaultContext().
 
     @system{ JointSliders,
              , # no input ports
-             @output_port{joint positions} }
+             @output_port{positions} }
     """
 
     def __init__(self, robot, lower_limit=-10., upper_limit=10.,
-                 resolution=-1, update_period_sec=0.1,
+                 resolution=-1, length=200, update_period_sec=0.005,
                  window=None, title=None):
         """"
         Args:
@@ -74,19 +76,25 @@ class JointSliders(VectorSystem):
         self._DeclarePeriodicPublish(update_period_sec, 0.0)
 
         self._slider = []
+        self._slider_position_start = []
+        context = robot.CreateDefaultContext()
+        state = robot.tree().get_multibody_state_vector(context)
+        self._default_position = state[:robot.num_positions()]
+
         k = 0
         for i in range(0, robot.num_joints()):
             joint = robot.tree().get_joint(JointIndex(i))
             low = joint.lower_limits()
             upp = joint.upper_limits()
             for j in range(0, joint.num_positions()):
+                self._slider_position_start.append(joint.position_start() + j)
                 self._slider.append(tk.Scale(self.window,
                                              from_=max(low[j],
                                                        lower_limit[k]),
                                              to=min(upp[j], upper_limit[k]),
                                              resolution=resolution[k],
                                              label=joint.name(),
-                                             length=200,
+                                             length=length,
                                              orient=tk.HORIZONTAL))
                 self._slider[k].pack()
                 k += 1
@@ -94,14 +102,28 @@ class JointSliders(VectorSystem):
         # TODO(russt): Consider resolving constraints in a slider event
         # callback.
 
-    def set(self, q):
+    def set_position(self, q):
+        """
+        Set all robot positions (corresponding to joint positions and
+        potentially positions not associated with any joint) to the
+        values in q.
+
+        Args:
+            q: a vector whose length is robot.num_positions().
+        """
+        self._default_position = q
+        for i in range(len(self._slider)):
+            self._slider[i].set(q[self._slider_position_start[i]])
+
+    def set_joint_position(self, q):
         """
         Set the slider positions to the values in q.
 
         Args:
-            q: a vector of length robot.num_positions()
+            q: a vector whose length is the same as the number of joint
+            positions (also the number of sliders) for the robot.
         """
-        assert(len(q) == len(self._slider))
+        assert(len(q) == len(self._default_position))
         for i in range(len(self._slider)):
             self._slider[i].set(q[i])
 
@@ -110,8 +132,9 @@ class JointSliders(VectorSystem):
         self.window.update()
 
     def _DoCalcVectorOutput(self, context, unused, unused2, output):
+        output[:] = self._default_position
         for i in range(0, len(self._slider)):
-            output[i] = self._slider[i].get()
+            output[self._slider_position_start[i]] = self._slider[i].get()
 
 
 class SchunkWsgButtons(LeafSystem):
@@ -125,8 +148,9 @@ class SchunkWsgButtons(LeafSystem):
              @output_port{max_force} }
     """
 
-    def __init__(self, window=None, open_position=0.055,
-                 closed_position=0.002, force_limit=40, update_period_sec=0.1):
+    def __init__(self, window=None, open_position=0.107,
+                 closed_position=0.002, force_limit=40,
+                 update_period_sec=0.05):
         """"
         Args:
             window:          Optionally pass in a tkinter.Tk() object to add

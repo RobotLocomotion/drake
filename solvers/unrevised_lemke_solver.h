@@ -89,11 +89,24 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
                      VectorX<T>* z, int* num_pivots,
                      const T& zero_tol = T(-1)) const;
 
-  bool available() const override { return true; }
+  bool available() const override { return is_available(); };
+
+  static bool is_available() { return true; }
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
+  void Solve(const MathematicalProgram&, const optional<Eigen::VectorXd>&,
+             const optional<SolverOptions>&,
+             MathematicalProgramResult*) const override {
+    throw std::runtime_error("Not implemented yet.");
+  }
+
   SolverId solver_id() const override;
+
+  bool AreProgramAttributesSatisfied(
+      const MathematicalProgram& prog) const override;
+
+  static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
 
  private:
   friend class UnrevisedLemkePrivateTests;

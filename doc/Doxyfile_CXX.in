@@ -1,4 +1,4 @@
-# Doxyfile 1.8.11
+# Doxyfile 1.8.13
 
 #---------------------------------------------------------------------------
 # Project related configuration options
@@ -40,7 +40,7 @@ TAB_SIZE               = 2
 ALIASES                = "default=@n @a Default: " \
                          "concept{1}=@ingroup \1\n@par Implemented concepts:\n@ref \1" \
                          "system{3}=<table align=center cellpadding=0 cellspacing=0><tr align=center><td><table cellspacing=0 cellpadding=0>\2</table></td><td align=center style=\"border:solid;padding-left:20px;padding-right:20px\" bgcolor=#F0F0F0>\1</td><td><table cellspacing=0 cellpadding=0>\3</table></td></tr></table>" \
-                         "input_port{1}=<tr><td align=right style=\"padding:5px 0px 5px 0px\">\1 &rarr;</td></tr>"\
+                         "input_port{1}=<tr><td align=right style=\"padding:5px 0px 5px 0px\">\1 &rarr;</td></tr>" \
                          "output_port{1}=<tr><td align=left style=\"padding:5px 0px 5px 0px\">&rarr; \1</td></tr>"
 TCL_SUBST              =
 OPTIMIZE_OUTPUT_FOR_C  = NO
@@ -89,9 +89,9 @@ SORT_MEMBERS_CTORS_1ST = NO
 SORT_GROUP_NAMES       = NO
 SORT_BY_SCOPE_NAME     = NO
 STRICT_PROTO_MATCHING  = NO
-GENERATE_TODOLIST      = YES
-GENERATE_TESTLIST      = YES
-GENERATE_BUGLIST       = YES
+GENERATE_TODOLIST      = NO
+GENERATE_TESTLIST      = NO
+GENERATE_BUGLIST       = NO
 GENERATE_DEPRECATEDLIST= YES
 ENABLED_SECTIONS       =
 MAX_INITIALIZER_LINES  = 30
@@ -152,7 +152,9 @@ REFERENCES_RELATION    = NO
 REFERENCES_LINK_SOURCE = YES
 SOURCE_TOOLTIPS        = YES
 USE_HTAGS              = NO
-VERBATIM_HEADERS       = YES
+VERBATIM_HEADERS       = NO
+CLANG_ASSISTED_PARSING = NO
+CLANG_OPTIONS          =
 #---------------------------------------------------------------------------
 # Configuration options related to the alphabetical class index
 #---------------------------------------------------------------------------
@@ -166,7 +168,7 @@ GENERATE_HTML          = YES
 HTML_OUTPUT            = html
 HTML_FILE_EXTENSION    = .html
 HTML_HEADER            =
-HTML_FOOTER            =
+HTML_FOOTER            = "@INPUT_ROOT@/drake/doc/footer.html"
 HTML_STYLESHEET        =
 HTML_EXTRA_STYLESHEET  =
 HTML_EXTRA_FILES       =
@@ -288,14 +290,14 @@ EXPAND_ONLY_PREDEF     = YES
 SEARCH_INCLUDES        = YES
 INCLUDE_PATH           =
 INCLUDE_FILE_PATTERNS  =
-PREDEFINED += DRAKE_DOXYGEN_CXX=1 HAVE_SPDLOG=1
+PREDEFINED            += DRAKE_DOXYGEN_CXX=1 HAVE_SPDLOG=1
 # =============================================================================
 # N.B. The spelling of the macro names between common/drake_copyable.h and this
 # file must be kept in sync!
 # =============================================================================
 # The following macros are carefully crafted to retain good markup when they
 # pass through Doxygen's preprocesor.
-PREDEFINED += DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(X):=" \
+PREDEFINED            += DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(X):=" \
 /** \name Does not allow copy, move, or assignment */ \
 /** \{ */ \
 X(const X&) = delete; \
@@ -303,7 +305,7 @@ X& operator=(const X&) = delete; \
 X(X&&) = delete; \
 X& operator=(X&&) = delete; \
 /** \} */"
-PREDEFINED += DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(X):=" \
+PREDEFINED            += DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(X):=" \
 /** \name Implements CopyConstructible, CopyAssignable, MoveConstructible, MoveAssignable */ \
 /** \{ */ \
 X(const X&) = default; \

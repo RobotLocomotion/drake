@@ -14,7 +14,7 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
-load("//tools:drake.bzl", "drake_cc_binary")
+load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_binary")
 load("@python//:version.bzl", "PYTHON_VERSION")
 
 genrule(
@@ -54,7 +54,16 @@ drake_cc_binary(
 # stored in the attic.  (Those will be used only after some path mangling.)
 drake_transitive_installed_hdrs_filegroup(
     name = "libdrake_headers_no_attic",
-    never_startswith = "attic/",
+    never_startswith = [
+        # The attic headers come in via `only_startswith = "attic/"` in a
+        # different rule, below.
+        "attic/",
+        # Drake's lcmtypes are installed via the //lcmtypes:install rule,
+        # because they part of a different CMake component than Drake main C++
+        # library.  They should not be part of libdrake.so's installed headers.
+        # (For CMake details, refer to //tools/install/libdrake:drake.cps.in.)
+        "lcmtypes/",
+    ],
     deps = LIBDRAKE_COMPONENTS,
 )
 

@@ -170,6 +170,7 @@ class SingleMoveTests : public ::testing::TestWithParam<std::tuple<int, int>> {
       done = plant->is_done(
           sys->GetSubsystemContext(*plant, simulator.get_context()));
     }
+    lcm.reset();
 
     // Verify final state of the object.
     // Frames:

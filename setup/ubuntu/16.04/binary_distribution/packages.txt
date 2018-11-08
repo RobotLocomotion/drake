@@ -37,6 +37,8 @@ python-pydot
 python-scipy
 python-six
 python-tk
+python-tornado
 python-yaml
+python-zmq
 qtbase5-dev
 zlib1g

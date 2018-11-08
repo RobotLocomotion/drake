@@ -4,6 +4,7 @@
 #
 # Do not update this list by hand; instead, run build_components_refresh.py.
 LIBDRAKE_COMPONENTS = [
+    "//attic/multibody",
     "//attic/multibody/collision",
     "//attic/multibody/joints",
     "//attic/multibody/parsers",
@@ -17,27 +18,23 @@ LIBDRAKE_COMPONENTS = [
     "//attic/multibody/rigid_body_plant:rigid_body_plant",  # unpackaged
     "//attic/multibody/rigid_body_plant:rigid_body_plant_bridge",  # unpackaged
     "//attic/multibody/shapes",
-    "//attic/multibody:approximate_ik",  # unpackaged
-    "//attic/multibody:global_inverse_kinematics",  # unpackaged
-    "//attic/multibody:inverse_kinematics",  # unpackaged
-    "//attic/multibody:kinematics_cache",  # unpackaged
-    "//attic/multibody:kinematics_cache_helper",  # unpackaged
-    "//attic/multibody:resolve_center_of_pressure",  # unpackaged
-    "//attic/multibody:rigid_body",  # unpackaged
-    "//attic/multibody:rigid_body_actuator",  # unpackaged
-    "//attic/multibody:rigid_body_constraint",  # unpackaged
-    "//attic/multibody:rigid_body_distance_constraint",  # unpackaged
-    "//attic/multibody:rigid_body_frame",  # unpackaged
-    "//attic/multibody:rigid_body_loop",  # unpackaged
-    "//attic/multibody:rigid_body_tree",  # unpackaged
-    "//attic/multibody:rigid_body_tree_alias_groups",  # unpackaged
-    "//attic/multibody:rigid_body_tree_construction",  # unpackaged
+    "//attic/perception",
+    "//attic/systems/controllers",
+    "//attic/systems/controllers/plan_eval",
+    "//attic/systems/controllers/qp_inverse_dynamics",
+    "//attic/systems/rendering",
+    "//attic/systems/robotInterfaces",
+    "//attic/systems/sensors",
+    "//attic/systems/trajectory_optimization",
+    "//attic/util",
     "//automotive",
     "//automotive/maliput/api",
     "//automotive/maliput/dragway",
     "//automotive/maliput/geometry_base",
     "//automotive/maliput/multilane",
     "//automotive/maliput/rndf",
+    "//automotive/maliput/simple_phase_book",
+    "//automotive/maliput/simple_phase_provider",
     "//automotive/maliput/simplerulebook",
     "//automotive/maliput/utility",
     "//common",
@@ -45,9 +42,15 @@ LIBDRAKE_COMPONENTS = [
     "//common/trajectories",
     "//common:drake_marker_shared_library",  # unpackaged
     "//common:text_logging_gflags_h",  # unpackaged
+    "//examples/manipulation_station:manipulation_station",  # unpackaged
+    "//examples/manipulation_station:manipulation_station_hardware_interface",  # unpackaged  # noqa
     "//geometry",
+    "//geometry/dev",
+    "//geometry/dev/render",
+    "//geometry/dev/render/shaders",
     "//geometry/query_results",
     "//lcm",
+    "//manipulation/dev:remote_tree_viewer_wrapper",  # unpackaged
     "//manipulation/perception",
     "//manipulation/planner",
     "//manipulation/scene_generation:random_clutter_generator",  # unpackaged
@@ -70,21 +73,19 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/multibody_tree/multibody_plant",
     "//multibody/multibody_tree/multibody_plant:contact_results_to_lcm",  # unpackaged  # noqa
     "//multibody/multibody_tree/parsing",
-    "//multibody/parsing",
     "//perception",
     "//solvers",
     "//systems/analysis",
     "//systems/controllers",
-    "//systems/controllers/plan_eval",
-    "//systems/controllers/qp_inverse_dynamics",
     "//systems/estimators",
     "//systems/framework",
     "//systems/lcm",
     "//systems/plants/spring_mass_system",
     "//systems/primitives",
     "//systems/rendering",
-    "//systems/robotInterfaces",
     "//systems/sensors",
+    "//systems/sensors/dev",
     "//systems/trajectory_optimization",
-    "//util",
+    # //examples/kuka_iiwa_arm:iiwa_common (indirectly)
+    # //examples/kuka_iiwa_arm:iiwa_lcm (indirectly)
 ]

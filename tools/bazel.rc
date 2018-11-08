@@ -72,16 +72,3 @@ build:everything --define=WITH_GUROBI=ON
 build:everything --define=WITH_MOSEK=ON
 # -- Options for SNOPT.
 build:everything --define=WITH_SNOPT=ON
-
-# Avoid deprecation warnings from these packages by never loading them, even
-# when doing "bazel build //...".  These package names only exist to preserve
-# compatibility for downstream users who compile using Bazel.  They should
-# never be used from within Drake; this line prevents such uses.  (Note that
-# Drake's bazel.rc is not loaded by downstream projects, so this line does not
-# affect them.)
-build --deleted_packages=//multibody/collision,//multibody/joints,//multibody/parsers,//multibody/rigid_body_plant,//multibody/shapes
-# To retain CI coverage of the deprecated packages (e.g., to ensure they load
-# correctly, don't have any lint, etc.) we enable them for "everything" builds.
-# Most Drake developers do not build in configuration, so for most developers
-# the deprecation warnings will still remain suppressed.
-build:everything --deleted_packages=

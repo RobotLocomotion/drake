@@ -44,7 +44,6 @@
     fun:MSK_ehajakopr
     fun:MSK_optimize
     fun:MSK_optimizetrm
-    fun:_ZNK5drake7solvers11MosekSolver5SolveERNS0_19MathematicalProgramE
 }
 
 {
@@ -57,7 +56,6 @@
     fun:MSK_optimizeunlicensed
     fun:MSK_optimize
     fun:MSK_optimizetrm
-    fun:_ZNK5drake7solvers11MosekSolver5SolveERNS0_19MathematicalProgramE
 }
 
 {
@@ -152,8 +150,6 @@
    fun:MSK_eorpgtpsj
    fun:MSK_optimize
    fun:MSK_optimizetrm
-   fun:_ZNK5drake7solvers11MosekSolver5SolveERNS0_19MathematicalProgramE
-   fun:_ZN5drake7solvers4test9RunSolverEPNS0_19MathematicalProgramERKNS0_34MathematicalProgramSolverInterfaceE
 }
 
 
@@ -171,7 +167,6 @@
    fun:MSK_eorpgtpsj
    fun:MSK_optimize
    fun:MSK_optimizetrm
-   fun:_ZNK5drake7solvers11MosekSolver5SolveERNS0_19MathematicalProgramE
 }
 
 # Started happening when Mosek got updated to 8.1.0.51. PR 8673
@@ -187,7 +182,6 @@
    fun:MSK_eorpgtpsj
    fun:MSK_optimize
    fun:MSK_optimizetrm
-   fun:_ZNK5drake7solvers11MosekSolver5SolveERNS0_19MathematicalProgramE
 }
 
 # Started happening when Mosek got updated to 8.1.0.51. PR 8673
@@ -387,8 +381,8 @@
    fun:MSK_eorpgtpsj
    fun:MSK_optimize
    fun:MSK_optimizetrm
-   fun:_ZNK5drake7solvers11MosekSolver5SolveERNS0_19MathematicalProgramE
 }
+
 # Started happening when Gurobi got updated to 7.0.2. PR 6332.
 {
     <gurobi-1>

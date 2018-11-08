@@ -19,6 +19,8 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace pick_and_place {
 
+using manipulation::schunk_wsg::MakeMultibodyForceToWsgForceSystem;
+using manipulation::schunk_wsg::MakeMultibodyStateToWsgStateSystem;
 using manipulation::schunk_wsg::SchunkWsgController;
 using manipulation::schunk_wsg::SchunkWsgStatusSender;
 using manipulation::util::ModelInstanceInfo;
@@ -119,16 +121,20 @@ LcmPlant::LcmPlant(
     builder.Connect(wsg_controller->get_output_port(0),
                     iiwa_and_wsg_plant_->get_input_port_wsg_command(i));
 
-    auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>(
-        iiwa_and_wsg_plant_->get_output_port_wsg_state(i).size(),
-        iiwa_and_wsg_plant_->get_output_port_wsg_measured_torque(i).size(),
-        manipulation::schunk_wsg::kSchunkWsgPositionIndex,
-        manipulation::schunk_wsg::kSchunkWsgVelocityIndex);
+    auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>();
+    auto mbp_state_to_wsg_state =
+        builder.AddSystem(MakeMultibodyStateToWsgStateSystem<double>());
     wsg_status_sender->set_name("wsg_status_sender" + suffix);
     builder.Connect(iiwa_and_wsg_plant_->get_output_port_wsg_state(i),
-                    wsg_status_sender->get_input_port_wsg_state());
+                    mbp_state_to_wsg_state->get_input_port());
+    builder.Connect(mbp_state_to_wsg_state->get_output_port(),
+                    wsg_status_sender->get_state_input_port());
+    auto mbp_force_to_wsg_force =
+        builder.AddSystem(MakeMultibodyForceToWsgForceSystem<double>());
     builder.Connect(iiwa_and_wsg_plant_->get_output_port_wsg_measured_torque(i),
-                    wsg_status_sender->get_input_port_measured_torque());
+                    mbp_force_to_wsg_force->get_input_port());
+    builder.Connect(mbp_force_to_wsg_force->get_output_port(),
+                    wsg_status_sender->get_force_input_port());
 
     // Export wsg status output port.
     output_port_wsg_status_.push_back(

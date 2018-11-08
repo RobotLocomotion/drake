@@ -64,10 +64,10 @@ TEST_F(RigidBodyTreeCloneTest, CloneAtlas) {
   EXPECT_TRUE(CompareToClone(*tree_));
 }
 
-// Tests RigidBodyTree::Clone() using a Prius with LIDAR sensors.
+// Tests RigidBodyTree::Clone() using a Prius.
 TEST_F(RigidBodyTreeCloneTest, ClonePrius) {
   const std::string filename = FindResourceOrThrow(
-      "drake/automotive/models/prius/prius_with_lidar.sdf");
+      "drake/automotive/models/prius/prius.sdf");
   AddModelInstancesFromSdfFileToWorld(filename, multibody::joints::kQuaternion,
       tree_.get());
   EXPECT_TRUE(CompareToClone(*tree_));

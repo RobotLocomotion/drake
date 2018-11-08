@@ -1,10 +1,10 @@
 #include "drake/geometry/internal_frame.h"
 
+#include "drake/common/never_destroyed.h"
+
 namespace drake {
 namespace geometry {
 namespace internal {
-
-const FrameId InternalFrame::kWorldFrame{FrameId::get_new_id()};
 
 InternalFrame::InternalFrame() {}
 
@@ -28,6 +28,11 @@ bool InternalFrame::operator==(const InternalFrame& other) const {
 
 bool InternalFrame::operator!=(const InternalFrame& other) const {
   return !(*this == other);
+}
+
+FrameId InternalFrame::world_frame_id() {
+  static const never_destroyed<FrameId> kWorldFrame{FrameId::get_new_id()};
+  return kWorldFrame.access();
 }
 
 }  // namespace internal

@@ -8,7 +8,11 @@ load(
     "drake_cc_package_library",
     "drake_cc_test",
 )
-load("//tools/skylark:test_tags.bzl", "gurobi_test_tags", "mosek_test_tags")
+load(
+    "@drake//tools/skylark:test_tags.bzl",
+    "gurobi_test_tags",
+    "mosek_test_tags",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -19,6 +23,7 @@ drake_cc_package_library(
         ":bilinear_product_util",
         ":binding",
         ":branch_and_bound",
+        ":choose_best_solver",
         ":constraint",
         ":cost",
         ":create_constraint",
@@ -37,6 +42,7 @@ drake_cc_package_library(
         ":linear_system_solver",
         ":mathematical_program",
         ":mathematical_program_api",
+        ":mathematical_program_result",
         ":mixed_integer_optimization_util",
         ":mixed_integer_rotation_constraint",
         ":moby_lcp_solver",
@@ -44,10 +50,15 @@ drake_cc_package_library(
         ":nlopt_solver",
         ":non_convex_optimization_util",
         ":osqp_solver",
+        ":program_attribute",
         ":rotation_constraint",
         ":scs_solver",
         ":snopt_solver",
+        ":solution_result",
+        ":solve",
         ":solver_id",
+        ":solver_options",
+        ":solver_result",
         ":solver_type",
         ":solver_type_converter",
         ":sos_basis_generator",
@@ -82,6 +93,27 @@ drake_cc_library(
     hdrs = ["binding.h"],
     deps = [
         ":decision_variable",
+    ],
+)
+
+drake_cc_library(
+    name = "choose_best_solver",
+    srcs = ["choose_best_solver.cc"],
+    hdrs = ["choose_best_solver.h"],
+    deps = [
+        ":dreal_solver",
+        ":equality_constrained_qp_solver",
+        ":gurobi_solver",
+        ":ipopt_solver",
+        ":linear_system_solver",
+        ":mathematical_program_api",
+        ":moby_lcp_solver",
+        ":mosek_solver",
+        ":nlopt_solver",
+        ":osqp_solver",
+        ":scs_solver",
+        ":snopt_solver",
+        ":solver_id",
     ],
 )
 
@@ -206,6 +238,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "solver_options",
+    srcs = ["solver_options.cc"],
+    hdrs = ["solver_options.h"],
+    deps = [
+        ":solver_id",
+    ],
+)
+
+drake_cc_library(
     name = "indeterminate",
     srcs = ["indeterminate.cc"],
     hdrs = ["indeterminate.h"],
@@ -246,6 +287,7 @@ drake_cc_library(
     hdrs = [],
     deps = [
         ":binding",
+        ":choose_best_solver",
         ":create_constraint",
         ":create_cost",
         ":decision_variable",
@@ -255,13 +297,18 @@ drake_cc_library(
         ":ipopt_solver",
         ":linear_system_solver",
         ":mathematical_program_api",
+        ":mathematical_program_result",
         ":moby_lcp_solver",
         ":mosek_solver",
         ":nlopt_solver",
         ":osqp_solver",
+        ":program_attribute",
         ":scs_solver",
         ":snopt_solver",
+        ":solution_result",
         ":solver_id",
+        ":solver_options",
+        ":solver_result",
         ":sos_basis_generator",
         ":symbolic_extraction",
         ":unrevised_lemke_solver",
@@ -269,6 +316,17 @@ drake_cc_library(
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+    ],
+)
+
+drake_cc_library(
+    name = "mathematical_program_result",
+    srcs = ["mathematical_program_result.cc"],
+    hdrs = ["mathematical_program_result.h"],
+    deps = [
+        ":solution_result",
+        ":solver_result",
+        "//systems/framework:value",
     ],
 )
 
@@ -352,6 +410,15 @@ drake_cc_library(
         ":integer_optimization_util",
         ":mathematical_program",
         ":mixed_integer_optimization_util",
+    ],
+)
+
+drake_cc_library(
+    name = "program_attribute",
+    srcs = ["program_attribute.cc"],
+    hdrs = ["program_attribute.h"],
+    deps = [
+        "//common:hash",
     ],
 )
 
@@ -477,6 +544,24 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "solution_result",
+    srcs = [
+        "solution_result.cc",
+    ],
+    hdrs = ["solution_result.h"],
+)
+
+drake_cc_library(
+    name = "solver_result",
+    srcs = ["solver_result.cc"],
+    hdrs = ["solver_result.h"],
+    deps = [
+        ":solver_id",
+        "//common:essential",
+    ],
+)
+
 # The mathematical_program_api target exists so that solver targets can access
 # the mathematical_program.h header, and the :mathematical_program target can
 # depend on solver targets, without creating a circular dependency.
@@ -501,10 +586,25 @@ drake_cc_library(
         ":decision_variable",
         ":function",
         ":indeterminate",
+        ":mathematical_program_result",
+        ":program_attribute",
+        ":solution_result",
         ":solver_id",
+        ":solver_options",
+        ":solver_result",
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
+    ],
+)
+
+drake_cc_library(
+    name = "solve",
+    srcs = ["solve.cc"],
+    hdrs = ["solve.h"],
+    deps = [
+        ":choose_best_solver",
+        ":mathematical_program",
     ],
 )
 
@@ -589,6 +689,7 @@ drake_cc_library(
             "//math:eigen_sparse_triplet",
             "//common:scoped_singleton",
             "@gurobi//:gurobi_c",
+            "@fmt",
         ],
         "//conditions:default": [
             ":mathematical_program_api",
@@ -615,11 +716,13 @@ drake_cc_library(
     deps = select({
         "//tools:with_mosek": [
             ":mathematical_program_api",
+            ":mathematical_program_result",
             "//common:scoped_singleton",
             "@mosek",
         ],
         "//conditions:default": [
             ":mathematical_program_api",
+            ":mathematical_program_result",
         ],
     }),
 )
@@ -631,7 +734,7 @@ drake_cc_library(
     name = "snopt_solver",
     srcs = select({
         "//tools:with_snopt": [
-            "snopt_solver.cc",
+            "snopt_solver_f2c.cc",
             "snopt_solver_common.cc",
         ],
         "//conditions:default": [
@@ -644,7 +747,7 @@ drake_cc_library(
     # result of `const char*` to a function taking a `char*`, or passing a
     # function pointer that receives parameters to a function that takes a
     # (mismatched) function pointer with no arguments.  We could carefully
-    # craft our snopt_solver.cc to have appropriate casts depending on the
+    # craft our snopt_solver_f2c.cc to have appropriate casts depending on the
     # signatures of the version of SNOPT in use, but choose instead to just
     # suppress all such warnings until we find some case where they matter.
     # (The next best step would be to write a sensible C++ SNOPT API wrapper,
@@ -952,6 +1055,7 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -1364,6 +1468,32 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "mathematical_program_result_test",
+    deps = [
+        ":mathematical_program_result",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "choose_best_solver_test",
+    deps = [
+        ":choose_best_solver",
+        ":mathematical_program",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "solve_test",
+    deps = [
+        ":solve",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
 # The extra_srcs are required here because add_lint_tests() doesn't understand
 # how to extract labels from select() functions yet.
 add_lint_tests(cpplint_extra_srcs = [
@@ -1393,7 +1523,7 @@ add_lint_tests(cpplint_extra_srcs = [
     "qp.cc",
     "scs_solver.cc",
     "scs_solver_common.cc",
-    "snopt_solver.cc",
+    "snopt_solver_f2c.cc",
     "snopt_solver.h",
     "snopt_solver_common.cc",
 ])

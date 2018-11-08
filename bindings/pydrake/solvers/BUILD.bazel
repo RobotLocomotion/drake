@@ -2,15 +2,19 @@
 
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:test_tags.bzl", "gurobi_test_tags", "mosek_test_tags")
 load(
-    "//tools/skylark:pybind.bzl",
+    "@drake//tools/skylark:test_tags.bzl",
+    "gurobi_test_tags",
+    "mosek_test_tags",
+)
+load(
+    "@drake//tools/skylark:pybind.bzl",
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
 load(
-    "//tools/skylark:drake_py.bzl",
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_library",
     "drake_py_test",
     "drake_py_unittest",
@@ -181,4 +185,6 @@ drake_py_unittest(
     deps = [":ik_py"],
 )
 
-add_lint_tests()
+add_lint_tests(
+    enable_clang_format_lint = True,
+)
