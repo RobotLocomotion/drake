@@ -16,19 +16,6 @@ namespace systems {
 namespace sensors {
 namespace {
 
-GTEST_TEST(BeamModelTest, TestSpecConstructor) {
-  const double kMaxRange = 5.0;
-
-  DepthSensorSpecification spec;
-  spec.set_max_range(kMaxRange);
-  spec.set_num_pitch_values(4);
-  spec.set_num_yaw_values(10);
-
-  BeamModel<double> model(spec);
-  EXPECT_EQ(model.max_range(), kMaxRange);
-  EXPECT_EQ(model.get_depth_input_port().size(), 40);
-}
-
 GTEST_TEST(BeamModelTest, TestInputPorts) {
   const int kNumReadings = 10;
   const double kMaxRange = 5.0;
