@@ -1120,14 +1120,14 @@ void MultibodyTree<T>::CalcFrameJacobianExpressedInWorld(
     if (Jv_WFq) {
       // Output block corresponding to mobilities in the current node.
       // This correspond to the geometric Jacobian to compute the translational
-      // velocity of frame Fq (sama as that of point Q) measured in the inboard
+      // velocity of frame Fq (same as that of point Q) measured in the inboard
       // body frame P and expressed in world. That is, v_PQ_W = v_PFq_W =
       // Jv_PFq_W * v(B), with v(B) the mobilities that correspond to the
       // current node.
       auto Jv_PFq_W =
           Jv_WFq->block(0, start_index_in_v, Jv_nrows, num_velocities);
 
-      // Position of this node's body Bi in the world W.
+      // Position of the body Bi for the node at level ilevel in the world W.
       const Vector3<T>& p_WBi = pc.get_X_WB(node.index()).translation();
 
       for (int ipoint = 0; ipoint < num_points; ++ipoint) {

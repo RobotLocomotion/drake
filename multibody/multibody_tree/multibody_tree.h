@@ -2745,8 +2745,9 @@ class MultibodyTree {
   // instantaneously move with frame F that is, the position of these points
   // Q is fixed in frame F.
   // Jacobians Jw_WFq and Jv_WFq are defined such that the angular velocity
-  // w_WFq and the translational velocity v_WFq of frame F shifted to a frame
-  // Fq with origin at a point Q are given by:
+  // w_WFq and the translational velocity v_WFq of frame F shifted (see
+  // SpatialVelocity::Shift() for a description of the shift operation) to a
+  // frame Fq with origin at a point Q are given by:
   //   w_WFq = Jw_WFq⋅v
   //   v_WFq = Jv_WFq⋅v
   //
@@ -2772,7 +2773,7 @@ class MultibodyTree {
   //
   //               Format of the Jacobian matrix Jv_WFq
   //
-  // We stack the translational velocity of each point Q into a row vector
+  // We stack the translational velocity of each point Q into a column vector
   // v_WFq = [v_WFq1; v_WFq2; ...] of size 3 x np, with np the number of
   // points in the input list. Then the translational velocities Jacobian is
   // defined as:
