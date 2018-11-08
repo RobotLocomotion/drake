@@ -294,15 +294,12 @@ class SpatialInertia {
     return *this;                    // Now M_SP_A
   }
 
-#if 0
 // TODO(mitiguy) Delete this deprecated code after February 5, 2019.
-  DRAKE_DEPRECATED("ReExpressInPlace(Matrix3<T>&) is deprecated. "
-                   "Use ReExpressInPlace(RotationMatrix<T>&). "
-                   "Code marked to be deleted on February 5, 2019.")
+  DRAKE_DEPRECATED("Use ReExpressInPlace(RotationMatrix<T>&). "
+                   "Code will be deleted after February 5, 2019.")
   SpatialInertia& ReExpressInPlace(const Matrix3<T>& R_AE) {
     return ReExpressInPlace(math::RotationMatrix<T>(R_AE));
   }
-#endif
 
   /// Given `this` spatial inertia `M_SP_E` for some body or composite body S,
   /// taken about a point P and expressed in frame E, this method computes the
@@ -315,15 +312,12 @@ class SpatialInertia {
     return SpatialInertia(*this).ReExpressInPlace(R_AE);
   }
 
-#if 0
 // TODO(mitiguy) Delete this deprecated code after February 5, 2019.
-  DRAKE_DEPRECATED("SpatialInertia::ReExpress(Matrix3<T>&) is deprecated. "
-                   "Use SpatialInertia:ReExpress(RotationMatrix<T>&). "
-                   "Code marked to be deleted on February 5, 2019.")
+  DRAKE_DEPRECATED("Use SpatialInertia:ReExpress(RotationMatrix<T>&). "
+                   "Code will be deleted after February 5, 2019.")
   SpatialInertia ReExpress(const Matrix3<T>& R_AE) const {
     return SpatialInertia(*this).ReExpressInPlace(R_AE);
   }
-#endif
 
   /// Given `this` spatial inertia `M_SP_E` for some body or composite body S,
   /// computed about point P, and expressed in frame E, this method uses

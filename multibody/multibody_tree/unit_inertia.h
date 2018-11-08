@@ -110,16 +110,13 @@ class UnitInertia : public RotationalInertia<T> {
     return *this;
   }
 
-#if 0
   // TODO(mitiguy) Delete this deprecated code after February 5, 2019.
-  DRAKE_DEPRECATED("UnitInertia::ReExpressInPlace(Matrix3<T>&) is deprecated. "
-                   "Use UnitInertia::ReExpressInPlace(RotationMatrix<T>&). "
-                   "Code marked to be deleted on February 5, 2019.")
+  DRAKE_DEPRECATED("Use UnitInertia::ReExpressInPlace(RotationMatrix<T>&). "
+                   "Code will be deleted after February 5, 2019.")
   UnitInertia<T>& ReExpressInPlace(const Matrix3<T>& R_FE) {
     RotationalInertia<T>::ReExpressInPlace(R_FE);
     return *this;
   }
-#endif
 
   /// Given `this` unit inertia `G_BP_E` of a body B about a point P and
   /// expressed in frame E, this method computes the same unit inertia
@@ -131,15 +128,12 @@ class UnitInertia : public RotationalInertia<T> {
     return UnitInertia<T>(RotationalInertia<T>::ReExpress(R_FE));
   }
 
-#if 0
   // TODO(mitiguy) Delete this deprecated code after February 5, 2019.
-  DRAKE_DEPRECATED("UnitInertia::ReExpress(Matrix3<T>&) is deprecated. "
-                   "Use UnitInertia::ReExpressInPlace(RotationMatrix<T>&). "
-                   "Code marked to be deleted on February 5, 2019.")
+  DRAKE_DEPRECATED("Use UnitInertia::ReExpressInPlace(RotationMatrix<T>&). "
+                   "Code will be deleted after February 5, 2019.")
   UnitInertia<T> ReExpress(const Matrix3<T>& R_FE) const {
     return UnitInertia<T>(RotationalInertia<T>::ReExpress(R_FE));
   }
-#endif
 
   /// For a central unit inertia `G_Bcm_E` computed about a body's center of
   /// mass (or centroid) `Bcm` and expressed in a frame E, this method shifts

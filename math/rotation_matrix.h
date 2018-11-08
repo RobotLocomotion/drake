@@ -157,25 +157,6 @@ class RotationMatrix {
                            Vector3<T>(Rzx, Rzy, Rzz));
   }
 
-  /// Constructs a %RotationMatrix `R_AB` from its 9 elements.
-  /// @param[in] Rxx, Rxy, Rxz first row of `R_AB`.
-  /// @param[in] Ryx, Ryy, Ryz second row of `R_AB`.
-  /// @param[in] Rzx, Rzy, Rzz third row of `R_AB`.
-  /// @throws std::logic_error in debug builds if `R_AB` fails IsValid(R_AB).
-  /// @note: In release builds, the caller can subsequently test if `R_AB` is,
-  /// in fact, a valid %RotationMatrix by calling `R_AB.IsValid()`.
-  /// @note The rotation matrix `R_AB` relates two sets of right-handed
-  /// orthogonal unit vectors, namely `Ax`, `Ay`, `Az` and `Bx`, `By`, `Bz`.
-  /// The `Rxy` element of `R_AB` is the dot-product of `Ax` with `By`.
-  /// The `Rzx` element of `R_AB` is the dot-product of `Az` with `Bx`.
-  explicit RotationMatrix(const T& Rxx, const T& Rxy, const T& Rxz,
-                          const T& Ryx, const T& Ryy, const T& Ryz,
-                          const T& Rzx, const T& Rzy, const T& Rzz) {
-    SetFromOrthonormalRows(Vector3<T>(Rxx, Rxy, Rxz),
-                           Vector3<T>(Ryx, Ryy, Ryz),
-                           Vector3<T>(Rzx, Rzy, Rzz));
-  }
-
   /// (Advanced) Makes the %RotationMatrix `R_AB` from right-handed orthogonal
   /// unit vectors `Bx`, `By`, `Bz` so the columns of `R_AB` are `[Bx, By, Bz]`.
   /// @param[in] Bx first unit vector in right-handed orthogonal set.

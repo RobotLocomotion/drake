@@ -538,15 +538,12 @@ class RotationalInertia {
     return *this;
   }
 
-#if 0
   // TODO(mitiguy) Delete this deprecated code after February 5, 2019.
-  DRAKE_DEPRECATED("ReExpressInPlace(Matrix3<T>&) is deprecated. "
-                   "Use ReExpressInPlace(RotationMatrix<T>&). "
-                   "Code marked to be deleted on February 5, 2019.")
+  DRAKE_DEPRECATED("Use ReExpressInPlace(RotationMatrix<T>&). "
+                   "Code will be deleted after February 5, 2019.")
   RotationalInertia<T>& ReExpressInPlace(const Matrix3<T>& R_AE) {
     return ReExpressInPlace(math::RotationMatrix<T>(R_AE));
   }
-#endif
 
   /// Re-expresses `this` rotational inertia `I_BP_E` to `I_BP_A`
   /// i.e., re-expresses body B's rotational inertia from frame E to frame A.
@@ -560,16 +557,13 @@ class RotationalInertia {
     return RotationalInertia(*this).ReExpressInPlace(R_AE);
   }
 
-#if 0
   // TODO(mitiguy) Delete this deprecated code after February 5, 2019.
-  DRAKE_DEPRECATED("RotationalInertia::ReExpress(Matrix3<T>&) is deprecated. "
-                   "Use RotationalInertia::ReExpress(RotationMatrix<T>&). "
-                   "Code marked to be deleted on February 5, 2019.")
+  DRAKE_DEPRECATED("Use RotationalInertia::ReExpress(RotationMatrix<T>&). "
+                   "Code will be deleted after February 5, 2019.")
   RotationalInertia<T> ReExpress(const Matrix3<T>& R_AE) const
                                           __attribute__((warn_unused_result)) {
     return RotationalInertia(*this).ReExpressInPlace(R_AE);
   }
-#endif
 
   /// @name Shift methods
   ///  Each shift method shifts a body's rotational inertia from one about-point

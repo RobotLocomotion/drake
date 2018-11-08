@@ -222,9 +222,10 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameB) {
   const double R_BAzx = sin(q2);
   const double R_BAzy = -sin(q1) * cos(q2);
   const double R_BAzz = cos(q1) * cos(q2);
-  const RotationMatrixd R_BA(R_BAxx, R_BAxy, R_BAxz,
-                             R_BAyx, R_BAyy, R_BAyz,
-                             R_BAzx, R_BAzy, R_BAzz);
+  const RotationMatrixd R_BA = RotationMatrixd::MakeFromOrthonormalRows(
+      Vector3d(R_BAxx, R_BAxy, R_BAxz),
+      Vector3d(R_BAyx, R_BAyy, R_BAyz),
+      Vector3d(R_BAzx, R_BAzy, R_BAzz));
 
   // Form an arbitrary (but valid) rotational inertia for B about-point Bo,
   // expressed-in frame A.  These results are from MotionGenesis and arise by
