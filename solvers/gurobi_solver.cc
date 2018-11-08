@@ -30,6 +30,14 @@ namespace drake {
 namespace solvers {
 namespace {
 
+// TODO(jwnimmer-tri) Add a reusable scope_guard to //common.
+// Make a scope exit guard -- an object that when destroyed runs `func`.
+auto MakeGuard(std::function<void()> func) {
+  // The shared_ptr deleter func is always invoked, even for nullptrs.
+  // http://en.cppreference.com/w/cpp/memory/shared_ptr/%7Eshared_ptr
+  return std::shared_ptr<void>(nullptr, [=](void*) { func(); });
+}
+
 // Information to be passed through a Gurobi C callback to
 // grant it information about its problem (the host
 // MathematicalProgram prog, and which decision variables
@@ -736,6 +744,9 @@ void GurobiSolver::Solve(const MathematicalProgram& prog,
   GRBmodel* model = nullptr;
   GRBnewmodel(env, &model, "gurobi_model", num_gurobi_vars, nullptr, &xlow[0],
               &xupp[0], gurobi_var_type.data(), nullptr);
+  auto guard = MakeGuard([model]() {
+      GRBfreemodel(model);
+    });
 
   int error = 0;
   // TODO(naveenoid) : This needs access externally.
@@ -930,8 +941,6 @@ void GurobiSolver::Solve(const MathematicalProgram& prog,
   }
 
   result->set_solution_result(solution_result);
-
-  GRBfreemodel(model);
 }
 
 SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
