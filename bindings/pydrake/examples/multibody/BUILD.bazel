@@ -3,12 +3,12 @@
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
-    "//tools/skylark:pybind.bzl",
+    "@drake//tools/skylark:pybind.bzl",
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
 load(
-    "//tools/skylark:drake_py.bzl",
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
 )
@@ -67,4 +67,6 @@ install(
     py_dest = PACKAGE_INFO.py_dest,
 )
 
-add_lint_tests()
+add_lint_tests(
+    enable_clang_format_lint = True,
+)

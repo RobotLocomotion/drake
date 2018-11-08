@@ -69,11 +69,9 @@ int DoMain() {
   status_pub->set_publish_period(
       manipulation::schunk_wsg::kSchunkWsgLcmStatusPeriod);
 
-  auto status_sender = builder.AddSystem<SchunkWsgStatusSender>(
-      tree.get_num_positions() + tree.get_num_velocities(),
-      tree.get_num_actuators(),
-      manipulation::schunk_wsg::kSchunkWsgPositionIndex,
-      manipulation::schunk_wsg::kSchunkWsgVelocityIndex);
+  auto status_sender = builder.AddSystem<SchunkWsgStatusSender>();
+  auto mbp_state_to_wsg_state = builder.AddSystem(
+      manipulation::schunk_wsg::MakeMultibodyStateToWsgStateSystem<double>());
   status_sender->set_name("status_sender");
 
   builder.Connect(command_sub->get_output_port(),
@@ -82,7 +80,9 @@ int DoMain() {
                   plant->actuator_command_input_port());
   builder.Connect(plant->state_output_port(), visualizer->get_input_port(0));
   builder.Connect(plant->state_output_port(),
-                  status_sender->get_input_port(0));
+                  mbp_state_to_wsg_state->get_input_port());
+  builder.Connect(mbp_state_to_wsg_state->get_output_port(),
+                  status_sender->get_state_input_port());
   builder.Connect(plant->state_output_port(),
                   wsg_controller->get_state_input_port());
   builder.Connect(*status_sender, *status_pub);
@@ -93,6 +93,7 @@ int DoMain() {
   lcm.StartReceiveThread();
   simulator.Initialize();
   simulator.StepTo(FLAGS_simulation_sec);
+  lcm.StopReceiveThread();
   return 0;
 }
 

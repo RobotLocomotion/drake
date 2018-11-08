@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("//tools/skylark:drake_py.bzl", "py_test_isolated")
+load("@drake//tools/skylark:drake_py.bzl", "py_test_isolated")
 
 def install_lint(
         existing_rules = None):
@@ -10,10 +10,6 @@ def install_lint(
     if existing_rules == None:
         existing_rules = native.existing_rules().values()
     package_name = "//" + native.package_name()  # e.g., "//systems/framework"
-
-    # This linter does not apply to 'dev' code (it is never installed).
-    if "/dev/" in package_name or package_name.endswith("/dev"):
-        return
 
     # For each rule tagged as "install", find a dependency chain from
     # //:install that reaches it. When there is no such chain, it is likely

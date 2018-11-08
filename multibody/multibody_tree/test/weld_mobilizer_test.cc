@@ -4,6 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/multibody_tree_system.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
@@ -14,9 +15,6 @@ namespace multibody {
 namespace multibody_tree {
 namespace {
 
-using Eigen::Isometry3d;
-using Eigen::Matrix3d;
-using Eigen::Translation3d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using std::make_unique;
@@ -42,11 +40,12 @@ class WeldMobilizerTest : public ::testing::Test {
     // Add a body so we can add a mobilizer to it.
     auto& body = model->AddBody<RigidBody>(M_B);
 
-    X_WB_ = Translation3d(1.0, 2.0, 3.0);
+    X_WB_ = math::RigidTransformd(Vector3d(1.0, 2.0, 3.0));
 
     // Add a weld mobilizer between the world and the body:
     weld_body_to_world_ = &model->AddMobilizer<WeldMobilizer>(
-        model->world_body().body_frame(), body.body_frame(), X_WB_);
+        model->world_body().body_frame(), body.body_frame(),
+        X_WB_.GetAsIsometry3());
 
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.
@@ -68,7 +67,7 @@ class WeldMobilizerTest : public ::testing::Test {
 
   const WeldMobilizer<double>* weld_body_to_world_{nullptr};
   // Pose of body B in the world frame W.
-  Isometry3d X_WB_;
+  math::RigidTransformd X_WB_;
 };
 
 TEST_F(WeldMobilizerTest, ZeroSizedState) {
@@ -77,9 +76,10 @@ TEST_F(WeldMobilizerTest, ZeroSizedState) {
 }
 
 TEST_F(WeldMobilizerTest, CalcAcrossMobilizerTransform) {
-  const Isometry3d X_FM =
-      weld_body_to_world_->CalcAcrossMobilizerTransform(*mbt_context_);
-  EXPECT_TRUE(CompareMatrices(X_FM.matrix(), X_WB_.matrix(),
+  const math::RigidTransformd X_FM(
+      weld_body_to_world_->CalcAcrossMobilizerTransform(*mbt_context_));
+  EXPECT_TRUE(CompareMatrices(X_FM.GetAsMatrix34(),
+                              X_WB_.GetAsMatrix34(),
                               kTolerance, MatrixCompareType::relative));
 }
 

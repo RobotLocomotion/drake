@@ -51,6 +51,8 @@ int main() {
   lcm.StartReceiveThread();
 
   simulator.StepTo(std::numeric_limits<double>::infinity());
+
+  lcm.StopReceiveThread();
   return 0;
 }
 

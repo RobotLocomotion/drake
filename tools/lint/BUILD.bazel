@@ -45,6 +45,14 @@ drake_py_library(
 )
 
 drake_py_binary(
+    name = "clang_format_lint",
+    srcs = ["clang_format_lint.py"],
+    deps = [
+        ":clang_format",
+    ],
+)
+
+drake_py_binary(
     name = "drakelint",
     srcs = ["drakelint.py"],
     # The clang-format-includes binary is not used by drakelint, because

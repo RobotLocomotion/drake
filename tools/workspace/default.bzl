@@ -37,6 +37,8 @@ load("@drake//tools/workspace/lcmtypes_robotlocomotion:repository.bzl", "lcmtype
 load("@drake//tools/workspace/liblz4:repository.bzl", "liblz4_repository")
 load("@drake//tools/workspace/libpng:repository.bzl", "libpng_repository")
 load("@drake//tools/workspace/libprotobuf:repository.bzl", "libprotobuf_repository")  # noqa
+load("@drake//tools/workspace/libtiff:repository.bzl", "libtiff_repository")
+load("@drake//tools/workspace/meshcat_python:repository.bzl", "meshcat_python_repository")  # noqa
 load("@drake//tools/workspace/mosek:repository.bzl", "mosek_repository")
 load("@drake//tools/workspace/net_sf_jchart2d:repository.bzl", "net_sf_jchart2d_repository")  # noqa
 load("@drake//tools/workspace/nlopt:repository.bzl", "nlopt_repository")
@@ -66,6 +68,7 @@ load("@drake//tools/workspace/tinydir:repository.bzl", "tinydir_repository")
 load("@drake//tools/workspace/tinyobjloader:repository.bzl", "tinyobjloader_repository")  # noqa
 load("@drake//tools/workspace/tinyxml2:repository.bzl", "tinyxml2_repository")
 load("@drake//tools/workspace/tinyxml:repository.bzl", "tinyxml_repository")
+load("@drake//tools/workspace/u_msgpack_python:repository.bzl", "u_msgpack_python_repository")  # noqa
 load("@drake//tools/workspace/vtk:repository.bzl", "vtk_repository")
 load("@drake//tools/workspace/yaml_cpp:repository.bzl", "yaml_cpp_repository")
 load("@drake//tools/workspace/zlib:repository.bzl", "zlib_repository")
@@ -152,6 +155,10 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         libpng_repository(name = "libpng")
     if "libprotobuf" not in excludes:
         libprotobuf_repository(name = "libprotobuf")
+    if "libtiff" not in excludes:
+        libtiff_repository(name = "libtiff")
+    if "meshcat_python" not in excludes:
+        meshcat_python_repository(name = "meshcat_python", mirrors = mirrors)
     if "mosek" not in excludes:
         mosek_repository(name = "mosek")
     if "net_sf_jchart2d" not in excludes:
@@ -210,6 +217,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         tinyxml2_repository(name = "tinyxml2")
     if "tinyxml" not in excludes:
         tinyxml_repository(name = "tinyxml")
+    if "u_msgpack_python" not in excludes:
+        u_msgpack_python_repository(name = "u_msgpack_python", mirrors = mirrors)  # noqa
     if "vtk" not in excludes:
         vtk_repository(name = "vtk", mirrors = mirrors)
     if "yaml_cpp" not in excludes:

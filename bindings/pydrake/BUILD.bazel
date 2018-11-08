@@ -8,14 +8,14 @@ load(
     "drake_cc_library",
 )
 load(
-    "//tools/skylark:drake_py.bzl",
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
     "drake_py_test",
     "drake_py_unittest",
 )
 load(
-    "//tools/skylark:pybind.bzl",
+    "@drake//tools/skylark:pybind.bzl",
     "drake_pybind_library",
     "generate_pybind_documentation_header",
     "get_drake_py_installs",
@@ -61,7 +61,8 @@ generate_pybind_documentation_header(
         "//:drake_shared_library",
         "//examples/acrobot:acrobot_plant",
         "//examples/compass_gait:compass_gait",
-        "//examples/manipulation_station:station_simulation",
+        "//examples/manipulation_station:manipulation_station",
+        "//examples/manipulation_station:manipulation_station_hardware_interface",  # noqa
         "//examples/pendulum:pendulum_plant",
         "//examples/rimless_wheel:rimless_wheel",
         "//examples/van_der_pol:van_der_pol",
@@ -104,7 +105,6 @@ drake_pybind_library(
         "//bindings/pydrake/util:deprecation_py",
     ],
     py_srcs = [
-        "autodiffutils.py",
         "forwarddiff.py",
     ],
 )
@@ -116,7 +116,6 @@ drake_pybind_library(
         "//bindings/pydrake/systems:systems_pybind",
         "//bindings/pydrake/util:wrap_pybind",
     ],
-    cc_so_name = "automotive",
     cc_srcs = ["automotive_py.cc"],
     package_info = PACKAGE_INFO,
 )
@@ -137,10 +136,10 @@ drake_pybind_library(
     name = "geometry_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/systems:systems_pybind",
         "//bindings/pydrake/util:deprecation_pybind",
         "//lcmtypes:viewer",
     ],
-    cc_so_name = "geometry",
     cc_srcs = ["geometry_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -156,7 +155,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/util:drake_optional_pybind",
     ],
-    cc_so_name = "lcm",
     cc_srcs = ["lcm_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -167,12 +165,26 @@ drake_pybind_library(
 drake_pybind_library(
     name = "math_py",
     cc_deps = ["//bindings/pydrake:documentation_pybind"],
-    cc_so_name = "math",
     cc_srcs = ["math_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
         "//bindings/pydrake/util:eigen_geometry_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "perception_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/systems:systems_pybind",
+    ],
+    cc_srcs = ["perception_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/systems:framework_py",
+        "//bindings/pydrake/systems:sensors_py",
     ],
 )
 
@@ -197,13 +209,12 @@ drake_pybind_library(
         "//bindings/pydrake/util:compatibility_py",
         "//bindings/pydrake/util:deprecation_py",
     ],
-    py_srcs = ["symbolic.py"],
+    py_srcs = ["_symbolic_extra.py"],
 )
 
 drake_pybind_library(
     name = "trajectories_py",
     cc_deps = ["//bindings/pydrake:documentation_pybind"],
-    cc_so_name = "trajectories",
     cc_srcs = ["trajectories_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -217,6 +228,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":geometry_py",
     ":lcm_py",
     ":math_py",
+    ":perception_py",
     ":symbolic_py",
     ":trajectories_py",
     "//bindings/pydrake/common",
@@ -270,6 +282,7 @@ drake_cc_googletest(
 
 drake_py_unittest(
     name = "all_test",
+    timeout = "moderate",
     data = ["//examples/pendulum:models"],
     deps = [":all_py"],
 )
@@ -277,7 +290,11 @@ drake_py_unittest(
 drake_py_library(
     name = "algebra_test_util_py",
     testonly = 1,
-    srcs = ["test/algebra_test_util.py"],
+    srcs = [
+        "test/__init__.py",
+        "test/algebra_test_util.py",
+    ],
+    visibility = ["//visibility:private"],
 )
 
 # Test ODR (One Definition Rule).
@@ -292,6 +309,8 @@ drake_pybind_library(
     cc_so_name = "test/autodiffutils_test_util",
     cc_srcs = ["test/autodiffutils_test_util_py.cc"],
     package_info = PACKAGE_INFO,
+    py_srcs = ["test/__init__.py"],
+    visibility = ["//visibility:private"],
 )
 
 drake_py_unittest(
@@ -315,6 +334,8 @@ drake_pybind_library(
     cc_so_name = "test/odr_test_module",
     cc_srcs = ["test/odr_test_module_py.cc"],
     package_info = PACKAGE_INFO,
+    py_srcs = ["test/__init__.py"],
+    visibility = ["//visibility:private"],
 )
 
 drake_py_unittest(
@@ -362,6 +383,13 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "perception_test",
+    deps = [
+        ":perception_py",
+    ],
+)
+
+drake_py_unittest(
     name = "symbolic_test",
     deps = [
         ":algebra_test_util_py",
@@ -393,18 +421,19 @@ drake_py_unittest(
     ],
 )
 
-add_lint_tests(
-    python_lint_extra_srcs = [
-        ":test/all_install_test.py",
-        ":test/common_install_test.py",
-    ],
-)
-
 drake_py_binary(
     name = "math_example",
     srcs = ["math_example.py"],
     isolate = 1,
     deps = [
         ":math_py",
+    ],
+)
+
+add_lint_tests(
+    enable_clang_format_lint = True,
+    python_lint_extra_srcs = [
+        ":test/all_install_test.py",
+        ":test/common_install_test.py",
     ],
 )

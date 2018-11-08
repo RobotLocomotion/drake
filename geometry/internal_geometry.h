@@ -10,6 +10,7 @@
 #include "drake/common/drake_optional.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
+#include "drake/geometry/internal_frame.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/geometry/visual_material.h"
 
@@ -17,70 +18,155 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-// TODO(SeanCurtis-TRI): Include additional user-specified payload metadata when
-// added to the declaration of GeometryInstance.
-/** Base class for the internal representation of registered geometry. It
- includes the data common to both anchored and dynamic geometry. */
-class InternalGeometryBase {
+/** The internal representation of the fixed portion of the scene graph
+ geometry. This includes those aspects that do *not* depend on computed values.
+ It includes things like the topology (which frame is a geometry attached to),
+ internal bookkeeping (how do we identify a proximity-engine representation of
+ the registered geometry), its name, and its *declared* geometry.  */
+class InternalGeometry {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(InternalGeometryBase)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(InternalGeometry)
 
+  // TODO(SeanCurtis-TRI): Is this strictly required? Typically, I have this to
+  // be compatible with STL structures that need to default construct. Confirm
+  // and document if such is the case.
   /** Default constructor. The geometry id will be invalid, the shape will
-   be nullptr, and the pose will be uninitialized. */
-  InternalGeometryBase() {}
+   be nullptr, and the pose will be uninitialized.  */
+  InternalGeometry() {}
 
-  // TODO(SeanCurtis-TRI): Resolve the issue inherent in having a copyable class
-  // (with subclasses) that has no virtual destructor. In its current
-  // incarnation this is *not* used polymorphically; it is used for code
-  // re-use purposes. This should be made more rigorous.
-
-  /** Default material, full constructor.
+  /** Constructs the internal geometry as an *immediate* child of the frame.
+   Therefore, it is assumed that X_FG = X_PG.
+   @param source_id     The id for the source that registered this geometry.
    @param shape         The shape specification for this instance.
+   @param frame_id      The id of the frame this belongs to.
    @param geometry_id   The identifier for _this_ geometry.
    @param name          The name of the geometry.
-   @param X_PG          The pose of the geometry G in the parent frame P. */
-  InternalGeometryBase(std::unique_ptr<Shape> shape, GeometryId geometry_id,
-                       const std::string& name, const Isometry3<double>& X_PG)
-      : InternalGeometryBase(std::move(shape), geometry_id, name, X_PG,
-                             VisualMaterial()) {}
+   @param X_FG          The pose of the geometry G in the parent frame F.
+   @param index         The index of this geometry in the SceneGraph's set of
+                        registered geometry.
+   @param material      The visual material to apply to this geometry.  */
+  InternalGeometry(SourceId source_id, std::unique_ptr<Shape> shape,
+                   FrameId frame_id, GeometryId geometry_id,
+                   std::string name, const Isometry3<double>& X_FG,
+                   GeometryIndex index, const VisualMaterial& material);
 
-  /** Full constructor.
-   @param shape         The shape specification for this instance.
-   @param geometry_id   The identifier for _this_ geometry.
-   @param name          The name of the geometry.
-   @param X_PG          The pose of the geometry G in the parent frame P.
-   @param engine_index  The position in the geometry engine of this geometry.
-   @param vis_material  The visual material for this geometry. */
-  InternalGeometryBase(std::unique_ptr<Shape> shape, GeometryId geometry_id,
-                       const std::string& name, const Isometry3<double>& X_PG,
-                       const VisualMaterial& vis_material)
-      : shape_spec_(std::move(shape)),
-        id_(geometry_id),
-        name_(name),
-        X_PG_(X_PG),
-        visual_material_(vis_material) {}
-
-  /** Compares two %InternalGeometryBase instances for "equality". Two internal
-   geometries are considered equal if they have the same geometry identifier. */
-  bool operator==(const InternalGeometryBase &other) const {
+  /** Compares two %InternalGeometry instances for "equality". Two internal
+   geometries are considered equal if they have the same geometry identifier.
+   */
+  bool operator==(const InternalGeometry &other) const {
     return id_ == other.id_;
   }
 
   /** Compares two %InternalGeometry instances for inequality. See operator==()
-   for the definition of equality. */
-  bool operator!=(const InternalGeometryBase &other) const {
+   for the definition of equality.  */
+  bool operator!=(const InternalGeometry &other) const {
     return !(*this == other);
   }
 
-  const Shape& get_shape() const { return *shape_spec_; }
+  /**  @name     Geometry properties  */
+  //@{
 
-  GeometryId get_id() const { return id_; }
+  /** Returns the shape specification for this geometry.  */
+  const Shape& shape() const { return *shape_spec_; }
 
-  const std::string& get_name() const { return name_; }
+  /** Returns the globally unique identifier for this geometry.  */
+  GeometryId id() const { return id_; }
 
-  const Isometry3<double>& get_pose_in_parent() const { return X_PG_; }
+  /** Returns the name of this geometry.  */
+  const std::string& name() const { return name_; }
 
-  const VisualMaterial& get_visual_material() const { return visual_material_; }
+  /** Returns the index of this geometry in the full scene graph.  */
+  GeometryIndex index() const { return index_; }
+
+  /** Returns the source id that registered the geometry.  */
+  SourceId source_id() const { return source_id_; }
+
+  /** Returns true if this geometry belongs to the source with the given id.  */
+  bool belongs_to_source(SourceId id) const { return source_id_ == id; }
+
+  /** Returns the geometry visual material.  */
+  const VisualMaterial& visual_material() const { return visual_material_; }
+
+  //@}
+
+  /** @name     Scene Graph topology    */
+  //@{
+
+  /** Reports the frame this internal geometry is rigidly attached to.  */
+  FrameId frame_id() const { return frame_id_; }
+
+  /** Returns true if the geometry is affixed to the frame with the given
+   `frame_id`.  */
+  bool is_child_of_frame(FrameId frame_id) const {
+    return frame_id == frame_id_;
+  }
+
+  /** Returns the pose of this geometry in the declared *parent* frame -- note
+   if this geometry was registered as a child of another geometry it will *not*
+   be the same as X_FG().  */
+  const Isometry3<double>& X_PG() const { return X_PG_; }
+
+  /** Returns the pose of this geometry in the frame to which it is ultimately
+   rigidly attached. This is in contrast to X_PG().  */
+  const Isometry3<double>& X_FG() const { return X_FG_; }
+
+  // TODO(SeanCurtis-TRI): Determine if tracking this parent geometry is
+  // necessary for now or if that only exists to facilitate removal later on.
+  /** Returns the declared parent geometry (if one exists).  */
+  optional<GeometryId> parent_id() const { return parent_geometry_id_; }
+
+  /** Sets this geometry to have *another* geometry as parent. In this case,
+   the pose set in the constructor is assumed to be X_PG and the X_FG value must
+   be updated.
+   @param id    The id of the parent geometry.
+   @param X_FG  The new value for X_FG (assuming the constructed value is to be
+                interpreted as X_PG.  */
+  void set_geometry_parent(GeometryId id, const Isometry3<double>& X_FG) {
+    parent_geometry_id_ = id;
+    X_FG_ = X_FG;
+  }
+
+  /** Returns true if this geometry has a geometry parent and the parent has the
+   given `geometry_id`.  */
+  bool is_child_of_geometry(GeometryId geometry_id) const {
+    return parent_geometry_id_ && *parent_geometry_id_ == geometry_id;
+  }
+
+  /** Returns a list of identifiers of geometries that have *this* geometry as
+   a parent. In other words, for an internal geometry `g`, `g.index()`
+   appears in this list iff `this->is_child_of_geometry(g.index())` returns
+   true.  */
+  const std::unordered_set<GeometryId>& child_geometry_ids() const {
+    return child_geometry_ids_;
+  }
+
+  /** Returns true if this geometry has a child geometry with the given
+   `geometry_id`.  */
+  bool has_child(GeometryId geometry_id) const {
+    return child_geometry_ids_.find(geometry_id) != child_geometry_ids_.end();
+  }
+
+  /** Adds a geometry with the given `geometry_id` to this geometry's set of
+   children.  */
+  void add_child(GeometryId geometry_id) {
+    child_geometry_ids_.insert(geometry_id);
+  }
+
+  /** Returns true if the geometry is *not* attached to the world frame -- or,
+   in other words, it *is* attached to a movable frame.  */
+  bool is_dynamic() const {
+    // NOTE: If I allow non-dynamic frames welded to the world, this will not
+    // be sufficient.
+    return frame_id_ != InternalFrame::world_frame_id();
+  }
+
+  //@}
+
+  /** Returns this geometry's valid index in the proximity engine iff this
+   geometry has a proximity role. If not, the returned index will be invalid.
+   */
+  ProximityIndex proximity_index() const { return proximity_index_; }
+  void set_proximity_index(ProximityIndex index) { proximity_index_ = index; }
 
  private:
   // The specification for this instance's shape.
@@ -93,160 +179,40 @@ class InternalGeometryBase {
   // same frame.
   std::string name_;
 
-  // The pose of this geometry in the parent frame. The parent may be a frame or
-  // another registered geometry.
+  // The index of this geometry in the "full" set of geometries (regardless of
+  // role).
+  GeometryIndex index_;
+
+  // The source id that registered the geometry.
+  SourceId source_id_;
+
+  // The identifier of the frame to which this geometry belongs.
+  FrameId frame_id_;
+
+  // The pose of this geometry in the registered parent frame. The parent may be
+  // a frame or another registered geometry.
   Isometry3<double> X_PG_;
+
+  // The pose of this geometry in the ultimate frame to which this geometry is
+  // rigidly affixed. If there is no parent geometry, X_PG_ == X_FG_.
+  Isometry3<double> X_FG_;
+
+  // The identifier for this frame's parent frame.
+  optional<GeometryId> parent_geometry_id_{nullopt};
+
+  // The identifiers for the geometry hung on this frame.
+  std::unordered_set<GeometryId> child_geometry_ids_;
+
+  // The index of the geometry in the engine. Note: is currently unused but will
+  // gain importance when the API for *removing* geometry is added. It is the
+  // mechanism by which we map a geometry to its instantiation in the proximity
+  // engine.
+  ProximityIndex proximity_index_{};
 
   // TODO(SeanCurtis-TRI): Consider making this "optional" so that the values
   // can be assigned at the frame level.
   // The "rendering" material -- e.g., OpenGl contexts and the like.
   VisualMaterial visual_material_;
-};
-
-/** This class represents the internal representation of registered _dynamic_
- geometry. It includes the user-specified meta data (e.g., name) and internal
- topology representations. */
-class InternalGeometry : public InternalGeometryBase {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(InternalGeometry)
-
-  /** Default constructor. The parent and frame ids will be invalid as well as
-   the state documented in InternalGeometryBase(). */
-  InternalGeometry();
-
-  /** Default material, full constructor.
-   @param shape         The shape specification for this instance.
-   @param frame_id      The identifier of the frame this belongs to.
-   @param geometry_id   The identifier for _this_ geometry.
-   @param name          The name of the geometry.
-   @param X_PG          The pose of the geometry G in the parent frame P. The
-                        parent may be a frame, or another registered geometry.
-   @param engine_index  The position in the geometry engine of this geometry.
-   @param parent_id     The optional id of the parent geometry. */
-  InternalGeometry(std::unique_ptr<Shape> shape, FrameId frame_id,
-                   GeometryId geometry_id, const std::string& name,
-                   const Isometry3<double>& X_PG, GeometryIndex engine_index,
-                   const optional<GeometryId>& parent_id = {});
-
-  /** Full constructor.
-   @param shape         The shape specification for this instance.
-   @param frame_id      The identifier of the frame this belongs to.
-   @param geometry_id   The identifier for _this_ geometry.
-   @param name          The name of the geometry.
-   @param X_PG          The pose of the geometry G in the parent frame P. The
-                        parent may be a frame, or another registered geometry.
-   @param engine_index  The position in the geometry engine of this geometry.
-   @param vis_material  The visual material for this geometry.
-   @param parent_id     The optional id of the parent geometry. */
-  InternalGeometry(std::unique_ptr<Shape> shape, FrameId frame_id,
-                   GeometryId geometry_id, const std::string& name,
-                   const Isometry3<double>& X_PG, GeometryIndex engine_index,
-                   const VisualMaterial& vis_material,
-                   const optional<GeometryId>& parent_id = {});
-
-  FrameId get_frame_id() const { return frame_id_; }
-
-  optional<GeometryId> get_parent_id() const { return parent_id_; }
-
-  void set_parent_id(GeometryId id) { parent_id_ = id; }
-
-  GeometryIndex get_engine_index() const { return engine_index_; }
-
-  void set_engine_index(GeometryIndex index) { engine_index_ = index; }
-
-  /** Returns true if this geometry has a geometry parent and the parent has the
-   given `geometry_id`. */
-  bool is_child_of_geometry(GeometryId geometry_id) const {
-    return parent_id_ && *parent_id_ == geometry_id;
-  }
-
-  /** Returns true if the geometry is affixed to the frame with the given
-   `frame_id`. */
-  bool is_child_of_frame(FrameId frame_id) const {
-    return frame_id == frame_id_;
-  }
-
-  const std::unordered_set<GeometryId>& get_child_geometry_ids() const {
-    return child_geometry_ids_;
-  }
-  std::unordered_set<GeometryId>* get_mutable_child_geometry_ids() {
-    return &child_geometry_ids_;
-  }
-
-  /** Returns true if this geometry has a child geometry with the given
-   `geometry_id`. */
-  bool has_child(GeometryId geometry_id) const {
-    return child_geometry_ids_.find(geometry_id) != child_geometry_ids_.end();
-  }
-
-  /** Adds a geometry with the given `geometry_id` to this geometry's set of
-   children. */
-  void add_child(GeometryId geometry_id) {
-    child_geometry_ids_.insert(geometry_id);
-  }
-
-  /** Removes the given `geometry_id` from this geometry's set of children. If
-   the id is not in the set, nothing changes. */
-  void remove_child(GeometryId geometry_id) {
-    child_geometry_ids_.erase(geometry_id);
-  }
-
- private:
-  // The identifier of the frame to which this geometry belongs.
-  FrameId frame_id_;
-
-  // The index of the geometry in the engine.
-  GeometryIndex engine_index_;
-
-  // The identifier for this frame's parent frame.
-  optional<GeometryId> parent_id_;
-
-  // The identifiers for the geometry hung on this frame.
-  std::unordered_set<GeometryId> child_geometry_ids_;
-};
-
-/** This class represents the internal representation of registered _anchored_
- geometry. It includes the user-specified meta data (e.g., name) and internal
- topology representations. */
-class InternalAnchoredGeometry : public InternalGeometryBase {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(InternalAnchoredGeometry)
-
-  /** Default constructor. State will be as documented in
-   InternalGeometryBase(). */
-  InternalAnchoredGeometry();
-
-  /** Default material, full constructor.
-   @param shape         The shape specification for this instance.
-   @param geometry_id   The identifier for _this_ geometry.
-   @param name          The name of the geometry.
-   @param X_WG          The pose of the geometry G in the world frame W.
-   @param engine_index  The position in the geometry engine of this geometry. */
-  InternalAnchoredGeometry(std::unique_ptr<Shape> shape, GeometryId geometry_id,
-                           const std::string& name,
-                           const Isometry3<double> X_WG,
-                           AnchoredGeometryIndex engine_index);
-
-  /** Full constructor.
-   @param shape         The shape specification for this instance.
-   @param geometry_id   The identifier for _this_ geometry.
-   @param name          The name of the geometry.
-   @param X_WG          The pose of the geometry G in the world frame W.
-   @param engine_index  The position in the geometry engine of this geometry.
-   @param vis_material  The visual material for this geometry. */
-  InternalAnchoredGeometry(std::unique_ptr<Shape> shape, GeometryId geometry_id,
-                           const std::string& name,
-                           const Isometry3<double> X_WG,
-                           AnchoredGeometryIndex engine_index,
-                           const VisualMaterial& vis_material);
-
-  AnchoredGeometryIndex get_engine_index() const { return engine_index_; }
-
-  void set_engine_index(AnchoredGeometryIndex index) { engine_index_ = index; }
-
- private:
-  // The index of the geometry in the engine.
-  AnchoredGeometryIndex engine_index_;
 };
 
 }  // namespace internal

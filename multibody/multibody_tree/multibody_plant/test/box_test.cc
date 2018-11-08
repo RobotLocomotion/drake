@@ -74,7 +74,7 @@ GTEST_TEST(Box, UnderStiction) {
   plant.AddForceElement<UniformGravityFieldElement>(
       -g * Vector3<double>::UnitZ());
 
-  plant.Finalize(&scene_graph);  // Done creating the model.
+  plant.Finalize();  // Done creating the model.
 
   const MultibodyTree<double>& tree = plant.tree();
   // Set contact parameters.
@@ -110,7 +110,9 @@ GTEST_TEST(Box, UnderStiction) {
   Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
-  plant_context.FixInputPort(0, Vector1<double>::Constant(applied_force));
+  plant_context.FixInputPort(
+      plant.get_actuation_input_port().get_index(),
+      Vector1<double>::Constant(applied_force));
 
   Simulator<double> simulator(*diagram, std::move(diagram_context));
   simulator.set_publish_every_time_step(true);

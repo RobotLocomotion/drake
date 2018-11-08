@@ -74,6 +74,107 @@ GTEST_TEST(RotationMatrix, RotationMatrixConstructor) {
 #endif
 }
 
+// Test making a RotationMatrix from three right-handed orthogonal unit vectors.
+GTEST_TEST(RotationMatrix, MakeFromOrthonormalRowsOrColumns) {
+  const double cos_theta = std::cos(0.5);
+  const double sin_theta = std::sin(0.5);
+
+  // Construct a matrix whose rows are right-handed orthogonal unit vectors.
+  const Vector3d Ax(1, 0, 0);
+  const Vector3d Ay(0, cos_theta, -sin_theta);
+  const Vector3d Az(0, sin_theta,  cos_theta);
+  Matrix3d m_row;
+  m_row.row(0) = Ax;
+  m_row.row(1) = Ay;
+  m_row.row(2) = Az;
+
+  // Make the rows of a RotationMatrix R from the unit vectors Ax, Ay, Az.
+  // Ensure m_row is identical to the 3x3 matrix underlying R.
+  RotationMatrix<double> R =
+      RotationMatrix<double>::MakeFromOrthonormalRows(Ax, Ay, Az);
+  const Matrix3d zero_row_matrix = m_row - R.matrix();
+  EXPECT_TRUE((zero_row_matrix.array() == 0).all());
+
+  // Construct a matrix whose columns are right-handed orthogonal unit vectors.
+  Matrix3d m_column;
+  m_column.col(0) = Ax;
+  m_column.col(1) = Ay;
+  m_column.col(2) = Az;
+
+  // Make the columns of a RotationMatrix R2 from the unit vectors Ax, Ay, Az.
+  // Ensure m_column is identical to the 3x3 matrix underlying R2.
+  RotationMatrix<double> R2 =
+      RotationMatrix<double>::MakeFromOrthonormalColumns(Ax, Ay, Az);
+  const Matrix3d zero_column_matrix = m_column - R2.matrix();
+  EXPECT_TRUE((zero_column_matrix.array() == 0).all());
+
+  // Test that RotationMatrix R2 is the inverse (transpose) of R2.
+  EXPECT_TRUE(R.IsExactlyEqualTo(R2.inverse()));
+
+  // The next test intentionally creates an invalid RotationMatrix that deviates
+  // from a valid RotationMatrix by a factor of 8.  The factor of 8 times the
+  // internal orthonormality tolerance provides a tolerance to the loss of up to
+  // three bits of precision (2^3 = 8) and allows for possible imprecision
+  // issues associated with variations in compilers, operating systems, etc.
+  const double delta =
+      8 * RotationMatrix<double>::get_internal_tolerance_for_orthonormality();
+  const Vector3d Fx(1, 0, delta);
+  const Vector3d Fy(0, cos_theta, -sin_theta);
+  const Vector3d Fz(0, sin_theta,  cos_theta);
+
+  // Non-orthogonal matrix should throw an exception (at least in debug builds).
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      R = RotationMatrix<double>::MakeFromOrthonormalRows(Fx, Fy, Fz),
+      std::logic_error, "Error: Rotation matrix is not orthonormal.*")
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      R = RotationMatrix<double>::MakeFromOrthonormalColumns(Fx, Fy, Fz),
+      std::logic_error, "Error: Rotation matrix is not orthonormal.*")
+
+  // Non-right handed matrix with determinant < 0 should throw an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      R = RotationMatrix<double>::MakeFromOrthonormalRows(
+          Vector3d(-1, 0, 0), Fy, Fz), std::logic_error,
+      "Error: Rotation matrix determinant is negative.*");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      R = RotationMatrix<double>::MakeFromOrthonormalColumns(
+          Vector3d(-1, 0, 0), Fy, Fz), std::logic_error,
+      "Error: Rotation matrix determinant is negative.*");
+
+  // Matrix with a NaN should throw an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      R = RotationMatrix<double>::MakeFromOrthonormalRows(
+          Vector3d(std::numeric_limits<double>::quiet_NaN(), 0, 0), Fy, Fz),
+      std::logic_error,
+      "Error: Rotation matrix contains an element that is infinity or NaN.*");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      R = RotationMatrix<double>::MakeFromOrthonormalColumns(
+          Vector3d(std::numeric_limits<double>::quiet_NaN(), 0, 0), Fy, Fz),
+          std::logic_error,
+        "Error: Rotation matrix contains an element that is infinity or NaN.*");
+
+  // Matrix with an infinity should throw an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      R = RotationMatrix<double>::MakeFromOrthonormalRows(
+          Vector3d(std::numeric_limits<double>::infinity(), 0, 0), Fy, Fz),
+      std::logic_error,
+      "Error: Rotation matrix contains an element that is infinity or NaN.*");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      R = RotationMatrix<double>::MakeFromOrthonormalColumns(
+          Vector3d(std::numeric_limits<double>::infinity(), 0, 0), Fy, Fz),
+          std::logic_error,
+        "Error: Rotation matrix contains an element that is infinity or NaN.*");
+
+#ifndef DRAKE_ASSERT_IS_ARMED
+  // In release builds, check for invalid matrix.
+  EXPECT_NO_THROW(
+      R = RotationMatrix<double>::MakeFromOrthonormalRows(Fx, Fy, Fz));
+  EXPECT_FALSE(R.IsValid());
+  EXPECT_NO_THROW(
+      R = RotationMatrix<double>::MakeFromOrthonormalColumns(Fx, Fy, Fz));
+  EXPECT_FALSE(R.IsValid());
+#endif
+}
+
 // Test setting a RotationMatrix from a Matrix3.
 GTEST_TEST(RotationMatrix, SetRotationMatrix) {
   const double cos_theta = std::cos(0.5);

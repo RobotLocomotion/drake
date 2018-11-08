@@ -20,6 +20,7 @@ CXX_FLAGS = [
 # The CLANG_FLAGS will be enabled for all C++ rules in the project when
 # building with clang (including the Apple LLVM compiler).
 CLANG_FLAGS = CXX_FLAGS + [
+    "-Werror=absolute-value",
     "-Werror=inconsistent-missing-override",
     "-Werror=non-virtual-dtor",
     "-Werror=return-stack-address",
@@ -204,8 +205,8 @@ def _path_startswith_match(path, only_startswith, never_startswith):
     if only_startswith:
         if not path.startswith(only_startswith):
             return False
-    if never_startswith:
-        if path.startswith(never_startswith):
+    for prefix in never_startswith:
+        if path.startswith(prefix):
             return False
     return True
 
@@ -236,7 +237,7 @@ _gather_transitive_hdrs = rule(
             providers = [DrakeCc],
         ),
         "only_startswith": attr.string(),
-        "never_startswith": attr.string(),
+        "never_startswith": attr.string_list(),
     },
     implementation = _gather_transitive_hdrs_impl,
 )
@@ -245,7 +246,7 @@ def drake_transitive_installed_hdrs_filegroup(
         name,
         deps = [],
         only_startswith = None,
-        never_startswith = None,
+        never_startswith = [],
         **kwargs):
     """Declare a filegroup that contains the transtive installed hdrs of the
     targets named by `deps`.

@@ -12,18 +12,9 @@ load(
     "drake_cc_vector_gen_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:public"])
-
-vtk_test_tags = [
-    # Disable under LeakSanitizer and Valgrind Memcheck due to
-    # driver-related leaks. For more information, see #7520.
-    "no_lsan",
-    "no_memcheck",
-    # Mitigates driver-related issues when running under `bazel test`. For
-    # more information, see #7004.
-    "no-sandbox",
-]
 
 drake_cc_package_library(
     name = "sensors",
@@ -38,6 +29,9 @@ drake_cc_package_library(
         ":gyroscope",
         ":image",
         ":image_to_lcm_image_array_t",
+        ":image_writer",
+        ":lcm_image_array_to_images",
+        ":lcm_image_traits",
         ":optitrack_sender",
         ":rgbd_camera",
         ":rgbd_renderer",
@@ -108,6 +102,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "lcm_image_traits",
+    srcs = [
+        "lcm_image_traits.cc",
+    ],
+    hdrs = [
+        "lcm_image_traits.h",
+    ],
+    deps = [
+        ":image",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
+drake_cc_library(
     name = "image_to_lcm_image_array_t",
     srcs = [
         "image_to_lcm_image_array_t.cc",
@@ -116,11 +124,46 @@ drake_cc_library(
         "image_to_lcm_image_array_t.h",
     ],
     deps = [
-        ":image",
+        ":lcm_image_traits",
+        "//common:essential",
+        "//systems/framework",
+        "@zlib",
+    ],
+)
+
+drake_cc_library(
+    name = "lcm_image_array_to_images",
+    srcs = [
+        "lcm_image_array_to_images.cc",
+    ],
+    hdrs = [
+        "lcm_image_array_to_images.h",
+    ],
+    deps = [
+        ":lcm_image_traits",
         "//common:essential",
         "//systems/framework",
         "@lcmtypes_robotlocomotion",
+        "@libpng",
+        "@vtk//:vtkIOImage",
         "@zlib",
+    ],
+)
+
+drake_cc_binary(
+    name = "lcm_image_array_receive_example",
+    srcs = [
+        "lcm_image_array_receive_example.cc",
+    ],
+    deps = [
+        ":image_to_lcm_image_array_t",
+        ":lcm_image_array_to_images",
+        "//common:text_logging_gflags",
+        "//common:unused",
+        "//lcm",
+        "//systems/analysis:simulator",
+        "//systems/lcm:lcm_pubsub_system",
+        "@gflags",
     ],
 )
 
@@ -352,6 +395,20 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "image_writer",
+    srcs = ["image_writer.cc"],
+    hdrs = ["image_writer.h"],
+    deps = [
+        ":image",
+        "//common:essential",
+        "//systems/framework",
+        "@spruce",
+        "@vtk//:vtkCommonDataModel",
+        "@vtk//:vtkIOImage",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -445,11 +502,23 @@ filegroup(
 )
 
 drake_cc_googletest(
+    name = "image_writer_test",
+    tags = vtk_test_tags(),
+    deps = [
+        ":image_writer",
+        "//common:temp_directory",
+        "//common/test_utilities",
+        "@spruce",
+        "@vtk//:vtkIOImage",
+    ],
+)
+
+drake_cc_googletest(
     name = "rgbd_camera_test",
     data = [
         ":test_models",
     ],
-    tags = vtk_test_tags,
+    tags = vtk_test_tags(),
     deps = [
         ":rgbd_camera",
         "//attic/multibody/parsers",
@@ -471,7 +540,7 @@ drake_cc_googletest(
     data = [
         ":test_models",
     ],
-    tags = vtk_test_tags,
+    tags = vtk_test_tags(),
     deps = [
         ":rgbd_renderer",
         ":rgbd_renderer_test_util",
@@ -486,7 +555,7 @@ drake_cc_googletest(
     data = [
         ":test_models",
     ],
-    tags = vtk_test_tags,
+    tags = vtk_test_tags(),
     deps = [
         ":rgbd_renderer",
         ":rgbd_renderer_test_util",
@@ -507,7 +576,7 @@ sh_test(
     data = [
         ":test_models",
     ],
-    tags = vtk_test_tags,
+    tags = vtk_test_tags(),
 )
 
 drake_cc_googletest(
@@ -528,6 +597,18 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "image_to_lcm_image_array_t_test",
     deps = [":image_to_lcm_image_array_t"],
+)
+
+drake_cc_googletest(
+    name = "lcm_image_array_to_images_test",
+    data = glob([
+        "test/*.jpg",
+        "test/*.png",
+    ]),
+    deps = [
+        ":lcm_image_array_to_images",
+        "//common:find_resource",
+    ],
 )
 
 drake_cc_googletest(

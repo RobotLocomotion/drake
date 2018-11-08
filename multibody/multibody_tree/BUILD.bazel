@@ -150,9 +150,7 @@ drake_cc_library(
         "//common:autodiff",
         "//common:nice_type_name",
         "//math:geometric_transform",
-        "//math:gradient",
         "//systems/framework:leaf_system",
-        "//util",
     ],
 )
 

@@ -226,11 +226,41 @@ class DifferentialInverseKinematicsParameters {
 };
 
 /**
- * Computes a generalized velocity v, s.t. J * v has the same direction as
- * V, and the difference between |V| and |J * v| is minimized while all
+ * Computes a generalized velocity v_next, via the following
+ * MathematicalProgram:
+ *
+ *   min_{v_next,alpha}   100 * | alpha - |V| |^2
+ *                        // iff J.rows() < J.cols(), then
+ *                          + | q_current + v_next*dt - q_nominal |^2
+ *
+ *   s.t. J*v_next = alpha * V / |V|  // J*v_next has the same direction as V
+ *        joint_lim_min <= q_current + v_next*dt <= joint_lim_max
+ *        joint_vel_lim_min <= v_next <= joint_vel_lim_max
+ *        joint_accel_lim_min <= (v_next - v_current)/dt <=
+ *          joint_accel_lim_max
+ *        for all i > J.rows(),
+ *          -unconstrained_vel_lim <= S.col(i)' v_next <= unconstrained_vel_lim
+ *          where J = UΣS' is the SVD, with the singular values in decreasing
+ *          order.  Note that the constraint is imposed on each column
+ *          independently.
+ *
+ *        and any additional linear constraints added via
+ *          AddLinearVelocityConstraint() in the
+ *          DifferentialInverseKinematicsParameters.
+ *   where J.rows() == V.size() and
+ *   J.cols() == v_current.size() == q_current.size() == v_next.size().  V
+ *   can have any size, with each element representing a constraint on the
+ *   solution (6 constraints specifying an end-effector pose is typical, but
+ *   not required).
+ *
+ * Intuitively, this finds a v_next such that J*v_next is in the same direction
+ * as V, and the difference between |V| and |J * v_next| is minimized while all
  * constraints in @p parameters are satisfied as well. If the problem is
- * redundant, a secondary objective to minimize |q_current + v * dt - q_nominal|
- * is added to the problem. It is possible that the solver is unable to find
+ * redundant, a secondary objective to minimize
+ *   |q_current + v_next * dt - q_nominal|
+ * is added to the problem.
+ *
+ * It is possible that the solver is unable to find
  * such a generalized velocity while not violating the constraints, in which
  * case, status will be set to kStuck in the returned
  * DifferentialInverseKinematicsResult.

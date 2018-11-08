@@ -3,13 +3,13 @@
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
-    "//tools/skylark:pybind.bzl",
+    "@drake//tools/skylark:pybind.bzl",
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
 load(
-    "//tools/skylark:drake_py.bzl",
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_library",
     "drake_py_unittest",
 )
@@ -37,7 +37,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//examples/acrobot:acrobot_plant",
     ],
-    cc_so_name = "acrobot",
     cc_srcs = ["acrobot_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -52,7 +51,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//examples/compass_gait",
     ],
-    cc_so_name = "compass_gait",
     cc_srcs = ["compass_gait_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -65,9 +63,7 @@ drake_pybind_library(
     name = "manipulation_station_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
-        "//examples/manipulation_station:station_simulation",
     ],
-    cc_so_name = "manipulation_station",
     cc_srcs = ["manipulation_station_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -83,7 +79,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//examples/pendulum:pendulum_plant",
     ],
-    cc_so_name = "pendulum",
     cc_srcs = ["pendulum_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -98,7 +93,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//examples/rimless_wheel",
     ],
-    cc_so_name = "rimless_wheel",
     cc_srcs = ["rimless_wheel_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -113,7 +107,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//examples/van_der_pol",
     ],
-    cc_so_name = "van_der_pol",
     cc_srcs = ["van_der_pol_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -195,4 +188,6 @@ drake_py_unittest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    enable_clang_format_lint = True,
+)

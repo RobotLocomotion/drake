@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <utility>
@@ -52,12 +53,6 @@ class GeometryStateTester {
   const std::unordered_map<GeometryId, geometry::internal::InternalGeometry>&
   geometries() const {
     return state_.geometries_;
-  }
-
-  const std::unordered_map<GeometryId,
-                           geometry::internal::InternalAnchoredGeometry>&
-  anchored_geometries() const {
-    return state_.anchored_geometries_;
   }
 
   SourceId GetSourceId(GeometryId geometry_id) {
@@ -221,41 +216,49 @@ GeometryState<T>& GeometryState<T>::operator=(
     // Register all of the frames for this source. This must be done in a "top"
     // down manner; i.e., before a frame is registered, its parent must be
     // registered. So, we'll order the frames appropriately.
+
+    // Initialize by putting all of the frames *known* to be fixed to the world
+    // first in the ordered set and all others in the unprocessed set.
     std::unordered_set<FrameId> unprocessed;
     std::vector<FrameId> ordered_frames;
-    auto order = [&ordered_frames, &unprocessed, &tester](FrameId frame_id) {
+    const auto& all_frame_ids = pair.second;
+    for (FrameId frame_id : all_frame_ids) {
       const geometry::internal::InternalFrame& source_frame =
           tester.frames().at(frame_id);
-      const FrameId parent_id = source_frame.parent_frame_id();
-      if (parent_id == InternalFrame::world_frame_id()) {
+      if (source_frame.parent_frame_id() == InternalFrame::world_frame_id()) {
         ordered_frames.push_back(frame_id);
       } else {
-        auto iter =
-            std::find(ordered_frames.begin(), ordered_frames.end(), parent_id);
-        if (iter == ordered_frames.end()) {
-          // Parent hasn't been ordered yet; defer.
-          unprocessed.insert(frame_id);
-        } else {
-          // If the parent is ordered, this can be ordered too.
-          ordered_frames.push_back(frame_id);
-        }
+        unprocessed.insert(frame_id);
       }
+    }
+
+    // Now iterate through the unprocessed frames and order them.
+
+    // Determine if the given frame id's parent has already been added to the
+    // ordered set.
+    auto has_ordered_parent = [&tester, &ordered_frames](FrameId frame_id) {
+      const geometry::internal::InternalFrame& source_frame =
+          tester.frames().at(frame_id);
+      auto iter = std::find(ordered_frames.begin(), ordered_frames.end(),
+          source_frame.parent_frame_id());
+      return iter != ordered_frames.end();
     };
 
-    const auto& frame_ids = pair.second;
-    for (const auto frame_id : frame_ids) {
-      order(frame_id);
-    }
-    // Now iterate through the unprocessed frames and order them.
     while (!unprocessed.empty()) {
-      const size_t initial_size = unprocessed.size();
+      std::unordered_set<FrameId> moved;
       for (FrameId frame_id : unprocessed) {
+        if (has_ordered_parent(frame_id)) {
+          ordered_frames.push_back(frame_id);
+          moved.insert(frame_id);
+        }
+      }
+      for (FrameId frame_id : moved) {
         unprocessed.erase(frame_id);
-        order(frame_id);
       }
       // *Some* progress must always be made.
-      DRAKE_DEMAND(initial_size > unprocessed.size());
+      DRAKE_DEMAND(moved.size() > 0);
     }
+
     // Now register the frames in a top-down order.
     for (FrameId frame_id : ordered_frames) {
       const geometry::internal::InternalFrame& source_frame =
@@ -268,72 +271,59 @@ GeometryState<T>& GeometryState<T>::operator=(
     }
   }
 
-  // Register only those geometries with non-zero alpha in the visual material.
-  // This is a bit of hack based on the fact that SDF parsing for MBP assigns
-  // an "invisible" material to all geometries registered as collision
-  // geometry.
-  // Register *anchored* geometries. They all affix directly to the world; so
-  // we can simply register them directly.
-  for (const auto& source_anchored : tester.source_anchored_geometry_map()) {
-    const SourceId source_id = source_anchored.first;
-    for (GeometryId geometry_id : source_anchored.second) {
-      const geometry::internal::InternalAnchoredGeometry& geometry =
-          tester.anchored_geometries().at(geometry_id);
-      const Vector4<double>& diffuse = geometry.get_visual_material().diffuse();
-      if (diffuse(3) > 0) {
-        RegisterValidGeometry(source_id, InternalFrame::world_frame_id(),
-                              geometry_id, geometry.get_shape().Clone(),
-                              geometry.get_name(),
-                              geometry.get_pose_in_parent(), diffuse, nullptr);
-      }
-    }
-  }
-
   // Register *dynamic* geometries. Like frames, geometries can be registered on
   // other geometries and they need to be registered *in order*.
   std::unordered_set<GeometryId> unprocessed_geometries;
   std::vector<GeometryId> ordered_geometry;
-  auto order_geometry = [&ordered_geometry, &unprocessed_geometries, &tester](
-      GeometryId geometry_id) {
+
+  // Partition geometries between those that have parent geometries into the
+  // unprocessed_geometries and those that don't into ordered_geometries.
+  for (const auto& pair : tester.geometries()) {
+    GeometryId id = pair.first;
     const geometry::internal::InternalGeometry& geometry =
-        tester.geometries().at(geometry_id);
-    if (!geometry.get_parent_id()) {
-      ordered_geometry.push_back(geometry_id);
+        tester.geometries().at(id);
+    if (!geometry.parent_id()) {
+      ordered_geometry.push_back(id);
     } else {
-      auto iter = std::find(ordered_geometry.begin(), ordered_geometry.end(),
-                            geometry_id);
-      if (iter == ordered_geometry.end()) {
-        // Parent hasn't been ordered yet; defer.
-        unprocessed_geometries.insert(geometry_id);
-      } else {
-        // If the parent is ordered, this can be ordered too.
-        ordered_geometry.push_back(geometry_id);
-      }
+      unprocessed_geometries.insert(id);
     }
+  }
+
+  // Determine if the given frame id's parent has already been added to the
+  // ordered set.
+  auto has_ordered_geometry_parent = [&tester,
+                                      &ordered_geometry](GeometryId id) {
+    const geometry::internal::InternalGeometry& geometry =
+        tester.geometries().at(id);
+    auto iter = std::find(ordered_geometry.begin(), ordered_geometry.end(),
+                          geometry.parent_id());
+    return iter != ordered_geometry.end();
   };
 
-  for (const auto& pair : tester.geometries()) {
-    order_geometry(pair.first);
-  }
-  // Now iterate through the unprocessed frames and order them.
   while (!unprocessed_geometries.empty()) {
-    const size_t initial_size = unprocessed_geometries.size();
-    for (GeometryId geometry_id : unprocessed_geometries) {
-      unprocessed_geometries.erase(geometry_id);
-      order_geometry(geometry_id);
+    std::unordered_set<GeometryId> moved;
+    for (GeometryId id : unprocessed_geometries) {
+      if (has_ordered_geometry_parent(id)) {
+        ordered_geometry.push_back(id);
+        moved.insert(id);
+      }
+    }
+    for (GeometryId id : moved) {
+      unprocessed_geometries.erase(id);
     }
     // *Some* progress must always be made.
-    DRAKE_DEMAND(initial_size > unprocessed_geometries.size());
+    DRAKE_DEMAND(moved.size() > 0);
   }
+
   // Now register the geometries in a top-down order.
   for (GeometryId geometry_id : ordered_geometry) {
     const geometry::internal::InternalGeometry& geometry =
         tester.geometries().at(geometry_id);
-    const Vector4<double>& diffuse = geometry.get_visual_material().diffuse();
+    const Vector4<double>& diffuse = geometry.visual_material().diffuse();
     if (diffuse(3) > 0) {
       internal::InternalGeometry* parent_geometry = nullptr;
-      if (geometry.get_parent_id()) {
-        GeometryId parent_id = *geometry.get_parent_id();
+      if (geometry.parent_id()) {
+        GeometryId parent_id = *geometry.parent_id();
         parent_geometry = &geometries_.at(parent_id);
       }
       // NOTE: This *could* fail if a geometry with non-zero alpha is parented
@@ -342,9 +332,9 @@ GeometryState<T>& GeometryState<T>::operator=(
       // the accompanying README.md.
       const SourceId source_id = tester.GetSourceId(geometry_id);
       RegisterValidGeometry(source_id,
-                            geometry.get_frame_id(), geometry_id,
-                            geometry.get_shape().Clone(), geometry.get_name(),
-                            geometry.get_pose_in_parent(), diffuse,
+                            geometry.frame_id(), geometry_id,
+                            geometry.shape().Clone(), geometry.name(),
+                            geometry.X_PG(), diffuse,
                             parent_geometry);
     }
   }

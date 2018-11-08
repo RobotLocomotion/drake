@@ -1149,7 +1149,6 @@ drake_py_unittest(
     data = [
         ":cpplint_wrapper",
         ":eigen_types.h",
-        "@styleguide//:cpplint/cpplint_test_header.h",
     ],
 )
 

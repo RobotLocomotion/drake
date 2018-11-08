@@ -919,6 +919,21 @@ SolverId UnrevisedLemkeSolverId::id() {
   return singleton.access();
 }
 
+template <typename T>
+bool UnrevisedLemkeSolver<T>::AreProgramAttributesSatisfied(
+    const MathematicalProgram& prog) const {
+  return UnrevisedLemkeSolver<T>::ProgramAttributesSatisfied(prog);
+}
+
+template <typename T>
+bool UnrevisedLemkeSolver<T>::ProgramAttributesSatisfied(
+    const MathematicalProgram& prog) {
+  static const never_destroyed<ProgramAttributes> solver_capability(
+      std::initializer_list<ProgramAttribute>{
+          ProgramAttribute::kLinearComplementarityConstraint});
+  return prog.required_capabilities() == solver_capability.access();
+}
+
 }  // namespace solvers
 }  // namespace drake
 

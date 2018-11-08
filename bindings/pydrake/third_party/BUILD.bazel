@@ -1,11 +1,13 @@
+# -*- python -*-
+
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
-    "//tools/skylark:drake_py.bzl",
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_library",
 )
 load(
-    "//tools/skylark:pybind.bzl",
+    "@drake//tools/skylark:pybind.bzl",
     "get_pybind_package_info",
 )
 load(":forward_files.bzl", "forward_files")
@@ -73,4 +75,6 @@ install(
     doc_dest = "share/doc",
 )
 
-add_lint_tests()
+add_lint_tests(
+    enable_clang_format_lint = True,
+)

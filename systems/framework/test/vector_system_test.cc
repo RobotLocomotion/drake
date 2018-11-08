@@ -175,7 +175,7 @@ TEST_F(VectorSystemTest, TopologyFailFast) {
   {  // A second input.
     TestVectorSystem dut;
     EXPECT_NO_THROW(dut.CreateDefaultContext());
-    dut.DeclareAbstractInputPort();
+    dut.DeclareAbstractInputPort(kUseDefaultName, Value<std::string>{});
     EXPECT_THROW(dut.CreateDefaultContext(), std::exception);
   }
 

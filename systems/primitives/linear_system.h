@@ -206,19 +206,19 @@ std::unique_ptr<LinearSystem<double>> Linearize(
 /// A first-order Taylor series approximation to a @p system in the neighborhood
 /// of an arbitrary point.  When Taylor-expanding a system at a non-equilibrium
 /// point, it may be represented either of the form:
-///   @f[ \dot{x} - \dot{x_0} = A (x - x_0) + B (u - u_0), @f]
+///   @f[ \dot{x} - \dot{x}_0 = A (x - x_0) + B (u - u_0), @f]
 /// for continuous time, or
 ///   @f[ x[n+1] - x_0[n+1] = A (x[n] - x_0[n]) + B (u[n] - u_0[n]), @f]
 /// for discrete time.  As above, we denote @f$ x_0, u_0 @f$ to be the nominal
 /// state and input at the provided @p context.  The system description is
-/// affine when the terms @f$ \dot{x_0} - A x_0 - B u_0 @f$ and @f$ x_0[n+1] -
+/// affine when the terms @f$ \dot{x}_0 - A x_0 - B u_0 @f$ and @f$ x_0[n+1] -
 /// A x_0[n] - B u_0[n] @f$ are nonzero.
 ///
 /// More precisely, let x be a state and u be an input.  This function returns
 /// an AffineSystem of the form:
 ///   @f[ \dot{x} = A x + B u + f_0, @f] (CT)
 ///   @f[ x[n+1] = A x[n] + B u[n] + f_0, @f] (DT)
-/// where @f$ f_0 = \dot{x_0} - A x_0 - B u_0 @f$ (CT) and
+/// where @f$ f_0 = \dot{x}_0 - A x_0 - B u_0 @f$ (CT) and
 /// @f$ f_0 = x_0[n+1] - A x[n] - B u[n] @f$ (DT).
 ///
 /// This method currently supports approximating around at most a single vector

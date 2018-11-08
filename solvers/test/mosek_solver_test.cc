@@ -27,9 +27,13 @@ INSTANTIATE_TEST_CASE_P(
 TEST_F(UnboundedLinearProgramTest0, Test) {
   MosekSolver solver;
   if (solver.available()) {
-    const SolutionResult result = solver.Solve(*prog_);
+    const MathematicalProgram& const_prog = *prog_;
+    MathematicalProgramResult result;
+    solver.Solve(const_prog, {}, {}, &result);
     // Mosek can only detect dual infeasibility, not primal unboundedness.
-    EXPECT_EQ(result, SolutionResult::kDualInfeasible);
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
+    EXPECT_EQ(
+        result.get_solver_details().GetValue<MosekSolverDetails>().rescode, 0);
   }
 }
 
