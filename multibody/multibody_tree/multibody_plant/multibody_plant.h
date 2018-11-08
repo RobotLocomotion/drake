@@ -227,6 +227,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     geometry_id_to_collision_index_ = other.geometry_id_to_collision_index_;
     visual_geometries_ = other.visual_geometries_;
     collision_geometries_ = other.collision_geometries_;
+    if (geometry_source_is_registered())
+      DeclareSceneGraphPorts();
+
     // MultibodyTree::CloneToScalar() already called MultibodyTree::Finalize()
     // on the new MultibodyTree on U. Therefore we only Finalize the plant's
     // internals (and not the MultibodyTree).
