@@ -123,7 +123,9 @@ TEST_F(PrismaticMobilizerTest, CalcAcrossMobilizerTransform) {
   // Though checked below, we make it explicit here that this mobilizer should
   // introduce no rotations at all.
   EXPECT_EQ(X_FM.rotation().matrix(), Matrix3d::Identity());
-  EXPECT_TRUE(X_FM.IsNearlyEqualTo(X_FM_expected, kTolerance));
+  EXPECT_TRUE(CompareMatrices(X_FM.GetAsMatrix34(),
+                              X_FM_expected.GetAsMatrix34(),
+                              kTolerance, MatrixCompareType::relative));
 }
 
 TEST_F(PrismaticMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {

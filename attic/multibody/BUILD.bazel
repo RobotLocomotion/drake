@@ -171,9 +171,9 @@ drake_cc_library(
     deps = [
         "//attic/multibody/collision",
         "//attic/multibody/joints",
+        "//attic/util",
         "//common:autodiff",
         "//common:essential",
-        "//util",
     ],
 )
 
@@ -258,11 +258,11 @@ _RBT_SHARD_COUNT = 2
             "//attic/multibody/collision",
             "//attic/multibody/joints",
             "//attic/multibody/shapes",
+            "//attic/util",
             "//common:autodiff",
             "//common:essential",
             "//math:geometric_transform",
             "//math:gradient",
-            "//util",
         ],
     )
     for i in range(_RBT_SHARD_COUNT)

@@ -56,5 +56,32 @@ SolverId ChooseBestSolver(const MathematicalProgram& prog) {
   throw std::invalid_argument(
       "There is no available solver for the optimization program");
 }
+
+std::unique_ptr<MathematicalProgramSolverInterface> MakeSolver(
+    const SolverId& id) {
+  if (id == LinearSystemSolver::id()) {
+    return std::make_unique<LinearSystemSolver>();
+  } else if (id == EqualityConstrainedQPSolver::id()) {
+    return std::make_unique<EqualityConstrainedQPSolver>();
+  } else if (id == MosekSolver::id()) {
+    return std::make_unique<MosekSolver>();
+  } else if (id == GurobiSolver::id()) {
+    return std::make_unique<GurobiSolver>();
+  } else if (id == OsqpSolver::id()) {
+    return std::make_unique<OsqpSolver>();
+  } else if (id == MobyLcpSolverId::id()) {
+    return std::make_unique<MobyLCPSolver<double>>();
+  } else if (id == SnoptSolver::id()) {
+    return std::make_unique<SnoptSolver>();
+  } else if (id == IpoptSolver::id()) {
+    return std::make_unique<IpoptSolver>();
+  } else if (id == NloptSolver::id()) {
+    return std::make_unique<NloptSolver>();
+  } else if (id == ScsSolver::id()) {
+    return std::make_unique<ScsSolver>();
+  } else {
+    throw std::invalid_argument("MakeSolver: no matching solver " + id.name());
+  }
+}
 }  // namespace solvers
 }  // namespace drake

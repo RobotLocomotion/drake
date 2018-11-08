@@ -78,7 +78,9 @@ TEST_F(WeldMobilizerTest, ZeroSizedState) {
 TEST_F(WeldMobilizerTest, CalcAcrossMobilizerTransform) {
   const math::RigidTransformd X_FM(
       weld_body_to_world_->CalcAcrossMobilizerTransform(*mbt_context_));
-  EXPECT_TRUE(X_FM.IsNearlyEqualTo(X_WB_, kTolerance));
+  EXPECT_TRUE(CompareMatrices(X_FM.GetAsMatrix34(),
+                              X_WB_.GetAsMatrix34(),
+                              kTolerance, MatrixCompareType::relative));
 }
 
 TEST_F(WeldMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {

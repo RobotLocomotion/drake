@@ -33,17 +33,17 @@ PYBIND11_MODULE(api, m) {
       .def(py::init<double, double, double>(), py::arg("x"), py::arg("y"),
            py::arg("z"), doc.GeoPositionT.ctor.doc_4)
       .def("xyz", &GeoPosition::xyz, py_reference_internal,
-        doc.GeoPositionT.xyz.doc);
+           doc.GeoPositionT.xyz.doc);
 
   py::class_<LanePosition>(m, "LanePosition", doc.LanePositionT.doc)
       .def(py::init<double, double, double>(), py::arg("s"), py::arg("r"),
            py::arg("h"), doc.LanePositionT.ctor.doc_4)
       .def("srh", &LanePosition::srh, py_reference_internal,
-        doc.LanePositionT.srh.doc);
+           doc.LanePositionT.srh.doc);
 
   py::class_<RoadPosition> road_position(m, "RoadPosition",
                                          doc.RoadPosition.doc);
-  road_position
+  road_position  // BR
       .def(py::init<>(), doc.RoadPosition.ctor.doc)
       .def(py::init<const Lane*, const LanePosition&>(), py::arg("lane"),
            py::arg("pos"),
@@ -55,20 +55,20 @@ PYBIND11_MODULE(api, m) {
 
   py::class_<Rotation>(m, "Rotation", doc.Rotation.doc)
       .def("quat", &Rotation::quat, py_reference_internal,
-        doc.Rotation.quat.doc)
+           doc.Rotation.quat.doc)
       .def("rpy", &Rotation::rpy, doc.Rotation.rpy.doc);
 
   py::class_<RoadGeometry>(m, "RoadGeometry", doc.RoadGeometry.doc)
       .def("num_junctions", &RoadGeometry::num_junctions,
-        doc.RoadGeometry.num_junctions.doc)
+           doc.RoadGeometry.num_junctions.doc)
       .def("junction", &RoadGeometry::junction, py_reference_internal,
-        doc.RoadGeometry.junction.doc);
+           doc.RoadGeometry.junction.doc);
 
   py::class_<Junction>(m, "Junction", doc.Junction.doc)
       .def("num_segments", &Junction::num_segments,
-        doc.Junction.num_segments.doc)
+           doc.Junction.num_segments.doc)
       .def("segment", &Junction::segment, py_reference_internal,
-        doc.Junction.segment.doc);
+           doc.Junction.segment.doc);
 
   py::class_<Segment>(m, "Segment", doc.Segment.doc)
       .def("num_lanes", &Segment::num_lanes, doc.Segment.num_lanes.doc)

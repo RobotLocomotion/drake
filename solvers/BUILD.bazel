@@ -55,6 +55,7 @@ drake_cc_package_library(
         ":scs_solver",
         ":snopt_solver",
         ":solution_result",
+        ":solve",
         ":solver_id",
         ":solver_options",
         ":solver_result",
@@ -597,6 +598,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "solve",
+    srcs = ["solve.cc"],
+    hdrs = ["solve.h"],
+    deps = [
+        ":choose_best_solver",
+        ":mathematical_program",
+    ],
+)
+
 # Internal Solvers.
 
 drake_cc_library(
@@ -678,6 +689,7 @@ drake_cc_library(
             "//math:eigen_sparse_triplet",
             "//common:scoped_singleton",
             "@gurobi//:gurobi_c",
+            "@fmt",
         ],
         "//conditions:default": [
             ":mathematical_program_api",
@@ -1043,6 +1055,7 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -1470,6 +1483,14 @@ drake_cc_googletest(
         ":choose_best_solver",
         ":mathematical_program",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "solve_test",
+    deps = [
+        ":solve",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

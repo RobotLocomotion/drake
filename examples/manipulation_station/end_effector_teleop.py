@@ -210,6 +210,8 @@ parser.add_argument(
     "--hardware", action='store_true',
     help="Use the ManipulationStationHardwareInterface instead of an "
          "in-process simulation.")
+parser.add_argument("--test", action='store_true',
+                    help="Disable opening the gui window for testing.")
 args = parser.parse_args()
 
 builder = DiagramBuilder()
@@ -226,7 +228,7 @@ else:
         station.get_mutable_scene_graph())
     station.Finalize()
 
-    ConnectDrakeVisualizer(builder, station.get_mutable_scene_graph(),
+    ConnectDrakeVisualizer(builder, station.get_scene_graph(),
                            station.GetOutputPort("pose_bundle"))
 
 robot = station.get_controller_plant()
@@ -249,6 +251,9 @@ builder.Connect(differential_ik.GetOutputPort("joint_position_desired"),
                 station.GetInputPort("iiwa_position"))
 
 teleop = builder.AddSystem(EndEffectorTeleop())
+if args.test:
+    teleop.window.withdraw()  # Don't display the window when testing.
+
 builder.Connect(teleop.get_output_port(0),
                 differential_ik.GetInputPort("X_WE_desired"))
 
@@ -281,11 +286,11 @@ if not args.hardware:
     # Place the object in the middle of the workspace.
     X_WObject = Isometry3.Identity()
     X_WObject.set_translation([.6, 0, 0])
-    station.get_mutable_multibody_plant().tree().SetFreeBodyPoseOrThrow(
-        station.get_mutable_multibody_plant().GetBodyByName("base_link",
-                                                            object),
+    station.get_multibody_plant().tree().SetFreeBodyPoseOrThrow(
+        station.get_multibody_plant().GetBodyByName("base_link",
+                                                    object),
         X_WObject, station.GetMutableSubsystemContext(
-            station.get_mutable_multibody_plant(),
+            station.get_multibody_plant(),
             station_context))
 
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(

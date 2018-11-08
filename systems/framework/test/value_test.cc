@@ -169,10 +169,14 @@ GTEST_TEST(ValueTest, TypeInfo) {
   auto base_value =
       std::make_unique<Value<BasicVector<double>>>(MyVector2d::Make(1., 2.));
 
+  EXPECT_EQ(double_value->static_type_info(), typeid(double));
   EXPECT_EQ(double_value->type_info(), typeid(double));
+
+  EXPECT_EQ(string_value->static_type_info(), typeid(std::string));
   EXPECT_EQ(string_value->type_info(), typeid(std::string));
 
-  // Must return the typeid of the most-derived type.
+  // The static type is BasicVector, but the runtime type is MyVector2d.
+  EXPECT_EQ(base_value->static_type_info(), typeid(BasicVector<double>));
   EXPECT_EQ(base_value->type_info(), typeid(MyVector2d));
 }
 

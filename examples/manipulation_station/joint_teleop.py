@@ -29,6 +29,8 @@ parser.add_argument(
     "--hardware", action='store_true',
     help="Use the ManipulationStationHardwareInterface instead of an "
          "in-process simulation.")
+parser.add_argument("--test", action='store_true',
+                    help="Disable opening the gui window for testing.")
 args = parser.parse_args()
 
 builder = DiagramBuilder()
@@ -49,11 +51,14 @@ else:
         station.get_mutable_scene_graph())
     station.Finalize()
 
-    ConnectDrakeVisualizer(builder, station.get_mutable_scene_graph(),
+    ConnectDrakeVisualizer(builder, station.get_scene_graph(),
                            station.GetOutputPort("pose_bundle"))
 
 teleop = builder.AddSystem(JointSliders(station.get_controller_plant(),
                                         length=800))
+if args.test:
+    teleop.window.withdraw()  # Don't display the window when testing.
+
 builder.Connect(teleop.get_output_port(0), station.GetInputPort(
     "iiwa_position"))
 
@@ -86,17 +91,17 @@ if not args.hardware:
     # Place the object in the middle of the workspace.
     X_WObject = Isometry3.Identity()
     X_WObject.set_translation([.6, 0, 0])
-    station.get_mutable_multibody_plant().tree().SetFreeBodyPoseOrThrow(
-        station.get_mutable_multibody_plant().GetBodyByName("base_link",
-                                                            object),
+    station.get_multibody_plant().tree().SetFreeBodyPoseOrThrow(
+        station.get_multibody_plant().GetBodyByName("base_link",
+                                                    object),
         X_WObject, station.GetMutableSubsystemContext(
-            station.get_mutable_multibody_plant(),
+            station.get_multibody_plant(),
             station_context))
 
 # Eval the output port once to read the initial positions of the IIWA.
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(
     station_context).get_value()
-teleop.set(q0)
+teleop.set_position(q0)
 
 # This is important to avoid duplicate publishes to the hardware interface:
 simulator.set_publish_every_time_step(False)

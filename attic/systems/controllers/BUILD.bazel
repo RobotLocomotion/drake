@@ -28,6 +28,7 @@ drake_cc_library(
     srcs = ["controlUtil.cpp"],
     hdrs = ["controlUtil.h"],
     deps = [
+        "//attic/util",
         "//common:essential",
         "//common/trajectories:piecewise_polynomial",
         "//math:autodiff",
@@ -35,7 +36,6 @@ drake_cc_library(
         "//math:geometric_transform",
         "//multibody:resolve_center_of_pressure",
         "//multibody:rigid_body_tree",
-        "//util",
     ],
 )
 
@@ -53,9 +53,9 @@ drake_cc_library(
     deps = [
         ":control_util",
         ":side",
+        "//attic/util",
         "//common:essential",
         "//multibody:rigid_body_tree",
-        "//util",
     ],
 )
 
@@ -88,11 +88,11 @@ drake_cc_library(
     srcs = ["polynomial_encode_decode.cc"],
     hdrs = ["polynomial_encode_decode.h"],
     deps = [
+        "//attic/util",
         "//common/trajectories:piecewise_polynomial",
         "//lcmtypes:piecewise_polynomial",
         "//lcmtypes:polynomial",
         "//lcmtypes:polynomial_matrix",
-        "//util",
     ],
 )
 
@@ -114,6 +114,7 @@ drake_cc_library(
         ":yaml_util",
         "//attic/multibody/joints",
         "//attic/multibody/parsers",
+        "//attic/util",
         "//common:essential",
         "//common:find_resource",
         "//common:is_approx_equal_abstol",
@@ -121,7 +122,6 @@ drake_cc_library(
         "//lcmtypes:zmp_com_observer_state",
         "//math:geometric_transform",
         "//solvers:gurobi_qp",
-        "//util",
     ],
 )
 

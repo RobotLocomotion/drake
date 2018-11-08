@@ -39,7 +39,10 @@ class MosekSolver : public MathematicalProgramSolverInterface {
 
   static bool is_available();
 
-  MathematicalProgramResult Solve(const MathematicalProgram& prog) const;
+  void Solve(const MathematicalProgram& prog,
+             const optional<Eigen::VectorXd>& initial_guess,
+             const optional<SolverOptions>& solver_options,
+             MathematicalProgramResult* result) const override;
 
   // Todo(hongkai.dai@tri.global): deprecate Solve with a non-const
   // MathematicalProgram.
@@ -90,10 +93,6 @@ class MosekSolver : public MathematicalProgramSolverInterface {
   static std::shared_ptr<License> AcquireLicense();
 
  private:
-  // TODO(hongkai.dai) remove this function when we remove Solve() with a
-  // non-cost MathematicalProgram.
-  MathematicalProgramResult SolveConstProg(
-      const MathematicalProgram& prog) const;
   // Note that this is mutable to allow latching the allocation of mosek_env_
   // during the first call of Solve() (which avoids grabbing a Mosek license
   // before we know that we actually want one).

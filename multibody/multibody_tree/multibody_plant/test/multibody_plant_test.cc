@@ -1355,6 +1355,10 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
       plant_autodiff.GetBodyByName("link2")).size(), link2_num_visuals);
   EXPECT_EQ(plant_autodiff.GetVisualGeometriesForBody(
       plant_autodiff.GetBodyByName("link3")).size(), link3_num_visuals);
+
+  // Make sure the geometry ports were included in the autodiffed plant.
+  EXPECT_NO_THROW(plant_autodiff.get_geometry_query_input_port());
+  EXPECT_NO_THROW(plant_autodiff.get_geometry_poses_output_port());
 }
 
 // This test is used to verify the correctness of the methods to compute the

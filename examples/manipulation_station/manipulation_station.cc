@@ -9,6 +9,7 @@
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
@@ -103,7 +104,8 @@ SpatialInertia<double> MakeCompositeGripperInertia(
 }
 
 template <typename T>
-ManipulationStation<T>::ManipulationStation(double time_step)
+ManipulationStation<T>::ManipulationStation(double time_step,
+                                            IiwaCollisionModel collision_model)
     : owned_plant_(std::make_unique<MultibodyPlant<T>>(time_step)),
       owned_scene_graph_(std::make_unique<SceneGraph<T>>()),
       owned_controller_plant_(std::make_unique<MultibodyPlant<T>>()) {
@@ -128,11 +130,23 @@ ManipulationStation<T>::ManipulationStation(double time_step)
           .GetAsIsometry3());
 
   // Add the Kuka IIWA.
-  const std::string iiwa_sdf_path = FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/"
-      "sdf/iiwa14_no_collision.sdf");
-  iiwa_model_ =
-      AddModelFromSdfFile(iiwa_sdf_path, "iiwa", plant_);
+  std::string iiwa_sdf_path;
+  switch (collision_model) {
+    case IiwaCollisionModel::kNoCollision:
+      iiwa_sdf_path = FindResourceOrThrow(
+          "drake/manipulation/models/iiwa_description/iiwa7/"
+          "iiwa7_no_collision.sdf");
+      break;
+    case IiwaCollisionModel::kBoxCollision:
+      iiwa_sdf_path = FindResourceOrThrow(
+          "drake/manipulation/models/iiwa_description/iiwa7/"
+          "iiwa7_with_box_collision.sdf");
+      break;
+    default:
+      DRAKE_ABORT_MSG("Unrecognized collision_model.");
+  }
+
+  iiwa_model_ = AddModelFromSdfFile(iiwa_sdf_path, "iiwa", plant_);
   plant_->WeldFrames(plant_->world_frame(),
                      plant_->GetFrameByName("iiwa_link_0", iiwa_model_));
 
@@ -143,7 +157,7 @@ ManipulationStation<T>::ManipulationStation(double time_step)
   wsg_model_ =
       AddModelFromSdfFile(wsg_sdf_path, "gripper", plant_);
   const RigidTransform<double> wsg_pose(RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
-                                        Vector3d(0, 0, 0.081));
+                                        Vector3d(0, 0, 0.114));
   plant_->WeldFrames(plant_->GetFrameByName("iiwa_link_7", iiwa_model_),
                      plant_->GetFrameByName("body", wsg_model_),
                      wsg_pose.GetAsIsometry3());
@@ -361,6 +375,11 @@ void ManipulationStation<T>::Finalize() {
 
   builder.ExportOutput(scene_graph_->get_pose_bundle_output_port(),
                        "pose_bundle");
+
+  builder.ExportOutput(plant_->get_contact_results_output_port(),
+      "contact_results");
+  builder.ExportOutput(plant_->get_continuous_state_output_port(),
+      "plant_continuous_state");
 
   builder.BuildInto(this);
 }

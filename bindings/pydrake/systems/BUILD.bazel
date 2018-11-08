@@ -223,6 +223,17 @@ drake_py_unittest(
     ],
 )
 
+drake_py_library(
+    name = "meshcat_visualizer_py",
+    srcs = ["meshcat_visualizer.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        ":module_py",
+        "//lcmtypes:lcmtypes_py",
+        "@meshcat_python//:meshcat",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":analysis_py",
     ":controllers_py",
@@ -236,6 +247,7 @@ PY_LIBRARIES_WITH_INSTALL = [
 
 PY_LIBRARIES = [
     ":drawing_py",
+    ":meshcat_visualizer_py",
     ":scalar_conversion_py",
     ":module_py",
 ]
@@ -349,6 +361,18 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "meshcat_visualizer_test",
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":meshcat_visualizer_py",
+        ":test_util_py",
+        "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake/multibody",
+    ],
+)
+
+drake_py_unittest(
     name = "primitives_test",
     deps = [
         ":analysis_py",
@@ -361,6 +385,7 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "rendering_test",
+    data = ["//multibody/benchmarks/acrobot:models"],
     deps = [
         ":rendering_py",
         "//bindings/pydrake/multibody:multibody_tree_py",
@@ -404,4 +429,6 @@ drake_py_binary(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    enable_clang_format_lint = True,
+)
