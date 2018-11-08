@@ -1549,6 +1549,8 @@ class MultibodyTree {
   /// `v` the vector of generalized velocities.
   /// @note This method returns a reference to existing data, exhibits constant
   ///       i.e., O(1) time complexity, and runs very quickly.
+  /// @throws std::exception if the `context` does not correspond to the context
+  /// for a multibody model.
   Eigen::VectorBlock<const VectorX<T>> GetMultibodyStateVector(
       const systems::Context<T>& context) const;
 
@@ -1566,6 +1568,8 @@ class MultibodyTree {
   /// Returns a Eigen vector containing the multibody state `x = [q; v]`
   /// of the model with `q` the vector of generalized positions and `v` the
   /// vector of generalized velocities for model instance `model_instance`.
+  /// @throws std::exception if the `context` does not correspond to the context
+  /// for a multibody model or `model_instance` is invalid.
   VectorX<T> GetMultibodyStateVector(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance) const;
@@ -1597,6 +1601,10 @@ class MultibodyTree {
   /// Sets `context` to store the multibody state `x = [q; v]`
   /// with `q` the vector of generalized positions and `v` the vector
   /// of generalized velocities for model instance `model_instance`.
+  /// @throws std::exception if the `context` does not correspond to the context
+  /// for a multibody model, `context` is nullptr, `model_instance` is invalid,
+  /// or `instance_state.size()` does not equal `num_positions(model_instance)`
+  /// + `num_velocities(model_instance)`.
   void SetMultibodyStateVector(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& instance_state,
