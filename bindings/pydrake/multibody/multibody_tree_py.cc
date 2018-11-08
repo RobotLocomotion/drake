@@ -258,24 +258,24 @@ void init_module(py::module m) {
                  &Class::GetModelInstanceName),
              py::arg("model_instance"), py_reference_internal,
              doc.MultibodyTree.GetModelInstanceName.doc)
-        .def("get_multibody_state_vector",
+        .def("GetMultibodyStateVector",
              [](const MultibodyTree<T>* self,
                 const Context<T>& context) -> Eigen::Ref<const VectorX<T>> {
-               return self->get_multibody_state_vector(context);
+               return self->GetMultibodyStateVector(context);
              },
              py_reference,
              // Keep alive, ownership: `return` keeps `Context` alive.
              py::keep_alive<0, 2>(), py::arg("context"),
-             doc.MultibodyTree.get_multibody_state_vector.doc)
-        .def("get_mutable_multibody_state_vector",
+             doc.MultibodyTree.GetMultibodyStateVector.doc)
+        .def("GetMutableMultibodyStateVector",
              [](const MultibodyTree<T>* self,
                 Context<T>* context) -> Eigen::Ref<VectorX<T>> {
-               return self->get_mutable_multibody_state_vector(context);
+               return self->GetMutableMultibodyStateVector(context);
              },
              py_reference,
              // Keep alive, ownership: `return` keeps `Context` alive.
              py::keep_alive<0, 2>(), py::arg("context"),
-             doc.MultibodyTree.get_mutable_multibody_state_vector.doc)
+             doc.MultibodyTree.GetMutableMultibodyStateVector.doc)
         .def("CalcPointsPositions",
              [](const Class* self, const Context<T>& context,
                 const Frame<T>& frame_B,

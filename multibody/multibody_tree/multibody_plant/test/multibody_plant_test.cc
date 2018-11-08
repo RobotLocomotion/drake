@@ -1829,13 +1829,13 @@ TEST_P(KukaArmTest, StateAccess) {
   // the context. Changes to state through the context can change the values
   // referenced by xc.
   Eigen::VectorBlock<const VectorX<double>> xc =
-      plant_->tree().get_multibody_state_vector(*context_);
+      plant_->tree().GetMultibodyStateVector(*context_);
   EXPECT_EQ(xc, xc_expected);
 
   // Get a mutable state and modified it.
   // Note: xc above is referencing values stored in the context. Therefore
   // setting the entire state to zero changes the values referenced by xc.
-  plant_->tree().get_mutable_multibody_state_vector(context_.get()).setZero();
+  plant_->tree().GetMutableMultibodyStateVector(context_.get()).setZero();
   EXPECT_EQ(xc, VectorX<double>::Zero(plant_->num_multibody_states()));
 }
 

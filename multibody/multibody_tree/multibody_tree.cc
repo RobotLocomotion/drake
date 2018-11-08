@@ -77,14 +77,29 @@ void MultibodyTree<T>::set_actuation_vector(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& u_instance,
     EigenPtr<VectorX<T>> u) const {
-  model_instances_.at(model_instance)->set_actuation_vector(u_instance, u);
+  SetActuationInArray(model_instance, u_instance, u);
+}
+
+template <typename T>
+void MultibodyTree<T>::SetActuationInArray(
+    ModelInstanceIndex model_instance,
+    const Eigen::Ref<const VectorX<T>>& u_instance,
+    EigenPtr<VectorX<T>> u) const {
+  model_instances_.at(model_instance)->SetActuationInArray(u_instance, u);
 }
 
 template <typename T>
 VectorX<T> MultibodyTree<T>::get_positions_from_array(
     ModelInstanceIndex model_instance,
-    const Eigen::Ref<const VectorX<T>>& q_array) const {
-  return model_instances_.at(model_instance)->get_positions_from_array(q_array);
+    const Eigen::Ref<const VectorX<T>>& q) const {
+  return GetPositionsFromArray(model_instance, q);
+}
+
+template <typename T>
+VectorX<T> MultibodyTree<T>::GetPositionsFromArray(
+    ModelInstanceIndex model_instance,
+    const Eigen::Ref<const VectorX<T>>& q) const {
+  return model_instances_.at(model_instance)->GetPositionsFromArray(q);
 }
 
 template <class T>
@@ -92,15 +107,29 @@ void MultibodyTree<T>::set_positions_in_array(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& model_q,
     EigenPtr<VectorX<T>> q_array) const {
-  model_instances_.at(model_instance)->set_positions_in_array(model_q, q_array);
+  SetPositionsInArray(model_instance, model_q, q_array);
+}
+
+template <class T>
+void MultibodyTree<T>::SetPositionsInArray(
+    ModelInstanceIndex model_instance,
+    const Eigen::Ref<const VectorX<T>>& q_instance,
+    EigenPtr<VectorX<T>> q) const {
+  model_instances_.at(model_instance)->SetPositionsInArray(q_instance, q);
 }
 
 template <typename T>
 VectorX<T> MultibodyTree<T>::get_velocities_from_array(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& v_array) const {
-  return model_instances_.at(model_instance)->get_velocities_from_array(
-      v_array);
+  return GetVelocitiesFromArray(model_instance, v_array);
+}
+
+template <typename T>
+VectorX<T> MultibodyTree<T>::GetVelocitiesFromArray(
+    ModelInstanceIndex model_instance,
+    const Eigen::Ref<const VectorX<T>>& v) const {
+  return model_instances_.at(model_instance)->GetVelocitiesFromArray(v);
 }
 
 template <class T>
@@ -108,8 +137,15 @@ void MultibodyTree<T>::set_velocities_in_array(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& model_v,
     EigenPtr<VectorX<T>> v_array) const {
-  model_instances_.at(model_instance)->set_velocities_in_array(
-      model_v, v_array);
+  SetVelocitiesInArray(model_instance, model_v, v_array);
+}
+
+template <class T>
+void MultibodyTree<T>::SetVelocitiesInArray(
+    ModelInstanceIndex model_instance,
+    const Eigen::Ref<const VectorX<T>>& v_instance,
+    EigenPtr<VectorX<T>> v) const {
+  model_instances_.at(model_instance)->SetVelocitiesInArray(v_instance, v);
 }
 
 template <typename T>
@@ -319,14 +355,55 @@ template <typename T>
 Eigen::VectorBlock<const VectorX<T>>
 MultibodyTree<T>::get_multibody_state_vector(
     const systems::Context<T>& context) const {
+  return GetMultibodyStateVector(context);
+}
+
+template <typename T>
+Eigen::VectorBlock<const VectorX<T>>
+MultibodyTree<T>::GetMultibodyStateVector(
+    const systems::Context<T>& context) const {
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
   return mbt_context.get_state_vector();
 }
 
 template <typename T>
+VectorX<T> MultibodyTree<T>::get_multibody_state_vector(
+    const systems::Context<T>& context,
+    ModelInstanceIndex model_instance) const {
+  return GetMultibodyStateVector(context, model_instance);
+}
+
+template <typename T>
+VectorX<T> MultibodyTree<T>::GetMultibodyStateVector(
+    const systems::Context<T>& context,
+    ModelInstanceIndex model_instance) const {
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+  Eigen::VectorBlock<const VectorX<T>> state_vector =
+      mbt_context.get_state_vector();
+
+  VectorX<T> instance_state_vector(num_states(model_instance));
+  instance_state_vector.head(num_positions(model_instance)) =
+      GetPositionsFromArray(
+          model_instance, state_vector.head(num_positions()));
+  instance_state_vector.tail(num_velocities(model_instance)) =
+      GetVelocitiesFromArray(
+          model_instance, state_vector.tail(num_velocities()));
+
+  return instance_state_vector;
+}
+
+template <typename T>
 Eigen::VectorBlock<VectorX<T>>
 MultibodyTree<T>::get_mutable_multibody_state_vector(
+    systems::Context<T>* context) const {
+  return GetMutableMultibodyStateVector(context);
+}
+
+template <typename T>
+Eigen::VectorBlock<VectorX<T>>
+MultibodyTree<T>::GetMutableMultibodyStateVector(
     systems::Context<T>* context) const {
   DRAKE_DEMAND(context != nullptr);
   auto* mbt_context = dynamic_cast<MultibodyTreeContext<T>*>(context);
@@ -335,6 +412,26 @@ MultibodyTree<T>::get_mutable_multibody_state_vector(
         "The context provided is not compatible with a multibody model.");
   }
   return mbt_context->get_mutable_state_vector();
+}
+
+template <typename T>
+void MultibodyTree<T>::set_multibody_state_vector(
+    ModelInstanceIndex model_instance,
+    const Eigen::Ref<const VectorX<T>>& instance_state,
+    systems::Context<T>* context) const {
+  SetMultibodyStateVector(model_instance, instance_state, context);
+}
+
+template <typename T>
+void MultibodyTree<T>::SetMultibodyStateVector(
+    ModelInstanceIndex model_instance,
+    const Eigen::Ref<const VectorX<T>>& instance_state,
+    systems::Context<T>* context) const {
+  Eigen::VectorBlock<VectorX<T>> state_vector =
+      GetMutableMultibodyStateVector(context);
+  SetPositionsInArray(model_instance,
+                      instance_state.head(num_positions(model_instance)),
+                      &state_vector);
 }
 
 template <typename T>

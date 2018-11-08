@@ -641,7 +641,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasForPointsGeometricJacobianExpressedInWorld) {
   x_autodiff << q_autodiff, v_autodiff;
 
   // Set the context for AutoDiffXd computations.
-  tree_autodiff().get_mutable_multibody_state_vector(context_autodiff_.get())
+  tree_autodiff().GetMutableMultibodyStateVector(context_autodiff_.get())
       = x_autodiff;
 
   // A set of points Pi attached to frame H on the end effector.
@@ -918,7 +918,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasForFrameGeometricJacobianExpressedInWorld) {
   x_autodiff << q_autodiff, v_autodiff;
 
   // Set the context for AutoDiffXd computations.
-  tree_autodiff().get_mutable_multibody_state_vector(context_autodiff_.get())
+  tree_autodiff().GetMutableMultibodyStateVector(context_autodiff_.get())
       = x_autodiff;
 
   // Po specifies the position of a new frame Hp which is the result of shifting
