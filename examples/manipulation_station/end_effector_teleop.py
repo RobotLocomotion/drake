@@ -159,8 +159,7 @@ class DifferentialIK(LeafSystem):
         context.get_mutable_discrete_state(0).SetFromVector(q)
 
     def ForwardKinematics(self, q):
-        x = self.robot.tree().get_mutable_multibody_state_vector(
-            self.robot_context)
+        x = self.robot.tree().GetMutableMultibodyStateVector(self.robot_context)
         x[:robot.num_positions()] = q
         return self.robot.tree().EvalBodyPoseInWorld(
             self.robot_context, self.frame_E.body())
