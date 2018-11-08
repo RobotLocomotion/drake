@@ -119,8 +119,8 @@ drake_cc_googletest(
     name = "piecewise_quaternion_test",
     deps = [
         ":piecewise_quaternion",
-        "//attic/util",
         "//common/test_utilities:eigen_matrix_compare",
+        "//math:wrap_to",
     ],
 )
 
