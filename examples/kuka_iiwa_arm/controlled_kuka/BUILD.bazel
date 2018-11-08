@@ -31,10 +31,10 @@ drake_cc_binary(
     ],
     deps = [
         ":controlled_kuka_trajectory",
+        "//attic/manipulation/util:sim_diagram_builder",
         "//common:find_resource",
         "//examples/kuka_iiwa_arm:iiwa_common",
         "//lcm",
-        "//manipulation/util:sim_diagram_builder",
         "//systems/analysis:simulator",
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/primitives:trajectory_source",

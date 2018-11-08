@@ -65,8 +65,8 @@ drake_cc_library(
     hdrs = ["humanoid_status_translator_system.h"],
     deps = [
         ":humanoid_status",
+        "//attic/manipulation/util:robot_state_msg_translator",
         "//attic/systems/controllers/qp_inverse_dynamics:lcm_utils",
-        "//manipulation/util:robot_state_msg_translator",
         "//multibody:rigid_body_tree",
         "//systems/framework:leaf_system",
     ],
@@ -97,10 +97,10 @@ drake_cc_binary(
         "//examples/valkyrie:models",
     ],
     deps = [
+        "//attic/manipulation/util:robot_state_msg_translator",
         "//attic/multibody/parsers",
         "//common:find_resource",
         "//examples/valkyrie:valkyrie_constants",
-        "//manipulation/util:robot_state_msg_translator",
         "//multibody:rigid_body_tree",
         "@gflags",
         "@lcmtypes_bot2_core",

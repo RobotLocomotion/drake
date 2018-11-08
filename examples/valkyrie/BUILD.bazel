@@ -25,8 +25,8 @@ drake_cc_library(
     srcs = ["robot_state_decoder.cc"],
     hdrs = ["robot_state_decoder.h"],
     deps = [
+        "//attic/manipulation/util:robot_state_msg_translator",
         "//attic/util",
-        "//manipulation/util:robot_state_msg_translator",
         "//multibody:rigid_body_tree",
         "//systems/framework:leaf_system",
         "@lcmtypes_bot2_core",
@@ -84,10 +84,10 @@ drake_cc_library(
     srcs = ["robot_state_encoder.cc"],
     hdrs = ["robot_state_encoder.h"],
     deps = [
+        "//attic/manipulation/util:robot_state_msg_translator",
         "//attic/multibody/rigid_body_plant",
         "//attic/systems/controllers:side",
         "//attic/util",
-        "//manipulation/util:robot_state_msg_translator",
     ],
 )
 
