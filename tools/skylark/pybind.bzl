@@ -3,12 +3,12 @@
 # @see bazelbuild/bazel#3493 for needing `@drake//` when loading `install`.
 load("@drake//tools/install:install.bzl", "install")
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
 )
 load(
-    "//tools/skylark:drake_py.bzl",
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_library",
     "drake_py_test",
 )
@@ -119,9 +119,8 @@ def drake_pybind_library(
         By default, this includes `pydrake_pybind` and
         `//:drake_shared_library`.
     @param cc_so_name (optional)
-        Shared object name. By default, this is `_${name}`, so that the C++
-        code can be then imported in a more controlled fashion in Python.
-        If overridden, this could be the public interface exposed to the user.
+        Shared object name. By default, this is `${name}` (without the `_py`
+        suffix if it's present).
     @param package_info
         This should be the result of `get_pybind_package_info` called from the
         current package. This dictates how `PYTHONPATH` is configured, and
@@ -132,7 +131,10 @@ def drake_pybind_library(
     if package_info == None:
         fail("`package_info` must be supplied.")
     if not cc_so_name:
-        cc_so_name = "_" + name
+        if name.endswith("_py"):
+            cc_so_name = name[:-3]
+        else:
+            cc_so_name = name
     install_name = name + "_install"
     targets = pybind_py_library(
         name = name,
@@ -274,7 +276,7 @@ def drake_pybind_cc_googletest(
 
     # Use this Python test as the glue for Bazel to expose the appropriate
     # environment for the C++ binary.
-    py_main = "//tools/skylark:py_env_runner.py"
+    py_main = "@drake//tools/skylark:py_env_runner.py"
     drake_py_test(
         name = name,
         srcs = [py_main],

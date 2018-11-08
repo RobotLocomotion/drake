@@ -1,7 +1,14 @@
 import os
 import sys
 
+import six
+
 from drake.tools.lint.formatter import IncludeFormatter
+
+if six.PY3:
+    _open = open
+
+    def open(filename, mode="r"): return _open(filename, mode, encoding="utf8")
 
 
 def _check_invalid_line_endings(filename):
@@ -61,9 +68,8 @@ def _check_shebang(filename):
         return 1
     shebang_whitelist = {
         "bash": "#!/bin/bash",
-        "directorPython": "#!/usr/bin/env directorPython",
         "python": "#!/usr/bin/env python2",
-        "python3": "#!/usr/bin/env python3"
+        "python3": "#!/usr/bin/env python3",
     }
     if has_shebang and shebang not in shebang_whitelist.values():
         print(("ERROR: shebang '{}' in the file '{}' is not in the shebang "

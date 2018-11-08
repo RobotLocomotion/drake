@@ -174,7 +174,7 @@ csc* EigenSparseToCSC(const Eigen::SparseMatrix<c_float>& mat) {
 }
 
 template <typename T1, typename T2>
-void SetOsqpSolverSetting(const std::map<std::string, T1>& options,
+void SetOsqpSolverSetting(const std::unordered_map<std::string, T1>& options,
                           const std::string& option_name,
                           T2* osqp_setting_field) {
   const auto it = options.find(option_name);
@@ -184,9 +184,9 @@ void SetOsqpSolverSetting(const std::map<std::string, T1>& options,
 }
 
 void SetOsqpSolverSettings(MathematicalProgram* prog, OSQPSettings* settings) {
-  const std::map<std::string, double>& options_double =
+  const std::unordered_map<std::string, double>& options_double =
       prog->GetSolverOptionsDouble(OsqpSolver::id());
-  const std::map<std::string, int>& options_int =
+  const std::unordered_map<std::string, int>& options_int =
       prog->GetSolverOptionsInt(OsqpSolver::id());
   // TODO(hongkai.dai): Fill in all the fields defined in OSQPSettings.
   SetOsqpSolverSetting(options_double, "rho", &(settings->rho));
@@ -199,7 +199,7 @@ void SetOsqpSolverSettings(MathematicalProgram* prog, OSQPSettings* settings) {
 }
 }  // namespace
 
-bool OsqpSolver::available() const { return true; }
+bool OsqpSolver::is_available() { return true; }
 
 SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   // OSQP solves a convex quadratic programming problem

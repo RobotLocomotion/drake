@@ -449,9 +449,8 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
   // TODO(amcastro-tri): Loop over bodies to compute velocity kinematics updates
   // corresponding to flexible bodies.
 
-  // TODO(amcastro-tri): Eval H_PB_W from the cache.
-  std::vector<Vector6<T>> H_PB_W_cache(num_velocities());
-  CalcAcrossNodeGeometricJacobianExpressedInWorld(context, pc, &H_PB_W_cache);
+  const std::vector<Vector6<T>>& H_PB_W_cache =
+      tree_system_->EvalAcrossNodeGeometricJacobianExpressedInWorld(context);
 
   // Performs a base-to-tip recursion computing body velocities.
   // This skips the world, depth = 0.
@@ -975,7 +974,6 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
   DRAKE_THROW_UNLESS(Jv_WFq != nullptr);
   DRAKE_THROW_UNLESS(Jv_WFq->rows() == 6);
   DRAKE_THROW_UNLESS(Jv_WFq->cols() == num_velocities());
-
   // Compute the position of Fq's origin Q in the world frame.
   Vector3<T> p_WoQ_W;
   CalcPointsPositions(context,
@@ -1086,9 +1084,8 @@ void MultibodyTree<T>::CalcFrameJacobianExpressedInWorld(
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
-  // TODO(amcastro-tri): Eval H_PB_W from the cache.
-  std::vector<Vector6<T>> H_PB_W_cache(num_velocities());
-  CalcAcrossNodeGeometricJacobianExpressedInWorld(context, pc, &H_PB_W_cache);
+  const std::vector<Vector6<T>>& H_PB_W_cache =
+      tree_system_->EvalAcrossNodeGeometricJacobianExpressedInWorld(context);
 
   // Performs a scan of all bodies in the kinematic path from the world to
   // body_B, computing each node's contribution to the Jacobians.
@@ -1231,9 +1228,8 @@ void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
 
-  // TODO(bobbyluig): Eval H_PB_W from the cache.
-  std::vector<Vector6<T>> H_PB_W_cache(num_velocities());
-  CalcAcrossNodeGeometricJacobianExpressedInWorld(context, pc, &H_PB_W_cache);
+  const std::vector<Vector6<T>>& H_PB_W_cache =
+      tree_system_->EvalAcrossNodeGeometricJacobianExpressedInWorld(context);
 
   // Perform tip-to-base recursion, skipping the world.
   for (int depth = tree_height() - 1; depth > 0; depth--) {

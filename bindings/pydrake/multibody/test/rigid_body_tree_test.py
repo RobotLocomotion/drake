@@ -211,6 +211,18 @@ class TestRigidBodyTree(unittest.TestCase):
                                    expressed_in_body_or_frame_ind=0)
         self.assertEqual(twist.shape[0], 6)
 
+    def test_accessor_api(self):
+        tree = RigidBodyTree(FindResourceOrThrow(
+            "drake/examples/simple_four_bar/FourBar.urdf"))
+        bodies = tree.get_bodies()
+        self.assertGreater(len(bodies), 0)
+        for body in bodies:
+            self.assertIsInstance(body, RigidBody)
+        frames = tree.get_frames()
+        self.assertGreater(len(frames), 0)
+        for frame in frames:
+            self.assertIsInstance(frame, RigidBodyFrame)
+
     def test_constraint_api(self):
         tree = RigidBodyTree(FindResourceOrThrow(
             "drake/examples/simple_four_bar/FourBar.urdf"))

@@ -12,18 +12,13 @@ namespace drake {
 
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
+using math::RigidTransformd;
+using math::RollPitchYawd;
 using multibody::joints::FloatingBaseType;
 using parsers::sdf::AddModelInstancesFromSdfFileToWorld;
 
 namespace parsers {
 namespace {
-
-// TODO(eric.cousineau): Figure out a core location for a sugar method like
-// this.
-Isometry3d XyzRpy(const Vector3d& xyz, const Vector3d& rpy) {
-  return math::RigidTransform<double>(
-      math::RollPitchYaw<double>(rpy).ToRotationMatrix(), xyz).GetAsIsometry3();
-}
 
 GTEST_TEST(SdfParserTest, ParseFrames) {
   // Minimal test of backporting *proper* frame parsing from MultibodyPlant to
@@ -55,24 +50,28 @@ GTEST_TEST(SdfParserTest, ParseFrames) {
         << name;
   };
 
-  const Isometry3d X_L1F1 = XyzRpy(
-      Vector3d(0.1, 0.2, 0.3), Vector3d(0.4, 0.5, 0.6));
+  const Isometry3d X_L1F1 = RigidTransformd(
+      RollPitchYawd(0.4, 0.5, 0.6), Vector3d(0.1, 0.2, 0.3)).GetAsIsometry3();
   check_frame(
       tree.findFrame("link1", test_instance),
       "model_scope_link1_frame", X_L1F1);
-  const Isometry3d X_F1F2 = XyzRpy(Vector3d(0.1, 0.0, 0.0), Vector3d::Zero());
+  const Isometry3d X_F1F2 = RigidTransformd(
+      Vector3d(0.1, 0.0, 0.0)).GetAsIsometry3();
   check_frame(
       tree.findFrame("model_scope_link1_frame", test_instance),
       "model_scope_link1_frame_child", X_F1F2);
   // TODO(eric.cousineau): Consider using model frame.
-  const Isometry3d X_MF3 = XyzRpy(Vector3d(0.7, 0.8, 0.9), Vector3d::Zero());
+  const Isometry3d X_MF3 = RigidTransformd(
+      Vector3d(0.7, 0.8, 0.9)).GetAsIsometry3();
   auto world_frame = tree.findFrame("world", world_instance);
   check_frame(world_frame, "model_scope_model_frame_implicit", X_MF3);
-  const Isometry3d X_WF4 = XyzRpy(Vector3d(1.1, 1.2, 1.3), Vector3d::Zero());
+  const Isometry3d X_WF4 = RigidTransformd(
+      Vector3d(1.1, 1.2, 1.3)).GetAsIsometry3();
   check_frame(world_frame, "model_scope_world_frame", X_WF4);
 
   // Old-style frame:
-  const Isometry3d X_L1O1 = XyzRpy(Vector3d(1, 2, 3), Vector3d(4, 5, 6));
+  const Isometry3d X_L1O1 = RigidTransformd(
+      RollPitchYawd(4, 5, 6), Vector3d(1, 2, 3)).GetAsIsometry3();
   check_frame(
       tree.findFrame("link1", test_instance), "old_style_frame", X_L1O1);
 }

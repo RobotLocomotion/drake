@@ -14,32 +14,32 @@ maliput_multilane_builder:
   points:
     a:
       xypoint: [0, 0, 0]
-      zpoint: [0, 0, 0, 0]
+      zpoint: [0, 0, 0]
     b:
       xypoint: [50, 5, 0]
-      zpoint: [0, 0, 0, 0]
+      zpoint: [0, 0, 0]
   connections:
     s1:
       lanes: [3, 0, 0]
       start: ["ref", "points.a.forward"]
       length: 50
-      z_end: ["ref", [0, 0, 0, 0]]
+      z_end: ["ref", [0, 0, 0]]
     s2:
       lanes: [1, 0, 10]
       start: ["ref", "connections.s1.end.ref.forward"]
       arc: [20, 180]
-      z_end: ["ref", [0, 0, 0, 0]]
+      z_end: ["ref", [0, 0, 0]]
     s3:
       lanes: [1, 0, 10]
       start: ["ref", "connections.s2.end.ref.forward"]
       length: 40
-      z_end: ["ref", [0, 0, 0, 0]]
+      z_end: ["ref", [0, 0, 0]]
     s4:
       lanes: [1, 0, 10]
       right_shoulder: 0
       start: ["ref", "connections.s3.end.ref.forward"]
       length: 10
-      z_end: ["ref", [0, 0, 0, 0]]
+      z_end: ["ref", [0, 0, 0]]
     s5:
       lanes: [2, 0, 5]
       start: ["ref", "connections.s4.end.ref.forward"]
@@ -49,38 +49,40 @@ maliput_multilane_builder:
       lanes: [2, 0, -5]
       start: ["ref", "points.b.forward"]
       arc: [20, -180]
-      z_end: ["ref", [0, 0, 0, 0]]
+      z_end: ["ref", [0, 0, 0]]
     s7:
       lanes: [2, 0, -5]
       start: ["ref", "connections.s6.end.ref.forward"]
       length: 50
-      z_end: ["ref", [0, 0, 0, 0]]
+      z_end: ["ref", [0, 0, 0]]
     s8:
       lanes: [2, 0, -5]
       start: ["ref", "connections.s7.end.ref.forward"]
       arc: [20, -180]
-      z_end: ["ref", [0, 0, 0, 0]]
+      z_end: ["ref", [0, 0, 0]]
     s9:
       lanes: [1, 0, 0]
       right_shoulder: 0
       start: ["ref", "connections.s7.end.ref.forward"]
       arc: [20, 30.5]
-      z_end: ["ref", [0, 0, 0, 0]]
+      z_end: ["ref", [0, 0, 0]]
     s10:
       lanes: [1, 0, 0]
       start: ["ref", "connections.s9.end.ref.forward"]
       arc: [20, 59.5]
-      z_end: ["ref", [5, 0.5, -15, 0.7255]]
+      z_end: ["ref", [5, 0.5, -15]]  # theta_dot is left unspecified for the
+                                     # Builder to properly adjust it to match
+                                     # continuity constraints.
     s11:
       lanes: [1, 0, 0]
       start: ["ref", "connections.s10.end.ref.forward"]
       arc: [20, 90]
-      z_end: ["ref", [10, 0, -15, 0]]
+      z_end: ["ref", [10, 0, -15]]
     s12:
       lanes: [1, 0, 0]
       start: ["ref", "connections.s11.end.ref.forward"]
       arc: [20, 90]
-      z_end: ["ref", [10, 0, 0, 0]]
+      z_end: ["ref", [10, 0, 0]]
     s13:
       lanes: [1, 0, 0]
       start: ["ref", "connections.s12.end.ref.forward"]
@@ -90,18 +92,18 @@ maliput_multilane_builder:
       lanes: [1, 0, 0]
       start: ["ref", "connections.s13.end.ref.forward"]
       length: 30
-      z_end: ["ref", [-10, 0, 0, 0]]
+      z_end: ["ref", [-10, 0, 0]]
     s15:
       lanes: [1, 0, 0]
       start: ["ref", "connections.s14.end.ref.forward"]
       length: 20
-      z_end: ["ref", [-10, 0, 0, 0]]
+      z_end: ["ref", [-10, 0, 0]]
     s16:
       lanes: [1, 0, 0]
       left_shoulder: 0
       start: ["ref", "connections.s15.end.ref.forward"]
       arc: [20, 90]
-      z_end: ["ref", [0, 0, 0, 0]]
+      z_end: ["ref", [0, 0, 0]]
   groups:
     g1: [s2, s6]
     g2: [s5, s9, s12]

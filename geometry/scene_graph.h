@@ -207,7 +207,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
   SceneGraph();
 
   /** Constructor used for scalar conversions. It should only be used to convert
-   _from_ double _to_ other scalar types. */
+   _from_ double _to_ other scalar types.  */
   template <typename U>
   explicit SceneGraph(const SceneGraph<U>& other);
 
@@ -222,7 +222,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    the inputs associated with that source. Failure to do so will be treated as
    a runtime error during the evaluation of %SceneGraph. %SceneGraph
    will detect that frames have been registered but no values have been
-   provided. */
+   provided.  */
   //@{
 
   /** Registers a new source to the geometry system. The caller must save the
@@ -242,23 +242,23 @@ class SceneGraph final : public systems::LeafSystem<T> {
   SourceId RegisterSource(const std::string& name = "");
 
   /** Reports if the given source id is registered.
-   @param id       The id of the source to query. */
+   @param id       The id of the source to query.  */
   bool SourceIsRegistered(SourceId id) const;
 
   /** Given a valid source `id`, returns a _pose_ input port associated
    with that `id`. This port is used to communicate _pose_ data for registered
    frames.
-   @throws std::logic_error if the source_id is _not_ recognized. */
+   @throws std::logic_error if the source_id is _not_ recognized.  */
   const systems::InputPort<T>& get_source_pose_port(SourceId id) const;
 
   /** Returns the output port which produces the PoseBundle for LCM
-   communication to drake visualizer. */
+   communication to drake visualizer.  */
   const systems::OutputPort<T>& get_pose_bundle_output_port() const {
     return systems::System<T>::get_output_port(bundle_port_index_);
   }
 
   /** Returns the output port which produces the QueryObject for performing
-   geometric queries. */
+   geometric queries.  */
   const systems::OutputPort<T>& get_query_output_port() const {
     return systems::System<T>::get_output_port(query_port_index_);
   }
@@ -304,7 +304,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @param frame         The definition of the frame to add.
    @returns  A newly allocated frame id.
    @throws std::logic_error  If the `source_id` does _not_ map to a registered
-                             source or if a context has been allocated. */
+                             source or if a context has been allocated.  */
   FrameId RegisterFrame(SourceId source_id, const GeometryFrame& frame);
 
   /** Registers a new frame F for this source. This hangs frame F on another
@@ -319,7 +319,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
                              registered source,
                              2. If the `parent_id` does _not_ map to a known
                              frame or does not belong to the source, or
-                             3. a context has been allocated. */
+                             3. a context has been allocated.  */
   FrameId RegisterFrame(SourceId source_id, FrameId parent_id,
                         const GeometryFrame& frame);
 
@@ -378,7 +378,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   //@}
 
-  /** Reports the identifier for the world frame. */
+  /** Reports the identifier for the world frame.  */
   static FrameId world_frame_id() {
     return internal::InternalFrame::world_frame_id();
   }
@@ -435,12 +435,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
   void ExcludeCollisionsBetween(const GeometrySet& setA,
                                 const GeometrySet& setB);
   //@}
-
-  // TODO(SeanCurtis-TRI) We should make the QueryObject constructor public,
-  // instead of forcing users to call a SceneGraph method to obtain one.
-  /** Constructs an empty QueryObject. This is intended for only only by
-   Systems to pass to DeclareAbstractInputPort as the model_value. */
-  QueryObject<T> MakeQueryObject() const;
 
  private:
   // Friend class to facilitate testing.

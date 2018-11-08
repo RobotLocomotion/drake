@@ -82,9 +82,10 @@ Additional Rules
 * When using the ``logging`` module, avoid its lazy-formatting
   syntax. Rationale: exceptions raised in lazy formatting get printed to
   ``stderr``, but are otherwise ignored, and thus may escape notice.
-* Executable files should use the following "shebang" line::
+* Executable files should use one of the following "shebang" lines::
 
     #!/usr/bin/env python2
+    #!/usr/bin/env python3
 
   Rationale: ``/usr/bin/env`` enables a ``PATH`` search for the Python 2.7
   executable. On macOS systems configured for Drake, this gives a better result

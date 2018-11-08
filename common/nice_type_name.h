@@ -52,7 +52,7 @@ class NiceTypeName {
   template <typename T>
   static const std::string& Get() {
     static const never_destroyed<std::string> canonical(
-        Canonicalize(Demangle(typeid(T).name())));
+        NiceTypeName::Get(typeid(T)));
     return canonical.access();
   }
 
@@ -64,7 +64,14 @@ class NiceTypeName {
   differ. */
   template <typename T>
   static std::string Get(const T& thing) {
-    return Canonicalize(Demangle(typeid(thing).name()));
+    return Get(typeid(thing));
+  }
+
+  /** Returns the nicely demangled and canonicalized type name of `info`. This
+  must be calculated on the fly so is expensive whenever called, though very
+  reasonable for use in error messages. */
+  static std::string Get(const std::type_info& info) {
+    return Canonicalize(Demangle(info.name()));
   }
 
   /** Using the algorithm appropriate to the current compiler, demangles a type

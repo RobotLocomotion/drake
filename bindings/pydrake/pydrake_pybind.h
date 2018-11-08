@@ -214,7 +214,8 @@ from `DiagramBuilder` to `Diagram` when calling
 ## Function Overloads
 
 To bind function overloads, please try the following (in order):
-- `py::overload_cast<Args>(func)`: See [the pybind11 documentation](http://pybind11.readthedocs.io/en/stable/classes.html#overloaded-methods).
+- `py::overload_cast<Args>(func)`: See [the pybind11
+documentation](http://pybind11.readthedocs.io/en/stable/classes.html#overloaded-methods).
 This works about 80% of the time.
 - `pydrake::overload_cast_explicit<Return, Args...>(func)`: When
 `py::overload_cast` does not work (not always guaranteed to work).
@@ -296,8 +297,7 @@ const auto py_reference = py::return_value_policy::reference;
 /// Used when returning references to objects that are internally owned by
 /// `self`. Implies both `py_reference` and `py::keep_alive<0, 1>`, which
 /// implies "Keep alive, reference: `return` keeps` self` alive".
-const auto py_reference_internal =
-    py::return_value_policy::reference_internal;
+const auto py_reference_internal = py::return_value_policy::reference_internal;
 
 // Implementation for `overload_cast_explicit`. We must use this structure so
 // that we can constrain what is inferred. Otherwise, the ambiguity confuses
@@ -322,20 +322,40 @@ struct overload_cast_impl {
 template <typename Return, typename... Args>
 constexpr auto overload_cast_explicit = overload_cast_impl<Return, Args...>{};
 
+/// Binds Pythonic `__copy__` and `__deepcopy__` for a class's copy
+/// constructor.
+/// @note Do not use this if the class's copy constructor does not imply a deep
+/// copy.
+template <typename PyClass>
+void DefCopyAndDeepCopy(PyClass* ppy_class) {
+  using Class = typename PyClass::type;
+  PyClass& py_class = *ppy_class;
+  py_class.def("__copy__", [](const Class* self) { return Class{*self}; })
+      .def("__deepcopy__",
+           [](const Class* self, py::dict /* memo */) { return Class{*self}; });
+}
+
+/// Executes Python code to introduce additional symbols for a given module.
+/// For a module with local name `{name}`, the code executed will be
+/// `_{name}_extra.py`. See #9599 for relevant background.
+inline void ExecuteExtraPythonCode(py::module m) {
+  py::module::import("pydrake").attr("_execute_extra_python_code")(m);
+}
+
 #if PY_MAJOR_VERSION >= 3
 // The following works around pybind11 modules getting reconstructed /
 // reimported in Python3. See pybind/pybind11#1559 for more details.
 // Use this ONLY when necessary (e.g. when using a utility method which imports
 // the module, within the module itself).
-#define PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable) \
-  { \
-    static py::handle variable##_original; \
-    if (variable##_original) { \
+#define PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable)                 \
+  {                                                                       \
+    static py::handle variable##_original;                                \
+    if (variable##_original) {                                            \
       variable = py::reinterpret_borrow<py::module>(variable##_original); \
-      return; \
-    } else { \
-      variable##_original = variable; \
-    } \
+      return;                                                             \
+    } else {                                                              \
+      variable##_original = variable;                                     \
+    }                                                                     \
   }
 #else  // PY_MAJOR_VERSION >= 3
 #define PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable)

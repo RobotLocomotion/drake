@@ -57,6 +57,7 @@ SchunkWsgPositionController::SchunkWsgPositionController(double time_step,
   // Store the most recent position command as state (for the commanded
   // velocity interpolation).
   this->DeclareDiscreteState(1);
+  this->DeclarePeriodicDiscreteUpdate(time_step_);
   this->set_name("wsg_controller");
 }
 
@@ -93,10 +94,10 @@ Vector2d SchunkWsgPositionController::CalcGeneralizedForce(
   const double f0_plus_f1 = -kp_constraint_ * (state[0] + state[1]) -
                             kd_constraint_ * (state[2] + state[3]);
 
-  // -f₀+f₁ = sat(kp_command*(2*q_d + q₀ - q₁) + kd_command*(2*v_d + v₀ - v₁)).
+  // -f₀+f₁ = sat(kp_command*(q_d + q₀ - q₁) + kd_command*(v_d + v₀ - v₁)).
   const double neg_f0_plus_f1 = math::saturate(
-      kp_command_ * (2 * desired_position + state[0] - state[1]) +
-          kd_command_ * (2 * desired_velocity + state[2] - state[3]),
+      kp_command_ * (desired_position + state[0] - state[1]) +
+          kd_command_ * (desired_velocity + state[2] - state[3]),
       -force_limit, force_limit);
 
   // f₀ = (f₀+f₁)/2 - (-f₀+f₁)/2,

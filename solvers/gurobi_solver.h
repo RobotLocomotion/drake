@@ -12,6 +12,25 @@
 namespace drake {
 namespace solvers {
 
+struct GurobiSolverDetails {
+  // The gurobi optimization time. Please refer to
+  // https://www.gurobi.com/documentation/8.0/refman/runtime.html
+  double optimizer_time{};
+
+  // The error message returned from Gurobi call. Please refer to
+  // https://www.gurobi.com/documentation/8.0/refman/error_codes.html
+  int error_code{};
+
+  // The status code when the optimize call has returned. Please refer to
+  // https://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
+  int optimization_status{};
+
+  // The best known bound on the optimal objective. This is used in mixed
+  // integer optimization. Please refer to
+  // https://www.gurobi.com/documentation/8.0/refman/objbound.html
+  double objective_bound{NAN};
+};
+
 class GurobiSolver : public MathematicalProgramSolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GurobiSolver)
@@ -21,7 +40,9 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
 
   // This solver is implemented in various pieces depending on if
   // Gurobi was available during compilation.
-  bool available() const override;
+  bool available() const override { return is_available(); };
+
+  static bool is_available();
 
   /// Contains info returned to a user function that handles
   /// a Node or Solution callback.
@@ -106,10 +127,19 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
+  void Solve(const MathematicalProgram&, const optional<Eigen::VectorXd>&,
+             const optional<SolverOptions>&,
+             MathematicalProgramResult*) const override;
+
   SolverId solver_id() const override;
 
   /// @return same as MathematicalProgramSolverInterface::solver_id()
   static SolverId id();
+
+  bool AreProgramAttributesSatisfied(
+      const MathematicalProgram& prog) const override;
+
+  static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
 
   /**
    * This type contains a valid Gurobi license environment, and is only to be

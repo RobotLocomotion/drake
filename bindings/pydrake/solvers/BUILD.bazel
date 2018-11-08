@@ -2,15 +2,19 @@
 
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:test_tags.bzl", "gurobi_test_tags", "mosek_test_tags")
 load(
-    "//tools/skylark:pybind.bzl",
+    "@drake//tools/skylark:test_tags.bzl",
+    "gurobi_test_tags",
+    "mosek_test_tags",
+)
+load(
+    "@drake//tools/skylark:pybind.bzl",
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
 load(
-    "//tools/skylark:drake_py.bzl",
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_library",
     "drake_py_test",
     "drake_py_unittest",
@@ -42,7 +46,7 @@ drake_pybind_library(
     py_deps = [
         "//bindings/pydrake/multibody:rigid_body_tree_py",
     ],
-    py_srcs = ["ik.py"],
+    py_srcs = ["_ik_extra.py"],
 )
 
 # TODO(eric.cousineau): Rename `mathematicalprogram` to
@@ -62,13 +66,11 @@ drake_pybind_library(
         "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake:symbolic_py",
     ],
-    py_srcs = ["mathematicalprogram.py"],
 )
 
 drake_pybind_library(
     name = "gurobi_py",
     cc_deps = ["//bindings/pydrake:documentation_pybind"],
-    cc_so_name = "gurobi",
     cc_srcs = ["gurobi_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [":mathematicalprogram_py"],
@@ -77,7 +79,6 @@ drake_pybind_library(
 drake_pybind_library(
     name = "ipopt_py",
     cc_deps = ["//bindings/pydrake:documentation_pybind"],
-    cc_so_name = "ipopt",
     cc_srcs = ["ipopt_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [":mathematicalprogram_py"],
@@ -86,7 +87,6 @@ drake_pybind_library(
 drake_pybind_library(
     name = "mosek_py",
     cc_deps = ["//bindings/pydrake:documentation_pybind"],
-    cc_so_name = "mosek",
     cc_srcs = ["mosek_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [":mathematicalprogram_py"],
@@ -95,7 +95,6 @@ drake_pybind_library(
 drake_pybind_library(
     name = "osqp_py",
     cc_deps = ["//bindings/pydrake:documentation_pybind"],
-    cc_so_name = "osqp",
     cc_srcs = ["osqp_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [":mathematicalprogram_py"],
@@ -186,4 +185,6 @@ drake_py_unittest(
     deps = [":ik_py"],
 )
 
-add_lint_tests()
+add_lint_tests(
+    enable_clang_format_lint = True,
+)

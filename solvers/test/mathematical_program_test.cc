@@ -2921,6 +2921,29 @@ GTEST_TEST(testMathematicalProgram, TestSolverOptions) {
   EXPECT_EQ(prog.GetSolverOptionsStr(wrong_solver_id).size(), 0);
 }
 
+GTEST_TEST(testMathematicalProgram, TestGetSolution) {
+  // Test GetSolution(var, result)
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+
+  MathematicalProgramResult result;
+  result.set_x_val(Eigen::Vector2d(1, 2));
+
+  // GetSolution(var, result) retrieves solution from `result`, GetSolution(var)
+  // retrieves the solution stored in prog. They should not be equal.
+  EXPECT_NE(prog.GetSolution(x(0), result), prog.GetSolution(x(0)));
+  EXPECT_NE(prog.GetSolution(x(1), result), prog.GetSolution(x(1)));
+
+  EXPECT_EQ(prog.GetSolution(x(0), result), 1);
+  EXPECT_EQ(prog.GetSolution(x(1), result), 2);
+  EXPECT_TRUE(CompareMatrices(
+      prog.GetSolution(Vector3<symbolic::Variable>(x(0), x(1), x(1)), result),
+      Eigen::Vector3d(1, 2, 2)));
+
+  // If result.get_x_val has wrong dimension, expect to throw an error.
+  result.set_x_val(Eigen::Vector3d::Zero());
+  EXPECT_THROW(prog.GetSolution(x(0), result), std::invalid_argument);
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

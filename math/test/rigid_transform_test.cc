@@ -89,7 +89,7 @@ GTEST_TEST(RigidTransform, DefaultRigidTransformIsIdentity) {
 
 // Tests constructing a RigidTransform from a RotationMatrix and Vector3.
 // Also test the set method.
-GTEST_TEST(RigidTransform, RigidTransformConstructorAndSet) {
+GTEST_TEST(RigidTransform, ConstructorAndSet) {
   const RotationMatrix<double> R1 = GetRotationMatrixB();
   const Matrix3d m = R1.matrix();
   const Vector3<double> p(4, 5, 6);
@@ -123,7 +123,7 @@ GTEST_TEST(RigidTransform, RigidTransformConstructorAndSet) {
 
 // Tests constructing a RigidTransform from just a RotationMatrix.
 // Also test alias/typdef RigidTransformd.
-GTEST_TEST(RigidTransform, RigidTransformConstructorFromRotationMatrix) {
+GTEST_TEST(RigidTransform, ConstructorFromRotationMatrix) {
   const RotationMatrixd R = GetRotationMatrixB();
   const RigidTransformd X(R);
   EXPECT_TRUE(X.rotation().IsExactlyEqualTo(R));
@@ -131,7 +131,7 @@ GTEST_TEST(RigidTransform, RigidTransformConstructorFromRotationMatrix) {
 }
 
 // Tests constructing a RigidTransform from just a position vector.
-GTEST_TEST(RigidTransform, RigidTransformConstructorFromPositionVector) {
+GTEST_TEST(RigidTransform, ConstructorFromPositionVector) {
   const Vector3<double> p(4, 5, 6);
   const RigidTransform<double> X(p);
   EXPECT_TRUE(X.rotation().IsExactlyIdentity());
@@ -139,11 +139,45 @@ GTEST_TEST(RigidTransform, RigidTransformConstructorFromPositionVector) {
 }
 
 // Tests constructing a RigidTransform from RollPitchYaw and a position vector.
-GTEST_TEST(RigidTransform, RigidTransformContructorRollPitchYawPositionVector) {
+GTEST_TEST(RigidTransform, ConstructorRollPitchYawPositionVector) {
   const RollPitchYaw<double> rpy(1, 2, 3);
   const Vector3<double> position(4, 5, 6);
   const RigidTransform<double> X(rpy, position);
+  // The following test is not a RigidTransform verification.
+  // It just tests that the rotation matrix in the transform is the same as the
+  // rotation matrix generated directly by the given RollPitchYaw rpy, and that
+  // the position vector in the transform is the same as the given position.
   EXPECT_TRUE(X.rotation().IsExactlyEqualTo(rpy.ToRotationMatrix()));
+  EXPECT_TRUE(X.translation() == position);
+}
+
+// Tests constructing a RigidTransform from a Quaterion and a position vector.
+GTEST_TEST(RigidTransform, ConstructorQuaternionPositionVector) {
+  // Note: Constructor says that the quaternion does not need to be unit length.
+  const Eigen::Quaternion<double> quaternion(1, 2, 3, 4);
+  const Vector3<double> position(4, 5, 6);
+  const RigidTransform<double> X(quaternion, position);
+  // The following test is not a RigidTransform verification.
+  // It just tests that the rotation matrix in the transform is the same as the
+  // rotation matrix generated directly by the given quaternion, and that
+  // the position vector in the transform is the same as the given position.
+  const RotationMatrix<double> R(quaternion);
+  EXPECT_TRUE(X.rotation().IsExactlyEqualTo(R));
+  EXPECT_TRUE(X.translation() == position);
+}
+
+// Tests constructing a RigidTransform from an AngleAxis and a position vector.
+GTEST_TEST(RigidTransform, ConstructorAngleAxisPositionVector) {
+  // Note: Constructor says that the axis does not need to be unit length.
+  const Eigen::AngleAxis<double> theta_lambda(0.3, Eigen::Vector3d(3, 2, 1));
+  const Vector3<double> position(4, 5, 6);
+  const RigidTransform<double> X(theta_lambda, position);
+  // The following test is not a RigidTransform verification.
+  // It just tests that the rotation matrix in the transform is the same as the
+  // rotation matrix generated directly by the given AngleAxis, and that
+  // the position vector in the transform is the same as the given position.
+  const RotationMatrix<double> R(theta_lambda);
+  EXPECT_TRUE(X.rotation().IsExactlyEqualTo(R));
   EXPECT_TRUE(X.translation() == position);
 }
 

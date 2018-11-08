@@ -86,7 +86,7 @@ SceneGraph<T>::SceneGraph()
                                &SceneGraph::CalcPoseBundle).get_index();
 
   query_port_index_ =
-      this->DeclareAbstractOutputPort("query", &SceneGraph::MakeQueryObject,
+      this->DeclareAbstractOutputPort("query",
                                       &SceneGraph::CalcQueryObject)
           .get_index();
 }
@@ -221,13 +221,6 @@ void SceneGraph<T>::MakeSourcePorts(SourceId source_id) {
 }
 
 template <typename T>
-QueryObject<T> SceneGraph<T>::MakeQueryObject() const {
-  // Returns a null-initialized QueryObject to be compatible with context
-  // allocation (see documentation on QueryObject).
-  return QueryObject<T>();
-}
-
-template <typename T>
 void SceneGraph<T>::CalcQueryObject(const Context<T>& context,
                                     QueryObject<T>* output) const {
   // NOTE: This is an exception to the style guide. It takes a const reference
@@ -250,9 +243,11 @@ void SceneGraph<T>::CalcQueryObject(const Context<T>& context,
 template <typename T>
 PoseBundle<T> SceneGraph<T>::MakePoseBundle() const {
   const auto& g_state = *initial_state_;
-  PoseBundle<T> bundle(g_state.get_num_frames());
+  // Don't include the world frame.
+  PoseBundle<T> bundle(g_state.get_num_frames() - 1);
   int i = 0;
   for (FrameId f_id : g_state.get_frame_ids()) {
+    if (f_id == world_frame_id()) continue;
     int frame_group = g_state.get_frame_group(f_id);
     bundle.set_model_instance_id(i, frame_group);
 
@@ -281,6 +276,7 @@ void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
   FullPoseUpdate(g_context);
   const auto& g_state = g_context.get_geometry_state();
   for (FrameId f_id : g_state.get_frame_ids()) {
+    if (f_id == world_frame_id()) continue;
     output->set_pose(i, g_state.get_pose_in_world(f_id));
     // TODO(SeanCurtis-TRI): Handle velocity.
     ++i;
@@ -306,20 +302,26 @@ void SceneGraph<T>::FullPoseUpdate(const GeometryContext<T>& context) const {
                            origin + " values on the input port.");
   };
 
+  // Process all sources *except*:
+  //   - the internal source and
+  //   - sources with no frames.
+  // The internal source will be included in source_frame_id_map_ but *not* in
+  // input_source_ids_.
   for (const auto& pair : state.source_frame_id_map_) {
     if (pair.second.size() > 0) {
       SourceId source_id = pair.first;
       const auto itr = input_source_ids_.find(source_id);
-      DRAKE_ASSERT(itr != input_source_ids_.end());
-      const int pose_port = itr->second.pose_port;
-      const auto pose_port_value =
-          this->template EvalAbstractInput(context, pose_port);
-      if (pose_port_value) {
-        const auto& poses =
-            pose_port_value->template GetValue<FramePoseVector<T>>();
-        mutable_state.SetFramePoses(poses);
-      } else {
-        throw_error(source_id, "pose");
+      if (itr != input_source_ids_.end()) {
+        const int pose_port = itr->second.pose_port;
+        const auto pose_port_value =
+            this->template EvalAbstractInput(context, pose_port);
+        if (pose_port_value) {
+          const auto& poses =
+              pose_port_value->template GetValue<FramePoseVector<T>>();
+          mutable_state.SetFramePoses(poses);
+        } else {
+          throw_error(source_id, "pose");
+        }
       }
     }
   }

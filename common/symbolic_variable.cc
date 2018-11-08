@@ -30,7 +30,9 @@ Variable::Id Variable::get_next_id() {
 }
 
 Variable::Variable(string name, const Type type)
-    : id_{get_next_id()}, type_{type}, name_{make_shared<string>(move(name))} {
+    : id_{get_next_id()},
+      type_{type},
+      name_{make_shared<const string>(move(name))} {
   DRAKE_ASSERT(id_ > 0);
 }
 Variable::Id Variable::get_id() const { return id_; }

@@ -399,44 +399,6 @@ class LeafSystem : public System<T> {
     }
   }
 
-  /// Allocates a vector that is suitable as an input value for @p input_port.
-  /// The default implementation in this class either clones the model_vector
-  /// (if the port was declared via DeclareVectorInputPort) or else allocates a
-  /// BasicVector (if the port was declared via DeclareInputPort(kVectorValued,
-  /// size).  Subclasses can override this method if the default behavior is
-  /// not sufficient.
-  BasicVector<T>* DoAllocateInputVector(
-      const InputPort<T>& input_port) const override {
-    std::unique_ptr<BasicVector<T>> model_result =
-        model_input_values_.CloneVectorModel<T>(input_port.get_index());
-    if (model_result) {
-      return model_result.release();
-    }
-    return new BasicVector<T>(input_port.size());
-  }
-
-  /// Allocates an AbstractValue suitable as an input value for @p input_port.
-  /// The default implementation in this class either clones the model_value
-  /// (if the port was declared via DeclareAbstractInputPort) or else aborts.
-  ///
-  /// Subclasses with abstract input ports must either provide a model_value
-  /// when declaring the port, or else override this method.
-  AbstractValue* DoAllocateInputAbstract(
-      const InputPort<T>& input_port) const override {
-    std::unique_ptr<AbstractValue> model_result =
-        model_input_values_.CloneModel(input_port.get_index());
-    if (model_result) {
-      return model_result.release();
-    }
-    throw std::logic_error(fmt::format(
-        "System::AllocateInputAbstract(): a System with abstract input ports "
-        "should pass a model_value to DeclareAbstractInputPort, or else must "
-        "override DoAllocateInputAbstract; the input port[{}] named '{}' did "
-        "not do either one (System {})",
-        input_port.get_index(), input_port.get_name(),
-        this->GetSystemPathname()));
-  }
-
   /// Emits a graphviz fragment for this System. Leaf systems are visualized as
   /// records. For instance, a leaf system with 2 inputs and 1 output is:
   ///
@@ -856,9 +818,8 @@ class LeafSystem : public System<T> {
 
   /// Declares a vector-valued input port using the given @p model_vector.
   /// This is the best way to declare LeafSystem input ports that require
-  /// subclasses of BasicVector.  The port's size will be model_vector.size(),
-  /// and LeafSystem's default implementation of DoAllocateInputVector will be
-  /// model_vector.Clone(). If the port is intended to model a random noise or
+  /// subclasses of BasicVector.  The port's size and type will be the same as
+  /// model_vector. If the port is intended to model a random noise or
   /// disturbance input, @p random_type can (optionally) be used to label it
   /// as such.  If the @p model_vector declares any
   /// VectorBase::CalcInequalityConstraint() constraints, they will be
@@ -883,20 +844,23 @@ class LeafSystem : public System<T> {
                                   kVectorValued, size, random_type);
   }
 
-  // Avoid shadowing out the no-arg DeclareAbstractInputPort().
+  // Avoid shadowing out the no-arg DeclareAbstractInputPort().  (This line
+  // should be removed when the deprecated base class methods disappear.)
   using System<T>::DeclareAbstractInputPort;
 
   /// Declares an abstract-valued input port using the given @p model_value.
   /// This is the best way to declare LeafSystem abstract input ports.
-  /// LeafSystem's default implementation of DoAllocateInputAbstract will be
-  /// model_value.Clone().
+  ///
+  /// Any port connected to this input, and any call to FixInputPort for this
+  /// input, must provide for values whose type matches this @p model_value.
   ///
   /// @see System::DeclareInputPort() for more information.
   const InputPort<T>& DeclareAbstractInputPort(
       std::string name, const AbstractValue& model_value) {
     const int next_index = this->get_num_input_ports();
     model_input_values_.AddModel(next_index, model_value.Clone());
-    return this->DeclareAbstractInputPort(NextInputPortName(std::move(name)));
+    return this->DeclareInputPort(NextInputPortName(std::move(name)),
+                                  kAbstractValued, 0 /* size */);
   }
   //@}
 
@@ -1642,6 +1606,26 @@ class LeafSystem : public System<T> {
  private:
   using SystemBase::NextInputPortName;
   using SystemBase::NextOutputPortName;
+
+  // Either clones the model_value, or else for vector ports allocates a
+  // BasicVector, or else for abstract ports throws an exception.
+  std::unique_ptr<AbstractValue> DoAllocateInput(
+      const InputPort<T>& input_port) const final {
+    std::unique_ptr<AbstractValue> model_result =
+        model_input_values_.CloneModel(input_port.get_index());
+    if (model_result) {
+      return model_result;
+    }
+    if (input_port.get_data_type() == kVectorValued) {
+      return std::make_unique<Value<BasicVector<T>>>(input_port.size());
+    }
+    throw std::logic_error(fmt::format(
+        "System::AllocateInputAbstract(): a System with abstract input ports "
+        "must pass a model_value to DeclareAbstractInputPort; the port[{}] "
+        "named '{}' did not do so (System {})",
+        input_port.get_index(), input_port.get_name(),
+        this->GetSystemPathname()));
+  }
 
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
       PeriodicEventDataComparator> DoGetPeriodicEvents() const override {

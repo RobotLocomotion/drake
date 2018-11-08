@@ -57,16 +57,19 @@ class SceneGraph;
 template <typename T>
 class QueryObject {
  public:
+  /** Constructs a default QueryObject (all pointers are null). */
+  QueryObject() = default;
+
+#ifndef DRAKE_DOXYGEN_CXX
   // NOTE: The copy semantics are provided to be compatible with AbstractValue.
   // The result will always be a "default" QueryObject (i.e., all pointers are
-  // null). There is no public constructor, the assumption is that the only way
-  // to acquire a reference/instance of QueryObject is through the
-  // SceneGraph output port. The SceneGraph is responsible for
-  // guaranteeing the returned QueryObject is "live" (via CalcQueryObject()).
+  // null). The SceneGraph is responsible for guaranteeing the returned
+  // QueryObject is "live" (via CalcQueryObject()).
   QueryObject(const QueryObject& other);
   QueryObject& operator=(const QueryObject&);
   // NOTE: The move semantics are implicitly deleted by the copy semantics.
   // There is no sense in "moving" a query object.
+#endif  // DRAKE_DOXYGEN_CXX
 
   // Note to developers on adding queries:
   //  All queries should call ThrowIfDefault() before taking any action.
@@ -262,13 +265,8 @@ class QueryObject {
 
   //@}
 
-  /** (Advanced.)  Ideally, only the SceneGraph should be able to create this
-   class.  However, that is not currently realistic, so we've made it public
-   for the time being. */
-  QueryObject() = default;
-
  private:
-  // SceneGraph is the only class that can instantiate QueryObjects.
+  // SceneGraph is the only class that may call set().
   friend class SceneGraph<T>;
   // Convenience class for testing.
   friend class QueryObjectTester;

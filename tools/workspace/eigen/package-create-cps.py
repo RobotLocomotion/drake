@@ -1,5 +1,3 @@
-#!/usr/bin/env python2
-
 from drake.tools.install.cpsutils import read_defs
 
 defs = read_defs("#define\s+EIGEN_(\w+_VERSION)\s+([0-9]+)")

@@ -153,6 +153,65 @@ class WitnessTriggeredEventData : public EventData {
 };
 
 /**
+ * Predefined types of triggers for events. Used at run time to determine why
+ * the associated event has occurred.
+ */
+enum class TriggerType {
+  kUnknown,
+
+  /**
+   * This trigger indicates that an associated event is triggered at system
+   * initialization.
+   */
+  kInitialization,
+
+  /**
+   * This trigger indicates that an associated event is triggered by directly
+   * calling the corresponding public system API for event handling (e.g.
+   * Publish(context)).
+   */
+  kForced,
+
+  /**
+   * This trigger indicates that an associated event is triggered by the
+   * system proceeding to a single, arbitrary time. Timed events are commonly
+   * created in System::CalcNextUpdateTime().
+   */
+  kTimed,
+
+  /**
+   * This type indicates that an associated event is triggered by the system
+   * proceeding to a time t ∈ {tᵢ = t₀ + p * i} for some period p, time
+   * offset t₀, and i is a non-negative integer. @see PeriodicEventData.
+   * Periodic events are commonly created in System::CalcNextUpdateTime().
+   */
+  kPeriodic,
+
+  /**
+   * This trigger indicates that an associated event is triggered whenever a
+   * `solver` takes a `step`. A `solver` is an abstract construct that
+   * controls the time and state evolution of a System. For example, a
+   * simulator is a `solver`. Its `step` advances time a finite duration by
+   * integrating a system, modifying its state accordingly. Per-step events
+   * are most commonly created in System::GetPerStepEvents(). A very common
+   * use of such per-step events is to update a discrete or abstract state
+   * variable that changes whenever the continuous state advances; examples
+   * are computing the "min" or "max" of some state variable, recording a
+   * signal in a delay buffer, or publishing. Per-step events are also useful
+   * to implement feedback controllers interfaced with physical devices; the
+   * controller can be implemented in the event handler, and the "step" would
+   * correspond to receiving sensory data from the hardware.
+   */
+  kPerStep,
+
+  /**
+   * This trigger indicates that an associated event is triggered by the zero
+   * crossing of a witness function.
+   */
+  kWitness,
+};
+
+/**
  * Abstract base class that represents an event. The base event contains two
  * main pieces of information: an enum trigger type and an optional attribute
  * of AbstractValue that can be used to explain why the event is triggered.
@@ -175,67 +234,11 @@ class Event {
   Event(Event&&) = delete;
   void operator=(Event&&) = delete;
 
+  // TODO(eric.cousineau): Deprecate and remove this alias.
+  using TriggerType = systems::TriggerType;
+
   /// Returns `true` if this is a DiscreteUpdateEvent.
   virtual bool is_discrete_update() const = 0;
-
-  /**
-   * Predefined types of triggers. Used at run time to determine why the
-   * associated event has occurred.
-   */
-  enum class TriggerType {
-    kUnknown,
-
-    /**
-     * This trigger indicates that an associated event is triggered at system
-     * initialization.
-     */
-    kInitialization,
-
-    /**
-     * This trigger indicates that an associated event is triggered by directly
-     * calling the corresponding public system API for event handling (e.g.
-     * Publish(context)).
-     */
-    kForced,
-
-    /**
-     * This trigger indicates that an associated event is triggered by the
-     * system proceeding to a single, arbitrary time. Timed events are commonly
-     * created in System::CalcNextUpdateTime().
-     */
-    kTimed,
-
-    /**
-     * This type indicates that an associated event is triggered by the system
-     * proceeding to a time t ∈ {tᵢ = t₀ + p * i} for some period p, time
-     * offset t₀, and i is a non-negative integer. @see PeriodicEventData.
-     * Periodic events are commonly created in System::CalcNextUpdateTime().
-     */
-    kPeriodic,
-
-    /**
-     * This trigger indicates that an associated event is triggered whenever a
-     * `solver` takes a `step`. A `solver` is an abstract construct that
-     * controls the time and state evolution of a System. For example, a
-     * simulator is a `solver`. Its `step` advances time a finite duration by
-     * integrating a system, modifying its state accordingly. Per-step events
-     * are most commonly created in System::GetPerStepEvents(). A very common
-     * use of such per-step events is to update a discrete or abstract state
-     * variable that changes whenever the continuous state advances; examples
-     * are computing the "min" or "max" of some state variable, recording a
-     * signal in a delay buffer, or publishing. Per-step events are also useful
-     * to implement feedback controllers interfaced with physical devices; the
-     * controller can be implemented in the event handler, and the "step" would
-     * correspond to receiving sensory data from the hardware.
-     */
-    kPerStep,
-
-    /**
-     * This trigger indicates that an associated event is triggered by the zero
-     * crossing of a witness function.
-     */
-    kWitness,
-  };
 
   /**
    * An object passed
