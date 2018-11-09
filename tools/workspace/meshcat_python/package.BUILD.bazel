@@ -19,15 +19,14 @@ py_library(
     deps = ["@u_msgpack_python//:umsgpack"],
 )
 
-# TODO(jamiesnape): Add acceptance test.
 py_binary(
     name = "meshcat-server",
     srcs = ["@drake//tools/workspace/meshcat_python:meshcat-server.py"],
     legacy_create_init = 0,
+    visibility = ["//visibility:public"],
     deps = [":meshcat"],
 )
 
-# TODO(jamiesnape): Add an install test.
 install_files(
     name = "install-meshcat-server",
     dest = "bin",
@@ -39,6 +38,9 @@ install_files(
 
 install(
     name = "install",
+    install_tests = [
+        "@drake//tools/workspace/meshcat_python:test/meshcat-server-install-test.py",  # noqa
+    ],
     targets = [":meshcat"],
     docs = ["LICENSE.txt"],
     py_strip_prefix = ["src"],
