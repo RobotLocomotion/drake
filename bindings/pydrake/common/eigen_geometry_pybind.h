@@ -13,6 +13,7 @@
 #include <Eigen/Dense>
 #include "pybind11/eigen.h"
 
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_assert.h"
 
 namespace drake {

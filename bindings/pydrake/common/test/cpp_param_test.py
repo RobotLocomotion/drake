@@ -14,7 +14,7 @@ import ctypes
 import numpy as np
 
 
-from pydrake.util.cpp_param import get_param_canonical, get_param_names
+from pydrake.common.cpp_param import get_param_canonical, get_param_names
 
 
 class CustomPyType(object):

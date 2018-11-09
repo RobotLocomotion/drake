@@ -8,7 +8,8 @@
 
 #include "pybind11/pybind11.h"
 
-#include "drake/bindings/pydrake/util/wrap_function.h"
+#include "drake/bindings/pydrake/common/wrap_function.h"
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_copyable.h"
 
 namespace drake {

@@ -1,7 +1,7 @@
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/util/wrap_pybind.h"
 
 namespace drake {
 namespace pydrake {

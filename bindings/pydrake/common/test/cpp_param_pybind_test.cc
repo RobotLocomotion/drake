@@ -1,4 +1,4 @@
-#include "drake/bindings/pydrake/util/cpp_param_pybind.h"
+#include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 
 // @file
 // Tests the public interfaces in `cpp_param.py` and `cpp_param_pybind.h`.

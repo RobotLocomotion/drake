@@ -1,4 +1,4 @@
-import pydrake.util.compatibility as mut
+import pydrake.common.compatibility as mut
 
 import numpy as np
 import unittest

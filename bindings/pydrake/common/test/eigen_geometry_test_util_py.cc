@@ -1,8 +1,8 @@
 #include <Eigen/Dense>
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/util/eigen_geometry_pybind.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 
