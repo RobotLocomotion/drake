@@ -21,8 +21,7 @@ using drake::multibody::UnitInertia;
 using Eigen::Isometry3d;
 
 void AddCylinderWithMultiContact(
-    MultibodyPlant<double>* plant, SceneGraph<double>* scene_graph,
-    const RigidBody<double>& body,
+    MultibodyPlant<double>* plant, const RigidBody<double>& body,
     double radius, double length, const CoulombFriction<double>& friction,
     double contact_spheres_radius, int num_contacts) {
   const VisualMaterial orange(Vector4<double>(1.0, 0.55, 0.0, 1.0));
@@ -32,8 +31,7 @@ void AddCylinderWithMultiContact(
   plant->RegisterVisualGeometry(
       body,
       /* Pose X_BG of the geometry frame G in the cylinder body frame B. */
-      Isometry3d::Identity(), Cylinder(radius, length), "visual", orange,
-      scene_graph);
+      Isometry3d::Identity(), Cylinder(radius, length), "visual", orange);
 
   // Add a bunch of little spheres to simulate "multi-contact".
   for (int i = 0; i < num_contacts; ++i) {
@@ -48,12 +46,11 @@ void AddCylinderWithMultiContact(
         body,
         X_BG,
         Sphere(contact_spheres_radius), "collision_top_" + std::to_string(i),
-        friction, scene_graph);
+        friction);
     plant->RegisterVisualGeometry(
         body,
         X_BG,
-        Sphere(contact_spheres_radius), "visual_top_" + std::to_string(i), red,
-        scene_graph);
+        Sphere(contact_spheres_radius), "visual_top_" + std::to_string(i), red);
 
     // Bottom spheres:
     X_BG.translation() << x, y, -length / 2;
@@ -61,12 +58,12 @@ void AddCylinderWithMultiContact(
         body,
         X_BG,
         Sphere(contact_spheres_radius), "collision_bottom_" + std::to_string(i),
-        friction, scene_graph);
+        friction);
     plant->RegisterVisualGeometry(
         body,
         X_BG,
         Sphere(contact_spheres_radius), "visual_bottom_" + std::to_string(i),
-        red, scene_graph);
+        red);
   }
 }
 
@@ -95,7 +92,7 @@ MakeCylinderPlant(double radius, double length, double mass,
 
   // Add geometry to the cylinder for both contact and visualization.
   AddCylinderWithMultiContact(
-      plant.get(), scene_graph,
+      plant.get(),
       cylinder, radius, length, surface_friction,
       contact_radius, num_contact_spheres);
 
@@ -107,17 +104,17 @@ MakeCylinderPlant(double radius, double length, double mass,
   plant->RegisterCollisionGeometry(
       plant->world_body(),
       HalfSpace::MakePose(normal_W, point_W), HalfSpace(), "collision",
-      surface_friction, scene_graph);
+      surface_friction);
 
   // Add visual for the ground.
   plant->RegisterVisualGeometry(
       plant->world_body(), HalfSpace::MakePose(normal_W, point_W),
-      HalfSpace(), "visual", scene_graph);
+      HalfSpace(), "visual");
 
   plant->AddForceElement<UniformGravityFieldElement>(gravity_W);
 
   // We are done creating the plant.
-  plant->Finalize(scene_graph);
+  plant->Finalize();
 
   return plant;
 }

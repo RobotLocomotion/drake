@@ -1,0 +1,46 @@
+# -*- python -*-
+
+load(
+    "@drake//attic:build_macros.bzl",
+    drake_cc_googletest = "attic_drake_cc_googletest",
+    drake_cc_library = "attic_drake_cc_library",
+    drake_cc_package_library = "attic_drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "rendering",
+    deps = [
+        ":drake_visualizer_client",
+    ],
+)
+
+drake_cc_library(
+    name = "drake_visualizer_client",
+    srcs = ["drake_visualizer_client.cc"],
+    hdrs = ["drake_visualizer_client.h"],
+    deps = [
+        "//attic/multibody/shapes",
+        "//lcmtypes:viewer",
+        "//math:geometric_transform",
+        "@eigen",
+    ],
+)
+
+drake_cc_googletest(
+    name = "drake_visualizer_client_test",
+    data = [
+        "//attic/multibody/shapes:test_models",
+    ],
+    deps = [
+        ":drake_visualizer_client",
+        "//common:find_resource",
+        "//lcmtypes:viewer",
+    ],
+)
+
+add_lint_tests(
+    cpplint_data = ["//attic:CPPLINT.cfg"],
+)

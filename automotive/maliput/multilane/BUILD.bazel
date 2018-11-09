@@ -112,6 +112,7 @@ drake_cc_googletest(
         ":builder",
         "//automotive/maliput/api/test_utilities",
         "//automotive/maliput/multilane/test_utilities",
+        "//common:essential",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )

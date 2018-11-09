@@ -40,8 +40,8 @@ PYBIND11_MODULE(symbolic, m) {
       "formula";
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
-  py::class_<Variable>(m, "Variable", doc.Variable.doc)
-      .def(py::init<const string&>(), doc.Variable.ctor.doc)
+  py::class_<Variable> var_cls(m, "Variable", doc.Variable.doc);
+  var_cls.def(py::init<const string&>(), doc.Variable.ctor.doc)
       .def("get_id", &Variable::get_id, doc.Variable.get_id.doc)
       .def("__str__", &Variable::to_string, doc.Variable.to_string.doc)
       .def("__repr__",
@@ -50,7 +50,6 @@ PYBIND11_MODULE(symbolic, m) {
            })
       .def("__hash__",
            [](const Variable& self) { return std::hash<Variable>{}(self); })
-      .def("__copy__", [](const Variable& self) -> Variable { return self; })
       // Addition.
       .def(py::self + py::self)
       .def(py::self + double())
@@ -115,6 +114,7 @@ PYBIND11_MODULE(symbolic, m) {
       .def(py::self != Expression())
       .def(py::self != py::self)
       .def(py::self != double());
+  DefCopyAndDeepCopy(&var_cls);
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
   py::class_<Variables>(m, "Variables", doc.Variables.doc)
@@ -177,8 +177,8 @@ PYBIND11_MODULE(symbolic, m) {
   });
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
-  py::class_<Expression>(m, "Expression")
-      .def(py::init<>(), doc.Expression.ctor.doc_3)
+  py::class_<Expression> expr_cls(m, "Expression");
+  expr_cls.def(py::init<>(), doc.Expression.ctor.doc_3)
       .def(py::init<double>(), doc.Expression.ctor.doc_4)
       .def(py::init<const Variable&>(), doc.Expression.ctor.doc_5)
       .def("__str__", &Expression::to_string)
@@ -312,6 +312,7 @@ PYBIND11_MODULE(symbolic, m) {
       .def("max", &symbolic::max, doc.max.doc)
       .def("ceil", &symbolic::ceil, doc.ceil.doc)
       .def("floor", &symbolic::floor, doc.floor.doc);
+  DefCopyAndDeepCopy(&expr_cls);
 
   // TODO(eric.cousineau): Consider deprecating these methods?
   // TODO(m-chaturvedi) Add Pybind11 documentation.
@@ -347,8 +348,8 @@ PYBIND11_MODULE(symbolic, m) {
         },
         doc.Expression.Jacobian.doc);
 
-  py::class_<Formula> formula(m, "Formula", doc.Formula.doc);
-  formula
+  py::class_<Formula> formula_cls(m, "Formula", doc.Formula.doc);
+  formula_cls
       .def("GetFreeVariables", &Formula::GetFreeVariables,
            doc.Formula.GetFreeVariables.doc)
       .def("EqualTo", &Formula::EqualTo, doc.Formula.EqualTo.doc)
@@ -401,7 +402,7 @@ PYBIND11_MODULE(symbolic, m) {
             "or `Polynomial` as keys (and then access the map in Python), "
             "please use pydrake.util.containers.EqualToDict`.");
       });
-  formula.attr("__bool__") = formula.attr("__nonzero__");
+  formula_cls.attr("__bool__") = formula_cls.attr("__nonzero__");
 
   // Cannot overload logical operators: http://stackoverflow.com/a/471561
   // Defining custom function for clarity.

@@ -2,6 +2,7 @@
 
 from pydrake.systems.rendering import (
     FrameVelocity,
+    MultibodyPositionToGeometryPose,
     PoseBundle,
     PoseAggregator,
     PoseVector,
@@ -11,6 +12,10 @@ import copy
 import unittest
 import numpy as np
 
+from pydrake.common import FindResourceOrThrow
+from pydrake.geometry import SceneGraph
+from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
+from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
 from pydrake.multibody.multibody_tree.math import (
     SpatialVelocity,
 )
@@ -187,3 +192,22 @@ class TestRendering(unittest.TestCase):
         self.assertTrue(np.allclose(vel_actual.translational(), v))
         self.assertTrue(
             (value.get_pose(2).matrix() == Isometry3(q3, p3).matrix()).all())
+
+    def testMultibodyPositionToGeometryPose(self):
+        file_name = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        plant = MultibodyPlant(time_step=0.01)
+        model_instance = AddModelFromSdfFile(
+            file_name=file_name, plant=plant)
+        scene_graph = SceneGraph()
+        plant.RegisterAsSourceForSceneGraph(scene_graph)
+        plant.Finalize()
+
+        to_pose = MultibodyPositionToGeometryPose(plant)
+
+        # Check the size of the input.
+        self.assertEqual(to_pose.get_input_port().size(), 2)
+
+        # Just check the spelling of the output port (size is not meaningful
+        # for Abstract-valued ports).
+        to_pose.get_output_port()

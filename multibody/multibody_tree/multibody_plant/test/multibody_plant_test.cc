@@ -270,7 +270,8 @@ class AcrobotPlantTests : public ::testing::Test {
     const std::string full_name = FindResourceOrThrow(
         "drake/multibody/benchmarks/acrobot/acrobot.sdf");
     plant_ = builder.AddSystem<MultibodyPlant>();
-    AddModelFromSdfFile(full_name, plant_, scene_graph_);
+    plant_->RegisterAsSourceForSceneGraph(scene_graph_);
+    AddModelFromSdfFile(full_name, plant_);
     // Add gravity to the model.
     plant_->AddForceElement<UniformGravityFieldElement>(
         -9.81 * Vector3<double>::UnitZ());
@@ -294,7 +295,7 @@ class AcrobotPlantTests : public ::testing::Test {
         "you must call Finalize\\(\\) first.");
 
     // Finalize() the plant.
-    plant_->Finalize(scene_graph_);
+    plant_->Finalize();
 
     // And build the Diagram:
     diagram_ = builder.Build();
@@ -709,8 +710,7 @@ class SphereChainScenario {
         plant_->world_body(),
         // A half-space passing through the origin in the x-z plane.
         geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
-        geometry::HalfSpace(), "ground", CoulombFriction<double>(),
-        scene_graph_);
+        geometry::HalfSpace(), "ground", CoulombFriction<double>());
 
     auto make_sphere = [this](int i) {
       const double radius = 0.5;
@@ -718,12 +718,11 @@ class SphereChainScenario {
           "Sphere" + to_string(i), SpatialInertia<double>());
       GeometryId sphere_id = plant_->RegisterCollisionGeometry(
           sphere, Isometry3d::Identity(), geometry::Sphere(radius), "collision",
-          CoulombFriction<double>(), scene_graph_);
+          CoulombFriction<double>());
       // We add visual geometry to implicitly test that they are *not* included
       // in the collision results. We don't even save the ids for them.
       plant_->RegisterVisualGeometry(sphere, Isometry3d::Identity(),
-                                     geometry::Sphere(radius), "visual",
-                                     scene_graph_);
+                                     geometry::Sphere(radius), "visual");
       return std::make_tuple(&sphere, sphere_id);
     };
 
@@ -749,7 +748,7 @@ class SphereChainScenario {
                                               SpatialInertia<double>());
 
     // We are done defining the model.
-    plant_->Finalize(scene_graph_);
+    plant_->Finalize();
 
     builder.Connect(
         plant_->get_geometry_poses_output_port(),
@@ -978,7 +977,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
       plant.world_body(),
       // A half-space passing through the origin in the x-z plane.
       geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
-      geometry::HalfSpace(), "ground", ground_friction, &scene_graph);
+      geometry::HalfSpace(), "ground", ground_friction);
 
   // Add two spherical bodies.
   const RigidBody<double>& sphere1 =
@@ -986,16 +985,16 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   CoulombFriction<double> sphere1_friction(0.8, 0.5);
   GeometryId sphere1_id = plant.RegisterCollisionGeometry(
       sphere1, Isometry3d::Identity(), geometry::Sphere(radius),
-      "collision", sphere1_friction, &scene_graph);
+      "collision", sphere1_friction);
   const RigidBody<double>& sphere2 =
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
   CoulombFriction<double> sphere2_friction(0.7, 0.6);
   GeometryId sphere2_id = plant.RegisterCollisionGeometry(
       sphere2, Isometry3d::Identity(), geometry::Sphere(radius),
-      "collision", sphere2_friction, &scene_graph);
+      "collision", sphere2_friction);
 
   // We are done defining the model.
-  plant.Finalize(&scene_graph);
+  plant.Finalize();
 
   EXPECT_EQ(plant.num_visual_geometries(), 0);
   EXPECT_EQ(plant.num_collision_geometries(), 3);
@@ -1062,7 +1061,7 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
       plant.world_body(),
       // A half-space passing through the origin in the x-z plane.
       geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
-      geometry::HalfSpace(), "ground", &scene_graph);
+      geometry::HalfSpace(), "ground");
 
   // Add two spherical bodies.
   const RigidBody<double>& sphere1 =
@@ -1070,16 +1069,16 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   Vector4<double> sphere1_diffuse{0.9, 0.1, 0.1, 0.5};
   GeometryId sphere1_id = plant.RegisterVisualGeometry(
       sphere1, Isometry3d::Identity(), geometry::Sphere(radius),
-      "visual", VisualMaterial(sphere1_diffuse), &scene_graph);
+      "visual", VisualMaterial(sphere1_diffuse));
   const RigidBody<double>& sphere2 =
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
   Vector4<double> sphere2_diffuse{0.1, 0.9, 0.1, 0.5};
   GeometryId sphere2_id = plant.RegisterVisualGeometry(
       sphere2, Isometry3d::Identity(), geometry::Sphere(radius),
-      "visual", VisualMaterial(sphere2_diffuse), &scene_graph);
+      "visual", VisualMaterial(sphere2_diffuse));
 
   // We are done defining the model.
-  plant.Finalize(&scene_graph);
+  plant.Finalize();
 
   EXPECT_EQ(plant.num_visual_geometries(), 3);
   EXPECT_EQ(plant.num_collision_geometries(), 0);
@@ -1312,7 +1311,7 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
       (MultibodyPlant<AutoDiffXd>(plant)), std::logic_error,
       ".*MultibodyTree with an invalid topology.*");
 
-  plant.Finalize(&scene_graph);
+  plant.Finalize();
 
   EXPECT_EQ(plant.num_bodies(), 4);  // It includes the world body.
   EXPECT_TRUE(plant.geometry_source_is_registered());
@@ -1356,6 +1355,10 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
       plant_autodiff.GetBodyByName("link2")).size(), link2_num_visuals);
   EXPECT_EQ(plant_autodiff.GetVisualGeometriesForBody(
       plant_autodiff.GetBodyByName("link3")).size(), link3_num_visuals);
+
+  // Make sure the geometry ports were included in the autodiffed plant.
+  EXPECT_NO_THROW(plant_autodiff.get_geometry_query_input_port());
+  EXPECT_NO_THROW(plant_autodiff.get_geometry_poses_output_port());
 }
 
 // This test is used to verify the correctness of the methods to compute the
@@ -1385,17 +1388,17 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     large_box_id_ = plant_.RegisterCollisionGeometry(
         large_box, Isometry3d::Identity(),
         geometry::Box(large_box_size_, large_box_size_, large_box_size_),
-        "collision", CoulombFriction<double>(), &scene_graph_);
+        "collision", CoulombFriction<double>());
 
     const RigidBody<double>& small_box =
         plant_.AddRigidBody("SmallBox", SpatialInertia<double>());
     small_box_id_ = plant_.RegisterCollisionGeometry(
         small_box, Isometry3d::Identity(),
         geometry::Box(small_box_size_, small_box_size_, small_box_size_),
-        "collision", CoulombFriction<double>(), &scene_graph_);
+        "collision", CoulombFriction<double>());
 
     // We are done defining the model.
-    plant_.Finalize(&scene_graph_);
+    plant_.Finalize();
 
     // Some sanity checks before proceeding.
     ASSERT_EQ(plant_.num_collision_geometries(), 2);

@@ -66,28 +66,27 @@ SpatialInertia<double> MakeCompositeGripperInertia(
   auto CalcFingerPoseInGripperFrame = [](const Joint<double>& slider) {
     // Pose of the joint's parent frame P (attached on gripper body G) in the
     // frame of the gripper G.
-    const Isometry3<double> X_GP =
-        slider.frame_on_parent().GetFixedPoseInBodyFrame();
+    const RigidTransform<double> X_GP(
+        slider.frame_on_parent().GetFixedPoseInBodyFrame());
     // Pose of the joint's child frame C (attached on the slider's finger body)
     // in the frame of the slider's finger F.
-    const Isometry3<double> X_FC =
-        slider.frame_on_child().GetFixedPoseInBodyFrame();
+    const RigidTransform<double> X_FC(
+        slider.frame_on_child().GetFixedPoseInBodyFrame());
     // When the slider's translational dof is zero, then P coincides with C.
     // Therefore:
-    const Isometry3<double> X_GF = X_GP * X_FC.inverse();
+    const RigidTransform<double> X_GF = X_GP * X_FC.inverse();
     return X_GF;
   };
-  // Pose of the left finger L in the gripper frame G when the slider's dof is
-  // zero.
-  const Isometry3<double> X_GL = CalcFingerPoseInGripperFrame(left_slider);
-  // Pose of the right finger R in the gripper frame G when the slider's dof is
-  // zero.
-  const Isometry3<double> X_GR = CalcFingerPoseInGripperFrame(right_slider);
+  // Pose of left finger L in gripper frame G when the slider's dof is zero.
+  const RigidTransform<double> X_GL(CalcFingerPoseInGripperFrame(left_slider));
+  // Pose of right finger R in gripper frame G when the slider's dof is zero.
+  const RigidTransform<double> X_GR(CalcFingerPoseInGripperFrame(right_slider));
   // Helper to compute the spatial inertia of a finger F in about the gripper's
   // origin Go, expressed in G.
   auto CalcFingerSpatialInertiaInGripperFrame = [](
-      const SpatialInertia<double>& M_FFo_F, const Isometry3<double>& X_GF) {
-    const auto M_FFo_G = M_FFo_F.ReExpress(X_GF.linear());
+      const SpatialInertia<double>& M_FFo_F,
+      const RigidTransform<double>& X_GF) {
+    const auto M_FFo_G = M_FFo_F.ReExpress(X_GF.rotation());
     const auto p_FoGo_G = -X_GF.translation();
     const auto M_FGo_G = M_FFo_G.Shift(p_FoGo_G);
     return M_FGo_G;
@@ -105,7 +104,8 @@ SpatialInertia<double> MakeCompositeGripperInertia(
 }
 
 template <typename T>
-ManipulationStation<T>::ManipulationStation(double time_step)
+ManipulationStation<T>::ManipulationStation(double time_step,
+                                            IiwaCollisionModel collision_model)
     : owned_plant_(std::make_unique<MultibodyPlant<T>>(time_step)),
       owned_scene_graph_(std::make_unique<SceneGraph<T>>()),
       owned_controller_plant_(std::make_unique<MultibodyPlant<T>>()) {
@@ -114,6 +114,7 @@ ManipulationStation<T>::ManipulationStation(double time_step)
   // the raw pointers, which should stay valid for the lifetime of the Diagram.
   plant_ = owned_plant_.get();
   scene_graph_ = owned_scene_graph_.get();
+  plant_->RegisterAsSourceForSceneGraph(scene_graph_);
 
   // Add the table and 80/20 workcell frame.
   const double dx_table_center_to_robot_base = 0.3257;
@@ -121,7 +122,7 @@ ManipulationStation<T>::ManipulationStation(double time_step)
   const std::string table_sdf_path = FindResourceOrThrow(
       "drake/examples/manipulation_station/models/amazon_table_simplified.sdf");
   const auto table =
-      AddModelFromSdfFile(table_sdf_path, "table", plant_, scene_graph_);
+      AddModelFromSdfFile(table_sdf_path, "table", plant_);
   plant_->WeldFrames(
       plant_->world_frame(), plant_->GetFrameByName("amazon_table", table),
       RigidTransform<double>(
@@ -129,11 +130,23 @@ ManipulationStation<T>::ManipulationStation(double time_step)
           .GetAsIsometry3());
 
   // Add the Kuka IIWA.
-  const std::string iiwa_sdf_path = FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/"
-      "sdf/iiwa14_no_collision.sdf");
-  iiwa_model_ =
-      AddModelFromSdfFile(iiwa_sdf_path, "iiwa", plant_, scene_graph_);
+  std::string iiwa_sdf_path;
+  switch (collision_model) {
+    case IiwaCollisionModel::kNoCollision:
+      iiwa_sdf_path = FindResourceOrThrow(
+          "drake/manipulation/models/iiwa_description/iiwa7/"
+          "iiwa7_no_collision.sdf");
+      break;
+    case IiwaCollisionModel::kBoxCollision:
+      iiwa_sdf_path = FindResourceOrThrow(
+          "drake/manipulation/models/iiwa_description/iiwa7/"
+          "iiwa7_with_box_collision.sdf");
+      break;
+    default:
+      DRAKE_ABORT_MSG("Unrecognized collision_model.");
+  }
+
+  iiwa_model_ = AddModelFromSdfFile(iiwa_sdf_path, "iiwa", plant_);
   plant_->WeldFrames(plant_->world_frame(),
                      plant_->GetFrameByName("iiwa_link_0", iiwa_model_));
 
@@ -142,14 +155,12 @@ ManipulationStation<T>::ManipulationStation(double time_step)
       "drake/manipulation/models/"
       "wsg_50_description/sdf/schunk_wsg_50.sdf");
   wsg_model_ =
-      AddModelFromSdfFile(wsg_sdf_path, "gripper", plant_, scene_graph_);
-  const Isometry3d wsg_pose =
-      RigidTransform<double>(
-          RollPitchYaw<double>(M_PI_2, 0, M_PI_2).ToRotationMatrix(),
-          Vector3d(0, 0, 0.081))
-          .GetAsIsometry3();
+      AddModelFromSdfFile(wsg_sdf_path, "gripper", plant_);
+  const RigidTransform<double> wsg_pose(RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
+                                        Vector3d(0, 0, 0.114));
   plant_->WeldFrames(plant_->GetFrameByName("iiwa_link_7", iiwa_model_),
-                     plant_->GetFrameByName("body", wsg_model_), wsg_pose);
+                     plant_->GetFrameByName("body", wsg_model_),
+                     wsg_pose.GetAsIsometry3());
 
   plant_->template AddForceElement<multibody::UniformGravityFieldElement>(
       -9.81 * Vector3d::UnitZ());
@@ -173,7 +184,8 @@ ManipulationStation<T>::ManipulationStation(double time_step)
           MakeCompositeGripperInertia(wsg_sdf_path));
   owned_controller_plant_->WeldFrames(owned_controller_plant_->GetFrameByName(
                                           "iiwa_link_7", controller_iiwa_model),
-                                      wsg_equivalent.body_frame(), wsg_pose);
+                                      wsg_equivalent.body_frame(),
+                                      wsg_pose.GetAsIsometry3());
 
   owned_controller_plant_
       ->template AddForceElement<multibody::UniformGravityFieldElement>(
@@ -191,7 +203,7 @@ void ManipulationStation<T>::AddCupboard() {
   const std::string sdf_path = FindResourceOrThrow(
       "drake/examples/manipulation_station/models/cupboard.sdf");
   const auto cupboard =
-      AddModelFromSdfFile(sdf_path, "cupboard", plant_, scene_graph_);
+      AddModelFromSdfFile(sdf_path, "cupboard", plant_);
   plant_->WeldFrames(
       plant_->world_frame(), plant_->GetFrameByName("cupboard_body", cupboard),
       RigidTransform<double>(
@@ -208,7 +220,7 @@ void ManipulationStation<T>::Finalize() {
   //   - cannot finalize plant until all of my objects are added, and
   //   - cannot wire up my diagram until we have finalized the plant.
 
-  plant_->Finalize(scene_graph_);
+  plant_->Finalize();
 
   systems::DiagramBuilder<T> builder;
 
@@ -363,6 +375,11 @@ void ManipulationStation<T>::Finalize() {
 
   builder.ExportOutput(scene_graph_->get_pose_bundle_output_port(),
                        "pose_bundle");
+
+  builder.ExportOutput(plant_->get_contact_results_output_port(),
+      "contact_results");
+  builder.ExportOutput(plant_->get_continuous_state_output_port(),
+      "plant_continuous_state");
 
   builder.BuildInto(this);
 }

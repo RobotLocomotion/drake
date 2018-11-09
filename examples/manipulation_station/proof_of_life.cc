@@ -5,6 +5,7 @@
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/manipulation_station/manipulation_station.h"
 #include "drake/geometry/geometry_visualization.h"
+#include "drake/multibody/multibody_tree/multibody_plant/contact_results_to_lcm.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
@@ -35,7 +36,7 @@ int do_main(int argc, char* argv[]) {
   // Create the "manipulation station".
   auto station = builder.AddSystem<ManipulationStation>();
   station->AddCupboard();
-  multibody::parsing::AddModelFromSdfFile(
+  auto object = multibody::parsing::AddModelFromSdfFile(
       FindResourceOrThrow(
           "drake/examples/manipulation_station/models/061_foam_brick.sdf"),
       "object", &station->get_mutable_multibody_plant(),
@@ -44,6 +45,9 @@ int do_main(int argc, char* argv[]) {
 
   geometry::ConnectDrakeVisualizer(&builder, station->get_mutable_scene_graph(),
                                    station->GetOutputPort("pose_bundle"));
+  multibody::multibody_plant::ConnectContactResultsToDrakeVisualizer(
+      &builder, station->get_mutable_multibody_plant(),
+      station->GetOutputPort("contact_results"));
 
   auto diagram = builder.Build();
 
@@ -75,6 +79,15 @@ int do_main(int argc, char* argv[]) {
   // Force limit at 40N.
   station_context.FixInputPort(
       station->GetInputPort("wsg_force_limit").get_index(), Vector1d(40.0));
+
+  // Place the object in the center of the table in front of the robot.
+  Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+  pose.translation() = Eigen::Vector3d(.6, 0, 0);
+  station->get_multibody_plant().tree().SetFreeBodyPoseOrThrow(
+      station->get_multibody_plant().GetBodyByName("base_link",
+                                                           object),
+      pose, &station->GetMutableSubsystemContext(
+          station->get_multibody_plant(), &station_context));
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();

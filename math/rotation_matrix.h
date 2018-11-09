@@ -56,12 +56,12 @@ class RotationMatrix {
 
   /// Constructs a 3x3 identity %RotationMatrix -- which corresponds to
   /// aligning two frames (so that unit vectors Ax = Bx, Ay = By, Az = Bz).
-  RotationMatrix() {}
+  RotationMatrix() : R_AB_(Matrix3<T>::Identity()) {}
 
   /// Constructs a %RotationMatrix from a Matrix3.
   /// @param[in] R an allegedly valid rotation matrix.
   /// @throws std::logic_error in debug builds if R fails IsValid(R).
-  explicit RotationMatrix(const Matrix3<T>& R) : R_AB_() { set(R); }
+  explicit RotationMatrix(const Matrix3<T>& R) { set(R); }
 
   /// Constructs a %RotationMatrix from an Eigen::Quaternion.
   /// @param[in] quaternion a non-zero, finite quaternion which may or may not
@@ -74,15 +74,14 @@ class RotationMatrix {
   // TODO(mitiguy) Although this method is fairly efficient, consider adding an
   // optional second argument if `quaternion` is known to be normalized apriori
   // or for some reason the calling site does not want `quaternion` normalized.
-  explicit RotationMatrix(const Eigen::Quaternion<T>& quaternion) : R_AB_() {
+  explicit RotationMatrix(const Eigen::Quaternion<T>& quaternion) {
     // Cost for various way to create a rotation matrix from a quaternion.
     // Eigen quaternion.toRotationMatrix() = 12 multiplies, 12 adds.
     // Drake  QuaternionToRotationMatrix() = 12 multiplies, 12 adds.
     // Extra cost for two_over_norm_squared =  4 multiplies,  3 adds, 1 divide.
     // Extra cost if normalized = 4 multiplies, 3 adds, 1 sqrt, 1 divide.
     const T two_over_norm_squared = T(2) / quaternion.squaredNorm();
-    R_AB_ = QuaternionToRotationMatrix(quaternion, two_over_norm_squared);
-    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+    set(QuaternionToRotationMatrix(quaternion, two_over_norm_squared));
   }
 
   /// Constructs a %RotationMatrix from an Eigen::AngleAxis.
@@ -98,12 +97,11 @@ class RotationMatrix {
   // %RotationMatrix constructor (above) with that un-normalized quaternion.
   // TODO(mitiguy) Consider adding an optional second argument if `lambda` is
   // known to be normalized apriori or calling site does not want normalization.
-  explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda) : R_AB_() {
+  explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda) {
     const Vector3<T>& lambda = theta_lambda.axis();
     const T norm = lambda.norm();
     const T& theta = theta_lambda.angle();
-    R_AB_ = Eigen::AngleAxis<T>(theta, lambda / norm).toRotationMatrix();
-    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+    set(Eigen::AngleAxis<T>(theta, lambda / norm).toRotationMatrix());
   }
 
   // TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
@@ -136,7 +134,7 @@ class RotationMatrix {
   /// @li 3rd rotation R_AB: Frames D, C, B (collectively -- as if welded)
   /// rotate relative to frame A by a roll angle `y` about `Bz = Az`.
   /// Note: B and A are no longer aligned.
-  explicit RotationMatrix(const RollPitchYaw<T>& rpy) : R_AB_() {
+  explicit RotationMatrix(const RollPitchYaw<T>& rpy) {
     const T& r = rpy.roll_angle();
     const T& p = rpy.pitch_angle();
     const T& y = rpy.yaw_angle();
@@ -154,9 +152,9 @@ class RotationMatrix {
     const T Rzx = -s1;
     const T Rzy = c1 * s0;
     const T Rzz = c1 * c0;
-    R_AB_.row(0) << Rxx, Rxy, Rxz;
-    R_AB_.row(1) << Ryx, Ryy, Ryz;
-    R_AB_.row(2) << Rzx, Rzy, Rzz;
+    SetFromOrthonormalRows(Vector3<T>(Rxx, Rxy, Rxz),
+                           Vector3<T>(Ryx, Ryy, Ryz),
+                           Vector3<T>(Rzx, Rzy, Rzz));
   }
 
   /// (Advanced) Makes the %RotationMatrix `R_AB` from right-handed orthogonal
@@ -586,7 +584,7 @@ class RotationMatrix {
 
   // Constructs a RotationMatrix without initializing the underlying 3x3 matrix.
   struct DoNotInitializeMemberFields{};
-  explicit RotationMatrix(DoNotInitializeMemberFields) : R_AB_() {}
+  explicit RotationMatrix(DoNotInitializeMemberFields) {}
 
   // Constructs a %RotationMatrix from a Matrix3.  No check is performed to test
   // whether or not the parameter R is a valid rotation matrix.
@@ -772,8 +770,8 @@ class RotationMatrix {
   }
 
   // Stores the underlying rotation matrix relating two frames (e.g. A and B).
-  // The default initialization is the identity matrix.
-  Matrix3<T> R_AB_{Matrix3<T>::Identity()};
+  // For speed, `R_AB_` is uninitialized (public constructors set its value).
+  Matrix3<T> R_AB_;
 };
 
 /// Abbreviation (alias/typedef) for a RotationMatrix double scalar type.

@@ -7,8 +7,10 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("@drake//tools/skylark:test_tags.bzl", "vtk_test_tags")
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 drake_cc_library(
     name = "manipulation_station",
@@ -39,17 +41,66 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "manipulation_station_hardware_interface",
+    srcs = [
+        "manipulation_station_hardware_interface.cc",
+    ],
+    hdrs = [
+        "manipulation_station_hardware_interface.h",
+    ],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common:find_resource",
+        "//examples/kuka_iiwa_arm:iiwa_lcm",
+        "//lcm",
+        "//manipulation/schunk_wsg:schunk_wsg_lcm",
+        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//systems/framework",
+        "//systems/lcm",
+        "//systems/primitives",
+        "//systems/sensors:lcm_image_array_to_images",
+    ],
+)
+
+drake_cc_binary(
+    name = "mock_station_simulation",
+    srcs = [
+        "mock_station_simulation.cc",
+    ],
+    add_test_rule = 1,
+    tags = vtk_test_tags(),
+    test_rule_args = ["--target_realtime_rate=0.0 --duration=0.1"],
+    deps = [
+        ":manipulation_station",
+        "//examples/kuka_iiwa_arm:iiwa_lcm",
+        "//geometry:geometry_visualization",
+        "//lcm",
+        "//manipulation/schunk_wsg:schunk_wsg_lcm",
+        "//systems/analysis:simulator",
+        "//systems/lcm",
+        "@gflags",
+    ],
+)
+
 drake_cc_binary(
     name = "proof_of_life",
     srcs = [
         "proof_of_life.cc",
     ],
     add_test_rule = 1,
+    tags = vtk_test_tags(),
     test_rule_args = ["--target_realtime_rate=0.0 --duration=0.1"],
     test_rule_timeout = "moderate",
     deps = [
         ":manipulation_station",
         "//geometry:geometry_visualization",
+        "//multibody/multibody_tree/multibody_plant:contact_results_to_lcm",
         "//systems/analysis:simulator",
         "@gflags",
     ],
@@ -59,14 +110,18 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "manipulation_station_test",
-    tags = [
-        # Due to a known issue with dev/scene_graph (#9686).
-        "no_lsan",
-        "no_memcheck",
-    ],
+    tags = vtk_test_tags(),
     deps = [
         ":manipulation_station",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "manipulation_station_hardware_interface_test",
+    deps = [
+        ":manipulation_station_hardware_interface",
+        "//systems/sensors:image",
     ],
 )
 
@@ -82,7 +137,21 @@ drake_py_binary(
     name = "joint_teleop",
     srcs = ["joint_teleop.py"],
     add_test_rule = 1,
-    test_rule_args = ["--target_realtime_rate=0.0 --duration=0.1"],
+    tags = vtk_test_tags(),
+    test_rule_args = ["--test --target_realtime_rate=0.0 --duration=0.1"],
+    test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_binary(
+    name = "end_effector_teleop",
+    srcs = ["end_effector_teleop.py"],
+    add_test_rule = 1,
+    tags = vtk_test_tags(),
+    test_rule_args = ["--test --target_realtime_rate=0.0 --duration=0.1"],
+    test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
         "//bindings/pydrake",
     ],

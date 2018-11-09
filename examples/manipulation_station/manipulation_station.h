@@ -11,6 +11,9 @@ namespace drake {
 namespace examples {
 namespace manipulation_station {
 
+/// Determines which sdf is loaded for the IIWA in the ManipulationStation.
+enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
+
 /// @defgroup manipulation_station_systems Manipulation Station
 /// @{
 /// @brief Systems related to the "manipulation station" used in the <a
@@ -47,7 +50,10 @@ namespace manipulation_station {
 ///   @output_port{camera2_rgb_image}
 ///   @output_port{camera2_depth_image}
 ///   @output_port{<b style="color:orange">camera2_label_image</b>}
-///   @output_port{<b style="color:orange">pose_bundle</b>} }
+///   @output_port{<b style="color:orange">pose_bundle</b>}
+///   @output_port{<b style="color:orange">contact_results</b>}
+///   @output_port{<b style="color:orange">plant_continuous_state</b>}
+/// }
 ///
 /// Note that outputs in <b style="color:orange">orange</b> are
 /// available in the simulation, but not on the real robot.  The distinction
@@ -113,10 +119,15 @@ class ManipulationStation : public systems::Diagram<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManipulationStation)
 
-  /// Construct the station model with @p time_step as the time step used by
-  /// MultibodyPlant<T>, and by the discrete derivative used to approximate
-  /// velocity from the position command inputs.
-  explicit ManipulationStation(double time_step = 0.002);
+  /// Construct the station model.
+  ///
+  /// @param time_step The time step used by MultibodyPlant<T>, and by the
+  ///   discrete derivative used to approximate velocity from the position
+  ///   command inputs.
+  /// @param collision_model Determines which sdf is loaded for the IIWA.
+  ManipulationStation(
+      double time_step = 0.002,
+      IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
 
   /// Add the geometry (and two extra degrees-of-freedom) of the optional
   /// workstation cupboard to the model.
@@ -132,14 +143,29 @@ class ManipulationStation : public systems::Diagram<T> {
   /// @see multibody::multibody_plant::MultibodyPlant<T>::Finalize()
   void Finalize();
 
-  /// Return a mutable reference to the main plant responsible for the
+  /// Returns a reference to the main plant responsible for the dynamics of
+  /// the robot and the environment.  This can be used to, e.g., add
+  /// additional elements into the world before calling Finalize().
+  const multibody::multibody_plant::MultibodyPlant<T>& get_multibody_plant()
+  const {
+    return *plant_;
+  }
+
+  /// Returns a mutable reference to the main plant responsible for the
   /// dynamics of the robot and the environment.  This can be used to, e.g.,
   /// add additional elements into the world before calling Finalize().
   multibody::multibody_plant::MultibodyPlant<T>& get_mutable_multibody_plant() {
     return *plant_;
   }
 
-  /// Return a mutable reference to the SceneGraph responsible for all of the
+  /// Returns a reference to the SceneGraph responsible for all of the geometry
+  /// for the robot and the environment.  This can be used to, e.g., add
+  /// additional elements into the world before calling Finalize().
+  const geometry::SceneGraph<T>& get_scene_graph() const {
+    return *scene_graph_;
+  }
+
+  /// Returns a mutable reference to the SceneGraph responsible for all of the
   /// geometry for the robot and the environment.  This can be used to, e.g.,
   /// add additional elements into the world before calling Finalize().
   geometry::SceneGraph<T>& get_mutable_scene_graph() { return *scene_graph_; }

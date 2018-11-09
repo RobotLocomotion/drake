@@ -54,14 +54,25 @@ drake_cc_library(
     ],
 )
 
+drake_py_binary(
+    name = "geometry_inspector",
+    srcs = ["geometry_inspector.py"],
+    add_test_rule = 1,
+    data = ["//multibody/benchmarks/acrobot:acrobot.sdf"],
+    test_rule_args = ["$(location //multibody/benchmarks/acrobot:acrobot.sdf) --test --position 0.1 0.2"],  # noqa
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
 drake_cc_library(
     name = "robot_state_msg_translator",
     srcs = ["robot_state_msg_translator.cc"],
     hdrs = ["robot_state_msg_translator.h"],
     deps = [
         ":bot_core_lcm_encode_decode",
+        "//attic/util",
         "//multibody:rigid_body_tree",
-        "//util",
         "@lcmtypes_bot2_core",
     ],
 )
@@ -85,11 +96,11 @@ drake_cc_library(
     deps = [
         "//attic/multibody/rigid_body_plant:create_load_robot_message",
         "//attic/multibody/rigid_body_plant:drake_visualizer",
+        "//attic/systems/rendering:drake_visualizer_client",
         "//common:essential",
         "//lcm",
         "//lcmtypes:viewer",
         "//systems/framework",
-        "//systems/rendering:drake_visualizer_client",
     ],
 )
 

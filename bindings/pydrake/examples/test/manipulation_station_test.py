@@ -2,16 +2,23 @@
 import unittest
 import numpy as np
 
-from pydrake.examples.manipulation_station import ManipulationStation
+from pydrake.examples.manipulation_station import (
+    IiwaCollisionModel,
+    ManipulationStation,
+    ManipulationStationHardwareInterface
+)
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
 
 
 class TestManipulationStation(unittest.TestCase):
     def test_manipulation_station(self):
         # Just check the spelling.
-        station = ManipulationStation(time_step=0.001)
+        station = ManipulationStation(
+            time_step=0.001, collision_model=IiwaCollisionModel.kNoCollision)
         station.Finalize()
+        station.get_multibody_plant()
         station.get_mutable_multibody_plant()
+        station.get_scene_graph()
         station.get_mutable_scene_graph()
         station.get_controller_plant()
 
@@ -32,3 +39,14 @@ class TestManipulationStation(unittest.TestCase):
         self.assertEqual(v, station.GetWsgVelocity(context))
 
         station.get_camera_pose(0)
+
+    def test_iiwa_collision_model(self):
+        # Check that all of the elements of the enum were spelled correctly.
+        IiwaCollisionModel.kNoCollision
+        IiwaCollisionModel.kBoxCollision
+
+    def test_manipulation_station_hardware_interface(self):
+        station = ManipulationStationHardwareInterface(
+            camera_ids=["123", "456"])
+        # Don't actually call Connect here, since it would block.
+        station.get_controller_plant()

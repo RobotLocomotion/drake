@@ -52,14 +52,14 @@ Manual style fixups
 C/C++: Clang-Format
 -------------------
 
-The
-:ref:`Mandatory platform specific instructions <platform_specific_setup>`
-already install ``clang-format-4.0``.
-
-You can check whether you've installed it correctly by executing::
-
-    clang-format-4.0 --help
+The :ref:`Mandatory platform specific instructions <platform_specific_setup>`
+install Drake's required version of ``clang-format``, depending on the platform
+(macOS or Ubuntu).
 
 To run clang-format::
 
-    clang-format-4.0 -i -style=file [file name]
+    # For development on macOS:
+    clang-format -i -style=file [file name]
+
+    # For development on Ubuntu:
+    clang-format-6.0 -i -style=file [file name]

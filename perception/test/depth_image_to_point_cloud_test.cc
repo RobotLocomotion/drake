@@ -89,6 +89,114 @@ TEST_F(DepthImageToPointCloudTest, ConversionAndNanValueTest) {
   }
 }
 
+// Note that we use ASSERTs instead of EXPECTs when we need to traverse many
+// pixels in an image or many points in a point cloud. This is to prevent
+// outputting massive amount of error messages and making debug hard when
+// test failed.
+
+class DepthImageToPointCloudConversionTest : public ::testing::Test {
+ public:
+  static constexpr float kFocal = 500.f;
+  static constexpr int kDepthWidth = 60;
+  static constexpr int kDepthHeight = 40;
+
+  DepthImageToPointCloudConversionTest() : camera_info_(
+      kDepthWidth, kDepthHeight,
+      kFocal, kFocal, kDepthWidth * 0.5, kDepthHeight * 0.5),
+      depth_image_(kDepthWidth, kDepthHeight, 1) {}
+
+  // kTooClose is treated as kTooFar. For the detail, refer to the document of
+  // RgbdCamera::ConvertDepthImageToPointCloud.
+  void VerifyTooFarTooClose() {
+    for (int v = 0; v < depth_image_.height(); ++v) {
+      for (int u = 0; u < depth_image_.width(); ++u) {
+        const int i = v * depth_image_.width() + u;
+        Eigen::Vector3f actual = actual_point_cloud_.col(i);
+        ASSERT_EQ(actual(0), systems::sensors::InvalidDepth::kTooFar);
+        ASSERT_EQ(actual(1), systems::sensors::InvalidDepth::kTooFar);
+        ASSERT_EQ(actual(2), systems::sensors::InvalidDepth::kTooFar);
+      }
+    }
+  }
+
+ protected:
+  // This must be called by all the test cases first.
+  void Init(float depth_value) {
+    std::fill(depth_image_.at(0, 0),
+              depth_image_.at(0, 0) + depth_image_.size(),
+              depth_value);
+  }
+
+  const systems::sensors::CameraInfo camera_info_;
+  systems::sensors::ImageDepth32F depth_image_;
+  Eigen::Matrix3Xf actual_point_cloud_;
+};
+
+// Verifies computed point cloud when pixel values in depth image are valid.
+TEST_F(DepthImageToPointCloudConversionTest, ValidValueTest) {
+  constexpr float kDepthValue = 1.f;
+  Init(kDepthValue);
+
+  DepthImageToPointCloud::Convert(
+      depth_image_, camera_info_, &actual_point_cloud_);
+
+  // This tolerance was determined empirically using Drake's supported
+  // platforms.
+  constexpr float kDistanceTolerance = 1e-8;
+  for (int v = 0; v < depth_image_.height(); ++v) {
+    for (int u = 0; u < depth_image_.width(); ++u) {
+      const int i = v * depth_image_.width() + u;
+      Eigen::Vector3f actual = actual_point_cloud_.col(i);
+
+      const double expected_x =
+          kDepthValue * (u - kDepthWidth * 0.5) / kFocal;
+      ASSERT_NEAR(actual(0), expected_x, kDistanceTolerance);
+      const double expected_y =
+          kDepthValue * (v - kDepthHeight * 0.5) / kFocal;
+      ASSERT_NEAR(actual(1), expected_y, kDistanceTolerance);
+      ASSERT_NEAR(actual(2), kDepthValue, kDistanceTolerance);
+    }
+  }
+}
+
+// Verifies computed point cloud when pixel values in depth image are NaN.
+TEST_F(DepthImageToPointCloudConversionTest, NanValueTest) {
+  Init(std::numeric_limits<float>::quiet_NaN());
+
+  DepthImageToPointCloud::Convert(
+      depth_image_, camera_info_, &actual_point_cloud_);
+
+  for (int v = 0; v < depth_image_.height(); ++v) {
+    for (int u = 0; u < depth_image_.width(); ++u) {
+      const int i = v * depth_image_.width() + u;
+      Eigen::Vector3f actual = actual_point_cloud_.col(i);
+      ASSERT_TRUE(std::isnan(actual(0)));
+      ASSERT_TRUE(std::isnan(actual(1)));
+      ASSERT_TRUE(std::isnan(actual(2)));
+    }
+  }
+}
+
+// Verifies computed point cloud when pixel values in depth image are kTooFar.
+TEST_F(DepthImageToPointCloudConversionTest, TooFarTest) {
+  Init(systems::sensors::InvalidDepth::kTooFar);
+
+  DepthImageToPointCloud::Convert(
+      depth_image_, camera_info_, &actual_point_cloud_);
+
+  VerifyTooFarTooClose();
+}
+
+// Verifies computed point cloud when pixel values in depth image are kTooClose.
+TEST_F(DepthImageToPointCloudConversionTest, TooCloseTest) {
+  Init(systems::sensors::InvalidDepth::kTooClose);
+
+  DepthImageToPointCloud::Convert(
+      depth_image_, camera_info_, &actual_point_cloud_);
+
+  VerifyTooFarTooClose();
+}
+
 }  // namespace
 }  // namespace perception
 }  // namespace drake

@@ -3,6 +3,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/mobilizer_impl.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
@@ -59,18 +60,17 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
 
   Isometry3<T> CalcAcrossMobilizerTransform(
       const MultibodyTreeContext<T>& context) const override {
-    Isometry3<T> X_FM = Isometry3<T>::Identity();
-
     const Vector3<T> axis_rotation_F = rotation_axis();
     const T rotation = get_rotation(context);
-    X_FM.linear() = Eigen::AngleAxis<T>(
-        rotation, axis_rotation_F).toRotationMatrix();
+    const math::RotationMatrix<T> R_FM(
+        Eigen::AngleAxis<T>(rotation, axis_rotation_F));
 
     const Vector3<T> axis_translation_F = translation_axis();
     const T translation = get_translation(context);
-    X_FM.translation() = translation * axis_translation_F;
+    const Vector3<T> p_FM = translation * axis_translation_F;
 
-    return X_FM;
+    const math::RigidTransform<T> X_FM(R_FM, p_FM);
+    return X_FM.GetAsIsometry3();
   }
 
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
@@ -308,8 +308,8 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
 
   // Rotate the spatial inertia about the y-axis to match the rotation of
   // q_WB.
-  Eigen::Matrix3d R_ZX =
-      Eigen::AngleAxisd(-M_PI_2, Vector3d::UnitY()).toRotationMatrix();
+  drake::math::RotationMatrix<double> R_ZX =
+      drake::math::RotationMatrix<double>::MakeYRotation(-M_PI_2);
   Matrix6<double> M_cylinder_mat = M_Ccm.ReExpress(R_ZX).CopyToFullMatrix6();
 
   // Get expected projected articulated body inertia of cylinder.

@@ -14,10 +14,13 @@ from pydrake.systems.analysis import (
 from pydrake.systems.framework import (
     AbstractValue,
     BasicVector, BasicVector_,
+    Context,
     DiagramBuilder,
     kUseDefaultName,
     LeafSystem, LeafSystem_,
     PortDataType,
+    PublishEvent,
+    TriggerType,
     VectorSystem,
     )
 from pydrake.systems.primitives import (
@@ -144,12 +147,17 @@ class TestCustom(unittest.TestCase):
                 self.called_feedthrough = False
                 self.called_continuous = False
                 self.called_discrete = False
+                self.called_initialize = False
                 # Ensure we have desired overloads.
                 self._DeclarePeriodicPublish(0.1)
                 self._DeclarePeriodicPublish(0.1, 0)
                 self._DeclarePeriodicPublish(period_sec=0.1, offset_sec=0.)
                 self._DeclarePeriodicDiscreteUpdate(
                     period_sec=0.1, offset_sec=0.)
+                self._DeclareInitializationEvent(
+                    event=PublishEvent(
+                        trigger_type=TriggerType.kInitialization,
+                        callback=self._on_initialize))
                 self._DeclareContinuousState(2)
                 self._DeclareDiscreteState(1)
                 # Ensure that we have inputs / outputs to call direct
@@ -160,6 +168,12 @@ class TestCustom(unittest.TestCase):
             def _DoPublish(self, context, events):
                 # Call base method to ensure we do not get recursion.
                 LeafSystem._DoPublish(self, context, events)
+                # N.B. We do not test for a singular call to `DoPublish`
+                # (checking `assertFalse(self.called_publish)` first) because
+                # the above `_DeclareInitializationEvent` will call both its
+                # callback and this event when invoked via
+                # `Simulator::Initialize` from `call_leaf_system_overrides`,
+                # even when we explicitly say not to publish at initialize.
                 self.called_publish = True
 
             def _DoHasDirectFeedthrough(self, input_port, output_port):
@@ -187,17 +201,25 @@ class TestCustom(unittest.TestCase):
                     self, context, events, discrete_state)
                 self.called_discrete = True
 
+            def _on_initialize(self, context, event):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(event, PublishEvent)
+                test.assertFalse(self.called_initialize)
+                self.called_initialize = True
+
         system = TrivialSystem()
         self.assertFalse(system.called_publish)
         self.assertFalse(system.called_feedthrough)
         self.assertFalse(system.called_continuous)
         self.assertFalse(system.called_discrete)
+        self.assertFalse(system.called_initialize)
         results = call_leaf_system_overrides(system)
         self.assertTrue(system.called_publish)
         self.assertTrue(system.called_feedthrough)
         self.assertFalse(results["has_direct_feedthrough"])
         self.assertTrue(system.called_continuous)
         self.assertTrue(system.called_discrete)
+        self.assertTrue(system.called_initialize)
         self.assertEqual(results["discrete_next_t"], 0.1)
 
         self.assertFalse(system.HasAnyDirectFeedthrough())
@@ -356,9 +378,8 @@ class TestCustom(unittest.TestCase):
             class CustomAbstractSystem(LeafSystem_[T]):
                 def __init__(self):
                     LeafSystem_[T].__init__(self)
-                    test_input_type = AbstractValue.Make(
-                        default_value)
-                    self.input_port = self._DeclareAbstractInputPort("in")
+                    self.input_port = self._DeclareAbstractInputPort(
+                        "in", AbstractValue.Make(default_value))
                     self.output_port = self._DeclareAbstractOutputPort(
                         "out",
                         lambda: AbstractValue.Make(default_value),
@@ -384,3 +405,23 @@ class TestCustom(unittest.TestCase):
             system.CalcOutput(context, output)
             value = output.get_data(0)
             self.assertEqual(value.get_value(), expected_output_value)
+
+    def test_deprecated_abstract_input_port(self):
+        # A system that takes a Value[object] on its input, and parses the
+        # input value's first element to a float on its output.
+        class ParseFloatSystem(LeafSystem_[float]):
+            def __init__(self):
+                LeafSystem_[float].__init__(self)
+                self._DeclareAbstractInputPort("in")
+                self._DeclareVectorOutputPort("out", BasicVector(1), self._Out)
+
+            def _Out(self, context, y_data):
+                py_obj = self.EvalAbstractInput(context, 0).get_value()[0]
+                y_data.SetAtIndex(0, float(py_obj))
+
+        system = ParseFloatSystem()
+        context = system.CreateDefaultContext()
+        output = system.AllocateOutput()
+        context.FixInputPort(0, AbstractValue.Make(["22.2"]))
+        system.CalcOutput(context, output)
+        self.assertEqual(output.get_vector_data(0).GetAtIndex(0), 22.2)

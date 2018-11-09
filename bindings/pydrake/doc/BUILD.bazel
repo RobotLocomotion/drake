@@ -4,69 +4,38 @@ package(default_visibility = ["//visibility:private"])
 
 load("@drake//tools/skylark:drake_py.bzl", "drake_py_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load(
-    "@drake//tools/skylark:drake_runfiles_binary.bzl",
-    "drake_runfiles_binary",
-)
 
-py_library(
-    name = "sphinx_pydrake",
-    srcs = ["sphinx_pydrake.py"],
-    imports = ["."],
-)
-
-# We need pydrake to be in the PYTHONPATH for sphinx.ext.autodoc to generate
-# API documentation.
-# TODO(jamiesnape): Can we avoid the need to re-compile pydrake for the host
-# architecture?
 drake_py_binary(
-    name = "sphinx_build",
-    srcs = ["sphinx_build.py"],
+    name = "gen_sphinx",
+    srcs = [
+        "gen_sphinx.py",
+        "pydrake_sphinx_extension.py",
+    ],
+    add_test_rule = 1,
+    data = [
+        "conf.py",
+    ],
+    imports = ["."],
+    main = "gen_sphinx.py",
+    # Some (currently disabled) Sphinx extensions try to reach out to the
+    # network; we should fail-fast if someone tries to turn them on.
+    tags = ["block-network"],
+    test_rule_args = ["--out_dir=<test>"],
+    test_rule_size = "medium",
     deps = [
-        ":sphinx_pydrake",
-        "//bindings/pydrake",
+        "//bindings/pydrake",  # We must import `pydrake` to document it.
+        "//doc:sphinx_base",
     ],
 )
 
 drake_py_binary(
-    name = "refresh_doc_modules",
-    srcs = ["refresh_doc_modules.py"],
-    deps = ["//bindings/pydrake"],
-)
-
-# TODO(jamiesnape): Refactor into a Starlark rule to share with //doc:sphinx.
-genrule(
-    name = "sphinx",
-    srcs = glob([
-        "**/*.rst",
-    ]) + ["conf.py"],
-    outs = ["sphinx.zip"],
-    cmd = " ".join([
-        # Run sphinx-build.
-        "$(location :sphinx_build) -b html",  # HTML output.
-        "-a -E -d $(@D)/.doctrees/",  # Don't use caching.
-        "-N -Q",  # Be very quiet.
-        "-T",  # Traceback.
-        "$$(dirname $(location conf.py))",  # Source dir.
-        "$(@D)/.tmpout",  # Output dir.
-        "&&",
-        # Create zipfile.
-        "( CWD=`pwd` && cd $(@D)/.tmpout && zip -q -r $$CWD/$@ ./ )",
-        "&&",
-        # Cleanup temporary files.
-        "rm -rf $(@D)/.doctrees/ $(@D)/.tmpout",
-    ]),
-    # Some (currently disabled) Sphinx extensions try to reach out to the
-    # network; we should fail-fast if someone tries to turn them on.
-    tags = ["block-network"],
-    tools = [":sphinx_build"],
-)
-
-# TODO(jamiesnape): Refactor to share logic with //doc:serve_sphinx.
-drake_py_binary(
     name = "serve_sphinx",
     srcs = ["serve_sphinx.py"],
-    data = [":sphinx.zip"],
+    data = [":gen_sphinx"],
+    deps = ["//doc:sphinx_base"],
 )
 
-add_lint_tests(python_lint_exclude = [":conf.py"])
+add_lint_tests(
+    enable_clang_format_lint = True,
+    python_lint_exclude = [":conf.py"],
+)

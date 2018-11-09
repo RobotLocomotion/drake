@@ -27,9 +27,11 @@ echo 'deb [arch=amd64] https://drake-apt.csail.mit.edu/xenial xenial main' > /et
 apt-get update
 
 # TODO(jamiesnape): Remove this line on or after 1/1/2019.
-apt-get remove lldb-4.0
+apt-get remove lldb-4.0 python-lldb-4.0
 
 apt-get install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages.txt" | tr '\n' ' ')
+
+locale-gen en_US.UTF-8
 
 dpkg_install_from_wget() {
   package="$1"

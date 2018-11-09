@@ -10,8 +10,6 @@ namespace multibody {
 namespace multibody_tree {
 namespace test {
 
-using Eigen::Isometry3d;
-using Eigen::Translation3d;
 using Eigen::Vector3d;
 
 template<typename T>
@@ -137,10 +135,10 @@ void FreeRotatingBodyPlant<T>::set_angular_velocity(
 }
 
 template<typename T>
-Isometry3<T> FreeRotatingBodyPlant<T>::CalcPoseInWorldFrame(
+math::RigidTransform<T> FreeRotatingBodyPlant<T>::CalcPoseInWorldFrame(
     const systems::Context<T>& context) const {
   auto& pc = this->EvalPositionKinematics(context);
-  return pc.get_X_WB(body_->node_index());
+  return math::RigidTransform<T>(pc.get_X_WB(body_->node_index()));
 }
 
 template<typename T>

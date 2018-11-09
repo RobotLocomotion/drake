@@ -22,12 +22,12 @@ template <typename PyClass>
 void DefClone(PyClass* ppy_class) {
   using Class = typename PyClass::type;
   PyClass& py_class = *ppy_class;
-  py_class
-    .def("Clone", &Class::Clone)
-    .def("__copy__", &Class::Clone)
-    .def("__deepcopy__", [](const Class* self, py::dict /* memo */) {
-      return self->Clone();
-    });
+  py_class  // BR
+      .def("Clone", &Class::Clone)
+      .def("__copy__", &Class::Clone)
+      .def("__deepcopy__", [](const Class* self, py::dict /* memo */) {
+        return self->Clone();
+      });
 }
 
 /// Defines an instantiation of `pydrake.systems.framework.Value[...]`. This is
@@ -68,9 +68,10 @@ py::object AddValueInstantiation(py::module scope) {
   // N.B. `reference_internal` for pybind POD types (int, str, etc.) does not
   // really do anything meaningful.
   // TODO(eric.cousineau): Add check to warn about this.
-  py_class
-    .def("get_value", &Class::get_value, py_reference_internal)
-    .def("get_mutable_value", &Class::get_mutable_value, py_reference_internal);
+  py_class  // BR
+      .def("get_value", &Class::get_value, py_reference_internal)
+      .def("get_mutable_value", &Class::get_mutable_value,
+           py_reference_internal);
   std::string set_value_docstring = "Replaces stored value with a new one.";
   if (!std::is_copy_constructible<T>::value) {
     set_value_docstring += R"""(
@@ -91,19 +92,17 @@ be destroyed when it is replaced, since it is stored using `unique_ptr<>`.
 // N.B. This should be kept in sync with the `*_DEFAULT_SCALARS` macro in
 // `default_scalars.h`.
 /// Type pack defining common scalar types.
-using CommonScalarPack = type_pack<
-    double,
-    AutoDiffXd,
-    symbolic::Expression
-    >;
+using CommonScalarPack = type_pack<  // BR
+    double,                          //
+    AutoDiffXd,                      //
+    symbolic::Expression>;
 
 // N.B. This should be kept in sync with the `*_DEFAULT_NONSYMBOLIC_SCALARS`
 // macro in `default_scalars.h`.
 /// Type pack for non-symbolic common scalar types.
-using NonSymbolicScalarPack = type_pack<
-    double,
-    AutoDiffXd
-    >;
+using NonSymbolicScalarPack = type_pack<  // BR
+    double,                               //
+    AutoDiffXd>;
 
 }  // namespace pysystems
 }  // namespace pydrake

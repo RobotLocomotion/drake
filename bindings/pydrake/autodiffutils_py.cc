@@ -75,6 +75,7 @@ PYBIND11_MODULE(autodiffutils, m) {
            },
            py::is_operator())
       .def("__abs__", [](const AutoDiffXd& x) { return abs(x); });
+  DefCopyAndDeepCopy(&autodiff);
 
   py::implicitly_convertible<double, AutoDiffXd>();
   py::implicitly_convertible<int, AutoDiffXd>();

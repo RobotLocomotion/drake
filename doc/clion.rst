@@ -390,3 +390,10 @@ command line::
 If you strongly prefer clicking on buttons, you might be able to configure the
 ``launchd`` environment using ``launchctl``, but this process is finicky. We
 have no reliable recipe for it yet.
+
+Formatting files
+----------------
+
+The instructions above related to ``clang-format-6.0`` are written for Ubuntu.
+On macOS, the program is named just ``clang-format``, without the ``-6.0``
+suffix.
