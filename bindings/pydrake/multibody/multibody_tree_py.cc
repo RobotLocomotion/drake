@@ -377,17 +377,19 @@ void init_module(py::module m) {
     // Add deprecated methods.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("get_multibody_state_vector", &Class::model, py_reference_internal);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-    cls.attr("message_model") = "Please use GetMultibodyStateVector().";
-    DeprecateAttribute(cls, "model", cls.attr("message_model"));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("get_mutable_multibody_state_vector", &Class::model,
+    cls.def("get_multibody_state_vector", &Class::get_multibody_state_vector,
             py_reference_internal);
+    cls.def("get_mutable_multibody_state_vector",
+            &Class::get_mutable_multibody_state_vector, py_reference_internal);
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-    cls.attr("message_model") = "Please use GetMutableMultibodyStateVector().";
-    DeprecateAttribute(cls, "model", cls.attr("message_model"));
+    cls.attr("message_get_mutable_multibody_state_vector") =
+        "Please use GetMutableMultibodyStateVector().";
+    DeprecateAttribute(cls, "get_mutable_multibody_state_vector",
+                       cls.attr("message_get_mutable_multibody_state_vector"));
+    cls.attr("message_get_multibody_state_vector") =
+        "Please use GetMultibodyStateVector().";
+    DeprecateAttribute(cls, "get_multibody_state_vector",
+                       cls.attr("message_get_multibody_state_vector"));
   }
 }
 
