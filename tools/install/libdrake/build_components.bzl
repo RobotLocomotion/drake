@@ -4,6 +4,12 @@
 #
 # Do not update this list by hand; instead, run build_components_refresh.py.
 LIBDRAKE_COMPONENTS = [
+    "//attic/manipulation/dev:remote_tree_viewer_wrapper",  # unpackaged
+    "//attic/manipulation/planner",
+    "//attic/manipulation/scene_generation:random_clutter_generator",  # unpackaged  # noqa
+    "//attic/manipulation/scene_generation:simulate_plant_to_rest",  # unpackaged  # noqa
+    "//attic/manipulation/sensors",
+    "//attic/manipulation/util",
     "//attic/multibody",
     "//attic/multibody/collision",
     "//attic/multibody/joints",
@@ -50,13 +56,8 @@ LIBDRAKE_COMPONENTS = [
     "//geometry/dev/render/shaders",
     "//geometry/query_results",
     "//lcm",
-    "//manipulation/dev:remote_tree_viewer_wrapper",  # unpackaged
     "//manipulation/perception",
-    "//manipulation/planner",
-    "//manipulation/scene_generation:random_clutter_generator",  # unpackaged
-    "//manipulation/scene_generation:simulate_plant_to_rest",  # unpackaged
     "//manipulation/schunk_wsg",
-    "//manipulation/sensors",
     "//manipulation/util",
     "//math",
     "//multibody/benchmarks/acrobot",
