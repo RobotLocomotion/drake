@@ -10,6 +10,10 @@ py_library(
         "src/meshcat/*.py",
         "src/meshcat/servers/*.py",
     ]),
+    data = glob([
+        "src/meshcat/viewer/dist/*.html",
+        "src/meshcat/viewer/dist/*.js",
+    ]),
     imports = ["src"],
     visibility = ["//visibility:public"],
     deps = ["@u_msgpack_python//:umsgpack"],
@@ -37,7 +41,6 @@ install(
     name = "install",
     targets = [":meshcat"],
     docs = ["LICENSE.txt"],
-    doc_dest = "share/doc/meshcat",
     py_strip_prefix = ["src"],
     visibility = ["//visibility:public"],
     deps = [":install-meshcat-server"],
