@@ -5,6 +5,7 @@
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/weld_joint.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/multibody_tree/multibody_tree_system.h"
 
 namespace drake {
 namespace multibody {
@@ -13,7 +14,8 @@ namespace {
 GTEST_TEST(ModelInstance, ModelInstanceTest) {
   // Create a tree with enough bodies to make two models, one with a
   // welded base and one free.
-  MultibodyTree<double> tree;
+  auto tree_pointer = std::make_unique<MultibodyTree<double>>();
+  MultibodyTree<double>& tree = *tree_pointer;
 
   const ModelInstanceIndex instance1 = tree.AddModelInstance("instance1");
 
@@ -107,6 +109,30 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   Eigen::VectorXd instance2_vel_expected(7);
   instance2_vel_expected << 11, 12, 13, 14, 15, 16, 18;
   EXPECT_TRUE(CompareMatrices(instance2_vel, instance2_vel_expected));
+
+  // Create a MultibodyTreeSystem so that we can get a context.
+  MultibodyTreeSystem<double> mb_system(std::move(tree_pointer));
+  std::unique_ptr<systems::Context<double>> context = mb_system.
+      CreateDefaultContext();
+
+  // Clear the entire multibody state vector so that we can check the effect
+  // of setting one instance at a time.
+  tree.GetMutableMultibodyStateVector(context.get()).setZero();
+  EXPECT_EQ(tree.GetMultibodyStateVector(*context).norm(), 0);
+
+  // Validate setting the position and velocity through the multibody state
+  // vector for an instance.
+  Eigen::VectorXd instance1_x(tree.num_positions(instance1) +
+      tree.num_velocities(instance1));
+  instance1_x << instance1_pos, instance1_vel;
+  tree.SetMultibodyStateVector(instance1, instance1_x, context.get());
+  EXPECT_EQ(tree.GetMultibodyStateVector(*context, instance2).norm(), 0);
+  const Eigen::VectorXd instance1_pos_from_array = tree.GetPositionsFromArray(
+      instance1, pos_vector);
+  const Eigen::VectorXd instance1_vel_from_array = tree.GetVelocitiesFromArray(
+      instance1, vel_vector);
+  EXPECT_TRUE(CompareMatrices(instance1_pos, instance1_pos_from_array));
+  EXPECT_TRUE(CompareMatrices(instance1_vel, instance1_vel_from_array));
 
   // Test that scalar conversion produces properly shaped results.
   std::unique_ptr<MultibodyTree<AutoDiffXd>> tree_ad =

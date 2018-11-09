@@ -429,9 +429,14 @@ void MultibodyTree<T>::SetMultibodyStateVector(
     systems::Context<T>* context) const {
   Eigen::VectorBlock<VectorX<T>> state_vector =
       GetMutableMultibodyStateVector(context);
+  Eigen::VectorBlock<VectorX<T>> q = state_vector.nestedExpression().head(
+      num_positions());
+  Eigen::VectorBlock<VectorX<T>> v = state_vector.nestedExpression().tail(
+      num_velocities());
   SetPositionsInArray(model_instance,
-                      instance_state.head(num_positions(model_instance)),
-                      &state_vector);
+                      instance_state.head(num_positions(model_instance)), &q);
+  SetVelocitiesInArray(model_instance,
+                       instance_state.tail(num_velocities(model_instance)), &v);
 }
 
 template <typename T>

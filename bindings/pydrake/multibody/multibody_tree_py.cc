@@ -240,6 +240,7 @@ void init_module(py::module m) {
     // `MultibodyTree` API will be exposed.
     using Class = MultibodyTree<T>;
     py::class_<Class> cls(m, "MultibodyTree", doc.MultibodyTree.doc);
+
     cls  // BR
         .def("CalcRelativeTransform", &Class::CalcRelativeTransform,
              py::arg("context"), py::arg("frame_A"), py::arg("frame_B"),
@@ -377,10 +378,24 @@ void init_module(py::module m) {
     // Add deprecated methods.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("get_multibody_state_vector", &Class::get_multibody_state_vector,
-            py_reference_internal);
-    cls.def("get_mutable_multibody_state_vector",
-            &Class::get_mutable_multibody_state_vector, py_reference_internal);
+    .def("get_multibody_state_vector",
+         [](const MultibodyTree<T>* self,
+            const Context<T>& context) -> Eigen::Ref<const VectorX<T>> {
+           return self->get_multibody_state_vector(context);
+         },
+         py_reference,
+        // Keep alive, ownership: `return` keeps `Context` alive.
+         py::keep_alive<0, 2>(), py::arg("context"),
+         doc.MultibodyTree.get_multibody_state_vector.doc)
+        .def("get_mutable_multibody_state_vector",
+             [](const MultibodyTree<T>* self,
+                Context<T>* context) -> Eigen::Ref<VectorX<T>> {
+               return self->get_mutable_multibody_state_vector(context);
+             },
+             py_reference,
+            // Keep alive, ownership: `return` keeps `Context` alive.
+             py::keep_alive<0, 2>(), py::arg("context"),
+             doc.MultibodyTree.get_mutable_multibody_state_vector.doc)
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
     cls.attr("message_get_mutable_multibody_state_vector") =
         "Please use GetMutableMultibodyStateVector().";

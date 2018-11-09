@@ -303,7 +303,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// Various methods for accessing and mutating the multibody state
   /// `x = [q; v]`, where `q` is the vector of generalized positions and `v` is
   /// the vector of generalized velocities, or some portion thereof (e.g.,
-  /// only `v`).
+  /// only `v`). These methods focus on _multibody_ state `x`, not total state
+  /// (which can include mechanical work, for example).
 
   /// Returns a const Eigen vector reference containing the multibody state
   /// `x = [q; v]` of the model with `q` the vector of generalized positions and
