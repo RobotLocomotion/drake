@@ -3,11 +3,15 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("@drake//tools/skylark:drake_py.bzl", "drake_py_unittest")
 
+MESHCAT_SERVER_FILES = [
+    "meshcat-server.py",
+    "meshcat-server",
+    "test/meshcat-server-install-test.py",
+    "test/meshcat-server-test.py",
+]
+
 exports_files(
-    [
-        "meshcat-server.py",
-        "meshcat-server",
-    ],
+    MESHCAT_SERVER_FILES,
     visibility = ["@meshcat_python//:__pkg__"],
 )
 
@@ -16,7 +20,4 @@ drake_py_unittest(
     deps = ["@meshcat_python//:meshcat"],
 )
 
-add_lint_tests(python_lint_extra_srcs = [
-    "meshcat-server.py",
-    "meshcat-server",
-])
+add_lint_tests(python_lint_extra_srcs = MESHCAT_SERVER_FILES)
