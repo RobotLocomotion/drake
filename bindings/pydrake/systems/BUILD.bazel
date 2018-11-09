@@ -229,8 +229,10 @@ drake_py_library(
     imports = PACKAGE_INFO.py_imports,
     deps = [
         ":module_py",
+        ":rendering_py",
         "//lcmtypes:lcmtypes_py",
         "@meshcat_python//:meshcat",
+        "@meshcat_python//:meshcat-server",
     ],
 )
 
@@ -362,6 +364,10 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "meshcat_visualizer_test",
+    data = [
+        "//examples/multibody/cart_pole:models",
+        "//manipulation/models/iiwa_description:models",
+    ],
     deps = [
         ":analysis_py",
         ":framework_py",
