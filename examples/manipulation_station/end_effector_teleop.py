@@ -18,6 +18,7 @@ from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (AbstractValue, BasicVector,
                                        DiagramBuilder, LeafSystem,
                                        PortDataType)
+from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 from pydrake.util.eigen_geometry import Isometry3, AngleAxis
 
 
@@ -230,6 +231,9 @@ else:
 
     ConnectDrakeVisualizer(builder, station.get_scene_graph(),
                            station.GetOutputPort("pose_bundle"))
+    meshcat = builder.AddSystem(MeshcatVisualizer(station.get_scene_graph()))
+    builder.Connect(station.GetOutputPort("pose_bundle"),
+                    meshcat.get_input_port(0))
 
 robot = station.get_controller_plant()
 params = DifferentialInverseKinematicsParameters(robot.num_positions(),

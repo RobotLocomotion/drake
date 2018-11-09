@@ -9,7 +9,8 @@ from pydrake.util.eigen_geometry import Quaternion
 from pydrake.geometry import DispatchLoadMessage, SceneGraph
 from pydrake.lcm import DrakeMockLcm
 from pydrake.math import RigidTransform, RotationMatrix
-from pydrake.systems.framework import LeafSystem, PortDataType
+from pydrake.systems.framework import AbstractValue, LeafSystem
+from pydrake.systems.rendering import PoseBundle
 
 from drake import lcmt_viewer_load_robot
 
@@ -66,8 +67,8 @@ class MeshcatVisualizer(LeafSystem):
         self._DeclarePeriodicPublish(draw_period, 0.0)
 
         # Pose bundle (from SceneGraph) input port.
-        self._DeclareInputPort("lcm_visualization",
-                               PortDataType.kAbstractValued, 0)
+        self._DeclareAbstractInputPort("lcm_visualization",
+                                       AbstractValue.Make(PoseBundle(0)))
 
         # Set up meshcat.
         self.prefix = prefix
