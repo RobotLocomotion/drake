@@ -4,7 +4,7 @@ import unittest
 import six
 from types import ModuleType
 
-import pydrake.util.cpp_template as m
+import pydrake.common.cpp_template as m
 
 _TEST_MODULE = "cpp_template_test"
 

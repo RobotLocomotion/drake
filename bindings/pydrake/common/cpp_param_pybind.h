@@ -9,8 +9,8 @@
 
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/util/type_pack.h"
 
 namespace drake {
 namespace pydrake {
