@@ -1,4 +1,4 @@
-#include "drake/bindings/pydrake/util/cpp_param_pybind.h"
+#include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 
 #include "pybind11/eval.h"
 
@@ -49,7 +49,7 @@ void RegisterCommon(py::module m, py::object param_aliases) {
 }  // namespace
 
 py::object GetParamAliases() {
-  py::module m = py::module::import("pydrake.util.cpp_param");
+  py::module m = py::module::import("pydrake.common.cpp_param");
   py::object param_aliases = m.attr("_param_aliases");
   const char registered_check[] = "_register_common_cpp";
   if (!py::hasattr(m, registered_check)) {

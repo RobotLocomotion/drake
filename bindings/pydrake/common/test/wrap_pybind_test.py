@@ -4,7 +4,7 @@ import copy
 import gc
 import unittest
 
-from pydrake.util.wrap_test_util import (
+from pydrake.common.wrap_test_util import (
     MyContainer,
     MyValue,
 )

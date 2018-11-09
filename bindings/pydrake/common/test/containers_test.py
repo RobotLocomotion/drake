@@ -1,4 +1,4 @@
-from pydrake.util.containers import EqualToDict
+from pydrake.common.containers import EqualToDict
 
 import unittest
 
