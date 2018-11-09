@@ -373,6 +373,20 @@ void init_module(py::module m) {
                return Cv;
              },
              py::arg("context"), doc.MultibodyTree.CalcBiasTerm.doc);
+    // Add deprecated methods.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("get_multibody_state_vector", &Class::model, py_reference_internal);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    cls.attr("message_model") = "Please use GetMultibodyStateVector().";
+    DeprecateAttribute(cls, "model", cls.attr("message_model"));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("get_mutable_multibody_state_vector", &Class::model,
+            py_reference_internal);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    cls.attr("message_model") = "Please use GetMutableMultibodyStateVector().";
+    DeprecateAttribute(cls, "model", cls.attr("message_model"));
   }
 }
 
