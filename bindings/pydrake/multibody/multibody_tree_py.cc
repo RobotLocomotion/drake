@@ -239,7 +239,8 @@ void init_module(py::module m) {
     // N.B. Pending a concrete direction on #9366, a minimal subset of the
     // `MultibodyTree` API will be exposed.
     using Class = MultibodyTree<T>;
-    py::class_<Class>(m, "MultibodyTree", doc.MultibodyTree.doc)
+    py::class_<Class> cls(m, "MultibodyTree", doc.MultibodyTree.doc);
+    cls  // BR
         .def("CalcRelativeTransform", &Class::CalcRelativeTransform,
              py::arg("context"), py::arg("frame_A"), py::arg("frame_B"),
              doc.MultibodyTree.CalcRelativeTransform.doc)
