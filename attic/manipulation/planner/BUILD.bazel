@@ -1,10 +1,10 @@
 # -*- python -*-
 
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_googletest",
-    "drake_cc_library",
-    "drake_cc_package_library",
+    "@drake//attic:build_macros.bzl",
+    drake_cc_googletest = "attic_drake_cc_googletest",
+    drake_cc_library = "attic_drake_cc_library",
+    drake_cc_package_library = "attic_drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -86,9 +86,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":differential_inverse_kinematics",
+        "//attic/manipulation/util:world_sim_tree_builder",
         "//common/test_utilities:eigen_matrix_compare",
         "//examples/kuka_iiwa_arm:iiwa_common",
-        "//manipulation/util:world_sim_tree_builder",
         "//multibody/multibody_tree/parsing",
     ],
 )
@@ -108,4 +108,6 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    cpplint_data = ["//attic:CPPLINT.cfg"],
+)

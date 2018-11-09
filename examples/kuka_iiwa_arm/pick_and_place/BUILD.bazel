@@ -48,9 +48,9 @@ drake_cc_library(
     deps = [
         ":pick_and_place_configuration",
         ":pick_and_place_configuration_proto",
+        "//attic/manipulation/util:world_sim_tree_builder",
         "//common:find_resource",
         "//common/proto:protobuf",
-        "//manipulation/util:world_sim_tree_builder",
         "//math:geometric_transform",
     ],
 )
@@ -69,6 +69,7 @@ drake_cc_library(
     ],
     deps = [
         ":pick_and_place_configuration",
+        "//attic/manipulation/util:world_sim_tree_builder",
         "//attic/multibody/parsers",
         "//common:essential",
         "//common/trajectories:piecewise_polynomial",
@@ -78,7 +79,6 @@ drake_cc_library(
         "//lcmtypes:schunk",
         "//lcmtypes:viewer",
         "//manipulation/util:bot_core_lcm_encode_decode",
-        "//manipulation/util:world_sim_tree_builder",
         "//multibody:inverse_kinematics",
         "//multibody:rigid_body_tree",
         "@lcmtypes_bot2_core",
