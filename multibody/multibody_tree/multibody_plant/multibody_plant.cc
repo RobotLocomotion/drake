@@ -11,6 +11,7 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/orthonormal_basis.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 
@@ -187,7 +188,7 @@ struct JointLimitsPenaltyParametersEstimator {
               body->default_spatial_inertia().template cast<T>();
           const Isometry3<T> X_PJ = frame.GetFixedPoseInBodyFrame();
           const Vector3<T>& p_PJ = X_PJ.translation();
-          const Matrix3<T>& R_PJ = X_PJ.linear();
+          const math::RotationMatrix<T> R_PJ(X_PJ.linear());
           const SpatialInertia<T> M_PJo_J =
               M_PPo_P.Shift(p_PJ).ReExpress(R_PJ);
           const RotationalInertia<T> I_PJo_J =

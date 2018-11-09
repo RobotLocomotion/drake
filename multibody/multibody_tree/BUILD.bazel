@@ -163,6 +163,7 @@ drake_cc_library(
         "//common:drake_bool",
         "//common:essential",
         "//common:extract_double",
+        "//math:geometric_transform",
     ],
 )
 
@@ -176,6 +177,7 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:drake_bool",
         "//common:essential",
+        "//math:geometric_transform",
         "//math:vector3_util",
         "//multibody/multibody_tree/math:spatial_algebra",
     ],
@@ -189,6 +191,7 @@ drake_cc_library(
         ":rotational_inertia",
         "//common:default_scalars",
         "//common:essential",
+        "//math:geometric_transform",
     ],
 )
 
@@ -329,6 +332,8 @@ drake_cc_googletest(
     deps = [
         ":rotational_inertia",
         "//common:autodiff",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
         "//math:gradient",
     ],
 )
@@ -337,6 +342,7 @@ drake_cc_googletest(
     name = "spatial_inertia_test",
     deps = [
         ":spatial_inertia",
+        "//math:geometric_transform",
         "//math:gradient",
     ],
 )
@@ -345,6 +351,7 @@ drake_cc_googletest(
     name = "unit_inertia_test",
     deps = [
         ":unit_inertia",
+        "//math:geometric_transform",
         "//math:gradient",
     ],
 )

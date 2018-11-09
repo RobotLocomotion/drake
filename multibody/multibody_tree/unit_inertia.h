@@ -5,6 +5,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
 
 namespace drake {
@@ -104,23 +105,33 @@ class UnitInertia : public RotationalInertia<T> {
 
   /// Re-express a unit inertia in a different frame, performing the operation
   /// in place and modifying the original object. @see ReExpress() for details.
-  UnitInertia<T>& ReExpressInPlace(const Matrix3<T>& R_FE) {
+  UnitInertia<T>& ReExpressInPlace(const math::RotationMatrix<T>& R_FE) {
     RotationalInertia<T>::ReExpressInPlace(R_FE);
     return *this;
+  }
+
+  // TODO(mitiguy) Delete this deprecated code after February 5, 2019.
+  DRAKE_DEPRECATED("Use UnitInertia::ReExpressInPlace(RotationMatrix<T>&). "
+                   "Code will be deleted after February 5, 2019.")
+  UnitInertia<T>& ReExpressInPlace(const Matrix3<T>& R_FE) {
+    return ReExpressInPlace(math::RotationMatrix<T>(R_FE));
   }
 
   /// Given `this` unit inertia `G_BP_E` of a body B about a point P and
   /// expressed in frame E, this method computes the same unit inertia
   /// re-expressed in another frame F as `G_BP_F = R_FE * G_BP_E * (R_FE)ᵀ`.
-  /// @param[in] R_FE Rotation matrix from the basis of frame E to the basis
-  ///                 of frame F.
+  /// @param[in] R_FE RotationMatrix relating frames F and E.
   /// @retval G_BP_F The same unit inertia for body B about point P but now
-  ///                re-expressed in frameF.
-  /// @warning This method does not check whether the input matrix `R_FE`
-  /// represents a valid rotation or not. It is the responsibility of users to
-  /// provide valid rotation matrices.
-  UnitInertia<T> ReExpress(const Matrix3<T>& R_FE) const {
+  ///                re-expressed in frame F.
+  UnitInertia<T> ReExpress(const math::RotationMatrix<T>& R_FE) const {
     return UnitInertia<T>(RotationalInertia<T>::ReExpress(R_FE));
+  }
+
+  // TODO(mitiguy) Delete this deprecated code after February 5, 2019.
+  DRAKE_DEPRECATED("Use UnitInertia::ReExpress(RotationMatrix<T>&). "
+                   "Code will be deleted after February 5, 2019.")
+  UnitInertia<T> ReExpress(const Matrix3<T>& R_FE) const {
+    return ReExpress(math::RotationMatrix<T>(R_FE));
   }
 
   /// For a central unit inertia `G_Bcm_E` computed about a body's center of
