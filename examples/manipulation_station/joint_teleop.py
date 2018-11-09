@@ -15,6 +15,7 @@ from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
 from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
+from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 from pydrake.util.eigen_geometry import Isometry3
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -53,6 +54,13 @@ else:
 
     ConnectDrakeVisualizer(builder, station.get_scene_graph(),
                            station.GetOutputPort("pose_bundle"))
+    meshcat_kwargs = dict()
+    if args.test:
+        meshcat_kwargs['zmq_url'] = None
+    meshcat = builder.AddSystem(MeshcatVisualizer(
+            station.get_scene_graph(), **meshcat_kwargs))
+    builder.Connect(station.GetOutputPort("pose_bundle"),
+                    meshcat.get_input_port(0))
 
 teleop = builder.AddSystem(JointSliders(station.get_controller_plant(),
                                         length=800))
