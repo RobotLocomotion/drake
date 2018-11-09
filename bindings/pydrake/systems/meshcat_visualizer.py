@@ -9,7 +9,10 @@ from pydrake.util.eigen_geometry import Quaternion
 from pydrake.geometry import DispatchLoadMessage, SceneGraph
 from pydrake.lcm import DrakeMockLcm
 from pydrake.math import RigidTransform, RotationMatrix
-from pydrake.systems.framework import LeafSystem, PortDataType
+from pydrake.systems.framework import (
+    AbstractValue, LeafSystem, PublishEvent, TriggerType
+)
+from pydrake.systems.rendering import PoseBundle
 
 from drake import lcmt_viewer_load_robot
 
@@ -37,9 +40,6 @@ class MeshcatVisualizer(LeafSystem):
     in another terminal, open the url printed in that terminal in your
     browser, then to run drake apps (potentially many times) that publish to
     that default url.
-
-    Note that you *must* manually call the load() method after the
-    SceneGraph has been finalized.
     """
 
     def __init__(self,
@@ -66,8 +66,8 @@ class MeshcatVisualizer(LeafSystem):
         self._DeclarePeriodicPublish(draw_period, 0.0)
 
         # Pose bundle (from SceneGraph) input port.
-        self._DeclareInputPort("lcm_visualization",
-                               PortDataType.kAbstractValued, 0)
+        self._DeclareAbstractInputPort("lcm_visualization",
+                                       AbstractValue.Make(PoseBundle(0)))
 
         # Set up meshcat.
         self.prefix = prefix
@@ -77,14 +77,20 @@ class MeshcatVisualizer(LeafSystem):
         self.vis[self.prefix].delete()
         self._scene_graph = scene_graph
 
+        def on_initialize(context, event):
+            self.load()
+
+        self._DeclareInitializationEvent(
+            event=PublishEvent(
+                trigger_type=TriggerType.kInitialization,
+                callback=on_initialize))
+
     def load(self):
         """
         Loads `meshcat` visualization elements.
         @pre The `scene_graph` used to construct this object must be part of a
         fully constructed diagram (e.g. via `DiagramBuilder.Build()`).
         """
-        # TODO(russt): Declare an initialization event to publish this
-        # pending resolution of #9842.
 
         # Intercept load message via mock LCM.
         mock_lcm = DrakeMockLcm()
@@ -140,6 +146,8 @@ class MeshcatVisualizer(LeafSystem):
                     frame_name][str(j)].set_transform(element_local_tf)
 
     def _DoPublish(self, context, event):
+        LeafSystem._DoPublish(self, context, event)
+
         pose_bundle = self.EvalAbstractInput(context, 0).get_value()
 
         for frame_i in range(pose_bundle.get_num_poses()):
