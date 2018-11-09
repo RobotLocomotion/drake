@@ -72,7 +72,8 @@ struct EqualityConstrainedQPSolverOptions {
 void GetEqualityConstrainedQPSolverOptions(
     std::unordered_map<std::string, double>* options_double,
     EqualityConstrainedQPSolverOptions* solver_options) {
-  auto it = options_double->find("FeasibilityTol");
+  auto it = options_double->find(
+      EqualityConstrainedQPSolver::FeasibilityTolOptionName());
   if (it != options_double->end()) {
     if (it->second >= 0) {
       solver_options->feasibility_tol = it->second;
@@ -324,6 +325,11 @@ bool EqualityConstrainedQPSolver::ProgramAttributesSatisfied(
   // cost.
   return AreRequiredAttributesSupported(prog.required_capabilities(),
                                         solver_capabilities.access());
+}
+
+std::string EqualityConstrainedQPSolver::FeasibilityTolOptionName() {
+  static const never_destroyed<std::string> name("FeasibilityTol");
+  return name.access();
 }
 
 }  // namespace solvers

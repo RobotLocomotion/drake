@@ -328,7 +328,8 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testFeasibilityTolerance) {
   SolverOptions solver_options;
   // The input solver option (1E-7) in `Solve` function takes priority over the
   // option stored in the prog (1E-6).
-  prog.SetSolverOption(EqualityConstrainedQPSolver::id(), "FeasibilityTol",
+  prog.SetSolverOption(EqualityConstrainedQPSolver::id(),
+                       EqualityConstrainedQPSolver::FeasibilityTolOptionName(),
                        1e-6);
   solver_options.SetOption(EqualityConstrainedQPSolver::id(), "FeasibilityTol",
                            1e-7);
