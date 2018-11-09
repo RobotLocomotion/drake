@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
@@ -30,7 +31,6 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testUnconstrainedQPDispatch) {
   auto x = prog.NewContinuousVariables<2>();
   prog.AddCost(pow(x(0) - 1, 2) + pow(x(1) - 1, 2));
 
-  prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
   prog.Solve();
 
   VectorXd expected_answer(2);
@@ -83,6 +83,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testLinearlyConstrainedQPDispatch) {
   prog.AddLinearConstraint(x(0) + x(1) == 1);
 
   prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
+
   prog.Solve();
 
   VectorXd expected_answer(2);
@@ -128,10 +129,11 @@ GTEST_TEST(testEqualityConstrainedQPSolver,
   auto x = prog.NewContinuousVariables<2>("x");
   prog.AddCost((x(0) - 1) * x(0));
   EqualityConstrainedQPSolver equality_qp_solver;
-  auto result = equality_qp_solver.Solve(prog);
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
-  EXPECT_NEAR(prog.GetSolution(x(0)), 0.5, 1E-10);
-  EXPECT_NEAR(prog.GetOptimalCost(), -0.25, 1E-10);
+  MathematicalProgramResult result;
+  equality_qp_solver.Solve(prog, {}, {}, &result);
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+  EXPECT_NEAR(prog.GetSolution(x(0), result), 0.5, 1E-10);
+  EXPECT_NEAR(result.get_optimal_cost(), -0.25, 1E-10);
 }
 
 GTEST_TEST(testEqualityConstrainedQPSolver,
@@ -319,6 +321,20 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testFeasibilityTolerance) {
   EXPECT_TRUE(CompareMatrices(cnstr_val, Eigen::Vector3d(1, -2, 1E-6), tol,
                               MatrixCompareType::absolute));
   EXPECT_NEAR(prog.GetOptimalCost(), 3, 1E-6);
+
+  // Now solve with a low feasibility tolerance again by passing the option in
+  // the Solver function. The result should be infeasible.
+  MathematicalProgramResult math_prog_result;
+  SolverOptions solver_options;
+  // The input solver option (1E-7) in `Solve` function takes priority over the
+  // option stored in the prog (1E-6).
+  prog.SetSolverOption(EqualityConstrainedQPSolver::id(), "FeasibilityTol",
+                       1e-6);
+  solver_options.SetOption(EqualityConstrainedQPSolver::id(), "FeasibilityTol",
+                           1e-7);
+  equality_qp_solver.Solve(prog, {}, solver_options, &math_prog_result);
+  EXPECT_EQ(math_prog_result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
 }
 
 // min x'*x + x0 + x1 + 1
@@ -337,6 +353,26 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testLinearCost) {
   EXPECT_TRUE(
       CompareMatrices(prog.GetSolution(x), Eigen::Vector2d(-.5, -.5), 1e-6));
   EXPECT_EQ(prog.GetOptimalCost(), .5);
+}
+
+GTEST_TEST(testEqualityConstrainedQPSolver, WrongSolverOptions) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearEqualityConstraint(x(0) + x(1), 1);
+  prog.AddQuadraticCost(x(0) * x(0) + x(1) * x(1));
+
+  EqualityConstrainedQPSolver solver;
+  MathematicalProgramResult result;
+  SolverOptions solver_options;
+  solver_options.SetOption(solver.solver_id(), "Foo", 0.1);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver.Solve(prog, {}, solver_options, &result), std::invalid_argument,
+      "Unsupported option in EqualityConstrainedQPSolver.");
+
+  solver_options.SetOption(solver.solver_id(), "FeasibilityTol", -0.1);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver.Solve(prog, {}, solver_options, &result), std::invalid_argument,
+      "FeasibilityTol should be a non-negative number.");
 }
 
 }  // namespace test
