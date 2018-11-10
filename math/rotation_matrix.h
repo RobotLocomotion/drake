@@ -25,6 +25,9 @@ namespace math {
 /// relates right-handed orthogonal unit vectors Ax, Ay, Az fixed in frame A
 /// to right-handed orthogonal unit vectors Bx, By, Bz fixed in frame B.
 /// The monogram notation for the rotation matrix relating A to B is `R_AB`.
+/// An example that gives context to this rotation matrix is `v_A = R_AB * v_B`,
+/// where `v_B` denotes an arbitrary vector v expressed in terms of Bx, By, Bz
+/// and `v_A` denotes vector v expressed in terms of Ax, Ay, Az.
 /// See @ref multibody_quantities for monogram notation for dynamics.
 /// See @ref orientation_discussion "a discussion on rotation matrices".
 ///
@@ -163,12 +166,13 @@ class RotationMatrix {
   /// @param[in] By second unit vector in right-handed orthogonal set.
   /// @param[in] Bz third unit vector in right-handed orthogonal set.
   /// @throws std::logic_error in debug builds if `R_AB` fails IsValid(R_AB).
-  /// @note: In release builds, the caller can subsequently test if `R_AB` is,
+  /// @note In release builds, the caller can subsequently test if `R_AB` is,
   /// in fact, a valid %RotationMatrix by calling `R_AB.IsValid()`.
   /// @note The rotation matrix `R_AB` relates two sets of right-handed
-  /// orthogonal unit vectors, namely `Ax`, `Ay`, `Az` and `Bx`, `By`, `Bz`.
-  /// The rows of `R_AB` are `Ax`, `Ay`, `Az` whereas the
-  /// columns of `R_AB` are `Bx`, `By`, `Bz`.
+  /// orthogonal unit vectors, namely Ax, Ay, Az and Bx, By, Bz.
+  /// The rows of `R_AB` are Ax, Ay, Az expressed in frame B (i.e.,`Ax_B`,
+  /// `Ay_B`, `Az_B`).  The columns of `R_AB` are Bx, By, Bz expressed in
+  /// frame A (i.e., `Bx_A`, `By_A`, `Bz_A`).
   static RotationMatrix<T> MakeFromOrthonormalColumns(
       const Vector3<T>& Bx, const Vector3<T>& By, const Vector3<T>& Bz) {
     RotationMatrix<T> R(DoNotInitializeMemberFields{});
@@ -182,12 +186,13 @@ class RotationMatrix {
   /// @param[in] Ay second unit vector in right-handed orthogonal set.
   /// @param[in] Az third unit vector in right-handed orthogonal set.
   /// @throws std::logic_error in debug builds if `R_AB` fails IsValid(R_AB).
-  /// @note: In release builds, the caller can subsequently test if `R_AB` is,
+  /// @note In release builds, the caller can subsequently test if `R_AB` is,
   /// in fact, a valid %RotationMatrix by calling `R_AB.IsValid()`.
   /// @note The rotation matrix `R_AB` relates two sets of right-handed
-  /// orthogonal unit vectors, namely `Ax`, `Ay`, `Az` and `Bx`, `By`, `Bz`.
-  /// The rows of `R_AB` are `Ax`, `Ay`, `Az` whereas the
-  /// columns of `R_AB` are `Bx`, `By`, `Bz`.
+  /// orthogonal unit vectors, namely Ax, Ay, Az and Bx, By, Bz.
+  /// The rows of `R_AB` are Ax, Ay, Az expressed in frame B (i.e.,`Ax_B`,
+  /// `Ay_B`, `Az_B`).  The columns of `R_AB` are Bx, By, Bz expressed in
+  /// frame A (i.e., `Bx_A`, `By_A`, `Bz_A`).
   static RotationMatrix<T> MakeFromOrthonormalRows(
       const Vector3<T>& Ax, const Vector3<T>& Ay, const Vector3<T>& Az) {
     RotationMatrix<T> R(DoNotInitializeMemberFields{});
