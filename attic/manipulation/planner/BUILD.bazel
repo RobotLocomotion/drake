@@ -16,7 +16,6 @@ drake_cc_package_library(
     name = "planner",
     deps = [
         ":constraint_relaxing_ik",
-        ":differential_inverse_kinematics",
         ":robot_plan_interpolator",
     ],
 )
@@ -30,18 +29,6 @@ drake_cc_library(
         "//common/trajectories:piecewise_polynomial",
         "//multibody:inverse_kinematics",
         "//multibody:rigid_body_tree",
-    ],
-)
-
-drake_cc_library(
-    name = "differential_inverse_kinematics",
-    srcs = ["differential_inverse_kinematics.cc"],
-    hdrs = ["differential_inverse_kinematics.h"],
-    deps = [
-        "//attic/multibody/parsers",
-        "//multibody:rigid_body_tree",
-        "//multibody/multibody_tree/multibody_plant",
-        "//solvers:mathematical_program",
     ],
 )
 
@@ -76,20 +63,6 @@ drake_cc_googletest(
     deps = [
         ":constraint_relaxing_ik",
         "//common:find_resource",
-    ],
-)
-
-drake_cc_googletest(
-    name = "differential_inverse_kinematics_test",
-    data = [
-        "//manipulation/models/iiwa_description:models",
-    ],
-    deps = [
-        ":differential_inverse_kinematics",
-        "//attic/manipulation/util:world_sim_tree_builder",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//examples/kuka_iiwa_arm:iiwa_common",
-        "//multibody/multibody_tree/parsing",
     ],
 )
 
