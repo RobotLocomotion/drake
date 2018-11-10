@@ -892,20 +892,6 @@ double ProjectMatToRotMatWithAxis(const Eigen::MatrixBase<Derived>& M,
   return theta;
 }
 
-// TODO(mitiguy) Delete this code after:
-// * All call sites removed, and
-// * code has subsequently been marked deprecated in favor of
-//   RotationMatrix(RollPitchYaw(rpy)). as per issue #8323.
-template <typename Derived>
-Matrix3<typename Derived::Scalar> rpy2rotmat(
-    const Eigen::MatrixBase<Derived>& rpy) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
-  using Scalar = typename Derived::Scalar;
-  const RollPitchYaw<Scalar> roll_pitch_yaw(rpy(0), rpy(1), rpy(2));
-  const RotationMatrix<Scalar> R(roll_pitch_yaw);
-  return R.matrix();
-}
-
 // @internal Initially, this code was in rotation_matrix.cc.  After
 // RotationMatrix was instantiated on symbolic expression, there was a linker
 // error that arose, but only during release builds and when tests in
@@ -942,32 +928,17 @@ RotationMatrix<T>::ThrowIfNotValid(const Matrix3<S>& R) {
   }
 }
 
-
-// TODO(mitiguy) Delete this code after October 6, 2018.
-/// (Deprecated), use @ref math::RotationMatrix::MakeXRotation().
-template <typename T>
-DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
-                     "Use math::RotationMatrix::MakeXRotation(theta).")
-Matrix3<T> XRotation(const T& theta) {
-  return drake::math::RotationMatrix<T>::MakeXRotation(theta).matrix();
-}
-
-// TODO(mitiguy) Delete this code after October 6, 2018.
-/// (Deprecated), use @ref math::RotationMatrix::MakeYRotation().
-template <typename T>
-DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
-                     "Use math::RotationMatrix::MakeYRotation(theta).")
-Matrix3<T> YRotation(const T& theta) {
-  return drake::math::RotationMatrix<T>::MakeYRotation(theta).matrix();
-}
-
-// TODO(mitiguy) Delete this code after October 6, 2018.
-/// (Deprecated), use @ref math::RotationMatrix::MakeZRotation().
-template <typename T>
-DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
-                     "Use math::RotationMatrix::MakeZRotation(theta).")
-Matrix3<T> ZRotation(const T& theta) {
-  return drake::math::RotationMatrix<T>::MakeZRotation(theta).matrix();
+// TODO(mitiguy) Delete this deprecated code after February 5, 2019.
+template <typename Derived>
+DRAKE_DEPRECATED("Use  RotationMatrix(RollPitchYaw(rpy)) as per issue #8323. "
+                 "Code will be deleted after February 5, 2019.")
+Matrix3<typename Derived::Scalar> rpy2rotmat(
+    const Eigen::MatrixBase<Derived>& rpy) {
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
+  using Scalar = typename Derived::Scalar;
+  const RollPitchYaw<Scalar> roll_pitch_yaw(rpy(0), rpy(1), rpy(2));
+  const RotationMatrix<Scalar> R(roll_pitch_yaw);
+  return R.matrix();
 }
 
 }  // namespace math
