@@ -57,6 +57,7 @@ LIBDRAKE_COMPONENTS = [
     "//geometry/query_results",
     "//lcm",
     "//manipulation/perception",
+    "//manipulation/planner",
     "//manipulation/schunk_wsg",
     "//manipulation/util",
     "//math",
