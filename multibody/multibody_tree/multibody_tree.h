@@ -1398,7 +1398,7 @@ class MultibodyTree {
 
   #ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
-  DRAKE_DEPRECATED("Call SetActuationInArray().")
+  DRAKE_DEPRECATED("Call SetActuationInArray(). Will be deleted after 2/7/19.")
   void set_actuation_vector(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& u_instance,
@@ -1422,7 +1422,8 @@ class MultibodyTree {
 
   #ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
-  DRAKE_DEPRECATED("Call GetPositionsFromArray().")
+  DRAKE_DEPRECATED("Call GetPositionsFromArray(). Will be removed after "
+                       "2/7/19.")
   VectorX<T> get_positions_from_array(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& q_array) const;
@@ -1438,7 +1439,7 @@ class MultibodyTree {
 
   #ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
-  DRAKE_DEPRECATED("Call SetPositionsInArray().")
+  DRAKE_DEPRECATED("Call SetPositionsInArray(). Will be removed after 2/7/19.")
   void set_positions_in_array(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& model_q,
@@ -1457,7 +1458,8 @@ class MultibodyTree {
 
   #ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
-  DRAKE_DEPRECATED("Call GetVelocitiesFromArray().")
+  DRAKE_DEPRECATED("Call GetVelocitiesFromArray(). Will be removed after"
+                       " 2/7/19.")
   VectorX<T> get_velocities_from_array(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& v_array) const;
@@ -1473,7 +1475,7 @@ class MultibodyTree {
 
   #ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
-  DRAKE_DEPRECATED("Call SetVelocitiesInArray().")
+  DRAKE_DEPRECATED("Call SetVelocitiesInArray(). Will be removed after 2/7/19.")
   void set_velocities_in_array(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& model_v,
@@ -1539,27 +1541,26 @@ class MultibodyTree {
 
   #ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
-  DRAKE_DEPRECATED("Call GetMultibodyStateVector().")
+  DRAKE_DEPRECATED("Call GetPositionsAndVelocities(). Will be removed after "
+                       "2/7/19.")
   Eigen::VectorBlock<const VectorX<T>> get_multibody_state_vector(
       const systems::Context<T>& context) const;
   #endif
 
-  /// Returns a const Eigen vector reference containing the multibody state
-  /// `x = [q; v]` of the model with `q` the vector of generalized positions and
+  /// Returns a const Eigen vector reference containing the vector
+  /// `[q; v]` of the model with `q` the vector of generalized positions and
   /// `v` the vector of generalized velocities.
   /// @note This method returns a reference to existing data, exhibits constant
   ///       i.e., O(1) time complexity, and runs very quickly.
   /// @throws std::exception if the `context` does not correspond to the context
   /// for a multibody model.
-  Eigen::VectorBlock<const VectorX<T>> GetMultibodyStateVector(
+  Eigen::VectorBlock<const VectorX<T>> GetPositionsAndVelocities(
       const systems::Context<T>& context) const;
 
 #ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
-  DRAKE_DEPRECATED("Call GetMultibodyStateVector().")
-  /// Returns a Eigen vector containing the multibody state `x = [q; v]`
-  /// of the model with q the vector of generalized positions and v the vector
-  /// of generalized velocities for model instance `model_instance`.
+  DRAKE_DEPRECATED("Call GetPositionsAndVelocities(). Will be removed after "
+                       "2/7/19.")
   VectorX<T> get_multibody_state_vector(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance) const;
@@ -1570,42 +1571,48 @@ class MultibodyTree {
   /// vector of generalized velocities for model instance `model_instance`.
   /// @throws std::exception if the `context` does not correspond to the context
   /// for a multibody model or `model_instance` is invalid.
-  VectorX<T> GetMultibodyStateVector(
+  /// @note returns a dense vector of dimension `q.size() + v.size()` associated
+  ///          with `model_instance` in O(`q.size()`) time.
+  VectorX<T> GetPositionsAndVelocities(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance) const;
 
   #ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
-  DRAKE_DEPRECATED("Call GetMutableMultibodyStateVector().")
+  DRAKE_DEPRECATED("Call GetMutablePositionsAndVelocities(). Will be removed"
+                       " after 2/7/19.")
   Eigen::VectorBlock<VectorX<T>> get_mutable_multibody_state_vector(
       systems::Context<T>* context) const;
   #endif
 
-  /// Returns a mutable Eigen vector containing the multibody state `x = [q; v]`
+  /// Returns a mutable Eigen vector containing the vector `[q; v]`
   /// of the model with `q` the vector of generalized positions and `v` the
   /// vector of generalized velocities.
   /// @throws std::exception if the `context` is nullptr or if it does not
   /// correspond to the context for a multibody model.
-  Eigen::VectorBlock<VectorX<T>> GetMutableMultibodyStateVector(
+  /// @note This method returns a reference to existing data, exhibits constant
+  ///       i.e., O(1) time complexity, and runs very quickly.
+  Eigen::VectorBlock<VectorX<T>> GetMutablePositionsAndVelocities(
       systems::Context<T>* context) const;
 
   #ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
-  DRAKE_DEPRECATED("Call SetMultibodyStateVector().")
+  DRAKE_DEPRECATED("Call SetPositionsAndVelocities(). Will be removed after "
+                       "2/7/19.")
   void set_multibody_state_vector(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& instance_state,
       systems::Context<T>* context) const;
   #endif
 
-  /// Sets `context` to store the multibody state `x = [q; v]`
+  /// Sets `context` to store the vector `[q; v]`
   /// with `q` the vector of generalized positions and `v` the vector
   /// of generalized velocities for model instance `model_instance`.
   /// @throws std::exception if the `context` does not correspond to the context
   /// for a multibody model, `context` is nullptr, `model_instance` is invalid,
   /// or `instance_state.size()` does not equal `num_positions(model_instance)`
   /// + `num_velocities(model_instance)`.
-  void SetMultibodyStateVector(
+  void SetPositionsAndVelocities(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& instance_state,
       systems::Context<T>* context) const;

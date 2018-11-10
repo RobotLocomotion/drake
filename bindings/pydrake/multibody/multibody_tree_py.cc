@@ -260,24 +260,24 @@ void init_module(py::module m) {
                  &Class::GetModelInstanceName),
              py::arg("model_instance"), py_reference_internal,
              doc.MultibodyTree.GetModelInstanceName.doc)
-        .def("GetMultibodyStateVector",
+        .def("GetPositionsAndVelocities",
              [](const MultibodyTree<T>* self,
                 const Context<T>& context) -> Eigen::Ref<const VectorX<T>> {
-               return self->GetMultibodyStateVector(context);
+               return self->GetPositionsAndVelocities(context);
              },
              py_reference,
              // Keep alive, ownership: `return` keeps `Context` alive.
              py::keep_alive<0, 2>(), py::arg("context"),
-             doc.MultibodyTree.GetMultibodyStateVector.doc)
-        .def("GetMutableMultibodyStateVector",
+             doc.MultibodyTree.GetPositionsAndVelocities.doc)
+        .def("GetMutablePositionsAndVelocities",
              [](const MultibodyTree<T>* self,
                 Context<T>* context) -> Eigen::Ref<VectorX<T>> {
-               return self->GetMutableMultibodyStateVector(context);
+               return self->GetMutablePositionsAndVelocities(context);
              },
              py_reference,
              // Keep alive, ownership: `return` keeps `Context` alive.
              py::keep_alive<0, 2>(), py::arg("context"),
-             doc.MultibodyTree.GetMutableMultibodyStateVector.doc)
+             doc.MultibodyTree.GetMutablePositionsAndVelocities.doc)
         .def("CalcPointsPositions",
              [](const Class* self, const Context<T>& context,
                 const Frame<T>& frame_B,
@@ -398,11 +398,11 @@ void init_module(py::module m) {
             doc.MultibodyTree.get_mutable_multibody_state_vector.doc);
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
     cls.attr("message_get_mutable_multibody_state_vector") =
-        "Please use GetMutableMultibodyStateVector().";
+        "Please use GetMutablePositionsAndVelocities().";
     DeprecateAttribute(cls, "get_mutable_multibody_state_vector",
                        cls.attr("message_get_mutable_multibody_state_vector"));
     cls.attr("message_get_multibody_state_vector") =
-        "Please use GetMultibodyStateVector().";
+        "Please use GetPositionsAndVelocities().";
     DeprecateAttribute(cls, "get_multibody_state_vector",
                        cls.attr("message_get_multibody_state_vector"));
   }

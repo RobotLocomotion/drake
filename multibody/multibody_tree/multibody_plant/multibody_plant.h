@@ -299,33 +299,32 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return tree().num_actuated_dofs(model_instance);
   }
 
-  /// @name Multibody state accessors and mutators.
-  /// Various methods for accessing and mutating the multibody state
-  /// `x = [q; v]`, where `q` is the vector of generalized positions and `v` is
-  /// the vector of generalized velocities, or some portion thereof (e.g.,
-  /// only `v`). These methods focus on _multibody_ state `x`, not total state
-  /// (which can include mechanical work, for example).
+  /// @name Position and velocity state component accessors and mutators.
+  /// Various methods for accessing and mutating `[q; v]`, where `q` is the
+  /// vector of generalized positions and `v` is the vector of generalized
+  /// velocities, or some portion thereof (e.g., only `v`).
+  /// @{
 
-  /// Returns a const Eigen vector reference containing the multibody state
-  /// `x = [q; v]` of the model with `q` the vector of generalized positions and
+  /// Returns a const Eigen vector reference containing the vector
+  /// `[q; v]` of the model with `q` the vector of generalized positions and
   /// `v` the vector of generalized velocities.
   /// @note This method returns a reference to existing data, exhibits constant
   ///       i.e., O(1) time complexity, and runs very quickly.
   /// @throws std::exception if the `context` does not
   /// correspond to the context for a multibody model.
-  Eigen::VectorBlock<const VectorX<T>> GetMultibodyStateVector(
+  Eigen::VectorBlock<const VectorX<T>> GetPositionsAndVelocities(
       const systems::Context<T>& context) const {
-    return tree().GetMultibodyStateVector(context);
+    return tree().GetPositionsAndVelocities(context);
   }
 
-  /// Returns a mutable Eigen vector containing the multibody state `x = [q; v]`
+  /// Returns a mutable Eigen vector containing the vector `[q; v]`
   /// of the model with `q` the vector of generalized positions and `v` the
   /// vector of generalized velocities.
   /// @throws std::exception if the `context` is nullptr or if it does not
   /// correspond to the context for a multibody model.
-  Eigen::VectorBlock<VectorX<T>> GetMutableMultibodyStateVector(
+  Eigen::VectorBlock<VectorX<T>> GetMutablePositionsAndVelocities(
       systems::Context<T>* context) const {
-    return tree().GetMutableMultibodyStateVector(context);
+    return tree().GetMutablePositionsAndVelocities(context);
   }
 
   /// Returns a const Eigen vector reference containing the vector of
@@ -334,24 +333,26 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   ///       i.e., O(1) time complexity, and runs very quickly.
   /// @throws std::exception if the `context` does not
   /// correspond to the context for a multibody model.
-  Eigen::VectorBlock<const VectorX<T>> GetPositionsVector(
+  Eigen::VectorBlock<const VectorX<T>> GetPositions(
       const systems::Context<T>& context) const {
     // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
-    // returned from GetMultibodyStateVector() as a VectorX<T> so that we can
+    // returned from GetPositionsAndVelocities() as a VectorX<T> so that we can
     // call head() on it.
-    return GetMultibodyStateVector(context).nestedExpression().head(
+    return GetPositionsAndVelocities(context).nestedExpression().head(
         num_positions());
   }
 
-  /// Returns an Eigen vector containing the generalized positions for the
+  /// Returns an Eigen vector containing the generalized positions (`q`) for the
   /// given model instance.
   /// @throws std::exception if the `context` does not
   /// correspond to the context for a multibody model.
-  VectorX<T> GetPositionsVector(
+  /// @note returns a dense vector of dimension `q.size()` associated with
+  ///          `model_instance` in O(`q.size()`) time.
+  VectorX<T> GetPositions(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance) const {
     return tree().GetPositionsFromArray(
-        model_instance, GetPositionsVector(context));
+        model_instance, GetPositions(context));
   }
 
   /// Returns a mutable Eigen vector reference containing the vector of
@@ -360,12 +361,12 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   ///       i.e., O(1) time complexity, and runs very quickly.
   /// @throws std::exception if the `context` is nullptr or if it does not
   /// correspond to the context for a multibody model.
-  Eigen::VectorBlock<VectorX<T>> GetMutablePositionsVector(
+  Eigen::VectorBlock<VectorX<T>> GetMutablePositions(
       systems::Context<T>* context) const {
     // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
-    // returned from GetMutableMultibodyStateVector() as a VectorX<T> so that we
-    // can call head() on it.
-    return tree().GetMutableMultibodyStateVector(context).nestedExpression().
+    // returned from GetMutablePositionsAndVelocities() as a VectorX<T> so that
+    // we can call head() on it.
+    return tree().GetMutablePositionsAndVelocities(context).nestedExpression().
         head(num_positions());
   }
 
@@ -374,10 +375,10 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// not correspond to the context for a multibody model, if the model instance
   /// index is invalid, or if the length of `q_instance` is not equal to
   /// `num_positions(model_instance)`.
-  void SetPositionsFromVector(
+  void SetPositions(
       systems::Context<T>* context,
       ModelInstanceIndex model_instance, const VectorX<T>& q_instance) const {
-    Eigen::VectorBlock<VectorX<T>> q = GetMutablePositionsVector(context);
+    Eigen::VectorBlock<VectorX<T>> q = GetMutablePositions(context);
     tree().SetPositionsInArray(model_instance, q_instance, &q);
   }
 
@@ -385,24 +386,26 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// generalized velocities.
   /// @note This method returns a reference to existing data, exhibits constant
   ///       i.e., O(1) time complexity, and runs very quickly.
-  Eigen::VectorBlock<const VectorX<T>> GetVelocitiesVector(
+  Eigen::VectorBlock<const VectorX<T>> GetVelocities(
       const systems::Context<T>& context) const {
     // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
-    // returned from GetMultibodyStateVector() as a VectorX<T> so that we can
+    // returned from GetPositionsAndVelocities() as a VectorX<T> so that we can
     // call tail() on it.
-    return GetMultibodyStateVector(context).nestedExpression().tail(
+    return GetPositionsAndVelocities(context).nestedExpression().tail(
         num_velocities());
   }
 
-  /// Returns an Eigen vector containing the generalized velocities for the
-  /// given model instance.
+  /// Returns an Eigen vector containing the generalized velocities (`v`) for
+  /// the given model instance.
   /// @throws std::exception if the `context` does not
   /// correspond to the context for a multibody model.
-  VectorX<T> GetVelocitiesVector(
+  /// @note returns a dense vector of dimension `v.size()` associated with
+  ///          `model_instance` in O(`v.size()`) time.
+  VectorX<T> GetVelocities(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance) const {
     return tree().GetVelocitiesFromArray(
-        model_instance, GetVelocitiesVector(context));
+        model_instance, GetVelocities(context));
   }
 
   /// Returns a mutable Eigen vector reference containing the vector of
@@ -411,12 +414,12 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   ///       i.e., O(1) time complexity, and runs very quickly.
   /// @throws std::exception if the `context` is nullptr or the context does
   /// not correspond to the context for a multibody model.
-  Eigen::VectorBlock<VectorX<T>> GetMutableVelocitiesVector(
+  Eigen::VectorBlock<VectorX<T>> GetMutableVelocities(
       systems::Context<T>* context) const {
     // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
-    // returned from GetMutableMultibodyStateVector() as a VectorX<T> so that we
-    // can call tail() on it.
-    return GetMutableMultibodyStateVector(context).nestedExpression().
+    // returned from GetMutablePositionsAndVelocities() as a VectorX<T> so that
+    // we can call tail() on it.
+    return GetMutablePositionsAndVelocities(context).nestedExpression().
         tail(num_velocities());
   }
 
@@ -425,10 +428,10 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// not correspond to the context for a multibody model, if the model instance
   /// index is invalid, or if the length of `v_instance` is not equal to
   /// `num_velocities(model_instance)`.
-  void SetVelocitiesFromVector(
+  void SetVelocities(
       systems::Context<T>* context,
       ModelInstanceIndex model_instance, const VectorX<T>& v_instance) const {
-    Eigen::VectorBlock<VectorX<T>> v = GetMutableVelocitiesVector(context);
+    Eigen::VectorBlock<VectorX<T>> v = GetMutableVelocities(context);
     tree().SetVelocitiesInArray(model_instance, v_instance, &v);
   }
   /// @}

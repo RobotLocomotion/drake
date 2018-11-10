@@ -300,15 +300,15 @@ class TestMultibodyTree(unittest.TestCase):
         x0 = np.concatenate([q0, v0])
 
         # The default state is all values set to zero.
-        x = tree.GetMultibodyStateVector(context)
+        x = tree.GetPositionsAndVelocities(context)
         self.assertTrue(np.allclose(x, np.zeros(4)))
 
         # Write into a mutable reference to the state vector.
-        x_reff = tree.GetMutableMultibodyStateVector(context)
+        x_reff = tree.GetMutablePositionsAndVelocities(context)
         x_reff[:] = x0
 
         # Verify we did modify the state stored in context.
-        x = tree.GetMultibodyStateVector(context)
+        x = tree.GetPositionsAndVelocities(context)
         self.assertTrue(np.allclose(x, x0))
 
     def test_model_instance_state_access(self):
@@ -369,11 +369,11 @@ class TestMultibodyTree(unittest.TestCase):
         x_plant_desired[nq:nq+7] = v_iiwa_desired
         x_plant_desired[nq+7:nq+nv] = v_gripper_desired
 
-        x_plant = tree.GetMutableMultibodyStateVector(context)
+        x_plant = tree.GetMutablePositionsAndVelocities(context)
         x_plant[:] = x_plant_desired
 
         # Get state from context.
-        x = tree.GetMultibodyStateVector(context)
+        x = tree.GetPositionsAndVelocities(context)
         q = x[0:nq]
         v = x[nq:nq+nv]
 

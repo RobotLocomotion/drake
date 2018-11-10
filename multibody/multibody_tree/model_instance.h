@@ -143,7 +143,7 @@ class ModelInstance :
   ///         num_positions().
   void SetPositionsInArray(
       const Eigen::Ref<const VectorX <T>>& q_instance,
-      EigenPtr <VectorX<T>> q) const;
+      EigenPtr<VectorX<T>> q) const;
 
   /// Returns an Eigen vector of the generalized velocities
   /// for `this` mobilizer from a vector `v` of generalized velocities for

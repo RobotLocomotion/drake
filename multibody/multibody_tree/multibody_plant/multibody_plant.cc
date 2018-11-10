@@ -1527,7 +1527,7 @@ void MultibodyPlant<T>::CopyContinuousStateOut(
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
 
   VectorX<T> instance_state_vector =
-      tree().GetMultibodyStateVector(context, model_instance);
+      tree().GetPositionsAndVelocities(context, model_instance);
   state_vector->SetFromVector(instance_state_vector);
 }
 

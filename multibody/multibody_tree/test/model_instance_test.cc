@@ -117,16 +117,16 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
 
   // Clear the entire multibody state vector so that we can check the effect
   // of setting one instance at a time.
-  tree.GetMutableMultibodyStateVector(context.get()).setZero();
-  EXPECT_EQ(tree.GetMultibodyStateVector(*context).norm(), 0);
+  tree.GetMutablePositionsAndVelocities(context.get()).setZero();
+  EXPECT_EQ(tree.GetPositionsAndVelocities(*context).norm(), 0);
 
   // Validate setting the position and velocity through the multibody state
   // vector for an instance.
   Eigen::VectorXd instance1_x(tree.num_positions(instance1) +
       tree.num_velocities(instance1));
   instance1_x << instance1_pos, instance1_vel;
-  tree.SetMultibodyStateVector(instance1, instance1_x, context.get());
-  EXPECT_EQ(tree.GetMultibodyStateVector(*context, instance2).norm(), 0);
+  tree.SetPositionsAndVelocities(instance1, instance1_x, context.get());
+  EXPECT_EQ(tree.GetPositionsAndVelocities(*context, instance2).norm(), 0);
   const Eigen::VectorXd instance1_pos_from_array = tree.GetPositionsFromArray(
       instance1, pos_vector);
   const Eigen::VectorXd instance1_vel_from_array = tree.GetVelocitiesFromArray(

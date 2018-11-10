@@ -355,12 +355,12 @@ template <typename T>
 Eigen::VectorBlock<const VectorX<T>>
 MultibodyTree<T>::get_multibody_state_vector(
     const systems::Context<T>& context) const {
-  return GetMultibodyStateVector(context);
+  return GetPositionsAndVelocities(context);
 }
 
 template <typename T>
 Eigen::VectorBlock<const VectorX<T>>
-MultibodyTree<T>::GetMultibodyStateVector(
+MultibodyTree<T>::GetPositionsAndVelocities(
     const systems::Context<T>& context) const {
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
@@ -371,11 +371,11 @@ template <typename T>
 VectorX<T> MultibodyTree<T>::get_multibody_state_vector(
     const systems::Context<T>& context,
     ModelInstanceIndex model_instance) const {
-  return GetMultibodyStateVector(context, model_instance);
+  return GetPositionsAndVelocities(context, model_instance);
 }
 
 template <typename T>
-VectorX<T> MultibodyTree<T>::GetMultibodyStateVector(
+VectorX<T> MultibodyTree<T>::GetPositionsAndVelocities(
     const systems::Context<T>& context,
     ModelInstanceIndex model_instance) const {
   const auto& mbt_context =
@@ -398,12 +398,12 @@ template <typename T>
 Eigen::VectorBlock<VectorX<T>>
 MultibodyTree<T>::get_mutable_multibody_state_vector(
     systems::Context<T>* context) const {
-  return GetMutableMultibodyStateVector(context);
+  return GetMutablePositionsAndVelocities(context);
 }
 
 template <typename T>
 Eigen::VectorBlock<VectorX<T>>
-MultibodyTree<T>::GetMutableMultibodyStateVector(
+MultibodyTree<T>::GetMutablePositionsAndVelocities(
     systems::Context<T>* context) const {
   DRAKE_DEMAND(context != nullptr);
   auto* mbt_context = dynamic_cast<MultibodyTreeContext<T>*>(context);
@@ -419,16 +419,16 @@ void MultibodyTree<T>::set_multibody_state_vector(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& instance_state,
     systems::Context<T>* context) const {
-  SetMultibodyStateVector(model_instance, instance_state, context);
+  SetPositionsAndVelocities(model_instance, instance_state, context);
 }
 
 template <typename T>
-void MultibodyTree<T>::SetMultibodyStateVector(
+void MultibodyTree<T>::SetPositionsAndVelocities(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& instance_state,
     systems::Context<T>* context) const {
   Eigen::VectorBlock<VectorX<T>> state_vector =
-      GetMutableMultibodyStateVector(context);
+      GetMutablePositionsAndVelocities(context);
   Eigen::VectorBlock<VectorX<T>> q = state_vector.nestedExpression().head(
       num_positions());
   Eigen::VectorBlock<VectorX<T>> v = state_vector.nestedExpression().tail(
