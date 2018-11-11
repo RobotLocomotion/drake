@@ -1426,7 +1426,9 @@ class MultibodyTree {
                        "2/7/19.")
   VectorX<T> get_positions_from_array(
       ModelInstanceIndex model_instance,
-      const Eigen::Ref<const VectorX<T>>& q_array) const;
+      const Eigen::Ref<const VectorX<T>>& q_array) const {
+    return GetPositionsFromArray(model_instance, q);
+  }
   #endif
 
   /// Returns a vector of generalized positions for `model_instance` from a
@@ -1443,7 +1445,9 @@ class MultibodyTree {
   void set_positions_in_array(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& model_q,
-      EigenPtr<VectorX<T>> q_array) const;
+      EigenPtr<VectorX<T>> q_array) const {
+    SetPositionsInArray(model_instance, model_q, q_array);
+  }
   #endif
 
   /// Sets the vector of generalized positions for `model_instance` in
@@ -1462,7 +1466,9 @@ class MultibodyTree {
                        " 2/7/19.")
   VectorX<T> get_velocities_from_array(
       ModelInstanceIndex model_instance,
-      const Eigen::Ref<const VectorX<T>>& v_array) const;
+      const Eigen::Ref<const VectorX<T>>& v_array) const {
+    return GetVelocitiesFromArray(model_instance, v_array);
+  }
   #endif
 
   /// Returns a vector of generalized velocities for `model_instance` from a
@@ -1479,7 +1485,9 @@ class MultibodyTree {
   void set_velocities_in_array(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& model_v,
-      EigenPtr<VectorX<T>> v_array) const;
+      EigenPtr<VectorX<T>> v_array) const {
+    SetVelocitiesInArray(model_instance, model_v, v_array);
+  }
   #endif
 
   /// Sets the vector of generalized velocities for `model_instance` in
@@ -1544,7 +1552,9 @@ class MultibodyTree {
   DRAKE_DEPRECATED("Call GetPositionsAndVelocities(). Will be removed after "
                        "2/7/19.")
   Eigen::VectorBlock<const VectorX<T>> get_multibody_state_vector(
-      const systems::Context<T>& context) const;
+      const systems::Context<T>& context) const {
+    return GetPositionsAndVelocities(context);
+  }
   #endif
 
   /// Returns a const Eigen vector reference containing the vector
@@ -1563,7 +1573,9 @@ class MultibodyTree {
                        "2/7/19.")
   VectorX<T> get_multibody_state_vector(
       const systems::Context<T>& context,
-      ModelInstanceIndex model_instance) const;
+      ModelInstanceIndex model_instance) const {
+    return GetPositionsAndVelocities(context, model_instance);
+  }
   #endif
 
   /// Returns a Eigen vector containing the multibody state `x = [q; v]`
@@ -1582,7 +1594,9 @@ class MultibodyTree {
   DRAKE_DEPRECATED("Call GetMutablePositionsAndVelocities(). Will be removed"
                        " after 2/7/19.")
   Eigen::VectorBlock<VectorX<T>> get_mutable_multibody_state_vector(
-      systems::Context<T>* context) const;
+      systems::Context<T>* context) const {
+    return GetMutablePositionsAndVelocities(context);
+  }
   #endif
 
   /// Returns a mutable Eigen vector containing the vector `[q; v]`
@@ -1602,7 +1616,9 @@ class MultibodyTree {
   void set_multibody_state_vector(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& instance_state,
-      systems::Context<T>* context) const;
+      systems::Context<T>* context) const {
+    SetPositionsAndVelocities(model_instance, instance_state, context);
+  }
   #endif
 
   /// Sets `context` to store the vector `[q; v]`
