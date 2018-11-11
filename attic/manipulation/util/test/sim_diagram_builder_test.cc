@@ -8,8 +8,8 @@
 #include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/controllers/pid_controller.h"
+#include "drake/systems/controllers/rbt_inverse_dynamics_controller.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 
 namespace drake {
@@ -147,7 +147,7 @@ GTEST_TEST(SimDiagramBuilderTest, TestSimulation) {
         single_arm.get());
 
     auto controller = builder.template AddController<
-        systems::controllers::InverseDynamicsController<double>>(
+        systems::controllers::rbt::InverseDynamicsController<double>>(
         info.instance_id, std::move(single_arm), iiwa_kp, iiwa_ki, iiwa_kd,
         false /* no feedforward acceleration */);
     controller->set_name("controller_" + std::to_string(info.instance_id));
