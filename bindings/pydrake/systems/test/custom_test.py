@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import copy
 import unittest
+import warnings
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
@@ -30,6 +31,10 @@ from pydrake.systems.primitives import (
 from pydrake.systems.test.test_util import (
     call_leaf_system_overrides,
     call_vector_system_overrides,
+    )
+
+from pydrake.util.deprecation import (
+    DrakeDeprecationWarning,
     )
 
 
@@ -407,12 +412,22 @@ class TestCustom(unittest.TestCase):
             self.assertEqual(value.get_value(), expected_output_value)
 
     def test_deprecated_abstract_input_port(self):
+        """This test case confirms that the deprecated API for abstract input ports
+        continues to operate correctly, until such a time as we remove it.  For
+        an example of non-deprecated APIs to use abstract input ports, see the
+        test_abstract_io_port case, above.
+        """
+        test = self
+
         # A system that takes a Value[object] on its input, and parses the
         # input value's first element to a float on its output.
         class ParseFloatSystem(LeafSystem_[float]):
             def __init__(self):
                 LeafSystem_[float].__init__(self)
-                self._DeclareAbstractInputPort("in")
+                with warnings.catch_warnings(record=True) as w:
+                    warnings.simplefilter("default", DrakeDeprecationWarning)
+                    self._DeclareAbstractInputPort("in")
+                    test.assertEqual(len(w), 1)
                 self._DeclareVectorOutputPort("out", BasicVector(1), self._Out)
 
             def _Out(self, context, y_data):
