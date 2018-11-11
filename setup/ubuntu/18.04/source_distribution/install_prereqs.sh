@@ -27,6 +27,8 @@ echo 'deb [arch=amd64] https://drake-apt.csail.mit.edu/bionic bionic main' > /et
 apt-get update
 apt-get install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages.txt" | tr '\n' ' ')
 
+locale-gen en_US.UTF-8
+
 dpkg_install_from_wget() {
   package="$1"
   version="$2"
@@ -67,6 +69,6 @@ dpkg_install_from_wget() {
 }
 
 dpkg_install_from_wget \
-  bazel 0.17.2 \
-  https://github.com/bazelbuild/bazel/releases/download/0.17.2/bazel_0.17.2-linux-x86_64.deb \
-  74570692dadd05a5892990ab65f136262b572580b29789116aadfa75ea5a3e68
+  bazel 0.18.0 \
+  https://github.com/bazelbuild/bazel/releases/download/0.18.0/bazel_0.18.0-linux-x86_64.deb \
+  fbdc6dd3bbac4512648314619a317de81df6bbea9826d9201c4e07ec48d3744f

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function
 
-from copy import copy
+import copy
 import unittest
 
 import numpy as np
@@ -333,7 +333,7 @@ class TestSymbolicExpression(SymbolicTestCase):
         algebra.check_value(1 + e_xv, "(1 + x)")
 
         # - In place.
-        e = copy(xv)
+        e = copy.copy(xv)
         e += e_yv
         algebra.check_value(e, "(x + y)")
         e += zv
@@ -349,7 +349,7 @@ class TestSymbolicExpression(SymbolicTestCase):
         algebra.check_value((1 - e_xv), "(1 - x)")
 
         # - In place.
-        e = copy(xv)
+        e = copy.copy(xv)
         e -= e_yv
         algebra.check_value(e, (x - y))
         e -= zv
@@ -365,7 +365,7 @@ class TestSymbolicExpression(SymbolicTestCase):
         algebra.check_value((1 * e_xv), "x")
 
         # - In place.
-        e = copy(xv)
+        e = copy.copy(xv)
         e *= e_yv
         algebra.check_value(e, "(x * y)")
         e *= zv
@@ -381,7 +381,7 @@ class TestSymbolicExpression(SymbolicTestCase):
         algebra.check_value((1 / e_xv), (1 / x))
 
         # - In place.
-        e = copy(xv)
+        e = copy.copy(xv)
         e /= e_yv
         algebra.check_value(e, (x / y))
         e /= zv
@@ -620,6 +620,10 @@ class TestSymbolicExpression(SymbolicTestCase):
         e = x + y
         env = {x: x + 2, y:  y + 3}
         self.assertEqualStructure(e.Substitute(env), x + y + 5)
+
+    def test_copy(self):
+        self._check_scalar(copy.copy(e_x), e_x)
+        self._check_scalar(copy.deepcopy(e_x), e_x)
 
     # See `math_overloads_test` for more comprehensive checks on math
     # functions.

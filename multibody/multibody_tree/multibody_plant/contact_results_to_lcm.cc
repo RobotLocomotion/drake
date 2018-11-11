@@ -88,6 +88,16 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& multibody_plant,
     lcm::DrakeLcmInterface* lcm) {
+  return ConnectContactResultsToDrakeVisualizer(
+      builder, multibody_plant,
+      multibody_plant.get_contact_results_output_port(), lcm);
+}
+
+systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
+    systems::DiagramBuilder<double>* builder,
+    const MultibodyPlant<double>& multibody_plant,
+    const systems::OutputPort<double>& contact_results_port,
+    lcm::DrakeLcmInterface* lcm) {
   DRAKE_DEMAND(builder != nullptr);
 
   auto contact_to_lcm =
@@ -100,8 +110,7 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
           "CONTACT_RESULTS", lcm));
   contact_results_publisher->set_name("contact_results_publisher");
 
-  builder->Connect(multibody_plant.get_contact_results_output_port(),
-                   contact_to_lcm->get_input_port(0));
+  builder->Connect(contact_results_port, contact_to_lcm->get_input_port(0));
   builder->Connect(contact_to_lcm->get_output_port(0),
                    contact_results_publisher->get_input_port());
   contact_results_publisher->set_publish_period(1 / 60.0);

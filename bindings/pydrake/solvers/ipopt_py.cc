@@ -14,12 +14,12 @@ PYBIND11_MODULE(ipopt, m) {
   m.doc() = "Ipopt solver bindings for MathematicalProgram";
 
   py::object solverinterface =
-      py::module::import("pydrake.solvers.mathematicalprogram").attr(
-          "MathematicalProgramSolverInterface");
+      py::module::import("pydrake.solvers.mathematicalprogram")
+          .attr("MathematicalProgramSolverInterface");
 
   py::class_<IpoptSolver>(m, "IpoptSolver", solverinterface,
-    doc.IpoptSolver.doc)
-    .def(py::init<>(), doc.IpoptSolver.ctor.doc);
+                          doc.IpoptSolver.doc)
+      .def(py::init<>(), doc.IpoptSolver.ctor.doc);
 }
 
 }  // namespace pydrake

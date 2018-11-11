@@ -31,15 +31,13 @@ void init_acrobot(py::module m) {
         py::overload_cast<const AcrobotParameters&, bool, SceneGraph<double>*>(
             &MakeAcrobotPlant),
         py::arg("default_parameters"), py::arg("finalize"),
-        py::arg("scene_graph") = nullptr,
-        doc.MakeAcrobotPlant.doc);
+        py::arg("scene_graph") = nullptr, doc.MakeAcrobotPlant.doc);
 }
 
 void init_all(py::module m) {
   py::dict vars = m.attr("__dict__");
-  py::exec(
-      "from pydrake.multibody.benchmarks.acrobot import *",
-      py::globals(), vars);
+  py::exec("from pydrake.multibody.benchmarks.acrobot import *", py::globals(),
+           vars);
 }
 
 PYBIND11_MODULE(benchmarks, m) {

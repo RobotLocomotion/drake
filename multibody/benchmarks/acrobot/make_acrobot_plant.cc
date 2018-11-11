@@ -61,21 +61,19 @@ MakeAcrobotPlant(const AcrobotParameters& params, bool finalize,
     // Pose of the geometry for link 1 in the link's frame.
     const RigidTransformd X_L1G1(-params.l1() / 2.0 * Vector3d::UnitZ());
     plant->RegisterVisualGeometry(link1, X_L1G1.GetAsIsometry3(),
-                                  Cylinder(params.r1(), params.l1()), "visual",
-                                  scene_graph);
+                                  Cylinder(params.r1(), params.l1()), "visual");
 
     // Pose of the geometry for link 2 in the link's frame.
     const RigidTransformd X_L2G2(-params.l2() / 2.0 * Vector3d::UnitZ());
     plant->RegisterVisualGeometry(link2, X_L2G2.GetAsIsometry3(),
-                                  Cylinder(params.r2(), params.l2()), "visual",
-                                  scene_graph);
+                                  Cylinder(params.r2(), params.l2()), "visual");
 
     // Register some (anchored) geometry to the world.
     const RigidTransformd X_WG;  // Default is identity transform.
     plant->RegisterVisualGeometry(
         plant->world_body(), X_WG.GetAsIsometry3(),
         Sphere(params.l1() / 8.0), /* Arbitrary radius to decorate the model. */
-        "visual", scene_graph);
+        "visual");
   }
 
   plant->AddJoint<RevoluteJoint>(
@@ -105,7 +103,7 @@ MakeAcrobotPlant(const AcrobotParameters& params, bool finalize,
       -params.g() * Vector3d::UnitZ());
 
   // We are done creating the plant.
-  if (finalize) plant->Finalize(scene_graph);
+  if (finalize) plant->Finalize();
 
   return plant;
 }

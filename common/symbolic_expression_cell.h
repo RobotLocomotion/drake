@@ -449,6 +449,9 @@ class ExpressionMulFactory {
    * methods. */
   void AddMap(const std::map<Expression, Expression> base_to_exponent_map);
 
+  /* Sets to represent a zero expression. */
+  void SetZero();
+
   double constant_{1.0};
   std::map<Expression, Expression> base_to_exponent_map_;
 };

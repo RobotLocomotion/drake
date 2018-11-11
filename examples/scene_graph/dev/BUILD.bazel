@@ -1,7 +1,7 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
@@ -11,6 +11,7 @@ load(
     "drake_cc_vector_gen_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 drake_cc_vector_gen_library(
     name = "bouncing_ball_vector",
@@ -34,14 +35,7 @@ drake_cc_binary(
     name = "bouncing_ball_run_dynamics",
     srcs = ["bouncing_ball_run_dynamics.cc"],
     add_test_rule = 1,
-    tags = [
-        # These errors seem to arise from OpenGL drivers. The CI errors have
-        # yet to be reproduced locally (although memcheck may produce a
-        # different set of errors locally).
-        "no_lsan",
-        "no_memcheck",
-        "manual",  # DO NOT MERGE THIS!!!!!!!Q!QQQ!!QQQQ!Q
-    ],
+    tags = vtk_test_tags(),
     test_rule_args = [
         "--simulation_time=0.1",
     ],

@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("//tools:drake.bzl", "drake_cc_library")
+load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -14,11 +14,11 @@ drake_cc_library(
         "humanoid_manipulation_plan.h",
     ],
     deps = [
-        "//manipulation/util:robot_state_msg_translator",
+        "//attic/manipulation/util:robot_state_msg_translator",
+        "//attic/systems/controllers/plan_eval:generic_plan",
+        "//attic/systems/controllers/qp_inverse_dynamics:lcm_utils",
+        "//attic/util",
         "//systems/controllers:zmp_planner",
-        "//systems/controllers/plan_eval:generic_plan",
-        "//systems/controllers/qp_inverse_dynamics:lcm_utils",
-        "//util",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],

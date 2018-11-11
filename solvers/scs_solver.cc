@@ -499,7 +499,7 @@ void SetScsProblemData(int A_row_count, int num_vars,
 }
 }  // namespace
 
-bool ScsSolver::available() const { return true; }
+bool ScsSolver::is_available() { return true; }
 
 SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   // SCS solves the problem in this form

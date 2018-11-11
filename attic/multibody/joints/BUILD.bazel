@@ -48,11 +48,11 @@ drake_cc_library(
     ],
     visibility = ["//visibility:private"],
     deps = [
+        "//attic/util",
         "//common:essential",
         "//common:unused",
         "//math:geometric_transform",
         "//math:gradient",
-        "//util",
     ],
 )
 

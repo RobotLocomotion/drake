@@ -39,7 +39,9 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
   /** Constructs a ContactResultsToLcmSystem.
    @param plant The MultibodyPlant that the ContactResults are generated from.
    @pre The `plant` must be finalized already. The input port of this system
-        must be connected to the corresponding output port of `plant`.  */
+        must be connected to the corresponding output port of `plant`
+        (either directly or from an exported port in a Diagram).
+  */
   explicit ContactResultsToLcmSystem(const MultibodyPlant<T>& plant);
 
   /** Scalar-converting copy constructor.  */
@@ -99,6 +101,25 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& multibody_plant,
+    lcm::DrakeLcmInterface* lcm = nullptr);
+
+/** Implements ConnectContactResultsToDrakeVisualizer, but using @p
+ contact_results_port to explicitly specify the output port used to get
+ contact results for @p multibody_plant.  This is required, for instance,
+ when the MultibodyPlant is inside a Diagram, and the Diagram exports the
+ pose bundle port.
+
+ @pre contact_results_port must be connected to the contact_results_port of
+ @p multibody_plant.
+
+ @see ConnectContactResultsToDrakeVisualizer().
+
+ @ingroup visualization
+ */
+systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
+    systems::DiagramBuilder<double>* builder,
+    const MultibodyPlant<double>& multibody_plant,
+    const systems::OutputPort<double>& contact_results_port,
     lcm::DrakeLcmInterface* lcm = nullptr);
 
 }  // namespace multibody_plant

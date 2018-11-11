@@ -59,9 +59,9 @@ class StartReference {
   }
 
   /// Builds a Spec at `connection`'s `end` side with `direction` direction.
-  /// When `direction` == `Direction::kReverse`, `endpoint` is reversed.
-  /// Spec's theta_dot will be cleared so the Builder adjusts it to match
-  /// continuity constraints.
+  /// `connection`'s theta_dot at the given `end` will be ignored by the new
+  /// Spec so that the Builder can adjust it to match road continuity
+  /// constraints.
   Spec at(const Connection& connection, api::LaneEnd::Which end,
           Direction direction) const {
     Endpoint endpoint = end == api::LaneEnd::Which::kStart ? connection.start()
@@ -121,7 +121,8 @@ class StartLane {
 
   /// Builds a Spec at `endpoint` with `direction` direction. When
   /// `direction` == `Direction::kReverse`, `endpoint` is reversed.
-  /// `endpoint`'s theta_dot must be nullopt.
+  /// Additionally, `endpoint`'s theta_dot must be nullopt. Otherwise
+  /// the Builder is unable to match road continuity constraints.
   Spec at(const Endpoint& endpoint, Direction direction) const {
     DRAKE_DEMAND(!endpoint.z().theta_dot().has_value());
     return direction == Direction::kForward
@@ -130,13 +131,12 @@ class StartLane {
   }
 
   /// Builds a Spec at `connection`'s `lane_id` lane at `end` side with
-  /// `direction` direction. When `direction` == `Direction::kReverse`,
-  /// `endpoint` is reversed.
+  /// `direction` direction. `connection`'s theta_dot at the given `end`
+  /// will be ignored by the new Spec so that the Builder can adjust it
+  /// to match road continuity constraints.
   ///
   /// `lane_id` must be non-negative and smaller than `connection`'s number of
   /// lanes.
-  /// Spec's theta_dot will be cleared so the Builder adjusts it to match
-  /// continuity constraints.
   Spec at(const Connection& connection, int lane_id, api::LaneEnd::Which end,
           Direction direction) const {
     DRAKE_DEMAND(lane_id >= 0 && lane_id < connection.num_lanes());
@@ -189,10 +189,9 @@ class EndReference {
   EndReference() = default;
 
   /// Builds a Spec at `connection`'s `end` side with `direction` direction.
-  /// When `direction` == `Direction::kReverse`, `end`-side endpoint's
-  /// EndpointZ is reversed.
-  /// Spec's theta_dot will be cleared so the Builder adjusts it to match
-  /// continuity constraints.
+  /// `connection`'s theta_dot at the given `end` will be ignored by the new
+  /// Spec so that the Builder can adjust it to match road continuity
+  /// constraints.
   Spec z_at(const Connection& connection, api::LaneEnd::Which end,
             Direction direction) const {
     EndpointZ endpoint_z = end == api::LaneEnd::Which::kStart
@@ -258,13 +257,12 @@ class EndLane {
   }
 
   /// Builds a Spec at `connection`'s `end` side with `direction` direction.
-  /// When `direction` == `Direction::kReverse`, `end`-side endpoint's
-  /// EndpointZ is reversed.
+  /// `connection`'s theta_dot at the given `end` will be ignored by the new
+  /// Spec so that the Builder can adjust it to match road continuity
+  /// constraints.
   ///
   /// `lane_id` must be non-negative and smaller than `connection`'s number of
   /// lanes.
-  /// Spec's theta_dot will be cleared so the Builder adjusts it to match
-  /// continuity constraints.
   Spec z_at(const Connection& connection, int lane_id, api::LaneEnd::Which end,
             Direction direction) const {
     DRAKE_DEMAND(lane_id >= 0 && lane_id < connection.num_lanes());
@@ -279,7 +277,8 @@ class EndLane {
 
   /// Builds an Spec at `endpoint_z` with `direction` direction.
   /// When `direction` == `Direction::kReverse`, `endpoint_z` is reversed.
-  /// `endpoint_z`'s theta_dot must be nullopt.
+  /// Additionally, `endpoint`'s theta_dot must be nullopt. Otherwise
+  /// the Builder is unable to match road continuity constraints.
   Spec z_at(const EndpointZ& endpoint_z, Direction direction) const {
     DRAKE_DEMAND(!endpoint_z.theta_dot().has_value());
     return direction == Direction::kForward
@@ -471,6 +470,8 @@ class BuilderBase {
       const std::vector<const Connection*>& connections) = 0;
 
   /// Produces a RoadGeometry, with the ID `id`.
+  /// @throws std::runtime_error if unable to produce a valid
+  ///                            (i.e. G1) RoadGeometry.
   virtual std::unique_ptr<const api::RoadGeometry> Build(
       const api::RoadGeometryId& id) const = 0;
 };
@@ -523,6 +524,16 @@ class BuilderFactoryBase {
 /// Segment bearing multiple Lanes. Each Group yields a Junction containing
 /// the Segments associated with the grouped Connections; ungrouped
 /// Connections each receive their own Junction.
+///
+/// At Endpoints where theta_dot (i.e. the rate of change of superelevation with
+/// respect to an arc-length coordinate t that travels along the Connection
+/// curve’s projection over the z = 0 plane) has not been explicitly specified
+/// the Builder will automatically calculate theta_dot values to preserve G1
+/// continuity across Connections. theta_dot values can only be explicitly
+/// specified for a Connection created from a reference curve with an explicit
+/// start or end Endpoint. However, specifying an explicit theta_dot may cause
+/// Builder::Build() to throw if it cannot assemble a G1 continuous
+/// RoadGeometry.
 ///
 /// Specific suffixes are used to name Maliput entities. The following list
 /// explains the naming convention:

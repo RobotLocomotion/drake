@@ -18,6 +18,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/symbolic.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace multibody {
@@ -506,13 +507,13 @@ class RotationalInertia {
   /// composite body) B about-point P expressed-in frame E and re-expresses
   /// to B's rotational inertia about-point P expressed-in frame A, i.e.,
   /// `I_BP_A = R_AE * I_BP_E * (R_AE)ᵀ`.
-  /// @param R_AE Rotation matrix from frame A to frame E.
+  /// @param[in] R_AE RotationMatrix relating frames A and E.
   /// @return A reference to `this` rotational inertia about-point P, but
   ///         with `this` expressed in frame A (instead of frame E).
   /// @throws std::logic_error for Debug builds if the rotational inertia that
   /// is re-expressed-in frame A violates CouldBePhysicallyValid().
   /// @see ReExpress().
-  RotationalInertia<T>& ReExpressInPlace(const Matrix3<T>& R_AE) {
+  RotationalInertia<T>& ReExpressInPlace(const math::RotationMatrix<T>& R_AE) {
     // There is an interesting discussion on Eigen's forum here:
     // https://forum.kde.org/viewtopic.php?f=74&t=97282
     // That discussion tell us that really here we don't have a significant
@@ -522,8 +523,9 @@ class RotationalInertia {
 
     // Local copy to avoid aliasing that occurs if using triangular view.
     Matrix3<T> I_BP_A;
-    I_BP_A.noalias() = R_AE *
-        I_SP_E_.template selfadjointView<Eigen::Lower>() * R_AE.transpose();
+    I_BP_A.noalias() = R_AE.matrix()
+                     * I_SP_E_.template selfadjointView<Eigen::Lower>()
+                     * R_AE.matrix().transpose();
 
     // Note: There is no guarantee of a symmetric result in I_SP_A (although it
     // should be symmetric within round-off error). Here we discard the upper-
@@ -536,16 +538,31 @@ class RotationalInertia {
     return *this;
   }
 
+  // TODO(mitiguy) Delete this deprecated code after February 5, 2019.
+  DRAKE_DEPRECATED("Use ReExpressInPlace(RotationMatrix<T>&). "
+                   "Code will be deleted after February 5, 2019.")
+  RotationalInertia<T>& ReExpressInPlace(const Matrix3<T>& R_AE) {
+    return ReExpressInPlace(math::RotationMatrix<T>(R_AE));
+  }
+
   /// Re-expresses `this` rotational inertia `I_BP_E` to `I_BP_A`
   /// i.e., re-expresses body B's rotational inertia from frame E to frame A.
-  /// @param R_AE Rotation matrix from frame A to frame E.
+  /// @param[in] R_AE RotationMatrix relating frames A and E.
   /// @retval I_BP_A Rotational inertia of B about-point P expressed-in frame A.
   /// @throws std::logic_error for Debug builds if the rotational inertia that
   /// is re-expressed-in frame A violates CouldBePhysicallyValid().
   /// @see ReExpressInPlace()
+  RotationalInertia<T> ReExpress(const math::RotationMatrix<T>& R_AE) const
+      __attribute__((warn_unused_result)) {
+    return RotationalInertia(*this).ReExpressInPlace(R_AE);
+  }
+
+  // TODO(mitiguy) Delete this deprecated code after February 5, 2019.
+  DRAKE_DEPRECATED("Use RotationalInertia::ReExpress(RotationMatrix<T>&). "
+                   "Code will be deleted after February 5, 2019.")
   RotationalInertia<T> ReExpress(const Matrix3<T>& R_AE) const
                                           __attribute__((warn_unused_result)) {
-    return RotationalInertia(*this).ReExpressInPlace(R_AE);
+    return ReExpress(math::RotationMatrix<T>(R_AE));
   }
 
   /// @name Shift methods

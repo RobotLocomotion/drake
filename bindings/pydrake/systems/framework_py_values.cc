@@ -31,14 +31,14 @@ void DefineFrameworkPyValues(py::module m) {
     using T = decltype(dummy);
     // Value types.
     DefineTemplateClassWithDefault<VectorBase<T>>(
-      m, "VectorBase", GetPyParam<T>(), doc.VectorBase.doc)
-      .def("CopyToVector", &VectorBase<T>::CopyToVector,
-           doc.VectorBase.CopyToVector.doc)
-      .def("SetAtIndex", &VectorBase<T>::SetAtIndex,
-           doc.VectorBase.SetAtIndex.doc)
-      .def("SetFromVector", &VectorBase<T>::SetFromVector,
-           doc.VectorBase.SetFromVector.doc)
-      .def("size", &VectorBase<T>::size, doc.VectorBase.size.doc);
+        m, "VectorBase", GetPyParam<T>(), doc.VectorBase.doc)
+        .def("CopyToVector", &VectorBase<T>::CopyToVector,
+             doc.VectorBase.CopyToVector.doc)
+        .def("SetAtIndex", &VectorBase<T>::SetAtIndex,
+             doc.VectorBase.SetAtIndex.doc)
+        .def("SetFromVector", &VectorBase<T>::SetFromVector,
+             doc.VectorBase.SetFromVector.doc)
+        .def("size", &VectorBase<T>::size, doc.VectorBase.size.doc);
 
     // TODO(eric.cousineau): Make a helper function for the Eigen::Ref<>
     // patterns.
@@ -47,29 +47,33 @@ void DefineFrameworkPyValues(py::module m) {
             m, "BasicVector", GetPyParam<T>(), doc.BasicVector.doc);
     DefClone(&basic_vector);
     basic_vector
-      // N.B. Place `init<VectorX<T>>` `init<int>` so that we do not implicitly
-      // convert scalar-size `np.array` objects to `int` (since this is normally
-      // permitted).
-      .def(py::init<VectorX<T>>(), py::arg("data"), doc.BasicVector.ctor.doc_5)
-      .def(py::init<int>(), py::arg("size"), doc.BasicVector.ctor.doc_4)
-      .def("get_value",
-          [](const BasicVector<T>* self) -> Eigen::Ref<const VectorX<T>> {
-            return self->get_value();
-          }, py_reference_internal, doc.BasicVector.get_value.doc)
-      // TODO(eric.cousineau): Remove this once `get_value` is changed, or
-      // reference semantics are changed for custom dtypes.
-      .def("_get_value_copy",
-          [](const BasicVector<T>* self) -> VectorX<T> {
-            return self->get_value();
-          })
-      .def("get_mutable_value",
-          [](BasicVector<T>* self) -> Eigen::Ref<VectorX<T>> {
-            return self->get_mutable_value();
-          }, py_reference_internal,
-           doc.BasicVector.get_mutable_value.doc)
-       .def("GetAtIndex", [](BasicVector<T>* self, int index) -> T& {
-         return self->GetAtIndex(index);
-       }, py_reference_internal, doc.BasicVector.GetAtIndex.doc);
+        // N.B. Place `init<VectorX<T>>` `init<int>` so that we do not
+        // implicitly convert scalar-size `np.array` objects to `int` (since
+        // this is normally permitted).
+        .def(py::init<VectorX<T>>(), py::arg("data"),
+             doc.BasicVector.ctor.doc_5)
+        .def(py::init<int>(), py::arg("size"), doc.BasicVector.ctor.doc_4)
+        .def("get_value",
+             [](const BasicVector<T>* self) -> Eigen::Ref<const VectorX<T>> {
+               return self->get_value();
+             },
+             py_reference_internal, doc.BasicVector.get_value.doc)
+        // TODO(eric.cousineau): Remove this once `get_value` is changed, or
+        // reference semantics are changed for custom dtypes.
+        .def("_get_value_copy",
+             [](const BasicVector<T>* self) -> VectorX<T> {
+               return self->get_value();
+             })
+        .def("get_mutable_value",
+             [](BasicVector<T>* self) -> Eigen::Ref<VectorX<T>> {
+               return self->get_mutable_value();
+             },
+             py_reference_internal, doc.BasicVector.get_mutable_value.doc)
+        .def("GetAtIndex",
+             [](BasicVector<T>* self, int index) -> T& {
+               return self->GetAtIndex(index);
+             },
+             py_reference_internal, doc.BasicVector.GetAtIndex.doc);
 
     DefineTemplateClassWithDefault<Supervector<T>, VectorBase<T>>(
         m, "Supervector", GetPyParam<T>(), doc.Supervector.doc);
@@ -95,16 +99,16 @@ void DefineFrameworkPyValues(py::module m) {
   py::class_<AbstractValue> abstract_value(m, "AbstractValue");
   DefClone(&abstract_value);
   abstract_value
-    // Only bind the exception variant, `SetFromOrThrow`, for use in Python.
-    // Otherwise, a user could encounter undefind behavior via `SetFrom`.
-    .def("SetFrom", &AbstractValue::SetFromOrThrow,
-         doc.AbstractValue.SetFrom.doc)
-    .def("get_value", abstract_stub("get_value"),
-         doc.AbstractValue.GetValue.doc)
-    .def("get_mutable_value", abstract_stub("get_mutable_value"),
-         doc.AbstractValue.GetMutableValue.doc)
-    .def("set_value", abstract_stub("set_value"),
-         doc.AbstractValue.SetValue.doc);
+      // Only bind the exception variant, `SetFromOrThrow`, for use in Python.
+      // Otherwise, a user could encounter undefind behavior via `SetFrom`.
+      .def("SetFrom", &AbstractValue::SetFromOrThrow,
+           doc.AbstractValue.SetFrom.doc)
+      .def("get_value", abstract_stub("get_value"),
+           doc.AbstractValue.GetValue.doc)
+      .def("get_mutable_value", abstract_stub("get_mutable_value"),
+           doc.AbstractValue.GetMutableValue.doc)
+      .def("set_value", abstract_stub("set_value"),
+           doc.AbstractValue.SetValue.doc);
 
   // Add `Value<std::string>` instantiation (visible in Python as `Value[str]`).
   AddValueInstantiation<string>(m);
@@ -151,7 +155,8 @@ void DefineFrameworkPyValues(py::module m) {
           py_value_class = py_value_template[py_object_type];
         }
         return py_value_class(value);
-      }, doc.AbstractValue.Make.doc);
+      },
+      doc.AbstractValue.Make.doc);
 }
 
 }  // namespace pydrake

@@ -139,11 +139,11 @@ def _impl(repository_ctx):
         ), "include")
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "16.04":
-            archive = "vtk-8.1.1-embree-3.2.0-ospray-1.6.1-python-2.7.12-python-3.5.2-qt-5.5.1-xenial-x86_64-2.tar.gz"  # noqa
-            sha256 = "eeeaf320f7cd14402e54f59bef7aa10911f395d575c25d276ce5d4c6797645d4"  # noqa
+            archive = "vtk-8.1.1-embree-3.2.0-ospray-1.6.1-python-2.7.12-python-3.5.2-qt-5.5.1-xenial-x86_64-3.tar.gz"  # noqa
+            sha256 = "7662b1898b92f81d33bb860621892d20da2ea8887ed9cea10f7f708877ca6688"  # noqa
         elif os_result.ubuntu_release == "18.04":
-            archive = "vtk-8.1.1-embree-3.2.0-ospray-1.6.1-python-2.7.15-python-3.6.5-qt-5.9.5-bionic-x86_64-2.tar.gz"  # noqa
-            sha256 = "fdc98bce61e092bc0d964834b5ff2c5a4ab9e0734727bd530cb74cd4296173bc"  # noqa
+            archive = "vtk-8.1.1-embree-3.2.0-ospray-1.6.1-python-2.7.15-python-3.6.5-qt-5.9.5-bionic-x86_64-3.tar.gz"  # noqa
+            sha256 = "aef51c26e5b1c600d57988ec37b87eb4568e415d536ef0d2c0e0b3d77c0ef220"  # noqa
         else:
             fail("Operating system is NOT supported", attr = os_result)
 
@@ -504,6 +504,8 @@ licenses([
             "vtkJPEGReader.h",
             "vtkPNGReader.h",
             "vtkPNGWriter.h",
+            "vtkTIFFReader.h",
+            "vtkTIFFWriter.h",
         ],
         deps = [
             ":vtkCommonCore",
@@ -512,6 +514,7 @@ licenses([
             ":vtkmetaio",
             "@libpng",
             "@zlib",
+            "@libtiff",
         ],
     )
 

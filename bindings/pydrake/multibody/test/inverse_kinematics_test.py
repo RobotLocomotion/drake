@@ -27,7 +27,7 @@ class TestInverseKinematics(unittest.TestCase):
             "drake/bindings/pydrake/multibody/test/two_bodies.sdf")
         self.plant = MultibodyPlant(time_step=0.01)
         model_instance = AddModelFromSdfFile(
-            file_name=file_name, plant=self.plant, scene_graph=None)
+            file_name=file_name, plant=self.plant)
         self.plant.Finalize()
         self.body1_frame = self.plant.GetBodyByName("body1").body_frame()
         self.body2_frame = self.plant.GetBodyByName("body2").body_frame()

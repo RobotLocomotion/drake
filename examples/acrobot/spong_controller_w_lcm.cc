@@ -74,6 +74,7 @@ int DoMain() {
     command_pub->Publish(pub_context);
   }
 
+  lcm.StopReceiveThread();
   return 0;
 }
 

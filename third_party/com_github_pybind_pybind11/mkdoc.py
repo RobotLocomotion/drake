@@ -11,8 +11,8 @@ from collections import OrderedDict, defaultdict
 from fnmatch import fnmatch
 import os
 import platform
-import sys
 import re
+import sys
 from tempfile import NamedTemporaryFile
 import textwrap
 
@@ -143,6 +143,7 @@ def sanitize_name(name):
     return name
 
 
+# TODO(jamiesnape): Refactor into multiple functions and unit test.
 def process_comment(comment):
     """
     Converts Doxygen-formatted string to look presentable in a Python
@@ -154,11 +155,13 @@ def process_comment(comment):
     leading_spaces = float('inf')
     for s in comment.expandtabs(tabsize=4).splitlines():
         s = s.strip()
+        if s.startswith('/*!'):
+            s = s[3:]
         if s.startswith('/*'):
             s = s[2:].lstrip('*')
         if s.endswith('*/'):
             s = s[:-2].rstrip('*')
-        if s.startswith('///'):
+        if s.startswith('///') or s.startswith('//!'):
             s = s[3:]
         if s.startswith('*'):
             s = s[1:]
@@ -179,6 +182,38 @@ def process_comment(comment):
     # in Doxygen.
     s = re.sub(r'<!--(.*?)-->', r'', s, flags=re.DOTALL)
 
+    # Markdown to reStructuredText.
+    # TODO(jamiesnape): Find a third-party library do this?
+    # Convert _italics_ to *italics*.
+    s = re.sub(r'([\s\-,;:!.()]+)_([^\s_]+|[^\s_].*?[^\s_])_([\s\-,;:!.()]+)',
+               r'\1*\2*\3', s, flags=re.DOTALL)
+    # Convert __bold__ to **bold**.
+    s = re.sub(
+        r'([\s\-,;:!.()]+)__([^\s_]+|[^\s_].*?[^\s_])__([\s\-,;:!.()]+)',
+        r'\1**\2**\3', s, flags=re.DOTALL)
+    # Convert `typewriter` to ``typewriter``.
+    s = re.sub(r'([\s\-,;:!.()]+)`([^\s`]|[^\s`].*?[^\s`])`([\s\-,;:!.()]+)',
+               r'\1``\2``\3', s, flags=re.DOTALL)
+    # Convert [Link](https://example.org) to `Link <https://example.org>`_.
+    s = re.sub(r'\[(.*?)\]\(([\w:.?/#]+)\)', r'`\1 <\2>`_', s,
+               flags=re.DOTALL)
+
+    s = re.sub(r'#### (.*?) ####', r'\n*\1*\n', s)
+    s = re.sub(r'#### (.*?)', r'\n*\1*\n', s)
+    s = re.sub(r'### (.*?) ###', r'\n**\1**\n', s)
+    s = re.sub(r'### (.*?)', r'\n**\1**\n', s)
+
+    def replace_with_header(pattern, token, s, **kwargs):
+        def repl(match):
+            return '\n{}\n{}\n'.format(match.group(1),
+                                       token * len(match.group(1)))
+        return re.sub(pattern, repl, s, **kwargs)
+
+    s = replace_with_header(r'## (.*?) ##', '-', s)
+    s = replace_with_header(r'## (.*?)', '-', s)
+    s = replace_with_header(r'# (.*?) #', '=', s)
+    s = replace_with_header(r'# (.*?)', '=', s)
+
     # Doxygen tags
     cpp_group = r'([\w:*()]+)'
     param_group = r'([\[\w,\]]+)'
@@ -186,7 +221,6 @@ def process_comment(comment):
     s = re.sub(r'[@\\][cp]\s+%s' % cpp_group, r'``\1``', s)
     s = re.sub(r'[@\\](?:a|e|em)\s+%s' % cpp_group, r'*\1*', s)
     s = re.sub(r'[@\\]b\s+%s' % cpp_group, r'**\1**', s)
-    s = re.sub(r'[@\\]ingroup\s+%s' % cpp_group, r'', s)
     s = re.sub(r'[@\\]param%s?\s+%s' % (param_group, cpp_group),
                r'\n\n$Parameter ``\2``:\n\n', s)
     s = re.sub(r'[@\\]tparam%s?\s+%s' % (param_group, cpp_group),
@@ -228,7 +262,7 @@ def process_comment(comment):
 
     s = re.sub(r'[@\\]details\s*', r'\n\n', s)
     s = re.sub(r'[@\\](?:brief|short)\s*', r'', s)
-    s = re.sub(r'[@\\]ref\s*', r'', s)
+    s = re.sub(r'[@\\]ref\s+', r'', s)
 
     for start_, end_ in (
         ('code', 'endcode'),
@@ -245,6 +279,11 @@ def process_comment(comment):
     # Doxygen list commands.
     s = re.sub(r'[@\\](?:arg|li)\s+', r'\n\n* ', s)
 
+    # Doxygen sectioning commands.
+    s = replace_with_header(r'[@\\]section\s+\w+\s+(.*)', '=', s)
+    s = replace_with_header(r'[@\\]subsection\s+\w+\s+(.*)', '-', s)
+    s = re.sub(r'[@\\]subsubsection\s+\w+\s+(.*)', r'\n**\1**\n', s)
+
     # Doxygen LaTeX commands.
     s = re.sub(r'[@\\]f\$\s*(.*?)\s*[@\\]f\$', r':math:`\1`', s,
                flags=re.DOTALL)
@@ -252,6 +291,9 @@ def process_comment(comment):
                flags=re.DOTALL)
     s = re.sub(r'[@\\]f\{([\w*]+)\}\s*(.*?)\s*[@\\]f\}',
                r'\n\n.. math:: \\begin{\1}\2\\end{\1}\n\n', s, flags=re.DOTALL)
+
+    # Drake-specific Doxygen aliases.
+    s = re.sub(r'[@\\]default\s+', r'\n$*Default:* ', s)
 
     # Remove these commands that take no argument. Ordering is significant for
     # command names with a common prefix.
@@ -276,6 +318,112 @@ def process_comment(comment):
         'tableofcontents',
     ):
         s = re.sub(r'[@\\]%s\s+' % cmd_, r'', s)
+
+    # Remove these commands and their one optional single-word argument.
+    for cmd_ in [
+        'dir',
+        'file',
+    ]:
+        s = re.sub(r'[@\\]%s( +[\w:./]+)?\s+' % cmd_, r'', s)
+
+    # Remove these commands and their one optional single-line argument.
+    for cmd_ in [
+        'mainpage',
+        'name'
+        'overload',
+    ]:
+        s = re.sub(r'[@\\]%s( +.*)?\s+' % cmd_, r'', s)
+
+    # Remove these commands and their one single-word argument. Ordering is
+    # significant for command names with a common prefix.
+    for cmd_ in [
+        'anchor',
+        'copybrief',
+        'copydetails',
+        'copydoc',
+        'def',
+        'dontinclude',
+        'enum',
+        'example',
+        'extends',
+        'htmlinclude',
+        'idlexcept',
+        'implements',
+        'includedoc',
+        'includelineno',
+        'include',
+        'latexinclude',
+        'memberof',
+        'namespace',
+        'package',
+        'relatedalso',
+        'related',
+        'relatesalso',
+        'relates',
+        'verbinclude',
+    ]:
+        s = re.sub(r'[@\\]%s\s+[\w:.]+\s+' % cmd_, r'', s)
+
+    # Remove these commands and their one single-line argument. Ordering is
+    # significant for command names with a common prefix.
+    for cmd_ in [
+        'addindex',
+        'fn',
+        'ingroup',
+        'line',
+        'property',
+        'skipline',
+        'skip',
+        'typedef',
+        'until',
+        'var',
+    ]:
+        s = re.sub(r'[@\\]%s\s+.*\s+' % cmd_, r'', s)
+
+    # Remove this command and its one single-word argument and one
+    # optional single-word argument.
+    s = re.sub(r'[@\\]headerfile\s+[\w:.]+( +[\w:.]+)?\s+', r'', s)
+
+    # Remove these commands and their one single-word argument and one
+    # optional single-line argument.
+    for cmd_ in [
+        'addtogroup',
+        'weakgroup',
+    ]:
+        s = re.sub(r'[@\\]%s\s+[\w:.]( +.*)?\s+' % cmd_, r'', s)
+
+    # Remove these commands and their one single-word argument and one
+    # single-line argument. Ordering is significant for command names with a
+    # common prefix.
+    for cmd_ in [
+        'snippetdoc',
+        'snippetlineno',
+        'snippet',
+    ]:
+        s = re.sub(r'[@\\]%s\s+[\w:.]\s+.*\s+' % cmd_, r'', s)
+
+    # Remove these commands and their one single-word argument and two
+    # optional single-word arguments.
+    for cmd_ in [
+        'category',
+        'class',
+        'interface',
+        'protocol',
+        'struct',
+        'union',
+    ]:
+        s = re.sub(r'[@\\]%s\s+[\w:.]+( +[\w:.]+){0,2}\s+' % cmd_, r'', s)
+
+    # Remove these commands and their one single-word argument, one optional
+    # quoted argument, and one optional single-word arguments.
+    for cmd_ in [
+        'diafile',
+        'dotfile',
+        'mscfile',
+    ]:
+        s = re.sub(
+            r'[@\\]%s\s+[\w:.]+(\s+".*?")?(\s+[\w:.]+=[\w:.]+)?s+' % cmd_,
+            r'', s)
 
     # Remove these pairs of commands and any text in between.
     for start_, end_ in (
@@ -315,7 +463,15 @@ def process_comment(comment):
     s = re.sub(r'</?ul>', r'', s, flags=re.IGNORECASE)
     s = re.sub(r'</li>', r'\n\n', s, flags=re.IGNORECASE)
 
+    s = re.sub(r'<a href="([\w:.?/#]+)">(.*?)</a>', r'`\2 <\1>`_', s,
+               flags=re.DOTALL | re.IGNORECASE)
+
     s = re.sub(r'<br/?>', r'\n\n', s, flags=re.IGNORECASE)
+
+    s = replace_with_header(r'<h1>(.*?)</h1>', '=', s, flags=re.IGNORECASE)
+    s = replace_with_header(r'<h2>(.*?)</h2>', '-', s, flags=re.IGNORECASE)
+    s = re.sub(r'<h3>(.*?)</h3>', r'\n**\1**\n', s, flags=re.IGNORECASE)
+    s = re.sub(r'<h4>(.*?)</h4>', r'\n*\1*\n', s, flags=re.IGNORECASE)
 
     s = s.replace('``true``', '``True``')
     s = s.replace('``false``', '``False``')
@@ -366,11 +522,13 @@ def process_comment(comment):
     ):
         s = re.sub(r'[@\\](%s)' % escaped_, r'\1', s)
 
-    # Re-flow text
+    # Reflow text where appropriate.
     wrapper = textwrap.TextWrapper()
+    wrapper.break_long_words = False
+    wrapper.break_on_hyphens = False
+    wrapper.drop_whitespace = True
     wrapper.expand_tabs = True
     wrapper.replace_whitespace = True
-    wrapper.drop_whitespace = True
     wrapper.width = 70
     wrapper.initial_indent = wrapper.subsequent_indent = ''
 
@@ -388,8 +546,11 @@ def process_comment(comment):
         else:
             for y in re.split(r'(?: *\n *){2,}', x):
                 lines = re.split(r'(?: *\n *)', y)
-                # Do not re-flow lists.
-                if re.match('^(?:[*+\-]|[0-9]+[.)]) ', lines[0]):
+                # Do not reflow lists or section headings.
+                if (re.match('^(?:[*+\-]|[0-9]+[.)]) ', lines[0]) or
+                    (len(lines) > 1 and
+                     (lines[1] == '=' * len(lines[0]) or
+                      lines[1] == '-' * len(lines[0])))):
                     result += y + '\n\n'
                 else:
                     wrapped = wrapper.fill(re.sub(r'\s+', ' ', y).strip())
@@ -618,7 +779,7 @@ def main():
     if output_filename is None or len(filenames) == 0:
         eprint('Syntax: %s -output=<file> [.. a list of header files ..]'
                % sys.argv[0])
-        exit(-1)
+        sys.exit(1)
 
     f = open(output_filename, 'w')
     # N.B. We substitute the `GENERATED FILE...` bits in this fashion because
@@ -689,7 +850,17 @@ def main():
     # Write header file.
     if not quiet:
         eprint("Writing header file...")
-    print_symbols(f, root_name, symbol_tree.root)
+    try:
+        print_symbols(f, root_name, symbol_tree.root)
+    except UnicodeEncodeError as e:
+        # User-friendly error for #9903.
+        print("""
+Encountered unicode error: {}
+If you are on Ubuntu, please ensure you have en_US.UTF-8 locales generated:
+    sudo apt-get install --no-install-recommends  locales
+    sudo locale-gen en_US.UTF-8
+""".format(e), file=sys.stderr)
+        sys.exit(1)
 
     f.write('''
 #if defined(__GNUG__)

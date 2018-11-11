@@ -8,6 +8,7 @@
 #include <sdf/sdf.hh>
 
 #include "drake/geometry/geometry_instance.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
@@ -78,7 +79,7 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
   const Isometry3d X_BBi = ToIsometry3(Inertial_BBcm_Bi.Pose());
 
   // B and Bi are not necessarily aligned.
-  const Matrix3d R_BBi = X_BBi.linear();
+  const math::RotationMatrix<double> R_BBi(X_BBi.linear());
 
   // Re-express in frame B as needed.
   const RotationalInertia<double> I_BBcm_B = I_BBcm_Bi.ReExpress(R_BBi);
@@ -384,7 +385,7 @@ void AddLinksFromSpecification(
     const RigidBody<double>& body =
         plant->AddRigidBody(link.Name(), model_instance, M_BBo_B);
 
-    if (scene_graph != nullptr) {
+    if (plant->geometry_source_is_registered()) {
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
            ++visual_index) {
         const sdf::Visual sdf_visual = detail::ResolveVisualUri(

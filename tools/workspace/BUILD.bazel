@@ -34,6 +34,8 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "lcm",
     "lcmtypes_bot2_core",
     "lcmtypes_robotlocomotion",
+    "meshcat",
+    "meshcat_python",
     "octomap",
     "osqp",
     "pybind11",
@@ -45,6 +47,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "stx",
     "tinydir",
     "tinyobjloader",
+    "u_msgpack_python",
     "vtk",
 ]] + ["//tools/workspace/%s:install" % p for p in [
     "dreal",

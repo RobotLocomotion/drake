@@ -1,7 +1,7 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
@@ -44,10 +44,10 @@ drake_cc_binary(
     ],
     deps = [
         ":jaco_lcm",
+        "//attic/manipulation/planner:robot_plan_interpolator",
         "//common:find_resource",
         "//common:text_logging_gflags",
         "//lcm",
-        "//manipulation/planner:robot_plan_interpolator",
         "//systems/controllers:pid_controller",
         "//systems/lcm:lcm_driven_loop",
         "//systems/lcm:lcm_pubsub_system",

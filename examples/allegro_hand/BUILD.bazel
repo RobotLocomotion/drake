@@ -1,7 +1,7 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
@@ -61,8 +61,8 @@ drake_cc_googletest(
     deps = [
         ":allegro_common",
         ":allegro_lcm",
+        "//attic/manipulation/util:world_sim_tree_builder",
         "//common/test_utilities:eigen_matrix_compare",
-        "//manipulation/util:world_sim_tree_builder",
         "//systems/framework",
     ],
 )

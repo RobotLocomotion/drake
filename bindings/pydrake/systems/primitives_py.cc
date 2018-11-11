@@ -43,7 +43,7 @@ PYBIND11_MODULE(primitives, m) {
     DefineTemplateClassWithDefault<Adder<T>, LeafSystem<T>>(
         m, "Adder", GetPyParam<T>(), doc.Adder.doc)
         .def(py::init<int, int>(), py::arg("num_inputs"), py::arg("size"),
-        doc.Adder.ctor.doc);
+             doc.Adder.ctor.doc);
 
     DefineTemplateClassWithDefault<AffineSystem<T>, LeafSystem<T>>(
         m, "AffineSystem", GetPyParam<T>(), doc.AffineSystem.doc)
@@ -58,20 +58,32 @@ PYBIND11_MODULE(primitives, m) {
              doc.AffineSystem.ctor.doc_3)
         // TODO(eric.cousineau): Fix these to return references instead of
         // copies.
-        .def("A", overload_cast_explicit<const Eigen::MatrixXd&>(
-            &AffineSystem<T>::A), doc.AffineSystem.A.doc)
-        .def("B", overload_cast_explicit<const Eigen::MatrixXd&>(
-            &AffineSystem<T>::B), doc.AffineSystem.B.doc)
-        .def("f0", overload_cast_explicit<const Eigen::VectorXd&>(
-            &AffineSystem<T>::f0), doc.AffineSystem.f0.doc)
-        .def("C", overload_cast_explicit<const Eigen::MatrixXd&>(
-            &AffineSystem<T>::C), doc.AffineSystem.C.doc)
-        .def("D", overload_cast_explicit<const Eigen::MatrixXd&>(
-            &AffineSystem<T>::D), doc.AffineSystem.D.doc)
-        .def("y0", overload_cast_explicit<const Eigen::VectorXd&>(
-            &AffineSystem<T>::y0), doc.AffineSystem.y0.doc)
+        .def("A",
+             overload_cast_explicit<const Eigen::MatrixXd&>(  // BR
+                 &AffineSystem<T>::A),
+             doc.AffineSystem.A.doc)
+        .def("B",
+             overload_cast_explicit<const Eigen::MatrixXd&>(  // BR
+                 &AffineSystem<T>::B),
+             doc.AffineSystem.B.doc)
+        .def("f0",
+             overload_cast_explicit<const Eigen::VectorXd&>(  // BR
+                 &AffineSystem<T>::f0),
+             doc.AffineSystem.f0.doc)
+        .def("C",
+             overload_cast_explicit<const Eigen::MatrixXd&>(  // BR
+                 &AffineSystem<T>::C),
+             doc.AffineSystem.C.doc)
+        .def("D",
+             overload_cast_explicit<const Eigen::MatrixXd&>(  // BR
+                 &AffineSystem<T>::D),
+             doc.AffineSystem.D.doc)
+        .def("y0",
+             overload_cast_explicit<const Eigen::VectorXd&>(  // BR
+                 &AffineSystem<T>::y0),
+             doc.AffineSystem.y0.doc)
         .def("time_period", &AffineSystem<T>::time_period,
-            doc.TimeVaryingAffineSystem.time_period.doc);
+             doc.TimeVaryingAffineSystem.time_period.doc);
 
     DefineTemplateClassWithDefault<ConstantValueSource<T>, LeafSystem<T>>(
         m, "ConstantValueSource", GetPyParam<T>(), doc.ConstantValueSource.doc)
@@ -79,24 +91,21 @@ PYBIND11_MODULE(primitives, m) {
              doc.ConstantValueSource.ctor.doc_3);
 
     DefineTemplateClassWithDefault<ConstantVectorSource<T>, LeafSystem<T>>(
-        m, "ConstantVectorSource", GetPyParam<T>(),
-            doc.ConstantValueSource.doc)
+        m, "ConstantVectorSource", GetPyParam<T>(), doc.ConstantValueSource.doc)
         .def(py::init<VectorX<T>>(), py::arg("source_value"),
              doc.ConstantValueSource.ctor.doc_3);
 
     DefineTemplateClassWithDefault<Demultiplexer<T>, LeafSystem<T>>(
         m, "Demultiplexer", GetPyParam<T>(), doc.Demultiplexer.doc)
-        .def(py::init<int, int>(),
-             py::arg("size"),
-             py::arg("output_ports_sizes") = 1,
-             doc.Demultiplexer.ctor.doc_3);
+        .def(py::init<int, int>(), py::arg("size"),
+             py::arg("output_ports_sizes") = 1, doc.Demultiplexer.ctor.doc_3);
 
     DefineTemplateClassWithDefault<Gain<T>, LeafSystem<T>>(
         m, "Gain", GetPyParam<T>(), doc.Gain.doc)
         .def(py::init<double, int>(), py::arg("k"), py::arg("size"),
              doc.Gain.ctor.doc_3)
-        .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&>(),
-             py::arg("k"), doc.Gain.ctor.doc_4);
+        .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&>(), py::arg("k"),
+             doc.Gain.ctor.doc_4);
 
     DefineTemplateClassWithDefault<Integrator<T>, LeafSystem<T>>(
         m, "Integrator", GetPyParam<T>(), doc.Integrator.doc)
@@ -113,8 +122,8 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<MatrixGain<T>, LinearSystem<T>>(
         m, "MatrixGain", GetPyParam<T>(), doc.MatrixGain.doc)
-        .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&>(),
-             py::arg("D"), doc.MatrixGain.ctor.doc_3);
+        .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&>(), py::arg("D"),
+             doc.MatrixGain.ctor.doc_3);
 
     DefineTemplateClassWithDefault<Multiplexer<T>, LeafSystem<T>>(
         m, "Multiplexer", GetPyParam<T>(), doc.Multiplexer.doc)
@@ -128,13 +137,13 @@ PYBIND11_MODULE(primitives, m) {
     DefineTemplateClassWithDefault<PassThrough<T>, LeafSystem<T>>(
         m, "PassThrough", GetPyParam<T>(), doc.PassThrough.doc)
         .def(py::init<int>(), doc.PassThrough.ctor.doc_3)
-        .def(py::init<const AbstractValue&>(),
-             doc.PassThrough.ctor.doc_4);
+        .def(py::init<const AbstractValue&>(), doc.PassThrough.ctor.doc_4);
 
     DefineTemplateClassWithDefault<Saturation<T>, LeafSystem<T>>(
         m, "Saturation", GetPyParam<T>(), doc.Saturation.doc)
-        .def(py::init<const VectorX<T>&, const VectorX<T>&>(), py::arg
-      ("min_value"), py::arg("max_value"), doc.Saturation.ctor.doc_3);
+        .def(py::init<const VectorX<T>&, const VectorX<T>&>(),
+             py::arg("min_value"), py::arg("max_value"),
+             doc.Saturation.ctor.doc_3);
 
     DefineTemplateClassWithDefault<SignalLogger<T>, LeafSystem<T>>(
         m, "SignalLogger", GetPyParam<T>(), doc.SignalLogger.doc)
@@ -144,8 +153,7 @@ PYBIND11_MODULE(primitives, m) {
         .def("sample_times", &SignalLogger<T>::sample_times,
              doc.SignalLogger.sample_times.doc)
         .def("data", &SignalLogger<T>::data, doc.SignalLogger.data.doc)
-        .def("reset", &SignalLogger<T>::reset,
-             doc.SignalLogger.reset.doc);
+        .def("reset", &SignalLogger<T>::reset, doc.SignalLogger.reset.doc);
 
     DefineTemplateClassWithDefault<WrapToSystem<T>, LeafSystem<T>>(
         m, "WrapToSystem", GetPyParam<T>(), doc.WrapToSystem.doc)
@@ -155,12 +163,10 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<ZeroOrderHold<T>, LeafSystem<T>>(
         m, "ZeroOrderHold", GetPyParam<T>(), doc.ZeroOrderHold.doc)
-        .def(py::init<double, int>(),
-             py::arg("period_sec"), py::arg("vector_size"),
-             doc.ZeroOrderHold.ctor.doc_3)
-        .def(py::init<double, const AbstractValue&>(),
-             py::arg("period_sec"), py::arg("abstract_model_value"),
-             doc.ZeroOrderHold.ctor.doc_4);
+        .def(py::init<double, int>(), py::arg("period_sec"),
+             py::arg("vector_size"), doc.ZeroOrderHold.ctor.doc_3)
+        .def(py::init<double, const AbstractValue&>(), py::arg("period_sec"),
+             py::arg("abstract_model_value"), doc.ZeroOrderHold.ctor.doc_4);
   };
   type_visit(bind_common_scalar_types, pysystems::CommonScalarPack{});
 
@@ -168,12 +174,12 @@ PYBIND11_MODULE(primitives, m) {
       m, "BarycentricMeshSystem", doc.BarycentricMeshSystem.doc)
       .def(py::init<math::BarycentricMesh<double>,
                     const Eigen::Ref<const MatrixX<double>>&>(),
-         doc.BarycentricMeshSystem.ctor.doc_3)
+           doc.BarycentricMeshSystem.ctor.doc_3)
       .def("get_mesh", &BarycentricMeshSystem<double>::get_mesh,
-         doc.BarycentricMeshSystem.get_mesh.doc)
+           doc.BarycentricMeshSystem.get_mesh.doc)
       .def("get_output_values",
            &BarycentricMeshSystem<double>::get_output_values,
-         doc.BarycentricMeshSystem.get_output_values.doc);
+           doc.BarycentricMeshSystem.get_output_values.doc);
 
   // Docs for typedef not being parsed.
   py::class_<UniformRandomSource, LeafSystem<double>>(m, "UniformRandomSource")
@@ -193,12 +199,11 @@ PYBIND11_MODULE(primitives, m) {
            py::arg("sampling_interval_sec"));
 
   py::class_<TrajectorySource<double>, LeafSystem<double>>(
-        m, "TrajectorySource", doc.TrajectorySource.doc)
-        .def(py::init<const trajectories::Trajectory<double>&, int, bool>(),
-          py::arg("trajectory"),
-          py::arg("output_derivative_order") = 0,
-          py::arg("zero_derivatives_beyond_limits") = true,
-          doc.TrajectorySource.ctor.doc_3);
+      m, "TrajectorySource", doc.TrajectorySource.doc)
+      .def(py::init<const trajectories::Trajectory<double>&, int, bool>(),
+           py::arg("trajectory"), py::arg("output_derivative_order") = 0,
+           py::arg("zero_derivatives_beyond_limits") = true,
+           doc.TrajectorySource.ctor.doc_3);
 
   m.def("AddRandomInputs", &AddRandomInputs, py::arg("sampling_interval_sec"),
         py::arg("builder"), doc.AddRandomInputs.doc);
@@ -206,8 +211,7 @@ PYBIND11_MODULE(primitives, m) {
   m.def("Linearize", &Linearize, py::arg("system"), py::arg("context"),
         py::arg("input_port_index") = systems::kUseFirstInputIfItExists,
         py::arg("output_port_index") = systems::kUseFirstOutputIfItExists,
-        py::arg("equilibrium_check_tolerance") = 1e-6,
-        doc.Linearize.doc);
+        py::arg("equilibrium_check_tolerance") = 1e-6, doc.Linearize.doc);
 
   m.def("FirstOrderTaylorApproximation", &FirstOrderTaylorApproximation,
         py::arg("system"), py::arg("context"),
@@ -216,14 +220,13 @@ PYBIND11_MODULE(primitives, m) {
         doc.FirstOrderTaylorApproximation.doc);
 
   m.def("ControllabilityMatrix", &ControllabilityMatrix,
-    doc.ControllabilityMatrix.doc);
+        doc.ControllabilityMatrix.doc);
 
   m.def("IsControllable", &IsControllable, py::arg("sys"),
-        py::arg("threshold") = nullopt,
-        doc.IsControllable.doc);
+        py::arg("threshold") = nullopt, doc.IsControllable.doc);
 
   m.def("ObservabilityMatrix", &ObservabilityMatrix,
-    doc.ObservabilityMatrix.doc);
+        doc.ObservabilityMatrix.doc);
 
   m.def("IsObservable", &IsObservable, py::arg("sys"),
         py::arg("threshold") = nullopt, doc.IsObservable.doc);

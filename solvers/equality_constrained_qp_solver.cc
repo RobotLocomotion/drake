@@ -2,8 +2,8 @@
 
 #include <cstring>
 #include <limits>
-#include <map>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include "drake/common/autodiff.h"
@@ -15,7 +15,7 @@
 namespace drake {
 namespace solvers {
 
-bool EqualityConstrainedQPSolver::available() const { return true; }
+bool EqualityConstrainedQPSolver::is_available() { return true; }
 
 /**
  * Solves the un-constrained QP problem
@@ -98,7 +98,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
 
   // The default tolerance is Eigen's dummy precision.
   double feasibility_tol = Eigen::NumTraits<double>::dummy_precision();
-  std::map<std::string, double> option_double =
+  std::unordered_map<std::string, double> option_double =
       prog.GetSolverOptionsDouble(EqualityConstrainedQPSolver::id());
   auto it = option_double.find("FeasibilityTol");
   if (it != option_double.end()) {
@@ -277,6 +277,23 @@ SolverId EqualityConstrainedQPSolver::solver_id() const { return id(); }
 SolverId EqualityConstrainedQPSolver::id() {
   static const never_destroyed<SolverId> singleton{"Equality constrained QP"};
   return singleton.access();
+}
+
+bool EqualityConstrainedQPSolver::AreProgramAttributesSatisfied(
+    const MathematicalProgram& prog) const {
+  return ProgramAttributesSatisfied(prog);
+}
+
+bool EqualityConstrainedQPSolver::ProgramAttributesSatisfied(
+    const MathematicalProgram& prog) {
+  static const never_destroyed<ProgramAttributes> solver_capabilities(
+      std::initializer_list<ProgramAttribute>{
+          ProgramAttribute::kQuadraticCost, ProgramAttribute::kLinearCost,
+          ProgramAttribute::kLinearEqualityConstraint});
+  // TODO(hongkai.dai) also make sure that there exists at least a quadratic
+  // cost.
+  return AreRequiredAttributesSupported(prog.required_capabilities(),
+                                        solver_capabilities.access());
 }
 
 }  // namespace solvers

@@ -27,11 +27,11 @@ using solvers::BoundingBoxConstraint;
 using solvers::Constraint;
 using solvers::Cost;
 using solvers::EvaluatorBase;
-using solvers::LinearConstraint;
-using solvers::LorentzConeConstraint;
-using solvers::LinearCost;
 using solvers::LinearComplementarityConstraint;
+using solvers::LinearConstraint;
+using solvers::LinearCost;
 using solvers::LinearEqualityConstraint;
+using solvers::LorentzConeConstraint;
 using solvers::MathematicalProgram;
 using solvers::MathematicalProgramSolverInterface;
 using solvers::MatrixXDecisionVariable;
@@ -183,11 +183,15 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       m, "MathematicalProgramSolverInterface",
       doc.MathematicalProgramSolverInterface.doc)
       .def("available", &MathematicalProgramSolverInterface::available,
-        doc.MathematicalProgramSolverInterface.available.doc)
+           doc.MathematicalProgramSolverInterface.available.doc)
       .def("solver_id", &MathematicalProgramSolverInterface::solver_id,
-        doc.MathematicalProgramSolverInterface.solver_id.doc)
-      .def("Solve", &MathematicalProgramSolverInterface::Solve,
-        doc.MathematicalProgramSolverInterface.Solve.doc)
+           doc.MathematicalProgramSolverInterface.solver_id.doc)
+      .def("Solve",
+           // NOLINTNEXTLINE(whitespace/parens)
+           static_cast<SolutionResult (MathematicalProgramSolverInterface::*)(
+               MathematicalProgram&) const>(
+               &MathematicalProgramSolverInterface::Solve),
+           py::arg("prog"), doc.MathematicalProgramSolverInterface.Solve.doc)
       // TODO(m-chaturvedi) Add Pybind11 documentation.
       .def("solver_type",
            [](const MathematicalProgramSolverInterface& self) {
@@ -197,17 +201,17 @@ PYBIND11_MODULE(mathematicalprogram, m) {
         return self.solver_id().name();
       });
 
-  py::class_<SolverId>(m, "SolverId", doc.SolverId.doc).def("name",
-    &SolverId::name, doc.SolverId.name.doc);
+  py::class_<SolverId>(m, "SolverId", doc.SolverId.doc)
+      .def("name", &SolverId::name, doc.SolverId.name.doc);
 
   py::enum_<SolverType>(m, "SolverType", doc.SolverType.doc)
       .value("kDReal", SolverType::kDReal, doc.SolverType.kDReal.doc)
       .value("kEqualityConstrainedQP", SolverType::kEqualityConstrainedQP,
-        doc.SolverType.kEqualityConstrainedQP.doc)
+             doc.SolverType.kEqualityConstrainedQP.doc)
       .value("kGurobi", SolverType::kGurobi, doc.SolverType.kGurobi.doc)
       .value("kIpopt", SolverType::kIpopt, doc.SolverType.kIpopt.doc)
       .value("kLinearSystem", SolverType::kLinearSystem,
-        doc.SolverType.kLinearSystem.doc)
+             doc.SolverType.kLinearSystem.doc)
       .value("kMobyLCP", SolverType::kMobyLCP, doc.SolverType.kMobyLCP.doc)
       .value("kMosek", SolverType::kMosek, doc.SolverType.kMosek.doc)
       .value("kNlopt", SolverType::kNlopt, doc.SolverType.kNlopt.doc)
@@ -298,7 +302,8 @@ PYBIND11_MODULE(mathematicalprogram, m) {
            [](MathematicalProgram* self, double lb, double ub,
               const Eigen::Ref<const MatrixX<symbolic::Variable>>& vars) {
              return self->AddBoundingBoxConstraint(lb, ub, vars);
-           }, doc.MathematicalProgram.AddBoundingBoxConstraint.doc_4)
+           },
+           doc.MathematicalProgram.AddBoundingBoxConstraint.doc_4)
       .def("AddConstraint",
            [](MathematicalProgram* self, py::function func,
               const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
@@ -365,7 +370,8 @@ PYBIND11_MODULE(mathematicalprogram, m) {
            [](MathematicalProgram* self,
               const Eigen::Ref<const MatrixXDecisionVariable>& vars) {
              return self->AddPositiveSemidefiniteConstraint(vars);
-           }, doc.MathematicalProgram.AddPositiveSemidefiniteConstraint.doc)
+           },
+           doc.MathematicalProgram.AddPositiveSemidefiniteConstraint.doc)
       .def("AddLinearComplementarityConstraint",
            static_cast<Binding<LinearComplementarityConstraint> (
                MathematicalProgram::*)(
@@ -378,7 +384,8 @@ PYBIND11_MODULE(mathematicalprogram, m) {
            [](MathematicalProgram* self,
               const Eigen::Ref<const MatrixX<Expression>>& e) {
              return self->AddPositiveSemidefiniteConstraint(e);
-           }, doc.MathematicalProgram.AddPositiveSemidefiniteConstraint.doc)
+           },
+           doc.MathematicalProgram.AddPositiveSemidefiniteConstraint.doc)
       .def("AddCost",
            [](MathematicalProgram* self, py::function func,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
@@ -390,13 +397,13 @@ PYBIND11_MODULE(mathematicalprogram, m) {
            py::arg("func"), py::arg("vars"), py::arg("description") = "",
            doc.MathematicalProgram.AddCost.doc)
       .def("AddCost",
-          static_cast<Binding<Cost> (MathematicalProgram::*)(
-          const Expression&)>(&MathematicalProgram::AddCost),
-          doc.MathematicalProgram.AddCost.doc)
+           static_cast<Binding<Cost> (MathematicalProgram::*)(
+               const Expression&)>(&MathematicalProgram::AddCost),
+           doc.MathematicalProgram.AddCost.doc)
       .def("AddLinearCost",
            static_cast<Binding<LinearCost> (MathematicalProgram::*)(
                const Expression&)>(&MathematicalProgram::AddLinearCost),
-          doc.MathematicalProgram.AddLinearCost.doc)
+           doc.MathematicalProgram.AddLinearCost.doc)
       .def("AddQuadraticCost",
            static_cast<Binding<QuadraticCost> (MathematicalProgram::*)(
                const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -451,185 +458,196 @@ PYBIND11_MODULE(mathematicalprogram, m) {
                &MathematicalProgram::AddSosConstraint),
            doc.MathematicalProgram.AddSosConstraint.doc)
       .def("AddVisualizationCallback",
-          static_cast<Binding<VisualizationCallback> (MathematicalProgram::*)(
-              const VisualizationCallback::CallbackFunction&,
-              const Eigen::Ref<const VectorXDecisionVariable>&)>(
-              &MathematicalProgram::AddVisualizationCallback),
-          doc.MathematicalProgram.AddVisualizationCallback.doc)
+           static_cast<Binding<VisualizationCallback> (MathematicalProgram::*)(
+               const VisualizationCallback::CallbackFunction&,
+               const Eigen::Ref<const VectorXDecisionVariable>&)>(
+               &MathematicalProgram::AddVisualizationCallback),
+           doc.MathematicalProgram.AddVisualizationCallback.doc)
       .def("Solve", &MathematicalProgram::Solve,
-          doc.MathematicalProgram.Solve.doc)
+           doc.MathematicalProgram.Solve.doc)
       .def("GetSolverId", &MathematicalProgram::GetSolverId,
-          doc.MathematicalProgram.GetSolverId.doc)
+           doc.MathematicalProgram.GetSolverId.doc)
       .def("linear_constraints", &MathematicalProgram::linear_constraints,
-          doc.MathematicalProgram.linear_constraints.doc)
+           doc.MathematicalProgram.linear_constraints.doc)
       .def("linear_equality_constraints",
            &MathematicalProgram::linear_equality_constraints,
-          doc.MathematicalProgram.linear_equality_constraints.doc)
+           doc.MathematicalProgram.linear_equality_constraints.doc)
       .def("bounding_box_constraints",
            &MathematicalProgram::bounding_box_constraints,
-          doc.MathematicalProgram.bounding_box_constraints.doc)
+           doc.MathematicalProgram.bounding_box_constraints.doc)
       .def("linear_costs", &MathematicalProgram::linear_costs,
-          doc.MathematicalProgram.linear_costs.doc)
+           doc.MathematicalProgram.linear_costs.doc)
       .def("quadratic_costs", &MathematicalProgram::quadratic_costs,
-          doc.MathematicalProgram.quadratic_costs.doc)
+           doc.MathematicalProgram.quadratic_costs.doc)
       .def("FindDecisionVariableIndex",
            &MathematicalProgram::FindDecisionVariableIndex,
-          doc.MathematicalProgram.FindDecisionVariableIndex.doc)
+           doc.MathematicalProgram.FindDecisionVariableIndex.doc)
       .def("num_vars", &MathematicalProgram::num_vars,
-          doc.MathematicalProgram.num_vars.doc)
+           doc.MathematicalProgram.num_vars.doc)
       .def("decision_variables", &MathematicalProgram::decision_variables,
-          doc.MathematicalProgram.decision_variables.doc)
+           doc.MathematicalProgram.decision_variables.doc)
       .def("GetSolution",
            [](const MathematicalProgram& prog, const Variable& var) {
              return prog.GetSolution(var);
-           }, doc.MathematicalProgram.GetSolution.doc)
+           },
+           doc.MathematicalProgram.GetSolution.doc)
       .def("GetSolution",
            [](const MathematicalProgram& prog,
               const VectorXDecisionVariable& var) {
              return prog.GetSolution(var);
-           }, doc.MathematicalProgram.GetSolution.doc)
+           },
+           doc.MathematicalProgram.GetSolution.doc)
       .def("GetSolution",
            [](const MathematicalProgram& prog,
               const MatrixXDecisionVariable& var) {
              return prog.GetSolution(var);
-           }, doc.MathematicalProgram.GetSolution.doc)
+           },
+           doc.MathematicalProgram.GetSolution.doc)
       .def("SubstituteSolution",
-          [](const MathematicalProgram& prog,
-            const symbolic::Expression& e) {
-          return prog.SubstituteSolution(e);
-          }, doc.MathematicalProgram.SubstituteSolution.doc)
+           [](const MathematicalProgram& prog, const symbolic::Expression& e) {
+             return prog.SubstituteSolution(e);
+           },
+           doc.MathematicalProgram.SubstituteSolution.doc)
       .def("SubstituteSolution",
-          [](const MathematicalProgram& prog,
-            const symbolic::Polynomial& p) {
-          return prog.SubstituteSolution(p);
-          }, doc.MathematicalProgram.SubstituteSolution.doc)
+           [](const MathematicalProgram& prog, const symbolic::Polynomial& p) {
+             return prog.SubstituteSolution(p);
+           },
+           doc.MathematicalProgram.SubstituteSolution.doc)
       .def("GetInitialGuess",
-          [](MathematicalProgram& prog,
-             const symbolic::Variable& decision_variable) {
-            return prog.GetInitialGuess(decision_variable);
-          }, doc.MathematicalProgram.GetInitialGuess.doc)
+           [](MathematicalProgram& prog,
+              const symbolic::Variable& decision_variable) {
+             return prog.GetInitialGuess(decision_variable);
+           },
+           doc.MathematicalProgram.GetInitialGuess.doc)
       .def("GetInitialGuess",
-          [](MathematicalProgram& prog,
-             const VectorXDecisionVariable& decision_variables) {
-            return prog.GetInitialGuess(decision_variables);
-          }, doc.MathematicalProgram.GetInitialGuess.doc)
+           [](MathematicalProgram& prog,
+              const VectorXDecisionVariable& decision_variables) {
+             return prog.GetInitialGuess(decision_variables);
+           },
+           doc.MathematicalProgram.GetInitialGuess.doc)
       .def("GetInitialGuess",
-          [](MathematicalProgram& prog,
-             const MatrixXDecisionVariable& decision_variables) {
-            return prog.GetInitialGuess(decision_variables);
-          }, doc.MathematicalProgram.GetInitialGuess.doc)
+           [](MathematicalProgram& prog,
+              const MatrixXDecisionVariable& decision_variables) {
+             return prog.GetInitialGuess(decision_variables);
+           },
+           doc.MathematicalProgram.GetInitialGuess.doc)
       .def("SetInitialGuess",
-          [](MathematicalProgram& prog,
-             const symbolic::Variable& decision_variable,
-             double variable_guess_value) {
-            prog.SetInitialGuess(decision_variable, variable_guess_value);
-          }, doc.MathematicalProgram.SetInitialGuess.doc)
+           [](MathematicalProgram& prog,
+              const symbolic::Variable& decision_variable,
+              double variable_guess_value) {
+             prog.SetInitialGuess(decision_variable, variable_guess_value);
+           },
+           doc.MathematicalProgram.SetInitialGuess.doc)
       .def("SetInitialGuess",
-          [](MathematicalProgram& prog,
-             const MatrixXDecisionVariable& decision_variable_mat,
-             const Eigen::MatrixXd& x0) {
-            prog.SetInitialGuess(decision_variable_mat, x0);
-          }, doc.MathematicalProgram.SetInitialGuess.doc)
+           [](MathematicalProgram& prog,
+              const MatrixXDecisionVariable& decision_variable_mat,
+              const Eigen::MatrixXd& x0) {
+             prog.SetInitialGuess(decision_variable_mat, x0);
+           },
+           doc.MathematicalProgram.SetInitialGuess.doc)
       .def("SetInitialGuessForAllVariables",
-          [](MathematicalProgram& prog,
-             const Eigen::VectorXd& x0) {
-            prog.SetInitialGuessForAllVariables(x0);
-          }, doc.MathematicalProgram.SetInitialGuessForAllVariables.doc)
+           [](MathematicalProgram& prog, const Eigen::VectorXd& x0) {
+             prog.SetInitialGuessForAllVariables(x0);
+           },
+           doc.MathematicalProgram.SetInitialGuessForAllVariables.doc)
       .def("SetSolverOption", &SetSolverOptionBySolverType<double>,
-          doc.MathematicalProgram.SetSolverOption.doc)
+           doc.MathematicalProgram.SetSolverOption.doc)
       .def("SetSolverOption", &SetSolverOptionBySolverType<int>,
-          doc.MathematicalProgram.SetSolverOption.doc_2)
+           doc.MathematicalProgram.SetSolverOption.doc_2)
       .def("SetSolverOption", &SetSolverOptionBySolverType<string>,
-          doc.MathematicalProgram.SetSolverOption.doc_3)
+           doc.MathematicalProgram.SetSolverOption.doc_3)
       // TODO(m-chaturvedi) Add Pybind11 documentation.
       .def("GetSolverOptions",
-          [](MathematicalProgram& prog, SolverType solver_type) {
-            py::dict out;
-            py::object update = out.attr("update");
-            const SolverId id = SolverTypeConverter::TypeToId(solver_type);
-            update(prog.GetSolverOptionsDouble(id));
-            update(prog.GetSolverOptionsInt(id));
-            update(prog.GetSolverOptionsStr(id));
-            return out;
-          });
+           [](MathematicalProgram& prog, SolverType solver_type) {
+             py::dict out;
+             py::object update = out.attr("update");
+             const SolverId id = SolverTypeConverter::TypeToId(solver_type);
+             update(prog.GetSolverOptionsDouble(id));
+             update(prog.GetSolverOptionsInt(id));
+             update(prog.GetSolverOptionsStr(id));
+             return out;
+           });
 
   py::enum_<SolutionResult>(m, "SolutionResult", doc.SolutionResult.doc)
       .value("kSolutionFound", SolutionResult::kSolutionFound,
-        doc.SolutionResult.kSolutionFound.doc)
+             doc.SolutionResult.kSolutionFound.doc)
       .value("kInvalidInput", SolutionResult::kInvalidInput,
-        doc.SolutionResult.kInvalidInput.doc)
+             doc.SolutionResult.kInvalidInput.doc)
       .value("kInfeasibleConstraints", SolutionResult::kInfeasibleConstraints,
-        doc.SolutionResult.kInfeasibleConstraints.doc)
+             doc.SolutionResult.kInfeasibleConstraints.doc)
       .value("kUnbounded", SolutionResult::kUnbounded,
-        doc.SolutionResult.kUnbounded.doc)
+             doc.SolutionResult.kUnbounded.doc)
       .value("kUnknownError", SolutionResult::kUnknownError,
-        doc.SolutionResult.kUnknownError.doc)
+             doc.SolutionResult.kUnknownError.doc)
       .value("kInfeasible_Or_Unbounded",
              SolutionResult::kInfeasible_Or_Unbounded,
              doc.SolutionResult.kInfeasible_Or_Unbounded.doc)
       .value("kIterationLimit", SolutionResult::kIterationLimit,
-        doc.SolutionResult.kIterationLimit.doc)
+             doc.SolutionResult.kIterationLimit.doc)
       .value("kDualInfeasible", SolutionResult::kDualInfeasible,
-        doc.SolutionResult.kDualInfeasible.doc);
+             doc.SolutionResult.kDualInfeasible.doc);
 
   // TODO(eric.cousineau): Expose Eval() in a Python-friendly fashion.
   py::class_<EvaluatorBase, std::shared_ptr<EvaluatorBase>>(m, "EvaluatorBase")
       .def("num_outputs", &EvaluatorBase::num_outputs,
-        doc.EvaluatorBase.num_outputs.doc)
+           doc.EvaluatorBase.num_outputs.doc)
       .def("num_vars", &EvaluatorBase::num_vars,
-        doc.EvaluatorBase.num_vars.doc);
+           doc.EvaluatorBase.num_vars.doc);
 
   py::class_<Constraint, EvaluatorBase, std::shared_ptr<Constraint>>(
       m, "Constraint", doc.Constraint.doc)
       .def("num_constraints", &Constraint::num_constraints,
-        doc.Constraint.num_constraints.doc)
+           doc.Constraint.num_constraints.doc)
       .def("lower_bound", &Constraint::lower_bound,
-        doc.Constraint.lower_bound.doc)
+           doc.Constraint.lower_bound.doc)
       .def("upper_bound", &Constraint::upper_bound,
-        doc.Constraint.upper_bound.doc);
+           doc.Constraint.upper_bound.doc);
 
   py::class_<LinearConstraint, Constraint, std::shared_ptr<LinearConstraint>>(
       m, "LinearConstraint", doc.LinearConstraint.doc)
       .def("A", &LinearConstraint::A, doc.LinearConstraint.A.doc)
       .def("UpdateCoefficients",
-          [](LinearConstraint& self, const Eigen::MatrixXd& new_A,
-             const Eigen::VectorXd& new_lb, const Eigen::VectorXd& new_ub) {
-            self.UpdateCoefficients(new_A, new_lb, new_ub);
-          }, py::arg("new_A"), py::arg("new_lb"), py::arg("new_ub"),
-          doc.LinearConstraint.UpdateCoefficients.doc)
+           [](LinearConstraint& self, const Eigen::MatrixXd& new_A,
+              const Eigen::VectorXd& new_lb, const Eigen::VectorXd& new_ub) {
+             self.UpdateCoefficients(new_A, new_lb, new_ub);
+           },
+           py::arg("new_A"), py::arg("new_lb"), py::arg("new_ub"),
+           doc.LinearConstraint.UpdateCoefficients.doc)
       .def("UpdateLowerBound",
-          [](LinearConstraint& self, const Eigen::VectorXd& new_lb) {
-            self.UpdateLowerBound(new_lb);
-          }, py::arg("new_lb"), doc.Constraint.UpdateLowerBound.doc)
+           [](LinearConstraint& self, const Eigen::VectorXd& new_lb) {
+             self.UpdateLowerBound(new_lb);
+           },
+           py::arg("new_lb"), doc.Constraint.UpdateLowerBound.doc)
       .def("UpdateUpperBound",
-          [](LinearConstraint& self, const Eigen::VectorXd& new_ub) {
-            self.UpdateUpperBound(new_ub);
-          }, py::arg("new_ub"), doc.Constraint.UpdateUpperBound.doc)
+           [](LinearConstraint& self, const Eigen::VectorXd& new_ub) {
+             self.UpdateUpperBound(new_ub);
+           },
+           py::arg("new_ub"), doc.Constraint.UpdateUpperBound.doc)
       .def("set_bounds",
-          [](LinearConstraint& self, const Eigen::VectorXd& new_lb,
-             const Eigen::VectorXd& new_ub) {
-            self.set_bounds(new_lb, new_ub);
-          }, py::arg("new_lb"), py::arg("new_ub"),
-          doc.Constraint.set_bounds.doc);
+           [](LinearConstraint& self, const Eigen::VectorXd& new_lb,
+              const Eigen::VectorXd& new_ub) {
+             self.set_bounds(new_lb, new_ub);
+           },
+           py::arg("new_lb"), py::arg("new_ub"), doc.Constraint.set_bounds.doc);
 
   py::class_<LorentzConeConstraint, Constraint,
              std::shared_ptr<LorentzConeConstraint>>(
-    m, "LorentzConeConstraint", doc.LorentzConeConstraint.doc)
-    .def("A", &LorentzConeConstraint::A, doc.LorentzConeConstraint.A.doc);
+      m, "LorentzConeConstraint", doc.LorentzConeConstraint.doc)
+      .def("A", &LorentzConeConstraint::A, doc.LorentzConeConstraint.A.doc);
   py::class_<LinearEqualityConstraint, LinearConstraint,
              std::shared_ptr<LinearEqualityConstraint>>(
-      m, "LinearEqualityConstraint",
-      doc.LinearEqualityConstraint.doc)
+      m, "LinearEqualityConstraint", doc.LinearEqualityConstraint.doc)
       .def("UpdateCoefficients",
-          [](LinearEqualityConstraint& self, const Eigen::MatrixXd& Aeq,
-             const Eigen::VectorXd& beq) {
-            self.UpdateCoefficients(Aeq, beq);
-          }, py::arg("Aeq"), py::arg("beq"),
-          doc.LinearEqualityConstraint.UpdateCoefficients.doc);
+           [](LinearEqualityConstraint& self,  // BR
+              const Eigen::MatrixXd& Aeq, const Eigen::VectorXd& beq) {
+             self.UpdateCoefficients(Aeq, beq);
+           },
+           py::arg("Aeq"), py::arg("beq"),
+           doc.LinearEqualityConstraint.UpdateCoefficients.doc);
 
   py::class_<BoundingBoxConstraint, LinearConstraint,
-             std::shared_ptr<BoundingBoxConstraint>>(m, "BoundingBoxConstraint",
-    doc.BoundingBoxConstraint.ctor.doc);
+             std::shared_ptr<BoundingBoxConstraint>>(
+      m, "BoundingBoxConstraint", doc.BoundingBoxConstraint.ctor.doc);
 
   py::class_<PositiveSemidefiniteConstraint, Constraint,
              std::shared_ptr<PositiveSemidefiniteConstraint>>(
@@ -658,15 +676,15 @@ PYBIND11_MODULE(mathematicalprogram, m) {
   py::class_<Cost, std::shared_ptr<Cost>> cost(m, "Cost", doc.Cost.doc);
 
   py::class_<LinearCost, Cost, std::shared_ptr<LinearCost>>(m, "LinearCost",
-    doc.LinearCost.doc)
+                                                            doc.LinearCost.doc)
       .def("a", &LinearCost::a, doc.LinearCost.a.doc)
       .def("b", &LinearCost::b, doc.LinearCost.b.doc)
       .def("UpdateCoefficients",
-          [](LinearCost& self, const Eigen::VectorXd& new_a,
-             double new_b) {
-            self.UpdateCoefficients(new_a, new_b);
-          }, py::arg("new_a"), py::arg("new_b") = 0,
-          doc.LinearCost.UpdateCoefficients.doc);
+           [](LinearCost& self, const Eigen::VectorXd& new_a, double new_b) {
+             self.UpdateCoefficients(new_a, new_b);
+           },
+           py::arg("new_a"), py::arg("new_b") = 0,
+           doc.LinearCost.UpdateCoefficients.doc);
 
   py::class_<QuadraticCost, Cost, std::shared_ptr<QuadraticCost>>(
       m, "QuadraticCost", doc.QuadraticCost.ctor.doc)
@@ -674,23 +692,23 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       .def("b", &QuadraticCost::b, doc.QuadraticCost.b.doc)
       .def("c", &QuadraticCost::c, doc.QuadraticCost.c.doc)
       .def("UpdateCoefficients",
-          [](QuadraticCost& self, const Eigen::MatrixXd& new_Q,
-             const Eigen::VectorXd& new_b, double new_c) {
-            self.UpdateCoefficients(new_Q, new_b, new_c);
-          }, py::arg("new_Q"), py::arg("new_b"), py::arg("new_c") = 0,
-      doc.QuadraticCost.UpdateCoefficients.doc);
+           [](QuadraticCost& self, const Eigen::MatrixXd& new_Q,
+              const Eigen::VectorXd& new_b,
+              double new_c) { self.UpdateCoefficients(new_Q, new_b, new_c); },
+           py::arg("new_Q"), py::arg("new_b"), py::arg("new_c") = 0,
+           doc.QuadraticCost.UpdateCoefficients.doc);
 
   RegisterBinding<Cost>(&m, &prog_cls, "Cost");
   RegisterBinding<LinearCost>(&m, &prog_cls, "LinearCost");
   RegisterBinding<QuadraticCost>(&m, &prog_cls, "QuadraticCost");
 
   py::class_<VisualizationCallback, EvaluatorBase,
-             std::shared_ptr<VisualizationCallback>>(m, "VisualizationCallback",
-    doc.VisualizationCallback.doc);
+             std::shared_ptr<VisualizationCallback>>(
+      m, "VisualizationCallback", doc.VisualizationCallback.doc);
 
   RegisterBinding<VisualizationCallback>(&m, &prog_cls,
                                          "VisualizationCallback");
-}
+}  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake
 }  // namespace drake

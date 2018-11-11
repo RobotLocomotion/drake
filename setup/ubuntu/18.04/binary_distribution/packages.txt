@@ -38,6 +38,9 @@ python-six
 python-scipy
 python-six
 python-tk
+python-tornado
+python-u-msgpack
 python-yaml
+python-zmq
 qtbase5-dev
 zlib1g
