@@ -98,6 +98,11 @@ class MeshcatVisualizer(LeafSystem):
 
             for j in range(link.num_geom):
                 geom = link.geom[j]
+                # MultibodyPlant currenly sets alpha=0 to make collision
+                # geometry "invisible".  Ignore those geometries here.
+                if geom.color[3] == 0:
+                    continue
+
                 element_local_tf = RigidTransform(
                     RotationMatrix(Quaternion(geom.quaternion)),
                     geom.position).GetAsMatrix4()
