@@ -70,20 +70,22 @@ struct EqualityConstrainedQPSolverOptions {
 };
 
 void GetEqualityConstrainedQPSolverOptions(
-    std::unordered_map<std::string, double>* options_double,
+    const std::unordered_map<std::string, double>& options,
     EqualityConstrainedQPSolverOptions* solver_options) {
-  auto it = options_double->find(
+  std::unordered_map<std::string, double> options_double = options;
+
+  auto it = options_double.find(
       EqualityConstrainedQPSolver::FeasibilityTolOptionName());
-  if (it != options_double->end()) {
+  if (it != options_double.end()) {
     if (it->second >= 0) {
       solver_options->feasibility_tol = it->second;
-      options_double->erase(it);
+      options_double.erase(it);
     } else {
       throw std::invalid_argument(
           "FeasibilityTol should be a non-negative number.");
     }
   }
-  if (!options_double->empty()) {
+  if (!options_double.empty()) {
     throw std::invalid_argument(
         "Unsupported option in EqualityConstrainedQPSolver.");
   }
@@ -130,11 +132,11 @@ void EqualityConstrainedQPSolver::Solve(
   EqualityConstrainedQPSolverOptions solver_options_struct{};
   std::unordered_map<std::string, double> option_double =
       prog.GetSolverOptionsDouble(EqualityConstrainedQPSolver::id());
-  GetEqualityConstrainedQPSolverOptions(&option_double, &solver_options_struct);
+  GetEqualityConstrainedQPSolverOptions(option_double, &solver_options_struct);
   if (solver_options.has_value()) {
     std::unordered_map<std::string, double> options_double_input =
         solver_options->GetOptionsDouble(EqualityConstrainedQPSolver::id());
-    GetEqualityConstrainedQPSolverOptions(&options_double_input,
+    GetEqualityConstrainedQPSolverOptions(options_double_input,
                                           &solver_options_struct);
   }
 
