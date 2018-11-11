@@ -56,7 +56,19 @@ class SolverOptions {
   const std::unordered_map<std::string, std::string>& GetOptionsStr(
       const SolverId& solver_id) const;
 
+  /**
+   * Merges the other solver options into this. If @p other and this solver
+   * option both define the same option for the same solver, then take this
+   * option as the priority.
+   */
+  void Merge(const SolverOptions& other);
+
+  bool operator==(const SolverOptions& other) const;
+
+  bool operator!=(const SolverOptions& other) const;
+
  private:
+  friend class SolverOptionsTester;
   std::map<SolverId, std::unordered_map<std::string, double>>
       solver_options_double_{};
   std::map<SolverId, std::unordered_map<std::string, int>>
