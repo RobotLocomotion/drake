@@ -52,8 +52,9 @@ class EqualityConstrainedQPSolver : public MathematicalProgramSolverInterface {
 
   static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
 
-  // Returns the string as a key value in SolverOption, to set the feasibility
-  // tolerance.
+  /** Returns the string as a key value in SolverOption, to set the feasibility
+   * tolerance.
+   */
   static std::string FeasibilityTolOptionName();
 };
 
