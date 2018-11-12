@@ -46,13 +46,13 @@ class MeshcatVisualizer(LeafSystem):
 
             ...
 
-            if 'meshcat' in args:
+            if args.meshcat:
                 meshcat = builder.AddSystem(MeshcatVisualizer(
                         scene_graph, zmq_url=args.meshcat))
         """
         parser.add_argument(
-            "--meshcat", nargs='?', metavar='zmq_url', const=None,
-            default=argparse.SUPPRESS,
+            "--meshcat", nargs='?', metavar='zmq_url', const="new",
+            default=None,
             help="Enable visualization with meshcat. If no zmq_url is "
                  "specified, a meshcat-server will be started as a "
                  "subprocess.  Use e.g. zmq_url=tcp://127.0.0.1:6000 to "
@@ -75,9 +75,9 @@ class MeshcatVisualizer(LeafSystem):
             zmq_url: Optionally set a url to connect to the visualizer.
                 Use zmp_url="default" to the value obtained by running a
                 single `meshcat-server` in another terminal.
-                Use zmp_url=None to start a new server (as a child of this
-                process); the url for your web browser will be printed to
-                the console.
+                Use zmp_url=None or zmq_url="new" to start a new server (as a
+                child of this process); the url for your web browser will be
+                printed to the console.
                 Use e.g. zmq_url="tcp://127.0.0.1:6000" to specify a
                 specific address.
 
@@ -95,6 +95,8 @@ class MeshcatVisualizer(LeafSystem):
 
         if zmq_url == "default":
             zmq_url = "tcp://127.0.0.1:6000"
+        elif zmq_url == "new":
+            zmq_url = None
 
         # Set up meshcat.
         self.prefix = prefix

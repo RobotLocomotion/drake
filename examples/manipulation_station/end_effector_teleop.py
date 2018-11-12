@@ -233,7 +233,7 @@ else:
 
     ConnectDrakeVisualizer(builder, station.get_scene_graph(),
                            station.GetOutputPort("pose_bundle"))
-    if 'meshcat' in args:
+    if args.meshcat:
         meshcat = builder.AddSystem(MeshcatVisualizer(
             station.get_scene_graph(), zmq_url=args.meshcat))
         builder.Connect(station.GetOutputPort("pose_bundle"),
