@@ -32,21 +32,18 @@ Arguments:
              example.
 """
 
+load("@drake//tools/workspace:github.bzl", "github_download_and_extract")
+
 def _impl(repository_ctx):
     if repository_ctx.name == "meshcat":
         fail("Rule must NOT be named meshcat")
 
-    urls = [
-        x.format(
-            repository = "rdeits/meshcat-python",
-            commit = "v0.0.13",
-        )
-        for x in repository_ctx.attr.mirrors.get("github")
-    ]
-    repository_ctx.download_and_extract(
-        urls,
+    github_download_and_extract(
+        repository_ctx,
+        "rdeits/meshcat-python",
+        "v0.0.13",
+        repository_ctx.attr.mirrors,
         sha256 = "e163a9bd55221ebaecbe15946481700e4c7dfbb9e231fa2bd25b852f9dcf1c6f",  # noqa
-        stripPrefix = "meshcat-python-0.0.13",
     )
 
     repository_ctx.symlink(
