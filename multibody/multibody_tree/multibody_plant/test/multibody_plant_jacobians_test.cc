@@ -25,10 +25,6 @@
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/diagram_builder.h"
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-
 namespace drake {
 
 using Eigen::AngleAxisd;
@@ -223,10 +219,6 @@ TEST_F(KukaIiwaModelTests, CalcPointsAnalyticJacobianExpressedInWorld) {
   // Sizes of the derivatives.
   EXPECT_EQ(p_WPi_derivs.rows(), 3 * kNumPoints);
   EXPECT_EQ(p_WPi_derivs.cols(), plant_->num_positions());
-
-  PRINT_VARn(Jq_WPi);
-
-  PRINT_VARn(p_WPi_derivs);
 
   // Verify the computed Jacobian Jq_WPi matches the one obtained using
   // automatic differentiation.
