@@ -39,14 +39,14 @@ def _impl(repository_ctx):
     urls = [
         x.format(
             repository = "rdeits/meshcat-python",
-            commit = "v0.0.13",
+            commit = "d0c8b6a9d1d750495ef9513254761cc14773cf99",
         )
         for x in repository_ctx.attr.mirrors.get("github")
     ]
     repository_ctx.download_and_extract(
         urls,
-        sha256 = "e163a9bd55221ebaecbe15946481700e4c7dfbb9e231fa2bd25b852f9dcf1c6f",  # noqa
-        stripPrefix = "meshcat-python-0.0.13",
+        sha256 = "99cdea957adf585b33c83cb284b6df16f953b0422ac5a035f4e0f50cf9105121",  # noqa
+        stripPrefix = "meshcat-python-d0c8b6a9d1d750495ef9513254761cc14773cf99",  # noqa
     )
 
     repository_ctx.symlink(
