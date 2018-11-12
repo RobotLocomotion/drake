@@ -317,9 +317,12 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return tree().GetPositionsAndVelocities(context);
   }
 
-  /// Returns a mutable Eigen vector containing the vector `[q; v]`
+  /// (Advanced) Returns a mutable Eigen vector containing the vector `[q; v]`
   /// of the model with `q` the vector of generalized positions and `v` the
-  /// vector of generalized velocities.
+  /// vector of generalized velocities (**see warning**).
+  /// @warning You should use SetPositionsAndVelocities() instead of this method
+  ///          unless you are fully aware of the interactions with the caching
+  ///          mechanism (see @ref dangerous_get_mutable).
   /// @throws std::exception if the `context` is nullptr or if it does not
   /// correspond to the context for a multibody model.
   Eigen::VectorBlock<VectorX<T>> GetMutablePositionsAndVelocities(
@@ -355,10 +358,13 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
         model_instance, GetPositions(context));
   }
 
-  /// Returns a mutable Eigen vector reference containing the vector of
-  /// generalized positions.
+  /// (Advanced) Returns a mutable Eigen vector reference containing the vector
+  /// of generalized positions (**see warning**).
   /// @note This method returns a reference to existing data, exhibits constant
   ///       i.e., O(1) time complexity, and runs very quickly.
+  /// @warning You should use SetPositions() instead of this method
+  ///          unless you are fully aware of the possible interactions with the
+  ///          caching mechanism (see @ref dangerous_get_mutable).
   /// @throws std::exception if the `context` is nullptr or if it does not
   /// correspond to the context for a multibody model.
   Eigen::VectorBlock<VectorX<T>> GetMutablePositions(
@@ -408,10 +414,13 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
         model_instance, GetVelocities(context));
   }
 
-  /// Returns a mutable Eigen vector reference containing the vector of
-  /// generalized velocities.
+  /// (Advanced) Returns a mutable Eigen vector reference containing the vector
+  /// of generalized velocities (**see warning**).
   /// @note This method returns a reference to existing data, exhibits constant
   ///       i.e., O(1) time complexity, and runs very quickly.
+  /// @warning You should use SetVelocities() instead of this method
+  ///          unless you are fully aware of the possible interactions with the
+  ///          caching mechanism (see @ref dangerous_get_mutable).
   /// @throws std::exception if the `context` is nullptr or the context does
   /// not correspond to the context for a multibody model.
   Eigen::VectorBlock<VectorX<T>> GetMutableVelocities(

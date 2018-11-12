@@ -1426,7 +1426,7 @@ class MultibodyTree {
                        "2/7/19.")
   VectorX<T> get_positions_from_array(
       ModelInstanceIndex model_instance,
-      const Eigen::Ref<const VectorX<T>>& q_array) const {
+      const Eigen::Ref<const VectorX<T>>& q) const {
     return GetPositionsFromArray(model_instance, q);
   }
   #endif
