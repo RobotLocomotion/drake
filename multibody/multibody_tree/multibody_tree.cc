@@ -873,23 +873,47 @@ void MultibodyTree<T>::CalcAcrossNodeGeometricJacobianExpressedInWorld(
 template <typename T>
 void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
     const systems::Context<T>& context,
-    const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
-    EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Jv_WQi) const {
-  DRAKE_THROW_UNLESS(p_BQi_set.rows() == 3);
-  const int num_points = p_BQi_set.cols();
-  DRAKE_THROW_UNLESS(p_WQi_set != nullptr);
-  DRAKE_THROW_UNLESS(p_WQi_set->cols() == num_points);
-  DRAKE_THROW_UNLESS(Jv_WQi != nullptr);
-  DRAKE_THROW_UNLESS(Jv_WQi->rows() == 3 * num_points);
-  DRAKE_THROW_UNLESS(Jv_WQi->cols() == num_velocities());
+    const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_FQ_list,
+    EigenPtr<MatrixX<T>> p_WQ_list, EigenPtr<MatrixX<T>> Jv_WFqi) const {
+  DRAKE_THROW_UNLESS(p_FQ_list.rows() == 3);
+  const int num_points = p_FQ_list.cols();
+  DRAKE_THROW_UNLESS(p_WQ_list != nullptr);
+  DRAKE_THROW_UNLESS(p_WQ_list->cols() == num_points);
+  DRAKE_THROW_UNLESS(Jv_WFqi != nullptr);
+  DRAKE_THROW_UNLESS(Jv_WFqi->rows() == 3 * num_points);
+  DRAKE_THROW_UNLESS(Jv_WFqi->cols() == num_velocities());
 
-  // Compute p_WQi for each point Qi in the set P_BQi_set.
+  // Compute p_WQi for each point Qi in the set p_FQ_list.
   CalcPointsPositions(context,
-                      frame_B, p_BQi_set,        /* From frame B */
-                      world_frame(), p_WQi_set); /* To world frame W */
+                      frame_F, p_FQ_list,        /* From frame B */
+                      world_frame(), p_WQ_list); /* To world frame W */
 
   CalcPointsGeometricJacobianExpressedInWorld(
-      context, frame_B, *p_WQi_set, Jv_WQi);
+      context, frame_F, *p_WQ_list, Jv_WFqi);
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcPointsAnalyticJacobianExpressedInWorld(
+    const systems::Context<T>& context,
+    const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_FQ_list,
+    EigenPtr<MatrixX<T>> p_WQ_list, EigenPtr<MatrixX<T>> Jq_WFq) const {
+  DRAKE_THROW_UNLESS(p_FQ_list.rows() == 3);
+  const int num_points = p_FQ_list.cols();
+  DRAKE_THROW_UNLESS(p_WQ_list != nullptr);
+  DRAKE_THROW_UNLESS(p_WQ_list->cols() == num_points);
+  DRAKE_THROW_UNLESS(Jq_WFq != nullptr);
+  DRAKE_THROW_UNLESS(Jq_WFq->rows() == 3 * num_points);
+  DRAKE_THROW_UNLESS(Jq_WFq->cols() == num_positions());
+
+  // Compute p_WQi for each point Qi in the set p_FQ_list.
+  CalcPointsPositions(context,
+                      frame_F, p_FQ_list,        /* From frame B */
+                      world_frame(), p_WQ_list); /* To world frame W */
+
+  CalcFrameJacobianExpressedInWorld(
+      context, frame_F, *p_WQ_list,
+      true /* from generalized positions */,
+      nullptr /* angular terms not needed */, Jq_WFq);
 }
 
 template <typename T>
@@ -1069,16 +1093,18 @@ void MultibodyTree<T>::CalcFrameJacobianExpressedInWorld(
   // The user must request at least one of the terms.
   DRAKE_THROW_UNLESS(Jw_WFq != nullptr || Jv_WFq != nullptr);
 
+  const int num_columns = from_qdot ? num_positions() : num_velocities();
+
   // If non-nullptr, check the proper size of the output Jacobian matrices.
   if (Jw_WFq) {
     DRAKE_THROW_UNLESS(Jw_WFq->rows() == 3);
-    DRAKE_THROW_UNLESS(Jw_WFq->cols() == num_velocities());
+    DRAKE_THROW_UNLESS(Jw_WFq->cols() == num_columns);
   }
   const int num_points = p_WQ_list.cols();
   const int Jv_nrows = 3 * num_points;
   if (Jv_WFq) {
     DRAKE_THROW_UNLESS(Jv_WFq->rows() == Jv_nrows);
-    DRAKE_THROW_UNLESS(Jv_WFq->cols() == num_velocities());
+    DRAKE_THROW_UNLESS(Jv_WFq->cols() == num_columns);
   }
 
   // If a user is re-using one of these Jacobians within a loop the first thing
@@ -1158,8 +1184,7 @@ void MultibodyTree<T>::CalcFrameJacobianExpressedInWorld(
       // body frame P and expressed in world. That is, v_PQ_W = v_PFq_W =
       // Jv_PFq_W * v(B), with v(B) the mobilities that correspond to the
       // current node.
-      auto Jv_PFq_W =
-          Jv_WFq->block(0, start_index_in_v, Jv_nrows, num_velocities);
+      auto Jv_PFq_W = Jv_WFq->block(0, start_index, Jv_nrows, Jncols);
 
       // Position of the body Bi for the node at level ilevel in the world W.
       const Vector3<T>& p_WBi = pc.get_X_WB(node.index()).translation();

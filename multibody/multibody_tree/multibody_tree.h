@@ -1827,6 +1827,11 @@ class MultibodyTree {
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_FQ_list) const;
 
+  void CalcPointsAnalyticJacobianExpressedInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_FQ_list,
+      EigenPtr<MatrixX<T>> p_WQ_list, EigenPtr<MatrixX<T>> Jq_WFq) const;
+
   /// Given a frame `Fq` defined by shifting a frame F from its origin `Fo` to
   /// a new origin `Q`, this method computes the geometric Jacobian `Jv_WFq`
   /// for frame `Fq`. The new origin `Q` is specified by the position vector
