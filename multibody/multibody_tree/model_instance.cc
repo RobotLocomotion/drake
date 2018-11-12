@@ -9,7 +9,7 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
-void ModelInstance<T>::set_actuation_vector(
+void ModelInstance<T>::SetActuationInArray(
     const Eigen::Ref<const VectorX<T>>& u_instance,
     EigenPtr<VectorX<T>> u) const {
   DRAKE_DEMAND(u != nullptr);
@@ -29,7 +29,7 @@ void ModelInstance<T>::set_actuation_vector(
 }
 
 template <typename T>
-VectorX<T> ModelInstance<T>::get_positions_from_array(
+VectorX<T> ModelInstance<T>::GetPositionsFromArray(
     const Eigen::Ref<const VectorX<T>>& q_array) const {
   if (q_array.size() != this->get_parent_tree().num_positions())
     throw std::logic_error("Passed in array is not properly sized.");
@@ -46,7 +46,7 @@ VectorX<T> ModelInstance<T>::get_positions_from_array(
 }
 
 template <class T>
-void ModelInstance<T>::set_positions_in_array(
+void ModelInstance<T>::SetPositionsInArray(
     const Eigen::Ref<const VectorX<T>>& model_q,
     EigenPtr<VectorX<T>> q_array) const {
   DRAKE_DEMAND(q_array);
@@ -65,7 +65,7 @@ void ModelInstance<T>::set_positions_in_array(
 }
 
 template <typename T>
-VectorX<T> ModelInstance<T>::get_velocities_from_array(
+VectorX<T> ModelInstance<T>::GetVelocitiesFromArray(
     const Eigen::Ref<const VectorX<T>>& v_array) const {
   if (v_array.size() != this->get_parent_tree().num_velocities())
     throw std::logic_error("Passed in array is not properly sized.");
@@ -82,7 +82,7 @@ VectorX<T> ModelInstance<T>::get_velocities_from_array(
 }
 
 template <class T>
-void ModelInstance<T>::set_velocities_in_array(
+void ModelInstance<T>::SetVelocitiesInArray(
     const Eigen::Ref<const VectorX<T>>& model_v,
     EigenPtr<VectorX<T>> v_array) const {
   DRAKE_DEMAND(v_array->size() == this->get_parent_tree().num_velocities());

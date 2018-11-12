@@ -83,7 +83,7 @@ GTEST_TEST(SchunkWsgControllerTest, SchunkWsgControllerTest) {
                 .GetAtIndex(0),
             -force_limit);
 
-  auto wsg_state = wsg->tree().get_mutable_multibody_state_vector(&wsg_context);
+  auto wsg_state = wsg->GetMutablePositionsAndVelocities(&wsg_context);
   wsg_state = Vector4d::Zero();
   simulator.StepTo(1.0);
 

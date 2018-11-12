@@ -273,8 +273,7 @@ class TestControllers(unittest.TestCase):
 
         # Set the plant's context.
         plant_context = plant.CreateDefaultContext()
-        x_plant = plant.tree().get_mutable_multibody_state_vector(
-            plant_context)
+        x_plant = plant.tree().GetMutablePositionsAndVelocities(plant_context)
         x_plant[:] = x
 
         # Compute the expected value of the generalized forces using

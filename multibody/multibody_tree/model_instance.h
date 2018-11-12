@@ -103,9 +103,9 @@ class ModelInstance :
     joint_actuators_.push_back(joint_actuator);
   }
 
-  /// Given the actuation values @p u_instance for all actuators in `this` model
-  /// instance, this method sets the portion of the actuation vector @p u (which
-  /// is the actuation vector for the entire MultibodyTee) corresponding to the
+  /// Given the actuation values `u_instance` for all actuators in `this` model
+  /// instance, this method sets the portion of the actuation vector `u` (which
+  /// is the actuation vector for the entire MultibodyTree) corresponding to the
   /// actuators for this model instance.
   /// @param[in] u_instance Actuation values for the actuators. It must be of
   ///   size equal to the number of degrees of freedom of all of the actuated
@@ -120,51 +120,51 @@ class ModelInstance :
   ///         model or `u` is not of size equal to the number of degrees of
   ///         freedom of all of the actuated joints in the entire MultibodyTree
   ///         model to which `this` actuator belongs to.
-  void set_actuation_vector(
+  void SetActuationInArray(
       const Eigen::Ref<const VectorX<T>>& u_instance,
       EigenPtr<VectorX<T>> u) const;
 
-  /// Returns a const Eigen expression of the vector of generalized positions
-  /// for `this` model instance from a vector `q_array` of generalized
+  /// Returns an Eigen vector of the generalized positions
+  /// for `this` model instance from a vector `q` of generalized
   /// positions for the entire MultibodyTree model.
-  /// @throws std::logic_error if `q_array` is not of size
+  /// @throws std::logic_error if `q` is not of size
   ///         MultibodyTree::num_positions().
-  VectorX<T> get_positions_from_array(
-      const Eigen::Ref<const VectorX<T>>& q_array) const;
+  VectorX<T> GetPositionsFromArray(
+      const Eigen::Ref<const VectorX<T>>& q) const;
 
   /// Sets the vector of generalized positions for `this` model instance in
   /// the relevant locations of an array that corresponds to the positions for
   /// the entire MultibodyTree model. Elements of the array that do not
   /// correspond to `this` are not altered. Note that calling
-  /// `set_positions_in_array(model_q, q_array)` causes
-  /// `get_positions_from_array(q_array)` to yield `model_q`.
-  /// @throws std::logic_error if `q_array` is not of size
-  ///         MultibodyTree::num_positions() or `model_q` is not of size
+  /// `SetPositionsInArray(q_instance, q)` causes
+  /// `GetPositionsFromArray(q)` to yield `q_instance`.
+  /// @throws std::logic_error if `q` is not of size
+  ///         MultibodyTree::num_positions() or `q_instance` is not of size
   ///         num_positions().
-  void set_positions_in_array(
-      const Eigen::Ref<const VectorX<T>>& model_q,
-      EigenPtr<VectorX<T>> q_array) const;
+  void SetPositionsInArray(
+      const Eigen::Ref<const VectorX <T>>& q_instance,
+      EigenPtr<VectorX<T>> q) const;
 
-  /// Returns a const Eigen expression of the vector of generalized velocities
-  /// for `this` mobilizer from a vector `v_array` of generalized velocities for
+  /// Returns an Eigen vector of the generalized velocities
+  /// for `this` mobilizer from a vector `v` of generalized velocities for
   /// the entire MultibodyTree model.
-  /// @throws std::logic_error if `v_array` is not of size
+  /// @throws std::logic_error if `v` is not of size
   ///         MultibodyTree::num_velocities().
-  VectorX<T> get_velocities_from_array(
-      const Eigen::Ref<const VectorX<T>>& v_array) const;
+  VectorX<T> GetVelocitiesFromArray(
+      const Eigen::Ref<const VectorX<T>>& v) const;
 
   /// Sets the vector of generalized velocities for `this` model instance in
   /// the relevant locations of an array corresponding to the velocities for the
   /// entire MultibodyTree model. Elements of the array that do not
   /// correspond to `this` are not altered. Note that calling
-  /// `set_velocities_in_array(model_v, v_array)` causes
-  /// `get_velocities_from_array(v_array)` to yield `model_v`.
-  /// @throws std::logic_error if `v_array` is not of size
-  ///         MultibodyTree::num_velocities() or `model_v` is not of size
+  /// `SetVelocitiesInArray(v_instance, v)` causes
+  /// `GetVelocitiesFromArray(v)` to yield `v_instance`.
+  /// @throws std::logic_error if `v` is not of size
+  ///         MultibodyTree::num_velocities() or `v_instance` is not of size
   ///         num_velocities().
-  void set_velocities_in_array(
-      const Eigen::Ref<const VectorX<T>>& model_v,
-      EigenPtr<VectorX<T>> v_array) const;
+  void SetVelocitiesInArray(
+      const Eigen::Ref<const VectorX<T>>& v_instance,
+      EigenPtr<VectorX<T>> v) const;
 
  private:
   void DoSetTopology(const MultibodyTreeTopology&) final {}

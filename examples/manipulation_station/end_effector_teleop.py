@@ -141,7 +141,7 @@ class DifferentialIK(LeafSystem):
         # methods.
         self.robot_context = robot.CreateDefaultContext()
         # Confirm that all velocities are zero (they will not be reset below).
-        assert not self.robot.tree().get_multibody_state_vector(
+        assert not self.robot.tree().GetPositionsAndVelocities(
             self.robot_context)[-robot.num_velocities():].any()
 
         # Store the robot positions as state.
@@ -159,7 +159,7 @@ class DifferentialIK(LeafSystem):
         context.get_mutable_discrete_state(0).SetFromVector(q)
 
     def ForwardKinematics(self, q):
-        x = self.robot.tree().get_mutable_multibody_state_vector(
+        x = self.robot.tree().GetMutablePositionsAndVelocities(
             self.robot_context)
         x[:robot.num_positions()] = q
         return self.robot.tree().EvalBodyPoseInWorld(
@@ -179,7 +179,7 @@ class DifferentialIK(LeafSystem):
         X_WE_desired = self.EvalAbstractInput(context, 0).get_value()
         q_last = context.get_discrete_state_vector().get_value()
 
-        x = self.robot.tree().get_mutable_multibody_state_vector(
+        x = self.robot.tree().GetMutablePositionsAndVelocities(
             self.robot_context)
         x[:robot.num_positions()] = q_last
         result = DoDifferentialInverseKinematics(self.robot,

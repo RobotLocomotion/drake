@@ -1527,18 +1527,9 @@ void MultibodyPlant<T>::CopyContinuousStateOut(
     const Context<T>& context, BasicVector<T>* state_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
 
-  VectorX<T> continuous_state_vector =
-      GetStateVector(context).CopyToVector();
-
-  VectorX<T> instance_state_vector(tree().num_states(model_instance));
-  instance_state_vector.head(num_positions(model_instance)) =
-      tree().get_positions_from_array(
-          model_instance, continuous_state_vector.head(num_positions()));
-  instance_state_vector.tail(num_velocities(model_instance)) =
-      tree().get_velocities_from_array(
-          model_instance, continuous_state_vector.tail(num_velocities()));
-
-  state_vector->set_value(instance_state_vector);
+  VectorX<T> instance_state_vector =
+      tree().GetPositionsAndVelocities(context, model_instance);
+  state_vector->SetFromVector(instance_state_vector);
 }
 
 template <typename T>
@@ -1559,7 +1550,7 @@ void MultibodyPlant<T>::CopyGeneralizedContactForcesOut(
   // Generalized velocities and generalized forces are ordered in the same way.
   // Thus we can call get_velocities_from_array().
   const VectorX<T> instance_tau_contact =
-      tree().get_velocities_from_array(model_instance, tau_contact);
+      tree().GetVelocitiesFromArray(model_instance, tau_contact);
 
   tau_vector->set_value(instance_tau_contact);
 }
