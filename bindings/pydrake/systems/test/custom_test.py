@@ -153,6 +153,8 @@ class TestCustom(unittest.TestCase):
                 self.called_continuous = False
                 self.called_discrete = False
                 self.called_initialize = False
+                self.called_per_step = False
+                self.called_periodic = False
                 # Ensure we have desired overloads.
                 self._DeclarePeriodicPublish(0.1)
                 self._DeclarePeriodicPublish(0.1, 0)
@@ -163,6 +165,16 @@ class TestCustom(unittest.TestCase):
                     event=PublishEvent(
                         trigger_type=TriggerType.kInitialization,
                         callback=self._on_initialize))
+                self._DeclarePerStepEvent(
+                    event=PublishEvent(
+                        trigger_type=TriggerType.kPerStep,
+                        callback=self._on_per_step))
+                self._DeclarePeriodicEvent(
+                    period_sec=0.1,
+                    offset_sec=0.0,
+                    event=PublishEvent(
+                        trigger_type=TriggerType.kPeriodic,
+                        callback=self._on_periodic))
                 self._DeclareContinuousState(2)
                 self._DeclareDiscreteState(1)
                 # Ensure that we have inputs / outputs to call direct
@@ -212,6 +224,17 @@ class TestCustom(unittest.TestCase):
                 test.assertFalse(self.called_initialize)
                 self.called_initialize = True
 
+            def _on_per_step(self, context, event):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(event, PublishEvent)
+                self.called_per_step = True
+
+            def _on_periodic(self, context, event):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(event, PublishEvent)
+                test.assertFalse(self.called_periodic)
+                self.called_periodic = True
+
         system = TrivialSystem()
         self.assertFalse(system.called_publish)
         self.assertFalse(system.called_feedthrough)
@@ -241,6 +264,13 @@ class TestCustom(unittest.TestCase):
         system.CalcTimeDerivatives(
             context, context_update.get_mutable_continuous_state())
         self.assertTrue(system.called_continuous)
+
+        # Test per-step and periodic call backs
+        system = TrivialSystem()
+        simulator = Simulator(system)
+        simulator.StepTo(0.1)
+        self.assertTrue(system.called_per_step)
+        self.assertTrue(system.called_periodic)
 
     def test_vector_system_overrides(self):
         dt = 0.5
