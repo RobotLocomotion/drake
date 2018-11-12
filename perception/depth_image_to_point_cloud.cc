@@ -46,6 +46,7 @@ void DepthImageToPointCloud::Convert(
     const systems::sensors::ImageDepth32F& depth_image,
     const systems::sensors::CameraInfo& camera_info,
     Eigen::Matrix3Xf* point_cloud) {
+  DRAKE_DEMAND(point_cloud != nullptr);
   using InvalidDepth = systems::sensors::InvalidDepth;
 
   if (depth_image.size() != point_cloud->cols()) {
@@ -64,12 +65,13 @@ void DepthImageToPointCloud::Convert(
 
   for (int v = 0; v < height; ++v) {
     for (int u = 0; u < width; ++u) {
-      float z = depth_image.at(u, v)[0];
+      const float z = depth_image.at(u, v)[0];
       if (z != InvalidDepth::kTooClose &&
           z != InvalidDepth::kTooFar) {
-        pc(0, v * width + u) = z * (u - cx) * fx_inv;
-        pc(1, v * width + u) = z * (v - cy) * fy_inv;
-        pc(2, v * width + u) = z;
+        const int col = v * width + u;
+        pc(0, col) = z * (u - cx) * fx_inv;
+        pc(1, col) = z * (v - cy) * fy_inv;
+        pc(2, col) = z;
       }
     }
   }
