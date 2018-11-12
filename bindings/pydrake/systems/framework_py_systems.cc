@@ -76,7 +76,9 @@ struct Impl {
     using Base::DeclareDiscreteState;
     using Base::DeclareInitializationEvent;
     using Base::DeclarePeriodicDiscreteUpdate;
+    using Base::DeclarePeriodicEvent;
     using Base::DeclarePeriodicPublish;
+    using Base::DeclarePerStepEvent;
     using Base::DeclareVectorOutputPort;
 
     // Because `LeafSystem<T>::DoPublish` is protected, and we had to override
@@ -422,6 +424,19 @@ struct Impl {
                self->DeclareInitializationEvent(event);
              },
              py::arg("event"), doc.LeafSystem.DeclareInitializationEvent.doc)
+        // Binding the *second* signature; first has no Event argument.
+        .def("_DeclarePeriodicEvent",
+             [](PyLeafSystem* self, double period_sec, double offset_sec,
+                const Event<T>& event) {
+               self->DeclarePeriodicEvent(period_sec, offset_sec, event);
+             },
+             py::arg("period_sec"), py::arg("offset_sec"), py::arg("event"),
+             doc.LeafSystem.DeclarePeriodicEvent.doc_2)
+        .def("_DeclarePerStepEvent",
+             [](PyLeafSystem* self, const Event<T>& event) {
+               self->DeclarePerStepEvent(event);
+             },
+             py::arg("event"), doc.LeafSystem.DeclarePerStepEvent.doc)
         .def("_DoPublish", &LeafSystemPublic::DoPublish,
              doc.LeafSystem.DoPublish.doc)
         // System attributes.
