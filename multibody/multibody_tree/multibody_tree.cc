@@ -1171,6 +1171,9 @@ void MultibodyTree<T>::CalcFrameJacobianExpressedInWorld(
   const std::vector<Vector6<T>>& H_PB_W_cache =
       tree_system_->EvalAcrossNodeGeometricJacobianExpressedInWorld(context);
 
+  // A statically allocated matrix with a maximum number of rows and columns.
+  Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, 0, 6, 7> Nplus;
+
   // Performs a scan of all bodies in the kinematic path from the world to
   // body_B, computing each node's contribution to the Jacobians.
   // Skip the world (ilevel = 0).
@@ -1197,7 +1200,7 @@ void MultibodyTree<T>::CalcFrameJacobianExpressedInWorld(
 
     // Mapping defined by v = N⁺(q)⋅q̇.
     // By default we assume v = q̇.
-    MatrixX<T> Nplus = MatrixX<T>::Identity(num_velocities, num_velocities);
+    Nplus.resize(num_velocities, num_positions);
     if (from_qdot) {
       const auto& mbt_context =
           dynamic_cast<const MultibodyTreeContext<T>&>(context);
@@ -1205,7 +1208,7 @@ void MultibodyTree<T>::CalcFrameJacobianExpressedInWorld(
       // if/when the computational cost of multiplying with Nplus from the
       // right becomes a bottleneck.
       // TODO(amcastro-tri): cache Nplus to avoid memory allocations.
-      Nplus = mobilizer.CalcNplusMatrix(mbt_context);
+      mobilizer.CalcNplusMatrix(mbt_context, &Nplus);
     }
 
     // The angular term is the same for all points since the angular

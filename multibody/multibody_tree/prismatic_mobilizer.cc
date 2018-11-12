@@ -96,9 +96,9 @@ void PrismaticMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
-MatrixX<T> PrismaticMobilizer<T>::CalcNplusMatrix(
-    const MultibodyTreeContext<T>& context) const {
-  return MatrixX<T>::Identity(kNv, kNq);
+void PrismaticMobilizer<T>::DoCalcNplusMatrix(
+    const MultibodyTreeContext<T>&, EigenPtr<MatrixX<T>> Nplus) const {
+  Nplus->setIdentity(kNv, kNq);
 }
 
 template <typename T>

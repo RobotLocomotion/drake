@@ -160,9 +160,6 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const override;
 
-  MatrixX<T> CalcNplusMatrix(
-      const MultibodyTreeContext<T>& context) const override;
-
   void MapVelocityToQDot(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
@@ -174,6 +171,10 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
       EigenPtr<VectorX<T>> v) const override;
 
  protected:
+  void DoCalcNplusMatrix(
+      const MultibodyTreeContext<T>& context,
+      EigenPtr<MatrixX<T>> Nplus) const final;
+
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;
 

@@ -217,9 +217,6 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const override;
 
-  MatrixX<T> CalcNplusMatrix(
-      const MultibodyTreeContext<T>& context) const override;
-
   /// Maps the generalized velocity v, which corresponds to the angular velocity
   /// `w_FM`, to time derivatives of space x-y-z angles θ₁, θ₂, θ₃ in `qdot`.
   ///
@@ -262,6 +259,10 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
 
 
  protected:
+  void DoCalcNplusMatrix(
+      const MultibodyTreeContext<T>& context,
+      EigenPtr<MatrixX<T>> Nplus) const final;
+
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;
 

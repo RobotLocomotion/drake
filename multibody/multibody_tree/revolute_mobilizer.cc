@@ -97,9 +97,9 @@ void RevoluteMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
-MatrixX<T> RevoluteMobilizer<T>::CalcNplusMatrix(
-      const MultibodyTreeContext<T>& context) const {
-  return MatrixX<T>::Identity(kNv, kNq);
+void RevoluteMobilizer<T>::DoCalcNplusMatrix(
+      const MultibodyTreeContext<T>&, EigenPtr<MatrixX<T>> Nplus) const {
+  Nplus->setIdentity(kNv, kNq);
 }
 
 template <typename T>

@@ -114,8 +114,8 @@ void SpaceXYZMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
-MatrixX<T> SpaceXYZMobilizer<T>::CalcNplusMatrix(
-    const MultibodyTreeContext<T>& context) const {
+void SpaceXYZMobilizer<T>::DoCalcNplusMatrix(
+    const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> Nplus) const {
   // The linear map between q̇ and v is given by matrix E_F(q) defined by:
   //          [ cos(y) * cos(p), -sin(y), 0]
   // E_F(q) = [ sin(y) * cos(p),  cos(y), 0]
@@ -136,14 +136,10 @@ MatrixX<T> SpaceXYZMobilizer<T>::CalcNplusMatrix(
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
 
-  MatrixX<T> Nplus = MatrixX<T>::Identity(kNv, kNq);
-
-  Nplus <<
+  *Nplus <<
         cy * cp, -sy, 0.0,
         sy * cp,  cy, 0.0,
             -sp, 0.0, 1.0;
-
-  return Nplus;
 }
 
 template <typename T>

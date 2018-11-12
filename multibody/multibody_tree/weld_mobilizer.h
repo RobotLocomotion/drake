@@ -74,9 +74,6 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const final;
 
-  MatrixX<T> CalcNplusMatrix(
-      const MultibodyTreeContext<T>& context) const final;
-
   /// This override is a no-op since this mobilizer has no generalized
   /// velocities associated with it.
   void MapVelocityToQDot(
@@ -92,6 +89,10 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
       EigenPtr<VectorX<T>> v) const final;
 
  protected:
+  void DoCalcNplusMatrix(
+      const MultibodyTreeContext<T>& context,
+      EigenPtr<MatrixX<T>> Nplus) const final;
+
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const final;
 

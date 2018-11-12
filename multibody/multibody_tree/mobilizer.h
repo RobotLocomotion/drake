@@ -440,8 +440,14 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const = 0;
 
-  virtual MatrixX<T> CalcNplusMatrix(
-      const MultibodyTreeContext<T>& context) const = 0;
+  void CalcNplusMatrix(
+      const MultibodyTreeContext<T>& context,
+      EigenPtr<MatrixX<T>> Nplus) const {
+    DRAKE_DEMAND(Nplus != nullptr);
+    DRAKE_DEMAND(Nplus->rows() == num_velocities());
+    DRAKE_DEMAND(Nplus->cols() == num_positions());
+    DoCalcNplusMatrix(context, Nplus);
+  }
 
   /// Computes the kinematic mapping `q̇ = N(q)⋅v` between generalized
   /// velocities v and time derivatives of the generalized positions `qdot`.
@@ -559,6 +565,11 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const Body<T>* body, const Mobilizer<T>* mobilizer) const = 0;
 
  protected:
+
+  virtual void DoCalcNplusMatrix(
+      const MultibodyTreeContext<T>& context,
+      EigenPtr<MatrixX<T>> Nplus) const = 0;
+
   /// @name Methods to make a clone templated on different scalar types.
   ///
   /// The only const argument to these methods is the new MultibodyTree clone
