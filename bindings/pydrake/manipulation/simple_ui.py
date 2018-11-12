@@ -78,7 +78,7 @@ class JointSliders(VectorSystem):
         self._slider = []
         self._slider_position_start = []
         context = robot.CreateDefaultContext()
-        state = robot.tree().get_multibody_state_vector(context)
+        state = robot.tree().GetPositionsAndVelocities(context)
         self._default_position = state[:robot.num_positions()]
 
         k = 0
