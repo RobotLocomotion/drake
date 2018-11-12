@@ -197,12 +197,9 @@ TEST_F(KukaIiwaModelTests, CalcPointsAnalyticJacobianExpressedInWorld) {
   // Initialize q to have values qvalue and so that it is the independent
   // variable of the problem.
   VectorX<AutoDiffXd> q_autodiff(plant_->num_positions());
-  auto q_double =
-      plant_->tree().get_multibody_state_vector(
-          *context_).segment(0, plant_->num_positions());
+  auto q_double = plant_->GetPositions(*context_);
   math::initializeAutoDiff(q_double, q_autodiff);
-  plant_autodiff_->tree().get_mutable_multibody_state_vector(
-      context_autodiff_.get()).segment(0, plant_->num_positions()) = q_autodiff;
+  plant_autodiff_->GetMutablePositions(context_autodiff_.get()) = q_autodiff;
 
   const MatrixX<AutoDiffXd> p_EPi_autodiff = p_EPi;
   MatrixX<AutoDiffXd> p_WPi_autodiff(3, kNumPoints);
