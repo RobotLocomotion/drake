@@ -21,6 +21,7 @@ cmake_configure_file(
     src = "configure/qdldl_types.h.in",
     out = "include/qdldl_types.h",
     defines = [
+        "QDLDL_BOOL_TYPE=unsigned char",
         # Keep this sync'd with the 'DLONG' defined in //tools/workspace/osqp.
         "QDLDL_INT_TYPE=long long",
         # Keep this sync'd with the lack of 'DFLOAT' in //tools/workspace/osqp.

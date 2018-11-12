@@ -63,7 +63,7 @@ drake_cc_library(
     hdrs = ["oracular_state_estimator.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//manipulation/util:robot_state_msg_translator",
+        "//attic/manipulation/util:robot_state_msg_translator",
         "//systems/framework:leaf_system",
         "@lcmtypes_bot2_core",
     ],
@@ -80,7 +80,7 @@ drake_cc_library(
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
-        "//manipulation/planner:robot_plan_interpolator",
+        "//attic/manipulation/planner:robot_plan_interpolator",
         "//systems/framework:diagram_builder",
         "//systems/primitives:demultiplexer",
     ],
@@ -164,10 +164,10 @@ drake_cc_binary(
         ":iiwa_common",
         ":iiwa_lcm",
         ":kuka_torque_controller",
+        "//attic/manipulation/util:sim_diagram_builder",
         "//attic/multibody/rigid_body_plant:frame_visualizer",
         "//common:text_logging_gflags",
         "//lcm",
-        "//manipulation/util:sim_diagram_builder",
         "//multibody:rigid_body_tree_construction",
         "//systems/analysis",
         "//systems/controllers:inverse_dynamics_controller",
@@ -199,10 +199,10 @@ drake_cc_binary(
     ],
     deps = [
         ":iiwa_common",
+        "//attic/manipulation/planner:constraint_relaxing_ik",
         "//attic/multibody/parsers",
         "//common:text_logging_gflags",
         "//lcmtypes:iiwa",
-        "//manipulation/planner:constraint_relaxing_ik",
         "//math:geometric_transform",
         "@lcm",
         "@lcmtypes_bot2_core",
@@ -231,8 +231,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":iiwa_lcm",
+        "//attic/manipulation/util:world_sim_tree_builder",
         "//common/test_utilities:eigen_matrix_compare",
-        "//manipulation/util:world_sim_tree_builder",
         "//systems/framework",
     ],
 )

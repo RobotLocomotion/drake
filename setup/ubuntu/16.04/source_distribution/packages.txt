@@ -39,6 +39,7 @@ libxml2-dev
 libxt-dev
 libyaml-cpp-dev
 lldb-6.0
+locales
 patchelf
 patchutils
 pkg-config

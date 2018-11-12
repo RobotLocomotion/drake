@@ -8,15 +8,17 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace multibody {
 namespace math {
 namespace {
 
-using Eigen::AngleAxisd;
+using drake::math::RotationMatrixd;
 using Eigen::Matrix3d;
 using Eigen::MatrixXd;
 using Eigen::NumTraits;
@@ -189,8 +191,7 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameA) {
   const RotationalInertia<double> I_RRo_R(I_perp, I_perp, I_axial);
 
   // Rotation of +90 degrees about x (F's y-axis is aligned with R's z-axis).
-  const Matrix3<double> R_FR =
-      AngleAxisd(M_PI_2, Vector3d::UnitX()).toRotationMatrix();
+  const RotationMatrixd R_FR = RotationMatrixd::MakeXRotation(M_PI_2);
 
   // Re-express in frame F using the above rotation.
   const RotationalInertia<double> I_RRo_F = I_RRo_R.ReExpress(R_FR);
@@ -221,10 +222,10 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameB) {
   const double R_BAzx = sin(q2);
   const double R_BAzy = -sin(q1) * cos(q2);
   const double R_BAzz = cos(q1) * cos(q2);
-  Matrix3d R_BA;
-  R_BA << R_BAxx, R_BAxy, R_BAxz,
-          R_BAyx, R_BAyy, R_BAyz,
-          R_BAzx, R_BAzy, R_BAzz;
+  const RotationMatrixd R_BA = RotationMatrixd::MakeFromOrthonormalRows(
+      Vector3d(R_BAxx, R_BAxy, R_BAxz),
+      Vector3d(R_BAyx, R_BAyy, R_BAyz),
+      Vector3d(R_BAzx, R_BAzy, R_BAzz));
 
   // Form an arbitrary (but valid) rotational inertia for B about-point Bo,
   // expressed-in frame A.  These results are from MotionGenesis and arise by
@@ -416,9 +417,8 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
   // Orient a frame Q relative to a frame W by subjecting frame Q to successive
   // body-fixed rotations of +20 degrees about x and +20 degrees about z.
   const double angle = 20 * M_PI / 180.0;
-  Matrix3<double> R_WQ =
-      (AngleAxisd(angle, Vector3d::UnitZ()) *
-       AngleAxisd(angle, Vector3d::UnitX())).toRotationMatrix();
+  const RotationMatrixd R_WQ = RotationMatrixd::MakeZRotation(angle) *
+                               RotationMatrixd::MakeXRotation(angle);
 
   // Compute B's rotational inertia about-point Bcm, expressed-in frame W.
   // This rotational inertia has all non-zero entries (not diagonal).
@@ -439,8 +439,11 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
                 expected_principal_moments.size());
 
   // Verify against the expected value.
-  EXPECT_TRUE(expected_principal_moments.isApprox(
-      principal_moments, NumTraits<double>::epsilon()));
+  const double max_inertia = I_BBcm_W.CalcMaximumPossibleMomentOfInertia();
+  const double kTolerance = 2 * max_inertia * NumTraits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(expected_principal_moments,
+                              principal_moments,
+                              kTolerance, MatrixCompareType::absolute));
 }
 
 // Test the method RotationalInertia::CalcPrincipalMomentsOfInertia() for a
@@ -612,13 +615,13 @@ GTEST_TEST(RotationalInertia, AutoDiff) {
 
   AutoDiff1d angle = angle_value;
   angle.derivatives()[0] = wz;
-  const Matrix3<AutoDiff1d> R_WB =
-      (AngleAxis<AutoDiff1d>(angle, Vector3d::UnitZ())).toRotationMatrix();
+  const drake::math::RotationMatrix<AutoDiff1d> R_WB =
+      drake::math::RotationMatrix<AutoDiff1d>::MakeZRotation(angle);
 
   // Split the rotational inertia into two Matrix3d; one with the values and
   // another one with the time derivatives.
   Matrix3<double> Rvalue_WB, Rdot_WB;
-  extract_derivatives(R_WB, Rvalue_WB, Rdot_WB);
+  extract_derivatives(R_WB.matrix(), Rvalue_WB, Rdot_WB);
 
   // The time derivative of the rotation matrix should be:
   //  Rdot = [w] * R, with w the angular velocity.
@@ -659,8 +662,8 @@ GTEST_TEST(RotationalInertia, AutoDiff) {
 
   // Test method that compares to inertia matrices using the original rotational
   // inertia and then the rotated/semi-unrotated rotational inertia.
-  const Matrix3<AutoDiff1d> R_BW =
-      (AngleAxis<AutoDiff1d>(-angle, Vector3d::UnitZ())).toRotationMatrix();
+  const drake::math::RotationMatrix<AutoDiff1d> R_BW =
+      drake::math::RotationMatrix<AutoDiff1d>::MakeZRotation(-angle);
   const RotationalInertia<AutoDiff1d> expectedI_B = I_W.ReExpress(R_BW);
   EXPECT_TRUE(expectedI_B.IsNearlyEqualTo(I_B, kEpsilon));
 }

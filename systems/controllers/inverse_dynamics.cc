@@ -157,7 +157,7 @@ void InverseDynamics<T>::CalcOutputForce(const Context<T>& context,
     const auto& tree = multibody_plant_->tree();
 
     // Set the position and velocity in the context.
-    tree.get_mutable_multibody_state_vector(multibody_plant_context_.get()) = x;
+    tree.GetMutablePositionsAndVelocities(multibody_plant_context_.get()) = x;
 
     if (this->is_pure_gravity_compensation()) {
       output->get_mutable_value() = -tree.CalcGravityGeneralizedForces(

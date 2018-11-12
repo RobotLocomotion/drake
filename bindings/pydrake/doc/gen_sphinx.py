@@ -10,6 +10,7 @@ import pydrake.all
 from pydrake.examples import (
     acrobot,
     compass_gait,
+    manipulation_station,
     pendulum,
     rimless_wheel,
     van_der_pol,

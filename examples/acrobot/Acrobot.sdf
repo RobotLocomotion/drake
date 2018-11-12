@@ -131,8 +131,7 @@
       </axis>
     </joint>
     <frame name="hand">
-      <link>lower_link</link>
-      <pose>0 0 -2.1 0 0 0</pose>
+      <pose frame="lower_link">0 0 -2.1 0 0 0</pose>
     </frame>
   </model>
 </sdf>

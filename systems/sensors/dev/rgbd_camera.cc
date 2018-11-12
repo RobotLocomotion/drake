@@ -24,37 +24,6 @@ using geometry::dev::QueryObject;
 using geometry::dev::render::DepthCameraProperties;
 using geometry::dev::SceneGraph;
 
-// Note that if `depth_image` holds any pixels that have NaN, the converted
-// points will also become NaN.
-void RgbdCamera::ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
-                                               const CameraInfo& camera_info,
-                                               Eigen::Matrix3Xf* point_cloud) {
-  if (depth_image.size() != point_cloud->cols()) {
-    point_cloud->resize(3, depth_image.size());
-  }
-
-  const int height = depth_image.height();
-  const int width = depth_image.width();
-  const float cx = camera_info.center_x();
-  const float cy = camera_info.center_y();
-  const float fx_inv = 1.f / camera_info.focal_x();
-  const float fy_inv = 1.f / camera_info.focal_y();
-
-  Eigen::Matrix3Xf& pc = *point_cloud;
-  pc = Eigen::Matrix3Xf::Constant(3, height * width, InvalidDepth::kTooFar);
-
-  for (int v = 0; v < height; ++v) {
-    for (int u = 0; u < width; ++u) {
-      float z = depth_image.at(u, v)[0];
-      if (z != InvalidDepth::kTooClose && z != InvalidDepth::kTooFar) {
-        pc(0, v * width + u) = z * (u - cx) * fx_inv;
-        pc(1, v * width + u) = z * (v - cy) * fy_inv;
-        pc(2, v * width + u) = z;
-      }
-    }
-  }
-}
-
 RgbdCamera::RgbdCamera(const std::string& name, const Eigen::Vector3d& p_WB_W,
                        const Eigen::Vector3d& rpy_WB_W,
                        const DepthCameraProperties& properties,
