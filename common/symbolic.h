@@ -41,5 +41,6 @@
 #include "drake/common/symbolic_formula.h"
 #include "drake/common/symbolic_formula_visitor.h"
 #include "drake/common/symbolic_simplification.h"
+#include "drake/common/symbolic_codegen.h"
 // clang-format on
 #undef DRAKE_COMMON_SYMBOLIC_HEADER

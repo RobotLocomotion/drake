@@ -537,6 +537,27 @@ ostream& operator<<(ostream& os, const Expression& e) {
   return e.ptr_->Display(os);
 }
 
+string CodeGen(const string& function_name, const vector<Variable>& parameters,
+               const Expression& e) {
+  ostringstream oss;
+  // Add header for the main function.
+  oss << "double " << function_name << "(const double* p) {\n";
+  // Codegen the expression.
+  // Build a map from Variable::Id to index (in parameters).
+  CodeGenVisitor::IdToIndexMap id_to_idx_map;
+  for (vector<Variable>::size_type i = 0; i < parameters.size(); ++i) {
+    id_to_idx_map.emplace(parameters[i].get_id(), i);
+  }
+  oss << "    return " << CodeGenVisitor(id_to_idx_map).CodeGen(e) << ";\n";
+  // Add footer for the main function.
+  oss << "}\n";
+  /// Handle `function_name_in`.
+  oss << "int " << function_name << "_in() {\n"
+      << "    return " << parameters.size() << ";\n"
+      << "}\n";
+  return oss.str();
+}
+
 Expression log(const Expression& e) {
   // Simplification: constant folding.
   if (is_constant(e)) {
