@@ -101,6 +101,13 @@ class TestGeneral(unittest.TestCase):
         # TODO(eric.cousineau): Consolidate the main API tests for `System`
         # to this test point.
 
+    def test_output_port_introspection(self):
+        system = Adder(1, 1)
+        output_port = system.GetOutputPort("sum")
+        self.assertEqual(output_port.get_index(), 0)
+        self.assertEqual(output_port.get_system(), system)
+        self.assertEqual(output_port.GetSourceOutputPort(), output_port)
+
     def test_context_api(self):
         system = Adder(3, 10)
         context = system.CreateDefaultContext()

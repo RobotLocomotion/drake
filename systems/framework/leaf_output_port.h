@@ -97,6 +97,9 @@ class LeafOutputPort final : public OutputPort<T> {
     return {nullopt, cache_entry().ticket()};
   };
 
+  // This port is the source.
+  const OutputPort<T>& DoGetSourceOutputPort() const final { return *this; }
+
   const CacheEntry* const cache_entry_;
 };
 

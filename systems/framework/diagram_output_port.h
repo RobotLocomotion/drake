@@ -80,13 +80,6 @@ class DiagramOutputPort final : public OutputPort<T> {
 
   ~DiagramOutputPort() final = default;
 
-  /** Obtains a reference to the subsystem output port that was exported to
-  create this diagram port. Note that the source may itself be a diagram
-  output port. */
-  const OutputPort<T>& get_source_output_port() const {
-    return *source_output_port_;
-  }
-
  private:
   // Asks the source system output port to allocate an appropriate object.
   std::unique_ptr<AbstractValue> DoAllocate() const final {
@@ -113,6 +106,11 @@ class DiagramOutputPort final : public OutputPort<T> {
   internal::OutputPortPrerequisite DoGetPrerequisite() const final {
     return {source_subsystem_index_, source_output_port_->ticket()};
   };
+
+  // Find the lowest-level exported port.
+  const OutputPort<T>& DoGetSourceOutputPort() const final {
+    return source_output_port_->GetSourceOutputPort();
+  }
 
   // Digs out the right subcontext for delegation.
   const Context<T>& get_subcontext(const Context<T>& diagram_context) const {

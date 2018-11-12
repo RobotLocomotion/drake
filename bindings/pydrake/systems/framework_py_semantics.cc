@@ -240,6 +240,10 @@ void DefineFrameworkPySemantics(py::module m) {
         .def("size", &OutputPort<T>::size, doc.OutputPortBase.size.doc)
         .def("get_index", &OutputPort<T>::get_index,
              doc.OutputPortBase.get_index.doc)
+        .def("get_system", &OutputPort<T>::get_system,
+             doc.OutputPort.get_system.doc, py_reference_internal)
+        .def("GetSourceOutputPort", &OutputPort<T>::GetSourceOutputPort,
+             doc.OutputPort.GetSourceOutputPort.doc, py_reference_internal)
         .def("EvalAbstract", &OutputPort<T>::EvalAbstract,
              doc.OutputPort.EvalAbstract.doc, py_reference_internal)
         .def("Eval",

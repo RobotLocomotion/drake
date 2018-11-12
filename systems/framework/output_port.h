@@ -135,9 +135,17 @@ class OutputPort : public OutputPortBase {
 
   /** Returns a reference to the System that owns this output port. Note that
   for a diagram output port this will be the diagram, not the leaf system whose
-  output port was forwarded. */
+  output port was exported. */
   const System<T>& get_system() const {
     return system_;
+  }
+
+  /** Returns a reference to the underlying output port that actually generates
+  the result seen on this output port. A LeafOutputPort will return itself while
+  a DiagramOutputPort will dig down recursively to find the LeafOutputPort that
+  has been exported (possibly through several levels of Diagram). */
+  const OutputPort<T>& GetSourceOutputPort() const {
+    return DoGetSourceOutputPort();
   }
 
  protected:
@@ -183,6 +191,11 @@ class OutputPort : public OutputPortBase {
   @param context A Context that has already been validated as compatible with
                  the System whose output port this is. */
   virtual const AbstractValue& DoEval(const Context<T>& context) const = 0;
+
+  /** A concrete %OutputPort must return the LeafOutputPort that is actually
+  generating the result for this %OutputPort. Diagrams should do this
+  recursively to find the port at the bottom. */
+  virtual const OutputPort<T>& DoGetSourceOutputPort() const = 0;
 
   /** This is useful for error messages and produces a human-readable
   identification of an offending output port. */

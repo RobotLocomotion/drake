@@ -73,6 +73,10 @@ class MyOutputPort : public OutputPort<double> {
   internal::OutputPortPrerequisite DoGetPrerequisite() const override {
     DRAKE_ABORT();
   };
+
+  const OutputPort<double>& DoGetSourceOutputPort() const override {
+    return *this;
+  }
 };
 
 class MyStringAllocatorPort : public MyOutputPort {
@@ -327,12 +331,22 @@ class MyDiagram : public Diagram<double> {
  public:
   MyDiagram() {
     DiagramBuilder<double> builder;
-    auto sys1 = builder.AddSystem<SystemWithNStates>(1);
-    auto sys2 = builder.AddSystem<SystemWithNStates>(2);
-    builder.ExportOutput(sys1->get_output_port(0));
-    builder.ExportOutput(sys2->get_output_port(0));
+    sys1_ = builder.AddSystem<SystemWithNStates>(1);
+    sys2_ = builder.AddSystem<SystemWithNStates>(2);
+    builder.ExportOutput(sys1_->get_output_port(0));
+    builder.ExportOutput(sys2_->get_output_port(0));
     builder.BuildInto(this);
   }
+  const OutputPort<double>& source_port0() const {
+    return sys1_->get_output_port(0);
+  }
+  const OutputPort<double>& source_port1() const {
+    return sys2_->get_output_port(0);
+  }
+
+ private:
+  const SystemWithNStates* sys1_{};
+  const SystemWithNStates* sys2_{};
 };
 
 // A two-level nested diagram.
@@ -340,23 +354,48 @@ class MyNestedDiagram : public Diagram<double> {
  public:
   MyNestedDiagram() {
     DiagramBuilder<double> builder;
-    auto leaf = builder.AddSystem<SystemWithNStates>(3);
-    auto diag = builder.AddSystem<MyDiagram>();
+    leaf_ = builder.AddSystem<SystemWithNStates>(3);
+    diag_ = builder.AddSystem<MyDiagram>();
 
     // Order so that the nested ports have to change numbering.
-    builder.ExportOutput(leaf->get_output_port(0));  // Should have 3 states.
-    builder.ExportOutput(diag->get_output_port(0));  // 1 state.
-    builder.ExportOutput(diag->get_output_port(1));  // 2 states.
+    builder.ExportOutput(leaf_->get_output_port(0));  // Should have 3 states.
+    builder.ExportOutput(diag_->get_output_port(0));  // 1 state.
+    builder.ExportOutput(diag_->get_output_port(1));  // 2 states.
 
     builder.BuildInto(this);
   }
+
+  const OutputPort<double>& source_port0() const {
+    return leaf_->get_output_port(0);
+  }
+  const OutputPort<double>& source_port1() const {
+    return diag_->get_output_port(0).GetSourceOutputPort();
+  }
+  const OutputPort<double>& source_port2() const {
+    return diag_->get_output_port(1).GetSourceOutputPort();
+  }
+
+ private:
+  const SystemWithNStates* leaf_{};
+  const MyDiagram* diag_{};
 };
+
+GTEST_TEST(DiagramOutputPortTest, LeafSourceIsItself) {
+  SystemWithNStates system(3);
+  EXPECT_EQ(&system.get_output_port(0).GetSourceOutputPort(),
+            &system.get_output_port(0));
+}
 
 GTEST_TEST(DiagramOutputPortTest, OneLevel) {
   MyDiagram diagram;
   auto context = diagram.CreateDefaultContext();
   auto& out0 = diagram.get_output_port(0);
   auto& out1 = diagram.get_output_port(1);
+
+  // Check that we can find the underlying source for the diagram port.
+  EXPECT_EQ(&out0.GetSourceOutputPort(), &diagram.source_port0());
+  EXPECT_EQ(&out1.GetSourceOutputPort(), &diagram.source_port1());
+
   auto value0 = out0.Allocate();  // unique_ptr<AbstractValue>
   auto value1 = out1.Allocate();
   const int* int0{};
@@ -377,6 +416,12 @@ GTEST_TEST(DiagramOutputPortTest, Nested) {
   auto& out0 = diagram.get_output_port(0);
   auto& out1 = diagram.get_output_port(1);
   auto& out2 = diagram.get_output_port(2);
+
+  // Check that we can find the underlying source for the diagram port.
+  EXPECT_EQ(&out0.GetSourceOutputPort(), &diagram.source_port0());
+  EXPECT_EQ(&out1.GetSourceOutputPort(), &diagram.source_port1());
+  EXPECT_EQ(&out2.GetSourceOutputPort(), &diagram.source_port2());
+
   auto value0 = out0.Allocate();  // unique_ptr<AbstractValue>
   auto value1 = out1.Allocate();
   auto value2 = out2.Allocate();
