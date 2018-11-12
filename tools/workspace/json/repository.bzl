@@ -1,15 +1,29 @@
 # -*- python -*-
 
-load("@drake//tools/workspace:github.bzl", "github_archive")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
-def json_repository(
-        name,
-        mirrors = None):
-    github_archive(
-        name = name,
-        repository = "nlohmann/json",
-        commit = "v3.4.0",
-        sha256 = "c377963a95989270c943d522bfefe7b889ef5ed0e1e15d535fd6f6f16ed70732",  # noqa
-        build_file = "@drake//tools/workspace/json:package.BUILD.bazel",
-        mirrors = mirrors,
+def _impl(repository_ctx):
+    urls = [
+        url.format(
+            repository = "nlohmann/json",
+            release = "v3.4.0",
+            filename = "json.hpp",
+        )
+        for url in repository_ctx.attr.mirrors["github-releases"]
+    ]
+    repository_ctx.download(
+        url = urls,  # noqa
+        output = "single_include/nlohmann/json.hpp",
+        sha256 = "63da6d1f22b2a7bb9e4ff7d6b255cf691a161ff49532dcc45d398a53e295835f",  # noqa
     )
+    repository_ctx.symlink(
+        Label("@drake//tools/workspace/json:package.BUILD.bazel"),
+        "BUILD.bazel",
+    )
+
+json_repository = repository_rule(
+    implementation = _impl,
+    attrs = dict(
+        mirrors = attr.string_list_dict(),
+    ),
+)
