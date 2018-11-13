@@ -59,6 +59,7 @@ drake_py_library(
     name = "module_py",
     srcs = ["__init__.py"],
     imports = PACKAGE_INFO.py_imports,
+    deps = ["@numpy_py"],
 )
 
 drake_py_library(
@@ -187,6 +188,7 @@ drake_py_library(
     name = "compatibility_py",
     srcs = ["compatibility.py"],
     deps = [
+        ":deprecation_py",
         ":module_py",
     ],
 )

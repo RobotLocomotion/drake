@@ -43,7 +43,9 @@ drake_py_library(
         # We use `common:_init_py` to avoid dependency cycles.
         "//bindings:bazel_workaround_4594_libdrake_py",
         "//bindings/pydrake/common:_init_py",
+        "//bindings/pydrake/util:compatibility_py",
         "//bindings/pydrake/util:deprecation_py",
+        "@numpy_py",
     ],
 )
 

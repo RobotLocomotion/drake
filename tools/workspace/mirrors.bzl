@@ -49,6 +49,9 @@ DEFAULT_MIRRORS = {
         "https://drake-mirror.csail.mit.edu/pypi/{package}/{package}-{version}.tar.gz",  # noqa
         "https://s3.amazonaws.com/drake-mirror/pypi/{package}/{package}-{version}.tar.gz",  # noqa
     ],
+    "pypi-general": [
+        "https://files.pythonhosted.org/packages/{hash_path}/{filename}",  # noqa
+    ],
     "vtk": [
         "https://drake-packages.csail.mit.edu/vtk/{archive}",
         "https://s3.amazonaws.com/drake-packages/vtk/{archive}",
