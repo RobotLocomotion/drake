@@ -147,7 +147,8 @@ def installed_headers_for_drake_deps(deps):
         for x in deps
         if (
             not x.startswith("@") and
-            not x.startswith("//drake/lcmtypes:")
+            not x.startswith("//drake/lcmtypes:") and
+            not x == "//:drake_shared_library"
         )
     ]
 
