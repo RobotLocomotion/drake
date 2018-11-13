@@ -30,6 +30,7 @@ Arguments:
              example.
 """
 
+load("@drake//tools/workspace:github.bzl", "github_download_and_extract")
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
 def _impl(repository_ctx):
@@ -50,17 +51,12 @@ def _impl(repository_ctx):
         )
 
     elif os_result.ubuntu_release == "16.04":
-        urls = [
-            x.format(
-                repository = "vsergeev/u-msgpack-python",
-                commit = "v2.1",
-            )
-            for x in repository_ctx.attr.mirrors.get("github")
-        ]
-        repository_ctx.download_and_extract(
-            urls,
+        github_download_and_extract(
+            repository_ctx,
+            "vsergeev/u-msgpack-python",
+            "v2.1",
+            repository_ctx.attr.mirrors,
             sha256 = "38e780b2ecfd6bae09c1f82d6adc4ade2579558296cfa944751081fc5c7c6b29",  # noqa
-            stripPrefix = "u-msgpack-python-2.1",
         )
 
     elif os_result.ubuntu_release == "18.04":
