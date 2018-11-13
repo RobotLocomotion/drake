@@ -19,6 +19,7 @@ from pydrake.systems.framework import (AbstractValue, BasicVector,
                                        DiagramBuilder, LeafSystem,
                                        PortDataType)
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
+from pydrake.systems.primitives import FirstOrderLowPassFilter
 from pydrake.util.eigen_geometry import Isometry3, AngleAxis
 
 
@@ -255,7 +256,11 @@ params.set_joint_velocity_limits((-.15*iiwa14_velocity_limits,
 differential_ik = builder.AddSystem(DifferentialIK(
     robot, robot.GetFrameByName("iiwa_link_7"), params, time_step))
 
+filter = builder.AddSystem(FirstOrderLowPassFilter(time_constant=2.0,
+                                                   size=7))
 builder.Connect(differential_ik.GetOutputPort("joint_position_desired"),
+                filter.get_input_port(0))
+builder.Connect(filter.get_output_port(0),
                 station.GetInputPort("iiwa_position"))
 
 teleop = builder.AddSystem(EndEffectorTeleop())
@@ -307,6 +312,8 @@ differential_ik.parameters.set_nominal_joint_position(q0)
 teleop.SetPose(differential_ik.ForwardKinematics(q0))
 differential_ik.SetPositions(diagram.GetMutableSubsystemContext(
     differential_ik, simulator.get_mutable_context()), q0)
+filter.set_initial_output_value(diagram.GetMutableSubsystemContext(
+    filter, simulator.get_mutable_context()), q0)
 
 # This is important to avoid duplicate publishes to the hardware interface:
 simulator.set_publish_every_time_step(False)
