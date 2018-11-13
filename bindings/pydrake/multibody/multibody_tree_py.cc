@@ -239,7 +239,9 @@ void init_module(py::module m) {
     // N.B. Pending a concrete direction on #9366, a minimal subset of the
     // `MultibodyTree` API will be exposed.
     using Class = MultibodyTree<T>;
-    py::class_<Class>(m, "MultibodyTree", doc.MultibodyTree.doc)
+    py::class_<Class> cls(m, "MultibodyTree", doc.MultibodyTree.doc);
+
+    cls  // BR
         .def("CalcRelativeTransform", &Class::CalcRelativeTransform,
              py::arg("context"), py::arg("frame_A"), py::arg("frame_B"),
              doc.MultibodyTree.CalcRelativeTransform.doc)
@@ -258,24 +260,24 @@ void init_module(py::module m) {
                  &Class::GetModelInstanceName),
              py::arg("model_instance"), py_reference_internal,
              doc.MultibodyTree.GetModelInstanceName.doc)
-        .def("get_multibody_state_vector",
+        .def("GetPositionsAndVelocities",
              [](const MultibodyTree<T>* self,
                 const Context<T>& context) -> Eigen::Ref<const VectorX<T>> {
-               return self->get_multibody_state_vector(context);
+               return self->GetPositionsAndVelocities(context);
              },
              py_reference,
              // Keep alive, ownership: `return` keeps `Context` alive.
              py::keep_alive<0, 2>(), py::arg("context"),
-             doc.MultibodyTree.get_multibody_state_vector.doc)
-        .def("get_mutable_multibody_state_vector",
+             doc.MultibodyTree.GetPositionsAndVelocities.doc)
+        .def("GetMutablePositionsAndVelocities",
              [](const MultibodyTree<T>* self,
                 Context<T>* context) -> Eigen::Ref<VectorX<T>> {
-               return self->get_mutable_multibody_state_vector(context);
+               return self->GetMutablePositionsAndVelocities(context);
              },
              py_reference,
              // Keep alive, ownership: `return` keeps `Context` alive.
              py::keep_alive<0, 2>(), py::arg("context"),
-             doc.MultibodyTree.get_mutable_multibody_state_vector.doc)
+             doc.MultibodyTree.GetMutablePositionsAndVelocities.doc)
         .def("CalcPointsPositions",
              [](const Class* self, const Context<T>& context,
                 const Frame<T>& frame_B,
@@ -313,10 +315,10 @@ void init_module(py::module m) {
                  &Class::SetFreeBodyPoseOrThrow),
              py::arg("body"), py::arg("X_WB"), py::arg("context"),
              doc.MultibodyTree.SetFreeBodyPoseOrThrow.doc)
-        .def("get_positions_from_array", &Class::get_positions_from_array,
+        .def("GetPositionsFromArray", &Class::GetPositionsFromArray,
              py::arg("model_instance"), py::arg("q_array"),
              doc.MultibodyTree.get_positions_from_array.doc)
-        .def("get_velocities_from_array", &Class::get_velocities_from_array,
+        .def("GetVelocitiesFromArray", &Class::GetVelocitiesFromArray,
              py::arg("model_instance"), py::arg("v_array"),
              doc.MultibodyTree.get_velocities_from_array.doc)
         .def("SetFreeBodySpatialVelocityOrThrow",
@@ -373,6 +375,36 @@ void init_module(py::module m) {
                return Cv;
              },
              py::arg("context"), doc.MultibodyTree.CalcBiasTerm.doc);
+    // Add deprecated methods.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("get_multibody_state_vector",
+            [](const MultibodyTree<T>* self,
+               const Context<T>& context) -> Eigen::Ref<const VectorX<T>> {
+              return self->get_multibody_state_vector(context);
+            },
+            py_reference,
+            // Keep alive, ownership: `return` keeps `Context` alive.
+            py::keep_alive<0, 2>(), py::arg("context"),
+            doc.MultibodyTree.get_multibody_state_vector.doc);
+    cls.def("get_mutable_multibody_state_vector",
+            [](const MultibodyTree<T>* self,
+               Context<T>* context) -> Eigen::Ref<VectorX<T>> {
+              return self->get_mutable_multibody_state_vector(context);
+            },
+            py_reference,
+            // Keep alive, ownership: `return` keeps `Context` alive.
+            py::keep_alive<0, 2>(), py::arg("context"),
+            doc.MultibodyTree.get_mutable_multibody_state_vector.doc);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    cls.attr("message_get_mutable_multibody_state_vector") =
+        "Please use GetMutablePositionsAndVelocities().";
+    DeprecateAttribute(cls, "get_mutable_multibody_state_vector",
+                       cls.attr("message_get_mutable_multibody_state_vector"));
+    cls.attr("message_get_multibody_state_vector") =
+        "Please use GetPositionsAndVelocities().";
+    DeprecateAttribute(cls, "get_multibody_state_vector",
+                       cls.attr("message_get_multibody_state_vector"));
   }
 }
 

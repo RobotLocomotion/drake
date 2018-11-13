@@ -25,6 +25,9 @@ namespace math {
 /// relates right-handed orthogonal unit vectors Ax, Ay, Az fixed in frame A
 /// to right-handed orthogonal unit vectors Bx, By, Bz fixed in frame B.
 /// The monogram notation for the rotation matrix relating A to B is `R_AB`.
+/// An example that gives context to this rotation matrix is `v_A = R_AB * v_B`,
+/// where `v_B` denotes an arbitrary vector v expressed in terms of Bx, By, Bz
+/// and `v_A` denotes vector v expressed in terms of Ax, Ay, Az.
 /// See @ref multibody_quantities for monogram notation for dynamics.
 /// See @ref orientation_discussion "a discussion on rotation matrices".
 ///
@@ -163,12 +166,13 @@ class RotationMatrix {
   /// @param[in] By second unit vector in right-handed orthogonal set.
   /// @param[in] Bz third unit vector in right-handed orthogonal set.
   /// @throws std::logic_error in debug builds if `R_AB` fails IsValid(R_AB).
-  /// @note: In release builds, the caller can subsequently test if `R_AB` is,
+  /// @note In release builds, the caller can subsequently test if `R_AB` is,
   /// in fact, a valid %RotationMatrix by calling `R_AB.IsValid()`.
   /// @note The rotation matrix `R_AB` relates two sets of right-handed
-  /// orthogonal unit vectors, namely `Ax`, `Ay`, `Az` and `Bx`, `By`, `Bz`.
-  /// The rows of `R_AB` are `Ax`, `Ay`, `Az` whereas the
-  /// columns of `R_AB` are `Bx`, `By`, `Bz`.
+  /// orthogonal unit vectors, namely Ax, Ay, Az and Bx, By, Bz.
+  /// The rows of `R_AB` are Ax, Ay, Az expressed in frame B (i.e.,`Ax_B`,
+  /// `Ay_B`, `Az_B`).  The columns of `R_AB` are Bx, By, Bz expressed in
+  /// frame A (i.e., `Bx_A`, `By_A`, `Bz_A`).
   static RotationMatrix<T> MakeFromOrthonormalColumns(
       const Vector3<T>& Bx, const Vector3<T>& By, const Vector3<T>& Bz) {
     RotationMatrix<T> R(DoNotInitializeMemberFields{});
@@ -182,12 +186,13 @@ class RotationMatrix {
   /// @param[in] Ay second unit vector in right-handed orthogonal set.
   /// @param[in] Az third unit vector in right-handed orthogonal set.
   /// @throws std::logic_error in debug builds if `R_AB` fails IsValid(R_AB).
-  /// @note: In release builds, the caller can subsequently test if `R_AB` is,
+  /// @note In release builds, the caller can subsequently test if `R_AB` is,
   /// in fact, a valid %RotationMatrix by calling `R_AB.IsValid()`.
   /// @note The rotation matrix `R_AB` relates two sets of right-handed
-  /// orthogonal unit vectors, namely `Ax`, `Ay`, `Az` and `Bx`, `By`, `Bz`.
-  /// The rows of `R_AB` are `Ax`, `Ay`, `Az` whereas the
-  /// columns of `R_AB` are `Bx`, `By`, `Bz`.
+  /// orthogonal unit vectors, namely Ax, Ay, Az and Bx, By, Bz.
+  /// The rows of `R_AB` are Ax, Ay, Az expressed in frame B (i.e.,`Ax_B`,
+  /// `Ay_B`, `Az_B`).  The columns of `R_AB` are Bx, By, Bz expressed in
+  /// frame A (i.e., `Bx_A`, `By_A`, `Bz_A`).
   static RotationMatrix<T> MakeFromOrthonormalRows(
       const Vector3<T>& Ax, const Vector3<T>& Ay, const Vector3<T>& Az) {
     RotationMatrix<T> R(DoNotInitializeMemberFields{});
@@ -887,20 +892,6 @@ double ProjectMatToRotMatWithAxis(const Eigen::MatrixBase<Derived>& M,
   return theta;
 }
 
-// TODO(mitiguy) Delete this code after:
-// * All call sites removed, and
-// * code has subsequently been marked deprecated in favor of
-//   RotationMatrix(RollPitchYaw(rpy)). as per issue #8323.
-template <typename Derived>
-Matrix3<typename Derived::Scalar> rpy2rotmat(
-    const Eigen::MatrixBase<Derived>& rpy) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
-  using Scalar = typename Derived::Scalar;
-  const RollPitchYaw<Scalar> roll_pitch_yaw(rpy(0), rpy(1), rpy(2));
-  const RotationMatrix<Scalar> R(roll_pitch_yaw);
-  return R.matrix();
-}
-
 // @internal Initially, this code was in rotation_matrix.cc.  After
 // RotationMatrix was instantiated on symbolic expression, there was a linker
 // error that arose, but only during release builds and when tests in
@@ -937,32 +928,17 @@ RotationMatrix<T>::ThrowIfNotValid(const Matrix3<S>& R) {
   }
 }
 
-
-// TODO(mitiguy) Delete this code after October 6, 2018.
-/// (Deprecated), use @ref math::RotationMatrix::MakeXRotation().
-template <typename T>
-DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
-                     "Use math::RotationMatrix::MakeXRotation(theta).")
-Matrix3<T> XRotation(const T& theta) {
-  return drake::math::RotationMatrix<T>::MakeXRotation(theta).matrix();
-}
-
-// TODO(mitiguy) Delete this code after October 6, 2018.
-/// (Deprecated), use @ref math::RotationMatrix::MakeYRotation().
-template <typename T>
-DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
-                     "Use math::RotationMatrix::MakeYRotation(theta).")
-Matrix3<T> YRotation(const T& theta) {
-  return drake::math::RotationMatrix<T>::MakeYRotation(theta).matrix();
-}
-
-// TODO(mitiguy) Delete this code after October 6, 2018.
-/// (Deprecated), use @ref math::RotationMatrix::MakeZRotation().
-template <typename T>
-DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
-                     "Use math::RotationMatrix::MakeZRotation(theta).")
-Matrix3<T> ZRotation(const T& theta) {
-  return drake::math::RotationMatrix<T>::MakeZRotation(theta).matrix();
+// TODO(mitiguy) Delete this deprecated code after February 5, 2019.
+template <typename Derived>
+DRAKE_DEPRECATED("Use  RotationMatrix(RollPitchYaw(rpy)) as per issue #8323. "
+                 "Code will be deleted after February 5, 2019.")
+Matrix3<typename Derived::Scalar> rpy2rotmat(
+    const Eigen::MatrixBase<Derived>& rpy) {
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
+  using Scalar = typename Derived::Scalar;
+  const RollPitchYaw<Scalar> roll_pitch_yaw(rpy(0), rpy(1), rpy(2));
+  const RotationMatrix<Scalar> R(roll_pitch_yaw);
+  return R.matrix();
 }
 
 }  // namespace math
