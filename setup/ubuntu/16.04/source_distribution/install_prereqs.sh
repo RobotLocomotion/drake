@@ -31,6 +31,8 @@ apt-get remove lldb-4.0 python-lldb-4.0
 
 apt-get install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages.txt" | tr '\n' ' ')
 
+locale-gen en_US.UTF-8
+
 dpkg_install_from_wget() {
   package="$1"
   version="$2"

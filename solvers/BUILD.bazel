@@ -689,6 +689,7 @@ drake_cc_library(
             "//math:eigen_sparse_triplet",
             "//common:scoped_singleton",
             "@gurobi//:gurobi_c",
+            "@fmt",
         ],
         "//conditions:default": [
             ":mathematical_program_api",
@@ -1054,6 +1055,7 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/geometry/scene_graph.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/benchmarks/inclined_plane/make_inclined_plane_plant.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
@@ -139,7 +140,8 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   const SpatialInertia<double> M_BBo_B = ball.default_spatial_inertia();
   const Isometry3<double>& X_WB =
       tree.EvalBodyPoseInWorld(plant_context, ball);
-  const SpatialInertia<double> M_BBo_W = M_BBo_B.ReExpress(X_WB.linear());
+  const drake::math::RotationMatrix<double> R_WB(X_WB.linear());
+  const SpatialInertia<double> M_BBo_W = M_BBo_B.ReExpress(R_WB);
   const double ke_WB = 0.5 * V_WB.dot(M_BBo_W * V_WB);
   const double speed = V_WB.translational().norm();
   const double angular_velocity = V_WB.rotational().y();

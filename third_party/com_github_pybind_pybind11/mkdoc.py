@@ -11,8 +11,8 @@ from collections import OrderedDict, defaultdict
 from fnmatch import fnmatch
 import os
 import platform
-import sys
 import re
+import sys
 from tempfile import NamedTemporaryFile
 import textwrap
 
@@ -779,7 +779,7 @@ def main():
     if output_filename is None or len(filenames) == 0:
         eprint('Syntax: %s -output=<file> [.. a list of header files ..]'
                % sys.argv[0])
-        exit(-1)
+        sys.exit(1)
 
     f = open(output_filename, 'w')
     # N.B. We substitute the `GENERATED FILE...` bits in this fashion because
@@ -850,7 +850,17 @@ def main():
     # Write header file.
     if not quiet:
         eprint("Writing header file...")
-    print_symbols(f, root_name, symbol_tree.root)
+    try:
+        print_symbols(f, root_name, symbol_tree.root)
+    except UnicodeEncodeError as e:
+        # User-friendly error for #9903.
+        print("""
+Encountered unicode error: {}
+If you are on Ubuntu, please ensure you have en_US.UTF-8 locales generated:
+    sudo apt-get install --no-install-recommends  locales
+    sudo locale-gen en_US.UTF-8
+""".format(e), file=sys.stderr)
+        sys.exit(1)
 
     f.write('''
 #if defined(__GNUG__)

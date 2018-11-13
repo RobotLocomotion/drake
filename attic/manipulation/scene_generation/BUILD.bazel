@@ -1,10 +1,10 @@
 # -*- python -*-
 
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_binary",
-    "drake_cc_googletest",
-    "drake_cc_library",
+    "@drake//attic:build_macros.bzl",
+    drake_cc_binary = "attic_drake_cc_binary",
+    drake_cc_googletest = "attic_drake_cc_googletest",
+    drake_cc_library = "attic_drake_cc_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -26,11 +26,11 @@ drake_cc_library(
     srcs = ["simulate_plant_to_rest.cc"],
     hdrs = ["simulate_plant_to_rest.h"],
     deps = [
+        "//attic/manipulation/util:simple_tree_visualizer",
+        "//attic/manipulation/util:world_sim_tree_builder",
         "//attic/multibody/rigid_body_plant",
         "//common",
         "//lcm",
-        "//manipulation/util:simple_tree_visualizer",
-        "//manipulation/util:world_sim_tree_builder",
         "//systems/analysis:simulator",
         "//systems/framework",
         "//systems/framework:diagram_builder",
@@ -75,4 +75,6 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    cpplint_data = ["//attic:CPPLINT.cfg"],
+)

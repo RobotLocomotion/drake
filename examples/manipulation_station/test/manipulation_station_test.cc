@@ -15,8 +15,8 @@ namespace {
 
 using Eigen::Vector2d;
 using Eigen::VectorXd;
-using systems::BasicVector;
 using multibody::RevoluteJoint;
+using systems::BasicVector;
 
 GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   ManipulationStation<double> station(0.001);
@@ -28,7 +28,7 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
       &station.get_mutable_scene_graph());
   station.Finalize();
 
-  auto& plant = station.get_mutable_multibody_plant();
+  auto& plant = station.get_multibody_plant();
   EXPECT_EQ(plant.num_actuated_dofs(), 9);  // 7 iiwa + 2 wsg.
 
   auto context = station.CreateDefaultContext();
@@ -151,7 +151,7 @@ GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
 
   // Partially check M(q)vdot ≈ Mₑ(q)vdot_desired + τ_feedforward + τ_external
   // by setting the right side to zero and confirming that vdot ≈ 0.
-  const auto& plant = station.get_mutable_multibody_plant();
+  const auto& plant = station.get_multibody_plant();
   // Make up some state (with zeros for non-iiwa states).
   VectorXd arbitrary_plant_state = VectorXd::Zero(plant_state_size);
   const auto& base_joint =
@@ -260,6 +260,27 @@ GTEST_TEST(ManipulationStationTest, CheckRGBDOutputs) {
             .size(),
         0);
   }
+}
+
+GTEST_TEST(ManipulationStationTest, CheckCollisionVariants) {
+  ManipulationStation<double> station1(
+      0.002, IiwaCollisionModel::kNoCollision);
+
+  // In this variant, there are collision geometries from the world and the
+  // gripper, but not from the iiwa.
+  const int num_collisions =
+      station1.get_multibody_plant().num_collision_geometries();
+
+  ManipulationStation<double> station2(
+      0.002, IiwaCollisionModel::kBoxCollision);
+  // Check for additional collision elements (one for each link, which includes
+  // the base).
+  EXPECT_EQ(station2.get_multibody_plant().num_collision_geometries(),
+            num_collisions + 8);
+
+  // The controlled model does not register with a scene graph, so has zero
+  // collisions.
+  EXPECT_EQ(station2.get_controller_plant().num_collision_geometries(), 0);
 }
 
 }  // namespace

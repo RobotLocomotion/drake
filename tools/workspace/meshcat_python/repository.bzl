@@ -32,19 +32,45 @@ Arguments:
              example.
 """
 
-load("@drake//tools/workspace:github.bzl", "github_archive")
-
-def meshcat_python_repository(
-        name,
-        mirrors = None):
-    if name == "meshcat":
+def _impl(repository_ctx):
+    if repository_ctx.name == "meshcat":
         fail("Rule must NOT be named meshcat")
 
-    github_archive(
-        name = name,
-        repository = "rdeits/meshcat-python",
-        commit = "v0.0.13",
-        sha256 = "e163a9bd55221ebaecbe15946481700e4c7dfbb9e231fa2bd25b852f9dcf1c6f",  # noqa
-        build_file = "@drake//tools/workspace/meshcat_python:package.BUILD.bazel",  # noqa
-        mirrors = mirrors,
+    urls = [
+        x.format(
+            repository = "rdeits/meshcat-python",
+            commit = "d0c8b6a9d1d750495ef9513254761cc14773cf99",
+        )
+        for x in repository_ctx.attr.mirrors.get("github")
+    ]
+    repository_ctx.download_and_extract(
+        urls,
+        sha256 = "99cdea957adf585b33c83cb284b6df16f953b0422ac5a035f4e0f50cf9105121",  # noqa
+        stripPrefix = "meshcat-python-d0c8b6a9d1d750495ef9513254761cc14773cf99",  # noqa
     )
+
+    repository_ctx.symlink(
+        Label("@drake//tools/workspace/meshcat_python:package.BUILD.bazel"),
+        "BUILD.bazel",
+    )
+
+    # src/meshcat/viewer is a git submodule and so not included in the
+    # meshcat-python archive (https://git.io/fpUnO). Therefore, we download it
+    # separately and symlink the necessary files instead.
+
+    repository_ctx.symlink(
+        Label("@meshcat//:dist/index.html"),
+        "src/meshcat/viewer/dist/index.html",
+    )
+
+    repository_ctx.symlink(
+        Label("@meshcat//:dist/main.min.js"),
+        "src/meshcat/viewer/dist/main.min.js",
+    )
+
+meshcat_python_repository = repository_rule(
+    attrs = {
+        "mirrors": attr.string_list_dict(),
+    },
+    implementation = _impl,
+)
