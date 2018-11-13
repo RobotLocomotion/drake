@@ -12,6 +12,7 @@
 #include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/first_order_low_pass_filter.h"
 #include "drake/systems/primitives/gain.h"
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/linear_system.h"
@@ -99,6 +100,23 @@ PYBIND11_MODULE(primitives, m) {
         m, "Demultiplexer", GetPyParam<T>(), doc.Demultiplexer.doc)
         .def(py::init<int, int>(), py::arg("size"),
              py::arg("output_ports_sizes") = 1, doc.Demultiplexer.ctor.doc_3);
+
+    DefineTemplateClassWithDefault<FirstOrderLowPassFilter<T>, LeafSystem<T>>(
+        m, "FirstOrderLowPassFilter", GetPyParam<T>(),
+        doc.FirstOrderLowPassFilter.doc)
+        .def(py::init<double, int>(), py::arg("time_constant"),
+             py::arg("size") = 1, doc.FirstOrderLowPassFilter.ctor.doc_3)
+        .def(py::init<const VectorX<double>&>(), py::arg("time_constants"),
+             doc.FirstOrderLowPassFilter.ctor.doc_4)
+        .def("get_time_constant",
+             &FirstOrderLowPassFilter<T>::get_time_constant,
+             doc.FirstOrderLowPassFilter.get_time_constant.doc)
+        .def("get_time_constants_vector",
+             &FirstOrderLowPassFilter<T>::get_time_constants_vector,
+             doc.FirstOrderLowPassFilter.get_time_constants_vector.doc)
+        .def("set_initial_output_value",
+             &FirstOrderLowPassFilter<T>::set_initial_output_value,
+             doc.FirstOrderLowPassFilter.set_initial_output_value.doc);
 
     DefineTemplateClassWithDefault<Gain<T>, LeafSystem<T>>(
         m, "Gain", GetPyParam<T>(), doc.Gain.doc)
