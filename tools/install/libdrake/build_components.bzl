@@ -48,8 +48,19 @@ LIBDRAKE_COMPONENTS = [
     "//common/trajectories",
     "//common:drake_marker_shared_library",  # unpackaged
     "//common:text_logging_gflags_h",  # unpackaged
+    "//examples/acrobot:acrobot_input",  # unpackaged
+    "//examples/acrobot:acrobot_params",  # unpackaged
+    "//examples/acrobot:acrobot_plant",  # unpackaged
+    "//examples/acrobot:acrobot_state",  # unpackaged
+    "//examples/compass_gait:compass_gait",  # unpackaged
+    "//examples/compass_gait:compass_gait_vector_types",  # unpackaged
     "//examples/manipulation_station:manipulation_station",  # unpackaged
     "//examples/manipulation_station:manipulation_station_hardware_interface",  # unpackaged  # noqa
+    "//examples/pendulum:pendulum_plant",  # unpackaged
+    "//examples/pendulum:pendulum_vector_types",  # unpackaged
+    "//examples/rimless_wheel:rimless_wheel",  # unpackaged
+    "//examples/rimless_wheel:rimless_wheel_vector_types",  # unpackaged
+    "//examples/van_der_pol:van_der_pol",  # unpackaged
     "//geometry",
     "//geometry/dev",
     "//geometry/dev/render",
