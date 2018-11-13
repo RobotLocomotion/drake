@@ -1,9 +1,9 @@
-import numpy as np
 import unittest
-import subprocess
+
+import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.geometry import (DispatchLoadMessage, SceneGraph)
+from pydrake.geometry import SceneGraph
 from pydrake.multibody.multibody_tree import UniformGravityFieldElement
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
 from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
@@ -13,8 +13,8 @@ from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 
 
 class TestMeshcat(unittest.TestCase):
-    # Cart-Pole with simple geometry.
-    def cartPoleTest(self):
+    def test_cart_pole(self):
+        """Cart-Pole with simple geometry."""
         file_name = FindResourceOrThrow(
             "drake/examples/multibody/cart_pole/cart_pole.sdf")
 
@@ -37,7 +37,6 @@ class TestMeshcat(unittest.TestCase):
                         visualizer.get_input_port(0))
 
         diagram = builder.Build()
-        visualizer.load()
 
         diagram_context = diagram.CreateDefaultContext()
         cart_pole_context = diagram.GetMutableSubsystemContext(
@@ -53,12 +52,10 @@ class TestMeshcat(unittest.TestCase):
 
         simulator = Simulator(diagram, diagram_context)
         simulator.set_publish_every_time_step(False)
-        simulator.set_target_realtime_rate(args.target_realtime_rate)
-        simulator.Initialize()
-        simulator.StepTo(args.duration)
+        simulator.StepTo(.1)
 
-    # Kuka IIWA with mesh geometry.
-    def kukaTest(args):
+    def test_kuka(self):
+        """Kuka IIWA with mesh geometry."""
         file_name = FindResourceOrThrow(
             "drake/manipulation/models/iiwa_description/sdf/"
             "iiwa14_no_collision.sdf")
@@ -81,7 +78,6 @@ class TestMeshcat(unittest.TestCase):
                         visualizer.get_input_port(0))
 
         diagram = builder.Build()
-        visualizer.load()
 
         diagram_context = diagram.CreateDefaultContext()
         kuka_context = diagram.GetMutableSubsystemContext(
@@ -93,6 +89,4 @@ class TestMeshcat(unittest.TestCase):
 
         simulator = Simulator(diagram, diagram_context)
         simulator.set_publish_every_time_step(False)
-        simulator.set_target_realtime_rate(args.target_realtime_rate)
-        simulator.Initialize()
-        simulator.StepTo(args.duration)
+        simulator.StepTo(.1)

@@ -18,6 +18,7 @@ from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (AbstractValue, BasicVector,
                                        DiagramBuilder, LeafSystem,
                                        PortDataType)
+from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 from pydrake.util.eigen_geometry import Isometry3, AngleAxis
 
 
@@ -210,8 +211,10 @@ parser.add_argument(
     "--hardware", action='store_true',
     help="Use the ManipulationStationHardwareInterface instead of an "
          "in-process simulation.")
-parser.add_argument("--test", action='store_true',
-                    help="Disable opening the gui window for testing.")
+parser.add_argument(
+    "--test", action='store_true',
+    help="Disable opening the gui window for testing.")
+MeshcatVisualizer.add_argparse_argument(parser)
 args = parser.parse_args()
 
 builder = DiagramBuilder()
@@ -230,6 +233,11 @@ else:
 
     ConnectDrakeVisualizer(builder, station.get_scene_graph(),
                            station.GetOutputPort("pose_bundle"))
+    if args.meshcat:
+        meshcat = builder.AddSystem(MeshcatVisualizer(
+            station.get_scene_graph(), zmq_url=args.meshcat))
+        builder.Connect(station.GetOutputPort("pose_bundle"),
+                        meshcat.get_input_port(0))
 
 robot = station.get_controller_plant()
 params = DifferentialInverseKinematicsParameters(robot.num_positions(),
