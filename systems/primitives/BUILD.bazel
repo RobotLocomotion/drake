@@ -109,6 +109,8 @@ drake_cc_library(
     hdrs = ["discrete_derivative.h"],
     deps = [
         ":linear_system",
+        ":multiplexer",
+        ":pass_through",
         "//systems/framework",
     ],
 )
