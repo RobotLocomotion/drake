@@ -1912,7 +1912,8 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
   x << q, qd;
 
   // Set the positions, make sure that they're retrieved successfully, and
-  // verify that no other multibody positions or velocities are altered.
+  // verify that no other multibody instance positions or velocities are
+  // altered.
   plant_->GetMutablePositionsAndVelocities(context_.get()).setZero();
   plant_->SetPositions(context_.get(), arm2, q);
   EXPECT_EQ(plant_->GetPositions(*context_, arm2), q);
@@ -1921,13 +1922,22 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
   EXPECT_EQ(plant_->GetVelocities(*context_, arm2).norm(), 0);
 
   // Set the velocities, make sure that they're retrieved successfully, and
-  // verify that no other multibody positions or velocities are altered.
+  // verify that no other multibody instance positions or velocities are
+  // altered.
   plant_->GetMutablePositionsAndVelocities(context_.get()).setZero();
   plant_->SetVelocities(context_.get(), arm2, qd);
   EXPECT_EQ(plant_->GetVelocities(*context_, arm2), qd);
   EXPECT_EQ(plant_->GetPositions(*context_, arm1).norm(), 0);
   EXPECT_EQ(plant_->GetVelocities(*context_, arm1).norm(), 0);
   EXPECT_EQ(plant_->GetPositions(*context_, arm2).norm(), 0);
+
+  // Set the positions and velocities, make sure that they're retrieved
+  // successfully and verify that no other multibody instance positions or
+  // velocities are altered.
+  plant_->GetMutablePositionsAndVelocities(context_.get()).setZero();
+  plant_->SetPositionsAndVelocities(context_.get(), arm2, x);
+  EXPECT_EQ(plant_->GetPositionsAndVelocities(*context_, arm2), x);
+  EXPECT_EQ(plant_->GetPositionsAndVelocities(*context_, arm1).norm(), 0);
 }
 
 // Verifies we instantiated an appropriate MultibodyPlant model based on the
