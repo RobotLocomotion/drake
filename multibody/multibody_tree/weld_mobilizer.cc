@@ -42,6 +42,10 @@ void WeldMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
+void WeldMobilizer<T>::DoCalcNMatrix(
+    const MultibodyTreeContext<T>&, EigenPtr<MatrixX<T>>) const {}
+
+template <typename T>
 void WeldMobilizer<T>::DoCalcNplusMatrix(
     const MultibodyTreeContext<T>&, EigenPtr<MatrixX<T>>) const {}
 

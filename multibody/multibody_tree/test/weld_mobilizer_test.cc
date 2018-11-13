@@ -117,6 +117,14 @@ TEST_F(WeldMobilizerTest, MapVelocityToQDotAndBack) {
                                          zero_sized_vector, &zero_sized_vector);
 }
 
+TEST_F(WeldMobilizerTest, KinematicMapping) {
+  // These methods are no-ops, just test we can call them with zero sized
+  // matrices.
+  MatrixX<double> N(0, 0);
+  weld_body_to_world_->CalcNMatrix(*mbt_context_, &N);
+  weld_body_to_world_->CalcNplusMatrix(*mbt_context_, &N);
+}
+
 }  // namespace
 }  // namespace multibody_tree
 }  // namespace multibody

@@ -209,6 +209,9 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   /// @}
 
  protected:
+  void DoCalcNMatrix(const MultibodyTreeContext<T>& context,
+                     EigenPtr<MatrixX<T>> N) const final;
+
   void DoCalcNplusMatrix(
       const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> Nplus) const final;
 

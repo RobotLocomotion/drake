@@ -274,6 +274,14 @@ Eigen::Matrix<T, 3, 4> QuaternionFloatingMobilizer<T>::CalcNplusMatrix(
 }
 
 template <typename T>
+void QuaternionFloatingMobilizer<T>::DoCalcNMatrix(
+    const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> N) const {
+  N->setZero();
+  N->template block<4, 3>(3, 3).setIdentity();
+  N->template block<4, 3>(0, 0) = CalcNMatrix(get_quaternion(context));
+}
+
+template <typename T>
 void QuaternionFloatingMobilizer<T>::DoCalcNplusMatrix(
     const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> Nplus) const {
   Nplus->template block<3, 3>(3, 4).setIdentity();

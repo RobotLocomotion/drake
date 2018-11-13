@@ -365,6 +365,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "revolute_mobilizer_test",
+    deps = [
+        ":multibody_tree",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "weld_mobilizer_test",
     deps = [
         ":multibody_tree",

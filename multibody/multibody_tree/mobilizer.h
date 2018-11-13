@@ -440,6 +440,14 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const = 0;
 
+  void CalcNMatrix(
+      const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> N) const {
+    DRAKE_DEMAND(N != nullptr);
+    DRAKE_DEMAND(N->rows() == num_positions());
+    DRAKE_DEMAND(N->cols() == num_velocities());
+    DoCalcNMatrix(context, N);
+  }
+
   void CalcNplusMatrix(
       const MultibodyTreeContext<T>& context,
       EigenPtr<MatrixX<T>> Nplus) const {
@@ -565,6 +573,9 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const Body<T>* body, const Mobilizer<T>* mobilizer) const = 0;
 
  protected:
+
+  virtual void DoCalcNMatrix(
+      const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> N) const = 0;
 
   virtual void DoCalcNplusMatrix(
       const MultibodyTreeContext<T>& context,

@@ -166,6 +166,9 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
       EigenPtr<VectorX<T>> v) const final;
 
  protected:
+  void DoCalcNMatrix(const MultibodyTreeContext<T>& context,
+                     EigenPtr<MatrixX<T>> N) const final;
+
   void DoCalcNplusMatrix(
       const MultibodyTreeContext<T>& context,
       EigenPtr<MatrixX<T>> Nplus) const final;

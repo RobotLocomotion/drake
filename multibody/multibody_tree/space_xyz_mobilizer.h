@@ -259,6 +259,9 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
 
 
  protected:
+  void DoCalcNMatrix(const MultibodyTreeContext<T>& context,
+                     EigenPtr<MatrixX<T>> N) const final;
+
   void DoCalcNplusMatrix(
       const MultibodyTreeContext<T>& context,
       EigenPtr<MatrixX<T>> Nplus) const final;
