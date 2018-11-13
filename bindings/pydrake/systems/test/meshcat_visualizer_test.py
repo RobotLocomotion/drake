@@ -1,5 +1,7 @@
-import numpy as np
 import unittest
+import subprocess
+
+import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import (DispatchLoadMessage, SceneGraph)
@@ -12,8 +14,8 @@ from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 
 
 class TestMeshcat(unittest.TestCase):
-    # Cart-Pole with simple geometry.
     def test_cart_pole(self):
+        """Cart-Pole with simple geometry."""
         file_name = FindResourceOrThrow(
             "drake/examples/multibody/cart_pole/cart_pole.sdf")
 
@@ -53,8 +55,8 @@ class TestMeshcat(unittest.TestCase):
         simulator.set_publish_every_time_step(False)
         simulator.StepTo(.1)
 
-    # Kuka IIWA with mesh geometry.
-    def test_kuka(args):
+    def test_kuka(self):
+        """Kuka IIWA with mesh geometry."""
         file_name = FindResourceOrThrow(
             "drake/manipulation/models/iiwa_description/sdf/"
             "iiwa14_no_collision.sdf")
