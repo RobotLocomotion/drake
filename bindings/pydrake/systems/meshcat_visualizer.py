@@ -6,6 +6,10 @@ package, Meshcat:
 import argparse
 import math
 
+import meshcat
+import meshcat.transformations as tf
+
+from drake import lcmt_viewer_load_robot
 from pydrake.util.eigen_geometry import Quaternion
 from pydrake.geometry import DispatchLoadMessage, SceneGraph
 from pydrake.lcm import DrakeMockLcm
@@ -14,11 +18,6 @@ from pydrake.systems.framework import (
     AbstractValue, LeafSystem, PublishEvent, TriggerType
 )
 from pydrake.systems.rendering import PoseBundle
-
-from drake import lcmt_viewer_load_robot
-
-import meshcat
-import meshcat.transformations as tf
 
 
 class MeshcatVisualizer(LeafSystem):
