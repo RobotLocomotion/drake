@@ -8,6 +8,7 @@
 #include <tinyxml2.h>
 
 #include "drake/geometry/visual_material.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
@@ -72,7 +73,7 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
   const RotationalInertia<double> I_BBcm_Bi(ixx, iyy, izz, ixy, ixz, iyz);
 
   // B and Bi are not necessarily aligned.
-  const Matrix3d R_BBi = X_BBi.linear();
+  const math::RotationMatrix<double> R_BBi(X_BBi.linear());
 
   // Re-express in frame B as needed.
   const RotationalInertia<double> I_BBcm_B = I_BBcm_Bi.ReExpress(R_BBi);

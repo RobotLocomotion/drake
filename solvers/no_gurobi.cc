@@ -18,5 +18,14 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram&) const {
           "solver.");
 }
 
+void GurobiSolver::Solve(const MathematicalProgram&,
+                         const optional<Eigen::VectorXd>&,
+                         const optional<SolverOptions>&,
+                         MathematicalProgramResult*) const {
+  throw std::runtime_error(
+      "The Gurobi bindings were not compiled.  You'll need to use a different "
+      "solver.");
+}
+
 }  // end namespace solvers
 }  // end namespace drake

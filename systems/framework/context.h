@@ -282,6 +282,7 @@ class Context : public ContextBase {
   /// the same as the old ones.
   ///
   /// <h4>Dangerous "get_mutable" methods</h4>
+  /// @anchor dangerous_get_mutable
   /// The `get_mutable` methods return a mutable reference to the local value
   /// object within this %Context. The notification sweep is done prior to
   /// returning that reference. You can then use the reference to make the

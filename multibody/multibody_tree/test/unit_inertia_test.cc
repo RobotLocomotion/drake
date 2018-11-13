@@ -9,6 +9,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
 
 namespace drake {
@@ -16,7 +17,6 @@ namespace multibody {
 namespace math {
 namespace {
 
-using Eigen::AngleAxisd;
 using Eigen::Matrix3d;
 using Eigen::MatrixXd;
 using Eigen::NumTraits;
@@ -105,8 +105,8 @@ GTEST_TEST(UnitInertia, ReExpressInAnotherFrame) {
   UnitInertia<double> G_Ro_R(Iperp, Iperp, Irr);
 
   // Rotation of +90 degrees about x.
-  Matrix3<double> R_FR =
-      AngleAxisd(M_PI_2, Vector3d::UnitX()).toRotationMatrix();
+  const drake::math::RotationMatrix<double> R_FR =
+      drake::math::RotationMatrix<double>::MakeXRotation(M_PI_2);
 
   // Re-express in frame F using the above rotation.
   const UnitInertia<double> G_Ro_F = G_Ro_R.ReExpress(R_FR);
@@ -218,8 +218,8 @@ GTEST_TEST(UnitInertia, SolidCylinder) {
       UnitInertia<double>::SolidCylinder(r, L, v);
   // Generate a rotation matrix from a Frame V in which Vz = v to frame Z where
   // Zz = zhat.
-  const Matrix3d R_ZV =
-      Quaterniond::FromTwoVectors(Vector3d::UnitZ(), v).toRotationMatrix();
+  const drake::math::RotationMatrix<double> R_ZV(
+      Quaterniond::FromTwoVectors(Vector3d::UnitZ(), v).toRotationMatrix());
   // Generate expected solution by computing it in the V frame and re-expressing
   // in the Z frame.
   const UnitInertia<double> Gv_expected = Gz.ReExpress(R_ZV);
@@ -266,8 +266,8 @@ GTEST_TEST(UnitInertia, AxiallySymmetric) {
 
   // Rotation of -pi/4 about the x axis, from a Z frame having its z axis
   // aligned with the z-axis of the cylinder to the expressed-in frame E.
-  Matrix3<double> R_EZ =
-      AngleAxisd(-M_PI_4, Vector3d::UnitX()).toRotationMatrix();
+  const drake::math::RotationMatrix<double> R_EZ =
+      drake::math::RotationMatrix<double>::MakeXRotation(-M_PI_4);
 
   // Unit inertia computed with AxiallySymmetric().
   UnitInertia<double> G_E =
@@ -315,8 +315,8 @@ GTEST_TEST(UnitInertia, ThinRod) {
 
   // Rotation of -pi/4 about the x axis, from a Z frame having its z-axis
   // aligned with the rod to the expressed-in frame E.
-  Matrix3<double> R_EZ =
-      AngleAxisd(-M_PI_4, Vector3d::UnitX()).toRotationMatrix();
+  const drake::math::RotationMatrix<double> R_EZ =
+      drake::math::RotationMatrix<double>::MakeXRotation(-M_PI_4);
 
   // Unit inertia computed with StraightLine().
   UnitInertia<double> G_E =
@@ -448,13 +448,13 @@ GTEST_TEST(UnitInertia, AutoDiff) {
 
   ADScalar angle = angle_value;
   angle.derivatives()[0] = wz;
-  Matrix3<ADScalar> R_WB =
-      (AngleAxis<ADScalar>(angle, Vector3d::UnitZ())).toRotationMatrix();
+  const drake::math::RotationMatrix<ADScalar> R_WB =
+      drake::math::RotationMatrix<ADScalar>::MakeZRotation(angle);
 
   // Split the unit inertia into two Matrix3d; one with the values and
   // another one with the time derivatives.
   Matrix3<double> Rvalue_WB, Rdot_WB;
-  extract_derivatives(R_WB, Rvalue_WB, Rdot_WB);
+  extract_derivatives(R_WB.matrix(), Rvalue_WB, Rdot_WB);
 
   // The time derivative of the rotation matrix should be:
   //  Rdot = w× * R, with w the angular velocity.

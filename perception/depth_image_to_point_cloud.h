@@ -40,6 +40,27 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
     return LeafSystem<double>::get_output_port(0);
   }
 
+  /// Converts a depth image obtained from RgbdCamera to a point cloud.  If a
+  /// pixel in the depth image has NaN depth value, all the `(x, y, z)` values
+  /// in the converted point will be NaN.
+  /// Similarly, if a pixel has either InvalidDepth::kTooFar or
+  /// InvalidDepth::kTooClose, the converted point will be
+  /// InvalidDepth::kTooFar. Note that this matches the convention used by the
+  /// Point Cloud Library (PCL).
+  ///
+  /// @param[in] depth_image The input depth image obtained from RgbdCamera.
+  ///
+  /// @param[in] camera_info The input camera info which is used for conversion.
+  ///
+  /// @param[out] point_cloud A pointer to a valid, non nullptr, point
+  /// cloud of Eigen Matrix3Xf type.
+  // TODO(kunimatsu-tri) Use drake::perception::PointCloud instead of
+  // Eigen::Matrix3Xf and create new constants there instead of reusing
+  // InvalidDepth.
+  static void Convert(const systems::sensors::ImageDepth32F& depth_image,
+                      const systems::sensors::CameraInfo& camera_info,
+                      Eigen::Matrix3Xf* point_cloud);
+
  private:
   /// Returns an empty point cloud.
   PointCloud MakeOutputPointCloud() const;

@@ -28,17 +28,30 @@ PYBIND11_MODULE(manipulation_station, m) {
   // ManipulationStation currently only supports double.
   using T = double;
 
+  py::enum_<IiwaCollisionModel>(m, "IiwaCollisionModel")
+      .value("kNoCollision", IiwaCollisionModel::kNoCollision,
+             doc.IiwaCollisionModel.kNoCollision.doc)
+      .value("kBoxCollision", IiwaCollisionModel::kBoxCollision,
+             doc.IiwaCollisionModel.kBoxCollision.doc)
+      .export_values();
+
   py::class_<ManipulationStation<T>, Diagram<T>>(m, "ManipulationStation")
-      .def(py::init<double>(), py::arg("time_step") = 0.002,
+      .def(py::init<double, IiwaCollisionModel>(), py::arg("time_step") = 0.002,
+           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
            doc.ManipulationStation.ctor.doc_3)
       .def("AddCupboard", &ManipulationStation<T>::AddCupboard,
            doc.ManipulationStation.AddCupboard.doc)
       .def("Finalize", &ManipulationStation<T>::Finalize,
            doc.ManipulationStation.Finalize.doc)
+      .def("get_multibody_plant", &ManipulationStation<T>::get_multibody_plant,
+           py_reference_internal,
+           doc.ManipulationStation.get_multibody_plant.doc)
       .def("get_mutable_multibody_plant",
            &ManipulationStation<T>::get_mutable_multibody_plant,
            py_reference_internal,
            doc.ManipulationStation.get_mutable_multibody_plant.doc)
+      .def("get_scene_graph", &ManipulationStation<T>::get_scene_graph,
+           py_reference_internal, doc.ManipulationStation.get_scene_graph.doc)
       .def("get_mutable_scene_graph",
            &ManipulationStation<T>::get_mutable_scene_graph,
            py_reference_internal,

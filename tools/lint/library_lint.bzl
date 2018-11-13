@@ -113,6 +113,7 @@ def library_lint(
             expression = missing_deps_expression,
             scope = scope,
             testonly = 1,
+            tags = ["lint", "library_lint"],
             visibility = ["//visibility:private"],
         )
         native.genquery(
@@ -120,6 +121,7 @@ def library_lint(
             expression = extra_deps_expression,
             scope = scope,
             testonly = 1,
+            tags = ["lint", "library_lint"],
             visibility = ["//visibility:private"],
         )
         library_lint_reporter_data += [

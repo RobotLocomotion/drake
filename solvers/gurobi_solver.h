@@ -12,6 +12,25 @@
 namespace drake {
 namespace solvers {
 
+struct GurobiSolverDetails {
+  // The gurobi optimization time. Please refer to
+  // https://www.gurobi.com/documentation/8.0/refman/runtime.html
+  double optimizer_time{};
+
+  // The error message returned from Gurobi call. Please refer to
+  // https://www.gurobi.com/documentation/8.0/refman/error_codes.html
+  int error_code{};
+
+  // The status code when the optimize call has returned. Please refer to
+  // https://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
+  int optimization_status{};
+
+  // The best known bound on the optimal objective. This is used in mixed
+  // integer optimization. Please refer to
+  // https://www.gurobi.com/documentation/8.0/refman/objbound.html
+  double objective_bound{NAN};
+};
+
 class GurobiSolver : public MathematicalProgramSolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GurobiSolver)
@@ -110,9 +129,7 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
 
   void Solve(const MathematicalProgram&, const optional<Eigen::VectorXd>&,
              const optional<SolverOptions>&,
-             MathematicalProgramResult*) const override {
-    throw std::runtime_error("Not implemented yet.");
-  }
+             MathematicalProgramResult*) const override;
 
   SolverId solver_id() const override;
 

@@ -223,6 +223,24 @@ drake_py_unittest(
     ],
 )
 
+drake_py_library(
+    name = "meshcat_visualizer_py",
+    srcs = ["meshcat_visualizer.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        ":framework_py",
+        ":module_py",
+        ":rendering_py",
+        "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake:lcm_py",
+        "//bindings/pydrake:math_py",
+        "//bindings/pydrake/util:eigen_geometry_py",
+        "//lcmtypes:lcmtypes_py",
+        "@meshcat_python//:meshcat",
+        "@meshcat_python//:meshcat-server",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":analysis_py",
     ":controllers_py",
@@ -236,6 +254,7 @@ PY_LIBRARIES_WITH_INSTALL = [
 
 PY_LIBRARIES = [
     ":drawing_py",
+    ":meshcat_visualizer_py",
     ":scalar_conversion_py",
     ":module_py",
 ]
@@ -345,6 +364,22 @@ drake_py_unittest(
         "//bindings/pydrake/examples:pendulum_py",
         "//bindings/pydrake/multibody:multibody_tree_py",
         "//bindings/pydrake/multibody:rigid_body_tree_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "meshcat_visualizer_test",
+    data = [
+        "//examples/multibody/cart_pole:models",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":meshcat_visualizer_py",
+        ":test_util_py",
+        "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake/multibody",
     ],
 )
 

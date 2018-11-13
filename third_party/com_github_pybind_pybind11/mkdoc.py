@@ -11,9 +11,9 @@ from collections import OrderedDict, defaultdict
 from fnmatch import fnmatch
 import os
 import platform
-import sys
 import re
-from tempfile import NamedTemporaryFile
+import sys
+from tempfile import NamedTemporaryFile, mkdtemp
 import textwrap
 
 from clang import cindex
@@ -779,7 +779,7 @@ def main():
     if output_filename is None or len(filenames) == 0:
         eprint('Syntax: %s -output=<file> [.. a list of header files ..]'
                % sys.argv[0])
-        exit(-1)
+        sys.exit(1)
 
     f = open(output_filename, 'w')
     # N.B. We substitute the `GENERATED FILE...` bits in this fashion because
@@ -829,8 +829,12 @@ def main():
             include_file_map[filename] = include_file
     assert len(include_files) > 0
     # Generate the glue include file, which will include all relevant include
-    # files, and parse.
-    with NamedTemporaryFile('w') as glue_include_file:
+    # files, and parse. Add a unique prefix so we do not leak accidentally leak
+    # in paths in `/tmp`.
+    dir_prefix = mkdtemp(prefix="drake_mkdoc_")
+    glue_include_file = NamedTemporaryFile(
+        'w', prefix="glue_include_file_", dir=dir_prefix)
+    with glue_include_file:
         for include_file in sorted(include_files):
             line = "#include \"{}\"".format(include_file)
             glue_include_file.write(line + "\n")
@@ -842,6 +846,7 @@ def main():
         index = cindex.Index(
             cindex.conf.lib.clang_createIndex(False, True))
         translation_unit = index.parse(glue_include_file.name, parameters)
+    os.rmdir(dir_prefix)
     # Extract symbols.
     if not quiet:
         eprint("Extract relevant symbols...")
@@ -850,7 +855,17 @@ def main():
     # Write header file.
     if not quiet:
         eprint("Writing header file...")
-    print_symbols(f, root_name, symbol_tree.root)
+    try:
+        print_symbols(f, root_name, symbol_tree.root)
+    except UnicodeEncodeError as e:
+        # User-friendly error for #9903.
+        print("""
+Encountered unicode error: {}
+If you are on Ubuntu, please ensure you have en_US.UTF-8 locales generated:
+    sudo apt-get install --no-install-recommends  locales
+    sudo locale-gen en_US.UTF-8
+""".format(e), file=sys.stderr)
+        sys.exit(1)
 
     f.write('''
 #if defined(__GNUG__)

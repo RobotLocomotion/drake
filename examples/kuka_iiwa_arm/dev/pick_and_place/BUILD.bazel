@@ -24,12 +24,12 @@ drake_cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        "//attic/manipulation/util:frame_pose_tracker",
+        "//attic/manipulation/util:world_sim_tree_builder",
         "//attic/multibody/rigid_body_plant",
         "//examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
         "//examples/kuka_iiwa_arm/pick_and_place:pick_and_place_configuration",  # noqa
         "//manipulation/schunk_wsg:schunk_wsg_controller",
-        "//manipulation/util:frame_pose_tracker",
-        "//manipulation/util:world_sim_tree_builder",
         "//systems/framework:diagram_builder",
         "//systems/sensors:optitrack_sender",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
@@ -144,6 +144,8 @@ drake_cc_binary(
         "//manipulation/models/wsg_50_description:models",
     ],
     deps = [
+        "//attic/manipulation/planner:robot_plan_interpolator",
+        "//attic/manipulation/util:world_sim_tree_builder",
         "//attic/multibody/rigid_body_plant:contact_results_to_lcm",
         "//attic/multibody/rigid_body_plant:create_load_robot_message",
         "//common:find_resource",
@@ -156,9 +158,7 @@ drake_cc_binary(
         "//lcm",
         "//lcmtypes:iiwa",
         "//lcmtypes:viewer",
-        "//manipulation/planner:robot_plan_interpolator",
         "//manipulation/schunk_wsg:schunk_wsg_controller",
-        "//manipulation/util:world_sim_tree_builder",
         "//systems/analysis:simulator",
         "@gflags",
         "@lcmtypes_bot2_core",

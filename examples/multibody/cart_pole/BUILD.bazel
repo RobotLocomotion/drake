@@ -44,7 +44,7 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "cart_pole_test",
-    data = ["cart_pole.sdf"],
+    data = [":models"],
     deps = [
         ":cart_pole_params",
         "//common:find_resource",

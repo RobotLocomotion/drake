@@ -4,6 +4,12 @@
 #
 # Do not update this list by hand; instead, run build_components_refresh.py.
 LIBDRAKE_COMPONENTS = [
+    "//attic/manipulation/dev:remote_tree_viewer_wrapper",  # unpackaged
+    "//attic/manipulation/planner",
+    "//attic/manipulation/scene_generation:random_clutter_generator",  # unpackaged  # noqa
+    "//attic/manipulation/scene_generation:simulate_plant_to_rest",  # unpackaged  # noqa
+    "//attic/manipulation/sensors",
+    "//attic/manipulation/util",
     "//attic/multibody",
     "//attic/multibody/collision",
     "//attic/multibody/joints",
@@ -22,7 +28,10 @@ LIBDRAKE_COMPONENTS = [
     "//attic/systems/controllers",
     "//attic/systems/controllers/plan_eval",
     "//attic/systems/controllers/qp_inverse_dynamics",
+    "//attic/systems/rendering",
     "//attic/systems/robotInterfaces",
+    "//attic/systems/sensors",
+    "//attic/systems/trajectory_optimization",
     "//attic/util",
     "//automotive",
     "//automotive/maliput/api",
@@ -30,6 +39,7 @@ LIBDRAKE_COMPONENTS = [
     "//automotive/maliput/geometry_base",
     "//automotive/maliput/multilane",
     "//automotive/maliput/rndf",
+    "//automotive/maliput/simple_phase_book",
     "//automotive/maliput/simple_phase_provider",
     "//automotive/maliput/simplerulebook",
     "//automotive/maliput/utility",
@@ -38,21 +48,28 @@ LIBDRAKE_COMPONENTS = [
     "//common/trajectories",
     "//common:drake_marker_shared_library",  # unpackaged
     "//common:text_logging_gflags_h",  # unpackaged
+    "//examples/acrobot:acrobot_input",  # unpackaged
+    "//examples/acrobot:acrobot_params",  # unpackaged
+    "//examples/acrobot:acrobot_plant",  # unpackaged
+    "//examples/acrobot:acrobot_state",  # unpackaged
+    "//examples/compass_gait:compass_gait",  # unpackaged
+    "//examples/compass_gait:compass_gait_vector_types",  # unpackaged
     "//examples/manipulation_station:manipulation_station",  # unpackaged
     "//examples/manipulation_station:manipulation_station_hardware_interface",  # unpackaged  # noqa
+    "//examples/pendulum:pendulum_plant",  # unpackaged
+    "//examples/pendulum:pendulum_vector_types",  # unpackaged
+    "//examples/rimless_wheel:rimless_wheel",  # unpackaged
+    "//examples/rimless_wheel:rimless_wheel_vector_types",  # unpackaged
+    "//examples/van_der_pol:van_der_pol",  # unpackaged
     "//geometry",
     "//geometry/dev",
     "//geometry/dev/render",
     "//geometry/dev/render/shaders",
     "//geometry/query_results",
     "//lcm",
-    "//manipulation/dev:remote_tree_viewer_wrapper",  # unpackaged
     "//manipulation/perception",
     "//manipulation/planner",
-    "//manipulation/scene_generation:random_clutter_generator",  # unpackaged
-    "//manipulation/scene_generation:simulate_plant_to_rest",  # unpackaged
     "//manipulation/schunk_wsg",
-    "//manipulation/sensors",
     "//manipulation/util",
     "//math",
     "//multibody/benchmarks/acrobot",

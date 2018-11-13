@@ -425,6 +425,12 @@ void ParseSdfFrame(
   // Check for old (Drake-specific) or new (sdformat spec) style.
   if (node->FirstChildElement("link")) {
     // Old style.
+    drake::log()->warn(
+        "Frame '{}' is using the old Drake-specific format:\n"
+        "  <frame ...> <link>{{parent}}</link> <pose>...</pose> </frame>\n"
+        "Please use the newer format:\n"
+        "  <frame ...> <pose frame='{{parent}}'>...</pose> </frame>",
+        name);
     // TODO(eric.cousineau): Consider deprecating this.
     string body_name;
     if (!parseStringValue(node, "link", body_name)) {

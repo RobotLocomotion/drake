@@ -1396,8 +1396,17 @@ class MultibodyTree {
   /// those vectors which apply to a single model instance only.
   /// @{
 
-  /// Given the actuation values @p u_instance for all actuators in @p
-  /// model_instance, this method sets the actuation vector u for the entire
+  #ifndef DRAKE_DOXYGEN_CXX
+  // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
+  DRAKE_DEPRECATED("Call SetActuationInArray(). Will be deleted after 2/7/19.")
+  void set_actuation_vector(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& u_instance,
+      EigenPtr<VectorX<T>> u) const;
+  #endif
+
+  /// Given the actuation values `u_instance` for all actuators in
+  /// `model_instance`, this method sets the actuation vector u for the entire
   /// MultibodyTree model to which this actuator belongs to. This method throws
   /// an exception if the size of `u_instance` is not equal to the number of
   /// degrees of freedom of all of the actuated joints in `model_instance`.
@@ -1406,43 +1415,87 @@ class MultibodyTree {
   ///   joints in `model_instance`.
   /// @param[out] u
   ///   The vector containing the actuation values for the entire MultibodyTree.
-  void set_actuation_vector(
+  void SetActuationInArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& u_instance,
       EigenPtr<VectorX<T>> u) const;
 
-  /// Returns a vector of generalized positions for `model_instance` from a
-  /// vector `q_array` of generalized positions for the entire MultibodyTree
-  /// model.  This method throws an exception if `q_array` is not of size
-  /// MultibodyTree::num_positions().
+  #ifndef DRAKE_DOXYGEN_CXX
+  // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
+  DRAKE_DEPRECATED("Call GetPositionsFromArray(). Will be removed after "
+                       "2/7/19.")
   VectorX<T> get_positions_from_array(
       ModelInstanceIndex model_instance,
-      const Eigen::Ref<const VectorX<T>>& q_array) const;
+      const Eigen::Ref<const VectorX<T>>& q) const {
+    return GetPositionsFromArray(model_instance, q);
+  }
+  #endif
 
-  /// Sets the vector of generalized positions for `model_instance` in
-  /// `q_array` using `model_q`, leaving all other elements in the array
-  /// untouched. This method throws an exception if `q_array` is not of size
-  /// MultibodyTree::num_positions() or `model_q` is not of size
-  /// `MultibodyTree::num_positions(model_instance)`.
+  /// Returns a vector of generalized positions for `model_instance` from a
+  /// vector `q_array` of generalized positions for the entire MultibodyTree
+  /// model.  This method throws an exception if `q` is not of size
+  /// MultibodyTree::num_positions().
+  VectorX<T> GetPositionsFromArray(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& q) const;
+
+  #ifndef DRAKE_DOXYGEN_CXX
+  // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
+  DRAKE_DEPRECATED("Call SetPositionsInArray(). Will be removed after 2/7/19.")
   void set_positions_in_array(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& model_q,
-      EigenPtr<VectorX<T>> q_array) const;
+      EigenPtr<VectorX<T>> q_array) const {
+    SetPositionsInArray(model_instance, model_q, q_array);
+  }
+  #endif
 
-  /// Returns a vector of generalized velocities for @p model_instance from a
-  /// vector `v_array` of generalized velocities for the entire MultibodyTree
+  /// Sets the vector of generalized positions for `model_instance` in
+  /// `q` using `q_instance`, leaving all other elements in the array
+  /// untouched. This method throws an exception if `q` is not of size
+  /// MultibodyTree::num_positions() or `q_instance` is not of size
+  /// `MultibodyTree::num_positions(model_instance)`.
+  void SetPositionsInArray(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& q_instance,
+      EigenPtr<VectorX<T>> q) const;
+
+  #ifndef DRAKE_DOXYGEN_CXX
+  // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
+  DRAKE_DEPRECATED("Call GetVelocitiesFromArray(). Will be removed after"
+                       " 2/7/19.")
+  VectorX<T> get_velocities_from_array(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& v_array) const {
+    return GetVelocitiesFromArray(model_instance, v_array);
+  }
+  #endif
+
+  /// Returns a vector of generalized velocities for `model_instance` from a
+  /// vector `v` of generalized velocities for the entire MultibodyTree
   /// model.  This method throws an exception if the input array is not of size
   /// MultibodyTree::num_velocities().
-  VectorX<T> get_velocities_from_array(
+  VectorX<T> GetVelocitiesFromArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& v_array) const;
 
-  /// Sets the vector of generalized velocities for `model_instance` in
-  /// `v_array` using `model_v`, leaving all other elements in the array
-  /// untouched. This method throws an exception if `v_array` is not of size
-  /// MultibodyTree::num_velocities() or `model_v` is not of size
-  /// `MultibodyTree::num_positions(model_instance)`.
+  #ifndef DRAKE_DOXYGEN_CXX
+  // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
+  DRAKE_DEPRECATED("Call SetVelocitiesInArray(). Will be removed after 2/7/19.")
   void set_velocities_in_array(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& model_v,
+      EigenPtr<VectorX<T>> v_array) const {
+    SetVelocitiesInArray(model_instance, model_v, v_array);
+  }
+  #endif
+
+  /// Sets the vector of generalized velocities for `model_instance` in
+  /// `v` using `v_instance`, leaving all other elements in the array
+  /// untouched. This method throws an exception if `v` is not of size
+  /// MultibodyTree::num_velocities() or `v_instance` is not of size
+  /// `MultibodyTree::num_positions(model_instance)`.
+  void SetVelocitiesInArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& model_v,
       EigenPtr<VectorX<T>> v_array) const;
@@ -1494,18 +1547,90 @@ class MultibodyTree {
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const;
 
-  /// Returns a const Eigen vector containing the multibody state `x = [q; v]`
-  /// of the model with q the vector of generalized positions and v the vector
-  /// of generalized velocities.
+  #ifndef DRAKE_DOXYGEN_CXX
+  // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
+  DRAKE_DEPRECATED("Call GetPositionsAndVelocities(). Will be removed after "
+                       "2/7/19.")
   Eigen::VectorBlock<const VectorX<T>> get_multibody_state_vector(
+      const systems::Context<T>& context) const {
+    return GetPositionsAndVelocities(context);
+  }
+  #endif
+
+  /// Returns a const Eigen vector reference containing the vector
+  /// `[q; v]` of the model with `q` the vector of generalized positions and
+  /// `v` the vector of generalized velocities.
+  /// @note This method returns a reference to existing data, exhibits constant
+  ///       i.e., O(1) time complexity, and runs very quickly.
+  /// @throws std::exception if the `context` does not correspond to the context
+  /// for a multibody model.
+  Eigen::VectorBlock<const VectorX<T>> GetPositionsAndVelocities(
       const systems::Context<T>& context) const;
 
-  /// Returns a mutable Eigen vector containing the multibody state `x = [q; v]`
-  /// of the model with q the vector of generalized positions and v the vector
-  /// of generalized velocities.
+#ifndef DRAKE_DOXYGEN_CXX
+  // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
+  DRAKE_DEPRECATED("Call GetPositionsAndVelocities(). Will be removed after "
+                       "2/7/19.")
+  VectorX<T> get_multibody_state_vector(
+      const systems::Context<T>& context,
+      ModelInstanceIndex model_instance) const {
+    return GetPositionsAndVelocities(context, model_instance);
+  }
+  #endif
+
+  /// Returns a Eigen vector containing the multibody state `x = [q; v]`
+  /// of the model with `q` the vector of generalized positions and `v` the
+  /// vector of generalized velocities for model instance `model_instance`.
+  /// @throws std::exception if the `context` does not correspond to the context
+  /// for a multibody model or `model_instance` is invalid.
+  /// @note returns a dense vector of dimension `q.size() + v.size()` associated
+  ///          with `model_instance` in O(`q.size()`) time.
+  VectorX<T> GetPositionsAndVelocities(
+      const systems::Context<T>& context,
+      ModelInstanceIndex model_instance) const;
+
+  #ifndef DRAKE_DOXYGEN_CXX
+  // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
+  DRAKE_DEPRECATED("Call GetMutablePositionsAndVelocities(). Will be removed"
+                       " after 2/7/19.")
+  Eigen::VectorBlock<VectorX<T>> get_mutable_multibody_state_vector(
+      systems::Context<T>* context) const {
+    return GetMutablePositionsAndVelocities(context);
+  }
+  #endif
+
+  /// Returns a mutable Eigen vector containing the vector `[q; v]`
+  /// of the model with `q` the vector of generalized positions and `v` the
+  /// vector of generalized velocities.
   /// @throws std::exception if the `context` is nullptr or if it does not
   /// correspond to the context for a multibody model.
-  Eigen::VectorBlock<VectorX<T>> get_mutable_multibody_state_vector(
+  /// @note This method returns a reference to existing data, exhibits constant
+  ///       i.e., O(1) time complexity, and runs very quickly.
+  Eigen::VectorBlock<VectorX<T>> GetMutablePositionsAndVelocities(
+      systems::Context<T>* context) const;
+
+  #ifndef DRAKE_DOXYGEN_CXX
+  // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
+  DRAKE_DEPRECATED("Call SetPositionsAndVelocities(). Will be removed after "
+                       "2/7/19.")
+  void set_multibody_state_vector(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& instance_state,
+      systems::Context<T>* context) const {
+    SetPositionsAndVelocities(model_instance, instance_state, context);
+  }
+  #endif
+
+  /// Sets `context` to store the vector `[q; v]`
+  /// with `q` the vector of generalized positions and `v` the vector
+  /// of generalized velocities for model instance `model_instance`.
+  /// @throws std::exception if the `context` does not correspond to the context
+  /// for a multibody model, `context` is nullptr, `model_instance` is invalid,
+  /// or `instance_state.size()` does not equal `num_positions(model_instance)`
+  /// + `num_velocities(model_instance)`.
+  void SetPositionsAndVelocities(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& instance_state,
       systems::Context<T>* context) const;
 
   /// Sets `context` to store the pose `X_WB` of a given `body` B in the world
@@ -1683,108 +1808,105 @@ class MultibodyTree {
   /// @name Methods to compute multibody Jacobians.
   /// @{
 
-  /// Given a set of points `Qi` with fixed position vectors `p_BQi` in a frame
-  /// B, (that is, their time derivative `ᴮd/dt(p_BQi)` in frame B is zero),
-  /// this method computes the geometric Jacobian `Jv_WQi` defined by:
+  /// Given a list of points with fixed position vectors `p_FQ` in a frame
+  /// F, (that is, their time derivative `DtF(p_FQ)` in frame F is zero),
+  /// this method computes the geometric Jacobian `Jv_WFq` defined by:
   /// <pre>
-  ///   v_WQi(q, v) = Jv_WQi(q)⋅v
+  ///   v_WQ(q, v) = Jv_WFq(q)⋅v
   /// </pre>
-  /// where `p_WQi` is the position vector in the world frame for each point
-  /// `Qi` in the input set, `v_WQi(q, v)` is the translational velocity of
-  /// point `Qi` in the world frame W and q and v are the vectors of generalized
-  /// position and velocity, respectively. Since the spatial velocity of each
-  /// point `Qi` is linear in the generalized velocities, the geometric
-  /// Jacobian `Jv_WQi` is a function of the generalized coordinates q only.
+  /// where `v_WQ(q, v)` is the translational velocity of point `Q` in the
+  /// world frame W and q and v are the vectors of generalized position and
+  /// velocity, respectively.
   ///
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q.
-  /// @param[in] frame_B
-  ///   The positions `p_BQi` of each point in the input set are measured and
-  ///   expressed in this frame B and are constant (fixed) in this frame.
-  /// @param[in] p_BQi_set
-  ///   A matrix with the fixed position of a set of points `Qi` measured and
-  ///   expressed in `frame_B`.
-  ///   Each column of this matrix contains the position vector `p_BQi` for a
-  ///   point `Qi` measured and expressed in frame B. Therefore this input
+  /// @param[in] frame_F
+  ///   The positions `p_FQ` of each point in the input set are measured and
+  ///   expressed in this frame F and are constant (fixed) in this frame.
+  /// @param[in] p_FQ_list
+  ///   A matrix with the fixed position of a set of points `Q` measured and
+  ///   expressed in `frame_F`.
+  ///   Each column of this matrix contains the position vector `p_FQ` for a
+  ///   point `Q` measured and expressed in frame F. Therefore this input
   ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
-  /// @param[out] p_WQi_set
-  ///   The output positions of each point `Qi` now computed as measured and
-  ///   expressed in frame W. These positions are computed in the process of
-  ///   computing the geometric Jacobian `J_WQi` and therefore external storage
+  /// @param[out] p_WQ_list
+  ///   The output positions of each point `Q` now measured and expressed in
+  //    the world frame W. These positions are computed in the process of
+  ///   computing the geometric Jacobian `J_WQ` and therefore external storage
   ///   must be provided.
-  ///   The output `p_WQi_set` **must** have the same size
-  ///   as the input set `p_BQi_set` or otherwise this method throws a
-  ///   std::runtime_error exception. That is `p_WQi_set` **must** be in
+  ///   The output `p_WQ_list` **must** have the same size as the input set
+  ///   `p_FQ_list` or otherwise this method throws a
+  ///   std::runtime_error exception. That is `p_WQ_list` **must** be in
   ///   `ℝ³ˣⁿᵖ`.
-  /// @param[out] Jv_WQi
-  ///   The geometric Jacobian `Jv_WQi(q)`, function of the generalized
+  /// @param[out] Jv_WFq
+  ///   The geometric Jacobian `Jv_WFq(q)`, function of the generalized
   ///   positions q only. This Jacobian relates the translational velocity
-  ///   `v_WQi` of each point `Qi` in the input set by: <pre>
-  ///     `v_WQi(q, v) = Jv_WQi(q)⋅v`
+  ///   `v_WQ` of each point `Q` in the input set by: <pre>
+  ///     v_WQ(q, v) = Jv_WFq(q)⋅v
   ///   </pre>
-  ///   so that `v_WQi` is a column vector of size `3⋅np` concatenating the
-  ///   velocity of all points `Qi` in the same order they were given in the
-  ///   input set. Therefore `J_WQi` is a matrix of size `3⋅np x nv`, with `nv`
-  ///   the number of generalized velocities. On input, matrix `J_WQi` **must**
+  ///   so that `v_WQ` is a column vector of size `3⋅np` concatenating the
+  ///   velocity of all points `Q` in the same order they were given in the
+  ///   input set. Therefore `J_WFq` is a matrix of size `3⋅np x nv`, with `nv`
+  ///   the number of generalized velocities. On input, matrix `J_WFq` **must**
   ///   have size `3⋅np x nv` or this method throws a std::runtime_error
   ///   exception.
   ///
-  /// @throws std::exception if the output `p_WQi_set` is nullptr or does not
-  ///  have the same size as the input array `p_BQi_set`.
-  /// @throws std::exception if `Jv_WQi` is nullptr or if it does not have the
-  /// appropriate size, see documentation for `Jv_WQi` for details.
+  /// @throws std::exception if the output `p_WQ_list` is nullptr or does not
+  ///  have the same size as the input array `p_FQ_list`.
+  /// @throws std::exception if `Jv_WFq` is nullptr or if it does not have the
+  /// appropriate size, see documentation for `Jv_WFq` for details.
   // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
   // most applications it is all we need and it is more efficient to compute.
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
-      EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Jv_WQi) const;
+      const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_FQ_list,
+      EigenPtr<MatrixX<T>> p_WQ_list, EigenPtr<MatrixX<T>> Jv_WFq) const;
 
-  /// This is a variant to compute the geometric Jacobian `Jv_WQi` for a set of
-  /// points `Qi` moving with `frame_B`, given that we know the position `p_WQi`
-  /// of each point in the set measured and expressed in the world frame W. The
-  /// geometric Jacobian `Jv_WQi` is defined such that: <pre>
-  ///   v_WQi(q, v) = Jv_WQi(q)⋅v
+  /// This is a variant to compute the geometric Jacobian `Jv_WFq` for a list of
+  /// points `Q` moving with `frame_F`, given that we know the position `p_WQ`
+  /// of each point in the list measured and expressed in the world frame W. The
+  /// geometric Jacobian `Jv_WFq` is defined such that: <pre>
+  ///   v_WQ(q, v) = Jv_WFq(q)⋅v
   /// </pre>
-  /// where `v_WQi(q, v)` is the translational velocity of point `Qi` in the
+  /// where `v_WQ(q, v)` is the translational velocity of point `Q` in the
   /// world frame W and q and v are the vectors of generalized position and
   /// velocity, respectively. Since the spatial velocity of each
-  /// point `Qi` is linear in the generalized velocities, the geometric
-  /// Jacobian `Jv_WQi` is a function of the generalized coordinates q only.
+  /// point `Q` is linear in the generalized velocities, the geometric
+  /// Jacobian `Jv_WFq` is a function of the generalized coordinates q only.
   ///
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q.
-  /// @param[in] frame_B
-  ///   Points `Qi` in the set instantaneously move with this frame.
-  /// @param[in] p_WQi_set
-  ///   A matrix with the fixed position of a set of points `Qi` measured and
+  /// @param[in] frame_F
+  ///   Points `Q` in the list instantaneously move with this frame.
+  /// @param[in] p_WQ_list
+  ///   A matrix with the fixed position of a list of points `Q` measured and
   ///   expressed in the world frame W.
-  ///   Each column of this matrix contains the position vector `p_WQi` for a
-  ///   point `Qi` measured and expressed in the world frame W. Therefore this
-  ///   input matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
-  /// @param[out] Jv_WQi
-  ///   The geometric Jacobian `Jv_WQi(q)`, function of the generalized
+  ///   Each column of this matrix contains the position vector `p_WQ` for a
+  ///   point `Q` measured and expressed in the world frame W. Therefore this
+  ///   input matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the list.
+  /// @param[out] Jv_WFq
+  ///   The geometric Jacobian `Jv_WFq(q)`, function of the generalized
   ///   positions q only. This Jacobian relates the translational velocity
-  ///   `v_WQi` of each point `Qi` in the input set by: <pre>
-  ///     `v_WQi(q, v) = Jv_WQi(q)⋅v`
+  ///   `v_WQ` of each point `Q` in the input list by: <pre>
+  ///     `v_WQ(q, v) = Jv_WFq(q)⋅v`
   ///   </pre>
-  ///   so that `v_WQi` is a column vector of size `3⋅np` concatenating the
-  ///   velocity of all points `Qi` in the same order they were given in the
-  ///   input set. Therefore `J_WQi` is a matrix of size `3⋅np x nv`, with `nv`
-  ///   the number of generalized velocities. On input, matrix `J_WQi` **must**
+  ///   so that `v_WQ` is a column vector of size `3⋅np` concatenating the
+  ///   velocity of all points `Q` in the same order they were given in the
+  ///   input list. Therefore `J_WQ` is a matrix of size `3⋅np x nv`, with `nv`
+  ///   the number of generalized velocities. On input, matrix `J_WQ` **must**
   ///   have size `3⋅np x nv` or this method throws a std::runtime_error
   ///   exception.
   ///
-  /// @throws std::exception if `Jv_WQi` is nullptr or if it does not have the
-  /// appropriate size, see documentation for `Jv_WQi` for details.
+  /// @throws std::exception if `Jv_WFq` is nullptr or if it does not have the
+  /// appropriate size, see documentation for `Jv_WFq` for details.
   // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
   // most applications it is all we need and it is more efficient to compute.
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_WQi_set,
-      EigenPtr<MatrixX<T>> Jv_WQi) const;
+      const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_WQ_list,
+      EigenPtr<MatrixX<T>> Jv_WFq) const;
 
   /// Computes the bias term `b_WFq` associated with the translational
   /// acceleration `a_WFq` of a point `Q` instantaneously moving with a frame F.
@@ -2742,6 +2864,68 @@ class MultibodyTree {
   // not be called pre-finalize. The invoking method should pass its name so
   // that the error message can include that detail.
   void ThrowIfNotFinalized(const char* source_method) const;
+
+  // Helper method to compute the angular velocity Jacobian Jw_WFq and the
+  // translational velocity Jacobian Jv_WFq for a list of points Q which
+  // instantaneously move with frame F that is, the position of these points
+  // Q is fixed in frame F.
+  // Jacobians Jw_WFq and Jv_WFq are defined such that the angular velocity
+  // w_WFq and the translational velocity v_WFq of frame F shifted (see
+  // SpatialVelocity::Shift() for a description of the shift operation) to a
+  // frame Fq with origin at a point Q are given by:
+  //   w_WFq = Jw_WFq⋅v
+  //   v_WFq = Jv_WFq⋅v
+  //
+  // This method provides the option to specify whether angular and/or
+  // translational terms need to be computed, however the caller must at least
+  // request one of them.
+  // If Jw_WFq is nullptr, then angular terms are not computed.
+  // If Jv_WFq is nullptr, then translational terms are not computed.
+  //
+  //
+  //               Format of the Jacobian matrix Jw_WFq
+  //
+  // Notice that, the angular velocity of frame F shifted to a frame Fq with
+  // origin at a point Q is the same as that of frame F, for any point Q.
+  // That is, w_WFq = w_WF for any point Q. With this in mind, Jw_WFq is
+  // defined so that:
+  //   w_WFq = w_WF = Jw_WFq⋅v
+  // and therefore Jw_WFq is a matrix of size 3 x nv, with nv the number of
+  // generalized velocities. If not nullptr on input, matrix Jw_WFq **must**
+  // have the required size of 3 x nv or this method throws a
+  // std::runtime_error exception.
+  //
+  //
+  //               Format of the Jacobian matrix Jv_WFq
+  //
+  // We stack the translational velocity of each point Q into a column vector
+  // v_WFq = [v_WFq1; v_WFq2; ...] of size 3 x np, with np the number of
+  // points in the input list. Then the translational velocities Jacobian is
+  // defined as:
+  //   Jv_WFq = ∇ᵥv_WFq
+  // that is, the gradient with respect to the generalized velocities v.
+  // Therefore vector v_WFq stacking the translational velocity of each point
+  // Q is given by:
+  //   v_WFq = Jv_WFq⋅v
+  //
+  // Therefore Jv_WFq is a matrix with 3⋅np rows and nv columns. If not
+  // nullptr on input, matrix Jv_WFq **must** have the required size of
+  // 3⋅np x nv or this method throws a std::runtime_error exception.
+  //
+  // This helper throws std::runtime_error when:
+  // - The number of rows in p_WQ_list does not equal three. That is, p_WQ_list
+  //   must be a matrix with each column being a 3D vector for each point Q.
+  // - Jw_WFq and Jv_WFq are both nullptr (caller must request at least one
+  //   Jacobian).
+  // - The number of columns of Jw_WFq and/or Jv_WFq does not equal
+  //   num_velocities().
+  // - The number of rows of Jw_WFq does not equal 3.
+  // - The number of rows of Jv_WFq does not equal 3 x np.
+  void CalcFrameJacobianExpressedInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_F,
+      const Eigen::Ref<const MatrixX<T>>& p_WQ_list,
+      EigenPtr<MatrixX<T>> Jw_WFq, EigenPtr<MatrixX<T>> Jv_WFq) const;
 
   // Implementation for CalcMassMatrixViaInverseDynamics().
   // It assumes:

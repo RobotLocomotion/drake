@@ -26,6 +26,7 @@ drake_cc_binary(
     test_rule_args = [" --sim_duration=0.01"],
     deps = [
         ":rod2d",
+        "//attic/systems/rendering:drake_visualizer_client",
         "//common:essential",
         "//common:text_logging_gflags",
         "//lcm",
@@ -33,7 +34,6 @@ drake_cc_binary(
         "//systems/analysis",
         "//systems/framework",
         "//systems/lcm:lcm_pubsub_system",
-        "//systems/rendering:drake_visualizer_client",
         "//systems/rendering:pose_aggregator",
         "//systems/rendering:pose_bundle_to_draw_message",
         "@gflags",
