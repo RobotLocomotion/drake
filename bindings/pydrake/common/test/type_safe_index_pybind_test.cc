@@ -1,4 +1,4 @@
-#include "drake/bindings/pydrake/util/type_safe_index_pybind.h"
+#include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 
 // @file
 // Tests the behavior of `type_safe_index_pybind.h`.

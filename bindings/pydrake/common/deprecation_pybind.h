@@ -16,7 +16,7 @@ namespace pydrake {
 inline void DeprecateAttribute(
     py::object cls, py::str name, py::str message) {
   py::object deprecated =
-      py::module::import("pydrake.util.deprecation").attr("deprecated");
+      py::module::import("pydrake.common.deprecation").attr("deprecated");
   py::object original = cls.attr(name);
   cls.attr(name) = deprecated(message)(original);
 }
@@ -28,7 +28,7 @@ inline void DeprecateAttribute(
 /// accessed, not only when it is called.
 inline void WarnDeprecated(py::str message) {
   py::object warn_deprecated =
-      py::module::import("pydrake.util.deprecation").attr("_warn_deprecated");
+      py::module::import("pydrake.common.deprecation").attr("_warn_deprecated");
   warn_deprecated(message);
 }
 
