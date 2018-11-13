@@ -1,6 +1,7 @@
 # -*- python -*-
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//tools/skylark:pybind.bzl",
     "drake_pybind_library",
@@ -24,6 +25,15 @@ drake_pybind_library(
     # Since `package_info` must be a `struct`, we must define this in a `*.bzl`
     # file.
     package_info = get_bazel_workaround_4594_libdrake_package_info(),
+)
+
+install(
+    name = "install",
+    visibility = ["//:__pkg__"],
+    deps = [
+        "//bindings/pybind11_ext:install",
+        "//bindings/pydrake:install",
+    ],
 )
 
 add_lint_tests()

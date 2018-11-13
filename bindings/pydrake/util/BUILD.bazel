@@ -40,9 +40,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "function_inference",
+    hdrs = ["function_inference.h"],
+    visibility = ["//visibility:public"],
+    deps = [":type_pack"],
+)
+
+drake_cc_library(
     name = "wrap_function",
     hdrs = ["wrap_function.h"],
     visibility = ["//visibility:public"],
+    deps = [":function_inference"],
 )
 
 drake_cc_library(
@@ -232,6 +240,13 @@ drake_cc_googletest(
     deps = [
         ":type_pack",
         "//common:nice_type_name",
+    ],
+)
+
+drake_cc_googletest(
+    name = "function_inference_test",
+    deps = [
+        ":function_inference",
     ],
 )
 

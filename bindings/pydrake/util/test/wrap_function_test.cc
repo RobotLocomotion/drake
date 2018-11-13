@@ -10,6 +10,7 @@
 
 namespace drake {
 namespace pydrake {
+namespace {
 
 // N.B. Anonymous namespace not used as it makes failure messages
 // (static_assert) harder to interpret.
@@ -67,10 +68,10 @@ GTEST_TEST(WrapFunction, Methods) {
   EXPECT_EQ(WrapIdentity(&MyClass::MethodStatic)(value), 2);
   // Wrapped signature: int (MyClass*, int)
   auto method_mutable = WrapIdentity(&MyClass::MethodMutable);
-  EXPECT_EQ(method_mutable(&c, value), 12);
+  EXPECT_EQ(method_mutable(c, value), 12);
   // method_mutable(&c_const, value);  // Should fail.
   // Wrapped signature: int (const MyClass*, int)
-  EXPECT_EQ(WrapIdentity(&MyClass::MethodConst)(&c_const, value), 20);
+  EXPECT_EQ(WrapIdentity(&MyClass::MethodConst)(c_const, value), 20);
 }
 
 // Move-only arguments.
@@ -245,7 +246,7 @@ struct check_signature {
 
   template <typename ReturnActual, typename... ArgsActual, typename FuncActual>
   static void run_impl(
-      const detail::function_info<
+      const detail::function_inference::info<
           FuncActual, ReturnActual, ArgsActual...>& info) {
     check_type<ReturnActual, ReturnExpected>();
     using Dummy = int[];
@@ -390,5 +391,6 @@ GTEST_TEST(WrapFunction, ChangeCallbackOnly) {
   check_expected::run(wrapped);
 }
 
+}  // namespace
 }  // namespace pydrake
 }  // namespace drake

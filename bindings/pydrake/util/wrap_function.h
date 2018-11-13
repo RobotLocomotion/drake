@@ -4,89 +4,14 @@
 #include <type_traits>
 #include <utility>
 
+#include "drake/bindings/pydrake/util/function_inference.h"
+
+// TODO(eric.cousineau): Figure out how to make this automatically hidden.
+#pragma GCC visibility push(hidden)
+
 namespace drake {
 namespace pydrake {
 namespace detail {
-
-// Collects both a functor object and its signature for ease of inference.
-template <typename Func, typename Return, typename ... Args>
-struct function_info {
-  // TODO(eric.cousineau): Ensure that this permits copy elision when combined
-  // with `std::forward<Func>(func)`, while still behaving well with primitive
-  // types.
-  std::decay_t<Func> func;
-};
-
-// Factory method for `function_info<>`, to be used by `infer_function_info`.
-template <typename Return, typename ... Args, typename Func>
-auto make_function_info(Func&& func, Return (*infer)(Args...) = nullptr) {
-  (void)infer;
-  return function_info<Func, Return, Args...>{std::forward<Func>(func)};
-}
-
-// SFINAE for functors.
-// N.B. This *only* distinguished between function / method pointers and
-// lambda objects. It does *not* distinguish among other types.
-template <typename Func, typename T = void>
-using enable_if_lambda_t =
-    std::enable_if_t<!std::is_function<std::decay_t<Func>>::value, T>;
-
-// Infers `function_info<>` from a function pointer.
-template <typename Return, typename ... Args>
-auto infer_function_info(Return (*func)(Args...)) {
-  return make_function_info<Return, Args...>(func);
-}
-
-// Infers `function_info<>` from a mutable method pointer.
-template <typename Return, typename Class, typename ... Args>
-auto infer_function_info(Return (Class::*method)(Args...)) {
-  auto func = [method](Class* self, Args... args) {
-    return (self->*method)(std::forward<Args>(args)...);
-  };
-  return make_function_info<Return, Class*, Args...>(func);
-}
-
-// Infers `function_info<>` from a const method pointer.
-template <typename Return, typename Class, typename ... Args>
-auto infer_function_info(Return (Class::*method)(Args...) const) {
-  auto func = [method](const Class* self, Args... args) {
-    return (self->*method)(std::forward<Args>(args)...);
-  };
-  return make_function_info<Return, const Class*, Args...>(func);
-}
-
-// Helpers for general functor objects.
-struct functor_helpers {
-  // Removes class from mutable method pointer for inferring signature
-  // of functor.
-  template <typename Class, typename Return, typename ... Args>
-  static auto remove_class_from_ptr(Return (Class::*)(Args...)) {
-    using Ptr = Return (*)(Args...);
-    return Ptr{};
-  }
-
-  // Removes class from const method pointer for inferring signature of functor.
-  template <typename Class, typename Return, typename ... Args>
-  static auto remove_class_from_ptr(Return (Class::*)(Args...) const) {
-    using Ptr = Return (*)(Args...);
-    return Ptr{};
-  }
-
-  // Infers function pointer from functor.
-  // @pre `Func` must have only *one* overload of `operator()`.
-  template <typename Func>
-  static auto infer_function_ptr() {
-    return remove_class_from_ptr(&Func::operator());
-  }
-};
-
-// Infers `function_info<>` from a generic functor.
-template <typename Func, typename = detail::enable_if_lambda_t<Func>>
-auto infer_function_info(Func&& func) {
-  return make_function_info(
-      std::forward<Func>(func),
-      functor_helpers::infer_function_ptr<std::decay_t<Func>>());
-}
 
 // Implementation for wrapping a function by scanning and replacing arguments
 // based on their types.
@@ -175,7 +100,7 @@ struct wrap_function_impl {
   // Wraps function arguments and the return value.
   // Generally used when `Return` is non-void.
   template <typename Func, typename Return, typename ... Args>
-  static auto run(function_info<Func, Return, Args...>&& info,
+  static auto run(function_inference::info<Func, Return, Args...>&& info,
       std::enable_if_t<enable_wrap_output<Return>, void*> = {}) {
     // N.B. Since we do not use the `mutable` keyword with this lambda,
     // any functors passed in *must* provide `operator()(...) const`.
@@ -192,7 +117,7 @@ struct wrap_function_impl {
   // Wraps function arguments, but not the return value.
   // Generally used when `Return` is void.
   template <typename Func, typename Return, typename ... Args>
-  static auto run(function_info<Func, Return, Args...>&& info,
+  static auto run(function_inference::info<Func, Return, Args...>&& info,
       std::enable_if_t<!enable_wrap_output<Return>, void*> = {}) {
     auto func_wrapped =
         [func_f = std::forward<Func>(info.func)]
@@ -264,3 +189,5 @@ using wrap_arg_function =
 
 }  // namespace pydrake
 }  // namespace drake
+
+#pragma GCC visibility pop

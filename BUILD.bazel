@@ -56,7 +56,7 @@ install(
     docs = ["LICENSE.TXT"],
     deps = [
         "//automotive/models:install_data",
-        "//bindings/pydrake:install",
+        "//bindings:install",
         "//common:install",
         "//common/proto:install",
         "//examples:install",
