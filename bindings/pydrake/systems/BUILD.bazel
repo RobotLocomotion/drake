@@ -228,8 +228,13 @@ drake_py_library(
     srcs = ["meshcat_visualizer.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [
+        ":framework_py",
         ":module_py",
         ":rendering_py",
+        "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake:lcm_py",
+        "//bindings/pydrake:math_py",
+        "//bindings/pydrake/util:eigen_geometry_py",
         "//lcmtypes:lcmtypes_py",
         "@meshcat_python//:meshcat",
         "@meshcat_python//:meshcat-server",
