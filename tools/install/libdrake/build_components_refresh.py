@@ -38,9 +38,14 @@ kind("cc_library", visible("//tools/install/libdrake:libdrake.so", "//..."))
     except("//:*")
     except("//bindings/pydrake/...")
     except(
-      "//examples/..." except(
+      "//examples/..." except(set(
+        "//examples/acrobot/..."
+        "//examples/compass_gait/..."
         "//examples/manipulation_station/..."
-      )
+        "//examples/pendulum/..."
+        "//examples/rimless_wheel/..."
+        "//examples/van_der_pol/..."
+      ))
     )
     except("//lcmtypes/...")
     except("//tools/install/libdrake:*")
