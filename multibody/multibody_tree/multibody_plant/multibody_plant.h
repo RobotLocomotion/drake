@@ -320,6 +320,19 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return tree().GetPositionsAndVelocities(context);
   }
 
+  /// Returns a Eigen vector containing the multibody state `x = [q; v]`
+  /// of the model with `q` the vector of generalized positions and `v` the
+  /// vector of generalized velocities for model instance `model_instance`.
+  /// @throws std::exception if the `context` does not correspond to the context
+  /// for a multibody model or `model_instance` is invalid.
+  /// @note returns a dense vector of dimension `q.size() + v.size()` associated
+  ///          with `model_instance` in O(`q.size()`) time.
+  VectorX<T> GetPositionsAndVelocities(
+      const systems::Context<T>& context,
+      ModelInstanceIndex model_instance) const {
+    return tree().GetPositionsAndVelocities(context, model_instance);
+  }
+
   /// (Advanced) Returns a mutable Eigen vector containing the vector `[q; v]`
   /// of the model with `q` the vector of generalized positions and `v` the
   /// vector of generalized velocities (**see warning**).
