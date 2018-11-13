@@ -276,7 +276,7 @@ void RobotStateLcmMessageTranslator::EncodeMessageKinematics(
     }
   } else {
     // Fixed base, the transformation is the joint's pose in the world frame.
-    X_JB.setIdentity();
+    X_JB.SetIdentity();
     V_JB.setZero();
   }
 
