@@ -355,6 +355,18 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     tree().GetMutablePositionsAndVelocities(context) = q_v;
   }
 
+  /// Sets all generalized velocities from the given vector [q; v] for the
+  /// specified model instance.
+  /// @throws std::exception if the `context` is nullptr, if the context does
+  /// not correspond to the context for a multibody model, if the model instance
+  /// index is invalid, or if the length of `q_v` is not equal to
+  /// `num_positions(model_instance) + num_velocities(model_instance)`.
+  void SetPositionsAndVelocities(
+      systems::Context<T>* context, ModelInstanceIndex model_instance,
+      const VectorX<T>& q_v) const {
+    tree().SetPositionsAndVelocities(model_instance, q_v, context);
+  }
+
   /// Returns a const Eigen vector reference containing the vector of
   /// generalized positions.
   /// @note This method returns a reference to existing data, exhibits constant

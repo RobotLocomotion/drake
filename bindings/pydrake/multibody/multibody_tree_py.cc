@@ -616,7 +616,7 @@ void init_multibody_plant(py::module m) {
                return self->GetMutablePositionsAndVelocities(context);
              },
              py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
+             // Keep alive, ownership: `return` keeps `Context` alive.
              py::keep_alive<0, 2>(), py::arg("context"),
              doc.MultibodyPlant.GetMutablePositionsAndVelocities.doc)
         .def("GetMutablePositions",
@@ -625,7 +625,7 @@ void init_multibody_plant(py::module m) {
                return self->GetMutablePositions(context);
              },
              py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
+             // Keep alive, ownership: `return` keeps `Context` alive.
              py::keep_alive<0, 2>(), py::arg("context"),
              doc.MultibodyPlant.GetMutablePositions.doc)
         .def("GetMutableVelocities",
@@ -634,7 +634,7 @@ void init_multibody_plant(py::module m) {
                return self->GetMutableVelocities(context);
              },
              py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
+             // Keep alive, ownership: `return` keeps `Context` alive.
              py::keep_alive<0, 2>(), py::arg("context"),
              doc.MultibodyPlant.GetMutableVelocities.doc)
         .def("GetPositions",
@@ -653,15 +653,12 @@ void init_multibody_plant(py::module m) {
              py_reference, py::arg("context"), py::arg("model_instance"),
              doc.MultibodyPlant.GetPositions.doc)
         .def("SetPositions",
-             [](const MultibodyPlant<T>* self,
-                systems::Context<T>* context, const VectorX<T>& q) {
-               self->SetPositions(context, q);
-             },
+             [](const MultibodyPlant<T>* self, systems::Context<T>* context,
+                const VectorX<T>& q) { self->SetPositions(context, q); },
              py_reference, py::arg("context"), py::arg("q"),
              doc.MultibodyPlant.SetPositions.doc)
         .def("SetPositions",
-             [](const MultibodyPlant<T>* self,
-                systems::Context<T>* context,
+             [](const MultibodyPlant<T>* self, systems::Context<T>* context,
                 multibody::ModelInstanceIndex model_instance,
                 const VectorX<T>& q) {
                self->SetPositions(context, model_instance, q);
@@ -684,10 +681,8 @@ void init_multibody_plant(py::module m) {
              py_reference, py::arg("context"), py::arg("model_instance"),
              doc.MultibodyPlant.GetVelocities.doc)
         .def("SetVelocities",
-             [](const MultibodyPlant<T>* self,
-                systems::Context<T>* context, const VectorX<T>& v) {
-               self->SetVelocities(context, v);
-             },
+             [](const MultibodyPlant<T>* self, systems::Context<T>* context,
+                const VectorX<T>& v) { self->SetVelocities(context, v); },
              py_reference, py::arg("context"), py::arg("v"),
              doc.MultibodyPlant.SetVelocities.doc)
         .def("SetVelocities",
@@ -713,21 +708,20 @@ void init_multibody_plant(py::module m) {
              py_reference, py::arg("context"), py::arg("model_instance"),
              doc.MultibodyPlant.GetPositionsAndVelocities.doc)
         .def("SetPositionsAndVelocities",
-             [](const MultibodyPlant<T>* self,
-                systems::Context<T>* context, const VectorX<T>& q_v) {
+             [](const MultibodyPlant<T>* self, systems::Context<T>* context,
+                const VectorX<T>& q_v) {
                self->SetPositionsAndVelocities(context, q_v);
              },
              py_reference, py::arg("context"), py::arg("q_v"),
              doc.MultibodyPlant.SetPositionsAndVelocities.doc)
         .def("SetPositionsAndVelocities",
-             [](const MultibodyPlant<T>* self,
-                systems::Context<T>* context,
+             [](const MultibodyPlant<T>* self, systems::Context<T>* context,
                 multibody::ModelInstanceIndex model_instance,
                 const VectorX<T>& q_v) {
-               self->SetPositions(context, model_instance, q_v);
+               self->SetPositionsAndVelocities(context, model_instance, q_v);
              },
              py_reference, py::arg("context"), py::arg("model_instance"),
-             py::arg("q"), doc.MultibodyPlant.SetPositions.doc);
+             py::arg("q_v"), doc.MultibodyPlant.SetPositionsAndVelocities.doc);
 
     // Add deprecated methods.
 #pragma GCC diagnostic push
