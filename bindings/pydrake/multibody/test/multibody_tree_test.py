@@ -232,7 +232,6 @@ class TestMultibodyTree(unittest.TestCase):
         AddModelFromUrdfFile(
             file_name=urdf_file, model_name="double_pendulum", plant=plant)
 
-
     def test_multibody_tree_kinematics(self):
         file_name = FindResourceOrThrow(
             "drake/examples/double_pendulum/models/double_pendulum.sdf")

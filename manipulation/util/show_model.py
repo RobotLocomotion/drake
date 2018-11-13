@@ -1,50 +1,97 @@
-"""Loads a model file (*.sdf or *.urdf) and then commands drake-visualizer to
-display it.
+"""Loads a model file (*.sdf or *.urdf) and then displays it in all
+available visualizers.
+
+Example usage:
+
+    cd drake
+    bazel build \
+        //tools:drake_visualizer @meshcat_python//:meshcat-server \
+        //manipulation/util:show_model
+
+    # Terminal 1
+    ./bazel-bin/tools/drake_visualizer
+    # Terminal 2
+    ./bazel-bin/external/meshcat_python/meshcat-server
+    # Terminal 3 (wait for visualizers to start)
+    ./bazel-bin/manipulation/util/show_model \
+        --meshcat default \
+        ./manipulation/models/iiwa_description/iiwa7/iiwa7_no_collision.sdf
+
 """
 
+from __future__ import print_function
 import argparse
-import numpy as np
 import os
 import sys
 
 from pydrake.lcm import DrakeLcm
-from pydrake.multibody.rigid_body_plant import DrakeVisualizer
-from pydrake.multibody.rigid_body_tree import (
-    AddModelInstancesFromSdfFile,
-    AddModelInstanceFromUrdfFile,
-    FloatingBaseType,
-    RigidBodyTree,
-)
+from pydrake.geometry import ConnectDrakeVisualizer, SceneGraph
+from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
+from pydrake.multibody.multibody_tree.parsing import (
+    AddModelFromSdfFile, AddModelFromUrdfFile)
+from pydrake.systems.analysis import Simulator
+from pydrake.systems.framework import DiagramBuilder
+from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("filename")
+    parser.add_argument(
+        "filename", type=str,
+        help="URDF or SDF file to display. If using under `bazel run`, "
+             "please ensure you provide an absolute path.")
+    MeshcatVisualizer.add_argparse_argument(parser)
     args = parser.parse_args()
+    filename = args.filename
+
+    # Construct Plant + SceneGraph.
+    builder = DiagramBuilder()
+    plant = builder.AddSystem(MultibodyPlant())
+    scene_graph = builder.AddSystem(SceneGraph())
+    plant.RegisterAsSourceForSceneGraph(scene_graph)
+    builder.Connect(
+        scene_graph.get_query_output_port(),
+        plant.get_geometry_query_input_port())
+    builder.Connect(
+        plant.get_geometry_poses_output_port(),
+        scene_graph.get_source_pose_port(plant.get_source_id()))
 
     # Load the model file.
-    tree = RigidBodyTree()
-    ext = os.path.splitext(args.filename)[1]
+    if not os.path.isfile(filename):
+        print("File does not exist: {}".format(filename), file=sys.stderr)
+        if not os.path.isabs(filename):
+            print("  File is not absolute; if you are running under "
+                  "`bazel run`, please provide an absolute path.",
+                  file=sys.stderr)
+        sys.exit(1)
+    ext = os.path.splitext(filename)[1]
     if ext == ".sdf":
-        AddModelInstancesFromSdfFile(
-            args.filename, FloatingBaseType.kFixed, None, tree)
+        AddModelFromSdfFile(filename, plant)
     elif ext == ".urdf":
-        AddModelInstanceFromUrdfFile(
-            args.filename, FloatingBaseType.kFixed, None, tree)
+        AddModelFromUrdfFile(filename, plant)
     else:
-        parser.error("Unknown extension " + ext)
+        print("Unknown extension " + ext, file=sys.stderr)
+        sys.exit(1)
 
-    # Send drake-visualizer messages to load the model and then position it in
-    # its default configuration.
-    q = tree.getZeroConfiguration()
-    v = np.zeros(tree.get_num_velocities())
-    lcm = DrakeLcm()
-    visualizer = DrakeVisualizer(tree=tree, lcm=lcm)
-    visualizer.PublishLoadRobot()
-    context = visualizer.CreateDefaultContext()
-    context.FixInputPort(0, np.concatenate([q, v]))
-    visualizer.Publish(context)
+    plant.Finalize()
+
+    # Publish to Drake Visualizer.
+    drake_viz_pub = ConnectDrakeVisualizer(builder, scene_graph)
+
+    # Publish to Meshcat.
+    meshcat_viz = builder.AddSystem(
+        MeshcatVisualizer(scene_graph, zmq_url=args.meshcat))
+    builder.Connect(scene_graph.get_pose_bundle_output_port(),
+                    meshcat_viz.get_input_port(0))
+
+    diagram = builder.Build()
+    context = diagram.CreateDefaultContext()
+
+    # Use Simulator to dispatch initialization events.
+    Simulator(diagram).Initialize()
+    # Publish draw messages with current state.
+    diagram.Publish(context)
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    main()
