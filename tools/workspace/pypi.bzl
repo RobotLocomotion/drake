@@ -5,8 +5,8 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 def pypi_archive(
         name,
-        package = None,
-        version = None,
+        pypi_path = None,
+        filename = None,
         build_file = None,
         sha256 = None,
         strip_prefix = None,
@@ -17,32 +17,33 @@ def pypi_archive(
     through to the call of "http_archive."
 
     Example:
-        Download and use the "foo" package, version 1.2.3, hosted on PyPI at
-        https://files.pythonhosted.org/packages/source/f/foo/foo-1.2.3.tar.gz.
+        Download and use the "six" package, version 1.11.0, hosted on PyPI at
+        https://pypi.org/project/six/
 
         WORKSPACE:
             load("//tools/workspace:pypi.bzl", "pypi_archive")
             pypi_archive(
-                name = "foo",
-                version = "1.2.3",
-                build_file = "foo.BUILD",
+                name = "six",
+                pypi_path = "16/d8/bc6316cf98419719bd59c91742194c111b6f2e85abac88e496adefaf7afe",  # noqa
+                filename = "six-1.11.0.tar.gz",
+                strip_prefix = "six-1.11.0",
+                build_file = "package.BUILD.bazel",
                 sha256 = "0123456789abcdef...",
             )
 
-        foo.BUILD:
+        package.BUILD.bazel:
             py_library(
-                name = "foo",
+                name = "six",
                 srcs = [
-                    "foo/__init__.py",
-                    "foo/bar.py",
+                    ...
                 ],
                 visibility = ["//visibility:public"],
             )
 
-        BUILD:
+        BUILD.bazel:
             py_binary(
                 name = "foobar",
-                deps = ["@foo//:foo"],
+                deps = ["@six"],
                 srcs = ["foobar.py"],
             )
 
@@ -50,8 +51,10 @@ def pypi_archive(
         name: A unique name for this rule. This argument will be used for the
             package name if the "package" argument is omitted [Name; required].
 
-        package: The name of the PyPI package to download. The "name" argument
-            will be used if this argument is omitted [String; optional].
+        pypi_path: Path of download file relative to
+            "https://files.pythonhosted.org/packages".
+
+        filename: Filename of download URL.
 
         version: The version of the PyPI package to be downloaded
             [String; required].
@@ -73,14 +76,14 @@ def pypi_archive(
             the list-of-strings are URLs to use, formatted using {package},
             {version}, and {p} (where {p} is the first letter of {package}).
     """
-    if not package:
-        package = name
+    if not filename:
+        fail("The `filename` argument to pypi_archive is required.")
 
-    if not version:
-        fail("The version argument to pypi_archive is required.")
+    if not pypi_path:
+        fail("The `pypi_path` argument to pypi_archive is required.")
 
     if not build_file:
-        fail("The build_file argument to pypi_archive is required.")
+        fail("The `build_file` argument to pypi_archive is required.")
 
     if not sha256:
         # Set an incorrect default value to allow the download attempt to fail
@@ -91,13 +94,8 @@ def pypi_archive(
     if not mirrors:
         fail("Missing mirrors=; see mirrors.bzl")
 
-    if strip_prefix:
-        strip_prefix = "{0}-{1}/{2}".format(package, version, strip_prefix)
-    else:
-        strip_prefix = "{0}-{1}".format(package, version)
-
     urls = [
-        x.format(p = package[:1], package = package, version = version)
+        x.format(pypi_path = pypi_path, filename = filename)
         for x in mirrors.get("pypi")
     ]
 

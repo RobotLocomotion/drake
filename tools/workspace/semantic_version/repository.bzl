@@ -7,10 +7,10 @@ def semantic_version_repository(
         mirrors = None):
     pypi_archive(
         name = name,
-        package = "semantic_version",
-        version = "2.6.0",
+        pypi_path = "72/83/f76958017f3094b072d8e3a72d25c3ed65f754cc607fdb6a7b33d84ab1d5",  # noqa
+        filename = "semantic_version-2.6.0.tar.gz",
         sha256 = "2a4328680073e9b243667b201119772aefc5fc63ae32398d6afafff07c4f54c0",  # noqa
-        strip_prefix = "semantic_version",
+        strip_prefix = "semantic_version-2.6.0/semantic_version",
         build_file = "@drake//tools/workspace/semantic_version:package.BUILD.bazel",  # noqa
         mirrors = mirrors,
     )

@@ -17,7 +17,7 @@ namespace pydrake {
 PYBIND11_MODULE(autodiffutils, m) {
   m.doc() = "Bindings for Eigen AutoDiff Scalars";
 
-  // Install NumPy warning filtres.
+  // Install NumPy warning filters.
   // N.B. This may interfere with other code, but until that is a confirmed
   // issue, we should aggressively try to avoid these warnings.
   py::module::import("pydrake.util.deprecation")

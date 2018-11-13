@@ -45,9 +45,9 @@ DEFAULT_MIRRORS = {
         "http://maven.ibiblio.org/maven2/{fulljar}",
     ],
     "pypi": [
-        "https://files.pythonhosted.org/packages/source/{p}/{package}/{package}-{version}.tar.gz",  # noqa
-        "https://drake-mirror.csail.mit.edu/pypi/{package}/{package}-{version}.tar.gz",  # noqa
-        "https://s3.amazonaws.com/drake-mirror/pypi/{package}/{package}-{version}.tar.gz",  # noqa
+        "https://files.pythonhosted.org/packages/{pypi_path}/{filename}",  # noqa
+        "https://drake-mirror.csail.mit.edu/pypi/{pypi_path}/{filename}",  # noqa
+        "https://s3.amazonaws.com/drake-mirror/pypi/{pypi_path}/{filename}",  # noqa
     ],
     "vtk": [
         "https://drake-packages.csail.mit.edu/vtk/{archive}",
