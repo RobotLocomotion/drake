@@ -333,6 +333,15 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return tree().GetMutablePositionsAndVelocities(context);
   }
 
+  /// Sets all generalized velocities from the given vector [q; v].
+  /// @throws std::exception if the `context` is nullptr, if the context does
+  /// not correspond to the context for a multibody model, or if the length of
+  /// `q_v` is not equal to `num_positions() + num_velocities()`.
+  void SetPositionsAndVelocities(
+      systems::Context<T>* context, const VectorX<T>& q_v) const {
+    tree().GetMutablePositionsAndVelocities(context) = q_v;
+  }
+
   /// Returns a const Eigen vector reference containing the vector of
   /// generalized positions.
   /// @note This method returns a reference to existing data, exhibits constant
@@ -377,6 +386,14 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     // we can call head() on it.
     return tree().GetMutablePositionsAndVelocities(context).nestedExpression().
         head(num_positions());
+  }
+
+  /// Sets all generalized positions from the given vector.
+  /// @throws std::exception if the `context` is nullptr, if the context does
+  /// not correspond to the context for a multibody model, or if the length of
+  /// `q` is not equal to `num_positions()`.
+  void SetPositions(systems::Context<T>* context, const VectorX<T>& q) const {
+    GetMutablePositions(context) = q;
   }
 
   /// Sets the positions for a particular model instance from the given vector.
@@ -433,6 +450,14 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     // we can call tail() on it.
     return GetMutablePositionsAndVelocities(context).nestedExpression().
         tail(num_velocities());
+  }
+
+  /// Sets all generalized velocities from the given vector.
+  /// @throws std::exception if the `context` is nullptr, if the context does
+  /// not correspond to the context for a multibody model, or if the length of
+  /// `v` is not equal to `num_velocities()`.
+  void SetVelocities(systems::Context<T>* context, const VectorX<T>& v) const {
+    GetMutableVelocities(context) = v;
   }
 
   /// Sets the velocities for a particular model instance from the given vector.
