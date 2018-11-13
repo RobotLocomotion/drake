@@ -31,6 +31,7 @@ def util_cc_alias(name):
     drake_cc_library(
         name = name,
         hdrs = [src],
+        declare_installed_headers = 0,
         tags = ["nolint"],
         deps = ["//bindings/pydrake/common:" + name],
     )
