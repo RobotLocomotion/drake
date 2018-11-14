@@ -9,13 +9,11 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
-//#include "drake/math/gradient.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/body_node_welded.h"
 #include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/spatial_inertia.h"
-//#include "drake/util/drakeGeometryUtil.h"
 
 namespace drake {
 namespace multibody {

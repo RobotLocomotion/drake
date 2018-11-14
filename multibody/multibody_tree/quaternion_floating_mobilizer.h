@@ -212,8 +212,8 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   void DoCalcNMatrix(const MultibodyTreeContext<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
-  void DoCalcNplusMatrix(
-      const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> Nplus) const final;
+  void DoCalcNplusMatrix(const MultibodyTreeContext<T>& context,
+                         EigenPtr<MatrixX<T>> Nplus) const final;
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;
