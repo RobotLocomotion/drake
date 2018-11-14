@@ -117,6 +117,17 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
   }
 
  protected:
+  void DoCalcNMatrix(const MultibodyTreeContext<T>&,
+                     EigenPtr<MatrixX<T>> N) const override {
+    N->setIdentity();
+  }
+
+  void DoCalcNplusMatrix(
+      const MultibodyTreeContext<T>&,
+      EigenPtr<MatrixX<T>> Nplus) const override {
+    Nplus->setIdentity();
+  }
+
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override {
     return TemplatedDoCloneToScalar(tree_clone);
