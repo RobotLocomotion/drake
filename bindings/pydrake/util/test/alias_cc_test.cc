@@ -1,5 +1,3 @@
-#include <gtest/gtest.h>
-
 // Ensure we can include files from their old path.
 #include "drake/bindings/pydrake/util/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/util/cpp_template_pybind.h"
@@ -12,12 +10,8 @@
 #include "drake/bindings/pydrake/util/wrap_function.h"
 #include "drake/bindings/pydrake/util/wrap_pybind.h"
 
-namespace drake {
-namespace pydrake {
-namespace {
+// Brief symbol check.
+using drake::pydrake::GetPyParam;
 
-GTEST_TEST(AliasCcTest, Dummy) {}
-
-}  // namespace
-}  // namespace pydrake
-}  // namespace drake
+// No-op; compilation test only.
+int main() { return 0; }

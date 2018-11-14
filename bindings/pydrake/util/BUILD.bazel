@@ -5,7 +5,7 @@ load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_googletest",
+    "drake_cc_test",
 )
 load(
     "@drake//tools/skylark:pybind.bzl",
@@ -89,8 +89,12 @@ install(
     py_dest = PACKAGE_INFO.py_dest,
 )
 
-drake_cc_googletest(
+drake_cc_test(
     name = "alias_cc_test",
+    # Using `drake_shared_library` can cause timeouts in debug mode (#10025).
+    timeout = "moderate",
+    # Using `drake_shared_library` can cause ASan ODR failures (#10025).
+    tags = ["no_asan"],
     deps = cc_alias_names,
 )
 
