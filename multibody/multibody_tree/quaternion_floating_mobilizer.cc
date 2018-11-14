@@ -255,7 +255,8 @@ Eigen::Matrix<T, 4, 3> QuaternionFloatingMobilizer<T>::CalcLMatrix(
 }
 
 template <typename T>
-Eigen::Matrix<T, 4, 3> QuaternionFloatingMobilizer<T>::CalcNMatrix(
+Eigen::Matrix<T, 4, 3>
+QuaternionFloatingMobilizer<T>::AngularVelocityToQuaternionRateMatrix(
     const Quaternion<T>& q_FM) {
   // With L given by CalcLMatrix we have:
   // N(q) = L(q_FM/2)
@@ -264,7 +265,8 @@ Eigen::Matrix<T, 4, 3> QuaternionFloatingMobilizer<T>::CalcNMatrix(
 }
 
 template <typename T>
-Eigen::Matrix<T, 3, 4> QuaternionFloatingMobilizer<T>::CalcNplusMatrix(
+Eigen::Matrix<T, 3, 4>
+QuaternionFloatingMobilizer<T>::QuaternionRateToAngularVelocityMatrix(
     const Quaternion<T>& q_FM) {
   // With L given by CalcLMatrix we have:
   // N⁺(q) = L(2 q_FM)ᵀ
@@ -277,15 +279,18 @@ template <typename T>
 void QuaternionFloatingMobilizer<T>::DoCalcNMatrix(
     const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> N) const {
   N->setZero();
-  N->template block<4, 3>(3, 3).setIdentity();
-  N->template block<4, 3>(0, 0) = CalcNMatrix(get_quaternion(context));
+  N->template block<4, 3>(0, 0) =
+      AngularVelocityToQuaternionRateMatrix(get_quaternion(context));
+  N->template block<3, 3>(4, 3).setIdentity();
 }
 
 template <typename T>
 void QuaternionFloatingMobilizer<T>::DoCalcNplusMatrix(
     const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> Nplus) const {
+  Nplus->setZero();
+  Nplus->template block<3, 4>(0, 0) =
+      QuaternionRateToAngularVelocityMatrix(get_quaternion(context));
   Nplus->template block<3, 3>(3, 4).setIdentity();
-  Nplus->template block<3, 4>(0, 0) = CalcNplusMatrix(get_quaternion(context));
 }
 
 template <typename T>
@@ -298,7 +303,8 @@ void QuaternionFloatingMobilizer<T>::MapVelocityToQDot(
   DRAKE_ASSERT(qdot->size() == kNq);
   const Quaternion<T> q_FM = get_quaternion(context);
   // Angular component, q̇_WB = N(q)⋅w_WB:
-  qdot->template head<4>() = CalcNMatrix(q_FM) * v.template head<3>();
+  qdot->template head<4>() =
+      AngularVelocityToQuaternionRateMatrix(q_FM) * v.template head<3>();
   // Translational component, ṗ_WB = v_WB:
   qdot->template tail<3>() = v.template tail<3>();
 }
@@ -313,7 +319,8 @@ void QuaternionFloatingMobilizer<T>::MapQDotToVelocity(
   DRAKE_ASSERT(v->size() == kNv);
   const Quaternion<T> q_FM = get_quaternion(context);
   // Angular component, w_WB = N⁺(q)⋅q̇_WB:
-  v->template head<3>() = CalcNplusMatrix(q_FM) * qdot.template head<4>();
+  v->template head<3>() =
+      QuaternionRateToAngularVelocityMatrix(q_FM) * qdot.template head<4>();
   // Translational component, v_WB = ṗ_WB:
   v->template tail<3>() = qdot.template tail<3>();
 }
