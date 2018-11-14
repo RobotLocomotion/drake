@@ -304,8 +304,8 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTrue(np.allclose(x, np.zeros(4)))
 
         # Write into a mutable reference to the state vector.
-        x_reff = tree.GetMutablePositionsAndVelocities(context)
-        x_reff[:] = x0
+        x_ref = tree.GetMutablePositionsAndVelocities(context)
+        x_ref[:] = x0
 
         # Verify that positions and velocities were set correctly.
         self.assertTrue(np.allclose(plant.GetPositions(context), q0))
@@ -317,23 +317,23 @@ class TestMultibodyTree(unittest.TestCase):
 
         # Now set positions and velocities independently and check them.
         zeros_2 = np.zeros([2, 1])
-        x_reff.fill(0)
+        x_ref.fill(0)
         plant.SetPositions(context, q0)
         self.assertTrue(np.allclose(plant.GetPositions(context), q0))
         self.assertTrue(np.allclose(plant.GetVelocities(context), zeros_2))
-        x_reff.fill(0)
+        x_ref.fill(0)
         plant.SetVelocities(context, v0)
         self.assertTrue(np.allclose(plant.GetPositions(context), zeros_2))
         self.assertTrue(np.allclose(plant.GetVelocities(context), v0))
 
         # Now test SetPositionsAndVelocities().
-        x_reff.fill(0)
+        x_ref.fill(0)
         plant.SetPositionsAndVelocities(context, x0)
         self.assertTrue(np.allclose(
             tree.GetPositionsAndVelocities(context), x0))
 
     def test_model_instance_state_access(self):
-        # Create a multibodyplant with a kuka arm and a schunk gripper.
+        # Create a MultibodyPlant with a kuka arm and a schunk gripper.
         # the arm is welded to the world, the gripper is welded to the
         # arm's end effector.
         wsg50_sdf_path = FindResourceOrThrow(
@@ -473,7 +473,7 @@ class TestMultibodyTree(unittest.TestCase):
             context, iiwa_model), np.zeros(nq_iiwa + nv_iiwa)))
 
     def test_model_instance_state_access_by_array(self):
-        # Create a multibodyplant with a kuka arm and a schunk gripper.
+        # Create a MultibodyPlant with a kuka arm and a schunk gripper.
         # the arm is welded to the world, the gripper is welded to the
         # arm's end effector.
         wsg50_sdf_path = FindResourceOrThrow(

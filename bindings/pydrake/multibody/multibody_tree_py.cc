@@ -651,7 +651,7 @@ void init_multibody_plant(py::module m) {
                return self->GetPositions(context, model_instance);
              },
              py_reference, py::arg("context"), py::arg("model_instance"),
-             doc.MultibodyPlant.GetPositions.doc)
+             doc.MultibodyPlant.GetPositions.doc_2)
         .def("SetPositions",
              [](const MultibodyPlant<T>* self, systems::Context<T>* context,
                 const VectorX<T>& q) { self->SetPositions(context, q); },
@@ -664,7 +664,7 @@ void init_multibody_plant(py::module m) {
                self->SetPositions(context, model_instance, q);
              },
              py_reference, py::arg("context"), py::arg("model_instance"),
-             py::arg("q"), doc.MultibodyPlant.SetPositions.doc)
+             py::arg("q"), doc.MultibodyPlant.SetPositions.doc_2)
         .def("GetVelocities",
              [](const MultibodyPlant<T>* self,
                 const systems::Context<T>& context) -> VectorX<T> {
@@ -679,7 +679,7 @@ void init_multibody_plant(py::module m) {
                return self->GetVelocities(context, model_instance);
              },
              py_reference, py::arg("context"), py::arg("model_instance"),
-             doc.MultibodyPlant.GetVelocities.doc)
+             doc.MultibodyPlant.GetVelocities.doc_2)
         .def("SetVelocities",
              [](const MultibodyPlant<T>* self, systems::Context<T>* context,
                 const VectorX<T>& v) { self->SetVelocities(context, v); },
@@ -691,7 +691,7 @@ void init_multibody_plant(py::module m) {
                self->SetVelocities(context, model_instance, v);
              },
              py_reference, py::arg("context"), py::arg("model_instance"),
-             py::arg("v"), doc.MultibodyPlant.SetVelocities.doc)
+             py::arg("v"), doc.MultibodyPlant.SetVelocities.doc_2)
         .def("GetPositionsAndVelocities",
              [](const MultibodyPlant<T>* self,
                 const systems::Context<T>& context) -> VectorX<T> {
@@ -706,7 +706,7 @@ void init_multibody_plant(py::module m) {
                return self->GetPositionsAndVelocities(context, model_instance);
              },
              py_reference, py::arg("context"), py::arg("model_instance"),
-             doc.MultibodyPlant.GetPositionsAndVelocities.doc)
+             doc.MultibodyPlant.GetPositionsAndVelocities.doc_2)
         .def("SetPositionsAndVelocities",
              [](const MultibodyPlant<T>* self, systems::Context<T>* context,
                 const VectorX<T>& q_v) {
@@ -721,7 +721,7 @@ void init_multibody_plant(py::module m) {
                self->SetPositionsAndVelocities(context, model_instance, q_v);
              },
              py_reference, py::arg("context"), py::arg("model_instance"),
-             py::arg("q_v"), doc.MultibodyPlant.SetPositionsAndVelocities.doc);
+             py::arg("q_v"), doc.MultibodyPlant.SetPositionsAndVelocities.doc_2);
 
     // Add deprecated methods.
 #pragma GCC diagnostic push
