@@ -16,8 +16,6 @@ namespace multibody {
 namespace multibody_tree {
 namespace {
 
-using Eigen::AngleAxisd;
-using Eigen::Matrix3d;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
 using math::RigidTransformd;
