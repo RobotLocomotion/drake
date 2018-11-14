@@ -34,6 +34,7 @@ def util_cc_alias(name):
         declare_installed_headers = 0,
         tags = ["nolint"],
         deps = ["//bindings/pydrake/common:" + name],
+        visibility = ["//visibility:public"],
     )
 
 def util_py_alias(name):
