@@ -22,6 +22,7 @@ from pydrake.systems.primitives import (
     ControllabilityMatrix,
     Demultiplexer, Demultiplexer_,
     ExponentialRandomSource,
+    FirstOrderLowPassFilter,
     FirstOrderTaylorApproximation,
     GaussianRandomSource,
     Gain, Gain_,
@@ -187,6 +188,18 @@ class TestGeneral(unittest.TestCase):
         system.CalcOutput(context, output)
         output_value = output.get_data(0)
         compare_value(self, output_value, model_value)
+
+    def test_first_order_low_pass_filter(self):
+        filter1 = FirstOrderLowPassFilter(time_constant=3.0, size=4)
+        self.assertEqual(filter1.get_time_constant(), 3.0)
+
+        alpha = np.array([1, 2, 3])
+        filter2 = FirstOrderLowPassFilter(time_constants=alpha)
+        np.testing.assert_array_equal(filter2.get_time_constants_vector(),
+                                      alpha)
+
+        context = filter2.CreateDefaultContext()
+        filter2.set_initial_output_value(context, [0., -0.2, 0.4])
 
     def test_gain(self):
         k = 42.

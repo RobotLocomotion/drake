@@ -5,7 +5,7 @@ which overrides any `-W` command-line arguments. To change this behavior, you
 can do something like:
 
 >>> import warnings
->>> from pydrake.util.deprecation import DrakeDeprecationWarning
+>>> from pydrake.common.deprecation import DrakeDeprecationWarning
 >>> warnings.simplefilter("always", DrakeDeprecationWarning)
 
 If you would like to disable all Drake-related warnings, you may use the
@@ -96,9 +96,8 @@ class ModuleShim(object):
 
 class DrakeDeprecationWarning(DeprecationWarning):
     """Extends `DeprecationWarning` to permit Drake-specific warnings to
-    be filtered by default, without having side effects on other libraries.
-    """
-    addendum = ("\n    Please see `help(pydrake.util.deprecation)` " +
+    be filtered by default, without having side effects on other libraries."""
+    addendum = ("\n    Please see `help(pydrake.common.deprecation)` " +
                 "for more information.")
 
     def __init__(self, message, *args):
@@ -161,10 +160,10 @@ def deprecated(message):
 
 def install_numpy_warning_filters(force=False):
     """Install warnings filters specific to NumPy."""
-    global installed_numpy_warning_filters
-    if installed_numpy_warning_filters and not force:
+    global _installed_numpy_warning_filters
+    if _installed_numpy_warning_filters and not force:
         return
-    installed_numpy_warning_filters = True
+    _installed_numpy_warning_filters = True
     # Warnings specific to comparison with `dtype=object` should be raised to
     # errors (#8315, #8491). Without them, NumPy will return effectively
     # garbage values (e.g. comparison based on object ID): either a scalar bool
@@ -181,4 +180,4 @@ def install_numpy_warning_filters(force=False):
 
 
 warnings.simplefilter('once', DrakeDeprecationWarning)
-installed_numpy_warning_filters = False
+_installed_numpy_warning_filters = False

@@ -4,7 +4,7 @@ Tests `pybind11` version information available from Drake.
 
 from __future__ import print_function
 
-import pydrake.util.pybind11_version as mut
+import pydrake.common.pybind11_version as mut
 
 import unittest
 

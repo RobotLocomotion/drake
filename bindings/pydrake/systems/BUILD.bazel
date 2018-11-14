@@ -45,10 +45,12 @@ drake_py_library(
 drake_cc_library(
     name = "systems_pybind",
     hdrs = ["systems_pybind.h"],
+    declare_installed_headers = 0,
     visibility = ["//visibility:public"],
     deps = [
         "//bindings/pydrake:autodiff_types_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/util:cpp_param_pybind",
         "//bindings/pydrake/util:cpp_template_pybind",
     ],
 )
@@ -161,6 +163,7 @@ drake_pybind_library(
         "//bindings/pydrake/util:cpp_template_pybind",
         "//bindings/pydrake/util:eigen_geometry_pybind",
         "//bindings/pydrake/util:eigen_pybind",
+        "//bindings/pydrake/util:type_pack",
     ],
     cc_srcs = ["sensors_py.cc"],
     package_info = PACKAGE_INFO,

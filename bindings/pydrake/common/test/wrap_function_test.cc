@@ -1,4 +1,4 @@
-#include "drake/bindings/pydrake/util/wrap_function.h"
+#include "drake/bindings/pydrake/common/wrap_function.h"
 
 #include <functional>
 #include <type_traits>

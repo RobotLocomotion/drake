@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-from pydrake.util.deprecation import DrakeDeprecationWarning
+from pydrake.common.deprecation import DrakeDeprecationWarning
 
 import pydoc
 import unittest
@@ -201,7 +201,7 @@ class TestDeprecation(unittest.TestCase):
                 prop_extra = ExampleClass.deprecated_prop
             # N.B. `help(<module>)` is super verbose.
             print("Help text:\n{}".format(
-                pydoc.getdoc(pydrake.util.deprecation)))
+                pydoc.getdoc(pydrake.common.deprecation)))
             # Manually set this back to `once`.
             warnings.simplefilter("ignored", DeprecationWarning)
             warnings.simplefilter("once", DrakeDeprecationWarning)
