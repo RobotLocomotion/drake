@@ -308,8 +308,8 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
 
   // Rotate the spatial inertia about the y-axis to match the rotation of
   // q_WB.
-  Eigen::Matrix3d R_ZX =
-      Eigen::AngleAxisd(-M_PI_2, Vector3d::UnitY()).toRotationMatrix();
+  drake::math::RotationMatrix<double> R_ZX =
+      drake::math::RotationMatrix<double>::MakeYRotation(-M_PI_2);
   Matrix6<double> M_cylinder_mat = M_Ccm.ReExpress(R_ZX).CopyToFullMatrix6();
 
   // Get expected projected articulated body inertia of cylinder.

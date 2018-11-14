@@ -121,7 +121,7 @@
           </mesh>
         </geometry>
         <material>
-          <diffuse>0.4 0.4 0.4 1.0</diffuse>
+          <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
         </material>
       </visual>
        <collision name='iiwa_link_2_collision'>
@@ -237,7 +237,7 @@
           </mesh>
         </geometry>
         <material>
-          <diffuse>0.4 0.4 0.4 1.0</diffuse>
+          <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
         </material>
       </visual>
       <collision name='iiwa_link_4_collision'>
@@ -353,7 +353,7 @@
           </mesh>
         </geometry>
         <material>
-          <diffuse>0.4 0.4 0.4 1.0</diffuse>
+          <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
         </material>
       </visual>
       <collision name='iiwa_link_6_collision'>

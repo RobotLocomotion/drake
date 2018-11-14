@@ -6,6 +6,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/multibody_tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/articulated_body_inertia_cache.h"
 #include "drake/multibody/multibody_tree/body.h"
@@ -685,7 +686,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     DRAKE_DEMAND(frame_M.body().index() == body_B.index());
     const Isometry3<T> X_BM = frame_M.CalcPoseInBodyFrame(context);
     const Vector3<T>& p_BoMo_B = X_BM.translation();
-    const Matrix3<T>& R_WB = get_X_WB(pc).linear();
+    const Isometry3<T>& X_WB = get_X_WB(pc);
+    const Matrix3<T>& R_WB = X_WB.linear();
     const Vector3<T> p_BoMo_W = R_WB * p_BoMo_B;
 
     // Output spatial force that would need to be exerted by this node's
@@ -978,7 +980,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const Isometry3<T>& X_WB = get_X_WB(pc);
 
     // Get R_WB.
-    const Matrix3<T> R_WB = X_WB.linear();
+    const math::RotationMatrix<T> R_WB(X_WB.linear());
 
     // Compute the spatial inertia for this body and re-express in W frame.
     const SpatialInertia<T> M_B = body_B.CalcSpatialInertiaInBodyFrame(context);
@@ -1409,7 +1411,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const Isometry3<T>& X_WB = get_X_WB(pc);
 
     // Orientation of B in W.
-    const Matrix3<T> R_WB = X_WB.linear();
+    const math::RotationMatrix<T> R_WB(X_WB.linear());
 
     // Body spatial velocity in W.
     const SpatialVelocity<T>& V_WB = get_V_WB(vc);

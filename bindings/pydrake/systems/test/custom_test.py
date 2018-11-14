@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import copy
 import unittest
+import warnings
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
@@ -30,6 +31,10 @@ from pydrake.systems.primitives import (
 from pydrake.systems.test.test_util import (
     call_leaf_system_overrides,
     call_vector_system_overrides,
+    )
+
+from pydrake.util.deprecation import (
+    DrakeDeprecationWarning,
     )
 
 
@@ -148,6 +153,8 @@ class TestCustom(unittest.TestCase):
                 self.called_continuous = False
                 self.called_discrete = False
                 self.called_initialize = False
+                self.called_per_step = False
+                self.called_periodic = False
                 # Ensure we have desired overloads.
                 self._DeclarePeriodicPublish(0.1)
                 self._DeclarePeriodicPublish(0.1, 0)
@@ -158,6 +165,16 @@ class TestCustom(unittest.TestCase):
                     event=PublishEvent(
                         trigger_type=TriggerType.kInitialization,
                         callback=self._on_initialize))
+                self._DeclarePerStepEvent(
+                    event=PublishEvent(
+                        trigger_type=TriggerType.kPerStep,
+                        callback=self._on_per_step))
+                self._DeclarePeriodicEvent(
+                    period_sec=0.1,
+                    offset_sec=0.0,
+                    event=PublishEvent(
+                        trigger_type=TriggerType.kPeriodic,
+                        callback=self._on_periodic))
                 self._DeclareContinuousState(2)
                 self._DeclareDiscreteState(1)
                 # Ensure that we have inputs / outputs to call direct
@@ -207,6 +224,17 @@ class TestCustom(unittest.TestCase):
                 test.assertFalse(self.called_initialize)
                 self.called_initialize = True
 
+            def _on_per_step(self, context, event):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(event, PublishEvent)
+                self.called_per_step = True
+
+            def _on_periodic(self, context, event):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(event, PublishEvent)
+                test.assertFalse(self.called_periodic)
+                self.called_periodic = True
+
         system = TrivialSystem()
         self.assertFalse(system.called_publish)
         self.assertFalse(system.called_feedthrough)
@@ -236,6 +264,13 @@ class TestCustom(unittest.TestCase):
         system.CalcTimeDerivatives(
             context, context_update.get_mutable_continuous_state())
         self.assertTrue(system.called_continuous)
+
+        # Test per-step and periodic call backs
+        system = TrivialSystem()
+        simulator = Simulator(system)
+        simulator.StepTo(0.1)
+        self.assertTrue(system.called_per_step)
+        self.assertTrue(system.called_periodic)
 
     def test_vector_system_overrides(self):
         dt = 0.5
@@ -407,12 +442,22 @@ class TestCustom(unittest.TestCase):
             self.assertEqual(value.get_value(), expected_output_value)
 
     def test_deprecated_abstract_input_port(self):
+        """This test case confirms that the deprecated API for abstract input ports
+        continues to operate correctly, until such a time as we remove it.  For
+        an example of non-deprecated APIs to use abstract input ports, see the
+        test_abstract_io_port case, above.
+        """
+        test = self
+
         # A system that takes a Value[object] on its input, and parses the
         # input value's first element to a float on its output.
         class ParseFloatSystem(LeafSystem_[float]):
             def __init__(self):
                 LeafSystem_[float].__init__(self)
-                self._DeclareAbstractInputPort("in")
+                with warnings.catch_warnings(record=True) as w:
+                    warnings.simplefilter("default", DrakeDeprecationWarning)
+                    self._DeclareAbstractInputPort("in")
+                    test.assertEqual(len(w), 1)
                 self._DeclareVectorOutputPort("out", BasicVector(1), self._Out)
 
             def _Out(self, context, y_data):

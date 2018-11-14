@@ -65,27 +65,6 @@ class RgbdCamera final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdCamera)
 
-  /// Converts a depth image obtained from RgbdCamera to a point cloud.  If a
-  /// pixel in the depth image has NaN depth value, all the `(x, y, z)` values
-  /// in the converted point will be NaN.
-  /// Similarly, if a pixel has either InvalidDepth::kTooFar or
-  /// InvalidDepth::kTooClose, the converted point will be
-  /// InvalidDepth::kTooFar. Note that this matches the convention used by the
-  /// Point Cloud Library (PCL).
-  ///
-  /// @param[in] depth_image The input depth image obtained from RgbdCamera.
-  ///
-  /// @param[in] camera_info The input camera info which is used for conversion.
-  ///
-  /// @param[out] point_cloud The pointer of output point cloud.
-  // TODO(kunimatsu-tri) Use drake::perception::PointCloud instead of
-  // Eigen::Matrix3Xf and create new constants there instead of reusing
-  // InvalidDepth.
-  // TODO(kunimatsu-tri) Move this to drake::perception.
-  static void ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
-                                            const CameraInfo& camera_info,
-                                            Eigen::Matrix3Xf* point_cloud);
-
   /// A constructor that uses the default RgbdRendererVTK renderer and
   /// defines `B` using Euler angles.
   /// The pose of %RgbdCamera will be fixed to the world coordinate system

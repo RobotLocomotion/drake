@@ -8,6 +8,8 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+package(default_visibility = ["//visibility:private"])
+
 drake_cc_library(
     name = "van_der_pol",
     srcs = ["van_der_pol.cc"],
