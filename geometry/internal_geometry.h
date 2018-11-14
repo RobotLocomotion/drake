@@ -78,6 +78,10 @@ class InternalGeometry {
   /** Returns the index of this geometry in the full scene graph.  */
   GeometryIndex index() const { return index_; }
 
+  /** Sets the internal geometry's index -- facilitates removing geometries from
+   the scene graph.  */
+  void set_index(GeometryIndex index) { index_ = index; }
+
   /** Returns the source id that registered the geometry.  */
   SourceId source_id() const { return source_id_; }
 
@@ -150,6 +154,14 @@ class InternalGeometry {
    children.  */
   void add_child(GeometryId geometry_id) {
     child_geometry_ids_.insert(geometry_id);
+  }
+
+  /** Removes the given `geometry_id` from the set of geometries that this frame
+   considers to be children. If the id is not in the set of children, nothing
+   happens.  */
+  void remove_child(GeometryId geometry_id) {
+    DRAKE_ASSERT(child_geometry_ids_.count(geometry_id) > 0);
+    child_geometry_ids_.erase(geometry_id);
   }
 
   /** Returns true if the geometry is *not* attached to the world frame -- or,

@@ -190,6 +190,12 @@ GeometryId SceneGraph<T>::RegisterAnchoredGeometry(
 }
 
 template <typename T>
+void SceneGraph<T>::RemoveGeometry(SourceId source_id, GeometryId geometry_id) {
+  GS_THROW_IF_CONTEXT_ALLOCATED
+  initial_state_->RemoveGeometry(source_id, geometry_id);
+}
+
+template <typename T>
 const SceneGraphInspector<T>& SceneGraph<T>::model_inspector() const {
   GS_THROW_IF_CONTEXT_ALLOCATED
   return model_inspector_;
