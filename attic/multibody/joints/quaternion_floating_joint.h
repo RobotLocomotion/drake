@@ -90,7 +90,8 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {
     const drake::Vector3<typename DerivedQ::Scalar> p_PoBo(q[0], q[1], q[2]);
-    const drake::Vector4<typename DerivedQ::Scalar> wxyz = q.template bottomRows<4>();
+    const drake::Vector4<typename DerivedQ::Scalar> wxyz =
+        q.template bottomRows<4>();
     const Eigen::Quaternion<typename DerivedQ::Scalar> quaternion_PB(
         wxyz(0), wxyz(1), wxyz(2), wxyz(3));
     const drake::math::RigidTransform<typename DerivedQ::Scalar> X_PB(
