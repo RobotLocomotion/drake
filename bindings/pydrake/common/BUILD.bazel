@@ -43,6 +43,8 @@ drake_pybind_library(
     cc_so_name = "_module_py",
     cc_srcs = ["module_py.cc"],
     package_info = PACKAGE_INFO,
+    # Ensure the correct version of `numpy` is used throughout `pydrake`.
+    py_deps = ["@numpy_py"],
     py_srcs = [
         "__init__.py",
     ],
@@ -87,6 +89,8 @@ drake_py_library(
     name = "deprecation_py",
     srcs = ["deprecation.py"],
     imports = PACKAGE_INFO.py_imports,
+    # `:module_py` consumes this, so use `_init_py` instead.
+    deps = [":_init_py"],
 )
 
 # N.B. Since `module_py` incorporates `deprecation_py`, C++ Python libraries
@@ -225,7 +229,9 @@ drake_py_library(
     name = "compatibility_py",
     srcs = ["compatibility.py"],
     deps = [
-        ":module_py",
+        # `:module_py` consumes this, so use `_init_py` instead.
+        ":_init_py",
+        ":deprecation_py",
     ],
 )
 

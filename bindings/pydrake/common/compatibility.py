@@ -1,58 +1,34 @@
 """Contains routines to monkey patch or provide alternatives to upstream code
-which may need changes for compatibility.
+which may need changes for compatibility, or check versions.
 """
 
 import numpy as np
+from numpy.lib import NumpyVersion
 
-_numpy_version = np.lib.NumpyVersion(np.version.version)
-_patches = {
-    'numpy_formatters': {
-        'applied': False,
-        'required': _numpy_version < np.lib.NumpyVersion('1.13.0'),
-    },
-}
+from pydrake.common.deprecation import _warn_deprecated
 
 
-def _defer_callable_type(cls):
-    # Makes a type, which is meant to purely callable, and defers its
-    # construction until it needs to be called.
+def check_required_numpy_version(_actual=np.version.version):
+    """Fails fast if a minimum version of NumPy is not present.
 
-    class Deferred(object):
-        def __init__(self, *args, **kwargs):
-            self._args = args
-            self._kwargs = kwargs
-            self._obj = None
+    pydrake requires NumPy >= 0.15.0 namely for the following patches:
+        https://github.com/numpy/numpy/pull/10898
+        https://github.com/numpy/numpy/pull/11076
 
-        def _get_obj(self):
-            if self._obj is None:
-                self._obj = cls(*self._args, **self._kwargs)
-            return self._obj
-
-        def __call__(self, *args, **kwargs):
-            return self._get_obj().__call__(*args, **kwargs)
-
-    return Deferred
+    If Drake uses user-dtypes in lieu of `dtype=object`, then anything that
+    refers to `autodiff` or `symbolic` (e.g. all of `systems`,
+    `multibody`, etc.) could potentially have "random" segfaults.
+    """
+    actual = NumpyVersion(_actual)
+    minimum = NumpyVersion('1.15.0')
+    if actual < minimum:
+        raise RuntimeError(
+            "pydrake requires numpy >= {}, but only {} is present".format(
+                minimum.vstring, actual.vstring))
 
 
 def maybe_patch_numpy_formatters():
-    """Required to permit printing of symbolic array types in NumPy < 1.13.0.
-
-    See #8729 for more information.
-    """
-    # Provides version-dependent monkey-patch which effectively achieves a
-    # portion of https://github.com/numpy/numpy/pull/8963
-    patch = _patches['numpy_formatters']
-    if not patch['required']:
-        return
-    if patch['applied']:
-        return
-    module = np.core.arrayprint
-    defer_callable_types = [
-        'IntegerFormat',
-        'FloatFormat',
-    ]
-    for name in defer_callable_types:
-        original = getattr(module, name)
-        deferred = _defer_callable_type(original)
-        setattr(module, name, deferred)
-    patch['applied'] = True
+    """Deprecated functionality."""
+    _warn_deprecated(
+        "`maybe_patch_numpy_formatters` is no longer needed, and will "
+        "be removed after 2019/01", stacklevel=3)

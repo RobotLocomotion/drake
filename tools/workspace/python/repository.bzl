@@ -40,7 +40,7 @@ _VERSION_SUPPORT_MATRIX = {
     "macos:10.14": ["2.7"],
 }
 
-def _repository_python_info(repository_ctx):
+def repository_python_info(repository_ctx):
     # Using `PYTHON_BIN_PATH` from the environment, determine:
     # - `python` - binary path
     # - `python_config` - configuration binary path
@@ -108,7 +108,7 @@ def _repository_python_info(repository_ctx):
 
 def _impl(repository_ctx):
     # Repository implementation.
-    py_info = _repository_python_info(
+    py_info = repository_python_info(
         repository_ctx,
     )
 
