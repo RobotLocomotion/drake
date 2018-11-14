@@ -1,13 +1,11 @@
 #pragma once
 
 #include <memory>
-#include <string>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/systems/controllers/inverse_dynamics.h"
 #include "drake/systems/controllers/pid_controller.h"
+#include "drake/systems/controllers/rbt_inverse_dynamics.h"
 #include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/framework/diagram.h"
 
@@ -19,6 +17,7 @@ class RigidBodyTree;
 namespace drake {
 namespace systems {
 namespace controllers {
+namespace rbt {  // Extra namespace to de-conflict vs the non-attic classname.
 
 /**
  * A state feedback controller that uses a PidController to generate desired
@@ -77,34 +76,6 @@ class InverseDynamicsController : public Diagram<T>,
                             const VectorX<double>& kd,
                             bool has_reference_acceleration);
 
-  /**
-   * Constructs an inverse dynamics controller for the given `plant` model.
-   * The %InverseDynamicsController holds an internal, non-owned reference to
-   * the MultibodyPlant object so you must ensure that `plant` has a longer
-   * lifetime than `this` %InverseDynamicsController.
-   * @param plant The model of the plant for control.
-   * @param kp Position gain.
-   * @param ki Integral gain.
-   * @param kd Velocity gain.
-   * @param has_reference_acceleration If true, there is an extra BasicVector
-   * input port for `vd*`. If false, `vd*` is treated as zero, and no extra
-   * input port is declared.
-   * @pre `plant` has been finalized (plant.is_finalized() returns `true`).
-   * @throws std::exception if
-   *  - The plant is not finalized (see MultibodyPlant::Finalize()).
-   *  - The number of generalized velocities is not equal to the number of
-   *    generalized positions.
-   *  - The model is not fully actuated.
-   *  - Vector kp, ki and kd do not all have the same size equal to the number
-   *    of generalized positions.
-   */
-  InverseDynamicsController(
-      const multibody::multibody_plant::MultibodyPlant<T>& plant,
-      const VectorX<double>& kp,
-      const VectorX<double>& ki,
-      const VectorX<double>& kd,
-      bool has_reference_acceleration);
-
   ~InverseDynamicsController() override;
 
   /**
@@ -149,40 +120,22 @@ class InverseDynamicsController : public Diagram<T>,
    */
   DRAKE_DEPRECATED("Please use get_rigid_body_tree_for_control().")
   const RigidBodyTree<T>& get_robot_for_control() const {
-    if (rigid_body_tree_for_control_ == nullptr) {
-      throw std::runtime_error(
-          "This controller was created for a MultibodyPlant."
-          "Use get_multibody_plant_for_control() instead.");
-    }
     return *rigid_body_tree_for_control_;
   }
 
   /**
    * Returns a pointer to the const RigidBodyTree used for control.
-   * @return `nullptr` if `this` was constructed using a MultibodyPlant.
    */
   const RigidBodyTree<T>* get_rigid_body_tree_for_control() const {
     return rigid_body_tree_for_control_.get();
   }
 
-  /**
-   * Returns a constant pointer to the MultibodyPlant used for control.
-   * @return `nullptr` if `this` was constructed using a RigidBodyTree.
-   */
-  const multibody::multibody_plant::MultibodyPlant<T>*
-      get_multibody_plant_for_control() const {
-    return multibody_plant_for_control_;
-  }
-
  private:
   void SetUp(const VectorX<double>& kp, const VectorX<double>& ki,
-      const VectorX<double>& kd,
-      const controllers::InverseDynamics<T>& inverse_dynamics,
+      const VectorX<double>& kd, const InverseDynamics<T>& inverse_dynamics,
       DiagramBuilder<T>* diagram_builder);
 
   std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_for_control_;
-  const multibody::multibody_plant::MultibodyPlant<T>*
-      multibody_plant_for_control_{nullptr};
   PidController<T>* pid_{nullptr};
   const bool has_reference_acceleration_{false};
   int input_port_index_estimated_state_{-1};
@@ -191,6 +144,7 @@ class InverseDynamicsController : public Diagram<T>,
   int output_port_index_control_{-1};
 };
 
+}  // namespace rbt
 }  // namespace controllers
 }  // namespace systems
 }  // namespace drake

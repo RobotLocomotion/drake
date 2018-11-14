@@ -1,16 +1,19 @@
 #pragma once
 
 #include <memory>
+#include <stdexcept>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/systems/framework/leaf_system.h"
 
-// Forward declaration keeps us from including RBT headers that significantly
-// slow compilation.
+#ifndef DRAKE_DOXYGEN_CXX
+// Forward declaration because we only need the type name for deprecation
+// purposes; we never call any methods on an RBT.
 template <class T>
 class RigidBodyTree;
+#endif
 
 namespace drake {
 namespace systems {
@@ -50,30 +53,29 @@ class InverseDynamics : public LeafSystem<T> {
 
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamics)
 
-  DRAKE_DEPRECATED("Please use constructor with InverseDynamicsType.")
-  InverseDynamics(const RigidBodyTree<T>* tree, bool pure_gravity_compensation);
+#ifndef DRAKE_DOXYGEN_CXX
+  // TODO(jwnimmer-tri) Remove these stubs on or about 2019-03-01.
+  // Remember to remove the forward declaration above at the same time.
+  DRAKE_DEPRECATED(
+      "Inverse dynamics for RigidBodyTree no longer uses this class; for new "
+      "instructions, see https://github.com/RobotLocomotion/drake/pull/9987")
+  InverseDynamics(const RigidBodyTree<T>*, bool) : mode_{} {
+    throw std::runtime_error(
+        "Inverse dynamics for RigidBodyTree no longer uses this class; for new "
+        "instructions, see https://github.com/RobotLocomotion/drake/pull/9987");
+  }
 
-  /**
-   * Computes inverse dynamics for `tree`, where the computed force `tau_id`
-   * is: <pre>
-   *   tau_id = `M(q)vd_d + C(q, v)v - tau_g(q) - tau_s(q) + tau_d(v)`
-   * </pre>
-   * where `M(q)` is the mass matrix, `C(q, v)v` is the Coriolis term,
-   * `tau_g(q)` is the gravity term, `q` is the generalized position, `v` is the
-   * generalized velocity, `vd_d` is the desired generalized acceleration,
-   * `tau_s` is computed via `RigidBodyTree::CalcGeneralizedSpringForces()` and
-   * `tau_d` is computed via `RigidBodyTree::frictionTorques()`.
-   * In gravity compensation mode, the generalized force only includes the
-   * gravity term, that is, `tau_id = -tau_g(q)`.
-   * @param tree Pointer to the model. The life span of @p tree must be longer
-   * than this instance.
-   * @param mode If set to kGravityCompensation, this instance will only
-   * consider the gravity term. It also will NOT have the desired acceleration
-   * input port.
-   */
-  InverseDynamics(const RigidBodyTree<T>* tree, InverseDynamicsMode mode);
+  DRAKE_DEPRECATED(
+      "Inverse dynamics for RigidBodyTree no longer uses this class; for new "
+      "instructions, see https://github.com/RobotLocomotion/drake/pull/9987")
+  InverseDynamics(const RigidBodyTree<T>*, InverseDynamicsMode) : mode_{} {
+    throw std::runtime_error(
+        "Inverse dynamics for RigidBodyTree no longer uses this class; for new "
+        "instructions, see https://github.com/RobotLocomotion/drake/pull/9987");
+  }
+#endif
 
-  DRAKE_DEPRECATED("Please use constructor with InverseDynamicsType.")
+  DRAKE_DEPRECATED("Please use constructor with InverseDynamicsMode.")
   InverseDynamics(const multibody::multibody_plant::MultibodyPlant<T>* plant,
                   bool pure_gravity_compensation);
 
@@ -149,7 +151,6 @@ class InverseDynamics : public LeafSystem<T> {
   void CalcOutputForce(const Context<T>& context,
                        BasicVector<T>* force) const;
 
-  const RigidBodyTree<T>* rigid_body_tree_{nullptr};
   const multibody::multibody_plant::MultibodyPlant<T>* multibody_plant_{
       nullptr};
 

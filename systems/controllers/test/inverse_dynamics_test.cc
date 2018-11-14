@@ -14,9 +14,6 @@
 #include "drake/multibody/multibody_tree/math/spatial_acceleration.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
-#include "drake/multibody/parsers/sdf_parser.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/controllers/test_utilities/compute_torque.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
@@ -33,14 +30,6 @@ namespace {
 
 class InverseDynamicsTest : public ::testing::Test {
  protected:
-  void Init(std::unique_ptr<RigidBodyTree<double>> tree,
-            const InverseDynamics<double>::InverseDynamicsMode mode) {
-    rigid_body_tree_ = std::move(tree);
-    inverse_dynamics_ = make_unique<InverseDynamics<double>>(
-        rigid_body_tree_.get(), mode);
-    FinishInit(mode);
-  }
-
   void Init(std::unique_ptr<MultibodyPlant<double>> plant,
             const InverseDynamics<double>::InverseDynamicsMode mode) {
     multibody_plant_ = std::move(plant);
@@ -108,16 +97,11 @@ class InverseDynamicsTest : public ::testing::Test {
 
     // Compute the expected torque.
     VectorXd expected_torque;
-    if (rigid_body_tree_.get()) {
-      expected_torque = controllers_test::ComputeTorque(
-          *rigid_body_tree_, position, velocity, vd_d);
-    } else {
-      ASSERT_TRUE(multibody_plant_.get());
-      ASSERT_TRUE(multibody_context_.get());
-      expected_torque = controllers_test::ComputeTorque(
-          *multibody_plant_, position, velocity, vd_d,
-          multibody_context_.get());
-    }
+    ASSERT_TRUE(multibody_plant_.get());
+    ASSERT_TRUE(multibody_context_.get());
+    expected_torque = controllers_test::ComputeTorque(
+        *multibody_plant_, position, velocity, vd_d,
+        multibody_context_.get());
 
     // Checks the expected and computed gravity torque.
     const BasicVector<double>* output_vector = output_->get_vector_data(0);
@@ -142,20 +126,15 @@ class InverseDynamicsTest : public ::testing::Test {
 
  private:
   int num_positions() const {
-    if (rigid_body_tree_)
-      return rigid_body_tree_->get_num_positions();
     DRAKE_DEMAND(multibody_plant_.get() != nullptr);
     return multibody_plant_->tree().num_positions();
   }
 
   int num_velocities() const {
-    if (rigid_body_tree_)
-      return rigid_body_tree_->get_num_velocities();
     DRAKE_DEMAND(multibody_plant_.get() != nullptr);
     return multibody_plant_->tree().num_velocities();
   }
 
-  std::unique_ptr<RigidBodyTree<double>> rigid_body_tree_;
   std::unique_ptr<MultibodyPlant<double>> multibody_plant_;
   std::unique_ptr<InverseDynamics<double>> inverse_dynamics_;
   std::unique_ptr<Context<double>> inverse_dynamics_context_;
@@ -166,29 +145,7 @@ class InverseDynamicsTest : public ::testing::Test {
 // Tests that the expected value of the gravity compensating torque and the
 // value computed by the InverseDynamics in pure gravity compensation mode
 // for a given joint configuration of the KUKA IIWA Arm are identical.
-TEST_F(InverseDynamicsTest, GravityCompensationTestRBT) {
-  auto tree = std::make_unique<RigidBodyTree<double>>();
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::FindResourceOrThrow("drake/manipulation/models/"
-          "iiwa_description/urdf/iiwa14_primitive_collision.urdf"),
-      drake::multibody::joints::kFixed, nullptr /* weld to frame */,
-      tree.get());
-  Init(std::move(tree),
-       InverseDynamics<double>::InverseDynamicsMode::kGravityCompensation);
-
-  // Defines an arbitrary robot position vector.
-  Eigen::VectorXd robot_position = Eigen::VectorXd::Zero(7);
-  robot_position << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
-
-  CheckGravityTorque(robot_position);
-}
-
-// TODO(edrumwri): Rename the test below, removing the MBT specifier, when
-// RigidBodyTree goes away (and the test above is necessarily removed).
-// Tests that the expected value of the gravity compensating torque and the
-// value computed by the InverseDynamics in pure gravity compensation mode
-// for a given joint configuration of the KUKA IIWA Arm are identical.
-TEST_F(InverseDynamicsTest, GravityCompensationTestMBT) {
+TEST_F(InverseDynamicsTest, GravityCompensationTest) {
   auto mbp = std::make_unique<MultibodyPlant<double>>();
   const std::string full_name = drake::FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
@@ -229,33 +186,7 @@ TEST_F(InverseDynamicsTest, GravityCompensationTestMBT) {
 
 // Tests that inverse dynamics returns the expected torque for a given state and
 // desired acceleration for the iiwa arm.
-TEST_F(InverseDynamicsTest, InverseDynamicsTestRBT) {
-  auto tree = std::make_unique<RigidBodyTree<double>>();
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::FindResourceOrThrow("drake/manipulation/models/"
-      "iiwa_description/urdf/iiwa14_primitive_collision.urdf"),
-      drake::multibody::joints::kFixed, nullptr /* weld to frame */,
-      tree.get());
-  Init(std::move(tree),
-       InverseDynamics<double>::InverseDynamicsMode::kInverseDynamics);
-
-  Eigen::VectorXd q = Eigen::VectorXd::Zero(7);
-  Eigen::VectorXd v = Eigen::VectorXd::Zero(7);
-  Eigen::VectorXd vd_d = Eigen::VectorXd::Zero(7);
-  for (int i = 0; i < 7; ++i) {
-    q[i] = i * 0.1 - 0.3;
-    v[i] = i - 3;
-    vd_d[i] = i - 3;
-  }
-
-  CheckTorque(q, v, vd_d);
-}
-
-// TODO(edrumwri): Rename the test below, removing the MBT specifier, when
-// RigidBodyTree goes away (and the test above is necessarily removed).
-// Tests that inverse dynamics returns the expected torque for a given state and
-// desired acceleration for the iiwa arm.
-TEST_F(InverseDynamicsTest, InverseDynamicsTestMBT) {
+TEST_F(InverseDynamicsTest, InverseDynamicsTest) {
   auto mbp = std::make_unique<MultibodyPlant<double>>();
   const std::string full_name = drake::FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");

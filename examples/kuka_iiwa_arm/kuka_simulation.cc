@@ -25,7 +25,7 @@
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/controllers/inverse_dynamics_controller.h"
+#include "drake/systems/controllers/rbt_inverse_dynamics_controller.h"
 #include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -55,7 +55,7 @@ using systems::DiagramBuilder;
 using systems::FrameVisualizer;
 using systems::RigidBodyPlant;
 using systems::Simulator;
-using systems::controllers::InverseDynamicsController;
+using systems::controllers::rbt::InverseDynamicsController;
 using systems::controllers::StateFeedbackControllerInterface;
 
 int DoMain() {
