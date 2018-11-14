@@ -721,7 +721,8 @@ void init_multibody_plant(py::module m) {
                self->SetPositionsAndVelocities(context, model_instance, q_v);
              },
              py_reference, py::arg("context"), py::arg("model_instance"),
-             py::arg("q_v"), doc.MultibodyPlant.SetPositionsAndVelocities.doc_2);
+             py::arg("q_v"),
+             doc.MultibodyPlant.SetPositionsAndVelocities.doc_2);
 
     // Add deprecated methods.
 #pragma GCC diagnostic push
