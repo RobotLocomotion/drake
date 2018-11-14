@@ -91,10 +91,8 @@ install(
 
 drake_cc_test(
     name = "alias_cc_test",
-    # Using `drake_shared_library` can cause timeouts in debug mode (#10025).
+    # Using `drake_shared_library` can cause timeouts in debug mode.
     timeout = "moderate",
-    # Using `drake_shared_library` can cause ASan ODR failures (#10025).
-    tags = ["no_asan"],
     deps = cc_alias_names,
 )
 

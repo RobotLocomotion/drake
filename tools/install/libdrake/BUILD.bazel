@@ -10,6 +10,7 @@ load(
 )
 load(
     "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_test",
     "drake_transitive_installed_hdrs_filegroup",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -165,7 +166,8 @@ cc_library(
     visibility = ["//:__pkg__"],
     deps = [
         ":libdrake_headers_only_attic_cc_library",
-        # The list of depended-on *.so files.
+        # The list of depended-on *.so files. These should ONLY be shared
+        # libraries; do not add static dependencies here.
         ":gurobi_deps",
         ":mosek_deps",
         ":vtk_deps",
@@ -175,7 +177,6 @@ cc_library(
         "@ignition_rndf",
         "@lcm",
         "@libprotobuf",
-        "@osqp",
         "@scs//:scsdir",
         "@tinyxml2",
     ] + [
@@ -199,6 +200,13 @@ cc_library(
     hdrs = [":libdrake_headers_only_attic"],
     include_prefix = "drake",
     strip_include_prefix = "/attic",
+)
+
+drake_cc_test(
+    name = "drake_shared_library_test",
+    # Using `drake_shared_library` can cause timeouts in debug mode.
+    timeout = "moderate",
+    deps = [":drake_shared_library"],
 )
 
 add_lint_tests(
