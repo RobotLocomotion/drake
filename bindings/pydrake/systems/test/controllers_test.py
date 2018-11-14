@@ -13,7 +13,9 @@ from pydrake.multibody.rigid_body_tree import (FloatingBaseType, RigidBodyTree)
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.controllers import (
     DiscreteTimeLinearQuadraticRegulator, DynamicProgrammingOptions,
-    FittedValueIteration, InverseDynamicsController, InverseDynamics,
+    FittedValueIteration,
+    InverseDynamicsController, InverseDynamics,
+    RbtInverseDynamicsController, RbtInverseDynamics,
     LinearQuadraticRegulator,
     LinearProgrammingApproximateDynamicProgramming,
     PeriodicBoundaryCondition
@@ -127,17 +129,17 @@ class TestControllers(unittest.TestCase):
                     output.get_vector_data(0).CopyToVector(), expected_torque))
 
         # Test with pure gravity compensation.
-        controller = InverseDynamics(
+        controller = RbtInverseDynamics(
             tree=tree,
-            mode=InverseDynamics.InverseDynamicsMode.kGravityCompensation)
+            mode=RbtInverseDynamics.InverseDynamicsMode.kGravityCompensation)
         q = np.array([.1, .2, .3, .4, .5, .6, .7])
         v = np.zeros(num_v)
         check_torque_example(controller, q, v)
 
         # Test with desired acceleration.
-        controller = InverseDynamics(
+        controller = RbtInverseDynamics(
             tree=tree,
-            mode=InverseDynamics.InverseDynamicsMode.kInverseDynamics)
+            mode=RbtInverseDynamics.InverseDynamicsMode.kInverseDynamics)
         q = np.array([.7, .6, .5, .4, .3, .2, .1])
         v = np.array([-.1, -.2, -.3, -.4, -.5, -.6, -.7])
         v_dot_desired = np.array([-.1, .1, -.1, .1, -.1, .1, -.1])
@@ -153,11 +155,12 @@ class TestControllers(unittest.TestCase):
         ki = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7])
         kd = np.array([.5, 1., 1.5, 2., 2.5, 3., 3.5])
 
-        controller = InverseDynamicsController(robot=tree,
-                                               kp=kp,
-                                               ki=ki,
-                                               kd=kd,
-                                               has_reference_acceleration=True)
+        controller = RbtInverseDynamicsController(
+            robot=tree,
+            kp=kp,
+            ki=ki,
+            kd=kd,
+            has_reference_acceleration=True)
         context = controller.CreateDefaultContext()
         output = controller.AllocateOutput()
 
@@ -203,6 +206,22 @@ class TestControllers(unittest.TestCase):
         controller.CalcOutput(context, output)
         self.assertTrue(np.allclose(output.get_vector_data(0).CopyToVector(),
                         expected_torque))
+
+    def test_multibody_plant_inverse_dynamics(self):
+        sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/" +
+            "iiwa_description/sdf/iiwa14_no_collision.sdf")
+
+        plant = MultibodyPlant(time_step=0.01)
+        AddModelFromSdfFile(file_name=sdf_path, plant=plant)
+        plant.WeldFrames(plant.world_frame(),
+                         plant.GetFrameByName("iiwa_link_0"))
+        plant.Finalize()
+
+        # Just test that the constructor doesn't throw.
+        controller = InverseDynamics(
+            plant=plant,
+            mode=InverseDynamics.InverseDynamicsMode.kGravityCompensation)
 
     def test_multibody_plant_inverse_dynamics_controller(self):
         sdf_path = FindResourceOrThrow(

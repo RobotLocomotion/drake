@@ -14,11 +14,13 @@
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/controllers/inverse_dynamics_controller.h"
+#include "drake/systems/controllers/rbt_inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 
 DEFINE_double(simulation_sec, 2, "Number of seconds to simulate.");
+
+using drake::systems::controllers::rbt::InverseDynamicsController;
 
 namespace drake {
 namespace examples {
@@ -56,13 +58,12 @@ int DoMain() {
   VectorX<double> jaco_kp, jaco_kd, jaco_ki;
   SetPositionControlledJacoGains(&jaco_kp, &jaco_ki, &jaco_kd);
   auto control_sys =
-      std::make_unique<systems::controllers::InverseDynamicsController<double>>(
+      std::make_unique<InverseDynamicsController<double>>(
           plant->get_rigid_body_tree().Clone(), jaco_kp, jaco_ki, jaco_kd,
           false /* no feedforward acceleration */);
   auto controller =
-      builder
-          .AddSystem<systems::controllers::InverseDynamicsController<double>>(
-              std::move(control_sys));
+      builder.AddSystem<InverseDynamicsController<double>>(
+          std::move(control_sys));
 
   // Adds a constant source for desired state.
   Eigen::VectorXd const_pos = Eigen::VectorXd::Zero(kNumDofs * 2);

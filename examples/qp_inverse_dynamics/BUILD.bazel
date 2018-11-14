@@ -51,10 +51,10 @@ drake_cc_googletest(
     deps = [
         ":manipulator_joint_space_controller",
         "//attic/multibody/parsers",
+        "//attic/systems/controllers:rbt_inverse_dynamics_controller",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/analysis:simulator",
-        "//systems/controllers:inverse_dynamics_controller",
         "//systems/framework",
         "//systems/primitives:constant_vector_source",
     ],
