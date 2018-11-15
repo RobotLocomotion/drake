@@ -18,7 +18,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/controllers/inverse_dynamics_controller.h"
+#include "drake/systems/controllers/rbt_inverse_dynamics_controller.h"
 #include "drake/systems/primitives/trajectory_source.h"
 
 DEFINE_double(simulation_sec, 0.1, "Number of seconds to simulate.");
@@ -53,7 +53,7 @@ int DoMain() {
   SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
 
   auto controller = builder.AddController<
-      systems::controllers::InverseDynamicsController<double>>(
+      systems::controllers::rbt::InverseDynamicsController<double>>(
       RigidBodyTreeConstants::kFirstNonWorldModelInstanceId,
       plant->get_rigid_body_tree().Clone(), iiwa_kp, iiwa_ki, iiwa_kd,
       false /* no feedforward acceleration */);
