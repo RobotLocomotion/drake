@@ -183,11 +183,12 @@ void SetOsqpSolverSetting(const std::unordered_map<std::string, T1>& options,
   }
 }
 
-void SetOsqpSolverSettings(MathematicalProgram* prog, OSQPSettings* settings) {
+void SetOsqpSolverSettings(const MathematicalProgram& prog,
+                           OSQPSettings* settings) {
   const std::unordered_map<std::string, double>& options_double =
-      prog->GetSolverOptionsDouble(OsqpSolver::id());
+      prog.GetSolverOptionsDouble(OsqpSolver::id());
   const std::unordered_map<std::string, int>& options_int =
-      prog->GetSolverOptionsInt(OsqpSolver::id());
+      prog.GetSolverOptionsInt(OsqpSolver::id());
   // TODO(hongkai.dai): Fill in all the fields defined in OSQPSettings.
   SetOsqpSolverSetting(options_double, "rho", &(settings->rho));
   SetOsqpSolverSetting(options_double, "sigma", &(settings->sigma));
@@ -201,7 +202,19 @@ void SetOsqpSolverSettings(MathematicalProgram* prog, OSQPSettings* settings) {
 
 bool OsqpSolver::is_available() { return true; }
 
-SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
+void OsqpSolver::Solve(const MathematicalProgram& prog,
+                       const optional<Eigen::VectorXd>& initial_guess,
+                       const optional<SolverOptions>& solver_options,
+                       MathematicalProgramResult* result) const {
+  // TODO(hongkai.dai): OSQP uses initial guess to warm start.
+  unused(initial_guess);
+  if (!AreProgramAttributesSatisfied(prog)) {
+    throw std::invalid_argument(
+        "OSQP solver's capability doesn't satisfy the requirement of the "
+        "problem.");
+  }
+  // TODO(hongkai.dai): use the input solver options once #9996 is merged.
+  unused(solver_options);
   // OSQP solves a convex quadratic programming problem
   // min 0.5 xᵀPx + qᵀx
   // s.t l ≤ Ax ≤ u
@@ -243,7 +256,7 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   // TODO(hongkai.dai): add a setter so that we can turn off polishing.
   settings->polish = 1;
   settings->verbose = 0;
-  SetOsqpSolverSettings(&prog, settings);
+  SetOsqpSolverSettings(prog, settings);
 
   // Setup workspace.
   // OSQP structures.
@@ -254,7 +267,17 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   c_int osqp_exitflag = osqp_solve(work);
 
   SolutionResult solution_result;
-  SolverResult solver_result(id());
+  result->set_solver_id(id());
+  OsqpSolverDetails& solver_details =
+      result->SetSolverDetailsType<OsqpSolverDetails>();
+  solver_details.iter = work->info->iter;
+  solver_details.status_val = work->info->status_val;
+  solver_details.primal_res = work->info->pri_res;
+  solver_details.dual_res = work->info->dua_res;
+  solver_details.setup_time = work->info->setup_time;
+  solver_details.solve_time = work->info->solve_time;
+  solver_details.polish_time = work->info->polish_time;
+  solver_details.run_time = work->info->run_time;
   if (osqp_exitflag) {
     solution_result = SolutionResult::kInvalidInput;
   } else {
@@ -263,17 +286,15 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
       case OSQP_SOLVED_INACCURATE: {
         const Eigen::Map<Eigen::Matrix<c_float, Eigen::Dynamic, 1>> osqp_sol(
             work->solution->x, prog.num_vars());
-        solver_result.set_decision_variable_values(osqp_sol.cast<double>());
-        solver_result.set_optimal_cost(work->info->obj_val +
-                                       constant_cost_term);
+        result->set_x_val(osqp_sol.cast<double>());
+        result->set_optimal_cost(work->info->obj_val + constant_cost_term);
         solution_result = SolutionResult::kSolutionFound;
         break;
       }
       case OSQP_PRIMAL_INFEASIBLE:
       case OSQP_PRIMAL_INFEASIBLE_INACCURATE: {
         solution_result = SolutionResult::kInfeasibleConstraints;
-        solver_result.set_optimal_cost(
-            MathematicalProgram::kGlobalInfeasibleCost);
+        result->set_optimal_cost(MathematicalProgram::kGlobalInfeasibleCost);
         break;
       }
       case OSQP_DUAL_INFEASIBLE:
@@ -288,6 +309,7 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
       default: { solution_result = SolutionResult::kUnknownError; }
     }
   }
+  result->set_solution_result(solution_result);
 
   // Clean workspace.
   osqp_cleanup(work);
@@ -301,9 +323,14 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   c_free(data->A);
   c_free(data);
   c_free(settings);
+}
 
+SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
+  MathematicalProgramResult result;
+  Solve(prog, {}, {}, &result);
+  const SolverResult solver_result = result.ConvertToSolverResult();
   prog.SetSolverResult(solver_result);
-  return solution_result;
+  return result.get_solution_result();
 }
 }  // namespace solvers
 }  // namespace drake
