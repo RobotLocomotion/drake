@@ -112,8 +112,8 @@ PYBIND11_MODULE(sensors, m) {
 
       py::class_<ImageT> image(m, TemporaryClassName<ImageT>().c_str());
       image  // BR
-          .def(py::init<int, int>(), doc.Image.ctor.doc_3)
-          .def(py::init<int, int, T>(), doc.Image.ctor.doc_4)
+          .def(py::init<int, int>(), doc.Image.ctor.doc_2args)
+          .def(py::init<int, int, T>(), doc.Image.ctor.doc_3args)
           .def("width", &ImageT::width, doc.Image.width.doc)
           .def("height", &ImageT::height, doc.Image.height.doc)
           .def("size", &ImageT::size, doc.Image.size.doc)
@@ -160,11 +160,11 @@ PYBIND11_MODULE(sensors, m) {
   // Systems.
   py::class_<CameraInfo>(m, "CameraInfo", doc.CameraInfo.doc)
       .def(py::init<int, int, double>(), py::arg("width"), py::arg("height"),
-           py::arg("fov_y"), doc.CameraInfo.ctor.doc_4)
+           py::arg("fov_y"), doc.CameraInfo.ctor.doc_3args)
       .def(py::init<int, int, double, double, double, double>(),
            py::arg("width"), py::arg("height"), py::arg("focal_x"),
            py::arg("focal_y"), py::arg("center_x"), py::arg("center_y"),
-           doc.CameraInfo.ctor.doc_3)
+           doc.CameraInfo.ctor.doc_6args)
       .def("width", &CameraInfo::width, doc.CameraInfo.width.doc)
       .def("height", &CameraInfo::height, doc.CameraInfo.height.doc)
       .def("focal_x", &CameraInfo::focal_x, doc.CameraInfo.focal_x.doc)
@@ -203,7 +203,7 @@ PYBIND11_MODULE(sensors, m) {
            py::arg("width") = int{RenderingConfig::kDefaultWidth},
            py::arg("height") = int{RenderingConfig::kDefaultHeight},
            // Keep alive, reference: `this` keeps  `RigidBodyTree` alive.
-           py::keep_alive<1, 3>(), doc.RgbdCamera.ctor.doc_3)
+           py::keep_alive<1, 3>(), doc.RgbdCamera.ctor.doc_10args)
       .def("color_camera_info", &RgbdCamera::color_camera_info,
            py_reference_internal, doc.RgbdCamera.color_camera_info.doc)
       .def("depth_camera_info", &RgbdCamera::depth_camera_info,
@@ -226,7 +226,7 @@ PYBIND11_MODULE(sensors, m) {
            py::arg("period") = double{RgbdCameraDiscrete::kDefaultPeriod},
            py::arg("render_label_image") = true,
            // Keep alive, ownership: `RgbdCamera` keeps `this` alive.
-           py::keep_alive<2, 1>(), doc.RgbdCameraDiscrete.ctor.doc_3)
+           py::keep_alive<2, 1>(), doc.RgbdCameraDiscrete.ctor.doc_3args)
       // N.B. Since `camera` is already connected, we do not need additional
       // `keep_alive`s.
       .def("camera", &RgbdCameraDiscrete::camera,

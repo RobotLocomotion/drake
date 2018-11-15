@@ -275,7 +275,7 @@ struct Impl {
                  &PySystem::DeclareInputPort),
              py_reference_internal, py::arg("name"), py::arg("type"),
              py::arg("size"), py::arg("random_type") = nullopt,
-             doc.System.DeclareInputPort.doc)
+             doc.System.DeclareInputPort.doc_4args)
         .def("_DeclareInputPort",
              overload_cast_explicit<  // BR
                  const InputPort<T>&, PortDataType, int,
@@ -288,19 +288,19 @@ struct Impl {
         .def("HasDirectFeedthrough",
              overload_cast_explicit<bool, int>(  // BR
                  &System<T>::HasDirectFeedthrough),
-             py::arg("output_port"), doc.System.HasDirectFeedthrough.doc)
+             py::arg("output_port"), doc.System.HasDirectFeedthrough.doc_1args)
         .def("HasDirectFeedthrough",
              overload_cast_explicit<bool, int, int>(
                  &System<T>::HasDirectFeedthrough),
              py::arg("input_port"), py::arg("output_port"),
-             doc.System.HasDirectFeedthrough.doc_2)
+             doc.System.HasDirectFeedthrough.doc_2args)
         // Context.
         .def("CreateDefaultContext", &System<T>::CreateDefaultContext,
              doc.System.CreateDefaultContext.doc)
         .def("AllocateOutput",
              overload_cast_explicit<unique_ptr<SystemOutput<T>>>(
                  &System<T>::AllocateOutput),
-             doc.System.AllocateOutput.doc)
+             doc.System.AllocateOutput.doc_0args)
         // TODO(sherm1) Deprecate this next signature (context unused).
         .def("AllocateOutput",
              [](const System<T>* self, const Context<T>&) {
@@ -309,7 +309,7 @@ struct Impl {
                    "Please use `System.AllocateOutput(self)` instead.");
                return self->AllocateOutput();
              },
-             py::arg("context"), doc.System.AllocateOutput.doc)
+             py::arg("context"), doc.System.AllocateOutput.doc_1args)
         .def("EvalVectorInput",
              [](const System<T>* self, const Context<T>& arg1, int arg2) {
                return self->EvalVectorInput(arg1, arg2);
@@ -342,7 +342,7 @@ struct Impl {
         .def("Publish",
              overload_cast_explicit<void, const Context<T>&>(
                  &System<T>::Publish),
-             doc.System.Publish.doc)
+             doc.System.Publish.doc_1args)
         // Scalar types.
         .def("ToAutoDiffXd",
              [](const System<T>& self) { return self.ToAutoDiffXd(); },
@@ -361,7 +361,7 @@ struct Impl {
 
     DefineTemplateClassWithDefault<LeafSystem<T>, PyLeafSystem, System<T>>(
         m, "LeafSystem", GetPyParam<T>(), doc.LeafSystem.doc)
-        .def(py::init<>(), doc.LeafSystem.ctor.doc_3)
+        .def(py::init<>(), doc.LeafSystem.ctor.doc_0args)
         // TODO(eric.cousineau): It'd be nice if we did not need the user to
         // propagate scalar conversion information. Ideally, if we could
         // intercept `self` at this point, when constructing `PyLeafSystem` for
@@ -369,14 +369,14 @@ struct Impl {
         // being used, and pass that as the converter. However, that requires an
         // old-style `py::init`, which is deprecated in Python...
         .def(py::init<SystemScalarConverter>(), py::arg("converter"),
-             doc.LeafSystem.ctor.doc_4)
+             doc.LeafSystem.ctor.doc_1args)
         .def("_DeclareAbstractInputPort",
              [](PyLeafSystem* self, const std::string& name,
                 const AbstractValue& model_value) -> const InputPort<T>& {
                return self->DeclareAbstractInputPort(name, model_value);
              },
              py_reference_internal, py::arg("name"), py::arg("model_value"),
-             doc.LeafSystem.DeclareAbstractInputPort.doc)
+             doc.LeafSystem.DeclareAbstractInputPort.doc_2args)
         .def("_DeclareAbstractInputPort",
              [](PyLeafSystem* self,
                 const std::string& name) -> const InputPort<T>& {
@@ -387,7 +387,7 @@ struct Impl {
                return self->DeclareAbstractInputPort(name, model_value);
              },
              py_reference_internal, py::arg("name"),
-             doc.System.DeclareAbstractInputPort.doc_2)
+             doc.System.DeclareAbstractInputPort.doc_1args)
         .def("_DeclareAbstractOutputPort",
              WrapCallbacks([](PyLeafSystem * self, const std::string& name,
                               AllocCallback arg1, CalcCallback arg2) -> auto& {
@@ -508,7 +508,7 @@ struct Impl {
         .def(py::init([](int inputs, int outputs) {
                return new PyVectorSystem(inputs, outputs);
              }),
-             doc.VectorSystem.ctor.doc);
+             doc.VectorSystem.ctor.doc_2args);
     // TODO(eric.cousineau): Bind virtual methods once we provide a function
     // wrapper to convert `Map<Derived>*` arguments.
     // N.B. This could be mitigated by using `EigenPtr` in public interfaces in

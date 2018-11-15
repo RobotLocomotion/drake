@@ -45,7 +45,7 @@ PYBIND11_MODULE(lcm, m) {
   {
     using Class = DrakeLcm;
     py::class_<Class, DrakeLcmInterface>(m, "DrakeLcm", doc.DrakeLcm.doc)
-        .def(py::init<>(), doc.DrakeLcm.ctor.doc_3)
+        .def(py::init<>(), doc.DrakeLcm.ctor.doc_0args)
         .def("StartReceiveThread", &Class::StartReceiveThread,
              doc.DrakeLcm.StartReceiveThread.doc)
         .def("StopReceiveThread", &Class::StopReceiveThread,
@@ -57,7 +57,7 @@ PYBIND11_MODULE(lcm, m) {
     using Class = DrakeMockLcm;
     py::class_<Class, DrakeLcmInterface>(m, "DrakeMockLcm",
                                          doc.DrakeMockLcm.doc)
-        .def(py::init<>(), doc.DrakeMockLcm.ctor.doc_3)
+        .def(py::init<>(), doc.DrakeMockLcm.ctor.doc_0args)
         .def("Subscribe",
              [](Class* self, const std::string& channel,
                 PyHandlerFunction handler) {

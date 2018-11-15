@@ -50,12 +50,12 @@ PYBIND11_MODULE(automotive, m) {
              doc.ScanStrategy.kBranches.doc);
 
   py::class_<ClosestPose<T>>(m, "ClosestPose", doc.ClosestPose.doc)
-      .def(py::init<>(), doc.ClosestPose.ctor.doc)
+      .def(py::init<>(), doc.ClosestPose.ctor.doc_0args)
       .def(py::init<const RoadOdometry<T>&, const T&>(), py::arg("odom"),
            py::arg("dist"),
            // Keep alive, transitive: `self` keeps `RoadOdometry` pointer
            // members alive.
-           py::keep_alive<1, 2>(), doc.ClosestPose.ctor.doc_2)
+           py::keep_alive<1, 2>(), doc.ClosestPose.ctor.doc_2args)
       .def_readwrite("odometry", &ClosestPose<T>::odometry,
                      py_reference_internal, doc.ClosestPose.odometry.doc)
       .def_readwrite("distance", &ClosestPose<T>::distance,
@@ -64,19 +64,19 @@ PYBIND11_MODULE(automotive, m) {
   py::class_<RoadOdometry<T>> road_odometry(m, "RoadOdometry",
                                             doc.RoadOdometry.doc);
   road_odometry  // BR
-      .def(py::init<>(), doc.RoadOdometry.ctor.doc)
+      .def(py::init<>(), doc.RoadOdometry.ctor.doc_0args)
       .def(py::init<const maliput::api::RoadPosition&,
                     const systems::rendering::FrameVelocity<T>&>(),
            py::arg("road_position"), py::arg("frame_velocity"),
            // Keep alive, transitive: `self` keeps `RoadPosition` pointer
            // members alive.
-           py::keep_alive<1, 2>(), doc.RoadOdometry.ctor.doc_2)
+           py::keep_alive<1, 2>(), doc.RoadOdometry.ctor.doc_2args)
       .def(py::init<const maliput::api::Lane*,
                     const maliput::api::LanePositionT<T>&,
                     const systems::rendering::FrameVelocity<T>&>(),
            py::arg("lane"), py::arg("lane_position"), py::arg("frame_velocity"),
            // Keep alive, reference: `self` keeps `Lane*` alive.
-           py::keep_alive<1, 2>(), doc.RoadOdometry.ctor.doc_3)
+           py::keep_alive<1, 2>(), doc.RoadOdometry.ctor.doc_3args)
       .def_readwrite("pos", &RoadOdometry<T>::pos, doc.RoadOdometry.pos.doc)
       .def_readwrite("vel", &RoadOdometry<T>::vel, doc.RoadOdometry.vel.doc);
   // TODO(m-chaturvedi) Add Pybind11 documentation.
@@ -84,7 +84,7 @@ PYBIND11_MODULE(automotive, m) {
 
   py::class_<LaneDirection>(m, "LaneDirection", doc.LaneDirection.doc)
       .def(py::init<const maliput::api::Lane*, bool>(), py::arg("lane"),
-           py::arg("with_s"), doc.LaneDirection.ctor.doc_5)
+           py::arg("with_s"), doc.LaneDirection.ctor.doc_2args)
       .def_readwrite("lane", &LaneDirection::lane, py_reference_internal,
                      doc.LaneDirection.lane.doc)
       .def_readwrite("with_s", &LaneDirection::with_s,
@@ -94,7 +94,7 @@ PYBIND11_MODULE(automotive, m) {
   // TODO(eric.cousineau) Bind this named vector automatically (see #8096).
   py::class_<DrivingCommand<T>, BasicVector<T>>(m, "DrivingCommand",
                                                 doc.DrivingCommand.doc)
-      .def(py::init<>(), doc.DrivingCommand.ctor.doc)
+      .def(py::init<>(), doc.DrivingCommand.ctor.doc_0args)
       .def("steering_angle", &DrivingCommand<T>::steering_angle,
            doc.DrivingCommand.steering_angle.doc)
       .def("acceleration", &DrivingCommand<T>::acceleration,
@@ -110,7 +110,7 @@ PYBIND11_MODULE(automotive, m) {
                     RoadPositionStrategy, double>(),
            py::arg("road"), py::arg("path_or_branches"),
            py::arg("road_position_strategy"), py::arg("period_sec"),
-           doc.IdmController.ctor.doc_3)
+           doc.IdmController.ctor.doc_4args)
       .def("ego_pose_input", &IdmController<T>::ego_pose_input,
            py_reference_internal, doc.IdmController.ego_pose_input.doc)
       .def("ego_velocity_input", &IdmController<T>::ego_velocity_input,
@@ -165,7 +165,7 @@ PYBIND11_MODULE(automotive, m) {
   // TODO(eric.cousineau) Bind this named vector automatically (see #8096).
   py::class_<SimpleCarState<T>, BasicVector<T>>(m, "SimpleCarState",
                                                 doc.SimpleCarState.doc)
-      .def(py::init<>(), doc.SimpleCarState.ctor.doc)
+      .def(py::init<>(), doc.SimpleCarState.ctor.doc_0args)
       .def("x", &SimpleCarState<T>::x, doc.SimpleCarState.x.doc)
       .def("y", &SimpleCarState<T>::y, doc.SimpleCarState.y.doc)
       .def("heading", &SimpleCarState<T>::heading,

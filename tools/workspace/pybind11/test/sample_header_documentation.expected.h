@@ -115,13 +115,13 @@ See also:
         // Symbol: drake::mkdoc_test::Class::Class
         struct /* ctor */ {
           // Source: drake/tools/workspace/pybind11/test/sample_header.h:125
-          const char* doc = R"""()""";
+          const char* doc_copy = R"""()""";
           // Source: drake/tools/workspace/pybind11/test/sample_header.h:125
-          const char* doc_2 = R"""()""";
+          const char* doc_move = R"""()""";
           // Source: drake/tools/workspace/pybind11/test/sample_header.h:146
-          const char* doc_3 = R"""(Custom constructor 1.)""";
+          const char* doc_0args = R"""(Custom constructor 1.)""";
           // Source: drake/tools/workspace/pybind11/test/sample_header.h:159
-          const char* doc_4 =
+          const char* doc_1args =
 R"""(Custom constructor 2. *Italics*. Ut tristique et egestas quis ipsum
 suspendisse ultrices gravida. ``Typewriter``. Suscipit tellus mauris a
 diam. Maecenas accumsan lacus vel facilisis volutpat est.
@@ -138,7 +138,7 @@ Ut consequat semper viverra nam libero.
     Class class();
     class.PublicMethod();)""";
           // Source: drake/tools/workspace/pybind11/test/sample_header.h:172
-          const char* doc_5 =
+          const char* doc_2args =
 R"""(Custom constructor 3. *Italics*. Integer quis auctor elit sed
 vulputate mi sit.
 

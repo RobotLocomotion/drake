@@ -38,11 +38,11 @@ PYBIND11_MODULE(trajectory_optimization, m) {
            [](const MultipleShooting& self) -> VectorXDecisionVariable {
              return self.state();
            },
-           doc.MultipleShooting.state.doc)
+           doc.MultipleShooting.state.doc_0args)
       .def("state",
            [](const MultipleShooting& self, int index)
                -> VectorXDecisionVariable { return self.state(index); },
-           doc.MultipleShooting.state.doc_2)
+           doc.MultipleShooting.state.doc_1args)
       .def("initial_state",
            [](const MultipleShooting& self) -> VectorXDecisionVariable {
              return self.initial_state();
@@ -57,22 +57,22 @@ PYBIND11_MODULE(trajectory_optimization, m) {
            [](const MultipleShooting& self) -> VectorXDecisionVariable {
              return self.input();
            },
-           doc.MultipleShooting.input.doc)
+           doc.MultipleShooting.input.doc_0args)
       .def("input",
            [](const MultipleShooting& self, int index)
                -> VectorXDecisionVariable { return self.input(index); },
-           doc.MultipleShooting.input.doc_2)
+           doc.MultipleShooting.input.doc_1args)
       .def("AddRunningCost",
            [](MultipleShooting& prog, const symbolic::Expression& g) {
              prog.AddRunningCost(g);
            },
-           doc.MultipleShooting.AddRunningCost.doc)
+           doc.MultipleShooting.AddRunningCost.doc_1args)
       .def("AddRunningCost",
            [](MultipleShooting& prog,
               const Eigen::Ref<const MatrixX<symbolic::Expression>>& g) {
              prog.AddRunningCost(g);
            },
-           doc.MultipleShooting.AddRunningCost.doc_2)
+           doc.MultipleShooting.AddRunningCost.doc_0args)
       .def("AddConstraintToAllKnotPoints",
            &MultipleShooting::AddConstraintToAllKnotPoints,
            doc.MultipleShooting.AddConstraintToAllKnotPoints.doc)
@@ -103,7 +103,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       .def("GetSampleTimes",
            overload_cast_explicit<Eigen::VectorXd>(
                &MultipleShooting::GetSampleTimes),
-           doc.MultipleShooting.GetSampleTimes.doc)
+           doc.MultipleShooting.GetSampleTimes.doc_0args)
       .def("GetInputSamples", &MultipleShooting::GetInputSamples,
            doc.MultipleShooting.GetInputSamples.doc)
       .def("GetStateSamples", &MultipleShooting::GetStateSamples,
@@ -121,7 +121,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
                     const systems::Context<double>&, int, double, double>(),
            py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
            py::arg("minimum_timestep"), py::arg("maximum_timestep"),
-           doc.DirectCollocation.ctor.doc)
+           doc.DirectCollocation.ctor.doc_5args)
       .def("ReconstructInputTrajectory",
            &DirectCollocation::ReconstructInputTrajectory,
            doc.DirectCollocation.ReconstructInputTrajectory.doc)
@@ -134,7 +134,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       m, "DirectCollocationConstraint", doc.DirectCollocationConstraint.doc)
       .def(py::init<const systems::System<double>&,
                     const systems::Context<double>&>(),
-           doc.DirectCollocationConstraint.ctor.doc_3);
+           doc.DirectCollocationConstraint.ctor.doc_2args);
 
   m.def("AddDirectCollocationConstraint", &AddDirectCollocationConstraint,
         py::arg("constraint"), py::arg("timestep"), py::arg("state"),

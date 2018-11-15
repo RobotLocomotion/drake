@@ -41,7 +41,7 @@ PYBIND11_MODULE(symbolic, m) {
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
   py::class_<Variable> var_cls(m, "Variable", doc.Variable.doc);
-  var_cls.def(py::init<const string&>(), doc.Variable.ctor.doc)
+  var_cls.def(py::init<const string&>(), doc.Variable.ctor.doc_1args)
       .def("get_id", &Variable::get_id, doc.Variable.get_id.doc)
       .def("__str__", &Variable::to_string, doc.Variable.to_string.doc)
       .def("__repr__",
@@ -208,12 +208,12 @@ PYBIND11_MODULE(symbolic, m) {
       .def("Substitute",
            [](const Expression& self, const Variable& var,
               const Expression& e) { return self.Substitute(var, e); },
-           doc.Expression.Substitute.doc)
+           doc.Expression.Substitute.doc_2args)
       .def("Substitute",
            [](const Expression& self, const Substitution& s) {
              return self.Substitute(s);
            },
-           doc.Expression.Substitute.doc_2)
+           doc.Expression.Substitute.doc_1args)
       .def("EqualTo", &Expression::EqualTo, doc.Expression.EqualTo.doc)
       // Addition
       .def(py::self + py::self)
@@ -362,22 +362,22 @@ PYBIND11_MODULE(symbolic, m) {
            [](const Formula& self, const Variable& var, const Expression& e) {
              return self.Substitute(var, e);
            },
-           doc.Formula.Substitute.doc)
+           doc.Formula.Substitute.doc_2args)
       .def("Substitute",
            [](const Formula& self, const Variable& var1, const Variable& var2) {
              return self.Substitute(var1, var2);
            },
-           doc.Formula.Substitute.doc_2)
+           doc.Formula.Substitute.doc_2args)
       .def("Substitute",
            [](const Formula& self, const Variable& var, const double c) {
              return self.Substitute(var, c);
            },
-           doc.Formula.Substitute.doc_2)
+           doc.Formula.Substitute.doc_2args)
       .def("Substitute",
            [](const Formula& self, const Substitution& s) {
              return self.Substitute(s);
            },
-           doc.Formula.Substitute.doc_2)
+           doc.Formula.Substitute.doc_1args)
       .def("to_string", &Formula::to_string, doc.Formula.to_string.doc)
       .def("__str__", &Formula::to_string)
       .def("__repr__",
@@ -458,16 +458,18 @@ PYBIND11_MODULE(symbolic, m) {
       .def("__pow__",
            [](const Monomial& self, const int p) { return pow(self, p); });
 
-  m.def("MonomialBasis",
-        [](const Eigen::Ref<const VectorX<Variable>>& vars, const int degree) {
-          return MonomialBasis(Variables{vars}, degree);
-        },
-        doc.MonomialBasis.doc)
+  m  // BR
+      .def("MonomialBasis",
+           [](const Eigen::Ref<const VectorX<Variable>>& vars,
+              const int degree) {
+             return MonomialBasis(Variables{vars}, degree);
+           },
+           doc.MonomialBasis.doc_2args)
       .def("MonomialBasis",
            [](const Variables& vars, const int degree) {
              return MonomialBasis(vars, degree);
            },
-           doc.MonomialBasis.doc);
+           doc.MonomialBasis.doc_2args);
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
   py::class_<Polynomial>(m, "Polynomial", doc.Polynomial.doc)

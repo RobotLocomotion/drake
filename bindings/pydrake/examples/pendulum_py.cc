@@ -38,14 +38,14 @@ PYBIND11_MODULE(pendulum, m) {
   // TODO(russt): Remove custom bindings once #8096 is resolved.
   py::class_<PendulumInput<T>, BasicVector<T>>(m, "PendulumInput",
                                                doc.PendulumInput.doc)
-      .def(py::init<>(), doc.PendulumInput.ctor.doc)
+      .def(py::init<>(), doc.PendulumInput.ctor.doc_0args)
       .def("tau", &PendulumInput<T>::tau, doc.PendulumInput.tau.doc)
       .def("set_tau", &PendulumInput<T>::set_tau,
            doc.PendulumInput.set_tau.doc);
 
   py::class_<PendulumParams<T>, BasicVector<T>>(m, "PendulumParams",
                                                 doc.PendulumParams.doc)
-      .def(py::init<>(), doc.PendulumParams.ctor.doc)
+      .def(py::init<>(), doc.PendulumParams.ctor.doc_0args)
       .def("mass", &PendulumParams<T>::mass, doc.PendulumParams.mass.doc)
       .def("length", &PendulumParams<T>::length, doc.PendulumParams.length.doc)
       .def("damping", &PendulumParams<T>::damping,
@@ -63,7 +63,7 @@ PYBIND11_MODULE(pendulum, m) {
 
   py::class_<PendulumState<T>, BasicVector<T>>(m, "PendulumState",
                                                doc.PendulumState.doc)
-      .def(py::init<>(), doc.PendulumState.ctor.doc)
+      .def(py::init<>(), doc.PendulumState.ctor.doc_0args)
       .def("theta", &PendulumState<T>::theta, doc.PendulumState.theta.doc)
       .def("thetadot", &PendulumState<T>::thetadot,
            doc.PendulumState.thetadot.doc)

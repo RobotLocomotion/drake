@@ -54,7 +54,7 @@ PYBIND11_MODULE(planner, m) {
               return Class{num_positions, num_velocities};
             }),
             py::arg("num_positions") = 0, py::arg("num_velocities") = 0,
-            class_doc.ctor.doc)
+            class_doc.ctor.doc_2args)
         .def("get_timestep", &Class::get_timestep, class_doc.get_timestep.doc)
         .def("set_timestep", &Class::set_timestep, class_doc.set_timestep.doc)
         .def("get_num_positions", &Class::get_num_positions,
