@@ -7,6 +7,8 @@
 
 namespace drake {
 namespace geometry {
+
+// TODO(SeanCurtis-TRI): Get rid of the "detail" namespace.
 namespace detail {
 
 /** Canonicalizes the given geometry *candidate* name. A canonicalized name may
@@ -19,7 +21,7 @@ std::string CanonicalizeStringName(const std::string& name);
 
 namespace internal {
 
-// A const range iterator through the keys of an unordered map.
+/// A const range iterator through the keys of an unordered map.
 template <typename K, typename V>
 class MapKeyRange {
  public:

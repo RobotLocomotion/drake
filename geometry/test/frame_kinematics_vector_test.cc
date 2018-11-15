@@ -155,19 +155,12 @@ GTEST_TEST(FrameKinematicsVector, FrameIdRange) {
   for (int i = 0; i < kPoseCount; ++i) ids.push_back(FrameId::get_new_id());
   FramePoseVector<double> poses(source_id, ids);
 
-  poses.clear();
-  std::unordered_map<FrameId, Isometry3<double>> recorded_poses;
-  for (int i = 0; i < kPoseCount; ++i) {
-    Isometry3<double> pose = Isometry3<double>::Identity();
-    pose.translation() << i, i, i;
-    recorded_poses[ids[i]] = pose;
-    EXPECT_NO_THROW(poses.set_value(ids[i], pose));
-  }
+  std::vector<FrameId> actual_ids;
+  for (FrameId id : poses.frame_ids()) actual_ids.push_back(id);
 
-  for (FrameId id : poses.get_frame_ids()) {
-    const Isometry3<double>& pose = poses.value(id);
-    EXPECT_TRUE(CompareMatrices(pose.matrix(), recorded_poses[id].matrix()));
-  }
+  EXPECT_EQ(ids.size(), actual_ids.size());
+  for (FrameId id : actual_ids)
+    EXPECT_TRUE(std::find(ids.begin(), ids.end(), id) != ids.end());
 }
 
 }  // namespace test

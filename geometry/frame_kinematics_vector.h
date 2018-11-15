@@ -227,14 +227,14 @@ class FrameKinematicsVector {
   /** Provides a range object for all of the frame ids in the vector.
    This is intended to be used as:
    @code
-   for (FrameId id : this_vector.get_frame_ids()) {
+   for (FrameId id : this_vector.frame_ids()) {
     ...
     // Obtain the KinematicsValue of an id by `this_vector.value(id)`
     ...
    }
    @endcode
    */
-  FrameIdRange get_frame_ids() const { return FrameIdRange(&values_); }
+  FrameIdRange frame_ids() const { return FrameIdRange(&values_); }
 
  private:
   // Utility function to help catch misuse.
