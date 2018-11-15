@@ -939,7 +939,7 @@ bool Simulator<T>::IntegrateContinuousState(
       auto& event = witness_function_events_[fn];
       if (!event) {
         event = fn->get_event()->Clone();
-        event->set_trigger_type(Event<T>::TriggerType::kWitness);
+        event->set_trigger_type(TriggerType::kWitness);
         event->set_event_data(std::make_unique<WitnessTriggeredEventData<T>>());
       }
 

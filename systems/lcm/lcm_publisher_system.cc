@@ -90,7 +90,7 @@ void LcmPublisherSystem::AddInitializationMessage(
   initialization_publisher_ = std::move(initialization_publisher);
 
   DeclareInitializationEvent(systems::PublishEvent<double>(
-      systems::Event<double>::TriggerType::kInitialization,
+      systems::TriggerType::kInitialization,
       [this](const systems::Context<double>& context,
              const systems::PublishEvent<double>&) {
         this->initialization_publisher_(context, this->lcm_);
@@ -117,7 +117,7 @@ void LcmPublisherSystem::DoPublish(
   const auto& event = events.front();
 
   if (event->get_trigger_type() ==
-      systems::Event<double>::TriggerType::kInitialization) {
+      systems::TriggerType::kInitialization) {
     // We shouldn't get another event along with our own initialization event.
     DRAKE_DEMAND(events.size() == 1);
     SPDLOG_TRACE(drake::log(), "Invoking initialization publisher");

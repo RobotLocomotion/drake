@@ -2338,11 +2338,7 @@ class PerStepActionTestSystem : public LeafSystem<double> {
     DeclareAbstractState(AbstractValue::Make<std::string>(""));
   }
 
-  template <typename EventType>
-  void AddPerStepEvent() {
-    EventType event(Event<double>::TriggerType::kPerStep);
-    this->DeclarePerStepEvent(event);
-  }
+  using LeafSystem<double>::DeclarePerStepEvent;
 
   int get_publish_ctr() const { return publish_ctr_; }
 
@@ -2398,8 +2394,8 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
     sys1 = builder.AddSystem<PerStepActionTestSystem>();
     sys1->set_name("sys1");
 
-    sys1->AddPerStepEvent<DiscreteUpdateEvent<double>>();
-    sys1->AddPerStepEvent<UnrestrictedUpdateEvent<double>>();
+    sys1->DeclarePerStepEvent(DiscreteUpdateEvent<double>());
+    sys1->DeclarePerStepEvent(UnrestrictedUpdateEvent<double>());
 
     sub_diagram = builder.Build();
     sub_diagram->set_name("sub_diagram");
@@ -2411,8 +2407,8 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   sys2->set_name("sys2");
 
   // sys2 has publish and unrestricted updates.
-  sys2->AddPerStepEvent<PublishEvent<double>>();
-  sys2->AddPerStepEvent<UnrestrictedUpdateEvent<double>>();
+  sys2->DeclarePerStepEvent(PublishEvent<double>());
+  sys2->DeclarePerStepEvent(UnrestrictedUpdateEvent<double>());
 
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
@@ -2471,7 +2467,7 @@ class MyEventTestSystem : public LeafSystem<double> {
       EXPECT_FALSE(this->GetUniquePeriodicDiscreteUpdateAttribute());
     } else {
       DeclarePerStepEvent<PublishEvent<double>>(
-          PublishEvent<double>(Event<double>::TriggerType::kPerStep));
+          PublishEvent<double>(TriggerType::kPerStep));
     }
     set_name(name);
   }
@@ -2486,10 +2482,10 @@ class MyEventTestSystem : public LeafSystem<double> {
       const std::vector<const PublishEvent<double>*>& events) const override {
     for (const PublishEvent<double>* event : events) {
       if (event->get_trigger_type() ==
-          Event<double>::TriggerType::kPeriodic) {
+          TriggerType::kPeriodic) {
         periodic_count_++;
       } else if (event->get_trigger_type() ==
-          Event<double>::TriggerType::kPerStep) {
+          TriggerType::kPerStep) {
         per_step_count_++;
       } else {
         DRAKE_ABORT();
@@ -2834,15 +2830,15 @@ GTEST_TEST(InitializationTest, InitializationTest) {
    public:
     InitializationTestSystem() {
       PublishEvent<double> pub_event(
-          Event<double>::TriggerType::kInitialization,
+          TriggerType::kInitialization,
           std::bind(&InitializationTestSystem::InitPublish, this,
                     std::placeholders::_1, std::placeholders::_2));
       DeclareInitializationEvent(pub_event);
 
       DeclareInitializationEvent(DiscreteUpdateEvent<double>(
-          Event<double>::TriggerType::kInitialization));
+          TriggerType::kInitialization));
       DeclareInitializationEvent(UnrestrictedUpdateEvent<double>(
-          Event<double>::TriggerType::kInitialization));
+          TriggerType::kInitialization));
     }
 
     bool get_pub_init() const { return pub_init_; }
@@ -2853,7 +2849,7 @@ GTEST_TEST(InitializationTest, InitializationTest) {
     void InitPublish(const Context<double>&,
                      const PublishEvent<double>& event) const {
       EXPECT_EQ(event.get_trigger_type(),
-                Event<double>::TriggerType::kInitialization);
+                TriggerType::kInitialization);
       pub_init_ = true;
     }
 
@@ -2863,7 +2859,7 @@ GTEST_TEST(InitializationTest, InitializationTest) {
         DiscreteValues<double>*) const final {
       EXPECT_EQ(events.size(), 1);
       EXPECT_EQ(events.front()->get_trigger_type(),
-                Event<double>::TriggerType::kInitialization);
+                TriggerType::kInitialization);
       dis_update_init_ = true;
     }
 
@@ -2873,7 +2869,7 @@ GTEST_TEST(InitializationTest, InitializationTest) {
         State<double>*) const final {
       EXPECT_EQ(events.size(), 1);
       EXPECT_EQ(events.front()->get_trigger_type(),
-                Event<double>::TriggerType::kInitialization);
+                TriggerType::kInitialization);
       unres_update_init_ = true;
     }
 
