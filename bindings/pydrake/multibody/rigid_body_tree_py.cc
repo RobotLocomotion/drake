@@ -190,7 +190,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
            },
            py::arg("body_name"), py::arg("model_name") = "",
            py::arg("model_id") = -1, py::return_value_policy::reference,
-           doc.RigidBodyTree.FindBody.doc)
+           doc.RigidBodyTree.FindBody.doc_3args)
       .def("FindBodyIndex", &RigidBodyTree<double>::FindBodyIndex,
            py::arg("body_name"), py::arg("model_id") = -1,
            doc.RigidBodyTree.FindBodyIndex.doc)
@@ -506,7 +506,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
             &parsers::urdf::  // BR
             AddModelInstanceFromUrdfStringSearchingInRosPackages),
         doc.drake.parsers.urdf
-            .AddModelInstanceFromUrdfStringSearchingInRosPackages.doc);
+            .AddModelInstanceFromUrdfStringSearchingInRosPackages.doc_6args);
   m.def("AddModelInstancesFromSdfFile",
         [](const std::string& sdf_filename,
            const FloatingBaseType floating_base_type,
@@ -518,13 +518,13 @@ PYBIND11_MODULE(rigid_body_tree, m) {
         },
         py::arg("sdf_filename"), py::arg("floating_base_type"),
         py::arg("weld_to_frame"), py::arg("tree"), py::arg("do_compile") = true,
-        doc.drake.parsers.sdf.AddModelInstancesFromSdfFile.doc);
+        doc.drake.parsers.sdf.AddModelInstancesFromSdfFile.doc_5args);
   m.def("AddModelInstancesFromSdfString",
         py::overload_cast<const std::string&, const FloatingBaseType,
                           shared_ptr<RigidBodyFrame<double>>,
                           RigidBodyTree<double>*>(
             &sdf::AddModelInstancesFromSdfString),
-        doc.drake.parsers.sdf.AddModelInstancesFromSdfString.doc);
+        doc.drake.parsers.sdf.AddModelInstancesFromSdfString.doc_4args);
   m.def("AddModelInstancesFromSdfStringSearchingInRosPackages",
         py::overload_cast<
             const std::string&, const PackageMap&, const FloatingBaseType,
@@ -532,7 +532,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
             &sdf::  // BR
             AddModelInstancesFromSdfStringSearchingInRosPackages),
         doc.drake.parsers.sdf
-            .AddModelInstancesFromSdfStringSearchingInRosPackages.doc);
+            .AddModelInstancesFromSdfStringSearchingInRosPackages.doc_5args);
   m.def("AddFlatTerrainToWorld", &multibody::AddFlatTerrainToWorld,
         py::arg("tree"), py::arg("box_size") = 1000, py::arg("box_depth") = 10,
         doc.drake.multibody.AddFlatTerrainToWorld.doc);

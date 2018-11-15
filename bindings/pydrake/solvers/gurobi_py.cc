@@ -19,7 +19,7 @@ PYBIND11_MODULE(gurobi, m) {
 
   py::class_<GurobiSolver>(m, "GurobiSolver", solverinterface,
                            doc.GurobiSolver.doc)
-      .def(py::init<>(), doc.GurobiSolver.ctor.doc);
+      .def(py::init<>(), doc.GurobiSolver.ctor.doc_0args);
 }
 
 }  // namespace pydrake

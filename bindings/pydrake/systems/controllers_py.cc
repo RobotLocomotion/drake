@@ -57,7 +57,7 @@ PYBIND11_MODULE(controllers, m) {
       m, "InverseDynamics", doc.InverseDynamics.doc);
   idyn.def(py::init<const RigidBodyTree<double>*,
                     InverseDynamics<double>::InverseDynamicsMode>(),
-           py::arg("tree"), py::arg("mode"), doc.InverseDynamics.ctor.doc);
+           py::arg("tree"), py::arg("mode"), doc.InverseDynamics.ctor.doc_3);
   idyn.def("is_pure_gravity_compensation",
            &InverseDynamics<double>::is_pure_gravity_compensation,
            doc.InverseDynamics.is_pure_gravity_compensation.doc);

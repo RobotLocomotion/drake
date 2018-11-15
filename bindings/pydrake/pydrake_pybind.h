@@ -143,10 +143,10 @@ An example of incorporating docstrings:
       constexpr auto& doc = pydrake_doc.drake.math;
       using T = double;
       py::class_<RigidTransform<T>>(m, "RigidTransform", doc.RigidTransform.doc)
-          .def(py::init(), doc.ExampleClass.ctor.doc_3)
+          .def(py::init(), doc.ExampleClass.ctor.doc_0args)
           ...
           .def(py::init<const RotationMatrix<T>&>(), py::arg("R"),
-               doc.RigidTransform.ctor.doc_5)
+               doc.RigidTransform.ctor.doc_1args)
           ...
           .def("set_rotation", &RigidTransform<T>::set_rotation, py::arg("R"),
                doc.RigidTransform.set_rotation.doc)
@@ -177,18 +177,13 @@ For more detail:
 
 - Each docstring is stored in `documentation_pybind.h` in the nested structure
 `pydrake_doc`.
-- The first docstring for a symbol will be accessible via
+- The docstring for a symbol without any overloads will be accessible via
 `pydrake_doc.drake.{namespace...}.{symbol}.doc`.
-- Any additional docstrings (e.g. overloads) will be accessible as `.doc_2`,
-`.doc_3`, etc; these indices are sorted lexically, by `(include_file, line)`.
+- The docstring for an overloaded symbol will be `.doc_something` instead of
+just `.doc`, where the `_something` suffix conveys some information about the
+overload.  Browse the documentation_pybind.h (described above) for details.
 - Constructors are accessible as `{symbol}.ctor.doc`, `{symbol}.ctor.doc_2`,
 etc.
-
-@note Macros are interpreted via `libclang` and could introduce more symbols.
-As an example, if a class uses `DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN` at the
-the top of its definition, and then defines a custom constructor below this,
-the custom constructor's documentation will be accessible as
-`{symbol}.ctor.doc_3`.
 
 @anchor PydrakeKeepAlive
 ## Keep Alive Behavior

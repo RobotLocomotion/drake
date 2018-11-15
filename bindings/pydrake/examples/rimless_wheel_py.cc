@@ -33,7 +33,7 @@ PYBIND11_MODULE(rimless_wheel, m) {
   // TODO(russt): Remove custom bindings once #8096 is resolved.
   py::class_<RimlessWheelParams<T>, BasicVector<T>>(m, "RimlessWheelParams",
                                                     doc.RimlessWheelParams.doc)
-      .def(py::init<>(), doc.RimlessWheelParams.ctor.doc)
+      .def(py::init<>(), doc.RimlessWheelParams.ctor.doc_0args)
       .def("mass", &RimlessWheelParams<T>::mass,
            doc.RimlessWheelParams.mass.doc)
       .def("length", &RimlessWheelParams<T>::length,
@@ -57,7 +57,7 @@ PYBIND11_MODULE(rimless_wheel, m) {
 
   py::class_<RimlessWheelContinuousState<T>, BasicVector<T>>(
       m, "RimlessWheelContinuousState", doc.RimlessWheelContinuousState.doc)
-      .def(py::init<>(), doc.RimlessWheelContinuousState.ctor.doc)
+      .def(py::init<>(), doc.RimlessWheelContinuousState.ctor.doc_0args)
       .def("theta", &RimlessWheelContinuousState<T>::theta,
            doc.RimlessWheelContinuousState.theta.doc)
       .def("thetadot", &RimlessWheelContinuousState<T>::thetadot,
