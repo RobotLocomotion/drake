@@ -837,6 +837,10 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   return solution_result;
 }
 
+bool SnoptSolver::is_thread_safe() { return false; }
+
+bool SnoptSolver::is_bounded_lp_broken() { return false; }
+
 }  // namespace solvers
 }  // namespace drake
 

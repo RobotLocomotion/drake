@@ -15,5 +15,17 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram&) const {
       "solver.");
 }
 
+bool SnoptSolver::is_thread_safe() {
+  throw std::runtime_error(
+      "The SNOPT bindings were not compiled.  You'll need to use a different "
+      "solver.");
+}
+
+bool SnoptSolver::is_bounded_lp_broken() {
+  throw std::runtime_error(
+      "The SNOPT bindings were not compiled.  You'll need to use a different "
+      "solver.");
+}
+
 }  // namespace solvers
 }  // namespace drake
