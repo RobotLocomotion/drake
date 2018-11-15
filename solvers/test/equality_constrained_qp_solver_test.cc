@@ -311,7 +311,8 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testFeasibilityTolerance) {
 
   // Now increase the feasibility tolerance.
   double tol = 1E-6;
-  prog.SetSolverOption(EqualityConstrainedQPSolver::id(), "FeasibilityTol",
+  prog.SetSolverOption(EqualityConstrainedQPSolver::id(),
+                       EqualityConstrainedQPSolver::FeasibilityTolOptionName(),
                        tol);
   result = equality_qp_solver.Solve(prog);
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
@@ -328,11 +329,9 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testFeasibilityTolerance) {
   SolverOptions solver_options;
   // The input solver option (1E-7) in `Solve` function takes priority over the
   // option stored in the prog (1E-6).
-  prog.SetSolverOption(EqualityConstrainedQPSolver::id(),
-                       EqualityConstrainedQPSolver::FeasibilityTolOptionName(),
-                       1e-6);
-  solver_options.SetOption(EqualityConstrainedQPSolver::id(), "FeasibilityTol",
-                           1e-7);
+  solver_options.SetOption(
+      EqualityConstrainedQPSolver::id(),
+      EqualityConstrainedQPSolver::FeasibilityTolOptionName(), 0.1 * tol);
   equality_qp_solver.Solve(prog, {}, solver_options, &math_prog_result);
   EXPECT_EQ(math_prog_result.get_solution_result(),
             SolutionResult::kInfeasibleConstraints);
