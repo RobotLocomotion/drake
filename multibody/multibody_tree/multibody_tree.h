@@ -1995,6 +1995,58 @@ class MultibodyTree {
       const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FQ,
       EigenPtr<MatrixX<T>> Jv_WFq) const;
 
+  /// Consider a point Q instantaneously moving with a frame B with position
+  /// `p_BQ` in that frame. Frame `Bq` is the frame defined by shifting frame B
+  /// with origin at `Bo` to a new origin at point Q. The spatial
+  /// velocity `V_ABq_E` of frame `Bq` measured in a frame A and expressed in a
+  /// frame E relates to the generalized velocities of the system by the
+  /// geometric Jacobian `Jv_ABq_E(q)` by: <pre>
+  ///   V_ABq_E(q, v) = Jv_ABq_E(q)⋅v
+  /// </pre>
+  /// This method computes the geometric Jacobian `Jv_ABq_E(q)`.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q.
+  /// @param[in] frame_B
+  ///   The position `p_BQ` of frame `Bq` is measured and expressed in this
+  ///   frame B.
+  /// @param[in] p_BQ
+  ///   The (fixed) position of the origin `Q` of frame `Bq` as measured and
+  ///   expressed in frame B.
+  /// @param[in] frame_A
+  ///   The second frame in which the spatial velocity `V_ABq` is measured and
+  ///   expressed.
+  /// @param[in] frame_E
+  ///   Frame in which the velocity V_ABq_E is expressed in.
+  /// @param[out] Jv_ABq
+  ///   The geometric Jacobian `Jv_ABq(q)`, function of the generalized
+  ///   positions q only. This Jacobian relates to the spatial velocity `V_ABq`
+  ///   of frame `Bq` by: <pre>
+  ///     V_ABq(q, v) = Jv_ABq(q)⋅v
+  ///   </pre>
+  ///   Therefore `Jv_ABq` is a matrix of size `6 x nv`, with `nv`
+  ///   the number of generalized velocities. On input, matrix `Jv_ABq` **must**
+  ///   have size `6 x nv` or this method throws an exception. The top rows of
+  ///   this matrix (which can be accessed with Jv_ABq.topRows<3>()) is the
+  ///   Jacobian `Hw_ABq` related to the angular velocity of `Bq` in A by
+  ///   `w_ABq = Hw_ABq⋅v`. The bottom rows of this matrix (which can be
+  ///   accessed with Jv_ABq.bottomRows<3>()) is the Jacobian `Hv_ABq` related
+  ///   to the translational velocity of the origin `Q` of frame `Bq` in A by
+  ///   `v_ABq = Hv_ABq⋅v`. This ordering is consistent with the internal
+  ///   storage of the SpatialVelocity class. Therefore the following operations
+  ///   results in a valid spatial velocity: <pre>
+  ///     SpatialVelocity<double> V_ABq(Jv_ABq * v);
+  ///   </pre>
+  ///
+  /// @throws std::exception if `J_ABq` is nullptr or if it is not of size
+  ///   `6 x nv`.
+  void CalcFrameGeometricJacobian(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BQ,
+      const Frame<T>& frame_A, const Frame<T>& frame_E,
+      EigenPtr<MatrixX<T>> Jv_ABq_E) const;
+
   /// Given a frame `Fq` defined by shifting a frame F from its origin `Fo` to
   /// a new origin `Q`, this method computes the bias term `Ab_WFq` associated
   /// with the spatial acceleration `A_WFq` a frame `Fq` instantaneously
