@@ -1054,8 +1054,9 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobian) {
     angle_index++;
   }
 
-  // Two arbitrary frames on the robot.
+  // Three arbitrary frames on the robot.
   const Body<double>& link3 = tree().GetBodyByName("iiwa_link_3");
+  const Body<double>& link5 = tree().GetBodyByName("iiwa_link_5");
   const Body<double>& link7 = tree().GetBodyByName("iiwa_link_7");
 
   // An arbitrary point Q in the end effector link 7.
@@ -1064,6 +1065,10 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobian) {
   // Link 3 kinematics.
   const Isometry3<double>& X_WL3 = tree().EvalBodyPoseInWorld(*context_, link3);
   const Matrix3<double>& R_WL3 = X_WL3.linear();
+
+  // link 5 kinematics.
+  const Isometry3<double>& X_WL5 = tree().EvalBodyPoseInWorld(*context_, link5);
+  const Matrix3<double>& R_WL5 = X_WL5.linear();
 
   // link 7 kinematics.
   const Isometry3<double>& X_WL7 = tree().EvalBodyPoseInWorld(*context_, link7);
@@ -1086,20 +1091,21 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobian) {
   const SpatialVelocity<double> V_WL7q =
       tree().EvalBodySpatialVelocityInWorld(*context_, link7).Shift(p_L7Q_W);
 
-  // Relative spatial velocity V_L3L7q of L7q in L3, measured in L3.
-  const SpatialVelocity<double> V_L3L7q = R_WL3.transpose() * (V_WL7q - V_WL3q);
+  // Relative spatial velocity V_L3L7q_L5 of L7q in L3, expressed in L5.
+  const SpatialVelocity<double> V_L3L7q_L5 =
+      R_WL5.transpose() * (V_WL7q - V_WL3q);
 
-  MatrixX<double> Jv_L3L7q(6, tree().num_velocities());
+  MatrixX<double> Jv_L3L7q_L5(6, tree().num_velocities());
   // Compute the Jacobian Jv_WF for that relate the generalized velocities with
   // the spatial velocity of frame F.
   tree().CalcFrameGeometricJacobian(
       *context_, link7.body_frame(), p_L7Q,
-      link3.body_frame(), link3.body_frame(), &Jv_L3L7q);
+      link3.body_frame(), link5.body_frame(), &Jv_L3L7q_L5);
 
   // Verify that V_L3L7q = Jv_L3L7q * v:
-  const SpatialVelocity<double> Jv_L3L7q_times_v(Jv_L3L7q * v);
+  const SpatialVelocity<double> Jv_L3L7q_L5_times_v(Jv_L3L7q_L5 * v);
 
-  EXPECT_TRUE(Jv_L3L7q_times_v.IsApprox(V_L3L7q, kTolerance));
+  EXPECT_TRUE(Jv_L3L7q_L5_times_v.IsApprox(V_L3L7q_L5, kTolerance));
 }
 
 // Fixture to setup a simple MBT model with weld mobilizers. The model is in
