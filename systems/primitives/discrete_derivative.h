@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -58,8 +59,15 @@ class DiscreteDerivative final : public LeafSystem<T> {
   /// vector value (x₀ = x₁ = u,resulting in a derivative = 0).  This is
   /// useful during initialization to avoid large derivative outputs if
   /// u[0] ≠ 0.  @p u must be the same size as the input/output ports.
+  void set_state(systems::Context<T>* context,
+                 const Eigen::Ref<const VectorX<T>>& u) const;
+
+  DRAKE_DEPRECATED("Use set_state(context, u) instead.  Will be deleted "
+                   "after 2/15/2019.")
   void set_state(const Eigen::Ref<const VectorX<T>>& u,
-                   systems::Context<T>* context) const;
+                 systems::Context<T>* context) const {
+    set_state(context, u);
+  }
 
   const systems::InputPort<T>& get_input_port() const {
     return System<T>::get_input_port(0);
@@ -82,6 +90,61 @@ class DiscreteDerivative final : public LeafSystem<T> {
 
   const int n_;  // The size of the input (and output) ports.
   const double time_step_;
+};
+
+/// Supports the common pattern of combining a (feed-through) position with
+/// a velocity estimated with the DiscreteDerivative into a single output
+/// vector with positions and velocities stacked.  This assumes that the
+/// number of positions == the number of velocities.
+///
+///                                  ┌─────┐
+/// position ───┬───────────────────>│     │
+///             │                    │ Mux ├──> state
+///             │   ┌────────────┐   │     │
+///             └──>│  Discrete  ├──>│     │
+///                 │ Derivative │   └─────┘
+///                 └────────────┘
+///
+/// @system{ StateInterpolatorWithDiscreteDerivative,
+///          @input_port{position},
+///          @output_port{state}
+/// }
+///
+/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - AutoDiffXd
+/// - symbolic::Expression
+///
+/// @ingroup primitive_systems
+template <typename T>
+class StateInterpolatorWithDiscreteDerivative final : public Diagram<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StateInterpolatorWithDiscreteDerivative)
+
+  /// Constructor taking @p num_positions, the size of the position vector
+  /// to be differentiated, and @p time_step, the sampling interval.
+  StateInterpolatorWithDiscreteDerivative(int num_positions, double time_step);
+
+  const systems::InputPort<T>& get_input_port() const {
+    return System<T>::get_input_port(0);
+  }
+
+  const systems::OutputPort<T>& get_output_port() const {
+    return System<T>::get_output_port(0);
+  }
+
+  /// Convenience method to set the entire position history for the
+  /// discrete-time derivative to a constant vector value (resulting in
+  /// velocity estimate of zero). This is useful during initialization to
+  /// avoid large derivative outputs.  @p position must be the same
+  /// size as the input/output ports.
+  void set_initial_position(systems::Context<T>* context,
+                            const Eigen::Ref<const VectorX<T>>& position) const;
+
+ private:
+  DiscreteDerivative<T>* derivative_;
 };
 
 }  // namespace systems
