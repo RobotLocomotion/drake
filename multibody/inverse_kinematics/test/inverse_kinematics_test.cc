@@ -204,23 +204,22 @@ TEST_F(TwoFreeBodiesTest, AngleBetweenVectorsConstraint) {
   EXPECT_NEAR(angle, angle_lower, 1E-6);
 }
 
-TEST_F(TwoFreeBodiesTest, MinimalDistanceConstraint) {
-  // Expect to throw an error, when adding minimal distance constraint to two
+TEST_F(TwoFreeBodiesTest, MinimumDistanceConstraint) {
+  // Expect to throw an error, when adding minimum distance constraint to two
   // free bodies, since the geometry has not been registered in the scene graph
   // yet.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ik_.AddMinimalDistanceConstraint(0.1), std::invalid_argument,
-      "MinimalDistanceConstraint: MultibodyPlant has not registered its "
+      ik_.AddMinimumDistanceConstraint(0.1), std::invalid_argument,
+      "MinimumDistanceConstraint: MultibodyPlant has not registered its "
       "geometry source with SceneGraph yet.");
 }
 
-
-TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraint) {
+TEST_F(TwoFreeSpheresTest, MinimumDistanceConstraint) {
   InverseKinematics ik(*diagram_double_, *plant_double_, plant_context_double_);
   AddUnitQuaternionConstraint(ik.q().head<4>(), ik.get_mutable_prog());
   AddUnitQuaternionConstraint(ik.q().segment<4>(7), ik.get_mutable_prog());
-  const double minimal_distance{0.2};
-  auto constraint = ik.AddMinimalDistanceConstraint(minimal_distance);
+  const double minimum_distance{0.2};
+  auto constraint = ik.AddMinimumDistanceConstraint(minimum_distance);
 
   Eigen::Matrix<double, 14, 1> q0;
   q0.setZero();
@@ -228,7 +227,7 @@ TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraint) {
   // If we comment out the next line that sets the position of sphere 1, hence
   // both sphere 1 and 2 are at the origin, then the signed distance query takes
   // forever.
-  // The initial guess satisfy the minimal distance constraint.
+  // The initial guess satisfy the minimum distance constraint.
   q0.segment<3>(4) << 0.1, 0.2, 0.3;
   q0(7) = 1;
   ik.get_mutable_prog()->SetInitialGuess(ik.q(), q0);
@@ -240,9 +239,9 @@ TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraint) {
   // The tolerance is very loose, since currently we use EPA/GJK to compute
   // the signed distance, which is known to be inaccurate.
   const double tol{2E-2};
-  EXPECT_GE((p_WA - p_WB).norm() - radius1_ - radius2_, minimal_distance - tol);
+  EXPECT_GE((p_WA - p_WB).norm() - radius1_ - radius2_, minimum_distance - tol);
 
-  // The initial guess doesn't satisfy the minimal distance constraint.
+  // The initial guess doesn't satisfy the minimum distance constraint.
   q0.segment<3>(4) << 0.02, 0.03, 0.04;
   ik.get_mutable_prog()->SetInitialGuess(ik.q(), q0);
   result = ik.get_mutable_prog()->Solve();
@@ -250,7 +249,7 @@ TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraint) {
   q_val = ik.prog().GetSolution(ik.q());
   p_WA = q_val.segment<3>(4);
   p_WB = q_val.segment<3>(11);
-  EXPECT_GE((p_WA - p_WB).norm() - radius1_ - radius2_, minimal_distance - tol);
+  EXPECT_GE((p_WA - p_WB).norm() - radius1_ - radius2_, minimum_distance - tol);
 }
 }  // namespace multibody
 }  // namespace drake

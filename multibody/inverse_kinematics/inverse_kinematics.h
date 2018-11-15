@@ -28,10 +28,11 @@ class InverseKinematics {
    * @param plant The robot on which the inverse kinematics problem will be
    * solved.
    * @note The inverse kinematics problem constructed in this way doesn't permit
-   * collision related constraint (such as AddMinimalDistanceConstraint). To
+   * collision related constraint (such as AddMinimumDistanceConstraint). To
    * enable collision related constraints, call InverseKinematics(const
-   * multibody_plant::MultibodyPlant<AutoDiffXd>& plant,
-   * systems::Context<AutoDiffXd>* context).
+   * multibody_plant::Diagram<double>& diagram,
+   * multibody_plant::MultibodyPlant<double>& plant, systems::Context<double>*
+   * plant_context).
    */
   explicit InverseKinematics(
       const multibody_plant::MultibodyPlant<double>& plant);
@@ -44,7 +45,7 @@ class InverseKinematics {
    * @param plant The robot on which the inverse kinematics problem will be
    * solved. If this plant has registered its geometry with a SceneGraph object,
    * then the user can impose collision related constraint (like
-   * AddMinimalDistanceConstraint).
+   * AddMinimumDistanceConstraint).
    * @param plant_context The MultibodyPlant context. @note
    * InverseKinematics doesn't own this context. If plant_context contains some
    * values at the construction of InverseKinematics, these values are not used
@@ -176,19 +177,19 @@ class InverseKinematics {
 
   /**
    * Constrain that the pairwise distance between objects should be no
-   * smaller than @p minimal distance. We consider the distance between pairs of
+   * smaller than @p minimum distance. We consider the distance between pairs of
    * 1. Anchored (static) object and a dynamic object.
    * 2. A dynamic object and another dynamic object, if one is not the parent
    * link of the other.
-   * @param minimal_distance The minimal value of the signed distance between
+   * @param minimum_distance The minimum value of the signed distance between
    * any admissible pairs of objects.
    * @pre The MultibodyPlant passed in the constructor of InverseKinematics has
    * registered its geometry with a SceneGraph object already. @throw
    * invalid_argument if the geometry hasn't been registered.
-   * @pre minimal_distance > 0.
+   * @pre minimum_distance > 0.
    * The formulation of the constraint is
    * ∑ γ(φᵢ/dₘᵢₙ - 1) = 0
-   * where φᵢ is the signed distance of the i'th pair, dₘᵢₙ is the minimal
+   * where φᵢ is the signed distance of the i'th pair, dₘᵢₙ is the minimum
    * allowable distance, and γ is a penalizing function defined as
    * γ(x) = 0 if x ≥ 0
    * γ(x) = -x exp(1/x) if x < 0
@@ -197,8 +198,8 @@ class InverseKinematics {
    * Valenzuela and Russ Tedrake, 2014 IEEE-RAS International Conference on
    * Humanoid Robots.
    */
-  solvers::Binding<solvers::Constraint> AddMinimalDistanceConstraint(
-      double minimal_distance);
+  solvers::Binding<solvers::Constraint> AddMinimumDistanceConstraint(
+      double minimum_distance);
 
   /** Getter for q. q is the decision variable for the generalized positions of
    * the robot. */

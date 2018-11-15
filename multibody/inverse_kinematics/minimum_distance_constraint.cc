@@ -1,4 +1,4 @@
-#include "drake/multibody/inverse_kinematics/minimal_distance_constraint.h"
+#include "drake/multibody/inverse_kinematics/minimum_distance_constraint.h"
 
 #include <limits>
 #include <vector>
@@ -10,7 +10,7 @@ namespace multibody {
 namespace internal {
 /**
  * Implements the penalty function  γ(φᵢ/dₘᵢₙ - 1)
- * where φᵢ is the signed distance of the i'th pair, dₘᵢₙ is the minimal
+ * where φᵢ is the signed distance of the i'th pair, dₘᵢₙ is the minimum
  * allowable distance, and γ is a penalizing function defined as
  * γ(x) = 0 if x ≥ 0
  * γ(x) = -x exp(1/x) if x < 0
@@ -33,32 +33,32 @@ void Penalty(double distance, double distance_threshold, double* penalty,
   }
 }
 
-MinimalDistanceConstraint::MinimalDistanceConstraint(
+MinimumDistanceConstraint::MinimumDistanceConstraint(
     const multibody::multibody_plant::MultibodyPlant<AutoDiffXd>& plant,
-    double minimal_distance, systems::Context<AutoDiffXd>* plant_context)
+    double minimum_distance, systems::Context<AutoDiffXd>* plant_context)
     : solvers::Constraint(1, plant.num_positions(), Vector1d(0), Vector1d(0)),
       plant_{plant},
-      minimal_distance_{minimal_distance},
+      minimum_distance_{minimum_distance},
       plant_context_{plant_context} {
   if (!plant_.geometry_source_is_registered()) {
     throw std::invalid_argument(
-        "MinimalDistanceConstraint: MultibodyPlant has not registered its "
+        "MinimumDistanceConstraint: MultibodyPlant has not registered its "
         "geometry source with SceneGraph yet.");
   }
-  if (minimal_distance_ <= 0) {
+  if (minimum_distance_ <= 0) {
     throw std::invalid_argument(
-        "MinimalDistanceConstraint: minimal_distance should be positive.");
+        "MinimumDistanceConstraint: minimum_distance should be positive.");
   }
 }
 
-void MinimalDistanceConstraint::DoEval(
+void MinimumDistanceConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
   AutoDiffVecXd y_t;
   Eval(math::initializeAutoDiff(x), &y_t);
   *y = math::autoDiffToValueMatrix(y_t);
 }
 
-void MinimalDistanceConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+void MinimumDistanceConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                                        AutoDiffVecXd* y) const {
   y->resize(1);
 
@@ -82,7 +82,7 @@ void MinimalDistanceConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
   // So the gradient ∂d/∂q = sign * p_CbCa_W / d² * (∂p_WCa/∂q - ∂p_WCb/∂q)
   for (const auto& signed_distance_pair : signed_distance_pairs) {
     const double distance = signed_distance_pair.distance;
-    if (distance < minimal_distance_) {
+    if (distance < minimum_distance_) {
       const double sign = distance > 0 ? 1 : -1;
 
       Vector3<AutoDiffXd> p_WCa, p_WCb;
@@ -101,7 +101,7 @@ void MinimalDistanceConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
           signed_distance_pair.p_BCb.cast<AutoDiffXd>(), plant_.world_frame(),
           &p_WCb);
       double penalty, dpenalty_ddistance;
-      Penalty(distance, minimal_distance_, &penalty, &dpenalty_ddistance);
+      Penalty(distance, minimum_distance_, &penalty, &dpenalty_ddistance);
 
       const AutoDiffXd distance_autodiff = sign * (p_WCa - p_WCb).norm();
       Eigen::RowVectorXd distance_gradient = distance_autodiff.derivatives();
