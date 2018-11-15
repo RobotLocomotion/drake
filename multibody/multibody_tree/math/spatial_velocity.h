@@ -272,5 +272,18 @@ inline SpatialVelocity<T> operator+(
   return SpatialVelocity<T>(V_EAb.get_coeffs() + V_AB_E.get_coeffs());
 }
 
+/// Given the spatial velocity `V_MAq` of a frame A shifted to a point Q as
+/// measured in a frame M and the spatial velocity `V_MBq_E` of a frame B
+/// shifted to the same point Q and measured in the same frame M, the
+/// subtraction operation corresponds to the spatial velocity `V_ABq` of
+/// frame B shifted to point Q. When these spatial velocities are all
+/// expressed in a common frame E, the subtraction operation is:
+/// `V_ABq_E = V_MBq_E - V_MAq_E`.
+template <typename T>
+inline SpatialVelocity<T> operator-(
+    const SpatialVelocity<T>& V_MBq_E, const SpatialVelocity<T>& V_MAq_E) {
+  return SpatialVelocity<T>(V_MBq_E.get_coeffs() - V_MAq_E.get_coeffs());
+}
+
 }  // namespace multibody
 }  // namespace drake
