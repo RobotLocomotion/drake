@@ -242,37 +242,33 @@ GTEST_TEST(ManipulationStationTest, CheckRGBDOutputs) {
 
   auto context = station.CreateDefaultContext();
 
-  const int kNumCameras = 3;
-  for (int i = 0; i < kNumCameras; i++) {
+  for (const auto& name : station.get_camera_names()) {
     // Make sure the camera outputs can be evaluated, and are non-empty.
-    EXPECT_GE(station.GetOutputPort("camera" + std::to_string(i) + "_rgb_image")
+    EXPECT_GE(station.GetOutputPort("camera_" + name + "_rgb_image")
                   .Eval<systems::sensors::ImageRgba8U>(*context)
                   .size(),
               0);
-    EXPECT_GE(
-        station.GetOutputPort("camera" + std::to_string(i) + "_depth_image")
-            .Eval<systems::sensors::ImageDepth32F>(*context)
-            .size(),
-        0);
-    EXPECT_GE(
-        station.GetOutputPort("camera" + std::to_string(i) + "_label_image")
-            .Eval<systems::sensors::ImageLabel16I>(*context)
-            .size(),
-        0);
+    EXPECT_GE(station.GetOutputPort("camera_" + name + "_depth_image")
+                  .Eval<systems::sensors::ImageDepth32F>(*context)
+                  .size(),
+              0);
+    EXPECT_GE(station.GetOutputPort("camera_" + name + "_label_image")
+                  .Eval<systems::sensors::ImageLabel16I>(*context)
+                  .size(),
+              0);
   }
 }
 
 GTEST_TEST(ManipulationStationTest, CheckCollisionVariants) {
-  ManipulationStation<double> station1(
-      0.002, IiwaCollisionModel::kNoCollision);
+  ManipulationStation<double> station1(0.002, IiwaCollisionModel::kNoCollision);
 
   // In this variant, there are collision geometries from the world and the
   // gripper, but not from the iiwa.
   const int num_collisions =
       station1.get_multibody_plant().num_collision_geometries();
 
-  ManipulationStation<double> station2(
-      0.002, IiwaCollisionModel::kBoxCollision);
+  ManipulationStation<double> station2(0.002,
+                                       IiwaCollisionModel::kBoxCollision);
   // Check for additional collision elements (one for each link, which includes
   // the base).
   EXPECT_EQ(station2.get_multibody_plant().num_collision_geometries(),

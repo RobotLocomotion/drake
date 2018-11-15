@@ -38,7 +38,8 @@ class TestManipulationStation(unittest.TestCase):
         station.SetWsgVelocity(v, context)
         self.assertEqual(v, station.GetWsgVelocity(context))
 
-        station.get_camera_pose(0)
+        station.get_camera_poses_in_world()["0"]
+        self.assertEqual(len(station.get_camera_names()), 3)
 
     def test_iiwa_collision_model(self):
         # Check that all of the elements of the enum were spelled correctly.
@@ -47,6 +48,7 @@ class TestManipulationStation(unittest.TestCase):
 
     def test_manipulation_station_hardware_interface(self):
         station = ManipulationStationHardwareInterface(
-            camera_ids=["123", "456"])
+            camera_names=["123", "456"])
         # Don't actually call Connect here, since it would block.
         station.get_controller_plant()
+        self.assertEqual(len(station.get_camera_names()), 2)

@@ -14,8 +14,8 @@ using systems::BasicVector;
 
 GTEST_TEST(ManipulationStationHardwareInterfaceTest, CheckPorts) {
   const int kNumIiwaDofs = 7;
-  const std::vector<std::string> camera_ids = {"123", "456"};
-  ManipulationStationHardwareInterface station(camera_ids);
+  const std::vector<std::string> camera_names = {"123", "456"};
+  ManipulationStationHardwareInterface station(camera_names);
   auto context = station.CreateDefaultContext();
 
   // Check sizes and names of the input ports.
@@ -64,16 +64,15 @@ GTEST_TEST(ManipulationStationHardwareInterfaceTest, CheckPorts) {
             1);
 
   // Camera outputs will be empty images since no messages have been received.
-  for (int i = 0; i < static_cast<int>(camera_ids.size()); i++) {
-    EXPECT_EQ(station.GetOutputPort("camera" + std::to_string(i) + "_rgb_image")
+  for (const std::string& name : camera_names) {
+    EXPECT_EQ(station.GetOutputPort("camera_" + name + "_rgb_image")
                   .Eval<systems::sensors::ImageRgba8U>(*context)
                   .size(),
               0);
-    EXPECT_EQ(
-        station.GetOutputPort("camera" + std::to_string(i) + "_depth_image")
-            .Eval<systems::sensors::ImageDepth32F>(*context)
-            .size(),
-        0);
+    EXPECT_EQ(station.GetOutputPort("camera_" + name + "_depth_image")
+                  .Eval<systems::sensors::ImageDepth32F>(*context)
+                  .size(),
+              0);
   }
 
   // TODO(russt): Consider adding mock lcm tests.  But doing so right now
