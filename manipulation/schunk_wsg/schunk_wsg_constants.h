@@ -63,8 +63,8 @@ MakeMultibodyStateToWsgStateSystem() {
 template <typename T>
 std::unique_ptr<systems::MatrixGain<T>>
 MakeMultibodyForceToWsgForceSystem() {
-  // gripper force = -finger0 + finger1.
-  return std::make_unique<systems::MatrixGain<T>>(Eigen::RowVector2d(-1, 1));
+  // gripper force = abs(finger0) + abs(finger1).
+  return std::make_unique<systems::MatrixGain<T>>(Eigen::RowVector2d(1, 1));
 }
 
 
