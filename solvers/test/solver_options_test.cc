@@ -9,17 +9,18 @@ class SolverOptionsTester {
   explicit SolverOptionsTester(const SolverOptions& solver_options)
       : solver_options_{solver_options} {}
 
-  const std::map<SolverId, std::unordered_map<std::string, double>>&
+  const std::unordered_map<SolverId, std::unordered_map<std::string, double>>&
   solver_options_double() const {
     return solver_options_.solver_options_double_;
   }
 
-  const std::map<SolverId, std::unordered_map<std::string, int>>&
+  const std::unordered_map<SolverId, std::unordered_map<std::string, int>>&
   solver_options_int() const {
     return solver_options_.solver_options_int_;
   }
 
-  const std::map<SolverId, std::unordered_map<std::string, std::string>>&
+  const std::unordered_map<
+    SolverId, std::unordered_map<std::string, std::string>>&
   solver_options_str() const {
     return solver_options_.solver_options_str_;
   }
@@ -28,10 +29,35 @@ class SolverOptionsTester {
   SolverOptions solver_options_;
 };
 
+GTEST_TEST(SolverOptionsTest, Ids) {
+  using Set = std::unordered_set<SolverId>;
+
+  SolverOptions dut;
+  EXPECT_EQ(dut.GetSolverIds(), Set{});
+
+  // Each type (double, int, string) can affect the "known IDs" result.
+  const SolverId id1("id1");
+  dut.SetOption(id1, "some_double", 0.0);
+  EXPECT_EQ(dut.GetSolverIds(), Set({id1}));
+  const SolverId id2("id2");
+  dut.SetOption(id2, "some_int", 1);
+  EXPECT_EQ(dut.GetSolverIds(), Set({id1, id2}));
+  const SolverId id3("id3");
+  dut.SetOption(id3, "some_string", "foo");
+  EXPECT_EQ(dut.GetSolverIds(), Set({id1, id2, id3}));
+
+  // Having the same ID used by in more than one type is okay.
+  dut.SetOption(id1, "some_int", 2);
+  dut.SetOption(id2, "some_string", "bar");
+  dut.SetOption(id3, "some_double", 1.0);
+  EXPECT_EQ(dut.GetSolverIds(), Set({id1, id2, id3}));
+}
+
 template <typename T>
 void CheckSolverOptionsHelper(
-    const std::map<SolverId, std::unordered_map<std::string, T>>& options,
-    const std::map<SolverId, std::unordered_map<std::string, T>>&
+    const std::unordered_map<SolverId, std::unordered_map<std::string, T>>&
+        options,
+    const std::unordered_map<SolverId, std::unordered_map<std::string, T>>&
         options_expected) {
   EXPECT_EQ(options.size(), options_expected.size());
   for (const auto& options_pair : options) {
@@ -79,7 +105,7 @@ void UpdateMergeResult(const SolverOptions& solver_options1,
   merge_option2_into_option1->Merge(solver_options2);
 }
 
-GTEST_TEST(MergeTest, Test) {
+GTEST_TEST(SolverOptionsTest, Merge) {
   const SolverId id1("foo1");
   const SolverId id2("foo2");
   SolverOptions solver_options1, solver_options2;

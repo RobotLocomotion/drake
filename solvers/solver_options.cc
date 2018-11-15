@@ -4,6 +4,12 @@
 
 namespace drake {
 namespace solvers {
+
+// A shorthand for our member field type, for options typed as T's, as in
+// MapMap[SolverId][string] => T.
+template <typename T>
+using MapMap = std::unordered_map<SolverId, std::unordered_map<std::string, T>>;
+
 void SolverOptions::SetOption(const SolverId& solver_id,
                               const std::string& solver_option,
                               double option_value) {
@@ -22,80 +28,57 @@ void SolverOptions::SetOption(const SolverId& solver_id,
   solver_options_str_[solver_id][solver_option] = option_value;
 }
 
+namespace {
+// If options has an entry for the given solver_id, returns a reference to the
+// mapped value.  Otherwise, returns a long-lived reference to an empty value.
+template <typename T>
+const std::unordered_map<std::string, T>& GetOptionsHelper(
+    const SolverId& solver_id, const MapMap<T>& options) {
+  static never_destroyed<std::unordered_map<std::string, T>> empty;
+  const auto iter = options.find(solver_id);
+  return (iter != options.end()) ? iter->second : empty.access();
+}
+}  // namespace
+
 const std::unordered_map<std::string, double>& SolverOptions::GetOptionsDouble(
     const SolverId& solver_id) const {
-  // Aliases for brevity.
-  const auto& options = solver_options_double_;
-  // For "unset" solver ids, the options are implicitly an empty map. To avoid
-  // copying (by always returning a const reference), and to avoid cluttering up
-  // each SolverOptions instance with empty maps, we keep a static, empty map
-  // for returning when the input solver_id isn't a key in the map.
-  static never_destroyed<std::unordered_map<std::string, double>>
-      solver_options_double_empty{};
-  const auto iter = options.find(solver_id);
-  return (iter != options.end()) ? iter->second
-                                 : solver_options_double_empty.access();
+  return GetOptionsHelper(solver_id, solver_options_double_);
 }
 
 const std::unordered_map<std::string, int>& SolverOptions::GetOptionsInt(
     const SolverId& solver_id) const {
-  // Aliases for brevity.
-  const auto& options = solver_options_int_;
-  // For "unset" solver ids, the options are implicitly an empty map. To avoid
-  // copying (by always returning a const reference), and to avoid cluttering up
-  // each SolverOptions instance with empty maps, we keep a static, empty map
-  // for returning when the input solver_id isn't a key in the map.
-  static never_destroyed<std::unordered_map<std::string, int>>
-      solver_options_int_empty{};
-  const auto iter = options.find(solver_id);
-  return (iter != options.end()) ? iter->second
-                                 : solver_options_int_empty.access();
+  return GetOptionsHelper(solver_id, solver_options_int_);
 }
 
 const std::unordered_map<std::string, std::string>&
 SolverOptions::GetOptionsStr(const SolverId& solver_id) const {
-  // Aliases for brevity.
-  const auto& options = solver_options_str_;
-  // For "unset" solver ids, the options are implicitly an empty map. To avoid
-  // copying (by always returning a const reference), and to avoid cluttering up
-  // each SolverOptions instance with empty maps, we keep a static, empty map
-  // for returning when the input solver_id isn't a key in the map.
-  static never_destroyed<std::unordered_map<std::string, std::string>>
-      solver_options_str_empty{};
-  const auto iter = options.find(solver_id);
-  return (iter != options.end()) ? iter->second
-                                 : solver_options_str_empty.access();
+  return GetOptionsHelper(solver_id, solver_options_str_);
+}
+
+std::unordered_set<SolverId> SolverOptions::GetSolverIds() const {
+  std::unordered_set<SolverId> result;
+  for (const auto& pair : solver_options_double_) { result.insert(pair.first); }
+  for (const auto& pair : solver_options_int_) { result.insert(pair.first); }
+  for (const auto& pair : solver_options_str_) { result.insert(pair.first); }
+  return result;
 }
 
 template <typename T>
-void MergeOptions(
-    const std::map<SolverId, std::unordered_map<std::string, T>>& other_options,
-    std::map<SolverId, std::unordered_map<std::string, T>>* this_options) {
-  for (const auto& other_solver_and_options : other_options) {
-    auto it = this_options->find(other_solver_and_options.first);
-    if (it == this_options->end()) {
-      // If this_options doesn't contain the solver ID
-      this_options->emplace_hint(it, other_solver_and_options);
-    } else {
-      // this_options contains the solver ID.
-      for (const auto& other_solver_option : other_solver_and_options.second) {
-        auto this_solver_option_it = it->second.find(other_solver_option.first);
-        if (this_solver_option_it == it->second.end()) {
-          // The string key is not contained in this_options.
-          it->second.emplace_hint(this_solver_option_it, other_solver_option);
-        } else {
-          // The string key is contained in this_options. Do nothing.
-          continue;
-        }
-      }
+void MergeHelper(const MapMap<T>& other, MapMap<T>* self) {
+  for (const auto& other_id_keyvals : other) {
+    const SolverId& id = other_id_keyvals.first;
+    std::unordered_map<std::string, T>& self_keyvals = (*self)[id];
+    for (const auto& other_keyval : other_id_keyvals.second) {
+      // This is a no-op when the key already exists.
+      self_keyvals.insert(other_keyval);
     }
   }
 }
 
 void SolverOptions::Merge(const SolverOptions& other) {
-  MergeOptions(other.solver_options_double_, &solver_options_double_);
-  MergeOptions(other.solver_options_int_, &solver_options_int_);
-  MergeOptions(other.solver_options_str_, &solver_options_str_);
+  MergeHelper(other.solver_options_double_, &solver_options_double_);
+  MergeHelper(other.solver_options_int_, &solver_options_int_);
+  MergeHelper(other.solver_options_str_, &solver_options_str_);
 }
 
 bool SolverOptions::operator==(const SolverOptions& other) const {

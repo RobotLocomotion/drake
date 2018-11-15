@@ -1,8 +1,8 @@
 #pragma once
 
-#include <map>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/solver_id.h"
@@ -56,6 +56,9 @@ class SolverOptions {
   const std::unordered_map<std::string, std::string>& GetOptionsStr(
       const SolverId& solver_id) const;
 
+  /** Returns the IDs that have any option set. */
+  std::unordered_set<SolverId> GetSolverIds() const;
+
   /**
    * Merges the other solver options into this. If @p other and this solver
    * option both define the same option for the same solver, then take this
@@ -69,11 +72,11 @@ class SolverOptions {
 
  private:
   friend class SolverOptionsTester;
-  std::map<SolverId, std::unordered_map<std::string, double>>
+  std::unordered_map<SolverId, std::unordered_map<std::string, double>>
       solver_options_double_{};
-  std::map<SolverId, std::unordered_map<std::string, int>>
+  std::unordered_map<SolverId, std::unordered_map<std::string, int>>
       solver_options_int_{};
-  std::map<SolverId, std::unordered_map<std::string, std::string>>
+  std::unordered_map<SolverId, std::unordered_map<std::string, std::string>>
       solver_options_str_{};
 };
 }  // namespace solvers
