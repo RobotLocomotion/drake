@@ -2019,23 +2019,24 @@ class MultibodyTree {
   ///   expressed.
   /// @param[in] frame_E
   ///   Frame in which the velocity V_ABq_E is expressed in.
-  /// @param[out] Jv_ABq
-  ///   The geometric Jacobian `Jv_ABq(q)`, function of the generalized
-  ///   positions q only. This Jacobian relates to the spatial velocity `V_ABq`
-  ///   of frame `Bq` by: <pre>
-  ///     V_ABq(q, v) = Jv_ABq(q)⋅v
+  /// @param[out] Jv_ABq_E
+  ///   The geometric Jacobian `Jv_ABq_E(q)`, function of the generalized
+  ///   positions q only. This Jacobian relates to the spatial velocity
+  ///   `V_ABq_E` of frame `Bq` in A and expressed in E by: <pre>
+  ///     V_ABq_E(q, v) = Jv_ABq_E(q)⋅v
   ///   </pre>
-  ///   Therefore `Jv_ABq` is a matrix of size `6 x nv`, with `nv`
-  ///   the number of generalized velocities. On input, matrix `Jv_ABq` **must**
-  ///   have size `6 x nv` or this method throws an exception. The top rows of
-  ///   this matrix (which can be accessed with Jv_ABq.topRows<3>()) is the
-  ///   Jacobian `Hw_ABq` related to the angular velocity of `Bq` in A by
-  ///   `w_ABq = Hw_ABq⋅v`. The bottom rows of this matrix (which can be
-  ///   accessed with Jv_ABq.bottomRows<3>()) is the Jacobian `Hv_ABq` related
-  ///   to the translational velocity of the origin `Q` of frame `Bq` in A by
-  ///   `v_ABq = Hv_ABq⋅v`. This ordering is consistent with the internal
-  ///   storage of the SpatialVelocity class. Therefore the following operations
-  ///   results in a valid spatial velocity: <pre>
+  ///   Therefore `Jv_ABq_E` is a matrix of size `6 x nv`, with `nv`
+  ///   the number of generalized velocities. On input, matrix `Jv_ABq_E`
+  ///   **must** have size `6 x nv` or this method throws an exception.
+  ///   The top rows of this matrix (which can be accessed with
+  ///   Jv_ABq.topRows<3>()) is the Jacobian `Hw_ABq` related to the angular
+  ///   velocity of `Bq` in A by `w_ABq = Hw_ABq⋅v`. The bottom rows of this
+  ///   matrix (which can be accessed with Jv_ABq.bottomRows<3>()) is the
+  ///   Jacobian `Hv_ABq` related to the translational velocity of the origin
+  ///   `Q` of frame `Bq` in A by `v_ABq = Hv_ABq⋅v`. This ordering is
+  ///   consistent with the internal storage of the SpatialVelocity class.
+  ///   Therefore the following operations results in a valid spatial
+  ///   velocity: <pre>
   ///     SpatialVelocity<double> V_ABq(Jv_ABq * v);
   ///   </pre>
   ///

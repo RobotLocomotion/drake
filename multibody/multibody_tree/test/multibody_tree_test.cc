@@ -1085,7 +1085,7 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobian) {
   // Spatial velocity of L7 shifted to Q.
   const SpatialVelocity<double> V_WL7q =
       tree().EvalBodySpatialVelocityInWorld(*context_, link7).Shift(p_L7Q_W);
-  
+
   // Relative spatial velocity V_L3L7q of L7q in L3, measured in L3.
   const SpatialVelocity<double> V_L3L7q = R_WL3.transpose() * (V_WL7q - V_WL3q);
 
