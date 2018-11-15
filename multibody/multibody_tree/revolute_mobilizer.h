@@ -49,8 +49,8 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   /// single rotational degree of freedom about axis `axis_F` expressed in the
   /// inboard frame F.
   /// @pre `axis_F` must be a non-zero vector with norm at least root square of
-  /// machine epsilon. This vector can have any length, only the direction is
-  /// used.
+  /// machine epsilon. This vector can have any length (subject to the norm
+  /// restriction above), only the direction is used.
   /// @throws std::exception if the L2 norm of `axis_F` is less than the square
   /// root of machine epsilon.
   RevoluteMobilizer(const Frame<T>& inboard_frame_F,

@@ -200,6 +200,14 @@ TEST_F(RevoluteMobilizerTest, KinematicMapping) {
   EXPECT_NEAR(Nplus(0, 0), 1.0, kTolerance);
 }
 
+TEST_F(RevoluteMobilizerTest, KinematicMappingOnWrongSizedMatrix) {
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  // Arbitrary size matrix.
+  MatrixX<double> N(28, 13);
+  EXPECT_DEATH(mobilizer_->CalcNMatrix(*mbt_context_, &N), ".*");
+  EXPECT_DEATH(mobilizer_->CalcNplusMatrix(*mbt_context_, &N), ".*");
+}
+
 }  // namespace
 }  // namespace multibody_tree
 }  // namespace multibody

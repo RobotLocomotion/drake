@@ -441,16 +441,16 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       Eigen::Ref<VectorX<T>> tau) const = 0;
 
   /// Computes the kinematic mapping matrix `N(q)` that maps generalized
-  /// velocities to time derivatives of the generalized positions according to
-  /// `q̇ = N(q)⋅v`.
+  /// velocities for this mobilizer to time derivatives of the generalized
+  /// positions for this mobilizer according to `q̇ = N(q)⋅v`.
   /// @param[in] context
   ///   The context for the parent tree that owns this mobilizer storing the
   ///   generalized positions q.
   /// @param[out] N
   ///   The kinematic mapping matrix `N(q)`. On input it must have size
-  ///   `nq x nv` with nq the number of generalized positions and nv the
-  ///   number of generalized velocities. This method aborts if N is nullptr
-  ///   or if N has the wrong size.
+  ///   `nq x nv` with nq and nv the number of generalized positions and the
+  ///   number of generalized velocities for this mobilizer, respectively. This
+  ///   method aborts if N is nullptr or if N has the wrong size.
   /// @see MapVelocityToQDot().
   void CalcNMatrix(
       const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> N) const {
