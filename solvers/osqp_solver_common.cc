@@ -31,6 +31,11 @@ bool OsqpSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
           ProgramAttribute::kLinearCost, ProgramAttribute::kQuadraticCost,
           ProgramAttribute::kLinearConstraint,
           ProgramAttribute::kLinearEqualityConstraint});
+  std::cout << AreRequiredAttributesSupported(prog.required_capabilities(),
+                                              solver_capabilities.access())
+            << "\n";
+  std::cout << (prog.required_capabilities().count(
+                    ProgramAttribute::kQuadraticCost) > 0);
   return AreRequiredAttributesSupported(prog.required_capabilities(),
                                         solver_capabilities.access()) &&
          prog.required_capabilities().count(ProgramAttribute::kQuadraticCost) >
