@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ostream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -71,7 +72,6 @@ class SolverOptions {
   bool operator!=(const SolverOptions& other) const;
 
  private:
-  friend class SolverOptionsTester;
   std::unordered_map<SolverId, std::unordered_map<std::string, double>>
       solver_options_double_{};
   std::unordered_map<SolverId, std::unordered_map<std::string, int>>
@@ -79,5 +79,9 @@ class SolverOptions {
   std::unordered_map<SolverId, std::unordered_map<std::string, std::string>>
       solver_options_str_{};
 };
+
+std::string to_string(const SolverOptions&);
+std::ostream& operator<<(std::ostream&, const SolverOptions&);
+
 }  // namespace solvers
 }  // namespace drake

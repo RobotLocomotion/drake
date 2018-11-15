@@ -1,5 +1,10 @@
 #include "drake/solvers/solver_options.h"
 
+#include <map>
+#include <sstream>
+
+#include "fmt/format.h"
+
 #include "drake/common/never_destroyed.h"
 
 namespace drake {
@@ -89,6 +94,45 @@ bool SolverOptions::operator==(const SolverOptions& other) const {
 
 bool SolverOptions::operator!=(const SolverOptions& other) const {
   return !(*this == other);
+}
+
+namespace {
+template <typename T>
+void Summarize(const SolverId& id,
+           const std::unordered_map<std::string, T>& keyvals,
+           std::map<std::string, std::string>* pairs) {
+  for (const auto& keyval : keyvals) {
+    (*pairs)[fmt::format("{}:{}", id.name(), keyval.first)] =
+        fmt::format("{}", keyval.second);
+  }
+}
+}  // namespace
+
+std::ostream& operator<<(std::ostream& os, const SolverOptions& x) {
+  os << "{SolverOptions";
+  const auto& ids = x.GetSolverIds();
+  if (ids.empty()) {
+    os << " empty";
+  } else {
+    // Map keyed on "solver_name:option_key" so our output is deterministic.
+    std::map<std::string, std::string> pairs;
+    for (const auto& id : ids) {
+      Summarize(id, x.GetOptionsDouble(id), &pairs);
+      Summarize(id, x.GetOptionsInt(id), &pairs);
+      Summarize(id, x.GetOptionsStr(id), &pairs);
+    }
+    for (const auto& pair : pairs) {
+      os << ", " << pair.first << "=" << pair.second;
+    }
+  }
+  os << "}";
+  return os;
+}
+
+std::string to_string(const SolverOptions& x) {
+  std::ostringstream result;
+  result << x;
+  return result.str();
 }
 
 }  // namespace solvers
