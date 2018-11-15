@@ -308,19 +308,38 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// velocities, or some portion thereof (e.g., only `v`).
   /// @{
 
-  /// Returns a const Eigen vector reference containing the vector
-  /// `[q; v]` of the model with `q` the vector of generalized positions and
+  /// Returns a const vector reference containing the vector
+  /// `[q; v]` with `q` the vector of generalized positions and
   /// `v` the vector of generalized velocities.
   /// @note This method returns a reference to existing data, exhibits constant
   ///       i.e., O(1) time complexity, and runs very quickly.
   /// @throws std::exception if the `context` does not
   /// correspond to the context for a multibody model.
+  // *** WARNING *** Auto-generated Python documentation assumes a fixed
+  // ordering of the overloaded methods. Change this ordering only if you change
+  // the associated Python documentation.
   Eigen::VectorBlock<const VectorX<T>> GetPositionsAndVelocities(
       const systems::Context<T>& context) const {
     return tree().GetPositionsAndVelocities(context);
   }
 
-  /// (Advanced) Returns a mutable Eigen vector containing the vector `[q; v]`
+  /// Returns the vector `[q; v]`
+  /// of the model with `q` the vector of generalized positions and `v` the
+  /// vector of generalized velocities for model instance `model_instance`.
+  /// @throws std::exception if the `context` does not correspond to the context
+  /// for a multibody model or `model_instance` is invalid.
+  /// @note returns a dense vector of dimension `q.size() + v.size()` associated
+  ///          with `model_instance` in O(`q.size()`) time.
+  // *** WARNING *** Auto-generated Python documentation assumes a fixed
+  // ordering of the overloaded methods. Change this ordering only if you change
+  // the associated Python documentation.
+  VectorX<T> GetPositionsAndVelocities(
+      const systems::Context<T>& context,
+      ModelInstanceIndex model_instance) const {
+    return tree().GetPositionsAndVelocities(context, model_instance);
+  }
+
+  /// (Advanced) Returns a mutable vector containing the vector `[q; v]`
   /// of the model with `q` the vector of generalized positions and `v` the
   /// vector of generalized velocities (**see warning**).
   /// @warning You should use SetPositionsAndVelocities() instead of this method
@@ -333,12 +352,43 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return tree().GetMutablePositionsAndVelocities(context);
   }
 
-  /// Returns a const Eigen vector reference containing the vector of
+  /// Sets all generalized positions and velocities from the given vector
+  /// [q; v].
+  /// @throws std::exception if the `context` is nullptr, if the context does
+  /// not correspond to the context for a multibody model, or if the length of
+  /// `q_v` is not equal to `num_positions() + num_velocities()`.
+  // *** WARNING *** Auto-generated Python documentation assumes a fixed
+  // ordering of the overloaded methods. Change this ordering only if you change
+  // the associated Python documentation.
+  void SetPositionsAndVelocities(
+      systems::Context<T>* context, const VectorX<T>& q_v) const {
+    tree().GetMutablePositionsAndVelocities(context) = q_v;
+  }
+
+  /// Sets generalized positions and velocities from the given vector
+  /// [q; v] for the specified model instance.
+  /// @throws std::exception if the `context` is nullptr, if the context does
+  /// not correspond to the context for a multibody model, if the model instance
+  /// index is invalid, or if the length of `q_v` is not equal to
+  /// `num_positions(model_instance) + num_velocities(model_instance)`.
+  // *** WARNING *** Auto-generated Python documentation assumes a fixed
+  // ordering of the overloaded methods. Change this ordering only if you change
+  // the associated Python documentation.
+  void SetPositionsAndVelocities(
+      systems::Context<T>* context, ModelInstanceIndex model_instance,
+      const VectorX<T>& q_v) const {
+    tree().SetPositionsAndVelocities(model_instance, q_v, context);
+  }
+
+  /// Returns a const vector reference containing the vector of
   /// generalized positions.
   /// @note This method returns a reference to existing data, exhibits constant
   ///       i.e., O(1) time complexity, and runs very quickly.
   /// @throws std::exception if the `context` does not
   /// correspond to the context for a multibody model.
+  // *** WARNING *** Auto-generated Python documentation assumes a fixed
+  // ordering of the overloaded methods. Change this ordering only if you change
+  // the associated Python documentation.
   Eigen::VectorBlock<const VectorX<T>> GetPositions(
       const systems::Context<T>& context) const {
     // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
@@ -348,12 +398,15 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
         num_positions());
   }
 
-  /// Returns an Eigen vector containing the generalized positions (`q`) for the
+  /// Returns an vector containing the generalized positions (`q`) for the
   /// given model instance.
   /// @throws std::exception if the `context` does not
   /// correspond to the context for a multibody model.
   /// @note returns a dense vector of dimension `q.size()` associated with
   ///          `model_instance` in O(`q.size()`) time.
+  // *** WARNING *** Auto-generated Python documentation assumes a fixed
+  // ordering of the overloaded methods. Change this ordering only if you change
+  // the associated Python documentation.
   VectorX<T> GetPositions(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance) const {
@@ -361,7 +414,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
         model_instance, GetPositions(context));
   }
 
-  /// (Advanced) Returns a mutable Eigen vector reference containing the vector
+  /// (Advanced) Returns a mutable vector reference containing the vector
   /// of generalized positions (**see warning**).
   /// @note This method returns a reference to existing data, exhibits constant
   ///       i.e., O(1) time complexity, and runs very quickly.
@@ -379,11 +432,25 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
         head(num_positions());
   }
 
+  /// Sets all generalized positions from the given vector.
+  /// @throws std::exception if the `context` is nullptr, if the context does
+  /// not correspond to the context for a multibody model, or if the length of
+  /// `q` is not equal to `num_positions()`.
+  // *** WARNING *** Auto-generated Python documentation assumes a fixed
+  // ordering of the overloaded methods. Change this ordering only if you change
+  // the associated Python documentation.
+  void SetPositions(systems::Context<T>* context, const VectorX<T>& q) const {
+    GetMutablePositions(context) = q;
+  }
+
   /// Sets the positions for a particular model instance from the given vector.
   /// @throws std::exception if the `context` is nullptr, if the context does
   /// not correspond to the context for a multibody model, if the model instance
   /// index is invalid, or if the length of `q_instance` is not equal to
   /// `num_positions(model_instance)`.
+  // *** WARNING *** Auto-generated Python documentation assumes a fixed
+  // ordering of the overloaded methods. Change this ordering only if you change
+  // the associated Python documentation.
   void SetPositions(
       systems::Context<T>* context,
       ModelInstanceIndex model_instance, const VectorX<T>& q_instance) const {
@@ -391,10 +458,12 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     tree().SetPositionsInArray(model_instance, q_instance, &q);
   }
 
-  /// Returns a const Eigen vector reference containing the vector of
-  /// generalized velocities.
+  /// Returns a const vector reference containing the generalized velocities.
   /// @note This method returns a reference to existing data, exhibits constant
   ///       i.e., O(1) time complexity, and runs very quickly.
+  // *** WARNING *** Auto-generated Python documentation assumes a fixed
+  // ordering of the overloaded methods. Change this ordering only if you change
+  // the associated Python documentation.
   Eigen::VectorBlock<const VectorX<T>> GetVelocities(
       const systems::Context<T>& context) const {
     // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
@@ -404,12 +473,15 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
         num_velocities());
   }
 
-  /// Returns an Eigen vector containing the generalized velocities (`v`) for
+  /// Returns a vector containing the generalized velocities (`v`) for
   /// the given model instance.
   /// @throws std::exception if the `context` does not
   /// correspond to the context for a multibody model.
   /// @note returns a dense vector of dimension `v.size()` associated with
   ///          `model_instance` in O(`v.size()`) time.
+  // *** WARNING *** Auto-generated Python documentation assumes a fixed
+  // ordering of the overloaded methods. Change this ordering only if you change
+  // the associated Python documentation.
   VectorX<T> GetVelocities(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance) const {
@@ -417,7 +489,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
         model_instance, GetVelocities(context));
   }
 
-  /// (Advanced) Returns a mutable Eigen vector reference containing the vector
+  /// (Advanced) Returns a mutable vector reference containing the vector
   /// of generalized velocities (**see warning**).
   /// @note This method returns a reference to existing data, exhibits constant
   ///       i.e., O(1) time complexity, and runs very quickly.
@@ -435,11 +507,26 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
         tail(num_velocities());
   }
 
-  /// Sets the velocities for a particular model instance from the given vector.
+  /// Sets all generalized velocities from the given vector.
+  /// @throws std::exception if the `context` is nullptr, if the context does
+  /// not correspond to the context for a multibody model, or if the length of
+  /// `v` is not equal to `num_velocities()`.
+  // *** WARNING *** Auto-generated Python documentation assumes a fixed
+  // ordering of the overloaded methods. Change this ordering only if you change
+  // the associated Python documentation.
+  void SetVelocities(systems::Context<T>* context, const VectorX<T>& v) const {
+    GetMutableVelocities(context) = v;
+  }
+
+  /// Sets the generalized velocities for a particular model instance from the
+  /// given vector.
   /// @throws std::exception if the `context` is nullptr, if the context does
   /// not correspond to the context for a multibody model, if the model instance
   /// index is invalid, or if the length of `v_instance` is not equal to
   /// `num_velocities(model_instance)`.
+  // *** WARNING *** Auto-generated Python documentation assumes a fixed
+  // ordering of the overloaded methods. Change this ordering only if you change
+  // the associated Python documentation.
   void SetVelocities(
       systems::Context<T>* context,
       ModelInstanceIndex model_instance, const VectorX<T>& v_instance) const {
