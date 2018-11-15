@@ -9,6 +9,7 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/geometry_visualization.h"
 #include "drake/lcmt_viewer_geometry_data.hpp"
 #include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/systems/framework/context.h"
@@ -19,6 +20,7 @@ namespace dev {
 namespace {
 
 using drake::geometry::dev::internal::GeometryVisualizationImpl;
+using drake::geometry::MakeDrakeVisualizerProperties;
 using drake::systems::Context;
 using Eigen::Isometry3d;
 using Eigen::Vector4d;
@@ -44,12 +46,25 @@ GTEST_TEST(GeometryVisualization, SimpleScene) {
   const float g = 0.5f;
   const float b = 0.25f;
   const float a = 0.125f;
-  Vector4<double> color{r, g, b, a};
-  scene_graph.RegisterGeometry(
+  GeometryId sphere_id = scene_graph.RegisterGeometry(
       source_id, frame_id,
       make_unique<GeometryInstance>(Isometry3d::Identity(),
-                                    make_unique<Sphere>(radius), "sphere",
-                                    VisualMaterial(color)));
+                                    make_unique<Sphere>(radius), "sphere"));
+  Vector4<double> color{r, g, b, a};
+  scene_graph.AssignRole(source_id, sphere_id,
+                         MakeDrakeVisualizerProperties(color));
+
+  // Add a second frame and geometry that only has collision properties. It
+  // should not impact the result.
+  FrameId collision_frame_id = scene_graph.RegisterFrame(
+      source_id, GeometryFrame("collision frame", Isometry3d::Identity()));
+  GeometryId collision_id = scene_graph.RegisterGeometry(
+      source_id, collision_frame_id,
+      make_unique<GeometryInstance>(Isometry3d::Identity(),
+                                    make_unique<Sphere>(radius),
+                                    "sphere_collision"));
+  scene_graph.AssignRole(source_id, collision_id,
+                         geometry::ProximityProperties());
 
   unique_ptr<Context<double>> context = scene_graph.AllocateContext();
   const GeometryContext<double>& geo_context =

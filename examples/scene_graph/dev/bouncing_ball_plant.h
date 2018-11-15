@@ -67,6 +67,9 @@ class BouncingBallPlant : public systems::LeafSystem<T> {
   /** Gravity in m/s^2. */
   double g() const { return g_; }
 
+  /** The geometry identifier for the registered ball.  */
+  geometry::GeometryId ball_id() const { return ball_id_; }
+
  protected:
   // The single input (geometry query) only impacts time derivatives and does
   // not affect any output port. So, there are no direct feedthroughs.

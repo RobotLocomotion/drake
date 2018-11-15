@@ -91,11 +91,6 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
     const SceneGraph<double>& scene_graph,
     lcm::DrakeLcmInterface* lcm = nullptr);
 
-/** Constructs an IllustrationProperties instance compatible with the
- ConnectDrakeVisualizer incorporating the given diffuse color. */
-IllustrationProperties MakeDrakeVisualizerProperties(
-    const Vector4<double>& diffuse);
-
 /** (Advanced) Explicitly dispatches an LCM load message based on the registered
  geometry. Normally this is done automatically at Simulator initialization. But
  if you have to do it yourself (likely because you are not using a Simulator),

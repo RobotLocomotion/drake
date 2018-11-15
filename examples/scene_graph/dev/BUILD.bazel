@@ -63,6 +63,7 @@ drake_cc_library(
     deps = [
         "//common",
         "//geometry:geometry_ids",
+        "//geometry:geometry_visualization",
         "//geometry/dev:scene_graph",
         "//math:geometric_transform",
         "//systems/framework:leaf_system",

@@ -162,7 +162,7 @@ class InternalGeometry {
 
   /** Assigns a proximity role to this geometry. Fails if it has already been
    assigned.  */
-  void SetRole(ProximityProperties properties) {
+  void SetRole(geometry::ProximityProperties properties) {
     if (proximity_props_) {
       throw std::logic_error("Geometry already has proximity role assigned");
     }
@@ -171,7 +171,7 @@ class InternalGeometry {
 
   /** Assigns a illustration role to this geometry. Fails if it has already been
    assigned.  */
-  void SetRole(IllustrationProperties properties) {
+  void SetRole(geometry::IllustrationProperties properties) {
     if (illustration_props_) {
       throw std::logic_error("Geometry already has illustration role assigned");
     }
@@ -201,14 +201,14 @@ class InternalGeometry {
 
   /** Returns a pointer to the geometry's proximity properties (if they are
    defined. Nullptr otherwise.  */
-  const ProximityProperties* proximity_properties() const {
+  const geometry::ProximityProperties* proximity_properties() const {
     if (proximity_props_) return &*proximity_props_;
     return nullptr;
   }
 
   /** Returns a pointer to the geometry's illustration properties (if they are
    defined. Nullptr otherwise.  */
-  const IllustrationProperties* illustration_properties() const {
+  const geometry::IllustrationProperties* illustration_properties() const {
     if (illustration_props_) return &*illustration_props_;
     return nullptr;
   }
@@ -274,8 +274,8 @@ class InternalGeometry {
   // defined at the frame level, and all child geometries inherit.
 
   // The optional property sets tied to the roles that the geometry plays.
-  optional<ProximityProperties> proximity_props_{nullopt};
-  optional<IllustrationProperties> illustration_props_{nullopt};
+  optional<geometry::ProximityProperties> proximity_props_{nullopt};
+  optional<geometry::IllustrationProperties> illustration_props_{nullopt};
   optional<PerceptionProperties> perception_props_{nullopt};
 
   // The index of the geometry in the render engine.

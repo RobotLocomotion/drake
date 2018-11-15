@@ -217,9 +217,7 @@ void RenderEngineVtk::AddFlatTerrain() {
   ColorD terrain_color =
       color_palette_.get_normalized_color(RenderLabel::terrain_label());
   PerceptionProperties material;
-  material.AddGroup("label");
   material.AddProperty("label", "id", RenderLabel::terrain_label());
-  material.AddGroup("phong");
   material.AddProperty("phong", "diffuse",
                        Eigen::Vector4d{terrain_color.r, terrain_color.g,
                                        terrain_color.b, 1.0});

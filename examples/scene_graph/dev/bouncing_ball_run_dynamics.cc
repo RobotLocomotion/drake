@@ -5,6 +5,7 @@
 
 #include "drake/examples/scene_graph/dev/bouncing_ball_plant.h"
 #include "drake/geometry/dev/geometry_visualization.h"
+#include "drake/geometry/dev/render/render_label.h"
 #include "drake/geometry/dev/scene_graph.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/scene_graph.h"
@@ -34,7 +35,12 @@ using RenderSceneGraph = geometry::dev::SceneGraph<T>;
 using geometry::dev::ConnectDrakeVisualizer;
 using geometry::dev::render::DepthCameraProperties;
 using geometry::dev::render::Fidelity;
+using geometry::dev::render::RenderLabel;
+using geometry::GeometryId;
 using geometry::HalfSpace;
+using geometry::IllustrationProperties;
+using geometry::dev::PerceptionProperties;
+using geometry::ProximityProperties;
 using geometry::SourceId;
 using lcm::DrakeLcm;
 using systems::InputPort;
@@ -65,10 +71,14 @@ int do_main() {
   // X_WH will be the identity.
   Vector3<double> Hz_W(0, 0, 1);
   Vector3<double> p_WH(0, 0, 0);
-  proximity_scene_graph->RegisterAnchoredGeometry(
+  GeometryId ground_id = proximity_scene_graph->RegisterAnchoredGeometry(
       global_source,
       make_unique<GeometryInstance>(HalfSpace::MakePose(Hz_W, p_WH),
                                     make_unique<HalfSpace>(), "ground"));
+  proximity_scene_graph->AssignRole(global_source, ground_id,
+                                    ProximityProperties());
+  proximity_scene_graph->AssignRole(global_source, ground_id,
+                                    IllustrationProperties());
 
   builder.Connect(bouncing_ball1->get_geometry_pose_output_port(),
                   proximity_scene_graph->get_source_pose_port(ball_source_id1));
@@ -88,6 +98,21 @@ int do_main() {
                   render_scene_graph->get_source_pose_port(ball_source_id1));
   builder.Connect(bouncing_ball2->get_geometry_pose_output_port(),
                   render_scene_graph->get_source_pose_port(ball_source_id2));
+
+  // Renderable properties; make everything grey.
+  auto labeled_material = []() {
+    PerceptionProperties material;
+    material.AddProperty("phong", "diffuse",
+                         Vector4<double>(0.7, 0.7, 0.7, 1.0));
+    material.AddProperty("label", "id", RenderLabel::new_label());
+    return material;
+  };
+
+  render_scene_graph->AssignRole(global_source, ground_id, labeled_material());
+  render_scene_graph->AssignRole(ball_source_id1, bouncing_ball1->ball_id(),
+                                 labeled_material());
+  render_scene_graph->AssignRole(ball_source_id2, bouncing_ball2->ball_id(),
+                                 labeled_material());
 
   DrakeLcm lcm;
   ConnectDrakeVisualizer(&builder, *render_scene_graph, &lcm);

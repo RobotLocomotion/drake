@@ -275,11 +275,9 @@ class RenderEngineVtkTest : public ::testing::Test {
   // Creates a simple perception properties set for fixed, known results.
   PerceptionProperties simple_material() const {
     PerceptionProperties material;
-    material.AddGroup("phong");
     Vector4d color(kDefaultVisualColor.r / 255., kDefaultVisualColor.g / 255.,
                    kDefaultVisualColor.b / 255., 1.);
     material.AddProperty("phong", "diffuse", color);
-    material.AddGroup("label");
     material.AddProperty("label", "id", expected_label_);
     return material;
   }

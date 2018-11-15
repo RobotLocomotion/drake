@@ -557,7 +557,7 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
       EXPECT_EQ(geometry.internal_index(), i);
       // We automatically assign render labels to any geometry with non-zero
       // alpha value in its diffuse color.
-      EXPECT_TRUE(geometry.render_index().is_valid());
+      EXPECT_FALSE(geometry.render_index().is_valid());
       EXPECT_FALSE(geometry.proximity_index().is_valid());
       EXPECT_EQ(geometry.child_geometry_ids().size(), 0);
 
@@ -589,10 +589,8 @@ TEST_F(GeometryStateTest, GetNumGeometryTests) {
             geometry_state_.get_num_geometries());
   EXPECT_EQ(single_tree_total_geometry_count(),
             geometry_state_.GetNumGeometriesWithRole(Role::kProximity));
-  EXPECT_EQ(single_tree_total_geometry_count(),
-            geometry_state_.GetNumGeometriesWithRole(Role::kPerception));
-  EXPECT_EQ(single_tree_total_geometry_count(),
-            geometry_state_.GetNumGeometriesWithRole(Role::kIllustration));
+  EXPECT_EQ(0, geometry_state_.GetNumGeometriesWithRole(Role::kPerception));
+  EXPECT_EQ(0, geometry_state_.GetNumGeometriesWithRole(Role::kIllustration));
 
   for (int i = 0; i < kFrameCount; ++i) {
     EXPECT_EQ(kGeometryCount,
@@ -600,10 +598,10 @@ TEST_F(GeometryStateTest, GetNumGeometryTests) {
     EXPECT_EQ(kGeometryCount,
               geometry_state_.GetNumFrameGeometriesWithRole(frames_[i],
                                                             Role::kProximity));
-    EXPECT_EQ(kGeometryCount,
+    EXPECT_EQ(0,
               geometry_state_.GetNumFrameGeometriesWithRole(
                   frames_[i], Role::kPerception));
-    EXPECT_EQ(kGeometryCount,
+    EXPECT_EQ(0,
               geometry_state_.GetNumFrameGeometriesWithRole(
                   frames_[i], Role::kIllustration));
   }
@@ -1495,7 +1493,7 @@ TEST_F(GeometryStateTest, GeometryNameValidation) {
   const FrameId world = InternalFrame::world_frame_id();
   EXPECT_FALSE(geometry_state_.IsValidGeometryName(world, Role::kProximity,
                                                    anchored_name_));
-  EXPECT_FALSE(geometry_state_.IsValidGeometryName(world, Role::kIllustration,
+  EXPECT_TRUE(geometry_state_.IsValidGeometryName(world, Role::kIllustration,
                                                    anchored_name_));
   EXPECT_TRUE(geometry_state_.IsValidGeometryName(world, Role::kProximity,
                                                   anchored_name_ + "2"));
@@ -1551,7 +1549,6 @@ TEST_F(GeometryStateTest, RolePropertyValueAssignment) {
   source.AddProperty(default_group, "prop1", 7);
   source.AddProperty(default_group, "prop2", 10);
   const std::string group1("group1");
-  source.AddGroup(group1);
   source.AddProperty(group1, "propA", 7.5);
   source.AddProperty(group1, "propB", "test");
 
@@ -1562,20 +1559,38 @@ TEST_F(GeometryStateTest, RolePropertyValueAssignment) {
 
   // Test groups.
   ASSERT_EQ(source.num_groups(), read->num_groups());
-  ASSERT_TRUE(read->has_group(group1));
-  ASSERT_TRUE(read->has_group(default_group));
+  ASSERT_TRUE(read->HasGroup(group1));
+  ASSERT_TRUE(read->HasGroup(default_group));
+
+  // Utility for counting properties in a group.
+  auto num_group_properties = [](const ProximityProperties& properties,
+                                 const std::string& group_name) {
+    const auto& group = properties.GetPropertiesInGroup(group_name);
+    return static_cast<int>(group.size());
+  };
+
+  // Utility for counting properties in a full set of properties.
+  auto num_total_properties =
+      [num_group_properties](const ProximityProperties& properties) {
+        int count = 0;
+        for (const auto& group_name : properties.GetGroupNames()) {
+          count += num_group_properties(properties, group_name);
+        }
+        return count;
+      };
 
   // Test properties.
-  EXPECT_EQ(source.NumProperties(), read->NumProperties());
+  EXPECT_EQ(num_total_properties(source), num_total_properties(*read));
 
-  EXPECT_EQ(source.NumProperties(default_group),
-            read->NumProperties(default_group));
+  EXPECT_EQ(num_group_properties(source, default_group),
+            num_group_properties(*read, default_group));
   EXPECT_EQ(source.GetProperty<int>(default_group, "prop1"),
             read->GetProperty<int>(default_group, "prop1"));
   EXPECT_EQ(source.GetProperty<int>(default_group, "prop2"),
             read->GetProperty<int>(default_group, "prop2"));
 
-  EXPECT_EQ(source.NumProperties(group1), read->NumProperties(group1));
+  EXPECT_EQ(num_group_properties(source, group1),
+            num_group_properties(*read, group1));
   EXPECT_EQ(source.GetProperty<double>(group1, "propA"),
             read->GetProperty<double>(group1, "propA"));
   EXPECT_EQ(source.GetProperty<std::string>(group1, "propB"),
@@ -1623,17 +1638,14 @@ TEST_F(GeometryStateTest, RoleAssignExceptions) {
       std::logic_error,
       "Geometry already has proximity role assigned");
 
+  EXPECT_NO_THROW(geometry_state_.AssignRole(source_id_, geometries_[0],
+                                             PerceptionProperties()));
+
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.AssignRole(source_id_, geometries_[0],
                                  PerceptionProperties()),
       std::logic_error,
       "Geometry already has perception role assigned");
-
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.AssignRole(source_id_, geometries_[0],
-                                 IllustrationProperties()),
-      std::logic_error,
-      "Geometry already has illustration role assigned");
 }
 
 // Tests the functionality that counts the number of children geometry a frame
@@ -1669,8 +1681,8 @@ TEST_F(GeometryStateTest, ChildGeometryRoleCount) {
 
   // Assert initial conditions.
   int proximity_count = 0;
-  int perception_count = kGeometryCount;
-  int illustration_count = kGeometryCount;
+  int perception_count = 0;
+  int illustration_count = 0;
   FrameId f_id = frames_[0];
   ASSERT_TRUE(expected_roles(f_id, proximity_count, perception_count,
                              illustration_count));

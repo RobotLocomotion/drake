@@ -56,7 +56,7 @@ class GeometryStateTester {
   }
 
   SourceId GetSourceId(GeometryId geometry_id) {
-    return state_.get_source_id(state_.GetFrameId(geometry_id));
+    return state_.geometries_.at(geometry_id).source_id();
   }
 
  private:
@@ -209,6 +209,15 @@ GeometryState<T>& GeometryState<T>::operator=(
     // First register the source. NOTE: This is a copy-and-paste of the
     // post-validation work done by RegisterNewSource.
     SourceId source_id = pair.first;
+    {
+      // Skip the internal source. We assume that any source that contains the
+      // world frame must be the internal source.
+      const auto& source_frames = pair.second;
+      if (source_frames.count(InternalFrame::world_frame_id()) > 0) {
+        DRAKE_DEMAND(source_frames.size() == 1);
+        continue;
+      }
+    }
     RegisterValidSource(source_id, tester.source_names().at(source_id));
 
     auto& frame_set = source_frame_id_map_[source_id];
@@ -268,6 +277,10 @@ GeometryState<T>& GeometryState<T>::operator=(
                          source_frame.frame_group(),
                          source_frame.parent_frame_id(), source_frame.clique(),
                          &frame_set);
+      DRAKE_DEMAND(frame_set.count(frame_id) > 0);
+    }
+    for (const auto frame_id : all_frame_ids) {
+      DRAKE_DEMAND(BelongsToSource(frame_id, source_id));
     }
   }
 
@@ -319,24 +332,32 @@ GeometryState<T>& GeometryState<T>::operator=(
   for (GeometryId geometry_id : ordered_geometry) {
     const geometry::internal::InternalGeometry& geometry =
         tester.geometries().at(geometry_id);
-    const Vector4<double>& diffuse = geometry.visual_material().diffuse();
-    if (diffuse(3) > 0) {
-      internal::InternalGeometry* parent_geometry = nullptr;
-      if (geometry.parent_id()) {
-        GeometryId parent_id = *geometry.parent_id();
-        parent_geometry = &geometries_.at(parent_id);
-      }
-      // NOTE: This *could* fail if a geometry with non-zero alpha is parented
-      // to a geometry that has zero-alpha. We assume that for the lifespan of
-      // this dev class, it won't come up. However, this is documented in
-      // the accompanying README.md.
-      const SourceId source_id = tester.GetSourceId(geometry_id);
-      RegisterValidGeometry(source_id,
-                            geometry.frame_id(), geometry_id,
-                            geometry.shape().Clone(), geometry.name(),
-                            geometry.X_PG(), diffuse,
-                            parent_geometry);
+
+    internal::InternalGeometry* parent_geometry = nullptr;
+    if (geometry.parent_id()) {
+      GeometryId parent_id = *geometry.parent_id();
+      parent_geometry = &geometries_.at(parent_id);
     }
+    // NOTE: This *could* fail if a geometry with non-zero alpha is parented
+    // to a geometry that has zero-alpha. We assume that for the lifespan of
+    // this dev class, it won't come up. However, this is documented in
+    // the accompanying README.md.
+    const SourceId source_id = tester.GetSourceId(geometry_id);
+    RegisterValidGeometry(source_id, geometry.frame_id(), geometry_id,
+                          geometry.shape().Clone(), geometry.name(),
+                          geometry.X_PG(), parent_geometry);
+    if (geometry.proximity_properties()) {
+      AssignRole(source_id, geometry_id, *geometry.proximity_properties());
+    }
+    if (geometry.illustration_properties()) {
+      AssignRole(source_id, geometry_id, *geometry.illustration_properties());
+    }
+  }
+  for (const auto& pair : tester.geometries()) {
+    // This assumes no geometries are owned by *either* scene graph.
+    const geometry::internal::InternalGeometry& geometry = pair.second;
+    SourceId source_id = geometry.source_id();
+    DRAKE_DEMAND(BelongsToSource(geometry.id(), source_id));
   }
 
   return *this;
@@ -622,8 +643,7 @@ GeometryId GeometryState<T>::RegisterGeometry(
 
   RegisterValidGeometry(source_id, frame_id, geometry_id,
                         geometry->release_shape(), geometry->name(),
-                        geometry->pose(), geometry->visual_material().diffuse(),
-                        nullptr);
+                        geometry->pose(), nullptr);
 
   return geometry_id;
 }
@@ -654,8 +674,7 @@ GeometryId GeometryState<T>::RegisterGeometryWithParent(
   GeometryId new_id = geometry->id();
   RegisterValidGeometry(source_id, frame_id, new_id,
                         geometry->release_shape(), geometry->name(),
-                        geometry->pose(), geometry->visual_material().diffuse(),
-                        &parent_geometry);
+                        geometry->pose(), &parent_geometry);
 
   return new_id;
 }
@@ -682,7 +701,7 @@ bool GeometryState<T>::IsValidGeometryName(
 template <typename T>
 void GeometryState<T>::AssignRole(SourceId source_id,
                                   GeometryId geometry_id,
-                                  ProximityProperties properties) {
+                                  geometry::ProximityProperties properties) {
   AssignRoleInternal(source_id, geometry_id, std::move(properties),
                      Role::kProximity);
 
@@ -774,7 +793,7 @@ void GeometryState<T>::AssignRole(SourceId source_id,
 template <typename T>
 void GeometryState<T>::AssignRole(SourceId source_id,
                                   GeometryId geometry_id,
-                                  IllustrationProperties properties) {
+                                  geometry::IllustrationProperties properties) {
   AssignRoleInternal(source_id, geometry_id, std::move(properties),
                      Role::kIllustration);
   // NOTE: No need to assign to any engines.
@@ -1132,7 +1151,7 @@ template <typename T>
 void GeometryState<T>::RegisterValidGeometry(
     SourceId source_id, FrameId frame_id, GeometryId geometry_id,
     std::unique_ptr<Shape> shape, const std::string& name,
-    const Isometry3<double>& X_PG, const Vector4<double>& diffuse,
+    const Isometry3<double>& X_PG,
     internal::InternalGeometry* parent_geometry) {
   InternalFrame& frame = frames_[frame_id];
   frame.add_child(geometry_id);
@@ -1164,24 +1183,6 @@ void GeometryState<T>::RegisterValidGeometry(
     const Isometry3<double>& X_FP = parent_geometry->X_FG();
     new_geometry.set_geometry_parent(parent_geometry->id(), X_FP * X_PG);
     parent_geometry->add_child(geometry_id);
-  }
-
-  // NOTE: This is a hack to provide compatibility with the fact that
-  // GeometryInstance currently has a visual material -- the *correct* work
-  // flow is to assign a role explicitly.
-  if (diffuse(3) > 0) {
-    PerceptionProperties p;
-    p.AddGroup("phong");
-    p.AddProperty("phong", "diffuse", diffuse);
-    p.AddGroup("label");
-    // NOTE: These render labels are *not* being returned and there is currently
-    // no meaningful facility for looking up by render label.
-    p.AddProperty("label", "id", render::RenderLabel::new_label());
-    AssignRole(source_id, geometry_id, p);
-    IllustrationProperties i;
-    i.AddGroup("phong");
-    i.AddProperty("phong", "diffuse", diffuse);
-    AssignRole(source_id, geometry_id, i);
   }
 }
 

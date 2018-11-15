@@ -15,7 +15,6 @@ drake_cc_package_library(
     deps = [
         ":geometry_context",
         ":geometry_index",
-        ":geometry_properties",
         ":geometry_roles",
         ":geometry_state",
         ":geometry_visualization",
@@ -45,23 +44,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "geometry_properties",
-    srcs = ["geometry_properties.cc"],
-    hdrs = ["geometry_properties.h"],
-    deps = [
-        "//common:essential",
-        "//systems/framework:value",
-        "@fmt",
-    ],
-)
-
-drake_cc_library(
     name = "geometry_roles",
     srcs = ["geometry_roles.cc"],
     hdrs = ["geometry_roles.h"],
     deps = [
-        ":geometry_properties",
         "//common:essential",
+        "//geometry:geometry_roles",
     ],
 )
 
@@ -199,14 +187,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "geometry_properties_test",
-    deps = [
-        ":geometry_properties",
-        "//common/test_utilities",
-    ],
-)
-
-drake_cc_googletest(
     name = "geometry_state_test",
     tags = ["no_asan"],  # It doesn't pass yet.
     deps = [
@@ -231,6 +211,7 @@ drake_cc_googletest(
     deps = [
         ":geometry_visualization",
         "//common/test_utilities:expect_throws_message",
+        "//geometry:geometry_visualization",
     ],
 )
 

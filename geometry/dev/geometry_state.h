@@ -431,7 +431,7 @@ class GeometryState {
                                5. the geometry's name is *not* unique in this
                                   role.  */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
-                  ProximityProperties properties);
+                  geometry::ProximityProperties properties);
 
   /** Assigns the given geometry id the perception role by assigning it the
    given set of proximity properties. At this time, the geometry's name is
@@ -465,7 +465,7 @@ class GeometryState {
                                5. the geometry's name is *not* unique in this
                                   role.    */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
-                  IllustrationProperties properties);
+                  geometry::IllustrationProperties properties);
 
   //@}
 
@@ -848,7 +848,6 @@ class GeometryState {
                              std::unique_ptr<Shape> shape,
                              const std::string& name,
                              const Isometry3<double>& X_PG,
-                             const Vector4<double>& diffuse,
                              internal::InternalGeometry* parent_geometry);
 
   // The GeometryState gets its own source so it can own entities (such as the
