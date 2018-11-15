@@ -27,19 +27,19 @@ PYBIND11_MODULE(trajectories, m) {
       .def("start_time",
            overload_cast_explicit<double, int>(
                &PiecewiseTrajectory<T>::start_time),
-           doc.PiecewiseTrajectory.start_time.doc)
+           doc.PiecewiseTrajectory.start_time.doc_1args)
       .def("end_time",
            overload_cast_explicit<double, int>(
                &PiecewiseTrajectory<T>::end_time),
-           doc.PiecewiseTrajectory.end_time.doc)
+           doc.PiecewiseTrajectory.end_time.doc_1args)
       .def("duration", &PiecewiseTrajectory<T>::duration,
            doc.PiecewiseTrajectory.duration.doc)
       .def("start_time",
            overload_cast_explicit<double>(&PiecewiseTrajectory<T>::start_time),
-           doc.PiecewiseTrajectory.start_time.doc)
+           doc.PiecewiseTrajectory.start_time.doc_0args)
       .def("end_time",
            overload_cast_explicit<double>(&PiecewiseTrajectory<T>::end_time),
-           doc.PiecewiseTrajectory.end_time.doc)
+           doc.PiecewiseTrajectory.end_time.doc_0args)
       .def("get_segment_index", &PiecewiseTrajectory<T>::get_segment_index,
            doc.PiecewiseTrajectory.get_segment_index.doc)
       .def("get_segment_times", &PiecewiseTrajectory<T>::get_segment_times,

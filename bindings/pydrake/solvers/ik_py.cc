@@ -28,7 +28,7 @@ PYBIND11_MODULE(ik, m) {
            static_cast<void (PostureConstraint::*)(  // NOLINT
                const Eigen::VectorXi&, const Eigen::VectorXd&,
                const Eigen::VectorXd&)>(&PostureConstraint::setJointLimits),
-           doc.PostureConstraint.setJointLimits.doc);
+           doc.PostureConstraint.setJointLimits.doc_3args);
 
   py::class_<WorldPositionConstraint, RigidBodyConstraint>(
       m, "_WorldPositionConstraint", doc.WorldPositionConstraint.doc)
@@ -143,10 +143,10 @@ PYBIND11_MODULE(ik, m) {
            static_cast<void (QuasiStaticConstraint::*)(  // NOLINT
                std::vector<int>, const Eigen::Matrix3Xd&)>(
                &QuasiStaticConstraint::addContact),
-           doc.QuasiStaticConstraint.addContact.doc);
+           doc.QuasiStaticConstraint.addContact.doc_2args);
 
   py::class_<IKoptions>(m, "IKoptions", doc.IKoptions.doc)
-      .def(py::init<RigidBodyTree<double>*>(), doc.IKoptions.ctor.doc)
+      .def(py::init<RigidBodyTree<double>*>(), doc.IKoptions.ctor.doc_1args)
       .def("setQ", &IKoptions::setQ, doc.IKoptions.setQ.doc)
       .def("getQ", &IKoptions::getQ, doc.IKoptions.getQ.doc)
       .def("setQa", &IKoptions::setQa, doc.IKoptions.setQa.doc)
