@@ -80,8 +80,8 @@ bool IsMeshFacePlanar(const GeoMesh& mesh, const IndexFace& face,
   const std::vector<IndexFace::Vertex>& face_vertices = face.vertices();
   DRAKE_DEMAND(face_vertices.size() >= 3);
   const Vector3<double>& x0 = GetMeshFaceVertexPosition(mesh, face_vertices[0]);
-  const Vector3<double>& n  = GetMeshFaceVertexNormal(mesh, face_vertices[0]);
-  *plane =  Hyperplane3<double>(n.normalized(), x0);
+  const Vector3<double>& n0 = GetMeshFaceVertexNormal(mesh, face_vertices[0]);
+  *plane =  Hyperplane3<double>(n0.normalized(), x0);
   return DoMeshVerticesLieOnPlane(mesh, face_vertices.begin() + 1,
                                   face_vertices.end(), *plane,
                                   tolerance);

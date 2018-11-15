@@ -329,7 +329,7 @@ std::vector<FaceVertexIndex> SimplifyMeshFacesContour(
 ///                  details.
 /// @returns Merged mesh faces as a single GeoFace.
 /// @pre The union of the all the faces referred by the given
-///      @p mergeable_faces_indices expands a simply connected
+///      @p mergeable_faces_indices yields a simply connected
 ///      region (i.e. with no holes).
 GeoFace MergeMeshFaces(const GeoMesh& mesh,
                        const std::set<int>& mergeable_faces_indices,
@@ -344,7 +344,7 @@ GeoFace MergeMeshFaces(const GeoMesh& mesh,
 ///                  functions for further details.
 /// @returns Output, simplified mesh.
 /// @pre The union of the all the faces in the given @p input_mesh
-///      expands a simply connected region (i.e. with no holes).
+///      yields a simply connected region (i.e. with no holes).
 GeoMesh SimplifyMeshFaces(const GeoMesh& input_mesh, double tolerance);
 
 
