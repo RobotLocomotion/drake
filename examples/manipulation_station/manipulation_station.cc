@@ -45,6 +45,8 @@ using multibody::parsing::AddModelFromSdfFile;
 
 const int kNumDofIiwa = 7;
 
+namespace internal {
+
 // TODO(amcastro-tri): Refactor this into schunk_wsg directory, and cover it
 // with a unit test.  Potentially tighten the tolerance in
 // station_simulation_test.
@@ -83,14 +85,14 @@ SpatialInertia<double> MakeCompositeGripperInertia(
   const RigidTransform<double> X_GR(CalcFingerPoseInGripperFrame(right_slider));
   // Helper to compute the spatial inertia of a finger F in about the gripper's
   // origin Go, expressed in G.
-  auto CalcFingerSpatialInertiaInGripperFrame = [](
-      const SpatialInertia<double>& M_FFo_F,
-      const RigidTransform<double>& X_GF) {
-    const auto M_FFo_G = M_FFo_F.ReExpress(X_GF.rotation());
-    const auto p_FoGo_G = -X_GF.translation();
-    const auto M_FGo_G = M_FFo_G.Shift(p_FoGo_G);
-    return M_FGo_G;
-  };
+  auto CalcFingerSpatialInertiaInGripperFrame =
+      [](const SpatialInertia<double>& M_FFo_F,
+         const RigidTransform<double>& X_GF) {
+        const auto M_FFo_G = M_FFo_F.ReExpress(X_GF.rotation());
+        const auto p_FoGo_G = -X_GF.translation();
+        const auto M_FGo_G = M_FFo_G.Shift(p_FoGo_G);
+        return M_FGo_G;
+      };
   // Shift and re-express in G frame the finger's spatial inertias.
   const auto M_LGo_G = CalcFingerSpatialInertiaInGripperFrame(M_LLo_L, X_GL);
   const auto M_RGo_G = CalcFingerSpatialInertiaInGripperFrame(M_RRo_R, X_GR);
@@ -102,6 +104,23 @@ SpatialInertia<double> MakeCompositeGripperInertia(
   M_CGo_G += M_RGo_G;
   return M_CGo_G;
 }
+
+// TODO(russt): Get these from SDF instead of having them hard-coded (#10022).
+void get_camera_poses(std::map<std::string, RigidTransform<double>>* pose_map) {
+  pose_map->emplace("0", RigidTransform<double>(
+                             RollPitchYaw<double>(1.69101, 0.176488, 0.432721),
+                             Vector3d(-0.233066, -0.451461, 0.466761)));
+
+  pose_map->emplace("1", RigidTransform<double>(
+                             RollPitchYaw<double>(-1.68974, 0.20245, -0.706783),
+                             Vector3d(-0.197236, 0.468471, 0.436499)));
+
+  pose_map->emplace("2", RigidTransform<double>(
+                             RollPitchYaw<double>(0.0438918, 1.03776, -3.13612),
+                             Vector3d(0.786905, -0.0284378, 1.04287)));
+}
+
+}  // namespace internal
 
 template <typename T>
 ManipulationStation<T>::ManipulationStation(double time_step,
@@ -121,8 +140,7 @@ ManipulationStation<T>::ManipulationStation(double time_step,
   const double dz_table_top_robot_base = 0.0127;
   const std::string table_sdf_path = FindResourceOrThrow(
       "drake/examples/manipulation_station/models/amazon_table_simplified.sdf");
-  const auto table =
-      AddModelFromSdfFile(table_sdf_path, "table", plant_);
+  const auto table = AddModelFromSdfFile(table_sdf_path, "table", plant_);
   plant_->WeldFrames(
       plant_->world_frame(), plant_->GetFrameByName("amazon_table", table),
       RigidTransform<double>(
@@ -154,8 +172,7 @@ ManipulationStation<T>::ManipulationStation(double time_step,
   const std::string wsg_sdf_path = FindResourceOrThrow(
       "drake/manipulation/models/"
       "wsg_50_description/sdf/schunk_wsg_50.sdf");
-  wsg_model_ =
-      AddModelFromSdfFile(wsg_sdf_path, "gripper", plant_);
+  wsg_model_ = AddModelFromSdfFile(wsg_sdf_path, "gripper", plant_);
   const RigidTransform<double> wsg_pose(RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
                                         Vector3d(0, 0, 0.114));
   plant_->WeldFrames(plant_->GetFrameByName("iiwa_link_7", iiwa_model_),
@@ -181,7 +198,7 @@ ManipulationStation<T>::ManipulationStation(double time_step,
   const multibody::RigidBody<T>& wsg_equivalent =
       owned_controller_plant_->AddRigidBody(
           "wsg_equivalent", controller_iiwa_model,
-          MakeCompositeGripperInertia(wsg_sdf_path));
+          internal::MakeCompositeGripperInertia(wsg_sdf_path));
   owned_controller_plant_->WeldFrames(owned_controller_plant_->GetFrameByName(
                                           "iiwa_link_7", controller_iiwa_model),
                                       wsg_equivalent.body_frame(),
@@ -190,6 +207,8 @@ ManipulationStation<T>::ManipulationStation(double time_step,
   owned_controller_plant_
       ->template AddForceElement<multibody::UniformGravityFieldElement>(
           -9.81 * Vector3d::UnitZ());
+
+  internal::get_camera_poses(&camera_poses_in_world_);
 }
 
 template <typename T>
@@ -202,15 +221,15 @@ void ManipulationStation<T>::AddCupboard() {
 
   const std::string sdf_path = FindResourceOrThrow(
       "drake/examples/manipulation_station/models/cupboard.sdf");
-  const auto cupboard =
-      AddModelFromSdfFile(sdf_path, "cupboard", plant_);
+  const auto cupboard = AddModelFromSdfFile(sdf_path, "cupboard", plant_);
   plant_->WeldFrames(
       plant_->world_frame(), plant_->GetFrameByName("cupboard_body", cupboard),
       RigidTransform<double>(
           RotationMatrix<double>::MakeZRotation(M_PI),
           Vector3d(dx_table_center_to_robot_base + dx_cupboard_to_table_center,
-                   0, dz_cupboard_to_table_center + cupboard_height / 2.0 -
-                          dz_table_top_robot_base))
+                   0,
+                   dz_cupboard_to_table_center + cupboard_height / 2.0 -
+                       dz_table_top_robot_base))
           .GetAsIsometry3());
 }
 
@@ -354,22 +373,22 @@ void ManipulationStation<T>::Finalize() {
         640, 480, M_PI_4, geometry::dev::render::Fidelity::kLow, 0.1, 2.0);
 
     // Create the cameras.
-    for (int i = 0; i < 3; i++) {
+    for (const auto& pose : camera_poses_in_world_) {
       auto camera =
           builder.template AddSystem<systems::sensors::dev::RgbdCamera>(
-              "camera" + std::to_string(i),
+              "camera_" + pose.first,
               geometry::dev::SceneGraph<double>::world_frame_id(),
-              get_camera_pose(i), camera_properties, false);
+              pose.second.GetAsIsometry3(), camera_properties, false);
       builder.Connect(render_scene_graph->get_query_output_port(),
                       camera->query_object_input_port());
 
       // TODO(russt): Add additional cameras.
       builder.ExportOutput(camera->color_image_output_port(),
-                           "camera" + std::to_string(i) + "_rgb_image");
+                           "camera_" + pose.first + "_rgb_image");
       builder.ExportOutput(camera->depth_image_output_port(),
-                           "camera" + std::to_string(i) + "_depth_image");
+                           "camera_" + pose.first + "_depth_image");
       builder.ExportOutput(camera->label_image_output_port(),
-                           "camera" + std::to_string(i) + "_label_image");
+                           "camera_" + pose.first + "_label_image");
     }
   }
 
@@ -377,9 +396,9 @@ void ManipulationStation<T>::Finalize() {
                        "pose_bundle");
 
   builder.ExportOutput(plant_->get_contact_results_output_port(),
-      "contact_results");
+                       "contact_results");
   builder.ExportOutput(plant_->get_continuous_state_output_port(),
-      "plant_continuous_state");
+                       "plant_continuous_state");
 
   builder.BuildInto(this);
 }
@@ -511,8 +530,8 @@ void ManipulationStation<T>::SetWsgPosition(
   const auto& wsg_controller = dynamic_cast<
       const manipulation::schunk_wsg::SchunkWsgPositionController&>(
       this->GetSubsystemByName("wsg_controller"));
-  wsg_controller.set_desired_position_history(q,
-      &this->GetMutableSubsystemContext(wsg_controller, station_context));
+  wsg_controller.set_desired_position_history(
+      q, &this->GetMutableSubsystemContext(wsg_controller, station_context));
 }
 
 template <typename T>
@@ -533,28 +552,14 @@ void ManipulationStation<T>::SetWsgVelocity(
 }
 
 template <typename T>
-Isometry3d ManipulationStation<T>::get_camera_pose(int camera_number) {
-  DRAKE_DEMAND(camera_number >= 0 && camera_number <= 2);
-
-  Vector3d p_WC;
-  Vector3d rpy_WC;
-
-  switch (camera_number) {
-    case 0:
-      p_WC << -0.233066, -0.451461, 0.466761;
-      rpy_WC << 1.69101, 0.176488, 0.432721;
-      break;
-    case 1:
-      p_WC << -0.197236, 0.468471, 0.436499;
-      rpy_WC << -1.68974, 0.20245, -0.706783;
-      break;
-    case 2:
-      p_WC << 0.786905, -0.0284378, 1.04287;
-      rpy_WC << 0.0438918, 1.03776, -3.13612;
-      break;
+std::vector<std::string> ManipulationStation<T>::get_camera_names()
+const {
+  std::vector<std::string> names;
+  names.reserve(camera_poses_in_world_.size());
+  for (const auto& pose : camera_poses_in_world_) {
+    names.emplace_back(pose.first);
   }
-  return RigidTransform<double>(RollPitchYaw<double>(rpy_WC), p_WC)
-      .GetAsIsometry3();
+  return names;
 }
 
 }  // namespace manipulation_station
