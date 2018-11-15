@@ -272,5 +272,13 @@ inline SpatialVelocity<T> operator+(
   return SpatialVelocity<T>(V_EAb.get_coeffs() + V_AB_E.get_coeffs());
 }
 
+/// Computes `V_AB_E`, the spatial velocity of frame B measured in frame A and
+/// expressed in frame E.
+template <typename T>
+inline SpatialVelocity<T> operator-(
+    const SpatialVelocity<T>& V_MB_E, const SpatialVelocity<T>& V_MA_E) {
+  return SpatialVelocity<T>(V_MB_E.get_coeffs() - V_MA_E.get_coeffs());
+}
+
 }  // namespace multibody
 }  // namespace drake
