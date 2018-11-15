@@ -630,7 +630,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     data->set_xcf(DoGetTargetSystemContinuousState(subsystem, diagram_xcf));
 
     // Add the event to the collection.
-    event->add_to_composite(&subevents);
+    event->AddToComposite(&subevents);
   }
 
   /// Provides witness functions of subsystems that are active at the beginning

@@ -147,7 +147,7 @@ const InputPort<double>& ImageWriter::DeclareImageInputPort(
       DeclareAbstractInputPort(port_name, systems::Value<Image<kPixelType>>());
 
   PublishEvent<double> event(
-      Event<double>::TriggerType::kPeriodic,
+      TriggerType::kPeriodic,
       [this, port_index = port.get_index()](const Context<double>& context,
                                             const PublishEvent<double>&) {
         WriteImage<kPixelType>(context, port_index);

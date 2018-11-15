@@ -179,11 +179,11 @@ class TestSystem : public System<double> {
     *time = context.get_time() + 1;
 
     if (context.get_time() < 10.0) {
-      PublishEvent<double> event(Event<double>::TriggerType::kPeriodic);
-      event.add_to_composite(event_info);
+      PublishEvent<double> event(TriggerType::kPeriodic);
+      event.AddToComposite(event_info);
     } else {
-      DiscreteUpdateEvent<double> event(Event<double>::TriggerType::kPeriodic);
-      event.add_to_composite(event_info);
+      DiscreteUpdateEvent<double> event(TriggerType::kPeriodic);
+      event.AddToComposite(event_info);
     }
   }
 
@@ -298,7 +298,7 @@ TEST_F(SystemTest, DiscretePublish) {
           event_info.get())->get_publish_events().get_events();
   EXPECT_EQ(events.size(), 1);
   EXPECT_EQ(events.front()->get_trigger_type(),
-            Event<double>::TriggerType::kPeriodic);
+            TriggerType::kPeriodic);
 
   system_.Publish(context_, event_info->get_publish_events());
   EXPECT_EQ(1, system_.get_publish_count());
