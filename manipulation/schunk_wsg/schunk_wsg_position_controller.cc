@@ -116,7 +116,7 @@ void SchunkWsgPositionController::CalcGripForceOutput(
     const drake::systems::Context<double>& context,
     drake::systems::BasicVector<double>* output_vector) const {
   Vector2d force = CalcGeneralizedForce(context);
-  output_vector->SetAtIndex(0, force[0] - force[1]);
+  output_vector->SetAtIndex(0, std::abs(force[0] - force[1]));
 }
 
 }  // namespace schunk_wsg
