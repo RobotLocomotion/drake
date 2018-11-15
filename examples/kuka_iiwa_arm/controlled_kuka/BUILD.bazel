@@ -15,9 +15,9 @@ drake_cc_library(
         "//manipulation/models/iiwa_description:models",
     ],
     deps = [
+        "//attic/multibody:inverse_kinematics",
         "//attic/multibody/parsers",
         "//common/trajectories:piecewise_polynomial",
-        "//multibody:inverse_kinematics",
     ],
 )
 

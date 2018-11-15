@@ -28,14 +28,14 @@ drake_cc_library(
     srcs = ["controlUtil.cpp"],
     hdrs = ["controlUtil.h"],
     deps = [
+        "//attic/multibody:resolve_center_of_pressure",
+        "//attic/multibody:rigid_body_tree",
         "//attic/util",
         "//common:essential",
         "//common/trajectories:piecewise_polynomial",
         "//math:autodiff",
         "//math:expmap",
         "//math:geometric_transform",
-        "//multibody:resolve_center_of_pressure",
-        "//multibody:rigid_body_tree",
     ],
 )
 
@@ -53,9 +53,9 @@ drake_cc_library(
     deps = [
         ":control_util",
         ":side",
+        "//attic/multibody:rigid_body_tree",
         "//attic/util",
         "//common:essential",
-        "//multibody:rigid_body_tree",
     ],
 )
 

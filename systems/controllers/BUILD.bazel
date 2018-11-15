@@ -53,7 +53,7 @@ drake_cc_library(
     srcs = ["inverse_dynamics.cc"],
     hdrs = ["inverse_dynamics.h"],
     deps = [
-        "//multibody:rigid_body_tree",
+        "//attic/multibody:rigid_body_tree",
         "//multibody/multibody_tree/multibody_plant",
         "//systems/framework",
     ],
@@ -67,7 +67,7 @@ drake_cc_library(
         ":inverse_dynamics",
         ":pid_controller",
         ":state_feedback_controller_interface",
-        "//multibody:rigid_body_tree",
+        "//attic/multibody:rigid_body_tree",
         "//multibody/multibody_tree/multibody_plant",
         "//systems/framework",
         "//systems/primitives:adder",
