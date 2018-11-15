@@ -330,8 +330,7 @@ bool EqualityConstrainedQPSolver::ProgramAttributesSatisfied(
 }
 
 std::string EqualityConstrainedQPSolver::FeasibilityTolOptionName() {
-  static const never_destroyed<std::string> name("FeasibilityTol");
-  return name.access();
+  return "FeasibilityTol";
 }
 
 }  // namespace solvers
