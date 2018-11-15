@@ -1,20 +1,20 @@
-#include "drake/systems/controllers/inverse_dynamics_controller.h"
+#include "drake/systems/controllers/rbt_inverse_dynamics_controller.h"
 
 #include <memory>
 #include <utility>
 
-#include "drake/systems/controllers/inverse_dynamics.h"
+#include "drake/multibody/rigid_body_tree.h"
+#include "drake/systems/controllers/rbt_inverse_dynamics.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/pass_through.h"
 
-using drake::multibody::multibody_plant::MultibodyPlant;
-
 namespace drake {
 namespace systems {
 namespace controllers {
+namespace rbt {
 
 template <typename T>
 void InverseDynamicsController<T>::SetUp(const VectorX<double>& kp,
@@ -97,35 +97,33 @@ void InverseDynamicsController<T>::set_integral_value(
 
 template <typename T>
 InverseDynamicsController<T>::InverseDynamicsController(
-    const MultibodyPlant<T>& plant,
-    const VectorX<double>& kp, const VectorX<double>& ki,
-    const VectorX<double>& kd, bool has_reference_acceleration)
-    : multibody_plant_for_control_(&plant),
+    std::unique_ptr<RigidBodyTree<T>> robot, const VectorX<double>& kp,
+    const VectorX<double>& ki, const VectorX<double>& kd,
+    bool has_reference_acceleration)
+    : rigid_body_tree_for_control_(std::move(robot)),
       has_reference_acceleration_(has_reference_acceleration) {
-  DRAKE_DEMAND(plant.is_finalized());
-
   DiagramBuilder<T> builder;
   auto inverse_dynamics =
-    builder.template AddSystem<InverseDynamics<T>>(
-      multibody_plant_for_control_,
-      InverseDynamics<T>::kInverseDynamics);
+      builder.template AddSystem<InverseDynamics<T>>(
+          rigid_body_tree_for_control_.get(), false);
 
-  const int num_positions = multibody_plant_for_control_->num_positions();
-  const int num_velocities = multibody_plant_for_control_->num_velocities();
-  const int num_actuators = multibody_plant_for_control_->num_actuators();
+  const int num_positions = rigid_body_tree_for_control_->get_num_positions();
+  const int num_velocities = rigid_body_tree_for_control_->get_num_velocities();
+  const int num_actuators = rigid_body_tree_for_control_->get_num_actuators();
   DRAKE_DEMAND(num_positions == kp.size());
   DRAKE_DEMAND(num_positions == num_velocities);
   DRAKE_DEMAND(num_positions == num_actuators);
   SetUp(kp, ki, kd, *inverse_dynamics, &builder);
 }
 
+// We need this in the *.cc file so that rigid_body_tree.h does not need to be
+// included by our header file.
 template <typename T>
 InverseDynamicsController<T>::~InverseDynamicsController() = default;
 
 template class InverseDynamicsController<double>;
-// TODO(siyuan) template on autodiff.
-// template class InverseDynamicsController<AutoDiffXd>;
 
+}  // namespace rbt
 }  // namespace controllers
 }  // namespace systems
 }  // namespace drake

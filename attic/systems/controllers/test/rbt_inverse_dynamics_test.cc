@@ -1,4 +1,4 @@
-#include "drake/systems/controllers/inverse_dynamics.h"
+#include "drake/systems/controllers/rbt_inverse_dynamics.h"
 
 #include <memory>
 #include <stdexcept>
@@ -11,9 +11,9 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/multibody_tree/math/spatial_acceleration.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/parsers/sdf_parser.h"
+#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/controllers/test_utilities/compute_torque.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
@@ -21,21 +21,20 @@
 using Eigen::AutoDiffScalar;
 using Eigen::VectorXd;
 using std::make_unique;
-using drake::multibody::multibody_plant::MultibodyPlant;
 
 namespace drake {
 namespace systems {
 namespace controllers {
+namespace rbt {
 namespace {
 
 class InverseDynamicsTest : public ::testing::Test {
  protected:
-  void Init(std::unique_ptr<MultibodyPlant<double>> plant,
+  void Init(std::unique_ptr<RigidBodyTree<double>> tree,
             const InverseDynamics<double>::InverseDynamicsMode mode) {
-    multibody_plant_ = std::move(plant);
-    multibody_context_ = multibody_plant_->CreateDefaultContext();
+    rigid_body_tree_ = std::move(tree);
     inverse_dynamics_ = make_unique<InverseDynamics<double>>(
-        multibody_plant_.get(), mode);
+        rigid_body_tree_.get(), mode);
     FinishInit(mode);
   }
 
@@ -96,12 +95,8 @@ class InverseDynamicsTest : public ::testing::Test {
     inverse_dynamics_->CalcOutput(*inverse_dynamics_context_, output_.get());
 
     // Compute the expected torque.
-    VectorXd expected_torque;
-    ASSERT_TRUE(multibody_plant_.get());
-    ASSERT_TRUE(multibody_context_.get());
-    expected_torque = controllers_test::ComputeTorque(
-        *multibody_plant_, position, velocity, vd_d,
-        multibody_context_.get());
+    VectorXd expected_torque = controllers_test::ComputeTorque(
+        *rigid_body_tree_, position, velocity, vd_d);
 
     // Checks the expected and computed gravity torque.
     const BasicVector<double>* output_vector = output_->get_vector_data(0);
@@ -109,96 +104,51 @@ class InverseDynamicsTest : public ::testing::Test {
                                 1e-10, MatrixCompareType::absolute));
   }
 
-  // Determines whether gravity is modeled by checking the generalized forces
-  // due to gravity.
-  bool GravityModeled(const VectorXd& q) const {
-    // The state can only be altered in this way because the state is known to
-    // be continuous while the state can generally be discrete for MBT/MBP.
-    multibody_context_->get_mutable_continuous_state().
-        get_mutable_generalized_position().SetFromVector(q);
-
-    // Verify that gravitational forces are nonzero (validating that the tree
-    // is put into the proper configuration and gravity is modeled).
-    const auto& tree = multibody_plant_->tree();
-    return tree.CalcGravityGeneralizedForces(*multibody_context_).norm() >
-              std::numeric_limits<double>::epsilon();
-  }
-
  private:
   int num_positions() const {
-    DRAKE_DEMAND(multibody_plant_.get() != nullptr);
-    return multibody_plant_->tree().num_positions();
+    return rigid_body_tree_->get_num_positions();
   }
 
   int num_velocities() const {
-    DRAKE_DEMAND(multibody_plant_.get() != nullptr);
-    return multibody_plant_->tree().num_velocities();
+    return rigid_body_tree_->get_num_velocities();
   }
 
-  std::unique_ptr<MultibodyPlant<double>> multibody_plant_;
+  std::unique_ptr<RigidBodyTree<double>> rigid_body_tree_;
   std::unique_ptr<InverseDynamics<double>> inverse_dynamics_;
   std::unique_ptr<Context<double>> inverse_dynamics_context_;
-  std::unique_ptr<Context<double>> multibody_context_;
   std::unique_ptr<SystemOutput<double>> output_;
 };
 
 // Tests that the expected value of the gravity compensating torque and the
 // value computed by the InverseDynamics in pure gravity compensation mode
 // for a given joint configuration of the KUKA IIWA Arm are identical.
-TEST_F(InverseDynamicsTest, GravityCompensationTest) {
-  auto mbp = std::make_unique<MultibodyPlant<double>>();
-  const std::string full_name = drake::FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
-  multibody::parsing::AddModelFromSdfFile(full_name, mbp.get());
-  mbp->WeldFrames(mbp->world_frame(),
-                  mbp->GetFrameByName("iiwa_link_0"));
-
-  // Finalize the model and transfer ownership.
-  mbp->Finalize();
-  Init(std::move(mbp),
+TEST_F(InverseDynamicsTest, GravityCompensationTestRBT) {
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      drake::FindResourceOrThrow("drake/manipulation/models/"
+          "iiwa_description/urdf/iiwa14_primitive_collision.urdf"),
+      drake::multibody::joints::kFixed, nullptr /* weld to frame */,
+      tree.get());
+  Init(std::move(tree),
        InverseDynamics<double>::InverseDynamicsMode::kGravityCompensation);
 
   // Defines an arbitrary robot position vector.
   Eigen::VectorXd robot_position = Eigen::VectorXd::Zero(7);
   robot_position << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
 
-  // Verify that gravity is *not* modeled.
-  EXPECT_FALSE(GravityModeled(robot_position));
-
-  // Re-initialize the model so we can add gravity.
-  mbp = std::make_unique<MultibodyPlant<double>>();
-  multibody::parsing::AddModelFromSdfFile(full_name, mbp.get());
-  mbp->WeldFrames(mbp->world_frame(),
-                  mbp->GetFrameByName("iiwa_link_0"));
-
-  // Add gravitational forces, finalize the model, and transfer ownership.
-  mbp->AddForceElement<multibody::UniformGravityFieldElement>(-9.8 *
-      Vector3<double>::UnitZ());
-  mbp->Finalize();
-  Init(std::move(mbp),
-       InverseDynamics<double>::InverseDynamicsMode::kGravityCompensation);
-
-  // Verify that gravity is modeled.
-  EXPECT_TRUE(GravityModeled(robot_position));
-
   CheckGravityTorque(robot_position);
 }
 
 // Tests that inverse dynamics returns the expected torque for a given state and
 // desired acceleration for the iiwa arm.
-TEST_F(InverseDynamicsTest, InverseDynamicsTest) {
-  auto mbp = std::make_unique<MultibodyPlant<double>>();
-  const std::string full_name = drake::FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
-  multibody::parsing::AddModelFromSdfFile(full_name, mbp.get());
-  mbp->WeldFrames(mbp->world_frame(),
-                  mbp->GetFrameByName("iiwa_link_0"));
-
-  // Add gravitational forces, finalize the model, and transfer ownership.
-  mbp->AddForceElement<multibody::UniformGravityFieldElement>(-9.8 *
-      Vector3<double>::UnitZ());
-  mbp->Finalize();
-  Init(std::move(mbp),
+TEST_F(InverseDynamicsTest, InverseDynamicsTestRBT) {
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      drake::FindResourceOrThrow("drake/manipulation/models/"
+      "iiwa_description/urdf/iiwa14_primitive_collision.urdf"),
+      drake::multibody::joints::kFixed, nullptr /* weld to frame */,
+      tree.get());
+  Init(std::move(tree),
        InverseDynamics<double>::InverseDynamicsMode::kInverseDynamics);
 
   Eigen::VectorXd q = Eigen::VectorXd::Zero(7);
@@ -210,13 +160,11 @@ TEST_F(InverseDynamicsTest, InverseDynamicsTest) {
     vd_d[i] = i - 3;
   }
 
-  // Check that gravity is modeled.
-  EXPECT_TRUE(GravityModeled(q));
-
   CheckTorque(q, v, vd_d);
 }
 
 }  // namespace
+}  // namespace rbt
 }  // namespace controllers
 }  // namespace systems
 }  // namespace drake
