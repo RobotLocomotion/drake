@@ -1037,6 +1037,10 @@ void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
     const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BQ,
     const Frame<T>& frame_A, const Frame<T>& frame_E,
     EigenPtr<MatrixX<T>> Jv_ABq_E) const {
+  DRAKE_THROW_UNLESS(Jv_ABq_E != nullptr);
+  DRAKE_THROW_UNLESS(Jv_ABq_E->rows() == 6);
+  DRAKE_THROW_UNLESS(Jv_ABq_E->cols() == num_velocities());
+
   // The spatial velocity V_WBq can be obtained by composing the spatial
   // velocities V_WAq and V_ABq. Expressed in the world frame W this composition
   // is V_WBq_W = V_ABq_W + V_ABq_W
