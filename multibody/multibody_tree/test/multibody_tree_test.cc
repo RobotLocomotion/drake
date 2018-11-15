@@ -372,6 +372,15 @@ class KukaIiwaModelTests : public ::testing::Test {
     return V_WB_array[end_effector_link_->index()].translational();
   }
 
+  template <typename T>
+  Vector3<T> CalcRelativeVelocity(
+      const MultibodyTree<T>& model_on_T,
+      const Context<T>& context_on_T) const {
+    std::vector<SpatialVelocity<T>> V_WB_array;
+    model_on_T.CalcAllBodySpatialVelocitiesInWorld(context_on_T, &V_WB_array);
+    return V_WB_array[end_effector_link_->index()].translational();
+  }
+
   // Computes spatial velocity `V_WE` of the end effector frame E in the world
   // frame W.
   template <typename T>
@@ -493,7 +502,7 @@ TEST_F(KukaIiwaModelTests, VerifyScalarConversionToAutoDiffXd) {
 // In addition, we are testing methods:
 // - MultibodyTree::CalcPointsPositions()
 // - MultibodyTree::CalcAllBodySpatialVelocitiesInWorld()
-TEST_F(KukaIiwaModelTests, GeometricJacobian) {
+TEST_F(KukaIiwaModelTests, CalcPointsGeometricJacobianExpressedInWorld) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = tree().num_positions();
   const int kNumStates = tree().num_states();
@@ -1014,6 +1023,83 @@ TEST_F(KukaIiwaModelTests, FrameGeometricJacobianForTheWorldFrame) {
   // Since in this case we are querying for the world frame, the Jacobian should
   // be exactly zero.
   EXPECT_EQ(Jv_WP, MatrixX<double>::Zero(6, nv));
+}
+
+TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobian) {
+  // The number of generalized positions in the Kuka iiwa robot arm model.
+  const int kNumPositions = tree().num_positions();
+  const int kNumStates = tree().num_states();
+
+  ASSERT_EQ(kNumPositions, 7);
+
+  ASSERT_EQ(tree_autodiff().num_positions(), kNumPositions);
+  ASSERT_EQ(tree_autodiff().num_states(), kNumStates);
+
+  ASSERT_EQ(context_->get_continuous_state().size(), kNumStates);
+  ASSERT_EQ(context_autodiff_->get_continuous_state().size(), kNumStates);
+
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
+  // A set of values for the joints' angles chosen mainly to avoid in-plane
+  // motions.
+  VectorX<double> q, v;
+  GetArbitraryNonZeroConfiguration(&q, &v);
+
+  // Set joint angles and rates.
+  int angle_index = 0;
+  for (const RevoluteJoint<double>* joint : joints_) {
+    joint->set_angle(context_.get(), q[angle_index]);
+    joint->set_angular_rate(context_.get(), v[angle_index]);
+    angle_index++;
+  }
+
+  // Two arbitrary frames on the robot.
+  const Body<double>& link3 = tree().GetBodyByName("iiwa_link_3");
+  const Body<double>& link7 = tree().GetBodyByName("iiwa_link_7");
+
+  // An arbitrary point Q in the end effector link 7.
+  const Vector3d p_L7Q = Vector3d(0.2, -0.1, 0.5);
+
+  // Link 3 kinematics.
+  const Isometry3<double>& X_WL3 = tree().EvalBodyPoseInWorld(*context_, link3);
+  const Matrix3<double>& R_WL3 = X_WL3.linear();
+
+  // link 7 kinematics.
+  const Isometry3<double>& X_WL7 = tree().EvalBodyPoseInWorld(*context_, link7);
+  const Matrix3<double>& R_WL7 = X_WL7.linear();
+
+  // Position of Q in L3, expressed in world.
+  // Spatial velocity of frame L3 shifted to Q.
+  const Isometry3<double> X_L3L7 = tree().CalcRelativeTransform(
+      *context_, link3.body_frame(), link7.body_frame());
+  const Vector3<double> p_L3Q_W = R_WL3 * X_L3L7 * p_L7Q;
+
+  // Position of Q in L7, expressed in world.
+  const Vector3<double> p_L7Q_W = R_WL7 * p_L7Q;
+
+  // Spatial velocity of L3 shifted to Q.
+  const SpatialVelocity<double> V_WL3q =
+      tree().EvalBodySpatialVelocityInWorld(*context_, link3).Shift(p_L3Q_W);
+
+  // Spatial velocity of L7 shifted to Q.
+  const SpatialVelocity<double> V_WL7q =
+      tree().EvalBodySpatialVelocityInWorld(*context_, link7).Shift(p_L7Q_W);
+  
+  // Relative spatial velocity V_L3L7q of L7q in L3, measured in L3.
+  const SpatialVelocity<double> V_L3L7q = R_WL3.transpose() * (V_WL7q - V_WL3q);
+
+  MatrixX<double> Jv_L3L7q(6, tree().num_velocities());
+  // Compute the Jacobian Jv_WF for that relate the generalized velocities with
+  // the spatial velocity of frame F.
+  tree().CalcFrameGeometricJacobian(
+      *context_, link7.body_frame(), p_L7Q,
+      link3.body_frame(), link3.body_frame(), &Jv_L3L7q);
+
+  // Verify that V_L3L7q = Jv_L3L7q * v:
+  const SpatialVelocity<double> Jv_L3L7q_times_v(Jv_L3L7q * v);
+
+  EXPECT_TRUE(Jv_L3L7q_times_v.IsApprox(V_L3L7q, kTolerance));
 }
 
 // Fixture to setup a simple MBT model with weld mobilizers. The model is in
