@@ -148,6 +148,28 @@ GTEST_TEST(FrameKinematicsVector, SymbolicInstantiation) {
   EXPECT_TRUE(z_.EqualTo(poses.value(ids[1]).translation()[2]));
 }
 
+GTEST_TEST(FrameKinematicsVector, FrameIdRange) {
+  SourceId source_id = SourceId::get_new_id();
+  int kPoseCount = 3;
+  std::vector<FrameId> ids;
+  for (int i = 0; i < kPoseCount; ++i) ids.push_back(FrameId::get_new_id());
+  FramePoseVector<double> poses(source_id, ids);
+
+  poses.clear();
+  std::unordered_map<FrameId, Isometry3<double>> recorded_poses;
+  for (int i = 0; i < kPoseCount; ++i) {
+    Isometry3<double> pose = Isometry3<double>::Identity();
+    pose.translation() << i, i, i;
+    recorded_poses[ids[i]] = pose;
+    EXPECT_NO_THROW(poses.set_value(ids[i], pose));
+  }
+
+  for (FrameId id : poses.get_frame_ids()) {
+    const Isometry3<double>& pose = poses.value(id);
+    EXPECT_TRUE(CompareMatrices(pose.matrix(), recorded_poses[id].matrix()));
+  }
+}
+
 }  // namespace test
 }  // namespace geometry
 }  // namespace drake

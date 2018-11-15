@@ -65,6 +65,7 @@ drake_cc_library(
     ],
     deps = [
         ":geometry_ids",
+        ":utilities",
         "//common:autodiff",
         "//common:essential",
         "//common:symbolic",
@@ -149,6 +150,7 @@ drake_cc_library(
         ":internal_frame",
         ":internal_geometry",
         ":proximity_engine",
+        ":utilities",
     ],
 )
 
