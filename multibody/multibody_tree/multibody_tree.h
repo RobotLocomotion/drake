@@ -2042,7 +2042,7 @@ class MultibodyTree {
   ///
   /// @throws std::exception if `J_ABq` is nullptr or if it is not of size
   ///   `6 x nv`.
-  void CalcFrameGeometricJacobian(
+  void CalcRelativeFrameGeometricJacobian(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BQ,
       const Frame<T>& frame_A, const Frame<T>& frame_E,

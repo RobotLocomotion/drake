@@ -1032,7 +1032,7 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcFrameGeometricJacobian(
+void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
     const systems::Context<T>& context,
     const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BQ,
     const Frame<T>& frame_A, const Frame<T>& frame_E,

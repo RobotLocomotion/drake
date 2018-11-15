@@ -1025,7 +1025,7 @@ TEST_F(KukaIiwaModelTests, FrameGeometricJacobianForTheWorldFrame) {
   EXPECT_EQ(Jv_WP, MatrixX<double>::Zero(6, nv));
 }
 
-TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobian) {
+TEST_F(KukaIiwaModelTests, CalcRelativeFrameGeometricJacobian) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = tree().num_positions();
   const int kNumStates = tree().num_states();
@@ -1098,7 +1098,7 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobian) {
   MatrixX<double> Jv_L3L7q_L5(6, tree().num_velocities());
   // Compute the Jacobian Jv_WF for that relate the generalized velocities with
   // the spatial velocity of frame F.
-  tree().CalcFrameGeometricJacobian(
+  tree().CalcRelativeFrameGeometricJacobian(
       *context_, link7.body_frame(), p_L7Q,
       link3.body_frame(), link5.body_frame(), &Jv_L3L7q_L5);
 
