@@ -6,7 +6,7 @@
 namespace drake {
 namespace maliput {
 namespace utility {
-
+namespace mesh {
 
 InverseFaceEdgeMap
 ComputeInverseFaceEdgeMap(const std::vector<IndexFace>& faces) {
@@ -39,8 +39,8 @@ ComputeFaceAdjacencyMap(const std::vector<IndexFace>& faces) {
     const DirectedEdgeIndex& edge_index = entry.first;
     const FaceEdgeIndex& face_edge_index = entry.second;
     if (adjacent_faces_map.count(face_edge_index.face_index) == 0) {
-      adjacent_faces_map[face_edge_index.face_index].assign(
-          faces[face_edge_index.face_index].vertices().size(), {-1, -1});
+      adjacent_faces_map[face_edge_index.face_index].resize(
+          faces[face_edge_index.face_index].vertices().size());
     }
     const DirectedEdgeIndex reversed_edge_index = edge_index.reverse();
     if (inverse_face_edge_map.count(reversed_edge_index) > 0) {
@@ -55,18 +55,12 @@ ComputeFaceAdjacencyMap(const std::vector<IndexFace>& faces) {
 
 const Vector3<double>& GetMeshFaceVertexPosition(
     const GeoMesh& mesh, const IndexFace::Vertex& vertex) {
-  DRAKE_DEMAND(0 <= vertex.vertex_index);
-  const std::vector<const GeoVertex*>& vertices = mesh.vertices();
-  DRAKE_DEMAND(vertex.vertex_index < static_cast<int>(vertices.size()));
-  return vertices[vertex.vertex_index]->v().xyz();
+  return mesh.vertices().at(vertex.vertex_index)->v().xyz();
 }
 
 const Vector3<double>& GetMeshFaceVertexNormal(
     const GeoMesh& mesh, const IndexFace::Vertex& vertex) {
-  DRAKE_DEMAND(0 <= vertex.normal_index);
-  const std::vector<const GeoNormal*>& normals = mesh.normals();
-  DRAKE_DEMAND(vertex.normal_index < static_cast<int>(normals.size()));
-  return normals[vertex.normal_index]->n().xyz();
+  return mesh.normals().at(vertex.normal_index)->n().xyz();
 }
 
 bool IsMeshFaceCoplanarWithPlane(const GeoMesh& mesh,
@@ -162,7 +156,7 @@ FindOuterFaceEdgeIndex(const std::set<int>& simply_connected_faces_indices,
       return {face_index, edge_index};
     }
   }
-  return {-1, -1};
+  return FaceEdgeIndex();
 }
 
 
@@ -202,15 +196,9 @@ std::vector<FaceVertexIndex> ComputeMeshFacesContour(
 const IndexFace::Vertex& MeshFaceVertexAt(
     const GeoMesh& mesh, const FaceVertexIndex& face_vertex_index) {
   const std::vector<IndexFace>& faces = mesh.faces();
-  DRAKE_DEMAND(0 <= face_vertex_index.face_index);
-  DRAKE_DEMAND(face_vertex_index.face_index <
-               static_cast<int>(faces.size()));
   const std::vector<IndexFace::Vertex>& face_vertices =
-      faces[face_vertex_index.face_index].vertices();
-  DRAKE_DEMAND(0 <= face_vertex_index.vertex_index);
-  DRAKE_DEMAND(face_vertex_index.vertex_index <
-               static_cast<int>(face_vertices.size()));
-  return face_vertices[face_vertex_index.vertex_index];
+      faces.at(face_vertex_index.face_index).vertices();
+  return face_vertices.at(face_vertex_index.vertex_index);
 }
 
 
@@ -283,6 +271,7 @@ GeoMesh SimplifyMeshFaces(const GeoMesh& input_mesh, double tolerance) {
 }
 
 
+}  // namespace mesh
 }  // namespace utility
 }  // namespace maliput
 }  // namespace drake

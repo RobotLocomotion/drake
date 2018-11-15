@@ -25,6 +25,10 @@ namespace drake {
 namespace maliput {
 namespace utility {
 
+using mesh::GeoMesh;
+using mesh::SrhFace;
+using mesh::SimplifyMeshFaces;
+
 namespace {
 
 // Traverses @p lane, generating a cover of the surface with with quads

@@ -17,7 +17,7 @@
 namespace drake {
 namespace maliput {
 namespace utility {
-
+namespace mesh {
 
 /// A container for a set of unique objects which keeps track of the original
 /// insertion order.  Its primary purpose is to assign a stable unique index
@@ -312,6 +312,7 @@ class SrhFace {
 };
 
 
+}  // namespace mesh
 }  // namespace utility
 }  // namespace maliput
 }  // namespace drake

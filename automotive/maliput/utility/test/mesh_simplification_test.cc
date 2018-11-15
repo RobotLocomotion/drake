@@ -5,6 +5,7 @@
 namespace drake {
 namespace maliput {
 namespace utility {
+namespace mesh {
 namespace {
 
 // Tests equality and inequality operator overloads
@@ -25,10 +26,10 @@ GTEST_TEST(DirectedEdgeIndexTest, Equality) {
 // Tests equality and inequality operator overloads
 // for FaceEdgeIndex instances.
 GTEST_TEST(FaceEdgeIndexTest, Equality) {
-  const DirectedEdgeIndex edge{0, 10};
-  const DirectedEdgeIndex equivalent_edge{0, 10};
-  const DirectedEdgeIndex edge_on_another_face{3, 10};
-  const DirectedEdgeIndex other_edge_on_same_face{0, 5};
+  const FaceEdgeIndex edge{0, 10};
+  const FaceEdgeIndex equivalent_edge{0, 10};
+  const FaceEdgeIndex edge_on_another_face{3, 10};
+  const FaceEdgeIndex other_edge_on_same_face{0, 5};
 
   EXPECT_EQ(edge, edge);
   EXPECT_EQ(edge, equivalent_edge);
@@ -37,6 +38,29 @@ GTEST_TEST(FaceEdgeIndexTest, Equality) {
 }
 
 // Fixture for mesh simplification tests.
+//
+// The mesh under test is depicted below:
+//
+// <pre>
+//
+//  I(0,2,1) ô---------------ǒ H(2,2,-1)
+//           |               |
+//           |               |
+//           |   C(1,1,0)    | F(2,1,0)
+//  D(0,1,0) o-------o-------o-------ô
+//           |       |       |     /  G(3,1,1)
+//           |       |       |   /
+//           |       |       | /           y ^   ⊙ z
+//  A(0,0,0) o-------o-------o E(2,0,0)      |
+//               B(1,0,0)                    +--->
+//                                               x
+// </pre>
+//
+// Notation being used is as follows:
+// - 'o' refers to a vertex on the z = 0 plane,
+// - 'ô' refers to a vertex on the z = 1 plane,
+// - 'ǒ' refers to a vertex on the z = -1 plane,
+// - '-', '|' and '/' refer to edges.
 class GeoMeshSimplificationTest : public ::testing::Test {
  protected:
   // Default constructor, initializing the mesh and its
@@ -170,67 +194,77 @@ class GeoMeshSimplificationTest : public ::testing::Test {
 
 
 TEST_F(GeoMeshSimplificationTest, InverseFaceEdgeMapComputation) {
-  const InverseFaceEdgeMap map = ComputeInverseFaceEdgeMap(faces());
+  InverseFaceEdgeMap map = ComputeInverseFaceEdgeMap(faces());
 
   // Tests first quad edges.
   EXPECT_EQ(map.count(kABEdge), 1);
   EXPECT_EQ(map.at(kABEdge), kFirstQuadAEdge);
-  EXPECT_EQ(map.count(kABEdge.reverse()), 0);
+  map.erase(kABEdge);
 
   EXPECT_EQ(map.count(kBCEdge), 1);
   EXPECT_EQ(map.at(kBCEdge), kFirstQuadBEdge);
+  map.erase(kBCEdge);
 
   EXPECT_EQ(map.count(kCDEdge), 1);
   EXPECT_EQ(map.at(kCDEdge), kFirstQuadCEdge);
+  map.erase(kCDEdge);
 
   EXPECT_EQ(map.count(kDAEdge), 1);
   EXPECT_EQ(map.at(kDAEdge), kFirstQuadDEdge);
-  EXPECT_EQ(map.count(kDAEdge.reverse()), 0);
+  map.erase(kDAEdge);
 
   // Tests second quad edges.
   EXPECT_EQ(map.count(kCBEdge), 1);
   EXPECT_EQ(map.at(kCBEdge), kSecondQuadCEdge);
+  map.erase(kCBEdge);
 
   EXPECT_EQ(map.count(kBEEdge), 1);
   EXPECT_EQ(map.at(kBEEdge), kSecondQuadBEdge);
-  EXPECT_EQ(map.count(kBEEdge.reverse()), 0);
+  map.erase(kBEEdge);
 
   EXPECT_EQ(map.count(kEFEdge), 1);
   EXPECT_EQ(map.at(kEFEdge), kSecondQuadEEdge);
+  map.erase(kEFEdge);
 
   EXPECT_EQ(map.count(kFCEdge), 1);
   EXPECT_EQ(map.at(kFCEdge), kSecondQuadFEdge);
+  map.erase(kFCEdge);
 
   // Tests triangle edges.
   EXPECT_EQ(map.count(kFEEdge), 1);
   EXPECT_EQ(map.at(kFEEdge), kTriangleFEdge);
+  map.erase(kFEEdge);
 
   EXPECT_EQ(map.count(kEGEdge), 1);
   EXPECT_EQ(map.at(kEGEdge), kTriangleEEdge);
-  EXPECT_EQ(map.count(kEGEdge.reverse()), 0);
+  map.erase(kEGEdge);
 
   EXPECT_EQ(map.count(kGFEdge), 1);
   EXPECT_EQ(map.at(kGFEdge), kTriangleGEdge);
-  EXPECT_EQ(map.count(kGFEdge.reverse()), 0);
+  map.erase(kGFEdge);
 
   // Tests third quad edges.
   EXPECT_EQ(map.count(kDCEdge), 1);
   EXPECT_EQ(map.at(kDCEdge), kThirdQuadDEdge);
+  map.erase(kDCEdge);
 
   EXPECT_EQ(map.count(kCFEdge), 1);
   EXPECT_EQ(map.at(kCFEdge), kThirdQuadCEdge);
+  map.erase(kCFEdge);
 
   EXPECT_EQ(map.count(kFHEdge), 1);
   EXPECT_EQ(map.at(kFHEdge), kThirdQuadFEdge);
-  EXPECT_EQ(map.count(kFHEdge.reverse()), 0);
+  map.erase(kFHEdge);
 
   EXPECT_EQ(map.count(kHIEdge), 1);
   EXPECT_EQ(map.at(kHIEdge), kThirdQuadHEdge);
-  EXPECT_EQ(map.count(kHIEdge.reverse()), 0);
+  map.erase(kHIEdge);
 
   EXPECT_EQ(map.count(kIDEdge), 1);
   EXPECT_EQ(map.at(kIDEdge), kThirdQuadIEdge);
-  EXPECT_EQ(map.count(kIDEdge.reverse()), 0);
+  map.erase(kIDEdge);
+
+  EXPECT_TRUE(map.empty());
 }
 
 
@@ -430,6 +464,7 @@ TEST_F(GeoMeshSimplificationTest, MeshSimplification) {
 }
 
 }  // namespace
+}  // namespace mesh
 }  // namespace utility
 }  // namespace maliput
 }  // namespace drake

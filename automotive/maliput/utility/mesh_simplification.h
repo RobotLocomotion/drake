@@ -17,7 +17,7 @@
 namespace drake {
 namespace maliput {
 namespace utility {
-
+namespace mesh {
 
 /// Index for a directed edge in a GeoMesh.
 struct DirectedEdgeIndex {
@@ -26,8 +26,10 @@ struct DirectedEdgeIndex {
     return {end_vertex_index, start_vertex_index};
   }
 
-  int start_vertex_index;  ///< Index of start vertex.
-  int end_vertex_index;  ///< Index of end vertex.
+  int start_vertex_index{-1};  ///< Index of start vertex, or -1
+                               ///  to mark index as invalid.
+  int end_vertex_index{-1};  ///< Index of end vertex, or -1 to
+                             ///  mark index as invalid.
 };
 
 
@@ -55,11 +57,13 @@ void hash_append(
 
 /// Index for a face edge in a GeoMesh.
 struct FaceEdgeIndex {
-  int face_index;  ///< Index of the face the edge belongs to.
-  int edge_index;  ///< Index of the edge, corresponding to its
-                   ///  start vertex index in the face vertices
-                   ///  sequence (assumed to be defined in a
-                   ///  counter-clockwise fashion).
+  int face_index{-1};  ///< Index of the face the edge belongs to, or
+                       ///  -1 to mark index as invalid.
+  int edge_index{-1};  ///< Index of the edge, corresponding to its
+                       ///  start vertex index in the face vertices
+                       ///  sequence (assumed to be defined in a
+                       ///  counter-clockwise fashion), or -1 to mark
+                       ///  index as invalid.
 };
 
 
@@ -76,30 +80,37 @@ inline bool operator!=(const FaceEdgeIndex& lhs, const FaceEdgeIndex& rhs) {
 
 /// The inverse of the mapping from face edges indices to their
 /// associated directed edge indices.
+/// @see ComputeInverseFaceEdgeMap
 using InverseFaceEdgeMap = std::unordered_map<
   DirectedEdgeIndex, FaceEdgeIndex, drake::DefaultHash>;
 
 
 /// Computes the inverse of the mapping from face edges indices to their
 /// associated directed edge indices for the given @p faces collection.
-/// @pre Mapping from directed edges to face edges is 1-to-1 (or in other
+/// @pre Mapping from directed edges to face edges is 1-to-1. In other
 ///      words, any given pair of vertices can be shared by two faces at
-///      most).
+///      most. This implies that the mesh is well-oriented, such that any
+///      adjacent have the common edge in opposite directions.
 /// @warning If any of the preconditions is not met, this function will
 ///          abort execution.
 InverseFaceEdgeMap
 ComputeInverseFaceEdgeMap(const std::vector<IndexFace>& faces);
 
 
-/// A mapping providing all adjacent faces to each
-/// face in a given GeoMesh, along with the edge
-/// these share.
+/// A mapping from each IndexFace index in a given GeoMesh to each of its
+/// adjacent faces, along with the index of the edge these share.
+/// @see FaceEdgeIndex
 using FaceAdjacencyMap = std::unordered_map<
   int, std::vector<FaceEdgeIndex>>;
 
 
-/// Computes a mapping providing all adjacent faces to each
-/// face in @p faces, along with the edge these share.
+/// Computes a mapping from each IndexFace index in @p faces to each of its
+/// adjacent faces, along with the index of the edge these share.
+///
+/// For each face at index `i` in @p faces, a sequence to map each edge `j`
+/// to its adjacent face and edge index is added to the map at `i`. If a given
+/// edge is not adjacent to any face, an invalid face and edge index (both set
+/// to -1, see FaceEdgeIndex) is put in its place.
 /// @pre Any given pair of vertices is shared by two faces at most.
 /// @warning If any of the preconditions is not met, this function will
 ///          abort execution.
@@ -206,7 +217,7 @@ std::set<int> AggregateAdjacentCoplanarMeshFaces(
 /// @param adjacent_faces_map Mapping of adjacent faces for the faces
 ///                           referred by @p simply_connected_faces_indices.
 /// @pre The union of the all the faces referred by the given
-///      @p simply_connected_faces_indices expands a simply
+///      @p simply_connected_faces_indices yields a simply
 ///      connected region (i.e. with no holes).
 FaceEdgeIndex
 FindOuterFaceEdgeIndex(const std::set<int>& simply_connected_faces_indices,
@@ -215,20 +226,22 @@ FindOuterFaceEdgeIndex(const std::set<int>& simply_connected_faces_indices,
 
 /// Index of a face vertex in a GeoMesh.
 struct FaceVertexIndex {
-  int face_index;  ///< Index of the face the vertex belongs to.
-  int vertex_index;  ///< Index of the face vertex.
+  int face_index{-1};  ///< Index of the face the vertex belongs to, or
+                       ///  -1 to mark index as invalid.
+  int vertex_index{-1};  ///< Index of the face vertex, or -1 to mark index
+                         /// as invalid.
 };
 
 
 /// Computes the contour of the simply connected region that all the faces
-/// referred by the given @p simply_connected_faces_indices expand.
+/// referred by the given @p simply_connected_faces_indices yield.
 /// @param simply_connected_faces_indices Indices of the faces whose outer face
 ///                                       edge is to be found.
 /// @param adjacent_faces_map Mapping of adjacent faces for the faces referred
 ///                           in @p simply_connected_faces_indices.
 /// @returns Face vertices as a counter-clockwise contour.
 /// @pre The union of the all the faces referred by the given
-///      @p simply_connected_faces_indices expands a simply
+///      @p simply_connected_faces_indices yield a simply
 ///      connected region (i.e. with no holes).
 std::vector<FaceVertexIndex> ComputeMeshFacesContour(
     const std::set<int>& simply_connected_faces_indices,
@@ -253,8 +266,8 @@ const IndexFace::Vertex& MeshFaceVertexAt(
 ///       digitized line or its caricature. Cartographica: The
 ///       International Journal for Geographic Information and
 ///       Geovisualization, 10(2), 112–122.
-/// @param first Iterator at the beginning of the collection.
-/// @param last Iterator at the end of the collection.
+/// @param first Iterator to first element of the collection.
+/// @param last Iterator to the last element of the collection.
 /// @param to_vertex A function to retrieve the vertex associated with
 ///                  an element of the collection (may be a pass-through).
 /// @param to_edge A function to construct an edge out of a pair of
@@ -312,7 +325,7 @@ std::vector<FaceVertexIndex> SimplifyMeshFacesContour(
 /// @param adjacent_faces_map Mapping of adjacent faces for the faces
 ///                           referred in @p mergeable_faces_indices.
 /// @param tolerance For contour simplification, in meters. See
-///                  Simplify<eshFacesContour() function for further
+///                  SimplifyMeshFacesContour() function for further
 ///                  details.
 /// @returns Merged mesh faces as a single GeoFace.
 /// @pre The union of the all the faces referred by the given
@@ -330,9 +343,12 @@ GeoFace MergeMeshFaces(const GeoMesh& mesh,
 ///                  MergeMeshFaces() and AggregateAdjacentCoplanarMeshFaces()
 ///                  functions for further details.
 /// @returns Output, simplified mesh.
+/// @pre The union of the all the faces in the given @p input_mesh
+///      expands a simply connected region (i.e. with no holes).
 GeoMesh SimplifyMeshFaces(const GeoMesh& input_mesh, double tolerance);
 
 
+}  // namespace mesh
 }  // namespace utility
 }  // namespace maliput
 }  // namespace drake

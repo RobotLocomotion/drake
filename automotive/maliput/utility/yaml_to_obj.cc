@@ -32,9 +32,9 @@ DEFINE_bool(draw_elevation_bounds,
             "Whether to draw the elevation bounds");
 DEFINE_double(simplify_mesh_threshold,
               drake::maliput::utility::ObjFeatures().simplify_mesh_threshold,
-              "Optional tolerance for mesh simplification. Make it equal to "
-              "the road linear tolerance to get a mesh size reduction while "
-              "keeping geometrical fidelity.");
+              "Optional tolerance for mesh simplification, in meters. Make it "
+              "equal to the road linear tolerance to get a mesh size reduction "
+              "while keeping geometrical fidelity.");
 
 namespace drake {
 namespace maliput {
