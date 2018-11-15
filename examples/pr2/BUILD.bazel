@@ -16,12 +16,12 @@ drake_cc_binary(
     srcs = ["pr2_passive_simulation.cc"],
     data = [":models"],
     deps = [
+        "//attic/multibody:rigid_body_tree_construction",
         "//attic/multibody/parsers",
         "//attic/multibody/rigid_body_plant",
         "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//common:find_resource",
         "//lcm",
-        "//multibody:rigid_body_tree_construction",
         "//systems/analysis:semi_explicit_euler_integrator",
         "//systems/analysis:simulator",
         "//systems/framework:diagram_builder",

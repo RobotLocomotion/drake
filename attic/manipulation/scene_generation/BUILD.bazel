@@ -15,9 +15,9 @@ drake_cc_library(
     srcs = ["random_clutter_generator.cc"],
     hdrs = ["random_clutter_generator.h"],
     deps = [
+        "//attic/multibody:inverse_kinematics",
+        "//attic/multibody:rigid_body_constraint",
         "//common",
-        "//multibody:inverse_kinematics",
-        "//multibody:rigid_body_constraint",
     ],
 )
 

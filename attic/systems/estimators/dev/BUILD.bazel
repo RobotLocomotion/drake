@@ -22,11 +22,11 @@ drake_cc_test(
     tags = mosek_test_tags(),
     deps = [
         ":rotation",
+        "//attic/multibody:rigid_body_tree",
         "//attic/multibody/collision",
         "//attic/multibody/parsers",
         "//common:essential",
         "//common:find_resource",
-        "//multibody:rigid_body_tree",
         "//solvers:mathematical_program",
         "@lcm",
         "@lcmtypes_bot2_core",
