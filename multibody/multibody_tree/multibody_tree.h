@@ -1740,6 +1740,12 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const Frame<T>& frame_A, const Frame<T>& frame_B) const;
 
+  /// Computes the relative orientation between two frames A and B and returns
+  /// it as a quaternion Q_AB.
+  Quaternion<T> CalcRelativeQuaternion(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_A, const Frame<T>& frame_B) const;
+
   /// Given the positions `p_BQi` for a set of points `Qi` measured and
   /// expressed in a frame B, this method computes the positions `p_AQi(q)` of
   /// each point `Qi` in the set as measured and expressed in another frame A,
@@ -1945,6 +1951,11 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_FQ_list) const;
+
+  void CalcPointsAnalyticJacobianExpressedInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_FQ_list,
+      EigenPtr<MatrixX<T>> p_WQ_list, EigenPtr<MatrixX<T>> Jq_WFq) const;
 
   /// Given a frame `Fq` defined by shifting a frame F from its origin `Fo` to
   /// a new origin `Q`, this method computes the geometric Jacobian `Jv_WFq`
@@ -2925,6 +2936,7 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_WQ_list,
+      bool from_qdot,
       EigenPtr<MatrixX<T>> Jw_WFq, EigenPtr<MatrixX<T>> Jv_WFq) const;
 
   // Implementation for CalcMassMatrixViaInverseDynamics().
