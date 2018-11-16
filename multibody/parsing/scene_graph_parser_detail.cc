@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/parsing/scene_graph_parser_detail.h"
+#include "drake/multibody/parsing/scene_graph_parser_detail.h"
 
 #include <memory>
 #include <stdexcept>
@@ -9,9 +9,9 @@
 
 #include "drake/geometry/geometry_instance.h"
 #include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
-#include "drake/multibody/multibody_tree/parsing/parser_common.h"
-#include "drake/multibody/multibody_tree/parsing/parser_path_utils.h"
-#include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
+#include "drake/multibody/parsing/parser_common.h"
+#include "drake/multibody/parsing/parser_path_utils.h"
+#include "drake/multibody/parsing/sdf_parser_common.h"
 
 namespace drake {
 namespace multibody {

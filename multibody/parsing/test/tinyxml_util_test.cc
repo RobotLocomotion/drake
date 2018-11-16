@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/parsing/tinyxml_util.h"
+#include "drake/multibody/parsing/tinyxml_util.h"
 
 #include <gtest/gtest.h>
 

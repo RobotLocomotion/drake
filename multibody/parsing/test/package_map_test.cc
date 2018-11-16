@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/parsing/package_map.h"
+#include "drake/multibody/parsing/package_map.h"
 
 #include <algorithm>
 
@@ -17,7 +17,7 @@ namespace {
 
 string GetTestDataRoot() {
   const string desired_dir =
-      "drake/multibody/multibody_tree/parsing/test/";
+      "drake/multibody/parsing/test/";
   const string contained_file =
       "package_map_test_packages/package_map_test_package_a/package.xml";
   const string absolute_file_path = FindResourceOrThrow(
@@ -106,7 +106,7 @@ GTEST_TEST(PackageMapTest, TestPopulateMapFromFolderExtraTrailingSlashes) {
 GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrake) {
   const string root_path = GetTestDataRoot();
   const string sdf_file_name = FindResourceOrThrow(
-      "drake/multibody/multibody_tree/parsing/test/"
+      "drake/multibody/parsing/test/"
       "package_map_test_packages/package_map_test_package_a/"
       "sdf/test_model.sdf");
 
