@@ -47,8 +47,8 @@ namespace schunk_wsg {
 /// velocities of the two fingers).  The output generalized_force is a
 /// BasicVector<double> of size 2 (generalized force inputs to the two
 /// fingers).  The output grip_force is a scalar surrogate for the force
-/// measurement from the driver, f = f₀-f₁, chosen so that positive grip force
-/// corresponds with closing the gripper.
+/// measurement from the driver, f = abs(f₀-f₁) which, like the gripper
+/// itself, only reports a positive force.
 ///
 class SchunkWsgPositionController : public systems::LeafSystem<double> {
  public:
