@@ -16,6 +16,7 @@ drake_cc_package_library(
     name = "planner",
     deps = [
         ":constraint_relaxing_ik",
+        ":rbt_differential_inverse_kinematics",
         ":robot_plan_interpolator",
     ],
 )
@@ -29,6 +30,17 @@ drake_cc_library(
         "//attic/multibody:rigid_body_tree",
         "//attic/multibody/parsers",
         "//common/trajectories:piecewise_polynomial",
+    ],
+)
+
+# N.B. This is unit tested in //manipulation/planner (non-attic).
+drake_cc_library(
+    name = "rbt_differential_inverse_kinematics",
+    srcs = ["rbt_differential_inverse_kinematics.cc"],
+    hdrs = ["rbt_differential_inverse_kinematics.h"],
+    deps = [
+        "//attic/multibody:rigid_body_tree",
+        "//manipulation/planner:differential_inverse_kinematics",
     ],
 )
 
