@@ -13,8 +13,9 @@ InverseKinematics::InverseKinematics(
     const multibody_plant::MultibodyPlant<double>& plant)
     : prog_{new solvers::MathematicalProgram()},
       plant_(plant),
+      context_(plant_.CreateDefaultContext()),
       system_(plant_.tree().ToAutoDiffXd()),
-      context_(system_.CreateDefaultContext()),
+      context_autodiff_(system_.CreateDefaultContext()),
       q_(prog_->NewContinuousVariables(plant_.num_positions(), "q")) {
   // Initialize the lower and upper bounds to -inf/inf. A free floating body
   // does not increment `num_joints()` (A single free floating body has
@@ -43,8 +44,8 @@ solvers::Binding<solvers::Constraint> InverseKinematics::AddPositionConstraint(
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper) {
   auto constraint = std::make_shared<internal::PositionConstraint>(
-      system_.tree(), frameB.index(), p_BQ, frameA.index(), p_AQ_lower,
-      p_AQ_upper, get_mutable_context());
+      plant_, frameB, p_BQ, frameA, p_AQ_lower, p_AQ_upper,
+      get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
 }
 
@@ -55,7 +56,7 @@ InverseKinematics::AddOrientationConstraint(
     double angle_bound) {
   auto constraint = std::make_shared<internal::OrientationConstraint>(
       system_.tree(), frameAbar.index(), R_AbarA, frameBbar.index(), R_BbarB,
-      angle_bound, get_mutable_context());
+      angle_bound, get_mutable_context_autodiff());
   return prog_->AddConstraint(constraint, q_);
 }
 
@@ -66,7 +67,7 @@ InverseKinematics::AddGazeTargetConstraint(
     const Eigen::Ref<const Eigen::Vector3d>& p_BT, double cone_half_angle) {
   auto constraint = std::make_shared<internal::GazeTargetConstraint>(
       system_.tree(), frameA.index(), p_AS, n_A, frameB.index(), p_BT,
-      cone_half_angle, get_mutable_context());
+      cone_half_angle, get_mutable_context_autodiff());
   return prog_->AddConstraint(constraint, q_);
 }
 
@@ -77,7 +78,7 @@ InverseKinematics::AddAngleBetweenVectorsConstraint(
     double angle_lower, double angle_upper) {
   auto constraint = std::make_shared<internal::AngleBetweenVectorsConstraint>(
       system_.tree(), frameA.index(), na_A, frameB.index(), nb_B, angle_lower,
-      angle_upper, get_mutable_context());
+      angle_upper, get_mutable_context_autodiff());
   return prog_->AddConstraint(constraint, q_);
 }
 }  // namespace multibody
