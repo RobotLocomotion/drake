@@ -68,15 +68,5 @@ void DrakeLcm::Subscribe(const std::string& channel, HandlerFunction handler) {
   lcm_.subscribeFunction(channel, &Callback, context)->setQueueCapacity(1);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-void DrakeLcm::Subscribe(const std::string& channel,
-                         DrakeLcmMessageHandlerInterface* handler) {
-  Subscribe(channel, std::bind(
-      std::mem_fn(&DrakeLcmMessageHandlerInterface::HandleMessage), handler,
-      channel, std::placeholders::_1, std::placeholders::_2));
-}
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-
 }  // namespace lcm
 }  // namespace drake

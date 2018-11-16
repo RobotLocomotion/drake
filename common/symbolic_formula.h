@@ -1098,18 +1098,6 @@ struct ConditionTraits<symbolic::Formula> {
 };
 }  // namespace assert
 
-/// Specialization of ExtractBoolOrThrow for `Bool<symbolic::Expression>` which
-/// includes `symbolic::Formula`. It calls `Evaluate` with an empty environment
-/// and throws if there are free variables in the expression.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-template <>
-DRAKE_DEPRECATED("Bool<T> is deprecated.")
-inline bool ExtractBoolOrThrow(const Bool<symbolic::Expression>& b) {
-  return b.value().Evaluate();
-}
-#pragma GCC diagnostic pop
-
 }  // namespace drake
 
 namespace std {

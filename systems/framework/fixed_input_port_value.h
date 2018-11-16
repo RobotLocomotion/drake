@@ -156,10 +156,6 @@ class FixedInputPortValue {
   DependencyTicket ticket_;
 };
 
-// TODO(sherm1) Get rid of this after 8/7/2018 (three months).
-DRAKE_DEPRECATED("Please use FixedInputPortValue instead.")
-typedef FixedInputPortValue FreestandingInputPortValue;
-
 #ifndef DRAKE_DOXYGEN_CXX
 namespace detail {
 

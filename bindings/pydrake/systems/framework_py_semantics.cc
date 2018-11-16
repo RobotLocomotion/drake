@@ -272,20 +272,6 @@ void DefineFrameworkPySemantics(py::module m) {
         .def("get_index", &InputPort<T>::get_index,
              doc.InputPortBase.get_index.doc);
 
-    // TODO(eric.cousineau): Make these deprecated module attributes so that
-    // they present deprecation messages.
-    // N.B. While this is called over again for each `T`, it is idempotent
-    // (no averse side-effects).
-    m.attr("InputPortDescriptor") = m.attr("InputPort");
-    m.attr("InputPortDescriptor_") = m.attr("InputPort_");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // Use deprecated alias directly here, so that it's easy to know when to
-    // remove it from the Python code.
-    static_assert(std::is_same<InputPortDescriptor<T>, InputPort<T>>::value,
-                  "Remove Python aliases once this causes a compilation error");
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-
     // Parameters.
     auto parameters = DefineTemplateClassWithDefault<Parameters<T>>(
         m, "Parameters", GetPyParam<T>(), doc.Parameters.doc);

@@ -51,16 +51,6 @@ void DrakeLcmLog::Publish(const std::string& channel, const void* data,
   }
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-void DrakeLcmLog::Subscribe(const std::string& channel,
-                            DrakeLcmMessageHandlerInterface* handler) {
-  Subscribe(channel, std::bind(
-      std::mem_fn(&DrakeLcmMessageHandlerInterface::HandleMessage), handler,
-      channel, std::placeholders::_1, std::placeholders::_2));
-}
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-
 void DrakeLcmLog::Subscribe(const std::string& channel,
                             HandlerFunction handler) {
   if (is_write_) {

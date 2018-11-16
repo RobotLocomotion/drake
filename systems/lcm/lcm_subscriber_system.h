@@ -10,7 +10,6 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/lcm/drake_lcm_interface.h"
-#include "drake/lcm/drake_lcm_message_handler_interface.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"

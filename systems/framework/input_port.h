@@ -52,13 +52,5 @@ class InputPort final : public InputPortBase {
   const System<T>& system_;
 };
 
-#ifndef DRAKE_DOXYGEN_CXX
-// TODO(sherm1) Remove this after 10/12/2018 (3 months).
-/// DEPRECATED -- use InputPort instead.
-template <typename T>
-using InputPortDescriptor DRAKE_DEPRECATED("Use InputPort instead.") =
-    InputPort<T>;
-#endif
-
 }  // namespace systems
 }  // namespace drake
