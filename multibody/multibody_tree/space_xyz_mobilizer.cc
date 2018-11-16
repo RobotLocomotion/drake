@@ -124,7 +124,7 @@ void SpaceXYZMobilizer<T>::DoCalcNMatrix(
   // w_FM = E_F(q) * q̇; q̇ = [ṙ, ṗ, ẏ]ᵀ
   //
   // Here, following a convention used by many dynamicists, we are calling the
-  // angles θ₁, θ₂, θ₃ as roll (r), pitch (p) and yaw (y), respectively.
+  // angles q0, q1, q2 as roll (r), pitch (p) and yaw (y), respectively.
   //
   // The linear map from v to q̇ is given by the inverse of E_F(q):
   //          [          cos(y) / cos(p),          sin(y) / cos(p), 0]
@@ -169,7 +169,7 @@ void SpaceXYZMobilizer<T>::DoCalcNplusMatrix(
   // w_FM = E_F(q) * q̇; q̇ = [ṙ, ṗ, ẏ]ᵀ
   //
   // Here, following a convention used by many dynamicists, we are calling the
-  // angles θ₁, θ₂, θ₃ as roll (r), pitch (p) and yaw (y), respectively.
+  // angles q0, q1, q2 as roll (r), pitch (p) and yaw (y), respectively.
   //
   // See detailed developer comments for E_F(q) in the implementation for
   // MapQDotToVelocity().

@@ -278,18 +278,28 @@ QuaternionFloatingMobilizer<T>::QuaternionRateToAngularVelocityMatrix(
 template <typename T>
 void QuaternionFloatingMobilizer<T>::DoCalcNMatrix(
     const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> N) const {
-  N->setZero();
+  // Upper-left block
   N->template block<4, 3>(0, 0) =
       AngularVelocityToQuaternionRateMatrix(get_quaternion(context));
+  // Upper-right block
+  N->template block<4, 3>(0, 3).setZero();
+  // Lower-left block
+  N->template block<3, 3>(4, 0).setZero();
+  // Lower-right block
   N->template block<3, 3>(4, 3).setIdentity();
 }
 
 template <typename T>
 void QuaternionFloatingMobilizer<T>::DoCalcNplusMatrix(
     const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> Nplus) const {
-  Nplus->setZero();
+  // Upper-left block
   Nplus->template block<3, 4>(0, 0) =
       QuaternionRateToAngularVelocityMatrix(get_quaternion(context));
+  // Upper-right block
+  Nplus->template block<3, 3>(0, 4).setZero();
+  // Lower-left block
+  Nplus->template block<3, 4>(3, 0).setZero();
+  // Lower-right block
   Nplus->template block<3, 3>(3, 4).setIdentity();
 }
 
