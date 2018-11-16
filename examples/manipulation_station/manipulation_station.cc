@@ -19,6 +19,7 @@
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/discrete_derivative.h"
 #include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/primitives/matrix_gain.h"
 #include "drake/systems/primitives/pass_through.h"
@@ -281,25 +282,11 @@ void ManipulationStation<T>::Finalize() {
                     plant_->get_actuation_input_port(iiwa_model_));
 
     // Approximate desired state command from a discrete derivative of the
-    // position command input port.  This is implemented as a LinearSystem
-    // with state variables to store the last position command.
-    //    x[n+1] = u[n]
-    //    y[n] = [u[n]; (u[n] - x[n])/h]
-    // where u[n] is the positions, y[n] output the positions and
-    // velocities, and h is the timestep.
-    const double time_step = plant_->time_step();
-    MatrixXd C(2 * kNumDofIiwa, kNumDofIiwa), D(2 * kNumDofIiwa, kNumDofIiwa);
-    // clang-format off
-    C << MatrixXd::Zero(kNumDofIiwa, kNumDofIiwa),
-         -MatrixXd::Identity(kNumDofIiwa, kNumDofIiwa) / time_step;
-    D << MatrixXd::Identity(kNumDofIiwa, kNumDofIiwa),
-         MatrixXd::Identity(kNumDofIiwa, kNumDofIiwa) / time_step;
-    // clang-format on
+    // position command input port.
     auto desired_state_from_position =
-        builder.template AddSystem<systems::LinearSystem>(
-            MatrixXd::Zero(kNumDofIiwa, kNumDofIiwa),      // A = 0
-            MatrixXd::Identity(kNumDofIiwa, kNumDofIiwa),  // B = I
-            C, D, time_step);
+        builder.template
+            AddSystem<systems::StateInterpolatorWithDiscreteDerivative>
+                (kNumDofIiwa, plant_->time_step());
     desired_state_from_position->set_name("desired_state_from_position");
     builder.Connect(desired_state_from_position->get_output_port(),
                     iiwa_controller->get_input_port_desired_state());
