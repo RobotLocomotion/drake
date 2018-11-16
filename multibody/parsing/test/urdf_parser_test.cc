@@ -1,11 +1,11 @@
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_urdf_parser.h"
+#include "drake/multibody/parsing/urdf_parser.h"
 
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/multibody_tree/parsing/parser_common.h"
+#include "drake/multibody/parsing/parser_common.h"
 
 namespace drake {
 
@@ -72,7 +72,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestAtlasMinimalContact) {
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, TestAddWithQuaternionFloatingDof) {
   const std::string resource_dir{
-    "drake/multibody/multibody_tree/parsing/test/urdf_parser_test/"};
+    "drake/multibody/parsing/test/urdf_parser_test/"};
   const std::string model_file = FindResourceOrThrow(
       resource_dir + "zero_dof_robot.urdf");
 

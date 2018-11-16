@@ -11,8 +11,8 @@
 
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/parsing/parser_common.h"
-#include "drake/multibody/multibody_tree/parsing/test/test_loaders.h"
+#include "drake/multibody/parsing/parser_common.h"
+#include "drake/multibody/parsing/test/test_loaders.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -47,7 +47,7 @@ class MultibodyPlantLinkTests :
  protected:
   MultibodyPlant<double> plant_;
   geometry::SceneGraph<double> scene_graph_;
-  const std::string base_name_{"drake/multibody/multibody_tree/parsing/test/"
+  const std::string base_name_{"drake/multibody/parsing/test/"
         "links_with_visuals_and_collisions"};
 };
 

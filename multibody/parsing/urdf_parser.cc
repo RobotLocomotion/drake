@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_urdf_parser.h"
+#include "drake/multibody/parsing/urdf_parser.h"
 
 #include <limits>
 #include <memory>
@@ -13,10 +13,10 @@
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/joints/weld_joint.h"
-#include "drake/multibody/multibody_tree/parsing/package_map.h"
-#include "drake/multibody/multibody_tree/parsing/parser_path_utils.h"
-#include "drake/multibody/multibody_tree/parsing/tinyxml_util.h"
-#include "drake/multibody/multibody_tree/parsing/urdf_geometry.h"
+#include "drake/multibody/parsing/package_map.h"
+#include "drake/multibody/parsing/parser_path_utils.h"
+#include "drake/multibody/parsing/tinyxml_util.h"
+#include "drake/multibody/parsing/urdf_geometry.h"
 
 namespace drake {
 namespace multibody {

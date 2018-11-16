@@ -1298,7 +1298,7 @@ TEST_F(SplitPendulum, MassMatrix) {
 // Verifies we can parse link collision geometries and surface friction.
 GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
   const std::string full_name = drake::FindResourceOrThrow(
-      "drake/multibody/multibody_tree/parsing/test/"
+      "drake/multibody/parsing/test/"
           "links_with_visuals_and_collisions.sdf");
   MultibodyPlant<double> plant;
   SceneGraph<double> scene_graph;
