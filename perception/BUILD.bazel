@@ -47,7 +47,8 @@ drake_cc_library(
         ":point_cloud",
         "//common:essential",
         "//systems/framework",
-        "//systems/sensors",
+        "//systems/sensors:camera_info",
+        "//systems/sensors:image",
     ],
 )
 
