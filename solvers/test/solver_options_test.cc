@@ -66,41 +66,30 @@ void UpdateMergeResult(const SolverOptions& solver_options1,
 GTEST_TEST(SolverOptionsTest, Merge) {
   const SolverId id1("foo1");
   const SolverId id2("foo2");
-  SolverOptions solver_options1, solver_options2;
-  SolverOptions merge_option2_into_option1, merge_option1_into_option2;
-  solver_options1.SetOption(id1, "key1", 1);
-  EXPECT_NE(solver_options1, solver_options2);
+  SolverOptions dut, dut_expected;
 
-  UpdateMergeResult(solver_options1, solver_options2,
-                    &merge_option1_into_option2, &merge_option2_into_option1);
-  EXPECT_EQ(solver_options1, merge_option1_into_option2);
-  EXPECT_EQ(solver_options1, merge_option2_into_option1);
+  SolverOptions foo;
+  foo.SetOption(id1, "key1", 1);
+  dut.Merge(foo);
+  dut_expected.SetOption(id1, "key1", 1);
+  EXPECT_EQ(dut, dut_expected);
 
-  solver_options2.SetOption(id1, "key1", 2);
-  UpdateMergeResult(solver_options1, solver_options2,
-                    &merge_option1_into_option2, &merge_option2_into_option1);
-  EXPECT_EQ(merge_option1_into_option2, solver_options2);
-  EXPECT_EQ(merge_option2_into_option1, solver_options1);
+  // Duplicate solver and key. No-op
+  foo.SetOption(id1, "key1", 2);
+  dut.Merge(foo);
+  EXPECT_EQ(dut, dut_expected);
 
-  // Now solver_options2 contains a key for solver foo, that is not contained in
-  // solver_options1.
-  solver_options2.SetOption(id1, "key2", 1);
-  UpdateMergeResult(solver_options1, solver_options2,
-                    &merge_option1_into_option2, &merge_option2_into_option1);
-  EXPECT_EQ(merge_option1_into_option2, solver_options2);
-  SolverOptions merge_option2_into_option1_expected = solver_options1;
-  merge_option2_into_option1_expected.SetOption(id1, "key2", 1);
-  EXPECT_EQ(merge_option2_into_option1, merge_option2_into_option1_expected);
+  // foo contains a key that is not contained in dut.
+  foo.SetOption(id1, "key2", 2);
+  dut.Merge(foo);
+  dut_expected.SetOption(id1, "key2", 2);
+  EXPECT_EQ(dut, dut_expected);
 
-  // Now solver_options1 contains a different solver id
-  solver_options1.SetOption(id2, "key1", 0.1);
-  UpdateMergeResult(solver_options1, solver_options2,
-                    &merge_option1_into_option2, &merge_option2_into_option1);
-  merge_option2_into_option1_expected.SetOption(id2, "key1", 0.1);
-  EXPECT_EQ(merge_option2_into_option1, merge_option2_into_option1_expected);
-  SolverOptions merge_option1_into_option2_expected = solver_options2;
-  merge_option1_into_option2_expected.SetOption(id2, "key1", 0.1);
-  EXPECT_EQ(merge_option1_into_option2, merge_option1_into_option2_expected);
+  // foo contains a solver that is not contained in dut.
+  foo.SetOption(id2, "key1", 1);
+  dut.Merge(foo);
+  dut_expected.SetOption(id2, "key1", 1);
+  EXPECT_EQ(dut, dut_expected);
 }
 }  // namespace solvers
 }  // namespace drake
