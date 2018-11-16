@@ -7,7 +7,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/multibody_tree_system.h"
-#include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/multibody_tree/test/mobilizer_tester.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -24,46 +24,16 @@ using systems::Context;
 constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
 // Fixture to setup a simple MBT model containing a prismatic mobilizer.
-class PrismaticMobilizerTest : public ::testing::Test {
+class PrismaticMobilizerTest : public MobilizerTester {
  public:
-  // Creates a simple model consisting of a single body with a prismatic joint
-  // connecting it to the world, with the sole purpose of verifying the
-  // PrismaticJoint methods.
   void SetUp() override {
-    // Spatial inertia for adding a body. The actual value is not important for
-    // these tests since they are all kinematic.
-    const SpatialInertia<double> M_B;
-
-    // Create an empty model.
-    auto model = std::make_unique<MultibodyTree<double>>();
-
-    // Add a body so we can add a mobilizer to it.
-    body_ = &model->AddBody<RigidBody>(M_B);
-
-    // Add a prismatic mobilizer between the world and the body:
-    slider_ = &model->AddMobilizer<PrismaticMobilizer>(
-        model->world_body().body_frame(), body_->body_frame(), axis_F_);
-
-    // We are done adding modeling elements. Transfer tree to system and get
-    // a Context.
-    system_ = std::make_unique<MultibodyTreeSystem<double>>(std::move(model));
-    context_ = system_->CreateDefaultContext();
-
-    // Performance critical queries take a MultibodyTreeContext to avoid dynamic
-    // casting.
-    mbt_context_ = dynamic_cast<MultibodyTreeContext<double>*>(context_.get());
-    ASSERT_NE(mbt_context_, nullptr);
+    slider_ = &AddMobilizerAndFinalize(
+        std::make_unique<PrismaticMobilizer<double>>(
+        tree().world_body().body_frame(), body_->body_frame(), axis_F_));
   }
 
-  const MultibodyTree<double>& tree() const { return system_->tree(); }
-
  protected:
-  std::unique_ptr<MultibodyTreeSystem<double>> system_;
-  std::unique_ptr<Context<double>> context_;
-
-  const RigidBody<double>* body_{nullptr};
   const PrismaticMobilizer<double>* slider_{nullptr};
-  MultibodyTreeContext<double>* mbt_context_{nullptr};
   // Prismatic mobilizer axis, expressed in the inboard frame F.
   // It's intentionally left non-normalized to verify the mobilizer properly
   // normalizes it at construction.
