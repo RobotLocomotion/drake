@@ -372,15 +372,6 @@ class KukaIiwaModelTests : public ::testing::Test {
     return V_WB_array[end_effector_link_->index()].translational();
   }
 
-  template <typename T>
-  Vector3<T> CalcRelativeVelocity(
-      const MultibodyTree<T>& model_on_T,
-      const Context<T>& context_on_T) const {
-    std::vector<SpatialVelocity<T>> V_WB_array;
-    model_on_T.CalcAllBodySpatialVelocitiesInWorld(context_on_T, &V_WB_array);
-    return V_WB_array[end_effector_link_->index()].translational();
-  }
-
   // Computes spatial velocity `V_WE` of the end effector frame E in the world
   // frame W.
   template <typename T>

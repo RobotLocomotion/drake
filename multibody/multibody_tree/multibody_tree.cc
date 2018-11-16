@@ -1043,9 +1043,9 @@ void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
 
   // The spatial velocity V_WBq can be obtained by composing the spatial
   // velocities V_WAq and V_ABq. Expressed in the world frame W this composition
-  // is V_WBq_W = V_ABq_W + V_ABq_W
+  // is V_WBq_W = V_WAq_W + V_ABq_W
   // That is: V_ABq_W = (Jv_WBq - Jv_WAq)⋅v
-  // An by re-expressing in frame E: V_ABq_E = R_EW⋅(Jv_WBq - Jv_WAq)⋅v
+  // And by re-expressing in frame E: V_ABq_E = R_EW⋅(Jv_WBq - Jv_WAq)⋅v
   // That is, Jv_ABq_E = R_EW⋅(Jv_WBq - Jv_WAq).
 
   Vector3<T> p_WQ;

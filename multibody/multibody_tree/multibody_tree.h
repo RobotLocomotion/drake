@@ -2009,8 +2009,7 @@ class MultibodyTree {
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q.
   /// @param[in] frame_B
-  ///   The position `p_BQ` of frame `Bq` is measured and expressed in this
-  ///   frame B.
+  ///   The position `p_BQ` of point Q is measured and expressed in this frame.
   /// @param[in] p_BQ
   ///   The (fixed) position of the origin `Q` of frame `Bq` as measured and
   ///   expressed in frame B.
