@@ -3,7 +3,9 @@
 #include <limits>
 
 #include "drake/math/autodiff_gradient.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree_context.h"
+#include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
@@ -26,6 +28,18 @@ bool AreAutoDiffVecXdEqual(const Eigen::Ref<const AutoDiffVecXd>& a,
  */
 void UpdateContextConfiguration(const Eigen::Ref<const VectorX<AutoDiffXd>>& q,
                                 MultibodyTreeContext<AutoDiffXd>* mbt_context);
+
+/**
+ * Check if the generalized positions in @p context are the same as @p q.
+ * If they are not the same, then reset @p context's generalized positions
+ * to @p q. Otherwise, leave @p context unchanged.
+ * The intention is to avoid dirtying the computation cache, given it is
+ * ticket-based rather than hash-based.
+ */
+void UpdateContextConfiguration(
+    drake::systems::Context<double>* context,
+    const multibody_plant::MultibodyPlant<double>& plant,
+    const Eigen::Ref<const VectorX<double>>& q);
 
 /**
  * Normalize an Eigen vector of doubles. Throw a logic error if the vector is

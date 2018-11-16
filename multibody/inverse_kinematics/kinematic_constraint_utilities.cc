@@ -27,6 +27,16 @@ void UpdateContextConfiguration(const Eigen::Ref<const VectorX<AutoDiffXd>>& q,
   }
 }
 
+void UpdateContextConfiguration(
+    drake::systems::Context<double>* context,
+    const drake::multibody::multibody_plant::MultibodyPlant<double>& plant,
+    const Eigen::Ref<const VectorX<double>>& q) {
+  DRAKE_ASSERT(context);
+  if (q != plant.GetPositions(*context)) {
+    plant.SetPositions(context, q);
+  }
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
