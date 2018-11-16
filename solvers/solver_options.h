@@ -34,6 +34,8 @@ namespace solvers {
  *
  * "SCS" -- Parameter name and values as specified in the struct SCS_SETTINGS in
  * SCS header file https://github.com/cvxgrp/scs/blob/master/include/scs.h
+ * Note that the SCS code on github master might be more up-to-date than the
+ * version used in Drake.
  */
 class SolverOptions {
  public:

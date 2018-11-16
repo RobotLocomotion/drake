@@ -502,6 +502,7 @@ void SetScsProblemData(int A_row_count, int num_vars,
 
 bool ScsSolver::is_available() { return true; }
 
+namespace {
 void SetScsSettings(std::unordered_map<std::string, int>* solver_options_int,
                     SCS_SETTINGS* scs_settings) {
   auto it = solver_options_int->find("max_iters");
@@ -566,6 +567,7 @@ void SetScsSettings(
     throw std::invalid_argument("Unsupported SCS solver options.");
   }
 }
+}  // namespace
 
 void ScsSolver::Solve(const MathematicalProgram& prog,
                       const optional<Eigen::VectorXd>& initial_guess,
