@@ -15,5 +15,14 @@ SolutionResult IpoptSolver::Solve(MathematicalProgram&) const {
       "solver.");
 }
 
+void IpoptSolver::Solve(const MathematicalProgram&,
+                        const optional<Eigen::VectorXd>&,
+                        const optional<SolverOptions>&,
+                        MathematicalProgramResult*) const {
+  throw std::runtime_error(
+      "The IPOPT bindings were not compiled.  You'll need to use a different "
+      "solver.");
+}
+
 }  // namespace solvers
 }  // namespace drake

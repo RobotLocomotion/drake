@@ -8,6 +8,21 @@
 namespace drake {
 namespace solvers {
 
+std::string to_string(IpoptSolverReturn status) {
+  switch(status) {
+    case IpoptSolverReturn::SUCCESS: {
+      return "Success";
+    }
+    case IpoptSolverReturn::MAXITER_EXCEEDED : {
+      return "Max iteration exceeded";
+    }
+    case IpoptSolverReturn::CPUTIME_EXCEEDED: {
+      return "CPU time exceeded";
+    }
+
+  }
+}
+
 SolverId IpoptSolver::solver_id() const {
   return id();
 }
