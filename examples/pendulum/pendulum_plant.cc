@@ -4,7 +4,9 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/geometry/geometry_frame.h"
+#include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/geometry_visualization.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -17,9 +19,10 @@ using Eigen::Vector4d;
 using geometry::Box;
 using geometry::Cylinder;
 using geometry::GeometryFrame;
+using geometry::GeometryId;
 using geometry::GeometryInstance;
+using geometry::MakeDrakeVisualizerProperties;
 using geometry::Sphere;
-using geometry::VisualMaterial;
 using std::make_unique;
 
 template <typename T>
@@ -126,30 +129,33 @@ void PendulumPlant<T>::RegisterGeometry(
   source_id_ = scene_graph->RegisterSource("pendulum");
 
   // The base.
-  scene_graph->RegisterAnchoredGeometry(
+  GeometryId id = scene_graph->RegisterAnchoredGeometry(
       source_id_,
       make_unique<GeometryInstance>(Isometry3d(Translation3d(0., 0., .025)),
-                                    make_unique<Box>(.05, 0.05, 0.05), "base",
-                                    VisualMaterial(Vector4d(.3, .6, .4, 1))));
+                                    make_unique<Box>(.05, 0.05, 0.05), "base"));
+  scene_graph->AssignRole(
+      source_id_, id, MakeDrakeVisualizerProperties(Vector4d(.3, .6, .4, 1)));
 
   frame_id_ = scene_graph->RegisterFrame(
       source_id_, GeometryFrame("arm", Isometry3d::Identity()));
 
   // The arm.
-  scene_graph->RegisterGeometry(
+  id = scene_graph->RegisterGeometry(
       source_id_, frame_id_,
       make_unique<GeometryInstance>(
           Isometry3d(Translation3d(0, 0, -params.length() / 2.)),
-          make_unique<Cylinder>(0.01, params.length()), "arm",
-          VisualMaterial(Vector4d(.9, .1, 0, 1))));
+          make_unique<Cylinder>(0.01, params.length()), "arm"));
+  scene_graph->AssignRole(
+      source_id_, id, MakeDrakeVisualizerProperties(Vector4d(.9, .1, 0, 1)));
 
   // The mass at the end of the arm.
-  scene_graph->RegisterGeometry(
+  id = scene_graph->RegisterGeometry(
       source_id_, frame_id_,
       make_unique<GeometryInstance>(
           Isometry3d(Translation3d(0, 0, -params.length())),
-          make_unique<Sphere>(params.mass() / 40.), "arm point mass",
-          VisualMaterial(Vector4d(0, 0, 1, 1))));
+          make_unique<Sphere>(params.mass() / 40.), "arm point mass"));
+  scene_graph->AssignRole(
+      source_id_, id, MakeDrakeVisualizerProperties(Vector4d(0, 0, 1, 1)));
 
   // Now allocate the output port.
   geometry_pose_port_ = AllocateGeometryPoseOutputPort();

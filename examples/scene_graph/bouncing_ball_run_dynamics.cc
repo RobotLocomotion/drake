@@ -24,7 +24,10 @@ namespace {
 
 using geometry::GeometryInstance;
 using geometry::SceneGraph;
+using geometry::GeometryId;
 using geometry::HalfSpace;
+using geometry::IllustrationProperties;
+using geometry::ProximityProperties;
 using geometry::SourceId;
 using lcm::DrakeLcm;
 using systems::InputPort;
@@ -54,10 +57,12 @@ int do_main() {
   // X_WH will be the identity.
   Vector3<double> Hz_W(0, 0, 1);
   Vector3<double> p_WH(0, 0, 0);
-  scene_graph->RegisterAnchoredGeometry(
+  GeometryId ground_id = scene_graph->RegisterAnchoredGeometry(
       global_source,
       make_unique<GeometryInstance>(HalfSpace::MakePose(Hz_W, p_WH),
                                     make_unique<HalfSpace>(), "ground"));
+  scene_graph->AssignRole(global_source, ground_id, ProximityProperties());
+  scene_graph->AssignRole(global_source, ground_id, IllustrationProperties());
 
   builder.Connect(bouncing_ball1->get_geometry_pose_output_port(),
                   scene_graph->get_source_pose_port(ball_source_id1));

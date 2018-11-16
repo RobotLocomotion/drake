@@ -27,7 +27,6 @@ drake_cc_package_library(
         ":identifier",
         ":internal_frame",
         ":internal_geometry",
-        ":materials",
         ":proximity_engine",
         ":scene_graph",
         ":scene_graph_inspector",
@@ -115,22 +114,12 @@ drake_cc_library(
     hdrs = ["geometry_instance.h"],
     deps = [
         ":geometry_ids",
-        ":materials",
+        ":geometry_roles",
         ":shape_specification",
         ":utilities",
         "//common:copyable_unique_ptr",
         "//common:essential",
     ],
-)
-
-drake_cc_library(
-    # NOTE: The material library and file name don't appear to match. This
-    # library will eventually contain multiple types of materials (e.g.,
-    # contact, rendering, depth, etc.)
-    name = "materials",
-    srcs = ["visual_material.cc"],
-    hdrs = ["visual_material.h"],
-    deps = ["//common"],
 )
 
 drake_cc_library(
@@ -243,7 +232,6 @@ drake_cc_library(
         ":geometry_index",
         ":geometry_roles",
         ":internal_frame",
-        ":materials",
         ":shape_specification",
         "//common:copyable_unique_ptr",
         "//common:essential",
@@ -379,13 +367,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "utilities_test",
     deps = ["utilities"],
-)
-
-drake_cc_googletest(
-    name = "visual_material_test",
-    deps = [
-        ":materials",
-    ],
 )
 
 add_lint_tests()

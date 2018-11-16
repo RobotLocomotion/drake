@@ -256,12 +256,6 @@ class GeometryState {
    @throws std::logic_error if the `frame_id` does not map to a valid frame.  */
   int NumGeometriesWithRole(FrameId frame_id, Role role) const;
 
-  /** Returns the visual material defined for geometry indicated by the given
-   `geometry_id`.
-   @throws std::logic_error If the `geometry_id` does _not_ map to a valid
-                            GeometryInstance.  */
-  const VisualMaterial& get_visual_material(GeometryId geometry_id) const;
-
   //@}
 
   /** @name        State management
@@ -387,11 +381,12 @@ class GeometryState {
    the name can be tested prior to registering the geometry.
    @param frame_id        The id of the frame to which the geometry would be
                           assigned.
+   @param role            The role for the candidate name.
    @param candidate_name  The name to validate.
    @return true if the `candidate_name` can be given to a `GeometryInstance`
-   assigned to the indicated frame.
+   assigned to the indicated frame with the indicated role.
    @throws std::exception if `frame_id` does not refer to a valid frame.  */
-  bool IsValidGeometryName(FrameId frame_id,
+  bool IsValidGeometryName(FrameId frame_id, Role role,
                            const std::string& candidate_name) const;
 
   /** Assigns the given geometry id the proximity role by assigning it the given
@@ -529,7 +524,8 @@ class GeometryState {
 
   /** Reports true if the collision pair (id1, id2) has been filtered out.
    @throws std::logic_error if either id does not reference a registered
-                            geometry.  */
+                            geometry or if the geometries do not have
+                            a proximity role.  */
   bool CollisionFiltered(GeometryId id1, GeometryId id2) const;
 
   //@}
@@ -716,9 +712,17 @@ class GeometryState {
   // Convenience function for accessing geometry whether dynamic or anchored.
   internal::InternalGeometry* GetMutableGeometry(GeometryId id);
 
+  // Reports if the given name is unique in the given frame and role.
+  bool NameIsUnique(FrameId id, Role role, const std::string& name) const;
+
+  // If the given name exists in the geometries affixed to the indicated frame
+  // for the given role, throws an exception.
+  void ThrowIfNameExistsInRole(FrameId id, Role role,
+                               const std::string& name) const;
+
   template <typename PropertyType>
   void AssignRoleInternal(SourceId source_id, GeometryId geometry_id,
-                          PropertyType properties);
+                          PropertyType properties, Role role);
 
   // The GeometryState gets its own source so it can own entities (such as the
   // world frame).

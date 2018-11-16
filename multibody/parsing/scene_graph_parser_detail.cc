@@ -8,6 +8,7 @@
 #include <sdf/sdf.hh>
 
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/geometry_visualization.h"
 #include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
 #include "drake/multibody/parsing/parser_common.h"
 #include "drake/multibody/parsing/parser_path_utils.h"
@@ -21,7 +22,8 @@ namespace detail {
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using geometry::GeometryInstance;
-using geometry::VisualMaterial;
+using geometry::IllustrationProperties;
+using geometry::MakeDrakeVisualizerProperties;
 using multibody_plant::CoulombFriction;
 using std::make_unique;
 
@@ -195,7 +197,7 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
       break;
     }
     case sdf::GeometryType::PLANE: {
-      const sdf::Plane &shape = *sdf_geometry.PlaneShape();
+      const sdf::Plane& shape = *sdf_geometry.PlaneShape();
       // TODO(amcastro-tri): we assume the normal is in the frame of the visual
       // geometry G. Verify this with @nkoenig.
       const Vector3d normal_G = ToVector3(shape.Normal());
@@ -213,17 +215,23 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
       break;
     }
   }
-
-  const VisualMaterial material = MakeVisualMaterialFromSdfVisual(sdf_visual);
-  return make_unique<GeometryInstance>(X_LC,
+  auto instance = make_unique<GeometryInstance>(X_LC,
                                        MakeShapeFromSdfGeometry(sdf_geometry),
-                                       sdf_visual.Name(), material);
+                                       sdf_visual.Name());
+  instance->set_illustration_properties(
+      MakeVisualPropertiesFromSdfVisual(sdf_visual));
+  return instance;
 }
 
-VisualMaterial MakeVisualMaterialFromSdfVisual(const sdf::Visual& sdf_visual) {
+IllustrationProperties MakeVisualPropertiesFromSdfVisual(
+    const sdf::Visual& sdf_visual) {
   // TODO(SeanCurtis-TRI): Update this to use the sdf API when
   // https://bitbucket.org/osrf/sdformat/pull-requests/445/material-dom/diff
   // merges.
+  // The existence of a visual element will *always* require an
+  // IllustrationProperties instance. How we populate it depends on the material
+  // values.
+  IllustrationProperties properties;
 
   const sdf::ElementPtr visual_element = sdf_visual.Element();
   // Element pointers can only be nullptr if Load() was not called on the sdf::
@@ -233,23 +241,28 @@ VisualMaterial MakeVisualMaterialFromSdfVisual(const sdf::Visual& sdf_visual) {
   const sdf::Element* const material_element =
       MaybeGetChildElement(*visual_element, "material");
 
-  const VisualMaterial default_material;
-  if (material_element == nullptr ||
-      !material_element->HasElement("diffuse")) {
-    return default_material;
+  if (material_element != nullptr) {
+    auto add_property = [material_element](
+        const char* property, IllustrationProperties* props) {
+      if (!material_element->HasElement(property)) return;
+      using ignition::math::Color;
+      const std::pair<Color, bool> value_pair =
+          material_element->Get<Color>(property, Color());
+      if (value_pair.second == false) return;
+      const Color& sdf_color = value_pair.first;
+
+      Vector4<double> color{sdf_color.R(), sdf_color.G(), sdf_color.B(),
+                            sdf_color.A()};
+      props->AddProperty("phong", property, color);
+    };
+
+    add_property("diffuse", &properties);
+    add_property("ambient", &properties);
+    add_property("specular", &properties);
+    add_property("emissive", &properties);
   }
 
-  // If the diffuse tag exists, rely on sdformat's rules for resolving strange
-  // <diffuse> values.
-  using ignition::math::Color;
-  const std::pair<Color, bool> value_pair =
-      material_element->Get<Color>("diffuse", Color());
-  if (value_pair.second == false) return default_material;
-  const Color& sdf_diffuse = value_pair.first;
-
-  Vector4<double> diffuse{sdf_diffuse.R(), sdf_diffuse.G(), sdf_diffuse.B(),
-                          sdf_diffuse.A()};
-  return VisualMaterial(diffuse);
+  return properties;
 }
 
 Isometry3d MakeGeometryPoseFromSdfCollision(

@@ -223,6 +223,22 @@ void SceneGraph<T>::RemoveGeometry(Context<T>* context, SourceId source_id,
 }
 
 template <typename T>
+void SceneGraph<T>::AssignRole(SourceId source_id,
+                               GeometryId geometry_id,
+                               ProximityProperties properties) {
+  GS_THROW_IF_CONTEXT_ALLOCATED
+  initial_state_->AssignRole(source_id, geometry_id, std::move(properties));
+}
+
+template <typename T>
+void SceneGraph<T>::AssignRole(SourceId source_id,
+                               GeometryId geometry_id,
+                               IllustrationProperties properties) {
+  GS_THROW_IF_CONTEXT_ALLOCATED
+  initial_state_->AssignRole(source_id, geometry_id, std::move(properties));
+}
+
+template <typename T>
 const SceneGraphInspector<T>& SceneGraph<T>::model_inspector() const {
   GS_THROW_IF_CONTEXT_ALLOCATED
   return model_inspector_;

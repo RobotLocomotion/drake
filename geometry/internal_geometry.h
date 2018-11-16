@@ -13,7 +13,6 @@
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/visual_material.h"
 
 namespace drake {
 namespace geometry {
@@ -35,21 +34,19 @@ class InternalGeometry {
    be nullptr, and the pose will be uninitialized.  */
   InternalGeometry() {}
 
-  /** Constructs the internal geometry as an *immediate* child of the frame.
-   Therefore, it is assumed that X_FG = X_PG.
+  /** Constructs the internal geometry without any assigned roles defined as an
+   *immediate* child of the frame. Therefore, it is assumed that X_FG = X_PG.
    @param source_id     The id for the source that registered this geometry.
    @param shape         The shape specification for this instance.
    @param frame_id      The id of the frame this belongs to.
    @param geometry_id   The identifier for _this_ geometry.
    @param name          The name of the geometry.
    @param X_FG          The pose of the geometry G in the parent frame F.
-   @param index         The index of this geometry in the SceneGraph's set of
-                        registered geometry.
-   @param material      The visual material to apply to this geometry.  */
+   @param index         The internal index of this internal geometry (w.r.t.
+                        its anchored/dynamic status).  */
   InternalGeometry(SourceId source_id, std::unique_ptr<Shape> shape,
-                   FrameId frame_id, GeometryId geometry_id,
-                   std::string name, const Isometry3<double>& X_FG,
-                   GeometryIndex index, const VisualMaterial& material);
+                   FrameId frame_id, GeometryId geometry_id, std::string name,
+                   const Isometry3<double>& X_FG, GeometryIndex index);
 
   /** Compares two %InternalGeometry instances for "equality". Two internal
    geometries are considered equal if they have the same geometry identifier.
@@ -88,9 +85,6 @@ class InternalGeometry {
 
   /** Returns true if this geometry belongs to the source with the given id.  */
   bool belongs_to_source(SourceId id) const { return source_id_ == id; }
-
-  /** Returns the geometry visual material.  */
-  const VisualMaterial& visual_material() const { return visual_material_; }
 
   //@}
 
@@ -274,11 +268,6 @@ class InternalGeometry {
   // mechanism by which we map a geometry to its instantiation in the proximity
   // engine.
   ProximityIndex proximity_index_{};
-
-  // TODO(SeanCurtis-TRI): Consider making this "optional" so that the values
-  // can be assigned at the frame level.
-  // The "rendering" material -- e.g., OpenGl contexts and the like.
-  VisualMaterial visual_material_;
 };
 
 }  // namespace internal

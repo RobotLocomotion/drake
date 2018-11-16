@@ -318,13 +318,6 @@ int GeometryState<T>::NumGeometriesWithRole(FrameId frame_id, Role role) const {
 }
 
 template <typename T>
-const VisualMaterial& GeometryState<T>::get_visual_material(
-    GeometryId geometry_id) const {
-  const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
-  return geometry.visual_material();
-}
-
-template <typename T>
 SourceId GeometryState<T>::RegisterNewSource(const std::string& name) {
   SourceId source_id = SourceId::get_new_id();
   const std::string final_name =
@@ -440,14 +433,18 @@ GeometryId GeometryState<T>::RegisterGeometry(
   geometries_.emplace(geometry_id,
                       InternalGeometry(source_id, geometry->release_shape(),
                                        frame_id, geometry_id, geometry->name(),
-                                       geometry->pose(), index,
-                                       geometry->visual_material()));
+                                       geometry->pose(), index));
 
-  // NOTE: This is a temporary expedient to maintain backwards compatibility;
-  // all registered geometries implicitly have proximity *and* visualization
-  // roles. This maintains the implicit semantics until the API is changed.
-  // The assignment of the illustration role is handled in the constructor.
-  AssignRole(source_id, geometry_id, ProximityProperties());
+  // Any roles defined on the geometry instance propagate through automatically.
+  if (geometry->mutable_illustration_properties()) {
+    AssignRole(source_id, geometry_id,
+               std::move(*geometry->mutable_illustration_properties()));
+  }
+
+  if (geometry->mutable_proximity_properties()) {
+    AssignRole(source_id, geometry_id,
+               std::move(*geometry->mutable_proximity_properties()));
+  }
 
   return geometry_id;
 }
@@ -519,19 +516,21 @@ void GeometryState<T>::RemoveGeometry(SourceId source_id,
 
 template <typename T>
 bool GeometryState<T>::IsValidGeometryName(
-    FrameId frame_id, const std::string& candidate_name) const {
+    FrameId frame_id, Role role, const std::string& candidate_name) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "Given frame id is not valid: " + to_string(frame_id);
   });
-  // TODO(SeanCurtis-TRI): Test for uniquness after geometry roles are added.
-  return !detail::CanonicalizeStringName(candidate_name).empty();
+  const std::string name = detail::CanonicalizeStringName(candidate_name);
+  if (name.empty()) return false;
+  return NameIsUnique(frame_id, role, name);
 }
 
 template <typename T>
 void GeometryState<T>::AssignRole(SourceId source_id,
                                   GeometryId geometry_id,
                                   ProximityProperties properties) {
-  AssignRoleInternal(source_id, geometry_id, std::move(properties));
+  AssignRoleInternal(source_id, geometry_id, std::move(properties),
+                     Role::kProximity);
 
   InternalGeometry* geometry = GetMutableGeometry(geometry_id);
   // This *must* be non-null, otherwise the internal role assignment would have
@@ -601,7 +600,8 @@ template <typename T>
 void GeometryState<T>::AssignRole(SourceId source_id,
                                   GeometryId geometry_id,
                                   IllustrationProperties properties) {
-  AssignRoleInternal(source_id, geometry_id, std::move(properties));
+  AssignRoleInternal(source_id, geometry_id, std::move(properties),
+                     Role::kIllustration);
   // NOTE: No need to assign to any engines.
 }
 
@@ -666,23 +666,33 @@ void GeometryState<T>::ExcludeCollisionsBetween(const GeometrySet& setA,
   std::unordered_set<GeometryIndex> dynamic2;
   std::unordered_set<GeometryIndex> anchored2;
   CollectIndices(setB, &dynamic2, &anchored2);
-
   geometry_engine_->ExcludeCollisionsBetween(dynamic1, anchored1, dynamic2,
                                              anchored2);
 }
 
 template <typename T>
 bool GeometryState<T>::CollisionFiltered(GeometryId id1, GeometryId id2) const {
+  std::string base_message =
+      "Can't report collision filter status between geometries " +
+          to_string(id1) + " and " + to_string(id2) + "; ";
   const internal::InternalGeometry* geometry1 = GetGeometry(id1);
   const internal::InternalGeometry* geometry2 = GetGeometry(id2);
   if (geometry1 != nullptr && geometry2 != nullptr) {
-    return geometry_engine_->CollisionFiltered(
-        geometry1->index(), geometry1->is_dynamic(),
-        geometry2->index(), geometry2->is_dynamic());
+    if (geometry1->has_proximity_role() && geometry2->has_proximity_role()) {
+      return geometry_engine_->CollisionFiltered(
+          geometry1->index(), geometry1->is_dynamic(),
+          geometry2->index(), geometry2->is_dynamic());
+    }
+    if (geometry1->has_proximity_role()) {
+      throw std::logic_error(base_message + to_string(id2) +
+                             " does not have a proximity role");
+    } else if (geometry2->has_proximity_role()) {
+      throw std::logic_error(base_message + to_string(id1) +
+                             " does not have a proximity role");
+    } else {
+      throw std::logic_error(base_message + " neither id has a proximity role");
+    }
   }
-  std::string base_message =
-      "Can't report collision filter status between geometries " +
-      to_string(id1) + " and " + to_string(id2) + "; ";
   if (geometry1 != nullptr) {
     throw std::logic_error(base_message + to_string(id2) +
                            " is not a valid geometry");
@@ -825,20 +835,20 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
                                           removed_index);
   }
 
-  // Now remove the geometry from engines. In the future, base this on the
-  // _role_ of the geometry.
-  ProximityIndex proximity_index = geometry.proximity_index();
-  optional<GeometryIndex> moved_index = geometry_engine_->RemoveGeometry(
-      proximity_index, geometry.is_dynamic());
-  if (moved_index) {
-    // The geometry engine moved a geometry into the removed `proximity_index`.
-    // Update the state's knowledge of this.
-    GeometryId moved_id = geometry_index_to_id_map_[*moved_index];
-    if (geometry.is_dynamic()) {
-      swap(X_WG_[proximity_index],
-           X_WG_[geometries_[moved_id].proximity_index()]);
+  if (geometry.has_proximity_role()) {
+    ProximityIndex proximity_index = geometry.proximity_index();
+    optional<GeometryIndex> moved_index = geometry_engine_->RemoveGeometry(
+        proximity_index, geometry.is_dynamic());
+    if (moved_index) {
+      // The geometry engine moved a geometry into the removed
+      // `proximity_index`. Update the state's knowledge of this.
+      GeometryId moved_id = geometry_index_to_id_map_[*moved_index];
+      if (geometry.is_dynamic()) {
+        swap(X_WG_[proximity_index],
+             X_WG_[geometries_[moved_id].proximity_index()]);
+      }
+      geometries_[moved_id].set_proximity_index(proximity_index);
     }
-    geometries_[moved_id].set_proximity_index(proximity_index);
   }
 
   if (caller == RemoveGeometryOrigin::kGeometry) {
@@ -914,10 +924,34 @@ InternalGeometry* GeometryState<T>::GetMutableGeometry(GeometryId id) {
 }
 
 template <typename T>
+bool GeometryState<T>::NameIsUnique(FrameId id, Role role,
+                                    const std::string& name) const {
+  bool unique = true;
+  const InternalFrame& frame = GetValueOrThrow(id, frames_);
+  for (GeometryId geometry_id : frame.child_geometries()) {
+    const InternalGeometry& geometry = geometries_.at(geometry_id);
+    if (geometry.has_role(role) && geometry.name() == name) {
+      unique = false;
+      break;
+    }
+  }
+  return unique;
+}
+
+template <typename T>
+void GeometryState<T>::ThrowIfNameExistsInRole(FrameId id, Role role,
+                                               const std::string& name) const {
+  if (!NameIsUnique(id, role, name)) {
+    throw std::logic_error("The name '" + name + "' has already been used by "
+        "a geometry with the '" + to_string(role) + "' role.");
+  }
+}
+
+template <typename T>
 template <typename PropertyType>
 void GeometryState<T>::AssignRoleInternal(SourceId source_id,
                                           GeometryId geometry_id,
-                                          PropertyType properties) {
+                                          PropertyType properties, Role role) {
   if (!BelongsToSource(geometry_id, source_id)) {
     throw std::logic_error("Given geometry id " + to_string(geometry_id) +
         " does not belong to the given source id " +
@@ -928,9 +962,17 @@ void GeometryState<T>::AssignRoleInternal(SourceId source_id,
   // `BelongsToSource()` call.
   DRAKE_DEMAND(geometry != nullptr);
 
-  // TODO(SeanCurtis-TRI): Check for name uniqueness in this role. Can't do yet
-  // because *every* geometry gets every role.
-
+  if (!geometry->has_role(role)) {
+    // Only test for name uniqueness if this geometry doesn't already have the
+    // specified role. This is here for two reasons:
+    //   1. If the role has already been assigned, we want that error to
+    //      have precedence -- i.e., the name is irrelevant if the role has
+    //      already been assigned. We rely on SetRole() to detect and throw.
+    //   2. We don't want this to *follow* SetRole(), because we only want to
+    //      set the role if the name is unique -- testing after would leave the
+    //      role assigned.
+    ThrowIfNameExistsInRole(geometry->frame_id(), role, geometry->name());
+  }
   geometry->SetRole(std::move(properties));
 }
 

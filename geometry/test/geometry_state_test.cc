@@ -175,7 +175,7 @@ class GeometryStateTest : public ::testing::Test {
   //  Although the sibling geometries affixed to each frame overlap, the pairs
   //  (g0, g1), (g2, g3), and (g4, g5) are implicitly filtered because they are
   //  sibling geometries affixed to the same frame.
-  SourceId SetUpSingleSourceTree() {
+  SourceId SetUpSingleSourceTree(bool assign_proximity_role = false) {
     using std::to_string;
 
     source_id_ = NewSource();
@@ -221,6 +221,10 @@ class GeometryStateTest : public ::testing::Test {
         geometries_[g_count] = geometry_state_.RegisterGeometry(
             source_id_, frame_id,
             make_unique<GeometryInstance>(pose, make_unique<Sphere>(1), name));
+        if (assign_proximity_role) {
+          geometry_state_.AssignRole(source_id_, geometries_[g_count],
+                                     ProximityProperties());
+        }
         X_FG_.push_back(pose);
         ++g_count;
       }
@@ -233,9 +237,12 @@ class GeometryStateTest : public ::testing::Test {
     // _implicitly_ tests registration of geometry against the world frame id
     // (as that is how `RegisterAnchoredGeometry()` works.
     anchored_geometry_ = geometry_state_.RegisterAnchoredGeometry(
-        source_id_,
-        make_unique<GeometryInstance>(
-            X_WA_, make_unique<Box>(100, 100, 2), anchored_name_));
+        source_id_, make_unique<GeometryInstance>(
+                        X_WA_, make_unique<Box>(100, 100, 2), anchored_name_));
+    if (assign_proximity_role) {
+      geometry_state_.AssignRole(
+          source_id_, anchored_geometry_, ProximityProperties());
+    }
     return source_id_;
   }
 
@@ -554,7 +561,7 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
       EXPECT_FALSE(geometry.parent_id());
       EXPECT_EQ(geometry.name(), geometry_names_[i]);
       EXPECT_EQ(geometry.index(), i);
-      EXPECT_TRUE(geometry.proximity_index().is_valid());
+      EXPECT_FALSE(geometry.proximity_index().is_valid());
       EXPECT_EQ(geometry.child_geometry_ids().size(), 0);
 
       // Note: There are no geometries parented to other geometries. The results
@@ -579,14 +586,13 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
 
 // Tests the GetNum*Geometry*Methods.
 TEST_F(GeometryStateTest, GetNumGeometryTests) {
-  SetUpSingleSourceTree();
+  SetUpSingleSourceTree(true /* add proximity roles */);
 
   EXPECT_EQ(single_tree_total_geometry_count(),
             geometry_state_.get_num_geometries());
   EXPECT_EQ(single_tree_total_geometry_count(),
             geometry_state_.GetNumGeometriesWithRole(Role::kProximity));
-  EXPECT_EQ(single_tree_total_geometry_count(),
-            geometry_state_.GetNumGeometriesWithRole(Role::kIllustration));
+  EXPECT_EQ(0, geometry_state_.GetNumGeometriesWithRole(Role::kIllustration));
 
   for (int i = 0; i < kFrameCount; ++i) {
     EXPECT_EQ(kGeometryCount,
@@ -594,7 +600,7 @@ TEST_F(GeometryStateTest, GetNumGeometryTests) {
     EXPECT_EQ(kGeometryCount,
               geometry_state_.GetNumFrameGeometriesWithRole(frames_[i],
                                                             Role::kProximity));
-    EXPECT_EQ(kGeometryCount,
+    EXPECT_EQ(0,
               geometry_state_.GetNumFrameGeometriesWithRole(
                   frames_[i], Role::kIllustration));
   }
@@ -939,7 +945,7 @@ TEST_F(GeometryStateTest, RegisterAnchoredNullGeometry) {
 //  ProximityIndex(0) will refer to the last _dynamic_ geometry (the
 //    dynamic geometry that previously had the highest ProximityIndex value.)
 TEST_F(GeometryStateTest, RemoveGeometry) {
-  SourceId s_id = SetUpSingleSourceTree();
+  SourceId s_id = SetUpSingleSourceTree(true);
   // Pose all of the frames to the specified poses in their parent frame.
   FramePoseVector<double> poses(source_id_, frames_);
   poses.clear();
@@ -994,7 +1000,7 @@ TEST_F(GeometryStateTest, RemoveGeometry) {
 // Tests the RemoveGeometry functionality in which the geometry removed has
 // geometry children.
 TEST_F(GeometryStateTest, RemoveGeometryTree) {
-  SourceId s_id = SetUpSingleSourceTree();
+  SourceId s_id = SetUpSingleSourceTree(true);
   // Pose all of the frames to the specified poses in their parent frame.
   FramePoseVector<double> poses(source_id_, frames_);
   poses.clear();
@@ -1016,6 +1022,8 @@ TEST_F(GeometryStateTest, RemoveGeometryTree) {
       s_id, root_id,
       make_unique<GeometryInstance>(Isometry3<double>::Identity(),
                                     unique_ptr<Shape>(new Sphere(1)), "leaf"));
+  geometry_state_.AssignRole(s_id, g_id, ProximityProperties());
+
   EXPECT_EQ(geometry_state_.get_num_geometries(),
             single_tree_total_geometry_count() + 1);
   EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(),
@@ -1063,7 +1071,7 @@ TEST_F(GeometryStateTest, RemoveGeometryTree) {
 // Tests the RemoveGeometry functionality in which the geometry is a child of
 // another geometry (and has no child geometries itself).
 TEST_F(GeometryStateTest, RemoveChildLeaf) {
-  SourceId s_id = SetUpSingleSourceTree();
+  SourceId s_id = SetUpSingleSourceTree(true);
   // The geometry parent and frame to which it belongs.
   GeometryId parent_id = geometries_[0];
   FrameId frame_id = frames_[0];
@@ -1133,7 +1141,7 @@ TEST_F(GeometryStateTest, RemoveGeometryInvalid) {
 
 // Tests removal of anchored geometry.
 TEST_F(GeometryStateTest, RemoveAnchoredGeometry) {
-  SourceId s_id = SetUpSingleSourceTree();
+  SourceId s_id = SetUpSingleSourceTree(true);
 
   const Vector3<double> normal{0, 1, 0};
   const Vector3<double> point{1, 1, 1};
@@ -1141,6 +1149,7 @@ TEST_F(GeometryStateTest, RemoveAnchoredGeometry) {
       s_id,
       make_unique<GeometryInstance>(HalfSpace::MakePose(normal, point),
                                     make_unique<HalfSpace>(), "anchored1"));
+  geometry_state_.AssignRole(s_id, anchored_id_1, ProximityProperties());
   // Confirm conditions of having added the anchored geometry.
   EXPECT_EQ(gs_tester_.get_geometry_index_id_map().size(),
             single_tree_total_geometry_count() + 1);
@@ -1413,7 +1422,7 @@ TEST_F(GeometryStateTest, QueryFrameProperties) {
 
 // Test disallowing collisions among members of a group (self collisions).
 TEST_F(GeometryStateTest, ExcludeCollisionsWithin) {
-  SetUpSingleSourceTree();
+  SetUpSingleSourceTree(true /* assign proximity roles */);
 
   // Pose all of the frames to the specified poses in their parent frame.
   FramePoseVector<double> poses(source_id_, frames_);
@@ -1486,7 +1495,7 @@ TEST_F(GeometryStateTest, ExcludeCollisionsWithin) {
 
 // Test disallowing collision between members fo two groups.
 TEST_F(GeometryStateTest, ExcludeCollisionsBetween) {
-  SetUpSingleSourceTree();
+  SetUpSingleSourceTree(true  /* add proximity roles */);
 
   // Pose all of the frames to the specified poses in their parent frame.
   FramePoseVector<double> poses(source_id_, frames_);
@@ -1521,6 +1530,68 @@ TEST_F(GeometryStateTest, ExcludeCollisionsBetween) {
   expected_collisions -= 2;
   pairs = geometry_state_.ComputePointPairPenetration();
   ASSERT_EQ(static_cast<int>(pairs.size()), expected_collisions);
+}
+
+// Test collision filtering configuration when the input GeometrySet includes
+// geometries that *do not* have a proximity role.
+TEST_F(GeometryStateTest, NonProximityRoleInCollisionFilter) {
+  // Default tree *all* has proximity queries.
+  SetUpSingleSourceTree(true  /* add proximity roles */);
+
+  // Pose all of the frames to the specified poses in their parent frame.
+  FramePoseVector<double> poses(source_id_, frames_);
+  poses.clear();
+  for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
+    poses.set_value(frames_[f], X_PF_[f]);
+  }
+  gs_tester_.SetFramePoses(poses);
+  gs_tester_.FinalizePoseUpdate();
+
+  // This is *non* const; we'll decrement it as we filter more and more
+  // collisions.
+  int expected_collisions = default_collision_pair_count();
+
+  // Baseline collision - the unfiltered collisions.
+  auto pairs = geometry_state_.ComputePointPairPenetration();
+  EXPECT_EQ(static_cast<int>(pairs.size()), expected_collisions);
+
+  // Now add a new collision element to the third frame that *should* put it
+  // in contact with the anchored geometry -- if it had a proximity role.
+  Isometry3<double> pose = Isometry3<double>::Identity();
+  // Place the new sphere so that it would collide with both of the current
+  // spheres -- this confirms that adding the proximity role will still properly
+  // include it in the collision filter for geometries under the same frame.
+  pose.translation() << 5.5, 0, 0;
+  // Have the name reflect the frame and the index in the geometry.
+  const std::string& name("added_sphere");
+  GeometryId added_id = geometry_state_.RegisterGeometry(
+      source_id_, frames_[2],
+      make_unique<GeometryInstance>(pose, make_unique<Sphere>(1), name));
+  gs_tester_.FinalizePoseUpdate();
+
+  // No change in number of collisions.
+  pairs = geometry_state_.ComputePointPairPenetration();
+  EXPECT_EQ(static_cast<int>(pairs.size()), expected_collisions);
+
+  // Attempting to filter collisions between a geometry with no proximity role
+  // and other geometry should have no effect on the number of collisions.
+  geometry_state_.ExcludeCollisionsBetween(GeometrySet{added_id},
+                                           GeometrySet{anchored_geometry_});
+  pairs = geometry_state_.ComputePointPairPenetration();
+  EXPECT_EQ(static_cast<int>(pairs.size()), expected_collisions);
+
+  // If we assign a role, the collisions go up by one -- the previous attempt
+  // to filter collisions had no affect and we increase the number of
+  // collisions.
+  geometry_state_.AssignRole(source_id_, added_id, ProximityProperties());
+  pairs = geometry_state_.ComputePointPairPenetration();
+  EXPECT_EQ(static_cast<int>(pairs.size()), expected_collisions + 1);
+
+  // Now if we filter it, it should get removed.
+  geometry_state_.ExcludeCollisionsBetween(GeometrySet{added_id},
+                                           GeometrySet{anchored_geometry_});
+  pairs = geometry_state_.ComputePointPairPenetration();
+  EXPECT_EQ(static_cast<int>(pairs.size()), expected_collisions);
 }
 
 // Tests the documented error conditions of ExcludeCollisionsWithin.
@@ -1578,7 +1649,34 @@ TEST_F(GeometryStateTest, CrossCollisionFilterExceptions) {
 
 // Test that the appropriate error messages are dispatched.
 TEST_F(GeometryStateTest, CollisionFilteredExceptions) {
+  // Initialize tree *without* any proximity roles assigned.
   SetUpSingleSourceTree();
+
+  // Assign proximity to a *single* geometry (which won't cause any automatic
+  // filtering.
+  geometry_state_.AssignRole(source_id_, geometries_[0], ProximityProperties());
+
+  // Case: First geometry does not have a proximity role.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.CollisionFiltered(geometries_[1], geometries_[0]),
+      std::logic_error,
+      ".* " + to_string(geometries_[1]) + " does not have a proximity role");
+
+  // Case: Second geometry does not have a proximity role.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.CollisionFiltered(geometries_[0], geometries_[1]),
+      std::logic_error,
+      ".* " + to_string(geometries_[1]) + " does not have a proximity role");
+
+  // Case: Neither geometry has a proximity role.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.CollisionFiltered(geometries_[1], geometries_[2]),
+      std::logic_error,
+      ".* neither id has a proximity role");
+
+  // Assign proximity to the *other* geometry on frame 1 -- triggering collision
+  // filtering between them.
+  geometry_state_.AssignRole(source_id_, geometries_[1], ProximityProperties());
 
   // Base case: Two geometries on same frame *are* filtered.
   EXPECT_TRUE(
@@ -1609,7 +1707,7 @@ TEST_F(GeometryStateTest, CollisionFilteredExceptions) {
 
 // Tests the ability to query for a geometry from the name of a geometry.
 TEST_F(GeometryStateTest, GetGeometryIdFromName) {
-  SetUpSingleSourceTree();
+  SetUpSingleSourceTree(true /* intialize with proximity role */);
   // Frame i has geometries f * kFrameCount + g, where g ∈ [0, kGeometryCount).
   for (int f = 0; f < kFrameCount; ++f) {
     for (int g = 0; g < kGeometryCount; ++g) {
@@ -1657,6 +1755,23 @@ TEST_F(GeometryStateTest, GetGeometryIdFromName) {
       std::logic_error,
       "The frame '.+?' .\\d+. has no geometry with the role 'unassigned' and "
       "the canonical name '.+'");
+
+  // Multiple unassigned geometries with the same name.
+
+  const std::string dummy_name("duplicate");
+  for (int i = 0; i < 2; ++i) {
+    const Isometry3<double> pose = Isometry3<double>::Identity();
+    geometry_state_.RegisterGeometry(
+        source_id_, frames_[0],
+        make_unique<GeometryInstance>(pose, make_unique<Sphere>(1),
+                                      dummy_name));
+  }
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.GetGeometryFromName(frames_[0], Role::kUnassigned,
+                                          dummy_name),
+      std::logic_error,
+      "The frame '.+?' .\\d+. has multiple geometries with the role "
+      "'unassigned' and the canonical name '.+'");
 }
 
 // Confirms that the name *stored* with the geometry is the trimmed version of
@@ -1689,19 +1804,30 @@ TEST_F(GeometryStateTest, GeometryNameStorage) {
 
 // Tests the logic for confirming if a name is valid or not.
 TEST_F(GeometryStateTest, GeometryNameValidation) {
-  SetUpSingleSourceTree();
+  SetUpSingleSourceTree(true /* Assign proximity roles */);
 
-  // Case: Invalid frame should throw (regardless of name contents).
+  // Case: Invalid frame should throw (regardless of name contents or role).
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.IsValidGeometryName(FrameId::get_new_id(), ""),
+      geometry_state_.IsValidGeometryName(FrameId::get_new_id(),
+                                          Role::kProximity, ""),
       std::logic_error, "Given frame id is not valid: \\d+");
 
   auto expect_bad_name = [this](const std::string& name,
                                 const std::string& exception_message,
                                 const std::string& printable_name) {
-    EXPECT_FALSE(geometry_state_.IsValidGeometryName(frames_[0], name))
+    EXPECT_FALSE(geometry_state_.IsValidGeometryName(frames_[0],
+                                                     Role::kProximity, name))
         << "Failed on input name: " << printable_name;
   };
+
+  // Unique in world frame.
+  const FrameId world = InternalFrame::world_frame_id();
+  EXPECT_FALSE(geometry_state_.IsValidGeometryName(world, Role::kProximity,
+                                                   anchored_name_));
+  EXPECT_TRUE(geometry_state_.IsValidGeometryName(world, Role::kIllustration,
+                                                  anchored_name_));
+  EXPECT_TRUE(geometry_state_.IsValidGeometryName(world, Role::kProximity,
+                                                  anchored_name_ + "2"));
 
   // Invalid cases:
   // Empty.
@@ -1716,27 +1842,225 @@ TEST_F(GeometryStateTest, GeometryNameValidation) {
 
   // Case: Valid (as a control case).
   const std::string unique = "unique";
-  EXPECT_TRUE(geometry_state_.IsValidGeometryName(frames_[0], unique));
+  EXPECT_TRUE(geometry_state_.IsValidGeometryName(frames_[0], Role::kProximity,
+                                                  unique));
 
   // Querying with non-canonical names test as the canonical name.
   vector<std::string> names{" " + unique, unique + " ", " " + unique + " "};
   for (const auto& name : names) {
-    EXPECT_TRUE(geometry_state_.IsValidGeometryName(frames_[0], name));
+    EXPECT_TRUE(geometry_state_.IsValidGeometryName(frames_[0],
+                                                    Role::kProximity, name));
   }
 
-  // Duplicate name is considered valid
-  // TODO(SeanCurtis-TRI): WHen geometry roles are introduced and duplicates
-  // are no longer valid, update this test.
+  // Test potential duplicates.
+
+  // A name with the same role will fail.
+  EXPECT_FALSE(geometry_state_.IsValidGeometryName(
+      frames_[0], Role::kProximity,
+      gs_tester_.get_geometries().at(geometries_[0]).name()));
+
+  // A name with the *different* role will pass.
   EXPECT_TRUE(geometry_state_.IsValidGeometryName(
-      frames_[0],
+      frames_[0], Role::kIllustration,
       gs_tester_.get_geometries().at(geometries_[0]).name()));
 
   // Case: Whitespace that SDF nevertheless considers not whitespace.
   // Update this when the following sdformat issue is resolved:
   // https://bitbucket.org/osrf/sdformat/issues/194/string-trimming-only-considers-space-and
   for (const std::string& s : {"\n", " \n\t", " \f", "\v", "\r", "\ntest"}) {
-    EXPECT_TRUE(geometry_state_.IsValidGeometryName(frames_[0], s));
+    EXPECT_TRUE(geometry_state_.IsValidGeometryName(frames_[0],
+                                                    Role::kProximity, s));
   }
+}
+
+// Tests simple that when a role is assigned to a geometry, that it successfully
+// reports that it has that role.
+TEST_F(GeometryStateTest, AssignRolesToGeometry) {
+  SetUpSingleSourceTree();
+
+  // We need at least 8 geometries to run through all role permutations. Add
+  // geometries until we're there.
+  const Isometry3<double> pose = Isometry3<double>::Identity();
+  for (int i = 0; i < 8 - single_tree_dynamic_geometry_count(); ++i) {
+    const std::string name = "new_geom" + std::to_string(i);
+    geometries_.push_back(geometry_state_.RegisterGeometry(
+        source_id_, frames_[0],
+        make_unique<GeometryInstance>(pose, make_unique<Sphere>(1), name)));
+  }
+
+  auto set_roles = [this](GeometryId id, bool set_proximity,
+                          bool set_illustration) {
+    if (set_proximity) {
+      geometry_state_.AssignRole(source_id_, id, ProximityProperties());
+    }
+    if (set_illustration) {
+      geometry_state_.AssignRole(source_id_, id, IllustrationProperties());
+    }
+  };
+
+  auto has_expected_roles = [this](
+      GeometryId id, bool has_proximity,
+      bool has_illustration) -> ::testing::AssertionResult {
+    const internal::InternalGeometry* geometry =
+        gs_tester_.GetGeometry(id);
+    bool passes = true;
+    ::testing::AssertionResult failure = ::testing::AssertionFailure();
+    if (has_proximity != (geometry->proximity_properties() != nullptr)) {
+      failure << "Proximity role: "
+              << (has_proximity ? " expected, but not found"
+                                : " not expected, but found. ");
+      passes = false;
+    }
+    if (has_illustration != (geometry->illustration_properties() != nullptr)) {
+      failure << "Illustration role: "
+              << (has_illustration ? " expected, but not found"
+                                   : " not expected, but found. ");
+      passes = false;
+    }
+    if (passes)
+      return ::testing::AssertionSuccess();
+    else
+      return failure;
+  };
+
+  // Given two role types, assign all four types of assignments.
+  for (int i = 0; i < 4; ++i) {
+    const bool proximity = i & 0x1;
+    const bool illustration = i & 0x2;
+    const GeometryId id = geometries_[i];
+    EXPECT_TRUE(has_expected_roles(id, false, false))
+              << "Geometry " << id << " at index (" << i
+              << ") didn't start without roles";
+    set_roles(id, proximity, illustration);
+    EXPECT_TRUE(has_expected_roles(id, proximity, illustration))
+              << "Incorrect roles for geometry " << id << " at index (" << i
+              << ").";
+  }
+
+  // Confirm it works on anchored geometry. Pick, arbitrarily, assigning
+  // proximity and illustration roles.
+  EXPECT_TRUE(has_expected_roles(anchored_geometry_, false, false));
+  set_roles(anchored_geometry_, true, true);
+  EXPECT_TRUE(has_expected_roles(anchored_geometry_, true, true));
+}
+
+// Tests that properties assigned to a geometry instance lead to the resulting
+// geometry having the appropriate roles assigned.
+TEST_F(GeometryStateTest, ImplicitRoleAssignment) {
+  SourceId s_id = NewSource();
+  FrameId f_id = geometry_state_.RegisterFrame(
+      s_id, GeometryFrame("frame", Isometry3<double>::Identity()));
+
+  auto make_instance = [this](const std::string& name) {
+    return make_unique<GeometryInstance>(
+        instance_pose_, make_unique<Sphere>(1.0), name);
+  };
+
+  // Case: no properties assigned leaves geometry with no roles.
+  {
+    GeometryId g_id = geometry_state_.RegisterGeometry(
+        s_id, f_id, make_instance("instance1"));
+    const internal::InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
+    EXPECT_FALSE(geometry->has_proximity_role());
+    EXPECT_FALSE(geometry->has_illustration_role());
+  }
+
+  // Case: Only proximity properties provided.
+  {
+    auto instance = make_instance("instance2");
+    instance->set_proximity_properties(ProximityProperties());
+    GeometryId g_id =
+        geometry_state_.RegisterGeometry(s_id, f_id, move(instance));
+
+    const internal::InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
+    EXPECT_TRUE(geometry->has_proximity_role());
+    EXPECT_FALSE(geometry->has_illustration_role());
+  }
+
+  // Case: Only illustration properties provided.
+  {
+    auto instance = make_instance("instance3");
+    instance->set_illustration_properties(IllustrationProperties());
+    GeometryId g_id =
+        geometry_state_.RegisterGeometry(s_id, f_id, move(instance));
+
+    const internal::InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
+    EXPECT_FALSE(geometry->has_proximity_role());
+    EXPECT_TRUE(geometry->has_illustration_role());
+  }
+
+  // Case: All properties provided.
+  {
+    auto instance = make_instance("instance4");
+    instance->set_proximity_properties(ProximityProperties());
+    instance->set_illustration_properties(IllustrationProperties());
+    GeometryId g_id =
+        geometry_state_.RegisterGeometry(s_id, f_id, move(instance));
+
+    const internal::InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
+    EXPECT_TRUE(geometry->has_proximity_role());
+    EXPECT_TRUE(geometry->has_illustration_role());
+  }
+}
+
+// Tests that the property values created get correctly propagated to the
+// target geometry.
+TEST_F(GeometryStateTest, RolePropertyValueAssignment) {
+  SetUpSingleSourceTree();
+  // Tests for proximity properties and assumes the same holds true for the
+  // other role property types.
+
+  ProximityProperties source;
+  const std::string& default_group = source.default_group_name();
+  source.AddProperty(default_group, "prop1", 7);
+  source.AddProperty(default_group, "prop2", 10);
+  const std::string group1("group1");
+  source.AddProperty(group1, "propA", 7.5);
+  source.AddProperty(group1, "propB", "test");
+
+  geometry_state_.AssignRole(source_id_, geometries_[0], source);
+  const ProximityProperties* read =
+      gs_tester_.GetGeometry(geometries_[0])->proximity_properties();
+  ASSERT_NE(read, nullptr);
+
+  // Test groups.
+  ASSERT_EQ(source.num_groups(), read->num_groups());
+  ASSERT_TRUE(read->HasGroup(group1));
+  ASSERT_TRUE(read->HasGroup(default_group));
+
+  // Utility for counting properties in a group.
+  auto num_group_properties = [](const ProximityProperties& properties,
+                                 const std::string& group_name) {
+    const auto& group = properties.GetPropertiesInGroup(group_name);
+    return static_cast<int>(group.size());
+  };
+
+  // Utility for counting properties in a full set of properties.
+  auto num_total_properties =
+      [num_group_properties](const ProximityProperties& properties) {
+        int count = 0;
+        for (const auto& group_name : properties.GetGroupNames()) {
+          count += num_group_properties(properties, group_name);
+        }
+        return count;
+      };
+
+  // Test properties.
+  EXPECT_EQ(num_total_properties(source), num_total_properties(*read));
+
+  EXPECT_EQ(num_group_properties(source, default_group),
+            num_group_properties(*read, default_group));
+  EXPECT_EQ(source.GetProperty<int>(default_group, "prop1"),
+            read->GetProperty<int>(default_group, "prop1"));
+  EXPECT_EQ(source.GetProperty<int>(default_group, "prop2"),
+            read->GetProperty<int>(default_group, "prop2"));
+
+  EXPECT_EQ(num_group_properties(source, group1),
+            num_group_properties(*read, group1));
+  EXPECT_EQ(source.GetProperty<double>(group1, "propA"),
+            read->GetProperty<double>(group1, "propA"));
+  EXPECT_EQ(source.GetProperty<std::string>(group1, "propB"),
+            read->GetProperty<std::string>(group1, "propB"));
 }
 
 // Tests the conditions in which `AssignRole()` throws an exception.
@@ -1772,20 +2096,110 @@ TEST_F(GeometryStateTest, RoleAssignExceptions) {
 
   // Redefinition of role - test each role individually to make sure it has
   // the right error message.
+  EXPECT_NO_THROW(geometry_state_.AssignRole(source_id_, geometries_[0],
+                                             ProximityProperties()));
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.AssignRole(source_id_, geometries_[0],
                                  ProximityProperties()),
       std::logic_error,
       "Geometry already has proximity role assigned");
+
+  EXPECT_NO_THROW(geometry_state_.AssignRole(source_id_, geometries_[0],
+                                             IllustrationProperties()));
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.AssignRole(source_id_, geometries_[0],
                                  IllustrationProperties()),
       std::logic_error,
       "Geometry already has illustration role assigned");
 
-  // TODO(SeanCurtis-TRI): When role assignment is delayed, add a geometry with
-  // the name of an *exisiting* geometry and show it breaks when the duplicate
-  // role is assigned.
+  // Addition of geometry with duplicate name -- no problem. Assigning it a
+  // duplicate role -- bad.
+  const Isometry3<double> pose = Isometry3<double>::Identity();
+  GeometryId new_id = geometry_state_.RegisterGeometry(
+      source_id_, frames_[0],
+      make_unique<GeometryInstance>(pose, make_unique<Sphere>(1),
+                                    geometry_names_[0]));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.AssignRole(source_id_, new_id, ProximityProperties()),
+      std::logic_error,
+      "The name .* has already been used by a geometry with the 'proximity' "
+      "role.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.AssignRole(source_id_, new_id, IllustrationProperties()),
+      std::logic_error,
+      "The name .* has already been used by a geometry with the 'illustration' "
+      "role.");
+}
+
+// Tests the functionality that counts the number of children geometry a frame
+// has for each role.
+TEST_F(GeometryStateTest, ChildGeometryRoleCount) {
+  // Defaults to *no* roles being set.
+  SetUpSingleSourceTree();
+
+  auto expected_roles = [this](
+      FrameId f_id, int num_proximity,
+      int num_illustration) -> ::testing::AssertionResult {
+    bool success = true;
+    ::testing::AssertionResult failure = ::testing::AssertionFailure();
+    std::vector<std::pair<Role, int>> roles{
+        {Role::kProximity, num_proximity},
+        {Role::kIllustration, num_illustration}};
+    for (const auto& pair : roles) {
+      const Role role = pair.first;
+      const int expected_count = pair.second;
+      const int actual_count =
+          geometry_state_.NumGeometriesWithRole(f_id, role);
+      if (actual_count != expected_count) {
+        success = false;
+        failure << "\nExpected " << expected_count << " geometries with the "
+                << role << " role. Found " << actual_count;
+      }
+    }
+    if (success)
+      return ::testing::AssertionSuccess();
+    else
+      return failure;
+  };
+
+  // Assert initial conditions.
+  int proximity_count = 0;
+  int illustration_count = 0;
+  FrameId f_id = frames_[0];
+  ASSERT_TRUE(expected_roles(f_id, proximity_count, illustration_count));
+
+  // Confirm the two geometries I'm going to play with belong to the same frame.
+  GeometryId g_id1 = geometries_[0];
+  GeometryId g_id2 = geometries_[1];
+  ASSERT_EQ(f_id, geometry_state_.GetFrameId(g_id1));
+  ASSERT_EQ(f_id, geometry_state_.GetFrameId(g_id2));
+
+  // Now start assigning roles and confirm results. Do *not* re-order these
+  // tests; the expected results accumulate.
+  geometry_state_.AssignRole(source_id_, g_id1, ProximityProperties());
+  ++proximity_count;
+  ASSERT_TRUE(expected_roles(f_id, proximity_count, illustration_count));
+
+  geometry_state_.AssignRole(source_id_, g_id2, IllustrationProperties());
+  ++illustration_count;
+  ASSERT_TRUE(expected_roles(f_id, proximity_count, illustration_count));
+
+  geometry_state_.AssignRole(source_id_, g_id1, IllustrationProperties());
+  ++illustration_count;
+  ASSERT_TRUE(expected_roles(f_id, proximity_count, illustration_count));
+  geometry_state_.AssignRole(source_id_, g_id2, ProximityProperties());
+  ++proximity_count;
+  ASSERT_TRUE(expected_roles(f_id, proximity_count, illustration_count));
+  // Now test against anchored geometry by passing in the world frame.
+  FrameId world_id = InternalFrame::world_frame_id();
+  ASSERT_TRUE(expected_roles(world_id, 0, 0));
+  geometry_state_.AssignRole(source_id_, anchored_geometry_,
+                             ProximityProperties());
+  ASSERT_TRUE(expected_roles(world_id, 1, 0));
+  geometry_state_.AssignRole(source_id_, anchored_geometry_,
+                             IllustrationProperties());
+  ASSERT_TRUE(expected_roles(world_id, 1, 1));
 }
 
 }  // namespace

@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <sstream>
 
 #include <gtest/gtest.h>
 #include "fmt/ostream.h"
@@ -25,6 +26,7 @@ using geometry::Box;
 using geometry::Cylinder;
 using geometry::GeometryInstance;
 using geometry::HalfSpace;
+using geometry::IllustrationProperties;
 using geometry::Mesh;
 using geometry::SceneGraph;
 using geometry::Shape;
@@ -35,7 +37,7 @@ using multibody::parsing::detail::MakeCoulombFrictionFromSdfCollisionOde;
 using multibody::parsing::detail::MakeGeometryInstanceFromSdfVisual;
 using multibody::parsing::detail::MakeGeometryPoseFromSdfCollision;
 using multibody::parsing::detail::MakeShapeFromSdfGeometry;
-using multibody::parsing::detail::MakeVisualMaterialFromSdfVisual;
+using multibody::parsing::detail::MakeVisualPropertiesFromSdfVisual;
 using std::make_unique;
 using std::unique_ptr;
 using systems::Context;
@@ -425,63 +427,170 @@ GTEST_TEST(SceneGraphParserDetail, MakeEmptyGeometryInstanceFromSdfVisual) {
 
 // Verify visual material parsing: default for unspecified, and diffuse color
 // given where specified in the SDF.
-GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterialDiffuse) {
-  using geometry::VisualMaterial;
+GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
+  using Eigen::Vector4d;
 
-  const VisualMaterial default_material;
+  // Searches the illustration properties for an optional phong material
+  // specification with optional color values.
+  auto expect_phong = [](const IllustrationProperties& dut, bool has_group,
+                         const Vector4d* diffuse, const Vector4d* specular,
+                         const Vector4d* ambient, const Vector4d* emissive) ->
+      ::testing::AssertionResult {
+    ::testing::AssertionResult failure = ::testing::AssertionFailure();
+    bool success = true;
+    if (has_group) {
+      if (dut.HasGroup("phong")) {
+        auto test_color = [&failure, &success, &dut](
+            const char* name, const Vector4d* ref_color) {
+          const bool has_property = dut.HasProperty("phong", name);
+          if (ref_color) {
+            if (has_property) {
+              const Vector4d& color = dut.GetProperty<Vector4d>("phong", name);
+              auto result = CompareMatrices(*ref_color, color);
+              if (result == ::testing::AssertionFailure()) {
+                success = false;
+                failure << "Incorrect values for '" << name << "':"
+                        << "\n expected: " << (*ref_color)
+                        << "\n found:    " << color;
+              }
+            } else {
+              success = false;
+              failure << ", missing expected property '" << name << "'";
+            }
+          } else {
+            if (has_property) {
+              success = false;
+              failure << ", found unexpected property '" << name << "'";
+            }
+          }
+        };
+        test_color("diffuse", diffuse);
+        test_color("specular", specular);
+        test_color("ambient", ambient);
+        test_color("emissive", emissive);
+      } else {
+        failure << ", missing the expected 'phong' group";
+        success = false;
+      }
+    } else {
+      if (dut.HasGroup("phong")) {
+        failure << ", found unexpected 'phong' group";
+        success = false;
+      }
+    }
+    if (success) {
+      return ::testing::AssertionSuccess();
+    } else {
+      return failure;
+    }
+  };
 
-  // Case: No material defined -- default visual material.
+  // Builds a visual XML tag with an optional <material> tag and optional
+  // color values.
+  auto make_xml = [](bool has_material, Vector4d* diffuse, Vector4d* specular,
+                     Vector4d* ambient, Vector4d* emissive) {
+    std::stringstream ss;
+    ss << "<visual name='some_link_visual'>"
+       << "  <pose>0 0 0 0 0 0</pose>"
+       << "  <geometry>"
+       << "    <sphere>"
+       << "      <radius>1</radius>"
+       << "    </sphere>"
+       << "  </geometry>";
+    if (has_material) {
+      auto write_color = [&ss](const char* name, const Vector4d* color) {
+        if (color) {
+          const Vector4d& c = *color;
+          ss << fmt::format("    <{0}>{1} {2} {3} {4}</{0}>", name,
+                            c(0), c(1), c(2), c(3));
+        }
+      };
+      ss << "  <material>";
+      write_color("diffuse", diffuse);
+      write_color("specular", specular);
+      write_color("ambient", ambient);
+      write_color("emissive", emissive);
+      ss << "  </material>";
+    }
+    ss << "</visual>";
+
+    return ss.str();
+  };
+
+  // Case: No material defined -- empty illustration properties.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
-        "<visual name='some_link_visual'>"
-        "  <pose>0 0 0 0 0 0</pose>"
-        "  <geometry>"
-        "    <sphere>"
-        "      <radius>1</radius>"
-        "    </sphere>"
-        "  </geometry>"
-        "</visual>");
-    VisualMaterial material = MakeVisualMaterialFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(CompareMatrices(material.diffuse(), default_material.diffuse(),
-                                0.0, MatrixCompareType::absolute));
+        make_xml(false, nullptr, nullptr, nullptr, nullptr));
+    IllustrationProperties material =
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    EXPECT_TRUE(
+        expect_phong(material, false, nullptr, nullptr, nullptr, nullptr));
   }
 
-  // Case: No diffuse defined -- default visual material.
+  // Case: Material tag defined, but no material properties -- empty
+  // illustration properties.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
-        "<visual name='some_link_visual'>"
-        "  <pose>0 0 0 0 0 0</pose>"
-        "  <geometry>"
-        "    <sphere>"
-        "      <radius>1</radius>"
-        "    </sphere>"
-        "  </geometry>"
-        "  <material>"
-        "  </material>"
-        "</visual>");
-    VisualMaterial material = MakeVisualMaterialFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(CompareMatrices(material.diffuse(), default_material.diffuse(),
-                                0.0, MatrixCompareType::absolute));
+        make_xml(true, nullptr, nullptr, nullptr, nullptr));
+    IllustrationProperties material =
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    EXPECT_TRUE(
+        expect_phong(material, false, nullptr, nullptr, nullptr, nullptr));
   }
 
-  // Case: Valid diffuse material -- visual material as specified.
+  Vector4<double> diffuse{0.25, 0.5, 0.75, 1.0};
+  Vector4<double> specular{0.5, 0.75, 1.0, 0.25};
+  Vector4<double> ambient{0.75, 1.0, 0.25, 0.5};
+  Vector4<double> emissive{1.0, 0.25, 0.5, 0.75};
+
+  // Case: Only valid diffuse material.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
-        "<visual name='some_link_visual'>"
-        "  <pose>0 0 0 0 0 0</pose>"
-        "  <geometry>"
-        "    <sphere>"
-        "      <radius>1</radius>"
-        "    </sphere>"
-        "  </geometry>"
-        "  <material>"
-        "    <diffuse>0.25 0.5 0.75 1</diffuse>"
-        "  </material>"
-        "</visual>");
-    VisualMaterial material = MakeVisualMaterialFromSdfVisual(*sdf_visual);
-    Vector4<double> expected_diffuse{0.25, 0.5, 0.75, 1.0};
-    EXPECT_TRUE(CompareMatrices(material.diffuse(), expected_diffuse,
-                                0.0, MatrixCompareType::absolute));
+        make_xml(true, &diffuse, nullptr, nullptr, nullptr));
+    IllustrationProperties material =
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    EXPECT_TRUE(
+        expect_phong(material, true, &diffuse, nullptr, nullptr, nullptr));
+  }
+
+  // Case: Only valid specular defined.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        make_xml(true, nullptr, &specular, nullptr, nullptr));
+    IllustrationProperties material =
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    EXPECT_TRUE(
+        expect_phong(material, true, nullptr, &specular, nullptr, nullptr));
+  }
+
+  // Case: Only valid ambient defined.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        make_xml(true, nullptr, nullptr, &ambient, nullptr));
+    IllustrationProperties material =
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    EXPECT_TRUE(
+        expect_phong(material, true, nullptr, nullptr, &ambient, nullptr));
+  }
+
+  // Case: Only valid emissive defined.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        make_xml(true, nullptr, nullptr, nullptr, &emissive));
+    IllustrationProperties material =
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    EXPECT_TRUE(
+        expect_phong(material, true, nullptr, nullptr, nullptr, &emissive));
+  }
+
+  // Case: All four
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        make_xml(true, &diffuse, &specular, &ambient, &emissive));
+    IllustrationProperties material =
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+    EXPECT_TRUE(
+        expect_phong(material, true, &diffuse, &specular, &ambient, &emissive));
   }
 
   // TODO(SeanCurtis-TRI): The following tests capture current behavior for
@@ -510,10 +619,11 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterialDiffuse) {
         "    <diffuse>0.25 1 0.5 0.25 2</diffuse>"
         "  </material>"
         "</visual>");
-    VisualMaterial material = MakeVisualMaterialFromSdfVisual(*sdf_visual);
+    IllustrationProperties material =
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
     Vector4<double> expected_diffuse{0.25, 1, 0.5, 0.25};
-    EXPECT_TRUE(CompareMatrices(material.diffuse(), expected_diffuse,
-                                0.0, MatrixCompareType::absolute));
+    EXPECT_TRUE(expect_phong(material, true, &expected_diffuse, nullptr,
+                             nullptr, nullptr));
   }
 
   // Case: Too few channel values -- fill in with 0 for b and 1 for alpha.
@@ -530,10 +640,11 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterialDiffuse) {
         "    <diffuse>0 1</diffuse>"
         "  </material>"
         "</visual>");
-    VisualMaterial material = MakeVisualMaterialFromSdfVisual(*sdf_visual);
+    IllustrationProperties material =
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
     Vector4<double> expected_diffuse{0, 1, 0, 1};
-    EXPECT_TRUE(CompareMatrices(material.diffuse(), expected_diffuse,
-                                0.0, MatrixCompareType::absolute));
+    EXPECT_TRUE(expect_phong(material, true, &expected_diffuse, nullptr,
+                             nullptr, nullptr));
   }
 
   // Case: Values out of range:
@@ -554,10 +665,11 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterialDiffuse) {
         "    <diffuse>-0.1 255 65025 2</diffuse>"
         "  </material>"
         "</visual>");
-    VisualMaterial material = MakeVisualMaterialFromSdfVisual(*sdf_visual);
+    IllustrationProperties material =
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
     Vector4<double> expected_diffuse{0, 1, 255, 1};
-    EXPECT_TRUE(CompareMatrices(material.diffuse(), expected_diffuse, 0.0,
-                                MatrixCompareType::absolute));
+    EXPECT_TRUE(expect_phong(material, true, &expected_diffuse, nullptr,
+                             nullptr, nullptr));
   }
 }
 

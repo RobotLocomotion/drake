@@ -434,6 +434,38 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   //@}
 
+  /** @name     Assigning roles to geometry
+
+   Geometries must be assigned one or more *roles* before they have an effect
+   on SceneGraph computations (see @ref geometry_roles for details). These
+   methods provide the ability to assign a role after registering a geometry.
+
+   The owner that registered the geometry provides its source id, the registered
+   geometry id, and a collection of properties associated with the desired role.
+   These methods will throw exceptions in any of the following circumstances:
+
+     - The source id is invalid.
+     - The geometry id is invalid.
+     - The geometry id is not owned by the given source id.
+     - The indicated role has already been assigned to the geometry.
+     - A context has been allocated.
+   */
+
+  // TODO(SeanCurtis-TRI): Provide mechanism for modifying properties and/or
+  // removing roles.
+
+  //@{
+
+  /** Assigns the proximity role to the given geometry.  */
+  void AssignRole(SourceId source_id, GeometryId geometry_id,
+                  ProximityProperties properties);
+
+  /** Assigns the illustration role to the given geometry.  */
+  void AssignRole(SourceId source_id, GeometryId geometry_id,
+                  IllustrationProperties properties);
+
+  //@}
+
   /** Reports the identifier for the world frame.  */
   static FrameId world_frame_id() {
     return internal::InternalFrame::world_frame_id();

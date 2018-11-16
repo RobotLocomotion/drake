@@ -11,7 +11,6 @@ namespace inclined_plane {
 using geometry::HalfSpace;
 using geometry::SceneGraph;
 using geometry::Sphere;
-using geometry::VisualMaterial;
 using multibody_plant::CoulombFriction;
 using multibody::multibody_plant::MultibodyPlant;
 using multibody::RigidBody;
@@ -65,13 +64,13 @@ std::unique_ptr<MultibodyPlant<double>> MakeInclinedPlanePlant(
       surface_friction);
 
   // Visual for the ball.
-  const VisualMaterial orange(Vector4<double>(1.0, 0.55, 0.0, 1.0));
+  const Vector4<double> orange(1.0, 0.55, 0.0, 1.0);
   plant->RegisterVisualGeometry(
       ball,
       X_BG.GetAsIsometry3(), Sphere(radius), "visual1", orange);
 
-  // Add little spherical spokes to highlight the sphere's rotation.
-  const VisualMaterial red(Vector4<double>(1.0, 0.0, 0.0, 1.0));
+  // Adds little spherical spokes highlight the sphere's rotation.
+  const Vector4<double> red(1.0, 0.0, 0.0, 1.0);
   plant->RegisterVisualGeometry(
       ball,
       // Pose of 1st spoke frame in the ball frame B.
