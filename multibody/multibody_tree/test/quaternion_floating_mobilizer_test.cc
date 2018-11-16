@@ -99,12 +99,8 @@ TEST_F(QuaternionFloatingMobilizerTest, KinematicMapping) {
   mobilizer_->CalcNplusMatrix(*mbt_context_, &Nplus);
 
   // Verify that Nplus is the left pseudoinverse of N.
-  MatrixX<double> N_x_Nplus_N = N * Nplus * N;
   MatrixX<double> Nplus_x_N = Nplus * N;
 
-  EXPECT_TRUE(CompareMatrices(
-      N_x_Nplus_N, N,
-      kTolerance, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(
       Nplus_x_N, MatrixX<double>::Identity(6, 6),
       kTolerance, MatrixCompareType::relative));
