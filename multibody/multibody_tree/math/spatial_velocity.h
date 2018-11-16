@@ -274,7 +274,9 @@ inline SpatialVelocity<T> operator+(
 
 /// The addition of two spatial velocities relates to the composition of
 /// the spatial velocities for two frames given we know the relative spatial
-/// velocity between them, see operator+() for further details.
+/// velocity between them, see
+/// operator+(const SpatialVelocity<T>&, const SpatialVelocity<T>&) for
+/// further details.
 ///
 /// Mathematically, operator-(v1, v2) is equivalent ot operator+(v1, -v2).
 ///
@@ -285,8 +287,9 @@ inline SpatialVelocity<T> operator+(
 ///   V_AB_E = V_MB_E - V_MAb_E = V_AB_E = V_MB_E - V_MA_E.Shift(p_AB_E)
 /// </pre>
 /// where we have expressed all quantities in a common frame E. Notice that,
-/// as explained in the documentation for operator+(), a
-/// SpatialVelocity::Shift() operation is needed.
+/// as explained in the documentation for
+/// operator+(const SpatialVelocity<T>&, const SpatialVelocity<T>&) a shift
+/// operation with SpatialVelocity::Shift() operation is needed.
 template <typename T>
 inline SpatialVelocity<T> operator-(
     const SpatialVelocity<T>& V_MBq_E, const SpatialVelocity<T>& V_MAq_E) {
