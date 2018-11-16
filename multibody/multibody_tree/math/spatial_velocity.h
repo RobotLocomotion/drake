@@ -245,31 +245,55 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
 /// can only be performed if the operands meet strict conditions. In addition
 /// the the usual requirement of common expressed-in frames, both spatial
 /// velocities must be for frames with the same origin point. The general idea
-/// is that if frame A has a spatial velocity with respect to E, and frame B
+/// is that if frame A has a spatial velocity with respect to M, and frame B
 /// has a spatial velocity with respect to A, we want to "compose" them so that
-/// we get frame B's spatial velocity in E. But that can't be done directly
+/// we get frame B's spatial velocity in M. But that can't be done directly
 /// since frames A and B don't have the same origin. So:
 ///
-/// Given the velocity V_EA of a frame A with respect to another frame E, and
+/// Given the velocity V_MA_E of a frame A in a measured-in frame M, and
 /// the velocity V_AB_E of a frame B measured in frame A (both
-/// expressed in frame E), we can calculate V_EB as their sum after shifting
-/// A's velocity to point Bo: <pre>
-///   V_EB = V_EA.Shift(p_AB_E) + V_AB_E
+/// expressed in a common frame E), we can calculate V_MB_E as their sum after
+/// shifting A's velocity to point Bo: <pre>
+///   V_MB_E = V_MA_E.Shift(p_AB_E) + V_AB_E
 /// </pre>
 /// where `p_AB_E` is the position vector from A's origin to B's origin,
 /// expressed in E. This shift can also be thought of as yielding the spatial
 /// velocity of a new frame Ab, which is an offset frame rigidly aligned with A,
 /// but with its origin shifted to B's origin: <pre>
-///   V_EAb = V_EA.Shift(p_AB_E)
-///   V_EB = V_EAb + V_AB_E
+///   V_MAb_E = V_MA_E.Shift(p_AB_E)
+///   V_MB_E = V_MAb_E + V_AB_E
 /// </pre>
 ///
 /// The addition in the last expression is what is carried out by this operator;
 /// the caller must have already performed the necessary shift.
 template <typename T>
 inline SpatialVelocity<T> operator+(
-    const SpatialVelocity<T>& V_EAb, const SpatialVelocity<T>& V_AB_E) {
-  return SpatialVelocity<T>(V_EAb.get_coeffs() + V_AB_E.get_coeffs());
+    const SpatialVelocity<T>& V_MAb_E, const SpatialVelocity<T>& V_AB_E) {
+  return SpatialVelocity<T>(V_MAb_E.get_coeffs() + V_AB_E.get_coeffs());
+}
+
+/// The addition of two spatial velocities relates to the composition of
+/// the spatial velocities for two frames given we know the relative spatial
+/// velocity between them, see
+/// operator+(const SpatialVelocity<T>&, const SpatialVelocity<T>&) for
+/// further details.
+///
+/// Mathematically, operator-(v1, v2) is equivalent ot operator+(v1, -v2).
+///
+/// Physically, the subtraction operation allow us to compute the relative
+/// velocity between two frames. As an example, consider having the the spatial
+/// velocities `V_MA` and `V_MB` of two frames A and B respectively measured in
+/// the same frame M. The velocity of B in A can be obtained as: <pre>
+///   V_AB_E = V_MB_E - V_MAb_E = V_AB_E = V_MB_E - V_MA_E.Shift(p_AB_E)
+/// </pre>
+/// where we have expressed all quantities in a common frame E. Notice that,
+/// as explained in the documentation for
+/// operator+(const SpatialVelocity<T>&, const SpatialVelocity<T>&) a shift
+/// operation with SpatialVelocity::Shift() operation is needed.
+template <typename T>
+inline SpatialVelocity<T> operator-(
+    const SpatialVelocity<T>& V_MBq_E, const SpatialVelocity<T>& V_MAq_E) {
+  return SpatialVelocity<T>(V_MBq_E.get_coeffs() - V_MAq_E.get_coeffs());
 }
 
 }  // namespace multibody
