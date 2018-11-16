@@ -34,6 +34,9 @@ class MathematicalProgramSolverInterface {
   /// Solves an optimization program with optional initial guess and solver
   /// options. Note that these initial guess and solver options are not written
   /// to @p prog.
+  /// If the @p prog has set an option for a solver, and @p solver_options
+  /// contains a different value for the same option on the same solver, then @p
+  /// solver_options takes priority.
   virtual void Solve(const MathematicalProgram& prog,
                      const optional<Eigen::VectorXd>& initial_guess,
                      const optional<SolverOptions>& solver_options,
