@@ -12,7 +12,7 @@ namespace drake {
 namespace manipulation {
 namespace planner {
 
-namespace {
+namespace detail {
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Eigen::Ref<const VectorX<double>>& q_current,
     const Eigen::Ref<const VectorX<double>>& v_current,
@@ -44,7 +44,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
       q_current, v_current, V_WE_E_scaled.head(num_cart_constraints),
       J_WE_E_scaled.topRows(num_cart_constraints), parameters);
 }
-}  // namespace
+}  // namespace detail
 
 std::ostream& operator<<(std::ostream& os,
                          const DifferentialInverseKinematicsStatus value) {
@@ -237,31 +237,6 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 }
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const RigidBodyTree<double>& robot, const KinematicsCache<double>& cache,
-    const Isometry3<double>& X_WE_desired,
-    const RigidBodyFrame<double>& frame_E,
-    const DifferentialInverseKinematicsParameters& parameters) {
-  const Isometry3<double> X_WE =
-      robot.CalcFramePoseInWorldFrame(cache, frame_E);
-  const Vector6<double> V_WE_desired =
-      ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) /
-      parameters.get_timestep();
-  return DoDifferentialInverseKinematics(robot, cache, V_WE_desired, frame_E,
-                                         parameters);
-}
-
-DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const RigidBodyTree<double>& robot, const KinematicsCache<double>& cache,
-    const Vector6<double>& V_WE_desired, const RigidBodyFrame<double>& frame_E,
-    const DifferentialInverseKinematicsParameters& parameters) {
-  Isometry3<double> X_WE = robot.CalcFramePoseInWorldFrame(cache, frame_E);
-  MatrixX<double> J_WE =
-      robot.CalcFrameSpatialVelocityJacobianInWorldFrame(cache, frame_E);
-  return DoDifferentialInverseKinematics(cache.getQ(), cache.getV(), X_WE, J_WE,
-                                         V_WE_desired, parameters);
-}
-
-DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const multibody::multibody_plant::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
     const Vector6<double>& V_WE_desired,
@@ -276,9 +251,10 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 
   const auto& mbt_context =
       dynamic_cast<const multibody::MultibodyTreeContext<double>&>(context);
-  return DoDifferentialInverseKinematics(mbt_context.get_positions(),
-                                         mbt_context.get_velocities(), X_WE,
-                                         J_WE, V_WE_desired, parameters);
+  return detail::DoDifferentialInverseKinematics(mbt_context.get_positions(),
+                                                 mbt_context.get_velocities(),
+                                                 X_WE, J_WE, V_WE_desired,
+                                                 parameters);
 }
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
@@ -311,9 +287,10 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 
   const auto& mbt_context =
       dynamic_cast<const multibody::MultibodyTreeContext<double>&>(context);
-  return DoDifferentialInverseKinematics(mbt_context.get_positions(),
-                                         mbt_context.get_velocities(), X_WE,
-                                         J_WE, V_WE_desired, parameters);
+  return detail::DoDifferentialInverseKinematics(mbt_context.get_positions(),
+                                                 mbt_context.get_velocities(),
+                                                 X_WE, J_WE, V_WE_desired,
+                                                 parameters);
 }
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
