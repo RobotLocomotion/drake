@@ -1,9 +1,13 @@
 #pragma once
 
+#include <map>
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/systems/framework/diagram.h"
 
@@ -41,15 +45,13 @@ enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 ///   @output_port{iiwa_torque_external}
 ///   @output_port{wsg_state_measured}
 ///   @output_port{wsg_force_measured}
-///   @output_port{camera0_rgb_image}
-///   @output_port{camera0_depth_image}
-///   @output_port{<b style="color:orange">camera0_label_image</b>}
-///   @output_port{camera1_rgb_image}
-///   @output_port{camera1_depth_image}
-///   @output_port{<b style="color:orange">camera1_label_image</b>}
-///   @output_port{camera2_rgb_image}
-///   @output_port{camera2_depth_image}
-///   @output_port{<b style="color:orange">camera2_label_image</b>}
+///   @output_port{camera_[NAME]_rgb_image}
+///   @output_port{camera_[NAME]_depth_image}
+///   @output_port{<b style="color:orange">camera_[NAME]_label_image</b>}
+///   @output_port{...}
+///   @output_port{camera_[NAME]_rgb_image}
+///   @output_port{camera_[NAME]_depth_image}
+///   @output_port{<b style="color:orange">camera_[NAME]_label_image</b>}
 ///   @output_port{<b style="color:orange">pose_bundle</b>}
 ///   @output_port{<b style="color:orange">contact_results</b>}
 ///   @output_port{<b style="color:orange">plant_continuous_state</b>}
@@ -147,7 +149,7 @@ class ManipulationStation : public systems::Diagram<T> {
   /// the robot and the environment.  This can be used to, e.g., add
   /// additional elements into the world before calling Finalize().
   const multibody::multibody_plant::MultibodyPlant<T>& get_multibody_plant()
-  const {
+      const {
     return *plant_;
   }
 
@@ -218,10 +220,14 @@ class ManipulationStation : public systems::Diagram<T> {
   /// Convenience method for setting the velocity of the Schunk WSG.
   void SetWsgVelocity(const T& v, systems::Context<T>* station_context) const;
 
-  /// Get the pose of the RGB-D cameras mounted on the station in the world
-  /// frame.
-  // TODO(russt): Get camera parameters/poses/ids from a config file.
-  static Eigen::Isometry3d get_camera_pose(int camera_number);
+  /// Get the camera poses.
+  const std::map<std::string, math::RigidTransform<double>>&
+  get_camera_poses_in_world() const {
+    return camera_poses_in_world_;
+  }
+
+  /// Get the camera names / unique ids.
+  std::vector<std::string> get_camera_names() const;
 
  private:
   // These are only valid until Finalize() is called.
@@ -236,6 +242,8 @@ class ManipulationStation : public systems::Diagram<T> {
 
   multibody::ModelInstanceIndex iiwa_model_;
   multibody::ModelInstanceIndex wsg_model_;
+
+  std::map<std::string, math::RigidTransform<double>> camera_poses_in_world_;
 };
 
 }  // namespace manipulation_station

@@ -26,29 +26,29 @@ PYBIND11_MODULE(api, m) {
 
   // TODO(m-chaturvedi) Add doc when typedefs are parsed (#9599)
   py::class_<RoadGeometryId>(m, "RoadGeometryId")
-      .def(py::init<std::string>(), doc.RoadGeometry.ctor.doc_3)
+      .def(py::init<std::string>(), doc.RoadGeometry.ctor.doc_0args)
       .def("string", &RoadGeometryId::string, py_reference_internal);
 
   py::class_<GeoPosition>(m, "GeoPosition", doc.GeoPositionT.doc)
       .def(py::init<double, double, double>(), py::arg("x"), py::arg("y"),
-           py::arg("z"), doc.GeoPositionT.ctor.doc_4)
+           py::arg("z"), doc.GeoPositionT.ctor.doc_3args)
       .def("xyz", &GeoPosition::xyz, py_reference_internal,
            doc.GeoPositionT.xyz.doc);
 
   py::class_<LanePosition>(m, "LanePosition", doc.LanePositionT.doc)
       .def(py::init<double, double, double>(), py::arg("s"), py::arg("r"),
-           py::arg("h"), doc.LanePositionT.ctor.doc_4)
+           py::arg("h"), doc.LanePositionT.ctor.doc_3args)
       .def("srh", &LanePosition::srh, py_reference_internal,
            doc.LanePositionT.srh.doc);
 
   py::class_<RoadPosition> road_position(m, "RoadPosition",
                                          doc.RoadPosition.doc);
   road_position  // BR
-      .def(py::init<>(), doc.RoadPosition.ctor.doc)
+      .def(py::init<>(), doc.RoadPosition.ctor.doc_0args)
       .def(py::init<const Lane*, const LanePosition&>(), py::arg("lane"),
            py::arg("pos"),
            // Keep alive, reference: `self` keeps `Lane*` alive.
-           py::keep_alive<1, 2>(), doc.RoadPosition.ctor.doc_2)
+           py::keep_alive<1, 2>(), doc.RoadPosition.ctor.doc_2args)
       .def_readwrite("pos", &RoadPosition::pos, doc.RoadPosition.pos.doc);
   // TODO(m-chaturvedi) Add doc when typedefs are parsed (#9599)
   DefReadWriteKeepAlive(&road_position, "lane", &RoadPosition::lane);

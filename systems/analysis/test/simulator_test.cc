@@ -962,8 +962,8 @@ class UnrestrictedUpdater : public LeafSystem<double> {
     const double inf = std::numeric_limits<double>::infinity();
     *time = (context.get_time() < t_upd_) ? t_upd_ : inf;
     UnrestrictedUpdateEvent<double> event(
-        Event<double>::TriggerType::kPeriodic);
-    event.add_to_composite(event_info);
+        TriggerType::kPeriodic);
+    event.AddToComposite(event_info);
   }
 
   void DoCalcUnrestrictedUpdate(
@@ -1479,18 +1479,18 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
     }
 
     void AddPerStepPublishEvent() {
-      PublishEvent<double> event(Event<double>::TriggerType::kPerStep);
+      PublishEvent<double> event(TriggerType::kPerStep);
       this->DeclarePerStepEvent(event);
     }
 
     void AddPerStepDiscreteUpdateEvent() {
-      DiscreteUpdateEvent<double> event(Event<double>::TriggerType::kPerStep);
+      DiscreteUpdateEvent<double> event(TriggerType::kPerStep);
       this->DeclarePerStepEvent(event);
     }
 
     void AddPerStepUnrestrictedUpdateEvent() {
       UnrestrictedUpdateEvent<double> event(
-          Event<double>::TriggerType::kPerStep);
+          TriggerType::kPerStep);
       this->DeclarePerStepEvent(event);
     }
 
@@ -1599,20 +1599,20 @@ GTEST_TEST(SimulatorTest, Initialization) {
    public:
     InitializationTestSystem() {
       PublishEvent<double> pub_event(
-          Event<double>::TriggerType::kInitialization,
+          TriggerType::kInitialization,
           std::bind(&InitializationTestSystem::InitPublish, this,
                     std::placeholders::_1, std::placeholders::_2));
       DeclareInitializationEvent(pub_event);
 
       DeclareInitializationEvent(DiscreteUpdateEvent<double>(
-          Event<double>::TriggerType::kInitialization));
+          TriggerType::kInitialization));
       DeclareInitializationEvent(UnrestrictedUpdateEvent<double>(
-          Event<double>::TriggerType::kInitialization));
+          TriggerType::kInitialization));
 
       DeclarePeriodicDiscreteUpdate(0.1);
       DeclarePerStepEvent<UnrestrictedUpdateEvent<double>>(
           UnrestrictedUpdateEvent<double>(
-              Event<double>::TriggerType::kPerStep));
+              TriggerType::kPerStep));
     }
 
     bool get_pub_init() const { return pub_init_; }
@@ -1624,7 +1624,7 @@ GTEST_TEST(SimulatorTest, Initialization) {
                      const PublishEvent<double>& event) const {
       EXPECT_EQ(context.get_time(), 0);
       EXPECT_EQ(event.get_trigger_type(),
-                Event<double>::TriggerType::kInitialization);
+                TriggerType::kInitialization);
       pub_init_ = true;
     }
 
@@ -1634,7 +1634,7 @@ GTEST_TEST(SimulatorTest, Initialization) {
         DiscreteValues<double>*) const final {
       EXPECT_EQ(events.size(), 1);
       if (events.front()->get_trigger_type() ==
-          Event<double>::TriggerType::kInitialization) {
+          TriggerType::kInitialization) {
         EXPECT_EQ(context.get_time(), 0);
         dis_update_init_ = true;
       } else {
@@ -1648,7 +1648,7 @@ GTEST_TEST(SimulatorTest, Initialization) {
         State<double>*) const final {
       EXPECT_EQ(events.size(), 1);
       if (events.front()->get_trigger_type() ==
-          Event<double>::TriggerType::kInitialization) {
+          TriggerType::kInitialization) {
         EXPECT_EQ(context.get_time(), 0);
         unres_update_init_ = true;
       } else {

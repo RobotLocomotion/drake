@@ -10,6 +10,7 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/sensors/image_to_lcm_image_array_t.h"
 
 namespace drake {
 namespace examples {
@@ -49,6 +50,25 @@ int do_main(int argc, char* argv[]) {
       &builder, station->get_mutable_multibody_plant(),
       station->GetOutputPort("contact_results"));
 
+  auto image_to_lcm_image_array =
+      builder.template AddSystem<systems::sensors::ImageToLcmImageArrayT>();
+  image_to_lcm_image_array->set_name("converter");
+  for (const auto& name : station->get_camera_names()) {
+    const auto& cam_port =
+        image_to_lcm_image_array
+            ->DeclareImageInputPort<systems::sensors::PixelType::kRgba8U>(
+                "camera_" + name);
+    builder.Connect(station->GetOutputPort("camera_" + name + "_rgb_image"),
+                    cam_port);
+  }
+  auto image_array_lcm_publisher = builder.template AddSystem(
+      systems::lcm::LcmPublisherSystem::Make<robotlocomotion::image_array_t>(
+          "DRAKE_RGBD_CAMERA_IMAGES", nullptr));
+  image_array_lcm_publisher->set_name("rgbd_publisher");
+  image_array_lcm_publisher->set_publish_period(1. / 10 /* 10 fps */);
+  builder.Connect(image_to_lcm_image_array->image_array_t_msg_output_port(),
+                  image_array_lcm_publisher->get_input_port());
+
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
@@ -84,10 +104,9 @@ int do_main(int argc, char* argv[]) {
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
   pose.translation() = Eigen::Vector3d(.6, 0, 0);
   station->get_multibody_plant().tree().SetFreeBodyPoseOrThrow(
-      station->get_multibody_plant().GetBodyByName("base_link",
-                                                           object),
-      pose, &station->GetMutableSubsystemContext(
-          station->get_multibody_plant(), &station_context));
+      station->get_multibody_plant().GetBodyByName("base_link", object), pose,
+      &station->GetMutableSubsystemContext(station->get_multibody_plant(),
+                                           &station_context));
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();

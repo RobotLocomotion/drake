@@ -32,7 +32,8 @@ class TestMeshcat(unittest.TestCase):
             scene_graph.get_source_pose_port(cart_pole.get_source_id()))
 
         visualizer = builder.AddSystem(MeshcatVisualizer(scene_graph,
-                                                         zmq_url=None))
+                                                         zmq_url=None,
+                                                         open_browser=False))
         builder.Connect(scene_graph.get_pose_bundle_output_port(),
                         visualizer.get_input_port(0))
 
@@ -73,7 +74,8 @@ class TestMeshcat(unittest.TestCase):
             scene_graph.get_source_pose_port(kuka.get_source_id()))
 
         visualizer = builder.AddSystem(MeshcatVisualizer(scene_graph,
-                                                         zmq_url=None))
+                                                         zmq_url=None,
+                                                         open_browser=False))
         builder.Connect(scene_graph.get_pose_bundle_output_port(),
                         visualizer.get_input_port(0))
 

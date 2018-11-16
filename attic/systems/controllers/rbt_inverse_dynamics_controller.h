@@ -1,27 +1,23 @@
 #pragma once
 
 #include <memory>
-#include <stdexcept>
-#include <string>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/systems/controllers/inverse_dynamics.h"
 #include "drake/systems/controllers/pid_controller.h"
+#include "drake/systems/controllers/rbt_inverse_dynamics.h"
 #include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/framework/diagram.h"
 
-#ifndef DRAKE_DOXYGEN_CXX
-// Forward declaration because we only need the type name for deprecation
-// purposes; we never call any methods on an RBT.
+// Forward declaration keeps us from including RBT headers that significantly
+// slow compilation.
 template <class T>
 class RigidBodyTree;
-#endif
 
 namespace drake {
 namespace systems {
 namespace controllers {
+namespace rbt {  // Extra namespace to de-conflict vs the non-attic classname.
 
 /**
  * A state feedback controller that uses a PidController to generate desired
@@ -62,48 +58,23 @@ class InverseDynamicsController : public Diagram<T>,
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamicsController)
 
-#ifndef DRAKE_DOXYGEN_CXX
-  // TODO(jwnimmer-tri) Remove these stubs on or about 2019-03-01.
-  // Remember to remove the forward declaration above at the same time.
-  DRAKE_DEPRECATED(
-      "Inverse dynamics for RigidBodyTree no longer uses this class; for new "
-      "instructions, see https://github.com/RobotLocomotion/drake/pull/9987")
-  InverseDynamicsController(std::unique_ptr<RigidBodyTree<T>>,
-                            const VectorX<double>&, const VectorX<double>&,
-                            const VectorX<double>&, bool) {
-    throw std::runtime_error(
-        "Inverse dynamics for RigidBodyTree no longer uses this class; for new "
-        "instructions, see https://github.com/RobotLocomotion/drake/pull/9987");
-  }
-#endif
-
   /**
-   * Constructs an inverse dynamics controller for the given `plant` model.
-   * The %InverseDynamicsController holds an internal, non-owned reference to
-   * the MultibodyPlant object so you must ensure that `plant` has a longer
-   * lifetime than `this` %InverseDynamicsController.
-   * @param plant The model of the plant for control.
+   * Constructs the controller that takes ownership of a given RigidBodyTree
+   * unique pointer.
+   * @param robot Unique pointer whose ownership will be transferred to this
+   * instance.
    * @param kp Position gain.
    * @param ki Integral gain.
    * @param kd Velocity gain.
    * @param has_reference_acceleration If true, there is an extra BasicVector
    * input port for `vd*`. If false, `vd*` is treated as zero, and no extra
    * input port is declared.
-   * @pre `plant` has been finalized (plant.is_finalized() returns `true`).
-   * @throws std::exception if
-   *  - The plant is not finalized (see MultibodyPlant::Finalize()).
-   *  - The number of generalized velocities is not equal to the number of
-   *    generalized positions.
-   *  - The model is not fully actuated.
-   *  - Vector kp, ki and kd do not all have the same size equal to the number
-   *    of generalized positions.
    */
-  InverseDynamicsController(
-      const multibody::multibody_plant::MultibodyPlant<T>& plant,
-      const VectorX<double>& kp,
-      const VectorX<double>& ki,
-      const VectorX<double>& kd,
-      bool has_reference_acceleration);
+  InverseDynamicsController(std::unique_ptr<RigidBodyTree<T>> robot,
+                            const VectorX<double>& kp,
+                            const VectorX<double>& ki,
+                            const VectorX<double>& kd,
+                            bool has_reference_acceleration);
 
   ~InverseDynamicsController() override;
 
@@ -144,42 +115,27 @@ class InverseDynamicsController : public Diagram<T>,
     return this->get_output_port(output_port_index_control_);
   }
 
-#ifndef DRAKE_DOXYGEN_CXX
-  DRAKE_DEPRECATED(
-      "Inverse dynamics for RigidBodyTree no longer uses this class; for new "
-      "instructions, see https://github.com/RobotLocomotion/drake/pull/9987")
+  /**
+   * Returns a constant reference to the RigidBodyTree used for control.
+   */
+  DRAKE_DEPRECATED("Please use get_rigid_body_tree_for_control().")
   const RigidBodyTree<T>& get_robot_for_control() const {
-    throw std::runtime_error(
-        "Inverse dynamics for RigidBodyTree no longer uses this class; for new "
-        "instructions, see https://github.com/RobotLocomotion/drake/pull/9987");
+    return *rigid_body_tree_for_control_;
   }
-
-  DRAKE_DEPRECATED(
-      "Inverse dynamics for RigidBodyTree no longer uses this class; for new "
-      "instructions, see https://github.com/RobotLocomotion/drake/pull/9987")
-  const RigidBodyTree<T>* get_rigid_body_tree_for_control() {
-    throw std::runtime_error(
-        "Inverse dynamics for RigidBodyTree no longer uses this class; for new "
-        "instructions, see https://github.com/RobotLocomotion/drake/pull/9987");
-  }
-#endif
 
   /**
-   * Returns a constant pointer to the MultibodyPlant used for control.
+   * Returns a pointer to the const RigidBodyTree used for control.
    */
-  const multibody::multibody_plant::MultibodyPlant<T>*
-      get_multibody_plant_for_control() const {
-    return multibody_plant_for_control_;
+  const RigidBodyTree<T>* get_rigid_body_tree_for_control() const {
+    return rigid_body_tree_for_control_.get();
   }
 
  private:
   void SetUp(const VectorX<double>& kp, const VectorX<double>& ki,
-      const VectorX<double>& kd,
-      const controllers::InverseDynamics<T>& inverse_dynamics,
+      const VectorX<double>& kd, const InverseDynamics<T>& inverse_dynamics,
       DiagramBuilder<T>* diagram_builder);
 
-  const multibody::multibody_plant::MultibodyPlant<T>*
-      multibody_plant_for_control_{nullptr};
+  std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_for_control_;
   PidController<T>* pid_{nullptr};
   const bool has_reference_acceleration_{false};
   int input_port_index_estimated_state_{-1};
@@ -188,6 +144,7 @@ class InverseDynamicsController : public Diagram<T>,
   int output_port_index_control_{-1};
 };
 
+}  // namespace rbt
 }  // namespace controllers
 }  // namespace systems
 }  // namespace drake
