@@ -5,7 +5,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"
-#include "drake/math/rotation_matrix.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
 namespace drake {
@@ -173,10 +173,14 @@ Isometry3<T> QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerTransform(
     const MultibodyTreeContext<T>& context) const {
   const auto& q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == kNq);
-  Isometry3<T> X_FM = Isometry3<T>::Identity();
-  X_FM.linear() = math::quat2rotmat(q.template head<4>());  // R_FM
-  X_FM.translation() = q.template tail<3>();  // p_FM
-  return X_FM;
+
+  // The first 4 elements in q contain a quaternion, ordered as w, x, y, z.
+  // The last 3 elements in q contain position from Fo to Mo.
+  const Vector4<T> wxyz(q.template head<4>());
+  const Vector3<T> p_FM = q.template tail<3>();  // position from Fo to Mo.
+  Eigen::Quaternion<T> quaternion_FM(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
+  const math::RigidTransform<T> X_FM(quaternion_FM, p_FM);
+  return X_FM.GetAsIsometry3();
 }
 
 template <typename T>
