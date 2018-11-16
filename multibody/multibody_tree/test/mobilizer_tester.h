@@ -15,7 +15,8 @@ namespace drake {
 namespace multibody {
 namespace multibody_tree {
 
-// Fixture to setup a simple MBT model containing a revolute mobilizer.
+// Helper fixture to setup a simple MBT model containing a single body
+// connected to the world by a mobilizer.
 class MobilizerTester : public ::testing::Test {
  public:
   // Creates a simple model consisting of a single body with a
