@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/primitives/discrete_derivative.h"
 
 namespace drake {
 namespace manipulation {
@@ -30,10 +31,87 @@ namespace schunk_wsg {
 /// and another to implement the controller (opening/closing the fingers):
 ///   -f₀+f₁ = sat(kp_command*(q_d + q₀ - q₁) + kd_command*(v_d + v₀ - v₁)),
 /// where sat() saturates the command to be in the range [-force_limit,
-/// force_limit], and v_d is estimated from q_d via a discrete-time derivative:
-///   v_d[n] = (q_d[n] - q_d[n-1])/h,
-/// where h is the time_step. The expectation is that
+/// force_limit].  The expectation is that
 ///   kp_constraint ≫ kp_command.
+///
+/// @system{ SchunkWSGPdController,
+///   @input_port{desired_state}
+///   @input_port{force_limit}
+///   @input_port{state},
+///   @output_port{generalized_force}
+///   @output_port{grip_force} }
+///
+/// The desired_state is a BasicVector<double> of size 2 (position and
+/// velocity of the distance between the fingers).  The force_limit is a
+/// scalar (BasicVector<double> of size 1).  The state is a
+/// BasicVector<double> of size 4 (positions and velocities of the two
+/// fingers).  The output generalized_force is a BasicVector<double> of size
+/// 2 (generalized force inputs to the two fingers).  The output grip_force is
+/// a scalar surrogate for the force measurement from the driver,
+/// f = abs(f₀-f₁) which, like the gripper itself, only reports a positive
+/// force.
+///
+class SchunkWsgPdController : public systems::LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPdController)
+
+  /// Initialize the controller.  The gain parameters are set based
+  /// limited tuning in simulation with a kuka picking up small objects.
+  // Note: These default parameter values came from the previous version of
+  // the controller, except that kp_command is decreased by 10x.  Setting
+  // kd_constraint = 50.0 resulted in some numerical instability in existing
+  // kuka tests.  They could be tuned in better with more simulation effort.
+  SchunkWsgPdController(double kp_command = 200.0, double kd_command = 5.0,
+                        double kp_constraint = 2000.0,
+                        double kd_constraint = 5.0);
+
+  const systems::InputPort<double>& get_desired_state_input_port() const {
+    return get_input_port(desired_state_input_port_);
+  }
+
+  const systems::InputPort<double>& get_force_limit_input_port() const {
+    return get_input_port(force_limit_input_port_);
+  }
+
+  const systems::InputPort<double>& get_state_input_port() const {
+    return get_input_port(state_input_port_);
+  }
+
+  const systems::OutputPort<double>& get_generalized_force_output_port() const {
+    return get_output_port(generalized_force_output_port_);
+  }
+
+  const systems::OutputPort<double>& get_grip_force_output_port() const {
+    return get_output_port(grip_force_output_port_);
+  }
+
+ private:
+  Eigen::Vector2d CalcGeneralizedForce(
+      const systems::Context<double>& context) const;
+
+  void CalcGeneralizedForceOutput(
+      const systems::Context<double>& context,
+      systems::BasicVector<double>* output_vector) const;
+
+  void CalcGripForceOutput(const systems::Context<double>& context,
+                           systems::BasicVector<double>* output_vector) const;
+
+  const double kp_command_;
+  const double kd_command_;
+  const double kp_constraint_;
+  const double kd_constraint_;
+
+  systems::InputPortIndex desired_state_input_port_{};
+  systems::InputPortIndex force_limit_input_port_{};
+  systems::InputPortIndex state_input_port_{};
+  systems::OutputPortIndex generalized_force_output_port_{};
+  systems::OutputPortIndex grip_force_output_port_{};
+};
+
+/// This class implements a controller for a Schunk WSG gripper in position
+/// control mode adding a discrete-derivative to estimate the desired
+/// velocity from the desired position commands.  It is a thin wrapper
+/// around SchunkWsgPdController.
 ///
 /// @system{ SchunkWSGPositionController,
 ///   @input_port{desired_position}
@@ -42,30 +120,25 @@ namespace schunk_wsg {
 ///   @output_port{generalized_force}
 ///   @output_port{grip_force} }
 ///
-/// The desired_position and force_limit are scalars (BasicVector<double> of
-/// size 1).  The state is a BasicVector<double> of size 4 (positions and
-/// velocities of the two fingers).  The output generalized_force is a
-/// BasicVector<double> of size 2 (generalized force inputs to the two
-/// fingers).  The output grip_force is a scalar surrogate for the force
-/// measurement from the driver, f = abs(f₀-f₁) which, like the gripper
-/// itself, only reports a positive force.
-///
-class SchunkWsgPositionController : public systems::LeafSystem<double> {
+/// @see SchunkWsgPdController
+class SchunkWsgPositionController : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPositionController)
 
   /// Initialize the controller.  The default @p time_step is set to match
   /// the update rate of the wsg firmware.  The gain parameters are set based
   /// limited tuning in simulation with a kuka picking up small objects.
-  // Note: These default parameter values came from the previous version of
-  // the controller, except that kp_command is decreased by 10x.  Setting
-  // kd_constraint = 50.0 resulted in some numerical instability in existing
-  // kuka tests.  They could be tuned in better with more simulation effort.
+  /// @see SchunkWsgPdController::SchunkWsgPdController()
   SchunkWsgPositionController(double time_step = 0.05,
                               double kp_command = 200.0,
                               double kd_command = 5.0,
                               double kp_constraint = 2000.0,
                               double kd_constraint = 5.0);
+
+  // The controller stores the last commanded desired position as state.
+  // This is a helper method to reset that state.
+  void set_initial_position(systems::Context<double>* context,
+                                    double desired_position) const;
 
   const systems::InputPort<double>& get_desired_position_input_port() const {
     return get_input_port(desired_position_input_port_);
@@ -87,35 +160,9 @@ class SchunkWsgPositionController : public systems::LeafSystem<double> {
     return get_output_port(grip_force_output_port_);
   }
 
-  // The controller stores the last commanded desired position as state.
-  // This is a helper method to reset that state.
-  void set_desired_position_history(double desired_position,
-                                    systems::Context<double>* context) const {
-    context->get_mutable_discrete_state_vector().SetAtIndex(0,
-                                                            desired_position);
-  }
-
  private:
-  Eigen::Vector2d CalcGeneralizedForce(
-      const systems::Context<double>& context) const;
-
-  void CalcGeneralizedForceOutput(
-      const systems::Context<double>& context,
-      systems::BasicVector<double>* output_vector) const;
-
-  void CalcGripForceOutput(const systems::Context<double>& context,
-                           systems::BasicVector<double>* output_vector) const;
-
-  void DoCalcDiscreteVariableUpdates(
-      const systems::Context<double>& context,
-      const std::vector<const systems::DiscreteUpdateEvent<double>*>& events,
-      systems::DiscreteValues<double>* updates) const;
-
-  const double time_step_;
-  const double kp_command_;
-  const double kd_command_;
-  const double kp_constraint_;
-  const double kd_constraint_;
+  systems::StateInterpolatorWithDiscreteDerivative<double>*
+      state_interpolator_;
 
   systems::InputPortIndex desired_position_input_port_{};
   systems::InputPortIndex force_limit_input_port_{};

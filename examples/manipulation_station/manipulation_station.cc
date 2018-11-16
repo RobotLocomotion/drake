@@ -19,6 +19,7 @@
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/discrete_derivative.h"
 #include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/primitives/matrix_gain.h"
 #include "drake/systems/primitives/pass_through.h"
@@ -181,6 +182,8 @@ ManipulationStation<T>::ManipulationStation(double time_step,
 
   plant_->template AddForceElement<multibody::UniformGravityFieldElement>(
       -9.81 * Vector3d::UnitZ());
+  plant_->set_name("plant");
+  scene_graph_->set_name("scene_graph");
 
   // Build the controller's version of the plant, which only contains the
   // IIWA and the equivalent inertia of the gripper.
@@ -207,6 +210,7 @@ ManipulationStation<T>::ManipulationStation(double time_step,
   owned_controller_plant_
       ->template AddForceElement<multibody::UniformGravityFieldElement>(
           -9.81 * Vector3d::UnitZ());
+  owned_controller_plant_->set_name("controller_plant");
 
   internal::get_camera_poses(&camera_poses_in_world_);
 }
@@ -300,25 +304,10 @@ void ManipulationStation<T>::Finalize() {
                     plant_->get_actuation_input_port(iiwa_model_));
 
     // Approximate desired state command from a discrete derivative of the
-    // position command input port.  This is implemented as a LinearSystem
-    // with state variables to store the last position command.
-    //    x[n+1] = u[n]
-    //    y[n] = [u[n]; (u[n] - x[n])/h]
-    // where u[n] is the positions, y[n] output the positions and
-    // velocities, and h is the timestep.
-    const double time_step = plant_->time_step();
-    MatrixXd C(2 * kNumDofIiwa, kNumDofIiwa), D(2 * kNumDofIiwa, kNumDofIiwa);
-    // clang-format off
-    C << MatrixXd::Zero(kNumDofIiwa, kNumDofIiwa),
-         -MatrixXd::Identity(kNumDofIiwa, kNumDofIiwa) / time_step;
-    D << MatrixXd::Identity(kNumDofIiwa, kNumDofIiwa),
-         MatrixXd::Identity(kNumDofIiwa, kNumDofIiwa) / time_step;
-    // clang-format on
-    auto desired_state_from_position =
-        builder.template AddSystem<systems::LinearSystem>(
-            MatrixXd::Zero(kNumDofIiwa, kNumDofIiwa),      // A = 0
-            MatrixXd::Identity(kNumDofIiwa, kNumDofIiwa),  // B = I
-            C, D, time_step);
+    // position command input port.
+    auto desired_state_from_position = builder.template AddSystem<
+        systems::StateInterpolatorWithDiscreteDerivative>(kNumDofIiwa,
+                                                          plant_->time_step());
     desired_state_from_position->set_name("desired_state_from_position");
     builder.Connect(desired_state_from_position->get_output_port(),
                     iiwa_controller->get_input_port_desired_state());
@@ -436,11 +425,13 @@ void ManipulationStation<T>::SetIiwaPosition(
   }
 
   // Set the position history in the state interpolator to match.
-  this->GetMutableSubsystemContext(
-          this->GetSubsystemByName("desired_state_from_position"),
-          station_context)
-      .get_mutable_discrete_state_vector()
-      .SetFromVector(q);
+  const auto& state_from_position =
+      dynamic_cast<
+          const systems::StateInterpolatorWithDiscreteDerivative<double>&>(this
+          ->GetSubsystemByName("desired_state_from_position"));
+  state_from_position.set_initial_position(
+      &this->GetMutableSubsystemContext(state_from_position, station_context),
+      q);
 }
 
 template <typename T>
@@ -530,8 +521,8 @@ void ManipulationStation<T>::SetWsgPosition(
   const auto& wsg_controller = dynamic_cast<
       const manipulation::schunk_wsg::SchunkWsgPositionController&>(
       this->GetSubsystemByName("wsg_controller"));
-  wsg_controller.set_desired_position_history(
-      q, &this->GetMutableSubsystemContext(wsg_controller, station_context));
+  wsg_controller.set_initial_position(
+      &this->GetMutableSubsystemContext(wsg_controller, station_context), q);
 }
 
 template <typename T>
@@ -552,8 +543,7 @@ void ManipulationStation<T>::SetWsgVelocity(
 }
 
 template <typename T>
-std::vector<std::string> ManipulationStation<T>::get_camera_names()
-const {
+std::vector<std::string> ManipulationStation<T>::get_camera_names() const {
   std::vector<std::string> names;
   names.reserve(camera_poses_in_world_.size());
   for (const auto& pose : camera_poses_in_world_) {

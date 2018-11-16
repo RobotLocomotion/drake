@@ -73,7 +73,7 @@ GTEST_TEST(DiscreteDerivativeTest, SetState) {
   // Setting the initial state to an arbitrary value results in the
   // derivative output being set to zero.
   auto context = deriv.CreateDefaultContext();
-  deriv.set_state(context.get(), Eigen::Vector2d(3.4, 4.4));
+  deriv.set_input_history(context.get(), Eigen::Vector2d(3.4, 4.4));
   EXPECT_TRUE(CompareMatrices(
       deriv.get_output_port().Eval<BasicVector<double>>(*context).get_value(),
       Vector2d::Zero()));
@@ -92,17 +92,28 @@ GTEST_TEST(StateInterpolatorWithDiscreteDerivativeTest, BasicTest) {
 
   auto context = position_to_state.CreateDefaultContext();
 
-  const Eigen::Vector2d position(0.123, 0.456);
+  const Eigen::Vector2d current_position(0.643, 0.821);
   context->FixInputPort(position_to_state.get_input_port().get_index(),
-                        position);
-  position_to_state.set_initial_position(context.get(), position);
+                        current_position);
 
+  // Use setter that zeros the initial velocity output:
+  const Eigen::Vector2d last_position(0.123, 0.456);
+  position_to_state.set_initial_position(context.get(), last_position);
   Eigen::Vector4d expected_state;
-  expected_state << position, Eigen::Vector2d::Zero();
+  expected_state << current_position, Eigen::Vector2d::Zero();
   EXPECT_TRUE(CompareMatrices(position_to_state.get_output_port()
                                   .Eval<BasicVector<double>>(*context)
                                   .get_value(),
                               expected_state));
+
+  // Use setter that specifies the initial velocity output:
+  const Eigen::Vector2d velocity(2.53, -6.2);
+  position_to_state.set_initial_state(context.get(), last_position, velocity);
+  expected_state << current_position, velocity;
+  EXPECT_TRUE(CompareMatrices(position_to_state.get_output_port()
+                                  .Eval<BasicVector<double>>(*context)
+                                  .get_value(),
+                              expected_state, 1e-14));
 }
 
 GTEST_TEST(StateInterpolatorWithDiscreteDerivativeTest, ScalarTypesTest) {
