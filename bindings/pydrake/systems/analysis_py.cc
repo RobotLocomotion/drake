@@ -60,7 +60,7 @@ PYBIND11_MODULE(analysis, m) {
              // Keep alive, reference: `self` keeps `System` alive.
              py::keep_alive<1, 2>(),
              // Keep alive, reference: `self` keeps `Context` alive.
-             py::keep_alive<1, 4>(), doc.RungeKutta2Integrator.ctor.doc_3);
+             py::keep_alive<1, 4>(), doc.RungeKutta2Integrator.ctor.doc_3args);
 
     DefineTemplateClassWithDefault<RungeKutta3Integrator<T>, IntegratorBase<T>>(
         m, "RungeKutta3Integrator", GetPyParam<T>(),
@@ -70,7 +70,7 @@ PYBIND11_MODULE(analysis, m) {
              // Keep alive, reference: `self` keeps `System` alive.
              py::keep_alive<1, 2>(),
              // Keep alive, reference: `self` keeps `Context` alive.
-             py::keep_alive<1, 3>(), doc.RungeKutta3Integrator.ctor.doc_3);
+             py::keep_alive<1, 3>(), doc.RungeKutta3Integrator.ctor.doc_2args);
 
     DefineTemplateClassWithDefault<Simulator<T>>(
         m, "Simulator", GetPyParam<T>(), doc.Simulator.doc)

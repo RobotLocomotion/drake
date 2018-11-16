@@ -365,9 +365,8 @@ Vector6d bodySpatialMotionPD(
   auto body_pose = r.relativeTransform(cache, 0, body_index);
   const auto& body_xyz = body_pose.translation();
   Vector3d body_xyz_task = T_world_to_task * body_xyz;
-  Vector4d body_quat =
-      drake::math::RotationMatrix<double>::ToQuaternionAsVector4(
-          body_pose.linear());
+  const Eigen::Quaterniond body_quat =
+      drake::math::RotationMatrix<double>::ToQuaternion(body_pose.linear());
   std::vector<int> v_indices;
   auto J_geometric =
       r.geometricJacobian(cache, 0, body_index, body_index, true, &v_indices);
@@ -376,9 +375,9 @@ Vector6d bodySpatialMotionPD(
     v_compact(i) = robot_state.qd(v_indices[i]);
   }
   Vector6d body_twist = J_geometric * v_compact;
-  Matrix3d R_body_to_world = drake::math::quat2rotmat(body_quat);
-  Matrix3d R_world_to_body = R_body_to_world.transpose();
-  Matrix3d R_body_to_task = T_world_to_task.linear() * R_body_to_world;
+  drake::math::RotationMatrixd R_body_to_world(body_quat);
+  drake::math::RotationMatrixd R_world_to_body = R_body_to_world.inverse();
+  Matrix3d R_body_to_task = T_world_to_task.linear() * R_body_to_world.matrix();
   Vector3d body_angular_vel =
       R_body_to_world *
       body_twist.head<3>();  // body_angular velocity in world frame
@@ -469,8 +468,10 @@ void evaluateXYZExpmapCubicSpline(
   }
 
   auto quat_autodiff = expmap2quat(expmap_autodiff);
-  Vector4d quat = autoDiffToValueMatrix(autoDiffToValueMatrix(quat_autodiff));
-  body_pose_des.linear() = drake::math::quat2rotmat(quat);
+  Vector4d wxyz = autoDiffToValueMatrix(autoDiffToValueMatrix(quat_autodiff));
+  const Eigen::Quaterniond quaternion(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
+  const drake::math::RotationMatrixd R(quaternion);
+  body_pose_des.linear() = R.matrix();
 
   // angular velocity and acceleration are computed from quaternion derivative
   // meaning of derivative vectors remains the same: first and second

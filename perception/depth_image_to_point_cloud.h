@@ -52,7 +52,8 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
   ///
   /// @param[in] camera_info The input camera info which is used for conversion.
   ///
-  /// @param[out] point_cloud The pointer of output point cloud.
+  /// @param[out] point_cloud A pointer to a valid, non nullptr, point
+  /// cloud of Eigen Matrix3Xf type.
   // TODO(kunimatsu-tri) Use drake::perception::PointCloud instead of
   // Eigen::Matrix3Xf and create new constants there instead of reusing
   // InvalidDepth.

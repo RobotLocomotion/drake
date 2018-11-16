@@ -147,7 +147,8 @@ def installed_headers_for_drake_deps(deps):
         for x in deps
         if (
             not x.startswith("@") and
-            not x.startswith("//drake/lcmtypes:")
+            not x.startswith("//drake/lcmtypes:") and
+            not x == "//:drake_shared_library"
         )
     ]
 
@@ -347,6 +348,7 @@ def drake_cc_library(
         clang_copts = [],
         gcc_copts = [],
         linkstatic = 1,
+        declare_installed_headers = 1,
         install_hdrs_exclude = [],
         **kwargs):
     """Creates a rule to declare a C++ library.
@@ -373,7 +375,7 @@ def drake_cc_library(
         srcs = srcs,
         deps = deps,
         copts = new_copts,
-        declare_installed_headers = 1,
+        declare_installed_headers = declare_installed_headers,
         **kwargs
     )
     _raw_drake_cc_library(
@@ -383,7 +385,7 @@ def drake_cc_library(
         deps = new_deps,
         copts = new_copts,
         linkstatic = linkstatic,
-        declare_installed_headers = 1,
+        declare_installed_headers = declare_installed_headers,
         install_hdrs_exclude = install_hdrs_exclude,
         **kwargs
     )

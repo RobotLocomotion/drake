@@ -50,6 +50,11 @@ For documenting block diagrams, consider using ascii art.  See, for instance,
 
 - http://asciiflow.com/
 
+The Emacs `ascii-art-to-unicode
+<https://elpa.gnu.org/packages/ascii-art-to-unicode.html>`_ package can make
+ascii-art block diagrams even prettier by replacing ``-``, ``|``, etc. with unicode
+`box-drawing characters <https://en.wikipedia.org/wiki/Box-drawing_character>`_.
+
 
 .. _doxygen-generation:
 

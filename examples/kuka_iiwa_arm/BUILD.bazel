@@ -31,10 +31,10 @@ drake_cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        "//attic/multibody:rigid_body_tree",
         "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/trajectories:piecewise_polynomial",
-        "//multibody:rigid_body_tree",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],
@@ -48,11 +48,11 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":iiwa_common",
+        "//attic/multibody:inverse_kinematics",
+        "//attic/multibody:rigid_body_tree",
         "//attic/multibody/rigid_body_plant:contact_results",
         "//common/trajectories:piecewise_polynomial",
         "//lcmtypes:iiwa",
-        "//multibody:inverse_kinematics",
-        "//multibody:rigid_body_tree",
         "//systems/framework:leaf_system",
     ],
 )
@@ -63,7 +63,7 @@ drake_cc_library(
     hdrs = ["oracular_state_estimator.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//manipulation/util:robot_state_msg_translator",
+        "//attic/manipulation/util:robot_state_msg_translator",
         "//systems/framework:leaf_system",
         "@lcmtypes_bot2_core",
     ],
@@ -80,7 +80,7 @@ drake_cc_library(
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
-        "//manipulation/planner:robot_plan_interpolator",
+        "//attic/manipulation/planner:robot_plan_interpolator",
         "//systems/framework:diagram_builder",
         "//systems/primitives:demultiplexer",
     ],
@@ -92,8 +92,8 @@ drake_cc_library(
     hdrs = ["kuka_torque_controller.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//multibody:rigid_body_tree",
-        "//systems/controllers:inverse_dynamics",
+        "//attic/multibody:rigid_body_tree",
+        "//attic/systems/controllers:rbt_inverse_dynamics",
         "//systems/controllers:pid_controller",
         "//systems/controllers:state_feedback_controller_interface",
         "//systems/framework:diagram_builder",
@@ -164,13 +164,13 @@ drake_cc_binary(
         ":iiwa_common",
         ":iiwa_lcm",
         ":kuka_torque_controller",
+        "//attic/manipulation/util:sim_diagram_builder",
+        "//attic/multibody:rigid_body_tree_construction",
         "//attic/multibody/rigid_body_plant:frame_visualizer",
+        "//attic/systems/controllers:rbt_inverse_dynamics_controller",
         "//common:text_logging_gflags",
         "//lcm",
-        "//manipulation/util:sim_diagram_builder",
-        "//multibody:rigid_body_tree_construction",
         "//systems/analysis",
-        "//systems/controllers:inverse_dynamics_controller",
         "//systems/controllers:state_feedback_controller_interface",
     ],
 )
@@ -199,10 +199,10 @@ drake_cc_binary(
     ],
     deps = [
         ":iiwa_common",
+        "//attic/manipulation/planner:constraint_relaxing_ik",
         "//attic/multibody/parsers",
         "//common:text_logging_gflags",
         "//lcmtypes:iiwa",
-        "//manipulation/planner:constraint_relaxing_ik",
         "//math:geometric_transform",
         "@lcm",
         "@lcmtypes_bot2_core",
@@ -231,8 +231,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":iiwa_lcm",
+        "//attic/manipulation/util:world_sim_tree_builder",
         "//common/test_utilities:eigen_matrix_compare",
-        "//manipulation/util:world_sim_tree_builder",
         "//systems/framework",
     ],
 )
@@ -245,9 +245,9 @@ drake_cc_googletest(
     deps = [
         ":iiwa_common",
         ":kuka_torque_controller",
+        "//attic/multibody:rigid_body_tree",
+        "//attic/multibody:rigid_body_tree_construction",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody:rigid_body_tree",
-        "//multibody:rigid_body_tree_construction",
     ],
 )
 

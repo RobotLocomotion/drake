@@ -18,6 +18,8 @@ from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (AbstractValue, BasicVector,
                                        DiagramBuilder, LeafSystem,
                                        PortDataType)
+from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
+from pydrake.systems.primitives import FirstOrderLowPassFilter
 from pydrake.util.eigen_geometry import Isometry3, AngleAxis
 
 
@@ -25,10 +27,8 @@ from pydrake.util.eigen_geometry import Isometry3, AngleAxis
 class EndEffectorTeleop(LeafSystem):
     def __init__(self):
         LeafSystem.__init__(self)
-        self._DeclareAbstractOutputPort("X_WE",
-                                        lambda: AbstractValue.Make(
-                                            Isometry3.Identity()),
-                                        self._DoCalcOutput)
+        self._DeclareVectorOutputPort("rpy_xyz", BasicVector(6),
+                                      self._DoCalcOutput)
 
         self._DeclarePeriodicPublish(0.1, 0.0)
 
@@ -101,12 +101,12 @@ class EndEffectorTeleop(LeafSystem):
         self.window.update()
 
     def _DoCalcOutput(self, context, output):
-        output.get_mutable_value().set_rotation(RollPitchYaw(self.roll.get(),
-                                                             self.pitch.get(),
-                                                             self.yaw.get()).
-                                                ToRotationMatrix().matrix())
-        output.get_mutable_value().set_translation([self.x.get(), self.y.get(),
-                                                    self.z.get()])
+        output.SetAtIndex(0, self.roll.get())
+        output.SetAtIndex(1, self.pitch.get())
+        output.SetAtIndex(2, self.yaw.get())
+        output.SetAtIndex(3, self.x.get())
+        output.SetAtIndex(4, self.y.get())
+        output.SetAtIndex(5, self.z.get())
 
 
 # TODO(russt): Clean this up and move it to C++.
@@ -141,7 +141,7 @@ class DifferentialIK(LeafSystem):
         # methods.
         self.robot_context = robot.CreateDefaultContext()
         # Confirm that all velocities are zero (they will not be reset below).
-        assert not self.robot.tree().get_multibody_state_vector(
+        assert not self.robot.tree().GetPositionsAndVelocities(
             self.robot_context)[-robot.num_velocities():].any()
 
         # Store the robot positions as state.
@@ -149,7 +149,8 @@ class DifferentialIK(LeafSystem):
         self._DeclarePeriodicDiscreteUpdate(time_step)
 
         # Desired pose of frame E in world frame.
-        self._DeclareAbstractInputPort("X_WE_desired")
+        self._DeclareInputPort("rpy_xyz_desired",
+                               PortDataType.kVectorValued, 6)
 
         # Provide the output as desired positions.
         self._DeclareVectorOutputPort("joint_position_desired", BasicVector(
@@ -159,7 +160,7 @@ class DifferentialIK(LeafSystem):
         context.get_mutable_discrete_state(0).SetFromVector(q)
 
     def ForwardKinematics(self, q):
-        x = self.robot.tree().get_mutable_multibody_state_vector(
+        x = self.robot.tree().GetMutablePositionsAndVelocities(
             self.robot_context)
         x[:robot.num_positions()] = q
         return self.robot.tree().EvalBodyPoseInWorld(
@@ -176,10 +177,12 @@ class DifferentialIK(LeafSystem):
 
     def _DoCalcDiscreteVariableUpdates(
             self, context, events, discrete_state):
-        X_WE_desired = self.EvalAbstractInput(context, 0).get_value()
+        rpy_xyz_desired = self.EvalVectorInput(context, 0).get_value()
+        X_WE_desired = RigidTransform(RollPitchYaw(rpy_xyz_desired[:3]),
+                                      rpy_xyz_desired[-3:]).GetAsIsometry3()
         q_last = context.get_discrete_state_vector().get_value()
 
-        x = self.robot.tree().get_mutable_multibody_state_vector(
+        x = self.robot.tree().GetMutablePositionsAndVelocities(
             self.robot_context)
         x[:robot.num_positions()] = q_last
         result = DoDifferentialInverseKinematics(self.robot,
@@ -210,8 +213,10 @@ parser.add_argument(
     "--hardware", action='store_true',
     help="Use the ManipulationStationHardwareInterface instead of an "
          "in-process simulation.")
-parser.add_argument("--test", action='store_true',
-                    help="Disable opening the gui window for testing.")
+parser.add_argument(
+    "--test", action='store_true',
+    help="Disable opening the gui window for testing.")
+MeshcatVisualizer.add_argparse_argument(parser)
 args = parser.parse_args()
 
 builder = DiagramBuilder()
@@ -230,6 +235,11 @@ else:
 
     ConnectDrakeVisualizer(builder, station.get_scene_graph(),
                            station.GetOutputPort("pose_bundle"))
+    if args.meshcat:
+        meshcat = builder.AddSystem(MeshcatVisualizer(
+            station.get_scene_graph(), zmq_url=args.meshcat))
+        builder.Connect(station.GetOutputPort("pose_bundle"),
+                        meshcat.get_input_port(0))
 
 robot = station.get_controller_plant()
 params = DifferentialInverseKinematicsParameters(robot.num_positions(),
@@ -253,9 +263,12 @@ builder.Connect(differential_ik.GetOutputPort("joint_position_desired"),
 teleop = builder.AddSystem(EndEffectorTeleop())
 if args.test:
     teleop.window.withdraw()  # Don't display the window when testing.
+filter = builder.AddSystem(FirstOrderLowPassFilter(time_constant=2.0,
+                                                   size=6))
 
-builder.Connect(teleop.get_output_port(0),
-                differential_ik.GetInputPort("X_WE_desired"))
+builder.Connect(teleop.get_output_port(0), filter.get_input_port(0))
+builder.Connect(filter.get_output_port(0),
+                differential_ik.GetInputPort("rpy_xyz_desired"))
 
 wsg_buttons = builder.AddSystem(SchunkWsgButtons(teleop.window))
 builder.Connect(wsg_buttons.GetOutputPort("position"), station.GetInputPort(
@@ -296,7 +309,13 @@ if not args.hardware:
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(
     station_context).get_value()
 differential_ik.parameters.set_nominal_joint_position(q0)
+
 teleop.SetPose(differential_ik.ForwardKinematics(q0))
+filter.set_initial_output_value(
+    diagram.GetMutableSubsystemContext(
+        filter, simulator.get_mutable_context()),
+    teleop.get_output_port(0).Eval(diagram.GetMutableSubsystemContext(
+        teleop, simulator.get_mutable_context())).get_value())
 differential_ik.SetPositions(diagram.GetMutableSubsystemContext(
     differential_ik, simulator.get_mutable_context()), q0)
 

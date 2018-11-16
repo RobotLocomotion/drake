@@ -19,7 +19,7 @@ PYBIND11_MODULE(mosek, m) {
 
   py::class_<MosekSolver>(m, "MosekSolver", solverinterface,
                           doc.MosekSolver.doc)
-      .def(py::init<>(), doc.MosekSolver.ctor.doc);
+      .def(py::init<>(), doc.MosekSolver.ctor.doc_0args);
 }
 
 }  // namespace pydrake

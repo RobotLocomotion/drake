@@ -1,5 +1,13 @@
 /// @file
 /// Utilities for arithmetic on quaternions.
+// @internal Eigen's 4-argument Quaternion constructor uses (w, x, y, z) order.
+// HOWEVER: If you use Eigen's 1-argument Quaternion constructor, where the one
+// argument is a 4-element Vector, the elements must be in (x, y, z, w) order!
+// So, the following two calls will give you the SAME quaternion:
+// Quaternion<double>(q(0), q(1), q(2), q(3));
+// Quaternion<double>(Vector4d(q(3), q(0), q(1), q(2)))
+// which is gross and will cause you much pain.  See:
+// http://eigen.tuxfamily.org/dox/classEigen_1_1Quaternion.html#a91b6ea2cac13ab2d33b6e74818ee1490
 
 #pragma once
 
@@ -14,27 +22,6 @@
 
 namespace drake {
 namespace math {
-
-// Eigen's 4-argument Quaternion constructor uses (w, x, y, z) ordering.
-// HOWEVER: If you use Eigen's 1-argument Quaternion constructor, where the one
-// argument is a 4-element Vector, the elements must be in (x, y, z, w) order!
-// So, the following two calls will give you the SAME quaternion:
-// Quaternion<double>(q(0), q(1), q(2), q(3));
-// Quaternion<double>(Vector4d(q(3), q(0), q(1), q(2)))
-// which is gross and will cause you much pain.  See:
-// http://eigen.tuxfamily.org/dox/classEigen_1_1Quaternion.html#a91b6ea2cac13ab2d33b6e74818ee1490
-//
-// This method takes a nice, normal (w, x, y, z) order vector and gives you
-// the Quaternion you expect.
-// (Deprecated), use @ref Eigen::Quaternion(w, x, y, z).
-// TODO(mitiguy) Delete this code that was deprecated on May 1, 2018.
-template <typename Derived>
-DRAKE_DEPRECATED("This code is deprecated.  Use Eigen's Quaternion constructor "
-                 "Quaternion(w, x, y, z) -- not a home-brew 4-element vectors")
-Eigen::Quaternion<typename Derived::Scalar> quat2eigenQuaternion(
-    const Eigen::MatrixBase<Derived>& q) {
-  return Eigen::Quaternion<typename Derived::Scalar>(q(0), q(1), q(2), q(3));
-}
 
 /**
  * Returns a unit quaternion that represents the same orientation as `q1`,
@@ -184,15 +171,13 @@ Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
   return ret;
 }
 
-// TODO(mitiguy) change all calling sites to this function.
-/**
- * Computes the rotation matrix from quaternion representation.
- * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
- * @param quaternion 4 x 1 unit length quaternion, @p q=[w;x;y;z]
- * @return 3 x 3 rotation matrix
- * (Deprecated), use @ref math::RotationMatrix(quaternion).
- */
+// Computes 3x3 matrix from associated quaternion representation.
+// @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
+// @param[in] quaternion 4 x 1 unit length quaternion, i.e., [w; x; y; z].
+// TODO(mitiguy) Delete this deprecated code after February 5, 2019.
 template <typename Derived>
+DRAKE_DEPRECATED("Use  math::RotationMatrix(Eigen::Quaternion). "
+                 "Code will be deleted after February 5, 2019.")
 Matrix3<typename Derived::Scalar> quat2rotmat(
     const Eigen::MatrixBase<Derived>& v) {
   const Eigen::Quaternion<typename Derived::Scalar> q(v(0), v(1), v(2), v(3));

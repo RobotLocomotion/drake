@@ -13,7 +13,7 @@ load(
     "drake_cc_vector_gen_library",
 )
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
 
 drake_cc_vector_gen_library(
     name = "compass_gait_vector_types",
@@ -30,6 +30,7 @@ drake_cc_library(
     hdrs = [
         "compass_gait.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":compass_gait_vector_types",
         "//common:default_scalars",
@@ -46,12 +47,12 @@ drake_cc_binary(
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         ":compass_gait",
+        "//attic/multibody:rigid_body_tree",
         "//attic/multibody/parsers",
         "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//common:find_resource",
         "//lcm",
         "//math:geometric_transform",
-        "//multibody:rigid_body_tree",
         "//systems/analysis:simulator",
         "@gflags",
     ],

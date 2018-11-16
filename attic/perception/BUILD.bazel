@@ -24,9 +24,9 @@ drake_cc_library(
     srcs = ["transform_point_cloud.cc"],
     hdrs = ["transform_point_cloud.h"],
     deps = [
+        "//attic/multibody:rigid_body_tree",
         "//common:essential",
         "//math:geometric_transform",
-        "//multibody:rigid_body_tree",
         "//perception:point_cloud",
         "//systems/framework",
     ],
@@ -37,8 +37,8 @@ drake_cc_library(
     srcs = ["rigid_body_point_cloud_filter.cc"],
     hdrs = ["rigid_body_point_cloud_filter.h"],
     deps = [
+        "//attic/multibody:rigid_body_tree",
         "//common:essential",
-        "//multibody:rigid_body_tree",
         "//perception:point_cloud",
         "//systems/framework",
     ],
@@ -49,8 +49,8 @@ drake_cc_googletest(
     srcs = ["test/rigid_body_point_cloud_filter_test.cc"],
     deps = [
         ":rigid_body_point_cloud_filter",
+        "//attic/multibody:rigid_body_tree",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody:rigid_body_tree",
         "//perception:point_cloud",
     ],
 )

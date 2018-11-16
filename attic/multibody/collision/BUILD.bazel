@@ -136,11 +136,11 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":collision",
+        "//attic/multibody:rigid_body_tree",
         "//attic/multibody/joints",
         "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:expect_throws_message",
-        "//multibody:rigid_body_tree",
     ],
 )
 

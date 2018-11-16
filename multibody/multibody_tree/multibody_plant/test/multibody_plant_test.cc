@@ -1822,7 +1822,7 @@ class KukaArmTest : public ::testing::TestWithParam<double> {
 // for either a discrete or continuous multibody model.
 TEST_P(KukaArmTest, StateAccess) {
   // Set the state to x[i] = i for each i-th entry.
-  const VectorX<double> xc_expected = VectorX<double>::LinSpaced(
+  VectorX<double> xc_expected = VectorX<double>::LinSpaced(
       plant_->num_multibody_states() /* size */,
       1 /* first index */, plant_->num_multibody_states() /* last index */);
   SetState(xc_expected);
@@ -1833,14 +1833,111 @@ TEST_P(KukaArmTest, StateAccess) {
   // the context. Changes to state through the context can change the values
   // referenced by xc.
   Eigen::VectorBlock<const VectorX<double>> xc =
-      plant_->tree().get_multibody_state_vector(*context_);
+      plant_->GetPositionsAndVelocities(*context_);
   EXPECT_EQ(xc, xc_expected);
 
-  // Get a mutable state and modified it.
+  // Modify positions and change xc expected to reflect changes to positions.
+  for (int i = 0; i < plant_->num_positions(); ++i)
+    xc_expected[i] *= -1;
+  plant_->GetMutablePositions(context_.get()) =
+      xc_expected.head(plant_->num_positions());
+  EXPECT_EQ(plant_->GetPositions(*context_),
+            xc_expected.head(plant_->num_positions()));
+  EXPECT_EQ(xc, xc_expected);
+
+  // SetPositions() should yield the same result.
+  plant_->GetMutablePositions(context_.get()).setZero();
+  plant_->SetPositions(
+      context_.get(), xc_expected.head(plant_->num_positions()));
+  EXPECT_EQ(plant_->GetPositions(*context_),
+            xc_expected.head(plant_->num_positions()));
+
+  // Modify velocities and change xc_expected to reflect changes to velocities.
+  for (int i = 0; i < plant_->num_velocities(); ++i)
+    xc_expected[i + plant_->num_positions()] *= -1;
+  plant_->GetMutableVelocities(context_.get()) =
+      xc_expected.tail(plant_->num_velocities());
+  EXPECT_EQ(plant_->GetVelocities(*context_),
+            xc_expected.tail(plant_->num_velocities()));
+  EXPECT_EQ(xc, xc_expected);
+
+  // SetVelocities() should yield the same result.
+  plant_->GetMutableVelocities(context_.get()).setZero();
+  plant_->SetVelocities(
+      context_.get(), xc_expected.tail(plant_->num_velocities()));
+  EXPECT_EQ(plant_->GetVelocities(*context_),
+            xc_expected.tail(plant_->num_velocities()));
+  EXPECT_EQ(xc, xc_expected);
+
+  // Get a mutable state and modify it.
   // Note: xc above is referencing values stored in the context. Therefore
   // setting the entire state to zero changes the values referenced by xc.
-  plant_->tree().get_mutable_multibody_state_vector(context_.get()).setZero();
+  plant_->GetMutablePositionsAndVelocities(context_.get()).setZero();
   EXPECT_EQ(xc, VectorX<double>::Zero(plant_->num_multibody_states()));
+  plant_->SetPositionsAndVelocities(context_.get(), xc_expected);
+  EXPECT_EQ(xc, xc_expected);
+}
+
+TEST_P(KukaArmTest, InstanceStateAccess) {
+  // Redo the setup process, now with two Iiwa's.
+  const char kSdfPath[] =
+      "drake/manipulation/models/iiwa_description/sdf/"
+          "iiwa14_no_collision.sdf";
+  plant_ = std::make_unique<MultibodyPlant<double>>(this->GetParam());
+  multibody::ModelInstanceIndex arm1 = AddModelFromSdfFile(
+      FindResourceOrThrow(kSdfPath), "arm1", plant_.get());
+  multibody::ModelInstanceIndex arm2 = AddModelFromSdfFile(
+      FindResourceOrThrow(kSdfPath), "arm2", plant_.get());
+  plant_->WeldFrames(plant_->world_frame(),
+                     plant_->GetFrameByName("iiwa_link_0", arm1));
+  plant_->WeldFrames(plant_->world_frame(),
+                     plant_->GetFrameByName("iiwa_link_0", arm2));
+  plant_->Finalize();
+
+  EXPECT_EQ(plant_->num_positions(), 14);
+  EXPECT_EQ(plant_->num_velocities(), 14);
+
+  // Re-create the context.
+  context_ = plant_->CreateDefaultContext();
+
+  // Prepare to set the positions, velocity, and state of one model instance.
+  VectorX<double> q = VectorX<double>::LinSpaced(
+      plant_->num_positions(arm2) /* size */,
+      1 /* first number */, plant_->num_positions(arm2) /* last number */);
+  VectorX<double> qd = VectorX<double>::LinSpaced(
+      plant_->num_velocities(arm2) /* size */,
+      10 /* first number */,
+      9 + plant_->num_velocities(arm2) /* last number */);
+  VectorX<double> x(q.size() + qd.size());
+  x << q, qd;
+
+  // Set the positions, make sure that they're retrieved successfully, and
+  // verify that no other multibody instance positions or velocities are
+  // altered.
+  plant_->GetMutablePositionsAndVelocities(context_.get()).setZero();
+  plant_->SetPositions(context_.get(), arm2, q);
+  EXPECT_EQ(plant_->GetPositions(*context_, arm2), q);
+  EXPECT_EQ(plant_->GetPositions(*context_, arm1).norm(), 0);
+  EXPECT_EQ(plant_->GetVelocities(*context_, arm1).norm(), 0);
+  EXPECT_EQ(plant_->GetVelocities(*context_, arm2).norm(), 0);
+
+  // Set the velocities, make sure that they're retrieved successfully, and
+  // verify that no other multibody instance positions or velocities are
+  // altered.
+  plant_->GetMutablePositionsAndVelocities(context_.get()).setZero();
+  plant_->SetVelocities(context_.get(), arm2, qd);
+  EXPECT_EQ(plant_->GetVelocities(*context_, arm2), qd);
+  EXPECT_EQ(plant_->GetPositions(*context_, arm1).norm(), 0);
+  EXPECT_EQ(plant_->GetVelocities(*context_, arm1).norm(), 0);
+  EXPECT_EQ(plant_->GetPositions(*context_, arm2).norm(), 0);
+
+  // Set the positions and velocities, make sure that they're retrieved
+  // successfully and verify that no other multibody instance positions or
+  // velocities are altered.
+  plant_->GetMutablePositionsAndVelocities(context_.get()).setZero();
+  plant_->SetPositionsAndVelocities(context_.get(), arm2, x);
+  EXPECT_EQ(plant_->GetPositionsAndVelocities(*context_, arm2), x);
+  EXPECT_EQ(plant_->GetPositionsAndVelocities(*context_, arm1).norm(), 0);
 }
 
 // Verifies we instantiated an appropriate MultibodyPlant model based on the

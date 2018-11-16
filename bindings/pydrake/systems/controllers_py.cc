@@ -13,6 +13,8 @@
 #include "drake/systems/controllers/inverse_dynamics.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
+#include "drake/systems/controllers/rbt_inverse_dynamics.h"
+#include "drake/systems/controllers/rbt_inverse_dynamics_controller.h"
 
 namespace drake {
 namespace pydrake {
@@ -53,12 +55,52 @@ PYBIND11_MODULE(controllers, m) {
                      &DynamicProgrammingOptions::visualization_callback,
                      doc.DynamicProgrammingOptions.visualization_callback.doc);
 
+  // The RBT flavor of inverse dynamics.
+
+  py::class_<rbt::InverseDynamics<double>, LeafSystem<double>> rbt_idyn(
+      m, "RbtInverseDynamics", doc.rbt.InverseDynamics.doc);
+  rbt_idyn  // BR
+      .def(py::init<const RigidBodyTree<double>*,
+                    rbt::InverseDynamics<double>::InverseDynamicsMode>(),
+           py::arg("tree"), py::arg("mode"), doc.rbt.InverseDynamics.ctor.doc_4)
+      .def("is_pure_gravity_compensation",
+           &rbt::InverseDynamics<double>::is_pure_gravity_compensation,
+           doc.rbt.InverseDynamics.is_pure_gravity_compensation.doc);
+
+  py::enum_<rbt::InverseDynamics<double>::InverseDynamicsMode>(  // BR
+      rbt_idyn, "InverseDynamicsMode")
+      .value("kInverseDynamics", rbt::InverseDynamics<double>::kInverseDynamics,
+             doc.rbt.InverseDynamics.InverseDynamicsMode.doc)
+      .value(
+          "kGravityCompensation",
+          rbt::InverseDynamics<double>::kGravityCompensation,
+          doc.rbt.InverseDynamics.InverseDynamicsMode.kGravityCompensation.doc)
+      .export_values();
+
+  py::class_<rbt::InverseDynamicsController<double>, Diagram<double>>(
+      m, "RbtInverseDynamicsController", doc.rbt.InverseDynamicsController.doc)
+      .def(py::init<std::unique_ptr<RigidBodyTree<double>>,
+                    const VectorX<double>&, const VectorX<double>&,
+                    const VectorX<double>&, bool>(),
+           py::arg("robot"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
+           py::arg("has_reference_acceleration"),
+           // Keep alive, ownership: RigidBodyTree keeps this alive.
+           // See "Keep Alive Behavior" in pydrake_pybind.h for details.
+           py::keep_alive<2 /* Nurse */, 1 /* Patient */>(),
+           doc.rbt.InverseDynamicsController.ctor.doc_5args)
+      .def("set_integral_value",
+           &rbt::InverseDynamicsController<double>::set_integral_value,
+           doc.rbt.InverseDynamicsController.set_integral_value.doc);
+
+  // The MBP flavor of inverse dynamics.
+
   py::class_<InverseDynamics<double>, LeafSystem<double>> idyn(
       m, "InverseDynamics", doc.InverseDynamics.doc);
-  idyn.def(py::init<const RigidBodyTree<double>*,
+  idyn  // BR
+      .def(py::init<const multibody::multibody_plant::MultibodyPlant<double>*,
                     InverseDynamics<double>::InverseDynamicsMode>(),
-           py::arg("tree"), py::arg("mode"), doc.InverseDynamics.ctor.doc);
-  idyn.def("is_pure_gravity_compensation",
+           py::arg("plant"), py::arg("mode"), doc.InverseDynamics.ctor.doc_6)
+      .def("is_pure_gravity_compensation",
            &InverseDynamics<double>::is_pure_gravity_compensation,
            doc.InverseDynamics.is_pure_gravity_compensation.doc);
 

@@ -45,10 +45,12 @@ drake_py_library(
 drake_cc_library(
     name = "systems_pybind",
     hdrs = ["systems_pybind.h"],
+    declare_installed_headers = 0,
     visibility = ["//visibility:public"],
     deps = [
         "//bindings/pydrake:autodiff_types_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/util:cpp_param_pybind",
         "//bindings/pydrake/util:cpp_template_pybind",
     ],
 )
@@ -161,6 +163,7 @@ drake_pybind_library(
         "//bindings/pydrake/util:cpp_template_pybind",
         "//bindings/pydrake/util:eigen_geometry_pybind",
         "//bindings/pydrake/util:eigen_pybind",
+        "//bindings/pydrake/util:type_pack",
     ],
     cc_srcs = ["sensors_py.cc"],
     package_info = PACKAGE_INFO,
@@ -228,9 +231,16 @@ drake_py_library(
     srcs = ["meshcat_visualizer.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [
+        ":framework_py",
         ":module_py",
+        ":rendering_py",
+        "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake:lcm_py",
+        "//bindings/pydrake:math_py",
+        "//bindings/pydrake/util:eigen_geometry_py",
         "//lcmtypes:lcmtypes_py",
         "@meshcat_python//:meshcat",
+        "@meshcat_python//:meshcat-server",
     ],
 )
 
@@ -362,6 +372,10 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "meshcat_visualizer_test",
+    data = [
+        "//examples/multibody/cart_pole:models",
+        "//manipulation/models/iiwa_description:models",
+    ],
     deps = [
         ":analysis_py",
         ":framework_py",
