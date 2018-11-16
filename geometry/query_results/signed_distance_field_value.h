@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
@@ -22,22 +24,28 @@ struct SignedDistanceFieldValue{
 
   SignedDistanceFieldValue() = default;
 
-  /** Constructor
+  /** Constructs SignedDistanceFieldValue struct from calculated results.
    @param id_G_in    The id of the geometry G to which we measure distance from
                      the query point Q.
    @param p_GN_in    The position of the nearest point N on G's surface from
                      the query point Q, expressed in G's frame.
-   @param dist       The signed distance from the query point Q to the nearest
+   @param distance_in  The signed distance from the query point Q to the nearest
                      point N. It is positive if the query point Q is outside the
                      geometry G. It is negative if the query point is inside the
                      geometry G. It is zero if the query point is on the
                      boundary of the geometry G.
    @param grad_W_in  The gradient vector of the distance function with respect
                      to the query point Q, expressed in world frame W.
+   @pre Assume grad_W_in is not NaN.
    */
   SignedDistanceFieldValue(GeometryId id_G_in, const Vector3<T>& p_GN_in,
-                           T dist, const Vector3<T>& grad_W_in)
-  : id_G(id_G_in), p_GN(p_GN_in), distance(dist), grad_W(grad_W_in) {}
+                           T distance_in, const Vector3<T>& grad_W_in)
+  : id_G(id_G_in), p_GN(p_GN_in), distance(distance_in), grad_W(grad_W_in) {
+    using std::isnan;
+    DRAKE_ASSERT(!(isnan(grad_W(0))||
+                   isnan(grad_W(1))||
+                   isnan(grad_W(2))))
+  }
 
   GeometryId id_G;
   Vector3<T> p_GN;

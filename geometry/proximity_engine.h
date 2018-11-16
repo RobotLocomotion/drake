@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <unordered_set>
 #include <vector>
@@ -158,25 +159,22 @@ class ProximityEngine {
       const std::vector<GeometryId>& geometry_map) const;
 
   /**
-   Compute signed distances and gradients from a query point to anchored
-   geometries (environment) in the scene.
+   Compute signed distances and gradient vectors from a query point to each
+   object in the scene.  Called by GeometryState::ComputePointSignedDistances.
    @param[in] p_WQ            Position of a query point Q in world frame W.
+   @param[in] influence_distance  Ignore any object beyond this distance.
    @param[in] geometry_map    A map from geometry _index_ to the corresponding
                               global geometry identifier.
    @retval signed_distances   A vector populated with per-object signed
-                              distance values (and supporting data). For each
-                              object in the scene, it reports the global
-                              geometry identifier of the object, the position
-                              of the nearest point on the object to the query
-                              point, the signed distance from the query
-                              point, and the gradient vector of the distance
-                              function with respect to the query point.
+                              distance and gradient vector.
                               See SignedDistanceFieldValue for details.
    */
   std::vector<SignedDistanceFieldValue<double>>
   ComputePointSignedDistances(
       const Vector3<double>& p_WQ,
-      const std::vector<GeometryId>& geometry_map) const;
+      const std::vector<GeometryId>& geometry_map,
+      const double influence_distance = std::numeric_limits<double>::infinity())
+      const;
   //@}
 
   //----------------------------------------------------------------------------
