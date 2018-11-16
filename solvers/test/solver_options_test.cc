@@ -53,16 +53,6 @@ GTEST_TEST(SolverOptionsTest, Ids) {
   EXPECT_EQ(dut.GetSolverIds(), Set({id1, id2, id3}));
 }
 
-void UpdateMergeResult(const SolverOptions& solver_options1,
-                       const SolverOptions& solver_options2,
-                       SolverOptions* merge_option1_into_option2,
-                       SolverOptions* merge_option2_into_option1) {
-  *merge_option1_into_option2 = solver_options2;
-  merge_option1_into_option2->Merge(solver_options1);
-  *merge_option2_into_option1 = solver_options1;
-  merge_option2_into_option1->Merge(solver_options2);
-}
-
 GTEST_TEST(SolverOptionsTest, Merge) {
   const SolverId id1("foo1");
   const SolverId id2("foo2");
