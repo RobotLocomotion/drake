@@ -2260,6 +2260,9 @@ class MathematicalProgram {
     solver_options_.SetOption(solver_id, solver_option, option_value);
   }
 
+  /**
+   * Returns the solver options stored inside MathematicalProgram.
+   */
   const SolverOptions& solver_options() const { return solver_options_; }
 
   const std::unordered_map<std::string, double>& GetSolverOptionsDouble(

@@ -68,6 +68,7 @@ std::unordered_set<SolverId> SolverOptions::GetSolverIds() const {
   return result;
 }
 
+namespace {
 template <typename T>
 void MergeHelper(const MapMap<T>& other, MapMap<T>* self) {
   for (const auto& other_id_keyvals : other) {
@@ -79,6 +80,7 @@ void MergeHelper(const MapMap<T>& other, MapMap<T>* self) {
     }
   }
 }
+}  // namespace
 
 void SolverOptions::Merge(const SolverOptions& other) {
   MergeHelper(other.solver_options_double_, &solver_options_double_);
