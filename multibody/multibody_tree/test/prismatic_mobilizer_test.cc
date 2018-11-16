@@ -168,7 +168,8 @@ TEST_F(PrismaticMobilizerTest, KinematicMapping) {
   EXPECT_NEAR(Nplus(0, 0), 1.0, kTolerance);
 }
 
-TEST_F(PrismaticMobilizerTest, KinematicMappingOnWrongSizedMatrix) {
+using PrismaticMobilizerDeathTest = PrismaticMobilizerTest;
+TEST_F(PrismaticMobilizerDeathTest, KinematicMappingOnWrongSizedMatrix) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
   // Arbitrary size matrix.

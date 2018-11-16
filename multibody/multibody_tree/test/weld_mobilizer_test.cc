@@ -95,7 +95,8 @@ TEST_F(WeldMobilizerTest, KinematicMapping) {
   weld_body_to_world_->CalcNplusMatrix(*mbt_context_, &N);
 }
 
-TEST_F(WeldMobilizerTest, KinematicMappingOnWrongSizedMatrix) {
+using WeldMobilizerDeathTest = WeldMobilizerTest;
+TEST_F(WeldMobilizerDeathTest, KinematicMappingOnWrongSizedMatrix) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
   // Arbitrary size matrix.
   MatrixX<double> N(28, 13);
