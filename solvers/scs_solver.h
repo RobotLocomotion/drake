@@ -13,7 +13,7 @@ namespace solvers {
 struct ScsSolverDetails {
   /// The status of the solver at termination. Please refer to
   /// https://github.com/cvxgrp/scs/blob/master/include/glbopts.h
-  /// Note that the SCS cod on github master might be slightly more up-to-date
+  /// Note that the SCS code on github master might be slightly more up-to-date
   /// than the version used in Drake.
   int scs_status{};
   /// These are the information returned by SCS at termination, please refer to
