@@ -50,8 +50,12 @@ IiwaKinematicConstraintTest::IiwaKinematicConstraintTest()
                      plant_->GetFrameByName("iiwa_link_0"));
   plant_->Finalize();
 
+  drake::log()->info("plant_->num_positions = {}", plant_->num_positions());
+
   diagram_ = builder.Build();
-  context_ = diagram_->CreateDefaultContext();
+  diagram_context_ = diagram_->CreateDefaultContext();
+  plant_context_ =
+      &diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get());
 }
 
 TwoFreeBodiesConstraintTest::TwoFreeBodiesConstraintTest()

@@ -95,7 +95,8 @@ GTEST_TEST(InverseKinematicsTest, ConstructorWithJointLimits) {
     EXPECT_FALSE(check_q_test(q_bad));
   }
 }
-
+// TODO(avalenzu): Re-enable once we allow nv != nq.
+#if (0)
 TEST_F(TwoFreeBodiesTest, PositionConstraint) {
   const Eigen::Vector3d p_BQ(0.2, 0.3, 0.5);
   const Eigen::Vector3d p_AQ_lower(-0.1, -0.2, -0.3);
@@ -201,5 +202,6 @@ TEST_F(TwoFreeBodiesTest, AngleBetweenVectorsConstraint) {
       std::acos(n_A_W.dot(n_B_W) / (n_A_W.norm() * n_B_W.norm()));
   EXPECT_NEAR(angle, angle_lower, 1E-6);
 }
+#endif
 }  // namespace multibody
 }  // namespace drake

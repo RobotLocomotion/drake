@@ -76,7 +76,8 @@ class IiwaKinematicConstraintTest : public ::testing::Test {
   std::unique_ptr<systems::Diagram<double>> diagram_{};
   multibody_plant::MultibodyPlant<double>* plant_{};
   geometry::SceneGraph<double>* scene_graph_{};
-  std::unique_ptr<systems::Context<double>> context_;
+  std::unique_ptr<systems::Context<double>> diagram_context_;
+  systems::Context<double>* plant_context_;
   MultibodyTreeSystem<AutoDiffXd> iiwa_autodiff_;
   MultibodyTreeSystem<double> iiwa_double_;
   std::unique_ptr<systems::Context<AutoDiffXd>> context_autodiff_;
