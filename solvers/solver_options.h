@@ -61,8 +61,9 @@ class SolverOptions {
   std::unordered_set<SolverId> GetSolverIds() const;
 
   /**
-   * If `other` and `this` option both define the same option for the same
-   * solver, we ignore then one from `other` and keep the one from `this`.
+   * Merges the other solver options into this. If `other` and `this` option
+   * both define the same option for the same solver, we ignore then one from
+   * `other` and keep the one from `this`.
    */
   void Merge(const SolverOptions& other);
 
