@@ -24,8 +24,6 @@ drake_cc_library(
     srcs = ["differential_inverse_kinematics.cc"],
     hdrs = ["differential_inverse_kinematics.h"],
     deps = [
-        "//attic/multibody:rigid_body_tree",
-        "//attic/multibody/parsers",
         "//multibody/multibody_tree/multibody_plant",
         "//solvers:mathematical_program",
     ],
@@ -40,7 +38,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":differential_inverse_kinematics",
-        "//attic/manipulation/util:world_sim_tree_builder",
+        "//attic/manipulation/planner:rbt_differential_inverse_kinematics",
+        "//attic/multibody/parsers",
         "//common/test_utilities:eigen_matrix_compare",
         "//examples/kuka_iiwa_arm:iiwa_common",
         "//multibody/multibody_tree/parsing",
