@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/parsing/urdf_geometry.h"
+#include "drake/multibody/parsing/urdf_geometry.h"
 
 #include <vector>
 
@@ -8,8 +8,8 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/multibody_tree/parsing/package_map.h"
-#include "drake/multibody/multibody_tree/parsing/parser_path_utils.h"
+#include "drake/multibody/parsing/package_map.h"
+#include "drake/multibody/parsing/parser_path_utils.h"
 
 namespace drake {
 namespace multibody {
@@ -97,7 +97,7 @@ class UrdfGeometryTests : public testing::Test {
 // assume if parsing certain things works here that it will keep working.
 TEST_F(UrdfGeometryTests, TestParseMaterial1) {
   const std::string resource_dir{
-    "drake/multibody/multibody_tree/parsing/test/urdf_parser_test/"};
+    "drake/multibody/parsing/test/urdf_parser_test/"};
   const std::string file_no_conflict_1 = FindResourceOrThrow(
       resource_dir + "non_conflicting_materials_1.urdf");
 
@@ -133,7 +133,7 @@ TEST_F(UrdfGeometryTests, TestParseMaterial1) {
 
 TEST_F(UrdfGeometryTests, TestParseMaterial2) {
   const std::string resource_dir{
-    "drake/multibody/multibody_tree/parsing/test/urdf_parser_test/"};
+    "drake/multibody/parsing/test/urdf_parser_test/"};
   const std::string file_no_conflict_2 = FindResourceOrThrow(
       resource_dir + "non_conflicting_materials_2.urdf");
 
@@ -175,7 +175,7 @@ TEST_F(UrdfGeometryTests, TestParseMaterial2) {
 
 TEST_F(UrdfGeometryTests, TestParseMaterial3) {
   const std::string resource_dir{
-    "drake/multibody/multibody_tree/parsing/test/urdf_parser_test/"};
+    "drake/multibody/parsing/test/urdf_parser_test/"};
   const std::string file_no_conflict_3 = FindResourceOrThrow(
       resource_dir + "non_conflicting_materials_3.urdf");
 
@@ -184,7 +184,7 @@ TEST_F(UrdfGeometryTests, TestParseMaterial3) {
 
 TEST_F(UrdfGeometryTests, TestParseMaterialDuplicateButSame) {
   const std::string resource_dir{
-    "drake/multibody/multibody_tree/parsing/test/urdf_parser_test/"};
+    "drake/multibody/parsing/test/urdf_parser_test/"};
   // This URDF defines the same color multiple times in different links.
   const std::string file_same_color_diff_links = FindResourceOrThrow(
       resource_dir + "duplicate_but_same_materials.urdf");
@@ -204,7 +204,7 @@ TEST_F(UrdfGeometryTests, TestParseMaterialDuplicateButSame) {
 
 TEST_F(UrdfGeometryTests, TestDuplicateMaterials) {
   const std::string resource_dir{
-    "drake/multibody/multibody_tree/parsing/test/urdf_parser_test/"};
+    "drake/multibody/parsing/test/urdf_parser_test/"};
   const std::string file_duplicate = FindResourceOrThrow(
       resource_dir + "duplicate_materials.urdf");
 
@@ -213,7 +213,7 @@ TEST_F(UrdfGeometryTests, TestDuplicateMaterials) {
 
 TEST_F(UrdfGeometryTests, TestConflictingMaterials) {
   const std::string resource_dir{
-    "drake/multibody/multibody_tree/parsing/test/urdf_parser_test/"};
+    "drake/multibody/parsing/test/urdf_parser_test/"};
   const std::string file_conflict = FindResourceOrThrow(
       resource_dir + "conflicting_materials.urdf");
 
@@ -222,7 +222,7 @@ TEST_F(UrdfGeometryTests, TestConflictingMaterials) {
 
 TEST_F(UrdfGeometryTests, TestWrongElementType) {
   const std::string resource_dir{
-    "drake/multibody/multibody_tree/parsing/test/urdf_parser_test/"};
+    "drake/multibody/parsing/test/urdf_parser_test/"};
   const std::string file_no_conflict_1 = FindResourceOrThrow(
       resource_dir + "non_conflicting_materials_1.urdf");
 

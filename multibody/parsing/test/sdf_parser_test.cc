@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/parsing/sdf_parser.h"
 
 #include <memory>
 
@@ -45,7 +45,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
   ASSERT_EQ(plant.num_model_instances(), 2);
 
   const std::string full_name = FindResourceOrThrow(
-      "drake/multibody/multibody_tree/parsing/test/"
+      "drake/multibody/parsing/test/"
       "links_with_visuals_and_collisions.sdf");
 
   ModelInstanceIndex instance1 =
@@ -181,7 +181,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
 // with negative damping.
 GTEST_TEST(SdfParserThrowsWhen, JointDampingIsNegative) {
   const std::string sdf_file_path =
-      "drake/multibody/multibody_tree/parsing/test/negative_damping_joint.sdf";
+      "drake/multibody/parsing/test/negative_damping_joint.sdf";
   MultibodyPlant<double> plant;
   DRAKE_EXPECT_THROWS_MESSAGE(
       AddModelFromSdfFile(FindResourceOrThrow(sdf_file_path), &plant),
@@ -193,7 +193,7 @@ GTEST_TEST(SdfParserThrowsWhen, JointDampingIsNegative) {
 
 GTEST_TEST(SdfParser, IncludeTags) {
   const std::string sdf_file_path =
-      "drake/multibody/multibody_tree/parsing/test";
+      "drake/multibody/parsing/test";
   sdf::addURIPath("model://", FindResourceOrThrow(sdf_file_path));
   MultibodyPlant<double> plant;
 
@@ -254,7 +254,7 @@ GTEST_TEST(SdfParser, IncludeTags) {
 
 GTEST_TEST(SdfParser, TestOptionalSceneGraph) {
   const std::string full_name = FindResourceOrThrow(
-      "drake/multibody/multibody_tree/parsing/test/"
+      "drake/multibody/parsing/test/"
       "links_with_visuals_and_collisions.sdf");
   int num_visuals_explicit{};
   {

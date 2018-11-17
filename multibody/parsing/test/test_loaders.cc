@@ -1,8 +1,8 @@
-#include "drake/multibody/multibody_tree/parsing/test/test_loaders.h"
+#include "drake/multibody/parsing/test/test_loaders.h"
 
 #include "drake/common/find_resource.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_urdf_parser.h"
+#include "drake/multibody/parsing/sdf_parser.h"
+#include "drake/multibody/parsing/urdf_parser.h"
 
 namespace drake {
 namespace multibody {
