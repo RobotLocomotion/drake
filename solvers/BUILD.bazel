@@ -233,6 +233,7 @@ drake_cc_library(
     hdrs = ["solver_id.h"],
     deps = [
         "//common:essential",
+        "//common:hash",
         "//common:reset_after_move",
     ],
 )
@@ -1491,6 +1492,13 @@ drake_cc_googletest(
     deps = [
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "solver_options_test",
+    deps = [
+        ":solver_options",
     ],
 )
 
