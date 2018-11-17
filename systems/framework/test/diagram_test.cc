@@ -777,14 +777,14 @@ TEST_F(DiagramTest, CalcTimeDerivatives) {
 
   // The derivative of the first integrator is A.
   const ContinuousState<double>& integrator0_xcdot =
-      diagram_->GetSubsystemDerivatives(*derivatives, integrator0());
+      diagram_->GetSubsystemDerivatives(*integrator0(), *derivatives);
   EXPECT_EQ(1 + 8, integrator0_xcdot.get_vector().GetAtIndex(0));
   EXPECT_EQ(2 + 16, integrator0_xcdot.get_vector().GetAtIndex(1));
   EXPECT_EQ(4 + 32, integrator0_xcdot.get_vector().GetAtIndex(2));
 
   // The derivative of the second integrator is the state of the first.
   const ContinuousState<double>& integrator1_xcdot =
-      diagram_->GetSubsystemDerivatives(*derivatives, integrator1());
+      diagram_->GetSubsystemDerivatives(*integrator1(), *derivatives);
   EXPECT_EQ(3, integrator1_xcdot.get_vector().GetAtIndex(0));
   EXPECT_EQ(9, integrator1_xcdot.get_vector().GetAtIndex(1));
   EXPECT_EQ(27, integrator1_xcdot.get_vector().GetAtIndex(2));
@@ -1004,7 +1004,17 @@ TEST_F(DiagramTest, DerivativesOfStatelessSystemAreEmpty) {
   std::unique_ptr<ContinuousState<double>> derivatives =
       diagram_->AllocateTimeDerivatives();
   EXPECT_EQ(0,
-            diagram_->GetSubsystemDerivatives(*derivatives, adder0()).size());
+            diagram_->GetSubsystemDerivatives(*adder0(), *derivatives).size());
+}
+
+// Tests that, when asked for the discrete state of Systems that are
+// stateless, Diagram returns an empty state.
+TEST_F(DiagramTest, DiscreteValuesOfStatelessSystemAreEmpty) {
+  std::unique_ptr<DiscreteValues<double>> updates =
+      diagram_->AllocateDiscreteVariables();
+  EXPECT_EQ(
+      0,
+      diagram_->GetSubsystemDiscreteValues(*adder0(), *updates).num_groups());
 }
 
 class DiagramOfDiagramsTest : public ::testing::Test {
@@ -1723,9 +1733,15 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   // Allocate the discrete variables.
   std::unique_ptr<DiscreteValues<double>> updates =
       diagram_.AllocateDiscreteVariables();
+  const DiscreteValues<double>& updates1 =
+      diagram_
+          .GetSubsystemDiscreteValues(*diagram_.hold1(), *updates);
+  const DiscreteValues<double>& updates2 =
+      diagram_
+          .GetSubsystemDiscreteValues(*diagram_.hold2(), *updates);
 
-  // Set the time to 8.5, so only hold2 updates.
-  context_->set_time(8.5);
+      // Set the time to 8.5, so only hold2 updates.
+      context_->set_time(8.5);
 
   // Request the next update time.
   auto events = diagram_.AllocateCompositeEventCollection();
@@ -1737,6 +1753,10 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   context_->set_time(9.0);
   diagram_.CalcDiscreteVariableUpdates(
       *context_, events->get_discrete_update_events(), updates.get());
+  EXPECT_EQ(1001.0, updates1[0]);
+  EXPECT_EQ(23.0, updates2[0]);
+
+  // Apply the updates to the context_.
   context_->get_mutable_discrete_state().SetFrom(*updates);
   EXPECT_EQ(1001.0, ctx1.get_discrete_state(0).GetAtIndex(0));
   EXPECT_EQ(23.0, ctx2.get_discrete_state(0).GetAtIndex(0));
@@ -1753,9 +1773,8 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   context_->set_time(12.0);
   diagram_.CalcDiscreteVariableUpdates(
       *context_, events->get_discrete_update_events(), updates.get());
-  context_->get_mutable_discrete_state().SetFrom(*updates);
-  EXPECT_EQ(17.0, ctx1.get_discrete_state(0).GetAtIndex(0));
-  EXPECT_EQ(23.0, ctx2.get_discrete_state(0).GetAtIndex(0));
+  EXPECT_EQ(17.0, updates1[0]);
+  EXPECT_EQ(23.0, updates2[0]);
 }
 
 // Tests that a publish action is taken at 19 sec.
