@@ -438,26 +438,26 @@ PYBIND11_MODULE(mathematicalprogram, m) {
                MathematicalProgram::*)(
                const Polynomial&, const Eigen::Ref<const VectorX<Monomial>>&)>(
                &MathematicalProgram::AddSosConstraint),
-           doc.MathematicalProgram.AddSosConstraint.doc)
+           doc.MathematicalProgram.AddSosConstraint.doc_2args_p_monomial_basis)
       .def("AddSosConstraint",
            static_cast<std::pair<Binding<PositiveSemidefiniteConstraint>,
                                  Binding<LinearEqualityConstraint>> (
                MathematicalProgram::*)(const Polynomial&)>(
                &MathematicalProgram::AddSosConstraint),
-           doc.MathematicalProgram.AddSosConstraint.doc)
+           doc.MathematicalProgram.AddSosConstraint.doc_1args_p)
       .def("AddSosConstraint",
            static_cast<std::pair<Binding<PositiveSemidefiniteConstraint>,
                                  Binding<LinearEqualityConstraint>> (
                MathematicalProgram::*)(
                const Expression&, const Eigen::Ref<const VectorX<Monomial>>&)>(
                &MathematicalProgram::AddSosConstraint),
-           doc.MathematicalProgram.AddSosConstraint.doc)
+           doc.MathematicalProgram.AddSosConstraint.doc_2args_e_monomial_basis)
       .def("AddSosConstraint",
            static_cast<std::pair<Binding<PositiveSemidefiniteConstraint>,
                                  Binding<LinearEqualityConstraint>> (
                MathematicalProgram::*)(const Expression&)>(
                &MathematicalProgram::AddSosConstraint),
-           doc.MathematicalProgram.AddSosConstraint.doc)
+           doc.MathematicalProgram.AddSosConstraint.doc_1args_e)
       .def("AddVisualizationCallback",
            static_cast<Binding<VisualizationCallback> (MathematicalProgram::*)(
                const VisualizationCallback::CallbackFunction&,
@@ -508,12 +508,12 @@ PYBIND11_MODULE(mathematicalprogram, m) {
            [](const MathematicalProgram& prog, const symbolic::Expression& e) {
              return prog.SubstituteSolution(e);
            },
-           doc.MathematicalProgram.SubstituteSolution.doc)
+           doc.MathematicalProgram.SubstituteSolution.doc_1args_e)
       .def("SubstituteSolution",
            [](const MathematicalProgram& prog, const symbolic::Polynomial& p) {
              return prog.SubstituteSolution(p);
            },
-           doc.MathematicalProgram.SubstituteSolution.doc)
+           doc.MathematicalProgram.SubstituteSolution.doc_1args_p)
       .def("GetInitialGuess",
            [](MathematicalProgram& prog,
               const symbolic::Variable& decision_variable) {

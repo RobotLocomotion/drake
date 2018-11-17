@@ -51,8 +51,9 @@ void DefineFrameworkPyValues(py::module m) {
         // implicitly convert scalar-size `np.array` objects to `int` (since
         // this is normally permitted).
         .def(py::init<VectorX<T>>(), py::arg("data"),
-             doc.BasicVector.ctor.doc_5)
-        .def(py::init<int>(), py::arg("size"), doc.BasicVector.ctor.doc_4)
+             doc.BasicVector.ctor.doc_1args_vec)
+        .def(py::init<int>(), py::arg("size"),
+             doc.BasicVector.ctor.doc_1args_size)
         .def("get_value",
              [](const BasicVector<T>* self) -> Eigen::Ref<const VectorX<T>> {
                return self->get_value();

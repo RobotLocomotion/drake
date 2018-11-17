@@ -468,11 +468,12 @@ PYBIND11_MODULE(rigid_body_tree, m) {
            py::arg("name"), py::arg("body"),
            py::arg("xyz") = Eigen::Vector3d::Zero(),
            py::arg("rpy") = Eigen::Vector3d::Zero(),
-           doc.RigidBodyFrame.ctor.doc_4)
+           doc.RigidBodyFrame.ctor.doc_4args_name_body_xyz_rpy)
       .def(py::init<const std::string&, RigidBody<double>*,
                     const Eigen::Isometry3d&>(),
            py::arg("name"), py::arg("body"), py::arg("transform_to_body"),
-           doc.RigidBodyFrame.ctor.doc_3)
+           doc.RigidBodyFrame.ctor.  // BR
+           doc_4args_name_body_transform_to_body_model_instance_id)
       .def("get_name", &RigidBodyFrame<double>::get_name,
            doc.RigidBodyFrame.get_name.doc)
       .def("get_frame_index", &RigidBodyFrame<double>::get_frame_index,
@@ -485,6 +486,11 @@ PYBIND11_MODULE(rigid_body_tree, m) {
            &RigidBodyFrame<double>::get_transform_to_body,
            doc.RigidBodyFrame.get_transform_to_body.doc);
 
+  // clang-format off
+  const char* const doc_AddModelInstanceFromUrdfFile =
+      doc.drake.parsers.urdf .AddModelInstanceFromUrdfFile
+      .doc_5args_urdf_filename_floating_base_type_weld_to_frame_do_compile_tree;
+  // clang-format on
   m.def("AddModelInstanceFromUrdfFile",
         [](const std::string& urdf_filename,
            const FloatingBaseType floating_base_type,
@@ -496,7 +502,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
         },
         py::arg("urdf_filename"), py::arg("floating_base_type"),
         py::arg("weld_to_frame"), py::arg("tree"), py::arg("do_compile") = true,
-        doc.drake.parsers.urdf.AddModelInstanceFromUrdfFile.doc);
+        doc_AddModelInstanceFromUrdfFile);
 
   m.def("AddModelInstanceFromUrdfStringSearchingInRosPackages",
         py::overload_cast<const std::string&, const PackageMap&,

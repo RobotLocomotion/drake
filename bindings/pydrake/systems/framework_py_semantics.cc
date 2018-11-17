@@ -205,7 +205,7 @@ void DefineFrameworkPySemantics(py::module m) {
                                                             callback);
                  })),
              py::arg("trigger_type"), py::arg("callback"),
-             doc.PublishEvent.ctor.doc_4);
+             doc.PublishEvent.ctor.doc_2args_trigger_type_callback);
     DefineTemplateClassWithDefault<DiscreteUpdateEvent<T>, Event<T>>(
         m, "DiscreteUpdateEvent", GetPyParam<T>(), doc.DiscreteUpdateEvent.doc);
 
@@ -292,21 +292,22 @@ void DefineFrameworkPySemantics(py::module m) {
     DefClone(&parameters);
     using BasicVectorPtrList = vector<unique_ptr<BasicVector<T>>>;
     parameters
-        .def(py::init<>(), doc.Parameters.ctor.doc_3)
+        .def(py::init<>(), doc.Parameters.ctor.doc_0args)
         // TODO(eric.cousineau): Ensure that we can respect keep alive behavior
         // with lists of pointers.
         .def(py::init<BasicVectorPtrList, AbstractValuePtrList>(),
-             py::arg("numeric"), py::arg("abstract"), doc.Parameters.ctor.doc_4)
+             py::arg("numeric"), py::arg("abstract"),
+             doc.Parameters.ctor.doc_2args_numeric_abstract)
         .def(py::init<BasicVectorPtrList>(), py::arg("numeric"),
-             doc.Parameters.ctor.doc_5)
+             doc.Parameters.ctor.doc_1args_numeric)
         .def(py::init<AbstractValuePtrList>(), py::arg("abstract"),
-             doc.Parameters.ctor.doc_6)
+             doc.Parameters.ctor.doc_1args_abstract)
         .def(py::init<unique_ptr<BasicVector<T>>>(), py::arg("vec"),
              // Keep alive, ownership: `vec` keeps `self` alive.
-             py::keep_alive<2, 1>(), doc.Parameters.ctor.doc_7)
+             py::keep_alive<2, 1>(), doc.Parameters.ctor.doc_1args_vec)
         .def(py::init<unique_ptr<AbstractValue>>(), py::arg("value"),
              // Keep alive, ownership: `value` keeps `self` alive.
-             py::keep_alive<2, 1>(), doc.Parameters.ctor.doc_8)
+             py::keep_alive<2, 1>(), doc.Parameters.ctor.doc_1args_value)
         .def("num_numeric_parameters", &Parameters<T>::num_numeric_parameters,
              doc.Parameters.num_numeric_parameters.doc)
         .def("num_abstract_parameters", &Parameters<T>::num_abstract_parameters,
@@ -372,7 +373,7 @@ void DefineFrameworkPySemantics(py::module m) {
     // - Constituents.
     DefineTemplateClassWithDefault<ContinuousState<T>>(
         m, "ContinuousState", GetPyParam<T>(), doc.ContinuousState.doc)
-        .def(py::init<>(), doc.ContinuousState.ctor.doc_5)
+        .def(py::init<>(), doc.ContinuousState.ctor.doc_0args)
         .def("get_vector", &ContinuousState<T>::get_vector,
              py_reference_internal, doc.ContinuousState.get_vector.doc)
         .def("get_mutable_vector", &ContinuousState<T>::get_mutable_vector,
