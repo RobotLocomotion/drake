@@ -61,14 +61,20 @@ class SolverOptions {
   std::unordered_set<SolverId> GetSolverIds() const;
 
   /**
-   * Merges the other solver options into this. If @p other and this solver
-   * option both define the same option for the same solver, then take this
-   * option as the priority.
+   * If `other` and `this` option both define the same option for the same
+   * solver, we ignore then one from `other` and keep the one from `this`.
    */
   void Merge(const SolverOptions& other);
 
+  /**
+   * Returns true if `this` and `other` have exactly the same solvers, with
+   * exactly the same keys and values for the options for each solver.
+   */
   bool operator==(const SolverOptions& other) const;
 
+  /**
+   * Negate operator==.
+   */
   bool operator!=(const SolverOptions& other) const;
 
  private:

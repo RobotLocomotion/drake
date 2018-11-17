@@ -48,8 +48,8 @@ GTEST_TEST(SolverOptionsTest, Ids) {
 
   // Having the same ID used by in more than one type is okay.
   dut.SetOption(id1, "some_int", 2);
-  dut.SetOption(id2, "some_string", "bar");
-  dut.SetOption(id3, "some_double", 1.0);
+  dut.SetOption(id1, "some_string", "bar");
+  dut.SetOption(id1, "some_double", 1.0);
   EXPECT_EQ(dut.GetSolverIds(), Set({id1, id2, id3}));
 }
 
