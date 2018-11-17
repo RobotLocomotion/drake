@@ -151,8 +151,7 @@ void EvaluateSingleNonlinearConstraint<LinearComplementarityConstraint>(
  * optimization problem.
  * @param grad_index The starting index of the gradient of constraint_list(0)
  * in the optimization problem.
- * @param tx the AutoDiffMatrixType that stores the value of the decision
- * variable.
+ * @param xvec the value of the decision variables.
  */
 template <typename C>
 void EvaluateNonlinearConstraints(
@@ -164,9 +163,9 @@ void EvaluateNonlinearConstraints(
     const auto& c = binding.evaluator();
     int num_constraints = SingleNonlinearConstraintSize(*c);
 
-    int num_v_variables = binding.GetNumElements();
-    this_x.resize(num_v_variables);
-    for (int i = 0; i < num_v_variables; ++i) {
+    const int num_variables = binding.GetNumElements();
+    this_x.resize(num_variables);
+    for (int i = 0; i < num_variables; ++i) {
       this_x(i) = xvec(prog.FindDecisionVariableIndex(binding.variables()(i)));
     }
 
@@ -179,7 +178,7 @@ void EvaluateNonlinearConstraints(
     }
 
     for (int i = 0; i < num_constraints; i++) {
-      for (int j = 0; j < num_v_variables; ++j) {
+      for (int j = 0; j < num_variables; ++j) {
         G[(*grad_index)++] = ty(i).derivatives()(j);
       }
     }
@@ -228,13 +227,13 @@ void EvaluateAndAddNonlinearCosts(
     double* total_cost, std::vector<double>* nonlinear_cost_gradients) {
   for (const auto& binding : nonlinear_costs) {
     const auto& obj = binding.evaluator();
-    const int num_v_variables = binding.GetNumElements();
+    const int num_variables = binding.GetNumElements();
 
-    Eigen::VectorXd this_x(num_v_variables);
+    Eigen::VectorXd this_x(num_variables);
     // binding_var_indices[i] is the index of binding.variables()(i) in prog's
     // decision variables.
-    std::vector<int> binding_var_indices(num_v_variables);
-    for (int i = 0; i < num_v_variables; ++i) {
+    std::vector<int> binding_var_indices(num_variables);
+    for (int i = 0; i < num_variables; ++i) {
       binding_var_indices[i] =
           prog.FindDecisionVariableIndex(binding.variables()(i));
       this_x(i) = x(binding_var_indices[i]);
@@ -243,7 +242,7 @@ void EvaluateAndAddNonlinearCosts(
     obj->Eval(math::initializeAutoDiff(this_x), &ty);
 
     *total_cost += ty(0).value();
-    for (int i = 0; i < num_v_variables; ++i) {
+    for (int i = 0; i < num_variables; ++i) {
       (*nonlinear_cost_gradients)[binding_var_indices[i]] +=
           ty(0).derivatives()(i);
     }
@@ -501,9 +500,9 @@ void UpdateLinearConstraint(const MathematicalProgram& prog,
 void SolveWithGivenOptions(
     const MathematicalProgram& prog,
     const Eigen::Ref<const Eigen::VectorXd>& x_init,
-    const std::map<std::string, std::string>& snopt_options_string,
-    const std::map<std::string, int>& snopt_options_int,
-    const std::map<std::string, double>& snopt_options_double,
+    const std::unordered_map<std::string, std::string>& snopt_options_string,
+    const std::unordered_map<std::string, int>& snopt_options_int,
+    const std::unordered_map<std::string, double>& snopt_options_double,
     int* snopt_status, double* objective, EigenPtr<Eigen::VectorXd> x_val) {
   DRAKE_ASSERT(x_val->rows() == prog.num_vars());
   char problem_name[] = "drake_problem";
@@ -797,7 +796,7 @@ SolutionResult MapSnoptInfoToSolutionResult(int snopt_info) {
 
 }  // namespace
 
-bool SnoptSolver::available() const { return true; }
+bool SnoptSolver::is_available() { return true; }
 
 SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   int snopt_status{0};
