@@ -98,7 +98,8 @@ PYBIND11_MODULE(lcm, m) {
                       DrakeLcmInterface*>(),
              py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
              // Keep alive: `self` keeps `DrakeLcmInterface` alive.
-             py::keep_alive<1, 3>(), doc.LcmSubscriberSystem.ctor.doc_3);
+             py::keep_alive<1, 3>(),
+             doc.LcmSubscriberSystem.ctor.doc_3args_channel_serializer_lcm);
   }
 
   m.def("ConnectLcmScope", &ConnectLcmScope, py::arg("src"), py::arg("channel"),

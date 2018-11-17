@@ -221,12 +221,12 @@ PYBIND11_MODULE(rigid_body_plant, m) {
              overload_cast_explicit<void, Context<T>*,
                                     const Eigen::Ref<const VectorX<T>>>(
                  &Class::set_state_vector),
-             doc.RigidBodyPlant.set_state_vector.doc)
+             doc.RigidBodyPlant.set_state_vector.doc_2args_context_x)
         .def("set_state_vector",
              overload_cast_explicit<void, State<T>*,
                                     const Eigen::Ref<const VectorX<T>>>(
                  &Class::set_state_vector),
-             doc.RigidBodyPlant.set_state_vector.doc_2)
+             doc.RigidBodyPlant.set_state_vector.doc_2args_state_x)
         .def("SetDefaultState", &Class::SetDefaultState,
              doc.RigidBodyPlant.SetDefaultState.doc)
         .def("FindInstancePositionIndexFromWorldIndex",
