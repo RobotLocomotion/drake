@@ -37,22 +37,22 @@ class BasicVector : public VectorBase<T> {
   explicit BasicVector(int size)
       : values_(VectorX<T>::Constant(size, dummy_value<T>::get())) {}
 
-  /// Constructs a BasicVector with the specified @p data.
-  explicit BasicVector(VectorX<T> data) : values_(std::move(data)) {}
+  /// Constructs a BasicVector with the specified @p vec data.
+  explicit BasicVector(VectorX<T> vec) : values_(std::move(vec)) {}
 
-  /// Constructs a BasicVector whose elements are the elements of @p data.
-  BasicVector(const std::initializer_list<T>& data)
-      : BasicVector<T>(data.size()) {
+  /// Constructs a BasicVector whose elements are the elements of @p init.
+  BasicVector(const std::initializer_list<T>& init)
+      : BasicVector<T>(init.size()) {
     int i = 0;
-    for (const T& datum : data) {
+    for (const T& datum : init) {
       this->SetAtIndex(i++, datum);
     }
   }
 
-  /// Constructs a BasicVector whose elements are the elements of @p data.
+  /// Constructs a BasicVector whose elements are the elements of @p init.
   static std::unique_ptr<BasicVector<T>> Make(
-      const std::initializer_list<T>& data) {
-    return std::make_unique<BasicVector<T>>(data);
+      const std::initializer_list<T>& init) {
+    return std::make_unique<BasicVector<T>>(init);
   }
 
   /// Constructs a BasicVector where each element is constructed using the

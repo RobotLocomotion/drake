@@ -142,16 +142,16 @@ PYBIND11_MODULE(primitives, m) {
     DefineTemplateClassWithDefault<MatrixGain<T>, LinearSystem<T>>(
         m, "MatrixGain", GetPyParam<T>(), doc.MatrixGain.doc)
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&>(), py::arg("D"),
-             doc.MatrixGain.ctor.doc_3);
+             doc.MatrixGain.ctor.doc_1args_D);
 
     DefineTemplateClassWithDefault<Multiplexer<T>, LeafSystem<T>>(
         m, "Multiplexer", GetPyParam<T>(), doc.Multiplexer.doc)
         .def(py::init<int>(), py::arg("num_scalar_inputs"),
-             doc.Multiplexer.ctor.doc_3)
+             doc.Multiplexer.ctor.doc_1args_num_scalar_inputs)
         .def(py::init<std::vector<int>>(), py::arg("input_sizes"),
-             doc.Multiplexer.ctor.doc_4)
+             doc.Multiplexer.ctor.doc_1args_input_sizes)
         .def(py::init<const BasicVector<T>&>(), py::arg("model_vector"),
-             doc.Multiplexer.ctor.doc_5);
+             doc.Multiplexer.ctor.doc_0args);
 
     DefineTemplateClassWithDefault<PassThrough<T>, LeafSystem<T>>(
         m, "PassThrough", GetPyParam<T>(), doc.PassThrough.doc)

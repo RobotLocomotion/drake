@@ -24,7 +24,7 @@ PYBIND11_MODULE(collision, m) {
                                             doc.Element.doc)
       .def(py::init<const DrakeShapes::Geometry&, const Eigen::Isometry3d&>(),
            py::arg("geometry_in"), py::arg("T_element_to_local"),
-           doc.Element.ctor.doc)
+           doc.Element.ctor.doc_2args_geometry_T_element_to_local)
       .def("set_body", &Element::set_body, doc.Element.set_body.doc)
       .def("get_body", &Element::get_body, doc.Element.get_body.doc);
 }

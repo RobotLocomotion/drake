@@ -62,7 +62,8 @@ PYBIND11_MODULE(controllers, m) {
   rbt_idyn  // BR
       .def(py::init<const RigidBodyTree<double>*,
                     rbt::InverseDynamics<double>::InverseDynamicsMode>(),
-           py::arg("tree"), py::arg("mode"), doc.rbt.InverseDynamics.ctor.doc_4)
+           py::arg("tree"), py::arg("mode"),
+           doc.rbt.InverseDynamics.ctor.doc_2args_tree_mode)
       .def("is_pure_gravity_compensation",
            &rbt::InverseDynamics<double>::is_pure_gravity_compensation,
            doc.rbt.InverseDynamics.is_pure_gravity_compensation.doc);
@@ -99,7 +100,8 @@ PYBIND11_MODULE(controllers, m) {
   idyn  // BR
       .def(py::init<const multibody::multibody_plant::MultibodyPlant<double>*,
                     InverseDynamics<double>::InverseDynamicsMode>(),
-           py::arg("plant"), py::arg("mode"), doc.InverseDynamics.ctor.doc_6)
+           py::arg("plant"), py::arg("mode"),
+           doc.InverseDynamics.ctor.doc_2args_plant_mode)
       .def("is_pure_gravity_compensation",
            &InverseDynamics<double>::is_pure_gravity_compensation,
            doc.InverseDynamics.is_pure_gravity_compensation.doc);
@@ -122,14 +124,15 @@ PYBIND11_MODULE(controllers, m) {
            py::arg("has_reference_acceleration"),
            // Keep alive, ownership: RigidBodyTree keeps this alive.
            // See "Keep Alive Behavior" in pydrake_pybind.h for details.
-           py::keep_alive<2 /* Nurse */, 1 /* Patient */>(),
-           doc.InverseDynamicsController.ctor.doc_3)
+           py::keep_alive<2 /* Nurse */, 1 /* Patient */>())
       .def(py::init<const MultibodyPlant<double>&, const VectorX<double>&,
                     const VectorX<double>&, const VectorX<double>&, bool>(),
            py::arg("robot"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
            py::arg("has_reference_acceleration"),
            // Keep alive, reference: `self` keeps `MultibodyPlant` alive.
-           py::keep_alive<1, 2>(), doc.InverseDynamicsController.ctor.doc_4)
+           py::keep_alive<1, 2>(),
+           doc.InverseDynamicsController.ctor.  // BR
+           doc_5args_plant_kp_ki_kd_has_reference_acceleration)
       .def("set_integral_value",
            &InverseDynamicsController<double>::set_integral_value,
            doc.InverseDynamicsController.set_integral_value.doc);
@@ -152,7 +155,7 @@ PYBIND11_MODULE(controllers, m) {
         },
         py::arg("A"), py::arg("B"), py::arg("Q"), py::arg("R"),
         py::arg("N") = Eigen::Matrix<double, 0, 0>::Zero(),
-        doc.LinearQuadraticRegulator.doc);
+        doc.LinearQuadraticRegulator.doc_5args_A_B_Q_R_N);
 
   m.def("DiscreteTimeLinearQuadraticRegulator",
         [](const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -173,7 +176,7 @@ PYBIND11_MODULE(controllers, m) {
             &LinearQuadraticRegulator),
         py::arg("system"), py::arg("Q"), py::arg("R"),
         py::arg("N") = Eigen::Matrix<double, 0, 0>::Zero(),
-        doc.LinearQuadraticRegulator.doc);
+        doc.LinearQuadraticRegulator.doc_4args_system_Q_R_N);
 
   m.def("LinearQuadraticRegulator",
         py::overload_cast<const systems::System<double>&,
@@ -184,7 +187,7 @@ PYBIND11_MODULE(controllers, m) {
             &LinearQuadraticRegulator),
         py::arg("system"), py::arg("context"), py::arg("Q"), py::arg("R"),
         py::arg("N") = Eigen::Matrix<double, 0, 0>::Zero(),
-        doc.LinearQuadraticRegulator.doc);
+        doc.LinearQuadraticRegulator.doc_5args_system_context_Q_R_N);
 }
 
 }  // namespace pydrake

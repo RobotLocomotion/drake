@@ -34,7 +34,8 @@ void init_pc_flags(py::module m) {
     using Class = Fields;
     constexpr auto& cls_doc = doc.Fields;
     py::class_<Class>(m, "Fields", cls_doc.doc)
-        .def(py::init<BaseFieldT>(), py::arg("base_fields"), cls_doc.ctor.doc_4)
+        .def(py::init<BaseFieldT>(), py::arg("base_fields"),
+             cls_doc.ctor.doc_1args_base_fields)
         .def("base_fields", &Class::base_fields, cls_doc.base_fields.doc)
         .def("has_base_fields", &Class::has_base_fields,
              cls_doc.has_base_fields.doc)
