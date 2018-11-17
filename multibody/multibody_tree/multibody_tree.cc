@@ -10,6 +10,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/body_node_welded.h"
+#include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/spatial_inertia.h"
@@ -70,6 +71,11 @@ MultibodyTree<T>::MultibodyTree() {
   ModelInstanceIndex default_instance =
       AddModelInstance("DefaultModelInstance");
   DRAKE_DEMAND(default_instance == default_model_instance());
+
+  // Add "world" frame for ease-of-use.
+  AddFrame(std::make_unique<FixedOffsetFrame<T>>(
+      "world", world_frame(), Eigen::Isometry3d::Identity(),
+      world_model_instance()));
 }
 
 template <typename T>

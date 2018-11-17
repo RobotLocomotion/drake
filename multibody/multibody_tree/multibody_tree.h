@@ -309,6 +309,10 @@ class MultibodyTree {
     if (frame == nullptr) {
       throw std::logic_error("Input frame is a nullptr.");
     }
+    if (frame->name() == "world" && HasFrameNamed("world")) {
+      throw std::logic_error(
+          "'world' cannot be added as frame in any model instance");
+    }
     FrameIndex frame_index = topology_.add_frame(frame->body().index());
     // This test MUST be performed BEFORE frames_.push_back() and
     // owned_frames_.push_back() below. Do not move it around!

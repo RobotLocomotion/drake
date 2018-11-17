@@ -14,6 +14,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
+#include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_tree_system.h"
@@ -231,6 +232,12 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
       /* Verify this method is throwing for the right reasons. */
       ".* already contains a joint actuator named 'iiwa_actuator_4'. "
           "Joint actuator names must be unique within a given model.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+          "world", model->world_frame(), Eigen::Isometry3d::Identity())),
+      std::logic_error,
+      "'world' cannot be added as frame in any model instance");
 
   // Now we tested we cannot add body or joints with an existing name, finalize
   // the model.
