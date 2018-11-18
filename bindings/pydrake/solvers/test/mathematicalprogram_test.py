@@ -1,6 +1,7 @@
 from __future__ import print_function, absolute_import
 
 from pydrake.solvers import mathematicalprogram as mp
+from pydrake.solvers.gurobi import GurobiSolver
 from pydrake.solvers.mathematicalprogram import SolverType
 
 import unittest
@@ -30,7 +31,7 @@ class TestQP:
             prog.AddLinearConstraint(sym.logical_and(x[1] >= 1, x[1] <= 2.)),
             # Linear inequality
             prog.AddLinearConstraint(3 * x[0] - x[1] <= 2),
-            # Linaer equality
+            # Linear equality
             prog.AddLinearConstraint(x[0] + 2 * x[1] == 3)]
 
         # TODO(eric.cousineau): Add constant terms
@@ -46,6 +47,7 @@ class TestMathematicalProgram(unittest.TestCase):
         vars_all = prog.decision_variables()
         self.assertEqual(vars_all.shape, (5,))
 
+    @unittest.skipUnless(GurobiSolver().available(), "Requires Gurobi")
     def test_mixed_integer_optimization(self):
         prog = mp.MathematicalProgram()
         x = prog.NewBinaryVariables(3, "x")

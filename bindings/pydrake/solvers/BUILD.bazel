@@ -165,8 +165,11 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "mathematicalprogram_test",
-    tags = gurobi_test_tags(),
-    deps = [":mathematicalprogram_py"],
+    tags = gurobi_test_tags(gurobi_required = False),
+    deps = [
+        ":gurobi_py",
+        ":mathematicalprogram_py",
+    ],
 )
 
 drake_py_test(
