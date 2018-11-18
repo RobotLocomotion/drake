@@ -304,14 +304,35 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   /// derivatives for the entire diagram. Aborts if @p subsystem is not
   /// actually a subsystem of this diagram. Returns a 0-length ContinuousState
   /// if @p subsystem has none.
-  const ContinuousState<T>& GetSubsystemDerivatives(
-      const ContinuousState<T>& derivatives, const System<T>* subsystem) const {
-    DRAKE_DEMAND(subsystem != nullptr);
+  const ContinuousState<T>& GetSubsystemDerivatives(const System<T>& subsystem,
+      const ContinuousState<T>& derivatives) const {
     auto diagram_derivatives =
         dynamic_cast<const DiagramContinuousState<T>*>(&derivatives);
     DRAKE_DEMAND(diagram_derivatives != nullptr);
-    const SubsystemIndex i = GetSystemIndexOrAbort(subsystem);
+    const SubsystemIndex i = GetSystemIndexOrAbort(&subsystem);
     return diagram_derivatives->get_substate(i);
+  }
+
+  DRAKE_DEPRECATED("Call GetSubsystemDerivatives(subsystem, derivatives) "
+                   "instead.  This call site will be removed on 2/15/19.")
+  const ContinuousState<T>& GetSubsystemDerivatives(
+      const ContinuousState<T>& derivatives, const System<T>* subsystem)
+      const {
+    return GetSubsystemDerivatives(*subsystem, derivatives);
+  }
+
+  /// Retrieves the discrete state values for a particular subsystem from the
+  /// discrete values for the entire diagram. Aborts if @p subsystem is not
+  /// actually a subsystem of this diagram. Returns an empty DiscreteValues
+  /// if @p subsystem has none.
+  const DiscreteValues<T>& GetSubsystemDiscreteValues(
+      const System<T>& subsystem,
+      const DiscreteValues<T>& discrete_values) const {
+    auto diagram_discrete_state =
+        dynamic_cast<const DiagramDiscreteValues<T>*>(&discrete_values);
+    DRAKE_DEMAND(diagram_discrete_state != nullptr);
+    const SubsystemIndex i = GetSystemIndexOrAbort(&subsystem);
+    return diagram_discrete_state->get_subdiscrete(i);
   }
 
   /// Returns a constant reference to the subcontext that corresponds to the
