@@ -364,10 +364,6 @@ GTEST_TEST(testEqualityConstrainedQPSolver, WrongSolverOptions) {
   EqualityConstrainedQPSolver solver;
   MathematicalProgramResult result;
   SolverOptions solver_options;
-  solver_options.SetOption(solver.solver_id(), "Foo", 0.1);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      solver.Solve(prog, {}, solver_options, &result), std::invalid_argument,
-      "Unsupported option in EqualityConstrainedQPSolver.");
 
   solver_options.SetOption(solver.solver_id(), "FeasibilityTol", -0.1);
   DRAKE_EXPECT_THROWS_MESSAGE(

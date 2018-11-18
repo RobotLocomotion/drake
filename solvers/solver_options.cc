@@ -137,5 +137,34 @@ std::string to_string(const SolverOptions& x) {
   return result.str();
 }
 
+namespace {
+template <typename T>
+bool CheckOptionKeysForSolverHelper(
+    const std::unordered_map<std::string, T>& key_vals,
+    const std::unordered_set<std::string>& allowable_keys) {
+  for (const auto& key_val : key_vals) {
+    if (allowable_keys.count(key_val.first) == 0) {
+      std::cout << key_val.first << " is not allowed in the SolverOptions.\n";
+      return false;
+    }
+  }
+  return true;
+}
+}  // namespace
+
+bool SolverOptions::CheckOptionKeysForSolver(
+    const SolverId& solver_id,
+    const std::unordered_set<std::string>& double_keys,
+    const std::unordered_set<std::string>& int_keys,
+    const std::unordered_set<std::string>& str_keys) const {
+  if (CheckOptionKeysForSolverHelper(GetOptionsDouble(solver_id),
+                                     double_keys) &&
+      CheckOptionKeysForSolverHelper(GetOptionsInt(solver_id), int_keys) &&
+      CheckOptionKeysForSolverHelper(GetOptionsStr(solver_id), str_keys)) {
+    return true;
+  }
+  return false;
+}
+
 }  // namespace solvers
 }  // namespace drake

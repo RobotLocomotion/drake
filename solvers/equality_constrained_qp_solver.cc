@@ -70,24 +70,23 @@ struct EqualityConstrainedQPSolverOptions {
 };
 
 void GetEqualityConstrainedQPSolverOptions(
-    const std::unordered_map<std::string, double>& options,
-    EqualityConstrainedQPSolverOptions* solver_options) {
-  std::unordered_map<std::string, double> options_double = options;
+    const SolverOptions& solver_options,
+    EqualityConstrainedQPSolverOptions* equality_qp_solver_options) {
+  DRAKE_ASSERT(solver_options.CheckOptionKeysForSolver(
+      EqualityConstrainedQPSolver::id(),
+      {EqualityConstrainedQPSolver::FeasibilityTolOptionName()}, {}, {}));
 
+  const auto& options_double =
+      solver_options.GetOptionsDouble(EqualityConstrainedQPSolver::id());
   auto it = options_double.find(
       EqualityConstrainedQPSolver::FeasibilityTolOptionName());
   if (it != options_double.end()) {
     if (it->second >= 0) {
-      solver_options->feasibility_tol = it->second;
-      options_double.erase(it);
+      equality_qp_solver_options->feasibility_tol = it->second;
     } else {
       throw std::invalid_argument(
           "FeasibilityTol should be a non-negative number.");
     }
-  }
-  if (!options_double.empty()) {
-    throw std::invalid_argument(
-        "Unsupported option in EqualityConstrainedQPSolver.");
   }
 }
 
@@ -130,15 +129,11 @@ void EqualityConstrainedQPSolver::Solve(
   }
 
   EqualityConstrainedQPSolverOptions solver_options_struct{};
-  std::unordered_map<std::string, double> option_double =
-      prog.GetSolverOptionsDouble(EqualityConstrainedQPSolver::id());
-  GetEqualityConstrainedQPSolverOptions(option_double, &solver_options_struct);
-  if (solver_options.has_value()) {
-    std::unordered_map<std::string, double> options_double_input =
-        solver_options->GetOptionsDouble(EqualityConstrainedQPSolver::id());
-    GetEqualityConstrainedQPSolverOptions(options_double_input,
-                                          &solver_options_struct);
-  }
+  SolverOptions merged_solver_options =
+      solver_options.has_value() ? solver_options.value() : SolverOptions();
+  merged_solver_options.Merge(prog.solver_options());
+  GetEqualityConstrainedQPSolverOptions(merged_solver_options,
+                                        &solver_options_struct);
 
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {

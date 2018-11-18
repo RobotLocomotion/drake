@@ -81,5 +81,29 @@ GTEST_TEST(SolverOptionsTest, Merge) {
   dut_expected.SetOption(id2, "key1", 1);
   EXPECT_EQ(dut, dut_expected);
 }
+
+GTEST_TEST(SolverOptionsTest, CheckOptionKeysForSolver) {
+  const SolverId id1("id1");
+  const SolverId id2("id2");
+
+  SolverOptions solver_options;
+  solver_options.SetOption(id1, "key1", 1.2);
+  solver_options.SetOption(id1, "key2", 1);
+  solver_options.SetOption(id1, "key3", "foo");
+
+  // First check a solver id not in solver_options.
+  EXPECT_TRUE(solver_options.CheckOptionKeysForSolver(id2, {"key1"}, {"key2"},
+                                                      {"key3"}));
+  // Check the solver id in solver_options.
+  EXPECT_TRUE(solver_options.CheckOptionKeysForSolver(id1, {"key1"}, {"key2"},
+                                                      {"key3"}));
+
+  // Check an option not set for id1.
+  solver_options.SetOption(id1, "key2", 1.3);
+  EXPECT_FALSE(solver_options.CheckOptionKeysForSolver(id1, {"key1"}, {"key2"},
+                                                       {"key3"}));
+  EXPECT_TRUE(solver_options.CheckOptionKeysForSolver(id1, {"key1", "key2"},
+                                                      {"key2"}, {"key3"}));
+}
 }  // namespace solvers
 }  // namespace drake
