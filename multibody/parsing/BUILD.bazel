@@ -25,6 +25,7 @@ filegroup(
 drake_cc_package_library(
     name = "parsing",
     deps = [
+        ":file_parser",
         ":package_map",
         ":parser_common",
         ":parser_path_utils",
@@ -179,6 +180,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "file_parser",
+    srcs = [
+        "file_parser.cc",
+    ],
+    hdrs = [
+        "file_parser.h",
+    ],
+    deps = [
+        ":sdf_parser",
+        ":urdf_parser",
+    ],
+)
+
+drake_cc_library(
     name = "test_loaders",
     testonly = 1,
     srcs = [
@@ -233,6 +248,19 @@ drake_cc_googletest(
     ],
     deps = [
         ":test_loaders",
+        "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "file_parser_test",
+    data = [
+        ":test_models",
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":file_parser",
+        "//common:find_resource",
         "//common/test_utilities",
     ],
 )

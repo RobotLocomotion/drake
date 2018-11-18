@@ -28,7 +28,11 @@ from pydrake.multibody.multibody_tree.multibody_plant import (
     PointPairContactInfo,
 )
 from pydrake.multibody.multibody_tree.parsing import (
+    AddModelFromFile,
     AddModelFromSdfFile,
+    AddModelFromUrdfFile,
+    AddModelsFromFile,
+    AddModelsFromSdfFile,
 )
 from pydrake.multibody.benchmarks.acrobot import (
     AcrobotParameters,
@@ -209,16 +213,40 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertIsInstance(joint_actuator.joint(), Joint)
 
     def test_multibody_plant_parsing(self):
-        file_name = FindResourceOrThrow(
+        sdf_file = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
-        plant = MultibodyPlant(time_step=0.01)
-        model_instance = AddModelFromSdfFile(
-            file_name=file_name, plant=plant)
-        self.assertIsInstance(model_instance, ModelInstanceIndex)
-
-        plant = MultibodyPlant(time_step=0.01)
-        model_instance = AddModelFromSdfFile(
-            file_name=file_name, model_name="acrobot", plant=plant)
+        urdf_file = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.urdf")
+        for dut, file_name, model_name, result_type in (
+                (AddModelFromFile, sdf_file, None, ModelInstanceIndex),
+                (AddModelFromFile, sdf_file, "", ModelInstanceIndex),
+                (AddModelFromFile, sdf_file, "foo", ModelInstanceIndex),
+                (AddModelFromFile, urdf_file, None, ModelInstanceIndex),
+                (AddModelFromFile, urdf_file, "", ModelInstanceIndex),
+                (AddModelFromFile, urdf_file, "foo", ModelInstanceIndex),
+                (AddModelFromSdfFile, sdf_file, None, ModelInstanceIndex),
+                (AddModelFromSdfFile, sdf_file, "", ModelInstanceIndex),
+                (AddModelFromSdfFile, sdf_file, "foo", ModelInstanceIndex),
+                (AddModelFromUrdfFile, urdf_file, None, ModelInstanceIndex),
+                (AddModelFromUrdfFile, urdf_file, "", ModelInstanceIndex),
+                (AddModelFromUrdfFile, urdf_file, "foo", ModelInstanceIndex),
+                (AddModelsFromFile, sdf_file, None, list),
+                (AddModelsFromFile, sdf_file, "", list),
+                (AddModelsFromFile, sdf_file, "foo", list),
+                (AddModelsFromFile, urdf_file, None, list),
+                (AddModelsFromFile, urdf_file, "", list),
+                (AddModelsFromFile, urdf_file, "foo", list),
+                (AddModelsFromSdfFile, sdf_file, None, list),
+                ):
+            plant = MultibodyPlant(time_step=0.01)
+            if model_name is None:
+                result = dut(file_name=file_name, plant=plant)
+            else:
+                result = dut(file_name=file_name, plant=plant,
+                             model_name=model_name)
+            self.assertIsInstance(result, result_type)
+            if result_type is list:
+                self.assertIsInstance(result[0], ModelInstanceIndex)
 
     def test_multibody_tree_kinematics(self):
         file_name = FindResourceOrThrow(

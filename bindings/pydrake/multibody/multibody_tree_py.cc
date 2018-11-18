@@ -21,7 +21,9 @@
 #include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/parsing/file_parser.h"
+#include "drake/multibody/parsing/sdf_parser.h"
+#include "drake/multibody/parsing/urdf_parser.h"
 
 namespace drake {
 namespace pydrake {
@@ -774,6 +776,30 @@ void init_parsing(py::module m) {
 
   using multibody_plant::MultibodyPlant;
 
+  m.def("AddModelsFromFile",
+        py::overload_cast<const string&, const string&, MultibodyPlant<T>*,
+                          SceneGraph<T>*>(&AddModelsFromFile),
+        py::arg("file_name"), py::arg("model_name"), py::arg("plant"),
+        py::arg("scene_graph") = nullptr, doc.AddModelsFromFile.doc_4args);
+  m.def("AddModelsFromFile",
+        py::overload_cast<const string&, MultibodyPlant<T>*, SceneGraph<T>*>(
+            &AddModelsFromFile),
+        py::arg("file_name"), py::arg("plant"),
+        py::arg("scene_graph") = nullptr, doc.AddModelsFromFile.doc_3args);
+  m.def("AddModelFromFile",
+        py::overload_cast<const string&, const string&, MultibodyPlant<T>*,
+                          SceneGraph<T>*>(&AddModelFromFile),
+        py::arg("file_name"), py::arg("model_name"), py::arg("plant"),
+        py::arg("scene_graph") = nullptr, doc.AddModelFromFile.doc_4args);
+  m.def("AddModelFromFile",
+        py::overload_cast<const string&, MultibodyPlant<T>*, SceneGraph<T>*>(
+            &AddModelFromFile),
+        py::arg("file_name"), py::arg("plant"),
+        py::arg("scene_graph") = nullptr, doc.AddModelFromFile.doc_3args);
+
+  m.def("AddModelsFromSdfFile", &AddModelsFromSdfFile, py::arg("file_name"),
+        py::arg("plant"), py::arg("scene_graph") = nullptr,
+        doc.AddModelsFromSdfFile.doc);
   m.def("AddModelFromSdfFile",
         py::overload_cast<const string&, const string&, MultibodyPlant<T>*,
                           SceneGraph<T>*>(&AddModelFromSdfFile),
@@ -784,6 +810,17 @@ void init_parsing(py::module m) {
             &AddModelFromSdfFile),
         py::arg("file_name"), py::arg("plant"),
         py::arg("scene_graph") = nullptr, doc.AddModelFromSdfFile.doc_3args);
+
+  m.def("AddModelFromUrdfFile",
+        py::overload_cast<const string&, const string&, MultibodyPlant<T>*,
+                          SceneGraph<T>*>(&AddModelFromUrdfFile),
+        py::arg("file_name"), py::arg("model_name"), py::arg("plant"),
+        py::arg("scene_graph") = nullptr, doc.AddModelFromUrdfFile.doc_4args);
+  m.def("AddModelFromUrdfFile",
+        py::overload_cast<const string&, MultibodyPlant<T>*, SceneGraph<T>*>(
+            &AddModelFromUrdfFile),
+        py::arg("file_name"), py::arg("plant"),
+        py::arg("scene_graph") = nullptr, doc.AddModelFromUrdfFile.doc_3args);
 }
 
 void init_all(py::module m) {
