@@ -369,10 +369,12 @@ class TestCustom(unittest.TestCase):
         diagram = builder.Build()
         context = diagram.CreateDefaultContext()
         # Existence check.
-        self.assertTrue(
-            diagram.GetMutableSubsystemState(system, context) is not None)
-        self.assertTrue(
-            diagram.GetMutableSubsystemContext(system, context) is not None)
+        self.assertIsNot(
+            diagram.GetMutableSubsystemState(system, context), None)
+        subcontext = diagram.GetMutableSubsystemContext(system, context)
+        self.assertIsNot(subcontext, None)
+        self.assertIs(
+            diagram.GetSubsystemContext(system, context), subcontext)
 
     def test_continuous_state_api(self):
         # N.B. Since this has trivial operations, we can test all scalar types.

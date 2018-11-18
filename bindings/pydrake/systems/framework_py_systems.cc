@@ -502,6 +502,13 @@ struct Impl {
              // Keep alive, ownership: `return` keeps `Context` alive.
              py::keep_alive<0, 3>(),
              doc.Diagram.GetMutableSubsystemState.doc_2args_subsystem_context)
+        .def("GetSubsystemContext",
+             overload_cast_explicit<const Context<T>&, const System<T>&,
+                                    const Context<T>&>(
+                 &Diagram<T>::GetSubsystemContext),
+             py_reference,
+             // Keep alive, ownership: `return` keeps `Context` alive.
+             py::keep_alive<0, 3>(), doc.Diagram.GetMutableSubsystemContext.doc)
         .def("GetMutableSubsystemContext",
              overload_cast_explicit<Context<T>&, const System<T>&, Context<T>*>(
                  &Diagram<T>::GetMutableSubsystemContext),
