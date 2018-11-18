@@ -72,7 +72,7 @@ void SetSolverOptionBySolverType(MathematicalProgram* self,
  * @param name Name of the Cost / Constraint class.
  */
 template <typename C>
-auto RegisterBinding(py::handle* pscope,
+auto RegisterBinding(py::module* pscope,
                      py::class_<MathematicalProgram>* pprog_cls,
                      const string& name) {
   auto& scope = *pscope;
@@ -80,10 +80,11 @@ auto RegisterBinding(py::handle* pscope,
   typedef Binding<C> B;
   string pyname = "Binding_" + name;
   // TODO(m-chaturvedi) Add Pybind11 documentation.
-  auto binding_cls = py::class_<B>(scope, pyname.c_str())
-                         .def("evaluator", &B::evaluator)
-                         .def("constraint", &B::evaluator)
-                         .def("variables", &B::variables);
+  py::class_<B> binding_cls(scope, pyname.c_str());
+  binding_cls  // BR
+      .def("evaluator", &B::evaluator)
+      .def("constraint", &B::evaluator)
+      .def("variables", &B::variables);
   // Deprecate `constraint`.
   DeprecateAttribute(
       binding_cls, "constraint",
@@ -674,7 +675,8 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       &m, &prog_cls, "LinearComplementarityConstraint");
 
   // Mirror procedure for costs
-  py::class_<Cost, std::shared_ptr<Cost>> cost(m, "Cost", doc.Cost.doc);
+  py::class_<Cost, EvaluatorBase, std::shared_ptr<Cost>> cost(m, "Cost",
+                                                              doc.Cost.doc);
 
   py::class_<LinearCost, Cost, std::shared_ptr<LinearCost>>(m, "LinearCost",
                                                             doc.LinearCost.doc)
