@@ -121,7 +121,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
       auto& subcontext = diagram_context->GetSubsystemContext(i);
 
-      if (!subcontext.num_numeric_parameters() &&
+      if (!subcontext.num_numeric_parameter_groups() &&
           !subcontext.num_abstract_parameters()) {
         // Then there is no work to do for this subcontext.
         continue;
@@ -135,11 +135,11 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       // expensive.
 
       std::vector<BasicVector<T>*> numeric_params;
-      for (int j = 0; j < subcontext.num_numeric_parameters(); ++j) {
+      for (int j = 0; j < subcontext.num_numeric_parameter_groups(); ++j) {
         numeric_params.push_back(&params->get_mutable_numeric_parameter(
             numeric_parameter_offset + j));
       }
-      numeric_parameter_offset += subcontext.num_numeric_parameters();
+      numeric_parameter_offset += subcontext.num_numeric_parameter_groups();
 
       std::vector<AbstractValue*> abstract_params;
       for (int j = 0; j < subcontext.num_abstract_parameters(); ++j) {
@@ -186,7 +186,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
       auto& subcontext = diagram_context->GetSubsystemContext(i);
 
-      if (!subcontext.num_numeric_parameters() &&
+      if (!subcontext.num_numeric_parameter_groups() &&
           !subcontext.num_abstract_parameters()) {
         // Then there is no work to do for this subcontext.
         continue;
@@ -201,11 +201,11 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
       std::vector<BasicVector<T>*> numeric_params;
       std::vector<AbstractValue*> abstract_params;
-      for (int j = 0; j < subcontext.num_numeric_parameters(); ++j) {
+      for (int j = 0; j < subcontext.num_numeric_parameter_groups(); ++j) {
         numeric_params.push_back(&params->get_mutable_numeric_parameter(
             numeric_parameter_offset + j));
       }
-      numeric_parameter_offset += subcontext.num_numeric_parameters();
+      numeric_parameter_offset += subcontext.num_numeric_parameter_groups();
       for (int j = 0; j < subcontext.num_abstract_parameters(); ++j) {
         abstract_params.push_back(&params->get_mutable_abstract_parameter(
             abstract_parameter_offset + j));

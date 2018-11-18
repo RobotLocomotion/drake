@@ -157,7 +157,8 @@ class LeafSystem : public System<T> {
     }
 
     // The numeric parameters must all be valid BasicVectors.
-    const int num_numeric_parameters = context->num_numeric_parameters();
+    const int num_numeric_parameters =
+        context->num_numeric_parameter_groups();
     for (int i = 0; i < num_numeric_parameters; ++i) {
       const BasicVector<T>& group = context->get_numeric_parameter(i);
       detail::CheckBasicVectorInvariants(&group);
@@ -206,7 +207,7 @@ class LeafSystem : public System<T> {
   void SetDefaultParameters(const Context<T>& context,
                             Parameters<T>* parameters) const override {
     unused(context);
-    for (int i = 0; i < parameters->num_numeric_parameters(); i++) {
+    for (int i = 0; i < parameters->num_numeric_parameter_groups(); i++) {
       BasicVector<T>& p = parameters->get_mutable_numeric_parameter(i);
       auto model_vector = model_numeric_parameters_.CloneVectorModel<T>(i);
       if (model_vector != nullptr) {
