@@ -79,6 +79,7 @@ struct Impl {
     using Base::DeclarePeriodicEvent;
     using Base::DeclarePeriodicPublish;
     using Base::DeclarePerStepEvent;
+    using Base::DeclareVectorInputPort;
     using Base::DeclareVectorOutputPort;
 
     // Because `LeafSystem<T>::DoPublish` is protected, and we had to override
@@ -402,6 +403,16 @@ struct Impl {
              }),
              py_reference_internal, py::arg("alloc"), py::arg("calc"),
              doc.LeafSystem.DeclareAbstractOutputPort.doc)
+        .def("_DeclareVectorInputPort",
+             [](PyLeafSystem * self, std::string name,
+                const BasicVector<T>& model_vector,
+                optional<RandomDistribution> random_type) -> auto& {
+               return self->DeclareVectorInputPort(name, model_vector,
+                                                   random_type);
+             },
+             py_reference_internal, py::arg("name"), py::arg("model_vector"),
+             py::arg("random_type") = nullopt,
+             doc.LeafSystem.DeclareVectorInputPort.doc_3args)
         .def("_DeclareVectorOutputPort",
              WrapCallbacks([](PyLeafSystem * self, const std::string& name,
                               const BasicVector<T>& arg1,
