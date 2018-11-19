@@ -1,0 +1,6 @@
+<sdf version='1.6'>
+  <model name='robot1'>
+  </model>
+  <model name='robot2'>
+  </model>
+</sdf>

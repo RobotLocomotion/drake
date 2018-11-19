@@ -45,7 +45,7 @@ drake_cc_binary(
         "//common:text_logging_gflags",
         "//geometry:geometry_visualization",
         "//multibody/benchmarks/acrobot:make_acrobot_plant",
-        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//multibody/parsing",
         "//systems/analysis:simulator",
         "//systems/controllers:linear_quadratic_regulator",
         "//systems/framework:diagram",
