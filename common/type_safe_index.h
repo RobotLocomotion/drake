@@ -173,8 +173,13 @@ class TypeSafeIndex {
   /// @name     Utility methods
   ///@{
 
-  /// Implicit conversion-to-int operator.
+  /// Implicit conversion-to-int operator. Must be valid.
   operator int() const {
+    return to_int();
+  }
+
+  /// Explicit conversion-to-int operator. Must be valid.
+  int to_int() const {
     DRAKE_ASSERT_VOID(AssertValid(index_, "Converting to an int."));
     return index_;
   }
