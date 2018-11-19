@@ -167,7 +167,7 @@ class TestValue(unittest.TestCase):
 
         params = Parameters(
             numeric=[model_numeric.Clone()], abstract=[model_abstract.Clone()])
-        self.assertEqual(params.num_numeric_parameters(), 1)
+        self.assertEqual(params.num_numeric_parameter_groups(), 1)
         self.assertEqual(params.num_abstract_parameters(), 1)
         # Numeric.
         compare(params.get_numeric_parameter(index=0), model_numeric)

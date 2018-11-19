@@ -308,8 +308,9 @@ void DefineFrameworkPySemantics(py::module m) {
         .def(py::init<unique_ptr<AbstractValue>>(), py::arg("value"),
              // Keep alive, ownership: `value` keeps `self` alive.
              py::keep_alive<2, 1>(), doc.Parameters.ctor.doc_1args_value)
-        .def("num_numeric_parameters", &Parameters<T>::num_numeric_parameters,
-             doc.Parameters.num_numeric_parameters.doc)
+        .def("num_numeric_parameter_groups",
+             &Parameters<T>::num_numeric_parameter_groups,
+             doc.Parameters.num_numeric_parameter_groups.doc)
         .def("num_abstract_parameters", &Parameters<T>::num_abstract_parameters,
              doc.Parameters.num_abstract_parameters.doc)
         .def("get_numeric_parameter", &Parameters<T>::get_numeric_parameter,

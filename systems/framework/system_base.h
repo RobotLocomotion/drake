@@ -735,8 +735,14 @@ class SystemBase : public internal::SystemMessageInterface {
 
   /** Returns the number of declared numeric parameters (each of these is
   a vector-valued parameter). */
-  int num_numeric_parameters() const {
+  int num_numeric_parameter_groups() const {
     return static_cast<int>(numeric_parameter_tickets_.size());
+  }
+
+  DRAKE_DEPRECATED("Use num_numeric_parameter_groups().  This method will be"
+                   " removed after 2/15/19.")
+  int num_numeric_parameters() const {
+    return num_numeric_parameter_groups();
   }
 
   /** Returns the number of declared abstract parameters. */
@@ -848,7 +854,7 @@ class SystemBase : public internal::SystemMessageInterface {
   @pre The supplied index must be the next available one; that is, indexes
        must be assigned sequentially. */
   void AddNumericParameter(NumericParameterIndex index) {
-    DRAKE_DEMAND(index == num_numeric_parameters());
+    DRAKE_DEMAND(index == num_numeric_parameter_groups());
     const DependencyTicket ticket(assign_next_dependency_ticket());
     numeric_parameter_tickets_.push_back(
         {ticket, "numeric parameter " + std::to_string(index)});
@@ -1036,7 +1042,7 @@ class SystemBase : public internal::SystemMessageInterface {
 
   const TrackerInfo& numeric_parameter_tracker_info(
       NumericParameterIndex index) const {
-    DRAKE_DEMAND(0 <= index && index < num_numeric_parameters());
+    DRAKE_DEMAND(0 <= index && index < num_numeric_parameter_groups());
     return numeric_parameter_tickets_[index];
   }
 

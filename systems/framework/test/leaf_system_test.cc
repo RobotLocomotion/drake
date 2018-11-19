@@ -535,10 +535,11 @@ TEST_F(LeafSystemTest, NumericParameters) {
   mutable_vec.SetAtIndex(1, 42.0);
   EXPECT_EQ(42.0, vec[1]);
 
-  EXPECT_EQ(system_.num_numeric_parameters(), 1);
+  EXPECT_EQ(system_.num_numeric_parameter_groups(), 1);
   const DependencyTracker& pn_tracker =
       context->get_tracker(system_.pn_ticket());
-  for (NumericParameterIndex i(0); i < system_.num_numeric_parameters(); ++i) {
+  for (NumericParameterIndex i(0);
+       i < system_.num_numeric_parameter_groups(); ++i) {
     const DependencyTracker& tracker =
         context->get_tracker(system_.numeric_parameter_ticket(i));
     EXPECT_TRUE(pn_tracker.HasPrerequisite(tracker));
@@ -1048,7 +1049,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
 GTEST_TEST(ModelLeafSystemTest, ModelNumericParams) {
   DeclaredModelPortsSystem dut;
   auto context = dut.CreateDefaultContext();
-  ASSERT_EQ(context->num_numeric_parameters(), 1);
+  ASSERT_EQ(context->num_numeric_parameter_groups(), 1);
   const BasicVector<double>& param = context->get_numeric_parameter(0);
   // Check that type was preserved.
   ASSERT_TRUE(is_dynamic_castable<const MyVector2d>(&param));

@@ -201,9 +201,9 @@ class System : public SystemBase {
 
     // Set the default parameters, checking that the number of parameters does
     // not change.
-    const int num_params = context->num_numeric_parameters();
+    const int num_params = context->num_numeric_parameter_groups();
     SetDefaultParameters(*context, &context->get_mutable_parameters());
-    DRAKE_DEMAND(num_params == context->num_numeric_parameters());
+    DRAKE_DEMAND(num_params == context->num_numeric_parameter_groups());
   }
 
   /// Assigns random values to all elements of the state.
@@ -258,10 +258,10 @@ class System : public SystemBase {
 
     // Set the default parameters, checking that the number of parameters does
     // not change.
-    const int num_params = context->num_numeric_parameters();
+    const int num_params = context->num_numeric_parameter_groups();
     SetRandomParameters(*context, &context->get_mutable_parameters(),
                         generator);
-    DRAKE_DEMAND(num_params == context->num_numeric_parameters());
+    DRAKE_DEMAND(num_params == context->num_numeric_parameter_groups());
   }
 
   /// For each input port, allocates a fixed input of the concrete type
