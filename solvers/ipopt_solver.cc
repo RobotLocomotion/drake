@@ -500,39 +500,92 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
   SolutionResult result_;
 };
 
+template <typename T>
+void SetIpoptApplicationOption(const std::string&, const T&,
+                               Ipopt::IpoptApplication*);
+
+template <typename T>
+typename std::enable_if<std::is_same<T, double>::value>::type
+SetIpoptApplicationOption(const std::string& key, const T& val,
+                          Ipopt::IpoptApplication* app) {
+  app->Options()->SetNumericValue(key, val);
+}
+
+template <typename T>
+typename std::enable_if<std::is_same<T, int>::value>::type
+SetIpoptApplicationOption(const std::string& key, const T& val,
+                          Ipopt::IpoptApplication* app) {
+  app->Options()->SetIntegerValue(key, val);
+}
+
+template <typename T>
+typename std::enable_if<std::is_same<T, std::string>::value>::type
+SetIpoptApplicationOption(const std::string& key, const T& val,
+                          Ipopt::IpoptApplication* app) {
+  app->Options()->SetStringValue(key, val);
+}
+
+template <typename T>
+void SetIpoptOptionsHelper(
+    const std::unordered_map<std::string, T>& ipopt_options,
+    const std::string& key,
+    const T& default_val, Ipopt::IpoptApplication* app) {
+  auto it = ipopt_options.find(key);
+  if (it == ipopt_options.end()) {
+    SetIpoptApplicationOption(key, default_val, app);
+  } else {
+    SetIpoptApplicationOption(key, it->second, app);
+  }
+}
+
+void SetIpoptOptions(const SolverOptions& solver_options, Ipopt::IpoptApplication* app) {
+  // The default tolerance.
+  const double tol = 1.05e-10;  // Note: SNOPT is only 1e-6, but in #3712 we
+  // diagnosed that the CompareMatrices tolerance needed to be the sqrt of the
+  // constr_viol_tol
+  const auto& ipopt_options_double = solver_options.GetOptionsDouble(IpoptSolver::id());
+  const auto& ipopt_options_str = solver_options.GetOptionsStr(IpoptSolver::id());
+  const auto& ipopt_options_int = solver_options.GetOptionsInt(IpoptSolver::id());
+  for (const auto& it : ipopt_options_double) {
+    app->Options()->SetNumericValue(it.first, it.second);
+  }
+
+  for (const auto& it : ipopt_options_int) {
+    app->Options()->SetIntegerValue(it.first, it.second);
+  }
+
+  for (const auto& it : ipopt_options_str) {
+    app->Options()->SetStringValue(it.first, it.second);
+  }
+  SetIpoptOptionsHelper(ipopt_options_double, "tol", tol, app);
+  SetIpoptOptionsHelper(ipopt_options_double, "constr_viol_tol", tol, app);
+  SetIpoptOptionsHelper(ipopt_options_double, "acceptable_tol", tol, app);
+  SetIpoptOptionsHelper(ipopt_options_double, "acceptable_constr_viol_tol", tol, app);
+  SetIpoptOptionsHelper(ipopt_options_str, "hessian_approximation", "limited-memory", app);
+  // Note: 0<= print_level <= 12, with higher numbers more verbose.  4 is very
+  // useful for debugging.
+  SetIpoptOptionsHelper(ipopt_options_int, "print_level", 2, app);
+}
+
 }  // namespace
 
 bool IpoptSolver::is_available() { return true; }
 
-SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
-  DRAKE_ASSERT(prog.linear_complementarity_constraints().empty());
+void IpoptSolver::Solve(const MathematicalProgram& prog,
+                        const optional<Eigen::VectorXd>& initial_guess,
+                        const optional<SolverOptions>& solver_options,
+                        MathematicalProgramResult* result) const {
+  if (!AreProgramAttributesSatisfied(prog)) {
+    throw std::invalid_argument("Ipopt doesn't satisfy the capabilities required by the program");
+  }
 
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
   app->RethrowNonIpoptException(true);
 
-  const double tol = 1.05e-10;  // Note: SNOPT is only 1e-6, but in #3712 we
-  // diagnosed that the CompareMatrices tolerance needed to be the sqrt of the
-  // constr_viol_tol
-  app->Options()->SetNumericValue("tol", tol);
-  app->Options()->SetNumericValue("constr_viol_tol", tol);
-  app->Options()->SetNumericValue("acceptable_tol", tol);
-  app->Options()->SetNumericValue("acceptable_constr_viol_tol", tol);
-  app->Options()->SetStringValue("hessian_approximation", "limited-memory");
-  // Note: 0<= print_level <= 12, with higher numbers more verbose.  4 is very
-  // useful for debugging.
-  app->Options()->SetIntegerValue("print_level", 2);
+  SolverOptions merged_solver_options = solver_options.has_value() ? solver_options.value() : SolverOptions();
+  merged_solver_options.Merge(prog.solver_options);
 
-  for (const auto& it : prog.GetSolverOptionsDouble(id())) {
-    app->Options()->SetNumericValue(it.first, it.second);
-  }
-
-  for (const auto& it : prog.GetSolverOptionsInt(id())) {
-    app->Options()->SetIntegerValue(it.first, it.second);
-  }
-
-  for (const auto& it : prog.GetSolverOptionsStr(id())) {
-    app->Options()->SetStringValue(it.first, it.second);
-  }
+  SetIpoptOptions(merged_solver_options, &(*app));
 
   Ipopt::ApplicationReturnStatus status = app->Initialize();
   if (status != Ipopt::Solve_Succeeded) {
