@@ -1,6 +1,9 @@
 #pragma once
 
+#include <ostream>
 #include <string>
+
+#include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/mathematical_program_solver_interface.h"
@@ -30,7 +33,10 @@ enum class IpoptSolverReturn {
   UNASSIGNED
 };
 
+
 std::string to_string(IpoptSolverReturn status);
+
+std::ostream& operator<<(std::ostream& os, IpoptSolverReturn solver_return);
 
 /**
  * The details of IPOPT solvers after calling Solve function. The users can get
@@ -39,9 +45,18 @@ std::string to_string(IpoptSolverReturn status);
  */
 struct IpoptSolverDetails {
   /**
-   * The final status of the solver. Please refer to 
+   * The final status of the solver. Please refer to section 6 in Introduction
+to Ipopt: A tutorial for downloading, installing, and using Ipopt.
    */
   IpoptSolverReturn status;
+  // The final value for the lower bound multiplier.
+  Eigen::VectorXd z_L;
+  // The final value for the upper bound multiplier.
+  Eigen::VectorXd z_U;
+  // The final value for the constraint function.
+  Eigen::VectorXd g;
+  // The final value for the constraint multiplier.
+  Eigen::VectorXd lambda;
 };
 
 class IpoptSolver : public MathematicalProgramSolverInterface {
