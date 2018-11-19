@@ -48,8 +48,8 @@ class CustomAdder(LeafSystem):
     def __init__(self, num_inputs, size):
         LeafSystem.__init__(self)
         for i in range(num_inputs):
-            self._DeclareInputPort(kUseDefaultName, PortDataType.kVectorValued,
-                                   size)
+            self._DeclareVectorInputPort(
+                "input{}".format(i), BasicVector(size))
         self._DeclareVectorOutputPort("sum", BasicVector(size), self._calc_sum)
 
     def _calc_sum(self, context, sum_data):
@@ -180,6 +180,9 @@ class TestCustom(unittest.TestCase):
                 # Ensure that we have inputs / outputs to call direct
                 # feedthrough.
                 self._DeclareInputPort(PortDataType.kVectorValued, 1)
+                self._DeclareVectorInputPort(
+                    name="test_input", model_vector=BasicVector(1),
+                    random_type=None)
                 self._DeclareVectorOutputPort(BasicVector(1), noop)
 
             def _DoPublish(self, context, events):
@@ -195,7 +198,7 @@ class TestCustom(unittest.TestCase):
 
             def _DoHasDirectFeedthrough(self, input_port, output_port):
                 # Test inputs.
-                test.assertEqual(input_port, 0)
+                test.assertIn(input_port, [0, 1])
                 test.assertEqual(output_port, 0)
                 # Call base method to ensure we do not get recursion.
                 base_return = LeafSystem._DoHasDirectFeedthrough(
@@ -366,10 +369,12 @@ class TestCustom(unittest.TestCase):
         diagram = builder.Build()
         context = diagram.CreateDefaultContext()
         # Existence check.
-        self.assertTrue(
-            diagram.GetMutableSubsystemState(system, context) is not None)
-        self.assertTrue(
-            diagram.GetMutableSubsystemContext(system, context) is not None)
+        self.assertIsNot(
+            diagram.GetMutableSubsystemState(system, context), None)
+        subcontext = diagram.GetMutableSubsystemContext(system, context)
+        self.assertIsNot(subcontext, None)
+        self.assertIs(
+            diagram.GetSubsystemContext(system, context), subcontext)
 
     def test_continuous_state_api(self):
         # N.B. Since this has trivial operations, we can test all scalar types.

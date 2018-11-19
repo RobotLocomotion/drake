@@ -79,6 +79,7 @@ struct Impl {
     using Base::DeclarePeriodicEvent;
     using Base::DeclarePeriodicPublish;
     using Base::DeclarePerStepEvent;
+    using Base::DeclareVectorInputPort;
     using Base::DeclareVectorOutputPort;
 
     // Because `LeafSystem<T>::DoPublish` is protected, and we had to override
@@ -402,6 +403,16 @@ struct Impl {
              }),
              py_reference_internal, py::arg("alloc"), py::arg("calc"),
              doc.LeafSystem.DeclareAbstractOutputPort.doc)
+        .def("_DeclareVectorInputPort",
+             [](PyLeafSystem * self, std::string name,
+                const BasicVector<T>& model_vector,
+                optional<RandomDistribution> random_type) -> auto& {
+               return self->DeclareVectorInputPort(name, model_vector,
+                                                   random_type);
+             },
+             py_reference_internal, py::arg("name"), py::arg("model_vector"),
+             py::arg("random_type") = nullopt,
+             doc.LeafSystem.DeclareVectorInputPort.doc_3args)
         .def("_DeclareVectorOutputPort",
              WrapCallbacks([](PyLeafSystem * self, const std::string& name,
                               const BasicVector<T>& arg1,
@@ -491,6 +502,13 @@ struct Impl {
              // Keep alive, ownership: `return` keeps `Context` alive.
              py::keep_alive<0, 3>(),
              doc.Diagram.GetMutableSubsystemState.doc_2args_subsystem_context)
+        .def("GetSubsystemContext",
+             overload_cast_explicit<const Context<T>&, const System<T>&,
+                                    const Context<T>&>(
+                 &Diagram<T>::GetSubsystemContext),
+             py_reference,
+             // Keep alive, ownership: `return` keeps `Context` alive.
+             py::keep_alive<0, 3>(), doc.Diagram.GetMutableSubsystemContext.doc)
         .def("GetMutableSubsystemContext",
              overload_cast_explicit<Context<T>&, const System<T>&, Context<T>*>(
                  &Diagram<T>::GetMutableSubsystemContext),
