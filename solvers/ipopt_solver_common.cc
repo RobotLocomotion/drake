@@ -9,11 +9,11 @@ namespace drake {
 namespace solvers {
 
 std::string to_string(IpoptSolverReturn status) {
-  switch(status) {
+  switch (status) {
     case IpoptSolverReturn::SUCCESS: {
       return "Success";
     }
-    case IpoptSolverReturn::MAXITER_EXCEEDED : {
+    case IpoptSolverReturn::MAXITER_EXCEEDED: {
       return "Max iteration exceeded";
     }
     case IpoptSolverReturn::CPUTIME_EXCEEDED: {
@@ -61,9 +61,7 @@ std::string to_string(IpoptSolverReturn status) {
     case IpoptSolverReturn::UNASSIGNED: {
       return "Unassigned";
     }
-    default : {
-      throw std::runtime_error("Should not reach here.");
-    }
+    default: { throw std::runtime_error("Should not reach here."); }
   }
 }
 
