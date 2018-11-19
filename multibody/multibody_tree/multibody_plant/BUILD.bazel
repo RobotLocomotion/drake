@@ -19,6 +19,7 @@ drake_cc_package_library(
         ":contact_info",
         ":contact_results",
         ":coulomb_friction",
+        ":multibody_graph_maker",
         ":multibody_plant_core",
     ],
 )
@@ -112,6 +113,19 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "multibody_graph_maker",
+    srcs = [
+        "multibody_graph_maker.cc",
+    ],
+    hdrs = [
+        "multibody_graph_maker.h",
+    ],
+    deps = [
+        "//common:essential",
+    ],
+)
+
 drake_cc_googletest(
     name = "multibody_plant_test",
     data = [
@@ -199,6 +213,14 @@ drake_cc_googletest(
     deps = [
         ":multibody_plant",
         "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_graph_maker_test",
+    deps = [
+        ":multibody_graph_maker",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
