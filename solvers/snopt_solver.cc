@@ -11,14 +11,12 @@
 #include <utility>
 #include <vector>
 
+// NOLINTNEXTLINE(build/include)
+#include "snopt.h"
+
 #include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
 #include "drake/solvers/mathematical_program.h"
-
-extern "C" {
-// NOLINTNEXTLINE(build/include)
-#include "snopt_cwrap.h"
-}
 
 // TODO(jwnimmer-tri) Eventually resolve these warnings.
 #pragma GCC diagnostic push
@@ -366,6 +364,7 @@ void UpdateConstraintBoundsAndGradients(
 
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < static_cast<int>(binding.GetNumElements()); ++j) {
+        // Fortran is 1-indexed.
         (*iGfun)[*grad_index] = 1 + *constraint_index + i;  // row order
         (*jGvar)[*grad_index] =
             1 + prog.FindDecisionVariableIndex(binding.variables()(j));
@@ -511,7 +510,6 @@ void SolveWithGivenOptions(
   if (print_file_it != snopt_options_string.end()) {
     print_file_name = print_file_it->second;
   }
-  int snopt_problem_memCalled = 0;
   isnLog snopt_problem_snLog = NULL;
   isnLog2 snopt_problem_snLog2 = NULL;
   isqLog snopt_problem_sqLog = NULL;
@@ -695,6 +693,7 @@ void SolveWithGivenOptions(
     f_snsetr(const_cast<char*>(it.first.c_str()), &option_len,
              const_cast<double*>(&(it.second)), &errors, snopt_problem_iw,
              &snopt_problem_leniw, snopt_problem_rw, &snopt_problem_lenrw);
+    // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
 
   for (const auto& it : snopt_options_int) {
@@ -703,6 +702,7 @@ void SolveWithGivenOptions(
     f_snseti(const_cast<char*>(it.first.c_str()), &option_len,
              const_cast<int*>(&(it.second)), &errors, snopt_problem_iw,
              &snopt_problem_leniw, snopt_problem_rw, &snopt_problem_lenrw);
+    // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
 
   int Cold = 0;
@@ -714,33 +714,32 @@ void SolveWithGivenOptions(
 
   // Reallocate int and real workspace
   int miniw, minrw;
-  if (snopt_problem_memCalled == 0) {
-    f_snmema(snopt_status, &nF, &nx, &lenA, &lenG, &miniw, &minrw,
-             snopt_problem_iw, &snopt_problem_leniw, snopt_problem_rw,
-             &snopt_problem_lenrw);
-    if (miniw > snopt_problem_leniw) {
-      snopt_problem_leniw = miniw;
-      snopt_problem_iw = static_cast<int*>(
-          realloc(snopt_problem_iw, sizeof(int) * snopt_problem_leniw));
-      const std::string option = "Total int workspace";
-      int errors;
-      int option_len = option.length();
-      f_snseti(const_cast<char*>(option.c_str()), &option_len,
-               &snopt_problem_leniw, &errors, snopt_problem_iw,
-               &snopt_problem_leniw, snopt_problem_rw, &snopt_problem_lenrw);
-    }
-    if (minrw > snopt_problem_lenrw) {
-      snopt_problem_lenrw = minrw;
-      snopt_problem_rw = static_cast<double*>(
-          realloc(snopt_problem_rw, sizeof(double) * snopt_problem_lenrw));
-      const std::string option = "Total real workspace";
-      int errors;
-      int option_len = option.length();
-      f_snseti(const_cast<char*>(option.c_str()), &option_len,
-               &snopt_problem_lenrw, &errors, snopt_problem_iw,
-               &snopt_problem_leniw, snopt_problem_rw, &snopt_problem_lenrw);
-    }
-    snopt_problem_memCalled = 1;
+  f_snmema(snopt_status, &nF, &nx, &lenA, &lenG, &miniw, &minrw,
+           snopt_problem_iw, &snopt_problem_leniw, snopt_problem_rw,
+           &snopt_problem_lenrw);
+  if (miniw > snopt_problem_leniw) {
+    snopt_problem_leniw = miniw;
+    snopt_problem_iw = static_cast<int*>(
+        realloc(snopt_problem_iw, sizeof(int) * snopt_problem_leniw));
+    const std::string option = "Total int workspace";
+    int errors;
+    int option_len = option.length();
+    f_snseti(const_cast<char*>(option.c_str()), &option_len,
+             &snopt_problem_leniw, &errors, snopt_problem_iw,
+             &snopt_problem_leniw, snopt_problem_rw, &snopt_problem_lenrw);
+    // TODO(hongkai.dai): report the error in SnoptSolverDetails.
+  }
+  if (minrw > snopt_problem_lenrw) {
+    snopt_problem_lenrw = minrw;
+    snopt_problem_rw = static_cast<double*>(
+        realloc(snopt_problem_rw, sizeof(double) * snopt_problem_lenrw));
+    const std::string option = "Total real workspace";
+    int errors;
+    int option_len = option.length();
+    f_snseti(const_cast<char*>(option.c_str()), &option_len,
+             &snopt_problem_lenrw, &errors, snopt_problem_iw,
+             &snopt_problem_leniw, snopt_problem_rw, &snopt_problem_lenrw);
+    // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
   // Actual solve.
   f_snkera(&Cold, problem_name, &nF, &nx, &ObjAdd, &ObjRow, snopt_userfun,
@@ -760,7 +759,6 @@ void SolveWithGivenOptions(
   free(snopt_problem_iw);
   free(snopt_problem_rw);
   // Sets snopt problem parameters to null or empty.
-  snopt_problem_memCalled = 0;
   snopt_problem_snLog = nullptr;
   snopt_problem_snLog2 = nullptr;
   snopt_problem_sqLog = nullptr;
