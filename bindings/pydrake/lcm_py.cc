@@ -67,7 +67,7 @@ PYBIND11_MODULE(lcm, m) {
              },
              py::arg("channel"), py::arg("handler"),
              doc.DrakeMockLcm.Subscribe.  // BR
-             doc_2args_conststdstring_drakelcmDrakeLcmInterfaceHandlerFunction)
+             doc)
         .def("InduceSubscriberCallback",
              [](Class* self, const std::string& channel, py::bytes buffer) {
                std::string str = buffer;

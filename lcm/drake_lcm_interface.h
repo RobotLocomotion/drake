@@ -8,10 +8,8 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
-#include "drake/lcm/drake_lcm_message_handler_interface.h"
 
 namespace drake {
 namespace lcm {
@@ -57,15 +55,6 @@ class DrakeLcmInterface {
    * Must not be the empty string.
    */
   virtual void Subscribe(const std::string& channel, HandlerFunction) = 0;
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // TODO(jwnimmer-tri) Remove this deprecated method on or about 2018-06-01.
-  /** A deprecated overload of Subscribe. */
-  DRAKE_DEPRECATED("Use the std::function overload instead")
-  virtual void Subscribe(const std::string& channel,
-                         DrakeLcmMessageHandlerInterface*) = 0;
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
  protected:
   DrakeLcmInterface() = default;

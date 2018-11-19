@@ -8,7 +8,6 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
-#include "drake/lcm/drake_lcm_message_handler_interface.h"
 #include "drake/lcm/lcm_receive_thread.h"
 
 namespace drake {
@@ -82,11 +81,6 @@ class DrakeLcm : public DrakeLcmInterface {
                int data_size, optional<double> time_sec) override;
 
   void Subscribe(const std::string&, HandlerFunction) override;
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  void Subscribe(const std::string&, DrakeLcmMessageHandlerInterface*) override;
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
  private:
   std::string requested_lcm_url_;
