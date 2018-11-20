@@ -134,6 +134,8 @@ ManipulationStation<T>::ManipulationStation(double time_step,
   plant_ = owned_plant_.get();
   scene_graph_ = owned_scene_graph_.get();
   plant_->RegisterAsSourceForSceneGraph(scene_graph_);
+  plant_->set_name("multibody_plant");
+  scene_graph_->set_name("scene_graph");
 
   // Add the table and 80/20 workcell frame.
   const double dx_table_center_to_robot_base = 0.3257;
@@ -207,8 +209,10 @@ ManipulationStation<T>::ManipulationStation(double time_step,
   owned_controller_plant_
       ->template AddForceElement<multibody::UniformGravityFieldElement>(
           -9.81 * Vector3d::UnitZ());
+  owned_controller_plant_->set_name("controller_plant");
 
   internal::get_camera_poses(&camera_poses_in_world_);
+  this->set_name("manipulation_station");
 }
 
 template <typename T>
@@ -364,6 +368,7 @@ void ManipulationStation<T>::Finalize() {
   {  // RGB-D Cameras
     auto render_scene_graph =
         builder.template AddSystem<geometry::dev::SceneGraph>(*scene_graph_);
+    render_scene_graph->set_name("dev_scene_graph_for_rendering");
 
     builder.Connect(plant_->get_geometry_poses_output_port(),
                     render_scene_graph->get_source_pose_port(
