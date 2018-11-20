@@ -31,46 +31,46 @@ PYBIND11_MODULE(pendulum, m) {
   // conversion.
   using T = double;
 
-  py::class_<PendulumPlant<T>, LeafSystem<T>>(m, "PendulumPlant",
-                                              doc.PendulumPlant.doc)
+  py::class_<PendulumPlant<T>, LeafSystem<T>>(
+      m, "PendulumPlant", doc.PendulumPlant.doc)
       .def(py::init<>(), doc.PendulumPlant.ctor.doc_3);
 
   // TODO(russt): Remove custom bindings once #8096 is resolved.
-  py::class_<PendulumInput<T>, BasicVector<T>>(m, "PendulumInput",
-                                               doc.PendulumInput.doc)
+  py::class_<PendulumInput<T>, BasicVector<T>>(
+      m, "PendulumInput", doc.PendulumInput.doc)
       .def(py::init<>(), doc.PendulumInput.ctor.doc_0args)
       .def("tau", &PendulumInput<T>::tau, doc.PendulumInput.tau.doc)
-      .def("set_tau", &PendulumInput<T>::set_tau,
-           doc.PendulumInput.set_tau.doc);
+      .def(
+          "set_tau", &PendulumInput<T>::set_tau, doc.PendulumInput.set_tau.doc);
 
-  py::class_<PendulumParams<T>, BasicVector<T>>(m, "PendulumParams",
-                                                doc.PendulumParams.doc)
+  py::class_<PendulumParams<T>, BasicVector<T>>(
+      m, "PendulumParams", doc.PendulumParams.doc)
       .def(py::init<>(), doc.PendulumParams.ctor.doc_0args)
       .def("mass", &PendulumParams<T>::mass, doc.PendulumParams.mass.doc)
       .def("length", &PendulumParams<T>::length, doc.PendulumParams.length.doc)
       .def("damping", &PendulumParams<T>::damping,
-           doc.PendulumParams.damping.doc)
+          doc.PendulumParams.damping.doc)
       .def("gravity", &PendulumParams<T>::gravity,
-           doc.PendulumParams.gravity.doc)
+          doc.PendulumParams.gravity.doc)
       .def("set_mass", &PendulumParams<T>::set_mass,
-           doc.PendulumParams.set_mass.doc)
+          doc.PendulumParams.set_mass.doc)
       .def("set_length", &PendulumParams<T>::set_length,
-           doc.PendulumParams.set_length.doc)
+          doc.PendulumParams.set_length.doc)
       .def("set_damping", &PendulumParams<T>::set_damping,
-           doc.PendulumParams.set_damping.doc)
+          doc.PendulumParams.set_damping.doc)
       .def("set_gravity", &PendulumParams<T>::set_gravity,
-           doc.PendulumParams.set_gravity.doc);
+          doc.PendulumParams.set_gravity.doc);
 
-  py::class_<PendulumState<T>, BasicVector<T>>(m, "PendulumState",
-                                               doc.PendulumState.doc)
+  py::class_<PendulumState<T>, BasicVector<T>>(
+      m, "PendulumState", doc.PendulumState.doc)
       .def(py::init<>(), doc.PendulumState.ctor.doc_0args)
       .def("theta", &PendulumState<T>::theta, doc.PendulumState.theta.doc)
       .def("thetadot", &PendulumState<T>::thetadot,
-           doc.PendulumState.thetadot.doc)
+          doc.PendulumState.thetadot.doc)
       .def("set_theta", &PendulumState<T>::set_theta,
-           doc.PendulumState.set_theta.doc)
+          doc.PendulumState.set_theta.doc)
       .def("set_thetadot", &PendulumState<T>::set_thetadot,
-           doc.PendulumState.set_thetadot.doc);
+          doc.PendulumState.set_thetadot.doc);
 }
 
 }  // namespace pydrake

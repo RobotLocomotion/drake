@@ -26,10 +26,10 @@ class SampleTranslator final
   std::unique_ptr<drake::systems::BasicVector<double>> AllocateOutputVector()
       const final;
   void Deserialize(const void* lcm_message_bytes, int lcm_message_length,
-                   drake::systems::VectorBase<double>* vector_base) const final;
+      drake::systems::VectorBase<double>* vector_base) const final;
   void Serialize(double time,
-                 const drake::systems::VectorBase<double>& vector_base,
-                 std::vector<uint8_t>* lcm_message_bytes) const final;
+      const drake::systems::VectorBase<double>& vector_base,
+      std::vector<uint8_t>* lcm_message_bytes) const final;
 };
 
 }  // namespace test

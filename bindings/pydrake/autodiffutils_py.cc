@@ -30,17 +30,17 @@ PYBIND11_MODULE(autodiffutils, m) {
       .def(py::init<const double&, const Eigen::VectorXd&>())
       .def("value", [](const AutoDiffXd& self) { return self.value(); })
       .def("derivatives",
-           [](const AutoDiffXd& self) { return self.derivatives(); })
+          [](const AutoDiffXd& self) { return self.derivatives(); })
       .def("__str__",
-           [](const AutoDiffXd& self) {
-             return py::str("AD{{{}, nderiv={}}}")
-                 .format(self.value(), self.derivatives().size());
-           })
+          [](const AutoDiffXd& self) {
+            return py::str("AD{{{}, nderiv={}}}")
+                .format(self.value(), self.derivatives().size());
+          })
       .def("__repr__",
-           [](const AutoDiffXd& self) {
-             return py::str("<AutoDiffXd {} nderiv={}>")
-                 .format(self.value(), self.derivatives().size());
-           })
+          [](const AutoDiffXd& self) {
+            return py::str("<AutoDiffXd {} nderiv={}>")
+                .format(self.value(), self.derivatives().size());
+          })
       // Arithmetic
       .def(-py::self)
       .def(py::self + py::self)
@@ -70,10 +70,10 @@ PYBIND11_MODULE(autodiffutils, m) {
       .def(py::self >= double())
       // Additional math
       .def("__pow__",
-           [](const AutoDiffXd& base, int exponent) {
-             return pow(base, exponent);
-           },
-           py::is_operator())
+          [](const AutoDiffXd& base, int exponent) {
+            return pow(base, exponent);
+          },
+          py::is_operator())
       .def("__abs__", [](const AutoDiffXd& x) { return abs(x); });
   DefCopyAndDeepCopy(&autodiff);
 
@@ -94,14 +94,14 @@ PYBIND11_MODULE(autodiffutils, m) {
       .def("asin", [](const AutoDiffXd& x) { return asin(x); })
       .def("acos", [](const AutoDiffXd& x) { return acos(x); })
       .def("atan2",
-           [](const AutoDiffXd& y, const AutoDiffXd& x) { return atan2(y, x); })
+          [](const AutoDiffXd& y, const AutoDiffXd& x) { return atan2(y, x); })
       .def("sinh", [](const AutoDiffXd& x) { return sinh(x); })
       .def("cosh", [](const AutoDiffXd& x) { return cosh(x); })
       .def("tanh", [](const AutoDiffXd& x) { return tanh(x); })
       .def("min",
-           [](const AutoDiffXd& x, const AutoDiffXd& y) { return min(x, y); })
+          [](const AutoDiffXd& x, const AutoDiffXd& y) { return min(x, y); })
       .def("max",
-           [](const AutoDiffXd& x, const AutoDiffXd& y) { return max(x, y); })
+          [](const AutoDiffXd& x, const AutoDiffXd& y) { return max(x, y); })
       .def("ceil", [](const AutoDiffXd& x) { return ceil(x); })
       .def("floor", [](const AutoDiffXd& x) { return floor(x); });
   // Mirror for numpy.
