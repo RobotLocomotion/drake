@@ -429,6 +429,16 @@ PYBIND11_MODULE(rigid_body_tree, m) {
                    cache, points, from_body_or_frame_ind, to_body_or_frame_ind);
              },
              doc.RigidBodyTree.transformPoints.doc)
+        .def("relativeRollPitchYaw",
+             [](const RigidBodyTree<double>& tree,
+                const KinematicsCache<T>& cache, int from_body_or_frame_ind,
+                int to_body_or_frame_ind) {
+               return tree.relativeRollPitchYaw(cache, from_body_or_frame_ind,
+                                                to_body_or_frame_ind);
+             },
+             py::arg("cache"), py::arg("from_body_or_frame_ind"),
+             py::arg("to_body_or_frame_ind"),
+             doc.RigidBodyTree.relativeRollPitchYaw.doc)
         .def("transformPointsJacobian",
              [](const RigidBodyTree<double>& tree,
                 const KinematicsCache<T>& cache, const Matrix3X<double>& points,
