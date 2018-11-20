@@ -393,6 +393,7 @@ void UpdateConstraintBoundsAndGradients<LinearComplementarityConstraint>(
     (*Flow)[*constraint_index] = 0;
     (*Fupp)[*constraint_index] = 0;
     for (int j = 0; j < binding.evaluator()->M().rows(); ++j) {
+      // Fortran is 1-indexed.
       (*iGfun)[*grad_index] = 1 + *constraint_index;
       (*jGvar)[*grad_index] =
           1 + prog.FindDecisionVariableIndex(binding.variables()(j));
@@ -682,6 +683,7 @@ void SolveWithGivenOptions(
   }
   for (const auto& it : linear_constraints_triplets) {
     A[A_index] = it.value();
+    // Fortran is 1-indexed.
     iAfun[A_index] = 2 + num_nonlinear_constraints + it.row();
     jAvar[A_index] = 1 + it.col();
     A_index++;
