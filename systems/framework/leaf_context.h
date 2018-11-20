@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <set>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -49,6 +50,59 @@ class LeafContext : public Context<T> {
   using Context<T>::init_abstract_state;
   using Context<T>::init_parameters;
 #endif
+
+  /// Returns a partial textual description of the Context, intended to be
+  /// human-readable.  It is not guaranteed to be unambiguous nor complete.
+  std::string to_string() const override {
+    std::ostringstream os;
+
+    os << this->GetSystemPathname() << " Context\n";
+    os << "----------------------------------------------------------------\n";
+    os << "Time: " << this->get_time() << "\n";
+
+    if (this->get_continuous_state().size() ||
+        this->get_num_discrete_state_groups() ||
+        this->get_num_abstract_states()) {
+      os << "States:\n";
+      if (this->get_continuous_state().size()) {
+        os << "  " << this->get_continuous_state().size()
+           << " continuous states\n";
+        os << "    " << this->get_continuous_state_vector() << "\n";
+      }
+      if (this->get_num_discrete_state_groups()) {
+        os << "  " << this->get_num_discrete_state_groups()
+           << " discrete state groups with\n";
+        for (int i = 0; i < this->get_num_discrete_state_groups(); i++) {
+          os << "     " << this->get_discrete_state(i).size() << " states\n";
+          os << "       " << this->get_discrete_state(i) << "\n";
+        }
+      }
+      if (this->get_num_abstract_states()) {
+        os << "  " << this->get_num_abstract_states() << " abstract states\n";
+      }
+      os << "\n";
+    }
+
+    if (this->num_numeric_parameter_groups() ||
+        this->num_abstract_parameters()) {
+      os << "Parameters:\n";
+      if (this->num_numeric_parameter_groups()) {
+        os << "  " << this->num_numeric_parameter_groups()
+           << " numeric parameter groups";
+        os << " with\n";
+        for (int i = 0; i < this->num_numeric_parameter_groups(); i++) {
+          os << "     " << this->get_numeric_parameter(i).size()
+             << " parameters\n";
+          os << "       " << this->get_numeric_parameter(i) << "\n";
+        }
+      }
+      if (this->num_abstract_parameters()) {
+        os << "  " << this->num_abstract_parameters()
+           << " abstract parameters\n";
+      }
+    }
+    return os.str();
+  }
 
  protected:
   /// Protected copy constructor takes care of the local data members and
