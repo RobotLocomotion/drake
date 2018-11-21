@@ -127,8 +127,18 @@ class RgbdCamera final : public LeafSystem<double> {
   /** Returns `X_BC`.  */
   const Eigen::Isometry3d& color_camera_optical_pose() const { return X_BC_; }
 
+  /** Sets `X_BC`.  */
+  void set_color_camera_optical_pose(const Eigen::Isometry3d& X_BC) {
+    X_BC_ = X_BC;
+  }
+
   /** Returns `X_BD`.  */
   const Eigen::Isometry3d& depth_camera_optical_pose() const { return X_BD_; }
+
+  /** Sets `X_BD`.  */
+  void set_depth_camera_optical_pose(const Eigen::Isometry3d& X_BD) {
+    X_BD_ = X_BD;
+  }
 
   /** Returns the id of the frame to which this camera is affixed. */
   geometry::FrameId parent_frame_id() const { return parent_frame_; }
@@ -189,7 +199,7 @@ class RgbdCamera final : public LeafSystem<double> {
 
   // The color sensor's origin (`Co`) is offset by 0.02 m on the Y axis of
   // the RgbdCamera's base coordinate system (`B`).
-  const Eigen::Isometry3d X_BC_{Eigen::Translation3d(0., 0.02, 0.) *
+  Eigen::Isometry3d X_BC_{Eigen::Translation3d(0., 0.02, 0.) *
       (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
           Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))};
 
@@ -197,7 +207,7 @@ class RgbdCamera final : public LeafSystem<double> {
   // it's needed.
   // The depth sensor's origin (`Do`) is offset by 0.02 m on the Y axis of
   // the RgbdCamera's base coordinate system (`B`).
-  const Eigen::Isometry3d X_BD_{Eigen::Translation3d(0., 0.02, 0.) *
+  Eigen::Isometry3d X_BD_{Eigen::Translation3d(0., 0.02, 0.) *
       (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
           Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))};
 };
