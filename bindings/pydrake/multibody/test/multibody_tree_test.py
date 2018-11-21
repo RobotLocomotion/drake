@@ -29,6 +29,7 @@ from pydrake.multibody.multibody_tree.multibody_plant import (
 )
 from pydrake.multibody.multibody_tree.parsing import (
     AddModelFromSdfFile,
+    Parser,
 )
 from pydrake.multibody.benchmarks.acrobot import (
     AcrobotParameters,
@@ -209,16 +210,43 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertIsInstance(joint_actuator.joint(), Joint)
 
     def test_multibody_plant_parsing(self):
-        file_name = FindResourceOrThrow(
+        # Calls every combination of overload spellings for the parser-related
+        # functions and inspects their return type.
+        sdf_file = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
-        plant = MultibodyPlant(time_step=0.01)
-        model_instance = AddModelFromSdfFile(
-            file_name=file_name, plant=plant)
-        self.assertIsInstance(model_instance, ModelInstanceIndex)
-
-        plant = MultibodyPlant(time_step=0.01)
-        model_instance = AddModelFromSdfFile(
-            file_name=file_name, model_name="acrobot", plant=plant)
+        urdf_file = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.urdf")
+        for dut, file_name, model_name, result_type in (
+                (Parser.AddModelFromFile, sdf_file, None, ModelInstanceIndex),
+                (Parser.AddModelFromFile, sdf_file, "", ModelInstanceIndex),
+                (Parser.AddModelFromFile, sdf_file, "a", ModelInstanceIndex),
+                (Parser.AddModelFromFile, urdf_file, None, ModelInstanceIndex),
+                (Parser.AddModelFromFile, urdf_file, "", ModelInstanceIndex),
+                (Parser.AddModelFromFile, urdf_file, "a", ModelInstanceIndex),
+                (Parser.AddAllModelsFromFile, sdf_file, None, list),
+                (Parser.AddAllModelsFromFile, urdf_file, None, list),
+                (AddModelFromSdfFile, sdf_file, None, ModelInstanceIndex),
+                (AddModelFromSdfFile, sdf_file, "", ModelInstanceIndex),
+                (AddModelFromSdfFile, sdf_file, "a", ModelInstanceIndex),
+                ):
+            # Call either the Parser method or the free function.
+            plant = MultibodyPlant(time_step=0.01)
+            if getattr(dut, 'im_self', '') is None:  # Is it a Parser method?
+                parser = Parser(plant=plant)
+                if model_name is None:
+                    result = dut(parser, file_name=file_name)
+                else:
+                    result = dut(parser, file_name=file_name,
+                                 model_name=model_name)
+            else:
+                if model_name is None:
+                    result = dut(file_name=file_name, plant=plant)
+                else:
+                    result = dut(file_name=file_name, plant=plant,
+                                 model_name=model_name)
+            self.assertIsInstance(result, result_type)
+            if result_type is list:
+                self.assertIsInstance(result[0], ModelInstanceIndex)
 
     def test_multibody_tree_kinematics(self):
         file_name = FindResourceOrThrow(
