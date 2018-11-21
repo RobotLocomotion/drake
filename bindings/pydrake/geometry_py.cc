@@ -34,7 +34,7 @@ void BindIdentifier(py::module m, const std::string& name) {
                      .format(cls_handle));
              return Class{};
            }),
-           cls_doc.ctor.doc_3)
+           cls_doc.ctor.doc_0args)
       .def("get_value", &Class::get_value, cls_doc.get_value.doc)
       .def("is_valid", &Class::is_valid, cls_doc.is_valid.doc)
       .def(py::self == py::self)
@@ -90,7 +90,7 @@ PYBIND11_MODULE(geometry, m) {
         // Keep alive, ownership: `return` keeps `builder` alive.
         py::keep_alive<0, 1>(),
         // TODO(eric.cousineau): Figure out why this is necessary (#9398).
-        py_reference, doc.ConnectDrakeVisualizer.doc);
+        py_reference, doc.ConnectDrakeVisualizer.doc_3args);
   m.def("ConnectDrakeVisualizer",
         py::overload_cast<
             systems::DiagramBuilder<double>*, const SceneGraph<double>&,
@@ -101,13 +101,13 @@ PYBIND11_MODULE(geometry, m) {
         // Keep alive, ownership: `return` keeps `builder` alive.
         py::keep_alive<0, 1>(),
         // TODO(eric.cousineau): Figure out why this is necessary (#9398).
-        py_reference, doc.ConnectDrakeVisualizer.doc);
+        py_reference, doc.ConnectDrakeVisualizer.doc_4args);
   m.def("DispatchLoadMessage", &DispatchLoadMessage, py::arg("scene_graph"),
         py::arg("lcm"), doc.DispatchLoadMessage.doc);
 
   // PenetrationAsPointPair
   py::class_<PenetrationAsPointPair<T>>(m, "PenetrationAsPointPair")
-      .def(py::init<>(), doc.PenetrationAsPointPair.ctor.doc_3)
+      .def(py::init<>(), doc.PenetrationAsPointPair.ctor.doc_0args)
       .def_readwrite("id_A", &PenetrationAsPointPair<T>::id_A,
                      doc.PenetrationAsPointPair.id_A.doc)
       .def_readwrite("id_B", &PenetrationAsPointPair<T>::id_B,

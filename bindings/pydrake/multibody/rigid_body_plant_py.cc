@@ -72,7 +72,8 @@ PYBIND11_MODULE(rigid_body_plant, m) {
         .def(py::init<const Vector3<T>&, const Vector3<T>&, const Vector3<T>&,
                       const Vector3<T>&>(),
              py::arg("application_point"), py::arg("normal"), py::arg("force"),
-             py::arg("torque") = Vector3<T>::Zero(), doc.ContactForce.ctor.doc)
+             py::arg("torque") = Vector3<T>::Zero(),
+             doc.ContactForce.ctor.doc_4args)
         .def("get_reaction_force", &Class::get_reaction_force,
              doc.ContactForce.get_reaction_force.doc)
         .def("get_application_point", &Class::get_application_point,
@@ -90,7 +91,7 @@ PYBIND11_MODULE(rigid_body_plant, m) {
     using Class = ContactResults<T>;
     py::class_<Class> cls(m, "ContactResults", doc.ContactResults.doc);
     cls  // BR
-        .def(py::init<>(), doc.ContactResults.ctor.doc)
+        .def(py::init<>(), doc.ContactResults.ctor.doc_0args)
         .def("get_num_contacts", &Class::get_num_contacts,
              doc.ContactResults.get_num_contacts.doc)
         .def("get_contact_info", &Class::get_contact_info,
@@ -114,11 +115,11 @@ PYBIND11_MODULE(rigid_body_plant, m) {
     using Class = CompliantMaterial;
     py::class_<Class> cls(m, "CompliantMaterial", doc.CompliantMaterial.doc);
     cls  // BR
-        .def(py::init<>(), doc.CompliantMaterial.ctor.doc)
+        .def(py::init<>(), doc.CompliantMaterial.ctor.doc_0args)
         .def(py::init<double, double, double, double>(),
              py::arg("youngs_modulus"), py::arg("dissipation"),
              py::arg("static_friction"), py::arg("dynamic_friction"),
-             doc.CompliantMaterial.ctor.doc_4)
+             doc.CompliantMaterial.ctor.doc_4args)
         // youngs_modulus
         .def("set_youngs_modulus", &Class::set_youngs_modulus, py_reference,
              doc.CompliantMaterial.set_youngs_modulus.doc)
@@ -143,11 +144,11 @@ PYBIND11_MODULE(rigid_body_plant, m) {
         // friction
         .def("set_friction", py::overload_cast<double>(&Class::set_friction),
              py::arg("value"), py_reference,
-             doc.CompliantMaterial.set_friction.doc)
+             doc.CompliantMaterial.set_friction.doc_1args)
         .def("set_friction",
              py::overload_cast<double, double>(&Class::set_friction),
              py::arg("static_friction"), py::arg("dynamic_friction"),
-             py_reference, doc.CompliantMaterial.set_friction.doc_2)
+             py_reference, doc.CompliantMaterial.set_friction.doc_2args)
         .def("static_friction", &Class::static_friction,
              py::arg("default_value") = Class::kDefaultStaticFriction,
              doc.CompliantMaterial.static_friction.doc)
@@ -171,7 +172,7 @@ PYBIND11_MODULE(rigid_body_plant, m) {
                                      doc.RigidBodyPlant.doc)
         .def(py::init<unique_ptr<const RigidBodyTree<T>>, double>(),
              py::arg("tree"), py::arg("timestep") = 0.0,
-             doc.RigidBodyPlant.ctor.doc)
+             doc.RigidBodyPlant.ctor.doc_2args)
         .def("set_contact_model_parameters",
              &Class::set_contact_model_parameters,
              doc.RigidBodyPlant.set_contact_model_parameters.doc)
@@ -184,28 +185,28 @@ PYBIND11_MODULE(rigid_body_plant, m) {
              doc.RigidBodyPlant.get_num_bodies.doc)
         .def("get_num_positions",
              overload_cast_explicit<int>(&Class::get_num_positions),
-             doc.RigidBodyPlant.get_num_positions.doc)
+             doc.RigidBodyPlant.get_num_positions.doc_0args)
         .def("get_num_positions",
              overload_cast_explicit<int, int>(&Class::get_num_positions),
-             doc.RigidBodyPlant.get_num_positions.doc_2)
+             doc.RigidBodyPlant.get_num_positions.doc_1args)
         .def("get_num_velocities",
              overload_cast_explicit<int>(&Class::get_num_velocities),
-             doc.RigidBodyPlant.get_num_velocities.doc)
+             doc.RigidBodyPlant.get_num_velocities.doc_0args)
         .def("get_num_velocities",
              overload_cast_explicit<int, int>(&Class::get_num_velocities),
-             doc.RigidBodyPlant.get_num_velocities.doc_2)
+             doc.RigidBodyPlant.get_num_velocities.doc_1args)
         .def("get_num_states",
              overload_cast_explicit<int>(&Class::get_num_states),
-             doc.RigidBodyPlant.get_num_states.doc)
+             doc.RigidBodyPlant.get_num_states.doc_0args)
         .def("get_num_states",
              overload_cast_explicit<int, int>(&Class::get_num_states),
-             doc.RigidBodyPlant.get_num_states.doc_2)
+             doc.RigidBodyPlant.get_num_states.doc_1args)
         .def("get_num_actuators",
              overload_cast_explicit<int>(&Class::get_num_actuators),
-             doc.RigidBodyPlant.get_num_actuators.doc)
+             doc.RigidBodyPlant.get_num_actuators.doc_0args)
         .def("get_num_actuators",
              overload_cast_explicit<int, int>(&Class::get_num_actuators),
-             doc.RigidBodyPlant.get_num_actuators.doc_2)
+             doc.RigidBodyPlant.get_num_actuators.doc_1args)
         .def("get_num_model_instances", &Class::get_num_model_instances,
              doc.RigidBodyPlant.get_num_model_instances.doc)
         .def("get_input_size", &Class::get_input_size,
@@ -220,12 +221,12 @@ PYBIND11_MODULE(rigid_body_plant, m) {
              overload_cast_explicit<void, Context<T>*,
                                     const Eigen::Ref<const VectorX<T>>>(
                  &Class::set_state_vector),
-             doc.RigidBodyPlant.set_state_vector.doc)
+             doc.RigidBodyPlant.set_state_vector.doc_2args_context_x)
         .def("set_state_vector",
              overload_cast_explicit<void, State<T>*,
                                     const Eigen::Ref<const VectorX<T>>>(
                  &Class::set_state_vector),
-             doc.RigidBodyPlant.set_state_vector.doc_2)
+             doc.RigidBodyPlant.set_state_vector.doc_2args_state_x)
         .def("SetDefaultState", &Class::SetDefaultState,
              doc.RigidBodyPlant.SetDefaultState.doc)
         .def("FindInstancePositionIndexFromWorldIndex",
@@ -284,7 +285,7 @@ PYBIND11_MODULE(rigid_body_plant, m) {
              // Keep alive, reference: `this` keeps `tree` alive.
              py::keep_alive<1, 2>(),
              // Keep alive, reference: `this` keeps `lcm` alive.
-             py::keep_alive<1, 3>(), doc.DrakeVisualizer.ctor.doc)
+             py::keep_alive<1, 3>(), doc.DrakeVisualizer.ctor.doc_3args)
         .def("set_publish_period", &Class::set_publish_period,
              py::arg("period"), doc.DrakeVisualizer.set_publish_period.doc)
         .def("ReplayCachedSimulation", &Class::ReplayCachedSimulation,

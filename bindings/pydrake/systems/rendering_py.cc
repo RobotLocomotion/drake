@@ -31,11 +31,11 @@ PYBIND11_MODULE(rendering, m) {
   py::class_<PoseVector<T>, BasicVector<T>> pose_vector(m, "PoseVector",
                                                         doc.PoseVector.doc);
   pose_vector  // BR
-      .def(py::init(), doc.PoseVector.ctor.doc)
+      .def(py::init(), doc.PoseVector.ctor.doc_0args)
       .def(py::init<const Eigen::Quaternion<T>&,
                     const Eigen::Translation<T, 3>&>(),
            py::arg("rotation"), py::arg("translation"),
-           doc.PoseVector.ctor.doc_2)
+           doc.PoseVector.ctor.doc_2args)
       .def("get_isometry", &PoseVector<T>::get_isometry,
            doc.PoseVector.get_isometry.doc)
       .def("get_translation", &PoseVector<T>::get_translation,
@@ -52,9 +52,9 @@ PYBIND11_MODULE(rendering, m) {
   py::class_<FrameVelocity<T>, BasicVector<T>> frame_velocity(
       m, "FrameVelocity", doc.FrameVelocity.doc);
   frame_velocity  // BR
-      .def(py::init(), doc.FrameVelocity.ctor.doc)
+      .def(py::init(), doc.FrameVelocity.ctor.doc_0args)
       .def(py::init<const multibody::SpatialVelocity<T>&>(),
-           py::arg("velocity"), doc.FrameVelocity.ctor.doc_2)
+           py::arg("velocity"), doc.FrameVelocity.ctor.doc_1args)
       .def("get_velocity", &FrameVelocity<T>::get_velocity,
            doc.FrameVelocity.get_velocity.doc)
       .def("set_velocity", &FrameVelocity<T>::set_velocity, py::arg("velocity"),
@@ -63,7 +63,7 @@ PYBIND11_MODULE(rendering, m) {
   frame_velocity.attr("kSize") = int{FrameVelocity<T>::kSize};
 
   py::class_<PoseBundle<T>>(m, "PoseBundle", doc.PoseBundle.doc)
-      .def(py::init<int>(), py::arg("num_poses"), doc.PoseBundle.ctor.doc_3)
+      .def(py::init<int>(), py::arg("num_poses"), doc.PoseBundle.ctor.doc_1args)
       .def("get_num_poses", &PoseBundle<T>::get_num_poses,
            doc.PoseBundle.get_num_poses.doc)
       .def("get_pose", &PoseBundle<T>::get_pose, doc.PoseBundle.get_pose.doc)
@@ -112,7 +112,7 @@ PYBIND11_MODULE(rendering, m) {
       m, "MultibodyPositionToGeometryPose",
       doc.MultibodyPositionToGeometryPose.doc)
       .def(py::init<const multibody::multibody_plant::MultibodyPlant<T>&>(),
-           doc.MultibodyPositionToGeometryPose.ctor.doc_3)
+           doc.MultibodyPositionToGeometryPose.ctor.doc_1args)
       .def("get_input_port",
            &MultibodyPositionToGeometryPose<T>::get_input_port,
            py_reference_internal,

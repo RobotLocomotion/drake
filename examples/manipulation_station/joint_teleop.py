@@ -16,6 +16,7 @@ from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
+from pydrake.systems.primitives import FirstOrderLowPassFilter
 from pydrake.util.eigen_geometry import Isometry3
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -67,8 +68,11 @@ teleop = builder.AddSystem(JointSliders(station.get_controller_plant(),
 if args.test:
     teleop.window.withdraw()  # Don't display the window when testing.
 
-builder.Connect(teleop.get_output_port(0), station.GetInputPort(
-    "iiwa_position"))
+filter = builder.AddSystem(FirstOrderLowPassFilter(time_constant=2.0,
+                                                   size=7))
+builder.Connect(teleop.get_output_port(0), filter.get_input_port(0))
+builder.Connect(filter.get_output_port(0),
+                station.GetInputPort("iiwa_position"))
 
 wsg_buttons = builder.AddSystem(SchunkWsgButtons(teleop.window))
 builder.Connect(wsg_buttons.GetOutputPort("position"), station.GetInputPort(
@@ -110,6 +114,8 @@ if not args.hardware:
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(
     station_context).get_value()
 teleop.set_position(q0)
+filter.set_initial_output_value(diagram.GetMutableSubsystemContext(
+    filter, simulator.get_mutable_context()), q0)
 
 # This is important to avoid duplicate publishes to the hardware interface:
 simulator.set_publish_every_time_step(False)

@@ -8,6 +8,7 @@
 #include "drake/common/unused.h"
 #include "drake/math/normalize_vector.h"
 #include "drake/math/quaternion.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_conversion_gradient.h"
 #include "drake/multibody/joints/drake_joint_impl.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -88,11 +89,14 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {
-    Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry> ret;
-    ret.linear() = drake::math::quat2rotmat(q.template bottomRows<4>());
-    ret.translation() << q[0], q[1], q[2];
-    ret.makeAffine();
-    return ret;
+    const drake::Vector3<typename DerivedQ::Scalar> p_PoBo(q[0], q[1], q[2]);
+    const drake::Vector4<typename DerivedQ::Scalar> wxyz =
+        q.template bottomRows<4>();
+    const Eigen::Quaternion<typename DerivedQ::Scalar> quaternion_PB(
+        wxyz(0), wxyz(1), wxyz(2), wxyz(3));
+    const drake::math::RigidTransform<typename DerivedQ::Scalar> X_PB(
+        quaternion_PB, p_PoBo);
+    return X_PB.GetAsIsometry3();
   }
 
   template <typename DerivedQ, typename DerivedMS>
@@ -183,12 +187,12 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     qdot_to_v.resize(get_num_velocities(), get_num_positions());
 
     // Get the quaternion values.
-    auto quat =
+    auto quaternion_block =
         q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension);
-    const auto& ew = quat[0];
-    const auto& ex = quat[1];
-    const auto& ey = quat[2];
-    const auto& ez = quat[3];
+    const typename DerivedQ::Scalar& ew = quaternion_block[0];
+    const typename DerivedQ::Scalar& ex = quaternion_block[1];
+    const typename DerivedQ::Scalar& ey = quaternion_block[2];
+    const typename DerivedQ::Scalar& ez = quaternion_block[3];
 
     // Assume that the quaternion orientation (e) gives a transformation matrix
     // that re-expresses vectors from some frame B to some frame N. The upper
@@ -211,8 +215,9 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
 
     // Given the arbitrary frames B and N described above, the next three
     // columns re-express linear velocities from frame N to frame B.
-    auto R = drake::math::quat2rotmat(quat);
-    qdot_to_v.template block<3, 3>(3, 0) = R.transpose();
+    const Eigen::Quaternion<typename DerivedQ::Scalar> quat(ew, ex, ey, ez);
+    const drake::math::RotationMatrix<typename DerivedQ::Scalar> R(quat);
+    qdot_to_v.template block<3, 3>(3, 0) = R.inverse().matrix();
     qdot_to_v.template block<3, 4>(3, 3).setZero();
   }
 
@@ -266,12 +271,12 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     }
 
     // Get the quaternion values.
-    auto quat =
+    auto quaternion_block =
         q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension);
-    const auto& ew = quat[0];
-    const auto& ex = quat[1];
-    const auto& ey = quat[2];
-    const auto& ez = quat[3];
+    const typename DerivedQ::Scalar& ew = quaternion_block[0];
+    const typename DerivedQ::Scalar& ex = quaternion_block[1];
+    const typename DerivedQ::Scalar& ey = quaternion_block[2];
+    const typename DerivedQ::Scalar& ez = quaternion_block[3];
 
     // Assume that the quaternion orientation (e) gives a transformation matrix
     // that re-expresses vectors from some frame B to some frame N. The upper
@@ -292,7 +297,9 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
 
     // Given the arbitrary frames B and N described above, the next three
     // columns re-express linear velocities from frame B to frame N.
-    v_to_qdot.template block<3, 3>(0, 3) = drake::math::quat2rotmat(quat);
+    const Eigen::Quaternion<typename DerivedQ::Scalar> quat(ew, ex, ey, ez);
+    const drake::math::RotationMatrix<typename DerivedQ::Scalar> R(quat);
+    v_to_qdot.template block<3, 3>(0, 3) = R.matrix();
     v_to_qdot.template block<4, 3>(3, 3).setZero();
   }
 

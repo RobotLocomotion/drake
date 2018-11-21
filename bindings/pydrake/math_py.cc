@@ -35,7 +35,7 @@ PYBIND11_MODULE(math, m) {
 
   py::class_<BarycentricMesh<T>>(m, "BarycentricMesh", doc.BarycentricMesh.doc)
       .def(py::init<BarycentricMesh<T>::MeshGrid>(),
-           doc.BarycentricMesh.ctor.doc_3)
+           doc.BarycentricMesh.ctor.doc_1args)
       .def("get_input_grid", &BarycentricMesh<T>::get_input_grid,
            doc.BarycentricMesh.get_input_grid.doc)
       .def("get_input_size", &BarycentricMesh<T>::get_input_size,
@@ -47,7 +47,7 @@ PYBIND11_MODULE(math, m) {
       .def("get_mesh_point",
            overload_cast_explicit<VectorX<T>, int>(
                &BarycentricMesh<T>::get_mesh_point),
-           doc.BarycentricMesh.get_mesh_point.doc)
+           doc.BarycentricMesh.get_mesh_point.doc_1args)
       .def("get_all_mesh_points", &BarycentricMesh<T>::get_all_mesh_points,
            doc.BarycentricMesh.get_all_mesh_points.doc)
       .def("EvalBarycentricWeights",
@@ -65,26 +65,29 @@ PYBIND11_MODULE(math, m) {
                                   const Eigen::Ref<const MatrixX<T>>&,
                                   const Eigen::Ref<const VectorX<T>>&>(
                &BarycentricMesh<T>::Eval),
-           doc.BarycentricMesh.Eval.doc)
+           doc.BarycentricMesh.Eval.doc_2args)
       .def("MeshValuesFrom", &BarycentricMesh<T>::MeshValuesFrom,
            doc.BarycentricMesh.MeshValuesFrom.doc);
 
   py::class_<RigidTransform<T>>(m, "RigidTransform", doc.RigidTransform.doc)
-      .def(py::init(), doc.RigidTransform.ctor.doc_3)
+      .def(py::init(), doc.RigidTransform.ctor.doc_0args)
       .def(py::init<const RotationMatrix<T>&, const Vector3<T>&>(),
-           py::arg("R"), py::arg("p"), doc.RigidTransform.ctor.doc_4)
+           py::arg("R"), py::arg("p"), doc.RigidTransform.ctor.doc_2args_R_p)
       .def(py::init<const RollPitchYaw<T>&, const Vector3<T>&>(),
-           py::arg("rpy"), py::arg("p"), doc.RigidTransform.ctor.doc_5)
+           py::arg("rpy"), py::arg("p"),
+           doc.RigidTransform.ctor.doc_2args_rpy_p)
       .def(py::init<const Eigen::Quaternion<T>&, const Vector3<T>&>(),
-           py::arg("quaternion"), py::arg("p"), doc.RigidTransform.ctor.doc_6)
+           py::arg("quaternion"), py::arg("p"),
+           doc.RigidTransform.ctor.doc_2args_quaternion_p)
       .def(py::init<const Eigen::AngleAxis<T>&, const Vector3<T>&>(),
-           py::arg("theta_lambda"), py::arg("p"), doc.RigidTransform.ctor.doc_7)
+           py::arg("theta_lambda"), py::arg("p"),
+           doc.RigidTransform.ctor.doc_2args_theta_lambda_p)
       .def(py::init<const RotationMatrix<T>&>(), py::arg("R"),
-           doc.RigidTransform.ctor.doc_8)
+           doc.RigidTransform.ctor.doc_1args_R)
       .def(py::init<const Vector3<T>&>(), py::arg("p"),
-           doc.RigidTransform.ctor.doc_9)
+           doc.RigidTransform.ctor.doc_1args_p)
       .def(py::init<const Isometry3<T>&>(), py::arg("pose"),
-           doc.RigidTransform.ctor.doc_10)
+           doc.RigidTransform.ctor.doc_1args_pose)
       .def("set", &RigidTransform<T>::set, py::arg("R"), py::arg("p"),
            doc.RigidTransform.set.doc)
       .def("SetFromIsometry3", &RigidTransform<T>::SetFromIsometry3,
@@ -116,24 +119,26 @@ PYBIND11_MODULE(math, m) {
            [](const RigidTransform<T>* self, const RigidTransform<T>& other) {
              return *self * other;
            },
-           py::arg("other"), doc.RigidTransform.operator_mul.doc)
+           py::arg("other"), doc.RigidTransform.operator_mul.doc_1args_other)
       .def("multiply",
            [](const RigidTransform<T>* self, const Vector3<T>& p_BoQ_B) {
              return *self * p_BoQ_B;
            },
-           py::arg("p_BoQ_B"), doc.RigidTransform.operator_mul.doc_2);
+           py::arg("p_BoQ_B"),
+           doc.RigidTransform.operator_mul.doc_1args_p_BoQ_B);
   // .def("IsNearlyEqualTo", ...)
   // .def("IsExactlyEqualTo", ...)
 
   py::class_<RollPitchYaw<T>>(m, "RollPitchYaw")
       .def(py::init<const Vector3<T>>(), py::arg("rpy"),
-           doc.RollPitchYaw.ctor.doc_3)
+           doc.RollPitchYaw.ctor.doc_1args_rpy)
       .def(py::init<const T&, const T&, const T&>(), py::arg("roll"),
-           py::arg("pitch"), py::arg("yaw"), doc.RollPitchYaw.ctor.doc_4)
+           py::arg("pitch"), py::arg("yaw"),
+           doc.RollPitchYaw.ctor.doc_3args_roll_pitch_yaw)
       .def(py::init<const RotationMatrix<T>&>(), py::arg("R"),
-           doc.RollPitchYaw.ctor.doc_5)
+           doc.RollPitchYaw.ctor.doc_1args_R)
       .def(py::init<const Eigen::Quaternion<T>&>(), py::arg("quaternion"),
-           doc.RollPitchYaw.ctor.doc_6)
+           doc.RollPitchYaw.ctor.doc_1args_quaternion)
       .def("vector", &RollPitchYaw<T>::vector, doc.RollPitchYaw.vector.doc)
       .def("roll_angle", &RollPitchYaw<T>::roll_angle,
            doc.RollPitchYaw.roll_angle.doc)
@@ -147,13 +152,13 @@ PYBIND11_MODULE(math, m) {
            doc.RollPitchYaw.ToRotationMatrix.doc);
 
   py::class_<RotationMatrix<T>>(m, "RotationMatrix", doc.RotationMatrix.doc)
-      .def(py::init(), doc.RotationMatrix.ctor.doc_3)
+      .def(py::init(), doc.RotationMatrix.ctor.doc_0args)
       .def(py::init<const Matrix3<T>&>(), py::arg("R"),
-           doc.RotationMatrix.ctor.doc_4)
+           doc.RotationMatrix.ctor.doc_1args_R)
       .def(py::init<Eigen::Quaternion<T>>(), py::arg("quaternion"),
-           doc.RotationMatrix.ctor.doc_5)
+           doc.RotationMatrix.ctor.doc_1args_quaternion)
       .def(py::init<const RollPitchYaw<T>&>(), py::arg("rpy"),
-           doc.RotationMatrix.ctor.doc_7)
+           doc.RotationMatrix.ctor.doc_1args_rpy)
       .def("matrix", &RotationMatrix<T>::matrix, doc.RotationMatrix.matrix.doc)
       // Do not define an operator until we have the Python3 `@` operator so
       // that operations are similar to those of arrays.
@@ -161,13 +166,13 @@ PYBIND11_MODULE(math, m) {
            [](const RotationMatrix<T>& self, const RotationMatrix<T>& other) {
              return self * other;
            },
-           doc.RotationMatrix.operator_mul.doc)
+           doc.RotationMatrix.operator_mul.doc_1args_other)
       .def("inverse", &RotationMatrix<T>::inverse,
            doc.RotationMatrix.inverse.doc)
       .def("ToQuaternion",
            overload_cast_explicit<Eigen::Quaternion<T>>(
                &RotationMatrix<T>::ToQuaternion),
-           doc.RotationMatrix.ToQuaternion.doc)
+           doc.RotationMatrix.ToQuaternion.doc_0args)
       .def_static("Identity", &RotationMatrix<T>::Identity,
                   doc.RotationMatrix.Identity.doc);
 

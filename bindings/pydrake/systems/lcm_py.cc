@@ -74,7 +74,7 @@ PYBIND11_MODULE(lcm, m) {
     py::class_<Class, PySerializerInterface>(m, "SerializerInterface")
         .def(py::init(
                  []() { return std::make_unique<PySerializerInterface>(); }),
-             doc.SerializerInterface.ctor.doc);
+             doc.SerializerInterface.ctor.doc_0args);
     // TODO(eric.cousineau): Consider providing bindings of C++ types if we want
     // to be able to connect to ports which use C++ LCM types.
   }
@@ -86,7 +86,7 @@ PYBIND11_MODULE(lcm, m) {
                       DrakeLcmInterface*>(),
              py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
              // Keep alive: `self` keeps `DrakeLcmInterface` alive.
-             py::keep_alive<1, 3>(), doc.LcmPublisherSystem.ctor.doc)
+             py::keep_alive<1, 3>(), doc.LcmPublisherSystem.ctor.doc_4)
         .def("set_publish_period", &Class::set_publish_period,
              py::arg("period"), doc.LcmPublisherSystem.set_publish_period.doc);
   }
@@ -98,7 +98,8 @@ PYBIND11_MODULE(lcm, m) {
                       DrakeLcmInterface*>(),
              py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
              // Keep alive: `self` keeps `DrakeLcmInterface` alive.
-             py::keep_alive<1, 3>(), doc.LcmSubscriberSystem.ctor.doc);
+             py::keep_alive<1, 3>(),
+             doc.LcmSubscriberSystem.ctor.doc_3args_channel_serializer_lcm);
   }
 
   m.def("ConnectLcmScope", &ConnectLcmScope, py::arg("src"), py::arg("channel"),

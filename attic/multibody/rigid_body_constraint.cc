@@ -11,6 +11,7 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/util/drakeGeometryUtil.h"
 
@@ -772,11 +773,11 @@ RelativePositionConstraint::RelativePositionConstraint(
       bodyB_idx_(bodyB_idx),
       bodyA_name_(robot->getBodyOrFrameName(bodyA_idx)),
       bodyB_name_(robot->getBodyOrFrameName(bodyB_idx)) {
-  Isometry3d bTbp_isometry;
-  bTbp_isometry.translation() = bTbp.topRows<3>();
-  bTbp_isometry.linear() = drake::math::quat2rotmat(bTbp.bottomRows<4>());
-  bTbp_isometry.makeAffine();
-  bpTb_ = bTbp_isometry.inverse();
+  const Vector3d position = bTbp.topRows<3>();
+  const Vector4d wxyz = bTbp.bottomRows<4>();
+  const Eigen::Quaterniond quat(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
+  const drake::math::RigidTransformd X(quat, position);
+  bpTb_ = X.inverse().GetAsIsometry3();
   set_type(RigidBodyConstraint::RelativePositionConstraintType);
 }
 

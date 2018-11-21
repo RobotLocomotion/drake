@@ -191,7 +191,8 @@ PYBIND11_MODULE(mathematicalprogram, m) {
            static_cast<SolutionResult (MathematicalProgramSolverInterface::*)(
                MathematicalProgram&) const>(
                &MathematicalProgramSolverInterface::Solve),
-           py::arg("prog"), doc.MathematicalProgramSolverInterface.Solve.doc)
+           py::arg("prog"),
+           doc.MathematicalProgramSolverInterface.Solve.doc_1args)
       // TODO(m-chaturvedi) Add Pybind11 documentation.
       .def("solver_type",
            [](const MathematicalProgramSolverInterface& self) {
@@ -220,7 +221,7 @@ PYBIND11_MODULE(mathematicalprogram, m) {
 
   py::class_<MathematicalProgram> prog_cls(m, "MathematicalProgram",
                                            doc.MathematicalProgram.doc);
-  prog_cls.def(py::init<>(), doc.MathematicalProgram.ctor.doc)
+  prog_cls.def(py::init<>(), doc.MathematicalProgram.ctor.doc_0args)
       .def("NewContinuousVariables",
            // NOLINTNEXTLINE(whitespace/parens)
            static_cast<VectorXDecisionVariable (MathematicalProgram::*)(
@@ -254,7 +255,7 @@ PYBIND11_MODULE(mathematicalprogram, m) {
              return self->NewSymmetricContinuousVariables(rows, name);
            },
            py::arg("rows"), py::arg("name") = "Symmetric",
-           doc.MathematicalProgram.NewSymmetricContinuousVariables.doc)
+           doc.MathematicalProgram.NewSymmetricContinuousVariables.doc_2args)
       .def("NewFreePolynomial", &MathematicalProgram::NewFreePolynomial,
            py::arg("indeterminates"), py::arg("deg"),
            py::arg("coeff_name") = "a",
@@ -265,13 +266,13 @@ PYBIND11_MODULE(mathematicalprogram, m) {
                    MathematicalProgram::*)(
                    const Eigen::Ref<const VectorX<Monomial>>&)>(
                &MathematicalProgram::NewSosPolynomial),
-           doc.MathematicalProgram.NewSosPolynomial.doc)
+           doc.MathematicalProgram.NewSosPolynomial.doc_1args)
       .def("NewSosPolynomial",
            static_cast<
                std::pair<Polynomial, Binding<PositiveSemidefiniteConstraint>> (
                    MathematicalProgram::*)(const Variables&, int)>(
                &MathematicalProgram::NewSosPolynomial),
-           doc.MathematicalProgram.NewSosPolynomial.doc_2)
+           doc.MathematicalProgram.NewSosPolynomial.doc_2args)
       .def("NewIndeterminates",
            // NOLINTNEXTLINE(whitespace/parens)
            static_cast<VectorXIndeterminate (MathematicalProgram::*)(
@@ -371,7 +372,7 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               const Eigen::Ref<const MatrixXDecisionVariable>& vars) {
              return self->AddPositiveSemidefiniteConstraint(vars);
            },
-           doc.MathematicalProgram.AddPositiveSemidefiniteConstraint.doc)
+           doc.MathematicalProgram.AddPositiveSemidefiniteConstraint.doc_1args)
       .def("AddLinearComplementarityConstraint",
            static_cast<Binding<LinearComplementarityConstraint> (
                MathematicalProgram::*)(
@@ -385,7 +386,7 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               const Eigen::Ref<const MatrixX<Expression>>& e) {
              return self->AddPositiveSemidefiniteConstraint(e);
            },
-           doc.MathematicalProgram.AddPositiveSemidefiniteConstraint.doc)
+           doc.MathematicalProgram.AddPositiveSemidefiniteConstraint.doc_1args)
       .def("AddCost",
            [](MathematicalProgram* self, py::function func,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
@@ -437,26 +438,26 @@ PYBIND11_MODULE(mathematicalprogram, m) {
                MathematicalProgram::*)(
                const Polynomial&, const Eigen::Ref<const VectorX<Monomial>>&)>(
                &MathematicalProgram::AddSosConstraint),
-           doc.MathematicalProgram.AddSosConstraint.doc)
+           doc.MathematicalProgram.AddSosConstraint.doc_2args_p_monomial_basis)
       .def("AddSosConstraint",
            static_cast<std::pair<Binding<PositiveSemidefiniteConstraint>,
                                  Binding<LinearEqualityConstraint>> (
                MathematicalProgram::*)(const Polynomial&)>(
                &MathematicalProgram::AddSosConstraint),
-           doc.MathematicalProgram.AddSosConstraint.doc)
+           doc.MathematicalProgram.AddSosConstraint.doc_1args_p)
       .def("AddSosConstraint",
            static_cast<std::pair<Binding<PositiveSemidefiniteConstraint>,
                                  Binding<LinearEqualityConstraint>> (
                MathematicalProgram::*)(
                const Expression&, const Eigen::Ref<const VectorX<Monomial>>&)>(
                &MathematicalProgram::AddSosConstraint),
-           doc.MathematicalProgram.AddSosConstraint.doc)
+           doc.MathematicalProgram.AddSosConstraint.doc_2args_e_monomial_basis)
       .def("AddSosConstraint",
            static_cast<std::pair<Binding<PositiveSemidefiniteConstraint>,
                                  Binding<LinearEqualityConstraint>> (
                MathematicalProgram::*)(const Expression&)>(
                &MathematicalProgram::AddSosConstraint),
-           doc.MathematicalProgram.AddSosConstraint.doc)
+           doc.MathematicalProgram.AddSosConstraint.doc_1args_e)
       .def("AddVisualizationCallback",
            static_cast<Binding<VisualizationCallback> (MathematicalProgram::*)(
                const VisualizationCallback::CallbackFunction&,
@@ -507,44 +508,44 @@ PYBIND11_MODULE(mathematicalprogram, m) {
            [](const MathematicalProgram& prog, const symbolic::Expression& e) {
              return prog.SubstituteSolution(e);
            },
-           doc.MathematicalProgram.SubstituteSolution.doc)
+           doc.MathematicalProgram.SubstituteSolution.doc_1args_e)
       .def("SubstituteSolution",
            [](const MathematicalProgram& prog, const symbolic::Polynomial& p) {
              return prog.SubstituteSolution(p);
            },
-           doc.MathematicalProgram.SubstituteSolution.doc)
+           doc.MathematicalProgram.SubstituteSolution.doc_1args_p)
       .def("GetInitialGuess",
            [](MathematicalProgram& prog,
               const symbolic::Variable& decision_variable) {
              return prog.GetInitialGuess(decision_variable);
            },
-           doc.MathematicalProgram.GetInitialGuess.doc)
+           doc.MathematicalProgram.GetInitialGuess.doc_1args)
       .def("GetInitialGuess",
            [](MathematicalProgram& prog,
               const VectorXDecisionVariable& decision_variables) {
              return prog.GetInitialGuess(decision_variables);
            },
-           doc.MathematicalProgram.GetInitialGuess.doc)
+           doc.MathematicalProgram.GetInitialGuess.doc_0args)
       .def("GetInitialGuess",
            [](MathematicalProgram& prog,
               const MatrixXDecisionVariable& decision_variables) {
              return prog.GetInitialGuess(decision_variables);
            },
-           doc.MathematicalProgram.GetInitialGuess.doc)
+           doc.MathematicalProgram.GetInitialGuess.doc_0args)
       .def("SetInitialGuess",
            [](MathematicalProgram& prog,
               const symbolic::Variable& decision_variable,
               double variable_guess_value) {
              prog.SetInitialGuess(decision_variable, variable_guess_value);
            },
-           doc.MathematicalProgram.SetInitialGuess.doc)
+           doc.MathematicalProgram.SetInitialGuess.doc_2args)
       .def("SetInitialGuess",
            [](MathematicalProgram& prog,
               const MatrixXDecisionVariable& decision_variable_mat,
               const Eigen::MatrixXd& x0) {
              prog.SetInitialGuess(decision_variable_mat, x0);
            },
-           doc.MathematicalProgram.SetInitialGuess.doc)
+           doc.MathematicalProgram.SetInitialGuess.doc_0args)
       .def("SetInitialGuessForAllVariables",
            [](MathematicalProgram& prog, const Eigen::VectorXd& x0) {
              prog.SetInitialGuessForAllVariables(x0);
@@ -647,17 +648,17 @@ PYBIND11_MODULE(mathematicalprogram, m) {
 
   py::class_<BoundingBoxConstraint, LinearConstraint,
              std::shared_ptr<BoundingBoxConstraint>>(
-      m, "BoundingBoxConstraint", doc.BoundingBoxConstraint.ctor.doc);
+      m, "BoundingBoxConstraint", doc.BoundingBoxConstraint.doc);
 
   py::class_<PositiveSemidefiniteConstraint, Constraint,
              std::shared_ptr<PositiveSemidefiniteConstraint>>(
       m, "PositiveSemidefiniteConstraint",
-      doc.PositiveSemidefiniteConstraint.ctor.doc);
+      doc.PositiveSemidefiniteConstraint.doc);
 
   py::class_<LinearComplementarityConstraint, Constraint,
              std::shared_ptr<LinearComplementarityConstraint>>(
       m, "LinearComplementarityConstraint",
-      doc.LinearComplementarityConstraint.ctor.doc);
+      doc.LinearComplementarityConstraint.doc);
 
   RegisterBinding<Constraint>(&m, &prog_cls, "Constraint");
   RegisterBinding<LinearConstraint>(&m, &prog_cls, "LinearConstraint");
@@ -687,7 +688,7 @@ PYBIND11_MODULE(mathematicalprogram, m) {
            doc.LinearCost.UpdateCoefficients.doc);
 
   py::class_<QuadraticCost, Cost, std::shared_ptr<QuadraticCost>>(
-      m, "QuadraticCost", doc.QuadraticCost.ctor.doc)
+      m, "QuadraticCost", doc.QuadraticCost.doc)
       .def("Q", &QuadraticCost::Q, doc.QuadraticCost.Q.doc)
       .def("b", &QuadraticCost::b, doc.QuadraticCost.b.doc)
       .def("c", &QuadraticCost::c, doc.QuadraticCost.c.doc)

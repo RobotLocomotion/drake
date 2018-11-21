@@ -414,6 +414,26 @@ TYPED_TEST(SpatialVelocityTest, AdditionOperation) {
   EXPECT_EQ(V.translational(), v_XY_A + v_XY_A);
 }
 
+// Tests operator-().
+TYPED_TEST(SpatialVelocityTest, SubtractionOperation) {
+  typedef typename TestFixture::ScalarType T;
+
+  // Arbitrary spatial velocity of a frame A shifted to a point Q.
+  const Vector3<T> w_MAq_E(0.5, 2.5, -0.2);
+  const Vector3<T> v_MAq_E(-0.8, 2.5, 1.3);
+  const SpatialVelocity<T> V_MAq_E(w_MAq_E, v_MAq_E);
+
+  // Arbitrary spatial velocity of a frame B shifted to a point Q.
+  const Vector3<T> w_MBq_E(-0.2, 0.5, 2.5);
+  const Vector3<T> v_MBq_E(1.0, 2.0, 3.0);
+  const SpatialVelocity<T> V_MBq_E(w_MBq_E, v_MBq_E);
+
+  SpatialVelocity<T> V_ABq_E = V_MBq_E - V_MAq_E;
+
+  EXPECT_EQ(V_ABq_E.rotational(), w_MBq_E - w_MAq_E);
+  EXPECT_EQ(V_ABq_E.translational(), v_MBq_E - v_MAq_E);
+}
+
 // Tests that we can take the dot product of a SpatialVelocity with a
 // SpatialForce.
 TYPED_TEST(SpatialVelocityTest, DotProductWithSpatialForce) {

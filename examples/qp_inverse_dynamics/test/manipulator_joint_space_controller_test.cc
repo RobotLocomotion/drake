@@ -6,7 +6,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/systems/controllers/inverse_dynamics_controller.h"
+#include "drake/systems/controllers/rbt_inverse_dynamics_controller.h"
 #include "drake/systems/controllers/setpoint.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -73,7 +73,7 @@ class ManipulatorJointSpaceControllerTest : public ::testing::Test {
     VectorX<double> kp, kd;
     params_->LookupDesiredDofMotionGains(&kp, &kd);
     auto vanilla_id_controller =
-        builder.AddSystem<systems::controllers::InverseDynamicsController>(
+        builder.AddSystem<systems::controllers::rbt::InverseDynamicsController>(
             std::move(robot), kp, VectorX<double>::Zero(7), kd, true);
 
     // Estimated state source.

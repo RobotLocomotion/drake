@@ -34,7 +34,8 @@ void init_pc_flags(py::module m) {
     using Class = Fields;
     constexpr auto& cls_doc = doc.Fields;
     py::class_<Class>(m, "Fields", cls_doc.doc)
-        .def(py::init<BaseFieldT>(), py::arg("base_fields"), cls_doc.ctor.doc_4)
+        .def(py::init<BaseFieldT>(), py::arg("base_fields"),
+             cls_doc.ctor.doc_1args_base_fields)
         .def("base_fields", &Class::base_fields, cls_doc.base_fields.doc)
         .def("has_base_fields", &Class::has_base_fields,
              cls_doc.has_base_fields.doc)
@@ -70,9 +71,9 @@ void init_perception(py::module m) {
                     cls_doc.IsInvalidValue.doc)
         .def(py::init<int, pc_flags::Fields>(), py::arg("new_size") = 0,
              py::arg("fields") = pc_flags::Fields(pc_flags::kXYZs),
-             cls_doc.ctor.doc)
+             cls_doc.ctor.doc_3args)
         .def(py::init<const PointCloud&>(), py::arg("other"),
-             cls_doc.ctor.doc_2)
+             cls_doc.ctor.doc_copy)
         .def("fields", &Class::fields, cls_doc.fields.doc)
         .def("size", &Class::size, cls_doc.size.doc)
         .def("resize",
@@ -100,7 +101,7 @@ void init_perception(py::module m) {
     py::class_<Class, LeafSystem<double>>(m, "DepthImageToPointCloud",
                                           cls_doc.doc)
         .def(py::init<const CameraInfo&>(), py::arg("camera_info"),
-             cls_doc.ctor.doc_3)
+             cls_doc.ctor.doc_1args)
         .def("depth_image_input_port", &Class::depth_image_input_port,
              py_reference_internal, cls_doc.depth_image_input_port.doc)
         .def("point_cloud_output_port", &Class::point_cloud_output_port,

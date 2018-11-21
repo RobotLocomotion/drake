@@ -313,8 +313,7 @@ class TestNonPeriodicSystem : public LeafSystem<double> {
  public:
   TestNonPeriodicSystem() {
     this->DeclareDiscreteState(1);
-    PublishEvent<double> event(Event<double>::TriggerType::kPerStep);
-    this->DeclarePerStepEvent(event);
+    this->DeclarePerStepEvent(PublishEvent<double>());
   }
 
   void DoCalcDiscreteVariableUpdates(

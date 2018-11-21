@@ -38,7 +38,7 @@ PYBIND11_MODULE(manipulation_station, m) {
   py::class_<ManipulationStation<T>, Diagram<T>>(m, "ManipulationStation")
       .def(py::init<double, IiwaCollisionModel>(), py::arg("time_step") = 0.002,
            py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
-           doc.ManipulationStation.ctor.doc_3)
+           doc.ManipulationStation.ctor.doc_2args)
       .def("AddCupboard", &ManipulationStation<T>::AddCupboard,
            doc.ManipulationStation.AddCupboard.doc)
       .def("Finalize", &ManipulationStation<T>::Finalize,
@@ -75,21 +75,29 @@ PYBIND11_MODULE(manipulation_station, m) {
            doc.ManipulationStation.GetWsgVelocity.doc)
       .def("SetWsgVelocity", &ManipulationStation<T>::SetWsgVelocity,
            doc.ManipulationStation.SetWsgVelocity.doc)
-      .def_static("get_camera_pose", &ManipulationStation<T>::get_camera_pose,
-                  doc.ManipulationStation.get_camera_pose.doc);
+      .def("get_camera_poses_in_world",
+           &ManipulationStation<T>::get_camera_poses_in_world,
+           py_reference_internal,
+           doc.ManipulationStation.get_camera_poses_in_world.doc)
+      .def("get_camera_names", &ManipulationStation<T>::get_camera_names,
+           doc.ManipulationStation.get_camera_names.doc);
 
   py::class_<ManipulationStationHardwareInterface, Diagram<double>>(
       m, "ManipulationStationHardwareInterface")
       .def(py::init<const std::vector<std::string>>(),
-           py::arg("camera_ids") = std::vector<std::string>{},
-           doc.ManipulationStationHardwareInterface.ctor.doc_3)
+           py::arg("camera_names") = std::vector<std::string>{},
+           doc.ManipulationStationHardwareInterface.ctor.doc_1args)
       .def("Connect", &ManipulationStationHardwareInterface::Connect,
            py::arg("wait_for_cameras") = true,
            doc.ManipulationStationHardwareInterface.Connect.doc)
       .def("get_controller_plant",
            &ManipulationStationHardwareInterface::get_controller_plant,
            py_reference_internal,
-           doc.ManipulationStationHardwareInterface.get_controller_plant.doc);
+           doc.ManipulationStationHardwareInterface.get_controller_plant.doc)
+      .def("get_camera_names",
+           &ManipulationStationHardwareInterface::get_camera_names,
+           py_reference_internal,
+           doc.ManipulationStationHardwareInterface.get_camera_names.doc);
 }
 
 }  // namespace pydrake

@@ -154,6 +154,13 @@ TEST_F(ContinuousStateTest, Clone) {
   EXPECT_EQ((*vector)[2], 1.75);
 }
 
+// Tests ability to stream a ContinuousState vector into a string.
+TEST_F(ContinuousStateTest, StringStream) {
+  std::stringstream s;
+  s << "hello " << continuous_state_->get_vector() << " world";
+  EXPECT_EQ(s.str(), "hello [1, 2, 3, 4] world");
+}
+
 // Tests for DiagramContinousState.
 
 class DiagramContinuousStateTest : public ::testing::Test {

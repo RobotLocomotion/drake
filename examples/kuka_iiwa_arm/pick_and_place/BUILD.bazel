@@ -70,6 +70,8 @@ drake_cc_library(
     deps = [
         ":pick_and_place_configuration",
         "//attic/manipulation/util:world_sim_tree_builder",
+        "//attic/multibody:inverse_kinematics",
+        "//attic/multibody:rigid_body_tree",
         "//attic/multibody/parsers",
         "//common:essential",
         "//common/trajectories:piecewise_polynomial",
@@ -79,8 +81,6 @@ drake_cc_library(
         "//lcmtypes:schunk",
         "//lcmtypes:viewer",
         "//manipulation/util:bot_core_lcm_encode_decode",
-        "//multibody:inverse_kinematics",
-        "//multibody:rigid_body_tree",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],

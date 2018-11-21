@@ -50,7 +50,7 @@ PYBIND11_MODULE(shapes, m) {
              self->getBoundingBoxPoints(pts);
              return pts;
            },
-           doc.Geometry.getBoundingBoxPoints.doc);
+           doc.Geometry.getBoundingBoxPoints.doc_1args);
 
   py::class_<Box, Geometry>(m, "Box", doc.Box.doc)
       .def(py::init<const Eigen::Vector3d&>(), py::arg("size"),
@@ -82,8 +82,7 @@ PYBIND11_MODULE(shapes, m) {
 
   py::class_<Element>(m, "Element", doc.Element.doc)
       .def(py::init<const Geometry&, const Eigen::Isometry3d&>(),
-           py::arg("geometry_in"), py::arg("T_element_to_local"),
-           doc.Element.ctor.doc)
+           py::arg("geometry_in"), py::arg("T_element_to_local"))
       .def("hasGeometry", &Element::hasGeometry, doc.Element.hasGeometry.doc)
       .def("getGeometry", &Element::getGeometry, py_reference_internal,
            doc.Element.getGeometry.doc)
@@ -94,9 +93,10 @@ PYBIND11_MODULE(shapes, m) {
            doc.Element.getLocalTransform.doc);
   py::class_<VisualElement, Element>(m, "VisualElement")
       .def(py::init<const Geometry&, const Eigen::Isometry3d&,
-                    const Eigen::Vector4d&>(),
+                    const Eigen::Vector4d&, const std::string&>(),
            py::arg("geometry_in"), py::arg("T_element_to_local"),
-           py::arg("material_in"), doc.VisualElement.ctor.doc_2)
+           py::arg("material_in"), py::arg("name") = "",
+           doc.VisualElement.ctor.doc_4args)
       .def("setMaterial", &VisualElement::setMaterial,
            "Apply an RGBA material.", doc.VisualElement.setMaterial.doc)
       .def("getMaterial", &VisualElement::getMaterial, "Get an RGBA material.",

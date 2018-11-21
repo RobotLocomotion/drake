@@ -125,7 +125,10 @@ def is_accepted_cursor(cursor):
         return False
     # TODO(eric.cousineau): Remove `cursor.is_default_method()`? May make
     # things unstable.
-    # TODO(eric.cousineau): Figure out how to strip forward declarations.
+    if cursor.kind in CLASS_KINDS and not cursor.is_definition():
+        # Don't process forward declarations.  If we did, we'd define the class
+        # overview documentation twice; both cursors have a .raw_comment value.
+        return False
     return True
 
 
@@ -658,6 +661,58 @@ def extract(include_file_map, cursor, symbol_tree):
             node.doc_symbols.append(symbol)
 
 
+def choose_doc_var_names(symbols):
+    """
+    Given a list of Symbol objects for a single doc struct, choose unambiguous,
+    meaningful, terse names for them.
+    """
+    result = []
+
+    def specialize_well_known_doc_var_names():
+        # Force well-known methods to have well-known names.
+        nonlocal symbols, result
+        for i, sym in enumerate(symbols):
+            if sym.cursor.is_copy_constructor():
+                result[i] = "doc_copy"
+            elif sym.cursor.is_move_constructor():
+                result[i] = "doc_move"
+
+    # No salt will be needed if there is only one name -- but we should still
+    # apply the well-known name heuristics.
+    result = ["doc" for _ in symbols]
+    specialize_well_known_doc_var_names()
+    if len(symbols) <= 1:
+        return result
+
+    # The argument count might be sufficient to disambiguate.
+    # TODO(jwnimmer-tri) Methods with enable_if sometimes report as 0args.
+    each_args = [list(x.cursor.get_arguments()) for x in symbols]
+    result = ["doc_{}args".format(len(args)) for args in each_args]
+    specialize_well_known_doc_var_names()
+    if len(result) == len(set(result)):
+        return result
+
+    # The argument names might be sufficient to disambiguate.
+    for i, args in enumerate(each_args):
+        if len(args) == 0:
+            continue
+        arg_names = []
+        for arg in args:
+            arg_name = utf8(arg.spelling) or \
+                sanitize_name(utf8(arg.type.spelling)).replace("_", "")
+            arg_names.append(arg_name)
+        result[i] = result[i] + "_" + "_".join(arg_names)
+    specialize_well_known_doc_var_names()
+    if len(result) == len(set(result)):
+        return result
+
+    # As a last resort, fall back to doc, doc_1, doc_2, etc.
+    result = ["doc"] + ["doc_{}".format(i + 1) for i in range(1, len(symbols))]
+    specialize_well_known_doc_var_names()
+    assert len(result) == len(set(result))
+    return result
+
+
 def print_symbols(f, name, node, level=0):
     """
     Prints C++ code for releveant documentation.
@@ -689,11 +744,9 @@ def print_symbols(f, name, node, level=0):
     iprint('{}struct /* {} */ {{'.format(modifier, name_var))
     # Print documentation items.
     symbol_iter = sorted(node.doc_symbols, key=Symbol.sorting_key)
-    for i, symbol in enumerate(symbol_iter):
+    doc_vars = choose_doc_var_names(symbol_iter)
+    for symbol, doc_var in zip(symbol_iter, doc_vars):
         assert name_chain == symbol.name_chain
-        doc_var = "doc"
-        if i > 0:
-            doc_var += "_{}".format(i + 1)
         delim = "\n"
         if "\n" not in symbol.comment and len(symbol.comment) < 40:
             delim = " "

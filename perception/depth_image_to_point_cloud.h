@@ -10,7 +10,6 @@
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/sensors/camera_info.h"
 #include "drake/systems/sensors/image.h"
-#include "drake/systems/sensors/rgbd_camera.h"
 
 namespace drake {
 namespace perception {

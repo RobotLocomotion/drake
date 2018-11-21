@@ -3,6 +3,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -13,8 +14,18 @@
 #include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
+
+#ifndef DRAKE_DOXYGEN_CXX
+// Forward declarations because we only need the type name for deprecation
+// purposes; we never call any methods on an RBT.
+template <class T>
+class RigidBodyTree;
+template <class T>
+class RigidBodyFrame;
+template <class T>
+class KinematicsCache;
+#endif
 
 namespace drake {
 namespace manipulation {
@@ -282,51 +293,34 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Eigen::Ref<const MatrixX<double>>& J,
     const DifferentialInverseKinematicsParameters& parameters);
 
-/**
- * A wrapper over
- * DoDifferentialInverseKinematics(q_current, v_current, V, J, params)
- * that tracks frame E's spatial velocity.
- * q_current and v_current are taken from @p cache. V is computed by first
- * transforming @p V_WE to V_WE_E, then taking the element-wise product between
- * V_WE_E and the gains (specified in frame E) in @p parameters, and only
- * selecting the non zero elements. J is computed similarly.
- * @param robot Kinematic tree.
- * @param cache Kinematic cache build from the current generalized position and
- * velocity.
- * @param V_WE_desired Desired world frame spatial velocity of @p frame_E.
- * @param frame_E End effector frame.
- * @param parameters Collection of various problem specific constraints and
- * constants.
- * @return If the solver successfully finds a solution, joint_velocities will
- * be set to v, otherwise it will be nullopt.
- */
-DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const RigidBodyTree<double>& robot, const KinematicsCache<double>& cache,
-    const Vector6<double>& V_WE_desired, const RigidBodyFrame<double>& frame_E,
-    const DifferentialInverseKinematicsParameters& parameters);
-
-/**
- * A wrapper over
- * DoDifferentialInverseKinematics(robot, cache, V_WE_desired, frame_E, params)
- * that tracks frame E's pose in the world frame.
- * q_current and v_current are taken from @p cache. V_WE is computed by
- * ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) / dt, where X_WE is computed
- * from @p cache, and dt is taken from @p parameters.
- * @param robot Robot model.
- * @param cache KinematiCache built from the current generalized position and
- * velocity.
- * @param X_WE_desired Desired pose of @p frame_E in the world frame.
- * @param frame_E End effector frame.
- * @param parameters Collection of various problem specific constraints and
- * constants.
- * @return If the solver successfully finds a solution, joint_velocities will
- * be set to v, otherwise it will be nullopt.
- */
-DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const RigidBodyTree<double>& robot, const KinematicsCache<double>& cache,
-    const Isometry3<double>& X_WE_desired,
-    const RigidBodyFrame<double>& frame_E,
-    const DifferentialInverseKinematicsParameters& parameters);
+#ifndef DRAKE_DOXYGEN_CXX
+// TODO(jwnimmer-tri) Remove these stubs on or about 2019-03-01.
+// Remember to remove the forward declaration above at the same time.
+DRAKE_DEPRECATED(
+    "DiffIK for RigidBodyTree no longer uses this file; for new "
+    "instructions, see https://github.com/RobotLocomotion/drake/pull/10047")
+inline DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
+    const RigidBodyTree<double>&, const KinematicsCache<double>&,
+    const Vector6<double>&, const RigidBodyFrame<double>&,
+    const DifferentialInverseKinematicsParameters&) {
+  throw std::runtime_error(
+      "DiffIK for RigidBodyTree no longer uses this file; for new "
+      "instructions, see https://github.com/RobotLocomotion/drake/pull/10047");
+}
+// TODO(jwnimmer-tri) Remove these stubs on or about 2019-03-01.
+// Remember to remove the forward declaration above at the same time.
+DRAKE_DEPRECATED(
+    "DiffIK for RigidBodyTree no longer uses this file; for new "
+    "instructions, see https://github.com/RobotLocomotion/drake/pull/10047")
+inline DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
+    const RigidBodyTree<double>&, const KinematicsCache<double>&,
+    const Isometry3<double>&, const RigidBodyFrame<double>&,
+    const DifferentialInverseKinematicsParameters&) {
+  throw std::runtime_error(
+      "DiffIK for RigidBodyTree no longer uses this file; for new "
+      "instructions, see https://github.com/RobotLocomotion/drake/pull/10047");
+}
+#endif
 
 /**
  * A wrapper over
@@ -398,6 +392,18 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Isometry3<double>& X_WE_desired,
     const multibody::Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
+
+#ifndef DRAKE_DOXYGEN_CXX
+namespace detail {
+DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
+    const Eigen::Ref<const VectorX<double>>&,
+    const Eigen::Ref<const VectorX<double>>&,
+    const Isometry3<double>&,
+    const Eigen::Ref<const MatrixX<double>>&,
+    const Vector6<double>&,
+    const DifferentialInverseKinematicsParameters&);
+}  // namespace detail
+#endif
 
 }  // namespace planner
 }  // namespace manipulation

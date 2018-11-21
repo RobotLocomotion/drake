@@ -316,7 +316,7 @@ class DiagramContext final : public Context<T> {
       // Using `access` here to avoid sending invalidations.
       Parameters<T>& subparams =
           Context<T>::access_mutable_parameters(&*subcontext);
-      for (int i = 0; i < subparams.num_numeric_parameters(); ++i) {
+      for (int i = 0; i < subparams.num_numeric_parameter_groups(); ++i) {
         numeric_params.push_back(&subparams.get_mutable_numeric_parameter(i));
       }
       for (int i = 0; i < subparams.num_abstract_parameters(); ++i) {
