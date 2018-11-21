@@ -8,7 +8,7 @@ py3-setup() { (
     source build/py3/bin/activate
     # Install some dependencies that Bazel has trouble picking up?
     pip install -I \
-        protobuf==3.6.0 sphinx==1.8.1 sphinx_rtd_theme
+        pyyaml protobuf==3.6.0 sphinx==1.8.1 sphinx_rtd_theme
     set -x
     # Reflect system Python; make `python` and `python-config` fall through to
     # system, and use `python{major}-config`.
