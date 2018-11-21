@@ -6,6 +6,10 @@ slack aren't using this code.
 
 ## Setup
 
+First, follow the nominal setup instructions:
+
+    https://drake.mit.edu/from_source.html
+
 In any terminal that you're using:
 
     cd drake
