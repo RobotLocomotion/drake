@@ -80,6 +80,8 @@ namespace systems {
 /// - AutoDiffXd
 ///
 /// Other instantiations are permitted but take longer to compile.
+///
+/// @ingroup simulation
 // TODO(sherm1) When API stabilizes, should list the methods above in addition
 // to describing them.
 template <typename T>
@@ -101,6 +103,11 @@ class Simulator {
   /// %Simulator will obtain a default Context from `system`.
   explicit Simulator(const System<T>& system,
                      std::unique_ptr<Context<T>> context = nullptr);
+
+  /// Create a %Simulator where which additionally maintains ownership of the
+  /// System.
+  Simulator(std::unique_ptr<System<T>> system,
+            std::unique_ptr<Context<T>> context = nullptr);
 
   /// Prepares the %Simulator for a simulation. If the initial Context does not
   /// satisfy the System's constraints, an attempt is made to modify the values
@@ -340,7 +347,14 @@ class Simulator {
   /// @note a mutable reference is not available.
   const System<T>& get_system() const { return system_; }
 
+  bool has_owned_system() const { return owned_system_ != nullptr; }
+
  private:
+  // All constructors delegate to here.
+  Simulator(const System<T>& system,
+            std::unique_ptr<System<T>> owned_system,
+            std::unique_ptr<Context<T>> context = nullptr);
+
   void HandleUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events);
 
@@ -384,6 +398,11 @@ class Simulator {
 
   static constexpr double kDefaultAccuracy = 1e-3;  // 1/10 of 1%.
   static constexpr double kDefaultInitialStepSizeAttempt = 1e-3;
+
+  // Do not use this.  This is valid iff the constructor is passed a
+  // unique_ptr (allowing the Simulator to maintain ownership).  Use the
+  // system_ variable instead, which is valid always.
+  std::unique_ptr<System<T>> const owned_system_;
 
   const System<T>& system_;              // Just a reference; not owned.
   std::unique_ptr<Context<T>> context_;  // The trajectory Context.
@@ -447,8 +466,21 @@ class Simulator {
 
 template <typename T>
 Simulator<T>::Simulator(const System<T>& system,
+                        std::unique_ptr<Context<T>> context) :
+                        Simulator(system, nullptr, std::move(context)) {}
+
+template <typename T>
+Simulator<T>::Simulator(std::unique_ptr<System<T>> owned_system,
+                        std::unique_ptr<Context<T>> context) :
+    Simulator(*owned_system, std::move(owned_system), std::move(context)) {}
+
+template <typename T>
+Simulator<T>::Simulator(const System<T>& system,
+                        std::unique_ptr<System<T>> owned_system,
                         std::unique_ptr<Context<T>> context)
-    : system_(system), context_(std::move(context)) {
+    : owned_system_(std::move(owned_system)),
+      system_(owned_system_ ? *owned_system_ : system),
+      context_(std::move(context)) {
   // Setup defaults that should be generally reasonable.
   const double max_step_size = 0.1;
   const double initial_step_size = 1e-4;
