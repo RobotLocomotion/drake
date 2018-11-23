@@ -30,7 +30,7 @@ multi-rate systems, and systems with multiple input/output ports as
 well, precisely because w is treated exactly as an additional input
 throughout the system classes.  Continuous-time random signals must
 be treated with some care; see internal::RandomSource for details on
-how they are treated for the purpopses of simulation.
+how they are treated for the purposes of simulation.
 
 The rule in Drake is that every method that can be called during the
 lifetime of a simulation, (e.g. calculating discrete updates, time
@@ -57,11 +57,26 @@ In order to specify distributions over random initial conditions and
 random parameters, System classes may override the methods
 System<T>::SetRandomState() and System<T>::SetRandomParameters().
 Algorithms written for systems may call System<T>::SetRandomContext()
-(which calls both of these).  The implementations of
-System<T>::SetRandomState() and System<T>::SetRandomParameters() are
-expected to call the random number generators in the C++ Standard
-Library.
+(which calls both of these).  These methods must be deterministic
+functions of their input arguments -- a (mutable) systems::RandomGenerator is
+passed in and must be the only source of "randomness". Their implementations
+are expected to draw samples from random distributions satisfying the C++
+Standard Library <a href=
+"https://en.cppreference.com/w/cpp/named_req/RandomNumberDistribution">
+RandomNumberDistribution concept</a>.  Because these distributions can have
+internal state, we encourage authors to allocate the distribution locally
+inside the implementation of the SetRandomState() or SetRandomParameters()
+methods; do not be tempted to create a mutable member variable of your System.
 
+Finally, in some cases the actual constitution of a System is random.
+A common example of this is when we perform a multibody simulation with
+a different number of objects generated in the environment for each random
+simulation.  APIs to support this functionality use a
+systems::analysis::SimulatorFactory method which constructs the random
+System and its simulation parameters as a deterministic function
+of the systems::RandomGenerator.
+
+@see systems::analysis::MonteCarloSimulation
 @ingroup systems
 */
 
