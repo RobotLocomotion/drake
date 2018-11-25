@@ -17,8 +17,16 @@ namespace perception {
 /// Converts a depth image to a point cloud.
 /// Basically a system that wraps around ConvertDepthImageToPointCloud in
 /// RGBDCamera.
-/// The system has a single input port that takes a ImageDepth32F and a single
-/// output port that contains a PointCloud.
+/// The system has a single input port that takes a
+/// systems::sensors::ImageDepth32F and a single output port that contains a
+/// PointCloud.
+///
+/// @system{ DepthImageToPointCloud,
+///          @input_port{depth_image},
+///          @output_port{point_cloud}
+/// }
+///
+/// @ingroup perception_systems
 class DepthImageToPointCloud final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DepthImageToPointCloud)
