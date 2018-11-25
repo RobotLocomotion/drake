@@ -37,7 +37,7 @@ namespace perception {
 /// This point cloud class provides the following fields:
 ///
 /// - xyz - Cartesian XYZ coordinates (float[3]).
-/// - descriptor - An descriptor that is run-time defined (float[X]).
+/// - descriptor - A descriptor that is run-time defined (float[X]).
 ///
 /// @note "contiguous" here means contiguous in memory. This was chosen to
 /// avoid ambiguity between PCL and Eigen, where in PCL "dense" implies that
