@@ -172,6 +172,10 @@ PYBIND11_MODULE(rigid_body_tree, m) {
           &RigidBodyTree<double>::AddCollisionFilterGroupMember,
           py::arg("group_name"), py::arg("body_name"), py::arg("model_id"),
           doc.RigidBodyTree.AddCollisionFilterGroupMember.doc)
+      .def("AddCollisionFilterIgnoreTarget",
+          &RigidBodyTree<double>::AddCollisionFilterIgnoreTarget,
+          py::arg("group_name"), py::arg("target_group_name"),
+          doc.RigidBodyTree.AddCollisionFilterIgnoreTarget.doc)
       .def("DefineCollisionFilterGroup",
           &RigidBodyTree<double>::DefineCollisionFilterGroup, py::arg("name"),
           doc.RigidBodyTree.DefineCollisionFilterGroup.doc)
