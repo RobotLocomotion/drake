@@ -20,11 +20,11 @@ PYBIND11_MODULE(parsers, m) {
       .def("size", &PackageMap::size, doc.PackageMap.size.doc)
       .def("GetPath", &PackageMap::GetPath, doc.PackageMap.GetPath.doc)
       .def("PopulateFromFolder", &PackageMap::PopulateFromFolder,
-           doc.PackageMap.PopulateFromFolder.doc)
+          doc.PackageMap.PopulateFromFolder.doc)
       .def("PopulateFromEnvironment", &PackageMap::PopulateFromEnvironment,
-           doc.PackageMap.PopulateFromEnvironment.doc)
+          doc.PackageMap.PopulateFromEnvironment.doc)
       .def("PopulateUpstreamToDrake", &PackageMap::PopulateUpstreamToDrake,
-           doc.PackageMap.PopulateUpstreamToDrake.doc);
+          doc.PackageMap.PopulateUpstreamToDrake.doc);
 }
 
 }  // namespace pydrake

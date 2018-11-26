@@ -25,9 +25,8 @@ void DefClone(PyClass* ppy_class) {
   py_class  // BR
       .def("Clone", &Class::Clone)
       .def("__copy__", &Class::Clone)
-      .def("__deepcopy__", [](const Class* self, py::dict /* memo */) {
-        return self->Clone();
-      });
+      .def("__deepcopy__",
+          [](const Class* self, py::dict /* memo */) { return self->Clone(); });
 }
 
 /// Defines an instantiation of `pydrake.systems.framework.Value[...]`. This is
@@ -71,7 +70,7 @@ py::object AddValueInstantiation(py::module scope) {
   py_class  // BR
       .def("get_value", &Class::get_value, py_reference_internal)
       .def("get_mutable_value", &Class::get_mutable_value,
-           py_reference_internal);
+          py_reference_internal);
   std::string set_value_docstring = "Replaces stored value with a new one.";
   if (!std::is_copy_constructible<T>::value) {
     set_value_docstring += R"""(

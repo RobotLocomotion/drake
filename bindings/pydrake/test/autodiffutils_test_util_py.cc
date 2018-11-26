@@ -16,11 +16,11 @@ PYBIND11_MODULE(autodiffutils_test_util, m) {
 
   // For testing implicit argument conversion.
   m.def("autodiff_scalar_pass_through",
-        [](const AutoDiffXd& value) { return value; });
+      [](const AutoDiffXd& value) { return value; });
   m.def("autodiff_vector_pass_through",
-        [](const VectorX<AutoDiffXd>& value) { return value; });
+      [](const VectorX<AutoDiffXd>& value) { return value; });
   m.def("autodiff_vector3_pass_through",
-        [](const Vector3<AutoDiffXd>& value) { return value; });
+      [](const Vector3<AutoDiffXd>& value) { return value; });
 }
 
 }  // namespace pydrake

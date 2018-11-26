@@ -17,8 +17,8 @@ PYBIND11_MODULE(mosek, m) {
       py::module::import("pydrake.solvers.mathematicalprogram")
           .attr("MathematicalProgramSolverInterface");
 
-  py::class_<MosekSolver>(m, "MosekSolver", solverinterface,
-                          doc.MosekSolver.doc)
+  py::class_<MosekSolver>(
+      m, "MosekSolver", solverinterface, doc.MosekSolver.doc)
       .def(py::init<>(), doc.MosekSolver.ctor.doc_0args);
 }
 
