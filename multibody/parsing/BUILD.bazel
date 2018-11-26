@@ -26,6 +26,7 @@ drake_cc_package_library(
     name = "parsing",
     deps = [
         ":package_map",
+        ":parser",
         ":parser_common",
         ":parser_path_utils",
         ":scene_graph_parser_detail",
@@ -179,6 +180,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "parser",
+    srcs = [
+        "parser.cc",
+    ],
+    hdrs = [
+        "parser.h",
+    ],
+    deps = [
+        ":sdf_parser",
+        ":urdf_parser",
+    ],
+)
+
+drake_cc_library(
     name = "test_loaders",
     testonly = 1,
     srcs = [
@@ -233,6 +248,19 @@ drake_cc_googletest(
     ],
     deps = [
         ":test_loaders",
+        "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "parser_test",
+    data = [
+        ":test_models",
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":parser",
+        "//common:find_resource",
         "//common/test_utilities",
     ],
 )
