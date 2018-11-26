@@ -26,46 +26,46 @@ PYBIND11_MODULE(rimless_wheel, m) {
   // conversion.
   using T = double;
 
-  py::class_<RimlessWheel<T>, LeafSystem<T>>(m, "RimlessWheel",
-                                             doc.RimlessWheel.doc)
+  py::class_<RimlessWheel<T>, LeafSystem<T>>(
+      m, "RimlessWheel", doc.RimlessWheel.doc)
       .def(py::init<>(), doc.RimlessWheel.ctor.doc_3);
 
   // TODO(russt): Remove custom bindings once #8096 is resolved.
-  py::class_<RimlessWheelParams<T>, BasicVector<T>>(m, "RimlessWheelParams",
-                                                    doc.RimlessWheelParams.doc)
+  py::class_<RimlessWheelParams<T>, BasicVector<T>>(
+      m, "RimlessWheelParams", doc.RimlessWheelParams.doc)
       .def(py::init<>(), doc.RimlessWheelParams.ctor.doc_0args)
-      .def("mass", &RimlessWheelParams<T>::mass,
-           doc.RimlessWheelParams.mass.doc)
+      .def(
+          "mass", &RimlessWheelParams<T>::mass, doc.RimlessWheelParams.mass.doc)
       .def("length", &RimlessWheelParams<T>::length,
-           doc.RimlessWheelParams.length.doc)
+          doc.RimlessWheelParams.length.doc)
       .def("gravity", &RimlessWheelParams<T>::gravity,
-           doc.RimlessWheelParams.gravity.doc)
+          doc.RimlessWheelParams.gravity.doc)
       .def("number_of_spokes", &RimlessWheelParams<T>::number_of_spokes,
-           doc.RimlessWheelParams.number_of_spokes.doc)
+          doc.RimlessWheelParams.number_of_spokes.doc)
       .def("slope", &RimlessWheelParams<T>::slope,
-           doc.RimlessWheelParams.slope.doc)
+          doc.RimlessWheelParams.slope.doc)
       .def("set_mass", &RimlessWheelParams<T>::set_mass,
-           doc.RimlessWheelParams.set_mass.doc)
+          doc.RimlessWheelParams.set_mass.doc)
       .def("set_length", &RimlessWheelParams<T>::set_length,
-           doc.RimlessWheelParams.set_length.doc)
+          doc.RimlessWheelParams.set_length.doc)
       .def("set_gravity", &RimlessWheelParams<T>::set_gravity,
-           doc.RimlessWheelParams.set_gravity.doc)
+          doc.RimlessWheelParams.set_gravity.doc)
       .def("set_number_of_spokes", &RimlessWheelParams<T>::set_number_of_spokes,
-           doc.RimlessWheelParams.set_number_of_spokes.doc)
+          doc.RimlessWheelParams.set_number_of_spokes.doc)
       .def("set_slope", &RimlessWheelParams<T>::set_slope,
-           doc.RimlessWheelParams.set_slope.doc);
+          doc.RimlessWheelParams.set_slope.doc);
 
   py::class_<RimlessWheelContinuousState<T>, BasicVector<T>>(
       m, "RimlessWheelContinuousState", doc.RimlessWheelContinuousState.doc)
       .def(py::init<>(), doc.RimlessWheelContinuousState.ctor.doc_0args)
       .def("theta", &RimlessWheelContinuousState<T>::theta,
-           doc.RimlessWheelContinuousState.theta.doc)
+          doc.RimlessWheelContinuousState.theta.doc)
       .def("thetadot", &RimlessWheelContinuousState<T>::thetadot,
-           doc.RimlessWheelContinuousState.thetadot.doc)
+          doc.RimlessWheelContinuousState.thetadot.doc)
       .def("set_theta", &RimlessWheelContinuousState<T>::set_theta,
-           doc.RimlessWheelContinuousState.set_theta.doc)
+          doc.RimlessWheelContinuousState.set_theta.doc)
       .def("set_thetadot", &RimlessWheelContinuousState<T>::set_thetadot,
-           doc.RimlessWheelContinuousState.set_thetadot.doc);
+          doc.RimlessWheelContinuousState.set_thetadot.doc);
 }
 
 }  // namespace pydrake

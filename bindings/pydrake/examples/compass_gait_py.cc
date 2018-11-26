@@ -26,59 +26,59 @@ PYBIND11_MODULE(compass_gait, m) {
   // conversion.
   using T = double;
 
-  py::class_<CompassGait<T>, LeafSystem<T>>(m, "CompassGait",
-                                            doc.CompassGait.doc)
+  py::class_<CompassGait<T>, LeafSystem<T>>(
+      m, "CompassGait", doc.CompassGait.doc)
       .def(py::init<>(), doc.CompassGait.ctor.doc_3);
 
   // TODO(russt): Remove custom bindings once #8096 is resolved.
-  py::class_<CompassGaitParams<T>, BasicVector<T>>(m, "CompassGaitParams",
-                                                   doc.CompassGaitParams.doc)
+  py::class_<CompassGaitParams<T>, BasicVector<T>>(
+      m, "CompassGaitParams", doc.CompassGaitParams.doc)
       .def(py::init<>(), doc.CompassGaitParams.ctor.doc_0args)
       .def("mass_hip", &CompassGaitParams<T>::mass_hip,
-           doc.CompassGaitParams.mass_hip.doc)
+          doc.CompassGaitParams.mass_hip.doc)
       .def("mass_leg", &CompassGaitParams<T>::mass_leg,
-           doc.CompassGaitParams.mass_leg.doc)
+          doc.CompassGaitParams.mass_leg.doc)
       .def("length_leg", &CompassGaitParams<T>::length_leg,
-           doc.CompassGaitParams.length_leg.doc)
+          doc.CompassGaitParams.length_leg.doc)
       .def("center_of_mass_leg", &CompassGaitParams<T>::center_of_mass_leg,
-           doc.CompassGaitParams.center_of_mass_leg.doc)
+          doc.CompassGaitParams.center_of_mass_leg.doc)
       .def("gravity", &CompassGaitParams<T>::gravity,
-           doc.CompassGaitParams.gravity.doc)
+          doc.CompassGaitParams.gravity.doc)
       .def("slope", &CompassGaitParams<T>::slope,
-           doc.CompassGaitParams.slope.doc)
+          doc.CompassGaitParams.slope.doc)
       .def("set_mass_hip", &CompassGaitParams<T>::set_mass_hip,
-           doc.CompassGaitParams.set_mass_hip.doc)
+          doc.CompassGaitParams.set_mass_hip.doc)
       .def("set_mass_leg", &CompassGaitParams<T>::set_mass_leg,
-           doc.CompassGaitParams.set_mass_leg.doc)
+          doc.CompassGaitParams.set_mass_leg.doc)
       .def("set_length_leg", &CompassGaitParams<T>::set_length_leg,
-           doc.CompassGaitParams.set_length_leg.doc)
+          doc.CompassGaitParams.set_length_leg.doc)
       .def("set_center_of_mass_leg",
-           &CompassGaitParams<T>::set_center_of_mass_leg,
-           doc.CompassGaitParams.set_center_of_mass_leg.doc)
+          &CompassGaitParams<T>::set_center_of_mass_leg,
+          doc.CompassGaitParams.set_center_of_mass_leg.doc)
       .def("set_gravity", &CompassGaitParams<T>::set_gravity,
-           doc.CompassGaitParams.set_gravity.doc)
+          doc.CompassGaitParams.set_gravity.doc)
       .def("set_slope", &CompassGaitParams<T>::set_slope,
-           doc.CompassGaitParams.set_slope.doc);
+          doc.CompassGaitParams.set_slope.doc);
 
   py::class_<CompassGaitContinuousState<T>, BasicVector<T>>(
       m, "CompassGaitContinuousState", doc.CompassGaitContinuousState.doc)
       .def(py::init<>(), doc.CompassGaitContinuousState.ctor.doc_0args)
       .def("stance", &CompassGaitContinuousState<T>::stance,
-           doc.CompassGaitContinuousState.stance.doc)
+          doc.CompassGaitContinuousState.stance.doc)
       .def("swing", &CompassGaitContinuousState<T>::swing,
-           doc.CompassGaitContinuousState.swing.doc)
+          doc.CompassGaitContinuousState.swing.doc)
       .def("stancedot", &CompassGaitContinuousState<T>::stancedot,
-           doc.CompassGaitContinuousState.stancedot.doc)
+          doc.CompassGaitContinuousState.stancedot.doc)
       .def("swingdot", &CompassGaitContinuousState<T>::swingdot,
-           doc.CompassGaitContinuousState.swingdot.doc)
+          doc.CompassGaitContinuousState.swingdot.doc)
       .def("set_stance", &CompassGaitContinuousState<T>::set_stance,
-           doc.CompassGaitContinuousState.set_stance.doc)
+          doc.CompassGaitContinuousState.set_stance.doc)
       .def("set_swing", &CompassGaitContinuousState<T>::set_swing,
-           doc.CompassGaitContinuousState.set_swing.doc)
+          doc.CompassGaitContinuousState.set_swing.doc)
       .def("set_stancedot", &CompassGaitContinuousState<T>::set_stancedot,
-           doc.CompassGaitContinuousState.set_stancedot.doc)
+          doc.CompassGaitContinuousState.set_stancedot.doc)
       .def("set_swingdot", &CompassGaitContinuousState<T>::set_swingdot,
-           doc.CompassGaitContinuousState.set_swingdot.doc);
+          doc.CompassGaitContinuousState.set_swingdot.doc);
 }
 
 }  // namespace pydrake

@@ -31,44 +31,44 @@ PYBIND11_MODULE(api, m) {
 
   py::class_<GeoPosition>(m, "GeoPosition", doc.GeoPositionT.doc)
       .def(py::init<double, double, double>(), py::arg("x"), py::arg("y"),
-           py::arg("z"), doc.GeoPositionT.ctor.doc_3args)
+          py::arg("z"), doc.GeoPositionT.ctor.doc_3args)
       .def("xyz", &GeoPosition::xyz, py_reference_internal,
-           doc.GeoPositionT.xyz.doc);
+          doc.GeoPositionT.xyz.doc);
 
   py::class_<LanePosition>(m, "LanePosition", doc.LanePositionT.doc)
       .def(py::init<double, double, double>(), py::arg("s"), py::arg("r"),
-           py::arg("h"), doc.LanePositionT.ctor.doc_3args)
+          py::arg("h"), doc.LanePositionT.ctor.doc_3args)
       .def("srh", &LanePosition::srh, py_reference_internal,
-           doc.LanePositionT.srh.doc);
+          doc.LanePositionT.srh.doc);
 
-  py::class_<RoadPosition> road_position(m, "RoadPosition",
-                                         doc.RoadPosition.doc);
+  py::class_<RoadPosition> road_position(
+      m, "RoadPosition", doc.RoadPosition.doc);
   road_position  // BR
       .def(py::init<>(), doc.RoadPosition.ctor.doc_0args)
       .def(py::init<const Lane*, const LanePosition&>(), py::arg("lane"),
-           py::arg("pos"),
-           // Keep alive, reference: `self` keeps `Lane*` alive.
-           py::keep_alive<1, 2>(), doc.RoadPosition.ctor.doc_2args)
+          py::arg("pos"),
+          // Keep alive, reference: `self` keeps `Lane*` alive.
+          py::keep_alive<1, 2>(), doc.RoadPosition.ctor.doc_2args)
       .def_readwrite("pos", &RoadPosition::pos, doc.RoadPosition.pos.doc);
   // TODO(m-chaturvedi) Add doc when typedefs are parsed (#9599)
   DefReadWriteKeepAlive(&road_position, "lane", &RoadPosition::lane);
 
   py::class_<Rotation>(m, "Rotation", doc.Rotation.doc)
-      .def("quat", &Rotation::quat, py_reference_internal,
-           doc.Rotation.quat.doc)
+      .def(
+          "quat", &Rotation::quat, py_reference_internal, doc.Rotation.quat.doc)
       .def("rpy", &Rotation::rpy, doc.Rotation.rpy.doc);
 
   py::class_<RoadGeometry>(m, "RoadGeometry", doc.RoadGeometry.doc)
       .def("num_junctions", &RoadGeometry::num_junctions,
-           doc.RoadGeometry.num_junctions.doc)
+          doc.RoadGeometry.num_junctions.doc)
       .def("junction", &RoadGeometry::junction, py_reference_internal,
-           doc.RoadGeometry.junction.doc);
+          doc.RoadGeometry.junction.doc);
 
   py::class_<Junction>(m, "Junction", doc.Junction.doc)
       .def("num_segments", &Junction::num_segments,
-           doc.Junction.num_segments.doc)
+          doc.Junction.num_segments.doc)
       .def("segment", &Junction::segment, py_reference_internal,
-           doc.Junction.segment.doc);
+          doc.Junction.segment.doc);
 
   py::class_<Segment>(m, "Segment", doc.Segment.doc)
       .def("num_lanes", &Segment::num_lanes, doc.Segment.num_lanes.doc)
