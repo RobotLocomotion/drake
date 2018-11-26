@@ -292,8 +292,8 @@ inline SpatialVelocity<T> operator+(
 /// operation with SpatialVelocity::Shift() operation is needed.
 template <typename T>
 inline SpatialVelocity<T> operator-(
-    const SpatialVelocity<T>& V_MBq_E, const SpatialVelocity<T>& V_MAq_E) {
-  return SpatialVelocity<T>(V_MBq_E.get_coeffs() - V_MAq_E.get_coeffs());
+    const SpatialVelocity<T>& V_MB_E, const SpatialVelocity<T>& V_MAb_E) {
+  return SpatialVelocity<T>(V_MB_E.get_coeffs() - V_MAb_E.get_coeffs());
 }
 
 }  // namespace multibody
