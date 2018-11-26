@@ -9,6 +9,8 @@ valgrind \
     --leak-check=full \
     --suppressions="$mydir/valgrind.supp" \
     --error-exitcode=1 \
+    --error-limit=no \
+    --gen-suppressions=all \
     --trace-children=yes \
     --track-origins=yes \
     --show-leak-kinds=definite,possible \
