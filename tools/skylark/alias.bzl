@@ -22,7 +22,7 @@ def drake_cc_hdrs_forwarding_library(
         relative_labels = [],
         relative_labels_map = {},
         actual_subdir = "",
-        loud = False,
+        add_deprecation_warning = False,
         tags = [],
         **kwargs):
     """Generates a drake_cc_library filled with generated header files that
@@ -37,8 +37,8 @@ def drake_cc_hdrs_forwarding_library(
     relative_labels_map is the value for the foo key (without the leading
     colon).
 
-    When loud is true, the generated header will have a #warning directive
-    explaining the new location.
+    When add_deprecation_warning is true, the generated header will have a
+    #warning directive explaining the new location.
     """
 
     actual_subdir or fail("Missing required actual_subdir")
@@ -53,7 +53,7 @@ def drake_cc_hdrs_forwarding_library(
         )
         warning = "#warning This header is deprecated; use {} instead".format(
             actual_include,
-        ) if loud else ""
+        ) if add_deprecation_warning else ""
         basename = stub_relative_label[1:] + ".h"
         generate_file(
             name = basename,
@@ -80,7 +80,7 @@ def drake_cc_library_aliases(
         relative_labels = [],
         relative_labels_map = {},
         actual_subdir = "",
-        loud = False,
+        add_deprecation_warning = False,
         tags = [],
         deps = [],
         **kwargs):
@@ -95,10 +95,10 @@ def drake_cc_library_aliases(
     new_foo for relative_labels is the same as foo, and new_foo for
     relative_labels_map is the value for the foo key.
 
-    When loud is true, the generated label in this package will have a
-    deprecation warning explaining the new location.  When using this mode, the
-    caller should probably set 'tags = ["manual"]' to avoid spurious warnings
-    during 'bazel build //...'.
+    When add_deprecation_warning is true, the generated label in this package
+    will have a deprecation warning explaining the new location.  When using
+    this mode, the caller should probably set 'tags = ["manual"]' to avoid
+    spurious warnings during 'bazel build //...'.
     """
 
     actual_subdir or fail("Missing required actual_subdir")
@@ -106,7 +106,10 @@ def drake_cc_library_aliases(
     mapping = _combine_relative_labels(relative_labels, relative_labels_map)
     for stub_relative_label, actual_relative_label in mapping.items():
         actual_full_label = "//" + actual_subdir + actual_relative_label
-        deprecation = ("Use the label " + actual_full_label) if loud else None
+        if add_deprecation_warning:
+            deprecation = ("Use the label " + actual_full_label)
+        else:
+            deprecation = None
         native.cc_library(
             name = stub_relative_label[1:],
             deps = deps + [actual_full_label],
