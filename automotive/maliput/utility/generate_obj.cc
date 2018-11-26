@@ -449,6 +449,12 @@ void RenderBranchPoint(
   draw_arrows(branch_point->GetBSide());
 }
 
+GeoMesh SimplifyMesh(const GeoMesh& mesh, const ObjFeatures& features) {
+  if (features.simplify_mesh_threshold == 0.) {
+    return mesh;  // Passes given mesh unmodified.
+  }
+  return SimplifyMeshFaces(mesh, features.simplify_mesh_threshold);
+}
 
 void RenderSegment(const api::Segment* segment,
                    const ObjFeatures& features,
@@ -466,12 +472,7 @@ void RenderSegment(const api::Segment* segment,
                        base_grid_unit,
                        true /*use_driveable_bounds*/,
                        [](double, double) { return 0.; });
-    if (features.simplify_mesh_threshold != 0.) {
-      asphalt_mesh->AddFacesFrom(SimplifyMeshFaces(
-          driveable_mesh, features.simplify_mesh_threshold));
-    } else {
-      asphalt_mesh->AddFacesFrom(driveable_mesh);
-    }
+    asphalt_mesh->AddFacesFrom(SimplifyMesh(driveable_mesh, features));
   }
 
   if (features.draw_elevation_bounds) {
@@ -490,15 +491,8 @@ void RenderSegment(const api::Segment* segment,
         true /*use_driveable_bounds*/,
         [&segment](double s, double r) {
           return segment->lane(0)->elevation_bounds(s, r).min(); });
-    if (features.simplify_mesh_threshold != 0.) {
-      h_bounds_mesh->AddFacesFrom(SimplifyMeshFaces(
-          upper_h_bounds_mesh, features.simplify_mesh_threshold));
-      h_bounds_mesh->AddFacesFrom(SimplifyMeshFaces(
-          lower_h_bounds_mesh, features.simplify_mesh_threshold));
-    } else {
-      h_bounds_mesh->AddFacesFrom(upper_h_bounds_mesh);
-      h_bounds_mesh->AddFacesFrom(lower_h_bounds_mesh);
-    }
+    h_bounds_mesh->AddFacesFrom(SimplifyMesh(upper_h_bounds_mesh, features));
+    h_bounds_mesh->AddFacesFrom(SimplifyMesh(lower_h_bounds_mesh, features));
   }
   for (int li = 0; li < segment->num_lanes(); ++li) {
     const api::Lane* lane = segment->lane(li);
@@ -512,35 +506,20 @@ void RenderSegment(const api::Segment* segment,
                          [&features](double, double) {
                            return features.lane_haze_elevation;
                          });
-      if (features.simplify_mesh_threshold != 0.) {
-        lane_mesh->AddFacesFrom(SimplifyMeshFaces(
-            haze_mesh, features.simplify_mesh_threshold));
-      } else {
-        lane_mesh->AddFacesFrom(haze_mesh);
-      }
+      lane_mesh->AddFacesFrom(SimplifyMesh(haze_mesh, features));
     }
     if (features.draw_stripes) {
       GeoMesh stripes_mesh;
       StripeLaneBounds(&stripes_mesh, lane, grid_unit,
                        features.stripe_elevation,
                        features.stripe_width);
-      if (features.simplify_mesh_threshold != 0.) {
-        marker_mesh->AddFacesFrom(SimplifyMeshFaces(
-            stripes_mesh, features.simplify_mesh_threshold));
-      } else {
-        marker_mesh->AddFacesFrom(stripes_mesh);
-      }
+      marker_mesh->AddFacesFrom(SimplifyMesh(stripes_mesh, features));
     }
     if (features.draw_arrows) {
       GeoMesh arrows_mesh;
       MarkLaneEnds(&arrows_mesh, lane, grid_unit,
                    features.arrow_elevation);
-      if (features.simplify_mesh_threshold != 0.) {
-        marker_mesh->AddFacesFrom(SimplifyMeshFaces(
-            arrows_mesh, features.simplify_mesh_threshold));
-      } else {
-        marker_mesh->AddFacesFrom(arrows_mesh);
-      }
+      marker_mesh->AddFacesFrom(SimplifyMesh(arrows_mesh, features));
     }
   }
 }

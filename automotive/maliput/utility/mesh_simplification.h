@@ -81,8 +81,8 @@ inline bool operator!=(const FaceEdgeIndex& lhs, const FaceEdgeIndex& rhs) {
 /// The inverse of the mapping from face edges indices to their
 /// associated directed edge indices.
 /// @see ComputeInverseFaceEdgeMap
-using InverseFaceEdgeMap = std::unordered_map<
-  DirectedEdgeIndex, FaceEdgeIndex, drake::DefaultHash>;
+using InverseFaceEdgeMap =
+    std::unordered_map<DirectedEdgeIndex, FaceEdgeIndex, drake::DefaultHash>;
 
 
 /// Computes the inverse of the mapping from face edges indices to their
@@ -100,8 +100,7 @@ ComputeInverseFaceEdgeMap(const std::vector<IndexFace>& faces);
 /// A mapping from each IndexFace index in a given GeoMesh to each of its
 /// adjacent faces, along with the index of the edge these share.
 /// @see FaceEdgeIndex
-using FaceAdjacencyMap = std::unordered_map<
-  int, std::vector<FaceEdgeIndex>>;
+using FaceAdjacencyMap = std::unordered_map<int, std::vector<FaceEdgeIndex>>;
 
 
 /// Computes a mapping from each IndexFace index in @p faces to each of its
@@ -114,8 +113,7 @@ using FaceAdjacencyMap = std::unordered_map<
 /// @pre Any given pair of vertices is shared by two faces at most.
 /// @warning If any of the preconditions is not met, this function will
 ///          abort execution.
-FaceAdjacencyMap
-ComputeFaceAdjacencyMap(const std::vector<IndexFace>& faces);
+FaceAdjacencyMap ComputeFaceAdjacencyMap(const std::vector<IndexFace>& faces);
 
 
 template <typename T>
@@ -196,11 +194,11 @@ bool IsMeshFacePlanar(const GeoMesh& mesh, const IndexFace& face,
 ///                  details.
 /// @param visited_faces_indices The indices of the faces visited so far.
 /// @returns The indices of the adjacent coplanar faces found.
-/// @pre Given @p face_index is valid for the given @p mesh.
+/// @pre Given @p start_face_index is valid for the given @p mesh.
 /// @pre Given @p tolerance is a positive real number.
 /// @pre Given @p visited_faces_indices collection is not nullptr.
-/// @pre Given @p face_index has not been visited yet
-///      (i.e. visited_faces_indices.count(face_index) == 0).
+/// @pre Given @p start_face_index has not been visited yet
+///      (i.e. visited_faces_indices.count(start_face_index) == 0).
 /// @post All adjacent coplanar faces found are marked as visited.
 /// @warning If any of the preconditions is not met, this function
 ///          will abort execution.
@@ -216,6 +214,8 @@ std::set<int> AggregateAdjacentCoplanarMeshFaces(
 ///                                       outer face edge is to be found.
 /// @param adjacent_faces_map Mapping of adjacent faces for the faces
 ///                           referred by @p simply_connected_faces_indices.
+/// @returns The index of first outer face edge found or an invalid index
+///          if it failed to find any due to unmet preconditions.
 /// @pre The union of the all the faces referred by the given
 ///      @p simply_connected_faces_indices yields a simply
 ///      connected region (i.e. with no holes).

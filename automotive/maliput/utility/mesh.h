@@ -31,7 +31,7 @@ template <class T, class Hash, class KeyEqual>
 class UniqueIndexer {
  public:
   /// Creates an empty UniqueIndexer.
-  UniqueIndexer() {}
+  UniqueIndexer() = default;
 
   /// Pushes @p thing onto the back of this container, and returns the unique
   /// index for @p thing.  If @p thing has already been added to the container,
@@ -167,7 +167,8 @@ class IndexFace {
   };
 
   void push_vertex(int vertex_index, int normal_index) {
-    vertices_.emplace_back(vertex_index, normal_index); }
+    vertices_.emplace_back(vertex_index, normal_index);
+  }
 
   const std::vector<Vertex>& vertices() const { return vertices_; }
 
