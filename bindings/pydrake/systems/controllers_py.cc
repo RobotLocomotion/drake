@@ -32,28 +32,27 @@ PYBIND11_MODULE(controllers, m) {
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.primitives");
 
-  py::class_<DynamicProgrammingOptions::PeriodicBoundaryCondition>(
-      m, "PeriodicBoundaryCondition",
+  py::class_<DynamicProgrammingOptions::PeriodicBoundaryCondition>(m,
+      "PeriodicBoundaryCondition",
       doc.DynamicProgrammingOptions.PeriodicBoundaryCondition.doc)
       .def(py::init<int, double, double>(),
-           doc.DynamicProgrammingOptions.PeriodicBoundaryCondition.ctor.doc);
+          doc.DynamicProgrammingOptions.PeriodicBoundaryCondition.ctor.doc);
 
-  py::class_<DynamicProgrammingOptions>(m, "DynamicProgrammingOptions",
-                                        doc.DynamicProgrammingOptions.doc)
+  py::class_<DynamicProgrammingOptions>(
+      m, "DynamicProgrammingOptions", doc.DynamicProgrammingOptions.doc)
       .def(py::init<>())
       .def_readwrite("discount_factor",
-                     &DynamicProgrammingOptions::discount_factor,
-                     doc.DynamicProgrammingOptions.discount_factor.doc)
-      .def_readwrite(
-          "periodic_boundary_conditions",
+          &DynamicProgrammingOptions::discount_factor,
+          doc.DynamicProgrammingOptions.discount_factor.doc)
+      .def_readwrite("periodic_boundary_conditions",
           &DynamicProgrammingOptions::periodic_boundary_conditions,
           doc.DynamicProgrammingOptions.periodic_boundary_conditions.doc)
       .def_readwrite("convergence_tol",
-                     &DynamicProgrammingOptions::convergence_tol,
-                     doc.DynamicProgrammingOptions.convergence_tol.doc)
+          &DynamicProgrammingOptions::convergence_tol,
+          doc.DynamicProgrammingOptions.convergence_tol.doc)
       .def_readwrite("visualization_callback",
-                     &DynamicProgrammingOptions::visualization_callback,
-                     doc.DynamicProgrammingOptions.visualization_callback.doc);
+          &DynamicProgrammingOptions::visualization_callback,
+          doc.DynamicProgrammingOptions.visualization_callback.doc);
 
   // The RBT flavor of inverse dynamics.
 
@@ -61,19 +60,18 @@ PYBIND11_MODULE(controllers, m) {
       m, "RbtInverseDynamics", doc.rbt.InverseDynamics.doc);
   rbt_idyn  // BR
       .def(py::init<const RigidBodyTree<double>*,
-                    rbt::InverseDynamics<double>::InverseDynamicsMode>(),
-           py::arg("tree"), py::arg("mode"),
-           doc.rbt.InverseDynamics.ctor.doc_2args_tree_mode)
+               rbt::InverseDynamics<double>::InverseDynamicsMode>(),
+          py::arg("tree"), py::arg("mode"),
+          doc.rbt.InverseDynamics.ctor.doc_2args_tree_mode)
       .def("is_pure_gravity_compensation",
-           &rbt::InverseDynamics<double>::is_pure_gravity_compensation,
-           doc.rbt.InverseDynamics.is_pure_gravity_compensation.doc);
+          &rbt::InverseDynamics<double>::is_pure_gravity_compensation,
+          doc.rbt.InverseDynamics.is_pure_gravity_compensation.doc);
 
   py::enum_<rbt::InverseDynamics<double>::InverseDynamicsMode>(  // BR
       rbt_idyn, "InverseDynamicsMode")
       .value("kInverseDynamics", rbt::InverseDynamics<double>::kInverseDynamics,
-             doc.rbt.InverseDynamics.InverseDynamicsMode.doc)
-      .value(
-          "kGravityCompensation",
+          doc.rbt.InverseDynamics.InverseDynamicsMode.doc)
+      .value("kGravityCompensation",
           rbt::InverseDynamics<double>::kGravityCompensation,
           doc.rbt.InverseDynamics.InverseDynamicsMode.kGravityCompensation.doc)
       .export_values();
@@ -81,17 +79,17 @@ PYBIND11_MODULE(controllers, m) {
   py::class_<rbt::InverseDynamicsController<double>, Diagram<double>>(
       m, "RbtInverseDynamicsController", doc.rbt.InverseDynamicsController.doc)
       .def(py::init<std::unique_ptr<RigidBodyTree<double>>,
-                    const VectorX<double>&, const VectorX<double>&,
-                    const VectorX<double>&, bool>(),
-           py::arg("robot"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
-           py::arg("has_reference_acceleration"),
-           // Keep alive, ownership: RigidBodyTree keeps this alive.
-           // See "Keep Alive Behavior" in pydrake_pybind.h for details.
-           py::keep_alive<2 /* Nurse */, 1 /* Patient */>(),
-           doc.rbt.InverseDynamicsController.ctor.doc_5args)
+               const VectorX<double>&, const VectorX<double>&,
+               const VectorX<double>&, bool>(),
+          py::arg("robot"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
+          py::arg("has_reference_acceleration"),
+          // Keep alive, ownership: RigidBodyTree keeps this alive.
+          // See "Keep Alive Behavior" in pydrake_pybind.h for details.
+          py::keep_alive<2 /* Nurse */, 1 /* Patient */>(),
+          doc.rbt.InverseDynamicsController.ctor.doc_5args)
       .def("set_integral_value",
-           &rbt::InverseDynamicsController<double>::set_integral_value,
-           doc.rbt.InverseDynamicsController.set_integral_value.doc);
+          &rbt::InverseDynamicsController<double>::set_integral_value,
+          doc.rbt.InverseDynamicsController.set_integral_value.doc);
 
   // The MBP flavor of inverse dynamics.
 
@@ -99,95 +97,93 @@ PYBIND11_MODULE(controllers, m) {
       m, "InverseDynamics", doc.InverseDynamics.doc);
   idyn  // BR
       .def(py::init<const multibody::multibody_plant::MultibodyPlant<double>*,
-                    InverseDynamics<double>::InverseDynamicsMode>(),
-           py::arg("plant"), py::arg("mode"),
-           doc.InverseDynamics.ctor.doc_2args_plant_mode)
+               InverseDynamics<double>::InverseDynamicsMode>(),
+          py::arg("plant"), py::arg("mode"),
+          doc.InverseDynamics.ctor.doc_2args_plant_mode)
       .def("is_pure_gravity_compensation",
-           &InverseDynamics<double>::is_pure_gravity_compensation,
-           doc.InverseDynamics.is_pure_gravity_compensation.doc);
+          &InverseDynamics<double>::is_pure_gravity_compensation,
+          doc.InverseDynamics.is_pure_gravity_compensation.doc);
 
   py::enum_<InverseDynamics<double>::InverseDynamicsMode>(  // BR
       idyn, "InverseDynamicsMode")
       .value("kInverseDynamics", InverseDynamics<double>::kInverseDynamics,
-             doc.InverseDynamics.InverseDynamicsMode.doc)
+          doc.InverseDynamics.InverseDynamicsMode.doc)
       .value("kGravityCompensation",
-             InverseDynamics<double>::kGravityCompensation,
-             doc.InverseDynamics.InverseDynamicsMode.kGravityCompensation.doc)
+          InverseDynamics<double>::kGravityCompensation,
+          doc.InverseDynamics.InverseDynamicsMode.kGravityCompensation.doc)
       .export_values();
 
   py::class_<InverseDynamicsController<double>, Diagram<double>>(
       m, "InverseDynamicsController", doc.InverseDynamicsController.doc)
       .def(py::init<std::unique_ptr<RigidBodyTree<double>>,
-                    const VectorX<double>&, const VectorX<double>&,
-                    const VectorX<double>&, bool>(),
-           py::arg("robot"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
-           py::arg("has_reference_acceleration"),
-           // Keep alive, ownership: RigidBodyTree keeps this alive.
-           // See "Keep Alive Behavior" in pydrake_pybind.h for details.
-           py::keep_alive<2 /* Nurse */, 1 /* Patient */>())
+               const VectorX<double>&, const VectorX<double>&,
+               const VectorX<double>&, bool>(),
+          py::arg("robot"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
+          py::arg("has_reference_acceleration"),
+          // Keep alive, ownership: RigidBodyTree keeps this alive.
+          // See "Keep Alive Behavior" in pydrake_pybind.h for details.
+          py::keep_alive<2 /* Nurse */, 1 /* Patient */>())
       .def(py::init<const MultibodyPlant<double>&, const VectorX<double>&,
-                    const VectorX<double>&, const VectorX<double>&, bool>(),
-           py::arg("robot"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
-           py::arg("has_reference_acceleration"),
-           // Keep alive, reference: `self` keeps `MultibodyPlant` alive.
-           py::keep_alive<1, 2>(),
-           doc.InverseDynamicsController.ctor.  // BR
-           doc_5args_plant_kp_ki_kd_has_reference_acceleration)
+               const VectorX<double>&, const VectorX<double>&, bool>(),
+          py::arg("robot"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
+          py::arg("has_reference_acceleration"),
+          // Keep alive, reference: `self` keeps `MultibodyPlant` alive.
+          py::keep_alive<1, 2>(),
+          doc.InverseDynamicsController.ctor.  // BR
+          doc_5args_plant_kp_ki_kd_has_reference_acceleration)
       .def("set_integral_value",
-           &InverseDynamicsController<double>::set_integral_value,
-           doc.InverseDynamicsController.set_integral_value.doc);
+          &InverseDynamicsController<double>::set_integral_value,
+          doc.InverseDynamicsController.set_integral_value.doc);
 
   m.def("FittedValueIteration", WrapCallbacks(&FittedValueIteration),
-        doc.FittedValueIteration.doc);
+      doc.FittedValueIteration.doc);
 
   m.def("LinearProgrammingApproximateDynamicProgramming",
-        WrapCallbacks(&LinearProgrammingApproximateDynamicProgramming),
-        doc.LinearProgrammingApproximateDynamicProgramming.doc);
+      WrapCallbacks(&LinearProgrammingApproximateDynamicProgramming),
+      doc.LinearProgrammingApproximateDynamicProgramming.doc);
 
   m.def("LinearQuadraticRegulator",
-        [](const Eigen::Ref<const Eigen::MatrixXd>& A,
-           const Eigen::Ref<const Eigen::MatrixXd>& B,
-           const Eigen::Ref<const Eigen::MatrixXd>& Q,
-           const Eigen::Ref<const Eigen::MatrixXd>& R,
-           const Eigen::Ref<const Eigen::MatrixXd>& N) {
-          auto result = LinearQuadraticRegulator(A, B, Q, R, N);
-          return std::make_pair(result.K, result.S);
-        },
-        py::arg("A"), py::arg("B"), py::arg("Q"), py::arg("R"),
-        py::arg("N") = Eigen::Matrix<double, 0, 0>::Zero(),
-        doc.LinearQuadraticRegulator.doc_5args_A_B_Q_R_N);
+      [](const Eigen::Ref<const Eigen::MatrixXd>& A,
+          const Eigen::Ref<const Eigen::MatrixXd>& B,
+          const Eigen::Ref<const Eigen::MatrixXd>& Q,
+          const Eigen::Ref<const Eigen::MatrixXd>& R,
+          const Eigen::Ref<const Eigen::MatrixXd>& N) {
+        auto result = LinearQuadraticRegulator(A, B, Q, R, N);
+        return std::make_pair(result.K, result.S);
+      },
+      py::arg("A"), py::arg("B"), py::arg("Q"), py::arg("R"),
+      py::arg("N") = Eigen::Matrix<double, 0, 0>::Zero(),
+      doc.LinearQuadraticRegulator.doc_5args_A_B_Q_R_N);
 
   m.def("DiscreteTimeLinearQuadraticRegulator",
-        [](const Eigen::Ref<const Eigen::MatrixXd>& A,
-           const Eigen::Ref<const Eigen::MatrixXd>& B,
-           const Eigen::Ref<const Eigen::MatrixXd>& Q,
-           const Eigen::Ref<const Eigen::MatrixXd>& R) {
-          auto result = DiscreteTimeLinearQuadraticRegulator(A, B, Q, R);
-          return std::make_pair(result.K, result.S);
-        },
-        py::arg("A"), py::arg("B"), py::arg("Q"), py::arg("R"),
-        doc.DiscreteTimeLinearQuadraticRegulator.doc);
+      [](const Eigen::Ref<const Eigen::MatrixXd>& A,
+          const Eigen::Ref<const Eigen::MatrixXd>& B,
+          const Eigen::Ref<const Eigen::MatrixXd>& Q,
+          const Eigen::Ref<const Eigen::MatrixXd>& R) {
+        auto result = DiscreteTimeLinearQuadraticRegulator(A, B, Q, R);
+        return std::make_pair(result.K, result.S);
+      },
+      py::arg("A"), py::arg("B"), py::arg("Q"), py::arg("R"),
+      doc.DiscreteTimeLinearQuadraticRegulator.doc);
 
   m.def("LinearQuadraticRegulator",
-        py::overload_cast<const systems::LinearSystem<double>&,
-                          const Eigen::Ref<const Eigen::MatrixXd>&,
-                          const Eigen::Ref<const Eigen::MatrixXd>&,
-                          const Eigen::Ref<const Eigen::MatrixXd>&>(
-            &LinearQuadraticRegulator),
-        py::arg("system"), py::arg("Q"), py::arg("R"),
-        py::arg("N") = Eigen::Matrix<double, 0, 0>::Zero(),
-        doc.LinearQuadraticRegulator.doc_4args_system_Q_R_N);
+      py::overload_cast<const systems::LinearSystem<double>&,
+          const Eigen::Ref<const Eigen::MatrixXd>&,
+          const Eigen::Ref<const Eigen::MatrixXd>&,
+          const Eigen::Ref<const Eigen::MatrixXd>&>(&LinearQuadraticRegulator),
+      py::arg("system"), py::arg("Q"), py::arg("R"),
+      py::arg("N") = Eigen::Matrix<double, 0, 0>::Zero(),
+      doc.LinearQuadraticRegulator.doc_4args_system_Q_R_N);
 
   m.def("LinearQuadraticRegulator",
-        py::overload_cast<const systems::System<double>&,
-                          const systems::Context<double>&,
-                          const Eigen::Ref<const Eigen::MatrixXd>&,
-                          const Eigen::Ref<const Eigen::MatrixXd>&,
-                          const Eigen::Ref<const Eigen::MatrixXd>&>(
-            &LinearQuadraticRegulator),
-        py::arg("system"), py::arg("context"), py::arg("Q"), py::arg("R"),
-        py::arg("N") = Eigen::Matrix<double, 0, 0>::Zero(),
-        doc.LinearQuadraticRegulator.doc_5args_system_context_Q_R_N);
+      py::overload_cast<const systems::System<double>&,
+          const systems::Context<double>&,
+          const Eigen::Ref<const Eigen::MatrixXd>&,
+          const Eigen::Ref<const Eigen::MatrixXd>&,
+          const Eigen::Ref<const Eigen::MatrixXd>&>(&LinearQuadraticRegulator),
+      py::arg("system"), py::arg("context"), py::arg("Q"), py::arg("R"),
+      py::arg("N") = Eigen::Matrix<double, 0, 0>::Zero(),
+      doc.LinearQuadraticRegulator.doc_5args_system_context_Q_R_N);
 }
 
 }  // namespace pydrake

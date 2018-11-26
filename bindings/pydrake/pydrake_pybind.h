@@ -327,7 +327,7 @@ void DefCopyAndDeepCopy(PyClass* ppy_class) {
   PyClass& py_class = *ppy_class;
   py_class.def("__copy__", [](const Class* self) { return Class{*self}; })
       .def("__deepcopy__",
-           [](const Class* self, py::dict /* memo */) { return Class{*self}; });
+          [](const Class* self, py::dict /* memo */) { return Class{*self}; });
 }
 
 /// Executes Python code to introduce additional symbols for a given module.

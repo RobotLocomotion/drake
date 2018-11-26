@@ -19,22 +19,22 @@ PYBIND11_MODULE(joints, m) {
 
   py::class_<DrakeJoint>(m, "DrakeJoint", doc.DrakeJoint.doc)
       .def("get_num_positions", &DrakeJoint::get_num_positions,
-           doc.DrakeJoint.get_num_positions.doc)
+          doc.DrakeJoint.get_num_positions.doc)
       .def("get_name", &DrakeJoint::get_name, doc.DrakeJoint.get_name.doc);
 
-  py::class_<PrismaticJoint, DrakeJoint>(m, "PrismaticJoint",
-                                         doc.PrismaticJoint.doc)
+  py::class_<PrismaticJoint, DrakeJoint>(
+      m, "PrismaticJoint", doc.PrismaticJoint.doc)
       .def(py::init<const std::string&, const Eigen::Isometry3d&,
-                    const Eigen::Vector3d&>(),
-           py::arg("name"), py::arg("transform_to_parent_body"),
-           py::arg("translation_axis"), doc.PrismaticJoint.ctor.doc);
+               const Eigen::Vector3d&>(),
+          py::arg("name"), py::arg("transform_to_parent_body"),
+          py::arg("translation_axis"), doc.PrismaticJoint.ctor.doc);
 
-  py::class_<RevoluteJoint, DrakeJoint>(m, "RevoluteJoint",
-                                        doc.RevoluteJoint.doc)
+  py::class_<RevoluteJoint, DrakeJoint>(
+      m, "RevoluteJoint", doc.RevoluteJoint.doc)
       .def(py::init<const std::string&, const Eigen::Isometry3d&,
-                    const Eigen::Vector3d&>(),
-           py::arg("name"), py::arg("transform_to_parent_body"),
-           py::arg("rotation_axis"), doc.RevoluteJoint.ctor.doc);
+               const Eigen::Vector3d&>(),
+          py::arg("name"), py::arg("transform_to_parent_body"),
+          py::arg("rotation_axis"), doc.RevoluteJoint.ctor.doc);
 }
 
 }  // namespace pydrake

@@ -17,8 +17,8 @@ PYBIND11_MODULE(gurobi, m) {
       py::module::import("pydrake.solvers.mathematicalprogram")
           .attr("MathematicalProgramSolverInterface");
 
-  py::class_<GurobiSolver>(m, "GurobiSolver", solverinterface,
-                           doc.GurobiSolver.doc)
+  py::class_<GurobiSolver>(
+      m, "GurobiSolver", solverinterface, doc.GurobiSolver.doc)
       .def(py::init<>(), doc.GurobiSolver.ctor.doc_0args);
 }
 
