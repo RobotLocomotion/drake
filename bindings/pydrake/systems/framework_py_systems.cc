@@ -372,23 +372,25 @@ struct Impl {
             py_reference_internal, py::arg("name"),
             doc.System.DeclareAbstractInputPort.doc_1args)
         .def("_DeclareAbstractOutputPort",
-            WrapCallbacks([](PyLeafSystem * self, const std::string& name,
-                              AllocCallback arg1, CalcCallback arg2) -> auto& {
+            WrapCallbacks([](PyLeafSystem* self, const std::string& name,
+                              AllocCallback arg1,
+                              CalcCallback arg2) -> const OutputPort<T>& {
               return self->DeclareAbstractOutputPort(name, arg1, arg2);
             }),
             py_reference_internal, py::arg("name"), py::arg("alloc"),
             py::arg("calc"))
         .def("_DeclareAbstractOutputPort",
-            WrapCallbacks([](PyLeafSystem * self, AllocCallback arg1,
-                              CalcCallback arg2) -> auto& {
+            WrapCallbacks([](PyLeafSystem* self, AllocCallback arg1,
+                              CalcCallback arg2) -> const OutputPort<T>& {
               return self->DeclareAbstractOutputPort(arg1, arg2);
             }),
             py_reference_internal, py::arg("alloc"), py::arg("calc"),
             doc.LeafSystem.DeclareAbstractOutputPort.doc)
         .def("_DeclareVectorInputPort",
-            [](PyLeafSystem * self, std::string name,
+            [](PyLeafSystem* self, std::string name,
                 const BasicVector<T>& model_vector,
-                optional<RandomDistribution> random_type) -> auto& {
+                optional<RandomDistribution> random_type)
+                -> const InputPort<T>& {
               return self->DeclareVectorInputPort(
                   name, model_vector, random_type);
             },
@@ -396,16 +398,16 @@ struct Impl {
             py::arg("random_type") = nullopt,
             doc.LeafSystem.DeclareVectorInputPort.doc_3args)
         .def("_DeclareVectorOutputPort",
-            WrapCallbacks([](PyLeafSystem * self, const std::string& name,
+            WrapCallbacks([](PyLeafSystem* self, const std::string& name,
                               const BasicVector<T>& arg1,
-                              CalcVectorCallback arg2) -> auto& {
+                              CalcVectorCallback arg2) -> const OutputPort<T>& {
               return self->DeclareVectorOutputPort(name, arg1, arg2);
             }),
             py_reference_internal, py::arg("name"), py::arg("model_value"),
             py::arg("calc"))
         .def("_DeclareVectorOutputPort",
-            WrapCallbacks([](PyLeafSystem * self, const BasicVector<T>& arg1,
-                              CalcVectorCallback arg2) -> auto& {
+            WrapCallbacks([](PyLeafSystem* self, const BasicVector<T>& arg1,
+                              CalcVectorCallback arg2) -> const OutputPort<T>& {
               return self->DeclareVectorOutputPort(arg1, arg2);
             }),
             py_reference_internal, doc.LeafSystem.DeclareVectorOutputPort.doc)
