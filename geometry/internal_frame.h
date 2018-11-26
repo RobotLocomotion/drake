@@ -140,6 +140,14 @@ class InternalFrame {
     child_geometries_.insert(geometry_id);
   }
 
+  /** Removes the given `geometry_id` from the set of geometries that this frame
+   considers to be children.
+   @pre the id _is_ a valid child of this frame.  */
+  void remove_child(GeometryId geometry_id) {
+    DRAKE_ASSERT(child_geometries_.count(geometry_id) > 0);
+    child_geometries_.erase(geometry_id);
+  }
+
   /** The identifier used for identifying the single world frame in all
    instances of SceneGraph. The world frame will eventually have an arbitrary
    number of child frames and geometries; but there will always only be one

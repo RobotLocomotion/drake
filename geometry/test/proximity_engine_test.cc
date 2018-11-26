@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity_engine.h"
 
 #include <utility>
+#include <vector>
 
 #include <fcl/fcl.h>
 #include <gtest/gtest.h>
@@ -40,6 +41,18 @@ class ProximityEngineTester {
   template <typename T>
   static int peek_next_clique(const ProximityEngine<T>& engine) {
     return engine.peek_next_clique();
+  }
+
+  template <typename T>
+  static Vector3<T> GetTranslation(ProximityIndex index, bool is_dynamic,
+                                   const ProximityEngine<T>& engine) {
+    return engine.GetX_WG(index, is_dynamic).translation();
+  }
+
+  template <typename T>
+  static GeometryIndex GetGeometryIndex(ProximityIndex index, bool is_dynamic,
+                                        const ProximityEngine<T>& engine) {
+    return engine.GetGeometryIndex(index, is_dynamic);
   }
 };
 
@@ -91,6 +104,89 @@ GTEST_TEST(ProximityEngineTests, AddMixedGeometry) {
   EXPECT_EQ(engine.num_geometries(), 2);
   EXPECT_EQ(engine.num_anchored(), 1);
   EXPECT_EQ(engine.num_dynamic(), 1);
+}
+
+// Removes geometry (dynamic and anchored) from the engine. The test creates
+// a _unique_ engine instance with all dynamic or all anchored geometries.
+// It is not necessary to create a mixed engine because the two geometry
+// types are segregated.
+GTEST_TEST(ProximityEngineTests, RemoveGeometry) {
+  for (bool is_dynamic : {true, false}) {
+    ProximityEngine<double> engine;
+
+    double x_pos[] = {0, 2, 4};
+
+    std::vector<GeometryIndex> geometry_indices;
+    std::vector<ProximityIndex> proximity_indices;
+    std::vector<Isometry3<double>> poses;
+
+    // Populate the world with three anchored spheres located on the x-axis at
+    // x = 0, 2, & 4. With radius of 0.5, they should *not* be colliding.
+    Sphere sphere{0.5};
+
+    for (int i = 0; i < 3; ++i) {
+      geometry_indices.push_back(GeometryIndex(i + 10));
+      poses.push_back(Isometry3<double>::Identity());
+      poses[i].translation() << x_pos[i], 0, 0;
+      if (is_dynamic) {
+        proximity_indices.push_back(
+            engine.AddDynamicGeometry(sphere, geometry_indices[i]));
+      } else {
+        proximity_indices.push_back(
+            engine.AddAnchoredGeometry(sphere, poses[i], geometry_indices[i]));
+      }
+      EXPECT_EQ(proximity_indices[i], i);
+      EXPECT_NE(static_cast<int>(proximity_indices[i]),
+                static_cast<int>(geometry_indices[i]));
+    }
+    EXPECT_EQ(engine.num_geometries(), 3);
+    EXPECT_EQ(engine.num_anchored(), is_dynamic ? 0 : 3);
+    EXPECT_EQ(engine.num_dynamic(), is_dynamic ? 3 : 0);
+
+    if (is_dynamic) {
+      // Poses for dynamic geometries need to be explicitly updated.
+      engine.UpdateWorldPoses(poses);
+    }
+
+    // Case: Remove middle object, confirm that final gets moved.
+    auto remove_index = ProximityIndex(1);
+    optional<GeometryIndex> moved =
+        engine.RemoveGeometry(remove_index, is_dynamic);
+    // Confirm that a move is reported, that the moved object has its engine
+    // index updated, and that there is "physical" evidence of the move (e.g.,
+    // the correct, unique position).
+    {
+      EXPECT_EQ(engine.num_geometries(), 2);
+      EXPECT_EQ(engine.num_anchored(), is_dynamic ? 0 : 2);
+      EXPECT_EQ(engine.num_dynamic(), is_dynamic ? 2 : 0);
+      EXPECT_TRUE(moved);
+      EXPECT_EQ(*moved, geometry_indices[2]);
+      EXPECT_TRUE(CompareMatrices(ProximityEngineTester::GetTranslation(
+                                      remove_index, is_dynamic, engine),
+                                  Vector3<double>{x_pos[2], 0, 0}, 0,
+                                  MatrixCompareType::absolute));
+      EXPECT_EQ(ProximityEngineTester::GetGeometryIndex(remove_index,
+                                                        is_dynamic, engine),
+                geometry_indices[2]);
+    }
+
+    // Case: Remove the last object, nothing should get moved.
+    moved = engine.RemoveGeometry(remove_index, is_dynamic);
+    // RemoveGeometry
+    {
+      EXPECT_EQ(engine.num_geometries(), 1);
+      EXPECT_EQ(engine.num_anchored(), is_dynamic ? 0 : 1);
+      EXPECT_EQ(engine.num_dynamic(), is_dynamic ? 1 : 0);
+      EXPECT_FALSE(moved);
+      EXPECT_TRUE(CompareMatrices(ProximityEngineTester::GetTranslation(
+                                      ProximityIndex(0), is_dynamic, engine),
+                                  Vector3<double>{x_pos[0], 0, 0}, 0,
+                                  MatrixCompareType::absolute));
+      EXPECT_EQ(ProximityEngineTester::GetGeometryIndex(ProximityIndex(0),
+                                                        is_dynamic, engine),
+                geometry_indices[0]);
+    }
+  }
 }
 
 // Tests for reading .obj files.------------------------------------------------

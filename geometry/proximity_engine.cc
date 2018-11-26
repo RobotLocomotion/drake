@@ -590,6 +590,26 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return proximity_index;
   }
 
+  void UpdateGeometryIndex(ProximityIndex proximity_index, bool is_dynamic,
+                           GeometryIndex geometry_index) {
+    if (is_dynamic) {
+      EncodedData::encode_dynamic(geometry_index)
+          .store_in(dynamic_objects_[proximity_index].get());
+    } else {
+      EncodedData::encode_anchored(geometry_index)
+          .store_in(anchored_objects_[proximity_index].get());
+    }
+  }
+
+  optional<GeometryIndex> RemoveGeometry(ProximityIndex index,
+                                         bool is_dynamic) {
+    if (is_dynamic) {
+      return RemoveGeometry(index, &dynamic_tree_, &dynamic_objects_);
+    } else {
+      return RemoveGeometry(index, &anchored_tree_, &anchored_objects_);
+    }
+  }
+
   int num_geometries() const {
     return static_cast<int>(dynamic_objects_.size() + anchored_objects_.size());
   }
@@ -979,11 +999,57 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   int peek_next_clique() const { return collision_filter_.peek_next_clique(); }
 
+  const Isometry3<double>& GetX_WG(ProximityIndex index,
+                                   bool is_dynamic) const {
+    if (is_dynamic) {
+      return dynamic_objects_[index]->getTransform();
+    } else {
+      return anchored_objects_[index]->getTransform();
+    }
+  }
+
+  GeometryIndex GetGeometryIndex(ProximityIndex index, bool is_dynamic) const {
+    if (is_dynamic) {
+      return EncodedData(*dynamic_objects_[index]).index();
+    } else {
+      return EncodedData(*anchored_objects_[index]).index();
+    }
+  }
+
  private:
   // Engine on one scalar can see the members of other engines.
   friend class ProximityEngineTester;
   template <typename>
   friend class ProximityEngine;
+
+  // Removes the geometry with the given proximity index from the given tree. It
+  // potentially moves another object to take its slot in the vector of objects
+  // to maintain a contiguous memory block.
+  optional<GeometryIndex> RemoveGeometry(
+      ProximityIndex index, fcl::DynamicAABBTreeCollisionManager<double>* tree,
+      std::vector<std::unique_ptr<fcl::CollisionObject<double>>>* geometries) {
+    std::vector<unique_ptr<fcl::CollisionObject<double>>>& typed_geometries =
+        *geometries;
+    fcl::CollisionObjectd* fcl_object = typed_geometries[index].get();
+    const size_t old_size = tree->size();
+    tree->unregisterObject(fcl_object);
+    // NOTE: The FCL API provides no other mechanism for confirming the
+    // unregistration was successful.
+    DRAKE_DEMAND(old_size == tree->size() + 1);
+    optional<GeometryIndex> moved{};
+    DRAKE_DEMAND(typed_geometries.size() > 0);
+    const size_t last = typed_geometries.size() - 1;
+    if (index < last) {
+      // Removed geometry that *isn't* the last in the geometries. Swap last
+      // into empty slot.
+      const fcl::CollisionObjectd* move_object = typed_geometries[last].get();
+      EncodedData encoding(*move_object);
+      moved = encoding.index();
+      typed_geometries[index].swap(typed_geometries.back());
+    }
+    typed_geometries.pop_back();
+    return moved;
+  }
 
   // TODO(SeanCurtis-TRI): Convert these to scalar type T when I know how to
   // transmogrify them. Otherwise, while the engine can't be transmogrified, the
@@ -1097,6 +1163,19 @@ ProximityIndex ProximityEngine<T>::AddAnchoredGeometry(
 }
 
 template <typename T>
+void ProximityEngine<T>::UpdateGeometryIndex(ProximityIndex proximity_index,
+                                             bool is_dynamic,
+                                             GeometryIndex geometry_index) {
+  impl_->UpdateGeometryIndex(proximity_index, is_dynamic, geometry_index);
+}
+
+template <typename T>
+optional<GeometryIndex> ProximityEngine<T>::RemoveGeometry(
+    ProximityIndex index, bool is_dynamic) {
+  return impl_->RemoveGeometry(index, is_dynamic);
+}
+
+template <typename T>
 int ProximityEngine<T>::num_geometries() const {
   return impl_->num_geometries();
 }
@@ -1186,6 +1265,18 @@ bool ProximityEngine<T>::IsDeepCopy(const ProximityEngine<T>& other) const {
 template <typename T>
 int ProximityEngine<T>::peek_next_clique() const {
   return impl_->peek_next_clique();
+}
+
+template <typename T>
+const Isometry3<double>& ProximityEngine<T>::GetX_WG(ProximityIndex index,
+                                                     bool is_dynamic) const {
+  return impl_->GetX_WG(index, is_dynamic);
+}
+
+template <typename T>
+GeometryIndex ProximityEngine<T>::GetGeometryIndex(ProximityIndex index,
+                                                   bool is_dynamic) const {
+  return impl_->GetGeometryIndex(index, is_dynamic);
 }
 
 }  // namespace internal

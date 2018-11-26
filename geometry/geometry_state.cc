@@ -23,6 +23,7 @@ using internal::ProximityEngine;
 using std::make_pair;
 using std::make_unique;
 using std::move;
+using std::swap;
 using std::to_string;
 
 //-----------------------------------------------------------------------------
@@ -114,6 +115,12 @@ GeometryState<T>::GeometryState()
 
   source_frame_id_map_[self_source_] = {world};
   source_root_frame_map_[self_source_] = {world};
+}
+
+template <typename T>
+int GeometryState<T>::NumFramesForSource(SourceId source_id) const {
+  if (source_frame_id_map_.count(source_id) == 0) return 0;
+  return static_cast<int>(source_frame_id_map_.at(source_id).size());
 }
 
 template <typename T>
@@ -476,6 +483,18 @@ GeometryId GeometryState<T>::RegisterAnchoredGeometry(
 }
 
 template <typename T>
+void GeometryState<T>::RemoveGeometry(SourceId source_id,
+                                      GeometryId geometry_id) {
+  if (!BelongsToSource(geometry_id, source_id)) {
+    throw std::logic_error(
+        "Trying to remove geometry " + to_string(geometry_id) + " from "
+            "source " + to_string(source_id) + ", but the geometry doesn't "
+            "belong to that source.");
+  }
+  RemoveGeometryUnchecked(geometry_id, RemoveGeometryOrigin::kGeometry);
+}
+
+template <typename T>
 bool GeometryState<T>::IsValidGeometryName(
     FrameId frame_id, const std::string& candidate_name) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
@@ -628,6 +647,84 @@ template <typename T>
 SourceId GeometryState<T>::get_source_id(FrameId frame_id) const {
   const auto& frame = GetValueOrThrow(frame_id, frames_);
   return frame.source_id();
+}
+
+template <typename T>
+void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
+                                               RemoveGeometryOrigin caller) {
+  const InternalGeometry& geometry = GetValueOrThrow(geometry_id, geometries_);
+
+  // TODO(SeanCurtis-TRI): When this get invoked by RemoveFrame(), this
+  // recursive action will not be necessary, as all child geometries will
+  // automatically get removed. I've put it into a block so for future
+  // reference; simply add an if statement to determine if this is coming from
+  // frame removal.
+  {
+    for (auto child_id : geometry.child_geometry_ids()) {
+      RemoveGeometryUnchecked(child_id, RemoveGeometryOrigin::kRecurse);
+    }
+    // Remove the geometry from its frame's list of geometries.
+    auto& frame = GetMutableValueOrThrow(geometry.frame_id(), &frames_);
+    frame.remove_child(geometry_id);
+  }
+
+  // We want to maintain a contiguous block of valid GeometryIndex values (such
+  // that geometries_ doesn't have gaps. If we remove geometries from the
+  // middle, we want to fill the middle. Ideally, we would move the last to the
+  // hole (minimizing moves).
+  GeometryIndex last_index(geometry_index_to_id_map_.size() - 1);
+  GeometryIndex removed_index = geometry.index();
+  if (removed_index != last_index) {
+    // Move things around in geometry
+    geometries_[geometry_index_to_id_map_.back()].set_index(removed_index);
+    geometry_index_to_id_map_[removed_index] =
+        geometry_index_to_id_map_[last_index];
+
+    // Any engine that relies on a GeometryIndex to access GeometryId needs to
+    // be informed that a geometry has moved -- from last_index to
+    // removed_index.
+    InternalGeometry& moved_geometry =
+        geometries_[geometry_index_to_id_map_[removed_index]];
+    geometry_engine_->UpdateGeometryIndex(moved_geometry.proximity_index(),
+                                          moved_geometry.is_dynamic(),
+                                          removed_index);
+  }
+
+  // Now remove the geometry from engines. In the future, base this on the
+  // _role_ of the geometry.
+  ProximityIndex proximity_index = geometry.proximity_index();
+  optional<GeometryIndex> moved_index = geometry_engine_->RemoveGeometry(
+      proximity_index, geometry.is_dynamic());
+  if (moved_index) {
+    // The geometry engine moved a geometry into the removed `proximity_index`.
+    // Update the state's knowledge of this.
+    GeometryId moved_id = geometry_index_to_id_map_[*moved_index];
+    if (geometry.is_dynamic()) {
+      swap(X_WG_[proximity_index],
+           X_WG_[geometries_[moved_id].proximity_index()]);
+    }
+    geometries_[moved_id].set_proximity_index(proximity_index);
+  }
+
+  if (caller == RemoveGeometryOrigin::kGeometry) {
+    // Only the geometry that this function is *directly* invoked on needs to
+    // remove itself from its possible parent geometry. If called recursively,
+    // it is because the parent geometry is being deleted anyways and removal
+    // is implicit in the deletion of that parent geometry.
+    if (optional<GeometryId> parent_id = geometry.parent_id()) {
+      auto& parent_geometry =
+          GetMutableValueOrThrow(*parent_id, &geometries_);
+      parent_geometry.remove_child(geometry_id);
+    }
+  }
+
+  // Clean up state collections. The removed geometry should now be the *last*
+  // item.
+  X_WG_.pop_back();
+  geometry_index_to_id_map_.pop_back();
+
+  // Remove from the geometries.
+  geometries_.erase(geometry_id);
 }
 
 template <typename T>

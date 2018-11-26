@@ -376,6 +376,18 @@ class SceneGraph final : public systems::LeafSystem<T> {
   GeometryId RegisterAnchoredGeometry(
       SourceId source_id, std::unique_ptr<GeometryInstance> geometry);
 
+  /** Removes the given geometry G (indicated by `geometry_id`) from the given
+   source's registered geometries. All registered geometries hanging from
+   this geometry will also be removed.
+   @param source_id   The identifier for the owner geometry source.
+   @param geometry_id The identifier of the geometry to remove.
+   @throws std::logic_error If:
+                            1. The `source_id` is not a registered source,
+                            2. the `geometry_id` doesn't belong to the source,
+                               or
+                            3. a context has been allocated. */
+  void RemoveGeometry(SourceId source_id, GeometryId geometry_id);
+
   //@}
 
   /** Reports the identifier for the world frame.  */
