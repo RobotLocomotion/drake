@@ -15,10 +15,23 @@ namespace drake {
 namespace perception {
 
 /// Converts a depth image to a point cloud.
-/// Basically a system that wraps around ConvertDepthImageToPointCloud in
-/// RGBDCamera.
-/// The system has a single input port that takes a ImageDepth32F and a single
-/// output port that contains a PointCloud.
+///
+/// @system{ DepthImageToPointCloud,
+///          @input_port{depth_image}
+///          @input_port{camera_pose (optional)},
+///          @output_port{point_cloud}
+/// }
+///
+/// The system has an input port that takes a
+/// systems::sensors::ImageDepth32F and an additional optional input port
+/// that takes a math::RigidTransform for the camera_pose.  If this port is
+/// connected, then the point cloud is represented in the parent frame (e.g.
+/// if camera_pose is the pose of the camera in the world frame, then the
+/// point_cloud output will be a PointCloud in the world frame).  If
+/// the camera_pose input is not connected, the PointCloud will be represented
+/// in the camera frame.
+///
+/// @ingroup perception_systems
 class DepthImageToPointCloud final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DepthImageToPointCloud)
@@ -31,7 +44,12 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
 
   /// Returns the abstract valued input port that contains an ImageDepth32F.
   const systems::InputPort<double>& depth_image_input_port() const {
-    return this->get_input_port(input_port_depth_image_index_);
+    return this->get_input_port(depth_image_input_port_);
+  }
+
+  /// Returns the abstract valued input port that contains an Isometry3d.
+  const systems::InputPort<double>& camera_pose_input_port() const {
+    return this->get_input_port(camera_pose_input_port_);
   }
 
   /// Returns the abstract valued output port that contains a PointCloud.
@@ -68,7 +86,8 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
   void ConvertDepthImageToPointCloud(const systems::Context<double>& context,
                                      PointCloud* output) const;
 
-  int input_port_depth_image_index_{-1};
+  systems::InputPortIndex depth_image_input_port_{};
+  systems::InputPortIndex camera_pose_input_port_{};
 
   const systems::sensors::CameraInfo& camera_info_;
 };
