@@ -561,9 +561,14 @@ class TestRigidBodyTree(unittest.TestCase):
         box_collision_element.set_body(body_2)
         rbt.addCollisionElement(box_collision_element, body_2, "default")
 
+        # Define a collision filter group containing bodies 1 and 2 and make
+        # that group ignore itself.
         rbt.DefineCollisionFilterGroup(name="test_group")
         rbt.AddCollisionFilterGroupMember(
+            group_name="test_group", body_name="body_1", model_id=0)
+        rbt.AddCollisionFilterGroupMember(
             group_name="test_group", body_name="body_2", model_id=0)
+        rbt.AddCollisionFilterIgnoreTarget("test_group", "test_group")
 
         self.assertFalse(rbt.initialized())
         rbt.compile()
