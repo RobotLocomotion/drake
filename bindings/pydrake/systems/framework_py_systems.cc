@@ -301,16 +301,7 @@ struct Impl {
         .def("AllocateOutput",
              overload_cast_explicit<unique_ptr<SystemOutput<T>>>(
                  &System<T>::AllocateOutput),
-             doc.System.AllocateOutput.doc_0args)
-        // TODO(sherm1) Deprecate this next signature (context unused).
-        .def("AllocateOutput",
-             [](const System<T>* self, const Context<T>&) {
-               WarnDeprecated(
-                   "`System.AllocateOutput(self, Context)` is deprecated. "
-                   "Please use `System.AllocateOutput(self)` instead.");
-               return self->AllocateOutput();
-             },
-             py::arg("context"), doc.System.AllocateOutput.doc_1args)
+             doc.System.AllocateOutput.doc)
         .def("EvalVectorInput",
              [](const System<T>* self, const Context<T>& arg1, int arg2) {
                return self->EvalVectorInput(arg1, arg2);

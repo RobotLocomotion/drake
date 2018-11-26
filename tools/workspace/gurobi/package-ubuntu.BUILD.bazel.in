@@ -68,15 +68,6 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-# TODO(pvarin): Remove this alias and deprecation message after 2018-09-21
-alias(
-    name = "gurobi",
-    actual = "gurobi_c",
-    deprecation = "The @gurobi//:gurobi target is deprecated, \
-                   you should use @gurobi//:gurobi_c instead",
-    visibility = ["//visibility:public"],
-)
-
 install_files(
     name = "install_libraries",
     dest = ".",
