@@ -249,8 +249,6 @@ struct DistanceFromPointCallbackData {
         geometry_map(*geometry_map_in),
         influence_distance(influence_distance_in) {}
 
-  // We measure distance from this point, which is represented as
-  // fcl::CollisionObjectd.
   fcl::CollisionObjectd* query;
 
   // Maps so the distance call back can map from engine index to geometry id.
@@ -258,7 +256,6 @@ struct DistanceFromPointCallbackData {
 
   const double influence_distance;
 
-  // Vectors of distance results
   std::vector<SignedDistanceFieldValue<double>>* distances;
 };
 
@@ -361,7 +358,7 @@ bool DistanceFromPointCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
                data.query == fcl_object_B_ptr);
   threshold = data.influence_distance;
 
-  // We use `const` to prevent modification of the collision objects
+  // We use `const` to prevent modification of the collision objects.
   const fcl::CollisionObjectd& fcl_query = *data.query;
   const fcl::CollisionObjectd* fcl_collision_object_ptr =
                                    (data.query == fcl_object_A_ptr)?
@@ -408,11 +405,12 @@ bool DistanceFromPointCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
   Vector3d grad_W = p_GQ_W;
 
   // If the query point Q is at the center of the sphere G, we arbitrarily set
-  // the gradient vector to (1,0,0) as documented in proximity_engine.h
-  // No need for tolerance.  We have tried normalizing (1e-300, 1e-296, 1e-296),
-  // and it returned a reasonable unit vector.
+  // the gradient vector to (1,0,0) as documented in query_object.h
+  // (QueryObject::ComputePointSignedDistances). No need for tolerance. We have
+  // tried normalizing (1e-300, 1e-296, 1e-296), and it returned "reasonable"
+  // unit vector.
   if (grad_W.norm() == 0.0)
-    grad_W << 1.0, 0.0, 0.0;  // Arbitrary (1,0,0) as documented in
+    grad_W << 1.0, 0.0, 0.0;
   else
     grad_W.normalize();
 

@@ -125,7 +125,7 @@ class QueryObject {
    @name                   Signed Distance Queries
 
    These queries provide the signed distance between two objects in the
-   scene, or they provide the signded distance from a query point to each
+   scene, or they provide the signed distance from a query point to each
    object in the scene.
   */
   //@{
@@ -135,7 +135,7 @@ class QueryObject {
    pairs of geometries in the world. Reports both the separating geometries
    and penetrating geometries.
 
-   These queries provide φ(A, B), the signed distance between two objects A and
+   This query provides φ(A, B), the signed distance between two objects A and
    B.
 
    If the objects do not overlap (i.e., A ⋂ B = ∅), φ > 0 and represents the
@@ -198,9 +198,9 @@ class QueryObject {
 
    grad φ(p) = (p - N)/|p - N|
 
-   Also in general, if the query point is inside the object, the gradient vector
-   is the unit vector in the direction from the query point to the nearest point
-   N on the object's surface:
+   Also in many cases, if the query point is inside the object, the gradient
+   vector is the unit vector in the direction from the query point to a nearby
+   point N on the object's surface:
 
    grad φ(p) = (N - p)/|N - p|
 
@@ -215,11 +215,7 @@ class QueryObject {
    not continuous.
 
    @note For a convex object, the signed distance function is smooth (having
-   continuous first-order partial derivatives) outside the object. However, the
-   signed distance function is not smooth inside the convex object; specifically
-   at any position on the medial axis inside the convex object, the signed
-   distance function is not smooth.
-
+   continuous first-order partial derivatives) outside the object.
 
    @param[in] p_WQ            Position of a query point Q in world frame W.
    @param[in] influence_distance  We ignore any object beyond this distance.

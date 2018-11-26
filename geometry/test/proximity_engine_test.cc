@@ -291,6 +291,23 @@ GTEST_TEST(ProximityEngineTests, PointSignedDistancesInfluenceDistance) {
 }
 
 // Reports arbitrary gradient at the center of the sphere.
+GTEST_TEST(ProximityEngineTests, PointSignedDistancesCenterOfSphere) {
+  ProximityEngine<double> engine;
+  std::vector<GeometryId> geometry_map;
+
+  Sphere sphere{0.7};
+  Isometry3<double> pose = Isometry3<double>::Identity();
+  engine.AddAnchoredGeometry(sphere, pose, GeometryIndex(0));
+  GeometryId sphere_id = GeometryId::get_new_id();
+  geometry_map.push_back(sphere_id);
+
+  Vector3d query{0.0, 0.0, 0.0};
+  auto results = engine.ComputePointSignedDistances(query, geometry_map);
+
+  EXPECT_EQ(results.size(), 1);
+  EXPECT_EQ(results[0].id_G, sphere_id);
+  EXPECT_EQ(results[0].grad_W, Vector3d(1.0, 0.0, 0.0));
+}
 
 // Penetration tests -- testing data flow; not testing the value of the query.
 

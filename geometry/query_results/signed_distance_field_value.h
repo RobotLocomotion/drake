@@ -36,7 +36,7 @@ struct SignedDistanceFieldValue{
                      boundary of the geometry G.
    @param grad_W_in  The gradient vector of the distance function with respect
                      to the query point Q, expressed in world frame W.
-   @pre Assume grad_W_in is not NaN.
+   @pre Assume grad_W_in must not contain NaN.
    */
   SignedDistanceFieldValue(GeometryId id_G_in, const Vector3<T>& p_GN_in,
                            T distance_in, const Vector3<T>& grad_W_in)
@@ -44,7 +44,7 @@ struct SignedDistanceFieldValue{
     using std::isnan;
     DRAKE_ASSERT(!(isnan(grad_W(0))||
                    isnan(grad_W(1))||
-                   isnan(grad_W(2))))
+                   isnan(grad_W(2))));
   }
 
   GeometryId id_G;
