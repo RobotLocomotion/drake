@@ -50,13 +50,13 @@ TEST_F(RevoluteMobilizerTest, AxisIsNormalizedAtConstruction) {
 TEST_F(RevoluteMobilizerTest, StateAccess) {
   const double some_value1 = 1.5;
   const double some_value2 = std::sqrt(2);
-  // Verify we can set a prismatic mobilizer position given the model's context.
+  // Verify we can set a revolute mobilizer position given the model's context.
   mobilizer_->set_angle(context_.get(), some_value1);
   EXPECT_EQ(mobilizer_->get_angle(*context_), some_value1);
   mobilizer_->set_angle(context_.get(), some_value2);
   EXPECT_EQ(mobilizer_->get_angle(*context_), some_value2);
 
-  // Verify we can set a prismatic mobilizer position rate given the model's
+  // Verify we can set a revolute mobilizer position rate given the model's
   // context.
   mobilizer_->set_angular_rate(context_.get(), some_value1);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), some_value1);
@@ -159,21 +159,12 @@ TEST_F(RevoluteMobilizerTest, KinematicMapping) {
   // Compute N.
   MatrixX<double> N(1, 1);
   mobilizer_->CalcNMatrix(*mbt_context_, &N);
-  EXPECT_NEAR(N(0, 0), 1.0, kTolerance);
+  EXPECT_EQ(N(0, 0), 1.0);
 
   // Compute Nplus.
   MatrixX<double> Nplus(1, 1);
   mobilizer_->CalcNplusMatrix(*mbt_context_, &Nplus);
-  EXPECT_NEAR(Nplus(0, 0), 1.0, kTolerance);
-}
-
-using RevoluteMobilizerDeathTest = RevoluteMobilizerTest;
-TEST_F(RevoluteMobilizerDeathTest, KinematicMappingOnWrongSizedMatrix) {
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-  // Arbitrary size matrix.
-  MatrixX<double> N(28, 13);
-  EXPECT_DEATH(mobilizer_->CalcNMatrix(*mbt_context_, &N), ".*");
-  EXPECT_DEATH(mobilizer_->CalcNplusMatrix(*mbt_context_, &N), ".*");
+  EXPECT_EQ(Nplus(0, 0), 1.0);
 }
 
 }  // namespace

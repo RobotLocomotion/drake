@@ -160,22 +160,12 @@ TEST_F(PrismaticMobilizerTest, KinematicMapping) {
   // Compute N.
   MatrixX<double> N(1, 1);
   slider_->CalcNMatrix(*mbt_context_, &N);
-  EXPECT_NEAR(N(0, 0), 1.0, kTolerance);
+  EXPECT_EQ(N(0, 0), 1.0);
 
   // Compute Nplus.
   MatrixX<double> Nplus(1, 1);
   slider_->CalcNplusMatrix(*mbt_context_, &Nplus);
-  EXPECT_NEAR(Nplus(0, 0), 1.0, kTolerance);
-}
-
-using PrismaticMobilizerDeathTest = PrismaticMobilizerTest;
-TEST_F(PrismaticMobilizerDeathTest, KinematicMappingOnWrongSizedMatrix) {
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
-  // Arbitrary size matrix.
-  MatrixX<double> N(28, 13);
-  EXPECT_DEATH(slider_->CalcNMatrix(*mbt_context_, &N), ".*");
-  EXPECT_DEATH(slider_->CalcNplusMatrix(*mbt_context_, &N), ".*");
+  EXPECT_EQ(Nplus(0, 0), 1.0);
 }
 
 }  // namespace

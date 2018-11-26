@@ -449,8 +449,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// @param[out] N
   ///   The kinematic mapping matrix `N(q)`. On input it must have size
   ///   `nq x nv` with nq and nv the number of generalized positions and the
-  ///   number of generalized velocities for this mobilizer, respectively. This
-  ///   method aborts if N is nullptr or if N has the wrong size.
+  ///   number of generalized velocities for this mobilizer, respectively.
   /// @see MapVelocityToQDot().
   void CalcNMatrix(
       const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> N) const {
@@ -470,8 +469,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// @param[out] Nplus
   ///   The kinematic mapping matrix `N⁺(q)`. On input it must have size
   ///   `nv x nq` with nq the number of generalized positions and nv the
-  ///   number of generalized velocities. This method aborts if `Nplus` is
-  //    nullptr or if `Nplus` has the wrong size.
+  ///   number of generalized velocities.
   /// @see MapVelocityToQDot().
   void CalcNplusMatrix(
       const MultibodyTreeContext<T>& context,

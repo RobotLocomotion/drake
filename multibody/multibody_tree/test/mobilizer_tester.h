@@ -38,7 +38,7 @@ class MobilizerTester : public ::testing::Test {
   template <template <typename> class MobilizerType>
   const MobilizerType<double>& AddMobilizerAndFinalize(
       std::unique_ptr<MobilizerType<double>> mobilizer) {
-    // Add a revolute mobilizer between the world and the body:
+    // Add a mobilizer between the world and the body:
     const MobilizerType<double>& mobilizer_ref =
         owned_tree_->AddMobilizer(std::move(mobilizer));
 

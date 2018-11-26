@@ -99,15 +99,6 @@ TEST_F(SpaceXYZMobilizerTest, KinematicMapping) {
       kTolerance, MatrixCompareType::relative));
 }
 
-using SpaceXYZMobilizerDeathTest = SpaceXYZMobilizerTest;
-TEST_F(SpaceXYZMobilizerDeathTest, KinematicMappingOnWrongSizedMatrix) {
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-  // Arbitrary size matrix.
-  MatrixX<double> N(28, 13);
-  EXPECT_DEATH(mobilizer_->CalcNMatrix(*mbt_context_, &N), ".*");
-  EXPECT_DEATH(mobilizer_->CalcNplusMatrix(*mbt_context_, &N), ".*");
-}
-
 }  // namespace
 }  // namespace multibody_tree
 }  // namespace multibody
