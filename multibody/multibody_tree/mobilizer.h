@@ -440,6 +440,46 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const = 0;
 
+  /// Computes the kinematic mapping matrix `N(q)` that maps generalized
+  /// velocities for this mobilizer to time derivatives of the generalized
+  /// positions for this mobilizer according to `q̇ = N(q)⋅v`.
+  /// @param[in] context
+  ///   The context for the parent tree that owns this mobilizer storing the
+  ///   generalized positions q.
+  /// @param[out] N
+  ///   The kinematic mapping matrix `N(q)`. On input it must have size
+  ///   `nq x nv` with nq and nv the number of generalized positions and the
+  ///   number of generalized velocities for this mobilizer, respectively.
+  /// @see MapVelocityToQDot().
+  void CalcNMatrix(
+      const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> N) const {
+    DRAKE_DEMAND(N != nullptr);
+    DRAKE_DEMAND(N->rows() == num_positions());
+    DRAKE_DEMAND(N->cols() == num_velocities());
+    DoCalcNMatrix(context, N);
+  }
+
+  /// Computes the kinematic mapping matrix `N⁺(q)` that maps time
+  /// derivatives of the generalized positions to generalized velocities
+  /// according to `v = N⁺(q)⋅q̇`. `N⁺(q)` is the left pseudoinverse of the
+  /// kinematic mapping `N(q)`, see CalcNMatrix().
+  /// @param[in] context
+  ///   The context for the parent tree that owns this mobilizer storing the
+  ///   generalized positions q.
+  /// @param[out] Nplus
+  ///   The kinematic mapping matrix `N⁺(q)`. On input it must have size
+  ///   `nv x nq` with nq the number of generalized positions and nv the
+  ///   number of generalized velocities.
+  /// @see MapVelocityToQDot().
+  void CalcNplusMatrix(
+      const MultibodyTreeContext<T>& context,
+      EigenPtr<MatrixX<T>> Nplus) const {
+    DRAKE_DEMAND(Nplus != nullptr);
+    DRAKE_DEMAND(Nplus->rows() == num_velocities());
+    DRAKE_DEMAND(Nplus->cols() == num_positions());
+    DoCalcNplusMatrix(context, Nplus);
+  }
+
   /// Computes the kinematic mapping `q̇ = N(q)⋅v` between generalized
   /// velocities v and time derivatives of the generalized positions `qdot`.
   /// The generalized positions vector is stored in `context`.
@@ -556,6 +596,17 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const Body<T>* body, const Mobilizer<T>* mobilizer) const = 0;
 
  protected:
+  /// NVI to CalcNMatrix(). Implementations can safely assume that N is not the
+  /// nullptr and that N has the proper size.
+  virtual void DoCalcNMatrix(
+      const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> N) const = 0;
+
+  /// NVI to CalcNplusMatrix(). Implementations can safely assume that Nplus is
+  /// not the nullptr and that Nplus has the proper size.
+  virtual void DoCalcNplusMatrix(
+      const MultibodyTreeContext<T>& context,
+      EigenPtr<MatrixX<T>> Nplus) const = 0;
+
   /// @name Methods to make a clone templated on different scalar types.
   ///
   /// The only const argument to these methods is the new MultibodyTree clone

@@ -209,6 +209,12 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   /// @}
 
  protected:
+  void DoCalcNMatrix(const MultibodyTreeContext<T>& context,
+                     EigenPtr<MatrixX<T>> N) const final;
+
+  void DoCalcNplusMatrix(const MultibodyTreeContext<T>& context,
+                         EigenPtr<MatrixX<T>> Nplus) const final;
+
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;
 
@@ -232,12 +238,15 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // quaternion time derivative for which q̇_WB = N(q)⋅w_WB.
   // With L given by CalcLMatrix we have:
   // N(q) = L(q_FM/2)
-  static Eigen::Matrix<T, 4, 3> CalcNMatrix(const Quaternion<T>& q);
+  static Eigen::Matrix<T, 4, 3> AngularVelocityToQuaternionRateMatrix(
+      const Quaternion<T>& q);
+
   // Helper to compute the kinematic map N⁺(q) from quaternion time derivative
   // to angular velocity for which w_WB = N⁺(q)⋅q̇_WB.
   // With L given by CalcLMatrix we have:
   // N⁺(q) = L(2 q_FM)ᵀ
-  static Eigen::Matrix<T, 3, 4> CalcNplusMatrix(const Quaternion<T>& q);
+  static Eigen::Matrix<T, 3, 4> QuaternionRateToAngularVelocityMatrix(
+      const Quaternion<T>& q);
 
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>

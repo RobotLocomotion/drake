@@ -114,6 +114,80 @@ void SpaceXYZMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
+void SpaceXYZMobilizer<T>::DoCalcNMatrix(
+    const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> N) const {
+  using std::sin;
+  using std::cos;
+  using std::abs;
+
+  // The linear map E_F(q) allows computing v from q̇ as:
+  // w_FM = E_F(q) * q̇; q̇ = [ṙ, ṗ, ẏ]ᵀ
+  //
+  // Here, following a convention used by many dynamicists, we are calling the
+  // angles q0, q1, q2 as roll (r), pitch (p) and yaw (y), respectively.
+  //
+  // The linear map from v to q̇ is given by the inverse of E_F(q):
+  //          [          cos(y) / cos(p),          sin(y) / cos(p), 0]
+  // Einv_F = [                  -sin(y),                   cos(y), 0]
+  //          [ sin(p) * cos(y) / cos(p), sin(p) * sin(y) / cos(p), 1]
+  //
+  // such that q̇ = Einv_F(q) * w_FM; q̇ = [ṙ, ṗ, ẏ]ᵀ
+  // See developer notes in MapVelocityToQdot() for further details.
+
+  const Vector3<T> angles = get_angles(context);
+  const T cp = cos(angles[1]);
+  // Demand for the computation to be away from a state for which Einv_F is
+  // singular.
+  DRAKE_DEMAND(abs(cp) > 1.0e-3);
+
+  const T sp = sin(angles[1]);
+  const T sy = sin(angles[2]);
+  const T cy = cos(angles[2]);
+  const T cpi = 1.0 / cp;
+
+  const T cy_x_cpi = cy * cpi;
+  const T sy_x_cpi = sy * cpi;
+
+  // ṙ = (cos(y) * w0 + sin(y) * w1) / cos(p)
+  N->row(0) << cy_x_cpi, sy_x_cpi, 0.0;
+
+  // ṗ = -sin(y) * w0 + cos(y) * w1
+  N->row(1) << -sy, cy, 0.0;
+
+  // ẏ = sin(p) * ṙ + w2
+  N->row(2) << cy_x_cpi * sp, sy_x_cpi * sp, 1.0;
+}
+
+template <typename T>
+void SpaceXYZMobilizer<T>::DoCalcNplusMatrix(
+    const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> Nplus) const {
+  // The linear map between q̇ and v is given by matrix E_F(q) defined by:
+  //          [ cos(y) * cos(p), -sin(y), 0]
+  // E_F(q) = [ sin(y) * cos(p),  cos(y), 0]
+  //          [         -sin(p),       0, 1]
+  //
+  // w_FM = E_F(q) * q̇; q̇ = [ṙ, ṗ, ẏ]ᵀ
+  //
+  // Here, following a convention used by many dynamicists, we are calling the
+  // angles q0, q1, q2 as roll (r), pitch (p) and yaw (y), respectively.
+  //
+  // See detailed developer comments for E_F(q) in the implementation for
+  // MapQDotToVelocity().
+
+  const Vector3<T> angles = get_angles(context);
+
+  const T sp = sin(angles[1]);
+  const T cp = cos(angles[1]);
+  const T sy = sin(angles[2]);
+  const T cy = cos(angles[2]);
+
+  *Nplus <<
+        cy * cp, -sy, 0.0,
+        sy * cp,  cy, 0.0,
+            -sp, 0.0, 1.0;
+}
+
+template <typename T>
 void SpaceXYZMobilizer<T>::MapVelocityToQDot(
     const MultibodyTreeContext<T>& context,
     const Eigen::Ref<const VectorX<T>>& v,
