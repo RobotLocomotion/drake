@@ -21,7 +21,8 @@
 #include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/parsing/sdf_parser.h"
 
 namespace drake {
 namespace pydrake {
@@ -773,6 +774,19 @@ void init_parsing(py::module m) {
   constexpr auto& doc = pydrake_doc.drake.multibody.parsing;
 
   using multibody_plant::MultibodyPlant;
+
+  // Parser
+  {
+    using Class = Parser;
+    py::class_<Class>(m, "Parser", doc.Parser.doc)
+        .def(py::init<MultibodyPlant<double>*, SceneGraph<double>*>(),
+             py::arg("plant"), py::arg("scene_graph") = nullptr,
+             doc.Parser.ctor.doc_2args)
+        .def("AddAllModelsFromFile", &Class::AddAllModelsFromFile,
+             py::arg("file_name"), doc.Parser.AddAllModelsFromFile.doc)
+        .def("AddModelFromFile", &Class::AddModelFromFile, py::arg("file_name"),
+             py::arg("model_name") = "", doc.Parser.AddModelFromFile.doc);
+  }
 
   m.def("AddModelFromSdfFile",
         py::overload_cast<const string&, const string&, MultibodyPlant<T>*,

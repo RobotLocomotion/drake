@@ -13,6 +13,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/parsing/sdf_parser_common.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
