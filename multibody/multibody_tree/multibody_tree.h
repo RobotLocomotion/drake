@@ -1995,6 +1995,7 @@ class MultibodyTree {
       const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FQ,
       EigenPtr<MatrixX<T>> Jv_WFq) const;
 
+  /// Computes the geometric Jacobian for a point moving with a given frame.
   /// Consider a point Q instantaneously moving with a frame B with position
   /// `p_BQ` in that frame. Frame `Bq` is the frame defined by shifting frame B
   /// with origin at `Bo` to a new origin at point Q. The spatial
@@ -2004,6 +2005,8 @@ class MultibodyTree {
   ///   V_ABq_E(q, v) = Jv_ABq_E(q)⋅v
   /// </pre>
   /// This method computes the geometric Jacobian `Jv_ABq_E(q)`.
+  /// In the above, note that the "q" in `Bq` represents the point "Q" while
+  /// the other uses of q alone refer to the generalized coordinates.
   ///
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
@@ -2017,7 +2020,7 @@ class MultibodyTree {
   ///   The second frame in which the spatial velocity `V_ABq` is measured and
   ///   expressed.
   /// @param[in] frame_E
-  ///   Frame in which the velocity V_ABq_E is expressed in.
+  ///   Frame in which the velocity V_ABq_E is expressed.
   /// @param[out] Jv_ABq_E
   ///   The geometric Jacobian `Jv_ABq_E(q)`, function of the generalized
   ///   positions q only. This Jacobian relates to the spatial velocity
@@ -2027,15 +2030,15 @@ class MultibodyTree {
   ///   Therefore `Jv_ABq_E` is a matrix of size `6 x nv`, with `nv`
   ///   the number of generalized velocities. On input, matrix `Jv_ABq_E`
   ///   **must** have size `6 x nv` or this method throws an exception.
-  ///   The top rows of this matrix (which can be accessed with
-  ///   Jv_ABq.topRows<3>()) is the Jacobian `Hw_ABq` related to the angular
-  ///   velocity of `Bq` in A by `w_ABq = Hw_ABq⋅v`. The bottom rows of this
-  ///   matrix (which can be accessed with Jv_ABq.bottomRows<3>()) is the
-  ///   Jacobian `Hv_ABq` related to the translational velocity of the origin
-  ///   `Q` of frame `Bq` in A by `v_ABq = Hv_ABq⋅v`. This ordering is
-  ///   consistent with the internal storage of the SpatialVelocity class.
-  ///   Therefore the following operations results in a valid spatial
-  ///   velocity: <pre>
+  ///   Given a `6 x nv` spatial Jacobian Jv, let Jvr be the `3 x nv`
+  ///   rotational part (top 3 rows) and Jvt be the translational part
+  ///   (bottom 3 rows). These can be obtained as follows: <pre>
+  ///     Jvr_ABq = Jv_ABq.topRows<3>();
+  ///     Jvt_ABq = Jv_ABq.bottomRows<3>();
+  ///   </pre>
+  ///   This ordering is consistent with the internal storage of the
+  ///   SpatialVelocity class. Therefore the following operations results in
+  ///   a valid spatial velocity: <pre>
   ///     SpatialVelocity<double> V_ABq(Jv_ABq * v);
   ///   </pre>
   ///

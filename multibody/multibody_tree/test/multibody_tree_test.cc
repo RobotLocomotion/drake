@@ -1097,6 +1097,36 @@ TEST_F(KukaIiwaModelTests, CalcRelativeFrameGeometricJacobian) {
   const SpatialVelocity<double> Jv_L3L7q_L5_times_v(Jv_L3L7q_L5 * v);
 
   EXPECT_TRUE(Jv_L3L7q_L5_times_v.IsApprox(V_L3L7q_L5, kTolerance));
+
+  // Unit test that CalcRelativeFrameGeometricJacobian throws an exception when
+  // the input Jacobian is nullptr.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      tree().CalcRelativeFrameGeometricJacobian(
+          *context_, link7.body_frame(), p_L7Q,
+          link3.body_frame(), link5.body_frame(), nullptr),
+      std::exception,
+      ".*'Jv_ABq_E != nullptr'.*");
+
+  // Unit test that CalcRelativeFrameGeometricJacobian throws an exception when
+  // the input Jacobian has the wrong number of rows.
+  MatrixX<double> Jv_wrong_size;
+  Jv_wrong_size.resize(9, tree().num_velocities());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      tree().CalcRelativeFrameGeometricJacobian(
+          *context_, link7.body_frame(), p_L7Q,
+          link3.body_frame(), link5.body_frame(), &Jv_wrong_size),
+      std::exception,
+      ".*'Jv_ABq_E->rows\\(\\) == 6'.*");
+
+  // Unit test that CalcRelativeFrameGeometricJacobian throws an exception when
+  // the input Jacobian has the wrong number of columns.
+  Jv_wrong_size.resize(6, 23);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      tree().CalcRelativeFrameGeometricJacobian(
+          *context_, link7.body_frame(), p_L7Q,
+          link3.body_frame(), link5.body_frame(), &Jv_wrong_size),
+      std::exception,
+      ".*'Jv_ABq_E->cols\\(\\) == num_velocities\\(\\)'.*");
 }
 
 // Fixture to setup a simple MBT model with weld mobilizers. The model is in
