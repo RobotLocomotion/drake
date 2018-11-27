@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/constraint.h"
 
 namespace drake {
@@ -49,13 +49,12 @@ class OrientationConstraint : public solvers::Constraint {
   // @param context The Context that has been allocated for this @p tree. We
   // will update the context when evaluating the constraint. @p context should
   // be alive during the lifetime of this constraint.
-  OrientationConstraint(const MultibodyTree<AutoDiffXd>& tree,
-                        FrameIndex frameAbar_idx,
+  OrientationConstraint(const multibody_plant::MultibodyPlant<double>& plant,
+                        const Frame<double>& frameAbar,
                         const math::RotationMatrix<double>& R_AbarA,
-                        FrameIndex frameBbar_idx,
+                        const Frame<double>& frameBbar,
                         const math::RotationMatrix<double>& R_BbarB,
-                        double theta_bound,
-                        MultibodyTreeContext<AutoDiffXd>* context);
+                        double theta_bound, systems::Context<double>* context);
 
   ~OrientationConstraint() override {}
 
@@ -73,12 +72,12 @@ class OrientationConstraint : public solvers::Constraint {
         "variables.");
   }
 
-  const MultibodyTree<AutoDiffXd>& tree_;
-  const Frame<AutoDiffXd>& frameAbar_;
-  const Matrix3<AutoDiffXd> R_AbarA_;
-  const Frame<AutoDiffXd>& frameBbar_;
-  const Matrix3<AutoDiffXd> R_BbarB_;
-  MultibodyTreeContext<AutoDiffXd>* const context_;
+  const multibody_plant::MultibodyPlant<double>& plant_;
+  const Frame<double>& frameAbar_;
+  const Frame<double>& frameBbar_;
+  const math::RotationMatrix<double>& R_AbarA_;
+  const math::RotationMatrix<double>& R_BbarB_;
+  systems::Context<double>* const context_;
 };
 }  // namespace internal
 }  // namespace multibody
