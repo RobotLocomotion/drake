@@ -21,6 +21,7 @@
 #include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
 #include "drake/systems/analysis/test_utilities/stateless_system.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/event.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 
@@ -32,6 +33,7 @@ using LogisticSystem = drake::systems::analysis_test::LogisticSystem<double>;
 using StatelessSystem = drake::systems::analysis_test::StatelessSystem<double>;
 using Eigen::AutoDiffScalar;
 using Eigen::NumTraits;
+using Eigen::Vector2d;
 using std::complex;
 
 namespace drake {
@@ -947,8 +949,105 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   EXPECT_EQ(spring_mass.get_update_count(), 30);
 }
 
-namespace {
-// A system that outputs the time.
+// A pure discrete system that generates the Fibonacci sequence Fₙ using the
+// following difference equation:
+//   xₙ₊₁ = {xₙ[0] + xₙ[1], xₙ[0]}
+//   yₙ = xₙ[0]
+//   x₀ ≜ {0, 1}
+//
+// We want to verify that we can emulate this difference equation in Drake's
+// hybrid simulator, which advances a continuous time variable t rather than
+// a discrete step number n. To do that, we pick an arbitrary discrete
+// period h, and show that publishing at t=nh produces the expected result
+//     n  0  1  2  3  4  5  6  7  8
+//     Fₙ 0  1  1  2  3  5  8 13 21 ...
+class FibonacciDifferenceEquation : public LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FibonacciDifferenceEquation)
+
+  FibonacciDifferenceEquation() {
+    DeclareDiscreteState(2 /* x[0], x[1] */);
+
+    // Output yₙ.
+    DeclarePeriodicEvent(
+        kPeriod, 0.,
+        PublishEvent<double>(
+            [this](const Context<double>& context_n,
+                   const PublishEvent<double>&) { Output(context_n); }));
+
+    // Update to xₙ₊₁ (x_np1).
+    DeclarePeriodicEvent(
+        kPeriod, 0.,
+        DiscreteUpdateEvent<double>([this](const Context<double>& context_n,
+                                           const DiscreteUpdateEvent<double>&,
+                                           DiscreteValues<double>* x_np1) {
+          x_np1->get_mutable_vector().set_value(Update(context_n));
+        }));
+  }
+
+  // Update function xₙ₊₁ = f(n, xₙ).
+  Vector2d Update(const Context<double>& context_n) const {
+    ++update_count_;
+    const auto& x_n = context_n.get_discrete_state();
+    return {x_n[0] + x_n[1], x_n[0]};
+  }
+
+  // Output function yₙ = g(n, xₙ). We record t, n, and Fₙ.
+  void Output(const Context<double>& context_n) const {
+    ++output_count_;
+    const double t = context_n.get_time();
+    const int n = static_cast<int>(std::round(t/kPeriod));
+    const int F_n = context_n.get_discrete_state()[0];  // xₙ[0]
+    sample_time_t_.push_back(t);
+    step_number_n_.push_back(n);
+    fibonacci_n_.push_back(F_n);
+  }
+
+  // Set initial conditions x₀.
+  void Initialize(Context<double>* context_0) const {
+    auto& x_0 = context_0->get_mutable_discrete_state();
+    x_0.get_mutable_vector().set_value(Vector2d(0., 1.));
+  }
+
+  int num_updates() const { return update_count_; }
+  int num_outputs() const { return output_count_; }
+  const std::vector<double>& t() const { return sample_time_t_; }
+  const std::vector<int>& n() const { return step_number_n_; }
+  const std::vector<int>& series() const { return fibonacci_n_; }
+
+ private:
+  static constexpr double kPeriod = 1.;
+
+  mutable int update_count_{};
+  mutable int output_count_{};
+  mutable std::vector<double> sample_time_t_;
+  mutable std::vector<int> step_number_n_;
+  mutable std::vector<int> fibonacci_n_;
+};
+
+GTEST_TEST(SimulatorTest, FibonacciSystemTest) {
+  FibonacciDifferenceEquation fibonacci;
+
+  Simulator<double> simulator(fibonacci);
+
+  // Set the initial conditions: x₀[0]=0, x₀[1]=1.
+  fibonacci.Initialize(&simulator.get_mutable_context());
+
+  // Simulate forward.
+  simulator.StepTo(10.);
+
+  EXPECT_EQ(fibonacci.num_outputs(), 11);
+  EXPECT_EQ(fibonacci.num_updates(), 10);
+
+  EXPECT_EQ(fibonacci.n(),
+            std::vector<int>({0, 1, 2, 3, 4, 5,  6,  7,  8,  9, 10}));
+  EXPECT_EQ(fibonacci.series(),
+            std::vector<int>({0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55}));
+  EXPECT_EQ(fibonacci.t(),
+            std::vector<double>({0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10.}));
+}
+
+// A continuous system that outputs the time.
 class TimeOutputter : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TimeOutputter)
@@ -1001,8 +1100,6 @@ class SimpleHybridSystem : public LeafSystem<double> {
   const double kPeriod = 1.0;
   mutable int num_discrete_updates_{0};
 };
-}  // namespace
-
 
 // Tests that a simple hybrid discrete/continuous system can be simulated as
 // expected. This particular test performs its first and only update at
@@ -1125,7 +1222,6 @@ GTEST_TEST(SimulatorTest, SimpleHybridSystemTest3) {
 }
 
 // A mock System that requests a single update at a prespecified time.
-namespace {
 class UnrestrictedUpdater : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrestrictedUpdater)
@@ -1174,7 +1270,6 @@ class UnrestrictedUpdater : public LeafSystem<double> {
       unrestricted_update_callback_{nullptr};
   std::function<void(const Context<double>&)> derivatives_callback_{nullptr};
 };
-}  // namespace
 
 // Tests that the simulator captures an unrestricted update at the exact time
 // (i.e., without accumulating floating point error).
@@ -1397,10 +1492,16 @@ GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
   });
 
   Simulator<double> simulator(system);
+  simulator.set_publish_at_initialization(false);
   simulator.set_publish_every_time_step(false);
   simulator.StepTo(0.5);
+
+  // Update occurs at 1000Hz, at the beginning of each step (there is no
+  // discrete event update during initialization nor a final update at the
+  // final time).
   EXPECT_EQ(500, num_disc_updates);
-  // Publication occurs at 400Hz, and also at initialization.
+  // Publication occurs at 400Hz, at the end of initialization and the end
+  // of each step.
   EXPECT_EQ(200 + 1, num_publishes);
 }
 

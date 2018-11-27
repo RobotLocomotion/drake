@@ -8,26 +8,32 @@ namespace systems {
 as well as considerations for implementing these systems in Drake.
 
 The state space dynamics of a discrete system is:
-@verbatim
-x[n+1] = f(p; n, x[n], u[n])
-y[n] = g(p; n, x[n], u[n])
-@endverbatim
+```
+    xₙ₊₁ = f(p; n, xₙ, uₙ)    // update
+    yₙ   = g(p; n, xₙ, uₙ)    // output
+    x₀   = xᵢₙᵢₜ              // initialize
+```
 
-where `n` ∈ ℤ is the variable iterate (typically starting at zero), `x` ∈ ℝ is
+where n ∈ ℤ is the variable iterate (typically starting at zero), x ∈ ℝ is
 the discrete state variable ("discrete" refers to the countability of the
-elements of the sequence, x[1], ..., x[n] and not the values that x can take),
-`y` is the output, `u` is the input, and `p` are the (constant)
-parameters. `f(.)` and `g(.)` are the _process_ and _output_ models,
-respectively. The bracket notation (e.g., `x[0]`) are used to show that
-the state and output are a function of a discrete process. 
+elements of the sequence, x₀, x₁, ..., xₙ and not the values that x can take),
+y is the desired output, u is the input, and p are the (constant)
+parameters. f(.) and g(.) are the _update_ and _output_ functions,
+respectively. Any of these quantities can be vector-valued. The subscript
+notation (e.g., x₀) is used to show that the state, input, and output result
+from a discrete process. We use bracket notation, e.g. x[1] to designate
+particular elements of a vector-valued quantity (indexing from 0). Combined,
+x₁[3] would be the value of the fourth element of the x vector, evaluated at
+step n=1. In code we use a Latex-like underscore to indicate the step number,
+so we write x_1[3] to represent x₁[3].
 
 @image html framework/images/discrete.png "Figure 1: Plots of state (x) and output (y) of a discrete system. This plot shows one possible relationship between iterate (n) and time (t)."
 
 The following class implements the simple discrete system
-@verbatim
-x[n+1] = x[n] + 1
-y[n] = x[n] + 1
-@endverbatim
+```
+    xₙ₊₁ = xₙ + 1
+    yₙ   = xₙ + 1
+```
 as a Drake LeafSystem:
 
 @code

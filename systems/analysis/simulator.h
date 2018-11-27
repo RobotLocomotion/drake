@@ -593,7 +593,10 @@ void Simulator<T>::Initialize() {
   // Allocate the witness function collection.
   witnessed_events_ = system_.AllocateCompositeEventCollection();
 
-  // Do any publishes last.
+  // Do any publishes last. Merge the initialization events with current_time
+  // timed events (if any).
+  if (timed_or_witnessed_event_triggered_)
+    init_events->Merge(*timed_events_);
   HandlePublish(init_events->get_publish_events());
 
   // Initialize runtime variables.
