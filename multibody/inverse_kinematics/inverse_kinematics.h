@@ -160,17 +160,11 @@ class InverseKinematics {
   solvers::MathematicalProgram* get_mutable_prog() const { return prog_.get(); }
 
  private:
-  MultibodyTreeContext<AutoDiffXd>* get_mutable_context_autodiff() {
-    return dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(
-        context_autodiff_.get());
-  }
   systems::Context<double>* get_mutable_context() { return context_.get(); }
 
   std::unique_ptr<solvers::MathematicalProgram> prog_;
   const multibody_plant::MultibodyPlant<double>& plant_;
   std::unique_ptr<systems::Context<double>> const context_;
-  const MultibodyTreeSystem<AutoDiffXd> system_;
-  std::unique_ptr<systems::Context<AutoDiffXd>> const context_autodiff_;
   solvers::VectorXDecisionVariable q_;
 };
 }  // namespace multibody
