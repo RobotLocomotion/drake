@@ -2982,7 +2982,7 @@ class MultibodyTree {
   void ThrowIfNotFinalized(const char* source_method) const;
 
   // Helper method to compute the rotational part of the frame Jacobian Jr_WFq
-  // and the translational part of the frame Jacobian Jt_WFq for a list of 
+  // and the translational part of the frame Jacobian Jt_WFq for a list of
   // points Q which instantaneously move with frame F that is, the position
   // of these points Q is fixed in frame F.
   // Jacobians Jr_WFq and Jt_WFq are defined such that the angular velocity

@@ -143,7 +143,6 @@ drake_cc_googletest(
     data = [
         "//examples/kuka_iiwa_arm/models",
         "//manipulation/models/iiwa_description:models",
-        #        "//multibody/multibody_tree/parsing:test_models",
     ],
     deps = [
         ":multibody_plant",

@@ -1,11 +1,5 @@
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-
-#include <functional>
 #include <limits>
 #include <memory>
-#include <set>
-#include <tuple>
-#include <utility>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -19,11 +13,10 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/continuous_state.h"
-#include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
 
@@ -39,16 +32,7 @@ using math::RollPitchYaw;
 using math::RotationMatrix;
 using multibody::multibody_plant::MultibodyPlant;
 using multibody::parsing::AddModelFromSdfFile;
-using systems::AbstractValue;
-using systems::BasicVector;
 using systems::Context;
-using systems::ContinuousState;
-using systems::DiagramBuilder;
-using systems::Diagram;
-using systems::VectorBase;
-using std::pair;
-using std::make_pair;
-using std::tie;
 using std::unique_ptr;
 
 namespace multibody {
