@@ -1183,28 +1183,28 @@ void MultibodyTree<T>::CalcFrameJacobianExpressedInWorld(
     const Frame<T>& frame_F,
     const Eigen::Ref<const MatrixX<T>>& p_WQ_list,
     bool from_qdot,
-    EigenPtr<MatrixX<T>> Jw_WFq, EigenPtr<MatrixX<T>> Jv_WFq) const {
+    EigenPtr<MatrixX<T>> Jr_WFq, EigenPtr<MatrixX<T>> Jt_WFq) const {
   // The user must request at least one of the terms.
-  DRAKE_THROW_UNLESS(Jw_WFq != nullptr || Jv_WFq != nullptr);
+  DRAKE_THROW_UNLESS(Jr_WFq != nullptr || Jt_WFq != nullptr);
 
   const int num_columns = from_qdot ? num_positions() : num_velocities();
 
   // If non-nullptr, check the proper size of the output Jacobian matrices.
-  if (Jw_WFq) {
-    DRAKE_THROW_UNLESS(Jw_WFq->rows() == 3);
-    DRAKE_THROW_UNLESS(Jw_WFq->cols() == num_columns);
+  if (Jr_WFq) {
+    DRAKE_THROW_UNLESS(Jr_WFq->rows() == 3);
+    DRAKE_THROW_UNLESS(Jr_WFq->cols() == num_columns);
   }
   const int num_points = p_WQ_list.cols();
   const int Jv_nrows = 3 * num_points;
-  if (Jv_WFq) {
-    DRAKE_THROW_UNLESS(Jv_WFq->rows() == Jv_nrows);
-    DRAKE_THROW_UNLESS(Jv_WFq->cols() == num_columns);
+  if (Jt_WFq) {
+    DRAKE_THROW_UNLESS(Jt_WFq->rows() == Jv_nrows);
+    DRAKE_THROW_UNLESS(Jt_WFq->cols() == num_columns);
   }
 
   // If a user is re-using one of these Jacobians within a loop the first thing
   // we'll want to do is to re-initialize it to zero.
-  if (Jw_WFq) Jw_WFq->setZero();
-  if (Jv_WFq) Jv_WFq->setZero();
+  if (Jr_WFq) Jr_WFq->setZero();
+  if (Jt_WFq) Jt_WFq->setZero();
 
   // Body to which frame F is attached to:
   const Body<T>& body_B = frame_F.body();
@@ -1265,23 +1265,23 @@ void MultibodyTree<T>::CalcFrameJacobianExpressedInWorld(
     // The angular term is the same for all points since the angular
     // velocity of frame Fq, obtained by shifting frame F to origin at point Q,
     // is the same as that of frame F, for all point Q in the input list.
-    if (Jw_WFq) {
+    if (Jr_WFq) {
       // Output block corresponding to the contribution of the mobilities in
-      // level ilevel to the angular Jacobian Jw_WFq.
-      auto Jw_PFq_W = Jw_WFq->block(0, start_index, 3, Jncols);
+      // level ilevel to the angular Jacobian Jr_WFq.
+      auto Jw_PFq_W = Jr_WFq->block(0, start_index, 3, Jncols);
 
       // Note: w_PFq_W = w_PF_W = w_PB_W.
       Jw_PFq_W = Hw_PB_W * Nplus;
     }
 
-    if (Jv_WFq) {
+    if (Jt_WFq) {
       // Output block corresponding to mobilities in the current node.
       // This correspond to the geometric Jacobian to compute the translational
       // velocity of frame Fq (same as that of point Q) measured in the inboard
       // body frame P and expressed in world. That is, v_PQ_W = v_PFq_W =
       // Jv_PFq_W * v(B), with v(B) the mobilities that correspond to the
       // current node.
-      auto Jv_PFq_W = Jv_WFq->block(0, start_index, Jv_nrows, Jncols);
+      auto Jv_PFq_W = Jt_WFq->block(0, start_index, Jv_nrows, Jncols);
 
       // Position of the body Bi for the node at level ilevel in the world W.
       const Vector3<T>& p_WBi = pc.get_X_WB(node.index()).translation();
