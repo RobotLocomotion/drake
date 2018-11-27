@@ -44,8 +44,7 @@ class SnoptSolver : public MathematicalProgramSolverInterface  {
   /// safe.
   static bool is_thread_safe();
 
-  /// For some reason, when I use SNOPT 7.4, the solver fails to detect a simple
-  /// LP being unbounded.
+  /// For some reason, SNOPT 7.4 fails to detect a simple LP being unbounded.
   static bool is_bounded_lp_broken();
 };
 
