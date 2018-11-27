@@ -33,8 +33,8 @@ drake_cc_library(
     ],
     deps = [
         ":frame_cache",
+        "//attic/multibody:rigid_body_tree",
         "//common:essential",
-        "//multibody:rigid_body_tree",
         "@eigen",
         "@sdformat",
     ],
@@ -53,13 +53,13 @@ drake_cc_binary(
     test_rule_args = ["--simulation_time=0.01"],
     deps = [
         ":sdf_helpers",
+        "//attic/multibody:rigid_body_tree",
         "//attic/multibody/rigid_body_plant",
         "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//common:essential",
         "//common:find_resource",
         "//common:text_logging_gflags",
         "//lcm",
-        "//multibody:rigid_body_tree",
         "//systems/analysis",
         "//systems/framework",
         "@sdformat",
@@ -78,8 +78,8 @@ drake_cc_library(
         "test/rigid_body_types_compare.h",
     ],
     deps = [
+        "//attic/multibody:rigid_body",
         "//attic/multibody/shapes",
-        "//multibody:rigid_body",
         "@gtest//:without_main",
     ],
 )
@@ -102,9 +102,9 @@ drake_cc_googletest(
     deps = [
         ":rigid_body_types_compare",
         ":sdf_helpers",
+        "//attic/multibody:rigid_body_tree",
         "//attic/multibody/joints",
         "//common:find_resource",
-        "//multibody:rigid_body_tree",
     ],
 )
 

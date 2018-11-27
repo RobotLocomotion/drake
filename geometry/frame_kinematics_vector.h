@@ -7,6 +7,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/utilities.h"
 
 namespace drake {
 namespace geometry {
@@ -169,8 +170,15 @@ struct KinematicsValueInitializer<Isometry3<S>> {
   */
 template <class KinematicsValue>
 class FrameKinematicsVector {
+  // Forward declaration.
+  struct FlaggedValue;
+
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FrameKinematicsVector)
+
+  /** An object that represents the range of FrameId values in this class. It
+   is used in range-based for loops to iterate through registered frames.  */
+  using FrameIdRange = internal::MapKeyRange<FrameId, FlaggedValue>;
 
   // TODO(SeanCurtis-TRI) Find some API language that cautions users that this
   // result is not terribly useful on its own, but instead it will usually be
@@ -215,6 +223,18 @@ class FrameKinematicsVector {
 
   /** Reports true if the given id is a member of this data. */
   bool has_id(FrameId id) const { return values_.count(id) > 0; }
+
+  /** Provides a range object for all of the frame ids in the vector.
+   This is intended to be used as:
+   @code
+   for (FrameId id : this_vector.frame_ids()) {
+    ...
+    // Obtain the KinematicsValue of an id by `this_vector.value(id)`
+    ...
+   }
+   @endcode
+   */
+  FrameIdRange frame_ids() const { return FrameIdRange(&values_); }
 
  private:
   // Utility function to help catch misuse.

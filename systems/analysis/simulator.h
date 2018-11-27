@@ -24,85 +24,103 @@
 namespace drake {
 namespace systems {
 
-/// A class for advancing the state of hybrid dynamic systems, represented by
-/// `System<T>` objects, forward in time. Starting with an initial Context for a
-/// given System, %Simulator advances time and produces a series of Context
-/// values that forms a trajectory satisfying the system's dynamic equations to
-/// a specified accuracy. Only the Context is modified by a %Simulator; the
-/// System is const.
-///
-/// A Drake System is a continuous/discrete/hybrid dynamic system where the
-/// continuous part is a DAE, that is, it is expected to consist of a set of
-/// differential equations and bilateral algebraic constraints. The set of
-/// active constraints may change as a result of particular events, such as
-/// contact.
-///
-/// Given a current Context, we expect a System to provide us with
-/// - derivatives for the continuous differential equations that already satisfy
-///   the differentiated form of the constraints (typically, acceleration
-///   constraints),
-/// - a projection method for least-squares correction of violated higher-level
-///   constraints (position and velocity level),
-/// - a time-of-next-update method that can be used to adjust the integrator
-///   step size in preparation for a discrete update,
-/// - a method that can update discrete variables when their update time is
-///   reached,
-/// - witness (guard) functions for event isolation,
-/// - event handlers (reset functions) for making appropriate changes to state
-///   and mode variables when an event has been isolated.
-///
-/// The continuous parts of the trajectory are advanced using a numerical
-/// integrator. Different integrators have different properties; you can choose
-/// the one that is most appropriate for your application or use the default
-/// which is adequate for most systems.
-///
-/// <h2>Simulation mechanics for systems with multiple event types</h2>
-/// This documentation is targeted toward users who have created a LeafSystem
-/// with multiple event types (unrestricted update, discrete update, and
-/// publish). For authors of such systems, it is useful to understand the
-/// simulation mechanics in order to attain the desired state over time, and
-/// this behavior is dependent on the ordering in which events are processed.
-///
-/// The pseudocode for the algorithm that the simulator uses to step the state
-/// from time and state `{ t0, xc(t0), xd(t0⁻), xa(t0⁻) }` forward in time
-/// by length _no greater_ than Δt is: 
-/// @verbatim
-/// Step(t0, xc(t0⁻), xd(t0⁻), xa(t0⁻), Δt)
-///
-///   % Update any variables (no restrictions).
-///   { xc(t0*), xd(t0*), xa(t0*) } ← 
-///       DoAnyUnrestrictedUpdates(t0, xc(t0⁻), xd(t0⁻), xa(t0⁻))
-///
-///   % Update discrete variables.
-///   xd(t0⁺) ← DoAnyDiscreteUpdates(t0,  xc(t0*), xd(t0*), xa(t0*))
-///
-///   % See how far it is safe to integrate without missing any events.
-///   tₑ ← NextEventTime(t0, xc(t0*), xd(t0⁺), xa(t0*))
-///
-///   % Integrate continuous variables forward in time.
-///   h ← min(tₑ - t0, Δt)
-///   { t₁, xc(t₁⁻) } ← Integrate(t0, xc(t0*), xd(t0⁺), xa(t0*), h)
-///
-///   % Hold discrete and abstract variables values from t0* and t0⁺ to t₁⁻.
-///   xd(t₁⁻) ← xd(t0⁺)
-///   xa(t₁⁻) ← xa(t0*)
-///
-///   DoAnyPublishes(t₁, xc(t₁⁻), xd(t₁⁻), xa(t₁⁻))
-///
-///   return { t₁, xc(t₁⁻), xd(t₁⁻), xa(t₁⁻) }
-/// @endverbatim
-/// where we use the notation `xd(t⁻)` to denote a variable before any
-/// instantaneous (unrestricted or discrete) updates, `xd(t*)` to denote the
-/// same variable after an unrestricted update, and `xd(t⁺)` to denote the same
-/// variable after a discrete update. 
-///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-/// Instantiated templates for the following kinds of T's are provided and
-/// available to link against in the containing library:
-/// - double
-/// - AutoDiffXd
-///
-/// Other instantiations are permitted but take longer to compile.
+/**
+ A class for advancing the state of hybrid dynamic systems, represented by
+ `System<T>` objects, forward in time. Starting with an initial Context for a
+ given System, %Simulator advances time and produces a series of Context
+ values that forms a trajectory satisfying the system's dynamic equations to
+ a specified accuracy. Only the Context is modified by a %Simulator; the
+ System is const.
+
+ A Drake System is a continuous/discrete/hybrid dynamic system where the
+ continuous part is a DAE, that is, it is expected to consist of a set of
+ differential equations and bilateral algebraic constraints. The set of
+ active constraints may change as a result of particular events, such as
+ contact.
+
+ Given a current Context, we expect a System to provide us with
+ - derivatives for the continuous differential equations that already satisfy
+   the differentiated form of the constraints (typically, acceleration
+   constraints),
+ - a projection method for least-squares correction of violated higher-level
+   constraints (position and velocity level),
+ - a time-of-next-update method that can be used to adjust the integrator
+   step size in preparation for a discrete update,
+ - a method that can update discrete variables when their update time is
+   reached,
+ - witness (guard) functions for event isolation,
+ - event handlers (reset functions) for making appropriate changes to state
+   and mode variables when an event has been isolated.
+
+The continuous parts of the trajectory are advanced using a numerical
+integrator. Different integrators have different properties; you can choose
+the one that is most appropriate for your application or use the default
+which is adequate for most systems.
+
+<h2>How the simulation is stepped: simulation mechanics for authors of
+  hybrid or discrete systems (Advanced)</h2>
+This documentation is targeted toward users who have created a LeafSystem
+implementing a hybrid or discrete system. For authors of such systems, it is
+useful to understand the simulation mechanics in order to attain the desired
+state behavior over time. This behavior is dependent on the ordering in
+which events are processed.
+
+The pseudocode for the algorithm that the simulator uses to step the state
+from time and state `{ t0, xc(t0), xd(t0⁻), xa(t0⁻) }` forward in time
+by length _no greater_ than Δt will be presented shortly. We will make use
+of the notation `xd(t⁻)` to denote a variable before any instantaneous
+(unrestricted or discrete) updates, `xd(t*)` to denote the same variable
+after an unrestricted update, and `xd(t⁺)` to denote the same variable after
+a discrete update. The pseudocode follows:
+@verbatim
+procedure Step(t0, xc(t0⁻), xd(t0⁻), xa(t0⁻), Δt)
+
+// Update any variables (no restrictions).
+{ xc(t0*), xd(t0*), xa(t0⁺) } ←
+    DoAnyUnrestrictedUpdates(t0, xc(t0⁻), xd(t0⁻), xa(t0⁻))
+
+// Update discrete variables.
+xd(t0⁺) ← DoAnyDiscreteUpdates(t0,  xc(t0*), xd(t0*), xa(t0⁺))
+
+// See how far it is safe to integrate without missing any events.
+tₑ ← NextEventTime(t0, xc(t0*), xd(t0⁺), xa(t0⁺))
+
+// Integrate continuous variables forward in time.
+h ← min(tₑ - t0, Δt)
+{ t₁, xc(t₁⁻) } ← Integrate(t0, xc(t0*), xd(t0⁺), xa(t0*), h)
+
+// Hold discrete and abstract variables values from t0* and t0⁺ to t₁⁻.
+xd(t₁⁻) ← xd(t0⁺)
+xa(t₁⁻) ← xa(t0*)
+
+DoAnyPublishes(t₁, xc(t₁⁻), xd(t₁⁻), xa(t₁⁻))
+
+return { t₁, xc(t₁⁻), xd(t₁⁻), xa(t₁⁻) }
+@endverbatim
+
+We can use this algorithm to examine the Initialize() and StepTo() functions,
+which we shall now do in reverse order. StepTo() can be outlined as:
+@verbatim
+procedure StepTo(t_final)
+t ← current_time
+while t ≠ t_final
+  { tnew, xc(tnew⁻), xd(tnew⁻), xa(tnew⁻) } ←
+        Step(t, xc(t⁻), xd(t⁻), xa(t⁻), t_final - t)
+  { t, xc(t⁻), xd(t⁻), xa(t⁻) } ← { tnew, xc(tnew⁻), xd(tnew⁻), xa(tnew⁻) }
+endwhile
+@endverbatim
+Initialize() is equivalent to Step() with `t0 = initial_time - ε`
+(for `ε ≪ 1`) and `Δt = 0`.
+
+@tparam T The vector element type, which must be a valid Eigen scalar.
+Instantiated templates for the following kinds of T's are provided and
+available to link against in the containing library:
+ - double
+ - AutoDiffXd
+
+Other instantiations are permitted but take longer to compile.
+*/
+
 // TODO(sherm1) When API stabilizes, should list the methods above in addition
 // to describing them.
 template <typename T>
@@ -274,10 +292,6 @@ class Simulator {
     initialization_done_ = false;
     return std::move(context_);
   }
-
-  /// Call this at the end of a simulation (i.e., after StepTo()) to handle any
-  /// events that have been triggered but not yet handled.
-  void Finalize();
 
   /// Forget accumulated statistics. Statistics are reset to the values they
   /// have post construction or immediately after `Initialize()`.
@@ -468,7 +482,7 @@ class Simulator {
   std::unique_ptr<CompositeEventCollection<T>> witnessed_events_;
 
   // Indicates when a timed or witnessed event needs to be handled on the next
-  // call to StepTo() or Finalize().
+  // call to StepTo() or StepInPlace().
   bool timed_or_witnessed_event_triggered_{false};
 
   // The time that the next timed event is to be handled. This value is set in
@@ -557,9 +571,10 @@ void Simulator<T>::Initialize() {
   DRAKE_DEMAND(per_step_events_ != nullptr);
   system_.GetPerStepEvents(*context_, per_step_events_.get());
 
-  // TODO: CalcNextUpdateTime() requires a...
+  // Ensure that CalcNextUpdateTime() can return the current time by perturbing
+  // current time as slightly toward negative infinity as we can allow.
   const T current_time = context_->get_time();
-  const long double inf = -std::numeric_limits<long double>::infinity();
+  const long double inf = std::numeric_limits<long double>::infinity();
   context_->set_time(nexttoward(current_time, -inf));
 
   // Get the next timed event.
@@ -578,7 +593,10 @@ void Simulator<T>::Initialize() {
   // Allocate the witness function collection.
   witnessed_events_ = system_.AllocateCompositeEventCollection();
 
-  // Do any publishes last.
+  // Do any publishes last. Merge the initialization events with current_time
+  // timed events (if any).
+  if (timed_or_witnessed_event_triggered_)
+    init_events->Merge(*timed_events_);
   HandlePublish(init_events->get_publish_events());
 
   // Initialize runtime variables.
@@ -629,6 +647,13 @@ void Simulator<T>::HandlePublish(
   }
 }
 
+// TODO(edrumwri): Consider adding a special function to "complete" a simulation
+//                 by calling, in effect, StepTo(get_context().get_time()) to
+//                 process any events that have triggered but not been processed
+//                 at the conclusion to a StepTo() call. At the present time, we
+//                 believe the issue of remaining, unprocessed events is rarely
+//                 likely to be important and can be circumvented in multiple
+//                 ways, like calling StepTo(get_context().get_time()).
 template <typename T>
 void Simulator<T>::StepTo(const T& boundary_time) {
   if (!initialization_done_) Initialize();
@@ -732,26 +757,6 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
   // TODO(edrumwri): Add test coverage to complete #8490.
   redetermine_active_witnesses_ = true;
-}
-
-template <class T>
-void Simulator<T>::Finalize() {
-  DRAKE_DEMAND(timed_events_ != nullptr);
-  DRAKE_DEMAND(witnessed_events_ != nullptr);
-  if (timed_or_witnessed_event_triggered_) {
-    // Do any final unrestricted or discrete updates from witnessed
-    // events, only if an event was triggered.     merged_events->Clear();
-    auto merged_events = system_.AllocateCompositeEventCollection();
-    merged_events->Merge(*timed_events_);
-    merged_events->Merge(*witnessed_events_);
-
-    // Do the unrestricted and discrete updates.
-    HandleUnrestrictedUpdate(merged_events->get_unrestricted_update_events());
-    HandleDiscreteUpdate(merged_events->get_discrete_update_events());
-
-    // Reset the flag.
-    timed_or_witnessed_event_triggered_ = false;
-  }
 }
 
 template <class T>
@@ -1008,7 +1013,7 @@ bool Simulator<T>::IntegrateContinuousState(
       auto& event = witness_function_events_[fn];
       if (!event) {
         event = fn->get_event()->Clone();
-        event->set_trigger_type(Event<T>::TriggerType::kWitness);
+        event->set_trigger_type(TriggerType::kWitness);
         event->set_event_data(std::make_unique<WitnessTriggeredEventData<T>>());
       }
 

@@ -8,7 +8,7 @@
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/manipulation/util/sim_diagram_builder.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/systems/controllers/inverse_dynamics_controller.h"
+#include "drake/systems/controllers/rbt_inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/matrix_gain.h"
@@ -74,7 +74,7 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
         single_arm.get());
 
     auto iiwa_controller = builder.template AddController<
-        systems::controllers::InverseDynamicsController<T>>(
+        systems::controllers::rbt::InverseDynamicsController<T>>(
         iiwa_instances[i].instance_id, std::move(single_arm), iiwa_kp, iiwa_ki,
         iiwa_kd, true /* with feedforward acceleration */);
     iiwa_controller->set_name("IIWAInverseDynamicsController" + suffix);

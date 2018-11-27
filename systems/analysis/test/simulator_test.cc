@@ -21,6 +21,7 @@
 #include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
 #include "drake/systems/analysis/test_utilities/stateless_system.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/event.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 
@@ -32,6 +33,7 @@ using LogisticSystem = drake::systems::analysis_test::LogisticSystem<double>;
 using StatelessSystem = drake::systems::analysis_test::StatelessSystem<double>;
 using Eigen::AutoDiffScalar;
 using Eigen::NumTraits;
+using Eigen::Vector2d;
 using std::complex;
 
 namespace drake {
@@ -947,8 +949,105 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   EXPECT_EQ(spring_mass.get_update_count(), 30);
 }
 
-namespace {
-// A system that outputs the time.
+// A pure discrete system that generates the Fibonacci sequence Fₙ using the
+// following difference equation:
+//   xₙ₊₁ = {xₙ[0] + xₙ[1], xₙ[0]}
+//   yₙ = xₙ[0]
+//   x₀ ≜ {0, 1}
+//
+// We want to verify that we can emulate this difference equation in Drake's
+// hybrid simulator, which advances a continuous time variable t rather than
+// a discrete step number n. To do that, we pick an arbitrary discrete
+// period h, and show that publishing at t=nh produces the expected result
+//     n  0  1  2  3  4  5  6  7  8
+//     Fₙ 0  1  1  2  3  5  8 13 21 ...
+class FibonacciDifferenceEquation : public LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FibonacciDifferenceEquation)
+
+  FibonacciDifferenceEquation() {
+    DeclareDiscreteState(2 /* x[0], x[1] */);
+
+    // Output yₙ.
+    DeclarePeriodicEvent(
+        kPeriod, 0.,
+        PublishEvent<double>(
+            [this](const Context<double>& context_n,
+                   const PublishEvent<double>&) { Output(context_n); }));
+
+    // Update to xₙ₊₁ (x_np1).
+    DeclarePeriodicEvent(
+        kPeriod, 0.,
+        DiscreteUpdateEvent<double>([this](const Context<double>& context_n,
+                                           const DiscreteUpdateEvent<double>&,
+                                           DiscreteValues<double>* x_np1) {
+          x_np1->get_mutable_vector().set_value(Update(context_n));
+        }));
+  }
+
+  // Update function xₙ₊₁ = f(n, xₙ).
+  Vector2d Update(const Context<double>& context_n) const {
+    ++update_count_;
+    const auto& x_n = context_n.get_discrete_state();
+    return {x_n[0] + x_n[1], x_n[0]};
+  }
+
+  // Output function yₙ = g(n, xₙ). We record t, n, and Fₙ.
+  void Output(const Context<double>& context_n) const {
+    ++output_count_;
+    const double t = context_n.get_time();
+    const int n = static_cast<int>(std::round(t/kPeriod));
+    const int F_n = context_n.get_discrete_state()[0];  // xₙ[0]
+    sample_time_t_.push_back(t);
+    step_number_n_.push_back(n);
+    fibonacci_n_.push_back(F_n);
+  }
+
+  // Set initial conditions x₀.
+  void Initialize(Context<double>* context_0) const {
+    auto& x_0 = context_0->get_mutable_discrete_state();
+    x_0.get_mutable_vector().set_value(Vector2d(0., 1.));
+  }
+
+  int num_updates() const { return update_count_; }
+  int num_outputs() const { return output_count_; }
+  const std::vector<double>& t() const { return sample_time_t_; }
+  const std::vector<int>& n() const { return step_number_n_; }
+  const std::vector<int>& series() const { return fibonacci_n_; }
+
+ private:
+  static constexpr double kPeriod = 1.;
+
+  mutable int update_count_{};
+  mutable int output_count_{};
+  mutable std::vector<double> sample_time_t_;
+  mutable std::vector<int> step_number_n_;
+  mutable std::vector<int> fibonacci_n_;
+};
+
+GTEST_TEST(SimulatorTest, FibonacciSystemTest) {
+  FibonacciDifferenceEquation fibonacci;
+
+  Simulator<double> simulator(fibonacci);
+
+  // Set the initial conditions: x₀[0]=0, x₀[1]=1.
+  fibonacci.Initialize(&simulator.get_mutable_context());
+
+  // Simulate forward.
+  simulator.StepTo(10.);
+
+  EXPECT_EQ(fibonacci.num_outputs(), 11);
+  EXPECT_EQ(fibonacci.num_updates(), 10);
+
+  EXPECT_EQ(fibonacci.n(),
+            std::vector<int>({0, 1, 2, 3, 4, 5,  6,  7,  8,  9, 10}));
+  EXPECT_EQ(fibonacci.series(),
+            std::vector<int>({0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55}));
+  EXPECT_EQ(fibonacci.t(),
+            std::vector<double>({0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10.}));
+}
+
+// A continuous system that outputs the time.
 class TimeOutputter : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TimeOutputter)
@@ -969,7 +1068,6 @@ class TimeOutputter : public LeafSystem<double> {
 // A hybrid discrete-continuous system:
 // x[n+1] = x[n] + u(t)
 // x[0] = 0
-// u(t) = t
 class SimpleHybridSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleHybridSystem)
@@ -979,6 +1077,9 @@ class SimpleHybridSystem : public LeafSystem<double> {
     this->DeclareDiscreteState(1 /* single state variable */);
     this->DeclareVectorInputPort("u", systems::BasicVector<double>(1));
   }
+
+  // Gets the number of discrete updates performed.
+  int num_discrete_updates() const { return num_discrete_updates_; }
 
  private:
   void DoCalcDiscreteVariableUpdates(
@@ -990,39 +1091,66 @@ class SimpleHybridSystem : public LeafSystem<double> {
     DRAKE_DEMAND(input);
     const double u = input->get_value()[0];
     (*x_next)[0] = x + u;
+
+    // Modifying system members in DoCalcDiscreteVariableUpdates() is an
+    // anti-pattern. It is done here only to simplify the testing code.
+    ++num_discrete_updates_;
   }
 
   const double kPeriod = 1.0;
+  mutable int num_discrete_updates_{0};
 };
-}  // namespace
 
-
-// TODO: Tests that ...
+// Tests that a simple hybrid discrete/continuous system can be simulated as
+// expected. This particular test performs its first and only update at
+// t = 1.0s.
 GTEST_TEST(SimulatorTest, SimpleHybridSystemTest) {
   DiagramBuilder<double> builder;
+
+  // Connect a system that outputs u(t) = t to the hybrid system
+  // x[n+1] = x[n] + u(t).
   auto time_outputter = builder.AddSystem<TimeOutputter>();
-  auto hybrid_system = builder.AddSystem<SimpleHybridSystem>(1.0);
+  const double offset_time = 1.0;
+  auto hybrid_system = builder.AddSystem<SimpleHybridSystem>(offset_time);
   builder.Connect(time_outputter->get_output_port(0),
                   hybrid_system->get_input_port(0));
   auto diagram = builder.Build();
   Simulator<double> simulator(*diagram);
 
-  // Set the initial conditions.
+  // Set the initial conditions: x[0] = 0.
   simulator.get_mutable_context().get_mutable_discrete_state()[0] = 0.0;
 
   // Simulate forward.
   simulator.StepTo(1.0);
-  simulator.Finalize();
 
-  // TODO: Check that the update occurs at exactly the desired time.
+  // Check that the no event was yet performed.
+  EXPECT_EQ(hybrid_system->num_discrete_updates(), 0);
+
+  // There will be a pending event. Handle it by calling StepTo(1.0) one more
+  // time.
+  simulator.StepTo(1.0);
+
+  // Check that the expected state value was attained. The value should be 1.0
+  // because we expect the discrete update to occur at t = 1, meaning that
+  // u(t) = 1.
   EXPECT_EQ(simulator.get_context().get_discrete_state()[0], 1.0);
+
+  // Check that the expected number of updates (one) was performed.
+  EXPECT_EQ(hybrid_system->num_discrete_updates(), 1);
 }
 
-// TODO: Tests that ...
+// Tests that a simple hybrid discrete/continuous system can be simulated as
+// expected. This particular test performs its first and only update at
+// t = 1.0s.
 GTEST_TEST(SimulatorTest, SimpleHybridSystemTest2) {
   DiagramBuilder<double> builder;
+
+  // Connect a system that outputs u(t) = t to the hybrid system
+  // x[n+1] = x[n] + u(t). This is the same system as used in
+  // SimpleHybridSystemTest but with an offset of zero instead of one.
   auto time_outputter = builder.AddSystem<TimeOutputter>();
-  auto hybrid_system = builder.AddSystem<SimpleHybridSystem>(0.0);
+  const double offset_time = 0.0;
+  auto hybrid_system = builder.AddSystem<SimpleHybridSystem>(offset_time);
   builder.Connect(time_outputter->get_output_port(0),
                   hybrid_system->get_input_port(0));
   auto diagram = builder.Build();
@@ -1034,16 +1162,33 @@ GTEST_TEST(SimulatorTest, SimpleHybridSystemTest2) {
   // Simulate forward.
   simulator.StepTo(1.0);
 
-  // TODO: Check that the update occurs at exactly the desired time.
+  // Check that the expected state value was attained. The value should be 0.0
+  // because we expect the discrete update to occur at t = 0, meaning that
+  // u(t) = 0.
   EXPECT_EQ(simulator.get_context().get_discrete_state()[0], 0.0);
+
+  // Check that the expected number of updates (one) was performed.
+  EXPECT_EQ(hybrid_system->num_discrete_updates(), 1);
 }
 
-// TODO: Tests that ...
+// Tests that we can use a zero-order hold in concert with the hybrid diagram
+// constructed in SimpleHybridSystemTest and SimpleHybridSystemTest2 to get
+// the two systems to match.
 GTEST_TEST(SimulatorTest, SimpleHybridSystemTest3) {
   DiagramBuilder<double> builder;
+
+  // Construct the diagram as before, but now with a zero-order hold between
+  // u(t) = t and the SimpleHybridSystem.
   auto time_outputter = builder.AddSystem<TimeOutputter>();
-  auto zoh = builder.AddSystem<ZeroOrderHold<double>>(1.0, 1);
-  auto hybrid_system = builder.AddSystem<SimpleHybridSystem>(0.0);
+  const double zoh_period = 1.0;
+  const int x_dim = 1;
+  auto zoh = builder.AddSystem<ZeroOrderHold<double>>(zoh_period, x_dim);
+
+  // Construct the hybrid system as done in SimpleHybridSystemTest2.
+  const double offset_time = 1.0;
+  auto hybrid_system = builder.AddSystem<SimpleHybridSystem>(offset_time);
+
+  // Wire and complete the Diagram.
   builder.Connect(time_outputter->get_output_port(0),
                   zoh->get_input_port());
   builder.Connect(zoh->get_output_port(),
@@ -1053,18 +1198,30 @@ GTEST_TEST(SimulatorTest, SimpleHybridSystemTest3) {
 
   // Set the initial conditions.
   Context<double>& mutable_context = simulator.get_mutable_context();
-  diagram->GetMutableSubsystemContext(*hybrid_system, &mutable_context).
-      get_mutable_discrete_state()[0] = 0.0;
+  Context<double>& mutable_hybrid_context = diagram->GetMutableSubsystemContext(
+      *hybrid_system, &mutable_context);
+  mutable_hybrid_context.get_mutable_discrete_state()[0] = 0.0;
 
   // Simulate forward.
   simulator.StepTo(1.0);
 
-  // TODO: Check that the update occurs at exactly the desired time.
-  EXPECT_EQ(diagram->GetSubsystemContext(*hybrid_system, mutable_context).get_discrete_state()[0], 0.0);
+  // Check that the no event was yet performed.
+  EXPECT_EQ(hybrid_system->num_discrete_updates(), 0);
+
+  // There will be a pending event. Handle it by calling StepTo(1.0) one more
+  // time.
+  simulator.StepTo(1.0);
+
+  // Check that the expected state value was attained. The value should be 0.0
+  // because we expect the discrete update to occur at t = 1 using a zero-order
+  // hold on u(t), resulting in a zero value input.
+  EXPECT_EQ(mutable_hybrid_context.get_discrete_state()[0], 0.0);
+
+  // Check that the expected number of updates (one) was performed.
+  EXPECT_EQ(hybrid_system->num_discrete_updates(), 1);
 }
 
 // A mock System that requests a single update at a prespecified time.
-namespace {
 class UnrestrictedUpdater : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrestrictedUpdater)
@@ -1079,8 +1236,8 @@ class UnrestrictedUpdater : public LeafSystem<double> {
     const double inf = std::numeric_limits<double>::infinity();
     *time = (context.get_time() < t_upd_) ? t_upd_ : inf;
     UnrestrictedUpdateEvent<double> event(
-        Event<double>::TriggerType::kPeriodic);
-    event.add_to_composite(event_info);
+        TriggerType::kPeriodic);
+    event.AddToComposite(event_info);
   }
 
   void DoCalcUnrestrictedUpdate(
@@ -1113,7 +1270,6 @@ class UnrestrictedUpdater : public LeafSystem<double> {
       unrestricted_update_callback_{nullptr};
   std::function<void(const Context<double>&)> derivatives_callback_{nullptr};
 };
-}  // namespace
 
 // Tests that the simulator captures an unrestricted update at the exact time
 // (i.e., without accumulating floating point error).
@@ -1336,10 +1492,16 @@ GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
   });
 
   Simulator<double> simulator(system);
+  simulator.set_publish_at_initialization(false);
   simulator.set_publish_every_time_step(false);
   simulator.StepTo(0.5);
+
+  // Update occurs at 1000Hz, at the beginning of each step (there is no
+  // discrete event update during initialization nor a final update at the
+  // final time).
   EXPECT_EQ(500, num_disc_updates);
-  // Publication occurs at 400Hz, and also at initialization.
+  // Publication occurs at 400Hz, at the end of initialization and the end
+  // of each step.
   EXPECT_EQ(200 + 1, num_publishes);
 }
 
@@ -1596,18 +1758,18 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
     }
 
     void AddPerStepPublishEvent() {
-      PublishEvent<double> event(Event<double>::TriggerType::kPerStep);
+      PublishEvent<double> event(TriggerType::kPerStep);
       this->DeclarePerStepEvent(event);
     }
 
     void AddPerStepDiscreteUpdateEvent() {
-      DiscreteUpdateEvent<double> event(Event<double>::TriggerType::kPerStep);
+      DiscreteUpdateEvent<double> event(TriggerType::kPerStep);
       this->DeclarePerStepEvent(event);
     }
 
     void AddPerStepUnrestrictedUpdateEvent() {
       UnrestrictedUpdateEvent<double> event(
-          Event<double>::TriggerType::kPerStep);
+          TriggerType::kPerStep);
       this->DeclarePerStepEvent(event);
     }
 
@@ -1716,20 +1878,20 @@ GTEST_TEST(SimulatorTest, Initialization) {
    public:
     InitializationTestSystem() {
       PublishEvent<double> pub_event(
-          Event<double>::TriggerType::kInitialization,
+          TriggerType::kInitialization,
           std::bind(&InitializationTestSystem::InitPublish, this,
                     std::placeholders::_1, std::placeholders::_2));
       DeclareInitializationEvent(pub_event);
 
       DeclareInitializationEvent(DiscreteUpdateEvent<double>(
-          Event<double>::TriggerType::kInitialization));
+          TriggerType::kInitialization));
       DeclareInitializationEvent(UnrestrictedUpdateEvent<double>(
-          Event<double>::TriggerType::kInitialization));
+          TriggerType::kInitialization));
 
       DeclarePeriodicDiscreteUpdate(0.1);
       DeclarePerStepEvent<UnrestrictedUpdateEvent<double>>(
           UnrestrictedUpdateEvent<double>(
-              Event<double>::TriggerType::kPerStep));
+              TriggerType::kPerStep));
     }
 
     bool get_pub_init() const { return pub_init_; }
@@ -1741,7 +1903,7 @@ GTEST_TEST(SimulatorTest, Initialization) {
                      const PublishEvent<double>& event) const {
       EXPECT_EQ(context.get_time(), 0);
       EXPECT_EQ(event.get_trigger_type(),
-                Event<double>::TriggerType::kInitialization);
+                TriggerType::kInitialization);
       pub_init_ = true;
     }
 
@@ -1751,7 +1913,7 @@ GTEST_TEST(SimulatorTest, Initialization) {
         DiscreteValues<double>*) const final {
       EXPECT_EQ(events.size(), 1);
       if (events.front()->get_trigger_type() ==
-          Event<double>::TriggerType::kInitialization) {
+          TriggerType::kInitialization) {
         EXPECT_EQ(context.get_time(), 0);
         dis_update_init_ = true;
       } else {
@@ -1765,7 +1927,7 @@ GTEST_TEST(SimulatorTest, Initialization) {
         State<double>*) const final {
       EXPECT_EQ(events.size(), 1);
       if (events.front()->get_trigger_type() ==
-          Event<double>::TriggerType::kInitialization) {
+          TriggerType::kInitialization) {
         EXPECT_EQ(context.get_time(), 0);
         unres_update_init_ = true;
       } else {

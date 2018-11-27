@@ -34,6 +34,7 @@ SimpleRightOfWayPhaseProvider::DoGetPhase(
   if (it == phases_.end()) {
     return nullopt;
   }
+  // TODO(liang.fok) Add support for "next phase" and "duration until", #9993.
   return Result{it->second, nullopt};
 }
 

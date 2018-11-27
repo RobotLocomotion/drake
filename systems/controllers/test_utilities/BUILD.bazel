@@ -23,7 +23,7 @@ drake_cc_library(
     testonly = 1,
     hdrs = ["compute_torque.h"],
     deps = [
-        "//multibody:rigid_body_tree",
+        "//attic/multibody:rigid_body_tree",
         "//multibody/multibody_tree/multibody_plant",
         "//systems/framework",
     ],

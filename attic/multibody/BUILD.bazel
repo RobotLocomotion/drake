@@ -146,6 +146,7 @@ drake_cc_library(
     hdrs = ["rigid_body_constraint.h"],
     deps = [
         ":rigid_body_tree",
+        "//math:geometric_transform",
     ],
 )
 
@@ -689,7 +690,7 @@ drake_cc_googletest(
     data = [
         "test/rigid_body_tree/two_dof_robot.urdf",
         "test/test.alias_groups",
-        "//multibody:test_models",
+        "//attic/multibody:test_models",
     ],
     deps = [
         ":rigid_body_tree_alias_groups",

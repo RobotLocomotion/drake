@@ -38,7 +38,7 @@ PYBIND11_MODULE(manipulation_station, m) {
   py::class_<ManipulationStation<T>, Diagram<T>>(m, "ManipulationStation")
       .def(py::init<double, IiwaCollisionModel>(), py::arg("time_step") = 0.002,
            py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
-           doc.ManipulationStation.ctor.doc_3)
+           doc.ManipulationStation.ctor.doc_2args)
       .def("AddCupboard", &ManipulationStation<T>::AddCupboard,
            doc.ManipulationStation.AddCupboard.doc)
       .def("Finalize", &ManipulationStation<T>::Finalize,
@@ -82,7 +82,7 @@ PYBIND11_MODULE(manipulation_station, m) {
       m, "ManipulationStationHardwareInterface")
       .def(py::init<const std::vector<std::string>>(),
            py::arg("camera_ids") = std::vector<std::string>{},
-           doc.ManipulationStationHardwareInterface.ctor.doc_3)
+           doc.ManipulationStationHardwareInterface.ctor.doc_1args)
       .def("Connect", &ManipulationStationHardwareInterface::Connect,
            py::arg("wait_for_cameras") = true,
            doc.ManipulationStationHardwareInterface.Connect.doc)

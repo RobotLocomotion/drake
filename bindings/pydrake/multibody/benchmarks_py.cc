@@ -25,7 +25,7 @@ void init_acrobot(py::module m) {
 
   py::class_<AcrobotParameters>(m, "AcrobotParameters",
                                 doc.AcrobotParameters.doc)
-      .def(py::init(), doc.AcrobotParameters.ctor.doc);
+      .def(py::init(), doc.AcrobotParameters.doc);
 
   m.def("MakeAcrobotPlant",
         py::overload_cast<const AcrobotParameters&, bool, SceneGraph<double>*>(

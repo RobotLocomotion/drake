@@ -17,6 +17,8 @@ drake_cc_package_library(
         ":instantaneous_qp_controller",
         ":polynomial_encode_decode",
         ":qp_common",
+        ":rbt_inverse_dynamics",
+        ":rbt_inverse_dynamics_controller",
         ":side",
         ":yaml_util",
         ":zmp_util",
@@ -28,14 +30,14 @@ drake_cc_library(
     srcs = ["controlUtil.cpp"],
     hdrs = ["controlUtil.h"],
     deps = [
+        "//attic/multibody:resolve_center_of_pressure",
+        "//attic/multibody:rigid_body_tree",
         "//attic/util",
         "//common:essential",
         "//common/trajectories:piecewise_polynomial",
         "//math:autodiff",
         "//math:expmap",
         "//math:geometric_transform",
-        "//multibody:resolve_center_of_pressure",
-        "//multibody:rigid_body_tree",
     ],
 )
 
@@ -53,9 +55,9 @@ drake_cc_library(
     deps = [
         ":control_util",
         ":side",
+        "//attic/multibody:rigid_body_tree",
         "//attic/util",
         "//common:essential",
-        "//multibody:rigid_body_tree",
     ],
 )
 
@@ -125,6 +127,33 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "rbt_inverse_dynamics",
+    srcs = ["rbt_inverse_dynamics.cc"],
+    hdrs = ["rbt_inverse_dynamics.h"],
+    deps = [
+        "//multibody:rigid_body_tree",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "rbt_inverse_dynamics_controller",
+    srcs = ["rbt_inverse_dynamics_controller.cc"],
+    hdrs = ["rbt_inverse_dynamics_controller.h"],
+    deps = [
+        ":rbt_inverse_dynamics",
+        "//multibody:rigid_body_tree",
+        "//systems/controllers:pid_controller",
+        "//systems/controllers:state_feedback_controller_interface",
+        "//systems/framework",
+        "//systems/primitives:adder",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:demultiplexer",
+        "//systems/primitives:pass_through",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -133,6 +162,35 @@ drake_cc_googletest(
         ":polynomial_encode_decode",
         "//common/test_utilities",
         "//common/trajectories:random_piecewise_polynomial",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rbt_inverse_dynamics_test",
+    data = [
+        "//examples/simple_four_bar:models",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":rbt_inverse_dynamics",
+        "//attic/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/controllers/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rbt_inverse_dynamics_controller_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":rbt_inverse_dynamics_controller",
+        "//attic/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/controllers/test_utilities",
     ],
 )
 

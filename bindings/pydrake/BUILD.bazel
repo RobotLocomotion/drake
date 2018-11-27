@@ -72,12 +72,14 @@ generate_pybind_documentation_header(
 drake_cc_library(
     name = "documentation_pybind",
     hdrs = ["documentation_pybind.h"],
+    declare_installed_headers = 0,
     tags = ["nolint"],
 )
 
 drake_cc_library(
     name = "pydrake_pybind",
     hdrs = ["pydrake_pybind.h"],
+    declare_installed_headers = 0,
     # NOTE: We must violate IWYU and not list any Drake libraries in "deps"
     # here because we do not want these dependencies violating ODR (at both
     # development and install time).
@@ -87,6 +89,7 @@ drake_cc_library(
 drake_cc_library(
     name = "autodiff_types_pybind",
     hdrs = ["autodiff_types_pybind.h"],
+    declare_installed_headers = 0,
     visibility = ["//visibility:public"],
 )
 
@@ -191,6 +194,7 @@ drake_pybind_library(
 drake_cc_library(
     name = "symbolic_types_pybind",
     hdrs = ["symbolic_types_pybind.h"],
+    declare_installed_headers = 0,
     visibility = ["//visibility:public"],
 )
 

@@ -17,6 +17,7 @@
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/lcmt_zmp_com_observer_state.hpp"
 #include "drake/math/quaternion.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/solvers/fast_qp.h"
 #include "drake/systems/controllers/controlUtil.h"
@@ -569,12 +570,11 @@ void checkCentroidalMomentumMatchesTotalWrench(
     beta_start += active_support_length;
   }
 
-  double mass = robot.getMass();
-  Vector6d gravitational_wrench_in_com = robot.a_grav * mass;
-  Isometry3d com_to_world = Isometry3d::Identity();
-  com_to_world.translation() = robot.centerOfMass(cache);
-  Vector6d gravitational_wrench_in_world =
-      transformSpatialForce(com_to_world, gravitational_wrench_in_com);
+  const double mass = robot.getMass();
+  const Vector6d gravitational_wrench_in_com = robot.a_grav * mass;
+  const drake::math::RigidTransformd X_cm_world(robot.centerOfMass(cache));
+  const Vector6d gravitational_wrench_in_world = transformSpatialForce(
+      X_cm_world.GetAsIsometry3(), gravitational_wrench_in_com);
   total_wrench_in_world += gravitational_wrench_in_world;
 
   auto world_momentum_matrix = robot.worldMomentumMatrix(cache);
@@ -744,10 +744,12 @@ int InstantaneousQPController::setupAndSolveQP(
         qp_input.body_motion_data[i].quat_task_to_world);
     Map<const Vector3d> translation_task_to_world(
         qp_input.body_motion_data[i].translation_task_to_world);
-    desired_body_accelerations[i].T_task_to_world.linear() =
-        drake::math::quat2rotmat(quat_task_to_world);
-    desired_body_accelerations[i].T_task_to_world.translation() =
-        translation_task_to_world;
+    const Eigen::Quaterniond quat(quat_task_to_world(0), quat_task_to_world(1),
+                                  quat_task_to_world(2), quat_task_to_world(3));
+    const drake::math::RigidTransformd X_task_to_world(
+        quat, translation_task_to_world);
+    desired_body_accelerations[i].T_task_to_world =
+        X_task_to_world.GetAsIsometry3();
     Map<const Vector3d> xyz_kp_multiplier(
         qp_input.body_motion_data[i].xyz_kp_multiplier);
     Map<const Vector3d> xyz_damping_ratio_multiplier(

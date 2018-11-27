@@ -29,11 +29,11 @@ drake_cc_library(
         "point_contact_detail.h",
     ],
     deps = [
+        "//attic/multibody:rigid_body_tree",
         "//common:copyable_unique_ptr",
         "//common:default_scalars",
         "//common:essential",
         "//math:orthonormal_basis",
-        "//multibody:rigid_body_tree",
     ],
 )
 
@@ -53,9 +53,9 @@ drake_cc_library(
     deps = [
         ":compliant_material",
         ":contact_results",
+        "//attic/multibody:rigid_body_tree",
         "//common",
         "//common:copyable_unique_ptr",
-        "//multibody:rigid_body_tree",
     ],
 )
 
@@ -71,10 +71,10 @@ drake_cc_library(
     ],
     deps = [
         ":compliant_contact_model",
+        "//attic/multibody:rigid_body_tree",
         "//common:copyable_unique_ptr",
         "//common:essential",
         "//math:orthonormal_basis",
-        "//multibody:rigid_body_tree",
         "//multibody/constraint:constraint_solver",
         "//solvers:mathematical_program",
         "//systems/framework",
@@ -86,10 +86,10 @@ drake_cc_library(
     srcs = ["rigid_body_plant_bridge.cc"],
     hdrs = ["rigid_body_plant_bridge.h"],
     deps = [
+        "//attic/multibody:rigid_body_tree",
         "//geometry:geometry_ids",
         "//geometry:materials",
         "//geometry:scene_graph",
-        "//multibody:rigid_body_tree",
     ],
 )
 
@@ -113,9 +113,9 @@ drake_cc_library(
     srcs = ["create_load_robot_message.cc"],
     hdrs = ["create_load_robot_message.h"],
     deps = [
+        "//attic/multibody:rigid_body_tree",
         "//attic/systems/rendering:drake_visualizer_client",
         "//lcmtypes:viewer",
-        "//multibody:rigid_body_tree",
     ],
 )
 
@@ -131,10 +131,10 @@ drake_cc_library(
     ],
     deps = [
         ":create_load_robot_message",
+        "//attic/multibody:rigid_body_tree",
         "//attic/systems/rendering:drake_visualizer_client",
         "//common/trajectories:piecewise_polynomial",
         "//lcmtypes:viewer",
-        "//multibody:rigid_body_tree",
         "//systems/lcm:lcm_pubsub_system",
         "//systems/primitives:signal_log",
     ],
@@ -145,8 +145,8 @@ drake_cc_library(
     srcs = ["frame_visualizer.cc"],
     hdrs = ["frame_visualizer.h"],
     deps = [
+        "//attic/multibody:rigid_body_tree",
         "//lcmtypes:viewer",
-        "//multibody:rigid_body_tree",
         "//systems/lcm:lcm_pubsub_system",
     ],
 )
@@ -201,8 +201,8 @@ drake_cc_googletest(
     deps = [
         ":contact_result_test_common",
         ":rigid_body_plant",
+        "//attic/multibody:rigid_body_tree",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody:rigid_body_tree",
     ],
 )
 
@@ -211,8 +211,8 @@ drake_cc_googletest(
     deps = [
         ":compliant_contact_model",
         ":contact_result_test_common",
+        "//attic/multibody:rigid_body_tree",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody:rigid_body_tree",
     ],
 )
 
@@ -247,7 +247,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "kinematics_results_test",
-    data = ["//multibody:test_models"],
+    data = ["//attic/multibody:test_models"],
     deps = [
         ":rigid_body_plant",
         "//attic/multibody/parsers",
@@ -260,18 +260,18 @@ drake_cc_googletest(
     name = "rigid_body_plant_test",
     data = [
         ":test_models",
+        "//attic/multibody:test_models",
         "//examples/pendulum:models",
         "//manipulation/models/iiwa_description:models",
         "//multibody:models",
-        "//multibody:test_models",
     ],
     deps = [
         ":rigid_body_plant",
+        "//attic/multibody:rigid_body_tree_construction",
         "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//examples/pendulum:pendulum_vector_types",
-        "//multibody:rigid_body_tree_construction",
         "//systems/primitives:linear_system",
     ],
 )

@@ -5,7 +5,7 @@
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
 #include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
-#include "drake/systems/controllers/inverse_dynamics_controller.h"
+#include "drake/systems/controllers/rbt_inverse_dynamics_controller.h"
 
 namespace drake {
 namespace examples {
@@ -97,7 +97,7 @@ class IiwaAndBoxPlantWithStateEstimator : public systems::Diagram<T> {
   OracularStateEstimation<T>* iiwa_state_est_{nullptr};
   OracularStateEstimation<T>* box_state_est_{nullptr};
   std::unique_ptr<RigidBodyTree<T>> object_{nullptr};
-  systems::controllers::InverseDynamicsController<T>* iiwa_controller_{nullptr};
+  systems::controllers::rbt::InverseDynamicsController<T>* iiwa_controller_{};
   systems::RigidBodyPlant<T>* plant_{nullptr};
 
   int input_port_iiwa_state_command_{-1};

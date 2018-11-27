@@ -304,15 +304,176 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTrue(np.allclose(x, np.zeros(4)))
 
         # Write into a mutable reference to the state vector.
-        x_reff = tree.GetMutablePositionsAndVelocities(context)
-        x_reff[:] = x0
+        x_ref = tree.GetMutablePositionsAndVelocities(context)
+        x_ref[:] = x0
+
+        # Verify that positions and velocities were set correctly.
+        self.assertTrue(np.allclose(plant.GetPositions(context), q0))
+        self.assertTrue(np.allclose(plant.GetVelocities(context), v0))
 
         # Verify we did modify the state stored in context.
         x = tree.GetPositionsAndVelocities(context)
         self.assertTrue(np.allclose(x, x0))
 
+        # Now set positions and velocities independently and check them.
+        zeros_2 = np.zeros([2, 1])
+        x_ref.fill(0)
+        plant.SetPositions(context, q0)
+        self.assertTrue(np.allclose(plant.GetPositions(context), q0))
+        self.assertTrue(np.allclose(plant.GetVelocities(context), zeros_2))
+        x_ref.fill(0)
+        plant.SetVelocities(context, v0)
+        self.assertTrue(np.allclose(plant.GetPositions(context), zeros_2))
+        self.assertTrue(np.allclose(plant.GetVelocities(context), v0))
+
+        # Now test SetPositionsAndVelocities().
+        x_ref.fill(0)
+        plant.SetPositionsAndVelocities(context, x0)
+        self.assertTrue(np.allclose(
+            tree.GetPositionsAndVelocities(context), x0))
+
     def test_model_instance_state_access(self):
-        # Create a multibodyplant with a kuka arm and a schunk gripper.
+        # Create a MultibodyPlant with a kuka arm and a schunk gripper.
+        # the arm is welded to the world, the gripper is welded to the
+        # arm's end effector.
+        wsg50_sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/" +
+            "wsg_50_description/sdf/schunk_wsg_50.sdf")
+        iiwa_sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/" +
+            "iiwa_description/sdf/iiwa14_no_collision.sdf")
+
+        plant = MultibodyPlant()
+
+        iiwa_model = AddModelFromSdfFile(
+            file_name=iiwa_sdf_path, model_name='robot', plant=plant)
+        gripper_model = AddModelFromSdfFile(
+            file_name=wsg50_sdf_path, model_name='gripper', plant=plant)
+
+        # Weld the base of arm and gripper to reduce the number of states.
+        X_EeGripper = Isometry3.Identity()
+        X_EeGripper.set_translation([0, 0, 0.081])
+        X_EeGripper.set_rotation(
+            RollPitchYaw(np.pi / 2, 0, np.pi / 2).ToRotationMatrix().matrix())
+        plant.WeldFrames(A=plant.world_frame(),
+                         B=plant.GetFrameByName("iiwa_link_0", iiwa_model))
+        plant.WeldFrames(
+            A=plant.GetFrameByName("iiwa_link_7", iiwa_model),
+            B=plant.GetFrameByName("body", gripper_model),
+            X_AB=X_EeGripper)
+        plant.Finalize()
+
+        # Create a context of the MBP and set the state of the context
+        # to desired values.
+        context = plant.CreateDefaultContext()
+        tree = plant.tree()
+
+        nq = plant.num_positions()
+        nv = plant.num_velocities()
+
+        nq_iiwa = 7
+        nv_iiwa = 7
+        nq_gripper = 2
+        nv_gripper = 2
+        q_iiwa_desired = np.zeros(nq_iiwa)
+        v_iiwa_desired = np.zeros(nv_iiwa)
+        q_gripper_desired = np.zeros(nq_gripper)
+        v_gripper_desired = np.zeros(nv_gripper)
+
+        q_iiwa_desired[2] = np.pi/3
+        q_gripper_desired[0] = 0.1
+        v_iiwa_desired[1] = 5.0
+        q_gripper_desired[0] = -0.3
+
+        x_iiwa_desired = np.zeros(nq_iiwa + nv_iiwa)
+        x_iiwa_desired[0:nq_iiwa] = q_iiwa_desired
+        x_iiwa_desired[nq_iiwa:nq_iiwa+nv_iiwa] = v_iiwa_desired
+
+        x_gripper_desired = np.zeros(nq_gripper + nv_gripper)
+        x_gripper_desired[0:nq_gripper] = q_gripper_desired
+        x_gripper_desired[nq_gripper:nq_gripper+nv_gripper] = v_gripper_desired
+
+        x_plant_desired = np.zeros(nq + nv)
+        x_plant_desired[0:7] = q_iiwa_desired
+        x_plant_desired[7:9] = q_gripper_desired
+        x_plant_desired[nq:nq+7] = v_iiwa_desired
+        x_plant_desired[nq+7:nq+nv] = v_gripper_desired
+
+        # Check SetPositionsAndVelocities() for each model instance.
+        # Do the iiwa model first.
+        plant.SetPositionsAndVelocities(context, np.zeros(nq + nv))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(context),
+                                    np.zeros(nq + nv)))
+        plant.SetPositionsAndVelocities(context, iiwa_model, x_iiwa_desired)
+        self.assertTrue(np.allclose(
+            plant.GetPositionsAndVelocities(context, iiwa_model),
+            x_iiwa_desired))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(
+            context, gripper_model), np.zeros(nq_gripper + nv_gripper)))
+        # Do the gripper model.
+        plant.SetPositionsAndVelocities(context, np.zeros(nq + nv))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(context),
+                                    np.zeros(nq + nv)))
+        plant.SetPositionsAndVelocities(
+            context, gripper_model, x_gripper_desired)
+        self.assertTrue(np.allclose(
+            plant.GetPositionsAndVelocities(context, gripper_model),
+            x_gripper_desired))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(
+            context, iiwa_model), np.zeros(nq_iiwa + nv_iiwa)))
+
+        # Check SetPositions() for each model instance.
+        # Do the iiwa model first.
+        plant.SetPositionsAndVelocities(context, np.zeros(nq + nv))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(context),
+                                    np.zeros(nq + nv)))
+        plant.SetPositions(context, iiwa_model, q_iiwa_desired)
+        self.assertTrue(np.allclose(
+            plant.GetPositions(context, iiwa_model), q_iiwa_desired))
+        self.assertTrue(np.allclose(plant.GetVelocities(
+            context, iiwa_model), np.zeros(nv_iiwa)))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(
+            context, gripper_model), np.zeros(nq_gripper + nv_gripper)))
+        # Do the gripper model.
+        plant.SetPositionsAndVelocities(context, np.zeros(nq + nv))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(context),
+                                    np.zeros(nq + nv)))
+        plant.SetPositions(context, gripper_model, q_gripper_desired)
+        self.assertTrue(np.allclose(
+            plant.GetPositions(context, gripper_model),
+            q_gripper_desired))
+        self.assertTrue(np.allclose(plant.GetVelocities(
+            context, gripper_model), np.zeros(nq_gripper)))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(
+            context, iiwa_model), np.zeros(nq_iiwa + nv_iiwa)))
+
+        # Check SetVelocities() for each model instance.
+        # Do the iiwa model first.
+        plant.SetPositionsAndVelocities(context, np.zeros(nq + nv))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(context),
+                                    np.zeros(nq + nv)))
+        plant.SetVelocities(context, iiwa_model, v_iiwa_desired)
+        self.assertTrue(np.allclose(
+            plant.GetVelocities(context, iiwa_model), v_iiwa_desired))
+        self.assertTrue(np.allclose(plant.GetPositions(
+            context, iiwa_model), np.zeros(nq_iiwa)))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(
+            context, gripper_model), np.zeros(nq_gripper + nv_gripper)))
+        # Do the gripper model.
+        plant.SetPositionsAndVelocities(context, np.zeros(nq + nv))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(context),
+                                    np.zeros(nq + nv)))
+        plant.SetVelocities(context, gripper_model, v_gripper_desired)
+        self.assertTrue(np.allclose(
+            plant.GetVelocities(context, gripper_model),
+            v_gripper_desired))
+        self.assertTrue(np.allclose(plant.GetPositions(
+            context, gripper_model), np.zeros(nv_gripper)))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(
+            context, iiwa_model), np.zeros(nq_iiwa + nv_iiwa)))
+
+    def test_model_instance_state_access_by_array(self):
+        # Create a MultibodyPlant with a kuka arm and a schunk gripper.
         # the arm is welded to the world, the gripper is welded to the
         # arm's end effector.
         wsg50_sdf_path = FindResourceOrThrow(

@@ -46,13 +46,13 @@ PYBIND11_MODULE(acrobot, m) {
   // TODO(russt): Remove custom bindings once #8096 is resolved.
   py::class_<AcrobotInput<T>, BasicVector<T>>(m, "AcrobotInput",
                                               doc.AcrobotInput.doc)
-      .def(py::init<>(), doc.AcrobotInput.ctor.doc)
+      .def(py::init<>(), doc.AcrobotInput.ctor.doc_0args)
       .def("tau", &AcrobotInput<T>::tau, doc.AcrobotInput.tau.doc)
       .def("set_tau", &AcrobotInput<T>::set_tau, doc.AcrobotInput.set_tau.doc);
 
   py::class_<AcrobotParams<T>, BasicVector<T>>(m, "AcrobotParams",
                                                doc.AcrobotParams.doc)
-      .def(py::init<>(), doc.AcrobotParams.ctor.doc)
+      .def(py::init<>(), doc.AcrobotParams.ctor.doc_0args)
       .def("m1", &AcrobotParams<T>::m1, doc.AcrobotParams.m1.doc)
       .def("m2", &AcrobotParams<T>::m2, doc.AcrobotParams.m2.doc)
       .def("l1", &AcrobotParams<T>::l1, doc.AcrobotParams.l1.doc)
@@ -77,7 +77,7 @@ PYBIND11_MODULE(acrobot, m) {
 
   py::class_<AcrobotState<T>, BasicVector<T>>(m, "AcrobotState",
                                               doc.AcrobotState.doc)
-      .def(py::init<>(), doc.AcrobotState.ctor.doc)
+      .def(py::init<>(), doc.AcrobotState.ctor.doc_0args)
       .def("theta1", &AcrobotState<T>::theta1, doc.AcrobotState.theta1.doc)
       .def("theta1dot", &AcrobotState<T>::theta1dot,
            doc.AcrobotState.theta1dot.doc)
