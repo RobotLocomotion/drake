@@ -934,7 +934,7 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcPointsAnalyticJacobianExpressedInWorld(
+void MultibodyTree<T>::CalcPointsAnalyticalJacobianExpressedInWorld(
     const systems::Context<T>& context,
     const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_FQ_list,
     EigenPtr<MatrixX<T>> p_WQ_list, EigenPtr<MatrixX<T>> Jq_WFq) const {

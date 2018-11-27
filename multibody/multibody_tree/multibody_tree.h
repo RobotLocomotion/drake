@@ -1952,7 +1952,63 @@ class MultibodyTree {
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_FQ_list) const;
 
-  void CalcPointsAnalyticJacobianExpressedInWorld(
+  /// Given a list of points with fixed position vectors `p_FQ` in a frame
+  /// F, (that is, their time derivative `DtF(p_FQ)` in frame F is zero),
+  /// this method computes the analytical Jacobian `Jq_WFq(q)`.
+  /// In the notation `Jq_WFq(q)` used for the Jacobian, note that the "q" in
+  /// `Fq` represents the point "Q" moving with frame F while the other uses
+  /// of q alone refer to the generalized coordinates. In particular, `Jq`
+  /// indicates that a derivative with respect to the generalized coordinates q
+  /// is taken.
+  /// The analytical Jacobian `Jq_WFq(q)` is defined by: <pre>
+  ///   Jq_WFq(q) = d(p_WFq(q))/dq
+  /// </pre>
+  /// where `p_WFq(q)` is the position of point Q, which moves with frame F, in
+  /// the world frame W.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q.
+  /// @param[in] frame_F
+  ///   The positions `p_FQ` of each point in the input set are measured and
+  ///   expressed in this frame F and are constant (fixed) in this frame.
+  /// @param[in] p_FQ_list
+  ///   A matrix with the fixed position of a set of points `Q` measured and
+  ///   expressed in `frame_F`.
+  ///   Each column of this matrix contains the position vector `p_FQ` for a
+  ///   point `Q` measured and expressed in frame F. Therefore this input
+  ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
+  /// @param[out] p_WQ_list
+  ///   The output positions of each point `Q` now measured and expressed in
+  //    the world frame W. These positions are computed in the process of
+  ///   computing the geometric Jacobian `J_WQ` and therefore external storage
+  ///   must be provided.
+  ///   The output `p_WQ_list` **must** have the same size as the input set
+  ///   `p_FQ_list` or otherwise this method throws a
+  ///   std::runtime_error exception. That is `p_WQ_list` **must** be in
+  ///   `ℝ³ˣⁿᵖ`.
+  /// @param[out] Jq_WFq
+  ///   The analytical Jacobian `Jq_WFq(q)`, function of the generalized
+  ///   positions q only.
+  ///   We stack the positions of each point Q in the world frame W into a
+  ///   column vector p_WFq = [p_WFq1; p_WFq2; ...] of size 3⋅np, with np
+  ///   the number of points in p_FQ_list. Then the analytical Jacobian is
+  ///   defined as: <pre>
+  ///     Jq_WFq(q) = ∇(p_WFq(q))
+  ///   </pre>
+  ///   with `∇(⋅)` the gradient operator with respect to the generalized
+  ///   positions q. Therefore `Jq_WFq` is a matrix of size `3⋅np x nq`, with
+  ///   `nq` the number of generalized positions. On input, matrix `Jq_WFq`
+  ///   **must** have size `3⋅np x nq` or this method throws a
+  ///   std::runtime_error exception.
+  ///
+  /// @throws std::exception if the output `p_WQ_list` is nullptr or does not
+  /// have the same size as the input array `p_FQ_list`.
+  /// @throws std::exception if `Jq_WFq` is nullptr or if it does not have the
+  /// appropriate size, see documentation for `Jq_WFq` for details.
+  // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
+  // most applications it is all we need and it is more efficient to compute.
+  void CalcPointsAnalyticalJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_FQ_list,
       EigenPtr<MatrixX<T>> p_WQ_list, EigenPtr<MatrixX<T>> Jq_WFq) const;

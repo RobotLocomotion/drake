@@ -64,7 +64,10 @@ class KukaIiwaModelTests : public ::testing::Test {
         "drake/manipulation/models/iiwa_description/sdf/"
         "iiwa14_no_collision.sdf";
 
-    // Create a floating model of a Kuka arm.
+    // Create a model of a Kuka arm. Notice we do not weld the robot's base
+    // to the world and therefore the model is free floating in space. This
+    // makes for a more interesting setup to test the computation of
+    // analytical Jacobians.
     plant_ = std::make_unique<MultibodyPlant<double>>();
     AddModelFromSdfFile(FindResourceOrThrow(kArmSdfPath), plant_.get());
     // Add a frame H with a fixed pose X_GH in the end effector frame G.
@@ -93,7 +96,7 @@ class KukaIiwaModelTests : public ::testing::Test {
       joint.set_angle(context_.get(), q0[joint_index]);
     }
 
-    // Set the pose of the floating base link.
+    // Set an aribrary (though non-identity) pose of the floating base link.
     const auto& base_body = plant_->GetBodyByName("iiwa_link_0");
     const RigidTransform<double> X_WB(
         RollPitchYaw<double>(M_PI / 3, -M_PI / 2, M_PI / 8),
@@ -126,6 +129,7 @@ class KukaIiwaModelTests : public ::testing::Test {
   // Computes the geometric Jacobian Jv_WPi for a set of points Pi moving with
   // the end effector frame E, given their (fixed) position p_WPi in the end
   // effector frame.
+  // This templated helper method allows us to use automatic differentiation.
   // See MultibodyTree::CalcPointsGeometricJacobianExpressedInWorld() for
   // details.
   template <typename T>
@@ -136,7 +140,7 @@ class KukaIiwaModelTests : public ::testing::Test {
       MatrixX<T>* p_WPi, MatrixX<T>* Jq_WPi) const {
     const Body<T>& linkG_on_T =
         plant_on_T.tree().get_variant(*end_effector_link_);
-    plant_on_T.tree().CalcPointsAnalyticJacobianExpressedInWorld(
+    plant_on_T.tree().CalcPointsAnalyticalJacobianExpressedInWorld(
         context_on_T, linkG_on_T.body_frame(), p_EPi, p_WPi, Jq_WPi);
   }
 
@@ -159,7 +163,7 @@ class KukaIiwaModelTests : public ::testing::Test {
   std::unique_ptr<Context<AutoDiffXd>> context_autodiff_;
 };
 
-TEST_F(KukaIiwaModelTests, CalcPointsAnalyticJacobianExpressedInWorld) {
+TEST_F(KukaIiwaModelTests, CalcPointsAnalyticalJacobianExpressedInWorld) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
