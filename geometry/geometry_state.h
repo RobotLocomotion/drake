@@ -107,6 +107,10 @@ class GeometryState {
     return static_cast<int>(geometries_.size());
   }
 
+  /** Reports the number of frames registered to the given `source_id`. Returns
+   zero if the source is not valid.  */
+  int NumFramesForSource(SourceId source_id) const;
+
   /** Reports the total number of geometries directly registered to the given
    frame. This count does _not_ include geometries attached to frames that are
    descendants of this frame.
@@ -333,6 +337,19 @@ class GeometryState {
   GeometryId RegisterAnchoredGeometry(
       SourceId source_id,
       std::unique_ptr<GeometryInstance> geometry);
+
+  /** Removes the given geometry from the the indicated source's geometries. Any
+   geometry that was hung from the indicated geometry will _also_ be removed.
+   @param source_id     The identifier for the owner geometry source.
+   @param geometry_id   The identifier of the geometry to remove (can be dynamic
+                        or anchored).
+   @throws std::logic_error  1. If the `source_id` does _not_ map to a
+                             registered source, or
+                             2. the `geometry_id` does not map to a valid
+                             geometry, or
+                             3. the `geometry_id` maps to a geometry that does
+                             not belong to the indicated source. */
+  void RemoveGeometry(SourceId source_id, GeometryId geometry_id);
 
   /** Reports whether the canonicalized version of the given candidate geometry
    name is considered valid. This tests the requirements described in the
@@ -569,6 +586,29 @@ class GeometryState {
   // frame belongs to no registered source.
   SourceId get_source_id(FrameId frame_id) const;
 
+  // The origin from where an invocation of RemoveGeometryUnchecked was called.
+  // The origin changes the work that is required.
+  // TODO(SeanCurtis-TRI): Add `kFrame` when this can be invoked by removing
+  // a frame.
+  enum class RemoveGeometryOrigin {
+    kGeometry,   // Invoked by RemoveGeometry().
+    kRecurse     // Invoked by recursive call in RemoveGeometryUnchecked.
+  };
+
+  // Performs the work necessary to remove the identified geometry from
+  // the world. The amount of work depends on the context from which this
+  // method is invoked:
+  //
+  //  - RemoveGeometry(): A specific geometry (and its corresponding
+  //    hierarchy) is being removed. In addition to recursively removing all
+  //    child geometries, it must also remove this geometry id from its parent
+  //    frame and, if it exists, its parent geometry.
+  //   - RemoveGeometryUnchecked(): This is the recursive call; it's parent
+  //    is already slated for removal, so parent references can be left alone.
+  // @throws std::logic_error if `geometry_id` is not in `geometries_`.
+  void RemoveGeometryUnchecked(GeometryId geometry_id,
+                               RemoveGeometryOrigin caller);
+
   // Recursively updates the frame and geometry _pose_ information for the tree
   // rooted at the given frame, whose parent's pose in the world frame is given
   // as `X_WP`.
@@ -579,7 +619,7 @@ class GeometryState {
   // Reports true if the given id refers to a _dynamic_ geometry. Assumes the
   // precondition that id refers to a valid geometry in the state.
   bool is_dynamic(GeometryId id) const {
-    return geometries_.count(id) > 0;
+    return geometries_.at(id).is_dynamic();
   }
 
   // Convenience function for accessing geometry whether dynamic or anchored.
@@ -653,7 +693,8 @@ class GeometryState {
   // relative to its parent frame, P: X_PF.
   std::vector<Isometry3<T>> X_PF_;
 
-  // The pose of every _dynamic_ geometry relative to the _world_ frame.
+  // The pose of every _dynamic_ geometry relative to the _world_ frame. This is
+  // indexed by _ProximityIndex_ and _not_ GeometryIndex.
   // After a complete state update from input poses,
   //   X_WG_[i] == X_WFₙ · X_FₙFₙ₋₁ · ... · X_F₁F · G_i.X_FG()
   // Where F is the parent frame of geometry G_i, Fₖ₊₁ is the parent frame of

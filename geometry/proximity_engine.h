@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/drake_optional.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
@@ -92,6 +93,25 @@ class ProximityEngine {
                                      const Isometry3<double>& X_WG,
                                      GeometryIndex index);
 
+  /** Informs the proximity engine that the geometry at `proximity_index` has
+   moved in the GeometryState storage (i.e., it's GeometryIndex has changed).
+   @param proximity_index   The index of the geometry.
+   @param is_dynamic        True if the geometry is dynamic (false if anchored).
+   @param geometry_index    The new _GeometryIndex_ for the geometry.  */
+  void UpdateGeometryIndex(ProximityIndex proximity_index, bool is_dynamic,
+                           GeometryIndex geometry_index);
+
+  /** Removes the given geometry indicated by `index` from the engine. Returns
+   the index of the geometry that was moved into this newly cleared index
+   position to maintain contiguous indices.
+   @param index       The proximity index of the geometry to be removed.
+   @param is_dynamic  True if the geometry is dynamic, false if anchored.
+   @returns The GeometryIndex of the geometry that was moved into this index
+            or nullopt if no geometry was moved.
+   @pre the index is valid value.
+  */
+  optional<GeometryIndex> RemoveGeometry(ProximityIndex index, bool is_dynamic);
+
   /** Reports the _total_ number of geometries in the engine -- dynamic and
    anchored (spanning all sources).  */
   int num_geometries() const;
@@ -103,11 +123,10 @@ class ProximityEngine {
   int num_anchored() const;
 
   /** The distance (signed/unsigned/penetration distance) is generally computed
-   * from an iterative process. The distance_tolerance determines when the
-   * iterative process will terminate.
-   * As a rule of rule of thumb, one can generally assume that the answer will
-   * be within 10 * tol to the true answer.
-   */
+   from an iterative process. The distance_tolerance determines when the
+   iterative process will terminate.
+   As a rule of rule of thumb, one can generally assume that the answer will
+   be within 10 * tol to the true answer.  */
   void set_distance_tolerance(double tol);
 
   double distance_tolerance() const;
@@ -253,6 +272,12 @@ class ProximityEngine {
 
   // Reveals what the next generated clique will be (without changing it).
   int peek_next_clique() const;
+
+  // Reports the pose (X_WG) of the geometry at the given index.
+  const Isometry3<double>& GetX_WG(ProximityIndex index, bool is_dynamic) const;
+
+  // Reports the GeometryIndex for the geometry at the given index.
+  GeometryIndex GetGeometryIndex(ProximityIndex index, bool is_dynamic) const;
 
   ////////////////////////////////////////////////////////////////////////////
 
