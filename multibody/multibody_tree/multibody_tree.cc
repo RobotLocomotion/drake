@@ -1096,17 +1096,17 @@ void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
   auto Jvr_WAq = Jv_WAq.template topRows<3>();     // rotational part.
   auto Jvt_WAq = Jv_WAq.template bottomRows<3>();  // translational part.
   CalcFrameJacobianExpressedInWorld(
-      context, frame_A, p_WQ, &Jvr_WAq, &Jvt_WAq);
+      context, frame_A, p_WQ, false /* from v */, &Jvr_WAq, &Jvt_WAq);
 
   MatrixX<T> Jv_WBq(6, num_velocities());
-  auto Hw_WBq = Jv_WBq.template topRows<3>();
-  auto Hv_WBq = Jv_WBq.template bottomRows<3>();
+  auto Jvr_WBq = Jv_WBq.template topRows<3>();     // rotational part.
+  auto Jvt_WBq = Jv_WBq.template bottomRows<3>();  // translational part.
   CalcFrameJacobianExpressedInWorld(
-      context, frame_B, p_WQ, &Hw_WBq, &Hv_WBq);
+      context, frame_B, p_WQ,  false /* from v */, &Jvr_WBq, &Jvt_WBq);
 
   // Geometric Jacobian Jv_ABq_W when E is the world frame W.
-  Jv_ABq_E->template topRows<3>() = Hw_WBq - Jvr_WAq;
-  Jv_ABq_E->template bottomRows<3>() = Hv_WBq - Jvt_WAq;
+  Jv_ABq_E->template topRows<3>() = Jvr_WBq - Jvr_WAq;
+  Jv_ABq_E->template bottomRows<3>() = Jvt_WBq - Jvt_WAq;
 
   // If the expressed-in frame E is not the world frame, we need to perform
   // an additional operation.
