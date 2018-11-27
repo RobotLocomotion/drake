@@ -54,7 +54,8 @@ IiwaKinematicConstraintTest::IiwaKinematicConstraintTest()
 
   diagram_ = builder.Build();
   diagram_context_ = diagram_->CreateDefaultContext();
-  plant_context_ = &diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get());
+  plant_context_ =
+      &diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get());
 }
 
 TwoFreeBodiesConstraintTest::TwoFreeBodiesConstraintTest()
