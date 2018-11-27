@@ -728,16 +728,31 @@ drake_cc_library(
     }),
 )
 
-# If --config snopt is used, this target builds object code that satisfies
-# MathematicalProgramSolverInterface by calling SNOPT. Otherwise, this target
-# builds dummy object code that fails at runtime.
+# If --config snopt (or one of --config snopt_{fortran,f2c}) is used, this
+# target builds object code that satisfies MathematicalProgramSolverInterface
+# by calling SNOPT. Otherwise, this target builds dummy object code that fails
+# at runtime.
 drake_cc_library(
     name = "snopt_solver",
     srcs = select({
+        # For now `--config snopt` ("Use the default SNOPT flavor") is a
+        # synonym for `--config snopt_f2c` ("Use the f2c SNOPT flavor").
+        # In the future, the default will change to be the Fortran flavor.
         "//tools:with_snopt": [
             "snopt_solver_f2c.cc",
             "snopt_solver_common.cc",
         ],
+        # This is always the Fortran flavor.
+        "//tools:with_snopt_fortran": [
+            "snopt_solver.cc",
+            "snopt_solver_common.cc",
+        ],
+        # This is always the f2c flavor.
+        "//tools:with_snopt_f2c": [
+            "snopt_solver_f2c.cc",
+            "snopt_solver_common.cc",
+        ],
+        # This is when SNOPT is disabled / unavailable.
         "//conditions:default": [
             "no_snopt.cc",
             "snopt_solver_common.cc",
@@ -756,11 +771,25 @@ drake_cc_library(
     # snopt_wrapper.cc could still have full `-pedantic` checks enabled.)
     copts = ["-fpermissive"],
     deps = select({
+        # This is Drake's default flavor; currently f2c.
         "//tools:with_snopt": [
             ":mathematical_program_api",
             "//math:autodiff",
             "@snopt//:snopt_c",
         ],
+        # This is always the Fortran flavor.
+        "//tools:with_snopt_fortran": [
+            ":mathematical_program_api",
+            "//math:autodiff",
+            "@snopt//:snopt_cwrap",
+        ],
+        # This is always the f2c flavor.
+        "//tools:with_snopt_f2c": [
+            ":mathematical_program_api",
+            "//math:autodiff",
+            "@snopt//:snopt_c",
+        ],
+        # This is when SNOPT is disabled / unavailable.
         "//conditions:default": [
             ":mathematical_program_api",
         ],
@@ -1531,7 +1560,8 @@ add_lint_tests(cpplint_extra_srcs = [
     "qp.cc",
     "scs_solver.cc",
     "scs_solver_common.cc",
-    "snopt_solver_f2c.cc",
+    "snopt_solver.cc",
     "snopt_solver.h",
     "snopt_solver_common.cc",
+    "snopt_solver_f2c.cc",
 ])

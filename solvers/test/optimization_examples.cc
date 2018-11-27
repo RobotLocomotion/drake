@@ -205,8 +205,8 @@ NonConvexQPproblem1::NonConvexQPproblem1(CostForm cost_form,
 
 void NonConvexQPproblem1::CheckSolution() const {
   const auto& x_value = prog_->GetSolution(x_);
-  EXPECT_TRUE(CompareMatrices(x_value, x_expected_, 1E-9,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(x_value, x_expected_, 1E-9, MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*prog_, 1E-5);
 }
 
