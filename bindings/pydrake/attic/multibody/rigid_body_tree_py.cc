@@ -439,9 +439,14 @@ PYBIND11_MODULE(rigid_body_tree, m) {
         .def("doKinematics",
             [](const RigidBodyTree<double>& tree, const VectorX<T>& q,
                 const VectorX<T>& v) { return tree.doKinematics(q, v); },
-            doc.RigidBodyTree.doKinematics.doc_3args);
-    // CreateKinematicsCacheWithType
-    // ComputeMaximumDepthCollisionPoints
+            doc.RigidBodyTree.doKinematics.doc_3args)
+        // CreateKinematicsCacheWithType
+        // CreateKinematicsCacheWithType
+        .def("ComputeMaximumDepthCollisionPoints",
+           &RigidBodyTree<double>::ComputeMaximumDepthCollisionPoints<T>,
+           py::arg("cache"),
+           py::arg("use_margins") = true,
+           py::arg("throw_i f_missing_gradient") = true);
     // Type (b) methods:
     tree_cls
         .def("transformPoints",
