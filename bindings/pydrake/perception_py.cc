@@ -25,9 +25,11 @@ void init_pc_flags(py::module m) {
   {
     using Class = BaseField;
     constexpr auto& cls_doc = doc.BaseField;
-    py::enum_<Class>(m, "BaseField", cls_doc.doc)
+    py::enum_<Class>(m, "BaseField", py::arithmetic(), cls_doc.doc)
         .value("kNone", Class::kNone, cls_doc.kNone.doc)
-        .value("kXYZs", Class::kXYZs, cls_doc.kXYZs.doc);
+        .value("kXYZs", Class::kXYZs, cls_doc.kXYZs.doc)
+        .value("kNormals", Class::kNormals, cls_doc.kNormals.doc)
+        .value("kRGBs", Class::kRGBs, cls_doc.kRGBs.doc);
   }
 
   {
@@ -39,8 +41,8 @@ void init_pc_flags(py::module m) {
         .def("base_fields", &Class::base_fields, cls_doc.base_fields.doc)
         .def("has_base_fields", &Class::has_base_fields,
             cls_doc.has_base_fields.doc)
-        // TODO(eric.cousineau): Bind bitwise operator overloads if they're
-        // useful.
+        .def(py::self | py::self)
+        .def(py::self & py::self)
         .def(py::self == py::self)
         .def(py::self != py::self);
   }
@@ -62,6 +64,7 @@ void init_perception(py::module m) {
     constexpr auto& cls_doc = doc.PointCloud;
     py::class_<Class> cls(m, "PointCloud", cls_doc.doc);
     cls.attr("T") = GetPyParam<Class::T>()[0];
+    cls.attr("C") = GetPyParam<Class::C>()[0];
     cls.attr("D") = GetPyParam<Class::D>()[0];
     // N.B. Workaround linking error for `constexpr` bits.
     cls.attr("kDefaultValue") = Class::T{Class::kDefaultValue};
@@ -79,6 +82,7 @@ void init_perception(py::module m) {
         .def("resize",
             [](PointCloud* self, int new_size) { self->resize(new_size); },
             py::arg("new_size"), cls_doc.resize.doc)
+        // XYZs
         .def("has_xyzs", &Class::has_xyzs, cls_doc.has_xyzs.doc)
         .def("xyzs", &Class::xyzs, py_reference_internal, cls_doc.xyzs.doc)
         .def("mutable_xyzs", &Class::mutable_xyzs, py_reference_internal,
@@ -86,6 +90,24 @@ void init_perception(py::module m) {
         .def("xyz", &Class::xyz, py::arg("i"), cls_doc.xyz.doc)
         .def("mutable_xyz", &Class::mutable_xyz, py::arg("i"),
             py_reference_internal, cls_doc.mutable_xyz.doc)
+        // Normals
+        .def("has_normals", &Class::has_normals, cls_doc.has_normals.doc)
+        .def("normals", &Class::normals, py_reference_internal,
+            cls_doc.normals.doc)
+        .def("mutable_normals", &Class::mutable_normals, py_reference_internal,
+            cls_doc.mutable_normals.doc)
+        .def("normal", &Class::normal, py::arg("i"), cls_doc.normal.doc)
+        .def("mutable_normal", &Class::mutable_normal, py::arg("i"),
+            py_reference_internal, cls_doc.mutable_normal.doc)
+        // RGBs
+        .def("has_rgbs", &Class::has_rgbs, cls_doc.has_rgbs.doc)
+        .def("rgbs", &Class::rgbs, py_reference_internal, cls_doc.rgbs.doc)
+        .def("mutable_rgbs", &Class::mutable_rgbs, py_reference_internal,
+            cls_doc.mutable_rgbs.doc)
+        .def("rgb", &Class::rgb, py::arg("i"), cls_doc.rgb.doc)
+        .def("mutable_rgb", &Class::mutable_rgb, py::arg("i"),
+            py_reference_internal, cls_doc.mutable_rgb.doc)
+        // Mutators.
         .def("SetFrom",
             [](PointCloud* self, const PointCloud& other) {
               self->SetFrom(other);

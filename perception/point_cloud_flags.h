@@ -22,6 +22,10 @@ enum BaseField : int {
   kInherit = 1 << 0,
   /// XYZ point in Cartesian space.
   kXYZs = 1 << 1,
+  /// Normals.
+  kNormals = 1 << 2,
+  /// RGB colors.
+  kRGBs = 1 << 3,
 };
 
 /// Describes an descriptor field with a name and the descriptor's size.
@@ -84,7 +88,7 @@ class Fields {
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
   Fields(BaseFieldT base_fields)
       : base_fields_(base_fields) {
-    if (base_fields < 0 || base_fields >= (kXYZs << 1))
+    if (base_fields < 0 || base_fields >= (kRGBs << 1))
       throw std::runtime_error("Invalid BaseField specified.");
   }
 
