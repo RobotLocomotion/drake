@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/solvers/constraint.h"
 
 namespace drake {
@@ -44,14 +44,14 @@ class GazeTargetConstraint : public solvers::Constraint {
   // @param context The Context that has been allocated for this @p tree. We
   // will update the context when evaluating the constraint. @p context should
   // be alive during the lifetime of this constraint.
-  GazeTargetConstraint(const MultibodyTree<AutoDiffXd>& tree,
-                       const FrameIndex& frameA_idx,
+  GazeTargetConstraint(const multibody_plant::MultibodyPlant<double>& plant,
+                       const Frame<double>& frameA,
                        const Eigen::Ref<const Eigen::Vector3d>& p_AS,
                        const Eigen::Ref<const Eigen::Vector3d>& n_A,
-                       const FrameIndex& frameB_idx,
+                       const Frame<double>& frameB,
                        const Eigen::Ref<const Eigen::Vector3d>& p_BT,
                        double cone_half_angle,
-                       MultibodyTreeContext<AutoDiffXd>* context);
+                       systems::Context<double>* context);
 
   ~GazeTargetConstraint() override{};
 
@@ -67,15 +67,15 @@ class GazeTargetConstraint : public solvers::Constraint {
     throw std::logic_error(
         "GazeTargetConstraint::DoEval() does not work for symbolic variables.");
   }
-  const MultibodyTree<AutoDiffXd>& tree_;
-  const Frame<AutoDiffXd>& frameA_;
+  const multibody_plant::MultibodyPlant<double>& plant_;
+  const Frame<double>& frameA_;
   const Eigen::Vector3d p_AS_;
   const Eigen::Vector3d n_A_;
-  const Frame<AutoDiffXd>& frameB_;
-  const Vector3<AutoDiffXd> p_BT_;
+  const Frame<double>& frameB_;
+  const Eigen::Vector3d p_BT_;
   const double cone_half_angle_;
   const double cos_cone_half_angle_;
-  MultibodyTreeContext<AutoDiffXd>* const context_;
+  systems::Context<double>* const context_;
 };
 }  // namespace internal
 }  // namespace multibody
