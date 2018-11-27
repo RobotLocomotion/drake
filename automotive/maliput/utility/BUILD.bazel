@@ -19,6 +19,7 @@ drake_cc_package_library(
     name = "utility",
     deps = [
         ":everything",
+        ":meshes",
     ],
 )
 
@@ -36,8 +37,24 @@ drake_cc_library(
     ],
     visibility = ["//visibility:private"],
     deps = [
+        ":meshes",
         "//automotive/maliput/api",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "meshes",
+    srcs = [
+        "mesh_simplification.cc",
+    ],
+    hdrs = [
+        "mesh.h",
+        "mesh_simplification.h",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//automotive/maliput/api",
     ],
 )
 
@@ -122,6 +139,13 @@ drake_py_unittest(
     data = [
         ":yaml_to_obj",
         "//automotive/maliput/multilane:yamls",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mesh_simplification_test",
+    deps = [
+        ":meshes",
     ],
 )
 
