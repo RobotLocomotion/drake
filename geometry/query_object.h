@@ -124,9 +124,31 @@ class QueryObject {
    @anchor signed_distance_query
    @name                   Signed Distance Queries
 
-   These queries provide the signed distance between two objects in the
-   scene, or they provide the signed distance from a query point to each
-   object in the scene.
+   These queries provide the signed distance φₛ(t) where each of s (source) and
+   t (target) could be either a geometric object or a query point, both of
+   which could be treated mathematically as point sets. A geometric object is
+   an uncountable set of points in the volume bounded by its boundary, and a
+   query point is a singleton point set.
+
+   Mathematically we can define a signed distance φₛ(t) using Euclidean distance
+   dist(.,.) between two points, and the notion of being outside and inside of
+   a geometric object g bounded by its boundary ∂g. Here we define the boundary
+   of a query point as the point itself.
+   φₛ(t) = min {dist(p,q) : p ∈ s, q ∈ t }  if s ⋂ t = ∅       (non-overlapping)
+   φₛ(t) = 0  if s ⋂ t = ∂s ⋂ ∂t ≠ ∅                  (touching at the boundary)
+   φₛ(t) = min {-dist(p,q) : p ∈ ∂s, q ∈ ∂t }  otherwise           (overlapping)
+
+   Details and definitions of available signed distance functions might be
+   slightly different from the above example.
+
+   These queries also provide a "witness" of the signed distance, which is
+   a pair of points nₛ and nₜ in s and t respectively that yields the signed
+   distance. In general, there might be many witnesses of the same signed
+   distance value.
+
+   @note The signed distance function φₛ(t) is a continuous function with
+   respect to the pose of the geometric objects or the position of the query
+   point. Its partial derivatives are continuous almost everywhere.
   */
   //@{
 
@@ -160,9 +182,6 @@ class QueryObject {
    This method is affected by collision filtering; geometry pairs that
    have been filtered will not produce signed distance query results.
 
-   @note The signed distance function is a continuous function with respect to
-   the pose of the objects.
-
    Notice that this is an O(N²) operation, where N
    is the number of geometries remaining in the world after applying collision
    filter. We report the distance between dynamic objects, and between dynamic
@@ -177,15 +196,11 @@ class QueryObject {
   ComputeSignedDistancePairwiseClosestPoints() const;
 
   /**
-   Compute signed distances and gradients from a query point to each object in
-   the scene.
+   Computes the signed distances and gradients from a query point to each
+   object in the scene.
 
-   These queries provide φ(p), the signed distance from the position p of a
+   This query provides φ(p), the signed distance from the position p of a
    query point to each object in the scene.
-
-   If the position p is outside the object, the signed distance is positive.
-   If the position p is inside the object, the signed distance is negative.
-   If the position p is on its boundary, the signed distance is zero.
 
    Optionally you can specify an influence distance that will filter out any
    object beyond the influence distance.  By default, we report distances
@@ -204,15 +219,14 @@ class QueryObject {
 
    grad φ(p) = (N - p)/|N - p|
 
-   @note For a sphere, its signed distance function does not have a
-   well-defined gradient vector at its center. In that case, we will assign
-   an arbitrary vector (1,0,0) as its gradient vector.
+   @note For a sphere, the signed distance function φ(p) does not have a
+   well-defined gradient vector at the center of the sphere. In this case, we
+   will assign an arbitrary vector (1,0,0) as its gradient vector.
 
    @note The signed distance function is a continuous function with respect to
-   the position of the query point; however, its gradient vector field may
-   not be continuous. Specifically at a position on the medial axis, the
-   signed distance function is continuous but its gradient vector field is
-   not continuous.
+   the position of the query point, but its gradient vector field may
+   not be continuous. Specifically at a position on the medial axis, its
+   gradient vector field is not continuous.
 
    @note For a convex object, the signed distance function is smooth (having
    continuous first-order partial derivatives) outside the object.
@@ -229,11 +243,11 @@ class QueryObject {
                               the signed distance from the query point, and
                               the gradient vector of the distance function with
                               respect to the query point.
-                              See SignedDistanceFieldValue for details.
    */
   std::vector<SignedDistanceFieldValue<double>>
-  ComputePointSignedDistances(const Vector3<double>& p_WQ,
-      const double influence_distance = std::numeric_limits<double>::infinity())
+  ComputeSignedDistanceToPoint(const Vector3<double> &p_WQ,
+                               const double influence_distance
+                                 = std::numeric_limits<double>::infinity())
       const;
   //@}
 

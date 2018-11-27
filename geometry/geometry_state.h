@@ -501,20 +501,13 @@ class GeometryState {
         geometry_index_to_id_map_);
   }
 
-  /**
-   Compute signed distances and gradient vectors from a query point to each
-   object in the scene.  Called by QueryObject::ComputePointSignedDistances.
-   @param[in] p_WQ            Position of a query point Q in world frame W.
-   @param[in] influence_distance  Ignore any object beyond this distance.
-   @retval signed_distances   A vector populated with per-object signed
-                              distance and gradient vector.
-                              See SignedDistanceFieldValue for details.
+  /** Performs work in support of QueryObject::ComputeSignedDistanceToPoint().
    */
   std::vector<SignedDistanceFieldValue<double>>
-  ComputePointSignedDistances(
-      const Vector3<double>& p_WQ,
+  ComputeSignedDistanceToPoint(
+      const Vector3<double> &p_WQ,
       const double influence_distance) const {
-    return geometry_engine_->ComputePointSignedDistances(
+    return geometry_engine_->ComputeSignedDistanceToPoint(
         p_WQ, geometry_index_to_id_map_, influence_distance);
   }
   //@}

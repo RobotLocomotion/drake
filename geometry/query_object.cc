@@ -42,14 +42,14 @@ QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints() const {
 
 template <typename T>
 std::vector<SignedDistanceFieldValue<double>>
-QueryObject<T>::ComputePointSignedDistances(
+QueryObject<T>::ComputeSignedDistanceToPoint(
     const Vector3<double>& p_WQ,
     const double influence_distance) const {
   ThrowIfDefault();
 
   scene_graph_->FullPoseUpdate(*context_);
   const GeometryState<T>& state = context_->get_geometry_state();
-  return state.ComputePointSignedDistances(p_WQ, influence_distance);
+  return state.ComputeSignedDistanceToPoint(p_WQ, influence_distance);
 }
 
 template <typename T>
