@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/constraint.h"
 
 namespace drake {
@@ -40,13 +40,13 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
   // @param context The Context that has been allocated for this @p tree. We
   // will update the context when evaluating the constraint. @p context should
   // be alive during the lifetime of this constraint.
-  AngleBetweenVectorsConstraint(const MultibodyTree<AutoDiffXd>& tree,
-                                FrameIndex frameA_idx,
-                                const Eigen::Ref<const Eigen::Vector3d>& na_A,
-                                FrameIndex frameB_idx,
-                                const Eigen::Ref<const Eigen::Vector3d>& nb_B,
-                                double angle_lower, double angle_upper,
-                                MultibodyTreeContext<AutoDiffXd>* context);
+  AngleBetweenVectorsConstraint(
+      const multibody_plant::MultibodyPlant<double>& plant,
+      const Frame<double>& frameA,
+      const Eigen::Ref<const Eigen::Vector3d>& na_A,
+      const Frame<double>& frameB,
+      const Eigen::Ref<const Eigen::Vector3d>& nb_B, double angle_lower,
+      double angle_upper, systems::Context<double>* context);
 
   ~AngleBetweenVectorsConstraint() override {}
 
@@ -63,12 +63,12 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
         "AngleBetweenVectorsConstraint::DoEval() does not work for symbolic "
         "variables.");
   }
-  const MultibodyTree<AutoDiffXd>& tree_;
-  const Frame<AutoDiffXd>& frameA_;
+  const multibody_plant::MultibodyPlant<double>& plant_;
+  const Frame<double>& frameA_;
   const Eigen::Vector3d na_unit_A_;
-  const Frame<AutoDiffXd>& frameB_;
+  const Frame<double>& frameB_;
   const Eigen::Vector3d nb_unit_B_;
-  MultibodyTreeContext<AutoDiffXd>* context_;
+  systems::Context<double>* const context_;
 };
 }  // namespace internal
 }  // namespace multibody

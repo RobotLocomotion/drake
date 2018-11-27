@@ -77,8 +77,8 @@ InverseKinematics::AddAngleBetweenVectorsConstraint(
     const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& nb_B,
     double angle_lower, double angle_upper) {
   auto constraint = std::make_shared<internal::AngleBetweenVectorsConstraint>(
-      system_.tree(), frameA.index(), na_A, frameB.index(), nb_B, angle_lower,
-      angle_upper, get_mutable_context_autodiff());
+      plant_, frameA, na_A, frameB, nb_B, angle_lower, angle_upper,
+      get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
 }
 }  // namespace multibody
