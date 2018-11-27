@@ -7,7 +7,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/multibody_tree_system.h"
-#include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/multibody_tree/test/mobilizer_tester.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -26,49 +26,16 @@ using systems::Context;
 constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
 // Fixture to setup a simple MBT model containing a revolute mobilizer.
-class RevoluteMobilizerTest : public ::testing::Test {
+class RevoluteMobilizerTest : public MobilizerTester {
  public:
-  // Creates a simple model consisting of a single body with a revolute
-  // mobilizer connecting it to the world, with the sole purpose of verifying
-  // the RevoluteMobilizer methods.
   void SetUp() override {
-    // Spatial inertia for adding a body. The actual value is not important for
-    // these tests since they are all kinematic.
-    const SpatialInertia<double> M_B;
-
-    // Create an empty model.
-    auto model = std::make_unique<MultibodyTree<double>>();
-
-    // Add a body so we can add a mobilizer to it.
-    body_ = &model->AddBody<RigidBody>(M_B);
-
-    // Add a revolute mobilizer between the world and the body:
-    mobilizer_ = &model->AddMobilizer<RevoluteMobilizer>(
-        model->world_body().body_frame(), body_->body_frame(), axis_F_);
-
-    // We are done adding modeling elements. Transfer tree to system and get
-    // a Context.
-    system_ = std::make_unique<MultibodyTreeSystem<double>>(std::move(model));
-    context_ = system_->CreateDefaultContext();
-
-    // Performance critical queries take a MultibodyTreeContext to avoid dynamic
-    // casting.
-    mbt_context_ = dynamic_cast<MultibodyTreeContext<double>*>(context_.get());
-    ASSERT_NE(mbt_context_, nullptr);
+    mobilizer_ = &AddMobilizerAndFinalize(
+        std::make_unique<RevoluteMobilizer<double>>(
+            tree().world_body().body_frame(), body_->body_frame(), axis_F_));
   }
 
-  const MultibodyTree<double>& tree() const { return system_->tree(); }
-
  protected:
-  std::unique_ptr<MultibodyTreeSystem<double>> system_;
-  std::unique_ptr<Context<double>> context_;
-
-  const RigidBody<double>* body_{nullptr};
   const RevoluteMobilizer<double>* mobilizer_{nullptr};
-  MultibodyTreeContext<double>* mbt_context_{nullptr};
-  // Revolute mobilizer axis, expressed in the inboard frame F.
-  // It's intentionally left non-normalized to verify the mobilizer properly
-  // normalizes it at construction.
   const Vector3d axis_F_{1.0, 2.0, 3.0};
 };
 
@@ -83,13 +50,13 @@ TEST_F(RevoluteMobilizerTest, AxisIsNormalizedAtConstruction) {
 TEST_F(RevoluteMobilizerTest, StateAccess) {
   const double some_value1 = 1.5;
   const double some_value2 = std::sqrt(2);
-  // Verify we can set a prismatic mobilizer position given the model's context.
+  // Verify we can set a revolute mobilizer position given the model's context.
   mobilizer_->set_angle(context_.get(), some_value1);
   EXPECT_EQ(mobilizer_->get_angle(*context_), some_value1);
   mobilizer_->set_angle(context_.get(), some_value2);
   EXPECT_EQ(mobilizer_->get_angle(*context_), some_value2);
 
-  // Verify we can set a prismatic mobilizer position rate given the model's
+  // Verify we can set a revolute mobilizer position rate given the model's
   // context.
   mobilizer_->set_angular_rate(context_.get(), some_value1);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), some_value1);
@@ -192,12 +159,12 @@ TEST_F(RevoluteMobilizerTest, KinematicMapping) {
   // Compute N.
   MatrixX<double> N(1, 1);
   mobilizer_->CalcNMatrix(*mbt_context_, &N);
-  EXPECT_NEAR(N(0, 0), 1.0, kTolerance);
+  EXPECT_EQ(N(0, 0), 1.0);
 
   // Compute Nplus.
   MatrixX<double> Nplus(1, 1);
   mobilizer_->CalcNplusMatrix(*mbt_context_, &Nplus);
-  EXPECT_NEAR(Nplus(0, 0), 1.0, kTolerance);
+  EXPECT_EQ(Nplus(0, 0), 1.0);
 }
 
 }  // namespace

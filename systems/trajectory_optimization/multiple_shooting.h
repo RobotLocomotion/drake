@@ -106,7 +106,8 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// index @p index.
   Eigen::VectorBlock<const solvers::VectorXDecisionVariable> input(
       int index) const {
-    DRAKE_DEMAND(index >= 0 && index < N_);
+    DRAKE_DEMAND(index >= 0);
+    DRAKE_DEMAND(index < N_);
     return u_vars_.segment(index * num_inputs_, num_inputs_);
   }
 

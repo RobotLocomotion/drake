@@ -14,17 +14,17 @@ PYBIND11_MODULE(parsers, m) {
   m.doc() = "Tools for loading robots from various files";
 
   py::class_<PackageMap>(m, "PackageMap", doc.PackageMap.doc)
-      .def(py::init<>(), doc.PackageMap.ctor.doc)
+      .def(py::init<>(), doc.PackageMap.ctor.doc_0args)
       .def("Add", &PackageMap::Add, doc.PackageMap.Add.doc)
       .def("Contains", &PackageMap::Contains, doc.PackageMap.Contains.doc)
       .def("size", &PackageMap::size, doc.PackageMap.size.doc)
       .def("GetPath", &PackageMap::GetPath, doc.PackageMap.GetPath.doc)
       .def("PopulateFromFolder", &PackageMap::PopulateFromFolder,
-           doc.PackageMap.PopulateFromFolder.doc)
+          doc.PackageMap.PopulateFromFolder.doc)
       .def("PopulateFromEnvironment", &PackageMap::PopulateFromEnvironment,
-           doc.PackageMap.PopulateFromEnvironment.doc)
+          doc.PackageMap.PopulateFromEnvironment.doc)
       .def("PopulateUpstreamToDrake", &PackageMap::PopulateUpstreamToDrake,
-           doc.PackageMap.PopulateUpstreamToDrake.doc);
+          doc.PackageMap.PopulateUpstreamToDrake.doc);
 }
 
 }  // namespace pydrake

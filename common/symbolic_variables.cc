@@ -29,8 +29,8 @@ namespace symbolic {
 
 Variables::Variables(std::initializer_list<Variable> init) : vars_(init) {}
 
-Variables::Variables(const Eigen::Ref<const VectorX<Variable>>& init)
-    : vars_{init.data(), init.data() + init.size()} {}
+Variables::Variables(const Eigen::Ref<const VectorX<Variable>>& vec)
+    : vars_{vec.data(), vec.data() + vec.size()} {}
 
 string Variables::to_string() const {
   ostringstream oss;

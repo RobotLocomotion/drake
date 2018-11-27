@@ -157,7 +157,8 @@ class LeafSystem : public System<T> {
     }
 
     // The numeric parameters must all be valid BasicVectors.
-    const int num_numeric_parameters = context->num_numeric_parameters();
+    const int num_numeric_parameters =
+        context->num_numeric_parameter_groups();
     for (int i = 0; i < num_numeric_parameters; ++i) {
       const BasicVector<T>& group = context->get_numeric_parameter(i);
       detail::CheckBasicVectorInvariants(&group);
@@ -206,7 +207,7 @@ class LeafSystem : public System<T> {
   void SetDefaultParameters(const Context<T>& context,
                             Parameters<T>* parameters) const override {
     unused(context);
-    for (int i = 0; i < parameters->num_numeric_parameters(); i++) {
+    for (int i = 0; i < parameters->num_numeric_parameter_groups(); i++) {
       BasicVector<T>& p = parameters->get_mutable_numeric_parameter(i);
       auto model_vector = model_numeric_parameters_.CloneVectorModel<T>(i);
       if (model_vector != nullptr) {
@@ -351,7 +352,7 @@ class LeafSystem : public System<T> {
     DRAKE_DEMAND(dynamic_cast<const WitnessTriggeredEventData<T>*>(
         event->get_event_data()));
     DRAKE_DEMAND(events);
-    event->add_to_composite(events);
+    event->AddToComposite(events);
   }
 
   /// Computes the next update time based on the configured periodic events, for
@@ -395,7 +396,7 @@ class LeafSystem : public System<T> {
     // Write out the events that fire at min_time.
     *time = min_time;
     for (const Event<T>* event : next_events) {
-      event->add_to_composite(events);
+      event->AddToComposite(events);
     }
   }
 
@@ -639,7 +640,7 @@ class LeafSystem : public System<T> {
   void DeclarePeriodicEvent(double period_sec, double offset_sec) {
     static_assert(std::is_base_of<Event<T>, EventType>::value,
                   "EventType must be a subclass of Event<T>.");
-    EventType event(Event<T>::TriggerType::kPeriodic);
+    EventType event(TriggerType::kPeriodic);
     PeriodicEventData periodic_data;
     periodic_data.set_period_sec(period_sec);
     periodic_data.set_offset_sec(offset_sec);
@@ -648,27 +649,32 @@ class LeafSystem : public System<T> {
   }
 
   /// Declares that this System has a simple, fixed-period event specified by
-  /// @p event. A deep copy of @p event will be made and maintained by `this`.
-  /// @p event's trigger type must be Event::TriggerType::kPeriodic or this
-  /// method aborts. The first tick will occur at t = @p offset_sec, and it
+  /// @p event. The first tick will occur at t = @p offset_sec, and it
   /// will recur at every @p period_sec thereafter. Note that the periodic
   /// events returned by system::CalcNextUpdateTime() will happen at a time
   /// strictly after the querying time. E.g. if there is a periodic event with
   /// offset = 0 and period = 5, when calling CalcNextUpdateTime() at t = 0,
   /// the returned event will happen at t = 5 not t = 0.
   ///
-  /// Note that @p event's attribute field is preserved.
+  /// A deep copy of @p event will be made and maintained by `this`. The
+  /// trigger type in the clone will be set to kPeriodic, unless it is already
+  /// set in the source @p event in which case it must be kPeriodic already.
+  /// The @p event's attribute field is preserved.
   ///
   /// @tparam EventType A class derived from Event (e.g., PublishEvent,
   /// DiscreteUpdateEvent, UnrestrictedUpdateEvent, etc.)
   template <typename EventType>
   void DeclarePeriodicEvent(double period_sec, double offset_sec,
-      const EventType& event) {
-    DRAKE_DEMAND(event.get_trigger_type() == Event<T>::TriggerType::kPeriodic);
+                            const EventType& event) {
+    DRAKE_DEMAND(event.get_trigger_type() == TriggerType::kUnknown ||
+                 event.get_trigger_type() == TriggerType::kPeriodic);
     PeriodicEventData periodic_data;
     periodic_data.set_period_sec(period_sec);
     periodic_data.set_offset_sec(offset_sec);
-    periodic_events_.push_back(std::make_pair(periodic_data, event.Clone()));
+    auto event_copy = event.Clone();
+    event_copy->set_trigger_type(TriggerType::kPeriodic);
+    periodic_events_.emplace_back(
+        std::make_pair(periodic_data, std::move(event_copy)));
   }
 
   /// Declares a periodic discrete update event with period = @p period_sec and
@@ -701,21 +707,22 @@ class LeafSystem : public System<T> {
 
   /// Declares a per-step event using @p event, which is deep copied (the
   /// copy is maintained by `this`). @p event's associated trigger type must be
-  /// set to Event::TriggerType::kPerStep. Aborts otherwise.
+  /// unknown or already set to Event::TriggerType::kPerStep. Aborts otherwise.
   template <typename EventType>
   void DeclarePerStepEvent(const EventType& event) {
-    DRAKE_DEMAND(event.get_trigger_type() == Event<T>::TriggerType::kPerStep);
-    event.add_to_composite(&per_step_events_);
+    DRAKE_DEMAND(event.get_trigger_type() == TriggerType::kUnknown ||
+        event.get_trigger_type() == TriggerType::kPerStep);
+    event.AddToComposite(TriggerType::kPerStep, &per_step_events_);
   }
 
   /// Declares an initialization event by deep copying @p event and storing it
-  /// internally. @p event's associated trigger type must be
-  /// Event::TriggerType::kInitialization. Aborts otherwise.
+  /// internally. @p event's associated trigger type must be unknown or already
+  /// set to Event::TriggerType::kInitialization. Aborts otherwise.
   template <typename EventType>
   void DeclareInitializationEvent(const EventType& event) {
-    DRAKE_DEMAND(event.get_trigger_type() ==
-                 Event<T>::TriggerType::kInitialization);
-    event.add_to_composite(&initialization_events_);
+    DRAKE_DEMAND(event.get_trigger_type() == TriggerType::kUnknown ||
+        event.get_trigger_type() == TriggerType::kInitialization);
+    event.AddToComposite(TriggerType::kInitialization, &initialization_events_);
   }
 
   /// Declares that this System should reserve continuous state with
@@ -1322,7 +1329,7 @@ class LeafSystem : public System<T> {
       return (system_ptr->*publish_callback)(context, publish_event);
     };
     PublishEvent<T> publish_event(fn);
-    publish_event.set_trigger_type(Event<T>::TriggerType::kWitness);
+    publish_event.set_trigger_type(TriggerType::kWitness);
     return std::make_unique<WitnessFunction<T>>(
         this, description, direction_type, calc, publish_event.Clone());
   }
@@ -1346,7 +1353,7 @@ class LeafSystem : public System<T> {
       return (system_ptr->*du_callback)(context, du_event, values);
     };
     DiscreteUpdateEvent<T> du_event(fn);
-    du_event.set_trigger_type(Event<T>::TriggerType::kWitness);
+    du_event.set_trigger_type(TriggerType::kWitness);
     return std::make_unique<WitnessFunction<T>>(
         this, description, direction_type, calc, du_event.Clone());
   }
@@ -1370,7 +1377,7 @@ class LeafSystem : public System<T> {
       return (system_ptr->*uu_callback)(context, uu_event, state);
     };
     UnrestrictedUpdateEvent<T> uu_event(fn);
-    uu_event.set_trigger_type(Event<T>::TriggerType::kWitness);
+    uu_event.set_trigger_type(TriggerType::kWitness);
     return std::make_unique<WitnessFunction<T>>(
         this, description, direction_type, calc, uu_event.Clone());
   }

@@ -98,13 +98,13 @@ void PrismaticMobilizer<T>::ProjectSpatialForce(
 template <typename T>
 void PrismaticMobilizer<T>::DoCalcNMatrix(
     const MultibodyTreeContext<T>&, EigenPtr<MatrixX<T>> N) const {
-  N->setIdentity(kNv, kNq);
+  (*N)(0, 0) = 1.0;
 }
 
 template <typename T>
 void PrismaticMobilizer<T>::DoCalcNplusMatrix(
     const MultibodyTreeContext<T>&, EigenPtr<MatrixX<T>> Nplus) const {
-  Nplus->setIdentity(kNv, kNq);
+  (*Nplus)(0, 0) = 1.0;
 }
 
 template <typename T>

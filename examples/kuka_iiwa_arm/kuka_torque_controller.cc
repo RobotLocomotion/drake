@@ -3,8 +3,8 @@
 #include <utility>
 #include <vector>
 
-#include "drake/systems/controllers/inverse_dynamics.h"
 #include "drake/systems/controllers/pid_controller.h"
+#include "drake/systems/controllers/rbt_inverse_dynamics.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/primitives/adder.h"
@@ -21,7 +21,7 @@ using drake::systems::Context;
 using drake::systems::DiagramBuilder;
 using drake::systems::LeafSystem;
 using drake::systems::PassThrough;
-using drake::systems::controllers::InverseDynamics;
+using drake::systems::controllers::rbt::InverseDynamics;
 using drake::systems::controllers::PidController;
 
 template <typename T>

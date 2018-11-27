@@ -41,7 +41,7 @@ class ParametersTest : public ::testing::Test {
 };
 
 TEST_F(ParametersTest, Numeric) {
-  ASSERT_EQ(2, params_->num_numeric_parameters());
+  ASSERT_EQ(2, params_->num_numeric_parameter_groups());
   ASSERT_EQ(2, params_->get_numeric_parameters().num_groups());
   EXPECT_EQ(3.0, params_->get_numeric_parameter(0).GetAtIndex(0));
   EXPECT_EQ(6.0, params_->get_numeric_parameter(0).GetAtIndex(1));

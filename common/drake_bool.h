@@ -94,9 +94,3 @@ boolean<typename Derived::Scalar> none_of(
   return none(m.unaryExpr(pred));
 }
 }  // namespace drake
-
-// Include our older functions for backwards compatibility.
-// TODO(jwnimmer-tri) Delete drake_bool_deprecated.h on or about 2018-12-01.
-#define DRAKE_BOOL_DEPRECATED_OK_TO_INCLUDE 1
-#include "drake/common/drake_bool_deprecated.h"
-#undef DRAKE_BOOL_DEPRECATED_OK_TO_INCLUDE

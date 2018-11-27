@@ -16,6 +16,7 @@ drake_cc_package_library(
     name = "planner",
     deps = [
         ":constraint_relaxing_ik",
+        ":rbt_differential_inverse_kinematics",
         ":robot_plan_interpolator",
     ],
 )
@@ -25,10 +26,21 @@ drake_cc_library(
     srcs = ["constraint_relaxing_ik.cc"],
     hdrs = ["constraint_relaxing_ik.h"],
     deps = [
+        "//attic/multibody:inverse_kinematics",
+        "//attic/multibody:rigid_body_tree",
         "//attic/multibody/parsers",
         "//common/trajectories:piecewise_polynomial",
-        "//multibody:inverse_kinematics",
-        "//multibody:rigid_body_tree",
+    ],
+)
+
+# N.B. This is unit tested in //manipulation/planner (non-attic).
+drake_cc_library(
+    name = "rbt_differential_inverse_kinematics",
+    srcs = ["rbt_differential_inverse_kinematics.cc"],
+    hdrs = ["rbt_differential_inverse_kinematics.h"],
+    deps = [
+        "//attic/multibody:rigid_body_tree",
+        "//manipulation/planner:differential_inverse_kinematics",
     ],
 )
 
@@ -37,9 +49,9 @@ drake_cc_library(
     srcs = ["robot_plan_interpolator.cc"],
     hdrs = ["robot_plan_interpolator.h"],
     deps = [
+        "//attic/multibody:rigid_body_tree",
         "//attic/multibody/parsers",
         "//common/trajectories:piecewise_polynomial",
-        "//multibody:rigid_body_tree",
         "//systems/framework:leaf_system",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",

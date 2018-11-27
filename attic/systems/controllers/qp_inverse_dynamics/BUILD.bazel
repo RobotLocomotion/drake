@@ -55,8 +55,8 @@ drake_cc_library(
     deps = [
         ":control",
         ":id_controller_config",
+        "//attic/multibody:rigid_body_tree_alias_groups",
         "//common/proto:protobuf",
-        "//multibody:rigid_body_tree_alias_groups",
     ],
 )
 
@@ -69,7 +69,7 @@ drake_cc_library(
         "robot_kinematic_state.h",
     ],
     deps = [
-        "//multibody:rigid_body_tree",
+        "//attic/multibody:rigid_body_tree",
     ],
 )
 
@@ -90,9 +90,9 @@ drake_cc_library(
     ],
     deps = [
         ":robot_kinematic_state",
+        "//attic/multibody:rigid_body_tree",
         "//common:essential",
         "//math:gradient",
-        "//multibody:rigid_body_tree",
         "//solvers:mathematical_program",
     ],
 )
@@ -103,8 +103,8 @@ drake_cc_library(
     hdrs = ["qp_inverse_dynamics_system.h"],
     deps = [
         ":control",
+        "//attic/multibody:rigid_body_tree",
         "//lcmtypes:inverse_dynamics_debug_info",
-        "//multibody:rigid_body_tree",
         "//systems/framework:leaf_system",
     ],
 )
@@ -133,7 +133,7 @@ drake_cc_library(
     hdrs = ["qp_output_translator_system.h"],
     deps = [
         ":control",
-        "//multibody:rigid_body_tree",
+        "//attic/multibody:rigid_body_tree",
         "//systems/framework:leaf_system",
         "@lcmtypes_bot2_core",
     ],
@@ -145,7 +145,7 @@ drake_cc_library(
     hdrs = ["robot_kinematic_state_translator_system.h"],
     deps = [
         ":robot_kinematic_state",
-        "//multibody:rigid_body_tree",
+        "//attic/multibody:rigid_body_tree",
         "//systems/framework:leaf_system",
     ],
 )
@@ -175,10 +175,10 @@ drake_cc_googletest(
     ],
     deps = [
         ":param_parser",
+        "//attic/multibody:rigid_body_tree_alias_groups",
         "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody:rigid_body_tree_alias_groups",
     ],
 )
 

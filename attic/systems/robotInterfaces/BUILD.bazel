@@ -52,6 +52,7 @@ drake_cc_library(
         ":atlas_util",
         ":body_motion_data",
         ":convex_hull",
+        "//attic/multibody:rigid_body_tree",
         "//attic/systems/controllers:polynomial_encode_decode",
         "//attic/systems/controllers:side",
         "//attic/systems/controllers:zmp_util",
@@ -64,7 +65,6 @@ drake_cc_library(
         "//math:expmap",
         "//math:geometric_transform",
         "//math:gradient",
-        "//multibody:rigid_body_tree",
     ],
 )
 
