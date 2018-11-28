@@ -88,6 +88,7 @@ void DefineFrameworkPySemantics(py::module m) {
     using T = decltype(dummy);
     DefineTemplateClassWithDefault<Context<T>>(
         m, "Context", GetPyParam<T>(), doc.Context.doc)
+        .def("__str__", &Context<T>::to_string, doc.Context.to_string.doc)
         .def("get_num_input_ports", &Context<T>::get_num_input_ports,
             doc.ContextBase.get_num_input_ports.doc)
         .def("FixInputPort",

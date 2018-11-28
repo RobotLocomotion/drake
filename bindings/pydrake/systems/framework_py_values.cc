@@ -1,5 +1,7 @@
 #include "drake/bindings/pydrake/systems/framework_py_values.h"
 
+#include <sstream>
+
 #include "pybind11/eigen.h"
 #include "pybind11/eval.h"
 #include "pybind11/pybind11.h"
@@ -32,6 +34,12 @@ void DefineFrameworkPyValues(py::module m) {
     // Value types.
     DefineTemplateClassWithDefault<VectorBase<T>>(
         m, "VectorBase", GetPyParam<T>(), doc.VectorBase.doc)
+        .def("__str__",
+            [](const VectorBase<T>& vec) {
+              std::ostringstream oss;
+              oss << vec;
+              return oss.str();
+            })
         .def("CopyToVector", &VectorBase<T>::CopyToVector,
             doc.VectorBase.CopyToVector.doc)
         .def("SetAtIndex", &VectorBase<T>::SetAtIndex,

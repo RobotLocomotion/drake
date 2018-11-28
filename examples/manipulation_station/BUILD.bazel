@@ -158,6 +158,15 @@ drake_py_binary(
     ],
 )
 
+drake_py_binary(
+    name = "print_station_context",
+    srcs = ["print_station_context.py"],
+    add_test_rule = 1,
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
 install_data()
 
 add_lint_tests()
