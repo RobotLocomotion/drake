@@ -4,7 +4,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -14,8 +14,8 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -31,7 +31,6 @@ using math::RigidTransform;
 using math::RollPitchYaw;
 using math::RotationMatrix;
 using multibody::multibody_plant::MultibodyPlant;
-using multibody::parsing::AddModelFromSdfFile;
 using systems::Context;
 using std::unique_ptr;
 
@@ -44,16 +43,17 @@ class KukaIiwaModelTests : public ::testing::Test {
  public:
   // Creates MultibodyTree for a KUKA Iiwa robot arm.
   void SetUp() override {
-    const char kArmSdfPath[] =
+    const std::string kArmSdfPath = FindResourceOrThrow(
         "drake/manipulation/models/iiwa_description/sdf/"
-        "iiwa14_no_collision.sdf";
+        "iiwa14_no_collision.sdf");
 
     // Create a model of a Kuka arm. Notice we do not weld the robot's base
     // to the world and therefore the model is free floating in space. This
     // makes for a more interesting setup to test the computation of
     // analytical Jacobians.
     plant_ = std::make_unique<MultibodyPlant<double>>();
-    AddModelFromSdfFile(FindResourceOrThrow(kArmSdfPath), plant_.get());
+    parsing::Parser parser(plant_.get());
+    parser.AddModelFromFile(kArmSdfPath);
     // Add a frame H with a fixed pose X_GH in the end effector frame G.
     end_effector_link_ = &plant_->GetBodyByName("iiwa_link_7");
     frame_H_ = &plant_->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
@@ -110,11 +110,11 @@ class KukaIiwaModelTests : public ::testing::Test {
     return q;
   }
 
-  // Computes the geometric Jacobian Jv_WPi for a set of points Pi moving with
-  // the end effector frame E, given their (fixed) position p_WPi in the end
+  // Computes the analytical Jacobian Jq_WPi for a set of points Pi moving with
+  // the end effector frame E, given their (fixed) position p_EPi in the end
   // effector frame.
   // This templated helper method allows us to use automatic differentiation.
-  // See MultibodyTree::CalcPointsGeometricJacobianExpressedInWorld() for
+  // See MultibodyTree::CalcPointsAnalyticalJacobianExpressedInWorld() for
   // details.
   template <typename T>
   void CalcPointsOnEndEffectorAnalyticJacobian(
@@ -159,8 +159,7 @@ TEST_F(KukaIiwaModelTests, CalcPointsAnalyticalJacobianExpressedInWorld) {
 
   SetArbitraryConfiguration();
 
-  // A set of points Pi attached to the end effector, thus we a fixed position
-  // in its frame G.
+  // A set of points Pi fixed in the end effector frame E.
   const int kNumPoints = 2;  // The set stores 2 points.
   MatrixX<double> p_EPi(3, kNumPoints);
   p_EPi.col(0) << 0.1, -0.05, 0.02;
@@ -169,8 +168,6 @@ TEST_F(KukaIiwaModelTests, CalcPointsAnalyticalJacobianExpressedInWorld) {
   MatrixX<double> p_WPi(3, kNumPoints);
   MatrixX<double> Jq_WPi(3 * kNumPoints, plant_->num_positions());
 
-  // Since for the Kuka iiwa arm v = q̇, the analytic Jacobian Jq_WPi equals the
-  // geometric Jacobian Jv_Wpi.
   CalcPointsOnEndEffectorAnalyticJacobian(
       *plant_, *context_, p_EPi, &p_WPi, &Jq_WPi);
 
@@ -210,7 +207,6 @@ TEST_F(KukaIiwaModelTests, CalcPointsAnalyticalJacobianExpressedInWorld) {
 
   // Verify the computed Jacobian Jq_WPi matches the one obtained using
   // automatic differentiation.
-  // In this case analytic and geometric Jacobians are equal since v = q.
   EXPECT_TRUE(CompareMatrices(Jq_WPi, p_WPi_derivs,
                               kTolerance, MatrixCompareType::relative));
 }
