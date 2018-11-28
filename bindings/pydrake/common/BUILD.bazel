@@ -190,6 +190,13 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "drake_variant_pybind",
+    hdrs = ["drake_variant_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+)
+
+drake_cc_library(
     name = "type_safe_index_pybind",
     hdrs = ["type_safe_index_pybind.h"],
     declare_installed_headers = 0,
@@ -352,6 +359,13 @@ drake_pybind_cc_googletest(
         "//common/test_utilities:expect_throws_message",
     ],
     py_deps = [":cpp_template_py"],
+)
+
+drake_pybind_cc_googletest(
+    name = "drake_variant_pybind_test",
+    cc_deps = [
+        ":drake_variant_pybind",
+    ],
 )
 
 drake_pybind_library(

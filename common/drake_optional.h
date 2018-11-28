@@ -1,5 +1,12 @@
 #pragma once
 
+// Due to https://github.com/tcbrindle/cpp17_headers/issues/4, we must always
+// include variant before optional.  Rather than leaving that up to our users,
+// we force the issue here.  Note that this does NOT place stx::variant into
+// the drake namespace, so users still need to include drake_variant.h in order
+// to use variants.
+#include <stx/variant.hpp>
+
 // As of our currently supported platforms (Ubuntu 16.04 Xenial and macOS 10.13
 // High Sierra), the std::experimental::optional implementations for libstdc++
 // and libc++ lack some C++17 features, such as std::optional::has_value() or
