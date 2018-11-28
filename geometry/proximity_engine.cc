@@ -237,9 +237,8 @@ struct DistanceData {
   std::vector<SignedDistancePair<double>>* nearest_pairs{};
 };
 
-// Struct for use in DistanceFromPointCallback(). Contains the distance
-// request and accumulates result in a std::vector of
-// drake::geometry::SignedDistanceToPoint
+// Struct for use in DistanceFromPointCallback(). Contains the distance request
+// and accumulates result in a vector of drake::geometry::SignedDistanceToPoint.
 struct DistanceFromPointCallbackData {
   DistanceFromPointCallbackData(
       fcl::CollisionObjectd* query_in,

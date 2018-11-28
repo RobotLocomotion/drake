@@ -26,7 +26,7 @@ struct SignedDistanceToPoint{
 
   SignedDistanceToPoint() = default;
 
-  /** Constructs SignedDistanceFieldValue struct from calculated results.
+  /** Constructs SignedDistanceToPoint struct from calculated results.
    @param id_G_in     The id of the geometry G to which we measure distance from
                       the query point Q.
    @param p_GN_in     The position of the nearest point N on G's surface from
