@@ -12,6 +12,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/shape_specification.h"
@@ -553,6 +554,7 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
       EXPECT_FALSE(geometry.parent_id());
       EXPECT_EQ(geometry.name(), geometry_names_[i]);
       EXPECT_EQ(geometry.index(), i);
+      EXPECT_TRUE(geometry.proximity_index().is_valid());
       EXPECT_EQ(geometry.child_geometry_ids().size(), 0);
 
       // Note: There are no geometries parented to other geometries. The results
@@ -571,8 +573,7 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
     }
   }
   EXPECT_EQ(static_cast<int>(gs_tester_.get_geometry_world_poses().size()),
-            single_tree_dynamic_geometry_count());
-  // Includes the frames we've added (kFrameCount) plus the world frame.
+            single_tree_total_geometry_count());
   EXPECT_EQ(gs_tester_.get_frame_parent_poses().size(), kFrameCount + 1);
 }
 
@@ -582,10 +583,20 @@ TEST_F(GeometryStateTest, GetNumGeometryTests) {
 
   EXPECT_EQ(single_tree_total_geometry_count(),
             geometry_state_.get_num_geometries());
+  EXPECT_EQ(single_tree_total_geometry_count(),
+            geometry_state_.GetNumGeometriesWithRole(Role::kProximity));
+  EXPECT_EQ(single_tree_total_geometry_count(),
+            geometry_state_.GetNumGeometriesWithRole(Role::kIllustration));
 
   for (int i = 0; i < kFrameCount; ++i) {
     EXPECT_EQ(kGeometryCount,
               geometry_state_.GetNumFrameGeometries(frames_[i]));
+    EXPECT_EQ(kGeometryCount,
+              geometry_state_.GetNumFrameGeometriesWithRole(frames_[i],
+                                                            Role::kProximity));
+    EXPECT_EQ(kGeometryCount,
+              geometry_state_.GetNumFrameGeometriesWithRole(
+                  frames_[i], Role::kIllustration));
   }
 }
 
@@ -942,23 +953,21 @@ TEST_F(GeometryStateTest, RemoveGeometry) {
   GeometryId g_id = geometries_[0];
   FrameId f_id = frames_[0];
   auto proximity_index = gs_tester_.get_geometries().at(g_id).proximity_index();
-  // Confirm that the first geometry belongs to the first frame.
+  // Confirm initial state.
   ASSERT_EQ(geometry_state_.GetFrameId(g_id), f_id);
   EXPECT_EQ(geometry_state_.get_num_geometries(),
             single_tree_total_geometry_count());
   EXPECT_NE(
       gs_tester_.get_geometries().at(geometries_.back()).proximity_index(),
       proximity_index);
-  // get_geometry_world_poses (aka X_WG_) has one pose for each _dynamic_
-  // geometry.
-  EXPECT_EQ(gs_tester_.get_geometry_world_poses().size(),
+  EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(),
             single_tree_dynamic_geometry_count());
 
   geometry_state_.RemoveGeometry(s_id, g_id);
 
   EXPECT_EQ(geometry_state_.get_num_geometries(),
             single_tree_total_geometry_count() - 1);
-  EXPECT_EQ(gs_tester_.get_geometry_world_poses().size(),
+  EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(),
             single_tree_dynamic_geometry_count() - 1);
 
   EXPECT_FALSE(gs_tester_.get_frames().at(f_id).has_child(g_id));
@@ -1009,6 +1018,8 @@ TEST_F(GeometryStateTest, RemoveGeometryTree) {
                                     unique_ptr<Shape>(new Sphere(1)), "leaf"));
   EXPECT_EQ(geometry_state_.get_num_geometries(),
             single_tree_total_geometry_count() + 1);
+  EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(),
+            single_tree_dynamic_geometry_count() + 1);
   EXPECT_EQ(geometry_state_.GetFrameId(g_id), f_id);
   EXPECT_EQ(gs_tester_.get_geometries().at(g_id).proximity_index(),
             geometries_.size());
@@ -1016,7 +1027,7 @@ TEST_F(GeometryStateTest, RemoveGeometryTree) {
   geometry_state_.RemoveGeometry(s_id, root_id);
   EXPECT_EQ(geometry_state_.get_num_geometries(),
             single_tree_total_geometry_count() - 1);
-  EXPECT_EQ(gs_tester_.get_geometry_world_poses().size(),
+  EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(),
             single_tree_dynamic_geometry_count() - 1);
 
   const auto& frame = gs_tester_.get_frames().at(f_id);
@@ -1071,7 +1082,7 @@ TEST_F(GeometryStateTest, RemoveChildLeaf) {
 
   EXPECT_EQ(geometry_state_.get_num_geometries(),
             single_tree_total_geometry_count());
-  EXPECT_EQ(gs_tester_.get_geometry_world_poses().size(), geometries_.size());
+  EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(), geometries_.size());
   EXPECT_EQ(geometry_state_.GetFrameId(parent_id), frame_id);
 
   EXPECT_FALSE(gs_tester_.get_frames().at(frame_id).has_child(g_id));
@@ -1558,38 +1569,46 @@ TEST_F(GeometryStateTest, GetGeometryIdFromName) {
       GeometryId expected_id = geometries_[g_index];
       // Look up with the canonical name.
       EXPECT_EQ(geometry_state_.GetGeometryFromName(frames_[f],
+                                                    Role::kProximity,
                                                     geometry_names_[g_index]),
                 expected_id);
       // Look up with non-canonical name.
       EXPECT_EQ(geometry_state_.GetGeometryFromName(
-                    frames_[f], " " + geometry_names_[g_index]),
+                    frames_[f], Role::kProximity,
+                    " " + geometry_names_[g_index]),
                 expected_id);
     }
   }
 
   // Grab anchored.
-  EXPECT_EQ(geometry_state_.GetGeometryFromName(
-      InternalFrame::world_frame_id(),
-      anchored_name_),
-            anchored_geometry_);
+  EXPECT_EQ(
+      geometry_state_.GetGeometryFromName(InternalFrame::world_frame_id(),
+                                          Role::kProximity, anchored_name_),
+      anchored_geometry_);
+
   // Failure cases.
 
   // Bad frame id.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.GetGeometryFromName(FrameId::get_new_id(), "irrelevant"),
+      geometry_state_.GetGeometryFromName(FrameId::get_new_id(),
+                                          Role::kUnassigned, "irrelevant"),
       std::logic_error, "Referenced frame \\d+ has not been registered.");
 
   // Bad *anchored* geometry name.
   const FrameId world_id = gs_tester_.get_world_frame();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.GetGeometryFromName(world_id, "bad"), std::logic_error,
-      "The frame 'world' .\\d+. has no geometry with the canonical name .+");
+      geometry_state_.GetGeometryFromName(world_id, Role::kUnassigned, "bad"),
+      std::logic_error,
+      "The frame 'world' .\\d+. has no geometry with the role 'unassigned' "
+      "and the canonical name '.+'");
 
   // Bad *dynamic* geometry name.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.GetGeometryFromName(frames_[0], "bad_name"),
+      geometry_state_.GetGeometryFromName(frames_[0], Role::kUnassigned,
+                                          "bad_name"),
       std::logic_error,
-      "The frame '.+?' .\\d+. has no geometry with the canonical name .+");
+      "The frame '.+?' .\\d+. has no geometry with the role 'unassigned' and "
+      "the canonical name '.+'");
 }
 
 // Confirms that the name *stored* with the geometry is the trimmed version of
@@ -1670,6 +1689,55 @@ TEST_F(GeometryStateTest, GeometryNameValidation) {
   for (const std::string& s : {"\n", " \n\t", " \f", "\v", "\r", "\ntest"}) {
     EXPECT_TRUE(geometry_state_.IsValidGeometryName(frames_[0], s));
   }
+}
+
+// Tests the conditions in which `AssignRole()` throws an exception.
+TEST_F(GeometryStateTest, RoleAssignExceptions) {
+  SetUpSingleSourceTree();
+
+  // NOTE: On the basis that all AssignRole variants ultimately call the same
+  // underlying method, this only exercises one variant to represent all. If
+  // they no longer invoke the same underlying method, this test should change
+  // accordingly.
+
+  // Invalid source.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.AssignRole(SourceId::get_new_id(), geometries_[0],
+                                 ProximityProperties()),
+      std::logic_error,
+      "Referenced geometry source \\d+ is not registered.");
+
+  // Invalid geometry id.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.AssignRole(source_id_, GeometryId::get_new_id(),
+                                 ProximityProperties()),
+      std::logic_error,
+      "Referenced geometry \\d+ has not been registered.");
+
+  // Geometry not owned by source.
+  SourceId other_source = geometry_state_.RegisterNewSource("alt_source");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.AssignRole(other_source, geometries_[0],
+                                 ProximityProperties()),
+      std::logic_error,
+      "Given geometry id \\d+ does not belong to the given source .*");
+
+  // Redefinition of role - test each role individually to make sure it has
+  // the right error message.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.AssignRole(source_id_, geometries_[0],
+                                 ProximityProperties()),
+      std::logic_error,
+      "Geometry already has proximity role assigned");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.AssignRole(source_id_, geometries_[0],
+                                 IllustrationProperties()),
+      std::logic_error,
+      "Geometry already has illustration role assigned");
+
+  // TODO(SeanCurtis-TRI): When role assignment is delayed, add a geometry with
+  // the name of an *exisiting* geometry and show it breaks when the duplicate
+  // role is assigned.
 }
 
 }  // namespace

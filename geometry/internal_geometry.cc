@@ -1,5 +1,7 @@
 #include "drake/geometry/internal_geometry.h"
 
+#include "drake/common/drake_assert.h"
+
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -17,8 +19,24 @@ InternalGeometry::InternalGeometry(
       X_PG_(X_FG),
       X_FG_(X_FG),
       parent_geometry_id_(nullopt),
-      visual_material_(material) {}
+      visual_material_(material) {
+  // Short-term expedient; all internal geometries have illustration properties.
+  IllustrationProperties properties;
+  properties.AddProperty("phong", "diffuse", material.diffuse());
+  SetRole(properties);
+}
 
+bool InternalGeometry::has_role(Role role) const {
+  switch (role) {
+    case Role::kProximity:
+      return has_proximity_role();
+    case Role::kIllustration:
+      return has_illustration_role();
+    case Role::kUnassigned:
+      return !(has_proximity_role() || has_illustration_role());
+  }
+  DRAKE_ABORT_MSG("Unreachable code; switch on enum had unexpected value");
+}
 
 }  // namespace internal
 }  // namespace geometry

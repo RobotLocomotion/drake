@@ -43,11 +43,13 @@ GTEST_TEST(GeometryVisualization, SimpleScene) {
   const float g = 0.5f;
   const float b = 0.25f;
   const float a = 0.125f;
+  Vector4<double> color{r, g, b, a};
+  VisualMaterial material(color);
   scene_graph.RegisterGeometry(
       source_id, frame_id,
       make_unique<GeometryInstance>(Isometry3d::Identity(),
                                     make_unique<Sphere>(radius), "sphere",
-                                    VisualMaterial(Vector4d{r, g, b, a})));
+                                    material));
 
   unique_ptr<Context<double>> context = scene_graph.AllocateContext();
   const GeometryContext<double>& geo_context =
