@@ -45,6 +45,23 @@ class GeometryVisualizationImpl {
    system, and
  - sets the publishing rate to 1/60 of a second (simulated time).
 
+ @anchor geometry_visualization_role_dependency
+ The visualization mechanism depends on the illustration role (see
+ @ref geometry_roles for details). Specifically, only geometries with
+ the illustration role assigned will be included. The visualization function
+ looks for the following properties in the IllustrationProperties instance.
+ | Group name | Required | Property Name |  Property Type  | Property Description |
+ | :--------: | :------: | :-----------: | :-------------: | :------------------- |
+ |    phong   | no       | diffuse       | Eigen::Vector4d | The rgba value of the object surface |
+ See MakeDrakeVisualizerProperties() to facilitate making a compliant set of
+ illustration properties.
+
+ You can then connect source output ports for visualization like this:
+ @code
+   builder->Connect(pose_output_port,
+                    scene_graph.get_source_pose_port(source_id));
+ @endcode
+
  @note The initialization event occurs when Simulator::Initialize() is called
  (explicitly or implicitly at the start of a simulation). If you aren't going
  to be using a Simulator, use DispatchLoadMessage() to send the message
@@ -88,6 +105,11 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
     const SceneGraph<double>& scene_graph,
     const systems::OutputPort<double>& pose_bundle_output_port,
     lcm::DrakeLcmInterface* lcm = nullptr);
+
+/** Constructs an IllustrationProperties instance compatible with the
+ ConnectDrakeVisualizer incorporating the given diffuse color.  */
+IllustrationProperties MakeDrakeVisualizerProperties(
+    const Vector4<double>& diffuse);
 
 /** (Advanced) Explicitly dispatches an LCM load message based on the registered
  geometry. Normally this is done automatically at Simulator initialization. But
