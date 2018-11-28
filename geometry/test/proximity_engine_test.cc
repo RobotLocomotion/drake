@@ -376,7 +376,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceToPointSingleAnchored) {
                               1e-15, MatrixCompareType::absolute));
 }
 
-// Different reports depending on the threshold
+// Different reports depending on the threshold.
 GTEST_TEST(ProximityEngineTests, SignedDistanceToPointThreshold) {
   ProximityEngine<double> engine;
   std::vector<GeometryId> geometry_map;
