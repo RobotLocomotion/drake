@@ -21,14 +21,9 @@ namespace systems {
 ///   x₀[0] and x₁[0] are initialized in the Context (default is zeros).
 /// </pre>
 ///
-/// Note: The reason for this specific implementation is a little subtle.
-/// Since drake systems do not control the evaluation time of their output
-/// ports, a downstream system may ask for the output at any continuous time.
-/// The estimate y(t) = (u(t) - u[n])/(t-n*h), which is a more
-/// continuous-time derivative, would require fewer state variables, and
-/// introduce less delay.  But the inconsistent time interval (which could be
-/// arbitrarily close to zero) makes it numerically unreliable.  Prefer the
-/// discrete-time derivative implemented here.
+/// Note: It is a very bad idea to make the derivative be computed
+/// continuously, i.e. `y(t) = (u(t) - u[n])/(t-n*h)`, as it is numerically
+/// unstable and incorrectly masks the discrete nature of the computation.
 ///
 /// @system{ DiscreteDerivative, @input_port{u}, @output_port{dudt} }
 ///
