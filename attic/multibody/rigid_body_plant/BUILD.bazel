@@ -272,6 +272,7 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//examples/pendulum:pendulum_vector_types",
+        "//multibody/multibody_tree/multibody_plant",
         "//systems/primitives:linear_system",
     ],
 )

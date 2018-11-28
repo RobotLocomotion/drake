@@ -57,6 +57,8 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:autodiff",
+        "//multibody/multibody_tree:floating_body_plant",
+        "//systems/analysis",
         "//systems/analysis:runge_kutta3_integrator",
         "//systems/framework:diagram",
         "//systems/framework:diagram_builder",

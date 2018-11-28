@@ -6,6 +6,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace benchmarks {
@@ -50,17 +51,13 @@ class FreeBody {
   /// axis of rotation and passing through its center of mass.
   /// For example, for a cylinder of radius r, length h and uniformly
   /// distributed mass m with its rotational axis aligined along its body frame
-  /// z-axis this would be: <pre>
-  ///   I = Ixx = Iyy = m / 12 (3 r² + h²)
-  /// </pre>
+  /// z-axis this would be: I = Ixx = Iyy = m / 12 (3 r² + h²)
   double get_I() const { return 0.04; }
 
   /// Returns body's moment of inertia about its axis of rotation.
   /// For example, for a cylinder of radius r, length h and uniformly
   /// distributed mass  m with its rotational axis aligined along its body frame
-  /// z-axis this would be: <pre>
-  ///   J = Izz = m r² / 2
-  /// </pre>
+  /// z-axis this would be: J = Izz = m r² / 2
   double get_J() const { return 0.02; }
 
   // Get methods for initial values and gravity.
@@ -68,17 +65,18 @@ class FreeBody {
     return quat_NB_initial_;
   }
   const Eigen::Vector3d& get_w_NB_B_initial() const { return w_NB_B_initial_; }
+  Eigen::Vector3d get_w_NB_N_initial() const {
+    const math::RotationMatrixd R_NB_initial(quat_NB_initial_);
+    return R_NB_initial * w_NB_B_initial_;
+  }
   const Eigen::Vector3d& get_p_NoBcm_N_initial() const {
     return p_NoBcm_N_initial_;
-  }
-  const Eigen::Vector3d& get_v_NBcm_B_initial() const {
-    return v_NBcm_B_initial_;
   }
   const Eigen::Vector3d& get_uniform_gravity_expressed_in_world() const {
     return uniform_gravity_expressed_in_world_;
   }
-  Eigen::Vector3d GetInitialVelocityOfBcmInWorldExpressedInWorld() const {
-    const Eigen::Matrix3d R_NB_initial = quat_NB_initial_.toRotationMatrix();
+  Eigen::Vector3d get_v_NBcm_N_initial() const {
+    const math::RotationMatrixd R_NB_initial(quat_NB_initial_);
     return R_NB_initial * v_NBcm_B_initial_;
   }
 
