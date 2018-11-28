@@ -87,23 +87,21 @@ supported for CMake builds using the "Unix Makefiles" generator.
 |                                  | | CMake 3.10.2  | | GCC 7.3       |            |                   |        |
 +----------------------------------+-----------------+-----------------+------------+                   |        |
 | macOS High Sierra (10.13)        | | Bazel 0.19.2  | Apple LLVM 10.0 | Oracle 11  |                   |        |
-+----------------------------------+ | CMake 3.12.3  |                 |            |                   |        |
++----------------------------------+ | CMake 3.13.0  |                 |            |                   |        |
 | macOS Mojave (10.14)             |                 |                 |            |                   |        |
 +----------------------------------+-----------------+-----------------+------------+-------------------+--------+
 
 
-Ubuntu Bionic C++ and Python support is experimental and has limited testing
-in continuous integration. macOS Mojave C++ and Python support and macOS and
-Ubuntu Bionic MATLAB support is experimental and untested in continuous
-integration.
+macOS Mojave C++ and Python support and macOS and Ubuntu Bionic MATLAB support
+is experimental and untested in continuous integration.
 
 .. _binary-packages:
 
 Binary Packages
 ---------------
 
-The binary releases of Drake are built with GCC 5.4 on Ubuntu Xenial and Apple
-LLVM 10.0 on macOS High Sierra.
+The binary releases of Drake are built with GCC 5.4 on Ubuntu Xenial, GCC 7.3
+on Ubuntu Bionic, and Apple LLVM 10.0 on macOS High Sierra.
 
 The links for these packages are listed in :ref:`binary-installation`.
 
