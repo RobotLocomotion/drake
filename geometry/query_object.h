@@ -7,8 +7,8 @@
 
 #include "drake/geometry/geometry_context.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
-#include "drake/geometry/query_results/signed_distance_field_value.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
+#include "drake/geometry/query_results/signed_distance_to_point.h"
 #include "drake/geometry/scene_graph_inspector.h"
 
 namespace drake {
@@ -120,45 +120,34 @@ class QueryObject {
   //@}
 
   //---------------------------------------------------------------------------
+  // TODO(DamrongGuoy): Write a better documentation for Signed Distance
+  // Queries.
   /**
    @anchor signed_distance_query
    @name                   Signed Distance Queries
 
-   These queries provide the signed distance φₛ(t) where each of s (source) and
-   t (target) could be either a geometric object or a query point, both of
-   which could be treated mathematically as point sets. A geometric object is
-   an uncountable set of points in the volume bounded by its boundary, and a
-   query point is a singleton point set.
+   These queries provide the signed distance between two objects. Each query
+   has a specific definition of the signed distance being positive, negative,
+   or zero associated with some notions of being outside, inside, or on
+   the boundary.
 
-   Mathematically we can define a signed distance φₛ(t) using Euclidean distance
-   dist(.,.) between two points, and the notion of being outside and inside of
-   a geometric object g bounded by its boundary ∂g. Here we define the boundary
-   of a query point as the point itself.
-   φₛ(t) = min {dist(p,q) : p ∈ s, q ∈ t }  if s ⋂ t = ∅       (non-overlapping)
-   φₛ(t) = 0  if s ⋂ t = ∂s ⋂ ∂t ≠ ∅                  (touching at the boundary)
-   φₛ(t) = min {-dist(p,q) : p ∈ ∂s, q ∈ ∂t }  otherwise           (overlapping)
+   These queries provide bookkeeping data like geometry id(s) of the geometries
+   involved and the important locations on the boundaries of these geometries.
 
-   Details and definitions of available signed distance functions might be
-   slightly different from the above example.
-
-   These queries also provide a "witness" of the signed distance, which is
-   a pair of points nₛ and nₜ in s and t respectively that yields the signed
-   distance. In general, there might be many witnesses of the same signed
-   distance value.
-
-   @note The signed distance function φₛ(t) is a continuous function with
-   respect to the pose of the geometric objects or the position of the query
-   point. Its partial derivatives are continuous almost everywhere.
+   The signed distance function is a continuous function. Its partial
+   derivatives are continuous almost everywhere.
   */
   //@{
 
+  // TODO(DamrongGuoy): Refactor documentation of
+  // ComputeSignedDistancePairwiseClosestPoints(). Move the common sections
+  // into Signed Distance Queries.
   /**
    Computes the signed distance together with the nearest points across all
    pairs of geometries in the world. Reports both the separating geometries
    and penetrating geometries.
 
-   This query provides φ(A, B), the signed distance between two objects A and
-   B.
+   This query provides φ(A, B), the signed distance between two objects A and B.
 
    If the objects do not overlap (i.e., A ⋂ B = ∅), φ > 0 and represents the
    minimal distance between the two objects. More formally:
@@ -195,6 +184,9 @@ class QueryObject {
   std::vector<SignedDistancePair<double>>
   ComputeSignedDistancePairwiseClosestPoints() const;
 
+  // TODO(DamrongGuoy): Refactor documentation of
+  // ComputeSignedDistanceToPoint(). Move the common sections into Signed
+  // Distance Queries.
   /**
    Computes the signed distances and gradients from a query point to each
    object in the scene.
@@ -202,53 +194,48 @@ class QueryObject {
    This query provides φ(p), the signed distance from the position p of a
    query point to each object in the scene.
 
-   Optionally you can specify an influence distance that will filter out any
-   object beyond the influence distance.  By default, we report distances
-   from the query point to every object.
+   Optionally you can specify a threshold distance that will filter out any
+   object beyond the threshold. By default, we report distances from the query
+   point to every object.
 
-   We also provide the gradient vector of the signed distance function at the
-   position p of the query point. In general, if the query point p is outside
+   This query also provides the gradient vector of the signed distance
+   function at the position p of the query point. In general, if the query point p is outside
    the object, the gradient vector is the unit vector in the direction from
    the nearest point N on the object's surface to the query point:
 
    grad φ(p) = (p - N)/|p - N|
 
-   Also in many cases, if the query point is inside the object, the gradient
-   vector is the unit vector in the direction from the query point to a nearby
+   In general, if the query point is inside the object, the gradient vector
+   is the unit vector in the direction from the query point to the nearest
    point N on the object's surface:
 
    grad φ(p) = (N - p)/|N - p|
 
-   @note For a sphere, the signed distance function φ(p) does not have a
-   well-defined gradient vector at the center of the sphere. In this case, we
-   will assign an arbitrary vector (1,0,0) as its gradient vector.
+   @note For a sphere, the signed distance function φ(p) has undefined gradient
+   vector at the center of the sphere. In this case, we will assign an arbitrary
+   vector (1,0,0) as its gradient vector.
 
    @note The signed distance function is a continuous function with respect to
    the position of the query point, but its gradient vector field may
    not be continuous. Specifically at a position on the medial axis, its
    gradient vector field is not continuous.
 
-   @note For a convex object, the signed distance function is smooth (having
-   continuous first-order partial derivatives) outside the object.
+   @note For a convex object, outside the object at positive distance from
+   the boundary, the signed distance function is smooth (having continuous
+   first-order partial derivatives).
 
    @param[in] p_WQ            Position of a query point Q in world frame W.
-   @param[in] influence_distance  We ignore any object beyond this distance.
+   @param[in] threshold       We ignore any object beyond this distance.
                               By default, it is infinity, so we report
                               distances from the query point to every object.
    @retval signed_distances   A vector populated with per-object signed
-                              distance values (and supporting data). For each
-                              object in the scene, it reports the global
-                              geometry identifier of the object, the position
-                              of the nearest point on the object's boundary,
-                              the signed distance from the query point, and
-                              the gradient vector of the distance function with
-                              respect to the query point.
+                              distance values (and supporting data).
+                              @see SignedDistanceToPoint.
    */
-  std::vector<SignedDistanceFieldValue<double>>
+  std::vector<SignedDistanceToPoint<double>>
   ComputeSignedDistanceToPoint(const Vector3<double> &p_WQ,
-                               const double influence_distance
-                                 = std::numeric_limits<double>::infinity())
-      const;
+                               const double threshold
+                               = std::numeric_limits<double>::infinity()) const;
   //@}
 
  private:

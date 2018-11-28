@@ -223,7 +223,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsMultipleAnchored) {
   EXPECT_EQ(results.size(), 0);
 }
 
-// PointSignedDistances tests -- single-object tests with multiple query points
+// SignedDistanceToPoint tests -- single-object tests with multiple query points
 //
 // We use query points at (2,3,6) and (0.1,0.15,0.3) at distance 7.0 and 0.35
 // from the origin respectively. They are on the same ray from the origin. The
@@ -245,7 +245,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsMultipleAnchored) {
 // ray from the origin to the query point and hence (2,3,6)/7.
 
 // Reports distances within 1e-15 tolerance, both outside and inside.
-GTEST_TEST(ProximityEngineTests, PointSignedDistanceSingleAnchored) {
+GTEST_TEST(ProximityEngineTests, SignedDistanceToPointSingleAnchored) {
   using std::abs;
 
   ProximityEngine<double> engine;
@@ -258,34 +258,30 @@ GTEST_TEST(ProximityEngineTests, PointSignedDistanceSingleAnchored) {
   geometry_map.push_back(sphere_id);
 
   Vector3d query{2.0, 3.0, 6.0};
-  auto results = engine.ComputeSignedDistanceToPoint(query,
-                                                     geometry_map);
+  auto results = engine.ComputeSignedDistanceToPoint(query, geometry_map);
   EXPECT_EQ(results.size(), 1);
   EXPECT_EQ(results[0].id_G, sphere_id);
-  EXPECT_TRUE(CompareMatrices(results[0].p_GN, Vector3d(0.2, 0.3, 0.6),
-                              1e-15, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(results[0].p_GN, Vector3d(0.2, 0.3, 0.6), 1e-15,
+                              MatrixCompareType::absolute));
   // The query point is outside the sphere, so we expect positive distance.
   EXPECT_NEAR(results[0].distance, 6.3, 1e-15);
-  EXPECT_TRUE(CompareMatrices(results[0].grad_W,
-                              Vector3d(2.0, 3.0, 6.0)/7.0,
+  EXPECT_TRUE(CompareMatrices(results[0].grad_W, Vector3d(2.0, 3.0, 6.0) / 7.0,
                               1e-15, MatrixCompareType::absolute));
 
-  query << 0.1 , 0.15 , 0.3;
-  results = engine.ComputeSignedDistanceToPoint(query,
-                                                geometry_map);
+  query << 0.1, 0.15, 0.3;
+  results = engine.ComputeSignedDistanceToPoint(query, geometry_map);
   EXPECT_EQ(results.size(), 1);
   EXPECT_EQ(results[0].id_G, sphere_id);
-  EXPECT_TRUE(CompareMatrices(results[0].p_GN, Vector3d(0.2, 0.3, 0.6),
-                              1e-15, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(results[0].p_GN, Vector3d(0.2, 0.3, 0.6), 1e-15,
+                              MatrixCompareType::absolute));
   // This query point is inside the sphere, so we expect negative distance.
   EXPECT_NEAR(results[0].distance, -0.35, 1e-15);
-  EXPECT_TRUE(CompareMatrices(results[0].grad_W,
-                              Vector3d(2.0, 3.0, 6.0)/7.0,
+  EXPECT_TRUE(CompareMatrices(results[0].grad_W, Vector3d(2.0, 3.0, 6.0) / 7.0,
                               1e-15, MatrixCompareType::absolute));
 }
 
-// Different reports depending on the influence_distance
-GTEST_TEST(ProximityEngineTests, PointSignedDistancesInfluenceDistance) {
+// Different reports depending on the threshold
+GTEST_TEST(ProximityEngineTests, SignedDistanceToPointThreshold) {
   ProximityEngine<double> engine;
   std::vector<GeometryId> geometry_map;
 
@@ -296,21 +292,23 @@ GTEST_TEST(ProximityEngineTests, PointSignedDistancesInfluenceDistance) {
   geometry_map.push_back(sphere_id);
 
   Vector3d query{2.0, 3.0, 6.0};
-  const double large_influence_distance = 6.3+0.01;
+  const double large_threshold = 6.3 + 0.01;
   auto results = engine.ComputeSignedDistanceToPoint(query, geometry_map,
-                                                     large_influence_distance);
-  // The large influence distance allows one object in the results.
+                                                     large_threshold);
+  // The large threshold allows one object in the results.
   EXPECT_EQ(results.size(), 1);
 
-  const double small_influence_distance = 6.3-0.01;
+  const double small_threshold = 6.3 - 0.01;
   results = engine.ComputeSignedDistanceToPoint(query, geometry_map,
-                                                small_influence_distance);
-  // The small influence distance removed all objects.
+                                                small_threshold);
+  // The small threshold skips all objects.
   EXPECT_EQ(results.size(), 0);
 }
 
-// Reports an arbitrary gradient vector (1,0,0) at the center of the sphere.
-GTEST_TEST(ProximityEngineTests, PointSignedDistancesCenterOfSphere) {
+// Reports an arbitrary gradient vector (1,0,0) (as defined in the
+// QueryObject::ComputeSignedDistanceToPoint() documentation) at the center of
+// the sphere.
+GTEST_TEST(ProximityEngineTests, SignedDistanceToPointCenterOfSphere) {
   ProximityEngine<double> engine;
   std::vector<GeometryId> geometry_map;
 

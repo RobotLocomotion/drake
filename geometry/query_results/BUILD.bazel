@@ -14,8 +14,8 @@ drake_cc_package_library(
     name = "query_results",
     deps = [
         ":penetration_as_point_pair",
-        ":signed_distance_field_value",
         ":signed_distance_pair",
+        ":signed_distance_to_point",
     ],
 )
 
@@ -40,9 +40,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "signed_distance_field_value",
+    name = "signed_distance_to_point",
     srcs = [],
-    hdrs = ["signed_distance_field_value.h"],
+    hdrs = ["signed_distance_to_point.h"],
     deps = [
         "//common",
         "//geometry:geometry_ids",

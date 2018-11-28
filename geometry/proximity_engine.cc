@@ -239,16 +239,16 @@ struct DistanceData {
 
 // Struct for use in DistanceFromPointCallback(). Contains the distance
 // request and accumulates result in a std::vector of
-// drake::geometry::SignedDistanceFieldValue
+// drake::geometry::SignedDistanceToPoint
 struct DistanceFromPointCallbackData {
   DistanceFromPointCallbackData(
       fcl::CollisionObjectd* query_in,
       const std::vector<GeometryId>* geometry_map_in,
-      const double influence_distance_in,
-      std::vector<SignedDistanceFieldValue<double>>* distances_in)
+      const double threshold_in,
+      std::vector<SignedDistanceToPoint<double>>* distances_in)
       : query_point(query_in),
         geometry_map(*geometry_map_in),
-        influence_distance(influence_distance_in),
+        threshold(threshold_in),
         distances(distances_in) {}
 
   // The query point is represented as a zero-radius sphere.
@@ -257,9 +257,10 @@ struct DistanceFromPointCallbackData {
   // Maps so the distance call back can map from geometry index to geometry id.
   const std::vector<GeometryId>& geometry_map;
 
-  const double influence_distance;
+  // We ignore any object beyond this distance.
+  const double threshold;
 
-  std::vector<SignedDistanceFieldValue<double>>* distances;
+  std::vector<SignedDistanceToPoint<double>>* distances;
 };
 
 // Struct for use in SingleCollisionCallback(). Contains the collision request
@@ -358,8 +359,12 @@ bool DistanceFromPointCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
   auto& data = *static_cast<DistanceFromPointCallbackData*>(callback_data);
 
   // We set the threshold, so that the broad-phase fcl::distance will skip any
-  // object beyond this distance.
-  threshold = data.influence_distance;
+  // object beyond this distance. It is used in fcl::distance; if the distance
+  // between two geometries is proved to be greater than `threshold` (for
+  // example, the smallest distance between the bounding boxes containing
+  // object A and object B is greater than `dist`), then fcl::distance will skip
+  // the callback.
+  threshold = data.threshold;
 
   // We use `const` to prevent modification of the collision objects.
   const fcl::CollisionObjectd* point_object = data.query_point;
@@ -372,9 +377,9 @@ bool DistanceFromPointCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
 
   const fcl::CollisionGeometryd* collision_geometry =
       geometry_object->collisionGeometry().get();
-  // TODO(DamrongGuoy): When we support more than one kind of geometry,
-  // we will probably do something similar to reification process (see
-  // AddAnchoredGeometry() and ImplementGeometry()).
+
+  // TODO(DamrongGuoy): Replace this custom code when FCL does this for us with
+  // the required accuracy and performance.
   //
   // For now, we skip any non-sphere geometry. Returning false tells fcl to
   // continue to other objects.
@@ -385,32 +390,35 @@ bool DistanceFromPointCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
       *static_cast<const fcl::Sphered*>(collision_geometry);
   const double radius = fcl_sphere.radius;
 
-  const Vector3d p_WQ = point_object->getTranslation();
-  const Vector3d p_WG = geometry_object->getTranslation();
+  const Vector3d& p_WQ = point_object->getTranslation();
+  const Vector3d& p_WG = geometry_object->getTranslation();
   const Vector3d p_GQ_W = p_WQ - p_WG;
   const double dist_GQ = p_GQ_W.norm();
   const double distance = dist_GQ - radius;
 
-  if (distance > data.influence_distance)
+  if (distance > data.threshold)
     return false;  // Returning false tells fcl to continue to other objects.
 
   // The gradient is always in the direction from the center of the sphere to
   // the query point Q, regardless of whether the point Q is outside or inside
-  // the sphere G.  The gradient is not defined if the query point Q is at the
+  // the sphere G.  The gradient is undefined if the query point Q is at the
   // center of the sphere G.
   //
   // If the query point Q is at the center of the sphere G, we arbitrarily set
   // the gradient vector to (1,0,0) as documented in query_object.h
-  // (QueryObject::ComputeSignedDistanceToPoint). No need for tolerance. We have
-  // tried normalizing (1e-300, 1e-296, 1e-296), and it returned a "reasonable"
-  // unit vector.
-  Vector3d grad_W = (dist_GQ != 0.0)? p_GQ_W/dist_GQ : Vector3d{1.0, 0.0, 0.0};
+  // (QueryObject::ComputeSignedDistanceToPoint).
+  //
+  // TODO(DamrongGuoy): Set up tolerance, so that very near the center of the
+  // sphere, we consistently set the gradient vector in the direction (1,0,0)
+  // instead of a noisy direction.
+  Vector3d grad_W = (dist_GQ != 0.0)? p_GQ_W / dist_GQ
+                                    : Vector3d{1.0, 0.0, 0.0};
 
   // Position vector of the nearest point N on G's surface from the query
   // point Q, expressed in G's frame.
   const Isometry3<double>& X_WG = geometry_object->getTransform();
-  const Vector3d p_GN_W = radius*grad_W;
-  const Vector3d p_GN_G = X_WG.inverse()*p_GN_W;
+  const Vector3d p_GN_W = radius * grad_W;
+  const Vector3d p_GN_G = X_WG.inverse() * p_GN_W;
 
   data.distances->emplace_back(target_id, p_GN_G, distance, grad_W);
   return false;  // Returning false tells fcl to continue to other objects.
@@ -899,20 +907,20 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return witness_pairs;
   }
 
-  std::vector<SignedDistanceFieldValue<double>> ComputeSignedDistanceToPoint(
+  std::vector<SignedDistanceToPoint<double>> ComputeSignedDistanceToPoint(
       const Vector3d& p_WQ,
       const std::vector<GeometryId>& geometry_map,
-      const double influence_distance) const {
+      const double threshold) const {
     // We create a sphere of zero radius centered at the query point and put
     // it into a fcl::CollisionObject.
     auto fcl_sphere = make_shared<fcl::Sphered>(0.0);  // sphere of zero radius
     fcl::CollisionObjectd query_point(fcl_sphere);
     query_point.setTranslation(p_WQ);
 
-    std::vector<SignedDistanceFieldValue<double>> distances;
+    std::vector<SignedDistanceToPoint<double>> distances;
 
     DistanceFromPointCallbackData data{&query_point, &geometry_map,
-                                       influence_distance, &distances};
+                                       threshold, &distances};
 
     anchored_tree_.distance(&query_point, &data, DistanceFromPointCallback);
     dynamic_tree_.distance(&query_point, &data, DistanceFromPointCallback);
@@ -1256,13 +1264,12 @@ ProximityEngine<T>::ComputeSignedDistancePairwiseClosestPoints(
 }
 
 template <typename T>
-std::vector<SignedDistanceFieldValue<double>>
+std::vector<SignedDistanceToPoint<double>>
 ProximityEngine<T>::ComputeSignedDistanceToPoint(
     const Vector3<double>& query,
     const std::vector<GeometryId>& geometry_map,
-    const double influence_distance) const {
-  return impl_->ComputeSignedDistanceToPoint(query, geometry_map,
-                                             influence_distance);
+    const double threshold) const {
+  return impl_->ComputeSignedDistanceToPoint(query, geometry_map, threshold);
 }
 
 

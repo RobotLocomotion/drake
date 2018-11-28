@@ -9,8 +9,8 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
-#include "drake/geometry/query_results/signed_distance_field_value.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
+#include "drake/geometry/query_results/signed_distance_to_point.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -162,17 +162,16 @@ class ProximityEngine {
    @param[in] p_WQ            Position of a query point Q in world frame W.
    @param[in] geometry_map    A map from geometry _index_ to the corresponding
                               global geometry identifier.
-   @param[in] influence_distance  Ignore any object beyond this distance.
+   @param[in] threshold       Ignore any object beyond this distance.
    @retval signed_distances   A vector populated with per-object signed
                               distance and gradient vector.
                               See SignedDistanceFieldValue for details.
    */
-  std::vector<SignedDistanceFieldValue<double>>
+  std::vector<SignedDistanceToPoint<double>>
   ComputeSignedDistanceToPoint(
       const Vector3<double>& p_WQ,
       const std::vector<GeometryId>& geometry_map,
-      const double influence_distance = std::numeric_limits<double>::infinity())
-      const;
+      const double threshold = std::numeric_limits<double>::infinity()) const;
   //@}
 
   //----------------------------------------------------------------------------
