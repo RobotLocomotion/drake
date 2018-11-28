@@ -33,8 +33,8 @@ drake_cc_library(
         "accelerometer_output.h",
     ],
     deps = [
+        "//attic/multibody:rigid_body_tree",
         "//attic/multibody/rigid_body_plant",
-        "//multibody:rigid_body_tree",
         "//systems/framework",
     ],
 )
@@ -52,7 +52,7 @@ drake_cc_library(
         "depth_sensor_specification.h",
     ],
     deps = [
-        "//multibody:rigid_body_tree",
+        "//attic/multibody:rigid_body_tree",
         "//systems/framework",
         "//systems/rendering:pose_vector",
     ],
@@ -68,7 +68,7 @@ drake_cc_library(
     ],
     deps = [
         ":depth_sensor",
-        "//multibody:rigid_body_tree",
+        "//attic/multibody:rigid_body_tree",
         "//systems/rendering:pose_vector",
         "@lcmtypes_bot2_core",
     ],
@@ -85,7 +85,7 @@ drake_cc_library(
         "gyroscope_output.h",
     ],
     deps = [
-        "//multibody:rigid_body_tree",
+        "//attic/multibody:rigid_body_tree",
         "//systems/framework",
     ],
 )

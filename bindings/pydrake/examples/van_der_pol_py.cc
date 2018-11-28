@@ -23,8 +23,8 @@ PYBIND11_MODULE(van_der_pol, m) {
   // conversion.
   using T = double;
 
-  py::class_<VanDerPolOscillator<T>, LeafSystem<T>>(m, "VanDerPolOscillator",
-                                                    doc.VanDerPolOscillator.doc)
+  py::class_<VanDerPolOscillator<T>, LeafSystem<T>>(
+      m, "VanDerPolOscillator", doc.VanDerPolOscillator.doc)
       .def(py::init<>(), doc.VanDerPolOscillator.ctor.doc_3);
 }
 

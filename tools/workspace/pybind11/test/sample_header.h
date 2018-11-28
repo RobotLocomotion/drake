@@ -14,6 +14,7 @@
 /// Ultrices in iaculis nunc sed augue lacus viverra. Dolor sit amet
 /// consectetur adipiscing elit duis tristique.
 
+#include <string>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
@@ -71,6 +72,9 @@ namespace drake {
 struct MidLevelSymbol {};
 
 namespace mkdoc_test {
+
+// A forward-declaration is ignored.
+class Class;
 
 /** Function. Mi sit amet mauris commodo quis. */
 void func();
@@ -208,6 +212,21 @@ class Class {
   /// @post Begin postcondition. Tortor id aliquet lectus proin nibh nisl
   /// condimentum id. End postcondition.
   static void PublicStatic() {}
+
+  /// This one takes an int.
+  void overloaded_method(int alpha);
+
+  /// This one takes a double.
+  void overloaded_method(double bravo);
+
+  /// This one takes an int and a double.
+  void overloaded_method(int charlie, double delta);
+
+  /// This one takes the road less traveled.
+  void overloaded_method(double, int);
+
+  /// This one takes a non-primitive type.
+  void overloaded_method(const std::string&);
 
  protected:
   /// @protected

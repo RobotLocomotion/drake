@@ -5,7 +5,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"
-#include "drake/math/rotation_matrix.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
 namespace drake {
@@ -173,10 +173,14 @@ Isometry3<T> QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerTransform(
     const MultibodyTreeContext<T>& context) const {
   const auto& q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == kNq);
-  Isometry3<T> X_FM = Isometry3<T>::Identity();
-  X_FM.linear() = math::quat2rotmat(q.template head<4>());  // R_FM
-  X_FM.translation() = q.template tail<3>();  // p_FM
-  return X_FM;
+
+  // The first 4 elements in q contain a quaternion, ordered as w, x, y, z.
+  // The last 3 elements in q contain position from Fo to Mo.
+  const Vector4<T> wxyz(q.template head<4>());
+  const Vector3<T> p_FM = q.template tail<3>();  // position from Fo to Mo.
+  Eigen::Quaternion<T> quaternion_FM(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
+  const math::RigidTransform<T> X_FM(quaternion_FM, p_FM);
+  return X_FM.GetAsIsometry3();
 }
 
 template <typename T>
@@ -255,7 +259,8 @@ Eigen::Matrix<T, 4, 3> QuaternionFloatingMobilizer<T>::CalcLMatrix(
 }
 
 template <typename T>
-Eigen::Matrix<T, 4, 3> QuaternionFloatingMobilizer<T>::CalcNMatrix(
+Eigen::Matrix<T, 4, 3>
+QuaternionFloatingMobilizer<T>::AngularVelocityToQuaternionRateMatrix(
     const Quaternion<T>& q_FM) {
   // With L given by CalcLMatrix we have:
   // N(q) = L(q_FM/2)
@@ -264,13 +269,42 @@ Eigen::Matrix<T, 4, 3> QuaternionFloatingMobilizer<T>::CalcNMatrix(
 }
 
 template <typename T>
-Eigen::Matrix<T, 3, 4> QuaternionFloatingMobilizer<T>::CalcNplusMatrix(
+Eigen::Matrix<T, 3, 4>
+QuaternionFloatingMobilizer<T>::QuaternionRateToAngularVelocityMatrix(
     const Quaternion<T>& q_FM) {
   // With L given by CalcLMatrix we have:
   // N⁺(q) = L(2 q_FM)ᵀ
   return CalcLMatrix(
           {2.0 * q_FM.w(), 2.0 * q_FM.x(), 2.0 * q_FM.y(), 2.0 * q_FM.z()}).
           transpose();
+}
+
+template <typename T>
+void QuaternionFloatingMobilizer<T>::DoCalcNMatrix(
+    const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> N) const {
+  // Upper-left block
+  N->template block<4, 3>(0, 0) =
+      AngularVelocityToQuaternionRateMatrix(get_quaternion(context));
+  // Upper-right block
+  N->template block<4, 3>(0, 3).setZero();
+  // Lower-left block
+  N->template block<3, 3>(4, 0).setZero();
+  // Lower-right block
+  N->template block<3, 3>(4, 3).setIdentity();
+}
+
+template <typename T>
+void QuaternionFloatingMobilizer<T>::DoCalcNplusMatrix(
+    const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> Nplus) const {
+  // Upper-left block
+  Nplus->template block<3, 4>(0, 0) =
+      QuaternionRateToAngularVelocityMatrix(get_quaternion(context));
+  // Upper-right block
+  Nplus->template block<3, 3>(0, 4).setZero();
+  // Lower-left block
+  Nplus->template block<3, 4>(3, 0).setZero();
+  // Lower-right block
+  Nplus->template block<3, 3>(3, 4).setIdentity();
 }
 
 template <typename T>
@@ -283,7 +317,8 @@ void QuaternionFloatingMobilizer<T>::MapVelocityToQDot(
   DRAKE_ASSERT(qdot->size() == kNq);
   const Quaternion<T> q_FM = get_quaternion(context);
   // Angular component, q̇_WB = N(q)⋅w_WB:
-  qdot->template head<4>() = CalcNMatrix(q_FM) * v.template head<3>();
+  qdot->template head<4>() =
+      AngularVelocityToQuaternionRateMatrix(q_FM) * v.template head<3>();
   // Translational component, ṗ_WB = v_WB:
   qdot->template tail<3>() = v.template tail<3>();
 }
@@ -298,7 +333,8 @@ void QuaternionFloatingMobilizer<T>::MapQDotToVelocity(
   DRAKE_ASSERT(v->size() == kNv);
   const Quaternion<T> q_FM = get_quaternion(context);
   // Angular component, w_WB = N⁺(q)⋅q̇_WB:
-  v->template head<3>() = CalcNplusMatrix(q_FM) * qdot.template head<4>();
+  v->template head<3>() =
+      QuaternionRateToAngularVelocityMatrix(q_FM) * qdot.template head<4>();
   // Translational component, v_WB = ṗ_WB:
   v->template tail<3>() = qdot.template tail<3>();
 }

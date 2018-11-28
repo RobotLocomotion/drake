@@ -40,7 +40,7 @@ void CheckForSinglePeriodicEvent(const EventListType& events) {
   // met.
   if (events.size() == 1) {
     EXPECT_EQ(events.front()->get_trigger_type(),
-        Event<double>::TriggerType::kPeriodic);
+        TriggerType::kPeriodic);
   }
 }
 

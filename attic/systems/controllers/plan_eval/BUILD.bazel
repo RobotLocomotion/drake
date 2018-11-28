@@ -30,10 +30,10 @@ drake_cc_library(
         "generic_plan.h",
     ],
     deps = [
+        "//attic/multibody:rigid_body_tree_alias_groups",
         "//attic/systems/controllers/qp_inverse_dynamics:control",
         "//attic/systems/controllers/qp_inverse_dynamics:param_parser",
         "//manipulation/util:trajectory_utils",
-        "//multibody:rigid_body_tree_alias_groups",
         "//systems/controllers:setpoint",
         "//systems/framework:value",
     ],
@@ -61,8 +61,8 @@ drake_cc_library(
         "test/test_common.h",
     ],
     deps = [
+        "//attic/multibody:rigid_body_tree_alias_groups",
         "//attic/systems/controllers/qp_inverse_dynamics:param_parser",
-        "//multibody:rigid_body_tree_alias_groups",
     ],
 )
 
@@ -71,8 +71,8 @@ drake_cc_library(
     srcs = ["plan_eval_base_system.cc"],
     hdrs = ["plan_eval_base_system.h"],
     deps = [
+        "//attic/multibody:rigid_body_tree_alias_groups",
         "//attic/systems/controllers/qp_inverse_dynamics:param_parser",
-        "//multibody:rigid_body_tree_alias_groups",
         "//systems/controllers:setpoint",
         "//systems/framework:leaf_system",
     ],
@@ -90,10 +90,10 @@ drake_cc_googletest(
     deps = [
         ":generic_plan",
         ":test_common",
+        "//attic/multibody:rigid_body_tree",
         "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody:rigid_body_tree",
     ],
 )
 
@@ -107,10 +107,10 @@ drake_cc_googletest(
     deps = [
         ":manipulator_move_end_effector_plan",
         ":test_common",
+        "//attic/multibody:rigid_body_tree",
         "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody:rigid_body_tree",
     ],
 )
 

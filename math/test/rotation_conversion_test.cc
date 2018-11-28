@@ -337,7 +337,7 @@ class RotationConversionTest : public ::testing::Test {
   std::vector<RotationMatrix<double>> rotation_matrix_test_cases_;
 };
 
-TEST_F(RotationConversionTest, quat2RotmatTest) {
+TEST_F(RotationConversionTest, quaternionToRotationMatrixTest) {
   for (const Quaterniond& qi : quaternion_test_cases_) {
     // Compute the rotation matrix using Eigen geometry module, compare the
     // result with RotationMatrix(quaternion).

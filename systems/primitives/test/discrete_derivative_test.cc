@@ -73,10 +73,49 @@ GTEST_TEST(DiscreteDerivativeTest, SetState) {
   // Setting the initial state to an arbitrary value results in the
   // derivative output being set to zero.
   auto context = deriv.CreateDefaultContext();
-  deriv.set_state(Eigen::Vector2d(3.4, 4.4), context.get());
+  deriv.set_state(context.get(), Eigen::Vector2d(3.4, 4.4));
   EXPECT_TRUE(CompareMatrices(
       deriv.get_output_port().Eval<BasicVector<double>>(*context).get_value(),
       Vector2d::Zero()));
+}
+
+GTEST_TEST(StateInterpolatorWithDiscreteDerivativeTest, BasicTest) {
+  const int kNumPositions = 2;
+  const double time_step = 0.1;
+  StateInterpolatorWithDiscreteDerivative<double> position_to_state(
+      kNumPositions, time_step);
+
+  EXPECT_EQ(&position_to_state.GetInputPort("position"),
+            &position_to_state.get_input_port());
+  EXPECT_EQ(&position_to_state.GetOutputPort("state"),
+            &position_to_state.get_output_port());
+
+  auto context = position_to_state.CreateDefaultContext();
+
+  const Eigen::Vector2d position(0.123, 0.456);
+  context->FixInputPort(position_to_state.get_input_port().get_index(),
+                        position);
+  position_to_state.set_initial_position(context.get(), position);
+
+  Eigen::Vector4d expected_state;
+  expected_state << position, Eigen::Vector2d::Zero();
+  EXPECT_TRUE(CompareMatrices(position_to_state.get_output_port()
+                                  .Eval<BasicVector<double>>(*context)
+                                  .get_value(),
+                              expected_state));
+}
+
+GTEST_TEST(StateInterpolatorWithDiscreteDerivativeTest, ScalarTypesTest) {
+  const int kNumPositions = 2;
+  const double time_step = 0.1;
+  StateInterpolatorWithDiscreteDerivative<double> position_to_state(
+      kNumPositions, time_step);
+
+  auto autodiff = position_to_state.ToAutoDiffXd();
+  EXPECT_EQ(autodiff->get_output_port(0).size(), 2*kNumPositions);
+
+  auto symbolic = position_to_state.ToSymbolic();
+  EXPECT_EQ(symbolic->get_output_port(0).size(), 2*kNumPositions);
 }
 
 }  // namespace

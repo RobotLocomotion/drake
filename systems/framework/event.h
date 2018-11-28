@@ -289,10 +289,31 @@ class Event {
   #endif
 
   /**
-   * Adds `this` event to the event collection @p events. See derived
-   * implementations for more details.
+   * Adds a clone of `this` event to the event collection `events`, with
+   * the given trigger type. If `this` event has an unknown trigger type, then
+   * any trigger type is acceptable. Otherwise the given trigger type must
+   * match match the trigger type stored in `this` event.
+   * @pre `trigger_type` must match the current trigger type unless that is
+   *      unknown.
+   * @pre `events` must not be null.
    */
-  virtual void add_to_composite(CompositeEventCollection<T>* events) const = 0;
+  void AddToComposite(TriggerType trigger_type,
+                      CompositeEventCollection<T>* events) const {
+    DRAKE_DEMAND(events != nullptr);
+    DRAKE_DEMAND(trigger_type_ == TriggerType::kUnknown ||
+                 trigger_type_ == trigger_type);
+    DoAddToComposite(trigger_type, &*events);
+  }
+
+  /**
+   * Provides an alternate signature for adding an Event that already has the
+   * correct trigger type set. Must not have an unknown trigger type.
+   */
+  void AddToComposite(CompositeEventCollection<T>* events) const {
+    DRAKE_DEMAND(events != nullptr);
+    DRAKE_DEMAND(trigger_type_ != TriggerType::kUnknown);
+    DoAddToComposite(trigger_type_, &*events);
+  }
 
  protected:
   Event(const Event& other) : trigger_type_(other.trigger_type_) {
@@ -305,6 +326,13 @@ class Event {
   /// Constructs an Event with the specified @p trigger.
   explicit Event(const TriggerType& trigger) : trigger_type_(trigger) {}
   #endif
+
+  /**
+   * Derived classes must implement this to add a clone of this Event to
+   * the event collection and unconditionally set its trigger type.
+   */
+  virtual void DoAddToComposite(TriggerType trigger_type,
+                                CompositeEventCollection<T>* events) const = 0;
 
   /**
    * Derived classes must implement this method to clone themselves. Any
@@ -361,26 +389,15 @@ class PublishEvent final : public Event<T> {
   #if !defined(DRAKE_DOXYGEN_CXX)
   // Makes a PublishEvent with `trigger_type`, no event data, and
   // callback function `callback`, which can be null.
-  PublishEvent(const typename Event<T>::TriggerType& trigger_type,
+  PublishEvent(const TriggerType& trigger_type,
                const PublishCallback& callback)
       : Event<T>(trigger_type), callback_(callback) {}
 
   // Makes a PublishEvent with `trigger_type`, no event data, and
   // no specified callback function.
-  explicit PublishEvent(const typename Event<T>::TriggerType& trigger_type)
+  explicit PublishEvent(const TriggerType& trigger_type)
       : Event<T>(trigger_type) {}
   #endif
-
-  /**
-   * Assuming that @p events is not null, this function makes a deep copy of
-   * this event and adds the deep copy to @p events's collection of publish
-   * events.
-   */
-  void add_to_composite(CompositeEventCollection<T>* events) const override {
-    DRAKE_DEMAND(events != nullptr);
-    events->add_publish_event(
-        std::unique_ptr<PublishEvent<T>>(this->DoClone()));
-  }
 
   /**
    * Calls the optional callback function, if one exists, with @p context and
@@ -393,8 +410,15 @@ class PublishEvent final : public Event<T> {
  private:
   PublishEvent(const PublishEvent&) = default;
 
+  void DoAddToComposite(TriggerType trigger_type,
+                        CompositeEventCollection<T>* events) const final {
+    auto event = std::unique_ptr<PublishEvent<T>>(this->DoClone());
+    event->set_trigger_type(trigger_type);
+    events->add_publish_event(std::move(event));
+  }
+
   // Clones PublishEvent-specific data.
-  PublishEvent<T>* DoClone() const override { return new PublishEvent(*this); }
+  PublishEvent<T>* DoClone() const final { return new PublishEvent(*this); }
 
   // Optional callback function that handles this publish event.
   PublishCallback callback_{nullptr};
@@ -435,27 +459,16 @@ class DiscreteUpdateEvent final : public Event<T> {
   // Makes a DiscreteUpdateEvent with `trigger_type` with no event data and
   // the callback function `callback`.
   // `callback` can be null.
-  DiscreteUpdateEvent(const typename Event<T>::TriggerType& trigger_type,
+  DiscreteUpdateEvent(const TriggerType& trigger_type,
                       const DiscreteUpdateCallback& callback)
       : Event<T>(trigger_type), callback_(callback) {}
 
   // Makes a DiscreteUpdateEvent with @p trigger_type with no event data and
   // no specified callback function.
   explicit DiscreteUpdateEvent(
-      const typename Event<T>::TriggerType& trigger_type)
+      const TriggerType& trigger_type)
       : DiscreteUpdateEvent(trigger_type, nullptr) {}
   #endif
-
-  /**
-   * Assuming that @p events is not null, this function makes a deep copy of
-   * this event and adds the deep copy to @p events's collection of discrete
-   * update events.
-   */
-  void add_to_composite(CompositeEventCollection<T>* events) const override {
-    DRAKE_DEMAND(events != nullptr);
-    events->add_discrete_update_event(
-        std::unique_ptr<DiscreteUpdateEvent<T>>(this->DoClone()));
-  }
 
   /**
    * Calls the optional callback function, if one exists, with @p context,
@@ -469,8 +482,15 @@ class DiscreteUpdateEvent final : public Event<T> {
  private:
   DiscreteUpdateEvent(const DiscreteUpdateEvent&) = default;
 
+  void DoAddToComposite(TriggerType trigger_type,
+                        CompositeEventCollection<T>* events) const final {
+    auto event = std::unique_ptr<DiscreteUpdateEvent<T>>(this->DoClone());
+    event->set_trigger_type(trigger_type);
+    events->add_discrete_update_event(std::move(event));
+  }
+
   // Clones DiscreteUpdateEvent-specific data.
-  DiscreteUpdateEvent<T>* DoClone() const override {
+  DiscreteUpdateEvent<T>* DoClone() const final {
     return new DiscreteUpdateEvent(this->get_trigger_type(), callback_);
   }
 
@@ -512,27 +532,16 @@ class UnrestrictedUpdateEvent final : public Event<T> {
   #if !defined(DRAKE_DOXYGEN_CXX)
   // Makes an UnrestrictedUpdateEvent with `trigger_type` and callback function
   // `callback`. `callback` can be null.
-  UnrestrictedUpdateEvent(const typename Event<T>::TriggerType& trigger_type,
+  UnrestrictedUpdateEvent(const TriggerType& trigger_type,
                           const UnrestrictedUpdateCallback& callback)
       : Event<T>(trigger_type), callback_(callback) {}
 
   // Makes an UnrestrictedUpateEvent with @p trigger_type, no optional data, and
   // no callback function.
   explicit UnrestrictedUpdateEvent(
-      const typename Event<T>::TriggerType& trigger_type)
+      const TriggerType& trigger_type)
       : UnrestrictedUpdateEvent(trigger_type, nullptr) {}
   #endif
-
-  /**
-   * Assuming that @p events is not null, this function makes a deep copy of
-   * this event and adds the deep copy to @p events's collection of unrestricted
-   * update events.
-   */
-  void add_to_composite(CompositeEventCollection<T>* events) const override {
-    DRAKE_DEMAND(events != nullptr);
-    events->add_unrestricted_update_event(
-        std::unique_ptr<UnrestrictedUpdateEvent<T>>(this->DoClone()));
-  }
 
   /**
    * Calls the optional callback function, if one exists, with @p context,
@@ -545,8 +554,15 @@ class UnrestrictedUpdateEvent final : public Event<T> {
  private:
   UnrestrictedUpdateEvent(const UnrestrictedUpdateEvent&) = default;
 
+  void DoAddToComposite(TriggerType trigger_type,
+                        CompositeEventCollection<T>* events) const final {
+    auto event = std::unique_ptr<UnrestrictedUpdateEvent<T>>(this->DoClone());
+    event->set_trigger_type(trigger_type);
+    events->add_unrestricted_update_event(std::move(event));
+  }
+
   // Clones event data specific to UnrestrictedUpdateEvent.
-  UnrestrictedUpdateEvent<T>* DoClone() const override {
+  UnrestrictedUpdateEvent<T>* DoClone() const final {
     return new UnrestrictedUpdateEvent(*this);
   }
 

@@ -8,7 +8,7 @@
 #include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
-#include "drake/systems/controllers/inverse_dynamics_controller.h"
+#include "drake/systems/controllers/rbt_inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -67,7 +67,7 @@ IiwaAndBoxPlantWithStateEstimator<T>::IiwaAndBoxPlantWithStateEstimator(
   }
 
   iiwa_controller_ = builder.template AddController<
-      systems::controllers::InverseDynamicsController<T>>(
+      systems::controllers::rbt::InverseDynamicsController<T>>(
       iiwa_info.instance_id, std::move(single_arm), iiwa_kp, iiwa_ki, iiwa_kd,
       true /* with feedforward acceleration */);
   iiwa_controller_->set_name("IIWAInverseDynamicsController");

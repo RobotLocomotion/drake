@@ -102,6 +102,7 @@ drake_cc_binary(
         "//geometry:geometry_visualization",
         "//multibody/multibody_tree/multibody_plant:contact_results_to_lcm",
         "//systems/analysis:simulator",
+        "//systems/sensors:image_to_lcm_image_array_t",
         "@gflags",
     ],
 )

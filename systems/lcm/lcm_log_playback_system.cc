@@ -45,7 +45,7 @@ void LcmLogPlaybackSystem::DoCalcNextUpdateTime(
   *time = next_message_time;
   events->get_mutable_publish_events().add_event(
       std::make_unique<systems::PublishEvent<double>>(
-          Event<double>::TriggerType::kTimed, callback));
+          TriggerType::kTimed, callback));
 }
 
 }  // namespace lcm

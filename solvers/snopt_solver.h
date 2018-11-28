@@ -38,6 +38,14 @@ class SnoptSolver : public MathematicalProgramSolverInterface  {
       const MathematicalProgram& prog) const override;
 
   static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
+
+  /// @return if the solver is thread safe. SNOPT f2c interface uses global
+  /// variables, hence it is not thread safe. SNOPT fortran interface is thread
+  /// safe.
+  static bool is_thread_safe();
+
+  /// For some reason, SNOPT 7.4 fails to detect a simple LP being unbounded.
+  static bool is_bounded_lp_broken();
 };
 
 }  // namespace solvers

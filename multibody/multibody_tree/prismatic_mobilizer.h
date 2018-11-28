@@ -46,8 +46,8 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   /// `outboard_frame_M` granting a single translational degree of freedom along
   /// `axis_F`, expressed in the `inboard_frame_F`.
   /// @pre `axis_F` must be a non-zero vector with norm at least root square of
-  /// machine epsilon. This vector can have any length, only the direction is
-  /// used.
+  /// machine epsilon. This vector can have any length (subject to the norm
+  /// restriction above), only the direction is used.
   /// @throws std::exception if the L2 norm of `axis_F` is less than the square
   /// root of machine epsilon.
   PrismaticMobilizer(const Frame<T>& inboard_frame_F,
@@ -166,6 +166,13 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
       EigenPtr<VectorX<T>> v) const final;
 
  protected:
+  void DoCalcNMatrix(const MultibodyTreeContext<T>& context,
+                     EigenPtr<MatrixX<T>> N) const final;
+
+  void DoCalcNplusMatrix(
+      const MultibodyTreeContext<T>& context,
+      EigenPtr<MatrixX<T>> Nplus) const final;
+
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const final;
 

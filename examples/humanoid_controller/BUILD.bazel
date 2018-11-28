@@ -41,11 +41,11 @@ drake_cc_library(
     srcs = ["humanoid_status.cc"],
     hdrs = ["humanoid_status.h"],
     deps = [
+        "//attic/multibody:rigid_body_tree",
+        "//attic/multibody:rigid_body_tree_alias_groups",
         "//attic/systems/controllers:side",
         "//attic/systems/controllers/qp_inverse_dynamics:robot_kinematic_state",  # noqa
         "//common:essential",
-        "//multibody:rigid_body_tree",
-        "//multibody:rigid_body_tree_alias_groups",
     ],
 )
 
@@ -66,8 +66,8 @@ drake_cc_library(
     deps = [
         ":humanoid_status",
         "//attic/manipulation/util:robot_state_msg_translator",
+        "//attic/multibody:rigid_body_tree",
         "//attic/systems/controllers/qp_inverse_dynamics:lcm_utils",
-        "//multibody:rigid_body_tree",
         "//systems/framework:leaf_system",
     ],
 )
@@ -98,10 +98,10 @@ drake_cc_binary(
     ],
     deps = [
         "//attic/manipulation/util:robot_state_msg_translator",
+        "//attic/multibody:rigid_body_tree",
         "//attic/multibody/parsers",
         "//common:find_resource",
         "//examples/valkyrie:valkyrie_constants",
-        "//multibody:rigid_body_tree",
         "@gflags",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",

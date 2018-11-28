@@ -5,7 +5,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
-#include "drake/lcm/drake_lcm_message_handler_interface.h"
 
 namespace drake {
 namespace lcm {
@@ -64,16 +63,6 @@ void DrakeMockLcm::Subscribe(const std::string& channel,
   DRAKE_THROW_UNLESS(!channel.empty());
   subscriptions_.emplace(channel, std::move(handler));
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-void DrakeMockLcm::Subscribe(const std::string& channel,
-                             DrakeLcmMessageHandlerInterface* handler) {
-  Subscribe(channel, std::bind(
-      std::mem_fn(&DrakeLcmMessageHandlerInterface::HandleMessage), handler,
-      channel, std::placeholders::_1, std::placeholders::_2));
-}
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 void DrakeMockLcm::InduceSubscriberCallback(const std::string& channel,
                                             const void* data, int data_size) {

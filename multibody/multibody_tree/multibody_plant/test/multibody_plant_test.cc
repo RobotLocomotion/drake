@@ -1298,7 +1298,7 @@ TEST_F(SplitPendulum, MassMatrix) {
 // Verifies we can parse link collision geometries and surface friction.
 GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
   const std::string full_name = drake::FindResourceOrThrow(
-      "drake/multibody/multibody_tree/parsing/test/"
+      "drake/multibody/parsing/test/"
           "links_with_visuals_and_collisions.sdf");
   MultibodyPlant<double> plant;
   SceneGraph<double> scene_graph;
@@ -1845,6 +1845,13 @@ TEST_P(KukaArmTest, StateAccess) {
             xc_expected.head(plant_->num_positions()));
   EXPECT_EQ(xc, xc_expected);
 
+  // SetPositions() should yield the same result.
+  plant_->GetMutablePositions(context_.get()).setZero();
+  plant_->SetPositions(
+      context_.get(), xc_expected.head(plant_->num_positions()));
+  EXPECT_EQ(plant_->GetPositions(*context_),
+            xc_expected.head(plant_->num_positions()));
+
   // Modify velocities and change xc_expected to reflect changes to velocities.
   for (int i = 0; i < plant_->num_velocities(); ++i)
     xc_expected[i + plant_->num_positions()] *= -1;
@@ -1854,11 +1861,21 @@ TEST_P(KukaArmTest, StateAccess) {
             xc_expected.tail(plant_->num_velocities()));
   EXPECT_EQ(xc, xc_expected);
 
-  // Get a mutable state and modified it.
+  // SetVelocities() should yield the same result.
+  plant_->GetMutableVelocities(context_.get()).setZero();
+  plant_->SetVelocities(
+      context_.get(), xc_expected.tail(plant_->num_velocities()));
+  EXPECT_EQ(plant_->GetVelocities(*context_),
+            xc_expected.tail(plant_->num_velocities()));
+  EXPECT_EQ(xc, xc_expected);
+
+  // Get a mutable state and modify it.
   // Note: xc above is referencing values stored in the context. Therefore
   // setting the entire state to zero changes the values referenced by xc.
-  plant_->tree().GetMutablePositionsAndVelocities(context_.get()).setZero();
+  plant_->GetMutablePositionsAndVelocities(context_.get()).setZero();
   EXPECT_EQ(xc, VectorX<double>::Zero(plant_->num_multibody_states()));
+  plant_->SetPositionsAndVelocities(context_.get(), xc_expected);
+  EXPECT_EQ(xc, xc_expected);
 }
 
 TEST_P(KukaArmTest, InstanceStateAccess) {
@@ -1895,7 +1912,8 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
   x << q, qd;
 
   // Set the positions, make sure that they're retrieved successfully, and
-  // verify that no other multibody positions or velocities are altered.
+  // verify that no other multibody instance positions or velocities are
+  // altered.
   plant_->GetMutablePositionsAndVelocities(context_.get()).setZero();
   plant_->SetPositions(context_.get(), arm2, q);
   EXPECT_EQ(plant_->GetPositions(*context_, arm2), q);
@@ -1904,13 +1922,22 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
   EXPECT_EQ(plant_->GetVelocities(*context_, arm2).norm(), 0);
 
   // Set the velocities, make sure that they're retrieved successfully, and
-  // verify that no other multibody positions or velocities are altered.
+  // verify that no other multibody instance positions or velocities are
+  // altered.
   plant_->GetMutablePositionsAndVelocities(context_.get()).setZero();
   plant_->SetVelocities(context_.get(), arm2, qd);
   EXPECT_EQ(plant_->GetVelocities(*context_, arm2), qd);
   EXPECT_EQ(plant_->GetPositions(*context_, arm1).norm(), 0);
   EXPECT_EQ(plant_->GetVelocities(*context_, arm1).norm(), 0);
   EXPECT_EQ(plant_->GetPositions(*context_, arm2).norm(), 0);
+
+  // Set the positions and velocities, make sure that they're retrieved
+  // successfully and verify that no other multibody instance positions or
+  // velocities are altered.
+  plant_->GetMutablePositionsAndVelocities(context_.get()).setZero();
+  plant_->SetPositionsAndVelocities(context_.get(), arm2, x);
+  EXPECT_EQ(plant_->GetPositionsAndVelocities(*context_, arm2), x);
+  EXPECT_EQ(plant_->GetPositionsAndVelocities(*context_, arm1).norm(), 0);
 }
 
 // Verifies we instantiated an appropriate MultibodyPlant model based on the

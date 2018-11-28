@@ -8,6 +8,7 @@
 #include "drake/common/unused.h"
 #include "drake/math/normalize_vector.h"
 #include "drake/math/quaternion.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_conversion_gradient.h"
 #include "drake/multibody/joints/drake_joint_impl.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -72,12 +73,10 @@ class QuaternionBallJoint : public DrakeJointImpl<QuaternionBallJoint> {
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {
-    Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry> ret;
-    drake::Vector4<typename DerivedQ::Scalar> quat(q[0], q[1], q[2], q[3]);
-    ret.linear() = drake::math::quat2rotmat(quat);
-    ret.translation().setZero();
-    ret.makeAffine();
-    return ret;
+    Eigen::Quaternion<typename DerivedQ::Scalar> quat(q[0], q[1], q[2], q[3]);
+    const drake::math::RotationMatrix<typename DerivedQ::Scalar> R_PB(quat);
+    const drake::math::RigidTransform<typename DerivedQ::Scalar> X_PB(R_PB);
+    return X_PB.GetAsIsometry3();
   }
 
   template <typename DerivedQ, typename DerivedMS>

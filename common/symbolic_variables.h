@@ -45,7 +45,7 @@ class Variables {
   Variables(std::initializer_list<Variable> init);
 
   /** Constructs from an Eigen vector of variables. */
-  explicit Variables(const Eigen::Ref<const VectorX<Variable>>& init);
+  explicit Variables(const Eigen::Ref<const VectorX<Variable>>& vec);
 
   /** Returns the number of elements. */
   size_type size() const { return vars_.size(); }

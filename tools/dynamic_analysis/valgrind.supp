@@ -383,6 +383,33 @@
    fun:MSK_optimizetrm
 }
 
+# TODO(jamiesnape): Determine whether this is a defect within MOSEK or its
+# dependencies (#10087).
+{
+   <mosek-21>
+   Memcheck:Cond
+   fun:__wcsnlen_avx2
+   fun:wcsrtombs
+   fun:MSK_sysenv_wfopen
+   fun:MSK_sysenv_fopen
+   fun:MSK_fopentask
+   fun:MSK_linkfiletotaskstream
+}
+
+# TODO(jamiesnape): Determine whether this is a defect within MOSEK or its
+# dependencies (#10087).
+{
+   <mosek-22>
+   Memcheck:Cond
+   fun:internal_ascii_loop
+   fun:__gconv_transform_internal_ascii
+   fun:wcsrtombs
+   fun:MSK_sysenv_wfopen
+   fun:MSK_sysenv_fopen
+   fun:MSK_fopentask
+   fun:MSK_linkfiletotaskstream
+}
+
 # Started happening when Gurobi got updated to 7.0.2. PR 6332.
 {
     <gurobi-1>
@@ -405,4 +432,16 @@
     fun:call_init
     fun:_dl_init
     obj:/lib/x86_64-linux-gnu/ld-2.23.so
+}
+
+# Conditional jump depending on uninitialized value in IPOPT 3.11.9 as
+# packaged for Ubuntu Bionic. Fixed in IPOPT 3.12.11 per
+# https://projects.coin-or.org/Ipopt/changeset?new=2724
+{
+   <ipopt-mumps-solver-interface-1>
+   Memcheck:Cond
+   fun:dmumps_
+   fun:dmumps_f77_
+   fun:dmumps_c
+   fun:_ZN5Ipopt20MumpsSolverInterfaceC1Ev
 }

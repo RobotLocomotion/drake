@@ -117,7 +117,7 @@ class DiagramContextTest : public ::testing::Test {
     EXPECT_EQ(context_->get_continuous_state().size(), 2);
     EXPECT_EQ(context_->get_num_discrete_state_groups(), 1);
     EXPECT_EQ(context_->get_num_abstract_states(), 1);
-    EXPECT_EQ(context_->num_numeric_parameters(), 1);
+    EXPECT_EQ(context_->num_numeric_parameter_groups(), 1);
     EXPECT_EQ(context_->num_abstract_parameters(), 1);
     EXPECT_EQ(context_->num_subcontexts(), kNumSystems);
   }
@@ -278,7 +278,7 @@ void VerifyClonedState(const State<double>& clone) {
 // Verifies that the @p params are a clone of the params constructed in
 // DiagramContextTest::SetUp.
 void VerifyClonedParameters(const Parameters<double>& params) {
-  ASSERT_EQ(1, params.num_numeric_parameters());
+  ASSERT_EQ(1, params.num_numeric_parameter_groups());
   EXPECT_EQ(76.0, params.get_numeric_parameter(0).GetAtIndex(0));
   EXPECT_EQ(77.0, params.get_numeric_parameter(0).GetAtIndex(1));
   ASSERT_EQ(1, params.num_abstract_parameters());

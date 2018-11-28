@@ -139,14 +139,6 @@ class System : public SystemBase {
     return output;
   }
 
-#ifndef DRAKE_DOXYGEN_CXX
-  // TODO(sherm1) Remove this after 10/1/2018 (three months).
-  DRAKE_DEPRECATED("Call AllocateOutput() with no Context argument.")
-  std::unique_ptr<SystemOutput<T>> AllocateOutput(const Context<T>&) const {
-    return AllocateOutput();
-  }
-#endif
-
   /// Returns a ContinuousState of the same size as the continuous_state
   /// allocated in CreateDefaultContext. The simulator will provide this state
   /// as the output argument to EvalTimeDerivatives.
@@ -201,9 +193,9 @@ class System : public SystemBase {
 
     // Set the default parameters, checking that the number of parameters does
     // not change.
-    const int num_params = context->num_numeric_parameters();
+    const int num_params = context->num_numeric_parameter_groups();
     SetDefaultParameters(*context, &context->get_mutable_parameters());
-    DRAKE_DEMAND(num_params == context->num_numeric_parameters());
+    DRAKE_DEMAND(num_params == context->num_numeric_parameter_groups());
   }
 
   /// Assigns random values to all elements of the state.
@@ -258,10 +250,10 @@ class System : public SystemBase {
 
     // Set the default parameters, checking that the number of parameters does
     // not change.
-    const int num_params = context->num_numeric_parameters();
+    const int num_params = context->num_numeric_parameter_groups();
     SetRandomParameters(*context, &context->get_mutable_parameters(),
                         generator);
-    DRAKE_DEMAND(num_params == context->num_numeric_parameters());
+    DRAKE_DEMAND(num_params == context->num_numeric_parameter_groups());
   }
 
   /// For each input port, allocates a fixed input of the concrete type

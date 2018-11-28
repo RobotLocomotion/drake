@@ -9,10 +9,7 @@ def tinyxml2_repository(
         name,
         licenses = ["notice"],  # Zlib
         modname = "tinyxml2",
-        pkg_config_paths = [
-            "/usr/local/opt/tinyxml2@7.0/lib/pkgconfig",
-            "/usr/local/opt/tinyxml2/lib/pkgconfig",
-        ],
+        pkg_config_paths = ["/usr/local/opt/tinyxml2/lib/pkgconfig"],
         **kwargs):
     pkg_config_repository(
         name = name,

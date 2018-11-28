@@ -11,33 +11,6 @@ namespace drake {
 namespace lcm {
 namespace {
 
-// TODO(jwnimmer-tri) When the DrakeLcmMessageHandlerInterface class is
-// deleted, refactor this test to use the HandlerFunction interface.  For now,
-// since the DrakeLcmInterface code delegates to the HandlerFunction code, we
-// keep this all as-is so that all codepaths are covered by tests.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-template <typename MsgType>
-class TestHandler : public DrakeLcmMessageHandlerInterface {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestHandler)
-
-  explicit TestHandler(const std::string& name) : name_(name) {}
-
-  void HandleMessage(const std::string& channel, const void* buffer,
-                     int size) override {
-    EXPECT_EQ(channel, name_);
-    msg_.decode(buffer, 0, size);
-  }
-
-  const MsgType& get_msg() const { return msg_; }
-
- private:
-  const std::string name_;
-  MsgType msg_{};
-};
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-
 // Generates a log file using the write-only interface, then plays it back
 // and check message content with a subscriber.
 GTEST_TEST(LcmLogTest, LcmLogTestSaveAndRead) {
@@ -57,19 +30,20 @@ GTEST_TEST(LcmLogTest, LcmLogTestSaveAndRead) {
 
   auto r_log = std::make_unique<DrakeLcmLog>("test.log", false);
   // Add multiple subscribers to the same channel.
-  std::vector<std::unique_ptr<TestHandler<drake::lcmt_drake_signal>>> handlers;
+  std::vector<drake::lcmt_drake_signal> messages(3, drake::lcmt_drake_signal{});
   for (int i = 0; i < 3; i++) {
-    handlers.emplace_back(
-        std::make_unique<TestHandler<drake::lcmt_drake_signal>>(channel_name));
-    r_log->Subscribe(channel_name, handlers.back().get());
+    Subscribe<drake::lcmt_drake_signal>(
+        r_log.get(), channel_name, [i, &messages](const auto& message) {
+          messages[i] = message;
+        });
   }
 
   double r_time = r_log->GetNextMessageTime();
   EXPECT_NEAR(r_time, log_time, 1e-12);
   r_log->DispatchMessageAndAdvanceLog(r_time);
 
-  for (const auto& handler : handlers) {
-    const drake::lcmt_drake_signal& decoded_msg = handler->get_msg();
+  for (int i = 0; i < 3; i++) {
+    const auto& decoded_msg = messages[i];
     EXPECT_EQ(msg.dim, decoded_msg.dim);
     EXPECT_EQ(msg.val.size(), decoded_msg.val.size());
     EXPECT_EQ(msg.val[0], decoded_msg.val[0]);

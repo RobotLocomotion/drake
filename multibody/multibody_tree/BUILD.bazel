@@ -356,9 +356,46 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "mobilizer_tester",
+    testonly = 1,
+    hdrs = ["test/mobilizer_tester.h"],
+    deps = [
+        "//multibody/multibody_tree/multibody_plant",
+    ],
+)
+
 drake_cc_googletest(
     name = "prismatic_mobilizer_test",
     deps = [
+        ":mobilizer_tester",
+        ":multibody_tree",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "quaternion_floating_mobilizer_test",
+    deps = [
+        ":mobilizer_tester",
+        ":multibody_tree",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "revolute_mobilizer_test",
+    deps = [
+        ":mobilizer_tester",
+        ":multibody_tree",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "space_xyz_mobilizer_test",
+    deps = [
+        ":mobilizer_tester",
         ":multibody_tree",
         "//common/test_utilities:eigen_matrix_compare",
     ],
@@ -367,6 +404,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "weld_mobilizer_test",
     deps = [
+        ":mobilizer_tester",
         ":multibody_tree",
         "//common/test_utilities:eigen_matrix_compare",
     ],

@@ -229,7 +229,7 @@ bool DirectTranscription::AddSymbolicDynamicConstraints(
   }
 
   symbolic::Substitution sub;
-  for (int i = 0; i < context.num_numeric_parameters(); i++) {
+  for (int i = 0; i < context.num_numeric_parameter_groups(); i++) {
     const auto& params = context.get_numeric_parameter(i).get_value();
     for (int j = 0; j < params.size(); j++) {
       sub.emplace(inspector->numeric_parameters(i)[j], params[j]);

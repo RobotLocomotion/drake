@@ -29,6 +29,15 @@ struct ObjFeatures {
   bool draw_branch_points{true};
   /// Draw highlighting of elevation_bounds of each lane?
   bool draw_elevation_bounds{true};
+  /// Tolerance for mesh simplification, or the distance from a vertex to an
+  /// edge line or to a face plane at which said vertex is considered redundant
+  /// (i.e. it is not necessary to further define those geometrical entities),
+  /// in meters. If equal to 0, no mesh simplification will take place. If equal
+  /// to the road linear tolerance, mesh simplification will be constrained
+  /// enough so as to keep mesh geometrical accuracy. If greater than the road
+  /// linear tolerance, mesh size reductions will come at the expense of
+  /// geometrical accuracy.
+  double simplify_mesh_threshold{0.};
   /// Absolute width of stripes
   double stripe_width{0.25};
   /// Absolute elevation (h) of stripes above road surface

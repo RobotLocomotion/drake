@@ -168,13 +168,13 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
         events->get_mutable_unrestricted_update_events();
     uu_events.add_event(
         std::make_unique<systems::UnrestrictedUpdateEvent<double>>(
-            Event<double>::TriggerType::kTimed));
+            TriggerType::kTimed));
   } else {
     EventCollection<DiscreteUpdateEvent<double>>& du_events =
         events->get_mutable_discrete_update_events();
     du_events.add_event(
         std::make_unique<systems::DiscreteUpdateEvent<double>>(
-            Event<double>::TriggerType::kTimed));
+            TriggerType::kTimed));
   }
 }
 

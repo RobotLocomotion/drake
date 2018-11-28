@@ -62,6 +62,8 @@ drake_cc_googletest(
     # causes timeouts in kcov.
     tags = ["no_kcov"],
     deps = [
+        "//attic/multibody:rigid_body_tree",
+        "//attic/multibody:rigid_body_tree_construction",
         "//attic/multibody/parsers",
         "//attic/multibody/rigid_body_plant",
         "//attic/multibody/rigid_body_plant:contact_results_to_lcm",
@@ -72,8 +74,6 @@ drake_cc_googletest(
         "//common/trajectories:trajectory",
         "//lcm",
         "//manipulation/schunk_wsg",
-        "//multibody:rigid_body_tree",
-        "//multibody:rigid_body_tree_construction",
         "//systems/analysis",
         "//systems/controllers:pid_controlled_system",
         "//systems/framework:diagram_builder",
