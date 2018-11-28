@@ -155,7 +155,7 @@ ManipulationStation<T>::ManipulationStation(double time_step)
 }
 
 template <typename T>
-multibody::ModelInstanceIndex ManipulationStation<T>::AddModelFromSdf(
+multibody::ModelInstanceIndex ManipulationStation<T>::AddAndWeldModelFromSdf(
     const std::string& model_path, const std::string& model_name,
     const multibody::Frame<T>& parent, const std::string& child_frame_name,
     const Isometry3<double>& X_PC) {
@@ -163,14 +163,15 @@ multibody::ModelInstanceIndex ManipulationStation<T>::AddModelFromSdf(
 
   const multibody::ModelInstanceIndex new_model =
       AddModelFromSdfFile(model_path, model_name, plant_);
-  plant_->WeldFrames(
-      parent, plant_->GetFrameByName(child_frame_name, new_model), X_PC);
+  const auto& child_frame = plant_->GetFrameByName(child_frame_name, new_model);
+  plant_->WeldFrames(parent, child_frame, X_PC);
   // Check for iiwa
   if (model_name == "iiwa") {
     iiwa_model_ = new_model;
     iiwa_model_info_.model_path = model_path;
     iiwa_model_info_.parent_body_name = parent.body().name();
     iiwa_model_info_.child_frame_name = child_frame_name;
+    iiwa_model_info_.child_body_name = child_frame.body().name();
     iiwa_model_info_.X_PC = parent.GetFixedPoseInBodyFrame() * X_PC;
     drake::log()->info("Added iiwa.");
   } else if (model_name == "gripper") {
@@ -179,6 +180,7 @@ multibody::ModelInstanceIndex ManipulationStation<T>::AddModelFromSdf(
     wsg_model_info_.model_path = model_path;
     wsg_model_info_.parent_body_name = parent.body().name();
     wsg_model_info_.child_frame_name = child_frame_name;
+    iiwa_model_info_.child_body_name = child_frame.body().name();
     wsg_model_info_.X_PC = parent.GetFixedPoseInBodyFrame() * X_PC;
     drake::log()->info("Added gripper.");
   }
@@ -197,7 +199,8 @@ void ManipulationStation<T>::SetupDefaultStation(
         "drake/examples/manipulation_station/models/"
         "amazon_table_simplified.sdf");
 
-    AddModelFromSdf(sdf_path, "table", plant_->world_frame(), "amazon_table",
+    AddAndWeldModelFromSdf(sdf_path, "table", plant_->world_frame(),
+        "amazon_table",
         RigidTransform<double>(Vector3d(dx_table_center_to_robot_base, 0,
                                    -dz_table_top_robot_base))
             .GetAsIsometry3());
@@ -214,7 +217,7 @@ void ManipulationStation<T>::SetupDefaultStation(
     const std::string sdf_path = FindResourceOrThrow(
         "drake/examples/manipulation_station/models/cupboard.sdf");
 
-    AddModelFromSdf(sdf_path, "cupboard", plant_->world_frame(),
+    AddAndWeldModelFromSdf(sdf_path, "cupboard", plant_->world_frame(),
         "cupboard_body",
         RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI),
             Vector3d(
@@ -241,8 +244,8 @@ void ManipulationStation<T>::SetupDefaultStation(
       default:
         DRAKE_ABORT_MSG("Unrecognized collision_model.");
     }
-    AddModelFromSdf(sdf_path, "iiwa", plant_->world_frame(), "iiwa_link_0",
-        Isometry3<double>::Identity());
+    AddAndWeldModelFromSdf(sdf_path, "iiwa", plant_->world_frame(),
+        "iiwa_link_0", Isometry3<double>::Identity());
   }
 
   // Add default wsg.
@@ -251,7 +254,7 @@ void ManipulationStation<T>::SetupDefaultStation(
         "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
     const multibody::Frame<T>& link7 =
         plant_->GetFrameByName("iiwa_link_7", iiwa_model_);
-    AddModelFromSdf(sdf_path, "gripper", link7, "body",
+    AddAndWeldModelFromSdf(sdf_path, "gripper", link7, "body",
         RigidTransform<double>(
             RollPitchYaw<double>(M_PI_2, 0, M_PI_2), Vector3d(0, 0, 0.114))
             .GetAsIsometry3());
@@ -280,9 +283,7 @@ void ManipulationStation<T>::MakeIiwaControllerModel() {
       owned_controller_plant_->AddRigidBody("wsg_equivalent",
           controller_iiwa_model,
           internal::MakeCompositeGripperInertia(
-              wsg_model_info_.model_path, wsg_model_info_.child_frame_name));
-  // (above) This is pretty shady, i need to figure out a way to pass which
-  // mass to lump.
+              wsg_model_info_.model_path, wsg_model_info_.child_body_name));
 
   owned_controller_plant_->WeldFrames(
       owned_controller_plant_->GetFrameByName(

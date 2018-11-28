@@ -39,8 +39,6 @@ args = parser.parse_args()
 
 builder = DiagramBuilder()
 
-args.hardware = True
-
 if args.hardware:
     # TODO(russt): Replace this hard-coded camera serial number with a config
     # file.
