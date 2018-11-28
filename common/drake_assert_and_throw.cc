@@ -43,6 +43,11 @@ void PrintFailureDetailTo(std::ostream& out, const char* condition,
 // Declared in drake_assert.h.
 void Abort(const char* condition, const char* func, const char* file,
            int line) {
+  if (AssertionConfig::singleton().assertion_failures_are_exceptions) {
+    // Cross fingers.
+    Throw(condition, func, file, line);
+    return;
+  }
   std::cerr << "abort: ";
   PrintFailureDetailTo(std::cerr, condition, func, file, line);
   std::cerr << std::endl;
