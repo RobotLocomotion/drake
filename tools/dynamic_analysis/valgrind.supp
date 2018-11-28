@@ -383,6 +383,33 @@
    fun:MSK_optimizetrm
 }
 
+# TODO(jamiesnape): Determine whether this is a defect within MOSEK or its
+# dependencies (#10087).
+{
+   <mosek-21>
+   Memcheck:Cond
+   fun:__wcsnlen_avx2
+   fun:wcsrtombs
+   fun:MSK_sysenv_wfopen
+   fun:MSK_sysenv_fopen
+   fun:MSK_fopentask
+   fun:MSK_linkfiletotaskstream
+}
+
+# TODO(jamiesnape): Determine whether this is a defect within MOSEK or its
+# dependencies (#10087).
+{
+   <mosek-22>
+   Memcheck:Cond
+   fun:internal_ascii_loop
+   fun:__gconv_transform_internal_ascii
+   fun:wcsrtombs
+   fun:MSK_sysenv_wfopen
+   fun:MSK_sysenv_fopen
+   fun:MSK_fopentask
+   fun:MSK_linkfiletotaskstream
+}
+
 # Started happening when Gurobi got updated to 7.0.2. PR 6332.
 {
     <gurobi-1>
