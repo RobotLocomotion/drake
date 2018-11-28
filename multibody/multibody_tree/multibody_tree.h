@@ -1808,13 +1808,13 @@ class MultibodyTree {
   /// @name Methods to compute multibody Jacobians.
   /// @{
 
-  /// Given a list of points with fixed position vectors `p_FQ` in a frame
-  /// F, (that is, their time derivative `DtF(p_FQ)` in frame F is zero),
-  /// this method computes the geometric Jacobian `Jv_WFq` defined by:
+  /// Given a list of points with fixed position vectors `p_FP` in a frame
+  /// F, (that is, their time derivative `DtF(p_FP)` in frame F is zero),
+  /// this method computes the geometric Jacobian `Jv_WFp` defined by:
   /// <pre>
-  ///   v_WQ(q, v) = Jv_WFq(q)⋅v
+  ///   v_WP(q, v) = Jv_WFp(q)⋅v
   /// </pre>
-  /// where `v_WQ(q, v)` is the translational velocity of point `Q` in the
+  /// where `v_WP(q, v)` is the translational velocity of point `P` in the
   /// world frame W and q and v are the vectors of generalized position and
   /// velocity, respectively.
   ///
@@ -1822,227 +1822,225 @@ class MultibodyTree {
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q.
   /// @param[in] frame_F
-  ///   The positions `p_FQ` of each point in the input set are measured and
+  ///   The positions `p_FP` of each point in the input set are measured and
   ///   expressed in this frame F and are constant (fixed) in this frame.
-  /// @param[in] p_FQ_list
-  ///   A matrix with the fixed position of a set of points `Q` measured and
+  /// @param[in] p_FP_list
+  ///   A matrix with the fixed position of a set of points `P` measured and
   ///   expressed in `frame_F`.
-  ///   Each column of this matrix contains the position vector `p_FQ` for a
-  ///   point `Q` measured and expressed in frame F. Therefore this input
+  ///   Each column of this matrix contains the position vector `p_FP` for a
+  ///   point `P` measured and expressed in frame F. Therefore this input
   ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
-  /// @param[out] p_WQ_list
-  ///   The output positions of each point `Q` now measured and expressed in
+  /// @param[out] p_WP_list
+  ///   The output positions of each point `P` now measured and expressed in
   //    the world frame W. These positions are computed in the process of
-  ///   computing the geometric Jacobian `J_WQ` and therefore external storage
+  ///   computing the geometric Jacobian `J_WP` and therefore external storage
   ///   must be provided.
-  ///   The output `p_WQ_list` **must** have the same size as the input set
-  ///   `p_FQ_list` or otherwise this method throws a
-  ///   std::runtime_error exception. That is `p_WQ_list` **must** be in
+  ///   The output `p_WP_list` **must** have the same size as the input set
+  ///   `p_FP_list` or otherwise this method throws a
+  ///   std::runtime_error exception. That is `p_WP_list` **must** be in
   ///   `ℝ³ˣⁿᵖ`.
-  /// @param[out] Jv_WFq
-  ///   The geometric Jacobian `Jv_WFq(q)`, function of the generalized
+  /// @param[out] Jv_WFp
+  ///   The geometric Jacobian `Jv_WFp(q)`, function of the generalized
   ///   positions q only. This Jacobian relates the translational velocity
-  ///   `v_WQ` of each point `Q` in the input set by: <pre>
-  ///     v_WQ(q, v) = Jv_WFq(q)⋅v
+  ///   `v_WP` of each point `P` in the input set by: <pre>
+  ///     v_WP(q, v) = Jv_WFp(q)⋅v
   ///   </pre>
-  ///   so that `v_WQ` is a column vector of size `3⋅np` concatenating the
-  ///   velocity of all points `Q` in the same order they were given in the
-  ///   input set. Therefore `J_WFq` is a matrix of size `3⋅np x nv`, with `nv`
-  ///   the number of generalized velocities. On input, matrix `J_WFq` **must**
+  ///   so that `v_WP` is a column vector of size `3⋅np` concatenating the
+  ///   velocity of all points `P` in the same order they were given in the
+  ///   input set. Therefore `J_WFp` is a matrix of size `3⋅np x nv`, with `nv`
+  ///   the number of generalized velocities. On input, matrix `J_WFp` **must**
   ///   have size `3⋅np x nv` or this method throws a std::runtime_error
   ///   exception.
   ///
-  /// @throws std::exception if the output `p_WQ_list` is nullptr or does not
-  ///  have the same size as the input array `p_FQ_list`.
-  /// @throws std::exception if `Jv_WFq` is nullptr or if it does not have the
-  /// appropriate size, see documentation for `Jv_WFq` for details.
+  /// @throws std::exception if the output `p_WP_list` is nullptr or does not
+  ///  have the same size as the input array `p_FP_list`.
+  /// @throws std::exception if `Jv_WFp` is nullptr or if it does not have the
+  /// appropriate size, see documentation for `Jv_WFp` for details.
   // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
   // most applications it is all we need and it is more efficient to compute.
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_FQ_list,
-      EigenPtr<MatrixX<T>> p_WQ_list, EigenPtr<MatrixX<T>> Jv_WFq) const;
+      const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_FP_list,
+      EigenPtr<MatrixX<T>> p_WP_list, EigenPtr<MatrixX<T>> Jv_WFp) const;
 
-  /// This is a variant to compute the geometric Jacobian `Jv_WFq` for a list of
-  /// points `Q` moving with `frame_F`, given that we know the position `p_WQ`
+  /// This is a variant to compute the geometric Jacobian `Jv_WFp` for a list of
+  /// points `P` moving with `frame_F`, given that we know the position `p_WP`
   /// of each point in the list measured and expressed in the world frame W. The
-  /// geometric Jacobian `Jv_WFq` is defined such that: <pre>
-  ///   v_WQ(q, v) = Jv_WFq(q)⋅v
+  /// geometric Jacobian `Jv_WFp` is defined such that: <pre>
+  ///   v_WP(q, v) = Jv_WFp(q)⋅v
   /// </pre>
-  /// where `v_WQ(q, v)` is the translational velocity of point `Q` in the
+  /// where `v_WP(q, v)` is the translational velocity of point `P` in the
   /// world frame W and q and v are the vectors of generalized position and
   /// velocity, respectively. Since the spatial velocity of each
-  /// point `Q` is linear in the generalized velocities, the geometric
-  /// Jacobian `Jv_WFq` is a function of the generalized coordinates q only.
+  /// point `P` is linear in the generalized velocities, the geometric
+  /// Jacobian `Jv_WFp` is a function of the generalized coordinates q only.
   ///
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q.
   /// @param[in] frame_F
-  ///   Points `Q` in the list instantaneously move with this frame.
-  /// @param[in] p_WQ_list
-  ///   A matrix with the fixed position of a list of points `Q` measured and
+  ///   Points `P` in the list instantaneously move with this frame.
+  /// @param[in] p_WP_list
+  ///   A matrix with the fixed position of a list of points `P` measured and
   ///   expressed in the world frame W.
-  ///   Each column of this matrix contains the position vector `p_WQ` for a
-  ///   point `Q` measured and expressed in the world frame W. Therefore this
+  ///   Each column of this matrix contains the position vector `p_WP` for a
+  ///   point `P` measured and expressed in the world frame W. Therefore this
   ///   input matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the list.
-  /// @param[out] Jv_WFq
-  ///   The geometric Jacobian `Jv_WFq(q)`, function of the generalized
+  /// @param[out] Jv_WFp
+  ///   The geometric Jacobian `Jv_WFp(q)`, function of the generalized
   ///   positions q only. This Jacobian relates the translational velocity
-  ///   `v_WQ` of each point `Q` in the input list by: <pre>
-  ///     `v_WQ(q, v) = Jv_WFq(q)⋅v`
+  ///   `v_WP` of each point `P` in the input list by: <pre>
+  ///     `v_WP(q, v) = Jv_WFp(q)⋅v`
   ///   </pre>
-  ///   so that `v_WQ` is a column vector of size `3⋅np` concatenating the
-  ///   velocity of all points `Q` in the same order they were given in the
-  ///   input list. Therefore `J_WQ` is a matrix of size `3⋅np x nv`, with `nv`
-  ///   the number of generalized velocities. On input, matrix `J_WQ` **must**
+  ///   so that `v_WP` is a column vector of size `3⋅np` concatenating the
+  ///   velocity of all points `P` in the same order they were given in the
+  ///   input list. Therefore `J_WP` is a matrix of size `3⋅np x nv`, with `nv`
+  ///   the number of generalized velocities. On input, matrix `J_WP` **must**
   ///   have size `3⋅np x nv` or this method throws a std::runtime_error
   ///   exception.
   ///
-  /// @throws std::exception if `Jv_WFq` is nullptr or if it does not have the
-  /// appropriate size, see documentation for `Jv_WFq` for details.
+  /// @throws std::exception if `Jv_WFp` is nullptr or if it does not have the
+  /// appropriate size, see documentation for `Jv_WFp` for details.
   // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
   // most applications it is all we need and it is more efficient to compute.
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_WQ_list,
-      EigenPtr<MatrixX<T>> Jv_WFq) const;
+      const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_WP_list,
+      EigenPtr<MatrixX<T>> Jv_WFp) const;
 
-  /// Computes the bias term `b_WFq` associated with the translational
-  /// acceleration `a_WFq` of a point `Q` instantaneously moving with a frame F.
-  /// That is, the translational acceleration of point `Q` can be computed as:
+  /// Computes the bias term `b_WFp` associated with the translational
+  /// acceleration `a_WFp` of a point `P` instantaneously moving with a frame F.
+  /// That is, the translational acceleration of point `P` can be computed as:
   /// <pre>
-  ///   a_WFq = Jv_WFq(q)⋅v̇ + b_WFq(q, v)
+  ///   a_WFp = Jv_WFp(q)⋅v̇ + b_WFp(q, v)
   /// </pre>
-  /// where `b_WFq = J̇v_WFq(q, v)⋅v`.
+  /// where `b_WFp = J̇v_WFp(q, v)⋅v`.
   ///
-  /// This method computes `b_WFq` for each point `Q` in `p_FQ_list` defined by
-  /// its position `p_FQ` in `frame_F`.
+  /// This method computes `b_WFp` for each point `P` in `p_FP_list` defined by
+  /// its position `p_FP` in `frame_F`.
   ///
   /// @see CalcPointsGeometricJacobianExpressedInWorld() to compute the
-  /// geometric Jacobian `Jv_WFq(q)`.
+  /// geometric Jacobian `Jv_WFp(q)`.
   ///
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q and generalized velocities v.
   /// @param[in] frame_F
-  ///   Points `Q` in the list instantaneously move with this frame.
-  /// @param[in] p_FQ_list
-  ///   A matrix with the fixed position of a list of points `Q` measured and
+  ///   Points `P` in the list instantaneously move with this frame.
+  /// @param[in] p_FP_list
+  ///   A matrix with the fixed position of a list of points `P` measured and
   ///   expressed in `frame_F`.
-  ///   Each column of this matrix contains the position vector `p_FQ` for a
-  ///   point `Q` measured and expressed in frame F. Therefore this input
+  ///   Each column of this matrix contains the position vector `p_FP` for a
+  ///   point `P` measured and expressed in frame F. Therefore this input
   ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the list.
-  /// @returns b_WFq
+  /// @returns b_WFp
   ///   The bias term, function of the generalized positions q and the
   ///   generalized velocities v as stored in `context`.
   ///   The returned vector has size `3⋅np`, with np the number of points in
-  ///   `p_FQ_list`, and concatenates the bias terms for each point `Q` in the
+  ///   `p_FP_list`, and concatenates the bias terms for each point `P` in the
   ///   list in the same order they are specified on input.
   ///
-  /// @throws std::exception if `p_FQ_list` does not have 3 rows.
+  /// @throws std::exception if `p_FP_list` does not have 3 rows.
   VectorX<T> CalcBiasForPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
-      const Eigen::Ref<const MatrixX<T>>& p_FQ_list) const;
+      const Eigen::Ref<const MatrixX<T>>& p_FP_list) const;
 
-  /// Given a frame `Fq` defined by shifting a frame F from its origin `Fo` to
-  /// a new origin `Q`, this method computes the geometric Jacobian `Jv_WFq`
-  /// for frame `Fq`. The new origin `Q` is specified by the position vector
-  /// `p_FQ` in frame F. The frame geometric Jacobian `Jv_WFq` is defined by:
+  /// Given a frame `Fp` defined by shifting a frame F from its origin `Fo` to
+  /// a new origin `P`, this method computes the geometric Jacobian `Jv_WFp`
+  /// for frame `Fp`. The new origin `P` is specified by the position vector
+  /// `p_FP` in frame F. The frame geometric Jacobian `Jv_WFp` is defined by:
   /// <pre>
-  ///   V_WFq(q, v) = Jv_WFq(q)⋅v
+  ///   V_WFp(q, v) = Jv_WFp(q)⋅v
   /// </pre>
-  /// where `V_WFq(q, v)` is the spatial velocity of frame `Fq` measured and
+  /// where `V_WFp(q, v)` is the spatial velocity of frame `Fp` measured and
   /// expressed in the world frame W and q and v are the vectors of generalized
   /// position and velocity, respectively.
-  /// The geometric Jacobian `Jv_WFq(q)` is a function of the generalized
+  /// The geometric Jacobian `Jv_WFp(q)` is a function of the generalized
   /// coordinates q only.
   ///
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q.
   /// @param[in] frame_F
-  ///   The position `p_FQ` of frame `Fq` is measured and expressed in this
+  ///   The position `p_FP` of frame `Fp` is measured and expressed in this
   ///   frame F.
-  /// @param[in] p_FQ
-  ///   The (fixed) position of the origin `Q` of frame `Fq` as measured and
+  /// @param[in] p_FP
+  ///   The (fixed) position of the origin `P` of frame `Fp` as measured and
   ///   expressed in frame F.
-  /// @param[out] Jv_WFq
-  ///   The geometric Jacobian `Jv_WFq(q)`, function of the generalized
-  ///   positions q only. This Jacobian relates to the spatial velocity `V_WFq`
-  ///   of frame `Fq` by: <pre>
-  ///     V_WFq(q, v) = Jv_WFq(q)⋅v
+  /// @param[out] Jv_WFp
+  ///   The geometric Jacobian `Jv_WFp(q)`, function of the generalized
+  ///   positions q only. This Jacobian relates to the spatial velocity `V_WFp`
+  ///   of frame `Fp` by: <pre>
+  ///     V_WFp(q, v) = Jv_WFp(q)⋅v
   ///   </pre>
-  ///   Therefore `Jv_WFq` is a matrix of size `6 x nv`, with `nv`
-  ///   the number of generalized velocities. On input, matrix `Jv_WFq` **must**
+  ///   Therefore `Jv_WFp` is a matrix of size `6 x nv`, with `nv`
+  ///   the number of generalized velocities. On input, matrix `Jv_WFp` **must**
   ///   have size `6 x nv` or this method throws an exception. The top rows of
-  ///   this matrix (which can be accessed with Jv_WFq.topRows<3>()) is the
-  ///   Jacobian `Hw_WFq` related to the angular velocity of `Fq` in W by
-  ///   `w_WFq = Hw_WFq⋅v`. The bottom rows of this matrix (which can be
-  ///   accessed with Jv_WFq.bottomRows<3>()) is the Jacobian `Hv_WFq` related
-  ///   to the translational velocity of the origin `Q` of frame `Fq` in W by
-  ///   `v_WFqo = Hv_WFq⋅v`. This ordering is consistent with the internal
+  ///   this matrix (which can be accessed with Jv_WFp.topRows<3>()) is the
+  ///   Jacobian `Hw_WFp` related to the angular velocity of `Fp` in W by
+  ///   `w_WFp = Hw_WFp⋅v`. The bottom rows of this matrix (which can be
+  ///   accessed with Jv_WFp.bottomRows<3>()) is the Jacobian `Hv_WFp` related
+  ///   to the translational velocity of the origin `P` of frame `Fp` in W by
+  ///   `v_WFpo = Hv_WFp⋅v`. This ordering is consistent with the internal
   ///   storage of the SpatialVelocity class. Therefore the following operations
   ///   results in a valid spatial velocity: <pre>
-  ///     SpatialVelocity<double> Jv_WFq_times_v(Jv_WFq * v);
+  ///     SpatialVelocity<double> Jv_WFp_times_v(Jv_WFp * v);
   ///   </pre>
   ///
-  /// @throws std::exception if `J_WFq` is nullptr or if it is not of size
+  /// @throws std::exception if `J_WFp` is nullptr or if it is not of size
   ///   `6 x nv`.
   void CalcFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FQ,
-      EigenPtr<MatrixX<T>> Jv_WFq) const;
+      const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP,
+      EigenPtr<MatrixX<T>> Jv_WFp) const;
 
   /// Computes the geometric Jacobian for a point moving with a given frame.
-  /// Consider a point Q instantaneously moving with a frame B with position
-  /// `p_BQ` in that frame. Frame `Bq` is the frame defined by shifting frame B
-  /// with origin at `Bo` to a new origin at point Q. The spatial
-  /// velocity `V_ABq_E` of frame `Bq` measured in a frame A and expressed in a
+  /// Consider a point P instantaneously moving with a frame B with position
+  /// `p_BP` in that frame. Frame `Bp` is the frame defined by shifting frame B
+  /// with origin at `Bo` to a new origin at point P. The spatial
+  /// velocity `V_ABp_E` of frame `Bp` measured in a frame A and expressed in a
   /// frame E relates to the generalized velocities of the system by the
-  /// geometric Jacobian `Jv_ABq_E(q)` by: <pre>
-  ///   V_ABq_E(q, v) = Jv_ABq_E(q)⋅v
+  /// geometric Jacobian `Jv_ABp_E(q)` by: <pre>
+  ///   V_ABp_E(q, v) = Jv_ABp_E(q)⋅v
   /// </pre>
-  /// This method computes the geometric Jacobian `Jv_ABq_E(q)`.
-  /// In the above, note that the "q" in `Bq` represents the point "Q" while
-  /// the other uses of q alone refer to the generalized coordinates.
+  /// This method computes the geometric Jacobian `Jv_ABp_E(q)`.
   ///
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q.
   /// @param[in] frame_B
-  ///   The position `p_BQ` of point Q is measured and expressed in this frame.
-  /// @param[in] p_BQ
-  ///   The (fixed) position of the origin `Q` of frame `Bq` as measured and
+  ///   The position `p_BP` of point P is measured and expressed in this frame.
+  /// @param[in] p_BP
+  ///   The (fixed) position of the origin `P` of frame `Bp` as measured and
   ///   expressed in frame B.
   /// @param[in] frame_A
-  ///   The second frame in which the spatial velocity `V_ABq` is measured and
+  ///   The second frame in which the spatial velocity `V_ABp` is measured and
   ///   expressed.
   /// @param[in] frame_E
-  ///   Frame in which the velocity V_ABq_E is expressed.
-  /// @param[out] Jv_ABq_E
-  ///   The geometric Jacobian `Jv_ABq_E(q)`, function of the generalized
+  ///   Frame in which the velocity V_ABp_E is expressed.
+  /// @param[out] Jv_ABp_E
+  ///   The geometric Jacobian `Jv_ABp_E(q)`, function of the generalized
   ///   positions q only. This Jacobian relates to the spatial velocity
-  ///   `V_ABq_E` of frame `Bq` in A and expressed in E by: <pre>
-  ///     V_ABq_E(q, v) = Jv_ABq_E(q)⋅v
+  ///   `V_ABp_E` of frame `Bp` in A and expressed in E by: <pre>
+  ///     V_ABp_E(q, v) = Jv_ABp_E(q)⋅v
   ///   </pre>
-  ///   Therefore `Jv_ABq_E` is a matrix of size `6 x nv`, with `nv`
-  ///   the number of generalized velocities. On input, matrix `Jv_ABq_E`
+  ///   Therefore `Jv_ABp_E` is a matrix of size `6 x nv`, with `nv`
+  ///   the number of generalized velocities. On input, matrix `Jv_ABp_E`
   ///   **must** have size `6 x nv` or this method throws an exception.
   ///   Given a `6 x nv` spatial Jacobian Jv, let Jvr be the `3 x nv`
   ///   rotational part (top 3 rows) and Jvt be the translational part
   ///   (bottom 3 rows). These can be obtained as follows: <pre>
-  ///     Jvr_ABq = Jv_ABq.topRows<3>();
-  ///     Jvt_ABq = Jv_ABq.bottomRows<3>();
+  ///     Jvr_ABp = Jv_ABp.topRows<3>();
+  ///     Jvt_ABp = Jv_ABp.bottomRows<3>();
   ///   </pre>
   ///   This ordering is consistent with the internal storage of the
   ///   SpatialVelocity class. Therefore the following operations results in
   ///   a valid spatial velocity: <pre>
-  ///     SpatialVelocity<double> V_ABq(Jv_ABq * v);
+  ///     SpatialVelocity<double> V_ABp(Jv_ABp * v);
   ///   </pre>
   ///
-  /// @throws std::exception if `J_ABq` is nullptr or if it is not of size
+  /// @throws std::exception if `J_ABp` is nullptr or if it is not of size
   ///   `6 x nv`.
   void CalcRelativeFrameGeometricJacobian(
       const systems::Context<T>& context,
@@ -2050,38 +2048,38 @@ class MultibodyTree {
       const Frame<T>& frame_A, const Frame<T>& frame_E,
       EigenPtr<MatrixX<T>> Jv_ABq_E) const;
 
-  /// Given a frame `Fq` defined by shifting a frame F from its origin `Fo` to
-  /// a new origin `Q`, this method computes the bias term `Ab_WFq` associated
-  /// with the spatial acceleration `A_WFq` a frame `Fq` instantaneously
-  /// moving with a frame F at a fixed position `p_FQ`.
-  /// That is, the spatial acceleration of frame `Fq` can be computed as:
+  /// Given a frame `Fp` defined by shifting a frame F from its origin `Fo` to
+  /// a new origin `P`, this method computes the bias term `Ab_WFp` associated
+  /// with the spatial acceleration `A_WFp` a frame `Fp` instantaneously
+  /// moving with a frame F at a fixed position `p_FP`.
+  /// That is, the spatial acceleration of frame `Fp` can be computed as:
   /// <pre>
-  ///   A_WFq = Jv_WFq(q)⋅v̇ + Ab_WFq(q, v)
+  ///   A_WFp = Jv_WFp(q)⋅v̇ + Ab_WFp(q, v)
   /// </pre>
-  /// where `Ab_WFq(q, v) = J̇v_WFq(q, v)⋅v`.
+  /// where `Ab_WFp(q, v) = J̇v_WFp(q, v)⋅v`.
   ///
   /// @see CalcFrameGeometricJacobianExpressedInWorld() to compute the
-  /// geometric Jacobian `Jv_WFq(q)`.
+  /// geometric Jacobian `Jv_WFp(q)`.
   ///
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q and generalized velocities v.
   /// @param[in] frame_F
-  ///   The position `p_FQ` of frame `Fq` is measured and expressed in this
+  ///   The position `p_FP` of frame `Fp` is measured and expressed in this
   ///   frame F.
-  /// @param[in] p_FQ
-  ///   The (fixed) position of the origin `Q` of frame `Fq` as measured and
+  /// @param[in] p_FP
+  ///   The (fixed) position of the origin `P` of frame `Fp` as measured and
   ///   expressed in frame F.
-  /// @returns Ab_WFq
+  /// @returns Ab_WFp
   ///   The bias term, function of the generalized positions q and the
   ///   generalized velocities v as stored in `context`.
   ///   The returned vector is of size 6, with the first three elements related
   ///   to the bias in angular acceleration and the with the last three elements
   ///   related to the bias in translational acceleration.
-  /// @note SpatialAcceleration(Ab_WFq) defines a valid SpatialAcceleration.
+  /// @note SpatialAcceleration(Ab_WFp) defines a valid SpatialAcceleration.
   Vector6<T> CalcBiasForFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FQ) const;
+      const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP) const;
 
   /// @}
   // End of multibody Jacobian methods section.
