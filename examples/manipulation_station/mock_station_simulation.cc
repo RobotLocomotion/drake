@@ -48,7 +48,7 @@ int do_main(int argc, char* argv[]) {
 
   // Create the "manipulation station".
   auto station = builder.AddSystem<ManipulationStation>();
-  station->AddCupboard();
+  station->SetupDefaultStation();
   // TODO(russt): Load sdf objects specified at the command line.  Requires
   // #9747.
   auto object = multibody::parsing::AddModelFromSdfFile(

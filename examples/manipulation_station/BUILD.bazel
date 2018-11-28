@@ -25,6 +25,7 @@ drake_cc_library(
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
     ],
+    copts = ["-g"],
     visibility = ["//visibility:public"],
     deps = [
         "//common:find_resource",

@@ -2,6 +2,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/examples/manipulation_station/manipulation_station.h"
@@ -36,11 +37,11 @@ PYBIND11_MODULE(manipulation_station, m) {
       .export_values();
 
   py::class_<ManipulationStation<T>, Diagram<T>>(m, "ManipulationStation")
-      .def(py::init<double, IiwaCollisionModel>(), py::arg("time_step") = 0.002,
+      .def(py::init<double>(), py::arg("time_step") = 0.002,
+          doc.ManipulationStation.ctor.doc_1args)
+      .def("SetupDefaultStation", &ManipulationStation<T>::SetupDefaultStation,
           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
-          doc.ManipulationStation.ctor.doc_2args)
-      .def("AddCupboard", &ManipulationStation<T>::AddCupboard,
-          doc.ManipulationStation.AddCupboard.doc)
+          doc.ManipulationStation.SetupDefaultStation.doc)
       .def("Finalize", &ManipulationStation<T>::Finalize,
           doc.ManipulationStation.Finalize.doc)
       .def("get_multibody_plant", &ManipulationStation<T>::get_multibody_plant,

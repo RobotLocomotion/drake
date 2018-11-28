@@ -127,13 +127,14 @@ class ManipulationStation : public systems::Diagram<T> {
   ///   discrete derivative used to approximate velocity from the position
   ///   command inputs.
   /// @param collision_model Determines which sdf is loaded for the IIWA.
-  ManipulationStation(
-      double time_step = 0.002,
+  ManipulationStation(double time_step = 0.002);
+
+  void SetupDefaultStation(
       IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
 
-  /// Add the geometry (and two extra degrees-of-freedom) of the optional
-  /// workstation cupboard to the model.
-  void AddCupboard();
+  multibody::ModelInstanceIndex AddModelFromSdf(const std::string& model_path,
+      const std::string& model_name, const multibody::Frame<T>& parent,
+      const std::string& child_frame_name, const Isometry3<double>& X_PC);
 
   // TODO(russt): Add scalar copy constructor etc once we support more
   // scalar types than T=double.  See #9573.
@@ -229,7 +230,33 @@ class ManipulationStation : public systems::Diagram<T> {
   /// Get the camera names / unique ids.
   std::vector<std::string> get_camera_names() const;
 
+  void SetWsgGains(double kp, double kd);
+
+  void SetIiwaPositionGains(const VectorX<double>& kp) {
+    SetIiwaGains(kp, &iiwa_kp_);
+  }
+
+  void SetIiwaVelocityGains(const VectorX<double>& kd) {
+    SetIiwaGains(kd, &iiwa_kd_);
+  }
+
+  void SetIiwaIntegralGains(const VectorX<double>& ki) {
+    SetIiwaGains(ki, &iiwa_ki_);
+  }
+
  private:
+  struct ModelInformation {
+    /// This needs to have the full path. i.e. drake::FindResourceOrThrow(...)
+    std::string model_path;
+    std::string parent_body_name;
+    std::string child_frame_name;
+    Isometry3<double> X_PC{Isometry3<double>::Identity()};
+  };
+
+  void SetIiwaGains(const VectorX<double>& new_gains, VectorX<double>* gains);
+
+  void MakeIiwaControllerModel();
+
   // These are only valid until Finalize() is called.
   std::unique_ptr<multibody::multibody_plant::MultibodyPlant<T>> owned_plant_;
   std::unique_ptr<geometry::SceneGraph<T>> owned_scene_graph_;
@@ -244,6 +271,17 @@ class ManipulationStation : public systems::Diagram<T> {
   multibody::ModelInstanceIndex wsg_model_;
 
   std::map<std::string, math::RigidTransform<double>> camera_poses_in_world_;
+
+  // These are kp and kd gains for iiwa and wsg controllers.
+  VectorX<double> iiwa_kp_;
+  VectorX<double> iiwa_kd_;
+  VectorX<double> iiwa_ki_;
+  double wsg_kp_;
+  double wsg_kd_;
+
+  //
+  ModelInformation iiwa_model_info_;
+  ModelInformation wsg_model_info_;
 };
 
 }  // namespace manipulation_station

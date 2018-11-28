@@ -39,6 +39,8 @@ args = parser.parse_args()
 
 builder = DiagramBuilder()
 
+args.hardware = True
+
 if args.hardware:
     # TODO(russt): Replace this hard-coded camera serial number with a config
     # file.
@@ -48,7 +50,7 @@ if args.hardware:
     station.Connect(wait_for_cameras=False)
 else:
     station = builder.AddSystem(ManipulationStation())
-    station.AddCupboard()
+    station.SetupDefaultStation()
     object = AddModelFromSdfFile(FindResourceOrThrow(
         "drake/examples/manipulation_station/models/061_foam_brick.sdf"),
         "object", station.get_mutable_multibody_plant(),

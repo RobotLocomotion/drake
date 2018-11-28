@@ -36,7 +36,7 @@ int do_main(int argc, char* argv[]) {
 
   // Create the "manipulation station".
   auto station = builder.AddSystem<ManipulationStation>();
-  station->AddCupboard();
+  station->SetupDefaultStation();
   auto object = multibody::parsing::AddModelFromSdfFile(
       FindResourceOrThrow(
           "drake/examples/manipulation_station/models/061_foam_brick.sdf"),

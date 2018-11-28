@@ -52,11 +52,11 @@ namespace internal {
 // with a unit test.  Potentially tighten the tolerance in
 // station_simulation_test.
 SpatialInertia<double> MakeCompositeGripperInertia(
-    const std::string& wsg_sdf_path) {
+    const std::string& wsg_sdf_path, const std::string& body_name) {
   MultibodyPlant<double> plant;
   AddModelFromSdfFile(wsg_sdf_path, &plant);
   plant.Finalize();
-  const auto& gripper_body = plant.tree().GetRigidBodyByName("body");
+  const auto& gripper_body = plant.tree().GetRigidBodyByName(body_name);
   const auto& left_finger = plant.tree().GetRigidBodyByName("left_finger");
   const auto& right_finger = plant.tree().GetRigidBodyByName("right_finger");
   const auto& left_slider = plant.GetJointByName("left_finger_sliding_joint");
@@ -124,120 +124,175 @@ void get_camera_poses(std::map<std::string, RigidTransform<double>>* pose_map) {
 }  // namespace internal
 
 template <typename T>
-ManipulationStation<T>::ManipulationStation(double time_step,
-                                            IiwaCollisionModel collision_model)
+ManipulationStation<T>::ManipulationStation(double time_step)
     : owned_plant_(std::make_unique<MultibodyPlant<T>>(time_step)),
       owned_scene_graph_(std::make_unique<SceneGraph<T>>()),
       owned_controller_plant_(std::make_unique<MultibodyPlant<T>>()) {
+  // Set default gains.
+  iiwa_kp_ = VectorXd::Constant(kNumDofIiwa, 100);
+  iiwa_ki_ = VectorXd::Constant(kNumDofIiwa, 1);
+  iiwa_kd_.resize(kNumDofIiwa);
+  for (int i = 0; i < kNumDofIiwa; i++) {
+    // Critical damping gains.
+    iiwa_kd_[i] = 2 * std::sqrt(iiwa_kp_[i]);
+  }
+  wsg_kp_ = 200;
+  wsg_kd_ = 5;
+
   // This class holds the unique_ptrs explicitly for plant and scene_graph
   // until Finalize() is called (when they are moved into the Diagram). Grab
   // the raw pointers, which should stay valid for the lifetime of the Diagram.
   plant_ = owned_plant_.get();
   scene_graph_ = owned_scene_graph_.get();
   plant_->RegisterAsSourceForSceneGraph(scene_graph_);
-  plant_->set_name("multibody_plant");
   scene_graph_->set_name("scene_graph");
-
-  // Add the table and 80/20 workcell frame.
-  const double dx_table_center_to_robot_base = 0.3257;
-  const double dz_table_top_robot_base = 0.0127;
-  const std::string table_sdf_path = FindResourceOrThrow(
-      "drake/examples/manipulation_station/models/amazon_table_simplified.sdf");
-  const auto table = AddModelFromSdfFile(table_sdf_path, "table", plant_);
-  plant_->WeldFrames(
-      plant_->world_frame(), plant_->GetFrameByName("amazon_table", table),
-      RigidTransform<double>(
-          Vector3d(dx_table_center_to_robot_base, 0, -dz_table_top_robot_base))
-          .GetAsIsometry3());
-
-  // Add the Kuka IIWA.
-  std::string iiwa_sdf_path;
-  switch (collision_model) {
-    case IiwaCollisionModel::kNoCollision:
-      iiwa_sdf_path = FindResourceOrThrow(
-          "drake/manipulation/models/iiwa_description/iiwa7/"
-          "iiwa7_no_collision.sdf");
-      break;
-    case IiwaCollisionModel::kBoxCollision:
-      iiwa_sdf_path = FindResourceOrThrow(
-          "drake/manipulation/models/iiwa_description/iiwa7/"
-          "iiwa7_with_box_collision.sdf");
-      break;
-    default:
-      DRAKE_ABORT_MSG("Unrecognized collision_model.");
-  }
-
-  iiwa_model_ = AddModelFromSdfFile(iiwa_sdf_path, "iiwa", plant_);
-  plant_->WeldFrames(plant_->world_frame(),
-                     plant_->GetFrameByName("iiwa_link_0", iiwa_model_));
-
-  // Add the Schunk gripper and weld it to the end of the IIWA.
-  const std::string wsg_sdf_path = FindResourceOrThrow(
-      "drake/manipulation/models/"
-      "wsg_50_description/sdf/schunk_wsg_50.sdf");
-  wsg_model_ = AddModelFromSdfFile(wsg_sdf_path, "gripper", plant_);
-  const RigidTransform<double> wsg_pose(RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
-                                        Vector3d(0, 0, 0.114));
-  plant_->WeldFrames(plant_->GetFrameByName("iiwa_link_7", iiwa_model_),
-                     plant_->GetFrameByName("body", wsg_model_),
-                     wsg_pose.GetAsIsometry3());
 
   plant_->template AddForceElement<multibody::UniformGravityFieldElement>(
       -9.81 * Vector3d::UnitZ());
   plant_->set_name("plant");
-  scene_graph_->set_name("scene_graph");
 
+  internal::get_camera_poses(&camera_poses_in_world_);
+}
+
+template <typename T>
+multibody::ModelInstanceIndex ManipulationStation<T>::AddModelFromSdf(
+    const std::string& model_path, const std::string& model_name,
+    const multibody::Frame<T>& parent, const std::string& child_frame_name,
+    const Isometry3<double>& X_PC) {
+  DRAKE_THROW_UNLESS(!plant_->HasModelInstanceNamed(model_name));
+
+  const multibody::ModelInstanceIndex new_model =
+      AddModelFromSdfFile(model_path, model_name, plant_);
+  plant_->WeldFrames(
+      parent, plant_->GetFrameByName(child_frame_name, new_model), X_PC);
+  // Check for iiwa
+  if (model_name == "iiwa") {
+    iiwa_model_ = new_model;
+    iiwa_model_info_.model_path = model_path;
+    iiwa_model_info_.parent_body_name = parent.body().name();
+    iiwa_model_info_.child_frame_name = child_frame_name;
+    iiwa_model_info_.X_PC = parent.GetFixedPoseInBodyFrame() * X_PC;
+    drake::log()->info("Added iiwa.");
+  } else if (model_name == "gripper") {
+    // TODO(siyuan): need to check parent.body.model_instance == iiwa_model_
+    wsg_model_ = new_model;
+    wsg_model_info_.model_path = model_path;
+    wsg_model_info_.parent_body_name = parent.body().name();
+    wsg_model_info_.child_frame_name = child_frame_name;
+    wsg_model_info_.X_PC = parent.GetFixedPoseInBodyFrame() * X_PC;
+    drake::log()->info("Added gripper.");
+  }
+
+  return new_model;
+}
+
+template <typename T>
+void ManipulationStation<T>::SetupDefaultStation(
+    const IiwaCollisionModel collision_model) {
+  // Add the table and 80/20 workcell frame.
+  {
+    const double dx_table_center_to_robot_base = 0.3257;
+    const double dz_table_top_robot_base = 0.0127;
+    const std::string sdf_path = FindResourceOrThrow(
+        "drake/examples/manipulation_station/models/"
+        "amazon_table_simplified.sdf");
+
+    AddModelFromSdf(sdf_path, "table", plant_->world_frame(), "amazon_table",
+        RigidTransform<double>(Vector3d(dx_table_center_to_robot_base, 0,
+                                   -dz_table_top_robot_base))
+            .GetAsIsometry3());
+  }
+
+  // Add the cupboard.
+  {
+    const double dx_table_center_to_robot_base = 0.3257;
+    const double dz_table_top_robot_base = 0.0127;
+    const double dx_cupboard_to_table_center = 0.43 + 0.15;
+    const double dz_cupboard_to_table_center = 0.02;
+    const double cupboard_height = 0.815;
+
+    const std::string sdf_path = FindResourceOrThrow(
+        "drake/examples/manipulation_station/models/cupboard.sdf");
+
+    AddModelFromSdf(sdf_path, "cupboard", plant_->world_frame(),
+        "cupboard_body",
+        RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI),
+            Vector3d(
+                dx_table_center_to_robot_base + dx_cupboard_to_table_center, 0,
+                dz_cupboard_to_table_center + cupboard_height / 2.0 -
+                    dz_table_top_robot_base))
+            .GetAsIsometry3());
+  }
+
+  // Add default iiwa.
+  {
+    std::string sdf_path;
+    switch (collision_model) {
+      case IiwaCollisionModel::kNoCollision:
+        sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/iiwa_description/iiwa7/"
+            "iiwa7_no_collision.sdf");
+        break;
+      case IiwaCollisionModel::kBoxCollision:
+        sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/iiwa_description/iiwa7/"
+            "iiwa7_with_box_collision.sdf");
+        break;
+      default:
+        DRAKE_ABORT_MSG("Unrecognized collision_model.");
+    }
+    AddModelFromSdf(sdf_path, "iiwa", plant_->world_frame(), "iiwa_link_0",
+        Isometry3<double>::Identity());
+  }
+
+  // Add default wsg.
+  {
+    const std::string sdf_path = FindResourceOrThrow(
+        "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
+    const multibody::Frame<T>& link7 =
+        plant_->GetFrameByName("iiwa_link_7", iiwa_model_);
+    AddModelFromSdf(sdf_path, "gripper", link7, "body",
+        RigidTransform<double>(
+            RollPitchYaw<double>(M_PI_2, 0, M_PI_2), Vector3d(0, 0, 0.114))
+            .GetAsIsometry3());
+  }
+}
+
+template <typename T>
+void ManipulationStation<T>::MakeIiwaControllerModel() {
   // Build the controller's version of the plant, which only contains the
   // IIWA and the equivalent inertia of the gripper.
-  const auto controller_iiwa_model =
-      AddModelFromSdfFile(iiwa_sdf_path, "iiwa", owned_controller_plant_.get());
-  owned_controller_plant_->WeldFrames(owned_controller_plant_->world_frame(),
-                                      owned_controller_plant_->GetFrameByName(
-                                          "iiwa_link_0", controller_iiwa_model),
-                                      Isometry3d::Identity());
+  const auto controller_iiwa_model = AddModelFromSdfFile(
+      iiwa_model_info_.model_path, "iiwa", owned_controller_plant_.get());
+
+  // (HACK) This needs to be properly set.
+  owned_controller_plant_->WeldFrames(owned_controller_plant_->GetFrameByName(
+                                          iiwa_model_info_.parent_body_name),
+      owned_controller_plant_->GetFrameByName(
+          iiwa_model_info_.child_frame_name, controller_iiwa_model),
+      iiwa_model_info_.X_PC);
   // Add a single body to represent the IIWA pendant's calibration of the
   // gripper.  The body of the WSG accounts for >90% of the total mass
   // (according to the sdf)... and we don't believe our inertia calibration
   // on the hardware to be so precise, so we simply ignore the inertia
   // contribution from the fingers here.
   const multibody::RigidBody<T>& wsg_equivalent =
-      owned_controller_plant_->AddRigidBody(
-          "wsg_equivalent", controller_iiwa_model,
-          internal::MakeCompositeGripperInertia(wsg_sdf_path));
-  owned_controller_plant_->WeldFrames(owned_controller_plant_->GetFrameByName(
-                                          "iiwa_link_7", controller_iiwa_model),
-                                      wsg_equivalent.body_frame(),
-                                      wsg_pose.GetAsIsometry3());
+      owned_controller_plant_->AddRigidBody("wsg_equivalent",
+          controller_iiwa_model,
+          internal::MakeCompositeGripperInertia(
+              wsg_model_info_.model_path, wsg_model_info_.child_frame_name));
+  // (above) This is pretty shady, i need to figure out a way to pass which
+  // mass to lump.
+
+  owned_controller_plant_->WeldFrames(
+      owned_controller_plant_->GetFrameByName(
+          wsg_model_info_.parent_body_name, controller_iiwa_model),
+      wsg_equivalent.body_frame(), wsg_model_info_.X_PC);
 
   owned_controller_plant_
       ->template AddForceElement<multibody::UniformGravityFieldElement>(
           -9.81 * Vector3d::UnitZ());
   owned_controller_plant_->set_name("controller_plant");
-
-  internal::get_camera_poses(&camera_poses_in_world_);
-  this->set_name("manipulation_station");
-}
-
-template <typename T>
-void ManipulationStation<T>::AddCupboard() {
-  const double dx_table_center_to_robot_base = 0.3257;
-  const double dz_table_top_robot_base = 0.0127;
-  const double dx_cupboard_to_table_center = 0.43 + 0.15;
-  const double dz_cupboard_to_table_center = 0.02;
-  const double cupboard_height = 0.815;
-
-  const std::string sdf_path = FindResourceOrThrow(
-      "drake/examples/manipulation_station/models/cupboard.sdf");
-  const auto cupboard = AddModelFromSdfFile(sdf_path, "cupboard", plant_);
-  plant_->WeldFrames(
-      plant_->world_frame(), plant_->GetFrameByName("cupboard_body", cupboard),
-      RigidTransform<double>(
-          RotationMatrix<double>::MakeZRotation(M_PI),
-          Vector3d(dx_table_center_to_robot_base + dx_cupboard_to_table_center,
-                   0,
-                   dz_cupboard_to_table_center + cupboard_height / 2.0 -
-                       dz_table_top_robot_base))
-          .GetAsIsometry3());
 }
 
 template <typename T>
@@ -245,6 +300,10 @@ void ManipulationStation<T>::Finalize() {
   // Note: This deferred diagram construction method/workflow exists because we
   //   - cannot finalize plant until all of my objects are added, and
   //   - cannot wire up my diagram until we have finalized the plant.
+  DRAKE_THROW_UNLESS(plant_->HasModelInstanceNamed("iiwa") &&
+                     plant_->HasModelInstanceNamed("gripper"));
+
+  MakeIiwaControllerModel();
 
   plant_->Finalize();
 
@@ -284,16 +343,9 @@ void ManipulationStation<T>::Finalize() {
     owned_controller_plant_->Finalize();
 
     // Add the inverse dynamics controller.
-    VectorXd iiwa_kp = VectorXd::Constant(kNumDofIiwa, 100);
-    VectorXd iiwa_kd(kNumDofIiwa);
-    for (int i = 0; i < kNumDofIiwa; i++) {
-      // Critical damping gains.
-      iiwa_kd[i] = 2 * std::sqrt(iiwa_kp[i]);
-    }
-    VectorXd iiwa_ki = VectorXd::Constant(kNumDofIiwa, 1);
     auto iiwa_controller = builder.template AddSystem<
         systems::controllers::InverseDynamicsController>(
-        *owned_controller_plant_, iiwa_kp, iiwa_ki, iiwa_kd, false);
+        *owned_controller_plant_, iiwa_kp_, iiwa_ki_, iiwa_kd_, false);
     iiwa_controller->set_name("iiwa_controller");
     builder.Connect(plant_->get_continuous_state_output_port(iiwa_model_),
                     iiwa_controller->get_input_port_estimated_state());
@@ -323,8 +375,10 @@ void ManipulationStation<T>::Finalize() {
   }
 
   {
+    const double wsg_update_period = 0.05;
     auto wsg_controller = builder.template AddSystem<
-        manipulation::schunk_wsg::SchunkWsgPositionController>();
+        manipulation::schunk_wsg::SchunkWsgPositionController>(
+        wsg_update_period, wsg_kp_, wsg_kd_);
     wsg_controller->set_name("wsg_controller");
 
     builder.Connect(wsg_controller->get_generalized_force_output_port(),
@@ -554,6 +608,23 @@ std::vector<std::string> ManipulationStation<T>::get_camera_names() const {
     names.emplace_back(pose.first);
   }
   return names;
+}
+
+template <typename T>
+void ManipulationStation<T>::SetWsgGains(const double kp, const double kd) {
+  DRAKE_THROW_UNLESS(!plant_->is_finalized());
+  DRAKE_THROW_UNLESS(kp >= 0 && kd >= 0);
+  wsg_kp_ = kp;
+  wsg_kd_ = kd;
+}
+
+template <typename T>
+void ManipulationStation<T>::SetIiwaGains(
+    const VectorX<double>& new_gains, VectorX<double>* gains) {
+  DRAKE_THROW_UNLESS(!plant_->is_finalized());
+  DRAKE_THROW_UNLESS(new_gains.size() == gains->size());
+  DRAKE_THROW_UNLESS((new_gains.array() >= 0).all());
+  *gains = new_gains;
 }
 
 }  // namespace manipulation_station

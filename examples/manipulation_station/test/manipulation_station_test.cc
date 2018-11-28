@@ -21,7 +21,7 @@ using systems::BasicVector;
 
 GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   ManipulationStation<double> station(0.001);
-  station.AddCupboard();
+  station.SetupDefaultStation();
   multibody::parsing::AddModelFromSdfFile(
       FindResourceOrThrow("drake/examples/manipulation_station/models"
                           "/061_foam_brick.sdf"),
@@ -250,15 +250,16 @@ GTEST_TEST(ManipulationStationTest, CheckRGBDOutputs) {
 }
 
 GTEST_TEST(ManipulationStationTest, CheckCollisionVariants) {
-  ManipulationStation<double> station1(0.002, IiwaCollisionModel::kNoCollision);
+  ManipulationStation<double> station1(0.002);
+  station1.SetupDefaultStation(IiwaCollisionModel::kNoCollision);
 
   // In this variant, there are collision geometries from the world and the
   // gripper, but not from the iiwa.
   const int num_collisions =
       station1.get_multibody_plant().num_collision_geometries();
 
-  ManipulationStation<double> station2(0.002,
-                                       IiwaCollisionModel::kBoxCollision);
+  ManipulationStation<double> station2(0.002);
+  station2.SetupDefaultStation(IiwaCollisionModel::kBoxCollision);
   // Check for additional collision elements (one for each link, which includes
   // the base).
   EXPECT_EQ(station2.get_multibody_plant().num_collision_geometries(),
