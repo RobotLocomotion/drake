@@ -628,10 +628,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   //  1. I could make this move semantics (or swap semantics).
   //  2. I could simply have a method that returns a mutable reference to such
   //    a vector and the caller sets values there directly.
-  void UpdateWorldPoses(const std::vector<Isometry3<T>>& X_WG) {
-    DRAKE_DEMAND(X_WG.size() == dynamic_objects_.size());
-    for (size_t i = 0; i < X_WG.size(); ++i) {
-      dynamic_objects_[i]->setTransform(convert(X_WG[i]));
+  void UpdateWorldPoses(const std::vector<Isometry3<T>>& X_WG,
+                        const std::vector<GeometryIndex>& indices) {
+    DRAKE_DEMAND(indices.size() == dynamic_objects_.size());
+    for (size_t i = 0; i < indices.size(); ++i) {
+      dynamic_objects_[i]->setTransform(convert(X_WG[indices[i]]));
     }
     dynamic_tree_.update();
   }
@@ -1209,8 +1210,9 @@ std::unique_ptr<ProximityEngine<AutoDiffXd>> ProximityEngine<T>::ToAutoDiffXd()
 
 template <typename T>
 void ProximityEngine<T>::UpdateWorldPoses(
-    const std::vector<Isometry3<T>>& X_WG) {
-  impl_->UpdateWorldPoses(X_WG);
+    const std::vector<Isometry3<T>>& X_WG,
+    const std::vector<GeometryIndex>& indices) {
+  impl_->UpdateWorldPoses(X_WG, indices);
 }
 
 template <typename T>

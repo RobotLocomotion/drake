@@ -403,10 +403,14 @@ TEST_F(SceneGraphTest, ModelInspector) {
 
   const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
 
-  EXPECT_EQ(inspector.GetGeometryIdByName(frame_1, "sphere"), sphere_1);
-  EXPECT_EQ(inspector.GetGeometryIdByName(frame_2, "sphere"), sphere_2);
+  // TODO(SeanCurtis-TRI): Change these roles to unassigned, when they no longer
+  // get a proximity and illustration role by default.
+  EXPECT_EQ(inspector.GetGeometryIdByName(frame_1, Role::kProximity, "sphere"),
+            sphere_1);
+  EXPECT_EQ(inspector.GetGeometryIdByName(frame_2, Role::kProximity, "sphere"),
+            sphere_2);
   EXPECT_EQ(inspector.GetGeometryIdByName(scene_graph_.world_frame_id(),
-                                          "sphere"),
+                                          Role::kProximity, "sphere"),
             anchored_id);
 }
 
@@ -593,7 +597,8 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
   const Isometry3<double> kIdentity = Isometry3<double>::Identity();
 
   // Case: Registered source with anchored geometry and frame but no dynamic
-  // geometry --> pose vector with one entry.
+  // geometry --> empty pose vector; only frames with dynamic geometry with an
+  // illustration role are included.
   {
     SceneGraph<double> scene_graph;
     SourceId s_id = scene_graph.RegisterSource("dummy");
@@ -604,7 +609,9 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
     FrameId f_id =
         scene_graph.RegisterFrame(s_id, GeometryFrame("f", kIdentity));
     PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
-    EXPECT_EQ(1, poses.get_num_poses());
+    // The frame has no illustration geometry, so it is not part of the pose
+    // bundle.
+    EXPECT_EQ(0, poses.get_num_poses());
     auto context = scene_graph.AllocateContext();
     FramePoseVector<double> pose_vector(s_id, {f_id});
     context->FixInputPort(scene_graph.get_source_pose_port(s_id).get_index(),
@@ -629,6 +636,8 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
         make_unique<GeometryInstance>(Isometry3<double>::Identity(),
                                       make_unique<Sphere>(1.0), "sphere"));
     PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
+    // The frame is included because the geometry automatically is assigned an
+    // illustration role.
     EXPECT_EQ(1, poses.get_num_poses());
     auto context = scene_graph.AllocateContext();
     FramePoseVector<double> pose_vector(s_id, {f_id});
