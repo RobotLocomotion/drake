@@ -275,6 +275,14 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   )
 endif()
 
+set(BAZEL_TARGETS_ARGS "${CMAKE_INSTALL_PREFIX}")
+
+option(NO_STRIP "Do not strip symbols (for debugging); do NOT enable this you are redistributing packages" OFF)
+if(NO_STRIP)
+  message("WARNING: Symbols are not stripped; if you have a proprietary solver enabled, do NOT redistribute these binaries.")
+  list(INSERT BAZEL_TARGETS_ARGS 0 "--no-strip")
+endif()
+
 include(ExternalProject)
 
 ExternalProject_Add(drake_cxx_python
@@ -283,7 +291,7 @@ ExternalProject_Add(drake_cxx_python
   BUILD_COMMAND ${BAZEL_ENV} "${Bazel_EXECUTABLE}" ${BAZEL_STARTUP_ARGS} build ${BAZEL_ARGS} ${BAZEL_TARGETS}
   BUILD_IN_SOURCE 1
   BUILD_ALWAYS 1
-  INSTALL_COMMAND ${BAZEL_ENV} "${Bazel_EXECUTABLE}" ${BAZEL_STARTUP_ARGS} run ${BAZEL_ARGS} ${BAZEL_TARGETS} -- "${CMAKE_INSTALL_PREFIX}"
+  INSTALL_COMMAND ${BAZEL_ENV} "${Bazel_EXECUTABLE}" ${BAZEL_STARTUP_ARGS} run ${BAZEL_ARGS} ${BAZEL_TARGETS} -- ${BAZEL_TARGETS_ARGS}
   USES_TERMINAL_BUILD 1
   USES_TERMINAL_INSTALL 1
 )
