@@ -147,15 +147,17 @@ class KukaIiwaModelTests : public ::testing::Test {
   std::unique_ptr<Context<AutoDiffXd>> context_autodiff_;
 };
 
-TEST_F(KukaIiwaModelTests, CalcPointsAnalyticalJacobianExpressedInWorld) {
-  // Numerical tolerance used to verify numerical results.
-  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
-
+TEST_F(KukaIiwaModelTests, FixtureInvariants) {
   // Sanity check basic invariants.
   // Seven dofs for the arm plus floating base.
   EXPECT_EQ(plant_->num_joints(), kNumJoints);
   EXPECT_EQ(plant_->num_positions(), kNumPositions);
   EXPECT_EQ(plant_->num_velocities(), kNumVelocities);
+}
+
+TEST_F(KukaIiwaModelTests, CalcPointsAnalyticalJacobianExpressedInWorld) {
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
   SetArbitraryConfiguration();
 
@@ -209,6 +211,63 @@ TEST_F(KukaIiwaModelTests, CalcPointsAnalyticalJacobianExpressedInWorld) {
   // automatic differentiation.
   EXPECT_TRUE(CompareMatrices(Jq_WPi, p_WPi_derivs,
                               kTolerance, MatrixCompareType::relative));
+}
+
+TEST_F(KukaIiwaModelTests, CalcRelativeFrameAnalyticalJacobian) {
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
+  SetArbitraryConfiguration();
+
+  // A point P fixed in the end effector frame E.
+  Vector3<double> p_EP{0.1, -0.05, 0.02};
+
+  MatrixX<double> Jq_WEp(6, plant_->num_positions());
+
+  // Compute the analytical Jacobian using the method under test.
+  plant_->tree().CalcRelativeFrameAnalyticalJacobian(
+      *context_, end_effector_link_->body_frame(), p_EP, plant_->world_frame(),
+      plant_->world_frame(), &Jq_WEp);
+
+  // Alternatively, compute the analytical Jacobian by taking the gradient of
+  // the spatial velocity V_WEp with respect to q̇, since V_WEp = Jq_WEP * q̇. We
+  // do that with the steps below.
+
+  // Initialize q̇ to have zero values and so that it is the independent
+  // variable of the problem.
+  VectorX<AutoDiffXd> qdot_autodiff =
+      math::initializeAutoDiff(VectorX<double>::Zero(kNumPositions));
+  auto q_double = plant_->GetPositions(*context_);
+  VectorX<AutoDiffXd> v_autodiff(kNumVelocities);
+  // Update the context with the position values from `context_`.
+  plant_autodiff_->SetPositions(context_autodiff_.get(),
+                                q_double.cast<AutoDiffXd>());
+  // Set the velocity values in the context using q̇.
+  plant_autodiff_->tree().MapQDotToVelocity(*context_autodiff_, qdot_autodiff,
+                                            &v_autodiff);
+  plant_autodiff_->SetVelocities(context_autodiff_.get(), v_autodiff);
+
+  // Compute V_WEp.
+  const Body<AutoDiffXd>& end_effector_link_autodiff =
+      plant_autodiff_->tree().get_variant(*end_effector_link_);
+  Isometry3<AutoDiffXd> X_WE_autodiff =
+      plant_autodiff_->tree().EvalBodyPoseInWorld(*context_autodiff_,
+                                                  end_effector_link_autodiff);
+  Vector3<AutoDiffXd> p_EP_W = X_WE_autodiff.linear() * p_EP.cast<AutoDiffXd>();
+  SpatialVelocity<AutoDiffXd> V_WEp_autodiff =
+      plant_autodiff_->tree()
+          .EvalBodySpatialVelocityInWorld(*context_autodiff_,
+                                          end_effector_link_autodiff)
+          .Shift(p_EP_W);
+
+  // Extract the analytical Jacobian.
+  MatrixX<double> Jq_WEp_autodiff =
+      math::autoDiffToGradientMatrix(V_WEp_autodiff.get_coeffs());
+
+  // Verify the Jacobian Jq_WEp compupted by the method under test matches the
+  // one obtained using automatic differentiation.
+  EXPECT_TRUE(CompareMatrices(Jq_WEp, Jq_WEp_autodiff, kTolerance,
+                              MatrixCompareType::relative));
 }
 
 }  // namespace

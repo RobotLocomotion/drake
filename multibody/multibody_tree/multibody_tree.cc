@@ -1058,6 +1058,19 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
 }
 
 template <typename T>
+void MultibodyTree<T>::CalcRelativeFrameAnalyticalJacobian(
+    const systems::Context<T>& context,
+    const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
+    const Frame<T>& frame_A, const Frame<T>& frame_E,
+    EigenPtr<MatrixX<T>> Jq_ABp_E) const {
+  DRAKE_THROW_UNLESS(Jq_ABp_E != nullptr);
+  DRAKE_THROW_UNLESS(Jq_ABp_E->rows() == 6);
+  DRAKE_THROW_UNLESS(Jq_ABp_E->cols() == num_positions());
+  CalcRelativeFrameJacobian(context, frame_B, p_BP, frame_A, frame_E,
+                            true /* from q̇ */, Jq_ABp_E);
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
     const systems::Context<T>& context,
     const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
@@ -1066,13 +1079,32 @@ void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
   DRAKE_THROW_UNLESS(Jv_ABp_E != nullptr);
   DRAKE_THROW_UNLESS(Jv_ABp_E->rows() == 6);
   DRAKE_THROW_UNLESS(Jv_ABp_E->cols() == num_velocities());
+  CalcRelativeFrameJacobian(context, frame_B, p_BP, frame_A, frame_E,
+                            false /* from v */, Jv_ABp_E);
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcRelativeFrameJacobian(
+    const systems::Context<T>& context,
+    const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
+    const Frame<T>& frame_A, const Frame<T>& frame_E, bool from_qdot,
+    EigenPtr<MatrixX<T>> J_ABp_E) const {
+  DRAKE_THROW_UNLESS(J_ABp_E != nullptr);
+  DRAKE_THROW_UNLESS(J_ABp_E->rows() == 6);
+  const int num_columns = from_qdot ? num_positions() : num_velocities();
+  DRAKE_THROW_UNLESS(J_ABp_E->cols() == num_columns);
 
   // The spatial velocity V_WBp can be obtained by composing the spatial
   // velocities V_WAp and V_ABp. Expressed in the world frame W this composition
   // is V_WBp_W = V_WAp_W + V_ABp_W
-  // That is: V_ABp_W = (Jv_WBp - Jv_WAp)⋅v
-  // And by re-expressing in frame E: V_ABp_E = R_EW⋅(Jv_WBp - Jv_WAp)⋅v
-  // That is, Jv_ABp_E = R_EW⋅(Jv_WBp - Jv_WAp).
+  // Therefore,
+  //   V_ABp_W = (J_WBp - J_WAp)⋅z,
+  // where
+  //   - if from_qdot is true,  z = q̇ and J_W{A,B}p = Jq_W{A,B}p, and
+  //   - if from_qdot is false, z = v and J_W{A,B}p = Jv_W{A,B}p.
+  // Expressed in frame E, this becomes
+  //   V_ABp_E = R_EW⋅(J_WBp - J_WAp)⋅z.
+  // Thus, J_ABp_E = R_EW⋅(J_WBp - J_WAp).
 
   Vector3<T> p_WP;
   CalcPointsPositions(context,
@@ -1082,21 +1114,21 @@ void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
   // TODO(amcastro-tri): When performance becomes an issue, implement this
   // method so that we only consider the kinematic path from A to B.
 
-  MatrixX<T> Jv_WAp(6, num_velocities());
-  auto Jvr_WAp = Jv_WAp.template topRows<3>();     // rotational part.
-  auto Jvt_WAp = Jv_WAp.template bottomRows<3>();  // translational part.
-  CalcFrameJacobianExpressedInWorld(
-      context, frame_A, p_WP, false /* from v */, &Jvr_WAp, &Jvt_WAp);
+  MatrixX<T> J_WAp(6, num_columns);
+  auto Jr_WAp = J_WAp.template topRows<3>();     // rotational part.
+  auto Jt_WAp = J_WAp.template bottomRows<3>();  // translational part.
+  CalcFrameJacobianExpressedInWorld(context, frame_A, p_WP, from_qdot, &Jr_WAp,
+                                    &Jt_WAp);
 
-  MatrixX<T> Jv_WBp(6, num_velocities());
-  auto Jvr_WBp = Jv_WBp.template topRows<3>();
-  auto Jvt_WBp = Jv_WBp.template bottomRows<3>();
-  CalcFrameJacobianExpressedInWorld(
-      context, frame_B, p_WP, false /* from v */, &Jvr_WBp, &Jvt_WBp);
+  MatrixX<T> J_WBp(6, num_columns);
+  auto Jr_WBp = J_WBp.template topRows<3>();     // rotational part.
+  auto Jt_WBp = J_WBp.template bottomRows<3>();  // translational part.
+  CalcFrameJacobianExpressedInWorld(context, frame_B, p_WP, from_qdot, &Jr_WBp,
+                                    &Jt_WBp);
 
-  // Geometric Jacobian Jv_ABp_W when E is the world frame W.
-  Jv_ABp_E->template topRows<3>() = Jvr_WBp - Jvr_WAp;
-  Jv_ABp_E->template bottomRows<3>() = Jvt_WBp - Jvt_WAp;
+  // Jacobian J_ABp_W when E is the world frame W.
+  J_ABp_E->template topRows<3>() = Jr_WBp - Jr_WAp;
+  J_ABp_E->template bottomRows<3>() = Jt_WBp - Jt_WAp;
 
   // If the expressed-in frame E is not the world frame, we need to perform
   // an additional operation.
@@ -1104,9 +1136,9 @@ void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
     const Isometry3<T> X_EW =
         CalcRelativeTransform(context, frame_E, world_frame());
     const Matrix3<T>& R_EW = X_EW.linear();
-    Jv_ABp_E->template topRows<3>() = R_EW * Jv_ABp_E->template topRows<3>();
-    Jv_ABp_E->template bottomRows<3>() =
-        R_EW * Jv_ABp_E->template bottomRows<3>();
+    J_ABp_E->template topRows<3>() = R_EW * J_ABp_E->template topRows<3>();
+    J_ABp_E->template bottomRows<3>() =
+        R_EW * J_ABp_E->template bottomRows<3>();
   }
 }
 
