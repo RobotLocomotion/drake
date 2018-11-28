@@ -2991,7 +2991,7 @@ class MultibodyTree {
   //   w_WFq = Jr_WFq⋅q̇
   //   v_WFq = Jt_WFq⋅q̇
   // when computed in terms of the time derivatives of the generalized
-  // positions (from_qdot =  true).
+  // positions (from_qdot = true).
   //
   // This method provides the option to specify whether angular and/or
   // translational terms need to be computed, however the caller must at least
@@ -3006,9 +3006,9 @@ class MultibodyTree {
   // origin at a point Q is the same as that of frame F, for any point Q.
   // That is, w_WFq = w_WF for any point Q. With this in mind, Jr_WFq is
   // defined so that:
-  //   w_WFq = w_WF = Jr_WFq⋅v (or = Jr_WFq⋅q̇ if from_qdot =  true).
+  //   w_WFq = w_WF = Jr_WFq⋅v (or = Jr_WFq⋅q̇ if from_qdot = true).
   // and therefore Jr_WFq is a matrix with 3 rows and nv columns (or nq
-  // columns when from_qdot =  true), with nv and nq the
+  // columns when from_qdot = true), with nv and nq the
   // number of generalized velocities and positions, respectively. If not
   // nullptr on input, matrix Jr_WFq **must** have the documented size or this
   // method throws a std::runtime_error exception.
@@ -3022,7 +3022,7 @@ class MultibodyTree {
   // defined such that:
   //   v_WFq = Jt_WFq⋅v, when from_qdot = false
   // or by:
-  //   v_WFq = Jt_WFq⋅q̇, when from_qdot =  true
+  //   v_WFq = Jt_WFq⋅q̇, when from_qdot = true
   //
   // Therefore Jt_WFq is a matrix with 3⋅np rows and nv columns (from_qdot =
   // false) or nq columns (from_qdot = true). If not
