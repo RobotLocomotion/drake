@@ -93,7 +93,8 @@ template <typename PyClass, typename Class, typename T>
 void DefReadWriteKeepAlive(PyClass* cls, const char* name, T Class::*member) {
   auto getter = [member](const Class* obj) { return obj->*member; };
   auto setter = [member](Class* obj, const T& value) { obj->*member = value; };
-  cls->def_property(name, py::cpp_function(getter),
+  cls->def_property(name,  // BR
+      py::cpp_function(getter),
       py::cpp_function(setter,
           // Keep alive, reference: `self` keeps `value` alive.
           py::keep_alive<1, 2>()));

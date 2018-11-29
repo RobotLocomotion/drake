@@ -31,7 +31,9 @@ template <typename... Ts>
 py::object BindSimpleTemplate(py::module m) {
   using Class = SimpleTemplate<Ts...>;
   py::class_<Class> py_class(m, TemporaryClassName<Class>().c_str());
-  py_class.def(py::init<>()).def("GetNames", &Class::GetNames);
+  py_class  // BR
+      .def(py::init<>())
+      .def("GetNames", &Class::GetNames);
   AddTemplateClass(m, "SimpleTemplate", py_class, GetPyParam<Ts...>());
   return py_class;
 }
@@ -81,10 +83,10 @@ vector<string> SimpleFunction() {
 GTEST_TEST(CppTemplateTest, TemplateFunction) {
   py::module m("__main__");
 
-  AddTemplateFunction(
-      m, "SimpleFunction", &SimpleFunction<int>, GetPyParam<int>());
-  AddTemplateFunction(m, "SimpleFunction", &SimpleFunction<int, double>,
-      GetPyParam<int, double>());
+  AddTemplateFunction(m, "SimpleFunction",  // BR
+      &SimpleFunction<int>, GetPyParam<int>());
+  AddTemplateFunction(m, "SimpleFunction",  // BR
+      &SimpleFunction<int, double>, GetPyParam<int, double>());
 
   const vector<string> expected_1 = {"int"};
   const vector<string> expected_2 = {"int", "double"};
@@ -104,7 +106,8 @@ GTEST_TEST(CppTemplateTest, TemplateMethod) {
   py::module m("__main__");
 
   py::class_<SimpleType> py_class(m, "SimpleType");
-  py_class.def(py::init<>());
+  py_class  // BR
+      .def(py::init<>());
   AddTemplateMethod(py_class, "SimpleMethod", &SimpleType::SimpleMethod<int>,
       GetPyParam<int>());
   AddTemplateMethod(py_class, "SimpleMethod",

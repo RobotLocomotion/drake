@@ -188,8 +188,9 @@ struct wrap_function_impl {
   template <typename Func, typename Return, typename... Args>
   static auto run(function_info<Func, Return, Args...>&& info,
       std::enable_if_t<!enable_wrap_output<Return>, void*> = {}) {
-    auto func_wrapped = [func_f = std::forward<Func>(info.func)](
-                            wrap_type_t<Args>... args_wrapped) -> Return {
+    auto func_wrapped =  // BR
+        [func_f = std::forward<Func>(info.func)](
+            wrap_type_t<Args>... args_wrapped) -> Return {
       return func_f(wrap_arg<Args>::unwrap(
           std::forward<wrap_type_t<Args>>(args_wrapped))...);
     };

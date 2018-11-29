@@ -168,10 +168,13 @@ template <class VisitWith = type_visit_with_default,
     typename Visitor = void, typename... Ts>
 void type_visit(Visitor&& visitor, type_pack<Ts...> = {},
     template_single_tag<Predicate> = {}) {
-  (void)detail::DummyList{
-      (detail::type_visit_impl<VisitWith, Visitor>::template runner<Ts,
-           Predicate<Ts>::value>::run(std::forward<Visitor>(visitor)),
-          true)...};
+  // clang-format off
+  (void)detail::DummyList{(
+      detail::type_visit_impl<VisitWith, Visitor>::
+          template runner<Ts, Predicate<Ts>::value>::
+              run(std::forward<Visitor>(visitor)),
+      true)...};
+  // clang-format on
 }
 
 /// Provides short-hand for hashing a type.

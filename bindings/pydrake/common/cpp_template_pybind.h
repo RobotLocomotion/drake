@@ -20,9 +20,10 @@ namespace internal {
 // Please see that function for common parameters.
 // @param template_cls_name Name of the template class in `cpp_template`,
 // resolves to class to be passed as `template_cls`.
-inline py::object GetOrInitTemplate(py::handle scope, const std::string& name,
-    const std::string& template_cls_name, py::tuple args = py::tuple(),
-    py::dict kwargs = py::dict()) {
+inline py::object GetOrInitTemplate(  // BR
+    py::handle scope, const std::string& name,
+    const std::string& template_cls_name,  // BR
+    py::tuple args = py::tuple(), py::dict kwargs = py::dict()) {
   const char module_name[] = "pydrake.common.cpp_template";
   py::handle m = py::module::import(module_name);
   return m.attr("get_or_init")(
