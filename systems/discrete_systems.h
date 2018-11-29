@@ -42,49 +42,35 @@ class SimpleDiscreteSystem : public LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleDiscreteSystem)
 
   SimpleDiscreteSystem() {
-    DeclareDiscreteState(1);  // Just one state variable, x[0].
+    DeclareDiscreteState(1);  // Just one state variable, x[0], default=0.
 
     // Output yₙ using a Drake "publish" event (occurs at the end of step n).
-    DeclarePeriodicEvent(kPeriod, kOffset,
-                         systems::PublishEvent<double>(
-                             [this](const systems::Context<double>& context,
-                                    const systems::PublishEvent<double>&) {
-                               Output(context);
-                             }));
+    DeclarePeriodicPublish(kPeriod, kOffset, &SimpleDiscreteSystem::Output);
 
-    // Update to xₙ₊₁ (x_np1), using a Drake "discrete update" event (occurs
+    // Update to xₙ₊₁, using a Drake "discrete update" event (occurs
     // at the beginning of step n+1).
-    DeclarePeriodicEvent(kPeriod, kOffset,
-                         systems::DiscreteUpdateEvent<double>(
-                             [this](const systems::Context<double>& context,
-                                    const systems::DiscreteUpdateEvent<double>&,
-                                    systems::DiscreteValues<double>* x_np1) {
-                               x_np1->get_mutable_vector()[0] =
-                                   Update(context);
-                             }));
+    DeclarePeriodicDiscreteUpdate(kPeriod, kOffset,
+                                  &SimpleDiscreteSystem::Update);
   }
 
-  // Set initial condition x₀ = 0.
-  void Initialize(systems::Context<double>* context) const {
-    context->get_mutable_discrete_state()[0] = 0.;
-  }
-
-  static constexpr double kPeriod = 0.02;  // Update at 50Hz (h=1/50).
-  static constexpr double kOffset = 0.;    // Trigger events starting at n=0.
+  static constexpr double kPeriod = 1/50.;  // Update at 50Hz (h=1/50).
+  static constexpr double kOffset = 0.;  // Trigger events at n=0.
 
  private:
-  // Update function xₙ₊₁ = f(n, xₙ).
-  double Update(const systems::Context<double>& context) const {
+  systems::EventStatus Update(const systems::Context<double>& context,
+                              systems::DiscreteValues<double>* xd) const {
     const double x_n = GetX(context);
-    return x_n + 1.;
+    (*xd)[0] = x_n + 1.;
+    return systems::EventStatus::Succeeded();
   }
 
   // Output function yₙ = g(n, xₙ). (Here, just writes 'n: Sₙ (t)' to cout.)
-  void Output(const systems::Context<double>& context) const {
+  systems::EventStatus Output(const systems::Context<double>& context) const {
     const double t = context.get_time();
     const int n = static_cast<int>(std::round(t / kPeriod));
     const double S_n = 10 * GetX(context);  // 10 xₙ[0]
     std::cout << n << ": " << S_n << " (" << t << ")\n";
+    return systems::EventStatus::Succeeded();
   }
 
   double GetX(const Context<double>& context) const {
@@ -95,10 +81,9 @@ class SimpleDiscreteSystem : public LeafSystem<double> {
 
 Stepping this system forward using the following code fragment:
 @code
-SimpleDiscreteSystem system;
-Simulator<double> simulator(system);
-system.Initialize(&simulator.get_mutable_context());
-simulator.StepTo(3 * SimpleDiscreteSystem::kPeriod);
+  SimpleDiscreteSystem system;
+  Simulator<double> simulator(system);
+  simulator.StepTo(3 * SimpleDiscreteSystem::kPeriod);
 @endcode
 yields the following output:
 ```

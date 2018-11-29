@@ -961,12 +961,13 @@ GTEST_TEST(SimulatorTest, SpringMass) {
 // period h, and show that publishing at t=nh produces the expected result
 //     n  0  1  2  3  4  5  6  7  8
 //     Fₙ 0  1  1  2  3  5  8 13 21 ...
-class FibonacciDifferenceEquation : public LeafSystem<double> {
+class FibonacciTestSystem : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FibonacciDifferenceEquation)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FibonacciTestSystem)
 
-  FibonacciDifferenceEquation() {
-    DeclareDiscreteState(2 /* x[0], x[1] */);
+  FibonacciTestSystem() {
+  // Set the default initial conditions: x₀[0]=0, x₀[1]=1.
+    DeclareDiscreteState(Eigen::Vector2d(0., 1.));
 
     // Output yₙ.
     DeclarePeriodicEvent(
@@ -1026,12 +1027,9 @@ class FibonacciDifferenceEquation : public LeafSystem<double> {
 };
 
 GTEST_TEST(SimulatorTest, FibonacciSystemTest) {
-  FibonacciDifferenceEquation fibonacci;
+  FibonacciTestSystem fibonacci;
 
   Simulator<double> simulator(fibonacci);
-
-  // Set the initial conditions: x₀[0]=0, x₀[1]=1.
-  fibonacci.Initialize(&simulator.get_mutable_context());
 
   // Simulate forward.
   simulator.StepTo(10.);
@@ -1058,49 +1056,35 @@ class SimpleDiscreteSystem : public LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleDiscreteSystem)
 
   SimpleDiscreteSystem() {
-    DeclareDiscreteState(1);  // Just one state variable, x[0].
+    DeclareDiscreteState(1);  // Just one state variable, x[0], default=0.
 
     // Output yₙ using a Drake "publish" event (occurs at the end of step n).
-    DeclarePeriodicEvent(kPeriod, kOffset,
-                         systems::PublishEvent<double>(
-                             [this](const systems::Context<double>& context_n,
-                                    const systems::PublishEvent<double>&) {
-                               Output(context_n);
-                             }));
+    DeclarePeriodicPublish(kPeriod, kOffset, &SimpleDiscreteSystem::Output);
 
-    // Update to xₙ₊₁ (x_np1), using a Drake "discrete update" event (occurs
+    // Update to xₙ₊₁, using a Drake "discrete update" event (occurs
     // at the beginning of step n+1).
-    DeclarePeriodicEvent(kPeriod, kOffset,
-                         systems::DiscreteUpdateEvent<double>(
-                             [this](const systems::Context<double>& context_n,
-                                    const systems::DiscreteUpdateEvent<double>&,
-                                    systems::DiscreteValues<double>* x_np1) {
-                               x_np1->get_mutable_vector()[0] =
-                                   Update(context_n);
-                             }));
-  }
-
-  // Set initial condition x₀ = 0.
-  void Initialize(systems::Context<double>* context_0) const {
-    context_0->get_mutable_discrete_state()[0] = 0.;
+    DeclarePeriodicDiscreteUpdate(kPeriod, kOffset,
+                                  &SimpleDiscreteSystem::Update);
   }
 
   static constexpr double kPeriod = 1/50.;  // Update at 50Hz (h=1/50).
   static constexpr double kOffset = 0.;  // Trigger events at n=0.
 
  private:
-  // Update function xₙ₊₁ = f(n, xₙ).
-  double Update(const systems::Context<double>& context_n) const {
-    const double x_n = GetX(context_n);
-    return x_n + 1.;
+  systems::EventStatus Update(const systems::Context<double>& context,
+                              systems::DiscreteValues<double>* xd) const {
+    const double x_n = GetX(context);
+    (*xd)[0] = x_n + 1.;
+    return systems::EventStatus::Succeeded();
   }
 
   // Output function yₙ = g(n, xₙ). (Here, just writes 'n: Sₙ (t)' to cout.)
-  void Output(const systems::Context<double>& context_n) const {
-    const double t = context_n.get_time();
+  systems::EventStatus Output(const systems::Context<double>& context) const {
+    const double t = context.get_time();
     const int n = static_cast<int>(std::round(t / kPeriod));
-    const double S_n = 10 * GetX(context_n);  // 10 xₙ[0]
+    const double S_n = 10 * GetX(context);  // 10 xₙ[0]
     std::cout << n << ": " << S_n << " (" << t << ")\n";
+    return systems::EventStatus::Succeeded();
   }
 
   double GetX(const Context<double>& context) const {
@@ -1113,15 +1097,15 @@ GTEST_TEST(SimulatorTest, SimpleDiscreteSystem) {
 
   Simulator<double> simulator(system);
 
-  // Set the initial conditions: x₀[0]=0, x₀[1]=1.
-  system.Initialize(&simulator.get_mutable_context());
-
   // Simulate forward.
   testing::internal::CaptureStdout();
   simulator.StepTo(3 * SimpleDiscreteSystem::kPeriod);
   std::string output = testing::internal::GetCapturedStdout();
 
-  EXPECT_EQ(output, "0: 0 (0)\n1: 10 (0.02)\n2: 20 (0.04)\n3: 30 (0.06)\n");
+  EXPECT_EQ(output, "0: 0 (0)\n"
+                    "1: 10 (0.02)\n"
+                    "2: 20 (0.04)\n"
+                    "3: 30 (0.06)\n");
 }
 
 // A continuous system that outputs the time.

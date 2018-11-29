@@ -17,9 +17,6 @@ int DoMain() {
 
   systems::Simulator<double> simulator(fibonacci);
 
-  // Set the initial conditions.
-  fibonacci.Initialize(&simulator.get_mutable_context());
-
   // Simulate forward until t=h*steps.
   simulator.StepTo(FibonacciDifferenceEquation::kPeriod * FLAGS_steps);
 
