@@ -113,7 +113,28 @@ class SceneGraphInspector {
     return state_->GetGeometryFromName(frame_id, role, name);
   }
 
+  /** Reports the number of frames registered to the given source id. Returns
+   zero for unregistered source ids.  */
+  int NumFramesForSource(SourceId source_id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->NumFramesForSource(source_id);
+  }
+
+  /** Reports the number of geometries affixed to the given frame id.
+   @throws std::runtime_error if `frame_id` is invalid.  */
+  int NumGeometriesForFrame(FrameId frame_id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetNumFrameGeometries(frame_id);
+  }
+
   //@}
+
+  /** Reports true if collision between the two indicated geometries has been
+   filtered out.  */
+  bool CollisionFiltered(GeometryId id1, GeometryId id2) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->CollisionFiltered(id1, id2);
+  }
 
  private:
   // Only SceneGraph and QueryObject instances can construct

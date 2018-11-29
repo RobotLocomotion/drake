@@ -672,6 +672,29 @@ void GeometryState<T>::ExcludeCollisionsBetween(const GeometrySet& setA,
 }
 
 template <typename T>
+bool GeometryState<T>::CollisionFiltered(GeometryId id1, GeometryId id2) const {
+  const internal::InternalGeometry* geometry1 = GetGeometry(id1);
+  const internal::InternalGeometry* geometry2 = GetGeometry(id2);
+  if (geometry1 != nullptr && geometry2 != nullptr) {
+    return geometry_engine_->CollisionFiltered(
+        geometry1->index(), geometry1->is_dynamic(),
+        geometry2->index(), geometry2->is_dynamic());
+  }
+  std::string base_message =
+      "Can't report collision filter status between geometries " +
+      to_string(id1) + " and " + to_string(id2) + "; ";
+  if (geometry1 != nullptr) {
+    throw std::logic_error(base_message + to_string(id2) +
+                           " is not a valid geometry");
+  } else if (geometry2 != nullptr) {
+    throw std::logic_error(base_message + to_string(id1) +
+        " is not a valid geometry");
+  } else {
+    throw std::logic_error(base_message + "neither id is a valid geometry");
+  }
+}
+
+template <typename T>
 std::unique_ptr<GeometryState<AutoDiffXd>> GeometryState<T>::ToAutoDiffXd()
     const {
   return std::unique_ptr<GeometryState<AutoDiffXd>>(

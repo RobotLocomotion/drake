@@ -527,6 +527,13 @@ class GeometryState {
   void ExcludeCollisionsBetween(const GeometrySet& setA,
                                 const GeometrySet& setB);
 
+  /** Reports true if the collision pair (id1, id2) has been filtered out.
+   @throws std::logic_error if either id does not reference a registered
+                            geometry.  */
+  bool CollisionFiltered(GeometryId id1, GeometryId id2) const;
+
+  //@}
+
   //---------------------------------------------------------------------------
   /** @name                Signed Distance Queries
 
