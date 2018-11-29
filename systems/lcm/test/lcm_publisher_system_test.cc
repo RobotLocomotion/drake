@@ -59,7 +59,7 @@ void TestPublisher(const std::string& channel_name, lcm::DrakeMockLcm* lcm,
   const double time = 1.41421356;
   context->set_time(time);
 
-  dut->Publish(*context.get());
+  dut->PublishInputAsLcmMessage(*context.get());
 
   // Verifies that the correct message was published.
   const std::vector<uint8_t>& published_message_bytes =
@@ -202,7 +202,7 @@ GTEST_TEST(LcmPublisherSystemTest, SerializerTest) {
                         make_unique<Value<lcmt_drake_signal>>(sample_data));
 
   // Verifies that a correct message is published.
-  dut->Publish(*context.get());
+  dut->PublishInputAsLcmMessage(*context.get());
   const auto& bytes = lcm.get_last_published_message(channel_name);
   drake::lcmt_drake_signal received_message{};
   received_message.decode(bytes.data(), 0, bytes.size());

@@ -105,33 +105,33 @@ const std::string& LcmPublisherSystem::get_channel_name() const {
   return channel_;
 }
 
-void LcmPublisherSystem::set_publish_period(double period) {
-  LeafSystem<double>::DeclarePeriodicPublish(period);
+void LcmPublisherSystem::activate_per_step_publish() {
+  this->DeclarePerStepEvent(systems::PublishEvent<double>(
+      [this](const systems::Context<double>& context,
+             const systems::PublishEvent<double>&) {
+        // If multiple events occur simultaneously (for example, due to
+        // occasional synchronization of periods from different periodic
+        // events), we still only want to publish the input port values once,
+        // so we don't care if there are more events.
+        this->PublishInputAsLcmMessage(context);
+      }));
 }
 
-void LcmPublisherSystem::DoPublish(
-    const Context<double>& context,
-    const std::vector<const systems::PublishEvent<double>*>& events) const {
+void LcmPublisherSystem::set_publish_period(double period) {
+  const double offset = 0.0;
+  this->DeclarePeriodicEvent(period, offset, systems::PublishEvent<double>(
+      [this](const systems::Context<double>& context,
+             const systems::PublishEvent<double>&) {
+        // If multiple events occur simultaneously (for example, due to
+        // occasional synchronization of periods from different periodic
+        // events), we still only want to publish the input port values once,
+        // so we don't care if there are more events.
+        this->PublishInputAsLcmMessage(context);
+      }));
+}
 
-  DRAKE_DEMAND(!events.empty());  // Framework guarantees this.
-  const auto& event = events.front();
-
-  if (event->get_trigger_type() ==
-      systems::TriggerType::kInitialization) {
-    // We shouldn't get another event along with our own initialization event.
-    DRAKE_DEMAND(events.size() == 1);
-    SPDLOG_TRACE(drake::log(), "Invoking initialization publisher");
-    event->handle(context);
-    return;
-  }
-
-  // If the event isn't initialization, we assume it is a request to publish
-  // the input port contents as an LCM message. (This is likely to be a periodic
-  // event, but could be a forced event or any other type.) If multiple events
-  // occur simultaneously (for example, due to occasional synchronization of
-  // periods from different periodic events), we still only want to publish the
-  // input port values once, so we don't care if there are more events.
-
+void LcmPublisherSystem::PublishInputAsLcmMessage(
+    const Context<double>& context) const {
   SPDLOG_TRACE(drake::log(), "Publishing LCM {} message", channel_);
   DRAKE_ASSERT((translator_ != nullptr) != (serializer_.get() != nullptr));
 

@@ -174,6 +174,12 @@ class LcmPublisherSystem : public LeafSystem<double> {
   static std::string make_name(const std::string& channel);
 
   /**
+   * Sets this system to do a per-step publish.
+   * See LeafSystem::DeclarePerStepEvent() for a description of per-step events.
+   */
+  void activate_per_step_publish();
+
+  /**
    * Sets the publishing period of this system. See
    * LeafSystem::DeclarePeriodicPublish() for details about the semantics of
    * parameter `period`.
@@ -217,6 +223,10 @@ class LcmPublisherSystem : public LeafSystem<double> {
   // This system has no output ports.
   void get_output_port(int) = delete;
 
+  /// Takes the VectorBase from the input port of the context and publishes
+  /// it onto an LCM channel.
+  void PublishInputAsLcmMessage(const Context<double>& context) const;
+
  private:
   // All constructors delegate to here. If the lcm pointer is null, we'll
   // allocate and maintain a DrakeLcm object internally.
@@ -226,12 +236,6 @@ class LcmPublisherSystem : public LeafSystem<double> {
                          owned_translator,
                      std::unique_ptr<SerializerInterface> serializer,
                      drake::lcm::DrakeLcmInterface* lcm);
-
-  // Takes the VectorBase from the input port of the context and publishes
-  // it onto an LCM channel.
-  void DoPublish(
-      const Context<double>& context,
-      const std::vector<const systems::PublishEvent<double>*>&) const override;
 
   // The channel on which to publish LCM messages.
   const std::string channel_;

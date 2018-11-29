@@ -550,13 +550,6 @@ void Simulator<T>::Initialize() {
   // Restore default values.
   ResetStatistics();
 
-  // TODO(siyuan): transfer publish entirely to individual systems.
-  // Do a publish before the simulation starts.
-  if (publish_at_initialization_) {
-    system_.Publish(*context_);
-    ++num_publishes_;
-  }
-
   // Process all the initialization events.
   auto init_events = system_.AllocateCompositeEventCollection();
   system_.GetInitializationEvents(*context_, init_events.get());
@@ -598,6 +591,13 @@ void Simulator<T>::Initialize() {
   if (timed_or_witnessed_event_triggered_)
     init_events->Merge(*timed_events_);
   HandlePublish(init_events->get_publish_events());
+
+  // TODO(siyuan): transfer publish entirely to individual systems.
+  // Do a publish before the simulation starts.
+  if (publish_at_initialization_) {
+    system_.Publish(*context_);
+    ++num_publishes_;
+  }
 
   // Initialize runtime variables.
   initialization_done_ = true;

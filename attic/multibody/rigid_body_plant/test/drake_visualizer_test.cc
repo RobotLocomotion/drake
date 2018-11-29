@@ -509,6 +509,7 @@ GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
   // Prepares to integrate.
   drake::systems::Simulator<double> simulator(dut, std::move(context));
   simulator.set_publish_every_time_step(false);
+  simulator.set_publish_at_initialization(true);
   simulator.Initialize();
   VerifyLoadMessage(lcm.get_last_published_message("DRAKE_VIEWER_LOAD_ROBOT"));
 
