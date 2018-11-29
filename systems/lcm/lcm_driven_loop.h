@@ -65,7 +65,7 @@ class UtimeMessageToSeconds : public LcmMessageToTimeInterface {
  * the concrete type of the message, and is able to supply a time converter.
  *
  * This class uses the Simulator class internally for event handling
- * (kPublishAction, kDiscreteUpdateAction, kUnrestrictedUpdateAction) and
+ * (publish, discrete update, and unrestricted update) and
  * continuous state integration (e.g. the I term in a PID). The main message
  * handling loop conceptually is:
  * <pre>
@@ -96,7 +96,7 @@ class UtimeMessageToSeconds : public LcmMessageToTimeInterface {
  * This implementation relies on several assumptions:
  *
  * 1. The loop is blocked only on one Lcm message.
- * 2. It's pointless to for the handler system to perform any computation
+ * 2. It's pointless for the handler system to perform any computation
  *    without a new Lcm message, thus the handler loop is blocking.
  * 3. The computation for the given system should be faster than the incoming
  *    message rate.

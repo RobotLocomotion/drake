@@ -3,42 +3,37 @@
 //
 // This is meant to be a sort of "hello world" example for the
 // drake::system classes.  It defines a very simple continuous time system,
-// simulates it from a given initial condition, and plots the result.
+// simulates it from a given initial condition, and checks the result.
 
-#include "drake/common/unused.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/framework/vector_system.h"
+#include "drake/systems/framework/leaf_system.h"
 
 // Simple Continuous Time System
-//   xdot = -x + x^3
+//   xdot = -x + x³
 //   y = x
-class SimpleContinuousTimeSystem : public drake::systems::VectorSystem<double> {
+class SimpleContinuousTimeSystem : public drake::systems::LeafSystem<double> {
  public:
-  SimpleContinuousTimeSystem()
-      : drake::systems::VectorSystem<double>(0,    // Zero inputs.
-                                             1) {  // One output.
-    this->DeclareContinuousState(1);               // One state variable.
+  SimpleContinuousTimeSystem() {
+    this->DeclareVectorOutputPort("y", drake::systems::BasicVector<double>(1),
+                                  &SimpleContinuousTimeSystem::CopyStateOut);
+    this->DeclareContinuousState(1);  // One state variable.
   }
 
  private:
-  // xdot = -x + x^3
-  virtual void DoCalcVectorTimeDerivatives(
+  // xdot = -x + x³
+  void DoCalcTimeDerivatives(
       const drake::systems::Context<double>& context,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& input,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& state,
-      Eigen::VectorBlock<Eigen::VectorXd>* derivatives) const {
-    drake::unused(context, input);
-    (*derivatives)(0) = -state(0) + std::pow(state(0), 3.0);
+      drake::systems::ContinuousState<double>* derivatives) const override {
+    const double x = context.get_continuous_state_vector()[0];
+    const double xdot = -x + std::pow(x, 3.0);
+    (*derivatives)[0] = xdot;
   }
 
   // y = x
-  virtual void DoCalcVectorOutput(
-      const drake::systems::Context<double>& context,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& input,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& state,
-      Eigen::VectorBlock<Eigen::VectorXd>* output) const {
-    drake::unused(context, input);
-    *output = state;
+  void CopyStateOut(const drake::systems::Context<double>& context,
+                    drake::systems::BasicVector<double>* output) const {
+    const double x = context.get_continuous_state_vector()[0];
+    (*output)[0] = x;
   }
 };
 
