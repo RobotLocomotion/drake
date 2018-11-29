@@ -9,9 +9,10 @@ Nightly releases
 
 There are `experimental binary packages <https://github.com/RobotLocomotion/drake/issues/1766#issuecomment-318955338>`_ of Drake available at:
 
+- https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-bionic.tar.gz
 - https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-xenial.tar.gz
 - https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac.tar.gz
-- :samp:`https://drake-packages.csail.mit.edu/drake/nightly/drake-{yyyymmdd}-{mac|xenial}.tar.gz`.
+- :samp:`https://drake-packages.csail.mit.edu/drake/nightly/drake-{yyyymmdd}-{bionic|mac|xenial}.tar.gz`.
     - Example: https://drake-packages.csail.mit.edu/drake/nightly/drake-20171015-xenial.tar.gz
 
 Example usages of these binaries are shown in this `example CMake project <https://github.com/RobotLocomotion/drake-shambhala/tree/master/drake_cmake_installed>`_.
