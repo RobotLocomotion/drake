@@ -42,11 +42,14 @@ PYBIND11_MODULE(manipulation_station, m) {
       .def("SetupDefaultStation", &ManipulationStation<T>::SetupDefaultStation,
           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
           doc.ManipulationStation.SetupDefaultStation.doc)
-      .def("AddAndWeldModelFromSdf", &ManipulationStation<T>::AddAndWeldModelFromSdf,
+      .def("AddAndWeldModelFromSdf",
+          &ManipulationStation<T>::AddAndWeldModelFromSdf,
           doc.ManipulationStation.AddAndWeldModelFromSdf.doc)
-      .def("RegisterIiwaControllerModel", &ManipulationStation<T>::RegisterIiwaControllerModel,
+      .def("RegisterIiwaControllerModel",
+          &ManipulationStation<T>::RegisterIiwaControllerModel,
           doc.ManipulationStation.RegisterIiwaControllerModel.doc)
-      .def("RegisterWsgControllerModel", &ManipulationStation<T>::RegisterWsgControllerModel,
+      .def("RegisterWsgControllerModel",
+          &ManipulationStation<T>::RegisterWsgControllerModel,
           doc.ManipulationStation.RegisterWsgControllerModel.doc)
       .def("Finalize", &ManipulationStation<T>::Finalize,
           doc.ManipulationStation.Finalize.doc)
@@ -90,11 +93,14 @@ PYBIND11_MODULE(manipulation_station, m) {
           doc.ManipulationStation.get_camera_names.doc)
       .def("SetWsgGains", &ManipulationStation<T>::SetWsgGains,
           doc.ManipulationStation.SetWsgGains.doc)
-      .def("SetIiwaPositionGains", &ManipulationStation<T>::SetIiwaPositionGains,
+      .def("SetIiwaPositionGains",
+          &ManipulationStation<T>::SetIiwaPositionGains,
           doc.ManipulationStation.SetIiwaPositionGains.doc)
-      .def("SetIiwaVelocityGains", &ManipulationStation<T>::SetIiwaVelocityGains,
+      .def("SetIiwaVelocityGains",
+          &ManipulationStation<T>::SetIiwaVelocityGains,
           doc.ManipulationStation.SetIiwaVelocityGains.doc)
-      .def("SetIiwaIntegralGains", &ManipulationStation<T>::SetIiwaIntegralGains,
+      .def("SetIiwaIntegralGains",
+          &ManipulationStation<T>::SetIiwaIntegralGains,
           doc.ManipulationStation.SetIiwaIntegralGains.doc);
 
   py::class_<ManipulationStationHardwareInterface, Diagram<double>>(

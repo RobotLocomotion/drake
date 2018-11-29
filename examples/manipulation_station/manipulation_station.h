@@ -281,17 +281,20 @@ class ManipulationStation : public systems::Diagram<T> {
   /// Set the gains for the WSG controller. Need to be called before Finalize().
   void SetWsgGains(double kp, double kd);
 
-  /// Set the position gains for the IIWA controller. Need to be called before Finalize().
+  /// Set the position gains for the IIWA controller. Need to be called before
+  /// Finalize().
   void SetIiwaPositionGains(const VectorX<double>& kp) {
     SetIiwaGains(kp, &iiwa_kp_);
   }
 
-  /// Set the velocity gains for the IIWA controller. Need to be called before Finalize().
+  /// Set the velocity gains for the IIWA controller. Need to be called before
+  /// Finalize().
   void SetIiwaVelocityGains(const VectorX<double>& kd) {
     SetIiwaGains(kd, &iiwa_kd_);
   }
 
-  /// Set the integral gains for the IIWA controller. Need to be called before Finalize().
+  /// Set the integral gains for the IIWA controller. Need to be called before
+  /// Finalize().
   void SetIiwaIntegralGains(const VectorX<double>& ki) {
     SetIiwaGains(ki, &iiwa_ki_);
   }
