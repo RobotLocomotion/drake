@@ -102,4 +102,6 @@ drake_py_test(
     deps = [":util"],
 )
 
-add_lint_tests()
+add_lint_tests(
+    enable_clang_format_lint = True,
+)
