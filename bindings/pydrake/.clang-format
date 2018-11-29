@@ -1,5 +1,18 @@
 # -*- yaml -*-
 
+# This portion of the file contains settings that are local to the
+# //bindings/... code, rather than all of Drake.
+
+# When a function signature's parameters or a function call's arguments need to
+# wrap onto another line, indent by four spaces -- do not whitespace castle all
+# the way over to the open-paren.
+AlignAfterOpenBracket: DontAlign
+
+# -----------------------------------------------------------------------------
+# The contents of the root dotfile should be exactly copied below this point.
+# -----------------------------------------------------------------------------
+# -*- yaml -*-
+
 # This file determines clang-format's style settings; for details, refer to
 # http://clang.llvm.org/docs/ClangFormatStyleOptions.html
 

@@ -26,6 +26,10 @@ package(default_visibility = [
     "//bindings:__subpackages__",
 ])
 
+exports_files([
+    ".clang-format",
+])
+
 # This determines how `PYTHONPATH` is configured, and how to install the
 # bindings.
 PACKAGE_INFO = get_pybind_package_info(base_package = "//bindings")
@@ -434,7 +438,17 @@ drake_py_binary(
     ],
 )
 
+drake_py_unittest(
+    name = "dot_clang_format_test",
+    data = [
+        "//:.clang-format",
+        "//bindings/pydrake:.clang-format",
+    ],
+    tags = ["lint"],
+)
+
 add_lint_tests(
+    cpplint_data = ["//bindings/pydrake:.clang-format"],
     enable_clang_format_lint = True,
     python_lint_extra_srcs = [
         ":test/all_install_test.py",
