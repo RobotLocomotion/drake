@@ -12,7 +12,6 @@ namespace {
 // Verify that we get the right sequence for one sequence length.
 GTEST_TEST(Fibonacci, CheckSequence) {
   FibonacciDifferenceEquation fibonacci;
-
   systems::Simulator<double> simulator(fibonacci);
 
   // Simulate forward to fibonacci(6): 0 1 1 2 3 5 8

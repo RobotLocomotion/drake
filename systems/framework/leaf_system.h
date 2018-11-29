@@ -369,7 +369,10 @@ class LeafSystem : public System<T> {
 
   /// Computes the next update time based on the configured periodic events, for
   /// scalar types that are arithmetic, or aborts for scalar types that are not
-  /// arithmetic. Subclasses that require aperiodic events should override.
+  /// arithmetic. Subclasses that require aperiodic events should override, but
+  /// be sure to invoke the parent class implementation at the start of the
+  /// override if you want periodic events to be handled.
+  ///
   /// @post `time` is set to a value greater than or equal to
   ///       `context.get_time()` on return.
   /// @warning If you override this method, think carefully before setting
@@ -381,9 +384,8 @@ class LeafSystem : public System<T> {
                             CompositeEventCollection<T>* events,
                             T* time) const override {
     T min_time = std::numeric_limits<double>::infinity();
-    // No periodic events.
+
     if (periodic_events_.empty()) {
-      // No discrete update.
       *time = min_time;
       return;
     }
@@ -392,11 +394,10 @@ class LeafSystem : public System<T> {
     // the set of registered events that will occur at that time.
     std::vector<const Event<T>*> next_events;
     for (const auto& event_pair : periodic_events_) {
-      const PeriodicEventData& event_data =
-          event_pair.first;
+      const PeriodicEventData& event_data = event_pair.first;
       const Event<T>* const event = event_pair.second.get();
-      const T t = leaf_system_detail::GetNextSampleTime(
-          event_data, context.get_time());
+      const T t =
+          leaf_system_detail::GetNextSampleTime(event_data, context.get_time());
       if (t < min_time) {
         min_time = t;
         next_events = {event};
@@ -634,37 +635,30 @@ class LeafSystem : public System<T> {
     return index;
   }
 
-  /// Declares that this System has a simple, fixed-period event specified with
-  /// no custom callback function, and its attribute field contains an
-  /// Event<T>::PeriodicAttribute constructed from the specified @p period_sec
-  /// and @p offset_sec. The first tick will occur at t = @p offset_sec, and it
-  /// will recur at every @p period_sec thereafter. Note that the periodic
-  /// events returned by system::CalcNextUpdateTime() will happen at a time
-  /// strictly after the querying time. E.g. if there is a periodic event with
-  /// offset = 0 and period = 5, when calling CalcNextUpdateTime() at t = 0,
-  /// the returned event will happen at t = 5 not t = 0.
+  // =========================================================================
+  /// @name                  Declare periodic events
+  /// Declares that this System has a simple, fixed-period event. The first tick
+  /// will occur at t = `offset_sec`, and it will recur at every `period_sec`
+  /// thereafter. Several signatures are provided to allow for a general Event
+  /// object to be triggered, or simpler class member functions to be invoked
+  /// instead.
   ///
-  /// @tparam EventType A class derived from Event (e.g., PublishEvent,
-  /// DiscreteUpdateEvent, UnrestrictedUpdateEvent, etc.)
-  template <typename EventType>
-  void DeclarePeriodicEvent(double period_sec, double offset_sec) {
-    static_assert(std::is_base_of<Event<T>, EventType>::value,
-                  "EventType must be a subclass of Event<T>.");
-    EventType event(TriggerType::kPeriodic);
-    PeriodicEventData periodic_data;
-    periodic_data.set_period_sec(period_sec);
-    periodic_data.set_offset_sec(offset_sec);
-    event.set_event_data(std::make_unique<PeriodicEventData>(periodic_data));
-    periodic_events_.push_back(std::make_pair(periodic_data, event.Clone()));
-  }
+  /// Reaching a designated time causes a periodic event to be dispatched
+  /// to one of the three available types of event dispatcher: publish (read
+  /// only), discrete update, and unrestricted update.
+  ///
+  /// @note If you want to generate timed events that are _not_ periodic
+  /// (timers, alarms, etc.), overload DoCalcNextUpdateTime() rather than using
+  /// the methods in this section.
+  ///
+  /// Template arguments to these methods are inferred from the argument lists
+  /// and need not be specified explicitly.
+  /// @pre `period_sec` > 0 and `offset_sec` ≥ 0.
+  //@{
 
-  /// Declares that this System has a simple, fixed-period event specified by
-  /// @p event. The first tick will occur at t = @p offset_sec, and it
-  /// will recur at every @p period_sec thereafter. Note that the periodic
-  /// events returned by system::CalcNextUpdateTime() will happen at a time
-  /// strictly after the querying time. E.g. if there is a periodic event with
-  /// offset = 0 and period = 5, when calling CalcNextUpdateTime() at t = 0,
-  /// the returned event will happen at t = 5 not t = 0.
+  /// Declares a periodic event specifying an arbitrary Event object, whose
+  /// event type determines which event dispatcher (publish, discrete update, or
+  /// unrestricted update) is invoked.
   ///
   /// A deep copy of @p event will be made and maintained by `this`. The
   /// trigger type in the clone will be set to kPeriodic, unless it is already
@@ -672,7 +666,7 @@ class LeafSystem : public System<T> {
   /// The @p event's attribute field is preserved.
   ///
   /// @tparam EventType A class derived from Event (e.g., PublishEvent,
-  /// DiscreteUpdateEvent, UnrestrictedUpdateEvent, etc.)
+  /// DiscreteUpdateEvent, UnrestrictedUpdateEvent.)
   template <typename EventType>
   void DeclarePeriodicEvent(double period_sec, double offset_sec,
                             const EventType& event) {
@@ -687,54 +681,337 @@ class LeafSystem : public System<T> {
         std::make_pair(periodic_data, std::move(event_copy)));
   }
 
-  /// Declares a periodic discrete update event with period = @p period_sec and
-  /// offset = @p offset_sec. The event does not have a custom callback
-  /// function, and its trigger will be set to Event::TriggerType::kPeriodic.
-  /// Its attribute will be an Event<T>::PeriodicAttribute of @p offset_sec and
-  /// @p period_sec. Authors are encouraged to read @ref discrete_systems for
-  /// implications of mixing discrete and continuous systems.
-  void DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec = 0) {
-    DeclarePeriodicEvent<DiscreteUpdateEvent<T>>(period_sec, offset_sec);
+  /// Declares a periodic Publish event that triggers a callback to a given
+  /// class member publish-event handler method.
+  /// @tparam MySystem The type of the invoking concrete LeafSystem.
+  template <class MySystem>
+  void DeclarePeriodicPublish(
+      double period_sec, double offset_sec,
+      EventStatus (MySystem::*publish)(const Context<T>&) const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(publish != nullptr);
+
+    DeclarePeriodicEvent(period_sec, offset_sec,
+        PublishEvent<T>(TriggerType::kPeriodic, [this_ptr, publish](
+                                                    const Context<T>& context,
+                                                    const PublishEvent<T>&) {
+          // TODO(sherm1) Forward the return status.
+          (this_ptr->*publish)(context);  // Ignore return status for now.
+        }));
   }
 
-  /// Declares a periodic unrestricted update event with period = @p period_sec
-  /// and offset = @p offset_sec. The event does not have a custom callback
-  /// function, and its trigger will be set to Event::TriggerType::kPeriodic.
-  /// Its attribute will be an Event<T>::PeriodicAttribute of @p offset_sec and
-  /// @p period_sec.
+  /// Declares a periodic DiscreteUpdate event that triggers a callback to a
+  /// given class member discrete update-event handler method. Authors are
+  /// encouraged to read @ref discrete_systems for implications of using
+  /// discrete systems in a hybrid system framework.
+  /// @tparam MySystem The type of the invoking concrete LeafSystem.
+  template <class MySystem>
+  void DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec,
+                                     EventStatus (MySystem::*update)(
+                                         const Context<T>&, DiscreteValues<T>*)
+                                         const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(update != nullptr);
+
+    DeclarePeriodicEvent(period_sec, offset_sec,
+        DiscreteUpdateEvent<T>(TriggerType::kPeriodic,
+                               [this_ptr, update](const Context<T>& context,
+                                                  const DiscreteUpdateEvent<T>&,
+                                                  DiscreteValues<T>* xd) {
+                                 // TODO(sherm1) Forward the return status.
+                                 (this_ptr->*update)(
+                                     context,
+                                     &*xd);  // Ignore return status for now.
+                               }));
+  }
+
+  /// Declares a periodic UnrestrictedUpdate event that triggers a callback to a
+  /// given class member unrestricted update-event handler method.
+  /// @tparam MySystem The type of the invoking concrete %LeafSystem.
+  template <class MySystem>
+  void DeclarePeriodicUnrestrictedUpdate(
+      double period_sec, double offset_sec,
+      EventStatus (MySystem::*update)(const Context<T>&, State<T>*)
+          const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(update != nullptr);
+
+    DeclarePeriodicEvent(period_sec, offset_sec,
+        UnrestrictedUpdateEvent<T>(
+            TriggerType::kPeriodic,
+            [this_ptr, update](const Context<T>& context,
+                               const UnrestrictedUpdateEvent<T>&, State<T>* x) {
+              // TODO(sherm1) Forward the return status.
+              (this_ptr->*update)(context,
+                                  &*x);  // Ignore return status for now.
+            }));
+  }
+
+  /// (To be deprecated) Declares a periodic publish event that invokes the
+  /// Publish() dispatcher but does not provide a handler function. This does
+  /// guarantee that a Simulator step will end exactly at the publish time,
+  /// but otherwise has no effect unless the DoPublish() dispatcher has been
+  /// overloaded (not recommended).
+  void DeclarePeriodicPublish(double period_sec, double offset_sec = 0) {
+    DeclarePeriodicEvent(period_sec, offset_sec, PublishEvent<T>());
+  }
+
+  /// (To be deprecated) Declares a periodic discrete update event that invokes
+  /// the DiscreteUpdate() dispatcher but does not provide a handler
+  /// function. This does guarantee that a Simulator step will end exactly at
+  /// the update time, but otherwise has no effect unless the
+  /// DoDiscreteUpdate() dispatcher has been overloaded (not recommended).
+  void DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec = 0) {
+    DeclarePeriodicEvent(period_sec, offset_sec, DiscreteUpdateEvent<T>());
+  }
+
+  /// (To be deprecated) Declares a periodic unrestricted update event that
+  /// invokes the UnrestrictedUpdate() dispatcher but does not provide a handler
+  /// function. This does guarantee that a Simulator step will end exactly at
+  /// the update time, but otherwise has no effect unless the
+  /// DoUnrestrictedUpdate() dispatcher has been overloaded (not recommended).
   void DeclarePeriodicUnrestrictedUpdate(double period_sec,
                                          double offset_sec = 0) {
-    DeclarePeriodicEvent<UnrestrictedUpdateEvent<T>>(period_sec, offset_sec);
+    DeclarePeriodicEvent(period_sec, offset_sec, UnrestrictedUpdateEvent<T>());
   }
+  //@}
 
-  /// Declares a periodic publish event with period = @p period_sec
-  /// and offset = @p offset_sec. The event does not have a custom callback
-  /// function, and its trigger will be set to Event::TriggerType::kPeriodic.
-  /// Its attribute will be an Event<T>::PeriodicAttribute of @p offset_sec and
-  /// @p period_sec.
-  void DeclarePeriodicPublish(double period_sec, double offset_sec = 0) {
-    DeclarePeriodicEvent<PublishEvent<T>>(period_sec, offset_sec);
-  }
+  // =========================================================================
+  /// @name                 Declare per-step events
+  //@{
 
   /// Declares a per-step event using @p event, which is deep copied (the
-  /// copy is maintained by `this`). @p event's associated trigger type must be
-  /// unknown or already set to Event::TriggerType::kPerStep. Aborts otherwise.
+  /// copy is maintained by `this`). @p event's associated trigger type must
+  /// be unknown or already set to Event::TriggerType::kPerStep. Aborts
+  /// otherwise.
   template <typename EventType>
   void DeclarePerStepEvent(const EventType& event) {
     DRAKE_DEMAND(event.get_trigger_type() == TriggerType::kUnknown ||
-        event.get_trigger_type() == TriggerType::kPerStep);
+                 event.get_trigger_type() == TriggerType::kPerStep);
     event.AddToComposite(TriggerType::kPerStep, &per_step_events_);
   }
 
-  /// Declares an initialization event by deep copying @p event and storing it
-  /// internally. @p event's associated trigger type must be unknown or already
-  /// set to Event::TriggerType::kInitialization. Aborts otherwise.
+  template <class MySystem>
+  void DeclarePerStepPublish(
+      EventStatus (MySystem::*publish)(const Context<T>&) const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(publish != nullptr);
+
+    DeclarePerStepEvent<PublishEvent<T>>(PublishEvent<T>(
+        TriggerType::kPerStep,
+        [this_ptr, publish](const Context<T>& context, const PublishEvent<T>&) {
+          // TODO(sherm1) Forward the return status.
+          (this_ptr->*publish)(context);  // Ignore return status for now.
+        }));
+  }
+
+  template <class MySystem>
+  void DeclarePerStepDiscreteUpdate(EventStatus (MySystem::*update)(
+      const Context<T>&, DiscreteValues<T>*) const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(update != nullptr);
+
+    DeclarePerStepEvent(DiscreteUpdateEvent<T>(
+        TriggerType::kPerStep, [this_ptr, update](const Context<T>& context,
+                                                  const DiscreteUpdateEvent<T>&,
+                                                  DiscreteValues<T>* xd) {
+          // TODO(sherm1) Forward the return status.
+          (this_ptr->*update)(context,
+                              &*xd);  // Ignore return status for now.
+        }));
+  }
+
+  template <class MySystem>
+  void DeclarePerStepUnrestrictedUpdate(EventStatus (MySystem::*update)(
+      const Context<T>&, State<T>*) const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(update != nullptr);
+
+    DeclarePerStepEvent(UnrestrictedUpdateEvent<T>(
+        TriggerType::kPerStep,
+        [this_ptr, update](const Context<T>& context,
+                           const UnrestrictedUpdateEvent<T>&, State<T>* x) {
+          // TODO(sherm1) Forward the return status.
+          (this_ptr->*update)(context,
+                              &*x);  // Ignore return status for now.
+        }));
+  }
+  //@}
+
+  // =========================================================================
+  /// @name                 Declare initialization events
+  /// These methods are used to declare events that occur when the Drake
+  /// Simulator's Initialize() method is invoked. Initialize() may be called
+  /// explicitly, but Simulator::StepTo() will invoke it implicitly if it hasn't
+  /// already been called.
+  ///
+  /// During initialization, unrestricted update events are performed first for
+  /// the whole Diagram, then discrete update events for the whole Diagram.
+  /// Timed update events are not performed during initialization, even if they
+  /// are scheduled for the initial time; in that case they are done at the
+  /// beginning of the first StepTo() call. Oh the other hand, initialization
+  /// publish events and timed publish events that are scheduled
+  /// for the initial time are dispatched together during initialization.
+  /// They are ordered such that each subsystem sees its initialization publish
+  /// events before its timed publish events.
+  //@{
+
+  /// Declares that a Publish event should occur at initialization and invokes
+  /// the given event handler method. The handler should be a class member
+  /// function (method) with signature like:
+  /// @code
+  ///   EventHandlerStatus MySystem::Publish(const Context<T>&) const;
+  /// @endcode
+  /// where `MySystem` is a class derived from `LeafSystem<T>` and the method
+  /// name is arbitrary. Template arguments will be deduced and do not need
+  /// to be specified.
+  ///
+  /// @pre `this` must be dynamic_cast-able to MySystem.
+  /// @pre `publish` must not be null.
+  ///
+  /// @see DeclareInitializationDiscreteUpdate()
+  /// @see DeclareInitializationUnrestrictedUpdate()
+  /// @see DeclareInitializationEvent()
+  template <class MySystem>
+  void DeclareInitializationPublish(
+      EventStatus(MySystem::*publish)(const Context<T>&) const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(publish != nullptr);
+
+    DeclareInitializationEvent<PublishEvent<T>>(PublishEvent<T>(
+        TriggerType::kInitialization,
+        [this_ptr, publish](const Context<T>& context,
+                            const PublishEvent<T>&) {
+          // TODO(sherm1) Forward the return status.
+          (this_ptr->*publish)(context);  // Ignore return status for now.
+        }));
+  }
+
+  /// Declares that a DiscreteUpdate event should occur at initialization and
+  /// invokes the given event handler method. The handler should be a class
+  /// member function (method) with signature like:
+  /// @code
+  ///   EventHandlerStatus MySystem::Update(const Context<T>&,
+  ///                                       DiscreteValues<T>*) const;
+  /// @endcode
+  /// where `MySystem` is a class derived from `LeafSystem<T>` and the method
+  /// name is arbitrary. Template arguments will be deduced and do not need to
+  /// be specified.
+  ///
+  /// @pre `this` must be dynamic_cast-able to MySystem.
+  /// @pre `update` must not be null.
+  ///
+  /// @see DeclareInitializationPublish()
+  /// @see DeclareInitializationUnrestrictedUpdate()
+  /// @see DeclareInitializationEvent()
+  template <class MySystem>
+  void DeclareInitializationDiscreteUpdate(
+      EventStatus(MySystem::*update)
+          (const Context<T>&, DiscreteValues<T>*) const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(update != nullptr);
+
+    DeclareInitializationEvent(DiscreteUpdateEvent<T>(
+        TriggerType::kInitialization,
+        [this_ptr, update](const Context<T>& context,
+                           const DiscreteUpdateEvent<T>&,
+                           DiscreteValues<T>* xd) {
+          // TODO(sherm1) Forward the return status.
+          (this_ptr->*update)(context,
+                              &*xd);  // Ignore return status for now.
+        }));
+  }
+
+  /// Declares that an UnrestrictedUpdate event should occur at initialization
+  /// and invokes the given event handler method. The handler should be a class
+  /// member function (method) with signature like:
+  /// @code
+  ///   EventHandlerStatus MySystem::Update(const Context<T>&,
+  ///                                       State<T>*) const;
+  /// @endcode
+  /// where `MySystem` is a class derived from `LeafSystem<T>` and the method
+  /// name is arbitrary. Template arguments will be deduced and do not need to
+  /// be specified.
+  ///
+  /// @pre `this` must be dynamic_cast-able to MySystem.
+  /// @pre `update` must not be null.
+  ///
+  /// @see DeclareInitializationPublish()
+  /// @see DeclareInitializationDiscreteUpdate()
+  /// @see DeclareInitializationEvent()
+  template <class MySystem>
+  void DeclareInitializationUnrestrictedUpdate(
+      EventStatus(MySystem::*update)
+          (const Context<T>&, State<T>*) const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(update != nullptr);
+
+    DeclareInitializationEvent(UnrestrictedUpdateEvent<T>(
+        TriggerType::kInitialization,
+        [this_ptr, update](const Context<T>& context,
+                           const UnrestrictedUpdateEvent<T>&, State<T>* x) {
+          // TODO(sherm1) Forward the return status.
+          (this_ptr->*update)(context,
+                              &*x);  // Ignore return status for now.
+        }));
+  }
+
+  /// (Advanced) Declares that a particular Event object should be dispatched at
+  /// initialization. This is the most general form for declaring initialization
+  /// events and most users should use one of the other methods in this group
+  /// instead.
+  ///
+  /// @see DeclareInitializationPublish()
+  /// @see DeclareInitializationDiscreteUpdate()
+  /// @see DeclareInitializationUnrestrictedUpdate()
+  ///
+  /// Depending on the type of `event`, on initialization it will be passed to
+  /// the Publish, DiscreteUpdate, or UnrestrictedUpdate event dispatcher. If
+  /// the `event` object contains a handler function, Drake's default
+  /// dispatchers will invoke that handler. If not, then no further action is
+  /// taken. Thus an `event` with no handler has no effect unless its dispatcher
+  /// has been overridden. We strongly recommend that you _do not_ override the
+  /// dispatcher and instead _do_ supply a handler.
+  ///
+  /// The given `event` object is deep-copied (cloned), and the copy is stored
+  /// internally so you do not need to keep the object around after this call.
+  ///
+  /// @pre `event`'s associated trigger type must be unknown or already set to
+  /// TriggerType::kInitialization.
   template <typename EventType>
   void DeclareInitializationEvent(const EventType& event) {
     DRAKE_DEMAND(event.get_trigger_type() == TriggerType::kUnknown ||
         event.get_trigger_type() == TriggerType::kInitialization);
     event.AddToComposite(TriggerType::kInitialization, &initialization_events_);
   }
+  //@}
 
   /// @name          Declare continuous state variables
   /// Continuous state consists of up to three kinds of variables: generalized
@@ -961,30 +1238,31 @@ class LeafSystem : public System<T> {
   /// @anchor DeclareLeafOutputPort_documentation
   ///
   /// Methods in this section are used by derived classes to declare their
-  /// output ports, which may be vector valued or abstract valued. Every output
-  /// port must have an _allocator_ function and
-  /// a _calculator_ function. The allocator returns an object suitable for
-  /// holding a value of the output port. The calculator uses the contents of
-  /// a given Context to produce the output port's value, which is placed in
-  /// an object of the type returned by the allocator.
+  /// output ports, which may be vector valued or abstract valued. Every
+  /// output port must have an _allocator_ function and a _calculator_
+  /// function. The allocator returns an object suitable for holding a value
+  /// of the output port. The calculator uses the contents of a given Context
+  /// to produce the output port's value, which is placed in an object of the
+  /// type returned by the allocator.
   ///
-  /// Although the allocator and calculator functions ultimately satisfy generic
-  /// function signatures defined in LeafOutputPort, we provide a variety
-  /// of `DeclareVectorOutputPort()` and `DeclareAbstractOutputPort()`
-  /// signatures here for convenient specification, with mapping to the generic
-  /// form handled invisibly. In particular, allocators are most easily defined
-  /// by providing a model value that can be used to construct an
-  /// allocator that copies the model when a new value object is needed.
-  /// Alternatively a method can be provided that constructs a value object when
-  /// invoked (those methods are conventionally, but not necessarily, named
-  /// `MakeSomething()` where `Something` is replaced by the output port value
-  /// type).
+  /// Although the allocator and calculator functions ultimately satisfy
+  /// generic function signatures defined in LeafOutputPort, we provide a
+  /// variety of `DeclareVectorOutputPort()` and `DeclareAbstractOutputPort()`
+  /// signatures here for convenient specification, with mapping to the
+  /// generic form handled invisibly. In particular, allocators are most
+  /// easily defined by providing a model value that can be used to construct
+  /// an allocator that copies the model when a new value object is needed.
+  /// Alternatively a method can be provided that constructs a value object
+  /// when invoked (those methods are conventionally, but not necessarily,
+  /// named `MakeSomething()` where `Something` is replaced by the output port
+  /// value type).
   ///
-  /// Because output port values are ultimately stored in AbstractValue objects,
-  /// the underlying types must be suitable. For vector ports, that means the
-  /// type must be BasicVector or a class derived from BasicVector. For abstract
-  /// ports, the type must be copy constructible or cloneable. For
-  /// methods below that are not given an explicit model value or construction
+  /// Because output port values are ultimately stored in AbstractValue
+  /// objects, the underlying types must be suitable. For vector ports, that
+  /// means the type must be BasicVector or a class derived from BasicVector.
+  /// For abstract ports, the type must be copy constructible or cloneable.
+  /// For methods below that are not given an explicit model value or
+  /// construction
   /// ("make") method, the underlying type must be default constructible.
   /// @see drake::systems::Value for more about abstract values.
   ///
@@ -994,8 +1272,8 @@ class LeafSystem : public System<T> {
   /// sources. See @ref DeclareCacheEntry_documentation "DeclareCacheEntry"
   /// for more information about prerequisites.
   ///
-  /// Output ports must have a name that is unique within the owning subsystem.
-  /// Users can provide meaningful names or specify the name as
+  /// Output ports must have a name that is unique within the owning
+  /// subsystem. Users can provide meaningful names or specify the name as
   /// `kUseDefaultName` in which case a name like "y3" is
   /// automatically provided, where the number is the output port index. An
   /// empty name is not permitted.
@@ -1003,8 +1281,8 @@ class LeafSystem : public System<T> {
 
   /// Declares a vector-valued output port by specifying (1) a model vector of
   /// type BasicVectorSubtype derived from BasicVector and initialized to the
-  /// correct size and desired initial value, and (2) a calculator function that
-  /// is a class member function (method) with signature:
+  /// correct size and desired initial value, and (2) a calculator function
+  /// that is a class member function (method) with signature:
   /// @code
   /// void MySystem::CalcOutputVector(const Context<T>&,
   ///                                 BasicVectorSubtype*) const;
@@ -1046,10 +1324,11 @@ class LeafSystem : public System<T> {
         "output " + std::to_string(int{port.get_index()}), model_vector,
         [&port, storage = std::shared_ptr<AbstractValue>{}](
             const Context<T>& context) mutable -> const VectorBase<T>& {
-          // Because we must return a VectorBase by const reference, our lambda
-          // object needs a member field to maintain storage for our result.
-          // We must use a shared_ptr not because we share storage, but because
-          // our lambda must be copyable.  This will go away once Eval works.
+          // Because we must return a VectorBase by const reference, our
+          // lambda object needs a member field to maintain storage for our
+          // result. We must use a shared_ptr not because we share storage,
+          // but because our lambda must be copyable.  This will go away once
+          // Eval works.
           storage = port.Allocate();
           // TODO(jwnimmer-tri) We should use port.Eval(), once it works.
           port.Calc(context, storage.get());
@@ -1072,8 +1351,8 @@ class LeafSystem : public System<T> {
   /// Template arguments will be deduced and do not need to be specified.
   ///
   /// @note The default constructor will be called once immediately, and
-  /// subsequent allocations will just copy the model value without invoking the
-  /// constructor again. If you want the constructor invoked again at each
+  /// subsequent allocations will just copy the model value without invoking
+  /// the constructor again. If you want the constructor invoked again at each
   /// allocation (not common), use one of the other signatures to explicitly
   /// provide a method for the allocator to call; that method can then invoke
   /// the `BasicVectorSubtype` default constructor.
@@ -1086,7 +1365,8 @@ class LeafSystem : public System<T> {
     static_assert(
         std::is_default_constructible<BasicVectorSubtype>::value,
         "LeafSystem::DeclareVectorOutputPort(calc): the one-argument form of "
-        "this method requires that the output type has a default constructor");
+        "this method requires that the output type has a default "
+        "constructor");
     // Invokes the previous method.
     return DeclareVectorOutputPort(NextOutputPortName(std::move(name)),
                                    BasicVectorSubtype{}, calc,
@@ -1094,11 +1374,11 @@ class LeafSystem : public System<T> {
   }
 
   /// (Advanced) Declares a vector-valued output port using the given
-  /// `model_vector` and a function for calculating the port's value at runtime.
-  /// The port's size will be model_vector.size(), and the default allocator for
-  /// the port will be model_vector.Clone(). Note that this takes the calculator
-  /// function in its most generic form; if you have a member function available
-  /// use one of the other signatures.
+  /// `model_vector` and a function for calculating the port's value at
+  /// runtime. The port's size will be model_vector.size(), and the default
+  /// allocator for the port will be model_vector.Clone(). Note that this
+  /// takes the calculator function in its most generic form; if you have a
+  /// member function available use one of the other signatures.
   /// @see LeafOutputPort::CalcVectorCallback
   const OutputPort<T>& DeclareVectorOutputPort(
       variant<std::string, UseDefaultName> name,
@@ -1106,9 +1386,10 @@ class LeafSystem : public System<T> {
       typename LeafOutputPort<T>::CalcVectorCallback vector_calc_function,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
-    auto& port = CreateVectorLeafOutputPort(NextOutputPortName(std::move(name)),
-        model_vector.size(), MakeAllocCallback(model_vector),
-        std::move(vector_calc_function), std::move(prerequisites_of_calc));
+    auto& port = CreateVectorLeafOutputPort(
+        NextOutputPortName(std::move(name)), model_vector.size(),
+        MakeAllocCallback(model_vector), std::move(vector_calc_function),
+        std::move(prerequisites_of_calc));
     return port;
   }
 
@@ -1154,8 +1435,8 @@ class LeafSystem : public System<T> {
   /// Template arguments will be deduced and do not need to be specified.
   ///
   /// @note The default constructor will be called once immediately, and
-  /// subsequent allocations will just copy the model value without invoking the
-  /// constructor again. If you want the constructor invoked again at each
+  /// subsequent allocations will just copy the model value without invoking
+  /// the constructor again. If you want the constructor invoked again at each
   /// allocation (not common), use one of the other signatures to explicitly
   /// provide a method for the allocator to call; that method can then invoke
   /// the `OutputType` default constructor.
@@ -1166,26 +1447,28 @@ class LeafSystem : public System<T> {
       void (MySystem::*calc)(const Context<T>&, OutputType*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
-    static_assert(
-        std::is_default_constructible<OutputType>::value,
-        "LeafSystem::DeclareAbstractOutputPort(calc): the one-argument form of "
-        "this method requires that the output type has a default constructor");
+    static_assert(std::is_default_constructible<OutputType>::value,
+                  "LeafSystem::DeclareAbstractOutputPort(calc): the "
+                  "one-argument form of "
+                  "this method requires that the output type has a default "
+                  "constructor");
     // Note that value initialization {} is required here.
     return DeclareAbstractOutputPort(NextOutputPortName(std::move(name)),
                                      OutputType{}, calc,
                                      std::move(prerequisites_of_calc));
   }
 
-  /// Declares an abstract-valued output port by specifying member functions to
-  /// use both for the allocator and calculator. The signatures are:
+  /// Declares an abstract-valued output port by specifying member functions
+  /// to use both for the allocator and calculator. The signatures are:
   /// @code
   /// OutputType MySystem::MakeOutputValue() const;
   /// void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
   /// @endcode
-  /// where `MySystem` is a class derived from `LeafSystem<T>` and `OutputType`
-  /// may be any concrete type such that `Value<OutputType>` is permitted.
-  /// See alternate signature if your allocator method needs a Context.
-  /// Template arguments will be deduced and do not need to be specified.
+  /// where `MySystem` is a class derived from `LeafSystem<T>` and
+  /// `OutputType` may be any concrete type such that `Value<OutputType>` is
+  /// permitted. See alternate signature if your allocator method needs a
+  /// Context. Template arguments will be deduced and do not need to be
+  /// specified.
   /// @see drake::systems::Value
   template <class MySystem, typename OutputType>
   const OutputPort<T>& DeclareAbstractOutputPort(
@@ -1199,7 +1482,9 @@ class LeafSystem : public System<T> {
 
     auto& port = CreateAbstractLeafOutputPort(
         NextOutputPortName(std::move(name)),
-        [this_ptr, make]() { return AbstractValue::Make((this_ptr->*make)()); },
+        [this_ptr, make]() {
+          return AbstractValue::Make((this_ptr->*make)());
+        },
         [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
           OutputType& typed_result = result->GetMutableValue<OutputType>();
           (this_ptr->*calc)(context, &typed_result);
@@ -1279,11 +1564,11 @@ class LeafSystem : public System<T> {
   template <class MySystem, typename OutputType>
   std::enable_if_t<!std::is_same<OutputType, std::string>::value,
                    const OutputPort<T>&>
-  DeclareAbstractOutputPort(const OutputType& model_value,
-                            void (MySystem::*calc)(const Context<T>&,
-                                                   OutputType*) const,
-                            std::set<DependencyTicket> prerequisites_of_calc = {
-                                all_sources_ticket()}) {
+  DeclareAbstractOutputPort(
+      const OutputType& model_value,
+      void (MySystem::*calc)(const Context<T>&, OutputType*) const,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()}) {
     return DeclareAbstractOutputPort(kUseDefaultName, model_value, calc,
                                      std::move(prerequisites_of_calc));
   }
@@ -1305,7 +1590,7 @@ class LeafSystem : public System<T> {
   /// in #9447.
   template <class MySystem, typename OutputType>
   const OutputPort<T>& DeclareAbstractOutputPort(
-      OutputType (MySystem::*make)() const,
+      OutputType(MySystem::*make)() const,
       void (MySystem::*calc)(const Context<T>&, OutputType*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
@@ -1321,9 +1606,9 @@ class LeafSystem : public System<T> {
       typename LeafOutputPort<T>::CalcCallback calc_function,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
-    return DeclareAbstractOutputPort(kUseDefaultName, std::move(alloc_function),
-                                     std::move(calc_function),
-                                     std::move(prerequisites_of_calc));
+    return DeclareAbstractOutputPort(
+        kUseDefaultName, std::move(alloc_function), std::move(calc_function),
+        std::move(prerequisites_of_calc));
   }
   //@}
 
@@ -1333,17 +1618,17 @@ class LeafSystem : public System<T> {
   /// witness functions useful for ensuring that integration ends a step upon
   /// entering particular times or states.
   ///
-  /// In contrast to other declaration methods (e.g., DeclareVectorOutputPort(),
-  /// for which the System class creates and stores the objects and returns
-  /// references to them, the witness function declaration functions return
-  /// heap-allocated objects that the subclass of leaf system owns. This
-  /// facilitates returning pointers to these objects in
-  /// System::DoGetWitnessFunctions().
+  /// In contrast to other declaration methods (e.g.,
+  /// DeclareVectorOutputPort(), for which the System class creates and stores
+  /// the objects and returns references to them, the witness function
+  /// declaration functions return heap-allocated objects that the subclass of
+  /// leaf system owns. This facilitates returning pointers to these objects
+  /// in System::DoGetWitnessFunctions().
   //@{
 
-  /// Constructs the witness function with the given description (used primarily
-  /// for debugging and logging), direction type, and calculator function; and
-  /// with no event object.
+  /// Constructs the witness function with the given description (used
+  /// primarily for debugging and logging), direction type, and calculator
+  /// function; and with no event object.
   /// @note Constructing a witness function with no corresponding event forces
   ///       Simulator's integration of an ODE to end a step at the witness
   ///       isolation time. For example, isolating a function's minimum or
@@ -1355,24 +1640,24 @@ class LeafSystem : public System<T> {
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const) const {
-    return std::make_unique<WitnessFunction<T>>(
-        this, description, direction_type, calc);
+    return std::make_unique<WitnessFunction<T>>(this, description,
+                                                direction_type, calc);
   }
 
-  /// Constructs the witness function with the given description (used primarily
-  /// for debugging and logging), direction type, and calculator function; and
-  /// with no event object.
+  /// Constructs the witness function with the given description (used
+  /// primarily for debugging and logging), direction type, and calculator
+  /// function; and with no event object.
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       std::function<T(const Context<T>&)> calc) const {
-    return std::make_unique<WitnessFunction<T>>(
-        this, description, direction_type, calc);
+    return std::make_unique<WitnessFunction<T>>(this, description,
+                                                direction_type, calc);
   }
 
-  /// Constructs the witness function with the given description (used primarily
-  /// for debugging and logging), direction type, calculator function, and
-  /// publish event callback function for when this triggers.
+  /// Constructs the witness function with the given description (used
+  /// primarily for debugging and logging), direction type, calculator
+  /// function, and publish event callback function for when this triggers.
   template <class MySystem>
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
       const std::string& description,
@@ -1382,8 +1667,8 @@ class LeafSystem : public System<T> {
           const Context<T>&, const PublishEvent<T>&) const) const {
     static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
                   "Expected to be invoked from a LeafSystem-derived system.");
-    auto fn = [this, publish_callback](
-        const Context<T>& context, const PublishEvent<T>& publish_event) {
+    auto fn = [this, publish_callback](const Context<T>& context,
+                                       const PublishEvent<T>& publish_event) {
       auto system_ptr = dynamic_cast<const MySystem*>(this);
       DRAKE_DEMAND(system_ptr);
       return (system_ptr->*publish_callback)(context, publish_event);
@@ -1394,20 +1679,23 @@ class LeafSystem : public System<T> {
         this, description, direction_type, calc, publish_event.Clone());
   }
 
-  /// Constructs the witness function with the given description (used primarily
-  /// for debugging and logging), direction type, calculator function, and
-  /// discrete update event callback function for when this triggers.
+  /// Constructs the witness function with the given description (used
+  /// primarily for debugging and logging), direction type, calculator
+  /// function, and discrete update event callback function for when this
+  /// triggers.
   template <class MySystem>
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const,
       void (MySystem::*du_callback)(const Context<T>&,
-          const DiscreteUpdateEvent<T>&, DiscreteValues<T>*) const) const {
+                                    const DiscreteUpdateEvent<T>&,
+                                    DiscreteValues<T>*) const) const {
     static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
                   "Expected to be invoked from a LeafSystem-derived system.");
     auto fn = [this, du_callback](const Context<T>& context,
-        const DiscreteUpdateEvent<T>& du_event, DiscreteValues<T>* values) {
+                                  const DiscreteUpdateEvent<T>& du_event,
+                                  DiscreteValues<T>* values) {
       auto system_ptr = dynamic_cast<const MySystem*>(this);
       DRAKE_DEMAND(system_ptr);
       return (system_ptr->*du_callback)(context, du_event, values);
@@ -1418,20 +1706,23 @@ class LeafSystem : public System<T> {
         this, description, direction_type, calc, du_event.Clone());
   }
 
-  /// Constructs the witness function with the given description (used primarily
-  /// for debugging and logging), direction type, calculator function, and
-  /// unrestricted update event callback function for when this triggers.
+  /// Constructs the witness function with the given description (used
+  /// primarily for debugging and logging), direction type, calculator
+  /// function, and unrestricted update event callback function for when this
+  /// triggers.
   template <class MySystem>
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const,
-      void (MySystem::*uu_callback)(const Context<T>&,
-          const UnrestrictedUpdateEvent<T>&, State<T>*) const) const {
+      void (MySystem::*uu_callback)(
+          const Context<T>&, const UnrestrictedUpdateEvent<T>&, State<T>*)
+          const) const {
     static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
                   "Expected to be invoked from a LeafSystem-derived system.");
     auto fn = [this, uu_callback](const Context<T>& context,
-        const UnrestrictedUpdateEvent<T>& uu_event, State<T>* state) {
+                                  const UnrestrictedUpdateEvent<T>& uu_event,
+                                  State<T>* state) {
       auto system_ptr = dynamic_cast<const MySystem*>(this);
       DRAKE_DEMAND(system_ptr);
       return (system_ptr->*uu_callback)(context, uu_event, state);
@@ -1442,37 +1733,35 @@ class LeafSystem : public System<T> {
         this, description, direction_type, calc, uu_event.Clone());
   }
 
-  /// Constructs the witness function with the given description (used primarily
-  /// for debugging and logging), direction type, and calculator
+  /// Constructs the witness function with the given description (used
+  /// primarily for debugging and logging), direction type, and calculator
   /// function, and with an object corresponding to the event that is to be
   /// dispatched when this witness function triggers. Example types of event
-  /// objects are publish, discrete variable update, unrestricted update events.
-  /// A clone of the event will be owned by the newly constructed
+  /// objects are publish, discrete variable update, unrestricted update
+  /// events. A clone of the event will be owned by the newly constructed
   /// WitnessFunction.
   template <class MySystem>
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
-      T (MySystem::*calc)(const Context<T>&) const,
-      const Event<T>& e) const {
+      T (MySystem::*calc)(const Context<T>&) const, const Event<T>& e) const {
     static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
                   "Expected to be invoked from a LeafSystem-derived system.");
     return std::make_unique<WitnessFunction<T>>(
         this, description, direction_type, calc, e.Clone());
   }
 
-  /// Constructs the witness function with the given description (used primarily
-  /// for debugging and logging), direction type, and calculator
+  /// Constructs the witness function with the given description (used
+  /// primarily for debugging and logging), direction type, and calculator
   /// function, and with an object corresponding to the event that is to be
   /// dispatched when this witness function triggers. Example types of event
-  /// objects are publish, discrete variable update, unrestricted update events.
-  /// A clone of the event will be owned by the newly constructed
+  /// objects are publish, discrete variable update, unrestricted update
+  /// events. A clone of the event will be owned by the newly constructed
   /// WitnessFunction.
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
-      std::function<T(const Context<T>&)> calc,
-      const Event<T>& e) const {
+      std::function<T(const Context<T>&)> calc, const Event<T>& e) const {
     return std::make_unique<WitnessFunction<T>>(
         this, description, direction_type, calc, e.Clone());
   }
@@ -1495,8 +1784,8 @@ class LeafSystem : public System<T> {
   /// these constraints.
   template <class MySystem>
   SystemConstraintIndex DeclareEqualityConstraint(
-      void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
-      int count, const std::string& description) {
+      void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const, int count,
+      const std::string& description) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
     return DeclareEqualityConstraint(
@@ -1509,8 +1798,8 @@ class LeafSystem : public System<T> {
 
   /// Declares a system constraint of the form
   ///   f(context) = 0
-  /// by specifying a std::function to use to calculate the (Vector) constraint
-  /// value with a signature:
+  /// by specifying a std::function to use to calculate the (Vector)
+  /// constraint value with a signature:
   /// @code
   /// void CalcConstraint(const Context<T>&, VectorX<T>*);
   /// @endcode
@@ -1545,8 +1834,8 @@ class LeafSystem : public System<T> {
   /// these constraints.
   template <class MySystem>
   SystemConstraintIndex DeclareInequalityConstraint(
-      void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
-      int count, const std::string& description) {
+      void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const, int count,
+      const std::string& description) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
     return DeclareInequalityConstraint(
@@ -1559,8 +1848,8 @@ class LeafSystem : public System<T> {
 
   /// Declares a system constraint of the form
   ///   f(context) ≥ 0
-  /// by specifying a std::function to use to calculate the (Vector) constraint
-  /// value with a signature:
+  /// by specifying a std::function to use to calculate the (Vector)
+  /// constraint value with a signature:
   /// @code
   /// void CalcConstraint(const Context<T>&, VectorX<T>*);
   /// @endcode
@@ -1585,17 +1874,19 @@ class LeafSystem : public System<T> {
   /// for each event that has a callback function, it will invoke the callback
   /// with @p context and that event. This can be used for tasks that need
   /// read-only access to the context, such as sending messages, producing
-  /// console output, debugging, logging, saving the trajectory to a file, etc.
+  /// console output, debugging, logging, saving the trajectory to a file,
+  /// etc.
   ///
-  /// This method is called only from the virtual DispatchPublishHandler, which
-  /// is only called from the public non-virtual Publish(), which will have
-  /// already error-checked @p context so you may assume that it is valid.
+  /// This method is called only from the virtual DispatchPublishHandler,
+  /// which is only called from the public non-virtual Publish(), which will
+  /// have already error-checked @p context so you may assume that it is
+  /// valid.
   ///
   /// @param[in] context Const current context.
   /// @param[in] events All the publish events that need handling.
-  virtual void DoPublish(
-      const Context<T>& context,
-      const std::vector<const PublishEvent<T>*>& events) const {
+  virtual void DoPublish(const Context<T>& context,
+                         const std::vector<const PublishEvent<T>*>& events)
+      const {
     for (const PublishEvent<T>* event : events) {
       event->handle(context);
     }
@@ -1616,7 +1907,8 @@ class LeafSystem : public System<T> {
   /// have error-checked the parameters so you don't have to. In particular,
   /// implementations may assume that @p context is valid; that
   /// @p discrete_state is non-null, and that the referenced object has the
-  /// same constituent structure as was produced by AllocateDiscreteVariables().
+  /// same constituent structure as was produced by
+  /// AllocateDiscreteVariables().
   ///
   /// @param[in] context The "before" state.
   /// @param[in] events All the discrete update events that need handling.
@@ -1652,7 +1944,8 @@ class LeafSystem : public System<T> {
   /// is non-null, and that the referenced object has the same constituent
   /// structure as the state in @p context.
   ///
-  /// @param[in]     context The "before" state that is to be used to calculate
+  /// @param[in]     context The "before" state that is to be used to
+  /// calculate
   ///                        the returned state update.
   /// @param[in]     events All the unrestricted update events that need
   ///                       handling.
@@ -1695,9 +1988,11 @@ class LeafSystem : public System<T> {
   }
 
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
-      PeriodicEventDataComparator> DoGetPeriodicEvents() const override {
+           PeriodicEventDataComparator>
+  DoGetPeriodicEvents() const override {
     std::map<PeriodicEventData, std::vector<const Event<T>*>,
-        PeriodicEventDataComparator> periodic_events_map;
+             PeriodicEventDataComparator>
+        periodic_events_map;
     for (const auto& i : periodic_events_) {
       periodic_events_map[i.first].push_back(i.second.get());
     }
@@ -1708,11 +2003,11 @@ class LeafSystem : public System<T> {
   // Assumes @param events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
   // Assumes @param events is not empty. Aborts otherwise.
-  void DispatchPublishHandler(
-      const Context<T>& context,
-      const EventCollection<PublishEvent<T>>& events) const final {
+  void DispatchPublishHandler(const Context<T>& context,
+                              const EventCollection<PublishEvent<T>>& events)
+      const final {
     const LeafEventCollection<PublishEvent<T>>& leaf_events =
-       dynamic_cast<const LeafEventCollection<PublishEvent<T>>&>(events);
+        dynamic_cast<const LeafEventCollection<PublishEvent<T>>&>(events);
     // Only call DoPublish if there are publish events.
     DRAKE_DEMAND(leaf_events.HasEvents());
     this->DoPublish(context, leaf_events.get_events());
@@ -1735,7 +2030,7 @@ class LeafSystem : public System<T> {
     // events.
     DRAKE_DEMAND(leaf_events.HasEvents());
     this->DoCalcDiscreteVariableUpdates(context, leaf_events.get_events(),
-        discrete_state);
+                                        discrete_state);
   }
 
   // Calls DoCalcUnrestrictedUpdate.
@@ -1756,36 +2051,35 @@ class LeafSystem : public System<T> {
   }
 
   void DoGetPerStepEvents(
-      const Context<T>&,
-      CompositeEventCollection<T>* events) const override {
+      const Context<T>&, CompositeEventCollection<T>* events) const override {
     events->SetFrom(per_step_events_);
   }
 
   void DoGetInitializationEvents(
-      const Context<T>&,
-      CompositeEventCollection<T>* events) const override {
+      const Context<T>&, CompositeEventCollection<T>* events) const override {
     events->SetFrom(initialization_events_);
   }
 
   // Returns a SystemSymbolicInspector for this system, or nullptr if one
   // cannot be constructed because this System has no symbolic representation.
-  std::unique_ptr<SystemSymbolicInspector> MakeSystemSymbolicInspector() const {
+  std::unique_ptr<SystemSymbolicInspector> MakeSystemSymbolicInspector()
+      const {
     // We use different implementations when T = Expression or not.
     return MakeSystemSymbolicInspectorImpl(*this);
   }
 
   // When T == Expression, we don't need to use scalar conversion.
   static std::unique_ptr<SystemSymbolicInspector>
-  MakeSystemSymbolicInspectorImpl(const System<symbolic::Expression>& system) {
+  MakeSystemSymbolicInspectorImpl(
+      const System<symbolic::Expression>& system) {
     return std::make_unique<SystemSymbolicInspector>(system);
   }
 
   // When T != Expression, attempt to use scalar conversion.
   template <typename T1>
-  static
-  typename std::enable_if_t<
-    !std::is_same<T1, symbolic::Expression>::value,
-    std::unique_ptr<SystemSymbolicInspector>>
+  static typename std::enable_if_t<
+      !std::is_same<T1, symbolic::Expression>::value,
+      std::unique_ptr<SystemSymbolicInspector>>
   MakeSystemSymbolicInspectorImpl(const System<T1>& system) {
     using symbolic::Expression;
     std::unique_ptr<System<Expression>> converted = system.ToSymbolicMaybe();
@@ -1799,15 +2093,15 @@ class LeafSystem : public System<T> {
   // Creates a new cached, vector-valued LeafOutputPort in this LeafSystem and
   // returns a reference to it.
   LeafOutputPort<T>& CreateVectorLeafOutputPort(
-      std::string name,
-      int fixed_size,
+      std::string name, int fixed_size,
       typename LeafOutputPort<T>::AllocCallback vector_allocator,
       typename LeafOutputPort<T>::CalcVectorCallback vector_calculator,
       std::set<DependencyTicket> calc_prerequisites) {
     // Construct a suitable type-erased cache calculator from the given
     // BasicVector<T> calculator function.
     auto cache_calc_function = [vector_calculator](
-        const ContextBase& context_base, AbstractValue* abstract) {
+                                   const ContextBase& context_base,
+                                   AbstractValue* abstract) {
       auto& context = dynamic_cast<const Context<T>&>(context_base);
 
       // The abstract value must be a Value<BasicVector<T>>, even if the
@@ -1832,18 +2126,18 @@ class LeafSystem : public System<T> {
         std::move(cache_calc_function), std::move(calc_prerequisites));
   }
 
-  // Creates a new cached, abstract-valued LeafOutputPort in this LeafSystem and
-  // returns a reference to it.
+  // Creates a new cached, abstract-valued LeafOutputPort in this LeafSystem
+  // and returns a reference to it.
   LeafOutputPort<T>& CreateAbstractLeafOutputPort(
-      std::string name,
-      typename LeafOutputPort<T>::AllocCallback allocator,
+      std::string name, typename LeafOutputPort<T>::AllocCallback allocator,
       typename LeafOutputPort<T>::CalcCallback calculator,
       std::set<DependencyTicket> calc_prerequisites) {
     // Construct a suitable type-erased cache calculator from the given
     // type-T calculator function.
-    auto cache_calc_function = [calculator](
-        const ContextBase& context_base, AbstractValue* result) {
-      const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
+    auto cache_calc_function = [calculator](const ContextBase& context_base,
+                                            AbstractValue* result) {
+      const Context<T>& context =
+          dynamic_cast<const Context<T>&>(context_base);
       return calculator(context, result);
     };
 
@@ -1875,8 +2169,7 @@ class LeafSystem : public System<T> {
     auto port = std::make_unique<LeafOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
-        std::move(name),
-        oport_index, this->assign_next_dependency_ticket(),
+        std::move(name), oport_index, this->assign_next_dependency_ticket(),
         fixed_size == 0 ? kAbstractValued : kVectorValued, fixed_size,
         &cache_entry);
     LeafOutputPort<T>* const port_ptr = port.get();
@@ -1897,22 +2190,19 @@ class LeafSystem : public System<T> {
     // allocator functor here.
     copyable_unique_ptr<AbstractValue> owned_model(
         new Value<OutputType>(model_value));
-    return [model = std::move(owned_model)]() {
-      return model->Clone();
-    };
+    return [model = std::move(owned_model)]() { return model->Clone(); };
   }
 
   // If @p model_vector's CalcInequalityConstraint provides any constraints,
   // then declares inequality constraints on `this` using a calc function that
   // obtains a VectorBase from a Context using @p get_vector_from_context and
-  // then delegates to the VectorBase::CalcInequalityConstraint.  Note that the
-  // model vector is only used to determine how many constraints will appear;
-  // it is not part of the ongoing constraint computations.
+  // then delegates to the VectorBase::CalcInequalityConstraint.  Note that
+  // the model vector is only used to determine how many constraints will
+  // appear; it is not part of the ongoing constraint computations.
   void MaybeDeclareVectorBaseInequalityConstraint(
-      const std::string& kind,
-      const VectorBase<T>& model_vector,
+      const std::string& kind, const VectorBase<T>& model_vector,
       const std::function<const VectorBase<T>&(const Context<T>&)>&
-        get_vector_from_context) {
+          get_vector_from_context) {
     VectorX<T> dummy_value;
     model_vector.CalcInequalityConstraint(&dummy_value);
     const int count = dummy_value.size();
@@ -1923,20 +2213,19 @@ class LeafSystem : public System<T> {
         [get_vector_from_context](const Context<T>& con, VectorX<T>* value) {
           get_vector_from_context(con).CalcInequalityConstraint(value);
         },
-        count,
-        kind + " of type " + NiceTypeName::Get(model_vector));
+        count, kind + " of type " + NiceTypeName::Get(model_vector));
   }
 
   // Periodic Update or Publish events registered on this system.
-  std::vector<std::pair<PeriodicEventData,
-                        std::unique_ptr<Event<T>>>>
+  std::vector<std::pair<PeriodicEventData, std::unique_ptr<Event<T>>>>
       periodic_events_;
 
   // Update or Publish events registered on this system for every simulator
   // major time step.
   LeafCompositeEventCollection<T> per_step_events_;
 
-  // Update or Publish events that need to be handled at system initialization.
+  // Update or Publish events that need to be handled at system
+  // initialization.
   LeafCompositeEventCollection<T> initialization_events_;
 
   // A model continuous state to be used during Context allocation.

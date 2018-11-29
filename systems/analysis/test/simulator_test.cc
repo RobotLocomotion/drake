@@ -970,41 +970,33 @@ class ExampleDiscreteSystem : public LeafSystem<double> {
 
     // Output yₙ using a Drake "publish" event (occurs at the end of step n,
     // where step 0 is "initialize" and StepTo(kPeriod) yields step 1).
-    DeclarePeriodicEvent(kPeriod, kPublishOffset,
-                         systems::PublishEvent<double>(
-                             [this](const systems::Context<double>& context,
-                                    const systems::PublishEvent<double>&) {
-                               PrintResult(context);
-                             }));
+    DeclarePeriodicPublish(kPeriod, kOffset,
+                           &ExampleDiscreteSystem::PrintResult);
 
-    // Update to xₙ₊₁, using a Drake "discrete update" event (occurs at the
-    // beginning of step n+1).
-    DeclarePeriodicEvent(kPeriod, kPublishOffset,
-                         systems::DiscreteUpdateEvent<double>(
-                             [this](const systems::Context<double>& context,
-                                    const systems::DiscreteUpdateEvent<double>&,
-                                    systems::DiscreteValues<double>* xd) {
-                               Update(context, xd);
-                             }));
+    // Update to xₙ₊₁, using a Drake "discrete update" event (occurs
+    // at the beginning of step n+1).
+    DeclarePeriodicDiscreteUpdate(kPeriod, kOffset,
+                                  &ExampleDiscreteSystem::Update);
   }
 
   static constexpr double kPeriod = 1/50.;  // Update at 50Hz (h=1/50).
-  static constexpr double kPublishOffset = 0.;  // Trigger events at n=0.
+  static constexpr double kOffset = 0.;  // Trigger events at n=0.
 
  private:
-  // Update function xₙ₊₁ = f(n, xₙ).
-  void Update(const systems::Context<double>& context,
-              systems::DiscreteValues<double>* xd) const {
+  systems::EventStatus Update(const systems::Context<double>& context,
+                              systems::DiscreteValues<double>* xd) const {
     const double x_n = GetX(context);
     (*xd)[0] = x_n + 1.;
+    return systems::EventStatus::Succeeded();
   }
 
   // Prints the result of output function yₙ = g(n, xₙ) to cout.
-  void PrintResult(const systems::Context<double>& context) const {
+  systems::EventStatus PrintResult(const systems::Context<double>& context) const {
     const double t = context.get_time();
     const int n = static_cast<int>(std::round(t / kPeriod));
     const double S_n = 10 * GetX(context);  // 10 xₙ[0]
     std::cout << n << ": " << S_n << " (" << t << ")\n";
+    return systems::EventStatus::Succeeded();
   }
 
   double GetX(const Context<double>& context) const {

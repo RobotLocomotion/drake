@@ -57,8 +57,6 @@ The code required to produce the above sequence (see run_fibonacci.cc) is just
   simulator.StepTo(8 * FibonacciDifferenceEquation::kPeriod);
 @endcode
 */
-// TODO(sherm1) Simplify the periodic event specifications here when
-// PR #10132 lands.
 class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FibonacciDifferenceEquation)
@@ -67,39 +65,33 @@ class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
     // Set default initial conditions to produce the above sequence.
     DeclareDiscreteState(Eigen::Vector2d(0., 1.));
 
-    // Output yₙ using a Drake "publish" event (occurs at the end of step n).
-    DeclarePeriodicEvent(kPeriod, 0.,  // period, offset
-                         systems::PublishEvent<double>(
-                             [this](const systems::Context<double>& context,
-                                    const systems::PublishEvent<double>&) {
-                               PrintResult(context);
-                             }));
+    // Output yₙ using a Drake "publish" event (occurs at the end of step n,
+    // including "step" 0 which is initialization).
+    DeclarePeriodicPublish(kPeriod, 0.,
+                           &FibonacciDifferenceEquation::PrintResult);
 
     // Update to xₙ₊₁, using a Drake "discrete update" event (occurs
     // at the beginning of step n+1).
-    DeclarePeriodicEvent(kPeriod, 0.,
-                         systems::DiscreteUpdateEvent<double>(
-                             [this](const systems::Context<double>& context,
-                                    const systems::DiscreteUpdateEvent<double>&,
-                                    systems::DiscreteValues<double>* xd) {
-                               Update(context, xd);
-                             }));
+    DeclarePeriodicDiscreteUpdate(kPeriod, 0.,
+                                  &FibonacciDifferenceEquation::Update);
   }
 
   /// Update period (in seconds) for the system.
-  static constexpr double kPeriod = 0.7;  // Arbitrary, e.g. 0.1234 works too!
+  static constexpr double kPeriod = 1.;  // Arbitrary, e.g. 0.1234 works too!
 
  private:
   // Update function xₙ₊₁ = f(n, xₙ).
-  void Update(const systems::Context<double>& context,
+  systems::EventStatus Update(const systems::Context<double>& context,
                               systems::DiscreteValues<double>* xd) const {
     const auto& x_n = context.get_discrete_state();
     (*xd)[0] = x_n[0] + x_n[1];
     (*xd)[1] = x_n[0];
+    return systems::EventStatus::Succeeded();
   }
 
   // Print the result of the output function yₙ = g(n, xₙ) to cout.
-  void PrintResult(const systems::Context<double>& context) const {
+  systems::EventStatus PrintResult(
+      const systems::Context<double>& context) const {
     const double t = context.get_time();
     // Because of finite floating point precision, t / kPeriod will yield the
     // desired step (n) plus or minus some error. For example, (3 * 0.7) / 0.7
@@ -107,8 +99,9 @@ class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
     // (rounded), not n = 2 (truncated). Using round() first ensures that
     // casting to an int gives the correct step number.
     const int n = static_cast<int>(std::round(t / kPeriod));
-    const int F_n = context.get_discrete_state()[0];  // xₙ[0]
+    const int64_t F_n = context.get_discrete_state()[0];  // xₙ[0]
     std::cout << n << ": " << F_n << "\n";
+    return systems::EventStatus::Succeeded();
   }
 };
 
