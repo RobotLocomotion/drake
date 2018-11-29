@@ -13,8 +13,8 @@ from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
 class TestManipulationStation(unittest.TestCase):
     def test_manipulation_station(self):
         # Just check the spelling.
-        station = ManipulationStation(
-            time_step=0.001, collision_model=IiwaCollisionModel.kNoCollision)
+        station = ManipulationStation(time_step=0.001)
+        station.SetupDefaultStation()
         station.Finalize()
         station.get_multibody_plant()
         station.get_mutable_multibody_plant()

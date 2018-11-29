@@ -42,6 +42,12 @@ PYBIND11_MODULE(manipulation_station, m) {
       .def("SetupDefaultStation", &ManipulationStation<T>::SetupDefaultStation,
           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
           doc.ManipulationStation.SetupDefaultStation.doc)
+      .def("AddAndWeldModelFromSdf", &ManipulationStation<T>::AddAndWeldModelFromSdf,
+          doc.ManipulationStation.AddAndWeldModelFromSdf.doc)
+      .def("RegisterIiwaControllerModel", &ManipulationStation<T>::RegisterIiwaControllerModel,
+          doc.ManipulationStation.RegisterIiwaControllerModel.doc)
+      .def("RegisterWsgControllerModel", &ManipulationStation<T>::RegisterWsgControllerModel,
+          doc.ManipulationStation.RegisterWsgControllerModel.doc)
       .def("Finalize", &ManipulationStation<T>::Finalize,
           doc.ManipulationStation.Finalize.doc)
       .def("get_multibody_plant", &ManipulationStation<T>::get_multibody_plant,
@@ -81,7 +87,15 @@ PYBIND11_MODULE(manipulation_station, m) {
           py_reference_internal,
           doc.ManipulationStation.get_camera_poses_in_world.doc)
       .def("get_camera_names", &ManipulationStation<T>::get_camera_names,
-          doc.ManipulationStation.get_camera_names.doc);
+          doc.ManipulationStation.get_camera_names.doc)
+      .def("SetWsgGains", &ManipulationStation<T>::SetWsgGains,
+          doc.ManipulationStation.SetWsgGains.doc)
+      .def("SetIiwaPositionGains", &ManipulationStation<T>::SetIiwaPositionGains,
+          doc.ManipulationStation.SetIiwaPositionGains.doc)
+      .def("SetIiwaVelocityGains", &ManipulationStation<T>::SetIiwaVelocityGains,
+          doc.ManipulationStation.SetIiwaVelocityGains.doc)
+      .def("SetIiwaIntegralGains", &ManipulationStation<T>::SetIiwaIntegralGains,
+          doc.ManipulationStation.SetIiwaIntegralGains.doc);
 
   py::class_<ManipulationStationHardwareInterface, Diagram<double>>(
       m, "ManipulationStationHardwareInterface")

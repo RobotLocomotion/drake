@@ -110,6 +110,7 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
 GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
   const double kTimeStep = 0.002;
   ManipulationStation<double> station(kTimeStep);
+  station.SetupDefaultStation();
   station.Finalize();
 
   auto context = station.CreateDefaultContext();
@@ -205,6 +206,7 @@ GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
 
 GTEST_TEST(ManipulationStationTest, CheckWsg) {
   ManipulationStation<double> station(0.001);
+  station.SetupDefaultStation();
   station.Finalize();
 
   auto context = station.CreateDefaultContext();
@@ -228,6 +230,7 @@ GTEST_TEST(ManipulationStationTest, CheckWsg) {
 
 GTEST_TEST(ManipulationStationTest, CheckRGBDOutputs) {
   ManipulationStation<double> station(0.001);
+  station.SetupDefaultStation();
   station.Finalize();
 
   auto context = station.CreateDefaultContext();
