@@ -1200,7 +1200,7 @@ void MultibodyTree<T>::CalcFrameJacobianExpressedInWorld(
   const Body<T>& body_B = frame_F.body();
 
   // Do nothing for bodies anchored to the world and return zero Jacobians.
-  // That is, Jw_WFp * v = 0 and Jv_WFp * v = 0, always, for anchored bodies.
+  // That is, Jw_WFq * v = 0 and Jv_WFq * v = 0, always, for anchored bodies.
   if (body_B.index() == world_index()) return;
 
   // Compute kinematic path from body B to the world:
@@ -1272,9 +1272,9 @@ void MultibodyTree<T>::CalcFrameJacobianExpressedInWorld(
     if (Jt_WFq) {
       // Output block corresponding to mobilities in the current node.
       // This correspond to the geometric Jacobian to compute the translational
-      // velocity of frame Fp (same as that of point P) measured in the inboard
-      // body frame P and expressed in world. That is, v_PP_W = v_PFp_W =
-      // Jv_PFp_W * v(B), with v(B) the mobilities that correspond to the
+      // velocity of frame Fq (same as that of point Q) measured in the inboard
+      // body frame P and expressed in world. That is, v_PQ_W = v_PFq_W =
+      // Jv_PFq_W * v(B), with v(B) the mobilities that correspond to the
       // current node.
       auto Jv_PFq_W =
           Jt_WFq->block(0, start_index, Jt_nrows, mobilizer_jacobian_ncols);
@@ -1283,24 +1283,24 @@ void MultibodyTree<T>::CalcFrameJacobianExpressedInWorld(
       const Vector3<T>& p_WBi = pc.get_X_WB(node.index()).translation();
 
       for (int ipoint = 0; ipoint < num_points; ++ipoint) {
-        const Vector3<T>& p_WP = p_WQ_list.col(ipoint);
+        const Vector3<T>& p_WQ = p_WQ_list.col(ipoint);
 
         // Position of point P measured from Bi, expressed in the world W.
-        const Vector3<T> p_BiP_W = p_WP - p_WBi;
+        const Vector3<T> p_BiQ_W = p_WQ - p_WBi;
 
         // We stack the Jacobian for each translational velocity in the same
-        // order the input points P are provided in the input list.
+        // order the input points Q are provided in the input list.
         const int ipoint_row = 3 * ipoint;
 
-        // Mutable alias into J_PFp_W for the translational terms for the
+        // Mutable alias into J_PFq_W for the translational terms for the
         // ipoint-th point.
         auto Hv_PFqi_W =
             Jv_PFq_W.block(ipoint_row, 0, 3, mobilizer_jacobian_ncols);
 
-        // Now "shift" H_PB_W to H_PBpi_W.
+        // Now "shift" H_PB_W to H_PBqi_W.
         // We do it by shifting one column at a time:
-        // Note: V_PFq_W equals V_PBq_W since F moves with B.
-        Hv_PFqi_W = (Hv_PB_W + Hw_PB_W.colwise().cross(p_BiP_W)) * Nplus;
+        // Note: w_PFq_W equals w_PBq_W since F moves with B.
+        Hv_PFqi_W = (Hv_PB_W + Hw_PB_W.colwise().cross(p_BiQ_W)) * Nplus;
       }  // ipoint.
     }
   }  // body_node_index
