@@ -944,6 +944,16 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     }
   }
 
+  bool CollisionFiltered(GeometryIndex index1, bool is_dynamic_1,
+                         GeometryIndex index2, bool is_dynamic_2) const {
+    // Collisions between anchored geometries are implicitly filtered.
+    if (!is_dynamic_1 && !is_dynamic_2) return true;
+    EncodedData encoding1(index1, is_dynamic_1);
+    EncodedData encoding2(index2, is_dynamic_2);
+    return !collision_filter_.CanCollideWith(encoding1.encoded_data(),
+                                             encoding2.encoded_data());
+  }
+
   int get_next_clique() { return collision_filter_.next_clique_id(); }
 
   void set_clique(GeometryIndex index, int clique) {
@@ -1241,6 +1251,13 @@ void ProximityEngine<T>::ExcludeCollisionsBetween(
     const std::unordered_set<GeometryIndex>& dynamic2,
     const std::unordered_set<GeometryIndex>& anchored2) {
   impl_->ExcludeCollisionsBetween(dynamic1, anchored1, dynamic2, anchored2);
+}
+
+template <typename T>
+bool ProximityEngine<T>::CollisionFiltered(
+    GeometryIndex index1, bool is_dynamic_1,
+    GeometryIndex index2, bool is_dynamic_2) const {
+  return impl_->CollisionFiltered(index1, is_dynamic_1, index2, is_dynamic_2);
 }
 
 // Client-attorney interface for GeometryState to manipulate collision filters.

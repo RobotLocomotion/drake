@@ -1442,10 +1442,27 @@ TEST_F(GeometryStateTest, ExcludeCollisionsWithin) {
 
   // Frames 0 & 1 do *not* have colliding geometry; adding a filter should have
   // *no* impact on the number of reported collisions.
+
+  // Confirm that geometry pairs (i, j) are reported as initially _not_ filtered
+  // from collisions where i is a geometry belonging to frame 0 and j is a
+  // geometry belonging to frame 1.
+  for (int i = 0; i < kGeometryCount; ++i) {
+    for (int j = kGeometryCount; j < kGeometryCount * 2; ++j) {
+      EXPECT_FALSE(geometry_state_.CollisionFiltered(
+          geometries_[i], geometries_[j]));
+    }
+  }
   geometry_state_.ExcludeCollisionsWithin(
       GeometrySet({anchored_geometry_}, {frames_[0], frames_[1]}));
   pairs = geometry_state_.ComputePointPairPenetration();
   ASSERT_EQ(static_cast<int>(pairs.size()), expected_collisions);
+  // Now confirm that collision filtering is reported.
+  for (int i = 0; i < kGeometryCount; ++i) {
+    for (int j = kGeometryCount; j < kGeometryCount * 2; ++j) {
+      EXPECT_TRUE(geometry_state_.CollisionFiltered(
+          geometries_[i], geometries_[j]));
+    }
+  }
 
   // Frame 2 has *two* geometries that collide with the anchored geometry. This
   // eliminates those collisions.
@@ -1546,6 +1563,37 @@ TEST_F(GeometryStateTest, CrossCollisionFilterExceptions) {
       std::logic_error,
       "Geometry set includes a geometry id that doesn't belong to the "
           "SceneGraph: \\d+");
+}
+
+// Test that the appropriate error messages are dispatched.
+TEST_F(GeometryStateTest, CollisionFilteredExceptions) {
+  SetUpSingleSourceTree();
+
+  // Base case: Two geometries on same frame *are* filtered.
+  EXPECT_TRUE(
+      geometry_state_.CollisionFiltered(geometries_[0], geometries_[1]));
+
+  GeometryId bad_id = GeometryId::get_new_id();
+
+  // Case: First geometry is bad.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.CollisionFiltered(bad_id, geometries_[0]),
+      std::logic_error,
+      "Can't report collision filter status between geometries .* " +
+          to_string(bad_id) + " is not a valid geometry");
+
+  // Case: Second geometry is bad.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.CollisionFiltered(geometries_[0], bad_id),
+      std::logic_error,
+      "Can't report collision filter status between geometries .* " +
+          to_string(bad_id) + " is not a valid geometry");
+
+  // Case: Both geometries are bad.
+  DRAKE_EXPECT_THROWS_MESSAGE(geometry_state_.CollisionFiltered(bad_id, bad_id),
+                              std::logic_error,
+                              "Can't report collision filter status between "
+                              "geometries .* neither id is a valid geometry");
 }
 
 // Tests the ability to query for a geometry from the name of a geometry.
