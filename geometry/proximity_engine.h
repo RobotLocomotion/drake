@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <unordered_set>
 #include <vector>
@@ -10,6 +11,7 @@
 #include "drake/geometry/geometry_index.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
+#include "drake/geometry/query_results/signed_distance_to_point.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -177,8 +179,22 @@ class ProximityEngine {
   std::vector<SignedDistancePair<double>>
   ComputeSignedDistancePairwiseClosestPoints(
       const std::vector<GeometryId>& geometry_map) const;
-  //@}
 
+  /** Performs work in support of GeometryState::ComputeSignedDistanceToPoint().
+   @param[in] p_WQ            Position of a query point Q in world frame W.
+   @param[in] geometry_map    A map from geometry _index_ to the corresponding
+                              global geometry identifier.
+   @param[in] threshold       Ignore any object beyond this distance.
+   @retval signed_distances   A vector populated with per-object signed
+                              distance and gradient vector.
+                              See SignedDistanceFieldValue for details.
+   */
+  std::vector<SignedDistanceToPoint<double>>
+  ComputeSignedDistanceToPoint(
+      const Vector3<double>& p_WQ,
+      const std::vector<GeometryId>& geometry_map,
+      const double threshold = std::numeric_limits<double>::infinity()) const;
+  //@}
 
   //----------------------------------------------------------------------------
   /** @name                Collision Queries
