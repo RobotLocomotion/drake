@@ -81,15 +81,16 @@ class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
                              [this](const systems::Context<double>& context,
                                     const systems::DiscreteUpdateEvent<double>&,
                                     systems::DiscreteValues<double>* x_np1) {
-                               x_np1->get_mutable_vector()
-                                   .set_value(Update(context));
+                               Update(context, x_np1);
                              }));
   }
 
   // Update function xₙ₊₁ = f(n, xₙ).
-  Eigen::Vector2d Update(const systems::Context<double>& context) const {
+  void Update(const systems::Context<double>& context,
+      systems::DiscreteValues<double>* x_np1) const {
     const auto& x_n = context.get_discrete_state();
-    return {x_n[0] + x_n[1], x_n[0]};
+    (*x_np1)[0] = x_n[0] + x_n[1];
+    (*x_np1)[1] = x_n[0];
   }
 
   // Output function yₙ = g(n, xₙ). (Here, just writes 'n: Fₙ' to cout.)
@@ -103,7 +104,8 @@ class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
   // Set initial conditions x₀.
   void Initialize(systems::Context<double>* context) const {
     auto& x_0 = context->get_mutable_discrete_state();
-    x_0.get_mutable_vector().set_value(Eigen::Vector2d(0., 1.));
+    x_0[0] = 0.;
+    x_0[1] = 1.;
   }
 
   static constexpr double kPeriod = 1.;  // Arbitrary, e.g. 0.1234 works too!
