@@ -696,6 +696,32 @@ class LeafSystem : public System<T> {
         }));
   }
 
+  /// This variant accepts a handler that is assumed to succeed rather than
+  /// one that returns an EventStatus result. The handler signature is:
+  /// @code
+  ///   void MySystem::MyPublish(const Context<T>&) const;
+  /// @endcode
+  /// See the other signature for more information.
+  template <class MySystem>
+  void DeclarePeriodicPublishEvent(double period_sec, double offset_sec,
+                                   void (MySystem::*publish)(const Context<T>&)
+                                       const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(publish != nullptr);
+
+    DeclarePeriodicEvent(
+        period_sec, offset_sec,
+        PublishEvent<T>(TriggerType::kPeriodic,
+                        [this_ptr, publish](const Context<T>& context,
+                                            const PublishEvent<T>&) {
+                          (this_ptr->*publish)(context);
+                          // TODO(sherm1) return EventStatus::Succeeded()
+                        }));
+  }
+
   /// Declares that a DiscreteUpdate event should occur periodically and that it
   /// should invoke the given event handler method. The handler should be a
   /// class member function (method) with this signature:
@@ -739,12 +765,39 @@ class LeafSystem : public System<T> {
                                }));
   }
 
+  /// This variant accepts a handler that is assumed to succeed rather than
+  /// one that returns an EventStatus result. The handler signature is:
+  /// @code
+  ///   void MySystem::MyUpdate(const Context<T>&,
+  ///                           DiscreteValues<T>*) const;
+  /// @endcode
+  /// See the other signature for more information.
+  template <class MySystem>
+  void DeclarePeriodicDiscreteUpdateEvent(
+      double period_sec, double offset_sec,
+      void (MySystem::*update)(const Context<T>&, DiscreteValues<T>*) const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(update != nullptr);
+
+    DeclarePeriodicEvent(
+        period_sec, offset_sec,
+        DiscreteUpdateEvent<T>(TriggerType::kPeriodic,
+                               [this_ptr, update](const Context<T>& context,
+                                                  const DiscreteUpdateEvent<T>&,
+                                                  DiscreteValues<T>* xd) {
+                                 (this_ptr->*update)(context, &*xd);
+                                 // TODO(sherm1) return EventStatus::Succeeded()
+                               }));
+  }
+
   /// Declares that an UnrestrictedUpdate event should occur periodically and
   /// that it should invoke the given event handler method. The handler should
   /// be a class member function (method) with this signature:
   /// @code
-  ///   EventStatus MySystem::MyUpdate(const Context<T>&,
-  ///                                  State<T>*) const;
+  ///   EventStatus MySystem::MyUpdate(const Context<T>&, State<T>*) const;
   /// @endcode
   /// where `MySystem` is a class derived from `LeafSystem<T>` and the method
   /// name is arbitrary.
@@ -777,6 +830,33 @@ class LeafSystem : public System<T> {
               // TODO(sherm1) Forward the return status.
               (this_ptr->*update)(context,
                                   &*x);  // Ignore return status for now.
+            }));
+  }
+
+  /// This variant accepts a handler that is assumed to succeed rather than
+  /// one that returns an EventStatus result. The handler signature is:
+  /// @code
+  ///   void MySystem::MyUpdate(const Context<T>&, State<T>*) const;
+  /// @endcode
+  /// See the other signature for more information.
+  template <class MySystem>
+  void DeclarePeriodicUnrestrictedUpdateEvent(
+      double period_sec, double offset_sec,
+      void (MySystem::*update)(const Context<T>&, State<T>*) const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(update != nullptr);
+
+    DeclarePeriodicEvent(
+        period_sec, offset_sec,
+        UnrestrictedUpdateEvent<T>(
+            TriggerType::kPeriodic,
+            [this_ptr, update](const Context<T>& context,
+                               const UnrestrictedUpdateEvent<T>&, State<T>* x) {
+              (this_ptr->*update)(context, &*x);
+              // TODO(sherm1) return EventStatus::Succeeded()
             }));
   }
 

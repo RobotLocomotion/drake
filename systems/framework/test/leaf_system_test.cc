@@ -2370,6 +2370,14 @@ class EventSugarTestSystem : public LeafSystem<double> {
         &EventSugarTestSystem::MyDiscreteUpdateHandler);
     DeclarePeriodicUnrestrictedUpdateEvent(kPeriod, kOffset,
         &EventSugarTestSystem::MyUnrestrictedUpdateHandler);
+
+    // These variants don't require an EventStatus return.
+    DeclarePeriodicPublishEvent(kPeriod, kOffset,
+        &EventSugarTestSystem::MySuccessfulPublishHandler);
+    DeclarePeriodicDiscreteUpdateEvent(kPeriod, kOffset,
+        &EventSugarTestSystem::MySuccessfulDiscreteUpdateHandler);
+    DeclarePeriodicUnrestrictedUpdateEvent(kPeriod, kOffset,
+        &EventSugarTestSystem::MySuccessfulUnrestrictedUpdateHandler);
   }
 
   const double kPeriod = 0.125;
@@ -2381,21 +2389,35 @@ class EventSugarTestSystem : public LeafSystem<double> {
 
  private:
   EventStatus MyPublishHandler(const Context<double>& context) const {
-    ++num_publish_;
+    MySuccessfulPublishHandler(context);
     return EventStatus::Succeeded();
   }
 
   EventStatus MyDiscreteUpdateHandler(
       const Context<double>& context,
       DiscreteValues<double>* discrete_state) const {
-    ++num_discrete_update_;
+    MySuccessfulDiscreteUpdateHandler(context, &*discrete_state);
     return EventStatus::Succeeded();
   }
 
   EventStatus MyUnrestrictedUpdateHandler(const Context<double>& context,
-                                          State<double>* discrete_state) const {
-    ++num_unrestricted_update_;
+                                          State<double>* state) const {
+    MySuccessfulUnrestrictedUpdateHandler(context, &*state);
     return EventStatus::Succeeded();
+  }
+
+  void MySuccessfulPublishHandler(const Context<double>&) const {
+    ++num_publish_;
+  }
+
+  void MySuccessfulDiscreteUpdateHandler(const Context<double>&,
+                                         DiscreteValues<double>*) const {
+    ++num_discrete_update_;
+  }
+
+  void MySuccessfulUnrestrictedUpdateHandler(const Context<double>&,
+                                             State<double>*) const {
+    ++num_unrestricted_update_;
   }
 
   mutable int num_publish_{0};
@@ -2450,9 +2472,9 @@ GTEST_TEST(EventSugarTest, HandlersGetCalled) {
       *context, all_events->get_discrete_update_events(), &*discrete_state);
   dut.Publish(*context, all_events->get_publish_events());
 
-  EXPECT_EQ(dut.num_publish(), 3);
-  EXPECT_EQ(dut.num_discrete_update(), 3);
-  EXPECT_EQ(dut.num_unrestricted_update(), 3);
+  EXPECT_EQ(dut.num_publish(), 4);
+  EXPECT_EQ(dut.num_discrete_update(), 4);
+  EXPECT_EQ(dut.num_unrestricted_update(), 4);
 }
 
 }  // namespace
