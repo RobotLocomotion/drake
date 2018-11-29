@@ -12,19 +12,19 @@
 
 namespace drake {
 
-template <typename ... Ts>
+template <typename... Ts>
 struct type_pack;
 
 namespace detail {
 
 // Provides type at given index.
-template <size_t N, size_t K, typename T, typename ... Ts>
+template <size_t N, size_t K, typename T, typename... Ts>
 struct type_at_impl {
   using type = typename type_at_impl<N, K + 1, Ts...>::type;
 };
 
 // Base case.
-template <size_t N, typename T, typename ... Ts>
+template <size_t N, typename T, typename... Ts>
 struct type_at_impl<N, N, T, Ts...> {
   using type = T;
 };
@@ -52,7 +52,7 @@ struct type_pack_extract_impl {
   static_assert(!std::is_same<T, T>::value, "Wrong template");
 };
 
-template <template <typename ... Ts> class Tpl, typename ... Ts>
+template <template <typename... Ts> class Tpl, typename... Ts>
 struct type_pack_extract_impl<Tpl<Ts...>> {
   using type = type_pack<Ts...>;
 };
@@ -63,15 +63,14 @@ using DummyList = bool[];
 
 template <typename T>
 struct assert_default_constructible {
-  static_assert(std::is_default_constructible<T>::value,
-                "Must be default constructible");
+  static_assert(
+      std::is_default_constructible<T>::value, "Must be default constructible");
 };
 
 }  // namespace detail
 
-
 /// Extracts the Ith type from a sequence of types.
-template <size_t I, typename ... Ts>
+template <size_t I, typename... Ts>
 struct type_at {
   static_assert(I >= 0 && I < sizeof...(Ts), "Invalid type index");
   using type = typename detail::type_at_impl<I, 0, Ts...>::type;
@@ -97,7 +96,7 @@ struct template_single_tag {
 };
 
 /// Provides a tag to pass a parameter packs for ease of inference.
-template <typename ... Ts>
+template <typename... Ts>
 struct type_pack {
   /// Number of template parameters.
   static constexpr int size = sizeof...(Ts);
@@ -113,7 +112,7 @@ struct type_pack {
 
 /// Returns an expression (only to be used in `decltype`) for inferring
 /// and binding a parameter pack to a template.
-template <template <typename...> class Tpl, typename ... Ts>
+template <template <typename...> class Tpl, typename... Ts>
 Tpl<Ts...> type_bind(type_pack<Ts...>);
 
 /// Extracts the inner template arguments (typename only) for a typename which
@@ -165,17 +164,14 @@ struct type_check_different_from {
 /// @tparam Predicate Predicate operating on the type dictated by `VisitWith`.
 /// @param visitor Lambda or functor for visiting a type.
 template <class VisitWith = type_visit_with_default,
-          template <typename> class Predicate = type_check_always_true,
-          typename Visitor = void,
-          typename ... Ts>
-void type_visit(
-    Visitor&& visitor, type_pack<Ts...> = {},
+    template <typename> class Predicate = type_check_always_true,
+    typename Visitor = void, typename... Ts>
+void type_visit(Visitor&& visitor, type_pack<Ts...> = {},
     template_single_tag<Predicate> = {}) {
-  (void)detail::DummyList{(
-      detail::type_visit_impl<VisitWith, Visitor>::
-          template runner<Ts, Predicate<Ts>::value>::
-              run(std::forward<Visitor>(visitor)),
-      true)...};
+  (void)detail::DummyList{
+      (detail::type_visit_impl<VisitWith, Visitor>::template runner<Ts,
+           Predicate<Ts>::value>::run(std::forward<Visitor>(visitor)),
+          true)...};
 }
 
 /// Provides short-hand for hashing a type.

@@ -75,8 +75,7 @@ py::object GetPyParamScalarImpl(const std::type_info& tinfo) {
       // once simpler dependencies are used (or something else is used to
       // justify linking in `libdrake.so`).
       const std::string name = tinfo.name();
-      throw std::runtime_error(
-          "C++ type is not registered in pybind: " + name);
+      throw std::runtime_error("C++ type is not registered in pybind: " + name);
     }
     py::handle h(reinterpret_cast<PyObject*>(info->type));
     return py::reinterpret_borrow<py::object>(h);

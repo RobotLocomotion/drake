@@ -23,31 +23,28 @@ PYBIND11_MODULE(eigen_geometry_test_util, m) {
 
   using T = double;
 
-  m.def("create_isometry", []() {
-    return Isometry3<T>::Identity();
-  });
+  m.def("create_isometry", []() { return Isometry3<T>::Identity(); });
   m.def("check_isometry", [](const Isometry3d& X) {
-    const T error =
-        (X.matrix() - Isometry3<T>::Identity().matrix())
-        .array().abs().maxCoeff();
+    const T error = (X.matrix() - Isometry3<T>::Identity().matrix())
+                        .array()
+                        .abs()
+                        .maxCoeff();
     DRAKE_THROW_UNLESS(error < kTolerance);
   });
 
-  m.def("create_translation", []() {
-    return Translation3<T>(Vector3<T>::Zero());
-  });
+  m.def("create_translation",
+      []() { return Translation3<T>(Vector3<T>::Zero()); });
   m.def("check_translation", [](const Translation3<T>& p) {
     const T error = p.vector().array().abs().maxCoeff();
     DRAKE_THROW_UNLESS(error < kTolerance);
   });
 
-  m.def("create_quaternion", []() {
-    return Quaternion<T>::Identity();
-  });
+  m.def("create_quaternion", []() { return Quaternion<T>::Identity(); });
   m.def("check_quaternion", [](const Quaternion<T>& q) {
-    const T error =
-        (q.coeffs() - Quaternion<T>::Identity().coeffs())
-        .array().abs().maxCoeff();
+    const T error = (q.coeffs() - Quaternion<T>::Identity().coeffs())
+                        .array()
+                        .abs()
+                        .maxCoeff();
     DRAKE_THROW_UNLESS(error < kTolerance);
   });
 }

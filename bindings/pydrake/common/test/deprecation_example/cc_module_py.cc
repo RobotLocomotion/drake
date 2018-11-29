@@ -27,8 +27,7 @@ PYBIND11_MODULE(cc_module, m) {
   cls.attr("message_method") = "Deprecated method";
   cls.attr("message_prop") = "Deprecated property";
   // Add deprecated members.
-  cls
-      .def(py::init())
+  cls.def(py::init())
       .def("DeprecatedMethod", &ExampleCppClass::DeprecatedMethod)
       .def_readwrite("deprecated_prop", &ExampleCppClass::deprecated_prop)
       .def("overload", py::overload_cast<>(&ExampleCppClass::overload))

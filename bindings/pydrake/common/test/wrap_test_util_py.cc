@@ -25,8 +25,7 @@ PYBIND11_MODULE(wrap_test_util, m) {
       .def_readwrite("value", &MyValue::value, py_reference_internal);
 
   py::class_<MyContainer> my_container(m, "MyContainer");
-  my_container
-      .def(py::init<>());
+  my_container.def(py::init<>());
   DefReadWriteKeepAlive(&my_container, "member", &MyContainer::member);
 }
 
