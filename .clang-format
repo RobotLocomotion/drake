@@ -16,6 +16,12 @@ PointerAlignment: Left
 # the way over to the open-paren.
 AlignAfterOpenBracket: DontAlign
 
+# Try to fit onto a single line:
+# - functions with an empty body, or
+# - member functions defined inside a class;
+# everything else (e.g., free functions) are forced onto multiple lines.
+AllowShortFunctionsOnASingleLine: Inline
+
 # Specify the #include statement order.  This implements the order mandated by
 # the Google C++ Style Guide: related header, C headers, C++ headers, library
 # headers, and finally the project headers.
