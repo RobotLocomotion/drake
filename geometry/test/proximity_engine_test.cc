@@ -643,9 +643,17 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsWithinCliqueGeneration) {
 
   int expected_clique = PET::peek_next_clique(engine_);
 
+  // Named aliases for otherwise inscrutable true/false magic values. The
+  // parameter in the invoked method is called `is_dynamic`. So, we set the
+  // the constant `is_dynamic` to true and its opposite, `is_anchored` to false.
+  const bool is_anchored = false;
+  const bool is_dynamic = true;
+
   // No dynamic geometry --> no cliques generated.
   engine_.ExcludeCollisionsWithin({}, {anchored1, anchored2});
   ASSERT_EQ(PET::peek_next_clique(engine_), expected_clique);
+  EXPECT_TRUE(engine_.CollisionFiltered(anchored1, is_anchored,
+                                        anchored2, is_anchored));
 
   // Single dynamic and no anchored geometry --> no cliques generated.
   engine_.ExcludeCollisionsWithin({dynamic1}, {});
@@ -654,12 +662,18 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsWithinCliqueGeneration) {
   // Multiple dynamic and no anchored geometry --> cliques generated.
   engine_.ExcludeCollisionsWithin({dynamic1, dynamic2}, {});
   ASSERT_EQ(PET::peek_next_clique(engine_), ++expected_clique);
+  EXPECT_TRUE(engine_.CollisionFiltered(dynamic1, is_dynamic,
+                                        dynamic2, is_dynamic));
 
   // Single dynamic and (one or more) anchored geometry --> cliques generated.
   engine_.ExcludeCollisionsWithin({dynamic1}, {anchored1});
   ASSERT_EQ(PET::peek_next_clique(engine_), ++expected_clique);
+  EXPECT_TRUE(engine_.CollisionFiltered(anchored1, is_anchored,
+                                        dynamic1, is_dynamic));
   engine_.ExcludeCollisionsWithin({dynamic1}, {anchored1, anchored2});
   ASSERT_EQ(PET::peek_next_clique(engine_), ++expected_clique);
+  EXPECT_TRUE(engine_.CollisionFiltered(anchored2, is_anchored,
+                                        dynamic1, is_dynamic));
 
   // Multiple dynamic and (one or more) anchored geometry --> cliques generated.
   engine_.ExcludeCollisionsWithin({dynamic1, dynamic2}, {anchored1});
@@ -684,7 +698,11 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsWithin) {
   geometry_map_.push_back(collide_id);
   EXPECT_EQ(engine_.num_geometries(), 2);
 
+  EXPECT_FALSE(engine_.CollisionFiltered(origin_index, true,
+                                         collide_index, true));
   engine_.ExcludeCollisionsWithin({origin_index, collide_index}, {});
+  EXPECT_TRUE(engine_.CollisionFiltered(origin_index, true,
+                                        collide_index, true));
 
   // Non-colliding case
   MoveDynamicSphere(collide_index, false /* not colliding */);
@@ -780,7 +798,11 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsBetween) {
   geometry_map_.push_back(collide_id);
   EXPECT_EQ(engine_.num_geometries(), 2);
 
+  EXPECT_FALSE(engine_.CollisionFiltered(origin_index, true,
+                                         collide_index, true));
   engine_.ExcludeCollisionsBetween({origin_index}, {}, {collide_index}, {});
+  EXPECT_TRUE(engine_.CollisionFiltered(origin_index, true,
+                                        collide_index, true));
 
   // Non-colliding case
   MoveDynamicSphere(collide_index, false /* not colliding */);
