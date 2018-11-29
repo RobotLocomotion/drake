@@ -798,28 +798,45 @@ SolutionResult MapSnoptInfoToSolutionResult(int snopt_info) {
 
 bool SnoptSolver::is_available() { return true; }
 
-SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
+void SnoptSolver::Solve(const MathematicalProgram& prog,
+                        const optional<Eigen::VectorXd>& initial_guess,
+                        const optional<SolverOptions>& solver_options,
+                        MathematicalProgramResult* result) const {
+  *result = {};
+
+  // Our function's arguments for initial_guess and solver_options take
+  // precedence over prog's values.
+  const Eigen::VectorXd& x_init =
+      initial_guess ? *initial_guess : prog.initial_guess();
+  SolverOptions merged_options =
+      solver_options ? *solver_options : SolverOptions();
+  merged_options.Merge(prog.solver_options());
+
+  // Call SNOPT.
   int snopt_status{0};
   double objective{0};
   Eigen::VectorXd x_val(prog.num_vars());
   SolveWithGivenOptions(
-      prog, prog.initial_guess(), prog.GetSolverOptionsStr(id()),
-      prog.GetSolverOptionsInt(id()), prog.GetSolverOptionsDouble(id()),
+      prog, x_init,
+      merged_options.GetOptionsStr(id()),
+      merged_options.GetOptionsInt(id()),
+      merged_options.GetOptionsDouble(id()),
       &snopt_status, &objective, &x_val);
+
+  // Populate our results structure.
+  result->set_solver_id(id());
+  const SolutionResult solution_result =
+      MapSnoptInfoToSolutionResult(snopt_status);
+  result->set_solution_result(solution_result);
+  result->set_x_val(x_val);
+  if (solution_result == SolutionResult::kUnbounded) {
+    result->set_optimal_cost(MathematicalProgram::kUnboundedCost);
+  } else {
+    result->set_optimal_cost(objective);
+  }
   // TODO(hongkai.dai) add other useful quantities to a struct specific to
   // SNOPT, to include information on constraint values, xstate, Fstate, xmul,
   // Fmul, etc.
-  SolverResult solver_result(id());
-  solver_result.set_decision_variable_values(x_val);
-  solver_result.set_optimal_cost(objective);
-
-  const SolutionResult solution_result =
-      MapSnoptInfoToSolutionResult(snopt_status);
-  if (solution_result == SolutionResult::kUnbounded) {
-    solver_result.set_optimal_cost(MathematicalProgram::kUnboundedCost);
-  }
-  prog.SetSolverResult(solver_result);
-  return solution_result;
 }
 
 bool SnoptSolver::is_thread_safe() { return true; }
