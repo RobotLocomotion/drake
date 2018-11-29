@@ -246,6 +246,10 @@ class ProximityEngine {
       const std::unordered_set<GeometryIndex>& dynamic2,
       const std::unordered_set<GeometryIndex>& anchored2);
 
+  /** Reports true if the geometry pair (index1, index2) has been filtered from
+   collision.  */
+  bool CollisionFiltered(GeometryIndex index1, bool is_dynamic_1,
+                         GeometryIndex index2, bool is_dynamic_2) const;
   //@}
 
  private:
