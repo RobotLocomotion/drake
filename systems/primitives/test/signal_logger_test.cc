@@ -92,7 +92,7 @@ GTEST_TEST(TestSignalLogger, SetPublishPeriod) {
   // Construct Simulator
   Simulator<double> simulator(*diagram);
   simulator.set_publish_every_time_step(false);
-  simulator.set_publish_at_initialization(true);
+  simulator.set_publish_at_initialization(false);
 
   // Run simulation
   simulator.StepTo(1);
