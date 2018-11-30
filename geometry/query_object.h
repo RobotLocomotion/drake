@@ -187,13 +187,13 @@ class QueryObject {
   // TODO(DamrongGuoy): Improve and refactor documentation of
   // ComputeSignedDistanceToPoint(). Move the common sections into Signed
   // Distance Queries. Update documentation as we add more functionality.
-  // Right now it only supports spheres.
+  // Right now it only supports spheres and boxes.
   /**
    Computes the signed distances and gradients to a query point from each
    geometry in the scene.
 
-   @warning Currently supports spheres only. Silently ignores other kinds of
-   geometries, which will be added later.
+   @warning Currently supports spheres and boxes only. Silently ignores other
+   kinds of geometries, which will be added later.
 
    This query provides φᵢ(p), φᵢ:ℝ³→ℝ, the signed distance to the position
    p of a query point from geometry Gᵢ in the scene.  It returns an array of
@@ -211,20 +211,36 @@ class QueryObject {
 
    ∇φᵢ(p) = (p - Nᵢ)/|p - Nᵢ| if p is outside Gᵢ
 
-   ∇φᵢ(p) = (Nᵢ - p)/|Nᵢ - p| if p is inside Gᵢ
+   ∇φᵢ(p) = -(p - Nᵢ)/|p - Nᵢ| if p is inside Gᵢ
 
    Note that ∇φᵢ(p) is also defined on Gᵢ's surface, but we cannot use the
    above formula.
 
-   @note For a sphere, the signed distance function φᵢ(p) has undefined gradient
-   vector at the center of the sphere--every point on the sphere's surface
-   has the same distance to the center.  In this case, we will assign an
-   arbitrary vector (1,0,0) as its gradient vector.
+   @note For a sphere G, the signed distance function φᵢ(p) has an undefined
+   gradient vector at the center of the sphere--every point on the sphere's
+   surface has the same distance to the center.  In this case, we will assign
+   ∇φᵢ(p) the unit vector Gx (x-directional vector of G's frame) expressed
+   in World frame.
+
+   @note For a box, at a point p on an edge or a corner of the box, the signed
+   distance function φᵢ(p) has an undefined gradient vector.  In this case, we
+   will assign a unit vector in the direction of the average of the outward
+   face unit normals of the incident faces of the edge or the corner.
+   A point p is considered being on a face, or an edge, or a corner of the
+   box if its lies within a certain tolerance from them.
+
+   @note For a box B, if a point p is inside the box, and it is equidistant to
+   to multiple nearest faces, the signed distance function φᵢ(p) at p will have
+   an undefined gradient vector. There is a nearest point candidate associated
+   with each nearest face. In this case, we arbitrarily pick the point Nᵢ
+   associated with one of the nearest faces.  Please note that, due to the
+   possible round off error arising from applying a pose X_WG to B, there is no
+   guarantee which of the nearest faces will be used.
 
    @note The signed distance function is a continuous function with respect to
    the position of the query point, but its gradient vector field may
-   not be continuous. Specifically at a position on the medial axis, its
-   gradient vector field is not continuous.
+   not be continuous. Specifically at a position equidistant to multiple
+   nearest points, its gradient vector field is not continuous.
 
    @note For a convex object, outside the object at positive distance from
    the boundary, the signed distance function is smooth (having continuous
