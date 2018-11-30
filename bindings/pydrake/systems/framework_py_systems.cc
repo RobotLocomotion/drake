@@ -32,6 +32,7 @@ namespace {
 using symbolic::Expression;
 using systems::Context;
 using systems::ContinuousState;
+using systems::Diagram;
 using systems::DiscreteUpdateEvent;
 using systems::DiscreteValues;
 using systems::LeafSystem;
@@ -146,6 +147,25 @@ struct Impl {
   };
 
   using PyLeafSystem = PyLeafSystemBase<>;
+
+  class DiagramPublic : public Diagram<T> {
+   public:
+    using Base = Diagram<T>;
+
+    DiagramPublic() = default;
+  };
+
+  // Provide flexible inheritance to leverage prior binding information, per
+  // documentation:
+  // http://pybind11.readthedocs.io/en/stable/advanced/classes.html#combining-virtual-functions-and-inheritance
+  template <typename DiagramBase = DiagramPublic>
+  class PyDiagramBase : public py::wrapper<DiagramBase> {
+   public:
+    using Base = py::wrapper<DiagramBase>;
+    using Base::Base;
+  };
+
+  using PyDiagram = PyDiagramBase<>;
 
   class VectorSystemPublic : public VectorSystem<T> {
    public:
@@ -477,8 +497,9 @@ struct Impl {
             // Keep alive, ownership: `AbstractValue` keeps `self` alive.
             py::keep_alive<2, 1>(), doc.LeafSystem.DeclareAbstractState.doc);
 
-    DefineTemplateClassWithDefault<Diagram<T>, System<T>>(
+    DefineTemplateClassWithDefault<Diagram<T>, PyDiagram, System<T>>(
         m, "Diagram", GetPyParam<T>(), doc.Diagram.doc)
+        .def(py::init<>(), doc.Diagram.ctor.doc_4)
         .def("GetMutableSubsystemState",
             overload_cast_explicit<State<T>&, const System<T>&, Context<T>*>(
                 &Diagram<T>::GetMutableSubsystemState),
