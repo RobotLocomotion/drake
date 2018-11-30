@@ -1058,19 +1058,6 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcRelativeFrameAnalyticalJacobian(
-    const systems::Context<T>& context,
-    const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
-    const Frame<T>& frame_A, const Frame<T>& frame_E,
-    EigenPtr<MatrixX<T>> Jq_ABp_E) const {
-  DRAKE_THROW_UNLESS(Jq_ABp_E != nullptr);
-  DRAKE_THROW_UNLESS(Jq_ABp_E->rows() == 6);
-  DRAKE_THROW_UNLESS(Jq_ABp_E->cols() == num_positions());
-  CalcRelativeFrameJacobian(context, frame_B, p_BP, frame_A, frame_E,
-                            true /* from q̇ */, Jq_ABp_E);
-}
-
-template <typename T>
 void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
     const systems::Context<T>& context,
     const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
@@ -1079,12 +1066,12 @@ void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
   DRAKE_THROW_UNLESS(Jv_ABp_E != nullptr);
   DRAKE_THROW_UNLESS(Jv_ABp_E->rows() == 6);
   DRAKE_THROW_UNLESS(Jv_ABp_E->cols() == num_velocities());
-  CalcRelativeFrameJacobian(context, frame_B, p_BP, frame_A, frame_E,
+  CalcRelativeFrameGeometricJacobian(context, frame_B, p_BP, frame_A, frame_E,
                             false /* from v */, Jv_ABp_E);
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcRelativeFrameJacobian(
+void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
     const systems::Context<T>& context,
     const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
     const Frame<T>& frame_A, const Frame<T>& frame_E, bool from_qdot,

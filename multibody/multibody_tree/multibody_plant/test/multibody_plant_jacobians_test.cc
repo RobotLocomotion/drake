@@ -213,7 +213,7 @@ TEST_F(KukaIiwaModelTests, CalcPointsAnalyticalJacobianExpressedInWorld) {
                               kTolerance, MatrixCompareType::relative));
 }
 
-TEST_F(KukaIiwaModelTests, CalcRelativeFrameAnalyticalJacobian) {
+TEST_F(KukaIiwaModelTests, CalcRelativeFrameGeometricJacobian) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
@@ -225,11 +225,11 @@ TEST_F(KukaIiwaModelTests, CalcRelativeFrameAnalyticalJacobian) {
   MatrixX<double> Jq_WEp(6, plant_->num_positions());
 
   // Compute the analytical Jacobian using the method under test.
-  plant_->tree().CalcRelativeFrameAnalyticalJacobian(
+  plant_->tree().CalcRelativeFrameGeometricJacobian(
       *context_, end_effector_link_->body_frame(), p_EP, plant_->world_frame(),
-      plant_->world_frame(), &Jq_WEp);
+      plant_->world_frame(), true /* from q̇ */, &Jq_WEp);
 
-  // Alternatively, compute the analytical Jacobian by taking the gradient of
+  // Alternatively, compute the geometric Jacobian by taking the gradient of
   // the spatial velocity V_WEp with respect to q̇, since V_WEp = Jq_WEP * q̇. We
   // do that with the steps below.
 
