@@ -6,6 +6,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/drake_variant_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
@@ -262,9 +263,9 @@ struct Impl {
         .def("GetOutputPort", &System<T>::GetOutputPort, py_reference_internal,
             py::arg("port_name"), doc.System.GetOutputPort.doc)
         .def("_DeclareInputPort",
-            overload_cast_explicit<const InputPort<T>&, std::string,
-                PortDataType, int, optional<RandomDistribution>>(
-                &PySystem::DeclareInputPort),
+            overload_cast_explicit<const InputPort<T>&,
+                variant<std::string, UseDefaultName>, PortDataType, int,
+                optional<RandomDistribution>>(&PySystem::DeclareInputPort),
             py_reference_internal, py::arg("name"), py::arg("type"),
             py::arg("size"), py::arg("random_type") = nullopt,
             doc.System.DeclareInputPort.doc_4args)
