@@ -1,4 +1,4 @@
-// Purpose: Compare Drake with exact (closed-form) solution from Section
+// Purpose: Compare Drake with the exact (closed-form) solution from Section
 //          1.13 (pgs. 60-62) of Spacecraft Dynamics, by Kane & Levinson.
 //          This closed-form solution includes both angular velocity and
 //          Euler parameters for an axis-symmetric rigid body B, when the moment
@@ -225,22 +225,13 @@ void  TestDrakeSolutionForSpecificInitialValue(
   // wx, wy, wz is w_NB_N, B's angular velocity in N, expressed in N.
   //
   // vx, vy, vz is v_NBcm_N, the velocity of Bcm in N, expressed in N.
-  const Quaterniond& quat_NB_initial =
-      torque_free_cylinder_exact.get_quat_NB_initial();
-  const Vector3d p_NoBcm_N_initial =
-      torque_free_cylinder_exact.get_p_NoBcm_N_initial();
-  const Vector3d w_NB_N_initial =
-      torque_free_cylinder_exact.Calc_w_NB_N_initial();
-  const Vector3d v_NBcm_N_initial =
-      torque_free_cylinder_exact.Calc_v_NBcm_N_initial();
+  const Quaterniond& quat_NB = torque_free_cylinder_exact.get_initial_quat_NB();
+  const Vector3d p_NoBcm_N = torque_free_cylinder_exact.get_initial_p_NoBcm_N();
+  const Vector3d w_NB_N = torque_free_cylinder_exact.CalcInitial_w_NB_N();
+  const Vector3d v_NBcm_N = torque_free_cylinder_exact.CalcInitial_v_NBcm_N();
   Eigen::Matrix<double, 13, 1> state_initial;
-  state_initial << quat_NB_initial.w(),
-                   quat_NB_initial.x(),
-                   quat_NB_initial.y(),
-                   quat_NB_initial.z(),
-                   p_NoBcm_N_initial,
-                   w_NB_N_initial,
-                   v_NBcm_N_initial;
+  state_initial << quat_NB.w(), quat_NB.x(), quat_NB.y(), quat_NB.z(),
+                   p_NoBcm_N, w_NB_N, v_NBcm_N;
   systems::VectorBase<double>& state_drake =
       context->get_mutable_continuous_state_vector();
   state_drake.SetFromVector(state_initial);
@@ -299,8 +290,8 @@ void  TestDrakeSolutionForVariousInitialValues(
   for (double thetaX = 0; thetaX <= 2*M_PI; thetaX += 0.1*M_PI) {
     for (double thetaY = 0; thetaY <= 0.5*M_PI; thetaY += 0.1*M_PI) {
       const math::RollPitchYaw<double> spaceXYZ_angles(thetaX, thetaY, 0);
-      const Quaterniond quat_NB_initial = spaceXYZ_angles.ToQuaternion();
-      torque_free_cylinder_exact->set_quat_NB_initial(quat_NB_initial);
+      const Quaterniond initial_quat_NB = spaceXYZ_angles.ToQuaternion();
+      torque_free_cylinder_exact->set_initial_quat_NB(initial_quat_NB);
 
       // Since there are 20 * 5 = 100 total tests of initial conditions, only
       // perform time-consuming numerically integration infrequently.
@@ -330,16 +321,16 @@ void  TestDrakeSolutionForVariousInitialValues(
 GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   // Store initial values in a class that can calculate an exact solution.
   // Store gravitational acceleration expressed in N (e.g. [0, 0, -9.81]).
-  const Quaterniond quat_NB_initial(1, 0, 0, 0);
-  const Vector3d w_NB_B_initial(2.0, 4.0, 6.0);
-  const Vector3d p_NoBcm_N_initial(1.0, 2.0, 3.0);
-  const Vector3d v_NBcm_B_initial(-4.2, 5.5, 6.1);
-  const Vector3d gravity(0, 0, -9.81);
-  FreeBody torque_free_cylinder_exact(quat_NB_initial, w_NB_B_initial,
-                                      p_NoBcm_N_initial, v_NBcm_B_initial,
+  const Quaterniond quat_NB(1, 0, 0, 0);    // Initial value.
+  const Vector3d w_NB_B(2.0, 4.0, 6.0);     // Initial value.
+  const Vector3d p_NoBcm_N(1.0, 2.0, 3.0);  // Initial value.
+  const Vector3d v_NBcm_B(-4.2, 5.5, 6.1);  // Initial value.
+  const Vector3d gravity(0, 0, -9.81);      // Per note below, in -Nz direction.
+  FreeBody torque_free_cylinder_exact(quat_NB, w_NB_B, p_NoBcm_N, v_NBcm_B,
                                       gravity);
 
-  // Instantiate the model for the free body in space.
+  // Instantiate the Drake model for the free body in space.
+  // Note the Drake model requires gravity to be in the -Nz direction.
   const double mass = 1.0;  // Arbitrary value.
   const double inertia_transverse = torque_free_cylinder_exact.get_I();
   const double inertia_axial = torque_free_cylinder_exact.get_J();
