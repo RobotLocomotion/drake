@@ -55,6 +55,7 @@ enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 ///   @output_port{<b style="color:orange">pose_bundle</b>}
 ///   @output_port{<b style="color:orange">contact_results</b>}
 ///   @output_port{<b style="color:orange">plant_continuous_state</b>}
+///   @output_port{<b style="color:orange">geometry_poses</b>}
 /// }
 ///
 /// Note that outputs in <b style="color:orange">orange</b> are
@@ -129,23 +130,10 @@ class ManipulationStation : public systems::Diagram<T> {
   explicit ManipulationStation(double time_step = 0.002);
 
   /// Adds a default iiwa, wsg, cupboard, and 8020 frame for the class.
+  /// Must be called before Finalize().
   /// @param collision_model Determines which sdf is loaded for the IIWA.
   void SetupDefaultStation(
       IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
-
-  /// Load a SDF model and weld it to the MultibodyPlant.
-  /// @param model_path Full path to the sdf model file. i.e. with
-  /// FindResourceOrThrow
-  /// @param model_name Name of the added model instance.
-  /// @param parent Frame P from the MultibodyPlant to which the new model is
-  /// welded to.
-  /// @param child_frame_name Defines frame C (the child frame), assumed to be
-  /// present in the model being added.
-  /// @param X_PC Transformation of frame C relative to frame P.
-  multibody::ModelInstanceIndex AddAndWeldModelFromSdf(
-      const std::string& model_path, const std::string& model_name,
-      const multibody::Frame<T>& parent, const std::string& child_frame_name,
-      const Isometry3<double>& X_PC = Isometry3<double>::Identity());
 
   /// Notifies the ManipulationStation that the IIWA robot model instance can
   /// be identified by @p model_name, as well as necessary information to
@@ -278,23 +266,24 @@ class ManipulationStation : public systems::Diagram<T> {
   /// Get the camera names / unique ids.
   std::vector<std::string> get_camera_names() const;
 
-  /// Set the gains for the WSG controller. Need to be called before Finalize().
+  /// Set the gains for the WSG controller. Has no effect after Finalize() is
+  /// called.
   void SetWsgGains(double kp, double kd);
 
-  /// Set the position gains for the IIWA controller. Need to be called before
-  /// Finalize().
+  /// Set the position gains for the IIWA controller. Has no effect after
+  /// Finalize() is called.
   void SetIiwaPositionGains(const VectorX<double>& kp) {
     SetIiwaGains(kp, &iiwa_kp_);
   }
 
-  /// Set the velocity gains for the IIWA controller. Need to be called before
-  /// Finalize().
+  /// Set the velocity gains for the IIWA controller. Has no effect after
+  /// Finalize() is called.
   void SetIiwaVelocityGains(const VectorX<double>& kd) {
     SetIiwaGains(kd, &iiwa_kd_);
   }
 
-  /// Set the integral gains for the IIWA controller. Need to be called before
-  /// Finalize().
+  /// Set the integral gains for the IIWA controller. Has no effect after
+  /// Finalize() is called.
   void SetIiwaIntegralGains(const VectorX<double>& ki) {
     SetIiwaGains(ki, &iiwa_ki_);
   }

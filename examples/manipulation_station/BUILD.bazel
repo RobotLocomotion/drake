@@ -20,7 +20,6 @@ drake_cc_library(
     hdrs = [
         "manipulation_station.h",
     ],
-    copts = ["-g"],
     data = [
         ":models",
         "//manipulation/models/iiwa_description:models",

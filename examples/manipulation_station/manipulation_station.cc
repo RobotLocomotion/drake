@@ -125,6 +125,29 @@ void get_camera_poses(std::map<std::string, RigidTransform<double>>* pose_map) {
                              Vector3d(0.786905, -0.0284378, 1.04287)));
 }
 
+// Load a SDF model and weld it to the MultibodyPlant.
+// @param model_path Full path to the sdf model file. i.e. with
+// FindResourceOrThrow
+// @param model_name Name of the added model instance.
+// @param parent Frame P from the MultibodyPlant to which the new model is
+// welded to.
+// @param child_frame_name Defines frame C (the child frame), assumed to be
+// present in the model being added.
+// @param X_PC Transformation of frame C relative to frame P.
+template <typename T>
+multibody::ModelInstanceIndex AddAndWeldModelFromSdf(
+    const std::string& model_path, const std::string& model_name,
+    const multibody::Frame<T>& parent, const std::string& child_frame_name,
+    const Isometry3<double>& X_PC, MultibodyPlant<T>* plant) {
+  DRAKE_THROW_UNLESS(!plant->HasModelInstanceNamed(model_name));
+
+  const multibody::ModelInstanceIndex new_model =
+      AddModelFromSdfFile(model_path, model_name, plant);
+  const auto& child_frame = plant->GetFrameByName(child_frame_name, new_model);
+  plant->WeldFrames(parent, child_frame, X_PC);
+  return new_model;
+}
+
 }  // namespace internal
 
 template <typename T>
@@ -159,20 +182,6 @@ ManipulationStation<T>::ManipulationStation(double time_step)
 }
 
 template <typename T>
-multibody::ModelInstanceIndex ManipulationStation<T>::AddAndWeldModelFromSdf(
-    const std::string& model_path, const std::string& model_name,
-    const multibody::Frame<T>& parent, const std::string& child_frame_name,
-    const Isometry3<double>& X_PC) {
-  DRAKE_THROW_UNLESS(!plant_->HasModelInstanceNamed(model_name));
-
-  const multibody::ModelInstanceIndex new_model =
-      AddModelFromSdfFile(model_path, model_name, plant_);
-  const auto& child_frame = plant_->GetFrameByName(child_frame_name, new_model);
-  plant_->WeldFrames(parent, child_frame, X_PC);
-  return new_model;
-}
-
-template <typename T>
 void ManipulationStation<T>::SetupDefaultStation(
     const IiwaCollisionModel collision_model) {
   // Add the table and 80/20 workcell frame.
@@ -183,11 +192,11 @@ void ManipulationStation<T>::SetupDefaultStation(
         "drake/examples/manipulation_station/models/"
         "amazon_table_simplified.sdf");
 
-    AddAndWeldModelFromSdf(sdf_path, "table", plant_->world_frame(),
-        "amazon_table",
-        RigidTransform<double>(Vector3d(dx_table_center_to_robot_base, 0,
-                                   -dz_table_top_robot_base))
-            .GetAsIsometry3());
+    const Isometry3<double> X_WT = RigidTransform<double>(
+        Vector3d(dx_table_center_to_robot_base, 0,
+            -dz_table_top_robot_base)).GetAsIsometry3();
+    internal::AddAndWeldModelFromSdf(
+        sdf_path, "table", plant_->world_frame(), "amazon_table", X_WT, plant_);
   }
 
   // Add the cupboard.
@@ -201,14 +210,14 @@ void ManipulationStation<T>::SetupDefaultStation(
     const std::string sdf_path = FindResourceOrThrow(
         "drake/examples/manipulation_station/models/cupboard.sdf");
 
-    AddAndWeldModelFromSdf(sdf_path, "cupboard", plant_->world_frame(),
-        "cupboard_body",
-        RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI),
-            Vector3d(
-                dx_table_center_to_robot_base + dx_cupboard_to_table_center, 0,
-                dz_cupboard_to_table_center + cupboard_height / 2.0 -
-                    dz_table_top_robot_base))
-            .GetAsIsometry3());
+    const Isometry3<double> X_WC = RigidTransform<double>(
+        RotationMatrix<double>::MakeZRotation(M_PI),
+        Vector3d(dx_table_center_to_robot_base + dx_cupboard_to_table_center, 0,
+            dz_cupboard_to_table_center + cupboard_height / 2.0 -
+                dz_table_top_robot_base))
+                                       .GetAsIsometry3();
+    internal::AddAndWeldModelFromSdf(sdf_path, "cupboard",
+        plant_->world_frame(), "cupboard_body", X_WC, plant_);
   }
 
   // Add default iiwa.
@@ -229,8 +238,8 @@ void ManipulationStation<T>::SetupDefaultStation(
         DRAKE_ABORT_MSG("Unrecognized collision_model.");
     }
     const Isometry3<double> X_WI = Isometry3<double>::Identity();
-    AddAndWeldModelFromSdf(
-        sdf_path, "iiwa", plant_->world_frame(), "iiwa_link_0", X_WI);
+    internal::AddAndWeldModelFromSdf(
+        sdf_path, "iiwa", plant_->world_frame(), "iiwa_link_0", X_WI, plant_);
     RegisterIiwaControllerModel(
         sdf_path, "iiwa", plant_->world_frame().name(), "iiwa_link_0", X_WI);
   }
@@ -244,7 +253,8 @@ void ManipulationStation<T>::SetupDefaultStation(
     Isometry3<double> X_7G = RigidTransform<double>(
         RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
         Vector3d(0, 0, 0.114)).GetAsIsometry3();
-    AddAndWeldModelFromSdf(sdf_path, "gripper", link7, "body", X_7G);
+    internal::AddAndWeldModelFromSdf(
+        sdf_path, "gripper", link7, "body", X_7G, plant_);
     RegisterWsgControllerModel(sdf_path, "gripper", link7.name(), "body", X_7G);
   }
 }
@@ -437,6 +447,8 @@ void ManipulationStation<T>::Finalize() {
                        "contact_results");
   builder.ExportOutput(plant_->get_continuous_state_output_port(),
                        "plant_continuous_state");
+  builder.ExportOutput(plant_->get_geometry_poses_output_port(),
+                       "geometry_poses");
 
   builder.BuildInto(this);
 }
