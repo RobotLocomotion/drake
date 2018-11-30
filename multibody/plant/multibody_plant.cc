@@ -325,10 +325,10 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
   GeometryId id = RegisterGeometry(body, X_BG, shape, name, scene_graph_);
+
   // TODO(SeanCurtis-TRI): Push the contact parameters into the
   // ProximityProperties.
   scene_graph_->AssignRole(*source_id_, id, geometry::ProximityProperties());
-
   const int collision_index = geometry_id_to_collision_index_.size();
   geometry_id_to_collision_index_[id] = collision_index;
   DRAKE_ASSERT(
@@ -413,7 +413,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
   // Register geometry in the body frame.
   std::unique_ptr<geometry::GeometryInstance> geometry_instance =
       std::make_unique<GeometryInstance>(X_BG, shape.Clone(), name);
-  GeometryId geometry_id = scene_graph->RegisterGeometryWithoutRole(
+  GeometryId geometry_id = scene_graph->RegisterGeometry(
       source_id_.value(), body_index_to_frame_id_[body.index()],
       std::move(geometry_instance));
   geometry_id_to_body_index_[geometry_id] = body.index();
