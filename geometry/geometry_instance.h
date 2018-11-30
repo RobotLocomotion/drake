@@ -6,8 +6,10 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/geometry/visual_material.h"
 
@@ -123,6 +125,44 @@ class GeometryInstance {
   /** Returns the *canonicalized* name for the instance. */
   const std::string& name() const { return name_; }
 
+  /** Sets the proximity properties for the given instance. */
+  void set_proximity_properties(ProximityProperties properties) {
+    proximity_properties_ = std::move(properties);
+  }
+
+  /** Sets the illustration properties for the given instance. */
+  void set_illustration_properties(IllustrationProperties properties) {
+    illustration_props_ = std::move(properties);
+  }
+
+  /** Returns a pointer to the geometry's mutable proximity properties (if they
+   are defined). Nullptr otherwise.  */
+  ProximityProperties* mutable_proximity_properties() {
+    if (proximity_properties_) return &*proximity_properties_;
+    return nullptr;
+  }
+
+  /** Returns a pointer to the geometry's const proximity properties (if they
+   are defined). Nullptr otherwise.  */
+  const ProximityProperties* proximity_properties() const {
+    if (proximity_properties_) return &*proximity_properties_;
+    return nullptr;
+  }
+
+  /** Returns a pointer to the geometry's mutable illustration properties (if
+   they are defined). Nullptr otherwise.  */
+  IllustrationProperties* mutable_illustration_properties() {
+    if (illustration_props_) return &*illustration_props_;
+    return nullptr;
+  }
+
+  /** Returns a pointer to the geometry's const illustration properties (if
+   they are defined). Nullptr otherwise.  */
+  const IllustrationProperties* illustration_properties() const {
+    if (illustration_props_) return &*illustration_props_;
+    return nullptr;
+  }
+
  private:
   // The *globally* unique identifier for this instance. It is functionally
   // const (i.e. defined in construction) but not marked const to allow for
@@ -140,6 +180,10 @@ class GeometryInstance {
 
   // The "rendering" material -- e.g., OpenGl contexts and the like.
   VisualMaterial visual_material_;
+  // Optional properties.
+  optional<ProximityProperties> proximity_properties_{nullopt};
+  optional<IllustrationProperties> illustration_props_{nullopt};
 };
+
 }  // namespace geometry
 }  // namespace drake

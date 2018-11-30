@@ -306,6 +306,17 @@ class GeometryState {
   /** Registers a GeometryInstance with the state. The state takes ownership of
    the geometry and associates it with the given frame and source. Returns the
    new identifier for the successfully registered GeometryInstance.
+
+   Roles will be assigned to the geometry if the corresponding properties have
+   been assigned to the instance.
+
+   @note The geometry will automatically be assigned both proximity and
+   illustration roles, regardless of whether or not the geometry instance has
+   been assigned properties exist. If properties have been assigned, those
+   properties will be used, otherwise default properties will be used. In the
+   near future, the *WithoutRole() variant of this function will replace this
+   function and no roles will be the normal behavior.
+
    @param source_id    The id of the source to which the frame and geometry
                        belongs.
    @param frame_id     The id of the frame on which the geometry is to hang.
@@ -322,12 +333,26 @@ class GeometryState {
   GeometryId RegisterGeometry(SourceId source_id, FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
+  /** Variant of RegisterGeometry() that assigns _no_ default roles to the
+   geometry.  */
+  GeometryId RegisterGeometryWithoutRole(
+      SourceId source_id, FrameId frame_id,
+      std::unique_ptr<GeometryInstance> geometry);
+
   /** Registers a GeometryInstance with the state. Rather than hanging directly
    from a _frame_, the instance hangs on another geometry instance. The input
    `geometry` instance's pose is assumed to be relative to that parent geometry
    instance. The state takes ownership of the geometry and associates it with
    the given geometry parent (and, ultimately, the parent geometry's frame) and
    source. Returns the new identifier for the successfully registered
+
+   @note The geometry will automatically be assigned both proximity and
+   illustration roles, regardless of whether or not the geometry instance has
+   been assigned properties exist. If properties have been assigned, those
+   properties will be used, otherwise default properties will be used. In the
+   near future, the *WithoutRole() variant of this function will replace this
+   function and no roles will be the normal behavior.
+
    GeometryInstance.
    @param source_id    The id of the source on which the geometry is being
                        declared.
@@ -346,6 +371,12 @@ class GeometryState {
       SourceId source_id, GeometryId parent_id,
       std::unique_ptr<GeometryInstance> geometry);
 
+  /** Variant of RegisterGeometryWithParent() that assigns _no_ default roles to
+   the geometry.  */
+  GeometryId RegisterGeometryWithParentWithoutRole(
+      SourceId source_id, GeometryId parent_id,
+      std::unique_ptr<GeometryInstance> geometry);
+
   // TODO(SeanCurtis-TRI): Consider deprecating this; it's now strictly a
   // wrapper for the more general `RegisterGeometry()`.
   /** Registers a GeometryInstance with the state as anchored geometry. This
@@ -353,6 +384,14 @@ class GeometryState {
    The `geometry`'s pose value is relative to the world frame. The state takes
    ownership of the geometry and associates it with the given source. Returns
    the new identifier for the GeometryInstance.
+
+   @note The geometry will automatically be assigned both proximity and
+   illustration roles, regardless of whether or not the geometry instance has
+   been assigned properties exist. If properties have been assigned, those
+   properties will be used, otherwise default properties will be used. In the
+   near future, the *WithoutRole() variant of this function will replace this
+   function and no roles will be the normal behavior.
+
    @param source_id    The id of the source on which the geometry is being
                        declared.
    @param geometry     The geometry to get the id for. The state takes
@@ -364,6 +403,12 @@ class GeometryState {
                              3. the geometry's name doesn't satisfy the
                              requirements outlined in GeometryInstance.  */
   GeometryId RegisterAnchoredGeometry(
+      SourceId source_id,
+      std::unique_ptr<GeometryInstance> geometry);
+
+  /** Variant of RegisterAnchoredGeometry() that assigns _no_ default roles to
+   the geometry.  */
+  GeometryId RegisterAnchoredGeometryWithoutRole(
       SourceId source_id,
       std::unique_ptr<GeometryInstance> geometry);
 
@@ -529,7 +574,8 @@ class GeometryState {
 
   /** Reports true if the collision pair (id1, id2) has been filtered out.
    @throws std::logic_error if either id does not reference a registered
-                            geometry.  */
+                            geometry or if the geometries do not have
+                            a proximity role.  */
   bool CollisionFiltered(GeometryId id1, GeometryId id2) const;
 
   //@}
