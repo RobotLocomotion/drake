@@ -51,7 +51,7 @@ void DiscreteDerivative<T>::DoCalcDiscreteVariableUpdates(
   VectorX<T> u = this->EvalEigenVectorInput(context, 0);
   discrete_state->get_mutable_vector().get_mutable_value().head(n_) =
       this->EvalEigenVectorInput(context, 0);
-discrete_state->get_mutable_vector().get_mutable_value().head(n_) = u;
+  discrete_state->get_mutable_vector().get_mutable_value().head(n_) = u;
 
   // x₁[n+1] = x₀[n].
   discrete_state->get_mutable_vector().get_mutable_value().tail(n_) =
