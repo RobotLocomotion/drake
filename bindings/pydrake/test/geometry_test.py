@@ -76,4 +76,4 @@ class TestGeometry(unittest.TestCase):
         self.assertIsInstance(obj.id_B, mut.GeometryId)
         self.assertTupleEqual(obj.p_ACa.shape, (3,))
         self.assertTupleEqual(obj.p_BCb.shape, (3,))
-        self.assertIsInstance(obj.distance, float))
+        self.assertIsInstance(obj.distance, float)

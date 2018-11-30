@@ -361,6 +361,31 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTrue(np.allclose(
             tree.GetPositionsAndVelocities(context), x0))
 
+    def test_model_instance_port_access(self):
+        # Create a MultibodyPlant with a kuka arm and a schunk gripper.
+        # the arm is welded to the world, the gripper is welded to the
+        # arm's end effector.
+        wsg50_sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/" +
+            "wsg_50_description/sdf/schunk_wsg_50.sdf")
+        iiwa_sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/" +
+            "iiwa_description/sdf/iiwa14_no_collision.sdf")
+
+        plant = MultibodyPlant()
+        iiwa_model = AddModelFromSdfFile(
+            file_name=iiwa_sdf_path, model_name='robot', plant=plant)
+        gripper_model = AddModelFromSdfFile(
+            file_name=wsg50_sdf_path, model_name='gripper', plant=plant)
+        plant.Finalize()
+
+        # Test that we can get an actuation input port and a continuous state
+        # output port.
+        self.assertIsInstance(
+            plant.get_actuation_input_port(iiwa_model), InputPort)
+        self.assertIsInstance(
+            plant.get_continuous_state_output_port(gripper_model), OutputPort)
+
     def test_model_instance_state_access(self):
         # Create a MultibodyPlant with a kuka arm and a schunk gripper.
         # the arm is welded to the world, the gripper is welded to the
@@ -580,6 +605,14 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTrue(np.allclose(v_iiwa_desired, v_iiwa))
         self.assertTrue(np.allclose(q_gripper_desired, q_gripper))
         self.assertTrue(np.allclose(v_gripper_desired, v_gripper))
+
+        # Verify that SetPositionsInArray() and SetVelocitiesInArray() works.
+        q = tree.SetPositionsInArray(iiwa_model, q_iiwa * 0, q)
+        self.assertTrue(np.allclose(
+            tree.GetPositionsFromArray(iiwa_model, q), q_iiwa * 0))
+        v = tree.SetVelocitiesInArray(iiwa_model, v_iiwa * 0, v)
+        self.assertTrue(np.allclose(
+            tree.GetVelocitiesFromArray(iiwa_model, v), v_iiwa * 0))
 
     def test_multibody_add_joint(self):
         """

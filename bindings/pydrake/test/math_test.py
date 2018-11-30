@@ -166,3 +166,8 @@ class TestMath(unittest.TestCase):
         self.assertTrue(np.allclose(rpy.ToQuaternion().wxyz(), q_I.wxyz()))
         R = rpy.ToRotationMatrix().matrix()
         self.assertTrue(np.allclose(R, np.eye(3)))
+
+    def test_orthonormal_basis(self):
+        R = mut.ComputeBasisFromAxis(axis_index=0, axis_W=[1, 0, 0])
+        self.assertAlmostEqual(np.linalg.det(R), 1.0)
+        self.assertTrue(np.allclose(R.dot(R.T), np.eye(3)))
