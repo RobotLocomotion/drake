@@ -39,6 +39,7 @@ from pydrake.multibody.benchmarks.acrobot import (
 from pydrake.geometry import (
     GeometryId,
     PenetrationAsPointPair,
+    SignedDistancePair,
     SceneGraph,
 )
 from pydrake.systems.framework import DiagramBuilder
@@ -690,6 +691,9 @@ class TestMultibodyTree(unittest.TestCase):
         # Implicitly require that this should be size 1.
         point_pair, = query_object.ComputePointPairPenetration()
         self.assertIsInstance(point_pair, PenetrationAsPointPair)
+        signed_distance_pair, = query_object.\
+            ComputeSignedDistancePairwiseClosestPoints()
+        self.assertIsInstance(signed_distance_pair, SignedDistancePair)
         inspector = query_object.inspector()
         bodies = {plant.GetBodyFromFrameId(inspector.GetFrameId(id_))
                   for id_ in [point_pair.id_A, point_pair.id_B]}
