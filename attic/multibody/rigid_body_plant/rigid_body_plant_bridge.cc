@@ -156,7 +156,7 @@ void RigidBodyPlantBridge<T>::RegisterTree(SceneGraph<T>* scene_graph) {
       if (shape) {
         const std::string name = "visual_" + std::to_string(visual_count++);
         Isometry3<double> X_FG = visual_element.getLocalTransform();
-        GeometryId id = scene_graph->RegisterGeometryWithoutRole(
+        GeometryId id = scene_graph->RegisterGeometry(
             source_id_, body_id,
             std::make_unique<GeometryInstance>(X_FG, std::move(shape), name));
 
@@ -175,7 +175,7 @@ void RigidBodyPlantBridge<T>::RegisterTree(SceneGraph<T>* scene_graph) {
         const std::string name = "collision_" +
             std::to_string(collision_count++);
         Isometry3<double> X_FG = collision_element->getLocalTransform();
-        GeometryId id = scene_graph->RegisterGeometryWithoutRole(
+        GeometryId id = scene_graph->RegisterGeometry(
             source_id_, body_id,
             std::make_unique<GeometryInstance>(X_FG, std::move(shape), name));
         // TODO(SeanCurtis-TRI): Populate contact material from the element's

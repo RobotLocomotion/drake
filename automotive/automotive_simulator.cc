@@ -125,7 +125,7 @@ void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
   // SDF.  We should try to load the SDF instead, but there is not any geometry
   // code exposed for that yet. Related to this is the assignment of default
   // illustration properties.
-  geometry::GeometryId geometry_id = scene_graph_->RegisterGeometryWithoutRole(
+  geometry::GeometryId geometry_id = scene_graph_->RegisterGeometry(
       source_id, frame_id,
       std::make_unique<geometry::GeometryInstance>(
           Isometry3d(Eigen::Translation3d(
@@ -138,7 +138,7 @@ void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
   const geometry::IllustrationProperties grey =
       geometry::MakeDrakeVisualizerProperties(
           Eigen::Vector4d(0.2, 0.2, 0.2, 1.0));
-  geometry_id = scene_graph_->RegisterGeometryWithoutRole(
+  geometry_id = scene_graph_->RegisterGeometry(
       source_id, frame_id,
       std::make_unique<geometry::GeometryInstance>(
           math::RigidTransformd(
@@ -148,7 +148,7 @@ void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
           std::make_unique<geometry::Cylinder>(0.323, 0.215),
           "left_wheel"));
   scene_graph_->AssignRole(source_id, geometry_id, grey);
-  geometry_id = scene_graph_->RegisterGeometryWithoutRole(
+  geometry_id = scene_graph_->RegisterGeometry(
       source_id, frame_id,
       std::make_unique<geometry::GeometryInstance>(
           math::RigidTransformd(
@@ -158,7 +158,7 @@ void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
           std::make_unique<geometry::Cylinder>(0.323, 0.215),
           "right_wheel"));
   scene_graph_->AssignRole(source_id, geometry_id, grey);
-  geometry_id = scene_graph_->RegisterGeometryWithoutRole(
+  geometry_id = scene_graph_->RegisterGeometry(
       source_id, frame_id,
       std::make_unique<geometry::GeometryInstance>(
           math::RigidTransformd(
@@ -168,7 +168,7 @@ void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
           std::make_unique<geometry::Cylinder>(0.323, 0.215),
           "left_wheel_rear"));
   scene_graph_->AssignRole(source_id, geometry_id, grey);
-  geometry_id = scene_graph_->RegisterGeometryWithoutRole(
+  geometry_id = scene_graph_->RegisterGeometry(
       source_id, frame_id,
       std::make_unique<geometry::GeometryInstance>(
           math::RigidTransformd(

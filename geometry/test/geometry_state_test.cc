@@ -218,7 +218,7 @@ class GeometryStateTest : public ::testing::Test {
         const std::string& name =
             to_string(frame_id) + "_g" + std::to_string(i);
         geometry_names_[g_count] = name;
-        geometries_[g_count] = geometry_state_.RegisterGeometryWithoutRole(
+        geometries_[g_count] = geometry_state_.RegisterGeometry(
             source_id_, frame_id,
             make_unique<GeometryInstance>(pose, make_unique<Sphere>(1), name));
         if (assign_proximity_role) {
@@ -236,7 +236,7 @@ class GeometryStateTest : public ::testing::Test {
     // This simultaneously tests the named registration function and
     // _implicitly_ tests registration of geometry against the world frame id
     // (as that is how `RegisterAnchoredGeometry()` works.
-    anchored_geometry_ = geometry_state_.RegisterAnchoredGeometryWithoutRole(
+    anchored_geometry_ = geometry_state_.RegisterAnchoredGeometry(
         source_id_, make_unique<GeometryInstance>(
                         X_WA_, make_unique<Box>(100, 100, 2), anchored_name_));
     if (assign_proximity_role) {
@@ -1018,7 +1018,7 @@ TEST_F(GeometryStateTest, RemoveGeometryTree) {
   // Confirm that the first geometry belongs to the first frame.
   ASSERT_EQ(geometry_state_.GetFrameId(root_id), f_id);
   // Hang geometry from the first geometry.
-  GeometryId g_id = geometry_state_.RegisterGeometryWithParentWithoutRole(
+  GeometryId g_id = geometry_state_.RegisterGeometryWithParent(
       s_id, root_id,
       make_unique<GeometryInstance>(Isometry3<double>::Identity(),
                                     unique_ptr<Shape>(new Sphere(1)), "leaf"));
@@ -1145,11 +1145,10 @@ TEST_F(GeometryStateTest, RemoveAnchoredGeometry) {
 
   const Vector3<double> normal{0, 1, 0};
   const Vector3<double> point{1, 1, 1};
-  const auto anchored_id_1 =
-      geometry_state_.RegisterAnchoredGeometryWithoutRole(
-          s_id,
-          make_unique<GeometryInstance>(HalfSpace::MakePose(normal, point),
-                                        make_unique<HalfSpace>(), "anchored1"));
+  const auto anchored_id_1 = geometry_state_.RegisterAnchoredGeometry(
+      s_id,
+      make_unique<GeometryInstance>(HalfSpace::MakePose(normal, point),
+                                    make_unique<HalfSpace>(), "anchored1"));
   geometry_state_.AssignRole(s_id, anchored_id_1, ProximityProperties());
   // Confirm conditions of having added the anchored geometry.
   EXPECT_EQ(gs_tester_.get_geometry_index_id_map().size(),
@@ -1571,7 +1570,7 @@ TEST_F(GeometryStateTest, NonProximityRoleInCollisionFilter) {
   // new geometry in a penetrating configuration.
   pose.translation() << 5.5, 0, 0;
   const std::string name("added_sphere");
-  GeometryId added_id = geometry_state_.RegisterGeometryWithoutRole(
+  GeometryId added_id = geometry_state_.RegisterGeometry(
       source_id_, frames_[2],
       make_unique<GeometryInstance>(pose, make_unique<Sphere>(1), name));
   gs_tester_.FinalizePoseUpdate();
@@ -1763,6 +1762,23 @@ TEST_F(GeometryStateTest, GetGeometryIdFromName) {
       std::logic_error,
       "The frame '.+?' .\\d+. has no geometry with the role 'unassigned' and "
       "the canonical name '.+'");
+
+  // Multiple unassigned geometries with the same name.
+
+  const std::string dummy_name("duplicate");
+  for (int i = 0; i < 2; ++i) {
+    const Isometry3<double> pose = Isometry3<double>::Identity();
+    geometry_state_.RegisterGeometry(
+        source_id_, frames_[0],
+        make_unique<GeometryInstance>(pose, make_unique<Sphere>(1),
+                                      dummy_name));
+  }
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.GetGeometryFromName(frames_[0], Role::kUnassigned,
+                                          dummy_name),
+      std::logic_error,
+      "The frame '.+?' .\\d+. has multiple geometries with the role "
+      "'unassigned' and the canonical name '.+'");
 }
 
 // Confirms that the name *stored* with the geometry is the trimmed version of
@@ -1795,19 +1811,30 @@ TEST_F(GeometryStateTest, GeometryNameStorage) {
 
 // Tests the logic for confirming if a name is valid or not.
 TEST_F(GeometryStateTest, GeometryNameValidation) {
-  SetUpSingleSourceTree();
+  SetUpSingleSourceTree(true /* Assign proximity roles */);
 
-  // Case: Invalid frame should throw (regardless of name contents).
+  // Case: Invalid frame should throw (regardless of name contents or role).
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.IsValidGeometryName(FrameId::get_new_id(), ""),
+      geometry_state_.IsValidGeometryName(FrameId::get_new_id(),
+                                          Role::kProximity, ""),
       std::logic_error, "Given frame id is not valid: \\d+");
 
   auto expect_bad_name = [this](const std::string& name,
                                 const std::string& exception_message,
                                 const std::string& printable_name) {
-    EXPECT_FALSE(geometry_state_.IsValidGeometryName(frames_[0], name))
+    EXPECT_FALSE(geometry_state_.IsValidGeometryName(frames_[0],
+                                                     Role::kProximity, name))
         << "Failed on input name: " << printable_name;
   };
+
+  // Unique in world frame.
+  const FrameId world = InternalFrame::world_frame_id();
+  EXPECT_FALSE(geometry_state_.IsValidGeometryName(world, Role::kProximity,
+                                                   anchored_name_));
+  EXPECT_TRUE(geometry_state_.IsValidGeometryName(world, Role::kIllustration,
+                                                  anchored_name_));
+  EXPECT_TRUE(geometry_state_.IsValidGeometryName(world, Role::kProximity,
+                                                  anchored_name_ + "2"));
 
   // Invalid cases:
   // Empty.
@@ -1822,26 +1849,34 @@ TEST_F(GeometryStateTest, GeometryNameValidation) {
 
   // Case: Valid (as a control case).
   const std::string unique = "unique";
-  EXPECT_TRUE(geometry_state_.IsValidGeometryName(frames_[0], unique));
+  EXPECT_TRUE(geometry_state_.IsValidGeometryName(frames_[0], Role::kProximity,
+                                                  unique));
 
   // Querying with non-canonical names test as the canonical name.
   vector<std::string> names{" " + unique, unique + " ", " " + unique + " "};
   for (const auto& name : names) {
-    EXPECT_TRUE(geometry_state_.IsValidGeometryName(frames_[0], name));
+    EXPECT_TRUE(geometry_state_.IsValidGeometryName(frames_[0],
+                                                    Role::kProximity, name));
   }
 
-  // Duplicate name is considered valid
-  // TODO(SeanCurtis-TRI): WHen geometry roles are introduced and duplicates
-  // are no longer valid, update this test.
+  // Test potential duplicates.
+
+  // A name with the same role will fail.
+  EXPECT_FALSE(geometry_state_.IsValidGeometryName(
+      frames_[0], Role::kProximity,
+      gs_tester_.get_geometries().at(geometries_[0]).name()));
+
+  // A name with the *different* role will pass.
   EXPECT_TRUE(geometry_state_.IsValidGeometryName(
-      frames_[0],
+      frames_[0], Role::kIllustration,
       gs_tester_.get_geometries().at(geometries_[0]).name()));
 
   // Case: Whitespace that SDF nevertheless considers not whitespace.
   // Update this when the following sdformat issue is resolved:
   // https://bitbucket.org/osrf/sdformat/issues/194/string-trimming-only-considers-space-and
   for (const std::string& s : {"\n", " \n\t", " \f", "\v", "\r", "\ntest"}) {
-    EXPECT_TRUE(geometry_state_.IsValidGeometryName(frames_[0], s));
+    EXPECT_TRUE(geometry_state_.IsValidGeometryName(frames_[0],
+                                                    Role::kProximity, s));
   }
 }
 
@@ -1855,7 +1890,7 @@ TEST_F(GeometryStateTest, AssignRolesToGeometry) {
   const Isometry3<double> pose = Isometry3<double>::Identity();
   for (int i = 0; i < 8 - single_tree_dynamic_geometry_count(); ++i) {
     const std::string name = "new_geom" + std::to_string(i);
-    geometries_.push_back(geometry_state_.RegisterGeometryWithoutRole(
+    geometries_.push_back(geometry_state_.RegisterGeometry(
         source_id_, frames_[0],
         make_unique<GeometryInstance>(pose, make_unique<Sphere>(1), name)));
   }
@@ -1930,7 +1965,7 @@ TEST_F(GeometryStateTest, InstanceRoleAssignment) {
 
   // Case: no properties assigned leaves geometry with no roles.
   {
-    GeometryId g_id = geometry_state_.RegisterGeometryWithoutRole(
+    GeometryId g_id = geometry_state_.RegisterGeometry(
         s_id, f_id, make_instance("instance1"));
     const internal::InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
     EXPECT_FALSE(geometry->has_proximity_role());
@@ -1942,7 +1977,7 @@ TEST_F(GeometryStateTest, InstanceRoleAssignment) {
     auto instance = make_instance("instance2");
     instance->set_proximity_properties(ProximityProperties());
     GeometryId g_id =
-        geometry_state_.RegisterGeometryWithoutRole(s_id, f_id, move(instance));
+        geometry_state_.RegisterGeometry(s_id, f_id, move(instance));
 
     const internal::InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
     EXPECT_TRUE(geometry->has_proximity_role());
@@ -1954,7 +1989,7 @@ TEST_F(GeometryStateTest, InstanceRoleAssignment) {
     auto instance = make_instance("instance3");
     instance->set_illustration_properties(IllustrationProperties());
     GeometryId g_id =
-        geometry_state_.RegisterGeometryWithoutRole(s_id, f_id, move(instance));
+        geometry_state_.RegisterGeometry(s_id, f_id, move(instance));
 
     const internal::InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
     EXPECT_FALSE(geometry->has_proximity_role());
@@ -1967,7 +2002,7 @@ TEST_F(GeometryStateTest, InstanceRoleAssignment) {
     instance->set_proximity_properties(ProximityProperties());
     instance->set_illustration_properties(IllustrationProperties());
     GeometryId g_id =
-        geometry_state_.RegisterGeometryWithoutRole(s_id, f_id, move(instance));
+        geometry_state_.RegisterGeometry(s_id, f_id, move(instance));
 
     const internal::InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
     EXPECT_TRUE(geometry->has_proximity_role());
@@ -2083,6 +2118,25 @@ TEST_F(GeometryStateTest, RoleAssignExceptions) {
                                  IllustrationProperties()),
       std::logic_error,
       "Geometry already has illustration role assigned");
+
+  // Addition of geometry with duplicate name -- no problem. Assigning it a
+  // duplicate role -- bad.
+  const Isometry3<double> pose = Isometry3<double>::Identity();
+  GeometryId new_id = geometry_state_.RegisterGeometry(
+      source_id_, frames_[0],
+      make_unique<GeometryInstance>(pose, make_unique<Sphere>(1),
+                                    geometry_names_[0]));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.AssignRole(source_id_, new_id, ProximityProperties()),
+      std::logic_error,
+      "The name .* has already been used by a geometry with the 'proximity' "
+      "role.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.AssignRole(source_id_, new_id, IllustrationProperties()),
+      std::logic_error,
+      "The name .* has already been used by a geometry with the 'illustration' "
+      "role.");
 }
 
 // Tests the functionality that counts the number of children geometry a frame

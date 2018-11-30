@@ -404,14 +404,12 @@ TEST_F(SceneGraphTest, ModelInspector) {
 
   const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
 
-  // TODO(SeanCurtis-TRI): Change these roles to unassigned, when they no longer
-  // get a proximity and illustration role by default.
-  EXPECT_EQ(inspector.GetGeometryIdByName(frame_1, Role::kProximity, "sphere"),
+  EXPECT_EQ(inspector.GetGeometryIdByName(frame_1, Role::kUnassigned, "sphere"),
             sphere_1);
-  EXPECT_EQ(inspector.GetGeometryIdByName(frame_2, Role::kProximity, "sphere"),
+  EXPECT_EQ(inspector.GetGeometryIdByName(frame_2, Role::kUnassigned, "sphere"),
             sphere_2);
   EXPECT_EQ(inspector.GetGeometryIdByName(scene_graph_.world_frame_id(),
-                                          Role::kProximity, "sphere"),
+                                          Role::kUnassigned, "sphere"),
             anchored_id);
 }
 
@@ -637,9 +635,9 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
         make_unique<GeometryInstance>(Isometry3<double>::Identity(),
                                       make_unique<Sphere>(1.0), "sphere"));
     PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
-    // The frame is included because the geometry automatically is assigned an
-    // illustration role.
-    EXPECT_EQ(1, poses.get_num_poses());
+    // The dynamic geometry has no illustration role, so it doesn't lead the
+    // frame to be included in the bundle.
+    EXPECT_EQ(0, poses.get_num_poses());
     auto context = scene_graph.AllocateContext();
     FramePoseVector<double> pose_vector(s_id, {f_id});
     context->FixInputPort(scene_graph.get_source_pose_port(s_id).get_index(),
@@ -706,10 +704,13 @@ GTEST_TEST(SceneGraphContextModifier, CollisionFilters) {
       source_id, GeometryFrame("frame_3", Isometry3d::Identity()));
   GeometryId g_id1 =
       scene_graph.RegisterGeometry(source_id, f_id1, make_sphere_instance());
+  scene_graph.AssignRole(source_id, g_id1, ProximityProperties());
   GeometryId g_id2 =
       scene_graph.RegisterGeometry(source_id, f_id2, make_sphere_instance());
+  scene_graph.AssignRole(source_id, g_id2, ProximityProperties());
   GeometryId g_id3 =
       scene_graph.RegisterGeometry(source_id, f_id3, make_sphere_instance());
+  scene_graph.AssignRole(source_id, g_id3, ProximityProperties());
 
   // Confirm that the model reports no filtered pairs.
   EXPECT_FALSE(scene_graph.model_inspector().CollisionFiltered(g_id1, g_id2));

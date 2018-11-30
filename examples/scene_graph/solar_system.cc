@@ -114,7 +114,7 @@ void MakeArm(SourceId source_id, ParentId parent_id, double length,
   arm_pose.linear() =
       Eigen::AngleAxis<double>(M_PI / 2, Vector3<double>::UnitY()).matrix();
   arm_pose.translation() << length / 2, 0, 0;
-  GeometryId id = scene_graph->RegisterGeometryWithoutRole(
+  GeometryId id = scene_graph->RegisterGeometry(
       source_id, parent_id, make_unique<GeometryInstance>(
                                 arm_pose, make_unique<Cylinder>(radius, length),
                                 "horz_arm"));
@@ -122,7 +122,7 @@ void MakeArm(SourceId source_id, ParentId parent_id, double length,
 
   Isometry3<double> post_pose = Isometry3<double>::Identity();
   post_pose.translation() << length, 0, height / 2;
-  id = scene_graph->RegisterGeometryWithoutRole(
+  id = scene_graph->RegisterGeometry(
       source_id, parent_id,
       make_unique<GeometryInstance>(post_pose,
                                     make_unique<Cylinder>(radius, height),
@@ -144,7 +144,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   // Allocate the sun.
   // NOTE: we don't store the id of the sun geometry because we have no need
   // for subsequent access (the same is also true for dynamic geometries).
-  GeometryId id = scene_graph->RegisterAnchoredGeometryWithoutRole(
+  GeometryId id = scene_graph->RegisterAnchoredGeometry(
       source_id_, make_unique<GeometryInstance>(
                       Isometry3<double>::Identity(), make_unique<Sphere>(1.f),
                       "sun"));
@@ -155,7 +155,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   const double post_height = 1;
   Isometry3<double> post_pose = Isometry3<double>::Identity();
   post_pose.translation() << 0, 0, (orrery_bottom + post_height / 2);
-  id = scene_graph->RegisterAnchoredGeometryWithoutRole(
+  id = scene_graph->RegisterAnchoredGeometry(
       source_id_,
       make_unique<GeometryInstance>(
           post_pose, make_unique<Cylinder>(pipe_radius, post_height),
@@ -181,7 +181,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   const double kEarthOrbitRadius = 3.0;
   Isometry3<double> X_EGe{
       Translation3<double>{kEarthOrbitRadius, 0, -kEarthBottom}};
-  id = scene_graph->RegisterGeometryWithoutRole(
+  id = scene_graph->RegisterGeometry(
       source_id_, planet_id,
       make_unique<GeometryInstance>(X_EGe, make_unique<Sphere>(0.25f),
                                     "earth"));
@@ -208,7 +208,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   Vector3<double> luna_position =
       Vector3<double>(-1, 0.5, 0.5).normalized() * kLunaOrbitRadius;
   Isometry3<double> X_LGl{Translation3<double>{luna_position}};
-  id = scene_graph->RegisterGeometryWithoutRole(
+  id = scene_graph->RegisterGeometry(
       source_id_, luna_id, make_unique<GeometryInstance>(
                                X_LGl, make_unique<Sphere>(0.075f), "luna"));
   scene_graph->AssignRole(
@@ -225,7 +225,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
 
   std::string convexsat_absolute_path =
       FindResourceOrThrow("drake/examples/scene_graph/cuboctahedron.obj");
-  id = scene_graph->RegisterGeometryWithoutRole(
+  id = scene_graph->RegisterGeometry(
       source_id_, convexsat_id,
       make_unique<GeometryInstance>(
           X_LGl, make_unique<Convex>(convexsat_absolute_path, 0.075),
@@ -241,7 +241,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   body_offset_.push_back(X_EL);
   axes_.push_back(luna_axis_E.normalized());
 
-  id = scene_graph->RegisterGeometryWithoutRole(
+  id = scene_graph->RegisterGeometry(
       source_id_, boxsat_id,
       make_unique<GeometryInstance>(
           X_LGl, make_unique<Box>(0.15, 0.15, 0.15), "boxsat"));
@@ -263,7 +263,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   const double kMarsSize = 0.24;
   Isometry3<double> X_MGm{
       Translation3<double>{kMarsOrbitRadius, 0, -orrery_bottom}};
-  GeometryId mars_geometry_id = scene_graph->RegisterGeometryWithoutRole(
+  GeometryId mars_geometry_id = scene_graph->RegisterGeometry(
       source_id_, planet_id,
       make_unique<GeometryInstance>(X_MGm, make_unique<Sphere>(kMarsSize),
                                     "mars"));
@@ -275,7 +275,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
       FindResourceOrThrow("drake/examples/scene_graph/planet_rings.obj");
   Vector3<double> axis = Vector3<double>(1, 1, 1).normalized();
   Isometry3<double> X_GmGr(AngleAxis<double>(M_PI / 3, axis));
-  id = scene_graph->RegisterGeometryWithoutRole(
+  id = scene_graph->RegisterGeometry(
       source_id_, mars_geometry_id,
       make_unique<GeometryInstance>(
           X_GmGr, make_unique<Mesh>(rings_absolute_path, kMarsSize), "rings"));
@@ -300,7 +300,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   // The geometry is displaced from the Phobos's frame so that it orbits.
   const double kPhobosOrbitRadius = 0.34;
   Isometry3<double> X_PGp{Translation3<double>{kPhobosOrbitRadius, 0, 0}};
-  id = scene_graph->RegisterGeometryWithoutRole(
+  id = scene_graph->RegisterGeometry(
       source_id_, phobos_id, make_unique<GeometryInstance>(
                                  X_PGp, make_unique<Sphere>(0.06f), "phobos"));
   scene_graph->AssignRole(

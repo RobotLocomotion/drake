@@ -73,14 +73,6 @@ class SceneGraphInspector {
     return state_->GetFrameId(geometry_id);
   }
 
-  /** Returns the visual material of the geometry indicated by the given
-   `geometry_id` (if it exists).
-   @throws  std::logic_error if the geometry id is invalid.  */
-  const VisualMaterial& GetVisualMaterial(GeometryId geometry_id) const {
-    DRAKE_DEMAND(state_ != nullptr);
-    return state_->get_visual_material(geometry_id);
-  }
-
   /** Reports the name of the frame indicated by the given id.
    @throws std::logic_error if `frame_id` doesn't refer to a valid frame.  */
   const std::string& GetName(FrameId frame_id) const {
