@@ -524,7 +524,7 @@ class Simulator {
   std::unique_ptr<CompositeEventCollection<T>> witnessed_events_;
 
   // Indicates when a timed or witnessed event needs to be handled on the next
-  // call to StepTo() or StepInPlace().
+  // call to StepTo().
   bool timed_or_witnessed_event_triggered_{false};
 
   // The time that the next timed event is to be handled. This value is set in
@@ -642,7 +642,8 @@ void Simulator<T>::Initialize() {
   witnessed_events_ = system_.AllocateCompositeEventCollection();
 
   // Do any publishes last. Merge the initialization events with current_time
-  // timed events (if any).
+  // timed events (if any). We expect all initialization events to precede
+  // any timed events in the merged collection.
   if (timed_or_witnessed_event_triggered_)
     init_events->Merge(*timed_events_);
   HandlePublish(init_events->get_publish_events());
