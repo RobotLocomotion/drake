@@ -59,60 +59,87 @@ which is adequate for most systems.
 
 <h2>How the simulation is stepped: simulation mechanics for authors of
   hybrid or discrete systems (Advanced)</h2>
+
 This documentation is targeted toward users who have created a LeafSystem
 implementing a hybrid or discrete system. For authors of such systems, it is
 useful to understand the simulation mechanics in order to attain the desired
 state behavior over time. This behavior is dependent on the ordering in
-which events are processed.
+which events are processed. For a general introduction, see
+@ref discrete_systems; for details keep reading here.
 
-The pseudocode for the algorithm that the simulator uses to step the state
-from time and state `{ t0, xc(t0), xd(t0⁻), xa(t0⁻) }` forward in time
-by length _no greater_ than Δt will be presented shortly. We will make use
-of the notation `xd(t⁻)` to denote a variable before any instantaneous
-(unrestricted or discrete) updates, `xd(t*)` to denote the same variable
-after an unrestricted update, and `xd(t⁺)` to denote the same variable after
-a discrete update. The pseudocode follows:
-@verbatim
-procedure Step(t0, xc(t0⁻), xd(t0⁻), xa(t0⁻), Δt)
+Next we present pseudocode for the algorithm that the simulator uses to advance
+the system through time. This algorithm is given a starting time and state
+`{ tₛ, x(tₛ) }` and advances it to an end time `{ tₑ, x(tₑ) }`, where tₑ is
+_no later_ than a given tₘₐₓ. Recall that Drake's state x is partitioned into
+continuous, discrete, and abstract subgroups xc, xd, and xa, so
+`x = { xc, xd, xa }`. We will make use of notation like `xd(t⁻)` to denote a
+state partition's value _before_ any instantaneous (unrestricted or discrete)
+update. We'll use `xd(t*)` to denote the value _after_ an unrestrictd update
+but _before_ a discrete update, and `xd(t⁺)` to indicate the value after all
+updates have been performed. When all partitions of the state are at a
+consistent update level, we'll just write `x(t⁻)` or `x(t⁺)` to be concise.
+Note that while a discrete update can change only the discrete state variables
+xd, an unrestricted update can change any or all of xc, xd, and xa.
 
-// Update any variables (no restrictions).
-{ xc(t0*), xd(t0*), xa(t0⁺) } ←
-    DoAnyUnrestrictedUpdates(t0, xc(t0⁻), xd(t0⁻), xa(t0⁻))
+The pseudocode follows:
+```
+// Advance time and state from start time tₛ⁻ to an end time tₑ⁻, where
+// tₛ ≤ tₑ ≤ tₘₐₓ.
+procedure Step(tₛ, x(tₛ⁻), tₘₐₓ)
 
-// Update discrete variables.
-xd(t0⁺) ← DoAnyDiscreteUpdates(t0,  xc(t0*), xd(t0*), xa(t0⁺))
+  // Update any variables (no restrictions).
+  { xc(tₛ⁺), xd(tₛ*), xa(tₛ⁺) }
+          ← DoAnyUnrestrictedUpdates(tₛ, x(tₛ⁻))
 
-// See how far it is safe to integrate without missing any events.
-tₑ ← NextEventTime(t0, xc(t0*), xd(t0⁺), xa(t0⁺))
+  // Update discrete variables.
+  xd(tₛ⁺) ← DoAnyDiscreteUpdates(tₛ,  { xc(tₛ⁺), xd(tₛ*), xa(tₛ⁺) })
 
-// Integrate continuous variables forward in time.
-h ← min(tₑ - t0, Δt)
-{ t₁, xc(t₁⁻) } ← Integrate(t0, xc(t0*), xd(t0⁺), xa(t0*), h)
+  // -------------------------
+  // Time and state are at tₛ⁺
+  // -------------------------
 
-// Hold discrete and abstract variables values from t0* and t0⁺ to t₁⁻.
-xd(t₁⁻) ← xd(t0⁺)
-xa(t₁⁻) ← xa(t0*)
+  // See how far it is safe to integrate without missing any events.
+  tₑᵥₑₙₜ ← CalcNextEventTime(tₛ, x(tₛ⁺))
 
-DoAnyPublishes(t₁, xc(t₁⁻), xd(t₁⁻), xa(t₁⁻))
+  // Integrate continuous variables forward in time. Integration may terminate
+  // before reaching tₛₜₒₚ due to witnessed events.
+  tₛₜₒₚ ← min(tₑᵥₑₙₜ, tₘₐₓ)
+  { tₑ, xc(tₑ⁻) } ← Integrate(tₛ, x(tₛ⁺), tₛₜₒₚ)
 
-return { t₁, xc(t₁⁻), xd(t₁⁻), xa(t₁⁻) }
-@endverbatim
+  // Hold discrete and abstract variable values from tₛ⁺ to tₑ⁻.
+  { xd(tₑ⁻), xa(tₑ⁻) } ← { xd(tₛ⁺), xa(tₛ⁺) }
 
-We can use this algorithm to examine the Initialize() and StepTo() functions,
-which we shall now do in reverse order. StepTo() can be outlined as:
-@verbatim
-procedure StepTo(t_final)
-t ← current_time
-while t ≠ t_final
-  { tnew, xc(tnew⁻), xd(tnew⁻), xa(tnew⁻) } ←
-        Step(t, xc(t⁻), xd(t⁻), xa(t⁻), t_final - t)
-  { t, xc(t⁻), xd(t⁻), xa(t⁻) } ← { tnew, xc(tnew⁻), xd(tnew⁻), xa(tnew⁻) }
-endwhile
-@endverbatim
-Initialize() is equivalent to Step() with `t0 = initial_time - ε`
-(for `ε ≪ 1`) and `Δt = 0`.
+  // -------------------------
+  // Time and state are at tₑ⁻
+  // -------------------------
+
+  DoAnyPublishes(tₑ, x(tₑ⁻))
+
+  return { tₑ, x(tₑ⁻) }
+```
+
+We can use this algorithm to examine the StepTo() and Initialize() functions:
+```
+// Advance the simulation until time tₘₐₓ.
+procedure StepTo(tₘₐₓ)
+  t ← current_time
+  while t ≠ tₘₐₓ
+    { tₑ, x(tₑ⁻) } ← Step(t, x(t⁻), tₘₐₓ)
+    { t, x(t⁻) } ← { tₑ, x(tₑ⁻) }
+  endwhile
+
+// Update time and state to t₀⁻, the condition it should have at the
+// start of the first simulation step.
+procedure Initialize(t₀, x₀)
+  { x(t₀⁻) } ← DoAnyUpdates as in Step()
+  DoAnyPublishes(t₀, x(t₀⁻))
+```
+Thus Initialize() performs initialization updates, does no integration, and
+publishes any triggered events that occur. This is nearly identical to a
+zero-length Step().
 
 @tparam T The vector element type, which must be a valid Eigen scalar.
+
 Instantiated templates for the following kinds of T's are provided and
 available to link against in the containing library:
  - double

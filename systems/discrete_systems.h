@@ -2,7 +2,7 @@
 namespace drake {
 namespace systems {
 
-/** @addtogroup discrete_systems
+/** @addtogroup discrete_systems Discrete Systems
 @brief This page describes discrete systems modeled by difference equations
 (contrast to continuous systems modeled by ordinary differential equations)
 as well as considerations for implementing these systems in Drake.
