@@ -11,7 +11,6 @@ using geometry::Cylinder;
 using geometry::HalfSpace;
 using geometry::SceneGraph;
 using geometry::Sphere;
-using geometry::VisualMaterial;
 using drake::multibody::multibody_plant::CoulombFriction;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::RigidBody;
@@ -24,8 +23,8 @@ void AddCylinderWithMultiContact(
     MultibodyPlant<double>* plant, const RigidBody<double>& body,
     double radius, double length, const CoulombFriction<double>& friction,
     double contact_spheres_radius, int num_contacts) {
-  const VisualMaterial orange(Vector4<double>(1.0, 0.55, 0.0, 1.0));
-  const VisualMaterial red(Vector4<double>(1.0, 0.0, 0.0, 1.0));
+  const Vector4<double> orange(1.0, 0.55, 0.0, 1.0);
+  const Vector4<double> red(1.0, 0.0, 0.0, 1.0);
 
   // Visual for the Cylinder
   plant->RegisterVisualGeometry(

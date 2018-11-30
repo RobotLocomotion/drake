@@ -37,6 +37,7 @@ drake_cc_library(
         ":coulomb_friction",
         "//common:default_scalars",
         "//geometry:geometry_ids",
+        "//geometry:geometry_visualization",
         "//geometry:scene_graph",
         "//math:orthonormal_basis",
         "//multibody/multibody_tree",
