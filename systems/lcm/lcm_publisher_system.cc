@@ -117,7 +117,7 @@ void LcmPublisherSystem::DoPublish(
 
   // Note: initialization events can be packaged in the `events` vector along
   // with other kinds of event triggers as of #9766. In order to retain the
-  // current behavior, we handle initialization events first, and other events
+  // current behavior, we handle initialization events first and other events
   // second.
   // TODO(edrumwri): Replace this DoPublish() handler with separate event
   // handlers in a separate PR (all sorts of tests _will_ break).

@@ -1298,10 +1298,10 @@ GTEST_TEST(SimulatorTest, SimpleHybridSystemTest3) {
   EXPECT_EQ(hybrid_system->num_discrete_updates(), 1);
 }
 
-// A "Delta function" system that outputs zero except at at instant when
-// the output is 1. Despite that, this is a continuous function of time. We'll
-// use it to verify that a discrete system that takes this as input samples
-// it at the expected instant.
+// A "Delta function" system that outputs zero except at the instant when
+// the output is 1. This function of time is continuous otherwise. We'll
+// verify that the output of this system into a discrete system produces samples
+// at the expected instant in time.
 class DeltaFunction : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeltaFunction)

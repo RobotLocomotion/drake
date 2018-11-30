@@ -165,16 +165,16 @@ update function is invoked, while the ● markers show the value _after_ the
 update. In (a), the ○ markers coincide with the original discrete values, while
 in (b), the ● markers do.
 
-Either of the above continuous functions can be produced easily with Drake's
-periodic events, by choosing whether the first update occurs at t=0 or t=h.
-However, for most-convenient intermixing of continuous and discrete elements,
-we recommend the sampling shown in Figure 2(a), which is produced by allowing
-the first events to occur at t=0 as we did in the example above. With that
-method the update that advances the discrete system from step n to step n+1
-occurs at time `t = n*h` as expected, allowing continuous quantities like u(t)
-to be used in the update function. On the other hand, with the sampling in
-Figure 2(b) that update occurs at time `t = (n+1)*h` instead, meaning that the
-value `u(n*h)` would not be available unless it had been previously sampled.
+Which of the two continuous functions above is produced depends on whether the
+first periodic update occurs at time t=0 or t=h. However, for most-convenient
+intermixing of continuous and discrete elements, we recommend the sampling shown
+in Figure 2(a), which is produced by allowing the first events to occur at t=0
+as we did in the example above. With that method the update that advances the
+discrete system from step n to step n+1 occurs at time `t = n*h` as expected,
+allowing continuous quantities like u(t) to be used in the update function. On
+the other hand, with the sampling in Figure 2(b) that update occurs at time
+`t = (n+1)*h` instead, meaning that the value `u(n*h)` would not be available
+unless it had been previously sampled (e.g., via a zero-order hold).
 
 <h3>Timing of Publish vs. DiscreteUpdate in Drake</h3>
 
