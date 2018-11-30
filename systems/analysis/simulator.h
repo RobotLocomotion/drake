@@ -484,16 +484,16 @@ class Simulator {
   bool redetermine_active_witnesses_{true};
 
   // Per step events that are to be handled on every "major time step" (i.e.,
-  // every successful completion of a step). This collection is set within
-  // Initialize().
+  // every successful completion of a step). This collection is constructed
+  // within Initialize().
   std::unique_ptr<CompositeEventCollection<T>> per_step_events_;
 
   // Timed events can be triggered either at a particular time (like an alarm)
-  // or periodically. This collection is set within Initialize().
+  // or periodically. This collection is constructed within Initialize().
   std::unique_ptr<CompositeEventCollection<T>> timed_events_;
 
   // Witnessed events are triggered as a witness function crosses zero during
-  // StepTo(). This collection is set within Initialize().
+  // StepTo(). This collection is constructed within Initialize().
   std::unique_ptr<CompositeEventCollection<T>> witnessed_events_;
 
   // Indicates when a timed or witnessed event needs to be handled on the next

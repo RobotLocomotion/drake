@@ -1200,7 +1200,7 @@ GTEST_TEST(SimulatorTest, SimpleHybridSystemTest) {
   // Simulate forward.
   simulator.StepTo(1.0);
 
-  // Check that the no event was yet performed.
+  // Check that no discrete update has been performed.
   EXPECT_EQ(hybrid_system->num_discrete_updates(), 0);
 
   // There will be a pending event. Handle it by calling StepTo(1.0) one more
