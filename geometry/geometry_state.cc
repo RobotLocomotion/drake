@@ -318,13 +318,6 @@ int GeometryState<T>::NumGeometriesWithRole(FrameId frame_id, Role role) const {
 }
 
 template <typename T>
-const VisualMaterial& GeometryState<T>::get_visual_material(
-    GeometryId geometry_id) const {
-  const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
-  return geometry.visual_material();
-}
-
-template <typename T>
 SourceId GeometryState<T>::RegisterNewSource(const std::string& name) {
   SourceId source_id = SourceId::get_new_id();
   const std::string final_name =
@@ -392,37 +385,6 @@ template <typename T>
 GeometryId GeometryState<T>::RegisterGeometry(
     SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance> geometry) {
-  // Detects if the geometry instance has already been assigned properties and
-  // prepares defaults for assignment if not.
-  optional<IllustrationProperties> illustration;
-  optional<ProximityProperties> proximity;
-
-  // Any roles defined on the geometry instance propagate through automatically.
-  if (geometry != nullptr) {
-    if (!geometry->proximity_properties()) {
-      // NOTE: Default proximity properties have no values.
-      proximity.emplace();
-    }
-    if (!geometry->illustration_properties()) {
-      illustration.emplace();
-      illustration->AddProperty("phong", "diffuse",
-                                geometry->visual_material().diffuse());
-    }
-  }
-
-  GeometryId geometry_id = RegisterGeometryWithoutRole(source_id, frame_id,
-                                                       std::move(geometry));
-
-  if (proximity) AssignRole(source_id, geometry_id, *proximity);
-  if (illustration) AssignRole(source_id, geometry_id, *illustration);
-
-  return geometry_id;
-}
-
-template <typename T>
-GeometryId GeometryState<T>::RegisterGeometryWithoutRole(
-    SourceId source_id, FrameId frame_id,
-    std::unique_ptr<GeometryInstance> geometry) {
   if (geometry == nullptr) {
     throw std::logic_error(
         "Registering null geometry to frame " + to_string(frame_id) +
@@ -471,18 +433,17 @@ GeometryId GeometryState<T>::RegisterGeometryWithoutRole(
   geometries_.emplace(geometry_id,
                       InternalGeometry(source_id, geometry->release_shape(),
                                        frame_id, geometry_id, geometry->name(),
-                                       geometry->pose(), index,
-                                       geometry->visual_material()));
+                                       geometry->pose(), index));
 
   // Any roles defined on the geometry instance propagate through automatically.
-  if (geometry->proximity_properties()) {
-    AssignRole(source_id, geometry_id,
-               std::move(*geometry->mutable_proximity_properties()));
-  }
-
   if (geometry->illustration_properties()) {
     AssignRole(source_id, geometry_id,
                std::move(*geometry->mutable_illustration_properties()));
+  }
+
+  if (geometry->proximity_properties()) {
+    AssignRole(source_id, geometry_id,
+               std::move(*geometry->mutable_proximity_properties()));
   }
 
   return geometry_id;
@@ -534,74 +495,11 @@ GeometryId GeometryState<T>::RegisterGeometryWithParent(
 }
 
 template <typename T>
-GeometryId GeometryState<T>::RegisterGeometryWithParentWithoutRole(
-    SourceId source_id, GeometryId parent_id,
-    std::unique_ptr<GeometryInstance> geometry) {
-  // NOTE: This is currently just a copy-and-paste of the
-  // RegisterGeometryWithParent() method with the call to RegisterGeometry()
-  // changed. In a few more PRs, this will drop back down to only a single
-  // variant.
-
-  // There are three error conditions in the doxygen:.
-  //    1. geometry == nullptr,
-  //    2. source_id is not a registered source, and
-  //    3. parent_id doesn't belong to source_id.
-  //
-  // Only #1 is tested directly. #2 and #3 are tested implicitly during the act
-  // of registering the geometry.
-
-  if (geometry == nullptr) {
-    throw std::logic_error(
-        "Registering null geometry to geometry " + to_string(parent_id) +
-            ", on source " + to_string(source_id) + ".");
-  }
-
-  // This confirms that parent_id exists at all.
-  InternalGeometry& parent_geometry =
-      GetMutableValueOrThrow(parent_id, &geometries_);
-  FrameId frame_id = parent_geometry.frame_id();
-
-  // TODO(SeanCurtis-TRI): Revisit this post-hoc parent patching code for
-  // something more direct. See
-  // https://github.com/RobotLocomotion/drake/issues/10147.
-
-  // This implicitly confirms that source_id is registered (condition #2) and
-  // that frame_id belongs to source_id. By construction, parent_id must
-  // belong to the same source as frame_id, so this tests condition #3.
-  GeometryId new_id = RegisterGeometryWithoutRole(source_id, frame_id,
-                                                  move(geometry));
-
-  // RegisterGeometry stores X_PG into X_FG_ (having assumed that  the
-  // parent was a frame). The following code replaces the stored X_PG value with
-  // the semantically correct value X_FG by concatenating X_FP with X_PG.
-
-  // Transform pose relative to geometry, to pose relative to frame.
-  InternalGeometry& new_geometry = geometries_[new_id];
-  // The call to `RegisterGeometry()` above stashed the pose X_PG into the
-  // X_FG_ vector assuming the parent was the frame. Replace it by concatenating
-  // its pose in parent, with its parent's pose in frame. NOTE: the pose is no
-  // longer available from geometry because of the `move(geometry)`.
-  const Isometry3<double>& X_PG = new_geometry.X_FG();
-  const Isometry3<double>& X_FP = parent_geometry.X_FG();
-  new_geometry.set_geometry_parent(parent_id, X_FP * X_PG);
-  parent_geometry.add_child(new_id);
-  return new_id;
-}
-
-template <typename T>
 GeometryId GeometryState<T>::RegisterAnchoredGeometry(
     SourceId source_id,
     std::unique_ptr<GeometryInstance> geometry) {
   return RegisterGeometry(source_id, InternalFrame::world_frame_id(),
                           std::move(geometry));
-}
-
-template <typename T>
-GeometryId GeometryState<T>::RegisterAnchoredGeometryWithoutRole(
-    SourceId source_id,
-    std::unique_ptr<GeometryInstance> geometry) {
-  return RegisterGeometryWithoutRole(source_id, InternalFrame::world_frame_id(),
-                                     std::move(geometry));
 }
 
 template <typename T>
@@ -618,19 +516,21 @@ void GeometryState<T>::RemoveGeometry(SourceId source_id,
 
 template <typename T>
 bool GeometryState<T>::IsValidGeometryName(
-    FrameId frame_id, const std::string& candidate_name) const {
+    FrameId frame_id, Role role, const std::string& candidate_name) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "Given frame id is not valid: " + to_string(frame_id);
   });
-  // TODO(SeanCurtis-TRI): Test for uniquness after geometry roles are added.
-  return !detail::CanonicalizeStringName(candidate_name).empty();
+  const std::string name = detail::CanonicalizeStringName(candidate_name);
+  if (name.empty()) return false;
+  return NameIsUnique(frame_id, role, name);
 }
 
 template <typename T>
 void GeometryState<T>::AssignRole(SourceId source_id,
                                   GeometryId geometry_id,
                                   ProximityProperties properties) {
-  AssignRoleInternal(source_id, geometry_id, std::move(properties));
+  AssignRoleInternal(source_id, geometry_id, std::move(properties),
+                     Role::kProximity);
 
   InternalGeometry* geometry = GetMutableGeometry(geometry_id);
   // This *must* be non-null, otherwise the internal role assignment would have
@@ -700,7 +600,8 @@ template <typename T>
 void GeometryState<T>::AssignRole(SourceId source_id,
                                   GeometryId geometry_id,
                                   IllustrationProperties properties) {
-  AssignRoleInternal(source_id, geometry_id, std::move(properties));
+  AssignRoleInternal(source_id, geometry_id, std::move(properties),
+                     Role::kIllustration);
   // NOTE: No need to assign to any engines.
 }
 
@@ -1023,10 +924,34 @@ InternalGeometry* GeometryState<T>::GetMutableGeometry(GeometryId id) {
 }
 
 template <typename T>
+bool GeometryState<T>::NameIsUnique(FrameId id, Role role,
+                                    const std::string& name) const {
+  bool unique = true;
+  const InternalFrame& frame = GetValueOrThrow(id, frames_);
+  for (GeometryId geometry_id : frame.child_geometries()) {
+    const InternalGeometry& geometry = geometries_.at(geometry_id);
+    if (geometry.has_role(role) && geometry.name() == name) {
+      unique = false;
+      break;
+    }
+  }
+  return unique;
+}
+
+template <typename T>
+void GeometryState<T>::ThrowIfNameExistsInRole(FrameId id, Role role,
+                                               const std::string& name) const {
+  if (!NameIsUnique(id, role, name)) {
+    throw std::logic_error("The name '" + name + "' has already been used by "
+        "a geometry with the '" + to_string(role) + "' role.");
+  }
+}
+
+template <typename T>
 template <typename PropertyType>
 void GeometryState<T>::AssignRoleInternal(SourceId source_id,
                                           GeometryId geometry_id,
-                                          PropertyType properties) {
+                                          PropertyType properties, Role role) {
   if (!BelongsToSource(geometry_id, source_id)) {
     throw std::logic_error("Given geometry id " + to_string(geometry_id) +
         " does not belong to the given source id " +
@@ -1037,9 +962,17 @@ void GeometryState<T>::AssignRoleInternal(SourceId source_id,
   // `BelongsToSource()` call.
   DRAKE_DEMAND(geometry != nullptr);
 
-  // TODO(SeanCurtis-TRI): Check for name uniqueness in this role. Can't do yet
-  // because *every* geometry gets every role.
-
+  if (!geometry->has_role(role)) {
+    // Only test for name uniqueness if this geometry doesn't already have the
+    // specified role. This is here for two reasons:
+    //   1. If the role has already been assigned, we want that error to
+    //      have precedence -- i.e., the name is irrelevant if the role has
+    //      already been assigned. We rely on SetRole() to detect and throw.
+    //   2. We don't want this to *follow* SetRole(), because we only want to
+    //      set the role if the name is unique -- testing after would leave the
+    //      role assigned.
+    ThrowIfNameExistsInRole(geometry->frame_id(), role, geometry->name());
+  }
   geometry->SetRole(std::move(properties));
 }
 

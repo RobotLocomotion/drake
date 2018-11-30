@@ -50,7 +50,7 @@ BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
 
   ball_frame_id_ = scene_graph->RegisterFrame(
       source_id, GeometryFrame("ball_frame", Isometry3<double>::Identity()));
-  ball_id_ = scene_graph->RegisterGeometryWithoutRole(
+  ball_id_ = scene_graph->RegisterGeometry(
       source_id, ball_frame_id_,
       make_unique<GeometryInstance>(Isometry3<double>::Identity(), /*X_FG*/
                                     make_unique<Sphere>(diameter_ / 2.0),

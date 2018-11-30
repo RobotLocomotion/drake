@@ -129,7 +129,7 @@ void PendulumPlant<T>::RegisterGeometry(
   source_id_ = scene_graph->RegisterSource("pendulum");
 
   // The base.
-  GeometryId id = scene_graph->RegisterAnchoredGeometryWithoutRole(
+  GeometryId id = scene_graph->RegisterAnchoredGeometry(
       source_id_,
       make_unique<GeometryInstance>(Isometry3d(Translation3d(0., 0., .025)),
                                     make_unique<Box>(.05, 0.05, 0.05), "base"));
@@ -140,7 +140,7 @@ void PendulumPlant<T>::RegisterGeometry(
       source_id_, GeometryFrame("arm", Isometry3d::Identity()));
 
   // The arm.
-  id = scene_graph->RegisterGeometryWithoutRole(
+  id = scene_graph->RegisterGeometry(
       source_id_, frame_id_,
       make_unique<GeometryInstance>(
           Isometry3d(Translation3d(0, 0, -params.length() / 2.)),
@@ -149,7 +149,7 @@ void PendulumPlant<T>::RegisterGeometry(
       source_id_, id, MakeDrakeVisualizerProperties(Vector4d(.9, .1, 0, 1)));
 
   // The mass at the end of the arm.
-  id = scene_graph->RegisterGeometryWithoutRole(
+  id = scene_graph->RegisterGeometry(
       source_id_, frame_id_,
       make_unique<GeometryInstance>(
           Isometry3d(Translation3d(0, 0, -params.length())),
