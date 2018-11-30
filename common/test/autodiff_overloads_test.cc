@@ -72,6 +72,15 @@ GTEST_TEST(AutodiffOverloadsTest, ExtractDouble) {
   EXPECT_EQ(ExtractDoubleOrThrow(y), 1.0);
 }
 
+// Tests correctness of nexttoward.
+GTEST_TEST(AutodiffOverloadsTest, NextToward) {
+  const long double inf = std::numeric_limits<long double>::infinity();
+  const double eps = std::numeric_limits<double>::epsilon();
+  Eigen::AutoDiffScalar<Eigen::Vector2d> x;
+  x.value() = 1.0;
+  EXPECT_EQ(nexttoward(x, inf) - 1, eps);
+}
+
 // Tests correctness of isinf.
 GTEST_TEST(AutodiffOverloadsTest, IsInf) {
   Eigen::AutoDiffScalar<Eigen::Vector2d> x;
