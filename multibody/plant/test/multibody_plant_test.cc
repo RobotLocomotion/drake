@@ -15,9 +15,9 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
+#include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/geometry/visual_material.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -45,11 +45,11 @@ using Eigen::VectorXd;
 using geometry::FrameId;
 using geometry::FramePoseVector;
 using geometry::GeometryId;
+using geometry::IllustrationProperties;
 using geometry::PenetrationAsPointPair;
 using geometry::QueryObject;
 using geometry::SceneGraph;
 using geometry::SceneGraphInspector;
-using geometry::VisualMaterial;
 using math::RigidTransform;
 using math::RollPitchYaw;
 using math::RotationMatrix;
@@ -1067,13 +1067,13 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   Vector4<double> sphere1_diffuse{0.9, 0.1, 0.1, 0.5};
   GeometryId sphere1_id = plant.RegisterVisualGeometry(
       sphere1, Isometry3d::Identity(), geometry::Sphere(radius),
-      "visual", VisualMaterial(sphere1_diffuse));
+      "visual", sphere1_diffuse);
   const RigidBody<double>& sphere2 =
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
   Vector4<double> sphere2_diffuse{0.1, 0.9, 0.1, 0.5};
   GeometryId sphere2_id = plant.RegisterVisualGeometry(
       sphere2, Isometry3d::Identity(), geometry::Sphere(radius),
-      "visual", VisualMaterial(sphere2_diffuse));
+      "visual", sphere2_diffuse);
 
   // We are done defining the model.
   plant.Finalize();
@@ -1093,24 +1093,30 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
 
   const SceneGraphInspector<double>& inspector = query_object.inspector();
   {
-    const VisualMaterial& test_material =
-        inspector.GetVisualMaterial(ground_id);
-    EXPECT_TRUE(CompareMatrices(test_material.diffuse(),
-                                VisualMaterial().diffuse(), 0.0,
+    const IllustrationProperties* material =
+        inspector.GetIllustrationProperties(ground_id);
+    ASSERT_NE(material, nullptr);
+    // Undefined property value indicates use of default value.
+    EXPECT_FALSE(material->HasProperty("phong", "diffuse"));
+  }
+
+  // This implicitly assumes that there *is* a "phong"|"diffuse" material. An
+  // exception will be thrown otherwise.
+  auto get_diffuse_color = [&inspector](GeometryId id) -> Vector4<double> {
+    const IllustrationProperties* material =
+        inspector.GetIllustrationProperties(id);
+    return
+        material->GetProperty<Vector4<double>>("phong", "diffuse");
+  };
+  {
+    const Vector4<double>& test_diffuse = get_diffuse_color(sphere1_id);
+    EXPECT_TRUE(CompareMatrices(test_diffuse, sphere1_diffuse, 0.0,
                                 MatrixCompareType::absolute));
   }
 
   {
-    const VisualMaterial& test_material =
-        inspector.GetVisualMaterial(sphere1_id);
-    EXPECT_TRUE(CompareMatrices(test_material.diffuse(), sphere1_diffuse, 0.0,
-                                MatrixCompareType::absolute));
-  }
-
-  {
-    const VisualMaterial& test_material =
-        inspector.GetVisualMaterial(sphere2_id);
-    EXPECT_TRUE(CompareMatrices(test_material.diffuse(), sphere2_diffuse, 0.0,
+    const Vector4<double>& test_diffuse = get_diffuse_color(sphere2_id);
+    EXPECT_TRUE(CompareMatrices(test_diffuse, sphere2_diffuse, 0.0,
                                 MatrixCompareType::absolute));
   }
 }
