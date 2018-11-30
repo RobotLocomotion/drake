@@ -105,5 +105,6 @@ install(
 )
 
 add_lint_tests(
+    cpplint_data = ["//bindings/pydrake:.clang-format"],
     enable_clang_format_lint = True,
 )
