@@ -69,40 +69,40 @@ class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
     // Output yₙ using a Drake "publish" event (occurs at the end of step n).
     DeclarePeriodicEvent(kPeriod, 0.,  // period, offset
                          systems::PublishEvent<double>(
-                             [this](const systems::Context<double>& context_n,
+                             [this](const systems::Context<double>& context,
                                     const systems::PublishEvent<double>&) {
-                               Output(context_n);
+                               Output(context);
                              }));
 
     // Update to xₙ₊₁ (x_np1), using a Drake "discrete update" event (occurs
     // at the beginning of step n+1).
     DeclarePeriodicEvent(kPeriod, 0.,
                          systems::DiscreteUpdateEvent<double>(
-                             [this](const systems::Context<double>& context_n,
+                             [this](const systems::Context<double>& context,
                                     const systems::DiscreteUpdateEvent<double>&,
                                     systems::DiscreteValues<double>* x_np1) {
                                x_np1->get_mutable_vector()
-                                   .set_value(Update(context_n));
+                                   .set_value(Update(context));
                              }));
   }
 
   // Update function xₙ₊₁ = f(n, xₙ).
-  Eigen::Vector2d Update(const systems::Context<double>& context_n) const {
-    const auto& x_n = context_n.get_discrete_state();
+  Eigen::Vector2d Update(const systems::Context<double>& context) const {
+    const auto& x_n = context.get_discrete_state();
     return {x_n[0] + x_n[1], x_n[0]};
   }
 
   // Output function yₙ = g(n, xₙ). (Here, just writes 'n: Fₙ' to cout.)
-  void Output(const systems::Context<double>& context_n) const {
-    const double t = context_n.get_time();
+  void Output(const systems::Context<double>& context) const {
+    const double t = context.get_time();
     const int n = static_cast<int>(std::round(t / kPeriod));
-    const int F_n = context_n.get_discrete_state()[0];  // xₙ[0]
+    const int F_n = context.get_discrete_state()[0];  // xₙ[0]
     std::cout << n << ": " << F_n << "\n";
   }
 
   // Set initial conditions x₀.
-  void Initialize(systems::Context<double>* context_0) const {
-    auto& x_0 = context_0->get_mutable_discrete_state();
+  void Initialize(systems::Context<double>* context) const {
+    auto& x_0 = context->get_mutable_discrete_state();
     x_0.get_mutable_vector().set_value(Eigen::Vector2d(0., 1.));
   }
 
