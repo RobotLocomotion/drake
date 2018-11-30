@@ -39,7 +39,7 @@ TEST_F(InfeasibleLinearProgramTest0, TestSnopt) {
 TEST_F(UnboundedLinearProgramTest0, TestSnopt) {
   prog_->SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
   SnoptSolver solver;
-  if (solver.available()) {
+  if (solver.available() && !solver.is_bounded_lp_broken()) {
     const auto solver_result = solver.Solve(*prog_);
     EXPECT_EQ(solver_result, SolutionResult::kUnbounded);
     EXPECT_EQ(prog_->GetOptimalCost(),

@@ -94,7 +94,7 @@ GTEST_TEST(URDFParserTest, ParseJointProperties) {
 
 GTEST_TEST(URDFParserTest, TestParseMaterial) {
   const string resource_dir{
-    "drake/multibody/multibody_tree/parsing/test/urdf_parser_test/"};
+    "drake/multibody/parsing/test/urdf_parser_test/"};
   const string file_no_conflict_1 = FindResourceOrThrow(
       resource_dir + "non_conflicting_materials_1.urdf");
   const string file_no_conflict_2 = FindResourceOrThrow(
@@ -125,7 +125,7 @@ GTEST_TEST(URDFParserTest, TestParseMaterial) {
 
 GTEST_TEST(URDFParserTest, TestDuplicateMaterials) {
   const string resource_dir{
-    "drake/multibody/multibody_tree/parsing/test/urdf_parser_test/"};
+    "drake/multibody/parsing/test/urdf_parser_test/"};
   const string file_duplicate = FindResourceOrThrow(
       resource_dir + "duplicate_materials.urdf");
 
@@ -136,7 +136,7 @@ GTEST_TEST(URDFParserTest, TestDuplicateMaterials) {
 
 GTEST_TEST(URDFParserTest, TestConflictingMaterials) {
   const string resource_dir{
-    "drake/multibody/multibody_tree/parsing/test/urdf_parser_test/"};
+    "drake/multibody/parsing/test/urdf_parser_test/"};
   const string file_conflict = FindResourceOrThrow(
       resource_dir + "conflicting_materials.urdf");
 
@@ -162,7 +162,7 @@ string ReadTextFile(const string& file) {
 // This was added as a result of #4248.
 GTEST_TEST(URDFParserTest, TestAddWithQuaternionFloatingDof) {
   const string resource_dir{
-    "drake/multibody/multibody_tree/parsing/test/urdf_parser_test/"};
+    "drake/multibody/parsing/test/urdf_parser_test/"};
   const string model_file = FindResourceOrThrow(
       resource_dir + "zero_dof_robot.urdf");
   const string model_string = ReadTextFile(model_file);
@@ -211,7 +211,7 @@ GTEST_TEST(URDFParserTest,
 // This prevents a regression of #5928.
 GTEST_TEST(URDFParserTest, TestAddModelInstanceFromUrdfStringWeldToFrame) {
   const string resource_dir{
-    "drake/multibody/multibody_tree/parsing/test/urdf_parser_test/"};
+    "drake/multibody/parsing/test/urdf_parser_test/"};
   const string model_file = FindResourceOrThrow(
       resource_dir + "non_conflicting_materials_1.urdf");
   const string model_string = ReadTextFile(model_file);

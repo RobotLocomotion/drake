@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
@@ -377,6 +378,17 @@ TEST_F(LeafContextTest, GetAbstractInput) {
   EXPECT_EQ(nullptr, ReadAbstractInputPort(context, 1));
 }
 
+TEST_F(LeafContextTest, ToString) {
+  const std::string str = context_.to_string();
+  using ::testing::HasSubstr;
+  EXPECT_THAT(str, HasSubstr("Time: 12"));
+  EXPECT_THAT(str, HasSubstr("5 continuous states"));
+  EXPECT_THAT(str, HasSubstr("2 discrete state groups"));
+  EXPECT_THAT(str, HasSubstr("1 abstract state"));
+  EXPECT_THAT(str, HasSubstr("2 numeric parameter groups"));
+  EXPECT_THAT(str, HasSubstr("1 abstract parameters"));
+}
+
 // Tests that items can be stored and retrieved in the cache.
 TEST_F(LeafContextTest, SetAndGetCache) {
   CacheIndex index = context_.get_mutable_cache()
@@ -524,7 +536,7 @@ TEST_F(LeafContextTest, Clone) {
   // Verify that the parameters were copied.
   LeafContext<double>* leaf_clone =
       dynamic_cast<LeafContext<double>*>(clone.get());
-  EXPECT_EQ(2, leaf_clone->num_numeric_parameters());
+  EXPECT_EQ(2, leaf_clone->num_numeric_parameter_groups());
   const BasicVector<double>& param0 = leaf_clone->get_numeric_parameter(0);
   EXPECT_EQ(1.0, param0[0]);
   EXPECT_EQ(2.0, param0[1]);

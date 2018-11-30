@@ -12,6 +12,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/shape_specification.h"
@@ -226,15 +227,15 @@ class GeometryStateTest : public ::testing::Test {
     }
 
     // Create anchored geometry.
-    pose = Isometry3<double>::Identity();
-    pose.translation() << 0, 0, -1;
+    X_WA_ = Isometry3<double>::Identity();
+    X_WA_.translation() << 0, 0, -1;
     // This simultaneously tests the named registration function and
     // _implicitly_ tests registration of geometry against the world frame id
     // (as that is how `RegisterAnchoredGeometry()` works.
     anchored_geometry_ = geometry_state_.RegisterAnchoredGeometry(
         source_id_,
         make_unique<GeometryInstance>(
-            pose, make_unique<Box>(100, 100, 2), anchored_name_));
+            X_WA_, make_unique<Box>(100, 100, 2), anchored_name_));
     return source_id_;
   }
 
@@ -332,8 +333,10 @@ class GeometryStateTest : public ::testing::Test {
   vector<Isometry3<double>> X_WF_;
   // The poses of the frames in the parent's frame.
   vector<Isometry3<double>> X_PF_;
-  // The poses of the geometries in the parent frame.
+  // The poses of the dynamic geometries in the parent frame.
   vector<Isometry3<double>> X_FG_;
+  // The pose of the anchored geometry in the world frame.
+  Isometry3<double> X_WA_;
   // The default source name.
   const std::string kSourceName{"default_source"};
 };
@@ -381,6 +384,9 @@ TEST_F(GeometryStateTest, GeometryStatistics) {
   // Dummy source + self source.
   EXPECT_EQ(geometry_state_.get_num_sources(), 2);
   EXPECT_EQ(geometry_state_.get_num_frames(), single_tree_frame_count());
+  EXPECT_EQ(geometry_state_.NumFramesForSource(source_id_),
+            single_tree_frame_count() - 1);  // subtract the world frame.
+  EXPECT_EQ(geometry_state_.NumFramesForSource(SourceId::get_new_id()), 0);
   EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(),
             single_tree_dynamic_geometry_count());
   EXPECT_EQ(geometry_state_.GetNumAnchoredGeometries(),
@@ -548,6 +554,7 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
       EXPECT_FALSE(geometry.parent_id());
       EXPECT_EQ(geometry.name(), geometry_names_[i]);
       EXPECT_EQ(geometry.index(), i);
+      EXPECT_TRUE(geometry.proximity_index().is_valid());
       EXPECT_EQ(geometry.child_geometry_ids().size(), 0);
 
       // Note: There are no geometries parented to other geometries. The results
@@ -566,8 +573,7 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
     }
   }
   EXPECT_EQ(static_cast<int>(gs_tester_.get_geometry_world_poses().size()),
-            single_tree_dynamic_geometry_count());
-  // Includes the frames we've added (kFrameCount) plus the world frame.
+            single_tree_total_geometry_count());
   EXPECT_EQ(gs_tester_.get_frame_parent_poses().size(), kFrameCount + 1);
 }
 
@@ -577,10 +583,20 @@ TEST_F(GeometryStateTest, GetNumGeometryTests) {
 
   EXPECT_EQ(single_tree_total_geometry_count(),
             geometry_state_.get_num_geometries());
+  EXPECT_EQ(single_tree_total_geometry_count(),
+            geometry_state_.GetNumGeometriesWithRole(Role::kProximity));
+  EXPECT_EQ(single_tree_total_geometry_count(),
+            geometry_state_.GetNumGeometriesWithRole(Role::kIllustration));
 
   for (int i = 0; i < kFrameCount; ++i) {
     EXPECT_EQ(kGeometryCount,
               geometry_state_.GetNumFrameGeometries(frames_[i]));
+    EXPECT_EQ(kGeometryCount,
+              geometry_state_.GetNumFrameGeometriesWithRole(frames_[i],
+                                                            Role::kProximity));
+    EXPECT_EQ(kGeometryCount,
+              geometry_state_.GetNumFrameGeometriesWithRole(
+                  frames_[i], Role::kIllustration));
   }
 }
 
@@ -915,6 +931,240 @@ TEST_F(GeometryStateTest, RegisterAnchoredNullGeometry) {
       "Registering null geometry to frame \\d+, on source \\d+.");
 }
 
+// Tests the RemoveGeometry functionality. Ultimately, this confirms that the
+// re-ordering of geometries is correct. By removing geometry 0 (the first
+// registered geometry (and first dynamic geometry), two indices will change:
+//  GeometryIndex(0) will refer to the anchored geometry (the geometry which
+//    previously had the highest GeometryIndex value).
+//  ProximityIndex(0) will refer to the last _dynamic_ geometry (the
+//    dynamic geometry that previously had the highest ProximityIndex value.)
+TEST_F(GeometryStateTest, RemoveGeometry) {
+  SourceId s_id = SetUpSingleSourceTree();
+  // Pose all of the frames to the specified poses in their parent frame.
+  FramePoseVector<double> poses(source_id_, frames_);
+  poses.clear();
+  for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
+    poses.set_value(frames_[f], X_PF_[f]);
+  }
+  gs_tester_.SetFramePoses(poses);
+  gs_tester_.FinalizePoseUpdate();
+
+  // The geometry to remove, its parent frame, and its engine index.
+  GeometryId g_id = geometries_[0];
+  FrameId f_id = frames_[0];
+  auto proximity_index = gs_tester_.get_geometries().at(g_id).proximity_index();
+  // Confirm initial state.
+  ASSERT_EQ(geometry_state_.GetFrameId(g_id), f_id);
+  EXPECT_EQ(geometry_state_.get_num_geometries(),
+            single_tree_total_geometry_count());
+  EXPECT_NE(
+      gs_tester_.get_geometries().at(geometries_.back()).proximity_index(),
+      proximity_index);
+  EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(),
+            single_tree_dynamic_geometry_count());
+
+  geometry_state_.RemoveGeometry(s_id, g_id);
+
+  EXPECT_EQ(geometry_state_.get_num_geometries(),
+            single_tree_total_geometry_count() - 1);
+  EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(),
+            single_tree_dynamic_geometry_count() - 1);
+
+  EXPECT_FALSE(gs_tester_.get_frames().at(f_id).has_child(g_id));
+  EXPECT_EQ(gs_tester_.get_geometries().count(g_id), 0);
+
+  // Confirm GeometryIndex(0) now maps to the anchored geometry.
+  GeometryId last_geometry_id = anchored_geometry_;
+  const auto& last_geometry =
+      gs_tester_.get_geometries().at(last_geometry_id);
+  EXPECT_EQ(last_geometry.proximity_index(), proximity_index);
+  EXPECT_EQ(gs_tester_.get_geometry_index_id_map()[0], last_geometry_id);
+
+  // Confirm that ProximityIndex(0) belongs to the last dynamic geometry --
+  // also confirm that the X_WG_ quantity indexed by proximity index points to
+  // that geometry's world pose.
+  EXPECT_EQ(
+      gs_tester_.get_geometries().at(geometries_.back()).proximity_index(),
+      proximity_index);
+  Isometry3<double> X_WG = X_WF_.back() * X_FG_.back();
+  EXPECT_TRUE(CompareMatrices(gs_tester_.get_geometry_world_poses()[0].matrix(),
+                              X_WG.matrix()));
+}
+
+// Tests the RemoveGeometry functionality in which the geometry removed has
+// geometry children.
+TEST_F(GeometryStateTest, RemoveGeometryTree) {
+  SourceId s_id = SetUpSingleSourceTree();
+  // Pose all of the frames to the specified poses in their parent frame.
+  FramePoseVector<double> poses(source_id_, frames_);
+  poses.clear();
+  for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
+    poses.set_value(frames_[f], X_PF_[f]);
+  }
+  gs_tester_.SetFramePoses(poses);
+  gs_tester_.FinalizePoseUpdate();
+
+  // The geometry to remove, its parent frame, and its proximity index.
+  GeometryId root_id = geometries_[0];
+  FrameId f_id = frames_[0];
+  auto proximity_index =
+      gs_tester_.get_geometries().at(root_id).proximity_index();
+  // Confirm that the first geometry belongs to the first frame.
+  ASSERT_EQ(geometry_state_.GetFrameId(root_id), f_id);
+  // Hang geometry from the first geometry.
+  GeometryId g_id = geometry_state_.RegisterGeometryWithParent(
+      s_id, root_id,
+      make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+                                    unique_ptr<Shape>(new Sphere(1)), "leaf"));
+  EXPECT_EQ(geometry_state_.get_num_geometries(),
+            single_tree_total_geometry_count() + 1);
+  EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(),
+            single_tree_dynamic_geometry_count() + 1);
+  EXPECT_EQ(geometry_state_.GetFrameId(g_id), f_id);
+  EXPECT_EQ(gs_tester_.get_geometries().at(g_id).proximity_index(),
+            geometries_.size());
+
+  geometry_state_.RemoveGeometry(s_id, root_id);
+  EXPECT_EQ(geometry_state_.get_num_geometries(),
+            single_tree_total_geometry_count() - 1);
+  EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(),
+            single_tree_dynamic_geometry_count() - 1);
+
+  const auto& frame = gs_tester_.get_frames().at(f_id);
+  EXPECT_FALSE(frame.has_child(root_id));
+  EXPECT_FALSE(frame.has_child(g_id));
+  EXPECT_EQ(gs_tester_.get_geometries().count(root_id), 0);
+  EXPECT_EQ(gs_tester_.get_geometries().count(g_id), 0);
+
+  // Deleting a tree of geometry is a bottom-up operation. That means the newly
+  // added leaf geometry will be deleted first. By construction, it *is* the
+  // last geometry added (highest proximity index and highest geometry index)
+  // so no index swapping will take place to remove it. However, there will be
+  // swapping akin to that in the RemoveGeometry() test.
+
+  // Confirm GeometryIndex(0) now maps to the anchored geometry.
+  GeometryId last_geometry_id = anchored_geometry_;
+  const auto& last_geometry =
+      gs_tester_.get_geometries().at(last_geometry_id);
+  EXPECT_EQ(last_geometry.proximity_index(), proximity_index);
+  EXPECT_EQ(gs_tester_.get_geometry_index_id_map()[0], last_geometry_id);
+
+  // Confirm that ProximityIndex(0) belongs to the last dynamic geometry --
+  // also confirm that the X_WG_ quantity indexed by proximity index points to
+  // that geometry's world pose.
+  EXPECT_EQ(
+      gs_tester_.get_geometries().at(geometries_.back()).proximity_index(),
+      proximity_index);
+  Isometry3<double> X_WG = X_WF_.back() * X_FG_.back();
+  EXPECT_TRUE(CompareMatrices(gs_tester_.get_geometry_world_poses()[0].matrix(),
+                              X_WG.matrix()));
+}
+
+// Tests the RemoveGeometry functionality in which the geometry is a child of
+// another geometry (and has no child geometries itself).
+TEST_F(GeometryStateTest, RemoveChildLeaf) {
+  SourceId s_id = SetUpSingleSourceTree();
+  // The geometry parent and frame to which it belongs.
+  GeometryId parent_id = geometries_[0];
+  FrameId frame_id = frames_[0];
+  // Confirm that the first geometry belongs to the first frame.
+  ASSERT_EQ(geometry_state_.GetFrameId(parent_id), frame_id);
+  // Hang geometry from the first geometry.
+  GeometryId g_id = geometry_state_.RegisterGeometryWithParent(
+      s_id, parent_id,
+      make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+                                    unique_ptr<Shape>(new Sphere(1)), "leaf"));
+  EXPECT_EQ(geometry_state_.get_num_geometries(),
+            single_tree_total_geometry_count() + 1);
+  EXPECT_EQ(geometry_state_.GetFrameId(g_id), frame_id);
+
+  geometry_state_.RemoveGeometry(s_id, g_id);
+
+  EXPECT_EQ(geometry_state_.get_num_geometries(),
+            single_tree_total_geometry_count());
+  EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(), geometries_.size());
+  EXPECT_EQ(geometry_state_.GetFrameId(parent_id), frame_id);
+
+  EXPECT_FALSE(gs_tester_.get_frames().at(frame_id).has_child(g_id));
+  EXPECT_TRUE(gs_tester_.get_frames().at(frame_id).has_child(parent_id));
+  EXPECT_FALSE(gs_tester_.get_geometries().at(parent_id).has_child(g_id));
+
+  // The geometry we deleted is the *last*; the engine indices of all other
+  // geometries should be unchanged.
+  for (size_t i = 0; i < geometries_.size(); ++i) {
+    EXPECT_EQ(gs_tester_.get_geometry_index_id_map().at(i),
+              geometries_[i]);
+  }
+}
+
+// Tests the response to invalid use of RemoveGeometry.
+TEST_F(GeometryStateTest, RemoveGeometryInvalid) {
+  SourceId s_id = SetUpSingleSourceTree();
+
+  // Case: Invalid source id, valid geometry id.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RemoveGeometry(SourceId::get_new_id(),
+                                     geometries_[0]),
+      std::logic_error,
+      "Referenced geometry source \\d+ is not registered.");
+
+  // Case: Invalid geometry id, valid source id.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RemoveGeometry(s_id, GeometryId::get_new_id()),
+      std::logic_error,
+      "Referenced geometry \\d+ has not been registered.");
+
+  // Case: Valid geometry and source, but geometry belongs to different source.
+  SourceId s_id2 = geometry_state_.RegisterNewSource("new_source");
+  FrameId frame_id = geometry_state_.RegisterFrame(s_id2, *frame_);
+  EXPECT_EQ(geometry_state_.get_num_frames(), single_tree_frame_count() + 1);
+  GeometryId g_id = geometry_state_.RegisterGeometry(
+      s_id2, frame_id,
+      make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+                                    unique_ptr<Shape>(new Sphere(1)), "new"));
+  EXPECT_EQ(geometry_state_.get_num_geometries(),
+            single_tree_total_geometry_count() + 1);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RemoveGeometry(s_id, g_id),
+      std::logic_error,
+      "Trying to remove geometry \\d+ from source \\d+.+geometry doesn't "
+          "belong.+");
+}
+
+// Tests removal of anchored geometry.
+TEST_F(GeometryStateTest, RemoveAnchoredGeometry) {
+  SourceId s_id = SetUpSingleSourceTree();
+
+  const Vector3<double> normal{0, 1, 0};
+  const Vector3<double> point{1, 1, 1};
+  const auto anchored_id_1 = geometry_state_.RegisterAnchoredGeometry(
+      s_id,
+      make_unique<GeometryInstance>(HalfSpace::MakePose(normal, point),
+                                    make_unique<HalfSpace>(), "anchored1"));
+  // Confirm conditions of having added the anchored geometry.
+  EXPECT_EQ(gs_tester_.get_geometry_index_id_map().size(),
+            single_tree_total_geometry_count() + 1);
+  EXPECT_TRUE(geometry_state_.BelongsToSource(anchored_id_1, s_id));
+  EXPECT_EQ(gs_tester_.GetGeometry(anchored_id_1)->proximity_index(), 1);
+
+  geometry_state_.RemoveGeometry(s_id, anchored_geometry_);
+
+  EXPECT_EQ(gs_tester_.GetGeometry(anchored_geometry_), nullptr);
+
+  // Two indices move:
+  //  The new anchored geometry gets the geometry index of the old anchored
+  //     geometry.
+  //  The new anchored geometry engine index goes down to zero.
+  EXPECT_EQ(gs_tester_.get_geometry_index_id_map().size(),
+            single_tree_total_geometry_count());
+  EXPECT_EQ(gs_tester_.get_geometry_index_id_map().back(),
+            anchored_id_1);
+  // The highest *index* is always count - 1.
+  EXPECT_EQ(gs_tester_.get_geometries().at(anchored_id_1).index(),
+            single_tree_total_geometry_count() - 1);
+  EXPECT_EQ(gs_tester_.get_geometries().at(anchored_id_1).proximity_index(), 0);
+}
+
 // Confirms the behavior for requesting geometry poses with a bad geometry
 // identifier. The basic behavior is tested implicitly in other tests because
 // they rely on them to validate state.
@@ -1203,10 +1453,27 @@ TEST_F(GeometryStateTest, ExcludeCollisionsWithin) {
 
   // Frames 0 & 1 do *not* have colliding geometry; adding a filter should have
   // *no* impact on the number of reported collisions.
+
+  // Confirm that geometry pairs (i, j) are reported as initially _not_ filtered
+  // from collisions where i is a geometry belonging to frame 0 and j is a
+  // geometry belonging to frame 1.
+  for (int i = 0; i < kGeometryCount; ++i) {
+    for (int j = kGeometryCount; j < kGeometryCount * 2; ++j) {
+      EXPECT_FALSE(geometry_state_.CollisionFiltered(
+          geometries_[i], geometries_[j]));
+    }
+  }
   geometry_state_.ExcludeCollisionsWithin(
       GeometrySet({anchored_geometry_}, {frames_[0], frames_[1]}));
   pairs = geometry_state_.ComputePointPairPenetration();
   ASSERT_EQ(static_cast<int>(pairs.size()), expected_collisions);
+  // Now confirm that collision filtering is reported.
+  for (int i = 0; i < kGeometryCount; ++i) {
+    for (int j = kGeometryCount; j < kGeometryCount * 2; ++j) {
+      EXPECT_TRUE(geometry_state_.CollisionFiltered(
+          geometries_[i], geometries_[j]));
+    }
+  }
 
   // Frame 2 has *two* geometries that collide with the anchored geometry. This
   // eliminates those collisions.
@@ -1309,6 +1576,37 @@ TEST_F(GeometryStateTest, CrossCollisionFilterExceptions) {
           "SceneGraph: \\d+");
 }
 
+// Test that the appropriate error messages are dispatched.
+TEST_F(GeometryStateTest, CollisionFilteredExceptions) {
+  SetUpSingleSourceTree();
+
+  // Base case: Two geometries on same frame *are* filtered.
+  EXPECT_TRUE(
+      geometry_state_.CollisionFiltered(geometries_[0], geometries_[1]));
+
+  GeometryId bad_id = GeometryId::get_new_id();
+
+  // Case: First geometry is bad.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.CollisionFiltered(bad_id, geometries_[0]),
+      std::logic_error,
+      "Can't report collision filter status between geometries .* " +
+          to_string(bad_id) + " is not a valid geometry");
+
+  // Case: Second geometry is bad.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.CollisionFiltered(geometries_[0], bad_id),
+      std::logic_error,
+      "Can't report collision filter status between geometries .* " +
+          to_string(bad_id) + " is not a valid geometry");
+
+  // Case: Both geometries are bad.
+  DRAKE_EXPECT_THROWS_MESSAGE(geometry_state_.CollisionFiltered(bad_id, bad_id),
+                              std::logic_error,
+                              "Can't report collision filter status between "
+                              "geometries .* neither id is a valid geometry");
+}
+
 // Tests the ability to query for a geometry from the name of a geometry.
 TEST_F(GeometryStateTest, GetGeometryIdFromName) {
   SetUpSingleSourceTree();
@@ -1319,38 +1617,46 @@ TEST_F(GeometryStateTest, GetGeometryIdFromName) {
       GeometryId expected_id = geometries_[g_index];
       // Look up with the canonical name.
       EXPECT_EQ(geometry_state_.GetGeometryFromName(frames_[f],
+                                                    Role::kProximity,
                                                     geometry_names_[g_index]),
                 expected_id);
       // Look up with non-canonical name.
       EXPECT_EQ(geometry_state_.GetGeometryFromName(
-                    frames_[f], " " + geometry_names_[g_index]),
+                    frames_[f], Role::kProximity,
+                    " " + geometry_names_[g_index]),
                 expected_id);
     }
   }
 
   // Grab anchored.
-  EXPECT_EQ(geometry_state_.GetGeometryFromName(
-      InternalFrame::world_frame_id(),
-      anchored_name_),
-            anchored_geometry_);
+  EXPECT_EQ(
+      geometry_state_.GetGeometryFromName(InternalFrame::world_frame_id(),
+                                          Role::kProximity, anchored_name_),
+      anchored_geometry_);
+
   // Failure cases.
 
   // Bad frame id.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.GetGeometryFromName(FrameId::get_new_id(), "irrelevant"),
+      geometry_state_.GetGeometryFromName(FrameId::get_new_id(),
+                                          Role::kUnassigned, "irrelevant"),
       std::logic_error, "Referenced frame \\d+ has not been registered.");
 
   // Bad *anchored* geometry name.
   const FrameId world_id = gs_tester_.get_world_frame();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.GetGeometryFromName(world_id, "bad"), std::logic_error,
-      "The frame 'world' .\\d+. has no geometry with the canonical name .+");
+      geometry_state_.GetGeometryFromName(world_id, Role::kUnassigned, "bad"),
+      std::logic_error,
+      "The frame 'world' .\\d+. has no geometry with the role 'unassigned' "
+      "and the canonical name '.+'");
 
   // Bad *dynamic* geometry name.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.GetGeometryFromName(frames_[0], "bad_name"),
+      geometry_state_.GetGeometryFromName(frames_[0], Role::kUnassigned,
+                                          "bad_name"),
       std::logic_error,
-      "The frame '.+?' .\\d+. has no geometry with the canonical name .+");
+      "The frame '.+?' .\\d+. has no geometry with the role 'unassigned' and "
+      "the canonical name '.+'");
 }
 
 // Confirms that the name *stored* with the geometry is the trimmed version of
@@ -1431,6 +1737,55 @@ TEST_F(GeometryStateTest, GeometryNameValidation) {
   for (const std::string& s : {"\n", " \n\t", " \f", "\v", "\r", "\ntest"}) {
     EXPECT_TRUE(geometry_state_.IsValidGeometryName(frames_[0], s));
   }
+}
+
+// Tests the conditions in which `AssignRole()` throws an exception.
+TEST_F(GeometryStateTest, RoleAssignExceptions) {
+  SetUpSingleSourceTree();
+
+  // NOTE: On the basis that all AssignRole variants ultimately call the same
+  // underlying method, this only exercises one variant to represent all. If
+  // they no longer invoke the same underlying method, this test should change
+  // accordingly.
+
+  // Invalid source.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.AssignRole(SourceId::get_new_id(), geometries_[0],
+                                 ProximityProperties()),
+      std::logic_error,
+      "Referenced geometry source \\d+ is not registered.");
+
+  // Invalid geometry id.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.AssignRole(source_id_, GeometryId::get_new_id(),
+                                 ProximityProperties()),
+      std::logic_error,
+      "Referenced geometry \\d+ has not been registered.");
+
+  // Geometry not owned by source.
+  SourceId other_source = geometry_state_.RegisterNewSource("alt_source");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.AssignRole(other_source, geometries_[0],
+                                 ProximityProperties()),
+      std::logic_error,
+      "Given geometry id \\d+ does not belong to the given source .*");
+
+  // Redefinition of role - test each role individually to make sure it has
+  // the right error message.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.AssignRole(source_id_, geometries_[0],
+                                 ProximityProperties()),
+      std::logic_error,
+      "Geometry already has proximity role assigned");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.AssignRole(source_id_, geometries_[0],
+                                 IllustrationProperties()),
+      std::logic_error,
+      "Geometry already has illustration role assigned");
+
+  // TODO(SeanCurtis-TRI): When role assignment is delayed, add a geometry with
+  // the name of an *exisiting* geometry and show it breaks when the duplicate
+  // role is assigned.
 }
 
 }  // namespace

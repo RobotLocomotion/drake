@@ -153,6 +153,11 @@ class Simulator {
   ///          time) in the owned context *before calling StepTo()*.
   void Initialize();
 
+  /// Create a %Simulator which additionally maintains ownership of the System.
+  Simulator(std::unique_ptr<const System<T>> system,
+            std::unique_ptr<Context<T>> context = nullptr);
+
+
   /// Advances the System's trajectory until `boundary_time` is reached in
   /// the context or some other termination condition occurs. A variety of
   /// `std::runtime_error` conditions are possible here, as well as error
@@ -384,6 +389,11 @@ class Simulator {
   const System<T>& get_system() const { return system_; }
 
  private:
+  // All constructors delegate to here.
+  Simulator(const System<T>* system,
+            std::unique_ptr<const System<T>> owned_system,
+            std::unique_ptr<Context<T>> context);
+
   void HandleUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events);
 
@@ -427,6 +437,11 @@ class Simulator {
 
   static constexpr double kDefaultAccuracy = 1e-3;  // 1/10 of 1%.
   static constexpr double kDefaultInitialStepSizeAttempt = 1e-3;
+
+  // Do not use this.  This is valid iff the constructor is passed a
+  // unique_ptr (allowing the Simulator to maintain ownership).  Use the
+  // system_ variable instead, which is valid always.
+  const std::unique_ptr<const System<T>> owned_system_;
 
   const System<T>& system_;              // Just a reference; not owned.
   std::unique_ptr<Context<T>> context_;  // The trajectory Context.
@@ -507,7 +522,20 @@ class Simulator {
 template <typename T>
 Simulator<T>::Simulator(const System<T>& system,
                         std::unique_ptr<Context<T>> context)
-    : system_(system), context_(std::move(context)) {
+    : Simulator(&system, nullptr, std::move(context)) {}
+
+template <typename T>
+Simulator<T>::Simulator(std::unique_ptr<const System<T>> owned_system,
+                        std::unique_ptr<Context<T>> context) :
+    Simulator(nullptr, std::move(owned_system), std::move(context)) {}
+
+template <typename T>
+Simulator<T>::Simulator(const System<T>* system,
+                        std::unique_ptr<const System<T>> owned_system,
+                        std::unique_ptr<Context<T>> context)
+    : owned_system_(std::move(owned_system)),
+      system_(owned_system_ ? *owned_system_ : *system),
+      context_(std::move(context)) {
   // Setup defaults that should be generally reasonable.
   const double max_step_size = 0.1;
   const double initial_step_size = 1e-4;

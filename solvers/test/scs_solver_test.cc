@@ -202,6 +202,7 @@ INSTANTIATE_TEST_CASE_P(
 TEST_P(QuadraticProgramTest, TestQP) {
   ScsSolver solver;
   if (solver.available()) {
+    prob()->prog()->SetSolverOption(ScsSolver::id(), "verbose", 0);
     prob()->RunProblem(&solver);
   }
 }
@@ -245,6 +246,29 @@ GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   if (scs_solver.available()) {
     SolveEigenvalueProblem(scs_solver, 1E-5);
   }
+}
+
+GTEST_TEST(TestScs, SetOptions) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x(0) + x(1) >= 1);
+  prog.AddQuadraticCost(x(0) * x(0) + x(1) * x(1));
+
+  MathematicalProgramResult result;
+  ScsSolver solver;
+  solver.Solve(prog, {}, {}, &result);
+  const int iter_solve =
+      result.get_solver_details().GetValue<ScsSolverDetails>().iter;
+  const int solved_status =
+      result.get_solver_details().GetValue<ScsSolverDetails>().scs_status;
+  DRAKE_DEMAND(iter_solve >= 2);
+  SolverOptions solver_options;
+  // Now we require that SCS can only take half of the iterations before
+  // termination. We expect now SCS cannot solve the problem.
+  solver_options.SetOption(solver.solver_id(), "max_iters", iter_solve / 2);
+  solver.Solve(prog, {}, solver_options, &result);
+  EXPECT_NE(result.get_solver_details().GetValue<ScsSolverDetails>().scs_status,
+            solved_status);
 }
 }  // namespace test
 }  // namespace solvers

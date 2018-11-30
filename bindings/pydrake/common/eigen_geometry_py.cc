@@ -1,4 +1,5 @@
 #include <cmath>
+#include <stdexcept>
 
 #include "pybind11/pybind11.h"
 
@@ -33,15 +34,15 @@ template <typename T>
 void CheckRotMat(const Matrix3<T>& R) {
   // See `ExpectRotMat`.
   const T identity_error =
-      (R * R.transpose() - Eigen::Matrix<T, 3, 3>::Identity())
+      (R * R.transpose() - Matrix3<T>::Identity())
       .array().abs().maxCoeff();
-  DRAKE_THROW_UNLESS(
-      identity_error < kCheckTolerance &&
-      "Rotation matrix is not orthonormal");
+  if (identity_error >= kCheckTolerance) {
+    throw std::logic_error("Rotation matrix is not orthonormal");
+  }
   const T det_error = fabs(R.determinant() - 1);
-  DRAKE_THROW_UNLESS(
-    det_error < kCheckTolerance &&
-    "Rotation matrix violates right-hand rule");
+  if (det_error >= kCheckTolerance) {
+    throw std::logic_error("Rotation matrix violates right-hand rule");
+  }
 }
 
 template <typename T>
@@ -51,25 +52,25 @@ void CheckIsometry(const Isometry3<T>& X) {
   bottom_expected << 0, 0, 0, 1;
   const T bottom_error =
       (X.matrix().bottomRows(1) - bottom_expected).array().abs().maxCoeff();
-  DRAKE_THROW_UNLESS(
-      bottom_error < kCheckTolerance &&
-      "Homogeneous matrix is improperly scaled.");
+  if (bottom_error >= kCheckTolerance) {
+    throw std::logic_error("Homogeneous matrix is improperly scaled.");
+  }
 }
 
 template <typename T>
 void CheckQuaternion(const Eigen::Quaternion<T>& q) {
   const T norm_error = fabs(q.coeffs().norm() - 1);
-  DRAKE_THROW_UNLESS(
-      norm_error < kCheckTolerance &&
-      "Quaternion is not normalized");
+  if (norm_error >= kCheckTolerance) {
+    throw std::logic_error("Quaternion is not normalized");
+  }
 }
 
 template <typename T>
 void CheckAngleAxis(const Eigen::AngleAxis<T>& value) {
   const T norm_error = fabs(value.axis().norm() - 1);
-  DRAKE_THROW_UNLESS(
-      norm_error < kCheckTolerance &&
-      "Axis is not normalized");
+  if (norm_error >= kCheckTolerance) {
+    throw std::logic_error("Axis is not normalized");
+  }
 }
 
 }  // namespace

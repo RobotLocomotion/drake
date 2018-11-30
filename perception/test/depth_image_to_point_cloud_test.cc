@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/systems/sensors/camera_info.h"
 
 namespace drake {
@@ -55,7 +56,7 @@ class DepthImageToPointCloudTest : public ::testing::Test {
 // Verifies that the system computes the correct point cloud for a given depth
 // image.
 TEST_F(DepthImageToPointCloudTest, ConversionAndNanValueTest) {
-  const float kDistanceTolerance = 1e-8;
+  const float kDistanceTolerance = 1e-6;
   const float kDepth = 0.65;
   const int kTooClosePointCloudIndex = 2;
   const int kTooFarPointCloudIndex = 658;
@@ -87,6 +88,28 @@ TEST_F(DepthImageToPointCloudTest, ConversionAndNanValueTest) {
       ASSERT_NEAR(output_depth(i), test_data(i), kDistanceTolerance);
     }
   }
+
+  // Now apply a camera_pose input.
+  Eigen::Vector3d offset(1.3, 4.5, -4);
+  math::RigidTransformd pose(offset);
+  context_->FixInputPort(
+      converter_->camera_pose_input_port().get_index(),
+      systems::AbstractValue::Make<math::RigidTransformd>(pose));
+
+  converter_->point_cloud_output_port().Calc(*context_, output_.get());
+  output_cloud = output_->GetValueOrThrow<perception::PointCloud>();
+  output_depth = output_cloud.xyzs().row(2);
+
+  for (int i = 0; i < output_cloud.size(); ++i) {
+    if (i == kTooClosePointCloudIndex) {
+      ASSERT_EQ(output_depth(i), systems::sensors::InvalidDepth::kTooFar);
+    } else if (i == kTooFarPointCloudIndex) {
+      ASSERT_EQ(output_depth(i), systems::sensors::InvalidDepth::kTooFar);
+    } else {
+      ASSERT_NEAR(output_depth(i), test_data(i) + offset(2),
+                  kDistanceTolerance);
+    }
+  }
 }
 
 // Note that we use ASSERTs instead of EXPECTs when we need to traverse many
@@ -100,10 +123,10 @@ class DepthImageToPointCloudConversionTest : public ::testing::Test {
   static constexpr int kDepthWidth = 60;
   static constexpr int kDepthHeight = 40;
 
-  DepthImageToPointCloudConversionTest() : camera_info_(
-      kDepthWidth, kDepthHeight,
-      kFocal, kFocal, kDepthWidth * 0.5, kDepthHeight * 0.5),
-      depth_image_(kDepthWidth, kDepthHeight, 1) {}
+  DepthImageToPointCloudConversionTest()
+      : camera_info_(kDepthWidth, kDepthHeight, kFocal, kFocal,
+                     kDepthWidth * 0.5, kDepthHeight * 0.5),
+        depth_image_(kDepthWidth, kDepthHeight, 1) {}
 
   // kTooClose is treated as kTooFar. For the detail, refer to the document of
   // RgbdCamera::ConvertDepthImageToPointCloud.
@@ -123,8 +146,7 @@ class DepthImageToPointCloudConversionTest : public ::testing::Test {
   // This must be called by all the test cases first.
   void Init(float depth_value) {
     std::fill(depth_image_.at(0, 0),
-              depth_image_.at(0, 0) + depth_image_.size(),
-              depth_value);
+              depth_image_.at(0, 0) + depth_image_.size(), depth_value);
   }
 
   const systems::sensors::CameraInfo camera_info_;
@@ -137,8 +159,8 @@ TEST_F(DepthImageToPointCloudConversionTest, ValidValueTest) {
   constexpr float kDepthValue = 1.f;
   Init(kDepthValue);
 
-  DepthImageToPointCloud::Convert(
-      depth_image_, camera_info_, &actual_point_cloud_);
+  DepthImageToPointCloud::Convert(depth_image_, camera_info_,
+                                  &actual_point_cloud_);
 
   // This tolerance was determined empirically using Drake's supported
   // platforms.
@@ -148,11 +170,9 @@ TEST_F(DepthImageToPointCloudConversionTest, ValidValueTest) {
       const int i = v * depth_image_.width() + u;
       Eigen::Vector3f actual = actual_point_cloud_.col(i);
 
-      const double expected_x =
-          kDepthValue * (u - kDepthWidth * 0.5) / kFocal;
+      const double expected_x = kDepthValue * (u - kDepthWidth * 0.5) / kFocal;
       ASSERT_NEAR(actual(0), expected_x, kDistanceTolerance);
-      const double expected_y =
-          kDepthValue * (v - kDepthHeight * 0.5) / kFocal;
+      const double expected_y = kDepthValue * (v - kDepthHeight * 0.5) / kFocal;
       ASSERT_NEAR(actual(1), expected_y, kDistanceTolerance);
       ASSERT_NEAR(actual(2), kDepthValue, kDistanceTolerance);
     }
@@ -163,8 +183,8 @@ TEST_F(DepthImageToPointCloudConversionTest, ValidValueTest) {
 TEST_F(DepthImageToPointCloudConversionTest, NanValueTest) {
   Init(std::numeric_limits<float>::quiet_NaN());
 
-  DepthImageToPointCloud::Convert(
-      depth_image_, camera_info_, &actual_point_cloud_);
+  DepthImageToPointCloud::Convert(depth_image_, camera_info_,
+                                  &actual_point_cloud_);
 
   for (int v = 0; v < depth_image_.height(); ++v) {
     for (int u = 0; u < depth_image_.width(); ++u) {
@@ -181,8 +201,8 @@ TEST_F(DepthImageToPointCloudConversionTest, NanValueTest) {
 TEST_F(DepthImageToPointCloudConversionTest, TooFarTest) {
   Init(systems::sensors::InvalidDepth::kTooFar);
 
-  DepthImageToPointCloud::Convert(
-      depth_image_, camera_info_, &actual_point_cloud_);
+  DepthImageToPointCloud::Convert(depth_image_, camera_info_,
+                                  &actual_point_cloud_);
 
   VerifyTooFarTooClose();
 }
@@ -191,8 +211,8 @@ TEST_F(DepthImageToPointCloudConversionTest, TooFarTest) {
 TEST_F(DepthImageToPointCloudConversionTest, TooCloseTest) {
   Init(systems::sensors::InvalidDepth::kTooClose);
 
-  DepthImageToPointCloud::Convert(
-      depth_image_, camera_info_, &actual_point_cloud_);
+  DepthImageToPointCloud::Convert(depth_image_, camera_info_,
+                                  &actual_point_cloud_);
 
   VerifyTooFarTooClose();
 }

@@ -57,13 +57,13 @@ class TestEigenGeometry(unittest.TestCase):
         q = mut.Quaternion.Identity()
         # - wxyz
         q_wxyz_bad = [1., 2, 3, 4]
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(RuntimeError):
             q.set_wxyz(q_wxyz_bad)
         self.assertTrue(np.allclose(q.wxyz(), [1, 0, 0, 0]))
         # - Rotation.
         R_bad = np.copy(R)
         R_bad[0, 0] = 10
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(RuntimeError):
             q_other.set_rotation(R_bad)
         self.assertTrue(np.allclose(q_other.rotation(), R_I))
 
@@ -115,12 +115,12 @@ class TestEigenGeometry(unittest.TestCase):
         transform = mut.Isometry3(rotation=R, translation=p)
         R_bad = np.copy(R)
         R_bad[0, 0] = 10.
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(RuntimeError):
             transform.set_rotation(R_bad)
         self.assertTrue(np.allclose(R, transform.rotation()))
         X_bad = np.copy(X)
         X_bad[:3, :3] = R_bad
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(RuntimeError):
             transform.set_matrix(X_bad)
         self.assertTrue(np.allclose(X, transform.matrix()))
         # Test `type_caster`s.
@@ -172,7 +172,7 @@ class TestEigenGeometry(unittest.TestCase):
         value = mut.AngleAxis(value_identity)
         value.set_angle(np.pi / 4)
         v = normalize(np.array([0.1, 0.2, 0.3]))
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(RuntimeError):
             value.set_axis([0.1, 0.2, 0.3])
         value.set_axis(v)
         self.assertEqual(value.angle(), np.pi / 4)

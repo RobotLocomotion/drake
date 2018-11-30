@@ -1,8 +1,9 @@
 #pragma once
 
-#include <map>
+#include <ostream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/solver_id.h"
@@ -31,6 +32,11 @@ namespace solvers {
  * "GUROBI" -- Parameter name and values as specified in Gurobi Reference
  * Manual, section 10.2 "Parameter Descriptions"
  * https://www.gurobi.com/documentation/7.5/refman/parameters.html
+ *
+ * "SCS" -- Parameter name and values as specified in the struct SCS_SETTINGS in
+ * SCS header file https://github.com/cvxgrp/scs/blob/master/include/scs.h
+ * Note that the SCS code on github master might be more up-to-date than the
+ * version used in Drake.
  */
 class SolverOptions {
  public:
@@ -56,13 +62,38 @@ class SolverOptions {
   const std::unordered_map<std::string, std::string>& GetOptionsStr(
       const SolverId& solver_id) const;
 
+  /** Returns the IDs that have any option set. */
+  std::unordered_set<SolverId> GetSolverIds() const;
+
+  /**
+   * Merges the other solver options into this. If `other` and `this` option
+   * both define the same option for the same solver, we ignore then one from
+   * `other` and keep the one from `this`.
+   */
+  void Merge(const SolverOptions& other);
+
+  /**
+   * Returns true if `this` and `other` have exactly the same solvers, with
+   * exactly the same keys and values for the options for each solver.
+   */
+  bool operator==(const SolverOptions& other) const;
+
+  /**
+   * Negate operator==.
+   */
+  bool operator!=(const SolverOptions& other) const;
+
  private:
-  std::map<SolverId, std::unordered_map<std::string, double>>
+  std::unordered_map<SolverId, std::unordered_map<std::string, double>>
       solver_options_double_{};
-  std::map<SolverId, std::unordered_map<std::string, int>>
+  std::unordered_map<SolverId, std::unordered_map<std::string, int>>
       solver_options_int_{};
-  std::map<SolverId, std::unordered_map<std::string, std::string>>
+  std::unordered_map<SolverId, std::unordered_map<std::string, std::string>>
       solver_options_str_{};
 };
+
+std::string to_string(const SolverOptions&);
+std::ostream& operator<<(std::ostream&, const SolverOptions&);
+
 }  // namespace solvers
 }  // namespace drake

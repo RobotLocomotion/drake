@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 
 #include "drake/common/drake_assert.h"
@@ -47,23 +48,17 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   /// `inboard_frame_F` and the outboard frame M `outboard_frame_F` granting a
   /// single rotational degree of freedom about axis `axis_F` expressed in the
   /// inboard frame F.
-  /// @pre axis_F must be a unit vector within at least 1.0e-6. This rather
-  /// loose tolerance (at least for simulation) allows users to provide "near
-  /// unity" axis vectors originated, for instance, during the parsing of a
-  /// file with limited precision. Internally, we re-normalize the axis to
-  /// within machine precision.
-  /// @throws std::runtime_error if the provided rotational axis is not a unit
-  /// vector.
+  /// @pre `axis_F` must be a non-zero vector with norm at least root square of
+  /// machine epsilon. This vector can have any length (subject to the norm
+  /// restriction above), only the direction is used.
+  /// @throws std::exception if the L2 norm of `axis_F` is less than the square
+  /// root of machine epsilon.
   RevoluteMobilizer(const Frame<T>& inboard_frame_F,
                     const Frame<T>& outboard_frame_M,
                     const Vector3<double>& axis_F) :
       MobilizerBase(inboard_frame_F, outboard_frame_M), axis_F_(axis_F) {
-    if (!axis_F.isUnitary(1.0e-6)) {
-      throw std::runtime_error("The rotation axis must be a unit vector");
-    }
-    // We allow a rather loose tolerance in the isUnitary check above so that we
-    // don't get spurious exceptions when, for instance, the provided axis comes
-    // from parsing a file. Therefore we re-normalize here.
+    double kEpsilon = std::sqrt(std::numeric_limits<double>::epsilon());
+    DRAKE_THROW_UNLESS(!axis_F.isZero(kEpsilon));
     axis_F_.normalize();
   }
 
@@ -171,6 +166,13 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
       EigenPtr<VectorX<T>> v) const override;
 
  protected:
+  void DoCalcNMatrix(const MultibodyTreeContext<T>& context,
+                     EigenPtr<MatrixX<T>> N) const final;
+
+  void DoCalcNplusMatrix(
+      const MultibodyTreeContext<T>& context,
+      EigenPtr<MatrixX<T>> Nplus) const final;
+
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;
 

@@ -125,7 +125,10 @@ def is_accepted_cursor(cursor):
         return False
     # TODO(eric.cousineau): Remove `cursor.is_default_method()`? May make
     # things unstable.
-    # TODO(eric.cousineau): Figure out how to strip forward declarations.
+    if cursor.kind in CLASS_KINDS and not cursor.is_definition():
+        # Don't process forward declarations.  If we did, we'd define the class
+        # overview documentation twice; both cursors have a .raw_comment value.
+        return False
     return True
 
 
@@ -683,8 +686,22 @@ def choose_doc_var_names(symbols):
 
     # The argument count might be sufficient to disambiguate.
     # TODO(jwnimmer-tri) Methods with enable_if sometimes report as 0args.
-    args = [list(x.cursor.get_arguments()) for x in symbols]
-    result = ["doc_{}args".format(len(x)) for x in args]
+    each_args = [list(x.cursor.get_arguments()) for x in symbols]
+    result = ["doc_{}args".format(len(args)) for args in each_args]
+    specialize_well_known_doc_var_names()
+    if len(result) == len(set(result)):
+        return result
+
+    # The argument names might be sufficient to disambiguate.
+    for i, args in enumerate(each_args):
+        if len(args) == 0:
+            continue
+        arg_names = []
+        for arg in args:
+            arg_name = utf8(arg.spelling) or \
+                sanitize_name(utf8(arg.type.spelling)).replace("_", "")
+            arg_names.append(arg_name)
+        result[i] = result[i] + "_" + "_".join(arg_names)
     specialize_well_known_doc_var_names()
     if len(result) == len(set(result)):
         return result

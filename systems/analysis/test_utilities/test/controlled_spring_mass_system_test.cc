@@ -87,7 +87,7 @@ TEST_F(SpringMassSystemTest, EvalTimeDerivatives) {
 
   // The derivatives of plant.
   const ContinuousState<double>& plant_xcdot =
-      model_->GetSubsystemDerivatives(*derivatives, &model_->get_plant());
+      model_->GetSubsystemDerivatives(model_->get_plant(), *derivatives);
 
   // Position derivative.
   EXPECT_EQ(v0, plant_xcdot.get_vector().GetAtIndex(0));

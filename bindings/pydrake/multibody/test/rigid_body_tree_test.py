@@ -83,6 +83,22 @@ class TestRigidBodyTree(unittest.TestCase):
             [0, 0, 0, 1]])
         self.assertTrue(np.allclose(T, T_expected))
 
+        # Relative RPY, checking autodiff (#9886).
+        q[:] = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
+        q_ad = np.array([AutoDiffXd(x) for x in q])
+        world = tree.findFrame("world")
+        frame = tree.findFrame("arm_com")
+        kinsol = tree.doKinematics(q)
+        rpy = tree.relativeRollPitchYaw(
+            cache=kinsol, from_body_or_frame_ind=world.get_frame_index(),
+            to_body_or_frame_ind=frame.get_frame_index())
+        kinsol_ad = tree.doKinematics(q_ad)
+        rpy_ad = tree.relativeRollPitchYaw(
+            cache=kinsol_ad, from_body_or_frame_ind=world.get_frame_index(),
+            to_body_or_frame_ind=frame.get_frame_index())
+        for x, x_ad in zip(rpy, rpy_ad):
+            self.assertEqual(x, x_ad.value())
+
         # Do FK and compare pose of 'arm' with expected pose.
         q[:] = 0
         q[6] = np.pi / 2
@@ -545,9 +561,14 @@ class TestRigidBodyTree(unittest.TestCase):
         box_collision_element.set_body(body_2)
         rbt.addCollisionElement(box_collision_element, body_2, "default")
 
+        # Define a collision filter group containing bodies 1 and 2 and make
+        # that group ignore itself.
         rbt.DefineCollisionFilterGroup(name="test_group")
         rbt.AddCollisionFilterGroupMember(
+            group_name="test_group", body_name="body_1", model_id=0)
+        rbt.AddCollisionFilterGroupMember(
             group_name="test_group", body_name="body_2", model_id=0)
+        rbt.AddCollisionFilterIgnoreTarget("test_group", "test_group")
 
         self.assertFalse(rbt.initialized())
         rbt.compile()

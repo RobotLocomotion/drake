@@ -181,6 +181,23 @@ class QueryObject;
 
  Failure to meet these requirements will lead to a run-time error.
 
+ @section geom_model_vs_context Model versus Context
+
+ Many (and eventually all) methods that configure the population of SceneGraph
+ have two variants that differ by whether they accept a mutable Context or not.
+ When no Context is provided, _this_ %SceneGraph instance's underlying model is
+ modified. When the %SceneGraph instance allocates a context, its model is
+ copied into that context.
+
+ The second variant causes %SceneGraph to modify the data stored in the provided
+ Context to be modified _instead of the internal model_.
+
+ @note In this initial version, the only methods with the Context-modifying
+ variant are those methods that _do not_ change the the semantics of the input
+ or output ports. Modifications that make such changes must be coordinated
+ across systems.
+ <!-- TODO(SeanCurtis-TRI): Add context-modifying variants of all methods. -->
+
  @cond
  // TODO(SeanCurtis-TRI): Future work which will require add'l documentation:
  //   - velocity kinematics.
@@ -270,31 +287,38 @@ class SceneGraph final : public systems::LeafSystem<T> {
    This includes registering a new geometry source, adding or
    removing frames, and adding or removing geometries.
 
-   Currently, the topology can only be manipulated during initialization.
-   Eventually, the API will expand to include modifications of the topology
-   during discrete updates.
+   The work flow for adding geometry to the SceneGraph is as follows:
 
-   The initialization phase begins with the instantiation of a %SceneGraph
-   and ends when a context is allocated by the %SceneGraph instance. This is
-   the only phase when geometry sources can be registered with %SceneGraph.
-   Once a source is registered, it can register frames and geometries. Any
-   frames and geometries registered during this phase become part of the
-   _default_ context state for %SceneGraph and calls to
-   CreateDefaultContext() will produce identical contexts.
+   - A geometry source registers itself with %SceneGraph (via RegisterSource()).
+   - The geometry source can then immediately register "anchored" geometry --
+     geometry that is affixed to the world frame. These geometries will never
+     move.
+   - For geometries that need to move based on the source's state, the
+     geometry source must first register a GeometryFrame. In fact, geometries
+     never move directly; it is the frames to which they are affixed that move.
+     A geometry source can register a frame via the RegisterFrame() methods.
+   - Once a frame has been registered, the geometry source can register
+     geometries that are rigidly affixed to that frame (or, figuratively
+     speaking, "hung" on that frame). The geometry is immovably posed in that
+     frame and assigned various properties. The geometry is registered via calls
+     to the RegisterGeometry() methods.
 
-   Every geometry must ultimately be associated with a parent frame.
-   The position of every geometry in the world depends on a hierarchy of frames
-   between it and the world. The pose of a geometry is described relative
-   to its parent (a frame or another geometry). That parent may, in turn, also
-   have a parent. So, the position of a particular geometry in the world frame
-   depends on all of its ancestors which lie between it and the world frame. The
-   act of assigning a frame or geometry as a child to another frame or geometry
-   (as appropriate) and defining its pose, is referred to colloquially has
-   "hanging" it on the parent.
+   %SceneGraph has a concept of "ownership" that is separate from the C++
+   notion of ownership. In this case, %SceneGraph protects geometry and frames
+   registered by one source from being modified by another source. All methods
+   that change the world are associated with the SourceId of the geometry source
+   requesting the change. One source cannot "hang" geometry onto a frame (or
+   geometry) that belongs to another source. However, all sources have read
+   access to all geometries in the world. For example, queries will return
+   GeometryId values that span all sources and the properties of the associated
+   geometries can be queried by arbitrary sources.
 
-   Geometry sources can only hang frames or geometries onto other frames and/or
-   geometries that it "owns".
-   */
+   That said, if one source _chooses_ to share its SourceId externally, then
+   arbitrary code can use that SourceId to modify the geometry resources that
+   are associated with that SourceId.
+
+   @note There are no Context-modifying variants for source or frame
+   registration yet, as these methods modify the port semantics.  */
   //@{
 
   /** Registers a new frame F on for this source. This hangs frame F on the
@@ -342,6 +366,13 @@ class SceneGraph final : public systems::LeafSystem<T> {
   GeometryId RegisterGeometry(SourceId source_id, FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
+  /** systems::Context-modifying variant of RegisterGeometry(). Rather than
+   modifying %SceneGraph's model, it modifies the copy of the model stored in
+   the provided context.  */
+  GeometryId RegisterGeometry(systems::Context<T>* context, SourceId source_id,
+                              FrameId frame_id,
+                              std::unique_ptr<GeometryInstance> geometry);
+
   /** Registers a new geometry G for this source. This hangs geometry G on a
    previously registered geometry P (indicated by `geometry_id`). The pose of
    the geometry is defined in a fixed pose relative to geometry P (i.e.,
@@ -362,6 +393,13 @@ class SceneGraph final : public systems::LeafSystem<T> {
   GeometryId RegisterGeometry(SourceId source_id, GeometryId geometry_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
+  /** systems::Context-modifying variant of RegisterGeometry(). Rather than
+   modifying %SceneGraph's model, it modifies the copy of the model stored in
+   the provided context.  */
+  GeometryId RegisterGeometry(systems::Context<T>* context, SourceId source_id,
+                              GeometryId geometry_id,
+                              std::unique_ptr<GeometryInstance> geometry);
+
   /** Registers a new _anchored_ geometry G for this source. This hangs geometry
    G from the world frame (W). Its pose is defined in that frame (i.e., `X_WG`).
    Returns the corresponding unique geometry id.
@@ -375,6 +413,24 @@ class SceneGraph final : public systems::LeafSystem<T> {
                              requirements outlined in GeometryInstance.  */
   GeometryId RegisterAnchoredGeometry(
       SourceId source_id, std::unique_ptr<GeometryInstance> geometry);
+
+  /** Removes the given geometry G (indicated by `geometry_id`) from the given
+   source's registered geometries. All registered geometries hanging from
+   this geometry will also be removed.
+   @param source_id   The identifier for the owner geometry source.
+   @param geometry_id The identifier of the geometry to remove.
+   @throws std::logic_error If:
+                            1. The `source_id` is not a registered source,
+                            2. the `geometry_id` doesn't belong to the source,
+                               or
+                            3. a context has been allocated. */
+  void RemoveGeometry(SourceId source_id, GeometryId geometry_id);
+
+  /** systems::Context-modifying variant of RemoveGeometry(). Rather than
+   modifying %SceneGraph's model, it modifies the copy of the model stored in
+   the provided context.  */
+  void RemoveGeometry(systems::Context<T>* context, SourceId source_id,
+                      GeometryId geometry_id);
 
   //@}
 
@@ -424,6 +480,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
                             scene graph.  */
   void ExcludeCollisionsWithin(const GeometrySet& set);
 
+  /** systems::Context-modifying variant of ExcludeCollisionsWithin(). Rather
+   than modifying %SceneGraph's model, it modifies the copy of the model stored
+   in the provided context.  */
+  void ExcludeCollisionsWithin(systems::Context<T>* context,
+                               const GeometrySet& set);
+
   /** Excludes geometry pairs from collision evaluation by updating the
    candidate pair set `C = C - P`, where `P = {(a, b)}, ∀ a ∈ A, b ∈ B` and
    `A = {a₀, a₁, ..., aₘ}` and `B = {b₀, b₁, ..., bₙ}` are the input sets of
@@ -433,6 +495,13 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @throws std::logic_error if the groups include ids that don't exist in the
                             scene graph.   */
   void ExcludeCollisionsBetween(const GeometrySet& setA,
+                                const GeometrySet& setB);
+
+  /** systems::Context-modifying variant of ExcludeCollisionsBetween(). Rather
+   than modifying %SceneGraph's model, it modifies the copy of the model stored
+   in the provided context.  */
+  void ExcludeCollisionsBetween(systems::Context<T>* context,
+                                const GeometrySet& setA,
                                 const GeometrySet& setB);
   //@}
 
