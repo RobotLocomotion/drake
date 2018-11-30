@@ -22,7 +22,7 @@ bool PyEquals(py::object lhs, py::object rhs) {
 }
 
 // Ensures that the type `T` maps to the expression in `py_expr_expected`.
-template <typename ... Ts>
+template <typename... Ts>
 bool CheckPyParam(const string& py_expr_expected, type_pack<Ts...> param = {}) {
   py::object actual = GetPyParam(param);
   py::object expected = py::eval(py_expr_expected.c_str());

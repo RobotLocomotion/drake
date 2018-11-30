@@ -14,4 +14,6 @@
 using drake::pydrake::GetPyParam;
 
 // No-op; compilation test only.
-int main() { return 0; }
+int main() {
+  return 0;
+}

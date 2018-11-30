@@ -22,22 +22,21 @@ namespace drake {
 namespace pydrake {
 namespace {
 
-template <typename ... Ts>
+template <typename... Ts>
 struct SimpleTemplate {
   vector<string> GetNames() {
     return {NiceTypeName::Get<Ts>()...};
   }
 };
 
-template <typename ... Ts>
+template <typename... Ts>
 py::object BindSimpleTemplate(py::module m) {
   using Class = SimpleTemplate<Ts...>;
   py::class_<Class> py_class(m, TemporaryClassName<Class>().c_str());
   py_class
       .def(py::init<>())
       .def("GetNames", &Class::GetNames);
-  AddTemplateClass(
-      m, "SimpleTemplate", py_class, GetPyParam<Ts...>());
+  AddTemplateClass(m, "SimpleTemplate", py_class, GetPyParam<Ts...>());
   return py_class;
 }
 
@@ -78,7 +77,7 @@ GTEST_TEST(CppTemplateTest, TemplateClass) {
       R"([^\0]*incompatible function arguments[^\0]*\(arg0: __main__\.SimpleTemplate\[int\]\)[^\0]*)");  // NOLINT
 }
 
-template <typename ... Ts>
+template <typename... Ts>
 vector<string> SimpleFunction() {
   return {NiceTypeName::Get<Ts>()...};
 }
@@ -100,7 +99,7 @@ GTEST_TEST(CppTemplateTest, TemplateFunction) {
 }
 
 struct SimpleType {
-  template <typename ... Ts>
+  template <typename... Ts>
   vector<string> SimpleMethod() {
     return {NiceTypeName::Get<Ts>()...};
   }

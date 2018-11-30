@@ -39,18 +39,15 @@ inline void AddInstantiation(
 // Gets name for a given instantiation.
 inline std::string GetInstantiationName(
     py::handle py_template, py::tuple param) {
-  return py::cast<std::string>(
-    py_template.attr("_instantiation_name")(param));
+  return py::cast<std::string>(py_template.attr("_instantiation_name")(param));
 }
 
 }  // namespace internal
 
-
 /// Provides a temporary, unique name for a class instantiation that
 /// will be passed to `AddTemplateClass`.
 template <typename T>
-std::string TemporaryClassName(
-    const std::string& name = "TemporaryName") {
+std::string TemporaryClassName(const std::string& name = "TemporaryName") {
   return "_" + name + "_" + typeid(T).name();
 }
 
@@ -100,8 +97,7 @@ py::class_<Class, Options...> DefineTemplateClassWithDefault(
 /// @param param Parameters for the instantiation.
 template <typename Func>
 py::object AddTemplateFunction(
-    py::handle scope, const std::string& name, Func&& func,
-    py::tuple param) {
+    py::handle scope, const std::string& name, Func&& func, py::tuple param) {
   // TODO(eric.cousineau): Use `py::sibling` if overloads are needed.
   py::object py_template =
       internal::GetOrInitTemplate(scope, name, "TemplateFunction");
@@ -121,9 +117,8 @@ template <typename Method>
 py::object AddTemplateMethod(
     py::handle scope, const std::string& name, Method&& method,
     py::tuple param) {
-  py::object py_template =
-      internal::GetOrInitTemplate(
-          scope, name, "TemplateMethod", py::make_tuple(scope));
+  py::object py_template = internal::GetOrInitTemplate(
+      scope, name, "TemplateMethod", py::make_tuple(scope));
   py::object py_func = py::cpp_function(
       std::forward<Method>(method),
       py::name(internal::GetInstantiationName(py_template, param).c_str()),

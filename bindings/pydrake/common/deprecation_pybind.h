@@ -13,8 +13,7 @@ namespace pydrake {
 /// Deprecates an attribute `name` of a class `cls`.
 /// This *only* works with class attributes (unbound members or methods) as it
 /// is implemented with a Python property descriptor.
-inline void DeprecateAttribute(
-    py::object cls, py::str name, py::str message) {
+inline void DeprecateAttribute(py::object cls, py::str name, py::str message) {
   py::object deprecated =
       py::module::import("pydrake.common.deprecation").attr("deprecated");
   py::object original = cls.attr(name);
