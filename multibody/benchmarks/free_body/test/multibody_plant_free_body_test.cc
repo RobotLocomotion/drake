@@ -25,6 +25,8 @@
 namespace drake {
 namespace benchmarks {
 namespace free_body {
+namespace {
+
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
@@ -34,19 +36,19 @@ using systems::Simulator;
 
 const double kEpsilon = std::numeric_limits<double>::epsilon();
 
-/// This function tests Drake solution versus an exact (closed-form) solution
-/// for the torque-free motion of an axis-symmetric uniform rigid cylinder B in
-/// a Newtonian frame N, where torque-free means the moment of forces about
-/// Bcm (B's mass center) is zero.
-/// @param[in] torque_free_cylinder_exact class that stores initial values,
-///            gravity, and methods to calculate the exact solution at time t.
-/// @param[in] rigid_body_plant Drake's rigid-body system being simulated.
-/// @param[in] context all input to System (parameters, time, state, etc.,)
-/// @param[out] stateDt_drake stores time-derivative values of state at time t.
-/// @param[in] tolerance minimum tolerance required to match results.
+// This function tests Drake solution versus an exact (closed-form) solution
+// for the torque-free motion of an axis-symmetric uniform rigid cylinder B in
+// a Newtonian frame N, where torque-free means the moment of forces about
+// Bcm (B's mass center) is zero.
+// @param[in] torque_free_cylinder_exact class that stores initial values,
+//            gravity, and methods to calculate the exact solution at time t.
+// @param[in] axisymmetric_plant Drake's rigid-body system being simulated.
+// @param[in] context all input to System (parameters, time, state, etc.,)
+// @param[out] stateDt_drake stores time-derivative values of state at time t.
+// @param[in] tolerance minimum tolerance required to match results.
 void TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
        const FreeBody& torque_free_cylinder_exact,
-       const AxiallySymmetricFreeBodyPlant<double>& rigid_body_plant,
+       const AxiallySymmetricFreeBodyPlant<double>& axisymmetric_plant,
        const drake::systems::Context<double>& context,
        drake::systems::ContinuousState<double>* stateDt_drake,
        const double tolerance) {
@@ -70,7 +72,7 @@ void TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
   // wDt_NB_N  is B's angular acceleration in N, expressed in N, and
   //           is equal to [ẇx, ẇy, ẇz], where [wx, wy, wz] is w_NB_N.
   // xyzDDt is [ẍ  ÿ  z̈] Bcm's acceleration in N, expressed in N.
-  rigid_body_plant.CalcTimeDerivatives(context, stateDt_drake);
+  axisymmetric_plant.CalcTimeDerivatives(context, stateDt_drake);
   const VectorXd stateDt_as_vector = stateDt_drake->CopyToVector();
   const Vector4d quatDt_NB_drake = stateDt_as_vector.segment<4>(0);
   const Vector3d xyzDt_drake     = stateDt_as_vector.segment<3>(4);
@@ -104,15 +106,14 @@ void TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
   EXPECT_TRUE(R_NB_drake.IsNearlyEqualTo(R_NB_exact, tolerance));
 
   // Compare Drake and exact results.
-  // TODO(mitiguy) Investigate why big factor (1600) needed to test wDt_NB_B.
   const Vector3d w_NB_B_drake = R_NB_drake.inverse() * w_NB_N_drake;
   const Vector3d wDt_NB_B_drake = R_NB_drake.inverse() * wDt_NB_N_drake;
-  EXPECT_TRUE(CompareMatrices(w_NB_B_drake,       w_NB_B_exact,   2*tolerance));
-  EXPECT_TRUE(CompareMatrices(wDt_NB_B_drake,  wDt_NB_B_exact, 1600*tolerance));
-  EXPECT_TRUE(CompareMatrices(xyz_drake,             xyz_exact,     tolerance));
-  EXPECT_TRUE(CompareMatrices(xyzDt_drake,         xyzDt_exact,     tolerance));
-  EXPECT_TRUE(CompareMatrices(v_NBcm_N_drake,      xyzDt_exact,     tolerance));
-  EXPECT_TRUE(CompareMatrices(xyzDDt_drake,       xyzDDt_exact,  10*tolerance));
+  EXPECT_TRUE(CompareMatrices(w_NB_B_drake,     w_NB_B_exact,  2*tolerance));
+  EXPECT_TRUE(CompareMatrices(wDt_NB_B_drake, wDt_NB_B_exact,  8*tolerance));
+  EXPECT_TRUE(CompareMatrices(xyz_drake,           xyz_exact,    tolerance));
+  EXPECT_TRUE(CompareMatrices(xyzDt_drake,       xyzDt_exact,    tolerance));
+  EXPECT_TRUE(CompareMatrices(v_NBcm_N_drake,    xyzDt_exact,    tolerance));
+  EXPECT_TRUE(CompareMatrices(xyzDDt_drake,     xyzDDt_exact,  8*tolerance));
 
   // Multi-step process to compare Drake vs exact time-derivative of quaternion.
   // Ensure time-derivative of Drake's quaternion satisfies quaternionDt test.
@@ -129,25 +130,25 @@ void TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
 }
 
 
-/// Numerically integrate rigid body plant's equations of motion from time t = 0
-/// to time t_final with a 3rd-order variable-step Runge-Kutta integrator.
-/// @param[in] torque_free_cylinder_exact class that stores initial values,
-///            gravity, and methods to calculate the exact solution at time t.
-/// @param[in] rigid_body_plant Drake's rigid-body system being simulated.
-/// @param[in,out] context on entry, context should be properly filled with all
-/// input to system (parameters, time = 0.0, state).  On output, context is
-/// changed so its time = t_final and its state has been updated.
-/// @param[out] stateDt_drake on output, stores time-derivatives of state.
-/// @param[in] dt_max maximum (fixed) step size taken by the integrator.
-/// @param[in] t_final value of time that signals the simulation to stop.
-/// t_final is not required to be an exact multiple of dt_max as the
-/// integration step is adjusted as necessary to land at exactly t_final.
-/// @param[in] maximum_absolute_error_per_integration_step maximum allowable
-/// absolute error (for any variable being integrated) for the numerical
-/// integrator's internal time-step (which can shrink or grow).
+// Numerically integrate rigid body plant's equations of motion from time t = 0
+// to time t_final with a 3rd-order variable-step Runge-Kutta integrator.
+// @param[in] torque_free_cylinder_exact class that stores initial values,
+//            gravity, and methods to calculate the exact solution at time t.
+// @param[in] axisymmetric_plant Drake's rigid-body system being simulated.
+// @param[in,out] context on entry, context should be properly filled with all
+// input to system (parameters, time = 0.0, state).  On output, context is
+// changed so its time = t_final and its state has been updated.
+// @param[out] stateDt_drake on output, stores time-derivatives of state.
+// @param[in] dt_max maximum (fixed) step size taken by the integrator.
+// @param[in] t_final value of time that signals the simulation to stop.
+// t_final is not required to be an exact multiple of dt_max as the
+// integration step is adjusted as necessary to land at exactly t_final.
+// @param[in] maximum_absolute_error_per_integration_step maximum allowable
+// absolute error (for any variable being integrated) for the numerical
+// integrator's internal time-step (which can shrink or grow).
 void  IntegrateForwardWithVariableStepRungeKutta3(
           const FreeBody& torque_free_cylinder_exact,
-          const AxiallySymmetricFreeBodyPlant<double>& rigid_body_plant,
+          const AxiallySymmetricFreeBodyPlant<double>& axisymmetric_plant,
           drake::systems::Context<double>* context,
           drake::systems::ContinuousState<double>* stateDt_drake,
           const double dt_max, const double t_final,
@@ -155,7 +156,7 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
   DRAKE_DEMAND(context != NULL  &&  stateDt_drake != NULL  &&  dt_max >= 0.0);
 
   // Integrate with variable-step Runge-Kutta3 integrator.
-  systems::RungeKutta3Integrator<double> rk3(rigid_body_plant, context);
+  systems::RungeKutta3Integrator<double> rk3(axisymmetric_plant, context);
   rk3.set_maximum_step_size(dt_max);  // Need before Initialize (or exception).
   rk3.set_target_accuracy(maximum_absolute_error_per_integration_step);
   rk3.Initialize();
@@ -171,10 +172,10 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
   while (true) {
     // At boundary of each numerical integration step, test Drake's simulation
     // accuracy versus exact (closed-form) solution.
-    const double tolerance = maximum_absolute_error_per_integration_step;
+    const double tolerance = 4 * maximum_absolute_error_per_integration_step;
     TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
         torque_free_cylinder_exact,
-        rigid_body_plant,
+        axisymmetric_plant,
         *context,
         stateDt_drake,
         tolerance);
@@ -188,22 +189,22 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
 }
 
 
-/// This function tests Drake's calculation of the time-derivative of the state
-/// at an initial condition, and depending on should_numerically_integrate, also
-/// tests Drake's numerical integration of the rigid body's equations of motion.
-/// @param[in] torque_free_cylinder_exact class that stores initial values,
-///            gravity, and methods to calculate the exact solution at time t.
-/// @param[in] rigid_body_plant Drake's rigid-body system being simulated.
-/// @param[in,out] context on entry, context is properly sized for all input to
-/// system (parameters, time = 0.0, state).  On output, context may be changed
-/// changed so its time = t_final and its state has been updated.
-/// @param[out] stateDt_drake on output, stores time-derivatives of state.
-/// @param[in] should_numerically_integrate set to `true` if calling function
-/// wants this function to also numerically integrate and check accuracy of
-/// Drake's simulation results.
+// This function tests Drake's calculation of the time-derivative of the state
+// at an initial condition, and depending on should_numerically_integrate, also
+// tests Drake's numerical integration of the rigid body's equations of motion.
+// @param[in] torque_free_cylinder_exact class that stores initial values,
+//            gravity, and methods to calculate the exact solution at time t.
+// @param[in] axisymmetric_plant Drake's rigid-body system being simulated.
+// @param[in,out] context on entry, context is properly sized for all input to
+// system (parameters, time = 0.0, state).  On output, context may be changed
+// changed so its time = t_final and its state has been updated.
+// @param[out] stateDt_drake on output, stores time-derivatives of state.
+// @param[in] should_numerically_integrate set to `true` if calling function
+// wants this function to also numerically integrate and check accuracy of
+// Drake's simulation results.
 void  TestDrakeSolutionForSpecificInitialValue(
     const FreeBody& torque_free_cylinder_exact,
-    const AxiallySymmetricFreeBodyPlant<double>& rigid_body_plant,
+    const AxiallySymmetricFreeBodyPlant<double>& axisymmetric_plant,
     drake::systems::Context<double>* context,
     drake::systems::ContinuousState<double>* stateDt_drake,
     const bool should_numerically_integrate) {
@@ -229,9 +230,9 @@ void  TestDrakeSolutionForSpecificInitialValue(
   const Vector3d p_NoBcm_N_initial =
       torque_free_cylinder_exact.get_p_NoBcm_N_initial();
   const Vector3d w_NB_N_initial =
-      torque_free_cylinder_exact.get_w_NB_N_initial();
+      torque_free_cylinder_exact.Calc_w_NB_N_initial();
   const Vector3d v_NBcm_N_initial =
-      torque_free_cylinder_exact.get_v_NBcm_N_initial();
+      torque_free_cylinder_exact.Calc_v_NBcm_N_initial();
   Eigen::Matrix<double, 13, 1> state_initial;
   state_initial << quat_NB_initial.w(),
                    quat_NB_initial.x(),
@@ -252,8 +253,8 @@ void  TestDrakeSolutionForSpecificInitialValue(
   // Initially (t = 0), Drake's results should be close to machine-precision.
   TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
       torque_free_cylinder_exact,
-      rigid_body_plant, *context, stateDt_drake,
-      50 * kEpsilon);
+      axisymmetric_plant, *context, stateDt_drake,
+      32 * kEpsilon);
 
   // Maybe numerically integrate.
   if (should_numerically_integrate) {
@@ -263,32 +264,32 @@ void  TestDrakeSolutionForSpecificInitialValue(
     // Integrate forward, testing Drake's results vs. exact solution frequently.
     IntegrateForwardWithVariableStepRungeKutta3(
         torque_free_cylinder_exact,
-        rigid_body_plant, context, stateDt_drake,
+        axisymmetric_plant, context, stateDt_drake,
         dt_max, t_final, maximum_absolute_error_per_integration_step);
   }
 }
 
 
-/// This function sets up various initial values for Drake to test against an
-/// exact solution. For one (mostly arbitrary) initial value, this also tests
-/// Drake's numerical integration of the rigid body's equations of motion.
-/// @param[in] torque_free_cylinder_exact class that stores initial values,
-///            gravity, and methods to calculate the exact solution at time t.
-/// @param[in] rigid_body_plant rigid-body system being simulated.
+// This function sets up various initial values for Drake to test against an
+// exact solution. For one (mostly arbitrary) initial value, this also tests
+// Drake's numerical integration of the rigid body's equations of motion.
+// @param[in] torque_free_cylinder_exact class that stores initial values,
+//            gravity, and methods to calculate the exact solution at time t.
+// @param[in] axisymmetric_plant rigid-body system being simulated.
 void  TestDrakeSolutionForVariousInitialValues(
       FreeBody* torque_free_cylinder_exact,
-      const AxiallySymmetricFreeBodyPlant<double>& rigid_body_plant) {
+      const AxiallySymmetricFreeBodyPlant<double>& axisymmetric_plant) {
   DRAKE_DEMAND(torque_free_cylinder_exact != nullptr);
 
-  // Drake's Simulator will create a Context by calling the rigid_body_plant's
+  // Drake's Simulator will create a Context by calling axisymmetric_plant's
   // CreateDefaultContext(). This in turn will initialize its state by making a
   // call to this system's SetDefaultState().
-  systems::Simulator<double> simulator(rigid_body_plant);
+  systems::Simulator<double> simulator(axisymmetric_plant);
   systems::Context<double>& context = simulator.get_mutable_context();
 
   // Allocate space to hold the time-derivative of the Drake state.
   std::unique_ptr<systems::ContinuousState<double>> stateDt =
-      rigid_body_plant.AllocateTimeDerivatives();
+      axisymmetric_plant.AllocateTimeDerivatives();
   drake::systems::ContinuousState<double>* stateDt_drake = stateDt.get();
 
   // Test a variety of initial normalized quaternions.
@@ -305,7 +306,7 @@ void  TestDrakeSolutionForVariousInitialValues(
       // perform time-consuming numerically integration infrequently.
       const bool also_numerically_integrate = (test_counter++ == 120);
       TestDrakeSolutionForSpecificInitialValue(*torque_free_cylinder_exact,
-                                               rigid_body_plant,
+                                               axisymmetric_plant,
                                                &context, stateDt_drake,
                                                also_numerically_integrate);
     }
@@ -313,19 +314,19 @@ void  TestDrakeSolutionForVariousInitialValues(
 }
 
 
-/// This function tests Drake's simulation of the motion of an axis-symmetric
-/// rigid body B (uniform cylinder) in a Newtonian frame (World) N.  Since the
-/// only external forces on B are uniform gravitational forces, the moment of
-/// all forces about B's mass center is zero ("torque-free"), there exists an
-/// exact (closed-form) solution for B's motion.  Specifically, this
-/// function tests Drake's solution against an exact solution for: quaternion,
-/// angular velocity expressed in B (body-frame), angular acceleration expressed
-/// in B and position, velocity, and acceleration expressed in N (World).
-/// Algorithm from [Kane, 1983] Sections 1.13 and 3.1, Pages 60-62 and 159-169.
-///
-/// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
-///  (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
-///   https://ecommons.cornell.edu/handle/1813/637
+// This function tests Drake's simulation of the motion of an axis-symmetric
+// rigid body B (uniform cylinder) in a Newtonian frame (World) N.  Since the
+// only external forces on B are uniform gravitational forces, the moment of
+// all forces about B's mass center is zero ("torque-free"), there exists an
+// exact (closed-form) solution for B's motion.  Specifically, this
+// function tests Drake's solution against an exact solution for: quaternion,
+// angular velocity expressed in B (body-frame), angular acceleration expressed
+// in B and position, velocity, and acceleration expressed in N (World).
+// Algorithm from [Kane, 1983] Sections 1.13 and 3.1, Pages 60-62 and 159-169.
+//
+// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
+//  (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
+//   https://ecommons.cornell.edu/handle/1813/637
 GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   // Store initial values in a class that can calculate an exact solution.
   // Store gravitational acceleration expressed in N (e.g. [0, 0, -9.81]).
@@ -342,13 +343,15 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   const double mass = 1.0;  // Arbitrary value.
   const double inertia_transverse = torque_free_cylinder_exact.get_I();
   const double inertia_axial = torque_free_cylinder_exact.get_J();
-  AxiallySymmetricFreeBodyPlant<double> rigid_body_plant(
+  AxiallySymmetricFreeBodyPlant<double> axisymmetric_plant(
      mass, inertia_transverse, inertia_axial, -gravity(2));
 
   TestDrakeSolutionForVariousInitialValues(&torque_free_cylinder_exact,
-                                           rigid_body_plant);
+                                           axisymmetric_plant);
 }
 
+
+}  // namespace
 }  // namespace free_body
 }  // namespace benchmarks
 }  // namespace drake

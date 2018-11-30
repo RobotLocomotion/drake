@@ -103,7 +103,7 @@ std::tuple<Vector3d, Vector3d, Vector3d>
 FreeBody::CalculateExactTranslationalSolution(const double t) const {
   // Initial values of x, y, z and ẋ, ẏ, ż.
   const Vector3d& xyz_initial = get_p_NoBcm_N_initial();
-  const Vector3d& xyzDt_initial = get_v_NBcm_N_initial();
+  const Vector3d& xyzDt_initial = Calc_v_NBcm_N_initial();
 
   // Create a tuple to package for returning the results.
   std::tuple<Vector3d, Vector3d, Vector3d> returned_tuple;

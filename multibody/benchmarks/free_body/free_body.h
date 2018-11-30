@@ -65,7 +65,7 @@ class FreeBody {
     return quat_NB_initial_;
   }
   const Eigen::Vector3d& get_w_NB_B_initial() const { return w_NB_B_initial_; }
-  Eigen::Vector3d get_w_NB_N_initial() const {
+  Eigen::Vector3d Calc_w_NB_N_initial() const {
     const math::RotationMatrixd R_NB_initial(quat_NB_initial_);
     return R_NB_initial * w_NB_B_initial_;
   }
@@ -75,7 +75,7 @@ class FreeBody {
   const Eigen::Vector3d& get_uniform_gravity_expressed_in_world() const {
     return uniform_gravity_expressed_in_world_;
   }
-  Eigen::Vector3d get_v_NBcm_N_initial() const {
+  Eigen::Vector3d Calc_v_NBcm_N_initial() const {
     const math::RotationMatrixd R_NB_initial(quat_NB_initial_);
     return R_NB_initial * v_NBcm_B_initial_;
   }
