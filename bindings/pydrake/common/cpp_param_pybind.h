@@ -43,7 +43,7 @@ inline py::object GetPyParamScalarImpl(
 /// @returns Python tuple of canonical parameters.
 /// @throws std::runtime_error on the first type it encounters that is neither
 /// aliased nor registered in `pybind11`.
-template <typename ... Ts>
+template <typename... Ts>
 inline py::tuple GetPyParam(type_pack<Ts...> = {}) {
   return py::make_tuple(internal::GetPyParamScalarImpl(type_pack<Ts>{})...);
 }

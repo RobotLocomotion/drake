@@ -8,6 +8,12 @@
 # the way over to the open-paren.
 AlignAfterOpenBracket: DontAlign
 
+# Try to fit onto a single line:
+# - functions with an empty body, or
+# - member functions defined inside a class;
+# everything else (e.g., free functions) are forced onto multiple lines.
+AllowShortFunctionsOnASingleLine: Inline
+
 # -----------------------------------------------------------------------------
 # The contents of the root dotfile should be exactly copied below this point.
 # -----------------------------------------------------------------------------

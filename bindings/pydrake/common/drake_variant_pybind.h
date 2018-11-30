@@ -11,8 +11,8 @@ namespace detail {
 // @see pybind11/stl.h, `variant_caster`.
 
 template <typename... Types>
-struct type_caster<stx::variant<Types...>> :
-    public variant_caster<stx::variant<Types...>> {};
+struct type_caster<stx::variant<Types...>>
+    : public variant_caster<stx::variant<Types...>> {};
 
 }  // namespace detail
 }  // namespace pybind11
