@@ -321,7 +321,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsMultipleAnchored) {
   EXPECT_EQ(results.size(), 0);
 }
 
-// SignedDistanceToPoint tests -- single-object tests with multiple query points
+// SignedDistanceToPoint tests -- single-sphere tests with multiple query points
 //
 // We use query points at (2,3,6) and (0.1,0.15,0.3) at distance 7.0 and 0.35
 // from the origin respectively. They are on the same ray from the origin. The
@@ -343,7 +343,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsMultipleAnchored) {
 // ray from the origin to the query point and hence (2,3,6)/7.
 
 // Reports distances within 1e-15 tolerance, both outside and inside.
-GTEST_TEST(ProximityEngineTests, SignedDistanceToPointSingleAnchored) {
+GTEST_TEST(ProximityEngineTests, SignedDistanceToPointSingleAnchoredSphere) {
   using std::abs;
 
   ProximityEngine<double> engine;
@@ -422,6 +422,143 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceToPointCenterOfSphere) {
   EXPECT_EQ(results.size(), 1);
   EXPECT_EQ(results[0].id_G, sphere_id);
   EXPECT_EQ(results[0].grad_W, Vector3d(1.0, 0.0, 0.0));
+}
+
+// We set up a 20x10x10 box centered at the origin [-10,10]x[-5,5]x[-5,5] and
+// test these query points outside the box:
+// (13,0,0) at distance 3.0 from the face {10}x[-5,5]x[-5,5],
+// (13,0,9) at distance 5.0 from the edge {10}x[-5,5]x{5}, and
+// {12,8,11) at distance 7.0 from the vertex {10}x{5}x{5}.
+GTEST_TEST(ProximityEngineTests, SignedDistanceToPointOutsideBox) {
+  ProximityEngine<double> engine;
+  std::vector<GeometryId> geometry_map;
+
+  Box box{20., 10., 10.};
+  Isometry3d pose = Isometry3d::Identity();
+  engine.AddAnchoredGeometry(box, pose, GeometryIndex(0));
+  GeometryId box_id = GeometryId::get_new_id();
+  geometry_map.push_back(box_id);
+
+  Vector3d query{13., 0., 0.};
+  auto results = engine.ComputeSignedDistanceToPoint(query, geometry_map);
+  EXPECT_EQ(results.size(), 1);
+  EXPECT_EQ(results[0].id_G, box_id);
+  EXPECT_EQ(results[0].p_GN, Vector3d(10., 0., 0.));
+  EXPECT_EQ(results[0].distance, 3.0);
+  EXPECT_EQ(results[0].grad_W, Vector3d(1.0, 0.0, 0.0));
+
+  query << 13., 0., 9.;
+  results = engine.ComputeSignedDistanceToPoint(query, geometry_map);
+  EXPECT_EQ(results.size(), 1);
+  EXPECT_EQ(results[0].id_G, box_id);
+  EXPECT_EQ(results[0].p_GN, Vector3d(10., 0., 5.));
+  EXPECT_EQ(results[0].distance, 5.0);
+  EXPECT_EQ(results[0].grad_W, Vector3d(3.0, 0.0, 4.0) / 5.0);
+
+  query << 12., 8., 11.;
+  results = engine.ComputeSignedDistanceToPoint(query, geometry_map);
+  EXPECT_EQ(results.size(), 1);
+  EXPECT_EQ(results[0].id_G, box_id);
+  EXPECT_EQ(results[0].p_GN, Vector3d(10., 5., 5.));
+  EXPECT_EQ(results[0].distance, 7.0);
+  EXPECT_EQ(results[0].grad_W, Vector3d(2., 3., 6.) / 7.);
+}
+
+// We set up a 20x10x10 box centered at the origin [-10,10]x[-5,5]x[-5,5] and
+// test these query points on the boundary of the box: on a face, on an edge,
+// and on a vertex of the box.
+GTEST_TEST(ProximityEngineTests, SignedDistanceToPointOnBoundaryOfBox) {
+  ProximityEngine<double> engine;
+  std::vector<GeometryId> geometry_map;
+
+  Box box{20., 10., 10.};
+  Isometry3d pose = Isometry3d::Identity();
+  engine.AddAnchoredGeometry(box, pose, GeometryIndex(0));
+  GeometryId box_id = GeometryId::get_new_id();
+  geometry_map.push_back(box_id);
+
+  Vector3d query{-10., 0., 0.};  // On the face {-10}x[-5,5]x[-5,5].
+  auto results = engine.ComputeSignedDistanceToPoint(query, geometry_map);
+  EXPECT_EQ(results.size(), 1);
+  EXPECT_EQ(results[0].id_G, box_id);
+  EXPECT_EQ(results[0].p_GN, Vector3d(-10., 0., 0.));
+  EXPECT_EQ(results[0].distance, 0.);
+  EXPECT_EQ(results[0].grad_W, Vector3d(-1., 0., 0.));
+
+  query << -10., 0., 5.;  // On the edge {-10}x[-5,5]x{5}.
+  results = engine.ComputeSignedDistanceToPoint(query, geometry_map);
+  EXPECT_EQ(results.size(), 1);
+  EXPECT_EQ(results[0].id_G, box_id);
+  EXPECT_EQ(results[0].p_GN, Vector3d(-10., 0., 5.));
+  EXPECT_EQ(results[0].distance, 0.);
+  EXPECT_TRUE(CompareMatrices(results[0].grad_W,
+                              Vector3d(-2., 0., 1.) / sqrt(5.), 1e-15,
+                              MatrixCompareType::absolute));
+
+  query << -10., -5., -5.;  // On the vertex {-10}x{-5}x{-5}.
+  results = engine.ComputeSignedDistanceToPoint(query, geometry_map);
+  EXPECT_EQ(results.size(), 1);
+  EXPECT_EQ(results[0].id_G, box_id);
+  EXPECT_EQ(results[0].p_GN, Vector3d(-10., -5., -5.));
+  EXPECT_EQ(results[0].distance, 0.);
+  EXPECT_TRUE(CompareMatrices(results[0].grad_W,
+                              Vector3d(-2., -1., -1.) / sqrt(6.), 1e-15,
+                              MatrixCompareType::absolute));
+}
+
+// We set up a 20x10x10 box centered at the origin [-10,10]x[-5,5]x[-5,5] and
+// test these query points in the interior of the box: near a face, on a
+// medial face, on a medial edge, at a medial vertex, and at the center of
+// the box.
+GTEST_TEST(ProximityEngineTests, SignedDistanceToPointInsideBox) {
+  ProximityEngine<double> engine;
+  std::vector<GeometryId> geometry_map;
+
+  Box box{20., 10., 10.};
+  Isometry3d pose = Isometry3d::Identity();
+  engine.AddAnchoredGeometry(box, pose, GeometryIndex(0));
+  GeometryId box_id = GeometryId::get_new_id();
+  geometry_map.push_back(box_id);
+
+  Vector3d query{6., 1., 2.};  // Nearest to the face [-10,10]x[-5,5]x{5}.
+  auto results = engine.ComputeSignedDistanceToPoint(query, geometry_map);
+  EXPECT_EQ(results.size(), 1);
+  EXPECT_EQ(results[0].id_G, box_id);
+  EXPECT_EQ(results[0].p_GN, Vector3d(6., 1., 5.));
+  EXPECT_EQ(results[0].distance, -3.);
+  EXPECT_EQ(results[0].grad_W, Vector3d(0., 0., 1.));
+
+  query << 6., 0., 1.;  // On a medial face of the box.
+  results = engine.ComputeSignedDistanceToPoint(query, geometry_map);
+  EXPECT_EQ(results.size(), 1);
+  EXPECT_EQ(results[0].id_G, box_id);
+  EXPECT_EQ(results[0].p_GN, Vector3d(10., 0., 1.));
+  EXPECT_EQ(results[0].distance, -4.);
+  EXPECT_EQ(results[0].grad_W, Vector3d(1., 0., 0.));
+
+  query << 6., 1., 1.;  // On a medial edge of the box.
+  results = engine.ComputeSignedDistanceToPoint(query, geometry_map);
+  EXPECT_EQ(results.size(), 1);
+  EXPECT_EQ(results[0].id_G, box_id);
+  EXPECT_EQ(results[0].p_GN, Vector3d(10., 1., 1.));
+  EXPECT_EQ(results[0].distance, -4);
+  EXPECT_EQ(results[0].grad_W, Vector3d(1., 0., 0.));
+
+  query << 5., 0., 0.;  // At a medial vertex of the box.
+  results = engine.ComputeSignedDistanceToPoint(query, geometry_map);
+  EXPECT_EQ(results.size(), 1);
+  EXPECT_EQ(results[0].id_G, box_id);
+  EXPECT_EQ(results[0].p_GN, Vector3d(10., 0., 0.));
+  EXPECT_EQ(results[0].distance, -5);
+  EXPECT_EQ(results[0].grad_W, Vector3d(1., 0., 0.));
+
+  query << 0., 0., 0.;  // At the center of the box.
+  results = engine.ComputeSignedDistanceToPoint(query, geometry_map);
+  EXPECT_EQ(results.size(), 1);
+  EXPECT_EQ(results[0].id_G, box_id);
+  EXPECT_EQ(results[0].p_GN, Vector3d(0., 5., 0.));
+  EXPECT_EQ(results[0].distance, -5.);
+  EXPECT_EQ(results[0].grad_W, Vector3d(0., 1., 0.));
 }
 
 // Penetration tests -- testing data flow; not testing the value of the query.

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdint>
 #include <iterator>
 #include <string>
@@ -18,6 +19,7 @@
 #include <tiny_obj_loader.h>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/drake_variant.h"
 #include "drake/common/sorted_vectors_have_intersection.h"
 
 namespace drake {
@@ -349,6 +351,156 @@ bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
   return false;
 }
 
+
+using SupportGeometry = variant<const fcl::Sphered*,
+                                const fcl::Boxd*>;
+
+struct DistanceToPoint {
+  DistanceToPoint(const GeometryId id_in,
+                  const Isometry3<double>& X_WG_in,
+                  const Vector3d& p_WQ_in) :
+                  geometry_id(id_in), X_WG(X_WG_in), p_WQ(p_WQ_in) {}
+
+  const GeometryId geometry_id;
+  const Isometry3<double>& X_WG;
+  const Vector3d& p_WQ;
+
+  // Computes the signed distance from a sphere to a query point, the nearest
+  // point on the boundary, and the gradient vector.
+  SignedDistanceToPoint<double> operator()(const fcl::Sphered* sphere) {
+    // TODO(DamrongGuoy): Move most code of this function into FCL.
+    const double radius = sphere->radius;
+
+    const Vector3d& p_WG = X_WG.translation();
+    const Vector3d p_GQ_W = p_WQ - p_WG;
+    const double dist_GQ = p_GQ_W.norm();
+    const double distance = dist_GQ - radius;
+
+    // The gradient is always in the direction from the center of the sphere to
+    // the query point Q, regardless of whether the point Q is outside or inside
+    // the sphere G.  The gradient is undefined if the query point Q is at the
+    // center of the sphere G.
+    //
+    // If the query point Q is at the center of the sphere G, we arbitrarily set
+    // the gradient vector to (1,0,0) as documented in query_object.h
+    // (QueryObject::ComputeSignedDistanceToPoint).
+    //
+    // TODO(DamrongGuoy): Set up tolerance, so that very near the center of the
+    // sphere, we consistently set the gradient vector in the direction (1,0,0)
+    // instead of a noisy direction.
+    Vector3d grad_W = (dist_GQ != 0.0) ? p_GQ_W / dist_GQ
+                                       : Vector3d{1.0, 0.0, 0.0};
+
+    // Position vector of the nearest point N on G's surface from the query
+    // point Q, expressed in G's frame.
+    const Vector3d p_GN_W = radius * grad_W;
+    const Vector3d p_GN_G = X_WG.inverse() * p_GN_W;
+
+    return SignedDistanceToPoint<double>{geometry_id, p_GN_G, distance, grad_W};
+  }
+
+  // Computes the signed distance from a box to a query point, the nearest
+  // point on the boundary, and the gradient vector.
+  SignedDistanceToPoint<double> operator()(const fcl::Boxd* box) {
+    // TODO(DamrongGuoy): Move most code of this function into FCL.
+    const Vector3d p_GQ_G = X_WG * p_WQ;
+
+    // The box B is an axis-aligned box [-h(0),h(0)]x[-h(1),h(1)]x[-h(2),h(2)]
+    // centered at the origin, where h(i) is half the size of the box in the
+    // i-th coordinate.
+    const Vector3d half_size = box->side / 2.0;
+
+    // Clamping when a coordinate `coord` is strictly beyond or exactly on the
+    // boundary values ±half_size(i). It will help us check whether a query
+    // point is outside the box, on the boundary of the box, or inside the box.
+    auto clamping = [&half_size](const int i, const double coord,
+                                 bool& isClamp) {
+      isClamp = true;
+      if (coord >= half_size(i)) return half_size(i);
+      if (coord <= -half_size(i)) return -half_size(i);
+      isClamp = false;
+      return coord;
+    };
+
+    // For a query point inside the box, this helper function picks one or more
+    // axes whose coordinate is closest to the boundary value ±half_size(i). It
+    // will help us compute the nearest point on the boundary.
+    // @param coordinates inside the box.
+    auto extremalAxis = [&half_size](const Vector3d& coordinates) {
+      double minDiff = std::numeric_limits<double>::infinity();
+      int axis = 0;
+      for (int i = 0; i < 3; ++i) {
+        for (auto bound : std::vector<double>{half_size(i), -half_size(i)}) {
+          double diff = std::abs(bound - coordinates(i));
+          if (diff < minDiff) {
+            minDiff = diff;
+            axis = i;
+          }
+        }
+      }
+      return axis;
+    };
+
+    // For a query point Q and the box B with boundary ∂B, after clamping
+    // below, we expect the following results for `clamp` and `isClamp`
+    // depending on whether Q is outside B, on ∂B, or inside B.
+    //----------------------------------------------------------
+    //                | clamp | isClamp
+    //----------------|-------|---------------------------------
+    // Q is outside B | ≠ Q   | at least one isClamp(i) is true
+    // Q is on ∂B     | = Q   | at least one isClamp(i) is true
+    // Q is inside B  | = Q   | none of isClamp(i) is true
+    //----------------------------------------------------------
+    //-----------------------------------------
+    //                |  clamp                |
+    //----------------|-----------------------|
+    // Q is outside B | = nearest point on ∂B |
+    // Q is on ∂B     | = nearest point on ∂B |
+    // Q is inside B  | ≠ nearest point on ∂B |
+    //-----------------------------------------
+    Vector3d clamp;
+    Vector3<bool> isClamp;
+    for (int i = 0; i < 3; ++i) clamp(i) = clamping(i, p_GQ_G(i), isClamp(i));
+
+    // Initialize the nearest point `p_GN_G` on ∂B as the `clamp` point.
+    Vector3d p_GN_G = clamp;
+    double distance;
+    Vector3d grad_G{0., 0., 0.};
+
+    if (p_GN_G != p_GQ_G) {
+      // Q is outside the box.
+      Vector3d p_NQ_G = p_GQ_G - p_GN_G;
+      distance = p_NQ_G.norm();
+      grad_G = p_NQ_G / distance;
+    } else if (isClamp(0) || isClamp(1) || isClamp(2)) {
+      // Q is on the boundary of the box.
+      distance = 0.0;
+      // A point on a face of the box has one isClamp(i) = true.
+      // A point on an edge of the box has two isClamp(i) = true.
+      // A point on a vertex of the box has three isClamp(i) = true.
+      // The gradient at a point on an edge or a vertex of the box is undefined.
+      // Here, the calculation is equivalent to taking a linear combination.
+      for (int i = 0; i < 3; ++i) {
+        if (isClamp(i)) grad_G(i) = clamp(i);
+      }
+      grad_G.normalize();
+    } else {
+      // Q is inside the box.
+      // TODO(DamrongGuoy): Write a better way to handle the query points on
+      // the medial axis.  It has multiple nearest points, so its gradient is
+      // undefined.  Here, we pick the first nearest point we found.
+      int axis = extremalAxis(p_GQ_G);
+      bool gez = (p_GQ_G(axis) >= 0.);  // gez = greater than or equal zero
+      p_GN_G(axis) = (gez) ? half_size(axis) : -half_size(axis);
+      grad_G(axis) = (gez) ? 1. : -1.;
+      distance = -half_size(axis) + std::abs(p_GQ_G(axis));
+    }
+
+    Vector3d grad_W = X_WG.inverse() * grad_G;
+    return SignedDistanceToPoint<double>{geometry_id, p_GN_G, distance, grad_W};
+  }
+};
+
 // The callback function in fcl::distance request. It supports
 // ComputeSignedDistanceToPoint.
 bool DistanceFromPointCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
@@ -365,8 +517,8 @@ bool DistanceFromPointCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
   // We use `const` to prevent modification of the collision objects.
   const fcl::CollisionObjectd* point_object = data.query_point;
   const fcl::CollisionObjectd* geometry_object =
-                                   (data.query_point == fcl_object_A_ptr)?
-                                   fcl_object_B_ptr: fcl_object_A_ptr;
+      (data.query_point == fcl_object_A_ptr) ?
+      fcl_object_B_ptr : fcl_object_A_ptr;
 
   const std::vector<GeometryId>& geometry_map = data.geometry_map;
   GeometryId target_id = EncodedData(*geometry_object).id(geometry_map);
@@ -377,46 +529,27 @@ bool DistanceFromPointCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
   // TODO(DamrongGuoy): Replace this custom code when FCL does this for us with
   // the required accuracy and performance.
   //
-  // For now, we skip any non-sphere geometry. Returning false tells fcl to
-  // continue to other objects.
-  if (collision_geometry->getNodeType() != fcl::GEOM_SPHERE)
-    return false;
+  SupportGeometry geometry;
+  switch (collision_geometry->getNodeType()) {
+    case fcl::GEOM_SPHERE:
+      geometry = static_cast<const fcl::Sphered*>(collision_geometry);
+      break;
+    case fcl::GEOM_BOX:
+      geometry = static_cast<const fcl::Boxd*>(collision_geometry);
+      break;
+    default:
+      return false;  // Returning false tells fcl to continue to other objects.
+  }
 
-  const fcl::Sphered& fcl_sphere =
-      *static_cast<const fcl::Sphered*>(collision_geometry);
-  const double radius = fcl_sphere.radius;
-
-  const Vector3d& p_WQ = point_object->getTranslation();
-  const Vector3d& p_WG = geometry_object->getTranslation();
-  const Vector3d p_GQ_W = p_WQ - p_WG;
-  const double dist_GQ = p_GQ_W.norm();
-  const double distance = dist_GQ - radius;
-
-  if (distance > data.threshold)
-    return false;  // Returning false tells fcl to continue to other objects.
-
-  // The gradient is always in the direction from the center of the sphere to
-  // the query point Q, regardless of whether the point Q is outside or inside
-  // the sphere G.  The gradient is undefined if the query point Q is at the
-  // center of the sphere G.
-  //
-  // If the query point Q is at the center of the sphere G, we arbitrarily set
-  // the gradient vector to (1,0,0) as documented in query_object.h
-  // (QueryObject::ComputeSignedDistanceToPoint).
-  //
-  // TODO(DamrongGuoy): Set up tolerance, so that very near the center of the
-  // sphere, we consistently set the gradient vector in the direction (1,0,0)
-  // instead of a noisy direction.
-  Vector3d grad_W = (dist_GQ != 0.0)? p_GQ_W / dist_GQ
-                                    : Vector3d{1.0, 0.0, 0.0};
-
-  // Position vector of the nearest point N on G's surface from the query
-  // point Q, expressed in G's frame.
   const Isometry3<double>& X_WG = geometry_object->getTransform();
-  const Vector3d p_GN_W = radius * grad_W;
-  const Vector3d p_GN_G = X_WG.inverse() * p_GN_W;
+  const Vector3d& p_WQ = point_object->getTranslation();
 
-  data.distances->emplace_back(target_id, p_GN_G, distance, grad_W);
+  SignedDistanceToPoint<double> distance =
+      visit(DistanceToPoint{target_id, X_WG, p_WQ}, geometry);
+
+  if (distance.distance <= data.threshold)
+    data.distances->emplace_back(distance);
+
   return false;  // Returning false tells fcl to continue to other objects.
 }
 
