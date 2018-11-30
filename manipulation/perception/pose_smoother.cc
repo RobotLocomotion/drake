@@ -8,6 +8,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/manipulation/util/moving_average_filter.h"
 #include "drake/math/quaternion.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -58,40 +59,7 @@ VectorX<double> ComputeVelocities(const Isometry3d& pose_1,
   }
   return velocities;
 }
-// TODO(naveenoid) : Replace the usage of these methods eventually with
-// PoseVector or a similar future variant.
-/*
- * Converts a 7 dimensional VectorX<double> describing a pose (composed by
- * positions in the first 3 dimensions and orientation in quaternions in the
- * next 4) into an Eigen::Isometry3d object.
- */
-Isometry3<double> VectorToIsometry3d(const VectorX<double>& pose_vector) {
-  Isometry3<double> pose = Isometry3<double>::Identity();
-  pose.linear() = Quaterniond(pose_vector(3), pose_vector(4), pose_vector(5),
-                              pose_vector(6))
-      .toRotationMatrix();
-  pose.translation() = pose_vector.head<3>();
-  pose.makeAffine();
-  return pose;
-}
 
-/*
- * Converts a pose specified as an Eigen::Isometry3d into a 7 dimensional
- * VectorX<double> (composed by positions in the first 3 dimensions and
- * orientation in quaternions in the next 4).
- */
-VectorX<double> Isometry3dToVector(const Isometry3<double>& pose) {
-  VectorX<double> pose_vector = VectorX<double>::Zero(7);
-  pose_vector.head<3>() = pose.translation();
-  Quaterniond return_quat = Quaterniond(pose.linear());
-  return_quat = math::QuaternionToCanonicalForm(return_quat);
-
-  pose_vector.tail<4>() = (VectorX<double>(4) << return_quat.w(),
-      return_quat.x(), return_quat.y(), return_quat.z())
-      .finished();
-
-  return pose_vector;
-}
 
 }  // namespace
 
@@ -157,26 +125,36 @@ void PoseSmoother::DoCalcUnrestrictedUpdate(
   }
   // If data is below threshold it can be added to the filter.
   if (accept_data_point) {
-    Quaterniond input_quaternion = Quaterniond(input_pose.linear());
+    const Quaterniond input_quaternion(input_pose.linear());
+    const math::RotationMatrixd input_R(input_quaternion);
+    const Vector3<double>& input_p = input_pose.translation();
+    const math::RigidTransform corrected_input(input_R, input_p);
 
-    input_quaternion = math::QuaternionToCanonicalForm(input_quaternion);
-    Isometry3d corrected_input = input_pose;
-    corrected_input.linear() = input_quaternion.toRotationMatrix();
-
-    Isometry3d accepted_pose = Isometry3d::Identity();
+    math::RigidTransformd accepted_pose;  // Default is identity pose.
     // If the smoother is enabled.
     if (is_filter_enabled_) {
-      VectorX<double> temp =
-          internal_state.filter->Update(Isometry3dToVector(corrected_input));
-      accepted_pose = VectorToIsometry3d(temp);
+      // Create a 7-element array whose first four elements describe orientation
+      // with a "canonical" quaternion (q0, q1, q2, q3) and whose last three
+      // elements are the position (x, y, z).
+      // Note: A "canonical" quaternion is a quaternion with q0 > = 0.
+      const Quaterniond corrected_input_quat =
+          corrected_input.rotation().ToQuaternion();
+      VectorX<double> corrected_pose_vector(7);
+      corrected_pose_vector << translation(), quat.matrix();
+
+      VectorX<double> position_quat =
+          internal_state.filter->Update(corrected_pose_vector);
+
+      const Quaterniond quat(position_quat(3), position_quat(4),
+                             position_quat(5), position_quat(6));
+      accepted_pose.set(math::RotationMatrixd(quat), position_quat.head<3>());
     } else {
       accepted_pose = corrected_input;
     }
-    current_velocity = ComputeVelocities(
-        accepted_pose, current_pose, current_time -
-            time_at_last_accepted_pose);
+    current_velocity = ComputeVelocities(accepted_pose.GetAsIsometry3(),
+        current_pose, current_time - time_at_last_accepted_pose);
     time_at_last_accepted_pose = current_time;
-    current_pose = accepted_pose;
+    current_pose = accepted_pose.GetAsIsometry3();
   } else {
     drake::log()->debug("Data point rejected");
   }
