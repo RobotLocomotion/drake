@@ -127,7 +127,7 @@ void LcmPublisherSystem::DoPublish(
         systems::TriggerType::kInitialization) {
       DRAKE_DEMAND(++num_initialization_events == 1);
       SPDLOG_TRACE(drake::log(), "Invoking initialization publisher");
-      event->handle(context);
+      events[i]->handle(context);
     }
   }
 
