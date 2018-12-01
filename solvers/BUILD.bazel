@@ -101,7 +101,6 @@ drake_cc_library(
     srcs = ["choose_best_solver.cc"],
     hdrs = ["choose_best_solver.h"],
     deps = [
-        ":dreal_solver",
         ":equality_constrained_qp_solver",
         ":gurobi_solver",
         ":ipopt_solver",
