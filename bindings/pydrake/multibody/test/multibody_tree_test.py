@@ -589,8 +589,8 @@ class TestMultibodyTree(unittest.TestCase):
 
         # Get state from context.
         x = tree.GetPositionsAndVelocities(context)
-        q = x[0:nq]
-        v = x[nq:nq+nv]
+        q = x[0:nq].copy()
+        v = x[nq:nq+nv].copy()
 
         # Get positions and velocities of specific model instances
         # from the postion/velocity vector of the plant.
@@ -607,12 +607,48 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTrue(np.allclose(v_gripper_desired, v_gripper))
 
         # Verify that SetPositionsInArray() and SetVelocitiesInArray() works.
-        q = tree.SetPositionsInArray(iiwa_model, q_iiwa * 0, q)
+        tree.SetPositionsInArray(iiwa_model, np.zeros([len(q_iiwa)]), q)
         self.assertTrue(np.allclose(
-            tree.GetPositionsFromArray(iiwa_model, q), q_iiwa * 0))
-        v = tree.SetVelocitiesInArray(iiwa_model, v_iiwa * 0, v)
+            tree.GetPositionsFromArray(iiwa_model, q),
+            np.zeros([len(q_iiwa)])))
+        tree.SetVelocitiesInArray(iiwa_model, np.zeros([len(v_iiwa)]), v)
         self.assertTrue(np.allclose(
-            tree.GetVelocitiesFromArray(iiwa_model, v), v_iiwa * 0))
+            tree.GetVelocitiesFromArray(iiwa_model, v),
+            np.zeros([len(v_iiwa)])))
+
+    def test_map_qdot_to_v_and_back(self):
+        # Create a MultibodyPlant with a kuka arm welded to the world.
+        iiwa_sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/" +
+            "iiwa_description/sdf/iiwa14_no_collision.sdf")
+        timestep = 0.0002
+        plant = MultibodyPlant(timestep)
+        iiwa_model = AddModelFromSdfFile(
+            file_name=iiwa_sdf_path, model_name='robot', plant=plant)
+        plant.WeldFrames(
+            A=plant.world_frame(),
+            B=plant.GetFrameByName("iiwa_link_0", iiwa_model))
+        plant.Finalize()
+
+        # Create a context of the MBP and set the state of the context
+        # to desired values.
+        context = plant.CreateDefaultContext()
+        tree = plant.tree()
+
+        # Try mapping velocity to qdot and back.
+        nq = plant.num_positions()
+        nv = plant.num_velocities()
+        q = np.linspace(start=1.0, stop=nq, num=nq)
+        v = np.linspace(start=-1.0, stop=-nv, num=nv)
+        x_ref = plant.GetMutablePositionsAndVelocities(context)
+        x_ref[0:nq] = q
+        x_ref[-nv:] = v
+
+        qdot = np.zeros([len(q)])
+        vprime = np.zeros([len(v)])
+        plant.MapVelocityToQDot(context, v, qdot)
+        plant.MapQDotToVelocity(context, qdot, vprime)
+        self.assertTrue(np.allclose(v, vprime))
 
     def test_multibody_add_joint(self):
         """

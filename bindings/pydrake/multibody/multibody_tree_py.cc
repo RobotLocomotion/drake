@@ -265,61 +265,57 @@ void init_module(py::module m) {
         .def("GetMutablePositionsAndVelocities",
             [](const MultibodyTree<T>* self,
                 Context<T>* context) -> Eigen::Ref<VectorX<T>> {
-               return self->GetMutablePositionsAndVelocities(context);
-             },
-             py_reference,
-             // Keep alive, ownership: `return` keeps `Context` alive.
-             py::keep_alive<0, 2>(), py::arg("context"),
-             doc.MultibodyTree.GetMutablePositionsAndVelocities.doc)
+              return self->GetMutablePositionsAndVelocities(context);
+            },
+            py_reference,
+            // Keep alive, ownership: `return` keeps `Context` alive.
+            py::keep_alive<0, 2>(), py::arg("context"),
+            doc.MultibodyTree.GetMutablePositionsAndVelocities.doc)
         .def("GetPositionsFromArray", &Class::GetPositionsFromArray,
-             py::arg("model_instance"), py::arg("q"),
-             doc.MultibodyTree.GetPositionsFromArray.doc)
+            py::arg("model_instance"), py::arg("q"),
+            doc.MultibodyTree.GetPositionsFromArray.doc)
         .def("SetPositionsInArray",
-             [](const Class* self, multibody::ModelInstanceIndex model_instance,
+            [](const Class* self, multibody::ModelInstanceIndex model_instance,
                 const Eigen::Ref<const VectorX<T>> q_instance,
-                const VectorX<T>& q) -> VectorX<T> {
-               VectorX<T> qnew = q;
-               self->SetPositionsInArray(model_instance, q_instance, &qnew);
-               return qnew;
-             },
-             py::arg("model_instance"), py::arg("q_instance"), py::arg("q"),
-             doc.MultibodyTree.SetPositionsInArray.doc)
+                Eigen::Ref<VectorX<T>> q) -> void {
+              self->SetPositionsInArray(model_instance, q_instance, &q);
+            },
+            py::arg("model_instance"), py::arg("q_instance"), py::arg("q"),
+            doc.MultibodyTree.SetPositionsInArray.doc)
         .def("SetVelocitiesInArray",
-             [](const Class* self, multibody::ModelInstanceIndex model_instance,
+            [](const Class* self, multibody::ModelInstanceIndex model_instance,
                 const Eigen::Ref<const VectorX<T>> v_instance,
-                const VectorX<T>& v) -> VectorX<T> {
-               VectorX<T> vnew = v;
-               self->SetVelocitiesInArray(model_instance, v_instance, &vnew);
-               return vnew;
-             },
-             py::arg("model_instance"), py::arg("v_instance"), py::arg("v"),
-             doc.MultibodyTree.SetVelocitiesInArray.doc)
+                Eigen::Ref<VectorX<T>> v) -> void {
+              self->SetVelocitiesInArray(model_instance, v_instance, &v);
+            },
+            py::arg("model_instance"), py::arg("v_instance"), py::arg("v"),
+            doc.MultibodyTree.SetVelocitiesInArray.doc)
         .def("CalcPointsPositions",
             [](const Class* self, const Context<T>& context,
                 const Frame<T>& frame_B,
                 const Eigen::Ref<const MatrixX<T>>& p_BQi,
                 const Frame<T>& frame_A) {
-               MatrixX<T> p_AQi(p_BQi.rows(), p_BQi.cols());
-               self->CalcPointsPositions(context, frame_B, p_BQi, frame_A,
-                                         &p_AQi);
-               return p_AQi;
-             },
-             py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
-             py::arg("frame_A"), doc.MultibodyTree.CalcPointsPositions.doc)
+              MatrixX<T> p_AQi(p_BQi.rows(), p_BQi.cols());
+              self->CalcPointsPositions(
+                  context, frame_B, p_BQi, frame_A, &p_AQi);
+              return p_AQi;
+            },
+            py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
+            py::arg("frame_A"), doc.MultibodyTree.CalcPointsPositions.doc)
         .def("CalcPointsGeometricJacobianExpressedInWorld",
-             [](const Class* self, const Context<T>& context,
+            [](const Class* self, const Context<T>& context,
                 const Frame<T>& frame_F,
                 const Eigen::Ref<const MatrixX<T>>& p_WQ_list) {
-               const int num_points = p_WQ_list.cols();
-               MatrixX<T> Jv_WFq(3 * num_points, self->num_velocities());
-               self->CalcPointsGeometricJacobianExpressedInWorld(
-                   context, frame_F, p_WQ_list, &Jv_WFq);
-               return Jv_WFq;
-             },
-             py::arg("context"), py::arg("frame_F"),
-             py::arg("p_WQ_list") = Vector3<T>::Zero().eval(),
-             doc.MultibodyTree.CalcPointsGeometricJacobianExpressedInWorld.
-                 doc_4args)
+              const int num_points = p_WQ_list.cols();
+              MatrixX<T> Jv_WFq(3 * num_points, self->num_velocities());
+              self->CalcPointsGeometricJacobianExpressedInWorld(
+                  context, frame_F, p_WQ_list, &Jv_WFq);
+              return Jv_WFq;
+            },
+            py::arg("context"), py::arg("frame_F"),
+            py::arg("p_WQ_list") = Vector3<T>::Zero().eval(),
+            doc.MultibodyTree.CalcPointsGeometricJacobianExpressedInWorld
+                .doc_4args)
         .def("CalcFrameGeometricJacobianExpressedInWorld",
             [](const Class* self, const Context<T>& context,
                 const Frame<T>& frame_B, const Vector3<T>& p_BoFo_B) {
@@ -611,27 +607,27 @@ void init_multibody_plant(py::module m) {
     // Port accessors.
     cls  // BR
         .def("get_actuation_input_port",
-             overload_cast_explicit<const systems::InputPort<T>&>(
-                 &Class::get_actuation_input_port),
-             py_reference_internal,
-             doc.MultibodyPlant.get_actuation_input_port.doc_0args)
+            overload_cast_explicit<const systems::InputPort<T>&>(
+                &Class::get_actuation_input_port),
+            py_reference_internal,
+            doc.MultibodyPlant.get_actuation_input_port.doc_0args)
         .def("get_actuation_input_port",
-             overload_cast_explicit<const systems::InputPort<T>&,
-                 multibody::ModelInstanceIndex>(
-                 &Class::get_actuation_input_port),
-             py_reference_internal,
-             doc.MultibodyPlant.get_actuation_input_port.doc_1args)
+            overload_cast_explicit<const systems::InputPort<T>&,
+                multibody::ModelInstanceIndex>(
+                &Class::get_actuation_input_port),
+            py_reference_internal,
+            doc.MultibodyPlant.get_actuation_input_port.doc_1args)
         .def("get_continuous_state_output_port",
-             overload_cast_explicit<const systems::OutputPort<T>&>(
-                 &Class::get_continuous_state_output_port),
-             py_reference_internal,
-             doc.MultibodyPlant.get_continuous_state_output_port.doc_0args)
+            overload_cast_explicit<const systems::OutputPort<T>&>(
+                &Class::get_continuous_state_output_port),
+            py_reference_internal,
+            doc.MultibodyPlant.get_continuous_state_output_port.doc_0args)
         .def("get_continuous_state_output_port",
-             overload_cast_explicit<const systems::OutputPort<T>&,
-                                    multibody::ModelInstanceIndex>(
-                 &Class::get_continuous_state_output_port),
-             py_reference_internal,
-             doc.MultibodyPlant.get_continuous_state_output_port.doc_1args)
+            overload_cast_explicit<const systems::OutputPort<T>&,
+                multibody::ModelInstanceIndex>(
+                &Class::get_continuous_state_output_port),
+            py_reference_internal,
+            doc.MultibodyPlant.get_continuous_state_output_port.doc_1args)
         .def("get_contact_results_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_contact_results_output_port),

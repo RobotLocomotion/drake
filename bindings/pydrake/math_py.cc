@@ -32,12 +32,12 @@ PYBIND11_MODULE(math, m) {
   using T = double;
 
   m.def("wrap_to", &wrap_to<T, T>, py::arg("value"), py::arg("low"),
-        py::arg("high"), doc.wrap_to.doc);
+      py::arg("high"), doc.wrap_to.doc);
   m.def("ComputeBasisFromAxis",
       [](int axis_index, const Vector3<T>& axis) {
-         return ComputeBasisFromAxis(axis_index, axis);
-      }, py::arg("axis_index"), py::arg("axis_W"),
-      doc.ComputeBasisFromAxis.doc);
+        return ComputeBasisFromAxis(axis_index, axis);
+      },
+      py::arg("axis_index"), py::arg("axis_W"), doc.ComputeBasisFromAxis.doc);
   py::class_<BarycentricMesh<T>>(m, "BarycentricMesh", doc.BarycentricMesh.doc)
       .def(py::init<BarycentricMesh<T>::MeshGrid>(),
           doc.BarycentricMesh.ctor.doc_1args)
