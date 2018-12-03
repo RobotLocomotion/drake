@@ -316,6 +316,13 @@ class RotationMatrix {
     return RotationMatrix<T>(R_AB_.transpose());
   }
 
+  /// Returns `R_BA = R_AB⁻¹`, the transpose of this %RotationMatrix.
+  /// @note For a valid rotation matrix `R_BA = R_AB⁻¹ = R_ABᵀ`.
+  // @internal This method's name was chosen to mimic Eigen's transpose().
+  RotationMatrix<T> transpose() const {
+    return RotationMatrix<T>(R_AB_.transpose());
+  }
+
   /// Returns the Matrix3 underlying a %RotationMatrix.
   const Matrix3<T>& matrix() const { return R_AB_; }
 

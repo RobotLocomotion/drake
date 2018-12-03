@@ -1252,16 +1252,14 @@ class BoxPenetrationTest : public ::testing::Test {
     // Compute the pose of the colliding box.
     // a. Orient the box so that the corner p_BoC_B = (-0.5, -0.5, -0.5) lies in
     //    the most -z extent. With only rotation, p_BoC_B != p_WC.
-    Isometry3d X_WB;
-    X_WB = AngleAxisd(std::atan(M_SQRT2), Vector3d(M_SQRT1_2, -M_SQRT1_2, 0))
-               .toRotationMatrix();
+    const math::RotationMatrixd R_WB(AngleAxisd(std::atan(M_SQRT2),
+                                     Vector3d(M_SQRT1_2, -M_SQRT1_2, 0);
 
     // b. Translate it so that the rotated corner p_BoC_W lies at
     //    (0, 0, -d).
-    Vector3d p_BoC_W = X_WB.linear() * p_BoC_B;
-    Vector3d p_WB = p_WC - p_BoC_W;
-    X_WB.translation() = p_WB;
-    return X_WB;
+    const Vector3d p_BoC_W = R_WB * p_BoC_B;
+    const Vector3d p_WB = p_WC - p_BoC_W;
+    return math::RigidTransformd(R_WB, p_WB).GetAsIsometry3());
   }
 
   // Produces the X_WB that produces low-quality answers.

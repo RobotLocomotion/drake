@@ -140,11 +140,10 @@ TEST_F(TwoFreeBodiesTest, OrientationConstraint) {
   EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
   const auto q_sol = ik_.prog().GetSolution(ik_.q());
   RetrieveSolution();
-  const Eigen::Matrix3d R_AbarBbar =
-      (body1_quaternion_sol_.inverse() * body2_quaternion_sol_)
-          .toRotationMatrix();
-  const Eigen::Matrix3d R_AB =
-      R_AbarA.matrix().transpose() * R_AbarBbar * R_BbarB.matrix();
+  const math::RotationMatrix<double> R_AbarBbar(body1_quaternion_sol_.inverse()
+                                              * body2_quaternion_sol_);
+  const math::RotationMatrix<double> R_AB = R_AbarA.transpose()
+                                          * R_AbarBbar * R_BbarB;
   const double angle = Eigen::AngleAxisd(R_AB).angle();
   EXPECT_LE(angle, angle_bound + 1E-6);
 }
