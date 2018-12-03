@@ -323,7 +323,6 @@ GeometryState<T>& GeometryState<T>::operator=(
     // "visualizable" (which means has an illustration role in the main
     // scene graph.
     if (geometry.has_illustration_role()) {
-      const Vector4<double>& diffuse = geometry.visual_material().diffuse();
       internal::InternalGeometry* parent_geometry = nullptr;
       if (geometry.parent_id()) {
         GeometryId parent_id = *geometry.parent_id();
@@ -333,12 +332,16 @@ GeometryState<T>& GeometryState<T>::operator=(
       // to a geometry that has zero-alpha. We assume that for the lifespan of
       // this dev class, it won't come up. However, this is documented in
       // the accompanying README.md.
+      IllustrationProperties properties;
+      properties.AddGroup("phong");
+      properties.AddProperty("phong", "diffuse",
+          geometry.illustration_properties()->GetPropertyOrDefault(
+              "phong", "diffuse", Vector4<double>(0.9, 0.9, 0.9, 1.0)));
       const SourceId source_id = tester.GetSourceId(geometry_id);
       RegisterValidGeometry(source_id,
                             geometry.frame_id(), geometry_id,
                             geometry.shape().Clone(), geometry.name(),
-                            geometry.X_PG(), diffuse,
-                            parent_geometry);
+                            geometry.X_PG(), properties, parent_geometry);
     }
   }
 
@@ -623,10 +626,17 @@ GeometryId GeometryState<T>::RegisterGeometry(
         ", but the frame doesn't belong to the source.";
   });
 
+  IllustrationProperties properties;
+  if (geometry->illustration_properties() != nullptr) {
+    properties.AddGroup("phong");
+    properties.AddProperty(
+        "phong", "diffuse",
+        geometry->illustration_properties()->GetPropertyOrDefault(
+            "phong", "diffuse", Vector4<double>(0.9, 0.9, 0.9, 1.0)));
+  }
   RegisterValidGeometry(source_id, frame_id, geometry_id,
                         geometry->release_shape(), geometry->name(),
-                        geometry->pose(), geometry->visual_material().diffuse(),
-                        nullptr);
+                        geometry->pose(), properties, nullptr);
 
   return geometry_id;
 }
@@ -655,10 +665,17 @@ GeometryId GeometryState<T>::RegisterGeometryWithParent(
   FrameId frame_id = parent_geometry.frame_id();
 
   GeometryId new_id = geometry->id();
+  IllustrationProperties properties;
+  if (geometry->illustration_properties() != nullptr) {
+    properties.AddGroup("phong");
+    properties.AddProperty(
+        "phong", "diffuse",
+        geometry->illustration_properties()->GetPropertyOrDefault(
+            "phong", "diffuse", Vector4<double>(0.9, 0.9, 0.9, 1.0)));
+  }
   RegisterValidGeometry(source_id, frame_id, new_id,
                         geometry->release_shape(), geometry->name(),
-                        geometry->pose(), geometry->visual_material().diffuse(),
-                        &parent_geometry);
+                        geometry->pose(), properties, &parent_geometry);
 
   return new_id;
 }
@@ -1261,7 +1278,7 @@ template <typename T>
 void GeometryState<T>::RegisterValidGeometry(
     SourceId source_id, FrameId frame_id, GeometryId geometry_id,
     std::unique_ptr<Shape> shape, const std::string& name,
-    const Isometry3<double>& X_PG, const Vector4<double>& diffuse,
+    const Isometry3<double>& X_PG, const IllustrationProperties& properties,
     internal::InternalGeometry* parent_geometry) {
   InternalFrame& frame = frames_[frame_id];
   frame.add_child(geometry_id);
@@ -1295,24 +1312,20 @@ void GeometryState<T>::RegisterValidGeometry(
     parent_geometry->add_child(geometry_id);
   }
 
-  // NOTE: This is a hack to provide compatibility with the fact that
-  // GeometryInstance currently has a visual material -- the *correct* work
-  // flow is to assign a role explicitly.
-  if (diffuse(3) > 0) {
-    PerceptionProperties p;
+  AssignRole(source_id, geometry_id, properties);
+
+  PerceptionProperties p;
+  if (properties.HasProperty("phong", "diffuse")) {
     p.AddGroup("phong");
-    p.AddProperty("phong", "diffuse", diffuse);
-    p.AddGroup("label");
-    // NOTE: These render labels are *not* being returned and there is currently
-    // no meaningful facility for looking up by render label.
-    static const auto kNonTerrainLabel = render::RenderLabel::new_label();
-    p.AddProperty("label", "id", kNonTerrainLabel);
-    AssignRole(source_id, geometry_id, p);
-    IllustrationProperties i;
-    i.AddGroup("phong");
-    i.AddProperty("phong", "diffuse", diffuse);
-    AssignRole(source_id, geometry_id, i);
+    p.AddProperty("phong", "diffuse",
+                  properties.GetProperty<Vector4<double>>("phong", "diffuse"));
   }
+  p.AddGroup("label");
+  // NOTE: These render labels are *not* being returned and there is currently
+  // no meaningful facility for looking up by render label.
+  static const auto kNonTerrainLabel = render::RenderLabel::new_label();
+  p.AddProperty("label", "id", kNonTerrainLabel);
+  AssignRole(source_id, geometry_id, p);
 }
 
 }  // namespace dev
