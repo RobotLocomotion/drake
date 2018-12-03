@@ -13,12 +13,9 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_library(
     name = "fibonacci",
     hdrs = [
-        "fibonacci.h",
+        "fibonacci_difference_equation.h",
     ],
-    deps = [
-        "//common:essential",
-        "//systems/framework:leaf_system",
-    ],
+    deps = [],
 )
 
 drake_cc_binary(
@@ -40,7 +37,6 @@ drake_cc_googletest(
     deps = [
         ":fibonacci",
         "//systems/analysis",
-        "//systems/framework/test_utilities",
     ],
 )
 

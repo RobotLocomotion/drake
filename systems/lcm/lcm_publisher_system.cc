@@ -122,14 +122,18 @@ void LcmPublisherSystem::DoPublish(
   // TODO(edrumwri): Replace this DoPublish() handler with separate event
   // handlers in a separate PR (all sorts of tests _will_ break).
   int num_initialization_events = 0;
-  for (int i = 0; i < static_cast<int>(events.size()); ++i) {
-    if (events[i]->get_trigger_type() ==
-        systems::TriggerType::kInitialization) {
+  for (const systems::PublishEvent<double>* event : events) {
+    if (event->get_trigger_type() == systems::TriggerType::kInitialization) {
+      // We expect no more than one initialization event.
       DRAKE_DEMAND(++num_initialization_events == 1);
       SPDLOG_TRACE(drake::log(), "Invoking initialization publisher");
-      events[i]->handle(context);
+      event->handle(context);
     }
   }
+
+  // If events are all initialization events, return now.
+  if (static_cast<int>(events.size()) == num_initialization_events)
+    return;
 
   // If there are remaining non-initialization events, we assume they are
   // requests to publish the input port contents as an LCM message. (This is
@@ -138,8 +142,6 @@ void LcmPublisherSystem::DoPublish(
   // occasional synchronization of periods from different periodic events), we
   // still only want to publish the input port values once, so we don't care if
   // there are more events.
-  if (static_cast<int>(events.size()) - num_initialization_events <= 0)
-    return;
 
   SPDLOG_TRACE(drake::log(), "Publishing LCM {} message", channel_);
   DRAKE_ASSERT((translator_ != nullptr) != (serializer_.get() != nullptr));
