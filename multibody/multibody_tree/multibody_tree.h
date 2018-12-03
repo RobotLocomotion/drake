@@ -2051,13 +2051,13 @@ class MultibodyTree {
       const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP,
       EigenPtr<MatrixX<T>> Jv_WFp) const;
 
-  /// Computes the geometric Jacobian for a point moving with a given frame.
-  /// Consider a point P instantaneously moving with a frame B with position
-  /// `p_BP` in that frame. Frame `Bp` is the frame defined by shifting frame B
-  /// with origin at `Bo` to a new origin at point P. The spatial
-  /// velocity `V_ABp_E` of frame `Bp` measured in a frame A and expressed in a
-  /// frame E relates to the generalized velocities of the system by the
-  /// geometric Jacobian `Jv_ABp_E(q)` by: <pre>
+  /// Computes the geometric Jacobian of a frame instantaneously moving with a
+  /// specified frame in the model. Consider a point P instantaneously moving
+  /// with a frame B with position `p_BP` in that frame. Frame `Bp` is the frame
+  /// defined by shifting frame B with origin at `Bo` to a new origin at point
+  /// P. The spatial velocity `V_ABp_E` of frame `Bp` measured in a frame A and
+  /// expressed in a frame E relates to the generalized velocities of the system
+  /// by the geometric Jacobian `Jv_ABp_E(q)` by: <pre>
   ///   V_ABp_E(q, v) = Jv_ABp_E(q)⋅v
   /// </pre>
   /// This method computes the geometric Jacobian `Jv_ABp_E(q)`.
@@ -2104,9 +2104,9 @@ class MultibodyTree {
       const Frame<T>& frame_A, const Frame<T>& frame_E,
       EigenPtr<MatrixX<T>> Jv_ABp_E) const;
 
-  /// Computes the geometric Jacobian of frame `Bp` relative to frame `A`,
-  /// expressed in frame `E`.  Consider a point P instantaneously moving with a
-  /// frame B with position `p_BP` in that frame. Frame `Bp` is the frame
+  /// Computes the geometric Jacobian of a frame instantaneously moving with a
+  /// specified frame in the model. Consider a point P instantaneously moving
+  /// with a frame B with position `p_BP` in that frame. Frame `Bp` is the frame
   /// defined by shifting frame B with origin at `Bo` to a new origin at point
   /// P. The spatial velocity `V_ABp_E` of frame `Bp` measured in a frame A and
   /// expressed in a frame E can be expressed as: <pre>
@@ -2128,37 +2128,37 @@ class MultibodyTree {
   ///   The (fixed) position of the origin `P` of frame `Bp` as measured and
   ///   expressed in frame B.
   /// @param[in] frame_A
-  ///   The second frame in which the spatial velocity `V_ABp` is measured and
-  ///   expressed.
+  ///   The second frame in which the spatial velocity `V_ABp` is measured.
   /// @param[in] frame_E
-  ///   Frame in which the velocity V_ABp_E is expressed.
+  ///   Frame in which the velocity V_ABp_E, and therefore the Jacobian J_ABp_E
+  ///   is expressed.
   /// @param[out] J_ABp_E_
   ///   The geometric Jacobian `J_ABp_E(q)`, function of the generalized
   ///   positions q only. This Jacobian relates to the spatial velocity
   ///   `V_ABp_E` of frame `Bp` in `A` and expressed in `E` by: <pre>
   ///     V_ABp_E(q, z) = J_ABp_E(q)⋅z </pre>
   ///   where z = q̇ if `from_qdot` is true, and z = v otherwise.
-  ///   Therefore `Jv_ABp_E` is a matrix of size `6 x nz`, where `nz` is the
+  ///   Therefore `J_ABp_E` is a matrix of size `6 x nz`, where `nz` is the
   ///   number of elements in z. On input, matrix `Jv_ABp_E` **must** have size
   ///   `6 x nz` or this method throws an exception. Given a `6 x nz` Jacobian
   ///   J, let Jr be the `3 x nz` rotational part (top 3 rows) and Jt be the
   ///   translational part (bottom 3 rows). These can be obtained as follows:
   ///   ```
-  ///     Jr_ABp = J_ABp.topRows<3>();
-  ///     Jt_ABp = J_ABp.bottomRows<3>();
+  ///     Jr_ABp_E = J_ABp_E.topRows<3>();
+  ///     Jt_ABp_E = J_ABp_E.bottomRows<3>();
   ///   ```
   ///   This ordering is consistent with the internal storage of the
   ///   SpatialVelocity class. Therefore the following operations results in
   ///   a valid spatial velocity: <pre>
   ///     SpatialVelocity<double> V_ABp(J_ABp * z); </pre>
   ///
-  /// @throws std::exception if `J_ABp` is nullptr or if it is not of size
+  /// @throws std::exception if `J_ABp_E` is nullptr or if it is not of size
   ///   `6 x nz`.
   void CalcRelativeFrameGeometricJacobian(
       const systems::Context<T>& context,
-      const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BQ,
+      const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
       const Frame<T>& frame_A, const Frame<T>& frame_E, bool from_qdot,
-      EigenPtr<MatrixX<T>> J_ABq_E) const;
+      EigenPtr<MatrixX<T>> J_ABp_E) const;
 
   /// Given a frame `Fp` defined by shifting a frame F from its origin `Fo` to
   /// a new origin `P`, this method computes the bias term `Ab_WFp` associated

@@ -1067,7 +1067,7 @@ void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
   DRAKE_THROW_UNLESS(Jv_ABp_E->rows() == 6);
   DRAKE_THROW_UNLESS(Jv_ABp_E->cols() == num_velocities());
   CalcRelativeFrameGeometricJacobian(context, frame_B, p_BP, frame_A, frame_E,
-                            false /* from v */, Jv_ABp_E);
+                                     false /* from v */, Jv_ABp_E);
 }
 
 template <typename T>

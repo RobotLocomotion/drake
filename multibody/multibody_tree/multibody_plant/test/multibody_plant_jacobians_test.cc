@@ -69,7 +69,7 @@ class KukaIiwaModelTests : public ::testing::Test {
 
   void SetArbitraryConfiguration() {
     // Get an arbitrary set of angles and velocities for each joint.
-    const VectorX<double> q0 = GetArbitraryJointConfiguration();
+    const VectorX<double> q_v0 = GetArbitraryJointConfiguration();
 
     EXPECT_EQ(plant_->num_joints(), 7);
     for (JointIndex joint_index(0); joint_index < plant_->num_joints();
@@ -77,10 +77,11 @@ class KukaIiwaModelTests : public ::testing::Test {
       const RevoluteJoint<double>& joint =
           dynamic_cast<const RevoluteJoint<double>&>(
               plant_->tree().get_joint(joint_index));
-      joint.set_angle(context_.get(), q0[joint_index]);
+      joint.set_angle(context_.get(), q_v0[joint_index]);
+      joint.set_angular_rate(context_.get(), q_v0[kNumJoints + joint_index]);
     }
 
-    // Set an aribrary (though non-identity) pose of the floating base link.
+    // Set an arbitrary (though non-identity) pose of the floating base link.
     const auto& base_body = plant_->GetBodyByName("iiwa_link_0");
     const RigidTransform<double> X_WB(
         RollPitchYaw<double>(M_PI / 3, -M_PI / 2, M_PI / 8),
@@ -88,12 +89,17 @@ class KukaIiwaModelTests : public ::testing::Test {
     plant_->SetFreeBodyPoseInAnchoredFrame(
         context_.get(), plant_->world_frame(), base_body,
         X_WB.GetAsIsometry3());
+    // Set an arbitrary non-zero spatial velocity of the floating base link.
+    const Vector3<double> w_WB{-1, 1, -1};
+    const Vector3<double> v_WB{1, -1, 1};
+    plant_->tree().SetFreeBodySpatialVelocityOrThrow(base_body, {w_WB, v_WB},
+                                                     context_.get());
   }
 
   // Gets an arm state to an arbitrary configuration in which joint angles and
   // rates are non-zero.
   VectorX<double> GetArbitraryJointConfiguration() {
-    VectorX<double> q(kNumJoints);
+    VectorX<double> q_v(2 * kNumJoints);
 
     // A set of values for the joint's angles chosen mainly to avoid in-plane
     // motions.
@@ -105,9 +111,19 @@ class KukaIiwaModelTests : public ::testing::Test {
     const double qE = q60;
     const double qF = q30;
     const double qG = q60;
-    q << qA, qB, qC, qD, qE, qF, qG;
+    // Arbitrary non-zero velocities.
+    const double v_positive = 0.1;   // rad/s
+    const double v_negative = -0.1;  // rad/s
+    const double vA = v_positive;
+    const double vB = v_negative;
+    const double vC = v_positive;
+    const double vD = v_negative;
+    const double vE = v_positive;
+    const double vF = v_negative;
+    const double vG = v_positive;
+    q_v << qA, qB, qC, qD, qE, qF, qG, vA, vB, vC, vD, vE, vF, vG;
 
-    return q;
+    return q_v;
   }
 
   // Computes the analytical Jacobian Jq_WPi for a set of points Pi moving with
@@ -224,7 +240,7 @@ TEST_F(KukaIiwaModelTests, CalcRelativeFrameGeometricJacobian) {
 
   MatrixX<double> Jq_WEp(6, plant_->num_positions());
 
-  // Compute the analytical Jacobian using the method under test.
+  // Compute the geometric Jacobian using the method under test.
   plant_->tree().CalcRelativeFrameGeometricJacobian(
       *context_, end_effector_link_->body_frame(), p_EP, plant_->world_frame(),
       plant_->world_frame(), true /* from q̇ */, &Jq_WEp);
@@ -250,17 +266,18 @@ TEST_F(KukaIiwaModelTests, CalcRelativeFrameGeometricJacobian) {
   // Compute V_WEp.
   const Body<AutoDiffXd>& end_effector_link_autodiff =
       plant_autodiff_->tree().get_variant(*end_effector_link_);
-  Isometry3<AutoDiffXd> X_WE_autodiff =
+  const Isometry3<AutoDiffXd> X_WE_autodiff =
       plant_autodiff_->tree().EvalBodyPoseInWorld(*context_autodiff_,
                                                   end_effector_link_autodiff);
-  Vector3<AutoDiffXd> p_EP_W = X_WE_autodiff.linear() * p_EP.cast<AutoDiffXd>();
-  SpatialVelocity<AutoDiffXd> V_WEp_autodiff =
+  const Vector3<AutoDiffXd> p_EP_W =
+      X_WE_autodiff.linear() * p_EP.cast<AutoDiffXd>();
+  const SpatialVelocity<AutoDiffXd> V_WEp_autodiff =
       plant_autodiff_->tree()
           .EvalBodySpatialVelocityInWorld(*context_autodiff_,
                                           end_effector_link_autodiff)
           .Shift(p_EP_W);
 
-  // Extract the analytical Jacobian.
+  // Extract the geometric Jacobian.
   MatrixX<double> Jq_WEp_autodiff =
       math::autoDiffToGradientMatrix(V_WEp_autodiff.get_coeffs());
 
