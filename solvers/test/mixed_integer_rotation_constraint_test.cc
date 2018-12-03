@@ -200,8 +200,7 @@ TEST_P(TestMixedIntegerRotationConstraintGenerator, TestConstructor) {
 }
 
 TEST_P(TestMixedIntegerRotationConstraintGenerator, TestBinaryAssignment) {
-  const Eigen::Matrix3d R_test =
-      Eigen::AngleAxisd(0.1, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  const RotationMatrixd R_test = RotationMatrixd::MakeZRotation(0.1);
   auto b_constraint = prog_.AddBoundingBoxConstraint(0, 0, ret.B_[0][0]);
   auto UpdateBConstraint =
       [&b_constraint](const Eigen::Ref<const Eigen::VectorXd>& b_val) {

@@ -7,6 +7,7 @@
 
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
@@ -183,7 +184,7 @@ GTEST_TEST(SnoptTest, DistanceToTetrahedron) {
   EXPECT_NEAR((p_WP_sol - p_WQ_sol).norm(), distance_expected, tol);
   const Eigen::Quaterniond quaternion_WB_sol(quat_WB_sol(0), quat_WB_sol(1),
                                              quat_WB_sol(2), quat_WB_sol(3));
-  const Eigen::Matrix3d R_WB = quaternion_WB_sol.toRotationMatrix();
+  const math::RotationMatrixd R_WB(quaternion_WB_sol);
   const Eigen::Vector3d p_BQ = R_WB.transpose() * (p_WQ_sol - p_WB_sol);
   EXPECT_TRUE(
       ((prog.A_tetrahedron() * p_BQ).array() <= prog.b_tetrahedron().array())

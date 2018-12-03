@@ -219,7 +219,7 @@ GTEST_TEST(UnitInertia, SolidCylinder) {
   // Generate a rotation matrix from a Frame V in which Vz = v to frame Z where
   // Zz = zhat.
   const drake::math::RotationMatrix<double> R_ZV(
-      Quaterniond::FromTwoVectors(Vector3d::UnitZ(), v).toRotationMatrix());
+      Quaterniond::FromTwoVectors(Vector3d::UnitZ(), v));
   // Generate expected solution by computing it in the V frame and re-expressing
   // in the Z frame.
   const UnitInertia<double> Gv_expected = Gz.ReExpress(R_ZV);
