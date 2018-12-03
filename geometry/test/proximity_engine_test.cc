@@ -10,6 +10,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -1259,7 +1260,7 @@ class BoxPenetrationTest : public ::testing::Test {
     //    (0, 0, -d).
     const Vector3d p_BoC_W = R_WB * p_BoC_B;
     const Vector3d p_WB = p_WC - p_BoC_W;
-    return math::RigidTransformd(R_WB, p_WB).GetAsIsometry3());
+    return math::RigidTransformd(R_WB, p_WB).GetAsIsometry3();
   }
 
   // Produces the X_WB that produces low-quality answers.

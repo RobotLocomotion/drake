@@ -285,6 +285,7 @@ drake_cc_googletest(
         ":shape_specification",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//math:geometric_transform",
     ],
 )
 
