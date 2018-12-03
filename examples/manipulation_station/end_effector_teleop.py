@@ -226,7 +226,7 @@ if args.hardware:
     station.Connect(wait_for_cameras=False)
 else:
     station = builder.AddSystem(ManipulationStation())
-    station.AddCupboard()
+    station.SetupDefaultStation()
     object = AddModelFromSdfFile(FindResourceOrThrow(
         "drake/examples/manipulation_station/models/061_foam_brick.sdf"),
         "object", station.get_mutable_multibody_plant(),
