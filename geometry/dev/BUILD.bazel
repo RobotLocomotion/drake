@@ -231,6 +231,7 @@ drake_cc_googletest(
     deps = [
         ":geometry_visualization",
         "//common/test_utilities:expect_throws_message",
+        "//geometry:geometry_visualization",
     ],
 )
 

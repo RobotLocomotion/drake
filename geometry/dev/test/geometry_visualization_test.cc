@@ -9,6 +9,7 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/geometry_visualization.h"
 #include "drake/lcmt_viewer_geometry_data.hpp"
 #include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/systems/framework/context.h"
@@ -44,12 +45,12 @@ GTEST_TEST(GeometryVisualization, SimpleScene) {
   const float g = 0.5f;
   const float b = 0.25f;
   const float a = 0.125f;
+  auto instance = make_unique<GeometryInstance>(
+      Isometry3d::Identity(), make_unique<Sphere>(radius), "sphere");
   Vector4<double> color{r, g, b, a};
-  scene_graph.RegisterGeometry(
-      source_id, frame_id,
-      make_unique<GeometryInstance>(Isometry3d::Identity(),
-                                    make_unique<Sphere>(radius), "sphere",
-                                    VisualMaterial(color)));
+  instance->set_illustration_properties(
+      geometry::MakeDrakeVisualizerProperties(color));
+  scene_graph.RegisterGeometry(source_id, frame_id, std::move(instance));
 
   unique_ptr<Context<double>> context = scene_graph.AllocateContext();
   const GeometryContext<double>& geo_context =
