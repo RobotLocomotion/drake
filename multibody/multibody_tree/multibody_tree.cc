@@ -1067,17 +1067,30 @@ void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
   DRAKE_THROW_UNLESS(Jv_ABp_E->rows() == 6);
   DRAKE_THROW_UNLESS(Jv_ABp_E->cols() == num_velocities());
   CalcRelativeFrameGeometricJacobian(context, frame_B, p_BP, frame_A, frame_E,
-                                     false /* from v */, Jv_ABp_E);
+                                     GeometricJacobianType::kVToSpatialVelocity,
+                                     Jv_ABp_E);
 }
 
 template <typename T>
 void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
     const systems::Context<T>& context,
     const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
-    const Frame<T>& frame_A, const Frame<T>& frame_E, bool from_qdot,
+    const Frame<T>& frame_A, const Frame<T>& frame_E,
+    GeometricJacobianType jacobian_type,
     EigenPtr<MatrixX<T>> J_ABp_E) const {
   DRAKE_THROW_UNLESS(J_ABp_E != nullptr);
   DRAKE_THROW_UNLESS(J_ABp_E->rows() == 6);
+  bool from_qdot{false};
+  switch (jacobian_type) {
+    case GeometricJacobianType::kQDotToSpatialVelocity: {
+      from_qdot = true;
+      break;
+    }
+    case GeometricJacobianType::kVToSpatialVelocity: {
+      // Do nothing. from_qdot is initialized to false.
+      break;
+    }
+  }
   const int num_columns = from_qdot ? num_positions() : num_velocities();
   DRAKE_THROW_UNLESS(J_ABp_E->cols() == num_columns);
 

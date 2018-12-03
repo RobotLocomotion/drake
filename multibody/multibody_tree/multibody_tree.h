@@ -37,6 +37,11 @@
 namespace drake {
 namespace multibody {
 
+enum class GeometricJacobianType {
+  kQDotToSpatialVelocity,
+  kVToSpatialVelocity
+};
+
 /// @cond
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
@@ -2052,52 +2057,8 @@ class MultibodyTree {
       EigenPtr<MatrixX<T>> Jv_WFp) const;
 
   /// Computes the geometric Jacobian of a frame instantaneously moving with a
-  /// specified frame in the model. Consider a point P instantaneously moving
-  /// with a frame B with position `p_BP` in that frame. Frame `Bp` is the frame
-  /// defined by shifting frame B with origin at `Bo` to a new origin at point
-  /// P. The spatial velocity `V_ABp_E` of frame `Bp` measured in a frame A and
-  /// expressed in a frame E relates to the generalized velocities of the system
-  /// by the geometric Jacobian `Jv_ABp_E(q)` by: <pre>
-  ///   V_ABp_E(q, v) = Jv_ABp_E(q)⋅v
-  /// </pre>
-  /// This method computes the geometric Jacobian `Jv_ABp_E(q)`.
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the model. It stores the
-  ///   generalized positions q.
-  /// @param[in] frame_B
-  ///   The position `p_BP` of point P is measured and expressed in this frame.
-  /// @param[in] p_BP
-  ///   The (fixed) position of the origin `P` of frame `Bp` as measured and
-  ///   expressed in frame B.
-  /// @param[in] frame_A
-  ///   The second frame in which the spatial velocity `V_ABp` is measured and
-  ///   expressed.
-  /// @param[in] frame_E
-  ///   Frame in which the velocity V_ABp_E is expressed.
-  /// @param[out] Jv_ABp_E
-  ///   The geometric Jacobian `Jv_ABp_E(q)`, function of the generalized
-  ///   positions q only. This Jacobian relates to the spatial velocity
-  ///   `V_ABp_E` of frame `Bp` in A and expressed in E by: <pre>
-  ///     V_ABp_E(q, v) = Jv_ABp_E(q)⋅v
-  ///   </pre>
-  ///   Therefore `Jv_ABp_E` is a matrix of size `6 x nv`, with `nv`
-  ///   the number of generalized velocities. On input, matrix `Jv_ABp_E`
-  ///   **must** have size `6 x nv` or this method throws an exception.
-  ///   Given a `6 x nv` spatial Jacobian Jv, let Jvr be the `3 x nv`
-  ///   rotational part (top 3 rows) and Jvt be the translational part
-  ///   (bottom 3 rows). These can be obtained as follows: <pre>
-  ///     Jvr_ABp = Jv_ABp.topRows<3>();
-  ///     Jvt_ABp = Jv_ABp.bottomRows<3>();
-  ///   </pre>
-  ///   This ordering is consistent with the internal storage of the
-  ///   SpatialVelocity class. Therefore the following operations results in
-  ///   a valid spatial velocity: <pre>
-  ///     SpatialVelocity<double> V_ABp(Jv_ABp * v);
-  ///   </pre>
-  ///
-  /// @throws std::exception if `J_ABp` is nullptr or if it is not of size
-  ///   `6 x nv`.
+  /// specified frame in the model. Calls the more general overload with
+  /// `jacobian_type` set to GeometricJacobianType::kVToSpatialVelocity.
   void CalcRelativeFrameGeometricJacobian(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
@@ -2113,9 +2074,10 @@ class MultibodyTree {
   ///   V_ABp_E(q, z) = J_ABp_E(q)⋅z
   /// </pre>
   /// where z represents
-  ///   * the time derivative of the generalized position vector q̇, if from_qdot
-  ///     is true, and
-  ///   * the generalized velocity vector v, if from_qdot is false.
+  ///   * the time derivative of the generalized position vector q̇, if
+  ///     jacobian_type is GeometricJacobianType::kQDotToSpatialVelocity.
+  ///   * the generalized velocity vector v, if jacobian_type is
+  ///     GeometricJacobianType::kVToSpatialVelocity.
   ///
   /// This method computes `J_ABp_E(q)`.
   ///
@@ -2132,12 +2094,14 @@ class MultibodyTree {
   /// @param[in] frame_E
   ///   Frame in which the velocity V_ABp_E, and therefore the Jacobian J_ABp_E
   ///   is expressed.
+  /// @param[in] jacobian_type
+  ///   Enum indicating whether `J_ABp_E` converts generalized velocities or
+  ///   time-derivatives of generalized positions to spatial velocities.
   /// @param[out] J_ABp_E_
   ///   The geometric Jacobian `J_ABp_E(q)`, function of the generalized
   ///   positions q only. This Jacobian relates to the spatial velocity
   ///   `V_ABp_E` of frame `Bp` in `A` and expressed in `E` by: <pre>
   ///     V_ABp_E(q, z) = J_ABp_E(q)⋅z </pre>
-  ///   where z = q̇ if `from_qdot` is true, and z = v otherwise.
   ///   Therefore `J_ABp_E` is a matrix of size `6 x nz`, where `nz` is the
   ///   number of elements in z. On input, matrix `Jv_ABp_E` **must** have size
   ///   `6 x nz` or this method throws an exception. Given a `6 x nz` Jacobian
@@ -2157,7 +2121,8 @@ class MultibodyTree {
   void CalcRelativeFrameGeometricJacobian(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
-      const Frame<T>& frame_A, const Frame<T>& frame_E, bool from_qdot,
+      const Frame<T>& frame_A, const Frame<T>& frame_E,
+      GeometricJacobianType jacobian_type,
       EigenPtr<MatrixX<T>> J_ABp_E) const;
 
   /// Given a frame `Fp` defined by shifting a frame F from its origin `Fo` to
