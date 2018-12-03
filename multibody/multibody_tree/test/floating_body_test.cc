@@ -146,8 +146,8 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
 
   // Sets the benchmark initial angular velocity to match the plant's default
   // set by SetDefaultState().
-  benchmark_.set_w_NB_B_initial(w0_WB);
-  benchmark_.set_v_NBcm_B_initial(v0_WB);
+  benchmark_.set_initial_w_NB_B(w0_WB);
+  benchmark_.set_initial_v_NBcm_B(v0_WB);
 
   simulator.Initialize();
   RungeKutta3Integrator<double>* integrator =

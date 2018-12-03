@@ -68,7 +68,7 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
 
   // Sets the benchmark initial angular velocity to match the plant's default
   // set by SetDefaultState().
-  benchmark_.set_w_NB_B_initial(w0_WB);
+  benchmark_.set_initial_w_NB_B(w0_WB);
 
   // Set the initial angular velocity.
   free_body_plant.set_angular_velocity(&context, w0_WB);
