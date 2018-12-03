@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
 #include "drake/solvers/create_constraint.h"
 
@@ -144,7 +145,7 @@ TEST_F(TwoFreeBodiesTest, OrientationConstraint) {
                                               * body2_quaternion_sol_);
   const math::RotationMatrix<double> R_AB = R_AbarA.transpose()
                                           * R_AbarBbar * R_BbarB;
-  const double angle = Eigen::AngleAxisd(R_AB).angle();
+  const double angle = Eigen::AngleAxisd(R_AB.matrix()).angle();
   EXPECT_LE(angle, angle_bound + 1E-6);
 }
 

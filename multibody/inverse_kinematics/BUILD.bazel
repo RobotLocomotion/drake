@@ -101,6 +101,7 @@ drake_cc_googletest(
     deps = [
         ":inverse_kinematics_test_utilities",
         ":kinematic_constraint",
+        "//math:geometric_transform",
     ],
 )
 
@@ -129,6 +130,7 @@ drake_cc_googletest(
     deps = [
         ":inverse_kinematics_core",
         ":inverse_kinematics_test_utilities",
+        "//math:geometric_transform",
     ],
 )
 

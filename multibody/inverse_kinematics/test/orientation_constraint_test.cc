@@ -1,5 +1,6 @@
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
 
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
 
 namespace drake {
@@ -65,7 +66,7 @@ TEST_F(TwoFreeBodiesConstraintTest, OrientationConstraint) {
   const math::RotationMatrixd R_AbarBbar(body1_quaternion.inverse()
                                        * body2_quaternion);
   const math::RotationMatrixd R_AB = R_AbarA.transpose() * R_AbarBbar * R_BbarB;
-  const double theta = Eigen::AngleAxisd(R_AB).angle();
+  const double theta = Eigen::AngleAxisd(R_AB.matrix()).angle();
 
   OrientationConstraint good_constraint(
       two_bodies_autodiff_.tree(), body1_index_, R_AbarA, body2_index_, R_BbarB,
