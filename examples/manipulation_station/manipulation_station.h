@@ -132,7 +132,9 @@ class ManipulationStation : public systems::Diagram<T> {
   ///   command inputs.
   explicit ManipulationStation(double time_step = 0.002);
 
-  /// Adds a default iiwa, wsg, cupboard, and 8020 frame for the class.
+  /// Adds a default iiwa, wsg, cupboard, and 8020 frame for the class, then
+  /// calls RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
+  /// appropriate arguments.
   /// Must be called before Finalize().
   /// @param collision_model Determines which sdf is loaded for the IIWA.
   void SetupDefaultStation(
@@ -142,7 +144,8 @@ class ManipulationStation : public systems::Diagram<T> {
   /// be identified by @p model_name, as well as necessary information to
   /// reload model for the internal controller's use. Assumes an model instance
   /// named @p model_name has already been added to the MultibodyPlant.
-  /// Must be called before Finalize().
+  /// Only call this with custom IIWA models (i.e. not calling
+  /// SetupDefaultStation()). Must be called before Finalize().
   /// @param model_path Full path to the model file.
   /// @param model_name Name of the model.
   /// @param parent_frame_name Identifies frame P (the parent frame) in the
@@ -159,7 +162,8 @@ class ManipulationStation : public systems::Diagram<T> {
   /// be identified by @p model_name, as well as necessary information to
   /// reload model for the internal controller's use. Assumes an model instance
   /// named @p model_name has already been added to the MultibodyPlant.
-  /// Must be called before Finalize().
+  /// Only call this with custom WSG models (i.e. not calling
+  /// SetupDefaultStation()). Must be called before Finalize().
   /// @param model_path Full path to the model file.
   /// @param model_name Name of the model.
   /// @param parent_frame_name Identifies frame P (the parent frame) in the

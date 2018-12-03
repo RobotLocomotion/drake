@@ -5,7 +5,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/systems/primitives/discrete_derivative.h"
 #include "drake/systems/sensors/image.h"
 
@@ -22,11 +22,12 @@ using systems::BasicVector;
 GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   ManipulationStation<double> station(0.001);
   station.SetupDefaultStation();
-  multibody::parsing::AddModelFromSdfFile(
+  multibody::parsing::Parser parser(&station.get_mutable_multibody_plant(),
+                                    &station.get_mutable_scene_graph());
+  parser.AddModelFromFile(
       FindResourceOrThrow("drake/examples/manipulation_station/models"
                           "/061_foam_brick.sdf"),
-      "object", &station.get_mutable_multibody_plant(),
-      &station.get_mutable_scene_graph());
+      "object");
   station.Finalize();
 
   auto& plant = station.get_multibody_plant();
