@@ -11,7 +11,7 @@ from pydrake.examples.manipulation_station import (
 )
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
 from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
-
+from pydrake.multibody.multibody_tree import ModelInstanceIndex
 
 class TestManipulationStation(unittest.TestCase):
     def test_manipulation_station(self):
@@ -67,11 +67,11 @@ class TestManipulationStation(unittest.TestCase):
             plant.GetFrameByName("body", wsg), X_7G)
 
         # Register models for the controller.
-        station.RegisterIiwaControllerModel(iiwa_model_file, "iiwa",
-                                            plant.world_frame().name(),
-                                            "iiwa_link_0", X_WI)
+        world_instance = ModelInstanceIndex(0)
+        station.RegisterIiwaControllerModel(iiwa_model_file, world_instance,
+            plant.world_frame().name(), iiwa, "iiwa_link_0", X_WI)
         station.RegisterWsgControllerModel(
-            wsg_model_file, "gripper", "iiwa_link_7", "body", X_7G)
+            wsg_model_file, iiwa, "iiwa_link_7", wsg, "body", X_7G)
 
         # Finalize
         station.Finalize()
