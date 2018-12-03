@@ -1210,10 +1210,9 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBack) {
       (1.5 * Vector3d::UnitX() +
        2.0 * Vector3d::UnitY() +
        3.0 * Vector3d::UnitZ()).normalized();
-  Isometry3d X_WB = Isometry3d::Identity();
-  X_WB.linear() = AngleAxisd(M_PI / 3.0, axis_W).toRotationMatrix();
-  X_WB.translation() = p_WB;
-  plant.tree().SetFreeBodyPoseOrThrow(body, X_WB, context.get());
+  const math::RigidTransformd X_WB(AngleAxisd(M_PI / 3.0, axis_W), p_WB);
+  plant.tree().SetFreeBodyPoseOrThrow(
+      body, X_WB.GetAsIsometry3(), context.get());
 
   // Set an arbitrary, non-zero, spatial velocity of B in W.
   const SpatialVelocity<double> V_WB(Vector3d(1.0, 2.0, 3.0),

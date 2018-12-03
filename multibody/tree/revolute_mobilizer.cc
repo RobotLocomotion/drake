@@ -62,9 +62,9 @@ Isometry3<T> RevoluteMobilizer<T>::CalcAcrossMobilizerTransform(
     const MultibodyTreeContext<T>& context) const {
   const auto& q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == 1);
-  Isometry3<T> X_FM = Isometry3<T>::Identity();
-  X_FM.linear() = Eigen::AngleAxis<T>(q[0], axis_F_).toRotationMatrix();
-  return X_FM;
+  const math::RotationMatrix<T> R_FM(Eigen::AngleAxis<T>(q[0], axis_F_));
+  const math::RigidTransform<T> X_FM(R_FM);
+  return X_FM.GetAsIsometry3();
 }
 
 template <typename T>

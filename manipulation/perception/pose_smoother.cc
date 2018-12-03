@@ -128,7 +128,7 @@ void PoseSmoother::DoCalcUnrestrictedUpdate(
     const Quaterniond input_quaternion(input_pose.linear());
     const math::RotationMatrixd input_R(input_quaternion);
     const Vector3<double>& input_p = input_pose.translation();
-    const math::RigidTransform corrected_input(input_R, input_p);
+    const math::RigidTransformd corrected_input(input_R, input_p);
 
     math::RigidTransformd accepted_pose;  // Default is identity pose.
     // If the smoother is enabled.
@@ -140,7 +140,8 @@ void PoseSmoother::DoCalcUnrestrictedUpdate(
       const Quaterniond corrected_input_quat =
           corrected_input.rotation().ToQuaternion();
       VectorX<double> corrected_pose_vector(7);
-      corrected_pose_vector << translation(), quat.matrix();
+      corrected_pose_vector << corrected_input.translation(),
+          corrected_input_quat.matrix();
 
       VectorX<double> position_quat =
           internal_state.filter->Update(corrected_pose_vector);
