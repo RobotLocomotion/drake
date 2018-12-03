@@ -27,8 +27,11 @@ enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 /// @}
 
 /// A system that represents the complete manipulation station, including the
-/// robotic arm (a Kuka IIWA LWR), the gripper (a Schunk WSG 50), the
-/// externally mounted sensors, and the structure that it is mounted into.
+/// robotic arm (a Kuka IIWA LWR), the gripper (a Schunk WSG 50), and anything
+/// a user might want to load into the model. SetupDefaultStation() provides
+/// the setup that is used in the MIT Intelligent Robot Manipulation class,
+/// which includes the supporting structure for IIWA and several RGBD cameras.
+///
 /// @{
 ///
 /// @system{ ManipulationStation,
@@ -147,9 +150,9 @@ class ManipulationStation : public systems::Diagram<T> {
   /// @param child_frame_name Identifies frame C (the child frame) in the IIWA
   /// model that is used welded to frame P.
   /// @param X_PC Transformation between frame P and C.
-  void RegisterIiwaControllerModel(const std::string& model_path,
-      const std::string& model_name, const std::string& parent_frame_name,
-      const std::string& child_frame_name,
+  void RegisterIiwaControllerModel(
+      const std::string& model_path, const std::string& model_name,
+      const std::string& parent_frame_name, const std::string& child_frame_name,
       const Isometry3<double>& X_PC = Isometry3<double>::Identity());
 
   /// Notifies the ManipulationStation that the WSG robot model instance can
@@ -164,9 +167,12 @@ class ManipulationStation : public systems::Diagram<T> {
   /// @param child_frame_name Identifies frame C (the child frame) in the WSG
   /// model that is used welded to frame P.
   /// @param X_PC Transformation between frame P and C.
-  void RegisterWsgControllerModel(const std::string& model_path,
-      const std::string& model_name, const std::string& parent_frame_name,
-      const std::string& child_frame_name,
+  // TODO(siyuan.feng@tri.global): Some of these information should be
+  // retrievable from the MultibodyPlant directly or MultibodyPlant should
+  // provide partial tree cloning.
+  void RegisterWsgControllerModel(
+      const std::string& model_path, const std::string& model_name,
+      const std::string& parent_frame_name, const std::string& child_frame_name,
       const Isometry3<double>& X_PC = Isometry3<double>::Identity());
 
   // TODO(russt): Add scalar copy constructor etc once we support more

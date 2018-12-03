@@ -50,14 +50,16 @@ class TestManipulationStation(unittest.TestCase):
 
         # Add models for iiwa and wsg
         iiwa_model_file = FindResourceOrThrow(
-            "drake/manipulation/models/iiwa_description/iiwa7/iiwa7_no_collision.sdf")
+            "drake/manipulation/models/iiwa_description/iiwa7/"
+            "iiwa7_no_collision.sdf")
         iiwa = AddModelFromSdfFile(iiwa_model_file, "iiwa", plant)
         X_WI = Isometry3.Identity()
-        plant.WeldFrames(
-            plant.world_frame(), plant.GetFrameByName("iiwa_link_0", iiwa), X_WI)
+        plant.WeldFrames(plant.world_frame(),
+                         plant.GetFrameByName("iiwa_link_0", iiwa), X_WI)
 
         wsg_model_file = FindResourceOrThrow(
-            "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf")
+            "drake/manipulation/models/wsg_50_description/sdf/"
+            "schunk_wsg_50.sdf")
         wsg = AddModelFromSdfFile(wsg_model_file, "gripper", plant)
         X_7G = Isometry3.Identity()
         plant.WeldFrames(
@@ -65,15 +67,17 @@ class TestManipulationStation(unittest.TestCase):
             plant.GetFrameByName("body", wsg), X_7G)
 
         # Register models for the controller.
-        station.RegisterIiwaControllerModel(
-            iiwa_model_file, "iiwa", plant.world_frame().name(), "iiwa_link_0", X_WI)
+        station.RegisterIiwaControllerModel(iiwa_model_file, "iiwa",
+                                            plant.world_frame().name(),
+                                            "iiwa_link_0", X_WI)
         station.RegisterWsgControllerModel(
             wsg_model_file, "gripper", "iiwa_link_7", "body", X_7G)
 
         # Finalize
         station.Finalize()
 
-        # This WSG gripper model has 2 independent dof, and the IIWA model has 7.
+        # This WSG gripper model has 2 independent dof, and the IIWA model
+        # has 7.
         self.assertEqual(plant.num_positions(), 9)
         self.assertEqual(plant.num_velocities(), 9)
 

@@ -192,11 +192,12 @@ void ManipulationStation<T>::SetupDefaultStation(
         "drake/examples/manipulation_station/models/"
         "amazon_table_simplified.sdf");
 
-    const Isometry3<double> X_WT = RigidTransform<double>(
-        Vector3d(dx_table_center_to_robot_base, 0,
-            -dz_table_top_robot_base)).GetAsIsometry3();
-    internal::AddAndWeldModelFromSdf(
-        sdf_path, "table", plant_->world_frame(), "amazon_table", X_WT, plant_);
+    const Isometry3<double> X_WT =
+        RigidTransform<double>(Vector3d(dx_table_center_to_robot_base, 0,
+                                        -dz_table_top_robot_base))
+            .GetAsIsometry3();
+    internal::AddAndWeldModelFromSdf(sdf_path, "table", plant_->world_frame(),
+                                     "amazon_table", X_WT, plant_);
   }
 
   // Add the cupboard.
@@ -210,14 +211,17 @@ void ManipulationStation<T>::SetupDefaultStation(
     const std::string sdf_path = FindResourceOrThrow(
         "drake/examples/manipulation_station/models/cupboard.sdf");
 
-    const Isometry3<double> X_WC = RigidTransform<double>(
-        RotationMatrix<double>::MakeZRotation(M_PI),
-        Vector3d(dx_table_center_to_robot_base + dx_cupboard_to_table_center, 0,
-            dz_cupboard_to_table_center + cupboard_height / 2.0 -
-                dz_table_top_robot_base))
-                                       .GetAsIsometry3();
+    const Isometry3<double> X_WC =
+        RigidTransform<double>(
+            RotationMatrix<double>::MakeZRotation(M_PI),
+            Vector3d(
+                dx_table_center_to_robot_base + dx_cupboard_to_table_center, 0,
+                dz_cupboard_to_table_center + cupboard_height / 2.0 -
+                    dz_table_top_robot_base))
+            .GetAsIsometry3();
     internal::AddAndWeldModelFromSdf(sdf_path, "cupboard",
-        plant_->world_frame(), "cupboard_body", X_WC, plant_);
+                                     plant_->world_frame(), "cupboard_body",
+                                     X_WC, plant_);
   }
 
   // Add default iiwa.
@@ -238,10 +242,10 @@ void ManipulationStation<T>::SetupDefaultStation(
         DRAKE_ABORT_MSG("Unrecognized collision_model.");
     }
     const Isometry3<double> X_WI = Isometry3<double>::Identity();
-    internal::AddAndWeldModelFromSdf(
-        sdf_path, "iiwa", plant_->world_frame(), "iiwa_link_0", X_WI, plant_);
-    RegisterIiwaControllerModel(
-        sdf_path, "iiwa", plant_->world_frame().name(), "iiwa_link_0", X_WI);
+    internal::AddAndWeldModelFromSdf(sdf_path, "iiwa", plant_->world_frame(),
+                                     "iiwa_link_0", X_WI, plant_);
+    RegisterIiwaControllerModel(sdf_path, "iiwa", plant_->world_frame().name(),
+                                "iiwa_link_0", X_WI);
   }
 
   // Add default wsg.
@@ -250,11 +254,12 @@ void ManipulationStation<T>::SetupDefaultStation(
         "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
     const multibody::Frame<T>& link7 =
         plant_->GetFrameByName("iiwa_link_7", iiwa_model_);
-    Isometry3<double> X_7G = RigidTransform<double>(
-        RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
-        Vector3d(0, 0, 0.114)).GetAsIsometry3();
-    internal::AddAndWeldModelFromSdf(
-        sdf_path, "gripper", link7, "body", X_7G, plant_);
+    Isometry3<double> X_7G =
+        RigidTransform<double>(RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
+                               Vector3d(0, 0, 0.114))
+            .GetAsIsometry3();
+    internal::AddAndWeldModelFromSdf(sdf_path, "gripper", link7, "body", X_7G,
+                                     plant_);
     RegisterWsgControllerModel(sdf_path, "gripper", link7.name(), "body", X_7G);
   }
 }
@@ -266,10 +271,11 @@ void ManipulationStation<T>::MakeIiwaControllerModel() {
   const auto controller_iiwa_model = AddModelFromSdfFile(
       iiwa_model_info_.model_path, "iiwa", owned_controller_plant_.get());
 
-  owned_controller_plant_->WeldFrames(owned_controller_plant_->GetFrameByName(
-                                          iiwa_model_info_.parent_frame_name),
+  owned_controller_plant_->WeldFrames(
       owned_controller_plant_->GetFrameByName(
-          iiwa_model_info_.child_frame_name, controller_iiwa_model),
+          iiwa_model_info_.parent_frame_name),
+      owned_controller_plant_->GetFrameByName(iiwa_model_info_.child_frame_name,
+                                              controller_iiwa_model),
       iiwa_model_info_.X_PC);
   // Add a single body to represent the IIWA pendant's calibration of the
   // gripper.  The body of the WSG accounts for >90% of the total mass
@@ -277,14 +283,14 @@ void ManipulationStation<T>::MakeIiwaControllerModel() {
   // on the hardware to be so precise, so we simply ignore the inertia
   // contribution from the fingers here.
   const multibody::RigidBody<T>& wsg_equivalent =
-      owned_controller_plant_->AddRigidBody("wsg_equivalent",
-          controller_iiwa_model,
+      owned_controller_plant_->AddRigidBody(
+          "wsg_equivalent", controller_iiwa_model,
           internal::MakeCompositeGripperInertia(
               wsg_model_info_.model_path, wsg_model_info_.child_frame_name));
 
   owned_controller_plant_->WeldFrames(
-      owned_controller_plant_->GetFrameByName(
-          wsg_model_info_.parent_frame_name, controller_iiwa_model),
+      owned_controller_plant_->GetFrameByName(wsg_model_info_.parent_frame_name,
+                                              controller_iiwa_model),
       wsg_equivalent.body_frame(), wsg_model_info_.X_PC);
 
   owned_controller_plant_
@@ -622,8 +628,8 @@ void ManipulationStation<T>::SetWsgGains(const double kp, const double kd) {
 }
 
 template <typename T>
-void ManipulationStation<T>::SetIiwaGains(
-    const VectorX<double>& new_gains, VectorX<double>* gains) {
+void ManipulationStation<T>::SetIiwaGains(const VectorX<double>& new_gains,
+                                          VectorX<double>* gains) {
   DRAKE_THROW_UNLESS(!plant_->is_finalized());
   DRAKE_THROW_UNLESS(new_gains.size() == gains->size());
   DRAKE_THROW_UNLESS((new_gains.array() >= 0).all());
