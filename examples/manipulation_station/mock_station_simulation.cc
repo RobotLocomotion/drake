@@ -14,7 +14,7 @@
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -48,14 +48,15 @@ int do_main(int argc, char* argv[]) {
 
   // Create the "manipulation station".
   auto station = builder.AddSystem<ManipulationStation>();
-  station->AddCupboard();
+  station->SetupDefaultStation();
+  multibody::parsing::Parser parser(&station->get_mutable_multibody_plant(),
+                                    &station->get_mutable_scene_graph());
   // TODO(russt): Load sdf objects specified at the command line.  Requires
   // #9747.
-  auto object = multibody::parsing::AddModelFromSdfFile(
+  auto object = parser.AddModelFromFile(
       FindResourceOrThrow(
           "drake/examples/manipulation_station/models/061_foam_brick.sdf"),
-      "brick", &station->get_mutable_multibody_plant(),
-      &station->get_mutable_scene_graph());
+      "brick");
   station->Finalize();
 
   geometry::ConnectDrakeVisualizer(&builder, station->get_scene_graph(),

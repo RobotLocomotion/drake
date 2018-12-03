@@ -5,7 +5,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/systems/primitives/discrete_derivative.h"
 #include "drake/systems/sensors/image.h"
 
@@ -21,12 +21,13 @@ using systems::BasicVector;
 
 GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   ManipulationStation<double> station(0.001);
-  station.AddCupboard();
-  multibody::parsing::AddModelFromSdfFile(
+  station.SetupDefaultStation();
+  multibody::parsing::Parser parser(&station.get_mutable_multibody_plant(),
+                                    &station.get_mutable_scene_graph());
+  parser.AddModelFromFile(
       FindResourceOrThrow("drake/examples/manipulation_station/models"
                           "/061_foam_brick.sdf"),
-      "object", &station.get_mutable_multibody_plant(),
-      &station.get_mutable_scene_graph());
+      "object");
   station.Finalize();
 
   auto& plant = station.get_multibody_plant();
@@ -110,6 +111,7 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
 GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
   const double kTimeStep = 0.002;
   ManipulationStation<double> station(kTimeStep);
+  station.SetupDefaultStation();
   station.Finalize();
 
   auto context = station.CreateDefaultContext();
@@ -205,6 +207,7 @@ GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
 
 GTEST_TEST(ManipulationStationTest, CheckWsg) {
   ManipulationStation<double> station(0.001);
+  station.SetupDefaultStation();
   station.Finalize();
 
   auto context = station.CreateDefaultContext();
@@ -228,6 +231,7 @@ GTEST_TEST(ManipulationStationTest, CheckWsg) {
 
 GTEST_TEST(ManipulationStationTest, CheckRGBDOutputs) {
   ManipulationStation<double> station(0.001);
+  station.SetupDefaultStation();
   station.Finalize();
 
   auto context = station.CreateDefaultContext();
@@ -250,15 +254,16 @@ GTEST_TEST(ManipulationStationTest, CheckRGBDOutputs) {
 }
 
 GTEST_TEST(ManipulationStationTest, CheckCollisionVariants) {
-  ManipulationStation<double> station1(0.002, IiwaCollisionModel::kNoCollision);
+  ManipulationStation<double> station1(0.002);
+  station1.SetupDefaultStation(IiwaCollisionModel::kNoCollision);
 
   // In this variant, there are collision geometries from the world and the
   // gripper, but not from the iiwa.
   const int num_collisions =
       station1.get_multibody_plant().num_collision_geometries();
 
-  ManipulationStation<double> station2(0.002,
-                                       IiwaCollisionModel::kBoxCollision);
+  ManipulationStation<double> station2(0.002);
+  station2.SetupDefaultStation(IiwaCollisionModel::kBoxCollision);
   // Check for additional collision elements (one for each link, which includes
   // the base).
   EXPECT_EQ(station2.get_multibody_plant().num_collision_geometries(),
