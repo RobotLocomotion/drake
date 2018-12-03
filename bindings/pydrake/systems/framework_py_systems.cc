@@ -312,21 +312,21 @@ struct Impl {
         .def("CalcTimeDerivatives", &System<T>::CalcTimeDerivatives,
             doc.System.CalcTimeDerivatives.doc)
         .def("MapVelocityToQDot",
-              [](const System<T>* self, const Context<T>& context,
-                 const Eigen::Ref<const VectorX<T>>& v,
-                 Eigen::Ref<VectorX<T>> qdot) -> void {
-                BasicVector<T> output(qdot.size());
-                self->MapVelocityToQDot(context, v, &output);
-                qdot = output.CopyToVector();
-              })
+            [](const System<T>* self, const Context<T>& context,
+                const Eigen::Ref<const VectorX<T>>& v,
+                Eigen::Ref<VectorX<T>> qdot) -> void {
+              BasicVector<T> output(qdot.size());
+              self->MapVelocityToQDot(context, v, &output);
+              qdot = output.CopyToVector();
+            })
         .def("MapQDotToVelocity",
-              [](const System<T>* self, const Context<T>& context,
-                 const Eigen::Ref<const VectorX<T>>& qdot,
-                 Eigen::Ref<VectorX<T>> v) -> void {
-                BasicVector<T> output(v.size());
-                self->MapQDotToVelocity(context, qdot, &output);
-                v = output.CopyToVector();
-              })
+            [](const System<T>* self, const Context<T>& context,
+                const Eigen::Ref<const VectorX<T>>& qdot,
+                Eigen::Ref<VectorX<T>> v) -> void {
+              BasicVector<T> output(v.size());
+              self->MapQDotToVelocity(context, qdot, &output);
+              v = output.CopyToVector();
+            })
         // Sugar.
         .def("GetGraphvizString",
             [str_py](const System<T>* self, int max_depth) {

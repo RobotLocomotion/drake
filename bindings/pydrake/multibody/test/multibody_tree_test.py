@@ -621,7 +621,9 @@ class TestMultibodyTree(unittest.TestCase):
         iiwa_sdf_path = FindResourceOrThrow(
             "drake/manipulation/models/" +
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
-        timestep = 0.0002
+        # NOTE: timestep must be set to 0.0 to make state continuous so that
+        # MapVelocityToQDot() and MapQDotToVelocity() work.
+        timestep = 0.0
         plant = MultibodyPlant(timestep)
         iiwa_model = AddModelFromSdfFile(
             file_name=iiwa_sdf_path, model_name='robot', plant=plant)
@@ -643,7 +645,6 @@ class TestMultibodyTree(unittest.TestCase):
         x_ref = plant.GetMutablePositionsAndVelocities(context)
         x_ref[0:nq] = q
         x_ref[-nv:] = v
-
         qdot = np.zeros([len(q)])
         vprime = np.zeros([len(v)])
         plant.MapVelocityToQDot(context, v, qdot)
