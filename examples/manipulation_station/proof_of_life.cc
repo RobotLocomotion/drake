@@ -109,7 +109,6 @@ int do_main(int argc, char* argv[]) {
                                            &station_context));
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
-  simulator.Initialize();
   simulator.StepTo(FLAGS_duration);
 
   // Check that the arm is (very roughly) in the commanded position.

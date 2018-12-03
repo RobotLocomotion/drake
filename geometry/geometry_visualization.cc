@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
@@ -140,20 +141,36 @@ namespace internal {
 
 lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
     const GeometryState<double>& state) {
+  using internal::InternalFrame;
   using internal::InternalGeometry;
 
   lcmt_viewer_load_robot message{};
   // Populate the message.
-  // This includes the world frame.
-  const int frame_count = state.get_num_frames();
-  const int anchored_count = state.GetNumFrameGeometries(
-      InternalFrame::world_frame_id());
 
-  // If no anchored frames were found, remove the world frame from the count of
-  // total frames/links.
-  int total_link_count = anchored_count > 0 ? frame_count : frame_count - 1;
-  message.num_links = total_link_count;
-  message.link.resize(total_link_count);
+  // Collect the dynamic frames that actually have illustration geometry. These
+  // (plus possibly the world frame) are the frames that will be broadcast in
+  // the message.
+  std::vector<std::pair<FrameId, int>> dynamic_frames;
+  for (const auto& pair : state.frames_) {
+    const FrameId frame_id = pair.first;
+    // We'll handle the world frame special.
+    if (frame_id == InternalFrame::world_frame_id()) continue;
+    const int count =
+        state.NumGeometriesWithRole(frame_id, Role::kIllustration);
+    if (count > 0) {
+      dynamic_frames.push_back({frame_id, count});
+    }
+  }
+  // Add the world frame if it has geometries with illustration role.
+  const int anchored_count = state.NumGeometriesWithRole(
+      InternalFrame::world_frame_id(), Role::kIllustration);
+  const int frame_count = static_cast<int>(dynamic_frames.size()) +
+      (anchored_count > 0 ? 1 : 0);
+
+  message.num_links = frame_count;
+  message.link.resize(frame_count);
+
+  const Eigen::Vector4d default_color({0.9, 0.9, 0.9, 1.0});
 
   int link_index = 0;
   // Load anchored geometry into the world frame.
@@ -167,20 +184,24 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
         state.frames_.at(InternalFrame::world_frame_id());
     for (const GeometryId id : world_frame.child_geometries()) {
       const InternalGeometry& geometry = state.geometries_.at(id);
-      const Shape& shape = geometry.shape();
-      const Eigen::Vector4d& color = geometry.visual_material().diffuse();
-      message.link[0].geom[geom_index] = MakeGeometryData(
-          shape, geometry.X_FG(), color);
-      ++geom_index;
+      const IllustrationProperties* props = geometry.illustration_properties();
+      if (props != nullptr) {
+        const Shape& shape = geometry.shape();
+        const Eigen::Vector4d& color = props->GetPropertyOrDefault(
+            "phong", "diffuse", default_color);
+        message.link[0].geom[geom_index] = MakeGeometryData(
+            shape, geometry.X_FG(), color);
+        ++geom_index;
+      }
     }
     link_index = 1;
   }
 
   // Load dynamic geometry into their own frames.
-  for (const auto& pair : state.frames_) {
-    const internal::InternalFrame& frame = pair.second;
-    // The world frame is handled specifically above.
-    if (frame.is_world()) continue;
+  for (const auto& pair : dynamic_frames) {
+    const FrameId frame_id = pair.first;
+    const int geometry_count = pair.second;
+    const internal::InternalFrame& frame = state.frames_.at(frame_id);
     SourceId s_id = state.get_source_id(frame.id());
     const std::string& src_name = state.get_source_name(s_id);
     // TODO(SeanCurtis-TRI): The name in the load message *must* match the name
@@ -188,18 +209,20 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
     // use a common code-base to translate (source_id, frame) -> name.
     message.link[link_index].name = src_name + "::" + frame.name();
     message.link[link_index].robot_num = frame.frame_group();
-    const int geom_count = static_cast<int>(
-        frame.child_geometries().size());
-    message.link[link_index].num_geom = geom_count;
-    message.link[link_index].geom.resize(geom_count);
+    message.link[link_index].num_geom = geometry_count;
+    message.link[link_index].geom.resize(geometry_count);
     int geom_index = 0;
     for (GeometryId geom_id : frame.child_geometries()) {
       const InternalGeometry& geometry = state.geometries_.at(geom_id);
-      const Shape& shape = geometry.shape();
-      const Eigen::Vector4d& color = geometry.visual_material().diffuse();
-      message.link[link_index].geom[geom_index] =
-          MakeGeometryData(shape, geometry.X_FG(), color);
-      ++geom_index;
+      const IllustrationProperties* props = geometry.illustration_properties();
+      if (props != nullptr) {
+        const Shape& shape = geometry.shape();
+        const Eigen::Vector4d& color = props->GetPropertyOrDefault(
+            "phong", "diffuse", default_color);
+        message.link[link_index].geom[geom_index] =
+            MakeGeometryData(shape, geometry.X_FG(), color);
+        ++geom_index;
+      }
     }
     ++link_index;
   }
@@ -266,6 +289,13 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
     const SceneGraph<double>& scene_graph, lcm::DrakeLcmInterface* lcm) {
   return ConnectDrakeVisualizer(builder, scene_graph,
                                 scene_graph.get_pose_bundle_output_port(), lcm);
+}
+
+IllustrationProperties MakeDrakeVisualizerProperties(
+    const Vector4<double>& diffuse) {
+  IllustrationProperties props;
+  props.AddProperty("phong", "diffuse", diffuse);
+  return props;
 }
 
 }  // namespace geometry

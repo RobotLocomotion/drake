@@ -237,6 +237,10 @@ void RobotStateLcmMessageTranslator::EncodeMessageKinematics(
 
   // Encodes the floating base.
   const DrakeJoint& root_joint = root_body_.getJoint();
+  // TODO(mitiguy) This code needs better notation and documentation.
+  // To developers: Do not copy and paste this function's code elsewhere without
+  // understanding it and how it works.  I am not this code's original author,
+  // and find it difficult to understand.
   // J is the root_joint frame.
   math::RigidTransform<double> X_JB;  // Default is identity transform.
   Vector6<double> V_JB;

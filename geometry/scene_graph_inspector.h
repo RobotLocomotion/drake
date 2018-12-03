@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_state.h"
 
 namespace drake {
@@ -96,8 +97,9 @@ class SceneGraphInspector {
   }
 
   /** Reports the id of the geometry with the given name, attached to the
-   indicated frame.
+   indicated frame with the given role.
    @param frame_id  The frame whose geometry is being queried.
+   @param role      The assigned role of the desired geometry.
    @param name      The name of the geometry to query for. The name will be
                     canonicalized prior to lookup (see
                     @ref canonicalized_geometry_names "GeometryInstance" for
@@ -105,14 +107,34 @@ class SceneGraphInspector {
    @return The id of the queried geometry.
    @throws std::logic_error if no such geometry exists, multiple geometries have
                             that name, or if the frame doesn't exist.  */
-  // TODO(SeanCurtis-TRI): Extend to include role.
-  GeometryId GetGeometryIdByName(FrameId frame_id,
+  GeometryId GetGeometryIdByName(FrameId frame_id, Role role,
                                  const std::string& name) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetGeometryFromName(frame_id, name);
+    return state_->GetGeometryFromName(frame_id, role, name);
+  }
+
+  /** Reports the number of frames registered to the given source id. Returns
+   zero for unregistered source ids.  */
+  int NumFramesForSource(SourceId source_id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->NumFramesForSource(source_id);
+  }
+
+  /** Reports the number of geometries affixed to the given frame id.
+   @throws std::runtime_error if `frame_id` is invalid.  */
+  int NumGeometriesForFrame(FrameId frame_id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetNumFrameGeometries(frame_id);
   }
 
   //@}
+
+  /** Reports true if collision between the two indicated geometries has been
+   filtered out.  */
+  bool CollisionFiltered(GeometryId id1, GeometryId id2) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->CollisionFiltered(id1, id2);
+  }
 
  private:
   // Only SceneGraph and QueryObject instances can construct

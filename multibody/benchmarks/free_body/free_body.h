@@ -6,6 +6,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace benchmarks {
@@ -33,15 +34,29 @@ class FreeBody {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FreeBody)
 
-  FreeBody(const Eigen::Quaterniond& quat_NB_initial,
-           const Eigen::Vector3d& w_NB_B_initial,
-           const Eigen::Vector3d& p_NoBcm_N_initial,
-           const Eigen::Vector3d& v_NBcm_B_initial,
+  /// Constructs a class that can be queried for exact values of orientation,
+  /// position, and motion of a torque-free rigid body at time t.
+  /// @param[in] initial_quat_NB  Value at time t = 0 of the quaternion
+  /// relating right-handed orthonormal vectors Nx, Ny, Nz fixed in N (world)
+  /// to right-handed orthonormal unit vectors Bx, By, Bz fixed in B (body).
+  /// Note: The unit vector Bz is parallel to body B's symmetry axis.
+  /// Note: The quaternion should already be normalized before it is passed.
+  /// @param[in] initial_W_NB_B Value at time t = 0 of the angular velocity in N
+  /// of body B, expressed in N.
+  /// @param[in] initial_p_NoBcm_N Value at time t = 0 of the position vector
+  /// from No (origin of world N) to Bcm (B's center of mass), expressed in N.
+  /// @param[in] initial_v_NBcm_N Value at time t = 0 of the velocity in N
+  /// of Bcm (B's center of mass), expressed in N.
+  /// @param[in] gravity_N Local gravitational acceleration, expressed in N.
+  FreeBody(const Eigen::Quaterniond& initial_quat_NB,
+           const Eigen::Vector3d& initial_w_NB_B,
+           const Eigen::Vector3d& initial_p_NoBcm_N,
+           const Eigen::Vector3d& initial_v_NBcm_B,
            const Eigen::Vector3d& gravity_N)
-      : quat_NB_initial_(quat_NB_initial),
-        w_NB_B_initial_(w_NB_B_initial),
-        p_NoBcm_N_initial_(p_NoBcm_N_initial),
-        v_NBcm_B_initial_(v_NBcm_B_initial),
+      : initial_quat_NB_(initial_quat_NB),
+        initial_w_NB_B_(initial_w_NB_B),
+        initial_p_NoBcm_N_(initial_p_NoBcm_N),
+        initial_v_NBcm_B_(initial_v_NBcm_B),
         uniform_gravity_expressed_in_world_(gravity_N) {}
 
   ~FreeBody() = default;
@@ -50,50 +65,47 @@ class FreeBody {
   /// axis of rotation and passing through its center of mass.
   /// For example, for a cylinder of radius r, length h and uniformly
   /// distributed mass m with its rotational axis aligined along its body frame
-  /// z-axis this would be: <pre>
-  ///   I = Ixx = Iyy = m / 12 (3 r² + h²)
-  /// </pre>
+  /// z-axis this would be: I = Ixx = Iyy = m / 12 (3 r² + h²)
   double get_I() const { return 0.04; }
 
   /// Returns body's moment of inertia about its axis of rotation.
   /// For example, for a cylinder of radius r, length h and uniformly
   /// distributed mass  m with its rotational axis aligined along its body frame
-  /// z-axis this would be: <pre>
-  ///   J = Izz = m r² / 2
-  /// </pre>
+  /// z-axis this would be: J = Izz = m r² / 2
   double get_J() const { return 0.02; }
 
   // Get methods for initial values and gravity.
-  const Eigen::Quaterniond& get_quat_NB_initial() const {
-    return quat_NB_initial_;
+  const Eigen::Quaterniond& get_initial_quat_NB() const {
+    return initial_quat_NB_;
   }
-  const Eigen::Vector3d& get_w_NB_B_initial() const { return w_NB_B_initial_; }
-  const Eigen::Vector3d& get_p_NoBcm_N_initial() const {
-    return p_NoBcm_N_initial_;
+  const Eigen::Vector3d& get_initial_w_NB_B() const { return initial_w_NB_B_; }
+  Eigen::Vector3d CalcInitial_w_NB_N() const {
+    const math::RotationMatrixd R_NB(initial_quat_NB_);
+    return R_NB * initial_w_NB_B_;
   }
-  const Eigen::Vector3d& get_v_NBcm_B_initial() const {
-    return v_NBcm_B_initial_;
+  const Eigen::Vector3d& get_initial_p_NoBcm_N() const {
+    return initial_p_NoBcm_N_;
   }
   const Eigen::Vector3d& get_uniform_gravity_expressed_in_world() const {
     return uniform_gravity_expressed_in_world_;
   }
-  Eigen::Vector3d GetInitialVelocityOfBcmInWorldExpressedInWorld() const {
-    const Eigen::Matrix3d R_NB_initial = quat_NB_initial_.toRotationMatrix();
-    return R_NB_initial * v_NBcm_B_initial_;
+  Eigen::Vector3d CalcInitial_v_NBcm_N() const {
+    const math::RotationMatrixd R_NB(initial_quat_NB_);
+    return R_NB * initial_v_NBcm_B_;
   }
 
   // Set methods for initial values and gravity.
-  void set_quat_NB_initial(const Eigen::Quaterniond& quat_NB_initial) {
-    quat_NB_initial_ = quat_NB_initial;
+  void set_initial_quat_NB(const Eigen::Quaterniond& quat_NB) {
+    initial_quat_NB_ = quat_NB;
   }
-  void set_w_NB_B_initial(const Eigen::Vector3d& w_NB_B_initial) {
-    w_NB_B_initial_ = w_NB_B_initial;
+  void set_initial_w_NB_B(const Eigen::Vector3d& w_NB_B) {
+    initial_w_NB_B_ = w_NB_B;
   }
-  void set_p_NoBcm_N_initial(const Eigen::Vector3d& p_NoBcm_N_initial) {
-    p_NoBcm_N_initial_ = p_NoBcm_N_initial;
+  void set_initial_p_NoBcm_N(const Eigen::Vector3d& p_NoBcm_N) {
+    initial_p_NoBcm_N_ = p_NoBcm_N;
   }
-  void set_v_NBcm_B_initial(const Eigen::Vector3d& v_NBcm_B_initial) {
-    v_NBcm_B_initial_ = v_NBcm_B_initial;
+  void set_initial_v_NBcm_B(const Eigen::Vector3d& v_NBcm_B) {
+    initial_v_NBcm_B_ = v_NBcm_B;
   }
   void SetUniformGravityExpressedInWorld(const Eigen::Vector3d& gravity) {
     uniform_gravity_expressed_in_world_ = gravity;
@@ -177,24 +189,22 @@ class FreeBody {
   std::tuple<Eigen::Quaterniond, Eigen::Vector3d, Eigen::Vector3d>
   CalculateExactRotationalSolutionABInitiallyAligned(const double t) const;
 
-  // quat_NB_initial_ is the initial (t=0) value of the quaternion that relates
-  // unit vectors Nx, Ny, Nz fixed in World N (e.g., Nz vertically upward) to
-  // unit vectors Bx, By, Bz fixed in body B (Bz parallel to symmetry axis)
-  // Note: The quaternion should already be normalized before it is set.
-  // Note: quat_NB_initial is analogous to the initial rotation matrix R_NB.
-  Eigen::Quaterniond quat_NB_initial_;
+  // Initial (t = 0) value of the quaternion relating unit vectors Nx, Ny, Nz
+  // fixed in World N to unit vectors Bx, By, Bz fixed in body B (Bz is parallel
+  // to body B's symmetry axis). Note: The quaternion notation quat_NB is
+  // analogous to the rotation matrix notation R_NB.
+  Eigen::Quaterniond initial_quat_NB_;
 
-  // w_NB_B_initial_ is B's initial angular velocity in N, expressed in B.
-  Eigen::Vector3d w_NB_B_initial_;
+  // Initial (t = 0) value of angular velocity in N of B, expressed in B.
+  Eigen::Vector3d initial_w_NB_B_;
 
-  // p_NoBcm_N_initial_ is Bcm's initial position from No, expressed in N, i.e.,
-  // x, y, z, the Nx, Ny, Nz measures of Bcm's position vector from point No
-  // (World origin).  Note: Bcm (B's center of mass) is coincident with Bo.
-  Eigen::Vector3d p_NoBcm_N_initial_;
+  // Initial (t = 0) value of the position vector from No (world origin) to
+  // Bcm (B's center of mass), expressed in N.
+  Eigen::Vector3d initial_p_NoBcm_N_;
 
-  // v_NBcm_B_initial_ is Bcm's initial velocity in N, expressed in B.
-  // Note: v_NBcm_B is not (in general) the time-derivative of ẋ, ẏ, ż.
-  Eigen::Vector3d v_NBcm_B_initial_;
+  // Initial (t = 0) value of the velocity in N of Bcm, expressed in B.
+  // Note: v_NBcm_B is not the time-derivative in B (or N) of p_NoBcm_N_.
+  Eigen::Vector3d initial_v_NBcm_B_;
 
   // uniform_gravity_expressed_in_world_ is the local planet's (e.g., Earth)
   // uniform gravitational acceleration, expressed in World (e.g., Earth).

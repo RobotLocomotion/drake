@@ -281,6 +281,10 @@ class TestGeneral(unittest.TestCase):
         input2 = BasicVector([0.003, 0.004, 0.005])
         context.FixInputPort(2, input2)  # Test the BasicVector overload.
 
+        # Test __str__ methods.
+        self.assertRegexpMatches(str(context), "integrator")
+        self.assertEqual(str(input2), "[0.003, 0.004, 0.005]")
+
         # Initialize integrator states.
         integrator_xc = (
             diagram.GetMutableSubsystemState(integrator, context)

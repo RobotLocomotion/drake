@@ -1105,7 +1105,7 @@ TEST_F(KukaIiwaModelTests, CalcRelativeFrameGeometricJacobian) {
           *context_, link7.body_frame(), p_L7Q,
           link3.body_frame(), link5.body_frame(), nullptr),
       std::exception,
-      ".*'Jv_ABq_E != nullptr'.*");
+      ".*'Jv_ABp_E != nullptr'.*");
 
   // Unit test that CalcRelativeFrameGeometricJacobian throws an exception when
   // the input Jacobian has the wrong number of rows.
@@ -1116,7 +1116,7 @@ TEST_F(KukaIiwaModelTests, CalcRelativeFrameGeometricJacobian) {
           *context_, link7.body_frame(), p_L7Q,
           link3.body_frame(), link5.body_frame(), &Jv_wrong_size),
       std::exception,
-      ".*'Jv_ABq_E->rows\\(\\) == 6'.*");
+      ".*'Jv_ABp_E->rows\\(\\) == 6'.*");
 
   // Unit test that CalcRelativeFrameGeometricJacobian throws an exception when
   // the input Jacobian has the wrong number of columns.
@@ -1126,7 +1126,7 @@ TEST_F(KukaIiwaModelTests, CalcRelativeFrameGeometricJacobian) {
           *context_, link7.body_frame(), p_L7Q,
           link3.body_frame(), link5.body_frame(), &Jv_wrong_size),
       std::exception,
-      ".*'Jv_ABq_E->cols\\(\\) == num_velocities\\(\\)'.*");
+      ".*'Jv_ABp_E->cols\\(\\) == num_velocities\\(\\)'.*");
 }
 
 // Fixture to setup a simple MBT model with weld mobilizers. The model is in

@@ -263,7 +263,7 @@ Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
 template <typename Derived>
 typename std::enable_if<is_eigen_vector_of<Derived, symbolic::Formula>::value,
                         Binding<Constraint>>::type
-ParseConstraint(const Eigen::MatrixBase<Derived>& e) {
+ParseConstraint(const Eigen::MatrixBase<Derived>&) {
   // TODO(eric.cousineau): Implement this.
   throw std::runtime_error("Not implemented");
 }

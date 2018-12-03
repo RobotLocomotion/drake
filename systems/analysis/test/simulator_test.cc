@@ -1670,7 +1670,17 @@ GTEST_TEST(SimulatorTest, Initialization) {
   EXPECT_TRUE(sys.get_unres_update_init());
 }
 
+GTEST_TEST(SimulatorTest, OwnedSystemTest) {
+  const double offset = 0.1;
+  Simulator<double> simulator_w_system(
+      std::make_unique<ExampleDiagram>(offset));
+
+  // Check that my System reference is still valid.
+  EXPECT_NE(
+      dynamic_cast<const ExampleDiagram*>(&simulator_w_system.get_system()),
+      nullptr);
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
-

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -7,6 +8,7 @@
 #include "drake/geometry/geometry_context.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
+#include "drake/geometry/query_results/signed_distance_to_point.h"
 #include "drake/geometry/scene_graph_inspector.h"
 
 namespace drake {
@@ -118,12 +120,34 @@ class QueryObject {
   //@}
 
   //---------------------------------------------------------------------------
+  // TODO(DamrongGuoy): Write a better documentation for Signed Distance
+  // Queries.
   /**
    @anchor signed_distance_query
    @name                   Signed Distance Queries
 
-   These queries provide φ(A, B), the signed distance between two objects A and
-   B.
+   These queries provide the signed distance between two objects. Each query
+   has a specific definition of the signed distance being positive, negative,
+   or zero associated with some notions of being outside, inside, or on
+   the boundary.
+
+   These queries provide bookkeeping data like geometry id(s) of the geometries
+   involved and the important locations on the boundaries of these geometries.
+
+   The signed distance function is a continuous function. Its partial
+   derivatives are continuous almost everywhere.
+  */
+  //@{
+
+  // TODO(DamrongGuoy): Refactor documentation of
+  // ComputeSignedDistancePairwiseClosestPoints(). Move the common sections
+  // into Signed Distance Queries.
+  /**
+   Computes the signed distance together with the nearest points across all
+   pairs of geometries in the world. Reports both the separating geometries
+   and penetrating geometries.
+
+   This query provides φ(A, B), the signed distance between two objects A and B.
 
    If the objects do not overlap (i.e., A ⋂ B = ∅), φ > 0 and represents the
    minimal distance between the two objects. More formally:
@@ -147,27 +171,77 @@ class QueryObject {
    This method is affected by collision filtering; geometry pairs that
    have been filtered will not produce signed distance query results.
 
-   @note The signed distance function is a continuous function with respect to
-   the pose of the objects.
-   */
-
-  //@{
-
+   Notice that this is an O(N²) operation, where N
+   is the number of geometries remaining in the world after applying collision
+   filter. We report the distance between dynamic objects, and between dynamic
+   and anchored objects. We DO NOT report the distance between two anchored
+   objects.
+   @retval near_pairs The signed distance for all unfiltered geometry pairs.
+  */
   // TODO(hongkai.dai): add a distance bound as an optional input, such that the
   // function doesn't return the pairs whose signed distance is larger than the
   // distance bound.
-  /**
-   * Computes the signed distance together with the nearest points across all
-   * pairs of geometries in the world. Reports both the separating geometries
-   * and penetrating geometries. Notice that this is an O(N²) operation, where N
-   * is the number of geometries remaining in the world after applying collision
-   * filter. We report the distance between dynamic objects, and between dynamic
-   * and anchored objects. We DO NOT report the distance between two anchored
-   * objects.
-   * @retval near_pairs The signed distance for all unfiltered geometry pairs.
-   */
   std::vector<SignedDistancePair<double>>
   ComputeSignedDistancePairwiseClosestPoints() const;
+
+  // TODO(DamrongGuoy): Improve and refactor documentation of
+  // ComputeSignedDistanceToPoint(). Move the common sections into Signed
+  // Distance Queries. Update documentation as we add more functionality.
+  // Right now it only supports spheres.
+  /**
+   Computes the signed distances and gradients to a query point from each
+   geometry in the scene.
+
+   @warning Currently supports spheres only. Silently ignores other kinds of
+   geometries, which will be added later.
+
+   This query provides φᵢ(p), φᵢ:ℝ³→ℝ, the signed distance to the position
+   p of a query point from geometry Gᵢ in the scene.  It returns an array of
+   the signed distances from all geometries.
+
+   Optionally you can specify a threshold distance that will filter out any
+   object beyond the threshold. By default, we report distances from the query
+   point to every object.
+
+   This query also provides the gradient vector ∇φᵢ(p) of the signed distance
+   function from geometry Gᵢ. Note that, in general, if p is outside Gᵢ, then
+   ∇φᵢ(p) equals the unit vector in the direction from the nearest point Nᵢ on
+   Gᵢ's surface to p. If p is inside Gᵢ, then ∇φᵢ(p) is in the direction from
+   p to Nᵢ. This observation is written formally as:
+
+   ∇φᵢ(p) = (p - Nᵢ)/|p - Nᵢ| if p is outside Gᵢ
+
+   ∇φᵢ(p) = (Nᵢ - p)/|Nᵢ - p| if p is inside Gᵢ
+
+   Note that ∇φᵢ(p) is also defined on Gᵢ's surface, but we cannot use the
+   above formula.
+
+   @note For a sphere, the signed distance function φᵢ(p) has undefined gradient
+   vector at the center of the sphere--every point on the sphere's surface
+   has the same distance to the center.  In this case, we will assign an
+   arbitrary vector (1,0,0) as its gradient vector.
+
+   @note The signed distance function is a continuous function with respect to
+   the position of the query point, but its gradient vector field may
+   not be continuous. Specifically at a position on the medial axis, its
+   gradient vector field is not continuous.
+
+   @note For a convex object, outside the object at positive distance from
+   the boundary, the signed distance function is smooth (having continuous
+   first-order partial derivatives).
+
+   @param[in] p_WQ            Position of a query point Q in world frame W.
+   @param[in] threshold       We ignore any object beyond this distance.
+                              By default, it is infinity, so we report
+                              distances from the query point to every object.
+   @retval signed_distances   A vector populated with per-object signed
+                              distance values (and supporting data).
+                              See SignedDistanceToPoint.
+   */
+  std::vector<SignedDistanceToPoint<double>>
+  ComputeSignedDistanceToPoint(const Vector3<double> &p_WQ,
+                               const double threshold
+                               = std::numeric_limits<double>::infinity()) const;
   //@}
 
  private:

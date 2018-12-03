@@ -590,9 +590,9 @@ class LinearEqualityConstraint : public LinearConstraint {
    * instead.
    */
   template <typename DerivedA, typename DerivedL, typename DerivedU>
-  void UpdateCoefficients(const Eigen::MatrixBase<DerivedA>& new_A,
-                          const Eigen::MatrixBase<DerivedL>& new_lb,
-                          const Eigen::MatrixBase<DerivedU>& new_ub) {
+  void UpdateCoefficients(const Eigen::MatrixBase<DerivedA>&,
+                          const Eigen::MatrixBase<DerivedL>&,
+                          const Eigen::MatrixBase<DerivedU>&) {
     static_assert(
         !std::is_same<DerivedA, DerivedA>::value,
         "This method should not be called form `LinearEqualityConstraint`");

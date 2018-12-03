@@ -190,6 +190,13 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "drake_variant_pybind",
+    hdrs = ["drake_variant_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+)
+
+drake_cc_library(
     name = "type_safe_index_pybind",
     hdrs = ["type_safe_index_pybind.h"],
     declare_installed_headers = 0,
@@ -354,6 +361,13 @@ drake_pybind_cc_googletest(
     py_deps = [":cpp_template_py"],
 )
 
+drake_pybind_cc_googletest(
+    name = "drake_variant_pybind_test",
+    cc_deps = [
+        ":drake_variant_pybind",
+    ],
+)
+
 drake_pybind_library(
     name = "eigen_geometry_test_util_py",
     testonly = 1,
@@ -419,4 +433,8 @@ drake_py_unittest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    cpplint_data = ["//bindings/pydrake:.clang-format"],
+    # TODO(jwnimmer-tri) We should enable this eventually.
+    enable_clang_format_lint = False,
+)

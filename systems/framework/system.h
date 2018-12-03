@@ -2112,7 +2112,7 @@ class System : public SystemBase {
         return [&expected_type, port_index, pathname](
             const AbstractValue& actual) {
           if (actual.static_type_info() != expected_type) {
-            ThrowInputPortHasWrongType(
+            SystemBase::ThrowInputPortHasWrongType(
                 "FixInputPortTypeCheck", pathname, port_index,
                 NiceTypeName::Get(expected_type),
                 NiceTypeName::Get(actual.type_info()));

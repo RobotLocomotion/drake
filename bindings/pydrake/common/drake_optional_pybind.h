@@ -15,12 +15,12 @@ namespace detail {
 // @see pybind11/stl.h, `optional_caster`.
 
 template <typename T>
-struct type_caster<stx::optional<T>> :
-    public optional_caster<stx::optional<T>> {};
+struct type_caster<stx::optional<T>>
+    : public optional_caster<stx::optional<T>> {};
 
-template<>
-struct type_caster<stx::nullopt_t> :
-    public void_caster<stx::nullopt_t> {};
+template <>
+struct type_caster<stx::nullopt_t>
+    : public void_caster<stx::nullopt_t> {};
 
 }  // namespace detail
 }  // namespace pybind11

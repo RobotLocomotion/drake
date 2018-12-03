@@ -24,8 +24,12 @@ auto WrapIdentity(Func&& func) {
 // parameters.
 void Void() {}
 void IntToVoid(int) {}
-int ReturnInt() { return 1; }
-int IntToInt(int value) { return value; }
+int ReturnInt() {
+  return 1;
+}
+int IntToInt(int value) {
+  return value;
+}
 
 GTEST_TEST(WrapFunction, FunctionPointer) {
   int value{0};
@@ -156,8 +160,7 @@ template <typename T>
 struct ptr {
   // Ensure that this is not being used in lieu of `const_ptr` (ensure that
   // our specializiation delegates correctly).
-  static_assert(
-      !std::is_const<T>::value, "Should be using `const_ptr`");
+  static_assert(!std::is_const<T>::value, "Should be using `const_ptr`");
   T* value{};
 };
 
@@ -166,21 +169,16 @@ template <typename T, typename = void>
 struct wrap_change : public wrap_arg_default<T> {};
 
 template <typename T>
-using wrap_change_t =
-    detail::wrap_function_impl<wrap_change>::wrap_type_t<T>;
+using wrap_change_t = detail::wrap_function_impl<wrap_change>::wrap_type_t<T>;
 
 // Wraps any `const T*` with `const_ptr`, except for `int`.
 // SFINAE. Could be achieved with specialization, but using to uphold SFINAE
 // contract provided by `WrapFunction`.
 template <typename T>
 struct wrap_change<const T*, std::enable_if_t<!std::is_same<T, int>::value>> {
-  static const_ptr<T> wrap(const T* arg) {
-    return {arg};
-  }
+  static const_ptr<T> wrap(const T* arg) { return {arg}; }
 
-  static const T* unwrap(const_ptr<T> arg_wrapped) {
-    return arg_wrapped.value;
-  }
+  static const T* unwrap(const_ptr<T> arg_wrapped) { return arg_wrapped.value; }
 };
 
 // Wraps any `const T&` with `const_ptr`, except for `int`.
@@ -245,8 +243,8 @@ struct check_signature {
 
   template <typename ReturnActual, typename... ArgsActual, typename FuncActual>
   static void run_impl(
-      const detail::function_info<
-          FuncActual, ReturnActual, ArgsActual...>& info) {
+      const detail::function_info<FuncActual, ReturnActual, ArgsActual...>&
+          info) {
     check_type<ReturnActual, ReturnExpected>();
     using Dummy = int[];
     (void)Dummy{(check_type<ArgsActual, ArgsExpected>(), 0)...};
@@ -284,8 +282,7 @@ GTEST_TEST(WrapFunction, ChangeBasic) {
   double y = 4.;
 
   ptr<int> out = WrapChange(ChangeBasic)(
-      &a, const_ptr<double>{&b},
-      ptr<int>{&x}, ptr<double>{&y});
+      &a, const_ptr<double>{&b}, ptr<int>{&x}, ptr<double>{&y});
 
   EXPECT_EQ(x, 4);
   EXPECT_EQ(y, 6.);
@@ -296,32 +293,24 @@ class MyClassChange {
  public:
   double* ChangeComprehensive(
       // double (general case)
-      double,
-      double*, double&,
-      const double*, const double&,
+      double, double*, double&, const double*, const double&,
       // int (special case)
-      int,
-      int*, int&,
-      const int*, const int&) {
+      int, int*, int&, const int*, const int&) {
     return nullptr;
   }
 };
 
 GTEST_TEST(WrapFunction, ChangeComprehensive) {
   auto wrapped = WrapChange(&MyClassChange::ChangeComprehensive);
-  using check_expected =
-      check_signature<
-          // Return.
-          ptr<double>,
-          // self
-          ptr<MyClassChange>,
-          // double (general case)
-          double,
-          ptr<double>, ptr<double>,
-          const_ptr<double>, const_ptr<double>,
-          // int (special case)
-          int, ptr<int>, ptr<int>,
-          const int*, const int*>;
+  using check_expected = check_signature<
+      // Return.
+      ptr<double>,
+      // self
+      ptr<MyClassChange>,
+      // double (general case)
+      double, ptr<double>, ptr<double>, const_ptr<double>, const_ptr<double>,
+      // int (special case)
+      int, ptr<int>, ptr<int>, const int*, const int*>;
   check_expected::run(wrapped);
 }
 
@@ -329,30 +318,29 @@ using Callback = std::function<const double&(MyClassChange*, const int&)>;
 using CallbackWrapped =
     std::function<const_ptr<double>(ptr<MyClassChange>, const int*)>;
 
-Callback ChangeCallback(const Callback&) { throw std::runtime_error("Dummy"); }
+Callback ChangeCallback(const Callback&) {
+  throw std::runtime_error("Dummy");
+}
 
 GTEST_TEST(WrapFunction, ChangeCallback) {
   auto wrapped = WrapChange(ChangeCallback);
-  using check_expected =
-      check_signature<
-          // Return.
-          CallbackWrapped,
-          // Arguments.
-          CallbackWrapped>;
+  using check_expected = check_signature<
+      // Return.
+      CallbackWrapped,
+      // Arguments.
+      CallbackWrapped>;
   check_expected::run(wrapped);
 }
 
-void ChangeCallbackNested(
-    const std::function<Callback(const Callback&)>&) {}
+void ChangeCallbackNested(const std::function<Callback(const Callback&)>&) {}
 
 GTEST_TEST(WrapFunction, ChangeCallbackNested) {
   auto wrapped = WrapChange(ChangeCallbackNested);
-  using check_expected =
-      check_signature<
-          // Return.
-          void,
-          // Nested callback, wrapped.
-          std::function<CallbackWrapped(CallbackWrapped)>>;
+  using check_expected = check_signature<
+      // Return.
+      void,
+      // Nested callback, wrapped.
+      std::function<CallbackWrapped(CallbackWrapped)>>;
   check_expected::run(wrapped);
 }
 
@@ -374,19 +362,17 @@ auto WrapChangeCallbackOnly(Func&& func) {
   return WrapFunction<wrap_change_callback, false>(std::forward<Func>(func));
 }
 
-Callback ChangeCallbackOnly(
-    double*, Callback, const Callback&) { return {}; }
+Callback ChangeCallbackOnly(double*, Callback, const Callback&) {
+  return {};
+}
 
 GTEST_TEST(WrapFunction, ChangeCallbackOnly) {
   auto wrapped = WrapChangeCallbackOnly(ChangeCallbackOnly);
-  using check_expected =
-      check_signature<
-          // Return.
-          CallbackWrapped,
-          // Arguments.
-          double*,
-          CallbackWrapped,
-          CallbackWrapped>;
+  using check_expected = check_signature<
+      // Return.
+      CallbackWrapped,
+      // Arguments.
+      double*, CallbackWrapped, CallbackWrapped>;
   check_expected::run(wrapped);
 }
 
