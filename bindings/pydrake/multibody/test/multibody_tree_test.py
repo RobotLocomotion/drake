@@ -271,10 +271,16 @@ class TestMultibodyTree(unittest.TestCase):
             frame_A=world_frame).T
         self.assertTupleEqual(p_AQi.shape, (2, 3))
 
+        # Test the "frame" Jacobian.
         Jv_WL = tree.CalcFrameGeometricJacobianExpressedInWorld(
             context=context, frame_B=base_frame,
             p_BoFo_B=[0, 0, 0])
         self.assertTupleEqual(Jv_WL.shape, (6, plant.num_velocities()))
+
+        # Test the "points" Jacobian.
+        Jp_W = tree.CalcPointsGeometricJacobianExpressedInWorld(
+            context=context, frame_F=base_frame, p_WQ_list=[0, 0, 0])
+        self.assertTupleEqual(Jp_W.shape, (3, plant.num_velocities()))
 
         # Compute body pose.
         X_WBase = tree.EvalBodyPoseInWorld(context, base)
