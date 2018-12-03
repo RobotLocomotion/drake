@@ -26,11 +26,12 @@ enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 /// @ingroup example_systems
 /// @}
 
-/// A system that represents the complete manipulation station, including the
-/// robotic arm (a Kuka IIWA LWR), the gripper (a Schunk WSG 50), and anything
-/// a user might want to load into the model. SetupDefaultStation() provides
-/// the setup that is used in the MIT Intelligent Robot Manipulation class,
-/// which includes the supporting structure for IIWA and several RGBD cameras.
+/// A system that represents the complete manipulation station, including
+/// exactly one robotic arm (a Kuka IIWA LWR), one gripper (a Schunk WSG 50),
+/// and anything a user might want to load into the model.
+/// SetupDefaultStation() provides the setup that is used in the MIT
+/// Intelligent Robot Manipulation class, which includes the supporting
+/// structure for IIWA and several RGBD cameras.
 ///
 /// @{
 ///
@@ -132,9 +133,10 @@ class ManipulationStation : public systems::Diagram<T> {
   ///   command inputs.
   explicit ManipulationStation(double time_step = 0.002);
 
-  /// Adds a default iiwa, wsg, cupboard, and 8020 frame for the class, then
-  /// calls RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
-  /// appropriate arguments.
+  /// Adds a default iiwa, wsg, cupboard, and 8020 frame for the MIT
+  /// Intelligent Robot Manipulation class, then calls
+  /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
+  /// the appropriate arguments.
   /// Must be called before Finalize().
   /// @param collision_model Determines which sdf is loaded for the IIWA.
   void SetupDefaultStation(
@@ -144,19 +146,33 @@ class ManipulationStation : public systems::Diagram<T> {
   /// be identified by @p model_name, as well as necessary information to
   /// reload model for the internal controller's use. Assumes an model instance
   /// named @p model_name has already been added to the MultibodyPlant.
+  /// Note, the current implementation only allows @p parent_frame_name to be
+  /// the world frame.
   /// Only call this with custom IIWA models (i.e. not calling
   /// SetupDefaultStation()). Must be called before Finalize().
   /// @param model_path Full path to the model file.
   /// @param model_name Name of the model.
   /// @param parent_frame_name Identifies frame P (the parent frame) in the
-  /// MultidboyPlant that the IIWA model has been attached to.
+  /// MultibodyPlant that the IIWA model has been attached to.
   /// @param child_frame_name Identifies frame C (the child frame) in the IIWA
   /// model that is used welded to frame P.
   /// @param X_PC Transformation between frame P and C.
+  /// @throws If @p model_name, @p parent_frame_name or @p child_frame_name is
+  /// not present in the MultibodyPlant.
+  // TODO(siyuan.feng@tri.global): throws meaningful errors earlier here,
+  // rather than in Finalize() if the arguments are inconsistent with the plant.
+  // TODO(siyuan.feng@tri.global): remove the assumption that parent frame has
+  // to be world.
+  // TODO(siyuan.feng@tri.global): Some of these information should be
+  // retrievable from the MultibodyPlant directly or MultibodyPlant should
+  // provide partial tree cloning.
   void RegisterIiwaControllerModel(
-      const std::string& model_path, const std::string& model_name,
-      const std::string& parent_frame_name, const std::string& child_frame_name,
-      const Isometry3<double>& X_PC = Isometry3<double>::Identity());
+      const std::string& model_path,
+      const multibody::ModelInstanceIndex parent_instance,
+      const std::string& parent_frame_name,
+      const multibody::ModelInstanceIndex iiwa_instance,
+      const std::string& child_frame_name,
+      const Isometry3<double>& X_PC);
 
   /// Notifies the ManipulationStation that the WSG robot model instance can
   /// be identified by @p model_name, as well as necessary information to
@@ -167,17 +183,24 @@ class ManipulationStation : public systems::Diagram<T> {
   /// @param model_path Full path to the model file.
   /// @param model_name Name of the model.
   /// @param parent_frame_name Identifies frame P (the parent frame) in the
-  /// MultidboyPlant that the WSG model has been attached to.
+  /// MultibodyPlant that the WSG model has been attached to.
   /// @param child_frame_name Identifies frame C (the child frame) in the WSG
   /// model that is used welded to frame P.
   /// @param X_PC Transformation between frame P and C.
+  /// @throws If @p model_name, @p parent_frame_name or @p child_frame_name is
+  /// not present in the MultibodyPlant.
   // TODO(siyuan.feng@tri.global): Some of these information should be
   // retrievable from the MultibodyPlant directly or MultibodyPlant should
   // provide partial tree cloning.
+  // TODO(siyuan.feng@tri.global): throws meaningful errors earlier here,
+  // rather than in Finalize() if the arguments are inconsistent with the plant.
   void RegisterWsgControllerModel(
-      const std::string& model_path, const std::string& model_name,
-      const std::string& parent_frame_name, const std::string& child_frame_name,
-      const Isometry3<double>& X_PC = Isometry3<double>::Identity());
+      const std::string& model_path,
+      const multibody::ModelInstanceIndex parent_instance,
+      const std::string& parent_frame_name,
+      const multibody::ModelInstanceIndex wsg_instance,
+      const std::string& child_frame_name,
+      const Isometry3<double>& X_PC);
 
   // TODO(russt): Add scalar copy constructor etc once we support more
   // scalar types than T=double.  See #9573.
@@ -276,24 +299,24 @@ class ManipulationStation : public systems::Diagram<T> {
   /// Get the camera names / unique ids.
   std::vector<std::string> get_camera_names() const;
 
-  /// Set the gains for the WSG controller. Has no effect after Finalize() is
-  /// called.
+  /// Set the gains for the WSG controller.
+  /// @throws exception if Finalize() has been called.
   void SetWsgGains(double kp, double kd);
 
-  /// Set the position gains for the IIWA controller. Has no effect after
-  /// Finalize() is called.
+  /// Set the position gains for the IIWA controller.
+  /// @throws exception if Finalize() has been called.
   void SetIiwaPositionGains(const VectorX<double>& kp) {
     SetIiwaGains(kp, &iiwa_kp_);
   }
 
-  /// Set the velocity gains for the IIWA controller. Has no effect after
-  /// Finalize() is called.
+  /// Set the velocity gains for the IIWA controller.
+  /// @throws exception if Finalize() has been called.
   void SetIiwaVelocityGains(const VectorX<double>& kd) {
     SetIiwaGains(kd, &iiwa_kd_);
   }
 
-  /// Set the integral gains for the IIWA controller. Has no effect after
-  /// Finalize() is called.
+  /// Set the integral gains for the IIWA controller.
+  /// @throws exception if Finalize() has been called.
   void SetIiwaIntegralGains(const VectorX<double>& ki) {
     SetIiwaGains(ki, &iiwa_ki_);
   }
@@ -302,14 +325,19 @@ class ManipulationStation : public systems::Diagram<T> {
   // Struct defined to store information about the how to parse and add a model.
   struct ModelInformation {
     /// This needs to have the full path. i.e. drake::FindResourceOrThrow(...)
-    std::string model_name;
     std::string model_path;
+    multibody::ModelInstanceIndex parent_instance;
     std::string parent_frame_name;
+    multibody::ModelInstanceIndex model_instance;
     std::string child_frame_name;
     Isometry3<double> X_PC{Isometry3<double>::Identity()};
   };
 
-  void SetIiwaGains(const VectorX<double>& new_gains, VectorX<double>* gains);
+  // @param gains is supposed to be one of iiwa_kp_, iiwa_kd_ or iiwa_ki_. The
+  // only purpose of this function is to check for invalid inputs then set one
+  // of those member fields.
+  void SetIiwaGains(const VectorX<double>& new_gains,
+                    VectorX<double>* gains) const;
 
   // Assumes iiwa_model_info_ and wsg_model_info_ have already being populated.
   // Should only be called from Finalize().
@@ -327,10 +355,8 @@ class ManipulationStation : public systems::Diagram<T> {
 
   // Populated by RegisterIiwaControllerModel() and
   // RegisterWsgControllerModel().
-  ModelInformation iiwa_model_info_;
-  ModelInformation wsg_model_info_;
-  multibody::ModelInstanceIndex iiwa_model_;
-  multibody::ModelInstanceIndex wsg_model_;
+  ModelInformation iiwa_model_;
+  ModelInformation wsg_model_;
 
   // Stored camera poses.
   std::map<std::string, math::RigidTransform<double>> camera_poses_in_world_;
@@ -339,8 +365,9 @@ class ManipulationStation : public systems::Diagram<T> {
   VectorX<double> iiwa_kp_;
   VectorX<double> iiwa_kd_;
   VectorX<double> iiwa_ki_;
-  double wsg_kp_;
-  double wsg_kd_;
+  // TODO(siyuan.feng@tri.global): Need to tunes these better.
+  double wsg_kp_{200};
+  double wsg_kd_{5};
 };
 
 }  // namespace manipulation_station
