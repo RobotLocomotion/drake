@@ -930,8 +930,8 @@ RotationMatrix<T>::ThrowIfNotValid(const Matrix3<S>& R) {
 
 // TODO(mitiguy) Delete this deprecated code after February 5, 2019.
 template <typename Derived>
-DRAKE_DEPRECATED("Use  RotationMatrix(RollPitchYaw(rpy)) as per issue #8323. "
-                 "Code will be deleted after February 5, 2019.")
+DRAKE_DEPRECATED("Use  RotationMatrix(RollPitchYaw(rpy)).matrix() as per issue "
+                 "#8323. Code will be deleted after February 5, 2019.")
 Matrix3<typename Derived::Scalar> rpy2rotmat(
     const Eigen::MatrixBase<Derived>& rpy) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
