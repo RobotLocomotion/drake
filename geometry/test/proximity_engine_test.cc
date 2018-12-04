@@ -11,6 +11,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace geometry {
@@ -1254,7 +1255,7 @@ class BoxPenetrationTest : public ::testing::Test {
     // a. Orient the box so that the corner p_BoC_B = (-0.5, -0.5, -0.5) lies in
     //    the most -z extent. With only rotation, p_BoC_B != p_WC.
     const math::RotationMatrixd R_WB(AngleAxisd(std::atan(M_SQRT2),
-                                     Vector3d(M_SQRT1_2, -M_SQRT1_2, 0);
+                                     Vector3d(M_SQRT1_2, -M_SQRT1_2, 0)));
 
     // b. Translate it so that the rotated corner p_BoC_W lies at
     //    (0, 0, -d).
