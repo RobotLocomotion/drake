@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Install development and runtime prerequisites for binary distributions of
-# Drake on Ubuntu 16.04.
+# Drake on Ubuntu 16.04 (Xenial) or 18.04 (Bionic).
 
 set -euo pipefail
 
@@ -13,8 +13,10 @@ fi
 apt-get update
 apt-get install --no-install-recommends lsb-release
 
-if [[ "$(lsb_release -sc)" != 'xenial' ]]; then
-  echo 'This script requires Ubuntu 16.04 (Xenial)' >&2
+codename=$(lsb_release -sc)
+
+if [[ "${codename}" != 'xenial' && "${codename}" != 'bionic' ]]; then
+  echo 'This script requires Ubuntu 16.04 (Xenial) or 18.04 (Bionic)' >&2
   exit 2
 fi
 
@@ -24,4 +26,4 @@ cmake
 EOF
 )
 
-apt-get install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages.txt" | tr '\n' ' ')
+apt-get install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages-${codename}.txt" | tr '\n' ' ')
