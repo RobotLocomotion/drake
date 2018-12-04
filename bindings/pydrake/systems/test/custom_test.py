@@ -434,6 +434,29 @@ class TestCustom(unittest.TestCase):
                 self.assertEqual(
                     context.get_continuous_state_vector().size(), 6)
 
+    def test_discrete_state_api(self):
+        # N.B. Since this has trivial operations, we can test all scalar types.
+        for T in [float, AutoDiffXd, Expression]:
+
+            class TrivialSystem(LeafSystem_[T]):
+                def __init__(self, index):
+                    LeafSystem_[T].__init__(self)
+                    num_states = 3
+                    if index == 0:
+                        self._DeclareDiscreteState(
+                            num_state_variables=num_states)
+                    elif index == 1:
+                        self._DeclareDiscreteState([1, 2, 3])
+                    elif index == 2:
+                        self._DeclareDiscreteState(
+                            BasicVector_[T](num_states))
+
+            for index in range(3):
+                system = TrivialSystem(index)
+                context = system.CreateDefaultContext()
+                self.assertEqual(
+                    context.get_discrete_state(0).size(), 3)
+
     def test_abstract_io_port(self):
         test = self
         # N.B. Since this has trivial operations, we can test all scalar types.
