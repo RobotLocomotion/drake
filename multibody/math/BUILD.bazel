@@ -1,0 +1,105 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_package_library(
+    name = "math",
+    deps = [
+        ":spatial_acceleration",
+        ":spatial_algebra",
+        ":spatial_force",
+        ":spatial_momentum",
+        ":spatial_vector",
+        ":spatial_velocity",
+    ],
+)
+
+drake_cc_library(
+    name = "spatial_vector",
+    srcs = [],
+    hdrs = ["spatial_vector.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "spatial_velocity",
+    srcs = ["spatial_velocity.cc"],
+    hdrs = ["spatial_velocity.h"],
+    deps = [
+        ":spatial_vector",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "spatial_acceleration",
+    srcs = ["spatial_acceleration.cc"],
+    hdrs = ["spatial_acceleration.h"],
+    deps = [
+        ":spatial_vector",
+        ":spatial_velocity",
+        "//common:default_scalars",
+        "//common:essential",
+        "//math:vector3_util",
+    ],
+)
+
+drake_cc_library(
+    name = "spatial_force",
+    srcs = ["spatial_force.cc"],
+    hdrs = ["spatial_force.h"],
+    deps = [
+        ":spatial_vector",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "spatial_momentum",
+    srcs = ["spatial_momentum.cc"],
+    hdrs = ["spatial_momentum.h"],
+    deps = [
+        ":spatial_vector",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "spatial_algebra",
+    srcs = [],
+    hdrs = ["spatial_algebra.h"],
+    deps = [
+        ":spatial_acceleration",
+        ":spatial_force",
+        ":spatial_momentum",
+        ":spatial_vector",
+        ":spatial_velocity",
+        "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "spatial_algebra_test",
+    deps = [
+        ":spatial_algebra",
+        "//common:autodiff",
+        "//common:symbolic",
+    ],
+)
+
+add_lint_tests()

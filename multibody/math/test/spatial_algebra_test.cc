@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/math/spatial_algebra.h"
+#include "drake/multibody/math/spatial_algebra.h"
 
 #include <sstream>
 #include <string>
