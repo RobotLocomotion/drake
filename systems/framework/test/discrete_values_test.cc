@@ -55,6 +55,24 @@ TEST_F(DiscreteValuesTest, UnownedState) {
   EXPECT_EQ(xd.get_vector(1).get_value(), v01_);
 }
 
+TEST_F(DiscreteValuesTest, AppendGroup) {
+  DiscreteValues<double> xd(std::move(data_));
+  ASSERT_EQ(xd.num_groups(), 2);
+  EXPECT_EQ(xd.get_vector(0).get_value(), v00_);
+  EXPECT_EQ(xd.get_vector(1).get_value(), v01_);
+  const int group_num = xd.AppendGroup(std::make_unique<MyVector3d>(v11_));
+  EXPECT_EQ(group_num, 2);
+  ASSERT_EQ(xd.num_groups(), 3);
+
+  // Check that we didn't break previous values.
+  EXPECT_EQ(xd.get_vector(0).get_value(), v00_);
+  EXPECT_EQ(xd.get_vector(1).get_value(), v01_);
+
+  // Check that new value and type are preserved.
+  EXPECT_EQ(xd.get_vector(2).get_value(), v11_);
+  EXPECT_TRUE(is_dynamic_castable<MyVector3d>(&xd.get_vector(2)));
+}
+
 TEST_F(DiscreteValuesTest, NoNullsAllowed) {
   // Unowned.
   EXPECT_THROW(DiscreteValues<double>(

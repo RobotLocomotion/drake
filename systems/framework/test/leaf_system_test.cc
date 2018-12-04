@@ -3,6 +3,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <typeinfo>
 
 #include <Eigen/Dense>
 #include <gmock/gmock.h>
@@ -1056,6 +1057,65 @@ GTEST_TEST(ModelLeafSystemTest, ModelNumericParams) {
   EXPECT_EQ(2, param.size());
   EXPECT_EQ(1.1, param.GetAtIndex(0));
   EXPECT_EQ(2.2, param.GetAtIndex(1));
+}
+
+// Tests that various DeclareDiscreteState() signatures work correctly and
+// that the model values get used in SetDefaultContext().
+GTEST_TEST(ModelLeafSystemTest, ModelDiscreteState) {
+  class DeclaredModelDiscreteStateSystem : public LeafSystem<double> {
+   public:
+    // This should produce three discrete variable groups.
+    DeclaredModelDiscreteStateSystem() {
+      // Takes a BasicVector.
+      indexes_.push_back(
+          DeclareDiscreteState(MyVector2d(Eigen::Vector2d(1., 2.))));
+      // Takes an Eigen vector.
+      indexes_.push_back(DeclareDiscreteState(Eigen::Vector3d(3., 4., 5.)));
+      // Four state variables, initialized to zero.
+      indexes_.push_back(DeclareDiscreteState(4));
+    }
+    std::vector<DiscreteStateIndex> indexes_;
+  };
+
+  DeclaredModelDiscreteStateSystem dut;
+  EXPECT_EQ(dut.num_discrete_state_groups(), 3);
+  for (int i=0; i < static_cast<int>(dut.indexes_.size()); ++i)
+    EXPECT_TRUE(dut.indexes_[i] == i);
+
+  auto context = dut.CreateDefaultContext();
+  DiscreteValues<double>& xd = context->get_mutable_discrete_state();
+  EXPECT_EQ(xd.num_groups(), 3);
+
+  // Concrete type and value should have been preserved.
+  BasicVector<double>& xd0 = xd.get_mutable_vector(0);
+  EXPECT_TRUE(is_dynamic_castable<const MyVector2d>(&xd0));
+  EXPECT_EQ(xd0.get_value(), Eigen::Vector2d(1., 2.));
+
+  // Eigen vector should have been stored in a BasicVector-type object.
+  BasicVector<double>& xd1 = xd.get_mutable_vector(1);
+  EXPECT_EQ(typeid(xd1), typeid(BasicVector<double>));
+  EXPECT_EQ(xd1.get_value(), Eigen::Vector3d(3., 4., 5.));
+
+  // Discrete state with no model should act as though it were given an
+  // all-zero Eigen vector model.
+  BasicVector<double>& xd2 = xd.get_mutable_vector(2);
+  EXPECT_EQ(typeid(xd2), typeid(BasicVector<double>));
+  EXPECT_EQ(xd2.get_value(), Eigen::Vector4d(0., 0., 0., 0.));
+
+  // Now make changes, then see if SetDefaultContext() puts them back.
+  xd0.SetFromVector(Eigen::Vector2d(9., 10.));
+  xd1.SetFromVector(Eigen::Vector3d(11., 12., 13.));
+  xd2.SetFromVector(Eigen::Vector4d(1., 2., 3., 4.));
+
+  // Of course that had to work, but let's just prove it ...
+  EXPECT_EQ(xd0.get_value(), Eigen::Vector2d(9., 10.));
+  EXPECT_EQ(xd1.get_value(), Eigen::Vector3d(11., 12., 13.));
+  EXPECT_EQ(xd2.get_value(), Eigen::Vector4d(1., 2., 3., 4.));
+
+  dut.SetDefaultContext(&*context);
+  EXPECT_EQ(xd0.get_value(), Eigen::Vector2d(1., 2.));
+  EXPECT_EQ(xd1.get_value(), Eigen::Vector3d(3., 4., 5.));
+  EXPECT_EQ(xd2.get_value(), Eigen::Vector4d(0., 0., 0., 0.));
 }
 
 // Tests that DeclareAbstractState works expectedly.

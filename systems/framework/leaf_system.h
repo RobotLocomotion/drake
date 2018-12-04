@@ -190,11 +190,23 @@ class LeafSystem : public System<T> {
     } else {
       xc.SetFromVector(VectorX<T>::Zero(xc.size()));
     }
+
     DiscreteValues<T>& xd = state->get_mutable_discrete_state();
-    for (int i = 0; i < xd.num_groups(); i++) {
-      BasicVector<T>& s = xd.get_mutable_vector(i);
-      s.SetFromVector(VectorX<T>::Zero(s.size()));
+
+    // Check that _if_ we have models, there is one for each group.
+    DRAKE_DEMAND(model_discrete_state_.num_groups() == 0 ||
+        model_discrete_state_.num_groups() == xd.num_groups());
+
+    if (model_discrete_state_.num_groups() > 0) {
+      xd.CopyFrom(model_discrete_state_);
+    } else {
+      // With no model vector, we just zero all the discrete variables.
+      for (int i = 0; i < xd.num_groups(); i++) {
+        BasicVector<T>& s = xd.get_mutable_vector(i);
+        s.SetFromVector(VectorX<T>::Zero(s.size()));
+      }
     }
+
     AbstractValues& xa = state->get_mutable_abstract_state();
     xa.CopyFrom(AbstractValues(model_abstract_states_.CloneAllModels()));
   }
@@ -471,8 +483,8 @@ class LeafSystem : public System<T> {
   /// Returns a ContinuousState used to implement both CreateDefaultContext and
   /// AllocateTimeDerivatives. Allocates the state configured with
   /// DeclareContinuousState, or none by default. Systems with continuous state
-  /// variables may override, but must ensure the ContinuousState vector is
-  /// a subclass of BasicVector.
+  /// variables may override (not recommended), but must ensure the
+  /// ContinuousState vector is a subclass of BasicVector.
   virtual std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const {
     if (model_continuous_state_vector_ != nullptr) {
       return std::make_unique<ContinuousState<T>>(
@@ -483,19 +495,17 @@ class LeafSystem : public System<T> {
   }
 
   /// Reserves the discrete state as required by CreateDefaultContext. By
-  /// default, reserves no state. Systems with discrete state should override.
+  /// default, clones the model values as provided in DeclareDiscreteState()
+  /// calls. Alternatively, systems with discrete state can override this
+  /// method (not recommended).
   virtual std::unique_ptr<DiscreteValues<T>> AllocateDiscreteState() const {
-    if (model_discrete_state_vector_ != nullptr) {
-      return std::make_unique<DiscreteValues<T>>(
-          model_discrete_state_vector_->Clone());
-    }
-    return std::make_unique<DiscreteValues<T>>();
+    return model_discrete_state_.Clone();
   }
 
   /// Reserves the abstract state as required by CreateDefaultContext. By
   /// default, it clones the abstract states declared through
-  /// DeclareAbstractState() calls. Derived systems should override for
-  /// different behaviors.
+  /// DeclareAbstractState() calls. Derived systems may override for
+  /// different behaviors (not recommended).
   virtual std::unique_ptr<AbstractValues> AllocateAbstractState() const {
     return std::make_unique<AbstractValues>(
         std::move(model_abstract_states_.CloneAllModels()));
@@ -788,22 +798,45 @@ class LeafSystem : public System<T> {
     DeclareContinuousState(*model_vector, num_q, num_v, num_z);
   }
 
-  /// Declares that this System should reserve discrete state with
-  /// @p num_state_variables state variables. Has no effect if
-  /// AllocateDiscreteState is overridden.
-  // TODO(sherm1) Repeated calls to this should allocate additional discrete
-  // state groups. Currently there is only one.
-  void DeclareDiscreteState(int num_state_variables) {
-    const DiscreteStateIndex index(0);  // Only one implemented currently.
-    model_discrete_state_vector_ =
-        std::make_unique<BasicVector<T>>(num_state_variables);
+  /// Declares a discrete state group with @p model_vector.size() state
+  /// variables, stored in a vector Cloned from @p model_vector (preserving the
+  /// concrete type and value). Each time this is called, a new discrete state
+  /// group is added; the assigned discrete state group index is returned.
+  ///
+  /// @note Has no effect if AllocateDiscreteState is overridden (not
+  ///       recommended).
+  DiscreteStateIndex DeclareDiscreteState(const BasicVector<T>& model_vector) {
+    const DiscreteStateIndex index(model_discrete_state_.num_groups());
+    model_discrete_state_.AppendGroup(model_vector.Clone());
     this->AddDiscreteStateGroup(index);
+    return index;
+  }
+
+  /// Declares a discrete state group with @p model_vector.size() state
+  /// variables, stored in a BasicVector initialized with the contents of
+  /// @p model_vector. See the BasicVector-accepting signature for more
+  /// information.
+  DiscreteStateIndex DeclareDiscreteState(
+      const Eigen::Ref<const VectorX<T>>& model_vector) {
+    return DeclareDiscreteState(BasicVector<T>(model_vector));
+  }
+
+  /// Declares a discrete state group with @p num_state_variables state
+  /// variables, stored in a BasicVector initialized to be all-zero. If you want
+  /// non-zero initial values, use an alternate DeclareDiscreteState() signature
+  /// that accepts a `model_vector` parameter. See the BasicVector-accepting
+  /// signature for more information.
+  /// @pre `num_state_variables` must be non-negative.
+  DiscreteStateIndex DeclareDiscreteState(int num_state_variables) {
+    DRAKE_DEMAND(num_state_variables >= 0);
+    return DeclareDiscreteState(VectorX<T>::Zero(num_state_variables));
   }
 
   /// Declares an abstract state.
   /// @param abstract_state The abstract state, its ownership is transferred.
   /// @return index of the declared abstract state.
-  int DeclareAbstractState(std::unique_ptr<AbstractValue> abstract_state) {
+  AbstractStateIndex DeclareAbstractState(
+      std::unique_ptr<AbstractValue> abstract_state) {
     const AbstractStateIndex index(model_abstract_states_.size());
     model_abstract_states_.AddModel(index, std::move(abstract_state));
     this->AddAbstractState(index);
@@ -1886,7 +1919,7 @@ class LeafSystem : public System<T> {
   int num_misc_continuous_states_{0};
 
   // A model discrete state to be used during Context allocation.
-  std::unique_ptr<BasicVector<T>> model_discrete_state_vector_;
+  DiscreteValues<T> model_discrete_state_;
 
   // A model abstract state to be used during Context allocation.
   detail::ModelValues model_abstract_states_;
