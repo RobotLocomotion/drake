@@ -37,9 +37,11 @@
 namespace drake {
 namespace multibody {
 
+/// Enumeration that distinguishes between flavors of geometric Jacobians based
+/// on their domains.
 enum class GeometricJacobianType {
-  kQDotToSpatialVelocity,
-  kVToSpatialVelocity
+  kFromGeneralizedPositionRates,  /// V = J q̇
+  kFromGeneralizedVelocities      /// V = J v
 };
 
 /// @cond
@@ -2058,7 +2060,7 @@ class MultibodyTree {
 
   /// Computes the geometric Jacobian of a frame instantaneously moving with a
   /// specified frame in the model. Calls the more general overload with
-  /// `jacobian_type` set to GeometricJacobianType::kVToSpatialVelocity.
+  /// `jacobian_type` set to GeometricJacobianType::kFromGeneralizedVelocities.
   void CalcRelativeFrameGeometricJacobian(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
@@ -2075,9 +2077,9 @@ class MultibodyTree {
   /// </pre>
   /// where z represents
   ///   * the time derivative of the generalized position vector q̇, if
-  ///     jacobian_type is GeometricJacobianType::kQDotToSpatialVelocity.
+  ///     jacobian_type is GeometricJacobianType::kFromGeneralizedPositionRates.
   ///   * the generalized velocity vector v, if jacobian_type is
-  ///     GeometricJacobianType::kVToSpatialVelocity.
+  ///     GeometricJacobianType::kFromGeneralizedVelocities.
   ///
   /// This method computes `J_ABp_E(q)`.
   ///

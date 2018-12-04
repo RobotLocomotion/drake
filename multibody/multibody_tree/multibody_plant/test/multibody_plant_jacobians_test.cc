@@ -69,7 +69,7 @@ class KukaIiwaModelTests : public ::testing::Test {
 
   void SetArbitraryConfiguration() {
     // Get an arbitrary set of angles and velocities for each joint.
-    const VectorX<double> q_v0 = GetArbitraryJointConfiguration();
+    const VectorX<double> x0 = GetArbitraryJointConfiguration();
 
     EXPECT_EQ(plant_->num_joints(), 7);
     for (JointIndex joint_index(0); joint_index < plant_->num_joints();
@@ -77,8 +77,8 @@ class KukaIiwaModelTests : public ::testing::Test {
       const RevoluteJoint<double>& joint =
           dynamic_cast<const RevoluteJoint<double>&>(
               plant_->tree().get_joint(joint_index));
-      joint.set_angle(context_.get(), q_v0[joint_index]);
-      joint.set_angular_rate(context_.get(), q_v0[kNumJoints + joint_index]);
+      joint.set_angle(context_.get(), x0[joint_index]);
+      joint.set_angular_rate(context_.get(), x0[kNumJoints + joint_index]);
     }
 
     // Set an arbitrary (though non-identity) pose of the floating base link.
@@ -99,7 +99,7 @@ class KukaIiwaModelTests : public ::testing::Test {
   // Gets an arm state to an arbitrary configuration in which joint angles and
   // rates are non-zero.
   VectorX<double> GetArbitraryJointConfiguration() {
-    VectorX<double> q_v(2 * kNumJoints);
+    VectorX<double> x(2 * kNumJoints);
 
     // A set of values for the joint's angles chosen mainly to avoid in-plane
     // motions.
@@ -121,9 +121,9 @@ class KukaIiwaModelTests : public ::testing::Test {
     const double vE = v_positive;
     const double vF = v_negative;
     const double vG = v_positive;
-    q_v << qA, qB, qC, qD, qE, qF, qG, vA, vB, vC, vD, vE, vF, vG;
+    x << qA, qB, qC, qD, qE, qF, qG, vA, vB, vC, vD, vE, vF, vG;
 
-    return q_v;
+    return x;
   }
 
   // Computes the analytical Jacobian Jq_WPi for a set of points Pi moving with
@@ -243,8 +243,8 @@ TEST_F(KukaIiwaModelTests, CalcRelativeFrameGeometricJacobian) {
   // Compute the geometric Jacobian using the method under test.
   plant_->tree().CalcRelativeFrameGeometricJacobian(
       *context_, end_effector_link_->body_frame(), p_EP, plant_->world_frame(),
-      plant_->world_frame(), GeometricJacobianType::kQDotToSpatialVelocity,
-      &Jq_WEp);
+      plant_->world_frame(),
+      GeometricJacobianType::kFromGeneralizedPositionRates, &Jq_WEp);
 
   // Alternatively, compute the geometric Jacobian by taking the gradient of
   // the spatial velocity V_WEp with respect to q̇, since V_WEp = Jq_WEP * q̇. We
