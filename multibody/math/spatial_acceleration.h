@@ -6,8 +6,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/convert_time_derivative.h"
-#include "drake/multibody/multibody_tree/math/spatial_vector.h"
-#include "drake/multibody/multibody_tree/math/spatial_velocity.h"
+#include "drake/multibody/math/spatial_vector.h"
+#include "drake/multibody/math/spatial_velocity.h"
 
 namespace drake {
 namespace multibody {

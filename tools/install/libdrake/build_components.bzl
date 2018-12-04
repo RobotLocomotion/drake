@@ -80,6 +80,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/pendulum",
     "//multibody/constraint",
     "//multibody/inverse_kinematics",
+    "//multibody/math",
     "//multibody/multibody_tree",
     "//multibody/multibody_tree/implicit_stribeck:implicit_stribeck_solver",  # unpackaged  # noqa
     "//multibody/multibody_tree/math",

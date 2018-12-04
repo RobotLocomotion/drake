@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/math/spatial_acceleration.h"
+#include "drake/multibody/math/spatial_acceleration.h"
 
 #include "drake/common/default_scalars.h"
 
