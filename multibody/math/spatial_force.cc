@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/math/spatial_force.h"
+#include "drake/multibody/math/spatial_force.h"
 
 #include "drake/common/default_scalars.h"
 
