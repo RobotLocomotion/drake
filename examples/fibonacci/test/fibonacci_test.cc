@@ -14,9 +14,6 @@ GTEST_TEST(Fibonacci, CheckSequence) {
 
   systems::Simulator<double> simulator(fibonacci);
 
-  // Set the initial conditions.
-  fibonacci.Initialize(&simulator.get_mutable_context());
-
   // Simulate forward to fibonacci(6): 0 1 1 2 3 5 8
   testing::internal::CaptureStdout();
   simulator.StepTo(6 * FibonacciDifferenceEquation::kPeriod);
