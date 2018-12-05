@@ -8,6 +8,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
+#include "drake/manipulation/schunk_wsg/gen/schunk_wsg_command.h"
 
 namespace drake {
 namespace manipulation {
@@ -30,19 +31,23 @@ SchunkWsgCommandReceiver::SchunkWsgCommandReceiver(double initial_position,
                   "force_limit", BasicVector<double>(1),
                   &SchunkWsgCommandReceiver::CalcForceLimitOutput)
               .get_index()) {
+
+  this->DeclareVectorInputPort("lcmt_schunk_wsg_command",
+                               SchunkWsgCommand<double>());
+  /*
   this->DeclareAbstractInputPort("lcmt_schunk_wsg_command",
                                  systems::Value<lcmt_schunk_wsg_command>());
+  */
 }
 
 void SchunkWsgCommandReceiver::CalcPositionOutput(
     const Context<double>& context, BasicVector<double>* output) const {
-  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
-  DRAKE_ASSERT(input != nullptr);
-  const auto& command = input->GetValue<lcmt_schunk_wsg_command>();
+  const auto wsg_command = this->template EvalVectorInput<SchunkWsgCommand>(context, 0);
+  DRAKE_THROW_UNLESS(wsg_command != nullptr);
 
   double target_position = initial_position_;
-  if (command.utime != 0) {
-    target_position = command.target_position_mm / 1e3;
+  if (wsg_command->utime() != 0) {
+    target_position = wsg_command->target_position_mm() / 1e3;
     if (std::isnan(target_position)) {
       target_position = 0;
     }
@@ -53,13 +58,12 @@ void SchunkWsgCommandReceiver::CalcPositionOutput(
 
 void SchunkWsgCommandReceiver::CalcForceLimitOutput(
     const Context<double>& context, BasicVector<double>* output) const {
-  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
-  DRAKE_ASSERT(input != nullptr);
-  const auto& command = input->GetValue<lcmt_schunk_wsg_command>();
+  const auto wsg_command = this->template EvalVectorInput<SchunkWsgCommand>(context, 0);
+  DRAKE_THROW_UNLESS(wsg_command != nullptr);
 
   double force_limit = initial_force_;
-  if (command.utime != 0) {
-    force_limit = command.force;
+  if (wsg_command->utime() != 0) {
+    force_limit = wsg_command->force();
   }
 
   output->SetAtIndex(0, force_limit);

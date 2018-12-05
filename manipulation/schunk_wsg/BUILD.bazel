@@ -40,10 +40,18 @@ drake_cc_library(
 
 drake_cc_library(
     name = "schunk_wsg_lcm",
-    srcs = ["schunk_wsg_lcm.cc"],
-    hdrs = ["schunk_wsg_lcm.h"],
+    srcs = [
+        "schunk_wsg_lcm.cc",
+        "schunk_wsg_command_translator.cc",
+    ],
+    hdrs = [
+        "schunk_wsg_lcm.h",
+        "schunk_wsg_command_translator.h",
+    ],
     deps = [
+        ":schunk_wsg_command",
         "//lcmtypes:schunk",
+        "//systems/lcm:translator",
         "//systems/framework:leaf_system",
         "//systems/primitives:matrix_gain",
     ],
@@ -52,6 +60,12 @@ drake_cc_library(
 drake_cc_vector_gen_library(
     name = "schunk_wsg_trajectory_generator_state_vector",
     srcs = ["schunk_wsg_trajectory_generator_state_vector.named_vector"],
+    visibility = [":__subpackages__"],
+)
+
+drake_cc_vector_gen_library(
+    name = "schunk_wsg_command",
+    srcs = ["schunk_wsg_command.named_vector"],
     visibility = [":__subpackages__"],
 )
 

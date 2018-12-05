@@ -23,6 +23,8 @@
 #include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/matrix_gain.h"
 
+#include "drake/manipulation/schunk_wsg/schunk_wsg_command_translator.h"
+
 namespace drake {
 namespace examples {
 namespace manipulation_station {
@@ -108,9 +110,14 @@ int do_main(int argc, char* argv[]) {
                   iiwa_status_publisher->get_input_port());
 
   // Receive the WSG commands.
+  /*
   auto wsg_command_subscriber = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_schunk_wsg_command>(
           "SCHUNK_WSG_COMMAND", &lcm));
+  */
+  manipulation::schunk_wsg::SchunkWsgCommandTranslator wsg_cmd_to_vec;
+  auto wsg_command_subscriber = builder.AddSystem(
+      std::make_unique<systems::lcm::LcmSubscriberSystem>("SCHUNK_WSG_COMMAND", wsg_cmd_to_vec, &lcm));
   auto wsg_command =
       builder.AddSystem<manipulation::schunk_wsg::SchunkWsgCommandReceiver>();
   builder.Connect(wsg_command_subscriber->get_output_port(),
