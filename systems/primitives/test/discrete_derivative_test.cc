@@ -42,6 +42,7 @@ GTEST_TEST(DiscreteDerivativeTest, FirstOrderHold) {
 
   auto diagram = builder.Build();
   Simulator<double> simulator(*diagram);
+  simulator.set_publish_at_initialization(false);
   simulator.set_publish_every_time_step(false);
   simulator.StepTo(kDuration);
 
@@ -50,9 +51,6 @@ GTEST_TEST(DiscreteDerivativeTest, FirstOrderHold) {
       // The initial outputs should be zero (due to the zero initial
       // conditions).
       EXPECT_TRUE(CompareMatrices(log->data().col(i), Vector2d(0., 0.)));
-    } else if (log->sample_times()(i) <= 2 * time_step) {
-      // TODO(edrumwri): Zap this "else if" block on resolution of #9702.
-      // It is only here to cover up the bug.
     } else if (log->sample_times()(i) <= time_step) {
       // The outputs should jump for one timestep because u(0) is non-zero.
       EXPECT_TRUE(CompareMatrices(
