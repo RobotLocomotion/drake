@@ -255,7 +255,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
                         SceneGraph's logic.
    @throws std::logic_error if a context has already been allocated for this
                             %SceneGraph.
-   @see GeometryState::RegisterNewSource() */
+   @see GeometryState::RegisterNewSource()  */
   SourceId RegisterSource(const std::string& name = "");
 
   /** Reports if the given source id is registered.
@@ -365,6 +365,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
                              requirements outlined in GeometryInstance.  */
   GeometryId RegisterGeometry(SourceId source_id, FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry);
+  GeometryId RegisterGeometryWithoutRole(
+      SourceId source_id, FrameId frame_id,
+      std::unique_ptr<GeometryInstance> geometry);
 
   /** systems::Context-modifying variant of RegisterGeometry(). Rather than
    modifying %SceneGraph's model, it modifies the copy of the model stored in
@@ -372,6 +375,10 @@ class SceneGraph final : public systems::LeafSystem<T> {
   GeometryId RegisterGeometry(systems::Context<T>* context, SourceId source_id,
                               FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry);
+
+  GeometryId RegisterGeometryWithoutRole(
+      systems::Context<T>* context, SourceId source_id, FrameId frame_id,
+      std::unique_ptr<GeometryInstance> geometry);
 
   /** Registers a new geometry G for this source. This hangs geometry G on a
    previously registered geometry P (indicated by `geometry_id`). The pose of
@@ -392,6 +399,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
                             requirements outlined in GeometryInstance.  */
   GeometryId RegisterGeometry(SourceId source_id, GeometryId geometry_id,
                               std::unique_ptr<GeometryInstance> geometry);
+  GeometryId RegisterGeometryWithoutRole(
+      SourceId source_id, GeometryId geometry_id,
+      std::unique_ptr<GeometryInstance> geometry);
 
   /** systems::Context-modifying variant of RegisterGeometry(). Rather than
    modifying %SceneGraph's model, it modifies the copy of the model stored in
@@ -399,6 +409,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
   GeometryId RegisterGeometry(systems::Context<T>* context, SourceId source_id,
                               GeometryId geometry_id,
                               std::unique_ptr<GeometryInstance> geometry);
+  GeometryId RegisterGeometryWithoutRole(
+      systems::Context<T>* context, SourceId source_id, GeometryId geometry_id,
+      std::unique_ptr<GeometryInstance> geometry);
 
   /** Registers a new _anchored_ geometry G for this source. This hangs geometry
    G from the world frame (W). Its pose is defined in that frame (i.e., `X_WG`).
@@ -413,6 +426,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
                              requirements outlined in GeometryInstance.  */
   GeometryId RegisterAnchoredGeometry(
       SourceId source_id, std::unique_ptr<GeometryInstance> geometry);
+  GeometryId RegisterAnchoredGeometryWithoutRole(
+      SourceId source_id, std::unique_ptr<GeometryInstance> geometry);
 
   /** Removes the given geometry G (indicated by `geometry_id`) from the given
    source's registered geometries. All registered geometries hanging from
@@ -423,7 +438,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
                             1. The `source_id` is not a registered source,
                             2. the `geometry_id` doesn't belong to the source,
                                or
-                            3. a context has been allocated. */
+                            3. a context has been allocated.  */
   void RemoveGeometry(SourceId source_id, GeometryId geometry_id);
 
   /** systems::Context-modifying variant of RemoveGeometry(). Rather than
@@ -431,6 +446,38 @@ class SceneGraph final : public systems::LeafSystem<T> {
    the provided context.  */
   void RemoveGeometry(systems::Context<T>* context, SourceId source_id,
                       GeometryId geometry_id);
+
+  //@}
+
+  /** @name     Assigning roles to geometry
+
+   Geometries must be assigned one or more *roles* before they have an effect
+   on SceneGraph computations (see @ref geometry_roles for details). These
+   methods provide the ability to assign a role after registering a geometry.
+
+   The owner that registered the geometry provides its source id, the registered
+   geometry id, and a collection of properties associated with the desired role.
+   These methods will throw exceptions in any of the following circumstances:
+
+     - The source id is invalid.
+     - The geometry id is invalid.
+     - The geometry id is not owned by the given source id.
+     - The indicated role has already been assigned to the geometry.
+     - A context has been allocated.
+   */
+
+  // TODO(SeanCurtis-TRI): Provide mechanism for modifying properties and/or
+  // removing roles.
+
+  //@{
+
+  /** Assigns the proximity role to the given geometry.  */
+  void AssignRole(SourceId source_id, GeometryId geometry_id,
+                  ProximityProperties properties);
+
+  /** Assigns the illustration role to the given geometry.  */
+  void AssignRole(SourceId source_id, GeometryId geometry_id,
+                  IllustrationProperties properties);
 
   //@}
 

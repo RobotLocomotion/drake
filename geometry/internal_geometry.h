@@ -35,8 +35,8 @@ class InternalGeometry {
    be nullptr, and the pose will be uninitialized.  */
   InternalGeometry() {}
 
-  /** Constructs the internal geometry as an *immediate* child of the frame.
-   Therefore, it is assumed that X_FG = X_PG.
+  /** Constructs the internal geometry without any assigned roles defined as an
+   *immediate* child of the frame. Therefore, it is assumed that X_FG = X_PG.
    @param source_id     The id for the source that registered this geometry.
    @param shape         The shape specification for this instance.
    @param frame_id      The id of the frame this belongs to.

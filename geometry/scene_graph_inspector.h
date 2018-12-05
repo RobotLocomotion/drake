@@ -52,7 +52,7 @@ class SceneGraphInspector {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SceneGraphInspector)
 
   //----------------------------------------------------------------------------
-  /** @name                State queries */
+  /** @name                State queries  */
   //@{
 
   // NOTE: An inspector should never be released into the wild without having
@@ -125,6 +125,54 @@ class SceneGraphInspector {
   int NumGeometriesForFrame(FrameId frame_id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->GetNumFrameGeometries(frame_id);
+  }
+
+  /** Returns a const pointer to the proximity properties of the geometry
+   identified by `geometry_id`.
+   @param geometry_id   The identifier for the queried geometry.
+   @return A pointer to the properties (or nullptr if there are no such
+           properties.   */
+  const ProximityProperties* GetProximityProperties(
+      GeometryId geometry_id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->get_proximity_properties(geometry_id);
+  }
+
+  /** Returns a const pointer to the illustration properties of the geometry
+   identified by `geometry_id`.
+   @param geometry_id   The identifier for the queried geometry.
+   @return A pointer to the properties (or nullptr if there are no such
+           properties.   */
+  const IllustrationProperties* GetIllustrationProperties(
+      GeometryId geometry_id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->get_illustration_properties(geometry_id);
+  }
+
+  /** Reports the *total* number of geometries in the scene graph.  */
+  int num_geometries() const {
+    DRAKE_DEMAND(state_ != nullptr);
+    state_->get_num_geometries();
+  }
+
+  /** Reports the *total* number of geometries in the scene graph with the
+   indicated role.  */
+  int NumGeometriesWithRole(Role role) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    state_->GetNumGeometriesWithRole(role);
+  }
+
+  /** Reports the *total* number of geometries assigned to the given frame.  */
+  int NumFrameGeometries(FrameId frame_id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    state_->GetNumFrameGeometries(frame_id);
+  }
+
+  /** Reports the number of geometries assigned to the given frame with the
+   given role.  */
+  int NumFrameGeometriesWithRole(FrameId frame_id, Role role) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    state_->GetNumFrameGeometriesWithRole(frame_id, role);
   }
 
   //@}

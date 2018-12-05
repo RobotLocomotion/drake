@@ -98,8 +98,10 @@ namespace geometry {
      representations of real-world object surfaces. The properties associated
      with this role are those necessary to draw the illustration.
 
- Role assignment is achieved by assigning as set of role-related _properties_
- to a geometry (see SceneGraph::AssignRole()). The set _can_ be empty. Each
+ Role assignment is achieved by assigning a set of role-related _properties_
+ to a geometry. The properties can either be assigned to the GeometryInstance
+ prior to registration, or after registration via the registered geometry's
+ identifier (see SceneGraph::AssignRole()). The set _can_ be empty. Each
  role has a specific property set associated with it:
    - __Proximity role__: ProximityProperties
    - __Illustration role__: IllustrationProperties
@@ -127,10 +129,7 @@ namespace geometry {
 
  Generally, any code that is dependent on geometry roles, should document the
  type of role that it depends on, and the properties (if any) associated with
- that role that it requires/prefers.
-
- Roles are assigned during geometry registration (see
- SceneGraph::AssignRole()). */
+ that role that it requires/prefers.  */
 
 /** The set of properties for geometry used in a _proximity_ role.
 
@@ -169,7 +168,7 @@ enum class Role {
 /** @name  Geometry role to string conversions
 
  These are simply convenience functions for converting the Role enumeration into
- a human-readable string. */
+ a human-readable string.  */
 //@{
 
 std::string to_string(const Role& role);
