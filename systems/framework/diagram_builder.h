@@ -197,9 +197,9 @@ class DiagramBuilder {
   /// if it is unspecified, then a default name will be provided.
   /// @pre If supplied at all, @p name must not be empty.
   /// @return The index of the exported input port of the entire diagram.
-  InputPortIndex ExportInput(const InputPort<T>& input,
-                             std::string name = kUseDefaultName) {
-    DRAKE_DEMAND(!name.empty());
+  InputPortIndex ExportInput(
+      const InputPort<T>& input,
+      variant<std::string, UseDefaultName> name = kUseDefaultName) {
     InputPortLocator id{input.get_system(), input.get_index()};
     ThrowIfInputAlreadyWired(id);
     ThrowIfSystemNotRegistered(input.get_system());
@@ -211,7 +211,8 @@ class DiagramBuilder {
     std::string port_name =
         name == kUseDefaultName
             ? input.get_system()->get_name() + "_" + input.get_name()
-            : std::move(name);
+            : get<std::string>(std::move(name));
+    DRAKE_DEMAND(!port_name.empty());
     input_port_names_.emplace_back(std::move(port_name));
 
     diagram_input_set_.insert(id);
@@ -223,8 +224,9 @@ class DiagramBuilder {
   /// port; if it is unspecified, then a default name will be provided.
   /// @pre If supplied at all, @p name must not be empty.
   /// @return The index of the exported output port of the entire diagram.
-  OutputPortIndex ExportOutput(const OutputPort<T>& output,
-                               std::string name = kUseDefaultName) {
+  OutputPortIndex ExportOutput(
+      const OutputPort<T>& output,
+      variant<std::string, UseDefaultName> name = kUseDefaultName) {
     ThrowIfSystemNotRegistered(&output.get_system());
     OutputPortIndex return_id(output_port_ids_.size());
     output_port_ids_.push_back(
@@ -235,7 +237,8 @@ class DiagramBuilder {
     std::string port_name =
         name == kUseDefaultName
             ? output.get_system().get_name() + "_" + output.get_name()
-            : std::move(name);
+            : get<std::string>(std::move(name));
+    DRAKE_DEMAND(!port_name.empty());
     output_port_names_.emplace_back(std::move(port_name));
 
     return return_id;

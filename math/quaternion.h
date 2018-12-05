@@ -108,14 +108,6 @@ typename Derived1::Scalar quatDiffAxisInvar(
          2 * pow(u(0) * r(1) + u(1) * r(2) + u(2) * r(3), 2);
 }
 
-template <typename Derived>
-typename Derived::Scalar quatNorm(const Eigen::MatrixBase<Derived>& q) {
-  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
-  // the range problem in Eigen
-  using std::acos;
-  return acos(q(0));
-}
-
 /**
  * Q = Slerp(q1, q2, f) Spherical linear interpolation between two quaternions
  *   This function uses the implementation given in Algorithm 8 of [1].
