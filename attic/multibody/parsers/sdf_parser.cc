@@ -18,8 +18,8 @@
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/parser_common.h"
-#include "drake/multibody/parsers/parser_path_utils.h"
 #include "drake/multibody/parsers/xml_util.h"
+#include "drake/multibody/parsing/parser_path_utils.h"
 #include "drake/multibody/rigid_body_plant/compliant_material.h"
 #include "drake/multibody/rigid_body_tree.h"
 
@@ -51,6 +51,8 @@ using tinyxml2::XMLDocument;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using multibody::joints::FloatingBaseType;
+using multibody::parsing::GetFullPath;
+using multibody::parsing::ResolveFilename;
 
 void ParseSdfInertial(
     RigidBody<double>* body, XMLElement* node,

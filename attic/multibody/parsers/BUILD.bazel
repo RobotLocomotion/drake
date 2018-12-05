@@ -43,6 +43,7 @@ drake_cc_library(
         ":find_files",
         "//attic/multibody:rigid_body_tree",
         "//attic/multibody/rigid_body_plant:compliant_material",
+        "//multibody/parsing:parser_path_utils",
         "@tinydir",
         "@tinyxml2",
     ],
@@ -52,11 +53,9 @@ drake_cc_library(
     name = "find_files",
     hdrs = [
         "package_map.h",
-        "parser_path_utils.h",
     ],
     deps = [
         "//multibody/parsing:package_map",
-        "//multibody/parsing:parser_path_utils",
     ],
 )
 

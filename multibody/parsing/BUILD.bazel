@@ -62,7 +62,7 @@ drake_cc_library(
         "parser_path_utils.h",
     ],
     visibility = [
-        "//attic:__subpackages__",
+        "//attic/multibody/parsers:__pkg__",
     ],
     deps = [
         ":package_map",
