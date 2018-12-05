@@ -1,7 +1,6 @@
-#include "drake/examples/fibonacci/fibonacci_difference_equation.h"
-
 #include <gtest/gtest.h>
 
+#include "drake/examples/fibonacci/fibonacci_difference_equation.h"
 #include "drake/systems/analysis/simulator.h"
 
 namespace drake {

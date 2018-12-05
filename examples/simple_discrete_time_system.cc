@@ -10,7 +10,8 @@
 #include "drake/systems/framework/vector_system.h"
 
 // TODO(edrumwri): This system needs to use some sugar and the same workflow
-// as fibonacci_difference_equation. Revisit after events are
+// as fibonacci_difference_equation. Revisit after event declaration sugar
+// PR (#10132) lands.
 
 // Simple Discrete Time System
 //   x[n+1] = x[n]^3

@@ -15,7 +15,10 @@ drake_cc_library(
     hdrs = [
         "fibonacci_difference_equation.h",
     ],
-    deps = [],
+    deps = [
+        "//common:essential",
+        "//systems/framework:leaf_system",
+    ],
 )
 
 drake_cc_binary(
@@ -23,9 +26,7 @@ drake_cc_binary(
     srcs = ["run_fibonacci.cc"],
     deps = [
         ":fibonacci",
-        "//common:essential",
         "//systems/analysis:simulator",
-        "//systems/framework:leaf_system",
         "@gflags",
     ],
 )

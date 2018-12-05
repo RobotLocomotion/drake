@@ -1,6 +1,6 @@
 #include <gflags/gflags.h>
 
-#include "drake/examples/fibonacci/fibonacci.h"
+#include "drake/examples/fibonacci/fibonacci_difference_equation.h"
 #include "drake/systems/analysis/simulator.h"
 
 namespace drake {

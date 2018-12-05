@@ -74,7 +74,7 @@ _no later_ than a given tₘₐₓ. Recall that Drake's state x is partitioned i
 continuous, discrete, and abstract subgroups xc, xd, and xa, so
 `x = { xc, xd, xa }`. We will make use of notation like `xd(t⁻)` to denote a
 state partition's value _before_ any instantaneous (unrestricted or discrete)
-update. We'll use `xd(t*)` to denote the value _after_ an unrestrictd update
+update. We'll use `xd(t*)` to denote the value _after_ an unrestricted update
 but _before_ a discrete update, and `xd(t⁺)` to indicate the value after all
 updates have been performed. When all partitions of the state are at a
 consistent update level, we'll just write `x(t⁻)` or `x(t⁺)` to be concise.
@@ -170,20 +170,17 @@ class Simulator {
   explicit Simulator(const System<T>& system,
                      std::unique_ptr<Context<T>> context = nullptr);
 
+  /// Create a %Simulator which additionally maintains ownership of the System.
+  Simulator(std::unique_ptr<const System<T>> system,
+            std::unique_ptr<Context<T>> context = nullptr);
+
   /// Prepares the %Simulator for a simulation. If the owned Context does not
   /// satisfy the System's constraints, an attempt is made to modify the values
   /// of the continuous state variables to satisfy the constraints. This method
   /// will throw `std::logic_error` if the combination of options doesn't make
   /// sense, and `std::runtime_error` if it is unable to find a
   /// constraint-satisfying initial condition.
-  /// @warning You should call this method if you alter the state (including
-  ///          time) in the owned context *before calling StepTo()*.
   void Initialize();
-
-  /// Create a %Simulator which additionally maintains ownership of the System.
-  Simulator(std::unique_ptr<const System<T>> system,
-            std::unique_ptr<Context<T>> context = nullptr);
-
 
   /// Advances the System's trajectory until `boundary_time` is reached in
   /// the context or some other termination condition occurs. A variety of
@@ -192,12 +189,14 @@ class Simulator {
   /// computations. Be sure to enclose your simulation in a `try-catch` block
   /// and display the `what()` message.
   ///
-  /// We recommend that you call `Initialize()` prior to making the first call
-  /// to `StepTo()`. However, if you don't it will be called for you the first
+  /// We recommend that you call Initialize() prior to making the first call
+  /// to StepTo(). However, if you don't it will be called for you the first
   /// time that you attempt a step, possibly resulting in unexpected error
   /// conditions. See documentation for `Initialize()` for the error conditions
   /// it might produce.
   ///
+  /// @warning You should call Initialize() if you alter the state (including
+  ///          time) in the owned context *between successive StepTo() calls*.
   /// @param boundary_time The time to advance the context to.
   /// @pre The simulation state is valid (i.e., no discrete updates or state
   /// projections are necessary) at the present time.
