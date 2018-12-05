@@ -326,7 +326,6 @@ void AddJointFromSpecification(
 // object.
 std::string LoadSdf(
     sdf::Root* root,
-    parsing::PackageMap* package_map,
     const std::string& file_name) {
 
   const std::string full_path = parsing::GetFullPath(file_name);
@@ -341,9 +340,6 @@ std::string LoadSdf(
       error_accumulation += "Error: " + e.Message() + "\n";
     throw std::runtime_error(error_accumulation);
   }
-
-  // TODO(sam.creasey) Add support for using an existing package map.
-  package_map->PopulateUpstreamToDrake(full_path);
 
   // Uses the directory holding the SDF to be the root directory
   // in which to search for files referenced within the SDF file.
@@ -521,13 +517,27 @@ ModelInstanceIndex AddModelFromSdfFile(
     const std::string& model_name_in,
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
+  parsing::PackageMap package_map;
+
+  const std::string full_path = parsing::GetFullPath(file_name);
+  package_map.PopulateUpstreamToDrake(full_path);
+
+  return AddModelFromSdfFile(file_name, model_name_in, package_map, plant,
+                             scene_graph);
+}
+
+ModelInstanceIndex AddModelFromSdfFile(
+    const std::string& file_name,
+    const std::string& model_name_in,
+    const parsing::PackageMap& package_map,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
   sdf::Root root;
-  parsing::PackageMap package_map;
 
-  std::string root_dir = LoadSdf(&root, &package_map, file_name);
+  std::string root_dir = LoadSdf(&root, file_name);
 
   if (root.ModelCount() != 1) {
     throw std::runtime_error("File must have a single <model> element.");
@@ -554,17 +564,35 @@ ModelInstanceIndex AddModelFromSdfFile(
   return AddModelFromSdfFile(file_name, "", plant, scene_graph);
 }
 
+ModelInstanceIndex AddModelFromSdfFile(
+    const std::string& file_name,
+    const PackageMap& package_map,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph) {
+  return AddModelFromSdfFile(file_name, "", package_map, plant, scene_graph);
+}
+
 std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     const std::string& file_name,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph) {
+  parsing::PackageMap package_map;
+  const std::string full_path = parsing::GetFullPath(file_name);
+  package_map.PopulateUpstreamToDrake(full_path);
+  return AddModelsFromSdfFile(file_name, package_map, plant, scene_graph);
+}
+
+std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
+    const std::string& file_name,
+    const PackageMap& package_map,
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
   sdf::Root root;
-  parsing::PackageMap package_map;
 
-  std::string root_dir = LoadSdf(&root, &package_map, file_name);
+  std::string root_dir = LoadSdf(&root, file_name);
 
   // Throw an error if there are no models or worlds.
   if (root.ModelCount() == 0 && root.WorldCount() == 0) {

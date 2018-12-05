@@ -17,11 +17,13 @@ bazel run geometry_inspector --
 
 import argparse
 import numpy as np
+import os, sys
 
 from pydrake.geometry import ConnectDrakeVisualizer, SceneGraph
 from pydrake.manipulation.simple_ui import JointSliders
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
 from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
+from pydrake.multibody.parsers import PackageMap
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.rendering import MultibodyPositionToGeometryPose
@@ -33,6 +35,12 @@ parser.add_argument(
     type=str,
     help="Full path to an SDF file.")
 position_group = parser.add_mutually_exclusive_group()
+parser.add_argument(
+    "--package_path",
+    type=str,
+    nargs="+",
+    help="Full path to the root package name for reading in SDF resources.",
+    default=[])
 position_group.add_argument(
     "--position",
     type=float,
@@ -57,6 +65,7 @@ parser.add_argument(
     action='store_true',
     help="Disable opening the gui window for testing."
 )
+
 # TODO(russt): Add option to weld the base to the world pending the
 # availability of GetUniqueBaseBody requested in #9747.
 args = parser.parse_args()
@@ -64,10 +73,32 @@ args = parser.parse_args()
 builder = DiagramBuilder()
 scene_graph = builder.AddSystem(SceneGraph())
 
-# Construct a MultibodyPlant and load the SDF into it.
+# Construct a MultibodyPlant.
 plant = MultibodyPlant()
 plant.RegisterAsSourceForSceneGraph(scene_graph)
-AddModelFromSdfFile(args.filename, plant)
+
+# Get the package pathname.
+if len(args.package_path):
+
+  # Determine whether package.xml was found in the designated path.
+  package_path = args.package_path
+  if package_path[-1] != '/':
+    package_path += '/'
+  full_package_path = package_path + 'package.xml'
+  if not os.path.isfile(full_package_path):
+    print 'package.xml not found at: ' + full_package_path
+    sys.exit(-1)
+
+  # Create a PackageMap.
+  package_map = PackageMap()
+  package_map.PopulateFromFolder(package_path)
+
+  # Load the SDF into the plant.
+  AddModelFromSdfFile(args.filename, package_map, plant)
+else:
+  # Load the SDF into the plant.
+  AddModelFromSdfFile(args.filename, plant)
+
 plant.Finalize(scene_graph)
 
 # Add sliders to set positions of the joints.

@@ -67,26 +67,39 @@ bool GetPackagePath(const string& package, const PackageMap& package_map,
 }
 }  // namespace
 
-string ResolveFilename(const string& filename, const PackageMap& package_map,
+string ResolveURI(const string& uri, const PackageMap& package_map,
                        const string& root_dir) {
   spruce::path full_filename_spruce;
-  spruce::path raw_filename_spruce(filename);
+  spruce::path raw_filename_spruce(uri);
   const std::vector<string> split_filename = raw_filename_spruce.split();
 
-  if (IsAbsolutePath(filename)) {
+  // Strictly speaking, a URI should not just be a filename (i.e., it should
+  // be preceded by "file://"). But we allow this for backward compatibility
+  // and user convenience.
+
+  // Try treating the URI as an absolute path first.
+  if (IsAbsolutePath(uri)) {
     if (!raw_filename_spruce.exists()) {
-      drake::log()->warn("File {} could not be found.", filename);
+      drake::log()->warn("File {} could not be found.", uri);
       return string();
     }
-    return filename;
-  } else if (split_filename.front() == "package:") {
-    // A correctly formatted filename is:
+    return uri;
+  } else if (split_filename.front() == "file:") {
+    // Correctly formatted URI in this format is:
     //
-    //   package://package_name/bar/baz/model.xyz
+    //   file://bar/baz/model.xyz
+    // 
+
+  } else if (split_filename.front() == "package:" ||
+      split_filename.front() == "model:") {
+    // A correctly formatted URI in this format is:
     //
-    // Thus, index 0 contains "package", index 1 contains "", and index 2
-    // contains the package name. Furthermore, since the model file must follow
-    // the package name, there must be at least 4 tokens.
+    //   package://package_name/bar/baz/model.xyz or
+    //   model://package_name/bar/baz/model.xyz
+    //
+    // Thus, index 0 contains "package" or "model", index 1 contains "", and
+    // index 2 contains the package name. Furthermore, since the model file must
+    // follow the package name, there must be at least 4 tokens.
     const int kMinNumTokens = 4;
     const int kPackageNameIndex = 2;
     DRAKE_DEMAND(split_filename.size() >= kMinNumTokens);
@@ -116,12 +129,12 @@ string ResolveFilename(const string& filename, const PackageMap& package_map,
       full_filename_spruce = spruce::path(normalized_root_dir);
     }
 
-    full_filename_spruce.append(filename);
+    full_filename_spruce.append(uri);
   }
 
   if (!full_filename_spruce.exists()) {
     drake::log()->warn("File {} resolved to {} and could not be found.",
-                       filename, full_filename_spruce.getStr());
+                       uri, full_filename_spruce.getStr());
     return string();
   }
   return full_filename_spruce.getStr();

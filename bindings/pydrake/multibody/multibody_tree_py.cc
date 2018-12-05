@@ -782,12 +782,18 @@ void init_parsing(py::module m) {
       py::overload_cast<const string&, const string&, MultibodyPlant<T>*,
           SceneGraph<T>*>(&AddModelFromSdfFile),
       py::arg("file_name"), py::arg("model_name"), py::arg("plant"),
-      py::arg("scene_graph") = nullptr, doc.AddModelFromSdfFile.doc_4args);
+      py::arg("scene_graph") = nullptr, doc.AddModelFromSdfFile.doc);
   m.def("AddModelFromSdfFile",
       py::overload_cast<const string&, MultibodyPlant<T>*, SceneGraph<T>*>(
           &AddModelFromSdfFile),
       py::arg("file_name"), py::arg("plant"), py::arg("scene_graph") = nullptr,
-      doc.AddModelFromSdfFile.doc_3args);
+      doc.AddModelFromSdfFile.doc);
+  m.def("AddModelFromSdfFile",
+        py::overload_cast<const string&, const string&, const PackageMap&,
+          MultibodyPlant<T>*, SceneGraph<T>*>(&AddModelFromSdfFile),
+        py::arg("file_name"), py::arg("model_name"), py::arg("package_map"),
+        py::arg("plant"), py::arg("scene_graph") = nullptr,
+        doc.AddModelFromSdfFile.doc);
 }
 
 void init_all(py::module m) {

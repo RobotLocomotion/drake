@@ -6,6 +6,7 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
+#include "drake/multibody/parsing/package_map.h"
 
 namespace drake {
 namespace multibody {
@@ -15,6 +16,8 @@ namespace parsing {
 /// adds it to `plant`. The SDF file can only contain a single `<model>`
 /// element. `<world>` elements (used for instance to specify gravity) are
 /// ignored by this method.  A new model instance will be added to @p plant.
+/// Users should call this version of AddModelFromSdfFile() when attempting to
+/// load an SDF file outside of the Drake build environment.
 ///
 /// @throws std::runtime_error if the file is not in accordance with the SDF
 /// specification containing a message with a list of errors encountered while
@@ -29,6 +32,8 @@ namespace parsing {
 /// @param model_name
 ///   The name given to the newly created instance of this model.  If
 ///   empty, the "name" attribute from the model tag will be used.
+/// @param package_map
+///   An object that maps ROS packages to their full pathnames.
 /// @param plant
 ///   A pointer to a mutable MultibodyPlant object to which the model will be
 ///   added.
@@ -39,11 +44,29 @@ namespace parsing {
 ModelInstanceIndex AddModelFromSdfFile(
     const std::string& file_name,
     const std::string& model_name,
+    const parsing::PackageMap& package_map,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph = nullptr);
+
+/// Alternate version of AddModelFromSdfFile that does not accept a
+/// PackageMap argument.
+ModelInstanceIndex AddModelFromSdfFile(
+    const std::string& file_name,
+    const std::string& model_name,
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);
 
 /// Alternate version of AddModelFromSdfFile which always uses the "name"
 /// element from the model tag for the name of the newly created model instance.
+ModelInstanceIndex AddModelFromSdfFile(
+    const std::string& file_name,
+    const parsing::PackageMap& package_map,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph = nullptr);
+
+/// Alternate version of AddModelFromSdfFile which always uses the "name"
+/// element from the model tag for the name of the newly created model instance
+/// and does not accept a PackageMap argument.
 ModelInstanceIndex AddModelFromSdfFile(
     const std::string& file_name,
     multibody_plant::MultibodyPlant<double>* plant,
@@ -66,10 +89,20 @@ ModelInstanceIndex AddModelFromSdfFile(
 /// @param plant
 ///   A pointer to a mutable MultibodyPlant object to which the model will be
 ///   added.
+/// @param package_map
+///   An object that maps ROS packages to their full pathnames.
 /// @param scene_graph
 ///   A pointer to a mutable SceneGraph object used for geometry registration
 ///   (either to model visual or contact geometry).  May be nullptr.
 /// @returns The set of model instance indices for the newly added models.
+std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
+    const std::string& file_name,
+    const PackageMap& package_map,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph = nullptr);
+
+/// Alternative version of AddModelsFromSdfFile() that does not accept a
+/// PackageMap argument.
 std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     const std::string& file_name,
     multibody_plant::MultibodyPlant<double>* plant,
