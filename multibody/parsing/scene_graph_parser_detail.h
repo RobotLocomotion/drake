@@ -94,7 +94,7 @@ multibody_plant::CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
 /// an SDF file, this method makes a new Visual object which resolves
 /// the uri for the mesh element, if present.  If the mesh element is
 /// not present, the new object will be identical to the original.
-/// See parsers::ResolveFilename() for more detail on this operation.
+/// See parsers::ResolveURI() for more detail on this operation.
 ///
 /// @throws std::runtime_error if the <mesh> tag is present but
 /// missing <uri> or if the file referenced in <uri> can not be found.

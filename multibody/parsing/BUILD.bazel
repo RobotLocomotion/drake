@@ -329,6 +329,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "parser_path_utils_test",
+    data = [
+        ":test_models",
+    ],
     deps = [
         ":parser_path_utils",
     ],

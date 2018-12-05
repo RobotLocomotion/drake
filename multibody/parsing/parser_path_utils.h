@@ -17,8 +17,8 @@ namespace parsing {
 /// file_name is empty.
 std::string GetFullPath(const std::string& file_name);
 
-/// Resolves the full path of a file. If @p filename starts with
-/// "package:", the ROS packages specified in @p package_map are
+/// Resolves the full path of a URI. If @p uri starts with
+/// "package:" or "model:", the ROS packages specified in @p package_map are
 /// searched.  Otherwise, @p filename is appended to the end of @p
 /// root_dir (if it's not already an absolute path) and checked for
 /// existence. If the file does not exist or is not found, a warning
@@ -28,16 +28,16 @@ std::string GetFullPath(const std::string& file_name);
 ///
 /// @param[in] package_map A map where the keys are ROS package names and the
 /// values are the paths to the packages. This is only used if @p filename
-/// starts with "package:".
+/// starts with "package:"or "model:".
 ///
 /// @param[in] root_dir The root directory to look in. This is only used when
 /// @p filename does not start with "package:".
 ///
 /// @return The file's full path or an empty string if the file is not
 /// found or does not exist.
-std::string ResolveFilename(const std::string& filename,
-                            const PackageMap& package_map,
-                            const std::string& root_dir);
+std::string ResolveUri(const std::string& uri,
+                       const PackageMap& package_map,
+                       const std::string& root_dir);
 
 }  // namespace parsing
 }  // namespace multibody

@@ -48,6 +48,22 @@ GTEST_TEST(ParserPathUtilsTest, TestGetFullPathOfEmptyPath) {
   EXPECT_THROW(GetFullPath(""), std::runtime_error);
 }
 
+// Verifies that ResolveUri() resolves the proper file using the scheme
+// 'file://'
+GTEST_TEST(ResolveUriTest, TestFile) {
+  // Use an empty package map.
+  PackageMap package_map;
+
+  // Set the root directory.
+  const std::string root_dir = "drake/multibody/parsing/test/";
+  const std::string relative_path = "package_map_test_packages/"
+      "package_map_test_package_a/sdf/test_model.sdf";
+
+  const auto uri = std::string("file://") + relative_path;
+  string path = ResolveUri(uri, package_map, root_dir);
+  EXPECT_EQ(path, root_dir + relative_path);
+}
+
 }  // namespace
 }  // namespace parsing
 }  // namespace multibody

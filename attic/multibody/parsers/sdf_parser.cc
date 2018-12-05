@@ -161,7 +161,7 @@ bool ParseSdfGeometry(XMLElement* node, const PackageMap& package_map,
 
     // This method will return an empty string if the file is not found or
     // resolved within a ROS package.
-    string resolved_filename = ResolveFilename(uri, package_map, root_dir);
+    string resolved_filename = ResolveUri(uri, package_map, root_dir);
 
     if (resolved_filename.empty()) {
       throw runtime_error(string(__FILE__) + ": " + __func__ +

@@ -67,11 +67,65 @@ bool GetPackagePath(const string& package, const PackageMap& package_map,
 }
 }  // namespace
 
-string ResolveURI(const string& uri, const PackageMap& package_map,
+string ResolveUri(const string& uri, const PackageMap& package_map,
                        const string& root_dir) {
   spruce::path full_filename_spruce;
   spruce::path raw_filename_spruce(uri);
   const std::vector<string> split_filename = raw_filename_spruce.split();
+
+  // Look for a URI with an explicit scheme.
+  if (uri.find("://") != std::string::npos) {
+    if (split_filename.front() == "file:") {
+      // Correctly formatted URI in this format is:
+      //
+      //   file://bar/baz/model.xyz
+      //
+      // Thus, index 0 contains "file", index 1 contains "", and
+      // indices 3 onward contain the path.
+      const int kMinNumTokens = 3;
+      const int kFileNameIndex = 2;
+      DRAKE_DEMAND(split_filename.size() >= kMinNumTokens);
+      for (int i = kFileNameIndex;
+           i < static_cast<int>(split_filename.size()); ++i) {
+        full_filename_spruce.append(split_filename.at(i));
+      }
+    } else if (split_filename.front() == "package:" ||
+        split_filename.front() == "model:") {
+      // A correctly formatted URI in this format is:
+      //
+      //   package://package_name/bar/baz/model.xyz or
+      //   model://package_name/bar/baz/model.xyz
+      //
+      // Thus, index 0 contains "package:" or "model:", index 1 contains "", and
+      // index 2 contains the package name. Furthermore, since the model file
+      // must follow the package name, there must be at least 4 tokens.
+      const int kMinNumTokens = 4;
+      const int kPackageNameIndex = 2;
+      DRAKE_DEMAND(split_filename.size() >= kMinNumTokens);
+
+      string package_path_string;
+      if (GetPackagePath(split_filename.at(kPackageNameIndex), package_map,
+                         &package_path_string)) {
+        full_filename_spruce = spruce::path(package_path_string);
+
+        // The following loop starts at index 3 to skip the "package:"
+        // (or "model:"), "", and [package name] tokens as described above.
+        for (int i = kPackageNameIndex + 1;
+             i < static_cast<int>(split_filename.size()); ++i) {
+          full_filename_spruce.append(split_filename.at(i));
+        }
+      } else {
+        // The specified package was not found in the PackageMap.
+        return string();
+      }
+
+    } else {
+      const auto error_message = "URI specifies an unsupported scheme. "
+          "Supported schemes are 'file://', 'model://', and 'package://'. "
+          "Provided URI: " + uri;
+      throw std::runtime_error(error_message);
+    }
+  }
 
   // Strictly speaking, a URI should not just be a filename (i.e., it should
   // be preceded by "file://"). But we allow this for backward compatibility
@@ -84,41 +138,8 @@ string ResolveURI(const string& uri, const PackageMap& package_map,
       return string();
     }
     return uri;
-  } else if (split_filename.front() == "file:") {
-    // Correctly formatted URI in this format is:
-    //
-    //   file://bar/baz/model.xyz
-    // 
-
-  } else if (split_filename.front() == "package:" ||
-      split_filename.front() == "model:") {
-    // A correctly formatted URI in this format is:
-    //
-    //   package://package_name/bar/baz/model.xyz or
-    //   model://package_name/bar/baz/model.xyz
-    //
-    // Thus, index 0 contains "package" or "model", index 1 contains "", and
-    // index 2 contains the package name. Furthermore, since the model file must
-    // follow the package name, there must be at least 4 tokens.
-    const int kMinNumTokens = 4;
-    const int kPackageNameIndex = 2;
-    DRAKE_DEMAND(split_filename.size() >= kMinNumTokens);
-
-    string package_path_string;
-    if (GetPackagePath(split_filename.at(kPackageNameIndex), package_map,
-        &package_path_string)) {
-      full_filename_spruce = spruce::path(package_path_string);
-
-      // The following loop starts at index 3 to skip the "package", "", and
-      // [package name] tokens as described above.
-      for (int i = kPackageNameIndex + 1;
-          i < static_cast<int>(split_filename.size()); ++i) {
-        full_filename_spruce.append(split_filename.at(i));
-      }
-    } else {
-      return string();
-    }
   } else {
+    // Try it as a normalized root directory.
     const string normalized_root_dir = spruce::path(root_dir).getStr();
 
     // If root_dir is a relative path, convert it to an absolute path.

@@ -6,7 +6,7 @@ namespace drake {
 namespace parsers {
 
 using drake::multibody::parsing::GetFullPath;
-using drake::multibody::parsing::ResolveFilename;
+using drake::multibody::parsing::ResolveUri;
 
 }  // namespace parsers
 }  // namespace drake
