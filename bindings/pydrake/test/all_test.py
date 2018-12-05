@@ -103,6 +103,8 @@ class TestAll(unittest.TestCase):
             # - multibody_tree
             "MultibodyPlant",
             "SpatialVelocity",
+            # - parsing
+            "Parser",
             # - parsers
             "PackageMap",
             # - rigid_body_plant
