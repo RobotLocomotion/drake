@@ -111,7 +111,8 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
       static_cast<uint64_t>(IiwaCommand<double>::kUnitializedTime);
   this->DeclareVectorInputPort("command_vector",
                                IiwaCommand<double>(num_joints));
-  this->DeclareAbstractInputPort("command_message",
+  this->DeclareAbstractInputPort(
+      "command_message",
       systems::Value<lcmt_iiwa_command>(uninitialized_message));
 
   this->DeclareVectorOutputPort(

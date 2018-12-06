@@ -54,9 +54,9 @@ GTEST_TEST(IiwaLcmTest, IiwaCommandReceiverTest) {
   for (int i = 0; i < kNumJoints; i++) {
     command.joint_position[i] = position(i) + delta(i);
   }
-  const int message_input_id =
-      dut.GetInputPort("command_message").get_index();
-  context->FixInputPort(message_input_id,
+  const int message_input_id = dut.GetInputPort("command_message").get_index();
+  context->FixInputPort(
+      message_input_id,
       std::make_unique<systems::Value<lcmt_iiwa_command>>(command));
 
   std::unique_ptr<systems::DiscreteValues<double>> update =
@@ -87,7 +87,8 @@ GTEST_TEST(IiwaLcmTest, IiwaCommandReceiverTest) {
     command.joint_torque[i] = -1 + 3 * i;
     expected_torque[i] = command.joint_torque[i];
   }
-  context->FixInputPort(message_input_id,
+  context->FixInputPort(
+      message_input_id,
       std::make_unique<systems::Value<lcmt_iiwa_command>>(command));
 
   update = dut.AllocateDiscreteVariables();

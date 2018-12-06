@@ -101,8 +101,8 @@ int DoMain(void) {
     // suffix specified below.
     const std::string suffix = (num_iiwa > 1) ? "_" + std::to_string(i) : "";
     auto iiwa_command_sub =
-      builder.AddSystem(std::make_unique<systems::lcm::LcmSubscriberSystem>(
-          "IIWA_COMMAND" + suffix, iiwa_cmd_to_vec, &lcm));
+        builder.AddSystem(std::make_unique<systems::lcm::LcmSubscriberSystem>(
+            "IIWA_COMMAND" + suffix, iiwa_cmd_to_vec, &lcm));
 
     iiwa_command_sub->set_name("iiwa_command_subscriber" + suffix);
     builder.Connect(iiwa_command_sub->get_output_port(),
@@ -132,8 +132,8 @@ int DoMain(void) {
     wsg_status_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
     auto wsg_command_sub =
-      builder.AddSystem(std::make_unique<systems::lcm::LcmSubscriberSystem>(
-          "SCHUNK_WSG_COMMAND" + suffix, wsg_cmd_to_vec, &lcm));
+        builder.AddSystem(std::make_unique<systems::lcm::LcmSubscriberSystem>(
+            "SCHUNK_WSG_COMMAND" + suffix, wsg_cmd_to_vec, &lcm));
     builder.Connect(wsg_command_sub->get_output_port(),
                     plant->get_input_port_wsg_command(i));
   }

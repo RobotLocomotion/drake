@@ -70,13 +70,13 @@ SchunkWsgCommandReceiver::SchunkWsgCommandReceiver(double initial_position,
   lcmt_schunk_wsg_command uninitialized_message{};
   uninitialized_message.utime =
       static_cast<uint64_t>(uninitialized_command.utime());
-  this->DeclareAbstractInputPort("command_message",
+  this->DeclareAbstractInputPort(
+      "command_message",
       systems::Value<lcmt_schunk_wsg_command>(uninitialized_message));
 }
 
 void SchunkWsgCommandReceiver::EvalInput(
-    const Context<double>& context,
-    SchunkWsgCommand<double>* result) const {
+    const Context<double>& context, SchunkWsgCommand<double>* result) const {
   // Try the vector input port first.
   const SchunkWsgCommand<double>* wsg_command =
       this->template EvalVectorInput<SchunkWsgCommand>(context, 0);
