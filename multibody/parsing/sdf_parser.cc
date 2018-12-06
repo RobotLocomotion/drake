@@ -21,6 +21,7 @@
 namespace drake {
 namespace multibody {
 namespace parsing {
+namespace detail {
 
 using Eigen::Isometry3d;
 using Eigen::Matrix3d;
@@ -326,7 +327,7 @@ void AddJointFromSpecification(
 // object.
 std::string LoadSdf(
     sdf::Root* root,
-    parsing::PackageMap* package_map,
+    multibody::PackageMap* package_map,
     const std::string& file_name) {
 
   const std::string full_path = parsing::GetFullPath(file_name);
@@ -363,7 +364,7 @@ void AddLinksFromSpecification(
     const sdf::Model& model,
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph,
-    const parsing::PackageMap& package_map,
+    const multibody::PackageMap& package_map,
     const std::string& root_dir) {
 
   // Add all the links
@@ -474,7 +475,7 @@ ModelInstanceIndex AddModelFromSpecification(
     const std::string& model_name,
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph,
-    const parsing::PackageMap& package_map,
+    const multibody::PackageMap& package_map,
     const std::string& root_dir) {
 
   const ModelInstanceIndex model_instance =
@@ -525,7 +526,7 @@ ModelInstanceIndex AddModelFromSdfFile(
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
   sdf::Root root;
-  parsing::PackageMap package_map;
+  multibody::PackageMap package_map;
 
   std::string root_dir = LoadSdf(&root, &package_map, file_name);
 
@@ -547,13 +548,6 @@ ModelInstanceIndex AddModelFromSdfFile(
       model, model_name, plant, scene_graph, package_map, root_dir);
 }
 
-ModelInstanceIndex AddModelFromSdfFile(
-    const std::string& file_name,
-    multibody_plant::MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph) {
-  return AddModelFromSdfFile(file_name, "", plant, scene_graph);
-}
-
 std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     const std::string& file_name,
     multibody_plant::MultibodyPlant<double>* plant,
@@ -562,7 +556,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
   sdf::Root root;
-  parsing::PackageMap package_map;
+  multibody::PackageMap package_map;
 
   std::string root_dir = LoadSdf(&root, &package_map, file_name);
 
@@ -615,6 +609,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
   return model_instances;
 }
 
+}  // namespace detail
 }  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

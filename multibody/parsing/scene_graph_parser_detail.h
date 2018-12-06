@@ -99,7 +99,7 @@ multibody_plant::CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
 /// @throws std::runtime_error if the <mesh> tag is present but
 /// missing <uri> or if the file referenced in <uri> can not be found.
 sdf::Visual ResolveVisualUri(const sdf::Visual& original,
-                             const parsing::PackageMap& package_map,
+                             const multibody::PackageMap& package_map,
                              const std::string& root_dir);
 
 }  // namespace detail

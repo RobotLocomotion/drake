@@ -35,7 +35,7 @@ GTEST_TEST(SdfParserTest, ParseFrames) {
 
   // Check model scope frames.
   // Backport from MultibodyPlant test:
-  //   multibody/multibody_tree/parsing/test/multibody_plant_sdf_parser_test.cc
+  //   multibody/parsing/test/sdf_parser_test.cc
   //   at line 158, git sha 5687173
   auto cache = tree.doKinematics(tree.getZeroConfiguration());
   const double eps = std::numeric_limits<double>::epsilon();

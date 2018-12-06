@@ -7,7 +7,10 @@
 
 namespace drake {
 namespace multibody {
-namespace parsing {
+
+using parsing::detail::AddModelFromSdfFile;
+using parsing::detail::AddModelFromUrdfFile;
+using parsing::detail::AddModelsFromSdfFile;
 
 Parser::Parser(
     multibody_plant::MultibodyPlant<double>* plant,
@@ -53,6 +56,5 @@ ModelInstanceIndex Parser::AddModelFromFile(
   }
 }
 
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

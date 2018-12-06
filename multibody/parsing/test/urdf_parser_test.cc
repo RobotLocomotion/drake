@@ -9,15 +9,15 @@
 
 namespace drake {
 
-using multibody::parsing::AddModelFromUrdfFile;
 using Eigen::Vector3d;
 using geometry::GeometryId;
 using geometry::SceneGraph;
-using multibody::parsing::AddModelFromUrdfFile;
 using multibody::parsing::default_friction;
+using multibody::multibody_plant::MultibodyPlant;
 
 namespace multibody {
-namespace multibody_plant {
+namespace parsing {
+namespace detail {
 namespace {
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, DoublePendulum) {
@@ -25,7 +25,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, DoublePendulum) {
   SceneGraph<double> scene_graph;
   std::string full_name = FindResourceOrThrow(
       "drake/multibody/benchmarks/acrobot/double_pendulum.urdf");
-  AddModelFromUrdfFile(full_name, &plant, &scene_graph);
+  AddModelFromUrdfFile(full_name, "", &plant, &scene_graph);
   plant.Finalize();
 
   const MultibodyTree<double>& tree = plant.tree();
@@ -63,7 +63,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestAtlasMinimalContact) {
   std::string full_name = FindResourceOrThrow(
       "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
 
-  AddModelFromUrdfFile(full_name, &plant, &scene_graph);
+  AddModelFromUrdfFile(full_name, "", &plant, &scene_graph);
   plant.Finalize();
 
   EXPECT_EQ(plant.num_positions(), 37);
@@ -78,7 +78,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestAddWithQuaternionFloatingDof) {
 
   MultibodyPlant<double> plant;
   SceneGraph<double> scene_graph;
-  AddModelFromUrdfFile(model_file, &plant, &scene_graph);
+  AddModelFromUrdfFile(model_file, "", &plant, &scene_graph);
   plant.Finalize(&scene_graph);
 
   EXPECT_EQ(plant.num_positions(), 7);
@@ -93,7 +93,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestOptionalSceneGraph) {
     // Test explicitly specifying `scene_graph`.
     MultibodyPlant<double> plant;
     SceneGraph<double> scene_graph;
-    AddModelFromUrdfFile(full_name, &plant, &scene_graph);
+    AddModelFromUrdfFile(full_name, "", &plant, &scene_graph);
     plant.Finalize();
     num_visuals_explicit = plant.num_visual_geometries();
   }
@@ -103,13 +103,14 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestOptionalSceneGraph) {
     MultibodyPlant<double> plant;
     SceneGraph<double> scene_graph;
     plant.RegisterAsSourceForSceneGraph(&scene_graph);
-    AddModelFromUrdfFile(full_name, &plant);
+    AddModelFromUrdfFile(full_name, "", &plant);
     plant.Finalize();
     EXPECT_EQ(plant.num_visual_geometries(), num_visuals_explicit);
   }
 }
 
 }  // namespace
-}  // namespace multibody_plant
+}  // namespace detail
+}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

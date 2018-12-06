@@ -9,8 +9,6 @@ using drake::multibody::multibody_plant::MultibodyPlant;
 
 namespace drake {
 namespace multibody {
-namespace parsing {
-namespace test {
 namespace {
 
 GTEST_TEST(FileParserTest, BasicTest) {
@@ -111,7 +109,5 @@ GTEST_TEST(FileParserTest, ExtensionMatchTest) {
 }
 
 }  // namespace
-}  // namespace test
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

@@ -13,8 +13,8 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/manipulation/planner/rbt_differential_inverse_kinematics.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -45,8 +45,8 @@ std::unique_ptr<MultibodyPlant<double>> BuildMultibodyPlant() {
   const std::string iiwa_absolute_path = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
   auto plant = std::make_unique<MultibodyPlant<double>>();
-  drake::multibody::parsing::AddModelFromSdfFile(iiwa_absolute_path, "iiwa",
-                                                 plant.get());
+  drake::multibody::Parser(plant.get()).AddModelFromFile(
+      iiwa_absolute_path, "iiwa");
   plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("iiwa_link_0"));
   return plant;
 }

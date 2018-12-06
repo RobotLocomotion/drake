@@ -26,8 +26,8 @@
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -59,7 +59,7 @@ using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::benchmarks::pendulum::MakePendulumPlant;
 using multibody::benchmarks::pendulum::PendulumParameters;
 using multibody::multibody_plant::MultibodyPlant;
-using multibody::parsing::AddModelFromSdfFile;
+using multibody::Parser;
 using systems::AbstractValue;
 using systems::BasicVector;
 using systems::Context;
@@ -119,9 +119,9 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
 
   // Add a split pendulum to the plant.
   const ModelInstanceIndex pendulum_model_instance =
-      AddModelFromSdfFile(FindResourceOrThrow(
+      Parser(plant.get()).AddModelFromFile(FindResourceOrThrow(
           "drake/multibody/multibody_tree/"
-          "multibody_plant/test/split_pendulum.sdf"), plant.get());
+          "multibody_plant/test/split_pendulum.sdf"));
   EXPECT_EQ(plant->num_model_instances(), 3);
 
   plant->Finalize();
@@ -271,7 +271,7 @@ class AcrobotPlantTests : public ::testing::Test {
         "drake/multibody/benchmarks/acrobot/acrobot.sdf");
     plant_ = builder.AddSystem<MultibodyPlant>();
     plant_->RegisterAsSourceForSceneGraph(scene_graph_);
-    AddModelFromSdfFile(full_name, plant_);
+    Parser(plant_).AddModelFromFile(full_name);
     // Add gravity to the model.
     plant_->AddForceElement<UniformGravityFieldElement>(
         -9.81 * Vector3<double>::UnitZ());
@@ -320,7 +320,7 @@ class AcrobotPlantTests : public ::testing::Test {
     const std::string full_name = FindResourceOrThrow(
         "drake/multibody/benchmarks/acrobot/acrobot.sdf");
     discrete_plant_ = std::make_unique<MultibodyPlant<double>>(time_step);
-    AddModelFromSdfFile(full_name, discrete_plant_.get());
+    Parser(discrete_plant_.get()).AddModelFromFile(full_name);
     // Add gravity to the model.
     discrete_plant_->AddForceElement<UniformGravityFieldElement>(
         -9.81 * Vector3<double>::UnitZ());
@@ -940,7 +940,7 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
       "drake/multibody/multibody_tree/multibody_plant/test/"
       "split_pendulum.sdf");
   MultibodyPlant<double> plant;
-  AddModelFromSdfFile(sdf_file, &plant);
+  Parser(&plant).AddModelFromFile(sdf_file);
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.GetBodiesWeldedTo(plant.world_body()), std::logic_error,
       "Pre-finalize calls to 'GetBodiesWeldedTo\\(\\)' are not "
@@ -1253,7 +1253,7 @@ class SplitPendulum : public ::testing::Test {
     const std::string full_name = FindResourceOrThrow(
         "drake/multibody/multibody_tree/"
             "multibody_plant/test/split_pendulum.sdf");
-    AddModelFromSdfFile(full_name, &plant_);
+    Parser(&plant_).AddModelFromFile(full_name);
     plant_.Finalize();
 
     // Get pin joint so that we can set the state.
@@ -1302,7 +1302,7 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
           "links_with_visuals_and_collisions.sdf");
   MultibodyPlant<double> plant;
   SceneGraph<double> scene_graph;
-  AddModelFromSdfFile(full_name, &plant, &scene_graph);
+  Parser(&plant, &scene_graph).AddModelFromFile(full_name);
 
   // Try scalar-converting pre-finalize - error.
   // N.B. Use extra parentheses; otherwise, compiler may think this is a
@@ -1690,7 +1690,7 @@ GTEST_TEST(KukaModel, JointIndexes) {
           "iiwa14_no_collision.sdf";
 
   MultibodyPlant<double> plant;
-  AddModelFromSdfFile(FindResourceOrThrow(kSdfPath), &plant);
+  Parser(&plant).AddModelFromFile(FindResourceOrThrow(kSdfPath));
   const auto& base_link_frame = plant.GetFrameByName("iiwa_link_0");
   const Joint<double>& weld = plant.WeldFrames(
       plant.world_frame(), base_link_frame);
@@ -1771,7 +1771,7 @@ class KukaArmTest : public ::testing::TestWithParam<double> {
         "drake/manipulation/models/iiwa_description/sdf/"
             "iiwa14_no_collision.sdf";
     plant_ = std::make_unique<MultibodyPlant<double>>(this->GetParam());
-    AddModelFromSdfFile(FindResourceOrThrow(kSdfPath), plant_.get());
+    Parser(plant_.get()).AddModelFromFile(FindResourceOrThrow(kSdfPath));
     const Joint<double>& weld =
         plant_->WeldFrames(plant_->world_frame(),
                            plant_->GetFrameByName("iiwa_link_0"));
@@ -1884,10 +1884,11 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
       "drake/manipulation/models/iiwa_description/sdf/"
           "iiwa14_no_collision.sdf";
   plant_ = std::make_unique<MultibodyPlant<double>>(this->GetParam());
-  multibody::ModelInstanceIndex arm1 = AddModelFromSdfFile(
-      FindResourceOrThrow(kSdfPath), "arm1", plant_.get());
-  multibody::ModelInstanceIndex arm2 = AddModelFromSdfFile(
-      FindResourceOrThrow(kSdfPath), "arm2", plant_.get());
+  Parser parser(plant_.get());
+  multibody::ModelInstanceIndex arm1 = parser.AddModelFromFile(
+      FindResourceOrThrow(kSdfPath), "arm1");
+  multibody::ModelInstanceIndex arm2 = parser.AddModelFromFile(
+      FindResourceOrThrow(kSdfPath), "arm2");
   plant_->WeldFrames(plant_->world_frame(),
                      plant_->GetFrameByName("iiwa_link_0", arm1));
   plant_->WeldFrames(plant_->world_frame(),
@@ -1955,7 +1956,7 @@ GTEST_TEST(StateSelection, JointHasNoActuator) {
   const std::string file_name =
       "drake/multibody/benchmarks/acrobot/acrobot.sdf";
   MultibodyPlant<double> plant;
-  AddModelFromSdfFile(FindResourceOrThrow(file_name), &plant);
+  Parser(&plant).AddModelFromFile(FindResourceOrThrow(file_name));
   plant.Finalize();
 
   // Sanity checks.
@@ -1986,12 +1987,13 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
   // the methods for making state/actuation selector matrices for more complex
   // cases when we have floating robots in the model.
   MultibodyPlant<double> plant;
+  Parser parser(&plant);
   const ModelInstanceIndex arm_model =
-      AddModelFromSdfFile(FindResourceOrThrow(kArmSdfPath), &plant);
+      parser.AddModelFromFile(FindResourceOrThrow(kArmSdfPath));
 
   // Add the gripper.
   const ModelInstanceIndex gripper_model =
-      AddModelFromSdfFile(FindResourceOrThrow(kWsg50SdfPath), &plant);
+      parser.AddModelFromFile(FindResourceOrThrow(kWsg50SdfPath));
   const auto& end_effector = plant.GetBodyByName("iiwa_link_7", arm_model);
   const auto& gripper_body = plant.GetBodyByName("body", gripper_model);
   // We dont care for the actual pose of the gripper in the end effector frame
@@ -2170,14 +2172,15 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   MultibodyPlant<double> plant;
 
   // Load a model of a table for the robot.
+  Parser parser(&plant);
   const ModelInstanceIndex robot_table_model =
-      AddModelFromSdfFile(table_sdf_path, "robot_table", &plant);
+      parser.AddModelFromFile(table_sdf_path, "robot_table");
   plant.WeldFrames(plant.world_frame(),
                    plant.GetFrameByName("link", robot_table_model));
 
   // Load the robot and weld it on top of the robot table.
   const ModelInstanceIndex arm_model =
-      AddModelFromSdfFile(iiwa_sdf_path, &plant);
+      parser.AddModelFromFile(iiwa_sdf_path);
 
   const double table_top_z_in_world =
       // table's top height
@@ -2191,7 +2194,7 @@ GTEST_TEST(StateSelection, FloatingBodies) {
 
   // Load a second table for objects.
   const ModelInstanceIndex objects_table_model =
-      AddModelFromSdfFile(table_sdf_path, "objects_table", &plant);
+      parser.AddModelFromFile(table_sdf_path, "objects_table");
   const Isometry3d X_WT(Translation3d(0.8, 0.0, 0.0));
   plant.WeldFrames(plant.world_frame(),
                    plant.GetFrameByName("link", objects_table_model), X_WT);
@@ -2207,7 +2210,7 @@ GTEST_TEST(StateSelection, FloatingBodies) {
 
   // Add a floating mug.
   const ModelInstanceIndex mug_model =
-      AddModelFromSdfFile(mug_sdf_path, &plant);
+      parser.AddModelFromFile(mug_sdf_path);
   const Body<double>& mug = plant.GetBodyByName("main_body", mug_model);
 
   plant.Finalize();

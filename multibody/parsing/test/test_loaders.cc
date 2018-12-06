@@ -14,7 +14,7 @@ void LoadFromSdf(
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   const std::string sdf_path = FindResourceOrThrow(base_name + ".sdf");
-  AddModelFromSdfFile(sdf_path, plant, scene_graph);
+  parsing::detail::AddModelFromSdfFile(sdf_path, "", plant, scene_graph);
 }
 
 void LoadFromUrdf(
@@ -22,7 +22,7 @@ void LoadFromUrdf(
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   const std::string urdf_path = FindResourceOrThrow(base_name + ".urdf");
-  AddModelFromUrdfFile(urdf_path, plant, scene_graph);
+  parsing::detail::AddModelFromUrdfFile(urdf_path, "", plant, scene_graph);
 }
 
 }  // namespace test

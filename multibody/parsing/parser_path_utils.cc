@@ -54,7 +54,8 @@ namespace {
 // Searches for key package in package_map. If the key exists, this saves the
 // associated value in the string pointed to by package_path and then returns
 // true. It returns false otherwise.
-bool GetPackagePath(const string& package, const PackageMap& package_map,
+bool GetPackagePath(const string& package,
+                    const multibody::PackageMap& package_map,
                     string* package_path) {
   if (package_map.Contains(package)) {
     *package_path = package_map.GetPath(package);
@@ -67,7 +68,8 @@ bool GetPackagePath(const string& package, const PackageMap& package_map,
 }
 }  // namespace
 
-string ResolveFilename(const string& filename, const PackageMap& package_map,
+string ResolveFilename(const string& filename,
+                       const multibody::PackageMap& package_map,
                        const string& root_dir) {
   spruce::path full_filename_spruce;
   spruce::path raw_filename_spruce(filename);

@@ -52,7 +52,7 @@ class KukaIiwaModelTests : public ::testing::Test {
     // makes for a more interesting setup to test the computation of
     // analytical Jacobians.
     plant_ = std::make_unique<MultibodyPlant<double>>();
-    parsing::Parser parser(plant_.get());
+    Parser parser(plant_.get());
     parser.AddModelFromFile(kArmSdfPath);
     // Add a frame H with a fixed pose X_GH in the end effector frame G.
     end_effector_link_ = &plant_->GetBodyByName("iiwa_link_7");
