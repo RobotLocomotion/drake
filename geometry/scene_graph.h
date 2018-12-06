@@ -255,7 +255,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
                         SceneGraph's logic.
    @throws std::logic_error if a context has already been allocated for this
                             %SceneGraph.
-   @see GeometryState::RegisterNewSource() */
+   @see GeometryState::RegisterNewSource()  */
   SourceId RegisterSource(const std::string& name = "");
 
   /** Reports if the given source id is registered.
@@ -352,6 +352,13 @@ class SceneGraph final : public systems::LeafSystem<T> {
    geometry is defined in a fixed pose relative to F (i.e., `X_FG`).
    Returns the corresponding unique geometry id.
 
+   @note The geometry will automatically be assigned both proximity and
+   illustration roles, regardless of whether or not the geometry instance has
+   been assigned properties. If properties have been assigned, those
+   properties will be used, otherwise default properties will be used. In the
+   near future, the *WithoutRole() variant of this function will replace this
+   function and no roles will be the normal behavior.
+
    @param source_id   The id for the source registering the geometry.
    @param frame_id    The id for the frame F to hang the geometry on.
    @param geometry    The geometry G to affix to frame F.
@@ -366,6 +373,10 @@ class SceneGraph final : public systems::LeafSystem<T> {
   GeometryId RegisterGeometry(SourceId source_id, FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
+  GeometryId RegisterGeometryWithoutRole(
+      SourceId source_id, FrameId frame_id,
+      std::unique_ptr<GeometryInstance> geometry);
+
   /** systems::Context-modifying variant of RegisterGeometry(). Rather than
    modifying %SceneGraph's model, it modifies the copy of the model stored in
    the provided context.  */
@@ -373,11 +384,22 @@ class SceneGraph final : public systems::LeafSystem<T> {
                               FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
+  GeometryId RegisterGeometryWithoutRole(
+      systems::Context<T>* context, SourceId source_id, FrameId frame_id,
+      std::unique_ptr<GeometryInstance> geometry);
+
   /** Registers a new geometry G for this source. This hangs geometry G on a
    previously registered geometry P (indicated by `geometry_id`). The pose of
    the geometry is defined in a fixed pose relative to geometry P (i.e.,
    `X_PG`). By induction, this geometry is effectively rigidly affixed to the
    frame that P is affixed to. Returns the corresponding unique geometry id.
+
+   @note The geometry will automatically be assigned both proximity and
+   illustration roles, regardless of whether or not the geometry instance has
+   been assigned properties. If properties have been assigned, those
+   properties will be used, otherwise default properties will be used. In the
+   near future, the *WithoutRole() variant of this function will replace this
+   function and no roles will be the normal behavior.
 
    @param source_id    The id for the source registering the geometry.
    @param geometry_id  The id for the parent geometry P.
@@ -393,6 +415,10 @@ class SceneGraph final : public systems::LeafSystem<T> {
   GeometryId RegisterGeometry(SourceId source_id, GeometryId geometry_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
+  GeometryId RegisterGeometryWithoutRole(
+      SourceId source_id, GeometryId geometry_id,
+      std::unique_ptr<GeometryInstance> geometry);
+
   /** systems::Context-modifying variant of RegisterGeometry(). Rather than
    modifying %SceneGraph's model, it modifies the copy of the model stored in
    the provided context.  */
@@ -400,9 +426,21 @@ class SceneGraph final : public systems::LeafSystem<T> {
                               GeometryId geometry_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
+  GeometryId RegisterGeometryWithoutRole(
+      systems::Context<T>* context, SourceId source_id, GeometryId geometry_id,
+      std::unique_ptr<GeometryInstance> geometry);
+
   /** Registers a new _anchored_ geometry G for this source. This hangs geometry
    G from the world frame (W). Its pose is defined in that frame (i.e., `X_WG`).
    Returns the corresponding unique geometry id.
+
+   @note The geometry will automatically be assigned both proximity and
+   illustration roles, regardless of whether or not the geometry instance has
+   been assigned properties. If properties have been assigned, those
+   properties will be used, otherwise default properties will be used. In the
+   near future, the *WithoutRole() variant of this function will replace this
+   function and no roles will be the normal behavior.
+
    @param source_id     The id for the source registering the frame.
    @param geometry      The anchored geometry G to add to the world.
    @returns The index for the added geometry.
@@ -414,6 +452,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
   GeometryId RegisterAnchoredGeometry(
       SourceId source_id, std::unique_ptr<GeometryInstance> geometry);
 
+  GeometryId RegisterAnchoredGeometryWithoutRole(
+      SourceId source_id, std::unique_ptr<GeometryInstance> geometry);
+
   /** Removes the given geometry G (indicated by `geometry_id`) from the given
    source's registered geometries. All registered geometries hanging from
    this geometry will also be removed.
@@ -423,7 +464,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
                             1. The `source_id` is not a registered source,
                             2. the `geometry_id` doesn't belong to the source,
                                or
-                            3. a context has been allocated. */
+                            3. a context has been allocated.  */
   void RemoveGeometry(SourceId source_id, GeometryId geometry_id);
 
   /** systems::Context-modifying variant of RemoveGeometry(). Rather than
@@ -431,6 +472,38 @@ class SceneGraph final : public systems::LeafSystem<T> {
    the provided context.  */
   void RemoveGeometry(systems::Context<T>* context, SourceId source_id,
                       GeometryId geometry_id);
+
+  //@}
+
+  /** @name     Assigning roles to geometry
+
+   Geometries must be assigned one or more *roles* before they have an effect
+   on SceneGraph computations (see @ref geometry_roles for details). These
+   methods provide the ability to assign a role after registering a geometry.
+
+   The owner that registered the geometry provides its source id, the registered
+   geometry id, and a collection of properties associated with the desired role.
+   These methods will throw exceptions in any of the following circumstances:
+
+     - The source id is invalid.
+     - The geometry id is invalid.
+     - The geometry id is not owned by the given source id.
+     - The indicated role has already been assigned to the geometry.
+     - A context has been allocated.
+   */
+
+  // TODO(SeanCurtis-TRI): Provide mechanism for modifying properties and/or
+  // removing roles.
+
+  //@{
+
+  /** Assigns the proximity role to the given geometry.  */
+  void AssignRole(SourceId source_id, GeometryId geometry_id,
+                  ProximityProperties properties);
+
+  /** Assigns the illustration role to the given geometry.  */
+  void AssignRole(SourceId source_id, GeometryId geometry_id,
+                  IllustrationProperties properties);
 
   //@}
 
@@ -476,6 +549,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
    candidate pair set `C = C - P`, where `P = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ G` and
    `G = {g₀, g₁, ..., gₘ}` is the input `set` of geometries.
 
+   If the set includes geometries which have _not_ been assigned a proximity
+   role, those geometries will be ignored. If a proximity role is subsequently
+   assigned, those geometries will _still_ not be part of any collision filters.
+   Proximity roles should _generally_ be assigned prior to collision filter
+   configuration.
+
    @throws std::logic_error if the set includes ids that don't exist in the
                             scene graph.  */
   void ExcludeCollisionsWithin(const GeometrySet& set);
@@ -491,6 +570,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
    `A = {a₀, a₁, ..., aₘ}` and `B = {b₀, b₁, ..., bₙ}` are the input sets of
    geometries `setA` and `setB`, respectively. This does _not_ preclude
    collisions between members of the _same_ set.
+
+   If the sets include geometries which have _not_ been assigned a proximity
+   role, those geometries will be ignored. If a proximity role is subsequently
+   assigned, those geometries will _still_ not be part of any collision filters.
+   Proximity roles should _generally_ be assigned prior to collision filter
+   configuration.
 
    @throws std::logic_error if the groups include ids that don't exist in the
                             scene graph.   */
