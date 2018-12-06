@@ -20,8 +20,7 @@ using systems::Context;
 void SchunkWsgCommandTranslator::Deserialize(
     const void* lcm_message_bytes, int lcm_message_length,
     systems::VectorBase<double>* vector_base) const {
-  auto command =
-      dynamic_cast<SchunkWsgCommand<double>*>(vector_base);
+  auto command = dynamic_cast<SchunkWsgCommand<double>*>(vector_base);
   DRAKE_THROW_UNLESS(command);
 
   lcmt_schunk_wsg_command msg{};
@@ -47,7 +46,8 @@ void SchunkWsgCommandTranslator::Serialize(
   msg.encode(lcm_message_bytes->data(), 0, lcm_message_length);
 }
 
-std::unique_ptr<systems::BasicVector<double>> SchunkWsgCommandTranslator::AllocateOutputVector() const {
+std::unique_ptr<systems::BasicVector<double>>
+SchunkWsgCommandTranslator::AllocateOutputVector() const {
   return std::make_unique<SchunkWsgCommand<double>>();
 }
 
@@ -65,14 +65,14 @@ SchunkWsgCommandReceiver::SchunkWsgCommandReceiver(double initial_position,
                   "force_limit", BasicVector<double>(1),
                   &SchunkWsgCommandReceiver::CalcForceLimitOutput)
               .get_index()) {
-
   this->DeclareVectorInputPort("lcmt_schunk_wsg_command",
                                SchunkWsgCommand<double>());
 }
 
 void SchunkWsgCommandReceiver::CalcPositionOutput(
     const Context<double>& context, BasicVector<double>* output) const {
-  const auto wsg_command = this->template EvalVectorInput<SchunkWsgCommand>(context, 0);
+  const auto wsg_command =
+      this->template EvalVectorInput<SchunkWsgCommand>(context, 0);
   DRAKE_THROW_UNLESS(wsg_command != nullptr);
 
   double target_position = initial_position_;
@@ -88,7 +88,8 @@ void SchunkWsgCommandReceiver::CalcPositionOutput(
 
 void SchunkWsgCommandReceiver::CalcForceLimitOutput(
     const Context<double>& context, BasicVector<double>* output) const {
-  const auto wsg_command = this->template EvalVectorInput<SchunkWsgCommand>(context, 0);
+  const auto wsg_command =
+      this->template EvalVectorInput<SchunkWsgCommand>(context, 0);
   DRAKE_THROW_UNLESS(wsg_command != nullptr);
 
   double force_limit = initial_force_;

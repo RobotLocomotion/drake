@@ -25,14 +25,15 @@ using systems::DiscreteUpdateEvent;
 // cabinet.
 const double kIiwaLcmStatusPeriod = 0.005;
 
-template <typename T> IiwaCommand<T>::IiwaCommand(int num_joints)
-    : systems::BasicVector<T>(num_joints * 2 + 1),
-      num_joints_(num_joints) {
+template <typename T>
+IiwaCommand<T>::IiwaCommand(int num_joints)
+    : systems::BasicVector<T>(num_joints * 2 + 1), num_joints_(num_joints) {
   this->values().setZero();
   set_utime(kUnitializedTime);
 }
 
-template <typename T> T IiwaCommand<T>::utime() const {
+template <typename T>
+T IiwaCommand<T>::utime() const {
   return (*this)[0];
 }
 
@@ -64,8 +65,9 @@ void IiwaCommand<T>::set_joint_torque(const VectorX<T>& torque) {
 }
 
 IiwaCommandTranslator::IiwaCommandTranslator(int num_joints)
-    : systems::lcm::LcmAndVectorBaseTranslator(IiwaCommand<double>(num_joints).size()),
-    num_joints_(num_joints) {}
+    : systems::lcm::LcmAndVectorBaseTranslator(
+          IiwaCommand<double>(num_joints).size()),
+      num_joints_(num_joints) {}
 
 void IiwaCommandTranslator::Deserialize(
     const void* lcm_message_bytes, int lcm_message_length,
@@ -78,14 +80,12 @@ void IiwaCommandTranslator::Deserialize(
 
   DRAKE_THROW_UNLESS(msg.num_joints == num_joints_);
   Eigen::VectorXd q(msg.num_joints);
-  for (int i = 0; i < msg.num_joints; i++)
-    q[i] = msg.joint_position[i];
+  for (int i = 0; i < msg.num_joints; i++) q[i] = msg.joint_position[i];
 
   DRAKE_THROW_UNLESS(msg.num_torques == 0 || msg.num_torques == num_joints_);
   Eigen::VectorXd torque = Eigen::VectorXd::Zero(num_joints_);
   if (msg.num_torques) {
-    for (int i = 0; i < num_joints_; i++)
-      torque[i] = msg.joint_torque[i];
+    for (int i = 0; i < num_joints_; i++) torque[i] = msg.joint_torque[i];
   }
 
   command->set_utime(msg.utime);
@@ -93,12 +93,14 @@ void IiwaCommandTranslator::Deserialize(
   command->set_joint_torque(torque);
 }
 
-void IiwaCommandTranslator::Serialize(
-    double, const systems::VectorBase<double>&, std::vector<uint8_t>*) const {
+void IiwaCommandTranslator::Serialize(double,
+                                      const systems::VectorBase<double>&,
+                                      std::vector<uint8_t>*) const {
   DRAKE_THROW_UNLESS(false);
 }
 
-std::unique_ptr<systems::BasicVector<double>> IiwaCommandTranslator::AllocateOutputVector() const {
+std::unique_ptr<systems::BasicVector<double>>
+IiwaCommandTranslator::AllocateOutputVector() const {
   return std::make_unique<IiwaCommand<double>>(num_joints_);
 }
 
@@ -144,7 +146,8 @@ void IiwaCommandReceiver::DoCalcDiscreteVariableUpdates(
   }
 
   state_value.segment(num_joints_, num_joints_) =
-        (command->joint_position() - state_value.head(num_joints_)) / kIiwaLcmStatusPeriod;
+      (command->joint_position() - state_value.head(num_joints_)) /
+      kIiwaLcmStatusPeriod;
   state_value.head(num_joints_) = command->joint_position();
   state_value.tail(num_joints_) = command->joint_torque();
 }
