@@ -83,7 +83,7 @@ plant.RegisterAsSourceForSceneGraph(scene_graph)
 
 # Get the package pathname.
 if len(args.package_path):
-    # Determine whether package.xml was found in the designated path.
+    # Verify that package.xml is found in the designated path.
     package_path = args.package_path
     if package_path[-1] != '/':
         package_path += '/'
