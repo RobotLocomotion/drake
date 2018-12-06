@@ -334,6 +334,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":parser_path_utils",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

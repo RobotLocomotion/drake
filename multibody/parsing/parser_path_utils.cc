@@ -14,6 +14,7 @@ namespace drake {
 namespace multibody {
 namespace parsing {
 namespace {
+
 bool IsAbsolutePath(const string& filename) {
   const string prefix = "/";
   return filename.substr(0, prefix.size()) == prefix;
@@ -78,17 +79,24 @@ string ResolveUri(const string& uri, const PackageMap& package_map,
     if (split_filename.front() == "file:") {
       // Correctly formatted URI in this format is:
       //
-      //   file://bar/baz/model.xyz
+      //   file:///bar/baz/model.xyz
       //
-      // Thus, index 0 contains "file", index 1 contains "", and
+      // Thus, index 0 contains "file", indices 1 and 2 contain "", and
       // indices 3 onward contain the path.
       const int kMinNumTokens = 3;
-      const int kFileNameIndex = 2;
+      const int kFileNameIndex = 3;
       DRAKE_DEMAND(split_filename.size() >= kMinNumTokens);
       for (int i = kFileNameIndex;
            i < static_cast<int>(split_filename.size()); ++i) {
         full_filename_spruce.append(split_filename.at(i));
       }
+
+      if (full_filename_spruce.exists()) {
+        drake::log()->warn("File {} could not be found.",
+                           full_filename_spruce.getStr());
+        return string();
+      }
+      return full_filename_spruce.getStr();
     } else if (split_filename.front() == "package:" ||
         split_filename.front() == "model:") {
       // A correctly formatted URI in this format is:
@@ -125,32 +133,32 @@ string ResolveUri(const string& uri, const PackageMap& package_map,
           "Provided URI: " + uri;
       throw std::runtime_error(error_message);
     }
-  }
-
-  // Strictly speaking, a URI should not just be a filename (i.e., it should
-  // be preceded by "file://"). But we allow this for backward compatibility
-  // and user convenience.
-
-  // Try treating the URI as an absolute path first.
-  if (IsAbsolutePath(uri)) {
-    if (!raw_filename_spruce.exists()) {
-      drake::log()->warn("File {} could not be found.", uri);
-      return string();
-    }
-    return uri;
   } else {
-    // Try it as a normalized root directory.
-    const string normalized_root_dir = spruce::path(root_dir).getStr();
+    // Strictly speaking, a URI should not just be a filename (i.e., it should
+    // be preceded by "file://"). But we allow this for backward compatibility
+    // and user convenience.
 
-    // If root_dir is a relative path, convert it to an absolute path.
-    if (!IsAbsolutePath(normalized_root_dir)) {
-      full_filename_spruce = spruce::dir::getcwd();
-      full_filename_spruce.append(normalized_root_dir);
+    // Try treating the URI as an absolute path first.
+    if (IsAbsolutePath(uri)) {
+      if (!raw_filename_spruce.exists()) {
+        drake::log()->warn("File {} could not be found.", uri);
+        return string();
+      }
+      return uri;
     } else {
-      full_filename_spruce = spruce::path(normalized_root_dir);
-    }
+      // Try it as a normalized root directory.
+      const string normalized_root_dir = spruce::path(root_dir).getStr();
 
-    full_filename_spruce.append(uri);
+      // If root_dir is a relative path, convert it to an absolute path.
+      if (!IsAbsolutePath(normalized_root_dir)) {
+        full_filename_spruce = spruce::dir::getcwd();
+        full_filename_spruce.append(normalized_root_dir);
+      } else {
+        full_filename_spruce = spruce::path(normalized_root_dir);
+      }
+
+      full_filename_spruce.append(uri);
+    }
   }
 
   if (!full_filename_spruce.exists()) {
