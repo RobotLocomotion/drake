@@ -13,6 +13,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/parsing/sdf_parser_common.h"
 #include "drake/systems/framework/context.h"
 
@@ -39,9 +40,35 @@ namespace parsing {
 namespace test {
 namespace {
 
+// Verifies that the SDF loader with specified package map works as expected.
+GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
+  // We start with the world and default model instances (model_instance.h
+  // explains why there are two).
+  MultibodyPlant<double> plant;
+  ASSERT_EQ(plant.num_model_instances(), 2);
+
+  const std::string full_sdf_filename = FindResourceOrThrow(
+      "drake/manipulation/models/iiwa_description/"
+          "sdf/iiwa14_no_collision.sdf");
+  const std::string package_path = FindResourceOrThrow(
+      "drake/manipulation/models/iiwa_description");
+
+  // Construct the PackageMap.
+  PackageMap package_map;
+  package_map.PopulateFromFolder(package_path);
+
+  // Read in the SDF file.
+  AddModelFromSdfFile(full_sdf_filename, package_map, &plant);
+  plant.Finalize();
+
+  // Verify the number of model instances.
+  EXPECT_EQ(plant.num_model_instances(), 3);
+}
+
 // Verifies model instances are correctly created in the plant.
 GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
-  // We start with the world and default model instances.
+  // We start with the world and default model instances (model_instance.h
+  // explains why there are two).
   MultibodyPlant<double> plant;
   ASSERT_EQ(plant.num_model_instances(), 2);
 

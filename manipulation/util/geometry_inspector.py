@@ -21,7 +21,8 @@ bazel run geometry_inspector --
 
 import argparse
 import numpy as np
-import os, sys
+import os
+import sys
 
 from pydrake.geometry import ConnectDrakeVisualizer, SceneGraph
 from pydrake.manipulation.simple_ui import JointSliders
@@ -82,25 +83,24 @@ plant.RegisterAsSourceForSceneGraph(scene_graph)
 
 # Get the package pathname.
 if len(args.package_path):
+    # Determine whether package.xml was found in the designated path.
+    package_path = args.package_path
+    if package_path[-1] != '/':
+        package_path += '/'
+    full_package_path = package_path + 'package.xml'
+    if not os.path.isfile(full_package_path):
+        print 'package.xml not found at: ' + full_package_path
+        sys.exit(-1)
 
-  # Determine whether package.xml was found in the designated path.
-  package_path = args.package_path
-  if package_path[-1] != '/':
-    package_path += '/'
-  full_package_path = package_path + 'package.xml'
-  if not os.path.isfile(full_package_path):
-    print 'package.xml not found at: ' + full_package_path
-    sys.exit(-1)
+    # Create a PackageMap.
+    package_map = PackageMap()
+    package_map.PopulateFromFolder(package_path)
 
-  # Create a PackageMap.
-  package_map = PackageMap()
-  package_map.PopulateFromFolder(package_path)
-
-  # Load the SDF into the plant.
-  AddModelFromSdfFile(args.filename, package_map, plant)
+    # Load the SDF into the plant.
+    AddModelFromSdfFile(args.filename, package_map, plant)
 else:
-  # Load the SDF into the plant.
-  AddModelFromSdfFile(args.filename, plant)
+    # Load the SDF into the plant.
+    AddModelFromSdfFile(args.filename, plant)
 
 plant.Finalize(scene_graph)
 
