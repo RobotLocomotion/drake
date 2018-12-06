@@ -12,6 +12,10 @@ bazel run //bindings/pydrake/multibody:geometry_inspector --
 
 bazel run geometry_inspector --
   $HOME/drake/multibody/benchmarks/acrobot/acrobot.sdf --position 0.1 0.2
+
+bazel run geometry_inspector --
+  $HOME/drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
+  --package_path=$HOME/drake/manipulation/models/iiwa_description
 """
 # TODO(russt): Add support for URDF, too.
 
@@ -38,7 +42,6 @@ position_group = parser.add_mutually_exclusive_group()
 parser.add_argument(
     "--package_path",
     type=str,
-    nargs="+",
     help="Full path to the root package name for reading in SDF resources.",
     default=[])
 position_group.add_argument(

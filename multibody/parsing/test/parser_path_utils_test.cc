@@ -118,10 +118,14 @@ GTEST_TEST(ResolveUriTest, TestModel) {
   const std::string root_dir = "drake/multibody/parsing/test/";
 
   // Create the URI.
-  const string uri = "model://package_map_test_package_a/sdf/test_model.sdf";
+  const string uri_model =
+      "model://package_map_test_package_a/sdf/test_model.sdf";
+  EXPECT_EQ(ResolveUri(uri_model, package_map, root_dir), sdf_file_name);
 
-  string path = ResolveUri(uri, package_map, root_dir);
-  EXPECT_EQ(path, sdf_file_name);
+  // Create another URI using "package":
+  const string uri_package =
+      "package://package_map_test_package_a/sdf/test_model.sdf";
+  EXPECT_EQ(ResolveUri(uri_package, package_map, root_dir), sdf_file_name);
 }
 
 // Verifies that ResolveUri() chokes on an unsupported scheme (like http://)
