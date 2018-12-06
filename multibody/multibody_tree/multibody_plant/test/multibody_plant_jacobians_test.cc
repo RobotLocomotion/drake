@@ -132,6 +132,7 @@ class KukaIiwaModelTests : public ::testing::Test {
   // This templated helper method allows us to use automatic differentiation.
   // See MultibodyTree::CalcPointsAnalyticalJacobianExpressedInWorld() for
   // details.
+  // TODO(amcastro-tri): Rename this method as per issue #10155.
   template <typename T>
   void CalcPointsOnEndEffectorAnalyticJacobian(
       const MultibodyPlant<T>& plant_on_T,
@@ -171,6 +172,7 @@ TEST_F(KukaIiwaModelTests, FixtureInvariants) {
   EXPECT_EQ(plant_->num_velocities(), kNumVelocities);
 }
 
+// TODO(amcastro-tri): Rename this test as per issue #10155.
 TEST_F(KukaIiwaModelTests, CalcPointsAnalyticalJacobianExpressedInWorld) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
