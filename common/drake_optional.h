@@ -5,7 +5,16 @@
 // we force the issue here.  Note that this does NOT place stx::variant into
 // the drake namespace, so users still need to include drake_variant.h in order
 // to use variants.
+//
+// Furthermore, the stx header is broken in various ways, so we have to do some
+// work-arounds before and after including it.
+#if defined(__has_include)
+#if __has_include(<variant>)
+#include <variant>
+#endif
+#endif
 #include <stx/variant.hpp>
+#define STX_HAVE_IN_PLACE_T 1
 
 // As of our currently supported platforms (Ubuntu 16.04 Xenial and macOS 10.13
 // High Sierra), the std::experimental::optional implementations for libstdc++
