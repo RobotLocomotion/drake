@@ -19,12 +19,7 @@ InternalGeometry::InternalGeometry(
       X_PG_(X_FG),
       X_FG_(X_FG),
       parent_geometry_id_(nullopt),
-      visual_material_(material) {
-  // Short-term expedient; all internal geometries have illustration properties.
-  IllustrationProperties properties;
-  properties.AddProperty("phong", "diffuse", material.diffuse());
-  SetRole(properties);
-}
+      visual_material_(material) {}
 
 bool InternalGeometry::has_role(Role role) const {
   switch (role) {
