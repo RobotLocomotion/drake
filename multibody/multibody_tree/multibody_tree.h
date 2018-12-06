@@ -2150,6 +2150,7 @@ class MultibodyTree {
   Vector6<T> CalcBiasForFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP) const;
+
   /// Computes the Jacobian of spatial velocity for a frame instantaneously
   /// moving with a specified frame in the model. Consider a point P
   /// instantaneously moving with a frame B with position `p_BP` in that frame.
