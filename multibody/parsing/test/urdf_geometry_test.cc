@@ -86,7 +86,7 @@ class UrdfGeometryTests : public testing::Test {
  protected:
   XMLDocument xml_doc_;
   std::string root_dir_{"."};
-  PackageMap package_map_;
+  multibody::PackageMap package_map_;
   MaterialMap materials_;
 
   std::vector<GeometryInstance> visual_instances_;

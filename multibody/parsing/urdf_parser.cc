@@ -21,6 +21,7 @@
 namespace drake {
 namespace multibody {
 namespace parsing {
+namespace detail {
 
 using Eigen::Isometry3d;
 using Eigen::Matrix3d;
@@ -86,7 +87,7 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
       body_mass, p_BoBcm_B, I_BBcm_B);
 }
 
-void ParseBody(const PackageMap& package_map,
+void ParseBody(const multibody::PackageMap& package_map,
                const std::string& root_dir,
                ModelInstanceIndex model_instance,
                XMLElement* node,
@@ -422,7 +423,7 @@ void ParseFrame(ModelInstanceIndex model_instance,
 
 ModelInstanceIndex ParseUrdf(
     const std::string& model_name_in,
-    const PackageMap& package_map,
+    const multibody::PackageMap& package_map,
     const std::string& root_dir,
     XMLDocument* xml_doc,
     multibody_plant::MultibodyPlant<double>* plant,
@@ -523,7 +524,7 @@ ModelInstanceIndex AddModelFromUrdfFile(
     root_dir = full_path.substr(0, found);
   }
 
-  PackageMap package_map;
+  multibody::PackageMap package_map;
   // TODO(sam.creasey) Add support for using an existing package map.
   package_map.PopulateUpstreamToDrake(full_path);
 
@@ -535,13 +536,7 @@ ModelInstanceIndex AddModelFromUrdfFile(
                    &xml_doc, plant, scene_graph);
 }
 
-ModelInstanceIndex AddModelFromUrdfFile(
-    const std::string& file_name,
-    multibody_plant::MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph) {
-  return AddModelFromUrdfFile(file_name, "", plant, scene_graph);
-}
-
+}  // namespace detail
 }  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

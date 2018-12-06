@@ -23,8 +23,8 @@
 #include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
 #include "drake/multibody/multibody_tree/multibody_plant/contact_results_to_lcm.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram.h"
@@ -77,8 +77,9 @@ void DoMain() {
 
   const std::string object_model_path = FindResourceOrThrow(
       "drake/examples/allegro_hand/joint_control/simple_mug.sdf");
-  multibody::parsing::AddModelFromSdfFile(hand_model_path, &plant);
-  multibody::parsing::AddModelFromSdfFile(object_model_path, &plant);
+  multibody::Parser parser(&plant);
+  parser.AddModelFromFile(hand_model_path);
+  parser.AddModelFromFile(object_model_path);
 
   // Weld the hand to the world frame
   const auto& joint_hand_root = plant.GetBodyByName("hand_root");

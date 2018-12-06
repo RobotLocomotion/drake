@@ -7,8 +7,8 @@
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 
@@ -16,7 +16,7 @@ namespace drake {
 
 using systems::Context;
 using systems::Simulator;
-using multibody::parsing::AddModelFromSdfFile;
+using multibody::Parser;
 using multibody::UniformGravityFieldElement;
 
 namespace multibody {
@@ -205,7 +205,7 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
       "drake/manipulation/models/iiwa_description/sdf/"
           "iiwa14_no_collision.sdf";
   MultibodyPlant<double> plant(time_step);
-  AddModelFromSdfFile(FindResourceOrThrow(file_path), &plant);
+  Parser(&plant).AddModelFromFile(FindResourceOrThrow(file_path));
   plant.WeldFrames(plant.world_frame(),
                    plant.GetFrameByName("iiwa_link_0"));
   plant.Finalize();

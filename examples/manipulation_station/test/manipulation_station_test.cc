@@ -22,8 +22,8 @@ using systems::BasicVector;
 GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   ManipulationStation<double> station(0.001);
   station.SetupDefaultStation();
-  multibody::parsing::Parser parser(&station.get_mutable_multibody_plant(),
-                                    &station.get_mutable_scene_graph());
+  multibody::Parser parser(&station.get_mutable_multibody_plant(),
+                           &station.get_mutable_scene_graph());
   parser.AddModelFromFile(
       FindResourceOrThrow("drake/examples/manipulation_station/models"
                           "/061_foam_brick.sdf"),

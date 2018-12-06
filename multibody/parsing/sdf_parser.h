@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
@@ -10,6 +11,7 @@
 namespace drake {
 namespace multibody {
 namespace parsing {
+namespace detail {
 
 /// Parses a `<model>` element from the SDF file specified by `file_name` and
 /// adds it to `plant`. The SDF file can only contain a single `<model>`
@@ -42,13 +44,6 @@ ModelInstanceIndex AddModelFromSdfFile(
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);
 
-/// Alternate version of AddModelFromSdfFile which always uses the "name"
-/// element from the model tag for the name of the newly created model instance.
-ModelInstanceIndex AddModelFromSdfFile(
-    const std::string& file_name,
-    multibody_plant::MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr);
-
 /// Parses all `<model>` elements from the SDF file specified by `file_name`
 /// and adds them to `plant`. The SDF file can contain multiple `<model>`
 /// elements. New model instances will be added to @p plant for each
@@ -74,6 +69,47 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     const std::string& file_name,
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);
+
+}  // namespace detail
+
+#ifndef DRAKE_DOXYGEN_CXX
+// TODO(jwnimmer-tri) Remove these forwarders on or about 2019-03-01.
+
+DRAKE_DEPRECATED(
+    "AddModelFromSdfFile is deprecated; please use the class "
+    "drake::multibody::Parser instead.")
+inline ModelInstanceIndex AddModelFromSdfFile(
+    const std::string& file_name,
+    const std::string& model_name,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph = nullptr) {
+  return detail::AddModelFromSdfFile(file_name, model_name, plant, scene_graph);
+}
+
+// Alternate version of AddModelFromSdfFile which always uses the "name"
+// element from the model tag for the name of the newly created model instance.
+DRAKE_DEPRECATED(
+    "AddModelFromSdfFile is deprecated; please use the class "
+    "drake::multibody::Parser instead.")
+inline ModelInstanceIndex AddModelFromSdfFile(
+    const std::string& file_name,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph = nullptr) {
+  return detail::AddModelFromSdfFile(file_name, "", plant, scene_graph);
+}
+
+DRAKE_DEPRECATED(
+    "AddModelsFromSdfFile is deprecated; please use the class "
+    "drake::multibody::Parser instead.")
+inline std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
+    const std::string& file_name,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph = nullptr) {
+  return detail::AddModelsFromSdfFile(file_name, plant, scene_graph);
+}
+
+#endif  // DRAKE_DOXYGEN_CXX
+
 }  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

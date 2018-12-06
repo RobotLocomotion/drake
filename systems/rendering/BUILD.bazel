@@ -164,7 +164,7 @@ drake_cc_googletest(
         ":multibody_position_to_geometry_pose",
         "//common:find_resource",
         "//common/test_utilities",
-        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//multibody/parsing",
         "//systems/framework/test_utilities",
     ],
 )

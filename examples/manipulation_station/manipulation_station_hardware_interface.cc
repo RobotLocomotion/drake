@@ -12,7 +12,7 @@
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
@@ -26,7 +26,7 @@ namespace manipulation_station {
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using multibody::multibody_plant::MultibodyPlant;
-using multibody::parsing::AddModelFromSdfFile;
+using multibody::Parser;
 using robotlocomotion::image_array_t;
 
 // TODO(russt): Consider taking DrakeLcmInterface as an argument instead of
@@ -130,8 +130,9 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
   // IIWA and the equivalent inertia of the gripper.
   const std::string iiwa_sdf_path = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
+  Parser parser(owned_controller_plant_.get());
   const auto controller_iiwa_model =
-      AddModelFromSdfFile(iiwa_sdf_path, "iiwa", owned_controller_plant_.get());
+      parser.AddModelFromFile(iiwa_sdf_path, "iiwa");
   // TODO(russt): Provide API for changing the base coordinates of the plant.
   owned_controller_plant_->WeldFrames(owned_controller_plant_->world_frame(),
                                       owned_controller_plant_->GetFrameByName(

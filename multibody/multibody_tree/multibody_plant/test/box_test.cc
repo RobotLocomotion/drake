@@ -8,8 +8,8 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -18,7 +18,7 @@ namespace drake {
 
 using geometry::Box;
 using geometry::SceneGraph;
-using multibody::parsing::AddModelFromSdfFile;
+using multibody::Parser;
 using systems::AbstractValue;
 using systems::Context;
 using systems::Diagram;
@@ -68,7 +68,7 @@ GTEST_TEST(Box, UnderStiction) {
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/multibody_tree/multibody_plant/test/box.sdf");
   MultibodyPlant<double>& plant = *builder.AddSystem<MultibodyPlant>(time_step);
-  AddModelFromSdfFile(full_name, &plant, &scene_graph);
+  Parser(&plant, &scene_graph).AddModelFromFile(full_name);
 
   // Add gravity to the model.
   plant.AddForceElement<UniformGravityFieldElement>(

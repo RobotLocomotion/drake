@@ -27,7 +27,6 @@ using tinyxml2::XMLElement;
 
 namespace drake {
 namespace multibody {
-namespace parsing {
 
 PackageMap::PackageMap() {}
 
@@ -234,6 +233,5 @@ std::ostream& operator<<(std::ostream& out, const PackageMap& package_map) {
     return out;
 }
 
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

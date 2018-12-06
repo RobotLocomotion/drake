@@ -10,7 +10,7 @@
     <!-- <pose>10 20 30 0 0 0</pose> -->
 
     <!-- This is a subset of elements from:
-         //multibody/multibody_tree/parsing/test:links_with_visuals_and_collisions.sdf
+         //multibody/parsing/test:links_with_visuals_and_collisions.sdf
          This is meant to test a subset of porting backwards compatible
          functionality. -->
 

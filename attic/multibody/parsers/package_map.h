@@ -5,7 +5,7 @@
 namespace drake {
 namespace parsers {
 
-using PackageMap = drake::multibody::parsing::PackageMap;
+using PackageMap = drake::multibody::PackageMap;
 
 }  // namespace parsers
 }  // namespace drake
