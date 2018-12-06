@@ -10,8 +10,8 @@ from pydrake.examples.manipulation_station import (
     ManipulationStationHardwareInterface
 )
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
-from pydrake.multibody.multibody_tree.parsing import Parser
 from pydrake.multibody.multibody_tree import ModelInstanceIndex
+from pydrake.multibody.parsing import Parser
 
 
 class TestManipulationStation(unittest.TestCase):
