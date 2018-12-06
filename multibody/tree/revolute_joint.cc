@@ -1,10 +1,10 @@
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
 
 #include <memory>
 #include <stdexcept>
 
 #include "drake/common/autodiff.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
 namespace multibody {

@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/space_xyz_mobilizer.h"
+#include "drake/multibody/tree/space_xyz_mobilizer.h"
 
 #include <memory>
 #include <stdexcept>
@@ -7,7 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
 namespace multibody {

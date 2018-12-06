@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/multibody_forces.h"
+#include "drake/multibody/tree/multibody_forces.h"
 
 #include <array>
 #include <limits>
@@ -7,11 +7,11 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
-#include "drake/multibody/multibody_tree/rigid_body.h"
-#include "drake/multibody/multibody_tree/rotational_inertia.h"
-#include "drake/multibody/multibody_tree/spatial_inertia.h"
+#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/rotational_inertia.h"
+#include "drake/multibody/tree/spatial_inertia.h"
 
 namespace drake {
 namespace multibody {

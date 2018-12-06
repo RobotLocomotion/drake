@@ -1,12 +1,12 @@
-#include "drake/multibody/multibody_tree/linear_spring_damper.h"
+#include "drake/multibody/tree/linear_spring_damper.h"
 
 #include <limits>
 #include <utility>
 #include <vector>
 
 #include "drake/common/autodiff.h"
-#include "drake/multibody/multibody_tree/body.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/tree/body.h"
+#include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
 namespace multibody {

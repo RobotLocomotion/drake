@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/multibody_tree_system.h"
+#include "drake/multibody/tree/multibody_tree_system.h"
 
 #include <memory>
 #include <utility>
@@ -7,7 +7,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
 using systems::BasicVector;

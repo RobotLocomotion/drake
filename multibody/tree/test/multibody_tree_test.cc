@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree.h"
 
 #include <functional>
 #include <limits>
@@ -14,10 +14,10 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
-#include "drake/multibody/multibody_tree/frame.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/multibody_tree_system.h"
-#include "drake/multibody/multibody_tree/weld_mobilizer.h"
+#include "drake/multibody/tree/frame.h"
+#include "drake/multibody/tree/multibody_tree_system.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/weld_mobilizer.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/leaf_system.h"

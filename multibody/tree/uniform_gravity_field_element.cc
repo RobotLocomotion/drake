@@ -1,10 +1,10 @@
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 
 #include <vector>
 
 #include "drake/common/autodiff.h"
-#include "drake/multibody/multibody_tree/body.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/tree/body.h"
+#include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
 namespace multibody {

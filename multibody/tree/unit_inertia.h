@@ -6,7 +6,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/multibody_tree/rotational_inertia.h"
+#include "drake/multibody/tree/rotational_inertia.h"
 
 namespace drake {
 namespace multibody {

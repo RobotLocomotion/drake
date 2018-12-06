@@ -1,9 +1,9 @@
-#include "drake/multibody/multibody_tree/test/floating_body_plant.h"
+#include "drake/multibody/tree/test/floating_body_plant.h"
 
 #include <vector>
 
 #include "drake/common/default_scalars.h"
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 
 namespace drake {
 namespace multibody {

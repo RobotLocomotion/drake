@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/test/free_rotating_body_plant.h"
+#include "drake/multibody/tree/test/free_rotating_body_plant.h"
 
 #include <limits>
 #include <utility>
