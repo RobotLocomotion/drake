@@ -3,9 +3,13 @@
 /// @file This file contains classes dealing with sending/receiving
 /// LCM messages related to the Schunk WSG gripper.
 
+#include <memory>
+#include <vector>
+
 #include "drake/common/drake_deprecated.h"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
+#include "drake/manipulation/schunk_wsg/gen/schunk_wsg_command.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
@@ -52,10 +56,6 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
   SchunkWsgCommandReceiver(double initial_position = 0.02,
                            double initial_force = 40);
 
-  const systems::InputPort<double>& get_command_input_port() const {
-    return this->get_input_port(0);
-  }
-
   const systems::OutputPort<double>& get_position_output_port() const {
     return this->get_output_port(position_output_port_);
   }
@@ -71,7 +71,10 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
   void CalcForceLimitOutput(const systems::Context<double>& context,
                             systems::BasicVector<double>* output) const;
 
- private:
+  void EvalInput(const systems::Context<double>& context,
+                 SchunkWsgCommand<double>* result) const;
+
+  const SchunkWsgCommandTranslator translator_;
   const double initial_position_{};
   const double initial_force_{};
   const systems::OutputPortIndex position_output_port_{};

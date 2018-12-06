@@ -8,7 +8,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
-#include "drake/manipulation/schunk_wsg/gen/schunk_wsg_command.h"
 
 namespace drake {
 namespace manipulation {
@@ -65,19 +64,47 @@ SchunkWsgCommandReceiver::SchunkWsgCommandReceiver(double initial_position,
                   "force_limit", BasicVector<double>(1),
                   &SchunkWsgCommandReceiver::CalcForceLimitOutput)
               .get_index()) {
-  this->DeclareVectorInputPort("lcmt_schunk_wsg_command",
-                               SchunkWsgCommand<double>());
+  SchunkWsgCommand<double> uninitialized_command;
+  this->DeclareVectorInputPort("command_vector", uninitialized_command);
+
+  lcmt_schunk_wsg_command uninitialized_message{};
+  uninitialized_message.utime =
+      static_cast<uint64_t>(uninitialized_command.utime());
+  this->DeclareAbstractInputPort("command_message",
+      systems::Value<lcmt_schunk_wsg_command>(uninitialized_message));
+}
+
+void SchunkWsgCommandReceiver::EvalInput(
+    const Context<double>& context,
+    SchunkWsgCommand<double>* result) const {
+  // Try the vector input port first.
+  const SchunkWsgCommand<double>* wsg_command =
+      this->template EvalVectorInput<SchunkWsgCommand>(context, 0);
+
+  // Maybe the vector input is not wired, try abstract input next.
+  SchunkWsgCommand<double> decoded_command;
+  if (!wsg_command) {
+    const systems::AbstractValue* input = this->EvalAbstractInput(context, 1);
+    DRAKE_THROW_UNLESS(input != nullptr);
+    const auto& command_msg = input->GetValue<lcmt_schunk_wsg_command>();
+    std::vector<uint8_t> bytes(command_msg.getEncodedSize());
+    command_msg.encode(bytes.data(), 0, bytes.size());
+    translator_.Deserialize(bytes.data(), bytes.size(), &decoded_command);
+    wsg_command = &decoded_command;
+  }
+  DRAKE_THROW_UNLESS(wsg_command != nullptr);
+
+  result->get_mutable_value() = wsg_command->get_value();
 }
 
 void SchunkWsgCommandReceiver::CalcPositionOutput(
     const Context<double>& context, BasicVector<double>* output) const {
-  const auto wsg_command =
-      this->template EvalVectorInput<SchunkWsgCommand>(context, 0);
-  DRAKE_THROW_UNLESS(wsg_command != nullptr);
+  SchunkWsgCommand<double> wsg_command;
+  EvalInput(context, &wsg_command);
 
   double target_position = initial_position_;
-  if (wsg_command->utime() != 0) {
-    target_position = wsg_command->target_position_mm() / 1e3;
+  if (wsg_command.utime() != SchunkWsgCommand<double>().utime()) {
+    target_position = wsg_command.target_position_mm() / 1e3;
     if (std::isnan(target_position)) {
       target_position = 0;
     }
@@ -88,13 +115,12 @@ void SchunkWsgCommandReceiver::CalcPositionOutput(
 
 void SchunkWsgCommandReceiver::CalcForceLimitOutput(
     const Context<double>& context, BasicVector<double>* output) const {
-  const auto wsg_command =
-      this->template EvalVectorInput<SchunkWsgCommand>(context, 0);
-  DRAKE_THROW_UNLESS(wsg_command != nullptr);
+  SchunkWsgCommand<double> wsg_command;
+  EvalInput(context, &wsg_command);
 
   double force_limit = initial_force_;
-  if (wsg_command->utime() != 0) {
-    force_limit = wsg_command->force();
+  if (wsg_command.utime() != SchunkWsgCommand<double>().utime()) {
+    force_limit = wsg_command.force();
   }
 
   output->SetAtIndex(0, force_limit);

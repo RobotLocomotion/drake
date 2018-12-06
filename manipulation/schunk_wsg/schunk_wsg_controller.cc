@@ -20,8 +20,10 @@ SchunkWsgController::SchunkWsgController(double kp, double ki, double kd) {
   state_input_port_ = builder.ExportInput(state_pass_through->get_input_port());
 
   auto command_receiver = builder.AddSystem<SchunkWsgCommandReceiver>();
-  command_input_port_ =
-      builder.ExportInput(command_receiver->get_command_input_port());
+  builder.ExportInput(command_receiver->GetInputPort("command_vector"),
+                      "command_vector");
+  builder.ExportInput(command_receiver->GetInputPort("command_message"),
+                      "command_message");
 
   auto wsg_trajectory_generator =
       builder.AddSystem<SchunkWsgTrajectoryGenerator>(

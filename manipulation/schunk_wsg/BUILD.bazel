@@ -19,6 +19,7 @@ package(
 drake_cc_package_library(
     name = "schunk_wsg",
     deps = [
+        ":schunk_wsg_command",
         ":schunk_wsg_constants",
         ":schunk_wsg_controller",
         ":schunk_wsg_lcm",
@@ -45,8 +46,8 @@ drake_cc_library(
     deps = [
         ":schunk_wsg_command",
         "//lcmtypes:schunk",
-        "//systems/lcm:translator",
         "//systems/framework:leaf_system",
+        "//systems/lcm:translator",
         "//systems/primitives:matrix_gain",
     ],
 )

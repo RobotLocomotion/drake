@@ -105,8 +105,14 @@ IiwaCommandTranslator::AllocateOutputVector() const {
 }
 
 IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
-    : num_joints_(num_joints) {
-  this->DeclareVectorInputPort(IiwaCommand<double>(num_joints));
+    : num_joints_(num_joints), translator_(num_joints) {
+  lcmt_iiwa_command uninitialized_message{};
+  uninitialized_message.utime =
+      static_cast<uint64_t>(IiwaCommand<double>::kUnitializedTime);
+  this->DeclareVectorInputPort("command_vector",
+                               IiwaCommand<double>(num_joints));
+  this->DeclareAbstractInputPort("command_message",
+      systems::Value<lcmt_iiwa_command>(uninitialized_message));
 
   this->DeclareVectorOutputPort(
       systems::BasicVector<double>(num_joints_ * 2),
@@ -135,7 +141,20 @@ void IiwaCommandReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
     const std::vector<const DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
-  const auto command = this->template EvalVectorInput<IiwaCommand>(context, 0);
+  const IiwaCommand<double>* command =
+      this->template EvalVectorInput<IiwaCommand>(context, 0);
+
+  // If the vector input port is not wired, try the abstract value one.
+  IiwaCommand<double> decoded_command(num_joints_);
+  if (!command) {
+    const systems::AbstractValue* input = this->EvalAbstractInput(context, 1);
+    DRAKE_THROW_UNLESS(input != nullptr);
+    const auto& command_msg = input->GetValue<lcmt_iiwa_command>();
+    std::vector<uint8_t> bytes(command_msg.getEncodedSize());
+    command_msg.encode(bytes.data(), 0, bytes.size());
+    translator_.Deserialize(bytes.data(), bytes.size(), &decoded_command);
+    command = &decoded_command;
+  }
   DRAKE_THROW_UNLESS(command);
 
   BasicVector<double>& state = discrete_state->get_mutable_vector(0);

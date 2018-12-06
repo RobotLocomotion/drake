@@ -85,7 +85,8 @@ LcmPlant::LcmPlant(
 
     // Export iiwa command input port.
     input_port_iiwa_command_.push_back(
-        builder.ExportInput(iiwa_command_receiver->get_input_port(0)));
+        builder.ExportInput(
+            iiwa_command_receiver->GetInputPort("command_message")));
     builder.Connect(iiwa_command_receiver->get_commanded_state_output_port(),
                     iiwa_and_wsg_plant_->get_input_port_iiwa_state_command(i));
 
@@ -142,7 +143,7 @@ LcmPlant::LcmPlant(
 
     // Export WSG command input port.
     input_port_wsg_command_.push_back(
-        builder.ExportInput(wsg_controller->get_command_input_port()));
+        builder.ExportInput(wsg_controller->GetInputPort("command_message")));
   }
 
   // Build the system.

@@ -25,16 +25,11 @@ class SchunkWsgController : public systems::Diagram<double> {
   explicit SchunkWsgController(double kp = 2000.0, double ki = 0.0,
                                double kd = 5.0);
 
-  const systems::InputPort<double>& get_command_input_port() const {
-    return this->get_input_port(command_input_port_);
-  }
-
   const systems::InputPort<double>& get_state_input_port() const {
     return this->get_input_port(state_input_port_);
   }
 
  private:
-  int command_input_port_{};
   int state_input_port_{};
 };
 

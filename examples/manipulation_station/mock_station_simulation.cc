@@ -73,7 +73,7 @@ int do_main(int argc, char* argv[]) {
           "IIWA_COMMAND", iiwa_cmd_to_vec, &lcm));
   auto iiwa_command = builder.AddSystem<kuka_iiwa_arm::IiwaCommandReceiver>();
   builder.Connect(iiwa_command_subscriber->get_output_port(),
-                  iiwa_command->get_input_port(0));
+                  iiwa_command->GetInputPort("command_vector"));
 
   // Pull the positions out of the state.
   auto demux = builder.AddSystem<systems::Demultiplexer>(14, 7);
@@ -116,7 +116,7 @@ int do_main(int argc, char* argv[]) {
   auto wsg_command =
       builder.AddSystem<manipulation::schunk_wsg::SchunkWsgCommandReceiver>();
   builder.Connect(wsg_command_subscriber->get_output_port(),
-                  wsg_command->get_input_port(0));
+                  wsg_command->GetInputPort("command_vector"));
   builder.Connect(wsg_command->get_position_output_port(),
                   station->GetInputPort("wsg_position"));
   builder.Connect(wsg_command->get_force_limit_output_port(),

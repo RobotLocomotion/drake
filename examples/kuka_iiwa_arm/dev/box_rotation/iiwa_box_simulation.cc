@@ -183,9 +183,10 @@ int DoMain() {
   }
 
   // Create the command subscriber and status publisher.
-  auto iiwa_command_sub = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>("IIWA_COMMAND",
-                                                                 &lcm));
+  IiwaCommandTranslator iiwa_cmd_to_vec(14);
+  auto iiwa_command_sub =
+      builder.AddSystem(std::make_unique<systems::lcm::LcmSubscriberSystem>(
+          "IIWA_COMMAND", iiwa_cmd_to_vec, &lcm));
   iiwa_command_sub->set_name("iiwa_command_subscriber");
   auto iiwa_command_receiver = builder.AddSystem<IiwaCommandReceiver>(14);
   iiwa_command_receiver->set_name("iwwa_command_receiver");
@@ -240,7 +241,7 @@ int DoMain() {
   iiwa_zero_acceleration_source->set_name("zero_acceleration");
 
   builder.Connect(iiwa_command_sub->get_output_port(),
-                  iiwa_command_receiver->get_input_port(0));
+                  iiwa_command_receiver->GetInputPort("command_vector"));
 
   builder.Connect(iiwa_command_receiver->get_commanded_state_output_port(),
                   model->get_input_port_iiwa_state_command());

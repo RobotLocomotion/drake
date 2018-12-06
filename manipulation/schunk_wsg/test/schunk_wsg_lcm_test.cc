@@ -29,8 +29,9 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgCommandReceiverTest) {
   // Check that we get the initial position and force before receiving a
   // command.
   lcmt_schunk_wsg_command initial_command{};
+  const int message_input_id = dut.GetInputPort("command_message").get_index();
   context->FixInputPort(
-      0,
+      message_input_id,
       systems::AbstractValue::Make<lcmt_schunk_wsg_command>(initial_command));
   EXPECT_EQ(dut.get_position_output_port()
                 .Eval<BasicVector<double>>(*context)
@@ -47,7 +48,7 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgCommandReceiverTest) {
   initial_command.target_position_mm = 100;
   initial_command.force = 40;
   context->FixInputPort(
-      0,
+      message_input_id,
       systems::AbstractValue::Make<lcmt_schunk_wsg_command>(initial_command));
   EXPECT_EQ(dut.get_position_output_port()
                 .Eval<BasicVector<double>>(*context)

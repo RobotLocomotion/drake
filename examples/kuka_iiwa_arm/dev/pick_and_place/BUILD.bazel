@@ -159,6 +159,7 @@ drake_cc_binary(
         "//lcmtypes:iiwa",
         "//lcmtypes:viewer",
         "//manipulation/schunk_wsg:schunk_wsg_controller",
+        "//manipulation/schunk_wsg:schunk_wsg_lcm",
         "//systems/analysis:simulator",
         "@gflags",
         "@lcmtypes_bot2_core",

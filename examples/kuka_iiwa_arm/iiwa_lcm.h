@@ -14,7 +14,6 @@
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/systems/framework/leaf_system.h"
-
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
 namespace drake {
@@ -28,7 +27,7 @@ class IiwaCommand : public systems::BasicVector<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommand)
 
-  static constexpr double kUnitializedTime = -1;
+  static constexpr double kUnitializedTime = 0;
 
   explicit IiwaCommand(int num_joints);
 
@@ -111,6 +110,7 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
 
  private:
   const int num_joints_;
+  const IiwaCommandTranslator translator_;
 };
 
 /// Creates and outputs lcmt_iiwa_command messages
