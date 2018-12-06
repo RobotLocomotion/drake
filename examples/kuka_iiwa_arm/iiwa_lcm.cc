@@ -76,15 +76,18 @@ void IiwaCommandTranslator::Deserialize(
   DRAKE_THROW_UNLESS(command);
 
   lcmt_iiwa_command msg{};
-  msg.decode(lcm_message_bytes, 0, lcm_message_length);
+  const int length = msg.decode(lcm_message_bytes, 0, lcm_message_length);
+  DRAKE_THROW_UNLESS(length == lcm_message_length);
 
-  DRAKE_THROW_UNLESS(msg.num_joints == num_joints_);
-  Eigen::VectorXd q(msg.num_joints);
-  for (int i = 0; i < msg.num_joints; i++) q[i] = msg.joint_position[i];
+  const int num_joints = static_cast<int>(msg.joint_position.size());
+  DRAKE_THROW_UNLESS(num_joints == num_joints_);
+  Eigen::VectorXd q(num_joints);
+  for (int i = 0; i < num_joints; i++) q[i] = msg.joint_position[i];
 
-  DRAKE_THROW_UNLESS(msg.num_torques == 0 || msg.num_torques == num_joints_);
+  const int num_torques = static_cast<int>(msg.joint_torque.size());
+  DRAKE_THROW_UNLESS(num_torques == 0 || num_torques == num_joints_);
   Eigen::VectorXd torque = Eigen::VectorXd::Zero(num_joints_);
-  if (msg.num_torques) {
+  if (num_torques) {
     for (int i = 0; i < num_joints_; i++) torque[i] = msg.joint_torque[i];
   }
 
@@ -96,7 +99,7 @@ void IiwaCommandTranslator::Deserialize(
 void IiwaCommandTranslator::Serialize(double,
                                       const systems::VectorBase<double>&,
                                       std::vector<uint8_t>*) const {
-  DRAKE_THROW_UNLESS(false);
+  throw std::runtime_error("Not implemented");
 }
 
 std::unique_ptr<systems::BasicVector<double>>

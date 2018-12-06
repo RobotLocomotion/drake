@@ -17,6 +17,12 @@ namespace drake {
 namespace manipulation {
 namespace schunk_wsg {
 
+/**
+ * A translator between the LCM message type lcmt_schunk_wsg_command and
+ * its vectorized representation, SchunkWsgCommand. This is intended
+ * to be used with systems::lcm::LcmPublisherSystem and
+ * systems::lcm::LcmSubscriberSystem.
+ */
 class SchunkWsgCommandTranslator
     : public systems::lcm::LcmAndVectorBaseTranslator {
  public:
@@ -27,9 +33,19 @@ class SchunkWsgCommandTranslator
   std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector()
       const override;
 
+  /**
+   * Translates @p lcm_message_bytes into @p vector_base.
+   * @throws if @p lcm_message_bytes cannot be decoded as a
+   * lcmt_schunk_wsg_command struct or @p vector_base is not a
+   * SchunkWsgCommand<double>.
+   */
   void Deserialize(const void* lcm_message_bytes, int lcm_message_length,
                    systems::VectorBase<double>* vector_base) const override;
 
+  /**
+   * Not implemented.
+   * @throws std::runtime_error.
+   */
   void Serialize(double time, const systems::VectorBase<double>& vector_base,
                  std::vector<uint8_t>* lcm_message_bytes) const override;
 };

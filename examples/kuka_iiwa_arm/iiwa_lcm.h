@@ -22,6 +22,9 @@ namespace kuka_iiwa_arm {
 
 extern const double kIiwaLcmStatusPeriod;
 
+/**
+ * A vectorized representation of lcmt_iiwa_command.
+ */
 template <typename T>
 class IiwaCommand : public systems::BasicVector<T> {
  public:
@@ -29,6 +32,10 @@ class IiwaCommand : public systems::BasicVector<T> {
 
   static constexpr double kUnitializedTime = 0;
 
+  /**
+   * The dimension of this will be 2 * @p num_joints + 1, which are timestamp,
+   * position and torque per each joint.
+   */
   explicit IiwaCommand(int num_joints);
 
   T utime() const;
@@ -39,28 +46,62 @@ class IiwaCommand : public systems::BasicVector<T> {
 
   void set_utime(T utime);
 
+  /**
+   * @throws if the dimension of @p q does not match num_joints at construction
+   * time.
+   */
   void set_joint_position(const VectorX<T>& q);
 
+  /**
+   * @throws if the dimension of @p q does not match num_joints at construction
+   * time.
+   */
   void set_joint_torque(const VectorX<T>& torque);
 
+ private:
   IiwaCommand<T>* DoClone() const { return new IiwaCommand<T>(num_joints_); }
 
- private:
   const int num_joints_;
 };
 
+/**
+ * A translator between the LCM message type lcmt_iiwa_command and its
+ * vectorized representation, IiwaCommand<double>. This is intended to be used
+ * with systems::lcm::LcmPublisherSystem and systems::lcm::LcmSubscriberSystem.
+ */
 class IiwaCommandTranslator : public systems::lcm::LcmAndVectorBaseTranslator {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommandTranslator)
 
+  /**
+   * Constructs a IiwaCommandTranslator.
+   * @param num_joints Number of joints of the IIWA command.
+   */
   explicit IiwaCommandTranslator(int num_joints = kIiwaArmNumJoints);
 
   std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector()
       const override;
 
+  /**
+   * Translates @p lcm_message_bytes into @p vector_base. Assumes that the
+   * size of `joint_position` field in the decoded messages matches the
+   * declared number of joints at construction time. If the decoded
+   * `joint_torque` field is empty, the torque part of @p vector_base will
+   * be filled by zeros.
+   * @throws if
+   * - @p lcm_message_bytes cannot be decoded as a lcmt_iiwa_command.
+   * - @p vector_base is not a IiwaCommand<double>.
+   * - The decoded `joint_position` in @p lcm_message_bytes has a different
+   *   size.
+   * - The decoded `joint_torque` in @p lcm_message_bytes has a different size.
+   */
   void Deserialize(const void* lcm_message_bytes, int lcm_message_length,
                    systems::VectorBase<double>* vector_base) const override;
 
+  /**
+   * Not implemented.
+   * @throws std::runtime_error.
+   */
   void Serialize(double time, const systems::VectorBase<double>& vector_base,
                  std::vector<uint8_t>* lcm_message_bytes) const override;
 
