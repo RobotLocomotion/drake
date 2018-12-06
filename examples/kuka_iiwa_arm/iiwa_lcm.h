@@ -15,11 +15,59 @@
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/systems/framework/leaf_system.h"
 
+#include "drake/systems/lcm/lcm_and_vector_base_translator.h"
+
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
 extern const double kIiwaLcmStatusPeriod;
+
+template <typename T>
+class IiwaCommand : public systems::BasicVector<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommand)
+
+  static constexpr double kUnitializedTime = -1;
+
+  explicit IiwaCommand(int num_joints);
+
+  T utime() const;
+
+  Eigen::VectorBlock<const VectorX<T>> joint_position() const;
+
+  Eigen::VectorBlock<const VectorX<T>> joint_torque() const;
+
+  void set_utime(T utime);
+
+  void set_joint_position(const VectorX<T>& q);
+
+  void set_joint_torque(const VectorX<T>& torque);
+
+  IiwaCommand<T>* DoClone() const { return new IiwaCommand<T>(num_joints_); }
+
+ private:
+  const int num_joints_;
+};
+
+class IiwaCommandTranslator : public systems::lcm::LcmAndVectorBaseTranslator {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommandTranslator)
+
+  explicit IiwaCommandTranslator(int num_joints = kIiwaArmNumJoints);
+
+  std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector() const override;
+
+  void Deserialize(const void* lcm_message_bytes, int lcm_message_length,
+      systems::VectorBase<double>* vector_base) const override;
+
+  void Serialize(double time,
+      const systems::VectorBase<double>& vector_base,
+      std::vector<uint8_t>* lcm_message_bytes) const override;
+
+ private:
+  const int num_joints_;
+};
 
 /// Handles lcmt_iiwa_command messages from a LcmSubscriberSystem.
 /// Has two output ports: one for the commanded position for each joint along

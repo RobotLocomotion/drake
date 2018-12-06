@@ -17,6 +17,40 @@ namespace schunk_wsg {
 using systems::BasicVector;
 using systems::Context;
 
+void SchunkWsgCommandTranslator::Deserialize(
+    const void* lcm_message_bytes, int lcm_message_length,
+    systems::VectorBase<double>* vector_base) const {
+  auto command =
+      dynamic_cast<SchunkWsgCommand<double>*>(vector_base);
+  DRAKE_THROW_UNLESS(command);
+
+  lcmt_schunk_wsg_command msg{};
+  msg.decode(lcm_message_bytes, 0, lcm_message_length);
+
+  command->set_utime(msg.utime);
+  command->set_target_position_mm(msg.target_position_mm);
+  command->set_force(msg.force);
+}
+
+void SchunkWsgCommandTranslator::Serialize(
+    double, const systems::VectorBase<double>& vector_base,
+    std::vector<uint8_t>* lcm_message_bytes) const {
+  lcmt_schunk_wsg_command msg;
+  const auto& command =
+      dynamic_cast<const SchunkWsgCommand<double>&>(vector_base);
+  msg.utime = static_cast<uint64_t>(command.utime());
+  msg.target_position_mm = command.target_position_mm();
+  msg.force = command.force();
+
+  const int lcm_message_length = msg.getEncodedSize();
+  lcm_message_bytes->resize(lcm_message_length);
+  msg.encode(lcm_message_bytes->data(), 0, lcm_message_length);
+}
+
+std::unique_ptr<systems::BasicVector<double>> SchunkWsgCommandTranslator::AllocateOutputVector() const {
+  return std::make_unique<SchunkWsgCommand<double>>();
+}
+
 SchunkWsgCommandReceiver::SchunkWsgCommandReceiver(double initial_position,
                                                    double initial_force)
     : initial_position_(initial_position),
@@ -34,10 +68,6 @@ SchunkWsgCommandReceiver::SchunkWsgCommandReceiver(double initial_position,
 
   this->DeclareVectorInputPort("lcmt_schunk_wsg_command",
                                SchunkWsgCommand<double>());
-  /*
-  this->DeclareAbstractInputPort("lcmt_schunk_wsg_command",
-                                 systems::Value<lcmt_schunk_wsg_command>());
-  */
 }
 
 void SchunkWsgCommandReceiver::CalcPositionOutput(

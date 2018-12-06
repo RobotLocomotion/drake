@@ -23,8 +23,6 @@
 #include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/matrix_gain.h"
 
-#include "drake/manipulation/schunk_wsg/schunk_wsg_command_translator.h"
-
 namespace drake {
 namespace examples {
 namespace manipulation_station {
@@ -69,9 +67,9 @@ int do_main(int argc, char* argv[]) {
 
   // TODO(russt): IiwaCommandReceiver should output positions, not
   // state.  (We are adding delay twice in this current implementation).
+  kuka_iiwa_arm::IiwaCommandTranslator iiwa_cmd_to_vec(7);
   auto iiwa_command_subscriber = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_iiwa_command>(
-          "IIWA_COMMAND", &lcm));
+      std::make_unique<systems::lcm::LcmSubscriberSystem>("IIWA_COMMAND", iiwa_cmd_to_vec, &lcm));
   auto iiwa_command = builder.AddSystem<kuka_iiwa_arm::IiwaCommandReceiver>();
   builder.Connect(iiwa_command_subscriber->get_output_port(),
                   iiwa_command->get_input_port(0));
@@ -110,11 +108,6 @@ int do_main(int argc, char* argv[]) {
                   iiwa_status_publisher->get_input_port());
 
   // Receive the WSG commands.
-  /*
-  auto wsg_command_subscriber = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_schunk_wsg_command>(
-          "SCHUNK_WSG_COMMAND", &lcm));
-  */
   manipulation::schunk_wsg::SchunkWsgCommandTranslator wsg_cmd_to_vec;
   auto wsg_command_subscriber = builder.AddSystem(
       std::make_unique<systems::lcm::LcmSubscriberSystem>("SCHUNK_WSG_COMMAND", wsg_cmd_to_vec, &lcm));
@@ -170,7 +163,7 @@ int do_main(int argc, char* argv[]) {
                 station->get_multibody_plant(), &station_context));
 
   simulator.set_publish_every_time_step(false);
-  simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
+  // simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.StepTo(FLAGS_duration);
 
   return 0;

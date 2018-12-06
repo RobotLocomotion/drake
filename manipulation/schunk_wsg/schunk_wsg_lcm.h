@@ -7,10 +7,27 @@
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
 namespace drake {
 namespace manipulation {
 namespace schunk_wsg {
+
+class SchunkWsgCommandTranslator : public systems::lcm::LcmAndVectorBaseTranslator {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgCommandTranslator)
+
+  SchunkWsgCommandTranslator() : LcmAndVectorBaseTranslator(3) {}
+
+  std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector() const override;
+
+  void Deserialize(const void* lcm_message_bytes, int lcm_message_length,
+      systems::VectorBase<double>* vector_base) const override;
+
+  void Serialize(double time,
+      const systems::VectorBase<double>& vector_base,
+      std::vector<uint8_t>* lcm_message_bytes) const override;
+};
 
 /// Handles lcmt_schunk_wsg_command messages from a LcmSubscriberSystem.  Has
 /// two output ports: one for the commanded finger position represented as the

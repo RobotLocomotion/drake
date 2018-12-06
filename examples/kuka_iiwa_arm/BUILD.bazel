@@ -53,6 +53,7 @@ drake_cc_library(
         "//attic/multibody/rigid_body_plant:contact_results",
         "//common/trajectories:piecewise_polynomial",
         "//lcmtypes:iiwa",
+        "//systems/lcm:translator",
         "//systems/framework:leaf_system",
     ],
 )

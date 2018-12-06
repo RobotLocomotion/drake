@@ -2,16 +2,19 @@ namespace: "drake::manipulation::schunk_wsg"
 
 element {
     name: "utime"
-    doc: "Timestamp in microseconds"
+    doc: "Timestamp"
+    doc_units: "microsecond"
     default_value: "0.0"
 }
 element {
     name: "target_position_mm"
-    doc: "Distance between fingers in mm"
+    doc: "Distance between fingers"
+    doc_units: "mm"
     default_value: "0.0"
 }
 element {
     name: "force"
-    doc: "Max grasping force that each finger applies"
+    doc: "Max grasping force that each finger applies."
+    doc_units: "N"
     default_value: "0.0"
 }

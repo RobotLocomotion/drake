@@ -40,14 +40,8 @@ drake_cc_library(
 
 drake_cc_library(
     name = "schunk_wsg_lcm",
-    srcs = [
-        "schunk_wsg_lcm.cc",
-        "schunk_wsg_command_translator.cc",
-    ],
-    hdrs = [
-        "schunk_wsg_lcm.h",
-        "schunk_wsg_command_translator.h",
-    ],
+    srcs = ["schunk_wsg_lcm.cc"],
+    hdrs = ["schunk_wsg_lcm.h"],
     deps = [
         ":schunk_wsg_command",
         "//lcmtypes:schunk",
