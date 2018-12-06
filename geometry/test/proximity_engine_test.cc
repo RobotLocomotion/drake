@@ -491,9 +491,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceToPointOnBoundaryOfBox) {
   EXPECT_EQ(results[0].id_G, box_id);
   EXPECT_EQ(results[0].p_GN, Vector3d(-10., 0., 5.));
   EXPECT_EQ(results[0].distance, 0.);
-  EXPECT_TRUE(CompareMatrices(results[0].grad_W,
-                              Vector3d(-2., 0., 1.) / sqrt(5.), 1e-15,
-                              MatrixCompareType::absolute));
+  EXPECT_EQ(results[0].grad_W, Vector3d(-1., 0., 1.) / sqrt(2.));
 
   query << -10., -5., -5.;  // On the vertex {-10}x{-5}x{-5}.
   results = engine.ComputeSignedDistanceToPoint(query, geometry_map);
@@ -501,9 +499,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceToPointOnBoundaryOfBox) {
   EXPECT_EQ(results[0].id_G, box_id);
   EXPECT_EQ(results[0].p_GN, Vector3d(-10., -5., -5.));
   EXPECT_EQ(results[0].distance, 0.);
-  EXPECT_TRUE(CompareMatrices(results[0].grad_W,
-                              Vector3d(-2., -1., -1.) / sqrt(6.), 1e-15,
-                              MatrixCompareType::absolute));
+  EXPECT_EQ(results[0].grad_W, Vector3d(-1., -1., -1.) / sqrt(3.));
 }
 
 // We set up a 20x10x10 box centered at the origin [-10,10]x[-5,5]x[-5,5] and

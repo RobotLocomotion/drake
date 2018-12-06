@@ -414,26 +414,26 @@ struct DistanceToPoint {
     // boundary values ±half_size(i). It will help us check whether a query
     // point is outside the box, on the boundary of the box, or inside the box.
     auto clamping = [&half_size](const int i, const double coord,
-                                 bool& isClamp) {
-      isClamp = true;
+                                 bool& is_clamp) {
+      is_clamp = true;
       if (coord >= half_size(i)) return half_size(i);
       if (coord <= -half_size(i)) return -half_size(i);
-      isClamp = false;
+      is_clamp = false;
       return coord;
     };
 
-    // For a query point inside the box, this helper function picks one or more
-    // axes whose coordinate is closest to the boundary value ±half_size(i). It
-    // will help us compute the nearest point on the boundary.
-    // @param coordinates inside the box.
-    auto extremalAxis = [&half_size](const Vector3d& coordinates) {
-      double minDiff = std::numeric_limits<double>::infinity();
+    // For a query point Q inside the box, this helper function picks the axis
+    // whose coordinate is closest to the boundary value ±half_size(i). It will
+    // help us compute the nearest point on the boundary.
+    // @param p_GQ position of Q inside the box.
+    auto extremal_axis = [&half_size](const Vector3d& p_GQ) {
+      double min_diff = std::numeric_limits<double>::infinity();
       int axis = 0;
       for (int i = 0; i < 3; ++i) {
-        for (auto bound : std::vector<double>{half_size(i), -half_size(i)}) {
-          double diff = std::abs(bound - coordinates(i));
-          if (diff < minDiff) {
-            minDiff = diff;
+        for (auto bound : {half_size(i), -half_size(i)}) {
+          double diff = std::abs(bound - p_GQ(i));
+          if (diff < min_diff) {
+            min_diff = diff;
             axis = i;
           }
         }
@@ -441,58 +441,61 @@ struct DistanceToPoint {
       return axis;
     };
 
-    // For a query point Q and the box B with boundary ∂B, after clamping
-    // below, we expect the following results for `clamp` and `isClamp`
-    // depending on whether Q is outside B, on ∂B, or inside B.
+    // p_GC_G is the position of the clamping point C of the query point Q.
+    Vector3d p_GC_G;
+    Vector3<bool> is_clamp;
+    for (int i = 0; i < 3; ++i) p_GC_G(i) = clamping(i, p_GQ_G(i), is_clamp(i));
+
+    // Initialize the position of the nearest point N on ∂B as that of C.
+    Vector3d p_GN_G = p_GC_G;
+    double distance;
+    Vector3d grad_G{0., 0., 0.};
+
+    // For a query point Q and the box B with boundary ∂B, after clamping above,
+    // we have the following results for the clamping point C and the three
+    // booleans `is_clamp(i)`, depending on whether Q is outside B, on ∂B, or
+    // inside B.
     //----------------------------------------------------------
-    //                | clamp | isClamp
-    //----------------|-------|---------------------------------
-    // Q is outside B | ≠ Q   | at least one isClamp(i) is true
-    // Q is on ∂B     | = Q   | at least one isClamp(i) is true
-    // Q is inside B  | = Q   | none of isClamp(i) is true
+    //                | C    | is_clamp
+    //----------------|------|---------------------------------
+    // Q is outside B | ≠ Q  | at least one is_clamp(i) is true
+    // Q is on ∂B     | = Q  | at least one is_clamp(i) is true
+    // Q is inside B  | = Q  | none of is_clamp(i) is true
     //----------------------------------------------------------
     //-----------------------------------------
-    //                |  clamp                |
+    //                | C                     |
     //----------------|-----------------------|
     // Q is outside B | = nearest point on ∂B |
     // Q is on ∂B     | = nearest point on ∂B |
     // Q is inside B  | ≠ nearest point on ∂B |
     //-----------------------------------------
-    Vector3d clamp;
-    Vector3<bool> isClamp;
-    for (int i = 0; i < 3; ++i) clamp(i) = clamping(i, p_GQ_G(i), isClamp(i));
-
-    // Initialize the nearest point `p_GN_G` on ∂B as the `clamp` point.
-    Vector3d p_GN_G = clamp;
-    double distance;
-    Vector3d grad_G{0., 0., 0.};
-
-    if (p_GN_G != p_GQ_G) {
+    if (p_GC_G != p_GQ_G) {
       // Q is outside the box.
       Vector3d p_NQ_G = p_GQ_G - p_GN_G;
       distance = p_NQ_G.norm();
+      DRAKE_DEMAND(distance != 0.);
       grad_G = p_NQ_G / distance;
-    } else if (isClamp(0) || isClamp(1) || isClamp(2)) {
+    } else if (is_clamp(0) || is_clamp(1) || is_clamp(2)) {
       // Q is on the boundary of the box.
       distance = 0.0;
-      // A point on a face of the box has one isClamp(i) = true.
-      // A point on an edge of the box has two isClamp(i) = true.
-      // A point on a vertex of the box has three isClamp(i) = true.
-      // The gradient at a point on an edge or a vertex of the box is undefined.
-      // Here, the calculation is equivalent to taking a linear combination.
+      // A point on a face, on an edge, or on a vertex of the box has one, two,
+      // or three of the is_clamp(i) equals true respectively.  The gradient
+      // at a point on an edge or a vertex of the box is undefined. Here, the
+      // calculation is equivalent to averaging outward normals of the faces
+      // that contain the point.
       for (int i = 0; i < 3; ++i) {
-        if (isClamp(i)) grad_G(i) = clamp(i);
+        if (is_clamp(i)) grad_G(i) = (p_GC_G(i) >= 0.)? 1. : -1.;
       }
       grad_G.normalize();
     } else {
       // Q is inside the box.
-      // TODO(DamrongGuoy): Write a better way to handle the query points on
-      // the medial axis.  It has multiple nearest points, so its gradient is
-      // undefined.  Here, we pick the first nearest point we found.
-      int axis = extremalAxis(p_GQ_G);
-      bool gez = (p_GQ_G(axis) >= 0.);  // gez = greater than or equal zero
-      p_GN_G(axis) = (gez) ? half_size(axis) : -half_size(axis);
-      grad_G(axis) = (gez) ? 1. : -1.;
+      // Note that a query point on the medial axis has multiple nearest
+      // points, so its gradient is undefined. In that case, we pick the first
+      // nearest point we found.
+      int axis = extremal_axis(p_GQ_G);
+      bool positive_or_zero = (p_GQ_G(axis) >= 0.);
+      p_GN_G(axis) = positive_or_zero ? half_size(axis) : -half_size(axis);
+      grad_G(axis) = positive_or_zero ? 1. : -1.;
       distance = -half_size(axis) + std::abs(p_GQ_G(axis));
     }
 
