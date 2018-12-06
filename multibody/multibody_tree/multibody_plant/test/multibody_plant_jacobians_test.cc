@@ -242,7 +242,7 @@ TEST_F(KukaIiwaModelTests, CalcRelativeFrameGeometricJacobian) {
 
   // Compute the geometric Jacobian using the method under test.
   plant_->tree().CalcJacobianSpatialVelocity(
-      *context_, JacobianWithRespectTo::kGeneralizedPositionRates,
+      *context_, JacobianWrtVariable::kQDot,
       end_effector_link_->body_frame(), p_EP, plant_->world_frame(),
       plant_->world_frame(), &Jq_WEp);
 
