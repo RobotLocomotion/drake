@@ -7,7 +7,7 @@ from pydrake.geometry import (ConnectDrakeVisualizer, SceneGraph)
 from pydrake.lcm import DrakeLcm
 from pydrake.multibody.multibody_tree import UniformGravityFieldElement
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
-from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
+from pydrake.multibody.parsing import Parser
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
 
@@ -34,7 +34,7 @@ def main():
     scene_graph = builder.AddSystem(SceneGraph())
     cart_pole = builder.AddSystem(MultibodyPlant(time_step=args.time_step))
     cart_pole.RegisterAsSourceForSceneGraph(scene_graph)
-    AddModelFromSdfFile(file_name=file_name, plant=cart_pole)
+    Parser(plant=cart_pole).AddModelFromFile(file_name)
     cart_pole.AddForceElement(UniformGravityFieldElement([0, 0, -9.81]))
     cart_pole.Finalize()
     assert cart_pole.geometry_source_is_registered()

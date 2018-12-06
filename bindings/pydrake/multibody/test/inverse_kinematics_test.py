@@ -3,9 +3,7 @@ from pydrake.multibody import inverse_kinematics as ik
 import math
 
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
-from pydrake.multibody.multibody_tree.parsing import (
-    AddModelFromSdfFile,
-)
+from pydrake.multibody.parsing import Parser
 from pydrake.multibody.benchmarks.acrobot import (
     MakeAcrobotPlant,
 )
@@ -26,8 +24,7 @@ class TestInverseKinematics(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/bindings/pydrake/multibody/test/two_bodies.sdf")
         self.plant = MultibodyPlant(time_step=0.01)
-        model_instance = AddModelFromSdfFile(
-            file_name=file_name, plant=self.plant)
+        model_instance = Parser(self.plant).AddModelFromFile(file_name)
         self.plant.Finalize()
         self.body1_frame = self.plant.GetBodyByName("body1").body_frame()
         self.body2_frame = self.plant.GetBodyByName("body2").body_frame()
