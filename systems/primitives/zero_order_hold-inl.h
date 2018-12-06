@@ -87,7 +87,7 @@ void ZeroOrderHold<T>::DoCalcAbstractOutput(const Context<T>& context,
   // Do not use `get_abstract_state<AbstractValue>` since it would cast
   // the value to `Value<AbstractValue>`, which is an invalid type by design.
   const AbstractValue& state_value =
-      context.template get_abstract_state().get_value(0);
+      context.get_abstract_state().get_value(0);
   output->SetFrom(state_value);
 }
 

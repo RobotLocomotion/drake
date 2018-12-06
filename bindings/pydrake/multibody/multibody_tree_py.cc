@@ -21,7 +21,6 @@
 #include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
-#include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/parsing/sdf_parser.h"
 
 namespace drake {
@@ -765,44 +764,55 @@ void init_parsing(py::module m) {
 
   using multibody_plant::MultibodyPlant;
 
-  // Parser
-  {
-    using Class = Parser;
-    py::class_<Class>(m, "Parser", doc.Parser.doc)
-        .def(py::init<MultibodyPlant<double>*, SceneGraph<double>*>(),
-            py::arg("plant"), py::arg("scene_graph") = nullptr,
-            doc.Parser.ctor.doc_2args)
-        .def("AddAllModelsFromFile", &Class::AddAllModelsFromFile,
-            py::arg("file_name"), doc.Parser.AddAllModelsFromFile.doc)
-        .def("AddModelFromFile", &Class::AddModelFromFile, py::arg("file_name"),
-            py::arg("model_name") = "", doc.Parser.AddModelFromFile.doc);
-  }
+  // Stub in a deprecation shim for the Parser class.
+  // TODO(jwnimmer-tri) Remove this stub on or about 2019-01-01.
+  py::dict vars = m.attr("__dict__");
+  py::exec(
+      "class Parser(object):\n"
+      "    def __init__(self, *args, **kwargs):\n"
+      "        import pydrake.multibody.parsing\n"
+      "        self._x = pydrake.multibody.parsing.Parser(*args, **kwargs)\n"
+      "    def AddModelFromFile(self, *args, **kwargs):\n"
+      "        return self._x.AddModelFromFile(*args, **kwargs)\n"
+      "    def AddAllModelsFromFile(self, *args, **kwargs):\n"
+      "        return self._x.AddAllModelsFromFile(*args, **kwargs)\n",
+      py::globals(), vars);
+  py::object cls = m.attr("Parser");
+  const char* const message =
+      "Please use class pydrake.multibody.parsing.Parser instead of "
+      "class pydrake.multibody.multibody_tree.parsing.Parser.";
+  DeprecateAttribute(cls, "AddModelFromFile", message);
+  DeprecateAttribute(cls, "AddAllModelsFromFile", message);
 
+  // Bind the deprecated free functions.
+  // TODO(jwnimmer-tri) Remove these stubs on or about 2019-03-01.
   m.def("AddModelFromSdfFile",
-      py::overload_cast<const string&, const string&, MultibodyPlant<T>*,
-          SceneGraph<T>*>(&AddModelFromSdfFile),
+      [](const string& file_name, const string& model_name,
+          MultibodyPlant<double>* plant, SceneGraph<double>* scene_graph) {
+        WarnDeprecated(
+            "AddModelFromSdfFile is deprecated; please use the class "
+            "pydrake.multibody.parsing.Parser instead.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        return AddModelFromSdfFile(file_name, model_name, plant, scene_graph);
+#pragma GCC diagnostic pop
+      },
       py::arg("file_name"), py::arg("model_name"), py::arg("plant"),
       py::arg("scene_graph") = nullptr,
       doc.AddModelFromSdfFile.doc_4args_file_name_model_name_plant_scene_graph);
   m.def("AddModelFromSdfFile",
-      py::overload_cast<const string&, const PackageMap&, MultibodyPlant<T>*,
-          SceneGraph<T>*>(&AddModelFromSdfFile),
-      py::arg("file_name"), py::arg("package_map"), py::arg("plant"),
-      py::arg("scene_graph") = nullptr,
-      doc.AddModelFromSdfFile
-          .doc_4args_file_name_package_map_plant_scene_graph);
-  m.def("AddModelFromSdfFile",
-      py::overload_cast<const string&, MultibodyPlant<T>*, SceneGraph<T>*>(
-          &AddModelFromSdfFile),
+      [](const string& file_name, MultibodyPlant<double>* plant,
+          SceneGraph<double>* scene_graph) {
+        WarnDeprecated(
+            "AddModelFromSdfFile is deprecated; please use the class "
+            "pydrake.multibody.parsing.Parser instead.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        return AddModelFromSdfFile(file_name, plant, scene_graph);
+#pragma GCC diagnostic pop
+      },
       py::arg("file_name"), py::arg("plant"), py::arg("scene_graph") = nullptr,
       doc.AddModelFromSdfFile.doc_3args_file_name_plant_scene_graph);
-  m.def("AddModelFromSdfFile",
-      py::overload_cast<const string&, const string&, const PackageMap&,
-          MultibodyPlant<T>*, SceneGraph<T>*>(&AddModelFromSdfFile),
-      py::arg("file_name"), py::arg("model_name"), py::arg("package_map"),
-      py::arg("plant"), py::arg("scene_graph") = nullptr,
-      doc.AddModelFromSdfFile
-          .doc_5args_file_name_model_name_package_map_plant_scene_graph);
 }
 
 void init_all(py::module m) {

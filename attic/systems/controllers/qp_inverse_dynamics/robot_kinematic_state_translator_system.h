@@ -25,7 +25,7 @@ class RobotKinematicStateTranslatorSystem : public LeafSystem<T> {
   explicit RobotKinematicStateTranslatorSystem(const RigidBodyTree<T>* robot)
       : robot_(*robot), default_output_(robot) {
     const int kDim = robot->get_num_positions() + robot->get_num_velocities();
-    this->template DeclareInputPort(systems::kVectorValued, kDim).get_index();
+    this->DeclareInputPort(systems::kVectorValued, kDim).get_index();
     this->template DeclareAbstractOutputPort<
         RobotKinematicStateTranslatorSystem, RobotKinematicState<T>>(
         default_output_, &RobotKinematicStateTranslatorSystem::Translate);
@@ -53,7 +53,7 @@ class RobotKinematicStateTranslatorSystem : public LeafSystem<T> {
  private:
   void Translate(const systems::Context<T>& context,
                  RobotKinematicState<T>* output) const {
-    const VectorX<T> x = this->template EvalEigenVectorInput(context, 0);
+    const VectorX<T> x = this->EvalEigenVectorInput(context, 0);
 
     const int kPosDim = get_robot().get_num_positions();
     const int kVelDim = get_robot().get_num_velocities();

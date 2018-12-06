@@ -27,8 +27,8 @@ import sys
 from pydrake.geometry import ConnectDrakeVisualizer, SceneGraph
 from pydrake.manipulation.simple_ui import JointSliders
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
-from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
-from pydrake.multibody.parsers import PackageMap
+from pydrake.multibody.parsing import Parser
+from pydrake.multibody.parsing import PackageMap
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.rendering import MultibodyPositionToGeometryPose
@@ -81,6 +81,9 @@ scene_graph = builder.AddSystem(SceneGraph())
 plant = MultibodyPlant()
 plant.RegisterAsSourceForSceneGraph(scene_graph)
 
+# Create the parser.
+parser = Parser(plant)
+
 # Get the package pathname.
 if len(args.package_path):
     # Verify that package.xml is found in the designated path.
@@ -92,15 +95,12 @@ if len(args.package_path):
         print 'package.xml not found at: ' + full_package_path
         sys.exit(-1)
 
-    # Create a PackageMap.
-    package_map = PackageMap()
+    # Get the package map.
+    package_map = parser.mutable_package_map()
     package_map.PopulateFromFolder(package_path)
 
-    # Load the SDF into the plant.
-    AddModelFromSdfFile(args.filename, package_map, plant)
-else:
-    # Load the SDF into the plant.
-    AddModelFromSdfFile(args.filename, plant)
+# Load the SDF into the plant.
+parser.AddModelFromFile(args.filename)
 
 plant.Finalize(scene_graph)
 

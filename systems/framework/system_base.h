@@ -809,22 +809,28 @@ class SystemBase : public internal::SystemMessageInterface {
   given name if it isn't kUseDefaultName, otherwise making up a name like "u3"
   from the next available input port index.
   @pre `given_name` must not be empty. */
-  std::string NextInputPortName(std::string given_name) const {
-    DRAKE_DEMAND(!given_name.empty());
-    return given_name == kUseDefaultName
+  std::string NextInputPortName(
+      variant<std::string, UseDefaultName> given_name) const {
+    const std::string result =
+        given_name == kUseDefaultName
            ? std::string("u") + std::to_string(get_num_input_ports())
-           : std::move(given_name);
+           : get<std::string>(std::move(given_name));
+    DRAKE_DEMAND(!result.empty());
+    return result;
   }
 
   /** (Internal use only) Returns a name for the next output port, using the
   given name if it isn't kUseDefaultName, otherwise making up a name like "y3"
   from the next available output port index.
   @pre `given_name` must not be empty. */
-  std::string NextOutputPortName(std::string given_name) const {
-    DRAKE_DEMAND(!given_name.empty());
-    return given_name == kUseDefaultName
+  std::string NextOutputPortName(
+      variant<std::string, UseDefaultName> given_name) const {
+    const std::string result =
+        given_name == kUseDefaultName
            ? std::string("y") + std::to_string(get_num_output_ports())
-           : std::move(given_name);
+           : get<std::string>(std::move(given_name));
+    DRAKE_DEMAND(!result.empty());
+    return result;
   }
 
   /** (Internal use only) Assigns a ticket to a new discrete variable group

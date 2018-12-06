@@ -36,8 +36,8 @@ void LinearSpringDamper<T>::DoCalcAndAddForceContribution(
     MultibodyForces<T>* forces) const {
   using std::sqrt;
 
-  const Isometry3<T>& X_WA = pc.get_X_WB(bodyA().template node_index());
-  const Isometry3<T>& X_WB = pc.get_X_WB(bodyB().template node_index());
+  const Isometry3<T>& X_WA = pc.get_X_WB(bodyA().node_index());
+  const Isometry3<T>& X_WB = pc.get_X_WB(bodyB().node_index());
 
   const Vector3<T> p_WP = X_WA * p_AP_.template cast<T>();
   const Vector3<T> p_WQ = X_WB * p_BQ_.template cast<T>();
@@ -80,8 +80,8 @@ template <typename T>
 T LinearSpringDamper<T>::CalcPotentialEnergy(
     const MultibodyTreeContext<T>&,
     const PositionKinematicsCache<T>& pc) const {
-  const Isometry3<T>& X_WA =   pc.get_X_WB(bodyA().template node_index());
-  const Isometry3<T>& X_WB = pc.get_X_WB(bodyB().template node_index());
+  const Isometry3<T>& X_WA = pc.get_X_WB(bodyA().node_index());
+  const Isometry3<T>& X_WB = pc.get_X_WB(bodyB().node_index());
 
   const Vector3<T> p_WP = X_WA * p_AP_.template cast<T>();
   const Vector3<T> p_WQ = X_WB * p_BQ_.template cast<T>();
@@ -106,8 +106,8 @@ T LinearSpringDamper<T>::CalcConservativePower(
   //  Pc = -d(V)/dt
   // being positive when the potential energy decreases.
 
-  const Isometry3<T>& X_WA =   pc.get_X_WB(bodyA().template node_index());
-  const Isometry3<T>& X_WB = pc.get_X_WB(bodyB().template node_index());
+  const Isometry3<T>& X_WA = pc.get_X_WB(bodyA().node_index());
+  const Isometry3<T>& X_WB = pc.get_X_WB(bodyB().node_index());
 
   const Vector3<T> p_WP = X_WA * p_AP_.template cast<T>();
   const Vector3<T> p_WQ = X_WB * p_BQ_.template cast<T>();
@@ -188,8 +188,8 @@ template <typename T>
 T LinearSpringDamper<T>::CalcLengthTimeDerivative(
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc) const {
-  const Isometry3<T>& X_WA = pc.get_X_WB(bodyA().template node_index());
-  const Isometry3<T>& X_WB = pc.get_X_WB(bodyB().template node_index());
+  const Isometry3<T>& X_WA = pc.get_X_WB(bodyA().node_index());
+  const Isometry3<T>& X_WB = pc.get_X_WB(bodyB().node_index());
 
   const Vector3<T> p_WP = X_WA * p_AP_.template cast<T>();
   const Vector3<T> p_WQ = X_WB * p_BQ_.template cast<T>();

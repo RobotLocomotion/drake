@@ -62,7 +62,7 @@ drake_cc_library(
         "parser_path_utils.h",
     ],
     visibility = [
-        "//attic:__subpackages__",
+        "//attic/multibody/parsers:__pkg__",
     ],
     deps = [
         ":package_map",
@@ -269,6 +269,7 @@ drake_cc_googletest(
     name = "sdf_parser_test",
     data = [
         ":test_models",
+        "//manipulation/models/iiwa_description:models",
         "//multibody/benchmarks/acrobot:models",
     ],
     deps = [

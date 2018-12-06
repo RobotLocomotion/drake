@@ -4,6 +4,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/drake_variant_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
@@ -32,6 +33,9 @@ void DefineFrameworkPySemantics(py::module m) {
   constexpr auto& doc = pydrake_doc.drake.systems;
 
   m.attr("kAutoSize") = kAutoSize;
+
+  py::class_<UseDefaultName> use_default_name_cls(
+      m, "UseDefaultName", doc.UseDefaultName.doc);
   m.attr("kUseDefaultName") = kUseDefaultName;
 
   py::enum_<PortDataType>(m, "PortDataType")

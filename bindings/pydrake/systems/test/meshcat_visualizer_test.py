@@ -6,7 +6,7 @@ from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import SceneGraph
 from pydrake.multibody.multibody_tree import UniformGravityFieldElement
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
-from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
+from pydrake.multibody.parsing import Parser
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
@@ -21,8 +21,8 @@ class TestMeshcat(unittest.TestCase):
         builder = DiagramBuilder()
         scene_graph = builder.AddSystem(SceneGraph())
         cart_pole = builder.AddSystem(MultibodyPlant())
-        AddModelFromSdfFile(
-            file_name=file_name, plant=cart_pole, scene_graph=scene_graph)
+        parser = Parser(plant=cart_pole, scene_graph=scene_graph)
+        parser.AddModelFromFile(file_name)
         cart_pole.AddForceElement(UniformGravityFieldElement([0, 0, -9.81]))
         cart_pole.Finalize(scene_graph)
         assert cart_pole.geometry_source_is_registered()
@@ -63,8 +63,8 @@ class TestMeshcat(unittest.TestCase):
         builder = DiagramBuilder()
         scene_graph = builder.AddSystem(SceneGraph())
         kuka = builder.AddSystem(MultibodyPlant())
-        AddModelFromSdfFile(
-            file_name=file_name, plant=kuka, scene_graph=scene_graph)
+        parser = Parser(plant=kuka, scene_graph=scene_graph)
+        parser.AddModelFromFile(file_name)
         kuka.AddForceElement(UniformGravityFieldElement([0, 0, -9.81]))
         kuka.Finalize(scene_graph)
         assert kuka.geometry_source_is_registered()

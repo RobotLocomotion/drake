@@ -6,6 +6,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/drake_variant_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
@@ -282,9 +283,9 @@ struct Impl {
         .def("GetOutputPort", &System<T>::GetOutputPort, py_reference_internal,
             py::arg("port_name"), doc.System.GetOutputPort.doc)
         .def("_DeclareInputPort",
-            overload_cast_explicit<const InputPort<T>&, std::string,
-                PortDataType, int, optional<RandomDistribution>>(
-                &PySystem::DeclareInputPort),
+            overload_cast_explicit<const InputPort<T>&,
+                variant<std::string, UseDefaultName>, PortDataType, int,
+                optional<RandomDistribution>>(&PySystem::DeclareInputPort),
             py_reference_internal, py::arg("name"), py::arg("type"),
             py::arg("size"), py::arg("random_type") = nullopt,
             doc.System.DeclareInputPort.doc_4args)
@@ -462,28 +463,39 @@ struct Impl {
         .def("_DeclareContinuousState",
             py::overload_cast<int>(&LeafSystemPublic::DeclareContinuousState),
             py::arg("num_state_variables"),
-            doc.LeafSystem.DeclareContinuousState.doc)
+            doc.LeafSystem.DeclareContinuousState.doc_1args_num_state_variables)
         .def("_DeclareContinuousState",
             py::overload_cast<int, int, int>(
                 &LeafSystemPublic::DeclareContinuousState),
             py::arg("num_q"), py::arg("num_v"), py::arg("num_z"),
-            doc.LeafSystem.DeclareContinuousState.doc_2)
+            doc.LeafSystem.DeclareContinuousState.doc_3args_num_q_num_v_num_z)
         .def("_DeclareContinuousState",
             py::overload_cast<const BasicVector<T>&>(
                 &LeafSystemPublic::DeclareContinuousState),
             py::arg("model_vector"),
-            doc.LeafSystem.DeclareContinuousState.doc_3)
+            doc.LeafSystem.DeclareContinuousState.doc_1args_model_vector)
         // TODO(eric.cousineau): Ideally the downstream class of
         // `BasicVector<T>` should expose `num_q`, `num_v`, and `num_z`?
         .def("_DeclareContinuousState",
             py::overload_cast<const BasicVector<T>&, int, int, int>(
                 &LeafSystemPublic::DeclareContinuousState),
             py::arg("model_vector"), py::arg("num_q"), py::arg("num_v"),
-            py::arg("num_z"), doc.LeafSystem.DeclareContinuousState.doc_4)
+            py::arg("num_z"),
+            doc.LeafSystem.DeclareContinuousState
+                .doc_4args_model_vector_num_q_num_v_num_z)
         // Discrete state.
-        // TODO(eric.cousineau): Should there be a `BasicVector<>` overload?
-        .def("_DeclareDiscreteState", &LeafSystemPublic::DeclareDiscreteState,
-            doc.LeafSystem.DeclareDiscreteState.doc)
+        .def("_DeclareDiscreteState",
+            py::overload_cast<const BasicVector<T>&>(
+                &LeafSystemPublic::DeclareDiscreteState),
+            py::arg("model_vector"), doc.LeafSystem.DeclareDiscreteState.doc)
+        .def("_DeclareDiscreteState",
+            py::overload_cast<const Eigen::Ref<const VectorX<T>>&>(
+                &LeafSystemPublic::DeclareDiscreteState),
+            py::arg("model_vector"), doc.LeafSystem.DeclareDiscreteState.doc_2)
+        .def("_DeclareDiscreteState",
+            py::overload_cast<int>(&LeafSystemPublic::DeclareDiscreteState),
+            py::arg("num_state_variables"),
+            doc.LeafSystem.DeclareDiscreteState.doc_3)
         .def("_DeclarePeriodicDiscreteUpdate",
             &LeafSystemPublic::DeclarePeriodicDiscreteUpdate,
             py::arg("period_sec"), py::arg("offset_sec") = 0.,

@@ -12,7 +12,7 @@ from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
 from pydrake.manipulation.simple_ui import SchunkWsgButtons
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters, DoDifferentialInverseKinematics)
-from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
+from pydrake.multibody.parsing import Parser
 from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (AbstractValue, BasicVector,
@@ -226,11 +226,12 @@ if args.hardware:
     station.Connect(wait_for_cameras=False)
 else:
     station = builder.AddSystem(ManipulationStation())
-    station.AddCupboard()
-    object = AddModelFromSdfFile(FindResourceOrThrow(
+    station.SetupDefaultStation()
+    parser = Parser(station.get_mutable_multibody_plant(),
+                    station.get_mutable_scene_graph())
+    object = parser.AddModelFromFile(FindResourceOrThrow(
         "drake/examples/manipulation_station/models/061_foam_brick.sdf"),
-        "object", station.get_mutable_multibody_plant(),
-        station.get_mutable_scene_graph())
+        "object")
     station.Finalize()
 
     ConnectDrakeVisualizer(builder, station.get_scene_graph(),

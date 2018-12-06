@@ -1671,7 +1671,7 @@ class System : public SystemBase {
   /// @throws std::logic_error for a duplicate port name.
   /// @returns the declared port.
   const InputPort<T>& DeclareInputPort(
-      std::string name, PortDataType type, int size,
+      variant<std::string, UseDefaultName> name, PortDataType type, int size,
       optional<RandomDistribution> random_type = nullopt) {
     const InputPortIndex port_index(get_num_input_ports());
 
@@ -1711,7 +1711,8 @@ class System : public SystemBase {
 
   // Remove this overload on or about 2018-12-01.
   DRAKE_DEPRECATED("Use one of the other overloads.")
-  const InputPort<T>& DeclareAbstractInputPort(std::string name) {
+  const InputPort<T>& DeclareAbstractInputPort(
+      variant<std::string, UseDefaultName> name) {
     return DeclareInputPort(std::move(name), kAbstractValued, 0 /* size */);
   }
 #endif
