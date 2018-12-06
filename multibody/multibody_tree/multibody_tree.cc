@@ -1058,33 +1058,19 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
+void MultibodyTree<T>::CalcJacobianSpatialVelocity(
     const systems::Context<T>& context,
+    JacobianWithRespectTo with_respect_to,
     const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
     const Frame<T>& frame_A, const Frame<T>& frame_E,
-    EigenPtr<MatrixX<T>> Jv_ABp_E) const {
-  DRAKE_THROW_UNLESS(Jv_ABp_E != nullptr);
-  DRAKE_THROW_UNLESS(Jv_ABp_E->rows() == 6);
-  DRAKE_THROW_UNLESS(Jv_ABp_E->cols() == num_velocities());
-  CalcRelativeFrameGeometricJacobian(
-      context, frame_B, p_BP, frame_A, frame_E,
-      GeometricJacobianType::kFromGeneralizedVelocities, Jv_ABp_E);
-}
-
-template <typename T>
-void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
-    const systems::Context<T>& context,
-    const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
-    const Frame<T>& frame_A, const Frame<T>& frame_E,
-    GeometricJacobianType jacobian_type,
     EigenPtr<MatrixX<T>> J_ABp_E) const {
   DRAKE_THROW_UNLESS(J_ABp_E != nullptr);
   DRAKE_THROW_UNLESS(J_ABp_E->rows() == 6);
-  const bool from_qdot = [jacobian_type]() {
-    switch (jacobian_type) {
-      case GeometricJacobianType::kFromGeneralizedPositionRates:
+  const bool from_qdot = [with_respect_to]() {
+    switch (with_respect_to) {
+      case JacobianWithRespectTo::kGeneralizedPositionRates:
         return true;
-      case GeometricJacobianType::kFromGeneralizedVelocities:
+      case JacobianWithRespectTo::kGeneralizedVelocities:
         return false;
     }
     DRAKE_ABORT();  // NOTREACHED

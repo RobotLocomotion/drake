@@ -241,10 +241,10 @@ TEST_F(KukaIiwaModelTests, CalcRelativeFrameGeometricJacobian) {
   MatrixX<double> Jq_WEp(6, plant_->num_positions());
 
   // Compute the geometric Jacobian using the method under test.
-  plant_->tree().CalcRelativeFrameGeometricJacobian(
-      *context_, end_effector_link_->body_frame(), p_EP, plant_->world_frame(),
-      plant_->world_frame(),
-      GeometricJacobianType::kFromGeneralizedPositionRates, &Jq_WEp);
+  plant_->tree().CalcJacobianSpatialVelocity(
+      *context_, JacobianWithRespectTo::kGeneralizedPositionRates,
+      end_effector_link_->body_frame(), p_EP, plant_->world_frame(),
+      plant_->world_frame(), &Jq_WEp);
 
   // Alternatively, compute the geometric Jacobian by taking the gradient of
   // the spatial velocity V_WEp with respect to q̇, since V_WEp = Jq_WEP * q̇. We
