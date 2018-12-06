@@ -88,6 +88,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/multibody_tree/multibody_plant:contact_results_to_lcm",  # unpackaged  # noqa
     "//multibody/multibody_tree/parsing",
     "//multibody/parsing",
+    "//multibody/tree",
     "//perception",
     "//solvers",
     "//systems/analysis",
@@ -103,4 +104,5 @@ LIBDRAKE_COMPONENTS = [
     "//systems/trajectory_optimization",
     # //examples/kuka_iiwa_arm:iiwa_common (indirectly)
     # //examples/kuka_iiwa_arm:iiwa_lcm (indirectly)
+    # //multibody/multibody_tree/joints:forwarding_hdrs (indirectly)
 ]
