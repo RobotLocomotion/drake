@@ -1072,10 +1072,10 @@ void MultibodyTree<T>::CalcJacobianSpatialVelocity(
     const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
     const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
     const Frame<T>& frame_A, const Frame<T>& frame_E,
-    EigenPtr<MatrixX<T>> J_V_ABp_E) const {
-  DRAKE_THROW_UNLESS(J_V_ABp_E != nullptr);
-  DRAKE_THROW_UNLESS(J_V_ABp_E->rows() == 6);
-  const bool from_qdot = [with_respect_to]() {
+    EigenPtr<MatrixX<T>> Jw_V_ABp_E) const {
+  DRAKE_THROW_UNLESS(Jw_V_ABp_E != nullptr);
+  DRAKE_THROW_UNLESS(Jw_V_ABp_E->rows() == 6);
+  const bool wrt_qdot = [with_respect_to]() {
     switch (with_respect_to) {
       case JacobianWrtVariable::kQDot:
         return true;
@@ -1084,20 +1084,20 @@ void MultibodyTree<T>::CalcJacobianSpatialVelocity(
     }
     DRAKE_ABORT();  // NOTREACHED
   }();
-  const int num_columns = from_qdot ? num_positions() : num_velocities();
-  DRAKE_THROW_UNLESS(J_V_ABp_E->cols() == num_columns);
+  const int num_columns = wrt_qdot ? num_positions() : num_velocities();
+  DRAKE_THROW_UNLESS(Jw_V_ABp_E->cols() == num_columns);
 
   // The spatial velocity V_WBp can be obtained by composing the spatial
   // velocities V_WAp and V_ABp. Expressed in the world frame W this composition
   // is V_WBp_W = V_WAp_W + V_ABp_W
   // Therefore,
-  //   V_ABp_W = (J_WBp - J_WAp)⋅z,
+  //   V_ABp_W = (Jw_WBp - Jw_WAp)⋅w,
   // where
-  //   - if from_qdot is true,  z = q̇ and J_W{A,B}p = Jq_W{A,B}p, and
-  //   - if from_qdot is false, z = v and J_W{A,B}p = Jv_W{A,B}p.
+  //   - if wrt_qdot is true,  w = q̇ and Jw_W{Ap,Bp} = Jq_W{Ap,Bp}, and
+  //   - if wrt_qdot is false, w = v and Jw_W{Ap,Bp} = Jv_W{Ap,Bp}.
   // Expressed in frame E, this becomes
-  //   V_ABp_E = R_EW⋅(J_WBp - J_WAp)⋅z.
-  // Thus, J_V_ABp_E = R_EW⋅(J_WBp - J_WAp).
+  //   V_ABp_E = R_EW⋅(Jw_WBp - Jw_WAp)⋅w.
+  // Thus, Jw_V_ABp_E = R_EW⋅(Jw_WBp - Jw_WAp).
 
   Vector3<T> p_WP;
   CalcPointsPositions(context, frame_B, p_BP, /* From frame B */
@@ -1106,21 +1106,21 @@ void MultibodyTree<T>::CalcJacobianSpatialVelocity(
   // TODO(amcastro-tri): When performance becomes an issue, implement this
   // method so that we only consider the kinematic path from A to B.
 
-  MatrixX<T> J_WAp(6, num_columns);
-  auto Jr_WAp = J_WAp.template topRows<3>();     // rotational part.
-  auto Jt_WAp = J_WAp.template bottomRows<3>();  // translational part.
-  CalcFrameJacobianExpressedInWorld(context, frame_A, p_WP, from_qdot, &Jr_WAp,
+  MatrixX<T> Jw_WAp(6, num_columns);
+  auto Jr_WAp = Jw_WAp.template topRows<3>();     // rotational part.
+  auto Jt_WAp = Jw_WAp.template bottomRows<3>();  // translational part.
+  CalcFrameJacobianExpressedInWorld(context, frame_A, p_WP, wrt_qdot, &Jr_WAp,
                                     &Jt_WAp);
 
-  MatrixX<T> J_WBp(6, num_columns);
-  auto Jr_WBp = J_WBp.template topRows<3>();     // rotational part.
-  auto Jt_WBp = J_WBp.template bottomRows<3>();  // translational part.
-  CalcFrameJacobianExpressedInWorld(context, frame_B, p_WP, from_qdot, &Jr_WBp,
+  MatrixX<T> Jw_WBp(6, num_columns);
+  auto Jr_WBp = Jw_WBp.template topRows<3>();     // rotational part.
+  auto Jt_WBp = Jw_WBp.template bottomRows<3>();  // translational part.
+  CalcFrameJacobianExpressedInWorld(context, frame_B, p_WP, wrt_qdot, &Jr_WBp,
                                     &Jt_WBp);
 
-  // Jacobian J_ABp_W when E is the world frame W.
-  J_V_ABp_E->template topRows<3>() = Jr_WBp - Jr_WAp;
-  J_V_ABp_E->template bottomRows<3>() = Jt_WBp - Jt_WAp;
+  // Jacobian Jw_ABp_W when E is the world frame W.
+  Jw_V_ABp_E->template topRows<3>() = Jr_WBp - Jr_WAp;
+  Jw_V_ABp_E->template bottomRows<3>() = Jt_WBp - Jt_WAp;
 
   // If the expressed-in frame E is not the world frame, we need to perform
   // an additional operation.
@@ -1128,9 +1128,10 @@ void MultibodyTree<T>::CalcJacobianSpatialVelocity(
     const Isometry3<T> X_EW =
         CalcRelativeTransform(context, frame_E, world_frame());
     const Matrix3<T>& R_EW = X_EW.linear();
-    J_V_ABp_E->template topRows<3>() = R_EW * J_V_ABp_E->template topRows<3>();
-    J_V_ABp_E->template bottomRows<3>() =
-        R_EW * J_V_ABp_E->template bottomRows<3>();
+    Jw_V_ABp_E->template topRows<3>() =
+        R_EW * Jw_V_ABp_E->template topRows<3>();
+    Jw_V_ABp_E->template bottomRows<3>() =
+        R_EW * Jw_V_ABp_E->template bottomRows<3>();
   }
 }
 
