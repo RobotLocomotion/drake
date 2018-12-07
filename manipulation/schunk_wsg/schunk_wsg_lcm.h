@@ -3,25 +3,65 @@
 /// @file This file contains classes dealing with sending/receiving
 /// LCM messages related to the Schunk WSG gripper.
 
+#include <memory>
+#include <vector>
+
 #include "drake/common/drake_deprecated.h"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
+#include "drake/manipulation/schunk_wsg/gen/schunk_wsg_command.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
 namespace drake {
 namespace manipulation {
 namespace schunk_wsg {
 
-/// Handles lcmt_schunk_wsg_command messages from a LcmSubscriberSystem.  Has
-/// two output ports: one for the commanded finger position represented as the
-/// desired distance between the fingers in meters, and one for the commanded
-/// force limit.  The commanded position and force limit are scalars
+/// A translator between the LCM message type lcmt_schunk_wsg_command and
+/// its vectorized representation, SchunkWsgCommand. This is intended
+/// to be used with systems::lcm::LcmPublisherSystem and
+/// systems::lcm::LcmSubscriberSystem.
+// TODO(siyuan.feng@tri.global) remove this with #10149 is resolved.
+class SchunkWsgCommandTranslator
+    : public systems::lcm::LcmAndVectorBaseTranslator {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgCommandTranslator)
+
+  SchunkWsgCommandTranslator() : LcmAndVectorBaseTranslator(3) {}
+
+  std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector()
+      const override;
+
+  /// Translates @p lcm_message_bytes into @p vector_base.
+  /// @throws if @p lcm_message_bytes cannot be decoded as a
+  /// lcmt_schunk_wsg_command struct or @p vector_base is not a
+  /// SchunkWsgCommand<double>.
+  void Deserialize(const void* lcm_message_bytes, int lcm_message_length,
+                   systems::VectorBase<double>* vector_base) const override;
+
+  /// Not implemented.
+  /// @throws std::runtime_error.
+  void Serialize(double time, const systems::VectorBase<double>& vector_base,
+                 std::vector<uint8_t>* lcm_message_bytes) const override;
+};
+
+/// Handles the command for the Schunk WSG gripper from a LcmSubscriberSystem.
+/// It has two input ports for the lcmt_schunk_wsg_command message itself and
+/// a vectorized version (SchunkWsgCommand) of the message. Note, only one of
+/// the inputs should be connected. However, if both are connected, the
+/// message port will be ignored. It has two output ports: one for the
+/// commanded finger position represented as the desired distance between the
+/// fingers in meters, and one for the commanded force limit.
+/// The commanded position and force limit are scalars
 /// (BasicVector<double> of size 1).
 ///
 /// @system{ SchunkWsgCommandReceiver,
-///   @input_port{lcmt_schunk_wsg_command},
+///   @input_port{command_vector},
+///   @input_port{command_message},
 ///   @output_port{position}
 ///   @output_port{force_limit} }
+// TODO(siyuan.feng@tri.global) remove the vector input version after #10149 is
+// resolved.
 class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgCommandReceiver)
@@ -34,16 +74,12 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
   SchunkWsgCommandReceiver(double initial_position = 0.02,
                            double initial_force = 40);
 
-  const systems::InputPort<double>& get_command_input_port() const {
-    return this->get_input_port(0);
-  }
-
   const systems::OutputPort<double>& get_position_output_port() const {
-    return this->get_output_port(position_output_port_);
+    return this->GetOutputPort("position");
   }
 
   const systems::OutputPort<double>& get_force_limit_output_port() const {
-    return this->get_output_port(force_limit_output_port_);
+    return this->GetOutputPort("force_limit");
   }
 
  private:
@@ -53,11 +89,12 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
   void CalcForceLimitOutput(const systems::Context<double>& context,
                             systems::BasicVector<double>* output) const;
 
- private:
+  void EvalInput(const systems::Context<double>& context,
+                 SchunkWsgCommand<double>* result) const;
+
+  const SchunkWsgCommandTranslator translator_;
   const double initial_position_{};
   const double initial_force_{};
-  const systems::OutputPortIndex position_output_port_{};
-  const systems::OutputPortIndex force_limit_output_port_{};
 };
 
 
