@@ -37,6 +37,13 @@
 namespace drake {
 namespace multibody {
 
+/// Enumeration that distinguishes between flavors of Jacobians based
+/// on the variable with respect to which they are taken.
+enum class JacobianWrtVariable {
+  kQDot,  /// J = ∂V/∂q̇
+  kV      /// J = ∂V/∂v
+};
+
 /// @cond
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
@@ -1858,6 +1865,7 @@ class MultibodyTree {
   /// appropriate size, see documentation for `Jv_WFp` for details.
   // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
   // most applications it is all we need and it is more efficient to compute.
+  // TODO(amcastro-tri): Rework this method as per issue #10155.
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_FP_list,
@@ -1903,6 +1911,7 @@ class MultibodyTree {
   /// appropriate size, see documentation for `Jv_WFp` for details.
   // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
   // most applications it is all we need and it is more efficient to compute.
+  // TODO(amcastro-tri): Rework this method as per issue #10155.
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_WP_list,
@@ -1941,6 +1950,7 @@ class MultibodyTree {
   ///   list in the same order they are specified on input.
   ///
   /// @throws std::exception if `p_FP_list` does not have 3 rows.
+  // TODO(amcastro-tri): Rework this method as per issue #10155.
   VectorX<T> CalcBiasForPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
@@ -1997,6 +2007,7 @@ class MultibodyTree {
   /// appropriate size, see documentation for `Jq_WFp` for details.
   // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
   // most applications it is all we need and it is more efficient to compute.
+  // TODO(amcastro-tri): Rework this method as per issue #10155.
   void CalcPointsAnalyticalJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_FP_list,
@@ -2046,6 +2057,7 @@ class MultibodyTree {
   ///
   /// @throws std::exception if `J_WFp` is nullptr or if it is not of size
   ///   `6 x nv`.
+  // TODO(amcastro-tri): Rework this method as per issue #10155.
   void CalcFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP,
@@ -2098,6 +2110,7 @@ class MultibodyTree {
   ///
   /// @throws std::exception if `J_ABp` is nullptr or if it is not of size
   ///   `6 x nv`.
+  // TODO(amcastro-tri): Rework this method as per issue #10155.
   void CalcRelativeFrameGeometricJacobian(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
@@ -2133,9 +2146,71 @@ class MultibodyTree {
   ///   to the bias in angular acceleration and the with the last three elements
   ///   related to the bias in translational acceleration.
   /// @note SpatialAcceleration(Ab_WFp) defines a valid SpatialAcceleration.
+  // TODO(amcastro-tri): Rework this method as per issue #10155.
   Vector6<T> CalcBiasForFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP) const;
+
+  /// Computes the Jacobian of spatial velocity for a frame instantaneously
+  /// moving with a specified frame in the model. Consider a point P
+  /// instantaneously moving with a frame B with position `p_BP` in that frame.
+  /// Frame `Bp` is the frame defined by shifting frame B with origin at `Bo` to
+  /// a new origin at point P. The spatial velocity `V_ABp_E` of frame `Bp`
+  /// measured in a frame A and expressed in a frame E can be expressed as:
+  /// <pre>
+  ///   V_ABp_E(q, w) = Jw_ABp_E(q)⋅w
+  /// </pre>
+  /// where w represents
+  ///   * the time derivative of the generalized position vector q̇, if
+  ///     `with_respect_to` is JacobianWrtVariable::kQDot.
+  ///   * the generalized velocity vector v, if `with_respect_to` is
+  ///     JacobianWrtVariable::kV.
+  ///
+  /// This method computes `Jw_ABp_E(q)`.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q.
+  /// @param[in] with_respect_to
+  ///   Enum indicating whether `Jw_ABp_E` converts generalized velocities or
+  ///   time-derivatives of generalized positions to spatial velocities.
+  /// @param[in] frame_B
+  ///   The position `p_BP` of point P is measured and expressed in this frame.
+  /// @param[in] p_BP
+  ///   The (fixed) position of the origin `P` of frame `Bp` as measured and
+  ///   expressed in frame B.
+  /// @param[in] frame_A
+  ///   The second frame in which the spatial velocity `V_ABp` is measured.
+  /// @param[in] frame_E
+  ///   Frame in which the velocity V_ABp_E, and therefore the Jacobian Jw_ABp_E
+  ///   is expressed.
+  /// @param[out] Jw_ABp_E
+  ///   The Jacobian `Jw_ABp_E(q)`, function of the generalized
+  ///   positions q only. This Jacobian relates to the spatial velocity
+  ///   `V_ABp_E` of frame `Bp` in `A` and expressed in `E` by: <pre>
+  ///     V_ABp_E(q, w) = Jw_ABp_E(q)⋅w </pre>
+  ///   Therefore `Jw_ABp_E` is a matrix of size `6 x nz`, where `nz` is the
+  ///   number of elements in w. On input, matrix `Jv_ABp_E` **must** have size
+  ///   `6 x nz` or this method throws an exception. Given a `6 x nz` Jacobian
+  ///   J, let Jr be the `3 x nz` rotational part (top 3 rows) and Jt be the
+  ///   translational part (bottom 3 rows). These can be obtained as follows:
+  ///   ```
+  ///     Jr_ABp_E = Jw_ABp_E.topRows<3>();
+  ///     Jt_ABp_E = Jw_ABp_E.bottomRows<3>();
+  ///   ```
+  ///   This ordering is consistent with the internal storage of the
+  ///   SpatialVelocity class. Therefore the following operations results in
+  ///   a valid spatial velocity: <pre>
+  ///     SpatialVelocity<double> V_ABp(Jw_ABp * w); </pre>
+  ///
+  /// @throws std::exception if `Jw_ABp_E` is nullptr or if it is not of size
+  ///   `6 x nz`.
+  void CalcJacobianSpatialVelocity(
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
+      const Frame<T>& frame_A, const Frame<T>& frame_E,
+      EigenPtr<MatrixX<T>> Jw_ABp_E) const;
 
   /// @}
   // End of multibody Jacobian methods section.
@@ -2916,6 +2991,7 @@ class MultibodyTree {
   /// `H_PB_W_cache` stores the Jacobian matrices for all nodes in the tree as a
   /// vector of the columns of these matrices. Therefore `H_PB_W_cache` has as
   /// many entries as number of generalized velocities in the tree.
+  // TODO(amcastro-tri): Rework this method as per issue #10155.
   void CalcAcrossNodeGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,

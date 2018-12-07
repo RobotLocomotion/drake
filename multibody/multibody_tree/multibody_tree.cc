@@ -1063,40 +1063,64 @@ void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
     const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
     const Frame<T>& frame_A, const Frame<T>& frame_E,
     EigenPtr<MatrixX<T>> Jv_ABp_E) const {
-  DRAKE_THROW_UNLESS(Jv_ABp_E != nullptr);
-  DRAKE_THROW_UNLESS(Jv_ABp_E->rows() == 6);
-  DRAKE_THROW_UNLESS(Jv_ABp_E->cols() == num_velocities());
+  CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kV, frame_B, p_BP,
+                              frame_A, frame_E, Jv_ABp_E);
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcJacobianSpatialVelocity(
+    const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
+    const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
+    const Frame<T>& frame_A, const Frame<T>& frame_E,
+    EigenPtr<MatrixX<T>> Jw_V_ABp_E) const {
+  DRAKE_THROW_UNLESS(Jw_V_ABp_E != nullptr);
+  DRAKE_THROW_UNLESS(Jw_V_ABp_E->rows() == 6);
+  const bool wrt_qdot = [with_respect_to]() {
+    switch (with_respect_to) {
+      case JacobianWrtVariable::kQDot:
+        return true;
+      case JacobianWrtVariable::kV:
+        return false;
+    }
+    DRAKE_ABORT();  // NOTREACHED
+  }();
+  const int num_columns = wrt_qdot ? num_positions() : num_velocities();
+  DRAKE_THROW_UNLESS(Jw_V_ABp_E->cols() == num_columns);
 
   // The spatial velocity V_WBp can be obtained by composing the spatial
   // velocities V_WAp and V_ABp. Expressed in the world frame W this composition
   // is V_WBp_W = V_WAp_W + V_ABp_W
-  // That is: V_ABp_W = (Jv_WBp - Jv_WAp)⋅v
-  // And by re-expressing in frame E: V_ABp_E = R_EW⋅(Jv_WBp - Jv_WAp)⋅v
-  // That is, Jv_ABp_E = R_EW⋅(Jv_WBp - Jv_WAp).
+  // Therefore,
+  //   V_ABp_W = (Jw_WBp - Jw_WAp)⋅w,
+  // where
+  //   - if wrt_qdot is true,  w = q̇ and Jw_W{Ap,Bp} = Jq_W{Ap,Bp}, and
+  //   - if wrt_qdot is false, w = v and Jw_W{Ap,Bp} = Jv_W{Ap,Bp}.
+  // Expressed in frame E, this becomes
+  //   V_ABp_E = R_EW⋅(Jw_WBp - Jw_WAp)⋅w.
+  // Thus, Jw_V_ABp_E = R_EW⋅(Jw_WBp - Jw_WAp).
 
   Vector3<T> p_WP;
-  CalcPointsPositions(context,
-                      frame_B, p_BP,          /* From frame B */
+  CalcPointsPositions(context, frame_B, p_BP, /* From frame B */
                       world_frame(), &p_WP);  /* To world frame W */
 
   // TODO(amcastro-tri): When performance becomes an issue, implement this
   // method so that we only consider the kinematic path from A to B.
 
-  MatrixX<T> Jv_WAp(6, num_velocities());
-  auto Jvr_WAp = Jv_WAp.template topRows<3>();     // rotational part.
-  auto Jvt_WAp = Jv_WAp.template bottomRows<3>();  // translational part.
-  CalcFrameJacobianExpressedInWorld(
-      context, frame_A, p_WP, false /* from v */, &Jvr_WAp, &Jvt_WAp);
+  MatrixX<T> Jw_WAp(6, num_columns);
+  auto Jr_WAp = Jw_WAp.template topRows<3>();     // rotational part.
+  auto Jt_WAp = Jw_WAp.template bottomRows<3>();  // translational part.
+  CalcFrameJacobianExpressedInWorld(context, frame_A, p_WP, wrt_qdot, &Jr_WAp,
+                                    &Jt_WAp);
 
-  MatrixX<T> Jv_WBp(6, num_velocities());
-  auto Jvr_WBp = Jv_WBp.template topRows<3>();
-  auto Jvt_WBp = Jv_WBp.template bottomRows<3>();
-  CalcFrameJacobianExpressedInWorld(
-      context, frame_B, p_WP, false /* from v */, &Jvr_WBp, &Jvt_WBp);
+  MatrixX<T> Jw_WBp(6, num_columns);
+  auto Jr_WBp = Jw_WBp.template topRows<3>();     // rotational part.
+  auto Jt_WBp = Jw_WBp.template bottomRows<3>();  // translational part.
+  CalcFrameJacobianExpressedInWorld(context, frame_B, p_WP, wrt_qdot, &Jr_WBp,
+                                    &Jt_WBp);
 
-  // Geometric Jacobian Jv_ABp_W when E is the world frame W.
-  Jv_ABp_E->template topRows<3>() = Jvr_WBp - Jvr_WAp;
-  Jv_ABp_E->template bottomRows<3>() = Jvt_WBp - Jvt_WAp;
+  // Jacobian Jw_ABp_W when E is the world frame W.
+  Jw_V_ABp_E->template topRows<3>() = Jr_WBp - Jr_WAp;
+  Jw_V_ABp_E->template bottomRows<3>() = Jt_WBp - Jt_WAp;
 
   // If the expressed-in frame E is not the world frame, we need to perform
   // an additional operation.
@@ -1104,9 +1128,10 @@ void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
     const Isometry3<T> X_EW =
         CalcRelativeTransform(context, frame_E, world_frame());
     const Matrix3<T>& R_EW = X_EW.linear();
-    Jv_ABp_E->template topRows<3>() = R_EW * Jv_ABp_E->template topRows<3>();
-    Jv_ABp_E->template bottomRows<3>() =
-        R_EW * Jv_ABp_E->template bottomRows<3>();
+    Jw_V_ABp_E->template topRows<3>() =
+        R_EW * Jw_V_ABp_E->template topRows<3>();
+    Jw_V_ABp_E->template bottomRows<3>() =
+        R_EW * Jw_V_ABp_E->template bottomRows<3>();
   }
 }
 
