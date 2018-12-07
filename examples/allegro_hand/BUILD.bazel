@@ -46,7 +46,7 @@ drake_cc_binary(
         "//geometry:geometry_visualization",
         "//lcm",
         "//multibody/multibody_tree/multibody_plant",
-        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//multibody/parsing",
         "//systems/analysis",
         "//systems/primitives:constant_vector_source",
         "//systems/rendering:pose_bundle_to_draw_message",

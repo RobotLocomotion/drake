@@ -19,9 +19,7 @@ PYBIND11_MODULE(parsing, m) {
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::multibody::parsing;
-  constexpr auto& doc = pydrake_doc.drake.multibody.parsing;
+  constexpr auto& doc = pydrake_doc.drake.multibody;
 
   // PackageMap
   {

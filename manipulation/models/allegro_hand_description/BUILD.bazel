@@ -30,7 +30,7 @@ drake_cc_googletest(
     deps = [
         "//common:find_resource",
         "//multibody/multibody_tree/multibody_plant",
-        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//multibody/parsing",
     ],
 )
 

@@ -36,7 +36,7 @@ std::string GetFullPath(const std::string& file_name);
 /// @return The file's full path or an empty string if the file is not
 /// found or does not exist.
 std::string ResolveFilename(const std::string& filename,
-                            const PackageMap& package_map,
+                            const multibody::PackageMap& package_map,
                             const std::string& root_dir);
 
 }  // namespace parsing

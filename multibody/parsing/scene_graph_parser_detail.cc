@@ -338,7 +338,7 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
 }
 
 sdf::Visual ResolveVisualUri(const sdf::Visual& original,
-                             const parsing::PackageMap& package_map,
+                             const multibody::PackageMap& package_map,
                              const std::string& root_dir) {
   std::shared_ptr<sdf::Element> visual_element = original.Element()->Clone();
   sdf::Element* geom_element =

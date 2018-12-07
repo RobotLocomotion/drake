@@ -28,15 +28,15 @@ using math::RigidTransformd;
 using math::RollPitchYaw;
 using math::RollPitchYawd;
 using multibody::Body;
-using multibody::parsing::AddModelFromSdfFile;
-using multibody::parsing::AddModelsFromSdfFile;
+using multibody::parsing::detail::AddModelFromSdfFile;
+using multibody::parsing::detail::AddModelsFromSdfFile;
 using multibody::parsing::detail::ToIsometry3;
 using multibody::multibody_plant::MultibodyPlant;
 using systems::Context;
 
 namespace multibody {
 namespace parsing {
-namespace test {
+namespace detail {
 namespace {
 
 // Verifies model instances are correctly created in the plant.
@@ -62,11 +62,11 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
   const std::string acrobot_sdf_name = FindResourceOrThrow(
       "drake/multibody/benchmarks/acrobot/acrobot.sdf");
   ModelInstanceIndex acrobot1 =
-      AddModelFromSdfFile(acrobot_sdf_name, &plant);
+      AddModelFromSdfFile(acrobot_sdf_name, "", &plant);
 
   // Loading the model again without specifying a different model name should
   // throw.
-  EXPECT_THROW(AddModelFromSdfFile(acrobot_sdf_name, &plant),
+  EXPECT_THROW(AddModelFromSdfFile(acrobot_sdf_name, "", &plant),
                std::logic_error);
 
   ModelInstanceIndex acrobot2 =
@@ -185,7 +185,7 @@ GTEST_TEST(SdfParserThrowsWhen, JointDampingIsNegative) {
       "drake/multibody/parsing/test/negative_damping_joint.sdf";
   MultibodyPlant<double> plant;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AddModelFromSdfFile(FindResourceOrThrow(sdf_file_path), &plant),
+      AddModelFromSdfFile(FindResourceOrThrow(sdf_file_path), "", &plant),
       std::runtime_error,
       /* Verify this method is throwing for the right reasons. */
       "Joint damping is negative for joint '.*'. "
@@ -279,7 +279,7 @@ GTEST_TEST(SdfParser, TestOptionalSceneGraph) {
 }
 
 }  // namespace
-}  // namespace test
+}  // namespace detail
 }  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

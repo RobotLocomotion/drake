@@ -58,7 +58,7 @@ drake_cc_binary(
         "//geometry:scene_graph",
         "//lcm",
         "//multibody/multibody_tree/multibody_plant",
-        "//multibody/multibody_tree/parsing:multibody_plant_urdf_parser",
+        "//multibody/parsing",
         "//systems/analysis:simulator",
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/primitives:trajectory_source",

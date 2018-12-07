@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
@@ -10,6 +11,7 @@
 namespace drake {
 namespace multibody {
 namespace parsing {
+namespace detail {
 
 /// Parses a `<robot>` element from the URDF file specified by @p file_name and
 /// adds it to @p plant.  A new model instance will be added to @p plant.
@@ -36,13 +38,35 @@ ModelInstanceIndex AddModelFromUrdfFile(
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);
 
-/// Alternate version of AddModelFromUrdfFile which always uses the "name"
-/// element from the model tag for the name of the newly created model
-/// instance.
-ModelInstanceIndex AddModelFromUrdfFile(
+}  // namespace detail
+
+#ifndef DRAKE_DOXYGEN_CXX
+// TODO(jwnimmer-tri) Remove these forwarders on or about 2019-03-01.
+
+DRAKE_DEPRECATED(
+    "AddModelFromUrdfFile is deprecated; please use the class "
+    "drake::multibody::Parser instead.")
+inline ModelInstanceIndex AddModelFromUrdfFile(
+    const std::string& file_name,
+    const std::string& model_name,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph = nullptr) {
+  return detail::AddModelFromUrdfFile(
+      file_name, model_name, plant, scene_graph);
+}
+
+DRAKE_DEPRECATED(
+    "AddModelFromUrdfFile is deprecated; please use the class "
+    "drake::multibody::Parser instead.")
+inline ModelInstanceIndex AddModelFromUrdfFile(
     const std::string& file_name,
     multibody_plant::MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr);
+    geometry::SceneGraph<double>* scene_graph = nullptr) {
+  return detail::AddModelFromUrdfFile(
+      file_name, "", plant, scene_graph);
+}
+
+#endif  // DRAKE_DOXYGEN_CXX
 
 }  // namespace parsing
 }  // namespace multibody

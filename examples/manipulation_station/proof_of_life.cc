@@ -37,8 +37,8 @@ int do_main(int argc, char* argv[]) {
   // Create the "manipulation station".
   auto station = builder.AddSystem<ManipulationStation>();
   station->SetupDefaultStation();
-  multibody::parsing::Parser parser(&station->get_mutable_multibody_plant(),
-                                    &station->get_mutable_scene_graph());
+  multibody::Parser parser(&station->get_mutable_multibody_plant(),
+                           &station->get_mutable_scene_graph());
   auto object = parser.AddModelFromFile(
       FindResourceOrThrow(
           "drake/examples/manipulation_station/models/061_foam_brick.sdf"),

@@ -13,16 +13,22 @@ void LoadFromSdf(
     const std::string& base_name,
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
+  // The empty-string second argument here means that the model_name comes from
+  // the "name" attribute of the SDF.  This is a sensible default for the unit
+  // tests that call us.
   const std::string sdf_path = FindResourceOrThrow(base_name + ".sdf");
-  AddModelFromSdfFile(sdf_path, plant, scene_graph);
+  parsing::detail::AddModelFromSdfFile(sdf_path, "", plant, scene_graph);
 }
 
 void LoadFromUrdf(
     const std::string& base_name,
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
+  // The empty-string second argument here means that the model_name comes from
+  // the "name" attribute of the URDF.  This is a sensible default for the unit
+  // tests that call us.
   const std::string urdf_path = FindResourceOrThrow(base_name + ".urdf");
-  AddModelFromUrdfFile(urdf_path, plant, scene_graph);
+  parsing::detail::AddModelFromUrdfFile(urdf_path, "", plant, scene_graph);
 }
 
 }  // namespace test

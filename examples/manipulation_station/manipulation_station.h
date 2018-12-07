@@ -103,9 +103,9 @@ enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 /// e.g.:
 /// @code
 /// StationSimulation<double> station;
-/// AddModelFromSdfFile("my.sdf", "my_model",
-///                     &station.get_mutable_multibody_plant(),
-///                     &station.get_mutable_scene_graph());
+/// Parser parser(&station.get_mutable_multibody_plant(),
+///                &station.get_mutable_scene_graph());
+/// parser.AddModelFromFile("my.sdf", "my_model");
 /// ...
 /// // coming soon -- sugar API for adding additional objects.
 /// station.Finalize()
