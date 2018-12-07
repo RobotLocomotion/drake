@@ -46,7 +46,6 @@ drake_cc_library(
         "//math:geometric_transform",
         "//math:gradient",
         "//multibody/plant",
-        "//multibody/tree",
         "//solvers:constraint",
     ],
 )
