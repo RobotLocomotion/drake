@@ -41,7 +41,6 @@ drake_cc_library(
         "orientation_constraint.h",
         "position_constraint.h",
     ],
-    visibility = ["//visibility:private"],
     deps = [
         "//math:geometric_transform",
         "//math:gradient",
