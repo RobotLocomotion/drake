@@ -142,7 +142,7 @@ drake_cc_googletest(
         ":schunk_wsg_position_controller",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/multibody_tree/multibody_plant",
-        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//multibody/parsing",
         "//systems/analysis:simulator",
     ],
 )

@@ -169,7 +169,7 @@ std::unique_ptr<geometry::Shape> ParseCylinder(const XMLElement* shape_node) {
 }
 
 std::unique_ptr<geometry::Shape> ParseMesh(
-    const XMLElement* shape_node, const PackageMap& package_map,
+    const XMLElement* shape_node, const multibody::PackageMap& package_map,
     const std::string& root_dir) {
   std::string filename;
   if (!ParseStringAttribute(shape_node, "filename", &filename)) {
@@ -203,7 +203,7 @@ std::unique_ptr<geometry::Shape> ParseMesh(
 }
 
 std::unique_ptr<geometry::Shape> ParseGeometry(
-    const XMLElement* node, const PackageMap& package_map,
+    const XMLElement* node, const multibody::PackageMap& package_map,
     const std::string& root_dir) {
   if (node->FirstChildElement("box")) {
     return ParseBox(node->FirstChildElement("box"));
@@ -244,7 +244,8 @@ std::string MakeGeometryName(const std::string& basename,
 
 // Parses a "visual" element in @p node.
 geometry::GeometryInstance ParseVisual(
-    const std::string& parent_element_name, const PackageMap& package_map,
+    const std::string& parent_element_name,
+    const multibody::PackageMap& package_map,
     const std::string& root_dir, const XMLElement* node,
     MaterialMap* materials) {
   if (std::string(node->Name()) != "visual") {
@@ -361,7 +362,8 @@ geometry::GeometryInstance ParseVisual(
 //
 // @param[out] friction Coulomb friction for the associated geometry.
 geometry::GeometryInstance ParseCollision(
-    const std::string& parent_element_name, const PackageMap& package_map,
+    const std::string& parent_element_name,
+    const multibody::PackageMap& package_map,
     const std::string& root_dir, const XMLElement* node,
     CoulombFriction<double>* friction) {
   if (std::string(node->Name()) != "collision") {

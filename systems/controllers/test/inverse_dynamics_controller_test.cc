@@ -4,7 +4,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/systems/controllers/test_utilities/compute_torque.h"
 
 using drake::multibody::MultibodyTree;
@@ -22,7 +22,7 @@ GTEST_TEST(InverseDynamicsControllerTest, TestTorque) {
   auto robot = std::make_unique<MultibodyPlant<double>>();
   const std::string full_name = drake::FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
-  multibody::parsing::AddModelFromSdfFile(full_name, robot.get());
+  multibody::Parser(robot.get()).AddModelFromFile(full_name);
   robot->WeldFrames(robot->world_frame(),
                     robot->GetFrameByName("iiwa_link_0"));
   robot->Finalize();

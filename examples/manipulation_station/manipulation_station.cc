@@ -56,7 +56,7 @@ SpatialInertia<double> MakeCompositeGripperInertia(
     const std::string& wsg_sdf_path,
     const std::string& gripper_body_frame_name) {
   MultibodyPlant<double> plant;
-  multibody::parsing::Parser parser(&plant);
+  multibody::Parser parser(&plant);
   parser.AddModelFromFile(wsg_sdf_path);
   plant.Finalize();
   const auto& frame = plant.GetFrameByName(gripper_body_frame_name);
@@ -142,7 +142,7 @@ multibody::ModelInstanceIndex AddAndWeldModelFrom(
     const Isometry3<double>& X_PC, MultibodyPlant<T>* plant) {
   DRAKE_THROW_UNLESS(!plant->HasModelInstanceNamed(model_name));
 
-  multibody::parsing::Parser parser(plant);
+  multibody::Parser parser(plant);
   const multibody::ModelInstanceIndex new_model =
       parser.AddModelFromFile(model_path, model_name);
   const auto& child_frame = plant->GetFrameByName(child_frame_name, new_model);
@@ -271,7 +271,7 @@ template <typename T>
 void ManipulationStation<T>::MakeIiwaControllerModel() {
   // Build the controller's version of the plant, which only contains the
   // IIWA and the equivalent inertia of the gripper.
-  multibody::parsing::Parser parser(owned_controller_plant_.get());
+  multibody::Parser parser(owned_controller_plant_.get());
   const auto controller_iiwa_model =
       parser.AddModelFromFile(iiwa_model_.model_path, "iiwa");
 

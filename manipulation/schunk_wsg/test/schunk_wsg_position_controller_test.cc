@@ -8,7 +8,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -20,7 +20,7 @@ namespace {
 using Eigen::Vector4d;
 
 using multibody::multibody_plant::MultibodyPlant;
-using multibody::parsing::AddModelFromSdfFile;
+using multibody::Parser;
 using systems::BasicVector;
 
 GTEST_TEST(SchunkWsgPdControllerTest, BasicTest) {
@@ -65,7 +65,7 @@ GTEST_TEST(SchunkWsgPositionControllerTest, SimTest) {
   const std::string wsg_sdf_path = FindResourceOrThrow(
       "drake/manipulation/models/"
       "wsg_50_description/sdf/schunk_wsg_50.sdf");
-  const auto wsg_model = AddModelFromSdfFile(wsg_sdf_path, "gripper", wsg);
+  const auto wsg_model = Parser(wsg).AddModelFromFile(wsg_sdf_path, "gripper");
   wsg->WeldFrames(wsg->world_frame(), wsg->GetFrameByName("body", wsg_model),
                   Eigen::Isometry3d::Identity());
   wsg->Finalize();

@@ -83,7 +83,7 @@ drake_cc_library(
         "//multibody/benchmarks/kuka_iiwa_robot",
         "//multibody/multibody_tree",
         "//multibody/multibody_tree/multibody_plant",
-        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//multibody/parsing",
         "@gtest//:without_main",
     ],
 )
