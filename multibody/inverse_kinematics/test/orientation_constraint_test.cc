@@ -63,10 +63,10 @@ TEST_F(TwoFreeBodiesConstraintTest, OrientationConstraint) {
       0.2 * M_PI, Eigen::Vector3d(0.2, 0.4, -0.5).normalized()));
   const math::RotationMatrix<double> R_BbarB(Eigen::AngleAxisd(
       -0.4 * M_PI, Eigen::Vector3d(0.1, 1.2, -0.7).normalized()));
-  const math::RotationMatrixd R_AbarBbar(body1_quaternion.inverse()
-                                       * body2_quaternion);
+  const math::RotationMatrixd R_AbarBbar(
+      body1_quaternion.inverse() * body2_quaternion);
   const math::RotationMatrixd R_AB = R_AbarA.transpose() * R_AbarBbar * R_BbarB;
-  const double theta = Eigen::AngleAxisd(R_AB.matrix()).angle();
+  const double theta = R_AB.ToAngleAxis().angle();
 
   OrientationConstraint good_constraint(
       two_bodies_autodiff_.tree(), body1_index_, R_AbarA, body2_index_, R_BbarB,
