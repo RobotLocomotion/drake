@@ -53,9 +53,9 @@ void GazeTargetConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
   Vector3<double> p_AT;
   plant_.tree().CalcPointsPositions(*context_, frameB_, p_BT_, frameA_, &p_AT);
   Eigen::MatrixXd Jq_V_ABt(6, plant_.num_positions());
-  plant_.tree().CalcJacobianSpatialVelocity(
-      *context_, JacobianWrtVariable::kQDot, frameB_, p_BT_, frameA_, frameA_,
-      &Jq_V_ABt);
+  plant_.tree().CalcJacobianSpatialVelocity(*context_,
+                                            JacobianWrtVariable::kQDot, frameB_,
+                                            p_BT_, frameA_, frameA_, &Jq_V_ABt);
   // J_p_q = Jq_v_ABt = ∂p/∂q.
   const Matrix3X<double> Jq_p = Jq_V_ABt.bottomRows<3>();
   const Vector3<double> p_ST_A = p_AT - p_AS_;
