@@ -38,9 +38,9 @@ void PositionConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
   Eigen::Vector3d p_AQ{};
   plant_.tree().CalcPointsPositions(*context_, frameB_, p_BQ_, frameA_, &p_AQ);
   Eigen::MatrixXd Jq_V_ABq(6, plant_.num_positions());
-  plant_.tree().CalcJacobianSpatialVelocity(
-      *context_, JacobianWrtVariable::kQDot, frameB_, p_BQ_, frameA_, frameA_,
-      &Jq_V_ABq);
+  plant_.tree().CalcJacobianSpatialVelocity(*context_,
+                                            JacobianWrtVariable::kQDot, frameB_,
+                                            p_BQ_, frameA_, frameA_, &Jq_V_ABq);
   *y = math::initializeAutoDiffGivenGradientMatrix(p_AQ,
                                                    Jq_V_ABq.bottomRows<3>());
 }
