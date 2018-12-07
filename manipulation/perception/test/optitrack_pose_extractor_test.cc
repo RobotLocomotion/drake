@@ -61,6 +61,12 @@ TEST_F(OptitrackPoseTest, InvalidObjectTest) {
   optitrack::optitrack_frame_t test_frame{};
   optitrack::optitrack_rigid_body_t default_body{};
   default_body.id = 0;
+
+  // Need to initialize default_body.quat to a valid quaternion or else there
+  // is a downstream RotationMatrix class that throws an exception because
+  // the quaternion is invalid (e.g., it has NANs).
+  // Exceptions being thrown by the RotationMatrix class are not what this test
+  // is trying to achieve -- so properly initialize default_body.quat.
   default_body.quat[0] = 1;
   default_body.quat[1] = 0;
   default_body.quat[2] = 0;

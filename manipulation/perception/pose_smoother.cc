@@ -60,7 +60,38 @@ VectorX<double> ComputeVelocities(const Isometry3d& pose_1,
   return velocities;
 }
 
+// TODO(naveenoid) : Replace the usage of these methods eventually with
+// PoseVector or a similar future variant.
+// Sets a pose from a 7-element array whose first 3 elements are position and
+// last 4 elements are a "canonical" quaternion (w, x, y, z).
+Isometry3d Vector7ToIsometry3d(const VectorX<double>& pose_vector) {
+  DRAKE_ASSERT(pose_vector.size() == 7);
+  Quaterniond quaternion(pose_vector(3), pose_vector(4),
+                         pose_vector(5), pose_vector(6));
+  Isometry3<double> pose = Isometry3<double>::Identity();
+  // TODO(Mitiguy) Ask Naveen to document why the quaternion is not normalized,
+  // which allows for quaternion.toRotationMatrix() to return a non-orthonormal
+  // matrix.  However, manipulation/perception/test/pose_smoother_test.cc fails
+  // (why?) if the next line is uncommented (which makes me question the test).
+  // quaternion = quaternion.normalized();
+  pose.linear() = quaternion.toRotationMatrix();  // This is not orthonormal!
+  pose.translation() = pose_vector.head<3>();
+  pose.makeAffine();
+  return pose;
+}
 
+// Convert a pose into a 7 element array whose first 3 elements are position
+// and last 4 elements are a canoncial quaternion (w, x, y, z).
+// Note: A "canonical" quaternion is a quaternion with w > = 0.
+VectorX<double> RigidTransformdToVector7(const math::RigidTransformd& pose) {
+  VectorX<double> pose_vector = VectorX<double>::Zero(7);
+  pose_vector.head<3>() = pose.translation();
+  Quaterniond quat(pose.rotation().matrix());
+  quat = math::QuaternionToCanonicalForm(quat);
+  pose_vector.tail<4>() =
+      (VectorX<double>(4) << quat.w(), quat.x(), quat.y(), quat.z()).finished();
+  return pose_vector;
+}
 }  // namespace
 
 PoseSmoother::PoseSmoother(double desired_max_linear_velocity,
@@ -83,46 +114,6 @@ PoseSmoother::PoseSmoother(double desired_max_linear_velocity,
       systems::Value<Isometry3d>(Isometry3d::Identity()));
   this->DeclarePeriodicUnrestrictedUpdate(period_sec, 0);
 }
-
-
-// TODO(naveenoid) : Replace the usage of these methods eventually with
-// PoseVector or a similar future variant.
-// Sets a pose from a 7-element array whose first 3 elements are position and
-// last 4 elements are a "canonical" quaternion (w, x, y, z).
-Isometry3d Vector7ToIsometry3d(const VectorX<double>& pose_vector) {
-  Quaterniond quaternion(pose_vector(3), pose_vector(4),
-                         pose_vector(5), pose_vector(6));
-#if 1
-  Isometry3<double> pose = Isometry3<double>::Identity();
-  // TODO(Mitiguy) Ask Naveen to provide documentation as to why this is not
-  // normalized.  The rotation matrix that results is not orthonormal !
-  // quaternion = quaternion.normalized();
-  pose.linear() = quaternion.toRotationMatrix();  // This is not orthonormal!
-  pose.translation() = pose_vector.head<3>();
-  pose.makeAffine();
-  // math::RotationMatrixd R_invalid_matrix(pose.linear());
-  // (void)R_bad;  // Avoid warning that R_invalid_matrix is unused.
-  return pose;
-#else
-  // TODO(Mitiguy) Replace previous code with this single line.
-  // Change this function's return type to RigidTransformd.
-  return math::RigidTransformd(quaternion, pose_vector.head<3>());
-#endif
-}
-
-// Convert a pose into a 7 element array whose first 3 elements are position
-// and last 4 elements are a canoncial quaternion (w, x, y, z).
-// Note: A "canonical" quaternion is a quaternion with w > = 0.
-VectorX<double> RigidTransformdToVectorX(const math::RigidTransformd& pose) {
-  VectorX<double> pose_vector = VectorX<double>::Zero(7);
-  pose_vector.head<3>() = pose.translation();
-  Quaterniond quat(pose.rotation().matrix());
-  quat = math::QuaternionToCanonicalForm(quat);
-  pose_vector.tail<4>() = (VectorX<double>(4) << quat.w(), quat.x(), quat.y(),
-                                                 quat.z()).finished();
-  return pose_vector;
-}
-
 
 void PoseSmoother::DoCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
@@ -173,19 +164,18 @@ void PoseSmoother::DoCalcUnrestrictedUpdate(
     // If the smoother is enabled.
     if (is_filter_enabled_) {
       VectorX<double> temp = internal_state.filter->Update(
-          RigidTransformdToVectorX(corrected_input));
+          RigidTransformdToVector7(corrected_input));
       accepted_pose = Vector7ToIsometry3d(temp);
     }
 
-    current_velocity = ComputeVelocities(accepted_pose, current_pose,
-                                     current_time - time_at_last_accepted_pose);
+    current_velocity = ComputeVelocities(
+        accepted_pose, current_pose, current_time - time_at_last_accepted_pose);
     time_at_last_accepted_pose = current_time;
     current_pose = accepted_pose;
   } else {
     drake::log()->debug("Data point rejected");
   }
 }
-
 
 void PoseSmoother::OutputSmoothedPose(const systems::Context<double>& context,
                                       Isometry3d* output) const {

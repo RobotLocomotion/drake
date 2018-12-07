@@ -489,17 +489,17 @@ class RotationMatrix {
   }
 
   /// Returns a quaternion q that represents `this` %RotationMatrix.  Since the
-  /// quaternion `q` and `-q` represent the same %RotationMatrix, the quaternion
-  /// returned by this method chooses the "canonical" quaternion with q(0) >= 0.
+  /// quaternion `q` and `-q` represent the same %RotationMatrix, this method
+  /// chooses to return a canonical quaternion, i.e., with q(0) >= 0.
   // @internal This implementation is adapted from simbody at
   // https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
   Eigen::Quaternion<T> ToQuaternion() const { return ToQuaternion(R_AB_); }
 
   /// Returns a unit quaternion q associated with the 3x3 matrix M.  Since the
-  /// quaternion `q` and `-q` represent the same %RotationMatrix, the quaternion
-  /// returned by this method chooses the "canonical" quaternion with q(0) >= 0.
+  /// quaternion `q` and `-q` represent the same %RotationMatrix, this method
+  /// chooses to return a canonical quaternion, i.e., with q(0) >= 0.
   /// @param[in] M 3x3 matrix to be made into a quaternion.
-  /// @returns a unit quaternion q in canonical form (i.e., q(0) >= 0).
+  /// @returns a unit quaternion q in canonical form, i.e., with q(0) >= 0.
   /// @throws std::logic_error in debug builds if the quaternion `q`
   /// returned by this method cannot construct a valid %RotationMatrix.
   /// For example, if `M` contains NaNs, `q` will not be a valid quaternion.
@@ -541,7 +541,7 @@ class RotationMatrix {
     Eigen::Quaternion<T> q(w, x, y, z);
 
     // Since the quaternions q and -q correspond to the same rotation matrix,
-    // choose a "canonical" quaternion with q(0) > 0.
+    // choose to return a canonical quaternion, i.e., with q(0) >= 0.
     const T canonical_factor = (w < 0) ? T(-1) : T(1);
 
     // The quantity q calculated thus far in this algorithm is not a quaternion
