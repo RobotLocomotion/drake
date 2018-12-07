@@ -44,18 +44,13 @@ SchunkWsgCommandTranslator::AllocateOutputVector() const {
 
 SchunkWsgCommandReceiver::SchunkWsgCommandReceiver(double initial_position,
                                                    double initial_force)
-    : initial_position_(initial_position),
-      initial_force_(initial_force),
-      position_output_port_(
-          this->DeclareVectorOutputPort(
-                  "position", BasicVector<double>(1),
-                  &SchunkWsgCommandReceiver::CalcPositionOutput)
-              .get_index()),
-      force_limit_output_port_(
-          this->DeclareVectorOutputPort(
-                  "force_limit", BasicVector<double>(1),
-                  &SchunkWsgCommandReceiver::CalcForceLimitOutput)
-              .get_index()) {
+    : initial_position_(initial_position), initial_force_(initial_force) {
+  this->DeclareVectorOutputPort("position", BasicVector<double>(1),
+                                &SchunkWsgCommandReceiver::CalcPositionOutput);
+  this->DeclareVectorOutputPort(
+      "force_limit", BasicVector<double>(1),
+      &SchunkWsgCommandReceiver::CalcForceLimitOutput);
+
   SchunkWsgCommand<double> uninitialized_command;
   this->DeclareVectorInputPort("command_vector", uninitialized_command);
 

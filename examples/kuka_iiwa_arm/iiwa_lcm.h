@@ -25,6 +25,7 @@ extern const double kIiwaLcmStatusPeriod;
 /**
  * A vectorized representation of lcmt_iiwa_command.
  */
+// TODO(siyuan.feng@tri.global) remove this with #10149 is resolved.
 template <typename T>
 class IiwaCommand : public systems::BasicVector<T> {
  public:
@@ -69,6 +70,7 @@ class IiwaCommand : public systems::BasicVector<T> {
  * vectorized representation, IiwaCommand<double>. This is intended to be used
  * with systems::lcm::LcmPublisherSystem and systems::lcm::LcmSubscriberSystem.
  */
+// TODO(siyuan.feng@tri.global) remove this with #10149 is resolved.
 class IiwaCommandTranslator : public systems::lcm::LcmAndVectorBaseTranslator {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommandTranslator)
@@ -109,10 +111,22 @@ class IiwaCommandTranslator : public systems::lcm::LcmAndVectorBaseTranslator {
   const int num_joints_;
 };
 
-/// Handles lcmt_iiwa_command messages from a LcmSubscriberSystem.
-/// Has two output ports: one for the commanded position for each joint along
+/// Handles IIWA commands from a LcmSubscriberSystem. It has two input ports:
+/// one for lcmt_iiwa_command messages and the other for the vectorized
+/// version (IiwaCommand). Only one of the inputs should be connected. However,
+/// if both are connected, the message one will be ignored.
+/// It has two output ports: one for the commanded position for each joint along
 /// with an estimate of the commanded velocity for each joint, and another for
 /// commanded additional feedforward joint torque.
+///
+/// @system {
+///   @input_port{command_message}
+///   @input_port{command_vector}
+///   @output_port{state}
+///   @output_port{feedforward_torque}
+/// }
+// TODO(siyuan.feng@tri.global) remove the vector input version after #10149 is
+// resolved.
 class IiwaCommandReceiver : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommandReceiver)
@@ -130,12 +144,12 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
 
   const systems::OutputPort<double>& get_commanded_state_output_port()
       const {
-    return this->get_output_port(0);
+    return this->GetOutputPort("state");
   }
 
   const systems::OutputPort<double>& get_commanded_torque_output_port()
       const {
-    return this->get_output_port(1);
+    return this->GetOutputPort("feedforward_torque");
   }
 
  private:

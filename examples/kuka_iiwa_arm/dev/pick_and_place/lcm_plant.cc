@@ -117,8 +117,8 @@ LcmPlant::LcmPlant(
     auto wsg_controller = builder.AddSystem<SchunkWsgController>();
     wsg_controller->set_name("wsg_controller" + suffix);
     builder.Connect(iiwa_and_wsg_plant_->get_output_port_wsg_state(i),
-                    wsg_controller->get_state_input_port());
-    builder.Connect(wsg_controller->get_output_port(0),
+                    wsg_controller->GetInputPort("state"));
+    builder.Connect(wsg_controller->GetOutputPort("force"),
                     iiwa_and_wsg_plant_->get_input_port_wsg_command(i));
 
     auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>();

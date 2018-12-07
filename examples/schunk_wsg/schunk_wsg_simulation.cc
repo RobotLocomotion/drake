@@ -77,7 +77,7 @@ int DoMain() {
 
   builder.Connect(command_sub->get_output_port(),
                   wsg_controller->GetInputPort("command_vector"));
-  builder.Connect(wsg_controller->get_output_port(0),
+  builder.Connect(wsg_controller->GetOutputPort("force"),
                   plant->actuator_command_input_port());
   builder.Connect(plant->state_output_port(), visualizer->get_input_port(0));
   builder.Connect(plant->state_output_port(),
@@ -85,7 +85,7 @@ int DoMain() {
   builder.Connect(mbp_state_to_wsg_state->get_output_port(),
                   status_sender->get_state_input_port());
   builder.Connect(plant->state_output_port(),
-                  wsg_controller->get_state_input_port());
+                  wsg_controller->GetInputPort("state"));
   builder.Connect(*status_sender, *status_pub);
   auto sys = builder.Build();
 

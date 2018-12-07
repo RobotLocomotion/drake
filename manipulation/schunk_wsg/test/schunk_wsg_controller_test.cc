@@ -32,7 +32,7 @@ std::pair<double, double> RunWsgControllerTestStep(
       Eigen::VectorXd::Zero(kSchunkWsgNumPositions + kSchunkWsgNumVelocities);
   wsg_state_vec(0) = -(wsg_position / 1e3) / 2.;
   wsg_state_vec(1) = (wsg_position / 1e3) / 2.;
-  context->FixInputPort(dut.get_state_input_port().get_index(), wsg_state_vec);
+  context->FixInputPort(dut.GetInputPort("state").get_index(), wsg_state_vec);
   systems::Simulator<double> simulator(dut, std::move(context));
   simulator.StepTo(1.0);
   dut.CalcOutput(simulator.get_context(), output.get());

@@ -119,12 +119,12 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
       systems::Value<lcmt_iiwa_command>(uninitialized_message));
 
   this->DeclareVectorOutputPort(
-      systems::BasicVector<double>(num_joints_ * 2),
+      "state", systems::BasicVector<double>(num_joints_ * 2),
       [this](const Context<double>& c, BasicVector<double>* o) {
         this->CopyStateToOutput(c, 0, num_joints_ * 2, o);
       });
   this->DeclareVectorOutputPort(
-      systems::BasicVector<double>(num_joints_),
+      "feedforward_torque", systems::BasicVector<double>(num_joints_),
       [this](const Context<double>& c, BasicVector<double>* o) {
         this->CopyStateToOutput(c, num_joints_ * 2, num_joints_, o);
       });

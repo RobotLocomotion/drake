@@ -233,7 +233,7 @@ int DoMain() {
 
   builder.Connect(wsg_command_sub->get_output_port(),
                   wsg_controller->GetInputPort("command_vector"));
-  builder.Connect(wsg_controller->get_output_port(0),
+  builder.Connect(wsg_controller->GetOutputPort("force"),
                   model->get_input_port_wsg_command());
   builder.Connect(model->get_output_port_wsg_state(),
                   mbp_state_to_wsg_state->get_input_port());
@@ -244,7 +244,7 @@ int DoMain() {
   builder.Connect(mbp_force_to_wsg_force->get_output_port(),
                   wsg_status_sender->get_force_input_port());
   builder.Connect(model->get_output_port_wsg_state(),
-                  wsg_controller->get_state_input_port());
+                  wsg_controller->GetInputPort("state"));
   builder.Connect(*wsg_status_sender, *wsg_status_pub);
 
   auto iiwa_state_pub = builder.AddSystem(

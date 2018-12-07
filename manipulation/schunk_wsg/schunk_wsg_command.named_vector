@@ -14,7 +14,7 @@ element {
 }
 element {
     name: "force"
-    doc: "Max grasping force that each finger applies."
+    doc: "Max total grasping force applied by both fingers."
     doc_units: "N"
     default_value: "0.0"
 }
