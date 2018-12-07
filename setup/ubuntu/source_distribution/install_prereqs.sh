@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Install development prerequisites for source distributions of Drake on
-# Ubuntu 16.04.
+# Ubuntu 16.04 (Xenial) or 18.04 (Bionic).
 #
 # The development and runtime prerequisites for binary distributions should be
 # installed before running this script.
@@ -21,15 +21,13 @@ wget
 EOF
 )
 
+codename=$(lsb_release -sc)
+
 wget -O - https://drake-apt.csail.mit.edu/drake.pub.gpg | apt-key add
-echo 'deb [arch=amd64] https://drake-apt.csail.mit.edu/xenial xenial main' > /etc/apt/sources.list.d/drake.list
+echo "deb [arch=amd64] https://drake-apt.csail.mit.edu/${codename} ${codename} main" > /etc/apt/sources.list.d/drake.list
 
 apt-get update
-
-# TODO(jamiesnape): Remove this line on or after 1/1/2019.
-apt-get remove lldb-4.0 python-lldb-4.0
-
-apt-get install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages.txt" | tr '\n' ' ')
+apt-get install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages-${codename}.txt" | tr '\n' ' ')
 
 locale-gen en_US.UTF-8
 
