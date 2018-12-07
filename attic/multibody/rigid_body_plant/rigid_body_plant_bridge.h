@@ -145,9 +145,8 @@ class RigidBodyPlantBridge : public systems::LeafSystem<T> {
   int plant_state_port_{-1};
 
   // Registered frames. In this incarnation, body i's frame_id is stored in
-  // element i - 1. This is because *all* frames are currently being registered
-  // (regardless of weldedness or whether it has geometry) and we skip the
-  // world body (index 0).
+  // element i. This is because *all* frames are currently being registered
+  // (regardless of weldedness or whether it has geometry).
   std::vector<geometry::FrameId> body_ids_;
 };
 }  // namespace systems
