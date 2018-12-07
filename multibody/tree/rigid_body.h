@@ -7,11 +7,11 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/unused.h"
-#include "drake/multibody/multibody_tree/acceleration_kinematics_cache.h"
-#include "drake/multibody/multibody_tree/body.h"
-#include "drake/multibody/multibody_tree/position_kinematics_cache.h"
-#include "drake/multibody/multibody_tree/spatial_inertia.h"
-#include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
+#include "drake/multibody/tree/acceleration_kinematics_cache.h"
+#include "drake/multibody/tree/body.h"
+#include "drake/multibody/tree/position_kinematics_cache.h"
+#include "drake/multibody/tree/spatial_inertia.h"
+#include "drake/multibody/tree/velocity_kinematics_cache.h"
 
 namespace drake {
 namespace multibody {

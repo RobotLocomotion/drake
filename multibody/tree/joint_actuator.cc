@@ -1,8 +1,8 @@
-#include "drake/multibody/multibody_tree/joint_actuator.h"
+#include "drake/multibody/tree/joint_actuator.h"
 
 #include "drake/common/default_scalars.h"
-#include "drake/multibody/multibody_tree/joints/joint.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/tree/joint.h"
+#include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
 namespace multibody {

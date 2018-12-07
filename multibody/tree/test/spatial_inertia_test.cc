@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/spatial_inertia.h"
+#include "drake/multibody/tree/spatial_inertia.h"
 
 #include <limits>
 #include <sstream>
@@ -11,8 +11,8 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/multibody_tree/rotational_inertia.h"
-#include "drake/multibody/multibody_tree/unit_inertia.h"
+#include "drake/multibody/tree/rotational_inertia.h"
+#include "drake/multibody/tree/unit_inertia.h"
 
 namespace drake {
 namespace multibody {

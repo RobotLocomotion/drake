@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/unit_inertia.h"
+#include "drake/multibody/tree/unit_inertia.h"
 
 #include "drake/common/default_scalars.h"
 

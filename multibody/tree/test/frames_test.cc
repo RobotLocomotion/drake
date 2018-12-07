@@ -1,5 +1,5 @@
 /* clang-format off to disable clang-format-includes */
-#include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree.h"
 /* clang-format on */
 
 #include <memory>
@@ -10,10 +10,10 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/multibody_tree/fixed_offset_frame.h"
-#include "drake/multibody/multibody_tree/multibody_tree_system.h"
-#include "drake/multibody/multibody_tree/revolute_mobilizer.h"
-#include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/tree/fixed_offset_frame.h"
+#include "drake/multibody/tree/multibody_tree_system.h"
+#include "drake/multibody/tree/revolute_mobilizer.h"
+#include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {

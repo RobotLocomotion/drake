@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/rotational_inertia.h"
+#include "drake/multibody/tree/rotational_inertia.h"
 
 #include <iomanip>
 #include <sstream>

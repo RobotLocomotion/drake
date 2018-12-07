@@ -1,7 +1,7 @@
 #pragma once
 
-#include "drake/multibody/multibody_tree/multibody_tree_element.h"
-#include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
+#include "drake/multibody/tree/multibody_tree_element.h"
+#include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
 namespace multibody {

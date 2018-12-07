@@ -1,18 +1,18 @@
-#include "drake/multibody/multibody_tree/linear_spring_damper.h"
+#include "drake/multibody/tree/linear_spring_damper.h"
 
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
-#include "drake/multibody/multibody_tree/joints/weld_joint.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
-#include "drake/multibody/multibody_tree/multibody_tree_system.h"
-#include "drake/multibody/multibody_tree/position_kinematics_cache.h"
-#include "drake/multibody/multibody_tree/rigid_body.h"
-#include "drake/multibody/multibody_tree/spatial_inertia.h"
-#include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
+#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree_system.h"
+#include "drake/multibody/tree/position_kinematics_cache.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/spatial_inertia.h"
+#include "drake/multibody/tree/velocity_kinematics_cache.h"
+#include "drake/multibody/tree/weld_joint.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {

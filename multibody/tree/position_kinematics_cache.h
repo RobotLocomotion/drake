@@ -4,8 +4,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_stl_types.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
-#include "drake/multibody/multibody_tree/multibody_tree_topology.h"
+#include "drake/multibody/tree/multibody_tree_indexes.h"
+#include "drake/multibody/tree/multibody_tree_topology.h"
 
 namespace drake {
 namespace multibody {

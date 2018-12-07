@@ -6,8 +6,8 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/multibody_tree/position_kinematics_cache.h"
-#include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
+#include "drake/multibody/tree/position_kinematics_cache.h"
+#include "drake/multibody/tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/cache_entry.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"

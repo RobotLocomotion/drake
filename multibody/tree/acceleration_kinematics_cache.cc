@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/acceleration_kinematics_cache.h"
+#include "drake/multibody/tree/acceleration_kinematics_cache.h"
 
 #include "drake/common/autodiff.h"
 

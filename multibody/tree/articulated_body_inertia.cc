@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/articulated_body_inertia.h"
+#include "drake/multibody/tree/articulated_body_inertia.h"
 
 #include "drake/common/default_scalars.h"
 
