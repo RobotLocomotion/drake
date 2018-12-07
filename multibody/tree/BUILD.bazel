@@ -13,7 +13,7 @@ package(
 )
 
 drake_cc_package_library(
-    name = "multibody_tree",
+    name = "tree",
     deps = [
         ":articulated_body_inertia",
         ":multibody_tree_context",
@@ -93,21 +93,21 @@ drake_cc_library(
         "body_node_impl.cc",
         "fixed_offset_frame.cc",
         "joint_actuator.cc",
-        "joints/prismatic_joint.cc",
-        "joints/revolute_joint.cc",
-        "joints/weld_joint.cc",
         "linear_spring_damper.cc",
         "mobilizer_impl.cc",
         "model_instance.cc",
         "multibody_forces.cc",
         "multibody_tree.cc",
         "multibody_tree_system.cc",
+        "prismatic_joint.cc",
         "prismatic_mobilizer.cc",
         "quaternion_floating_mobilizer.cc",
+        "revolute_joint.cc",
         "revolute_mobilizer.cc",
         "rigid_body.cc",
         "space_xyz_mobilizer.cc",
         "uniform_gravity_field_element.cc",
+        "weld_joint.cc",
         "weld_mobilizer.cc",
     ],
     hdrs = [
@@ -119,11 +119,8 @@ drake_cc_library(
         "force_element.h",
         "frame.h",
         "frame_base.h",
+        "joint.h",
         "joint_actuator.h",
-        "joints/joint.h",
-        "joints/prismatic_joint.h",
-        "joints/revolute_joint.h",
-        "joints/weld_joint.h",
         "linear_spring_damper.h",
         "mobilizer.h",
         "mobilizer_impl.h",
@@ -131,16 +128,19 @@ drake_cc_library(
         "multibody_forces.h",
         "multibody_tree.h",
         "multibody_tree_system.h",
+        "prismatic_joint.h",
         "prismatic_mobilizer.h",
         "quaternion_floating_mobilizer.h",
+        "revolute_joint.h",
         "revolute_mobilizer.h",
         "rigid_body.h",
         "space_xyz_mobilizer.h",
         "uniform_gravity_field_element.h",
+        "weld_joint.h",
         "weld_mobilizer.h",
     ],
     # Hide this library outside of this package; users should depend on
-    # ":multibody_tree" broadly, not just ":multibody_tree_core".
+    # "//multibody/tree" broadly, not just ":multibody_tree_core".
     visibility = ["//visibility:private"],
     deps = [
         ":multibody_tree_context",
@@ -218,8 +218,8 @@ drake_cc_library(
     srcs = ["test/free_rotating_body_plant.cc"],
     hdrs = ["test/free_rotating_body_plant.h"],
     deps = [
+        ":tree",
         "//common:default_scalars",
-        "//multibody/multibody_tree",
         "//systems/framework",
     ],
 )
@@ -268,7 +268,7 @@ drake_cc_googletest(
     # Valgrind.
     timeout = "moderate",
     deps = [
-        ":multibody_tree",
+        ":tree",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:autodiff",
         "//math:gradient",
@@ -279,7 +279,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "tree_from_joints_test",
     deps = [
-        ":multibody_tree",
+        ":tree",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/benchmarks/acrobot:analytical_acrobot",
     ],
@@ -287,13 +287,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "frames_test",
-    deps = [":multibody_tree"],
+    deps = [":tree"],
 )
 
 drake_cc_googletest(
     name = "model_instance_test",
     deps = [
-        ":multibody_tree",
+        ":tree",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -301,7 +301,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "multibody_forces_test",
     deps = [
-        ":multibody_tree",
+        ":tree",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -309,7 +309,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "multibody_tree_test",
     deps = [
-        ":multibody_tree",
+        ":tree",
         "//common/test_utilities",
         "//math:gradient",
         "//multibody/benchmarks/kuka_iiwa_robot",
@@ -319,7 +319,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "multibody_tree_creation_test",
-    deps = [":multibody_tree"],
+    deps = [":tree"],
 )
 
 drake_cc_googletest(
@@ -369,7 +369,7 @@ drake_cc_googletest(
     name = "prismatic_mobilizer_test",
     deps = [
         ":mobilizer_tester",
-        ":multibody_tree",
+        ":tree",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -378,7 +378,7 @@ drake_cc_googletest(
     name = "quaternion_floating_mobilizer_test",
     deps = [
         ":mobilizer_tester",
-        ":multibody_tree",
+        ":tree",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -387,7 +387,7 @@ drake_cc_googletest(
     name = "revolute_mobilizer_test",
     deps = [
         ":mobilizer_tester",
-        ":multibody_tree",
+        ":tree",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -396,7 +396,7 @@ drake_cc_googletest(
     name = "space_xyz_mobilizer_test",
     deps = [
         ":mobilizer_tester",
-        ":multibody_tree",
+        ":tree",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -405,7 +405,7 @@ drake_cc_googletest(
     name = "weld_mobilizer_test",
     deps = [
         ":mobilizer_tester",
-        ":multibody_tree",
+        ":tree",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -413,17 +413,14 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "rigid_body_test",
     deps = [
-        ":multibody_tree",
+        ":tree",
     ],
 )
 
 drake_cc_googletest(
     name = "articulated_body_inertia_test",
     deps = [
-        ":articulated_body_inertia",
-        ":multibody_tree",
-        ":rotational_inertia",
-        ":unit_inertia",
+        ":tree",
         "//math:autodiff",
         "//math:gradient",
     ],
@@ -432,44 +429,38 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "articulated_body_algorithm_test",
     deps = [
-        ":articulated_body_inertia",
-        ":multibody_tree",
+        ":tree",
     ],
 )
 
 drake_cc_googletest(
     name = "linear_spring_damper_test",
     deps = [
-        ":multibody_tree",
+        ":tree",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//systems/framework:context",
     ],
 )
 
-# === joints/test/ ===
-
 drake_cc_googletest(
     name = "revolute_joint_test",
-    srcs = ["joints/test/revolute_joint_test.cc"],
     deps = [
-        ":multibody_tree",
+        ":tree",
     ],
 )
 
 drake_cc_googletest(
     name = "prismatic_joint_test",
-    srcs = ["joints/test/prismatic_joint_test.cc"],
     deps = [
-        ":multibody_tree",
+        ":tree",
     ],
 )
 
 drake_cc_googletest(
     name = "weld_joint_test",
-    srcs = ["joints/test/weld_joint_test.cc"],
     deps = [
-        ":multibody_tree",
+        ":tree",
     ],
 )
 
