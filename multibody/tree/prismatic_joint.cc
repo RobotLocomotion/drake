@@ -1,9 +1,9 @@
-#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
+#include "drake/multibody/tree/prismatic_joint.h"
 
 #include <memory>
 
 #include "drake/common/autodiff.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
 namespace multibody {

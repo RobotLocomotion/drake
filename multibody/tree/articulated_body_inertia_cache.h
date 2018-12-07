@@ -3,9 +3,9 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/multibody/multibody_tree/articulated_body_inertia.h"
-#include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
-#include "drake/multibody/multibody_tree/multibody_tree_topology.h"
+#include "drake/multibody/tree/articulated_body_inertia.h"
+#include "drake/multibody/tree/multibody_tree_indexes.h"
+#include "drake/multibody/tree/multibody_tree_topology.h"
 
 namespace drake {
 namespace multibody {

@@ -31,7 +31,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
-#include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
+#include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
 namespace multibody {

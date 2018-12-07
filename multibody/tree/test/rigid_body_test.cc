@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/tree/rigid_body.h"
 
 #include <gtest/gtest.h>
 

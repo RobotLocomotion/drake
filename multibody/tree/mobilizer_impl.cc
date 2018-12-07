@@ -1,9 +1,9 @@
-#include "drake/multibody/multibody_tree/mobilizer_impl.h"
+#include "drake/multibody/tree/mobilizer_impl.h"
 
 #include <memory>
 
 #include "drake/common/default_scalars.h"
-#include "drake/multibody/multibody_tree/body_node_impl.h"
+#include "drake/multibody/tree/body_node_impl.h"
 
 namespace drake {
 namespace multibody {
