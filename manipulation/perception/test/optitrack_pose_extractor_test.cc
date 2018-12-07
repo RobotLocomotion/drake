@@ -61,6 +61,10 @@ TEST_F(OptitrackPoseTest, InvalidObjectTest) {
   optitrack::optitrack_frame_t test_frame{};
   optitrack::optitrack_rigid_body_t default_body{};
   default_body.id = 0;
+  default_body.quat[0] = 1;
+  default_body.quat[1] = 0;
+  default_body.quat[2] = 0;
+  default_body.quat[3] = 0;
 
   test_frame.rigid_bodies.push_back(default_body);
   default_body.id = 1;
@@ -73,9 +77,7 @@ TEST_F(OptitrackPoseTest, InvalidObjectTest) {
   // in an update with no errors thrown.
   default_body.id = 2;
   test_frame.rigid_bodies.push_back(default_body);
-  // UpdateStateCalcOutput(test_frame);
-  // EXPECT_NO_THROW(UpdateStateCalcOutput(test_frame));
-  EXPECT_ANY_THROW(UpdateStateCalcOutput(test_frame));
+  EXPECT_NO_THROW(UpdateStateCalcOutput(test_frame));
 }
 
 TEST_F(OptitrackPoseTest, InvalidObjectIDTest) {
