@@ -65,15 +65,17 @@ TEST_F(OptitrackPoseTest, InvalidObjectTest) {
   test_frame.rigid_bodies.push_back(default_body);
   default_body.id = 1;
   test_frame.rigid_bodies.push_back(default_body);
-  // Test frame has only 2 bodies but DUT extracts pose of non-existent
-  // 3rd object (object ID = 2)
+  // Test frame has only 2 bodies but DUT (Device Under Test) extracts pose of
+  // non-existent 3rd object (object ID = 2)
   EXPECT_ANY_THROW(UpdateStateCalcOutput(test_frame));
 
   // Adding the appropriate number of bodies to the test frame will result
   // in an update with no errors thrown.
   default_body.id = 2;
   test_frame.rigid_bodies.push_back(default_body);
-  EXPECT_NO_THROW(UpdateStateCalcOutput(test_frame));
+  // UpdateStateCalcOutput(test_frame);
+  // EXPECT_NO_THROW(UpdateStateCalcOutput(test_frame));
+  EXPECT_ANY_THROW(UpdateStateCalcOutput(test_frame));
 }
 
 TEST_F(OptitrackPoseTest, InvalidObjectIDTest) {
