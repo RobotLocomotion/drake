@@ -23,7 +23,7 @@ install_files(
     }),
     strip_prefix = [
         "mac/binary_distribution",
-        "ubuntu/16.04/binary_distribution",
+        "ubuntu/binary_distribution",
     ],
     rename = {
         "share/drake/setup/install_prereqs.sh": "install_prereqs",
