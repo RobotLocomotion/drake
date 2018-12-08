@@ -1,4 +1,11 @@
 #!/usr/bin/env python2
+"""
+Installation script generated from a Bazel `install` target.
+"""
+
+# N.B. Please ensure any significant behavior is tested by `install_meta_test`.
+# Example execution:
+#   $ bazel test //tools/install:py/install_meta_test --test_output=streamed --nocache_test_results  # noqa
 
 import argparse
 import collections
