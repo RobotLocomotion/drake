@@ -41,3 +41,30 @@ class TestInstallMeta(unittest.TestCase):
         for expected_file in expected_manifest:
             file_path = join(install_dir, expected_file)
             self.assertTrue(isfile(file_path), expected_file)
+
+    def test_strip_args(self):
+        """Test behavior of `--no_strip` and related arguments."""
+        install_dir = self.get_install_dir("test_strip_args")
+        # Negative test: Ensure `--disable_nostrip_warning` is not used in a
+        # blanket fashion.
+        returncode = call(
+            [self.BINARY, install_dir, "--disable_no_strip_warning"])
+        self.assertEqual(returncode, 1)
+        # Test for warnings with no stripping:
+        strip_substr = "NOTE: Symbols are not stripped."
+        warning_substr = "WARNING: Proprietary dependencies are enabled."
+        # - Nominal.
+        text_with_warning = check_output([
+            self.BINARY, install_dir, "--no_strip"], stderr=STDOUT)
+        # N.B. `assertIn` error messages are not great for multiline, so just
+        # print and use nominal asserts.
+        print(text_with_warning)
+        self.assertTrue(strip_substr in text_with_warning)
+        self.assertTrue(warning_substr in text_with_warning)
+        # - Warning disabled.
+        text_without_warning = check_output([
+            self.BINARY, install_dir, "--no_strip",
+            "--disable_no_strip_warning"], stderr=STDOUT)
+        print(text_without_warning)
+        self.assertTrue(strip_substr in text_without_warning)
+        self.assertTrue(warning_substr not in text_without_warning)
