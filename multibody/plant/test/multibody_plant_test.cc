@@ -75,7 +75,6 @@ using std::tie;
 using std::unique_ptr;
 
 namespace multibody {
-namespace multibody_plant {
 
 class MultibodyPlantTester {
  public:
@@ -97,6 +96,7 @@ class MultibodyPlantTester {
   }
 };
 
+namespace multibody_plant {
 namespace {
 // This test creates a simple model for an acrobot using MultibodyPlant and
 // verifies a number of invariants such as that body and joint models were

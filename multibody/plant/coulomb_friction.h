@@ -5,7 +5,6 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_plant {
 
 /// Parameters for Coulomb's Law of Friction, namely:
 ///
@@ -149,6 +148,17 @@ CoulombFriction<T> CalcContactFrictionFromSurfaceProperties(
           s1.dynamic_friction() + s2.dynamic_friction()));
 }
 
+#ifndef DRAKE_DOXYGEN_CXX
+// TODO(#9314) Deprecate and then remove this transitional namespace.
+namespace multibody_plant {
+
+template<typename T>
+using CoulombFriction  = ::drake::multibody::CoulombFriction<T>;
+
+using multibody::CalcContactFrictionFromSurfaceProperties;
+
 }  // namespace multibody_plant
+#endif  // DRAKE_DOXYGEN_CXX
+
 }  // namespace multibody
 }  // namespace drake

@@ -11,7 +11,6 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_plant {
 
 /**
  A class containing information regarding contact response between two bodies
@@ -111,6 +110,13 @@ class PointPairContactInfo {
   T slip_speed_;
 };
 
+#ifndef DRAKE_DOXYGEN_CXX
+// TODO(#9314) Deprecate and then remove this transitional namespace.
+namespace multibody_plant {
+template <typename T>
+using PointPairContactInfo = ::drake::multibody::PointPairContactInfo<T>;
 }  // namespace multibody_plant
+#endif  // DRAKE_DOXYGEN_CXX
+
 }  // namespace multibody
 }  // namespace drake

@@ -26,7 +26,6 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_plant {
 
 /// @cond
 // Helper macro to throw an exception within methods that should not be called
@@ -212,8 +211,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   template <typename U>
   MultibodyPlant(const MultibodyPlant<U>& other)
       : MultibodyTreeSystem<T>(
-            systems::SystemTypeTag<
-                multibody::multibody_plant::MultibodyPlant>{},
+            systems::SystemTypeTag<multibody::MultibodyPlant>{},
             other.tree().template CloneToScalar<T>(), other.is_discrete()) {
     DRAKE_THROW_UNLESS(other.is_finalized());
     time_step_ = other.time_step_;
@@ -2097,7 +2095,14 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 #undef DRAKE_MBP_THROW_IF_NOT_FINALIZED
 /// @endcond
 
+#ifndef DRAKE_DOXYGEN_CXX
+// TODO(#9314) Deprecate and then remove this transitional namespace.
+namespace multibody_plant {
+template <typename T>
+using MultibodyPlant = ::drake::multibody::MultibodyPlant<T>;
 }  // namespace multibody_plant
+#endif  // DRAKE_DOXYGEN_CXX
+
 }  // namespace multibody
 }  // namespace drake
 
@@ -2107,7 +2112,7 @@ namespace drake {
 namespace systems {
 namespace scalar_conversion {
 template <>
-struct Traits<drake::multibody::multibody_plant::MultibodyPlant> :
+struct Traits<drake::multibody::MultibodyPlant> :
     public NonSymbolicTraits {};
 }  // namespace scalar_conversion
 }  // namespace systems
