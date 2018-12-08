@@ -1,0 +1,61 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/install:install.bzl", "install")
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_library",
+    "drake_transitive_installed_hdrs_filegroup",
+)
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_unittest",
+)
+
+package(default_visibility = ["//tools/install:__subpackages__"])
+
+drake_cc_library(
+    name = "dummy",
+    testonly = 1,
+    srcs = ["dummy.cc"],
+    hdrs = ["dummy.h"],
+)
+
+drake_cc_binary(
+    name = "libdummy.so",
+    testonly = 1,
+    linkshared = 1,
+    linkstatic = 1,
+    deps = [":dummy"],
+)
+
+drake_transitive_installed_hdrs_filegroup(
+    name = "libdummy_headers",
+    testonly = 1,
+    deps = [":dummy"],
+)
+
+py_library(
+    name = "dummy_py",
+    testonly = 1,
+    srcs = ["dummy.py"],
+)
+
+# N.B. This should NOT be incorporated into `build_components.bzl`.
+install(
+    name = "install",
+    testonly = 1,
+    targets = [
+        ":dummy_py",
+        ":libdummy.so",
+    ],
+    # TODO(eric.cousineau): Ensure the install paths for these headers are not
+    # the same as what is used in the cc library.
+    hdrs = [":libdummy_headers"],
+    data = ["README.md"],
+    data_dest = "share",
+)
+
+add_lint_tests(
+    enable_install_lint = False,
+    enable_library_lint = False,
+)
