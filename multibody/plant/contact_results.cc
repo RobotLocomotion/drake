@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
+#include "drake/multibody/plant/contact_results.h"
 
 #include <utility>
 
