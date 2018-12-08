@@ -1057,9 +1057,6 @@ class SimpleHybridSystem : public LeafSystem<double> {
     this->DeclareVectorInputPort("u", systems::BasicVector<double>(1));
   }
 
-  // Gets the number of discrete updates performed.
-  int num_discrete_updates() const { return num_discrete_updates_; }
-
  private:
   void DoCalcDiscreteVariableUpdates(
       const Context<double>& context,
@@ -1070,10 +1067,6 @@ class SimpleHybridSystem : public LeafSystem<double> {
     DRAKE_DEMAND(input);
     const double u = input->get_value()[0];
     (*x_next)[0] = x + u;
-
-    // Modifying system members in DoCalcDiscreteVariableUpdates() is an
-    // anti-pattern. It is done here only to simplify the testing code.
-    ++num_discrete_updates_;
   }
 
   const double kPublishPeriod = 1.0;
@@ -1081,7 +1074,7 @@ class SimpleHybridSystem : public LeafSystem<double> {
 };
 
 /*
- * The three tests that will follow focus on simple interactions between
+ * The two tests that will follow focus on simple interactions between
  * simulated discrete and continuous systems. These tests help the developers
  * and maintainers to understand the pecularities of StepTo(.) applied to mixed
  * discrete/continuous systems.
@@ -1138,10 +1131,6 @@ GTEST_TEST(SimulatorTest, SimpleHybridSystemTestOffsetOne) {
 
   // Check that the expected number of updates (one) was performed.
   EXPECT_EQ(simulator.get_num_discrete_updates(), 1);
-
-  // Verify that another call to StepTo(1.0) has no effect.
-  simulator.StepTo(1.0);
-  EXPECT_EQ(simulator.get_num_discrete_updates(), 1);
 }
 
 // Tests that a simple hybrid discrete/continuous system can be simulated as
@@ -1169,80 +1158,8 @@ GTEST_TEST(SimulatorTest, SimpleHybridSystemTestOffsetZero) {
   // Check that the expected number of updates (one) was performed.
   EXPECT_EQ(simulator.get_num_discrete_updates(), 1);
 
-  // Simulate to time 1.0 again. This should now bump the discrete value using
-  // u(t = 1.0) = 2, and the number of discrete updates should be bumped
-  // accordingly). Figure 2a of discrete_systems.h explains why if this is not
-  // clear.
-  const double u_1 = 2;
-  simulator.StepTo(1.0);
-
-  EXPECT_EQ(simulator.get_context().get_discrete_state()[0],
-            initial_condition + u_0 + u_1);
-
-  // Check that the expected number of updates (now two) were performed.
-  EXPECT_EQ(simulator.get_num_discrete_updates(), 2);
-
-  // Verify that another call to StepTo(1.0) has no effect.
-  simulator.StepTo(1.0);
-  EXPECT_EQ(simulator.get_num_discrete_updates(), 2);
-}
-
-// Tests that we can use a zero-order hold in concert with the hybrid diagram
-// constructed in SimpleHybridSystemTestOffsetOne and
-// SimpleHybridSystemOffsetZero to get the telemetry of the two systems to
-// match with the same number of StepTo(final_time) calls.
-GTEST_TEST(SimulatorTest, SimpleHybridSystemTestOffsetOnePlusZoh) {
-  DiagramBuilder<double> builder;
-
-  // Construct the diagram as in SimpleHybridSystemTestOffsetZero, but now with
-  // a zero-order hold between u(t) = t and the SimpleHybridSystem.
-  auto time_outputter = builder.AddSystem<TimeOutputter>();
-  const double zoh_period = 1.0;
-  const int x_dim = 1;
-  auto zoh = builder.AddSystem<ZeroOrderHold<double>>(zoh_period, x_dim);
-  const double offset_time = 0.0;
-  auto hybrid_system = builder.AddSystem<SimpleHybridSystem>(offset_time);
-
-  // Wire and complete the Diagram.
-  builder.Connect(*time_outputter, *zoh);
-  builder.Connect(*zoh, *hybrid_system);
-  auto diagram = builder.Build();
-  Simulator<double> simulator(*diagram);
-
-  // Set the initial conditions.
-  Context<double>& mutable_context = simulator.get_mutable_context();
-  Context<double>& mutable_hybrid_context = diagram->GetMutableSubsystemContext(
-      *hybrid_system, &mutable_context);
-  SetSimpleHybridSystemInitialConditions(&mutable_hybrid_context);
-  const double initial_condition =
-      mutable_hybrid_context.get_discrete_state()[0];
-
-  // Simulate forward.
-  simulator.StepTo(1.0);
-
-  // Check that the no event was yet handled and that the discrete state
-  // equals that of the initial condition.
-  EXPECT_EQ(hybrid_system->num_discrete_updates(), 0);
-  EXPECT_EQ(initial_condition, mutable_hybrid_context.get_discrete_state()[0]);
-
-  // There will be a pending event. Handle it by calling StepTo(1.0) one more
-  // time.
-  simulator.StepTo(1.0);
-
-  // Check that the expected state value was attained. The value should be 1.0
-  // because we expect the discrete update to occur at t = 1 using a zero-order
-  // hold on u(t) (i.e., using u(0) = 1). Note that this is the same value that
-  // is obtained at time 1.0 using SimpleHybridSystemTestOffsetOne.
-  const double u_0 = 1.0;
-  EXPECT_EQ(mutable_hybrid_context.get_discrete_state()[0],
-            initial_condition + u_0);
-
-  // Check that the expected number of updates (one) was performed.
-  EXPECT_EQ(hybrid_system->num_discrete_updates(), 1);
-
-  // Verify that calling StepTo(1.0) again results in no more updates.
-  simulator.StepTo(1.0);
-  EXPECT_EQ(hybrid_system->num_discrete_updates(), 1);
+  // Note: we do not call StepTo(1.0) here as we did in the last example since
+  // we only want a single update and StepTo(1.0) would give us another.
 }
 
 // A "Delta function" system that outputs zero except at the instant (the spike
