@@ -7,7 +7,6 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_plant {
 
 template <typename T>
 CoulombFriction<T>::CoulombFriction(const T& static_friction,
@@ -43,9 +42,8 @@ boolean<T> CoulombFriction<T>::operator==(const CoulombFriction& other) const {
       dynamic_friction() == other.dynamic_friction();
 }
 
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::multibody_plant::CoulombFriction);
+    class ::drake::multibody::CoulombFriction);

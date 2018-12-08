@@ -8,6 +8,9 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 
+// TODO(jwnimmer-tri) Remove `namespace implicit_stribeck` from this file; that
+// name no longer matches any directory (package) name.
+
 namespace drake {
 namespace multibody {
 namespace implicit_stribeck {
