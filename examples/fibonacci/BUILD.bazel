@@ -11,7 +11,7 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
-    name = "fibonacci",
+    name = "fibonacci_difference_equation",
     hdrs = [
         "fibonacci_difference_equation.h",
     ],
@@ -25,7 +25,7 @@ drake_cc_binary(
     name = "run_fibonacci",
     srcs = ["run_fibonacci.cc"],
     deps = [
-        ":fibonacci",
+        ":fibonacci_difference_equation",
         "//systems/analysis:simulator",
         "@gflags",
     ],
@@ -36,7 +36,7 @@ drake_cc_binary(
 drake_cc_googletest(
     name = "fibonacci_test",
     deps = [
-        ":fibonacci",
+        ":fibonacci_difference_equation",
         "//systems/analysis",
     ],
 )

@@ -55,16 +55,18 @@ The code required to produce the above sequence (see run_fibonacci.cc) is just
 @code{.cpp}
   FibonacciDifferenceEquation fibonacci;
   systems::Simulator<double> simulator(fibonacci);
-  fibonacci.Initialize(&simulator.get_mutable_context());
   simulator.StepTo(8 * FibonacciDifferenceEquation::kPeriod);
 @endcode
 */
+// TODO(sherm1) Simplify the periodic event specifications here when
+// PR #10132 lands.
 class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FibonacciDifferenceEquation)
 
   FibonacciDifferenceEquation() {
-    DeclareDiscreteState(2 /* x[0], x[1] */);
+    // Set default initial conditions to produce the above sequence.
+    DeclareDiscreteState(Eigen::Vector2d(0., 1.));
 
     // Output yₙ using a Drake "publish" event (occurs at the end of step n).
     DeclarePeriodicEvent(kPeriod, 0.,  // period, offset
@@ -74,22 +76,15 @@ class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
                                Output(context);
                              }));
 
-    // Update to xₙ₊₁ (x_np1), using a Drake "discrete update" event (occurs
+    // Update to xₙ₊₁, using a Drake "discrete update" event (occurs
     // at the beginning of step n+1).
     DeclarePeriodicEvent(kPeriod, 0.,
                          systems::DiscreteUpdateEvent<double>(
                              [this](const systems::Context<double>& context,
                                     const systems::DiscreteUpdateEvent<double>&,
-                                    systems::DiscreteValues<double>* x_np1) {
-                               Update(context, x_np1);
+                                    systems::DiscreteValues<double>* xd) {
+                               Update(context, xd);
                              }));
-  }
-
-  /// Set initial conditions x₀.
-  void Initialize(systems::Context<double>* context) const {
-    auto& x_0 = context->get_mutable_discrete_state();
-    x_0[0] = 0.;
-    x_0[1] = 1.;
   }
 
   /// Update period (in seconds) for the system.
@@ -98,10 +93,10 @@ class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
  private:
   // Update function xₙ₊₁ = f(n, xₙ).
   void Update(const systems::Context<double>& context,
-              systems::DiscreteValues<double>* x_np1) const {
+                              systems::DiscreteValues<double>* xd) const {
     const auto& x_n = context.get_discrete_state();
-    (*x_np1)[0] = x_n[0] + x_n[1];
-    (*x_np1)[1] = x_n[0];
+    (*xd)[0] = x_n[0] + x_n[1];
+    (*xd)[1] = x_n[0];
   }
 
   // Output function yₙ = g(n, xₙ). (Here, just writes 'n: Fₙ' to cout.)
