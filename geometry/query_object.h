@@ -216,25 +216,22 @@ class QueryObject {
    Note that ∇φᵢ(p) is also defined on Gᵢ's surface, but we cannot use the
    above formula.
 
-   @note For a sphere, the signed distance function φᵢ(p) has undefined gradient
-   vector at the center of the sphere--every point on the sphere's surface
-   has the same distance to the center.  In this case, we will assign an
-   arbitrary vector (1,0,0) as its gradient vector.
+   @note For a sphere, the signed distance function φᵢ(p) has an undefined
+   gradient vector at the center of the sphere--every point on the sphere's
+   surface has the same distance to the center.  In this case, we will assign
+   an arbitrary vector (1,0,0) as its gradient vector.
 
    @note For a box, at a point p on an edge or a corner of the box, the signed
-   distance function φᵢ(p) has undefined gradient vector.  In this case, we
+   distance function φᵢ(p) has an undefined gradient vector.  In this case, we
    will assign a unit vector in the direction of the average of the outward
    face normals of the incident faces of the edge or the corner.
 
-   @note For a box, if a point p is inside the box, and it is on the medial
-   surface, it will have multiple nearest points on the boundary of the box.
-   The signed distance function φᵢ(p) at p will have undefined gradient vector.
-   In this case, we will arbitrarily pick the nearest point and assign the
-   gradient vector as a unit vector in that direction. The nearest points are on
-   some of the six bounding faces of the box, and we pick the one on the face
-   perpendicular to the local x direction first, then y direction, then z
-   direction. For the same local coordinate axis, we pick the one with positive
-   coordinate first.
+   @note For a box, if a point p is inside the box, and it is equidistant to
+   to multiple nearest faces, the signed distance function φᵢ(p) at p will have
+   an undefined gradient vector. Each nearest face has a nearest point to p
+   offset from p in one of the box's local axis directions. We arbitrarily
+   select such a point from these local axis directions with the priority +x,-x,
+   +y,-y,+z,-z, and set ∇φᵢ(p) to that direction.
 
    @note The signed distance function is a continuous function with respect to
    the position of the query point, but its gradient vector field may

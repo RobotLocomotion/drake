@@ -351,10 +351,15 @@ bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
   return false;
 }
 
-
-using SupportGeometry = variant<const fcl::Sphered*,
-                                const fcl::Boxd*>;
-
+// A functor to support DistanceFromPointCallback(). It computes the signed
+// distance to a query point from a supported geometry.  Its constructor takes:
+// @param id_in    the id of the geometry,
+// @param X_WG_in  pose of the geometry in World frame.
+// @param p_WQ     position of the query point Q in World frame.
+//
+// Each overloaded operator() takes a geometry and returns the signed distance,
+// the nearest point on the boundary, and the gradient vector; all encapsulated
+// in SignedDistanceToPoint.
 struct DistanceToPoint {
   DistanceToPoint(const GeometryId id_in,
                   const Isometry3<double>& X_WG_in,
@@ -365,11 +370,10 @@ struct DistanceToPoint {
   const Isometry3<double>& X_WG;
   const Vector3d& p_WQ;
 
-  // Computes the signed distance from a sphere to a query point, the nearest
-  // point on the boundary, and the gradient vector.
-  SignedDistanceToPoint<double> operator()(const fcl::Sphered* sphere) {
+  // Overload for Sphere.
+  SignedDistanceToPoint<double> operator()(const fcl::Sphered& sphere) {
     // TODO(DamrongGuoy): Move most code of this function into FCL.
-    const double radius = sphere->radius;
+    const double radius = sphere.radius;
 
     const Vector3d& p_WG = X_WG.translation();
     const Vector3d p_GQ_W = p_WQ - p_WG;
@@ -399,33 +403,59 @@ struct DistanceToPoint {
     return SignedDistanceToPoint<double>{geometry_id, p_GN_G, distance, grad_W};
   }
 
-  // Computes the signed distance from a box to a query point, the nearest
-  // point on the boundary, and the gradient vector.
-  SignedDistanceToPoint<double> operator()(const fcl::Boxd* box) {
+  // Overload for Box.
+  SignedDistanceToPoint<double> operator()(const fcl::Boxd& box) {
     // TODO(DamrongGuoy): Move most code of this function into FCL.
     const Vector3d p_GQ_G = X_WG * p_WQ;
 
     // The box B is an axis-aligned box [-h(0),h(0)]x[-h(1),h(1)]x[-h(2),h(2)]
     // centered at the origin, where h(i) is half the size of the box in the
     // i-th coordinate.
-    const Vector3d half_size = box->side / 2.0;
+    const Vector3d half_size = box.side / 2.0;
 
-    // Clamping when a coordinate `coord` is strictly beyond or exactly on the
-    // boundary values ±half_size(i). It will help us check whether a query
-    // point is outside the box, on the boundary of the box, or inside the box.
+    // For a given i-th coordinate `coord` of the position of the query point Q
+    // expressed in the frame of the box, we clamp it within the bound
+    // ±half_size(i). If the `coord` is beyond or exactly on the bound, we set
+    // `is_clamp` to true. If the `coord` is strictly within the bound, we
+    // set `is_clamp` to false.
+    //
+    // It will help us check whether Q is outside B, on the boundary ∂B, or
+    // inside B.
+    //
+    // TODO(DamrongGuoy): Use tolerance to check `coord` against ±half_size(i).
+    // If `coord` is within a tolerance of ±half_size(i), we will treat it as
+    // being on ∂B; therefore, setting `is_clamp` to true. We will probably
+    // need another bool `on_bound` to distinguish the `coord` that is beyond
+    // the tolerance from ±half_size(i) and the `coord` that is within the
+    // tolerance. After that, we can use `is_clamp` and `on_bound` together
+    // to decide whether the query point is outside B, within the tolerance of
+    // ∂B, or inside B.
     auto clamping = [&half_size](const int i, const double coord,
-                                 bool& is_clamp) {
-      is_clamp = true;
+                                 bool* is_clamp) {
+      *is_clamp = true;
       if (coord >= half_size(i)) return half_size(i);
       if (coord <= -half_size(i)) return -half_size(i);
-      is_clamp = false;
+      *is_clamp = false;
       return coord;
     };
 
-    // For a query point Q inside the box, this helper function picks the axis
-    // whose coordinate is closest to the boundary value ±half_size(i). It will
-    // help us compute the nearest point on the boundary.
-    // @param p_GQ position of Q inside the box.
+    // The clamping point C has coordinates of Q clamping onto the box.
+    // Note that:
+    // 1. C is the nearest point to Q on ∂B iff Q is outside B or on ∂B.
+    // 2. C is at the same position as Q iff Q is inside B or on ∂B.
+    // 3. At least one of is_clamp(i) is true iff Q is outside B or on ∂B.
+    Vector3d p_GC_G;
+    Vector3<bool> is_clamp;
+    for (int i = 0; i < 3; ++i)
+      p_GC_G(i) = clamping(i, p_GQ_G(i), &is_clamp(i));
+
+    // For a query point Q inside the box, we pick the axis whose coordinate is
+    // closest to the boundary value ±half_size(i). If Q is equidistant to
+    // multiple faces of the box, we prioritize according to an arbitrary
+    // ordering: +x,-x,+y,-y,+z,-z as described in
+    // QueryObject::ComputeSignedDistanceToPoint.
+    //
+    // @pre Q is inside the box.
     auto extremal_axis = [&half_size](const Vector3d& p_GQ) {
       double min_diff = std::numeric_limits<double>::infinity();
       int axis = 0;
@@ -440,11 +470,6 @@ struct DistanceToPoint {
       }
       return axis;
     };
-
-    // p_GC_G is the position of the clamping point C of the query point Q.
-    Vector3d p_GC_G;
-    Vector3<bool> is_clamp;
-    for (int i = 0; i < 3; ++i) p_GC_G(i) = clamping(i, p_GQ_G(i), is_clamp(i));
 
     // Initialize the position of the nearest point N on ∂B as that of C.
     Vector3d p_GN_G = p_GC_G;
@@ -469,6 +494,10 @@ struct DistanceToPoint {
     // Q is on ∂B     | = nearest point on ∂B |
     // Q is inside B  | ≠ nearest point on ∂B |
     //-----------------------------------------
+    //
+    // TODO(DamrongGuoy): Use tolerance. See the above TODO for clamping().
+    // Instead of checking C = Q then checking is_clamp(i), we will check
+    // `is_clamp` and `on_bound` to distinguish the three cases.
     if (p_GC_G != p_GQ_G) {
       // Q is outside the box.
       Vector3d p_NQ_G = p_GQ_G - p_GN_G;
@@ -482,7 +511,8 @@ struct DistanceToPoint {
       // or three of the is_clamp(i) equals true respectively.  The gradient
       // at a point on an edge or a vertex of the box is undefined. Here, the
       // calculation is equivalent to averaging outward normals of the faces
-      // that contain the point.
+      // that contain the point.  We do not use weighted averaging because we
+      // want to make the decision locally independent of the shape of the box.
       for (int i = 0; i < 3; ++i) {
         if (is_clamp(i)) grad_G(i) = (p_GC_G(i) >= 0.)? 1. : -1.;
       }
@@ -496,16 +526,15 @@ struct DistanceToPoint {
       bool positive_or_zero = (p_GQ_G(axis) >= 0.);
       p_GN_G(axis) = positive_or_zero ? half_size(axis) : -half_size(axis);
       grad_G(axis) = positive_or_zero ? 1. : -1.;
-      distance = -half_size(axis) + std::abs(p_GQ_G(axis));
+      distance = std::abs(p_GQ_G(axis)) - half_size(axis);
     }
 
-    Vector3d grad_W = X_WG.inverse() * grad_G;
+    Vector3d grad_W = X_WG.linear().inverse() * grad_G;
     return SignedDistanceToPoint<double>{geometry_id, p_GN_G, distance, grad_W};
   }
 };
 
-// The callback function in fcl::distance request. It supports
-// ComputeSignedDistanceToPoint.
+// Callback function from fcl::distance to help ComputeSignedDistanceToPoint.
 bool DistanceFromPointCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
                                fcl::CollisionObjectd* fcl_object_B_ptr,
                                // NOLINTNEXTLINE
@@ -524,7 +553,7 @@ bool DistanceFromPointCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
       fcl_object_B_ptr : fcl_object_A_ptr;
 
   const std::vector<GeometryId>& geometry_map = data.geometry_map;
-  GeometryId target_id = EncodedData(*geometry_object).id(geometry_map);
+  GeometryId geometry_id = EncodedData(*geometry_object).id(geometry_map);
 
   const fcl::CollisionGeometryd* collision_geometry =
       geometry_object->collisionGeometry().get();
@@ -532,23 +561,23 @@ bool DistanceFromPointCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
   // TODO(DamrongGuoy): Replace this custom code when FCL does this for us with
   // the required accuracy and performance.
   //
-  SupportGeometry geometry;
+  DistanceToPoint distance_to_point{geometry_id,
+                                    geometry_object->getTransform(),
+                                    point_object->getTranslation()};
+
+  SignedDistanceToPoint<double> distance;
   switch (collision_geometry->getNodeType()) {
     case fcl::GEOM_SPHERE:
-      geometry = static_cast<const fcl::Sphered*>(collision_geometry);
+      distance = distance_to_point(
+          *static_cast<const fcl::Sphered*>(collision_geometry));
       break;
     case fcl::GEOM_BOX:
-      geometry = static_cast<const fcl::Boxd*>(collision_geometry);
+      distance = distance_to_point(
+          *static_cast<const fcl::Boxd*>(collision_geometry));
       break;
     default:
       return false;  // Returning false tells fcl to continue to other objects.
   }
-
-  const Isometry3<double>& X_WG = geometry_object->getTransform();
-  const Vector3d& p_WQ = point_object->getTranslation();
-
-  SignedDistanceToPoint<double> distance =
-      visit(DistanceToPoint{target_id, X_WG, p_WQ}, geometry);
 
   if (distance.distance <= data.threshold)
     data.distances->emplace_back(distance);
