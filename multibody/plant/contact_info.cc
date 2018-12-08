@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/multibody_plant/contact_info.h"
+#include "drake/multibody/plant/contact_info.h"
 
 #include "drake/common/default_scalars.h"
 

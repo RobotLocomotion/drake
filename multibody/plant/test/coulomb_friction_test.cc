@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
+#include "drake/multibody/plant/coulomb_friction.h"
 
 #include <gtest/gtest.h>
 

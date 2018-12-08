@@ -1,11 +1,11 @@
-#include "drake/multibody/multibody_tree/implicit_stribeck/implicit_stribeck_solver.h"
+#include "drake/multibody/plant/implicit_stribeck_solver.h"
 
 #include <memory>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/multibody_tree/implicit_stribeck/test/implicit_stribeck_solver_test_util.h"
+#include "drake/multibody/plant/test/implicit_stribeck_solver_test_util.h"
 
 namespace drake {
 namespace multibody {
