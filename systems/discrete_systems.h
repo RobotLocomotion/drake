@@ -4,8 +4,10 @@ namespace systems {
 
 // If you modify this example, be sure to update the matching unit test in
 // systems/analysis/test/simulator_test.cc.
-// TODO(sherm1) Beautify this example when PR #10132 lands.
-/** @addtogroup discrete_systems Discrete Systems
+// TODO(sherm1) When PR #10132 lands, beautify this example and use SignalLogger
+// for output rather than std::cout.
+
+/** @addtogroup discrete_systems
 @brief This page describes discrete systems modeled by difference equations
 (contrast to continuous systems modeled by ordinary differential equations)
 as well as considerations for implementing these systems in Drake.
@@ -129,7 +131,7 @@ _time_, and evolve in time both continuously (flow) and discretely (jump). It
 is easy enough to use time to represent the discrete steps n, by the conversion
 `t=n*h` where h is a periodic sampling time. In Figure 1 we've shown the
 conversion to time used by the example above as a second horizontal axis.
-However, since Drake simulations advance through continuous time, it must be
+However, since Drake simulations advance through _continuous_ time, it must be
 possible to obtain the values of all state variables and outputs at _any_ time
 t, not just at discrete times. So the question arises: what is the value of y(t)
 for values of t in between the sample times shown above? The answer doesn't
@@ -166,38 +168,57 @@ Which of the two continuous functions above is produced depends on whether the
 first periodic update occurs at time t=0 or t=h. However, for most-convenient
 intermixing of continuous and discrete elements, we recommend the sampling shown
 in Figure 2(a), which is produced by allowing the first events to occur at t=0
-as we did in the example above. With that method the update that advances the
-discrete system from step n to step n+1 occurs at time `t = n*h` as expected,
-allowing continuous quantities like u(t) to be used in the update function. On
-the other hand, with the sampling in Figure 2(b) that update occurs at time
-`t = (n+1)*h` instead, meaning that the value `u(n*h)` would not be available
-unless it had been previously sampled (e.g., via a zero-order hold).
+as we did in the example above.
 
-<h3>Timing of Publish vs. DiscreteUpdate in Drake</h3>
+<h4>(Advanced) Why is 2(a) better than 2(b)?</h4>
 
-A discrete system viewed in continuous time does not have a unique value at
-its sample times. In Figure 2 the ○ and ● symbols show two possible values
-at the same times. For a given sample time t, we use the notation t⁻ to denote
-the "pre-update" time, and t⁺ to denote the "post-update" time, so y(t⁻) is the
-value of y at time t _before_ discrete variables are updated, and y(t⁺) the
-value of y at time t _after_ they are updated. Thus if we have `t = n*h` then
-`y(t⁻) = yₙ` and `y(t⁺) = yₙ₊₁`.
+With the sampling shown in Figure 2(a), the update that advances the discrete
+system from step n to step n+1 occurs at time `t = n*h` as expected, allowing
+continuous quantities like u(t) to be used in the update function. On the other
+hand, with the sampling in Figure 2(b) that update occurs at time `t = (n+1)*h`
+instead, meaning that the value `u(n*h)` would not be available unless it had
+been previously sampled (e.g., via a zero-order hold).
 
-You can think of tᵢ⁻ as the time at the end of the iᵗʰ time step, while tᵢ⁺ is
-the time at the beginning of time step i+1. Initialization can then be
-considered the 0ᵗʰ "time step", so t₀⁻ occurs at the end of initialization,
-while t₀⁺ occurs at the start of the first time step.
+<h3>Timing of publish vs. discrete update events in Drake</h3>
 
-With those distinctions drawn, we can define Drake's event behavior: `Publish`
-events occur at t⁻ (end of previous step, ○ markers in Figure 2), while `Update`
-events occur at the start of the current step to produce the t⁺ values
-(● markers). So if you define periodic events starting at t=0 as we did in the
-example above, the first Publish event occurs at the end of initialization,
-while the first Update event occurs at the beginning of the first time step.
-Both `DiscreteUpdate` and `UnrestrictedUpdate` events are handled at the
-beginning of each step, with all unrestricted updates done first, followed by
-all discrete updates. The Context supplied as input to those update methods will
-contain the t⁻ (step n) values.
+A discrete system viewed in continuous time does not have a unique value at its
+sample times. In Figure 2, each pair of ○ and ● symbols shows two possible
+values at the same time. For a given sample time t, we use the notation x⁻(t) to
+denote the "pre-update" value of the state x, and x⁺(t) to denote the
+"post-update" value of x. So x⁻(t) is the value of x at time t _before_ discrete
+variables are updated, and x⁺(t) the value of x at time t _after_ they are
+updated. Thus if we have `t = n*h` then `x⁻(t) = xₙ` and `x⁺(t) = xₙ₊₁`. Note
+that state-dependent computations may be affected by these updates. For
+example, evaluating an input u(t) yields u⁻(t) before discrete updates, and
+u⁺(t) afterwards, meaning that the input evaluation is carried out using x⁻(t)
+or x⁺(t), respectively.
+
+For a discrete system, you can think of xₙ⁻(tₙ) as the state's value at
+the end of the nᵗʰ discrete step and the beginning of step n+1. Then discrete
+updates occur, yielding xₙ₊₁⁺, with time unchanged at tₙ. Initialization can
+be considered the 0ᵗʰ "step", so x₀⁻(t₀) is the state at the end of
+initialization, while x₁⁺(t₀) is the state just after the discrete update at
+the start of step 1.
+
+With those distinctions drawn, we can define Drake's state update behavior
+during a time step:
+ - `Publish` events at time t see x⁻(t), so if a publish handler evaluates an
+   input it sees u⁻(t). This occurs at the end of a step, shown as ○ markers in
+   Figure 2.
+ - `Update` events (of all kinds) at time t also see x⁻(t) and u⁻(t), and
+   produce x⁺(t). This occurs at the start of the next step, shown as ● markers
+   in Figure 2.
+ - `Continuous` update (numerical integration and time advancement) starts with
+   x⁺(t). Input and derivative evaluations will occur repeatedly as the time
+   and continuous state advance. Each evaluation will be performed using
+   updated values for continuous states xc and time. However, the discrete
+   variables (state partitions xd and xa) are held constant at their x⁺(t)
+   values, that is, at xd⁺(t) and xa⁺(t).
+
+If you define periodic events starting at t=0 as we did in the
+example above, the first publish event occurs at the end of initialization,
+while the first discrete update event occurs at the beginning of the first step,
+followed by continuous time and state advancement.
 
 @see drake::systems::Simulator for more details.
 
