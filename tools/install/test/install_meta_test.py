@@ -48,3 +48,20 @@ class TestInstallMeta(unittest.TestCase):
         }
         actual_manifest = self.listdir_recursive(install_dir)
         self.assertSetEqual(actual_manifest, expected_manifest)
+
+    def test_strip_args(self):
+        """Test behavior of `--no_strip`."""
+        install_dir = self.get_install_dir("test_strip_args")
+        strip_substr = "-- Symbols will NOT be stripped"
+        # - Without.
+        text_without = check_output(
+            [self.BINARY, "-v", install_dir], stderr=STDOUT)
+        # N.B. `assertIn` error messages are not great for multiline, so just
+        # print and use nominal asserts.
+        print(text_without)
+        self.assertTrue(strip_substr not in text_without)
+        # - With.
+        text_with = check_output(
+            [self.BINARY, install_dir, "-v", "--no_strip"], stderr=STDOUT)
+        print(text_with)
+        self.assertTrue(strip_substr in text_with)
