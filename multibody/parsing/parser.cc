@@ -36,7 +36,8 @@ std::vector<ModelInstanceIndex> Parser::AddAllModelsFromFile(
     const std::string& file_name) {
   const FileType type = DetermineFileType(file_name);
   if (type == FileType::kSdf) {
-    return AddModelsFromSdfFile(file_name, plant_, scene_graph_);
+    return AddModelsFromSdfFile(file_name, package_map_, plant_,
+        scene_graph_);
   } else {
     return {AddModelFromUrdfFile(file_name, {}, plant_, scene_graph_)};
   }
@@ -47,7 +48,8 @@ ModelInstanceIndex Parser::AddModelFromFile(
     const std::string& model_name) {
   const FileType type = DetermineFileType(file_name);
   if (type == FileType::kSdf) {
-    return AddModelFromSdfFile(file_name, model_name, plant_, scene_graph_);
+    return AddModelFromSdfFile(file_name, model_name, package_map_,
+        plant_, scene_graph_);
   } else {
     return AddModelFromUrdfFile(file_name, model_name, plant_, scene_graph_);
   }
