@@ -69,7 +69,8 @@ Isometry3d Vector7ToIsometry3d(const VectorX<double>& pose_vector) {
   Quaterniond quaternion(pose_vector(3), pose_vector(4),
                          pose_vector(5), pose_vector(6));
   Isometry3<double> pose = Isometry3<double>::Identity();
-  // TODO(Mitiguy) Ask Naveen to document why the quaternion is not normalized,
+  // TODO(Mitiguy) Ask Naveen to respond to newly created issue 10167 which
+  // requests documention (or a comment) about the un-normalized quaternion,
   // which allows for quaternion.toRotationMatrix() to return a non-orthonormal
   // matrix.  However, manipulation/perception/test/pose_smoother_test.cc fails
   // (why?) if the next line is uncommented (which makes me question the test).
