@@ -269,10 +269,32 @@ endif()
 
 set(BAZEL_TARGETS //:install)
 
+# Example usage to check warning for proprietary dependencies, using dummy
+# target.
+#   $ cmake .. -DDRAKE_TEST_WITH_DUMMY=ON -DCMAKE_BUILD_TYPE=Debug
+option(DRAKE_TEST_WITH_DUMMY "Use dummy target to quickly test CMake behavior." OFF)
+mark_as_advanced(DRAKE_TEST_WITH_DUMMY)
+if(DRAKE_TEST_WITH_DUMMY)
+  set(BAZEL_TARGETS //tools/install/dummy:install)
+endif()
+
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/install" CACHE STRING
     "Install path prefix, prepended onto install directories" FORCE
   )
+endif()
+
+set(BAZEL_TARGETS_ARGS "${CMAKE_INSTALL_PREFIX}")
+
+# If we are in debug mode, do not strip symbols.
+if(CMAKE_BUILD_TYPE STREQUAL Debug OR CMAKE_BUILD_TYPE STREQUAL RelWithDebugInfo)
+  # SNOPT has restrictions for redistribution given that we are statically
+  # linking it in.
+  if(WITH_SNOPT OR WITH_ROBOTLOCOMOTION_SNOPT)
+    message(WARNING "SNOPT is enabled, thus symbols will STILL be stripped, even in debug mode.")
+  else()
+    list(INSERT BAZEL_TARGETS_ARGS 0 "--no_strip")
+  endif()
 endif()
 
 include(ExternalProject)
@@ -283,7 +305,7 @@ ExternalProject_Add(drake_cxx_python
   BUILD_COMMAND ${BAZEL_ENV} "${Bazel_EXECUTABLE}" ${BAZEL_STARTUP_ARGS} build ${BAZEL_ARGS} ${BAZEL_TARGETS}
   BUILD_IN_SOURCE 1
   BUILD_ALWAYS 1
-  INSTALL_COMMAND ${BAZEL_ENV} "${Bazel_EXECUTABLE}" ${BAZEL_STARTUP_ARGS} run ${BAZEL_ARGS} ${BAZEL_TARGETS} -- "${CMAKE_INSTALL_PREFIX}"
+  INSTALL_COMMAND ${BAZEL_ENV} "${Bazel_EXECUTABLE}" ${BAZEL_STARTUP_ARGS} run ${BAZEL_ARGS} ${BAZEL_TARGETS} -- ${BAZEL_TARGETS_ARGS}
   USES_TERMINAL_BUILD 1
   USES_TERMINAL_INSTALL 1
 )
