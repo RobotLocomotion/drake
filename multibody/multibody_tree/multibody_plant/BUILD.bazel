@@ -6,6 +6,10 @@ load(
     "drake_cc_hdrs_forwarding_library",
     "drake_cc_library_aliases",
 )
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_package_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
@@ -16,8 +20,28 @@ package(
 # once Drake no longer internally uses any of these labels, and then schedule
 # this package for removal at a specific date.
 
+drake_cc_package_library(
+    name = "multibody_plant",
+    deps = [
+        ":contact_info",
+        ":contact_results",
+        ":contact_results_to_lcm",
+        ":coulomb_friction",
+        ":forwarding_hdrs",
+    ],
+)
+
+# Each of these aliases both `cc_library(name = "foo")` and `foo.h`.
 _RELATIVE_LABELS = [
-    ":implicit_stribeck_solver",
+    ":contact_info",
+    ":contact_results",
+    ":contact_results_to_lcm",
+    ":coulomb_friction",
+]
+
+# Each of these aliases only `foo.h`, without a similarly-named cc_library.
+_EXTRA_PLANT_HDRS = [
+    "multibody_plant.h",
 ]
 
 # Generates header files with the old include paths that include the header
@@ -26,7 +50,10 @@ drake_cc_hdrs_forwarding_library(
     name = "forwarding_hdrs",
     actual_subdir = "multibody/plant",
     add_deprecation_warning = False,
-    relative_labels = _RELATIVE_LABELS,
+    relative_labels = _RELATIVE_LABELS + [
+        ":" + x[:-2]
+        for x in _EXTRA_PLANT_HDRS
+    ],
     visibility = ["//visibility:private"],
 )
 
