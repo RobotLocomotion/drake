@@ -1176,7 +1176,8 @@ void GeometryState<T>::RegisterValidGeometry(
     p.AddGroup("label");
     // NOTE: These render labels are *not* being returned and there is currently
     // no meaningful facility for looking up by render label.
-    p.AddProperty("label", "id", render::RenderLabel::new_label());
+    static const auto kNonTerrainLabel = render::RenderLabel::new_label();
+    p.AddProperty("label", "id", kNonTerrainLabel);
     AssignRole(source_id, geometry_id, p);
     IllustrationProperties i;
     i.AddGroup("phong");

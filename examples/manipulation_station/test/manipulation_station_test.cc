@@ -274,6 +274,15 @@ GTEST_TEST(ManipulationStationTest, CheckCollisionVariants) {
   EXPECT_EQ(station2.get_controller_plant().num_collision_geometries(), 0);
 }
 
+// Check that making many stations does not exhaust resources.
+GTEST_TEST(ManipulationStationTest, MultipleInstanceTest) {
+  for (int i = 0; i < 20; ++i) {
+    ManipulationStation<double> station;
+    station.SetupDefaultStation();
+    station.Finalize();
+  }
+}
+
 }  // namespace
 }  // namespace manipulation_station
 }  // namespace examples
