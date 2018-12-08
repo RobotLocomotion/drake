@@ -76,24 +76,28 @@ integration. All other configurations are provided on a best-effort basis.
 Drake requires a compiler running in C++14 mode or greater. MATLAB is only
 supported for CMake builds using the "Unix Makefiles" generator.
 
-+----------------------------------+-----------------+-----------------+------------+-------------------+--------+
-| Operating System                 | Build System    | C/C++ Compiler  | Java       | MATLAB (Optional) | Python |
-+==================================+=================+=================+============+===================+========+
-+----------------------------------+-----------------+-----------------+------------+-------------------+--------+
-| Ubuntu 16.04 LTS (Xenial Xerus)  | | Bazel 0.19.2  | | Clang 6.0     | OpenJDK 8  | R2017a            | 2.7.11 |
-|                                  | | CMake 3.5.1   | | GCC 5.4       |            |                   |        |
-+----------------------------------+-----------------+-----------------+------------+-------------------+--------+
-| Ubuntu 18.04 LTS (Bionic Beaver) | | Bazel 0.19.2  | | Clang 6.0     | OpenJDK 11 | R2018b            | 2.7.15 |
-|                                  | | CMake 3.10.2  | | GCC 7.3       |            |                   |        |
-+----------------------------------+-----------------+-----------------+------------+                   |        |
-| macOS High Sierra (10.13)        | | Bazel 0.19.2  | Apple LLVM 10.0 | Oracle 11  |                   |        |
-+----------------------------------+ | CMake 3.13.0  |                 |            |                   |        |
-| macOS Mojave (10.14)             |                 |                 |            |                   |        |
-+----------------------------------+-----------------+-----------------+------------+-------------------+--------+
++----------------------------------+---------------------+-----------------+------------+-------------------+--------+
+| Operating System                 | Build System        | C/C++ Compiler  | Java       | MATLAB (Optional) | Python |
++==================================+=====================+=================+============+===================+========+
++----------------------------------+---------------------+-----------------+------------+-------------------+--------+
+| Ubuntu 16.04 LTS (Xenial Xerus)  | | Bazel 0.19.2      | | Clang 6.0     | OpenJDK 8  | R2017a            | 2.7.11 |
+|                                  | | CMake 3.5.1       | | GCC 5.4       |            |                   |        |
++----------------------------------+---------------------+-----------------+------------+-------------------+--------+
+| Ubuntu 18.04 LTS (Bionic Beaver) | | Bazel 0.19.2      | | Clang 6.0     | OpenJDK 11 | R2018b            | 2.7.15 |
+|                                  | | CMake 3.10.2      | | GCC 7.3       |            |                   |        |
++----------------------------------+---------------------+-----------------+------------+                   |        |
+| macOS High Sierra (10.13)        | | Bazel 0.19.2 [*]_ | Apple LLVM 10.0 | Oracle 11  |                   |        |
++----------------------------------+ | CMake 3.13.0      |                 |            |                   |        |
+| macOS Mojave (10.14)             |                     |                 |            |                   |        |
++----------------------------------+---------------------+-----------------+------------+-------------------+--------+
 
 
 macOS Mojave C++ and Python support and macOS and Ubuntu Bionic MATLAB support
 is experimental and untested in continuous integration.
+
+.. [*] Due to how the Homebrew tap is configured for Bazel, we are unable to
+   pin Bazel versions. The version displayed here is what we have tested, but
+   you may get a newer version from ``install_prereqs.sh``.
 
 .. _binary-packages:
 
