@@ -6,6 +6,7 @@ load(
     "install",
     "install_cmake_config",
     "install_files",
+    "install_py2_duplicates_if_py3",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -38,6 +39,16 @@ OPTITRACK_TARGETS = [
     "@optitrack_driver//src:optitrack_client_py",
 ]
 
+# For Python2-only `drake_visualizer`.
+install_py2_duplicates_if_py3(
+    name = "install_py2_duplicates_if_py3",
+    allowed_externals = OPTITRACK_TARGETS,
+    py_dest = "@PYTHON_SITE_PACKAGES@/optitrack",
+    py_strip_prefix = ["**/"],
+    targets = ["@optitrack_driver//lcmtypes:py_optitrack_lcmtypes"],
+    visibility = ["//visibility:private"],
+)
+
 install(
     name = "install",
     workspace = CMAKE_PACKAGE,
@@ -57,6 +68,7 @@ install(
     deps = [
         ":install_cmake_config",
         ":install_optitrack_client",
+        ":install_py2_duplicates_if_py3",
     ],
 )
 
