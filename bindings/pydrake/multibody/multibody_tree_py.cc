@@ -427,9 +427,7 @@ void init_math(py::module m) {
 void init_multibody_plant(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::multibody::multibody_plant;
-  constexpr auto& doc = pydrake_doc.drake.multibody.multibody_plant;
+  constexpr auto& doc = pydrake_doc.drake.multibody;
 
   py::module::import("pydrake.geometry");
   py::module::import("pydrake.systems.framework");
@@ -759,8 +757,6 @@ void init_parsing(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody.parsing;
-
-  using multibody_plant::MultibodyPlant;
 
   // Stub in a deprecation shim for the Parser class.
   // TODO(jwnimmer-tri) Remove this stub on or about 2019-01-01.

@@ -125,7 +125,8 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, BasicTest) {
   plant->AddRigidBody("link", SpatialInertia<double>());
   plant->Finalize();
 
-  auto publisher = ConnectContactResultsToDrakeVisualizer(&builder, *plant);
+  auto publisher = multibody_plant::ConnectContactResultsToDrakeVisualizer(
+      &builder, *plant);
 
   // Confirm that we get a non-null result.
   EXPECT_NE(publisher, nullptr);
@@ -150,8 +151,8 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, NestedDiagramTest) {
   systems::DiagramBuilder<double> builder;
   auto interior_diagram = builder.AddSystem(interior_builder.Build());
 
-  auto publisher = ConnectContactResultsToDrakeVisualizer(&builder, *plant,
-      interior_diagram->GetOutputPort("contact_results"));
+  auto publisher = multibody_plant::ConnectContactResultsToDrakeVisualizer(
+      &builder, *plant, interior_diagram->GetOutputPort("contact_results"));
 
   // Confirm that we get a non-null result.
   EXPECT_NE(publisher, nullptr);

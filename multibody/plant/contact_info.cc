@@ -4,7 +4,6 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_plant {
 
 template <typename T>
 PointPairContactInfo<T>::PointPairContactInfo(
@@ -20,10 +19,9 @@ PointPairContactInfo<T>::PointPairContactInfo(
     separation_speed_(separation_velocity),
     slip_speed_(slip_speed) {}
 
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake
 
 // Explicitly instantiates on the most common scalar types.
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::multibody_plant::PointPairContactInfo)
+    class ::drake::multibody::PointPairContactInfo)
