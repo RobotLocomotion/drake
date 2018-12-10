@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 #include <functional>
 #include <limits>
