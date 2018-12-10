@@ -12,6 +12,7 @@
 #include "pybind11/eval.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/test/test_util_pybind.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
@@ -21,6 +22,8 @@ using std::vector;
 namespace drake {
 namespace pydrake {
 namespace {
+
+using test::SynchronizeGlobalsForPython3;
 
 template <typename... Ts>
 struct SimpleTemplate {
@@ -45,12 +48,6 @@ void CheckValue(const string& expr, const T& expected) {
   EXPECT_EQ(py::eval(expr).cast<T>(), expected);
 }
 
-// TODO(eric.cousineau): Figure out why this is necessary.
-// Necessary for Python3.
-void sync(py::module m) {
-  py::globals().attr("update")(m.attr("__dict__"));
-}
-
 GTEST_TEST(CppTemplateTest, TemplateClass) {
   py::module m("__main__");
 
@@ -59,14 +56,14 @@ GTEST_TEST(CppTemplateTest, TemplateClass) {
 
   const vector<string> expected_1 = {"int"};
   const vector<string> expected_2 = {"int", "double"};
-  sync(m);
+  SynchronizeGlobalsForPython3(m);
 
   CheckValue("DefaultInst().GetNames()", expected_1);
   CheckValue("SimpleTemplate[int]().GetNames()", expected_1);
   CheckValue("SimpleTemplate[int, float]().GetNames()", expected_2);
 
   m.def("simple_func", [](const SimpleTemplate<int>&) {});
-  sync(m);
+  SynchronizeGlobalsForPython3(m);
 
   // Check error message if a function is called with the incorrect arguments.
   // N.B. We use `[^\0]` because C++ regex does not have an equivalent of
@@ -93,7 +90,7 @@ GTEST_TEST(CppTemplateTest, TemplateFunction) {
 
   const vector<string> expected_1 = {"int"};
   const vector<string> expected_2 = {"int", "double"};
-  sync(m);
+  SynchronizeGlobalsForPython3(m);
   CheckValue("SimpleFunction[int]()", expected_1);
   CheckValue("SimpleFunction[int, float]()", expected_2);
 }
@@ -120,7 +117,7 @@ GTEST_TEST(CppTemplateTest, TemplateMethod) {
 
   const vector<string> expected_1 = {"int"};
   const vector<string> expected_2 = {"int", "double"};
-  sync(m);
+  SynchronizeGlobalsForPython3(m);
   CheckValue("SimpleType().SimpleMethod[int]()", expected_1);
   CheckValue("SimpleType().SimpleMethod[int, float]()", expected_2);
 }

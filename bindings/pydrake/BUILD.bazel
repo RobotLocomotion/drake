@@ -91,6 +91,14 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "test_util_pybind",
+    testonly = 1,
+    hdrs = ["test/test_util_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+)
+
+drake_cc_library(
     name = "autodiff_types_pybind",
     hdrs = ["autodiff_types_pybind.h"],
     declare_installed_headers = 0,
