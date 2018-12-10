@@ -178,7 +178,6 @@ ManipulationStation<T>::ManipulationStation(double time_step)
       -9.81 * Vector3d::UnitZ());
   plant_->set_name("plant");
 
-  internal::get_camera_poses(&camera_poses_in_world_);
   this->set_name("manipulation_station");
 }
 
@@ -241,9 +240,10 @@ void ManipulationStation<T>::SetupDefaultStation(
       default:
         DRAKE_ABORT_MSG("Unrecognized collision_model.");
     }
-    const Isometry3<double> X_WI = Isometry3<double>::Identity();
+    const auto X_WI = RigidTransform<double>::Identity();
     auto iiwa_instance = internal::AddAndWeldModelFrom(
-        sdf_path, "iiwa", plant_->world_frame(), "iiwa_link_0", X_WI, plant_);
+        sdf_path, "iiwa", plant_->world_frame(), "iiwa_link_0",
+        X_WI.GetAsIsometry3(), plant_);
     RegisterIiwaControllerModel(
         sdf_path, iiwa_instance, plant_->world_frame(),
         plant_->GetFrameByName("iiwa_link_0", iiwa_instance), X_WI);
@@ -255,15 +255,39 @@ void ManipulationStation<T>::SetupDefaultStation(
         "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
     const multibody::Frame<T>& link7 =
         plant_->GetFrameByName("iiwa_link_7", iiwa_model_.model_instance);
-    Isometry3<double> X_7G =
-        RigidTransform<double>(RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
-                               Vector3d(0, 0, 0.114))
-            .GetAsIsometry3();
+    const RigidTransform<double> X_7G(RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
+                                      Vector3d(0, 0, 0.114));
     auto wsg_instance = internal::AddAndWeldModelFrom(
-        sdf_path, "gripper", link7, "body", X_7G, plant_);
+        sdf_path, "gripper", link7, "body", X_7G.GetAsIsometry3(), plant_);
     RegisterWsgControllerModel(sdf_path, wsg_instance, link7,
                                plant_->GetFrameByName("body", wsg_instance),
                                X_7G);
+  }
+
+  // Add default cameras.
+  {
+    std::map<std::string, RigidTransform<double>> camera_poses;
+    internal::get_camera_poses(&camera_poses);
+    // Typical D415 intrinsics for 848 x 480 resolution, note that rgb and
+    // depth are slightly different. And we are not able to model that at the
+    // moment.
+    // RGB:
+    // - w: 848, h: 480, fx: 616.285, fy: 615.778, ppx: 405.418, ppy: 232.864
+    // DEPTH:
+    // - w: 848, h: 480, fx: 645.138, fy: 645.138, ppx: 420.789, ppy: 239.13
+    // For this camera, we are going to assume that fx = fy, and we can compute
+    // fov_y by: fy = height / 2 / tan(fov_y / 2)
+    const double kFocalY = 645.;
+    const int kHeight = 480;
+    const int kWidth = 848;
+    const double fov_y = std::atan(kHeight / 2. / kFocalY) * 2;
+    geometry::dev::render::DepthCameraProperties camera_properties(
+        kWidth, kHeight, fov_y, geometry::dev::render::Fidelity::kLow, 0.1,
+        2.0);
+    for (const auto& camera_pair : camera_poses) {
+      RegisterRgbdCamera(camera_pair.first, plant_->world_frame(),
+                         camera_pair.second, camera_properties);
+    }
   }
 }
 
@@ -279,7 +303,7 @@ void ManipulationStation<T>::MakeIiwaControllerModel() {
       owned_controller_plant_->world_frame(),
       owned_controller_plant_->GetFrameByName(iiwa_model_.child_frame->name(),
                                               controller_iiwa_model),
-      iiwa_model_.X_PC);
+      iiwa_model_.X_PC.GetAsIsometry3());
   // Add a single body to represent the IIWA pendant's calibration of the
   // gripper.  The body of the WSG accounts for >90% of the total mass
   // (according to the sdf)... and we don't believe our inertia calibration
@@ -296,7 +320,7 @@ void ManipulationStation<T>::MakeIiwaControllerModel() {
   owned_controller_plant_->WeldFrames(
       owned_controller_plant_->GetFrameByName(wsg_model_.parent_frame->name(),
                                               controller_iiwa_model),
-      wsg_equivalent.body_frame(), wsg_model_.X_PC);
+      wsg_equivalent.body_frame(), wsg_model_.X_PC.GetAsIsometry3());
 
   owned_controller_plant_
       ->template AddForceElement<multibody::UniformGravityFieldElement>(
@@ -431,26 +455,30 @@ void ManipulationStation<T>::Finalize() {
                     render_scene_graph->get_source_pose_port(
                         plant_->get_source_id().value()));
 
-    geometry::dev::render::DepthCameraProperties camera_properties(
-        640, 480, M_PI_4, geometry::dev::render::Fidelity::kLow, 0.1, 2.0);
+    for (const auto& info_pair : camera_information_) {
+      std::string camera_name = "camera_" + info_pair.first;
+      const CameraInformation& info = info_pair.second;
 
-    // Create the cameras.
-    for (const auto& pose : camera_poses_in_world_) {
+      const optional<geometry::FrameId> parent_body_id =
+          plant_->GetBodyFrameIdIfExists(info.parent_frame->body().index());
+      DRAKE_THROW_UNLESS(parent_body_id.has_value());
+      const Isometry3<double> X_PC =
+          info.parent_frame->GetFixedPoseInBodyFrame() *
+          info.X_PC.GetAsIsometry3();
+
       auto camera =
           builder.template AddSystem<systems::sensors::dev::RgbdCamera>(
-              "camera_" + pose.first,
-              geometry::dev::SceneGraph<double>::world_frame_id(),
-              pose.second.GetAsIsometry3(), camera_properties, false);
+              camera_name, parent_body_id.value(), X_PC, info.properties,
+              false);
       builder.Connect(render_scene_graph->get_query_output_port(),
                       camera->query_object_input_port());
 
-      // TODO(russt): Add additional cameras.
       builder.ExportOutput(camera->color_image_output_port(),
-                           "camera_" + pose.first + "_rgb_image");
+                           camera_name + "_rgb_image");
       builder.ExportOutput(camera->depth_image_output_port(),
-                           "camera_" + pose.first + "_depth_image");
+                           camera_name + "_depth_image");
       builder.ExportOutput(camera->label_image_output_port(),
-                           "camera_" + pose.first + "_label_image");
+                           camera_name + "_label_image");
     }
   }
 
@@ -620,9 +648,9 @@ void ManipulationStation<T>::SetWsgVelocity(
 template <typename T>
 std::vector<std::string> ManipulationStation<T>::get_camera_names() const {
   std::vector<std::string> names;
-  names.reserve(camera_poses_in_world_.size());
-  for (const auto& pose : camera_poses_in_world_) {
-    names.emplace_back(pose.first);
+  names.reserve(camera_information_.size());
+  for (const auto& info : camera_information_) {
+    names.emplace_back(info.first);
   }
   return names;
 }
@@ -649,7 +677,8 @@ void ManipulationStation<T>::RegisterIiwaControllerModel(
     const std::string& model_path,
     const multibody::ModelInstanceIndex iiwa_instance,
     const multibody::Frame<T>& parent_frame,
-    const multibody::Frame<T>& child_frame, const Isometry3<double>& X_PC) {
+    const multibody::Frame<T>& child_frame,
+    const RigidTransform<double>& X_PC) {
   // TODO(siyuan.feng@tri.global): We really only just need to make sure
   // the parent frame is a AnchoredFrame(i.e. there is a rigid kinematic path
   // from it to the world), and record that X_WP. However, the computation to
@@ -670,13 +699,53 @@ void ManipulationStation<T>::RegisterWsgControllerModel(
     const std::string& model_path,
     const multibody::ModelInstanceIndex wsg_instance,
     const multibody::Frame<T>& parent_frame,
-    const multibody::Frame<T>& child_frame, const Isometry3<double>& X_PC) {
+    const multibody::Frame<T>& child_frame,
+    const RigidTransform<double>& X_PC) {
   wsg_model_.model_path = model_path;
   wsg_model_.parent_frame = &parent_frame;
   wsg_model_.child_frame = &child_frame;
   wsg_model_.X_PC = X_PC;
 
   wsg_model_.model_instance = wsg_instance;
+}
+
+template <typename T>
+void ManipulationStation<T>::RegisterRgbdCamera(
+    const std::string& name, const multibody::Frame<T>& parent_frame,
+    const RigidTransform<double>& X_PC,
+    const geometry::dev::render::DepthCameraProperties& properties) {
+  CameraInformation info;
+  info.parent_frame = &parent_frame;
+  info.X_PC = X_PC;
+  info.properties = properties;
+
+  camera_information_[name] = info;
+}
+
+template <typename T>
+std::map<std::string, RigidTransform<double>>
+ManipulationStation<T>::GetStaticCameraPosesInWorld() const {
+  std::map<std::string, RigidTransform<double>> static_camera_poses;
+
+  for (const auto& info : camera_information_) {
+    const auto& frame_P = *info.second.parent_frame;
+
+    // TODO(siyuan.feng@tri.global): We really only just need to make sure
+    // the parent frame is a AnchoredFrame(i.e. there is a rigid kinematic path
+    // from it to the world). However, the computation to query X_WP given a
+    // partially constructed plant is not feasible at the moment, so we are
+    // looking for cameras that are directly attached to the world instead.
+    const bool is_anchored =
+        frame_P.body().index() == plant_->world_frame().body().index();
+    if (is_anchored) {
+      static_camera_poses.emplace(
+          info.first,
+          RigidTransform<double>(frame_P.GetFixedPoseInBodyFrame()) *
+              info.second.X_PC);
+    }
+  }
+
+  return static_camera_poses;
 }
 
 }  // namespace manipulation_station
