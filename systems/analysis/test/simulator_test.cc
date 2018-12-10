@@ -1147,15 +1147,13 @@ GTEST_TEST(SimulatorTest, SimpleHybridSystemTestOffsetZero) {
   const double initial_condition = SetSimpleHybridSystemInitialConditions(
       &simulator.get_mutable_context());
 
-  // The first event occurs at t=0 and should be 
-
-  // Simulate forward. Since the first update occurs at t=1, and StepTo(1) only
-  // takes the state to x⁻(1), no update should occur.
+  // Simulate forward. The first update occurs at t=0, meaning StepTo(1) updates
+  // the discrete state to x⁺(0) (i.e., x₁) before updating time to 1.0.
   simulator.StepTo(1.0);
 
-  // Check that the expected state value was attained. The value should be the
-  // x₀ + u(0) because we expect the discrete update to occur at
-  // t = 0 when u(t) = 1.
+  // Check that the expected state value was attained. The value should be
+  // x₀ + u(0) since we expect the discrete update to occur at t = 0 when
+  // u(t) = 1.
   const double u0 = 1;
   EXPECT_EQ(simulator.get_context().get_discrete_state()[0],
             initial_condition + u0);

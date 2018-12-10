@@ -692,7 +692,7 @@ class LeafSystem : public System<T> {
   /// function, and its trigger will be set to Event::TriggerType::kPeriodic.
   /// Its attribute will be an Event<T>::PeriodicAttribute of @p offset_sec and
   /// @p period_sec. Authors are encouraged to read @ref discrete_systems for
-  /// implications of using discrete systems in a hybrid system framework.
+  /// implications of mixing discrete and continuous systems.
   void DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec = 0) {
     DeclarePeriodicEvent<DiscreteUpdateEvent<T>>(period_sec, offset_sec);
   }
