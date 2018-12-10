@@ -87,7 +87,7 @@ step, these are updated in three stages:
   -# Discrete update (can change only xd)
   -# Continuous update (changes t and xc)
 
-Where needed we extend the above notation to xc⁻, xa⁺, etc. to indicate the
+Where needed, we extend the above notation to xc⁻, xa⁺, etc. to indicate the
 value of an individual partition at a particular stage of the stepping
 algorithm.
 
@@ -139,7 +139,8 @@ procedure Step(tₛ, x⁻(tₛ), tₘₐₓ)
   return {tₑ, x⁻(tₑ)}
 ```
 
-We can use this algorithm to examine the StepTo() and Initialize() functions:
+We can use the notation and pseudocode to flesh out the StepTo() and
+Initialize() functions:
 ```
 // Advance the simulation until time tₘₐₓ.
 procedure StepTo(tₘₐₓ)
