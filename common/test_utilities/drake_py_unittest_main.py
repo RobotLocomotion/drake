@@ -53,6 +53,7 @@ if __name__ == '__main__':
               "marked executable in the filesystem; fix this via chmod a-x " +
               test_filename)
         sys.exit(1)
+    module = imp.load_source(test_name, found_filename)
 
     # Figure out which arguments are for unittest and which are for the module
     # under test.
@@ -65,13 +66,15 @@ if __name__ == '__main__':
         "-c", "--catch",
         "-b", "--buffer",
     ]
+    test_class_guesses = [
+        x for x in dir(module)
+        if x.startswith("Test")
+    ]
     index = 1
     while index < len(sys.argv):
         arg = sys.argv[index]
-        if arg == "--":
-            sys.argv.pop(index)
-            break
-        elif arg in known_unittest_args or arg.startswith("Test"):
+        if arg in known_unittest_args or any([
+                arg.startswith(clazz) for clazz in test_class_guesses]):
             unittest_argv.append(arg)
             sys.argv.pop(index)
             continue
@@ -97,8 +100,6 @@ if __name__ == '__main__':
         if "-h" in unittest_argv or "--help" in unittest_argv:
             parser.print_help()
             print("\n`unittest` specific arguments")
-
-        module = imp.load_source(test_name, found_filename)
 
         # Delegate the rest to unittest.
         unittest.main(module=test_name, argv=unittest_argv)
