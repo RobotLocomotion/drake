@@ -126,9 +126,18 @@ GTEST_TEST(OsqpSolverTest, SolverOptionsTest) {
 
     // Now only allow half the iterations in the OSQP solver. The solver should
     // not be able to solve the problem accurately.
-    prog.SetSolverOption(
-        osqp_solver.solver_id(), "max_iter",
-        result.get_solver_details().GetValue<OsqpSolverDetails>().iter / 2);
+    const int half_iterations =
+        result.get_solver_details().GetValue<OsqpSolverDetails>().iter / 2;
+    SolverOptions solver_options;
+    solver_options.SetOption(osqp_solver.solver_id(), "max_iter",
+                             half_iterations);
+    osqp_solver.Solve(prog, {}, solver_options, &result);
+    EXPECT_NE(
+        result.get_solver_details().GetValue<OsqpSolverDetails>().status_val,
+        OSQP_SOLVED);
+
+    // Now set the options in prog.
+    prog.SetSolverOption(osqp_solver.solver_id(), "max_iter", half_iterations);
     osqp_solver.Solve(prog, {}, {}, &result);
     EXPECT_NE(
         result.get_solver_details().GetValue<OsqpSolverDetails>().status_val,

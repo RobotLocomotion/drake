@@ -183,12 +183,25 @@ void SetOsqpSolverSetting(const std::unordered_map<std::string, T1>& options,
   }
 }
 
-void SetOsqpSolverSettings(const MathematicalProgram& prog,
+template <typename T1, typename T2>
+void SetOsqpSolverSettingWithDefaultValue(
+    const std::unordered_map<std::string, T1>& options,
+    const std::string& option_name, T2* osqp_setting_field,
+    const T1& default_field_value) {
+  const auto it = options.find(option_name);
+  if (it != options.end()) {
+    *osqp_setting_field = it->second;
+  } else {
+    *osqp_setting_field = default_field_value;
+  }
+}
+
+void SetOsqpSolverSettings(const SolverOptions& solver_options,
                            OSQPSettings* settings) {
   const std::unordered_map<std::string, double>& options_double =
-      prog.GetSolverOptionsDouble(OsqpSolver::id());
+      solver_options.GetOptionsDouble(OsqpSolver::id());
   const std::unordered_map<std::string, int>& options_int =
-      prog.GetSolverOptionsInt(OsqpSolver::id());
+      solver_options.GetOptionsInt(OsqpSolver::id());
   // TODO(hongkai.dai): Fill in all the fields defined in OSQPSettings.
   SetOsqpSolverSetting(options_double, "rho", &(settings->rho));
   SetOsqpSolverSetting(options_double, "sigma", &(settings->sigma));
@@ -196,7 +209,11 @@ void SetOsqpSolverSettings(const MathematicalProgram& prog,
   SetOsqpSolverSetting(options_int, "max_iter", &(settings->max_iter));
   SetOsqpSolverSetting(options_int, "polish_refine_iter",
                        &(settings->polish_refine_iter));
-  SetOsqpSolverSetting(options_int, "verbose", &(settings->verbose));
+  SetOsqpSolverSettingWithDefaultValue(options_int, "verbose",
+                                       &(settings->verbose), 0);
+  // Default polish to true, to get an accurate solution.
+  SetOsqpSolverSettingWithDefaultValue(options_int, "polish",
+                                       &(settings->polish), 1);
 }
 }  // namespace
 
@@ -213,8 +230,11 @@ void OsqpSolver::Solve(const MathematicalProgram& prog,
         "OSQP solver's capability doesn't satisfy the requirement of the "
         "problem.");
   }
-  // TODO(hongkai.dai): use the input solver options once #9996 is merged.
-  unused(solver_options);
+
+  SolverOptions merged_solver_options =
+      solver_options.has_value() ? solver_options.value() : SolverOptions();
+  merged_solver_options.Merge(prog.solver_options());
+
   // OSQP solves a convex quadratic programming problem
   // min 0.5 xᵀPx + qᵀx
   // s.t l ≤ Ax ≤ u
@@ -252,11 +272,7 @@ void OsqpSolver::Solve(const MathematicalProgram& prog,
   OSQPSettings* settings =
       static_cast<OSQPSettings*>(c_malloc(sizeof(OSQPSettings)));
   osqp_set_default_settings(settings);
-  // Default polish to true, to get an accurate solution.
-  // TODO(hongkai.dai): add a setter so that we can turn off polishing.
-  settings->polish = 1;
-  settings->verbose = 0;
-  SetOsqpSolverSettings(prog, settings);
+  SetOsqpSolverSettings(merged_solver_options, settings);
 
   // Setup workspace.
   // OSQP structures.

@@ -5,23 +5,28 @@
 
 namespace drake {
 namespace solvers {
+/**
+ * The OSQP solver details after calling Solve function in OsqpSolver. The user
+ * can obtain the details from
+ * MathematicalProgramResult.get_solver_details().GetValue<OsqpSolverDetails>();
+ */
 struct OsqpSolverDetails {
-  // Number of iterations taken.
+  /// Number of iterations taken.
   int iter{};
-  // Status of the solver at termination. Please refer to
-  // https://github.com/oxfordcontrol/osqp/blob/master/include/constants.h
+  /// Status of the solver at termination. Please refer to
+  /// https://github.com/oxfordcontrol/osqp/blob/master/include/constants.h
   int status_val{};
-  // Norm of primal residue.
+  /// Norm of primal residue.
   double primal_res{};
-  // Norm of dual residue.
+  /// Norm of dual residue.
   double dual_res{};
-  // Time taken for setup phase (seconds).
+  /// Time taken for setup phase (seconds).
   double setup_time{};
-  // Time taken for solve phase (seconds).
+  /// Time taken for solve phase (seconds).
   double solve_time{};
-  // Time taken for polish phase (seconds).
+  /// Time taken for polish phase (seconds).
   double polish_time{};
-  // Total OSQP time (seconds).
+  /// Total OSQP time (seconds).
   double run_time{};
 };
 
