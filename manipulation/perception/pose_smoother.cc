@@ -63,7 +63,7 @@ VectorX<double> ComputeVelocities(const Isometry3d& pose_1,
 // TODO(naveenoid) : Replace the usage of these methods eventually with
 // PoseVector or a similar future variant.
 // Sets a pose from a 7-element array whose first 3 elements are position and
-// last 4 elements are a "canonical" quaternion (w, x, y, z).
+// last 4 elements are a quaternion (w, x, y, z) with w >= 0 (canonical form).
 Isometry3d Vector7ToIsometry3d(const VectorX<double>& pose_vector) {
   DRAKE_ASSERT(pose_vector.size() == 7);
   Quaterniond quaternion(pose_vector(3), pose_vector(4),
@@ -81,9 +81,8 @@ Isometry3d Vector7ToIsometry3d(const VectorX<double>& pose_vector) {
   return pose;
 }
 
-// Convert a pose into a 7 element array whose first 3 elements are position
-// and last 4 elements are a canoncial quaternion (w, x, y, z).
-// Note: A "canonical" quaternion is a quaternion with w > = 0.
+// Convert a pose into a 7 element array whose first 3 elements are position and
+// last 4 elements are a quaternion (w, x, y, z) with w >= 0 (canonical form).
 VectorX<double> RigidTransformdToVector7(const math::RigidTransformd& pose) {
   VectorX<double> pose_vector = VectorX<double>::Zero(7);
   pose_vector.head<3>() = pose.translation();
