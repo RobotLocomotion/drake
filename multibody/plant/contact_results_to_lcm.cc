@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/multibody_plant/contact_results_to_lcm.h"
+#include "drake/multibody/plant/contact_results_to_lcm.h"
 
 #include <memory>
 
@@ -8,7 +8,6 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_plant {
 
 using systems::Context;
 using systems::Value;
@@ -118,10 +117,9 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
   return contact_results_publisher;
 }
 
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake
 
 // This should be kept in sync with the scalars that MultibodyPlant supports.
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::multibody::multibody_plant::ContactResultsToLcmSystem)
+    class drake::multibody::ContactResultsToLcmSystem)

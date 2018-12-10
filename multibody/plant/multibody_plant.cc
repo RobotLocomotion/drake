@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 #include <algorithm>
 #include <limits>
@@ -17,7 +17,6 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_plant {
 
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
@@ -224,7 +223,7 @@ struct JointLimitsPenaltyParametersEstimator {
 template <typename T>
 MultibodyPlant<T>::MultibodyPlant(double time_step)
     : MultibodyTreeSystem<T>(
-          systems::SystemTypeTag<multibody::multibody_plant::MultibodyPlant>{},
+          systems::SystemTypeTag<multibody::MultibodyPlant>{},
           nullptr, time_step > 0),
       time_step_(time_step) {
   DRAKE_THROW_UNLESS(time_step >= 0);
@@ -1725,9 +1724,8 @@ T MultibodyPlant<T>::StribeckModel::step5(const T& x) {
   return x3 * (10 + x * (6 * x - 15));  // 10x³ - 15x⁴ + 6x⁵
 }
 
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::multibody::multibody_plant::MultibodyPlant)
+    class drake::multibody::MultibodyPlant)

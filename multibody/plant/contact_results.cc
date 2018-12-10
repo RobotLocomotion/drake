@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
+#include "drake/multibody/plant/contact_results.h"
 
 #include <utility>
 
@@ -6,7 +6,6 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_plant {
 
 template <typename T>
 void ContactResults<T>::AddContactInfo(
@@ -28,10 +27,9 @@ const PointPairContactInfo<T>& ContactResults<T>::contact_info(int i) const {
   return point_pairs_info_[i];
 }
 
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake
 
 // Explicitly instantiates on the most common scalar types.
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::multibody_plant::ContactResults)
+    class ::drake::multibody::ContactResults)

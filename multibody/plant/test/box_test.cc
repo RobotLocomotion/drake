@@ -7,9 +7,9 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -66,7 +66,7 @@ GTEST_TEST(Box, UnderStiction) {
   const double kTolerance = 1.0e-12;
 
   const std::string full_name = FindResourceOrThrow(
-      "drake/multibody/multibody_tree/multibody_plant/test/box.sdf");
+      "drake/multibody/plant/test/box.sdf");
   MultibodyPlant<double>& plant = *builder.AddSystem<MultibodyPlant>(time_step);
   Parser(&plant, &scene_graph).AddModelFromFile(full_name);
 

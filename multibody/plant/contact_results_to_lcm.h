@@ -7,15 +7,14 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
-#include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/plant/contact_results.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 
 namespace drake {
 namespace multibody {
-namespace multibody_plant {
 
 /** A System that encodes ContactResults into a lcmt_contact_results_for_viz
  message. It has a single input port with type ContactResults<T> and a single
@@ -122,6 +121,18 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     const systems::OutputPort<double>& contact_results_port,
     lcm::DrakeLcmInterface* lcm = nullptr);
 
+#ifndef DRAKE_DOXYGEN_CXX
+// TODO(#9314) Deprecate and then remove this transitional namespace.
+namespace multibody_plant {
+
+template <typename T>
+using ContactResultsToLcmSystem =
+    ::drake::multibody::ContactResultsToLcmSystem<T>;
+
+using multibody::ConnectContactResultsToDrakeVisualizer;
+
 }  // namespace multibody_plant
+#endif  // DRAKE_DOXYGEN_CXX
+
 }  // namespace multibody
 }  // namespace drake

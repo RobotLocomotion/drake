@@ -4,11 +4,10 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/multibody_tree/multibody_plant/contact_info.h"
+#include "drake/multibody/plant/contact_info.h"
 
 namespace drake {
 namespace multibody {
-namespace multibody_plant {
 
 /**
  A container class storing the contact results information for each contact
@@ -48,6 +47,13 @@ class ContactResults {
   std::vector<PointPairContactInfo<T>> point_pairs_info_;
 };
 
+#ifndef DRAKE_DOXYGEN_CXX
+// TODO(#9314) Deprecate and then remove this transitional namespace.
+namespace multibody_plant {
+template <typename T>
+using ContactResults = ::drake::multibody::ContactResults<T>;
 }  // namespace multibody_plant
+#endif  // DRAKE_DOXYGEN_CXX
+
 }  // namespace multibody
 }  // namespace drake

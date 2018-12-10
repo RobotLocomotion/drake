@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 #include <functional>
 #include <limits>
@@ -75,7 +75,6 @@ using std::tie;
 using std::unique_ptr;
 
 namespace multibody {
-namespace multibody_plant {
 
 class MultibodyPlantTester {
  public:
@@ -97,6 +96,7 @@ class MultibodyPlantTester {
   }
 };
 
+namespace multibody_plant {
 namespace {
 // This test creates a simple model for an acrobot using MultibodyPlant and
 // verifies a number of invariants such as that body and joint models were
@@ -120,8 +120,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   // Add a split pendulum to the plant.
   const ModelInstanceIndex pendulum_model_instance =
       Parser(plant.get()).AddModelFromFile(FindResourceOrThrow(
-          "drake/multibody/multibody_tree/"
-          "multibody_plant/test/split_pendulum.sdf"));
+          "drake/multibody/plant/test/split_pendulum.sdf"));
   EXPECT_EQ(plant->num_model_instances(), 3);
 
   plant->Finalize();
@@ -937,8 +936,7 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
   // This test expects that the following model has a world body and a pair of
   // welded-together bodies.
   const std::string sdf_file = FindResourceOrThrow(
-      "drake/multibody/multibody_tree/multibody_plant/test/"
-      "split_pendulum.sdf");
+      "drake/multibody/plant/test/split_pendulum.sdf");
   MultibodyPlant<double> plant;
   Parser(&plant).AddModelFromFile(sdf_file);
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -1251,8 +1249,7 @@ class SplitPendulum : public ::testing::Test {
   void SetUp() override {
     // Make the cart_pole model.
     const std::string full_name = FindResourceOrThrow(
-        "drake/multibody/multibody_tree/"
-            "multibody_plant/test/split_pendulum.sdf");
+        "drake/multibody/plant/test/split_pendulum.sdf");
     Parser(&plant_).AddModelFromFile(full_name);
     plant_.Finalize();
 
