@@ -72,6 +72,14 @@ derived class, you should use
 
 # Conventions
 
+## API Names
+
+Any Python bindings of C++ code will maintain C++ naming conventions, as well
+as Python code that is directly related to C++ symbols (e.g. shims, wrappers,
+or extensions on existing bound classes).
+
+All other Python code be Pythonic and use PEP 8 naming conventions.
+
 ## Target Conventions
 
 ### Names
