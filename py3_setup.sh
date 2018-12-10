@@ -5,12 +5,13 @@ _dir=$(dirname ${BASH_SOURCE})
 py3-setup() { (
     set -x
     cd ${_dir}
-    python3 -m virtualenv --python python3 build/py3 --system-site-packages
+    python3 -m virtualenv --python python3 build/py3
     set +x
     source build/py3/bin/activate
-    # Install some dependencies that Bazel has trouble picking up?
+    # Install some (if not all) needed dependencies.
     pip install -I \
-        pyyaml protobuf==3.6.0 sphinx==1.8.1 sphinx_rtd_theme
+        pyyaml protobuf==3.6.0 sphinx==1.8.1 sphinx_rtd_theme \
+        numpy==1.14.0 zmq tornado matplotlib
     set -x
     # Reflect system Python; make `python` and `python-config` fall through to
     # system, and use `python{major}-config`.
