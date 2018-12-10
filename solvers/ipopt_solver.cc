@@ -153,63 +153,6 @@ struct ResultCache {
   std::vector<Number> grad;
 };
 
-IpoptSolverReturn ConvertToIpoptSolverReturn(Ipopt::SolverReturn status) {
-  switch (status) {
-    case Ipopt::SUCCESS: {
-      return IpoptSolverReturn::SUCCESS;
-    }
-    case Ipopt::MAXITER_EXCEEDED: {
-      return IpoptSolverReturn::MAXITER_EXCEEDED;
-    }
-    case Ipopt::CPUTIME_EXCEEDED: {
-      return IpoptSolverReturn::CPUTIME_EXCEEDED;
-    }
-    case Ipopt::STOP_AT_TINY_STEP: {
-      return IpoptSolverReturn::STOP_AT_TINY_STEP;
-    }
-    case Ipopt::STOP_AT_ACCEPTABLE_POINT: {
-      return IpoptSolverReturn::STOP_AT_ACCEPTABLE_POINT;
-    }
-    case Ipopt::LOCAL_INFEASIBILITY: {
-      return IpoptSolverReturn::LOCAL_INFEASIBILITY;
-    }
-    case Ipopt::USER_REQUESTED_STOP: {
-      return IpoptSolverReturn::USER_REQUESTED_STOP;
-    }
-    case Ipopt::FEASIBLE_POINT_FOUND: {
-      return IpoptSolverReturn::FEASIBLE_POINT_FOUND;
-    }
-    case Ipopt::DIVERGING_ITERATES: {
-      return IpoptSolverReturn::DIVERGING_ITERATES;
-    }
-    case Ipopt::RESTORATION_FAILURE: {
-      return IpoptSolverReturn::RESTORATION_FAILURE;
-    }
-    case Ipopt::ERROR_IN_STEP_COMPUTATION: {
-      return IpoptSolverReturn::ERROR_IN_STEP_COMPUTATION;
-    }
-    case Ipopt::INVALID_NUMBER_DETECTED: {
-      return IpoptSolverReturn::INVALID_NUMBER_DETECTED;
-    }
-    case Ipopt::TOO_FEW_DEGREES_OF_FREEDOM: {
-      return IpoptSolverReturn::TOO_FEW_DEGREES_OF_FREEDOM;
-    }
-    case Ipopt::INVALID_OPTION: {
-      return IpoptSolverReturn::INVALID_OPTION;
-    }
-    case Ipopt::OUT_OF_MEMORY: {
-      return IpoptSolverReturn::OUT_OF_MEMORY;
-    }
-    case Ipopt::INTERNAL_ERROR: {
-      return IpoptSolverReturn::INTERNAL_ERROR;
-    }
-    case Ipopt::UNASSIGNED: {
-      return IpoptSolverReturn::UNASSIGNED;
-    }
-    default: { throw std::runtime_error("Should not reach here."); }
-  }
-}
-
 // The C++ interface for IPOPT is described here:
 // http://www.coin-or.org/Ipopt/documentation/node23.html
 //
@@ -447,7 +390,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 
     IpoptSolverDetails& solver_details =
         result_->SetSolverDetailsType<IpoptSolverDetails>();
-    solver_details.status = ConvertToIpoptSolverReturn(status);
+    solver_details.status = status;
     solver_details.z_L = Eigen::Map<const Eigen::VectorXd>(z_L, n);
     solver_details.z_U = Eigen::Map<const Eigen::VectorXd>(z_U, n);
     solver_details.g = Eigen::Map<const Eigen::VectorXd>(g, m);
@@ -569,21 +512,9 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 };
 
 template <typename T>
-typename std::enable_if<std::is_same<T, double>::value, bool>::type
-FindOptionWithKey(const SolverOptions& solver_options, const std::string& key) {
-  return solver_options.GetOptionsDouble(IpoptSolver::id()).count(key) > 0;
-}
-
-template <typename T>
-typename std::enable_if<std::is_same<T, int>::value, bool>::type
-FindOptionWithKey(const SolverOptions& solver_options, const std::string& key) {
-  return solver_options.GetOptionsInt(IpoptSolver::id()).count(key) > 0;
-}
-
-template <typename T>
-typename std::enable_if<std::is_same<T, std::string>::value, bool>::type
-FindOptionWithKey(const SolverOptions& solver_options, const std::string& key) {
-  return solver_options.GetOptionsStr(IpoptSolver::id()).count(key) > 0;
+bool HasOptionWithKey(const SolverOptions& solver_options,
+                      const std::string& key) {
+  return solver_options.GetOptionsGeneric<T>(IpoptSolver::id()).count(key) > 0;
 }
 
 /**
@@ -593,7 +524,7 @@ FindOptionWithKey(const SolverOptions& solver_options, const std::string& key) {
 template <typename T>
 void SetIpoptOptionsHelper(const std::string& key, const T& default_val,
                            SolverOptions* ipopt_options) {
-  if (!FindOptionWithKey<T>(*ipopt_options, key)) {
+  if (!HasOptionWithKey<T>(*ipopt_options, key)) {
     ipopt_options->SetOption(IpoptSolver::id(), key, default_val);
   }
 }
@@ -623,7 +554,7 @@ void SetIpoptOptions(const MathematicalProgram& prog,
 
   const auto& ipopt_options_double =
       merged_solver_options.GetOptionsDouble(IpoptSolver::id());
-  const std::unordered_map<std::string, std::string>& ipopt_options_str =
+  const auto& ipopt_options_str =
       merged_solver_options.GetOptionsStr(IpoptSolver::id());
   const auto& ipopt_options_int =
       merged_solver_options.GetOptionsInt(IpoptSolver::id());
@@ -642,12 +573,70 @@ void SetIpoptOptions(const MathematicalProgram& prog,
 
 }  // namespace
 
+std::string IpoptSolverDetails::ConvertStatusToString() const {
+  switch (status) {
+    case Ipopt::SolverReturn::SUCCESS: {
+      return "Success";
+    }
+    case Ipopt::SolverReturn::MAXITER_EXCEEDED: {
+      return "Max iteration exceeded";
+    }
+    case Ipopt::SolverReturn::CPUTIME_EXCEEDED: {
+      return "CPU time exceeded";
+    }
+    case Ipopt::SolverReturn::STOP_AT_TINY_STEP: {
+      return "Stop at tiny step";
+    }
+    case Ipopt::SolverReturn::STOP_AT_ACCEPTABLE_POINT: {
+      return "Stop at acceptable point";
+    }
+    case Ipopt::SolverReturn::LOCAL_INFEASIBILITY: {
+      return "Local infeasibility";
+    }
+    case Ipopt::SolverReturn::USER_REQUESTED_STOP: {
+      return "User requested stop";
+    }
+    case Ipopt::SolverReturn::FEASIBLE_POINT_FOUND: {
+      return "Feasible point found";
+    }
+    case Ipopt::SolverReturn::DIVERGING_ITERATES: {
+      return "Divergent iterates";
+    }
+    case Ipopt::SolverReturn::RESTORATION_FAILURE: {
+      return "Restoration failure";
+    }
+    case Ipopt::SolverReturn::ERROR_IN_STEP_COMPUTATION: {
+      return "Error in step computation";
+    }
+    case Ipopt::SolverReturn::INVALID_NUMBER_DETECTED: {
+      return "Invalid number detected";
+    }
+    case Ipopt::SolverReturn::TOO_FEW_DEGREES_OF_FREEDOM: {
+      return "Too few degrees of freedom";
+    }
+    case Ipopt::SolverReturn::INVALID_OPTION: {
+      return "Invalid option";
+    }
+    case Ipopt::SolverReturn::OUT_OF_MEMORY: {
+      return "Out of memory";
+    }
+    case Ipopt::SolverReturn::INTERNAL_ERROR: {
+      return "Internal error";
+    }
+    case Ipopt::SolverReturn::UNASSIGNED: {
+      return "Unassigned";
+    }
+  }
+  throw std::runtime_error("Should not reach here.");
+}
+
 bool IpoptSolver::is_available() { return true; }
 
 void IpoptSolver::Solve(const MathematicalProgram& prog,
                         const optional<Eigen::VectorXd>& initial_guess,
                         const optional<SolverOptions>& solver_options,
                         MathematicalProgramResult* result) const {
+  *result = {};
   if (!AreProgramAttributesSatisfied(prog)) {
     throw std::invalid_argument(
         "Ipopt doesn't satisfy the capabilities required by the program");
