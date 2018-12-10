@@ -33,8 +33,10 @@ TEST_F(InfeasibleLinearProgramTest0, TestIpopt) {
     const Eigen::Vector2d x_val =
         prog_->GetSolution(prog_->decision_variables(), result);
     EXPECT_NEAR(result.get_optimal_cost(), -x_val(0) - x_val(1), 1E-7);
+    // local infeasibility is defined in Ipopt::SolverReturn in IpAlgTypes.hpp
+    const int kIpoptLocalInfeasibility = 5;
     EXPECT_EQ(result.get_solver_details().GetValue<IpoptSolverDetails>().status,
-              IpoptSolverReturn::LOCAL_INFEASIBILITY);
+              kIpoptLocalInfeasibility);
   }
 }
 
