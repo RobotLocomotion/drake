@@ -11,6 +11,17 @@ Drake Gallery
 If you have an example from your own work that you would like to showcase, please edit ``doc/gallery.rst`` directly and submit a pull request!
 
 
+Underactuated Robotics
+======================
+
+Drake is being used to teach `Underactuated Robotics
+<http://underactuated.csail.mit.edu>`_ at MIT.  The course textbook has
+numerous examples of modeling, controlling, and analyzing many of the canonical
+problems in dynamics and control for robotics.
+
+.. TODO(russt): Add videos of a few relevant examples.
+
+
 Manipulation
 ============
 
