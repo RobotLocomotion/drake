@@ -101,6 +101,28 @@ The following configurations are presently untested in continuous integration:
 -   macOS, Ubuntu Bionic: MATLAB
 -   Ubuntu Bionic: Python 3
 
+.. _configuration-management-non-determinism:
+
+Configuration Management Non-Determinism
+----------------------------------------
+
+The indicated versions for build systems and languages are recorded after
+having been tested on Continuous Integration.
+
+Due to how the Debian ``apt`` and Homebrew package managers work, you may not
+have these exact versions on your system when (re)running
+``install_prereqs.sh``. In general, later minor versions for more stable
+packages (e.g. CMake, compilers) should not prove to be too much of an issue.
+
+For less stable packages, such as Bazel, later minor versions may cause
+breakages. If you are on Ubuntu, please rerun ``install_prereqs.sh`` as it can
+downgrade Bazel. If on Mac, there is no easy mechanism to downgrade with
+Homebrew; however, we generally try to stay on top of Bazel versions.
+
+If you have tried and are unable to configure your system by
+:ref:`following the instructions <build_from_source>`, please do not hesitate
+to :ref:`ask for help <getting_help>`.
+
 .. _binary-packages:
 
 Binary Packages
