@@ -95,7 +95,10 @@ The following pseudocode uses the above notation to describe the algorithm that
 the %Simulator uses to advance the system by a single time step, and to clarify
 the effects on time and state of each of the update stages above. This algorithm
 is given a starting Context value `{tₛ, x⁻(tₛ)}` and returns an end Context
-value `{tₑ, x⁻(tₑ)}`, where tₑ is _no later_ than a given tₘₐₓ.
+value `{tₑ, x⁻(tₑ)}`, where tₑ is _no later_ than a given tₘₐₓ. Note that
+any quantities that are _computed_ from time and state, such as inputs u and
+time derivatives ẋc will be computed using the values of time and state as
+most recently updated at each stage of the computation.
 
 ```
 // Advance time and state from start value {tₛ, x⁻(tₛ)} to an end value
