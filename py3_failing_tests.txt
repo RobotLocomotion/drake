@@ -1,6 +1,6 @@
 source py3_setup.sh
 
-bazel-test //bindings/pydrake/...
+bazel-py3 test //bindings/pydrake/...
 --trace=user -f
 
 Python2
