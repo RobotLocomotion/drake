@@ -131,7 +131,7 @@ procedure Step(tₛ, x⁻(tₛ), tₘₐₓ)
   xa⁻(tₑ) ← xa⁺(tₛ)
 
   // ----------------------------------
-  // Time and state are at {tₑ, x⁻(tₛ)}
+  // Time and state are at {tₑ, x⁻(tₑ)}
   // ----------------------------------
 
   DoAnyPublishes(tₑ, x⁻(tₑ))

@@ -1072,80 +1072,25 @@ class SimpleHybridSystem : public LeafSystem<double> {
   const double kPeriod = 1.0;
 };
 
-/*
- * The two tests that follow the class definition and utility functions below
- * will focus on the update sequence during a simulation for simple mixed
- * discrete-continuous systems. These tests validate the logic described in the
- * StepTo(.) function documentation.
- */
-
-// Builds the simple hybrid (discrete-continuous) system used in the following
-// tests.
-std::unique_ptr<Diagram<double>> BuildSimpleHybridSystem(double offset_time) {
+// Tests the update sequence for a simple mixed discrete/continuous system
+// that uses the prescribed updating offset of 0.0.
+GTEST_TEST(SimulatorTest, SimpleHybridSystemTestOffsetZero) {
   DiagramBuilder<double> builder;
-
   // Connect a system that outputs u(t) = t to the hybrid system
   // x[n+1] = x[n] + u(t).
   auto shifted_time_outputter = builder.AddSystem<ShiftedTimeOutputter>();
-  auto hybrid_system = builder.AddSystem<SimpleHybridSystem>(offset_time);
+  const double updating_offset_time = 0.0;
+  auto hybrid_system = builder.AddSystem<SimpleHybridSystem>(
+      updating_offset_time);
   builder.Connect(*shifted_time_outputter, *hybrid_system);
-  return builder.Build();
-}
-
-// Sets the initial conditions (i.e., single state variable) for the simple
-// hybrid system and returns the initial condition used.
-double SetSimpleHybridSystemInitialConditions(Context<double>* context) {
-  const double value = 0.0;
-  context->get_mutable_discrete_state()[0] = value;
-  return value;
-}
-
-// Tests the update sequence for a simple mixed discrete/continuous system
-// that uses an updating offset of 1.0 instead of the updating offset
-// of 0.0 that will be used in the following test.
-GTEST_TEST(SimulatorTest, SimpleHybridSystemTestOffsetOne) {
-  auto diagram = BuildSimpleHybridSystem(1.0 /* updating offset */);
+  auto diagram = builder.Build();
   Simulator<double> simulator(*diagram);
 
   // Set the initial condition x₀ (the subscript notation reflects the
   // discrete step number as described in discrete_systems.h).
-  const double initial_condition = SetSimpleHybridSystemInitialConditions(
-      &simulator.get_mutable_context());
-
-  // Simulate forward. Since the first update occurs at t=1, and StepTo(1) only
-  // takes the state to x⁻(1), no update should occur.
-  simulator.StepTo(1.0);
-
-  // Check that no discrete update has been performed.
-  EXPECT_EQ(simulator.get_num_discrete_updates(), 0);
-  EXPECT_EQ(simulator.get_context().get_discrete_state()[0], initial_condition);
-
-  // There will be a pending event at t=1. Handle it by calling StepTo(1.0) one
-  // more time, which updates the state to x⁺(1) (i.e., x₁).
-  simulator.StepTo(1.0);
-
-  // Check that the expected state value was attained. The value should be
-  // x₁ = x₀ + u(1) because we expect the discrete update to occur at
-  // t = 1 where u(t) = 2.
-  const double u1 = 2;
-  EXPECT_EQ(simulator.get_context().get_discrete_state()[0],
-            initial_condition + u1);
-
-  // Check that the expected number of updates (one) was performed.
-  EXPECT_EQ(simulator.get_num_discrete_updates(), 1);
-}
-
-// Tests the update sequence for a simple mixed discrete/continuous system
-// that uses an updating offset of 0.0 instead of the updating offset
-// of 1.0 used in the previous test.
-GTEST_TEST(SimulatorTest, SimpleHybridSystemTestOffsetZero) {
-  auto diagram = BuildSimpleHybridSystem(0.0 /* updating offset */);
-  Simulator<double> simulator(*diagram);
-
-  // Set the initial condition x₀ (the subscript notation reflects the
-  // discrete step number as described in discrete_systems.h).
-  const double initial_condition = SetSimpleHybridSystemInitialConditions(
-      &simulator.get_mutable_context());
+  const double initial_condition = 0.0;
+  simulator.get_mutable_context().get_mutable_discrete_state()[0] =
+      initial_condition;
 
   // Simulate forward. The first update occurs at t=0, meaning StepTo(1) updates
   // the discrete state to x⁺(0) (i.e., x₁) before updating time to 1.0.
@@ -1160,9 +1105,6 @@ GTEST_TEST(SimulatorTest, SimpleHybridSystemTestOffsetZero) {
 
   // Check that the expected number of updates (one) was performed.
   EXPECT_EQ(simulator.get_num_discrete_updates(), 1);
-
-  // Note: we do not call StepTo(1.0) here as we did in the last example since
-  // we only want a single update and StepTo(1.0) would give us another.
 }
 
 // A "Delta function" system that outputs zero except at the instant (the spike
@@ -1481,7 +1423,7 @@ class MixedContinuousDiscreteSystem : public LeafSystem<double> {
     // floating-point error with, the default max step size.
     const double offset = 0.0;
     this->DeclarePeriodicDiscreteUpdate(kUpdatePeriod, offset);
-    this->DeclarePeriodicPublish(kPeriod);
+    this->DeclarePeriodicPublish(kPublishPeriod);
 
     // We need some continuous state (which will be unused) so that the
     // continuous state integration will not be bypassed.
@@ -1527,11 +1469,11 @@ class MixedContinuousDiscreteSystem : public LeafSystem<double> {
   }
 
   double update_period() const { return kUpdatePeriod; }
-  double publish_period() const { return kPeriod; }
+  double publish_period() const { return kPublishPeriod; }
 
  private:
   const double kUpdatePeriod{0.001};
-  const double kPeriod{0.0025};
+  const double kPublishPeriod{0.0025};
   std::function<void(const Context<double>&)> update_callback_{nullptr};
   std::function<void(const Context<double>&)> publish_callback_{nullptr};
   std::function<void(const Context<double>&)> derivatives_callback_{nullptr};

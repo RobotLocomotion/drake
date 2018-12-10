@@ -34,7 +34,7 @@ drake_cc_binary(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "fibonacci_test",
+    name = "fibonacci_difference_equation_test",
     deps = [
         ":fibonacci_difference_equation",
         "//systems/analysis",
