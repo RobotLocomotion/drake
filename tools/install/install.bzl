@@ -708,18 +708,20 @@ def install_py2_duplicates_if_py3(
         py2_targets = targets
     else:
         py2_targets = []
+
     # Assuming that we will only have one supported major-minor version of
     # Python2.
     py2_major_minor = "2.7"
     py2_dest = py_dest.replace(
         "@PYTHON_SITE_PACKAGES@",
-        "lib/python{}/site-packages".format(py2_major_minor))
+        "lib/python{}/site-packages".format(py2_major_minor),
+    )
     install(
         name = name,
         targets = py2_targets,
         py_dest = py2_dest,
-        **kwargs)
-
+        **kwargs
+    )
 
 #------------------------------------------------------------------------------
 # Generate information to install files to specified destination.

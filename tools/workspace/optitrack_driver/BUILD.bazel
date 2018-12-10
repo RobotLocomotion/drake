@@ -42,10 +42,10 @@ OPTITRACK_TARGETS = [
 # For Python2-only `drake_visualizer`.
 install_py2_duplicates_if_py3(
     name = "install_py2_duplicates_if_py3",
-    targets = ["@optitrack_driver//lcmtypes:py_optitrack_lcmtypes"],
+    allowed_externals = OPTITRACK_TARGETS,
     py_dest = "@PYTHON_SITE_PACKAGES@/optitrack",
     py_strip_prefix = ["**/"],
-    allowed_externals = OPTITRACK_TARGETS,
+    targets = ["@optitrack_driver//lcmtypes:py_optitrack_lcmtypes"],
     visibility = ["//visibility:private"],
 )
 
