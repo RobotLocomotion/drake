@@ -5,7 +5,10 @@ from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
 import unittest
 
 import numpy as np
-import Tkinter as tk
+try:
+    import tkinter as tk
+except ImportError:
+    import Tkinter as tk
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant

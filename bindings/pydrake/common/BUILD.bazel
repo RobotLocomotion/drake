@@ -340,7 +340,10 @@ drake_py_unittest(
 
 drake_pybind_cc_googletest(
     name = "cpp_param_pybind_test",
-    cc_deps = [":cpp_param_pybind"],
+    cc_deps = [
+        ":cpp_param_pybind",
+        "//bindings/pydrake:test_util_pybind",
+    ],
     py_deps = [":cpp_param_py"],
 )
 
@@ -355,6 +358,7 @@ drake_pybind_cc_googletest(
     name = "cpp_template_pybind_test",
     cc_deps = [
         ":cpp_template_pybind",
+        "//bindings/pydrake:test_util_pybind",
         "//common:nice_type_name",
         "//common/test_utilities:expect_throws_message",
     ],
@@ -365,6 +369,7 @@ drake_pybind_cc_googletest(
     name = "drake_variant_pybind_test",
     cc_deps = [
         ":drake_variant_pybind",
+        "//bindings/pydrake:test_util_pybind",
     ],
 )
 
@@ -391,6 +396,7 @@ drake_pybind_cc_googletest(
     name = "type_safe_index_pybind_test",
     cc_deps = [
         ":type_safe_index_pybind",
+        "//bindings/pydrake:test_util_pybind",
         "//common:nice_type_name",
     ],
 )

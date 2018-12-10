@@ -5,6 +5,7 @@ should NOT be called directly by anything else.
 
 import argparse
 import imp
+import io
 import os
 import re
 import sys
@@ -33,7 +34,7 @@ if __name__ == '__main__':
     if not found_filename:
         raise RuntimeError("No such file found {}!".format(
             test_filename))
-    with open(found_filename, "r") as infile:
+    with io.open(found_filename, "r", encoding="utf8") as infile:
         for line in infile.readlines():
             if any([line.startswith("if __name__ =="),
                     line.strip().startswith("unittest.main")]):
