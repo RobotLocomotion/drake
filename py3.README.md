@@ -21,17 +21,17 @@ Then, instead of using `bazel`, use the `bazel-py3` alias.
 
 To see what is or isn't working on your system:
 
-    bazel-py3 test //...
+    bazel test //...
 
 If you have all solvers set up correctly, use:
 
-    bazel-py3 test --config=everything //...
+    bazel test --config=everything //...
 
 ## Running
 
 Same as normal, but using `bazel-py3`:
 
-    bazel-py3 run {target} -- {args}
+    bazel run {target} -- {args}
 
 If you want all solvers, please ensure you're using `--config=everything`.
 
@@ -41,7 +41,7 @@ Note that CMake support for Python3 has not yet been tested.
 
 If you want to try installing and using the bindings, please do:
 
-    bazel-py3 run //:install -- /path/to/install
+    bazel run //:install -- /path/to/install
 
     # In any terminal you're using:
     export PYTHONPATH=/path/to/install/lib/python3.5/site-packages:${PYTHONPATH}
