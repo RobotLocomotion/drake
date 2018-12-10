@@ -42,11 +42,11 @@ The following class implements in Drake the simple discrete system
 which should generate the sequence `S = 0 10 20 30 ...` (that is, `Sₙ = 10*n`).
 
 @code{.cpp}
-class SimpleDiscreteSystem : public LeafSystem<double> {
+class ExampleDiscreteSystem : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleDiscreteSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExampleDiscreteSystem)
 
-  SimpleDiscreteSystem() {
+  ExampleDiscreteSystem() {
     DeclareDiscreteState(1);  // Just one state variable, x[0], default=0.
 
     // Output yₙ using a Drake "publish" event (occurs at the end of step n).
@@ -54,7 +54,7 @@ class SimpleDiscreteSystem : public LeafSystem<double> {
                          systems::PublishEvent<double>(
                              [this](const systems::Context<double>& context,
                                     const systems::PublishEvent<double>&) {
-                               Output(context);
+                               PrintResult(context);
                              }));
 
     // Update to xₙ₊₁, using a Drake "discrete update" event (occurs at the
@@ -79,8 +79,8 @@ class SimpleDiscreteSystem : public LeafSystem<double> {
     (*xd)[0] = x_n + 1.;
   }
 
-  // Output function yₙ = g(n, xₙ). (Here, just writes 'n: Sₙ (t)' to cout.)
-  void Output(const systems::Context<double>& context) const {
+  // Prints the result of output function yₙ = g(n, xₙ) to cout.
+  void PrintResult(const systems::Context<double>& context) const {
     const double t = context.get_time();
     const int n = static_cast<int>(std::round(t / kPeriod));
     const double S_n = 10 * GetX(context);  // 10 xₙ[0]
@@ -95,9 +95,9 @@ class SimpleDiscreteSystem : public LeafSystem<double> {
 
 Stepping this system forward using the following code fragment:
 @code
-  SimpleDiscreteSystem system;
+  ExampleDiscreteSystem system;
   Simulator<double> simulator(system);
-  simulator.StepTo(3 * SimpleDiscreteSystem::kPeriod);
+  simulator.StepTo(3 * ExampleDiscreteSystem::kPeriod);
 @endcode
 yields the following output:
 ```

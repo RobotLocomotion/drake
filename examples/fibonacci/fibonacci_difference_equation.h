@@ -30,12 +30,11 @@ The Fibonacci sequence is defined by the second-order difference equation
 ```
 which uses no input.
 
-Analogously to a second-order ODE, we can write this second order system as a
-pair of first-order difference equations, using two state variables
-`x = {x[0], x[1]}` (we're using square brackets for indexing the 2-element
-vector x, _not_ for step number!). In this case xₙ[0] holds Fₙ (the value of F
-at step n) while xₙ[1] holds Fₙ₋₁ (the previous value, i.e. the value of F at
-step n-1). Here is the discrete system:
+We can write this second order system as a pair of first-order difference
+equations, using two state variables `x = {x[0], x[1]}` (we're using square
+brackets for indexing the 2-element vector x, _not_ for step number!). In this
+case xₙ[0] holds Fₙ (the value of F at step n) while xₙ[1] holds Fₙ₋₁ (the
+previous value, i.e. the value of F at step n-1). Here is the discrete system:
 ```
     xₙ₊₁ = {xₙ[0] + xₙ[1], xₙ[0]}   // f()
       yₙ = xₙ[0]                    // g()
@@ -73,7 +72,7 @@ class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
                          systems::PublishEvent<double>(
                              [this](const systems::Context<double>& context,
                                     const systems::PublishEvent<double>&) {
-                               Output(context);
+                               PrintResult(context);
                              }));
 
     // Update to xₙ₊₁, using a Drake "discrete update" event (occurs
@@ -99,12 +98,14 @@ class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
     (*xd)[1] = x_n[0];
   }
 
-  // Output function yₙ = g(n, xₙ). (Here, just writes 'n: Fₙ' to cout.)
-  void Output(const systems::Context<double>& context) const {
+  // Print the result of the output function yₙ = g(n, xₙ) to cout.
+  void PrintResult(const systems::Context<double>& context) const {
     const double t = context.get_time();
-    // Floating point representation virtually guarantees that t / kPeriod
-    // will yield the desired step (n) plus or minus some error. Using round()
-    // ensures that casting to an int gives the correct step number.
+    // Because of finite floating point precision, t / kPeriod will yield the
+    // desired step (n) plus or minus some error. For example, (3 * 0.7) / 0.7
+    // in double precision evalutes to 2.9999999999999996, but we want int n = 3
+    // (rounded), not n = 2 (truncated). Using round() first ensures that
+    // casting to an int gives the correct step number.
     const int n = static_cast<int>(std::round(t / kPeriod));
     const int F_n = context.get_discrete_state()[0];  // xₙ[0]
     std::cout << n << ": " << F_n << "\n";
