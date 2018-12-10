@@ -1107,27 +1107,29 @@ GTEST_TEST(SimulatorTest, SimpleHybridSystemTestOffsetOne) {
   auto diagram = BuildSimpleHybridSystem(1.0 /* updating offset */);
   Simulator<double> simulator(*diagram);
 
-  // Set the initial conditions: x[0] = 0.
+  // Set the initial condition x₀ (the subscript notation reflects the
+  // discrete step number as described in discrete_systems.h).
   const double initial_condition = SetSimpleHybridSystemInitialConditions(
       &simulator.get_mutable_context());
 
-  // Simulate forward.
+  // Simulate forward. Since the first update occurs at t=1, and StepTo(1) only
+  // takes the state to x⁻(1), no update should occur.
   simulator.StepTo(1.0);
 
   // Check that no discrete update has been performed.
   EXPECT_EQ(simulator.get_num_discrete_updates(), 0);
   EXPECT_EQ(simulator.get_context().get_discrete_state()[0], initial_condition);
 
-  // There will be a pending event. Handle it by calling StepTo(1.0) one more
-  // time.
+  // There will be a pending event at t=1. Handle it by calling StepTo(1.0) one
+  // more time, which updates the state to x⁺(1) (i.e., x₁).
   simulator.StepTo(1.0);
 
   // Check that the expected state value was attained. The value should be
-  // initial_condition + u_1 because we expect the discrete update to occur at
-  // t = 1 when u(t) = 2.
-  const double u_1 = 2;
+  // x₁ = x₀ + u(1) because we expect the discrete update to occur at
+  // t = 1 where u(t) = 2.
+  const double u1 = 2;
   EXPECT_EQ(simulator.get_context().get_discrete_state()[0],
-            initial_condition + u_1);
+            initial_condition + u1);
 
   // Check that the expected number of updates (one) was performed.
   EXPECT_EQ(simulator.get_num_discrete_updates(), 1);
@@ -1140,19 +1142,23 @@ GTEST_TEST(SimulatorTest, SimpleHybridSystemTestOffsetZero) {
   auto diagram = BuildSimpleHybridSystem(0.0 /* updating offset */);
   Simulator<double> simulator(*diagram);
 
-  // Set the initial conditions: x[0] = 0.
+  // Set the initial condition x₀ (the subscript notation reflects the
+  // discrete step number as described in discrete_systems.h).
   const double initial_condition = SetSimpleHybridSystemInitialConditions(
       &simulator.get_mutable_context());
 
-  // Simulate forward.
+  // The first event occurs at t=0 and should be 
+
+  // Simulate forward. Since the first update occurs at t=1, and StepTo(1) only
+  // takes the state to x⁻(1), no update should occur.
   simulator.StepTo(1.0);
 
   // Check that the expected state value was attained. The value should be the
-  // initial condition + 1 because we expect the discrete update to occur at
+  // x₀ + u(0) because we expect the discrete update to occur at
   // t = 0 when u(t) = 1.
-  const double u_0 = 1;
+  const double u0 = 1;
   EXPECT_EQ(simulator.get_context().get_discrete_state()[0],
-            initial_condition + u_0);
+            initial_condition + u0);
 
   // Check that the expected number of updates (one) was performed.
   EXPECT_EQ(simulator.get_num_discrete_updates(), 1);
