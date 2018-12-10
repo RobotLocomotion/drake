@@ -967,8 +967,8 @@ class SimpleDiscreteSystem : public LeafSystem<double> {
     DeclareDiscreteState(1);  // Just one state variable, x[0], default=0.
 
     // Output yₙ using a Drake "publish" event (occurs at the end of step n,
-    // where step 0 is "initialize" and StepTo(kPublishPeriod) yields step 1).
-    DeclarePeriodicEvent(kPublishPeriod, kPublishOffset,
+    // where step 0 is "initialize" and StepTo(kPeriod) yields step 1).
+    DeclarePeriodicEvent(kPeriod, kPublishOffset,
                          systems::PublishEvent<double>(
                              [this](const systems::Context<double>& context,
                                     const systems::PublishEvent<double>&) {
@@ -977,7 +977,7 @@ class SimpleDiscreteSystem : public LeafSystem<double> {
 
     // Update to xₙ₊₁, using a Drake "discrete update" event (occurs at the
     // beginning of step n+1).
-    DeclarePeriodicEvent(kPublishPeriod, kPublishOffset,
+    DeclarePeriodicEvent(kPeriod, kPublishOffset,
                          systems::DiscreteUpdateEvent<double>(
                              [this](const systems::Context<double>& context,
                                     const systems::DiscreteUpdateEvent<double>&,
@@ -986,7 +986,7 @@ class SimpleDiscreteSystem : public LeafSystem<double> {
                              }));
   }
 
-  static constexpr double kPublishPeriod = 1/50.;  // Update at 50Hz (h=1/50).
+  static constexpr double kPeriod = 1/50.;  // Update at 50Hz (h=1/50).
   static constexpr double kPublishOffset = 0.;  // Trigger events at n=0.
 
  private:
@@ -1000,7 +1000,7 @@ class SimpleDiscreteSystem : public LeafSystem<double> {
   // Output function yₙ = g(n, xₙ). (Here, just writes 'n: Sₙ (t)' to cout.)
   void Output(const systems::Context<double>& context) const {
     const double t = context.get_time();
-    const int n = static_cast<int>(std::round(t / kPublishPeriod));
+    const int n = static_cast<int>(std::round(t / kPeriod));
     const double S_n = 10 * GetX(context);  // 10 xₙ[0]
     std::cout << n << ": " << S_n << " (" << t << ")\n";
   }
@@ -1017,7 +1017,7 @@ GTEST_TEST(SimulatorTest, SimpleDiscreteSystem) {
 
   // Simulate forward.
   testing::internal::CaptureStdout();
-  simulator.StepTo(3 * SimpleDiscreteSystem::kPublishPeriod);
+  simulator.StepTo(3 * SimpleDiscreteSystem::kPeriod);
   std::string output = testing::internal::GetCapturedStdout();
 
   EXPECT_EQ(output, "0: 0 (0)\n"
@@ -1026,15 +1026,15 @@ GTEST_TEST(SimulatorTest, SimpleDiscreteSystem) {
                     "3: 30 (0.06)\n");
 }
 
-// A continuous system that outputs the time.
-class TimeOutputter : public LeafSystem<double> {
+// A continuous system that outputs unity plus time.
+class ShiftedTimeOutputter : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TimeOutputter)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ShiftedTimeOutputter)
 
-  TimeOutputter() {
+  ShiftedTimeOutputter() {
     this->DeclareVectorOutputPort("time",
                                   BasicVector<double>(1),
-                                  &TimeOutputter::OutputTime);
+                                  &ShiftedTimeOutputter::OutputTime);
   }
 
  private:
@@ -1052,7 +1052,7 @@ class SimpleHybridSystem : public LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleHybridSystem)
 
   explicit SimpleHybridSystem(double offset) {
-    this->DeclarePeriodicDiscreteUpdate(kPublishPeriod, offset);
+    this->DeclarePeriodicDiscreteUpdate(kPeriod, offset);
     this->DeclareDiscreteState(1 /* single state variable */);
     this->DeclareVectorInputPort("u", systems::BasicVector<double>(1));
   }
@@ -1069,14 +1069,14 @@ class SimpleHybridSystem : public LeafSystem<double> {
     (*x_next)[0] = x + u;
   }
 
-  const double kPublishPeriod = 1.0;
+  const double kPeriod = 1.0;
 };
 
 /*
- * The two tests that will follow focus on simple interactions between
- * simulated discrete and continuous systems. These tests help the developers
- * and maintainers to understand the pecularities of StepTo(.) applied to mixed
- * discrete/continuous systems.
+ * The two tests that follow the class definition and utility functions below
+ * will focus on the update sequence during a simulation for simple mixed
+ * discrete-continuous systems. These tests validate the logic described in the
+ * StepTo(.) function documentation.
  */
 
 // Builds the simple hybrid (discrete-continuous) system used in the following
@@ -1086,29 +1086,30 @@ std::unique_ptr<Diagram<double>> BuildSimpleHybridSystem(double offset_time) {
 
   // Connect a system that outputs u(t) = t to the hybrid system
   // x[n+1] = x[n] + u(t).
-  auto time_outputter = builder.AddSystem<TimeOutputter>();
+  auto shifted_time_outputter = builder.AddSystem<ShiftedTimeOutputter>();
   auto hybrid_system = builder.AddSystem<SimpleHybridSystem>(offset_time);
-  builder.Connect(*time_outputter, *hybrid_system);
+  builder.Connect(*shifted_time_outputter, *hybrid_system);
   return builder.Build();
 }
 
 // Sets the initial conditions (i.e., single state variable) for the simple
-// hybrid system.
-void SetSimpleHybridSystemInitialConditions(Context<double>* context) {
-  context->get_mutable_discrete_state()[0] = 0.0;
+// hybrid system and returns the initial condition used.
+double SetSimpleHybridSystemInitialConditions(Context<double>* context) {
+  const double value = 0.0;
+  context->get_mutable_discrete_state()[0] = value;
+  return value;
 }
 
-// Tests that a simple hybrid discrete/continuous system can be simulated as
-// expected *using a publishing offset of 1.0 instead of the publishing offset
-// of 0.0 that will be used in the following test*.
+// Tests the update sequence for a simple mixed discrete/continuous system
+// that uses an updating offset of 1.0 instead of the updating offset
+// of 0.0 that will be used in the following test.
 GTEST_TEST(SimulatorTest, SimpleHybridSystemTestOffsetOne) {
-  auto diagram = BuildSimpleHybridSystem(1.0 /* publishing offset */);
+  auto diagram = BuildSimpleHybridSystem(1.0 /* updating offset */);
   Simulator<double> simulator(*diagram);
 
   // Set the initial conditions: x[0] = 0.
-  SetSimpleHybridSystemInitialConditions(&simulator.get_mutable_context());
-  const double initial_condition = simulator.get_context().
-      get_discrete_state()[0];
+  const double initial_condition = SetSimpleHybridSystemInitialConditions(
+      &simulator.get_mutable_context());
 
   // Simulate forward.
   simulator.StepTo(1.0);
@@ -1132,17 +1133,16 @@ GTEST_TEST(SimulatorTest, SimpleHybridSystemTestOffsetOne) {
   EXPECT_EQ(simulator.get_num_discrete_updates(), 1);
 }
 
-// Tests that a simple hybrid discrete/continuous system can be simulated as
-// expected *using a publishing offset of 0.0 instead of the publishing offset
-// of 1.0 used in the last test*.
+// Tests the update sequence for a simple mixed discrete/continuous system
+// that uses an updating offset of 0.0 instead of the updating offset
+// of 1.0 used in the previous test.
 GTEST_TEST(SimulatorTest, SimpleHybridSystemTestOffsetZero) {
-  auto diagram = BuildSimpleHybridSystem(0.0 /* publishing offset */);
+  auto diagram = BuildSimpleHybridSystem(0.0 /* updating offset */);
   Simulator<double> simulator(*diagram);
 
-  // Set the initial conditions.
-  SetSimpleHybridSystemInitialConditions(&simulator.get_mutable_context());
-  const double initial_condition = simulator.get_context().
-      get_discrete_state()[0];
+  // Set the initial conditions: x[0] = 0.
+  const double initial_condition = SetSimpleHybridSystemInitialConditions(
+      &simulator.get_mutable_context());
 
   // Simulate forward.
   simulator.StepTo(1.0);
@@ -1195,11 +1195,11 @@ class DeltaFunction : public LeafSystem<double> {
 //    x₀   = 0
 // By plugging interesting things into the input we can test whether we're
 // sampling the continuous input at the appropriate times.
-class DiscreteInputAdder : public LeafSystem<double> {
+class DiscreteInputAccumulator : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteInputAdder)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteInputAccumulator)
 
-  DiscreteInputAdder() {
+  DiscreteInputAccumulator() {
     DeclareDiscreteState(1);  // Just one state variable, x[0].
 
     DeclareVectorInputPort("u", BasicVector<double>(1));
@@ -1215,7 +1215,7 @@ class DiscreteInputAdder : public LeafSystem<double> {
 
     // Output yₙ using a Drake "publish" event (occurs at the end of step n).
     DeclarePeriodicEvent(
-        kPublishPeriod, kPublishOffset,
+        kPeriod, kPublishOffset,
         PublishEvent<double>(
             [this](const Context<double>& context,
                    const PublishEvent<double>&) {
@@ -1225,7 +1225,7 @@ class DiscreteInputAdder : public LeafSystem<double> {
     // Update to xₙ₊₁ (x_np1), using a Drake "discrete update" event (occurs
     // at the beginning of step n+1).
     DeclarePeriodicEvent(
-        kPublishPeriod, kPublishOffset,
+        kPeriod, kPublishOffset,
         DiscreteUpdateEvent<double>([this](const Context<double>& context,
                                            const DiscreteUpdateEvent<double>&,
                                            DiscreteValues<double>* x_np1) {
@@ -1237,7 +1237,7 @@ class DiscreteInputAdder : public LeafSystem<double> {
 
   const std::vector<double>& result() const { return result_; }
 
-  static constexpr double kPublishPeriod = 0.125;
+  static constexpr double kPeriod = 0.125;
   static constexpr double kPublishOffset = 0.;
 
  private:
@@ -1261,7 +1261,7 @@ GTEST_TEST(SimulatorTest, SpikeTest) {
   DiagramBuilder<double> builder;
 
   auto delta = builder.AddSystem<DeltaFunction>(0.);
-  auto hybrid_system = builder.AddSystem<DiscreteInputAdder>();
+  auto hybrid_system = builder.AddSystem<DiscreteInputAccumulator>();
   builder.Connect(delta->get_output_port(0), hybrid_system->get_input_port(0));
   auto diagram = builder.Build();
   Simulator<double> simulator(*diagram);
@@ -1269,21 +1269,21 @@ GTEST_TEST(SimulatorTest, SpikeTest) {
   // Test with spike time = 0.
   delta->set_spike_time(0);
   simulator.Initialize();
-  simulator.StepTo(5 * DiscreteInputAdder::kPublishPeriod);
+  simulator.StepTo(5 * DiscreteInputAccumulator::kPeriod);
   EXPECT_EQ(hybrid_system->result(), std::vector<double>({0, 1, 1, 1, 1, 1}));
 
   // Test with spike time = 3*h.
-  delta->set_spike_time(3 * DiscreteInputAdder::kPublishPeriod);
+  delta->set_spike_time(3 * DiscreteInputAccumulator::kPeriod);
   simulator.get_mutable_context().set_time(0.);
   simulator.Initialize();
-  simulator.StepTo(5 * DiscreteInputAdder::kPublishPeriod);
+  simulator.StepTo(5 * DiscreteInputAccumulator::kPeriod);
   EXPECT_EQ(hybrid_system->result(), std::vector<double>({0, 0, 0, 0, 1, 1}));
 
   // Test with spike time not coinciding with a sample time.
-  delta->set_spike_time(2.7 * DiscreteInputAdder::kPublishPeriod);
+  delta->set_spike_time(2.7 * DiscreteInputAccumulator::kPeriod);
   simulator.get_mutable_context().set_time(0.);
   simulator.Initialize();
-  simulator.StepTo(5 * DiscreteInputAdder::kPublishPeriod);
+  simulator.StepTo(5 * DiscreteInputAccumulator::kPeriod);
   EXPECT_EQ(hybrid_system->result(), std::vector<double>({0, 0, 0, 0, 0, 0}));
 }
 
@@ -1477,7 +1477,7 @@ class MixedContinuousDiscreteSystem : public LeafSystem<double> {
     // floating-point error with, the default max step size.
     const double offset = 0.0;
     this->DeclarePeriodicDiscreteUpdate(kUpdatePeriod, offset);
-    this->DeclarePeriodicPublish(kPublishPeriod);
+    this->DeclarePeriodicPublish(kPeriod);
 
     // We need some continuous state (which will be unused) so that the
     // continuous state integration will not be bypassed.
@@ -1523,11 +1523,11 @@ class MixedContinuousDiscreteSystem : public LeafSystem<double> {
   }
 
   double update_period() const { return kUpdatePeriod; }
-  double publish_period() const { return kPublishPeriod; }
+  double publish_period() const { return kPeriod; }
 
  private:
   const double kUpdatePeriod{0.001};
-  const double kPublishPeriod{0.0025};
+  const double kPeriod{0.0025};
   std::function<void(const Context<double>&)> update_callback_{nullptr};
   std::function<void(const Context<double>&)> publish_callback_{nullptr};
   std::function<void(const Context<double>&)> derivatives_callback_{nullptr};
