@@ -94,11 +94,11 @@ GTEST_TEST(SolverOptionsTest, CheckOptionKeysForSolver) {
   solver_options.SetOption(id1, "key3", "foo");
 
   // First check a solver id not in solver_options.
-  EXPECT_TRUE(solver_options.CheckOptionKeysForSolver(id2, {"key1"}, {"key2"},
-                                                      {"key3"}));
+  EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(id2, {"key1"},
+                                                          {"key2"}, {"key3"}));
   // Check the solver id in solver_options.
-  EXPECT_TRUE(solver_options.CheckOptionKeysForSolver(id1, {"key1"}, {"key2"},
-                                                      {"key3"}));
+  EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(id1, {"key1"},
+                                                          {"key2"}, {"key3"}));
 
   // Check an option not set for id1.
   solver_options.SetOption(id1, "key2", 1.3);
@@ -107,8 +107,8 @@ GTEST_TEST(SolverOptionsTest, CheckOptionKeysForSolver) {
                               std::invalid_argument,
                               "key2 is not allowed in the SolverOptions.\n");
 
-  EXPECT_TRUE(solver_options.CheckOptionKeysForSolver(id1, {"key1", "key2"},
-                                                      {"key2"}, {"key3"}));
+  EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(id1, {"key1", "key2"},
+                                                          {"key2"}, {"key3"}));
 }
 }  // namespace solvers
 }  // namespace drake

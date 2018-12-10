@@ -138,8 +138,11 @@ std::string to_string(const SolverOptions& x) {
 }
 
 namespace {
+// Check if all the keys in key_value pair key_vals is a subset of
+// allowable_keys, and put the the keys not in `allowable_keys` to
+// `disallowed_keys`.
 template <typename T>
-bool CheckOptionKeysForSolverHelper(
+void CheckOptionKeysForSolverHelper(
     const std::unordered_map<std::string, T>& key_vals,
     const std::unordered_set<std::string>& allowable_keys) {
   for (const auto& key_val : key_vals) {
@@ -148,22 +151,17 @@ bool CheckOptionKeysForSolverHelper(
                                   " is not allowed in the SolverOptions.\n");
     }
   }
-  return true;
 }
 }  // namespace
 
-bool SolverOptions::CheckOptionKeysForSolver(
+void SolverOptions::CheckOptionKeysForSolver(
     const SolverId& solver_id,
     const std::unordered_set<std::string>& double_keys,
     const std::unordered_set<std::string>& int_keys,
     const std::unordered_set<std::string>& str_keys) const {
-  if (CheckOptionKeysForSolverHelper(GetOptionsDouble(solver_id),
-                                     double_keys) &&
-      CheckOptionKeysForSolverHelper(GetOptionsInt(solver_id), int_keys) &&
-      CheckOptionKeysForSolverHelper(GetOptionsStr(solver_id), str_keys)) {
-    return true;
-  }
-  return false;
+  CheckOptionKeysForSolverHelper(GetOptionsDouble(solver_id), double_keys);
+  CheckOptionKeysForSolverHelper(GetOptionsInt(solver_id), int_keys);
+  CheckOptionKeysForSolverHelper(GetOptionsStr(solver_id), str_keys);
 }
 
 }  // namespace solvers

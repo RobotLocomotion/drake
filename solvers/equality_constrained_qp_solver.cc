@@ -72,7 +72,7 @@ struct EqualityConstrainedQPSolverOptions {
 void GetEqualityConstrainedQPSolverOptions(
     const SolverOptions& solver_options,
     EqualityConstrainedQPSolverOptions* equality_qp_solver_options) {
-  DRAKE_ASSERT(solver_options.CheckOptionKeysForSolver(
+  DRAKE_ASSERT_VOID(solver_options.CheckOptionKeysForSolver(
       EqualityConstrainedQPSolver::id(),
       {EqualityConstrainedQPSolver::FeasibilityTolOptionName()}, {}, {}));
 

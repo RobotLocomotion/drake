@@ -94,7 +94,7 @@ class SolverOptions {
    * @param str_keys The set of allowable keys for string options.
    * @throw invalid argument if the solver contains un-allowed options.
    */
-  bool CheckOptionKeysForSolver(
+  void CheckOptionKeysForSolver(
       const SolverId& solver_id,
       const std::unordered_set<std::string>& allowable_double_keys,
       const std::unordered_set<std::string>& allowable_int_keys,

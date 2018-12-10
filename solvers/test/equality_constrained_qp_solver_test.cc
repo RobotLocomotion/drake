@@ -355,20 +355,38 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testLinearCost) {
   EXPECT_EQ(prog.GetOptimalCost(), .5);
 }
 
-GTEST_TEST(testEqualityConstrainedQPSolver, WrongSolverOptions) {
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<2>();
-  prog.AddLinearEqualityConstraint(x(0) + x(1), 1);
-  prog.AddQuadraticCost(x(0) * x(0) + x(1) * x(1));
+class EqualityConstrainedQPSolverTest : public ::testing::Test {
+ public:
+  EqualityConstrainedQPSolverTest()
+      : prog_{},
+        x_{prog_.NewContinuousVariables<2>()},
+        solver_{},
+        result_{},
+        solver_options_{} {
+    prog_.AddLinearEqualityConstraint(x_(0) + x_(1), 1);
+    prog_.AddQuadraticCost(x_(0) * x_(0) + x_(1) * x_(1));
+  }
 
-  EqualityConstrainedQPSolver solver;
-  MathematicalProgramResult result;
-  SolverOptions solver_options;
+ protected:
+  MathematicalProgram prog_;
+  VectorDecisionVariable<2> x_;
+  EqualityConstrainedQPSolver solver_;
+  MathematicalProgramResult result_;
+  SolverOptions solver_options_;
+};
 
-  solver_options.SetOption(solver.solver_id(), "FeasibilityTol", -0.1);
+TEST_F(EqualityConstrainedQPSolverTest, WrongSolverOptions1) {
+  solver_options_.SetOption(solver_.solver_id(), "Foo", 0.1);
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      solver_.Solve(prog_, {}, solver_options_, &result_),
+      std::invalid_argument, "Foo is not allowed in the SolverOptions.\n");
+}
+
+TEST_F(EqualityConstrainedQPSolverTest, WrongSolverOptions2) {
+  solver_options_.SetOption(solver_.solver_id(), "FeasibilityTol", -0.1);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      solver.Solve(prog, {}, solver_options, &result), std::invalid_argument,
-      "FeasibilityTol should be a non-negative number.");
+      solver_.Solve(prog_, {}, solver_options_, &result_),
+      std::invalid_argument, "FeasibilityTol should be a non-negative number.");
 }
 
 }  // namespace test
