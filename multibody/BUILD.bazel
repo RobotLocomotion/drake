@@ -1,48 +1,61 @@
 # -*- python -*-
 
 load(
-    "//attic:build_macros.bzl",
-    "add_attic_aliases",
+    "@drake//tools/skylark:alias.bzl",
+    "drake_cc_library_aliases",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
-
-add_attic_aliases([
-    "approximate_ik",
-    "global_inverse_kinematics",
-    "inverse_kinematics",
-    "kinematics_cache",
-    "kinematics_cache_helper",
-    "resolve_center_of_pressure",
-    "rigid_body",
-    "rigid_body_actuator",
-    "rigid_body_actuator_compare_to_clone",
-    "rigid_body_compare_to_clone",
-    "rigid_body_constraint",
-    "rigid_body_distance_constraint",
-    "rigid_body_frame",
-    "rigid_body_frame_compare_to_clone",
-    "rigid_body_loop",
-    "rigid_body_loop_compare_to_clone",
-    "rigid_body_tree",
-    "rigid_body_tree_alias_groups",
-    "rigid_body_tree_alias_groups_proto_genproto",
-    "rigid_body_tree_compare_to_clone",
-    "rigid_body_tree_construction",
-    "test_models",
-    # These labels are omitted on purpose; they should not have been marked
-    # public in the first place:
-    # "benchmark_rigid_body_tree",
-    # "debug_manipulator_dynamics",
-    # "rigid_body_tree_alias_groups_proto_ubsan_fixup",
-])
 
 filegroup(
     name = "models",
     srcs = [
         "models/box.urdf",
         "models/box_small.urdf",
+    ],
+)
+
+drake_cc_library_aliases(
+    actual_subdir = "attic/multibody",
+    add_deprecation_warning = True,
+    relative_labels = [
+        ":approximate_ik",
+        ":global_inverse_kinematics",
+        ":inverse_kinematics",
+        ":kinematics_cache",
+        ":kinematics_cache_helper",
+        ":resolve_center_of_pressure",
+        ":rigid_body",
+        ":rigid_body_actuator",
+        ":rigid_body_constraint",
+        ":rigid_body_distance_constraint",
+        ":rigid_body_frame",
+        ":rigid_body_loop",
+        ":rigid_body_tree",
+        ":rigid_body_tree_alias_groups",
+        ":rigid_body_tree_construction",
+    ],
+    tags = [
+        "exclude_from_libdrake",
+        "manual",
+    ],
+)
+
+drake_cc_library_aliases(
+    testonly = 1,
+    actual_subdir = "attic/multibody",
+    add_deprecation_warning = True,
+    relative_labels = [
+        ":rigid_body_actuator_compare_to_clone",
+        ":rigid_body_compare_to_clone",
+        ":rigid_body_frame_compare_to_clone",
+        ":rigid_body_loop_compare_to_clone",
+        ":rigid_body_tree_compare_to_clone",
+    ],
+    tags = [
+        "exclude_from_libdrake",
+        "manual",
     ],
 )
 

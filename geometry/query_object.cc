@@ -41,6 +41,18 @@ QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints() const {
 }
 
 template <typename T>
+std::vector<SignedDistanceToPoint<double>>
+QueryObject<T>::ComputeSignedDistanceToPoint(
+    const Vector3<double>& p_WQ,
+    const double threshold) const {
+  ThrowIfDefault();
+
+  scene_graph_->FullPoseUpdate(*context_);
+  const GeometryState<T>& state = context_->get_geometry_state();
+  return state.ComputeSignedDistanceToPoint(p_WQ, threshold);
+}
+
+template <typename T>
 const GeometryState<T>& QueryObject<T>::geometry_state() const {
   // TODO(SeanCurtis-TRI): Handle the "baked" query object case.
   DRAKE_DEMAND(scene_graph_ != nullptr);

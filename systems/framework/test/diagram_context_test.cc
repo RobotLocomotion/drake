@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <Eigen/Dense>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/pointer_cast.h"
@@ -66,9 +67,7 @@ class DiagramContextTest : public ::testing::Test {
  protected:
   void SetUp() override {
     adder0_ = std::make_unique<Adder<double>>(2 /* inputs */, kSize);
-    adder0_->set_name("adder0");
     adder1_ = std::make_unique<Adder<double>>(2 /* inputs */, kSize);
-    adder1_->set_name("adder1");
 
     integrator0_.reset(new Integrator<double>(kSize));
     integrator1_.reset(new Integrator<double>(kSize));
@@ -79,6 +78,16 @@ class DiagramContextTest : public ::testing::Test {
         std::make_unique<SystemWithNumericParameters>();
     system_with_abstract_parameters_ =
         std::make_unique<SystemWithAbstractParameters>();
+
+    adder0_->set_name("adder0");
+    adder1_->set_name("adder1");
+    integrator0_->set_name("integrator0");
+    integrator1_->set_name("integrator1");
+    discrete_state_system_->set_name("discrete_state_system");
+    abstract_state_system_->set_name("abstract_state_system");
+    system_with_numeric_parameters_->set_name("system_with_numeric_parameters");
+    system_with_abstract_parameters_->set_name(
+        "system_with_abstract_parameters");
 
     // This chunk of code is partially mimicking Diagram::DoAllocateContext()
     // which is normally in charge of making DiagramContexts.
@@ -117,7 +126,7 @@ class DiagramContextTest : public ::testing::Test {
     EXPECT_EQ(context_->get_continuous_state().size(), 2);
     EXPECT_EQ(context_->get_num_discrete_state_groups(), 1);
     EXPECT_EQ(context_->get_num_abstract_states(), 1);
-    EXPECT_EQ(context_->num_numeric_parameters(), 1);
+    EXPECT_EQ(context_->num_numeric_parameter_groups(), 1);
     EXPECT_EQ(context_->num_abstract_parameters(), 1);
     EXPECT_EQ(context_->num_subcontexts(), kNumSystems);
   }
@@ -278,7 +287,7 @@ void VerifyClonedState(const State<double>& clone) {
 // Verifies that the @p params are a clone of the params constructed in
 // DiagramContextTest::SetUp.
 void VerifyClonedParameters(const Parameters<double>& params) {
-  ASSERT_EQ(1, params.num_numeric_parameters());
+  ASSERT_EQ(1, params.num_numeric_parameter_groups());
   EXPECT_EQ(76.0, params.get_numeric_parameter(0).GetAtIndex(0));
   EXPECT_EQ(77.0, params.get_numeric_parameter(0).GetAtIndex(1));
   ASSERT_EQ(1, params.num_abstract_parameters());
@@ -642,6 +651,21 @@ TEST_F(DiagramContextTest, SetAndGetInputPorts) {
   AttachInputPorts();
   EXPECT_EQ(128, ReadVectorInputPort(*context_, 0)->get_value()[0]);
   EXPECT_EQ(256, ReadVectorInputPort(*context_, 1)->get_value()[0]);
+}
+
+TEST_F(DiagramContextTest, ToString) {
+  const std::string str = context_->to_string();
+  EXPECT_THAT(str, ::testing::HasSubstr("integrator0"));
+  EXPECT_THAT(str, ::testing::HasSubstr("integrator1"));
+  EXPECT_THAT(str, ::testing::HasSubstr("discrete_state_system"));
+  EXPECT_THAT(str, ::testing::HasSubstr("abstract_state_system"));
+  EXPECT_THAT(str, ::testing::HasSubstr("system_with_numeric_parameters"));
+  EXPECT_THAT(str, ::testing::HasSubstr("system_with_abstract_parameters"));
+
+  // Adders named adder0 and adder1 are part of the diagram, but don't have
+  // any context that is useful to print, so are excluded.
+  EXPECT_THAT(str, ::testing::Not(::testing::HasSubstr("adder0")));
+  EXPECT_THAT(str, ::testing::Not(::testing::HasSubstr("adder1")));
 }
 
 // Test that start_next_change_event() returns a sequentially increasing

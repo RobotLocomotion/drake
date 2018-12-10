@@ -3,6 +3,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <typeinfo>
 
 #include <Eigen/Dense>
 #include <gmock/gmock.h>
@@ -45,6 +46,7 @@ class TestSystem : public LeafSystem<T> {
   using LeafSystem<T>::DeclareAbstractInputPort;
   using LeafSystem<T>::DeclareVectorOutputPort;
   using LeafSystem<T>::DeclareAbstractOutputPort;
+  using LeafSystem<T>::DeclarePerStepEvent;
 
   void AddPeriodicUpdate() {
     const double period = 10.0;
@@ -76,12 +78,6 @@ class TestSystem : public LeafSystem<T> {
   }
 
   void AddPublish(double period) { this->DeclarePeriodicPublish(period); }
-
-  template <typename EventType>
-  void AddPerStepEvent() {
-    EventType event(Event<T>::TriggerType::kPerStep);
-    this->DeclarePerStepEvent(event);
-  }
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override {}
@@ -355,8 +351,7 @@ TEST_F(LeafSystemTest, OffsetHasNotArrivedYet) {
   EXPECT_EQ(5.0, time);
   const auto& events = leaf_info_->get_discrete_update_events().get_events();
   EXPECT_EQ(events.size(), 1);
-  EXPECT_EQ(events.front()->get_trigger_type(),
-            Event<double>::TriggerType::kPeriodic);
+  EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
 }
 
 // Tests that if the current time is smaller than the offset, the next
@@ -373,15 +368,13 @@ TEST_F(LeafSystemTest, EventsAtTheSameTime) {
   {
     const auto& events = leaf_info_->get_discrete_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
-    EXPECT_EQ(events.front()->get_trigger_type(),
-              Event<double>::TriggerType::kPeriodic);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
   }
   {
     const auto& events =
         leaf_info_->get_unrestricted_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
-    EXPECT_EQ(events.front()->get_trigger_type(),
-              Event<double>::TriggerType::kPeriodic);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
   }
 }
 
@@ -395,8 +388,7 @@ TEST_F(LeafSystemTest, ExactlyAtOffset) {
   EXPECT_EQ(15.0, time);
   const auto& events = leaf_info_->get_discrete_update_events().get_events();
   EXPECT_EQ(events.size(), 1);
-  EXPECT_EQ(events.front()->get_trigger_type(),
-            Event<double>::TriggerType::kPeriodic);
+  EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
 }
 
 // Tests that if the current time is larger than the offset, the next
@@ -409,8 +401,7 @@ TEST_F(LeafSystemTest, OffsetIsInThePast) {
   EXPECT_EQ(25.0, time);
   const auto& events = leaf_info_->get_discrete_update_events().get_events();
   EXPECT_EQ(events.size(), 1);
-  EXPECT_EQ(events.front()->get_trigger_type(),
-            Event<double>::TriggerType::kPeriodic);
+  EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
 }
 
 // Tests that if the current time is exactly an update time, the next update
@@ -423,8 +414,7 @@ TEST_F(LeafSystemTest, ExactlyOnUpdateTime) {
   EXPECT_EQ(35.0, time);
   const auto& events = leaf_info_->get_discrete_update_events().get_events();
   EXPECT_EQ(events.size(), 1);
-  EXPECT_EQ(events.front()->get_trigger_type(),
-            Event<double>::TriggerType::kPeriodic);
+  EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
 }
 
 // Tests periodic events' scheduling when its offset is zero.
@@ -457,8 +447,7 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
   {
     const auto& events = leaf_info_->get_publish_events().get_events();
     EXPECT_EQ(events.size(), 1);
-    EXPECT_EQ(events.front()->get_trigger_type(),
-              Event<double>::TriggerType::kPeriodic);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
   }
 
   // The update event fires at 15sec.
@@ -468,8 +457,7 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
   {
     const auto& events = leaf_info_->get_discrete_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
-    EXPECT_EQ(events.front()->get_trigger_type(),
-              Event<double>::TriggerType::kPeriodic);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
   }
 
   // Both events fire at 60sec.
@@ -479,14 +467,12 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
   {
     const auto& events = leaf_info_->get_discrete_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
-    EXPECT_EQ(events.front()->get_trigger_type(),
-              Event<double>::TriggerType::kPeriodic);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
   }
   {
     const auto& events = leaf_info_->get_publish_events().get_events();
     EXPECT_EQ(events.size(), 1);
-    EXPECT_EQ(events.front()->get_trigger_type(),
-              Event<double>::TriggerType::kPeriodic);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
   }
 }
 
@@ -550,10 +536,11 @@ TEST_F(LeafSystemTest, NumericParameters) {
   mutable_vec.SetAtIndex(1, 42.0);
   EXPECT_EQ(42.0, vec[1]);
 
-  EXPECT_EQ(system_.num_numeric_parameters(), 1);
+  EXPECT_EQ(system_.num_numeric_parameter_groups(), 1);
   const DependencyTracker& pn_tracker =
       context->get_tracker(system_.pn_ticket());
-  for (NumericParameterIndex i(0); i < system_.num_numeric_parameters(); ++i) {
+  for (NumericParameterIndex i(0);
+       i < system_.num_numeric_parameter_groups(); ++i) {
     const DependencyTracker& tracker =
         context->get_tracker(system_.numeric_parameter_ticket(i));
     EXPECT_TRUE(pn_tracker.HasPrerequisite(tracker));
@@ -661,30 +648,27 @@ TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
 TEST_F(LeafSystemTest, DeclarePerStepEvents) {
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
 
-  system_.AddPerStepEvent<PublishEvent<double>>();
-  system_.AddPerStepEvent<DiscreteUpdateEvent<double>>();
-  system_.AddPerStepEvent<UnrestrictedUpdateEvent<double>>();
+  system_.DeclarePerStepEvent(PublishEvent<double>());
+  system_.DeclarePerStepEvent(DiscreteUpdateEvent<double>());
+  system_.DeclarePerStepEvent(UnrestrictedUpdateEvent<double>());
 
   system_.GetPerStepEvents(*context, event_info_.get());
 
   {
     const auto& events = leaf_info_->get_publish_events().get_events();
     EXPECT_EQ(events.size(), 1);
-    EXPECT_EQ(events.front()->get_trigger_type(),
-              Event<double>::TriggerType::kPerStep);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPerStep);
   }
   {
     const auto& events = leaf_info_->get_discrete_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
-    EXPECT_EQ(events.front()->get_trigger_type(),
-              Event<double>::TriggerType::kPerStep);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPerStep);
   }
   {
     const auto& events =
         leaf_info_->get_unrestricted_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
-    EXPECT_EQ(events.front()->get_trigger_type(),
-              Event<double>::TriggerType::kPerStep);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPerStep);
   }
 }
 
@@ -1066,13 +1050,72 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
 GTEST_TEST(ModelLeafSystemTest, ModelNumericParams) {
   DeclaredModelPortsSystem dut;
   auto context = dut.CreateDefaultContext();
-  ASSERT_EQ(context->num_numeric_parameters(), 1);
+  ASSERT_EQ(context->num_numeric_parameter_groups(), 1);
   const BasicVector<double>& param = context->get_numeric_parameter(0);
   // Check that type was preserved.
   ASSERT_TRUE(is_dynamic_castable<const MyVector2d>(&param));
   EXPECT_EQ(2, param.size());
   EXPECT_EQ(1.1, param.GetAtIndex(0));
   EXPECT_EQ(2.2, param.GetAtIndex(1));
+}
+
+// Tests that various DeclareDiscreteState() signatures work correctly and
+// that the model values get used in SetDefaultContext().
+GTEST_TEST(ModelLeafSystemTest, ModelDiscreteState) {
+  class DeclaredModelDiscreteStateSystem : public LeafSystem<double> {
+   public:
+    // This should produce three discrete variable groups.
+    DeclaredModelDiscreteStateSystem() {
+      // Takes a BasicVector.
+      indexes_.push_back(
+          DeclareDiscreteState(MyVector2d(Eigen::Vector2d(1., 2.))));
+      // Takes an Eigen vector.
+      indexes_.push_back(DeclareDiscreteState(Eigen::Vector3d(3., 4., 5.)));
+      // Four state variables, initialized to zero.
+      indexes_.push_back(DeclareDiscreteState(4));
+    }
+    std::vector<DiscreteStateIndex> indexes_;
+  };
+
+  DeclaredModelDiscreteStateSystem dut;
+  EXPECT_EQ(dut.num_discrete_state_groups(), 3);
+  for (int i=0; i < static_cast<int>(dut.indexes_.size()); ++i)
+    EXPECT_TRUE(dut.indexes_[i] == i);
+
+  auto context = dut.CreateDefaultContext();
+  DiscreteValues<double>& xd = context->get_mutable_discrete_state();
+  EXPECT_EQ(xd.num_groups(), 3);
+
+  // Concrete type and value should have been preserved.
+  BasicVector<double>& xd0 = xd.get_mutable_vector(0);
+  EXPECT_TRUE(is_dynamic_castable<const MyVector2d>(&xd0));
+  EXPECT_EQ(xd0.get_value(), Eigen::Vector2d(1., 2.));
+
+  // Eigen vector should have been stored in a BasicVector-type object.
+  BasicVector<double>& xd1 = xd.get_mutable_vector(1);
+  EXPECT_EQ(typeid(xd1), typeid(BasicVector<double>));
+  EXPECT_EQ(xd1.get_value(), Eigen::Vector3d(3., 4., 5.));
+
+  // Discrete state with no model should act as though it were given an
+  // all-zero Eigen vector model.
+  BasicVector<double>& xd2 = xd.get_mutable_vector(2);
+  EXPECT_EQ(typeid(xd2), typeid(BasicVector<double>));
+  EXPECT_EQ(xd2.get_value(), Eigen::Vector4d(0., 0., 0., 0.));
+
+  // Now make changes, then see if SetDefaultContext() puts them back.
+  xd0.SetFromVector(Eigen::Vector2d(9., 10.));
+  xd1.SetFromVector(Eigen::Vector3d(11., 12., 13.));
+  xd2.SetFromVector(Eigen::Vector4d(1., 2., 3., 4.));
+
+  // Of course that had to work, but let's just prove it ...
+  EXPECT_EQ(xd0.get_value(), Eigen::Vector2d(9., 10.));
+  EXPECT_EQ(xd1.get_value(), Eigen::Vector3d(11., 12., 13.));
+  EXPECT_EQ(xd2.get_value(), Eigen::Vector4d(1., 2., 3., 4.));
+
+  dut.SetDefaultContext(&*context);
+  EXPECT_EQ(xd0.get_value(), Eigen::Vector2d(1., 2.));
+  EXPECT_EQ(xd1.get_value(), Eigen::Vector3d(3., 4., 5.));
+  EXPECT_EQ(xd2.get_value(), Eigen::Vector4d(0., 0., 0., 0.));
 }
 
 // Tests that DeclareAbstractState works expectedly.
@@ -1349,10 +1392,8 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
       s->CopyFrom(*c.CloneState());
     };
 
-    UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kPeriodic,
-                                          callback);
-
-    event.add_to_composite(&leaf_events);
+    UnrestrictedUpdateEvent<double> event(TriggerType::kPeriodic, callback);
+    event.AddToComposite(&leaf_events);
   }
 
   // Verify no exception is thrown.
@@ -1371,10 +1412,8 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
           std::make_unique<BasicVector<double>>(4), 4, 0, 0));
     };
 
-    UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kPeriodic,
-                                          callback);
-
-    event.add_to_composite(&leaf_events);
+    UnrestrictedUpdateEvent<double> event(TriggerType::kPeriodic, callback);
+    event.AddToComposite(&leaf_events);
   }
 
   // Call the unrestricted update function, verifying that an exception
@@ -1401,10 +1440,8 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
           std::make_unique<DiscreteValues<double>>(std::move(disc_data)));
     };
 
-    UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kPeriodic,
-                                          callback);
-
-    event.add_to_composite(&leaf_events);
+    UnrestrictedUpdateEvent<double> event(TriggerType::kPeriodic, callback);
+    event.AddToComposite(&leaf_events);
   }
 
   // Call the unrestricted update function again, again verifying that an
@@ -1427,10 +1464,8 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
       s->set_abstract_state(std::make_unique<AbstractValues>());
     };
 
-    UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kPeriodic,
-                                          callback);
-
-    event.add_to_composite(&leaf_events);
+    UnrestrictedUpdateEvent<double> event(TriggerType::kPeriodic, callback);
+    event.AddToComposite(&leaf_events);
   }
 
   // Call the unrestricted update function again, again verifying that an
@@ -1794,7 +1829,7 @@ class TestTriggerSystem : public LeafSystem<double> {
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
     for (const PublishEvent<double>* event : events) {
-      if (event->get_trigger_type() == Event<double>::TriggerType::kForced)
+      if (event->get_trigger_type() == TriggerType::kForced)
         continue;
 
       // Call custom callback handler.
@@ -1809,19 +1844,17 @@ class TestTriggerSystem : public LeafSystem<double> {
       CompositeEventCollection<double>* events) const override {
     {
       PublishEvent<double> event(
-          Event<double>::TriggerType::kPerStep,
           std::bind(&TestTriggerSystem::StringCallback, this,
               std::placeholders::_1, std::placeholders::_2,
               std::make_shared<const std::string>("hello")));
-      event.add_to_composite(events);
+      event.AddToComposite(TriggerType::kPerStep, events);
     }
 
     {
       PublishEvent<double> event(
-          Event<double>::TriggerType::kPerStep,
           std::bind(&TestTriggerSystem::IntCallback, this,
               std::placeholders::_1, std::placeholders::_2, 42));
-      event.add_to_composite(events);
+      event.AddToComposite(TriggerType::kPerStep, events);
     }
   }
 
@@ -1942,6 +1975,7 @@ class ConstraintTestSystem : public LeafSystem<double> {
 
   // Expose some protected methods for testing.
   using LeafSystem<double>::DeclareContinuousState;
+  using LeafSystem<double>::DeclareDiscreteState;
   using LeafSystem<double>::DeclareEqualityConstraint;
   using LeafSystem<double>::DeclareInequalityConstraint;
   using LeafSystem<double>::DeclareNumericParameter;
@@ -2097,6 +2131,16 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   EXPECT_THAT(constraint3.description(), ::testing::ContainsRegex(
       "^output 0 of type .*ConstraintBasicVector<double,44>$"));
 
+  // Declaring constrained model discrete state should add constraints.
+  // We want `vec[0] >= 55` on the state vector.
+  using DiscreteStateVector = ConstraintBasicVector<double, 55>;
+  dut.DeclareDiscreteState(DiscreteStateVector{});
+  EXPECT_EQ(dut.get_num_constraints(), 5);
+  const SystemConstraint<double>& constraint4 = dut.get_constraint(Index{4});
+  EXPECT_FALSE(constraint4.is_equality_constraint());
+  EXPECT_THAT(constraint4.description(), ::testing::ContainsRegex(
+      "^discrete state of type .*ConstraintBasicVector<double,55>$"));
+
   // We'll work through the Calc results all at the end, so that we don't
   // change the shape of the System and Context while we're Calc'ing.
   auto context = dut.CreateDefaultContext();
@@ -2205,15 +2249,12 @@ GTEST_TEST(InitializationTest, InitializationTest) {
    public:
     InitializationTestSystem() {
       PublishEvent<double> pub_event(
-          Event<double>::TriggerType::kInitialization,
           std::bind(&InitializationTestSystem::InitPublish, this,
                     std::placeholders::_1, std::placeholders::_2));
       DeclareInitializationEvent(pub_event);
 
-      DeclareInitializationEvent(DiscreteUpdateEvent<double>(
-          Event<double>::TriggerType::kInitialization));
-      DeclareInitializationEvent(UnrestrictedUpdateEvent<double>(
-          Event<double>::TriggerType::kInitialization));
+      DeclareInitializationEvent(DiscreteUpdateEvent<double>());
+      DeclareInitializationEvent(UnrestrictedUpdateEvent<double>());
     }
 
     bool get_pub_init() const { return pub_init_; }
@@ -2223,8 +2264,7 @@ GTEST_TEST(InitializationTest, InitializationTest) {
    private:
     void InitPublish(const Context<double>&,
                      const PublishEvent<double>& event) const {
-      EXPECT_EQ(event.get_trigger_type(),
-                Event<double>::TriggerType::kInitialization);
+      EXPECT_EQ(event.get_trigger_type(), TriggerType::kInitialization);
       pub_init_ = true;
     }
 
@@ -2234,7 +2274,7 @@ GTEST_TEST(InitializationTest, InitializationTest) {
         DiscreteValues<double>*) const final {
       EXPECT_EQ(events.size(), 1);
       EXPECT_EQ(events.front()->get_trigger_type(),
-                Event<double>::TriggerType::kInitialization);
+                TriggerType::kInitialization);
       dis_update_init_ = true;
     }
 
@@ -2244,7 +2284,7 @@ GTEST_TEST(InitializationTest, InitializationTest) {
         State<double>*) const final {
       EXPECT_EQ(events.size(), 1);
       EXPECT_EQ(events.front()->get_trigger_type(),
-                Event<double>::TriggerType::kInitialization);
+                TriggerType::kInitialization);
       unres_update_init_ = true;
     }
 

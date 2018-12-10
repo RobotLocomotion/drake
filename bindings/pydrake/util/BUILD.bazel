@@ -1,29 +1,22 @@
 # -*- python -*-
+# Backwards-compatibility aliases.
 
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_googletest",
-    "drake_cc_library",
+    "drake_cc_test",
 )
 load(
     "@drake//tools/skylark:pybind.bzl",
-    "drake_pybind_cc_googletest",
-    "drake_pybind_library",
-    "get_drake_py_installs",
     "get_pybind_package_info",
 )
 load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_library",
     "drake_py_test",
-    "drake_py_unittest",
 )
-load(
-    "//tools/workspace/pybind11:repository.bzl",
-    "generate_pybind11_version_py_file",
-)
+load(":build_macros.bzl", "util_cc_alias", "util_py_alias")
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -33,184 +26,54 @@ package(default_visibility = [
 # bindings.
 PACKAGE_INFO = get_pybind_package_info("//bindings")
 
-drake_cc_library(
-    name = "type_pack",
-    hdrs = ["type_pack.h"],
-    visibility = ["//visibility:public"],
-)
-
-drake_cc_library(
-    name = "wrap_function",
-    hdrs = ["wrap_function.h"],
-    visibility = ["//visibility:public"],
-)
-
-drake_cc_library(
-    name = "wrap_pybind",
-    hdrs = ["wrap_pybind.h"],
-    visibility = ["//visibility:public"],
-    deps = [":wrap_function"],
-)
-
-# These utilities do not need any of the bound Drake C++ code. To simplify
-# test dependencies, this module does not declare a dependency on
-# `pydrake:module_py`, as would be customary for any other `module_py` target.
 drake_py_library(
     name = "module_py",
     srcs = ["__init__.py"],
-    imports = PACKAGE_INFO.py_imports,
 )
 
-drake_py_library(
-    name = "deprecation_py",
-    srcs = ["deprecation.py"],
-    imports = PACKAGE_INFO.py_imports,
-)
-
-# N.B. Since `:module_py` incorporates `deprecation_py`, C++ Python libraries
-# need not worry about it.
-drake_cc_library(
-    name = "deprecation_pybind",
-    hdrs = ["deprecation_pybind.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//bindings/pydrake:pydrake_pybind"],
-)
-
-drake_cc_library(
-    name = "eigen_pybind",
-    hdrs = ["eigen_pybind.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//bindings/pydrake:pydrake_pybind"],
-)
-
-drake_cc_library(
-    name = "eigen_geometry_pybind",
-    hdrs = ["eigen_geometry_pybind.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//bindings/pydrake:pydrake_pybind"],
-)
-
-drake_pybind_library(
-    name = "eigen_geometry_py",
-    cc_deps = [":eigen_geometry_pybind"],
-    cc_srcs = ["eigen_geometry_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [":module_py"],
-)
-
-# ODR does not matter, because the singleton will be stored in Python.
-drake_cc_library(
-    name = "cpp_param_pybind",
-    srcs = ["cpp_param_pybind.cc"],
-    hdrs = ["cpp_param_pybind.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":type_pack",
-        "//bindings/pydrake:pydrake_pybind",
-        "@pybind11",
-    ],
-)
-
-drake_py_library(
-    name = "cpp_param_py",
-    srcs = ["cpp_param.py"],
-    deps = [
-        ":module_py",
-    ],
-)
-
-drake_py_library(
-    name = "cpp_template_py",
-    srcs = ["cpp_template.py"],
-    deps = [
-        ":cpp_param_py",
-        ":module_py",
-    ],
-)
-
-drake_cc_library(
-    name = "cpp_template_pybind",
-    srcs = [],
-    hdrs = ["cpp_template_pybind.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cpp_param_pybind",
-        "//bindings/pydrake:pydrake_pybind",
-        "@pybind11",
-    ],
-)
-
-drake_py_library(
-    name = "cpp_const_py",
-    srcs = ["cpp_const.py"],
-    deps = [
-        ":module_py",
-        "//bindings/pydrake/third_party:wrapt_py",
-    ],
-)
-
-drake_cc_library(
-    name = "drake_optional_pybind",
-    hdrs = ["drake_optional_pybind.h"],
-    visibility = ["//visibility:public"],
-)
-
-drake_cc_library(
-    name = "type_safe_index_pybind",
-    hdrs = ["type_safe_index_pybind.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//bindings/pydrake:documentation_pybind"],
-)
-
-generate_pybind11_version_py_file(
-    name = "pybind11_version.py",
-)
-
-drake_py_library(
-    name = "pybind11_version_py",
-    srcs = ["pybind11_version.py"],
-    tags = ["nolint"],  # Do not lint generated files.
-    deps = [
-        ":module_py",
-    ],
-)
-
-drake_py_library(
-    name = "containers_py",
-    srcs = ["containers.py"],
-    deps = [
-        ":module_py",
-    ],
-)
-
-drake_py_library(
-    name = "compatibility_py",
-    srcs = ["compatibility.py"],
-    deps = [
-        ":module_py",
-    ],
-)
-
-PY_LIBRARIES_WITH_INSTALL = [
-    ":eigen_geometry_py",
-]
-
-PY_LIBRARIES = [
+py_alias_names = [
     ":compatibility_py",
     ":containers_py",
     ":cpp_const_py",
     ":cpp_param_py",
     ":cpp_template_py",
     ":deprecation_py",
-    ":module_py",
+    ":eigen_geometry_py",
     ":pybind11_version_py",
+]
+
+[
+    util_py_alias(name = name[1:])
+    for name in py_alias_names
+]
+
+PY_LIBRARIES = py_alias_names + [
+    ":module_py",
+]
+
+cc_alias_names = [
+    ":cpp_param_pybind",
+    ":cpp_template_pybind",
+    ":deprecation_pybind",
+    ":drake_optional_pybind",
+    ":eigen_geometry_pybind",
+    ":eigen_pybind",
+    ":type_pack",
+    ":type_safe_index_pybind",
+    ":wrap_function",
+    ":wrap_pybind",
+]
+
+[
+    util_cc_alias(name = name[1:])
+    for name in cc_alias_names
 ]
 
 # Symbol roll-up (for user ease).
 drake_py_library(
     name = "all_py",
     srcs = ["all.py"],
-    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
+    deps = PY_LIBRARIES,
 )
 
 # Package roll-up (for Bazel dependencies).
@@ -224,154 +87,22 @@ install(
     name = "install",
     targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
-    deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
-drake_cc_googletest(
-    name = "type_pack_test",
-    deps = [
-        ":type_pack",
-        "//common:nice_type_name",
-    ],
+drake_cc_test(
+    name = "alias_cc_test",
+    # Using `drake_shared_library` can cause timeouts in debug mode.
+    timeout = "moderate",
+    deps = cc_alias_names,
 )
 
-drake_cc_googletest(
-    name = "wrap_function_test",
-    deps = [
-        ":wrap_function",
-    ],
+drake_py_test(
+    name = "alias_py_test",
+    allow_import_unittest = True,
+    deps = [":util"],
 )
 
-drake_pybind_library(
-    name = "deprecation_example_cc_module_py",
-    testonly = 1,
-    add_install = False,
-    cc_deps = ["//bindings/pydrake/util:deprecation_pybind"],
-    cc_so_name = "test/deprecation_example/cc_module",
-    cc_srcs = ["test/deprecation_example/cc_module_py.cc"],
-    package_info = PACKAGE_INFO,
-    visibility = ["//visibility:private"],
+add_lint_tests(
+    cpplint_data = ["//bindings/pydrake:.clang-format"],
+    enable_clang_format_lint = True,
 )
-
-drake_py_library(
-    name = "deprecation_example",
-    testonly = 1,
-    srcs = glob(["test/deprecation_example/*.py"]),
-    imports = ["test"],
-    visibility = ["//visibility:private"],
-    deps = [
-        ":deprecation_example_cc_module_py",
-        ":deprecation_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "deprecation_test",
-    deps = [
-        ":deprecation_example",
-    ],
-)
-
-drake_py_unittest(
-    name = "cpp_const_test",
-    deps = [
-        ":cpp_const_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "cpp_param_test",
-    deps = [
-        ":cpp_param_py",
-    ],
-)
-
-drake_pybind_cc_googletest(
-    name = "cpp_param_pybind_test",
-    cc_deps = [":cpp_param_pybind"],
-    py_deps = [":cpp_param_py"],
-)
-
-drake_py_unittest(
-    name = "cpp_template_test",
-    deps = [
-        ":cpp_template_py",
-    ],
-)
-
-drake_pybind_cc_googletest(
-    name = "cpp_template_pybind_test",
-    cc_deps = [
-        ":cpp_template_pybind",
-        "//common:nice_type_name",
-        "//common/test_utilities:expect_throws_message",
-    ],
-    py_deps = [":cpp_template_py"],
-)
-
-drake_pybind_library(
-    name = "eigen_geometry_test_util_py",
-    testonly = 1,
-    add_install = False,
-    cc_deps = [":eigen_geometry_pybind"],
-    cc_so_name = "test/eigen_geometry_test_util",
-    cc_srcs = ["test/eigen_geometry_test_util_py.cc"],
-    package_info = PACKAGE_INFO,
-    visibility = ["//visibility:private"],
-)
-
-drake_py_unittest(
-    name = "eigen_geometry_test",
-    deps = [
-        ":eigen_geometry_py",
-        ":eigen_geometry_test_util_py",
-    ],
-)
-
-drake_pybind_cc_googletest(
-    name = "type_safe_index_pybind_test",
-    cc_deps = [
-        ":type_safe_index_pybind",
-        "//common:nice_type_name",
-    ],
-)
-
-drake_py_unittest(
-    name = "pybind11_version_test",
-    deps = [
-        ":pybind11_version_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "containers_test",
-    deps = [
-        ":containers_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "compatibility_test",
-    deps = [
-        ":compatibility_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "wrap_test_util_py",
-    testonly = 1,
-    add_install = False,
-    cc_deps = [":wrap_pybind"],
-    cc_srcs = ["test/wrap_test_util_py.cc"],
-    package_info = PACKAGE_INFO,
-    visibility = ["//visibility:private"],
-)
-
-drake_py_unittest(
-    name = "wrap_pybind_test",
-    deps = [
-        ":wrap_test_util_py",
-    ],
-)
-
-add_lint_tests()

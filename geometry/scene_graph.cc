@@ -173,6 +173,34 @@ GeometryId SceneGraph<T>::RegisterGeometry(
 }
 
 template <typename T>
+GeometryId SceneGraph<T>::RegisterGeometryWithoutRole(
+    SourceId source_id, FrameId frame_id,
+    std::unique_ptr<GeometryInstance> geometry) {
+  GS_THROW_IF_CONTEXT_ALLOCATED
+  return initial_state_->RegisterGeometryWithoutRole(
+      source_id, frame_id, std::move(geometry));
+}
+
+template <typename T>
+GeometryId SceneGraph<T>::RegisterGeometry(
+    Context<T>* context, SourceId source_id, FrameId frame_id,
+    std::unique_ptr<GeometryInstance> geometry) {
+  auto* g_context = static_cast<GeometryContext<T>*>(context);
+  auto& g_state = g_context->get_mutable_geometry_state();
+  return g_state.RegisterGeometry(source_id, frame_id, std::move(geometry));
+}
+
+template <typename T>
+GeometryId SceneGraph<T>::RegisterGeometryWithoutRole(
+    Context<T>* context, SourceId source_id, FrameId frame_id,
+    std::unique_ptr<GeometryInstance> geometry) {
+  auto* g_context = static_cast<GeometryContext<T>*>(context);
+  auto& g_state = g_context->get_mutable_geometry_state();
+  return g_state.RegisterGeometryWithoutRole(source_id, frame_id,
+                                             std::move(geometry));
+}
+
+template <typename T>
 GeometryId SceneGraph<T>::RegisterGeometry(
     SourceId source_id, GeometryId geometry_id,
     std::unique_ptr<GeometryInstance> geometry) {
@@ -182,11 +210,78 @@ GeometryId SceneGraph<T>::RegisterGeometry(
 }
 
 template <typename T>
+GeometryId SceneGraph<T>::RegisterGeometryWithoutRole(
+    SourceId source_id, GeometryId geometry_id,
+    std::unique_ptr<GeometryInstance> geometry) {
+  GS_THROW_IF_CONTEXT_ALLOCATED
+  return initial_state_->RegisterGeometryWithParentWithoutRole(
+      source_id, geometry_id, std::move(geometry));
+}
+
+template <typename T>
+GeometryId SceneGraph<T>::RegisterGeometry(
+    Context<T>* context, SourceId source_id, GeometryId geometry_id,
+    std::unique_ptr<GeometryInstance> geometry) {
+  auto* g_context = static_cast<GeometryContext<T>*>(context);
+  auto& g_state = g_context->get_mutable_geometry_state();
+  return g_state.RegisterGeometryWithParent(source_id, geometry_id,
+                                            std::move(geometry));
+}
+
+template <typename T>
+GeometryId SceneGraph<T>::RegisterGeometryWithoutRole(
+    Context<T>* context, SourceId source_id, GeometryId geometry_id,
+    std::unique_ptr<GeometryInstance> geometry) {
+  auto* g_context = static_cast<GeometryContext<T>*>(context);
+  auto& g_state = g_context->get_mutable_geometry_state();
+  return g_state.RegisterGeometryWithParentWithoutRole(
+      source_id, geometry_id, std::move(geometry));
+}
+
+template <typename T>
 GeometryId SceneGraph<T>::RegisterAnchoredGeometry(
     SourceId source_id, std::unique_ptr<GeometryInstance> geometry) {
   GS_THROW_IF_CONTEXT_ALLOCATED
   return initial_state_->RegisterAnchoredGeometry(source_id,
                                                   std::move(geometry));
+}
+
+template <typename T>
+GeometryId SceneGraph<T>::RegisterAnchoredGeometryWithoutRole(
+    SourceId source_id, std::unique_ptr<GeometryInstance> geometry) {
+  GS_THROW_IF_CONTEXT_ALLOCATED
+  return initial_state_->RegisterAnchoredGeometryWithoutRole(
+      source_id, std::move(geometry));
+}
+
+template <typename T>
+void SceneGraph<T>::RemoveGeometry(SourceId source_id, GeometryId geometry_id) {
+  GS_THROW_IF_CONTEXT_ALLOCATED
+  initial_state_->RemoveGeometry(source_id, geometry_id);
+}
+
+template <typename T>
+void SceneGraph<T>::RemoveGeometry(Context<T>* context, SourceId source_id,
+                                   GeometryId geometry_id) {
+  auto* g_context = static_cast<GeometryContext<T>*>(context);
+  auto& g_state = g_context->get_mutable_geometry_state();
+  g_state.RemoveGeometry(source_id, geometry_id);
+}
+
+template <typename T>
+void SceneGraph<T>::AssignRole(SourceId source_id,
+                               GeometryId geometry_id,
+                               ProximityProperties properties) {
+  GS_THROW_IF_CONTEXT_ALLOCATED
+  initial_state_->AssignRole(source_id, geometry_id, std::move(properties));
+}
+
+template <typename T>
+void SceneGraph<T>::AssignRole(SourceId source_id,
+                               GeometryId geometry_id,
+                               IllustrationProperties properties) {
+  GS_THROW_IF_CONTEXT_ALLOCATED
+  initial_state_->AssignRole(source_id, geometry_id, std::move(properties));
 }
 
 template <typename T>
@@ -202,10 +297,27 @@ void SceneGraph<T>::ExcludeCollisionsWithin(const GeometrySet& geometry_set) {
 }
 
 template <typename T>
+void SceneGraph<T>::ExcludeCollisionsWithin(Context<T>* context,
+                                            const GeometrySet& geometry_set) {
+  auto* g_context = static_cast<GeometryContext<T>*>(context);
+  auto& g_state = g_context->get_mutable_geometry_state();
+  g_state.ExcludeCollisionsWithin(geometry_set);
+}
+
+template <typename T>
 void SceneGraph<T>::ExcludeCollisionsBetween(const GeometrySet& setA,
                                              const GeometrySet& setB) {
   GS_THROW_IF_CONTEXT_ALLOCATED
   initial_state_->ExcludeCollisionsBetween(setA, setB);
+}
+
+template <typename T>
+void SceneGraph<T>::ExcludeCollisionsBetween(Context<T>* context,
+                                             const GeometrySet& setA,
+                                             const GeometrySet& setB) {
+  auto* g_context = static_cast<GeometryContext<T>*>(context);
+  auto& g_state = g_context->get_mutable_geometry_state();
+  g_state.ExcludeCollisionsBetween(setA, setB);
 }
 
 template <typename T>
@@ -243,11 +355,21 @@ void SceneGraph<T>::CalcQueryObject(const Context<T>& context,
 template <typename T>
 PoseBundle<T> SceneGraph<T>::MakePoseBundle() const {
   const auto& g_state = *initial_state_;
-  // Don't include the world frame.
-  PoseBundle<T> bundle(g_state.get_num_frames() - 1);
+  // Collect only those frames that have illustration geometry -- based on the
+  // *model*.
+  // TODO(SeanCurtis-TRI): This happens *twice* now (once here and once in
+  // CalcPoseBundle); might be worth refactoring/caching it.
+  std::vector<FrameId> dynamic_frames;
+  for (const auto& pair : g_state.frames_) {
+    const FrameId frame_id = pair.first;
+    if (frame_id == world_frame_id()) continue;
+    if (g_state.NumGeometriesWithRole(frame_id, Role::kIllustration) > 0) {
+      dynamic_frames.push_back(frame_id);
+    }
+  }
+  PoseBundle<T> bundle(static_cast<int>(dynamic_frames.size()));
   int i = 0;
-  for (FrameId f_id : g_state.get_frame_ids()) {
-    if (f_id == world_frame_id()) continue;
+  for (FrameId f_id : dynamic_frames) {
     int frame_group = g_state.get_frame_group(f_id);
     bundle.set_model_instance_id(i, frame_group);
 
@@ -275,8 +397,19 @@ void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
   // cache instead of this heavy-handed update.
   FullPoseUpdate(g_context);
   const auto& g_state = g_context.get_geometry_state();
-  for (FrameId f_id : g_state.get_frame_ids()) {
-    if (f_id == world_frame_id()) continue;
+
+  // Collect only those frames that have illustration geometry -- based on the
+  // *model*.
+  std::vector<FrameId> dynamic_frames;
+  for (const auto& pair : g_state.frames_) {
+    const FrameId frame_id = pair.first;
+    if (frame_id == world_frame_id()) continue;
+    if (g_state.NumGeometriesWithRole(frame_id, Role::kIllustration) > 0) {
+      dynamic_frames.push_back(frame_id);
+    }
+  }
+
+  for (FrameId f_id : dynamic_frames) {
     output->set_pose(i, g_state.get_pose_in_world(f_id));
     // TODO(SeanCurtis-TRI): Handle velocity.
     ++i;
@@ -314,7 +447,7 @@ void SceneGraph<T>::FullPoseUpdate(const GeometryContext<T>& context) const {
       if (itr != input_source_ids_.end()) {
         const int pose_port = itr->second.pose_port;
         const auto pose_port_value =
-            this->template EvalAbstractInput(context, pose_port);
+            this->EvalAbstractInput(context, pose_port);
         if (pose_port_value) {
           const auto& poses =
               pose_port_value->template GetValue<FramePoseVector<T>>();

@@ -12,8 +12,9 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/manipulation/planner/rbt_differential_inverse_kinematics.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -44,8 +45,8 @@ std::unique_ptr<MultibodyPlant<double>> BuildMultibodyPlant() {
   const std::string iiwa_absolute_path = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
   auto plant = std::make_unique<MultibodyPlant<double>>();
-  drake::multibody::parsing::AddModelFromSdfFile(iiwa_absolute_path, "iiwa",
-                                                 plant.get());
+  drake::multibody::Parser(plant.get()).AddModelFromFile(
+      iiwa_absolute_path, "iiwa");
   plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("iiwa_link_0"));
   return plant;
 }
@@ -150,8 +151,9 @@ TEST_F(DifferentialInverseKinematicsTest, PositiveTest) {
   auto V_WE = (Vector6<double>() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0).finished();
 
   // Test without additional linear constraints.
-  DifferentialInverseKinematicsResult result = DoDifferentialInverseKinematics(
-      *tree_, *cache_, V_WE, *frame_E_, *params_);
+  DifferentialInverseKinematicsResult result =
+      rbt::DoDifferentialInverseKinematics(
+          *tree_, *cache_, V_WE, *frame_E_, *params_);
   DifferentialInverseKinematicsStatus function_status{result.status};
   drake::log()->info("function_status = {}", function_status);
 
@@ -162,8 +164,8 @@ TEST_F(DifferentialInverseKinematicsTest, PositiveTest) {
   const auto b = VectorX<double>::Zero(A.rows());
   params_->AddLinearVelocityConstraint(
       std::make_shared<LinearConstraint>(A, b, b));
-  result = DoDifferentialInverseKinematics(*tree_, *cache_, V_WE, *frame_E_,
-                                           *params_);
+  result = rbt::DoDifferentialInverseKinematics(
+      *tree_, *cache_, V_WE, *frame_E_, *params_);
   drake::log()->info("function_status = {}", function_status);
 
   CheckPositiveResult(V_WE, result);
@@ -181,8 +183,8 @@ TEST_F(DifferentialInverseKinematicsTest, OverConstrainedTest) {
   params_->AddLinearVelocityConstraint(
       std::make_shared<LinearConstraint>(A, b, b));
   DifferentialInverseKinematicsResult function_result =
-      DoDifferentialInverseKinematics(*tree_, *cache_, V_WE, *frame_E_,
-                                      *params_);
+      rbt::DoDifferentialInverseKinematics(
+          *tree_, *cache_, V_WE, *frame_E_, *params_);
   DifferentialInverseKinematicsStatus function_status{function_result.status};
   drake::log()->info("function_status = {}", function_status);
 
@@ -193,8 +195,8 @@ TEST_F(DifferentialInverseKinematicsTest, MultiBodyTreeTest) {
   const double eps = std::numeric_limits<double>::epsilon();
   auto V_WE = (Vector6<double>() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0).finished();
   DifferentialInverseKinematicsResult rbt_result =
-      DoDifferentialInverseKinematics(*tree_, *cache_, V_WE, *frame_E_,
-                                      *params_);
+      rbt::DoDifferentialInverseKinematics(
+          *tree_, *cache_, V_WE, *frame_E_, *params_);
   DifferentialInverseKinematicsResult mbp_result =
       DoDifferentialInverseKinematics(*mbp_, *context_, V_WE, *frame_E_mbt_,
                                       *params_);
@@ -215,8 +217,8 @@ TEST_F(DifferentialInverseKinematicsTest, MultiBodyTreeTest) {
   Isometry3<double> X_WE_desired =
       Translation3<double>(Vector3<double>(0.1, 0.2, 0.3)) *
       AngleAxis<double>(3.44, Vector3<double>(0.3, -0.2, 0.1).normalized());
-  rbt_result = DoDifferentialInverseKinematics(*tree_, *cache_, X_WE_desired,
-                                               *frame_E_, *params_);
+  rbt_result = rbt::DoDifferentialInverseKinematics(
+      *tree_, *cache_, X_WE_desired, *frame_E_, *params_);
   mbp_result = DoDifferentialInverseKinematics(*mbp_, *context_, X_WE_desired,
                                                *frame_E_mbt_, *params_);
   // TODO(siyuanfeng-tri) Ideally a smaller tolerance would pass, but there
@@ -252,8 +254,8 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
     params_->set_end_effector_velocity_gain(gain_E);
 
     DifferentialInverseKinematicsResult function_result =
-        DoDifferentialInverseKinematics(*tree_, *cache_, V_WE_desired,
-                                        *frame_E_, *params_);
+        rbt::DoDifferentialInverseKinematics(
+            *tree_, *cache_, V_WE_desired, *frame_E_, *params_);
     ASSERT_TRUE(function_result.joint_velocities != nullopt);
 
     // Transform the resulting end effector frame's velocity into body frame.
@@ -299,8 +301,8 @@ TEST_F(DifferentialInverseKinematicsTest, SimpleTracker) {
   const double dt = params_->get_timestep();
   for (int iteration = 0; iteration < 900; iteration++) {
     DifferentialInverseKinematicsResult function_result =
-        DoDifferentialInverseKinematics(*tree_, *cache_, X_WE_desired,
-                                        *frame_E_, *params_);
+        rbt::DoDifferentialInverseKinematics(
+            *tree_, *cache_, X_WE_desired, *frame_E_, *params_);
 
     EXPECT_EQ(function_result.status,
               DifferentialInverseKinematicsStatus::kSolutionFound);

@@ -15,10 +15,10 @@ import numpy as np
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import SceneGraph
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
-from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
 from pydrake.multibody.multibody_tree.math import (
     SpatialVelocity,
 )
+from pydrake.multibody.parsing import Parser
 from pydrake.systems.framework import (
     AbstractValue,
     BasicVector,
@@ -197,8 +197,7 @@ class TestRendering(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         plant = MultibodyPlant(time_step=0.01)
-        model_instance = AddModelFromSdfFile(
-            file_name=file_name, plant=plant)
+        model_instance = Parser(plant).AddModelFromFile(file_name)
         scene_graph = SceneGraph()
         plant.RegisterAsSourceForSceneGraph(scene_graph)
         plant.Finalize()

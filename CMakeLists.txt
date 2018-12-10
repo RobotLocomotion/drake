@@ -15,7 +15,7 @@ if(CYGWIN OR NOT UNIX)
 endif()
 
 set(UNIX_DISTRIBUTION_ID)
-set(UNIX_DISTRIBUTION_RELEASE)
+set(UNIX_DISTRIBUTION_CODENAME)
 
 if(UNIX AND NOT APPLE)
   find_program(LSB_RELEASE_EXECUTABLE NAMES lsb_release)
@@ -42,30 +42,30 @@ if(UNIX AND NOT APPLE)
 
   string(TOLOWER "${UNIX_DISTRIBUTION_ID}" UNIX_DISTRIBUTION_ID)
 
-  execute_process(COMMAND "${LSB_RELEASE_EXECUTABLE}" --release --short
-    RESULT_VARIABLE LSB_RELEASE_RELEASE_SHORT_RESULT_VARIABLE
-    OUTPUT_VARIABLE LSB_RELEASE_RELEASE_SHORT_OUTPUT_VARIABLE
+  execute_process(COMMAND "${LSB_RELEASE_EXECUTABLE}" --codename --short
+    RESULT_VARIABLE LSB_RELEASE_CODENAME_SHORT_RESULT_VARIABLE
+    OUTPUT_VARIABLE LSB_RELEASE_CODENAME_SHORT_OUTPUT_VARIABLE
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
 
-  if(LSB_RELEASE_RELEASE_SHORT_RESULT_VARIABLE EQUAL 0)
-    set(UNIX_DISTRIBUTION_RELEASE
-      "${LSB_RELEASE_RELEASE_SHORT_OUTPUT_VARIABLE}"
+  if(LSB_RELEASE_CODENAME_SHORT_RESULT_VARIABLE EQUAL 0)
+    set(UNIX_DISTRIBUTION_CODENAME
+      "${LSB_RELEASE_CODENAME_SHORT_OUTPUT_VARIABLE}"
     )
   endif()
 
   # The supported releases should match those listed in both doc/developers.rst
   # and tools/workspace/os.bzl.
-  if(NOT UNIX_DISTRIBUTION_RELEASE MATCHES "^(16.04|18.04)$")
+  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(bionic|xenial)$")
      message(FATAL_ERROR
-       "Release ${UNIX_DISTRIBUTION_RELEASE} is NOT supported"
+       "Release ${UNIX_DISTRIBUTION_CODENAME} is NOT supported"
      )
   endif()
 endif()
 
 # The version passed to find_package(Bazel) should match the
 # minimum_bazel_version value in the call to versions.check() in WORKSPACE.
-set(MINIMUM_BAZEL_VERSION 0.18.0)
+set(MINIMUM_BAZEL_VERSION 0.19.2)
 find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE REQUIRED)
 
 get_filename_component(C_COMPILER_REALPATH "${CMAKE_C_COMPILER}" REALPATH)
@@ -358,7 +358,7 @@ else()
   set(CPACK_DEBIAN_PACKAGE_RELEASE 1)
   set(CPACK_DEBIAN_PACKAGE_SECTION contrib/devel)
 
-  file(STRINGS "setup/${UNIX_DISTRIBUTION_ID}/${UNIX_DISTRIBUTION_RELEASE}/binary_distribution/packages.txt"
+  file(STRINGS "setup/${UNIX_DISTRIBUTION_ID}/binary_distribution/packages-${UNIX_DISTRIBUTION_CODENAME}.txt"
     CPACK_DEBIAN_PACKAGE_DEPENDS
   )
   string(REGEX REPLACE "([a-z0-9\\-]+)=([a-z0-9\\-\\.~]+)" "\\1 (= \\2)"

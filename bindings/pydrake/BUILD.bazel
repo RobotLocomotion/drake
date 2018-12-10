@@ -26,6 +26,10 @@ package(default_visibility = [
     "//bindings:__subpackages__",
 ])
 
+exports_files([
+    ".clang-format",
+])
+
 # This determines how `PYTHONPATH` is configured, and how to install the
 # bindings.
 PACKAGE_INFO = get_pybind_package_info(base_package = "//bindings")
@@ -72,12 +76,14 @@ generate_pybind_documentation_header(
 drake_cc_library(
     name = "documentation_pybind",
     hdrs = ["documentation_pybind.h"],
+    declare_installed_headers = 0,
     tags = ["nolint"],
 )
 
 drake_cc_library(
     name = "pydrake_pybind",
     hdrs = ["pydrake_pybind.h"],
+    declare_installed_headers = 0,
     # NOTE: We must violate IWYU and not list any Drake libraries in "deps"
     # here because we do not want these dependencies violating ODR (at both
     # development and install time).
@@ -87,6 +93,7 @@ drake_cc_library(
 drake_cc_library(
     name = "autodiff_types_pybind",
     hdrs = ["autodiff_types_pybind.h"],
+    declare_installed_headers = 0,
     visibility = ["//visibility:public"],
 )
 
@@ -118,18 +125,6 @@ drake_pybind_library(
     ],
     cc_srcs = ["automotive_py.cc"],
     package_info = PACKAGE_INFO,
-)
-
-drake_py_library(
-    name = "backwards_compatibility_py",
-    srcs = [
-        "parsers.py",
-        "rbtree.py",
-    ],
-    deps = [
-        "//bindings/pydrake/multibody:parsers_py",
-        "//bindings/pydrake/multibody:rigid_body_tree_py",
-    ],
 )
 
 drake_pybind_library(
@@ -191,6 +186,7 @@ drake_pybind_library(
 drake_cc_library(
     name = "symbolic_types_pybind",
     hdrs = ["symbolic_types_pybind.h"],
+    declare_installed_headers = 0,
     visibility = ["//visibility:public"],
 )
 
@@ -243,7 +239,6 @@ PY_LIBRARIES_WITH_INSTALL = [
 ]
 
 PY_LIBRARIES = [
-    ":backwards_compatibility_py",
     ":module_py",
 ]
 
@@ -414,13 +409,6 @@ drake_py_unittest(
     ],
 )
 
-drake_py_unittest(
-    name = "backwards_compatability_test",
-    deps = [
-        ":backwards_compatibility_py",
-    ],
-)
-
 drake_py_binary(
     name = "math_example",
     srcs = ["math_example.py"],
@@ -430,7 +418,17 @@ drake_py_binary(
     ],
 )
 
+drake_py_unittest(
+    name = "dot_clang_format_test",
+    data = [
+        "//:.clang-format",
+        "//bindings/pydrake:.clang-format",
+    ],
+    tags = ["lint"],
+)
+
 add_lint_tests(
+    cpplint_data = ["//bindings/pydrake:.clang-format"],
     enable_clang_format_lint = True,
     python_lint_extra_srcs = [
         ":test/all_install_test.py",

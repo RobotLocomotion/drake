@@ -1,0 +1,7 @@
+.bazelproject
+.git
+.gitattributes
+.github
+.gitignore
+.idea
+bazel-*

@@ -12,10 +12,11 @@ from pydrake.examples.manipulation_station import \
     (ManipulationStation, ManipulationStationHardwareInterface)
 from pydrake.geometry import ConnectDrakeVisualizer
 from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
-from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
+from pydrake.multibody.parsing import Parser
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
+from pydrake.systems.primitives import FirstOrderLowPassFilter
 from pydrake.util.eigen_geometry import Isometry3
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -47,11 +48,12 @@ if args.hardware:
     station.Connect(wait_for_cameras=False)
 else:
     station = builder.AddSystem(ManipulationStation())
-    station.AddCupboard()
-    object = AddModelFromSdfFile(FindResourceOrThrow(
+    station.SetupDefaultStation()
+    parser = Parser(station.get_mutable_multibody_plant(),
+                    station.get_mutable_scene_graph())
+    object = parser.AddModelFromFile(FindResourceOrThrow(
         "drake/examples/manipulation_station/models/061_foam_brick.sdf"),
-        "object", station.get_mutable_multibody_plant(),
-        station.get_mutable_scene_graph())
+        "object")
     station.Finalize()
 
     ConnectDrakeVisualizer(builder, station.get_scene_graph(),
@@ -67,8 +69,11 @@ teleop = builder.AddSystem(JointSliders(station.get_controller_plant(),
 if args.test:
     teleop.window.withdraw()  # Don't display the window when testing.
 
-builder.Connect(teleop.get_output_port(0), station.GetInputPort(
-    "iiwa_position"))
+filter = builder.AddSystem(FirstOrderLowPassFilter(time_constant=2.0,
+                                                   size=7))
+builder.Connect(teleop.get_output_port(0), filter.get_input_port(0))
+builder.Connect(filter.get_output_port(0),
+                station.GetInputPort("iiwa_position"))
 
 wsg_buttons = builder.AddSystem(SchunkWsgButtons(teleop.window))
 builder.Connect(wsg_buttons.GetOutputPort("position"), station.GetInputPort(
@@ -110,6 +115,8 @@ if not args.hardware:
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(
     station_context).get_value()
 teleop.set_position(q0)
+filter.set_initial_output_value(diagram.GetMutableSubsystemContext(
+    filter, simulator.get_mutable_context()), q0)
 
 # This is important to avoid duplicate publishes to the hardware interface:
 simulator.set_publish_every_time_step(False)

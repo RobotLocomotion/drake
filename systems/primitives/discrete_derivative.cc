@@ -4,6 +4,9 @@
 #include <vector>
 
 #include "drake/common/default_scalars.h"
+#include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/multiplexer.h"
+#include "drake/systems/primitives/pass_through.h"
 
 namespace drake {
 namespace systems {
@@ -28,12 +31,15 @@ DiscreteDerivative<T>::DiscreteDerivative(int num_inputs, double time_step)
 }
 
 template <typename T>
-void DiscreteDerivative<T>::set_state(
-    const Eigen::Ref<const drake::VectorX<T>>& u,
-    drake::systems::Context<T>* context) const {
-  DRAKE_DEMAND(u.size() == n_);
+void DiscreteDerivative<T>::set_input_history(
+    drake::systems::Context<T>* context,
+    const Eigen::Ref<const drake::VectorX<T>>& u_n, const Eigen::Ref<const
+    drake::VectorX<T>>& u_n_minus_1) const {
+  DRAKE_DEMAND(u_n.size() == n_);
+  DRAKE_DEMAND(u_n_minus_1.size() == n_);
 
-  context->get_mutable_discrete_state_vector().get_mutable_value() << u, u;
+  context->get_mutable_discrete_state_vector().get_mutable_value()
+    << u_n, u_n_minus_1;
 }
 
 template <typename T>
@@ -61,8 +67,54 @@ void DiscreteDerivative<T>::CalcOutput(
   output_vector->SetFromVector((x0 - x1) / time_step_);
 }
 
+template <typename T>
+StateInterpolatorWithDiscreteDerivative<
+    T>::StateInterpolatorWithDiscreteDerivative(int num_positions,
+                                                double time_step) {
+  DiagramBuilder<T> builder;
+
+  auto pass_through = builder.template AddSystem<PassThrough>(num_positions);
+  derivative_ =
+      builder.template AddSystem<DiscreteDerivative>(num_positions, time_step);
+  auto mux = builder.template AddSystem<Multiplexer>(
+      std::vector<int>{num_positions, num_positions});
+
+  builder.ExportInput(pass_through->get_input_port(), "position");
+  builder.Connect(pass_through->get_output_port(),
+                  derivative_->get_input_port());
+  builder.Connect(pass_through->get_output_port(), mux->get_input_port(0));
+  builder.Connect(derivative_->get_output_port(), mux->get_input_port(1));
+  builder.ExportOutput(mux->get_output_port(0), "state");
+
+  builder.BuildInto(this);
+}
+
+template <typename T>
+void StateInterpolatorWithDiscreteDerivative<T>::set_initial_position(
+    systems::Context<T>* context,
+    const Eigen::Ref<const VectorX<T>>& position) const {
+  derivative_->set_input_history(
+      &this->GetMutableSubsystemContext(*derivative_, context), position);
+}
+
+template <typename T>
+void StateInterpolatorWithDiscreteDerivative<T>::set_initial_state(
+    systems::Context<T>* context,
+    const Eigen::Ref<const VectorX<T>>& position, const Eigen::Ref<const
+    VectorX<T>>& velocity) const {
+  // The derivative block implements y(t) = (u[n]-u[n-1])/h, so we want
+  // u[n] = position, u[n-1] = u[n] - h*velocity
+  derivative_->set_input_history(
+      &this->GetMutableSubsystemContext(*derivative_, context), position,
+      position - derivative_->time_step()*velocity);
+}
+
+
 }  // namespace systems
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::DiscreteDerivative)
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::StateInterpolatorWithDiscreteDerivative)

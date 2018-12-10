@@ -121,7 +121,7 @@ drake_cc_googletest(
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//multibody/benchmarks/acrobot:models",
-        "//multibody/multibody_tree/parsing:test_models",
+        "//multibody/parsing:test_models",
     ],
     deps = [
         ":multibody_plant",
@@ -133,8 +133,26 @@ drake_cc_googletest(
         "//math:gradient",
         "//multibody/benchmarks/acrobot",
         "//multibody/benchmarks/pendulum",
-        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//multibody/parsing",
         "//systems/primitives:linear_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_jacobians_test",
+    data = [
+        "//examples/kuka_iiwa_arm/models",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":multibody_plant",
+        "//common:autodiff",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//math:geometric_transform",
+        "//math:gradient",
+        "//multibody/parsing",
     ],
 )
 
@@ -146,7 +164,7 @@ drake_cc_googletest(
         ":multibody_plant",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//multibody/parsing",
         "//systems/analysis:simulator",
     ],
 )
@@ -188,7 +206,7 @@ drake_cc_googletest(
     deps = [
         ":multibody_plant",
         "//common:find_resource",
-        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//multibody/parsing",
         "//systems/analysis:simulator",
     ],
 )

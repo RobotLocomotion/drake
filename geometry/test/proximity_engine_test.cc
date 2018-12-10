@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity_engine.h"
 
 #include <utility>
+#include <vector>
 
 #include <fcl/fcl.h>
 #include <gtest/gtest.h>
@@ -40,6 +41,18 @@ class ProximityEngineTester {
   template <typename T>
   static int peek_next_clique(const ProximityEngine<T>& engine) {
     return engine.peek_next_clique();
+  }
+
+  template <typename T>
+  static Vector3<T> GetTranslation(ProximityIndex index, bool is_dynamic,
+                                   const ProximityEngine<T>& engine) {
+    return engine.GetX_WG(index, is_dynamic).translation();
+  }
+
+  template <typename T>
+  static GeometryIndex GetGeometryIndex(ProximityIndex index, bool is_dynamic,
+                                        const ProximityEngine<T>& engine) {
+    return engine.GetGeometryIndex(index, is_dynamic);
   }
 };
 
@@ -91,6 +104,91 @@ GTEST_TEST(ProximityEngineTests, AddMixedGeometry) {
   EXPECT_EQ(engine.num_geometries(), 2);
   EXPECT_EQ(engine.num_anchored(), 1);
   EXPECT_EQ(engine.num_dynamic(), 1);
+}
+
+// Removes geometry (dynamic and anchored) from the engine. The test creates
+// a _unique_ engine instance with all dynamic or all anchored geometries.
+// It is not necessary to create a mixed engine because the two geometry
+// types are segregated.
+GTEST_TEST(ProximityEngineTests, RemoveGeometry) {
+  for (bool is_dynamic : {true, false}) {
+    ProximityEngine<double> engine;
+
+    double x_pos[] = {0, 2, 4};
+
+    std::vector<GeometryIndex> geometry_indices;
+    std::vector<ProximityIndex> proximity_indices;
+    std::vector<Isometry3<double>> poses;
+
+    // Populate the world with three anchored spheres located on the x-axis at
+    // x = 0, 2, & 4. With radius of 0.5, they should *not* be colliding.
+    Sphere sphere{0.5};
+
+    for (int i = 0; i < 3; ++i) {
+      geometry_indices.push_back(GeometryIndex(i + 10));
+      poses.push_back(Isometry3<double>::Identity());
+      poses[i].translation() << x_pos[i], 0, 0;
+      if (is_dynamic) {
+        proximity_indices.push_back(
+            engine.AddDynamicGeometry(sphere, geometry_indices[i]));
+      } else {
+        proximity_indices.push_back(
+            engine.AddAnchoredGeometry(sphere, poses[i], geometry_indices[i]));
+      }
+      EXPECT_EQ(proximity_indices[i], i);
+      EXPECT_NE(static_cast<int>(proximity_indices[i]),
+                static_cast<int>(geometry_indices[i]));
+    }
+    EXPECT_EQ(engine.num_geometries(), 3);
+    EXPECT_EQ(engine.num_anchored(), is_dynamic ? 0 : 3);
+    EXPECT_EQ(engine.num_dynamic(), is_dynamic ? 3 : 0);
+
+    if (is_dynamic) {
+      // Poses for dynamic geometries need to be explicitly updated.
+      std::vector<GeometryIndex> indices(poses.size());
+      std::iota(indices.begin(), indices.end(), GeometryIndex(0));
+      engine.UpdateWorldPoses(poses, indices);
+    }
+
+    // Case: Remove middle object, confirm that final gets moved.
+    auto remove_index = ProximityIndex(1);
+    optional<GeometryIndex> moved =
+        engine.RemoveGeometry(remove_index, is_dynamic);
+    // Confirm that a move is reported, that the moved object has its engine
+    // index updated, and that there is "physical" evidence of the move (e.g.,
+    // the correct, unique position).
+    {
+      EXPECT_EQ(engine.num_geometries(), 2);
+      EXPECT_EQ(engine.num_anchored(), is_dynamic ? 0 : 2);
+      EXPECT_EQ(engine.num_dynamic(), is_dynamic ? 2 : 0);
+      EXPECT_TRUE(moved);
+      EXPECT_EQ(*moved, geometry_indices[2]);
+      EXPECT_TRUE(CompareMatrices(ProximityEngineTester::GetTranslation(
+                                      remove_index, is_dynamic, engine),
+                                  Vector3<double>{x_pos[2], 0, 0}, 0,
+                                  MatrixCompareType::absolute));
+      EXPECT_EQ(ProximityEngineTester::GetGeometryIndex(remove_index,
+                                                        is_dynamic, engine),
+                geometry_indices[2]);
+    }
+
+    // Case: Remove the last object, nothing should get moved.
+    moved = engine.RemoveGeometry(remove_index, is_dynamic);
+    // RemoveGeometry
+    {
+      EXPECT_EQ(engine.num_geometries(), 1);
+      EXPECT_EQ(engine.num_anchored(), is_dynamic ? 0 : 1);
+      EXPECT_EQ(engine.num_dynamic(), is_dynamic ? 1 : 0);
+      EXPECT_FALSE(moved);
+      EXPECT_TRUE(CompareMatrices(ProximityEngineTester::GetTranslation(
+                                      ProximityIndex(0), is_dynamic, engine),
+                                  Vector3<double>{x_pos[0], 0, 0}, 0,
+                                  MatrixCompareType::absolute));
+      EXPECT_EQ(ProximityEngineTester::GetGeometryIndex(ProximityIndex(0),
+                                                        is_dynamic, engine),
+                geometry_indices[0]);
+    }
+  }
 }
 
 // Tests for reading .obj files.------------------------------------------------
@@ -223,6 +321,109 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsMultipleAnchored) {
   EXPECT_EQ(results.size(), 0);
 }
 
+// SignedDistanceToPoint tests -- single-object tests with multiple query points
+//
+// We use query points at (2,3,6) and (0.1,0.15,0.3) at distance 7.0 and 0.35
+// from the origin respectively. They are on the same ray from the origin. The
+// first query point is 20 times farther from the origin than the second query
+// point is. These fixed-digit rational numbers are convenient for testing.
+//
+// We use the anchored sphere centered at the origin with radius 0.7, which
+// is 1/10 of the distance to the origin of the first query point, and twice
+// the distance to the origin of the second query point.
+//
+// Since both query points are on the same straight line from the origin,
+// they share the same nearest point on the sphere at:
+// (1/10)*(2,3,6) = 2*(0.1,0.15,0.3) = (0.2,0.3,0.6).
+//
+// The signed distance to the first query point is 7-0.7 = 6.3,
+// and the signed distance to the second query point is 0.35-0.7 = -0.35.
+//
+// The gradient vector, which is a unit vector, is along the direction of the
+// ray from the origin to the query point and hence (2,3,6)/7.
+
+// Reports distances within 1e-15 tolerance, both outside and inside.
+GTEST_TEST(ProximityEngineTests, SignedDistanceToPointSingleAnchored) {
+  using std::abs;
+
+  ProximityEngine<double> engine;
+  std::vector<GeometryId> geometry_map;
+
+  Sphere sphere{0.7};
+  Isometry3<double> pose = Isometry3<double>::Identity();
+  engine.AddAnchoredGeometry(sphere, pose, GeometryIndex(0));
+  GeometryId sphere_id = GeometryId::get_new_id();
+  geometry_map.push_back(sphere_id);
+
+  Vector3d query{2.0, 3.0, 6.0};
+  auto results = engine.ComputeSignedDistanceToPoint(query, geometry_map);
+  EXPECT_EQ(results.size(), 1);
+  EXPECT_EQ(results[0].id_G, sphere_id);
+  EXPECT_TRUE(CompareMatrices(results[0].p_GN, Vector3d(0.2, 0.3, 0.6), 1e-15,
+                              MatrixCompareType::absolute));
+  // The query point is outside the sphere, so we expect positive distance.
+  EXPECT_NEAR(results[0].distance, 6.3, 1e-15);
+  EXPECT_TRUE(CompareMatrices(results[0].grad_W, Vector3d(2.0, 3.0, 6.0) / 7.0,
+                              1e-15, MatrixCompareType::absolute));
+
+  query << 0.1, 0.15, 0.3;
+  results = engine.ComputeSignedDistanceToPoint(query, geometry_map);
+  EXPECT_EQ(results.size(), 1);
+  EXPECT_EQ(results[0].id_G, sphere_id);
+  EXPECT_TRUE(CompareMatrices(results[0].p_GN, Vector3d(0.2, 0.3, 0.6), 1e-15,
+                              MatrixCompareType::absolute));
+  // This query point is inside the sphere, so we expect negative distance.
+  EXPECT_NEAR(results[0].distance, -0.35, 1e-15);
+  EXPECT_TRUE(CompareMatrices(results[0].grad_W, Vector3d(2.0, 3.0, 6.0) / 7.0,
+                              1e-15, MatrixCompareType::absolute));
+}
+
+// Different reports depending on the threshold.
+GTEST_TEST(ProximityEngineTests, SignedDistanceToPointThreshold) {
+  ProximityEngine<double> engine;
+  std::vector<GeometryId> geometry_map;
+
+  Sphere sphere{0.7};
+  Isometry3<double> pose = Isometry3<double>::Identity();
+  engine.AddAnchoredGeometry(sphere, pose, GeometryIndex(0));
+  GeometryId sphere_id = GeometryId::get_new_id();
+  geometry_map.push_back(sphere_id);
+
+  Vector3d query{2.0, 3.0, 6.0};
+  const double large_threshold = 6.3 + 0.01;
+  auto results = engine.ComputeSignedDistanceToPoint(query, geometry_map,
+                                                     large_threshold);
+  // The large threshold allows one object in the results.
+  EXPECT_EQ(results.size(), 1);
+
+  const double small_threshold = 6.3 - 0.01;
+  results = engine.ComputeSignedDistanceToPoint(query, geometry_map,
+                                                small_threshold);
+  // The small threshold skips all objects.
+  EXPECT_EQ(results.size(), 0);
+}
+
+// Reports an arbitrary gradient vector (1,0,0) (as defined in the
+// QueryObject::ComputeSignedDistanceToPoint() documentation) at the center of
+// the sphere.
+GTEST_TEST(ProximityEngineTests, SignedDistanceToPointCenterOfSphere) {
+  ProximityEngine<double> engine;
+  std::vector<GeometryId> geometry_map;
+
+  Sphere sphere{0.7};
+  Isometry3<double> pose = Isometry3<double>::Identity();
+  engine.AddAnchoredGeometry(sphere, pose, GeometryIndex(0));
+  GeometryId sphere_id = GeometryId::get_new_id();
+  geometry_map.push_back(sphere_id);
+
+  Vector3d query{0.0, 0.0, 0.0};
+  auto results = engine.ComputeSignedDistanceToPoint(query, geometry_map);
+
+  EXPECT_EQ(results.size(), 1);
+  EXPECT_EQ(results[0].id_G, sphere_id);
+  EXPECT_EQ(results[0].grad_W, Vector3d(1.0, 0.0, 0.0));
+}
+
 // Penetration tests -- testing data flow; not testing the value of the query.
 
 // A scene with no geometry reports no penetrations.
@@ -320,7 +521,9 @@ class SimplePenetrationTest : public ::testing::Test {
                                          Isometry3<double>::Identity());
     const double x_pos = is_colliding ? colliding_x_ : free_x_;
     poses[index] = Isometry3<double>(Translation3d{x_pos, 0, 0});
-    engine->UpdateWorldPoses(poses);
+    std::vector<GeometryIndex> indices(poses.size());
+    std::iota(indices.begin(), indices.end(), GeometryIndex(0));
+    engine->UpdateWorldPoses(poses, indices);
   }
 
   // Compute penetration and confirm that a single penetration with the expected
@@ -503,7 +706,9 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
   geometry_map_.push_back(origin_id);
   EXPECT_EQ(origin_index, 0);
   std::vector<Isometry3<double>> poses{Isometry3<double>::Identity()};
-  engine_.UpdateWorldPoses(poses);
+  std::vector<GeometryIndex> indices(poses.size());
+  std::iota(indices.begin(), indices.end(), GeometryIndex(0));
+  engine_.UpdateWorldPoses(poses, indices);
 
   ProximityIndex collide_index =
       engine_.AddDynamicGeometry(sphere_, GeometryIndex(1));
@@ -547,9 +752,17 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsWithinCliqueGeneration) {
 
   int expected_clique = PET::peek_next_clique(engine_);
 
+  // Named aliases for otherwise inscrutable true/false magic values. The
+  // parameter in the invoked method is called `is_dynamic`. So, we set the
+  // the constant `is_dynamic` to true and its opposite, `is_anchored` to false.
+  const bool is_anchored = false;
+  const bool is_dynamic = true;
+
   // No dynamic geometry --> no cliques generated.
   engine_.ExcludeCollisionsWithin({}, {anchored1, anchored2});
   ASSERT_EQ(PET::peek_next_clique(engine_), expected_clique);
+  EXPECT_TRUE(engine_.CollisionFiltered(anchored1, is_anchored,
+                                        anchored2, is_anchored));
 
   // Single dynamic and no anchored geometry --> no cliques generated.
   engine_.ExcludeCollisionsWithin({dynamic1}, {});
@@ -558,12 +771,18 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsWithinCliqueGeneration) {
   // Multiple dynamic and no anchored geometry --> cliques generated.
   engine_.ExcludeCollisionsWithin({dynamic1, dynamic2}, {});
   ASSERT_EQ(PET::peek_next_clique(engine_), ++expected_clique);
+  EXPECT_TRUE(engine_.CollisionFiltered(dynamic1, is_dynamic,
+                                        dynamic2, is_dynamic));
 
   // Single dynamic and (one or more) anchored geometry --> cliques generated.
   engine_.ExcludeCollisionsWithin({dynamic1}, {anchored1});
   ASSERT_EQ(PET::peek_next_clique(engine_), ++expected_clique);
+  EXPECT_TRUE(engine_.CollisionFiltered(anchored1, is_anchored,
+                                        dynamic1, is_dynamic));
   engine_.ExcludeCollisionsWithin({dynamic1}, {anchored1, anchored2});
   ASSERT_EQ(PET::peek_next_clique(engine_), ++expected_clique);
+  EXPECT_TRUE(engine_.CollisionFiltered(anchored2, is_anchored,
+                                        dynamic1, is_dynamic));
 
   // Multiple dynamic and (one or more) anchored geometry --> cliques generated.
   engine_.ExcludeCollisionsWithin({dynamic1, dynamic2}, {anchored1});
@@ -580,7 +799,9 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsWithin) {
   geometry_map_.push_back(origin_id);
 
   std::vector<Isometry3<double>> poses{Isometry3<double>::Identity()};
-  engine_.UpdateWorldPoses(poses);
+  std::vector<GeometryIndex> indices(poses.size());
+  std::iota(indices.begin(), indices.end(), GeometryIndex(0));
+  engine_.UpdateWorldPoses(poses, indices);
 
   GeometryIndex collide_index(1);
   engine_.AddDynamicGeometry(sphere_, collide_index);
@@ -588,7 +809,11 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsWithin) {
   geometry_map_.push_back(collide_id);
   EXPECT_EQ(engine_.num_geometries(), 2);
 
+  EXPECT_FALSE(engine_.CollisionFiltered(origin_index, true,
+                                         collide_index, true));
   engine_.ExcludeCollisionsWithin({origin_index, collide_index}, {});
+  EXPECT_TRUE(engine_.CollisionFiltered(origin_index, true,
+                                        collide_index, true));
 
   // Non-colliding case
   MoveDynamicSphere(collide_index, false /* not colliding */);
@@ -676,7 +901,9 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsBetween) {
   geometry_map_.push_back(origin_id);
 
   std::vector<Isometry3<double>> poses{Isometry3<double>::Identity()};
-  engine_.UpdateWorldPoses(poses);
+  std::vector<GeometryIndex> indices(poses.size());
+  std::iota(indices.begin(), indices.end(), GeometryIndex(0));
+  engine_.UpdateWorldPoses(poses, indices);
 
   GeometryIndex collide_index(1);
   engine_.AddDynamicGeometry(sphere_, collide_index);
@@ -684,7 +911,11 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsBetween) {
   geometry_map_.push_back(collide_id);
   EXPECT_EQ(engine_.num_geometries(), 2);
 
+  EXPECT_FALSE(engine_.CollisionFiltered(origin_index, true,
+                                         collide_index, true));
   engine_.ExcludeCollisionsBetween({origin_index}, {}, {collide_index}, {});
+  EXPECT_TRUE(engine_.CollisionFiltered(origin_index, true,
+                                        collide_index, true));
 
   // Non-colliding case
   MoveDynamicSphere(collide_index, false /* not colliding */);
@@ -805,9 +1036,11 @@ GTEST_TEST(ProximityEngineCollisionTest, SpherePunchThroughBox) {
       {"sphere's center has crossed the box's origin - flipped normal",
        {-eps, 0, 0}, 1, {1, 0, 0}, radius + half_w - eps}};
   // clang-format on
+  std::vector<GeometryIndex> indices(poses.size());
+  std::iota(indices.begin(), indices.end(), GeometryIndex(0));
   for (const auto& test : test_data) {
     poses[1].translation() = test.sphere_pose;
-    engine.UpdateWorldPoses(poses);
+    engine.UpdateWorldPoses(poses, indices);
     std::vector<PenetrationAsPointPair<double>> results =
         engine.ComputePointPairPenetration(geometry_map);
 
@@ -971,7 +1204,9 @@ class BoxPenetrationTest : public ::testing::Test {
 
     // Update the poses of the geometry.
     std::vector<Isometry3d> poses{shape_pose(shape_type), X_WB};
-    engine_.UpdateWorldPoses(poses);
+    std::vector<GeometryIndex> indices(poses.size());
+    std::iota(indices.begin(), indices.end(), GeometryIndex(0));
+    engine_.UpdateWorldPoses(poses, indices);
     std::vector<PenetrationAsPointPair<double>> results =
         engine_.ComputePointPairPenetration(geometry_map_);
 

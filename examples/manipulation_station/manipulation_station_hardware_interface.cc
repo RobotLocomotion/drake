@@ -1,5 +1,7 @@
 #include "drake/examples/manipulation_station/manipulation_station_hardware_interface.h"
 
+#include <utility>
+
 #include "robotlocomotion/image_array_t.hpp"
 
 #include "drake/common/find_resource.h"
@@ -10,7 +12,7 @@
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
@@ -24,15 +26,16 @@ namespace manipulation_station {
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using multibody::multibody_plant::MultibodyPlant;
-using multibody::parsing::AddModelFromSdfFile;
+using multibody::Parser;
 using robotlocomotion::image_array_t;
 
 // TODO(russt): Consider taking DrakeLcmInterface as an argument instead of
 // (only) constructing one internally.
 ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
-    const std::vector<std::string> camera_ids)
+    std::vector<std::string> camera_names)
     : owned_controller_plant_(std::make_unique<MultibodyPlant<double>>()),
-      owned_lcm_(new lcm::DrakeLcm()) {
+      owned_lcm_(new lcm::DrakeLcm()),
+      camera_names_(std::move(camera_names)) {
   systems::DiagramBuilder<double> builder;
 
   // Publish IIWA command.
@@ -103,24 +106,20 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
   builder.Connect(wsg_status_subscriber_->get_output_port(),
                   wsg_status_receiver->get_input_port(0));
 
-  int camera_number{0};
-  // TODO(russt): Consider having port names use camera serial numbers
-  // instead of 0-based indices.
-  for (const std::string& id : camera_ids) {
+  for (const std::string& name : camera_names_) {
     auto camera_subscriber = builder.AddSystem(
         systems::lcm::LcmSubscriberSystem::Make<image_array_t>(
-            "DRAKE_RGBD_CAMERA_IMAGES_" + id, owned_lcm_.get()));
+            "DRAKE_RGBD_CAMERA_IMAGES_" + name, owned_lcm_.get()));
     auto array_to_images =
         builder.AddSystem<systems::sensors::LcmImageArrayToImages>();
     builder.Connect(camera_subscriber->get_output_port(),
                     array_to_images->image_array_t_input_port());
     builder.ExportOutput(
         array_to_images->color_image_output_port(),
-        "camera" + std::to_string(camera_number) + "_rgb_image");
+        "camera_" + name + "_rgb_image");
     builder.ExportOutput(
         array_to_images->depth_image_output_port(),
-        "camera" + std::to_string(camera_number) + "_depth_image");
-    camera_number++;
+        "camera_" + name + "_depth_image");
     camera_subscribers_.push_back(camera_subscriber);
   }
 
@@ -131,8 +130,9 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
   // IIWA and the equivalent inertia of the gripper.
   const std::string iiwa_sdf_path = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
+  Parser parser(owned_controller_plant_.get());
   const auto controller_iiwa_model =
-      AddModelFromSdfFile(iiwa_sdf_path, "iiwa", owned_controller_plant_.get());
+      parser.AddModelFromFile(iiwa_sdf_path, "iiwa");
   // TODO(russt): Provide API for changing the base coordinates of the plant.
   owned_controller_plant_->WeldFrames(owned_controller_plant_->world_frame(),
                                       owned_controller_plant_->GetFrameByName(

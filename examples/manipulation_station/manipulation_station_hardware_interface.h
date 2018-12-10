@@ -34,11 +34,11 @@ namespace manipulation_station {
 ///   @output_port{iiwa_torque_external}
 ///   @output_port{wsg_state_measured}
 ///   @output_port{wsg_force_measured}
-///   @output_port{camera0_rgb_image}
-///   @output_port{camera0_depth_image}
+///   @output_port{camera_[NAME]_rgb_image}
+///   @output_port{camera_[NAME]_depth_image}
 ///   @output_port{...}
-///   @output_port{cameraN_rgb_image}
-///   @output_port{cameraN_depth_image}
+///   @output_port{camera_[NAME]_rgb_image}
+///   @output_port{camera_[NAME]_depth_image}
 /// }
 ///
 /// @ingroup manipulation_station_systems
@@ -50,11 +50,11 @@ class ManipulationStationHardwareInterface : public systems::Diagram<double> {
 
   /// Subscribes to an incoming camera message on the channel
   ///   DRAKE_RGBD_CAMERA_IMAGES_<camera_id>
-  /// where @p camera_ids contains the ids, typically serial numbers, and
-  /// declares the output ports camera%d_rgb_image and camera%d_depth_image,
-  /// where %d is the camera number starting at zero.
+  /// where @p camera_name contains the names/unique ids, typically serial
+  /// numbers, and declares the output ports camera_%s_rgb_image and
+  /// camera_%s_depth_image, where %s is the camera name.
   ManipulationStationHardwareInterface(
-      const std::vector<std::string> camera_ids = {});
+      std::vector<std::string> camera_names = {});
 
   /// Starts a thread to receive network messages, and blocks execution until
   /// the first messages have been received.
@@ -69,6 +69,10 @@ class ManipulationStationHardwareInterface : public systems::Diagram<double> {
     return *owned_controller_plant_;
   }
 
+  const std::vector<std::string>& get_camera_names() const {
+    return camera_names_;
+  }
+
  private:
   std::unique_ptr<multibody::multibody_plant::MultibodyPlant<double>>
       owned_controller_plant_;
@@ -76,6 +80,8 @@ class ManipulationStationHardwareInterface : public systems::Diagram<double> {
   systems::lcm::LcmSubscriberSystem* wsg_status_subscriber_;
   systems::lcm::LcmSubscriberSystem* iiwa_status_subscriber_;
   std::vector<systems::lcm::LcmSubscriberSystem*> camera_subscribers_;
+
+  const std::vector<std::string> camera_names_;
 };
 
 }  // namespace manipulation_station

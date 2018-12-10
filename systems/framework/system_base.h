@@ -735,8 +735,14 @@ class SystemBase : public internal::SystemMessageInterface {
 
   /** Returns the number of declared numeric parameters (each of these is
   a vector-valued parameter). */
-  int num_numeric_parameters() const {
+  int num_numeric_parameter_groups() const {
     return static_cast<int>(numeric_parameter_tickets_.size());
+  }
+
+  DRAKE_DEPRECATED("Use num_numeric_parameter_groups().  This method will be"
+                   " removed after 2/15/19.")
+  int num_numeric_parameters() const {
+    return num_numeric_parameter_groups();
   }
 
   /** Returns the number of declared abstract parameters. */
@@ -803,22 +809,28 @@ class SystemBase : public internal::SystemMessageInterface {
   given name if it isn't kUseDefaultName, otherwise making up a name like "u3"
   from the next available input port index.
   @pre `given_name` must not be empty. */
-  std::string NextInputPortName(std::string given_name) const {
-    DRAKE_DEMAND(!given_name.empty());
-    return given_name == kUseDefaultName
+  std::string NextInputPortName(
+      variant<std::string, UseDefaultName> given_name) const {
+    const std::string result =
+        given_name == kUseDefaultName
            ? std::string("u") + std::to_string(get_num_input_ports())
-           : std::move(given_name);
+           : get<std::string>(std::move(given_name));
+    DRAKE_DEMAND(!result.empty());
+    return result;
   }
 
   /** (Internal use only) Returns a name for the next output port, using the
   given name if it isn't kUseDefaultName, otherwise making up a name like "y3"
   from the next available output port index.
   @pre `given_name` must not be empty. */
-  std::string NextOutputPortName(std::string given_name) const {
-    DRAKE_DEMAND(!given_name.empty());
-    return given_name == kUseDefaultName
+  std::string NextOutputPortName(
+      variant<std::string, UseDefaultName> given_name) const {
+    const std::string result =
+        given_name == kUseDefaultName
            ? std::string("y") + std::to_string(get_num_output_ports())
-           : std::move(given_name);
+           : get<std::string>(std::move(given_name));
+    DRAKE_DEMAND(!result.empty());
+    return result;
   }
 
   /** (Internal use only) Assigns a ticket to a new discrete variable group
@@ -848,7 +860,7 @@ class SystemBase : public internal::SystemMessageInterface {
   @pre The supplied index must be the next available one; that is, indexes
        must be assigned sequentially. */
   void AddNumericParameter(NumericParameterIndex index) {
-    DRAKE_DEMAND(index == num_numeric_parameters());
+    DRAKE_DEMAND(index == num_numeric_parameter_groups());
     const DependencyTicket ticket(assign_next_dependency_ticket());
     numeric_parameter_tickets_.push_back(
         {ticket, "numeric parameter " + std::to_string(index)});
@@ -1036,7 +1048,7 @@ class SystemBase : public internal::SystemMessageInterface {
 
   const TrackerInfo& numeric_parameter_tracker_info(
       NumericParameterIndex index) const {
-    DRAKE_DEMAND(0 <= index && index < num_numeric_parameters());
+    DRAKE_DEMAND(0 <= index && index < num_numeric_parameter_groups());
     return numeric_parameter_tickets_[index];
   }
 

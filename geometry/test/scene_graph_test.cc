@@ -93,6 +93,13 @@ class SceneGraphTester {
 
 namespace {
 
+// Convenience function for making a geometry instance.
+std::unique_ptr<GeometryInstance> make_sphere_instance(
+    double radius = 1.0) {
+  return make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+                                       make_unique<Sphere>(radius), "sphere");
+}
+
 // Testing harness to facilitate working with/testing the SceneGraph. Before
 // performing *any* queries in tests, `AllocateContext` must be explicitly
 // invoked in the test.
@@ -120,12 +127,6 @@ class SceneGraphTest : public ::testing::Test {
     if (!geom_context_)
       throw std::runtime_error("Must call AllocateContext() first.");
     return query_object_;
-  }
-
-  static std::unique_ptr<GeometryInstance> make_sphere_instance(
-      double radius = 1.0) {
-    return make_unique<GeometryInstance>(Isometry3<double>::Identity(),
-                                         make_unique<Sphere>(radius), "sphere");
   }
 
   SceneGraph<double> scene_graph_;
@@ -403,10 +404,14 @@ TEST_F(SceneGraphTest, ModelInspector) {
 
   const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
 
-  EXPECT_EQ(inspector.GetGeometryIdByName(frame_1, "sphere"), sphere_1);
-  EXPECT_EQ(inspector.GetGeometryIdByName(frame_2, "sphere"), sphere_2);
+  // TODO(SeanCurtis-TRI): Change these roles to unassigned, when they no longer
+  // get a proximity and illustration role by default.
+  EXPECT_EQ(inspector.GetGeometryIdByName(frame_1, Role::kProximity, "sphere"),
+            sphere_1);
+  EXPECT_EQ(inspector.GetGeometryIdByName(frame_2, Role::kProximity, "sphere"),
+            sphere_2);
   EXPECT_EQ(inspector.GetGeometryIdByName(scene_graph_.world_frame_id(),
-                                          "sphere"),
+                                          Role::kProximity, "sphere"),
             anchored_id);
 }
 
@@ -593,7 +598,8 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
   const Isometry3<double> kIdentity = Isometry3<double>::Identity();
 
   // Case: Registered source with anchored geometry and frame but no dynamic
-  // geometry --> pose vector with one entry.
+  // geometry --> empty pose vector; only frames with dynamic geometry with an
+  // illustration role are included.
   {
     SceneGraph<double> scene_graph;
     SourceId s_id = scene_graph.RegisterSource("dummy");
@@ -604,7 +610,9 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
     FrameId f_id =
         scene_graph.RegisterFrame(s_id, GeometryFrame("f", kIdentity));
     PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
-    EXPECT_EQ(1, poses.get_num_poses());
+    // The frame has no illustration geometry, so it is not part of the pose
+    // bundle.
+    EXPECT_EQ(0, poses.get_num_poses());
     auto context = scene_graph.AllocateContext();
     FramePoseVector<double> pose_vector(s_id, {f_id});
     context->FixInputPort(scene_graph.get_source_pose_port(s_id).get_index(),
@@ -629,6 +637,8 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
         make_unique<GeometryInstance>(Isometry3<double>::Identity(),
                                       make_unique<Sphere>(1.0), "sphere"));
     PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
+    // The frame is included because the geometry automatically is assigned an
+    // illustration role.
     EXPECT_EQ(1, poses.get_num_poses());
     auto context = scene_graph.AllocateContext();
     FramePoseVector<double> pose_vector(s_id, {f_id});
@@ -637,6 +647,105 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
     EXPECT_NO_THROW(SceneGraphTester::CalcPoseBundle(scene_graph, *context,
                                                      &poses));
   }
+}
+
+// Tests that exercise the Context-modifying API
+
+// Test that geometries can be successfully added to an allocated context.
+GTEST_TEST(SceneGraphContextModifier, RegisterGeometry) {
+  // Initializes the scene graph and context.
+  SceneGraph<double> scene_graph;
+  SourceId source_id = scene_graph.RegisterSource("source");
+  FrameId frame_id = scene_graph.RegisterFrame(
+      source_id, GeometryFrame("frame", Isometry3d::Identity()));
+  auto context = scene_graph.AllocateContext();
+
+  // Confirms the state. NOTE: All subsequent actions modify `context` in place.
+  // This allows us to use this same query_object and inspector throughout the
+  // test without requiring any updates or changes to them..
+  QueryObject<double> query_object;
+  SceneGraphTester::GetQueryObjectPortValue(scene_graph, *context,
+                                            &query_object);
+  const auto& inspector = query_object.inspector();
+  EXPECT_EQ(1, inspector.NumFramesForSource(source_id));
+  EXPECT_EQ(0, inspector.NumGeometriesForFrame(frame_id));
+
+  // Test registration of geometry onto _frame_.
+  GeometryId sphere_id_1 = scene_graph.RegisterGeometry(
+      context.get(), source_id, frame_id, make_sphere_instance());
+  EXPECT_EQ(1, inspector.NumGeometriesForFrame(frame_id));
+  EXPECT_EQ(frame_id, inspector.GetFrameId(sphere_id_1));
+
+  // Test registration of geometry onto _geometry_.
+  GeometryId sphere_id_2 = scene_graph.RegisterGeometry(
+      context.get(), source_id, sphere_id_1, make_sphere_instance());
+  EXPECT_EQ(2, inspector.NumGeometriesForFrame(frame_id));
+  EXPECT_EQ(frame_id, inspector.GetFrameId(sphere_id_2));
+
+  // Remove the geometry.
+  EXPECT_NO_THROW(scene_graph.RemoveGeometry(context.get(), source_id,
+                                             sphere_id_2));
+  EXPECT_EQ(1, inspector.NumGeometriesForFrame(frame_id));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      inspector.GetFrameId(sphere_id_2),
+      std::logic_error,
+      "Referenced geometry \\d+ has not been registered.");
+}
+
+GTEST_TEST(SceneGraphContextModifier, CollisionFilters) {
+  // Initializes the scene graph and context.
+  SceneGraph<double> scene_graph;
+  // Simple scene with three frames, each with a sphere which, by default
+  // collide.
+  SourceId source_id = scene_graph.RegisterSource("source");
+  FrameId f_id1 = scene_graph.RegisterFrame(
+      source_id, GeometryFrame("frame_1", Isometry3d::Identity()));
+  FrameId f_id2 = scene_graph.RegisterFrame(
+      source_id, GeometryFrame("frame_2", Isometry3d::Identity()));
+  FrameId f_id3 = scene_graph.RegisterFrame(
+      source_id, GeometryFrame("frame_3", Isometry3d::Identity()));
+  GeometryId g_id1 =
+      scene_graph.RegisterGeometry(source_id, f_id1, make_sphere_instance());
+  GeometryId g_id2 =
+      scene_graph.RegisterGeometry(source_id, f_id2, make_sphere_instance());
+  GeometryId g_id3 =
+      scene_graph.RegisterGeometry(source_id, f_id3, make_sphere_instance());
+
+  // Confirm that the model reports no filtered pairs.
+  EXPECT_FALSE(scene_graph.model_inspector().CollisionFiltered(g_id1, g_id2));
+  EXPECT_FALSE(scene_graph.model_inspector().CollisionFiltered(g_id1, g_id3));
+  EXPECT_FALSE(scene_graph.model_inspector().CollisionFiltered(g_id2, g_id3));
+
+  auto context = scene_graph.AllocateContext();
+
+  // Confirms the state. NOTE: Because we're not copying the query object or
+  // changing context, this query object and inspector are valid for querying
+  // the modified context.
+  QueryObject<double> query_object;
+  SceneGraphTester::GetQueryObjectPortValue(scene_graph, *context,
+                                            &query_object);
+  const auto& inspector = query_object.inspector();
+
+  // Confirm unfiltered state.
+  EXPECT_FALSE(inspector.CollisionFiltered(g_id1, g_id2));
+  EXPECT_FALSE(inspector.CollisionFiltered(g_id1, g_id3));
+  EXPECT_FALSE(inspector.CollisionFiltered(g_id2, g_id3));
+
+  scene_graph.ExcludeCollisionsWithin(context.get(),
+                                      GeometrySet({g_id1, g_id2}));
+  EXPECT_TRUE(inspector.CollisionFiltered(g_id1, g_id2));
+  EXPECT_FALSE(inspector.CollisionFiltered(g_id1, g_id3));
+  EXPECT_FALSE(inspector.CollisionFiltered(g_id2, g_id3));
+
+  scene_graph.ExcludeCollisionsBetween(context.get(),
+                                       GeometrySet({g_id1, g_id2}),
+                                       GeometrySet({g_id3}));
+  EXPECT_TRUE(inspector.CollisionFiltered(g_id1, g_id2));
+  EXPECT_TRUE(inspector.CollisionFiltered(g_id1, g_id3));
+  EXPECT_TRUE(inspector.CollisionFiltered(g_id2, g_id3));
+
+  // TODO(SeanCurtis-TRI): When post-allocation model modification is allowed,
+  // confirm that the model didn't change.
 }
 
 }  // namespace

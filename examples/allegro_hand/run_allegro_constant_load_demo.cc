@@ -16,8 +16,8 @@
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/joints/weld_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -69,7 +69,7 @@ void DoMain() {
     full_name = FindResourceOrThrow("drake/manipulation/models/"
       "allegro_hand_description/sdf/allegro_hand_description_left.sdf");
 
-  multibody::parsing::AddModelFromSdfFile(full_name, &plant);
+  multibody::Parser(&plant).AddModelFromFile(full_name);
 
   // Weld the hand to the world frame
   const auto& joint_hand_root = plant.GetBodyByName("hand_root");

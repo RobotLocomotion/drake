@@ -237,8 +237,12 @@ void RobotStateLcmMessageTranslator::EncodeMessageKinematics(
 
   // Encodes the floating base.
   const DrakeJoint& root_joint = root_body_.getJoint();
+  // TODO(mitiguy) This code needs better notation and documentation.
+  // To developers: Do not copy and paste this function's code elsewhere without
+  // understanding it and how it works.  I am not this code's original author,
+  // and find it difficult to understand.
   // J is the root_joint frame.
-  Isometry3<double> X_JB;
+  math::RigidTransform<double> X_JB;  // Default is identity transform.
   Vector6<double> V_JB;
 
   if (is_floating_base_) {
@@ -247,12 +251,9 @@ void RobotStateLcmMessageTranslator::EncodeMessageKinematics(
 
     if (root_joint.get_num_positions() == 6) {
       // RPY
+      const Vector3<double> position = q.segment<3>(position_start);
       const math::RollPitchYaw<double> rpy(q.segment<3>(position_start + 3));
-      Vector3<double> rpydot = v.segment<3>(velocity_start + 3);
-
-      X_JB.translation() = q.segment<3>(position_start);
-      X_JB.linear() = rpy.ToMatrix3ViaRotationMatrix();
-      X_JB.makeAffine();
+      X_JB = math::RigidTransformd(rpy, position);
 
       Matrix3<double> phi = Matrix3<double>::Zero();
       angularvel2rpydotMatrix(rpy.vector(), phi,
@@ -260,33 +261,36 @@ void RobotStateLcmMessageTranslator::EncodeMessageKinematics(
                               static_cast<Matrix3<double>*>(nullptr));
 
       auto decomp = Eigen::ColPivHouseholderQR<Matrix3<double>>(phi);
+      Vector3<double> rpydot = v.segment<3>(velocity_start + 3);
       V_JB.head<3>() = decomp.solve(rpydot);
       V_JB.tail<3>() = v.segment<3>(velocity_start);
     } else if (root_joint.get_num_positions() == 7) {
       // Quaternion
-      X_JB.translation() = q.segment<3>(position_start);
-      X_JB.linear() = math::quat2rotmat(q.segment<4>(position_start + 3));
-      X_JB.makeAffine();
+      const Vector3<double> position = q.segment<3>(position_start);
+      const Vector4<double> wxyz = q.segment<4>(position_start + 3);
+      const Eigen::Quaterniond quat(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
+      const math::RotationMatrixd R_JB(quat);
+      X_JB = math::RigidTransformd(R_JB, position);
 
-      // v has velocity in body frame.
-      V_JB.head<3>() = X_JB.linear() * v.segment<3>(velocity_start);
-      V_JB.tail<3>() = X_JB.linear() * v.segment<3>(velocity_start + 3);
+      // Express velocity in the body frame.
+      V_JB.head<3>() = R_JB * v.segment<3>(velocity_start);
+      V_JB.tail<3>() = R_JB * v.segment<3>(velocity_start + 3);
     } else {
       DRAKE_ABORT_MSG("Floating joint is neither a RPY or a Quaternion joint.");
     }
   } else {
     // Fixed base, the transformation is the joint's pose in the world frame.
-    X_JB.setIdentity();
+    X_JB.SetIdentity();
     V_JB.setZero();
   }
 
-  Isometry3<double> X_WJ = root_joint.get_transform_to_parent_body();
-  Isometry3<double> X_WB = X_WJ * X_JB;
+  const math::RigidTransformd X_WJ(root_joint.get_transform_to_parent_body());
+  const math::RigidTransformd X_WB = X_WJ * X_JB;
   Vector6<double> V_WB;
-  V_WB.head<3>() = X_WJ.linear() * V_JB.head<3>();
-  V_WB.tail<3>() = X_WJ.linear() * V_JB.tail<3>();
+  V_WB.head<3>() = X_WJ.rotation() * V_JB.head<3>();
+  V_WB.tail<3>() = X_WJ.rotation() * V_JB.tail<3>();
 
-  EncodePose(X_WB, msg->pose);
+  EncodePose(X_WB.GetAsIsometry3(), msg->pose);
   EncodeTwist(V_WB, msg->twist);
 
   EncodeValue(joint_name_to_q_index_, msg->joint_name, q,

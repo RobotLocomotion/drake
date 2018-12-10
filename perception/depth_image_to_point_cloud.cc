@@ -1,17 +1,23 @@
 #include "drake/perception/depth_image_to_point_cloud.h"
 
+#include "drake/math/rigid_transform.h"
+
 namespace drake {
 namespace perception {
 
 DepthImageToPointCloud::DepthImageToPointCloud(
     const systems::sensors::CameraInfo& camera_info)
     : camera_info_(camera_info) {
-  // input port for depth image
-  input_port_depth_image_index_ = this->DeclareAbstractInputPort(
-      systems::kUseDefaultName,
+  // Input port for depth image.
+  depth_image_input_port_ = this->DeclareAbstractInputPort(
+      "depth_image",
       systems::Value<systems::sensors::ImageDepth32F>{}).get_index();
 
-  /// output port for filtered point cloud
+  // Optional input port for camera pose.
+  camera_pose_input_port_ = this->DeclareAbstractInputPort("camera_pose",
+      systems::Value<math::RigidTransformd>{}).get_index();
+
+  // Output port for filtered point cloud.
   this->DeclareAbstractOutputPort(
       &DepthImageToPointCloud::MakeOutputPointCloud,
       &DepthImageToPointCloud::ConvertDepthImageToPointCloud);
@@ -25,7 +31,7 @@ PointCloud DepthImageToPointCloud::MakeOutputPointCloud() const {
 void DepthImageToPointCloud::ConvertDepthImageToPointCloud(
     const systems::Context<double>& context, PointCloud* output) const {
   const systems::AbstractValue* input_depth_image_ptr =
-      this->EvalAbstractInput(context, input_port_depth_image_index_);
+      this->EvalAbstractInput(context, depth_image_input_port_);
   DRAKE_ASSERT(input_depth_image_ptr != nullptr);
   const auto& input_image =
       input_depth_image_ptr->GetValue<systems::sensors::ImageDepth32F>();
@@ -33,15 +39,35 @@ void DepthImageToPointCloud::ConvertDepthImageToPointCloud(
   Eigen::Matrix3Xf point_cloud;
   Convert(input_image, camera_info_, &point_cloud);
 
+  const systems::AbstractValue* camera_pose_ptr = this->EvalAbstractInput
+      (context, camera_pose_input_port_);
+  // Setup camera pose in parent frame:
+  Eigen::Isometry3f X_PC = Eigen::Isometry3f::Identity();
+  if (camera_pose_ptr) {
+    X_PC = camera_pose_ptr->GetValue<math::RigidTransformd>()
+                          .GetAsIsometry3()
+                          .cast<float>();
+  }
+
   const int kNumCols = point_cloud.cols();
   output->resize(kNumCols);
+  output->mutable_xyzs() = X_PC * point_cloud;
+
+  // Special case for the non-finite points; just pass them through.
+  // Note that currently x,y, and z are all non-finite if the depth value is
+  // kTooClose or kTooFar.
   for (int i = 0; i < kNumCols; i++) {
-    output->mutable_xyz(i) = point_cloud.col(i);
+    if (!std::isfinite(point_cloud(2, i))) {
+      output->mutable_xyz(i) = point_cloud.col(i);
+    }
   }
 }
 
 // Note that if `depth_image` holds any pixels that have NaN, the converted
 // points will also become NaN.
+// TODO(russt): Consider dropping NaN/kTooClose/kTooFar points from the point
+// cloud output? (This would require adding support for colored point clouds,
+// because current implementation assume that an RGB image will still line up).
 void DepthImageToPointCloud::Convert(
     const systems::sensors::ImageDepth32F& depth_image,
     const systems::sensors::CameraInfo& camera_info,

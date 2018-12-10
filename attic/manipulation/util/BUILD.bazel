@@ -27,11 +27,11 @@ drake_cc_library(
     srcs = ["world_sim_tree_builder.cc"],
     hdrs = ["world_sim_tree_builder.h"],
     deps = [
+        "//attic/multibody:rigid_body_tree",
+        "//attic/multibody:rigid_body_tree_construction",
         "//attic/multibody/parsers",
         "//attic/multibody/rigid_body_plant:compliant_contact_model",
         "//common:find_resource",
-        "//multibody:rigid_body_tree",
-        "//multibody:rigid_body_tree_construction",
     ],
 )
 
@@ -40,9 +40,9 @@ drake_cc_library(
     srcs = ["robot_state_msg_translator.cc"],
     hdrs = ["robot_state_msg_translator.h"],
     deps = [
+        "//attic/multibody:rigid_body_tree",
         "//attic/util",
         "//manipulation/util:bot_core_lcm_encode_decode",
-        "//multibody:rigid_body_tree",
         "@lcmtypes_bot2_core",
     ],
 )
@@ -98,9 +98,9 @@ drake_cc_library(
     srcs = ["frame_pose_tracker.cc"],
     hdrs = ["frame_pose_tracker.h"],
     deps = [
+        "//attic/multibody:rigid_body_tree",
         "//attic/multibody/rigid_body_plant",
         "//geometry:frame_kinematics",
-        "//multibody:rigid_body_tree",
         "//multibody/multibody_tree/math:spatial_velocity",
         "//systems/framework:leaf_system",
     ],
@@ -119,11 +119,11 @@ drake_cc_googletest(
     ],
     deps = [
         ":robot_state_msg_translator",
+        "//attic/multibody:rigid_body_tree_construction",
         "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
-        "//multibody:rigid_body_tree_construction",
     ],
 )
 
@@ -138,10 +138,10 @@ drake_cc_googletest(
         ":sim_diagram_builder",
         ":world_sim_tree_builder",
         "//attic/multibody/rigid_body_plant",
+        "//attic/systems/controllers:rbt_inverse_dynamics_controller",
         "//common/test_utilities:eigen_matrix_compare",
         "//lcm",
         "//systems/analysis",
-        "//systems/controllers:inverse_dynamics_controller",
         "//systems/controllers:pid_controller",
         "//systems/framework",
         "//systems/primitives:constant_vector_source",
@@ -153,11 +153,11 @@ drake_cc_googletest(
     data = ["//manipulation/models/iiwa_description:models"],
     deps = [
         ":frame_pose_tracker",
+        "//attic/multibody:rigid_body_tree",
         "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_geometry_compare",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody:rigid_body_tree",
         "//systems/framework",
     ],
 )

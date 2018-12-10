@@ -10,8 +10,8 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -25,7 +25,7 @@ using lcm::DrakeLcm;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::multibody_plant::MultibodyPlant;
-using multibody::parsing::AddModelFromSdfFile;
+using multibody::Parser;
 using multibody::JointActuator;
 using multibody::RevoluteJoint;
 using multibody::UniformGravityFieldElement;
@@ -58,7 +58,8 @@ std::unique_ptr<systems::AffineSystem<double>> MakeBalancingLQRController(
   // created along with a SceneGraph for simulation would also have input ports
   // to interact with that SceneGraph).
   MultibodyPlant<double> acrobot;
-  AddModelFromSdfFile(full_name, &acrobot);
+  Parser parser(&acrobot);
+  parser.AddModelFromFile(full_name);
   // Add gravity to the model.
   acrobot.AddForceElement<UniformGravityFieldElement>(
       -9.81 * Vector3<double>::UnitZ());
@@ -108,7 +109,8 @@ int do_main() {
   MultibodyPlant<double>& acrobot =
       *builder.AddSystem<MultibodyPlant>(time_step);
 
-  AddModelFromSdfFile(full_name, &acrobot, &scene_graph);
+  Parser parser(&acrobot, &scene_graph);
+  parser.AddModelFromFile(full_name);
 
   // Add gravity to the model.
   acrobot.AddForceElement<UniformGravityFieldElement>(

@@ -160,9 +160,10 @@ int DoMain() {
   visualizer->set_publish_period(kIiwaLcmStatusPeriod);
 
   // Create the command subscriber and status publisher.
-  auto iiwa_command_sub = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>("IIWA_COMMAND",
-                                                                 &lcm));
+  IiwaCommandTranslator iiwa_cmd_to_vec;
+  auto iiwa_command_sub =
+      builder.AddSystem(std::make_unique<systems::lcm::LcmSubscriberSystem>(
+          "IIWA_COMMAND", iiwa_cmd_to_vec, &lcm));
   iiwa_command_sub->set_name("iiwa_command_subscriber");
   auto iiwa_command_receiver = builder.AddSystem<IiwaCommandReceiver>();
   iiwa_command_receiver->set_name("iwwa_command_receiver");
@@ -188,7 +189,7 @@ int DoMain() {
   iiwa_zero_acceleration_source->set_name("zero_acceleration");
 
   builder.Connect(iiwa_command_sub->get_output_port(),
-                  iiwa_command_receiver->get_input_port(0));
+                  iiwa_command_receiver->GetInputPort("command_vector"));
   builder.Connect(iiwa_command_receiver->get_commanded_state_output_port(),
                   model->get_input_port_iiwa_state_command());
   builder.Connect(iiwa_zero_acceleration_source->get_output_port(),
@@ -209,9 +210,10 @@ int DoMain() {
   builder.Connect(iiwa_status_sender->get_output_port(0),
                   iiwa_status_pub->get_input_port());
 
-  auto wsg_command_sub = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<lcmt_schunk_wsg_command>(
-          "SCHUNK_WSG_COMMAND", &lcm));
+  manipulation::schunk_wsg::SchunkWsgCommandTranslator wsg_cmd_to_vec;
+  auto wsg_command_sub =
+      builder.AddSystem(std::make_unique<systems::lcm::LcmSubscriberSystem>(
+          "SCHUNK_WSG_COMMAND", wsg_cmd_to_vec, &lcm));
   wsg_command_sub->set_name("wsg_command_subscriber");
   auto wsg_controller = builder.AddSystem<SchunkWsgController>();
 
@@ -230,8 +232,8 @@ int DoMain() {
   wsg_status_sender->set_name("wsg_status_sender");
 
   builder.Connect(wsg_command_sub->get_output_port(),
-                  wsg_controller->get_command_input_port());
-  builder.Connect(wsg_controller->get_output_port(0),
+                  wsg_controller->GetInputPort("command_vector"));
+  builder.Connect(wsg_controller->GetOutputPort("force"),
                   model->get_input_port_wsg_command());
   builder.Connect(model->get_output_port_wsg_state(),
                   mbp_state_to_wsg_state->get_input_port());
@@ -242,7 +244,7 @@ int DoMain() {
   builder.Connect(mbp_force_to_wsg_force->get_output_port(),
                   wsg_status_sender->get_force_input_port());
   builder.Connect(model->get_output_port_wsg_state(),
-                  wsg_controller->get_state_input_port());
+                  wsg_controller->GetInputPort("state"));
   builder.Connect(*wsg_status_sender, *wsg_status_pub);
 
   auto iiwa_state_pub = builder.AddSystem(

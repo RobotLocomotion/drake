@@ -1,6 +1,6 @@
 /// @file
 /// Utilities for arithmetic on quaternions.
-// Note: Eigen's 4-argument Quaternion constructor uses (w, x, y, z) ordering.
+// @internal Eigen's 4-argument Quaternion constructor uses (w, x, y, z) order.
 // HOWEVER: If you use Eigen's 1-argument Quaternion constructor, where the one
 // argument is a 4-element Vector, the elements must be in (x, y, z, w) order!
 // So, the following two calls will give you the SAME quaternion:
@@ -108,14 +108,6 @@ typename Derived1::Scalar quatDiffAxisInvar(
          2 * pow(u(0) * r(1) + u(1) * r(2) + u(2) * r(3), 2);
 }
 
-template <typename Derived>
-typename Derived::Scalar quatNorm(const Eigen::MatrixBase<Derived>& q) {
-  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
-  // the range problem in Eigen
-  using std::acos;
-  return acos(q(0));
-}
-
 /**
  * Q = Slerp(q1, q2, f) Spherical linear interpolation between two quaternions
  *   This function uses the implementation given in Algorithm 8 of [1].
@@ -171,15 +163,13 @@ Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
   return ret;
 }
 
-// TODO(mitiguy) change all calling sites to this function.
-/**
- * Computes the rotation matrix from quaternion representation.
- * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
- * @param quaternion 4 x 1 unit length quaternion, @p q=[w;x;y;z]
- * @return 3 x 3 rotation matrix
- * (Deprecated), use @ref math::RotationMatrix(quaternion).
- */
+// Computes 3x3 matrix from associated quaternion representation.
+// @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
+// @param[in] quaternion 4 x 1 unit length quaternion, i.e., [w; x; y; z].
+// TODO(mitiguy) Delete this deprecated code after February 5, 2019.
 template <typename Derived>
+DRAKE_DEPRECATED("Use  math::RotationMatrix(Eigen::Quaternion). "
+                 "Code will be deleted after February 5, 2019.")
 Matrix3<typename Derived::Scalar> quat2rotmat(
     const Eigen::MatrixBase<Derived>& v) {
   const Eigen::Quaternion<typename Derived::Scalar> q(v(0), v(1), v(2), v(3));

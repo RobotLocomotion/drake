@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "drake/common/drake_optional.h"
@@ -177,8 +178,15 @@ class Context : public ContextBase {
   const Parameters<T>& get_parameters() const { return *parameters_; }
 
   /// Returns the number of vector-valued parameters.
+  int num_numeric_parameter_groups() const {
+    return parameters_->num_numeric_parameter_groups();
+  }
+
+  DRAKE_DEPRECATED(
+      "Use num_numeric_parameter_groups().  This method will be removed after "
+      "2/15/19.")
   int num_numeric_parameters() const {
-    return parameters_->num_numeric_parameters();
+    return num_numeric_parameter_groups();
   }
 
   /// Returns a const reference to the vector-valued parameter at @p index.
@@ -595,6 +603,12 @@ class Context : public ContextBase {
   std::unique_ptr<State<T>> CloneState() const {
     return DoCloneState();
   }
+
+  /// Returns a partial textual description of the Context, intended to be
+  /// human-readable.  It is not guaranteed to be unambiguous nor complete.
+  std::string to_string() const {
+    return do_to_string();
+  }
   //@}
 
  protected:
@@ -669,6 +683,10 @@ class Context : public ContextBase {
   /// CloneState().
   virtual std::unique_ptr<State<T>> DoCloneState() const = 0;
 
+  /// Returns a partial textual description of the Context, intended to be
+  /// human-readable.  It is not guaranteed to be unambiguous nor complete.
+  virtual std::string do_to_string() const = 0;
+
   /// Invokes PropagateTimeChange() on all subcontexts of this Context. The
   /// default implementation does nothing, which is suitable for leaf contexts.
   /// Diagram contexts must override.
@@ -738,6 +756,12 @@ class Context : public ContextBase {
   copyable_unique_ptr<Parameters<T>> parameters_{
       std::make_unique<Parameters<T>>()};
 };
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const Context<T>& context) {
+  os << context.to_string();
+  return os;
+}
 
 }  // namespace systems
 }  // namespace drake

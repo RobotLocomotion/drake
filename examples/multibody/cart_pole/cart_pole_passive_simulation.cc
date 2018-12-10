@@ -11,8 +11,8 @@
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -27,7 +27,7 @@ using lcm::DrakeLcm;
 
 // "multibody" namespace is ambiguous here without "drake::".
 using drake::multibody::multibody_plant::MultibodyPlant;
-using drake::multibody::parsing::AddModelFromSdfFile;
+using drake::multibody::Parser;
 using drake::multibody::PrismaticJoint;
 using drake::multibody::RevoluteJoint;
 using drake::multibody::UniformGravityFieldElement;
@@ -55,7 +55,7 @@ int do_main() {
       "drake/examples/multibody/cart_pole/cart_pole.sdf");
   MultibodyPlant<double>& cart_pole =
       *builder.AddSystem<MultibodyPlant>(FLAGS_time_step);
-  AddModelFromSdfFile(full_name, &cart_pole, &scene_graph);
+  Parser(&cart_pole, &scene_graph).AddModelFromFile(full_name);
 
   // Add gravity to the model.
   cart_pole.AddForceElement<UniformGravityFieldElement>(

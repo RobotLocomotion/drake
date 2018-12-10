@@ -22,12 +22,12 @@ drake_cc_library(
         "//multibody:models",
     ],
     deps = [
+        "//attic/multibody:global_inverse_kinematics",
+        "//attic/multibody:inverse_kinematics",
+        "//attic/multibody:rigid_body_tree_construction",
         "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody:global_inverse_kinematics",
-        "//multibody:inverse_kinematics",
-        "//multibody:rigid_body_tree_construction",
         "@gtest//:without_main",
     ],
 )

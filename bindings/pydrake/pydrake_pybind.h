@@ -72,6 +72,14 @@ derived class, you should use
 
 # Conventions
 
+## API Names
+
+Any Python bindings of C++ code will maintain C++ naming conventions, as well
+as Python code that is directly related to C++ symbols (e.g. shims, wrappers,
+or extensions on existing bound classes).
+
+All other Python code be Pythonic and use PEP 8 naming conventions.
+
 ## Target Conventions
 
 ### Names
@@ -143,10 +151,10 @@ An example of incorporating docstrings:
       constexpr auto& doc = pydrake_doc.drake.math;
       using T = double;
       py::class_<RigidTransform<T>>(m, "RigidTransform", doc.RigidTransform.doc)
-          .def(py::init(), doc.ExampleClass.ctor.doc_3)
+          .def(py::init(), doc.ExampleClass.ctor.doc_0args)
           ...
           .def(py::init<const RotationMatrix<T>&>(), py::arg("R"),
-               doc.RigidTransform.ctor.doc_5)
+               doc.RigidTransform.ctor.doc_1args)
           ...
           .def("set_rotation", &RigidTransform<T>::set_rotation, py::arg("R"),
                doc.RigidTransform.set_rotation.doc)
@@ -177,18 +185,13 @@ For more detail:
 
 - Each docstring is stored in `documentation_pybind.h` in the nested structure
 `pydrake_doc`.
-- The first docstring for a symbol will be accessible via
+- The docstring for a symbol without any overloads will be accessible via
 `pydrake_doc.drake.{namespace...}.{symbol}.doc`.
-- Any additional docstrings (e.g. overloads) will be accessible as `.doc_2`,
-`.doc_3`, etc; these indices are sorted lexically, by `(include_file, line)`.
+- The docstring for an overloaded symbol will be `.doc_something` instead of
+just `.doc`, where the `_something` suffix conveys some information about the
+overload.  Browse the documentation_pybind.h (described above) for details.
 - Constructors are accessible as `{symbol}.ctor.doc`, `{symbol}.ctor.doc_2`,
 etc.
-
-@note Macros are interpreted via `libclang` and could introduce more symbols.
-As an example, if a class uses `DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN` at the
-the top of its definition, and then defines a custom constructor below this,
-the custom constructor's documentation will be accessible as
-`{symbol}.ctor.doc_3`.
 
 @anchor PydrakeKeepAlive
 ## Keep Alive Behavior
@@ -247,43 +250,49 @@ an alias.
 @anchor PydrakeBazelDebug
 # Interactive Debugging with Bazel
 
-If you would like to interactively debug binding code (using IPython for
-general Python behavior, or GDB for C++ behavior), debug C++ behavior from a
-Python binary, while using Bazel, you may expose Bazel's development
-environment variables by adding these lines to your Python script:
+If you are debugging a unitest, first try running the test with `--trace=user`
+to see where the code is failing. This should cover most cases where you need
+to debug C++ bits. Example:
 
-    import subprocess
-    subprocess.Popen(
-        "export -p | sed 's# PWD=# OLD_PWD=#g' | tee /tmp/env.sh",
-        shell=True)
+    bazel run //bindings/pydrake/systems:py/lifetime_test -- --trace=user
 
-Run your target once from Bazel, and then source the generated `/tmp/env.sh` in
-your terminal to gain access to the environment variables (e.g. `$PYTHONPATH`).
+If you need to debug futher while using Bazel, it is suggested to use
+`gdbserver` for simplicity. Example:
 
-## Example with GDB
+```
+    # Terminal 1 - Host process.
+    cd drake
+    bazel run -c dbg \
+        --run_under='gdbserver localhost:9999' \
+        //bindings/pydrake/systems:py/lifetime_test -- \
+        --trace=user
 
-This is a brief recipe for debugging with GDB
-(note the usage of subshell `(...)` to keep the variables scoped):
+    # Terminal 2 - Client debugger.
+    cd drake
+    gdb -ex "dir ${PWD}/bazel-drake" \
+        -ex "target remote localhost:9999" \
+        -ex "set sysroot" \
+        -ex "set breakpoint pending on"
+    # In the GDB terminal:
+    (gdb) break drake::systems::Simulator<double>::Simulator
+    (gdb) continue
+```
 
-    (
-        target=//bindings/pydrake/systems:lifetime_test
-        target_bin=$(echo ${target} | sed -e 's#//##' -e 's#:#/#')
-        bazel run -c dbg ${target}
-        workspace=$(bazel info workspace)
-        name=$(basename ${workspace})
-        cd ${workspace}/bazel-${name}
-        source /tmp/env.sh
-        gdb --args python ${workspace}/bazel-bin/${target_bin}
-    )
+`set sysroot` is important for using `gdbserver`, `set breakpoint pending on`
+allows you set the breakpoints before loading `libdrake.so`, and `dir ...` adds
+source directories. It is also suggested that you
+[enable readline history](https://stackoverflow.com/a/3176802) in `~/.gdbinit`
+for ease of use.
 
-This allows you to use GDB from the terminal, while being able to inspect the
-sources in Bazel's symlink forests.
+If using CLion, you can still connect to the `gdbserver` instance.
 
-If using CLion, consider using `gdbserver`.
+There are analogs for `lldb` / `lldbserver` but for brevity, only GDB is
+covered.
 
 */
 
-// TODO(eric.cousineau): Add API naming conventions (#7819).
+// TODO(eric.cousineau): If it ever stops redirecting stdin, use
+// `bazel run --run_under='gdb --args python' --script_path=...`.
 
 // Note: Doxygen apparently doesn't process comments for namespace aliases. If
 // you put Doxygen comments here they will apply instead to py_reference. See
@@ -332,7 +341,7 @@ void DefCopyAndDeepCopy(PyClass* ppy_class) {
   PyClass& py_class = *ppy_class;
   py_class.def("__copy__", [](const Class* self) { return Class{*self}; })
       .def("__deepcopy__",
-           [](const Class* self, py::dict /* memo */) { return Class{*self}; });
+          [](const Class* self, py::dict /* memo */) { return Class{*self}; });
 }
 
 /// Executes Python code to introduce additional symbols for a given module.
