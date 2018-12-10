@@ -36,6 +36,7 @@ GTEST_TEST(VariantTest, CheckCasting) {
   py::module m("__main__");
 
   m.def("VariantToString", &VariantToString, py::arg("value"));
+  py::globals().attr("update")(m.attr("__dict__"));
   ExpectString("VariantToString(1)", "int(1)");
   ExpectString("VariantToString(0.5)", "double(0.5)");
   ExpectString("VariantToString('foo')", "string(foo)");

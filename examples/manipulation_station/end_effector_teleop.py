@@ -1,7 +1,9 @@
-
 import argparse
 
-import Tkinter as tk
+try:
+    import tkinter as tk
+except ImportError:
+    import Tkinter as tk
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow

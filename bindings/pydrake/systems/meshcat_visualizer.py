@@ -179,8 +179,8 @@ class MeshcatVisualizer(LeafSystem):
                         meshcat.geometry.ObjMeshGeometry.from_file(
                             geom.string_data[0:-3] + "obj")
                 else:
-                    print "UNSUPPORTED GEOMETRY TYPE ", \
-                        geom.type, " IGNORED"
+                    print("UNSUPPORTED GEOMETRY TYPE {} IGNORED".format(
+                          geom.type))
                     continue
 
                 # Turn a list of R,G,B elements (any indexable list of >= 3
