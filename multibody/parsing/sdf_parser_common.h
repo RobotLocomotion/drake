@@ -6,7 +6,6 @@
 
 namespace drake {
 namespace multibody {
-namespace parsing {
 namespace detail {
 
 /// Helper function to express an ignition::math::Vector3d instance as
@@ -18,6 +17,5 @@ Eigen::Vector3d ToVector3(const ignition::math::Vector3d& vector);
 Eigen::Isometry3d ToIsometry3(const ignition::math::Pose3d& pose);
 
 }  // namespace detail
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

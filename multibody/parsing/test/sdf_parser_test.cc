@@ -13,10 +13,12 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/parsing/sdf_parser_common.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
+namespace multibody {
+namespace detail {
+namespace {
 
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
@@ -27,17 +29,8 @@ using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYaw;
 using math::RollPitchYawd;
-using multibody::Body;
-using multibody::parsing::detail::AddModelFromSdfFile;
-using multibody::parsing::detail::AddModelsFromSdfFile;
-using multibody::parsing::detail::ToIsometry3;
-using multibody::multibody_plant::MultibodyPlant;
+using multibody_plant::MultibodyPlant;
 using systems::Context;
-
-namespace multibody {
-namespace parsing {
-namespace detail {
-namespace {
 
 // Verifies model instances are correctly created in the plant.
 GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
@@ -280,6 +273,5 @@ GTEST_TEST(SdfParser, TestOptionalSceneGraph) {
 
 }  // namespace
 }  // namespace detail
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

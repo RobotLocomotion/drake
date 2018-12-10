@@ -11,7 +11,6 @@
 
 namespace drake {
 namespace multibody {
-namespace parsing {
 namespace detail {
 
 /// Given an sdf::Geometry object representing a <geometry> element from an SDF
@@ -103,6 +102,5 @@ sdf::Visual ResolveVisualUri(const sdf::Visual& original,
                              const std::string& root_dir);
 
 }  // namespace detail
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

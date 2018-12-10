@@ -44,10 +44,10 @@ using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
 using drake::parsers::ModelInstanceIdTable;
+using drake::multibody::detail::GetFullPath;
+using drake::multibody::detail::ResolveFilename;
 using drake::multibody::joints::FloatingBaseType;
 using drake::multibody::joints::kRollPitchYaw;
-using drake::multibody::parsing::GetFullPath;
-using drake::multibody::parsing::ResolveFilename;
 
 namespace {
 

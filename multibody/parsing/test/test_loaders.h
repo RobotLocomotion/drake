@@ -8,7 +8,6 @@
 
 namespace drake {
 namespace multibody {
-namespace parsing {
 namespace test {
 
 /// This is a function signature used to parameterize unit tests by which
@@ -33,6 +32,5 @@ void LoadFromUrdf(
     geometry::SceneGraph<double>* scene_graph);
 
 }  // namespace test
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake
