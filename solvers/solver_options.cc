@@ -144,8 +144,8 @@ bool CheckOptionKeysForSolverHelper(
     const std::unordered_set<std::string>& allowable_keys) {
   for (const auto& key_val : key_vals) {
     if (allowable_keys.count(key_val.first) == 0) {
-      std::cout << key_val.first << " is not allowed in the SolverOptions.\n";
-      return false;
+      throw std::invalid_argument(key_val.first +
+                                  " is not allowed in the SolverOptions.\n");
     }
   }
   return true;

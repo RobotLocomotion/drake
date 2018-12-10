@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
+
 namespace drake {
 namespace solvers {
 
@@ -100,8 +102,11 @@ GTEST_TEST(SolverOptionsTest, CheckOptionKeysForSolver) {
 
   // Check an option not set for id1.
   solver_options.SetOption(id1, "key2", 1.3);
-  EXPECT_FALSE(solver_options.CheckOptionKeysForSolver(id1, {"key1"}, {"key2"},
-                                                       {"key3"}));
+  DRAKE_EXPECT_THROWS_MESSAGE(solver_options.CheckOptionKeysForSolver(
+                                  id1, {"key1"}, {"key2"}, {"key3"}),
+                              std::invalid_argument,
+                              "key2 is not allowed in the SolverOptions.\n");
+
   EXPECT_TRUE(solver_options.CheckOptionKeysForSolver(id1, {"key1", "key2"},
                                                       {"key2"}, {"key3"}));
 }

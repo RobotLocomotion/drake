@@ -88,6 +88,13 @@ void GetEqualityConstrainedQPSolverOptions(
           "FeasibilityTol should be a non-negative number.");
     }
   }
+  if (!solver_options.GetOptionsInt(EqualityConstrainedQPSolver::id())
+           .empty() ||
+      !solver_options.GetOptionsStr(EqualityConstrainedQPSolver::id())
+           .empty()) {
+    throw std::invalid_argument(
+        "Unsupported options for equality constrained QP solver.");
+  }
 }
 
 void EqualityConstrainedQPSolver::Solve(

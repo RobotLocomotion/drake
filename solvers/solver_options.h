@@ -92,6 +92,7 @@ class SolverOptions {
    * @param double_keys The set of allowable keys for double options.
    * @param int_keys The set of allowable keys for int options.
    * @param str_keys The set of allowable keys for string options.
+   * @throw invalid argument if the solver contains un-allowed options.
    */
   bool CheckOptionKeysForSolver(
       const SolverId& solver_id,
