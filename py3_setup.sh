@@ -1,3 +1,5 @@
+#!/bin/bash
+
 _dir=$(dirname ${BASH_SOURCE})
 
 py3-setup() { (
@@ -23,16 +25,10 @@ fi
 
 source ${_dir}/build/py3/bin/activate
 _python_bin=$(which python3)
+_flags="--python_path=${_python_bin} --action_env=PYTHON_BIN_PATH=${_python_bin}"
 
-bazel-py3() { (
-    set -eu
-    cmd=${1}
-    shift
-    set -x
-    bazel ${cmd} \
-        --python_path=${_python_bin} \
-        --action_env=PYTHON_BIN_PATH=${_python_bin} \
-        "$@"
-) }
-
-complete -F _bazel__complete -o nospace "bazel-py3"
+cat > ${_dir}/user-python.bazelrc <<EOF
+build ${_flags}
+run ${_flags}
+test ${_flags}
+EOF
