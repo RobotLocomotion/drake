@@ -369,7 +369,10 @@ class LeafSystem : public System<T> {
 
   /// Computes the next update time based on the configured periodic events, for
   /// scalar types that are arithmetic, or aborts for scalar types that are not
-  /// arithmetic. Subclasses that require aperiodic events should override.
+  /// arithmetic. Subclasses that require aperiodic events should override, but
+  /// be sure to invoke the parent class implementation at the start of the
+  /// override if you want periodic events to be handled.
+  ///
   /// @post `time` is set to a value greater than or equal to
   ///       `context.get_time()` on return.
   /// @warning If you override this method, think carefully before setting
@@ -381,9 +384,8 @@ class LeafSystem : public System<T> {
                             CompositeEventCollection<T>* events,
                             T* time) const override {
     T min_time = std::numeric_limits<double>::infinity();
-    // No periodic events.
+
     if (periodic_events_.empty()) {
-      // No discrete update.
       *time = min_time;
       return;
     }
@@ -392,11 +394,10 @@ class LeafSystem : public System<T> {
     // the set of registered events that will occur at that time.
     std::vector<const Event<T>*> next_events;
     for (const auto& event_pair : periodic_events_) {
-      const PeriodicEventData& event_data =
-          event_pair.first;
+      const PeriodicEventData& event_data = event_pair.first;
       const Event<T>* const event = event_pair.second.get();
-      const T t = leaf_system_detail::GetNextSampleTime(
-          event_data, context.get_time());
+      const T t =
+          leaf_system_detail::GetNextSampleTime(event_data, context.get_time());
       if (t < min_time) {
         min_time = t;
         next_events = {event};
@@ -635,23 +636,37 @@ class LeafSystem : public System<T> {
   }
 
   // =========================================================================
-  /// @name                 Declare periodic events
-  /// Declares that this System has a simple, fixed-period event specified by
-  /// @p event. The first tick will occur at t = @p offset_sec, and it
-  /// will recur at every @p period_sec thereafter. Note that the periodic
-  /// events returned by system::CalcNextUpdateTime() will happen at a time
-  /// strictly after the querying time. E.g. if there is a periodic event with
-  /// offset = 0 and period = 5, when calling CalcNextUpdateTime() at t = 0,
-  /// the returned event will happen at t = 5 not t = 0.
+  /// @name                  Declare periodic events
+  /// Declares that this System has a simple, fixed-period event. The first tick
+  /// will occur at t = `offset_sec`, and it will recur at every `period_sec`
+  /// thereafter. Several signatures are provided to allow for a general Event
+  /// object to be triggered, or simpler class member functions to be invoked
+  /// instead.
+  ///
+  /// Reaching a designated time causes a periodic event to be dispatched
+  /// to one of the three available types of event dispatcher: publish (read
+  /// only), discrete update, and unrestricted update.
+  ///
+  /// @note If you want to generate timed events that are _not_ periodic
+  /// (timers, alarms, etc.), overload DoCalcNextUpdateTime() rather than using
+  /// the methods in this section.
+  ///
+  /// Template arguments to these methods are inferred from the argument lists
+  /// and need not be specified explicitly.
+  /// @pre `period_sec` > 0 and `offset_sec` ≥ 0.
   //@{
 
+  /// Declares a periodic event specifying an arbitrary Event object, whose
+  /// event type determines which event dispatcher (publish, discrete update, or
+  /// unrestricted update) is invoked.
+  ///
   /// A deep copy of @p event will be made and maintained by `this`. The
   /// trigger type in the clone will be set to kPeriodic, unless it is already
   /// set in the source @p event in which case it must be kPeriodic already.
   /// The @p event's attribute field is preserved.
   ///
   /// @tparam EventType A class derived from Event (e.g., PublishEvent,
-  /// DiscreteUpdateEvent, UnrestrictedUpdateEvent, etc.)
+  /// DiscreteUpdateEvent, UnrestrictedUpdateEvent.)
   template <typename EventType>
   void DeclarePeriodicEvent(double period_sec, double offset_sec,
                             const EventType& event) {
@@ -666,6 +681,9 @@ class LeafSystem : public System<T> {
         std::make_pair(periodic_data, std::move(event_copy)));
   }
 
+  /// Declares a periodic Publish event that triggers a callback to a given
+  /// class member publish-event handler method.
+  /// @tparam MySystem The type of the invoking concrete LeafSystem.
   template <class MySystem>
   void DeclarePeriodicPublish(
       double period_sec, double offset_sec,
@@ -685,6 +703,11 @@ class LeafSystem : public System<T> {
         }));
   }
 
+  /// Declares a periodic DiscreteUpdate event that triggers a callback to a
+  /// given class member discrete update-event handler method. Authors are
+  /// encouraged to read @ref discrete_systems for implications of using
+  /// discrete systems in a hybrid system framework.
+  /// @tparam MySystem The type of the invoking concrete LeafSystem.
   template <class MySystem>
   void DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec,
                                      EventStatus (MySystem::*update)(
@@ -708,6 +731,9 @@ class LeafSystem : public System<T> {
                                }));
   }
 
+  /// Declares a periodic UnrestrictedUpdate event that triggers a callback to a
+  /// given class member unrestricted update-event handler method.
+  /// @tparam MySystem The type of the invoking concrete %LeafSystem.
   template <class MySystem>
   void DeclarePeriodicUnrestrictedUpdate(
       double period_sec, double offset_sec,
@@ -730,33 +756,32 @@ class LeafSystem : public System<T> {
             }));
   }
 
-  /// Declares a periodic discrete update event with period = @p period_sec and
-  /// offset = @p offset_sec. The event does not have a custom callback
-  /// function, and its trigger will be set to Event::TriggerType::kPeriodic.
-  /// Its attribute will be an Event<T>::PeriodicAttribute of @p offset_sec and
-  /// @p period_sec. Authors are encouraged to read @ref discrete_systems for
-  /// implications of using discrete systems in a hybrid system framework.
+  /// (To be deprecated) Declares a periodic publish event that invokes the
+  /// Publish() dispatcher but does not provide a handler function. This does
+  /// guarantee that a Simulator step will end exactly at the publish time,
+  /// but otherwise has no effect unless the DoPublish() dispatcher has been
+  /// overloaded (not recommended).
+  void DeclarePeriodicPublish(double period_sec, double offset_sec = 0) {
+    DeclarePeriodicEvent(period_sec, offset_sec, PublishEvent<T>());
+  }
+
+  /// (To be deprecated) Declares a periodic discrete update event that invokes
+  /// the DiscreteUpdate() dispatcher but does not provide a handler
+  /// function. This does guarantee that a Simulator step will end exactly at
+  /// the update time, but otherwise has no effect unless the
+  /// DoDiscreteUpdate() dispatcher has been overloaded (not recommended).
   void DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec = 0) {
     DeclarePeriodicEvent(period_sec, offset_sec, DiscreteUpdateEvent<T>());
   }
 
-  /// Declares a periodic unrestricted update event with period = @p period_sec
-  /// and offset = @p offset_sec. The event does not have a custom callback
-  /// function, and its trigger will be set to Event::TriggerType::kPeriodic.
-  /// Its attribute will be an Event<T>::PeriodicAttribute of @p offset_sec and
-  /// @p period_sec.
+  /// (To be deprecated) Declares a periodic unrestricted update event that
+  /// invokes the UnrestrictedUpdate() dispatcher but does not provide a handler
+  /// function. This does guarantee that a Simulator step will end exactly at
+  /// the update time, but otherwise has no effect unless the
+  /// DoUnrestrictedUpdate() dispatcher has been overloaded (not recommended).
   void DeclarePeriodicUnrestrictedUpdate(double period_sec,
                                          double offset_sec = 0) {
     DeclarePeriodicEvent(period_sec, offset_sec, UnrestrictedUpdateEvent<T>());
-  }
-
-  /// Declares a periodic publish event with period = @p period_sec
-  /// and offset = @p offset_sec. The event does not have a custom callback
-  /// function, and its trigger will be set to Event::TriggerType::kPeriodic.
-  /// Its attribute will be an Event<T>::PeriodicAttribute of @p offset_sec and
-  /// @p period_sec.
-  void DeclarePeriodicPublish(double period_sec, double offset_sec = 0) {
-    DeclarePeriodicEvent(period_sec, offset_sec, PublishEvent<T>());
   }
   //@}
 

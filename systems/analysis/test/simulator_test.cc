@@ -1004,12 +1004,6 @@ class FibonacciTestSystem : public LeafSystem<double> {
     fibonacci_n_.push_back(F_n);
   }
 
-  // Set initial conditions x₀.
-  void Initialize(Context<double>* context_0) const {
-    auto& x_0 = context_0->get_mutable_discrete_state();
-    x_0.get_mutable_vector().set_value(Vector2d(0., 1.));
-  }
-
   int num_updates() const { return update_count_; }
   int num_outputs() const { return output_count_; }
   const std::vector<double>& t() const { return sample_time_t_; }

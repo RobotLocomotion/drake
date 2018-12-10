@@ -70,7 +70,7 @@ class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
     // including "step" 0 which is initialization).
     DeclarePeriodicPublish(kPeriod, 0., &FibonacciDifferenceEquation::Output);
 
-    // Update to xₙ₊₁ (x_np1), using a Drake "discrete update" event (occurs
+    // Update to xₙ₊₁, using a Drake "discrete update" event (occurs
     // at the beginning of step n+1).
     DeclarePeriodicDiscreteUpdate(kPeriod, 0.,
                                   &FibonacciDifferenceEquation::Update);

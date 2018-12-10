@@ -385,32 +385,26 @@ class EventStatus {
   };
 
   /// Sets this status to "did nothing", with no message.
-  static EventStatus DidNothing() {
-    return EventStatus(kDidNothing);
-  }
+  static EventStatus DidNothing() { return EventStatus(kDidNothing); }
 
   /// Sets this status to "succeeded" with no message.
-  static EventStatus Succeeded() {
-    return EventStatus(kSucceeded);
-  }
+  static EventStatus Succeeded() { return EventStatus(kSucceeded); }
 
   /// Sets this status to "reached termination" with a message explaining why.
   static EventStatus ReachedTermination(const SystemBase* system,
-                                               std::string message) {
+                                        std::string message) {
     return EventStatus(kReachedTermination, system, message);
   }
 
   /// Sets this status to "failed" with a message explaining why.
-  static EventStatus Failed(const SystemBase* system,
-                                   std::string message) {
+  static EventStatus Failed(const SystemBase* system, std::string message) {
     return EventStatus(kFailed, system, message);
   }
 
   /// If the `candidate` is a more-severe status than `this` one,
   /// replaces the contents of `this` with the more-severe status.
   EventStatus& KeepMoreSevere(EventStatus candidate) {
-    if (candidate.severity() > severity())
-      *this = candidate;
+    if (candidate.severity() > severity()) *this = candidate;
     return *this;
   }
 
@@ -426,8 +420,7 @@ class EventStatus {
 
  private:
   explicit EventStatus(Severity severity) : severity_(severity) {}
-  EventStatus(Severity severity, const SystemBase* system,
-                     std::string message)
+  EventStatus(Severity severity, const SystemBase* system, std::string message)
       : severity_(severity), system_(system), message_(std::move(message)) {}
 
   Severity severity_{kDidNothing};
