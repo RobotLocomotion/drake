@@ -10,7 +10,7 @@ using std::string;
 
 namespace drake {
 namespace multibody {
-namespace parsing {
+namespace detail {
 namespace {
 
 // Verifies that GetFullPath() promotes a relative path to an absolute path,
@@ -49,6 +49,6 @@ GTEST_TEST(ParserPathUtilsTest, TestGetFullPathOfEmptyPath) {
 }
 
 }  // namespace
-}  // namespace parsing
+}  // namespace detail
 }  // namespace multibody
 }  // namespace drake

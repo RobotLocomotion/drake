@@ -20,10 +20,7 @@
 
 namespace drake {
 namespace multibody {
-namespace parsing {
 namespace {
-
-using multibody_plant::MultibodyPlant;
 
 class AcrobotModelTests :
       public testing::TestWithParam<test::ModelLoadFunction> {
@@ -177,6 +174,5 @@ INSTANTIATE_TEST_CASE_P(UrdfAcrobatModelTests,
 
 
 }  // namespace
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

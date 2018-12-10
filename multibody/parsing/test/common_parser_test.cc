@@ -17,7 +17,7 @@
 
 namespace drake {
 namespace multibody {
-namespace parsing {
+namespace detail {
 namespace {
 
 using geometry::GeometryId;
@@ -144,7 +144,7 @@ TEST_P(MultibodyPlantLinkTests, LinksWithCollisions) {
   // not specify them in the SDF file.
   EXPECT_TRUE(
       plant_.default_coulomb_friction(link3_collision_geometry_ids[0]) ==
-      parsing::default_friction());
+      default_friction());
 }
 
 
@@ -157,6 +157,6 @@ INSTANTIATE_TEST_CASE_P(UrdfMultibodyPlantLinkTests,
                         ::testing::Values(test::LoadFromUrdf));
 
 }  // namespace
-}  // namespace parsing
+}  // namespace detail
 }  // namespace multibody
 }  // namespace drake

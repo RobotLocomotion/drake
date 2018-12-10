@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace multibody {
-namespace parsing {
+namespace detail {
 
 /// Obtains the full path of @file_name. If @p file_name is already a
 /// full path (i.e., it starts with a "/"), the path is not modified.
@@ -36,9 +36,9 @@ std::string GetFullPath(const std::string& file_name);
 /// @return The file's full path or an empty string if the file is not
 /// found or does not exist.
 std::string ResolveFilename(const std::string& filename,
-                            const multibody::PackageMap& package_map,
+                            const PackageMap& package_map,
                             const std::string& root_dir);
 
-}  // namespace parsing
+}  // namespace detail
 }  // namespace multibody
 }  // namespace drake

@@ -15,6 +15,9 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 
+namespace drake {
+namespace multibody {
+
 using std::cerr;
 using std::endl;
 using std::getenv;
@@ -24,9 +27,6 @@ using std::string;
 using std::vector;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
-
-namespace drake {
-namespace multibody {
 
 PackageMap::PackageMap() {}
 

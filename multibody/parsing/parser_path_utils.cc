@@ -8,11 +8,12 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 
-using std::string;
-
 namespace drake {
 namespace multibody {
-namespace parsing {
+namespace detail {
+
+using std::string;
+
 namespace {
 bool IsAbsolutePath(const string& filename) {
   const string prefix = "/";
@@ -55,7 +56,7 @@ namespace {
 // associated value in the string pointed to by package_path and then returns
 // true. It returns false otherwise.
 bool GetPackagePath(const string& package,
-                    const multibody::PackageMap& package_map,
+                    const PackageMap& package_map,
                     string* package_path) {
   if (package_map.Contains(package)) {
     *package_path = package_map.GetPath(package);
@@ -69,7 +70,7 @@ bool GetPackagePath(const string& package,
 }  // namespace
 
 string ResolveFilename(const string& filename,
-                       const multibody::PackageMap& package_map,
+                       const PackageMap& package_map,
                        const string& root_dir) {
   spruce::path full_filename_spruce;
   spruce::path raw_filename_spruce(filename);
@@ -129,6 +130,6 @@ string ResolveFilename(const string& filename,
   return full_filename_spruce.getStr();
 }
 
-}  // namespace parsing
+}  // namespace detail
 }  // namespace multibody
 }  // namespace drake

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <vector>
 
 #include "drake/common/drake_deprecated.h"
 #include "drake/geometry/scene_graph.h"
@@ -10,7 +9,6 @@
 
 namespace drake {
 namespace multibody {
-namespace parsing {
 namespace detail {
 
 /// Parses a `<robot>` element from the URDF file specified by @p file_name and
@@ -42,6 +40,7 @@ ModelInstanceIndex AddModelFromUrdfFile(
 
 #ifndef DRAKE_DOXYGEN_CXX
 // TODO(jwnimmer-tri) Remove these forwarders on or about 2019-03-01.
+namespace parsing {
 
 DRAKE_DEPRECATED(
     "AddModelFromUrdfFile is deprecated; please use the class "
@@ -66,8 +65,8 @@ inline ModelInstanceIndex AddModelFromUrdfFile(
       file_name, "", plant, scene_graph);
 }
 
+}  // namespace parsing
 #endif  // DRAKE_DOXYGEN_CXX
 
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

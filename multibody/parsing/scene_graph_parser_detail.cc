@@ -15,7 +15,6 @@
 
 namespace drake {
 namespace multibody {
-namespace parsing {
 namespace detail {
 
 using Eigen::Isometry3d;
@@ -338,7 +337,7 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
 }
 
 sdf::Visual ResolveVisualUri(const sdf::Visual& original,
-                             const multibody::PackageMap& package_map,
+                             const PackageMap& package_map,
                              const std::string& root_dir) {
   std::shared_ptr<sdf::Element> visual_element = original.Element()->Clone();
   sdf::Element* geom_element =
@@ -350,7 +349,7 @@ sdf::Visual ResolveVisualUri(const sdf::Visual& original,
       if (uri_element) {
         const std::string uri = uri_element->Get<std::string>();
         const std::string resolved_name =
-            parsing::ResolveFilename(uri, package_map, root_dir);
+            ResolveFilename(uri, package_map, root_dir);
         if (!resolved_name.empty()) {
           uri_element->Set(resolved_name);
         } else {
@@ -373,7 +372,5 @@ sdf::Visual ResolveVisualUri(const sdf::Visual& original,
 }
 
 }  // namespace detail
-
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

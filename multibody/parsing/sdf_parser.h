@@ -10,7 +10,6 @@
 
 namespace drake {
 namespace multibody {
-namespace parsing {
 namespace detail {
 
 /// Parses a `<model>` element from the SDF file specified by `file_name` and
@@ -74,6 +73,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
 
 #ifndef DRAKE_DOXYGEN_CXX
 // TODO(jwnimmer-tri) Remove these forwarders on or about 2019-03-01.
+namespace parsing {
 
 DRAKE_DEPRECATED(
     "AddModelFromSdfFile is deprecated; please use the class "
@@ -108,8 +108,8 @@ inline std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
   return detail::AddModelsFromSdfFile(file_name, plant, scene_graph);
 }
 
+}  // namespace parsing
 #endif  // DRAKE_DOXYGEN_CXX
 
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

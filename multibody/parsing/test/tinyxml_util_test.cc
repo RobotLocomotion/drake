@@ -11,7 +11,6 @@ using tinyxml2::XMLElement;
 
 namespace drake {
 namespace multibody {
-namespace parsing {
 namespace detail {
 namespace {
 
@@ -115,6 +114,5 @@ GTEST_TEST(TinyxmlUtilTest, ThreeVectorAttributeTest) {
 
 }  // namespace
 }  // namespace detail
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

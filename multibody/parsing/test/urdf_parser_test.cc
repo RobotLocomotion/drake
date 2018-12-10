@@ -5,20 +5,16 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/parsing/parser_common.h"
 
 namespace drake {
+namespace multibody {
+namespace detail {
+namespace {
 
 using Eigen::Vector3d;
 using geometry::GeometryId;
 using geometry::SceneGraph;
-using multibody::parsing::default_friction;
-using multibody::multibody_plant::MultibodyPlant;
-
-namespace multibody {
-namespace parsing {
-namespace detail {
-namespace {
+using multibody_plant::MultibodyPlant;
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, DoublePendulum) {
   MultibodyPlant<double> plant;
@@ -111,6 +107,5 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestOptionalSceneGraph) {
 
 }  // namespace
 }  // namespace detail
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake
