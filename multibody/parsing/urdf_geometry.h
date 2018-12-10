@@ -14,7 +14,6 @@
 
 namespace drake {
 namespace multibody {
-namespace parsing {
 namespace detail {
 
 /// A map from the name of a material to its color. The color is specified in
@@ -40,7 +39,7 @@ void ParseMaterial(const tinyxml2::XMLElement* node, MaterialMap* materials);
 /// repeated if the material properties are identical.
 geometry::GeometryInstance ParseVisual(
     const std::string& parent_element_name,
-    const multibody::PackageMap& package_map,
+    const PackageMap& package_map,
     const std::string& root_dir, const tinyxml2::XMLElement* node,
     MaterialMap* materials);
 
@@ -51,11 +50,10 @@ geometry::GeometryInstance ParseVisual(
 /// @param[out] friction Coulomb friction for the associated geometry.
 geometry::GeometryInstance ParseCollision(
     const std::string& parent_element_name,
-    const multibody::PackageMap& package_map,
+    const PackageMap& package_map,
     const std::string& root_dir, const tinyxml2::XMLElement* node,
     multibody_plant::CoulombFriction<double>* friction);
 
 }  /// namespace detail
-}  /// namespace parsing
 }  /// namespace multibody
 }  /// namespace drake

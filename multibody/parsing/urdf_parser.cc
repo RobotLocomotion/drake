@@ -20,19 +20,17 @@
 
 namespace drake {
 namespace multibody {
-namespace parsing {
 namespace detail {
 
 using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
-
-using tinyxml2::XMLDocument;
-using tinyxml2::XMLElement;
-
 using geometry::VisualMaterial;
 using multibody_plant::CoulombFriction;
+using multibody_plant::MultibodyPlant;
+using tinyxml2::XMLDocument;
+using tinyxml2::XMLElement;
 
 namespace {
 
@@ -45,13 +43,13 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
 
   XMLElement* origin = node->FirstChildElement("origin");
   if (origin) {
-    X_BBi = detail::OriginAttributesToTransform(origin);
+    X_BBi = OriginAttributesToTransform(origin);
   }
 
   double body_mass = 0;
   XMLElement* mass = node->FirstChildElement("mass");
   if (mass) {
-    detail::ParseScalarAttribute(mass, "value", &body_mass);
+    ParseScalarAttribute(mass, "value", &body_mass);
   }
 
   double ixx = 0;
@@ -63,12 +61,12 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
 
   XMLElement* inertia = node->FirstChildElement("inertia");
   if (inertia) {
-    detail::ParseScalarAttribute(inertia, "ixx", &ixx);
-    detail::ParseScalarAttribute(inertia, "ixy", &ixy);
-    detail::ParseScalarAttribute(inertia, "ixz", &ixz);
-    detail::ParseScalarAttribute(inertia, "iyy", &iyy);
-    detail::ParseScalarAttribute(inertia, "iyz", &iyz);
-    detail::ParseScalarAttribute(inertia, "izz", &izz);
+    ParseScalarAttribute(inertia, "ixx", &ixx);
+    ParseScalarAttribute(inertia, "ixy", &ixy);
+    ParseScalarAttribute(inertia, "ixz", &ixz);
+    ParseScalarAttribute(inertia, "iyy", &iyy);
+    ParseScalarAttribute(inertia, "iyz", &iyz);
+    ParseScalarAttribute(inertia, "izz", &izz);
   }
 
   const RotationalInertia<double> I_BBcm_Bi(ixx, iyy, izz, ixy, ixz, iyz);
@@ -91,17 +89,17 @@ void ParseBody(const multibody::PackageMap& package_map,
                const std::string& root_dir,
                ModelInstanceIndex model_instance,
                XMLElement* node,
-               detail::MaterialMap* materials,
+               MaterialMap* materials,
                multibody_plant::MultibodyPlant<double>* plant,
                geometry::SceneGraph<double>* scene_graph) {
   std::string drake_ignore;
-  if (detail::ParseStringAttribute(node, "drake_ignore", &drake_ignore) &&
+  if (ParseStringAttribute(node, "drake_ignore", &drake_ignore) &&
       drake_ignore == std::string("true")) {
     return;
   }
 
   std::string body_name;
-  if (!detail::ParseStringAttribute(node, "name", &body_name)) {
+  if (!ParseStringAttribute(node, "name", &body_name)) {
     throw std::runtime_error(
         "ERROR: link tag is missing name attribute.");
   }
@@ -128,8 +126,7 @@ void ParseBody(const multibody::PackageMap& package_map,
          visual_node;
          visual_node = visual_node->NextSiblingElement("visual")) {
       geometry::GeometryInstance geometry_instance =
-          detail::ParseVisual(body_name, package_map, root_dir,
-                              visual_node, materials);
+          ParseVisual(body_name, package_map, root_dir, visual_node, materials);
       plant->RegisterVisualGeometry(
           body, geometry_instance.pose(), geometry_instance.shape(),
           geometry_instance.name(), geometry_instance.visual_material(),
@@ -141,8 +138,8 @@ void ParseBody(const multibody::PackageMap& package_map,
          collision_node = collision_node->NextSiblingElement("collision")) {
       CoulombFriction<double> friction;
       geometry::GeometryInstance geometry_instance =
-          detail::ParseCollision(body_name, package_map, root_dir,
-                                 collision_node, &friction);
+          ParseCollision(body_name, package_map, root_dir, collision_node,
+                         &friction);
       plant->RegisterCollisionGeometry(
           body, geometry_instance.pose(), geometry_instance.shape(),
           geometry_instance.name(), friction, scene_graph);
@@ -168,12 +165,12 @@ void ParseJointKeyParams(XMLElement* node,
                          std::string* type,
                          std::string* parent_link_name,
                          std::string* child_link_name) {
-  if (!detail::ParseStringAttribute(node, "name", name)) {
+  if (!ParseStringAttribute(node, "name", name)) {
     throw std::runtime_error(
         "ERROR: joint tag is missing name attribute");
   }
 
-  if (!detail::ParseStringAttribute(node, "type", type)) {
+  if (!ParseStringAttribute(node, "type", type)) {
     throw std::runtime_error(
         "ERROR: joint " + *name + " is missing type attribute");
   }
@@ -184,7 +181,7 @@ void ParseJointKeyParams(XMLElement* node,
     throw std::runtime_error(
         "ERROR: joint " + *name + " doesn't have a parent node!");
   }
-  if (!detail::ParseStringAttribute(parent_node, "link", parent_link_name)) {
+  if (!ParseStringAttribute(parent_node, "link", parent_link_name)) {
     throw std::runtime_error(
         "ERROR: joint " + *name + "'s parent does not have a link attribute!");
   }
@@ -195,7 +192,7 @@ void ParseJointKeyParams(XMLElement* node,
     throw std::runtime_error(
         "ERROR: joint " + *name + " doesn't have a child node");
   }
-  if (!detail::ParseStringAttribute(child_node, "link", child_link_name)) {
+  if (!ParseStringAttribute(child_node, "link", child_link_name)) {
     throw std::runtime_error(
         "ERROR: joint " + *name + "'s child does not have a link attribute!");
   }
@@ -207,8 +204,8 @@ void ParseJointLimits(XMLElement* node, double* lower, double* upper) {
 
   XMLElement* limit_node = node->FirstChildElement("limit");
   if (limit_node) {
-    detail::ParseScalarAttribute(limit_node, "lower", lower);
-    detail::ParseScalarAttribute(limit_node, "upper", upper);
+    ParseScalarAttribute(limit_node, "lower", lower);
+    ParseScalarAttribute(limit_node, "upper", upper);
   }
 }
 
@@ -220,15 +217,14 @@ void ParseJointDynamics(const std::string& joint_name,
 
   XMLElement* dynamics_node = node->FirstChildElement("dynamics");
   if (dynamics_node) {
-    detail::ParseScalarAttribute(dynamics_node, "damping", damping);
-    if (detail::ParseScalarAttribute(dynamics_node, "friction",
-                                     &coulomb_friction) &&
+    ParseScalarAttribute(dynamics_node, "damping", damping);
+    if (ParseScalarAttribute(dynamics_node, "friction", &coulomb_friction) &&
         coulomb_friction != 0.0) {
       drake::log()->warn("Joint {} specifies non-zero friction, which is "
                          "not supported by MultibodyPlant", joint_name);
     }
-    if (detail::ParseScalarAttribute(dynamics_node, "coulomb_window",
-                                     &coulomb_window) &&
+    if (ParseScalarAttribute(dynamics_node, "coulomb_window",
+                             &coulomb_window) &&
         coulomb_window != std::numeric_limits<double>::epsilon()) {
       drake::log()->warn("Joint {} specifies non-zero coulomb_window, which is "
                          "not supported by MultibodyPlant", joint_name);
@@ -258,7 +254,7 @@ void ParseJoint(ModelInstanceIndex model_instance,
                 XMLElement* node,
                 multibody_plant::MultibodyPlant<double>* plant) {
   std::string drake_ignore;
-  if (detail::ParseStringAttribute(node, "drake_ignore", &drake_ignore) &&
+  if (ParseStringAttribute(node, "drake_ignore", &drake_ignore) &&
       drake_ignore == std::string("true")) {
     return;
   }
@@ -275,14 +271,14 @@ void ParseJoint(ModelInstanceIndex model_instance,
   Isometry3d X_PJ = Isometry3d::Identity();
   XMLElement* origin = node->FirstChildElement("origin");
   if (origin) {
-    X_PJ = detail::OriginAttributesToTransform(origin);
+    X_PJ = OriginAttributesToTransform(origin);
   }
 
   Vector3d axis(1, 0, 0);
   XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && type.compare("fixed") != 0 &&
       type.compare("floating") != 0 && type.compare("ball") != 0) {
-    detail::ParseVectorAttribute(axis_node, "xyz", &axis);
+    ParseVectorAttribute(axis_node, "xyz", &axis);
     if (axis.norm() < 1e-8) {
       throw std::runtime_error(
           "ERROR: Joint " + name + "axis is zero.  Don't do that.");
@@ -336,7 +332,7 @@ void ParseTransmission(ModelInstanceIndex model_instance,
     type = type_node->GetText();
   } else {
     // Old URDF format, kept for convenience
-    if (!detail::ParseStringAttribute(node, "type", &type)) {
+    if (!ParseStringAttribute(node, "type", &type)) {
       throw std::runtime_error(
           std::string(__FILE__) + ": " + __func__ +
           "ERROR: Transmission element is missing a type.");
@@ -361,7 +357,7 @@ void ParseTransmission(ModelInstanceIndex model_instance,
   }
 
   std::string actuator_name;
-  if (!detail::ParseStringAttribute(actuator_node, "name", &actuator_name)) {
+  if (!ParseStringAttribute(actuator_node, "name", &actuator_name)) {
     throw std::runtime_error(
         "ERROR: Transmission is missing an actuator name.");
   }
@@ -374,7 +370,7 @@ void ParseTransmission(ModelInstanceIndex model_instance,
   }
 
   std::string joint_name;
-  if (!detail::ParseStringAttribute(joint_node, "name", &joint_name)) {
+  if (!ParseStringAttribute(joint_node, "name", &joint_name)) {
     throw std::runtime_error(
         "ERROR: Transmission is missing a joint name.");
   }
@@ -403,12 +399,12 @@ void ParseFrame(ModelInstanceIndex model_instance,
                 XMLElement* node,
                 multibody_plant::MultibodyPlant<double>* plant) {
   std::string name;
-  if (!detail::ParseStringAttribute(node, "name", &name)) {
+  if (!ParseStringAttribute(node, "name", &name)) {
     throw std::runtime_error("ERROR parsing frame name.");
   }
 
   std::string body_name;
-  if (!detail::ParseStringAttribute(node, "link", &body_name)) {
+  if (!ParseStringAttribute(node, "link", &body_name)) {
     throw std::runtime_error(
         "ERROR: missing link name for frame " + name + ".");
   }
@@ -416,7 +412,7 @@ void ParseFrame(ModelInstanceIndex model_instance,
   const Body<double>& body =
       GetBodyForElement(name, body_name, model_instance, plant);
 
-  Isometry3d X_BF = detail::OriginAttributesToTransform(node);
+  Isometry3d X_BF = OriginAttributesToTransform(node);
   plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
       name, body.body_frame(), X_BF));
 }
@@ -435,8 +431,7 @@ ModelInstanceIndex ParseUrdf(
   }
 
   std::string model_name = model_name_in;
-  if (model_name.empty() &&
-      !detail::ParseStringAttribute(node, "name", &model_name)) {
+  if (model_name.empty() && !ParseStringAttribute(node, "name", &model_name)) {
       throw std::runtime_error(
           "ERROR: Your robot must have a name attribute or a model name "
           "must be specified.");
@@ -445,11 +440,11 @@ ModelInstanceIndex ParseUrdf(
   // Parses the model's material elements. Throws an exception if there's a
   // material name clash regardless of whether the associated RGBA values are
   // the same.
-  detail::MaterialMap materials;
+  MaterialMap materials;
   for (XMLElement* material_node = node->FirstChildElement("material");
        material_node;
        material_node = material_node->NextSiblingElement("material")) {
-    detail::ParseMaterial(material_node, &materials);
+    ParseMaterial(material_node, &materials);
   }
 
   const ModelInstanceIndex model_instance =
@@ -506,7 +501,7 @@ ModelInstanceIndex AddModelFromUrdfFile(
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
-  const std::string full_path = parsing::GetFullPath(file_name);
+  const std::string full_path = GetFullPath(file_name);
 
   // Opens the URDF file and feeds it into the XML parser.
   XMLDocument xml_doc;
@@ -537,6 +532,5 @@ ModelInstanceIndex AddModelFromUrdfFile(
 }
 
 }  // namespace detail
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

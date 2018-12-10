@@ -7,7 +7,6 @@
 
 namespace drake {
 namespace multibody {
-namespace parsing {
 namespace detail {
 
 /// Parses a string attribute of @p node named @p attribute_name into @p val.
@@ -79,6 +78,5 @@ bool ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,
                                Eigen::Vector3d* val);
 
 }  // namespace detail
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

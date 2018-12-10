@@ -15,14 +15,12 @@
 
 namespace drake {
 namespace multibody {
-namespace parsing {
 namespace detail {
 
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using tinyxml2::XMLElement;
-
 using multibody_plant::CoulombFriction;
 
 namespace {
@@ -96,7 +94,7 @@ void ParseMaterial(const XMLElement* node, MaterialMap* materials) {
   const XMLElement* color_node = node->FirstChildElement("color");
 
   if (color_node) {
-    if (!detail::ParseVectorAttribute(color_node, "rgba", &rgba)) {
+    if (!ParseVectorAttribute(color_node, "rgba", &rgba)) {
       throw std::runtime_error("Color tag is missing rgba attribute.");
     }
     AddMaterialToMaterialMap(name, rgba, true /* abort_if_name_clash */,
@@ -169,7 +167,7 @@ std::unique_ptr<geometry::Shape> ParseCylinder(const XMLElement* shape_node) {
 }
 
 std::unique_ptr<geometry::Shape> ParseMesh(
-    const XMLElement* shape_node, const multibody::PackageMap& package_map,
+    const XMLElement* shape_node, const PackageMap& package_map,
     const std::string& root_dir) {
   std::string filename;
   if (!ParseStringAttribute(shape_node, "filename", &filename)) {
@@ -203,7 +201,7 @@ std::unique_ptr<geometry::Shape> ParseMesh(
 }
 
 std::unique_ptr<geometry::Shape> ParseGeometry(
-    const XMLElement* node, const multibody::PackageMap& package_map,
+    const XMLElement* node, const PackageMap& package_map,
     const std::string& root_dir) {
   if (node->FirstChildElement("box")) {
     return ParseBox(node->FirstChildElement("box"));
@@ -245,7 +243,7 @@ std::string MakeGeometryName(const std::string& basename,
 // Parses a "visual" element in @p node.
 geometry::GeometryInstance ParseVisual(
     const std::string& parent_element_name,
-    const multibody::PackageMap& package_map,
+    const PackageMap& package_map,
     const std::string& root_dir, const XMLElement* node,
     MaterialMap* materials) {
   if (std::string(node->Name()) != "visual") {
@@ -363,7 +361,7 @@ geometry::GeometryInstance ParseVisual(
 // @param[out] friction Coulomb friction for the associated geometry.
 geometry::GeometryInstance ParseCollision(
     const std::string& parent_element_name,
-    const multibody::PackageMap& package_map,
+    const PackageMap& package_map,
     const std::string& root_dir, const XMLElement* node,
     CoulombFriction<double>* friction) {
   if (std::string(node->Name()) != "collision") {
@@ -458,6 +456,5 @@ geometry::GeometryInstance ParseCollision(
 }
 
 }  // namespace detail
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

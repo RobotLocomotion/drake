@@ -9,10 +9,9 @@
 
 namespace drake {
 namespace multibody {
-namespace parsing {
 namespace detail {
-namespace {
 
+namespace {
 std::vector<double> ConvertToDoubles(const std::string& str) {
   std::istringstream ss(str);
 
@@ -23,7 +22,6 @@ std::vector<double> ConvertToDoubles(const std::string& str) {
   }
   return out;
 }
-
 }  // namespace
 
 bool ParseStringAttribute(const tinyxml2::XMLElement* node,
@@ -128,6 +126,5 @@ bool ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,
 }
 
 }  // namespace detail
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

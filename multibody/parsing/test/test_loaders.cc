@@ -6,7 +6,6 @@
 
 namespace drake {
 namespace multibody {
-namespace parsing {
 namespace test {
 
 void LoadFromSdf(
@@ -17,7 +16,7 @@ void LoadFromSdf(
   // the "name" attribute of the SDF.  This is a sensible default for the unit
   // tests that call us.
   const std::string sdf_path = FindResourceOrThrow(base_name + ".sdf");
-  parsing::detail::AddModelFromSdfFile(sdf_path, "", plant, scene_graph);
+  detail::AddModelFromSdfFile(sdf_path, "", plant, scene_graph);
 }
 
 void LoadFromUrdf(
@@ -28,10 +27,9 @@ void LoadFromUrdf(
   // the "name" attribute of the URDF.  This is a sensible default for the unit
   // tests that call us.
   const std::string urdf_path = FindResourceOrThrow(base_name + ".urdf");
-  parsing::detail::AddModelFromUrdfFile(urdf_path, "", plant, scene_graph);
+  detail::AddModelFromUrdfFile(urdf_path, "", plant, scene_graph);
 }
 
 }  // namespace test
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

@@ -20,24 +20,16 @@
 
 namespace drake {
 namespace multibody {
-namespace parsing {
 namespace detail {
 
 using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
-using drake::geometry::GeometryInstance;
-using drake::geometry::SceneGraph;
-using drake::multibody::multibody_plant::CoulombFriction;
-using drake::multibody::multibody_plant::MultibodyPlant;
-using drake::multibody::parsing::detail::ToIsometry3;
-using drake::multibody::parsing::detail::ToVector3;
-using drake::multibody::RevoluteJoint;
-using drake::multibody::SpatialInertia;
-using drake::multibody::UniformGravityFieldElement;
-using drake::multibody::UnitInertia;
-using drake::multibody::WeldJoint;
+using geometry::GeometryInstance;
+using geometry::SceneGraph;
+using multibody_plant::CoulombFriction;
+using multibody_plant::MultibodyPlant;
 using std::unique_ptr;
 
 // Unnamed namespace for free functions local to this file.
@@ -327,10 +319,10 @@ void AddJointFromSpecification(
 // object.
 std::string LoadSdf(
     sdf::Root* root,
-    multibody::PackageMap* package_map,
+    PackageMap* package_map,
     const std::string& file_name) {
 
-  const std::string full_path = parsing::GetFullPath(file_name);
+  const std::string full_path = GetFullPath(file_name);
 
   // Load the SDF file.
   sdf::Errors errors = root->Load(full_path);
@@ -364,7 +356,7 @@ void AddLinksFromSpecification(
     const sdf::Model& model,
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph,
-    const multibody::PackageMap& package_map,
+    const PackageMap& package_map,
     const std::string& root_dir) {
 
   // Add all the links
@@ -389,10 +381,10 @@ void AddLinksFromSpecification(
     if (plant->geometry_source_is_registered()) {
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
            ++visual_index) {
-        const sdf::Visual sdf_visual = detail::ResolveVisualUri(
+        const sdf::Visual sdf_visual = ResolveVisualUri(
             *link.VisualByIndex(visual_index), package_map, root_dir);
         unique_ptr<GeometryInstance> geometry_instance =
-            detail::MakeGeometryInstanceFromSdfVisual(sdf_visual);
+            MakeGeometryInstanceFromSdfVisual(sdf_visual);
         // We check for nullptr in case someone decided to specify an SDF
         // <empty/> geometry.
         if (geometry_instance) {
@@ -410,11 +402,11 @@ void AddLinksFromSpecification(
         const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
         if (sdf_geometry.Type() != sdf::GeometryType::EMPTY) {
           const Isometry3d X_LG =
-              detail::MakeGeometryPoseFromSdfCollision(sdf_collision);
+              MakeGeometryPoseFromSdfCollision(sdf_collision);
           std::unique_ptr<geometry::Shape> shape =
-              detail::MakeShapeFromSdfGeometry(sdf_geometry);
+              MakeShapeFromSdfGeometry(sdf_geometry);
           const CoulombFriction<double> coulomb_friction =
-              detail::MakeCoulombFrictionFromSdfCollisionOde(sdf_collision);
+              MakeCoulombFrictionFromSdfCollisionOde(sdf_collision);
           plant->RegisterCollisionGeometry(body, X_LG, *shape,
                                            sdf_collision.Name(),
                                            coulomb_friction, scene_graph);
@@ -475,7 +467,7 @@ ModelInstanceIndex AddModelFromSpecification(
     const std::string& model_name,
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph,
-    const multibody::PackageMap& package_map,
+    const PackageMap& package_map,
     const std::string& root_dir) {
 
   const ModelInstanceIndex model_instance =
@@ -526,7 +518,7 @@ ModelInstanceIndex AddModelFromSdfFile(
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
   sdf::Root root;
-  multibody::PackageMap package_map;
+  PackageMap package_map;
 
   std::string root_dir = LoadSdf(&root, &package_map, file_name);
 
@@ -556,7 +548,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
   sdf::Root root;
-  multibody::PackageMap package_map;
+  PackageMap package_map;
 
   std::string root_dir = LoadSdf(&root, &package_map, file_name);
 
@@ -610,6 +602,5 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
 }
 
 }  // namespace detail
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake
