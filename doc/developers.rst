@@ -95,6 +95,26 @@ supported for CMake builds using the "Unix Makefiles" generator.
 macOS Mojave C++ and Python support and macOS and Ubuntu Bionic MATLAB support
 is experimental and untested in continuous integration.
 
+.. note::
+
+   The indicated versions for build systems and languages are recorded after
+   having been tested on Continuous Integration.
+
+   Due to how the Debian ``apt`` and Homebrew package managers work, you may
+   not have these exact versions on your system when (re)running
+   ``install_prereqs.sh``. In general, later minor versions for more stable
+   packages (e.g. CMake, compilers) should not prove to be too much of an issue.
+
+   For less stable packages, such as Bazel, later minor versions may
+   cause breakages. If you are on Ubuntu, please rerun ``install_prereqs.sh``
+   as it can downgrade Bazel. If on Mac, there is no easy mechanism to
+   downgrade with bazelbuild's Homebrew tap, but we generally try to stay on
+   top of Bazel versions.
+
+   If you tried to ensure that the appropriate software versions are installed,
+   but your work is blocked by configuration issues, please do not hesitate to
+   :ref:`ask for help <getting_help>`, treating this as a bug.
+
 .. _binary-packages:
 
 Binary Packages
