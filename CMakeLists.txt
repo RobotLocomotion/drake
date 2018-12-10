@@ -538,7 +538,7 @@ set(CPACK_GENERATOR TGZ)
 set(CPACK_INSTALLED_DIRECTORIES "${CMAKE_INSTALL_PREFIX}" .)
 set(CPACK_PACKAGE_CONTACT RobotLocomotion)
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
-  "Planning, control, and analysis toolbox for nonlinear dynamical systems"
+  "Model-based design and verification for robotics"
 )
 set(CPACK_PACKAGE_VENDOR RobotLocomotion)
 set(CPACK_PACKAGE_VERSION_MAJOR 0)
