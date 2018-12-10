@@ -66,7 +66,7 @@ GTEST_TEST(Box, UnderStiction) {
   const double kTolerance = 1.0e-12;
 
   const std::string full_name = FindResourceOrThrow(
-      "drake/multibody/multibody_tree/multibody_plant/test/box.sdf");
+      "drake/multibody/plant/test/box.sdf");
   MultibodyPlant<double>& plant = *builder.AddSystem<MultibodyPlant>(time_step);
   Parser(&plant, &scene_graph).AddModelFromFile(full_name);
 
