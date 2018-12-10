@@ -67,6 +67,79 @@ class GenerateObjTest : public ::testing::Test {
 };
 
 
+TEST_F(GenerateObjTest, NoEpsilonSampling) {
+  const double kLaneWidth{4.};
+  const double kLinearTolerance{0.01};
+  const double kAngularTolerance{0.01 * M_PI};
+  const double kScaleLength{1.};
+  const maliput::multilane::ComputationPolicy kComputationPolicy{
+      maliput::multilane::ComputationPolicy::kPreferSpeed};
+  const maliput::api::HBounds kElevationBounds{0., 5.2};
+
+  auto rb = multi::BuilderFactory().Make(kLaneWidth, kElevationBounds,
+                                         kLinearTolerance, kAngularTolerance,
+                                         kScaleLength, kComputationPolicy);
+
+  // Initialize roads lane layouts.
+  // Reference lane from which the reference curve of the segment is placed (at
+  // kRefR0 lateral distance).
+  const int kRefLane = 0;
+  // Distance between the reference curve and kRefLane lane curve.
+  const double kRefR0 = 0.;
+  const double kLeftShoulder{2.};
+  const double kRightShoulder{2.};
+  const int kLaneNumber{1};
+  const multi::LaneLayout lane_layout(kLeftShoulder, kRightShoulder,
+                                      kLaneNumber, kRefLane, kRefR0);
+
+  // Initialize the road from the origin.
+  const multi::EndpointXy kOriginXy{0., 0., 0.};
+  const multi::EndpointZ kFlatZ{0., 0., 0., {}};
+  const multi::Endpoint kRoadOrigin{kOriginXy, kFlatZ};
+
+  // Construct road.
+  const double kArcLength = 25.;
+  const double kArcRadius = 40.;
+  const auto street1 = rb->Connect(
+      "street1", lane_layout,
+      multi::StartReference().at(kRoadOrigin, multi::Direction::kForward),
+      multi::ArcOffset(kArcLength, -kArcRadius / kArcLength),
+      multi::EndReference().z_at(kFlatZ, multi::Direction::kForward));
+  const auto street2 = rb->Connect(
+      "street2", lane_layout,
+      multi::StartReference().at(*street1, api::LaneEnd::kFinish,
+                                 multi::Direction::kForward),
+      multi::ArcOffset(kArcLength, kArcRadius / kArcLength),
+      multi::EndReference().z_at(kFlatZ, multi::Direction::kForward));
+  rb->Connect(
+      "street3", lane_layout,
+      multi::StartReference().at(*street2, api::LaneEnd::kFinish,
+                                 multi::Direction::kForward),
+      multi::ArcOffset(kArcLength, -kArcRadius / kArcLength),
+      multi::EndReference().z_at(kFlatZ, multi::Direction::kForward));
+
+  const std::unique_ptr<const api::RoadGeometry> dut =
+      rb->Build(maliput::api::RoadGeometryId{"no-epsilon-sampling-dut"});
+
+  ObjFeatures features;
+  features.min_grid_resolution = 5.0;
+  features.simplify_mesh_threshold = 0.01;
+  const std::string basename{"NoEpsilonSampling"};
+  GenerateObjFile(dut.get(), directory_.getStr(), basename, features);
+
+  spruce::path actual_obj_path(directory_);
+  actual_obj_path.append(basename + ".obj");
+  EXPECT_TRUE(actual_obj_path.isFile());
+
+  spruce::path actual_mtl_path(directory_);
+  actual_mtl_path.append(basename + ".mtl");
+  EXPECT_TRUE(actual_mtl_path.isFile());
+
+  paths_to_cleanup_.push_back(actual_obj_path);
+  paths_to_cleanup_.push_back(actual_mtl_path);
+}
+
+
 class GenerateObjBasicDutTest : public GenerateObjTest {
  protected:
   const double kLinearTolerance = 0.01;
