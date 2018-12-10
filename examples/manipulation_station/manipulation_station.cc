@@ -178,7 +178,6 @@ ManipulationStation<T>::ManipulationStation(double time_step)
       -9.81 * Vector3d::UnitZ());
   plant_->set_name("plant");
 
-  internal::get_camera_poses(&camera_poses_in_world_);
   this->set_name("manipulation_station");
 }
 
@@ -264,6 +263,19 @@ void ManipulationStation<T>::SetupDefaultStation(
     RegisterWsgControllerModel(sdf_path, wsg_instance, link7,
                                plant_->GetFrameByName("body", wsg_instance),
                                X_7G);
+  }
+
+  // Add default cameras.
+  {
+    std::map<std::string, RigidTransform<double>> camera_poses;
+    internal::get_camera_poses(&camera_poses);
+    geometry::dev::render::DepthCameraProperties camera_properties(
+        640, 480, M_PI_4, geometry::dev::render::Fidelity::kLow, 0.1, 2.0);
+    for (const auto& camera_pair : camera_poses) {
+      RegisterRgbdCamera(camera_pair.first, plant_->world_frame(),
+                         camera_pair.second.GetAsIsometry3(),
+                         camera_properties);
+    }
   }
 }
 
@@ -431,26 +443,30 @@ void ManipulationStation<T>::Finalize() {
                     render_scene_graph->get_source_pose_port(
                         plant_->get_source_id().value()));
 
-    geometry::dev::render::DepthCameraProperties camera_properties(
-        640, 480, M_PI_4, geometry::dev::render::Fidelity::kLow, 0.1, 2.0);
+    for (const auto& info_pair : camera_information_) {
+      std::string camera_name = "camera_" + info_pair.first;
+      const CameraInformation& info = info_pair.second;
 
-    // Create the cameras.
-    for (const auto& pose : camera_poses_in_world_) {
+      const optional<geometry::FrameId> parent_body_id =
+          plant_->GetBodyFrameIdIfExists(info.parent_frame->body().index());
+      DRAKE_THROW_UNLESS(parent_body_id.has_value());
+      const Isometry3<double> X_PC =
+          info.parent_frame->GetFixedPoseInBodyFrame() * info.X_PC;
+
       auto camera =
           builder.template AddSystem<systems::sensors::dev::RgbdCamera>(
-              "camera_" + pose.first,
-              geometry::dev::SceneGraph<double>::world_frame_id(),
-              pose.second.GetAsIsometry3(), camera_properties, false);
+              camera_name, parent_body_id.value(), X_PC, info.properties,
+              false);
       builder.Connect(render_scene_graph->get_query_output_port(),
                       camera->query_object_input_port());
 
       // TODO(russt): Add additional cameras.
       builder.ExportOutput(camera->color_image_output_port(),
-                           "camera_" + pose.first + "_rgb_image");
+                           camera_name + "_rgb_image");
       builder.ExportOutput(camera->depth_image_output_port(),
-                           "camera_" + pose.first + "_depth_image");
+                           camera_name + "_depth_image");
       builder.ExportOutput(camera->label_image_output_port(),
-                           "camera_" + pose.first + "_label_image");
+                           camera_name + "_label_image");
     }
   }
 
@@ -620,9 +636,9 @@ void ManipulationStation<T>::SetWsgVelocity(
 template <typename T>
 std::vector<std::string> ManipulationStation<T>::get_camera_names() const {
   std::vector<std::string> names;
-  names.reserve(camera_poses_in_world_.size());
-  for (const auto& pose : camera_poses_in_world_) {
-    names.emplace_back(pose.first);
+  names.reserve(camera_information_.size());
+  for (const auto& info : camera_information_) {
+    names.emplace_back(info.first);
   }
   return names;
 }
@@ -677,6 +693,45 @@ void ManipulationStation<T>::RegisterWsgControllerModel(
   wsg_model_.X_PC = X_PC;
 
   wsg_model_.model_instance = wsg_instance;
+}
+
+template <typename T>
+void ManipulationStation<T>::RegisterRgbdCamera(
+    const std::string& name, const multibody::Frame<T>& parent_frame,
+    const Isometry3<double>& X_PC,
+    const geometry::dev::render::DepthCameraProperties& properties) {
+  CameraInformation info;
+  info.parent_frame = &parent_frame;
+  info.X_PC = X_PC;
+  info.properties = properties;
+
+  camera_information_[name] = info;
+}
+
+template <typename T>
+std::map<std::string, math::RigidTransform<double>>
+ManipulationStation<T>::GetStaticCameraPosesInWorld() const {
+  std::map<std::string, math::RigidTransform<double>> static_camera_poses;
+
+  for (const auto& info : camera_information_) {
+    const auto& frame_P = *info.second.parent_frame;
+
+    // TODO(siyuan.feng@tri.global): We really only just need to make sure
+    // the parent frame is a AnchoredFrame(i.e. there is a rigid kinematic path
+    // from it to the world). However, the computation to query X_WP given a
+    // partially constructed plant is not feasible at the moment, so we are
+    // looking for cameras that are directly attached to the world instead.
+    const bool is_anchored =
+        frame_P.body().index() == plant_->world_frame().body().index();
+    if (is_anchored) {
+      static_camera_poses.emplace(
+          info.first,
+          math::RigidTransform<double>(frame_P.GetFixedPoseInBodyFrame() *
+                                       info.second.X_PC));
+    }
+  }
+
+  return static_camera_poses;
 }
 
 }  // namespace manipulation_station

@@ -10,6 +10,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/systems/framework/diagram.h"
+#include "drake/systems/sensors/dev/rgbd_camera.h"
 
 namespace drake {
 namespace examples {
@@ -198,6 +199,20 @@ class ManipulationStation : public systems::Diagram<T> {
       const multibody::Frame<T>& parent_frame,
       const multibody::Frame<T>& child_frame, const Isometry3<double>& X_PC);
 
+  /// Registers a RGBD camera. Must be called before Finalize().
+  /// @param name Name for the camera.
+  /// @param parent_frame The parent frame (frame P). The body that
+  /// @p parent_frame is attached to must have a corresponding
+  /// geometry::FrameId. Otherwise, an exception will be throw in Finalize().
+  /// @param X_PCameraBody Transformation between frame P and the camera body.
+  /// see systems::sensors::dev::RgbdCamera for descriptions about how the
+  /// camera body, RGB, and depth image frames are related.
+  /// @param properties Properties for the RGBD camera.
+  void RegisterRgbdCamera(
+      const std::string& name, const multibody::Frame<T>& parent_frame,
+      const Isometry3<double>& X_PCameraBody,
+      const geometry::dev::render::DepthCameraProperties& properties);
+
   // TODO(russt): Add scalar copy constructor etc once we support more
   // scalar types than T=double.  See #9573.
 
@@ -286,11 +301,10 @@ class ManipulationStation : public systems::Diagram<T> {
   /// Convenience method for setting the velocity of the Schunk WSG.
   void SetWsgVelocity(const T& v, systems::Context<T>* station_context) const;
 
-  /// Get the camera poses.
-  const std::map<std::string, math::RigidTransform<double>>&
-  get_camera_poses_in_world() const {
-    return camera_poses_in_world_;
-  }
+  /// Returns a map from camera name to X_WCameraBody for all the static
+  /// (rigidly attached to the world body) cameras that have been registered.
+  std::map<std::string, math::RigidTransform<double>>
+  GetStaticCameraPosesInWorld() const;
 
   /// Get the camera names / unique ids.
   std::vector<std::string> get_camera_names() const;
@@ -328,6 +342,13 @@ class ManipulationStation : public systems::Diagram<T> {
     Isometry3<double> X_PC{Isometry3<double>::Identity()};
   };
 
+  struct CameraInformation {
+    const multibody::Frame<T>* parent_frame{};
+    Isometry3<double> X_PC{Isometry3<double>::Identity()};
+    geometry::dev::render::DepthCameraProperties properties{
+        0, 0, 0, geometry::dev::render::Fidelity::kLow, 0, 0};
+  };
+
   // @param gains is supposed to be one of iiwa_kp_, iiwa_kd_ or iiwa_ki_. The
   // only purpose of this function is to check for invalid inputs then set one
   // of those member fields.
@@ -353,8 +374,8 @@ class ManipulationStation : public systems::Diagram<T> {
   ModelInformation iiwa_model_;
   ModelInformation wsg_model_;
 
-  // Stored camera poses.
-  std::map<std::string, math::RigidTransform<double>> camera_poses_in_world_;
+  // Registered camera related information.
+  std::map<std::string, CameraInformation> camera_information_;
 
   // These are kp and kd gains for iiwa and wsg controllers.
   VectorX<double> iiwa_kp_;

@@ -46,7 +46,7 @@ class TestManipulationStation(unittest.TestCase):
         station.SetWsgVelocity(v, context)
         self.assertEqual(v, station.GetWsgVelocity(context))
 
-        station.get_camera_poses_in_world()["0"]
+        station.GetStaticCameraPosesInWorld()["0"]
         self.assertEqual(len(station.get_camera_names()), 3)
 
     def test_manipulation_station_add_iiwa_and_wsg_explicitly(self):
