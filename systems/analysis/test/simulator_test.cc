@@ -23,7 +23,6 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/event.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
-#include "drake/systems/primitives/zero_order_hold.h"
 
 using drake::systems::WitnessFunction;
 using drake::systems::Simulator;
@@ -33,7 +32,6 @@ using LogisticSystem = drake::systems::analysis_test::LogisticSystem<double>;
 using StatelessSystem = drake::systems::analysis_test::StatelessSystem<double>;
 using Eigen::AutoDiffScalar;
 using Eigen::NumTraits;
-using Eigen::Vector2d;
 using std::complex;
 
 namespace drake {
