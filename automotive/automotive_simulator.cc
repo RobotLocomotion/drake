@@ -123,8 +123,9 @@ void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
   // Add visualization geometry.
   // TODO(jeremy.nimmer) These hard-coded shapes duplicate the contents of the
   // SDF.  We should try to load the SDF instead, but there is not any geometry
-  // code exposed for that yet.
-  scene_graph_->RegisterGeometry(
+  // code exposed for that yet. Related to this is the assignment of default
+  // illustration properties.
+  geometry::GeometryId geometry_id = scene_graph_->RegisterGeometryWithoutRole(
       source_id, frame_id,
       std::make_unique<geometry::GeometryInstance>(
           Isometry3d(Eigen::Translation3d(
@@ -132,8 +133,12 @@ void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
           std::make_unique<geometry::Mesh>(
               FindResourceOrThrow("drake/automotive/models/prius/prius.obj")),
           "prius_body"));
-  const geometry::VisualMaterial gray(Eigen::Vector4d(0.2, 0.2, 0.2, 1.0));
-  scene_graph_->RegisterGeometry(
+  scene_graph_->AssignRole(source_id, geometry_id,
+                           geometry::IllustrationProperties());
+  const geometry::IllustrationProperties grey =
+      geometry::MakeDrakeVisualizerProperties(
+          Eigen::Vector4d(0.2, 0.2, 0.2, 1.0));
+  geometry_id = scene_graph_->RegisterGeometryWithoutRole(
       source_id, frame_id,
       std::make_unique<geometry::GeometryInstance>(
           math::RigidTransformd(
@@ -141,8 +146,9 @@ void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
               Eigen::Vector3d(1.409 + kVisOffsetInX, 0.802, 0.316))
           .GetAsIsometry3(),
           std::make_unique<geometry::Cylinder>(0.323, 0.215),
-          "left_wheel", gray));
-  scene_graph_->RegisterGeometry(
+          "left_wheel"));
+  scene_graph_->AssignRole(source_id, geometry_id, grey);
+  geometry_id = scene_graph_->RegisterGeometryWithoutRole(
       source_id, frame_id,
       std::make_unique<geometry::GeometryInstance>(
           math::RigidTransformd(
@@ -150,8 +156,9 @@ void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
               Eigen::Vector3d(1.409 + kVisOffsetInX, -0.802, 0.316))
           .GetAsIsometry3(),
           std::make_unique<geometry::Cylinder>(0.323, 0.215),
-          "right_wheel", gray));
-  scene_graph_->RegisterGeometry(
+          "right_wheel"));
+  scene_graph_->AssignRole(source_id, geometry_id, grey);
+  geometry_id = scene_graph_->RegisterGeometryWithoutRole(
       source_id, frame_id,
       std::make_unique<geometry::GeometryInstance>(
           math::RigidTransformd(
@@ -159,8 +166,9 @@ void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
               Eigen::Vector3d(-1.409 + kVisOffsetInX, 0.802, 0.323))
           .GetAsIsometry3(),
           std::make_unique<geometry::Cylinder>(0.323, 0.215),
-          "left_wheel_rear", gray));
-  scene_graph_->RegisterGeometry(
+          "left_wheel_rear"));
+  scene_graph_->AssignRole(source_id, geometry_id, grey);
+  geometry_id = scene_graph_->RegisterGeometryWithoutRole(
       source_id, frame_id,
       std::make_unique<geometry::GeometryInstance>(
           math::RigidTransformd(
@@ -168,7 +176,8 @@ void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
               Eigen::Vector3d(-1.409 + kVisOffsetInX, -0.802, 0.323))
           .GetAsIsometry3(),
           std::make_unique<geometry::Cylinder>(0.323, 0.215),
-          "right_wheel_rear", gray));
+          "right_wheel_rear"));
+  scene_graph_->AssignRole(source_id, geometry_id, grey);
 
   // Convert PoseVector into FramePoseVector.
   using Converter = systems::rendering::RenderPoseToGeometryPose<T>;
