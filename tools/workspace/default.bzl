@@ -188,8 +188,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         pycps_repository(name = "pycps", mirrors = mirrors)
     if "python" not in excludes:
         python_repository(name = "python")
-    if "python2" not in excludes:
-        python_repository(name = "python2", compat_version = "2")
     if "python3" not in excludes:
         python3_repository(name = "python3")
     if "qdldl" not in excludes:

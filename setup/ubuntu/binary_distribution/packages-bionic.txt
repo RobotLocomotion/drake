@@ -34,7 +34,6 @@ python-lxml
 python-matplotlib
 python-numpy
 python-pydot
-python-six
 python-scipy
 python-six
 python-tk
