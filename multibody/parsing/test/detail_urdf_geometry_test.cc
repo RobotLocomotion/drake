@@ -1,4 +1,4 @@
-#include "drake/multibody/parsing/urdf_geometry.h"
+#include "drake/multibody/parsing/detail_urdf_geometry.h"
 
 #include <vector>
 
@@ -8,8 +8,8 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/package_map.h"
-#include "drake/multibody/parsing/parser_path_utils.h"
 
 namespace drake {
 namespace multibody {

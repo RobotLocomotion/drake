@@ -1,4 +1,4 @@
-#include "drake/multibody/parsing/sdf_parser_common.h"
+#include "drake/multibody/parsing/detail_ignition.h"
 
 namespace drake {
 namespace multibody {

@@ -1,4 +1,4 @@
-#include "drake/multibody/parsing/parser_path_utils.h"
+#include "drake/multibody/parsing/detail_path_utils.h"
 
 #include <string>
 #include <vector>
