@@ -215,7 +215,7 @@ const double kRotationTolerance = 1e-15;
     EXPECT_NEAR(dut.roll(), _ro, kRotationTolerance);                   \
     EXPECT_NEAR(dut.pitch(), _pi, kRotationTolerance);                  \
     EXPECT_NEAR(dut.yaw(), _ya, kRotationTolerance);                    \
-    EXPECT_TRUE(CompareMatrices(dut.matrix(), _ma,                      \
+    EXPECT_TRUE(CompareMatrices(dut.CalcRotationMatrix().matrix(), _ma, \
                                 kRotationTolerance));                   \
   } while (0)
 

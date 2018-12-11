@@ -89,7 +89,9 @@ class Rotation {
   }
 
   /// Provides a rotation matrix representation of the rotation.
-  Matrix3<double> matrix() const { return quaternion_.toRotationMatrix(); }
+  math::RotationMatrix<double> CalcRotationMatrix() const {
+    return math::RotationMatrix<double>(quaternion_);
+  }
 
   /// Provides a representation of rotation as a vector of angles
   /// `[roll, pitch, yaw]` (in radians).
