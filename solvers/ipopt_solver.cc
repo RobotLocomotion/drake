@@ -514,7 +514,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 template <typename T>
 bool HasOptionWithKey(const SolverOptions& solver_options,
                       const std::string& key) {
-  return solver_options.GetOptionsGeneric<T>(IpoptSolver::id()).count(key) > 0;
+  return solver_options.GetOptions<T>(IpoptSolver::id()).count(key) > 0;
 }
 
 /**

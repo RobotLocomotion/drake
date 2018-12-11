@@ -137,5 +137,18 @@ std::string to_string(const SolverOptions& x) {
   return result.str();
 }
 
+const std::unordered_map<std::string, double>& SolverOptions::GetOptionsImpl(
+    const SolverId& solver_id, double*) const {
+  return GetOptionsDouble(solver_id);
+}
+const std::unordered_map<std::string, int>& SolverOptions::GetOptionsImpl(
+    const SolverId& solver_id, int*) const {
+  return GetOptionsInt(solver_id);
+}
+const std::unordered_map<std::string, std::string>&
+SolverOptions::GetOptionsImpl(const SolverId& solver_id, std::string*) const {
+  return GetOptionsStr(solver_id);
+}
+
 }  // namespace solvers
 }  // namespace drake

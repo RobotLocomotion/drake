@@ -63,25 +63,9 @@ class SolverOptions {
       const SolverId& solver_id) const;
 
   template <typename T>
-  typename std::enable_if<std::is_same<T, double>::value,
-                          const std::unordered_map<std::string, double>&>::type
-  GetOptionsGeneric(const SolverId& solver_id) const {
-    return GetOptionsDouble(solver_id);
-  }
-
-  template <typename T>
-  typename std::enable_if<std::is_same<T, int>::value,
-                          const std::unordered_map<std::string, int>&>::type
-  GetOptionsGeneric(const SolverId& solver_id) const {
-    return GetOptionsInt(solver_id);
-  }
-
-  template <typename T>
-  typename std::enable_if<
-      std::is_same<T, std::string>::value,
-      const std::unordered_map<std::string, std::string>&>::type
-  GetOptionsGeneric(const SolverId& solver_id) const {
-    return GetOptionsStr(solver_id);
+  const std::unordered_map<std::string, T>& GetOptions(
+      const SolverId& solver_id) const {
+    return GetOptionsImpl(solver_id, static_cast<T*>(nullptr));
   }
 
   /** Returns the IDs that have any option set. */
@@ -106,6 +90,13 @@ class SolverOptions {
   bool operator!=(const SolverOptions& other) const;
 
  private:
+  const std::unordered_map<std::string, double>& GetOptionsImpl(
+      const SolverId& solver_id, double*) const;
+  const std::unordered_map<std::string, int>& GetOptionsImpl(
+      const SolverId& solver_id, int*) const;
+  const std::unordered_map<std::string, std::string>& GetOptionsImpl(
+      const SolverId& solver_id, std::string*) const;
+
   std::unordered_map<SolverId, std::unordered_map<std::string, double>>
       solver_options_double_{};
   std::unordered_map<SolverId, std::unordered_map<std::string, int>>
