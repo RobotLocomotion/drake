@@ -3,9 +3,9 @@ import subprocess
 import unittest
 
 
-class TestShowModel(unittest.TestCase):
-    def test_show(self):
-        """Test that show_model doesn't crash."""
+class TestGeometryInspector(unittest.TestCase):
+    def test_geometry_inspector(self):
+        """Test that the binary doesn't crash."""
         # Test both an SDF and an URDF.
         models = [
             "multibody/benchmarks/acrobot/acrobot.sdf",
@@ -13,4 +13,6 @@ class TestShowModel(unittest.TestCase):
         ]
         for model in models:
             subprocess.check_call(
-                ["manipulation/util/show_model", os.path.abspath(model)])
+                ["manipulation/util/geometry_inspector",
+                 os.path.abspath(model),
+                 "--test", "--position", "0.1", "0.2"])
