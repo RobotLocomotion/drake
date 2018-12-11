@@ -5,6 +5,30 @@
 
 namespace drake {
 namespace solvers {
+/**
+ * The OSQP solver details after calling Solve function in OsqpSolver. The user
+ * can obtain the details from
+ * MathematicalProgramResult.get_solver_details().GetValue<OsqpSolverDetails>();
+ */
+struct OsqpSolverDetails {
+  /// Number of iterations taken.
+  int iter{};
+  /// Status of the solver at termination. Please refer to
+  /// https://github.com/oxfordcontrol/osqp/blob/master/include/constants.h
+  int status_val{};
+  /// Norm of primal residue.
+  double primal_res{};
+  /// Norm of dual residue.
+  double dual_res{};
+  /// Time taken for setup phase (seconds).
+  double setup_time{};
+  /// Time taken for solve phase (seconds).
+  double solve_time{};
+  /// Time taken for polish phase (seconds).
+  double polish_time{};
+  /// Total OSQP time (seconds).
+  double run_time{};
+};
 
 class OsqpSolver : public MathematicalProgramSolverInterface {
  public:
@@ -23,9 +47,7 @@ class OsqpSolver : public MathematicalProgramSolverInterface {
 
   void Solve(const MathematicalProgram&, const optional<Eigen::VectorXd>&,
              const optional<SolverOptions>&,
-             MathematicalProgramResult*) const override {
-    throw std::runtime_error("Not implemented yet.");
-  }
+             MathematicalProgramResult*) const override;
 
   SolverId solver_id() const override;
 
