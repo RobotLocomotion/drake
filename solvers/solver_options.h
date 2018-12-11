@@ -62,6 +62,12 @@ class SolverOptions {
   const std::unordered_map<std::string, std::string>& GetOptionsStr(
       const SolverId& solver_id) const;
 
+  template <typename T>
+  const std::unordered_map<std::string, T>& GetOptions(
+      const SolverId& solver_id) const {
+    return GetOptionsImpl(solver_id, static_cast<T*>(nullptr));
+  }
+
   /** Returns the IDs that have any option set. */
   std::unordered_set<SolverId> GetSolverIds() const;
 
@@ -101,6 +107,13 @@ class SolverOptions {
       const std::unordered_set<std::string>& allowable_str_keys) const;
 
  private:
+  const std::unordered_map<std::string, double>& GetOptionsImpl(
+      const SolverId& solver_id, double*) const;
+  const std::unordered_map<std::string, int>& GetOptionsImpl(
+      const SolverId& solver_id, int*) const;
+  const std::unordered_map<std::string, std::string>& GetOptionsImpl(
+      const SolverId& solver_id, std::string*) const;
+
   std::unordered_map<SolverId, std::unordered_map<std::string, double>>
       solver_options_double_{};
   std::unordered_map<SolverId, std::unordered_map<std::string, int>>

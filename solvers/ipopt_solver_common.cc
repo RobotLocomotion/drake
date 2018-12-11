@@ -7,7 +7,6 @@
 
 namespace drake {
 namespace solvers {
-
 SolverId IpoptSolver::solver_id() const {
   return id();
 }

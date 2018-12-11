@@ -26,11 +26,17 @@ TEST_F(InfeasibleLinearProgramTest0, TestIpopt) {
   prog_->SetInitialGuessForAllVariables(Eigen::Vector2d(1, 2));
   IpoptSolver solver;
   if (solver.available()) {
-    const auto solver_result = solver.Solve(*prog_);
-    EXPECT_EQ(solver_result, SolutionResult::kInfeasibleConstraints);
+    MathematicalProgramResult result;
+    solver.Solve(*prog_, {}, {}, &result);
+    EXPECT_EQ(result.get_solution_result(),
+              SolutionResult::kInfeasibleConstraints);
     const Eigen::Vector2d x_val =
-        prog_->GetSolution(prog_->decision_variables());
-    EXPECT_NEAR(prog_->GetOptimalCost(), -x_val(0) - x_val(1), 1E-7);
+        prog_->GetSolution(prog_->decision_variables(), result);
+    EXPECT_NEAR(result.get_optimal_cost(), -x_val(0) - x_val(1), 1E-7);
+    // local infeasibility is defined in Ipopt::SolverReturn in IpAlgTypes.hpp
+    const int kIpoptLocalInfeasibility = 5;
+    EXPECT_EQ(result.get_solver_details().GetValue<IpoptSolverDetails>().status,
+              kIpoptLocalInfeasibility);
   }
 }
 
