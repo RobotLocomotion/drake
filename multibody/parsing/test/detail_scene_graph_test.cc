@@ -1,4 +1,4 @@
-#include "drake/multibody/parsing/scene_graph_parser_detail.h"
+#include "drake/multibody/parsing/detail_scene_graph.h"
 
 #include <limits>
 #include <memory>

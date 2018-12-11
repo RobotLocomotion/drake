@@ -1,4 +1,4 @@
-#include "drake/multibody/parsing/urdf_parser.h"
+#include "drake/multibody/parsing/detail_urdf_parser.h"
 
 #include <gtest/gtest.h>
 

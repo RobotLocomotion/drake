@@ -1,4 +1,4 @@
-#include "drake/multibody/parsing/urdf_geometry.h"
+#include "drake/multibody/parsing/detail_urdf_geometry.h"
 
 #include <iomanip>
 #include <memory>
@@ -9,9 +9,9 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/visual_material.h"
-#include "drake/multibody/parsing/parser_common.h"
-#include "drake/multibody/parsing/parser_path_utils.h"
-#include "drake/multibody/parsing/tinyxml_util.h"
+#include "drake/multibody/parsing/detail_common.h"
+#include "drake/multibody/parsing/detail_path_utils.h"
+#include "drake/multibody/parsing/detail_tinyxml.h"
 
 namespace drake {
 namespace multibody {

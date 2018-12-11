@@ -2,7 +2,6 @@
 
 #include <string>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
@@ -37,36 +36,5 @@ ModelInstanceIndex AddModelFromUrdfFile(
     geometry::SceneGraph<double>* scene_graph = nullptr);
 
 }  // namespace detail
-
-#ifndef DRAKE_DOXYGEN_CXX
-// TODO(jwnimmer-tri) Remove these forwarders on or about 2019-03-01.
-namespace parsing {
-
-DRAKE_DEPRECATED(
-    "AddModelFromUrdfFile is deprecated; please use the class "
-    "drake::multibody::Parser instead.")
-inline ModelInstanceIndex AddModelFromUrdfFile(
-    const std::string& file_name,
-    const std::string& model_name,
-    multibody_plant::MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr) {
-  return detail::AddModelFromUrdfFile(
-      file_name, model_name, plant, scene_graph);
-}
-
-DRAKE_DEPRECATED(
-    "AddModelFromUrdfFile is deprecated; please use the class "
-    "drake::multibody::Parser instead.")
-inline ModelInstanceIndex AddModelFromUrdfFile(
-    const std::string& file_name,
-    multibody_plant::MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr) {
-  return detail::AddModelFromUrdfFile(
-      file_name, "", plant, scene_graph);
-}
-
-}  // namespace parsing
-#endif  // DRAKE_DOXYGEN_CXX
-
 }  // namespace multibody
 }  // namespace drake
