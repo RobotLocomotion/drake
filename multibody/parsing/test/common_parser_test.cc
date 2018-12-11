@@ -11,7 +11,7 @@
 
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/parsing/parser_common.h"
+#include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/test/test_loaders.h"
 #include "drake/systems/framework/context.h"
 

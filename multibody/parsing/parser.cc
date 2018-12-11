@@ -2,8 +2,8 @@
 
 #include <spruce.hh>
 
-#include "drake/multibody/parsing/sdf_parser.h"
-#include "drake/multibody/parsing/urdf_parser.h"
+#include "drake/multibody/parsing/detail_sdf_parser.h"
+#include "drake/multibody/parsing/detail_urdf_parser.h"
 
 namespace drake {
 namespace multibody {

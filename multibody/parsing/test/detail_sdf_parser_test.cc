@@ -1,4 +1,4 @@
-#include "drake/multibody/parsing/sdf_parser.h"
+#include "drake/multibody/parsing/detail_sdf_parser.h"
 
 #include <memory>
 
