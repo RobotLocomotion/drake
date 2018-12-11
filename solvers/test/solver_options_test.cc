@@ -105,7 +105,7 @@ GTEST_TEST(SolverOptionsTest, CheckOptionKeysForSolver) {
   DRAKE_EXPECT_THROWS_MESSAGE(solver_options.CheckOptionKeysForSolver(
                                   id1, {"key1"}, {"key2"}, {"key3"}),
                               std::invalid_argument,
-                              "key2 is not allowed in the SolverOptions.\n");
+                              "key2 is not allowed in the SolverOptions.");
 
   EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(id1, {"key1", "key2"},
                                                           {"key2"}, {"key3"}));

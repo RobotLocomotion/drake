@@ -139,8 +139,7 @@ std::string to_string(const SolverOptions& x) {
 
 namespace {
 // Check if all the keys in key_value pair key_vals is a subset of
-// allowable_keys, and put the the keys not in `allowable_keys` to
-// `disallowed_keys`.
+// allowable_keys, and throw an invalid argument if not.
 template <typename T>
 void CheckOptionKeysForSolverHelper(
     const std::unordered_map<std::string, T>& key_vals,
@@ -148,7 +147,7 @@ void CheckOptionKeysForSolverHelper(
   for (const auto& key_val : key_vals) {
     if (allowable_keys.count(key_val.first) == 0) {
       throw std::invalid_argument(key_val.first +
-                                  " is not allowed in the SolverOptions.\n");
+                                  " is not allowed in the SolverOptions.");
     }
   }
 }
