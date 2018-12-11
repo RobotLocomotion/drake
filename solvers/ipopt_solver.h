@@ -37,7 +37,7 @@ struct IpoptSolverDetails {
   /** Convert status field to string. This function is useful if you want to
    * interpret the meaning of status.
    */
-  std::string ConvertStatusToString() const;
+  const char* ConvertStatusToString() const;
 };
 
 class IpoptSolver : public MathematicalProgramSolverInterface {

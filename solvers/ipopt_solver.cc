@@ -573,7 +573,7 @@ void SetIpoptOptions(const MathematicalProgram& prog,
 
 }  // namespace
 
-std::string IpoptSolverDetails::ConvertStatusToString() const {
+const char* IpoptSolverDetails::ConvertStatusToString() const {
   switch (status) {
     case Ipopt::SolverReturn::SUCCESS: {
       return "Success";
@@ -627,7 +627,7 @@ std::string IpoptSolverDetails::ConvertStatusToString() const {
       return "Unassigned";
     }
   }
-  throw std::runtime_error("Should not reach here.");
+  return "Unknown enumerated SolverReturn value.";
 }
 
 bool IpoptSolver::is_available() { return true; }

@@ -7,7 +7,7 @@
 namespace drake {
 namespace solvers {
 
-std::string IpoptSolverDetails::ConvertStatusToString() const {
+const char* IpoptSolverDetails::ConvertStatusToString() const {
   throw std::runtime_error(
       "The IPOPT bindings were not compiled.  You'll need to use a different "
       "solver.");
