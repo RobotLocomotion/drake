@@ -388,10 +388,15 @@ void AddLinksFromSpecification(
         // We check for nullptr in case someone decided to specify an SDF
         // <empty/> geometry.
         if (geometry_instance) {
+          // The parsing should *always* produce an IllustrationProperties
+          // instance, even if it is empty.
+          DRAKE_DEMAND(
+              geometry_instance->illustration_properties() != nullptr);
+
           plant->RegisterVisualGeometry(
               body, geometry_instance->pose(), geometry_instance->shape(),
-              geometry_instance->name(), geometry_instance->visual_material(),
-              scene_graph);
+              geometry_instance->name(),
+              *geometry_instance->illustration_properties());
         }
       }
 

@@ -106,6 +106,7 @@ drake_cc_library(
     deps = [
         ":detail_misc",
         ":package_map",
+        "//geometry:geometry_visualization",
         "//geometry:scene_graph",
         "//multibody/multibody_tree/multibody_plant:coulomb_friction",
         "@sdformat",

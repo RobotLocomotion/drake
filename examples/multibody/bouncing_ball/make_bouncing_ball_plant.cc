@@ -10,7 +10,6 @@ namespace bouncing_ball {
 using geometry::Sphere;
 using geometry::HalfSpace;
 using geometry::SceneGraph;
-using geometry::VisualMaterial;
 using drake::multibody::multibody_plant::CoulombFriction;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::RigidBody;
@@ -54,7 +53,7 @@ MakeBouncingBallPlant(double radius, double mass,
             surface_friction);
 
     // Add visual for the ball.
-    const VisualMaterial orange(Vector4<double>(1.0, 0.55, 0.0, 1.0));
+    const Vector4<double> orange(1.0, 0.55, 0.0, 1.0);
     plant->RegisterVisualGeometry(
         ball,
         /* Pose X_BG of the geometry frame G in the ball frame B. */

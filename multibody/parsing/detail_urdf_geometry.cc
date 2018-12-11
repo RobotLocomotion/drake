@@ -8,7 +8,8 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
-#include "drake/geometry/visual_material.h"
+#include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/geometry_visualization.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_tinyxml.h"
@@ -281,7 +282,9 @@ geometry::GeometryInstance ParseVisual(
   // the XML here may not specify a "name" attribute. Because of this difference
   // in context, we need specialized logic here to determine the material
   // visualization of a link.
-  geometry::VisualMaterial visual_material;  // default grey
+
+  // The empty set relies on consumer defaults.
+  geometry::IllustrationProperties properties;
 
   const XMLElement* material_node = node->FirstChildElement("material");
   if (material_node) {
@@ -333,7 +336,7 @@ geometry::GeometryInstance ParseVisual(
     // node, use that color. It takes precedence over any material saved in
     // the material map.
     if (color_specified) {
-      visual_material = geometry::VisualMaterial(rgba);
+      properties = geometry::MakeDrakeVisualizerProperties(rgba);
     } else if (name_specified) {
       // No color specified. Checks if the material is already in the
       // materials map.
@@ -342,7 +345,8 @@ geometry::GeometryInstance ParseVisual(
       if (material_iter != materials->end()) {
         // The material is in the map. Sets the material of the visual
         // element based on the value in the map.
-        visual_material = geometry::VisualMaterial(material_iter->second);
+        properties =
+            geometry::MakeDrakeVisualizerProperties(material_iter->second);
       }
     }
   }
@@ -352,8 +356,10 @@ geometry::GeometryInstance ParseVisual(
     geometry_name = MakeGeometryName(parent_element_name + "_Visual", node);
   }
 
-  return geometry::GeometryInstance(T_element_to_link, std::move(shape),
-                                    geometry_name, visual_material);
+  auto instance = geometry::GeometryInstance(
+      T_element_to_link, std::move(shape), geometry_name);
+  instance.set_illustration_properties(properties);
+  return instance;
 }
 
 // Parses a "collision" element in @p node.

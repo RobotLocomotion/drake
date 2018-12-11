@@ -7,6 +7,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/geometry_roles.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/package_map.h"
@@ -20,7 +21,6 @@ using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
 using geometry::GeometryInstance;
-using geometry::VisualMaterial;
 using multibody_plant::CoulombFriction;
 
 class UrdfGeometryTests : public testing::Test {
@@ -94,6 +94,7 @@ class UrdfGeometryTests : public testing::Test {
 // This test dives into more detail for some things than other tests.  We
 // assume if parsing certain things works here that it will keep working.
 TEST_F(UrdfGeometryTests, TestParseMaterial1) {
+  using Eigen::Vector4d;
   const std::string resource_dir{
     "drake/multibody/parsing/test/urdf_parser_test/"};
   const std::string file_no_conflict_1 = FindResourceOrThrow(
@@ -103,13 +104,13 @@ TEST_F(UrdfGeometryTests, TestParseMaterial1) {
 
   ASSERT_EQ(materials_.size(), 3);
 
-  Eigen::Vector4d brown(0.93333333333, 0.79607843137, 0.67843137254, 1);
+  Vector4d brown(0.93333333333, 0.79607843137, 0.67843137254, 1);
   EXPECT_TRUE(CompareMatrices(materials_.at("brown"), brown, 1e-10));
 
-  Eigen::Vector4d red(0.93333333333, 0.2, 0.2, 1);
+  Vector4d red(0.93333333333, 0.2, 0.2, 1);
   EXPECT_TRUE(CompareMatrices(materials_.at("red"), red, 1e-10));
 
-  Eigen::Vector4d green(0, 1, 0, 1);
+  Vector4d green(0, 1, 0, 1);
   EXPECT_TRUE(CompareMatrices(materials_.at("green"), green, 1e-10));
 
   ASSERT_EQ(visual_instances_.size(), 1);
@@ -125,8 +126,13 @@ TEST_F(UrdfGeometryTests, TestParseMaterial1) {
   ASSERT_TRUE(box);
   EXPECT_TRUE(CompareMatrices(box->size(), Eigen::Vector3d(0.2, 0.2, 0.2)));
 
-  EXPECT_TRUE(CompareMatrices(
-      visual.visual_material().diffuse(), materials_.at("green")));
+  const geometry::IllustrationProperties* properties =
+      visual.illustration_properties();
+  ASSERT_NE(properties, nullptr);
+  EXPECT_TRUE(properties->HasProperty("phong", "diffuse"));
+  EXPECT_TRUE(
+      CompareMatrices(properties->GetProperty<Vector4d>("phong", "diffuse"),
+          materials_.at("green")));
 }
 
 TEST_F(UrdfGeometryTests, TestParseMaterial2) {
