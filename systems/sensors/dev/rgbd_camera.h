@@ -27,7 +27,11 @@ namespace dev {
 
  @system{RgbdCamera,
     @input_port{geometry_query},
-    @output_port{color_image} @output_port{depth_image} @output_port{label_image} @output_port{X_WB}
+    @output_port{color_image}
+    @output_port{depth_image}
+    @output_port{depth_image_16u}
+    @output_port{label_image}
+    @output_port{X_WB}
  }
 
  Let `W` be the world coordinate system. In addition to `W`, there are three
@@ -59,6 +63,10 @@ namespace dev {
      is different from the range data used by laser range finders (like that
      provided by DepthSensor) in which the depth value represents the
      distance from the sensor origin to the object's surface.
+
+   - The data is semantically the same as the float depth image except each
+     pixel is a 16 bit unsigned short instead of a 32 bit float, and the
+     measurement is in millimeter.
 
    - The label image has a single channel represented by a int16_t. The value
      stored in the channel holds a model ID which corresponds to an object
@@ -156,8 +164,10 @@ class RgbdCamera final : public LeafSystem<double> {
   // These are the calculator methods for the four output ports.
   void CalcColorImage(const Context<double>& context,
                       ImageRgba8U* color_image) const;
-  void CalcDepthImage(const Context<double>& context,
-                      ImageDepth32F* depth_image) const;
+  void CalcDepthImage32F(const Context<double>& context,
+                         ImageDepth32F* depth_image) const;
+  void CalcDepthImage16U(const Context<double>& context,
+                         ImageDepth16U* depth_image) const;
   void CalcLabelImage(const Context<double>& context,
                       ImageLabel16I* label_image) const;
   void CalcPoseVector(const Context<double>& context,
