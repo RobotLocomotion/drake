@@ -223,6 +223,7 @@ void OsqpSolver::Solve(const MathematicalProgram& prog,
                        const optional<Eigen::VectorXd>& initial_guess,
                        const optional<SolverOptions>& solver_options,
                        MathematicalProgramResult* result) const {
+  *result = {};
   // TODO(hongkai.dai): OSQP uses initial guess to warm start.
   unused(initial_guess);
   if (!AreProgramAttributesSatisfied(prog)) {
@@ -232,7 +233,7 @@ void OsqpSolver::Solve(const MathematicalProgram& prog,
   }
 
   SolverOptions merged_solver_options =
-      solver_options.has_value() ? solver_options.value() : SolverOptions();
+      solver_options.value_or(SolverOptions());
   merged_solver_options.Merge(prog.solver_options());
 
   // OSQP solves a convex quadratic programming problem
