@@ -318,7 +318,8 @@ struct Impl {
               BasicVector<T> output(qdot.size());
               self->MapVelocityToQDot(context, v, &output);
               qdot = output.CopyToVector();
-            })
+            }, py::arg("context"), py::arg("v"), py::arg("qdot"),
+             doc.System.MapVelocityToQDot.doc)
         .def("MapQDotToVelocity",
             [](const System<T>* self, const Context<T>& context,
                 const Eigen::Ref<const VectorX<T>>& qdot,
@@ -326,7 +327,8 @@ struct Impl {
               BasicVector<T> output(v.size());
               self->MapQDotToVelocity(context, qdot, &output);
               v = output.CopyToVector();
-            })
+            }, py::arg("context"), py::arg("qdot"), py::arg("v"),
+             doc.System.MapQDotToVelocity.doc)
         // Sugar.
         .def("GetGraphvizString",
             [str_py](const System<T>* self, int max_depth) {
