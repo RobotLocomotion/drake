@@ -1625,10 +1625,9 @@ GTEST_TEST(SimulatorTest, NoStretchedStep) {
   const double event_t_final = 1.0;
   const double directed_t_final = event_t_final - 0.1;
 
-  // Initialize a fixed step integrator and the simulator.
+  // Initialize a fixed step integrator.
   simulator.reset_integrator<RungeKutta2Integrator<double>>(spring_mass,
       directed_t_final, &simulator.get_mutable_context());
-  simulator.Initialize();
 
   // Set initial condition using the Simulator's internal Context.
   simulator.get_mutable_context().set_time(0);
@@ -1730,7 +1729,6 @@ GTEST_TEST(SimulatorTest, StretchedStepPerfectStorm) {
   integrator->set_requested_minimum_step_size(req_min_step_size);
   integrator->request_initial_step_size_target(directed_t_final);
   integrator->set_target_accuracy(accuracy);
-  simulator.Initialize();
 
   // Set initial condition using the Simulator's internal Context.
   simulator.get_mutable_context().set_time(0);
@@ -1743,10 +1741,13 @@ GTEST_TEST(SimulatorTest, StretchedStepPerfectStorm) {
   EXPECT_THROW(simulator.StepTo(expected_t_final), std::runtime_error);
 
   // Now disable exceptions on violating the minimum step size and step again.
+  // Since we are changing the state between successive StepTo(.) calls, it is
+  // wise to call Initialize() prior to the second call.
   simulator.get_mutable_context().set_time(0);
   spring_mass.set_position(&simulator.get_mutable_context(), 0.1);
   spring_mass.set_velocity(&simulator.get_mutable_context(), 0);
   integrator->set_throw_on_minimum_step_size_violation(false);
+  simulator.Initialize();
   simulator.StepTo(expected_t_final);
 
   // Verify that the step size was stretched and that exactly one "step" was
