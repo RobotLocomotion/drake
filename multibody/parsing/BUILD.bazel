@@ -284,6 +284,7 @@ drake_cc_googletest(
     data = [
         ":test_models",
         "//examples/atlas:models",
+        "//manipulation/models/iiwa_description:models",
         "//multibody/benchmarks/acrobot:models",
     ],
     deps = [

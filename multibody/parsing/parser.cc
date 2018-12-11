@@ -39,7 +39,8 @@ std::vector<ModelInstanceIndex> Parser::AddAllModelsFromFile(
     return AddModelsFromSdfFile(file_name, package_map_, plant_,
         scene_graph_);
   } else {
-    return {AddModelFromUrdfFile(file_name, {}, plant_, scene_graph_)};
+    return {AddModelFromUrdfFile(
+        file_name, {}, package_map_, plant_, scene_graph_)};
   }
 }
 
@@ -51,7 +52,8 @@ ModelInstanceIndex Parser::AddModelFromFile(
     return AddModelFromSdfFile(file_name, model_name, package_map_,
         plant_, scene_graph_);
   } else {
-    return AddModelFromUrdfFile(file_name, model_name, plant_, scene_graph_);
+    return AddModelFromUrdfFile(
+        file_name, model_name, package_map_, plant_, scene_graph_);
   }
 }
 
