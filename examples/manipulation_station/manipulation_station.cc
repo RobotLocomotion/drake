@@ -477,6 +477,8 @@ void ManipulationStation<T>::Finalize() {
                            camera_name + "_rgb_image");
       builder.ExportOutput(camera->depth_image_output_port(),
                            camera_name + "_depth_image");
+      builder.ExportOutput(camera->GetOutputPort("depth_image_16u"),
+                           camera_name + "_depth_image_16u");
       builder.ExportOutput(camera->label_image_output_port(),
                            camera_name + "_label_image");
     }

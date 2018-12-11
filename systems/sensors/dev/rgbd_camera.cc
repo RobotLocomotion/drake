@@ -63,10 +63,15 @@ void RgbdCamera::InitPorts(const std::string& name) {
   color_image_port_ = &this->DeclareAbstractOutputPort(
       "color_image", color_image, &RgbdCamera::CalcColorImage);
 
-  ImageDepth32F depth_image(depth_camera_info_.width(),
-                            depth_camera_info_.height());
+  ImageDepth32F depth32(depth_camera_info_.width(),
+                        depth_camera_info_.height());
   depth_image_port_ = &this->DeclareAbstractOutputPort(
-      "depth_image", depth_image, &RgbdCamera::CalcDepthImage);
+      "depth_image", depth32, &RgbdCamera::CalcDepthImage32F);
+
+  ImageDepth16U depth16(depth_camera_info_.width(),
+                        depth_camera_info_.height());
+  this->DeclareAbstractOutputPort("depth_image_16u", depth16,
+                                  &RgbdCamera::CalcDepthImage16U);
 
   ImageLabel16I label_image(color_camera_info_.width(),
                             color_camera_info_.height());
@@ -123,11 +128,24 @@ void RgbdCamera::CalcColorImage(const Context<double>& context,
                                 color_image, show_window_);
 }
 
-void RgbdCamera::CalcDepthImage(const Context<double>& context,
-                                ImageDepth32F* depth_image) const {
+void RgbdCamera::CalcDepthImage32F(const Context<double>& context,
+                                   ImageDepth32F* depth_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
   query_object.RenderDepthImage(properties_, parent_frame_, X_PB_ * X_BD_,
                                 depth_image);
+}
+
+void RgbdCamera::CalcDepthImage16U(const Context<double>& context,
+                                   ImageDepth16U* depth_image) const {
+  ImageDepth32F depth32(depth_image->width(), depth_image->height());
+  CalcDepthImage32F(context, &depth32);
+  // Convert to mm and 16bits.
+  for (int w = 0; w < depth_image->width(); w++) {
+    for (int h = 0; h < depth_image->height(); h++) {
+      depth_image->at(w, h)[0] =
+          static_cast<uint16_t>(depth32.at(w, h)[0] * 1000);
+    }
+  }
 }
 
 void RgbdCamera::CalcLabelImage(const Context<double>& context,
