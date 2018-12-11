@@ -15,7 +15,7 @@ namespace solvers {
 struct NloptSolverDetails {
   // The return status of NLopt solver. Please refer to
   // https://nlopt.readthedocs.io/en/latest/NLopt_Reference/#return-values.
-  int status;
+  int status{};
 };
 
 class NloptSolver : public MathematicalProgramSolverInterface {
@@ -48,15 +48,16 @@ class NloptSolver : public MathematicalProgramSolverInterface {
 
   static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
 
-  /** The key name for the constraint tolerance.*/
+  /** The key name for the double-valued constraint tolerance.*/
   static std::string ConstraintToleranceName();
 
-  /** The key name for x relative tolerance.*/
+  /** The key name for double-valued x relative tolerance.*/
   static std::string XRelativeToleranceName();
 
-  /** The key name for x absolute tolerance.*/
+  /** The key name for double-valued x absolute tolerance.*/
   static std::string XAbsoluteToleranceName();
 
+  /** The key name for int-valued maximum number of evaluations. */
   static std::string MaxEvalName();
 };
 

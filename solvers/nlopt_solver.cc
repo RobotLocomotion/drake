@@ -335,6 +335,7 @@ void NloptSolver::Solve(const MathematicalProgram& prog,
                         const optional<Eigen::VectorXd>& initial_guess,
                         const optional<SolverOptions>& solver_options,
                         MathematicalProgramResult* result) const {
+  *result = {};
   const int nx = prog.num_vars();
 
   // Load the algo to use and the size.
@@ -378,7 +379,7 @@ void NloptSolver::Solve(const MathematicalProgram& prog,
   opt.set_min_objective(EvaluateCosts, const_cast<MathematicalProgram*>(&prog));
 
   SolverOptions merged_solver_options =
-      solver_options.has_value() ? solver_options.value() : SolverOptions();
+      solver_options.value_or(SolverOptions());
   merged_solver_options.Merge(prog.solver_options());
 
   const auto& nlopt_options_double =
@@ -451,7 +452,6 @@ void NloptSolver::Solve(const MathematicalProgram& prog,
       case nlopt::FTOL_REACHED:
       case nlopt::XTOL_REACHED: {
         // Now check if the constraints are violated.
-        // TODO(hongkai.dai) Allow the user to set this tolerance.
         bool all_constraints_satisfied = true;
         auto constraint_test = [&prog, constraint_tol,
                                 &all_constraints_satisfied,
