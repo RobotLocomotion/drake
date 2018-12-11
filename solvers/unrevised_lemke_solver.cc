@@ -166,7 +166,6 @@ void UnrevisedLemkeSolver<T>::Solve(
   // variables.
   //
 
-  // We don't actually indicate different results.
   result->set_solver_id(UnrevisedLemkeSolverId::id());
 
   // Create a dummy variable for the number of pivots used.
