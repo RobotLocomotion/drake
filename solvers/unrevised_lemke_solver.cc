@@ -117,6 +117,7 @@ void UnrevisedLemkeSolver<T>::Solve(
     const optional<Eigen::VectorXd>& initial_guess,
     const optional<SolverOptions>& solver_options,
     MathematicalProgramResult* result) const {
+  *result = {};
   unused(initial_guess);
   unused(solver_options);
   // This solver imposes restrictions that its problem:
@@ -187,11 +188,10 @@ void UnrevisedLemkeSolver<T>::Solve(
           prog.FindDecisionVariableIndex(binding.variables()(i));
       x_sol(variable_index) = constraint_solution(i);
     }
-    result->set_optimal_cost(0.0);
   }
+  result->set_optimal_cost(0.0);
   result->set_x_val(x_sol);
   result->set_solution_result(SolutionResult::kSolutionFound);
-  return;
 }
 
 template <typename T>
