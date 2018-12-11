@@ -157,7 +157,7 @@ void AddGripperPads(MultibodyPlant<double>* plant,
     plant->RegisterCollisionGeometry(finger, X_FS, Sphere(kPadMinorRadius),
                                      "collision" + std::to_string(i), friction);
 
-    const geometry::VisualMaterial red(Vector4<double>(1.0, 0.0, 0.0, 1.0));
+    const Vector4<double> red(1.0, 0.0, 0.0, 1.0);
     plant->RegisterVisualGeometry(finger, X_FS, Sphere(kPadMinorRadius),
                                   "visual" + std::to_string(i), red);
   }

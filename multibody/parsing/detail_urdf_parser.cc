@@ -7,7 +7,6 @@
 #include <Eigen/Dense>
 #include <tinyxml2.h>
 
-#include "drake/geometry/visual_material.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
@@ -26,7 +25,6 @@ using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
-using geometry::VisualMaterial;
 using multibody_plant::CoulombFriction;
 using multibody_plant::MultibodyPlant;
 using tinyxml2::XMLDocument;
@@ -127,10 +125,14 @@ void ParseBody(const multibody::PackageMap& package_map,
          visual_node = visual_node->NextSiblingElement("visual")) {
       geometry::GeometryInstance geometry_instance =
           ParseVisual(body_name, package_map, root_dir, visual_node, materials);
+      // The parsing should *always* produce an IllustrationProperties
+      // instance, even if it is empty.
+      DRAKE_DEMAND(
+          geometry_instance.illustration_properties() != nullptr);
       plant->RegisterVisualGeometry(
           body, geometry_instance.pose(), geometry_instance.shape(),
-          geometry_instance.name(), geometry_instance.visual_material(),
-          scene_graph);
+          geometry_instance.name(),
+          *geometry_instance.illustration_properties(), scene_graph);
     }
 
     for (XMLElement* collision_node = node->FirstChildElement("collision");

@@ -1080,8 +1080,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// @param[in] name
   ///   The name for the geometry. It must satisfy the requirements defined in
   ///   drake::geometry::GeometryInstance.
-  /// @param[in] material
-  ///   The visual material to assign to the geometry.
+  /// @param[in] properties
+  ///   The illustration properties for this geometry.
   /// @param[out] scene_graph
   ///   (Deprecated) A valid non nullptr to a SceneGraph on which geometry will
   ///   get registered.
@@ -1092,11 +1092,22 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
-      const geometry::VisualMaterial& material,
+      const geometry::IllustrationProperties& properties,
       geometry::SceneGraph<T>* scene_graph = nullptr);
 
-  /// Overload for visual geometry registration; it implicitly assigns the
-  /// default material.
+  /// Overload for visual geometry registration; it converts the `diffuse_color`
+  /// (RGBA with values in the range [0, 1]) into a
+  /// geometry::ConnectDrakeVisualizer()-compatible set of
+  /// geometry::IllustrationProperties.
+  geometry::GeometryId RegisterVisualGeometry(
+      const Body<T>& body, const Isometry3<double>& X_BG,
+      const geometry::Shape& shape, const std::string& name,
+      const Vector4<double>& diffuse_color,
+      geometry::SceneGraph<T>* scene_graph = nullptr);
+
+  /// Overload for visual geometry registration; it relies on the downstream
+  /// geometry::IllustrationProperties _consumer_ to provide default parameter
+  /// values (see @ref geometry_roles for details).
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
@@ -1759,7 +1770,6 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape,
       const std::string& name,
-      const optional<geometry::VisualMaterial>& material,
       geometry::SceneGraph<T>* scene_graph);
 
   bool body_has_registered_frame(const Body<T>& body) const {
