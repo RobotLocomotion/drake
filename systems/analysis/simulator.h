@@ -103,7 +103,7 @@ value `{tₑ, x⁻(tₑ)}`, where tₑ is _no later_ than a given tₘₐₓ.
 procedure Step(tₛ, x⁻(tₛ), tₘₐₓ)
 
   // Update any variables (no restrictions).
-  x*(tₛ) ← DoAnyUnrestrictedUpdates(tₛ, x(tₛ⁻))
+  x*(tₛ) ← DoAnyUnrestrictedUpdates(tₛ, x⁻(tₛ))
 
   // ----------------------------------
   // Time and state are at {tₛ, x*(tₛ)}
@@ -554,7 +554,7 @@ class Simulator {
 
   // The time that the next timed event is to be handled. This value is set in
   // both Initialize() and StepTo().
-  T next_timed_event_time_{-1};
+  T next_timed_event_time_{std::numeric_limits<double>::quiet_NaN()};
 
   // Pre-allocated temporaries for updated discrete states.
   std::unique_ptr<DiscreteValues<T>> discrete_updates_;
@@ -644,6 +644,10 @@ void Simulator<T>::Initialize() {
   DRAKE_DEMAND(per_step_events_ != nullptr);
   system_.GetPerStepEvents(*context_, per_step_events_.get());
 
+  // Allocate timed events collection.
+  timed_events_ = system_.AllocateCompositeEventCollection();
+  DRAKE_DEMAND(timed_events_ != nullptr);
+
   // Ensure that CalcNextUpdateTime() can return the current time by perturbing
   // current time as slightly toward negative infinity as we can allow.
   const T current_time = context_->get_time();
@@ -651,8 +655,6 @@ void Simulator<T>::Initialize() {
   context_->set_time(nexttoward(current_time, -inf));
 
   // Get the next timed event.
-  timed_events_ = system_.AllocateCompositeEventCollection();
-  DRAKE_DEMAND(timed_events_ != nullptr);
   next_timed_event_time_ =
       system_.CalcNextUpdateTime(*context_, timed_events_.get());
 
