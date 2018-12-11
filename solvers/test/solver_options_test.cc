@@ -102,10 +102,11 @@ GTEST_TEST(SolverOptionsTest, CheckOptionKeysForSolver) {
 
   // Check an option not set for id1.
   solver_options.SetOption(id1, "key2", 1.3);
-  DRAKE_EXPECT_THROWS_MESSAGE(solver_options.CheckOptionKeysForSolver(
-                                  id1, {"key1"}, {"key2"}, {"key3"}),
-                              std::invalid_argument,
-                              "key2 is not allowed in the SolverOptions.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver_options.CheckOptionKeysForSolver(id1, {"key1"}, {"key2"},
+                                              {"key3"}),
+      std::invalid_argument,
+      "key2 is not allowed in the SolverOptions for id1.");
 
   EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(id1, {"key1", "key2"},
                                                           {"key2"}, {"key3"}));

@@ -143,11 +143,13 @@ namespace {
 template <typename T>
 void CheckOptionKeysForSolverHelper(
     const std::unordered_map<std::string, T>& key_vals,
-    const std::unordered_set<std::string>& allowable_keys) {
+    const std::unordered_set<std::string>& allowable_keys,
+    const std::string& solver_name) {
   for (const auto& key_val : key_vals) {
     if (allowable_keys.count(key_val.first) == 0) {
       throw std::invalid_argument(key_val.first +
-                                  " is not allowed in the SolverOptions.");
+                                  " is not allowed in the SolverOptions for " +
+                                  solver_name + ".");
     }
   }
 }
@@ -158,9 +160,12 @@ void SolverOptions::CheckOptionKeysForSolver(
     const std::unordered_set<std::string>& double_keys,
     const std::unordered_set<std::string>& int_keys,
     const std::unordered_set<std::string>& str_keys) const {
-  CheckOptionKeysForSolverHelper(GetOptionsDouble(solver_id), double_keys);
-  CheckOptionKeysForSolverHelper(GetOptionsInt(solver_id), int_keys);
-  CheckOptionKeysForSolverHelper(GetOptionsStr(solver_id), str_keys);
+  CheckOptionKeysForSolverHelper(GetOptionsDouble(solver_id), double_keys,
+                                 solver_id.name());
+  CheckOptionKeysForSolverHelper(GetOptionsInt(solver_id), int_keys,
+                                 solver_id.name());
+  CheckOptionKeysForSolverHelper(GetOptionsStr(solver_id), str_keys,
+                                 solver_id.name());
 }
 
 }  // namespace solvers
