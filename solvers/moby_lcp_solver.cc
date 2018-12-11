@@ -159,7 +159,6 @@ SolutionResult MobyLCPSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::Solve(
 
 template <>
 void MobyLCPSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::Solve(
-    // NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
     const MathematicalProgram&, const optional<Eigen::VectorXd>&,
     const optional<SolverOptions>&, MathematicalProgramResult*) const {
   DRAKE_ABORT_MSG(
@@ -174,6 +173,7 @@ void MobyLCPSolver<T>::Solve(const MathematicalProgram& prog,
                              const optional<Eigen::VectorXd>& initial_guess,
                              const optional<SolverOptions>& solver_options,
                              MathematicalProgramResult* result) const {
+  *result = {};
   // Moby doesn't use initial guess or the solver options.
   unused(initial_guess);
   unused(solver_options);
@@ -248,8 +248,8 @@ void MobyLCPSolver<T>::Solve(const MathematicalProgram& prog,
           prog.FindDecisionVariableIndex(binding.variables()(i));
       x_sol(variable_index) = constraint_solution(i);
     }
-    result->set_optimal_cost(0.0);
   }
+  result->set_optimal_cost(0.0);
   result->set_x_val(x_sol);
   result->set_solution_result(SolutionResult::kSolutionFound);
 }

@@ -273,7 +273,7 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
   void Solve(const MathematicalProgram& prog,
-             const optional<Eigen::VectorXd>& nitial_guess,
+             const optional<Eigen::VectorXd>& initial_guess,
              const optional<SolverOptions>& solver_options,
              MathematicalProgramResult* result) const override;
 
