@@ -187,6 +187,7 @@ PYTHON_SITE_PACKAGES_RELPATH = "{site_packages_relpath}"
         ext_suffix = py_info.ext_suffix,
         site_packages_relpath = py_info.site_packages_relpath,
     )
+    print("py_info:\n  {}".format(py_info))
     repository_ctx.file(
         "version.bzl",
         content = skylark_content,
