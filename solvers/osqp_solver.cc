@@ -232,10 +232,6 @@ void OsqpSolver::Solve(const MathematicalProgram& prog,
         "problem.");
   }
 
-  SolverOptions merged_solver_options =
-      solver_options.value_or(SolverOptions());
-  merged_solver_options.Merge(prog.solver_options());
-
   // OSQP solves a convex quadratic programming problem
   // min 0.5 xᵀPx + qᵀx
   // s.t l ≤ Ax ≤ u
@@ -273,6 +269,10 @@ void OsqpSolver::Solve(const MathematicalProgram& prog,
   OSQPSettings* settings =
       static_cast<OSQPSettings*>(c_malloc(sizeof(OSQPSettings)));
   osqp_set_default_settings(settings);
+
+  SolverOptions merged_solver_options =
+      solver_options.value_or(SolverOptions());
+  merged_solver_options.Merge(prog.solver_options());
   SetOsqpSolverSettings(merged_solver_options, settings);
 
   // Setup workspace.
