@@ -229,7 +229,6 @@ void MobyLCPSolver<T>::Solve(const MathematicalProgram& prog,
   // implementation but might perform better if the solver were to parallelize
   // internally.
 
-  // We don't actually indicate different results.
   result->set_solver_id(MobyLcpSolverId::id());
 
   Eigen::VectorXd x_sol(prog.num_vars());
