@@ -20,6 +20,31 @@ namespace multibody {
 namespace multibody_plant {
 namespace {
 
+// Verifies that the URDF loader with specified package map works as expected.
+GTEST_TEST(MultibodyPlantUrdfParserTest, PackageMapSpecified) {
+  // We start with the world and default model instances (model_instance.h
+  // explains why there are two).
+  MultibodyPlant<double> plant;
+  ASSERT_EQ(plant.num_model_instances(), 2);
+
+  const std::string full_urdf_filename = FindResourceOrThrow(
+      "drake/manipulation/models/iiwa_description/"
+          "urdf/iiwa14_no_collision.urdf");
+  const std::string package_path = FindResourceOrThrow(
+      "drake/manipulation/models/iiwa_description");
+
+  // Construct the PackageMap.
+  parsing::PackageMap package_map;
+  package_map.PopulateFromFolder(package_path);
+
+  // Read in the URDF file.
+  AddModelFromUrdfFile(full_urdf_filename, package_map, &plant);
+  plant.Finalize();
+
+  // Verify the number of model instances.
+  EXPECT_EQ(plant.num_model_instances(), 3);
+}
+
 GTEST_TEST(MultibodyPlantUrdfParserTest, DoublePendulum) {
   MultibodyPlant<double> plant;
   SceneGraph<double> scene_graph;

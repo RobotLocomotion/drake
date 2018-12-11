@@ -49,7 +49,7 @@ ModelInstanceIndex AddModelFromSdfFile(
     geometry::SceneGraph<double>* scene_graph = nullptr);
 
 /// Alternate version of AddModelFromSdfFile that does not accept a
-/// PackageMap argument.
+/// PackageMap argument (the parser maintains its own PackageMap).
 ModelInstanceIndex AddModelFromSdfFile(
     const std::string& file_name,
     const std::string& model_name,

@@ -502,6 +502,21 @@ ModelInstanceIndex AddModelFromUrdfFile(
     const std::string& model_name_in,
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
+  parsing::PackageMap package_map;
+
+  const std::string full_path = parsing::GetFullPath(file_name);
+  package_map.PopulateUpstreamToDrake(full_path);
+
+  return AddModelFromUrdfFile(
+      file_name, model_name_in, package_map, plant, scene_graph);
+}
+
+ModelInstanceIndex AddModelFromUrdfFile(
+    const std::string& file_name,
+    const std::string& model_name_in,
+    const parsing::PackageMap& package_map,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
@@ -523,10 +538,6 @@ ModelInstanceIndex AddModelFromUrdfFile(
     root_dir = full_path.substr(0, found);
   }
 
-  PackageMap package_map;
-  // TODO(sam.creasey) Add support for using an existing package map.
-  package_map.PopulateUpstreamToDrake(full_path);
-
   if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
     plant->RegisterAsSourceForSceneGraph(scene_graph);
   }
@@ -540,6 +551,14 @@ ModelInstanceIndex AddModelFromUrdfFile(
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   return AddModelFromUrdfFile(file_name, "", plant, scene_graph);
+}
+
+ModelInstanceIndex AddModelFromUrdfFile(
+    const std::string& file_name,
+    const parsing::PackageMap& package_map,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph) {
+  return AddModelFromUrdfFile(file_name, "", package_map, plant, scene_graph);
 }
 
 }  // namespace parsing
