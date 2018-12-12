@@ -159,8 +159,6 @@ class RgbdCamera final : public LeafSystem<double> {
   const OutputPort<double>& camera_base_pose_output_port() const;
 
  private:
-  void InitPorts(const std::string& name);
-
   // These are the calculator methods for the four output ports.
   void CalcColorImage(const Context<double>& context,
                       ImageRgba8U* color_image) const;

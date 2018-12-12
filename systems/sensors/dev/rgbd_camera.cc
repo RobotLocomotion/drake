@@ -7,6 +7,7 @@
 
 #include "drake/geometry/dev/render/camera_properties.h"
 #include "drake/geometry/dev/scene_graph.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/zero_order_hold.h"
@@ -28,16 +29,11 @@ RgbdCamera::RgbdCamera(const std::string& name, const Eigen::Vector3d& p_WB_W,
                        const Eigen::Vector3d& rpy_WB_W,
                        const DepthCameraProperties& properties,
                        bool show_window)
-    : parent_frame_(SceneGraph<double>::world_frame_id()),
-      show_window_(show_window),
-      color_camera_info_(properties.width, properties.height, properties.fov_y),
-      depth_camera_info_(properties.width, properties.height, properties.fov_y),
-      properties_(properties),
-      X_PB_(Eigen::Translation3d(p_WB_W[0], p_WB_W[1], p_WB_W[2]) *
-            Eigen::Isometry3d(math::RollPitchYaw<double>(rpy_WB_W)
-                                  .ToMatrix3ViaRotationMatrix())) {
-  InitPorts(name);
-}
+    : RgbdCamera(name, SceneGraph<double>::world_frame_id(),
+                 math::RigidTransform<double>(
+                     math::RollPitchYaw<double>(rpy_WB_W), p_WB_W)
+                     .GetAsIsometry3(),
+                 properties, show_window) {}
 
 RgbdCamera::RgbdCamera(const std::string& name, FrameId parent_frame,
                        const Isometry3<double>& X_PB,
@@ -49,10 +45,6 @@ RgbdCamera::RgbdCamera(const std::string& name, FrameId parent_frame,
       depth_camera_info_(properties.width, properties.height, properties.fov_y),
       properties_(properties),
       X_PB_(X_PB) {
-  InitPorts(name);
-}
-
-void RgbdCamera::InitPorts(const std::string& name) {
   this->set_name(name);
 
   query_object_input_port_ = &this->DeclareAbstractInputPort(
@@ -80,6 +72,14 @@ void RgbdCamera::InitPorts(const std::string& name) {
 
   camera_base_pose_port_ = &this->DeclareVectorOutputPort(
       "X_WB", rendering::PoseVector<double>(), &RgbdCamera::CalcPoseVector);
+
+  const double kDepth16UOverflowDistance =
+      std::numeric_limits<uint16_t>::max() / 1000.;
+  if (properties.z_far() > kDepth16UOverflowDistance) {
+    drake::log()->warn(
+        "Max depth is {}, larger than {}, depth_image_16u output will overflow",
+        properties.z_far(), kDepth16UOverflowDistance);
+  }
 }
 
 const InputPort<double>& RgbdCamera::query_object_input_port() const {
