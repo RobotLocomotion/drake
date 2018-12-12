@@ -395,10 +395,10 @@ class TestMultibodyTree(unittest.TestCase):
 
         plant = MultibodyPlant()
         parser = Parser(plant)
-        iiwa_model = parser.AddModelFromSdfFile(
-            file_name=iiwa_sdf_path, model_name='robot', plant=plant)
-        gripper_model = parser.AddModelFromSdfFile(
-            file_name=wsg50_sdf_path, model_name='gripper', plant=plant)
+        iiwa_model = parser.AddModelFromFile(
+            file_name=iiwa_sdf_path, model_name='robot')
+        gripper_model = parser.AddModelFromFile(
+            file_name=wsg50_sdf_path, model_name='gripper')
         plant.Finalize()
 
         # Test that we can get an actuation input port and a continuous state
@@ -634,6 +634,8 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTrue(np.allclose(v_gripper_desired, v_gripper))
 
         # Verify that SetPositionsInArray() and SetVelocitiesInArray() works.
+        q = np.linspace(1, nq, nq)
+        v = np.linspace(1, nv, nv)
         tree.SetPositionsInArray(iiwa_model, np.zeros([len(q_iiwa)]), q)
         self.assertTrue(np.allclose(
             tree.GetPositionsFromArray(iiwa_model, q),
@@ -652,8 +654,9 @@ class TestMultibodyTree(unittest.TestCase):
         # MapVelocityToQDot() and MapQDotToVelocity() work.
         timestep = 0.0
         plant = MultibodyPlant(timestep)
-        iiwa_model = AddModelFromSdfFile(
-            file_name=iiwa_sdf_path, model_name='robot', plant=plant)
+        parser = Parser(plant)
+        iiwa_model = parser.AddModelFromFile(
+            file_name=iiwa_sdf_path, model_name='robot')
         plant.WeldFrames(
             A=plant.world_frame(),
             B=plant.GetFrameByName("iiwa_link_0", iiwa_model))
