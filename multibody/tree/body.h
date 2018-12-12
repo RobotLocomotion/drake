@@ -216,14 +216,15 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
 
   /// Returns the pose `X_WB` of this body B in the world frame W as a function
   /// of the state of the model stored in `context`.
-  const Isometry3<T>& EvalPoseInWorld(systems::Context<T>& context) const {
+  const Isometry3<T>& EvalPoseInWorld(
+      const systems::Context<T>& context) const {
     return this->get_parent_tree().EvalBodyPoseInWorld(context, *this);
   }
 
   /// Returns the spatial velocity `V_WB` of this body B in the world frame W
   /// as a function of the state of the model stored in `context`.
   const SpatialVelocity<T>& EvalSpatialVelocityInWorld(
-      systems::Context<T>& context) const {
+      const systems::Context<T>& context) const {
     return this->get_parent_tree().EvalBodySpatialVelocityInWorld(
         context, *this);
   }

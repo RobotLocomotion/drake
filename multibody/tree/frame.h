@@ -109,7 +109,7 @@ class Frame : public FrameBase<T> {
   /// For `this` frame F, returns `X_WF`.
   /// @note Body::EvalPoseInWorld() provides a more efficient way to obtain
   /// the pose for a body frame.
-  Isometry3<T> CalcPoseInWorld(systems::Context<T>& context) const {
+  Isometry3<T> CalcPoseInWorld(const systems::Context<T>& context) const {
     return this->get_parent_tree().CalcRelativeTransform(
         context, this->get_parent_tree().world_frame(), *this);
   }
@@ -118,7 +118,7 @@ class Frame : public FrameBase<T> {
   /// `frame_M` as a function of the state of the model stored in `context`.
   /// @see CalcPoseInWorld().
   Isometry3<T> CalcPose(
-      systems::Context<T>& context, const Frame<T>& frame_M) const {
+      const systems::Context<T>& context, const Frame<T>& frame_M) const {
     return this->get_parent_tree().CalcRelativeTransform(
         context, frame_M, *this);
   }
@@ -128,7 +128,7 @@ class Frame : public FrameBase<T> {
   /// @note Body::EvalSpatialVelocityInWorld() provides a more efficient way to
   /// obtain the spatial velocity for a body frame.
   SpatialVelocity<T> CalcSpatialVelocityInWorld(
-      systems::Context<T>& context) const {
+      const systems::Context<T>& context) const {
     const Isometry3<T>& X_WB = body().EvalPoseInWorld(context);
     const Vector3<T> p_BF = CalcPoseInBodyFrame(context).translation();
     const Vector3<T> p_BF_W = X_WB.linear() * p_BF;
@@ -142,7 +142,7 @@ class Frame : public FrameBase<T> {
   /// state of the model stored in `context`.
   /// @see CalcSpatialVelocityInWorld().
   SpatialVelocity<T> CalcSpatialVelocity(
-      systems::Context<T>& context,
+      const systems::Context<T>& context,
       const Frame<T>& frame_M, const Frame<T>& frame_E) const {
     const Matrix3<T> R_WM = frame_M.CalcPoseInWorld(context).linear();
     const Vector3<T> p_MF =
