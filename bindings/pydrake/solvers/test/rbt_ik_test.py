@@ -14,6 +14,35 @@ class TestRBTIK(unittest.TestCase):
             os.path.join(pydrake.getDrakePath(),
                          "examples/pendulum/Pendulum.urdf"))
 
+    def testSingleTimeKinematicConstraint(self):
+        # Demonstrate that a subclass of SingleTimeKinematicConstraint
+        # inherits functional `eval` and `bounds` methods.
+
+        q = np.zeros(self.r.get_num_positions())
+        kinsol = self.r.doKinematics(q)
+        ub = np.array([0.0, 0.0, -0.45])
+        lb = np.array([0.0, 0.0, -0.55])
+        # This point, at the zero configuration, is
+        # at [0, 0, -1] in world frame as well.
+        body_pt = np.array([0., 0., -1])
+        constraint = ik.WorldPositionConstraint(
+            self.r, self.r.FindBodyIndex("arm"),
+            body_pt, lb, ub)
+        self.assertIsInstance(constraint, ik.SingleTimeKinematicConstraint)
+        lb_inspect, ub_inspect = constraint.bounds(t=0.)
+        self.assertTrue(np.allclose(lb_inspect, lb))
+        self.assertTrue(np.allclose(ub_inspect, ub))
+        c, dc_dq = constraint.eval(0., kinsol)
+        # Because the floating base position is all 0's and the arm
+        # origin is not offset from the floating base, the world
+        # point should equal the body point.
+        c_expected = body_pt
+        dc_dq_expected = np.array([[1., 0., 0., 0., -1., 0., -1.],
+                                   [0., 1., 0., 1., 0., 0., 0.],
+                                   [0., 0., 1., 0., 0., 0., 0.]])
+        self.assertTrue(np.allclose(c, c_expected))
+        self.assertTrue(np.allclose(dc_dq, dc_dq_expected))
+
     def testPostureConstraint(self):
         q = -0.9
         posture_constraint = ik.PostureConstraint(self.r)
