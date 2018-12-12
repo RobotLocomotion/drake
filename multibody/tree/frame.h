@@ -104,19 +104,29 @@ class Frame : public FrameBase<T> {
     return GetFixedPoseInBodyFrame() * X_FQ;
   }
 
+  /// Computes and returns the pose `X_WF` of `this` frame F in the world
+  /// frame W as a function of the state of the model stored in `context`.
   /// For `this` frame F, returns `X_WF`.
+  /// @note Body::EvalPoseInWorld() provides a more efficient way to obtain
+  /// the pose for a body frame.
   Isometry3<T> CalcPoseInWorld(systems::Context<T>& context) const {
     return this->get_parent_tree().CalcRelativeTransform(
         context, this->get_parent_tree().world_frame(), *this);
   }
 
-  /// For `this` frame F, returns `X_MF`.
+  /// Computes and returns the pose `X_MF` of `this` frame F in measured in
+  /// `frame_M` as a function of the state of the model stored in `context`.
+  /// @see CalcPoseInWorld().
   Isometry3<T> CalcPose(
       systems::Context<T>& context, const Frame<T>& frame_M) const {
     return this->get_parent_tree().CalcRelativeTransform(
         context, frame_M, *this);
   }
 
+  /// Computes and returns the spatial velocity `V_WF` of `this` frame F in the
+  /// world frame W as a function of the state of the model stored in `context`.
+  /// @note Body::EvalSpatialVelocityInWorld() provides a more efficient way to
+  /// obtain the spatial velocity for a body frame.
   SpatialVelocity<T> CalcSpatialVelocityInWorld(
       systems::Context<T>& context) const {
     const Isometry3<T>& X_WB = body().EvalPoseInWorld(context);
@@ -127,7 +137,10 @@ class Frame : public FrameBase<T> {
     return V_WF;
   }
 
-  /// Returns `V_MF_E` for `this` frame F.
+  /// Computes and returns the spatial velocity `V_MF_E` of `this` frame F
+  /// measured in `frame_M` and expressed in `frame_E` as a function of the
+  /// state of the model stored in `context`.
+  /// @see CalcSpatialVelocityInWorld().
   SpatialVelocity<T> CalcSpatialVelocity(
       systems::Context<T>& context,
       const Frame<T>& frame_M, const Frame<T>& frame_E) const {
