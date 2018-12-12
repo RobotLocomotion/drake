@@ -550,7 +550,7 @@ class TestMultibodyTree(unittest.TestCase):
             context, iiwa_model), np.zeros(nq_iiwa + nv_iiwa)))
 
     def test_model_instance_state_access_by_array(self):
-                # Create a MultibodyPlant with a kuka arm and a schunk gripper.
+        # Create a MultibodyPlant with a kuka arm and a schunk gripper.
         # the arm is welded to the world, the gripper is welded to the
         # arm's end effector.
         wsg50_sdf_path = FindResourceOrThrow(
