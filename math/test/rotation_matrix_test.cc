@@ -110,6 +110,7 @@ GTEST_TEST(RotationMatrix, MakeFromOrthonormalRowsOrColumns) {
 
   // Test that RotationMatrix R2 is the inverse (transpose) of R2.
   EXPECT_TRUE(R.IsExactlyEqualTo(R2.inverse()));
+  EXPECT_TRUE(R.IsExactlyEqualTo(R2.transpose()));
 
   // The next test intentionally creates an invalid RotationMatrix that deviates
   // from a valid RotationMatrix by a factor of 8.  The factor of 8 times the
@@ -292,8 +293,8 @@ GTEST_TEST(RotationMatrix, ConstructorWithRollPitchYaw) {
   EXPECT_TRUE(R_rpy.IsExactlyEqualTo(R_expected));
 }
 
-// Test calculating the inverse of a RotationMatrix.
-GTEST_TEST(RotationMatrix, Inverse) {
+// Test calculating the inverse and transpose of a RotationMatrix.
+GTEST_TEST(RotationMatrix, InverseAndTranspose) {
   const double cos_theta = std::cos(0.5);
   const double sin_theta = std::sin(0.5);
   Matrix3d m;
@@ -301,9 +302,11 @@ GTEST_TEST(RotationMatrix, Inverse) {
       0, cos_theta, sin_theta,
       0, -sin_theta, cos_theta;
   RotationMatrix<double> R(m);
-  RotationMatrix<double> RRinv = R * R.inverse();
+  RotationMatrix<double> RRinverse   = R * R.inverse();
+  RotationMatrix<double> RRtranspose = R * R.transpose();
   const RotationMatrix<double>& I = RotationMatrix<double>::Identity();
-  EXPECT_TRUE(RRinv.IsNearlyEqualTo(I, 8 * kEpsilon));
+  EXPECT_TRUE(RRinverse.IsNearlyEqualTo(I, 8 * kEpsilon));
+  EXPECT_TRUE(RRtranspose.IsNearlyEqualTo(I, 8 * kEpsilon));
 }
 
 // Test rotation matrix multiplication and IsNearlyEqualTo.
@@ -544,7 +547,8 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   const RotationMatrix<double> I = R * R.inverse();
   EXPECT_TRUE(I.IsNearlyEqualTo(RotationMatrix<double>(Matrix3d::Identity()),
-                                10 * kEpsilon));
+                                8 * kEpsilon));
+  EXPECT_TRUE(R.inverse().IsNearlyEqualTo(R.transpose(), 8 * kEpsilon));
 }
 
 
