@@ -1,5 +1,6 @@
 #include "drake/systems/sensors/dev/rgbd_camera.h"
 
+#include <limits>
 #include <string>
 #include <utility>
 
@@ -75,10 +76,10 @@ RgbdCamera::RgbdCamera(const std::string& name, FrameId parent_frame,
 
   const double kDepth16UOverflowDistance =
       std::numeric_limits<uint16_t>::max() / 1000.;
-  if (properties.z_far() > kDepth16UOverflowDistance) {
+  if (properties.z_far > kDepth16UOverflowDistance) {
     drake::log()->warn(
         "Max depth is {}, larger than {}, depth_image_16u output will overflow",
-        properties.z_far(), kDepth16UOverflowDistance);
+        properties.z_far, kDepth16UOverflowDistance);
   }
 }
 
