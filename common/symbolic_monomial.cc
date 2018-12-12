@@ -251,8 +251,8 @@ Monomial& Monomial::pow_in_place(const int p) {
     for (auto& item : powers_) {
       int& exponent{item.second};
       exponent *= p;
-      total_degree_ += (exponent * (p - 1));
     }
+    total_degree_ *= p;
   }  // If p == 1, NO OP.
   return *this;
 }
