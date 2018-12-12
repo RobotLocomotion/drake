@@ -250,10 +250,9 @@ Monomial& Monomial::pow_in_place(const int p) {
   } else if (p > 1) {
     for (auto& item : powers_) {
       int& exponent{item.second};
-      const int old_exponent = item.second;
       exponent *= p;
-      total_degree_ += exponent - old_exponent;
     }
+    total_degree_ *= p;
   }  // If p == 1, NO OP.
   return *this;
 }
