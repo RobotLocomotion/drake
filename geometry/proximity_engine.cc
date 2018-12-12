@@ -354,12 +354,10 @@ bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
 // A functor to support DistanceFromPointCallback(). It computes the signed
 // distance to a query point from a supported geometry.  Its constructor takes:
 // @param id_in    the id of the geometry,
-// @param X_WG_in  pose of the geometry in World frame.
-// @param p_WQ     position of the query point Q in World frame.
+// @param X_WG_in  pose of the geometry in World frame,
+// @param p_WQ_in  position of the query point Q in World frame.
 //
-// Each overloaded operator() takes a geometry and returns the signed distance,
-// the nearest point on the boundary, and the gradient vector; all encapsulated
-// in SignedDistanceToPoint.
+// Each operator() takes a geometry and returns a SignedDistanceToPoint.
 struct DistanceToPoint {
   DistanceToPoint(const GeometryId id_in,
                   const Isometry3<double>& X_WG_in,
@@ -397,16 +395,17 @@ struct DistanceToPoint {
 
     // Position vector of the nearest point N on G's surface from the query
     // point Q, expressed in G's frame.
-    const Vector3d p_GN_W = radius * grad_W;
-    const Vector3d p_GN_G = X_WG.inverse() * p_GN_W;
+    const Vector3d p_WN = p_WG + radius * grad_W;
+    const Vector3d p_GN = X_WG.inverse() * p_WN;
 
-    return SignedDistanceToPoint<double>{geometry_id, p_GN_G, distance, grad_W};
+    return SignedDistanceToPoint<double>{geometry_id, p_GN, distance, grad_W};
   }
 
   // Overload for Box.
   SignedDistanceToPoint<double> operator()(const fcl::Boxd& box) {
     // TODO(DamrongGuoy): Move most code of this function into FCL.
-    const Vector3d p_GQ_G = X_WG * p_WQ;
+    // Express the given query point Q in the frame of the box geometry G.
+    const Vector3d p_GQ_G = X_WG.inverse() * p_WQ;
 
     // The box B is an axis-aligned box [-h(0),h(0)]x[-h(1),h(1)]x[-h(2),h(2)]
     // centered at the origin, where h(i) is half the size of the box in the
@@ -448,28 +447,6 @@ struct DistanceToPoint {
     Vector3<bool> is_clamp;
     for (int i = 0; i < 3; ++i)
       p_GC_G(i) = clamping(i, p_GQ_G(i), &is_clamp(i));
-
-    // For a query point Q inside the box, we pick the axis whose coordinate is
-    // closest to the boundary value ±half_size(i). If Q is equidistant to
-    // multiple faces of the box, we prioritize according to an arbitrary
-    // ordering: +x,-x,+y,-y,+z,-z as described in
-    // QueryObject::ComputeSignedDistanceToPoint.
-    //
-    // @pre Q is inside the box.
-    auto extremal_axis = [&half_size](const Vector3d& p_GQ) {
-      double min_diff = std::numeric_limits<double>::infinity();
-      int axis = 0;
-      for (int i = 0; i < 3; ++i) {
-        for (auto bound : {half_size(i), -half_size(i)}) {
-          double diff = std::abs(bound - p_GQ(i));
-          if (diff < min_diff) {
-            min_diff = diff;
-            axis = i;
-          }
-        }
-      }
-      return axis;
-    };
 
     // Initialize the position of the nearest point N on ∂B as that of C.
     Vector3d p_GN_G = p_GC_G;
@@ -519,9 +496,24 @@ struct DistanceToPoint {
       grad_G.normalize();
     } else {
       // Q is inside the box.
-      // Note that a query point on the medial axis has multiple nearest
-      // points, so its gradient is undefined. In that case, we pick the first
-      // nearest point we found.
+      // We pick the axis whose coordinate is closest to the boundary value
+      // ±half_size(i). If Q is equidistant to multiple faces of the box, we
+      // prioritize according to an arbitrary ordering: +x,-x,+y,-y,+z,-z as
+      // described in QueryObject::ComputeSignedDistanceToPoint.
+      auto extremal_axis = [&half_size](const Vector3d& p_GQ) {
+        double min_diff = std::numeric_limits<double>::infinity();
+        int axis = 0;
+        for (int i = 0; i < 3; ++i) {
+          for (auto bound : {half_size(i), -half_size(i)}) {
+            double diff = std::abs(bound - p_GQ(i));
+            if (diff < min_diff) {
+              min_diff = diff;
+              axis = i;
+            }
+          }
+        }
+        return axis;
+      };
       int axis = extremal_axis(p_GQ_G);
       bool positive_or_zero = (p_GQ_G(axis) >= 0.);
       p_GN_G(axis) = positive_or_zero ? half_size(axis) : -half_size(axis);
@@ -529,7 +521,8 @@ struct DistanceToPoint {
       distance = std::abs(p_GQ_G(axis)) - half_size(axis);
     }
 
-    Vector3d grad_W = X_WG.linear().inverse() * grad_G;
+    // Use X_WG.linear() for vectors. Use X_WG for points.
+    Vector3d grad_W = X_WG.linear() * grad_G;
     return SignedDistanceToPoint<double>{geometry_id, p_GN_G, distance, grad_W};
   }
 };

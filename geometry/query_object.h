@@ -228,10 +228,9 @@ class QueryObject {
 
    @note For a box, if a point p is inside the box, and it is equidistant to
    to multiple nearest faces, the signed distance function φᵢ(p) at p will have
-   an undefined gradient vector. Each nearest face has a nearest point to p
-   offset from p in one of the box's local axis directions. We arbitrarily
-   select such a point from these local axis directions with the priority +x,-x,
-   +y,-y,+z,-z, and set ∇φᵢ(p) to that direction.
+   an undefined gradient vector. There is a nearest point candidate
+   associated with each nearest face. We pick the point associated with the
+   box face in the following priority order: +x,-x,+y,-y,+z,-z.
 
    @note The signed distance function is a continuous function with respect to
    the position of the query point, but its gradient vector field may

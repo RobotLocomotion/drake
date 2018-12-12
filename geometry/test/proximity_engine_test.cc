@@ -10,6 +10,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -57,6 +58,10 @@ class ProximityEngineTester {
 };
 
 namespace {
+
+using math::RigidTransformd;
+using math::RollPitchYawd;
+using math::RotationMatrixd;
 
 using Eigen::AngleAxisd;
 using Eigen::Isometry3d;
@@ -343,7 +348,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsMultipleAnchored) {
 // ray from the origin to the query point and hence (2,3,6)/7.
 
 // Reports distances within 1e-15 tolerance, both outside and inside.
-GTEST_TEST(ProximityEngineTests, SignedDistanceToPointSingleAnchoredSphere) {
+GTEST_TEST(SignedDistanceToPoint, SingleAnchoredSphere) {
   using std::abs;
 
   ProximityEngine<double> engine;
@@ -379,7 +384,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceToPointSingleAnchoredSphere) {
 }
 
 // Different reports depending on the threshold.
-GTEST_TEST(ProximityEngineTests, SignedDistanceToPointThreshold) {
+GTEST_TEST(SignedDistanceToPoint, Threshold) {
   ProximityEngine<double> engine;
   std::vector<GeometryId> geometry_map;
 
@@ -406,7 +411,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceToPointThreshold) {
 // Reports an arbitrary gradient vector (1,0,0) (as defined in the
 // QueryObject::ComputeSignedDistanceToPoint() documentation) at the center of
 // the sphere.
-GTEST_TEST(ProximityEngineTests, SignedDistanceToPointCenterOfSphere) {
+GTEST_TEST(SignedDistanceToPoint, CenterOfSphere) {
   ProximityEngine<double> engine;
   std::vector<GeometryId> geometry_map;
 
@@ -424,12 +429,48 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceToPointCenterOfSphere) {
   EXPECT_EQ(results[0].grad_W, Vector3d(1.0, 0.0, 0.0));
 }
 
+// We apply a rigid transform X_WG to both the sphere G and the query point Q.
+//
+// Before applying X_WG, the position of Q is (2,3,6) at distance 7.0 from
+// the origin. Before applying X_WG, the sphere is centered at the origin with
+// radius 0.7. The signed distance from G to Q is 7-0.7 = 6.3.
+//
+//                  World frame                G's frame
+// G's center      X_WG.translation()           (0,0,0)
+// Q               X_WG * (2,3,6)               (2,3,6)
+// nearest point   X_WG * (0.2,0.3,0.6)         (0.2,0.3,0.6)
+// distance        6.3                          6.3
+// gradient        X_WG.rotation()*(2,3,6)/7    (2,3,6)/7
+GTEST_TEST(SignedDistanceToPoint, RigidTransformSphere) {
+  ProximityEngine<double> engine;
+  std::vector<GeometryId> geometry_map;
+
+  Sphere sphere{0.7};
+  RigidTransformd X_WG(RollPitchYawd(M_PI_2, M_PI_2, M_PI),
+                       Vector3d{10., 10., 10.});
+  engine.AddAnchoredGeometry(sphere, X_WG.GetAsIsometry3(), GeometryIndex(0));
+  GeometryId sphere_id = GeometryId::get_new_id();
+  geometry_map.push_back(sphere_id);
+
+  const Vector3d p_GQ{2., 3., 6.};
+  const Vector3d p_WQ = X_WG * p_GQ;
+  auto results = engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map);
+
+  EXPECT_EQ(results.size(), 1);
+  EXPECT_EQ(results[0].id_G, sphere_id);
+  EXPECT_TRUE(CompareMatrices(results[0].p_GN, Vector3d(0.2, 0.3, 0.6), 1e-14));
+  EXPECT_NEAR(results[0].distance, 6.3, 1e-15);
+  const Vector3d grad_G = Vector3d(2.0, 3.0, 6.0) / 7.0;
+  const Vector3d grad_W = X_WG.rotation() * grad_G;
+  EXPECT_TRUE(CompareMatrices(results[0].grad_W, grad_W, 1e-15));
+}
+
 // We set up a 20x10x10 box centered at the origin [-10,10]x[-5,5]x[-5,5] and
 // test these query points outside the box:
 // (13,0,0) at distance 3.0 from the face {10}x[-5,5]x[-5,5],
 // (13,0,9) at distance 5.0 from the edge {10}x[-5,5]x{5}, and
-// {12,8,11) at distance 7.0 from the vertex {10}x{5}x{5}.
-GTEST_TEST(ProximityEngineTests, SignedDistanceToPointOutsideBox) {
+// (12,8,11) at distance 7.0 from the vertex {10}x{5}x{5}.
+GTEST_TEST(SignedDistanceToPoint, OutsideBox) {
   ProximityEngine<double> engine;
   std::vector<GeometryId> geometry_map;
 
@@ -467,7 +508,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceToPointOutsideBox) {
 // We set up a 20x10x10 box centered at the origin [-10,10]x[-5,5]x[-5,5] and
 // test these query points on the boundary of the box: on a face, on an edge,
 // and on a vertex of the box.
-GTEST_TEST(ProximityEngineTests, SignedDistanceToPointOnBoundaryOfBox) {
+GTEST_TEST(SignedDistanceToPoint, OnBoundaryOfBox) {
   ProximityEngine<double> engine;
   std::vector<GeometryId> geometry_map;
 
@@ -506,7 +547,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceToPointOnBoundaryOfBox) {
 // test these query points in the interior of the box: near a face, on a
 // medial face, on a medial edge, at a medial vertex, and at the center of
 // the box.
-GTEST_TEST(ProximityEngineTests, SignedDistanceToPointInsideBox) {
+GTEST_TEST(SignedDistanceToPoint, InsideBox) {
   ProximityEngine<double> engine;
   std::vector<GeometryId> geometry_map;
 
@@ -555,6 +596,69 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceToPointInsideBox) {
   EXPECT_EQ(results[0].p_GN, Vector3d(0., 5., 0.));
   EXPECT_EQ(results[0].distance, -5.);
   EXPECT_EQ(results[0].grad_W, Vector3d(0., 1., 0.));
+}
+
+// We set up a 20x10x10 box G and translated it by (10,10,10).  In its own
+// frame, the box G can be expressed as [-10,10]x[-5,5]x[-5,5].  In World
+// frame, G can be expressed as [0,20]x[5,15]x[5,15].  We test the query
+// point Q at (23,10,10) in World frame, which is (13,0,0) in G's frame.
+//                  World frame             G's frame
+// box            [0,20]x[5,15]x[5,15]   [-10,10]x[-5,5]x[-5,5]
+// Q                (23,10,10)               (13,0,0)
+// nearst point     (20,10,10)               (10,0,0)
+// distance             3                       3
+// gradient          (1,0,0)                 (1,0,0)
+GTEST_TEST(SignedDistanceToPoint, OutsideTranslateBox) {
+  ProximityEngine<double> engine;
+  std::vector<GeometryId> geometry_map;
+
+  Box box{20., 10., 10.};
+  Isometry3d pose(Translation3d(10., 10., 10.));
+  engine.AddAnchoredGeometry(box, pose, GeometryIndex(0));
+  GeometryId box_id = GeometryId::get_new_id();
+  geometry_map.push_back(box_id);
+
+  Vector3d query{23., 10., 10.};
+  auto results = engine.ComputeSignedDistanceToPoint(query, geometry_map);
+  EXPECT_EQ(results.size(), 1);
+  EXPECT_EQ(results[0].id_G, box_id);
+  EXPECT_EQ(results[0].p_GN, Vector3d(10., 0., 0.));
+  EXPECT_EQ(results[0].distance, 3.0);
+  EXPECT_EQ(results[0].grad_W, Vector3d(1.0, 0.0, 0.0));
+}
+
+// We set up a 20x10x10 box G with a rigid transform X_WG. We apply X_WG to the
+// query point Q, which is expressed as (12,8,11) in G's frame.
+//                  World frame                       G's frame
+// box           X_WG * [-10,10]x[-5,5]x[-5,5]    [-10,10]x[-5,5]x[-5,5]
+// Q             X_WG * (12,8,11)                     (12,8,11)
+// nearest point X_WG * (10,5,5)                      (10,5,5)
+// distance      7                                    7
+// gradient      X_WG.rotation()*(2,3,6)/7            (2,3,6)/7
+GTEST_TEST(SignedDistanceToPoint, OutsideRigidTransformBox) {
+  ProximityEngine<double> engine;
+  std::vector<GeometryId> geometry_map;
+
+  Box box{20., 10., 10.};
+  RigidTransformd X_WG(RollPitchYawd(M_PI_4, M_PI_2, M_PI),
+                       Vector3d{10., 10., 10.});
+  engine.AddAnchoredGeometry(box, X_WG.GetAsIsometry3(), GeometryIndex(0));
+  GeometryId box_id = GeometryId::get_new_id();
+  geometry_map.push_back(box_id);
+
+  const Vector3d p_GQ{12., 8., 11};
+  const Vector3d p_WQ = X_WG * p_GQ;
+  auto results = engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map);
+  EXPECT_EQ(results.size(), 1);
+  EXPECT_EQ(results[0].id_G, box_id);
+  // Nearest point in G's frame.
+  EXPECT_EQ(results[0].p_GN, Vector3d(10., 5., 5.));
+  // Floating point rounding due to the rigid transform.
+  EXPECT_NEAR(results[0].distance, 7.0, 1e-14);
+  // Expected gradient vectors in G's frame and World frame.
+  const Vector3d grad_G = Vector3d(2., 3., 6.) / 7.;
+  const Vector3d grad_W = X_WG.rotation() * grad_G;
+  EXPECT_TRUE(CompareMatrices(results[0].grad_W, grad_W, 1e-14));
 }
 
 // Penetration tests -- testing data flow; not testing the value of the query.
