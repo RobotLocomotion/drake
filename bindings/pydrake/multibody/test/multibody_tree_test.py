@@ -662,7 +662,6 @@ class TestMultibodyTree(unittest.TestCase):
         # Create a context of the MBP and set the state of the context
         # to desired values.
         context = plant.CreateDefaultContext()
-        tree = plant.tree()
 
         # Try mapping velocity to qdot and back.
         nq = plant.num_positions()
