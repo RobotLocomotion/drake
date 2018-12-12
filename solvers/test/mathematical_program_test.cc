@@ -2951,9 +2951,9 @@ GTEST_TEST(testMathematicalProgram, NewSosPolynomial) {
   auto t = prog.NewIndeterminates<4>();
   const auto m = symbolic::MonomialBasis<4, 2>(symbolic::Variables(t));
   const auto pair = prog.NewSosPolynomial(m);
-  const symbolic::Polynomial p = pair.first;
-  const Binding<PositiveSemidefiniteConstraint> psd_binding = pair.second;
-  const auto Q_flat = psd_binding.variables();
+  const symbolic::Polynomial& p = pair.first;
+  const Binding<PositiveSemidefiniteConstraint>& psd_binding = pair.second;
+  const auto& Q_flat = psd_binding.variables();
   MatrixX<symbolic::Polynomial> Q_poly(m.rows(), m.rows());
   const symbolic::Monomial monomial_one{};
   for (int i = 0; i < Q_poly.rows(); ++i) {

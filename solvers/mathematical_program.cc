@@ -190,9 +190,9 @@ MathematicalProgram::NewSosPolynomial(
   const MatrixXDecisionVariable Q{
       NewSymmetricContinuousVariables(monomial_basis.size())};
   const auto psd_binding = AddPositiveSemidefiniteConstraint(Q);
-  // TODO(hongkai.dai): ideally we should compute p in one line as
+  // TODO(hongkai.dai & soonho.kong): ideally we should compute p in one line as
   // monomial_basis.dot(Q * monomial_basis). But as explained in #10200, this
-  // one line version is too slow, so we use this double for loops to compute
+  // one line version is too slow, so we use this double for loop to compute
   // the matrix product by hand. I will revert to the one line version when it
   // is fast.
   symbolic::Polynomial p{};
