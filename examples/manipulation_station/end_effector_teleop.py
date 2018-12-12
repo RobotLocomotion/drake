@@ -33,7 +33,9 @@ class EndEffectorTeleop(LeafSystem):
         self._DeclareVectorOutputPort("rpy_xyz", BasicVector(6),
                                       self._DoCalcOutput)
 
-        self._DeclarePeriodicPublish(0.1, 0.0)
+        # Note: This timing affects the keyboard teleop performance. A larger
+        #       time step causes more lag in the response.
+        self._DeclarePeriodicPublish(0.01, 0.0)
 
         self.window = tk.Tk()
         self.window.title("End-Effector TeleOp")
@@ -74,6 +76,34 @@ class EndEffectorTeleop(LeafSystem):
                           length=800,
                           orient=tk.HORIZONTAL)
         self.z.pack()
+
+        # The key bindings below provide teleop functionality via the
+        # keyboard, and are somewhat arbitrary (inspired by gaming
+        # conventions). Note that in order for the keyboard bindings to
+        # be active, the teleop slider window must be the active window.
+
+        def update(scale, value):
+            return lambda(event): scale.set(scale.get() + value)
+
+        # Delta displacements for motion via keyboard teleop.
+        rotation_delta = 0.05  # rad
+        position_delta = 0.01  # m
+
+        # Linear motion key bindings.
+        self.window.bind("<Up>", update(self.z, +position_delta))
+        self.window.bind("<Down>", update(self.z, -position_delta))
+        self.window.bind("<d>", update(self.y, +position_delta))
+        self.window.bind("<a>", update(self.y, -position_delta))
+        self.window.bind("<w>", update(self.x, +position_delta))
+        self.window.bind("<s>", update(self.x, -position_delta))
+
+        # Rotational motion key bindings.
+        self.window.bind("<Control-d>", update(self.pitch, +rotation_delta))
+        self.window.bind("<Control-a>", update(self.pitch, -rotation_delta))
+        self.window.bind("<Control-w>", update(self.roll, +rotation_delta))
+        self.window.bind("<Control-s>", update(self.roll, -rotation_delta))
+        self.window.bind("<Control-Up>", update(self.yaw, +rotation_delta))
+        self.window.bind("<Control-Down>", update(self.yaw, -rotation_delta))
 
     def SetPose(self, pose):
         """
