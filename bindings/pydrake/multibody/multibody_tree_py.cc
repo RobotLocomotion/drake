@@ -271,25 +271,6 @@ void init_module(py::module m) {
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>(), py::arg("context"),
             doc.MultibodyTree.GetMutablePositionsAndVelocities.doc)
-        .def("GetPositionsFromArray", &Class::GetPositionsFromArray,
-            py::arg("model_instance"), py::arg("q"),
-            doc.MultibodyTree.GetPositionsFromArray.doc)
-        .def("SetPositionsInArray",
-            [](const Class* self, multibody::ModelInstanceIndex model_instance,
-                const Eigen::Ref<const VectorX<T>> q_instance,
-                Eigen::Ref<VectorX<T>> q) -> void {
-              self->SetPositionsInArray(model_instance, q_instance, &q);
-            },
-            py::arg("model_instance"), py::arg("q_instance"), py::arg("q"),
-            doc.MultibodyTree.SetPositionsInArray.doc)
-        .def("SetVelocitiesInArray",
-            [](const Class* self, multibody::ModelInstanceIndex model_instance,
-                const Eigen::Ref<const VectorX<T>> v_instance,
-                Eigen::Ref<VectorX<T>> v) -> void {
-              self->SetVelocitiesInArray(model_instance, v_instance, &v);
-            },
-            py::arg("model_instance"), py::arg("v_instance"), py::arg("v"),
-            doc.MultibodyTree.SetVelocitiesInArray.doc)
         .def("CalcPointsPositions",
             [](const Class* self, const Context<T>& context,
                 const Frame<T>& frame_B,
