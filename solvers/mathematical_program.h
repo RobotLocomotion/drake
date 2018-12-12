@@ -2158,7 +2158,7 @@ class MathematicalProgram {
    * basis of all indeterminates in the program with degree equal to half the
    * TotalDegree of @p p. It returns a pair of constraint bindings expressing:
    *
-   *  - The coefficients matrix Q is PSD (positive semidefinite).
+   *  - The coefficients matrix Q. This matrix should be positive semidefinite.
    *  - The coefficients matching conditions in linear equality constraint.
    */
   std::pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
@@ -2171,7 +2171,7 @@ class MathematicalProgram {
    * polynomial with respect to `indeterminates()` in this mathematical
    * program. It returns a pair of constraint bindings expressing:
    *
-   *  - The coefficients matrix Q is PSD (positive semidefinite).
+   *  - The coefficients matrix Q. This matrix should be positive semidefinite.
    *  - The coefficients matching conditions in linear equality constraint.
    */
   std::pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
@@ -2186,7 +2186,7 @@ class MathematicalProgram {
    * mathematical program. It returns a pair of
    * constraint bindings expressing:
    *
-   *  - The coefficients matrix Q is PSD (positive semidefinite).
+   *  - The coefficients matrix Q. This matrix should be positive semidefinite.
    *  - The coefficients matching conditions in linear equality constraint.
    */
   std::pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
