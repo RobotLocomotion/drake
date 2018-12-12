@@ -51,26 +51,26 @@ class MultibodyForces {
     return static_cast<int>(tau_.size());
   }
 
-  /// Returns a constant reference to the vector of generalized forces stored by
-  /// `this` forces object.
+  /// (Advanced) Returns a constant reference to the vector of generalized
+  /// forces stored by `this` forces object.
   const VectorX<T>& generalized_forces() const {
     return tau_;
   }
 
-  /// Mutable version of generalized_forces().
+  /// (Advanced) Mutable version of generalized_forces().
   VectorX<T>& mutable_generalized_forces() {
     return tau_;
   }
 
-  /// Returns a constant reference to the vector of spatial body forces
-  /// `F_BBo_W` on each body B in the model, at the body's frame origin `Bo`,
-  /// expressed in the world frame W.
+  /// (Advanced) Returns a constant reference to the vector of spatial body
+  /// forces `F_BBo_W` on each body B in the model, at the body's frame
+  /// origin `Bo`, expressed in the world frame W.
   /// @note Entries are ordered by BodyNodeIndex.
   const std::vector<SpatialForce<T>>& body_forces() const {
     return F_B_W_;
   }
 
-  /// Mutable version of body_forces().
+  /// (Advanced) Mutable version of body_forces().
   std::vector<SpatialForce<T>>& mutable_body_forces() {
     return F_B_W_;
   }
