@@ -7,7 +7,6 @@
 
 namespace drake {
 namespace multibody {
-namespace internal {
 /**
  * Constrains that the angle between a vector na and another vector nb is
  * between [θ_lower, θ_upper]. na is fixed to a frame A, while nb is fixed
@@ -23,27 +22,27 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
 
   /**
    * Constructs an AngleBetweenVectorsConstraint.
-   * @param tree The MultibodyTree on which the constraint is imposed. @p tree
-   * should be alive during the lifetime of this constraint.
-   * @param frameA_idx The index of frame A.
+   * @param plant The MultibodyPlant on which the constraint is imposed.
+   *   @p plant should be alive during the lifetime of this constraint.
+   * @param frameA The Frame object for frame A.
    * @param na_A The vector na_A fixed to frame A, expressed in frame A.
-   * @pre na_A should be a non-zero vector.
-   * @throws std::logic_error if na_A is close to zero.
-   * @param frameB_idx The index of frame B.
+   * @param frameB The Frame object for frame B.
    * @param nb_B The vector nb fixed to frame B, expressed in frameB.
-   * @pre nb_B should be a non-zero vector.
-   * @throws std::logic_error if nb_B is close to zero.
    * @param angle_lower The lower bound on the angle between na and nb. It is
-   * denoted as θ_lower in the class documentation.
-   * @pre angle_lower >= 0.
-   * @throws std::invalid_argument error if angle_lower is negative.
+   *   denoted as θ_lower in the class documentation.
    * @param angle_upper The upper bound on the angle between na and nb. it is
-   * denoted as θ_upper in the class documentation.
+   *   denoted as θ_upper in the class documentation.
+   * @param context The Context that has been allocated for this @p plant. We
+   *   will update the context when evaluating the constraint. @p context should
+   *   be alive during the lifetime of this constraint.
+   * @pre na_A should be a non-zero vector.
+   * @pre nb_B should be a non-zero vector.
+   * @pre angle_lower >= 0.
    * @pre angle_lower <= angle_upper <= pi.
+   * @throws std::logic_error if na_A is close to zero.
+   * @throws std::logic_error if nb_B is close to zero.
+   * @throws std::invalid_argument error if angle_lower is negative.
    * @throws std::invalid_argument if angle_upper is outside the bounds.
-   * @param context The Context that has been allocated for this @p tree. We
-   * will update the context when evaluating the constraint. @p context should
-   * be alive during the lifetime of this constraint.
    */
   AngleBetweenVectorsConstraint(
       const multibody_plant::MultibodyPlant<double>& plant,
@@ -75,6 +74,5 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
   const Eigen::Vector3d nb_unit_B_;
   systems::Context<double>* const context_;
 };
-}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

@@ -7,7 +7,6 @@
 
 namespace drake {
 namespace multibody {
-namespace internal {
 /**
  * Constrains a target point T to be within a cone K. The point T ("T" stands
  * for "target") is fixed in a frame B, with position p_BT. The cone
@@ -28,25 +27,25 @@ class GazeTargetConstraint : public solvers::Constraint {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GazeTargetConstraint)
 
   /**
-   * @param tree The MultibodyTree on which the constraint is imposed. @p tree
-   *   should be alive during the lifetime of this constraint.
-   * @param frameA_idx The frame where the gaze cone is fixed to.
+   * @param plant The MultibodyPlant on which the constraint is imposed.
+   *   @p plant should be alive during the lifetime of this constraint.
+   * @param frameA The frame to which the gaze cone is fixed.
    * @param p_AS The position of the cone source point S, measured and expressed
    *   in frame A.
    * @param n_A The directional vector representing the center ray of the cone,
    *   expressed in frame A.
-   * @pre @p n_A cannot be a zero vector.
-   * @throws std::invalid_argument is n_A is close to a zero vector.
-   * @param frameB_idx The frame where the target point T is fixed to.
+   * @param frameB The frame to which the target point T is fixed.
    * @param p_BT The position of the target point T, measured and expressed in
    *   frame B.
    * @param cone_half_angle The half angle of the cone. We denote it as θ in the
    *   class documentation. @p cone_half_angle is in radians.
-   * @pre @p 0 <= cone_half_angle <= pi.
-   * @throws std::invalid_argument if cone_half_angle is outside of the bound.
-   * @param context The Context that has been allocated for this @p tree. We
+   * @param context The Context that has been allocated for this @p plant. We
    *   will update the context when evaluating the constraint. @p context should
    *   be alive during the lifetime of this constraint.
+   * @pre @p n_A cannot be a zero vector.
+   * @pre @p 0 <= cone_half_angle <= pi.
+   * @throws std::invalid_argument is n_A is close to a zero vector.
+   * @throws std::invalid_argument if cone_half_angle is outside of the bound.
    */
   GazeTargetConstraint(const multibody_plant::MultibodyPlant<double>& plant,
                        const Frame<double>& frameA,
@@ -81,6 +80,5 @@ class GazeTargetConstraint : public solvers::Constraint {
   const double cos_cone_half_angle_;
   systems::Context<double>* const context_;
 };
-}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
