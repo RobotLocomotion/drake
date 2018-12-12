@@ -54,10 +54,10 @@ class KukaIiwaModelTests : public ::testing::Test {
     plant_ = std::make_unique<MultibodyPlant<double>>();
     Parser parser(plant_.get());
     parser.AddModelFromFile(kArmSdfPath);
-    // Add a frame H with a fixed pose X_GH in the end effector frame G.
+    // Add a frame H with a fixed pose X_EH in the end effector frame E.
     end_effector_link_ = &plant_->GetBodyByName("iiwa_link_7");
     frame_H_ = &plant_->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-        "H", *end_effector_link_, X_GH_.GetAsIsometry3()));
+        "H", *end_effector_link_, X_EH_.GetAsIsometry3()));
     plant_->Finalize();
 
     context_ = plant_->CreateDefaultContext();
@@ -153,7 +153,7 @@ class KukaIiwaModelTests : public ::testing::Test {
 
   std::unique_ptr<MultibodyPlant<double>> plant_;
   std::unique_ptr<Context<double>> context_;
-  const RigidTransform<double> X_GH_{
+  const RigidTransform<double> X_EH_{
       RollPitchYaw<double>{M_PI_2, 0, M_PI_2}.ToRotationMatrix(),
       Vector3d{0, 0, 0.081}};
   const Body<double>* end_effector_link_{nullptr};
@@ -288,6 +288,59 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
   // one obtained using automatic differentiation.
   EXPECT_TRUE(CompareMatrices(Jq_WEp, Jq_WEp_autodiff, kTolerance,
                               MatrixCompareType::relative));
+}
+
+TEST_F(KukaIiwaModelTests, FramesPoseKinematics) {
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+  SetArbitraryConfiguration();
+
+  const Isometry3<double> X_WE = end_effector_link_->EvalPoseInWorld(*context_);
+  const Isometry3<double> X_WH = frame_H_->CalcPoseInWorld(*context_);
+  const Isometry3<double> X_WH_expected = X_WE * X_EH_.GetAsIsometry3();
+  EXPECT_TRUE(CompareMatrices(
+      X_WH.matrix(), X_WH_expected.matrix(),
+      kTolerance, MatrixCompareType::relative));
+
+  const Body<double>& link3 = plant_->GetBodyByName("iiwa_link_3");
+  const Isometry3<double> X_HL3 =
+      link3.body_frame().CalcPose(*context_, *frame_H_);
+  const Isometry3<double> X_WL3 = link3.body_frame().CalcPoseInWorld(*context_);
+  const Isometry3<double> X_HL3_expected = X_WH.inverse() * X_WL3;
+  EXPECT_TRUE(CompareMatrices(
+      X_HL3.matrix(), X_HL3_expected.matrix(),
+      kTolerance, MatrixCompareType::relative));
+
+  const SpatialVelocity<double> V_WE =
+      end_effector_link_->EvalSpatialVelocityInWorld(*context_);
+  const SpatialVelocity<double> V_WH =
+      frame_H_->CalcSpatialVelocityInWorld(*context_);
+  const Vector3<double> p_EH =
+      frame_H_->GetFixedPoseInBodyFrame().translation();
+  const Matrix3<double>& R_WE = X_WE.linear();
+  const Vector3<double> p_EH_W = R_WE * p_EH;
+  const SpatialVelocity<double> V_WH_expected = V_WE.Shift(p_EH_W);
+  EXPECT_TRUE(CompareMatrices(
+      V_WH.get_coeffs(), V_WH_expected.get_coeffs(),
+      kTolerance, MatrixCompareType::relative));
+
+  // Spatial velocity of link 3 measured in the H frame and expressed in the
+  // end-effector frame E.
+  const SpatialVelocity<double> V_HL3_E =
+      link3.body_frame().CalcSpatialVelocity(
+          *context_, *frame_H_, end_effector_link_->body_frame());
+  // Compute V_HL3_E_expected.
+  const SpatialVelocity<double> V_WH_E = R_WE.transpose() * V_WH;
+  const Matrix3<double> R_EH = frame_H_->GetFixedPoseInBodyFrame().linear();
+  const Vector3<double> p_HL3_E = R_EH * X_HL3.translation();
+  const SpatialVelocity<double> V_WL3_E =
+      R_WE.transpose() * link3.EvalSpatialVelocityInWorld(*context_);
+  // V_WL3_E = V_WH_E.Shift(p_HL3_E) + V_HL3_E
+  const SpatialVelocity<double> V_HL3_E_expected =
+      V_WL3_E - V_WH_E.Shift(p_HL3_E);
+  EXPECT_TRUE(CompareMatrices(
+      V_HL3_E.get_coeffs(), V_HL3_E_expected.get_coeffs(),
+      kTolerance, MatrixCompareType::relative));
 }
 
 }  // namespace

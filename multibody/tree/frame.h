@@ -5,6 +5,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/multibody/math/spatial_velocity.h"
 #include "drake/multibody/tree/frame_base.h"
 #include "drake/multibody/tree/multibody_tree_context.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
@@ -101,6 +102,49 @@ class Frame : public FrameBase<T> {
   virtual Isometry3<T> GetFixedOffsetPoseInBody(
       const Isometry3<T>& X_FQ) const {
     return GetFixedPoseInBodyFrame() * X_FQ;
+  }
+
+  /// For `this` frame F, returns `X_WF`.
+  Isometry3<T> CalcPoseInWorld(systems::Context<T>& context) const {
+    return this->get_parent_tree().CalcRelativeTransform(
+        context, this->get_parent_tree().world_frame(), *this);
+  }
+
+  /// For `this` frame F, returns `X_MF`.
+  Isometry3<T> CalcPose(
+      systems::Context<T>& context, const Frame<T>& frame_M) const {
+    return this->get_parent_tree().CalcRelativeTransform(
+        context, frame_M, *this);
+  }
+
+  SpatialVelocity<T> CalcSpatialVelocityInWorld(
+      systems::Context<T>& context) const {
+    const Isometry3<T>& X_WB = body().EvalPoseInWorld(context);
+    const Vector3<T> p_BF = CalcPoseInBodyFrame(context).translation();
+    const Vector3<T> p_BF_W = X_WB.linear() * p_BF;
+    const SpatialVelocity<T>& V_WB = body().EvalSpatialVelocityInWorld(context);
+    const SpatialVelocity<T> V_WF = V_WB.Shift(p_BF_W);
+    return V_WF;
+  }
+
+  /// Returns `V_MF_E` for `this` frame F.
+  SpatialVelocity<T> CalcSpatialVelocity(
+      systems::Context<T>& context,
+      const Frame<T>& frame_M, const Frame<T>& frame_E) const {
+    const Matrix3<T> R_WM = frame_M.CalcPoseInWorld(context).linear();
+    const Vector3<T> p_MF =
+        this->CalcPose(context, frame_M).translation();
+    const Vector3<T> p_MF_W = R_WM * p_MF;
+    const SpatialVelocity<T> V_WM = frame_M.CalcSpatialVelocityInWorld(context);
+    const SpatialVelocity<T> V_WF = this->CalcSpatialVelocityInWorld(context);
+    // We obtain V_MF from the composition of spatial velocities:
+    //   V_WF = V_WMf + V_MF = V_WM.Shift(p_MF) + V_MF
+    const SpatialVelocity<T> V_MF_W = V_WF - V_WM.Shift(p_MF_W);
+    if (frame_E.index() == FrameIndex(0)) return V_MF_W;
+    // If expressed-in frame_E is not the world perform additional
+    // transformation.
+    const Matrix3<T> R_WE = frame_E.CalcPoseInWorld(context).linear();
+    return R_WE.transpose() * V_MF_W;
   }
 
   /// NVI to DoCloneToScalar() templated on the scalar type of the new clone to
