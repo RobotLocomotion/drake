@@ -66,7 +66,7 @@ void RgbdCamera::InitPorts(const std::string& name) {
   ImageDepth32F depth32(depth_camera_info_.width(),
                         depth_camera_info_.height());
   depth_image_port_ = &this->DeclareAbstractOutputPort(
-      "depth_image", depth32, &RgbdCamera::CalcDepthImage32F);
+      "depth_image_32f", depth32, &RgbdCamera::CalcDepthImage32F);
 
   ImageDepth16U depth16(depth_camera_info_.width(),
                         depth_camera_info_.height());
