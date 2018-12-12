@@ -908,7 +908,7 @@ void init_parsing(py::module m) {
       },
       py::arg("file_name"), py::arg("model_name"), py::arg("plant"),
       py::arg("scene_graph") = nullptr,
-      doc.AddModelFromSdfFile.doc_4args_file_name_model_name_plant_scene_graph);
+      doc.AddModelFromSdfFile.doc_4args);
   m.def("AddModelFromSdfFile",
       [](const string& file_name, MultibodyPlant<double>* plant,
           SceneGraph<double>* scene_graph) {
