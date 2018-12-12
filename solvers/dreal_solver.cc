@@ -419,7 +419,7 @@ optional<DrealSolver::IntervalBox> DrealSolver::Minimize(
 bool DrealSolver::is_available() { return true; }
 
 namespace {
-// Extracts double value of @p key from @p solver_options. If not specified,
+// Extracts value of @p key from @p solver_options. If not specified,
 // returns @p default_value.
 template <typename T>
 T GetOptionWithDefaultValue(const SolverOptions& solver_options,
@@ -523,6 +523,7 @@ void DrealSolver::Solve(const MathematicalProgram& prog,
                         const optional<Eigen::VectorXd>& initial_guess,
                         const optional<SolverOptions>& solver_options,
                         MathematicalProgramResult* result) const {
+  *result = {};
   unused(initial_guess);
   if (!AreProgramAttributesSatisfied(prog)) {
     throw std::invalid_argument(
@@ -557,8 +558,8 @@ void DrealSolver::Solve(const MathematicalProgram& prog,
   const double precision{GetOptionWithDefaultValue(
       merged_solver_options, "precision", 0.001 /* default */)};
   const LocalOptimization local_optimization{
-      GetOptionWithDefaultValue(merged_solver_options, "use_local_optimization",
-                                1 /* default */) > 0
+      GetOptionWithDefaultValue<int>(
+          merged_solver_options, "use_local_optimization", 1 /* default */) > 0
           ? LocalOptimization::kUse
           : LocalOptimization::kNotUse};
   optional<IntervalBox> dreal_result;
