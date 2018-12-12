@@ -243,7 +243,7 @@ GTEST_TEST(ManipulationStationTest, CheckRGBDOutputs) {
                   .size(),
               0);
     EXPECT_GE(station.GetOutputPort("camera_" + name + "_depth_image")
-                  .Eval<systems::sensors::ImageDepth32F>(*context)
+                  .Eval<systems::sensors::ImageDepth16U>(*context)
                   .size(),
               0);
     EXPECT_GE(station.GetOutputPort("camera_" + name + "_label_image")

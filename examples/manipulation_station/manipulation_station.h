@@ -52,12 +52,10 @@ enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 ///   @output_port{wsg_force_measured}
 ///   @output_port{camera_[NAME]_rgb_image}
 ///   @output_port{camera_[NAME]_depth_image}
-///   @output_port{camera_[NAME]_depth_image_16u}
 ///   @output_port{<b style="color:orange">camera_[NAME]_label_image</b>}
 ///   @output_port{...}
 ///   @output_port{camera_[NAME]_rgb_image}
 ///   @output_port{camera_[NAME]_depth_image}
-///   @output_port{camera_[NAME]_depth_image_16u}
 ///   @output_port{<b style="color:orange">camera_[NAME]_label_image</b>}
 ///   @output_port{<b style="color:orange">pose_bundle</b>}
 ///   @output_port{<b style="color:orange">contact_results</b>}
@@ -65,9 +63,8 @@ enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 ///   @output_port{<b style="color:orange">geometry_poses</b>}
 /// }
 ///
-/// Each pixel in the output image from `depth_image` is a 32bit float, and the
-/// depth is represented in meters, whereas each pixel from `depth_image_16u`
-/// is a 16 bits unsigned short and represented in millimeters.
+/// Each pixel in the output image from `depth_image` is a 16bit unsigned
+/// short in millimeters.
 ///
 /// Note that outputs in <b style="color:orange">orange</b> are
 /// available in the simulation, but not on the real robot.  The distinction
