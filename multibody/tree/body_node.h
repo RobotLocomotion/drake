@@ -11,6 +11,7 @@
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/articulated_body_inertia_cache.h"
 #include "drake/multibody/tree/body.h"
+#include "drake/multibody/tree/detail/multibody_tree_forward_decl.h"
 #include "drake/multibody/tree/mobilizer.h"
 #include "drake/multibody/tree/multibody_tree_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
@@ -21,9 +22,6 @@
 
 namespace drake {
 namespace multibody {
-
-// Forward declaration.
-template<typename T> class MultibodyTree;
 
 namespace internal {
 

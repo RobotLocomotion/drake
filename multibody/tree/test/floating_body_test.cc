@@ -10,7 +10,7 @@
 
 namespace drake {
 namespace multibody {
-
+namespace internal {
 // Friend tester class for accessing MultibodyTree protected/private internals.
 class MultibodyTreeTester {
  public:
@@ -20,6 +20,7 @@ class MultibodyTreeTester {
     return model.GetFreeBodyMobilizerOrThrow(body);
   }
 };
+}  // namespace internal
 
 namespace multibody_tree {
 namespace test {
@@ -33,6 +34,7 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using systems::Context;
 using systems::RungeKutta3Integrator;
+using internal::MultibodyTreeTester;
 
 GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   const double kEpsilon = std::numeric_limits<double>::epsilon();
