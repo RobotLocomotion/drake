@@ -9,9 +9,10 @@ import os
 import sys
 
 from drake.tools.lint.formatter import IncludeFormatter
+from drake.tools.lint.util import find_all_sources
 
 
-def main():
+def main(workspace_name="drake"):
     parser = argparse.ArgumentParser(
         prog='clang-format-includes',
         description=__doc__)
@@ -27,18 +28,14 @@ def main():
     args = parser.parse_args()
 
     if args.all:
-        # TODO(jwnimmer-tri) Consolidate this logic with the cpplint_wrapper
-        # tree searching logic, including some way to unit test "all" search.
+        workspace_dir, relpaths = find_all_sources(workspace_name)
         extensions = ["cc", "h", "cpp"]
-        pathnames = ["drake"]
         filenames = [
-            os.path.join(dirpath, filename)
-            for pathname in pathnames
-            for dirpath, _, filenames in os.walk(pathname)
-            for filename in filenames
-            if os.path.splitext(filename)[1][1:] in extensions and
-            "/third_party/" not in dirpath and
-            "/matlab/" not in dirpath
+            os.path.join(workspace_dir, relpath)
+            for relpath in relpaths
+            if os.path.splitext(relpath)[1][1:] in extensions and
+            not relpath.startswith("third_party") and
+            not relpath.startswith("matlab")
         ]
     else:
         filenames = args.filenames

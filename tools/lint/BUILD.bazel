@@ -81,7 +81,10 @@ drake_py_binary(
     name = "clang-format-includes",
     srcs = ["clang_format_includes.py"],
     main = "clang_format_includes.py",
-    deps = [":formatter"],
+    deps = [
+        ":formatter",
+        ":util",
+    ],
 )
 
 drake_py_binary(
