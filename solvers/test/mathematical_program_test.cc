@@ -2944,6 +2944,27 @@ GTEST_TEST(testMathematicalProgram, TestGetSolution) {
   result.set_x_val(Eigen::Vector3d::Zero());
   EXPECT_THROW(prog.GetSolution(x(0), result), std::invalid_argument);
 }
+
+GTEST_TEST(testMathematicalProgram, NewSosPolynomial) {
+  // Check if the newly created sos polynomial can be computed as m' * Q * m.
+  MathematicalProgram prog;
+  auto t = prog.NewIndeterminates<4>();
+  const auto m = symbolic::MonomialBasis<4, 2>(symbolic::Variables(t));
+  const auto pair = prog.NewSosPolynomial(m);
+  const symbolic::Polynomial p = pair.first;
+  const Binding<PositiveSemidefiniteConstraint> psd_binding = pair.second;
+  const auto Q_flat = psd_binding.variables();
+  MatrixX<symbolic::Polynomial> Q_poly(m.rows(), m.rows());
+  const symbolic::Monomial monomial_one{};
+  for (int i = 0; i < Q_poly.rows(); ++i) {
+    for (int j = 0; j < Q_poly.cols(); ++j) {
+      Q_poly(i, j) =
+          symbolic::Polynomial({{monomial_one, Q_flat(j * Q_poly.rows() + i)}});
+    }
+  }
+  const symbolic::Polynomial p_expected(m.dot(Q_poly * m));
+  EXPECT_TRUE(p.EqualTo(p_expected));
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

@@ -190,15 +190,18 @@ MathematicalProgram::NewSosPolynomial(
   const MatrixXDecisionVariable Q{
       NewSymmetricContinuousVariables(monomial_basis.size())};
   const auto psd_binding = AddPositiveSemidefiniteConstraint(Q);
-  // Constructs a coefficient matrix of Polynomials Q_poly from Q. In the
-  // process, we make sure that each Q_poly(i, j) is treated as a decision
-  // variable, not an indeterminate.
-  const drake::MatrixX<symbolic::Polynomial> Q_poly{
-      Q.unaryExpr([](const Variable& q_i_j) {
-        return symbolic::Polynomial{q_i_j /* coeff */, {} /* Monomial */};
-      })};
-  // p = mᵀ * Q_poly * m.
-  const symbolic::Polynomial p{monomial_basis.dot(Q_poly * monomial_basis)};
+  // TODO(hongkai.dai): ideally we should compute p in one line as
+  // monomial_basis.dot(Q * monomial_basis). But as explained in #10200, this
+  // one line version is too slow, so we use this double for loops to compute
+  // the matrix product by hand. I will revert to the one line version when it
+  // is fast.
+  symbolic::Polynomial p{};
+  for (int i = 0; i < Q.rows(); ++i) {
+    p.AddProduct(Q(i, i), pow(monomial_basis(i), 2));
+    for (int j = i + 1; j < Q.cols(); ++j) {
+      p.AddProduct(2 * Q(i, j), monomial_basis(i) * monomial_basis(j));
+    }
+  }
   return make_pair(p, psd_binding);
 }
 
