@@ -184,12 +184,16 @@ symbolic::Polynomial MathematicalProgram::NewFreePolynomial(
   return p;
 }
 
-std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
-MathematicalProgram::NewSosPolynomial(
-    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
-  const MatrixXDecisionVariable Q{
-      NewSymmetricContinuousVariables(monomial_basis.size())};
-  const auto psd_binding = AddPositiveSemidefiniteConstraint(Q);
+// This is the utility function for creating new nonnegative polynomials
+// (sos-polynomial, sdsos-polynomial, dsos-polynomial, etc). It creates a
+// symmetric matrix Q as decision variables, and return m' * Q * m as the new
+// polynomial, where m is the monomial basis.
+pair<symbolic::Polynomial, MatrixXDecisionVariable>
+MathematicalProgram::NewNonnegativePolynomial(
+    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+    NonnegativePolynomial type) {
+  const MatrixXDecisionVariable Q =
+      NewSymmetricContinuousVariables(monomial_basis.size());
   // TODO(hongkai.dai & soonho.kong): ideally we should compute p in one line as
   // monomial_basis.dot(Q * monomial_basis). But as explained in #10200, this
   // one line version is too slow, so we use this double for loop to compute
@@ -202,25 +206,47 @@ MathematicalProgram::NewSosPolynomial(
       p.AddProduct(2 * Q(i, j), monomial_basis(i) * monomial_basis(j));
     }
   }
-  return make_pair(p, psd_binding);
+  switch (type) {
+    case MathematicalProgram::NonnegativePolynomial::kSos: {
+      AddPositiveSemidefiniteConstraint(Q);
+      break;
+    }
+    case MathematicalProgram::NonnegativePolynomial::kSdsos: {
+      AddScaledDiagonallyDominantMatrixConstraint(
+          Q.cast<symbolic::Expression>());
+      break;
+    }
+    case MathematicalProgram::NonnegativePolynomial::kDsos: {
+      AddPositiveDiagonallyDominantMatrixConstraint(
+          Q.cast<symbolic::Expression>());
+      break;
+    }
+  }
+  return std::make_pair(p, Q);
 }
 
-pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
-MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
-                                      const int degree) {
+pair<symbolic::Polynomial, MatrixXDecisionVariable>
+MathematicalProgram::NewNonnegativePolynomial(
+    const symbolic::Variables& indeterminates, int degree,
+    NonnegativePolynomial type) {
   DRAKE_DEMAND(degree > 0 && degree % 2 == 0);
   const drake::VectorX<symbolic::Monomial> x{
       MonomialBasis(indeterminates, degree / 2)};
-  return NewSosPolynomial(x);
+  return NewNonnegativePolynomial(x, type);
 }
 
-namespace {
-symbolic::Polynomial NewNonnegativePolynomial(const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis, MathematicalProgram* prog, MatrixXDecisionVariable* Q) {
-  *Q = prog->NewSymmetricContinuousVariables(monomial_basis.size());
+std::pair<symbolic::Polynomial, MatrixXDecisionVariable>
+MathematicalProgram::NewSosPolynomial(
+    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
+  return NewNonnegativePolynomial(
+      monomial_basis, MathematicalProgram::NonnegativePolynomial::kSos);
 }
-}  // namespace
-symbolic::Polynomial MathematicalProgram::NewSdsosPolynomial(const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
-  
+
+pair<symbolic::Polynomial, MatrixXDecisionVariable>
+MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
+                                      const int degree) {
+  return NewNonnegativePolynomial(
+      indeterminates, degree, MathematicalProgram::NonnegativePolynomial::kSos);
 }
 
 MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
@@ -800,24 +826,24 @@ MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
 // Note that FindIndeterminateIndex is implemented in
 // mathematical_program_api.cc instead of this file.
 
-pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
+pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
 MathematicalProgram::AddSosConstraint(
     const symbolic::Polynomial& p,
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
   const auto pair = NewSosPolynomial(monomial_basis);
   const symbolic::Polynomial& sos_poly{pair.first};
-  const Binding<PositiveSemidefiniteConstraint>& psd_binding{pair.second};
+  const MatrixXDecisionVariable& Q{pair.second};
   const auto leq_binding = AddLinearEqualityConstraint(sos_poly == p);
-  return make_pair(psd_binding, leq_binding);
+  return make_pair(Q, leq_binding);
 }
 
-pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
+pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
 MathematicalProgram::AddSosConstraint(const symbolic::Polynomial& p) {
   return AddSosConstraint(
       p, ConstructMonomialBasis(p));
 }
 
-pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
+pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
 MathematicalProgram::AddSosConstraint(
     const symbolic::Expression& e,
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
@@ -826,7 +852,7 @@ MathematicalProgram::AddSosConstraint(
       monomial_basis);
 }
 
-pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
+pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
 MathematicalProgram::AddSosConstraint(const symbolic::Expression& e) {
   return AddSosConstraint(
       symbolic::Polynomial{e, symbolic::Variables{indeterminates_}});
